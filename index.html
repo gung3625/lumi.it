@@ -3,41 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lumi Photo Vault</title>
+    <title>Lumi 예약 시스템</title>
     <style>
         body { background: #fff5f8; font-family: sans-serif; display: flex; justify-content: center; padding: 20px; }
-        .card { background: white; padding: 30px; border-radius: 20px; width: 100%; max-width: 350px; text-align: center; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
-        input, button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: 1px solid #eee; box-sizing: border-box; }
-        button { background: #ff4081; color: white; border: none; font-weight: bold; cursor: pointer; }
+        .card { background: white; padding: 30px; border-radius: 20px; width: 100%; max-width: 400px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+        h1 { color: #ff4081; text-align: center; }
+        label { font-size: 14px; color: #666; display: block; margin-top: 10px; }
+        input, button { width: 100%; padding: 12px; margin-top: 5px; border-radius: 10px; border: 1px solid #eee; box-sizing: border-box; }
+        button { background: #ff4081; color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 20px; }
     </style>
 </head>
 <body>
     <div class="card">
-        <h1>Lumi Start</h1>
+        <h1>Lumi 예약하기</h1>
         <form id="lumiForm">
+            <label>성함</label>
+            <input type="text" id="userName" placeholder="성함을 입력하세요" required>
+            
+            <label>연락처</label>
+            <input type="tel" id="userPhone" placeholder="010-0000-0000" required>
+            
+            <label>예약 날짜</label>
+            <input type="date" id="resDate" required>
+            
+            <label>예약 시간</label>
+            <input type="time" id="resTime" required>
+            
+            <label>참고용 사진 업로드</label>
             <input type="file" id="fileInput" accept="image/*" required>
-            <input type="text" id="userInput" placeholder="성함" required>
-            <button type="submit" id="btn">사진 전송</button>
+            
+            <button type="submit" id="btn">예약 완료</button>
         </form>
     </div>
     <script>
         document.getElementById('lumiForm').onsubmit = async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btn');
-            btn.innerText = "전송 중...";
+            btn.innerText = "예약 처리 중...";
             btn.disabled = true;
 
             const fd = new FormData();
             fd.append('photo', document.getElementById('fileInput').files[0]);
-            fd.append('user', document.getElementById('userInput').value);
+            fd.append('userName', document.getElementById('userName').value);
+            fd.append('userPhone', document.getElementById('userPhone').value);
+            fd.append('resDate', document.getElementById('resDate').value);
+            fd.append('resTime', document.getElementById('resTime').value);
 
             try {
                 const r = await fetch('/.netlify/functions/reserve', { method: 'POST', body: fd });
-                if (r.ok) alert("성공적으로 저장되었습니다!");
+                if (r.ok) alert("예약과 사진 전송이 성공했습니다!");
                 else alert("전송 실패: " + await r.text());
             } catch (err) { alert("연결 오류가 발생했습니다."); }
             
-            btn.innerText = "사진 전송";
+            btn.innerText = "예약 완료";
             btn.disabled = false;
         };
     </script>
