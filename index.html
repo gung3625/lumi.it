@@ -23,6 +23,7 @@
             <input type="file" id="photo" accept="image/*" required>
             <button type="submit" id="btn">예약하기</button>
         </form>
+        
         <footer>
             <a href="/privacy.html" class="privacy-link" target="_blank">개인정보처리방침 보기</a>
             <p>
@@ -33,41 +34,40 @@
             </p>
             <p>© 2026 Lumi. All rights reserved.</p>
         </footer>
-    </div>
-<script>
-    document.getElementById('resForm').onsubmit = async (e) => {
-        e.preventDefault(); // 404 방지용 1순위 코드
-        const btn = document.getElementById('btn');
-        btn.disabled = true; 
-        btn.innerText = "전송 중...";
+    </div> <script>
+        document.getElementById('resForm').onsubmit = async (e) => {
+            e.preventDefault(); // 화면 넘어감(404) 방지
+            const btn = document.getElementById('btn');
+            btn.disabled = true;
+            btn.innerText = "전송 중...";
 
-        const fd = new FormData();
-        fd.append('photo', document.getElementById('photo').files[0]);
-        fd.append('userName', document.getElementById('name').value);
-        fd.append('userPhone', document.getElementById('phone').value);
-        fd.append('resDate', document.getElementById('date').value);
-        fd.append('resTime', document.getElementById('time').value);
+            const fd = new FormData();
+            fd.append('photo', document.getElementById('photo').files[0]);
+            fd.append('userName', document.getElementById('name').value);
+            fd.append('userPhone', document.getElementById('phone').value);
+            fd.append('resDate', document.getElementById('date').value);
+            fd.append('resTime', document.getElementById('time').value);
 
-        try {
-            // 이 주소가 10시 59분에 성공했던 그 주소입니다!
-            const r = await fetch('/.netlify/functions/reserve', { 
-                method: 'POST', 
-                body: fd 
-            });
+            try {
+                // 10시 59분에 성공했던 그 마법의 주소입니다
+                const r = await fetch('/.netlify/functions/reserve', { 
+                    method: 'POST', 
+                    body: fd 
+                });
 
-            if (r.ok) {
-                alert("예약이 완료되었습니다! 확인 후 연락드릴게요.");
-                location.reload(); // 성공 시 새로고침
-            } else {
-                alert("서버 연결에 문제가 있습니다. (에러 코드: " + r.status + ")");
+                if (r.ok) {
+                    alert("예약이 완료되었습니다!");
+                    location.reload();
+                } else {
+                    alert("서버 연결 실패 (코드: " + r.status + ")");
+                }
+            } catch (err) {
+                alert("연결 오류가 발생했습니다.");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "예약하기";
             }
-        } catch (err) {
-            alert("연결 실패: 인터넷 상태를 확인해주세요.");
-        } finally {
-            btn.disabled = false; 
-            btn.innerText = "예약하기";
-        }
-    };
-</script>
+        };
+    </script>
 </body>
 </html>
