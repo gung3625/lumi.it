@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ko">
+<body>
+ <h1>예약 현황</h1>
+ <table id="reservationTable">
+   <thead>
+     <tr>
+       <th>키</th>
+       <th>예약자</th>
+       <th>예약 날짜</th>
+     </tr>
+   </thead>
+   <tbody id="tableBody"></tbody>
+ </table>
+ <script>
+ (async () => {
+   const res = await fetch('/.netlify/functions/list');
+   const data = await res.json();
+   const tableBody = document.getElementById('tableBody');
+   data.forEach(item => {
+     const row = document.createElement('tr');
+     row.innerHTML = `<td>${item.key}</td><td>${item.sender}</td><td>${item.reservedAt}</td>`;
+     tableBody.appendChild(row);
+   });
+ })();
+ </script>
+</body>
+</html>
