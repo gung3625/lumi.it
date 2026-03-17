@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="ko">
+<body>
+ <h1>Lumi 2.0 Test</h1>
+ <form id="uploadForm">
+ <input type="file" id="fileInput" required>
+ <button type="submit">사진 보내기</button>
+ </form>
+ <script>
+ document.getElementById('uploadForm').onsubmit = async (e) => {
+ e.preventDefault();
+ const fd = new FormData();
+ fd.append('photo', document.getElementById('fileInput').files[0]);
+ const r = await fetch('/.netlify/functions/reserve', { method: 'POST', body: fd });
+ alert(r.ok ? "전송 성공!" : "전송 실패");
+ };
+ </script>
+</body>
+</html>
