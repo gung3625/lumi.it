@@ -1,5 +1,14 @@
 [build]
+  # 중요: 현재 폴더(.)에 있는 html 파일들을 웹에 보여주겠다는 설정입니다.
   publish = "."
+
 [functions]
-  directory = "."
+  # 중요: js 파일들이 들어있는 정확한 경로입니다.
+  directory = "netlify/functions"
   node_bundler = "esbuild"
+
+[[redirects]]
+  # 주소창에 .html을 안 붙여도 접속되게 도와주는 마법의 설정입니다.
+  from = "/admin"
+  to = "/admin.html"
+  status = 200
