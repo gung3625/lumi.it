@@ -1,42 +1,51 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8"><title>Lumi 예약</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumi 예약 시스템</title>
     <style>
-        body { background: #fff5f8; font-family: sans-serif; display: flex; justify-content: center; padding: 20px; }
-        .card { background: white; padding: 30px; border-radius: 20px; width: 100%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
-        input, button { width: 100%; padding: 12px; margin-top: 10px; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
-        button { background: #ff4081; color: white; border: none; font-weight: bold; cursor: pointer; }
-   footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #888; line-height: 1.6; text-align: center; }
+        body { background: #fff5f8; font-family: 'Pretendard', sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
+        .card { background: white; padding: 30px; border-radius: 20px; width: 100%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); box-sizing: border-box; }
+        h1 { color: #ff4081; text-align: center; margin-bottom: 25px; }
+        input, button { width: 100%; padding: 12px; margin-top: 10px; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; font-size: 16px; }
+        button { background: #ff4081; color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 20px; transition: 0.3s; }
+        button:disabled { background: #ccc; }
+        
+        footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #888; line-height: 1.6; text-align: center; width: 100%; max-width: 400px; }
         footer a { color: #ff4081; text-decoration: none; font-weight: bold; }
         .privacy-link { margin-bottom: 10px; display: block; }
     </style>
 </head>
 <body>
     <div class="card">
-        <h1 style="color:#ff4081; text-align:center;">Lumi 예약</h1>
+        <h1>Lumi 예약</h1>
         <form id="resForm">
             <input type="text" id="name" placeholder="성함" required>
-            <input type="tel" id="phone" placeholder="연락처" required>
+            <input type="tel" id="phone" placeholder="연락처 (010-0000-0000)" required>
             <input type="date" id="date" required>
             <input type="time" id="time" required>
+            <p style="font-size: 12px; color: #666; margin-top: 15px;">참고 사진 첨부</p>
             <input type="file" id="photo" accept="image/*" required>
             <button type="submit" id="btn">예약하기</button>
         </form>
-        
+
         <footer>
             <a href="/privacy.html" class="privacy-link" target="_blank">개인정보처리방침 보기</a>
             <p>
-                <b>상호명:</b> Lumi | <b>대표자:</b> [김현] <br>
+                <b>상호명:</b> Lumi | <b>대표자:</b> 김현 <br>
                 <b>사업자번호:</b> 330-04-03207 <br>
                 <b>주소:</b> 서울특별시 용산구 회나무로 32-7 <br>
                 <b>연락처:</b> 010-6424-6284 | <b>이메일:</b> gung3625@gmail.com
             </p>
             <p>© 2026 Lumi. All rights reserved.</p>
         </footer>
-    </div> <script>
+    </div>
+
+    <script>
         document.getElementById('resForm').onsubmit = async (e) => {
-            e.preventDefault(); // 화면 넘어감(404) 방지
+            e.preventDefault(); // 페이지 새로고침 방지 (404 방지 핵심)
+            
             const btn = document.getElementById('btn');
             btn.disabled = true;
             btn.innerText = "전송 중...";
@@ -49,20 +58,21 @@
             fd.append('resTime', document.getElementById('time').value);
 
             try {
-                // 10시 59분에 성공했던 그 마법의 주소입니다
-                const r = await fetch('/.netlify/functions/reserve', { 
-                    method: 'POST', 
-                    body: fd 
+                // 10시 59분에 성공했던 그 경로입니다.
+                const response = await fetch('/.netlify/functions/reserve', {
+                    method: 'POST',
+                    body: fd
                 });
 
-                if (r.ok) {
-                    alert("예약이 완료되었습니다!");
+                if (response.ok) {
+                    alert("예약이 정상적으로 접수되었습니다!");
                     location.reload();
                 } else {
-                    alert("서버 연결 실패 (코드: " + r.status + ")");
+                    const errorText = await response.text();
+                    alert("전송 실패 (코드: " + response.status + ")\n사유: " + errorText);
                 }
             } catch (err) {
-                alert("연결 오류가 발생했습니다.");
+                alert("연결 에러가 발생했습니다. 잠시 후 다시 시도해주세요.");
             } finally {
                 btn.disabled = false;
                 btn.innerText = "예약하기";
