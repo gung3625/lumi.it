@@ -8,10 +8,7 @@ export const handler = async (event) => {
         token: "nfp_bqKqY4GBrd8MNNLxCiCssFhRN5qGfzWe82f7"
     });
 
-    const headers = Object.fromEntries(
-        Object.entries(event.headers).map(([k, v]) => [k.toLowerCase(), v])
-    );
-
+    const headers = Object.fromEntries(Object.entries(event.headers).map(([k, v]) => [k.toLowerCase(), v]));
     if (!headers['content-type']) return { statusCode: 400, body: "No Content-Type" };
 
     let fileData = null;
