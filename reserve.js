@@ -2,11 +2,16 @@ import { getStore } from "@netlify/blobs";
 import busboy from "busboy";
 
 export const handler = async (event) => {
-    // Netlify 대시보드에서 Blobs를 활성화했다면 키 없이도 작동합니다.
-    const store = getStore({ name: 'lumi_vault' });
-    const fields = {};
+    // 사장님이 찾으신 Project ID와 토큰을 직접 꽂았습니다.
+    const store = getStore({ 
+        name: 'lumi_vault',
+        siteID: "28d60e0e-6aa4-4b45-b117-0bcc3c4268fc", 
+        token: "nfp_bqKqY4GBrd8MNNLxCiCssFhRN5qGfzWe82f7"
+    });
+
     let fileData = null;
     let fileName = "";
+    const fields = {};
 
     return new Promise((resolve) => {
         const bb = busboy({ headers: event.headers });
@@ -21,17 +26,21 @@ export const handler = async (event) => {
         bb.on('field', (name, val) => { fields[name] = val; });
 
         bb.on('finish', async () => {
-            if (!fileData) return resolve({ statusCode: 400, body: "파일이 없습니다." });
+            if (!fileData) return resolve({ statusCode: 400, body: "파일이 전송되지 않았습니다." });
 
             try {
-                // 사진을 금고에 저장 (이름은 현재시간으로)
+                // 현재 시간과 파일명을 조합해 금고에 저장합니다.
                 const key = `${Date.now()}_${fileName}`;
                 await store.setRaw(key, fileData, { 
-                    metadata: { user: fields.user || "Unknown" } 
+                    metadata: { 
+                        user: fields.user || "Unknown",
+                        originalName: fileName 
+                    } 
                 });
                 resolve({ statusCode: 200, body: "Success" });
             } catch (err) {
-                resolve({ statusCode: 500, body: "Vault Error: " + err.message });
+                // 에러 발생 시 상세 내용을 화면에 띄웁니다.
+                resolve({ statusCode: 500, body: "금고 저장 실패: " + err.message });
             }
         });
 
