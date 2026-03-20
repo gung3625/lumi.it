@@ -2,101 +2,251 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="facebook-domain-verification" content="t18ls5bk3b508yf9kmizwr9fyild3s" />
-    <title>Lumi 예약 시스템</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>lumi — 매장 SNS 홍보 자동화 서비스</title>
+    <meta name="description" content="사진 한 장만 올리면, 분석부터 글쓰기, 게시까지 lumi가 대신해요. 소상공인을 위한 SNS 홍보 자동화 서비스.">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="lumi — 매장 SNS 홍보 자동화 서비스">
+    <meta property="og:description" content="사진 한 장만 올리면, 분석부터 글쓰기, 게시까지 lumi가 대신해요.">
+    <meta property="og:url" content="https://lumi.it.kr">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-        body { background: #fff5f8; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; justify-content: center; padding: 20px; line-height: 1.5; }
-        .card { background: white; padding: 30px; border-radius: 20px; width: 100%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
-        h1 { color: #ff4081; text-align: center; margin-bottom: 25px; }
-        input { width: 100%; padding: 12px; margin-top: 10px; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; font-size: 14px; }
-        input:focus { border-color: #ff4081; outline: none; }
-        
-        .upload-section { margin-top: 20px; padding: 20px; border: 2px dashed #ffc1d6; border-radius: 12px; text-align: center; background: #fff9fb; }
-        .status-msg { margin-top: 15px; text-align: center; font-weight: bold; color: #ff4081; min-height: 24px; font-size: 14px; }
-        
-        footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; font-size: 11px; color: #777; text-align: center; }
-        footer b { color: #555; }
-        .privacy-link { display: inline-block; margin-bottom: 12px; color: #ff4081; text-decoration: none; font-weight: bold; font-size: 12px; }
+        :root {
+            --pink: #FF6B9D;
+            --pink-light: #FF8FB5;
+            --pink-pale: #FFF0F6;
+            --pink-ultra: #FFF7FB;
+            --g900: #191F28;
+            --g700: #333D4B;
+            --g500: #6B7684;
+            --g400: #8B95A1;
+            --g200: #E8ECF0;
+            --g100: #F2F4F6;
+            --g50: #F9FAFB;
+            --white: #FFFFFF;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; -webkit-font-smoothing:antialiased; word-break:keep-all; }
+        html { scroll-behavior:smooth; }
+        body { font-family:'Noto Sans KR','Apple SD Gothic Neo',sans-serif; background:var(--white); color:var(--g700); overflow-x:hidden; line-height:1.6; }
+
+        /* NAV */
+        nav { position:fixed; top:0; left:0; width:100%; height:60px; display:flex; align-items:center; justify-content:space-between; padding:0 24px; background:rgba(255,255,255,.92); backdrop-filter:blur(20px); border-bottom:1px solid var(--g100); z-index:900; }
+        .nav-logo { height:32px; cursor:pointer; }
+        .nav-cta { padding:9px 18px; border:none; background:var(--g900); color:#fff; font-size:14px; font-weight:700; border-radius:12px; cursor:pointer; font-family:inherit; text-decoration:none; display:inline-flex; align-items:center; }
+
+        /* HERO */
+        .hero { padding:120px 24px 80px; text-align:center; background:var(--white); }
+        .hero-chip { display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:999px; background:var(--pink-pale); color:var(--pink); font-size:12px; font-weight:700; margin-bottom:24px; }
+        .hero-chip-dot { width:6px; height:6px; border-radius:50%; background:var(--pink); }
+        .hero-title { font-size:clamp(2rem,6vw,3.2rem); font-weight:900; color:var(--g900); line-height:1.25; letter-spacing:-.03em; margin-bottom:20px; }
+        .hero-title .acc { color:var(--pink); }
+        .hero-desc { font-size:clamp(.9rem,2vw,1.05rem); color:var(--g500); line-height:1.85; max-width:440px; margin:0 auto 36px; }
+        .hero-btn { display:inline-flex; align-items:center; padding:15px 32px; background:var(--pink); color:#fff; font-size:15px; font-weight:700; border-radius:16px; text-decoration:none; border:none; cursor:pointer; font-family:inherit; }
+
+        /* FEATURES */
+        .sec { padding:80px 24px; }
+        .sec-inner { max-width:960px; margin:0 auto; }
+        .sec-label { font-size:11px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--pink); margin-bottom:12px; text-align:center; }
+        .sec-title { font-size:clamp(1.5rem,3.5vw,2.2rem); font-weight:900; color:var(--g900); line-height:1.3; letter-spacing:-.025em; text-align:center; margin-bottom:12px; }
+        .sec-desc { font-size:.95rem; color:var(--g500); text-align:center; margin-bottom:48px; }
+        .feat-bg { background:var(--g50); }
+        .feat-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px; }
+        .feat-card { background:var(--white); border-radius:20px; padding:28px 24px; border:1px solid var(--g200); }
+        .feat-icon { width:44px; height:44px; border-radius:12px; background:var(--pink-pale); display:flex; align-items:center; justify-content:center; font-size:1.3rem; margin-bottom:16px; }
+        .feat-name { font-size:.95rem; font-weight:800; color:var(--g900); margin-bottom:8px; }
+        .feat-desc { font-size:.85rem; color:var(--g500); line-height:1.8; }
+
+        /* HOW */
+        .how-steps { display:flex; flex-direction:column; max-width:520px; margin:0 auto; }
+        .how-step { display:flex; gap:18px; align-items:flex-start; padding:22px 0; position:relative; }
+        .how-step+.how-step::before { content:''; position:absolute; left:18px; top:0; width:2px; height:100%; background:var(--pink-pale); }
+        .step-circle { width:38px; height:38px; border-radius:50%; flex-shrink:0; background:var(--pink); display:flex; align-items:center; justify-content:center; font-size:.95rem; position:relative; z-index:1; }
+        .step-body { padding-top:6px; }
+        .step-ttl { font-size:.92rem; font-weight:800; color:var(--g900); margin-bottom:4px; }
+        .step-dsc { font-size:.83rem; color:var(--g500); line-height:1.75; }
+
+        /* PRICING */
+        .price-bg { background:var(--g50); }
+        .price-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px; max-width:560px; margin:0 auto; }
+        .price-card { background:var(--white); border-radius:24px; padding:32px 28px; border:1px solid var(--g200); position:relative; }
+        .price-card.hl { border-color:var(--pink); }
+        .price-bdg { position:absolute; top:-13px; left:24px; padding:4px 14px; border-radius:999px; background:var(--pink); color:#fff; font-size:11px; font-weight:700; }
+        .price-lbl { font-size:.83rem; font-weight:700; color:var(--g500); margin-bottom:10px; }
+        .price-amt { display:flex; align-items:baseline; gap:4px; margin-bottom:16px; }
+        .price-num { font-size:2.6rem; font-weight:900; color:var(--g900); letter-spacing:-.04em; line-height:1; }
+        .price-unit { font-size:.88rem; color:var(--g400); }
+        .price-desc { font-size:.83rem; color:var(--g500); line-height:1.75; margin-bottom:22px; }
+        .btn-price { width:100%; padding:13px; border:none; background:var(--pink); color:#fff; font-size:14px; font-weight:700; border-radius:12px; cursor:pointer; font-family:inherit; }
+        .btn-price-off { background:var(--white); color:var(--g700); border:1.5px solid var(--g200); }
+
+        /* CTA */
+        .cta-sec { padding:0 24px 80px; }
+        .cta-box { max-width:960px; margin:0 auto; background:var(--g900); border-radius:24px; padding:64px 40px; text-align:center; }
+        .cta-title { font-size:clamp(1.4rem,3vw,2rem); font-weight:900; color:#fff; margin-bottom:10px; line-height:1.3; }
+        .cta-desc { font-size:.88rem; color:rgba(255,255,255,.5); margin-bottom:30px; }
+        .btn-cta { display:inline-flex; align-items:center; padding:14px 32px; border:none; background:var(--pink); color:#fff; font-size:15px; font-weight:700; border-radius:12px; cursor:pointer; font-family:inherit; text-decoration:none; }
+
+        /* FOOTER */
+        footer { background:var(--g50); border-top:1px solid var(--g200); padding:56px 24px 40px; }
+        .footer-inner { max-width:960px; margin:0 auto; }
+        .footer-top { display:flex; justify-content:space-between; align-items:flex-start; gap:32px; flex-wrap:wrap; margin-bottom:32px; }
+        .footer-logo { height:28px; margin-bottom:12px; opacity:.5; }
+        .footer-info { font-size:12px; color:var(--g400); line-height:2; }
+        .footer-links { display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start; margin-top:4px; }
+        .footer-links a { font-size:12px; font-weight:600; color:var(--g400); text-decoration:none; transition:color .2s; }
+        .footer-links a:hover { color:var(--g900); }
+        .footer-bottom { padding-top:20px; border-top:1px solid var(--g200); font-size:11px; color:var(--g400); }
+
+        @media(max-width:480px) {
+            .footer-top { flex-direction:column; gap:20px; }
+            .cta-box { padding:48px 22px; border-radius:20px; }
+        }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h1>Lumi 예약</h1>
-        <form id="resForm">
-            <input type="text" id="name" placeholder="성함" required>
-            <input type="tel" id="phone" placeholder="연락처 (010-0000-0000)" required>
-            <input type="date" id="date" required>
-            <input type="time" id="time" required>
-            
-            <div class="upload-section">
-                <p style="font-size: 13px; color: #ff4081; margin-bottom: 10px;"><b>[필수] 사진 선택 시 즉시 예약 완료</b></p>
-                <input type="file" id="photo" accept="image/*" required>
+
+<nav>
+    <img src="https://i.ibb.co/vzR0j4x/lumi-logo-transparent.png" class="nav-logo" alt="lumi">
+    <a href="mailto:gung3625@gmail.com" class="nav-cta">문의하기</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+    <div class="hero-chip"><div class="hero-chip-dot"></div>SNS 홍보 자동화 서비스</div>
+    <h1 class="hero-title">SNS 홍보,<br><span class="acc">이제 어렵지 않아요.</span></h1>
+    <p class="hero-desc">사진 한 장만 올리면 돼요.<br>분석, 글쓰기, 게시까지 lumi가 알아서 해요.</p>
+    <a href="mailto:gung3625@gmail.com" class="hero-btn">서비스 문의하기</a>
+</section>
+
+<!-- FEATURES -->
+<section class="sec feat-bg">
+    <div class="sec-inner">
+        <p class="sec-label">Features</p>
+        <h2 class="sec-title">올리는 건 사진 한 장이에요.</h2>
+        <p class="sec-desc">분석, 글쓰기, 게시는 lumi가 맡아요.</p>
+        <div class="feat-grid">
+            <div class="feat-card">
+                <div class="feat-icon">📸</div>
+                <div class="feat-name">사진만 올려요</div>
+                <p class="feat-desc">어떤 사진이든 괜찮아요. 뭘 써야 할지, 언제 올려야 할지는 lumi가 고민해요.</p>
             </div>
-        </form>
-        
-        <div id="status" class="status-msg"></div>
-
-        <footer>
-            <a href="/privacy.html" class="privacy-link">개인정보처리방침 보기</a>
-            <p>
-                <b>상호명:</b> Lumi | <b>대표자:</b> 김현 <br>
-                <b>사업자번호:</b> 330-04-03207 <br>
-                <b>주소:</b> 서울특별시 용산구 회나무로 32-7 <br>
-                <b>연락처:</b> 010-6424-6284 | <b>이메일:</b> gung3625@gmail.com
-            </p>
-            <p style="margin-top:10px;">© 2026 Lumi. All rights reserved.</p>
-        </footer>
+            <div class="feat-card">
+                <div class="feat-icon">🤖</div>
+                <div class="feat-name">사진을 읽어요</div>
+                <p class="feat-desc">AI가 사진을 보고 가게 분위기, 메뉴, 특징을 스스로 파악해요.</p>
+            </div>
+            <div class="feat-card">
+                <div class="feat-icon">✍️</div>
+                <div class="feat-name">글은 lumi가 써요</div>
+                <p class="feat-desc">오늘 날씨, 요즘 트렌드에 맞춰 자연스러운 글을 써요. 직접 쓴 것처럼요.</p>
+            </div>
+            <div class="feat-card">
+                <div class="feat-icon">⏰</div>
+                <div class="feat-name">때 맞춰 올려요</div>
+                <p class="feat-desc">지금 바로 올리거나 원하는 시간에 예약해 두면 돼요. 언제 올려야 잘 보이는지는 데이터로 찾아요.</p>
+            </div>
+            <div class="feat-card">
+                <div class="feat-icon">🖼️</div>
+                <div class="feat-name">여러 장도 돼요</div>
+                <p class="feat-desc">한 장이든 여러 장이든 올리면 돼요. 캐러셀로 자동으로 정리해요.</p>
+            </div>
+            <div class="feat-card">
+                <div class="feat-icon">📦</div>
+                <div class="feat-name">보관했다가 나중에</div>
+                <p class="feat-desc">지금 당장 올리기 어렵다면 보관해 두세요. 나중에 예약하면 lumi가 알아서 올려요.</p>
+            </div>
+        </div>
     </div>
+</section>
 
-    <script>
-        const fileInput = document.getElementById('photo');
-        const statusDiv = document.getElementById('status');
+<!-- HOW -->
+<section class="sec">
+    <div class="sec-inner">
+        <p class="sec-label">How it works</p>
+        <h2 class="sec-title">3단계예요. 생각보다 짧아요.</h2>
+        <div class="how-steps">
+            <div class="how-step">
+                <div class="step-circle">📸</div>
+                <div class="step-body">
+                    <div class="step-ttl">사진을 올려요</div>
+                    <p class="step-dsc">오늘 찍은 사진 아무거나요. 한 장도, 여러 장도 괜찮아요.</p>
+                </div>
+            </div>
+            <div class="how-step">
+                <div class="step-circle">⚡</div>
+                <div class="step-body">
+                    <div class="step-ttl">lumi가 읽고 글을 써요</div>
+                    <p class="step-dsc">AI가 사진을 읽고, 오늘 트렌드에 맞는 글을 완성해요. 손댈 게 없어요.</p>
+                </div>
+            </div>
+            <div class="how-step">
+                <div class="step-circle">🚀</div>
+                <div class="step-body">
+                    <div class="step-ttl">알아서 올라가요</div>
+                    <p class="step-dsc">지금 올리거나 예약해 두면 돼요. 나머지는 lumi가 해요.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 
-        fileInput.onchange = async () => {
-            if (!fileInput.files[0]) return;
+<!-- PRICING -->
+<section class="sec price-bg">
+    <div class="sec-inner">
+        <p class="sec-label">Pricing</p>
+        <h2 class="sec-title">약정 없이,<br>쓰고 싶을 때만 써요.</h2>
+        <p class="sec-desc" style="margin-bottom:48px;">숨겨진 비용은 없어요.</p>
+        <div class="price-grid">
+            <div class="price-card">
+                <p class="price-lbl">일주일 무료</p>
+                <div class="price-amt"><span class="price-num">0</span><span class="price-unit">원</span></div>
+                <p class="price-desc">카드 없이 일주일 동안 써볼 수 있어요.</p>
+                <button class="btn-price btn-price-off" onclick="location.href='mailto:gung3625@gmail.com'">무료로 써보기</button>
+            </div>
+            <div class="price-card hl">
+                <div class="price-bdg">추천 플랜</div>
+                <p class="price-lbl">lumi 구독</p>
+                <div class="price-amt"><span class="price-num">3.9</span><span class="price-unit">만원 / 월</span></div>
+                <p class="price-desc">매일 전문팀이 매장을 가장 잘 보이게 만들어요.</p>
+                <button class="btn-price" onclick="location.href='mailto:gung3625@gmail.com'">구독하기</button>
+            </div>
+        </div>
+    </div>
+</section>
 
-            const name = document.getElementById('name').value;
-            const phone = document.getElementById('phone').value;
-            const date = document.getElementById('date').value;
-            const time = document.getElementById('time').value;
+<!-- CTA -->
+<div class="cta-sec">
+    <div class="cta-box">
+        <h2 class="cta-title">홍보, 이제 lumi한테<br>맡겨도 돼요.</h2>
+        <p class="cta-desc">7일 동안 무료예요. 카드 번호도 필요 없어요.</p>
+        <a href="mailto:gung3625@gmail.com" class="btn-cta">지금 써보기</a>
+    </div>
+</div>
 
-            if (!name || !phone || !date || !time) {
-                alert("상단의 예약 정보를 모두 입력한 후 사진을 선택해 주세요!");
-                fileInput.value = ""; 
-                return;
-            }
+<!-- FOOTER -->
+<footer>
+    <div class="footer-inner">
+        <div class="footer-top">
+            <div>
+                <img src="https://i.ibb.co/vzR0j4x/lumi-logo-transparent.png" class="footer-logo" alt="lumi">
+                <p class="footer-info">
+                    상호명: 루미 (lumi) &nbsp;|&nbsp; 대표자: 김현<br>
+                    사업자 등록번호: 330-04-03207<br>
+                    사업장 소재지: 서울특별시 용산구 회나무로 32-7 (이태원동)<br>
+                    업태: 도매 및 소매업 &nbsp;|&nbsp; 종목: SNS마켓<br>
+                    연락처: 010-6424-6284 &nbsp;|&nbsp; 이메일: gung3625@gmail.com
+                </p>
+            </div>
+            <div class="footer-links">
+                <a href="/terms.html">이용약관</a>
+                <a href="/privacy.html">개인정보 처리방침</a>
+            </div>
+        </div>
+        <p class="footer-bottom">© 2026 lumi (루미) · 사업자 등록번호 330-04-03207 · 대표 김현 · 서울특별시 용산구 회나무로 32-7</p>
+    </div>
+</footer>
 
-            statusDiv.innerText = "🚀 사진 및 예약 정보 전송 중...";
-            fileInput.disabled = true;
-
-            const fd = new FormData();
-            fd.append('photo', fileInput.files[0]);
-            fd.append('userName', name);
-            fd.append('userPhone', phone);
-            fd.append('resDate', date);
-            fd.append('resTime', time);
-
-            try {
-                const r = await fetch('/.netlify/functions/reserve', { 
-                    method: 'POST', 
-                    body: fd 
-                });
-
-                if (r.ok) {
-                    statusDiv.style.color = "#2e7d32";
-                    statusDiv.innerText = "✅ 전송 완료! 예약이 접수되었습니다.";
-                    alert("성공적으로 예약되었습니다.");
-                } else {
-                    throw new Error("전송 실패");
-                }
-            } catch (err) {
-                statusDiv.style.color = "#d32f2f";
-                statusDiv.innerText = "❌ 전송 실패. 다시 시도해 주세요.";
-                alert("오류가 발생했습니다. 네트워크 상태를 확인해 주세요.");
-            } finally {
-                fileInput.disabled = false;
-            }
-        };
-    </script>
 </body>
 </html>
