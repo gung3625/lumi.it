@@ -1,0 +1,1926 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>lumi — 홍보, 이제 사진 한 장으로 끝내요</title>
+    <meta name="description" content="사진 한 장만 올리면, 나머지는 lumi가 다 해요.">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="lumi — 매장 홍보, 사진 한 장으로">
+    <meta property="og:description" content="사진 한 장만 올리면, 나머지는 lumi가 다 해요.">
+    <meta property="og:image" content="https://i.ibb.co/vzR0j4x/lumi-logo-transparent.png">
+    <meta property="og:url" content="https://lumi.it.kr">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --pink:       #FF6B9D;
+            --pink-light: #FF8FB5;
+            --pink-soft:  #FFD6E7;
+            --pink-pale:  #FFF0F6;
+            --pink-ultra: #FFF7FB;
+            --g900: #191F28;
+            --g700: #333D4B;
+            --g500: #6B7684;
+            --g400: #8B95A1;
+            --g200: #E8ECF0;
+            --g100: #F2F4F6;
+            --g50:  #F9FAFB;
+            --white: #FFFFFF;
+            --r-xs: 8px; --r-sm: 12px; --r-md: 16px; --r-lg: 24px; --r-xl: 32px; --r-full: 999px;
+            --sh-xs: 0 1px 4px rgba(0,0,0,.06);
+            --sh-sm: 0 2px 12px rgba(0,0,0,.07);
+            --sh-md: 0 4px 24px rgba(0,0,0,.08);
+            --sh-pink: 0 8px 24px rgba(255,107,157,.28);
+            --ease: cubic-bezier(0.16,1,0.3,1);
+        }
+        *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased;word-break:keep-all;}
+        html{scroll-behavior:smooth;}
+        body{font-family:'Noto Sans KR','Apple SD Gothic Neo',sans-serif;background:var(--white);color:var(--g700);overflow-x:hidden;line-height:1.6;font-size:15px;}
+        .hidden{display:none!important;}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+
+        /* NAV */
+        nav{position:fixed;top:0;left:0;width:100%;height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:rgba(255,255,255,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--g100);z-index:900;}
+        .nav-logo{width:80px;cursor:pointer;transition:opacity .2s;}
+        .nav-logo:hover{opacity:.7;}
+        .nav-right{display:flex;align-items:center;gap:8px;}
+        .nav-txt-btn{padding:8px 14px;border:none;background:none;font-size:14px;font-weight:600;color:var(--g500);cursor:pointer;border-radius:var(--r-sm);font-family:inherit;transition:background .2s,color .2s;}
+        .nav-txt-btn:hover{background:var(--g100);color:var(--g900);}
+        .nav-cta{padding:9px 18px;border:none;background:var(--g900);color:var(--white);font-size:14px;font-weight:700;border-radius:var(--r-sm);cursor:pointer;font-family:inherit;transition:background .2s,transform .2s;}
+        .nav-cta:hover{background:#000;transform:translateY(-1px);}
+
+        /* LANDING */
+        #lumi-intro-view-port{padding-top:60px;}
+
+        /* HERO */
+        .hero{padding:88px 24px 80px;text-align:center;background:var(--white);}
+        .hero-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:var(--r-full);background:var(--pink-pale);color:var(--pink);font-size:12px;font-weight:700;margin-bottom:24px;animation:fadeUp .5s var(--ease) .05s both;}
+        .hero-chip-dot{width:6px;height:6px;border-radius:50%;background:var(--pink);}
+        .hero-title{font-size:clamp(2rem,6vw,3.2rem);font-weight:900;color:var(--g900);line-height:1.25;letter-spacing:-.03em;margin-bottom:20px;animation:fadeUp .5s var(--ease) .15s both;}
+        .hero-title .acc{color:var(--pink);}
+        .hero-desc{font-size:clamp(.9rem,2vw,1.05rem);color:var(--g500);line-height:1.85;max-width:440px;margin:0 auto 36px;animation:fadeUp .5s var(--ease) .25s both;}
+        .hero-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;animation:fadeUp .5s var(--ease) .35s both;}
+        .btn-main{padding:14px 28px;border:none;background:var(--pink);color:#fff;font-size:15px;font-weight:700;border-radius:var(--r-md);cursor:pointer;font-family:inherit;box-shadow:var(--sh-pink);transition:transform .25s var(--ease),box-shadow .25s,background .2s;}
+        .btn-main:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(255,107,157,.36);background:var(--pink-light);}
+        .btn-main:active{transform:scale(.97);}
+        .btn-sub{padding:14px 24px;border:1.5px solid var(--g200);background:var(--white);color:var(--g700);font-size:15px;font-weight:600;border-radius:var(--r-md);cursor:pointer;font-family:inherit;transition:background .2s,border-color .2s,transform .2s;}
+        .btn-sub:hover{background:var(--g50);border-color:var(--g400);transform:translateY(-1px);}
+        .hero-stats{display:flex;align-items:center;justify-content:center;max-width:460px;margin:52px auto 0;background:var(--g50);border-radius:var(--r-lg);border:1px solid var(--g200);overflow:hidden;animation:fadeUp .5s var(--ease) .45s both;}
+        .stat-item{flex:1;padding:20px 16px;text-align:center;position:relative;}
+        .stat-item+.stat-item::before{content:'';position:absolute;left:0;top:20%;height:60%;width:1px;background:var(--g200);}
+        .stat-num{font-size:1.25rem;font-weight:900;color:var(--g900);letter-spacing:-.02em;}
+        .stat-lbl{font-size:11px;color:var(--g400);font-weight:500;margin-top:3px;}
+
+        /* SECTION */
+        .sec{padding:80px 24px;}
+        .sec-inner{max-width:1000px;margin:0 auto;}
+        .sec-ey{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--pink);margin-bottom:12px;}
+        .sec-title{font-size:clamp(1.5rem,3.5vw,2.2rem);font-weight:900;color:var(--g900);line-height:1.3;letter-spacing:-.025em;}
+        .sec-desc{font-size:.95rem;color:var(--g500);margin-top:12px;line-height:1.8;max-width:440px;}
+
+        /* FEATURES */
+        .feat-bg{background:var(--g50);}
+        .feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin-top:48px;}
+        .feat-card{background:var(--white);border-radius:var(--r-lg);padding:28px 24px;border:1px solid var(--g200);transition:transform .3s var(--ease),box-shadow .3s,border-color .3s;}
+        .feat-card:hover{transform:translateY(-4px);box-shadow:var(--sh-md);border-color:var(--pink-soft);}
+        .feat-icon{width:44px;height:44px;border-radius:var(--r-md);background:var(--pink-pale);display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin-bottom:16px;}
+        .feat-name{font-size:.95rem;font-weight:800;color:var(--g900);margin-bottom:8px;}
+        .feat-desc{font-size:.85rem;color:var(--g500);line-height:1.8;}
+
+        /* CHANNELS */
+        .ch-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-top:48px;}
+        .ch-card{background:var(--g50);border-radius:var(--r-lg);padding:24px 18px;text-align:center;border:1px solid var(--g100);transition:transform .3s var(--ease),background .2s,border-color .2s,box-shadow .2s;}
+        .ch-card:hover{transform:translateY(-3px);background:var(--white);border-color:var(--pink-soft);box-shadow:var(--sh-sm);}
+        .ch-icon{font-size:1.8rem;margin-bottom:10px;}
+        .ch-name{font-size:.88rem;font-weight:800;color:var(--g900);margin-bottom:5px;}
+        .ch-desc{font-size:.75rem;color:var(--g400);line-height:1.6;}
+        .ch-badge{display:inline-block;margin-top:10px;padding:3px 10px;border-radius:var(--r-full);background:var(--pink-pale);color:var(--pink);font-size:10px;font-weight:700;}
+        .ch-badge-off{background:var(--g100);color:var(--g400);}
+
+        /* HOW */
+        .how-bg{background:var(--pink-ultra);}
+        .how-steps{display:flex;flex-direction:column;gap:0;margin-top:48px;max-width:520px;}
+        .how-step{display:flex;gap:18px;align-items:flex-start;padding:22px 0;position:relative;}
+        .how-step+.how-step::before{content:'';position:absolute;left:18px;top:0;width:2px;height:100%;background:var(--pink-soft);}
+        .step-circle{width:38px;height:38px;border-radius:50%;flex-shrink:0;background:var(--white);border:2px solid var(--pink-soft);display:flex;align-items:center;justify-content:center;font-size:.95rem;position:relative;z-index:1;}
+        .step-circle.on{background:var(--pink);border-color:var(--pink);}
+        .step-body{padding-top:6px;}
+        .step-ttl{font-size:.92rem;font-weight:800;color:var(--g900);margin-bottom:4px;}
+        .step-dsc{font-size:.83rem;color:var(--g500);line-height:1.75;}
+
+        /* TEAM */
+        .team-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:48px;}
+        .team-card{background:var(--white);border-radius:var(--r-lg);padding:26px 22px;border:1px solid var(--g200);transition:transform .3s var(--ease),box-shadow .3s;}
+        .team-card:hover{transform:translateY(-3px);box-shadow:var(--sh-md);}
+        .team-card.hl{border-color:var(--pink-soft);background:var(--pink-ultra);}
+        .team-role{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--pink);margin-bottom:10px;}
+        .team-name{font-size:.95rem;font-weight:800;color:var(--g900);margin-bottom:8px;}
+        .team-desc{font-size:.83rem;color:var(--g500);line-height:1.8;}
+
+        /* PRICING */
+        .price-bg{background:var(--g50);}
+        .price-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;max-width:960px;margin:48px auto 0;}
+        .price-card{background:var(--white);border-radius:var(--r-xl);padding:36px 28px;border:1px solid var(--g200);position:relative;transition:transform .3s var(--ease),box-shadow .3s;}
+        .price-card:hover{transform:translateY(-4px);box-shadow:var(--sh-md);}
+        .price-card.hl{border-color:var(--pink);box-shadow:0 8px 40px rgba(255,107,157,.14);}
+        .price-card.pro{background:var(--g900);border-color:var(--g900);}
+        .price-bdg{position:absolute;top:-13px;left:24px;padding:4px 14px;border-radius:var(--r-full);background:var(--pink);color:#fff;font-size:11px;font-weight:700;}
+        .price-bdg.dark{background:var(--g700);}
+        .price-lbl{font-size:.83rem;font-weight:700;color:var(--g500);margin-bottom:10px;}
+        .price-card.pro .price-lbl{color:rgba(255,255,255,.5);}
+        .price-amt{display:flex;align-items:baseline;gap:4px;margin-bottom:6px;}
+        .price-num{font-size:2.6rem;font-weight:900;color:var(--g900);letter-spacing:-.04em;line-height:1;}
+        .price-card.pro .price-num{color:#fff;}
+        .price-unit{font-size:.88rem;color:var(--g400);}
+        .price-card.pro .price-unit{color:rgba(255,255,255,.4);}
+        .price-feat-list{list-style:none;padding:0;margin:16px 0 24px;display:flex;flex-direction:column;gap:9px;}
+        .price-feat-list li{display:flex;align-items:flex-start;gap:8px;font-size:.83rem;color:var(--g700);line-height:1.5;}
+        .price-card.pro .price-feat-list li{color:rgba(255,255,255,.8);}
+        .price-feat-list li .pf-icon{flex-shrink:0;margin-top:1px;}
+        .price-feat-list li .pf-coming{font-size:10px;font-weight:700;color:var(--g400);background:var(--g100);padding:2px 6px;border-radius:4px;margin-left:4px;}
+        .price-card.pro .price-feat-list li .pf-coming{color:rgba(255,255,255,.4);background:rgba(255,255,255,.1);}
+        .price-divider{height:1px;background:var(--g100);margin:16px 0;}
+        .price-card.pro .price-divider{background:rgba(255,255,255,.1);}
+        .btn-price-on{width:100%;padding:13px;border:none;background:var(--pink);color:#fff;font-size:14px;font-weight:700;border-radius:var(--r-md);cursor:pointer;font-family:inherit;transition:background .2s,transform .2s;}
+        .btn-price-on:hover{background:var(--pink-light);transform:translateY(-1px);}
+        .btn-price-off{width:100%;padding:13px;background:var(--white);color:var(--g700);font-size:14px;font-weight:700;border:1.5px solid var(--g200);border-radius:var(--r-md);cursor:pointer;font-family:inherit;transition:background .2s,border-color .2s;}
+        .btn-price-off:hover{background:var(--g50);border-color:var(--g400);}
+        .btn-price-pro{width:100%;padding:13px;border:none;background:rgba(255,255,255,.15);color:#fff;font-size:14px;font-weight:700;border-radius:var(--r-md);cursor:pointer;font-family:inherit;border:1.5px solid rgba(255,255,255,.2);transition:background .2s;}
+        .btn-price-pro:hover{background:rgba(255,255,255,.25);}
+        .price-compare{max-width:960px;margin:48px auto 0;background:var(--white);border-radius:var(--r-lg);border:1px solid var(--g200);overflow:hidden;}
+        .price-compare-title{padding:20px 24px;font-size:.88rem;font-weight:800;color:var(--g500);border-bottom:1px solid var(--g200);letter-spacing:.06em;text-transform:uppercase;}
+        .price-compare-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;border-bottom:1px solid var(--g100);}
+        .price-compare-row:last-child{border-bottom:none;}
+        .price-compare-row.header{background:var(--g50);}
+        .pcc{padding:14px 16px;font-size:.82rem;display:flex;align-items:center;}
+        .pcc.feat{font-weight:600;color:var(--g700);}
+        .pcc.center{justify-content:center;text-align:center;font-weight:700;}
+        .pcc.pink{color:var(--pink);}
+        .pcc.dark{color:var(--g900);font-weight:800;}
+
+        /* CTA */
+        .cta-sec{padding:0 24px 80px;}
+        .cta-box{max-width:1000px;margin:0 auto;background:var(--g900);border-radius:var(--r-xl);padding:64px 40px;text-align:center;position:relative;overflow:hidden;}
+        .cta-box::before{content:'';position:absolute;width:300px;height:300px;border-radius:50%;background:var(--pink);opacity:.08;top:-100px;right:-60px;}
+        .cta-box::after{content:'';position:absolute;width:220px;height:220px;border-radius:50%;background:var(--pink-soft);opacity:.05;bottom:-70px;left:-40px;}
+        .cta-inner{position:relative;z-index:1;}
+        .cta-title{font-size:clamp(1.4rem,3vw,2rem);font-weight:900;color:#fff;margin-bottom:10px;line-height:1.3;}
+        .cta-desc{font-size:.88rem;color:rgba(255,255,255,.5);margin-bottom:30px;line-height:1.7;}
+        .btn-cta{padding:14px 32px;border:none;background:var(--pink);color:#fff;font-size:15px;font-weight:700;border-radius:var(--r-md);cursor:pointer;font-family:inherit;box-shadow:var(--sh-pink);transition:transform .2s,box-shadow .2s;}
+        .btn-cta:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(255,107,157,.4);}
+
+        /* FOOTER */
+        footer{background:var(--g50);border-top:1px solid var(--g200);padding:56px 24px 40px;}
+        .footer-inner{max-width:1000px;margin:0 auto;}
+        .footer-top{display:flex;justify-content:space-between;align-items:flex-start;gap:32px;flex-wrap:wrap;margin-bottom:40px;}
+        .footer-logo{width:72px;margin-bottom:12px;opacity:.5;}
+        .footer-info{font-size:12px;color:var(--g400);line-height:2;}
+        .footer-links{display:flex;gap:20px;flex-wrap:wrap;}
+        .footer-links a{font-size:12px;font-weight:600;color:var(--g400);text-decoration:none;transition:color .2s;}
+        .footer-links a:hover{color:var(--g900);}
+        .footer-bottom{padding-top:24px;border-top:1px solid var(--g200);font-size:11px;color:var(--g400);}
+
+        /* AUTH PORTAL */
+        .portal-overlay{position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.4);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:20px;}
+        .portal-sheet{background:var(--white);border-radius:var(--r-xl);padding:32px;width:100%;max-width:390px;max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch;position:relative;animation:sheetUp .35s var(--ease);box-shadow:0 24px 80px rgba(0,0,0,.18);}
+        @keyframes sheetUp{from{opacity:0;transform:translateY(24px) scale(.97);}to{opacity:1;transform:translateY(0) scale(1);}}
+        .portal-x{position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:50%;border:none;background:var(--g100);color:var(--g500);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s;}
+        .portal-x:hover{background:var(--g200);}
+        .portal-logo{width:68px;margin:0 auto 22px;display:block;}
+        .portal-tabs{display:flex;border-bottom:1.5px solid var(--g100);margin-bottom:22px;}
+        .p-tab{flex:1;padding:10px 0;text-align:center;font-size:14px;font-weight:700;color:var(--g400);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1.5px;transition:color .2s,border-color .2s;}
+        .p-tab.active{color:var(--g900);border-bottom-color:var(--g900);}
+        .portal-ttl{font-size:1.05rem;font-weight:800;color:var(--g900);margin-bottom:4px;text-align:center;}
+        .portal-sub{font-size:.82rem;color:var(--g400);text-align:center;margin-bottom:18px;}
+        .inp{width:100%;padding:13px 16px;margin-bottom:10px;border:1.5px solid var(--g200);border-radius:var(--r-md);background:var(--g50);font-size:14px;color:var(--g900);font-family:inherit;outline:none;transition:border-color .2s,background .2s,box-shadow .2s;}
+        .inp:focus{border-color:var(--pink);background:var(--white);box-shadow:0 0 0 3px rgba(255,107,157,.12);}
+        .inp::placeholder{color:var(--g400);}
+        .inp-otp{text-align:center;font-size:1.8rem;font-weight:900;letter-spacing:14px;height:72px;}
+        select.inp{cursor:pointer;appearance:none;}
+        .s-dots{display:flex;justify-content:center;gap:6px;margin-bottom:18px;}
+        .s-dot{width:6px;height:6px;border-radius:50%;background:var(--g200);transition:all .3s;}
+        .s-dot.on{background:var(--pink);width:20px;border-radius:3px;}
+        .btn-portal{width:100%;padding:14px;margin-top:4px;border:none;background:var(--g900);color:#fff;font-size:15px;font-weight:700;border-radius:var(--r-md);cursor:pointer;font-family:inherit;transition:background .2s,transform .2s;}
+        .btn-portal:hover{background:#000;transform:translateY(-1px);}
+        .btn-portal:active{transform:scale(.98);}
+
+        /* DASHBOARD */
+        .dash-layer{position:fixed;inset:0;z-index:8000;background:var(--g50);display:none;flex-direction:column;overflow-y:auto;}
+        .dash-topbar{position:sticky;top:0;background:rgba(249,250,251,.94);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--g200);padding:0 20px;height:56px;display:flex;align-items:center;justify-content:space-between;z-index:10;}
+        .dash-topbar-logo{width:68px;}
+        .dash-back{font-size:13px;font-weight:600;color:var(--g400);border:none;background:none;cursor:pointer;font-family:inherit;transition:color .2s;}
+        .dash-back:hover{color:var(--g900);}
+        .dash-body{max-width:580px;margin:0 auto;width:100%;padding:28px 20px 100px;}
+        .dash-hello{margin-bottom:24px;}
+        .dash-hello h2{font-size:1.25rem;font-weight:800;color:var(--g900);}
+        .dash-hello p{font-size:.83rem;color:var(--g400);margin-top:3px;}
+        .weather-card{background:var(--white);border-radius:var(--r-lg);padding:18px;border:1px solid var(--g200);display:flex;align-items:center;gap:14px;margin-bottom:16px;box-shadow:var(--sh-xs);}
+        .w-icon{font-size:1.9rem;width:44px;text-align:center;}
+        .w-status{font-size:.88rem;font-weight:700;color:var(--g900);}
+        .w-guide{font-size:.78rem;color:var(--pink);margin-top:3px;font-weight:500;}
+        .dash-lbl{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--g400);margin-bottom:10px;}
+        .trend-wrap{display:flex;flex-direction:column;gap:7px;margin-bottom:20px;}
+        .trend-row{background:var(--white);border-radius:var(--r-md);padding:13px 15px;border:1px solid var(--g100);display:flex;align-items:center;gap:10px;transition:transform .2s,box-shadow .2s;}
+        .trend-row:hover{transform:translateY(-1px);box-shadow:var(--sh-xs);}
+        .t-rank{font-size:11px;font-weight:900;color:var(--pink-soft);width:18px;}
+        .t-tag{flex:1;font-size:.87rem;font-weight:700;color:var(--g900);}
+        .t-hot{font-size:10px;font-weight:700;color:var(--pink);background:var(--pink-pale);padding:2px 8px;border-radius:var(--r-full);}
+        .upload-card{background:var(--white);border-radius:var(--r-xl);padding:26px 22px;border:1px solid var(--g200);box-shadow:var(--sh-xs);margin-bottom:14px;}
+        .upload-ttl{font-size:.92rem;font-weight:800;color:var(--g900);margin-bottom:18px;text-align:center;}
+        .drop-zone{position:relative;border:1.5px dashed var(--pink-soft);border-radius:var(--r-lg);padding:32px 18px;text-align:center;cursor:pointer;background:var(--pink-ultra);transition:background .2s,border-color .2s;margin-bottom:14px;}
+        .drop-zone:hover{background:var(--pink-pale);border-color:var(--pink);}
+        .drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;}
+        .drop-icon{font-size:1.9rem;margin-bottom:7px;}
+        .drop-txt{font-size:.83rem;color:var(--g500);}
+        .drop-txt b{color:var(--pink);}
+        .preview-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(68px,1fr));gap:8px;margin-bottom:14px;}
+        .prev-thumb{width:68px;height:68px;border-radius:var(--r-sm);overflow:hidden;border:1px solid var(--pink-soft);animation:fadeUp .3s var(--ease);}
+        .prev-thumb img{width:100%;height:100%;object-fit:cover;}
+        .dash-note{width:100%;padding:13px 15px;border:1.5px solid var(--g200);border-radius:var(--r-md);background:var(--g50);font-size:.87rem;color:var(--g900);font-family:inherit;resize:none;outline:none;line-height:1.75;margin-bottom:14px;transition:border-color .2s,background .2s;}
+        .dash-note:focus{border-color:var(--pink);background:var(--white);box-shadow:0 0 0 3px rgba(255,107,157,.08);}
+        .dash-note::placeholder{color:var(--g400);}
+        .act-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+        .btn-act-on{padding:13px;border:none;background:var(--pink);color:#fff;font-size:14px;font-weight:700;border-radius:var(--r-md);cursor:pointer;font-family:inherit;transition:background .2s,transform .2s;}
+        .btn-act-on:hover{background:var(--pink-light);transform:translateY(-1px);}
+        .btn-act-off{padding:13px;background:var(--white);color:var(--g700);font-size:14px;font-weight:700;border:1.5px solid var(--g200);border-radius:var(--r-md);cursor:pointer;font-family:inherit;transition:background .2s,border-color .2s;}
+        .btn-act-off:hover{background:var(--g50);border-color:var(--g400);}
+        .arc-card{background:var(--white);border-radius:var(--r-lg);padding:18px;border:1px solid var(--g100);margin-bottom:10px;animation:fadeUp .35s var(--ease);}
+        .arc-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+        .arc-time{font-size:10px;font-weight:700;color:var(--pink);letter-spacing:.06em;text-transform:uppercase;}
+        .arc-del{font-size:11px;color:var(--g400);background:none;border:none;cursor:pointer;text-decoration:underline;transition:color .2s;}
+        .arc-del:hover{color:#e53e3e;}
+        .arc-note{font-size:.83rem;color:var(--g500);margin-top:10px;padding-top:10px;border-top:1px solid var(--g100);line-height:1.75;}
+        .arc-empty{background:var(--white);border-radius:var(--r-lg);padding:36px 18px;text-align:center;border:1.5px dashed var(--g200);color:var(--g400);font-size:.83rem;font-weight:600;}
+        .btn-withdraw{display:block;margin:36px auto 0;background:none;border:none;font-size:11px;font-weight:600;color:var(--g400);text-decoration:underline;cursor:pointer;font-family:inherit;letter-spacing:.06em;text-transform:uppercase;transition:color .2s;}
+        .btn-withdraw:hover{color:#e53e3e;}
+
+        /* 에러/성공 메시지 */
+        .field-err{font-size:12px;font-weight:600;color:#E53E3E;margin:-6px 0 10px 4px;animation:fadeUp .25s var(--ease);}
+        .field-ok{font-size:12px;font-weight:600;color:#38A169;margin:-6px 0 10px 4px;animation:fadeUp .25s var(--ease);}
+        .inp.err{border-color:#E53E3E!important;background:#FFF5F5!important;}
+        .inp.ok{border-color:#38A169!important;}
+        .toast{position:fixed;bottom:32px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--g900);color:#fff;padding:12px 24px;border-radius:var(--r-full);font-size:13px;font-weight:600;z-index:99999;opacity:0;transition:all .35s var(--ease);pointer-events:none;white-space:nowrap;}
+        .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+        .toast.pink{background:var(--pink);}
+
+        /* 말투 선택 카드 */
+        .tone-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+        .tone-card{padding:12px 10px;border:1.5px solid var(--g200);border-radius:var(--r-md);cursor:pointer;text-align:center;transition:border-color .2s,background .2s;background:var(--g50);}
+        .tone-card:hover{border-color:var(--pink-soft);background:var(--pink-ultra);}
+        .tone-card.selected{border-color:var(--pink);background:var(--pink-pale);}
+        .tone-emoji{font-size:1.3rem;margin-bottom:4px;}
+        .tone-name{font-size:12px;font-weight:800;color:var(--g900);}
+        .tone-desc{font-size:10px;color:var(--g400);margin-top:2px;line-height:1.4;}
+
+        /* 스텝 진행 확장 (스텝 4 추가) */
+        .s-dot.on{background:var(--pink);width:20px;border-radius:3px;}
+
+        /* ── 시나리오 섹션 ── */
+        .scenario-tabs {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+        .scenario-tab {
+            padding: 10px 20px;
+            border-radius: 99px;
+            border: 1.5px solid var(--g200);
+            background: var(--white);
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--g500);
+            cursor: pointer;
+            transition: all .25s var(--ease);
+            font-family: inherit;
+        }
+        .scenario-tab.on {
+            background: var(--pink);
+            border-color: var(--pink);
+            color: #fff;
+            box-shadow: var(--sh-pink);
+        }
+        .scenario-panel { display: none; }
+        .scenario-panel.on { display: block; }
+
+        .scenario-flow {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 0;
+            align-items: center;
+            background: var(--white);
+            border-radius: 24px;
+            border: 1.5px solid var(--g200);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        .scenario-before, .scenario-after {
+            padding: 28px 24px;
+        }
+        .scenario-before { border-right: 1.5px solid var(--g200); }
+        .scenario-arrow {
+            padding: 0 16px;
+            font-size: 1.5rem;
+            color: var(--pink);
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .scenario-side-label {
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--g400);
+            margin-bottom: 12px;
+        }
+        .scenario-input-box {
+            background: var(--g50);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 10px;
+        }
+        .scenario-input-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--g400);
+            margin-bottom: 6px;
+        }
+        .scenario-photos {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+        .scenario-photo {
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            background: var(--g200);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+        }
+        .scenario-comment {
+            background: var(--white);
+            border: 1.5px solid var(--g200);
+            border-radius: 8px;
+            padding: 8px 10px;
+            font-size: 12px;
+            color: var(--g700);
+            font-weight: 500;
+        }
+        .scenario-result {
+            background: var(--pink-pale);
+            border-radius: 12px;
+            padding: 14px;
+        }
+        .scenario-result-caption {
+            font-size: 12px;
+            color: var(--g700);
+            line-height: 1.75;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        .scenario-result-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+        .scenario-result-tag {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--pink);
+            background: var(--white);
+            padding: 3px 8px;
+            border-radius: 99px;
+        }
+        .scenario-meta {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+        }
+        .scenario-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: var(--white);
+            border-radius: 10px;
+            border: 1px solid var(--g200);
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--g700);
+        }
+        .scenario-meta-icon { font-size: 14px; }
+
+        @media(max-width:640px){
+            .scenario-flow {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto;
+            }
+            .scenario-before { border-right: none; border-bottom: 1.5px solid var(--g200); }
+            .scenario-arrow { padding: 12px 0; transform: rotate(90deg); }
+        }
+
+        @media(max-width:480px){
+            .act-btns,.hero-btns{grid-template-columns:1fr;flex-direction:column;}
+            .footer-top{flex-direction:column;gap:20px;}
+            .cta-box{padding:48px 22px;border-radius:var(--r-lg);}
+            .tone-grid{grid-template-columns:1fr 1fr;}
+            #nav-how-btn, #nav-price-btn{display:none;}
+        }
+    </style>
+    <script src="https://cdn.portone.io/v2/browser-sdk.js"></script>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+    <img src="https://i.ibb.co/vzR0j4x/lumi-logo-transparent.png" class="nav-logo" alt="lumi" onclick="smoothScrollTo('lumi-intro-view-port')">
+    <div class="nav-right">
+        <button class="nav-txt-btn" id="nav-how-btn" onclick="smoothScrollTo('feat-sec')">기능</button>
+        <button class="nav-txt-btn" id="nav-price-btn" onclick="smoothScrollTo('price-sec')">요금</button>
+        <button class="nav-txt-btn" onclick="openPortal('login')">로그인</button>
+        <button class="nav-cta" onclick="openPortal('signup')">시작해 보기</button>
+    </div>
+</nav>
+
+<!-- LANDING -->
+<div id="lumi-intro-view-port">
+
+    <!-- HERO -->
+    <section class="hero">
+        <div class="hero-chip"><div class="hero-chip-dot"></div>소상공인 SNS 자동화 서비스</div>
+        <h1 class="hero-title">사진만 올리면<br><span class="acc">알아서 업로드 됩니다!</span></h1>
+        <p class="hero-desc">글 못 써도 괜찮아요. 시간 없어도 괜찮아요.<br>날씨 반영, 트렌드 태그, 예약 게시까지<br>lumi가 전부 대신 해드려요.</p>
+        <div class="hero-btns">
+            <button class="btn-main" onclick="openPortal('signup')">7일 무료로 써보기</button>
+            <button class="btn-sub" onclick="document.getElementById('feat-sec').scrollIntoView({behavior:'smooth'})">어떻게 작동해요?</button>
+        </div>
+        <div class="hero-stats">
+            <div class="stat-item"><div class="stat-num">1분</div><div class="stat-lbl">하루에 쓰는 시간</div></div>
+            <div class="stat-item"><div class="stat-num">사진 1장</div><div class="stat-lbl">준비물 전부</div></div>
+            <div class="stat-item"><div class="stat-num">7일 무료</div><div class="stat-lbl">카드 없이 시작</div></div>
+        </div>
+    </section>
+
+    <!-- 기능 -->
+    <section class="sec feat-bg" id="feat-sec">
+        <div class="sec-inner">
+            <div class="sec-ey">어떻게 달라요</div>
+            <h2 class="sec-title">올리는 건 사진 한 장이에요.</h2>
+            <p class="sec-desc">분석, 글쓰기, 게시는 lumi가 맡아요. 대표님은 가게 운영에만 집중하세요.</p>
+            <div class="feat-grid">
+                <div class="feat-card"><div class="feat-icon">📸</div><div class="feat-name">사진만 올리면 끝이에요</div><p class="feat-desc">뭘 써야 할지, 어떤 해시태그를 달아야 할지 고민할 필요 없어요. 사진 한 장 올리면 lumi가 나머지를 다 알아서 해요. 하루 1분이면 충분해요.</p></div>
+                <div class="feat-card"><div class="feat-icon">🤖</div><div class="feat-name">lumi가 사진을 직접 읽어요</div><p class="feat-desc">lumi는 사진을 보고 가게 분위기, 메뉴 특징, 색감, 계절감을 스스로 파악해요. "아메리카노 사진이네, 가을이고 창가 자리구나" — 이걸 lumi가 직접 읽고 글을 써요.</p></div>
+                <div class="feat-card" style="border-color:#FFF0C0;background:#FFFDF0;">
+                    <div class="feat-icon" style="background:#FFF8DC;">☀️</div>
+                    <div class="feat-name">날씨를 반영해서 써요</div>
+                    <p class="feat-desc">오늘 날씨가 흐리면 "비 오는 날엔 따뜻한 라떼 한 잔", 맑으면 "화창한 오후엔 테라스 자리가 딱이에요" — 날씨에 맞는 글이 자동으로 나와요. 고객이 지금 이 순간 공감할 수 있는 글이에요.</p>
+                    <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:5px;">
+                        <span style="font-size:10px;font-weight:700;color:#B8860B;background:#FFF8DC;padding:3px 8px;border-radius:99px;">실시간 날씨 연동</span>
+                        <span style="font-size:10px;font-weight:700;color:#B8860B;background:#FFF8DC;padding:3px 8px;border-radius:99px;">위치 기반</span>
+                        <span style="font-size:10px;font-weight:700;color:#B8860B;background:#FFF8DC;padding:3px 8px;border-radius:99px;">계절감 반영</span>
+                    </div>
+                </div>
+                <div class="feat-card" style="border-color:#E8F4FF;background:#F0F8FF;">
+                    <div class="feat-icon" style="background:#E0F0FF;">📊</div>
+                    <div class="feat-name">요즘 뜨는 태그를 달아요</div>
+                    <p class="feat-desc">인스타그램에서 지금 이 순간 사람들이 많이 검색하는 해시태그를 달아줘요. #카페스타그램 같은 뻔한 태그 말고, 요즘 실제로 노출되는 태그요. 내 게시물이 더 많은 사람에게 보일 확률이 높아져요.</p>
+                    <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:5px;">
+                        <span style="font-size:10px;font-weight:700;color:#1a6bb5;background:#E0F0FF;padding:3px 8px;border-radius:99px;">업종별 트렌드 반영</span>
+                        <span style="font-size:10px;font-weight:700;color:#1a6bb5;background:#E0F0FF;padding:3px 8px;border-radius:99px;">노출 최적화</span>
+                        <span style="font-size:10px;font-weight:700;color:#1a6bb5;background:#E0F0FF;padding:3px 8px;border-radius:99px;">자동 업데이트</span>
+                    </div>
+                </div>
+                <div class="feat-card"><div class="feat-icon">⏰</div><div class="feat-name">원하는 시간에 올려요</div><p class="feat-desc">바쁜 점심 시간, 손님 응대 중에도 걱정 없어요. 미리 사진을 올려두고 "오후 7시에 올려줘"하면 lumi가 정확히 그 시간에 게시해요. 인스타 알림 없이 자동으로요.</p></div>
+                <div class="feat-card"><div class="feat-icon">🖼️</div><div class="feat-name">여러 장도 한 번에</div><p class="feat-desc">신메뉴 컷 여러 장, 매장 분위기 사진 여러 장 — 한꺼번에 올리면 묶음 게시물로 올라가요. 최대 10장까지 가능해요. 사진 한 장씩 올리느라 시간 쓸 필요 없어요.</p></div>
+                <div class="feat-card" style="border-color:var(--pink-soft);background:var(--pink-ultra);">
+                    <div class="feat-icon" style="background:var(--pink-pale);">🎨</div>
+                    <div class="feat-name">우리 매장 스타일로만 써요</div>
+                    <p class="feat-desc">매장 소개, 말투 스타일, 지역, 업종을 알려주면 lumi가 딱 우리 매장 톤으로만 글을 써요. 따뜻한 감성 카페면 따뜻하게, 트렌디한 뷰티샵이면 트렌디하게. 옆집이랑 똑같은 글은 절대 안 나와요.</p>
+                    <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:5px;">
+                        <span style="font-size:10px;font-weight:700;color:var(--pink);background:var(--pink-pale);padding:3px 8px;border-radius:99px;">말투 선택</span>
+                        <span style="font-size:10px;font-weight:700;color:var(--pink);background:var(--pink-pale);padding:3px 8px;border-radius:99px;">업종 맞춤</span>
+                        <span style="font-size:10px;font-weight:700;color:var(--pink);background:var(--pink-pale);padding:3px 8px;border-radius:99px;">해시태그 스타일</span>
+                        <span style="font-size:10px;font-weight:700;color:var(--pink);background:var(--pink-pale);padding:3px 8px;border-radius:99px;">매장 소개 반영</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 시나리오 탭 -->
+            <div style="margin-top:72px;">
+                <div class="sec-ey" style="text-align:center;margin-bottom:12px;">실제로 이렇게 써요</div>
+                <h2 class="sec-title" style="text-align:center;margin-bottom:8px;">사진이랑 한 마디만<br>적어주면 돼요.</h2>
+                <p class="sec-desc" style="text-align:center;margin:0 auto 36px;">나머지는 전부 lumi가 해요.</p>
+
+                <div class="scenario-tabs">
+                    <button class="scenario-tab on" onclick="switchScenario('cafe')">☕ 카페 신메뉴</button>
+                    <button class="scenario-tab" onclick="switchScenario('beauty')">💅 뷰티샵 시술</button>
+                    <button class="scenario-tab" onclick="switchScenario('food')">🍽️ 식당 메뉴</button>
+                </div>
+
+                <!-- 카페 신메뉴 -->
+                <div class="scenario-panel on" id="scenario-cafe">
+                    <div class="scenario-flow">
+                        <div class="scenario-before">
+                            <div class="scenario-side-label">대표님이 올린 것</div>
+                            <div class="scenario-input-box">
+                                <div class="scenario-input-label">사진 3장</div>
+                                <div class="scenario-photos">
+                                    <div class="scenario-photo">🍓</div>
+                                    <div class="scenario-photo">☕</div>
+                                    <div class="scenario-photo">🎂</div>
+                                </div>
+                                <div class="scenario-input-label" style="margin-top:8px;">코멘트</div>
+                                <div class="scenario-comment">"딸기 시즌 신메뉴 나왔어요"</div>
+                            </div>
+                        </div>
+                        <div class="scenario-arrow">→</div>
+                        <div class="scenario-after">
+                            <div class="scenario-side-label">lumi가 만들어 올린 것</div>
+                            <div class="scenario-result">
+                                <div class="scenario-result-caption">봄이 왔나봐요 🍓<br>오늘부터 딸기 시즌 신메뉴 시작이에요.<br>달콤한 향기, 직접 느껴보세요.<br>매장에서 기다리고 있을게요 ☕</div>
+                                <div class="scenario-result-tags">
+                                    <span class="scenario-result-tag">#딸기시즌</span>
+                                    <span class="scenario-result-tag">#신메뉴</span>
+                                    <span class="scenario-result-tag">#봄카페</span>
+                                    <span class="scenario-result-tag">#카페스타그램</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="scenario-meta">
+                        <div class="scenario-meta-item"><span class="scenario-meta-icon">🖼️</span>사진 3장 묶음으로 자동 정리</div>
+                        <div class="scenario-meta-item"><span class="scenario-meta-icon">⏰</span>오늘 오후 7시, 최적 시간에 게시</div>
+                        <div class="scenario-meta-item"><span class="scenario-meta-icon">☀️</span>오늘 날씨 반영해서 글 작성</div>
+                    </div>
+                </div>
+
+                <!-- 뷰티샵 -->
+                <div class="scenario-panel" id="scenario-beauty">
+                    <div class="scenario-flow">
+                        <div class="scenario-before">
+                            <div class="scenario-side-label">대표님이 올린 것</div>
+                            <div class="scenario-input-box">
+                                <div class="scenario-input-label">사진 2장</div>
+                                <div class="scenario-photos">
+                                    <div class="scenario-photo">💅</div>
+                                    <div class="scenario-photo">✨</div>
+                                </div>
+                                <div class="scenario-input-label" style="margin-top:8px;">코멘트</div>
+                                <div class="scenario-comment">"봄 네일아트 신규 디자인"</div>
+                            </div>
+                        </div>
+                        <div class="scenario-arrow">→</div>
+                        <div class="scenario-after">
+                            <div class="scenario-side-label">lumi가 만들어 올린 것</div>
+                            <div class="scenario-result">
+                                <div class="scenario-result-caption">봄의 설렘을 손끝에 담았어요 🌸<br>이번 시즌 신규 디자인이 들어왔어요.<br>예약은 프로필 링크에서 가능해요.</div>
+                                <div class="scenario-result-tags">
+                                    <span class="scenario-result-tag">#봄네일</span>
+                                    <span class="scenario-result-tag">#네일아트</span>
+                                    <span class="scenario-result-tag">#젤네일</span>
+                                    <span class="scenario-result-tag">#네일스타그램</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="scenario-meta">
+                        <div class="scenario-meta-item"><span class="scenario-meta-icon">🖼️</span>사진 2장 자동 정리</div>
+                        <div class="scenario-meta-item"><span class="scenario-meta-icon">📊</span>뷰티 트렌드 태그 반영</div>
+                        <div class="scenario-meta-item"><span class="scenario-meta-icon">🎨</span>업종 맞춤 글 스타일 적용</div>
+                    </div>
+                </div>
+
+                
+                <!-- 식당 메뉴 -->
+                <div class="scenario-panel" id="scenario-food">
+                    <div class="scenario-flow">
+                        <div class="scenario-before">
+                            <div class="scenario-side-label">대표님이 올린 것</div>
+                            <div class="scenario-input-box">
+                                <div class="scenario-input-label">사진 4장</div>
+                                <div class="scenario-photos">
+                                    <div class="scenario-photo">🥩</div>
+                                    <div class="scenario-photo">🍖</div>
+                                    <div class="scenario-photo">🥗</div>
+                                    <div class="scenario-photo">🍺</div>
+                                </div>
+                                <div class="scenario-input-label" style="margin-top:8px;">코멘트</div>
+                                <div class="scenario-comment">"이번 주말 특선 메뉴"</div>
+                            </div>
+                        </div>
+                        <div class="scenario-arrow">→</div>
+                        <div class="scenario-after">
+                            <div class="scenario-side-label">lumi가 만들어 올린 것</div>
+                            <div class="scenario-result">
+                                <div class="scenario-result-caption">이번 주말만 만날 수 있어요 🥩<br>특선 메뉴가 준비됐어요.<br>주말 저녁, 특별한 자리에 어울리는 한 상이에요.</div>
+                                <div class="scenario-result-tags">
+                                    <span class="scenario-result-tag">#주말특선</span>
+                                    <span class="scenario-result-tag">#오늘저녁</span>
+                                    <span class="scenario-result-tag">#맛집스타그램</span>
+                                    <span class="scenario-result-tag">#고기맛집</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="scenario-meta">
+                        <div class="scenario-meta-item"><span class="scenario-meta-icon">🖼️</span>사진 4장 묶음으로 자동 정리</div>
+                        <div class="scenario-meta-item"><span class="scenario-meta-icon">📅</span>주말 한정 느낌 반영</div>
+                        <div class="scenario-meta-item"><span class="scenario-meta-icon">🍽️</span>식당 업종 맞춤 글쓰기</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 채널 -->
+    <section class="sec" style="background:var(--white);">
+        <div class="sec-inner">
+            <div class="sec-ey">지원하는 채널</div>
+            <h2 class="sec-title">지금은 인스타그램부터,<br>채널은 계속 늘어나요.</h2>
+            <p class="sec-desc">인스타그램 자동화로 시작해요. 네이버 블로그, 카카오, 유튜브도 순서대로 추가할게요.</p>
+            <div class="ch-grid">
+                <div class="ch-card"><div class="ch-icon">📷</div><div class="ch-name">인스타그램</div><p class="ch-desc">피드·스토리·릴스 자동 게시</p><span class="ch-badge">운영 중</span></div>
+                <div class="ch-card"><div class="ch-icon">🔵</div><div class="ch-name">네이버 블로그</div><p class="ch-desc">블로그 포스팅 자동화</p><span class="ch-badge ch-badge-off">준비 중</span></div>
+                <div class="ch-card"><div class="ch-icon">💬</div><div class="ch-name">카카오 알림톡</div><p class="ch-desc">주간 리포트 알림 발송</p><span class="ch-badge">운영 중</span></div>
+                <div class="ch-card"><div class="ch-icon">▶️</div><div class="ch-name">유튜브 쇼츠</div><p class="ch-desc">영상 자동 업로드</p><span class="ch-badge ch-badge-off">준비 중</span></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How -->
+    <section class="sec how-bg">
+        <div class="sec-inner">
+            <div class="sec-ey">이렇게 쓰면 돼요</div>
+            <h2 class="sec-title">3단계예요. 생각보다 짧아요.</h2>
+            <div class="how-steps">
+                <div class="how-step"><div class="step-circle on">📸</div><div class="step-body"><div class="step-ttl">사진을 올려요</div><p class="step-dsc">오늘 찍은 사진 아무거나요. 한 장도, 여러 장도 괜찮아요.</p></div></div>
+                <div class="how-step"><div class="step-circle on">⚡</div><div class="step-body"><div class="step-ttl">lumi가 읽고 글을 써요</div><p class="step-dsc">lumi가 사진을 읽고, 오늘 트렌드에 맞는 글을 완성해요. 손댈 게 없어요.</p></div></div>
+                <div class="how-step"><div class="step-circle on">🚀</div><div class="step-body"><div class="step-ttl">알아서 올라가요</div><p class="step-dsc">지금 올리거나 예약해 두면 돼요. 나머지는 lumi가 해요.</p></div></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 팀 -->
+    <section class="lumi-team-sec">
+        <div class="sec-inner">
+            <div class="lumi-team-intro">
+                <div class="sec-ey">lumi 팀을 소개해요</div>
+                <h2 class="sec-title">사진 한 장 뒤에서<br>세 명이 일하고 있어요.</h2>
+                <p class="sec-desc">대표님이 사진을 올리는 순간, 세 명의 lumi가 동시에 움직여요.</p>
+            </div>
+
+            <!-- 캐릭터 카드 3개 -->
+            <div class="lumi-members">
+                <div class="lumi-member-card">
+                    <div class="lumi-avatar">📷</div>
+                    <div class="lumi-member-role">이미지 전문가</div>
+                    <div class="lumi-member-name">사진사 lumi</div>
+                    <p class="lumi-member-desc">사진을 받는 순간 색감, 구도, 분위기를 파악해요. 어떤 포인트를 강조하면 손님 눈에 띄는지 누구보다 잘 알아요.</p>
+                    <div class="lumi-member-tags">
+                        <span class="lumi-member-tag">이미지 분석</span>
+                        <span class="lumi-member-tag">색감 감지</span>
+                        <span class="lumi-member-tag">구도 파악</span>
+                    </div>
+                </div>
+                <div class="lumi-member-card">
+                    <div class="lumi-avatar">✍️</div>
+                    <div class="lumi-member-role">글쓰기 전문가</div>
+                    <div class="lumi-member-name">작가 lumi</div>
+                    <p class="lumi-member-desc">사진사 lumi의 분석을 받아 글을 써요. 어색하지 않고 자연스러운 문장으로요. 대표님이 직접 쓴 것처럼 느껴지는 게 목표예요.</p>
+                    <div class="lumi-member-tags">
+                        <span class="lumi-member-tag">캡션 작성</span>
+                        <span class="lumi-member-tag">말투 맞춤</span>
+                        <span class="lumi-member-tag">감성 표현</span>
+                    </div>
+                </div>
+                <div class="lumi-member-card">
+                    <div class="lumi-avatar">📊</div>
+                    <div class="lumi-member-role">트렌드 전문가</div>
+                    <div class="lumi-member-name">트렌드 lumi</div>
+                    <p class="lumi-member-desc">요즘 뭐가 유행인지 매일 살펴봐요. 언제 올려야 가장 많이 보이는지, 어떤 태그가 잘 먹히는지 직접 확인하고 골라요.</p>
+                    <div class="lumi-member-tags">
+                        <span class="lumi-member-tag">트렌드 분석</span>
+                        <span class="lumi-member-tag">해시태그</span>
+                        <span class="lumi-member-tag">최적 시간</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 실제 대화 애니메이션 -->
+            <div class="lumi-chat-sec">
+                <p class="lumi-chat-title">대표님이 사진을 올리면 이런 일이 일어나요</p>
+                <div class="chat-bubble-wrap" id="lumi-chat-demo">
+                    <div class="chat-row right" data-delay="0">
+                        <div>
+                            <div class="chat-name">대표님</div>
+                            <div class="chat-bubble">오늘 딸기 신메뉴 나왔어요! 사진 올릴게요 🍓</div>
+                        </div>
+                        <div class="chat-avatar ceo">👨‍🍳</div>
+                    </div>
+                    <div class="chat-row" data-delay="800">
+                        <div class="chat-avatar photo">📷</div>
+                        <div>
+                            <div class="chat-name">사진사 lumi</div>
+                            <div class="chat-bubble">사진 받았어요. 딸기 색감이 선명하고 배경 보케가 예쁘네요. 따뜻한 감성으로 가면 좋겠어요.</div>
+                        </div>
+                    </div>
+                    <div class="chat-row" data-delay="1800">
+                        <div class="chat-avatar trend">📊</div>
+                        <div>
+                            <div class="chat-name">트렌드 lumi</div>
+                            <div class="chat-bubble">오늘 오후 7시가 최적 시간이에요. #딸기시즌 #봄신메뉴 태그 지금 인기 급상승 중이에요!</div>
+                        </div>
+                    </div>
+                    <div class="chat-row" data-delay="2800">
+                        <div class="chat-avatar writer">✍️</div>
+                        <div>
+                            <div class="chat-name">작가 lumi</div>
+                            <div class="chat-bubble">캡션 완성했어요.<br><br>"봄이 왔나봐요 🍓<br>오늘부터 딸기 시즌 신메뉴 시작이에요.<br>달콤한 향기, 직접 느껴보세요."<br><br>오후 7시에 올릴게요!</div>
+                        </div>
+                    </div>
+                    <div class="chat-row right" data-delay="4000">
+                        <div>
+                            <div class="chat-name">대표님</div>
+                            <div class="chat-bubble">완벽해요 👍</div>
+                        </div>
+                        <div class="chat-avatar ceo">👨‍🍳</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 요금 -->
+    <section class="sec price-bg" id="price-sec">
+        <div class="sec-inner">
+            <div class="sec-ey" style="text-align:center;">요금</div>
+            <h2 class="sec-title" style="text-align:center;">같은 가격에<br>이만큼 해주는 곳은 없어요.</h2>
+            <p class="sec-desc" style="text-align:center;margin:12px auto 0;">카드 없이 7일 무료로 먼저 써보세요.</p>
+
+            <div class="price-grid" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr));max-width:720px;">
+
+                <!-- 스탠다드 (유일한 유료 플랜) -->
+                <div class="price-card hl">
+                    <div class="price-bdg">🎉 오픈 세일</div>
+                    <p class="price-lbl">스탠다드</p>
+                    <div class="price-amt">
+                        <span style="font-size:.95rem;color:var(--g400);text-decoration:line-through;margin-right:8px;">59,000원</span>
+                        <span class="price-num">39,000</span><span class="price-unit">원 / 월</span>
+                    </div>
+                    <p style="font-size:.78rem;color:var(--pink);font-weight:700;margin-bottom:4px;">🎉 오픈 기념 특별가</p>
+                    <p style="font-size:.75rem;color:var(--g400);margin-bottom:16px;">주 4회, 알고리즘에 딱 맞는 게시 주기.</p>
+                    <div class="price-divider"></div>
+                    <ul class="price-feat-list">
+                        <li><span class="pf-icon">📸</span>인스타 자동 게시 <strong>월 16회</strong></li>
+                        <li><span class="pf-icon">✍️</span>캡션 + 해시태그 자동 생성</li>
+                        <li><span class="pf-icon">☀️</span>날씨 반영 캡션</li>
+                        <li><span class="pf-icon">📊</span>트렌드 태그</li>
+                        <li><span class="pf-icon">⏰</span>예약 게시</li>
+                        <li><span class="pf-icon">🎨</span>1:1 글스타일 커스텀</li>
+                        <li><span class="pf-icon">🖼️</span>사진 최대 10장 한 번에 올리기</li>
+                        <li><span class="pf-icon">💬</span>주간 리포트 카카오 알림톡</li>
+                    </ul>
+                    <button class="btn-price-on" onclick="openPortal('signup')">7일 무료로 시작하기</button>
+                    <p style="text-align:center;font-size:.75rem;color:var(--g400);margin-top:10px;">카드 등록 없이 시작해요.</p>
+                </div>
+
+                <!-- 프로 -->
+                <div class="price-card pro">
+                    <div class="price-bdg dark">출시 예정</div>
+                    <p class="price-lbl">프로</p>
+                    <div class="price-amt"><span class="price-num" style="font-size:1.6rem;letter-spacing:0;">가격 공개 예정</span></div>
+                    <p style="font-size:.78rem;color:rgba(255,255,255,.4);margin-bottom:16px;">사전 알림을 신청하면 먼저 알려드려요.</p>
+                    <div class="price-divider"></div>
+                    <ul class="price-feat-list">
+                        <li><span class="pf-icon">✅</span>스탠다드 전부 포함</li>
+                        <li><span class="pf-icon">📸</span>인스타 자동 게시 <strong style="color:#fff;">월 20회</strong></li>
+                        <li><span class="pf-icon">💬</span>자동 댓글 <span class="pf-coming">준비 중</span></li>
+                        <li><span class="pf-icon">📩</span>자동 DM <span class="pf-coming">준비 중</span></li>
+                        <li><span class="pf-icon">📝</span>네이버 블로그 자동 게시 <span class="pf-coming">준비 중</span></li>
+                        <li><span class="pf-icon">▶️</span>유튜브 쇼츠 자동 업로드 <span class="pf-coming">준비 중</span></li>
+                        <li><span class="pf-icon">📊</span>심층 월간 성과 리포트</li>
+                    </ul>
+                    <button class="btn-price-pro" onclick="openPortal('signup')">사전 알림 신청하기</button>
+                </div>
+            </div>
+
+            <!-- 경쟁사 비교 -->
+            <div class="price-compare">
+                <div class="price-compare-title">다른 서비스랑 비교해봤어요</div>
+                <div class="price-compare-row header">
+                    <div class="pcc feat"></div>
+                    <div class="pcc center" style="font-size:.75rem;color:var(--g500);">해외 서비스</div>
+                    <div class="pcc center" style="font-size:.75rem;color:var(--g500);">직접 운영</div>
+                    <div class="pcc center pink" style="font-size:.75rem;">lumi ✨</div>
+                </div>
+                <div class="price-compare-row">
+                    <div class="pcc feat">월 가격</div>
+                    <div class="pcc center" style="color:var(--g500);">월 $6~12</div>
+                    <div class="pcc center" style="color:var(--g500);">직접 쓰는 시간</div>
+                    <div class="pcc center pink dark">39,000원 🎉</div>
+                </div>
+                <div class="price-compare-row">
+                    <div class="pcc feat">인스타 자동 게시</div>
+                    <div class="pcc center">✅</div>
+                    <div class="pcc center">✅</div>
+                    <div class="pcc center pink">✅</div>
+                </div>
+                <div class="price-compare-row">
+                    <div class="pcc feat">캡션 자동 생성</div>
+                    <div class="pcc center" style="color:var(--g400);">❌</div>
+                    <div class="pcc center" style="color:var(--g400);">❌</div>
+                    <div class="pcc center pink">✅</div>
+                </div>
+                <div class="price-compare-row">
+                    <div class="pcc feat">날씨 반영</div>
+                    <div class="pcc center" style="color:var(--g400);">❌</div>
+                    <div class="pcc center" style="color:var(--g400);">❌</div>
+                    <div class="pcc center pink">✅</div>
+                </div>
+                <div class="price-compare-row">
+                    <div class="pcc feat">트렌드 태그</div>
+                    <div class="pcc center" style="color:var(--g400);">❌</div>
+                    <div class="pcc center" style="color:var(--g400);">❌</div>
+                    <div class="pcc center pink">✅</div>
+                </div>
+                <div class="price-compare-row">
+                    <div class="pcc feat">1:1 맞춤 커스텀</div>
+                    <div class="pcc center" style="color:var(--g400);">❌</div>
+                    <div class="pcc center" style="color:var(--g400);">❌</div>
+                    <div class="pcc center pink">✅</div>
+                </div>
+                <div class="price-compare-row">
+                    <div class="pcc feat">한국어 특화</div>
+                    <div class="pcc center" style="color:var(--g400);">❌</div>
+                    <div class="pcc center" style="color:var(--g400);">❌</div>
+                    <div class="pcc center pink">✅</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- FAQ -->
+    <section class="sec" style="background:var(--g50);">
+        <div class="sec-inner">
+            <div class="sec-ey" style="text-align:center;">자주 묻는 질문</div>
+            <h2 class="sec-title" style="text-align:center;margin-bottom:40px;">궁금한 게 있으신가요?</h2>
+            <div style="max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:12px;">
+
+                <details style="background:var(--white);border-radius:var(--r-lg);border:1px solid var(--g200);padding:20px 24px;cursor:pointer;">
+                    <summary style="font-size:.95rem;font-weight:700;color:var(--g900);list-style:none;display:flex;justify-content:space-between;align-items:center;">
+                        인스타그램 비밀번호를 알려줘야 하나요?
+                        <span style="color:var(--pink);font-size:1.2rem;">+</span>
+                    </summary>
+                    <p style="margin-top:12px;font-size:.88rem;color:var(--g500);line-height:1.8;">아니요, 비밀번호는 절대 필요하지 않아요. 메타(Meta) 공식 API를 통해 연동하기 때문에 비밀번호 없이 안전하게 연결돼요.</p>
+                </details>
+
+                <details style="background:var(--white);border-radius:var(--r-lg);border:1px solid var(--g200);padding:20px 24px;cursor:pointer;">
+                    <summary style="font-size:.95rem;font-weight:700;color:var(--g900);list-style:none;display:flex;justify-content:space-between;align-items:center;">
+                        게시물이 마음에 안 들면 어떻게 해요?
+                        <span style="color:var(--pink);font-size:1.2rem;">+</span>
+                    </summary>
+                    <p style="margin-top:12px;font-size:.88rem;color:var(--g500);line-height:1.8;">코멘트 칸에 원하는 방향을 적어주시면 그 내용을 반영해서 글을 써요. "좀 더 따뜻하게", "신메뉴 가격도 넣어줘" 같은 메모면 충분해요. 그래도 마음에 안 드시면 인스타그램에서 직접 수정하시면 돼요.</p>
+                </details>
+
+                <details style="background:var(--white);border-radius:var(--r-lg);border:1px solid var(--g200);padding:20px 24px;cursor:pointer;">
+                    <summary style="font-size:.95rem;font-weight:700;color:var(--g900);list-style:none;display:flex;justify-content:space-between;align-items:center;">
+                        구독 취소는 어떻게 해요?
+                        <span style="color:var(--pink);font-size:1.2rem;">+</span>
+                    </summary>
+                    <p style="margin-top:12px;font-size:.88rem;color:var(--g500);line-height:1.8;">언제든지 취소할 수 있어요. 위약금이나 해지 수수료는 없어요. gung3625@gmail.com으로 메일 한 통만 보내주시면 바로 처리해 드려요.</p>
+                </details>
+
+                <details style="background:var(--white);border-radius:var(--r-lg);border:1px solid var(--g200);padding:20px 24px;cursor:pointer;">
+                    <summary style="font-size:.95rem;font-weight:700;color:var(--g900);list-style:none;display:flex;justify-content:space-between;align-items:center;">
+                        인스타그램 비즈니스 계정이 없어도 돼요?
+                        <span style="color:var(--pink);font-size:1.2rem;">+</span>
+                    </summary>
+                    <p style="margin-top:12px;font-size:.88rem;color:var(--g500);line-height:1.8;">자동 게시 기능은 인스타그램 비즈니스 계정 또는 크리에이터 계정이 필요해요. 개인 계정을 비즈니스 계정으로 전환하는 건 인스타그램 앱에서 무료로 할 수 있고, 전환해도 기존 게시물이나 팔로워에는 영향이 없어요.</p>
+                </details>
+
+                <details style="background:var(--white);border-radius:var(--r-lg);border:1px solid var(--g200);padding:20px 24px;cursor:pointer;">
+                    <summary style="font-size:.95rem;font-weight:700;color:var(--g900);list-style:none;display:flex;justify-content:space-between;align-items:center;">
+                        7일 무료체험 후 자동으로 결제되나요?
+                        <span style="color:var(--pink);font-size:1.2rem;">+</span>
+                    </summary>
+                    <p style="margin-top:12px;font-size:.88rem;color:var(--g500);line-height:1.8;">아니요, 카드 등록 없이 시작하기 때문에 자동 결제는 없어요. 7일 후에는 서비스 이용이 중단되고, 계속 쓰고 싶으시면 그때 구독을 시작하시면 돼요.</p>
+                </details>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <div class="cta-sec">
+        <div class="cta-box">
+            <div class="cta-inner">
+                <h2 class="cta-title">홍보, 이제 lumi한테<br>맡겨도 돼요.</h2>
+                <p class="cta-desc">7일 동안 무료예요. 카드 번호도 필요 없어요.</p>
+                <button class="btn-cta" onclick="openPortal('signup')">지금 써보기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-inner">
+            <div class="footer-top">
+                <div>
+                    <img src="https://i.ibb.co/vzR0j4x/lumi-logo-transparent.png" class="footer-logo" alt="lumi">
+                    <p class="footer-info">
+                        상호명: 루미 (lumi)<br>
+                        대표자: 김현 &nbsp;|&nbsp; 사업자 등록번호: 330-04-03207<br>
+                        사업장 소재지: 서울특별시 용산구 회나무로 32-7 (이태원동)<br>
+                        업태: 서비스업 &nbsp;|&nbsp; 종목: 광고대행업<br>
+                        통신판매업 신고번호: 신고 준비 중<br>
+                        문의: gung3625@gmail.com
+                    </p>
+                </div>
+                <div class="footer-links">
+                    <a href="https://lumi.it.kr/terms">이용약관</a>
+                    <a href="https://lumi.it.kr/privacy">개인정보 처리방침</a>
+                    <a href="mailto:gung3625@gmail.com">문의하기</a>
+                </div>
+            </div>
+            <p class="footer-bottom">© 2026 lumi (루미) · 사업자 등록번호 330-04-03207 · 대표 김현 · 서울특별시 용산구 회나무로 32-7</p>
+        </div>
+    </footer>
+</div>
+
+<!-- AUTH PORTAL -->
+<div id="lumi-auth-portal" class="portal-overlay">
+    <div class="portal-sheet">
+        <button class="portal-x" onclick="resetToInitialLanding()">✕</button>
+        <img src="https://i.ibb.co/vzR0j4x/lumi-logo-transparent.png" class="portal-logo" alt="lumi">
+        <div class="portal-tabs">
+            <span id="tab-login-btn" class="p-tab active" onclick="setPortalMode('login')">로그인</span>
+            <span id="tab-signup-btn" class="p-tab" onclick="setPortalMode('signup')">회원가입</span>
+        </div>
+        <!-- 로그인 -->
+        <div id="lumi-login-view">
+            <p class="portal-ttl">다시 오셨네요.</p>
+            <p class="portal-sub">이메일과 비밀번호를 입력하세요.</p>
+            <input type="email" id="id-login-field" placeholder="이메일 주소" class="inp" oninput="clearFieldErr(this.id,'login-email-err')">
+            <div id="login-email-err" class="field-err hidden"></div>
+            <input type="password" id="pw-login-field" placeholder="비밀번호" class="inp" oninput="clearFieldErr(this.id,'login-pw-err')">
+            <div id="login-pw-err" class="field-err hidden"></div>
+            <button class="btn-portal" onclick="handleLoginAction()">로그인</button>
+        </div>
+        <!-- 회원가입 -->
+        <div id="lumi-signup-view" class="hidden">
+            <div class="s-dots">
+                <div class="s-dot on" id="dot-1"></div>
+                <div class="s-dot" id="dot-2"></div>
+                <div class="s-dot" id="dot-3"></div>
+                <div class="s-dot" id="dot-4"></div>
+                <div class="s-dot" id="dot-5"></div>
+            </div>
+            <div id="node-step-1">
+                <p class="portal-ttl">시작해 볼게요.</p>
+                <p class="portal-sub">매장 정보와 연락처를 알려주세요.</p>
+                <input type="text" id="ceo-name-field" placeholder="대표님 성함 (예: 김현)" class="inp" oninput="clearFieldErr(this.id,'ceo-name-err')">
+                <div id="ceo-name-err" class="field-err hidden"></div>
+                <input type="text" id="store-name-field" placeholder="매장 이름 (예: 카페루미)" class="inp" oninput="clearFieldErr(this.id,'store-name-err')">
+                <div id="store-name-err" class="field-err hidden"></div>
+                <input type="text" id="store-insta-field" placeholder="인스타그램 아이디 (예: @lumi_cafe)" class="inp" oninput="clearFieldErr(this.id,'store-insta-err')">
+                <div id="store-insta-err" class="field-err hidden"></div>
+                <input type="email" id="id-reg-field" placeholder="이메일 주소" class="inp" oninput="clearFieldErr(this.id,'reg-email-err')">
+                <div id="reg-email-err" class="field-err hidden"></div>
+                <input type="tel" id="ph-reg-field" placeholder="휴대폰 번호 (숫자만)" class="inp" oninput="clearFieldErr(this.id,'reg-ph-err')">
+                <div id="reg-ph-err" class="field-err hidden"></div>
+                <div style="background:var(--pink-pale);border-radius:var(--r-sm);padding:10px 14px;margin-bottom:12px;">
+                    <p style="font-size:11px;font-weight:700;color:var(--pink);">아래 정보를 추가하면 게시물 퀄리티가 올라가요.</p>
+                </div>
+                <input type="text" id="store-desc-field" placeholder="매장 한 줄 소개 (선택 · 예: 이태원 감성 카페)" class="inp" style="border-style:dashed;">
+                <input type="text" id="store-region-field" placeholder="매장 지역 (선택 · 예: 서울 이태원)" class="inp" style="border-style:dashed;">
+                <button class="btn-portal" onclick="validateStep1()">인증번호 받기</button>
+            </div>
+            <div id="node-step-2" class="hidden">
+                <p class="portal-ttl">번호를 확인해요.</p>
+                <p class="portal-sub">이메일로 보낸 번호 6자리를 입력하세요.</p>
+                <input type="text" id="id-otp-field" placeholder="000000" class="inp inp-otp" maxlength="6" oninput="clearFieldErr(this.id,'otp-err')">
+                <div id="otp-err" class="field-err hidden"></div>
+                <button class="btn-portal" onclick="validateStep2()">확인</button>
+                <p style="text-align:center;margin-top:12px;font-size:13px;color:#999;">이메일을 못 받으셨나요? <button onclick="resendOtp()" style="background:none;border:none;color:#FF6B9D;font-size:13px;cursor:pointer;text-decoration:underline;padding:0;">재전송</button></p>
+            </div>
+            <div id="node-step-3" class="hidden">
+                <p class="portal-ttl">마지막이에요.</p>
+                <p class="portal-sub">매장에 맞는 설정을 골라요.</p>
+                <select id="biz-cat-select" class="inp" style="height:50px;margin-bottom:8px;" onchange="toggleBizOther(this.value)">
+                    <option value="cafe">☕ 카페 / 베이커리 / 디저트</option>
+                    <option value="food">🍽️ 레스토랑 / 식당 / 술집</option>
+                    <option value="beauty">💅 미용 / 헤어 / 네일 / 에스테틱</option>
+                    <option value="other">✏️ 직접 입력</option>
+                </select>
+                <input type="text" id="biz-cat-other" placeholder="업종을 직접 입력해 주세요 (예: 꽃집, 반려동물 용품, 의류)" class="inp" style="display:none;margin-bottom:8px;" oninput="clearFieldErr(this.id,'biz-cat-other-err')">
+                <div id="biz-cat-other-err" class="field-err hidden"></div>
+                <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:8px;">글 스타일</p>
+                <div class="tone-grid" style="margin-bottom:16px;">
+                    <div class="tone-card selected" id="tone-warm" onclick="selectTone('warm')">
+                        <div class="tone-emoji">🤗</div>
+                        <div class="tone-name">친근하게</div>
+                        <div class="tone-desc">"오늘도 맛있게 드세요~"</div>
+                    </div>
+                    <div class="tone-card" id="tone-cool" onclick="selectTone('cool')">
+                        <div class="tone-emoji">😎</div>
+                        <div class="tone-name">감성적으로</div>
+                        <div class="tone-desc">"오늘의 한 컷, 당신을 위해"</div>
+                    </div>
+                    <div class="tone-card" id="tone-fun" onclick="selectTone('fun')">
+                        <div class="tone-emoji">🎉</div>
+                        <div class="tone-name">재미있게</div>
+                        <div class="tone-desc">"이거 안 먹으면 후회각!"</div>
+                    </div>
+                    <div class="tone-card" id="tone-pro" onclick="selectTone('pro')">
+                        <div class="tone-emoji">✨</div>
+                        <div class="tone-name">신뢰감 있게</div>
+                        <div class="tone-desc">"정성스럽게 준비했습니다"</div>
+                    </div>
+                </div>
+                <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:8px;">해시태그 스타일</p>
+                <div style="display:flex;gap:8px;margin-bottom:16px;">
+                    <div class="tone-card selected" id="tag-few" onclick="selectTagStyle('few')" style="flex:1;padding:10px 8px;">
+                        <div class="tone-name">간결하게</div>
+                        <div class="tone-desc">5개 이내</div>
+                    </div>
+                    <div class="tone-card" id="tag-mid" onclick="selectTagStyle('mid')" style="flex:1;padding:10px 8px;">
+                        <div class="tone-name">적당하게</div>
+                        <div class="tone-desc">10개 내외</div>
+                    </div>
+                    <div class="tone-card" id="tag-many" onclick="selectTagStyle('many')" style="flex:1;padding:10px 8px;">
+                        <div class="tone-name">많이</div>
+                        <div class="tone-desc">20개 이상</div>
+                    </div>
+                </div>
+                <button class="btn-portal" onclick="finishLumiSignup()" style="background:var(--pink);">시작하기</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="lumi-dashboard-node" class="dash-layer">
+    <div class="dash-topbar">
+        <img src="https://i.ibb.co/vzR0j4x/lumi-logo-transparent.png" class="dash-topbar-logo" alt="lumi">
+        <button class="dash-back" onclick="resetToInitialLanding()">홈으로</button>
+    </div>
+    <div class="dash-body">
+        <!-- 페이월 오버레이 -->
+        <div id="lumi-paywall" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,255,255,.97);z-index:9999;display:none;align-items:center;justify-content:center;flex-direction:column;padding:40px 24px;text-align:center;">
+            <div style="font-size:48px;margin-bottom:16px;">🔒</div>
+            <h2 id="paywall-title" style="font-size:1.4rem;font-weight:900;color:#1a1a2e;margin-bottom:8px;">무료체험이 종료됐어요.</h2>
+            <p id="paywall-desc" style="font-size:.9rem;color:#666;margin-bottom:32px;line-height:1.6;">lumi를 계속 사용하려면 구독을 시작해주세요.<br>지금 구독하면 오픈 기념 특별가 39,000원으로 이용 가능해요.</p>
+            <button onclick="location.href='#price-sec'" style="background:var(--pink);color:#fff;border:none;border-radius:14px;padding:16px 40px;font-size:1rem;font-weight:700;cursor:pointer;margin-bottom:12px;">구독 시작하기</button>
+            <button onclick="lumiLogout()" style="background:none;border:none;color:#999;font-size:.85rem;cursor:pointer;">로그아웃</button>
+        </div>
+
+        <div class="dash-hello">
+            <h2 id="dash-store-name">안녕하세요.</h2>
+            <p>오늘도 lumi가 함께해요.</p>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+                <span id="post-remain-badge" style="font-size:.75rem;background:#fff0f6;color:var(--pink);padding:4px 10px;border-radius:99px;font-weight:700;"></span>
+                <button onclick="lumiLogout()" style="background:none;border:1px solid #eee;border-radius:8px;padding:6px 14px;font-size:12px;color:#999;cursor:pointer;">로그아웃</button>
+            </div>
+        </div>
+        <div class="weather-card">
+            <div class="w-icon" id="dash-w-icon">☀️</div>
+            <div>
+                <div class="w-status" id="dash-w-text">서울: 매우 맑음</div>
+                <div class="w-guide" id="dash-w-guide">"맑은 날 자연광은 최고의 필터입니다!"</div>
+            </div>
+        </div>
+        <p class="dash-lbl">지금 인기 태그</p>
+        <div class="trend-wrap" id="trend-list-node"></div>
+        <div class="upload-card">
+            <p class="upload-ttl">오늘의 사진을 올려요.</p>
+            <div class="drop-zone">
+                <input type="file" id="ceo-file-selector" multiple accept="image/*" onchange="syncBinaryWarehouse()">
+                <div id="ceo-preview-box" class="preview-grid"></div>
+                <div id="ceo-placeholder">
+                    <div class="drop-icon">📸</div>
+                    <p class="drop-txt">사진을 선택하세요</p>
+                </div>
+            </div>
+            <div style="background:var(--g50);border-radius:var(--r-sm);padding:10px 14px;margin-bottom:10px;border-left:3px solid var(--pink);">
+                <p style="font-size:11px;font-weight:700;color:var(--g500);line-height:1.7;">오늘 특별히 전하고 싶은 소식이 있다면 적어주세요.<br>
+                <span style="color:var(--pink);">예) 신메뉴 출시, 명절 휴무 안내, 이벤트 진행 중</span><br>
+                없으면 비워도 돼요. lumi가 사진 보고 알아서 써드려요.</p>
+            </div>
+            <textarea id="ceo-note-input" class="dash-note" rows="3" placeholder="예) 오늘 딸기 시즌 신메뉴 나왔어요!&#10;예) 다음 주 월~화 명절 휴무입니다.&#10;예) 오픈 1주년 이벤트 진행 중이에요."></textarea>
+            <div style="margin-bottom:14px;">
+                <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:8px;">예약 게시 (선택)</p>
+                <input type="datetime-local" id="reserve-time-field" class="inp" style="height:48px;cursor:pointer;">
+                <p id="reserve-time-hint" style="font-size:11px;color:var(--g400);margin-top:4px;display:none;"></p>
+            </div>
+            <div class="act-btns">
+                <button class="btn-act-on" onclick="commitPost('now')">바로 올리기</button>
+                <button class="btn-act-off" onclick="commitPost('reserve')">예약 저장</button>
+            </div>
+        </div>
+        <p class="dash-lbl">보관함</p>
+        <ul id="lumi-inventory-list" style="list-style:none;padding:0;"></ul>
+        <button class="btn-withdraw" onclick="withdrawFromLumi()">탈퇴하기</button>
+    </div>
+</div>
+
+<script>
+/* ── 시나리오 탭 전환 ── */
+function switchScenario(id){
+    document.querySelectorAll('.scenario-tab').forEach((t,i)=>{
+        const ids=['cafe','beauty','food'];
+        t.classList.toggle('on', ids[i]===id);
+    });
+    document.querySelectorAll('.scenario-panel').forEach(p=>{
+        p.classList.toggle('on', p.id==='scenario-'+id);
+    });
+}
+
+/* ── 부드러운 스크롤 (모바일 탭 포함) ── */
+function smoothScrollTo(id){
+    const el=document.getElementById(id);
+    if(!el) return;
+    const top=el.getBoundingClientRect().top+window.scrollY-64;
+    window.scrollTo({top, behavior:'smooth'});
+}
+
+/* ── 모바일 엔터키 → 다음 필드 이동 + 스크롤 ── */
+(function(){
+    // 포털 내 input 순서 정의
+    const FIELD_ORDER = [
+        'ceo-name-field',
+        'store-name-field',
+        'store-insta-field',
+        'id-reg-field',
+        'ph-reg-field',
+        'store-desc-field',
+        'store-region-field',
+        'id-otp-field',
+        'id-login-field',
+        'pw-login-field'
+    ];
+
+    function scrollFieldIntoSheet(el){
+        const sheet = el.closest('.portal-sheet');
+        if(!sheet) return;
+        // sheet 기준 상대 위치 계산
+        const elRect = el.getBoundingClientRect();
+        const sheetRect = sheet.getBoundingClientRect();
+        const relTop = elRect.top - sheetRect.top + sheet.scrollTop - 16;
+        sheet.scrollTo({top: relTop, behavior:'smooth'});
+    }
+
+    document.addEventListener('keydown', function(e){
+        if(e.key !== 'Enter' && e.keyCode !== 13) return;
+        const current = e.target;
+        if(!current.matches('input')) return;
+        if(!current.closest('.portal-sheet')) return;
+
+        const currentId = current.id;
+        const idx = FIELD_ORDER.indexOf(currentId);
+        if(idx === -1) return;
+
+        // 다음 필드 찾기 (visible 한 것만)
+        for(let i = idx+1; i < FIELD_ORDER.length; i++){
+            const next = document.getElementById(FIELD_ORDER[i]);
+            if(next && next.offsetParent !== null && !next.closest('.hidden')){
+                e.preventDefault();
+                next.focus();
+                setTimeout(()=> scrollFieldIntoSheet(next), 100);
+                return;
+            }
+        }
+        // 마지막 필드면 기본 동작 (제출)
+    }, true);
+
+    // 포커스 이동 시에도 스크롤
+    document.addEventListener('focus', function(e){
+        const el = e.target;
+        if(!el.matches('input, select, textarea')) return;
+        if(!el.closest('.portal-sheet')) return;
+        setTimeout(()=> scrollFieldIntoSheet(el), 120);
+    }, true);
+})();
+
+const LUMI_CORE = {
+    weather: {
+        clear:{icon:"☀️",status:"매우 맑음",guide:"맑은 날 자연광은 최고의 필터입니다! 채광을 살린 사진을 강력 추천해요.",mood:"햇살 가득한 오후, 우리 매장만의 특별한 여유를 담아보세요."},
+        rain: {icon:"💧",status:"비 내림",  guide:"창가 조명을 최대한 활용하세요! 유리창의 물방울 샷이 도달률을 높입니다.",mood:"빗소리와 함께 즐기는 따스한 감성. 아늑한 무드를 선물할게요."},
+        snow: {icon:"❄️",status:"눈 옴",   guide:"따뜻한 김이 모락모락 나는 메뉴 사진이 정답!",mood:"창밖은 하얀 겨울이지만, 여기는 온기가 가득합니다."},
+        dust: {icon:"🌫️",status:"미세먼지",guide:"쾌적한 실내 무드를 강조해 보세요.",mood:"미세먼지 없는 청정 구역! 안심하고 쉴 수 있는 공간으로 초대합니다."}
+    },
+    trends: {
+        cafe:  ["#봄햇살_아늑한_인테리어","#라떼아트_챌린지","#오늘의_커피기록","#우리동네_최애카페"],
+        food:  ["#오늘의_플레이팅_정석","#숨겨진_미식공간","#주말다이닝_성공","#제철요리_신메뉴"],
+        beauty:["#봄맞이_무드체인지","#퍼스널컬러_디자인","#나만알고싶은_헤어샵","#에스테틱_홈케어"]
+    }
+};
+let archive=[],stagedFiles=[],bizCat='cafe',captionTone='warm',ceoName='',storeName='',storeDesc='',storeInsta='',storeRegion='',tagStyle='mid';
+let realtimeTrends = [];
+let currentWeatherData = null; // 실제 날씨 데이터 전역 보관
+
+/* ── 저장소 ── */
+function bootPersistence(){const r=localStorage.getItem('lumi_archive');if(r){try{archive=JSON.parse(r);}catch(e){archive=[];}}}
+function syncPersistence(){localStorage.setItem('lumi_archive',JSON.stringify(archive));}
+
+/* ── 토스트 알림 ── */
+function showToast(msg,type=''){
+    let t=document.getElementById('lumi-toast');
+    if(!t){t=document.createElement('div');t.id='lumi-toast';t.className='toast';document.body.appendChild(t);}
+    t.textContent=msg;t.className='toast'+(type?' '+type:'');
+    requestAnimationFrame(()=>{t.classList.add('show');});
+    clearTimeout(t._timer);
+    t._timer=setTimeout(()=>{t.classList.remove('show');},2800);
+}
+
+/* ── 필드 에러 ── */
+function showFieldErr(inputId,errId,msg){
+    const inp=document.getElementById(inputId);
+    const err=document.getElementById(errId);
+    if(inp){inp.classList.add('err');inp.classList.remove('ok');}
+    if(err){err.textContent=msg;err.classList.remove('hidden');}
+}
+function clearFieldErr(inputId,errId){
+    const inp=document.getElementById(inputId);
+    const err=document.getElementById(errId);
+    if(inp){inp.classList.remove('err');}
+    if(err){err.classList.add('hidden');}
+}
+function setFieldOk(inputId){
+    const inp=document.getElementById(inputId);
+    if(inp){inp.classList.remove('err');inp.classList.add('ok');}
+}
+
+/* ── 이메일 형식 검사 ── */
+function isValidEmail(v){return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);}
+
+/* ── 로그인 검증 ── */
+function handleLoginAction(){
+    const email=document.getElementById('id-login-field').value.trim();
+    const pw=document.getElementById('pw-login-field').value;
+    let ok=true;
+    if(!email){showFieldErr('id-login-field','login-email-err','이메일을 입력하세요.');ok=false;}
+    else if(!isValidEmail(email)){showFieldErr('id-login-field','login-email-err','이메일 형식을 확인해 주세요.');ok=false;}
+    else{setFieldOk('id-login-field');}
+    if(!pw){showFieldErr('pw-login-field','login-pw-err','비밀번호를 입력하세요.');ok=false;}
+    else if(pw.length<6){showFieldErr('pw-login-field','login-pw-err','6자 이상으로 입력하세요.');ok=false;}
+    else{setFieldOk('pw-login-field');}
+    if(ok) grantAccess();
+}
+
+/* ── 회원가입 스텝 검증 ── */
+async function validateStep1(){
+    const name=document.getElementById('ceo-name-field').value.trim();
+    const store=document.getElementById('store-name-field').value.trim();
+    const insta=document.getElementById('store-insta-field').value.trim();
+    const email=document.getElementById('id-reg-field').value.trim();
+    const phone=document.getElementById('ph-reg-field').value.trim();
+    let ok=true;
+    if(!name){showFieldErr('ceo-name-field','ceo-name-err','성함을 입력하세요.');ok=false;}
+    else{setFieldOk('ceo-name-field');}
+    if(!store){showFieldErr('store-name-field','store-name-err','매장 이름을 입력하세요.');ok=false;}
+    else{setFieldOk('store-name-field');}
+    if(!insta){showFieldErr('store-insta-field','store-insta-err','인스타그램 아이디를 입력하세요.');ok=false;}
+    else{setFieldOk('store-insta-field');}
+    if(!email){showFieldErr('id-reg-field','reg-email-err','이메일을 입력하세요.');ok=false;}
+    else if(!isValidEmail(email)){showFieldErr('id-reg-field','reg-email-err','이메일 형식을 확인해 주세요.');ok=false;}
+    else{setFieldOk('id-reg-field');}
+    if(!phone){showFieldErr('ph-reg-field','reg-ph-err','휴대폰 번호를 입력하세요.');ok=false;}
+    else if(!/^[0-9]{10,11}$/.test(phone.replace(/-/g,''))){showFieldErr('ph-reg-field','reg-ph-err','숫자만 10~11자리로 입력하세요.');ok=false;}
+    else{setFieldOk('ph-reg-field');}
+    if(!ok) return;
+
+    // 실제 OTP 발송
+    const btn = document.querySelector('#node-step-1 .btn-portal');
+    btn.disabled = true;
+    btn.textContent = '전송 중...';
+    try {
+        const res = await fetch('/.netlify/functions/send-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            showToast('인증번호를 보냈어요. 이메일을 확인해주세요.', 'pink');
+            navNode(2);
+        } else {
+            showToast(data.error || '발송에 실패했습니다. 다시 시도해주세요.', 'red');
+        }
+    } catch(e) {
+        showToast('네트워크 오류가 발생했습니다. 다시 시도해주세요.', 'red');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '인증번호 받기';
+    }
+}
+async function validateStep2(){
+    const otp=document.getElementById('id-otp-field').value.trim();
+    const email=document.getElementById('id-reg-field').value.trim();
+    if(!otp){showFieldErr('id-otp-field','otp-err','인증번호를 입력하세요.');return;}
+    if(otp.length!==6||!/^[0-9]+$/.test(otp)){showFieldErr('id-otp-field','otp-err','숫자 6자리를 입력하세요.');return;}
+
+    const btn = document.querySelector('#node-step-2 .btn-portal');
+    btn.disabled = true;
+    btn.textContent = '확인 중...';
+    try {
+        const res = await fetch('/.netlify/functions/verify-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, otp })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            setFieldOk('id-otp-field');
+            showToast('이메일 인증이 완료됐어요!', 'pink');
+            navNode(3);
+        } else {
+            showFieldErr('id-otp-field','otp-err', data.error || '인증번호가 올바르지 않습니다.');
+        }
+    } catch(e) {
+        showFieldErr('id-otp-field','otp-err','네트워크 오류가 발생했습니다.');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '확인';
+    }
+}
+
+/* ── 업종 직접입력 토글 ── */
+function toggleBizOther(val) {
+    const otherInput = document.getElementById('biz-cat-other');
+    if (val === 'other') {
+        otherInput.style.display = 'block';
+        otherInput.focus();
+    } else {
+        otherInput.style.display = 'none';
+        otherInput.value = '';
+    }
+}
+
+/* ── 말투 선택 ── */
+function selectTone(tone){
+    captionTone=tone;
+    ['warm','cool','fun','pro'].forEach(t=>{
+        document.getElementById('tone-'+t).classList.toggle('selected',t===tone);
+    });
+}
+
+/* ── 회원가입 완료 ── */
+async function finishLumiSignup(){
+    bizCat=document.getElementById('biz-cat-select').value;
+    if (bizCat === 'other') {
+        const otherVal = document.getElementById('biz-cat-other').value.trim();
+        if (!otherVal) {
+            showFieldErr('biz-cat-other','biz-cat-other-err','업종을 입력해 주세요.');
+            return;
+        }
+        bizCat = otherVal;
+    }
+    ceoName=document.getElementById('ceo-name-field').value.trim();
+    storeName=document.getElementById('store-name-field').value.trim();
+    storeInsta=document.getElementById('store-insta-field').value.trim();
+    const descEl=document.getElementById('store-desc-field');
+    const regionEl=document.getElementById('store-region-field');
+    if(descEl) storeDesc=descEl.value.trim();
+    if(regionEl) storeRegion=regionEl.value.trim();
+    const email=document.getElementById('id-reg-field').value.trim();
+    const phone=document.getElementById('ph-reg-field').value.trim();
+
+    const btn = document.querySelector('#node-step-3 .btn-portal');
+    btn.disabled = true;
+    btn.textContent = '가입 중...';
+
+    try {
+        const res = await fetch('/.netlify/functions/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: ceoName,
+                storeName,
+                instagram: storeInsta,
+                email,
+                phone,
+                storeDesc,
+                region: storeRegion,
+                bizCategory: bizCat,
+                captionTone,
+                tagStyle
+            })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            localStorage.setItem('lumi_token', data.token);
+            localStorage.setItem('lumi_user', JSON.stringify(data.user));
+            showToast('준비됐어요. 지금 시작할게요.', 'pink');
+            grantAccess();
+        } else {
+            showToast(data.error || '가입에 실패했습니다. 다시 시도해주세요.', 'red');
+            btn.disabled = false;
+            btn.textContent = '시작하기';
+        }
+    } catch(e) {
+        showToast('네트워크 오류가 발생했습니다.', 'red');
+        btn.disabled = false;
+        btn.textContent = '시작하기';
+    }
+}
+
+/* ── 태그 스타일 선택 ── */
+function selectTagStyle(style){
+    tagStyle=style;
+    ['few','mid','many'].forEach(t=>{
+        document.getElementById('tag-'+t).classList.toggle('selected',t===style);
+    });
+}
+
+/* ── 실제 날씨 API (Open-Meteo, 위치 기반) ── */
+// WMO 날씨 코드 → lumi 상태 변환
+function parseWeatherCode(code) {
+    if ([0,1].includes(code))              return 'clear';  // 맑음
+    if ([2,3,45,48].includes(code))        return 'clear';  // 흐림 → 맑음으로 처리
+    if ([51,53,55,61,63,65,80,81,82].includes(code)) return 'rain';  // 비
+    if ([71,73,75,77,85,86].includes(code)) return 'snow'; // 눈
+    return 'clear';
+}
+
+async function fetchRealWeather(lat, lon, locationName) {
+    try {
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=weathercode,temperature_2m&timezone=Asia%2FTokyo`;
+        const res = await fetch(url);
+        const data = await res.json();
+        const code = data.current.weathercode;
+        const temp = Math.round(data.current.temperature_2m);
+        const state = parseWeatherCode(code);
+        const cfg = LUMI_CORE.weather[state];
+
+        // 전역 날씨 데이터 저장 (웹훅 전송용)
+        currentWeatherData = {
+            state,
+            status: cfg.status,
+            temperature: temp,
+            locationName,
+            guide: cfg.guide,
+            mood: cfg.mood
+        };
+
+        // UI 업데이트
+        document.getElementById('dash-w-icon').innerText = cfg.icon;
+        document.getElementById('dash-w-text').innerText = `${locationName}: ${cfg.status} ${temp}°C`;
+        document.getElementById('dash-w-guide').innerText = '"' + cfg.guide + '"';
+        document.getElementById('ceo-note-input').placeholder = '오늘의 추천 무드:\n' + cfg.mood;
+
+    } catch(e) {
+        // API 실패 시 서울 기본값 유지
+        console.warn('날씨 API 실패, 기본값 사용');
+        syncWeatherUI('clear');
+    }
+}
+
+async function initWeather() {
+    // 서울 기본 좌표
+    const SEOUL = { lat: 37.5665, lon: 126.9780, name: '서울' };
+
+    if (!navigator.geolocation) {
+        // 위치 API 자체 없으면 서울
+        await fetchRealWeather(SEOUL.lat, SEOUL.lon, SEOUL.name);
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+            // 위치 허용: 실제 좌표로 날씨 가져오기
+            const { latitude, longitude } = pos.coords;
+            // 역지오코딩 (위치 이름) - Open-Meteo 자체 제공 없으므로 '현재 위치' 표기
+            await fetchRealWeather(latitude, longitude, '현재 위치');
+        },
+        async () => {
+            // 위치 거부 또는 오류 → 서울 기준
+            await fetchRealWeather(SEOUL.lat, SEOUL.lon, SEOUL.name);
+        },
+        { timeout: 5000 }
+    );
+}
+
+/* ── 파일 업로드 ── */
+function syncBinaryWarehouse(){
+    const input=document.getElementById('ceo-file-selector');
+    const preview=document.getElementById('ceo-preview-box');
+    const ph=document.getElementById('ceo-placeholder');
+    preview.innerHTML='';stagedFiles=Array.from(input.files);
+    ph.classList.toggle('hidden',stagedFiles.length>0);
+    stagedFiles.forEach((f,i)=>{const r=new FileReader();r.onload=e=>{const d=document.createElement('div');d.className='prev-thumb';d.innerHTML=`<img src="${e.target.result}" alt="${i}">`;preview.appendChild(d);};r.readAsDataURL(f);});
+}
+
+/* ── 포스트 ── */
+async function commitPost(type){
+    const notes=document.getElementById('ceo-note-input').value.trim();
+    if(stagedFiles.length===0){showToast('사진을 먼저 선택하세요.');return;}
+    // 메시지는 선택사항 - 없으면 lumi가 알아서 작성
+
+    const photos=await Promise.all(stagedFiles.map(f=>new Promise(res=>{const r=new FileReader();r.onload=e=>res({name:f.name,data:e.target.result});r.readAsDataURL(f);})));
+
+    // 현재 트렌드 태그 수집 (실시간 or 기본값)
+    const currentTrends = realtimeTrends.length > 0 ? realtimeTrends : (LUMI_CORE.trends[bizCat] || LUMI_CORE.trends.cafe);
+
+    // 날씨 데이터 (실제 API 결과 or 기본값)
+    const weatherPayload = currentWeatherData || {
+        state: 'clear',
+        status: LUMI_CORE.weather.clear.status,
+        temperature: null,
+        locationName: storeRegion || '서울',
+        guide: LUMI_CORE.weather.clear.guide,
+        mood: LUMI_CORE.weather.clear.mood
+    };
+
+    // 매장 프로필 (선택 정보 포함)
+    const storeProfile = {
+        name: storeName,
+        description: storeDesc,
+        instagram: storeInsta,
+        region: storeRegion,
+        category: bizCat,
+        toneStyle: captionTone,
+        tagStyle: tagStyle
+    };
+
+    if(type==='now'){
+        // 웹훅으로 실제 전송
+        const formData = new FormData();
+        // 사진 파일들 추가
+        stagedFiles.forEach((f, i) => formData.append(`photo_${i}`, f, f.name));
+        // 텍스트 데이터 추가
+        formData.append('userMessage', notes);
+        formData.append('bizCategory', bizCat);
+        formData.append('captionTone', captionTone);
+        formData.append('tagStyle', tagStyle);
+        formData.append('weather', JSON.stringify(weatherPayload));
+        formData.append('trends', JSON.stringify(currentTrends));
+        formData.append('storeProfile', JSON.stringify(storeProfile));
+        formData.append('photoCount', stagedFiles.length);
+        formData.append('submittedAt', new Date().toISOString());
+        const reserveTime=document.getElementById('reserve-time-field').value;
+        if(reserveTime) formData.append('scheduledAt', new Date(reserveTime).toISOString());
+
+        try {
+            showToast('전송 중이에요...');
+
+            // 게시 횟수 카운팅 먼저 확인
+            const token = localStorage.getItem('lumi_token');
+            if (token) {
+                const countRes = await fetch('/.netlify/functions/count-post', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+                const countData = await countRes.json();
+                if (!countRes.ok) {
+                    if (countData.code === 'TRIAL_EXPIRED') {
+                        showPaywall('trial');
+                    } else if (countData.code === 'POST_LIMIT_REACHED') {
+                        showPaywall('limit');
+                    } else {
+                        showToast(countData.error || '게시 오류가 발생했어요.');
+                    }
+                    return;
+                }
+                // 남은 횟수 업데이트
+                const remainEl = document.getElementById('post-remain-badge');
+                if (remainEl) remainEl.textContent = '이번 달 ' + countData.remaining + '회 남음';
+            }
+
+            const res = await fetch('/.netlify/functions/reserve', {
+                method: 'POST',
+                body: formData
+            });
+            if(res.ok){
+                showToast('게시 요청을 보냈어요.','pink');
+                resetDashboard();
+            } else {
+                showToast('전송에 실패했어요. 다시 시도해 주세요.');
+            }
+        } catch(e) {
+            showToast('네트워크 오류가 발생했어요.');
+        }
+
+    } else {
+        // 보관함 저장 (로컬)
+        const reserveTimeVal=document.getElementById('reserve-time-field').value;
+        const scheduledAt=reserveTimeVal ? new Date(reserveTimeVal).toISOString() : null;
+        archive.push({
+            id: Date.now(),
+            time: new Date().toLocaleString(),
+            scheduledAt,
+            content: notes,
+            photos,
+            weather: weatherPayload,
+            trends: currentTrends,
+            bizCategory: bizCat,
+            captionTone,
+            storeProfile
+        });
+        syncPersistence();
+        renderArchive();
+        showToast('보관함에 저장했어요.','pink');
+        resetDashboard();
+    }
+}
+
+/* ── 보관함 ── */
+function renderArchive(){
+    const el=document.getElementById('lumi-inventory-list');
+    if(archive.length===0){el.innerHTML='<div class="arc-empty">아직 보관된 기록이 없습니다.</div>';return;}
+    el.innerHTML=archive.map(item=>{
+        const schedLabel=item.scheduledAt
+            ? `<span style="font-size:10px;font-weight:700;color:var(--pink);background:var(--pink-pale);padding:2px 8px;border-radius:99px;margin-left:8px;">⏰ ${new Date(item.scheduledAt).toLocaleDateString('ko-KR',{month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span>`
+            : '';
+        return `<li class="arc-card"><div class="arc-head"><span class="arc-time">${item.time}${schedLabel}</span><button class="arc-del" onclick="removeArchiveItem(${item.id})">삭제</button></div><div class="preview-grid">${item.photos.map(p=>`<div class="prev-thumb"><img src="${p.data}"></div>`).join('')}</div><p class="arc-note">${item.content ? '"'+item.content+'"' : '<span style="color:var(--g400);font-style:normal;">메시지 없음 — lumi가 알아서 작성해요</span>'}</p></li>`;
+    }).join('');
+}
+
+/* ── 포털 / 네비게이션 ── */
+function setPortalMode(mode){
+    const vL=document.getElementById('lumi-login-view'),vS=document.getElementById('lumi-signup-view');
+    const tL=document.getElementById('tab-login-btn'),tS=document.getElementById('tab-signup-btn');
+    if(mode==='login'){vL.classList.remove('hidden');vS.classList.add('hidden');tL.classList.add('active');tS.classList.remove('active');}
+    else{vL.classList.add('hidden');vS.classList.remove('hidden');tL.classList.remove('active');tS.classList.add('active');navNode(1);}
+}
+function openPortal(init){
+    window._lumiScrollPos = window.scrollY;
+    document.getElementById('lumi-auth-portal').style.display='flex';
+    setPortalMode(init);
+}
+function resetToInitialLanding(){
+    const savedScroll = window._lumiScrollPos || 0;
+    document.getElementById('lumi-auth-portal').style.display='none';
+    document.getElementById('lumi-dashboard-node').style.display='none';
+    document.getElementById('lumi-intro-view-port').style.display='block';
+    // 포털 닫을 때만 스크롤 복원, 대시보드에서 홈으로 갈 때는 맨위로
+    const fromDash = document.getElementById('lumi-dashboard-node').style.display === 'none';
+    window.scrollTo({top: savedScroll, behavior:'instant'});
+}
+function navNode(s){[1,2,3].forEach(n=>{document.getElementById(`node-step-${n}`).classList.add('hidden');document.getElementById(`dot-${n}`).classList.remove('on');});document.getElementById(`node-step-${s}`).classList.remove('hidden');document.getElementById(`dot-${s}`).classList.add('on');}
+async function grantAccess(){
+    document.getElementById('lumi-auth-portal').style.display='none';
+    document.getElementById('lumi-intro-view-port').style.display='none';
+    document.getElementById('lumi-dashboard-node').style.display='flex';
+    window.scrollTo(0,0);
+    bootPersistence();
+    renderArchive();
+    loadTrends();
+    initWeather();
+
+    // 플랜 상태 체크
+    const userRaw = localStorage.getItem('lumi_user');
+    if (userRaw) {
+        try {
+            const user = JSON.parse(userRaw);
+            const res = await fetch('/.netlify/functions/check-plan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: user.email })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                if (data.trialExpired) {
+                    showPaywall('trial');
+                    return;
+                }
+                if (data.remaining <= 0) {
+                    showPaywall('limit');
+                    return;
+                }
+                // 남은 횟수 표시
+                const remainEl = document.getElementById('post-remain-badge');
+                if (remainEl) remainEl.textContent = '이번 달 ' + data.remaining + '회 남음';
+            }
+        } catch(e) {
+            console.error('plan check error:', e);
+        }
+    }
+    // 대표님 이름 + 매장명 표시
+    const nameEl=document.getElementById('dash-store-name');
+    if(nameEl){
+        const greeting = ceoName ? ceoName+'님, ' : '';
+        nameEl.textContent = storeName ? greeting+storeName+' 대표님 안녕하세요.' : '안녕하세요.';
+    }
+    // 예약 시간 min/max 설정 (지금 ~ 7일 후)
+    const timeField=document.getElementById('reserve-time-field');
+    if(timeField){
+        const now=new Date();
+        const maxDate=new Date(now.getTime()+7*24*60*60*1000);
+        const toLocal=d=>new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16);
+        timeField.min=toLocal(now);
+        timeField.max=toLocal(maxDate);
+        timeField.addEventListener('change',function(){
+            const hint=document.getElementById('reserve-time-hint');
+            if(this.value){
+                const selected=new Date(this.value);
+                const opts={month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'};
+                hint.textContent=selected.toLocaleDateString('ko-KR',opts)+'에 게시돼요.';
+                hint.style.display='block';
+                hint.style.color='var(--pink)';
+                hint.style.fontWeight='700';
+            } else {
+                hint.style.display='none';
+            }
+        });
+    }
+}
+function removeArchiveItem(id){if(confirm("이 기록을 삭제할까요?")){archive=archive.filter(i=>i.id!==id);syncPersistence();renderArchive();}}
+function resetDashboard(){document.getElementById('ceo-note-input').value='';document.getElementById('ceo-file-selector').value='';document.getElementById('ceo-preview-box').innerHTML='';document.getElementById('ceo-placeholder').classList.remove('hidden');stagedFiles=[];}
+function withdrawFromLumi(){if(confirm("탈퇴하면 모든 기록이 사라져요. 계속할까요?")){localStorage.clear();showToast('계정을 삭제했어요.');setTimeout(()=>location.reload(),1200);}}
+function syncWeatherUI(state){const c=LUMI_CORE.weather[state]||LUMI_CORE.weather.clear;document.getElementById('dash-w-icon').innerText=c.icon;document.getElementById('dash-w-text').innerText='서울: '+c.status;document.getElementById('dash-w-guide').innerText='"'+c.guide+'"';document.getElementById('ceo-note-input').placeholder='오늘의 추천 무드:\n'+c.mood;}
+async function loadTrends() {
+    const trendEl = document.getElementById('trend-list-node');
+    if (!trendEl) return;
+
+    // 로딩 표시
+    trendEl.innerHTML = '<div style="color:var(--g400);font-size:.85rem;padding:8px 0;">트렌드 불러오는 중...</div>';
+
+    try {
+        const category = bizCat || 'cafe';
+        const res = await fetch('/.netlify/functions/get-trends?category=' + encodeURIComponent(category));
+        const data = await res.json();
+
+        const tags = data.tags || [];
+        if (tags.length === 0) throw new Error('태그 없음');
+
+        realtimeTrends = tags.slice(0, 8);
+        trendEl.innerHTML = tags.slice(0, 8).map((tag, i) =>
+            `<div class="trend-row"><span class="t-rank">0${i+1}</span><span class="t-tag">${tag}</span><span class="t-hot">${data.source === 'realtime' ? '실시간' : '인기'}</span></div>`
+        ).join('');
+    } catch(e) {
+        // 실패 시 하드코딩 기본값으로 폴백
+        const fallback = LUMI_CORE.trends[bizCat] || LUMI_CORE.trends.cafe;
+        realtimeTrends = fallback;
+        trendEl.innerHTML = fallback.map((tag, i) =>
+            `<div class="trend-row"><span class="t-rank">0${i+1}</span><span class="t-tag">${tag}</span><span class="t-hot">인기</span></div>`
+        ).join('');
+    }
+}
+
+bootPersistence();
+
+/* ── 채팅 데모 애니메이션 (Intersection Observer) ── */
+function initChatDemo() {
+    const rows = document.querySelectorAll('#lumi-chat-demo .chat-row');
+    if (!rows.length) return;
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                rows.forEach((row, i) => {
+                    const delay = parseInt(row.dataset.delay) || i * 600;
+                    setTimeout(() => row.classList.add('show'), delay);
+                });
+                observer.disconnect();
+            }
+        });
+    }, { threshold: 0.3 });
+
+    observer.observe(document.getElementById('lumi-chat-demo'));
+}
+initChatDemo();
+</script>
+</body>
+</html>
+
+<script>
+function showPaywall(type) {
+    document.getElementById('lumi-dashboard-node').style.display='none';
+    const portal = document.getElementById('lumi-auth-portal');
+    portal.style.display='flex';
+
+    const title = type === 'trial'
+        ? '7일 무료체험이 끝났어요 😢'
+        : '이번 달 게시 횟수를 모두 사용했어요!';
+    const desc = type === 'trial'
+        ? '계속 사용하려면 구독을 시작해주세요.'
+        : '다음 달까지 기다리거나 플랜을 업그레이드하세요.';
+
+    portal.innerHTML = `
+        <div style="text-align:center;padding:48px 24px;max-width:400px;margin:auto;">
+            <div style="font-size:48px;margin-bottom:16px;">🌸</div>
+            <h2 style="font-size:1.4rem;font-weight:900;color:#1a1a2e;margin-bottom:12px;">${title}</h2>
+            <p style="font-size:.9rem;color:#666;margin-bottom:8px;">${desc}</p>
+            <div style="background:#fff0f6;border-radius:16px;padding:20px;margin-bottom:24px;">
+                <div style="font-size:1.1rem;font-weight:900;color:#FF6B9D;margin-bottom:4px;">스탠다드 플랜</div>
+                <div style="font-size:.8rem;color:#999;text-decoration:line-through;margin-bottom:2px;">59,000원/월</div>
+                <div style="font-size:1.6rem;font-weight:900;color:#1a1a2e;">39,000원<span style="font-size:.85rem;font-weight:500;color:#666;">/월</span></div>
+                <div style="font-size:.75rem;color:#FF6B9D;font-weight:700;margin-top:4px;">🎉 오픈 기념 특별가</div>
+            </div>
+            <button onclick="startPayment()" style="display:block;width:100%;background:#FF6B9D;color:#fff;border:none;border-radius:12px;padding:16px;font-size:1rem;font-weight:700;cursor:pointer;margin-bottom:12px;">지금 구독하기</button>
+            <button onclick="lumiLogout()" style="background:none;border:none;color:#999;font-size:.85rem;cursor:pointer;">로그아웃</button>
+        </div>
+    `;
+}
+
+
+/* ── 결제 (포트원 v2 + 토스페이먼츠) ── */
+async function startPayment() {
+    const userRaw = localStorage.getItem('lumi_user');
+    if (!userRaw) {
+        showToast('로그인이 필요해요.', 'red');
+        openPortal('login');
+        return;
+    }
+    const user = JSON.parse(userRaw);
+
+    // 1. 주문 생성
+    const prepRes = await fetch('/.netlify/functions/payment-prepare', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: user.email, planType: 'standard' })
+    });
+    const prepData = await prepRes.json();
+    if (!prepRes.ok) {
+        showToast(prepData.error || '결제 준비에 실패했어요.', 'red');
+        return;
+    }
+
+    // 2. 포트원 v2 결제창 호출
+    try {
+        const response = await PortOne.requestPayment({
+            storeId: 'store-23f87009-a63a-4e6e-831e-a89ea9145102',
+            channelKey: 'channel-key-80e3e34a-9fe6-4bdb-8011-7504f6fb10f7',
+            paymentId: prepData.orderId,
+            orderName: prepData.orderName,
+            totalAmount: prepData.amount,
+            currency: 'KRW',
+            customer: {
+                email: user.email,
+                fullName: user.name
+            }
+        });
+
+        if (response.code) {
+            showToast('결제가 취소됐어요.', '');
+            return;
+        }
+
+        // 3. 서버사이드 결제 검증
+        const confirmRes = await fetch('/.netlify/functions/payment-confirm', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                paymentId: response.paymentId,
+                orderId: prepData.orderId
+            })
+        });
+        const confirmData = await confirmRes.json();
+
+        if (confirmRes.ok) {
+            // 로컬 사용자 정보 업데이트
+            user.plan = 'standard';
+            localStorage.setItem('lumi_user', JSON.stringify(user));
+            showToast('결제가 완료됐어요! 스탠다드 플랜이 시작됐어요. 🎉', 'pink');
+            setTimeout(() => location.reload(), 2000);
+        } else {
+            showToast(confirmData.error || '결제 검증에 실패했어요.', 'red');
+        }
+    } catch(e) {
+        console.error('결제 오류:', e);
+        showToast('결제 중 오류가 발생했어요.', 'red');
+    }
+}
+
+function lumiLogout() {
+    localStorage.removeItem('lumi_token');
+    localStorage.removeItem('lumi_user');
+    location.reload();
+}
+
+// 페이지 로드 시 로그인 상태 확인
+(function checkSession() {
+    const token = localStorage.getItem('lumi_token');
+    const userRaw = localStorage.getItem('lumi_user');
+    if (token && userRaw) {
+        try {
+            const user = JSON.parse(userRaw);
+            // 전역 변수 복원
+            ceoName = user.name || '';
+            storeName = user.storeName || '';
+            storeInsta = user.instagram || '';
+            storeDesc = user.storeDesc || '';
+            storeRegion = user.region || '';
+            bizCat = user.bizCategory || 'cafe';
+            captionTone = user.captionTone || 'warm';
+            tagStyle = user.tagStyle || 'mid';
+            // 대시보드 바로 진입
+            grantAccess();
+        } catch(e) {
+            localStorage.removeItem('lumi_token');
+            localStorage.removeItem('lumi_user');
+        }
+    }
+})();
+</script>
