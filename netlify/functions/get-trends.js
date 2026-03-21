@@ -54,8 +54,8 @@ function httpsPost(hostname, path, headers, body) {
 }
 
 async function fetchNaverTrends(category) {
-  const clientId = Netlify.env.get('NAVER_CLIENT_ID');
-  const clientSecret = Netlify.env.get('NAVER_CLIENT_SECRET');
+  const clientId = process.env.NAVER_CLIENT_ID;
+  const clientSecret = process.env.NAVER_CLIENT_SECRET;
   if (!clientId || !clientSecret) {
     console.log('Naver credentials missing - clientId:', !!clientId, 'clientSecret:', !!clientSecret);
     return null;
