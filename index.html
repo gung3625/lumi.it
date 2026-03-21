@@ -1019,7 +1019,7 @@
             <div id="node-step-1">
                 <p class="portal-ttl">시작해 볼게요.</p>
                 <p class="portal-sub">매장 정보와 연락처를 알려주세요.</p>
-                <input type="text" id="ceo-name-field" placeholder="대표님 성함 (예: 김현)" class="inp" oninput="clearFieldErr(this.id,'ceo-name-err')">
+                <input type="text" id="ceo-name-field" placeholder="대표님 성함 (예: 김루미)" class="inp" oninput="clearFieldErr(this.id,'ceo-name-err')">
                 <div id="ceo-name-err" class="field-err hidden"></div>
                 <input type="text" id="store-name-field" placeholder="매장 이름 (예: 카페루미)" class="inp" oninput="clearFieldErr(this.id,'store-name-err')">
                 <div id="store-name-err" class="field-err hidden"></div>
@@ -1121,6 +1121,7 @@
             <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
                 <span id="post-remain-badge" style="font-size:.75rem;background:#fff0f6;color:var(--pink);padding:4px 10px;border-radius:99px;font-weight:700;"></span>
                 <button onclick="lumiLogout()" style="background:none;border:1px solid #eee;border-radius:8px;padding:6px 14px;font-size:12px;color:#999;cursor:pointer;">로그아웃</button>
+                <button id="cancel-sub-btn" onclick="cancelSubscription()" style="display:none;background:none;border:1px solid #ffcccc;border-radius:8px;padding:6px 14px;font-size:12px;color:#ff4d4d;cursor:pointer;">구독 취소</button>
             </div>
         </div>
         <div class="weather-card">
@@ -1732,6 +1733,11 @@ async function grantAccess(){
                 // 남은 횟수 표시
                 const remainEl = document.getElementById('post-remain-badge');
                 if (remainEl) remainEl.textContent = '이번 달 ' + data.remaining + '회 남음';
+                // 구독 중이면 취소 버튼 표시
+                if (data.plan === 'standard' || data.plan === 'pro') {
+                    const cancelBtn = document.getElementById('cancel-sub-btn');
+                    if (cancelBtn && data.autoRenew !== false) cancelBtn.style.display = 'inline-block';
+                }
             }
         } catch(e) {
             console.error('plan check error:', e);
@@ -1857,6 +1863,32 @@ function showPaywall(type) {
 
 
 /* ── 결제 (포트원 v2 + 토스페이먼츠) ── */
+
+async function cancelSubscription() {
+    if (!confirm('구독을 취소할까요?\n현재 결제 기간이 끝날 때까지는 계속 이용 가능해요.')) return;
+
+    const userRaw = localStorage.getItem('lumi_user');
+    if (!userRaw) return;
+    const user = JSON.parse(userRaw);
+
+    try {
+        const res = await fetch('/.netlify/functions/cancel-subscription', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: user.email, token: user.token })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            showToast(data.message, '');
+            document.getElementById('cancel-sub-btn').style.display = 'none';
+        } else {
+            showToast(data.error || '취소 중 오류가 발생했어요.', 'red');
+        }
+    } catch(e) {
+        showToast('취소 중 오류가 발생했어요.', 'red');
+    }
+}
+
 async function startPayment() {
     const userRaw = localStorage.getItem('lumi_user');
     if (!userRaw) {
