@@ -10,19 +10,19 @@ const DEFAULT_TRENDS = {
 
 const NAVER_KEYWORDS = {
   cafe: [
-    { groupName: '카페', keywords: [{ name: '카페' }, { name: '커피' }, { name: '카페스타그램' }] },
-    { groupName: '베이커리', keywords: [{ name: '베이커리' }, { name: '빵집' }, { name: '디저트' }] }
+    { groupName: '카페', keywords: ['카페', '커피', '카페스타그램'] },
+    { groupName: '베이커리', keywords: ['베이커리', '빵집', '디저트'] }
   ],
   food: [
-    { groupName: '맛집', keywords: [{ name: '맛집' }, { name: '식당' }, { name: '맛스타그램' }] },
-    { groupName: '배달음식', keywords: [{ name: '배달음식' }, { name: '오늘뭐먹지' }, { name: '혼밥' }] }
+    { groupName: '맛집', keywords: ['맛집', '식당', '맛스타그램'] },
+    { groupName: '배달음식', keywords: ['배달음식', '오늘뭐먹지', '혼밥'] }
   ],
   beauty: [
-    { groupName: '뷰티', keywords: [{ name: '뷰티' }, { name: '메이크업' }, { name: '화장품' }] },
-    { groupName: '헤어네일', keywords: [{ name: '헤어샵' }, { name: '네일아트' }, { name: '에스테틱' }] }
+    { groupName: '뷰티', keywords: ['뷰티', '메이크업', '화장품'] },
+    { groupName: '헤어네일', keywords: ['헤어샵', '네일아트', '에스테틱'] }
   ],
   other: [
-    { groupName: '소상공인', keywords: [{ name: '소상공인' }, { name: '동네가게' }, { name: '로컬' }] }
+    { groupName: '소상공인', keywords: ['소상공인', '동네가게', '로컬'] }
   ]
 };
 
