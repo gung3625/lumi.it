@@ -1,4 +1,3 @@
-//gktdltb
 const { getStore } = require('@netlify/blobs');
 const https = require('https');
 
