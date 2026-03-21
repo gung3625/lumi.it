@@ -1,51 +1,81 @@
-import { getStore } from "@netlify/blobs";
-import fetch from "node-fetch";
+const { getStore } = require('@netlify/blobs');
 
-export const handler = async (event) => {
-    const store = getStore({ 
-        name: 'lumi_vault',
-        siteID: "28d60e0e-6aa4-4b45-b117-0bcc3c4268fc", 
-        token: "nfp_bqKqY4GBrd8MNNLxCiCssFhRN5qGfzWe82f7"
-    });
+exports.handler = async (event) => {
+  const MAKE_WEBHOOK_URL = process.env.MAKE_WEBHOOK_URL;
+  if (!MAKE_WEBHOOK_URL) {
+    console.error('MAKE_WEBHOOK_URL 환경변수가 없습니다.');
+    return { statusCode: 500 };
+  }
 
-    const MAKE_WEBHOOK_URL = "https://hook.eu1.make.com/pbs5m4kgrhifsyk9wvjp1duyhjovayet";
+  try {
+    const store = getStore('reservations');
+    const now = new Date();
 
+    // 예약된 게시물 목록 조회
+    let list;
     try {
-        const list = await store.list();
-        const now = new Date();
-
-        for (const blob of list.blobs) {
-            const entry = await store.getMetadata(blob.key);
-            if (!entry || entry.metadata.isSent) continue; // 이미 보냈다면 패스
-
-            const resDateTime = new Date(`${entry.metadata.resDate} ${entry.metadata.resTime}`);
-
-            // 예약 시간이 현재 시간보다 과거라면 (즉, 보낼 시간이 되었다면)
-            if (resDateTime <= now) {
-                const fileData = await store.get(blob.key, { type: "blob" });
-                const base64Data = Buffer.from(await fileData.arrayBuffer()).toString('base64');
-
-                // Make 웹훅으로 전송
-                await fetch(MAKE_WEBHOOK_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        ...entry.metadata,
-                        imageData: base64Data
-                    })
-                });
-
-                // 전송 완료 표시 (isSent 처리 또는 데이터 삭제)
-                await store.setMetadata(blob.key, { ...entry.metadata, isSent: true });
-            }
-        }
-        return { statusCode: 200 };
-    } catch (err) {
-        return { statusCode: 500, body: err.message };
+      list = await store.list({ prefix: 'reserve:' });
+    } catch(e) {
+      console.log('예약 목록 없음:', e.message);
+      return { statusCode: 200 };
     }
+
+    if (!list.blobs || list.blobs.length === 0) {
+      return { statusCode: 200 };
+    }
+
+    let sent = 0;
+
+    for (const blob of list.blobs) {
+      try {
+        const raw = await store.get(blob.key);
+        if (!raw) continue;
+
+        const item = JSON.parse(raw);
+
+        // 이미 전송됐으면 스킵
+        if (item.isSent) continue;
+
+        // 예약 시간 확인
+        if (!item.scheduledAt) continue;
+        const scheduledAt = new Date(item.scheduledAt);
+        if (scheduledAt > now) continue; // 아직 시간 안 됨
+
+        // Make 웹훅으로 전송
+        const res = await fetch(MAKE_WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...item,
+            sentAt: now.toISOString()
+          })
+        });
+
+        if (res.ok) {
+          // 전송 완료 표시
+          item.isSent = true;
+          item.sentAt = now.toISOString();
+          await store.set(blob.key, JSON.stringify(item));
+          sent++;
+          console.log('예약 게시 전송 완료:', blob.key);
+        } else {
+          console.error('Make 웹훅 전송 실패:', blob.key, res.status);
+        }
+      } catch(e) {
+        console.error('항목 처리 오류:', blob.key, e.message);
+      }
+    }
+
+    console.log(`스케줄러 완료: ${sent}건 전송`);
+    return { statusCode: 200 };
+
+  } catch (err) {
+    console.error('scheduler error:', err.message);
+    return { statusCode: 500 };
+  }
 };
 
-// Netlify 스케줄 설정 (매 1분마다 실행)
-export const config = {
-    schedule: "* * * * *"
+// 매 5분마다 실행 (1분은 너무 잦음)
+module.exports.config = {
+  schedule: '*/5 * * * *'
 };
