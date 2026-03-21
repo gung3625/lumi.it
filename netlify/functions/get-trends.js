@@ -175,4 +175,3 @@ exports.handler = async (event) => {
   // 4. 최종 기본값
   return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ category: storeKey, tags: DEFAULT_TRENDS[storeKey] || DEFAULT_TRENDS.other, updatedAt: null, source: 'default' }) };
 };
-ㅇㅇㅇㅇ
