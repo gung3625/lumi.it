@@ -88,12 +88,16 @@ async function fetchNaverTrends(category) {
       requestBody
     );
 
+    console.log('Naver API status:', result.status);
+    console.log('Naver API body:', result.body.substring(0, 500));
+
     if (result.status !== 200) {
       console.error('Naver API error:', result.status, result.body);
       return null;
     }
 
     const data = JSON.parse(result.body);
+    console.log('Naver data.results:', JSON.stringify(data.results ? data.results.length : 'none'));
     if (data.results && data.results.length > 0) {
       const sorted = data.results.sort((a, b) => {
         const aAvg = a.data.reduce((s, d) => s + d.ratio, 0) / a.data.length;
