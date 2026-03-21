@@ -49,7 +49,6 @@ async function fetchNaverTrends(category) {
   };
 
   try {
-    const fetch = require('node-fetch');
     const res = await fetch('https://openapi.naver.com/v1/datalab/search', {
       method: 'POST',
       headers: {
@@ -60,7 +59,11 @@ async function fetchNaverTrends(category) {
       body: JSON.stringify(body)
     });
 
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error('Naver API HTTP error:', res.status, errText);
+      return null;
+    }
     const data = await res.json();
 
     // 트렌드 결과를 해시태그로 변환
