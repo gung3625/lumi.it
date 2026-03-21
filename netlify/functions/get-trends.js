@@ -1,4 +1,5 @@
 const { getStore } = require('@netlify/blobs');
+const https = require('https');
 
 const DEFAULT_TRENDS = {
   cafe: ['#오늘의커피', '#카페스타그램', '#커피그램', '#카페투어', '#핸드드립', '#라떼아트', '#카페인생', '#커피한잔'],
@@ -7,7 +8,6 @@ const DEFAULT_TRENDS = {
   other: ['#소상공인', '#로컬맛집', '#동네가게', '#골목상권', '#오늘의추천', '#일상스타그램', '#데일리', '#인스타그램']
 };
 
-// 업종별 네이버 데이터랩 검색 키워드 그룹
 const NAVER_KEYWORDS = {
   cafe: [
     { groupName: '카페', keywords: [{ name: '카페' }, { name: '커피' }, { name: '카페스타그램' }] },
@@ -26,19 +26,47 @@ const NAVER_KEYWORDS = {
   ]
 };
 
-// 네이버 데이터랩 트렌드 검색어 API 호출
+// https 모듈로 네이버 API 직접 호출 (fetch 대신)
+function httpsPost(hostname, path, headers, body) {
+  return new Promise((resolve, reject) => {
+    const data = JSON.stringify(body);
+    const options = {
+      hostname,
+      path,
+      method: 'POST',
+      headers: {
+        ...headers,
+        'Content-Length': Buffer.byteLength(data)
+      }
+    };
+    const req = https.request(options, (res) => {
+      let responseData = '';
+      res.on('data', (chunk) => { responseData += chunk; });
+      res.on('end', () => {
+        resolve({ status: res.statusCode, body: responseData });
+      });
+    });
+    req.on('error', reject);
+    req.setTimeout(8000, () => { req.destroy(new Error('timeout')); });
+    req.write(data);
+    req.end();
+  });
+}
+
 async function fetchNaverTrends(category) {
   const clientId = process.env.NAVER_CLIENT_ID;
   const clientSecret = process.env.NAVER_CLIENT_SECRET;
-  if (!clientId || !clientSecret) return null;
+  if (!clientId || !clientSecret) {
+    console.log('Naver credentials missing');
+    return null;
+  }
 
   const today = new Date();
   const endDate = today.toISOString().slice(0, 10);
   const startDate = new Date(today - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-
   const keywordGroups = NAVER_KEYWORDS[category] || NAVER_KEYWORDS.other;
 
-  const body = {
+  const requestBody = {
     startDate,
     endDate,
     timeUnit: 'week',
@@ -49,52 +77,54 @@ async function fetchNaverTrends(category) {
   };
 
   try {
-    const res = await fetch('https://openapi.naver.com/v1/datalab/search', {
-      method: 'POST',
-      headers: {
+    const result = await httpsPost(
+      'openapi.naver.com',
+      '/v1/datalab/search',
+      {
         'Content-Type': 'application/json',
         'X-Naver-Client-Id': clientId,
         'X-Naver-Client-Secret': clientSecret
       },
-      body: JSON.stringify(body)
-    });
+      requestBody
+    );
 
-    if (!res.ok) {
-      const errText = await res.text();
-      console.error('Naver API HTTP error:', res.status, errText);
+    if (result.status !== 200) {
+      console.error('Naver API error:', result.status, result.body);
       return null;
     }
-    const data = await res.json();
 
-    // 트렌드 결과를 해시태그로 변환
+    const data = JSON.parse(result.body);
     if (data.results && data.results.length > 0) {
-      const trendingGroups = data.results
-        .sort((a, b) => {
-          const aAvg = a.data.reduce((s, d) => s + d.ratio, 0) / a.data.length;
-          const bAvg = b.data.reduce((s, d) => s + d.ratio, 0) / b.data.length;
-          return bAvg - aAvg;
-        });
+      const sorted = data.results.sort((a, b) => {
+        const aAvg = a.data.reduce((s, d) => s + d.ratio, 0) / a.data.length;
+        const bAvg = b.data.reduce((s, d) => s + d.ratio, 0) / b.data.length;
+        return bAvg - aAvg;
+      });
 
-      // 트렌딩 키워드를 해시태그로 변환 + 기본 태그 믹스
       const baseTags = DEFAULT_TRENDS[category] || DEFAULT_TRENDS.other;
-      const trendTags = trendingGroups.flatMap(g =>
-        g.title ? ['#' + g.title.replace(/\s/g, '')] : []
-      );
-
-      // 트렌드 태그 앞에, 기본 태그 뒤에 배치
+      const trendTags = sorted.flatMap(g => g.title ? ['#' + g.title.replace(/\s/g, '')] : []);
       const merged = [...new Set([...trendTags, ...baseTags])].slice(0, 8);
       return merged;
     }
     return null;
   } catch(e) {
-    console.error('Naver API error:', e);
+    console.error('Naver fetch error:', e.message);
     return null;
   }
 }
 
 exports.handler = async (event) => {
+  const corsHeaders = {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*'
+  };
+
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 200, headers: corsHeaders, body: '' };
+  }
+
   if (event.httpMethod !== 'GET' && event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
+    return { statusCode: 405, headers: corsHeaders, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
   let category = 'cafe';
@@ -111,54 +141,37 @@ exports.handler = async (event) => {
   const knownCategories = ['cafe', 'food', 'beauty'];
   const storeKey = knownCategories.includes(category) ? category : 'other';
 
+  // 1. Blobs 캐시 확인
   try {
-    const store = getStore('trends');
-
-    // 1. Blobs에 오늘 캐시된 데이터 있으면 바로 반환
-    let raw;
-    try { raw = await store.get('trends:' + storeKey); } catch { raw = null; }
+    const store = getStore({ name: 'trends', siteID: process.env.SITE_ID, token: process.env.NETLIFY_BLOBS_CONTEXT });
+    let raw = null;
+    try { raw = await store.get('trends:' + storeKey); } catch(e) { console.log('Blobs get error:', e.message); }
 
     if (raw) {
       const cached = JSON.parse(raw);
-      const updatedAt = new Date(cached.updatedAt);
-      const now = new Date();
-      const hoursDiff = (now - updatedAt) / (1000 * 60 * 60);
-
-      // 12시간 이내 캐시면 그대로 사용
+      const hoursDiff = (Date.now() - new Date(cached.updatedAt)) / (1000 * 60 * 60);
       if (hoursDiff < 12) {
-        return {
-          statusCode: 200,
-          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-          body: JSON.stringify({ category: storeKey, tags: cached.tags, updatedAt: cached.updatedAt, source: 'realtime' })
-        };
+        return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ category: storeKey, tags: cached.tags, updatedAt: cached.updatedAt, source: 'realtime' }) };
       }
     }
 
-    // 2. 캐시 없거나 오래됐으면 네이버 API 호출
+    // 2. 네이버 API 호출
     const naverTags = await fetchNaverTrends(storeKey);
     if (naverTags) {
       const updatedAt = new Date().toISOString();
-      await store.set('trends:' + storeKey, JSON.stringify({ tags: naverTags, updatedAt }));
-      return {
-        statusCode: 200,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ category: storeKey, tags: naverTags, updatedAt, source: 'realtime' })
-      };
+      try { await store.set('trends:' + storeKey, JSON.stringify({ tags: naverTags, updatedAt })); } catch(e) { console.log('Blobs set error:', e.message); }
+      return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ category: storeKey, tags: naverTags, updatedAt, source: 'realtime' }) };
     }
-
-    // 3. 네이버 API 실패하면 기본값
-    return {
-      statusCode: 200,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ category: storeKey, tags: DEFAULT_TRENDS[storeKey] || DEFAULT_TRENDS.other, updatedAt: null, source: 'default' })
-    };
-
-  } catch (err) {
-    console.error('get-trends error:', err);
-    return {
-      statusCode: 200,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ category: storeKey, tags: DEFAULT_TRENDS[storeKey] || DEFAULT_TRENDS.other, updatedAt: null, source: 'fallback' })
-    };
+  } catch(e) {
+    console.error('Blobs init error:', e.message);
   }
+
+  // 3. 네이버 API만 (Blobs 없이)
+  const naverTags = await fetchNaverTrends(storeKey);
+  if (naverTags) {
+    return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ category: storeKey, tags: naverTags, updatedAt: new Date().toISOString(), source: 'realtime' }) };
+  }
+
+  // 4. 최종 기본값
+  return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ category: storeKey, tags: DEFAULT_TRENDS[storeKey] || DEFAULT_TRENDS.other, updatedAt: null, source: 'default' }) };
 };
