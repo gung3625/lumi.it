@@ -1,7 +1,3 @@
-// send-otp.js와 같은 otpStore를 공유해야 하지만
-// Netlify Functions는 각 함수가 별도 프로세스라 메모리 공유 불가
-// → Netlify Blobs를 사용해 OTP를 저장/검증
-
 const { getStore } = require('@netlify/blobs');
 
 exports.handler = async (event) => {
@@ -22,9 +18,13 @@ exports.handler = async (event) => {
   }
 
   try {
-    const store = getStore('otp-store');
-    const raw = await store.get(`otp:${email}`);
+    const store = getStore({
+      name: 'otp-store',
+      siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
+      token: process.env.NETLIFY_TOKEN
+    });
 
+    const raw = await store.get(`otp:${email}`);
     if (!raw) {
       return { statusCode: 400, body: JSON.stringify({ error: '인증번호가 만료되었거나 존재하지 않습니다.' }) };
     }
@@ -48,6 +48,7 @@ exports.handler = async (event) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ success: true, message: '이메일 인증이 완료되었습니다.' })
     };
+
   } catch (err) {
     console.error('verify-otp error:', err);
     return {
