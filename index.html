@@ -1034,102 +1034,87 @@
         </div>
         <!-- 회원가입 -->
         <div id="lumi-signup-view" class="hidden">
-            <div class="s-dots">
-                <div class="s-dot on" id="dot-1"></div>
-                <div class="s-dot" id="dot-2"></div>
-                <div class="s-dot" id="dot-2b"></div>
-                <div class="s-dot" id="dot-3"></div>
-                <div class="s-dot" id="dot-4"></div>
-                <div class="s-dot" id="dot-5"></div>
-            </div>
-            <div id="node-step-1">
-                <p class="portal-ttl">시작해 볼게요.</p>
-                <p class="portal-sub">매장 정보와 연락처를 알려주세요.</p>
-                <input type="text" id="ceo-name-field" placeholder="대표님 성함 (예: 김루미)" class="inp" oninput="clearFieldErr(this.id,'ceo-name-err')">
-                <div id="ceo-name-err" class="field-err hidden"></div>
-                <input type="text" id="store-name-field" placeholder="매장 이름 (예: 카페루미)" class="inp" oninput="clearFieldErr(this.id,'store-name-err')">
-                <div id="store-name-err" class="field-err hidden"></div>
-                <input type="text" id="store-insta-field" placeholder="인스타그램 아이디 (예: @lumi__it)" class="inp" oninput="clearFieldErr(this.id,'store-insta-err')">
-                <div id="store-insta-err" class="field-err hidden"></div>
-                <input type="email" id="id-reg-field" placeholder="이메일 주소" class="inp" oninput="clearFieldErr(this.id,'reg-email-err')">
-                <div id="reg-email-err" class="field-err hidden"></div>
-                <input type="tel" id="ph-reg-field" placeholder="휴대폰 번호 (숫자만)" class="inp" oninput="clearFieldErr(this.id,'reg-ph-err')">
-                <div id="reg-ph-err" class="field-err hidden"></div>
-                <div style="background:var(--pink-pale);border-radius:var(--r-sm);padding:10px 14px;margin-bottom:12px;">
-                    <p style="font-size:11px;font-weight:700;color:var(--pink);">아래 정보를 추가하면 게시물 퀄리티가 올라가요.</p>
+            <p class="portal-ttl">시작해 볼게요.</p>
+            <p class="portal-sub">아래 정보를 입력하고 이메일 인증을 완료하면 가입이 돼요.</p>
+
+            <!-- 이메일 + 인증번호 -->
+            <div style="margin-bottom:4px;">
+                <div style="display:flex;gap:0;border:1.5px solid var(--g200);border-radius:var(--r-md);overflow:hidden;background:#fff;margin-bottom:8px;">
+                    <input type="text" id="id-reg-local" placeholder="이메일 아이디" class="inp" style="border:none;border-radius:0;flex:1;min-width:0;margin:0;" oninput="clearFieldErr('id-reg-field','reg-email-err')">
+                    <span style="display:flex;align-items:center;padding:0 6px;color:var(--g400);font-size:.9rem;flex-shrink:0;">@</span>
+                    <select id="id-reg-domain-select" class="inp" style="border:none;border-radius:0;border-left:1.5px solid var(--g200);flex:1;min-width:0;margin:0;height:50px;" onchange="toggleEmailDomain(this.value)">
+                        <option value="gmail.com">gmail.com</option>
+                        <option value="naver.com">naver.com</option>
+                        <option value="kakao.com">kakao.com</option>
+                        <option value="daum.net">daum.net</option>
+                        <option value="nate.com">nate.com</option>
+                        <option value="hanmail.net">hanmail.net</option>
+                        <option value="icloud.com">icloud.com</option>
+                        <option value="direct">직접 입력</option>
+                    </select>
                 </div>
-                <input type="text" id="store-desc-field" placeholder="매장 한 줄 소개 (선택 · 예: 이태원 감성 카페)" class="inp" style="border-style:dashed;">
-                <input type="text" id="store-region-field" placeholder="매장 지역 (선택 · 예: 서울 이태원)" class="inp" style="border-style:dashed;">
-                <button class="btn-portal" onclick="validateStep1()">인증번호 받기</button>
+                <input type="text" id="id-reg-domain-direct" placeholder="도메인 직접 입력 (예: company.com)" class="inp" style="display:none;margin-bottom:8px;" oninput="clearFieldErr('id-reg-field','reg-email-err')">
+                <input type="hidden" id="id-reg-field">
+                <button onclick="requestSignupOtp()" id="otp-req-btn" style="width:100%;height:50px;background:var(--pink);color:#fff;border:none;border-radius:var(--r-md);font-size:.9rem;font-weight:700;cursor:pointer;">인증번호 받기</button>
             </div>
-            <div id="node-step-2" class="hidden">
-                <p class="portal-ttl">번호를 확인해요.</p>
-                <p class="portal-sub">이메일로 보낸 번호 6자리를 입력하세요.</p>
-                <input type="text" id="id-otp-field" placeholder="000000" class="inp inp-otp" maxlength="6" oninput="clearFieldErr(this.id,'otp-err')">
+            <div id="reg-email-err" class="field-err hidden"></div>
+
+            <!-- OTP 입력 (인증 후 표시) -->
+            <div id="otp-row" class="hidden" style="margin-bottom:4px;">
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <input type="text" id="id-otp-field" placeholder="인증번호 6자리" class="inp" maxlength="6" style="letter-spacing:6px;font-size:1.1rem;font-weight:700;flex:1;" oninput="onOtpInput(this)">
+                    <span id="otp-verified-badge" class="hidden" style="color:#22c55e;font-weight:700;font-size:.9rem;white-space:nowrap;">✓ 인증완료</span>
+                </div>
                 <div id="otp-err" class="field-err hidden"></div>
-                <button class="btn-portal" onclick="validateStep2()">확인</button>
-                <p style="text-align:center;margin-top:12px;font-size:13px;color:#999;">이메일을 못 받으셨나요? <button onclick="resendOtp()" style="background:none;border:none;color:#FF6B9D;font-size:13px;cursor:pointer;text-decoration:underline;padding:0;">재전송</button></p>
+                <p style="font-size:12px;color:#999;margin-top:4px;">이메일을 못 받으셨나요? <button onclick="requestSignupOtp()" style="background:none;border:none;color:var(--pink);font-size:12px;cursor:pointer;text-decoration:underline;padding:0;">재전송</button></p>
             </div>
-            <div id="node-step-2b" class="hidden">
-                <p class="portal-ttl">비밀번호를 설정해요.</p>
-                <p class="portal-sub">로그인할 때 사용할 비밀번호를 입력해 주세요.</p>
-                <input type="password" id="id-pw-field" placeholder="비밀번호 (6자리 이상)" class="inp" oninput="clearFieldErr(this.id,'pw-err')">
-                <div id="pw-err" class="field-err hidden"></div>
-                <input type="password" id="id-pw-confirm-field" placeholder="비밀번호 확인" class="inp" style="margin-top:8px;" oninput="clearFieldErr(this.id,'pw-confirm-err')">
-                <div id="pw-confirm-err" class="field-err hidden"></div>
-                <button class="btn-portal" onclick="validateStepPassword()">다음</button>
+
+            <!-- 비밀번호 -->
+            <input type="password" id="id-pw-field" placeholder="비밀번호 (6자리 이상)" class="inp" oninput="clearFieldErr(this.id,'pw-err')">
+            <div id="pw-err" class="field-err hidden"></div>
+            <input type="password" id="id-pw-confirm-field" placeholder="비밀번호 확인" class="inp" oninput="clearFieldErr(this.id,'pw-confirm-err')">
+            <div id="pw-confirm-err" class="field-err hidden"></div>
+
+            <!-- 기본 정보 -->
+            <input type="text" id="ceo-name-field" placeholder="대표님 성함 (예: 김루미)" class="inp" oninput="clearFieldErr(this.id,'ceo-name-err')">
+            <div id="ceo-name-err" class="field-err hidden"></div>
+            <input type="text" id="store-name-field" placeholder="매장 이름 (예: 카페루미)" class="inp" oninput="clearFieldErr(this.id,'store-name-err')">
+            <div id="store-name-err" class="field-err hidden"></div>
+            <input type="text" id="store-insta-field" placeholder="인스타그램 아이디 (예: @lumi__it)" class="inp" oninput="clearFieldErr(this.id,'store-insta-err')">
+            <div id="store-insta-err" class="field-err hidden"></div>
+            <input type="tel" id="ph-reg-field" placeholder="휴대폰 번호 (숫자만)" class="inp" oninput="clearFieldErr(this.id,'reg-ph-err')">
+            <div id="reg-ph-err" class="field-err hidden"></div>
+
+            <!-- 선택 정보 -->
+            <div style="background:var(--pink-pale);border-radius:var(--r-sm);padding:10px 14px;margin-bottom:12px;">
+                <p style="font-size:11px;font-weight:700;color:var(--pink);">아래 정보를 추가하면 게시물 퀄리티가 올라가요.</p>
             </div>
-            <div id="node-step-3" class="hidden">
-                <p class="portal-ttl">마지막이에요.</p>
-                <p class="portal-sub">매장에 맞는 설정을 골라요.</p>
-                <select id="biz-cat-select" class="inp" style="height:50px;margin-bottom:8px;" onchange="toggleBizOther(this.value)">
-                    <option value="cafe">☕ 카페 / 베이커리 / 디저트</option>
-                    <option value="food">🍽️ 레스토랑 / 식당 / 술집</option>
-                    <option value="beauty">💅 미용 / 헤어 / 네일 / 에스테틱</option>
-                    <option value="other">✏️ 직접 입력</option>
-                </select>
-                <input type="text" id="biz-cat-other" placeholder="업종을 직접 입력해 주세요 (예: 꽃집, 반려동물 용품, 의류)" class="inp" style="display:none;margin-bottom:8px;" oninput="clearFieldErr(this.id,'biz-cat-other-err')">
-                <div id="biz-cat-other-err" class="field-err hidden"></div>
-                <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:8px;">글 스타일</p>
-                <div class="tone-grid" style="margin-bottom:16px;">
-                    <div class="tone-card selected" id="tone-warm" onclick="selectTone('warm')">
-                        <div class="tone-emoji">🤗</div>
-                        <div class="tone-name">친근하게</div>
-                        <div class="tone-desc">"오늘도 맛있게 드세요~"</div>
-                    </div>
-                    <div class="tone-card" id="tone-cool" onclick="selectTone('cool')">
-                        <div class="tone-emoji">😎</div>
-                        <div class="tone-name">감성적으로</div>
-                        <div class="tone-desc">"오늘의 한 컷, 당신을 위해"</div>
-                    </div>
-                    <div class="tone-card" id="tone-fun" onclick="selectTone('fun')">
-                        <div class="tone-emoji">🎉</div>
-                        <div class="tone-name">재미있게</div>
-                        <div class="tone-desc">"이거 안 먹으면 후회각!"</div>
-                    </div>
-                    <div class="tone-card" id="tone-pro" onclick="selectTone('pro')">
-                        <div class="tone-emoji">✨</div>
-                        <div class="tone-name">신뢰감 있게</div>
-                        <div class="tone-desc">"정성스럽게 준비했습니다"</div>
-                    </div>
-                </div>
-                <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:8px;">해시태그 스타일</p>
-                <div style="display:flex;gap:8px;margin-bottom:16px;">
-                    <div class="tone-card selected" id="tag-few" onclick="selectTagStyle('few')" style="flex:1;padding:10px 8px;">
-                        <div class="tone-name">간결하게</div>
-                        <div class="tone-desc">5개 이내</div>
-                    </div>
-                    <div class="tone-card" id="tag-mid" onclick="selectTagStyle('mid')" style="flex:1;padding:10px 8px;">
-                        <div class="tone-name">적당하게</div>
-                        <div class="tone-desc">10개 내외</div>
-                    </div>
-                    <div class="tone-card" id="tag-many" onclick="selectTagStyle('many')" style="flex:1;padding:10px 8px;">
-                        <div class="tone-name">많이</div>
-                        <div class="tone-desc">20개 이상</div>
-                    </div>
-                </div>
-                <button class="btn-portal" onclick="finishLumiSignup()" style="background:var(--pink);">시작하기</button>
-            </div>
+            <input type="text" id="store-desc-field" placeholder="매장 한 줄 소개 (선택 · 예: 이태원 감성 카페)" class="inp" style="border-style:dashed;">
+            <input type="text" id="store-region-field" placeholder="매장 지역 (선택 · 예: 서울 이태원)" class="inp" style="border-style:dashed;">
+
+            <!-- 업종 -->
+            <select id="biz-cat-select" class="inp" style="height:50px;margin-bottom:8px;" onchange="toggleBizOther(this.value)">
+                <option value="cafe">☕ 카페 / 베이커리 / 디저트</option>
+                <option value="food">🍽️ 레스토랑 / 식당 / 술집</option>
+                <option value="beauty">💅 미용 / 헤어 / 네일 / 에스테틱</option>
+                <option value="other">✏️ 직접 입력</option>
+            </select>
+            <input type="text" id="biz-cat-other" placeholder="업종을 직접 입력해 주세요 (예: 꽃집, 반려동물 용품, 의류)" class="inp" style="display:none;margin-bottom:8px;" oninput="clearFieldErr(this.id,'biz-cat-other-err')">
+            <div id="biz-cat-other-err" class="field-err hidden"></div>
+
+            <!-- 글 스타일 -->
+            <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:4px;">글 스타일 <span style="font-weight:400;color:var(--g400);">(선택 · 예: 친근하고 따뜻하게, 감성적으로, 재미있게)</span></p>
+            <input type="text" id="caption-tone-field" placeholder="원하는 글 스타일을 직접 입력하세요" class="inp" style="margin-bottom:16px;">
+
+            <!-- 해시태그 개수 -->
+            <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:4px;">해시태그 개수</p>
+            <select id="tag-style-select" class="inp" style="height:50px;margin-bottom:16px;">
+                <option value="few">간결하게 (5개 이내)</option>
+                <option value="mid" selected>적당하게 (10개 내외)</option>
+                <option value="many">많이 (20개 이상)</option>
+            </select>
+
+            <button class="btn-portal" onclick="finishLumiSignup()" style="background:var(--pink);">가입 완료</button>
         </div>
     </div>
 </div>
@@ -1328,6 +1313,20 @@ function setFieldOk(inputId){
 }
 
 /* ── 이메일 형식 검사 ── */
+
+function selectTone(t) {
+    captionTone = t;
+    ['warm','cool','fun','pro'].forEach(x => {
+        document.getElementById('tone-'+x)?.classList.toggle('selected', x === t);
+    });
+}
+function selectTagStyle(t) {
+    tagStyle = t;
+    ['few','mid','many'].forEach(x => {
+        document.getElementById('tag-'+x)?.classList.toggle('selected', x === t);
+    });
+}
+
 function isValidEmail(v){return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);}
 
 /* ── 로그인 검증 ── */
@@ -1344,207 +1343,11 @@ function handleLoginAction(){
     if(ok) grantAccess();
 }
 
-/* ── 회원가입 스텝 검증 ── */
-async function validateStep1(){
-    const name=document.getElementById('ceo-name-field').value.trim();
-    const store=document.getElementById('store-name-field').value.trim();
-    const insta=document.getElementById('store-insta-field').value.trim();
-    const email=document.getElementById('id-reg-field').value.trim();
-    const phone=document.getElementById('ph-reg-field').value.trim();
-    let ok=true;
-    if(!name){showFieldErr('ceo-name-field','ceo-name-err','성함을 입력하세요.');ok=false;}
-    else{setFieldOk('ceo-name-field');}
-    if(!store){showFieldErr('store-name-field','store-name-err','매장 이름을 입력하세요.');ok=false;}
-    else{setFieldOk('store-name-field');}
-    if(!insta){showFieldErr('store-insta-field','store-insta-err','인스타그램 아이디를 입력하세요.');ok=false;}
-    else{setFieldOk('store-insta-field');}
-    if(!email){showFieldErr('id-reg-field','reg-email-err','이메일을 입력하세요.');ok=false;}
-    else if(!isValidEmail(email)){showFieldErr('id-reg-field','reg-email-err','이메일 형식을 확인해 주세요.');ok=false;}
-    else{setFieldOk('id-reg-field');}
-    if(!phone){showFieldErr('ph-reg-field','reg-ph-err','휴대폰 번호를 입력하세요.');ok=false;}
-    else if(!/^[0-9]{10,11}$/.test(phone.replace(/-/g,''))){showFieldErr('ph-reg-field','reg-ph-err','숫자만 10~11자리로 입력하세요.');ok=false;}
-    else{setFieldOk('ph-reg-field');}
-    if(!ok) return;
+/* validateStep1 제거됨 - requestSignupOtp 사용 */
 
-    // 실제 OTP 발송
-    const btn = document.querySelector('#node-step-1 .btn-portal');
-    btn.disabled = true;
-    btn.textContent = '전송 중...';
-    try {
-        const res = await fetch('/.netlify/functions/send-otp', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email })
-        });
-        const data = await res.json();
-        if (res.ok) {
-            showToast('인증번호를 보냈어요. 이메일을 확인해주세요.', 'pink');
-            navNode(2);
-        } else {
-            showToast(data.error || '발송에 실패했습니다. 다시 시도해주세요.', 'red');
-        }
-    } catch(e) {
-        showToast('네트워크 오류가 발생했습니다. 다시 시도해주세요.', 'red');
-    } finally {
-        btn.disabled = false;
-        btn.textContent = '인증번호 받기';
-    }
-}
+/* resendOtp 제거됨 - requestSignupOtp 사용 */
 
-async function resendOtp() {
-    const email = document.getElementById('id-reg-field')?.value.trim()
-                || document.getElementById('id-login-field')?.value.trim();
-    if (!email) {
-        showToast('이메일을 먼저 입력해주세요.', 'red');
-        return;
-    }
-    try {
-        showToast('재전송 중...', '');
-        const res = await fetch('/.netlify/functions/send-otp', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email })
-        });
-        const data = await res.json();
-        if (res.ok) {
-            showToast('인증번호를 다시 보냈어요. 이메일을 확인해주세요.', 'pink');
-        } else {
-            showToast(data.error || '재전송에 실패했습니다.', 'red');
-        }
-    } catch(e) {
-        showToast('네트워크 오류가 발생했습니다.', 'red');
-    }
-}
-
-async function validateStep2(){
-    const otp=document.getElementById('id-otp-field').value.trim();
-    const email=document.getElementById('id-reg-field').value.trim();
-    if(!otp){showFieldErr('id-otp-field','otp-err','인증번호를 입력하세요.');return;}
-    if(otp.length!==6||!/^[0-9]+$/.test(otp)){showFieldErr('id-otp-field','otp-err','숫자 6자리를 입력하세요.');return;}
-
-    const btn = document.querySelector('#node-step-2 .btn-portal');
-    btn.disabled = true;
-    btn.textContent = '확인 중...';
-    try {
-        const res = await fetch('/.netlify/functions/verify-otp', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, otp })
-        });
-        const data = await res.json();
-        if (res.ok) {
-            setFieldOk('id-otp-field');
-            showToast('이메일 인증이 완료됐어요!', 'pink');
-            navNode(3);
-        } else {
-            showFieldErr('id-otp-field','otp-err', data.error || '인증번호가 올바르지 않습니다.');
-        }
-    } catch(e) {
-        showFieldErr('id-otp-field','otp-err','네트워크 오류가 발생했습니다.');
-    } finally {
-        btn.disabled = false;
-        btn.textContent = '확인';
-    }
-}
-
-/* ── 업종 직접입력 토글 ── */
-function toggleBizOther(val) {
-    const otherInput = document.getElementById('biz-cat-other');
-    if (val === 'other') {
-        otherInput.style.display = 'block';
-        otherInput.focus();
-    } else {
-        otherInput.style.display = 'none';
-        otherInput.value = '';
-    }
-}
-
-/* ── 말투 선택 ── */
-function selectTone(tone){
-    captionTone=tone;
-    ['warm','cool','fun','pro'].forEach(t=>{
-        document.getElementById('tone-'+t).classList.toggle('selected',t===tone);
-    });
-}
-
-/* ── 회원가입 완료 ── */
-async function finishLumiSignup(){
-    const password = document.getElementById('id-pw-field')?.value || '';
-    bizCat=document.getElementById('biz-cat-select').value;
-    if (bizCat === 'other') {
-        const otherVal = document.getElementById('biz-cat-other').value.trim();
-        if (!otherVal) {
-            showFieldErr('biz-cat-other','biz-cat-other-err','업종을 입력해 주세요.');
-            return;
-        }
-        bizCat = otherVal;
-    }
-    ceoName=document.getElementById('ceo-name-field').value.trim();
-    storeName=document.getElementById('store-name-field').value.trim();
-    storeInsta=document.getElementById('store-insta-field').value.trim();
-    const descEl=document.getElementById('store-desc-field');
-    const regionEl=document.getElementById('store-region-field');
-    if(descEl) storeDesc=descEl.value.trim();
-    if(regionEl) storeRegion=regionEl.value.trim();
-    const email=document.getElementById('id-reg-field').value.trim();
-    const phone=document.getElementById('ph-reg-field').value.trim();
-
-    const btn = document.querySelector('#node-step-3 .btn-portal');
-    btn.disabled = true;
-    btn.textContent = '가입 중...';
-
-    try {
-        const res = await fetch('/.netlify/functions/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                name: ceoName,
-                storeName,
-                instagram: storeInsta,
-                email,
-                phone,
-                storeDesc,
-                region: storeRegion,
-                bizCategory: bizCat,
-                captionTone,
-                tagStyle
-            })
-        });
-        const data = await res.json();
-        if (res.ok) {
-            localStorage.setItem('lumi_token', data.token);
-            localStorage.setItem('lumi_user', JSON.stringify(data.user));
-            showToast('준비됐어요. 지금 시작할게요.', 'pink');
-            grantAccess();
-        } else {
-            showToast(data.error || '가입에 실패했습니다. 다시 시도해주세요.', 'red');
-            btn.disabled = false;
-            btn.textContent = '시작하기';
-        }
-    } catch(e) {
-        showToast('네트워크 오류가 발생했습니다.', 'red');
-        btn.disabled = false;
-        btn.textContent = '시작하기';
-    }
-}
-
-/* ── 태그 스타일 선택 ── */
-function selectTagStyle(style){
-    tagStyle=style;
-    ['few','mid','many'].forEach(t=>{
-        document.getElementById('tag-'+t).classList.toggle('selected',t===style);
-    });
-}
-
-/* ── 실제 날씨 API (Open-Meteo, 위치 기반) ── */
-// WMO 날씨 코드 → lumi 상태 변환
-function parseWeatherCode(code) {
-    if ([0,1].includes(code))              return 'clear';  // 맑음
-    if ([2,3,45,48].includes(code))        return 'clear';  // 흐림 → 맑음으로 처리
-    if ([51,53,55,61,63,65,80,81,82].includes(code)) return 'rain';  // 비
-    if ([71,73,75,77,85,86].includes(code)) return 'snow'; // 눈
-    return 'clear';
-}
+/* validateStep2 제거됨 */
 
 async function fetchRealWeather(lat, lon, locationName) {
     try {
@@ -2016,6 +1819,232 @@ async function startPayment() {
         console.error('결제 오류:', e);
         showToast('결제 중 오류가 발생했어요.', 'red');
     }
+}
+
+
+// 이메일 도메인 직접입력 토글
+function toggleEmailDomain(val) {
+    const direct = document.getElementById('id-reg-domain-direct');
+    direct.style.display = val === 'direct' ? 'block' : 'none';
+}
+
+// 이메일 조합 함수
+function getSignupEmail() {
+    const local = document.getElementById('id-reg-local').value.trim();
+    const domainSelect = document.getElementById('id-reg-domain-select').value;
+    const domainDirect = document.getElementById('id-reg-domain-direct').value.trim();
+    const domain = domainSelect === 'direct' ? domainDirect : domainSelect;
+    return local && domain ? local + '@' + domain : '';
+}
+
+// 인증번호 요청
+async function requestSignupOtp() {
+    const email = getSignupEmail();
+    if (!email || !isValidEmail(email)) {
+        showFieldErr('id-reg-field', 'reg-email-err', '이메일을 올바르게 입력하세요.');
+        return;
+    }
+    document.getElementById('id-reg-field').value = email;
+    const btn = document.getElementById('otp-req-btn');
+    btn.disabled = true;
+    btn.textContent = '전송 중...';
+    try {
+        const res = await fetch('/.netlify/functions/send-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            showToast('인증번호를 보냈어요. 이메일을 확인해주세요.', 'pink');
+            document.getElementById('otp-row').classList.remove('hidden');
+            document.getElementById('id-otp-field').focus();
+            btn.textContent = '재전송';
+        } else {
+            showFieldErr('id-reg-field', 'reg-email-err', data.error || '발송 실패');
+            btn.textContent = '인증번호 받기';
+        }
+    } catch(e) {
+        showToast('네트워크 오류가 발생했습니다.', 'red');
+        btn.textContent = '인증번호 받기';
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+// OTP 6자리 자동 확인
+async function onOtpInput(input) {
+    clearFieldErr('id-otp-field', 'otp-err');
+    if (input.value.length !== 6) return;
+    const email = getSignupEmail();
+    const otp = input.value;
+    input.disabled = true;
+    try {
+        const res = await fetch('/.netlify/functions/verify-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, otp })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            document.getElementById('otp-verified-badge').classList.remove('hidden');
+            input.style.borderColor = '#22c55e';
+            window._otpVerified = true;
+        } else {
+            showFieldErr('id-otp-field', 'otp-err', data.error || '인증번호가 올바르지 않아요.');
+            input.value = '';
+            input.disabled = false;
+            input.focus();
+            window._otpVerified = false;
+        }
+    } catch(e) {
+        showFieldErr('id-otp-field', 'otp-err', '네트워크 오류가 발생했습니다.');
+        input.disabled = false;
+        window._otpVerified = false;
+    }
+}
+
+
+/* ── 비밀번호 찾기 ── */
+function openForgotPassword() {
+    document.getElementById('lumi-login-view').classList.add('hidden');
+    document.getElementById('lumi-forgot-view').classList.remove('hidden');
+}
+
+async function sendForgotOtp() {
+    const email = document.getElementById('forgot-email-field').value.trim();
+    if (!email || !isValidEmail(email)) {
+        showFieldErr('forgot-email-field','forgot-email-err','이메일을 올바르게 입력하세요.');
+        return;
+    }
+    try {
+        const res = await fetch('/.netlify/functions/send-otp', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            showToast('인증번호를 보냈어요.', 'pink');
+            document.getElementById('forgot-step-1').classList.add('hidden');
+            document.getElementById('forgot-step-2').classList.remove('hidden');
+        } else {
+            showFieldErr('forgot-email-field','forgot-email-err', data.error || '발송 실패');
+        }
+    } catch(e) { showToast('네트워크 오류가 발생했습니다.', 'red'); }
+}
+
+async function verifyForgotOtp() {
+    const email = document.getElementById('forgot-email-field').value.trim();
+    const otp = document.getElementById('forgot-otp-field').value.trim();
+    if (!otp || otp.length !== 6) {
+        showFieldErr('forgot-otp-field','forgot-otp-err','숫자 6자리를 입력하세요.');
+        return;
+    }
+    try {
+        const res = await fetch('/.netlify/functions/verify-otp', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, otp })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            document.getElementById('forgot-step-2').classList.add('hidden');
+            document.getElementById('forgot-step-3').classList.remove('hidden');
+        } else {
+            showFieldErr('forgot-otp-field','forgot-otp-err', data.error || '인증 실패');
+        }
+    } catch(e) { showToast('네트워크 오류가 발생했습니다.', 'red'); }
+}
+
+async function resetForgotPassword() {
+    const email = document.getElementById('forgot-email-field').value.trim();
+    const pw = document.getElementById('forgot-pw-field').value;
+    const pwc = document.getElementById('forgot-pw-confirm-field').value;
+    if (!pw || pw.length < 6) { showFieldErr('forgot-pw-field','forgot-pw-err','비밀번호는 6자리 이상이어야 해요.'); return; }
+    if (pw !== pwc) { showFieldErr('forgot-pw-confirm-field','forgot-pw-confirm-err','비밀번호가 일치하지 않아요.'); return; }
+    try {
+        const res = await fetch('/.netlify/functions/reset-password', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password: pw })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            showToast('비밀번호가 변경됐어요! 로그인해주세요.', 'pink');
+            setPortalMode('login');
+        } else {
+            showToast(data.error || '변경 실패', 'red');
+        }
+    } catch(e) { showToast('네트워크 오류가 발생했습니다.', 'red'); }
+}
+
+/* ── 회원가입 완료 ── */
+async function finishLumiSignup() {
+    const password = document.getElementById('id-pw-field')?.value || '';
+    const pwConfirm = document.getElementById('id-pw-confirm-field')?.value || '';
+    const toneInput = document.getElementById('caption-tone-field')?.value.trim();
+    if (toneInput) captionTone = toneInput;
+    tagStyle = document.getElementById('tag-style-select')?.value || 'mid';
+
+    // 비밀번호 검증
+    if (!password || password.length < 6) { showToast('비밀번호는 6자리 이상이어야 해요.', 'red'); return; }
+    if (password !== pwConfirm) { showToast('비밀번호가 일치하지 않아요.', 'red'); return; }
+
+    bizCat = document.getElementById('biz-cat-select').value;
+    if (bizCat === 'other') {
+        const otherVal = document.getElementById('biz-cat-other')?.value.trim();
+        if (!otherVal) { showFieldErr('biz-cat-other','biz-cat-other-err','업종을 입력해 주세요.'); return; }
+        bizCat = otherVal;
+    }
+
+    const name = document.getElementById('ceo-name-field')?.value.trim();
+    const sName = document.getElementById('store-name-field')?.value.trim();
+    const insta = document.getElementById('store-insta-field')?.value.trim();
+    const phone = document.getElementById('ph-reg-field')?.value.trim();
+    const email = getSignupEmail() || document.getElementById('id-reg-field')?.value.trim();
+    const storeDesc = document.getElementById('store-desc-field')?.value.trim() || '';
+    const region = document.getElementById('store-region-field')?.value.trim() || '';
+
+    if (!name) { showToast('성함을 입력해주세요.', 'red'); return; }
+    if (!sName) { showToast('매장 이름을 입력해주세요.', 'red'); return; }
+    if (!insta) { showToast('인스타그램 아이디를 입력해주세요.', 'red'); return; }
+    if (!phone) { showToast('휴대폰 번호를 입력해주세요.', 'red'); return; }
+    if (!window._otpVerified) { showToast('이메일 인증을 완료해주세요.', 'red'); return; }
+
+    const btn = document.querySelector('#lumi-signup-view .btn-portal[onclick="finishLumiSignup()"]');
+    if (btn) { btn.disabled = true; btn.textContent = '가입 중...'; }
+
+    try {
+        const res = await fetch('/.netlify/functions/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name, storeName: sName, instagram: insta, email, phone, password,
+                storeDesc, region, bizCategory: bizCat, captionTone, tagStyle
+            })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            localStorage.setItem('lumi_user', JSON.stringify({ ...data.user, token: data.token }));
+            showToast('가입 완료! 환영해요 🎉', 'pink');
+            setTimeout(() => { resetToInitialLanding(); grantAccess(); }, 1000);
+        } else {
+            showToast(data.error || '가입에 실패했어요.', 'red');
+        }
+    } catch(e) {
+        showToast('네트워크 오류가 발생했습니다.', 'red');
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = '가입 완료'; }
+    }
+}
+
+
+function toggleBizOther(val) {
+    const direct = document.getElementById('biz-cat-other');
+    if (direct) direct.style.display = val === 'other' ? 'block' : 'none';
+}
+
+function toggleEmailDomain(val) {
+    const direct = document.getElementById('id-reg-domain-direct');
+    if (direct) direct.style.display = val === 'direct' ? 'block' : 'none';
 }
 
 function lumiLogout() {
