@@ -229,6 +229,16 @@
         .t-tag{flex:1;font-size:.87rem;font-weight:700;color:var(--g900);}
         .t-hot{font-size:10px;font-weight:700;color:var(--pink);background:var(--pink-pale);padding:2px 8px;border-radius:var(--r-full);}
         .upload-card{background:var(--white);border-radius:var(--r-xl);padding:26px 22px;border:1px solid var(--g200);box-shadow:var(--sh-xs);margin-bottom:14px;}
+        .auto-reply-card{background:var(--white);border-radius:var(--r-xl);padding:26px 22px;border:1px solid var(--g200);box-shadow:var(--sh-xs);margin-bottom:14px;}
+        .keyword-row{display:flex;gap:8px;align-items:center;margin-bottom:10px;}
+        .keyword-row .inp-sm{height:42px;font-size:.85rem;border-radius:var(--r-md);border:1.5px solid var(--g200);padding:0 12px;background:var(--g50);flex:1;}
+        .keyword-row .inp-sm:focus{outline:none;border-color:var(--pink);}
+        .keyword-row .btn-del{width:36px;height:36px;border:none;background:var(--g100);border-radius:var(--r-md);cursor:pointer;font-size:14px;color:var(--g500);flex-shrink:0;}
+        .keyword-row .btn-del:hover{background:var(--g200);}
+        .btn-add-keyword{width:100%;height:42px;border:1.5px dashed var(--g300);background:transparent;border-radius:var(--r-md);cursor:pointer;font-size:.85rem;color:var(--g400);margin-top:4px;}
+        .btn-add-keyword:hover{border-color:var(--pink);color:var(--pink);}
+        .reply-section{margin-bottom:20px;}
+        .reply-section-title{font-size:12px;font-weight:700;color:var(--g600);margin-bottom:8px;}
         .upload-ttl{font-size:.92rem;font-weight:800;color:var(--g900);margin-bottom:18px;text-align:center;}
         .drop-zone{position:relative;border:1.5px dashed var(--pink-soft);border-radius:var(--r-lg);padding:32px 18px;text-align:center;cursor:pointer;background:var(--pink-ultra);transition:background .2s,border-color .2s;margin-bottom:14px;}
         .drop-zone:hover{background:var(--pink-pale);border-color:var(--pink);}
@@ -812,13 +822,12 @@
                     <div class="price-divider"></div>
                     <ul class="price-feat-list">
                         <li><span class="pf-icon">📸</span>인스타 자동 게시 <strong>월 16회</strong></li>
-                        <li><span class="pf-icon">✍️</span>캡션 + 해시태그 자동 생성</li>
+                        <li><span class="pf-icon">✍️</span>AI 캡션 + 해시태그 자동 생성</li>
                         <li><span class="pf-icon">☀️</span>날씨 반영 캡션</li>
                         <li><span class="pf-icon">📊</span>트렌드 태그</li>
                         <li><span class="pf-icon">⏰</span>예약 게시</li>
                         <li><span class="pf-icon">🎨</span>1:1 글스타일 커스텀</li>
                         <li><span class="pf-icon">🖼️</span>사진 최대 10장 한 번에 올리기</li>
-                        <li><span class="pf-icon">💬</span>주간 리포트 카카오 알림톡</li>
                     </ul>
                     <button class="btn-price-on" onclick="openPortal('signup')">7일 무료로 시작하기</button>
                     <p style="text-align:center;font-size:.75rem;color:var(--g400);margin-top:10px;">카드 등록 없이 시작해요.</p>
@@ -834,11 +843,11 @@
                     <ul class="price-feat-list">
                         <li><span class="pf-icon">✅</span>스탠다드 전부 포함</li>
                         <li><span class="pf-icon">📸</span>인스타 자동 게시 <strong style="color:#fff;">월 20회</strong></li>
-                        <li><span class="pf-icon">💬</span>자동 댓글 <span class="pf-coming">준비 중</span></li>
-                        <li><span class="pf-icon">📩</span>자동 DM <span class="pf-coming">준비 중</span></li>
-                        <li><span class="pf-icon">📝</span>네이버 블로그 자동 게시 <span class="pf-coming">준비 중</span></li>
-                        <li><span class="pf-icon">▶️</span>유튜브 쇼츠 자동 업로드 <span class="pf-coming">준비 중</span></li>
-                        <li><span class="pf-icon">📊</span>심층 월간 성과 리포트</li>
+                        <li><span class="pf-icon">💬</span>자동 댓글 답변 <span class="pf-coming">준비 중</span></li>
+                        <li><span class="pf-icon">📩</span>자동 DM 답변 <span class="pf-coming">준비 중</span></li>
+                        <li><span class="pf-icon">🔑</span>키워드별 자동 응답 설정 <span class="pf-coming">준비 중</span></li>
+                        <li><span class="pf-icon">📅</span>데일리 스케줄 가이드 알림톡 <span class="pf-coming">준비 중</span></li>
+                        <li><span class="pf-icon">📊</span>심층 주간 리포트 알림톡 <span class="pf-coming">준비 중</span></li>
                     </ul>
                     <button class="btn-price-pro" onclick="openPortal('signup')">사전 알림 신청하기</button>
                 </div>
@@ -1197,6 +1206,40 @@
                 <button class="btn-act-off" onclick="commitPost('reserve')">예약 저장</button>
             </div>
         </div>
+        <!-- 자동 응답 설정 (프로 플랜) -->
+        <p class="dash-lbl">자동 응답 설정 <span style="font-size:10px;font-weight:700;color:var(--pink);background:var(--pink-pale);padding:2px 8px;border-radius:99px;margin-left:4px;">PRO</span></p>
+        <div class="auto-reply-card" id="auto-reply-section">
+            <!-- 댓글 자동 답변 -->
+            <div class="reply-section">
+                <p class="reply-section-title">💬 댓글 자동 답변</p>
+                <div style="background:var(--g50);border-radius:var(--r-sm);padding:10px 14px;margin-bottom:12px;border-left:3px solid var(--pink);">
+                    <p style="font-size:11px;color:var(--g500);line-height:1.7;">댓글에 특정 키워드가 포함되면 자동으로 대댓글을 달아드려요.<br>
+                    <span style="color:var(--pink);">키워드를 비워두면 모든 댓글에 기본 답변이 달려요.</span></p>
+                </div>
+                <div id="comment-keywords-wrap"></div>
+                <button class="btn-add-keyword" onclick="addKeywordRow('comment')">+ 키워드 답변 추가</button>
+                <div style="margin-top:14px;">
+                    <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:6px;">기본 대댓글 (키워드 없을 때)</p>
+                    <textarea id="comment-default-reply" class="dash-note" rows="2" placeholder="예) 감사합니다 😊 궁금한 점은 DM으로 주세요!"></textarea>
+                </div>
+            </div>
+            <!-- DM 자동 답변 -->
+            <div class="reply-section">
+                <p class="reply-section-title">📩 DM 자동 답변</p>
+                <div style="background:var(--g50);border-radius:var(--r-sm);padding:10px 14px;margin-bottom:12px;border-left:3px solid var(--pink);">
+                    <p style="font-size:11px;color:var(--g500);line-height:1.7;">DM에 특정 키워드가 포함되면 자동으로 답장을 보내드려요.<br>
+                    <span style="color:var(--pink);">키워드를 비워두면 모든 DM에 기본 답변이 발송돼요.</span></p>
+                </div>
+                <div id="dm-keywords-wrap"></div>
+                <button class="btn-add-keyword" onclick="addKeywordRow('dm')">+ 키워드 답변 추가</button>
+                <div style="margin-top:14px;">
+                    <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:6px;">기본 DM 답변 (키워드 없을 때)</p>
+                    <textarea id="dm-default-reply" class="dash-note" rows="2" placeholder="예) 안녕하세요! 메시지 감사해요 😊 빠르게 확인 후 답변드릴게요!"></textarea>
+                </div>
+            </div>
+            <button class="btn-act-on" onclick="saveAutoReply()" style="width:100%;">자동 응답 설정 저장</button>
+        </div>
+
         <p class="dash-lbl">보관함</p>
         <ul id="lumi-inventory-list" style="list-style:none;padding:0;"></ul>
         <button class="btn-withdraw" onclick="withdrawFromLumi()">탈퇴하기</button>
@@ -1674,7 +1717,127 @@ async function grantAccess(){
     document.getElementById('lumi-intro-view-port').style.display='none';
     document.getElementById('lumi-dashboard-node').style.display='flex';
     window.scrollTo(0,0);
-    bootPersistence();
+    /* ── 자동 응답 설정 ── */
+function addKeywordRow(type) {
+    const wrap = document.getElementById(type + '-keywords-wrap');
+    if (!wrap) return;
+    const idx = wrap.children.length;
+    const row = document.createElement('div');
+    row.className = 'keyword-row';
+    row.dataset.index = idx;
+    row.innerHTML = `
+        <input type="text" class="inp-sm" placeholder="키워드 (예: 가격)" id="${type}-keyword-${idx}">
+        <input type="text" class="inp-sm" placeholder="답변 내용" id="${type}-reply-${idx}" style="flex:2;">
+        <button class="btn-del" onclick="removeKeywordRow(this)">✕</button>
+    `;
+    wrap.appendChild(row);
+}
+
+function removeKeywordRow(btn) {
+    btn.closest('.keyword-row').remove();
+}
+
+function getKeywordRows(type) {
+    const wrap = document.getElementById(type + '-keywords-wrap');
+    if (!wrap) return [];
+    const rows = [];
+    wrap.querySelectorAll('.keyword-row').forEach(row => {
+        const idx = row.dataset.index;
+        const keyword = document.getElementById(type + '-keyword-' + idx)?.value.trim();
+        const reply = document.getElementById(type + '-reply-' + idx)?.value.trim();
+        if (keyword && reply) rows.push({ keyword, reply });
+    });
+    return rows;
+}
+
+async function saveAutoReply() {
+    const commentKeywords = getKeywordRows('comment');
+    const dmKeywords = getKeywordRows('dm');
+    const commentDefault = document.getElementById('comment-default-reply')?.value.trim();
+    const dmDefault = document.getElementById('dm-default-reply')?.value.trim();
+
+    const payload = {
+        comment: { keywords: commentKeywords, defaultReply: commentDefault },
+        dm: { keywords: dmKeywords, defaultReply: dmDefault }
+    };
+
+    try {
+        const savedToken = localStorage.getItem('lumi_token') || '';
+        const res = await fetch('/.netlify/functions/save-auto-reply', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + savedToken
+            },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+            showToast('자동 응답 설정이 저장됐어요! ✅', 'pink');
+        } else {
+            showToast(data.error || '저장에 실패했어요.', 'red');
+        }
+    } catch(e) {
+        showToast('네트워크 오류가 발생했습니다.', 'red');
+    }
+}
+
+async function loadAutoReply() {
+    try {
+        const savedToken = localStorage.getItem('lumi_token') || '';
+        const res = await fetch('/.netlify/functions/save-auto-reply', {
+            headers: { 'Authorization': 'Bearer ' + savedToken }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+
+        // 댓글 키워드 복원
+        const commentWrap = document.getElementById('comment-keywords-wrap');
+        if (commentWrap && data.comment?.keywords) {
+            commentWrap.innerHTML = '';
+            data.comment.keywords.forEach((item, idx) => {
+                const row = document.createElement('div');
+                row.className = 'keyword-row';
+                row.dataset.index = idx;
+                row.innerHTML = `
+                    <input type="text" class="inp-sm" placeholder="키워드" id="comment-keyword-${idx}" value="${item.keyword}">
+                    <input type="text" class="inp-sm" placeholder="답변 내용" id="comment-reply-${idx}" value="${item.reply}" style="flex:2;">
+                    <button class="btn-del" onclick="removeKeywordRow(this)">✕</button>
+                `;
+                commentWrap.appendChild(row);
+            });
+        }
+        if (data.comment?.defaultReply) {
+            const el = document.getElementById('comment-default-reply');
+            if (el) el.value = data.comment.defaultReply;
+        }
+
+        // DM 키워드 복원
+        const dmWrap = document.getElementById('dm-keywords-wrap');
+        if (dmWrap && data.dm?.keywords) {
+            dmWrap.innerHTML = '';
+            data.dm.keywords.forEach((item, idx) => {
+                const row = document.createElement('div');
+                row.className = 'keyword-row';
+                row.dataset.index = idx;
+                row.innerHTML = `
+                    <input type="text" class="inp-sm" placeholder="키워드" id="dm-keyword-${idx}" value="${item.keyword}">
+                    <input type="text" class="inp-sm" placeholder="답변 내용" id="dm-reply-${idx}" value="${item.reply}" style="flex:2;">
+                    <button class="btn-del" onclick="removeKeywordRow(this)">✕</button>
+                `;
+                dmWrap.appendChild(row);
+            });
+        }
+        if (data.dm?.defaultReply) {
+            const el = document.getElementById('dm-default-reply');
+            if (el) el.value = data.dm.defaultReply;
+        }
+    } catch(e) {
+        console.log('자동 응답 설정 로딩 실패:', e.message);
+    }
+}
+
+bootPersistence();
     renderArchive();
 
     // 전역 변수 채우기 (로그인/재방문 공통)
@@ -1701,6 +1864,7 @@ async function grantAccess(){
     }
 
     loadTrends();
+    loadAutoReply();
     initWeather();
 
     // 플랜 상태 체크
@@ -1830,6 +1994,126 @@ async function loadTrends() {
         trendEl.innerHTML = fallback.map((tag, i) =>
             `<div class="trend-row"><span class="t-rank">0${i+1}</span><span class="t-tag">${tag}</span><span class="t-hot">인기</span></div>`
         ).join('');
+    }
+}
+
+/* ── 자동 응답 설정 ── */
+function addKeywordRow(type) {
+    const wrap = document.getElementById(type + '-keywords-wrap');
+    if (!wrap) return;
+    const idx = wrap.children.length;
+    const row = document.createElement('div');
+    row.className = 'keyword-row';
+    row.dataset.index = idx;
+    row.innerHTML = `
+        <input type="text" class="inp-sm" placeholder="키워드 (예: 가격)" id="${type}-keyword-${idx}">
+        <input type="text" class="inp-sm" placeholder="답변 내용" id="${type}-reply-${idx}" style="flex:2;">
+        <button class="btn-del" onclick="removeKeywordRow(this)">✕</button>
+    `;
+    wrap.appendChild(row);
+}
+
+function removeKeywordRow(btn) {
+    btn.closest('.keyword-row').remove();
+}
+
+function getKeywordRows(type) {
+    const wrap = document.getElementById(type + '-keywords-wrap');
+    if (!wrap) return [];
+    const rows = [];
+    wrap.querySelectorAll('.keyword-row').forEach(row => {
+        const idx = row.dataset.index;
+        const keyword = document.getElementById(type + '-keyword-' + idx)?.value.trim();
+        const reply = document.getElementById(type + '-reply-' + idx)?.value.trim();
+        if (keyword && reply) rows.push({ keyword, reply });
+    });
+    return rows;
+}
+
+async function saveAutoReply() {
+    const commentKeywords = getKeywordRows('comment');
+    const dmKeywords = getKeywordRows('dm');
+    const commentDefault = document.getElementById('comment-default-reply')?.value.trim();
+    const dmDefault = document.getElementById('dm-default-reply')?.value.trim();
+
+    const payload = {
+        comment: { keywords: commentKeywords, defaultReply: commentDefault },
+        dm: { keywords: dmKeywords, defaultReply: dmDefault }
+    };
+
+    try {
+        const savedToken = localStorage.getItem('lumi_token') || '';
+        const res = await fetch('/.netlify/functions/save-auto-reply', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + savedToken
+            },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+            showToast('자동 응답 설정이 저장됐어요! ✅', 'pink');
+        } else {
+            showToast(data.error || '저장에 실패했어요.', 'red');
+        }
+    } catch(e) {
+        showToast('네트워크 오류가 발생했습니다.', 'red');
+    }
+}
+
+async function loadAutoReply() {
+    try {
+        const savedToken = localStorage.getItem('lumi_token') || '';
+        const res = await fetch('/.netlify/functions/save-auto-reply', {
+            headers: { 'Authorization': 'Bearer ' + savedToken }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+
+        // 댓글 키워드 복원
+        const commentWrap = document.getElementById('comment-keywords-wrap');
+        if (commentWrap && data.comment?.keywords) {
+            commentWrap.innerHTML = '';
+            data.comment.keywords.forEach((item, idx) => {
+                const row = document.createElement('div');
+                row.className = 'keyword-row';
+                row.dataset.index = idx;
+                row.innerHTML = `
+                    <input type="text" class="inp-sm" placeholder="키워드" id="comment-keyword-${idx}" value="${item.keyword}">
+                    <input type="text" class="inp-sm" placeholder="답변 내용" id="comment-reply-${idx}" value="${item.reply}" style="flex:2;">
+                    <button class="btn-del" onclick="removeKeywordRow(this)">✕</button>
+                `;
+                commentWrap.appendChild(row);
+            });
+        }
+        if (data.comment?.defaultReply) {
+            const el = document.getElementById('comment-default-reply');
+            if (el) el.value = data.comment.defaultReply;
+        }
+
+        // DM 키워드 복원
+        const dmWrap = document.getElementById('dm-keywords-wrap');
+        if (dmWrap && data.dm?.keywords) {
+            dmWrap.innerHTML = '';
+            data.dm.keywords.forEach((item, idx) => {
+                const row = document.createElement('div');
+                row.className = 'keyword-row';
+                row.dataset.index = idx;
+                row.innerHTML = `
+                    <input type="text" class="inp-sm" placeholder="키워드" id="dm-keyword-${idx}" value="${item.keyword}">
+                    <input type="text" class="inp-sm" placeholder="답변 내용" id="dm-reply-${idx}" value="${item.reply}" style="flex:2;">
+                    <button class="btn-del" onclick="removeKeywordRow(this)">✕</button>
+                `;
+                dmWrap.appendChild(row);
+            });
+        }
+        if (data.dm?.defaultReply) {
+            const el = document.getElementById('dm-default-reply');
+            if (el) el.value = data.dm.defaultReply;
+        }
+    } catch(e) {
+        console.log('자동 응답 설정 로딩 실패:', e.message);
     }
 }
 
