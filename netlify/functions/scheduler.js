@@ -1,4 +1,5 @@
 const { getStore } = require('@netlify/blobs');
+const FormData = require('form-data');
 
 exports.handler = async (event) => {
   const MAKE_WEBHOOK_URL = process.env.MAKE_WEBHOOK_URL;
@@ -8,10 +9,13 @@ exports.handler = async (event) => {
   }
 
   try {
-    const store = getStore('reservations');
-    const now = new Date();
+    const store = getStore({
+      name: 'reservations',
+      siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
+      token: process.env.NETLIFY_TOKEN
+    });
 
-    // 예약된 게시물 목록 조회
+    const now = new Date();
     let list;
     try {
       list = await store.list({ prefix: 'reserve:' });
@@ -32,27 +36,41 @@ exports.handler = async (event) => {
         if (!raw) continue;
 
         const item = JSON.parse(raw);
-
-        // 이미 전송됐으면 스킵
         if (item.isSent) continue;
-
-        // 예약 시간 확인
         if (!item.scheduledAt) continue;
-        const scheduledAt = new Date(item.scheduledAt);
-        if (scheduledAt > now) continue; // 아직 시간 안 됨
 
-        // Make 웹훅으로 전송
+        const scheduledAt = new Date(item.scheduledAt);
+        if (scheduledAt > now) continue;
+
+        // multipart/form-data로 Make에 전송 (원본 파일)
+        const form = new FormData();
+
+        item.photos.forEach((p, i) => {
+          const buffer = Buffer.from(p.base64, 'base64');
+          form.append(`photo_${i}`, buffer, {
+            filename: p.fileName,
+            contentType: p.mimeType
+          });
+        });
+
+        form.append('photoCount', String(item.photos.length));
+        form.append('userMessage', item.userMessage || '');
+        form.append('bizCategory', item.bizCategory || 'cafe');
+        form.append('captionTone', item.captionTone || '');
+        form.append('tagStyle', item.tagStyle || 'mid');
+        form.append('weather', JSON.stringify(item.weather || {}));
+        form.append('trends', JSON.stringify(item.trends || []));
+        form.append('storeProfile', JSON.stringify(item.storeProfile || {}));
+        form.append('submittedAt', item.submittedAt || '');
+        form.append('scheduledAt', item.scheduledAt || '');
+
         const res = await fetch(MAKE_WEBHOOK_URL, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ...item,
-            sentAt: now.toISOString()
-          })
+          body: form,
+          headers: form.getHeaders()
         });
 
         if (res.ok) {
-          // 전송 완료 표시
           item.isSent = true;
           item.sentAt = now.toISOString();
           await store.set(blob.key, JSON.stringify(item));
@@ -75,7 +93,6 @@ exports.handler = async (event) => {
   }
 };
 
-// 매 5분마다 실행 (1분은 너무 잦음)
 module.exports.config = {
   schedule: '*/5 * * * *'
 };
