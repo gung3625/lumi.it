@@ -1594,7 +1594,8 @@ async function commitPost(type){
             showToast('전송 중이에요...');
 
             // 게시 횟수 카운팅 먼저 확인
-            const token = localStorage.getItem('lumi_token');
+            const lumiUserData = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+            const token = lumiUserData.token || '';
             if (token) {
                 const countRes = await fetch('/.netlify/functions/count-post', {
                     method: 'POST',
