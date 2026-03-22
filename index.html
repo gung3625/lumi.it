@@ -1178,7 +1178,18 @@
             <!-- 예약 게시 -->
             <div style="margin-bottom:14px;">
                 <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:8px;">예약 게시 (선택)</p>
-                <input type="datetime-local" id="reserve-time-field" class="inp" style="height:48px;cursor:pointer;">
+                <div style="display:flex;gap:8px;">
+                    <select id="reserve-date-select" class="inp" style="height:48px;flex:2;" onchange="updateReserveHint()">
+                        <option value="">날짜 선택</option>
+                    </select>
+                    <select id="reserve-hour-select" class="inp" style="height:48px;flex:1;" onchange="updateReserveHint()">
+                        <option value="">시</option>
+                    </select>
+                    <select id="reserve-min-select" class="inp" style="height:48px;flex:1;" onchange="updateReserveHint()">
+                        <option value="">분</option>
+                    </select>
+                </div>
+                <input type="hidden" id="reserve-time-field">
                 <p id="reserve-time-hint" style="font-size:11px;color:var(--g400);margin-top:4px;display:none;"></p>
             </div>
             <div class="act-btns">
@@ -1720,6 +1731,42 @@ async function grantAccess(){
         nameEl.textContent = storeName ? greeting+storeName+' 대표님 안녕하세요.' : '안녕하세요.';
     }
     // 예약 시간 min/max 설정 (지금 ~ 7일 후)
+    // 예약 날짜/시간 드롭다운 초기화
+    const dateSelect = document.getElementById('reserve-date-select');
+    const hourSelect = document.getElementById('reserve-hour-select');
+    if(dateSelect && hourSelect){
+        const now = new Date();
+        // 날짜 목록 (오늘 ~ 30일 후)
+        for(let i = 0; i <= 30; i++){
+            const d = new Date(now);
+            d.setDate(now.getDate() + i);
+            const opt = document.createElement('option');
+            const mm = d.getMonth() + 1;
+            const dd = d.getDate();
+            const day = ['일','월','화','수','목','금','토'][d.getDay()];
+            opt.value = d.toISOString().slice(0, 10);
+            opt.textContent = i === 0 ? `오늘 (${mm}/${dd})` : `${mm}월 ${dd}일 (${day})`;
+            dateSelect.appendChild(opt);
+        }
+        // 시간 목록 (0~23시)
+        for(let h = 0; h < 24; h++){
+            const opt = document.createElement('option');
+            opt.value = String(h).padStart(2,'0');
+            opt.textContent = `${h}시`;
+            hourSelect.appendChild(opt);
+        }
+        // 분 목록 (0~59분, 1분 단위)
+        const minSelect = document.getElementById('reserve-min-select');
+        if(minSelect){
+            for(let m = 0; m < 60; m++){
+                const opt = document.createElement('option');
+                opt.value = String(m).padStart(2,'0');
+                opt.textContent = `${m}분`;
+                minSelect.appendChild(opt);
+            }
+        }
+    }
+
     const timeField=document.getElementById('reserve-time-field');
     if(timeField){
         const now=new Date();
@@ -2142,6 +2189,27 @@ async function finishLumiSignup() {
 }
 
 
+
+
+function updateReserveHint() {
+    const dateVal = document.getElementById('reserve-date-select')?.value;
+    const hourVal = document.getElementById('reserve-hour-select')?.value;
+    const minVal = document.getElementById('reserve-min-select')?.value;
+    const hint = document.getElementById('reserve-time-hint');
+    const timeField = document.getElementById('reserve-time-field');
+
+    if (dateVal && hourVal !== '' && minVal !== '') {
+        const combined = dateVal + 'T' + hourVal + ':' + minVal + ':00';
+        timeField.value = combined;
+        const d = new Date(combined);
+        const opts = { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+        hint.textContent = d.toLocaleDateString('ko-KR', opts) + '에 게시돼요.';
+        hint.style.display = 'block';
+    } else {
+        timeField.value = '';
+        hint.style.display = 'none';
+    }
+}
 
 function updateBizCat(val) {
     bizCat = val;
