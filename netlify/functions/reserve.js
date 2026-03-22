@@ -76,16 +76,36 @@ exports.handler = async (event) => {
         try { storeProfile = JSON.parse(fields.storeProfile || '{}'); } catch(e) {}
 
         const textFields = {
+          // 기본 정보
           photoCount: String(photos.length),
           userMessage: fields.userMessage || '',
           bizCategory: fields.bizCategory || 'cafe',
           captionTone: fields.captionTone || '',
           tagStyle: fields.tagStyle || 'mid',
-          weather: JSON.stringify(weather),
-          trends: JSON.stringify(trends),
-          storeProfile: JSON.stringify(storeProfile),
           submittedAt: fields.submittedAt || new Date().toISOString(),
-          ...(fields.scheduledAt ? { scheduledAt: fields.scheduledAt } : {})
+          ...(fields.scheduledAt ? { scheduledAt: fields.scheduledAt } : {}),
+
+          // 날씨 (개별 필드)
+          weatherStatus: weather.status || '',
+          weatherTemperature: String(weather.temperature || ''),
+          weatherState: weather.state || '',
+          weatherGuide: weather.guide || '',
+          weatherMood: weather.mood || '',
+          weatherLocation: weather.locationName || '',
+
+          // 트렌드 (문자열)
+          trends: Array.isArray(trends) ? trends.join(', ') : '',
+
+          // 매장 프로필 (개별 필드)
+          storeName: storeProfile.name || '',
+          storeDescription: storeProfile.description || '',
+          storeInstagram: storeProfile.instagram || '',
+          storeRegion: storeProfile.region || '',
+          storeCategory: storeProfile.category || '',
+          storeToneStyle: storeProfile.toneStyle || '',
+          storeTagStyle: storeProfile.tagStyle || '',
+          ownerName: storeProfile.ownerName || '',
+          ownerEmail: storeProfile.ownerEmail || ''
         };
 
         // Make {{1.files.files}} 형식에 맞게 fieldName을 'files'로 통일
