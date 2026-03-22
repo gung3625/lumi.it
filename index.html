@@ -2148,7 +2148,8 @@ async function finishLumiSignup() {
     tagStyle = document.getElementById('tag-style-select')?.value || 'mid';
 
     // 비밀번호 검증
-    if (!password || password.length < 6) { showToast('비밀번호는 6자리 이상이어야 해요.', 'red'); return; }
+    const pwRegex = /^(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{10,}$/;
+    if (!password || !pwRegex.test(password)) { showToast('비밀번호는 특수문자를 포함한 10자리 이상이어야 해요.', 'red'); return; }
     if (password !== pwConfirm) { showToast('비밀번호가 일치하지 않아요.', 'red'); return; }
 
     bizCat = document.getElementById('biz-cat-select').value;
