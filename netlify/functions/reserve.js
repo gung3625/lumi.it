@@ -101,9 +101,7 @@ exports.handler = async (event) => {
           storeDescription: storeProfile.description || '',
           storeInstagram: storeProfile.instagram || '',
           storeRegion: storeProfile.region || '',
-          storeCategory: storeProfile.category || '',
-          storeToneStyle: storeProfile.toneStyle || '',
-          storeTagStyle: storeProfile.tagStyle || '',
+          storeCategory: fields.bizCategory || storeProfile.category || '',
           ownerName: storeProfile.ownerName || '',
           ownerEmail: storeProfile.ownerEmail || ''
         };
