@@ -157,7 +157,8 @@ exports.handler = async (event) => {
 
     console.log('[lumi] Webhook 수신:', JSON.stringify(body));
 
-    if (body.object !== 'instagram') return { statusCode: 200, body: 'OK' };
+    // 테스트 버튼은 sample 필드로 옴 - 실제 이벤트는 object: 'instagram'
+    if (body.object && body.object !== 'instagram') return { statusCode: 200, body: 'OK' };
 
     for (const entry of (body.entry || [])) {
       const igUserId = entry.id;
