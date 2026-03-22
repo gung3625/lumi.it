@@ -1147,6 +1147,35 @@
                 없으면 비워도 돼요. lumi가 사진 보고 알아서 써드려요.</p>
             </div>
             <textarea id="ceo-note-input" class="dash-note" rows="3" placeholder="예) 오늘 딸기 시즌 신메뉴 나왔어요!&#10;예) 다음 주 월~화 명절 휴무입니다.&#10;예) 오픈 1주년 이벤트 진행 중이에요."></textarea>
+            <!-- 업종 선택 -->
+            <div style="margin-bottom:10px;">
+                <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:6px;">업종</p>
+                <select id="dash-biz-cat" class="inp" style="height:46px;" onchange="updateBizCat(this.value)">
+                    <option value="cafe">☕ 카페 / 베이커리 / 디저트</option>
+                    <option value="food">🍽️ 레스토랑 / 식당 / 술집</option>
+                    <option value="beauty">💅 미용 / 헤어 / 네일 / 에스테틱</option>
+                    <option value="other">✏️ 직접 입력</option>
+                </select>
+                <input type="text" id="dash-biz-cat-other" placeholder="업종 직접 입력 (예: 꽃집, 반려동물)" class="inp" style="display:none;margin-top:6px;" oninput="bizCat=this.value">
+            </div>
+
+            <!-- 글 말투 -->
+            <div style="margin-bottom:10px;">
+                <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:6px;">글 말투 <span style="font-weight:400;color:var(--g400);">(선택)</span></p>
+                <input type="text" id="dash-caption-tone" class="inp" style="height:46px;" placeholder="예: 친근하게, 감성적으로, 재미있게" oninput="captionTone=this.value">
+            </div>
+
+            <!-- 해시태그 개수 -->
+            <div style="margin-bottom:14px;">
+                <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:6px;">해시태그 개수</p>
+                <select id="dash-tag-style" class="inp" style="height:46px;" onchange="tagStyle=this.value">
+                    <option value="few">간결하게 (5개 이내)</option>
+                    <option value="mid" selected>적당하게 (10개 내외)</option>
+                    <option value="many">많이 (20개 이상)</option>
+                </select>
+            </div>
+
+            <!-- 예약 게시 -->
             <div style="margin-bottom:14px;">
                 <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:8px;">예약 게시 (선택)</p>
                 <input type="datetime-local" id="reserve-time-field" class="inp" style="height:48px;cursor:pointer;">
@@ -1419,6 +1448,18 @@ function syncBinaryWarehouse(){
 
 /* ── 포스트 ── */
 async function commitPost(type){
+    // 대시보드 UI에서 최신값 가져오기
+    const dashBizEl = document.getElementById('dash-biz-cat');
+    const dashBizOtherEl = document.getElementById('dash-biz-cat-other');
+    const dashToneEl = document.getElementById('dash-caption-tone');
+    const dashTagEl = document.getElementById('dash-tag-style');
+    if (dashBizEl) {
+        bizCat = dashBizEl.value === 'other' && dashBizOtherEl?.value.trim()
+            ? dashBizOtherEl.value.trim()
+            : dashBizEl.value;
+    }
+    if (dashToneEl) captionTone = dashToneEl.value.trim() || captionTone;
+    if (dashTagEl) tagStyle = dashTagEl.value || tagStyle;
     const notes=document.getElementById('ceo-note-input').value.trim();
     if(stagedFiles.length===0){showToast('사진을 먼저 선택하세요.');return;}
     // 메시지는 선택사항 - 없으면 lumi가 알아서 작성
@@ -2037,6 +2078,13 @@ async function finishLumiSignup() {
 }
 
 
+
+function updateBizCat(val) {
+    bizCat = val;
+    const other = document.getElementById('dash-biz-cat-other');
+    if (other) other.style.display = val === 'other' ? 'block' : 'none';
+}
+
 function toggleBizOther(val) {
     const direct = document.getElementById('biz-cat-other');
     if (direct) direct.style.display = val === 'other' ? 'block' : 'none';
@@ -2066,6 +2114,16 @@ function lumiLogout() {
             storeInsta = user.instagram || '';
             storeDesc = user.storeDesc || '';
             storeRegion = user.region || '';
+            bizCat = user.bizCategory || 'cafe';
+            captionTone = user.captionTone || '';
+            tagStyle = user.tagStyle || 'mid';
+            // 대시보드 UI에 값 반영
+            const dashBiz = document.getElementById('dash-biz-cat');
+            if (dashBiz) dashBiz.value = bizCat;
+            const dashTone = document.getElementById('dash-caption-tone');
+            if (dashTone) dashTone.value = captionTone;
+            const dashTag = document.getElementById('dash-tag-style');
+            if (dashTag) dashTag.value = tagStyle;
             bizCat = user.bizCategory || 'cafe';
             captionTone = user.captionTone || 'warm';
             tagStyle = user.tagStyle || 'mid';
