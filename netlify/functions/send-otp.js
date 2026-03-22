@@ -24,7 +24,11 @@ exports.handler = async (event) => {
 
   // Netlify Blobs에 저장
   try {
-    const store = getStore('otp-store');
+    const store = getStore({
+      name: 'otp-store',
+      siteID: process.env.SITE_ID || process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
+      token: process.env.NETLIFY_TOKEN
+    });
     await store.set('otp:' + email, JSON.stringify({ otp, expiresAt }));
   } catch (err) {
     console.error('Blobs error:', err);
@@ -33,7 +37,6 @@ exports.handler = async (event) => {
 
   // Resend로 이메일 발송
   const resend = new Resend(process.env.RESEND_API_KEY);
-
   try {
     await resend.emails.send({
       from: 'lumi <noreply@lumi.it.kr>',
@@ -55,7 +58,6 @@ exports.handler = async (event) => {
         </div>
       `
     });
-
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
