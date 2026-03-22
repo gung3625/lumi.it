@@ -87,7 +87,7 @@ exports.handler = async (event) => {
 
           // 날씨 (개별 필드)
           weatherStatus: weather.status || '',
-          weatherTemperature: (weather.temperature !== undefined && weather.temperature !== null && weather.temperature !== '') ? String(weather.temperature) : '',
+          weatherTemperature: (weather.temperature !== undefined && weather.temperature !== null && weather.temperature !== '' && weather.temperature !== 'null') ? String(weather.temperature) : '',
           weatherState: weather.state || '',
           weatherGuide: weather.guide || '',
           weatherMood: weather.mood || '',
