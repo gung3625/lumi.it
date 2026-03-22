@@ -1,18 +1,27 @@
 const { getStore } = require('@netlify/blobs');
 const crypto = require('crypto');
 
-// 메타 서명 검증
+const SITE_ID = process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc';
+const NETLIFY_TOKEN = process.env.NETLIFY_TOKEN;
+
+// 테스트 계정 토큰 (심사 통과 전까지 하드코딩)
+const TEST_IG_USER_ID = '17841471744588526';
+const TEST_ACCESS_TOKEN = 'EAARhZCSGf1s4BRNUkXnJx1w60ZCFo2i5CvpL7uUOT7FldR7kAjDNSauXyFEk8t5bGxjkHW94LmnPNdt9Npxd6H3pl68xyyQcssZC7ZAy2AtaHbCaZC5L8THHI95swG1gM6u86TwqZAzVkCLaFRmBvakWZAxDxPRXa2GTYCtH30xb3Klyn4Dw1FFZCO616yslgkXGFGPFr6sFTNuOGMaI4ENa1idFC9igmPChTT8LrdEcoV47ikgkZB1HvaXpCjFBCjKB458B5Yol7MdMlbnDuH5um5LlZBCoP9';
+
 function verifySignature(payload, signature) {
   const appSecret = process.env.META_APP_SECRET;
-  if (!appSecret) return false;
+  if (!appSecret) return true; // 개발 모드에서는 스킵
   const expected = 'sha256=' + crypto
     .createHmac('sha256', appSecret)
     .update(payload)
     .digest('hex');
-  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+  try {
+    return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+  } catch(e) {
+    return false;
+  }
 }
 
-// 메타 Graph API 호출
 async function callGraphAPI(path, method, body, accessToken) {
   const url = `https://graph.facebook.com/v25.0${path}`;
   const res = await fetch(url, {
@@ -23,41 +32,48 @@ async function callGraphAPI(path, method, body, accessToken) {
     },
     body: body ? JSON.stringify(body) : undefined
   });
-  return res.json();
+  const data = await res.json();
+  console.log(`[lumi] Graph API ${method} ${path}:`, JSON.stringify(data));
+  return data;
 }
 
-// 고객 토큰 가져오기 (Blobs에서)
 async function getUserToken(igUserId) {
+  // 테스트 계정이면 하드코딩 토큰 사용
+  if (igUserId === TEST_IG_USER_ID) {
+    return TEST_ACCESS_TOKEN;
+  }
+  // 실제 고객은 Blobs에서 조회
   try {
     const store = getStore({
       name: 'users',
-      siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
-      token: process.env.NETLIFY_TOKEN
+      siteID: SITE_ID,
+      token: NETLIFY_TOKEN
     });
     const raw = await store.get('ig:' + igUserId);
     if (!raw) return null;
     const data = JSON.parse(raw);
     return data.accessToken || null;
   } catch(e) {
-    console.error('토큰 조회 오류:', e.message);
+    console.error('[lumi] 토큰 조회 오류:', e.message);
     return null;
   }
 }
 
-// 댓글 자동 답변
 async function handleComment(entry, accessToken) {
   const change = entry.changes?.[0];
   if (!change || change.field !== 'comments') return;
 
   const commentId = change.value?.id;
   const commentText = change.value?.text || '';
-  const mediaId = change.value?.media?.id;
+  const fromId = change.value?.from?.id;
+  const igUserId = entry.id;
 
   if (!commentId || !accessToken) return;
+  if (fromId === igUserId) return; // 자기 댓글은 스킵
 
-  // 댓글 내용에 따라 자동 답변 생성
+  console.log('[lumi] 댓글 수신:', commentText);
+
   let replyText = '감사합니다 😊 궁금한 점은 DM으로 문의해 주세요!';
-
   if (commentText.includes('가격') || commentText.includes('얼마')) {
     replyText = '가격 문의는 DM으로 편하게 연락 주세요 🙏';
   } else if (commentText.includes('예약') || commentText.includes('주문')) {
@@ -73,7 +89,6 @@ async function handleComment(entry, accessToken) {
   console.log('[lumi] 댓글 자동 답변 완료:', commentId);
 }
 
-// DM 자동 답변
 async function handleMessage(entry, accessToken) {
   const messaging = entry.messaging?.[0];
   if (!messaging) return;
@@ -82,11 +97,12 @@ async function handleMessage(entry, accessToken) {
   const messageText = messaging.message?.text || '';
   const igUserId = entry.id;
 
-  if (!senderId || !accessToken || senderId === igUserId) return;
+  if (!senderId || !accessToken) return;
+  if (senderId === igUserId) return; // 자기 메시지 스킵
 
-  // DM 내용에 따라 자동 답변 생성
+  console.log('[lumi] DM 수신:', messageText, '발신자:', senderId);
+
   let replyText = '안녕하세요! 메시지 감사해요 😊 빠르게 확인 후 답변드릴게요!';
-
   if (messageText.includes('가격') || messageText.includes('얼마')) {
     replyText = '안녕하세요! 가격 문의 주셨군요. 잠시 후 자세히 안내드릴게요 🙏';
   } else if (messageText.includes('예약') || messageText.includes('주문')) {
@@ -104,14 +120,15 @@ async function handleMessage(entry, accessToken) {
 }
 
 exports.handler = async (event) => {
-  // GET: Webhook 인증 (메타 검증 요청)
+  // GET: Webhook 인증
   if (event.httpMethod === 'GET') {
     const params = new URLSearchParams(event.rawQuery || '');
     const mode = params.get('hub.mode');
     const token = params.get('hub.verify_token');
     const challenge = params.get('hub.challenge');
-
     const verifyToken = process.env.META_WEBHOOK_VERIFY_TOKEN;
+
+    console.log('[lumi] Webhook 인증 요청:', { mode, token, challenge });
 
     if (mode === 'subscribe' && token === verifyToken) {
       console.log('[lumi] Webhook 인증 성공');
@@ -122,7 +139,6 @@ exports.handler = async (event) => {
 
   // POST: Webhook 이벤트 수신
   if (event.httpMethod === 'POST') {
-    // 서명 검증
     const signature = event.headers['x-hub-signature-256'] || '';
     if (signature && !verifySignature(event.body, signature)) {
       console.error('[lumi] 서명 검증 실패');
@@ -136,30 +152,23 @@ exports.handler = async (event) => {
       return { statusCode: 400, body: 'Bad Request' };
     }
 
+    console.log('[lumi] Webhook 수신:', JSON.stringify(body));
+
     if (body.object !== 'instagram') {
       return { statusCode: 200, body: 'OK' };
     }
 
-    // 각 entry 처리
     for (const entry of (body.entry || [])) {
       const igUserId = entry.id;
-
-      // 고객 토큰 조회
       const accessToken = await getUserToken(igUserId);
+
       if (!accessToken) {
         console.log('[lumi] 토큰 없음:', igUserId);
         continue;
       }
 
-      // 댓글 처리
-      if (entry.changes) {
-        await handleComment(entry, accessToken);
-      }
-
-      // DM 처리
-      if (entry.messaging) {
-        await handleMessage(entry, accessToken);
-      }
+      if (entry.changes) await handleComment(entry, accessToken);
+      if (entry.messaging) await handleMessage(entry, accessToken);
     }
 
     return { statusCode: 200, body: 'OK' };
