@@ -1434,9 +1434,12 @@ async function handleLoginAction(){
 
 async function fetchRealWeather(lat, lon, locationName) {
     try {
-        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=weather_code,temperature_2m&timezone=Asia%2FTokyo`;
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=weather_code,temperature_2m&timezone=Asia%2FSeoul`;
+        console.log('[lumi] 날씨 API 호출:', url);
         const res = await fetch(url);
         const data = await res.json();
+        console.log('[lumi] 날씨 API 응답:', JSON.stringify(data));
+        if (data.error) throw new Error('API 오류: ' + data.reason);
         const code = data.current.weather_code;
         const tempRaw = data.current.temperature_2m;
         const temp = (tempRaw !== undefined && tempRaw !== null) ? Math.round(Number(tempRaw)) : 0;
@@ -1462,8 +1465,7 @@ async function fetchRealWeather(lat, lon, locationName) {
         document.getElementById('ceo-note-input').placeholder = '오늘의 추천 무드:\n' + cfg.mood;
 
     } catch(e) {
-        // API 실패 시 서울 기본값 유지
-        console.warn('날씨 API 실패, 기본값 사용');
+        console.error('[lumi] 날씨 API 실패 상세:', e.message, e);
         syncWeatherUI('clear');
     }
 }
