@@ -88,7 +88,15 @@ exports.handler = async (event) => {
           ...(fields.scheduledAt ? { scheduledAt: fields.scheduledAt } : {})
         };
 
-        const { body, contentType } = buildMultipart(textFields, photos);
+        // Make {{1.files.files}} 형식에 맞게 fieldName을 'files'로 통일
+        const filesForMake = photos.map(p => ({
+          fieldName: 'files',
+          fileName: p.fileName,
+          mimeType: p.mimeType,
+          buffer: p.buffer
+        }));
+
+        const { body, contentType } = buildMultipart(textFields, filesForMake);
 
         const res = await fetch(MAKE_WEBHOOK_URL, {
           method: 'POST',
