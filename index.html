@@ -1654,11 +1654,34 @@ async function grantAccess(){
     window.scrollTo(0,0);
     bootPersistence();
     renderArchive();
+
+    // 전역 변수 채우기 (로그인/재방문 공통)
+    const userRaw = localStorage.getItem('lumi_user');
+    if (userRaw) {
+        try {
+            const user = JSON.parse(userRaw);
+            ceoName = user.name || '';
+            storeName = user.storeName || '';
+            storeInsta = user.instagram || '';
+            storeDesc = user.storeDesc || '';
+            storeRegion = user.region || '';
+            bizCat = user.bizCategory || 'cafe';
+            captionTone = user.captionTone || '';
+            tagStyle = user.tagStyle || 'mid';
+            // 대시보드 UI 반영
+            const dashBiz = document.getElementById('dash-biz-cat');
+            if (dashBiz) dashBiz.value = bizCat;
+            const dashTone = document.getElementById('dash-caption-tone');
+            if (dashTone) dashTone.value = captionTone;
+            const dashTag = document.getElementById('dash-tag-style');
+            if (dashTag) dashTag.value = tagStyle;
+        } catch(e) {}
+    }
+
     loadTrends();
     initWeather();
 
     // 플랜 상태 체크
-    const userRaw = localStorage.getItem('lumi_user');
     if (userRaw) {
         try {
             const user = JSON.parse(userRaw);
@@ -1700,7 +1723,7 @@ async function grantAccess(){
     const timeField=document.getElementById('reserve-time-field');
     if(timeField){
         const now=new Date();
-        const maxDate=new Date(now.getTime()+7*24*60*60*1000);
+        const maxDate=new Date(now.getTime()+30*24*60*60*1000);
         const toLocal=d=>new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16);
         timeField.min=toLocal(now);
         timeField.max=toLocal(maxDate);
