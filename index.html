@@ -1294,7 +1294,7 @@ const LUMI_CORE = {
         beauty:["#봄맞이_무드체인지","#퍼스널컬러_디자인","#나만알고싶은_헤어샵","#에스테틱_홈케어"]
     }
 };
-let archive=[],stagedFiles=[],bizCat='cafe',captionTone='warm',ceoName='',storeName='',storeDesc='',storeInsta='',storeRegion='',tagStyle='mid';
+let archive=[],stagedFiles=[],bizCat='cafe',captionTone='warm',ceoName='',storeName='',storeDesc='',storeInsta='',storeRegion='',tagStyle='mid',weatherLoaded=false;
 let realtimeTrends = [];
 let currentWeatherData = null; // 실제 날씨 데이터 전역 보관
 
@@ -1408,6 +1408,7 @@ async function fetchRealWeather(lat, lon, locationName) {
             guide: cfg.guide,
             mood: cfg.mood
         };
+        weatherLoaded = true;
 
         // UI 업데이트
         document.getElementById('dash-w-icon').innerText = cfg.icon;
@@ -1459,6 +1460,14 @@ function syncBinaryWarehouse(){
 
 /* ── 포스트 ── */
 async function commitPost(type){
+    // 날씨 로딩 안됐으면 최대 5초 대기
+    if (!weatherLoaded) {
+        showToast('날씨 정보 불러오는 중...', '');
+        for (let i = 0; i < 10; i++) {
+            await new Promise(r => setTimeout(r, 500));
+            if (weatherLoaded) break;
+        }
+    }
     // 대시보드 UI에서 최신값 가져오기
     const dashBizEl = document.getElementById('dash-biz-cat');
     const dashBizOtherEl = document.getElementById('dash-biz-cat-other');
