@@ -1,10 +1,36 @@
 const { getStore } = require('@netlify/blobs');
-const FormData = require('form-data');
+
+function buildMultipart(fields, files) {
+  const boundary = '----LumiBoundary' + Date.now().toString(16);
+  const buffers = [];
+
+  for (const [name, value] of Object.entries(fields)) {
+    buffers.push(Buffer.from(
+      `--${boundary}\r\nContent-Disposition: form-data; name="${name}"\r\n\r\n${value}\r\n`,
+      'utf8'
+    ));
+  }
+
+  for (const file of files) {
+    buffers.push(Buffer.from(
+      `--${boundary}\r\nContent-Disposition: form-data; name="${file.fieldName}"; filename="${file.fileName}"\r\nContent-Type: ${file.mimeType}\r\n\r\n`,
+      'utf8'
+    ));
+    buffers.push(file.buffer);
+    buffers.push(Buffer.from('\r\n', 'utf8'));
+  }
+
+  buffers.push(Buffer.from(`--${boundary}--\r\n`, 'utf8'));
+  return {
+    body: Buffer.concat(buffers),
+    contentType: `multipart/form-data; boundary=${boundary}`
+  };
+}
 
 exports.handler = async (event) => {
   const MAKE_WEBHOOK_URL = process.env.MAKE_WEBHOOK_URL;
   if (!MAKE_WEBHOOK_URL) {
-    console.error('MAKE_WEBHOOK_URL 환경변수가 없습니다.');
+    console.error('MAKE_WEBHOOK_URL 없음');
     return { statusCode: 500 };
   }
 
@@ -17,16 +43,12 @@ exports.handler = async (event) => {
 
     const now = new Date();
     let list;
-    try {
-      list = await store.list({ prefix: 'reserve:' });
-    } catch(e) {
+    try { list = await store.list({ prefix: 'reserve:' }); } catch(e) {
       console.log('예약 목록 없음:', e.message);
       return { statusCode: 200 };
     }
 
-    if (!list.blobs || list.blobs.length === 0) {
-      return { statusCode: 200 };
-    }
+    if (!list.blobs || list.blobs.length === 0) return { statusCode: 200 };
 
     let sent = 0;
 
@@ -34,40 +56,37 @@ exports.handler = async (event) => {
       try {
         const raw = await store.get(blob.key);
         if (!raw) continue;
-
         const item = JSON.parse(raw);
         if (item.isSent) continue;
         if (!item.scheduledAt) continue;
+        if (new Date(item.scheduledAt) > now) continue;
 
-        const scheduledAt = new Date(item.scheduledAt);
-        if (scheduledAt > now) continue;
+        const textFields = {
+          photoCount: String(item.photos.length),
+          userMessage: item.userMessage || '',
+          bizCategory: item.bizCategory || 'cafe',
+          captionTone: item.captionTone || '',
+          tagStyle: item.tagStyle || 'mid',
+          weather: JSON.stringify(item.weather || {}),
+          trends: JSON.stringify(item.trends || []),
+          storeProfile: JSON.stringify(item.storeProfile || {}),
+          submittedAt: item.submittedAt || '',
+          scheduledAt: item.scheduledAt || ''
+        };
 
-        // multipart/form-data로 Make에 전송 (원본 파일)
-        const form = new FormData();
+        const files = item.photos.map((p, i) => ({
+          fieldName: `photo_${i}`,
+          fileName: p.fileName,
+          mimeType: p.mimeType,
+          buffer: Buffer.from(p.base64, 'base64')
+        }));
 
-        item.photos.forEach((p, i) => {
-          const buffer = Buffer.from(p.base64, 'base64');
-          form.append(`photo_${i}`, buffer, {
-            filename: p.fileName,
-            contentType: p.mimeType
-          });
-        });
-
-        form.append('photoCount', String(item.photos.length));
-        form.append('userMessage', item.userMessage || '');
-        form.append('bizCategory', item.bizCategory || 'cafe');
-        form.append('captionTone', item.captionTone || '');
-        form.append('tagStyle', item.tagStyle || 'mid');
-        form.append('weather', JSON.stringify(item.weather || {}));
-        form.append('trends', JSON.stringify(item.trends || []));
-        form.append('storeProfile', JSON.stringify(item.storeProfile || {}));
-        form.append('submittedAt', item.submittedAt || '');
-        form.append('scheduledAt', item.scheduledAt || '');
+        const { body, contentType } = buildMultipart(textFields, files);
 
         const res = await fetch(MAKE_WEBHOOK_URL, {
           method: 'POST',
-          body: form,
-          headers: form.getHeaders()
+          headers: { 'Content-Type': contentType },
+          body
         });
 
         if (res.ok) {
@@ -75,16 +94,16 @@ exports.handler = async (event) => {
           item.sentAt = now.toISOString();
           await store.set(blob.key, JSON.stringify(item));
           sent++;
-          console.log('예약 게시 전송 완료:', blob.key);
+          console.log('예약 전송 완료:', blob.key);
         } else {
-          console.error('Make 웹훅 전송 실패:', blob.key, res.status);
+          console.error('Make 전송 실패:', blob.key, res.status);
         }
       } catch(e) {
-        console.error('항목 처리 오류:', blob.key, e.message);
+        console.error('항목 오류:', blob.key, e.message);
       }
     }
 
-    console.log(`스케줄러 완료: ${sent}건 전송`);
+    console.log(`스케줄러 완료: ${sent}건`);
     return { statusCode: 200 };
 
   } catch (err) {
