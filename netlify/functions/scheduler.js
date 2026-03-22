@@ -74,8 +74,9 @@ exports.handler = async (event) => {
           scheduledAt: item.scheduledAt || ''
         };
 
-        const files = item.photos.map((p, i) => ({
-          fieldName: `photo_${i}`,
+        // Make {{1.files.files}} 형식에 맞게 fieldName을 'files'로 통일
+        const files = item.photos.map((p) => ({
+          fieldName: 'files',
           fileName: p.fileName,
           mimeType: p.mimeType,
           buffer: Buffer.from(p.base64, 'base64')
