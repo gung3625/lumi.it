@@ -19,11 +19,10 @@ exports.handler = async (event) => {
       const chunks = [];
       file.on('data', (d) => chunks.push(d));
       file.on('end', () => {
-        const buffer = Buffer.concat(chunks);
         photos.push({
           fileName: info.filename,
           mimeType: info.mimeType,
-          base64: buffer.toString('base64')
+          base64: Buffer.concat(chunks).toString('base64')
         });
       });
     });
