@@ -17,6 +17,7 @@ exports.handler = async (event) => {
   }
 
   const { name, storeName, instagram, email, phone, password, storeDesc, region, bizCategory, captionTone, tagStyle } = body;
+
   if (!name || !storeName || !instagram || !email || !phone || !password) {
     return { statusCode: 400, body: JSON.stringify({ error: '필수 정보가 누락됐습니다.' }) };
   }
@@ -25,16 +26,24 @@ exports.handler = async (event) => {
   }
 
   try {
-    const store = getStore({ name: 'users', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
+    const store = getStore({
+      name: 'users',
+      siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
+      token: process.env.NETLIFY_TOKEN
+    });
 
     let existing;
     try { existing = await store.get('user:' + email); } catch(e) { existing = null; }
-    if (existing) return { statusCode: 409, body: JSON.stringify({ error: '이미 가입된 이메일입니다.' }) };
+    if (existing) {
+      return { statusCode: 409, body: JSON.stringify({ error: '이미 가입된 이메일입니다.' }) };
+    }
 
     const user = {
-      name, storeName,
+      name,
+      storeName,
       instagram: instagram.replace('@', ''),
-      email, phone,
+      email,
+      phone,
       passwordHash: hashPassword(password),
       storeDesc: storeDesc || '',
       region: region || '',
@@ -52,9 +61,12 @@ exports.handler = async (event) => {
     const token = Buffer.from(email + ':' + Date.now()).toString('base64');
     await store.set('token:' + token, JSON.stringify({ email, createdAt: new Date().toISOString() }));
 
-    // 비밀번호 해시 제거 후 반환
     const { passwordHash, ...safeUser } = user;
-    return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ success: true, token, user: safeUser }) };
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ success: true, token, user: safeUser })
+    };
   } catch (err) {
     console.error('register error:', err);
     return { statusCode: 500, body: JSON.stringify({ error: '가입 처리 중 오류가 발생했습니다.' }) };
