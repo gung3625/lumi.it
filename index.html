@@ -1391,11 +1391,12 @@ async function handleLoginAction(){
 
 async function fetchRealWeather(lat, lon, locationName) {
     try {
-        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=weathercode,temperature_2m&timezone=Asia%2FTokyo`;
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=weather_code,temperature_2m&timezone=Asia%2FTokyo`;
         const res = await fetch(url);
         const data = await res.json();
-        const code = data.current.weathercode;
-        const temp = Math.round(data.current.temperature_2m);
+        const code = data.current.weather_code;
+        const tempRaw = data.current.temperature_2m;
+        const temp = (tempRaw !== undefined && tempRaw !== null) ? Math.round(tempRaw) : null;
         const state = parseWeatherCode(code);
         const cfg = LUMI_CORE.weather[state];
 
@@ -1409,6 +1410,7 @@ async function fetchRealWeather(lat, lon, locationName) {
             mood: cfg.mood
         };
         weatherLoaded = true;
+        console.log('[lumi] 날씨 로딩 완료:', temp + '°C', state);
 
         // UI 업데이트
         document.getElementById('dash-w-icon').innerText = cfg.icon;
