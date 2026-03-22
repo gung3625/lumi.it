@@ -1,4 +1,11 @@
 const { getStore } = require('@netlify/blobs');
+const crypto = require('crypto');
+
+function hashPassword(password) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = crypto.pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex');
+  return salt + ':' + hash;
+}
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -9,9 +16,12 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: '잘못된 요청입니다.' }) };
   }
 
-  const { name, storeName, instagram, email, phone, storeDesc, region, bizCategory, captionTone, tagStyle } = body;
-  if (!name || !storeName || !instagram || !email || !phone) {
+  const { name, storeName, instagram, email, phone, password, storeDesc, region, bizCategory, captionTone, tagStyle } = body;
+  if (!name || !storeName || !instagram || !email || !phone || !password) {
     return { statusCode: 400, body: JSON.stringify({ error: '필수 정보가 누락됐습니다.' }) };
+  }
+  if (password.length < 6) {
+    return { statusCode: 400, body: JSON.stringify({ error: '비밀번호는 6자리 이상이어야 합니다.' }) };
   }
 
   try {
@@ -25,6 +35,7 @@ exports.handler = async (event) => {
       name, storeName,
       instagram: instagram.replace('@', ''),
       email, phone,
+      passwordHash: hashPassword(password),
       storeDesc: storeDesc || '',
       region: region || '',
       bizCategory: bizCategory || 'cafe',
@@ -41,7 +52,9 @@ exports.handler = async (event) => {
     const token = Buffer.from(email + ':' + Date.now()).toString('base64');
     await store.set('token:' + token, JSON.stringify({ email, createdAt: new Date().toISOString() }));
 
-    return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ success: true, token, user }) };
+    // 비밀번호 해시 제거 후 반환
+    const { passwordHash, ...safeUser } = user;
+    return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ success: true, token, user: safeUser }) };
   } catch (err) {
     console.error('register error:', err);
     return { statusCode: 500, body: JSON.stringify({ error: '가입 처리 중 오류가 발생했습니다.' }) };
