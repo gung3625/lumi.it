@@ -1396,7 +1396,7 @@ async function fetchRealWeather(lat, lon, locationName) {
         const data = await res.json();
         const code = data.current.weather_code;
         const tempRaw = data.current.temperature_2m;
-        const temp = (tempRaw !== undefined && tempRaw !== null) ? Math.round(tempRaw) : null;
+        const temp = (tempRaw !== undefined && tempRaw !== null) ? Math.round(Number(tempRaw)) : 0;
         const state = parseWeatherCode(code);
         const cfg = LUMI_CORE.weather[state];
 
