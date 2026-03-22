@@ -1085,34 +1085,12 @@
             <input type="tel" id="ph-reg-field" placeholder="휴대폰 번호 (숫자만)" class="inp" oninput="clearFieldErr(this.id,'reg-ph-err')">
             <div id="reg-ph-err" class="field-err hidden"></div>
 
-            <!-- 선택 정보 -->
-            <div style="background:var(--pink-pale);border-radius:var(--r-sm);padding:10px 14px;margin-bottom:12px;">
-                <p style="font-size:11px;font-weight:700;color:var(--pink);">아래 정보를 추가하면 게시물 퀄리티가 올라가요.</p>
-            </div>
-            <input type="text" id="store-desc-field" placeholder="매장 한 줄 소개 (선택 · 예: 이태원 감성 카페)" class="inp" style="border-style:dashed;">
-            <input type="text" id="store-region-field" placeholder="매장 지역 (선택 · 예: 서울 이태원)" class="inp" style="border-style:dashed;">
-
-            <!-- 업종 -->
-            <select id="biz-cat-select" class="inp" style="height:50px;margin-bottom:8px;" onchange="toggleBizOther(this.value)">
-                <option value="cafe">☕ 카페 / 베이커리 / 디저트</option>
-                <option value="food">🍽️ 레스토랑 / 식당 / 술집</option>
-                <option value="beauty">💅 미용 / 헤어 / 네일 / 에스테틱</option>
-                <option value="other">✏️ 직접 입력</option>
-            </select>
-            <input type="text" id="biz-cat-other" placeholder="업종을 직접 입력해 주세요 (예: 꽃집, 반려동물 용품, 의류)" class="inp" style="display:none;margin-bottom:8px;" oninput="clearFieldErr(this.id,'biz-cat-other-err')">
-            <div id="biz-cat-other-err" class="field-err hidden"></div>
-
-            <!-- 글 스타일 -->
-            <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:4px;">글 스타일 <span style="font-weight:400;color:var(--g400);">(선택 · 예: 친근하고 따뜻하게, 감성적으로, 재미있게)</span></p>
-            <input type="text" id="caption-tone-field" placeholder="원하는 글 스타일을 직접 입력하세요" class="inp" style="margin-bottom:16px;">
-
-            <!-- 해시태그 개수 -->
-            <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:4px;">해시태그 개수</p>
-            <select id="tag-style-select" class="inp" style="height:50px;margin-bottom:16px;">
-                <option value="few">간결하게 (5개 이내)</option>
-                <option value="mid" selected>적당하게 (10개 내외)</option>
-                <option value="many">많이 (20개 이상)</option>
-            </select>
+            <!-- 숨겨진 기본값 필드 (대시보드에서 설정 가능) -->
+            <input type="hidden" id="store-desc-field" value="">
+            <input type="hidden" id="store-region-field" value="">
+            <input type="hidden" id="biz-cat-select" value="cafe">
+            <input type="hidden" id="caption-tone-field" value="">
+            <input type="hidden" id="tag-style-select" value="mid">
 
             <button class="btn-portal" onclick="finishLumiSignup()" style="background:var(--pink);">가입 완료</button>
         </div>
@@ -1330,7 +1308,7 @@ function selectTagStyle(t) {
 function isValidEmail(v){return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);}
 
 /* ── 로그인 검증 ── */
-function handleLoginAction(){
+async function handleLoginAction(){
     const email=document.getElementById('id-login-field').value.trim();
     const pw=document.getElementById('pw-login-field').value;
     let ok=true;
@@ -1340,7 +1318,29 @@ function handleLoginAction(){
     if(!pw){showFieldErr('pw-login-field','login-pw-err','비밀번호를 입력하세요.');ok=false;}
     else if(pw.length<6){showFieldErr('pw-login-field','login-pw-err','6자 이상으로 입력하세요.');ok=false;}
     else{setFieldOk('pw-login-field');}
-    if(ok) grantAccess();
+    if(!ok) return;
+
+    const btn = document.querySelector('#lumi-login-view .btn-portal');
+    if(btn){ btn.disabled=true; btn.textContent='로그인 중...'; }
+    try {
+        const res = await fetch('/.netlify/functions/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password: pw })
+        });
+        const data = await res.json();
+        if(res.ok){
+            localStorage.setItem('lumi_user', JSON.stringify({ ...data.user, token: data.token }));
+            showToast('로그인됐어요!', 'pink');
+            setTimeout(() => { resetToInitialLanding(); grantAccess(); }, 500);
+        } else {
+            showToast(data.error || '로그인에 실패했어요.', 'red');
+        }
+    } catch(e){
+        showToast('네트워크 오류가 발생했습니다.', 'red');
+    } finally {
+        if(btn){ btn.disabled=false; btn.textContent='로그인'; }
+    }
 }
 
 /* validateStep1 제거됨 - requestSignupOtp 사용 */
