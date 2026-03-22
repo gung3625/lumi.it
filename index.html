@@ -1432,6 +1432,17 @@ async function handleLoginAction(){
 
 /* validateStep2 제거됨 */
 
+function parseWeatherCode(code) {
+    if (code <= 3) return 'clear';   // 맑음
+    if (code <= 48) return 'clear';  // 흐림 (clear로 폴백)
+    if (code <= 67) return 'rain';   // 비
+    if (code <= 77) return 'snow';   // 눈
+    if (code <= 82) return 'rain';   // 소나기
+    if (code <= 86) return 'snow';   // 눈보라
+    if (code <= 99) return 'rain';   // 뇌우
+    return 'clear';
+}
+
 async function fetchRealWeather(lat, lon, locationName) {
     try {
         const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=weather_code,temperature_2m&timezone=Asia%2FSeoul`;
