@@ -21,8 +21,9 @@ exports.handler = async (event) => {
   if (!name || !storeName || !instagram || !email || !phone || !password) {
     return { statusCode: 400, body: JSON.stringify({ error: '필수 정보가 누락됐습니다.' }) };
   }
-  if (password.length < 6) {
-    return { statusCode: 400, body: JSON.stringify({ error: '비밀번호는 6자리 이상이어야 합니다.' }) };
+  const pwRegex = /^(?=.*[!@#$%^&*()_+\-=\[\]{};':"\|,.<>\/?]).{10,}$/;
+  if (!pwRegex.test(password)) {
+    return { statusCode: 400, body: JSON.stringify({ error: '비밀번호는 특수문자를 포함한 10자리 이상이어야 합니다.' }) };
   }
 
   try {
