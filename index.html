@@ -478,7 +478,7 @@
         <button class="nav-txt-btn" id="nav-how-btn" onclick="smoothScrollTo('feat-sec')">기능</button>
         <button class="nav-txt-btn" id="nav-price-btn" onclick="smoothScrollTo('price-sec')">요금</button>
         <button class="nav-txt-btn" onclick="openPortal('login')">로그인</button>
-        <button class="nav-cta" onclick="openPortal('signup')">시작해 보기</button>
+        <button class="nav-cta" onclick="openPortal('signup')">시작하기</button>
     </div>
 </nav>
 
@@ -1023,7 +1023,7 @@
                 <div id="ceo-name-err" class="field-err hidden"></div>
                 <input type="text" id="store-name-field" placeholder="매장 이름 (예: 카페루미)" class="inp" oninput="clearFieldErr(this.id,'store-name-err')">
                 <div id="store-name-err" class="field-err hidden"></div>
-                <input type="text" id="store-insta-field" placeholder="인스타그램 아이디 (예: @lumi_cafe)" class="inp" oninput="clearFieldErr(this.id,'store-insta-err')">
+                <input type="text" id="store-insta-field" placeholder="인스타그램 아이디 (예: @lumi__it)" class="inp" oninput="clearFieldErr(this.id,'store-insta-err')">
                 <div id="store-insta-err" class="field-err hidden"></div>
                 <input type="email" id="id-reg-field" placeholder="이메일 주소" class="inp" oninput="clearFieldErr(this.id,'reg-email-err')">
                 <div id="reg-email-err" class="field-err hidden"></div>
@@ -1355,6 +1355,32 @@ async function validateStep1(){
         btn.textContent = '인증번호 받기';
     }
 }
+
+async function resendOtp() {
+    const email = document.getElementById('id-reg-field')?.value.trim()
+                || document.getElementById('id-login-field')?.value.trim();
+    if (!email) {
+        showToast('이메일을 먼저 입력해주세요.', 'red');
+        return;
+    }
+    try {
+        showToast('재전송 중...', '');
+        const res = await fetch('/.netlify/functions/send-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            showToast('인증번호를 다시 보냈어요. 이메일을 확인해주세요.', 'pink');
+        } else {
+            showToast(data.error || '재전송에 실패했습니다.', 'red');
+        }
+    } catch(e) {
+        showToast('네트워크 오류가 발생했습니다.', 'red');
+    }
+}
+
 async function validateStep2(){
     const otp=document.getElementById('id-otp-field').value.trim();
     const email=document.getElementById('id-reg-field').value.trim();
