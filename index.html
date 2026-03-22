@@ -1762,7 +1762,8 @@ async function saveAutoReply() {
     };
 
     try {
-        const savedToken = localStorage.getItem('lumi_token') || '';
+        const lumiUser = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+        const savedToken = lumiUser.token || '';
         const res = await fetch('/.netlify/functions/save-auto-reply', {
             method: 'POST',
             headers: {
@@ -1784,7 +1785,8 @@ async function saveAutoReply() {
 
 async function loadAutoReply() {
     try {
-        const savedToken = localStorage.getItem('lumi_token') || '';
+        const lumiUser2 = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+        const savedToken = lumiUser2.token || '';
         const res = await fetch('/.netlify/functions/save-auto-reply', {
             headers: { 'Authorization': 'Bearer ' + savedToken }
         });
@@ -2042,7 +2044,8 @@ async function saveAutoReply() {
     };
 
     try {
-        const savedToken = localStorage.getItem('lumi_token') || '';
+        const lumiUser = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+        const savedToken = lumiUser.token || '';
         const res = await fetch('/.netlify/functions/save-auto-reply', {
             method: 'POST',
             headers: {
@@ -2064,7 +2067,8 @@ async function saveAutoReply() {
 
 async function loadAutoReply() {
     try {
-        const savedToken = localStorage.getItem('lumi_token') || '';
+        const lumiUser2 = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+        const savedToken = lumiUser2.token || '';
         const res = await fetch('/.netlify/functions/save-auto-reply', {
             headers: { 'Authorization': 'Bearer ' + savedToken }
         });
