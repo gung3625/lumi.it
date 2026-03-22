@@ -85,7 +85,7 @@ async function handleComment(entry, accessToken, settings) {
   const igUserId = entry.id;
 
   if (!commentId || !accessToken) return;
-  if (fromId === igUserId) return;
+  // if (fromId === igUserId) return; // 테스트용 비활성화
 
   console.log('[lumi] 댓글 수신:', commentText);
 
@@ -109,7 +109,7 @@ async function handleMessage(entry, accessToken, settings) {
   const igUserId = entry.id;
 
   if (!senderId || !accessToken) return;
-  if (senderId === igUserId) return;
+  // if (senderId === igUserId) return; // 테스트용 비활성화
 
   console.log('[lumi] DM 수신:', messageText, '발신자:', senderId);
 
