@@ -1006,12 +1006,38 @@
             <input type="password" id="pw-login-field" placeholder="비밀번호" class="inp" oninput="clearFieldErr(this.id,'login-pw-err')">
             <div id="login-pw-err" class="field-err hidden"></div>
             <button class="btn-portal" onclick="handleLoginAction()">로그인</button>
+            <p style="text-align:center;margin-top:12px;font-size:13px;color:#999;">비밀번호를 잊으셨나요? <button onclick="openForgotPassword()" style="background:none;border:none;color:#FF6B9D;font-size:13px;cursor:pointer;text-decoration:underline;padding:0;">비밀번호 찾기</button></p>
+        </div>
+        <!-- 비밀번호 찾기 -->
+        <div id="lumi-forgot-view" class="hidden">
+            <p class="portal-ttl">비밀번호를 찾아요.</p>
+            <p class="portal-sub">가입한 이메일로 인증번호를 보내드릴게요.</p>
+            <div id="forgot-step-1">
+                <input type="email" id="forgot-email-field" placeholder="이메일 주소" class="inp" oninput="clearFieldErr(this.id,'forgot-email-err')">
+                <div id="forgot-email-err" class="field-err hidden"></div>
+                <button class="btn-portal" onclick="sendForgotOtp()">인증번호 받기</button>
+            </div>
+            <div id="forgot-step-2" class="hidden">
+                <input type="text" id="forgot-otp-field" placeholder="000000" class="inp inp-otp" maxlength="6" oninput="clearFieldErr(this.id,'forgot-otp-err')">
+                <div id="forgot-otp-err" class="field-err hidden"></div>
+                <button class="btn-portal" onclick="verifyForgotOtp()">확인</button>
+                <p style="text-align:center;margin-top:12px;font-size:13px;color:#999;"><button onclick="sendForgotOtp()" style="background:none;border:none;color:#FF6B9D;font-size:13px;cursor:pointer;text-decoration:underline;padding:0;">재전송</button></p>
+            </div>
+            <div id="forgot-step-3" class="hidden">
+                <input type="password" id="forgot-pw-field" placeholder="새 비밀번호 (6자리 이상)" class="inp" oninput="clearFieldErr(this.id,'forgot-pw-err')">
+                <div id="forgot-pw-err" class="field-err hidden"></div>
+                <input type="password" id="forgot-pw-confirm-field" placeholder="새 비밀번호 확인" class="inp" style="margin-top:8px;" oninput="clearFieldErr(this.id,'forgot-pw-confirm-err')">
+                <div id="forgot-pw-confirm-err" class="field-err hidden"></div>
+                <button class="btn-portal" onclick="resetForgotPassword()">비밀번호 변경</button>
+            </div>
+            <p style="text-align:center;margin-top:12px;font-size:13px;color:#999;"><button onclick="setPortalMode('login')" style="background:none;border:none;color:#999;font-size:13px;cursor:pointer;text-decoration:underline;padding:0;">로그인으로 돌아가기</button></p>
         </div>
         <!-- 회원가입 -->
         <div id="lumi-signup-view" class="hidden">
             <div class="s-dots">
                 <div class="s-dot on" id="dot-1"></div>
                 <div class="s-dot" id="dot-2"></div>
+                <div class="s-dot" id="dot-2b"></div>
                 <div class="s-dot" id="dot-3"></div>
                 <div class="s-dot" id="dot-4"></div>
                 <div class="s-dot" id="dot-5"></div>
@@ -1043,6 +1069,15 @@
                 <div id="otp-err" class="field-err hidden"></div>
                 <button class="btn-portal" onclick="validateStep2()">확인</button>
                 <p style="text-align:center;margin-top:12px;font-size:13px;color:#999;">이메일을 못 받으셨나요? <button onclick="resendOtp()" style="background:none;border:none;color:#FF6B9D;font-size:13px;cursor:pointer;text-decoration:underline;padding:0;">재전송</button></p>
+            </div>
+            <div id="node-step-2b" class="hidden">
+                <p class="portal-ttl">비밀번호를 설정해요.</p>
+                <p class="portal-sub">로그인할 때 사용할 비밀번호를 입력해 주세요.</p>
+                <input type="password" id="id-pw-field" placeholder="비밀번호 (6자리 이상)" class="inp" oninput="clearFieldErr(this.id,'pw-err')">
+                <div id="pw-err" class="field-err hidden"></div>
+                <input type="password" id="id-pw-confirm-field" placeholder="비밀번호 확인" class="inp" style="margin-top:8px;" oninput="clearFieldErr(this.id,'pw-confirm-err')">
+                <div id="pw-confirm-err" class="field-err hidden"></div>
+                <button class="btn-portal" onclick="validateStepPassword()">다음</button>
             </div>
             <div id="node-step-3" class="hidden">
                 <p class="portal-ttl">마지막이에요.</p>
@@ -1434,6 +1469,7 @@ function selectTone(tone){
 
 /* ── 회원가입 완료 ── */
 async function finishLumiSignup(){
+    const password = document.getElementById('id-pw-field')?.value || '';
     bizCat=document.getElementById('biz-cat-select').value;
     if (bizCat === 'other') {
         const otherVal = document.getElementById('biz-cat-other').value.trim();
@@ -1725,7 +1761,7 @@ function resetToInitialLanding(){
     const fromDash = document.getElementById('lumi-dashboard-node').style.display === 'none';
     window.scrollTo({top: savedScroll, behavior:'instant'});
 }
-function navNode(s){[1,2,3].forEach(n=>{document.getElementById(`node-step-${n}`).classList.add('hidden');document.getElementById(`dot-${n}`).classList.remove('on');});document.getElementById(`node-step-${s}`).classList.remove('hidden');document.getElementById(`dot-${s}`).classList.add('on');}
+function navNode(s){['1','2','2b','3'].forEach(n=>{document.getElementById(`node-step-${n}`)?.classList.add('hidden');document.getElementById(`dot-${n}`)?.classList.remove('on');});document.getElementById(`node-step-${s}`)?.classList.remove('hidden');document.getElementById(`dot-${s}`)?.classList.add('on');}
 async function grantAccess(){
     document.getElementById('lumi-auth-portal').style.display='none';
     document.getElementById('lumi-intro-view-port').style.display='none';
