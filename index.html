@@ -1480,6 +1480,8 @@ async function commitPost(type){
     };
 
     // 매장 프로필 (선택 정보 포함)
+    const userRaw = localStorage.getItem('lumi_user');
+    const userData = userRaw ? JSON.parse(userRaw) : {};
     const storeProfile = {
         name: storeName,
         description: storeDesc,
@@ -1487,7 +1489,9 @@ async function commitPost(type){
         region: storeRegion,
         category: bizCat,
         toneStyle: captionTone,
-        tagStyle: tagStyle
+        tagStyle: tagStyle,
+        ownerName: ceoName || userData.name || '',
+        ownerEmail: userData.email || ''
     };
 
     if(type==='now'){
@@ -1550,25 +1554,62 @@ async function commitPost(type){
         }
 
     } else {
-        // 보관함 저장 (로컬)
-        const reserveTimeVal=document.getElementById('reserve-time-field').value;
-        const scheduledAt=reserveTimeVal ? new Date(reserveTimeVal).toISOString() : null;
-        archive.push({
-            id: Date.now(),
-            time: new Date().toLocaleString(),
-            scheduledAt,
-            content: notes,
-            photos,
-            weather: weatherPayload,
-            trends: currentTrends,
-            bizCategory: bizCat,
-            captionTone,
-            storeProfile
-        });
-        syncPersistence();
-        renderArchive();
-        showToast('보관함에 저장했어요.','pink');
-        resetDashboard();
+        // 예약 저장 → Netlify Blobs에 저장
+        const reserveTimeVal = document.getElementById('reserve-time-field').value;
+        const scheduledAt = reserveTimeVal ? new Date(reserveTimeVal).toISOString() : null;
+        if (!scheduledAt) {
+            showToast('예약 시간을 선택해주세요.', 'red');
+            return;
+        }
+
+        const btn2 = document.querySelector('.btn-act-off');
+        if (btn2) { btn2.disabled = true; btn2.textContent = '저장 중...'; }
+
+        try {
+            const formData2 = new FormData();
+            stagedFiles.forEach((f, i) => formData2.append(`photo_${i}`, f, f.name));
+            formData2.append('userMessage', notes);
+            formData2.append('bizCategory', bizCat);
+            formData2.append('captionTone', captionTone);
+            formData2.append('tagStyle', tagStyle);
+            formData2.append('weather', JSON.stringify(weatherPayload));
+            formData2.append('trends', JSON.stringify(currentTrends));
+            formData2.append('storeProfile', JSON.stringify(storeProfile));
+            formData2.append('submittedAt', new Date().toISOString());
+            formData2.append('scheduledAt', scheduledAt);
+
+            const res2 = await fetch('/.netlify/functions/save-reservation', {
+                method: 'POST',
+                body: formData2
+            });
+            const data2 = await res2.json();
+
+            if (res2.ok) {
+                // 로컬 보관함에도 표시용으로 저장
+                archive.push({
+                    id: data2.id,
+                    time: new Date().toLocaleString(),
+                    scheduledAt,
+                    content: notes,
+                    photos,
+                    weather: weatherPayload,
+                    trends: currentTrends,
+                    bizCategory: bizCat,
+                    captionTone,
+                    storeProfile
+                });
+                syncPersistence();
+                renderArchive();
+                showToast('예약이 저장됐어요! ⏰', 'pink');
+                resetDashboard();
+            } else {
+                showToast(data2.error || '예약 저장에 실패했어요.', 'red');
+            }
+        } catch(e) {
+            showToast('네트워크 오류가 발생했습니다.', 'red');
+        } finally {
+            if (btn2) { btn2.disabled = false; btn2.textContent = '예약 저장'; }
+        }
     }
 }
 
@@ -2083,6 +2124,8 @@ function updateBizCat(val) {
     bizCat = val;
     const other = document.getElementById('dash-biz-cat-other');
     if (other) other.style.display = val === 'other' ? 'block' : 'none';
+    // 업종 변경 시 트렌드 다시 로드
+    if (val !== 'other') loadTrends();
 }
 
 function toggleBizOther(val) {
