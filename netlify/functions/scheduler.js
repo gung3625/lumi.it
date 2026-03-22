@@ -89,9 +89,7 @@ exports.handler = async (event) => {
           storeDescription: sp.description || '',
           storeInstagram: sp.instagram || '',
           storeRegion: sp.region || '',
-          storeCategory: sp.category || '',
-          storeToneStyle: sp.toneStyle || '',
-          storeTagStyle: sp.tagStyle || '',
+          storeCategory: item.bizCategory || sp.category || '',
           ownerName: sp.ownerName || '',
           ownerEmail: sp.ownerEmail || ''
         };
