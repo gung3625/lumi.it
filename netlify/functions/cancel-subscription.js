@@ -28,8 +28,14 @@ exports.handler = async (event) => {
 
     const user = JSON.parse(raw);
 
-    // 토큰 검증
-    if (user.token !== token) {
+    // 토큰 검증 (token:xxx 키로 저장된 토큰 조회)
+    let tokenData;
+    try { tokenData = await store.get('token:' + token); } catch { tokenData = null; }
+    if (!tokenData) {
+      return { statusCode: 401, body: JSON.stringify({ error: '인증에 실패했습니다.' }) };
+    }
+    const parsed = JSON.parse(tokenData);
+    if (parsed.email !== email) {
       return { statusCode: 401, body: JSON.stringify({ error: '인증에 실패했습니다.' }) };
     }
 
