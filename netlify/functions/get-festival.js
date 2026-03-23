@@ -12,13 +12,85 @@ function httpsGet(url) {
   });
 }
 
+function httpsPost(hostname, path, headers, body) {
+  return new Promise((resolve, reject) => {
+    const data = JSON.stringify(body);
+    const options = {
+      hostname, path, method: 'POST',
+      headers: { ...headers, 'Content-Length': Buffer.byteLength(data) }
+    };
+    const req = https.request(options, (res) => {
+      let responseData = '';
+      res.on('data', chunk => { responseData += chunk; });
+      res.on('end', () => resolve({ status: res.statusCode, body: responseData }));
+    });
+    req.on('error', reject);
+    req.setTimeout(8000, () => { req.destroy(new Error('timeout')); });
+    req.write(data);
+    req.end();
+  });
+}
+
 function getDateStr(offsetDays = 0) {
   const d = new Date();
   d.setDate(d.getDate() + offsetDays);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}${m}${day}`;
+  return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+}
+
+// 네이버 데이터랩으로 행사 인기도 순 정렬
+async function rankByNaverTrend(festivals) {
+  const clientId = process.env.NAVER_CLIENT_ID;
+  const clientSecret = process.env.NAVER_CLIENT_SECRET;
+  if (!clientId || !clientSecret || festivals.length <= 1) return festivals;
+
+  const today = new Date();
+  const endDate = today.toISOString().slice(0, 10);
+  const startDate = new Date(today - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+  // 데이터랩은 최대 5개 그룹 제한
+  const targets = festivals.slice(0, 5);
+  const keywordGroups = targets.map(f => ({
+    groupName: f.title.slice(0, 20), // groupName 최대 20자
+    keywords: [f.title.replace(/[()[\]]/g, '').trim().slice(0, 20)]
+  }));
+
+  try {
+    const result = await httpsPost(
+      'openapi.naver.com',
+      '/v1/datalab/search',
+      {
+        'Content-Type': 'application/json',
+        'X-Naver-Client-Id': clientId,
+        'X-Naver-Client-Secret': clientSecret
+      },
+      { startDate, endDate, timeUnit: 'week', keywordGroups }
+    );
+
+    if (result.status !== 200) return festivals;
+
+    const data = JSON.parse(result.body);
+    if (!data.results || data.results.length === 0) return festivals;
+
+    // 각 행사별 최근 검색량 평균 계산
+    const scoreMap = {};
+    data.results.forEach(r => {
+      const avg = r.data.length > 0
+        ? r.data.reduce((s, d) => s + d.ratio, 0) / r.data.length
+        : 0;
+      scoreMap[r.title] = avg;
+    });
+
+    // 인기도 높은 순 정렬
+    return [...festivals].sort((a, b) => {
+      const scoreA = scoreMap[a.title.slice(0, 20)] || 0;
+      const scoreB = scoreMap[b.title.slice(0, 20)] || 0;
+      return scoreB - scoreA;
+    });
+
+  } catch(e) {
+    console.error('naver datalab error:', e.message);
+    return festivals;
+  }
 }
 
 exports.handler = async (event) => {
@@ -36,8 +108,9 @@ exports.handler = async (event) => {
   const twoWeeksLater = getDateStr(14);
 
   try {
+    // 인기도 정렬을 위해 더 많이 가져옴 (최대 10개)
     let url = `https://apis.data.go.kr/B551011/KorService2/searchFestival2?` +
-      `numOfRows=3&pageNo=1&MobileOS=WEB&MobileApp=lumi&_type=json&arrange=R` +
+      `numOfRows=10&pageNo=1&MobileOS=WEB&MobileApp=lumi&_type=json&arrange=R` +
       `&eventStartDate=${today}&eventEndDate=${twoWeeksLater}` +
       `&serviceKey=${encodeURIComponent(serviceKey)}` +
       `&lDongRegnCd=${sidoCode}`;
@@ -45,26 +118,27 @@ exports.handler = async (event) => {
     if (sigunguCode) url += `&lDongSignguCd=${sigunguCode}`;
 
     const result = await httpsGet(url);
-
     if (result.status !== 200) {
-      console.error('행사 API 오류:', result.status, result.body.substring(0, 200));
       return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ festivals: [], count: 0 }) };
     }
 
     const data = JSON.parse(result.body);
     const items = data?.response?.body?.items?.item;
-
     if (!items) {
       return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ festivals: [], count: 0 }) };
     }
 
     const list = Array.isArray(items) ? items : [items];
-    const festivals = list.map(item => ({
+    let festivals = list.map(item => ({
       title: item.title || '',
       startDate: item.eventstartdate || '',
       endDate: item.eventenddate || '',
       addr: item.addr1 || '',
     }));
+
+    // 네이버 데이터랩으로 인기도 순 정렬 후 상위 3개
+    festivals = await rankByNaverTrend(festivals);
+    festivals = festivals.slice(0, 3);
 
     return {
       statusCode: 200,
