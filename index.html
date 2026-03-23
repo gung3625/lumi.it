@@ -1808,59 +1808,18 @@ async function fetchRealWeather(lat, lon, locationName) {
 }
 
 async function initWeather() {
-    const SEOUL = { lat: 37.5665, lon: 126.9780, name: '서울' };
+    // 날씨/에어코리아 모두 가게 지역 기준 — GPS 사용 안 함
+    const lumiUser = JSON.parse(localStorage.getItem('lumi_user') || '{}');
 
-    if (!navigator.geolocation) {
-        await fetchRealWeather(SEOUL.lat, SEOUL.lon, SEOUL.name);
-        fetchAirQuality('서울');
-        fetchFestivals();
-        return;
-    }
+    // 1순위: 드롭다운 텍스트 (가장 최신), 2순위: localStorage.storeSido, 3순위: 서울
+    const sidoSel = document.getElementById('dash-sido');
+    const sidoText = sidoSel?.options[sidoSel.selectedIndex]?.text || '';
+    const storeSido = (sidoText && sidoText !== '시/도 선택') ? sidoText
+        : (lumiUser.storeSido || '서울');
 
-    navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-            const banner = document.getElementById('location-denied-banner');
-            if (banner) banner.style.display = 'none';
-            const { latitude, longitude } = pos.coords;
-            await fetchRealWeather(latitude, longitude, '현재 위치');
-            fetchAirQuality('서울');
-            fetchFestivals({ lat: latitude, lng: longitude });
-        },
-        async (err) => {
-            if (err.code === err.PERMISSION_DENIED) {
-                const banner = document.getElementById('location-denied-banner');
-                if (banner) banner.style.display = 'block';
-            }
-            await fetchRealWeather(SEOUL.lat, SEOUL.lon, SEOUL.name);
-            fetchAirQuality('서울');
-            fetchFestivals();
-        },
-        { timeout: 5000 }
-    );
-}
-
-function retryLocation() {
-    const SEOUL = { lat: 37.5665, lon: 126.9780, name: '서울' };
-    if (!navigator.geolocation) return;
-
-    const btn = document.querySelector('#location-denied-banner button');
-    if (btn) { btn.disabled = true; btn.textContent = '확인 중...'; }
-
-    navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-            const banner = document.getElementById('location-denied-banner');
-            if (banner) banner.style.display = 'none';
-            const { latitude, longitude } = pos.coords;
-            await fetchRealWeather(latitude, longitude, '현재 위치');
-            fetchAirQuality('서울');
-            fetchFestivals({ lat: latitude, lng: longitude });
-        },
-        (err) => {
-            if (btn) { btn.disabled = false; btn.textContent = '위치 허용'; }
-            showToast('브라우저 설정에서 위치 권한을 허용해 주세요.', '');
-        },
-        { timeout: 5000 }
-    );
+    await fetchRealWeather(null, null, storeSido);
+    fetchAirQuality(storeSido);
+    fetchFestivals();
 }
 
 /* ── 파일 업로드 ── */
@@ -1959,7 +1918,17 @@ function updateStoreRegion() {
                 user.region = storeRegion;
                 user.sidoCode = sidoCode;
                 user.sigunguCode = sigunguCode;
+                user.storeSido = sidoText; // 날씨/에어코리아 조회용 시도명
                 localStorage.setItem('lumi_user', JSON.stringify(user));
+                // 서버에도 저장 (다음 로그인 시 복원)
+                const lumiToken = user.token || localStorage.getItem('lumi_token') || '';
+                if (lumiToken) {
+                    fetch('/.netlify/functions/update-profile', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + lumiToken },
+                        body: JSON.stringify({ sidoCode, sigunguCode, storeSido: sidoText, region: storeRegion })
+                    }).catch(() => {});
+                }
             }
         } catch(e) {}
     }
@@ -1977,23 +1946,31 @@ function restoreRegionDropdown(regionStr, sidoCode, sigunguCode) {
     setTimeout(() => {
         sigunguSel.value = sigunguCode;
         updateStoreRegion();
-        // 지역 복원 완료 후 행사 조회
-        setTimeout(() => fetchFestivals(), 100);
+        // 지역 복원 완료 후 날씨/행사 조회
+        setTimeout(() => {
+            fetchFestivals();
+            initWeather();
+        }, 100);
     }, 50);
 }
 
-async function fetchFestivals(latLng) {
+async function fetchFestivals() {
     try {
+        // 행사는 항상 가게 주소(지역 설정) 기준으로 조회 — GPS 위치 무관
         let sidoCode = document.getElementById('dash-region-sido-code')?.value || '';
         let sigunguCode = document.getElementById('dash-region-sigungu-code')?.value || '';
 
-        // 지역 드롭다운 미설정 + GPS 좌표 있으면 좌표로 sido 추정
-        if (!sidoCode && latLng) {
-            sidoCode = guessSidoFromLatLng(latLng.lat, latLng.lng);
+        // 지역 미설정 시 localStorage에서 sidoCode 복구 시도
+        if (!sidoCode) {
+            const lumiUser = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+            sidoCode = lumiUser.sidoCode || '';
+            sigunguCode = lumiUser.sigunguCode || '';
         }
 
         if (!sidoCode) return;
-        const res = await fetch(`/.netlify/functions/get-festival?sido=${sidoCode}&sigungu=${sigunguCode}`);
+        let festivalUrl = `/.netlify/functions/get-festival?sido=${sidoCode}`;
+        if (sigunguCode) festivalUrl += `&sigungu=${sigunguCode}`;
+        const res = await fetch(festivalUrl);
         const data = await res.json();
         currentFestivals = data.festivals || [];
         console.log('[lumi] 주변 행사:', currentFestivals.length, '개');
@@ -2441,7 +2418,11 @@ bootPersistence();
     loadTrends();
     loadAutoReply();
     checkIgConnection();
-    initWeather();
+    // 지역 설정된 경우 restoreRegionDropdown 완료 후 initWeather 호출됨
+    // 지역 미설정 시(신규 가입자) 바로 호출
+    if (!JSON.parse(localStorage.getItem('lumi_user') || '{}').sidoCode) {
+        initWeather();
+    }
 
     // 플랜 상태 체크
     if (userRaw) {
@@ -3198,6 +3179,11 @@ async function finishLumiSignup() {
     const email = getSignupEmail() || document.getElementById('id-reg-field')?.value.trim();
     const storeDesc = document.getElementById('store-desc-field')?.value.trim() || '';
     const region = document.getElementById('store-region-field')?.value.trim() || '';
+    // 지역 코드 (가입 시 드롭다운에서 선택했을 경우 대시보드 hidden input에서 읽기)
+    const sidoCode = document.getElementById('dash-region-sido-code')?.value || '';
+    const sigunguCode = document.getElementById('dash-region-sigungu-code')?.value || '';
+    const storeSidoSel = document.getElementById('dash-sido');
+    const storeSido = storeSidoSel?.options[storeSidoSel.selectedIndex]?.text || '';
 
     if (!name) { showToast('성함을 입력해주세요.', 'red'); return; }
     if (!sName) { showToast('매장 이름을 입력해주세요.', 'red'); return; }
@@ -3270,6 +3256,19 @@ function saveDashPrefs() {
         if (dashTone) user.captionTone = dashTone.value.trim();
         if (dashTag) user.tagStyle = dashTag.value;
         localStorage.setItem('lumi_user', JSON.stringify(user));
+        // 서버에도 저장 (다음 로그인 시 복원)
+        const lumiToken2 = user.token || localStorage.getItem('lumi_token') || '';
+        if (lumiToken2) {
+            fetch('/.netlify/functions/update-profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + lumiToken2 },
+                body: JSON.stringify({
+                    bizCategory: user.bizCategory,
+                    captionTone: user.captionTone,
+                    tagStyle: user.tagStyle
+                })
+            }).catch(() => {});
+        }
     } catch(e) {}
 }
 
