@@ -982,7 +982,7 @@
                         대표자: 김현 &nbsp;|&nbsp; 사업자 등록번호: 330-04-03207<br>
                         사업장 소재지: 서울특별시 용산구 회나무로 32-7 (이태원동)<br>
                         업태: 서비스업 &nbsp;|&nbsp; 종목: 광고대행업<br>
-                        통신판매업 신고번호: 신고 준비 중<br>
+                        통신판매업 신고번호: 제2024-서울용산-1166호<br>
                         문의: gung3625@gmail.com
                     </p>
                 </div>
@@ -1131,6 +1131,18 @@
                 <button id="cancel-sub-btn" onclick="cancelSubscription()" style="display:none;background:none;border:1px solid #ffcccc;border-radius:8px;padding:6px 14px;font-size:12px;color:#ff4d4d;cursor:pointer;">구독 취소</button>
             </div>
         </div>
+        <!-- Instagram 연동 상태 -->
+        <div id="ig-connect-banner" style="display:none;background:#fff0f6;border:1.5px solid var(--pink);border-radius:var(--r-xl);padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+            <div>
+                <p style="font-size:.85rem;font-weight:700;color:var(--pink);margin-bottom:2px;">Instagram 계정 연동이 필요해요</p>
+                <p style="font-size:.78rem;color:var(--g500);">연동 후 게시물을 자동으로 올릴 수 있어요.</p>
+            </div>
+            <button onclick="connectInstagram()" style="background:var(--pink);color:#fff;border:none;border-radius:var(--r-md);padding:10px 16px;font-size:.83rem;font-weight:700;cursor:pointer;white-space:nowrap;">Instagram 연동</button>
+        </div>
+        <div id="ig-connected-badge" style="display:none;background:#f0fff4;border:1.5px solid #52c41a;border-radius:var(--r-xl);padding:12px 18px;margin-bottom:16px;">
+            <p style="font-size:.83rem;font-weight:700;color:#389e0d;">✅ Instagram 계정이 연동됐어요!</p>
+        </div>
+
         <div class="weather-card">
             <div class="w-icon" id="dash-w-icon">☀️</div>
             <div>
@@ -1431,6 +1443,32 @@ async function handleLoginAction(){
 /* resendOtp 제거됨 - requestSignupOtp 사용 */
 
 /* validateStep2 제거됨 */
+
+function connectInstagram() {
+    const lumiUser = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+    const token = lumiUser.token || '';
+    window.location.href = '/.netlify/functions/ig-oauth?action=start&token=' + token;
+}
+
+function checkIgConnection() {
+    const params = new URLSearchParams(window.location.search);
+    const lumiUser = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+
+    if (params.get('oauth_success') === '1' || params.get('ig_connected') === '1') {
+        // 연동 성공
+        lumiUser.igConnected = true;
+        localStorage.setItem('lumi_user', JSON.stringify(lumiUser));
+        // URL 파라미터 제거
+        window.history.replaceState({}, '', '/');
+    }
+
+    const igConnected = lumiUser.igConnected;
+    const banner = document.getElementById('ig-connect-banner');
+    const badge = document.getElementById('ig-connected-badge');
+
+    if (banner) banner.style.display = igConnected ? 'none' : 'flex';
+    if (badge) badge.style.display = igConnected ? 'block' : 'none';
+}
 
 function parseWeatherCode(code) {
     if (code <= 3) return 'clear';   // 맑음
@@ -1881,6 +1919,7 @@ bootPersistence();
 
     loadTrends();
     loadAutoReply();
+    checkIgConnection();
     initWeather();
 
     // 플랜 상태 체크
