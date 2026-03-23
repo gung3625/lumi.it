@@ -77,23 +77,16 @@ exports.handler = async (event) => {
         try { storeProfile = JSON.parse(fields.storeProfile || '{}'); } catch(e) {}
         try { airQuality = JSON.parse(fields.airQuality || '{}'); } catch(e) {}
 
-        // 대기오염 등급 계산
-        function getPm10Level(v) {
+        // 초미세먼지(PM2.5) 등급만 사용
+        function getPm25Grade(v) {
           const val = parseInt(v);
           if (isNaN(val)) return '알 수 없음';
-          if (val <= 30)  return '매우 좋음 — 야외 활동하기 딱 좋은 날이에요';
-          if (val <= 80)  return '보통 — 일반적인 야외 활동에 문제없어요';
-          if (val <= 150) return '나쁨 — 미세먼지가 있어요. 실내 분위기를 강조해보세요';
-          return '매우 나쁨 — 미세먼지가 심해요. 실내에서 즐기는 메뉴를 추천해보세요';
+          if (val <= 15) return '좋음';
+          if (val <= 35) return '보통';
+          if (val <= 75) return '나쁨';
+          return '매우 나쁨';
         }
-        function getPm25Level(v) {
-          const val = parseInt(v);
-          if (isNaN(val)) return '알 수 없음';
-          if (val <= 15)  return '매우 좋음 — 공기가 깨끗한 날이에요';
-          if (val <= 35)  return '보통 — 초미세먼지 큰 문제 없어요';
-          if (val <= 75)  return '나쁨 — 초미세먼지가 있어요';
-          return '매우 나쁨 — 초미세먼지가 심해요';
-        }
+        const airGrade = airQuality.pm25Grade || (airQuality.pm25Value ? getPm25Grade(airQuality.pm25Value) : '알 수 없음');
 
         const textFields = {
           // 기본 정보
@@ -113,11 +106,8 @@ exports.handler = async (event) => {
           weatherMood: weather.mood || '',
           weatherLocation: weather.locationName || '',
 
-          // 대기오염 등급 (Make 캡션 생성에 활용)
-          airPm10Grade: airQuality.pm10Grade || '',
-          airPm10Level: airQuality.pm10Value ? getPm10Level(airQuality.pm10Value) : '알 수 없음',
-          airPm25Grade: airQuality.pm25Grade || '',
-          airPm25Level: airQuality.pm25Value ? getPm25Level(airQuality.pm25Value) : '알 수 없음',
+          // 대기오염 등급 (PM10, PM25 중 더 나쁜 등급 하나)
+          airQuality: airGrade,
 
           // 트렌드 (문자열)
           trends: Array.isArray(trends) ? trends.join(', ') : '',
