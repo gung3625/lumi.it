@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>고객센터 — lumi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --pink: #FF6B9D;
+            --pink-light: #FF8FB5;
+            --pink-soft: #FFD6E7;
+            --pink-pale: #FFF0F6;
+            --pink-ultra: #FFF7FB;
+            --g900: #191F28;
+            --g700: #333D4B;
+            --g500: #6B7684;
+            --g400: #8B95A1;
+            --g200: #E8ECF0;
+            --g100: #F2F4F6;
+            --g50: #F9FAFB;
+            --white: #FFFFFF;
+            --r-sm: 12px; --r-md: 16px; --r-lg: 24px; --r-xl: 32px; --r-full: 999px;
+            --sh-sm: 0 2px 12px rgba(0,0,0,.07);
+            --sh-md: 0 4px 24px rgba(0,0,0,.08);
+            --sh-pink: 0 8px 24px rgba(255,107,157,.28);
+            --ease: cubic-bezier(0.16,1,0.3,1);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; word-break: keep-all; }
+        body { font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif; background: var(--white); color: var(--g700); line-height: 1.7; font-size: 15px; }
+
+        /* NAV */
+        nav { position: sticky; top: 0; background: rgba(255,255,255,.95); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid var(--g100); padding: 0 24px; height: 60px; display: flex; align-items: center; justify-content: space-between; z-index: 100; }
+        .nav-logo { height: 100px; cursor: pointer; }
+        .nav-back { font-size: 14px; font-weight: 600; color: var(--g500); text-decoration: none; transition: color .2s; }
+        .nav-back:hover { color: var(--g900); }
+
+        /* HERO */
+        .hero { background: var(--g900); padding: 60px 24px 56px; text-align: center; }
+        .hero-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px; border-radius: var(--r-full); background: rgba(255,107,157,.15); color: var(--pink-light); font-size: 12px; font-weight: 700; margin-bottom: 18px; }
+        .hero-title { font-size: clamp(1.6rem, 4vw, 2.2rem); font-weight: 900; color: #fff; margin-bottom: 10px; letter-spacing: -.02em; line-height: 1.3; }
+        .hero-desc { font-size: .88rem; color: rgba(255,255,255,.5); line-height: 1.8; }
+
+        /* SECTION */
+        .section { max-width: 760px; margin: 0 auto; padding: 60px 24px 0; }
+        .section-label { font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--pink); margin-bottom: 10px; }
+        .section-title { font-size: 1.2rem; font-weight: 900; color: var(--g900); margin-bottom: 28px; letter-spacing: -.02em; }
+
+        /* CONTACT CARDS */
+        .contact-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 64px; }
+        .contact-card { background: var(--white); border: 1px solid var(--g200); border-radius: var(--r-xl); padding: 28px 20px; text-align: center; transition: transform .3s var(--ease), box-shadow .3s, border-color .3s; text-decoration: none; display: block; cursor: pointer; }
+        .contact-card:hover { transform: translateY(-4px); box-shadow: var(--sh-md); border-color: var(--pink-soft); }
+        .contact-card.kakao { border-color: #FEE500; background: #FFFDE7; }
+        .contact-card.kakao:hover { border-color: #F9C93E; }
+        .contact-icon { font-size: 2rem; margin-bottom: 12px; }
+        .contact-name { font-size: .9rem; font-weight: 800; color: var(--g900); margin-bottom: 6px; }
+        .contact-desc { font-size: .78rem; color: var(--g500); line-height: 1.6; margin-bottom: 16px; }
+        .contact-btn { display: inline-block; padding: 8px 20px; border-radius: var(--r-full); font-size: 12px; font-weight: 700; }
+        .contact-btn.pink { background: var(--pink); color: #fff; }
+        .contact-btn.dark { background: var(--g900); color: #fff; }
+        .contact-btn.yellow { background: #FEE500; color: #3A1D1D; }
+
+        /* FAQ */
+        .faq-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 64px; }
+        details { background: var(--g50); border-radius: var(--r-lg); border: 1px solid var(--g200); overflow: hidden; transition: border-color .2s; }
+        details[open] { border-color: var(--pink-soft); background: var(--pink-ultra); }
+        summary { padding: 20px 24px; font-size: .92rem; font-weight: 700; color: var(--g900); list-style: none; display: flex; justify-content: space-between; align-items: center; cursor: pointer; gap: 12px; }
+        summary::-webkit-details-marker { display: none; }
+        .faq-icon { font-size: 1.1rem; color: var(--pink); flex-shrink: 0; transition: transform .3s var(--ease); }
+        details[open] .faq-icon { transform: rotate(45deg); }
+        .faq-answer { padding: 0 24px 20px; font-size: .88rem; color: var(--g500); line-height: 1.85; border-top: 1px solid var(--g200); padding-top: 16px; margin: 0 24px; }
+        details[open] .faq-answer { border-color: var(--pink-soft); }
+
+        /* 1:1 문의 폼 */
+        .form-card { background: var(--g50); border-radius: var(--r-xl); border: 1px solid var(--g200); padding: 36px 32px; margin-bottom: 64px; }
+        .form-row { margin-bottom: 14px; }
+        .form-label { font-size: 12px; font-weight: 700; color: var(--g500); margin-bottom: 6px; display: block; }
+        .form-input { width: 100%; padding: 13px 16px; border: 1.5px solid var(--g200); border-radius: var(--r-md); background: var(--white); font-size: 14px; color: var(--g900); font-family: inherit; outline: none; transition: border-color .2s, box-shadow .2s; }
+        .form-input:focus { border-color: var(--pink); box-shadow: 0 0 0 3px rgba(255,107,157,.1); }
+        .form-input::placeholder { color: var(--g400); }
+        textarea.form-input { resize: none; line-height: 1.75; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .btn-submit { width: 100%; padding: 14px; margin-top: 6px; border: none; background: var(--pink); color: #fff; font-size: 15px; font-weight: 700; border-radius: var(--r-md); cursor: pointer; font-family: inherit; transition: background .2s, transform .2s; box-shadow: var(--sh-pink); }
+        .btn-submit:hover { background: var(--pink-light); transform: translateY(-1px); }
+        .btn-submit:active { transform: scale(.98); }
+        .form-note { font-size: 12px; color: var(--g400); text-align: center; margin-top: 10px; }
+
+        /* 성공 메시지 */
+        .success-msg { display: none; background: #F0FFF4; border: 1.5px solid #52c41a; border-radius: var(--r-lg); padding: 20px 24px; text-align: center; }
+        .success-msg.show { display: block; }
+        .success-msg p { font-size: .9rem; font-weight: 700; color: #389e0d; }
+
+        /* FOOTER */
+        footer { background: var(--g50); border-top: 1px solid var(--g200); padding: 40px 24px; text-align: center; font-size: 12px; color: var(--g400); line-height: 2; }
+        footer a { color: var(--g400); text-decoration: none; }
+        footer a:hover { color: var(--g900); }
+
+        @media (max-width: 480px) {
+            .form-grid { grid-template-columns: 1fr; }
+            .form-card { padding: 24px 20px; }
+            .hero { padding: 48px 20px 44px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+    <a href="/"><img src="https://i.ibb.co/hJSzXD2z/img-1.png" class="nav-logo" alt="lumi"></a>
+    <a href="/" class="nav-back">← 홈으로</a>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+    <div class="hero-chip">💬 고객센터</div>
+    <h1 class="hero-title">무엇이든 물어보세요.</h1>
+    <p class="hero-desc">궁금한 점이 있으시면 아래 방법으로 편하게 문의해 주세요.<br>빠르게 도움드릴게요.</p>
+</div>
+
+<!-- 연락 방법 -->
+<div class="section" style="padding-top:52px;">
+    <p class="section-label">문의 방법</p>
+    <h2 class="section-title">편하신 방법으로 연락해 주세요.</h2>
+    <div class="contact-grid">
+        <a href="https://pf.kakao.com/_lumi_it" target="_blank" class="contact-card kakao">
+            <div class="contact-icon">💛</div>
+            <div class="contact-name">카카오톡 채널</div>
+            <p class="contact-desc">가장 빠른 응답<br>평일 오전 10시 ~ 오후 6시</p>
+            <span class="contact-btn yellow">채널 추가하기</span>
+        </a>
+        <a href="mailto:gung3625@gmail.com" class="contact-card">
+            <div class="contact-icon">📧</div>
+            <div class="contact-name">이메일 문의</div>
+            <p class="contact-desc">gung3625@gmail.com<br>영업일 기준 1~2일 내 답변</p>
+            <span class="contact-btn dark">메일 보내기</span>
+        </a>
+        <div class="contact-card" onclick="document.getElementById('inquiry-form').scrollIntoView({behavior:'smooth'})">
+            <div class="contact-icon">📝</div>
+            <div class="contact-name">1:1 문의</div>
+            <p class="contact-desc">아래 폼을 작성해 주시면<br>이메일로 답변드려요.</p>
+            <span class="contact-btn pink">문의 작성하기</span>
+        </div>
+    </div>
+</div>
+
+<!-- FAQ -->
+<div class="section">
+    <p class="section-label">FAQ</p>
+    <h2 class="section-title">자주 묻는 질문이에요.</h2>
+    <div class="faq-list">
+
+        <details>
+            <summary>인스타그램 비밀번호를 알려줘야 하나요? <span class="faq-icon">+</span></summary>
+            <p class="faq-answer">아니요, 비밀번호는 절대 필요하지 않아요. 메타(Meta) 공식 API를 통해 연동하기 때문에 비밀번호 없이 안전하게 연결돼요.</p>
+        </details>
+
+        <details>
+            <summary>7일 무료체험 후 자동으로 결제되나요? <span class="faq-icon">+</span></summary>
+            <p class="faq-answer">아니요, 카드 등록 없이 시작하기 때문에 자동 결제는 없어요. 7일 후에는 서비스 이용이 중단되고, 계속 쓰고 싶으시면 그때 구독을 시작하시면 돼요.</p>
+        </details>
+
+        <details>
+            <summary>구독 취소는 어떻게 하나요? <span class="faq-icon">+</span></summary>
+            <p class="faq-answer">언제든지 취소할 수 있어요. 위약금이나 해지 수수료는 없어요. 서비스 내 대시보드에서 직접 취소하거나, gung3625@gmail.com으로 메일 한 통만 보내주시면 바로 처리해 드려요.</p>
+        </details>
+
+        <details>
+            <summary>환불이 가능한가요? <span class="faq-icon">+</span></summary>
+            <p class="faq-answer">결제 후 7일 이내이고 서비스를 사용하지 않은 경우 전액 환불이 가능해요. 7일이 지난 경우에는 해당 월 서비스를 제공한 것으로 보아 환불이 어렵지만, 다음 결제일 이전에 구독을 취소하면 이후 결제는 진행되지 않아요.</p>
+        </details>
+
+        <details>
+            <summary>게시물이 마음에 안 들면 어떻게 해요? <span class="faq-icon">+</span></summary>
+            <p class="faq-answer">코멘트 칸에 원하는 방향을 적어주시면 그 내용을 반영해서 글을 써요. "좀 더 따뜻하게", "신메뉴 가격도 넣어줘" 같은 메모면 충분해요. 그래도 마음에 안 드시면 인스타그램에서 직접 수정하시면 돼요.</p>
+        </details>
+
+        <details>
+            <summary>인스타그램 비즈니스 계정이 없어도 되나요? <span class="faq-icon">+</span></summary>
+            <p class="faq-answer">자동 게시 기능은 인스타그램 비즈니스 계정 또는 크리에이터 계정이 필요해요. 개인 계정을 비즈니스 계정으로 전환하는 건 인스타그램 앱에서 무료로 할 수 있고, 전환해도 기존 게시물이나 팔로워에는 영향이 없어요.</p>
+        </details>
+
+        <details>
+            <summary>사진은 몇 장까지 올릴 수 있나요? <span class="faq-icon">+</span></summary>
+            <p class="faq-answer">한 번에 최대 10장까지 올릴 수 있어요. 여러 장을 올리면 인스타그램 캐러셀(묶음 게시물) 형태로 자동 업로드돼요.</p>
+        </details>
+
+        <details>
+            <summary>예약 게시는 어떻게 사용하나요? <span class="faq-icon">+</span></summary>
+            <p class="faq-answer">사진과 코멘트를 올린 후, 날짜와 시간을 선택하고 "예약 저장" 버튼을 누르면 돼요. lumi가 해당 시간에 자동으로 게시해드려요.</p>
+        </details>
+
+        <details>
+            <summary>비밀번호를 잊어버렸어요. <span class="faq-icon">+</span></summary>
+            <p class="faq-answer">로그인 화면에서 "비밀번호 찾기"를 클릭하시면 가입하신 이메일로 인증번호를 보내드려요. 인증 후 새 비밀번호로 변경하실 수 있어요.</p>
+        </details>
+
+        <details>
+            <summary>회원 탈퇴는 어떻게 하나요? <span class="faq-icon">+</span></summary>
+            <p class="faq-answer">대시보드 하단의 "탈퇴하기" 버튼을 누르시면 돼요. 탈퇴 시 모든 데이터가 삭제되며 복구가 불가능하니 신중하게 결정해 주세요.</p>
+        </details>
+
+    </div>
+</div>
+
+<!-- 구독 취소 / 회원 탈퇴 -->
+<div class="section">
+    <p class="section-label">구독 취소 · 회원 탈퇴</p>
+    <h2 class="section-title">취소 또는 탈퇴를 원하시나요?</h2>
+    <div class="contact-grid" style="margin-bottom:32px;">
+        <div class="contact-card" style="text-align:left;cursor:default;">
+            <div class="contact-icon">🔕</div>
+            <div class="contact-name">구독 취소</div>
+            <p class="contact-desc" style="margin-bottom:16px;">구독을 취소하면 다음 결제일부터 자동 결제가 중단돼요. 현재 결제 기간 만료일까지는 계속 이용 가능해요. 위약금은 없어요.</p>
+            <a href="mailto:gung3625@gmail.com?subject=구독 취소 요청&body=이메일: %0A이름: %0A취소 사유(선택): " class="contact-btn dark">구독 취소 요청하기</a>
+        </div>
+        <div class="contact-card" style="text-align:left;cursor:default;border-color:#ffcccc;background:#fff5f5;">
+            <div class="contact-icon">👋</div>
+            <div class="contact-name">회원 탈퇴</div>
+            <p class="contact-desc" style="margin-bottom:16px;">탈퇴하면 모든 데이터가 삭제되며 복구가 불가능해요. 탈퇴 전 구독 중인 경우 구독 취소를 먼저 진행해 주세요.</p>
+            <a href="mailto:gung3625@gmail.com?subject=회원 탈퇴 요청&body=이메일: %0A이름: %0A탈퇴 사유(선택): " class="contact-btn" style="background:#ff4d4d;color:#fff;">탈퇴 요청하기</a>
+        </div>
+    </div>
+    <div style="background:var(--g50);border-radius:var(--r-lg);padding:16px 20px;border:1px solid var(--g200);font-size:.85rem;color:var(--g500);line-height:1.8;">
+        📌 요청 후 <strong style="color:var(--g900);">영업일 기준 1~2일 이내</strong>에 처리되며, 처리 완료 후 이메일로 안내해드려요.
+    </div>
+</div>
+
+<!-- 1:1 문의 폼 -->
+<div class="section" id="inquiry-form">
+    <p class="section-label">1:1 문의</p>
+    <h2 class="section-title">직접 문의해 주세요.</h2>
+    <div class="form-card">
+        <div id="success-message" class="success-msg">
+            <p>✅ 문의가 접수됐어요! 영업일 기준 1~2일 내로 이메일로 답변드릴게요.</p>
+        </div>
+        <form name="lumi-inquiry" method="POST" data-netlify="true" data-netlify-honeypot="bot-field" id="inquiry-form-el">
+            <input type="hidden" name="form-name" value="lumi-inquiry">
+            <input type="hidden" name="bot-field" style="display:none;">
+
+            <div class="form-grid">
+                <div class="form-row">
+                    <label class="form-label">이름 *</label>
+                    <input type="text" name="name" placeholder="대표님 성함" class="form-input" required>
+                </div>
+                <div class="form-row">
+                    <label class="form-label">이메일 *</label>
+                    <input type="email" name="email" placeholder="답변받을 이메일" class="form-input" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <label class="form-label">문의 유형 *</label>
+                <select name="category" class="form-input" required>
+                    <option value="">문의 유형을 선택해 주세요</option>
+                    <option value="서비스 이용">서비스 이용 방법</option>
+                    <option value="결제/환불">결제 및 환불</option>
+                    <option value="계정">계정 관련</option>
+                    <option value="Instagram 연동">Instagram 연동</option>
+                    <option value="오류 신고">오류 신고</option>
+                    <option value="제휴/협력">제휴 및 협력</option>
+                    <option value="기타">기타</option>
+                </select>
+            </div>
+
+            <div class="form-row">
+                <label class="form-label">문의 내용 *</label>
+                <textarea name="message" class="form-input" rows="6" placeholder="문의하실 내용을 자세히 적어주세요." required></textarea>
+            </div>
+
+            <button type="submit" class="btn-submit">문의 보내기</button>
+            <p class="form-note">영업일 기준 1~2일 내로 이메일로 답변드려요.</p>
+        </form>
+    </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+    <p style="margin-bottom:12px;">
+        <a href="/">홈</a> &nbsp;·&nbsp;
+        <a href="/terms">이용약관</a> &nbsp;·&nbsp;
+        <a href="/privacy">개인정보처리방침</a> &nbsp;·&nbsp;
+        <a href="/support">고객센터</a>
+    </p>
+    <p>상호명: 루미 (lumi) &nbsp;|&nbsp; 대표자: 김현 &nbsp;|&nbsp; 사업자등록번호: 330-04-03207</p>
+    <p>사업장: 서울특별시 용산구 회나무로 32-7 &nbsp;|&nbsp; 통신판매업: 제2024-서울용산-1166호</p>
+    <p style="margin-top:8px;">© 2026 lumi (루미). All rights reserved.</p>
+</footer>
+
+<script>
+document.getElementById('inquiry-form-el').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const form = e.target;
+    const data = new FormData(form);
+    try {
+        const res = await fetch('/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams(data).toString()
+        });
+        if (res.ok) {
+            form.style.display = 'none';
+            document.getElementById('success-message').classList.add('show');
+        } else {
+            alert('제출 중 오류가 발생했어요. 이메일로 직접 문의해 주세요.');
+        }
+    } catch(err) {
+        alert('제출 중 오류가 발생했어요. 이메일로 직접 문의해 주세요.');
+    }
+});
+</script>
+
+</body>
+</html>
