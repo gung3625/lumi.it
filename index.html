@@ -221,6 +221,8 @@
         .w-icon{font-size:1.9rem;width:44px;text-align:center;}
         .w-status{font-size:.88rem;font-weight:700;color:var(--g900);}
         .w-guide{font-size:.78rem;color:var(--pink);margin-top:3px;font-weight:500;}
+        .air-quality-row{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;}
+        .aq-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:var(--r-full);font-size:11px;font-weight:700;background:var(--g100);color:var(--g700);}
         .dash-lbl{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--g400);margin-bottom:10px;}
         .trend-wrap{display:flex;flex-direction:column;gap:7px;margin-bottom:20px;}
         .trend-row{background:var(--white);border-radius:var(--r-md);padding:13px 15px;border:1px solid var(--g100);display:flex;align-items:center;gap:10px;transition:transform .2s,box-shadow .2s;justify-content:space-between;}
@@ -1357,9 +1359,13 @@
 
         <div class="weather-card">
             <div class="w-icon" id="dash-w-icon">☀️</div>
-            <div>
+            <div style="flex:1;">
                 <div class="w-status" id="dash-w-text">서울: 매우 맑음</div>
                 <div class="w-guide" id="dash-w-guide">"맑은 날 자연광은 최고의 필터입니다!"</div>
+                <div class="air-quality-row" id="air-quality-row" style="display:none;">
+                    <span class="aq-badge" id="aq-pm10-badge">미세먼지 -</span>
+                    <span class="aq-badge" id="aq-pm25-badge">초미세먼지 -</span>
+                </div>
             </div>
         </div>
         <p class="dash-lbl">지금 인기 태그</p>
@@ -1562,6 +1568,7 @@ const LUMI_CORE = {
     }
 };
 let archive=[],stagedFiles=[],bizCat='cafe',captionTone='warm',ceoName='',storeName='',storeDesc='',storeInsta='',storeRegion='',tagStyle='mid',weatherLoaded=false;
+let currentAirQuality=null;
 let realtimeTrends = [];
 let currentWeatherData = null; // 실제 날씨 데이터 전역 보관
 
@@ -1743,20 +1750,56 @@ async function initWeather() {
 
     navigator.geolocation.getCurrentPosition(
         async (pos) => {
-            // 위치 허용: 실제 좌표로 날씨 가져오기
             const { latitude, longitude } = pos.coords;
-            // 역지오코딩 (위치 이름) - Open-Meteo 자체 제공 없으므로 '현재 위치' 표기
             await fetchRealWeather(latitude, longitude, '현재 위치');
+            fetchAirQuality('서울');
         },
         async () => {
-            // 위치 거부 또는 오류 → 서울 기준
             await fetchRealWeather(SEOUL.lat, SEOUL.lon, SEOUL.name);
+            fetchAirQuality('서울');
         },
         { timeout: 5000 }
     );
+    // geolocation 없을 때도 대기오염 호출
+    if (!navigator.geolocation) fetchAirQuality('서울');
 }
 
 /* ── 파일 업로드 ── */
+async function fetchAirQuality(sido) {
+    try {
+        const sidoParam = sido || '서울';
+        const res = await fetch('/.netlify/functions/get-air-quality?sido=' + encodeURIComponent(sidoParam));
+        const data = await res.json();
+        if (!data.pm10 || !data.pm25) return;
+
+        const pm10Badge = document.getElementById('aq-pm10-badge');
+        const pm25Badge = document.getElementById('aq-pm25-badge');
+        const aqRow = document.getElementById('air-quality-row');
+
+        // 전역 저장
+        currentAirQuality = {
+            pm10Value: data.pm10.value,
+            pm10Grade: data.pm10.grade,
+            pm25Value: data.pm25.value,
+            pm25Grade: data.pm25.grade
+        };
+
+        if (pm10Badge) {
+            pm10Badge.textContent = `미세먼지 ${data.pm10.value}㎍/㎥ ${data.pm10.grade}`;
+            pm10Badge.style.background = data.pm10.color + '22';
+            pm10Badge.style.color = data.pm10.color;
+        }
+        if (pm25Badge) {
+            pm25Badge.textContent = `초미세먼지 ${data.pm25.value}㎍/㎥ ${data.pm25.grade}`;
+            pm25Badge.style.background = data.pm25.color + '22';
+            pm25Badge.style.color = data.pm25.color;
+        }
+        if (aqRow) aqRow.style.display = 'flex';
+    } catch(e) {
+        console.log('대기오염 정보 로딩 실패:', e.message);
+    }
+}
+
 function syncBinaryWarehouse(){
     const input=document.getElementById('ceo-file-selector');
     const preview=document.getElementById('ceo-preview-box');
@@ -1833,6 +1876,7 @@ async function commitPost(type){
         formData.append('captionTone', captionTone);
         formData.append('tagStyle', tagStyle);
         formData.append('weather', JSON.stringify(weatherPayload));
+        formData.append('airQuality', JSON.stringify(currentAirQuality || {}));
         formData.append('trends', JSON.stringify(currentTrends));
         formData.append('storeProfile', JSON.stringify(storeProfile));
         formData.append('photoCount', stagedFiles.length);
