@@ -65,7 +65,7 @@ exports.handler = async (event) => {
   }
 
   try {
-    const url = `https://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getCtprvnRltmMesureDnsty?serviceKey=${serviceKey}&returnType=json&numOfRows=1&pageNo=1&sidoName=${encodeURIComponent(sidoName)}&ver=1.0`;
+    const url = `https://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getCtprvnRltmMesureDnsty?serviceKey=${encodeURIComponent(serviceKey)}&returnType=json&numOfRows=1&pageNo=1&sidoName=${encodeURIComponent(sidoName)}&ver=1.0`;
 
     const result = await httpsGet(url);
 
