@@ -208,7 +208,7 @@
         .btn-portal:active{transform:scale(.98);}
 
         /* DASHBOARD */
-        .dash-layer{position:fixed;inset:0;z-index:8000;background:var(--g50);display:none;flex-direction:column;overflow-y:auto;}
+        .dash-layer{position:fixed;inset:0;z-index:8000;background:var(--g50);display:none;flex-direction:column;overflow-y:auto;overscroll-behavior:none;}
         .dash-topbar{position:sticky;top:0;background:rgba(249,250,251,.94);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--g200);padding:0 20px;height:56px;display:flex;align-items:center;justify-content:space-between;z-index:10;}
         .dash-topbar-logo{height:104px;}
         .dash-back{font-size:13px;font-weight:600;color:var(--g400);border:none;background:none;cursor:pointer;font-family:inherit;transition:color .2s;}
@@ -1358,16 +1358,38 @@
         </div>
 
         <div class="weather-card">
-            <div class="w-icon" id="dash-w-icon">☀️</div>
+            <div class="w-icon" id="dash-w-icon">📍</div>
             <div style="flex:1;">
-                <div class="w-status" id="dash-w-text">서울: 매우 맑음</div>
-                <div class="w-guide" id="dash-w-guide">"맑은 날 자연광은 최고의 필터입니다!"</div>
+                <div class="w-status" id="dash-w-text">위치 확인 중...</div>
+                <div class="w-guide" id="dash-w-guide">위치를 허용하면 현재 날씨를 알려드려요</div>
                 <div class="air-quality-row" id="air-quality-row" style="display:none;">
                     <span class="aq-badge" id="aq-pm10-badge">미세먼지 -</span>
                     <span class="aq-badge" id="aq-pm25-badge">초미세먼지 -</span>
                 </div>
             </div>
         </div>
+
+        <!-- 위치 거부 시 안내 배너 -->
+        <div id="location-denied-banner" style="display:none;background:#fff8f0;border:1.5px solid #ffb347;border-radius:var(--r-lg);padding:16px 18px;margin-bottom:16px;">
+            <div style="display:flex;align-items:flex-start;gap:12px;">
+                <span style="font-size:1.4rem;margin-top:2px;">📍</span>
+                <div style="flex:1;">
+                    <p style="font-size:.88rem;font-weight:800;color:#b85c00;margin-bottom:6px;">위치 권한을 허용해 주세요</p>
+                    <p style="font-size:.78rem;color:#996633;line-height:1.7;margin-bottom:10px;">위치를 허용하면 아래 정보를 자동으로 받아볼 수 있어요.</p>
+                    <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:12px;">
+                        <div style="display:flex;align-items:center;gap:7px;font-size:.78rem;color:#7a4f00;">
+                            <span>☀️</span><span><strong>실시간 날씨</strong> — 현재 위치의 날씨를 반영한 캡션을 써드려요</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:7px;font-size:.78rem;color:#7a4f00;">
+                            <span>🎉</span><span><strong>주변 행사 정보</strong> — 근처 축제·행사가 있으면 캡션에 자연스럽게 녹여드려요</span>
+                        </div>
+                    </div>
+                    <button onclick="retryLocation()" style="width:100%;background:#ff9500;color:#fff;border:none;border-radius:var(--r-md);padding:11px;font-size:.88rem;font-weight:700;cursor:pointer;">📍 위치 허용하고 시작하기</button>
+                    <p style="font-size:.72rem;color:#bbb;margin-top:8px;text-align:center;">위치 정보는 날씨·행사 조회에만 사용되며 저장되지 않아요.</p>
+                </div>
+            </div>
+        </div>
+
         <p class="dash-lbl">지금 인기 태그</p>
         <div class="trend-wrap" id="trend-list-node"></div>
         <div class="upload-card">
@@ -1433,13 +1455,13 @@
             <!-- 글 말투 -->
             <div style="margin-bottom:10px;">
                 <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:6px;">글 말투 <span style="font-weight:400;color:var(--g400);">(선택)</span></p>
-                <input type="text" id="dash-caption-tone" class="inp" style="height:46px;" placeholder="예: 친근하게, 감성적으로, 재미있게" oninput="captionTone=this.value">
+                <input type="text" id="dash-caption-tone" class="inp" style="height:46px;" placeholder="예: 친근하게, 감성적으로, 재미있게" oninput="captionTone=this.value;saveDashPrefs()">
             </div>
 
             <!-- 해시태그 개수 -->
             <div style="margin-bottom:14px;">
                 <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:6px;">해시태그 개수</p>
-                <select id="dash-tag-style" class="inp" style="height:46px;" onchange="tagStyle=this.value">
+                <select id="dash-tag-style" class="inp" style="height:46px;" onchange="tagStyle=this.value;saveDashPrefs()">
                     <option value="few">간결하게 (5개 이내)</option>
                     <option value="mid" selected>적당하게 (10개 내외)</option>
                     <option value="many">많이 (20개 이상)</option>
@@ -1777,31 +1799,64 @@ async function fetchRealWeather(lat, lon, locationName) {
 }
 
 async function initWeather() {
-    // 서울 기본 좌표
     const SEOUL = { lat: 37.5665, lon: 126.9780, name: '서울' };
 
     if (!navigator.geolocation) {
-        // 위치 API 자체 없으면 서울
         await fetchRealWeather(SEOUL.lat, SEOUL.lon, SEOUL.name);
+        fetchAirQuality('서울');
+        fetchFestivals();
         return;
     }
 
     navigator.geolocation.getCurrentPosition(
         async (pos) => {
+            // 허용 시 배너 숨기기
+            const banner = document.getElementById('location-denied-banner');
+            if (banner) banner.style.display = 'none';
             const { latitude, longitude } = pos.coords;
             await fetchRealWeather(latitude, longitude, '현재 위치');
             fetchAirQuality('서울');
             fetchFestivals();
         },
-        async () => {
+        async (err) => {
+            // 거부 시 배너 표시 + 서울 기본값
+            if (err.code === err.PERMISSION_DENIED) {
+                const banner = document.getElementById('location-denied-banner');
+                if (banner) banner.style.display = 'block';
+            }
             await fetchRealWeather(SEOUL.lat, SEOUL.lon, SEOUL.name);
             fetchAirQuality('서울');
             fetchFestivals();
         },
         { timeout: 5000 }
     );
-    // geolocation 없을 때도 대기오염 호출
-    if (!navigator.geolocation) fetchAirQuality('서울');
+}
+
+function retryLocation() {
+    const SEOUL = { lat: 37.5665, lon: 126.9780, name: '서울' };
+    if (!navigator.geolocation) return;
+
+    // 버튼 상태 변경
+    const btn = document.querySelector('#location-denied-banner button');
+    if (btn) { btn.disabled = true; btn.textContent = '확인 중...'; }
+
+    navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+            // 허용됨 → 배너 숨기고 날씨/행사 갱신
+            const banner = document.getElementById('location-denied-banner');
+            if (banner) banner.style.display = 'none';
+            const { latitude, longitude } = pos.coords;
+            await fetchRealWeather(latitude, longitude, '현재 위치');
+            fetchAirQuality('서울');
+            fetchFestivals();
+        },
+        (err) => {
+            // 여전히 거부 → 브라우저 설정 안내
+            if (btn) { btn.disabled = false; btn.textContent = '위치 허용'; }
+            showToast('브라우저 설정에서 위치 권한을 허용해 주세요.', '');
+        },
+        { timeout: 5000 }
+    );
 }
 
 /* ── 파일 업로드 ── */
@@ -1892,6 +1947,17 @@ function updateStoreRegion() {
 
     if (sidoText && sigunguText && sigunguText !== '시/군/구 선택') {
         storeRegion = sidoText + ' ' + sigunguText;
+        // localStorage에도 저장
+        try {
+            const raw = localStorage.getItem('lumi_user');
+            if (raw) {
+                const user = JSON.parse(raw);
+                user.region = storeRegion;
+                user.sidoCode = sidoCode;
+                user.sigunguCode = sigunguCode;
+                localStorage.setItem('lumi_user', JSON.stringify(user));
+            }
+        } catch(e) {}
     }
 }
 
@@ -1907,6 +1973,8 @@ function restoreRegionDropdown(regionStr, sidoCode, sigunguCode) {
     setTimeout(() => {
         sigunguSel.value = sigunguCode;
         updateStoreRegion();
+        // 지역 복원 완료 후 행사 조회
+        setTimeout(() => fetchFestivals(), 100);
     }, 50);
 }
 
@@ -2144,8 +2212,7 @@ function resetToInitialLanding(){
     document.getElementById('lumi-auth-portal').style.display='none';
     document.getElementById('lumi-dashboard-node').style.display='none';
     document.getElementById('lumi-intro-view-port').style.display='block';
-    // 포털 닫을 때만 스크롤 복원, 대시보드에서 홈으로 갈 때는 맨위로
-    const fromDash = document.getElementById('lumi-dashboard-node').style.display === 'none';
+    document.body.style.overflow='';
     window.scrollTo({top: savedScroll, behavior:'instant'});
 }
 function navNode(s){['1','2','2b','3'].forEach(n=>{document.getElementById(`node-step-${n}`)?.classList.add('hidden');document.getElementById(`dot-${n}`)?.classList.remove('on');});document.getElementById(`node-step-${s}`)?.classList.remove('hidden');document.getElementById(`dot-${s}`)?.classList.add('on');}
@@ -2153,6 +2220,7 @@ async function grantAccess(){
     document.getElementById('lumi-auth-portal').style.display='none';
     document.getElementById('lumi-intro-view-port').style.display='none';
     document.getElementById('lumi-dashboard-node').style.display='flex';
+    document.body.style.overflow='hidden';
     window.scrollTo(0,0);
     /* ── 자동 응답 설정 ── */
 function addKeywordRow(type) {
@@ -3125,12 +3193,28 @@ function updateReserveHint() {
     }
 }
 
+function saveDashPrefs() {
+    try {
+        const raw = localStorage.getItem('lumi_user');
+        if (!raw) return;
+        const user = JSON.parse(raw);
+        const dashBiz = document.getElementById('dash-biz-cat');
+        const dashBizOther = document.getElementById('dash-biz-cat-other');
+        const dashTone = document.getElementById('dash-caption-tone');
+        const dashTag = document.getElementById('dash-tag-style');
+        if (dashBiz) user.bizCategory = dashBiz.value === 'other' && dashBizOther?.value.trim() ? dashBizOther.value.trim() : dashBiz.value;
+        if (dashTone) user.captionTone = dashTone.value.trim();
+        if (dashTag) user.tagStyle = dashTag.value;
+        localStorage.setItem('lumi_user', JSON.stringify(user));
+    } catch(e) {}
+}
+
 function updateBizCat(val) {
     bizCat = val;
     const other = document.getElementById('dash-biz-cat-other');
     if (other) other.style.display = val === 'other' ? 'block' : 'none';
-    // 업종 변경 시 트렌드 다시 로드
     if (val !== 'other') loadTrends();
+    saveDashPrefs();
 }
 
 function toggleBizOther(val) {
