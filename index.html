@@ -1390,6 +1390,12 @@
             </div>
         </div>
 
+        <!-- 주변 행사 섹션 (행사 있을 때만 표시) -->
+        <div id="festival-section" style="display:none;margin-bottom:16px;">
+            <p class="dash-lbl">🎉 주변 행사</p>
+            <div id="festival-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+        </div>
+
         <p class="dash-lbl">지금 인기 태그</p>
         <div class="trend-wrap" id="trend-list-node"></div>
         <div class="upload-card">
@@ -1762,16 +1768,19 @@ function parseWeatherCode(code) {
 
 async function fetchRealWeather(lat, lon, locationName) {
     try {
-        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=weather_code,temperature_2m&timezone=Asia%2FSeoul`;
-        console.log('[lumi] 날씨 API 호출:', url);
+        // 기상청 초단기실황 API (Netlify Function 프록시)
+        let url;
+        if (lat && lon) {
+            url = `/.netlify/functions/get-weather-kma?lat=${lat}&lon=${lon}&name=${encodeURIComponent(locationName)}`;
+        } else {
+            url = `/.netlify/functions/get-weather-kma?sido=${encodeURIComponent(locationName || '서울')}`;
+        }
         const res = await fetch(url);
         const data = await res.json();
-        console.log('[lumi] 날씨 API 응답:', JSON.stringify(data));
-        if (data.error) throw new Error('API 오류: ' + data.reason);
-        const code = data.current.weather_code;
-        const tempRaw = data.current.temperature_2m;
-        const temp = (tempRaw !== undefined && tempRaw !== null) ? Math.round(Number(tempRaw)) : 0;
-        const state = parseWeatherCode(code);
+        if (data.error || data.source === 'kma_error') throw new Error(data.error || 'KMA 오류');
+
+        const temp = data.temperature !== null ? data.temperature : 0;
+        const state = data.state || 'clear';
         const cfg = LUMI_CORE.weather[state];
 
         // 전역 날씨 데이터 저장 (웹훅 전송용)
@@ -1810,16 +1819,14 @@ async function initWeather() {
 
     navigator.geolocation.getCurrentPosition(
         async (pos) => {
-            // 허용 시 배너 숨기기
             const banner = document.getElementById('location-denied-banner');
             if (banner) banner.style.display = 'none';
             const { latitude, longitude } = pos.coords;
             await fetchRealWeather(latitude, longitude, '현재 위치');
             fetchAirQuality('서울');
-            fetchFestivals();
+            fetchFestivals({ lat: latitude, lng: longitude });
         },
         async (err) => {
-            // 거부 시 배너 표시 + 서울 기본값
             if (err.code === err.PERMISSION_DENIED) {
                 const banner = document.getElementById('location-denied-banner');
                 if (banner) banner.style.display = 'block';
@@ -1836,22 +1843,19 @@ function retryLocation() {
     const SEOUL = { lat: 37.5665, lon: 126.9780, name: '서울' };
     if (!navigator.geolocation) return;
 
-    // 버튼 상태 변경
     const btn = document.querySelector('#location-denied-banner button');
     if (btn) { btn.disabled = true; btn.textContent = '확인 중...'; }
 
     navigator.geolocation.getCurrentPosition(
         async (pos) => {
-            // 허용됨 → 배너 숨기고 날씨/행사 갱신
             const banner = document.getElementById('location-denied-banner');
             if (banner) banner.style.display = 'none';
             const { latitude, longitude } = pos.coords;
             await fetchRealWeather(latitude, longitude, '현재 위치');
             fetchAirQuality('서울');
-            fetchFestivals();
+            fetchFestivals({ lat: latitude, lng: longitude });
         },
         (err) => {
-            // 여전히 거부 → 브라우저 설정 안내
             if (btn) { btn.disabled = false; btn.textContent = '위치 허용'; }
             showToast('브라우저 설정에서 위치 권한을 허용해 주세요.', '');
         },
@@ -1978,19 +1982,79 @@ function restoreRegionDropdown(regionStr, sidoCode, sigunguCode) {
     }, 50);
 }
 
-async function fetchFestivals() {
+async function fetchFestivals(latLng) {
     try {
-        const sidoCode = document.getElementById('dash-region-sido-code')?.value || '';
-        const sigunguCode = document.getElementById('dash-region-sigungu-code')?.value || '';
-        if (!sidoCode) return; // 지역 미설정 시 조회 안 함
+        let sidoCode = document.getElementById('dash-region-sido-code')?.value || '';
+        let sigunguCode = document.getElementById('dash-region-sigungu-code')?.value || '';
+
+        // 지역 드롭다운 미설정 + GPS 좌표 있으면 좌표로 sido 추정
+        if (!sidoCode && latLng) {
+            sidoCode = guessSidoFromLatLng(latLng.lat, latLng.lng);
+        }
+
+        if (!sidoCode) return;
         const res = await fetch(`/.netlify/functions/get-festival?sido=${sidoCode}&sigungu=${sigunguCode}`);
         const data = await res.json();
         currentFestivals = data.festivals || [];
         console.log('[lumi] 주변 행사:', currentFestivals.length, '개');
+        renderFestivals();
     } catch(e) {
         console.log('[lumi] 행사 정보 로딩 실패:', e.message);
         currentFestivals = [];
     }
+}
+
+// GPS 좌표 → 한국 시도코드 대략 추정 (행사 조회용)
+function guessSidoFromLatLng(lat, lng) {
+    if (lat >= 37.4 && lat <= 37.7 && lng >= 126.7 && lng <= 127.2) return '11'; // 서울
+    if (lat >= 37.3 && lat <= 37.8 && lng >= 126.5 && lng <= 127.8) return '41'; // 경기
+    if (lat >= 37.2 && lat <= 37.7 && lng >= 126.4 && lng <= 126.9) return '28'; // 인천
+    if (lat >= 35.0 && lat <= 35.4 && lng >= 128.8 && lng <= 129.3) return '26'; // 부산
+    if (lat >= 35.7 && lat <= 36.1 && lng >= 128.4 && lng <= 128.8) return '27'; // 대구
+    if (lat >= 36.2 && lat <= 36.5 && lng >= 127.2 && lng <= 127.6) return '30'; // 대전
+    if (lat >= 35.1 && lat <= 35.3 && lng >= 126.7 && lng <= 126.95) return '29'; // 광주
+    if (lat >= 35.4 && lat <= 35.7 && lng >= 129.1 && lng <= 129.5) return '31'; // 울산
+    if (lat >= 36.4 && lat <= 36.7 && lng >= 127.2 && lng <= 127.6) return '34'; // 세종
+    if (lat >= 36.0 && lat <= 37.2 && lng >= 127.5 && lng <= 129.2) return '43'; // 충북
+    if (lat >= 36.0 && lat <= 37.2 && lng >= 126.3 && lng <= 127.5) return '44'; // 충남
+    if (lat >= 35.0 && lat <= 36.2 && lng >= 127.0 && lng <= 128.0) return '45'; // 전북
+    if (lat >= 34.0 && lat <= 35.2 && lng >= 126.0 && lng <= 127.5) return '46'; // 전남
+    if (lat >= 36.0 && lat <= 37.5 && lng >= 128.0 && lng <= 129.5) return '47'; // 경북
+    if (lat >= 34.7 && lat <= 35.7 && lng >= 127.5 && lng <= 129.3) return '48'; // 경남
+    if (lat >= 33.0 && lat <= 33.6 && lng >= 126.1 && lng <= 126.9) return '50'; // 제주
+    if (lat >= 37.0 && lat <= 38.6 && lng >= 127.7 && lng <= 129.3) return '42'; // 강원
+    return '11'; // 기본값 서울
+}
+
+function renderFestivals() {
+    const section = document.getElementById('festival-section');
+    const list = document.getElementById('festival-list');
+    if (!section || !list) return;
+
+    if (!currentFestivals || currentFestivals.length === 0) {
+        section.style.display = 'none';
+        return;
+    }
+
+    section.style.display = 'block';
+    list.innerHTML = currentFestivals.map(f => {
+        const fmt = d => d ? `${parseInt(d.slice(4,6))}/${parseInt(d.slice(6,8))}` : '';
+        const dateStr = f.startDate && f.endDate
+            ? `${fmt(f.startDate)} ~ ${fmt(f.endDate)}`
+            : f.startDate ? fmt(f.startDate) : '';
+        const addr = f.addr ? f.addr.replace('서울특별시 ', '').replace('경기도 ', '') : '';
+
+        return `<div style="background:var(--white);border-radius:var(--r-md);padding:13px 15px;border:1px solid var(--g100);display:flex;align-items:flex-start;gap:10px;">
+            <span style="font-size:1.2rem;margin-top:1px;">🎪</span>
+            <div style="flex:1;min-width:0;">
+                <div style="font-size:.87rem;font-weight:700;color:var(--g900);margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${f.title}</div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    ${dateStr ? `<span style="font-size:.75rem;color:var(--pink);font-weight:600;">📅 ${dateStr}</span>` : ''}
+                    ${addr ? `<span style="font-size:.75rem;color:var(--g400);">📌 ${addr}</span>` : ''}
+                </div>
+            </div>
+        </div>`;
+    }).join('');
 }
 
 function syncBinaryWarehouse(){
