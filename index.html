@@ -266,8 +266,7 @@
         .arc-del:hover{color:#e53e3e;}
         .arc-note{font-size:.83rem;color:var(--g500);margin-top:10px;padding-top:10px;border-top:1px solid var(--g100);line-height:1.75;}
         .arc-empty{background:var(--white);border-radius:var(--r-lg);padding:36px 18px;text-align:center;border:1.5px dashed var(--g200);color:var(--g400);font-size:.83rem;font-weight:600;}
-        .btn-withdraw{display:block;margin:36px auto 0;background:none;border:none;font-size:11px;font-weight:600;color:var(--g400);text-decoration:underline;cursor:pointer;font-family:inherit;letter-spacing:.06em;text-transform:uppercase;transition:color .2s;}
-        .btn-withdraw:hover{color:#e53e3e;}
+
 
         /* 에러/성공 메시지 */
         .field-err{font-size:12px;font-weight:600;color:#E53E3E;margin:-6px 0 10px 4px;animation:fadeUp .25s var(--ease);}
@@ -1302,21 +1301,6 @@
         </div>
         <button onclick="confirmCancelSubscription()" style="width:100%;padding:13px;background:#ff4d4d;color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:8px;">구독 취소 확정</button>
         <button onclick="closeCancelModal()" style="width:100%;padding:13px;background:#F2F4F6;color:#6B7684;border:none;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">계속 이용할게요</button>
-    </div>
-</div>
-
-<!-- 회원 탈퇴 모달 -->
-<div id="withdraw-modal" style="display:none;position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:20px;">
-    <div style="background:#fff;border-radius:24px;padding:32px;width:100%;max-width:380px;box-shadow:0 24px 80px rgba(0,0,0,.18);">
-        <div style="font-size:2rem;text-align:center;margin-bottom:12px;">⚠️</div>
-        <h3 style="font-size:1rem;font-weight:900;color:#191F28;text-align:center;margin-bottom:6px;">정말 탈퇴하시겠어요?</h3>
-        <p style="font-size:.82rem;color:#6B7684;text-align:center;margin-bottom:20px;line-height:1.7;">탈퇴하면 모든 데이터가 <strong style="color:#e53e3e;">영구 삭제</strong>되며<br>복구가 불가능해요. 구독 중이라면 즉시 취소돼요.</p>
-        <div style="background:#FFF5F5;border-radius:12px;padding:16px;margin-bottom:16px;">
-            <p style="font-size:12px;font-weight:700;color:#e53e3e;margin-bottom:8px;">확인을 위해 아래에 <strong>탈퇴</strong> 를 입력해 주세요.</p>
-            <input type="text" id="withdraw-confirm-input" placeholder="탈퇴" oninput="checkWithdrawInput(this)" style="width:100%;padding:11px 14px;border:1.5px solid #E8ECF0;border-radius:10px;font-size:14px;font-family:inherit;outline:none;transition:border-color .2s;">
-        </div>
-        <button id="withdraw-confirm-btn" onclick="confirmWithdraw()" disabled style="width:100%;padding:13px;background:#E8ECF0;color:#8B95A1;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:not-allowed;font-family:inherit;margin-bottom:8px;transition:background .2s,color .2s;">탈퇴하기</button>
-        <button onclick="closeWithdrawModal()" style="width:100%;padding:13px;background:#F2F4F6;color:#6B7684;border:none;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">취소</button>
     </div>
 </div>
 
@@ -2444,14 +2428,7 @@ async function loadAutoReply() {
 
 function removeArchiveItem(id){if(confirm("이 기록을 삭제할까요?")){archive=archive.filter(i=>i.id!==id);syncPersistence();renderArchive();}}
 function resetDashboard(){document.getElementById('ceo-note-input').value='';document.getElementById('ceo-file-selector').value='';document.getElementById('ceo-preview-box').innerHTML='';document.getElementById('ceo-placeholder').classList.remove('hidden');stagedFiles=[];}
-function withdrawFromLumi() {
-    const modal = document.getElementById('withdraw-modal');
-    if (modal) { modal.style.display = 'flex'; }
-    const input = document.getElementById('withdraw-confirm-input');
-    if (input) input.value = '';
-    const btn = document.getElementById('withdraw-confirm-btn');
-    if (btn) { btn.disabled = true; btn.style.background = '#E8ECF0'; btn.style.color = '#8B95A1'; btn.style.cursor = 'not-allowed'; }
-}
+
 
 function checkWithdrawInput(input) {
     const btn = document.getElementById('withdraw-confirm-btn');
