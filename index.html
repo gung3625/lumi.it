@@ -1645,6 +1645,7 @@ async function handleLoginAction(){
         const data = await res.json();
         if(res.ok){
             localStorage.setItem('lumi_user', JSON.stringify({ ...data.user, token: data.token }));
+            localStorage.setItem('lumi_token', data.token);
             showToast('로그인됐어요!', 'pink');
             setTimeout(() => { resetToInitialLanding(); grantAccess(); }, 500);
         } else {
@@ -1677,6 +1678,10 @@ function checkIgConnection() {
         // 연동 성공
         lumiUser.igConnected = true;
         localStorage.setItem('lumi_user', JSON.stringify(lumiUser));
+        // lumi_token이 없으면 user에서 꺼내서 저장 (Instagram 리다이렉트 후 세션 복원)
+        if (!localStorage.getItem('lumi_token') && lumiUser.token) {
+            localStorage.setItem('lumi_token', lumiUser.token);
+        }
         // URL 파라미터 제거
         window.history.replaceState({}, '', '/');
     }
@@ -2959,6 +2964,7 @@ async function finishLumiSignup() {
         const data = await res.json();
         if (res.ok) {
             localStorage.setItem('lumi_user', JSON.stringify({ ...data.user, token: data.token }));
+            localStorage.setItem('lumi_token', data.token);
             showToast('가입 완료! 환영해요 🎉', 'pink');
             setTimeout(() => { resetToInitialLanding(); grantAccess(); }, 1000);
         } else {
