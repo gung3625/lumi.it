@@ -72,10 +72,12 @@ exports.handler = async (event) => {
         let trends = [];
         let storeProfile = {};
         let airQuality = {};
+        let festivals = [];
         try { weather = JSON.parse(fields.weather || '{}'); } catch(e) {}
         try { trends = JSON.parse(fields.trends || '[]'); } catch(e) {}
         try { storeProfile = JSON.parse(fields.storeProfile || '{}'); } catch(e) {}
         try { airQuality = JSON.parse(fields.airQuality || '{}'); } catch(e) {}
+        try { festivals = JSON.parse(fields.festivals || '[]'); } catch(e) {}
 
         // 초미세먼지(PM2.5) 등급만 사용
         function getPm25Grade(v) {
@@ -108,6 +110,12 @@ exports.handler = async (event) => {
 
           // 대기오염 등급 (PM10, PM25 중 더 나쁜 등급 하나)
           airQuality: airGrade,
+
+          // 주변 행사 정보 (있을 때만 값이 있음)
+          nearbyFestivals: festivals.length > 0
+            ? festivals.map(f => `${f.title}(${f.startDate}~${f.endDate}, ${f.addr})`).join(' / ')
+            : '',
+          hasFestival: festivals.length > 0 ? 'true' : 'false',
 
           // 트렌드 (문자열)
           trends: Array.isArray(trends) ? trends.join(', ') : '',
