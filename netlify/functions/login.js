@@ -52,6 +52,16 @@ exports.handler = async (event) => {
     await store.set('token:' + token, JSON.stringify({ email, createdAt: new Date().toISOString() }));
 
     const { passwordHash, ...safeUser } = user;
+
+    // ig 연동 여부 확인 (igUserId로 토큰 존재 여부 체크)
+    if (safeUser.igUserId) {
+      let igRaw;
+      try { igRaw = await store.get('ig:' + safeUser.igUserId); } catch { igRaw = null; }
+      safeUser.igConnected = !!igRaw;
+    } else {
+      safeUser.igConnected = false;
+    }
+
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },

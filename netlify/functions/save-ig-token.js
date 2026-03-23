@@ -41,6 +41,18 @@ exports.handler = async (event) => {
       savedAt: new Date().toISOString()
     }));
 
+    // user:이메일 객체에도 igConnected 저장
+    if (email) {
+      let userRaw;
+      try { userRaw = await store.get('user:' + email); } catch { userRaw = null; }
+      if (userRaw) {
+        const user = JSON.parse(userRaw);
+        user.igConnected = true;
+        user.igUserId = igUserId;
+        await store.set('user:' + email, JSON.stringify(user));
+      }
+    }
+
     console.log('[lumi] Instagram 토큰 저장 완료:', igUserId);
 
     return {
