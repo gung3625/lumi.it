@@ -37,7 +37,7 @@ function getDateStr(offsetDays = 0) {
   return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
 }
 
-// 네이버 데이터랩으로 행사 인기도 순 정렬
+// 가져온 행사 목록을 네이버 데이터랩 인기도 순으로 정렬
 async function rankByNaverTrend(festivals) {
   const clientId = process.env.NAVER_CLIENT_ID;
   const clientSecret = process.env.NAVER_CLIENT_SECRET;
@@ -47,10 +47,10 @@ async function rankByNaverTrend(festivals) {
   const endDate = today.toISOString().slice(0, 10);
   const startDate = new Date(today - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
-  // 데이터랩은 최대 5개 그룹 제한
+  // 데이터랩 최대 5개 그룹 제한
   const targets = festivals.slice(0, 5);
   const keywordGroups = targets.map(f => ({
-    groupName: f.title.slice(0, 20), // groupName 최대 20자
+    groupName: f.title.slice(0, 20),
     keywords: [f.title.replace(/[()[\]]/g, '').trim().slice(0, 20)]
   }));
 
@@ -71,7 +71,7 @@ async function rankByNaverTrend(festivals) {
     const data = JSON.parse(result.body);
     if (!data.results || data.results.length === 0) return festivals;
 
-    // 각 행사별 최근 검색량 평균 계산
+    // 최근 검색량 평균으로 점수 계산
     const scoreMap = {};
     data.results.forEach(r => {
       const avg = r.data.length > 0
@@ -96,8 +96,8 @@ async function rankByNaverTrend(festivals) {
 exports.handler = async (event) => {
   const corsHeaders = { 'Content-Type': 'application/json' };
   const params = event.queryStringParameters || {};
-  const sidoCode = params.sido || '';
-  const sigunguCode = params.sigungu || '';
+  const sidoCode = params.sido || '';    // lDongRegnCd (예: 11=서울)
+  const sigunguCode = params.sigungu || ''; // lDongSignguCd (예: 170=용산구)
   const serviceKey = process.env.PUBLIC_DATA_API_KEY;
 
   if (!sidoCode || !serviceKey) {
@@ -108,7 +108,7 @@ exports.handler = async (event) => {
   const twoWeeksLater = getDateStr(14);
 
   try {
-    // 인기도 정렬을 위해 더 많이 가져옴 (최대 10개)
+    // 시군구 코드가 있으면 구 단위로 좁혀서 조회, 없으면 시도 단위
     let url = `https://apis.data.go.kr/B551011/KorService2/searchFestival2?` +
       `numOfRows=10&pageNo=1&MobileOS=WEB&MobileApp=lumi&_type=json&arrange=R` +
       `&eventStartDate=${today}&eventEndDate=${twoWeeksLater}` +
@@ -124,11 +124,29 @@ exports.handler = async (event) => {
 
     const data = JSON.parse(result.body);
     const items = data?.response?.body?.items?.item;
-    if (!items) {
+
+    // 구 단위로 결과 없으면 시도 단위로 fallback
+    let list = [];
+    if (!items && sigunguCode) {
+      const fallbackUrl = `https://apis.data.go.kr/B551011/KorService2/searchFestival2?` +
+        `numOfRows=10&pageNo=1&MobileOS=WEB&MobileApp=lumi&_type=json&arrange=R` +
+        `&eventStartDate=${today}&eventEndDate=${twoWeeksLater}` +
+        `&serviceKey=${encodeURIComponent(serviceKey)}` +
+        `&lDongRegnCd=${sidoCode}`;
+      const fallbackResult = await httpsGet(fallbackUrl);
+      const fallbackData = JSON.parse(fallbackResult.body);
+      const fallbackItems = fallbackData?.response?.body?.items?.item;
+      if (fallbackItems) {
+        list = Array.isArray(fallbackItems) ? fallbackItems : [fallbackItems];
+      }
+    } else if (items) {
+      list = Array.isArray(items) ? items : [items];
+    }
+
+    if (list.length === 0) {
       return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ festivals: [], count: 0 }) };
     }
 
-    const list = Array.isArray(items) ? items : [items];
     let festivals = list.map(item => ({
       title: item.title || '',
       startDate: item.eventstartdate || '',
@@ -136,7 +154,7 @@ exports.handler = async (event) => {
       addr: item.addr1 || '',
     }));
 
-    // 네이버 데이터랩으로 인기도 순 정렬 후 상위 3개
+    // 네이버 데이터랩 인기도 순 정렬 후 상위 3개
     festivals = await rankByNaverTrend(festivals);
     festivals = festivals.slice(0, 3);
 
