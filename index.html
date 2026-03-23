@@ -489,8 +489,9 @@
     <div class="nav-right">
         <button class="nav-txt-btn" id="nav-how-btn" onclick="smoothScrollTo('feat-sec')">기능</button>
         <button class="nav-txt-btn" id="nav-price-btn" onclick="smoothScrollTo('price-sec')">요금</button>
-        <button class="nav-txt-btn" onclick="openPortal('login')">로그인</button>
-        <button class="nav-cta" onclick="openPortal('signup')">시작하기</button>
+        <button class="nav-txt-btn" id="nav-login-btn" onclick="openPortal('login')">로그인</button>
+        <button class="nav-cta" id="nav-signup-btn" onclick="openPortal('signup')">시작하기</button>
+        <button class="nav-cta" id="nav-dashboard-btn" onclick="grantAccess()" style="display:none;background:var(--pink);">대시보드</button>
     </div>
 </nav>
 
@@ -1357,35 +1358,50 @@
             <p style="font-size:.83rem;font-weight:700;color:#389e0d;">✅ Instagram 계정이 연동됐어요!</p>
         </div>
 
+        <!-- 매장 지역 설정 -->
+        <div style="background:var(--white);border-radius:var(--r-xl);padding:20px 22px;border:1px solid var(--g200);box-shadow:var(--sh-xs);margin-bottom:16px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                <span style="font-size:1.1rem;">📍</span>
+                <p style="font-size:.92rem;font-weight:800;color:var(--g900);">매장 지역 설정</p>
+            </div>
+            <p style="font-size:.78rem;color:var(--g500);line-height:1.7;margin-bottom:12px;">지역을 설정하면 <strong style="color:var(--g700);">날씨·대기오염·주변 행사</strong> 정보를 자동으로 받아볼 수 있어요.<br>캡션에도 지역 분위기가 자연스럽게 반영돼요.</p>
+            <div style="display:flex;gap:6px;">
+                <select id="dash-sido" class="inp" style="height:46px;flex:1;" onchange="updateSigunguList()">
+                    <option value="">시/도 선택</option>
+                    <option value="11">서울</option>
+                    <option value="21">부산</option>
+                    <option value="22">대구</option>
+                    <option value="23">인천</option>
+                    <option value="24">광주</option>
+                    <option value="25">대전</option>
+                    <option value="26">울산</option>
+                    <option value="36">세종</option>
+                    <option value="31">경기</option>
+                    <option value="32">강원</option>
+                    <option value="33">충북</option>
+                    <option value="34">충남</option>
+                    <option value="37">전북</option>
+                    <option value="35">전남</option>
+                    <option value="38">경북</option>
+                    <option value="39">경남</option>
+                    <option value="50">제주</option>
+                </select>
+                <select id="dash-sigungu" class="inp" style="height:46px;flex:1;" onchange="updateStoreRegion()">
+                    <option value="">시/군/구 선택</option>
+                </select>
+            </div>
+            <input type="hidden" id="dash-region-sido-code">
+            <input type="hidden" id="dash-region-sigungu-code">
+        </div>
+
         <div class="weather-card">
             <div class="w-icon" id="dash-w-icon">📍</div>
             <div style="flex:1;">
-                <div class="w-status" id="dash-w-text">위치 확인 중...</div>
-                <div class="w-guide" id="dash-w-guide">위치를 허용하면 현재 날씨를 알려드려요</div>
+                <div class="w-status" id="dash-w-text">날씨 불러오는 중...</div>
+                <div class="w-guide" id="dash-w-guide">매장 지역을 설정하면 날씨를 알려드려요</div>
                 <div class="air-quality-row" id="air-quality-row" style="display:none;">
                     <span class="aq-badge" id="aq-pm10-badge">미세먼지 -</span>
                     <span class="aq-badge" id="aq-pm25-badge">초미세먼지 -</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- 위치 거부 시 안내 배너 -->
-        <div id="location-denied-banner" style="display:none;background:#fff8f0;border:1.5px solid #ffb347;border-radius:var(--r-lg);padding:16px 18px;margin-bottom:16px;">
-            <div style="display:flex;align-items:flex-start;gap:12px;">
-                <span style="font-size:1.4rem;margin-top:2px;">📍</span>
-                <div style="flex:1;">
-                    <p style="font-size:.88rem;font-weight:800;color:#b85c00;margin-bottom:6px;">위치 권한을 허용해 주세요</p>
-                    <p style="font-size:.78rem;color:#996633;line-height:1.7;margin-bottom:10px;">위치를 허용하면 아래 정보를 자동으로 받아볼 수 있어요.</p>
-                    <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:12px;">
-                        <div style="display:flex;align-items:center;gap:7px;font-size:.78rem;color:#7a4f00;">
-                            <span>☀️</span><span><strong>실시간 날씨</strong> — 현재 위치의 날씨를 반영한 캡션을 써드려요</span>
-                        </div>
-                        <div style="display:flex;align-items:center;gap:7px;font-size:.78rem;color:#7a4f00;">
-                            <span>🎉</span><span><strong>주변 행사 정보</strong> — 근처 축제·행사가 있으면 캡션에 자연스럽게 녹여드려요</span>
-                        </div>
-                    </div>
-                    <button onclick="retryLocation()" style="width:100%;background:#ff9500;color:#fff;border:none;border-radius:var(--r-md);padding:11px;font-size:.88rem;font-weight:700;cursor:pointer;">📍 위치 허용하고 시작하기</button>
-                    <p style="font-size:.72rem;color:#bbb;margin-top:8px;text-align:center;">위치 정보는 날씨·행사 조회에만 사용되며 저장되지 않아요.</p>
                 </div>
             </div>
         </div>
@@ -1414,38 +1430,6 @@
                 없으면 비워도 돼요. lumi가 사진 보고 알아서 써드려요.</p>
             </div>
             <textarea id="ceo-note-input" class="dash-note" rows="3" placeholder="예) 오늘 딸기 시즌 신메뉴 나왔어요!&#10;예) 다음 주 월~화 명절 휴무입니다.&#10;예) 오픈 1주년 이벤트 진행 중이에요."></textarea>
-            <!-- 지역 선택 -->
-            <div style="margin-bottom:10px;">
-                <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:6px;">매장 지역</p>
-                <div style="display:flex;gap:6px;">
-                    <select id="dash-sido" class="inp" style="height:46px;flex:1;" onchange="updateSigunguList()">
-                        <option value="">시/도 선택</option>
-                        <option value="11">서울</option>
-                        <option value="21">부산</option>
-                        <option value="22">대구</option>
-                        <option value="23">인천</option>
-                        <option value="24">광주</option>
-                        <option value="25">대전</option>
-                        <option value="26">울산</option>
-                        <option value="36">세종</option>
-                        <option value="31">경기</option>
-                        <option value="32">강원</option>
-                        <option value="33">충북</option>
-                        <option value="34">충남</option>
-                        <option value="37">전북</option>
-                        <option value="35">전남</option>
-                        <option value="38">경북</option>
-                        <option value="39">경남</option>
-                        <option value="50">제주</option>
-                    </select>
-                    <select id="dash-sigungu" class="inp" style="height:46px;flex:1;" onchange="updateStoreRegion()">
-                        <option value="">시/군/구 선택</option>
-                    </select>
-                </div>
-                <input type="hidden" id="dash-region-sido-code">
-                <input type="hidden" id="dash-region-sigungu-code">
-            </div>
-
             <!-- 업종 선택 -->
             <div style="margin-bottom:10px;">
                 <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:6px;">업종</p>
@@ -1532,7 +1516,9 @@
 
         <p class="dash-lbl">보관함</p>
         <ul id="lumi-inventory-list" style="list-style:none;padding:0;"></ul>
-        <a href="/support" class="btn-withdraw" style="display:block;margin:36px auto 0;text-align:center;text-decoration:underline;">탈퇴하기</a>
+        <div style="text-align:center;margin-top:32px;padding-bottom:20px;">
+            <a href="/support" style="font-size:13px;font-weight:600;color:var(--g400);text-decoration:none;display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border:1px solid var(--g200);border-radius:var(--r-full);transition:all .2s;" onmouseover="this.style.background='var(--g50)'" onmouseout="this.style.background=''">💬 고객센터 문의하기</a>
+        </div>
     </div>
 </div>
 
@@ -2255,6 +2241,14 @@ function resetToInitialLanding(){
     document.getElementById('lumi-intro-view-port').style.display='block';
     document.body.style.overflow='';
     window.scrollTo({top: savedScroll, behavior:'instant'});
+    // 로그인 상태면 네비에 대시보드 버튼 표시
+    const isLoggedIn = !!localStorage.getItem('lumi_token');
+    const dashBtn = document.getElementById('nav-dashboard-btn');
+    const loginBtn = document.getElementById('nav-login-btn');
+    const signupBtn = document.getElementById('nav-signup-btn');
+    if (dashBtn) dashBtn.style.display = isLoggedIn ? 'block' : 'none';
+    if (loginBtn) loginBtn.style.display = isLoggedIn ? 'none' : 'block';
+    if (signupBtn) signupBtn.style.display = isLoggedIn ? 'none' : 'block';
 }
 function navNode(s){['1','2','2b','3'].forEach(n=>{document.getElementById(`node-step-${n}`)?.classList.add('hidden');document.getElementById(`dot-${n}`)?.classList.remove('on');});document.getElementById(`node-step-${s}`)?.classList.remove('hidden');document.getElementById(`dot-${s}`)?.classList.add('on');}
 async function grantAccess(){
@@ -2263,38 +2257,102 @@ async function grantAccess(){
     document.getElementById('lumi-dashboard-node').style.display='flex';
     document.body.style.overflow='hidden';
     window.scrollTo(0,0);
-    /* ── 자동 응답 설정 ── */
-function addKeywordRow(type) {
-    const wrap = document.getElementById(type + '-keywords-wrap');
-    if (!wrap) return;
-    const idx = wrap.children.length;
-    const row = document.createElement('div');
-    row.className = 'keyword-row';
-    row.dataset.index = idx;
-    row.innerHTML = `
-        <input type="text" class="inp-sm" placeholder="키워드 (예: 가격)" id="${type}-keyword-${idx}">
-        <input type="text" class="inp-sm" placeholder="답변 내용" id="${type}-reply-${idx}" style="flex:2;">
-        <button class="btn-del" onclick="removeKeywordRow(this)">✕</button>
-    `;
-    wrap.appendChild(row);
+
+    bootPersistence();
+    renderArchive();
+
+    const userRaw = localStorage.getItem('lumi_user');
+    if (userRaw) {
+        try {
+            const user = JSON.parse(userRaw);
+            ceoName = user.name || '';
+            storeName = user.storeName || '';
+            storeInsta = user.instagram || '';
+            storeDesc = user.storeDesc || '';
+            storeRegion = user.region || '';
+            if (user.sidoCode || user.sigunguCode) {
+                restoreRegionDropdown(user.region, user.sidoCode || '', user.sigunguCode || '');
+            }
+            bizCat = user.bizCategory || 'cafe';
+            captionTone = user.captionTone || '';
+            tagStyle = user.tagStyle || 'mid';
+            const dashBiz = document.getElementById('dash-biz-cat');
+            if (dashBiz) dashBiz.value = bizCat;
+            const dashTone = document.getElementById('dash-caption-tone');
+            if (dashTone) dashTone.value = captionTone;
+            const dashTag = document.getElementById('dash-tag-style');
+            if (dashTag) dashTag.value = tagStyle;
+        } catch(e) {}
+    }
+
+    loadTrends();
+    loadAutoReply();
+    checkIgConnection();
+    if (!JSON.parse(localStorage.getItem('lumi_user') || '{}').sidoCode) {
+        initWeather();
+    }
+
+    if (userRaw) {
+        try {
+            const user = JSON.parse(userRaw);
+            const res = await fetch('/.netlify/functions/check-plan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: user.email })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                if (data.trialExpired) { showPaywall('trial'); return; }
+                if (data.remaining <= 0) { showPaywall('limit'); return; }
+                const remainEl = document.getElementById('post-remain-badge');
+                if (remainEl) remainEl.textContent = '이번 달 ' + data.remaining + '회 남음';
+                if (data.plan === 'standard' || data.plan === 'pro') {
+                    const cancelBtn = document.getElementById('cancel-sub-btn');
+                    if (cancelBtn && data.autoRenew !== false) cancelBtn.style.display = 'inline-block';
+                }
+            }
+        } catch(e) { console.error('plan check error:', e); }
+    }
+
+    const nameEl = document.getElementById('dash-store-name');
+    if (nameEl) {
+        const greeting = ceoName ? ceoName + '님, ' : '';
+        nameEl.textContent = storeName ? greeting + storeName + ' 대표님 안녕하세요.' : '안녕하세요.';
+    }
+
+    const dateSelect = document.getElementById('reserve-date-select');
+    const hourSelect = document.getElementById('reserve-hour-select');
+    if (dateSelect && hourSelect) {
+        const now = new Date();
+        for (let i = 0; i <= 30; i++) {
+            const d = new Date(now);
+            d.setDate(now.getDate() + i);
+            const opt = document.createElement('option');
+            const mm = d.getMonth() + 1;
+            const dd = d.getDate();
+            const day = ['일','월','화','수','목','금','토'][d.getDay()];
+            opt.value = d.toISOString().slice(0,10);
+            opt.textContent = i === 0 ? `오늘 (${mm}/${dd})` : `${mm}월 ${dd}일 (${day})`;
+            dateSelect.appendChild(opt);
+        }
+        for (let h = 0; h < 24; h++) {
+            const opt = document.createElement('option');
+            opt.value = String(h).padStart(2,'0');
+            opt.textContent = `${h}시`;
+            hourSelect.appendChild(opt);
+        }
+        const minSelect = document.getElementById('reserve-min-select');
+        if (minSelect) {
+            for (let m = 0; m < 60; m++) {
+                const opt = document.createElement('option');
+                opt.value = String(m).padStart(2,'0');
+                opt.textContent = `${m}분`;
+                minSelect.appendChild(opt);
+            }
+        }
+    }
 }
 
-function removeKeywordRow(btn) {
-    btn.closest('.keyword-row').remove();
-}
-
-function getKeywordRows(type) {
-    const wrap = document.getElementById(type + '-keywords-wrap');
-    if (!wrap) return [];
-    const rows = [];
-    wrap.querySelectorAll('.keyword-row').forEach(row => {
-        const idx = row.dataset.index;
-        const keyword = document.getElementById(type + '-keyword-' + idx)?.value.trim();
-        const reply = document.getElementById(type + '-reply-' + idx)?.value.trim();
-        if (keyword && reply) rows.push({ keyword, reply });
-    });
-    return rows;
-}
 
 async function saveAutoReply() {
     const commentKeywords = getKeywordRows('comment');
@@ -2384,45 +2442,6 @@ async function loadAutoReply() {
         console.log('자동 응답 설정 로딩 실패:', e.message);
     }
 }
-
-bootPersistence();
-    renderArchive();
-
-    // 전역 변수 채우기 (로그인/재방문 공통)
-    const userRaw = localStorage.getItem('lumi_user');
-    if (userRaw) {
-        try {
-            const user = JSON.parse(userRaw);
-            ceoName = user.name || '';
-            storeName = user.storeName || '';
-            storeInsta = user.instagram || '';
-            storeDesc = user.storeDesc || '';
-            storeRegion = user.region || '';
-            // 지역 드롭다운 복원
-            if (user.sidoCode || user.sigunguCode) {
-                restoreRegionDropdown(user.region, user.sidoCode || '', user.sigunguCode || '');
-            }
-            bizCat = user.bizCategory || 'cafe';
-            captionTone = user.captionTone || '';
-            tagStyle = user.tagStyle || 'mid';
-            // 대시보드 UI 반영
-            const dashBiz = document.getElementById('dash-biz-cat');
-            if (dashBiz) dashBiz.value = bizCat;
-            const dashTone = document.getElementById('dash-caption-tone');
-            if (dashTone) dashTone.value = captionTone;
-            const dashTag = document.getElementById('dash-tag-style');
-            if (dashTag) dashTag.value = tagStyle;
-        } catch(e) {}
-    }
-
-    loadTrends();
-    loadAutoReply();
-    checkIgConnection();
-    // 지역 설정된 경우 restoreRegionDropdown 완료 후 initWeather 호출됨
-    // 지역 미설정 시(신규 가입자) 바로 호출
-    if (!JSON.parse(localStorage.getItem('lumi_user') || '{}').sidoCode) {
-        initWeather();
-    }
 
     // 플랜 상태 체크
     if (userRaw) {
@@ -2722,8 +2741,6 @@ async function loadAutoReply() {
         console.log('자동 응답 설정 로딩 실패:', e.message);
     }
 }
-
-bootPersistence();
 
 /* ── 채팅 데모 애니메이션 (Intersection Observer) ── */
 function initChatDemo() {
@@ -3322,8 +3339,7 @@ function lumiLogout() {
             const dashTone = document.getElementById('dash-caption-tone');
             if (dashTone) dashTone.value = captionTone;
             const dashTag = document.getElementById('dash-tag-style');
-            if (dashTag) dashTag.
-value = tagStyle;
+            if (dashTag) dashTag.value = tagStyle;
             grantAccess();
         } catch(e) {
             localStorage.removeItem('lumi_token');
