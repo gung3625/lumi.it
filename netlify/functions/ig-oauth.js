@@ -91,7 +91,19 @@ exports.handler = async (event) => {
       igUserId, accessToken: longToken, pageAccessToken,
       email, connectedAt: new Date().toISOString()
     }));
-    if (email) await store.set('email-ig:' + email, igUserId);
+    if (email) {
+      await store.set('email-ig:' + email, igUserId);
+      // user:이메일에도 igUserId, igConnected 저장
+      try {
+        const userRaw = await store.get('user:' + email);
+        if (userRaw) {
+          const userData = JSON.parse(userRaw);
+          userData.igUserId = igUserId;
+          userData.igConnected = true;
+          await store.set('user:' + email, JSON.stringify(userData));
+        }
+      } catch(e) { console.error('[lumi] user 업데이트 실패:', e.message); }
+    }
 
     console.log('[lumi] Instagram OAuth 연동 완료:', igUserId, email);
     return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/?oauth_success=1' } };
