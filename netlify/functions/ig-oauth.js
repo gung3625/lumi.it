@@ -25,6 +25,7 @@ exports.handler = async (event) => {
       `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
       `&scope=instagram_basic,instagram_content_publish,instagram_manage_comments,instagram_manage_messages,pages_show_list,pages_read_engagement,pages_manage_metadata` +
       `&response_type=code` +
+      `&auth_type=reauthenticate` +
       `&state=${encodeURIComponent(lumiToken)}`;
     return { statusCode: 302, headers: { Location: authUrl } };
   }
