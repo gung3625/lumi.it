@@ -1341,8 +1341,9 @@
             </div>
             <button onclick="connectInstagram()" style="background:var(--pink);color:#fff;border:none;border-radius:var(--r-md);padding:10px 16px;font-size:.83rem;font-weight:700;cursor:pointer;white-space:nowrap;">Instagram 연동</button>
         </div>
-        <div id="ig-connected-badge" style="display:none;background:#f0fff4;border:1.5px solid #52c41a;border-radius:var(--r-xl);padding:12px 18px;margin-bottom:16px;">
+        <div id="ig-connected-badge" style="display:none;background:#f0fff4;border:1.5px solid #52c41a;border-radius:var(--r-xl);padding:12px 18px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
             <p style="font-size:.83rem;font-weight:700;color:#389e0d;">✅ Instagram 계정이 연동됐어요!</p>
+            <button onclick="disconnectInstagram()" style="background:none;border:1px solid #ffb3b3;border-radius:var(--r-sm);padding:6px 12px;font-size:12px;font-weight:600;color:#ff4d4d;cursor:pointer;white-space:nowrap;transition:all .2s;" onmouseover="this.style.background='#fff5f5'" onmouseout="this.style.background='none'">연동 끊기</button>
         </div>
 
         <!-- 매장 지역 설정 -->
@@ -1697,6 +1698,32 @@ async function handleLoginAction(){
 /* resendOtp 제거됨 - requestSignupOtp 사용 */
 
 /* validateStep2 제거됨 */
+
+async function disconnectInstagram() {
+    if (!confirm('Instagram 연동을 끊으시겠어요?')) return;
+    const lumiUser = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+    const token = lumiUser.token || localStorage.getItem('lumi_token') || '';
+    try {
+        const res = await fetch('/.netlify/functions/disconnect-ig', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (res.ok) {
+            lumiUser.igConnected = false;
+            lumiUser.igUserId = '';
+            localStorage.setItem('lumi_user', JSON.stringify(lumiUser));
+            const banner = document.getElementById('ig-connect-banner');
+            const badge = document.getElementById('ig-connected-badge');
+            if (banner) banner.style.display = 'flex';
+            if (badge) badge.style.display = 'none';
+            showToast('Instagram 연동이 해제됐어요.', '');
+        } else {
+            showToast('연동 해제에 실패했어요.', 'red');
+        }
+    } catch(e) {
+        showToast('네트워크 오류가 발생했습니다.', 'red');
+    }
+}
 
 function connectInstagram() {
     const lumiUser = JSON.parse(localStorage.getItem('lumi_user') || '{}');
@@ -2103,7 +2130,7 @@ async function commitPost(type){
         if(reserveTime) formData.append('scheduledAt', new Date(reserveTime).toISOString());
 
         try {
-            showToast('전송 중이에요...');
+            showToast('전송 중이에요... ⏳');
 
             // 게시 횟수 카운팅 먼저 확인
             const lumiUserData = JSON.parse(localStorage.getItem('lumi_user') || '{}');
@@ -2135,7 +2162,7 @@ async function commitPost(type){
                 body: formData
             });
             if(res.ok){
-                showToast('게시 요청을 보냈어요.','pink');
+                showToast('전송 완료! 🎉','pink');
                 resetDashboard();
             } else {
                 showToast('전송에 실패했어요. 다시 시도해 주세요.');
