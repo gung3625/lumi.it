@@ -1,4 +1,5 @@
 const busboy = require('busboy');
+const { getStore } = require('@netlify/blobs');
 
 function buildMultipart(fields, files) {
   const boundary = '----LumiBoundary' + Date.now().toString(16);
@@ -90,6 +91,35 @@ exports.handler = async (event) => {
         }
         const airGrade = airQuality.pm25Grade || (airQuality.pm25Value ? getPm25Grade(airQuality.pm25Value) : '알 수 없음');
 
+        // Blob에서 ig 토큰 조회
+        let igUserId = '';
+        let igAccessToken = '';
+        let igPageId = '';
+        if (storeProfile.ownerEmail) {
+          try {
+            const blobStore = getStore({
+              name: 'users',
+              siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
+              token: process.env.NETLIFY_TOKEN
+            });
+            const userRaw = await blobStore.get('user:' + storeProfile.ownerEmail);
+            if (userRaw) {
+              const userData = JSON.parse(userRaw);
+              igUserId = userData.igUserId || '';
+              if (igUserId) {
+                const igRaw = await blobStore.get('ig:' + igUserId);
+                if (igRaw) {
+                  const igData = JSON.parse(igRaw);
+                  igAccessToken = igData.accessToken || '';
+                  igPageId = igData.igPageId || igUserId;
+                }
+              }
+            }
+          } catch(e) {
+            console.error('[reserve] ig 토큰 조회 실패:', e.message);
+          }
+        }
+
         const textFields = {
           // 기본 정보
           photoCount: String(photos.length),
@@ -130,7 +160,12 @@ exports.handler = async (event) => {
           storeSigungu: storeProfile.sigungu || '',
           storeCategory: fields.bizCategory || storeProfile.category || '',
           ownerName: storeProfile.ownerName || '',
-          ownerEmail: storeProfile.ownerEmail || ''
+          ownerEmail: storeProfile.ownerEmail || '',
+
+          // Instagram 게시용 토큰 정보
+          igUserId: igUserId,
+          igAccessToken: igAccessToken,
+          igPageId: igPageId
         };
 
         // Make {{1.files.files}} 형식에 맞게 fieldName을 'files'로 통일
