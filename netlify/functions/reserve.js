@@ -111,11 +111,12 @@ exports.handler = async (event) => {
           // 대기오염 등급 (PM10, PM25 중 더 나쁜 등급 하나)
           airQuality: airGrade,
 
-          // 주변 행사 정보 (있을 때만 값이 있음)
+          // 주변 행사 정보
           nearbyFestivals: festivals.length > 0
-            ? festivals.map(f => `${f.title}(${f.startDate}~${f.endDate}, ${f.addr})`).join(' / ')
+            ? festivals.map(f => `${f.title}(${f.startDate}~${f.endDate}, ${f.addr}${f.dist ? ', ' + f.dist + 'km' : ''})`).join(' / ')
             : '',
           hasFestival: festivals.length > 0 ? 'true' : 'false',
+          festivalCount: String(festivals.length),
 
           // 트렌드 (문자열)
           trends: Array.isArray(trends) ? trends.join(', ') : '',
@@ -125,6 +126,8 @@ exports.handler = async (event) => {
           storeDescription: storeProfile.description || '',
           storeInstagram: storeProfile.instagram || '',
           storeRegion: storeProfile.region || '',
+          storeSido: storeProfile.sido || '',
+          storeSigungu: storeProfile.sigungu || '',
           storeCategory: fields.bizCategory || storeProfile.category || '',
           ownerName: storeProfile.ownerName || '',
           ownerEmail: storeProfile.ownerEmail || ''
