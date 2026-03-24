@@ -53,12 +53,9 @@ exports.handler = async (event) => {
 
     const { passwordHash, ...safeUser } = user;
 
-    // ig 연동 여부 확인 (igUserId로 토큰 존재 여부 체크)
-    if (safeUser.igUserId) {
-      let igRaw;
-      try { igRaw = await store.get('ig:' + safeUser.igUserId); } catch { igRaw = null; }
-      safeUser.igConnected = !!igRaw;
-    } else {
+    // ig 연동 여부 — user 객체에 저장된 값 그대로 사용
+    // (save-ig-token에서 user:이메일에 igConnected: true 저장함)
+    if (!safeUser.igUserId) {
       safeUser.igConnected = false;
     }
 
