@@ -92,9 +92,10 @@ exports.handler = async (event) => {
         const airGrade = airQuality.pm25Grade || (airQuality.pm25Value ? getPm25Grade(airQuality.pm25Value) : '알 수 없음');
 
         // Blob에서 ig 토큰 조회
+        // ig-oauth.js는 email-ig:이메일 → igUserId, ig:igUserId → 토큰 구조로 저장
         let igUserId = '';
-        let igAccessToken = '';
-        let igPageId = '';
+        let igAccessToken = '';   // 장기 유저 토큰
+        let igPageAccessToken = ''; // 페이지 액세스 토큰 (게시에 필요)
         if (storeProfile.ownerEmail) {
           try {
             const blobStore = getStore({
@@ -102,17 +103,28 @@ exports.handler = async (event) => {
               siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
               token: process.env.NETLIFY_TOKEN
             });
-            const userRaw = await blobStore.get('user:' + storeProfile.ownerEmail);
-            if (userRaw) {
-              const userData = JSON.parse(userRaw);
-              igUserId = userData.igUserId || '';
-              if (igUserId) {
-                const igRaw = await blobStore.get('ig:' + igUserId);
-                if (igRaw) {
-                  const igData = JSON.parse(igRaw);
-                  igAccessToken = igData.accessToken || '';
-                  igPageId = igData.igPageId || igUserId;
-                }
+            // 1. email-ig:이메일 → igUserId
+            let igUserIdRaw;
+            try { igUserIdRaw = await blobStore.get('email-ig:' + storeProfile.ownerEmail); } catch { igUserIdRaw = null; }
+
+            // fallback: user:이메일 에서 igUserId 조회
+            if (!igUserIdRaw) {
+              const userRaw = await blobStore.get('user:' + storeProfile.ownerEmail);
+              if (userRaw) {
+                const userData = JSON.parse(userRaw);
+                igUserId = userData.igUserId || '';
+              }
+            } else {
+              igUserId = igUserIdRaw.trim();
+            }
+
+            // 2. ig:igUserId → 토큰 정보
+            if (igUserId) {
+              const igRaw = await blobStore.get('ig:' + igUserId);
+              if (igRaw) {
+                const igData = JSON.parse(igRaw);
+                igAccessToken = igData.accessToken || '';
+                igPageAccessToken = igData.pageAccessToken || igData.accessToken || '';
               }
             }
           } catch(e) {
@@ -165,7 +177,7 @@ exports.handler = async (event) => {
           // Instagram 게시용 토큰 정보
           igUserId: igUserId,
           igAccessToken: igAccessToken,
-          igPageId: igPageId
+          igPageAccessToken: igPageAccessToken
         };
 
         // Make {{1.files.files}} 형식에 맞게 fieldName을 'files'로 통일
