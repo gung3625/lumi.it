@@ -490,6 +490,7 @@
         <button class="nav-txt-btn" id="nav-price-btn" onclick="smoothScrollTo('price-sec')">요금</button>
         <button class="nav-txt-btn" id="nav-login-btn" onclick="openPortal('login')">로그인</button>
         <button class="nav-cta" id="nav-signup-btn" onclick="handleStartBtn()">시작하기</button>
+        <button class="nav-cta" id="nav-dashboard-btn" onclick="grantAccess()" style="display:none;background:var(--pink);">대시보드</button>
     </div>
 </nav>
 
@@ -2241,7 +2242,14 @@ function resetToInitialLanding(){
     document.getElementById('lumi-intro-view-port').style.display='block';
     document.body.style.overflow='';
     window.scrollTo({top: savedScroll, behavior:'instant'});
-
+    // 로그인 상태면 네비 버튼 대시보드로 유지
+    const isLoggedIn = !!localStorage.getItem('lumi_token');
+    const signupBtn = document.getElementById('nav-signup-btn');
+    const loginBtn = document.getElementById('nav-login-btn');
+    const dashBtn = document.getElementById('nav-dashboard-btn');
+    if (signupBtn) signupBtn.style.display = isLoggedIn ? 'none' : 'block';
+    if (loginBtn) loginBtn.style.display = isLoggedIn ? 'none' : 'block';
+    if (dashBtn) dashBtn.style.display = isLoggedIn ? 'block' : 'none';
 }
 function navNode(s){['1','2','2b','3'].forEach(n=>{document.getElementById(`node-step-${n}`)?.classList.add('hidden');document.getElementById(`dot-${n}`)?.classList.remove('on');});document.getElementById(`node-step-${s}`)?.classList.remove('hidden');document.getElementById(`dot-${s}`)?.classList.add('on');}
 async function grantAccess(){
@@ -3136,6 +3144,13 @@ function lumiLogout() {
             if (dashTone) dashTone.value = captionTone;
             const dashTag = document.getElementById('dash-tag-style');
             if (dashTag) dashTag.value = tagStyle;
+            // 네비 버튼 전환 (시작하기 → 대시보드)
+            const signupBtn = document.getElementById('nav-signup-btn');
+            const loginBtn = document.getElementById('nav-login-btn');
+            const dashBtn = document.getElementById('nav-dashboard-btn');
+            if (signupBtn) signupBtn.style.display = 'none';
+            if (loginBtn) loginBtn.style.display = 'none';
+            if (dashBtn) dashBtn.style.display = 'block';
             grantAccess();
         } catch(e) {
             localStorage.removeItem('lumi_token');
