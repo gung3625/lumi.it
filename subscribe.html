@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>구독 시작 — lumi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.portone.io/v2/browser-sdk.js"></script>
+    <style>
+        :root {
+            --pink: #FF6B9D; --pink-light: #FF8FB5; --pink-soft: #FFD6E7;
+            --pink-pale: #FFF0F6; --pink-ultra: #FFF7FB;
+            --g900: #191F28; --g700: #333D4B; --g500: #6B7684;
+            --g400: #8B95A1; --g200: #E8ECF0; --g100: #F2F4F6;
+            --g50: #F9FAFB; --white: #FFFFFF;
+            --ease: cubic-bezier(0.16,1,0.3,1);
+        }
+        * { margin:0; padding:0; box-sizing:border-box; -webkit-font-smoothing:antialiased; }
+        body { font-family:'Noto Sans KR',sans-serif; background:var(--g50); color:var(--g700); min-height:100vh; }
+
+        /* NAV */
+        nav { background:rgba(255,255,255,.95); backdrop-filter:blur(20px); border-bottom:1px solid var(--g100); padding:0 24px; height:60px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
+        .nav-logo { height:100px; cursor:pointer; }
+        .nav-back { font-size:14px; font-weight:600; color:var(--g500); text-decoration:none; transition:color .2s; display:flex; align-items:center; gap:6px; }
+        .nav-back:hover { color:var(--g900); }
+
+        /* LAYOUT */
+        .page { max-width:960px; margin:0 auto; padding:48px 24px 100px; }
+        .page-title { font-size:1.6rem; font-weight:900; color:var(--g900); margin-bottom:6px; letter-spacing:-.03em; }
+        .page-sub { font-size:.9rem; color:var(--g500); margin-bottom:40px; }
+
+        /* GRID */
+        .grid { display:grid; grid-template-columns:1fr 380px; gap:24px; align-items:start; }
+        @media(max-width:720px){ .grid { grid-template-columns:1fr; } .order-summary { order:-1; } }
+
+        /* PLAN CARD */
+        .plan-card { background:var(--white); border-radius:20px; border:1.5px solid var(--pink-soft); padding:28px; margin-bottom:20px; }
+        .plan-badge { display:inline-block; background:var(--pink); color:#fff; font-size:11px; font-weight:800; padding:4px 12px; border-radius:99px; margin-bottom:14px; }
+        .plan-name { font-size:1.1rem; font-weight:900; color:var(--g900); margin-bottom:4px; }
+        .plan-price { display:flex; align-items:baseline; gap:4px; margin-bottom:4px; }
+        .plan-price-num { font-size:2.4rem; font-weight:900; color:var(--g900); letter-spacing:-.04em; }
+        .plan-price-unit { font-size:.85rem; color:var(--g400); }
+        .plan-price-origin { font-size:.85rem; color:var(--g400); text-decoration:line-through; margin-left:6px; }
+        .plan-desc { font-size:.82rem; color:var(--pink); font-weight:700; margin-bottom:20px; }
+        .plan-divider { height:1px; background:var(--g100); margin:20px 0; }
+        .plan-features { display:flex; flex-direction:column; gap:10px; }
+        .plan-feature { display:flex; align-items:center; gap:10px; font-size:.85rem; color:var(--g700); }
+        .plan-feature-icon { width:20px; height:20px; border-radius:50%; background:var(--pink-pale); display:flex; align-items:center; justify-content:center; font-size:.7rem; flex-shrink:0; }
+
+        /* FORM CARD */
+        .form-card { background:var(--white); border-radius:20px; border:1px solid var(--g200); padding:28px; margin-bottom:20px; }
+        .form-title { font-size:.95rem; font-weight:800; color:var(--g900); margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+        .form-step { width:22px; height:22px; border-radius:50%; background:var(--pink); color:#fff; font-size:.7rem; font-weight:800; display:flex; align-items:center; justify-content:center; }
+        .inp { width:100%; padding:13px 16px; margin-bottom:10px; border:1.5px solid var(--g200); border-radius:12px; background:var(--g50); font-size:14px; color:var(--g900); font-family:inherit; outline:none; transition:all .2s; }
+        .inp:focus { border-color:var(--pink); background:var(--white); box-shadow:0 0 0 3px rgba(255,107,157,.1); }
+        .inp::placeholder { color:var(--g400); }
+        .inp:disabled { background:var(--g100); color:var(--g500); cursor:not-allowed; }
+        .field-err { font-size:12px; color:#e53e3e; font-weight:600; margin:-6px 0 8px 4px; }
+        .field-ok { font-size:12px; color:#38a169; font-weight:600; margin:-6px 0 8px 4px; display:flex; align-items:center; gap:4px; }
+
+        /* SUMMARY */
+        .order-summary { background:var(--white); border-radius:20px; border:1px solid var(--g200); padding:28px; position:sticky; top:80px; }
+        .summary-title { font-size:.95rem; font-weight:800; color:var(--g900); margin-bottom:20px; }
+        .summary-row { display:flex; justify-content:space-between; align-items:center; font-size:.88rem; margin-bottom:12px; }
+        .summary-row.total { font-size:1rem; font-weight:900; color:var(--g900); border-top:1.5px solid var(--g200); padding-top:16px; margin-top:8px; }
+        .summary-row .label { color:var(--g500); }
+        .summary-row.total .label { color:var(--g900); }
+        .summary-free-badge { background:var(--pink-pale); color:var(--pink); font-size:.75rem; font-weight:700; padding:3px 10px; border-radius:99px; }
+
+        /* AGREE */
+        .agree-box { margin-bottom:16px; }
+        .agree-row { display:flex; align-items:flex-start; gap:10px; margin-bottom:10px; font-size:.83rem; color:var(--g700); cursor:pointer; }
+        .agree-row input[type=checkbox] { width:16px; height:16px; accent-color:var(--pink); margin-top:1px; flex-shrink:0; }
+        .agree-row a { color:var(--pink); font-weight:700; text-decoration:underline; }
+        .agree-err { font-size:12px; color:#e53e3e; font-weight:600; margin-bottom:10px; display:none; }
+
+        /* BTN */
+        .btn-pay { width:100%; padding:16px; border:none; background:var(--pink); color:#fff; font-size:16px; font-weight:800; border-radius:14px; cursor:pointer; font-family:inherit; transition:all .2s; box-shadow:0 4px 20px rgba(255,107,157,.3); letter-spacing:-.01em; }
+        .btn-pay:hover { background:var(--pink-light); transform:translateY(-2px); box-shadow:0 8px 28px rgba(255,107,157,.4); }
+        .btn-pay:active { transform:scale(.98); }
+        .btn-pay:disabled { background:var(--g200); color:var(--g400); box-shadow:none; transform:none; cursor:not-allowed; }
+        .pay-note { font-size:.75rem; color:var(--g400); text-align:center; margin-top:10px; line-height:1.6; }
+
+        /* TOAST */
+        .toast { position:fixed; bottom:32px; left:50%; transform:translateX(-50%) translateY(16px); background:var(--g900); color:#fff; padding:12px 24px; border-radius:99px; font-size:13px; font-weight:600; z-index:9999; opacity:0; transition:all .35s var(--ease); pointer-events:none; white-space:nowrap; }
+        .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+        .toast.pink { background:var(--pink); }
+
+        /* LOGIN REQUIRED */
+        .login-required { background:var(--white); border-radius:20px; border:1.5px dashed var(--g200); padding:48px 24px; text-align:center; display:none; }
+        .login-required h2 { font-size:1.1rem; font-weight:800; color:var(--g900); margin-bottom:8px; }
+        .login-required p { font-size:.88rem; color:var(--g500); margin-bottom:24px; }
+        .btn-login { display:inline-block; padding:12px 28px; background:var(--g900); color:#fff; font-size:14px; font-weight:700; border-radius:10px; text-decoration:none; transition:background .2s; }
+        .btn-login:hover { background:#000; }
+    </style>
+</head>
+<body>
+
+<nav>
+    <a href="/"><img src="https://i.ibb.co/ht8MxhY/img-1.png" class="nav-logo" alt="lumi"></a>
+    <a href="/" class="nav-back">← 홈으로</a>
+</nav>
+
+<div class="page">
+    <p class="page-title">구독 시작하기</p>
+    <p class="page-sub">7일 무료 체험 후 자동으로 결제됩니다. 언제든지 취소할 수 있어요.</p>
+
+    <!-- 비로그인 안내 -->
+    <div class="login-required" id="login-required">
+        <h2>로그인이 필요해요</h2>
+        <p>구독을 시작하려면 먼저 로그인해 주세요.</p>
+        <a href="/" class="btn-login" onclick="sessionStorage.setItem('redirect_after_login','subscribe')">로그인하러 가기</a>
+    </div>
+
+    <!-- 구독 폼 -->
+    <div class="grid" id="subscribe-content" style="display:none;">
+        <div>
+            <!-- 플랜 카드 -->
+            <div class="plan-card">
+                <div class="plan-badge">🎉 오픈 세일</div>
+                <div class="plan-name">스탠다드 플랜</div>
+                <div class="plan-price">
+                    <span class="plan-price-num">39,000</span>
+                    <span class="plan-price-unit">원 / 월</span>
+                    <span class="plan-price-origin">59,000원</span>
+                </div>
+                <div class="plan-desc">오픈 기념 특별가 · 언제든지 취소 가능</div>
+                <div class="plan-divider"></div>
+                <div class="plan-features">
+                    <div class="plan-feature"><div class="plan-feature-icon">📸</div>인스타 자동 게시 월 16회</div>
+                    <div class="plan-feature"><div class="plan-feature-icon">✍️</div>AI 캡션 + 해시태그 자동 생성</div>
+                    <div class="plan-feature"><div class="plan-feature-icon">☀️</div>날씨 반영 캡션</div>
+                    <div class="plan-feature"><div class="plan-feature-icon">📊</div>실시간 트렌드 태그</div>
+                    <div class="plan-feature"><div class="plan-feature-icon">⏰</div>예약 게시</div>
+                    <div class="plan-feature"><div class="plan-feature-icon">🎨</div>1:1 글스타일 커스텀</div>
+                    <div class="plan-feature"><div class="plan-feature-icon">🖼️</div>사진 최대 10장</div>
+                </div>
+            </div>
+
+            <!-- 결제 수단 -->
+            <div class="form-card">
+                <div class="form-title">
+                    <div class="form-step">1</div>
+                    결제 수단
+                </div>
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                    <label style="display:flex;align-items:center;gap:12px;padding:14px 16px;border:1.5px solid var(--pink);border-radius:12px;cursor:pointer;background:var(--pink-ultra);">
+                        <input type="radio" name="pay-method" value="card" checked style="accent-color:var(--pink);">
+                        <span style="font-size:.9rem;font-weight:700;color:var(--g900);">💳 신용카드 / 체크카드</span>
+                    </label>
+                </div>
+                <p style="font-size:.78rem;color:var(--g400);margin-top:10px;">현재 카드 결제만 지원합니다. 추후 결제수단이 추가될 예정이에요.</p>
+            </div>
+
+            <!-- 가입자 정보 -->
+            <div class="form-card">
+                <div class="form-title">
+                    <div class="form-step">2</div>
+                    가입자 정보 확인
+                </div>
+                <input type="text" class="inp" id="buyer-name" placeholder="이름" readonly>
+                <input type="email" class="inp" id="buyer-email" placeholder="이메일" readonly>
+                <input type="tel" class="inp" id="buyer-phone" placeholder="휴대폰 번호">
+                <div class="field-err" id="phone-err" style="display:none;"></div>
+            </div>
+        </div>
+
+        <!-- 주문 요약 -->
+        <div class="order-summary">
+            <div class="summary-title">주문 요약</div>
+            <div class="summary-row">
+                <span class="label">스탠다드 플랜</span>
+                <span>39,000원/월</span>
+            </div>
+            <div class="summary-row">
+                <span class="label">7일 무료 체험</span>
+                <span class="summary-free-badge">무료</span>
+            </div>
+            <div class="summary-row">
+                <span class="label">첫 결제일</span>
+                <span id="first-billing-date" style="font-weight:700;color:var(--g900);"></span>
+            </div>
+            <div class="summary-row total">
+                <span class="label">오늘 결제 금액</span>
+                <span style="color:var(--pink);">0원</span>
+            </div>
+
+            <!-- 약관 동의 -->
+            <div class="agree-box" style="margin-top:20px;">
+                <div class="agree-row">
+                    <input type="checkbox" id="agree-all" onchange="toggleAll(this.checked)">
+                    <span style="font-weight:800;color:var(--g900);">전체 동의하기</span>
+                </div>
+                <div style="height:1px;background:var(--g100);margin:8px 0 10px;"></div>
+                <div class="agree-row">
+                    <input type="checkbox" id="agree-terms">
+                    <span>(필수) <a href="/terms" target="_blank">이용약관</a> 동의</span>
+                </div>
+                <div class="agree-row">
+                    <input type="checkbox" id="agree-pay">
+                    <span>(필수) <a href="/terms#refund" target="_blank">유료 서비스 및 환불 정책</a> 동의</span>
+                </div>
+                <div class="agree-row">
+                    <input type="checkbox" id="agree-auto">
+                    <span>(필수) 7일 후 39,000원 자동결제 동의</span>
+                </div>
+                <div class="agree-err" id="agree-err">필수 항목에 모두 동의해 주세요.</div>
+            </div>
+
+            <button class="btn-pay" id="btn-pay" onclick="startPayment()">7일 무료로 시작하기</button>
+            <p class="pay-note">7일 무료 체험 종료 후 매월 39,000원이 자동 결제됩니다.<br>언제든지 취소 가능하며 위약금은 없습니다.</p>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let lumiUser = null;
+
+function showToast(msg, type='') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (type ? ' ' + type : '');
+    setTimeout(() => t.className = 'toast', 3000);
+}
+
+function toggleAll(checked) {
+    ['agree-terms','agree-pay','agree-auto'].forEach(id => {
+        document.getElementById(id).checked = checked;
+    });
+}
+
+function syncAll() {
+    const all = ['agree-terms','agree-pay','agree-auto'].every(id => document.getElementById(id).checked);
+    document.getElementById('agree-all').checked = all;
+}
+
+['agree-terms','agree-pay','agree-auto'].forEach(id => {
+    document.getElementById(id).addEventListener('change', syncAll);
+});
+
+// 첫 결제일 계산 (오늘 + 7일)
+function calcFirstBillingDate() {
+    const d = new Date();
+    d.setDate(d.getDate() + 7);
+    return `${d.getMonth()+1}월 ${d.getDate()}일`;
+}
+document.getElementById('first-billing-date').textContent = calcFirstBillingDate();
+
+// 로그인 상태 확인
+(function init() {
+    const token = localStorage.getItem('lumi_token');
+    const userRaw = localStorage.getItem('lumi_user');
+    if (!token || !userRaw) {
+        document.getElementById('login-required').style.display = 'block';
+        return;
+    }
+    try {
+        lumiUser = JSON.parse(userRaw);
+        document.getElementById('subscribe-content').style.display = 'grid';
+        document.getElementById('buyer-name').value = lumiUser.name || '';
+        document.getElementById('buyer-email').value = lumiUser.email || '';
+        document.getElementById('buyer-phone').value = lumiUser.phone || '';
+    } catch(e) {
+        document.getElementById('login-required').style.display = 'block';
+    }
+})();
+
+async function startPayment() {
+    // 약관 검증
+    const agreeErr = document.getElementById('agree-err');
+    if (!document.getElementById('agree-terms').checked ||
+        !document.getElementById('agree-pay').checked ||
+        !document.getElementById('agree-auto').checked) {
+        agreeErr.style.display = 'block';
+        agreeErr.scrollIntoView({ behavior:'smooth', block:'center' });
+        return;
+    }
+    agreeErr.style.display = 'none';
+
+    // 전화번호 검증
+    const phone = document.getElementById('buyer-phone').value.replace(/\D/g,'');
+    const phoneErr = document.getElementById('phone-err');
+    if (!phone || phone.length < 10) {
+        phoneErr.textContent = '휴대폰 번호를 올바르게 입력해 주세요.';
+        phoneErr.style.display = 'block';
+        return;
+    }
+    phoneErr.style.display = 'none';
+
+    const btn = document.getElementById('btn-pay');
+    btn.disabled = true;
+    btn.textContent = '처리 중...';
+
+    try {
+        // 주문 생성
+        const prepRes = await fetch('/.netlify/functions/payment-prepare', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: lumiUser.email, planType: 'standard' })
+        });
+        const prepData = await prepRes.json();
+        if (!prepRes.ok) throw new Error(prepData.error || '주문 생성 실패');
+
+        // 포트원 결제 (UI만 - 실제 결제 연동 전)
+        showToast('결제 연동 준비 중이에요. 곧 오픈됩니다! 🎉', 'pink');
+        btn.disabled = false;
+        btn.textContent = '7일 무료로 시작하기';
+
+    } catch(err) {
+        showToast(err.message || '오류가 발생했습니다.', '');
+        btn.disabled = false;
+        btn.textContent = '7일 무료로 시작하기';
+    }
+}
+</script>
+</body>
+</html>
