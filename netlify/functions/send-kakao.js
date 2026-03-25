@@ -4,11 +4,11 @@ const API_KEY = process.env.SOLAPI_API_KEY;
 const API_SECRET = process.env.SOLAPI_API_SECRET;
 const CHANNEL_ID = process.env.SOLAPI_CHANNEL_ID || 'lumi_it';
 
-// 솔라피 템플릿 코드
+// 솔라피 템플릿 (templateId: 긴 ID, code: 짧은 코드)
 const TEMPLATES = {
-  welcome: 'HMttBoUZVq',      // 회원가입 환영
-  upload: '5XY1oOgtXW',       // 업로드 알림
-  schedule: '1EQHbXgF4t'      // 데일리 스케줄 가이드
+  welcome:  { id: 'KA01TP260322191640813tM8YzoqdCss', code: 'HMttBoUZVq' },  // 회원가입 환영 (승인)
+  upload:   { id: 'KA01TP260322191753216QJdWJqLkCrZ', code: '5XY1oOgtXW' },  // 업로드 알림 (승인)
+  schedule: { id: 'KA01TP260322191942267zoXVvaI7xav', code: '1EQHbXgF4t' }   // 데일리 스케줄 (검수중)
 };
 
 // 솔라피 HMAC 인증 헤더 생성
@@ -29,7 +29,7 @@ async function sendAlimtalk(to, templateCode, variables) {
   // 변수를 #{변수명} 형태로 치환
   const kakaoOptions = {
     pfId: CHANNEL_ID,
-    templateId: templateCode,
+    templateId: templateCode.id,
     variables: variables
   };
 
@@ -37,6 +37,7 @@ async function sendAlimtalk(to, templateCode, variables) {
     message: {
       to,
       from: CHANNEL_ID,
+      type: 'ATA',
       kakaoOptions
     }
   };
@@ -79,13 +80,13 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: 'type, to 필수' }) };
   }
 
-  const templateCode = TEMPLATES[type];
-  if (!templateCode) {
+  const template = TEMPLATES[type];
+  if (!template) {
     return { statusCode: 400, body: JSON.stringify({ error: '알 수 없는 템플릿 타입' }) };
   }
 
   try {
-    const result = await sendAlimtalk(to, templateCode, variables || {});
+    const result = await sendAlimtalk(to, template, variables || {});
     return {
       statusCode: 200,
       body: JSON.stringify({ success: true, result })
