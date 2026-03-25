@@ -1279,21 +1279,34 @@
             <input type="hidden" id="tag-style-select" value="mid">
 
             <!-- 약관 동의 체크박스 -->
-            <div style="margin-bottom:14px;display:flex;flex-direction:column;gap:10px;">
-                <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:.85rem;color:var(--g700);">
-                    <input type="checkbox" id="agree-terms" style="margin-top:2px;accent-color:var(--pink);width:16px;height:16px;flex-shrink:0;">
-                    <span><a href="/terms" target="_blank" style="color:var(--pink);font-weight:700;text-decoration:underline;">이용약관</a>에 동의합니다 <span style="color:#e53e3e;">*</span></span>
+            <div style="margin-bottom:4px;">
+                <!-- 전체 동의 -->
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:12px 14px;background:var(--g50);border-radius:var(--r-md);border:1.5px solid var(--g200);margin-bottom:10px;">
+                    <input type="checkbox" id="agree-all" style="accent-color:var(--pink);width:18px;height:18px;flex-shrink:0;" onchange="toggleAllAgree(this.checked)">
+                    <span style="font-size:.9rem;font-weight:800;color:var(--g900);">전체 동의하기</span>
                 </label>
-                <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:.85rem;color:var(--g700);">
-                    <input type="checkbox" id="agree-privacy" style="margin-top:2px;accent-color:var(--pink);width:16px;height:16px;flex-shrink:0;">
-                    <span><a href="/privacy" target="_blank" style="color:var(--pink);font-weight:700;text-decoration:underline;">개인정보 처리방침</a>에 동의합니다 <span style="color:#e53e3e;">*</span></span>
-                </label>
-                <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:.85rem;color:var(--g700);">
-                    <input type="checkbox" id="agree-refund" style="margin-top:2px;accent-color:var(--pink);width:16px;height:16px;flex-shrink:0;">
-                    <span>환불 정책에 동의합니다 <span style="color:#e53e3e;">*</span><br><span style="font-size:.78rem;color:var(--g400);">결제 후 7일 경과 또는 서비스 사용 시 환불 불가. 구독 취소는 자동결제 중단이며 이미 결제된 금액은 환불되지 않습니다.</span></span>
-                </label>
+                <div style="display:flex;flex-direction:column;gap:8px;padding:0 4px;">
+                    <!-- 필수 항목들 -->
+                    <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:.83rem;color:var(--g700);">
+                        <input type="checkbox" id="agree-terms" style="margin-top:2px;accent-color:var(--pink);width:16px;height:16px;flex-shrink:0;" onchange="syncAllAgree()">
+                        <span>(필수) <a href="/terms" target="_blank" style="color:var(--pink);font-weight:700;text-decoration:underline;">이용약관</a> 동의</span>
+                    </label>
+                    <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:.83rem;color:var(--g700);">
+                        <input type="checkbox" id="agree-privacy" style="margin-top:2px;accent-color:var(--pink);width:16px;height:16px;flex-shrink:0;" onchange="syncAllAgree()">
+                        <span>(필수) <a href="/privacy" target="_blank" style="color:var(--pink);font-weight:700;text-decoration:underline;">개인정보 처리방침</a> 동의</span>
+                    </label>
+                    <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:.83rem;color:var(--g700);">
+                        <input type="checkbox" id="agree-refund" style="margin-top:2px;accent-color:var(--pink);width:16px;height:16px;flex-shrink:0;" onchange="syncAllAgree()">
+                        <span>(필수) 환불 정책 동의<br><span style="font-size:.75rem;color:var(--g400);">결제 후 7일 경과 또는 서비스 사용 시 환불 불가. 구독 취소는 자동결제 중단이며 이미 결제된 금액은 환불되지 않습니다.</span></span>
+                    </label>
+                    <!-- 선택 항목 -->
+                    <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:.83rem;color:var(--g700);padding-top:4px;border-top:1px solid var(--g100);margin-top:2px;">
+                        <input type="checkbox" id="agree-marketing" style="margin-top:2px;accent-color:var(--pink);width:16px;height:16px;flex-shrink:0;" onchange="syncAllAgree()">
+                        <span>(선택) 광고성 정보 수신 동의<br><span style="font-size:.75rem;color:var(--g400);">lumi 신기능, 이벤트, 프로모션 등 마케팅 정보를 카카오 알림톡·이메일로 받아보실 수 있어요. 미동의 시에도 서비스 이용에는 제한이 없으며, 업로드 알림 등 서비스 필수 알림은 정상 발송됩니다.</span></span>
+                    </label>
+                </div>
             </div>
-            <div id="agree-err" class="field-err hidden">이용약관, 개인정보 처리방침, 환불 정책에 모두 동의해 주세요.</div>
+            <div id="agree-err" class="field-err hidden">필수 항목(이용약관, 개인정보 처리방침, 환불 정책)에 모두 동의해 주세요.</div>
 
             <button class="btn-portal" onclick="finishLumiSignup()" style="background:var(--pink);">가입 완료</button>
         </div>
@@ -3022,6 +3035,22 @@ async function resetForgotPassword() {
 }
 
 /* ── 회원가입 완료 ── */
+function toggleAllAgree(checked) {
+    ['agree-terms','agree-privacy','agree-refund','agree-marketing'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.checked = checked;
+    });
+}
+
+function syncAllAgree() {
+    const all = ['agree-terms','agree-privacy','agree-refund','agree-marketing'].every(id => {
+        const el = document.getElementById(id);
+        return el ? el.checked : false;
+    });
+    const allEl = document.getElementById('agree-all');
+    if (allEl) allEl.checked = all;
+}
+
 async function finishLumiSignup() {
     // 약관 동의 검증
     const agreeTerms = document.getElementById('agree-terms')?.checked;
@@ -3082,7 +3111,8 @@ async function finishLumiSignup() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 name, storeName: sName, instagram: insta, email, phone, password,
-                birthdate, storeDesc, region, sidoCode, sigunguCode, bizCategory: bizCat, captionTone, tagStyle
+                birthdate, storeDesc, region, sidoCode, sigunguCode, bizCategory: bizCat, captionTone, tagStyle,
+                agreeMarketing: document.getElementById('agree-marketing')?.checked || false
             })
         });
         const data = await res.json();

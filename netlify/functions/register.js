@@ -17,7 +17,7 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: '잘못된 요청입니다.' }) };
   }
 
-  const { name, storeName, instagram, email, phone, password, birthdate, storeDesc, region, sidoCode, sigunguCode, storeSido, bizCategory, captionTone, tagStyle } = body;
+  const { name, storeName, instagram, email, phone, password, birthdate, storeDesc, region, sidoCode, sigunguCode, storeSido, bizCategory, captionTone, tagStyle, agreeMarketing } = body;
 
   if (!name || !storeName || !instagram || !email || !phone || !password || !birthdate) {
     return { statusCode: 400, body: JSON.stringify({ error: '필수 정보가 누락됐습니다.' }) };
@@ -63,6 +63,8 @@ exports.handler = async (event) => {
       bizCategory: bizCategory || 'cafe',
       captionTone: captionTone || 'warm',
       tagStyle: tagStyle || 'mid',
+      agreeMarketing: agreeMarketing === true,
+      agreeMarketingAt: agreeMarketing === true ? new Date().toISOString() : null,
       plan: 'trial',
       trialStart: new Date().toISOString(),
       createdAt: new Date().toISOString(),
