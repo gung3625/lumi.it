@@ -2323,6 +2323,29 @@ function resetToInitialLanding(){
 }
 function navNode(s){['1','2','2b','3'].forEach(n=>{document.getElementById(`node-step-${n}`)?.classList.add('hidden');document.getElementById(`dot-${n}`)?.classList.remove('on');});document.getElementById(`node-step-${s}`)?.classList.remove('hidden');document.getElementById(`dot-${s}`)?.classList.add('on');}
 async function grantAccess(){
+    // 구독 여부 확인 후 분기
+    const userRaw = localStorage.getItem('lumi_user');
+    if (userRaw) {
+        try {
+            const user = JSON.parse(userRaw);
+            const token = localStorage.getItem('lumi_token');
+            const res = await fetch('/.netlify/functions/check-plan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({ email: user.email })
+            });
+            const data = await res.json();
+            const plan = data.plan || 'trial';
+            const trialExpired = data.trialExpired || false;
+            // 무료체험 만료 + 미구독 → 구독 페이지로
+            if (trialExpired && plan === 'trial') {
+                window.location.href = '/subscribe';
+                return;
+            }
+            // 무료체험 중 또는 구독 중 → 대시보드
+        } catch(e) { /* 오류 시 대시보드로 */ }
+    }
+
     document.getElementById('lumi-auth-portal').style.display='none';
     document.getElementById('lumi-intro-view-port').style.display='none';
     document.getElementById('lumi-dashboard-node').style.display='flex';
