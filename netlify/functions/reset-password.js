@@ -18,7 +18,8 @@ exports.handler = async (event) => {
 
   const { email, password } = body;
   if (!email || !password) return { statusCode: 400, body: JSON.stringify({ error: '필수 정보가 없습니다.' }) };
-  if (password.length < 6) return { statusCode: 400, body: JSON.stringify({ error: '비밀번호는 6자리 이상이어야 합니다.' }) };
+  const pwRegex = /^(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{10,}$/;
+  if (!pwRegex.test(password)) return { statusCode: 400, body: JSON.stringify({ error: '비밀번호는 특수문자를 포함한 10자 이상이어야 합니다.' }) };
 
   try {
     const store = getStore({ name: 'users', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
