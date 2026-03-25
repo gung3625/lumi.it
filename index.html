@@ -836,7 +836,7 @@
                         <li><span class="pf-icon">🎨</span>1:1 글스타일 커스텀</li>
                         <li><span class="pf-icon">🖼️</span>사진 최대 10장 한 번에 올리기</li>
                     </ul>
-                    <button class="btn-price-on" onclick="openPortal('signup')">7일 무료로 시작하기</button>
+                    <button class="btn-price-on" onclick="handleStartBtn()">7일 무료로 시작하기</button>
                     <p style="text-align:center;font-size:.75rem;color:var(--g400);margin-top:10px;">카드 등록 없이 시작해요.</p>
                 </div>
 
@@ -973,7 +973,7 @@
             <div class="cta-inner">
                 <h2 class="cta-title">오늘 사진 한 장 찍으셨나요?<br>그게 오늘 할 일 전부예요.</h2>
                 <p class="cta-desc">7일 무료 체험 · 카드 번호 불필요 · 언제든 취소 가능</p>
-                <button class="btn-cta" onclick="openPortal('signup')">7일 무료로 시작하기 →</button>
+                <button class="btn-cta" onclick="handleStartBtn()">7일 무료로 시작하기 →</button>
             </div>
         </div>
     </div>
@@ -2298,7 +2298,7 @@ function openPortal(init){
 }
 function handleStartBtn(){
     if (localStorage.getItem('lumi_token')) {
-        grantAccess();
+        window.location.href = '/subscribe';
     } else {
         openPortal('signup');
     }
