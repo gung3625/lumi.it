@@ -493,6 +493,7 @@
         <button class="nav-txt-btn" id="nav-login-btn" onclick="openPortal('login')">로그인</button>
         <button class="nav-cta" id="nav-signup-btn" onclick="handleStartBtn()">시작하기</button>
         <button class="nav-cta" id="nav-dashboard-btn" onclick="grantAccess()" style="display:none;background:var(--pink);">대시보드</button>
+        <button class="nav-txt-btn" id="nav-logout-btn" onclick="lumiLogout()" style="display:none;">로그아웃</button>
     </div>
 </nav>
 
@@ -2309,9 +2310,11 @@ function resetToInitialLanding(){
     const signupBtn = document.getElementById('nav-signup-btn');
     const loginBtn = document.getElementById('nav-login-btn');
     const dashBtn = document.getElementById('nav-dashboard-btn');
+    const logoutBtn = document.getElementById('nav-logout-btn');
     if (signupBtn) signupBtn.style.display = isLoggedIn ? 'none' : 'block';
     if (loginBtn) loginBtn.style.display = isLoggedIn ? 'none' : 'block';
     if (dashBtn) dashBtn.style.display = isLoggedIn ? 'block' : 'none';
+    if (logoutBtn) logoutBtn.style.display = isLoggedIn ? 'block' : 'none';
 }
 function navNode(s){['1','2','2b','3'].forEach(n=>{document.getElementById(`node-step-${n}`)?.classList.add('hidden');document.getElementById(`dot-${n}`)?.classList.remove('on');});document.getElementById(`node-step-${s}`)?.classList.remove('hidden');document.getElementById(`dot-${s}`)?.classList.add('on');}
 async function grantAccess(){
@@ -3238,9 +3241,11 @@ function lumiLogout() {
             const signupBtn = document.getElementById('nav-signup-btn');
             const loginBtn = document.getElementById('nav-login-btn');
             const dashBtn = document.getElementById('nav-dashboard-btn');
+            const logoutBtn2 = document.getElementById('nav-logout-btn');
             if (signupBtn) signupBtn.style.display = 'none';
             if (loginBtn) loginBtn.style.display = 'none';
             if (dashBtn) dashBtn.style.display = 'block';
+            if (logoutBtn2) logoutBtn2.style.display = 'block';
             grantAccess();
         } catch(e) {
             localStorage.removeItem('lumi_token');
