@@ -1324,8 +1324,10 @@
 <div id="cancel-modal" style="display:none;position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:20px;">
     <div style="background:#fff;border-radius:24px;padding:32px;width:100%;max-width:380px;box-shadow:0 24px 80px rgba(0,0,0,.18);">
         <div style="font-size:2rem;text-align:center;margin-bottom:12px;">😢</div>
-        <h3 style="font-size:1rem;font-weight:900;color:#191F28;text-align:center;margin-bottom:6px;">정말 구독을 취소하시겠어요?</h3>
-        <p style="font-size:.82rem;color:#6B7684;text-align:center;margin-bottom:20px;line-height:1.7;">취소하더라도 현재 결제 기간 만료일까지는<br>계속 이용하실 수 있어요.</p>
+        <h3 style="font-size:1rem;font-weight:900;color:#191F28;text-align:center;margin-bottom:8px;">정말 구독을 취소하시겠어요?</h3>
+        <div id="cancel-modal-info" style="background:#F9FAFB;border-radius:12px;padding:14px 16px;margin-bottom:16px;text-align:center;">
+            <div style="font-size:.78rem;color:#8B95A1;margin-bottom:6px;">확인 중...</div>
+        </div>
         <p style="font-size:12px;font-weight:700;color:#6B7684;margin-bottom:8px;">취소 사유를 알려주시겠어요? <span style="font-weight:400;">(선택)</span></p>
         <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:20px;">
             <label style="display:flex;align-items:center;gap:10px;padding:11px 14px;border:1.5px solid #E8ECF0;border-radius:12px;cursor:pointer;font-size:.85rem;color:#333D4B;transition:border-color .2s;" onclick="selectCancelReason(this)">
@@ -2696,9 +2698,60 @@ function showPaywall(type) {
 
 /* ── 결제 (포트원 v2 + 토스페이먼츠) ── */
 
-function cancelSubscription() {
+async function cancelSubscription() {
     const modal = document.getElementById('cancel-modal');
+    const infoBox = document.getElementById('cancel-modal-info');
     if (modal) { modal.style.display = 'flex'; }
+
+    // 남은 기간 계산
+    try {
+        const userRaw = localStorage.getItem('lumi_user');
+        const user = JSON.parse(userRaw);
+        const res = await fetch('/.netlify/functions/check-plan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: user.email })
+        });
+        const data = await res.json();
+
+        // 다음 결제일(= 구독 시작일 + 한 달) 또는 무료체험 종료일 계산
+        const createdAt = new Date(user.createdAt || Date.now());
+        let expireDate;
+        if (data.plan === 'trial') {
+            expireDate = new Date(createdAt);
+            expireDate.setDate(expireDate.getDate() + 7);
+        } else {
+            // 구독 중: 다음 결제일까지
+            const subStart = new Date(user.subscriptionStart || user.createdAt || Date.now());
+            expireDate = new Date(subStart);
+            expireDate.setMonth(expireDate.getMonth() + 1);
+        }
+
+        const today = new Date();
+        const diffDays = Math.max(0, Math.ceil((expireDate - today) / (1000*60*60*24)));
+        const expireDateStr = expireDate.getMonth()+1 + '월 ' + expireDate.getDate() + '일';
+
+        if (infoBox) {
+            infoBox.innerHTML = `
+                <div style="font-size:.78rem;color:#8B95A1;margin-bottom:8px;">취소해도 아래 기간까지 계속 이용할 수 있어요.</div>
+                <div style="display:flex;justify-content:center;gap:20px;">
+                    <div>
+                        <div style="font-size:1.3rem;font-weight:900;color:#FF6B9D;">${diffDays}일</div>
+                        <div style="font-size:.72rem;color:#8B95A1;margin-top:2px;">남은 기간</div>
+                    </div>
+                    <div style="width:1px;background:#E8ECF0;"></div>
+                    <div>
+                        <div style="font-size:1rem;font-weight:900;color:#191F28;">${expireDateStr}</div>
+                        <div style="font-size:.72rem;color:#8B95A1;margin-top:2px;">이용 만료일</div>
+                    </div>
+                </div>
+            `;
+        }
+    } catch(e) {
+        if (infoBox) {
+            infoBox.innerHTML = '<div style="font-size:.82rem;color:#6B7684;">취소 후에도 현재 결제 기간까지 이용 가능합니다.</div>';
+        }
+    }
 }
 
 function selectCancelReason(label) {
