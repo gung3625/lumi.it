@@ -2370,10 +2370,10 @@ async function grantAccess(){
     bootPersistence();
     renderArchive();
 
-    const userRaw = localStorage.getItem('lumi_user');
-    if (userRaw) {
+    const userRaw2 = localStorage.getItem('lumi_user');
+    if (userRaw2) {
         try {
-            const user = JSON.parse(userRaw);
+            const user = JSON.parse(userRaw2);
             ceoName = user.name || '';
             storeName = user.storeName || '';
             storeInsta = user.instagram || '';
@@ -2401,9 +2401,9 @@ async function grantAccess(){
         initWeather();
     }
 
-    if (userRaw) {
+    if (userRaw2) {
         try {
-            const user = JSON.parse(userRaw);
+            const user = JSON.parse(userRaw2);
             const res = await fetch('/.netlify/functions/check-plan', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
