@@ -22,10 +22,10 @@ exports.handler = async (event) => {
     const thisMonth = now.getFullYear() + '-' + (now.getMonth() + 1);
     const postCount = user.postCountMonth === thisMonth ? (user.postCount || 0) : 0;
     const limits = { trial: 3, standard: 16, pro: 20 };
-    // 대표님 계정 무제한 처리
+    // 대표님 계정 - 프로 플랜 전체 기능 사용
     const ADMIN_EMAIL = 'gung3625@gmail.com';
     const isAdmin = email === ADMIN_EMAIL;
-    const plan = user.plan || 'trial';
+    const plan = isAdmin ? 'pro' : (user.plan || 'trial');
     const limit = limits[plan] || 3;
     const createdAt = new Date(user.createdAt);
     const diffDays = Math.floor((now - createdAt) / (1000 * 60 * 60 * 24));
