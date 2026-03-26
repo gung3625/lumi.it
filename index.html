@@ -1396,6 +1396,40 @@
             <button onclick="disconnectInstagram()" style="background:none;border:1px solid #ffb3b3;border-radius:var(--r-sm);padding:6px 12px;font-size:12px;font-weight:600;color:#ff4d4d;cursor:pointer;white-space:nowrap;transition:all .2s;" onmouseover="this.style.background='#fff5f5'" onmouseout="this.style.background='none'">연동 끊기</button>
         </div>
 
+        <!-- 개인정보 수정 -->
+        <div style="background:var(--white);border-radius:var(--r-xl);padding:20px 22px;border:1px solid var(--g200);box-shadow:var(--sh-xs);margin-bottom:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:1.1rem;">👤</span>
+                    <p style="font-size:.92rem;font-weight:800;color:var(--g900);">개인정보 수정</p>
+                </div>
+                <button id="profile-edit-btn" onclick="toggleProfileEdit()" style="font-size:12px;font-weight:700;color:var(--pink);background:var(--pink-pale);border:none;border-radius:99px;padding:5px 14px;cursor:pointer;">수정</button>
+            </div>
+            <!-- 보기 모드 -->
+            <div id="profile-view-mode">
+                <div style="display:flex;flex-direction:column;gap:8px;font-size:.85rem;color:var(--g700);">
+                    <div style="display:flex;justify-content:space-between;"><span style="color:var(--g400);">이름</span><span id="profile-view-name">-</span></div>
+                    <div style="display:flex;justify-content:space-between;"><span style="color:var(--g400);">매장명</span><span id="profile-view-store">-</span></div>
+                    <div style="display:flex;justify-content:space-between;"><span style="color:var(--g400);">인스타그램</span><span id="profile-view-insta">-</span></div>
+                    <div style="display:flex;justify-content:space-between;"><span style="color:var(--g400);">휴대폰</span><span id="profile-view-phone">-</span></div>
+                    <div style="display:flex;justify-content:space-between;"><span style="color:var(--g400);">매장 소개</span><span id="profile-view-desc" style="max-width:60%;text-align:right;line-height:1.5;">-</span></div>
+                </div>
+            </div>
+            <!-- 수정 모드 -->
+            <div id="profile-edit-mode" style="display:none;">
+                <input type="text" id="profile-edit-name" placeholder="대표님 성함" class="inp" style="margin-bottom:8px;">
+                <input type="text" id="profile-edit-store" placeholder="매장 이름" class="inp" style="margin-bottom:8px;">
+                <input type="text" id="profile-edit-insta" placeholder="인스타그램 아이디 (예: @lumi__it)" class="inp" style="margin-bottom:8px;">
+                <input type="tel" id="profile-edit-phone" placeholder="휴대폰 번호 (숫자만)" class="inp" style="margin-bottom:8px;">
+                <textarea id="profile-edit-desc" class="dash-note" rows="3" placeholder="매장 소개 (AI 캡션 작성에 활용됩니다)" style="margin-bottom:10px;"></textarea>
+                <div style="display:flex;gap:8px;">
+                    <button onclick="saveProfileEdit()" class="btn-act-on" style="flex:1;padding:12px;">저장</button>
+                    <button onclick="cancelProfileEdit()" class="btn-act-off" style="flex:1;padding:12px;">취소</button>
+                </div>
+                <div id="profile-edit-err" style="font-size:12px;color:#e53e3e;margin-top:8px;display:none;"></div>
+            </div>
+        </div>
+
         <!-- 매장 지역 설정 -->
         <div style="background:var(--white);border-radius:var(--r-xl);padding:20px 22px;border:1px solid var(--g200);box-shadow:var(--sh-xs);margin-bottom:16px;">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
@@ -2373,6 +2407,7 @@ async function grantAccess(){
     loadTrends();
     loadAutoReply();
     checkIgConnection();
+    initProfileView();
     if (!JSON.parse(localStorage.getItem('lumi_user') || '{}').sidoCode) {
         initWeather();
     }
@@ -3225,6 +3260,82 @@ function updateReserveHint() {
     } else {
         timeField.value = '';
         hint.style.display = 'none';
+    }
+}
+
+// ── 개인정보 수정 ──
+function initProfileView() {
+    const userRaw = localStorage.getItem('lumi_user');
+    if (!userRaw) return;
+    const user = JSON.parse(userRaw);
+    document.getElementById('profile-view-name').textContent = user.name || '-';
+    document.getElementById('profile-view-store').textContent = user.storeName || '-';
+    document.getElementById('profile-view-insta').textContent = user.instagram || '-';
+    document.getElementById('profile-view-phone').textContent = user.phone || '-';
+    document.getElementById('profile-view-desc').textContent = user.storeDesc || '-';
+}
+
+function toggleProfileEdit() {
+    const viewMode = document.getElementById('profile-view-mode');
+    const editMode = document.getElementById('profile-edit-mode');
+    const btn = document.getElementById('profile-edit-btn');
+    const userRaw = localStorage.getItem('lumi_user');
+    const user = userRaw ? JSON.parse(userRaw) : {};
+    document.getElementById('profile-edit-name').value = user.name || '';
+    document.getElementById('profile-edit-store').value = user.storeName || '';
+    document.getElementById('profile-edit-insta').value = user.instagram || '';
+    document.getElementById('profile-edit-phone').value = user.phone || '';
+    document.getElementById('profile-edit-desc').value = user.storeDesc || '';
+    viewMode.style.display = 'none';
+    editMode.style.display = 'block';
+    btn.style.display = 'none';
+}
+
+function cancelProfileEdit() {
+    document.getElementById('profile-view-mode').style.display = 'block';
+    document.getElementById('profile-edit-mode').style.display = 'none';
+    document.getElementById('profile-edit-btn').style.display = 'block';
+}
+
+async function saveProfileEdit() {
+    const name = document.getElementById('profile-edit-name').value.trim();
+    const storeName = document.getElementById('profile-edit-store').value.trim();
+    const instagram = document.getElementById('profile-edit-insta').value.trim();
+    const phone = document.getElementById('profile-edit-phone').value.trim();
+    const storeDesc = document.getElementById('profile-edit-desc').value.trim();
+    const errEl = document.getElementById('profile-edit-err');
+
+    if (!name) { errEl.textContent = '이름을 입력해 주세요.'; errEl.style.display = 'block'; return; }
+    errEl.style.display = 'none';
+
+    try {
+        const token = localStorage.getItem('lumi_token');
+        const res = await fetch('/.netlify/functions/update-profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ name, storeName, instagram, phone, storeDesc })
+        });
+        const data = await res.json();
+        if (!res.ok) { errEl.textContent = data.error || '저장 실패'; errEl.style.display = 'block'; return; }
+
+        // localStorage 업데이트
+        const userRaw = localStorage.getItem('lumi_user');
+        const user = userRaw ? JSON.parse(userRaw) : {};
+        Object.assign(user, { name, storeName, instagram, phone, storeDesc });
+        localStorage.setItem('lumi_user', JSON.stringify(user));
+
+        // 전역 변수 업데이트
+        ceoName = name;
+        storeName_g = storeName;
+        storeInsta = instagram;
+        storeDesc = storeDesc;
+
+        initProfileView();
+        cancelProfileEdit();
+        showToast('개인정보가 수정됐어요.', 'pink');
+    } catch(e) {
+        errEl.textContent = '저장 중 오류가 발생했어요.';
+        errEl.style.display = 'block';
     }
 }
 
