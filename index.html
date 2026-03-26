@@ -1287,12 +1287,15 @@
             <input type="tel" id="ph-reg-field" placeholder="휴대폰 번호 (숫자만)" class="inp" oninput="clearFieldErr(this.id,'reg-ph-err')">
             <div id="reg-ph-err" class="field-err hidden"></div>
 
-            <!-- 숨겨진 기본값 필드 (대시보드에서 설정 가능) -->
+            <!-- 숨겨진 기본값 필드 -->
             <input type="hidden" id="store-desc-field" value="">
             <input type="hidden" id="store-region-field" value="">
             <input type="hidden" id="biz-cat-select" value="cafe">
             <input type="hidden" id="caption-tone-field" value="">
             <input type="hidden" id="tag-style-select" value="mid">
+            <input type="hidden" id="dash-biz-cat" value="cafe">
+            <input type="hidden" id="dash-caption-tone" value="">
+            <input type="hidden" id="dash-tag-style" value="mid">
 
             <!-- 약관 동의 체크박스 -->
             <div style="margin-bottom:4px;">
@@ -1408,20 +1411,34 @@
             <!-- 보기 모드 -->
             <div id="profile-view-mode">
                 <div style="display:flex;flex-direction:column;gap:8px;font-size:.85rem;color:var(--g700);">
-                    <div style="display:flex;justify-content:space-between;"><span style="color:var(--g400);">이름</span><span id="profile-view-name">-</span></div>
                     <div style="display:flex;justify-content:space-between;"><span style="color:var(--g400);">매장명</span><span id="profile-view-store">-</span></div>
                     <div style="display:flex;justify-content:space-between;"><span style="color:var(--g400);">인스타그램</span><span id="profile-view-insta">-</span></div>
-                    <div style="display:flex;justify-content:space-between;"><span style="color:var(--g400);">휴대폰</span><span id="profile-view-phone">-</span></div>
                     <div style="display:flex;justify-content:space-between;"><span style="color:var(--g400);">매장 소개</span><span id="profile-view-desc" style="max-width:60%;text-align:right;line-height:1.5;">-</span></div>
+                    <div style="display:flex;justify-content:space-between;"><span style="color:var(--g400);">업종</span><span id="profile-view-bizcat">-</span></div>
+                    <div style="display:flex;justify-content:space-between;"><span style="color:var(--g400);">글 말투</span><span id="profile-view-tone">-</span></div>
+                    <div style="display:flex;justify-content:space-between;"><span style="color:var(--g400);">해시태그</span><span id="profile-view-tagstyle">-</span></div>
                 </div>
             </div>
             <!-- 수정 모드 -->
             <div id="profile-edit-mode" style="display:none;">
-                <input type="text" id="profile-edit-name" placeholder="대표님 성함" class="inp" style="margin-bottom:8px;">
                 <input type="text" id="profile-edit-store" placeholder="매장 이름" class="inp" style="margin-bottom:8px;">
                 <input type="text" id="profile-edit-insta" placeholder="인스타그램 아이디 (예: @lumi__it)" class="inp" style="margin-bottom:8px;">
-                <input type="tel" id="profile-edit-phone" placeholder="휴대폰 번호 (숫자만)" class="inp" style="margin-bottom:8px;">
-                <textarea id="profile-edit-desc" class="dash-note" rows="3" placeholder="매장 소개 (AI 캡션 작성에 활용됩니다)" style="margin-bottom:10px;"></textarea>
+                <textarea id="profile-edit-desc" class="dash-note" rows="2" placeholder="매장 소개 (AI 캡션 작성에 활용됩니다)" style="margin-bottom:8px;"></textarea>
+                <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:6px;">업종</p>
+                <select id="profile-edit-bizcat" class="inp" style="height:46px;margin-bottom:8px;">
+                    <option value="cafe">☕ 카페 / 베이커리 / 디저트</option>
+                    <option value="food">🍽️ 레스토랑 / 식당 / 술집</option>
+                    <option value="beauty">💅 미용 / 헤어 / 네일 / 에스테틱</option>
+                    <option value="other">✏️ 기타</option>
+                </select>
+                <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:6px;">글 말투 <span style="font-weight:400;color:var(--g400);">(선택)</span></p>
+                <input type="text" id="profile-edit-tone" class="inp" style="height:46px;margin-bottom:8px;" placeholder="예: 친근하게, 감성적으로, 재미있게">
+                <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:6px;">해시태그 개수</p>
+                <select id="profile-edit-tagstyle" class="inp" style="height:46px;margin-bottom:10px;">
+                    <option value="few">간결하게 (5개 이내)</option>
+                    <option value="mid">적당하게 (10개 내외)</option>
+                    <option value="many">많이 (20개 이상)</option>
+                </select>
                 <div style="display:flex;gap:8px;">
                     <button onclick="saveProfileEdit()" class="btn-act-on" style="flex:1;padding:12px;">저장</button>
                     <button onclick="cancelProfileEdit()" class="btn-act-off" style="flex:1;padding:12px;">취소</button>
@@ -1503,34 +1520,6 @@
                 없으면 비워도 돼요. lumi가 사진 보고 알아서 써드려요.</p>
             </div>
             <textarea id="ceo-note-input" class="dash-note" rows="3" placeholder="예) 오늘 딸기 시즌 신메뉴 나왔어요!&#10;예) 다음 주 월~화 명절 휴무입니다.&#10;예) 오픈 1주년 이벤트 진행 중이에요."></textarea>
-            <!-- 업종 선택 -->
-            <div style="margin-bottom:10px;">
-                <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:6px;">업종</p>
-                <select id="dash-biz-cat" class="inp" style="height:46px;" onchange="updateBizCat(this.value)">
-                    <option value="cafe">☕ 카페 / 베이커리 / 디저트</option>
-                    <option value="food">🍽️ 레스토랑 / 식당 / 술집</option>
-                    <option value="beauty">💅 미용 / 헤어 / 네일 / 에스테틱</option>
-                    <option value="other">✏️ 직접 입력</option>
-                </select>
-                <input type="text" id="dash-biz-cat-other" placeholder="업종 직접 입력 (예: 꽃집, 반려동물)" class="inp" style="display:none;margin-top:6px;" oninput="bizCat=this.value">
-            </div>
-
-            <!-- 글 말투 -->
-            <div style="margin-bottom:10px;">
-                <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:6px;">글 말투 <span style="font-weight:400;color:var(--g400);">(선택)</span></p>
-                <input type="text" id="dash-caption-tone" class="inp" style="height:46px;" placeholder="예: 친근하게, 감성적으로, 재미있게" oninput="captionTone=this.value;saveDashPrefs()">
-            </div>
-
-            <!-- 해시태그 개수 -->
-            <div style="margin-bottom:14px;">
-                <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:6px;">해시태그 개수</p>
-                <select id="dash-tag-style" class="inp" style="height:46px;" onchange="tagStyle=this.value;saveDashPrefs()">
-                    <option value="few">간결하게 (5개 이내)</option>
-                    <option value="mid" selected>적당하게 (10개 내외)</option>
-                    <option value="many">많이 (20개 이상)</option>
-                </select>
-            </div>
-
             <!-- 예약 게시 -->
             <div style="margin-bottom:14px;">
                 <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:8px;">예약 게시 (선택)</p>
@@ -2606,7 +2595,7 @@ async function confirmWithdraw() {
     showToast('계정이 삭제됐어요.', '');
     setTimeout(() => location.reload(), 1200);
 }
-function syncWeatherUI(state){const c=LUMI_CORE.weather[state]||LUMI_CORE.weather.clear;document.getElementById('dash-w-icon').innerText=c.icon;document.getElementById('dash-w-text').innerText='서울: '+c.status;document.getElementById('dash-w-guide').innerText='"'+c.guide+'"';document.getElementById('ceo-note-input').placeholder='오늘의 추천 무드:\n'+c.mood;}
+function syncWeatherUI(state){const c=LUMI_CORE.weather[state]||LUMI_CORE.weather.clear;document.getElementById('dash-w-icon').innerText=c.icon;document.getElementById('dash-w-text').innerText='서울: '+c.status;document.getElementById('dash-w-guide').innerText='"'+c.guide+'"';document.getElementById('ceo-note-input').placeholder='예) 신메뉴 출시, 명절 휴무 안내, 이벤트 진행 중';}
 async function loadTrends() {
     const trendEl = document.getElementById('trend-list-node');
     if (!trendEl) return;
@@ -3268,11 +3257,14 @@ function initProfileView() {
     const userRaw = localStorage.getItem('lumi_user');
     if (!userRaw) return;
     const user = JSON.parse(userRaw);
-    document.getElementById('profile-view-name').textContent = user.name || '-';
     document.getElementById('profile-view-store').textContent = user.storeName || '-';
     document.getElementById('profile-view-insta').textContent = user.instagram || '-';
-    document.getElementById('profile-view-phone').textContent = user.phone || '-';
     document.getElementById('profile-view-desc').textContent = user.storeDesc || '-';
+    const bizMap = {cafe:'카페/베이커리', food:'식당/레스토랑', beauty:'미용/뷰티'};
+    document.getElementById('profile-view-bizcat').textContent = bizMap[user.bizCategory] || user.bizCategory || '-';
+    document.getElementById('profile-view-tone').textContent = user.captionTone || '-';
+    const tagMap = {few:'간결하게 (5개 이내)', mid:'적당하게 (10개 내외)', many:'많이 (20개 이상)'};
+    document.getElementById('profile-view-tagstyle').textContent = tagMap[user.tagStyle] || '-';
 }
 
 function toggleProfileEdit() {
@@ -3281,11 +3273,15 @@ function toggleProfileEdit() {
     const btn = document.getElementById('profile-edit-btn');
     const userRaw = localStorage.getItem('lumi_user');
     const user = userRaw ? JSON.parse(userRaw) : {};
-    document.getElementById('profile-edit-name').value = user.name || '';
     document.getElementById('profile-edit-store').value = user.storeName || '';
     document.getElementById('profile-edit-insta').value = user.instagram || '';
-    document.getElementById('profile-edit-phone').value = user.phone || '';
     document.getElementById('profile-edit-desc').value = user.storeDesc || '';
+    const bizSel = document.getElementById('profile-edit-bizcat');
+    if (bizSel) bizSel.value = user.bizCategory || 'cafe';
+    const toneSel = document.getElementById('profile-edit-tone');
+    if (toneSel) toneSel.value = user.captionTone || '';
+    const tagSel = document.getElementById('profile-edit-tagstyle');
+    if (tagSel) tagSel.value = user.tagStyle || 'mid';
     viewMode.style.display = 'none';
     editMode.style.display = 'block';
     btn.style.display = 'none';
@@ -3298,14 +3294,13 @@ function cancelProfileEdit() {
 }
 
 async function saveProfileEdit() {
-    const editName = document.getElementById('profile-edit-name').value.trim();
     const editStore = document.getElementById('profile-edit-store').value.trim();
     const editInsta = document.getElementById('profile-edit-insta').value.trim();
-    const editPhone = document.getElementById('profile-edit-phone').value.trim();
     const editDesc = document.getElementById('profile-edit-desc').value.trim();
+    const editBizcat = document.getElementById('profile-edit-bizcat').value;
+    const editTone = document.getElementById('profile-edit-tone').value.trim();
+    const editTagstyle = document.getElementById('profile-edit-tagstyle').value;
     const errEl = document.getElementById('profile-edit-err');
-
-    if (!editName) { errEl.textContent = '이름을 입력해 주세요.'; errEl.style.display = 'block'; return; }
     errEl.style.display = 'none';
 
     try {
@@ -3313,7 +3308,7 @@ async function saveProfileEdit() {
         const res = await fetch('/.netlify/functions/update-profile', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-            body: JSON.stringify({ name: editName, storeName: editStore, instagram: editInsta, phone: editPhone, storeDesc: editDesc })
+            body: JSON.stringify({ storeName: editStore, instagram: editInsta, storeDesc: editDesc, bizCategory: editBizcat, captionTone: editTone, tagStyle: editTagstyle })
         });
         const data = await res.json();
         if (!res.ok) { errEl.textContent = data.error || '저장 실패'; errEl.style.display = 'block'; return; }
@@ -3321,18 +3316,28 @@ async function saveProfileEdit() {
         // localStorage 업데이트
         const userRaw = localStorage.getItem('lumi_user');
         const user = userRaw ? JSON.parse(userRaw) : {};
-        Object.assign(user, { name: editName, storeName: editStore, instagram: editInsta, phone: editPhone, storeDesc: editDesc });
+        Object.assign(user, { storeName: editStore, instagram: editInsta, storeDesc: editDesc, bizCategory: editBizcat, captionTone: editTone, tagStyle: editTagstyle });
         localStorage.setItem('lumi_user', JSON.stringify(user));
 
         // 전역 변수 업데이트
-        ceoName = editName;
         storeName = editStore;
         storeInsta = editInsta;
         storeDesc = editDesc;
+        bizCat = editBizcat;
+        captionTone = editTone;
+        tagStyle = editTagstyle;
+
+        // hidden 필드도 동기화
+        const dashBiz = document.getElementById('dash-biz-cat');
+        const dashTone = document.getElementById('dash-caption-tone');
+        const dashTag = document.getElementById('dash-tag-style');
+        if (dashBiz) dashBiz.value = editBizcat;
+        if (dashTone) dashTone.value = editTone;
+        if (dashTag) dashTag.value = editTagstyle;
 
         initProfileView();
         cancelProfileEdit();
-        showToast('개인정보가 수정됐어요.', 'pink');
+        showToast('설정이 저장됐어요.', 'pink');
     } catch(e) {
         errEl.textContent = '저장 중 오류: ' + e.message;
         errEl.style.display = 'block';
