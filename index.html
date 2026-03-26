@@ -3316,7 +3316,7 @@ async function saveProfileEdit() {
             body: JSON.stringify({ name, storeName, instagram, phone, storeDesc })
         });
         const data = await res.json();
-        if (!res.ok) { errEl.textContent = data.error || '저장 실패'; errEl.style.display = 'block'; return; }
+        if (!res.ok) { errEl.textContent = (data.error || '저장 실패') + (data.detail ? ': ' + data.detail : ''); errEl.style.display = 'block'; return; }
 
         // localStorage 업데이트
         const userRaw = localStorage.getItem('lumi_user');

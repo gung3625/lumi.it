@@ -54,7 +54,7 @@ exports.handler = async (event) => {
       body: JSON.stringify({ success: true, user: safeUser })
     };
   } catch (err) {
-    console.error('update-profile error:', err);
-    return { statusCode: 500, body: JSON.stringify({ error: '저장 중 오류가 발생했습니다.' }) };
+    console.error('update-profile error:', err.message || err);
+    return { statusCode: 500, body: JSON.stringify({ error: '저장 중 오류가 발생했습니다.', detail: err.message }) };
   }
 };
