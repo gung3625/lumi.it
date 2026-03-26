@@ -3298,14 +3298,14 @@ function cancelProfileEdit() {
 }
 
 async function saveProfileEdit() {
-    const name = document.getElementById('profile-edit-name').value.trim();
-    const storeName = document.getElementById('profile-edit-store').value.trim();
-    const instagram = document.getElementById('profile-edit-insta').value.trim();
-    const phone = document.getElementById('profile-edit-phone').value.trim();
-    const storeDesc = document.getElementById('profile-edit-desc').value.trim();
+    const editName = document.getElementById('profile-edit-name').value.trim();
+    const editStore = document.getElementById('profile-edit-store').value.trim();
+    const editInsta = document.getElementById('profile-edit-insta').value.trim();
+    const editPhone = document.getElementById('profile-edit-phone').value.trim();
+    const editDesc = document.getElementById('profile-edit-desc').value.trim();
     const errEl = document.getElementById('profile-edit-err');
 
-    if (!name) { errEl.textContent = '이름을 입력해 주세요.'; errEl.style.display = 'block'; return; }
+    if (!editName) { errEl.textContent = '이름을 입력해 주세요.'; errEl.style.display = 'block'; return; }
     errEl.style.display = 'none';
 
     try {
@@ -3313,28 +3313,28 @@ async function saveProfileEdit() {
         const res = await fetch('/.netlify/functions/update-profile', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-            body: JSON.stringify({ name, storeName, instagram, phone, storeDesc })
+            body: JSON.stringify({ name: editName, storeName: editStore, instagram: editInsta, phone: editPhone, storeDesc: editDesc })
         });
         const data = await res.json();
-        if (!res.ok) { errEl.textContent = (data.error || '저장 실패') + (data.detail ? ': ' + data.detail : ''); errEl.style.display = 'block'; return; }
+        if (!res.ok) { errEl.textContent = data.error || '저장 실패'; errEl.style.display = 'block'; return; }
 
         // localStorage 업데이트
         const userRaw = localStorage.getItem('lumi_user');
         const user = userRaw ? JSON.parse(userRaw) : {};
-        Object.assign(user, { name, storeName, instagram, phone, storeDesc });
+        Object.assign(user, { name: editName, storeName: editStore, instagram: editInsta, phone: editPhone, storeDesc: editDesc });
         localStorage.setItem('lumi_user', JSON.stringify(user));
 
         // 전역 변수 업데이트
-        ceoName = name;
-        storeName_g = storeName;
-        storeInsta = instagram;
-        storeDesc = storeDesc;
+        ceoName = editName;
+        storeName = editStore;
+        storeInsta = editInsta;
+        storeDesc = editDesc;
 
         initProfileView();
         cancelProfileEdit();
         showToast('개인정보가 수정됐어요.', 'pink');
     } catch(e) {
-        errEl.textContent = '저장 중 오류가 발생했어요.';
+        errEl.textContent = '저장 중 오류: ' + e.message;
         errEl.style.display = 'block';
     }
 }
