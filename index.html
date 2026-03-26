@@ -2336,31 +2336,7 @@ function resetToInitialLanding(){
 }
 function navNode(s){['1','2','2b','3'].forEach(n=>{document.getElementById(`node-step-${n}`)?.classList.add('hidden');document.getElementById(`dot-${n}`)?.classList.remove('on');});document.getElementById(`node-step-${s}`)?.classList.remove('hidden');document.getElementById(`dot-${s}`)?.classList.add('on');}
 async function grantAccess(){
-    // 구독 여부 확인 후 분기 (3초 타임아웃)
-    const userRaw = localStorage.getItem('lumi_user');
-    if (userRaw) {
-        try {
-            const user = JSON.parse(userRaw);
-            const token = localStorage.getItem('lumi_token');
-            const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 3000);
-            const res = await fetch('/.netlify/functions/check-plan', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                body: JSON.stringify({ email: user.email }),
-                signal: controller.signal
-            });
-            clearTimeout(timeout);
-            const data = await res.json();
-            const plan = data.plan || 'trial';
-            const trialExpired = data.trialExpired || false;
-            if (trialExpired && plan === 'trial') {
-                window.location.href = '/subscribe';
-                return;
-            }
-        } catch(e) { /* 타임아웃/오류 시 대시보드로 */ }
-    }
-
+    // 대시보드 즉시 진입 (구독 체크는 백그라운드에서)
     document.getElementById('lumi-auth-portal').style.display='none';
     document.getElementById('lumi-intro-view-port').style.display='none';
     document.getElementById('lumi-dashboard-node').style.display='flex';
