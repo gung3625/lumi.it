@@ -489,8 +489,8 @@
     <div class="nav-right">
         <button class="nav-txt-btn" id="nav-how-btn" onclick="smoothScrollTo('feat-sec')">기능</button>
         <button class="nav-txt-btn" id="nav-price-btn" onclick="smoothScrollTo('price-sec')">요금</button>
-        <button class="nav-txt-btn" id="nav-login-btn" onclick="openPortal('login')">로그인</button>
-        <button class="nav-cta" id="nav-signup-btn" onclick="handleStartBtn()">회원가입</button>
+        <button class="nav-txt-btn" id="nav-login-btn">로그인</button>
+        <button class="nav-cta" id="nav-signup-btn">회원가입</button>
         <button class="nav-txt-btn" id="nav-logout-btn" onclick="lumiLogout()" style="display:none;">로그아웃</button>
         <button class="nav-cta" id="nav-dashboard-btn" onclick="grantAccess()" style="display:none;background:var(--pink);">대시보드</button>
     </div>
@@ -3348,6 +3348,14 @@ function lumiLogout() {
         }
     }
 })();
+
+// 버튼 이벤트 바인딩 (Cloudflare 스크립트 충돌 방지)
+document.addEventListener('DOMContentLoaded', function() {
+    const loginBtn = document.getElementById('nav-login-btn');
+    const signupBtn = document.getElementById('nav-signup-btn');
+    if (loginBtn) loginBtn.addEventListener('click', function() { openPortal('login'); });
+    if (signupBtn) signupBtn.addEventListener('click', function() { handleStartBtn(); });
+});
 </script>
 </body>
 </html>
