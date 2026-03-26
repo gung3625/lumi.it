@@ -21,7 +21,7 @@ exports.handler = async (event) => {
     const now = new Date();
     const thisMonth = now.getFullYear() + '-' + (now.getMonth() + 1);
     const postCount = user.postCountMonth === thisMonth ? (user.postCount || 0) : 0;
-    const limits = { trial: 3, standard: 16, pro: 20 };
+    const limits = { trial: 3, standard: 16, pro: 999999 }; // pro는 사실상 무제한
     const plan = user.plan || 'trial';
     const limit = limits[plan] || 3;
     const createdAt = new Date(user.createdAt);
@@ -33,7 +33,7 @@ exports.handler = async (event) => {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        plan, postCount, limit, remaining: Math.max(0, limit - postCount),
+        plan, postCount, limit, remaining: plan === 'pro' ? 999999 : Math.max(0, limit - postCount),
         canPost, trialExpired, autoRenew: user.autoRenew !== false,
         trialDaysLeft: plan === 'trial' ? Math.max(0, 7 - diffDays) : null,
         user: { name: user.name, storeName: user.storeName, instagram: user.instagram, bizCategory: user.bizCategory, captionTone: user.captionTone, tagStyle: user.tagStyle, storeDesc: user.storeDesc, region: user.region }
