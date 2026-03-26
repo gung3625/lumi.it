@@ -2255,8 +2255,7 @@ async function commitPost(type){
                 // 남은 횟수 업데이트
                 const remainEl = document.getElementById('post-remain-badge');
                 if (remainEl) {
-                    const curPlan = JSON.parse(localStorage.getItem('lumi_user') || '{}').plan || '';
-                    if (curPlan === 'pro') {
+                    if (countData.remaining === 999999) {
                         remainEl.textContent = '무제한';
                     } else {
                         remainEl.textContent = '이번 달 ' + countData.remaining + '회 남음';

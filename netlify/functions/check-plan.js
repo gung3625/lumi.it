@@ -21,19 +21,22 @@ exports.handler = async (event) => {
     const now = new Date();
     const thisMonth = now.getFullYear() + '-' + (now.getMonth() + 1);
     const postCount = user.postCountMonth === thisMonth ? (user.postCount || 0) : 0;
-    const limits = { trial: 3, standard: 16, pro: 999999 }; // pro는 사실상 무제한
+    const limits = { trial: 3, standard: 16, pro: 20 };
+    // 대표님 계정 무제한 처리
+    const ADMIN_EMAIL = 'gung3625@gmail.com';
+    const isAdmin = email === ADMIN_EMAIL;
     const plan = user.plan || 'trial';
     const limit = limits[plan] || 3;
     const createdAt = new Date(user.createdAt);
     const diffDays = Math.floor((now - createdAt) / (1000 * 60 * 60 * 24));
     const trialExpired = plan === 'trial' && diffDays >= 7;
-    const canPost = !trialExpired && postCount < limit;
+    const canPost = isAdmin || (!trialExpired && postCount < limit);
 
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        plan, postCount, limit, remaining: plan === 'pro' ? 999999 : Math.max(0, limit - postCount),
+        plan, postCount, limit, remaining: isAdmin ? 999999 : Math.max(0, limit - postCount),
         canPost, trialExpired, autoRenew: user.autoRenew !== false,
         trialDaysLeft: plan === 'trial' ? Math.max(0, 7 - diffDays) : null,
         user: { name: user.name, storeName: user.storeName, instagram: user.instagram, bizCategory: user.bizCategory, captionTone: user.captionTone, tagStyle: user.tagStyle, storeDesc: user.storeDesc, region: user.region }
