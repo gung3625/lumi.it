@@ -1504,8 +1504,16 @@
         <p class="dash-lbl">지금 인기 태그</p>
         <div class="trend-wrap" id="trend-list-node"></div>
 
+        <!-- 보관함 (예약 게시 현황) -->
+        <div style="margin-bottom:14px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                <p class="dash-lbl" style="margin-bottom:0;">📁 예약 보관함</p>
+            </div>
+            <ul id="lumi-inventory-list" style="list-style:none;padding:0;"></ul>
+        </div>
+
         <div class="upload-card">
-            <p class="upload-ttl">오늘의 사진을 올려요.</p>
+            <p class="upload-ttl">오늘의 사진을 올려주세요! 📸</p>
             <div class="drop-zone">
                 <input type="file" id="ceo-file-selector" multiple accept="image/*" onchange="syncBinaryWarehouse()">
                 <div id="ceo-preview-box" class="preview-grid"></div>
@@ -1596,8 +1604,6 @@
             <button class="btn-act-on" onclick="saveAutoReply()" style="width:100%;">자동 응답 설정 저장</button>
         </div>
 
-        <p class="dash-lbl">보관함</p>
-        <ul id="lumi-inventory-list" style="list-style:none;padding:0;"></ul>
         <div style="text-align:center;margin-top:32px;padding-bottom:20px;">
             <a href="/support" style="font-size:13px;font-weight:600;color:var(--g400);text-decoration:none;display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border:1px solid var(--g200);border-radius:var(--r-full);transition:all .2s;" onmouseover="this.style.background='var(--g50)'" onmouseout="this.style.background=''">💬 고객센터 문의하기</a>
         </div>
@@ -2375,12 +2381,33 @@ async function loadBestTimeForPlan() {
 
 function renderArchive(){
     const el=document.getElementById('lumi-inventory-list');
-    if(archive.length===0){el.innerHTML='<div class="arc-empty">아직 보관된 기록이 없습니다.</div>';return;}
+    if(!el) return;
+    if(archive.length===0){
+        el.innerHTML='<div class="arc-empty" style="padding:20px;text-align:center;border:1.5px dashed var(--g200);border-radius:var(--r-lg);color:var(--g400);font-size:.83rem;font-weight:600;">예약된 게시물이 없어요</div>';
+        return;
+    }
     el.innerHTML=archive.map(item=>{
-        const schedLabel=item.scheduledAt
-            ? `<span style="font-size:10px;font-weight:700;color:var(--pink);background:var(--pink-pale);padding:2px 8px;border-radius:99px;margin-left:8px;">⏰ ${new Date(item.scheduledAt).toLocaleDateString('ko-KR',{month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span>`
-            : '';
-        return `<li class="arc-card"><div class="arc-head"><span class="arc-time">${item.time}${schedLabel}</span><button class="arc-del" onclick="removeArchiveItem(${item.id})">삭제</button></div><div class="preview-grid">${item.photos.map(p=>`<div class="prev-thumb"><img src="${p.data}"></div>`).join('')}</div><p class="arc-note">${item.content ? '"'+item.content+'"' : '<span style="color:var(--g400);font-style:normal;">메시지 없음 — lumi가 알아서 작성해요</span>'}</p></li>`;
+        const isScheduled = item.scheduledAt && !item.isSent;
+        const isSent = item.isSent;
+        const schedDate = item.scheduledAt ? new Date(item.scheduledAt) : null;
+        const schedStr = schedDate
+            ? schedDate.toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'}) + ' ' + schedDate.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})
+            : '즉시';
+        const statusBadge = isSent
+            ? '<span style="font-size:10px;font-weight:700;color:#38a169;background:#f0fff4;padding:2px 8px;border-radius:99px;">✅ 전송완료</span>'
+            : isScheduled
+                ? `<span style="font-size:10px;font-weight:700;color:var(--pink);background:var(--pink-pale);padding:2px 8px;border-radius:99px;">⏰ ${schedStr} 예약</span>`
+                : '<span style="font-size:10px;font-weight:700;color:var(--g400);background:var(--g100);padding:2px 8px;border-radius:99px;">바로 올리기</span>';
+        const thumbs = item.photos.slice(0,3).map(p=>`<img src="${p.data}" style="width:52px;height:52px;border-radius:8px;object-fit:cover;border:1px solid var(--g100);">`).join('');
+        const moreCount = item.photos.length > 3 ? `<span style="width:52px;height:52px;border-radius:8px;background:var(--g100);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--g500);">+${item.photos.length-3}</span>` : '';
+        return `<li style="background:var(--white);border-radius:var(--r-lg);padding:14px 16px;border:1px solid var(--g100);margin-bottom:8px;animation:fadeUp .3s var(--ease);">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                <div style="display:flex;align-items:center;gap:8px;">${statusBadge}</div>
+                <button class="arc-del" onclick="removeArchiveItem(${item.id})" style="font-size:11px;color:var(--g400);background:none;border:none;cursor:pointer;text-decoration:underline;">삭제</button>
+            </div>
+            <div style="display:flex;gap:6px;margin-bottom:8px;">${thumbs}${moreCount}</div>
+            <p style="font-size:.8rem;color:var(--g500);line-height:1.6;">${item.content ? '"'+item.content+'"' : '<span style="color:var(--g400);">메시지 없음 — lumi가 알아서 작성해요</span>'}</p>
+        </li>`;
     }).join('');
 }
 
