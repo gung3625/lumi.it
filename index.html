@@ -1542,6 +1542,26 @@
                 <button class="btn-act-off" onclick="commitPost('reserve')">예약 저장</button>
             </div>
         </div>
+
+        <!-- 최적 업로드 시간 (PRO 전용) -->
+        <div id="best-time-section" style="background:var(--white);border-radius:var(--r-xl);padding:20px 22px;border:1px solid var(--g200);box-shadow:var(--sh-xs);margin-bottom:14px;position:relative;overflow:hidden;">
+            <div id="best-time-lock" style="display:none;position:absolute;inset:0;background:rgba(249,250,251,.93);backdrop-filter:blur(3px);z-index:10;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;">
+                <div style="font-size:1.8rem;margin-bottom:8px;">🔒</div>
+                <p style="font-size:.88rem;font-weight:800;color:var(--g900);margin-bottom:4px;">프로 플랜 전용 기능이에요</p>
+                <p style="font-size:.78rem;color:var(--g500);">프로 플랜으로 업그레이드하면 업종별 최적 업로드 시간을 받아볼 수 있어요.</p>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:1rem;">⏰</span>
+                    <p style="font-size:.88rem;font-weight:800;color:var(--g900);">오늘 최적 업로드 시간</p>
+                    <span style="font-size:10px;font-weight:700;color:var(--pink);background:var(--pink-pale);padding:2px 8px;border-radius:99px;">PRO</span>
+                </div>
+                <span id="best-time-badge" style="font-size:1.2rem;font-weight:900;color:var(--pink);">--:--</span>
+            </div>
+            <p id="best-time-reason" style="font-size:.8rem;color:var(--g500);margin-bottom:10px;">업종 기반으로 팔로워가 가장 활발한 시간대를 분석해요.</p>
+            <div id="best-time-slots" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;"></div>
+            <p id="best-time-tip" style="font-size:.75rem;color:var(--pink);font-weight:600;"></p>
+        </div>
         <!-- 자동 응답 설정 (프로 플랜) -->
         <p class="dash-lbl">자동 응답 설정 <span style="font-size:10px;font-weight:700;color:var(--pink);background:var(--pink-pale);padding:2px 8px;border-radius:99px;margin-left:4px;">PRO</span></p>
         <div class="auto-reply-card" id="auto-reply-section">
@@ -2306,6 +2326,53 @@ async function commitPost(type){
 }
 
 /* ── 보관함 ── */
+async function loadBestTimeForPlan() {
+    const lockEl = document.getElementById('best-time-lock');
+    try {
+        const userRaw = localStorage.getItem('lumi_user');
+        const user = userRaw ? JSON.parse(userRaw) : {};
+        const token = localStorage.getItem('lumi_token');
+
+        // check-plan으로 플랜 확인
+        const res = await fetch('/.netlify/functions/check-plan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: user.email })
+        });
+        const data = await res.json();
+        const plan = data.plan || 'trial';
+        const isPro = plan === 'pro';
+
+        // 잠금/해제
+        if (lockEl) lockEl.style.display = isPro ? 'none' : 'flex';
+
+        // 프로 플랜이면 최적 시간 로드
+        if (isPro) {
+            const category = user.bizCategory || 'cafe';
+            const btRes = await fetch('/.netlify/functions/get-best-time', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ category })
+            });
+            const btData = await btRes.json();
+            if (btRes.ok) {
+                document.getElementById('best-time-badge').textContent = btData.bestTime;
+                document.getElementById('best-time-reason').textContent = btData.reason;
+                document.getElementById('best-time-tip').textContent = '💡 ' + btData.tip;
+                const slotsEl = document.getElementById('best-time-slots');
+                if (slotsEl && btData.allSlots) {
+                    slotsEl.innerHTML = btData.allSlots.map(s =>
+                        '<span style="background:var(--pink-pale);color:var(--pink);font-size:.75rem;font-weight:700;padding:4px 10px;border-radius:99px;" title="' + s.reason + '">' + s.time + '</span>'
+                    ).join('');
+                }
+            }
+        }
+    } catch(e) {
+        if (lockEl) lockEl.style.display = 'flex';
+        console.log('best-time-plan 오류:', e.message);
+    }
+}
+
 function renderArchive(){
     const el=document.getElementById('lumi-inventory-list');
     if(archive.length===0){el.innerHTML='<div class="arc-empty">아직 보관된 기록이 없습니다.</div>';return;}
@@ -2397,6 +2464,7 @@ async function grantAccess(){
     loadAutoReply();
     checkIgConnection();
     initProfileView();
+    loadBestTimeForPlan();
     if (!JSON.parse(localStorage.getItem('lumi_user') || '{}').sidoCode) {
         initWeather();
     }
