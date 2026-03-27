@@ -179,8 +179,7 @@ exports.handler = async (event) => {
           weatherStatus: weather.status || '',
           weatherTemperature: (weather.temperature !== undefined && weather.temperature !== null && weather.temperature !== '' && weather.temperature !== 'null') ? String(weather.temperature) : '',
           weatherState: weather.state || '',
-          weatherGuide: weather.guide || '',
-          weatherMood: weather.mood || '',
+
           weatherLocation: weather.locationName || '',
 
           // 대기오염 등급 (PM10, PM25 중 더 나쁜 등급 하나)
