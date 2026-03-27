@@ -4,7 +4,7 @@ const { getTodayBestSlot } = require('./get-best-time');
 
 const API_KEY = process.env.SOLAPI_API_KEY;
 const API_SECRET = process.env.SOLAPI_API_SECRET;
-const CHANNEL_ID = process.env.SOLAPI_CHANNEL_ID || 'lumi_it';
+const CHANNEL_ID = 'KA01PF26032219112677567W26lSNGQj';
 const SCHEDULE_TEMPLATE_ID = 'KA01TP260322191942267zoXVvaI7xav';
 
 // 솔라피 HMAC 인증 헤더

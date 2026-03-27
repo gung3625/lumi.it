@@ -2,7 +2,7 @@ const crypto = require('crypto');
 
 const API_KEY = process.env.SOLAPI_API_KEY;
 const API_SECRET = process.env.SOLAPI_API_SECRET;
-const CHANNEL_ID = process.env.SOLAPI_CHANNEL_ID || 'lumi_it';
+const CHANNEL_ID = 'KA01PF26032219112677567W26lSNGQj';
 
 // 솔라피 템플릿 (templateId: 긴 ID, code: 짧은 코드)
 const TEMPLATES = {
