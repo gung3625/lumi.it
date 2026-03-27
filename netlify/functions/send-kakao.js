@@ -8,7 +8,7 @@ const CHANNEL_ID = process.env.SOLAPI_CHANNEL_ID || 'lumi_it';
 const TEMPLATES = {
   welcome:  { id: 'KA01TP260322191640813tM8YzoqdCss', code: 'HMttBoUZVq' },  // 회원가입 환영 (승인)
   upload:   { id: 'KA01TP260322191753216QJdWJqLkCrZ', code: '5XY1oOgtXW' },  // 업로드 알림 (승인)
-  schedule: { id: 'KA01TP260322191942267zoXVvaI7xav', code: '1EQHbXgF4t' }   // 데일리 스케줄 (검수중)
+  schedule: { id: 'KA01TP260322191942267zoXVvaI7xav', code: '1EQHbXgF4t' }   // 데일리 스케줄 (승인완료)
 };
 
 // 솔라피 HMAC 인증 헤더 생성
