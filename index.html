@@ -197,6 +197,13 @@
         .portal-ttl{font-size:1.1rem;font-weight:900;color:var(--g900);margin-bottom:4px;text-align:center;letter-spacing:-.02em;}
         .portal-sub{font-size:.8rem;color:var(--g400);text-align:center;margin-bottom:16px;line-height:1.6;}
         .inp{width:100%;padding:12px 14px;margin-bottom:8px;border:1.5px solid var(--g200);border-radius:10px;background:var(--g50);font-size:14px;color:var(--g900);font-family:inherit;outline:none;transition:border-color .2s,box-shadow .2s;}
+        /* 회원가입 폼 섹션 */
+        .reg-section{background:var(--g50);border-radius:14px;padding:16px;margin-bottom:12px;border:1px solid var(--g100);}
+        .reg-section-label{font-size:11px;font-weight:800;color:var(--g400);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;}
+        .reg-field{margin-bottom:12px;}
+        .reg-field:last-child{margin-bottom:0;}
+        .reg-lbl{display:block;font-size:12px;font-weight:700;color:var(--g600);margin-bottom:5px;}
+        .reg-inp{margin-bottom:0!important;height:46px;}
         .inp:focus{border-color:var(--pink);background:var(--white);box-shadow:0 0 0 3px rgba(255,107,157,.1);}
         .inp::placeholder{color:var(--g400);}
         .inp-otp{text-align:center;font-size:1.8rem;font-weight:900;letter-spacing:14px;height:68px;}
@@ -1095,63 +1102,86 @@
         </div>
         <!-- 회원가입 -->
         <div id="lumi-signup-view" class="hidden">
-            <p style="font-size:.8rem;color:var(--g400);text-align:center;margin-bottom:14px;">아래 정보를 입력하고 이메일 인증을 완료하면 가입이 돼요.</p>
-
-            <!-- 이메일 + 인증번호 -->
-            <div style="margin-bottom:4px;">
-                <div style="display:flex;gap:0;border:1.5px solid var(--g200);border-radius:var(--r-md);overflow:hidden;background:#fff;margin-bottom:8px;">
-                    <input type="text" id="id-reg-local" placeholder="이메일 아이디" class="inp" style="border:none;border-radius:0;flex:1;min-width:0;margin:0;" oninput="clearFieldErr('id-reg-field','reg-email-err')">
-                    <span style="display:flex;align-items:center;padding:0 6px;color:var(--g400);font-size:.9rem;flex-shrink:0;">@</span>
-                    <select id="id-reg-domain-select" class="inp" style="border:none;border-radius:0;border-left:1.5px solid var(--g200);flex:1;min-width:0;margin:0;height:50px;" onchange="toggleEmailDomain(this.value)">
-                        <option value="gmail.com">gmail.com</option>
-                        <option value="naver.com">naver.com</option>
-                        <option value="kakao.com">kakao.com</option>
-                        <option value="daum.net">daum.net</option>
-                        <option value="nate.com">nate.com</option>
-                        <option value="hanmail.net">hanmail.net</option>
-                        <option value="icloud.com">icloud.com</option>
-                        <option value="direct">직접 입력</option>
-                    </select>
+            <!-- 섹션 1: 기본 정보 -->
+            <div class="reg-section">
+                <p class="reg-section-label">기본 정보</p>
+                <div class="reg-field">
+                    <label class="reg-lbl">이름</label>
+                    <input type="text" id="ceo-name-field" placeholder="대표님 성함" class="inp reg-inp" oninput="clearFieldErr(this.id,'ceo-name-err')">
+                    <div id="ceo-name-err" class="field-err hidden"></div>
                 </div>
-                <input type="text" id="id-reg-domain-direct" placeholder="도메인 직접 입력 (예: company.com)" class="inp" style="display:none;margin-bottom:8px;" oninput="clearFieldErr('id-reg-field','reg-email-err')">
-                <input type="hidden" id="id-reg-field">
-                <button onclick="requestSignupOtp()" id="otp-req-btn" style="width:100%;height:50px;background:var(--pink);color:#fff;border:none;border-radius:var(--r-md);font-size:.9rem;font-weight:700;cursor:pointer;">인증번호 받기</button>
-            </div>
-            <div id="reg-email-err" class="field-err hidden"></div>
-
-            <!-- OTP 입력 (인증 후 표시) -->
-            <div id="otp-row" class="hidden" style="margin-bottom:4px;">
-                <div style="display:flex;gap:8px;align-items:center;">
-                    <input type="text" id="id-otp-field" placeholder="인증번호 6자리" class="inp" maxlength="6" style="letter-spacing:6px;font-size:1.1rem;font-weight:700;flex:1;" oninput="onOtpInput(this)">
-                    <span id="otp-verified-badge" class="hidden" style="color:#22c55e;font-weight:700;font-size:.9rem;white-space:nowrap;">✓ 인증완료</span>
+                <div class="reg-field">
+                    <label class="reg-lbl">주민번호 <span style="font-weight:400;color:var(--g400);font-size:11px;">생년월일 + 성별 확인용</span></label>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <input type="text" id="jumin-front" placeholder="950906" class="inp reg-inp" style="flex:1;letter-spacing:4px;text-align:center;font-weight:700;margin-bottom:0;" maxlength="6" oninput="onJuminInput(this)" inputmode="numeric">
+                        <span style="color:var(--g400);font-weight:700;font-size:1.1rem;flex-shrink:0;">-</span>
+                        <input type="password" id="jumin-back" placeholder="●" class="inp reg-inp" style="width:48px;text-align:center;font-size:1.2rem;margin-bottom:0;" maxlength="1" oninput="onJuminBackInput(this)" inputmode="numeric">
+                        <span style="color:var(--g300);font-size:.85rem;flex-shrink:0;letter-spacing:2px;">●●●●●●</span>
+                    </div>
+                    <div id="reg-bd-err" class="field-err hidden"></div>
                 </div>
-                <div id="otp-err" class="field-err hidden"></div>
-                <p style="font-size:12px;color:#999;margin-top:4px;">이메일을 못 받으셨나요? <button onclick="requestSignupOtp()" style="background:none;border:none;color:var(--pink);font-size:12px;cursor:pointer;text-decoration:underline;padding:0;">재전송</button></p>
             </div>
 
-            <!-- 비밀번호 -->
-            <input type="password" id="id-pw-field" placeholder="비밀번호 (특수문자 포함 10자 이상)" class="inp" oninput="clearFieldErr(this.id,'pw-err')">
-            <div id="pw-err" class="field-err hidden"></div>
-            <input type="password" id="id-pw-confirm-field" placeholder="비밀번호 확인" class="inp" oninput="clearFieldErr(this.id,'pw-confirm-err')">
-            <div id="pw-confirm-err" class="field-err hidden"></div>
-
-            <!-- 기본 정보 -->
-            <input type="text" id="ceo-name-field" placeholder="대표님 성함 (예: 김루미)" class="inp" oninput="clearFieldErr(this.id,'ceo-name-err')">
-            <div id="ceo-name-err" class="field-err hidden"></div>
-            <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:6px;margin-top:2px;">주민번호</p>
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-                <input type="text" id="jumin-front" placeholder="앞 6자리" class="inp" style="flex:1;height:50px;margin-bottom:0;letter-spacing:3px;text-align:center;font-size:1rem;font-weight:700;" maxlength="6" oninput="onJuminInput(this)" inputmode="numeric">
-                <span style="font-size:1.2rem;color:var(--g400);font-weight:700;">-</span>
-                <input type="password" id="jumin-back" placeholder="●" class="inp" style="width:52px;height:50px;margin-bottom:0;text-align:center;font-size:1.4rem;font-weight:900;" maxlength="1" oninput="onJuminBackInput(this)" inputmode="numeric">
-                <span style="font-size:.85rem;color:var(--g400);">●●●●●●</span>
+            <!-- 섹션 2: 계정 정보 -->
+            <div class="reg-section">
+                <p class="reg-section-label">계정 정보</p>
+                <div class="reg-field">
+                    <label class="reg-lbl">이메일</label>
+                    <div style="display:flex;border:1.5px solid var(--g200);border-radius:10px;overflow:hidden;background:var(--g50);margin-bottom:0;">
+                        <input type="text" id="id-reg-local" placeholder="아이디" class="inp" style="border:none;background:transparent;border-radius:0;flex:1;min-width:0;margin:0;height:46px;" oninput="clearFieldErr('id-reg-field','reg-email-err')">
+                        <span style="display:flex;align-items:center;padding:0 4px;color:var(--g400);font-size:.85rem;flex-shrink:0;">@</span>
+                        <select id="id-reg-domain-select" class="inp" style="border:none;background:transparent;border-radius:0;border-left:1.5px solid var(--g200);width:120px;margin:0;height:46px;font-size:13px;" onchange="toggleEmailDomain(this.value)">
+                            <option value="gmail.com">gmail.com</option>
+                            <option value="naver.com">naver.com</option>
+                            <option value="kakao.com">kakao.com</option>
+                            <option value="daum.net">daum.net</option>
+                            <option value="nate.com">nate.com</option>
+                            <option value="hanmail.net">hanmail.net</option>
+                            <option value="icloud.com">icloud.com</option>
+                            <option value="direct">직접 입력</option>
+                        </select>
+                    </div>
+                    <input type="text" id="id-reg-domain-direct" placeholder="도메인 직접 입력 (예: company.com)" class="inp" style="display:none;margin-top:6px;margin-bottom:0;" oninput="clearFieldErr('id-reg-field','reg-email-err')">
+                    <input type="hidden" id="id-reg-field">
+                    <button onclick="requestSignupOtp()" id="otp-req-btn" style="width:100%;height:44px;background:var(--pink);color:#fff;border:none;border-radius:10px;font-size:.88rem;font-weight:700;cursor:pointer;margin-top:8px;font-family:inherit;">인증번호 받기</button>
+                    <div id="reg-email-err" class="field-err hidden"></div>
+                    <div id="otp-row" class="hidden" style="margin-top:8px;">
+                        <div style="display:flex;gap:8px;align-items:center;">
+                            <input type="text" id="id-otp-field" placeholder="인증번호 6자리" class="inp" maxlength="6" style="letter-spacing:6px;font-size:1rem;font-weight:700;flex:1;margin-bottom:0;height:46px;" oninput="onOtpInput(this)">
+                            <span id="otp-verified-badge" class="hidden" style="color:#22c55e;font-weight:700;font-size:.85rem;white-space:nowrap;">✓ 인증완료</span>
+                        </div>
+                        <div id="otp-err" class="field-err hidden"></div>
+                        <p style="font-size:11px;color:#aaa;margin-top:4px;">이메일을 못 받으셨나요? <button onclick="requestSignupOtp()" style="background:none;border:none;color:var(--pink);font-size:11px;cursor:pointer;text-decoration:underline;padding:0;font-family:inherit;">재전송</button></p>
+                    </div>
+                </div>
+                <div class="reg-field">
+                    <label class="reg-lbl">비밀번호</label>
+                    <input type="password" id="id-pw-field" placeholder="특수문자 포함 10자 이상" class="inp reg-inp" oninput="clearFieldErr(this.id,'pw-err')">
+                    <div id="pw-err" class="field-err hidden"></div>
+                    <input type="password" id="id-pw-confirm-field" placeholder="비밀번호 확인" class="inp reg-inp" style="margin-top:6px;" oninput="clearFieldErr(this.id,'pw-confirm-err')">
+                    <div id="pw-confirm-err" class="field-err hidden"></div>
+                </div>
             </div>
-            <div id="reg-bd-err" class="field-err hidden"></div>
-            <input type="text" id="store-name-field" placeholder="매장 이름 (예: 카페루미)" class="inp" oninput="clearFieldErr(this.id,'store-name-err')">
-            <div id="store-name-err" class="field-err hidden"></div>
-            <input type="text" id="store-insta-field" placeholder="인스타그램 아이디 (예: @lumi__it)" class="inp" oninput="clearFieldErr(this.id,'store-insta-err')">
-            <div id="store-insta-err" class="field-err hidden"></div>
-            <input type="tel" id="ph-reg-field" placeholder="휴대폰 번호 (숫자만)" class="inp" oninput="clearFieldErr(this.id,'reg-ph-err')">
-            <div id="reg-ph-err" class="field-err hidden"></div>
+
+            <!-- 섹션 3: 연락처 & 매장 -->
+            <div class="reg-section">
+                <p class="reg-section-label">연락처 & 매장</p>
+                <div class="reg-field">
+                    <label class="reg-lbl">휴대폰 번호</label>
+                    <input type="tel" id="ph-reg-field" placeholder="숫자만 입력" class="inp reg-inp" oninput="clearFieldErr(this.id,'reg-ph-err')">
+                    <div id="reg-ph-err" class="field-err hidden"></div>
+                </div>
+                <div class="reg-field">
+                    <label class="reg-lbl">인스타그램 아이디</label>
+                    <input type="text" id="store-insta-field" placeholder="@lumi__it" class="inp reg-inp" oninput="clearFieldErr(this.id,'store-insta-err')">
+                    <div id="store-insta-err" class="field-err hidden"></div>
+                </div>
+                <div class="reg-field">
+                    <label class="reg-lbl">매장 이름</label>
+                    <input type="text" id="store-name-field" placeholder="카페루미" class="inp reg-inp" oninput="clearFieldErr(this.id,'store-name-err')">
+                    <div id="store-name-err" class="field-err hidden"></div>
+                </div>
+            </div>
 
             <!-- 숨겨진 기본값 필드 -->
             <input type="hidden" id="store-desc-field" value="">
