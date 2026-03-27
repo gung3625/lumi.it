@@ -2156,10 +2156,15 @@ async function commitPost(type){
         description: storeDesc,
         instagram: storeInsta,
         region: storeRegion,
-        sido: userData.storeSido || '',
+        sido: (() => {
+            const sidoSel = document.getElementById('dash-sido');
+            const t = sidoSel?.options[sidoSel.selectedIndex]?.text || '';
+            return (t && t !== '시/도 선택') ? t : (userData.storeSido && userData.storeSido !== '시/도 선택' ? userData.storeSido : '');
+        })(),
         sigungu: (() => {
             const sel = document.getElementById('dash-sigungu');
-            return sel?.options[sel.selectedIndex]?.text || '';
+            const t = sel?.options[sel.selectedIndex]?.text || '';
+            return (t && t !== '시/군/구 선택') ? t : '';
         })(),
         category: bizCat,
         toneStyle: captionTone,
