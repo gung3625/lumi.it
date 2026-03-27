@@ -1467,7 +1467,7 @@
                 <span style="color:var(--pink);">예) 신메뉴 출시, 명절 휴무 안내, 이벤트 진행 중</span><br>
                 없으면 비워도 돼요. lumi가 사진 보고 알아서 써드려요.</p>
             </div>
-            <textarea id="ceo-note-input" class="dash-note" rows="3" placeholder="예) 오늘 딸기 시즌 신메뉴 나왔어요!&#10;예) 다음 주 월~화 명절 휴무입니다.&#10;예) 오픈 1주년 이벤트 진행 중이에요."></textarea>
+            <textarea id="ceo-note-input" class="dash-note" rows="3" placeholder="예) 신메뉴 출시, 명절 휴무 안내, 이벤트 진행 중"></textarea>
             <!-- 예약 게시 -->
             <div style="margin-bottom:14px;">
                 <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:8px;">예약 게시 (선택)</p>
@@ -2110,7 +2110,8 @@ async function commitPost(type){
     }
     if (dashToneEl) captionTone = dashToneEl.value.trim() || captionTone;
     if (dashTagEl) tagStyle = dashTagEl.value || tagStyle;
-    const notes=document.getElementById('ceo-note-input').value.trim();
+    const noteEl = document.getElementById('ceo-note-input');
+    const notes = (noteEl.value && noteEl.value.trim() !== noteEl.placeholder) ? noteEl.value.trim() : '';
     if(stagedFiles.length===0){showToast('사진을 먼저 선택하세요.');return;}
     // 메시지는 선택사항 - 없으면 lumi가 알아서 작성
 
