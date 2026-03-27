@@ -118,6 +118,18 @@ exports.handler = async (event) => {
               igUserId = igUserIdRaw.trim();
             }
 
+            // tone-like / tone-dislike 조회
+            let toneLikes = [];
+            let toneDislikes = [];
+            try {
+              const likeRaw = await blobStore.get('tone-like:' + storeProfile.ownerEmail);
+              if (likeRaw) toneLikes = JSON.parse(likeRaw);
+            } catch {}
+            try {
+              const dislikeRaw = await blobStore.get('tone-dislike:' + storeProfile.ownerEmail);
+              if (dislikeRaw) toneDislikes = JSON.parse(dislikeRaw);
+            } catch {}
+
             // 2. ig:igUserId → 토큰 정보
             if (igUserId) {
               const igRaw = await blobStore.get('ig:' + igUserId);
@@ -173,6 +185,10 @@ exports.handler = async (event) => {
           storeCategory: fields.bizCategory || storeProfile.category || '',
           ownerName: storeProfile.ownerName || '',
           ownerEmail: storeProfile.ownerEmail || '',
+
+          // 말투 학습 데이터
+          toneLikes: toneLikes.length > 0 ? toneLikes.map(t => t.caption).join('|||') : '',
+          toneDislikes: toneDislikes.length > 0 ? toneDislikes.map(t => t.caption).join('|||') : '',
 
           // Instagram 게시용 토큰 정보
           igUserId: igUserId,
