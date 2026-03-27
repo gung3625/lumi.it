@@ -124,8 +124,7 @@ async function sendMonthlyReport(userStore) {
         '#{지난달}': `${lastMonth.getMonth() + 1}월`,
         '#{게시횟수}': String(used),
         '#{남은횟수}': String(remaining),
-        '#{다음결제일}': nextBillingStr,
-        '#{플랜}': user.plan === 'pro' ? '프로' : '스탠다드'
+        '#{다음결제일}': nextBillingStr
       });
       sent++;
       await new Promise(r => setTimeout(r, 200));
