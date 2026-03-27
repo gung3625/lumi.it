@@ -1,5 +1,6 @@
 const { getStore } = require('@netlify/blobs');
 const crypto = require('crypto');
+const { getTodayBestSlot } = require('./get-best-time');
 
 const API_KEY = process.env.SOLAPI_API_KEY;
 const API_SECRET = process.env.SOLAPI_API_SECRET;
@@ -48,19 +49,28 @@ async function sendAlimtalk(to, variables) {
 
 // 날씨 상태 → 한국어 가이드
 function getWeatherGuide(status) {
-  if (!status) return '오늘도 멋진 사진 올려보세요!';
+  if (!status) return '오늘도 매장의 특별한 순간을 담아보세요!';
   const s = status.toLowerCase();
-  if (s.includes('맑') || s.includes('clear')) return '맑은 날 자연광을 최대한 활용해보세요. 채광 좋은 자리에서 찍은 사진이 반응이 좋아요.';
+  if (s.includes('맑') || s.includes('clear')) return '자연광을 최대한 활용해보세요. 채광 좋은 자리에서 찍은 사진이 반응이 좋아요.';
   if (s.includes('비') || s.includes('rain')) return '창가 조명을 활용해보세요. 빗소리와 함께하는 아늑한 무드 사진이 공감을 많이 받아요.';
   if (s.includes('눈') || s.includes('snow')) return '따뜻한 김이 모락모락 나는 메뉴 사진이 딱이에요. 겨울 감성 물씬 풍기는 사진을 올려보세요.';
   if (s.includes('흐') || s.includes('cloud')) return '부드러운 조명과 따뜻한 분위기로 매장의 편안함을 담아보세요.';
   return '오늘도 매장의 특별한 순간을 담아보세요!';
 }
 
+// 업종 카테고리 정규화 (다양한 업종 → 4개 카테고리)
+function normalizeBizCategory(cat) {
+  if (!cat) return 'other';
+  const c = cat.toLowerCase();
+  if (['cafe', 'bakery', 'dessert', 'juice'].includes(c)) return 'cafe';
+  if (['restaurant', 'korean', 'chinese', 'japanese', 'western', 'fastfood', 'bar', 'chicken', 'food'].includes(c)) return 'food';
+  if (['beauty', 'hair', 'nail', 'skincare', 'makeup', 'massage'].includes(c)) return 'beauty';
+  return 'other';
+}
+
 exports.handler = async (event) => {
   // 스케줄 함수(Netlify 자동 실행) 또는 수동 호출 모두 허용
-  // 수동 호출 시 x-lumi-secret 헤더로 인증
-  const isScheduled = event.body === undefined || event.httpMethod === undefined;
+  const isScheduled = !event.httpMethod;
   if (!isScheduled) {
     const secret = event.headers?.['x-lumi-secret'];
     if (secret !== process.env.LUMI_SECRET) {
@@ -85,13 +95,12 @@ exports.handler = async (event) => {
       }
     } catch(e) { console.log('트렌드 조회 실패:', e.message); }
 
-    // 현재 날씨 가져오기 (서울 기준)
+    // 현재 날씨 (KMA API 직접 호출)
     let weatherStr = '맑음';
     let guideStr = getWeatherGuide('맑음');
     try {
       const weatherRes = await fetch(
-        `/.netlify/functions/get-weather-kma?sido=${encodeURIComponent('서울')}`,
-        { headers: { 'host': 'lumi.it.kr' } }
+        'https://lumi.it.kr/.netlify/functions/get-weather-kma?sido=%EC%84%9C%EC%9A%B8'
       );
       if (weatherRes.ok) {
         const w = await weatherRes.json();
@@ -118,11 +127,16 @@ exports.handler = async (event) => {
         // 구독 만료 체크
         if (user.subscriptionEnd && new Date(user.subscriptionEnd) < new Date()) continue;
 
+        // 해당 고객 업종에 맞는 최적 시간 계산
+        const normalizedCat = normalizeBizCategory(user.bizCategory);
+        const bestTimeData = getTodayBestSlot(normalizedCat);
+        const bestTimeStr = `오늘 최적 시간: ${bestTimeData.time} (${bestTimeData.reason})`;
+
         const variables = {
           '#{이름}': user.name || user.storeName || '대표님',
           '#{날씨}': weatherStr,
           '#{트렌드}': trendStr,
-          '#{가이드}': guideStr
+          '#{가이드}': `${guideStr} ${bestTimeStr}`
         };
 
         await sendAlimtalk(user.phone, variables);
