@@ -149,7 +149,7 @@ async function sendSeasonEventAlert(userStore) {
       const raw = await userStore.get(blob.key);
       if (!raw) continue;
       const user = JSON.parse(raw);
-      if (!user.phone || !user.plan || user.plan === 'trial') continue;
+      if (!user.phone) continue; // trial 포함 전체 발송
 
       await sendAlimtalk(user.phone, TEMPLATES.season_event.id, {
         '#{이름}': user.name || user.storeName || '대표님',
