@@ -85,15 +85,13 @@ exports.handler = async (event) => {
       token: process.env.NETLIFY_TOKEN
     });
 
-    // 트렌드 데이터 가져오기
-    let trendStr = '#카페 #오늘의커피 #카페스타그램';
-    try {
-      const trendRaw = await userStore.get('trends:cafe');
-      if (trendRaw) {
-        const trends = JSON.parse(trendRaw);
-        trendStr = Array.isArray(trends) ? trends.slice(0, 5).join(' ') : trendStr;
-      }
-    } catch(e) { console.log('트렌드 조회 실패:', e.message); }
+    // 트렌드 기본값 (업종별)
+    const defaultTrends = {
+      cafe: '#카페 #오늘의커피 #카페스타그램 #라떼아트 #디저트',
+      food: '#오늘뭐먹지 #맛스타그램 #맛집탐방 #점심메뉴 #저녁메뉴',
+      beauty: '#뷰티스타그램 #오늘의네일 #헤어스타일 #피부관리 #셀카',
+      other: '#일상 #소상공인 #오늘의사진 #인스타그램 #감성사진'
+    };
 
     // 현재 날씨 (KMA API 직접 호출)
     let weatherStr = '맑음';
@@ -127,15 +125,28 @@ exports.handler = async (event) => {
         // 구독 만료 체크
         if (user.subscriptionEnd && new Date(user.subscriptionEnd) < new Date()) continue;
 
-        // 해당 고객 업종에 맞는 최적 시간 계산
+        // 해당 고객 업종에 맞는 최적 시간 + 트렌드
         const normalizedCat = normalizeBizCategory(user.bizCategory);
         const bestTimeData = getTodayBestSlot(normalizedCat);
         const bestTimeStr = `오늘 최적 시간: ${bestTimeData.time} (${bestTimeData.reason})`;
 
+        // 업종별 트렌드 가져오기
+        let userTrendStr = defaultTrends[normalizedCat] || defaultTrends.other;
+        try {
+          const trendRaw = await userStore.get('trends:' + normalizedCat);
+          if (trendRaw) {
+            const parsed = JSON.parse(trendRaw);
+            const tags = parsed.tags || parsed;
+            if (Array.isArray(tags) && tags.length > 0) {
+              userTrendStr = tags.slice(0, 5).join(' ');
+            }
+          }
+        } catch(e) { /* 기본값 사용 */ }
+
         const variables = {
           '#{이름}': user.name || user.storeName || '대표님',
           '#{날씨}': weatherStr,
-          '#{트렌드}': trendStr,
+          '#{트렌드}': userTrendStr,
           '#{가이드}': `${guideStr} ${bestTimeStr}`
         };
 
