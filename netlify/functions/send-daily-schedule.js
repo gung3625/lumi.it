@@ -143,11 +143,14 @@ exports.handler = async (event) => {
           }
         } catch(e) { /* 기본값 사용 */ }
 
+        // 트렌드 태그는 사진 주제 추천용임을 가이드에 명시
+        const trendGuide = `${guideStr} ${bestTimeStr} 위 인기태그를 주제로 사진을 찍어 올리면 더 많은 사람에게 노출돼요!`;
+
         const variables = {
           '#{이름}': user.name || user.storeName || '대표님',
           '#{날씨}': weatherStr,
           '#{트렌드}': userTrendStr,
-          '#{가이드}': `${guideStr} ${bestTimeStr}`
+          '#{가이드}': trendGuide
         };
 
         await sendAlimtalk(user.phone, variables);
