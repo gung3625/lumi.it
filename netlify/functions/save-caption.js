@@ -1,21 +1,31 @@
 const { getStore } = require('@netlify/blobs');
 
-// Make.com에서 캡션 생성 후 호출하는 콜백 함수
-// 캡션을 caption-history에 저장 → 다음 접속 시 피드백 UI에 표시
-
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
-  let body;
-  try { body = JSON.parse(event.body); } catch {
-    return { statusCode: 400, body: JSON.stringify({ error: '잘못된 요청입니다.' }) };
+  // JSON과 form-urlencoded 둘 다 처리
+  let email, caption, secret;
+  const contentType = event.headers['content-type'] || '';
+
+  try {
+    if (contentType.includes('application/json')) {
+      const body = JSON.parse(event.body);
+      email = body.email;
+      caption = body.caption;
+      secret = body.secret;
+    } else {
+      // form-urlencoded (Make.com Key-Value 방식)
+      const params = new URLSearchParams(event.body);
+      email = params.get('email');
+      caption = params.get('caption');
+      secret = params.get('secret');
+    }
+  } catch (e) {
+    return { statusCode: 400, body: JSON.stringify({ error: '잘못된 요청입니다.', detail: e.message }) };
   }
 
-  const { email, caption, secret } = body;
-
-  // 시크릿 검증
   if (secret !== process.env.LUMI_SECRET) {
     return { statusCode: 401, body: JSON.stringify({ error: '인증 실패' }) };
   }
@@ -31,19 +41,17 @@ exports.handler = async (event) => {
       token: process.env.NETLIFY_TOKEN
     });
 
-    // 1. 기존 caption-history 불러오기
     let history = [];
     try {
       const raw = await store.get('caption-history:' + email);
       if (raw) history = JSON.parse(raw);
     } catch { history = []; }
 
-    // 2. 새 캡션 추가 (최대 20개 유지, 피드백 대기 상태로)
     const newEntry = {
       id: Date.now(),
-      caption,
+      caption: caption.trim(),
       createdAt: new Date().toISOString(),
-      feedback: null  // null = 미응답, 'like' = 👍, 'dislike' = 👎
+      feedback: null
     };
     history.unshift(newEntry);
     if (history.length > 20) history = history.slice(0, 20);
