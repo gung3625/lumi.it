@@ -1444,6 +1444,25 @@
         <p class="dash-lbl">지금 인기 태그</p>
         <div class="trend-wrap" id="trend-list-node"></div>
 
+        <!-- 말투 피드백 섹션 -->
+        <div id="tone-feedback-section" style="display:none;background:var(--white);border-radius:var(--r-xl);padding:20px;border:1px solid var(--pink-soft);box-shadow:var(--sh-xs);margin-bottom:14px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                <span style="font-size:1rem;">✍️</span>
+                <p style="font-size:.88rem;font-weight:800;color:var(--g900);">지난번 캡션 어떠셨나요?</p>
+            </div>
+            <p style="font-size:.78rem;color:var(--g500);margin-bottom:14px;line-height:1.6;">선택하시면 다음 캡션 작성 시 반영돼요. 선택 안 하셔도 괜찮아요.</p>
+            <div id="tone-feedback-caption" style="background:var(--pink-ultra);border-radius:var(--r-md);padding:14px;font-size:.83rem;color:var(--g700);line-height:1.7;margin-bottom:14px;border-left:3px solid var(--pink-soft);"></div>
+            <div style="display:flex;gap:10px;">
+                <button id="tone-like-btn" onclick="submitToneFeedback('like')" style="flex:1;height:48px;background:var(--white);border:1.5px solid var(--g200);border-radius:var(--r-md);font-size:.88rem;font-weight:700;color:var(--g700);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .2s;font-family:inherit;" onmouseover="this.style.borderColor='#22c55e';this.style.background='#f0fff4'" onmouseout="this.style.borderColor='var(--g200)';this.style.background='var(--white)'">
+                    👍 마음에 들어요
+                </button>
+                <button id="tone-dislike-btn" onclick="submitToneFeedback('dislike')" style="flex:1;height:48px;background:var(--white);border:1.5px solid var(--g200);border-radius:var(--r-md);font-size:.88rem;font-weight:700;color:var(--g700);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .2s;font-family:inherit;" onmouseover="this.style.borderColor='#ef4444';this.style.background='#fff5f5'" onmouseout="this.style.borderColor='var(--g200)';this.style.background='var(--white)'">
+                    👎 별로였어요
+                </button>
+            </div>
+            <button onclick="dismissToneFeedback()" style="width:100%;margin-top:8px;background:none;border:none;font-size:12px;color:var(--g400);cursor:pointer;padding:4px;font-family:inherit;">다음에 할게요</button>
+        </div>
+
         <!-- 보관함 (예약 게시 현황) -->
         <div style="margin-bottom:14px;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
@@ -2439,6 +2458,7 @@ async function grantAccess(){
     checkIgConnection();
     initProfileView();
     loadBestTimeForPlan();
+    loadToneFeedback();
     if (!JSON.parse(localStorage.getItem('lumi_user') || '{}').sidoCode) {
         initWeather();
     }
@@ -3302,6 +3322,65 @@ function updateReserveHint() {
 function toggleBizcatDirect(val) {
     const directEl = document.getElementById('profile-edit-bizcat-direct');
     if (directEl) directEl.style.display = val === 'other_input' ? 'block' : 'none';
+}
+
+// ── 말투 피드백 ──
+let _pendingFeedbackId = null;
+
+async function loadToneFeedback() {
+    try {
+        const userRaw = localStorage.getItem('lumi_user');
+        if (!userRaw) return;
+        const user = JSON.parse(userRaw);
+        const token = localStorage.getItem('lumi_token');
+
+        const res = await fetch('/.netlify/functions/get-caption-history', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ email: user.email })
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+
+        // 피드백 안 한 캡션 중 가장 최근 것
+        const pending = (data.history || []).find(h => h.feedback === null);
+        if (!pending) return;
+
+        _pendingFeedbackId = pending.id;
+        document.getElementById('tone-feedback-caption').textContent = pending.caption;
+        document.getElementById('tone-feedback-section').style.display = 'block';
+    } catch(e) {
+        console.log('loadToneFeedback 오류:', e.message);
+    }
+}
+
+async function submitToneFeedback(type) {
+    if (!_pendingFeedbackId) return;
+    const likeBtn = document.getElementById('tone-like-btn');
+    const dislikeBtn = document.getElementById('tone-dislike-btn');
+    if (likeBtn) likeBtn.disabled = true;
+    if (dislikeBtn) dislikeBtn.disabled = true;
+
+    try {
+        const token = localStorage.getItem('lumi_token');
+        const res = await fetch('/.netlify/functions/tone-feedback', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ captionId: _pendingFeedbackId, feedback: type })
+        });
+        if (res.ok) {
+            const emoji = type === 'like' ? '👍' : '👎';
+            showToast(emoji + ' 피드백이 반영됐어요. 다음 캡션에 적용할게요!', 'pink');
+            document.getElementById('tone-feedback-section').style.display = 'none';
+            _pendingFeedbackId = null;
+        }
+    } catch(e) {
+        console.log('submitToneFeedback 오류:', e.message);
+    }
+}
+
+function dismissToneFeedback() {
+    document.getElementById('tone-feedback-section').style.display = 'none';
 }
 
 function initProfileView() {

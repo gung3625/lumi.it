@@ -144,6 +144,27 @@ exports.handler = async (event) => {
           }
         }
 
+        // 사진을 Blobs에 업로드하고 URL 생성 (GPT Vision용)
+        const imageUrls = [];
+        try {
+          const imgStore = getStore({
+            name: 'images',
+            siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
+            token: process.env.NETLIFY_TOKEN
+          });
+          for (let i = 0; i < photos.length; i++) {
+            const p = photos[i];
+            const key = `temp/${Date.now()}_${i}_${p.fileName}`;
+            await imgStore.set(key, p.buffer, { metadata: { contentType: p.mimeType } });
+            // Netlify Blobs 공개 URL
+            const siteId = process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc';
+            const url = `https://blob.core.tmp.netlify.app/${siteId}/images/${encodeURIComponent(key)}`;
+            imageUrls.push(url);
+          }
+        } catch(e) {
+          console.error('[reserve] 이미지 Blobs 업로드 실패:', e.message);
+        }
+
         const textFields = {
           // 기본 정보
           photoCount: String(photos.length),
@@ -185,6 +206,12 @@ exports.handler = async (event) => {
           storeCategory: fields.bizCategory || storeProfile.category || '',
           ownerName: storeProfile.ownerName || '',
           ownerEmail: storeProfile.ownerEmail || '',
+
+          // GPT Vision용 이미지 URL (Blobs)
+          imageUrls: imageUrls.join(','),
+          imageUrl1: imageUrls[0] || '',
+          imageUrl2: imageUrls[1] || '',
+          imageUrl3: imageUrls[2] || '',
 
           // 말투 학습 데이터
           toneLikes: toneLikes.length > 0 ? toneLikes.map(t => t.caption).join('|||') : '',
