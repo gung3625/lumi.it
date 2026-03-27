@@ -96,6 +96,8 @@ exports.handler = async (event) => {
         let igUserId = '';
         let igAccessToken = '';   // 장기 유저 토큰
         let igPageAccessToken = ''; // 페이지 액세스 토큰 (게시에 필요)
+        let toneLikes = [];
+        let toneDislikes = [];
         if (storeProfile.ownerEmail) {
           try {
             const blobStore = getStore({
@@ -119,8 +121,6 @@ exports.handler = async (event) => {
             }
 
             // tone-like / tone-dislike 조회
-            let toneLikes = [];
-            let toneDislikes = [];
             try {
               const likeRaw = await blobStore.get('tone-like:' + storeProfile.ownerEmail);
               if (likeRaw) toneLikes = JSON.parse(likeRaw);
