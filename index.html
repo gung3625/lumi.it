@@ -1848,8 +1848,7 @@ async function fetchRealWeather(lat, lon, locationName) {
             status: cfg.status,
             temperature: temp,
             locationName,
-            guide: cfg.guide,
-            mood: cfg.mood
+
         };
         weatherLoaded = true;
         console.log('[lumi] 날씨 로딩 완료:', temp + '°C', state);
@@ -1858,7 +1857,7 @@ async function fetchRealWeather(lat, lon, locationName) {
         document.getElementById('dash-w-icon').innerText = cfg.icon;
         document.getElementById('dash-w-text').innerText = `${locationName}: ${cfg.status} ${temp}°C`;
         document.getElementById('dash-w-guide').innerText = '"' + cfg.guide + '"';
-        document.getElementById('ceo-note-input').placeholder = '오늘의 추천 무드:\n' + cfg.mood;
+        document.getElementById('ceo-note-input').placeholder = '예) 신메뉴 출시, 명절 휴무 안내, 이벤트 진행 중';
 
     } catch(e) {
         console.error('[lumi] 날씨 API 실패 상세:', e.message, e);
