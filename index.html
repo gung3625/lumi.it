@@ -1519,6 +1519,9 @@
                     <p class="drop-txt">사진을 선택하세요</p>
                 </div>
             </div>
+            <div id="story-photo-notice" style="display:none;background:#FFF8E1;border-radius:var(--r-sm);padding:8px 12px;margin-bottom:8px;border-left:3px solid #FFC107;">
+                <p style="font-size:11px;color:#856404;line-height:1.6;">📖 <strong>스토리 자동 게시 ON</strong> — 첫 번째 사진이 대표 사진으로 스토리에 올라가요.</p>
+            </div>
             <div style="background:var(--g50);border-radius:var(--r-sm);padding:10px 14px;margin-bottom:10px;border-left:3px solid var(--pink);">
                 <p style="font-size:11px;font-weight:700;color:var(--g500);line-height:1.7;">오늘 특별히 전하고 싶은 소식이 있다면 적어주세요.<br>
                 <span style="color:var(--pink);">예) 신메뉴 출시, 명절 휴무 안내, 이벤트 진행 중</span><br>
@@ -3517,12 +3520,16 @@ function dismissToneFeedback() {
 function initAutoStory() {
     const user = JSON.parse(localStorage.getItem('lumi_user') || '{}');
     const toggle = document.getElementById('auto-story-toggle');
-    const slider = document.getElementById('auto-story-slider');
-    const knob = document.getElementById('auto-story-knob');
     if (!toggle) return;
     const isOn = user.autoStory === true;
     toggle.checked = isOn;
     updateStoryToggleUI(isOn);
+    updateStoryNotice(isOn);
+}
+
+function updateStoryNotice(isOn) {
+    const notice = document.getElementById('story-photo-notice');
+    if (notice) notice.style.display = isOn ? 'block' : 'none';
 }
 
 function updateStoryToggleUI(isOn) {
@@ -3535,6 +3542,7 @@ function updateStoryToggleUI(isOn) {
 
 async function saveAutoStory(checked) {
     updateStoryToggleUI(checked);
+    updateStoryNotice(checked);
     const token = localStorage.getItem('lumi_token');
     try {
         const res = await fetch('/.netlify/functions/update-profile', {

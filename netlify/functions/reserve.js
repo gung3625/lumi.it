@@ -246,7 +246,18 @@ exports.handler = async (event) => {
           buffer: p.buffer
         }));
 
-        const { body, contentType } = buildMultipart(textFields, filesForMake);
+        // 대표 사진 (첫 번째) → thumbnailFile로 별도 전송 (스토리용)
+        const thumbnailFile = photos.length > 0 ? [{
+          fieldName: 'thumbnailFile',
+          fileName: photos[0].fileName,
+          mimeType: photos[0].mimeType,
+          buffer: photos[0].buffer
+        }] : [];
+
+        // 전체 사진 + 대표 사진 함께 전송
+        const allFiles = [...filesForMake, ...thumbnailFile];
+
+        const { body, contentType } = buildMultipart(textFields, allFiles);
 
         const res = await fetch(MAKE_WEBHOOK_URL, {
           method: 'POST',
