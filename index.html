@@ -1537,6 +1537,23 @@
             <div id="best-time-slots" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;"></div>
             <p id="best-time-tip" style="font-size:.75rem;color:var(--pink);font-weight:600;"></p>
         </div>
+        <!-- 링크 페이지 설정 -->
+        <p class="dash-lbl">링크 페이지 설정</p>
+        <div style="background:var(--white);border-radius:var(--r-xl);padding:20px 22px;border:1px solid var(--g200);box-shadow:var(--sh-xs);margin-bottom:14px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                <div>
+                    <p style="font-size:.88rem;font-weight:800;color:var(--g900);margin-bottom:4px;">🔗 내 링크 페이지</p>
+                    <p id="link-page-url" style="font-size:.78rem;color:var(--pink);font-weight:600;cursor:pointer;" onclick="copyLinkPageUrl()">불러오는 중...</p>
+                </div>
+                <button onclick="copyLinkPageUrl()" style="background:var(--pink-pale);color:var(--pink);border:none;border-radius:99px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">복사</button>
+            </div>
+            <p style="font-size:.75rem;color:var(--g500);margin-bottom:14px;line-height:1.6;">인스타그램 바이오 링크에 넣으면 방문자가 매장 정보와 링크를 한 번에 볼 수 있어요.</p>
+            <!-- 링크 목록 -->
+            <div id="link-page-items"></div>
+            <button onclick="addLinkItem()" style="width:100%;height:44px;background:var(--g50);border:1.5px dashed var(--g200);border-radius:var(--r-md);font-size:.85rem;font-weight:600;color:var(--g500);cursor:pointer;font-family:inherit;margin-top:8px;">+ 링크 추가</button>
+            <button onclick="saveLinkPage()" class="btn-act-on" style="width:100%;margin-top:10px;padding:12px;">저장하기</button>
+        </div>
+
         <!-- 자동 응답 설정 (프로 플랜) -->
         <p class="dash-lbl">자동 응답 설정 <span style="font-size:10px;font-weight:700;color:var(--pink);background:var(--pink-pale);padding:2px 8px;border-radius:99px;margin-left:4px;">PRO</span></p>
         <div class="auto-reply-card" id="auto-reply-section">
@@ -2471,6 +2488,7 @@ async function grantAccess(){
     initProfileView();
     loadBestTimeForPlan();
     loadToneFeedback();
+    loadLinkPage();
     if (!JSON.parse(localStorage.getItem('lumi_user') || '{}').sidoCode) {
         initWeather();
     }
@@ -3393,6 +3411,85 @@ async function submitToneFeedback(type) {
 
 function dismissToneFeedback() {
     document.getElementById('tone-feedback-section').style.display = 'none';
+}
+
+// ── 링크 페이지 ──
+let _linkItems = [];
+
+const LINK_ICONS = ['📍','☎️','🛒','📅','📸','🌐','💬','🎁','📌','🔗'];
+
+async function loadLinkPage() {
+    const user = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+    const instaId = (user.instagram || '').replace('@', '');
+    if (!instaId) return;
+
+    const url = `https://lumi.it.kr/p/${instaId}`;
+    const el = document.getElementById('link-page-url');
+    if (el) el.textContent = url;
+
+    try {
+        const token = localStorage.getItem('lumi_token');
+        const res = await fetch(`/.netlify/functions/get-link-page?id=${instaId}`);
+        if (res.ok) {
+            const data = await res.json();
+            _linkItems = data.links || [];
+            renderLinkItems();
+        }
+    } catch(e) {}
+}
+
+function renderLinkItems() {
+    const el = document.getElementById('link-page-items');
+    if (!el) return;
+    if (_linkItems.length === 0) {
+        el.innerHTML = '<p style="font-size:.78rem;color:var(--g400);text-align:center;padding:12px 0;">아직 링크가 없어요. 추가해보세요!</p>';
+        return;
+    }
+    el.innerHTML = _linkItems.map((item, i) => `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;background:var(--g50);border-radius:var(--r-md);padding:10px 12px;">
+            <select onchange="_linkItems[${i}].icon=this.value" style="width:52px;height:36px;border:1.5px solid var(--g200);border-radius:8px;font-size:1rem;text-align:center;background:#fff;cursor:pointer;">
+                ${LINK_ICONS.map(ic => `<option value="${ic}" ${ic === item.icon ? 'selected' : ''}>${ic}</option>`).join('')}
+            </select>
+            <input type="text" value="${item.label || ''}" placeholder="버튼 이름" class="inp" style="flex:1;height:36px;margin:0;font-size:.83rem;" oninput="_linkItems[${i}].label=this.value">
+            <input type="url" value="${item.url || ''}" placeholder="https://..." class="inp" style="flex:2;height:36px;margin:0;font-size:.83rem;" oninput="_linkItems[${i}].url=this.value">
+            <button onclick="_linkItems.splice(${i},1);renderLinkItems()" style="background:none;border:none;color:var(--g400);font-size:1.1rem;cursor:pointer;padding:0 4px;">✕</button>
+        </div>
+    `).join('');
+}
+
+function addLinkItem() {
+    if (_linkItems.length >= 10) { showToast('링크는 최대 10개까지 추가할 수 있어요.', 'red'); return; }
+    _linkItems.push({ icon: '🔗', label: '', url: '' });
+    renderLinkItems();
+}
+
+async function saveLinkPage() {
+    const token = localStorage.getItem('lumi_token');
+    const validLinks = _linkItems.filter(l => l.label && l.url);
+    try {
+        const res = await fetch('/.netlify/functions/update-link-page', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ links: validLinks })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            showToast('링크 페이지가 저장됐어요! 🔗', 'pink');
+        } else {
+            showToast(data.error || '저장 실패', 'red');
+        }
+    } catch(e) {
+        showToast('저장 중 오류가 발생했어요.', 'red');
+    }
+}
+
+function copyLinkPageUrl() {
+    const user = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+    const instaId = (user.instagram || '').replace('@', '');
+    const url = `https://lumi.it.kr/p/${instaId}`;
+    navigator.clipboard.writeText(url).then(() => {
+        showToast('링크가 복사됐어요! 인스타 바이오에 붙여넣기 하세요 🔗', 'pink');
+    });
 }
 
 function initProfileView() {

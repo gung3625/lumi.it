@@ -1,0 +1,66 @@
+const { getStore } = require('@netlify/blobs');
+
+// 링크 페이지 저장 (인증 필요)
+exports.handler = async (event) => {
+  if (event.httpMethod !== 'POST') {
+    return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
+  }
+
+  const authHeader = event.headers['authorization'] || '';
+  const token = authHeader.replace('Bearer ', '').trim();
+  if (!token) return { statusCode: 401, body: JSON.stringify({ error: '인증 필요' }) };
+
+  let body;
+  try { body = JSON.parse(event.body); } catch {
+    return { statusCode: 400, body: JSON.stringify({ error: '잘못된 요청' }) };
+  }
+
+  try {
+    const store = getStore({
+      name: 'users',
+      siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
+      token: process.env.NETLIFY_TOKEN
+    });
+
+    // 토큰으로 이메일 조회
+    let tokenRaw;
+    try { tokenRaw = await store.get('token:' + token); } catch { tokenRaw = null; }
+    if (!tokenRaw) return { statusCode: 401, body: JSON.stringify({ error: '유효하지 않은 토큰' }) };
+    const { email } = JSON.parse(tokenRaw);
+
+    // 유저 정보 조회
+    const userRaw = await store.get('user:' + email);
+    if (!userRaw) return { statusCode: 404, body: JSON.stringify({ error: '사용자 없음' }) };
+    const user = JSON.parse(userRaw);
+
+    // 링크 최대 10개 제한
+    const links = (body.links || []).slice(0, 10).map(link => ({
+      icon: link.icon || '🔗',
+      label: link.label || '',
+      url: link.url || ''
+    })).filter(l => l.label && l.url);
+
+    const linkPage = {
+      links,
+      theme: body.theme || 'pink',
+      updatedAt: new Date().toISOString()
+    };
+
+    await store.set('linkpage:' + email, JSON.stringify(linkPage));
+
+    // insta: 키로 이메일 역조회 가능하도록 저장
+    const instaId = (user.instagram || '').replace('@', '').toLowerCase();
+    if (instaId) {
+      await store.set('insta:' + instaId, email);
+    }
+
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ success: true, url: `https://lumi.it.kr/p/${instaId}` })
+    };
+  } catch(err) {
+    console.error('update-link-page error:', err.message);
+    return { statusCode: 500, body: JSON.stringify({ error: '저장 실패' }) };
+  }
+};
