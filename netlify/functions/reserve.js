@@ -47,7 +47,6 @@ exports.handler = async (event) => {
     const bb = busboy({ headers });
     const fields = {};
     const photos = [];
-    let thumbnailPhoto = null;
 
     bb.on('file', (name, file, info) => {
       const chunks = [];
@@ -59,12 +58,7 @@ exports.handler = async (event) => {
           mimeType: info.mimeType,
           buffer: Buffer.concat(chunks)
         };
-        if (name === 'thumbnailFile') {
-          // 대표 사진 (스토리용) - photos 배열에서 제외
-          thumbnailPhoto = fileData;
-        } else {
-          photos.push(fileData);
-        }
+        photos.push(fileData);
       });
     });
 
@@ -251,18 +245,7 @@ exports.handler = async (event) => {
           buffer: p.buffer
         }));
 
-        // 대표 사진 (스토리용) - 프론트에서 thumbnailFile로 받은 것
-        const thumbnailFileForMake = thumbnailPhoto ? [{
-          fieldName: 'thumbnailFile',
-          fileName: thumbnailPhoto.fileName,
-          mimeType: thumbnailPhoto.mimeType,
-          buffer: thumbnailPhoto.buffer
-        }] : [];
-
-        // 전체 사진 + 대표 사진 함께 전송
-        const allFiles = [...filesForMake, ...thumbnailFileForMake];
-
-        const { body, contentType } = buildMultipart(textFields, allFiles);
+        const { body, contentType } = buildMultipart(textFields, filesForMake);
 
         const res = await fetch(MAKE_WEBHOOK_URL, {
           method: 'POST',
