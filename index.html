@@ -1321,6 +1321,7 @@
                     <div style="display:flex;justify-content:space-between;"><span style="color:var(--g400);">업종</span><span id="profile-view-bizcat">-</span></div>
                     <div style="display:flex;justify-content:space-between;"><span style="color:var(--g400);">글 말투</span><span id="profile-view-tone">-</span></div>
                     <div style="display:flex;justify-content:space-between;"><span style="color:var(--g400);">해시태그</span><span id="profile-view-tagstyle">-</span></div>
+                    <div style="display:flex;justify-content:space-between;"><span style="color:var(--g400);">커스텀</span><span id="profile-view-custom" style="color:var(--g400);">등록안됨</span></div>
                 </div>
             </div>
             <!-- 수정 모드 -->
@@ -3552,6 +3553,20 @@ function initProfileView() {
     document.getElementById('profile-view-tone').textContent = user.captionTone || '-';
     const tagMap = {few:'간결하게 (5개 이내)', mid:'적당하게 (10개 내외)', many:'많이 (20개 이상)'};
     document.getElementById('profile-view-tagstyle').textContent = tagMap[user.tagStyle] || '-';
+    const customEl = document.getElementById('profile-view-custom');
+    if (customEl) {
+        const captions = user.customCaptions || [];
+        const validCaptions = captions.filter(c => c && c.trim());
+        if (validCaptions.length > 0) {
+            customEl.textContent = validCaptions.length + '개 등록됨';
+            customEl.style.color = 'var(--pink)';
+            customEl.style.fontWeight = '700';
+        } else {
+            customEl.textContent = '등록안됨';
+            customEl.style.color = 'var(--g400)';
+            customEl.style.fontWeight = '400';
+        }
+    }
 }
 
 function toggleProfileEdit() {
