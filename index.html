@@ -2266,6 +2266,11 @@ async function commitPost(type){
         const formData = new FormData();
         // 사진 파일들 추가
         stagedFiles.forEach((f, i) => formData.append(`photo_${i}`, f, f.name));
+        // 대표 사진 (첫 번째) 별도 전송 - 스토리용
+        if (stagedFiles.length > 0) formData.append('thumbnailFile', stagedFiles[0], stagedFiles[0].name);
+        // 스토리 자동 게시 설정
+        const autoStoryOn = userData.autoStory === true;
+        formData.append('autoStory', autoStoryOn ? 'true' : 'false');
         // 텍스트 데이터 추가
         formData.append('userMessage', notes);
         formData.append('bizCategory', bizCat);

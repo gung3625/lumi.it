@@ -47,17 +47,24 @@ exports.handler = async (event) => {
     const bb = busboy({ headers });
     const fields = {};
     const photos = [];
+    let thumbnailPhoto = null;
 
     bb.on('file', (name, file, info) => {
       const chunks = [];
       file.on('data', (d) => chunks.push(d));
       file.on('end', () => {
-        photos.push({
+        const fileData = {
           fieldName: name,
           fileName: info.filename,
           mimeType: info.mimeType,
           buffer: Buffer.concat(chunks)
-        });
+        };
+        if (name === 'thumbnailFile') {
+          // 대표 사진 (스토리용) - photos 배열에서 제외
+          thumbnailPhoto = fileData;
+        } else {
+          photos.push(fileData);
+        }
       });
     });
 
@@ -131,15 +138,13 @@ exports.handler = async (event) => {
               if (dislikeRaw) toneDislikes = JSON.parse(dislikeRaw);
             } catch {}
 
-            // 커스텀 캡션 샘플 + autoStory 조회
-            let autoStory = false;
+            // 커스텀 캡션 샘플 조회
             try {
               const userDataRaw = await blobStore.get('user:' + storeProfile.ownerEmail);
               if (userDataRaw) {
                 const userData = JSON.parse(userDataRaw);
                 const captions = userData.customCaptions || [];
                 customCaptionsStr = captions.filter(c => c && c.trim()).join('|||');
-                autoStory = userData.autoStory === true;
               }
             } catch {}
 
@@ -230,7 +235,7 @@ exports.handler = async (event) => {
           toneDislikes: toneDislikes.length > 0 ? toneDislikes.map(t => t.caption).join('|||') : '',
 
           customCaptions: customCaptionsStr,
-          autoStory: autoStory ? 'true' : 'false',
+          autoStory: fields.autoStory || 'false',
 
           // Instagram 게시용 토큰 정보
           igUserId: igUserId,
@@ -246,16 +251,16 @@ exports.handler = async (event) => {
           buffer: p.buffer
         }));
 
-        // 대표 사진 (첫 번째) → thumbnailFile로 별도 전송 (스토리용)
-        const thumbnailFile = photos.length > 0 ? [{
+        // 대표 사진 (스토리용) - 프론트에서 thumbnailFile로 받은 것
+        const thumbnailFileForMake = thumbnailPhoto ? [{
           fieldName: 'thumbnailFile',
-          fileName: photos[0].fileName,
-          mimeType: photos[0].mimeType,
-          buffer: photos[0].buffer
+          fileName: thumbnailPhoto.fileName,
+          mimeType: thumbnailPhoto.mimeType,
+          buffer: thumbnailPhoto.buffer
         }] : [];
 
         // 전체 사진 + 대표 사진 함께 전송
-        const allFiles = [...filesForMake, ...thumbnailFile];
+        const allFiles = [...filesForMake, ...thumbnailFileForMake];
 
         const { body, contentType } = buildMultipart(textFields, allFiles);
 
