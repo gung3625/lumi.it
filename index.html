@@ -1381,6 +1381,15 @@
                 <input type="text" id="profile-edit-bizcat-direct" class="inp" style="height:46px;margin-bottom:8px;display:none;" placeholder="업종을 직접 입력해 주세요 (예: 타투샵, 세탁소)">
                 <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:6px;">글 말투 <span style="font-weight:400;color:var(--g400);">(선택)</span></p>
                 <input type="text" id="profile-edit-tone" class="inp" style="height:46px;margin-bottom:8px;" placeholder="예: 친근하게, 감성적으로, 재미있게">
+
+                <!-- 커스텀 캡션 샘플 -->
+                <div style="background:var(--pink-ultra);border-radius:var(--r-md);padding:14px;margin-bottom:8px;border:1px solid var(--pink-soft);">
+                    <p style="font-size:12px;font-weight:700;color:var(--pink);margin-bottom:4px;">✍️ 커스텀 말투 학습 <span style="font-weight:400;color:var(--g400);font-size:11px;">(선택, 최대 5개)</span></p>
+                    <p style="font-size:11px;color:var(--g500);line-height:1.6;margin-bottom:10px;">직접 작성했거나 마음에 드는 캡션을 입력하면, AI가 비슷한 스타일로 써드려요.</p>
+                    <div id="custom-caption-list"></div>
+                    <button onclick="addCustomCaption()" style="width:100%;height:38px;background:#fff;border:1.5px dashed var(--pink-soft);border-radius:8px;font-size:.8rem;font-weight:600;color:var(--pink);cursor:pointer;font-family:inherit;margin-top:6px;">+ 캡션 샘플 추가</button>
+                </div>
+
                 <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:6px;">해시태그 개수</p>
                 <select id="profile-edit-tagstyle" class="inp" style="height:46px;margin-bottom:10px;">
                     <option value="few">간결하게 (5개 이내)</option>
@@ -3349,6 +3358,45 @@ function updateReserveHint() {
 }
 
 // ── 프로필 설정 ──
+// ── 커스텀 말투 캡션 샘플 ──
+let _customCaptions = [];
+
+function addCustomCaption() {
+    if (_customCaptions.length >= 5) {
+        showToast('캡션 샘플은 최대 5개까지 입력할 수 있어요.', 'red');
+        return;
+    }
+    _customCaptions.push('');
+    renderCustomCaptions();
+    // 마지막 입력창에 포커스
+    const inputs = document.querySelectorAll('.custom-caption-input');
+    if (inputs.length > 0) inputs[inputs.length - 1].focus();
+}
+
+function renderCustomCaptions() {
+    const el = document.getElementById('custom-caption-list');
+    if (!el) return;
+    if (_customCaptions.length === 0) {
+        el.innerHTML = '';
+        return;
+    }
+    el.innerHTML = _customCaptions.map((cap, i) => `
+        <div style="display:flex;gap:6px;margin-bottom:6px;align-items:flex-start;">
+            <textarea class="custom-caption-input inp" rows="2"
+                style="flex:1;margin:0;font-size:.8rem;padding:8px 10px;resize:none;line-height:1.5;"
+                placeholder="예: 봄이 왔나봐요 🌸 오늘부터 딸기 시즌 시작이에요."
+                oninput="_customCaptions[${i}]=this.value">${cap}</textarea>
+            <button onclick="_customCaptions.splice(${i},1);renderCustomCaptions()"
+                style="background:none;border:none;color:var(--g400);font-size:1rem;cursor:pointer;padding:8px 4px;flex-shrink:0;">✕</button>
+        </div>
+    `).join('');
+}
+
+function loadCustomCaptions(captions) {
+    _customCaptions = Array.isArray(captions) ? captions.slice(0, 5) : [];
+    renderCustomCaptions();
+}
+
 function toggleBizcatDirect(val) {
     const directEl = document.getElementById('profile-edit-bizcat-direct');
     if (directEl) directEl.style.display = val === 'other_input' ? 'block' : 'none';
@@ -3532,6 +3580,8 @@ function toggleProfileEdit() {
     if (toneSel) toneSel.value = user.captionTone || '';
     const tagSel = document.getElementById('profile-edit-tagstyle');
     if (tagSel) tagSel.value = user.tagStyle || 'mid';
+    // 커스텀 캡션 샘플 로드
+    loadCustomCaptions(user.customCaptions || []);
     viewMode.style.display = 'none';
     editMode.style.display = 'block';
     btn.style.display = 'none';
@@ -3560,7 +3610,7 @@ async function saveProfileEdit() {
         const res = await fetch('/.netlify/functions/update-profile', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-            body: JSON.stringify({ storeName: editStore, instagram: editInsta, storeDesc: editDesc, bizCategory: editBizcat, captionTone: editTone, tagStyle: editTagstyle })
+            body: JSON.stringify({ storeName: editStore, instagram: editInsta, storeDesc: editDesc, bizCategory: editBizcat, captionTone: editTone, tagStyle: editTagstyle, customCaptions: _customCaptions.filter(c => c.trim()) })
         });
         const data = await res.json();
         if (!res.ok) { errEl.textContent = data.error || '저장 실패'; errEl.style.display = 'block'; return; }
@@ -3568,7 +3618,8 @@ async function saveProfileEdit() {
         // localStorage 업데이트
         const userRaw = localStorage.getItem('lumi_user');
         const user = userRaw ? JSON.parse(userRaw) : {};
-        Object.assign(user, { storeName: editStore, instagram: editInsta, storeDesc: editDesc, bizCategory: editBizcat, captionTone: editTone, tagStyle: editTagstyle });
+        const validCaptions = _customCaptions.filter(c => c.trim());
+        Object.assign(user, { storeName: editStore, instagram: editInsta, storeDesc: editDesc, bizCategory: editBizcat, captionTone: editTone, tagStyle: editTagstyle, customCaptions: validCaptions });
         localStorage.setItem('lumi_user', JSON.stringify(user));
 
         // 전역 변수 업데이트

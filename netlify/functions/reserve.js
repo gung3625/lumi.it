@@ -98,6 +98,7 @@ exports.handler = async (event) => {
         let igPageAccessToken = ''; // 페이지 액세스 토큰 (게시에 필요)
         let toneLikes = [];
         let toneDislikes = [];
+        let customCaptionsStr = '';
         if (storeProfile.ownerEmail) {
           try {
             const blobStore = getStore({
@@ -128,6 +129,16 @@ exports.handler = async (event) => {
             try {
               const dislikeRaw = await blobStore.get('tone-dislike:' + storeProfile.ownerEmail);
               if (dislikeRaw) toneDislikes = JSON.parse(dislikeRaw);
+            } catch {}
+
+            // 커스텀 캡션 샘플 조회
+            try {
+              const userDataRaw = await blobStore.get('user:' + storeProfile.ownerEmail);
+              if (userDataRaw) {
+                const userData = JSON.parse(userDataRaw);
+                const captions = userData.customCaptions || [];
+                customCaptionsStr = captions.filter(c => c && c.trim()).join('|||');
+              }
             } catch {}
 
             // 2. ig:igUserId → 토큰 정보
@@ -215,6 +226,8 @@ exports.handler = async (event) => {
           // 말투 학습 데이터
           toneLikes: toneLikes.length > 0 ? toneLikes.map(t => t.caption).join('|||') : '',
           toneDislikes: toneDislikes.length > 0 ? toneDislikes.map(t => t.caption).join('|||') : '',
+
+          customCaptions: customCaptionsStr,
 
           // Instagram 게시용 토큰 정보
           igUserId: igUserId,
