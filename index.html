@@ -1567,6 +1567,23 @@
             <div id="best-time-slots" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;"></div>
             <p id="best-time-tip" style="font-size:.75rem;color:var(--pink);font-weight:600;"></p>
         </div>
+        <!-- 스토리 자동 게시 -->
+        <p class="dash-lbl">게시 설정</p>
+        <div style="background:var(--white);border-radius:var(--r-xl);padding:18px 22px;border:1px solid var(--g200);box-shadow:var(--sh-xs);margin-bottom:14px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div>
+                    <p style="font-size:.88rem;font-weight:800;color:var(--g900);margin-bottom:4px;">📖 스토리 자동 게시</p>
+                    <p style="font-size:.75rem;color:var(--g500);line-height:1.6;">피드 게시 시 첫 번째 사진을 스토리에도 자동으로 올려요.<br>스토리는 24시간 후 자동 삭제됩니다.</p>
+                </div>
+                <label style="position:relative;display:inline-block;width:48px;height:26px;flex-shrink:0;margin-left:16px;">
+                    <input type="checkbox" id="auto-story-toggle" onchange="saveAutoStory(this.checked)" style="opacity:0;width:0;height:0;">
+                    <span id="auto-story-slider" style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:var(--g300);border-radius:26px;transition:.3s;">
+                        <span style="position:absolute;content:'';height:20px;width:20px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s;display:block;" id="auto-story-knob"></span>
+                    </span>
+                </label>
+            </div>
+        </div>
+
         <!-- 링크 페이지 설정 -->
         <p class="dash-lbl">링크 페이지 설정</p>
         <div style="background:var(--white);border-radius:var(--r-xl);padding:20px 22px;border:1px solid var(--g200);box-shadow:var(--sh-xs);margin-bottom:14px;">
@@ -2532,6 +2549,7 @@ async function grantAccess(){
     loadBestTimeForPlan();
     loadToneFeedback();
     loadLinkPage();
+    initAutoStory();
     if (!JSON.parse(localStorage.getItem('lumi_user') || '{}').sidoCode) {
         initWeather();
     }
@@ -3493,6 +3511,46 @@ async function submitToneFeedback(type) {
 
 function dismissToneFeedback() {
     document.getElementById('tone-feedback-section').style.display = 'none';
+}
+
+// ── 스토리 자동 게시 ──
+function initAutoStory() {
+    const user = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+    const toggle = document.getElementById('auto-story-toggle');
+    const slider = document.getElementById('auto-story-slider');
+    const knob = document.getElementById('auto-story-knob');
+    if (!toggle) return;
+    const isOn = user.autoStory === true;
+    toggle.checked = isOn;
+    updateStoryToggleUI(isOn);
+}
+
+function updateStoryToggleUI(isOn) {
+    const slider = document.getElementById('auto-story-slider');
+    const knob = document.getElementById('auto-story-knob');
+    if (!slider || !knob) return;
+    slider.style.background = isOn ? 'var(--pink)' : 'var(--g300)';
+    knob.style.transform = isOn ? 'translateX(22px)' : 'translateX(0)';
+}
+
+async function saveAutoStory(checked) {
+    updateStoryToggleUI(checked);
+    const token = localStorage.getItem('lumi_token');
+    try {
+        const res = await fetch('/.netlify/functions/update-profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ autoStory: checked })
+        });
+        if (res.ok) {
+            const user = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+            user.autoStory = checked;
+            localStorage.setItem('lumi_user', JSON.stringify(user));
+            showToast(checked ? '스토리 자동 게시가 켜졌어요 📖' : '스토리 자동 게시가 꺼졌어요', checked ? 'pink' : '');
+        }
+    } catch(e) {
+        showToast('설정 저장 중 오류가 발생했어요.', 'red');
+    }
 }
 
 // ── 링크 페이지 ──

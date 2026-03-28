@@ -131,13 +131,15 @@ exports.handler = async (event) => {
               if (dislikeRaw) toneDislikes = JSON.parse(dislikeRaw);
             } catch {}
 
-            // 커스텀 캡션 샘플 조회
+            // 커스텀 캡션 샘플 + autoStory 조회
+            let autoStory = false;
             try {
               const userDataRaw = await blobStore.get('user:' + storeProfile.ownerEmail);
               if (userDataRaw) {
                 const userData = JSON.parse(userDataRaw);
                 const captions = userData.customCaptions || [];
                 customCaptionsStr = captions.filter(c => c && c.trim()).join('|||');
+                autoStory = userData.autoStory === true;
               }
             } catch {}
 
@@ -228,6 +230,7 @@ exports.handler = async (event) => {
           toneDislikes: toneDislikes.length > 0 ? toneDislikes.map(t => t.caption).join('|||') : '',
 
           customCaptions: customCaptionsStr,
+          autoStory: autoStory ? 'true' : 'false',
 
           // Instagram 게시용 토큰 정보
           igUserId: igUserId,
