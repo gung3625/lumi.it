@@ -1968,13 +1968,21 @@ async function initWeather() {
     // 날씨/에어코리아 모두 가게 지역 기준 — GPS 사용 안 함
     const lumiUser = JSON.parse(localStorage.getItem('lumi_user') || '{}');
 
-    // 1순위: 드롭다운 텍스트 (가장 최신), 2순위: localStorage.storeSido, 3순위: 서울
+    // 시/도 가져오기
     const sidoSel = document.getElementById('dash-sido');
     const sidoText = sidoSel?.options[sidoSel.selectedIndex]?.text || '';
     const storeSido = (sidoText && sidoText !== '시/도 선택') ? sidoText
         : (lumiUser.storeSido || '서울');
 
-    await fetchRealWeather(null, null, storeSido);
+    // 시/군/구 가져오기
+    const sigunguSel = document.getElementById('dash-sigungu');
+    const sigunguText = sigunguSel?.options[sigunguSel.selectedIndex]?.text || '';
+    const storeSimgungu = (sigunguText && sigunguText !== '시/군/구 선택') ? sigunguText : '';
+
+    // 시/도 + 시/군/구 조합 (있을 경우)
+    const locationName = storeSimgungu ? `${storeSido} ${storeSimgungu}` : storeSido;
+
+    await fetchRealWeather(null, null, locationName);
     fetchAirQuality(storeSido);
     fetchFestivals();
 }
@@ -2767,7 +2775,7 @@ async function confirmWithdraw() {
     showToast('계정이 삭제됐어요.', '');
     setTimeout(() => location.reload(), 1200);
 }
-function syncWeatherUI(state){const c=LUMI_CORE.weather[state]||LUMI_CORE.weather.clear;document.getElementById('dash-w-icon').innerText=c.icon;document.getElementById('dash-w-text').innerText='서울: '+c.status;document.getElementById('dash-w-guide').innerText='"'+c.guide+'"';document.getElementById('ceo-note-input').placeholder='예) 신메뉴 출시, 명절 휴무 안내, 이벤트 진행 중';}
+function syncWeatherUI(state){const c=LUMI_CORE.weather[state]||LUMI_CORE.weather.clear;const lumiU=JSON.parse(localStorage.getItem('lumi_user')||'{}');const loc=storeRegion||lumiU.region||'서울';document.getElementById('dash-w-icon').innerText=c.icon;document.getElementById('dash-w-text').innerText=loc+': '+c.status;document.getElementById('dash-w-guide').innerText='"'+c.guide+'"';document.getElementById('ceo-note-input').placeholder='예) 신메뉴 출시, 명절 휴무 안내, 이벤트 진행 중';}
 async function loadTrends() {
     const trendEl = document.getElementById('trend-list-node');
     if (!trendEl) return;
