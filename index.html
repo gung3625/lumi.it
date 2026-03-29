@@ -586,6 +586,16 @@
                         <span style="font-size:10px;font-weight:700;color:#7C3AED;background:#EDE9FF;padding:3px 8px;border-radius:99px;">ON/OFF 설정 가능</span>
                     </div>
                 </div>
+                <div class="feat-card" style="border-color:#FFE4EC;background:#FFF5F8;">
+                    <div class="feat-icon" style="background:#FFD6E4;">🎉</div>
+                    <div class="feat-name">주변 행사도 놓치지 마세요</div>
+                    <p class="feat-desc">설정한 지역 근처에서 진행 중인 행사를 자동으로 알려드려요. 벚꽃 축제, 음식 페스티벌, 지역 이벤트 — 행사 분위기에 맞는 게시물을 올리면 반응이 훨씬 좋아요.</p>
+                    <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:5px;">
+                        <span style="font-size:10px;font-weight:700;color:#C2185B;background:#FFD6E4;padding:3px 8px;border-radius:99px;">지역 기반 자동 조회</span>
+                        <span style="font-size:10px;font-weight:700;color:#C2185B;background:#FFD6E4;padding:3px 8px;border-radius:99px;">ON/OFF 설정 가능</span>
+                        <span style="font-size:10px;font-weight:700;color:#C2185B;background:#FFD6E4;padding:3px 8px;border-radius:99px;">시즌 마케팅 활용</span>
+                    </div>
+                </div>
                 <div class="feat-card" style="border-color:#E8F0FF;background:#F4F7FF;">
                     <div class="feat-icon" style="background:#E8F0FF;">🔗</div>
                     <div class="feat-name">인스타 바이오 링크, 이제 lumi로</div>
@@ -874,6 +884,7 @@
                         <li><span class="pf-icon">🖼️</span>사진 최대 10장 한 번에 올리기</li>
                         <li><span class="pf-icon">🔗</span>lumi 링크 페이지 무료 제공</li>
                         <li><span class="pf-icon">📖</span>스토리 자동 게시 (ON/OFF 설정)</li>
+                        <li><span class="pf-icon">🎉</span>주변 행사 알림 (ON/OFF 설정)</li>
                     </ul>
                     <button class="btn-price-on" onclick="handleStartBtn()">7일 무료로 시작하기</button>
                     <p style="text-align:center;font-size:.75rem;color:var(--g400);margin-top:10px;">카드 등록 없이 시작해요.</p>
@@ -1597,6 +1608,20 @@
                 </div>
             </div>
         </div>
+        <div style="background:var(--white);border-radius:var(--r-xl);padding:18px 22px;border:1px solid var(--g200);box-shadow:var(--sh-xs);margin-bottom:14px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div>
+                    <p style="font-size:.88rem;font-weight:800;color:var(--g900);margin-bottom:4px;">🎉 주변 행사 알림</p>
+                    <p style="font-size:.75rem;color:var(--g500);line-height:1.6;">설정한 지역 근처에서 진행 중인 행사를 대시보드에 표시해요.<br>행사 분위기에 맞는 게시물을 올릴 수 있어요.</p>
+                </div>
+                <div style="flex-shrink:0;margin-left:16px;cursor:pointer;" onclick="document.getElementById('auto-festival-toggle').click()">
+                    <input type="checkbox" id="auto-festival-toggle" onchange="saveAutoFestival(this.checked)" style="display:none;">
+                    <div id="auto-festival-slider" style="width:52px;height:28px;border-radius:28px;background:#ccc;border:2px solid #bbb;position:relative;transition:all .3s;cursor:pointer;">
+                        <div id="auto-festival-knob" style="position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .3s;box-shadow:0 2px 6px rgba(0,0,0,.3);"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- 링크 페이지 설정 -->
         <p class="dash-lbl">링크 페이지 설정</p>
@@ -2177,6 +2202,10 @@ function renderFestivals() {
     const list = document.getElementById('festival-list');
     if (!section || !list) return;
 
+    // autoFestival OFF면 행사 섹션 숨김
+    const user = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+    if (user.autoFestival === false) { section.style.display = 'none'; return; }
+
     section.style.display = 'block';
     if (!currentFestivals || currentFestivals.length === 0) {
         list.innerHTML = '<div style="font-size:.83rem;color:var(--g400);padding:10px 4px;">📭 10km 내 진행 중인 행사가 없어요.</div>';
@@ -2577,6 +2606,7 @@ async function grantAccess(){
     loadToneFeedback();
     loadLinkPage();
     initAutoStory();
+    initAutoFestival();
     if (!JSON.parse(localStorage.getItem('lumi_user') || '{}').sidoCode) {
         initWeather();
     }
@@ -3538,6 +3568,48 @@ async function submitToneFeedback(type) {
 
 function dismissToneFeedback() {
     document.getElementById('tone-feedback-section').style.display = 'none';
+}
+
+// ── 주변 행사 알림 ──
+function initAutoFestival() {
+    const user = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+    const toggle = document.getElementById('auto-festival-toggle');
+    if (!toggle) return;
+    const isOn = user.autoFestival !== false; // 기본값 ON
+    toggle.checked = isOn;
+    updateFestivalToggleUI(isOn);
+}
+
+function updateFestivalToggleUI(isOn) {
+    const slider = document.getElementById('auto-festival-slider');
+    const knob = document.getElementById('auto-festival-knob');
+    if (!slider || !knob) return;
+    slider.style.background = isOn ? 'var(--pink)' : '#ccc';
+    slider.style.borderColor = isOn ? 'var(--pink)' : '#bbb';
+    knob.style.transform = isOn ? 'translateX(24px)' : 'translateX(0)';
+}
+
+async function saveAutoFestival(checked) {
+    updateFestivalToggleUI(checked);
+    const token = localStorage.getItem('lumi_token');
+    try {
+        const res = await fetch('/.netlify/functions/update-profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ autoFestival: checked })
+        });
+        if (res.ok) {
+            const user = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+            user.autoFestival = checked;
+            localStorage.setItem('lumi_user', JSON.stringify(user));
+            // 행사 섹션 즉시 표시/숨김
+            const section = document.getElementById('festival-section');
+            if (section) section.style.display = checked ? 'block' : 'none';
+            showToast(checked ? '주변 행사 알림이 켜졌어요 🎉' : '주변 행사 알림이 꺼졌어요', checked ? 'pink' : '');
+        }
+    } catch(e) {
+        showToast('설정 저장 중 오류가 발생했어요.', 'red');
+    }
 }
 
 // ── 스토리 자동 게시 ──

@@ -40,7 +40,7 @@ exports.handler = async (event) => {
     const user = JSON.parse(userRaw);
 
     // 허용된 필드만 업데이트
-    const allowed = ['name', 'storeName', 'instagram', 'phone', 'birthdate', 'storeDesc', 'sidoCode', 'sigunguCode', 'storeSido', 'region', 'bizCategory', 'captionTone', 'tagStyle', 'customCaptions', 'autoStory'];
+    const allowed = ['name', 'storeName', 'instagram', 'phone', 'birthdate', 'storeDesc', 'sidoCode', 'sigunguCode', 'storeSido', 'region', 'bizCategory', 'captionTone', 'tagStyle', 'customCaptions', 'autoStory', 'autoFestival'];
     allowed.forEach(key => {
       if (body[key] !== undefined) user[key] = body[key];
     });
