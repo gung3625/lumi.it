@@ -2326,7 +2326,9 @@ async function commitPost(type){
         formData.append('tagStyle', tagStyle);
         formData.append('weather', JSON.stringify(weatherPayload));
         formData.append('airQuality', JSON.stringify(currentAirQuality || {}));
-        formData.append('festivals', JSON.stringify(currentFestivals || []));
+        // autoFestival OFF면 행사 데이터 전송 안 함
+        const festivalData = (userData.autoFestival === false) ? [] : (currentFestivals || []);
+        formData.append('festivals', JSON.stringify(festivalData));
         formData.append('trends', JSON.stringify(currentTrends));
         formData.append('storeProfile', JSON.stringify(storeProfile));
         formData.append('photoCount', stagedFiles.length);
