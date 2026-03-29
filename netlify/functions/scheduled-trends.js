@@ -26,13 +26,18 @@ const NAVER_KEYWORDS = {
   ]
 };
 
+const CATEGORY_KO = {
+  cafe: '카페/베이커리',
+  food: '음식점/맛집',
+  beauty: '뷰티/헤어/네일',
+  other: '소상공인 일반'
+};
+
 function httpsPost(hostname, path, headers, body) {
   return new Promise((resolve, reject) => {
     const data = JSON.stringify(body);
     const options = {
-      hostname,
-      path,
-      method: 'POST',
+      hostname, path, method: 'POST',
       headers: { ...headers, 'Content-Length': Buffer.byteLength(data) }
     };
     const req = https.request(options, (res) => {
@@ -41,12 +46,23 @@ function httpsPost(hostname, path, headers, body) {
       res.on('end', () => resolve({ status: res.statusCode, body: responseData }));
     });
     req.on('error', reject);
-    req.setTimeout(8000, () => { req.destroy(new Error('timeout')); });
+    req.setTimeout(10000, () => { req.destroy(new Error('timeout')); });
     req.write(data);
     req.end();
   });
 }
 
+function httpsGet(url) {
+  return new Promise((resolve, reject) => {
+    https.get(url, (res) => {
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => resolve({ status: res.statusCode, body: data }));
+    }).on('error', reject);
+  });
+}
+
+// 1. 네이버 데이터랩 트렌드
 async function fetchNaverTrends(category) {
   const clientId = process.env.NAVER_CLIENT_ID;
   const clientSecret = process.env.NAVER_CLIENT_SECRET;
@@ -68,9 +84,7 @@ async function fetchNaverTrends(category) {
       },
       { startDate, endDate, timeUnit: 'week', keywordGroups, device: 'mo', ages: ['2', '3', '4', '5'], gender: 'f' }
     );
-
     if (result.status !== 200) return null;
-
     const data = JSON.parse(result.body);
     if (data.results && data.results.length > 0) {
       const sorted = data.results.sort((a, b) => {
@@ -78,20 +92,111 @@ async function fetchNaverTrends(category) {
         const bAvg = b.data.reduce((s, d) => s + d.ratio, 0) / b.data.length;
         return bAvg - aAvg;
       });
-      const baseTags = DEFAULT_TRENDS[category] || DEFAULT_TRENDS.other;
-      const trendTags = sorted.flatMap(g => g.title ? ['#' + g.title.replace(/\s/g, '')] : []);
-      return [...new Set([...trendTags, ...baseTags])].slice(0, 8);
+      return sorted.map(g => g.title).filter(Boolean);
     }
     return null;
   } catch(e) {
-    console.error('Naver fetch error:', e.message);
+    console.error('[naver] error:', e.message);
     return null;
   }
 }
 
-// 매일 오전 9시(KST) = UTC 00:00
+// 2. Google Trends (비공식 RSS)
+async function fetchGoogleTrends(category) {
+  try {
+    const catMap = { cafe: '카페 커피', food: '맛집 식당', beauty: '뷰티 헤어 네일', other: '소상공인' };
+    const query = encodeURIComponent(catMap[category] || '소상공인');
+    const url = `https://trends.google.com/trends/trendingsearches/daily/rss?geo=KR`;
+    const result = await httpsGet(url);
+    if (result.status !== 200) return null;
+
+    // RSS에서 title 추출
+    const titles = [];
+    const matches = result.body.matchAll(/<title><!\[CDATA\[([^\]]+)\]\]><\/title>/g);
+    for (const match of matches) {
+      const title = match[1].trim();
+      if (title && title !== 'Google Trends' && titles.length < 10) {
+        titles.push(title);
+      }
+    }
+    return titles.length > 0 ? titles : null;
+  } catch(e) {
+    console.error('[google] error:', e.message);
+    return null;
+  }
+}
+
+// 3. GPT 웹 검색으로 인스타 트렌드 조사 + 3가지 소스 종합
+async function synthesizeWithGPT(category, naverData, googleData) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) return null;
+
+  const categoryKo = CATEGORY_KO[category];
+  const naverStr = naverData ? naverData.join(', ') : '데이터 없음';
+  const googleStr = googleData ? googleData.slice(0, 5).join(', ') : '데이터 없음';
+
+  const prompt = `당신은 한국 소상공인 SNS 마케팅 전문가입니다.
+
+아래 데이터를 참고해서 오늘 날짜 기준 한국 인스타그램에서 "${categoryKo}" 업종 소상공인이 사용하면 노출이 잘 되는 해시태그를 선정해주세요.
+
+[네이버 데이터랩 트렌드]
+${naverStr}
+
+[구글 트렌드 (한국)]
+${googleStr}
+
+위 데이터를 종합하고, 실제 인스타그램에서 "${categoryKo}" 관련 게시물에 많이 사용되는 해시태그 트렌드도 고려해서:
+- 노출이 잘 되는 해시태그 8개를 선정하세요
+- 너무 광범위하거나 너무 좁지 않은 적절한 태그
+- 소상공인 매장 사진에 어울리는 태그
+- # 포함해서 응답 (예: #카페스타그램)
+- JSON 배열만 응답 (다른 설명 없이)
+
+예시 형식: ["#카페스타그램","#오늘의커피","#신메뉴출시","#카페투어","#디저트맛집","#베이커리","#핸드드립","#라떼아트"]`;
+
+  try {
+    const result = await httpsPost(
+      'api.openai.com',
+      '/v1/chat/completions',
+      {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      {
+        model: 'gpt-4o-mini',
+        max_tokens: 300,
+        messages: [
+          { role: 'system', content: '한국 인스타그램 해시태그 전문가. JSON 배열만 응답.' },
+          { role: 'user', content: prompt }
+        ]
+      }
+    );
+
+    if (result.status !== 200) {
+      console.error('[gpt] status:', result.status, result.body);
+      return null;
+    }
+
+    const data = JSON.parse(result.body);
+    const content = data.choices?.[0]?.message?.content?.trim();
+    if (!content) return null;
+
+    // JSON 파싱
+    const clean = content.replace(/```json|```/g, '').trim();
+    const tags = JSON.parse(clean);
+    if (Array.isArray(tags) && tags.length > 0) {
+      return tags.slice(0, 8);
+    }
+    return null;
+  } catch(e) {
+    console.error('[gpt] error:', e.message);
+    return null;
+  }
+}
+
+// 메인 핸들러
 exports.handler = async (event) => {
-  console.log('[scheduled-trends] 트렌드 자동 업데이트 시작');
+  console.log('[scheduled-trends] 트렌드 자동 업데이트 시작 (네이버+구글+GPT)');
 
   const categories = ['cafe', 'food', 'beauty', 'other'];
   const store = getStore('trends');
@@ -100,21 +205,50 @@ exports.handler = async (event) => {
 
   for (const category of categories) {
     try {
-      const tags = await fetchNaverTrends(category);
-      const finalTags = tags || DEFAULT_TRENDS[category];
+      // 3가지 소스 병렬 조회
+      const [naverData, googleData] = await Promise.all([
+        fetchNaverTrends(category),
+        fetchGoogleTrends(category)
+      ]);
+
+      console.log(`[${category}] 네이버: ${naverData?.length || 0}개, 구글: ${googleData?.length || 0}개`);
+
+      // GPT로 종합
+      let finalTags = null;
+      if (process.env.OPENAI_API_KEY) {
+        finalTags = await synthesizeWithGPT(category, naverData, googleData);
+        console.log(`[${category}] GPT 종합: ${finalTags?.length || 0}개`);
+      }
+
+      // GPT 실패 시 네이버 → 기본값 순으로 fallback
+      if (!finalTags) {
+        if (naverData && naverData.length > 0) {
+          finalTags = naverData.map(k => '#' + k.replace(/\s/g, '')).slice(0, 8);
+          finalTags = [...new Set([...finalTags, ...DEFAULT_TRENDS[category]])].slice(0, 8);
+        } else {
+          finalTags = DEFAULT_TRENDS[category];
+        }
+      }
+
       await store.set('trends:' + category, JSON.stringify({ tags: finalTags, updatedAt }));
-      results.push({ category, source: tags ? 'naver' : 'default', count: finalTags.length });
-      console.log(`[scheduled-trends] ${category} 업데이트 완료 (${tags ? 'naver' : 'default'})`);
+      results.push({ category, count: finalTags.length, sources: { naver: !!naverData, google: !!googleData, gpt: !!process.env.OPENAI_API_KEY } });
+      console.log(`[${category}] 완료:`, finalTags.join(', '));
+
+      // API 과부하 방지
+      await new Promise(r => setTimeout(r, 500));
+
     } catch(e) {
-      console.error(`[scheduled-trends] ${category} 업데이트 실패:`, e.message);
+      console.error(`[scheduled-trends] ${category} 실패:`, e.message);
+      const fallback = DEFAULT_TRENDS[category];
+      await store.set('trends:' + category, JSON.stringify({ tags: fallback, updatedAt }));
       results.push({ category, source: 'error', error: e.message });
     }
   }
 
   console.log('[scheduled-trends] 완료:', JSON.stringify(results));
+  return { statusCode: 200, body: JSON.stringify({ success: true, results }) };
 };
 
-// 매일 오전 9시 KST (= UTC 00:00)
 module.exports.config = {
   schedule: '0 0 * * *'
 };
