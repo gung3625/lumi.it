@@ -259,6 +259,9 @@
         .preview-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(68px,1fr));gap:8px;margin-bottom:14px;}
         .prev-thumb{width:68px;height:68px;border-radius:var(--r-sm);overflow:hidden;border:1px solid var(--pink-soft);animation:fadeUp .3s var(--ease);}
         .prev-thumb img{width:100%;height:100%;object-fit:cover;}
+        .prev-thumb{position:relative;}
+        .prev-thumb-del{position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:#ff4d4d;color:#fff;font-size:11px;font-weight:900;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;z-index:2;padding:0;}
+        .prev-thumb-badge{position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);font-size:9px;font-weight:800;color:#fff;background:var(--pink);border-radius:99px;padding:1px 5px;white-space:nowrap;z-index:2;}
         .dash-note{width:100%;padding:13px 15px;border:1.5px solid var(--g200);border-radius:var(--r-md);background:var(--g50);font-size:.87rem;color:var(--g900);font-family:inherit;resize:none;outline:none;line-height:1.75;margin-bottom:14px;transition:border-color .2s,background .2s;}
         .dash-note:focus{border-color:var(--pink);background:var(--white);box-shadow:0 0 0 3px rgba(255,107,157,.08);}
         .dash-note::placeholder{color:var(--g400);}
@@ -2233,13 +2236,49 @@ function renderFestivals() {
     }).join('');
 }
 
+function renderStagedFiles() {
+    const preview = document.getElementById('ceo-preview-box');
+    const ph = document.getElementById('ceo-placeholder');
+    preview.innerHTML = '';
+    ph.classList.toggle('hidden', stagedFiles.length > 0);
+    stagedFiles.forEach((f, i) => {
+        const r = new FileReader();
+        r.onload = e => {
+            const d = document.createElement('div');
+            d.className = 'prev-thumb';
+            d.innerHTML = `
+                <img src="${e.target.result}" alt="${i}">
+                <button class="prev-thumb-del" onclick="removeStageFile(${i})" title="삭제">✕</button>
+                ${i === 0 ? '<span class="prev-thumb-badge">대표</span>' : ''}
+            `;
+            preview.appendChild(d);
+        };
+        r.readAsDataURL(f);
+    });
+}
+
+function removeStageFile(index) {
+    stagedFiles.splice(index, 1);
+    // file input 초기화 (동일 파일 재선택 가능하도록)
+    document.getElementById('ceo-file-selector').value = '';
+    renderStagedFiles();
+    updateStoryNotice(document.getElementById('auto-story-toggle')?.checked);
+}
+
 function syncBinaryWarehouse(){
-    const input=document.getElementById('ceo-file-selector');
-    const preview=document.getElementById('ceo-preview-box');
-    const ph=document.getElementById('ceo-placeholder');
-    preview.innerHTML='';stagedFiles=Array.from(input.files);
-    ph.classList.toggle('hidden',stagedFiles.length>0);
-    stagedFiles.forEach((f,i)=>{const r=new FileReader();r.onload=e=>{const d=document.createElement('div');d.className='prev-thumb';d.innerHTML=`<img src="${e.target.result}" alt="${i}">`;preview.appendChild(d);};r.readAsDataURL(f);});
+    const input = document.getElementById('ceo-file-selector');
+    const newFiles = Array.from(input.files);
+    // 기존 파일에 새 파일 추가 (초기화 안 함)
+    const existingNames = stagedFiles.map(f => f.name + f.size);
+    newFiles.forEach(f => {
+        if (!existingNames.includes(f.name + f.size)) {
+            stagedFiles.push(f);
+        }
+    });
+    // input 초기화 (같은 파일 다시 선택 가능)
+    input.value = '';
+    renderStagedFiles();
+    updateStoryNotice(document.getElementById('auto-story-toggle')?.checked);
 }
 
 /* ── 포스트 ── */
@@ -2772,7 +2811,7 @@ async function loadAutoReply() {
 }
 
 function removeArchiveItem(id){if(confirm("이 기록을 삭제할까요?")){archive=archive.filter(i=>i.id!==id);syncPersistence();renderArchive();}}
-function resetDashboard(){document.getElementById('ceo-note-input').value='';document.getElementById('ceo-file-selector').value='';document.getElementById('ceo-preview-box').innerHTML='';document.getElementById('ceo-placeholder').classList.remove('hidden');stagedFiles=[];}
+function resetDashboard(){document.getElementById('ceo-note-input').value='';document.getElementById('ceo-file-selector').value='';stagedFiles=[];renderStagedFiles();_isCommitting=false;}
 
 
 function checkWithdrawInput(input) {
