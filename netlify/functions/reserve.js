@@ -164,10 +164,12 @@ exports.handler = async (event) => {
             siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
             token: process.env.NETLIFY_TOKEN
           });
+          const imageKeys = [];
           for (let i = 0; i < photos.length; i++) {
             const p = photos[i];
             const key = `temp/${Date.now()}_${i}_${p.fileName}`;
             await imgStore.set(key, p.buffer, { metadata: { contentType: p.mimeType } });
+            imageKeys.push(key);
             // Netlify Blobs 공개 URL
             const siteId = process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc';
             const url = `https://blob.core.tmp.netlify.app/${siteId}/images/${encodeURIComponent(key)}`;
@@ -256,6 +258,21 @@ exports.handler = async (event) => {
         if (!res.ok) {
           console.error('Make webhook error:', res.status);
           return resolve({ statusCode: 500, body: JSON.stringify({ error: 'Make 웹훅 전송 실패' }) });
+        }
+
+        // Make.com 전송 완료 후 임시 이미지 Blobs에서 즉시 삭제
+        try {
+          const imgStore2 = getStore({
+            name: 'images',
+            siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
+            token: process.env.NETLIFY_TOKEN
+          });
+          for (const key of (imageKeys || [])) {
+            await imgStore2.delete(key);
+          }
+          console.log('[reserve] 임시 이미지 삭제 완료:', (imageKeys || []).length, '개');
+        } catch(e) {
+          console.error('[reserve] 임시 이미지 삭제 실패:', e.message);
         }
 
         resolve({
