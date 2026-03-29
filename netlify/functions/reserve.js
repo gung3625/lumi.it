@@ -58,7 +58,10 @@ exports.handler = async (event) => {
           mimeType: info.mimeType,
           buffer: Buffer.concat(chunks)
         };
-        photos.push(fileData);
+        // thumbnailFile은 스토리용 별도 파일 - photos 배열에서 제외
+        if (name !== 'thumbnailFile') {
+          photos.push(fileData);
+        }
       });
     });
 
