@@ -158,13 +158,13 @@ exports.handler = async (event) => {
 
         // 사진을 Blobs에 업로드하고 URL 생성 (GPT Vision용)
         const imageUrls = [];
+        const imageKeys = [];
         try {
           const imgStore = getStore({
             name: 'images',
             siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
             token: process.env.NETLIFY_TOKEN
           });
-          const imageKeys = [];
           for (let i = 0; i < photos.length; i++) {
             const p = photos[i];
             const key = `temp/${Date.now()}_${i}_${p.fileName}`;

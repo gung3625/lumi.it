@@ -2243,7 +2243,10 @@ function syncBinaryWarehouse(){
 }
 
 /* ── 포스트 ── */
+let _isCommitting = false;
 async function commitPost(type){
+    if (_isCommitting) { showToast('처리 중입니다. 잠시 기다려주세요.', ''); return; }
+    _isCommitting = true;
     // 날씨 로딩 안됐으면 최대 5초 대기
     if (!weatherLoaded) {
         showToast('날씨 정보 불러오는 중...', '');
@@ -2370,7 +2373,11 @@ async function commitPost(type){
                 }
             }
 
-            const res = await fetch('/.netlify/functions/reserve', {
+            // 버튼 비활성화
+        const nowBtn = document.querySelector('.btn-act-on');
+        if (nowBtn) { nowBtn.disabled = true; nowBtn.textContent = '업로드 중...'; }
+
+        const res = await fetch('/.netlify/functions/reserve', {
                 method: 'POST',
                 body: formData
             });
