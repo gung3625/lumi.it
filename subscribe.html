@@ -95,7 +95,7 @@
         <p class="plan-name">스탠다드 플랜</p>
         <div class="plan-price">
             <span class="plan-price-orig">59,000원</span>
-            <span class="plan-price-num">39,000</span>
+            <span class="plan-price-num">49,000</span>
             <span class="plan-price-unit">원 / 월</span>
         </div>
         <p class="plan-price-tag">오픈 기념 특별가 · 언제든지 취소 가능</p>
@@ -157,7 +157,7 @@
     <!-- CTA -->
     <div class="cta-wrap">
         <button class="btn-pay" id="pay-btn" onclick="startPayment()">7일 무료 체험 시작하기</button>
-        <p class="cta-note">결제 후 7일간 무료 · 이후 월 39,000원 자동 결제<br>언제든지 취소 가능 · 취소 시 다음 결제일부터 중단</p>
+        <p class="cta-note">결제 후 7일간 무료 · 이후 월 49,000원 자동 결제<br>언제든지 취소 가능 · 취소 시 다음 결제일부터 중단</p>
     </div>
 </div>
 
@@ -220,7 +220,7 @@
             const prepRes = await fetch('/.netlify/functions/payment-prepare', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                body: JSON.stringify({ plan: 'standard', amount: 39000 })
+                body: JSON.stringify({ plan: 'standard', amount: 49000 })
             });
             const prepData = await prepRes.json();
             if (!prepRes.ok) throw new Error(prepData.error || '결제 준비 실패');
@@ -231,7 +231,7 @@
                 channelKey: 'channel-key-80e3e34a-9fe6-4bdb-8011-7504f6fb10f7',
                 paymentId: prepData.orderId,
                 orderName: 'lumi 스탠다드 플랜',
-                totalAmount: 39000,
+                totalAmount: 49000,
                 currency: 'KRW',
                 payMethod: selectedMethod,
                 customer: { fullName: prepData.name || '고객', email: prepData.email || '' },

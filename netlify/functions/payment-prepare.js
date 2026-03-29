@@ -19,7 +19,7 @@ exports.handler = async (event) => {
 
   // 플랜별 금액
   const PLANS = {
-    standard: { amount: 39000, name: 'lumi 스탠다드 플랜' }
+    standard: { amount: 49000, name: 'lumi 스탠다드 플랜' }
   };
 
   const plan = PLANS[planType];
