@@ -576,6 +576,16 @@
                         <span style="font-size:10px;font-weight:700;color:var(--pink);background:var(--pink-pale);padding:3px 8px;border-radius:99px;">매장 소개 반영</span>
                     </div>
                 </div>
+                <div class="feat-card" style="border-color:#EDE9FF;background:#F5F3FF;">
+                    <div class="feat-icon" style="background:#EDE9FF;">📖</div>
+                    <div class="feat-name">스토리도 자동으로 올려드려요</div>
+                    <p class="feat-desc">피드에 사진을 올리면 스토리에도 자동으로 공유돼요. 팔로워에게 하루 두 번 노출되는 효과. ON/OFF는 언제든지 설정에서 바꿀 수 있어요.</p>
+                    <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:5px;">
+                        <span style="font-size:10px;font-weight:700;color:#7C3AED;background:#EDE9FF;padding:3px 8px;border-radius:99px;">피드+스토리 동시 게시</span>
+                        <span style="font-size:10px;font-weight:700;color:#7C3AED;background:#EDE9FF;padding:3px 8px;border-radius:99px;">노출 2배 효과</span>
+                        <span style="font-size:10px;font-weight:700;color:#7C3AED;background:#EDE9FF;padding:3px 8px;border-radius:99px;">ON/OFF 설정 가능</span>
+                    </div>
+                </div>
                 <div class="feat-card" style="border-color:#E8F0FF;background:#F4F7FF;">
                     <div class="feat-icon" style="background:#E8F0FF;">🔗</div>
                     <div class="feat-name">인스타 바이오 링크, 이제 lumi로</div>
@@ -1580,8 +1590,8 @@
                 </div>
                 <div style="flex-shrink:0;margin-left:16px;cursor:pointer;" onclick="document.getElementById('auto-story-toggle').click()">
                     <input type="checkbox" id="auto-story-toggle" onchange="saveAutoStory(this.checked)" style="display:none;">
-                    <div id="auto-story-slider" style="width:48px;height:26px;border-radius:26px;background:var(--g300);position:relative;transition:background .3s;cursor:pointer;">
-                        <div id="auto-story-knob" style="position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .3s;box-shadow:0 1px 4px rgba(0,0,0,.2);"></div>
+                    <div id="auto-story-slider" style="width:52px;height:28px;border-radius:28px;background:#ccc;border:2px solid #bbb;position:relative;transition:all .3s;cursor:pointer;">
+                        <div id="auto-story-knob" style="position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .3s;box-shadow:0 2px 6px rgba(0,0,0,.3);"></div>
                     </div>
                 </div>
             </div>
@@ -3541,8 +3551,9 @@ function updateStoryToggleUI(isOn) {
     const slider = document.getElementById('auto-story-slider');
     const knob = document.getElementById('auto-story-knob');
     if (!slider || !knob) return;
-    slider.style.background = isOn ? 'var(--pink)' : 'var(--g300)';
-    knob.style.transform = isOn ? 'translateX(22px)' : 'translateX(0)';
+    slider.style.background = isOn ? 'var(--pink)' : '#ccc';
+    slider.style.borderColor = isOn ? 'var(--pink)' : '#bbb';
+    knob.style.transform = isOn ? 'translateX(24px)' : 'translateX(0)';
 }
 
 async function saveAutoStory(checked) {
