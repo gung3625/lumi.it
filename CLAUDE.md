@@ -206,7 +206,38 @@ Task 3 (트렌드): 최신 SaaS 디자인 트렌드 적용 방향
 
 ---
 
-## 📋 현재 남은 작업
+---
+
+## 🎨 프론트엔드 디자인 원칙 (frontend-design 스킬)
+
+lumi 페이지 디자인·개편 작업 시 반드시 따른다.
+
+**코딩 전 반드시 결정할 것:**
+- 톤: 극단적으로 선택 (미니멀, 맥시멀, 레트로, 럭셔리, 플레이풀 등)
+- 차별화: 한 가지 기억에 남는 포인트가 뭔가?
+- lumi 브랜드: 핑크(#FF6B9D) + 따뜻함 + 소상공인 친근함 유지
+
+**절대 금지:**
+- Inter, Roboto, Arial 같은 흔한 폰트
+- 보라색 그라디언트 on 흰 배경
+- AI가 만든 것 같은 뻔한 레이아웃
+- 맥락 없는 쿠키커터 디자인
+
+**해야 할 것:**
+- CSS 변수로 일관된 테마
+- 스크롤 트리거 애니메이션
+- 비대칭·그리드 브레이킹 레이아웃
+- 폰트는 디스플레이 + 바디 페어링
+- 호버 상태가 놀라워야 함
+
+---
+
+## 📚 Anthropic 제품 참고 문서
+
+Claude API 또는 Claude Code 관련 작업 시:
+- Claude API 문서: https://docs.claude.com/en/api/overview
+- Claude Code 문서: https://docs.claude.com/en/docs/claude-code/overview
+- Claude Code npm: https://www.npmjs.com/package/@anthropic-ai/claude-code
 
 - [ ] index.html How 섹션 인터랙티브 UI 교체
 - [ ] index.html + beta.html 디자인 전면 개편
