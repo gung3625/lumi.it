@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>lumi 베타 테스터 모집 — 선착순 20명 무료</title>
   <meta name="description" content="lumi 베타 테스터를 모집해요. 선착순 20명, 정식 출시 전까지 전부 무료.">
   <meta property="og:title" content="lumi 베타 테스터 모집 — 선착순 20명 무료">
@@ -133,6 +133,7 @@
       .how-wrap{flex-direction:column;}
       .phone-wrap{width:100%;display:flex;justify-content:center;}
       .form-card{padding:28px 20px;}
+      .ba-grid{grid-template-columns:1fr!important;}
     }
   </style>
 </head>
@@ -177,7 +178,7 @@
         </div>
         <div class="how-step" onclick="howGo(1)">
           <div class="how-icon">🔍</div>
-          <div><div class="how-num">STEP 02</div><div class="how-title">AI 사진 분석</div><div class="how-desc">색감, 분위기, 계절감까지 — AI가 사진을 스스로 읽어요.</div><div class="how-bar"><div class="how-fill" id="hf1"></div></div></div>
+          <div><div class="how-num">STEP 02</div><div class="how-title">lumi 사진 분석</div><div class="how-desc">색감, 분위기, 계절감까지 — lumi가 사진을 알아서 읽어요.</div><div class="how-bar"><div class="how-fill" id="hf1"></div></div></div>
         </div>
         <div class="how-step" onclick="howGo(2)">
           <div class="how-icon">✍️</div>
@@ -245,7 +246,7 @@
     <!-- Before / After 캡션 예시 -->
     <div style="background:var(--pink-ultra);border-radius:var(--r-xl);padding:28px 24px;border:1px solid var(--pink-soft);max-width:640px;margin:0 auto;">
       <div style="font-size:11px;font-weight:800;color:var(--pink);letter-spacing:.08em;margin-bottom:16px;">BEFORE / AFTER</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div class="ba-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
         <div style="background:var(--white);border-radius:var(--r-lg);padding:16px;border:1px solid var(--g200);">
           <div style="font-size:10px;font-weight:800;color:var(--g400);margin-bottom:8px;">😰 직접 쓴 글</div>
           <div style="font-size:.82rem;color:var(--g500);line-height:1.7;">오늘 딸기 라떼 나왔어요. 맛있으니까 많이 드세요. #카페 #신메뉴</div>
@@ -392,7 +393,7 @@ const SCREENS = [
     <div style="font-size:9px;font-weight:700;color:#FF6B9D;text-align:center">사진을 올려주세요<br><span style="color:#aaa;font-weight:400">탭하여 선택</span></div>
   </div>`,
   ()=>`<div style="padding:8px">
-    <div style="font-size:8px;font-weight:700;color:#FF6B9D;margin-bottom:5px">AI 분석 중...</div>
+    <div style="font-size:8px;font-weight:700;color:#FF6B9D;margin-bottom:5px">lumi 분석 중...</div>
     <div style="width:100%;height:110px;background:linear-gradient(135deg,#ffecd2,#fcb69f);border-radius:8px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:26px">☕<div style="position:absolute;left:0;right:0;height:2px;background:rgba(255,107,157,.85);animation:scan 1.4s ease-in-out infinite"></div></div>
     <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px">${TAGS.map((t,i)=>`<span style="font-size:8px;font-weight:700;padding:2px 7px;border-radius:20px;background:${t[1]};color:${t[2]};opacity:0;animation:fadeUp .4s ease ${i*.15+.3}s forwards">${t[0]}</span>`).join('')}</div>
   </div>`,
