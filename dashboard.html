@@ -1,0 +1,3127 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>lumi 대시보드</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdn.portone.io/v2/browser-sdk.js" async onerror="console.warn('포트원 SDK 로드 실패')"></script>
+<style>
+:root{
+  --pink:#E8628A;--pink-light:#F0849E;--pink-soft:#FADCE6;
+  --pink-pale:#FDF2F6;--pink-ultra:#FEF7FA;
+  --g900:#191F28;--g700:#333D4B;--g500:#6B7684;--g400:#8B95A1;
+  --g200:#E8ECF0;--g100:#F2F4F6;--g50:#F9FAFB;--white:#FFFFFF;
+  --r-sm:12px;--r-md:16px;--r-lg:24px;--r-xl:32px;--r-full:999px;
+  --ease:cubic-bezier(0.16,1,0.3,1);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased;word-break:keep-all;}
+html{scroll-behavior:smooth;}
+body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;background:var(--white);color:var(--g700);overflow-x:hidden;line-height:1.6;font-size:15px;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes typing{from{width:0}to{width:100%}}
+@keyframes blink{0%,100%{border-color:var(--pink)}50%{border-color:transparent}}
+
+/* BANNER */
+.top-banner{background:linear-gradient(90deg,#191F28,#2d0a1e,#191F28);padding:11px 16px;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;position:fixed;top:0;left:0;width:100%;z-index:1000;}
+.banner-dot{width:7px;height:7px;border-radius:50%;background:var(--pink);animation:pulse 1.2s infinite;flex-shrink:0;}
+.banner-txt{font-size:12px;color:#fff;font-weight:600;}
+.banner-txt strong{color:var(--pink);}
+.banner-btn{padding:5px 14px;background:var(--pink);color:#fff;font-size:11px;font-weight:800;border-radius:var(--r-full);border:none;cursor:pointer;text-decoration:none;}
+.banner-close{color:rgba(255,255,255,.4);font-size:16px;cursor:pointer;background:none;border:none;padding:0 4px;}
+
+/* NAV */
+nav{position:fixed;top:44px;left:0;width:100%;height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:rgba(255,255,255,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--g100);z-index:900;transition:top .3s;}
+.nav-logo{height:48px;cursor:pointer;}
+.nav-right{display:flex;align-items:center;gap:6px;}
+.nav-link{padding:8px 14px;border:none;background:none;font-size:14px;font-weight:600;color:var(--g500);cursor:pointer;border-radius:var(--r-sm);font-family:inherit;text-decoration:none;transition:all .2s;}
+.nav-link:hover{background:var(--g100);color:var(--g900);}
+.nav-cta{padding:9px 18px;border:none;background:var(--pink);color:#fff;font-size:13px;font-weight:700;border-radius:var(--r-sm);cursor:pointer;font-family:inherit;text-decoration:none;transition:all .2s;box-shadow:0 4px 12px rgba(232,98,138,.25);}
+.nav-cta:hover{background:#d4577b;transform:translateY(-1px);}
+
+/* HERO */
+.hero{padding:140px 24px 80px;background:linear-gradient(160deg,var(--white) 0%,var(--pink-ultra) 50%,var(--pink-pale) 100%);position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(232,98,138,.08) 0%,transparent 70%);top:-200px;right:-100px;pointer-events:none;}
+.hero::after{content:'';position:absolute;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(232,98,138,.06) 0%,transparent 70%);bottom:-100px;left:-80px;pointer-events:none;}
+
+/* SCROLL REVEAL */
+.reveal{opacity:0;transform:translateY(30px);transition:opacity .7s var(--ease),transform .7s var(--ease);}
+.reveal.visible{opacity:1;transform:translateY(0);}
+.hero-inner{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;}
+.hero-chip{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:var(--r-full);background:var(--white);color:var(--pink);font-size:12px;font-weight:700;margin-bottom:24px;box-shadow:0 2px 12px rgba(232,98,138,.12);border:1px solid var(--pink-soft);animation:fadeUp .5s var(--ease) .05s both;}
+.chip-dot{width:6px;height:6px;border-radius:50%;background:var(--pink);animation:pulse 1.2s infinite;}
+.hero-title{font-size:clamp(2rem,5vw,3.2rem);font-weight:900;color:var(--g900);line-height:1.25;letter-spacing:-.04em;margin-bottom:20px;animation:fadeUp .5s var(--ease) .15s both;}
+.hero-title .acc{color:var(--pink);}
+.hero-desc{font-size:clamp(.95rem,1.8vw,1.05rem);color:var(--g500);line-height:1.85;margin-bottom:32px;animation:fadeUp .5s var(--ease) .25s both;}
+.btn-main{display:inline-block;padding:16px 36px;border:none;background:var(--pink);color:#fff;font-size:16px;font-weight:800;border-radius:var(--r-full);cursor:pointer;font-family:inherit;box-shadow:0 8px 28px rgba(232,98,138,.3);transition:all .25s var(--ease);text-decoration:none;animation:fadeUp .5s var(--ease) .35s both;}
+.btn-main:hover{transform:translateY(-3px);box-shadow:0 14px 36px rgba(232,98,138,.35);background:#d4577b;}
+.hero-stats{display:flex;gap:24px;margin-top:36px;animation:fadeUp .5s var(--ease) .45s both;}
+.stat{display:flex;flex-direction:column;}
+.stat strong{font-size:1.1rem;font-weight:900;color:var(--pink);letter-spacing:-.02em;}
+.stat span{font-size:12px;color:var(--g400);font-weight:500;margin-top:2px;}
+
+/* PHONE MOCKUP */
+.hero-mockup{display:flex;justify-content:center;animation:fadeUp .6s var(--ease) .3s both;}
+.phone{width:260px;height:520px;background:linear-gradient(145deg,#2a2a3a,#1a1a2a);border-radius:40px;padding:10px;box-shadow:0 32px 80px rgba(25,31,40,.3),0 0 0 1px rgba(255,255,255,.1) inset;animation:float 4s ease-in-out infinite;}
+.phone-screen{background:var(--white);border-radius:32px;height:100%;overflow:hidden;display:flex;flex-direction:column;}
+.phone-notch{width:90px;height:26px;background:#1a1a2a;border-radius:0 0 16px 16px;margin:0 auto;}
+.phone-header{padding:12px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--g100);}
+.phone-avatar{width:28px;height:28px;border-radius:50%;background:var(--pink-soft);display:flex;align-items:center;justify-content:center;font-size:12px;}
+.phone-name{font-size:11px;font-weight:800;color:var(--g900);}
+.phone-body{flex:1;padding:12px;overflow:hidden;}
+.phone-img{width:100%;aspect-ratio:1;border-radius:12px;margin-bottom:10px;overflow:hidden;}
+.phone-img img{width:100%;height:100%;object-fit:cover;}
+.phone-caption{font-size:10px;color:var(--g700);line-height:1.7;}
+.phone-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;}
+.phone-tag{font-size:9px;padding:2px 8px;border-radius:var(--r-full);background:var(--pink-pale);color:var(--pink);font-weight:600;}
+
+/* SECTION COMMON */
+.sec{padding:80px 24px;}
+.sec-inner{max-width:1000px;margin:0 auto;}
+.sec-ey{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--pink);margin-bottom:10px;}
+.sec-title{font-size:clamp(1.5rem,3.5vw,2.1rem);font-weight:900;color:var(--g900);line-height:1.3;letter-spacing:-.025em;margin-bottom:40px;}
+
+/* HOW */
+.how-sec{background:var(--g50);}
+.how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+.how-card{background:var(--white);border-radius:var(--r-xl);padding:36px 28px;border:1px solid var(--g200);text-align:center;transition:all .35s var(--ease);box-shadow:0 2px 12px rgba(0,0,0,.03);}
+.how-card:hover{transform:translateY(-8px);box-shadow:0 20px 48px rgba(0,0,0,.1);border-color:var(--pink-soft);}
+.how-icon{width:56px;height:56px;border-radius:var(--r-lg);background:var(--pink-pale);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;}
+.how-icon svg{width:26px;height:26px;stroke:var(--pink);stroke-width:2;fill:none;}
+.how-card h3{font-size:1rem;font-weight:800;color:var(--g900);margin-bottom:8px;}
+.how-card p{font-size:.85rem;color:var(--g500);line-height:1.75;}
+.how-num{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--pink);color:#fff;font-size:11px;font-weight:800;margin-bottom:12px;}
+
+/* FEATURES */
+.feat-sec{background:var(--white);}
+.feat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;}
+.feat-card{background:var(--white);border-radius:var(--r-xl);padding:32px 26px;border:1px solid var(--g200);transition:all .35s var(--ease);box-shadow:0 2px 12px rgba(0,0,0,.03);}
+.feat-card:hover{transform:translateY(-6px);box-shadow:0 16px 40px rgba(0,0,0,.09);border-color:var(--pink-soft);}
+.feat-icon{width:48px;height:48px;border-radius:var(--r-lg);background:var(--pink-pale);display:flex;align-items:center;justify-content:center;margin-bottom:14px;}
+.feat-name{font-size:.95rem;font-weight:800;color:var(--g900);margin-bottom:8px;}
+.feat-desc{font-size:.83rem;color:var(--g500);line-height:1.8;}
+
+/* PROOF */
+.proof-sec{background:var(--white);}
+.ba-wrap{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:40px;}
+.ba-card{border-radius:var(--r-xl);padding:28px 24px;border:1px solid var(--g200);}
+.ba-before{background:var(--g50);}
+.ba-after{background:var(--pink-ultra);border-color:var(--pink-soft);}
+.ba-label{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:3px 10px;border-radius:var(--r-full);margin-bottom:14px;}
+.ba-before .ba-label{background:var(--g200);color:var(--g500);}
+.ba-after .ba-label{background:var(--pink);color:#fff;}
+.ba-card p{font-size:.88rem;color:var(--g700);line-height:1.85;}
+.reviews{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;}
+.review-card{background:var(--white);border-radius:var(--r-xl);padding:28px 24px;border:1px solid var(--g200);box-shadow:0 2px 12px rgba(0,0,0,.03);transition:all .3s var(--ease);}
+.review-card:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(0,0,0,.07);}
+.review-stars{color:#FBBF24;font-size:13px;margin-bottom:10px;letter-spacing:2px;}
+.review-text{font-size:.88rem;color:var(--g700);line-height:1.85;margin-bottom:14px;}
+.review-author{font-size:.8rem;font-weight:800;color:var(--g900);}
+
+/* PRICE */
+.price-sec{background:var(--g50);}
+.price-compare{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:700px;margin:0 auto 40px;}
+.price-col{background:var(--white);border-radius:var(--r-xl);padding:32px 28px;border:1px solid var(--g200);text-align:center;}
+.price-col.highlight{border-color:var(--pink);box-shadow:0 8px 32px rgba(232,98,138,.15);position:relative;}
+.price-badge{position:absolute;top:-13px;left:50%;transform:translateX(-50%);padding:4px 16px;background:var(--pink);color:#fff;font-size:11px;font-weight:700;border-radius:var(--r-full);white-space:nowrap;}
+.price-label{font-size:.85rem;font-weight:700;color:var(--g500);margin-bottom:8px;}
+.price-amount{font-size:2.2rem;font-weight:900;color:var(--g900);letter-spacing:-.04em;margin-bottom:4px;}
+.price-amount span{font-size:.85rem;color:var(--g400);font-weight:500;}
+.price-amount del{font-size:1rem;color:var(--g400);font-weight:500;}
+.price-list{list-style:none;padding:0;margin:16px 0 24px;text-align:left;}
+.price-list li{padding:7px 0;font-size:.85rem;color:var(--g700);display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--g100);}
+.price-list li:last-child{border-bottom:none;}
+.check{color:var(--pink);font-weight:700;}
+.price-vs{max-width:700px;margin:0 auto;background:var(--white);border-radius:var(--r-xl);border:1px solid var(--g200);overflow:hidden;}
+.vs-row{display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid var(--g100);font-size:.82rem;}
+.vs-row:last-child{border-bottom:none;}
+.vs-row.header{background:var(--g50);font-weight:800;color:var(--g900);}
+.vs-cell{padding:14px 16px;display:flex;align-items:center;}
+.vs-cell.center{justify-content:center;font-weight:700;}
+.vs-cell.pink{color:var(--pink);font-weight:800;}
+
+/* CTA */
+.cta-sec{padding:0 24px 80px;}
+.cta-box{max-width:1000px;margin:0 auto;background:linear-gradient(135deg,#1a0a2e,var(--g900),#2d0a1e);border-radius:var(--r-xl);padding:72px 40px;text-align:center;position:relative;overflow:hidden;}
+.cta-box::before{content:'';position:absolute;width:400px;height:400px;border-radius:50%;background:var(--pink);opacity:.1;top:-150px;right:-80px;}
+.cta-box h2{font-size:clamp(1.4rem,3vw,2rem);font-weight:900;color:#fff;margin-bottom:12px;line-height:1.3;position:relative;z-index:1;}
+.cta-box p{font-size:.88rem;color:rgba(255,255,255,.5);margin-bottom:32px;position:relative;z-index:1;}
+.btn-cta{display:inline-block;padding:16px 36px;border:none;background:var(--pink);color:#fff;font-size:16px;font-weight:800;border-radius:var(--r-full);cursor:pointer;font-family:inherit;box-shadow:0 8px 28px rgba(232,98,138,.35);transition:all .25s var(--ease);text-decoration:none;position:relative;z-index:1;}
+.btn-cta:hover{transform:translateY(-3px);box-shadow:0 14px 40px rgba(232,98,138,.4);}
+
+/* FOOTER */
+footer{background:var(--g50);border-top:1px solid var(--g200);padding:48px 24px 32px;}
+.footer-inner{max-width:1000px;margin:0 auto;display:flex;justify-content:space-between;align-items:flex-start;gap:32px;flex-wrap:wrap;}
+.footer-logo{height:40px;opacity:.5;margin-bottom:12px;}
+.footer-info{font-size:11px;color:var(--g400);line-height:2.2;}
+.footer-links{display:flex;gap:20px;}
+.footer-links a{font-size:12px;font-weight:600;color:var(--g400);text-decoration:none;transition:color .2s;}
+.footer-links a:hover{color:var(--g900);}
+.footer-copy{font-size:11px;color:var(--g400);text-align:center;margin-top:32px;padding-top:24px;border-top:1px solid var(--g200);max-width:1000px;margin-left:auto;margin-right:auto;}
+
+/* STICKY CTA (mobile) */
+.sticky-cta{position:fixed;bottom:0;left:0;width:100%;padding:12px 20px;background:rgba(255,255,255,.95);backdrop-filter:blur(12px);border-top:1px solid var(--g200);z-index:800;display:none;text-align:center;}
+.sticky-cta a{display:block;padding:14px;background:var(--pink);color:#fff;font-size:15px;font-weight:800;border-radius:var(--r-md);text-decoration:none;box-shadow:0 4px 16px rgba(232,98,138,.3);}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+  .hero-inner{grid-template-columns:1fr;text-align:center;}
+  .hero-stats{justify-content:center;}
+  .phone{width:180px;height:360px;}
+  .how-grid{grid-template-columns:1fr;}
+  .feat-grid{grid-template-columns:1fr;}
+  .ba-wrap{grid-template-columns:1fr;}
+  .price-compare{grid-template-columns:1fr;}
+  .sticky-cta{display:block;}
+  .cta-box{padding:48px 24px;}
+  .footer-inner{flex-direction:column;align-items:center;text-align:center;}
+}
+</style>
+</head>
+<body>
+<!-- AUTH PORTAL -->
+<div id="lumi-auth-portal" class="portal-overlay">
+    <div class="portal-sheet">
+        <button class="portal-x" onclick="resetToInitialLanding()">✕</button>
+        <div style="text-align:center;margin-bottom:16px;">
+            <img src="https://i.ibb.co/ht8MxhY/img-1.png" alt="lumi" style="height:80px;display:block;margin:0 auto;">
+        </div>
+        <div class="portal-tabs">
+            <span id="tab-login-btn" class="p-tab active" onclick="setPortalMode('login')">로그인</span>
+            <span id="tab-signup-btn" class="p-tab" onclick="setPortalMode('signup')">회원가입</span>
+        </div>
+        <!-- 로그인 -->
+        <div id="lumi-login-view">
+            <p style="font-size:.8rem;color:var(--g400);text-align:center;margin-bottom:14px;">이메일과 비밀번호를 입력하세요.</p>
+            <input type="email" id="id-login-field" placeholder="이메일 주소" class="inp" oninput="clearFieldErr(this.id,'login-email-err')">
+            <div id="login-email-err" class="field-err hidden"></div>
+            <input type="password" id="pw-login-field" placeholder="비밀번호" class="inp" oninput="clearFieldErr(this.id,'login-pw-err')">
+            <div id="login-pw-err" class="field-err hidden"></div>
+            <button class="btn-portal" onclick="handleLoginAction()">로그인</button>
+            <div style="display:flex;align-items:center;gap:10px;margin:16px 0 4px;">
+                <div style="flex:1;height:1px;background:var(--g100);"></div>
+                <span style="font-size:11px;color:var(--g400);font-weight:600;">계정 찾기</span>
+                <div style="flex:1;height:1px;background:var(--g100);"></div>
+            </div>
+            <p style="text-align:center;font-size:13px;color:#999;">
+                <button onclick="openFindId()" style="background:none;border:none;color:var(--g400);font-size:13px;cursor:pointer;padding:4px 8px;border-radius:6px;transition:background .2s;" onmouseover="this.style.background='var(--g100)'" onmouseout="this.style.background='none'">아이디 찾기</button>
+                <span style="color:var(--g200);">|</span>
+                <button onclick="openForgotPassword()" style="background:none;border:none;color:var(--pink);font-size:13px;cursor:pointer;font-weight:700;padding:4px 8px;border-radius:6px;transition:background .2s;" onmouseover="this.style.background='var(--pink-pale)'" onmouseout="this.style.background='none'">비밀번호 찾기</button>
+            </p>
+        </div>
+        <!-- 아이디 찾기 -->
+        <div id="lumi-findid-view" class="hidden">
+            <p class="portal-ttl">아이디를 찾아요.</p>
+            <p class="portal-sub">이름, 전화번호, 생년월일을 입력해주세요.</p>
+            <div id="findid-step-1">
+                <input type="text" id="findid-name-field" placeholder="대표님 성함" class="inp" oninput="clearFieldErr(this.id,'findid-name-err')">
+                <div id="findid-name-err" class="field-err hidden"></div>
+                <input type="tel" id="findid-phone-field" placeholder="휴대폰 번호 (숫자만)" class="inp" oninput="clearFieldErr(this.id,'findid-phone-err')">
+                <div id="findid-phone-err" class="field-err hidden"></div>
+                <input type="text" id="findid-bd-field" placeholder="생년월일 (예: 1990-05-15)" class="inp" maxlength="10" oninput="formatBirthdate(this);clearFieldErr(this.id,'findid-bd-err')">
+                <div id="findid-bd-err" class="field-err hidden"></div>
+                <button class="btn-portal" onclick="handleFindId()">아이디 찾기</button>
+            </div>
+            <div id="findid-step-2" class="hidden">
+                <div style="background:var(--pink-pale);border-radius:var(--r-lg);padding:20px;text-align:center;margin-bottom:16px;">
+                    <p style="font-size:.83rem;color:var(--g500);margin-bottom:6px;">가입된 이메일 주소</p>
+                    <p id="findid-result" style="font-size:1.1rem;font-weight:900;color:var(--g900);"></p>
+                </div>
+                <button class="btn-portal" onclick="setPortalMode('login')">로그인하러 가기</button>
+                <button class="btn-portal" onclick="openForgotPassword()" style="margin-top:8px;background:var(--g100);color:var(--g700);box-shadow:none;">비밀번호도 잊으셨나요?</button>
+            </div>
+            <p style="text-align:center;margin-top:12px;font-size:13px;color:#999;">
+                <button onclick="setPortalMode('login')" style="background:none;border:none;color:#999;font-size:13px;cursor:pointer;text-decoration:underline;padding:0;">로그인으로 돌아가기</button>
+            </p>
+        </div>
+        <!-- 비밀번호 찾기 -->
+        <div id="lumi-forgot-view" class="hidden">
+            <p class="portal-ttl">비밀번호를 찾아요.</p>
+            <p class="portal-sub">가입한 이메일로 인증번호를 보내드릴게요.</p>
+            <div id="forgot-step-1">
+                <input type="email" id="forgot-email-field" placeholder="이메일 주소" class="inp" oninput="clearFieldErr(this.id,'forgot-email-err')">
+                <div id="forgot-email-err" class="field-err hidden"></div>
+                <button class="btn-portal" onclick="sendForgotOtp()">인증번호 받기</button>
+            </div>
+            <div id="forgot-step-2" class="hidden">
+                <input type="text" id="forgot-otp-field" placeholder="000000" class="inp inp-otp" maxlength="6" oninput="clearFieldErr(this.id,'forgot-otp-err')">
+                <div id="forgot-otp-err" class="field-err hidden"></div>
+                <button class="btn-portal" onclick="verifyForgotOtp()">확인</button>
+                <p style="text-align:center;margin-top:12px;font-size:13px;color:#999;"><button onclick="sendForgotOtp()" style="background:none;border:none;color:#FF6B9D;font-size:13px;cursor:pointer;text-decoration:underline;padding:0;">재전송</button></p>
+            </div>
+            <div id="forgot-step-3" class="hidden">
+                <input type="password" id="forgot-pw-field" placeholder="새 비밀번호 (특수문자 포함 10자 이상)" class="inp" oninput="clearFieldErr(this.id,'forgot-pw-err')">
+                <div id="forgot-pw-err" class="field-err hidden"></div>
+                <input type="password" id="forgot-pw-confirm-field" placeholder="새 비밀번호 확인" class="inp" style="margin-top:8px;" oninput="clearFieldErr(this.id,'forgot-pw-confirm-err')">
+                <div id="forgot-pw-confirm-err" class="field-err hidden"></div>
+                <button class="btn-portal" onclick="resetForgotPassword()">비밀번호 변경</button>
+            </div>
+            <p style="text-align:center;margin-top:12px;font-size:13px;color:#999;"><button onclick="setPortalMode('login')" style="background:none;border:none;color:#999;font-size:13px;cursor:pointer;text-decoration:underline;padding:0;">로그인으로 돌아가기</button></p>
+        </div>
+        <!-- 회원가입 -->
+        <div id="lumi-signup-view" class="hidden">
+            <!-- 섹션 1: 기본 정보 -->
+            <div class="reg-section">
+                <p class="reg-section-label">기본 정보</p>
+                <div class="reg-field">
+                    <label class="reg-lbl">이름</label>
+                    <input type="text" id="ceo-name-field" placeholder="대표님 성함" class="inp reg-inp" oninput="clearFieldErr(this.id,'ceo-name-err')">
+                    <div id="ceo-name-err" class="field-err hidden"></div>
+                </div>
+                <div class="reg-field">
+                    <label class="reg-lbl">주민번호 <span style="font-weight:400;color:var(--g400);font-size:11px;">생년월일 + 성별 확인용</span></label>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <input type="text" id="jumin-front" placeholder="950906" class="inp reg-inp" style="flex:1;letter-spacing:4px;text-align:center;font-weight:700;margin-bottom:0;" maxlength="6" oninput="onJuminInput(this)" inputmode="numeric">
+                        <span style="color:var(--g400);font-weight:700;font-size:1.1rem;flex-shrink:0;">-</span>
+                        <input type="password" id="jumin-back" placeholder="●" class="inp reg-inp" style="width:48px;text-align:center;font-size:1.2rem;margin-bottom:0;" maxlength="1" oninput="onJuminBackInput(this)" inputmode="numeric">
+                        <span style="color:var(--g300);font-size:.85rem;flex-shrink:0;letter-spacing:2px;">●●●●●●</span>
+                    </div>
+                    <div id="reg-bd-err" class="field-err hidden"></div>
+                </div>
+            </div>
+
+            <!-- 섹션 2: 계정 정보 -->
+            <div class="reg-section">
+                <p class="reg-section-label">계정 정보</p>
+                <div class="reg-field">
+                    <label class="reg-lbl">이메일</label>
+                    <div style="display:flex;border:1.5px solid var(--g200);border-radius:10px;overflow:hidden;background:var(--g50);margin-bottom:0;">
+                        <input type="text" id="id-reg-local" placeholder="아이디" class="inp" style="border:none;background:transparent;border-radius:0;flex:1;min-width:0;margin:0;height:46px;" oninput="clearFieldErr('id-reg-field','reg-email-err')">
+                        <span style="display:flex;align-items:center;padding:0 4px;color:var(--g400);font-size:.85rem;flex-shrink:0;">@</span>
+                        <select id="id-reg-domain-select" class="inp" style="border:none;background:transparent;border-radius:0;border-left:1.5px solid var(--g200);width:120px;margin:0;height:46px;font-size:13px;" onchange="toggleEmailDomain(this.value)">
+                            <option value="gmail.com">gmail.com</option>
+                            <option value="naver.com">naver.com</option>
+                            <option value="kakao.com">kakao.com</option>
+                            <option value="daum.net">daum.net</option>
+                            <option value="nate.com">nate.com</option>
+                            <option value="hanmail.net">hanmail.net</option>
+                            <option value="icloud.com">icloud.com</option>
+                            <option value="direct">직접 입력</option>
+                        </select>
+                    </div>
+                    <input type="text" id="id-reg-domain-direct" placeholder="도메인 직접 입력 (예: company.com)" class="inp" style="display:none;margin-top:6px;margin-bottom:0;" oninput="clearFieldErr('id-reg-field','reg-email-err')">
+                    <input type="hidden" id="id-reg-field">
+                    <button onclick="requestSignupOtp()" id="otp-req-btn" style="width:100%;height:44px;background:var(--pink);color:#fff;border:none;border-radius:10px;font-size:.88rem;font-weight:700;cursor:pointer;margin-top:8px;font-family:inherit;">인증번호 받기</button>
+                    <div id="reg-email-err" class="field-err hidden"></div>
+                    <div id="otp-row" class="hidden" style="margin-top:8px;">
+                        <div style="display:flex;gap:8px;align-items:center;">
+                            <input type="text" id="id-otp-field" placeholder="인증번호 6자리" class="inp" maxlength="6" style="letter-spacing:6px;font-size:1rem;font-weight:700;flex:1;margin-bottom:0;height:46px;" oninput="onOtpInput(this)">
+                            <span id="otp-verified-badge" class="hidden" style="color:#22c55e;font-weight:700;font-size:.85rem;white-space:nowrap;">✓ 인증완료</span>
+                        </div>
+                        <div id="otp-err" class="field-err hidden"></div>
+                        <p style="font-size:11px;color:#aaa;margin-top:4px;">이메일을 못 받으셨나요? <button onclick="requestSignupOtp()" style="background:none;border:none;color:var(--pink);font-size:11px;cursor:pointer;text-decoration:underline;padding:0;font-family:inherit;">재전송</button></p>
+                    </div>
+                </div>
+                <div class="reg-field">
+                    <label class="reg-lbl">비밀번호</label>
+                    <input type="password" id="id-pw-field" placeholder="특수문자 포함 10자 이상" class="inp reg-inp" oninput="clearFieldErr(this.id,'pw-err')">
+                    <div id="pw-err" class="field-err hidden"></div>
+                    <input type="password" id="id-pw-confirm-field" placeholder="비밀번호 확인" class="inp reg-inp" style="margin-top:6px;" oninput="clearFieldErr(this.id,'pw-confirm-err')">
+                    <div id="pw-confirm-err" class="field-err hidden"></div>
+                </div>
+            </div>
+
+            <!-- 섹션 3: 연락처 & 매장 -->
+            <div class="reg-section">
+                <p class="reg-section-label">연락처 & 매장</p>
+                <div class="reg-field">
+                    <label class="reg-lbl">휴대폰 번호</label>
+                    <input type="tel" id="ph-reg-field" placeholder="숫자만 입력" class="inp reg-inp" oninput="clearFieldErr(this.id,'reg-ph-err')">
+                    <div id="reg-ph-err" class="field-err hidden"></div>
+                </div>
+                <div class="reg-field">
+                    <label class="reg-lbl">인스타그램 아이디</label>
+                    <input type="text" id="store-insta-field" placeholder="@lumi__it" class="inp reg-inp" oninput="clearFieldErr(this.id,'store-insta-err')">
+                    <div id="store-insta-err" class="field-err hidden"></div>
+                </div>
+                <div class="reg-field">
+                    <label class="reg-lbl">매장 이름</label>
+                    <input type="text" id="store-name-field" placeholder="카페루미" class="inp reg-inp" oninput="clearFieldErr(this.id,'store-name-err')">
+                    <div id="store-name-err" class="field-err hidden"></div>
+                </div>
+            </div>
+
+            <!-- 숨겨진 기본값 필드 -->
+            <input type="hidden" id="store-desc-field" value="">
+            <input type="hidden" id="store-region-field" value="">
+            <input type="hidden" id="biz-cat-select" value="cafe">
+            <input type="hidden" id="caption-tone-field" value="">
+            <input type="hidden" id="tag-style-select" value="mid">
+            <input type="hidden" id="dash-biz-cat" value="cafe">
+            <input type="hidden" id="dash-caption-tone" value="">
+            <input type="hidden" id="dash-tag-style" value="mid">
+
+            <!-- 약관 동의 체크박스 -->
+            <div style="margin-bottom:4px;">
+                <!-- 전체 동의 -->
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:12px 14px;background:var(--g50);border-radius:var(--r-md);border:1.5px solid var(--g200);margin-bottom:10px;">
+                    <input type="checkbox" id="agree-all" style="accent-color:var(--pink);width:18px;height:18px;flex-shrink:0;" onchange="toggleAllAgree(this.checked)">
+                    <span style="font-size:.9rem;font-weight:800;color:var(--g900);">전체 동의하기</span>
+                </label>
+                <div style="display:flex;flex-direction:column;gap:8px;padding:0 4px;">
+                    <!-- 필수 항목들 -->
+                    <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:.83rem;color:var(--g700);">
+                        <input type="checkbox" id="agree-terms" style="margin-top:2px;accent-color:var(--pink);width:16px;height:16px;flex-shrink:0;" onchange="syncAllAgree()">
+                        <span>(필수) <a href="/terms" target="_blank" style="color:var(--pink);font-weight:700;text-decoration:underline;">이용약관</a> 동의</span>
+                    </label>
+                    <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:.83rem;color:var(--g700);">
+                        <input type="checkbox" id="agree-privacy" style="margin-top:2px;accent-color:var(--pink);width:16px;height:16px;flex-shrink:0;" onchange="syncAllAgree()">
+                        <span>(필수) <a href="/privacy" target="_blank" style="color:var(--pink);font-weight:700;text-decoration:underline;">개인정보 처리방침</a> 동의</span>
+                    </label>
+                    <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:.83rem;color:var(--g700);">
+                        <input type="checkbox" id="agree-refund" style="margin-top:2px;accent-color:var(--pink);width:16px;height:16px;flex-shrink:0;" onchange="syncAllAgree()">
+                        <span>(필수) 유료 서비스 이용 및 <a href="/terms#refund" target="_blank" style="color:var(--pink);font-weight:700;text-decoration:underline;">환불 정책</a> 동의</span>
+                    </label>
+                    <!-- 선택 항목 -->
+                    <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:.83rem;color:var(--g700);padding-top:4px;border-top:1px solid var(--g100);margin-top:2px;">
+                        <input type="checkbox" id="agree-marketing" style="margin-top:2px;accent-color:var(--pink);width:16px;height:16px;flex-shrink:0;" onchange="syncAllAgree()">
+                        <span>(선택) 마케팅 정보 수신 동의</span>
+                    </label>
+                </div>
+            </div>
+            <div id="agree-err" class="field-err hidden">필수 항목(이용약관, 개인정보 처리방침, 환불 정책)에 모두 동의해 주세요.</div>
+
+            <button class="btn-portal" onclick="finishLumiSignup()" style="background:var(--pink);">가입 완료</button>
+        </div>
+    </div>
+</div>
+
+
+<!-- 구독 취소 모달 -->
+<div id="cancel-modal" style="display:none;position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:20px;">
+    <div style="background:#fff;border-radius:24px;padding:32px;width:100%;max-width:380px;box-shadow:0 24px 80px rgba(0,0,0,.18);">
+        <div style="font-size:2rem;text-align:center;margin-bottom:12px;">😢</div>
+        <h3 style="font-size:1rem;font-weight:900;color:#191F28;text-align:center;margin-bottom:8px;">정말 구독을 취소하시겠어요?</h3>
+        <div id="cancel-modal-info" style="background:#F9FAFB;border-radius:12px;padding:14px 16px;margin-bottom:16px;text-align:center;">
+            <div style="font-size:.78rem;color:#8B95A1;margin-bottom:6px;">확인 중...</div>
+        </div>
+        <p style="font-size:12px;font-weight:700;color:#6B7684;margin-bottom:8px;">취소 사유를 알려주시겠어요? <span style="font-weight:400;">(선택)</span></p>
+        <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:20px;">
+            <label style="display:flex;align-items:center;gap:10px;padding:11px 14px;border:1.5px solid #E8ECF0;border-radius:12px;cursor:pointer;font-size:.85rem;color:#333D4B;transition:border-color .2s;" onclick="selectCancelReason(this)">
+                <input type="radio" name="cancel-reason" value="비용 부담" style="accent-color:#FF6B9D;"> 비용이 부담돼요
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;padding:11px 14px;border:1.5px solid #E8ECF0;border-radius:12px;cursor:pointer;font-size:.85rem;color:#333D4B;transition:border-color .2s;" onclick="selectCancelReason(this)">
+                <input type="radio" name="cancel-reason" value="기능 부족" style="accent-color:#FF6B9D;"> 필요한 기능이 없어요
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;padding:11px 14px;border:1.5px solid #E8ECF0;border-radius:12px;cursor:pointer;font-size:.85rem;color:#333D4B;transition:border-color .2s;" onclick="selectCancelReason(this)">
+                <input type="radio" name="cancel-reason" value="사용 빈도 낮음" style="accent-color:#FF6B9D;"> 자주 사용하지 않아요
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;padding:11px 14px;border:1.5px solid #E8ECF0;border-radius:12px;cursor:pointer;font-size:.85rem;color:#333D4B;transition:border-color .2s;" onclick="selectCancelReason(this)">
+                <input type="radio" name="cancel-reason" value="기타" style="accent-color:#FF6B9D;"> 기타
+            </label>
+        </div>
+        <button onclick="confirmCancelSubscription()" style="width:100%;padding:13px;background:#ff4d4d;color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:8px;">구독 취소 확정</button>
+        <button onclick="closeCancelModal()" style="width:100%;padding:13px;background:#F2F4F6;color:#6B7684;border:none;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">계속 이용할게요</button>
+    </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="lumi-dashboard-node" class="dash-layer">
+    <div class="dash-topbar">
+        <img src="https://i.ibb.co/ht8MxhY/img-1.png" class="dash-topbar-logo" alt="lumi">
+        <button class="dash-back" onclick="resetToInitialLanding()">홈으로</button>
+    </div>
+    <div class="dash-body">
+        <!-- 페이월 오버레이 -->
+        <div id="lumi-paywall" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,255,255,.97);z-index:9999;display:none;align-items:center;justify-content:center;flex-direction:column;padding:40px 24px;text-align:center;">
+            <div style="font-size:48px;margin-bottom:16px;">🔒</div>
+            <h2 id="paywall-title" style="font-size:1.4rem;font-weight:900;color:#1a1a2e;margin-bottom:8px;">무료체험이 종료됐어요.</h2>
+            <p id="paywall-desc" style="font-size:.9rem;color:#666;margin-bottom:32px;line-height:1.6;">lumi를 계속 사용하려면 구독을 시작해주세요.<br>월 49,000원으로 인스타그램 자동화를 시작하세요.</p>
+            <button onclick="location.href='#price-sec'" style="background:var(--pink);color:#fff;border:none;border-radius:14px;padding:16px 40px;font-size:1rem;font-weight:700;cursor:pointer;margin-bottom:12px;">구독 시작하기</button>
+            <button onclick="lumiLogout()" style="background:none;border:none;color:#999;font-size:.85rem;cursor:pointer;">로그아웃</button>
+        </div>
+
+        <div class="dash-hello">
+            <h2 id="dash-store-name">안녕하세요.</h2>
+            <p>오늘도 lumi가 함께해요.</p>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+                <span id="post-remain-badge" style="font-size:.75rem;background:#fff0f6;color:var(--pink);padding:4px 10px;border-radius:99px;font-weight:700;"></span>
+                <button onclick="lumiLogout()" style="background:none;border:1px solid #eee;border-radius:8px;padding:6px 14px;font-size:12px;color:#999;cursor:pointer;">로그아웃</button>
+                <button id="cancel-sub-btn" onclick="cancelSubscription()" style="display:none;background:none;border:1px solid #ffcccc;border-radius:8px;padding:6px 14px;font-size:12px;color:#ff4d4d;cursor:pointer;font-weight:600;font-family:inherit;">구독 취소</button>
+            </div>
+        </div>
+        <!-- Instagram 연동 상태 -->
+        <div id="ig-connect-banner" style="display:none;background:#fff0f6;border:1.5px solid var(--pink);border-radius:var(--r-xl);padding:18px 20px;margin-bottom:16px;">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+                <div style="flex:1;">
+                    <p style="font-size:.88rem;font-weight:800;color:var(--pink);margin-bottom:6px;">📸 Instagram 연동이 필요해요</p>
+                    <p style="font-size:.78rem;color:var(--g600);line-height:1.7;margin-bottom:12px;">사진을 올리면 lumi가 캡션을 써서 <strong>인스타그램에 자동으로 게시</strong>해드려요.<br>연동하지 않으면 게시물 업로드가 불가능해요.</p>
+                    <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:14px;">
+                        <p style="font-size:.75rem;color:var(--g500);">✅ 연동하면 이런 게 가능해요</p>
+                        <p style="font-size:.75rem;color:var(--g500);">　• 사진 업로드 → AI 캡션 자동 생성 → 인스타 자동 게시</p>
+                        <p style="font-size:.75rem;color:var(--g500);">　• 예약 게시, 댓글/DM 자동 응답 (프로 플랜)</p>
+                    </div>
+                </div>
+            </div>
+            <button onclick="connectInstagram()" style="width:100%;background:var(--pink);color:#fff;border:none;border-radius:var(--r-md);padding:13px;font-size:.88rem;font-weight:700;cursor:pointer;font-family:inherit;">Instagram 연동하기 →</button>
+            <p style="font-size:.72rem;color:var(--g400);text-align:center;margin-top:8px;">비즈니스 또는 크리에이터 계정만 연동 가능해요.</p>
+        </div>
+        <div id="ig-connected-badge" style="display:none;background:#f0fff4;border:1.5px solid #52c41a;border-radius:var(--r-xl);padding:14px 18px;margin-bottom:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:1.1rem;">✅</span>
+                    <div>
+                        <p style="font-size:.85rem;font-weight:800;color:#389e0d;margin-bottom:2px;">Instagram 연동 완료</p>
+                        <p style="font-size:.75rem;color:#52c41a;">게시물이 자동으로 올라가요</p>
+                    </div>
+                </div>
+                <button onclick="disconnectInstagram()" style="background:none;border:1px solid #ffb3b3;border-radius:99px;padding:5px 12px;font-size:11px;font-weight:700;color:#ff4d4d;cursor:pointer;white-space:nowrap;font-family:inherit;transition:all .2s;" onmouseover="this.style.background='#fff5f5'" onmouseout="this.style.background='none'">연동 끊기</button>
+            </div>
+        </div>
+
+        <!-- 프로필 설정 -->
+        <div style="background:var(--white);border-radius:var(--r-xl);padding:20px 22px;border:1px solid var(--g200);box-shadow:var(--sh-xs);margin-bottom:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:1.1rem;">👤</span>
+                    <p style="font-size:.92rem;font-weight:800;color:var(--g900);">프로필 설정</p>
+                </div>
+                <button id="profile-edit-btn" onclick="toggleProfileEdit()" style="font-size:12px;font-weight:700;color:var(--pink);background:var(--pink-pale);border:none;border-radius:99px;padding:5px 14px;cursor:pointer;">수정</button>
+            </div>
+            <!-- 보기 모드 -->
+            <div id="profile-view-mode">
+                <div style="display:flex;flex-direction:column;gap:8px;font-size:.85rem;color:var(--g700);">
+                    <div style="display:flex;justify-content:space-between;"><span style="color:var(--g400);">매장명</span><span id="profile-view-store">-</span></div>
+                    <div style="display:flex;justify-content:space-between;"><span style="color:var(--g400);">인스타그램</span><span id="profile-view-insta">-</span></div>
+                    <div style="display:flex;justify-content:space-between;"><span style="color:var(--g400);">매장 소개</span><span id="profile-view-desc" style="max-width:60%;text-align:right;line-height:1.5;">-</span></div>
+                    <div style="display:flex;justify-content:space-between;"><span style="color:var(--g400);">업종</span><span id="profile-view-bizcat">-</span></div>
+                    <div style="display:flex;justify-content:space-between;"><span style="color:var(--g400);">글 말투</span><span id="profile-view-tone">-</span></div>
+                    <div style="display:flex;justify-content:space-between;"><span style="color:var(--g400);">해시태그</span><span id="profile-view-tagstyle">-</span></div>
+                    <div style="display:flex;justify-content:space-between;"><span style="color:var(--g400);">커스텀</span><span id="profile-view-custom" style="color:var(--g400);">등록안됨</span></div>
+                </div>
+            </div>
+            <!-- 수정 모드 -->
+            <div id="profile-edit-mode" style="display:none;">
+                <input type="text" id="profile-edit-store" placeholder="매장 이름" class="inp" style="margin-bottom:8px;">
+                <input type="text" id="profile-edit-insta" placeholder="인스타그램 아이디 (예: @lumi__it)" class="inp" style="margin-bottom:8px;">
+                <textarea id="profile-edit-desc" class="dash-note" rows="2" placeholder="매장 소개 (AI 캡션 작성에 활용됩니다)" style="margin-bottom:8px;"></textarea>
+                <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:6px;">업종</p>
+                <select id="profile-edit-bizcat" class="inp" style="height:46px;margin-bottom:6px;" onchange="toggleBizcatDirect(this.value)">
+                    <optgroup label="☕ 카페 / 음료">
+                        <option value="cafe">카페</option>
+                        <option value="bakery">베이커리 / 빵집</option>
+                        <option value="dessert">디저트 / 아이스크림</option>
+                        <option value="juice">주스 / 스무디</option>
+                    </optgroup>
+                    <optgroup label="🍽️ 식음료">
+                        <option value="restaurant">레스토랑</option>
+                        <option value="korean">한식</option>
+                        <option value="chinese">중식</option>
+                        <option value="japanese">일식</option>
+                        <option value="western">양식</option>
+                        <option value="fastfood">분식 / 패스트푸드</option>
+                        <option value="bar">술집 / 펍</option>
+                        <option value="chicken">치킨 / 배달</option>
+                    </optgroup>
+                    <optgroup label="💅 뷰티">
+                        <option value="beauty">뷰티샵 (통합)</option>
+                        <option value="hair">헤어샵</option>
+                        <option value="nail">네일샵</option>
+                        <option value="skincare">피부관리 / 에스테틱</option>
+                        <option value="makeup">메이크업 / 반영구</option>
+                        <option value="massage">마사지 / 스파</option>
+                    </optgroup>
+                    <optgroup label="🛍️ 쇼핑 / 리테일">
+                        <option value="fashion">패션 / 의류</option>
+                        <option value="accessories">액세서리 / 잡화</option>
+                        <option value="flower">꽃집</option>
+                        <option value="pet">반려동물</option>
+                        <option value="kids">아동 / 유아용품</option>
+                        <option value="interior">인테리어 / 가구</option>
+                    </optgroup>
+                    <optgroup label="🏃 운동 / 건강">
+                        <option value="fitness">헬스장 / 피트니스</option>
+                        <option value="yoga">요가 / 필라테스</option>
+                        <option value="sports">스포츠 / 레저</option>
+                        <option value="health">건강식품 / 영양제</option>
+                    </optgroup>
+                    <optgroup label="🎨 라이프스타일">
+                        <option value="photo">사진 / 영상</option>
+                        <option value="art">공방 / 아트클래스</option>
+                        <option value="music">음악 / 학원</option>
+                        <option value="travel">여행 / 숙박</option>
+                    </optgroup>
+                    <optgroup label="✏️ 기타">
+                        <option value="other_input">직접 입력</option>
+                    </optgroup>
+                </select>
+                <input type="text" id="profile-edit-bizcat-direct" class="inp" style="height:46px;margin-bottom:8px;display:none;" placeholder="업종을 직접 입력해 주세요 (예: 타투샵, 세탁소)">
+                <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:6px;">글 말투 <span style="font-weight:400;color:var(--g400);">(선택)</span></p>
+                <input type="text" id="profile-edit-tone" class="inp" style="height:46px;margin-bottom:8px;" placeholder="예: 친근하게, 감성적으로, 재미있게">
+
+                <!-- 커스텀 캡션 샘플 -->
+                <div style="background:var(--pink-ultra);border-radius:var(--r-md);padding:14px;margin-bottom:8px;border:1px solid var(--pink-soft);">
+                    <p style="font-size:12px;font-weight:700;color:var(--pink);margin-bottom:4px;">✍️ 커스텀 말투 학습 <span style="font-weight:400;color:var(--g400);font-size:11px;">(선택, 최대 5개)</span></p>
+                    <p style="font-size:11px;color:var(--g500);line-height:1.6;margin-bottom:10px;">직접 작성했거나 마음에 드는 캡션을 입력하면, AI가 비슷한 스타일로 써드려요.</p>
+                    <div id="custom-caption-list"></div>
+                    <button onclick="addCustomCaption()" style="width:100%;height:38px;background:#fff;border:1.5px dashed var(--pink-soft);border-radius:8px;font-size:.8rem;font-weight:600;color:var(--pink);cursor:pointer;font-family:inherit;margin-top:6px;">+ 캡션 샘플 추가</button>
+                </div>
+
+                <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:6px;">해시태그 개수</p>
+                <select id="profile-edit-tagstyle" class="inp" style="height:46px;margin-bottom:10px;">
+                    <option value="few">간결하게 (5개 이내)</option>
+                    <option value="mid">적당하게 (10개 내외)</option>
+                    <option value="many">많이 (20개 이상)</option>
+                </select>
+                <div style="display:flex;gap:8px;">
+                    <button onclick="saveProfileEdit()" class="btn-act-on" style="flex:1;padding:12px;">저장</button>
+                    <button onclick="cancelProfileEdit()" class="btn-act-off" style="flex:1;padding:12px;">취소</button>
+                </div>
+                <div id="profile-edit-err" style="font-size:12px;color:#e53e3e;margin-top:8px;display:none;"></div>
+            </div>
+        </div>
+
+        <!-- 매장 지역 설정 -->
+        <div style="background:var(--white);border-radius:var(--r-xl);padding:20px 22px;border:1px solid var(--g200);box-shadow:var(--sh-xs);margin-bottom:16px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                <span style="font-size:1.1rem;">📍</span>
+                <p style="font-size:.92rem;font-weight:800;color:var(--g900);">매장 지역 설정</p>
+            </div>
+            <p style="font-size:.78rem;color:var(--g500);line-height:1.7;margin-bottom:12px;">지역을 설정하면 <strong style="color:var(--g700);">날씨·대기오염·주변 행사</strong> 정보를 자동으로 받아볼 수 있어요.<br>캡션에도 지역 분위기가 자연스럽게 반영돼요.</p>
+            <div style="display:flex;gap:6px;">
+                <select id="dash-sido" class="inp" style="height:46px;flex:1;" onchange="updateSigunguList()">
+                    <option value="">시/도 선택</option>
+                    <option value="11">서울</option>
+                    <option value="21">부산</option>
+                    <option value="22">대구</option>
+                    <option value="23">인천</option>
+                    <option value="24">광주</option>
+                    <option value="25">대전</option>
+                    <option value="26">울산</option>
+                    <option value="36">세종</option>
+                    <option value="31">경기</option>
+                    <option value="32">강원</option>
+                    <option value="33">충북</option>
+                    <option value="34">충남</option>
+                    <option value="37">전북</option>
+                    <option value="35">전남</option>
+                    <option value="38">경북</option>
+                    <option value="39">경남</option>
+                    <option value="50">제주</option>
+                </select>
+                <select id="dash-sigungu" class="inp" style="height:46px;flex:1;" onchange="updateStoreRegion()" oninput="updateStoreRegion()">
+                    <option value="">시/군/구 선택</option>
+                </select>
+            </div>
+            <input type="hidden" id="dash-region-sido-code">
+            <input type="hidden" id="dash-region-sigungu-code">
+        </div>
+
+        <div class="weather-card">
+            <div class="w-icon" id="dash-w-icon">📍</div>
+            <div style="flex:1;">
+                <div class="w-status" id="dash-w-text">날씨 불러오는 중...</div>
+                <div class="w-guide" id="dash-w-guide">매장 지역을 설정하면 날씨를 알려드려요</div>
+                <div class="air-quality-row" id="air-quality-row" style="display:none;">
+                    <span class="aq-badge" id="aq-pm10-badge">미세먼지 -</span>
+                    <span class="aq-badge" id="aq-pm25-badge">초미세먼지 -</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 주변 행사 섹션 (행사 있을 때만 표시) -->
+        <div id="festival-section" style="display:none;margin-bottom:16px;">
+            <p class="dash-lbl">🎉 주변 행사</p>
+            <div id="festival-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+        </div>
+
+        <p class="dash-lbl">지금 인기 태그</p>
+        <div class="trend-wrap" id="trend-list-node"></div>
+
+        <!-- 말투 피드백 섹션 -->
+        <div id="tone-feedback-section" style="display:none;background:var(--white);border-radius:var(--r-xl);padding:20px;border:1px solid var(--pink-soft);box-shadow:var(--sh-xs);margin-bottom:14px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                <span style="font-size:1rem;">✍️</span>
+                <p style="font-size:.88rem;font-weight:800;color:var(--g900);">지난번 캡션 어떠셨나요?</p>
+            </div>
+            <p style="font-size:.78rem;color:var(--g500);margin-bottom:14px;line-height:1.6;">👍를 누르면 다음 캡션도 비슷한 톤으로 써드려요. 👎를 누르면 이런 방식은 피해서 작성해요. 최대 5개까지 기억하고 매번 반영돼요. 선택 안 하셔도 괜찮아요.</p>
+            <div id="tone-feedback-caption" style="background:var(--pink-ultra);border-radius:var(--r-md);padding:14px;font-size:.83rem;color:var(--g700);line-height:1.9;margin-bottom:14px;border-left:3px solid var(--pink-soft);white-space:pre-line;"></div>
+            <div style="display:flex;gap:10px;">
+                <button id="tone-like-btn" onclick="submitToneFeedback('like')" style="flex:1;height:48px;background:var(--white);border:1.5px solid var(--g200);border-radius:var(--r-md);font-size:.88rem;font-weight:700;color:var(--g700);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .2s;font-family:inherit;" onmouseover="this.style.borderColor='#22c55e';this.style.background='#f0fff4'" onmouseout="this.style.borderColor='var(--g200)';this.style.background='var(--white)'">
+                    👍 마음에 들어요
+                </button>
+                <button id="tone-dislike-btn" onclick="submitToneFeedback('dislike')" style="flex:1;height:48px;background:var(--white);border:1.5px solid var(--g200);border-radius:var(--r-md);font-size:.88rem;font-weight:700;color:var(--g700);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .2s;font-family:inherit;" onmouseover="this.style.borderColor='#ef4444';this.style.background='#fff5f5'" onmouseout="this.style.borderColor='var(--g200)';this.style.background='var(--white)'">
+                    👎 별로였어요
+                </button>
+            </div>
+            <button onclick="dismissToneFeedback()" style="width:100%;margin-top:8px;background:none;border:none;font-size:12px;color:var(--g400);cursor:pointer;padding:4px;font-family:inherit;">다음에 할게요</button>
+        </div>
+
+        <!-- 보관함 (예약 게시 현황) -->
+        <div style="margin-bottom:14px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                <p class="dash-lbl" style="margin-bottom:0;">📁 예약 보관함</p>
+            </div>
+            <ul id="lumi-inventory-list" style="list-style:none;padding:0;"></ul>
+        </div>
+
+        <div class="upload-card">
+            <p class="upload-ttl">오늘의 사진을 올려주세요!</p>
+            <div class="drop-zone">
+                <input type="file" id="ceo-file-selector" multiple accept="image/*" onchange="syncBinaryWarehouse()">
+                <div id="ceo-preview-box" class="preview-grid"></div>
+                <div id="ceo-placeholder">
+                    <div class="drop-icon">📸</div>
+                    <p class="drop-txt">사진을 선택하세요</p>
+                </div>
+            </div>
+            <div id="story-photo-notice" style="display:none;background:#FFF8E1;border-radius:var(--r-sm);padding:8px 12px;margin-bottom:8px;border-left:3px solid #FFC107;">
+                <p style="font-size:11px;color:#856404;line-height:1.6;">📖 <strong>스토리 자동 게시 ON</strong> — 첫 번째 사진이 대표 사진으로 스토리에 올라가요.</p>
+            </div>
+            <div style="background:var(--g50);border-radius:var(--r-sm);padding:10px 14px;margin-bottom:10px;border-left:3px solid var(--pink);">
+                <p style="font-size:11px;font-weight:700;color:var(--g500);line-height:1.7;">오늘 특별히 전하고 싶은 소식이 있다면 적어주세요.<br>
+                <span style="color:var(--pink);">예) 신메뉴 출시, 명절 휴무 안내, 이벤트 진행 중</span><br>
+                없으면 비워도 돼요. lumi가 사진 보고 알아서 써드려요.</p>
+            </div>
+            <textarea id="ceo-note-input" class="dash-note" rows="3" placeholder="예) 신메뉴 출시, 명절 휴무 안내, 이벤트 진행 중"></textarea>
+            <!-- 예약 게시 -->
+            <div style="margin-bottom:14px;">
+                <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:8px;">예약 게시 (선택)</p>
+                <div style="display:flex;gap:8px;">
+                    <select id="reserve-date-select" class="inp" style="height:48px;flex:2;" onchange="updateReserveHint()">
+                        <option value="">날짜 선택</option>
+                    </select>
+                    <select id="reserve-hour-select" class="inp" style="height:48px;flex:1;" onchange="updateReserveHint()">
+                        <option value="">시</option>
+                    </select>
+                    <select id="reserve-min-select" class="inp" style="height:48px;flex:1;" onchange="updateReserveHint()">
+                        <option value="">분</option>
+                    </select>
+                </div>
+                <input type="hidden" id="reserve-time-field">
+                <p id="reserve-time-hint" style="font-size:11px;color:var(--g400);margin-top:4px;display:none;"></p>
+            </div>
+            <div class="act-btns">
+                <button class="btn-act-on" onclick="commitPost('now')">바로 올리기</button>
+                <button class="btn-act-off" onclick="commitPost('reserve')">예약 저장</button>
+            </div>
+        </div>
+
+        <!-- 최적 업로드 시간 (PRO 전용) -->
+        <div id="best-time-section" style="background:var(--white);border-radius:var(--r-xl);padding:20px 22px;border:1px solid var(--g200);box-shadow:var(--sh-xs);margin-bottom:14px;position:relative;overflow:hidden;">
+            <div id="best-time-lock" style="display:none;position:absolute;inset:0;background:rgba(249,250,251,.93);backdrop-filter:blur(3px);z-index:10;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;">
+                <div style="font-size:1.8rem;margin-bottom:8px;">🔒</div>
+                <p style="font-size:.88rem;font-weight:800;color:var(--g900);margin-bottom:4px;">프로 플랜 전용 기능이에요</p>
+                <p style="font-size:.78rem;color:var(--g500);">프로 플랜으로 업그레이드하면 업종별 최적 업로드 시간을 받아볼 수 있어요.</p>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:1rem;">⏰</span>
+                    <p style="font-size:.88rem;font-weight:800;color:var(--g900);">오늘 최적 업로드 시간</p>
+                    <span style="font-size:10px;font-weight:700;color:var(--pink);background:var(--pink-pale);padding:2px 8px;border-radius:99px;">PRO</span>
+                </div>
+                <span id="best-time-badge" style="font-size:1.2rem;font-weight:900;color:var(--pink);">--:--</span>
+            </div>
+            <p id="best-time-reason" style="font-size:.8rem;color:var(--g500);margin-bottom:10px;">업종 기반으로 팔로워가 가장 활발한 시간대를 분석해요.</p>
+            <div id="best-time-slots" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;"></div>
+            <p id="best-time-tip" style="font-size:.75rem;color:var(--pink);font-weight:600;"></p>
+        </div>
+        <!-- 스토리 자동 게시 -->
+        <p class="dash-lbl">게시 설정</p>
+        <div style="background:var(--white);border-radius:var(--r-xl);padding:18px 22px;border:1px solid var(--g200);box-shadow:var(--sh-xs);margin-bottom:14px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div>
+                    <p style="font-size:.88rem;font-weight:800;color:var(--g900);margin-bottom:4px;">📖 스토리 자동 게시</p>
+                    <p style="font-size:.75rem;color:var(--g500);line-height:1.6;">피드 게시 시 첫 번째 사진을 스토리에도 자동으로 올려요.<br>스토리는 24시간 후 자동 삭제됩니다.</p>
+                </div>
+                <div style="flex-shrink:0;margin-left:16px;cursor:pointer;" onclick="document.getElementById('auto-story-toggle').click()">
+                    <input type="checkbox" id="auto-story-toggle" onchange="saveAutoStory(this.checked)" style="display:none;">
+                    <div id="auto-story-slider" style="width:52px;height:28px;border-radius:28px;background:#ccc;border:2px solid #bbb;position:relative;transition:all .3s;cursor:pointer;">
+                        <div id="auto-story-knob" style="position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .3s;box-shadow:0 2px 6px rgba(0,0,0,.3);"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div style="background:var(--white);border-radius:var(--r-xl);padding:18px 22px;border:1px solid var(--g200);box-shadow:var(--sh-xs);margin-bottom:14px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div>
+                    <p style="font-size:.88rem;font-weight:800;color:var(--g900);margin-bottom:4px;">🎉 주변 행사 캡션 반영</p>
+                    <p style="font-size:.75rem;color:var(--g500);line-height:1.6;">설정한 지역 근처 행사 정보를 AI 캡션에 반영해요.<br>OFF 시 행사 정보 없이 캡션이 작성돼요.</p>
+                </div>
+                <div style="flex-shrink:0;margin-left:16px;cursor:pointer;" onclick="document.getElementById('auto-festival-toggle').click()">
+                    <input type="checkbox" id="auto-festival-toggle" onchange="saveAutoFestival(this.checked)" style="display:none;">
+                    <div id="auto-festival-slider" style="width:52px;height:28px;border-radius:28px;background:#ccc;border:2px solid #bbb;position:relative;transition:all .3s;cursor:pointer;">
+                        <div id="auto-festival-knob" style="position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .3s;box-shadow:0 2px 6px rgba(0,0,0,.3);"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 링크 페이지 설정 -->
+        <p class="dash-lbl">링크 페이지 설정</p>
+        <div style="background:var(--white);border-radius:var(--r-xl);padding:20px 22px;border:1px solid var(--g200);box-shadow:var(--sh-xs);margin-bottom:14px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                <div>
+                    <p style="font-size:.88rem;font-weight:800;color:var(--g900);margin-bottom:4px;">🔗 내 링크 페이지</p>
+                    <p id="link-page-url" style="font-size:.78rem;color:var(--pink);font-weight:600;cursor:pointer;" onclick="copyLinkPageUrl()">불러오는 중...</p>
+                </div>
+                <button onclick="copyLinkPageUrl()" style="background:var(--pink-pale);color:var(--pink);border:none;border-radius:99px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">복사</button>
+            </div>
+            <p style="font-size:.75rem;color:var(--g500);margin-bottom:10px;line-height:1.6;">인스타그램 바이오 링크에 넣으면 방문자가 매장 정보와 여러 링크를 한 번에 볼 수 있어요.</p>
+
+            <!-- 예시 안내 -->
+            <div style="background:var(--g50);border-radius:var(--r-md);padding:12px 14px;margin-bottom:14px;border-left:3px solid var(--pink);">
+                <p style="font-size:11px;font-weight:700;color:var(--pink);margin-bottom:6px;">💡 이런 링크를 추가해보세요</p>
+                <div style="display:flex;flex-direction:column;gap:4px;">
+                    <p style="font-size:11px;color:var(--g500);">📍 네이버 지도 — 매장 위치 안내</p>
+                    <p style="font-size:11px;color:var(--g500);">☎️ 전화하기 — tel:010XXXX0000 형식</p>
+                    <p style="font-size:11px;color:var(--g500);">🛒 배달의민족 / 쿠팡이츠 — 주문 링크</p>
+                    <p style="font-size:11px;color:var(--g500);">📅 카카오 예약 — 예약 페이지 링크</p>
+                    <p style="font-size:11px;color:var(--g500);">🌐 홈페이지 / 블로그 — 상세 정보</p>
+                </div>
+            </div>
+
+            <!-- 링크 목록 -->
+            <div id="link-page-items"></div>
+            <button onclick="addLinkItem()" style="width:100%;height:44px;background:var(--g50);border:1.5px dashed var(--g200);border-radius:var(--r-md);font-size:.85rem;font-weight:600;color:var(--g500);cursor:pointer;font-family:inherit;margin-top:8px;">+ 링크 추가</button>
+            <button onclick="saveLinkPage()" class="btn-act-on" style="width:100%;margin-top:10px;padding:12px;">저장하기</button>
+        </div>
+
+        <!-- 자동 응답 설정 (프로 플랜) -->
+        <p class="dash-lbl">자동 응답 설정 <span style="font-size:10px;font-weight:700;color:var(--pink);background:var(--pink-pale);padding:2px 8px;border-radius:99px;margin-left:4px;">PRO</span></p>
+        <div class="auto-reply-card" id="auto-reply-section">
+            <!-- 댓글 자동 답변 -->
+            <div class="reply-section">
+                <p class="reply-section-title">💬 댓글 자동 답변</p>
+                <div style="background:var(--g50);border-radius:var(--r-sm);padding:10px 14px;margin-bottom:12px;border-left:3px solid var(--pink);">
+                    <p style="font-size:11px;color:var(--g500);line-height:1.7;">댓글에 특정 키워드가 포함되면 자동으로 대댓글을 달아드려요.<br>
+                    <span style="color:var(--pink);">키워드를 비워두면 모든 댓글에 기본 답변이 달려요.</span></p>
+                </div>
+                <div id="comment-keywords-wrap"></div>
+                <button class="btn-add-keyword" onclick="addKeywordRow('comment')">+ 키워드 답변 추가</button>
+                <div style="margin-top:14px;">
+                    <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:6px;">기본 대댓글 (키워드 없을 때)</p>
+                    <textarea id="comment-default-reply" class="dash-note" rows="2" placeholder="예) 감사합니다 😊 궁금한 점은 DM으로 주세요!"></textarea>
+                </div>
+            </div>
+            <!-- DM 자동 답변 -->
+            <div class="reply-section">
+                <p class="reply-section-title">📩 DM 자동 답변</p>
+                <div style="background:var(--g50);border-radius:var(--r-sm);padding:10px 14px;margin-bottom:12px;border-left:3px solid var(--pink);">
+                    <p style="font-size:11px;color:var(--g500);line-height:1.7;">DM에 특정 키워드가 포함되면 자동으로 답장을 보내드려요.<br>
+                    <span style="color:var(--pink);">키워드를 비워두면 모든 DM에 기본 답변이 발송돼요.</span></p>
+                </div>
+                <div id="dm-keywords-wrap"></div>
+                <button class="btn-add-keyword" onclick="addKeywordRow('dm')">+ 키워드 답변 추가</button>
+                <div style="margin-top:14px;">
+                    <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:6px;">기본 DM 답변 (키워드 없을 때)</p>
+                    <textarea id="dm-default-reply" class="dash-note" rows="2" placeholder="예) 안녕하세요! 메시지 감사해요 😊 빠르게 확인 후 답변드릴게요!"></textarea>
+                </div>
+            </div>
+            <button class="btn-act-on" onclick="saveAutoReply()" style="width:100%;">자동 응답 설정 저장</button>
+        </div>
+
+        <div style="text-align:center;margin-top:32px;padding-bottom:20px;">
+            <a href="/support" style="font-size:13px;font-weight:600;color:var(--g400);text-decoration:none;display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border:1px solid var(--g200);border-radius:var(--r-full);transition:all .2s;" onmouseover="this.style.background='var(--g50)'" onmouseout="this.style.background=''">💬 고객센터 문의하기</a>
+        </div>
+    </div>
+</div>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+/* ── 시나리오 탭 전환 ── */
+function switchScenario(id){
+    document.querySelectorAll('.scenario-tab').forEach((t,i)=>{
+        const ids=['cafe','beauty','food'];
+        t.classList.toggle('on', ids[i]===id);
+    });
+    document.querySelectorAll('.scenario-panel').forEach(p=>{
+        p.classList.toggle('on', p.id==='scenario-'+id);
+    });
+}
+
+/* ── 부드러운 스크롤 (모바일 탭 포함) ── */
+function smoothScrollTo(id){
+    const el=document.getElementById(id);
+    if(!el) return;
+    const top=el.getBoundingClientRect().top+window.scrollY-64;
+    window.scrollTo({top, behavior:'smooth'});
+}
+
+/* ── 모바일 엔터키 → 다음 필드 이동 + 스크롤 ── */
+(function(){
+    // 포털 내 input 순서 정의
+    const FIELD_ORDER = [
+        'ceo-name-field',
+        'store-name-field',
+        'store-insta-field',
+        'id-reg-field',
+        'ph-reg-field',
+        'store-desc-field',
+        'store-region-field',
+        'id-otp-field',
+        'id-login-field',
+        'pw-login-field'
+    ];
+
+    function scrollFieldIntoSheet(el){
+        const sheet = el.closest('.portal-sheet');
+        if(!sheet) return;
+        // sheet 기준 상대 위치 계산
+        const elRect = el.getBoundingClientRect();
+        const sheetRect = sheet.getBoundingClientRect();
+        const relTop = elRect.top - sheetRect.top + sheet.scrollTop - 16;
+        sheet.scrollTo({top: relTop, behavior:'smooth'});
+    }
+
+    document.addEventListener('keydown', function(e){
+        if(e.key !== 'Enter' && e.keyCode !== 13) return;
+        const current = e.target;
+        if(!current.matches('input')) return;
+        if(!current.closest('.portal-sheet')) return;
+
+        const currentId = current.id;
+        const idx = FIELD_ORDER.indexOf(currentId);
+        if(idx === -1) return;
+
+        // 다음 필드 찾기 (visible 한 것만)
+        for(let i = idx+1; i < FIELD_ORDER.length; i++){
+            const next = document.getElementById(FIELD_ORDER[i]);
+            if(next && next.offsetParent !== null && !next.closest('.hidden')){
+                e.preventDefault();
+                next.focus();
+                setTimeout(()=> scrollFieldIntoSheet(next), 100);
+                return;
+            }
+        }
+        // 마지막 필드면 기본 동작 (제출)
+    }, true);
+
+    // 포커스 이동 시에도 스크롤
+    document.addEventListener('focus', function(e){
+        const el = e.target;
+        if(!el.matches('input, select, textarea')) return;
+        if(!el.closest('.portal-sheet')) return;
+        setTimeout(()=> scrollFieldIntoSheet(el), 120);
+    }, true);
+})();
+
+const LUMI_CORE = {
+    weather: {
+        clear:{icon:"☀️",status:"매우 맑음",guide:"맑은 날 자연광은 최고의 필터입니다! 채광을 살린 사진을 강력 추천해요.",mood:"햇살 가득한 오후, 우리 매장만의 특별한 여유를 담아보세요."},
+        rain: {icon:"💧",status:"비 내림",  guide:"창가 조명을 최대한 활용하세요! 유리창의 물방울 샷이 도달률을 높입니다.",mood:"빗소리와 함께 즐기는 따스한 감성. 아늑한 무드를 선물할게요."},
+        snow: {icon:"❄️",status:"눈 옴",   guide:"따뜻한 김이 모락모락 나는 메뉴 사진이 정답!",mood:"창밖은 하얀 겨울이지만, 여기는 온기가 가득합니다."},
+        dust: {icon:"🌫️",status:"미세먼지",guide:"쾌적한 실내 무드를 강조해 보세요.",mood:"미세먼지 없는 청정 구역! 안심하고 쉴 수 있는 공간으로 초대합니다."}
+    },
+    trends: {
+        cafe:  ["#신메뉴출시","#오늘의커피","#카페스타그램","#라떼아트","#디저트맛집","#카페투어","#핸드드립","#베이커리"],
+        food:  ["#신메뉴","#오늘점심","#오늘저녁","#맛집추천","#맛스타그램","#주말특선","#혼밥","#맛집탐방"],
+        beauty:["#신규디자인","#네일스타그램","#헤어스타일","#오늘의메이크업","#젤네일","#네일아트","#헤어컬러","#뷰티스타그램"]
+    }
+};
+let archive=[],stagedFiles=[],bizCat='cafe',captionTone='warm',ceoName='',storeName='',storeDesc='',storeInsta='',storeRegion='',tagStyle='mid',weatherLoaded=false;
+let currentAirQuality=null;
+let currentFestivals=[];
+let realtimeTrends = [];
+let currentWeatherData = null; // 실제 날씨 데이터 전역 보관
+
+/* ── 저장소 ── */
+function bootPersistence(){const r=localStorage.getItem('lumi_archive');if(r){try{archive=JSON.parse(r);}catch(e){archive=[];}}}
+function syncPersistence(){localStorage.setItem('lumi_archive',JSON.stringify(archive));}
+
+/* ── 토스트 알림 ── */
+function showToast(msg,type=''){
+    let t=document.getElementById('lumi-toast');
+    if(!t){t=document.createElement('div');t.id='lumi-toast';t.className='toast';document.body.appendChild(t);}
+    t.textContent=msg;t.className='toast'+(type?' '+type:'');
+    requestAnimationFrame(()=>{t.classList.add('show');});
+    clearTimeout(t._timer);
+    t._timer=setTimeout(()=>{t.classList.remove('show');},2800);
+}
+
+/* ── 필드 에러 ── */
+function showFieldErr(inputId,errId,msg){
+    const inp=document.getElementById(inputId);
+    const err=document.getElementById(errId);
+    if(inp){inp.classList.add('err');inp.classList.remove('ok');}
+    if(err){err.textContent=msg;err.classList.remove('hidden');}
+}
+function clearFieldErr(inputId,errId){
+    const inp=document.getElementById(inputId);
+    const err=document.getElementById(errId);
+    if(inp){inp.classList.remove('err');}
+    if(err){err.classList.add('hidden');}
+}
+function setFieldOk(inputId){
+    const inp=document.getElementById(inputId);
+    if(inp){inp.classList.remove('err');inp.classList.add('ok');}
+}
+
+/* ── 이메일 형식 검사 ── */
+
+function selectTone(t) {
+    captionTone = t;
+    ['warm','cool','fun','pro'].forEach(x => {
+        document.getElementById('tone-'+x)?.classList.toggle('selected', x === t);
+    });
+}
+function selectTagStyle(t) {
+    tagStyle = t;
+    ['few','mid','many'].forEach(x => {
+        document.getElementById('tag-'+x)?.classList.toggle('selected', x === t);
+    });
+}
+
+function isValidEmail(v){return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);}
+
+/* ── 로그인 검증 ── */
+async function handleLoginAction(){
+    const email=document.getElementById('id-login-field').value.trim();
+    const pw=document.getElementById('pw-login-field').value;
+    let ok=true;
+    if(!email){showFieldErr('id-login-field','login-email-err','이메일을 입력하세요.');ok=false;}
+    else if(!isValidEmail(email)){showFieldErr('id-login-field','login-email-err','이메일 형식을 확인해 주세요.');ok=false;}
+    else{setFieldOk('id-login-field');}
+    if(!pw){showFieldErr('pw-login-field','login-pw-err','비밀번호를 입력하세요.');ok=false;}
+    else if(pw.length<6){showFieldErr('pw-login-field','login-pw-err','6자 이상으로 입력하세요.');ok=false;}
+    else{setFieldOk('pw-login-field');}
+    if(!ok) return;
+
+    const btn = document.querySelector('#lumi-login-view .btn-portal');
+    if(btn){ btn.disabled=true; btn.textContent='로그인 중...'; }
+    try {
+        const res = await fetch('/.netlify/functions/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password: pw })
+        });
+        const data = await res.json();
+        if(res.ok){
+            localStorage.setItem('lumi_user', JSON.stringify({ ...data.user, token: data.token }));
+            localStorage.setItem('lumi_token', data.token);
+            showToast('로그인됐어요!', 'pink');
+            setTimeout(() => { resetToInitialLanding(); grantAccess(); }, 500);
+        } else {
+            showToast(data.error || '로그인에 실패했어요.', 'red');
+        }
+    } catch(e){
+        showToast('네트워크 오류가 발생했습니다.', 'red');
+    } finally {
+        if(btn){ btn.disabled=false; btn.textContent='로그인'; }
+    }
+}
+
+/* validateStep1 제거됨 - requestSignupOtp 사용 */
+
+/* resendOtp 제거됨 - requestSignupOtp 사용 */
+
+/* validateStep2 제거됨 */
+
+async function disconnectInstagram() {
+    if (!confirm('Instagram 연동을 끊으시겠어요?')) return;
+    const lumiUser = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+    const token = lumiUser.token || localStorage.getItem('lumi_token') || '';
+    try {
+        const res = await fetch('/.netlify/functions/disconnect-ig', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (res.ok) {
+            lumiUser.igConnected = false;
+            lumiUser.igUserId = '';
+            localStorage.setItem('lumi_user', JSON.stringify(lumiUser));
+            const banner = document.getElementById('ig-connect-banner');
+            const badge = document.getElementById('ig-connected-badge');
+            if (banner) banner.style.display = 'flex';
+            if (badge) badge.style.display = 'none';
+            showToast('Instagram 연동이 해제됐어요.', '');
+        } else {
+            showToast('연동 해제에 실패했어요.', 'red');
+        }
+    } catch(e) {
+        showToast('네트워크 오류가 발생했습니다.', 'red');
+    }
+}
+
+function connectInstagram() {
+    const lumiUser = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+    const token = lumiUser.token || '';
+    window.location.href = '/.netlify/functions/ig-oauth?action=start&token=' + token;
+}
+
+function checkIgConnection() {
+    const params = new URLSearchParams(window.location.search);
+    const lumiUser = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+
+    if (params.get('oauth_success') === '1' || params.get('ig_connected') === '1') {
+        // 연동 성공
+        lumiUser.igConnected = true;
+        localStorage.setItem('lumi_user', JSON.stringify(lumiUser));
+        // lumi_token이 없으면 user에서 꺼내서 저장 (Instagram 리다이렉트 후 세션 복원)
+        if (!localStorage.getItem('lumi_token') && lumiUser.token) {
+            localStorage.setItem('lumi_token', lumiUser.token);
+        }
+        // URL 파라미터 제거
+        window.history.replaceState({}, '', '/');
+    }
+
+    const igConnected = lumiUser.igConnected;
+    const banner = document.getElementById('ig-connect-banner');
+    const badge = document.getElementById('ig-connected-badge');
+
+    if (banner) banner.style.display = igConnected ? 'none' : 'flex';
+    if (badge) badge.style.display = igConnected ? 'block' : 'none';
+}
+
+function parseWeatherCode(code) {
+    if (code <= 3) return 'clear';   // 맑음
+    if (code <= 48) return 'clear';  // 흐림 (clear로 폴백)
+    if (code <= 67) return 'rain';   // 비
+    if (code <= 77) return 'snow';   // 눈
+    if (code <= 82) return 'rain';   // 소나기
+    if (code <= 86) return 'snow';   // 눈보라
+    if (code <= 99) return 'rain';   // 뇌우
+    return 'clear';
+}
+
+async function fetchRealWeather(lat, lon, locationName) {
+    try {
+        // 기상청 초단기실황 API (Netlify Function 프록시)
+        let url;
+        if (lat && lon) {
+            url = `/.netlify/functions/get-weather-kma?lat=${lat}&lon=${lon}&name=${encodeURIComponent(locationName)}`;
+        } else {
+            url = `/.netlify/functions/get-weather-kma?sido=${encodeURIComponent(locationName || '서울')}`;
+        }
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data.error || data.source === 'kma_error') throw new Error(data.error || 'KMA 오류');
+
+        const temp = data.temperature !== null ? data.temperature : 0;
+        const state = data.state || 'clear';
+        const cfg = LUMI_CORE.weather[state];
+
+        // 전역 날씨 데이터 저장 (웹훅 전송용)
+        currentWeatherData = {
+            state,
+            status: cfg.status,
+            temperature: temp,
+            locationName,
+
+        };
+        weatherLoaded = true;
+        console.log('[lumi] 날씨 로딩 완료:', temp + '°C', state);
+
+        // UI 업데이트
+        document.getElementById('dash-w-icon').innerText = cfg.icon;
+        document.getElementById('dash-w-text').innerText = `${locationName}: ${cfg.status} ${temp}°C`;
+        document.getElementById('dash-w-guide').innerText = '"' + cfg.guide + '"';
+        document.getElementById('ceo-note-input').placeholder = '예) 신메뉴 출시, 명절 휴무 안내, 이벤트 진행 중';
+
+    } catch(e) {
+        console.error('[lumi] 날씨 API 실패 상세:', e.message, e);
+        syncWeatherUI('clear');
+    }
+}
+
+async function initWeather() {
+    // 날씨/에어코리아 모두 가게 지역 기준 — GPS 사용 안 함
+    const lumiUser = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+
+    // 시/도 가져오기
+    const sidoSel = document.getElementById('dash-sido');
+    const sidoText = sidoSel?.options[sidoSel.selectedIndex]?.text || '';
+    const storeSido = (sidoText && sidoText !== '시/도 선택') ? sidoText
+        : (lumiUser.storeSido || '서울');
+
+    // 시/군/구 가져오기
+    const sigunguSel = document.getElementById('dash-sigungu');
+    const sigunguText = sigunguSel?.options[sigunguSel.selectedIndex]?.text || '';
+    const storeSimgungu = (sigunguText && sigunguText !== '시/군/구 선택') ? sigunguText : '';
+
+    // 시/도 + 시/군/구 조합 (있을 경우)
+    const locationName = storeSimgungu ? `${storeSido} ${storeSimgungu}` : storeSido;
+
+    await fetchRealWeather(null, null, locationName);
+    fetchAirQuality(storeSido);
+    fetchFestivals();
+}
+
+/* ── 파일 업로드 ── */
+async function fetchAirQuality(sido) {
+    try {
+        const sidoParam = sido || '서울';
+        const res = await fetch('/.netlify/functions/get-air-quality?sido=' + encodeURIComponent(sidoParam));
+        const data = await res.json();
+        if (!data.pm10 || !data.pm25) return;
+
+        const pm10Badge = document.getElementById('aq-pm10-badge');
+        const pm25Badge = document.getElementById('aq-pm25-badge');
+        const aqRow = document.getElementById('air-quality-row');
+
+        // 전역 저장
+        currentAirQuality = {
+            pm10Value: data.pm10.value,
+            pm10Grade: data.pm10.grade,
+            pm25Value: data.pm25.value,
+            pm25Grade: data.pm25.grade
+        };
+
+        if (pm10Badge) {
+            pm10Badge.textContent = `미세먼지 ${data.pm10.value}㎍/㎥ ${data.pm10.grade}`;
+            pm10Badge.style.background = data.pm10.color + '22';
+            pm10Badge.style.color = data.pm10.color;
+        }
+        if (pm25Badge) {
+            pm25Badge.textContent = `초미세먼지 ${data.pm25.value}㎍/㎥ ${data.pm25.grade}`;
+            pm25Badge.style.background = data.pm25.color + '22';
+            pm25Badge.style.color = data.pm25.color;
+        }
+        if (aqRow) aqRow.style.display = 'flex';
+    } catch(e) {
+        console.log('대기오염 정보 로딩 실패:', e.message);
+    }
+}
+
+// 시도별 시군구 데이터
+const SIGUNGU_DATA = {
+  '11': [['110','종로구'],['140','중구'],['170','용산구'],['200','성동구'],['215','광진구'],['230','동대문구'],['260','중랑구'],['290','성북구'],['305','강북구'],['320','도봉구'],['350','노원구'],['380','은평구'],['410','서대문구'],['440','마포구'],['470','양천구'],['500','강서구'],['530','구로구'],['545','금천구'],['560','영등포구'],['590','동작구'],['620','관악구'],['650','서초구'],['680','강남구'],['710','송파구'],['740','강동구']],
+  '21': [['110','중구'],['140','서구'],['170','동구'],['200','영도구'],['230','부산진구'],['260','동래구'],['290','남구'],['320','북구'],['350','해운대구'],['380','사하구'],['410','금정구'],['440','강서구'],['470','연제구'],['500','수영구'],['530','사상구'],['710','기장군']],
+  '22': [['110','중구'],['140','동구'],['170','서구'],['200','남구'],['230','북구'],['260','수성구'],['290','달서구'],['710','달성군']],
+  '23': [['110','중구'],['140','동구'],['177','미추홀구'],['200','연수구'],['230','남동구'],['260','부평구'],['290','계양구'],['320','서구'],['710','강화군'],['720','옹진군']],
+  '24': [['110','동구'],['140','서구'],['170','남구'],['200','북구'],['230','광산구']],
+  '25': [['110','동구'],['140','중구'],['170','서구'],['200','유성구'],['230','대덕구']],
+  '26': [['110','중구'],['140','남구'],['170','동구'],['200','북구'],['710','울주군']],
+  '36': [['110','세종시']],
+  '31': [['110','수원시'],['130','성남시'],['150','의정부시'],['170','안양시'],['190','부천시'],['210','광명시'],['230','평택시'],['250','동두천시'],['270','안산시'],['280','고양시'],['290','과천시'],['310','구리시'],['360','남양주시'],['370','오산시'],['380','시흥시'],['390','군포시'],['410','의왕시'],['430','하남시'],['450','용인시'],['460','파주시'],['480','이천시'],['500','안성시'],['510','김포시'],['520','화성시'],['540','광주시'],['550','양주시'],['570','포천시'],['590','여주시'],['610','연천군'],['630','가평군'],['650','양평군']],
+  '32': [['110','춘천시'],['130','원주시'],['150','강릉시'],['170','동해시'],['190','태백시'],['210','속초시'],['230','삼척시'],['720','홍천군'],['730','횡성군'],['750','영월군'],['760','평창군'],['770','정선군'],['780','철원군'],['790','화천군'],['800','양구군'],['810','인제군'],['820','고성군'],['830','양양군']],
+  '33': [['110','청주시'],['130','충주시'],['150','제천시'],['720','보은군'],['730','옥천군'],['740','영동군'],['745','증평군'],['750','진천군'],['760','괴산군'],['770','음성군'],['800','단양군']],
+  '34': [['110','천안시'],['130','공주시'],['150','보령시'],['170','아산시'],['200','서산시'],['220','논산시'],['230','계룡시'],['240','당진시'],['710','금산군'],['730','부여군'],['740','서천군'],['760','청양군'],['770','홍성군'],['780','예산군'],['800','태안군']],
+  '37': [['110','전주시'],['130','군산시'],['140','익산시'],['170','정읍시'],['180','남원시'],['210','김제시'],['710','완주군'],['720','진안군'],['730','무주군'],['740','장수군'],['750','임실군'],['770','순창군'],['790','고창군'],['800','부안군']],
+  '35': [['110','목포시'],['130','여수시'],['150','순천시'],['170','나주시'],['230','광양시'],['710','담양군'],['720','곡성군'],['730','구례군'],['770','고흥군'],['780','보성군'],['790','화순군'],['800','장흥군'],['810','강진군'],['820','해남군'],['830','영암군'],['840','무안군'],['860','함평군'],['870','영광군'],['880','장성군'],['890','완도군'],['900','진도군'],['910','신안군']],
+  '38': [['110','포항시'],['130','경주시'],['140','김천시'],['150','안동시'],['170','구미시'],['190','영주시'],['210','영천시'],['230','상주시'],['250','문경시'],['260','경산시'],['720','군위군'],['730','의성군'],['740','청송군'],['750','영양군'],['760','영덕군'],['770','청도군'],['780','고령군'],['790','성주군'],['800','칠곡군'],['820','예천군'],['840','봉화군'],['850','울진군'],['860','울릉군']],
+  '39': [['110','창원시'],['125','진주시'],['145','통영시'],['155','사천시'],['170','김해시'],['180','밀양시'],['190','거제시'],['210','양산시'],['720','의령군'],['730','함안군'],['740','창녕군'],['745','고성군'],['760','남해군'],['770','하동군'],['780','산청군'],['790','함양군'],['800','거창군'],['810','합천군']],
+  '50': [['110','제주시'],['130','서귀포시']]
+};
+
+function updateSigunguList() {
+    const sido = document.getElementById('dash-sido').value;
+    const sigunguSel = document.getElementById('dash-sigungu');
+    sigunguSel.innerHTML = '<option value="">시/군/구 선택</option>';
+    if (!sido || !SIGUNGU_DATA[sido]) return;
+    SIGUNGU_DATA[sido].forEach(([code, name]) => {
+        const opt = document.createElement('option');
+        opt.value = code;
+        opt.textContent = name;
+        sigunguSel.appendChild(opt);
+    });
+    updateStoreRegion();
+}
+
+function updateStoreRegion() {
+    const sido = document.getElementById('dash-sido');
+    const sigungu = document.getElementById('dash-sigungu');
+    const sidoCode = sido?.value || '';
+    const sigunguCode = sigungu?.value || '';
+    const sidoText = sido?.options[sido.selectedIndex]?.text || '';
+    const sigunguText = sigungu?.options[sigungu.selectedIndex]?.text || '';
+
+    if (document.getElementById('dash-region-sido-code')) {
+        document.getElementById('dash-region-sido-code').value = sidoCode;
+    }
+    if (document.getElementById('dash-region-sigungu-code')) {
+        document.getElementById('dash-region-sigungu-code').value = sigunguCode;
+    }
+
+    if (sidoText && sigunguText && sigunguText !== '시/군/구 선택') {
+        storeRegion = sidoText + ' ' + sigunguText;
+        // localStorage에도 저장
+        try {
+            const raw = localStorage.getItem('lumi_user');
+            if (raw) {
+                const user = JSON.parse(raw);
+                user.region = storeRegion;
+                user.sidoCode = sidoCode;
+                user.sigunguCode = sigunguCode;
+                user.storeSido = sidoText; // 날씨/에어코리아 조회용 시도명
+                localStorage.setItem('lumi_user', JSON.stringify(user));
+                // 서버에도 저장 (다음 로그인 시 복원)
+                const lumiToken = user.token || localStorage.getItem('lumi_token') || '';
+                if (lumiToken) {
+                    fetch('/.netlify/functions/update-profile', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + lumiToken },
+                        body: JSON.stringify({ sidoCode, sigunguCode, storeSido: sidoText, region: storeRegion })
+                    }).catch(() => {});
+                }
+            }
+        } catch(e) {}
+
+        // 지역 변경 시 날씨/행사 즉시 갱신
+        fetchFestivals();
+        initWeather();
+    }
+}
+
+// 대시보드 로드 시 저장된 지역 복원
+function restoreRegionDropdown(regionStr, sidoCode, sigunguCode) {
+    if (!sidoCode) return;
+    const sidoSel = document.getElementById('dash-sido');
+    const sigunguSel = document.getElementById('dash-sigungu');
+    if (!sidoSel || !sigunguSel) return;
+
+    sidoSel.value = sidoCode;
+    updateSigunguList();
+    setTimeout(() => {
+        sigunguSel.value = sigunguCode;
+        updateStoreRegion();
+        // 지역 복원 완료 후 날씨/행사 조회
+        setTimeout(() => {
+            fetchFestivals();
+            initWeather();
+        }, 100);
+    }, 50);
+}
+
+async function fetchFestivals() {
+    try {
+        // 행사는 항상 가게 주소(지역 설정) 기준으로 조회 — GPS 위치 무관
+        let sidoCode = document.getElementById('dash-region-sido-code')?.value || '';
+        let sigunguCode = document.getElementById('dash-region-sigungu-code')?.value || '';
+
+        // 지역 미설정 시 localStorage에서 sidoCode 복구 시도
+        if (!sidoCode) {
+            const lumiUser = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+            sidoCode = lumiUser.sidoCode || '';
+            sigunguCode = lumiUser.sigunguCode || '';
+        }
+
+        if (!sidoCode) return;
+        let festivalUrl = `/.netlify/functions/get-festival?sido=${sidoCode}`;
+        if (sigunguCode) festivalUrl += `&sigungu=${sigunguCode}`;
+        const res = await fetch(festivalUrl);
+        const data = await res.json();
+        currentFestivals = data.festivals || [];
+        console.log('[lumi] 주변 행사:', currentFestivals.length, '개');
+        renderFestivals();
+    } catch(e) {
+        console.log('[lumi] 행사 정보 로딩 실패:', e.message);
+        currentFestivals = [];
+    }
+}
+
+// GPS 좌표 → 한국 시도코드 대략 추정 (행사 조회용)
+function guessSidoFromLatLng(lat, lng) {
+    if (lat >= 37.4 && lat <= 37.7 && lng >= 126.7 && lng <= 127.2) return '11'; // 서울
+    if (lat >= 37.3 && lat <= 37.8 && lng >= 126.5 && lng <= 127.8) return '41'; // 경기
+    if (lat >= 37.2 && lat <= 37.7 && lng >= 126.4 && lng <= 126.9) return '28'; // 인천
+    if (lat >= 35.0 && lat <= 35.4 && lng >= 128.8 && lng <= 129.3) return '26'; // 부산
+    if (lat >= 35.7 && lat <= 36.1 && lng >= 128.4 && lng <= 128.8) return '27'; // 대구
+    if (lat >= 36.2 && lat <= 36.5 && lng >= 127.2 && lng <= 127.6) return '30'; // 대전
+    if (lat >= 35.1 && lat <= 35.3 && lng >= 126.7 && lng <= 126.95) return '29'; // 광주
+    if (lat >= 35.4 && lat <= 35.7 && lng >= 129.1 && lng <= 129.5) return '31'; // 울산
+    if (lat >= 36.4 && lat <= 36.7 && lng >= 127.2 && lng <= 127.6) return '34'; // 세종
+    if (lat >= 36.0 && lat <= 37.2 && lng >= 127.5 && lng <= 129.2) return '43'; // 충북
+    if (lat >= 36.0 && lat <= 37.2 && lng >= 126.3 && lng <= 127.5) return '44'; // 충남
+    if (lat >= 35.0 && lat <= 36.2 && lng >= 127.0 && lng <= 128.0) return '45'; // 전북
+    if (lat >= 34.0 && lat <= 35.2 && lng >= 126.0 && lng <= 127.5) return '46'; // 전남
+    if (lat >= 36.0 && lat <= 37.5 && lng >= 128.0 && lng <= 129.5) return '47'; // 경북
+    if (lat >= 34.7 && lat <= 35.7 && lng >= 127.5 && lng <= 129.3) return '48'; // 경남
+    if (lat >= 33.0 && lat <= 33.6 && lng >= 126.1 && lng <= 126.9) return '50'; // 제주
+    if (lat >= 37.0 && lat <= 38.6 && lng >= 127.7 && lng <= 129.3) return '42'; // 강원
+    return '11'; // 기본값 서울
+}
+
+function renderFestivals() {
+    const section = document.getElementById('festival-section');
+    const list = document.getElementById('festival-list');
+    if (!section || !list) return;
+
+    // autoFestival OFF면 행사 섹션 숨김
+    const user = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+    if (user.autoFestival === false) { section.style.display = 'none'; return; }
+
+    section.style.display = 'block';
+    if (!currentFestivals || currentFestivals.length === 0) {
+        list.innerHTML = '<div style="font-size:.83rem;color:var(--g400);padding:10px 4px;">📭 10km 내 진행 중인 행사가 없어요.</div>';
+        return;
+    }
+
+    section.style.display = 'block';
+    list.innerHTML = currentFestivals.map(f => {
+        const fmt = d => d ? `${parseInt(d.slice(4,6))}/${parseInt(d.slice(6,8))}` : '';
+        const dateStr = f.startDate && f.endDate
+            ? `${fmt(f.startDate)} ~ ${fmt(f.endDate)}`
+            : f.startDate ? fmt(f.startDate) : '';
+        const addr = f.addr ? f.addr.replace('서울특별시 ', '').replace('경기도 ', '') : '';
+
+        return `<div style="background:var(--white);border-radius:var(--r-md);padding:13px 15px;border:1px solid var(--g100);display:flex;align-items:flex-start;gap:10px;">
+            <span style="font-size:1.2rem;margin-top:1px;">🎪</span>
+            <div style="flex:1;min-width:0;">
+                <div style="font-size:.87rem;font-weight:700;color:var(--g900);margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${f.title}</div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    ${dateStr ? `<span style="font-size:.75rem;color:var(--pink);font-weight:600;">📅 ${dateStr}</span>` : ''}
+                    ${addr ? `<span style="font-size:.75rem;color:var(--g400);">📌 ${addr}</span>` : ''}
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function renderStagedFiles() {
+    const preview = document.getElementById('ceo-preview-box');
+    const ph = document.getElementById('ceo-placeholder');
+    preview.innerHTML = '';
+    ph.classList.toggle('hidden', stagedFiles.length > 0);
+    stagedFiles.forEach((f, i) => {
+        const r = new FileReader();
+        r.onload = e => {
+            const d = document.createElement('div');
+            d.className = 'prev-thumb';
+            d.innerHTML = `
+                <div class="prev-thumb-img"><img src="${e.target.result}" alt="${i}" style="width:100%;height:100%;object-fit:cover;display:block;"></div>
+                <button class="prev-thumb-del" onclick="removeStageFile(${i})" title="삭제">✕</button>
+                ${i === 0 ? '<span class="prev-thumb-badge">대표</span>' : ''}
+            `;
+            preview.appendChild(d);
+        };
+        r.readAsDataURL(f);
+    });
+}
+
+function removeStageFile(index) {
+    stagedFiles.splice(index, 1);
+    // file input 초기화 (동일 파일 재선택 가능하도록)
+    document.getElementById('ceo-file-selector').value = '';
+    renderStagedFiles();
+    updateStoryNotice(document.getElementById('auto-story-toggle')?.checked);
+}
+
+function syncBinaryWarehouse(){
+    const input = document.getElementById('ceo-file-selector');
+    const newFiles = Array.from(input.files);
+    // 기존 파일에 새 파일 추가 (초기화 안 함)
+    const existingNames = stagedFiles.map(f => f.name + f.size);
+    newFiles.forEach(f => {
+        if (!existingNames.includes(f.name + f.size)) {
+            stagedFiles.push(f);
+        }
+    });
+    // input 초기화 (같은 파일 다시 선택 가능)
+    input.value = '';
+    renderStagedFiles();
+    updateStoryNotice(document.getElementById('auto-story-toggle')?.checked);
+}
+
+/* ── 포스트 ── */
+let _isCommitting = false;
+async function commitPost(type){
+    if (_isCommitting) { showToast('처리 중입니다. 잠시 기다려주세요.', ''); return; }
+    _isCommitting = true;
+    // 날씨 로딩 안됐으면 최대 5초 대기
+    if (!weatherLoaded) {
+        showToast('날씨 정보 불러오는 중...', '');
+        for (let i = 0; i < 10; i++) {
+            await new Promise(r => setTimeout(r, 500));
+            if (weatherLoaded) break;
+        }
+    }
+    // 대시보드 UI에서 최신값 가져오기
+    const dashBizEl = document.getElementById('dash-biz-cat');
+    const dashBizOtherEl = document.getElementById('dash-biz-cat-other');
+    const dashToneEl = document.getElementById('dash-caption-tone');
+    const dashTagEl = document.getElementById('dash-tag-style');
+    if (dashBizEl) {
+        bizCat = dashBizEl.value === 'other' && dashBizOtherEl?.value.trim()
+            ? dashBizOtherEl.value.trim()
+            : dashBizEl.value;
+    }
+    if (dashToneEl) captionTone = dashToneEl.value.trim() || captionTone;
+    if (dashTagEl) tagStyle = dashTagEl.value || tagStyle;
+    const noteEl = document.getElementById('ceo-note-input');
+    const notes = (noteEl.value && noteEl.value.trim() !== noteEl.placeholder) ? noteEl.value.trim() : '';
+    if(stagedFiles.length===0){showToast('사진을 먼저 선택하세요.');return;}
+    // 메시지는 선택사항 - 없으면 lumi가 알아서 작성
+
+    const photos=await Promise.all(stagedFiles.map(f=>new Promise(res=>{const r=new FileReader();r.onload=e=>res({name:f.name,data:e.target.result});r.readAsDataURL(f);})));
+
+    // 현재 트렌드 태그 수집 (실시간 or 기본값)
+    const currentTrends = realtimeTrends.length > 0 ? realtimeTrends : (LUMI_CORE.trends[bizCat] || LUMI_CORE.trends.cafe);
+
+    // 날씨 데이터 (실제 API 결과 or 기본값)
+    const weatherPayload = currentWeatherData || {
+        state: 'clear',
+        status: LUMI_CORE.weather.clear.status,
+        temperature: '',
+        locationName: storeRegion || '서울',
+        guide: LUMI_CORE.weather.clear.guide,
+        mood: LUMI_CORE.weather.clear.mood
+    };
+
+    // 매장 프로필 (선택 정보 포함)
+    const userRaw = localStorage.getItem('lumi_user');
+    const userData = userRaw ? JSON.parse(userRaw) : {};
+    const storeProfile = {
+        name: storeName,
+        description: storeDesc,
+        instagram: storeInsta,
+        region: storeRegion,
+        sido: (() => {
+            const sidoSel = document.getElementById('dash-sido');
+            const t = sidoSel?.options[sidoSel.selectedIndex]?.text || '';
+            return (t && t !== '시/도 선택') ? t : (userData.storeSido && userData.storeSido !== '시/도 선택' ? userData.storeSido : '');
+        })(),
+        sigungu: (() => {
+            const sel = document.getElementById('dash-sigungu');
+            const t = sel?.options[sel.selectedIndex]?.text || '';
+            return (t && t !== '시/군/구 선택') ? t : '';
+        })(),
+        category: bizCat,
+        toneStyle: captionTone,
+        tagStyle: tagStyle,
+        ownerName: ceoName || userData.name || '',
+        ownerEmail: userData.email || ''
+    };
+
+    if(type==='now'){
+        // 웹훅으로 실제 전송
+        const formData = new FormData();
+        // 사진 파일들 추가
+        stagedFiles.forEach((f, i) => formData.append(`photo_${i}`, f, f.name));
+        // 대표 사진 (첫 번째) 별도 전송 - 스토리용
+        if (stagedFiles.length > 0) formData.append('thumbnailFile', stagedFiles[0], stagedFiles[0].name);
+        // 스토리 자동 게시 설정
+        const autoStoryOn = userData.autoStory === true;
+        formData.append('autoStory', autoStoryOn ? 'true' : 'false');
+        // 텍스트 데이터 추가
+        formData.append('userMessage', notes);
+        formData.append('bizCategory', bizCat);
+        formData.append('captionTone', captionTone);
+        formData.append('tagStyle', tagStyle);
+        formData.append('weather', JSON.stringify(weatherPayload));
+        formData.append('airQuality', JSON.stringify(currentAirQuality || {}));
+        // autoFestival OFF면 행사 데이터 전송 안 함
+        const festivalData = (userData.autoFestival === false) ? [] : (currentFestivals || []);
+        formData.append('festivals', JSON.stringify(festivalData));
+        formData.append('trends', JSON.stringify(currentTrends));
+        formData.append('storeProfile', JSON.stringify(storeProfile));
+        formData.append('photoCount', stagedFiles.length);
+        formData.append('submittedAt', new Date().toISOString());
+        const reserveTime=document.getElementById('reserve-time-field').value;
+        if(reserveTime) formData.append('scheduledAt', new Date(reserveTime).toISOString());
+
+        try {
+            showToast('전송 중이에요... ⏳');
+
+            // 게시 횟수 카운팅 먼저 확인
+            const lumiUserData = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+            const token = lumiUserData.token || '';
+            if (token) {
+                const countRes = await fetch('/.netlify/functions/count-post', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+                const countData = await countRes.json();
+                if (!countRes.ok) {
+                    if (countData.code === 'TRIAL_EXPIRED') {
+                        showPaywall('trial');
+                    } else if (countData.code === 'POST_LIMIT_REACHED') {
+                        showPaywall('limit');
+                    } else {
+                        showToast(countData.error || '게시 오류가 발생했어요.');
+                    }
+                    return;
+                }
+                // 남은 횟수 업데이트
+                const remainEl = document.getElementById('post-remain-badge');
+                if (remainEl) {
+                    if (countData.remaining === 999999) {
+                        remainEl.textContent = '무제한';
+                    } else {
+                        remainEl.textContent = '이번 달 ' + countData.remaining + '회 남음';
+                    }
+                }
+            }
+
+            // 버튼 비활성화
+        const nowBtn = document.querySelector('.btn-act-on');
+        if (nowBtn) { nowBtn.disabled = true; nowBtn.textContent = '업로드 중...'; }
+
+        const res = await fetch('/.netlify/functions/reserve', {
+                method: 'POST',
+                body: formData
+            });
+            if(res.ok){
+                showToast('전송 완료! 🎉','pink');
+                resetDashboard();
+            } else {
+                showToast('전송에 실패했어요. 다시 시도해 주세요.');
+            }
+        } catch(e) {
+            showToast('네트워크 오류가 발생했어요.');
+        }
+
+    } else {
+        // 예약 저장 → Netlify Blobs에 저장
+        const reserveTimeVal = document.getElementById('reserve-time-field').value;
+        const scheduledAt = reserveTimeVal ? new Date(reserveTimeVal).toISOString() : null;
+        if (!scheduledAt) {
+            showToast('예약 시간을 선택해주세요.', 'red');
+            return;
+        }
+
+        const btn2 = document.querySelector('.btn-act-off');
+        if (btn2) { btn2.disabled = true; btn2.textContent = '저장 중...'; }
+
+        try {
+            const formData2 = new FormData();
+            stagedFiles.forEach((f, i) => formData2.append(`photo_${i}`, f, f.name));
+            formData2.append('userMessage', notes);
+            formData2.append('bizCategory', bizCat);
+            formData2.append('captionTone', captionTone);
+            formData2.append('tagStyle', tagStyle);
+            formData2.append('weather', JSON.stringify(weatherPayload));
+            formData2.append('trends', JSON.stringify(currentTrends));
+            formData2.append('storeProfile', JSON.stringify(storeProfile));
+            formData2.append('submittedAt', new Date().toISOString());
+            formData2.append('scheduledAt', scheduledAt);
+
+            const res2 = await fetch('/.netlify/functions/save-reservation', {
+                method: 'POST',
+                body: formData2
+            });
+            const data2 = await res2.json();
+
+            if (res2.ok) {
+                // 로컬 보관함에도 표시용으로 저장
+                archive.push({
+                    id: data2.id,
+                    time: new Date().toLocaleString(),
+                    scheduledAt,
+                    content: notes,
+                    photos,
+                    weather: weatherPayload,
+                    trends: currentTrends,
+                    bizCategory: bizCat,
+                    captionTone,
+                    storeProfile
+                });
+                syncPersistence();
+                renderArchive();
+                showToast('예약이 저장됐어요! ⏰', 'pink');
+                resetDashboard();
+            } else {
+                showToast(data2.error || '예약 저장에 실패했어요.', 'red');
+            }
+        } catch(e) {
+            showToast('네트워크 오류가 발생했습니다.', 'red');
+        } finally {
+            if (btn2) { btn2.disabled = false; btn2.textContent = '예약 저장'; }
+        }
+    }
+}
+
+/* ── 보관함 ── */
+async function loadBestTimeForPlan() {
+    const lockEl = document.getElementById('best-time-lock');
+    try {
+        const userRaw = localStorage.getItem('lumi_user');
+        const user = userRaw ? JSON.parse(userRaw) : {};
+        const token = localStorage.getItem('lumi_token');
+
+        // check-plan으로 플랜 확인
+        const res = await fetch('/.netlify/functions/check-plan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: user.email })
+        });
+        const data = await res.json();
+        const plan = data.plan || 'trial';
+        const isPro = plan === 'pro';
+
+        // 잠금/해제
+        if (lockEl) lockEl.style.display = isPro ? 'none' : 'flex';
+
+        // 프로 플랜이면 최적 시간 로드
+        if (isPro) {
+            const category = user.bizCategory || 'cafe';
+            const btRes = await fetch('/.netlify/functions/get-best-time', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ category })
+            });
+            const btData = await btRes.json();
+            if (btRes.ok) {
+                document.getElementById('best-time-badge').textContent = btData.bestTime;
+                document.getElementById('best-time-reason').textContent = btData.reason;
+                document.getElementById('best-time-tip').textContent = '💡 ' + btData.tip;
+                const slotsEl = document.getElementById('best-time-slots');
+                if (slotsEl && btData.allSlots) {
+                    slotsEl.innerHTML = btData.allSlots.map(s =>
+                        '<span style="background:var(--pink-pale);color:var(--pink);font-size:.75rem;font-weight:700;padding:4px 10px;border-radius:99px;" title="' + s.reason + '">' + s.time + '</span>'
+                    ).join('');
+                }
+            }
+        }
+    } catch(e) {
+        if (lockEl) lockEl.style.display = 'flex';
+        console.log('best-time-plan 오류:', e.message);
+    }
+}
+
+function renderArchive(){
+    const el=document.getElementById('lumi-inventory-list');
+    if(!el) return;
+    if(archive.length===0){
+        el.innerHTML='<div class="arc-empty" style="padding:20px;text-align:center;border:1.5px dashed var(--g200);border-radius:var(--r-lg);color:var(--g400);font-size:.83rem;font-weight:600;">예약된 게시물이 없어요</div>';
+        return;
+    }
+    el.innerHTML=archive.map(item=>{
+        const isScheduled = item.scheduledAt && !item.isSent;
+        const isSent = item.isSent;
+        const schedDate = item.scheduledAt ? new Date(item.scheduledAt) : null;
+        const schedStr = schedDate
+            ? schedDate.toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'}) + ' ' + schedDate.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})
+            : '즉시';
+        const statusBadge = isSent
+            ? '<span style="font-size:10px;font-weight:700;color:#38a169;background:#f0fff4;padding:2px 8px;border-radius:99px;">✅ 전송완료</span>'
+            : isScheduled
+                ? `<span style="font-size:10px;font-weight:700;color:var(--pink);background:var(--pink-pale);padding:2px 8px;border-radius:99px;">⏰ ${schedStr} 예약</span>`
+                : '<span style="font-size:10px;font-weight:700;color:var(--g400);background:var(--g100);padding:2px 8px;border-radius:99px;">바로 올리기</span>';
+        const thumbs = item.photos.slice(0,3).map(p=>`<img src="${p.data}" style="width:52px;height:52px;border-radius:8px;object-fit:cover;border:1px solid var(--g100);">`).join('');
+        const moreCount = item.photos.length > 3 ? `<span style="width:52px;height:52px;border-radius:8px;background:var(--g100);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--g500);">+${item.photos.length-3}</span>` : '';
+        return `<li style="background:var(--white);border-radius:var(--r-lg);padding:14px 16px;border:1px solid var(--g100);margin-bottom:8px;animation:fadeUp .3s var(--ease);">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                <div style="display:flex;align-items:center;gap:8px;">${statusBadge}</div>
+                <button class="arc-del" onclick="removeArchiveItem(${item.id})" style="font-size:11px;color:var(--g400);background:none;border:none;cursor:pointer;text-decoration:underline;">삭제</button>
+            </div>
+            <div style="display:flex;gap:6px;margin-bottom:8px;">${thumbs}${moreCount}</div>
+            <p style="font-size:.8rem;color:var(--g500);line-height:1.6;">${item.content ? '"'+item.content+'"' : '<span style="color:var(--g400);">메시지 없음 — lumi가 알아서 작성해요</span>'}</p>
+        </li>`;
+    }).join('');
+}
+
+/* ── 포털 / 네비게이션 ── */
+function setPortalMode(mode){
+    const vL=document.getElementById('lumi-login-view'),vS=document.getElementById('lumi-signup-view');
+    const vF=document.getElementById('lumi-forgot-view'),vFI=document.getElementById('lumi-findid-view');
+    const tL=document.getElementById('tab-login-btn'),tS=document.getElementById('tab-signup-btn');
+    if(vF)vF.classList.add('hidden');
+    if(vFI)vFI.classList.add('hidden');
+    if(mode==='login'){vL.classList.remove('hidden');vS.classList.add('hidden');tL.classList.add('active');tS.classList.remove('active');}
+    else{vL.classList.add('hidden');vS.classList.remove('hidden');tL.classList.remove('active');tS.classList.add('active');navNode(1);}
+}
+function openPortal(init){
+    window._lumiScrollPos = window.scrollY;
+    document.getElementById('lumi-auth-portal').style.display='flex';
+    setPortalMode(init);
+}
+function handleStartBtn(){
+    if (localStorage.getItem('lumi_token')) {
+        window.location.href = '/subscribe';
+    } else {
+        openPortal('signup');
+    }
+}
+function resetToInitialLanding(){
+    location.href='/';
+}
+function navNode(s){['1','2','2b','3'].forEach(n=>{document.getElementById(`node-step-${n}`)?.classList.add('hidden');document.getElementById(`dot-${n}`)?.classList.remove('on');});document.getElementById(`node-step-${s}`)?.classList.remove('hidden');document.getElementById(`dot-${s}`)?.classList.add('on');}
+async function grantAccess(){
+    // 대시보드 즉시 진입 (구독 체크는 백그라운드에서)
+    document.getElementById('lumi-auth-portal').style.display='none';
+    var introEl=document.getElementById('lumi-intro-view-port');if(introEl)introEl.style.display='none';
+    document.getElementById('lumi-dashboard-node').style.display='flex';
+    document.body.style.overflow='hidden';
+    window.scrollTo(0,0);
+
+    bootPersistence();
+    renderArchive();
+
+    const userRaw2 = localStorage.getItem('lumi_user');
+    if (userRaw2) {
+        try {
+            const user = JSON.parse(userRaw2);
+            ceoName = user.name || '';
+            storeName = user.storeName || '';
+            storeInsta = user.instagram || '';
+            storeDesc = user.storeDesc || '';
+            storeRegion = user.region || '';
+            if (user.sidoCode || user.sigunguCode) {
+                restoreRegionDropdown(user.region, user.sidoCode || '', user.sigunguCode || '');
+            }
+            bizCat = user.bizCategory || 'cafe';
+            captionTone = user.captionTone || '';
+            tagStyle = user.tagStyle || 'mid';
+            const dashBiz = document.getElementById('dash-biz-cat');
+            if (dashBiz) dashBiz.value = bizCat;
+            const dashTone = document.getElementById('dash-caption-tone');
+            if (dashTone) dashTone.value = captionTone;
+            const dashTag = document.getElementById('dash-tag-style');
+            if (dashTag) dashTag.value = tagStyle;
+        } catch(e) {}
+    }
+
+    loadTrends();
+    loadAutoReply();
+    checkIgConnection();
+    initProfileView();
+    loadBestTimeForPlan();
+    loadToneFeedback();
+    loadLinkPage();
+    initAutoStory();
+    initAutoFestival();
+    if (!JSON.parse(localStorage.getItem('lumi_user') || '{}').sidoCode) {
+        initWeather();
+    }
+
+    if (userRaw2) {
+        try {
+            const user = JSON.parse(userRaw2);
+            const res = await fetch('/.netlify/functions/check-plan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: user.email })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                if (data.trialExpired) { showPaywall('trial'); return; }
+                if (data.remaining <= 0) { showPaywall('limit'); return; }
+                const remainEl = document.getElementById('post-remain-badge');
+                if (remainEl) remainEl.textContent = '이번 달 ' + data.remaining + '회 남음';
+                if (data.plan === 'standard' || data.plan === 'pro') {
+                    const cancelBtn = document.getElementById('cancel-sub-btn');
+                    if (cancelBtn && data.autoRenew !== false) cancelBtn.style.display = 'inline-block';
+                }
+            }
+        } catch(e) { console.error('plan check error:', e); }
+    }
+
+    const nameEl = document.getElementById('dash-store-name');
+    if (nameEl) {
+        const greeting = ceoName ? ceoName + '님, ' : '';
+        nameEl.textContent = storeName ? greeting + storeName + ' 대표님 안녕하세요.' : '안녕하세요.';
+    }
+
+    const dateSelect = document.getElementById('reserve-date-select');
+    const hourSelect = document.getElementById('reserve-hour-select');
+    if (dateSelect && hourSelect) {
+        const now = new Date();
+        for (let i = 0; i <= 30; i++) {
+            const d = new Date(now);
+            d.setDate(now.getDate() + i);
+            const opt = document.createElement('option');
+            const mm = d.getMonth() + 1;
+            const dd = d.getDate();
+            const day = ['일','월','화','수','목','금','토'][d.getDay()];
+            opt.value = d.toISOString().slice(0,10);
+            opt.textContent = i === 0 ? `오늘 (${mm}/${dd})` : `${mm}월 ${dd}일 (${day})`;
+            dateSelect.appendChild(opt);
+        }
+        for (let h = 0; h < 24; h++) {
+            const opt = document.createElement('option');
+            opt.value = String(h).padStart(2,'0');
+            opt.textContent = `${h}시`;
+            hourSelect.appendChild(opt);
+        }
+        const minSelect = document.getElementById('reserve-min-select');
+        if (minSelect) {
+            for (let m = 0; m < 60; m++) {
+                const opt = document.createElement('option');
+                opt.value = String(m).padStart(2,'0');
+                opt.textContent = `${m}분`;
+                minSelect.appendChild(opt);
+            }
+        }
+    }
+}
+
+
+async function saveAutoReply() {
+    const commentKeywords = getKeywordRows('comment');
+    const dmKeywords = getKeywordRows('dm');
+    const commentDefault = document.getElementById('comment-default-reply')?.value.trim();
+    const dmDefault = document.getElementById('dm-default-reply')?.value.trim();
+
+    const payload = {
+        comment: { keywords: commentKeywords, defaultReply: commentDefault },
+        dm: { keywords: dmKeywords, defaultReply: dmDefault }
+    };
+
+    try {
+        const lumiUser = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+        const savedToken = lumiUser.token || '';
+        const res = await fetch('/.netlify/functions/save-auto-reply', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + savedToken
+            },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+            showToast('자동 응답 설정이 저장됐어요! ✅', 'pink');
+        } else {
+            showToast(data.error || '저장에 실패했어요.', 'red');
+        }
+    } catch(e) {
+        showToast('네트워크 오류가 발생했습니다.', 'red');
+    }
+}
+
+async function loadAutoReply() {
+    try {
+        const lumiUser2 = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+        const savedToken = lumiUser2.token || '';
+        const res = await fetch('/.netlify/functions/save-auto-reply', {
+            headers: { 'Authorization': 'Bearer ' + savedToken }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+
+        // 댓글 키워드 복원
+        const commentWrap = document.getElementById('comment-keywords-wrap');
+        if (commentWrap && data.comment?.keywords) {
+            commentWrap.innerHTML = '';
+            data.comment.keywords.forEach((item, idx) => {
+                const row = document.createElement('div');
+                row.className = 'keyword-row';
+                row.dataset.index = idx;
+                row.innerHTML = `
+                    <input type="text" class="inp-sm" placeholder="키워드" id="comment-keyword-${idx}" value="${item.keyword}">
+                    <input type="text" class="inp-sm" placeholder="답변 내용" id="comment-reply-${idx}" value="${item.reply}" style="flex:2;">
+                    <button class="btn-del" onclick="removeKeywordRow(this)">✕</button>
+                `;
+                commentWrap.appendChild(row);
+            });
+        }
+        if (data.comment?.defaultReply) {
+            const el = document.getElementById('comment-default-reply');
+            if (el) el.value = data.comment.defaultReply;
+        }
+
+        // DM 키워드 복원
+        const dmWrap = document.getElementById('dm-keywords-wrap');
+        if (dmWrap && data.dm?.keywords) {
+            dmWrap.innerHTML = '';
+            data.dm.keywords.forEach((item, idx) => {
+                const row = document.createElement('div');
+                row.className = 'keyword-row';
+                row.dataset.index = idx;
+                row.innerHTML = `
+                    <input type="text" class="inp-sm" placeholder="키워드" id="dm-keyword-${idx}" value="${item.keyword}">
+                    <input type="text" class="inp-sm" placeholder="답변 내용" id="dm-reply-${idx}" value="${item.reply}" style="flex:2;">
+                    <button class="btn-del" onclick="removeKeywordRow(this)">✕</button>
+                `;
+                dmWrap.appendChild(row);
+            });
+        }
+        if (data.dm?.defaultReply) {
+            const el = document.getElementById('dm-default-reply');
+            if (el) el.value = data.dm.defaultReply;
+        }
+    } catch(e) {
+        console.log('자동 응답 설정 로딩 실패:', e.message);
+    }
+}
+
+function removeArchiveItem(id){if(confirm("이 기록을 삭제할까요?")){archive=archive.filter(i=>i.id!==id);syncPersistence();renderArchive();}}
+function resetDashboard(){document.getElementById('ceo-note-input').value='';document.getElementById('ceo-file-selector').value='';stagedFiles=[];renderStagedFiles();_isCommitting=false;}
+
+
+function checkWithdrawInput(input) {
+    const btn = document.getElementById('withdraw-confirm-btn');
+    if (input.value === '탈퇴') {
+        btn.disabled = false;
+        btn.style.background = '#e53e3e';
+        btn.style.color = '#fff';
+        btn.style.cursor = 'pointer';
+    } else {
+        btn.disabled = true;
+        btn.style.background = '#E8ECF0';
+        btn.style.color = '#8B95A1';
+        btn.style.cursor = 'not-allowed';
+    }
+}
+
+function closeWithdrawModal() {
+    const modal = document.getElementById('withdraw-modal');
+    if (modal) { modal.style.display = 'none'; }
+}
+
+async function confirmWithdraw() {
+    const userRaw = localStorage.getItem('lumi_user');
+    const user = userRaw ? JSON.parse(userRaw) : null;
+
+    // 구독 중이면 먼저 취소
+    if (user?.token && user?.email) {
+        try {
+            await fetch('/.netlify/functions/cancel-subscription', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: user.email, token: user.token, reason: '회원탈퇴' })
+            });
+        } catch(e) { console.log('구독 취소 오류(탈퇴):', e); }
+    }
+
+    localStorage.clear();
+    showToast('계정이 삭제됐어요.', '');
+    setTimeout(() => location.reload(), 1200);
+}
+function syncWeatherUI(state){const c=LUMI_CORE.weather[state]||LUMI_CORE.weather.clear;const lumiU=JSON.parse(localStorage.getItem('lumi_user')||'{}');const loc=storeRegion||lumiU.region||'서울';document.getElementById('dash-w-icon').innerText=c.icon;document.getElementById('dash-w-text').innerText=loc+': '+c.status;document.getElementById('dash-w-guide').innerText='"'+c.guide+'"';document.getElementById('ceo-note-input').placeholder='예) 신메뉴 출시, 명절 휴무 안내, 이벤트 진행 중';}
+async function loadTrends() {
+    const trendEl = document.getElementById('trend-list-node');
+    if (!trendEl) return;
+
+    // 로딩 표시
+    trendEl.innerHTML = '<div style="color:var(--g400);font-size:.85rem;padding:8px 0;">트렌드 불러오는 중...</div>';
+
+    try {
+        const category = bizCat || 'cafe';
+        const res = await fetch('/.netlify/functions/get-trends?category=' + encodeURIComponent(category));
+        const data = await res.json();
+
+        const tags = data.tags || [];
+        if (tags.length === 0) throw new Error('태그 없음');
+
+        realtimeTrends = tags.slice(0, 8);
+        trendEl.innerHTML = tags.slice(0, 8).map((tag, i) =>
+            `<div class="trend-row"><span class="t-rank">0${i+1}</span><span class="t-tag">${tag}</span><span class="t-hot">${data.source === 'realtime' ? '실시간' : '인기'}</span></div>`
+        ).join('');
+    } catch(e) {
+        // 실패 시 하드코딩 기본값으로 폴백
+        const fallback = LUMI_CORE.trends[bizCat] || LUMI_CORE.trends.cafe;
+        realtimeTrends = fallback;
+        trendEl.innerHTML = fallback.map((tag, i) =>
+            `<div class="trend-row"><span class="t-rank">0${i+1}</span><span class="t-tag">${tag}</span><span class="t-hot">인기</span></div>`
+        ).join('');
+    }
+}
+
+/* ── 자동 응답 설정 ── */
+function addKeywordRow(type) {
+    const wrap = document.getElementById(type + '-keywords-wrap');
+    if (!wrap) return;
+    const idx = wrap.children.length;
+    const row = document.createElement('div');
+    row.className = 'keyword-row';
+    row.dataset.index = idx;
+    row.innerHTML = `
+        <input type="text" class="inp-sm" placeholder="키워드 (예: 가격)" id="${type}-keyword-${idx}">
+        <input type="text" class="inp-sm" placeholder="답변 내용" id="${type}-reply-${idx}" style="flex:2;">
+        <button class="btn-del" onclick="removeKeywordRow(this)">✕</button>
+    `;
+    wrap.appendChild(row);
+}
+
+function removeKeywordRow(btn) {
+    btn.closest('.keyword-row').remove();
+}
+
+function getKeywordRows(type) {
+    const wrap = document.getElementById(type + '-keywords-wrap');
+    if (!wrap) return [];
+    const rows = [];
+    wrap.querySelectorAll('.keyword-row').forEach(row => {
+        const idx = row.dataset.index;
+        const keyword = document.getElementById(type + '-keyword-' + idx)?.value.trim();
+        const reply = document.getElementById(type + '-reply-' + idx)?.value.trim();
+        if (keyword && reply) rows.push({ keyword, reply });
+    });
+    return rows;
+}
+
+/* ── 채팅 데모 애니메이션 (Intersection Observer) ── */
+function initChatDemo() {
+    const rows = document.querySelectorAll('#lumi-chat-demo .chat-row');
+    if (!rows.length) return;
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                rows.forEach((row, i) => {
+                    const delay = parseInt(row.dataset.delay) || i * 600;
+                    setTimeout(() => row.classList.add('show'), delay);
+                });
+                observer.disconnect();
+            }
+        });
+    }, { threshold: 0.1, rootMargin: "0px 0px -50px 0px" });
+
+    observer.observe(document.getElementById('lumi-chat-demo'));
+}
+initChatDemo();
+
+function showPaywall(type) {
+    document.getElementById('lumi-dashboard-node').style.display='none';
+    const portal = document.getElementById('lumi-auth-portal');
+    portal.style.display='flex';
+
+    const title = type === 'trial'
+        ? '베타 기간이 종료되었어요'
+        : '이번 달 게시 횟수를 모두 사용했어요!';
+    const desc = type === 'trial'
+        ? '계속 사용하려면 구독을 시작해주세요.'
+        : '다음 달까지 기다리거나 플랜을 업그레이드하세요.';
+
+    portal.innerHTML = `
+        <div style="text-align:center;padding:48px 24px;max-width:400px;margin:auto;">
+            <div style="font-size:48px;margin-bottom:16px;">🌸</div>
+            <h2 style="font-size:1.4rem;font-weight:900;color:#1a1a2e;margin-bottom:12px;">${title}</h2>
+            <p style="font-size:.9rem;color:#666;margin-bottom:8px;">${desc}</p>
+            <div style="background:#fff0f6;border-radius:16px;padding:20px;margin-bottom:24px;">
+                <div style="font-size:1.1rem;font-weight:900;color:#FF6B9D;margin-bottom:4px;">스탠다드 플랜</div>
+                <div style="font-size:.8rem;color:#999;text-decoration:line-through;margin-bottom:2px;">59,000원/월</div>
+                <div style="font-size:1.6rem;font-weight:900;color:#1a1a2e;">49,000원<span style="font-size:.85rem;font-weight:500;color:#666;">/월</span></div>
+                <div style="font-size:.75rem;color:#FF6B9D;font-weight:700;margin-top:4px;">🎉 오픈 기념 특별가</div>
+            </div>
+            <button onclick="startPayment()" style="display:block;width:100%;background:#FF6B9D;color:#fff;border:none;border-radius:12px;padding:16px;font-size:1rem;font-weight:700;cursor:pointer;margin-bottom:12px;">지금 구독하기</button>
+            <button onclick="lumiLogout()" style="background:none;border:none;color:#999;font-size:.85rem;cursor:pointer;">로그아웃</button>
+        </div>
+    `;
+}
+
+
+/* ── 결제 (포트원 v2 + 토스페이먼츠) ── */
+
+async function cancelSubscription() {
+    const modal = document.getElementById('cancel-modal');
+    const infoBox = document.getElementById('cancel-modal-info');
+    if (modal) { modal.style.display = 'flex'; }
+
+    // 남은 기간 계산
+    try {
+        const userRaw = localStorage.getItem('lumi_user');
+        const user = JSON.parse(userRaw);
+        const res = await fetch('/.netlify/functions/check-plan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: user.email })
+        });
+        const data = await res.json();
+
+        // 다음 결제일(= 구독 시작일 + 한 달) 또는 무료체험 종료일 계산
+        const createdAt = new Date(user.createdAt || Date.now());
+        let expireDate;
+        if (data.plan === 'trial') {
+            expireDate = new Date(createdAt);
+            expireDate.setDate(expireDate.getDate() + 7);
+        } else {
+            // 구독 중: 다음 결제일까지
+            const subStart = new Date(user.subscriptionStart || user.createdAt || Date.now());
+            expireDate = new Date(subStart);
+            expireDate.setMonth(expireDate.getMonth() + 1);
+        }
+
+        const today = new Date();
+        const diffDays = Math.max(0, Math.ceil((expireDate - today) / (1000*60*60*24)));
+        const expireDateStr = expireDate.getMonth()+1 + '월 ' + expireDate.getDate() + '일';
+
+        if (infoBox) {
+            infoBox.innerHTML = `
+                <div style="font-size:.78rem;color:#8B95A1;margin-bottom:8px;">취소해도 아래 기간까지 계속 이용할 수 있어요.</div>
+                <div style="display:flex;justify-content:center;gap:20px;">
+                    <div>
+                        <div style="font-size:1.3rem;font-weight:900;color:#FF6B9D;">${diffDays}일</div>
+                        <div style="font-size:.72rem;color:#8B95A1;margin-top:2px;">남은 기간</div>
+                    </div>
+                    <div style="width:1px;background:#E8ECF0;"></div>
+                    <div>
+                        <div style="font-size:1rem;font-weight:900;color:#191F28;">${expireDateStr}</div>
+                        <div style="font-size:.72rem;color:#8B95A1;margin-top:2px;">이용 만료일</div>
+                    </div>
+                </div>
+            `;
+        }
+    } catch(e) {
+        if (infoBox) {
+            infoBox.innerHTML = '<div style="font-size:.82rem;color:#6B7684;">취소 후에도 현재 결제 기간까지 이용 가능합니다.</div>';
+        }
+    }
+}
+
+function selectCancelReason(label) {
+    document.querySelectorAll('#cancel-modal label').forEach(l => l.style.borderColor = '#E8ECF0');
+    label.style.borderColor = '#FF6B9D';
+}
+
+function closeCancelModal() {
+    const modal = document.getElementById('cancel-modal');
+    if (modal) { modal.style.display = 'none'; }
+    document.querySelectorAll('input[name="cancel-reason"]').forEach(r => r.checked = false);
+    document.querySelectorAll('#cancel-modal label').forEach(l => l.style.borderColor = '#E8ECF0');
+}
+
+async function confirmCancelSubscription() {
+    const userRaw = localStorage.getItem('lumi_user');
+    if (!userRaw) return;
+    const user = JSON.parse(userRaw);
+    const reason = document.querySelector('input[name="cancel-reason"]:checked')?.value || '사유 없음';
+    const btn = document.querySelector('#cancel-modal button');
+    btn.disabled = true; btn.textContent = '처리 중...';
+    try {
+        const res = await fetch('/.netlify/functions/cancel-subscription', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: user.email, token: user.token, reason })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            closeCancelModal();
+            showToast(data.message, '');
+            document.getElementById('cancel-sub-btn').style.display = 'none';
+        } else {
+            showToast(data.error || '취소 중 오류가 발생했어요.', 'red');
+            btn.disabled = false; btn.textContent = '구독 취소 확정';
+        }
+    } catch(e) {
+        showToast('취소 중 오류가 발생했어요.', 'red');
+        btn.disabled = false; btn.textContent = '구독 취소 확정';
+    }
+}
+
+async function startPayment() {
+    const userRaw = localStorage.getItem('lumi_user');
+    if (!userRaw) {
+        showToast('로그인이 필요해요.', 'red');
+        openPortal('login');
+        return;
+    }
+    const user = JSON.parse(userRaw);
+
+    // 1. 주문 생성
+    const prepRes = await fetch('/.netlify/functions/payment-prepare', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: user.email, planType: 'standard' })
+    });
+    const prepData = await prepRes.json();
+    if (!prepRes.ok) {
+        showToast(prepData.error || '결제 준비에 실패했어요.', 'red');
+        return;
+    }
+
+    // 2. 포트원 v2 결제창 호출
+    try {
+        const response = await PortOne.requestPayment({
+            storeId: 'store-23f87009-a63a-4e6e-831e-a89ea9145102',
+            channelKey: 'channel-key-80e3e34a-9fe6-4bdb-8011-7504f6fb10f7',
+            paymentId: prepData.orderId,
+            orderName: prepData.orderName,
+            totalAmount: prepData.amount,
+            currency: 'KRW',
+            customer: {
+                email: user.email,
+                fullName: user.name
+            }
+        });
+
+        if (response.code) {
+            showToast('결제가 취소됐어요.', '');
+            return;
+        }
+
+        // 3. 서버사이드 결제 검증
+        const confirmRes = await fetch('/.netlify/functions/payment-confirm', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                paymentId: response.paymentId,
+                orderId: prepData.orderId
+            })
+        });
+        const confirmData = await confirmRes.json();
+
+        if (confirmRes.ok) {
+            // 로컬 사용자 정보 업데이트
+            user.plan = 'standard';
+            localStorage.setItem('lumi_user', JSON.stringify(user));
+            showToast('결제가 완료됐어요! 스탠다드 플랜이 시작됐어요. 🎉', 'pink');
+            setTimeout(() => location.reload(), 2000);
+        } else {
+            showToast(confirmData.error || '결제 검증에 실패했어요.', 'red');
+        }
+    } catch(e) {
+        console.error('결제 오류:', e);
+        showToast('결제 중 오류가 발생했어요.', 'red');
+    }
+}
+
+
+// 이메일 도메인 직접입력 토글
+function toggleEmailDomain(val) {
+    const direct = document.getElementById('id-reg-domain-direct');
+    direct.style.display = val === 'direct' ? 'block' : 'none';
+}
+
+// 이메일 조합 함수
+function getSignupEmail() {
+    const local = document.getElementById('id-reg-local').value.trim();
+    const domainSelect = document.getElementById('id-reg-domain-select').value;
+    const domainDirect = document.getElementById('id-reg-domain-direct').value.trim();
+    const domain = domainSelect === 'direct' ? domainDirect : domainSelect;
+    return local && domain ? local + '@' + domain : '';
+}
+
+// 인증번호 요청
+async function requestSignupOtp() {
+    const email = getSignupEmail();
+    if (!email || !isValidEmail(email)) {
+        showFieldErr('id-reg-field', 'reg-email-err', '이메일을 올바르게 입력하세요.');
+        return;
+    }
+    document.getElementById('id-reg-field').value = email;
+    const btn = document.getElementById('otp-req-btn');
+    btn.disabled = true;
+    btn.textContent = '전송 중...';
+    try {
+        const res = await fetch('/.netlify/functions/send-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            showToast('인증번호를 보냈어요. 이메일을 확인해주세요.', 'pink');
+            document.getElementById('otp-row').classList.remove('hidden');
+            document.getElementById('id-otp-field').focus();
+            btn.textContent = '재전송';
+        } else {
+            showFieldErr('id-reg-field', 'reg-email-err', data.error || '발송 실패');
+            btn.textContent = '인증번호 받기';
+        }
+    } catch(e) {
+        showToast('네트워크 오류가 발생했습니다.', 'red');
+        btn.textContent = '인증번호 받기';
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+// OTP 6자리 자동 확인
+async function onOtpInput(input) {
+    clearFieldErr('id-otp-field', 'otp-err');
+    if (input.value.length !== 6) return;
+    const email = getSignupEmail();
+    const otp = input.value;
+    input.disabled = true;
+    try {
+        const res = await fetch('/.netlify/functions/verify-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, otp })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            document.getElementById('otp-verified-badge').classList.remove('hidden');
+            input.style.borderColor = '#22c55e';
+            window._otpVerified = true;
+        } else {
+            showFieldErr('id-otp-field', 'otp-err', data.error || '인증번호가 올바르지 않아요.');
+            input.value = '';
+            input.disabled = false;
+            input.focus();
+            window._otpVerified = false;
+        }
+    } catch(e) {
+        showFieldErr('id-otp-field', 'otp-err', '네트워크 오류가 발생했습니다.');
+        input.disabled = false;
+        window._otpVerified = false;
+    }
+}
+
+
+/* ── 비밀번호 찾기 ── */
+/* ── 생년월일 드롭다운 초기화 ── */
+function initBirthdateSelects() {
+    const yearEl = document.getElementById('birthdate-year');
+    const monthEl = document.getElementById('birthdate-month');
+    const dayEl = document.getElementById('birthdate-day');
+    if (!yearEl || !monthEl || !dayEl) return;
+
+    // 년도 (1940 ~ 올해)
+    const curYear = new Date().getFullYear();
+    for (let y = curYear; y >= 1940; y--) {
+        const opt = document.createElement('option');
+        opt.value = y; opt.textContent = y + '년';
+        yearEl.appendChild(opt);
+    }
+    // 월
+    for (let m = 1; m <= 12; m++) {
+        const opt = document.createElement('option');
+        opt.value = String(m).padStart(2,'0'); opt.textContent = m + '월';
+        monthEl.appendChild(opt);
+    }
+    // 일 (기본 31일)
+    for (let d = 1; d <= 31; d++) {
+        const opt = document.createElement('option');
+        opt.value = String(d).padStart(2,'0'); opt.textContent = d + '일';
+        dayEl.appendChild(opt);
+    }
+}
+
+function updateBirthdateDays() {
+    const yearEl = document.getElementById('birthdate-year');
+    const monthEl = document.getElementById('birthdate-month');
+    const dayEl = document.getElementById('birthdate-day');
+    if (!yearEl || !monthEl || !dayEl) return;
+    const y = parseInt(yearEl.value) || 2000;
+    const m = parseInt(monthEl.value) || 1;
+    const maxDay = new Date(y, m, 0).getDate();
+    const currentDay = dayEl.value;
+    dayEl.innerHTML = '<option value="">일</option>';
+    for (let d = 1; d <= maxDay; d++) {
+        const opt = document.createElement('option');
+        opt.value = String(d).padStart(2,'0'); opt.textContent = d + '일';
+        dayEl.appendChild(opt);
+    }
+    if (currentDay && parseInt(currentDay) <= maxDay) dayEl.value = currentDay;
+}
+
+initBirthdateSelects();
+
+function getBirthdate() {
+    const y = document.getElementById('birthdate-year')?.value;
+    const m = document.getElementById('birthdate-month')?.value;
+    const d = document.getElementById('birthdate-day')?.value;
+    return (y && m && d) ? y + '-' + m + '-' + d : '';
+}
+
+// 아이디 찾기용 formatBirthdate (findid-bd-field는 텍스트 입력 유지)
+function formatBirthdate(input) {
+    let v = input.value.replace(/[^0-9]/g, '');
+    if (v.length >= 5) v = v.slice(0,4) + '-' + v.slice(4);
+    if (v.length >= 8) v = v.slice(0,7) + '-' + v.slice(7,9);
+    input.value = v.slice(0,10);
+}
+
+/* ── 아이디 찾기 ── */
+function openFindId() {
+    document.getElementById('lumi-login-view').classList.add('hidden');
+    document.getElementById('lumi-forgot-view').classList.add('hidden');
+    document.getElementById('lumi-findid-view').classList.remove('hidden');
+    document.getElementById('findid-step-1').classList.remove('hidden');
+    document.getElementById('findid-step-2').classList.add('hidden');
+}
+
+async function handleFindId() {
+    const name = document.getElementById('findid-name-field').value.trim();
+    const phone = document.getElementById('findid-phone-field').value.trim();
+    const birthdate = document.getElementById('findid-bd-field').value.trim();
+    if (!name) { showFieldErr('findid-name-field','findid-name-err','이름을 입력해주세요.'); return; }
+    if (!phone) { showFieldErr('findid-phone-field','findid-phone-err','전화번호를 입력해주세요.'); return; }
+    if (!birthdate || birthdate.length < 10) { showFieldErr('findid-bd-field','findid-bd-err','생년월일을 올바르게 입력해주세요.'); return; }
+    const btn = document.querySelector('#findid-step-1 .btn-portal');
+    if (btn) { btn.disabled = true; btn.textContent = '찾는 중...'; }
+    try {
+        const res = await fetch('/.netlify/functions/find-id', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, phone, birthdate })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            document.getElementById('findid-step-1').classList.add('hidden');
+            document.getElementById('findid-step-2').classList.remove('hidden');
+            document.getElementById('findid-result').textContent = data.email;
+        } else {
+            showToast(data.error || '일치하는 정보를 찾을 수 없어요.', 'red');
+        }
+    } catch(e) {
+        showToast('네트워크 오류가 발생했습니다.', 'red');
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = '아이디 찾기'; }
+    }
+}
+
+function openForgotPassword() {
+    document.getElementById('lumi-login-view').classList.add('hidden');
+    document.getElementById('lumi-forgot-view').classList.remove('hidden');
+}
+
+async function sendForgotOtp() {
+    const email = document.getElementById('forgot-email-field').value.trim();
+    if (!email || !isValidEmail(email)) {
+        showFieldErr('forgot-email-field','forgot-email-err','이메일을 올바르게 입력하세요.');
+        return;
+    }
+    try {
+        const res = await fetch('/.netlify/functions/send-otp', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            showToast('인증번호를 보냈어요.', 'pink');
+            document.getElementById('forgot-step-1').classList.add('hidden');
+            document.getElementById('forgot-step-2').classList.remove('hidden');
+        } else {
+            showFieldErr('forgot-email-field','forgot-email-err', data.error || '발송 실패');
+        }
+    } catch(e) { showToast('네트워크 오류가 발생했습니다.', 'red'); }
+}
+
+async function verifyForgotOtp() {
+    const email = document.getElementById('forgot-email-field').value.trim();
+    const otp = document.getElementById('forgot-otp-field').value.trim();
+    if (!otp || otp.length !== 6) {
+        showFieldErr('forgot-otp-field','forgot-otp-err','숫자 6자리를 입력하세요.');
+        return;
+    }
+    try {
+        const res = await fetch('/.netlify/functions/verify-otp', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, otp })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            document.getElementById('forgot-step-2').classList.add('hidden');
+            document.getElementById('forgot-step-3').classList.remove('hidden');
+        } else {
+            showFieldErr('forgot-otp-field','forgot-otp-err', data.error || '인증 실패');
+        }
+    } catch(e) { showToast('네트워크 오류가 발생했습니다.', 'red'); }
+}
+
+async function resetForgotPassword() {
+    const email = document.getElementById('forgot-email-field').value.trim();
+    const pw = document.getElementById('forgot-pw-field').value;
+    const pwc = document.getElementById('forgot-pw-confirm-field').value;
+    const forgotPwRegex = /^(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{10,}$/;
+    if (!pw || !forgotPwRegex.test(pw)) { showFieldErr('forgot-pw-field','forgot-pw-err','비밀번호는 특수문자를 포함한 10자 이상이어야 합니다.'); return; }
+    if (pw !== pwc) { showFieldErr('forgot-pw-confirm-field','forgot-pw-confirm-err','비밀번호가 일치하지 않아요.'); return; }
+    try {
+        const res = await fetch('/.netlify/functions/reset-password', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password: pw })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            showToast('비밀번호가 변경됐어요! 로그인해주세요.', 'pink');
+            setPortalMode('login');
+        } else {
+            showToast(data.error || '변경 실패', 'red');
+        }
+    } catch(e) { showToast('네트워크 오류가 발생했습니다.', 'red'); }
+}
+
+/* ── 회원가입 완료 ── */
+function toggleAllAgree(checked) {
+    ['agree-terms','agree-privacy','agree-refund','agree-marketing'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.checked = checked;
+    });
+}
+
+function syncAllAgree() {
+    const all = ['agree-terms','agree-privacy','agree-refund','agree-marketing'].every(id => {
+        const el = document.getElementById(id);
+        return el ? el.checked : false;
+    });
+    const allEl = document.getElementById('agree-all');
+    if (allEl) allEl.checked = all;
+}
+
+async function finishLumiSignup() {
+    // 약관 동의 검증
+    const agreeTerms = document.getElementById('agree-terms')?.checked;
+    const agreePrivacy = document.getElementById('agree-privacy')?.checked;
+    const agreeRefund = document.getElementById('agree-refund')?.checked;
+    const agreeErr = document.getElementById('agree-err');
+    if (!agreeTerms || !agreePrivacy || !agreeRefund) {
+        if (agreeErr) { agreeErr.classList.remove('hidden'); agreeErr.scrollIntoView({behavior:'smooth', block:'center'}); }
+        return;
+    }
+    if (agreeErr) agreeErr.classList.add('hidden');
+
+    const password = document.getElementById('id-pw-field')?.value || '';
+    const pwConfirm = document.getElementById('id-pw-confirm-field')?.value || '';
+    const toneInput = document.getElementById('caption-tone-field')?.value.trim();
+    if (toneInput) captionTone = toneInput;
+    tagStyle = document.getElementById('tag-style-select')?.value || 'mid';
+
+    // 비밀번호 검증
+    const pwRegex = /^(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{10,}$/;
+    if (!password || !pwRegex.test(password)) { showToast('비밀번호는 특수문자를 포함한 10자리 이상이어야 해요.', 'red'); return; }
+    if (password !== pwConfirm) { showToast('비밀번호가 일치하지 않아요.', 'red'); return; }
+
+    bizCat = document.getElementById('biz-cat-select').value;
+    if (bizCat === 'other') {
+        const otherVal = document.getElementById('biz-cat-other')?.value.trim();
+        if (!otherVal) { showFieldErr('biz-cat-other','biz-cat-other-err','업종을 입력해 주세요.'); return; }
+        bizCat = otherVal;
+    }
+
+    const name = document.getElementById('ceo-name-field')?.value.trim();
+    const sName = document.getElementById('store-name-field')?.value.trim();
+    const insta = document.getElementById('store-insta-field')?.value.trim();
+    const phone = document.getElementById('ph-reg-field')?.value.trim();
+    const birthdate = getBirthdate();
+    const email = getSignupEmail() || document.getElementById('id-reg-field')?.value.trim();
+    const storeDesc = document.getElementById('store-desc-field')?.value.trim() || '';
+    const region = document.getElementById('store-region-field')?.value.trim() || '';
+    // 지역 코드 (가입 시 드롭다운에서 선택했을 경우 대시보드 hidden input에서 읽기)
+    const sidoCode = document.getElementById('dash-region-sido-code')?.value || '';
+    const sigunguCode = document.getElementById('dash-region-sigungu-code')?.value || '';
+    const storeSidoSel = document.getElementById('dash-sido');
+    const storeSido = storeSidoSel?.options[storeSidoSel.selectedIndex]?.text || '';
+
+    if (!name) { showToast('성함을 입력해주세요.', 'red'); return; }
+    if (!sName) { showToast('매장 이름을 입력해주세요.', 'red'); return; }
+    if (!insta) { showToast('인스타그램 아이디를 입력해주세요.', 'red'); return; }
+    if (!phone) { showToast('휴대폰 번호를 입력해주세요.', 'red'); return; }
+    const front = document.getElementById('jumin-front')?.value || '';
+    const back1 = document.getElementById('jumin-back')?.value || '';
+    if (front.length !== 6 || !back1) { showFieldErr('jumin-front','reg-bd-err','주민번호 앞 6자리와 뒷자리 1개를 입력해주세요.'); return; }
+    if (!birthdate || birthdate.length < 10) { showFieldErr('jumin-front','reg-bd-err','생년월일을 올바르게 입력해주세요.'); return; }
+    const gender = getGender();
+    if (!window._otpVerified) { showToast('이메일 인증을 완료해주세요.', 'red'); return; }
+
+    const btn = document.querySelector('#lumi-signup-view .btn-portal[onclick="finishLumiSignup()"]');
+    if (btn) { btn.disabled = true; btn.textContent = '가입 중...'; }
+
+    try {
+        const res = await fetch('/.netlify/functions/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name, storeName: sName, instagram: insta, email, phone, password,
+                birthdate, gender, storeDesc, region, sidoCode, sigunguCode, bizCategory: bizCat, captionTone, tagStyle,
+                agreeMarketing: document.getElementById('agree-marketing')?.checked || false
+            })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            localStorage.setItem('lumi_user', JSON.stringify({ ...data.user, token: data.token }));
+            localStorage.setItem('lumi_token', data.token);
+            showToast('가입 완료! 환영해요 🎉', 'pink');
+            setTimeout(() => { resetToInitialLanding(); grantAccess(); }, 1000);
+        } else {
+            showToast(data.error || '가입에 실패했어요.', 'red');
+        }
+    } catch(e) {
+        showToast('네트워크 오류가 발생했습니다.', 'red');
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = '가입 완료'; }
+    }
+}
+
+
+
+
+function updateReserveHint() {
+    const dateVal = document.getElementById('reserve-date-select')?.value;
+    const hourVal = document.getElementById('reserve-hour-select')?.value;
+    const minVal = document.getElementById('reserve-min-select')?.value;
+    const hint = document.getElementById('reserve-time-hint');
+    const timeField = document.getElementById('reserve-time-field');
+
+    if (dateVal && hourVal !== '' && minVal !== '') {
+        const combined = dateVal + 'T' + hourVal + ':' + minVal + ':00';
+        timeField.value = combined;
+        const d = new Date(combined);
+        const opts = { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+        hint.textContent = d.toLocaleDateString('ko-KR', opts) + '에 게시돼요.';
+        hint.style.display = 'block';
+    } else {
+        timeField.value = '';
+        hint.style.display = 'none';
+    }
+}
+
+// ── 프로필 설정 ──
+// ── 커스텀 말투 캡션 샘플 ──
+let _customCaptions = [];
+
+function addCustomCaption() {
+    if (_customCaptions.length >= 5) {
+        showToast('캡션 샘플은 최대 5개까지 입력할 수 있어요.', 'red');
+        return;
+    }
+    _customCaptions.push('');
+    renderCustomCaptions();
+    // 마지막 입력창에 포커스
+    const inputs = document.querySelectorAll('.custom-caption-input');
+    if (inputs.length > 0) inputs[inputs.length - 1].focus();
+}
+
+function renderCustomCaptions() {
+    const el = document.getElementById('custom-caption-list');
+    if (!el) return;
+    if (_customCaptions.length === 0) {
+        el.innerHTML = '';
+        return;
+    }
+    el.innerHTML = _customCaptions.map((cap, i) => `
+        <div style="display:flex;gap:6px;margin-bottom:6px;align-items:flex-start;">
+            <textarea class="custom-caption-input inp" rows="2"
+                style="flex:1;margin:0;font-size:.8rem;padding:8px 10px;resize:none;line-height:1.5;"
+                placeholder="예: 봄이 왔나봐요 🌸 오늘부터 딸기 시즌 시작이에요."
+                oninput="_customCaptions[${i}]=this.value">${cap}</textarea>
+            <button onclick="_customCaptions.splice(${i},1);renderCustomCaptions()"
+                style="background:none;border:none;color:var(--g400);font-size:1rem;cursor:pointer;padding:8px 4px;flex-shrink:0;">✕</button>
+        </div>
+    `).join('');
+}
+
+function loadCustomCaptions(captions) {
+    _customCaptions = Array.isArray(captions) ? captions.slice(0, 5) : [];
+    renderCustomCaptions();
+}
+
+function toggleBizcatDirect(val) {
+    const directEl = document.getElementById('profile-edit-bizcat-direct');
+    if (directEl) directEl.style.display = val === 'other_input' ? 'block' : 'none';
+}
+
+// ── 말투 피드백 ──
+let _pendingFeedbackId = null;
+
+async function loadToneFeedback() {
+    try {
+        const userRaw = localStorage.getItem('lumi_user');
+        if (!userRaw) return;
+        const user = JSON.parse(userRaw);
+        const token = localStorage.getItem('lumi_token');
+
+        const res = await fetch('/.netlify/functions/get-caption-history', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ email: user.email })
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+
+        // 피드백 안 한 캡션 중 가장 최근 것
+        const pending = (data.history || []).find(h => h.feedback === null);
+        if (!pending) return;
+
+        _pendingFeedbackId = pending.id;
+        document.getElementById('tone-feedback-caption').textContent = pending.caption;
+        document.getElementById('tone-feedback-section').style.display = 'block';
+    } catch(e) {
+        console.log('loadToneFeedback 오류:', e.message);
+    }
+}
+
+async function submitToneFeedback(type) {
+    if (!_pendingFeedbackId) return;
+    const likeBtn = document.getElementById('tone-like-btn');
+    const dislikeBtn = document.getElementById('tone-dislike-btn');
+    if (likeBtn) likeBtn.disabled = true;
+    if (dislikeBtn) dislikeBtn.disabled = true;
+
+    try {
+        const token = localStorage.getItem('lumi_token');
+        const res = await fetch('/.netlify/functions/tone-feedback', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ captionId: _pendingFeedbackId, feedback: type })
+        });
+        if (res.ok) {
+            const emoji = type === 'like' ? '👍' : '👎';
+            showToast(emoji + ' 피드백이 반영됐어요. 다음 캡션에 적용할게요!', 'pink');
+            document.getElementById('tone-feedback-section').style.display = 'none';
+            _pendingFeedbackId = null;
+        }
+    } catch(e) {
+        console.log('submitToneFeedback 오류:', e.message);
+    }
+}
+
+function dismissToneFeedback() {
+    document.getElementById('tone-feedback-section').style.display = 'none';
+}
+
+// ── 주변 행사 알림 ──
+function initAutoFestival() {
+    const user = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+    const toggle = document.getElementById('auto-festival-toggle');
+    if (!toggle) return;
+    const isOn = user.autoFestival !== false; // 기본값 ON
+    toggle.checked = isOn;
+    updateFestivalToggleUI(isOn);
+}
+
+function updateFestivalToggleUI(isOn) {
+    const slider = document.getElementById('auto-festival-slider');
+    const knob = document.getElementById('auto-festival-knob');
+    if (!slider || !knob) return;
+    slider.style.background = isOn ? 'var(--pink)' : '#ccc';
+    slider.style.borderColor = isOn ? 'var(--pink)' : '#bbb';
+    knob.style.transform = isOn ? 'translateX(24px)' : 'translateX(0)';
+}
+
+async function saveAutoFestival(checked) {
+    updateFestivalToggleUI(checked);
+    const token = localStorage.getItem('lumi_token');
+    try {
+        const res = await fetch('/.netlify/functions/update-profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ autoFestival: checked })
+        });
+        if (res.ok) {
+            const user = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+            user.autoFestival = checked;
+            localStorage.setItem('lumi_user', JSON.stringify(user));
+            // 행사 섹션 즉시 표시/숨김
+            const section = document.getElementById('festival-section');
+            if (section) section.style.display = checked ? 'block' : 'none';
+            showToast(checked ? '주변 행사 알림이 켜졌어요 🎉' : '주변 행사 알림이 꺼졌어요', checked ? 'pink' : '');
+        }
+    } catch(e) {
+        showToast('설정 저장 중 오류가 발생했어요.', 'red');
+    }
+}
+
+// ── 스토리 자동 게시 ──
+function initAutoStory() {
+    const user = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+    const toggle = document.getElementById('auto-story-toggle');
+    if (!toggle) return;
+    const isOn = user.autoStory === true;
+    toggle.checked = isOn;
+    updateStoryToggleUI(isOn);
+    updateStoryNotice(isOn);
+}
+
+function updateStoryNotice(isOn) {
+    const notice = document.getElementById('story-photo-notice');
+    if (notice) notice.style.display = isOn ? 'block' : 'none';
+}
+
+function updateStoryToggleUI(isOn) {
+    const slider = document.getElementById('auto-story-slider');
+    const knob = document.getElementById('auto-story-knob');
+    if (!slider || !knob) return;
+    slider.style.background = isOn ? 'var(--pink)' : '#ccc';
+    slider.style.borderColor = isOn ? 'var(--pink)' : '#bbb';
+    knob.style.transform = isOn ? 'translateX(24px)' : 'translateX(0)';
+}
+
+async function saveAutoStory(checked) {
+    updateStoryToggleUI(checked);
+    updateStoryNotice(checked);
+    const token = localStorage.getItem('lumi_token');
+    try {
+        const res = await fetch('/.netlify/functions/update-profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ autoStory: checked })
+        });
+        if (res.ok) {
+            const user = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+            user.autoStory = checked;
+            localStorage.setItem('lumi_user', JSON.stringify(user));
+            showToast(checked ? '스토리 자동 게시가 켜졌어요 📖' : '스토리 자동 게시가 꺼졌어요', checked ? 'pink' : '');
+        }
+    } catch(e) {
+        showToast('설정 저장 중 오류가 발생했어요.', 'red');
+    }
+}
+
+// ── 링크 페이지 ──
+let _linkItems = [];
+
+const LINK_ICONS = ['📍','☎️','🛒','📅','📸','🌐','💬','🎁','📌','🔗'];
+
+async function loadLinkPage() {
+    const user = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+    const instaId = (user.instagram || '').replace('@', '');
+    if (!instaId) return;
+
+    const url = `https://lumi.it.kr/p/${instaId}`;
+    const el = document.getElementById('link-page-url');
+    if (el) el.textContent = url;
+
+    try {
+        const token = localStorage.getItem('lumi_token');
+        const res = await fetch(`/.netlify/functions/get-link-page?id=${instaId}`);
+        if (res.ok) {
+            const data = await res.json();
+            _linkItems = data.links || [];
+            renderLinkItems();
+        }
+    } catch(e) {}
+}
+
+function renderLinkItems() {
+    const el = document.getElementById('link-page-items');
+    if (!el) return;
+    if (_linkItems.length === 0) {
+        el.innerHTML = '<p style="font-size:.78rem;color:var(--g400);text-align:center;padding:12px 0;">아직 링크가 없어요. 추가해보세요!</p>';
+        return;
+    }
+    el.innerHTML = _linkItems.map((item, i) => `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;background:var(--g50);border-radius:var(--r-md);padding:10px 12px;">
+            <select onchange="_linkItems[${i}].icon=this.value" style="width:52px;height:36px;border:1.5px solid var(--g200);border-radius:8px;font-size:1rem;text-align:center;background:#fff;cursor:pointer;">
+                ${LINK_ICONS.map(ic => `<option value="${ic}" ${ic === item.icon ? 'selected' : ''}>${ic}</option>`).join('')}
+            </select>
+            <input type="text" value="${item.label || ''}" placeholder="버튼 이름" class="inp" style="flex:1;height:36px;margin:0;font-size:.83rem;" oninput="_linkItems[${i}].label=this.value">
+            <input type="url" value="${item.url || ''}" placeholder="https://..." class="inp" style="flex:2;height:36px;margin:0;font-size:.83rem;" oninput="_linkItems[${i}].url=this.value">
+            <button onclick="_linkItems.splice(${i},1);renderLinkItems()" style="background:none;border:none;color:var(--g400);font-size:1.1rem;cursor:pointer;padding:0 4px;">✕</button>
+        </div>
+    `).join('');
+}
+
+function addLinkItem() {
+    if (_linkItems.length >= 10) { showToast('링크는 최대 10개까지 추가할 수 있어요.', 'red'); return; }
+    _linkItems.push({ icon: '🔗', label: '', url: '' });
+    renderLinkItems();
+}
+
+async function saveLinkPage() {
+    const token = localStorage.getItem('lumi_token');
+    const validLinks = _linkItems.filter(l => l.label && l.url);
+    try {
+        const res = await fetch('/.netlify/functions/update-link-page', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ links: validLinks })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            showToast('링크 페이지가 저장됐어요! 🔗', 'pink');
+        } else {
+            showToast(data.error || '저장 실패', 'red');
+        }
+    } catch(e) {
+        showToast('저장 중 오류가 발생했어요.', 'red');
+    }
+}
+
+function copyLinkPageUrl() {
+    const user = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+    const instaId = (user.instagram || '').replace('@', '');
+    const url = `https://lumi.it.kr/p/${instaId}`;
+    navigator.clipboard.writeText(url).then(() => {
+        showToast('링크가 복사됐어요! 인스타 바이오에 붙여넣기 하세요 🔗', 'pink');
+    });
+}
+
+function initProfileView() {
+    const userRaw = localStorage.getItem('lumi_user');
+    if (!userRaw) return;
+    const user = JSON.parse(userRaw);
+    document.getElementById('profile-view-store').textContent = user.storeName || '-';
+    document.getElementById('profile-view-insta').textContent = user.instagram || '-';
+    document.getElementById('profile-view-desc').textContent = user.storeDesc || '-';
+    const bizMap = {cafe:'카페',bakery:'베이커리/빵집',dessert:'디저트',juice:'주스/스무디',restaurant:'레스토랑',korean:'한식',chinese:'중식',japanese:'일식',western:'양식',fastfood:'분식/패스트푸드',bar:'술집/펍',chicken:'치킨/배달',beauty:'뷰티샵',hair:'헤어샵',nail:'네일샵',skincare:'피부관리',makeup:'메이크업',massage:'마사지/스파',fashion:'패션/의류',accessories:'액세서리',flower:'꽃집',pet:'반려동물',kids:'아동용품',interior:'인테리어',fitness:'헬스장',yoga:'요가/필라테스',sports:'스포츠',health:'건강식품',photo:'사진/영상',art:'공방/아트',music:'음악',travel:'여행/숙박'};
+    document.getElementById('profile-view-bizcat').textContent = bizMap[user.bizCategory] || user.bizCategory || '-';
+    document.getElementById('profile-view-tone').textContent = user.captionTone || '-';
+    const tagMap = {few:'간결하게 (5개 이내)', mid:'적당하게 (10개 내외)', many:'많이 (20개 이상)'};
+    document.getElementById('profile-view-tagstyle').textContent = tagMap[user.tagStyle] || '-';
+    const customEl = document.getElementById('profile-view-custom');
+    if (customEl) {
+        const captions = user.customCaptions || [];
+        const validCaptions = captions.filter(c => c && c.trim());
+        if (validCaptions.length > 0) {
+            customEl.textContent = validCaptions.length + '개 등록됨';
+            customEl.style.color = 'var(--pink)';
+            customEl.style.fontWeight = '700';
+        } else {
+            customEl.textContent = '등록안됨';
+            customEl.style.color = 'var(--g400)';
+            customEl.style.fontWeight = '400';
+        }
+    }
+}
+
+function toggleProfileEdit() {
+    const viewMode = document.getElementById('profile-view-mode');
+    const editMode = document.getElementById('profile-edit-mode');
+    const btn = document.getElementById('profile-edit-btn');
+    const userRaw = localStorage.getItem('lumi_user');
+    const user = userRaw ? JSON.parse(userRaw) : {};
+    document.getElementById('profile-edit-store').value = user.storeName || '';
+    document.getElementById('profile-edit-insta').value = user.instagram || '';
+    document.getElementById('profile-edit-desc').value = user.storeDesc || '';
+    const bizSel = document.getElementById('profile-edit-bizcat');
+    const bizDirect = document.getElementById('profile-edit-bizcat-direct');
+    const knownValues = ['cafe','bakery','dessert','juice','restaurant','korean','chinese','japanese','western','fastfood','bar','chicken','beauty','hair','nail','skincare','makeup','massage','fashion','accessories','flower','pet','kids','interior','fitness','yoga','sports','health','photo','art','music','travel','other_input'];
+    const userBiz = user.bizCategory || 'cafe';
+    if (bizSel) {
+        if (knownValues.includes(userBiz)) {
+            bizSel.value = userBiz;
+            if (bizDirect) bizDirect.style.display = userBiz === 'other_input' ? 'block' : 'none';
+        } else {
+            bizSel.value = 'other_input';
+            if (bizDirect) { bizDirect.style.display = 'block'; bizDirect.value = userBiz; }
+        }
+    }
+    const toneSel = document.getElementById('profile-edit-tone');
+    if (toneSel) toneSel.value = user.captionTone || '';
+    const tagSel = document.getElementById('profile-edit-tagstyle');
+    if (tagSel) tagSel.value = user.tagStyle || 'mid';
+    // 커스텀 캡션 샘플 로드
+    loadCustomCaptions(user.customCaptions || []);
+    viewMode.style.display = 'none';
+    editMode.style.display = 'block';
+    btn.style.display = 'none';
+}
+
+function cancelProfileEdit() {
+    document.getElementById('profile-view-mode').style.display = 'block';
+    document.getElementById('profile-edit-mode').style.display = 'none';
+    document.getElementById('profile-edit-btn').style.display = 'block';
+}
+
+async function saveProfileEdit() {
+    const editStore = document.getElementById('profile-edit-store').value.trim();
+    const editInsta = document.getElementById('profile-edit-insta').value.trim();
+    const editDesc = document.getElementById('profile-edit-desc').value.trim();
+    const editBizcatSel = document.getElementById('profile-edit-bizcat').value;
+    const editBizcatDirect = document.getElementById('profile-edit-bizcat-direct').value.trim();
+    const editBizcat = editBizcatSel === 'other_input' ? (editBizcatDirect || 'other_input') : editBizcatSel;
+    const editTone = document.getElementById('profile-edit-tone').value.trim();
+    const editTagstyle = document.getElementById('profile-edit-tagstyle').value;
+    const errEl = document.getElementById('profile-edit-err');
+    errEl.style.display = 'none';
+
+    try {
+        const token = localStorage.getItem('lumi_token');
+        const res = await fetch('/.netlify/functions/update-profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ storeName: editStore, instagram: editInsta, storeDesc: editDesc, bizCategory: editBizcat, captionTone: editTone, tagStyle: editTagstyle, customCaptions: _customCaptions.filter(c => c.trim()) })
+        });
+        const data = await res.json();
+        if (!res.ok) { errEl.textContent = data.error || '저장 실패'; errEl.style.display = 'block'; return; }
+
+        // localStorage 업데이트
+        const userRaw = localStorage.getItem('lumi_user');
+        const user = userRaw ? JSON.parse(userRaw) : {};
+        const validCaptions = _customCaptions.filter(c => c.trim());
+        Object.assign(user, { storeName: editStore, instagram: editInsta, storeDesc: editDesc, bizCategory: editBizcat, captionTone: editTone, tagStyle: editTagstyle, customCaptions: validCaptions });
+        localStorage.setItem('lumi_user', JSON.stringify(user));
+
+        // 전역 변수 업데이트
+        storeName = editStore;
+        storeInsta = editInsta;
+        storeDesc = editDesc;
+        bizCat = editBizcat;
+        captionTone = editTone;
+        tagStyle = editTagstyle;
+
+        // hidden 필드도 동기화
+        const dashBiz = document.getElementById('dash-biz-cat');
+        const dashTone = document.getElementById('dash-caption-tone');
+        const dashTag = document.getElementById('dash-tag-style');
+        if (dashBiz) dashBiz.value = editBizcat;
+        if (dashTone) dashTone.value = editTone;
+        if (dashTag) dashTag.value = editTagstyle;
+
+        initProfileView();
+        cancelProfileEdit();
+        showToast('설정이 저장됐어요.', 'pink');
+    } catch(e) {
+        errEl.textContent = '저장 중 오류: ' + e.message;
+        errEl.style.display = 'block';
+    }
+}
+
+function saveDashPrefs() {
+    try {
+        const raw = localStorage.getItem('lumi_user');
+        if (!raw) return;
+        const user = JSON.parse(raw);
+        const dashBiz = document.getElementById('dash-biz-cat');
+        const dashBizOther = document.getElementById('dash-biz-cat-other');
+        const dashTone = document.getElementById('dash-caption-tone');
+        const dashTag = document.getElementById('dash-tag-style');
+        if (dashBiz) user.bizCategory = dashBiz.value === 'other' && dashBizOther?.value.trim() ? dashBizOther.value.trim() : dashBiz.value;
+        if (dashTone) user.captionTone = dashTone.value.trim();
+        if (dashTag) user.tagStyle = dashTag.value;
+        localStorage.setItem('lumi_user', JSON.stringify(user));
+        // 서버에도 저장 (다음 로그인 시 복원)
+        const lumiToken2 = user.token || localStorage.getItem('lumi_token') || '';
+        if (lumiToken2) {
+            fetch('/.netlify/functions/update-profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + lumiToken2 },
+                body: JSON.stringify({
+                    bizCategory: user.bizCategory,
+                    captionTone: user.captionTone,
+                    tagStyle: user.tagStyle
+                })
+            }).catch(() => {});
+        }
+    } catch(e) {}
+}
+
+function updateBizCat(val) {
+    bizCat = val;
+    const other = document.getElementById('dash-biz-cat-other');
+    if (other) other.style.display = val === 'other' ? 'block' : 'none';
+    if (val !== 'other') loadTrends();
+    saveDashPrefs();
+}
+
+function toggleBizOther(val) {
+    const direct = document.getElementById('biz-cat-other');
+    if (direct) direct.style.display = val === 'other' ? 'block' : 'none';
+}
+
+function toggleEmailDomain(val) {
+    const direct = document.getElementById('id-reg-domain-direct');
+    if (direct) direct.style.display = val === 'direct' ? 'block' : 'none';
+}
+
+function lumiLogout() {
+    localStorage.removeItem('lumi_token');
+    localStorage.removeItem('lumi_user');
+    location.reload();
+}
+
+// 페이지 로드 시 로그인 상태 확인
+(function checkSession() {
+    const token = localStorage.getItem('lumi_token');
+    const userRaw = localStorage.getItem('lumi_user');
+    if (token && userRaw) {
+        try {
+            const user = JSON.parse(userRaw);
+            // 전역 변수 복원
+            ceoName = user.name || '';
+            storeName = user.storeName || '';
+            storeInsta = user.instagram || '';
+            storeDesc = user.storeDesc || '';
+            storeRegion = user.region || '';
+            // 지역 드롭다운 복원
+            if (user.sidoCode || user.sigunguCode) {
+                restoreRegionDropdown(user.region, user.sidoCode || '', user.sigunguCode || '');
+            }
+            bizCat = user.bizCategory || 'cafe';
+            captionTone = user.captionTone || '';
+            tagStyle = user.tagStyle || 'mid';
+            // 대시보드 UI에 값 반영
+            const dashBiz = document.getElementById('dash-biz-cat');
+            if (dashBiz) dashBiz.value = bizCat;
+            const dashTone = document.getElementById('dash-caption-tone');
+            if (dashTone) dashTone.value = captionTone;
+            const dashTag = document.getElementById('dash-tag-style');
+            if (dashTag) dashTag.value = tagStyle;
+            // 네비 버튼 전환 (시작하기 → 대시보드)
+            const signupBtn = document.getElementById('nav-signup-btn');
+            const loginBtn = document.getElementById('nav-login-btn');
+            const dashBtn = document.getElementById('nav-dashboard-btn');
+            const logoutBtn2 = document.getElementById('nav-logout-btn');
+            if (signupBtn) signupBtn.style.display = 'none';
+            if (loginBtn) loginBtn.style.display = 'none';
+            if (dashBtn) dashBtn.style.display = 'block';
+            if (logoutBtn2) logoutBtn2.style.display = 'block';
+            grantAccess();
+        } catch(e) {
+            localStorage.removeItem('lumi_token');
+            localStorage.removeItem('lumi_user');
+        }
+    }
+})();
+
+// 버튼 이벤트 바인딩 (Cloudflare 스크립트 충돌 방지)
+document.addEventListener('DOMContentLoaded', function() {
+    const loginBtn = document.getElementById('nav-login-btn');
+    const signupBtn = document.getElementById('nav-signup-btn');
+    if (loginBtn) loginBtn.addEventListener('click', function() { openPortal('login'); });
+    if (signupBtn) signupBtn.addEventListener('click', function() { location.href='/beta'; });
+});
+// Lucide 아이콘 초기화
+if(typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+</body>
+</html>
