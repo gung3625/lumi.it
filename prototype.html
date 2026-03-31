@@ -6,6 +6,7 @@
 <title>lumi — 프로토타입</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
 <style>
 :root{
   --pink:#E8628A;--pink-light:#F0849E;--pink-soft:#FADCE6;
@@ -43,6 +44,12 @@ nav{position:fixed;top:44px;left:0;width:100%;height:56px;display:flex;align-ite
 
 /* HERO */
 .hero{padding:140px 24px 80px;background:linear-gradient(160deg,var(--white) 0%,var(--pink-ultra) 50%,var(--pink-pale) 100%);position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(232,98,138,.08) 0%,transparent 70%);top:-200px;right:-100px;pointer-events:none;}
+.hero::after{content:'';position:absolute;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(232,98,138,.06) 0%,transparent 70%);bottom:-100px;left:-80px;pointer-events:none;}
+
+/* SCROLL REVEAL */
+.reveal{opacity:0;transform:translateY(30px);transition:opacity .7s var(--ease),transform .7s var(--ease);}
+.reveal.visible{opacity:1;transform:translateY(0);}
 .hero-inner{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;}
 .hero-chip{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:var(--r-full);background:var(--white);color:var(--pink);font-size:12px;font-weight:700;margin-bottom:24px;box-shadow:0 2px 12px rgba(232,98,138,.12);border:1px solid var(--pink-soft);animation:fadeUp .5s var(--ease) .05s both;}
 .chip-dot{width:6px;height:6px;border-radius:50%;background:var(--pink);animation:pulse 1.2s infinite;}
@@ -58,14 +65,15 @@ nav{position:fixed;top:44px;left:0;width:100%;height:56px;display:flex;align-ite
 
 /* PHONE MOCKUP */
 .hero-mockup{display:flex;justify-content:center;animation:fadeUp .6s var(--ease) .3s both;}
-.phone{width:240px;height:480px;background:#1a1a2a;border-radius:36px;padding:10px;box-shadow:0 24px 64px rgba(25,31,40,.2);animation:float 4s ease-in-out infinite;}
-.phone-screen{background:var(--white);border-radius:28px;height:100%;overflow:hidden;display:flex;flex-direction:column;}
-.phone-notch{width:80px;height:24px;background:#1a1a2a;border-radius:0 0 14px 14px;margin:0 auto;}
+.phone{width:260px;height:520px;background:linear-gradient(145deg,#2a2a3a,#1a1a2a);border-radius:40px;padding:10px;box-shadow:0 32px 80px rgba(25,31,40,.3),0 0 0 1px rgba(255,255,255,.1) inset;animation:float 4s ease-in-out infinite;}
+.phone-screen{background:var(--white);border-radius:32px;height:100%;overflow:hidden;display:flex;flex-direction:column;}
+.phone-notch{width:90px;height:26px;background:#1a1a2a;border-radius:0 0 16px 16px;margin:0 auto;}
 .phone-header{padding:12px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--g100);}
 .phone-avatar{width:28px;height:28px;border-radius:50%;background:var(--pink-soft);display:flex;align-items:center;justify-content:center;font-size:12px;}
 .phone-name{font-size:11px;font-weight:800;color:var(--g900);}
 .phone-body{flex:1;padding:12px;overflow:hidden;}
-.phone-img{width:100%;aspect-ratio:1;background:linear-gradient(135deg,#ffecd2,#fcb69f);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:42px;margin-bottom:10px;}
+.phone-img{width:100%;aspect-ratio:1;border-radius:12px;margin-bottom:10px;overflow:hidden;}
+.phone-img img{width:100%;height:100%;object-fit:cover;}
 .phone-caption{font-size:10px;color:var(--g700);line-height:1.7;}
 .phone-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;}
 .phone-tag{font-size:9px;padding:2px 8px;border-radius:var(--r-full);background:var(--pink-pale);color:var(--pink);font-weight:600;}
@@ -79,8 +87,8 @@ nav{position:fixed;top:44px;left:0;width:100%;height:56px;display:flex;align-ite
 /* HOW */
 .how-sec{background:var(--g50);}
 .how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
-.how-card{background:var(--white);border-radius:var(--r-xl);padding:32px 24px;border:1px solid var(--g200);text-align:center;transition:all .3s var(--ease);}
-.how-card:hover{transform:translateY(-6px);box-shadow:0 12px 36px rgba(0,0,0,.08);border-color:var(--pink-soft);}
+.how-card{background:var(--white);border-radius:var(--r-xl);padding:36px 28px;border:1px solid var(--g200);text-align:center;transition:all .35s var(--ease);box-shadow:0 2px 12px rgba(0,0,0,.03);}
+.how-card:hover{transform:translateY(-8px);box-shadow:0 20px 48px rgba(0,0,0,.1);border-color:var(--pink-soft);}
 .how-icon{width:56px;height:56px;border-radius:var(--r-lg);background:var(--pink-pale);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;}
 .how-icon svg{width:26px;height:26px;stroke:var(--pink);stroke-width:2;fill:none;}
 .how-card h3{font-size:1rem;font-weight:800;color:var(--g900);margin-bottom:8px;}
@@ -90,8 +98,8 @@ nav{position:fixed;top:44px;left:0;width:100%;height:56px;display:flex;align-ite
 /* FEATURES */
 .feat-sec{background:var(--white);}
 .feat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;}
-.feat-card{background:var(--g50);border-radius:var(--r-xl);padding:28px 24px;border:1px solid var(--g100);transition:all .3s var(--ease);}
-.feat-card:hover{transform:translateY(-4px);box-shadow:0 8px 28px rgba(0,0,0,.07);border-color:var(--pink-soft);background:var(--white);}
+.feat-card{background:var(--white);border-radius:var(--r-xl);padding:32px 26px;border:1px solid var(--g200);transition:all .35s var(--ease);box-shadow:0 2px 12px rgba(0,0,0,.03);}
+.feat-card:hover{transform:translateY(-6px);box-shadow:0 16px 40px rgba(0,0,0,.09);border-color:var(--pink-soft);}
 .feat-icon{width:48px;height:48px;border-radius:var(--r-lg);background:var(--pink-pale);display:flex;align-items:center;justify-content:center;margin-bottom:14px;}
 .feat-name{font-size:.95rem;font-weight:800;color:var(--g900);margin-bottom:8px;}
 .feat-desc{font-size:.83rem;color:var(--g500);line-height:1.8;}
@@ -107,7 +115,8 @@ nav{position:fixed;top:44px;left:0;width:100%;height:56px;display:flex;align-ite
 .ba-after .ba-label{background:var(--pink);color:#fff;}
 .ba-card p{font-size:.88rem;color:var(--g700);line-height:1.85;}
 .reviews{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;}
-.review-card{background:var(--g50);border-radius:var(--r-xl);padding:24px 20px;border:1px solid var(--g100);}
+.review-card{background:var(--white);border-radius:var(--r-xl);padding:28px 24px;border:1px solid var(--g200);box-shadow:0 2px 12px rgba(0,0,0,.03);transition:all .3s var(--ease);}
+.review-card:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(0,0,0,.07);}
 .review-stars{color:#FBBF24;font-size:13px;margin-bottom:10px;letter-spacing:2px;}
 .review-text{font-size:.88rem;color:var(--g700);line-height:1.85;margin-bottom:14px;}
 .review-author{font-size:.8rem;font-weight:800;color:var(--g900);}
@@ -212,11 +221,11 @@ footer{background:var(--g50);border-top:1px solid var(--g200);padding:48px 24px 
         <div class="phone-screen">
           <div class="phone-notch"></div>
           <div class="phone-header">
-            <div class="phone-avatar">☕</div>
+            <div class="phone-avatar"><img src="https://images.unsplash.com/photo-1559925393-8be0ec4767c8?w=56&h=56&fit=crop&crop=face" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" alt=""></div>
             <div class="phone-name">성수동 카페</div>
           </div>
           <div class="phone-body">
-            <div class="phone-img">☕</div>
+            <div class="phone-img"><img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=400&fit=crop" alt="카페 라떼"></div>
             <div class="phone-caption">봄비 내리는 오후, 따뜻한 라떼 한 잔이 생각나는 날 🌧☕ 성수동에서 작은 행복을 찾아보세요.</div>
             <div class="phone-tags">
               <span class="phone-tag">#성수카페</span>
@@ -233,29 +242,29 @@ footer{background:var(--g50);border-top:1px solid var(--g200);padding:48px 24px 
 <!-- HOW -->
 <section class="sec how-sec" id="how">
   <div class="sec-inner">
-    <p class="sec-ey">이렇게 작동해요</p>
-    <h2 class="sec-title">사진 한 장이면<br>이 모든 게 자동이에요</h2>
+    <p class="sec-ey reveal">이렇게 작동해요</p>
+    <h2 class="sec-title reveal">사진 한 장이면<br>이 모든 게 자동이에요</h2>
     <div class="how-grid">
-      <div class="how-card">
+      <div class="how-card reveal">
         <div class="how-num">1</div>
         <div class="how-icon">
-          <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          <i data-lucide="camera" style="width:26px;height:26px;color:var(--pink);"></i>
         </div>
         <h3>사진 올리기</h3>
         <p>오늘 찍은 사진 한 장이면 충분해요.<br>한 장도, 여러 장도 괜찮아요.</p>
       </div>
-      <div class="how-card">
+      <div class="how-card reveal">
         <div class="how-num">2</div>
         <div class="how-icon">
-          <svg viewBox="0 0 24 24"><path d="M12 2L15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26z"/></svg>
+          <i data-lucide="sparkles" style="width:26px;height:26px;color:var(--pink);"></i>
         </div>
         <h3>AI가 알아서</h3>
         <p>사진 분석, 캡션 작성, 해시태그,<br>오늘 날씨까지 반영해서 완성해요.</p>
       </div>
-      <div class="how-card">
+      <div class="how-card reveal">
         <div class="how-num">3</div>
         <div class="how-icon">
-          <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          <i data-lucide="send" style="width:26px;height:26px;color:var(--pink);"></i>
         </div>
         <h3>자동 게시</h3>
         <p>최적 시간에 인스타그램에<br>자동으로 올라가요.</p>
@@ -267,65 +276,49 @@ footer{background:var(--g50);border-top:1px solid var(--g200);padding:48px 24px 
 <!-- FEATURES -->
 <section class="sec feat-sec">
   <div class="sec-inner">
-    <p class="sec-ey">주요 기능</p>
-    <h2 class="sec-title">사진 한 장 뒤에서<br>lumi가 하는 일</h2>
+    <p class="sec-ey reveal">주요 기능</p>
+    <h2 class="sec-title reveal">사진 한 장 뒤에서<br>lumi가 하는 일</h2>
     <div class="feat-grid">
-      <div class="feat-card">
-        <div class="feat-icon">
-          <svg viewBox="0 0 24 24" width="26" height="26" stroke="var(--pink)" stroke-width="2" fill="none"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-        </div>
+      <div class="feat-card reveal">
+        <div class="feat-icon"><i data-lucide="pen-tool" style="width:24px;height:24px;color:var(--pink);"></i></div>
         <h3 class="feat-name">AI 캡션 자동 생성</h3>
         <p class="feat-desc">사진을 분석해서 우리 매장 분위기에 딱 맞는 캡션을 써드려요. 매장 말투도 학습해요.</p>
       </div>
-      <div class="feat-card">
-        <div class="feat-icon">
-          <svg viewBox="0 0 24 24" width="26" height="26" stroke="var(--pink)" stroke-width="2" fill="none"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-        </div>
+      <div class="feat-card reveal">
+        <div class="feat-icon"><i data-lucide="hash" style="width:24px;height:24px;color:var(--pink);"></i></div>
         <h3 class="feat-name">트렌드 해시태그</h3>
         <p class="feat-desc">매일 업데이트되는 실시간 트렌드를 분석해서 노출이 잘 되는 해시태그를 자동으로 달아줘요.</p>
       </div>
-      <div class="feat-card">
-        <div class="feat-icon">
-          <svg viewBox="0 0 24 24" width="26" height="26" stroke="var(--pink)" stroke-width="2" fill="none"><path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.77.04"/></svg>
-        </div>
+      <div class="feat-card reveal">
+        <div class="feat-icon"><i data-lucide="cloud-sun" style="width:24px;height:24px;color:var(--pink);"></i></div>
         <h3 class="feat-name">날씨·계절 반영</h3>
         <p class="feat-desc">오늘 비가 오면 비 오는 감성으로, 봄이면 봄 감성으로. 날씨와 계절에 맞는 캡션을 만들어요.</p>
       </div>
-      <div class="feat-card">
-        <div class="feat-icon">
-          <svg viewBox="0 0 24 24" width="26" height="26" stroke="var(--pink)" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-        </div>
+      <div class="feat-card reveal">
+        <div class="feat-icon"><i data-lucide="clock" style="width:24px;height:24px;color:var(--pink);"></i></div>
         <h3 class="feat-name">예약 게시</h3>
         <p class="feat-desc">팔로워가 가장 많이 접속하는 시간을 분석해서 최적 시간에 자동으로 올려드려요.</p>
       </div>
     </div>
     <div id="more-feat-wrap" style="display:none;margin-top:16px;">
       <div class="feat-grid">
-        <div class="feat-card">
-          <div class="feat-icon">
-            <svg viewBox="0 0 24 24" width="26" height="26" stroke="var(--pink)" stroke-width="2" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-          </div>
+        <div class="feat-card reveal">
+          <div class="feat-icon"><i data-lucide="message-circle" style="width:24px;height:24px;color:var(--pink);"></i></div>
           <h3 class="feat-name">DM 자동 응답</h3>
           <p class="feat-desc">자주 묻는 질문에 키워드 기반으로 자동 답변을 보내드려요.</p>
         </div>
-        <div class="feat-card">
-          <div class="feat-icon">
-            <svg viewBox="0 0 24 24" width="26" height="26" stroke="var(--pink)" stroke-width="2" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-          </div>
+        <div class="feat-card reveal">
+          <div class="feat-icon"><i data-lucide="bar-chart-3" style="width:24px;height:24px;color:var(--pink);"></i></div>
           <h3 class="feat-name">성과 리포트</h3>
           <p class="feat-desc">게시물 반응, 팔로워 변화를 한눈에 보여드려요.</p>
         </div>
-        <div class="feat-card">
-          <div class="feat-icon">
-            <svg viewBox="0 0 24 24" width="26" height="26" stroke="var(--pink)" stroke-width="2" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
-          </div>
+        <div class="feat-card reveal">
+          <div class="feat-icon"><i data-lucide="link" style="width:24px;height:24px;color:var(--pink);"></i></div>
           <h3 class="feat-name">lumi 링크 페이지</h3>
           <p class="feat-desc">인스타 프로필에 넣을 미니 홈페이지를 자동으로 만들어드려요.</p>
         </div>
-        <div class="feat-card">
-          <div class="feat-icon">
-            <svg viewBox="0 0 24 24" width="26" height="26" stroke="var(--pink)" stroke-width="2" fill="none"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          </div>
+        <div class="feat-card reveal">
+          <div class="feat-icon"><i data-lucide="store" style="width:24px;height:24px;color:var(--pink);"></i></div>
           <h3 class="feat-name">멀티 매장 관리</h3>
           <p class="feat-desc">여러 매장의 인스타를 하나의 계정에서 관리할 수 있어요.</p>
         </div>
@@ -340,9 +333,9 @@ footer{background:var(--g50);border-top:1px solid var(--g200);padding:48px 24px 
 <!-- BEFORE/AFTER + REVIEWS -->
 <section class="sec proof-sec">
   <div class="sec-inner">
-    <p class="sec-ey">이런 캡션이 만들어져요</p>
-    <h2 class="sec-title">직접 쓴 글 vs lumi가 쓴 글</h2>
-    <div class="ba-wrap">
+    <p class="sec-ey reveal">이런 캡션이 만들어져요</p>
+    <h2 class="sec-title reveal">직접 쓴 글 vs lumi가 쓴 글</h2>
+    <div class="ba-wrap reveal">
       <div class="ba-card ba-before">
         <span class="ba-label">Before — 직접 쓴 글</span>
         <p>오늘의 커피 ☕<br>#카페 #일상 #커피스타그램</p>
@@ -372,8 +365,8 @@ footer{background:var(--g50);border-top:1px solid var(--g200);padding:48px 24px 
 <!-- PRICING -->
 <section class="sec price-sec" id="price-sec">
   <div class="sec-inner">
-    <p class="sec-ey">요금</p>
-    <h2 class="sec-title">SNS 대행사 월 50만원,<br>lumi는 월 4.9만원</h2>
+    <p class="sec-ey reveal">요금</p>
+    <h2 class="sec-title reveal">SNS 대행사 월 50만원,<br>lumi는 월 4.9만원</h2>
     <div class="price-compare">
       <div class="price-col">
         <div class="price-label">SNS 대행사</div>
@@ -466,17 +459,28 @@ footer{background:var(--g50);border-top:1px solid var(--g200);padding:48px 24px 
 </div>
 
 <script>
+// Lucide 아이콘 초기화
+lucide.createIcons();
+
 // 실시간 카운트
 (async()=>{try{const r=await fetch('/api/beta-apply');const d=await r.json();document.getElementById('proto-count').textContent=d.count||0;}catch(e){}})();
 
+// 스크롤 애니메이션 (IntersectionObserver)
+const observer = new IntersectionObserver((entries)=>{
+  entries.forEach((entry,i)=>{
+    if(entry.isIntersecting){
+      setTimeout(()=>entry.target.classList.add('visible'), i*80);
+      observer.unobserve(entry.target);
+    }
+  });
+},{threshold:0.15,rootMargin:'0px 0px -40px 0px'});
+document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));
+
 // 스크롤 시 sticky CTA 표시
-let lastScroll=0;
 window.addEventListener('scroll',()=>{
-  const st=window.scrollY;
   const sticky=document.querySelector('.sticky-cta');
-  if(st>400&&window.innerWidth<=768){sticky.style.display='block';}
+  if(window.scrollY>400&&window.innerWidth<=768){sticky.style.display='block';}
   else{sticky.style.display='none';}
-  lastScroll=st;
 });
 </script>
 </body>
