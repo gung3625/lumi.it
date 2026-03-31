@@ -160,7 +160,7 @@
   <button class="hero-btn" onclick="document.getElementById('tester-form').scrollIntoView({behavior:'smooth'})">무료 테스터 신청하기 →</button>
   <div class="hero-slots">
     <div class="slot-bar" id="hero-slots"></div>
-    <div class="slot-txt"><strong id="used-count">7</strong>/20 신청 완료</div>
+    <div class="slot-txt"><strong id="used-count">...</strong>/20 신청 완료</div>
   </div>
 </section>
 
@@ -295,7 +295,14 @@
         <div class="done-circle">✓</div>
         <div style="font-size:1.1rem;font-weight:900;color:var(--g900);">신청 완료!</div>
         <div style="font-size:.85rem;color:var(--g500);line-height:1.8;">카카오 알림톡으로<br>안내 드릴게요 😊<br><br>lumi와 함께 인스타를<br>더 쉽게 운영해 봐요!</div>
-        <button class="form-btn" style="max-width:200px;" onclick="location.href='/'">홈으로 가기</button>
+        <div style="margin-top:16px;padding:16px;background:var(--pink-ultra);border-radius:var(--r-lg);border:1px solid var(--pink-soft);">
+          <div style="font-size:.85rem;font-weight:800;color:var(--g900);margin-bottom:10px;">사장님 친구분도 함께 써보세요!</div>
+          <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+            <button onclick="shareBeta('kakao')" style="padding:9px 18px;background:#FEE500;color:#3C1E1E;font-size:13px;font-weight:700;border:none;border-radius:var(--r-full);cursor:pointer;font-family:inherit;">카카오톡 공유</button>
+            <button onclick="shareBeta('copy')" style="padding:9px 18px;background:var(--g100);color:var(--g700);font-size:13px;font-weight:700;border:none;border-radius:var(--r-full);cursor:pointer;font-family:inherit;">링크 복사</button>
+          </div>
+        </div>
+        <button class="form-btn" style="max-width:200px;margin-top:12px;" onclick="location.href='/'">홈으로 가기</button>
       </div>
     </div>
   </div>
@@ -329,6 +336,23 @@
 </footer>
 
 <script>
+// 공유 기능
+function shareBeta(type){
+  const url = 'https://lumi.it.kr/beta';
+  const text = '인스타 자동화 서비스 발견! 사진 한 장이면 캡션부터 게시까지 자동이래. 지금 무료 테스터 모집 중이야!';
+  if(type==='kakao'){
+    if(navigator.share){
+      navigator.share({title:'lumi 베타 테스터 모집',text:text,url:url}).catch(()=>{});
+    } else {
+      window.open(`https://story.kakao.com/share?url=${encodeURIComponent(url)}`,'_blank');
+    }
+  } else {
+    navigator.clipboard.writeText(url).then(()=>{
+      const btn=event.target;btn.textContent='복사 완료!';setTimeout(()=>btn.textContent='링크 복사',1500);
+    }).catch(()=>prompt('링크를 복사하세요:',url));
+  }
+}
+
 // 배너
 function closeBanner(){
   document.getElementById('beta-banner').classList.add('hidden');
@@ -336,12 +360,11 @@ function closeBanner(){
 }
 
 // 슬롯 렌더
-const USED = 7;
 function renderSlots(el, used){
   el.innerHTML = Array(20).fill(0).map((_,i)=>`<div class="slot${i<used?' used':''}"></div>`).join('');
 }
-renderSlots(document.getElementById('hero-slots'), USED);
-renderSlots(document.getElementById('form-slots'), USED);
+renderSlots(document.getElementById('hero-slots'), 0);
+renderSlots(document.getElementById('form-slots'), 0);
 
 // 실시간 신청자 수 조회
 async function fetchCount(){

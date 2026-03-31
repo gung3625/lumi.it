@@ -41,6 +41,18 @@ exports.handler = async (event) => {
 
       const list = await store.list();
       if (list.blobs.length >= 20) {
+        // 대기 명단에 실제 저장
+        const waitStore = getStore({
+          name: 'beta-waitlist',
+          consistency: 'strong',
+          siteID: process.env.NETLIFY_SITE_ID,
+          token: process.env.NETLIFY_TOKEN,
+        });
+        const waitId = `waitlist_${Date.now()}`;
+        await waitStore.setJSON(waitId, {
+          id: waitId, name, store: storeName, type, phone,
+          insta: insta || '', appliedAt: new Date().toISOString(),
+        });
         return { statusCode: 400, headers, body: JSON.stringify({ error: '마감', waitlist: true }) };
       }
 
@@ -53,11 +65,13 @@ exports.handler = async (event) => {
       // 운영자 알림톡 발송
       const remaining = 20 - list.blobs.length - 1;
       try {
+        const now = new Date().toISOString();
+        const signature = require('crypto').createHmac('sha256', process.env.SOLAPI_API_SECRET).update(`${now}${id}`).digest('hex');
         await fetch('https://api.solapi.com/messages/v4/send', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `HMAC-SHA256 ApiKey=${process.env.SOLAPI_API_KEY}, Date=${new Date().toISOString()}, Salt=${id}, Signature=${require('crypto').createHmac('sha256', process.env.SOLAPI_API_SECRET).update(`${new Date().toISOString()}${id}`).digest('hex')}`,
+            'Authorization': `HMAC-SHA256 ApiKey=${process.env.SOLAPI_API_KEY}, Date=${now}, Salt=${id}, Signature=${signature}`,
           },
           body: JSON.stringify({
             message: {

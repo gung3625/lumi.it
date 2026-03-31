@@ -41,6 +41,7 @@
         body{font-family:'Noto Sans KR','Apple SD Gothic Neo',sans-serif;background:var(--white);color:var(--g700);overflow-x:hidden;line-height:1.6;font-size:15px;}
         .hidden{display:none!important;}
         @keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
 
         /* NAV */
         nav{position:fixed;top:0;left:0;width:100%;height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:rgba(255,255,255,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--g100);z-index:900;}
@@ -492,8 +493,19 @@
 </head>
 <body>
 
+<!-- BETA BANNER -->
+<div class="beta-top-banner" id="beta-top-banner" style="background:linear-gradient(90deg,#191F28 0%,#2d0a1e 50%,#191F28 100%);padding:11px 16px;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;position:fixed;top:0;left:0;width:100%;z-index:1000;">
+    <div style="width:7px;height:7px;border-radius:50%;background:var(--pink);animation:pulse 1.2s ease-in-out infinite;flex-shrink:0;"></div>
+    <div style="font-size:12px;color:#fff;font-weight:600;">선착순 <strong style="color:var(--pink);" id="idx-beta-count">...</strong>/20 무료 테스터 모집 중</div>
+    <a href="/beta" style="padding:5px 14px;background:var(--pink);color:#fff;font-size:11px;font-weight:800;border-radius:999px;text-decoration:none;white-space:nowrap;">지금 신청하기 →</a>
+    <button onclick="document.getElementById('beta-top-banner').style.display='none';document.querySelector('nav').style.top='0px';" style="color:rgba(255,255,255,.4);font-size:16px;cursor:pointer;background:none;border:none;padding:0 4px;">✕</button>
+</div>
+<script>
+(async()=>{try{const r=await fetch('/api/beta-apply');const d=await r.json();document.getElementById('idx-beta-count').textContent=d.count||0;}catch(e){}})();
+</script>
+
 <!-- NAV -->
-<nav>
+<nav style="top:44px;">
     <img src="https://i.ibb.co/ht8MxhY/img-1.png" class="nav-logo" alt="lumi" onclick="smoothScrollTo('lumi-intro-view-port')">
     <div class="nav-right">
         <button class="nav-txt-btn" id="nav-how-btn" onclick="smoothScrollTo('feat-sec')">기능</button>
@@ -514,13 +526,13 @@
         <h1 class="hero-title">사진 한 장이면,<br><span class="acc">오늘 인스타 끝.</span></h1>
         <p class="hero-desc">평균 37분 걸리던 인스타 게시물, 이제 3분이면 됩니다.<br>캡션 · 해시태그 · 날씨 · 트렌드 · 예약 게시까지 전부 자동.</p>
         <div class="hero-btns">
-            <button class="btn-main" onclick="handleStartBtn()">무료로 먼저 써보기 →</button>
+            <button class="btn-main" onclick="location.href='/beta'">무료 테스터 신청하기 →</button>
             <button class="btn-sub" onclick="document.getElementById('feat-sec').scrollIntoView({behavior:'smooth'})">어떻게 작동하나요?</button>
         </div>
         <div class="hero-stats">
             <div class="stat-item"><div class="stat-num">하루 1분</div><div class="stat-lbl">평균 사용 시간</div></div>
             <div class="stat-item"><div class="stat-num">사진 1장</div><div class="stat-lbl">준비물의 전부</div></div>
-            <div class="stat-item"><div class="stat-num">7일 무료</div><div class="stat-lbl">카드 없이 시작</div></div>
+            <div class="stat-item"><div class="stat-num">선착순 무료</div><div class="stat-lbl">베타 테스터 모집 중</div></div>
         </div>
     </section>
 
@@ -930,7 +942,7 @@
                         <li><span class="pf-icon">📖</span>스토리 자동 게시 (ON/OFF 설정)</li>
                         <li><span class="pf-icon">🎉</span>주변 행사 캡션 반영 (ON/OFF 설정)</li>
                     </ul>
-                    <button class="btn-price-on" onclick="handleStartBtn()">7일 무료로 시작하기</button>
+                    <button class="btn-price-on" onclick="location.href='/beta'">무료 테스터 신청하기</button>
                     <p style="text-align:center;font-size:.75rem;color:var(--g400);margin-top:10px;">신용카드 불필요 · 선착순 20명</p>
                 </div>
 
@@ -1052,10 +1064,10 @@
 
                 <details style="background:var(--white);border-radius:var(--r-lg);border:1px solid var(--g200);padding:20px 24px;cursor:pointer;">
                     <summary style="font-size:.95rem;font-weight:700;color:var(--g900);list-style:none;display:flex;justify-content:space-between;align-items:center;">
-                        7일 무료체험 후 자동으로 결제되나요?
+                        베타 테스터는 정말 무료인가요?
                         <span style="color:var(--pink);font-size:1.2rem;">+</span>
                     </summary>
-                    <p style="margin-top:12px;font-size:.88rem;color:var(--g500);line-height:1.8;">아니요, 카드 등록 없이 시작하기 때문에 자동 결제는 없어요. 7일 후에는 서비스 이용이 중단되고, 계속 쓰고 싶으시면 그때 구독을 시작하시면 돼요.</p>
+                    <p style="margin-top:12px;font-size:.88rem;color:var(--g500);line-height:1.8;">네, 선착순 20명의 베타 테스터는 정식 출시 전까지 모든 기능을 완전 무료로 이용하실 수 있어요. 카드 등록도 필요 없고, 자동 결제도 없어요.</p>
                 </details>
 
             </div>
@@ -1068,7 +1080,7 @@
             <div class="cta-inner">
                 <h2 class="cta-title">지금 사진 한 장 올려보세요.<br>나머지는 lumi가 다 할게요.</h2>
                 <p class="cta-desc">선착순 20명 무료 테스터 모집 중 · 신용카드 불필요 · 언제든 취소 가능</p>
-                <button class="btn-cta" onclick="handleStartBtn()">무료로 먼저 써보기 →</button>
+                <button class="btn-cta" onclick="location.href='/beta'">무료 테스터 신청하기 →</button>
             </div>
         </div>
     </div>
@@ -2984,7 +2996,7 @@ function showPaywall(type) {
     portal.style.display='flex';
 
     const title = type === 'trial'
-        ? '7일 무료체험이 끝났어요 😢'
+        ? '베타 기간이 종료되었어요'
         : '이번 달 게시 횟수를 모두 사용했어요!';
     const desc = type === 'trial'
         ? '계속 사용하려면 구독을 시작해주세요.'
