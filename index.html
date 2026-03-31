@@ -177,7 +177,6 @@ footer{background:var(--g50);border-top:1px solid var(--g200);padding:48px 24px 
 @media(max-width:768px){
   .hero-inner{grid-template-columns:1fr;text-align:center;}
   .hero-stats{justify-content:center;}
-  .hero-mockup{order:-1;}
   .phone{width:180px;height:360px;}
   .how-grid{grid-template-columns:1fr;}
   .feat-grid{grid-template-columns:1fr;}
@@ -209,7 +208,7 @@ footer{background:var(--g50);border-top:1px solid var(--g200);padding:48px 24px 
     <a href="#how" class="nav-link">사용법</a>
     <a href="#price-sec" class="nav-link">요금</a>
     <button class="nav-link" id="nav-login-btn">로그인</button>
-    <button class="nav-cta" id="nav-signup-btn">회원가입</button>
+    <button class="nav-cta" id="nav-signup-btn">무료 테스터 신청</button>
     <button class="nav-link" id="nav-logout-btn" onclick="lumiLogout()" style="display:none;">로그아웃</button>
     <button class="nav-cta" id="nav-dashboard-btn" onclick="grantAccess()" style="display:none;">대시보드</button>
   </div>
@@ -3428,7 +3427,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const loginBtn = document.getElementById('nav-login-btn');
     const signupBtn = document.getElementById('nav-signup-btn');
     if (loginBtn) loginBtn.addEventListener('click', function() { openPortal('login'); });
-    if (signupBtn) signupBtn.addEventListener('click', function() { handleStartBtn(); });
+    if (signupBtn) signupBtn.addEventListener('click', function() { location.href='/beta'; });
 });
 // Lucide 아이콘 초기화
 if(typeof lucide !== 'undefined') lucide.createIcons();
@@ -3447,14 +3446,22 @@ const revealObserver = new IntersectionObserver((entries)=>{
 },{threshold:0.15,rootMargin:'0px 0px -40px 0px'});
 document.querySelectorAll('.reveal').forEach(el=>revealObserver.observe(el));
 
-// 스크롤 시 sticky CTA 표시
-window.addEventListener('scroll',()=>{
+// 스크롤 시 sticky CTA 표시 + footer 겹침 방지
+(function(){
   const sticky=document.querySelector('.sticky-cta');
-  if(sticky){
-    if(window.scrollY>400&&window.innerWidth<=768){sticky.style.display='block';}
+  const footerEl=document.querySelector('footer');
+  if(!sticky||!footerEl) return;
+  let footerVisible=false;
+  const footerObs=new IntersectionObserver((entries)=>{
+    footerVisible=entries[0].isIntersecting;
+    if(footerVisible) sticky.style.display='none';
+  },{threshold:0.1});
+  footerObs.observe(footerEl);
+  window.addEventListener('scroll',()=>{
+    if(window.scrollY>400&&window.innerWidth<=768&&!footerVisible){sticky.style.display='block';}
     else{sticky.style.display='none';}
-  }
-});
+  });
+})();
 </script>
 </body>
 </html>

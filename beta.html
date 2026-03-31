@@ -9,9 +9,9 @@
   <meta property="og:description" content="사진 한 장이면 인스타 끝. 지금 신청하면 무료로 먼저 써보실 수 있어요.">
   <meta property="og:image" content="https://i.ibb.co/ht8MxhY/img-1.png">
   <meta property="og:url" content="https://lumi.it.kr/beta">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
   <style>
     :root{
       --pink:#E8628A;--pink-light:#F0849E;--pink-soft:#FADCE6;
@@ -24,7 +24,7 @@
     }
     *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased;word-break:keep-all;}
     html{scroll-behavior:smooth;}
-    body{font-family:'Noto Sans KR','Apple SD Gothic Neo',sans-serif;background:var(--white);color:var(--g700);overflow-x:hidden;line-height:1.6;font-size:15px;}
+    body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;background:var(--white);color:var(--g700);overflow-x:hidden;line-height:1.6;font-size:15px;}
     @keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
     @keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
     @keyframes scan{0%{top:0;opacity:0}10%{opacity:1}90%{opacity:1}100%{top:100%;opacity:0}}
@@ -48,7 +48,10 @@
     .nav-logo{height:100px;cursor:pointer;transition:opacity .2s;}
     .nav-logo:hover{opacity:.7;}
     .nav-cta{padding:8px 16px;border:none;background:var(--pink);color:#fff;font-size:13px;font-weight:700;border-radius:var(--r-sm);cursor:pointer;font-family:inherit;box-shadow:var(--sh-pink);transition:all .2s;}
-    .nav-cta:hover{background:#e05588;transform:translateY(-1px);}
+    .nav-right{display:flex;align-items:center;gap:6px;}
+    .nav-link{padding:8px 14px;border:none;background:none;font-size:14px;font-weight:600;color:var(--g500);cursor:pointer;border-radius:var(--r-sm);font-family:inherit;text-decoration:none;transition:all .2s;}
+    .nav-link:hover{background:var(--g100);color:var(--g900);}
+    .nav-cta:hover{background:#d4577b;transform:translateY(-1px);}
     /* HERO */
     .hero{padding:160px 24px 80px;text-align:center;background:linear-gradient(160deg,var(--white) 0%,var(--pink-ultra) 40%,var(--pink-pale) 100%);position:relative;overflow:hidden;}
     .hero-chip{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:var(--r-full);background:var(--white);color:var(--pink);font-size:12px;font-weight:700;margin-bottom:24px;box-shadow:0 2px 16px rgba(255,107,157,.15);border:1px solid var(--pink-soft);animation:fadeUp .5s var(--ease) .05s both;}
@@ -126,14 +129,21 @@
     .faq-a{max-height:0;overflow:hidden;transition:max-height .35s var(--ease);}
     .faq-a-inner{padding:0 20px 18px;font-size:.85rem;color:var(--g500);line-height:1.8;}
     /* FOOTER */
-    footer{background:var(--g50);border-top:1px solid var(--g200);padding:40px 24px;text-align:center;}
+    footer{background:var(--g50);border-top:1px solid var(--g200);padding:48px 24px 32px;}
+    .footer-inner{max-width:960px;margin:0 auto;display:flex;justify-content:space-between;align-items:flex-start;gap:32px;flex-wrap:wrap;}
+    .footer-logo{height:40px;opacity:.5;margin-bottom:12px;}
     .footer-info{font-size:11px;color:var(--g400);line-height:2.2;}
+    .footer-links{display:flex;gap:20px;}
+    .footer-links a{font-size:12px;font-weight:600;color:var(--g400);text-decoration:none;transition:color .2s;}
+    .footer-links a:hover{color:var(--g900);}
+    .footer-copy{font-size:11px;color:var(--g400);text-align:center;margin-top:32px;padding-top:24px;border-top:1px solid var(--g200);max-width:960px;margin-left:auto;margin-right:auto;}
     /* RESPONSIVE */
     @media(max-width:640px){
       .how-wrap{flex-direction:column;}
       .phone-wrap{width:100%;display:flex;justify-content:center;}
       .form-card{padding:28px 20px;}
       .ba-grid{grid-template-columns:1fr!important;}
+      .footer-inner{flex-direction:column;align-items:center;text-align:center;}
     }
   </style>
 </head>
@@ -150,7 +160,11 @@
 <!-- NAV -->
 <nav id="beta-nav">
   <img src="https://i.ibb.co/ht8MxhY/img-1.png" class="nav-logo" onclick="location.href='/'">
-  <button class="nav-cta" onclick="document.getElementById('tester-form').scrollIntoView({behavior:'smooth'})">무료 테스터 신청 →</button>
+  <div class="nav-right">
+    <a href="/#how" class="nav-link">사용법</a>
+    <a href="/#price-sec" class="nav-link">요금</a>
+    <button class="nav-cta" onclick="document.getElementById('tester-form').scrollIntoView({behavior:'smooth'})">무료 테스터 신청 →</button>
+  </div>
 </nav>
 
 <!-- HERO -->
@@ -173,19 +187,19 @@
     <div class="how-wrap">
       <div class="how-steps">
         <div class="how-step on" onclick="howGo(0)">
-          <div class="how-icon">📸</div>
+          <div class="how-icon"><i data-lucide="camera" style="width:20px;height:20px;color:var(--pink);"></i></div>
           <div><div class="how-num">STEP 01</div><div class="how-title">사진 올리기</div><div class="how-desc">오늘 찍은 사진 한 장이면 충분해요. 한 장도, 여러 장도 괜찮아요.</div><div class="how-bar"><div class="how-fill" id="hf0"></div></div></div>
         </div>
         <div class="how-step" onclick="howGo(1)">
-          <div class="how-icon">🔍</div>
+          <div class="how-icon"><i data-lucide="sparkles" style="width:20px;height:20px;color:var(--pink);"></i></div>
           <div><div class="how-num">STEP 02</div><div class="how-title">lumi 사진 분석</div><div class="how-desc">색감, 분위기, 계절감까지 — lumi가 사진을 알아서 읽어요.</div><div class="how-bar"><div class="how-fill" id="hf1"></div></div></div>
         </div>
         <div class="how-step" onclick="howGo(2)">
-          <div class="how-icon">✍️</div>
+          <div class="how-icon"><i data-lucide="pen-tool" style="width:20px;height:20px;color:var(--pink);"></i></div>
           <div><div class="how-num">STEP 03</div><div class="how-title">캡션 자동 작성</div><div class="how-desc">우리 매장 말투로, 오늘 날씨까지 반영해서 캡션을 완성해요.</div><div class="how-bar"><div class="how-fill" id="hf2"></div></div></div>
         </div>
         <div class="how-step" onclick="howGo(3)">
-          <div class="how-icon">🚀</div>
+          <div class="how-icon"><i data-lucide="send" style="width:20px;height:20px;color:var(--pink);"></i></div>
           <div><div class="how-num">STEP 04</div><div class="how-title">인스타 자동 게시</div><div class="how-desc">트렌드 해시태그까지 달고, 최적 시간에 자동으로 올라가요.</div><div class="how-bar"><div class="how-fill" id="hf3"></div></div></div>
         </div>
       </div>
@@ -208,17 +222,17 @@
     <h2 class="sec-title" style="margin-bottom:32px;">지금 신청하면<br>이런 혜택이 있어요.</h2>
     <div class="benefits-grid">
       <div class="benefit-card">
-        <div class="benefit-icon">🎁</div>
+        <div class="benefit-icon"><i data-lucide="gift" style="width:28px;height:28px;color:var(--pink);"></i></div>
         <div class="benefit-title">정식 출시 전까지 무료</div>
         <div class="benefit-desc">신용카드 없이 신청하고, 정식 출시 전까지 모든 기능을 무료로 이용하실 수 있어요.</div>
       </div>
       <div class="benefit-card">
-        <div class="benefit-icon">💬</div>
+        <div class="benefit-icon"><i data-lucide="message-circle" style="width:28px;height:28px;color:var(--pink);"></i></div>
         <div class="benefit-title">내 의견이 바로 반영돼요</div>
         <div class="benefit-desc">불편한 점, 원하는 기능을 말씀해 주시면 우선적으로 반영해드려요. 제품을 함께 만들어가요.</div>
       </div>
       <div class="benefit-card">
-        <div class="benefit-icon">⭐</div>
+        <div class="benefit-icon"><i data-lucide="star" style="width:28px;height:28px;color:var(--pink);"></i></div>
         <div class="benefit-title">정식 출시 특별 혜택</div>
         <div class="benefit-desc">테스터로 참여하신 분들에게는 정식 출시 시 특별 할인 혜택을 먼저 안내해 드려요.</div>
       </div>
@@ -326,14 +340,23 @@
 
 <!-- FOOTER -->
 <footer>
-  <div class="footer-info">
-    상호명: 루미 (lumi) &nbsp;|&nbsp; 대표자: 김현 &nbsp;|&nbsp; 사업자 등록번호: 330-04-03207<br>
-    서울특별시 용산구 회나무로 32-7 (이태원동) &nbsp;|&nbsp; 통신판매업 신고번호: 제2024-서울용산-1166호<br>
-    <a href="/terms" style="color:var(--g400);text-decoration:none;">이용약관</a> &nbsp;·&nbsp;
-    <a href="/privacy" style="color:var(--g400);text-decoration:none;">개인정보 처리방침</a> &nbsp;·&nbsp;
-    <a href="/support" style="color:var(--g400);text-decoration:none;">고객센터</a><br>
-    © 2025 lumi. All rights reserved.
+  <div class="footer-inner">
+    <div>
+      <img src="https://i.ibb.co/ht8MxhY/img-1.png" class="footer-logo" alt="lumi">
+      <p class="footer-info">
+        상호명: 루미 (lumi) · 대표자: 김현<br>
+        사업자 등록번호: 330-04-03207<br>
+        서울특별시 용산구 회나무로 32-7 (이태원동)<br>
+        통신판매업 신고번호: 제2024-서울용산-1166호
+      </p>
+    </div>
+    <div class="footer-links">
+      <a href="/terms">이용약관</a>
+      <a href="/privacy">개인정보 처리방침</a>
+      <a href="/support">고객센터</a>
+    </div>
   </div>
+  <p class="footer-copy">© 2026 lumi (루미) · 대표 김현</p>
 </footer>
 
 <script>
@@ -500,6 +523,8 @@ async function submitForm(){
     btn.disabled = false;
   }
 }
+// Lucide 아이콘 초기화
+if(typeof lucide !== 'undefined') lucide.createIcons();
 </script>
 </body>
 </html>
