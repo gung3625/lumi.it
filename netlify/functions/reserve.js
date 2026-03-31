@@ -1,42 +1,9 @@
 const busboy = require('busboy');
 const { getStore } = require('@netlify/blobs');
 
-function buildMultipart(fields, files) {
-  const boundary = '----LumiBoundary' + Date.now().toString(16);
-  const buffers = [];
-
-  for (const [name, value] of Object.entries(fields)) {
-    buffers.push(Buffer.from(
-      `--${boundary}\r\nContent-Disposition: form-data; name="${name}"\r\n\r\n${value}\r\n`,
-      'utf8'
-    ));
-  }
-
-  for (const file of files) {
-    buffers.push(Buffer.from(
-      `--${boundary}\r\nContent-Disposition: form-data; name="${file.fieldName}"; filename="${file.fileName}"\r\nContent-Type: ${file.mimeType}\r\n\r\n`,
-      'utf8'
-    ));
-    buffers.push(file.buffer);
-    buffers.push(Buffer.from('\r\n', 'utf8'));
-  }
-
-  buffers.push(Buffer.from(`--${boundary}--\r\n`, 'utf8'));
-
-  return {
-    body: Buffer.concat(buffers),
-    contentType: `multipart/form-data; boundary=${boundary}`
-  };
-}
-
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
-  }
-
-  const MAKE_WEBHOOK_URL = process.env.MAKE_WEBHOOK_URL;
-  if (!MAKE_WEBHOOK_URL) {
-    return { statusCode: 500, body: JSON.stringify({ error: 'Webhook URL이 설정되지 않았습니다.' }) };
   }
 
   const headers = event.headers;
@@ -159,128 +126,62 @@ exports.handler = async (event) => {
           }
         }
 
-        // 사진을 Blobs에 업로드하고 URL 생성 (GPT Vision용)
-        const imageUrls = [];
-        const imageKeys = [];
-        try {
-          const imgStore = getStore({
-            name: 'images',
-            siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
-            token: process.env.NETLIFY_TOKEN
-          });
-          for (let i = 0; i < photos.length; i++) {
-            const p = photos[i];
-            const key = `temp/${Date.now()}_${i}_${p.fileName}`;
-            await imgStore.set(key, p.buffer, { metadata: { contentType: p.mimeType } });
-            imageKeys.push(key);
-            // Netlify Blobs 공개 URL
-            const siteId = process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc';
-            const url = `https://blob.core.tmp.netlify.app/${siteId}/images/${encodeURIComponent(key)}`;
-            imageUrls.push(url);
-          }
-        } catch(e) {
-          console.error('[reserve] 이미지 Blobs 업로드 실패:', e.message);
-        }
+        // Blobs에 예약 데이터 저장 (즉시 전송도 예약으로 통합)
+        const reserveStore = getStore({
+          name: 'reservations',
+          consistency: 'strong',
+          siteID: process.env.NETLIFY_SITE_ID,
+          token: process.env.NETLIFY_TOKEN,
+        });
 
-        const textFields = {
-          // 기본 정보
-          photoCount: String(photos.length),
+        const reserveKey = `reserve:${Date.now()}`;
+        const reserveData = {
+          photos: photos.map(p => ({
+            fileName: p.fileName,
+            mimeType: p.mimeType,
+            base64: p.buffer.toString('base64'),
+          })),
           userMessage: fields.userMessage || '',
           bizCategory: fields.bizCategory || 'cafe',
           captionTone: fields.captionTone || '',
           tagStyle: fields.tagStyle || 'mid',
           submittedAt: fields.submittedAt || new Date().toISOString(),
-          ...(fields.scheduledAt ? { scheduledAt: fields.scheduledAt } : {}),
-
-          // 날씨 (개별 필드)
-          weatherStatus: weather.status || '',
-          weatherTemperature: (weather.temperature !== undefined && weather.temperature !== null && weather.temperature !== '' && weather.temperature !== 'null') ? String(weather.temperature) : '',
-          weatherState: weather.state || '',
-
-          weatherLocation: weather.locationName || '',
-
-          // 대기오염 등급 (PM10, PM25 중 더 나쁜 등급 하나)
-          airQuality: airGrade,
-
-          // 주변 행사 정보
+          scheduledAt: fields.scheduledAt || new Date().toISOString(), // 즉시 전송이면 현재 시간
+          weather: {
+            ...weather,
+            airQuality: airGrade,
+          },
+          trends: Array.isArray(trends) ? trends : [],
+          storeProfile: storeProfile,
+          storyEnabled: fields.autoStory === 'true',
+          nearbyEvent: festivals.length > 0,
           nearbyFestivals: festivals.length > 0
             ? festivals.map(f => `${f.title}(${f.startDate}~${f.endDate}, ${f.addr}${f.dist ? ', ' + f.dist + 'km' : ''})`).join(' / ')
             : '',
-          hasFestival: festivals.length > 0 ? 'true' : 'false',
-          festivalCount: String(festivals.length),
-
-          // 트렌드 (문자열)
-          trends: Array.isArray(trends) ? trends.join(', ') : '',
-
-          // 매장 프로필 (개별 필드)
-          storeName: storeProfile.name || '',
-          storeDescription: storeProfile.description || '',
-          storeInstagram: storeProfile.instagram || '',
-          storeRegion: storeProfile.region || '',
-          storeSido: storeProfile.sido || '',
-          storeSigungu: storeProfile.sigungu || '',
-          storeCategory: fields.bizCategory || storeProfile.category || '',
-          ownerName: storeProfile.ownerName || '',
-          ownerEmail: storeProfile.ownerEmail || '',
-
-          // GPT Vision용 이미지 URL (Blobs)
-          imageUrls: imageUrls.join(','),
-          imageUrl1: imageUrls[0] || '',
-          imageUrl2: imageUrls[1] || '',
-          imageUrl3: imageUrls[2] || '',
-
-          // 말투 학습 데이터
           toneLikes: toneLikes.length > 0 ? toneLikes.map(t => t.caption).join('|||') : '',
           toneDislikes: toneDislikes.length > 0 ? toneDislikes.map(t => t.caption).join('|||') : '',
-
           customCaptions: customCaptionsStr,
-          autoStory: fields.autoStory || 'false',
-
-          // Instagram 게시용 토큰 정보
-          igUserId: igUserId,
-          igAccessToken: igAccessToken,
-          igPageAccessToken: igPageAccessToken
+          igUserId,
+          igAccessToken,
+          igPageAccessToken,
+          isSent: false,
         };
 
-        // Make {{1.files.files}} 형식에 맞게 fieldName을 'files'로 통일
-        const filesForMake = photos.map(p => ({
-          fieldName: 'files',
-          fileName: p.fileName,
-          mimeType: p.mimeType,
-          buffer: p.buffer
-        }));
+        await reserveStore.setJSON(reserveKey, reserveData);
+        console.log('[reserve] 예약 저장 완료:', reserveKey);
 
-        const { body, contentType } = buildMultipart(textFields, filesForMake);
-
-        const res = await fetch(MAKE_WEBHOOK_URL, {
+        // 즉시 전송: process-and-post Background Function 트리거
+        const siteUrl = process.env.URL || 'https://lumi.it.kr';
+        const ppRes = await fetch(`${siteUrl}/.netlify/functions/process-and-post`, {
           method: 'POST',
-          headers: { 'Content-Type': contentType },
-          body
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reservationKey: reserveKey }),
         });
-
-        if (!res.ok) {
-          console.error('Make webhook error:', res.status);
-          return resolve({ statusCode: 500, body: JSON.stringify({ error: 'Make 웹훅 전송 실패' }) });
-        }
-
-        // Make.com 전송 완료 후 임시 이미지 Blobs에서 즉시 삭제
-        try {
-          const imgStore2 = getStore({
-            name: 'images',
-            siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
-            token: process.env.NETLIFY_TOKEN
-          });
-          for (const key of (imageKeys || [])) {
-            await imgStore2.delete(key);
-          }
-          console.log('[reserve] 임시 이미지 삭제 완료:', (imageKeys || []).length, '개');
-        } catch(e) {
-          console.error('[reserve] 임시 이미지 삭제 실패:', e.message);
-        }
+        console.log('[reserve] process-and-post 트리거:', ppRes.status);
 
         resolve({
           statusCode: 200,
-          body: JSON.stringify({ success: true, photoCount: photos.length, scheduledAt: fields.scheduledAt || null })
+          body: JSON.stringify({ success: true, reservationKey: reserveKey, photoCount: photos.length })
         });
 
       } catch (err) {

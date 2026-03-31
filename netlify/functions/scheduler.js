@@ -61,5 +61,5 @@ exports.handler = async (event) => {
 };
 
 module.exports.config = {
-  schedule: '*/5 * * * *',
+  schedule: '* * * * *',
 };

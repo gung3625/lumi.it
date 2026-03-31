@@ -347,6 +347,63 @@ exports.handler = async (event) => {
 
     console.log(`[process-and-post] 시작: ${reservationKey}, 사진 ${item.photos.length}장`);
 
+    // 0. Blobs에서 ig 토큰 + 말투 학습 데이터 조회 (reserve.js 로직 통합)
+    const userStore = getStore({
+      name: 'users',
+      consistency: 'strong',
+      siteID: process.env.NETLIFY_SITE_ID,
+      token: process.env.NETLIFY_TOKEN,
+    });
+
+    if (sp.ownerEmail && !item.igUserId) {
+      try {
+        // ig 토큰 조회
+        let igUserId = '';
+        let igAccessToken = '';
+        const igUserIdRaw = await userStore.get('email-ig:' + sp.ownerEmail).catch(() => null);
+        if (igUserIdRaw) {
+          igUserId = igUserIdRaw.trim();
+        } else {
+          const userRaw = await userStore.get('user:' + sp.ownerEmail).catch(() => null);
+          if (userRaw) igUserId = JSON.parse(userRaw).igUserId || '';
+        }
+        if (igUserId) {
+          const igRaw = await userStore.get('ig:' + igUserId).catch(() => null);
+          if (igRaw) {
+            const igData = JSON.parse(igRaw);
+            igAccessToken = igData.accessToken || '';
+            item.igPageAccessToken = igData.pageAccessToken || igData.accessToken || '';
+          }
+        }
+        item.igUserId = igUserId;
+        item.igAccessToken = igAccessToken;
+
+        // tone-like / tone-dislike 조회
+        if (!item.toneLikes) {
+          const likeRaw = await userStore.get('tone-like:' + sp.ownerEmail).catch(() => null);
+          if (likeRaw) item.toneLikes = JSON.parse(likeRaw).map(t => t.caption).join('|||');
+        }
+        if (!item.toneDislikes) {
+          const dislikeRaw = await userStore.get('tone-dislike:' + sp.ownerEmail).catch(() => null);
+          if (dislikeRaw) item.toneDislikes = JSON.parse(dislikeRaw).map(t => t.caption).join('|||');
+        }
+
+        // customCaptions 조회
+        if (!item.customCaptions) {
+          const userData = await userStore.get('user:' + sp.ownerEmail).catch(() => null);
+          if (userData) {
+            const captions = JSON.parse(userData).customCaptions || [];
+            item.customCaptions = captions.filter(c => c && c.trim()).join('|||');
+          }
+        }
+      } catch (e) { console.error('[process-and-post] 사용자 데이터 조회 실패:', e.message); }
+    }
+
+    // airQuality 등급 변환
+    if (item.weather && !item.weather.airQuality && item.airQuality) {
+      item.weather.airQuality = item.airQuality;
+    }
+
     // 1. 이미지 리사이징 + 임시 저장
     const { imageUrls, tempKeys } = await processImages(item.photos, reservationKey);
     console.log('[process-and-post] 이미지 처리 완료');
