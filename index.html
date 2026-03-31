@@ -3,10 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>lumi — 프로토타입</title>
+<title>lumi — 홍보, 이제 사진 한 장으로 끝내요</title>
+<meta name="description" content="사진 한 장만 올리면, 나머지는 lumi가 다 해요.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="lumi — 매장 홍보, 사진 한 장으로">
+<meta property="og:description" content="사진 한 장만 올리면, 나머지는 lumi가 다 해요.">
+<meta property="og:image" content="https://i.ibb.co/ht8MxhY/img-1.png">
+<meta property="og:url" content="https://lumi.it.kr">
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdn.portone.io/v2/browser-sdk.js" async onerror="console.warn('포트원 SDK 로드 실패')"></script>
 <style>
 :root{
   --pink:#E8628A;--pink-light:#F0849E;--pink-soft:#FADCE6;
@@ -192,13 +199,19 @@ footer{background:var(--g50);border-top:1px solid var(--g200);padding:48px 24px 
   <button class="banner-close" onclick="document.getElementById('top-banner').style.display='none';document.querySelector('nav').style.top='0'">✕</button>
 </div>
 
+<!-- LANDING -->
+<div id="lumi-intro-view-port">
+
 <!-- NAV -->
 <nav>
   <img src="https://i.ibb.co/ht8MxhY/img-1.png" class="nav-logo" alt="lumi">
   <div class="nav-right">
     <a href="#how" class="nav-link">사용법</a>
     <a href="#price-sec" class="nav-link">요금</a>
-    <a href="/beta" class="nav-cta">무료 테스터 신청 →</a>
+    <button class="nav-link" id="nav-login-btn">로그인</button>
+    <button class="nav-cta" id="nav-signup-btn">회원가입</button>
+    <button class="nav-link" id="nav-logout-btn" onclick="lumiLogout()" style="display:none;">로그아웃</button>
+    <button class="nav-cta" id="nav-dashboard-btn" onclick="grantAccess()" style="display:none;">대시보드</button>
   </div>
 </nav>
 
@@ -330,7 +343,7 @@ footer{background:var(--g50);border-top:1px solid var(--g200);padding:48px 24px 
       </div>
     </div>
     <div style="text-align:center;margin-top:24px;">
-      <button id="more-feat-btn" onclick="document.getElementById('more-feat-wrap').style.display='block';this.style.display='none';" style="padding:12px 28px;background:var(--white);color:var(--g700);font-size:14px;font-weight:700;border:1.5px solid var(--g200);border-radius:var(--r-full);cursor:pointer;font-family:inherit;transition:all .2s;">모든 기능 보기 ↓</button>
+      <button id="more-feat-btn" onclick="document.getElementById('more-feat-wrap').style.display='block';this.style.display='none';document.querySelectorAll('#more-feat-wrap .reveal').forEach(el=>{if(typeof revealObserver!=='undefined')revealObserver.observe(el);else el.classList.add('visible');});" style="padding:12px 28px;background:var(--white);color:var(--g700);font-size:14px;font-weight:700;border:1.5px solid var(--g200);border-radius:var(--r-full);cursor:pointer;font-family:inherit;transition:all .2s;">모든 기능 보기 ↓</button>
     </div>
   </div>
 </section>
@@ -462,6 +475,8 @@ footer{background:var(--g50);border-top:1px solid var(--g200);padding:48px 24px 
 <div class="sticky-cta">
   <a href="/beta">무료 테스터 신청하기 →</a>
 </div>
+
+</div><!-- end lumi-intro-view-port -->
 
 <!-- AUTH PORTAL -->
 <div id="lumi-auth-portal" class="portal-overlay">
