@@ -239,6 +239,24 @@ Claude API 또는 Claude Code 관련 작업 시:
 - Claude Code 문서: https://docs.claude.com/en/docs/claude-code/overview
 - Claude Code npm: https://www.npmjs.com/package/@anthropic-ai/claude-code
 
+---
+
+## 🖥 UI 프로토타입 제작 (web-artifacts-builder 스킬)
+
+복잡한 React+Tailwind 기반 UI 프로토타입 제작 시 적용한다.
+
+**프로세스:**
+1. `scripts/init-artifact.sh <project-name>` 실행
+2. React 18 + TypeScript + Tailwind + shadcn/ui로 개발
+3. `scripts/bundle-artifact.sh` 로 단일 HTML 번들링
+4. 번들 결과물을 김현님께 공유
+
+**디자인 주의:**
+- 중앙 정렬 남용 금지, 보라색 그라디언트 금지, Inter 폰트 금지
+- lumi 브랜드 컬러(#FF6B9D) 반드시 유지
+
+---
+
 - [ ] index.html How 섹션 인터랙티브 UI 교체
 - [ ] index.html + beta.html 디자인 전면 개편
 - [ ] 포트원 KG이니시스 가맹점 신청
