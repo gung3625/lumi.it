@@ -3109,7 +3109,11 @@ function lumiLogout() {
         } catch(e) {
             localStorage.removeItem('lumi_token');
             localStorage.removeItem('lumi_user');
+            openPortal('login');
         }
+    } else {
+        // 미로그인 상태 — 로그인 포탈 표시
+        openPortal('login');
     }
 })();
 
