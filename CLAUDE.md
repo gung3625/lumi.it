@@ -241,6 +241,25 @@ Claude API 또는 Claude Code 관련 작업 시:
 
 ---
 
+## 📂 파일 읽기 라우터 (file-reading 스킬)
+
+파일 분석 시 확장자별 올바른 도구를 사용한다.
+
+| 확장자 | 도구 |
+|--------|------|
+| `.json`, `.log` | `jq` |
+| `.csv` | `pandas` with `nrows` |
+| `.txt`, `.md` | `wc -c` 확인 후 `head` or `cat` |
+| `.pdf` | `pdftotext` or `PyPDF` |
+| `.xlsx` | `openpyxl` |
+| binary/unknown | `file` 명령으로 타입 확인 먼저 |
+
+**절대 금지:** 바이너리 파일에 `cat` 사용 (쓰레기값 출력됨)
+
+**큰 파일:** 전체 로드 전 `wc -c`로 크기 확인 후 `head`로 샘플링
+
+---
+
 ## 🖥 UI 프로토타입 제작 (web-artifacts-builder 스킬)
 
 복잡한 React+Tailwind 기반 UI 프로토타입 제작 시 적용한다.
