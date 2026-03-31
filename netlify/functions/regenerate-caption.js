@@ -96,6 +96,10 @@ function buildCaptionPrompt(item, imageAnalysis, toneGuide) {
 
 ### ③ 날씨
 날씨: ${w.status || '?'} / 기온: ${w.temperature || '?'}°C
+날씨 상태: ${w.state || ''}
+날씨 가이드: ${w.guide || ''}
+날씨 분위기: ${w.mood || ''}
+위치: ${w.locationName || ''}
 숫자 직접 쓰지 말 것. "오늘처럼 선선한 날엔" ✅
 
 ### ④ 미세먼지
@@ -104,6 +108,7 @@ function buildCaptionPrompt(item, imageAnalysis, toneGuide) {
 
 ### ⑤ 트렌드
 트렌드 태그: ${trends}
+태그 스타일: ${item.tagStyle || 'mid'}
 본문에 억지로 넣지 말 것. 1~2개만 문장에 녹이고 나머지는 해시태그.
 
 ### ⑥ 주변 행사
@@ -125,6 +130,7 @@ hasFestival=true일 때만. "이 동네가 요즘 유독 활기차요" ✅
 시도: ${sp.sido || ''}
 시군구: ${sp.sigungu || ''}
 매장 소개: ${sp.description || ''}
+인스타그램: ${sp.instagram || ''}
 
 ---
 

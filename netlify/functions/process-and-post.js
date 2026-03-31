@@ -158,8 +158,13 @@ async function generateCaptions(imageAnalysis, item) {
 이미지 분석: ${imageAnalysis}
 코멘트: ${item.userMessage || ''}
 날씨: ${w.status || ''} / 기온: ${w.temperature || ''}°C
+날씨 상태: ${w.state || ''}
+날씨 가이드: ${w.guide || ''}
+날씨 분위기: ${w.mood || ''}
+위치: ${w.locationName || ''}
 초미세먼지: ${w.airQuality || ''}
 트렌드 태그: ${Array.isArray(item.trends) ? item.trends.join(', ') : ''}
+태그 스타일: ${item.tagStyle || 'mid'}
 근처 행사 여부: ${item.nearbyEvent || false}
 행사 정보: ${item.nearbyFestivals || ''}
 사진 수: ${item.photos.length}
@@ -171,6 +176,7 @@ async function generateCaptions(imageAnalysis, item) {
 시도: ${sp.sido || ''}
 시군구: ${sp.sigungu || ''}
 매장 소개: ${sp.description || ''}
+인스타그램: ${sp.instagram || ''}
 
 ## 말투 스타일
 요청 스타일: ${item.captionTone || '친근하게'}
