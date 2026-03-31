@@ -164,16 +164,31 @@ Task 3 [트렌드 에이전트]  ┘
 
 **⚡ 자동 병렬 실행 규칙 (명시 없어도 항상 적용)**
 
-분석·개선·검토 요청이 오면 반드시 Task 툴로 3개 병렬 실행한다. 절대 단일 에이전트로 처리하지 않는다.
+분석·개선·검토 요청이 오면 반드시 Task 툴로 4개 병렬 실행한다. 절대 단일 에이전트로 처리하지 않는다.
 
 ```
-Use the Task tool to ALWAYS spawn exactly 3 parallel subagents:
+Use the Task tool to ALWAYS spawn exactly 4 parallel subagents:
 Task 1 (아이디어): 개선 아이디어 제안
 Task 2 (검토): UX/전환율 문제점 분석
 Task 3 (트렌드): 최신 SaaS 디자인 트렌드 적용 방향
+Task 4 (QA): 실제 작동 여부 확인 + 버그·에러·개선점 파악
 
 병렬로 실행하고 결과를 취합해서 김현님께 보고한다.
 ```
+
+**QA 에이전트 역할 (Task 4):**
+- Netlify Functions 에러 로그 확인
+- 실제 API 호출 테스트 (beta-apply, beta-admin 등)
+- 콘솔 에러·경고 항목 리스트업
+- 성능 이슈 (로딩 속도, 대용량 파일 등) 파악
+- 출력 형식:
+  ```
+  [QA 결과]
+  작동 확인: 정상 / 오류
+  발견된 버그: ...
+  개선 필요 사항: ...
+  우선순위: 높음 / 중간 / 낮음
+  ```
 
 **아이디어 에이전트 출력 형식:**
 ```
@@ -238,6 +253,26 @@ Claude API 또는 Claude Code 관련 작업 시:
 - Claude API 문서: https://docs.claude.com/en/api/overview
 - Claude Code 문서: https://docs.claude.com/en/docs/claude-code/overview
 - Claude Code npm: https://www.npmjs.com/package/@anthropic-ai/claude-code
+
+---
+
+## 🔌 MCP 서버 개발 (mcp-builder 스킬)
+
+Solapi·PortOne·Meta Instagram API를 MCP 서버로 구조화할 때 적용한다.
+Claude Code에서 말로 알림톡 발송·결제 테스트·인스타 API 디버깅이 가능해짐.
+
+**권장 스택:** TypeScript + Streamable HTTP (원격 서버)
+
+**개발 4단계:**
+1. MCP 프로토콜 문서 숙지: `https://modelcontextprotocol.io/sitemap.xml`
+2. TypeScript SDK 참조: `https://raw.githubusercontent.com/modelcontextprotocol/typescript-sdk/main/README.md`
+3. 툴 구현 (Zod 스키마 + 비동기 에러 핸들링)
+4. MCP Inspector로 테스트: `npx @modelcontextprotocol/inspector`
+
+**lumi 우선 적용 대상:**
+- `solapi_send_alimtalk` — 알림톡 발송 테스트
+- `portone_payment_check` — 결제 상태 확인
+- `meta_instagram_post` — 인스타 게시물 테스트
 
 ---
 
