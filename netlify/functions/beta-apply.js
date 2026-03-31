@@ -11,7 +11,12 @@ exports.handler = async (event) => {
     return { statusCode: 200, headers, body: '' };
   }
 
-  const store = getStore({ name: 'beta-applicants', consistency: 'strong' });
+  const store = getStore({
+    name: 'beta-applicants',
+    consistency: 'strong',
+    siteID: process.env.NETLIFY_SITE_ID,
+    token: process.env.NETLIFY_TOKEN,
+  });
 
   // GET: 현재 신청자 수 조회
   if (event.httpMethod === 'GET') {

@@ -11,7 +11,12 @@ exports.handler = async (event) => {
     return { statusCode: 401, headers, body: JSON.stringify({ error: '인증 실패' }) };
   }
 
-  const store = getStore({ name: 'beta-applicants', consistency: 'strong' });
+  const store = getStore({
+    name: 'beta-applicants',
+    consistency: 'strong',
+    siteID: process.env.NETLIFY_SITE_ID,
+    token: process.env.NETLIFY_TOKEN,
+  });
   const list = await store.list();
 
   const applicants = await Promise.all(
