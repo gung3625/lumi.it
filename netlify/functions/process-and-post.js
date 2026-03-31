@@ -440,6 +440,8 @@ exports.handler = async (event) => {
     item.captionStatus = 'pending'; // pending → selected → posted
     item.captionGeneratedAt = new Date().toISOString();
     item.imageKeys = imageKeys;
+    // base64 원본 제거 — 용량 절약 (이미 temp-images에 리사이징 저장됨)
+    item.photos = item.photos.map(p => ({ fileName: p.fileName, mimeType: p.mimeType }));
     await reserveStore.set(reserveKey, JSON.stringify(item));
 
     // 7. 미리보기 알림톡 발송 (TODO: 알림톡 템플릿 검수 후 활성화)
