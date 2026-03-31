@@ -45,9 +45,28 @@ exports.handler = async (event) => {
         insta: insta || '', appliedAt: new Date().toISOString(),
       });
 
+      // 운영자 알림톡 발송
+      const remaining = 20 - list.blobs.length - 1;
+      try {
+        await fetch('https://api.solapi.com/messages/v4/send', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `HMAC-SHA256 ApiKey=${process.env.SOLAPI_API_KEY}, Date=${new Date().toISOString()}, Salt=${id}, Signature=${require('crypto').createHmac('sha256', process.env.SOLAPI_API_SECRET).update(`${new Date().toISOString()}${id}`).digest('hex')}`,
+          },
+          body: JSON.stringify({
+            message: {
+              to: '01064246284',
+              from: '01064246284',
+              text: `[lumi 베타 신청]\n이름: ${name}\n매장: ${storeName}\n업종: ${type}\n연락처: ${phone}\n인스타: ${insta || '미입력'}\n\n잔여: ${remaining}명`,
+            },
+          }),
+        });
+      } catch(e) { console.log('알림톡 실패:', e.message); }
+
       return {
         statusCode: 200, headers,
-        body: JSON.stringify({ success: true, remaining: 20 - list.blobs.length - 1 }),
+        body: JSON.stringify({ success: true, remaining }),
       };
     } catch (e) {
       return { statusCode: 500, headers, body: JSON.stringify({ error: e.message }) };
