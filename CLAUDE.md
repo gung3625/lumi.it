@@ -162,12 +162,17 @@ Task 3 [트렌드 에이전트]  ┘
 
 ---
 
-**병렬 실행 방법 (Claude Code에서):**
+**⚡ 자동 병렬 실행 규칙 (명시 없어도 항상 적용)**
+
+분석·개선·검토 요청이 오면 반드시 Task 툴로 3개 병렬 실행한다. 절대 단일 에이전트로 처리하지 않는다.
+
 ```
-Use the Task tool to spawn 3 parallel subagents:
+Use the Task tool to ALWAYS spawn exactly 3 parallel subagents:
 Task 1 (아이디어): 개선 아이디어 제안
 Task 2 (검토): UX/전환율 문제점 분석
 Task 3 (트렌드): 최신 SaaS 디자인 트렌드 적용 방향
+
+병렬로 실행하고 결과를 취합해서 김현님께 보고한다.
 ```
 
 **아이디어 에이전트 출력 형식:**
