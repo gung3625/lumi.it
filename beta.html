@@ -45,7 +45,7 @@
     /* NAV */
     nav{position:fixed;top:44px;left:0;width:100%;height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:rgba(255,255,255,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--g100);z-index:900;transition:top .3s;}
     nav.no-banner{top:0;}
-    .nav-logo{height:100px;cursor:pointer;transition:opacity .2s;}
+    .nav-logo{height:48px;cursor:pointer;transition:opacity .2s;}
     .nav-logo:hover{opacity:.7;}
     .nav-cta{padding:8px 16px;border:none;background:var(--pink);color:#fff;font-size:13px;font-weight:700;border-radius:var(--r-sm);cursor:pointer;font-family:inherit;box-shadow:var(--sh-pink);transition:all .2s;}
     .nav-right{display:flex;align-items:center;gap:6px;}
@@ -137,6 +137,9 @@
     .footer-links a{font-size:12px;font-weight:600;color:var(--g400);text-decoration:none;transition:color .2s;}
     .footer-links a:hover{color:var(--g900);}
     .footer-copy{font-size:11px;color:var(--g400);text-align:center;margin-top:32px;padding-top:24px;border-top:1px solid var(--g200);max-width:960px;margin-left:auto;margin-right:auto;}
+    /* STICKY CTA (mobile) */
+    .sticky-cta{position:fixed;bottom:0;left:0;width:100%;padding:12px 20px;background:rgba(255,255,255,.95);backdrop-filter:blur(12px);border-top:1px solid var(--g200);z-index:800;display:none;text-align:center;}
+    .sticky-cta button{display:block;width:100%;padding:14px;background:var(--pink);color:#fff;font-size:15px;font-weight:800;border:none;border-radius:var(--r-md);cursor:pointer;font-family:inherit;box-shadow:0 4px 16px rgba(232,98,138,.3);}
     /* RESPONSIVE */
     @media(max-width:640px){
       .how-wrap{flex-direction:column;}
@@ -284,7 +287,7 @@
         <div class="form-desc">선착순 <strong>20명</strong>만 받아요. 정식 출시 전까지 전부 무료로 이용하실 수 있어요.</div>
         <div class="slot-progress">
           <div class="slot-bar" id="form-slots" style="display:flex;gap:3px;flex:1;"></div>
-          <div class="slot-txt"><strong>7</strong>/20 신청</div>
+          <div class="slot-txt"><strong class="form-slot-count">...</strong>/20 신청</div>
         </div>
         <label>이름</label>
         <input type="text" id="f-name" placeholder="홍길동">
@@ -337,6 +340,11 @@
     </div>
   </div>
 </section>
+
+<!-- STICKY CTA (mobile) -->
+<div class="sticky-cta" id="beta-sticky">
+  <button onclick="document.getElementById('tester-form').scrollIntoView({behavior:'smooth'})">무료 테스터 신청하기 →</button>
+</div>
 
 <!-- FOOTER -->
 <footer>
@@ -525,6 +533,23 @@ async function submitForm(){
 }
 // Lucide 아이콘 초기화
 if(typeof lucide !== 'undefined') lucide.createIcons();
+
+// sticky CTA + footer 겹침 방지
+(function(){
+  var sticky=document.getElementById('beta-sticky');
+  var footerEl=document.querySelector('footer');
+  if(!sticky||!footerEl) return;
+  var footerVisible=false;
+  var footerObs=new IntersectionObserver(function(entries){
+    footerVisible=entries[0].isIntersecting;
+    if(footerVisible) sticky.style.display='none';
+  },{threshold:0.1});
+  footerObs.observe(footerEl);
+  window.addEventListener('scroll',function(){
+    if(window.scrollY>300&&window.innerWidth<=640&&!footerVisible){sticky.style.display='block';}
+    else{sticky.style.display='none';}
+  });
+})();
 </script>
 </body>
 </html>
