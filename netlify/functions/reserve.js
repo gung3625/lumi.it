@@ -167,17 +167,24 @@ exports.handler = async (event) => {
           isSent: false,
         };
 
+        console.log('[reserve] Blobs 저장 시작:', reserveKey, '사진:', reserveData.photos.length, '장');
         await reserveStore.setJSON(reserveKey, reserveData);
         console.log('[reserve] 예약 저장 완료:', reserveKey);
 
         // 즉시 전송: process-and-post Background Function 트리거
         const siteUrl = process.env.URL || 'https://lumi.it.kr';
-        const ppRes = await fetch(`${siteUrl}/.netlify/functions/process-and-post`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ reservationKey: reserveKey }),
-        });
-        console.log('[reserve] process-and-post 트리거:', ppRes.status);
+        console.log('[reserve] process-and-post 트리거 시도:', siteUrl);
+        try {
+          const ppRes = await fetch(`${siteUrl}/.netlify/functions/process-and-post`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reservationKey: reserveKey }),
+          });
+          console.log('[reserve] process-and-post 응답:', ppRes.status);
+        } catch (ppErr) {
+          console.error('[reserve] process-and-post 트리거 실패:', ppErr.message);
+          // 트리거 실패해도 예약 저장은 완료 — scheduler가 나중에 처리
+        }
 
         resolve({
           statusCode: 200,
