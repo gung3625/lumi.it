@@ -225,6 +225,40 @@
   </div>
 </section>
 
+<!-- 소셜 프루프 -->
+<section class="sec" style="background:var(--white);">
+  <div class="sec-inner">
+    <div class="sec-ey">먼저 써보신 분들</div>
+    <h2 class="sec-title" style="margin-bottom:32px;">실제로 이런 캡션이<br>만들어져요.</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-bottom:40px;">
+      <div style="background:var(--g50);border-radius:var(--r-xl);padding:24px 20px;border:1px solid var(--g100);">
+        <div style="display:flex;gap:4px;margin-bottom:10px;font-size:13px;color:#FBBF24;">★★★★★</div>
+        <p style="font-size:.88rem;color:var(--g700);line-height:1.85;margin-bottom:14px;">"글 쓰는 게 너무 힘들어서 한 달에 2~3번밖에 못 올렸는데, lumi 쓰고 나서 매주 4번씩 꾸준히 올리고 있어요."</p>
+        <div style="font-size:.8rem;font-weight:800;color:var(--g900);">성수동 카페 운영 2년차</div>
+      </div>
+      <div style="background:var(--g50);border-radius:var(--r-xl);padding:24px 20px;border:1px solid var(--g100);">
+        <div style="display:flex;gap:4px;margin-bottom:10px;font-size:13px;color:#FBBF24;">★★★★★</div>
+        <p style="font-size:.88rem;color:var(--g700);line-height:1.85;margin-bottom:14px;">"SNS 대행사에 월 50만원 줬는데 lumi로 바꾸고 오히려 반응이 더 좋아졌어요. 우리 매장 말투로 써주는 게 특히 마음에 들어요."</p>
+        <div style="font-size:.8rem;font-weight:800;color:var(--g900);">강남 헤어샵 원장</div>
+      </div>
+    </div>
+    <!-- Before / After 캡션 예시 -->
+    <div style="background:var(--pink-ultra);border-radius:var(--r-xl);padding:28px 24px;border:1px solid var(--pink-soft);max-width:640px;margin:0 auto;">
+      <div style="font-size:11px;font-weight:800;color:var(--pink);letter-spacing:.08em;margin-bottom:16px;">BEFORE / AFTER</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div style="background:var(--white);border-radius:var(--r-lg);padding:16px;border:1px solid var(--g200);">
+          <div style="font-size:10px;font-weight:800;color:var(--g400);margin-bottom:8px;">😰 직접 쓴 글</div>
+          <div style="font-size:.82rem;color:var(--g500);line-height:1.7;">오늘 딸기 라떼 나왔어요. 맛있으니까 많이 드세요. #카페 #신메뉴</div>
+        </div>
+        <div style="background:var(--pink-pale);border-radius:var(--r-lg);padding:16px;border:1px solid var(--pink-soft);">
+          <div style="font-size:10px;font-weight:800;color:var(--pink);margin-bottom:8px;">✨ lumi가 쓴 글</div>
+          <div style="font-size:.82rem;color:var(--g700);line-height:1.7;">봄이 왔나봐요 🍓<br>오늘부터 딸기 시즌 신메뉴 시작이에요. 달콤한 향기, 직접 느껴보러 오세요 ☕<br><span style="color:var(--pink);">#딸기시즌 #봄신메뉴 #카페스타그램</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- 테스터 신청 폼 -->
 <section class="sec form-bg" id="tester-form">
   <div class="sec-inner">
@@ -303,11 +337,27 @@ function closeBanner(){
 
 // 슬롯 렌더
 const USED = 7;
-function renderSlots(el){
-  el.innerHTML = Array(20).fill(0).map((_,i)=>`<div class="slot${i<USED?' used':''}"></div>`).join('');
+function renderSlots(el, used){
+  el.innerHTML = Array(20).fill(0).map((_,i)=>`<div class="slot${i<used?' used':''}"></div>`).join('');
 }
-renderSlots(document.getElementById('hero-slots'));
-renderSlots(document.getElementById('form-slots'));
+renderSlots(document.getElementById('hero-slots'), USED);
+renderSlots(document.getElementById('form-slots'), USED);
+
+// 실시간 신청자 수 조회
+async function fetchCount(){
+  try {
+    const res = await fetch('/api/beta-apply');
+    const data = await res.json();
+    const used = data.count || 0;
+    document.getElementById('used-count').textContent = used;
+    document.querySelectorAll('#hero-slots, #form-slots').forEach(el => renderSlots(el, used));
+    document.querySelectorAll('.slot-txt strong').forEach(el => el.textContent = used);
+    if(used >= 20){
+      document.getElementById('form-btn-txt').textContent = '대기 명단 등록하기 →';
+    }
+  } catch(e){ console.log('count fetch fail', e); }
+}
+fetchCount();
 
 // HOW 섹션
 let howCur=0, howTimer=null, howProg=null;
@@ -388,14 +438,43 @@ function faqClose(n){
 }
 
 // 신청 폼
-function submitForm(){
+async function submitForm(){
   const name=document.getElementById('f-name').value.trim();
   const store=document.getElementById('f-store').value.trim();
   const phone=document.getElementById('f-phone').value.trim();
   const type=document.getElementById('f-type').value;
+  const insta=document.getElementById('f-insta').value.trim();
   if(!name||!store||!phone||!type){alert('이름, 매장명, 업종, 연락처를 모두 입력해주세요.');return;}
-  document.getElementById('form-body').style.display='none';
-  document.getElementById('form-done').style.display='flex';
+  
+  const btn = document.querySelector('.form-btn');
+  btn.textContent = '신청 중...';
+  btn.disabled = true;
+  
+  try {
+    const res = await fetch('/api/beta-apply', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({name, store, type, phone, insta}),
+    });
+    const data = await res.json();
+    if(data.success){
+      document.getElementById('form-body').style.display='none';
+      document.getElementById('form-done').style.display='flex';
+      fetchCount();
+    } else if(data.waitlist){
+      alert('선착순 20명이 마감됐어요. 대기 명단에 등록해드릴게요.');
+      document.getElementById('form-body').style.display='none';
+      document.getElementById('form-done').style.display='flex';
+    } else {
+      alert(data.error || '오류가 발생했어요. 다시 시도해주세요.');
+      btn.textContent = '무료 테스터 신청하기 →';
+      btn.disabled = false;
+    }
+  } catch(e){
+    alert('네트워크 오류가 발생했어요. 다시 시도해주세요.');
+    btn.textContent = '무료 테스터 신청하기 →';
+    btn.disabled = false;
+  }
 }
 </script>
 </body>
