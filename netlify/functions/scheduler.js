@@ -32,9 +32,9 @@ exports.handler = async (event) => {
         if (!item.scheduledAt) continue;
         if (new Date(item.scheduledAt) > now) continue;
 
-        // process-and-post Background Function 트리거
+        // Background Function은 즉시 202 반환 — fire-and-forget
         const siteUrl = process.env.URL || 'https://lumi.it.kr';
-        const res = await fetch(`${siteUrl}/.netlify/functions/process-and-post`, {
+        const res = await fetch(`${siteUrl}/.netlify/functions/process-and-post-background`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ reservationKey: blob.key }),
@@ -42,7 +42,7 @@ exports.handler = async (event) => {
 
         if (res.ok || res.status === 202) {
           triggered++;
-          console.log('[scheduler] process-and-post 트리거:', blob.key);
+          console.log('[scheduler] process-and-post-background 트리거:', blob.key);
         } else {
           console.error('[scheduler] 트리거 실패:', blob.key, res.status);
         }
