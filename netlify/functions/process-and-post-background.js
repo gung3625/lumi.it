@@ -234,8 +234,12 @@ ${toneGuide}
     body: JSON.stringify({ model: 'gpt-5.4', input: prompt, store: true }),
   });
   const data = await res.json();
+  if (data.error) throw new Error(`gpt-5.4 오류: ${data.error.message || JSON.stringify(data.error)}`);
   const text = data.output?.[0]?.content?.[0]?.text || data.output_text || '';
-  return parseCaptions(text);
+  if (!text) throw new Error('gpt-5.4 응답 없음');
+  const captions = parseCaptions(text);
+  if (!captions.length) throw new Error(`캡션 파싱 실패. 응답: ${text.substring(0, 200)}`);
+  return captions;
 }
 
 // ── 알림톡 발송 ──
@@ -501,6 +505,21 @@ exports.handler = async (event) => {
 
   } catch (err) {
     console.error('[process-and-post] 에러:', err.message);
+    // 에러 발생 시 Blobs에 에러 상태 저장 → 폴링 무한루프 방지
+    try {
+      const store = getReservationStore();
+      const { reservationKey } = JSON.parse(event.body || '{}');
+      if (reservationKey) {
+        const raw = await store.get(reservationKey);
+        if (raw) {
+          const item = JSON.parse(raw);
+          item.captionsGeneratedAt = new Date().toISOString();
+          item.captionError = err.message;
+          item.generatedCaptions = [];
+          await store.set(reservationKey, JSON.stringify(item));
+        }
+      }
+    } catch (_) {}
     return { statusCode: 500, headers, body: JSON.stringify({ error: err.message }) };
   }
 };

@@ -1946,6 +1946,12 @@ function startCaptionPolling(reservationKey) {
       const res = await fetch(`/.netlify/functions/get-reservation?key=${encodeURIComponent(reservationKey)}&secret=lumi2026secret`);
       if (!res.ok) return;
       const data = await res.json();
+      if (data.captionError) {
+        clearInterval(_captionPollTimer);
+        showToast('캡션 생성에 실패했어요: ' + data.captionError, 'red');
+        closeCaptionSheet();
+        return;
+      }
       if (data.generatedCaptions && data.generatedCaptions.length > 0) {
         clearInterval(_captionPollTimer);
         showCaptionReady(reservationKey, data.generatedCaptions, data.regenCount || 0);
