@@ -74,6 +74,10 @@ exports.handler = async (event) => {
 
     await store.set('user:' + email, JSON.stringify(user));
 
+    // insta: 역조회 키 저장 — get-link-page, update-link-page에서 사용
+    const instaId = instagram.replace('@', '').toLowerCase();
+    if (instaId) await store.set('insta:' + instaId, email);
+
     const token = Buffer.from(email + ':' + Date.now()).toString('base64');
     await store.set('token:' + token, JSON.stringify({ email, createdAt: new Date().toISOString() }));
 

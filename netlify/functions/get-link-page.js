@@ -25,6 +25,26 @@ exports.handler = async (event) => {
       if (emailRaw) email = emailRaw.trim();
     } catch(e) {}
 
+    // fallback: user 전체에서 instagram 필드 매칭
+    if (!email) {
+      try {
+        const list = await store.list();
+        for (const entry of list.blobs) {
+          if (!entry.key.startsWith('user:')) continue;
+          const raw = await store.get(entry.key);
+          if (!raw) continue;
+          const u = JSON.parse(raw);
+          const uInsta = (u.instagram || '').replace('@', '').toLowerCase();
+          if (uInsta === instaId.replace('@', '').toLowerCase()) {
+            email = u.email;
+            // 누락된 insta: 키 자동 복구
+            await store.set('insta:' + uInsta, email);
+            break;
+          }
+        }
+      } catch(e) {}
+    }
+
     if (!email) {
       return { statusCode: 404, body: JSON.stringify({ error: '페이지를 찾을 수 없습니다.' }) };
     }
