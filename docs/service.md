@@ -1,12 +1,14 @@
 # 서비스 현황 + 파일 구조
 
-## 현재 상태 (2026-04-01)
-- 메타 비즈니스 앱 심사 중 (약 2주, 수정 불가)
+## 현재 상태 (2026-04-01 최신화)
+- 메타 비즈니스 앱 재심사 중 (이메일 인증 완료, lumi@lumi.it.kr → gung3625@gmail.com 포워딩)
 - 솔라피 알림톡 템플릿 재검수 중
 - 테스터 모집: 0명 (아직 1명도 없음)
 - beta.html 완료 (lumi.it.kr/beta)
 - admin-beta.html 완료 (lumi.it.kr/admin-beta, 토큰: lumi2026secret)
-- Remote Control 활성화됨 (모바일 작업 가능)
+- Make.com 완전 제거 완료 — 순수 Netlify Functions로 전환
+- 사업자등록번호 404-09-66416 전 페이지 최신화 완료
+- ImprovMX 이메일 포워딩 설정 완료 (*@lumi.it.kr → gung3625@gmail.com)
 
 ## 파일 구조
 ```
@@ -79,8 +81,20 @@ lumi.it/
 - [x] Before/After 모바일 반응형 세로 배치
 - [x] 비교표 "해외 서비스"→"SNS 대행사"
 
+### Make.com 제거 (2026-04-01)
+- [x] process-and-post-background.js — 이미지리사이징+GPT-4o분석+gpt-5.4캡션3개생성+알림톡
+- [x] select-and-post-background.js — 캡션선택 후 Instagram 게시 (Background Function)
+- [x] select-caption.js — 캡션 선택 즉시 200 반환 + background 트리거
+- [x] get-reservation.js — 캡션 폴링용 (generatedCaptions, isSent, postError)
+- [x] regenerate-caption.js — 월3회 캡션 재생성
+- [x] serve-image.js — Blobs 이미지 공개 URL 서빙
+- [x] reserve.js — await fetch로 background 트리거 (fire-and-forget 버그 수정)
+- [x] scheduler.js — MAKE_WEBHOOK_URL 제거, process-and-post-background 직접 호출
+- [x] 캡션 선택 UI — 폴링+선택+재생성 (dashboard.html)
+- [x] 클라이언트 사이드 리사이징 (6MB 제한 방지)
+- [x] 캡션 프롬프트 Make 원본으로 교체
+
 ## 제약 조건 (에이전트 필수 인지)
-- 메타 심사 완료 전: 인스타 자동 게시·인사이트 API 사용 불가
+- 메타 재심사 중: 인스타 자동 게시는 현재 동작하나 앱 심사 완료 후 안정화 예정
 - 솔라피 재검수 중: 알림톡 발송 불확실
-- 캡션 생성: 사진 업로드 후 Make.com→GPT 처리 (미리보기 불가)
 - 테스터 0명: 실사용 데이터·후기 없음
