@@ -26,8 +26,8 @@ exports.handler = async (event) => {
         if (!raw) continue;
         const item = JSON.parse(raw);
 
-        // 이미 게시된 항목만 스킵 (Make 원본과 동일)
-        if (item.isSent) continue;
+        // 이미 게시됐거나 취소된 항목 스킵
+        if (item.isSent || item.cancelled) continue;
         if (!item.scheduledAt) continue;
         if (new Date(item.scheduledAt) > now) continue;
 

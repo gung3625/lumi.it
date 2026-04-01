@@ -77,6 +77,7 @@ exports.handler = async (event) => {
         let toneLikes = [];
         let toneDislikes = [];
         let customCaptionsStr = '';
+        let relayMode = false;
         if (storeProfile.ownerEmail) {
           try {
             const blobStore = getStore({
@@ -109,13 +110,14 @@ exports.handler = async (event) => {
               if (dislikeRaw) toneDislikes = JSON.parse(dislikeRaw);
             } catch {}
 
-            // 커스텀 캡션 샘플 조회
+            // 커스텀 캡션 + 릴레이 모드 조회
             try {
               const userDataRaw = await blobStore.get('user:' + storeProfile.ownerEmail);
               if (userDataRaw) {
                 const userData = JSON.parse(userDataRaw);
                 const captions = userData.customCaptions || [];
                 customCaptionsStr = captions.filter(c => c && c.trim()).join('|||');
+                relayMode = userData.relayMode === true;
               }
             } catch {}
 
@@ -171,6 +173,7 @@ exports.handler = async (event) => {
           igUserId,
           igAccessToken,
           igPageAccessToken,
+          relayMode,
           isSent: false,
         };
 

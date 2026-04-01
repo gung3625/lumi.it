@@ -1,0 +1,52 @@
+const { getStore } = require('@netlify/blobs');
+
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Content-Type': 'application/json',
+};
+
+exports.handler = async (event) => {
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS };
+  if (event.httpMethod !== 'POST') return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method Not Allowed' }) };
+
+  const authHeader = event.headers['authorization'] || '';
+  if (!authHeader.startsWith('Bearer ')) return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증 필요' }) };
+
+  let body;
+  try { body = JSON.parse(event.body); } catch {
+    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '잘못된 요청' }) };
+  }
+
+  const { reservationKey } = body;
+  if (!reservationKey) return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'reservationKey 필수' }) };
+
+  try {
+    const store = getStore({
+      name: 'reservations',
+      consistency: 'strong',
+      siteID: process.env.NETLIFY_SITE_ID,
+      token: process.env.NETLIFY_TOKEN,
+    });
+
+    const raw = await store.get(reservationKey);
+    if (!raw) return { statusCode: 404, headers: CORS, body: JSON.stringify({ error: '예약 없음' }) };
+
+    const item = JSON.parse(raw);
+    if (item.isSent) return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '이미 게시된 항목은 취소할 수 없어요.' }) };
+
+    item.cancelled = true;
+    item.cancelledAt = new Date().toISOString();
+    item.captionStatus = 'cancelled';
+    await store.set(reservationKey, JSON.stringify(item));
+
+    return {
+      statusCode: 200,
+      headers: CORS,
+      body: JSON.stringify({ success: true }),
+    };
+  } catch (err) {
+    console.error('cancel-reservation error:', err.message);
+    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '오류가 발생했습니다.' }) };
+  }
+};

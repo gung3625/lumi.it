@@ -753,6 +753,34 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
             </div>
         </div>
 
+        <div style="background:var(--white);border-radius:var(--r-xl);padding:18px 22px;border:1px solid var(--g200);box-shadow:var(--sh-xs);margin-bottom:14px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div>
+                    <p style="font-size:.88rem;font-weight:800;color:var(--g900);margin-bottom:4px;">🔄 릴레이 모드</p>
+                    <p style="font-size:.75rem;color:var(--g500);line-height:1.6;">캡션 생성 후 자동 게시하지 않고<br>직접 확인·수정 후 게시해요.</p>
+                </div>
+                <div style="flex-shrink:0;margin-left:16px;cursor:pointer;" onclick="document.getElementById('relay-mode-toggle').click()">
+                    <input type="checkbox" id="relay-mode-toggle" onchange="saveRelayMode(this.checked)" style="display:none;">
+                    <div id="relay-mode-slider" style="width:52px;height:28px;border-radius:28px;background:#ccc;border:2px solid #bbb;position:relative;transition:all .3s;cursor:pointer;">
+                        <div id="relay-mode-knob" style="position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .3s;box-shadow:0 2px 6px rgba(0,0,0,.3);"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 릴레이 대기열 -->
+        <div id="relay-queue-section" style="display:none;margin-bottom:14px;">
+            <div style="background:var(--white);border-radius:var(--r-xl);padding:18px 22px;border:1px solid var(--g200);box-shadow:var(--sh-xs);">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                    <p style="font-size:.88rem;font-weight:800;color:var(--g900);">📋 대기 중인 게시물</p>
+                    <button onclick="loadRelayQueue()" style="background:none;border:none;font-size:.75rem;color:var(--pink);font-weight:700;cursor:pointer;font-family:inherit;">새로고침</button>
+                </div>
+                <div id="relay-queue-list" style="display:flex;flex-direction:column;gap:10px;">
+                    <p style="font-size:.78rem;color:var(--g400);text-align:center;">불러오는 중...</p>
+                </div>
+            </div>
+        </div>
+
         <!-- 링크 페이지 설정 -->
         <p class="dash-lbl">링크 페이지 설정</p>
         <div style="background:var(--white);border-radius:var(--r-xl);padding:20px 22px;border:1px solid var(--g200);box-shadow:var(--sh-xs);margin-bottom:14px;">
@@ -1801,6 +1829,7 @@ async function grantAccess(){
     loadLinkPage();
     initAutoStory();
     initAutoFestival();
+    initRelayMode();
     loadCalendar();
     if (!JSON.parse(localStorage.getItem('lumi_user') || '{}').sidoCode) {
         initWeather();
@@ -2011,7 +2040,7 @@ function showCaptionWaiting(reservationKey) {
       </div>
       <div id="caption-ready-state" style="display:none;">
         <p style="font-size:14px;color:#888;margin:0 0 8px;">마음에 드는 캡션을 선택해주세요. 선택 즉시 인스타그램에 게시됩니다.</p>
-        <p style="font-size:12px;color:var(--pink);margin:0 0 16px;line-height:1.5;">⏰ 선택하지 않으면 <strong>30분 후</strong> 첫 번째 캡션으로 자동 게시돼요.</p>
+        <p id="caption-auto-post-notice" style="font-size:12px;color:var(--pink);margin:0 0 16px;line-height:1.5;">⏰ 선택하지 않으면 <strong>30분 후</strong> 첫 번째 캡션으로 자동 게시돼요.</p>
         <div id="caption-list" style="display:flex;flex-direction:column;gap:12px;"></div>
         <div style="margin-top:16px;display:flex;gap:10px;align-items:center;">
           <button id="regen-btn" onclick="regenerateCaption('${reservationKey}')" style="flex:1;padding:12px;border:2px solid #E8628A;background:#fff;color:#E8628A;font-size:14px;font-weight:600;border-radius:12px;cursor:pointer;font-family:inherit;">다시 생성</button>
@@ -2066,6 +2095,11 @@ function showCaptionReady(reservationKey, captions, regenCount) {
   document.getElementById('caption-waiting-state').style.display = 'none';
   const readyEl = document.getElementById('caption-ready-state');
   readyEl.style.display = 'block';
+
+  // 릴레이 모드면 자동 게시 안내 숨김
+  const autoNotice = document.getElementById('caption-auto-post-notice');
+  const user = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+  if (autoNotice && user.relayMode) autoNotice.style.display = 'none';
 
   const list = document.getElementById('caption-list');
   list.innerHTML = '';
@@ -3075,6 +3109,202 @@ async function saveAutoStory(checked) {
     } catch(e) {
         showToast('설정 저장 중 오류가 발생했어요.', 'red');
     }
+}
+
+// ── 릴레이 모드 ──
+function initRelayMode() {
+    const user = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+    const toggle = document.getElementById('relay-mode-toggle');
+    if (!toggle) return;
+    const isOn = user.relayMode === true;
+    toggle.checked = isOn;
+    updateRelayToggleUI(isOn);
+    if (isOn) loadRelayQueue();
+}
+
+function updateRelayToggleUI(isOn) {
+    const slider = document.getElementById('relay-mode-slider');
+    const knob = document.getElementById('relay-mode-knob');
+    if (!slider || !knob) return;
+    slider.style.background = isOn ? 'var(--pink)' : '#ccc';
+    slider.style.borderColor = isOn ? 'var(--pink)' : '#bbb';
+    knob.style.transform = isOn ? 'translateX(24px)' : 'translateX(0)';
+    const queueEl = document.getElementById('relay-queue-section');
+    if (queueEl) queueEl.style.display = isOn ? 'block' : 'none';
+}
+
+async function saveRelayMode(checked) {
+    updateRelayToggleUI(checked);
+    const token = localStorage.getItem('lumi_token');
+    try {
+        const res = await fetch('/.netlify/functions/update-profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ relayMode: checked })
+        });
+        if (res.ok) {
+            const user = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+            user.relayMode = checked;
+            localStorage.setItem('lumi_user', JSON.stringify(user));
+            showToast(checked ? '릴레이 모드가 켜졌어요 🔄' : '릴레이 모드가 꺼졌어요', checked ? 'pink' : '');
+            if (checked) loadRelayQueue();
+        }
+    } catch(e) {
+        showToast('설정 저장 중 오류가 발생했어요.', 'red');
+    }
+}
+
+async function loadRelayQueue() {
+    const listEl = document.getElementById('relay-queue-list');
+    if (!listEl) return;
+    listEl.innerHTML = '<p style="font-size:.78rem;color:var(--g400);text-align:center;">불러오는 중...</p>';
+    const token = localStorage.getItem('lumi_token');
+    try {
+        const res = await fetch('/.netlify/functions/relay-list', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!res.ok) { listEl.innerHTML = '<p style="font-size:.78rem;color:var(--g400);text-align:center;">불러오기 실패</p>'; return; }
+        const data = await res.json();
+        if (!data.items || data.items.length === 0) {
+            listEl.innerHTML = '<p style="font-size:.78rem;color:var(--g400);text-align:center;">대기 중인 게시물이 없어요</p>';
+            return;
+        }
+        listEl.innerHTML = data.items.map(item => {
+            const preview = (item.captions[0] || '').substring(0, 80);
+            const time = item.captionsGeneratedAt ? new Date(item.captionsGeneratedAt).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+            const isRelay = item.relayMode;
+            return `
+            <div style="border:1.5px solid ${isRelay ? 'rgba(232,98,138,.3)' : 'var(--g200)'};border-radius:12px;padding:14px 16px;background:${isRelay ? '#fff8fa' : '#fff'};">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                    <span style="font-size:.75rem;color:var(--g400);">${time} · 사진 ${item.photoCount}장</span>
+                    ${isRelay ? '<span style="font-size:.7rem;background:var(--pink);color:#fff;padding:2px 8px;border-radius:99px;font-weight:600;">릴레이</span>' : ''}
+                </div>
+                <p style="font-size:.82rem;color:var(--g900);line-height:1.5;margin:0 0 10px;white-space:pre-wrap;">${esc(preview)}${preview.length >= 80 ? '...' : ''}</p>
+                <div style="display:flex;gap:8px;">
+                    <button onclick="openRelayEdit('${item.key}')" style="flex:1;padding:8px;background:var(--pink);color:#fff;border:none;border-radius:8px;font-size:.78rem;font-weight:700;cursor:pointer;font-family:inherit;">확인·게시</button>
+                    <button onclick="cancelRelayItem('${item.key}')" style="padding:8px 14px;background:var(--g100);color:var(--g600);border:none;border-radius:8px;font-size:.78rem;font-weight:600;cursor:pointer;font-family:inherit;">취소</button>
+                </div>
+            </div>`;
+        }).join('');
+    } catch(e) {
+        listEl.innerHTML = '<p style="font-size:.78rem;color:var(--g400);text-align:center;">네트워크 오류</p>';
+    }
+}
+
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+async function openRelayEdit(reservationKey) {
+    const token = localStorage.getItem('lumi_token');
+    try {
+        const res = await fetch(`/.netlify/functions/get-reservation?key=${encodeURIComponent(reservationKey)}`, { headers: { 'Authorization': 'Bearer ' + token } });
+        if (!res.ok) { showToast('데이터를 불러올 수 없어요.', 'red'); return; }
+        const data = await res.json();
+        if (!data.generatedCaptions || data.generatedCaptions.length === 0) { showToast('캡션이 아직 준비되지 않았어요.', 'red'); return; }
+
+        const overlay = document.createElement('div');
+        overlay.id = 'relay-edit-overlay';
+        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+        document.body.style.overflow = 'hidden';
+
+        overlay.innerHTML = `
+        <div style="background:#fff;border-radius:20px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;padding:28px 24px 32px;box-shadow:0 24px 80px rgba(0,0,0,.2);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <span style="font-size:17px;font-weight:700;color:#1a1a2e;">캡션 확인·수정</span>
+                <button onclick="closeRelayEdit()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#888;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;">×</button>
+            </div>
+            <p style="font-size:13px;color:#888;margin:0 0 16px;">캡션을 수정한 뒤 게시하거나, 그대로 선택해서 게시하세요.</p>
+            <div id="relay-edit-captions" style="display:flex;flex-direction:column;gap:12px;"></div>
+        </div>`;
+        document.body.appendChild(overlay);
+
+        const container = document.getElementById('relay-edit-captions');
+        data.generatedCaptions.forEach((caption, i) => {
+            const card = document.createElement('div');
+            card.style.cssText = 'border:2px solid #f0f0f0;border-radius:14px;padding:14px;';
+            card.innerHTML = `
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                    <span style="font-size:12px;font-weight:600;color:#E8628A;">버전 ${i+1}</span>
+                    <div style="display:flex;gap:6px;">
+                        <button onclick="saveRelayCaption('${reservationKey}',${i})" style="background:#fff;border:1.5px solid #E8628A;color:#E8628A;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">저장</button>
+                        <button onclick="postRelayCaption('${reservationKey}',${i})" style="background:#E8628A;color:#fff;border:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">이걸로 올리기</button>
+                    </div>
+                </div>
+                <textarea id="relay-cap-${i}" style="width:100%;min-height:120px;border:1.5px solid #eee;border-radius:10px;padding:10px;font-size:13px;line-height:1.7;color:#333;resize:vertical;font-family:inherit;">${esc(caption)}</textarea>`;
+            container.appendChild(card);
+        });
+    } catch(e) {
+        showToast('네트워크 오류가 발생했어요.', 'red');
+    }
+}
+
+function closeRelayEdit() {
+    const el = document.getElementById('relay-edit-overlay');
+    if (el) el.remove();
+    document.body.style.overflow = '';
+}
+
+async function saveRelayCaption(reservationKey, index) {
+    const textarea = document.getElementById('relay-cap-' + index);
+    if (!textarea) return;
+    const token = localStorage.getItem('lumi_token');
+    try {
+        const res = await fetch('/.netlify/functions/edit-caption', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ reservationKey, captionIndex: index, newCaption: textarea.value })
+        });
+        if (res.ok) showToast('캡션이 저장됐어요 ✏️', 'pink');
+        else showToast('저장에 실패했어요.', 'red');
+    } catch(e) { showToast('네트워크 오류', 'red'); }
+}
+
+async function postRelayCaption(reservationKey, index) {
+    const textarea = document.getElementById('relay-cap-' + index);
+    if (!textarea) return;
+    const token = localStorage.getItem('lumi_token');
+    const email = (JSON.parse(localStorage.getItem('lumi_user')||'{}').email || '');
+
+    // 수정된 내용이 있으면 먼저 저장
+    try {
+        await fetch('/.netlify/functions/edit-caption', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ reservationKey, captionIndex: index, newCaption: textarea.value })
+        });
+    } catch {}
+
+    // 게시 요청
+    try {
+        const res = await fetch('/.netlify/functions/select-caption', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ reservationKey, captionIndex: index, email })
+        });
+        if (res.ok) {
+            closeRelayEdit();
+            showToast('인스타그램에 올리는 중... 📸', 'pink');
+            loadRelayQueue();
+        } else {
+            const data = await res.json().catch(() => ({}));
+            showToast(data.error || '게시에 실패했어요.', 'red');
+        }
+    } catch(e) { showToast('네트워크 오류', 'red'); }
+}
+
+async function cancelRelayItem(reservationKey) {
+    if (!confirm('이 게시물을 취소할까요?')) return;
+    const token = localStorage.getItem('lumi_token');
+    try {
+        const res = await fetch('/.netlify/functions/cancel-reservation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ reservationKey })
+        });
+        if (res.ok) {
+            showToast('게시가 취소됐어요.', '');
+            loadRelayQueue();
+        } else showToast('취소에 실패했어요.', 'red');
+    } catch(e) { showToast('네트워크 오류', 'red'); }
 }
 
 // ── 링크 페이지 ──
