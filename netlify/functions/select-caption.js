@@ -217,10 +217,12 @@ exports.handler = async (event) => {
     }
     const selectedCaption = captions[idx];
 
-    // 이미지 URL 생성 (serve-image Function을 통한 Blobs 공개 URL)
-    const imageUrls = (item.imageKeys || []).map(k =>
-      `${SITE_URL}/.netlify/functions/serve-image?key=${encodeURIComponent(k)}`
-    );
+    // 이미지 URL — process-and-post가 저장한 imageUrls 직접 사용, 없으면 imageKeys로 생성
+    const imageUrls = item.imageUrls && item.imageUrls.length
+      ? item.imageUrls
+      : (item.imageKeys || item.tempKeys || []).map(k =>
+          `${SITE_URL}/.netlify/functions/serve-image?key=${encodeURIComponent(k)}`
+        );
     if (!imageUrls.length) {
       return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '게시할 이미지가 없습니다' }) };
     }
