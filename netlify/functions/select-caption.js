@@ -51,7 +51,7 @@ async function publishCarousel(igUserId, igAccessToken, containerIds, caption) {
   if (data.error) throw new Error(`IG carousel error: ${JSON.stringify(data.error)}`);
 
   // Meta 서버 처리 시간 — 10초 대기
-  await new Promise(r => setTimeout(r, 10000));
+  await new Promise(r => setTimeout(r, 5000));
 
   const pubRes = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media_publish`, {
     method: 'POST',
@@ -74,7 +74,7 @@ async function publishSingle(igUserId, igAccessToken, imageUrl, caption) {
   const data = await res.json();
   if (data.error) throw new Error(`IG single error: ${JSON.stringify(data.error)}`);
 
-  await new Promise(r => setTimeout(r, 10000));
+  await new Promise(r => setTimeout(r, 5000));
 
   const pubRes = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media_publish`, {
     method: 'POST',
@@ -125,14 +125,11 @@ async function postToInstagram(item, caption, imageUrls) {
     result = await publishSingle(igUserId, igAccessToken, imageUrls[0], caption);
   }
 
-  // 스토리 게시 (storyEnabled == true)
+  // 스토리 게시 — 메인 게시 완료 후 비동기로 처리 (응답 지연 방지)
   if (item.storyEnabled) {
-    try {
-      await publishStory(igUserId, igAccessToken, imageUrls[0]);
-      console.log('[lumi] 스토리 게시 완료');
-    } catch (e) {
-      console.error('[lumi] 스토리 게시 실패:', e.message);
-    }
+    publishStory(igUserId, igAccessToken, imageUrls[0])
+      .then(() => console.log('[lumi] 스토리 게시 완료'))
+      .catch(e => console.error('[lumi] 스토리 게시 실패:', e.message));
   }
 
   return result;
