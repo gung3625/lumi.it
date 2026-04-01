@@ -1,5 +1,6 @@
 const { getStore } = require('@netlify/blobs');
 const crypto = require('crypto');
+const { Resend } = require('resend');
 
 // 솔라피 설정
 const API_KEY = process.env.SOLAPI_API_KEY;
