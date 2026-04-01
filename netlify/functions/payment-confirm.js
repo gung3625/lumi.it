@@ -90,6 +90,32 @@ exports.handler = async (event) => {
       await userStore.set('user:' + order.email, JSON.stringify(user));
     }
 
+    // 결제 완료 이메일 발송
+    try {
+      const { Resend } = require('resend');
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      if (order.email && process.env.RESEND_API_KEY) {
+        const planNames = { standard: '월간', standard_3m: '3개월', standard_yearly: '연간' };
+        const planLabel = planNames[order.planType] || '스탠다드';
+        await resend.emails.send({
+          from: 'lumi <no-reply@lumi.it.kr>',
+          to: order.email,
+          subject: `[lumi] 스탠다드 ${planLabel} 결제가 완료됐어요!`,
+          html: `<div style="font-family:Pretendard,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;">
+            <h2 style="color:#E8628A;margin-bottom:16px;">결제 완료 🎉</h2>
+            <p style="color:#333D4B;line-height:1.8;">
+              스탠다드 ${planLabel} 플랜 결제가 정상 처리됐어요.<br>
+              결제 금액: <strong>${order.amount.toLocaleString()}원</strong><br>
+              지금 바로 대시보드에서 사진을 올려보세요!
+            </p>
+            <a href="https://lumi.it.kr/dashboard" style="display:inline-block;margin-top:20px;padding:12px 28px;background:#E8628A;color:#fff;border-radius:12px;text-decoration:none;font-weight:700;">대시보드 바로가기</a>
+          </div>`
+        });
+      }
+    } catch (emailErr) {
+      console.error('결제 완료 이메일 발송 실패:', emailErr.message);
+    }
+
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },

@@ -6,9 +6,12 @@ const CHANNEL_ID = 'KA01PF26032219112677567W26lSNGQj';
 
 // 솔라피 템플릿 (templateId: 긴 ID, code: 짧은 코드)
 const TEMPLATES = {
-  welcome:  { id: 'KA01TP260322191640813tM8YzoqdCss', code: 'HMttBoUZVq' },  // 회원가입 환영 (승인)
-  upload:   { id: 'KA01TP260322191753216QJdWJqLkCrZ', code: '5XY1oOgtXW' },  // 업로드 알림 (승인)
-  schedule: { id: 'KA01TP260322191942267zoXVvaI7xav', code: '1EQHbXgF4t' }   // 데일리 스케줄 (승인완료)
+  welcome:      { id: 'KA01TP260322191640813tM8YzoqdCss', code: 'HMttBoUZVq' },  // 회원가입 환영 (승인)
+  upload:       { id: 'KA01TP260322191753216QJdWJqLkCrZ', code: '5XY1oOgtXW' },  // 업로드 알림 (승인)
+  schedule:     { id: 'KA01TP260322191942267zoXVvaI7xav', code: '1EQHbXgF4t' },  // 데일리 스케줄 (승인완료)
+  captionReady: { id: '', code: '' },  // 캡션 준비 완료 (솔라피 검수 후 ID 입력)
+  postComplete: { id: '', code: '' },  // 게시 완료 (솔라피 검수 후 ID 입력)
+  postFailed:   { id: '', code: '' }   // 게시 실패 (솔라피 검수 후 ID 입력)
 };
 
 // 솔라피 HMAC 인증 헤더 생성
@@ -86,7 +89,27 @@ exports.handler = async (event) => {
   }
 
   try {
-    const result = await sendAlimtalk(to, template, variables || {});
+    let result;
+    // 템플릿 ID가 없으면 SMS fallback (솔라피 검수 전 임시)
+    if (!template.id) {
+      const smsBody = {
+        message: {
+          to,
+          from: process.env.SOLAPI_SENDER || '01064246284',
+          type: 'SMS',
+          text: variables.text || `[lumi] ${type} 알림`
+        }
+      };
+      const smsRes = await fetch('https://api.solapi.com/messages/v4/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': getAuthHeader() },
+        body: JSON.stringify(smsBody)
+      });
+      result = await smsRes.json();
+      console.log('[lumi] SMS fallback 발송:', JSON.stringify(result));
+    } else {
+      result = await sendAlimtalk(to, template, variables || {});
+    }
     return {
       statusCode: 200,
       body: JSON.stringify({ success: true, result })

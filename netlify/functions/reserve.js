@@ -168,7 +168,7 @@ exports.handler = async (event) => {
         };
 
         console.log('[reserve] Blobs 저장 시작:', reserveKey, '사진:', reserveData.photos.length, '장');
-        await reserveStore.setJSON(reserveKey, reserveData);
+        await reserveStore.set(reserveKey, JSON.stringify(reserveData));
         console.log('[reserve] 예약 저장 완료:', reserveKey);
 
         // 즉시 전송: process-and-post Background Function 트리거

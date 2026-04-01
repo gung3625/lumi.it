@@ -356,7 +356,7 @@ async function postToInstagram(item, caption, imageUrls) {
     });
     const cData = await cRes.json();
     if (cData.error) throw new Error(cData.error.message);
-    await sleep(10000);
+    await sleep(5000);
     // 게시
     const pRes = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media_publish`, {
       method: 'POST',
@@ -375,7 +375,7 @@ async function postToInstagram(item, caption, imageUrls) {
     });
     const d = await res.json();
     if (d.error) throw new Error(d.error.message);
-    await sleep(10000);
+    await sleep(5000);
     const pRes = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media_publish`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -532,15 +532,31 @@ exports.handler = async (event) => {
       await sendAlimtalk(phone, `[lumi] ${sp.name || '사장'}님, 캡션이 준비됐어요!\n\n3가지 스타일로 만들었어요.\n마음에 드는 캡션을 선택해주세요.\n\n미리보기: ${previewUrl}\n\n선택하지 않으면 ${autoTime}에 자동 게시됩니다.`);
     }
 
-    // 6. 30분 대기 후 자동 게시
+    // 6. 30분 대기 후 자동 게시 (재생성 시 autoPostAt 참조)
     await sleep(30 * 60 * 1000);
 
-    // 재조회 (고객이 선택했을 수 있음)
+    // 재조회 (고객이 선택했거나 캡션 재생성했을 수 있음)
     const updated = JSON.parse(await store.get(reservationKey));
     if (updated.isSent) {
       console.log('[process-and-post] 이미 게시됨. 종료.');
       await cleanupTempImages(tempKeys);
       return;
+    }
+
+    // 캡션 재생성으로 autoPostAt이 연장됐으면 추가 대기
+    if (updated.autoPostAt) {
+      const remainMs = new Date(updated.autoPostAt).getTime() - Date.now();
+      if (remainMs > 60000) {
+        console.log(`[process-and-post] autoPostAt 연장됨. ${Math.round(remainMs/60000)}분 추가 대기`);
+        await sleep(remainMs);
+        // 재조회
+        const recheck = JSON.parse(await store.get(reservationKey));
+        if (recheck.isSent) {
+          console.log('[process-and-post] 추가 대기 중 게시됨. 종료.');
+          await cleanupTempImages(tempKeys);
+          return;
+        }
+      }
     }
 
     // 1번 캡션으로 자동 게시

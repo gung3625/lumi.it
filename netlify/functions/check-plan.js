@@ -45,7 +45,7 @@ exports.handler = async (event) => {
         daysUntilExpire: (plan === 'standard' && planExpireAt && planExpireAt > now) ? Math.ceil((planExpireAt - now) / (1000 * 60 * 60 * 24)) : null,
         planExpired: standardExpired || false,
         trialDaysLeft: plan === 'trial' ? Math.max(0, 7 - diffDays) : null,
-        user: { name: user.name, storeName: user.storeName, instagram: user.instagram, bizCategory: user.bizCategory, captionTone: user.captionTone, tagStyle: user.tagStyle, storeDesc: user.storeDesc, region: user.region }
+        user: { name: user.name, storeName: user.storeName, instagram: user.instagram, bizCategory: user.bizCategory, captionTone: user.captionTone, tagStyle: user.tagStyle, storeDesc: user.storeDesc, region: user.region, autoStory: user.autoStory, autoFestival: user.autoFestival, sidoCode: user.sidoCode, sigunguCode: user.sigunguCode }
       })
     };
   } catch (err) {
