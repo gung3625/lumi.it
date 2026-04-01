@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>lumi 대시보드</title>
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
@@ -32,7 +32,7 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
           .portal-overlay{padding:0;align-items:flex-end;}
           .portal-sheet{max-height:100vh;max-width:100%;border-radius:24px 24px 0 0;padding:24px 20px 32px;}
         }
-        .portal-x{position:absolute;top:16px;right:16px;width:30px;height:30px;border-radius:50%;border:none;background:var(--g100);color:var(--g500);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+        .portal-x{position:absolute;top:12px;right:12px;width:44px;height:44px;border-radius:50%;border:none;background:var(--g100);color:var(--g500);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;}
         .portal-x:hover{background:var(--g200);color:var(--g900);}
         .portal-tabs{display:flex;background:var(--g100);border-radius:10px;padding:3px;margin-bottom:20px;gap:3px;}
         .p-tab{flex:1;padding:8px 0;text-align:center;font-size:13px;font-weight:700;color:var(--g400);cursor:pointer;border-radius:8px;transition:all .2s;}
@@ -49,7 +49,7 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
         .reg-inp{margin-bottom:0!important;height:46px;}
         .inp:focus{border-color:var(--pink);background:var(--white);box-shadow:0 0 0 3px rgba(255,107,157,.1);}
         .inp::placeholder{color:var(--g400);}
-        .inp-otp{text-align:center;font-size:1.8rem;font-weight:900;letter-spacing:14px;height:68px;}
+        .inp-otp{text-align:center;font-size:clamp(1.2rem,5vw,1.8rem);font-weight:900;letter-spacing:clamp(6px,3vw,14px);height:60px;}
         select.inp{cursor:pointer;appearance:none;}
         .s-dots{display:flex;justify-content:center;gap:6px;margin-bottom:14px;}
         .s-dot{width:6px;height:6px;border-radius:50%;background:var(--g200);transition:all .3s;}
@@ -64,7 +64,7 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
         .dash-topbar-logo{height:48px;}
         .dash-back{font-size:15px;font-weight:700;color:var(--white);background:var(--pink);border:none;border-radius:var(--r-md);padding:10px 22px;cursor:pointer;font-family:inherit;transition:background .2s,transform .2s;box-shadow:var(--sh-pink);}
         .dash-back:hover{background:var(--pink-light);transform:translateY(-1px);}
-        .dash-body{max-width:580px;margin:0 auto;width:100%;padding:28px 20px 100px;}
+        .dash-body{max-width:580px;margin:0 auto;width:100%;padding:28px 20px calc(100px + env(safe-area-inset-bottom, 0px));}
         .dash-hello{margin-bottom:24px;}
         .dash-hello h2{font-size:1.25rem;font-weight:800;color:var(--g900);}
         .dash-hello p{font-size:.83rem;color:var(--g400);margin-top:3px;}
@@ -102,7 +102,7 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
         .preview-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:12px;margin-bottom:20px;}
         .prev-thumb{width:100px;height:100px;border-radius:var(--r-sm);border:1.5px solid var(--pink-soft);animation:fadeUp .3s var(--ease);position:relative;overflow:visible;}
         .prev-thumb-img{width:100%;height:100%;object-fit:cover;border-radius:var(--r-sm);overflow:hidden;display:block;}
-        .prev-thumb-del{position:absolute;top:-7px;right:-7px;width:20px;height:20px;border-radius:50%;background:#ff4d4d;color:#fff;font-size:11px;font-weight:900;border:2px solid #fff;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;z-index:3;padding:0;box-shadow:0 1px 4px rgba(0,0,0,.2);}
+        .prev-thumb-del{position:absolute;top:-10px;right:-10px;width:28px;height:28px;border-radius:50%;background:#ff4d4d;color:#fff;font-size:12px;font-weight:900;border:2px solid #fff;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;z-index:3;padding:0;box-shadow:0 1px 4px rgba(0,0,0,.2);}
         .prev-thumb-badge{position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);font-size:10px;font-weight:800;color:#fff;background:var(--pink);border-radius:99px;padding:2px 8px;white-space:nowrap;z-index:3;box-shadow:0 1px 4px rgba(0,0,0,.15);}
         .dash-note{width:100%;padding:13px 15px;border:1.5px solid var(--g200);border-radius:var(--r-md);background:var(--g50);font-size:.87rem;color:var(--g900);font-family:inherit;resize:none;outline:none;line-height:1.75;margin-bottom:14px;transition:border-color .2s,background .2s;}
         .dash-note:focus{border-color:var(--pink);background:var(--white);box-shadow:0 0 0 3px rgba(255,107,157,.08);}
@@ -251,7 +251,7 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
                 <div class="reg-field">
                     <label class="reg-lbl">이메일</label>
                     <div style="display:flex;border:1.5px solid var(--g200);border-radius:10px;overflow:hidden;background:var(--g50);margin-bottom:0;">
-                        <input type="text" id="id-reg-local" placeholder="아이디" class="inp" style="border:none;background:transparent;border-radius:0;flex:1;min-width:0;margin:0;height:46px;" oninput="clearFieldErr('id-reg-field','reg-email-err')">
+                        <input type="text" id="id-reg-local" placeholder="아이디" class="inp" autocomplete="email" style="border:none;background:transparent;border-radius:0;flex:1;min-width:0;margin:0;height:46px;" oninput="clearFieldErr('id-reg-field','reg-email-err')">
                         <span style="display:flex;align-items:center;padding:0 4px;color:var(--g400);font-size:.85rem;flex-shrink:0;">@</span>
                         <select id="id-reg-domain-select" class="inp" style="border:none;background:transparent;border-radius:0;border-left:1.5px solid var(--g200);width:120px;margin:0;height:46px;font-size:13px;" onchange="toggleEmailDomain(this.value)">
                             <option value="gmail.com">gmail.com</option>
@@ -279,7 +279,7 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
                 </div>
                 <div class="reg-field">
                     <label class="reg-lbl">비밀번호</label>
-                    <input type="password" id="id-pw-field" placeholder="특수문자 포함 10자 이상" class="inp reg-inp" oninput="clearFieldErr(this.id,'pw-err')">
+                    <input type="password" id="id-pw-field" placeholder="특수문자 포함 10자 이상" class="inp reg-inp" autocomplete="new-password" oninput="clearFieldErr(this.id,'pw-err')">
                     <div id="pw-err" class="field-err hidden"></div>
                     <input type="password" id="id-pw-confirm-field" placeholder="비밀번호 확인" class="inp reg-inp" style="margin-top:6px;" oninput="clearFieldErr(this.id,'pw-confirm-err')">
                     <div id="pw-confirm-err" class="field-err hidden"></div>
@@ -1692,6 +1692,7 @@ function setPortalMode(mode){
 function openPortal(init){
     window._lumiScrollPos = window.scrollY;
     document.getElementById('lumi-auth-portal').style.display='flex';
+    document.body.style.overflow='hidden';
     setPortalMode(init);
 }
 function handleStartBtn(){
@@ -1708,6 +1709,7 @@ function navNode(s){['1','2','2b','3'].forEach(n=>{document.getElementById(`node
 async function grantAccess(){
     // 대시보드 즉시 진입 (구독 체크는 백그라운드에서)
     document.getElementById('lumi-auth-portal').style.display='none';
+    document.body.style.overflow='';
     var introEl=document.getElementById('lumi-intro-view-port');if(introEl)introEl.style.display='none';
     document.getElementById('lumi-dashboard-node').style.display='flex';
     document.body.style.overflow='hidden';
