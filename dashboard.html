@@ -1992,12 +1992,22 @@ function showCaptionReady(reservationKey, captions, regenCount) {
 async function selectCaption(reservationKey, index) {
   const btn = event.target;
   btn.disabled = true; btn.textContent = '게시 중...';
+
+  // 진행 상태 메시지 순환
+  const messages = ['게시 중...', '인스타그램에 업로드 중...', '거의 다 됐어요...'];
+  let msgIdx = 0;
+  const msgTimer = setInterval(() => {
+    msgIdx = (msgIdx + 1) % messages.length;
+    btn.textContent = messages[msgIdx];
+  }, 4000);
+
   try {
     const res = await fetch('/.netlify/functions/select-caption', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ reservationKey, captionIndex: index, secret: 'lumi2026secret' })
     });
+    clearInterval(msgTimer);
     const data = await res.json();
     if (res.ok) {
       closeCaptionSheet();
@@ -2007,6 +2017,7 @@ async function selectCaption(reservationKey, index) {
       showToast(data.error || '게시에 실패했어요.', 'red');
     }
   } catch(e) {
+    clearInterval(msgTimer);
     btn.disabled = false; btn.textContent = '이걸로 올리기';
     showToast('네트워크 오류가 발생했어요.', 'red');
   }
