@@ -25,10 +25,11 @@ lumi.it/
 ├── beta.html          # 테스터 모집 (530줄)
 ├── dashboard.html     # 인증 + 대시보드 (3085줄)
 ├── admin-beta.html    # 신청자 관리
-├── subscribe.html     # 구독
+├── subscribe.html     # 구독 (3단 요금제)
+├── calendar.html      # 7일 인스타 콘텐츠 캘린더
 ├── prototype.html     # 프로토타입 (참고용)
 ├── netlify.toml       # /api/*, /dashboard, /p/:id 라우팅
-└── netlify/functions/ # 39개 Functions
+└── netlify/functions/ # 47개+ Functions
     ├── beta-apply.js  # 베타 신청 + 웰컴 알림톡
     ├── beta-admin.js  # 신청자 조회 (인증 필요)
     └── scheduler.js   # 게시물 스케줄링
@@ -74,6 +75,23 @@ lumi.it/
 - [x] 대시보드 dashboard.html 분리 (index.html에서 인증+대시보드 코드 이동)
 - [x] netlify.toml /dashboard 라우팅 추가
 - [x] dashboard.html 랜딩 전용 CSS 제거
+
+### Cycle 1: 결제 + 체험 + 리텐션 (2026-04-01)
+- [x] 3단 요금제 (월간/3개월/연간) — subscribe.html + payment-prepare/confirm.js
+- [x] check-plan.js 스탠다드 만료 체크 버그 수정
+- [x] check-expiry.js 만료 알림 (D-7/D-3/D-day/D+1) 스케줄 함수
+- [x] 비회원 캡션 체험 데모 — demo-caption.js + index.html 데모 섹션
+- [x] 리텐션 이메일 시스템 — send-notifications.js (활성화/휴면/주간팁)
+- [x] unsubscribe-retention.js 수신거부 페이지
+
+### Cycle 2: 톤 플레이그라운드 + 캘린더 (2026-04-01)
+- [x] 캡션 톤 플레이그라운드 — 4가지 말투 전환 (친근/격식/감성/유머)
+- [x] "언제든 변경 가능" CTA 안내 문구
+- [x] 사장님 인스타 캘린더 — calendar.html + generate-calendar.js
+- [x] 캘린더 2일만 공개, 나머지 블러 + 회원가입 CTA
+- [x] generate-calendar.js QA (rate limit, gpt-4o-mini, 에러 sanitize)
+- [x] index.html 톤 변경 실패 시 롤백 버그 수정
+- [x] calendar.html --pink 컬러 통일 (#E8628A)
 
 ### 기타
 - [x] user-scalable=no 제거 (접근성)
