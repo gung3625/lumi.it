@@ -108,7 +108,8 @@ async function publishStory(igUserId, igAccessToken, imageUrl) {
 }
 
 async function postToInstagram(item, caption, imageUrls) {
-  const { igUserId, igAccessToken } = item;
+  const { igUserId } = item;
+  const igAccessToken = item.igPageAccessToken || item.igAccessToken;
   let result;
 
   if (imageUrls.length > 1) {

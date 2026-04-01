@@ -233,7 +233,9 @@ async function sendAlimtalk(phone, text) {
 
 // ── Instagram 게시 ──
 async function postToInstagram(item, caption, imageUrls) {
-  const { igUserId, igAccessToken, storyEnabled } = item;
+  const { igUserId, storyEnabled } = item;
+  // pageAccessToken 우선, 없으면 accessToken 사용
+  const igAccessToken = item.igPageAccessToken || item.igAccessToken;
   if (!igUserId || !igAccessToken) throw new Error('Instagram 연동 정보 없음');
 
   let postId;
@@ -474,6 +476,3 @@ exports.handler = async (event) => {
     return { statusCode: 500, headers, body: JSON.stringify({ error: err.message }) };
   }
 };
-
-// Background Function
-exports.config = { type: 'background' };
