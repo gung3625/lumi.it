@@ -463,17 +463,20 @@ exports.handler = async (event) => {
   try {
     const userStore = getStore({
       name: 'users',
+      consistency: 'strong',
       siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
       token: process.env.NETLIFY_TOKEN
     });
 
-    const [monthly, season, firstPost, expiry, retention] = await Promise.all([
+    // 기존 알림 먼저 실행 (user 객체 write 포함)
+    const [monthly, season, firstPost, expiry] = await Promise.all([
       sendMonthlyReport(userStore),
       sendSeasonEventAlert(userStore),
       sendFirstPostCoaching(userStore),
-      sendExpiryAlert(userStore),
-      runRetentionEmails(userStore)
+      sendExpiryAlert(userStore)
     ]);
+    // 리텐션 이메일은 순차 실행 (race condition 방지)
+    const retention = await runRetentionEmails(userStore);
 
     console.log('[lumi] 알림 발송 완료:', { monthly, season, firstPost, expiry, retention });
     return {

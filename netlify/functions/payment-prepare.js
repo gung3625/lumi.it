@@ -12,10 +12,35 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: '잘못된 요청입니다.' }) };
   }
 
-  const { email, planType } = body;
-  if (!email || !planType) {
+  const { planType } = body;
+  if (!planType) {
     return { statusCode: 400, body: JSON.stringify({ error: '필수 정보가 없습니다.' }) };
   }
+
+  // Authorization 헤더에서 토큰 → 이메일 역조회
+  const authHeader = event.headers?.authorization || event.headers?.Authorization || '';
+  const token = authHeader.replace('Bearer ', '');
+  if (!token) {
+    return { statusCode: 401, body: JSON.stringify({ error: '로그인이 필요합니다.' }) };
+  }
+  const userStore = getStore({ name: 'users', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
+  let tokenData;
+  try { tokenData = await userStore.get('token:' + token); } catch { tokenData = null; }
+  if (!tokenData) {
+    return { statusCode: 401, body: JSON.stringify({ error: '인증에 실패했습니다.' }) };
+  }
+  const { email } = JSON.parse(tokenData);
+  if (!email) {
+    return { statusCode: 401, body: JSON.stringify({ error: '인증에 실패했습니다.' }) };
+  }
+
+  // 사용자 정보 조회 (결제창에 이름/이메일 전달용)
+  let userName = '고객';
+  try {
+    const userRaw = await userStore.get('user:' + email);
+    if (userRaw) { const u = JSON.parse(userRaw); userName = u.name || u.storeName || '고객'; }
+  } catch {}
+
 
   // 플랜별 금액
   const PLANS = {
@@ -34,7 +59,7 @@ exports.handler = async (event) => {
 
   try {
     // 주문 정보 Blobs에 저장 (결제 검증용)
-    const store = getStore('orders');
+    const store = getStore({ name: 'orders', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
     await store.set('order:' + orderId, JSON.stringify({
       orderId,
       email,
@@ -53,7 +78,9 @@ exports.handler = async (event) => {
         success: true,
         orderId,
         amount: plan.amount,
-        orderName: plan.name
+        orderName: plan.name,
+        email,
+        name: userName
       })
     };
   } catch (err) {

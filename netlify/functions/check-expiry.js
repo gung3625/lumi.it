@@ -21,7 +21,7 @@ function getDaysUntilExpiry(planExpireAt) {
   const now = new Date();
   const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
   const todayMidnight = new Date(kst.toISOString().slice(0, 10) + 'T00:00:00Z');
-  const expiryMidnight = new Date(planExpireAt + 'T00:00:00Z');
+  const expiryMidnight = new Date(planExpireAt.slice(0, 10) + 'T00:00:00Z');
   return Math.round((expiryMidnight - todayMidnight) / (1000 * 60 * 60 * 24));
 }
 
@@ -123,7 +123,7 @@ exports.handler = async (event) => {
         await store.set(blob.key, JSON.stringify(user));
         sent++;
 
-        // 솔라피 rate limit 대비
+        // Resend rate limit 대비
         await new Promise(r => setTimeout(r, 200));
       } catch (e) {
         console.error('[check-expiry] 발송 실패:', blob.key, e.message);
