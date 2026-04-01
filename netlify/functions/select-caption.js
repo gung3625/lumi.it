@@ -224,44 +224,26 @@ exports.handler = async (event) => {
       return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '게시할 이미지가 없습니다' }) };
     }
 
-    console.log(`[select-caption] 게시 시작: ${reservationKey}, captionIndex=${idx}, 이미지 ${imageUrls.length}장`);
+    console.log(`[select-caption] 캡션 선택: ${reservationKey}, captionIndex=${idx}`);
 
-    // 3. Instagram 게시 (단일/캐러셀, 스토리 포함)
-    const result = await postToInstagram(item, selectedCaption, imageUrls);
-    if (result && result.error) {
-      throw new Error(`Instagram 게시 실패: ${JSON.stringify(result.error)}`);
-    }
-    console.log('[select-caption] Instagram 게시 완료:', JSON.stringify(result));
-
-    // 4. save-caption 호출 — 캡션 히스토리 저장
-    const ownerEmail = email || item.storeProfile?.ownerEmail;
-    if (ownerEmail) {
-      try {
-        await saveCaptionHistory(ownerEmail, selectedCaption);
-        console.log('[select-caption] 캡션 히스토리 저장 완료');
-      } catch (e) {
-        console.error('[select-caption] 캡션 히스토리 저장 실패:', e.message);
-      }
-    }
-
-    // 5. 예약 데이터 업데이트 — isSent=true, sentAt 기록
-    item.isSent = true;
-    item.sentAt = new Date().toISOString();
-    item.captionStatus = 'posted';
+    // 3. 선택 상태 저장 (게시 중 표시)
     item.selectedCaptionIndex = idx;
-    item.selectedCaption = selectedCaption;
-    item.postedAt = new Date().toISOString();
+    item.captionStatus = 'posting';
     await reserveStore.set(reservationKey, JSON.stringify(item));
 
-    // 임시 이미지 정리
-    for (const key of (item.imageKeys || [])) {
-      try { await tempStore.delete(key); } catch {}
-    }
+    // 4. Background Function에 실제 게시 위임 (await으로 트리거 확인)
+    const ownerEmail = email || item.storeProfile?.ownerEmail;
+    const triggerRes = await fetch('https://lumi.it.kr/.netlify/functions/select-and-post-background', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reservationKey, captionIndex: idx, email: ownerEmail }),
+    });
+    console.log('[select-caption] select-and-post-background 트리거:', triggerRes.status);
 
     return {
       statusCode: 200,
       headers: CORS,
-      body: JSON.stringify({ success: true, caption: selectedCaption }),
+      body: JSON.stringify({ success: true, status: 'posting' }),
     };
 
   } catch (err) {
@@ -269,7 +251,7 @@ exports.handler = async (event) => {
     return {
       statusCode: 500,
       headers: CORS,
-      body: JSON.stringify({ error: '게시 실패', detail: err.message }),
+      body: JSON.stringify({ error: '게시 요청 실패', detail: err.message }),
     };
   }
 };

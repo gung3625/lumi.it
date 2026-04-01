@@ -39,6 +39,7 @@ exports.handler = async (event) => {
         isSent: item.isSent || false,
         sentAt: item.sentAt || null,
         regenCount: item.regenCount || 0,
+        postError: item.postError || null,
       }),
     };
   } catch (err) {

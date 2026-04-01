@@ -2005,22 +2005,55 @@ async function selectCaption(reservationKey, index) {
     const res = await fetch('/.netlify/functions/select-caption', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reservationKey, captionIndex: index, secret: 'lumi2026secret' })
+      body: JSON.stringify({
+        reservationKey, captionIndex: index, secret: 'lumi2026secret',
+        email: (JSON.parse(localStorage.getItem('lumi_user')||'{}').email || '')
+      })
     });
     clearInterval(msgTimer);
     const data = await res.json();
-    if (res.ok) {
-      closeCaptionSheet();
-      showToast('인스타그램에 게시됐어요! 📸', 'pink');
-    } else {
+    if (!res.ok) {
       btn.disabled = false; btn.textContent = '이걸로 올리기';
       showToast(data.error || '게시에 실패했어요.', 'red');
+      return;
     }
+    // 백그라운드에서 게시 중 — isSent 폴링으로 완료 감지
+    btn.textContent = '인스타그램에 올리는 중...';
+    startPostPolling(reservationKey);
   } catch(e) {
     clearInterval(msgTimer);
     btn.disabled = false; btn.textContent = '이걸로 올리기';
     showToast('네트워크 오류가 발생했어요.', 'red');
   }
+}
+
+let _postPollTimer = null;
+function startPostPolling(reservationKey) {
+  if (_postPollTimer) clearInterval(_postPollTimer);
+  let attempts = 0;
+  _postPollTimer = setInterval(async () => {
+    attempts++;
+    if (attempts > 24) { // 2분
+      clearInterval(_postPollTimer);
+      closeCaptionSheet();
+      showToast('게시에 시간이 오래 걸리고 있어요. 인스타그램에서 확인해보세요.', '');
+      return;
+    }
+    try {
+      const res = await fetch(`/.netlify/functions/get-reservation?key=${encodeURIComponent(reservationKey)}&secret=lumi2026secret`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.isSent) {
+        clearInterval(_postPollTimer);
+        closeCaptionSheet();
+        showToast('인스타그램에 게시됐어요! 📸', 'pink');
+      } else if (data.postError) {
+        clearInterval(_postPollTimer);
+        closeCaptionSheet();
+        showToast('게시에 실패했어요: ' + data.postError, 'red');
+      }
+    } catch(e) {}
+  }, 5000);
 }
 
 async function regenerateCaption(reservationKey) {
