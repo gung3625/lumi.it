@@ -15,7 +15,7 @@ exports.handler = async (event) => {
   }
 
   try {
-    const { image, bizCategory, recaptchaToken } = JSON.parse(event.body || '{}');
+    const { image, bizCategory, recaptchaToken, tone } = JSON.parse(event.body || '{}');
 
     if (!image || !bizCategory) {
       return { statusCode: 400, headers, body: JSON.stringify({ error: '사진과 업종을 입력해주세요.' }) };
@@ -56,9 +56,21 @@ exports.handler = async (event) => {
       return { statusCode: 429, headers, body: JSON.stringify({ error: '오늘 체험 횟수(3회)를 모두 사용했어요. 내일 다시 시도해주세요!' }) };
     }
 
+    // ── 톤별 프롬프트 지시 ──
+    const toneMap = {
+      friendly: '편하게 말하듯이, ~요 체, 이모지 적절히 사용',
+      formal: '정중하고 깔끔하게, ~합니다 체, 이모지 최소한으로',
+      emotional: '서정적이고 따뜻하게, 문학적 표현, 줄바꿈 활용',
+      humorous: '재치있고 위트있게, 말장난 OK, 밈 참조 OK',
+    };
+    const toneInstruction = toneMap[tone] || toneMap.friendly;
+
     // ── GPT-4o 캡션 생성 ──
     const prompt = `당신은 한국 소상공인의 인스타그램 캡션을 대신 써주는 전문 카피라이터입니다.
 사진 한 장과 업종 정보만으로 매력적인 캡션을 만들어주세요.
+
+## 말투 지시
+${toneInstruction}
 
 ## 절대 금지
 - "안녕하세요", "오늘도 찾아주셔서 감사합니다" 같은 뻔한 인사

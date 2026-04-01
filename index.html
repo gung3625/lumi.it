@@ -147,6 +147,24 @@ nav{position:fixed;top:44px;left:0;width:100%;height:56px;display:flex;align-ite
 .demo-compare td.pink{color:var(--pink);font-weight:800;}
 .demo-remaining{font-size:12px;color:var(--g400);margin-top:12px;}
 
+/* TONE PLAYGROUND */
+.tone-bar{display:none;margin-top:20px;}
+.tone-bar-label{font-size:12px;font-weight:700;color:var(--g500);margin-bottom:10px;}
+.tone-btns{display:flex;gap:8px;flex-wrap:wrap;}
+.tone-btn{padding:8px 18px;border:1.5px solid var(--g200);border-radius:var(--r-full);font-size:13px;font-weight:700;color:var(--g700);background:var(--g100);cursor:pointer;font-family:inherit;transition:all .2s var(--ease);}
+.tone-btn:hover{border-color:var(--pink-light);color:var(--pink);}
+.tone-btn.active{background:var(--pink);color:#fff;border-color:var(--pink);}
+.tone-btn:disabled{opacity:.5;cursor:not-allowed;}
+.demo-result-text.fade-out{opacity:0;transition:opacity .25s ease;}
+.demo-result-text.fade-in{opacity:1;transition:opacity .35s ease;}
+.demo-tone-cta{display:none;margin-top:20px;padding:20px 24px;background:var(--pink-ultra);border:1px solid var(--pink-soft);border-radius:var(--r-lg);text-align:center;}
+.demo-tone-cta p{font-size:.88rem;color:var(--g700);line-height:1.7;margin-bottom:14px;}
+.demo-tone-cta a{display:inline-block;padding:10px 24px;background:var(--pink);color:#fff;font-size:14px;font-weight:700;border-radius:var(--r-full);text-decoration:none;transition:all .2s var(--ease);box-shadow:0 4px 12px rgba(232,98,138,.25);}
+.demo-tone-cta a:hover{background:#d4577b;transform:translateY(-1px);}
+@media(max-width:768px){
+  .tone-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+}
+
 /* PROOF */
 .proof-sec{background:var(--white);}
 .ba-wrap{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:40px;}
@@ -433,6 +451,23 @@ footer{background:var(--g50);border-top:1px solid var(--g200);padding:48px 24px 
         <p class="demo-disclaimer" id="demo-disclaimer-text"></p>
       </div>
 
+      <!-- TONE PLAYGROUND -->
+      <div class="tone-bar" id="tone-bar">
+        <div class="tone-bar-label">다른 말투로 다시 써볼까요?</div>
+        <div class="tone-btns">
+          <button class="tone-btn active" data-tone="friendly">친근체</button>
+          <button class="tone-btn" data-tone="formal">격식체</button>
+          <button class="tone-btn" data-tone="emotional">감성체</button>
+          <button class="tone-btn" data-tone="humorous">유머체</button>
+        </div>
+      </div>
+
+      <!-- TONE CTA -->
+      <div class="demo-tone-cta" id="demo-tone-cta">
+        <p>마음에 드는 말투를 찾으셨나요?<br>가입하면 이 톤으로 매번 캡션이 와요. 언제든 변경할 수 있어요.</p>
+        <a href="/beta">무료로 시작하기 &rarr;</a>
+      </div>
+
       <div class="demo-cta-box" id="demo-cta">
         <div class="demo-cta-title">가입하면 이렇게 달라져요</div>
         <table class="demo-compare">
@@ -664,8 +699,12 @@ document.addEventListener('DOMContentLoaded', function() {
   const ctaBox = document.getElementById('demo-cta');
   const remainingEl = document.getElementById('demo-remaining');
 
+  const toneBar = document.getElementById('tone-bar');
+  const toneCta = document.getElementById('demo-tone-cta');
+  const toneBtns = document.querySelectorAll('.tone-btn');
   let selectedFile = null;
   let base64Data = null;
+  let currentTone = 'friendly';
 
   // 남은 횟수 표시
   function updateRemaining(){
@@ -758,8 +797,12 @@ document.addEventListener('DOMContentLoaded', function() {
       if(!res.ok) throw new Error(data.error || '오류가 발생했어요.');
 
       captionText.textContent = data.caption;
+      captionText.classList.remove('fade-out');
+      captionText.classList.add('fade-in');
       if(data.disclaimer) disclaimerText.textContent = data.disclaimer;
       resultEl.style.display = 'block';
+      toneBar.style.display = 'block';
+      toneCta.style.display = 'block';
       ctaBox.style.display = 'block';
 
       localStorage.setItem(dayKey, String(used + 1));
@@ -772,6 +815,55 @@ document.addEventListener('DOMContentLoaded', function() {
       submitBtn.disabled = false;
       checkReady();
     }
+  });
+
+  // 톤 변경
+  toneBtns.forEach(function(btn){
+    btn.addEventListener('click', async function(){
+      var tone = btn.getAttribute('data-tone');
+      if(tone === currentTone) return;
+
+      var dayKey = 'demo_' + new Date().toISOString().slice(0,10);
+      var used = parseInt(localStorage.getItem(dayKey)||'0',10);
+      if(used >= 3){ alert('오늘 체험 횟수(3회)를 모두 사용했어요!'); return; }
+      if(!base64Data || !bizSelect.value) return;
+
+      // 버튼 상태 업데이트
+      toneBtns.forEach(function(b){ b.classList.remove('active'); b.disabled = true; });
+      btn.classList.add('active');
+      currentTone = tone;
+
+      // 페이드 아웃
+      captionText.classList.remove('fade-in');
+      captionText.classList.add('fade-out');
+
+      // 스피너 표시
+      loadingEl.style.display = 'block';
+
+      try {
+        var res = await fetch('/api/demo-caption', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: base64Data, bizCategory: bizSelect.value, tone: tone }),
+        });
+        var data = await res.json();
+        if(!res.ok) throw new Error(data.error || '오류가 발생했어요.');
+
+        captionText.textContent = data.caption;
+        captionText.classList.remove('fade-out');
+        captionText.classList.add('fade-in');
+
+        localStorage.setItem(dayKey, String(used + 1));
+        updateRemaining();
+      } catch(err){
+        alert(err.message);
+        captionText.classList.remove('fade-out');
+        captionText.classList.add('fade-in');
+      } finally {
+        loadingEl.style.display = 'none';
+        toneBtns.forEach(function(b){ b.disabled = false; });
+      }
+    });
   });
 
   // 복사하기
