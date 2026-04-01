@@ -60,16 +60,23 @@ async function processImages(photos, reserveKey) {
   const imgStore = getTempImageStore();
   const imageUrls = [];
   const tempKeys = [];
-  const imageBuffers = []; // GPT-4o base64 직접 전달용
+  const imageBuffers = []; // GPT-4o 분석용 (512px 소형)
 
   for (let i = 0; i < photos.length; i++) {
     let buffer = Buffer.from(photos[i].base64, 'base64');
+    let smallBuffer = buffer; // 분석용 소형
 
     if (sharp) {
       try {
+        // Instagram용: 1080x1350
         buffer = await sharp(buffer)
           .resize(1080, 1350, { fit: 'cover', position: 'center' })
           .jpeg({ quality: 85 })
+          .toBuffer();
+        // 분석용: 512px (GPT-4o 전송 크기 최소화)
+        smallBuffer = await sharp(Buffer.from(photos[i].base64, 'base64'))
+          .resize(512, 512, { fit: 'inside' })
+          .jpeg({ quality: 70 })
           .toBuffer();
       } catch (e) { console.error(`이미지 ${i} 리사이징 실패:`, e.message); }
     }
@@ -80,7 +87,7 @@ async function processImages(photos, reserveKey) {
     const siteUrl = process.env.URL || 'https://lumi.it.kr';
     imageUrls.push(`${siteUrl}/.netlify/functions/serve-image?key=${encodeURIComponent(tempKey)}`);
     tempKeys.push(tempKey);
-    imageBuffers.push(buffer.toString('base64')); // base64 보관
+    imageBuffers.push(smallBuffer.toString('base64')); // 소형 base64
   }
 
   return { imageUrls, tempKeys, imageBuffers };
@@ -138,7 +145,7 @@ async function analyzeImages(imageBuffers) {
 
   const content = [{ type: 'text', text: prompt }];
   for (const b64 of imageBuffers) {
-    content.push({ type: 'image_url', image_url: { url: `data:image/jpeg;base64,${b64}`, detail: 'high' } });
+    content.push({ type: 'image_url', image_url: { url: `data:image/jpeg;base64,${b64}`, detail: 'low' } });
   }
 
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
