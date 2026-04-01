@@ -126,7 +126,7 @@ exports.handler = async (event) => {
 </html>`
           })
         });
-        console.log('[lumi] 웰컴 이메일 발송:', email);
+        console.log('[lumi] 웰컴 이메일 발송 완료');
       }
     } catch(emailErr) {
       console.error('[lumi] 웰컴 이메일 발송 실패:', emailErr.message);
@@ -147,7 +147,7 @@ exports.handler = async (event) => {
           variables: { '#{이름}': name }
         })
       });
-      console.log('[lumi] 웰컴 알림톡 발송:', phone);
+      console.log('[lumi] 웰컴 알림톡 발송 완료');
     } catch(kakaoErr) {
       console.error('[lumi] 웰컴 알림톡 발송 실패:', kakaoErr.message);
     }

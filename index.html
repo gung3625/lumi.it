@@ -136,7 +136,16 @@ nav{position:fixed;top:44px;left:0;width:100%;height:56px;display:flex;align-ite
 .demo-result-text{font-size:.9rem;color:var(--g700);line-height:1.85;white-space:pre-wrap;}
 .demo-copy-btn{display:inline-flex;align-items:center;gap:6px;margin-top:14px;padding:8px 18px;background:var(--g50);border:1px solid var(--g200);border-radius:var(--r-full);font-size:13px;font-weight:700;color:var(--g700);cursor:pointer;font-family:inherit;transition:all .2s;}
 .demo-copy-btn:hover{background:var(--g100);}
-.demo-disclaimer{font-size:12px;color:var(--g400);margin-top:12px;line-height:1.6;}
+.demo-disclaimer{display:none;}
+.demo-upgrade-card{display:none;margin-top:20px;background:linear-gradient(135deg,#FFF5F7 0%,#FFF0F3 100%);border:1.5px solid var(--pink-soft);border-radius:var(--r-lg);padding:24px 20px;}
+.demo-upgrade-label{font-size:11px;font-weight:800;letter-spacing:.06em;color:var(--pink);margin-bottom:10px;}
+.demo-upgrade-msg{font-size:.88rem;color:var(--g700);line-height:1.7;margin-bottom:16px;}
+.demo-upgrade-msg strong{color:var(--g900);}
+.demo-upgrade-list{list-style:none;padding:0;margin:0 0 16px;display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.demo-upgrade-list li{font-size:.82rem;color:var(--g700);display:flex;align-items:center;gap:6px;font-weight:600;}
+.demo-upgrade-list li .ico{width:20px;height:20px;border-radius:50%;background:var(--pink);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;}
+.demo-upgrade-cta{display:block;width:100%;padding:14px;background:var(--pink);color:#fff;font-size:15px;font-weight:800;border:none;border-radius:var(--r-md);cursor:pointer;font-family:inherit;text-align:center;text-decoration:none;transition:all .25s var(--ease);box-shadow:0 4px 16px rgba(232,98,138,.25);}
+.demo-upgrade-cta:hover{background:#d4577b;transform:translateY(-2px);}
 .demo-cta-box{display:none;margin-top:28px;background:var(--pink-ultra);border:1px solid var(--pink-soft);border-radius:var(--r-lg);padding:28px 24px;text-align:center;}
 .demo-cta-title{font-size:1rem;font-weight:800;color:var(--g900);margin-bottom:16px;}
 .demo-compare{width:100%;border-collapse:collapse;margin-bottom:20px;font-size:.82rem;}
@@ -449,6 +458,21 @@ footer{background:var(--g50);border-top:1px solid var(--g200);padding:48px 24px 
           <button class="demo-copy-btn" id="demo-copy"><i data-lucide="copy" style="width:14px;height:14px;"></i> 복사하기</button>
         </div>
         <p class="demo-disclaimer" id="demo-disclaimer-text"></p>
+
+        <!-- 업그레이드 카드 (캡션 바로 아래) -->
+        <div class="demo-upgrade-card" id="demo-upgrade-card">
+          <div class="demo-upgrade-label">지금 이 캡션은 사진만 보고 만들었어요</div>
+          <div class="demo-upgrade-msg">가입하시면 lumi가 <strong>이런 정보까지</strong> 반영해서 훨씬 정교한 캡션을 만들어 드려요.</div>
+          <ul class="demo-upgrade-list">
+            <li><span class="ico">☀</span> 오늘 날씨·기온</li>
+            <li><span class="ico">📈</span> 실시간 트렌드 태그</li>
+            <li><span class="ico">🎤</span> 대표님 말투 학습</li>
+            <li><span class="ico">🎪</span> 주변 축제·행사</li>
+            <li><span class="ico">🕐</span> 최적 게시 시간</li>
+            <li><span class="ico">📷</span> 캡션 3개 중 선택</li>
+          </ul>
+          <a href="/subscribe" class="demo-upgrade-cta">가입하고 진짜 캡션 받아보기 →</a>
+        </div>
       </div>
 
       <!-- TONE PLAYGROUND -->
@@ -465,7 +489,7 @@ footer{background:var(--g50);border-top:1px solid var(--g200);padding:48px 24px 
       <!-- TONE CTA -->
       <div class="demo-tone-cta" id="demo-tone-cta">
         <p>마음에 드는 말투를 찾으셨나요?<br>가입하면 이 톤으로 매번 캡션이 와요. 언제든 변경할 수 있어요.</p>
-        <a href="/beta">무료로 시작하기 &rarr;</a>
+        <a href="/subscribe">무료로 시작하기 &rarr;</a>
       </div>
 
       <div class="demo-cta-box" id="demo-cta">
@@ -478,7 +502,7 @@ footer{background:var(--g50);border-top:1px solid var(--g200);padding:48px 24px 
           <tr><td>말투 학습</td><td>✕</td><td class="pink">피드백 반영</td></tr>
           <tr><td>인스타 자동 게시</td><td>✕</td><td class="pink">예약 게시</td></tr>
         </table>
-        <a href="/beta" class="btn-main" style="display:block;text-align:center;padding:14px;animation:none;">무료로 시작하기 →</a>
+        <a href="/subscribe" class="btn-main" style="display:block;text-align:center;padding:14px;animation:none;">무료로 시작하기 →</a>
       </div>
 
       <p class="demo-remaining" id="demo-remaining"></p>
@@ -697,6 +721,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const disclaimerText = document.getElementById('demo-disclaimer-text');
   const copyBtn = document.getElementById('demo-copy');
   const ctaBox = document.getElementById('demo-cta');
+  const upgradeCard = document.getElementById('demo-upgrade-card');
   const remainingEl = document.getElementById('demo-remaining');
 
   const toneBar = document.getElementById('tone-bar');
@@ -786,6 +811,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadingEl.style.display = 'block';
     resultEl.style.display = 'none';
     ctaBox.style.display = 'none';
+    upgradeCard.style.display = 'none';
 
     try {
       var res = await fetch('/api/demo-caption', {
@@ -801,6 +827,7 @@ document.addEventListener('DOMContentLoaded', function() {
       captionText.classList.add('fade-in');
       if(data.disclaimer) disclaimerText.textContent = data.disclaimer;
       resultEl.style.display = 'block';
+      upgradeCard.style.display = 'block';
       toneBar.style.display = 'block';
       toneCta.style.display = 'block';
       ctaBox.style.display = 'block';

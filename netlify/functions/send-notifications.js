@@ -51,7 +51,7 @@ async function sendAlimtalk(to, templateId, variables) {
   });
 
   const data = await res.json();
-  console.log('[lumi] 알림톡 발송:', to, templateId, JSON.stringify(data));
+  console.log('[lumi] 알림톡 발송 완료:', templateId, res.status);
   return data;
 }
 

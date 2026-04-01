@@ -43,7 +43,7 @@ async function sendAlimtalk(to, variables) {
   });
 
   const data = await res.json();
-  console.log('[lumi] 데일리 알림톡 발송:', to, JSON.stringify(data));
+  console.log('[lumi] 데일리 알림톡 발송 완료:', res.status);
   return data;
 }
 
@@ -81,6 +81,7 @@ exports.handler = async (event) => {
   try {
     const userStore = getStore({
       name: 'users',
+      consistency: 'strong',
       siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
       token: process.env.NETLIFY_TOKEN
     });
@@ -102,7 +103,7 @@ exports.handler = async (event) => {
       );
       if (weatherRes.ok) {
         const w = await weatherRes.json();
-        weatherStr = w.status || '맑음';
+        weatherStr = w.state || w.status || '맑음';
         guideStr = getWeatherGuide(weatherStr);
       }
     } catch(e) { console.log('날씨 조회 실패:', e.message); }
@@ -118,8 +119,8 @@ exports.handler = async (event) => {
         if (!raw) continue;
         const user = JSON.parse(raw);
 
-        // 프로 플랜만 발송
-        if (user.plan !== 'pro') continue;
+        // 유료 플랜(standard) 이상만 발송
+        if (user.plan !== 'standard' && user.plan !== 'pro') continue;
         if (!user.phone) continue;
 
         // 구독 만료 체크
@@ -133,7 +134,8 @@ exports.handler = async (event) => {
         // 업종별 트렌드 가져오기
         let userTrendStr = defaultTrends[normalizedCat] || defaultTrends.other;
         try {
-          const trendRaw = await userStore.get('trends:' + normalizedCat);
+          const trendStore = getStore({ name: 'trends', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
+          const trendRaw = await trendStore.get('trends:' + normalizedCat);
           if (trendRaw) {
             const parsed = JSON.parse(trendRaw);
             const tags = parsed.tags || parsed;

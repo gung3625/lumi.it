@@ -1412,7 +1412,7 @@ async function commitPost(type){
     if (dashTagEl) tagStyle = dashTagEl.value || tagStyle;
     const noteEl = document.getElementById('ceo-note-input');
     const notes = (noteEl.value && noteEl.value.trim() !== noteEl.placeholder) ? noteEl.value.trim() : '';
-    if(stagedFiles.length===0){showToast('사진을 먼저 선택하세요.');return;}
+    if(stagedFiles.length===0){showToast('사진을 먼저 선택하세요.');_isCommitting=false;return;}
     // 메시지는 선택사항 - 없으면 lumi가 알아서 작성
 
     const photos=await Promise.all(stagedFiles.map(f=>new Promise(res=>{const r=new FileReader();r.onload=e=>res({name:f.name,data:e.target.result});r.readAsDataURL(f);})));
@@ -1529,9 +1529,13 @@ async function commitPost(type){
                 resetDashboard();
             } else {
                 showToast('전송에 실패했어요. 다시 시도해 주세요.');
+                if (nowBtn) { nowBtn.disabled = false; nowBtn.textContent = '바로 올리기'; }
             }
         } catch(e) {
             showToast('네트워크 오류가 발생했어요.');
+            if (nowBtn) { nowBtn.disabled = false; nowBtn.textContent = '바로 올리기'; }
+        } finally {
+            _isCommitting = false;
         }
 
     } else {
@@ -1540,6 +1544,7 @@ async function commitPost(type){
         const scheduledAt = reserveTimeVal ? new Date(reserveTimeVal).toISOString() : null;
         if (!scheduledAt) {
             showToast('예약 시간을 선택해주세요.', 'red');
+            _isCommitting = false;
             return;
         }
 
@@ -1988,7 +1993,7 @@ function startCaptionPolling(reservationKey) {
       return;
     }
     try {
-      const res = await fetch(`/.netlify/functions/get-reservation?key=${encodeURIComponent(reservationKey)}&secret=lumi2026secret`);
+      const res = await fetch(`/.netlify/functions/get-reservation?key=${encodeURIComponent(reservationKey)}`, { headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('lumi_token') || '') } });
       if (!res.ok) return;
       const data = await res.json();
       if (data.captionError) {
@@ -2049,9 +2054,9 @@ async function selectCaption(reservationKey, index) {
   try {
     const res = await fetch('/.netlify/functions/select-caption', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('lumi_token') || '') },
       body: JSON.stringify({
-        reservationKey, captionIndex: index, secret: 'lumi2026secret',
+        reservationKey, captionIndex: index,
         email: (JSON.parse(localStorage.getItem('lumi_user')||'{}').email || '')
       })
     });
@@ -2085,7 +2090,7 @@ function startPostPolling(reservationKey) {
       return;
     }
     try {
-      const res = await fetch(`/.netlify/functions/get-reservation?key=${encodeURIComponent(reservationKey)}&secret=lumi2026secret`);
+      const res = await fetch(`/.netlify/functions/get-reservation?key=${encodeURIComponent(reservationKey)}`, { headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('lumi_token') || '') } });
       if (!res.ok) return;
       const data = await res.json();
       if (data.isSent) {
@@ -2109,8 +2114,8 @@ async function regenerateCaption(reservationKey) {
   try {
     const res = await fetch('/.netlify/functions/regenerate-caption', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reservationKey, secret: 'lumi2026secret', email: (JSON.parse(localStorage.getItem('lumi_user')||'{}').email || '') })
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('lumi_token') || '') },
+      body: JSON.stringify({ reservationKey, email: (JSON.parse(localStorage.getItem('lumi_user')||'{}').email || '') })
     });
     const data = await res.json();
     if (res.ok && data.captions) {

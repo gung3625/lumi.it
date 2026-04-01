@@ -415,7 +415,7 @@ async function saveCaptionHistory(email, caption) {
     await fetch('https://lumi.it.kr/.netlify/functions/save-caption', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, caption, secret: 'lumi2026secret' }),
+      body: JSON.stringify({ email, caption, secret: process.env.LUMI_SECRET }),
     });
   } catch (e) { console.error('캡션 저장 실패:', e.message); }
 }
@@ -532,45 +532,48 @@ exports.handler = async (event) => {
       await sendAlimtalk(phone, `[lumi] ${sp.name || '사장'}님, 캡션이 준비됐어요!\n\n3가지 스타일로 만들었어요.\n마음에 드는 캡션을 선택해주세요.\n\n미리보기: ${previewUrl}\n\n선택하지 않으면 ${autoTime}에 자동 게시됩니다.`);
     }
 
-    // 6. 30분 대기 후 자동 게시 (재생성 시 autoPostAt 참조)
-    await sleep(30 * 60 * 1000);
+    // 6. autoPostAt 설정 (scheduler.js가 처리) — Background Function 15분 제한으로 직접 sleep 불가
+    item.autoPostAt = new Date(Date.now() + 30 * 60000).toISOString();
+    await store.set(reservationKey, JSON.stringify(item));
+    console.log('[process-and-post] autoPostAt 설정:', item.autoPostAt, '— scheduler가 자동 게시 처리');
 
-    // 재조회 (고객이 선택했거나 캡션 재생성했을 수 있음)
-    const updated = JSON.parse(await store.get(reservationKey));
+    // 10분 대기 후 아직 선택 안 했으면 자동 게시 시도 (Background Function 15분 내)
+    await sleep(10 * 60 * 1000);
+
+    // 재조회 (고객이 선택했을 수 있음)
+    const updatedRaw = await store.get(reservationKey);
+    if (!updatedRaw) {
+      console.log('[process-and-post] 예약 데이터 삭제됨. 종료.');
+      await cleanupTempImages(tempKeys);
+      return;
+    }
+    const updated = JSON.parse(updatedRaw);
     if (updated.isSent) {
       console.log('[process-and-post] 이미 게시됨. 종료.');
       await cleanupTempImages(tempKeys);
       return;
     }
 
-    // 캡션 재생성으로 autoPostAt이 연장됐으면 추가 대기
-    if (updated.autoPostAt) {
-      const remainMs = new Date(updated.autoPostAt).getTime() - Date.now();
-      if (remainMs > 60000) {
-        console.log(`[process-and-post] autoPostAt 연장됨. ${Math.round(remainMs/60000)}분 추가 대기`);
-        await sleep(remainMs);
-        // 재조회
-        const recheck = JSON.parse(await store.get(reservationKey));
-        if (recheck.isSent) {
-          console.log('[process-and-post] 추가 대기 중 게시됨. 종료.');
-          await cleanupTempImages(tempKeys);
-          return;
-        }
-      }
+    // 아직 autoPostAt이 미래면 scheduler에 위임하고 종료
+    if (updated.autoPostAt && new Date(updated.autoPostAt).getTime() > Date.now() + 60000) {
+      console.log('[process-and-post] autoPostAt 아직 미래. scheduler에 위임.');
+      await cleanupTempImages(tempKeys);
+      return;
     }
 
     // 1번 캡션으로 자동 게시
     const finalCaptions = updated.captions || updated.generatedCaptions || captions;
     console.log('[process-and-post] 자동 게시 실행');
     try {
-      const postId = await postToInstagram(updated, finalCaptions[0], imageUrls);
+      const postCaption = finalCaptions[0];
+      const postId = await postToInstagram(updated, postCaption, imageUrls);
       updated.isSent = true;
       updated.sentAt = new Date().toISOString();
       updated.selectedCaptionIndex = 0;
-      updated.postedCaption = captions[0];
+      updated.postedCaption = postCaption;
       updated.instagramPostId = postId;
       await store.set(reservationKey, JSON.stringify(updated));
-      await saveCaptionHistory(sp.ownerEmail, captions[0]);
+      await saveCaptionHistory(sp.ownerEmail, postCaption);
 
       if (phone) {
         await sendAlimtalk(phone, `[lumi] 인스타그램에 게시됐어요!\n\n${sp.name || '매장'} 게시물이 자동으로 올라갔어요.\n인스타그램에서 확인해보세요 📸`);

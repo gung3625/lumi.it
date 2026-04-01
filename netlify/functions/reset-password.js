@@ -7,34 +7,57 @@ function hashPassword(password) {
   return salt + ':' + hash;
 }
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'Content-Type',
+  'Content-Type': 'application/json',
+};
+
 exports.handler = async (event) => {
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: corsHeaders, body: '' };
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
+    return { statusCode: 405, headers: corsHeaders, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
   let body;
   try { body = JSON.parse(event.body); } catch {
     return { statusCode: 400, body: JSON.stringify({ error: '잘못된 요청입니다.' }) };
   }
 
-  const { email, password } = body;
-  if (!email || !password) return { statusCode: 400, body: JSON.stringify({ error: '필수 정보가 없습니다.' }) };
+  const { email, password, otpToken } = body;
+  if (!email || !password) return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ error: '필수 정보가 없습니다.' }) };
+  if (!otpToken) return { statusCode: 401, headers: corsHeaders, body: JSON.stringify({ error: 'OTP 인증이 필요합니다.' }) };
   const pwRegex = /^(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{10,}$/;
-  if (!pwRegex.test(password)) return { statusCode: 400, body: JSON.stringify({ error: '비밀번호는 특수문자를 포함한 10자 이상이어야 합니다.' }) };
+  if (!pwRegex.test(password)) return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ error: '비밀번호는 특수문자를 포함한 10자 이상이어야 합니다.' }) };
 
   try {
-    const store = getStore({ name: 'users', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
+    const store = getStore({ name: 'users', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
+
+    // OTP 토큰 검증
+    let otpRaw;
+    try { otpRaw = await store.get('otp-verified:' + email); } catch(e) { otpRaw = null; }
+    if (!otpRaw) return { statusCode: 401, headers: corsHeaders, body: JSON.stringify({ error: 'OTP 인증을 먼저 완료해주세요.' }) };
+    const otpData = JSON.parse(otpRaw);
+    if (otpData.token !== otpToken) return { statusCode: 401, headers: corsHeaders, body: JSON.stringify({ error: 'OTP 인증 정보가 유효하지 않습니다.' }) };
+    // 10분 유효
+    if (Date.now() - new Date(otpData.verifiedAt).getTime() > 10 * 60 * 1000) {
+      return { statusCode: 401, headers: corsHeaders, body: JSON.stringify({ error: 'OTP 인증이 만료됐습니다. 다시 인증해주세요.' }) };
+    }
+
     let raw;
     try { raw = await store.get('user:' + email); } catch(e) { raw = null; }
-    if (!raw) return { statusCode: 404, body: JSON.stringify({ error: '가입되지 않은 이메일입니다.' }) };
+    if (!raw) return { statusCode: 404, headers: corsHeaders, body: JSON.stringify({ error: '가입되지 않은 이메일입니다.' }) };
 
     const user = JSON.parse(raw);
     user.passwordHash = hashPassword(password);
     user.passwordUpdatedAt = new Date().toISOString();
     await store.set('user:' + email, JSON.stringify(user));
 
-    return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ success: true, message: '비밀번호가 변경됐어요.' }) };
+    // OTP 인증 정보 삭제 (일회용)
+    try { await store.delete('otp-verified:' + email); } catch(e) {}
+
+    return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ success: true, message: '비밀번호가 변경됐어요.' }) };
   } catch (err) {
-    console.error('reset-password error:', err);
-    return { statusCode: 500, body: JSON.stringify({ error: '비밀번호 변경 중 오류가 발생했습니다.' }) };
+    console.error('reset-password error:', err.message);
+    return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ error: '비밀번호 변경 중 오류가 발생했습니다.' }) };
   }
 };

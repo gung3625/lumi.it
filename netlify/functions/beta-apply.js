@@ -49,18 +49,18 @@ exports.handler = async (event) => {
           token: process.env.NETLIFY_TOKEN,
         });
         const waitId = `waitlist_${Date.now()}`;
-        await waitStore.setJSON(waitId, {
+        await waitStore.set(waitId, JSON.stringify({
           id: waitId, name, store: storeName, type, phone,
           insta: insta || '', appliedAt: new Date().toISOString(),
-        });
+        }));
         return { statusCode: 400, headers, body: JSON.stringify({ error: '마감', waitlist: true }) };
       }
 
       const id = `applicant_${Date.now()}`;
-      await store.setJSON(id, {
+      await store.set(id, JSON.stringify({
         id, name, store: storeName, type, phone,
         insta: insta || '', appliedAt: new Date().toISOString(),
-      });
+      }));
 
       // 운영자 알림톡 발송
       const remaining = 20 - list.blobs.length - 1;

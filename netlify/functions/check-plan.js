@@ -1,18 +1,32 @@
 const { getStore } = require('@netlify/blobs');
 
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Content-Type': 'application/json',
+};
+
 exports.handler = async (event) => {
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
+    return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
+
+  // 인증: Bearer 토큰 필수
+  const authHeader = event.headers['authorization'] || '';
+  if (!authHeader.startsWith('Bearer ') || authHeader.length < 10) {
+    return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증이 필요합니다.' }) };
+  }
+
   let body;
   try { body = JSON.parse(event.body); } catch {
-    return { statusCode: 400, body: JSON.stringify({ error: '잘못된 요청입니다.' }) };
+    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '잘못된 요청입니다.' }) };
   }
   const { email } = body;
-  if (!email) return { statusCode: 400, body: JSON.stringify({ error: '이메일이 필요합니다.' }) };
+  if (!email) return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '이메일이 필요합니다.' }) };
 
   try {
-    const store = getStore({ name: 'users', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
+    const store = getStore({ name: 'users', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
     let raw;
     try { raw = await store.get('user:' + email); } catch(e) { raw = null; }
     if (!raw) return { statusCode: 404, body: JSON.stringify({ error: '사용자를 찾을 수 없습니다.' }) };
@@ -36,7 +50,7 @@ exports.handler = async (event) => {
 
     return {
       statusCode: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: CORS,
       body: JSON.stringify({
         plan, postCount, limit, remaining: isAdmin ? 999999 : Math.max(0, limit - postCount),
         canPost, trialExpired, autoRenew: user.autoRenew !== false,
@@ -50,6 +64,6 @@ exports.handler = async (event) => {
     };
   } catch (err) {
     console.error('check-plan error:', err);
-    return { statusCode: 500, body: JSON.stringify({ error: '플랜 확인 중 오류가 발생했습니다.' }) };
+    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '플랜 확인 중 오류가 발생했습니다.' }) };
   }
 };

@@ -4,8 +4,8 @@ const crypto = require('crypto');
 const SITE_ID = process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc';
 const NETLIFY_TOKEN = process.env.NETLIFY_TOKEN;
 
-const TEST_IG_USER_ID = '17841471744588526';
-const TEST_ACCESS_TOKEN = 'EAARhZCSGf1s4BRIbZCR7P6RCWcOaGWLJMrvzdwXg35zzTTZA27sQojBu3Jiw16YmErBBPeEAKvLOcGsRoaigZAqShqowZAkNldpyjON4uOcvQZCh1ZCPuYM0q2nqtpnhVQjukAJLTRil0NkZCJmj3dMkHajBx5fQZA3SqPVFAMQop1DHSSW7CSQyHL95cgtCmZAEApf04ZACtP3QptY7X5o';
+const TEST_IG_USER_ID = process.env.TEST_IG_USER_ID || '';
+const TEST_ACCESS_TOKEN = process.env.TEST_IG_ACCESS_TOKEN || '';
 
 // --- [기존 헬퍼 함수 유지] ---
 function verifySignature(payload, signature) {

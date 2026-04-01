@@ -11,9 +11,13 @@ exports.handler = async (event) => {
   if (event.httpMethod !== 'GET') return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method Not Allowed' }) };
 
   const { key, secret } = event.queryStringParameters || {};
+  const authHeader = event.headers['authorization'] || '';
 
   if (!key) return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'key 필수' }) };
-  if (secret !== process.env.LUMI_SECRET) return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증 실패' }) };
+  // Bearer 토큰 또는 LUMI_SECRET으로 인증
+  const hasBearer = authHeader.startsWith('Bearer ') && authHeader.length > 10;
+  const hasSecret = secret === process.env.LUMI_SECRET;
+  if (!hasBearer && !hasSecret) return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증 실패' }) };
 
   try {
     const store = getStore({

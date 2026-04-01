@@ -115,16 +115,17 @@ async function load(){
       tbody.innerHTML = '<tr><td colspan="7" class="empty">아직 신청자가 없어요.</td></tr>';
       return;
     }
+    function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
     tbody.innerHTML = data.applicants.map((a,i) => {
       const d = new Date(a.appliedAt);
       const dt = `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
       return `<tr>
         <td><b>${i+1}</b></td>
-        <td>${a.name}</td>
-        <td>${a.store}</td>
-        <td><span class="chip">${a.type}</span></td>
-        <td>${a.phone}</td>
-        <td>${a.insta || '-'}</td>
+        <td>${esc(a.name||'')}</td>
+        <td>${esc(a.store||'')}</td>
+        <td><span class="chip">${esc(a.type||'')}</span></td>
+        <td>${esc(a.phone||'')}</td>
+        <td>${esc(a.insta||'-')}</td>
         <td style="color:var(--g5);font-size:12px">${dt}</td>
       </tr>`;
     }).join('');
