@@ -1,4 +1,6 @@
 const { getStore } = require('@netlify/blobs');
+const { createHmac } = require('crypto');
+
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
@@ -252,8 +254,7 @@ async function sendAlimtalk(phone, text) {
   try {
     const now = new Date().toISOString();
     const salt = `post_${Date.now()}`;
-    const crypto = require('crypto');
-    const sig = crypto.createHmac('sha256', process.env.SOLAPI_API_SECRET).update(`${now}${salt}`).digest('hex');
+    const sig = createHmac('sha256', process.env.SOLAPI_API_SECRET).update(`${now}${salt}`).digest('hex');
     await fetch('https://api.solapi.com/messages/v4/send', {
       method: 'POST',
       headers: {
@@ -367,20 +368,18 @@ async function cleanupTempImages(tempKeys) {
   }
 }
 
-// ── 메인 핸들러 (Background Function) ──
+// ── 메인 핸들러 (Background Function — export default 최신 문법) ──
 exports.handler = async (event) => {
-  if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers, body: '' };
-
-  let reservationKey = null; // catch 블록에서 접근 가능하도록 외부 선언
+  let reservationKey = null;
 
   try {
     const body = JSON.parse(event.body || '{}');
     reservationKey = body.reservationKey;
-    if (!reservationKey) return { statusCode: 400, headers, body: JSON.stringify({ error: 'reservationKey 필요' }) };
+    if (!reservationKey) return;
 
     const store = getReservationStore();
     const raw = await store.get(reservationKey);
-    if (!raw) return { statusCode: 404, headers, body: JSON.stringify({ error: '예약 없음' }) };
+    if (!raw) return;
     const item = JSON.parse(raw);
     const sp = item.storeProfile || {};
 
@@ -481,7 +480,7 @@ exports.handler = async (event) => {
     if (updated.isSent) {
       console.log('[process-and-post] 이미 게시됨. 종료.');
       await cleanupTempImages(tempKeys);
-      return { statusCode: 200, headers, body: JSON.stringify({ status: 'already_posted' }) };
+      return;
     }
 
     // 1번 캡션으로 자동 게시
@@ -509,7 +508,7 @@ exports.handler = async (event) => {
     }
 
     await cleanupTempImages(tempKeys);
-    return { statusCode: 200, headers, body: JSON.stringify({ status: 'completed' }) };
+    return;
 
   } catch (err) {
     console.error('[process-and-post] 에러:', err.message);
@@ -527,6 +526,6 @@ exports.handler = async (event) => {
         }
       } catch (_) {}
     }
-    return { statusCode: 500, headers, body: JSON.stringify({ error: err.message }) };
+    return;
   }
-};
+}
