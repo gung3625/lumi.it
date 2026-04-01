@@ -371,8 +371,11 @@ async function cleanupTempImages(tempKeys) {
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers, body: '' };
 
+  let reservationKey = null; // catch 블록에서 접근 가능하도록 외부 선언
+
   try {
-    const { reservationKey } = JSON.parse(event.body || '{}');
+    const body = JSON.parse(event.body || '{}');
+    reservationKey = body.reservationKey;
     if (!reservationKey) return { statusCode: 400, headers, body: JSON.stringify({ error: 'reservationKey 필요' }) };
 
     const store = getReservationStore();
@@ -511,10 +514,9 @@ exports.handler = async (event) => {
   } catch (err) {
     console.error('[process-and-post] 에러:', err.message);
     // 에러 발생 시 Blobs에 에러 상태 저장 → 폴링 무한루프 방지
-    try {
-      const store = getReservationStore();
-      const { reservationKey } = JSON.parse(event.body || '{}');
-      if (reservationKey) {
+    if (reservationKey) {
+      try {
+        const store = getReservationStore();
         const raw = await store.get(reservationKey);
         if (raw) {
           const item = JSON.parse(raw);
@@ -523,8 +525,8 @@ exports.handler = async (event) => {
           item.generatedCaptions = [];
           await store.set(reservationKey, JSON.stringify(item));
         }
-      }
-    } catch (_) {}
+      } catch (_) {}
+    }
     return { statusCode: 500, headers, body: JSON.stringify({ error: err.message }) };
   }
 };
