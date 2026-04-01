@@ -71,7 +71,7 @@ exports.handler = async (event) => {
 
   return {
     statusCode: 200,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
     body: JSON.stringify({
       category: cat,
       bestTime: result.time,

@@ -54,7 +54,7 @@ function httpsGet(url) {
 }
 
 exports.handler = async (event) => {
-  const corsHeaders = { 'Content-Type': 'application/json' };
+  const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' };
 
   const sido = event.queryStringParameters?.sido || '서울';
   const sidoName = SIDO_MAP[sido] || '서울';

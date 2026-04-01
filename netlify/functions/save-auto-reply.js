@@ -4,10 +4,12 @@ const SITE_ID = process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c42
 const NETLIFY_TOKEN = process.env.NETLIFY_TOKEN;
 
 exports.handler = async (event) => {
-  const headers = { 'Content-Type': 'application/json' };
+  const headers = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Content-Type': 'application/json' };
+
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers, body: '' };
 
   const store = getStore({
-    name: 'auto-replies',
+    name: 'auto-replies', consistency: 'strong',
     siteID: SITE_ID,
     token: NETLIFY_TOKEN
   });
@@ -20,7 +22,7 @@ exports.handler = async (event) => {
       const token = authHeader.replace('Bearer ', '');
       if (!token) return { statusCode: 401, headers, body: JSON.stringify({ error: '인증 필요' }) };
 
-      const tokenStore = getStore({ name: 'users', siteID: SITE_ID, token: NETLIFY_TOKEN });
+      const tokenStore = getStore({ name: 'users', consistency: 'strong', siteID: SITE_ID, token: NETLIFY_TOKEN });
       const tokenData = await tokenStore.get('token:' + token);
       if (!tokenData) return { statusCode: 401, headers, body: JSON.stringify({ error: '유효하지 않은 토큰' }) };
 
@@ -42,7 +44,7 @@ exports.handler = async (event) => {
       const token = authHeader.replace('Bearer ', '');
       if (!token) return { statusCode: 401, headers, body: JSON.stringify({ error: '인증 필요' }) };
 
-      const tokenStore = getStore({ name: 'users', siteID: SITE_ID, token: NETLIFY_TOKEN });
+      const tokenStore = getStore({ name: 'users', consistency: 'strong', siteID: SITE_ID, token: NETLIFY_TOKEN });
       const tokenData = await tokenStore.get('token:' + token);
       if (!tokenData) return { statusCode: 401, headers, body: JSON.stringify({ error: '유효하지 않은 토큰' }) };
 

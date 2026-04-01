@@ -79,14 +79,14 @@ exports.handler = async (event) => {
     let email = '';
     if (state) {
       try {
-        const tokenStore = getStore({ name: 'users', siteID: SITE_ID, token: NETLIFY_TOKEN });
+        const tokenStore = getStore({ name: 'users', consistency: 'strong', siteID: SITE_ID, token: NETLIFY_TOKEN });
         const td = await tokenStore.get('token:' + state);
         if (td) email = JSON.parse(td).email || '';
       } catch(e) { console.error('[lumi] 이메일 조회 실패:', e.message); }
     }
 
     // 5. Blobs에 저장
-    const store = getStore({ name: 'users', siteID: SITE_ID, token: NETLIFY_TOKEN });
+    const store = getStore({ name: 'users', consistency: 'strong', siteID: SITE_ID, token: NETLIFY_TOKEN });
     await store.set('ig:' + igUserId, JSON.stringify({
       igUserId, accessToken: longToken, pageAccessToken,
       email, connectedAt: new Date().toISOString()

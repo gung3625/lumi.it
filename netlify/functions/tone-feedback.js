@@ -1,11 +1,14 @@
 const { getStore } = require('@netlify/blobs');
 
+const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Content-Type': 'application/json' };
+
 // 👍👎 피드백 저장 함수
 // 피드백에 따라 tone-like / tone-dislike 업데이트
 
 exports.handler = async (event) => {
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
+    return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
   const authHeader = event.headers['authorization'] || '';
@@ -26,7 +29,7 @@ exports.handler = async (event) => {
 
   try {
     const store = getStore({
-      name: 'users',
+      name: 'users', consistency: 'strong',
       siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
       token: process.env.NETLIFY_TOKEN
     });
@@ -79,11 +82,11 @@ exports.handler = async (event) => {
 
     return {
       statusCode: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: CORS,
       body: JSON.stringify({ success: true, likes: likes.length, dislikes: dislikes.length })
     };
   } catch (err) {
     console.error('tone-feedback error:', err.message);
-    return { statusCode: 500, body: JSON.stringify({ error: '저장 실패', detail: err.message }) };
+    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '저장 실패', detail: err.message }) };
   }
 };

@@ -138,7 +138,7 @@ async function rankByNaverTrend(festivals) {
 }
 
 exports.handler = async (event) => {
-  const corsHeaders = { 'Content-Type': 'application/json' };
+  const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' };
   const params = event.queryStringParameters || {};
   const sidoCode = params.sido || '';
   const sigunguCode = params.sigungu || '';

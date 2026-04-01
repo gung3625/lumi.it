@@ -100,7 +100,7 @@ function httpsGet(url) {
 }
 
 exports.handler = async (event) => {
-    const corsHeaders = { 'Content-Type': 'application/json' };
+    const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' };
     const serviceKey = process.env.PUBLIC_DATA_API_KEY;
 
     if (!serviceKey) {

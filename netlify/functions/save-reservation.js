@@ -1,9 +1,12 @@
 const { getStore } = require('@netlify/blobs');
 const busboy = require('busboy');
 
+const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Content-Type': 'application/json' };
+
 exports.handler = async (event) => {
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
+    return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
   const headers = event.headers;
@@ -64,7 +67,7 @@ exports.handler = async (event) => {
         };
 
         const store = getStore({
-          name: 'reservations',
+          name: 'reservations', consistency: 'strong',
           siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
           token: process.env.NETLIFY_TOKEN
         });
@@ -73,13 +76,13 @@ exports.handler = async (event) => {
 
         resolve({
           statusCode: 200,
-          headers: { 'Content-Type': 'application/json' },
+          headers: CORS,
           body: JSON.stringify({ success: true, id: reservationId, scheduledAt: fields.scheduledAt })
         });
 
       } catch(err) {
         console.error('save-reservation error:', err);
-        resolve({ statusCode: 500, body: JSON.stringify({ error: '예약 저장 중 오류가 발생했습니다.' }) });
+        resolve({ statusCode: 500, headers: CORS, body: JSON.stringify({ error: '예약 저장 중 오류가 발생했습니다.' }) });
       }
     });
 

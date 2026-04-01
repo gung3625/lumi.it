@@ -1,6 +1,8 @@
 const { getStore } = require('@netlify/blobs');
 const crypto = require('crypto');
 
+const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Content-Type': 'application/json' };
+
 function hashPassword(password) {
   const salt = crypto.randomBytes(16).toString('hex');
   const hash = crypto.pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex');
@@ -8,8 +10,9 @@ function hashPassword(password) {
 }
 
 exports.handler = async (event) => {
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
+    return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
   let body;
@@ -36,7 +39,7 @@ exports.handler = async (event) => {
 
   try {
     const store = getStore({
-      name: 'users',
+      name: 'users', consistency: 'strong',
       siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
       token: process.env.NETLIFY_TOKEN
     });
@@ -154,11 +157,11 @@ exports.handler = async (event) => {
 
     return {
       statusCode: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: CORS,
       body: JSON.stringify({ success: true, token, user: safeUser })
     };
   } catch (err) {
     console.error('register error:', err);
-    return { statusCode: 500, body: JSON.stringify({ error: '가입 처리 중 오류가 발생했습니다.' }) };
+    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '가입 처리 중 오류가 발생했습니다.' }) };
   }
 };

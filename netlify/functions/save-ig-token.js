@@ -29,7 +29,7 @@ exports.handler = async (event) => {
 
   try {
     const store = getStore({
-      name: 'users',
+      name: 'users', consistency: 'strong',
       siteID: SITE_ID,
       token: NETLIFY_TOKEN
     });
