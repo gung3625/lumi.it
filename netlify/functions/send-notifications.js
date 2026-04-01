@@ -240,6 +240,216 @@ async function sendExpiryAlert(userStore) {
   return { sent };
 }
 
+// === 리텐션 이메일 시스템 ===
+
+// HMAC 토큰 생성 (수신거부 링크용)
+function generateUnsubToken(email) {
+  return crypto.createHmac('sha256', process.env.LUMI_SECRET).update(email).digest('hex');
+}
+
+// 리텐션 이메일 HTML 빌드
+function buildRetentionHtml({ heading, body, ctaText, ctaUrl, userName, email }) {
+  const unsubToken = generateUnsubToken(email);
+  const unsubUrl = `https://lumi.it.kr/api/unsubscribe-retention?email=${encodeURIComponent(email)}&token=${unsubToken}`;
+  return `<!DOCTYPE html>
+<html lang="ko">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f9f9f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;">
+  <tr><td style="background:#FF6B9D;padding:32px;text-align:center;">
+    <span style="font-size:28px;font-weight:800;color:#fff;letter-spacing:-0.5px;">lumi</span>
+  </td></tr>
+  <tr><td style="padding:40px 32px;">
+    <p style="margin:0 0 8px;font-size:14px;color:#666;">${userName || '대표'}님께</p>
+    <h1 style="margin:0 0 20px;font-size:22px;color:#191F28;line-height:1.4;">${heading}</h1>
+    <p style="margin:0 0 32px;font-size:15px;color:#4E5968;line-height:1.7;">${body}</p>
+    ${ctaText && ctaUrl ? `<a href="${ctaUrl}" style="display:inline-block;padding:14px 32px;background:#FF6B9D;color:#fff;text-decoration:none;border-radius:10px;font-size:15px;font-weight:600;">${ctaText}</a>` : ''}
+  </td></tr>
+  <tr><td style="padding:24px 32px;border-top:1px solid #eee;font-size:12px;color:#999;line-height:1.6;">
+    <p style="margin:0;">본 메일은 lumi 서비스에 마케팅 수신 동의한 회원에게 발송됩니다.</p>
+    <p style="margin:4px 0 0;">발신: 루미(lumi) | 서울특별시 | 문의: help@lumi.it.kr</p>
+    <p style="margin:8px 0 0;"><a href="${unsubUrl}" style="color:#999;text-decoration:underline;">수신거부</a></p>
+  </td></tr>
+</table>
+</body></html>`;
+}
+
+// Resend로 이메일 발송
+async function sendRetentionEmail(resend, to, subject, htmlContent) {
+  const result = await resend.emails.send({
+    from: 'lumi <noreply@lumi.it.kr>',
+    to: [to],
+    subject: `(광고) ${subject}`,
+    html: htmlContent
+  });
+  return result;
+}
+
+// 활성화 시퀀스: trial + postCount === 0
+async function sendActivationSequence(store, user, blobKey, resend) {
+  if (user.plan !== 'trial') return null;
+  if ((user.postCount || 0) > 0) return null;
+
+  const now = new Date();
+  const createdAt = new Date(user.createdAt);
+  const diffDays = Math.floor((now - createdAt) / (1000 * 60 * 60 * 24));
+  const sent = user.retentionEmailsSent || {};
+  const userName = user.name || user.storeName;
+  const email = user.email;
+  let sentKey = null;
+
+  const sequences = [
+    { day: 1, key: 'activation_d1', heading: '사진 한 장만 올려보세요 📸', body: 'lumi에 가입해 주셔서 감사합니다! 첫 게시물을 올리면 AI가 자동으로 매력적인 캡션과 해시태그를 만들어 드려요. 지금 바로 사진 한 장으로 시작해보세요.' },
+    { day: 3, key: 'activation_d3', heading: '아직 lumi를 안 써보셨네요', body: '무료 체험 기간이 흘러가고 있어요. lumi의 AI 게시물 자동 생성, 한번 경험해보시면 왜 사장님들이 좋아하는지 바로 아실 거예요.' },
+    { day: 5, key: 'activation_d5', heading: '무료 체험 2일 남았어요!', body: '체험 기간이 곧 끝나요. 아직 한 번도 게시물을 올려보지 않으셨다면, 지금이 마지막 기회입니다. 딱 1분이면 첫 게시물을 만들 수 있어요.' }
+  ];
+
+  const match = sequences.find(s => s.day === diffDays);
+  if (!match) return null;
+  if (sent[match.key]) return null;
+
+  const html = buildRetentionHtml({
+    heading: match.heading,
+    body: match.body,
+    ctaText: 'lumi 시작하기',
+    ctaUrl: 'https://lumi.it.kr/dashboard.html',
+    userName,
+    email
+  });
+
+  await sendRetentionEmail(resend, email, match.heading, html);
+
+  sent[match.key] = new Date().toISOString();
+  user.retentionEmailsSent = sent;
+  await store.set(blobKey, JSON.stringify(user));
+  return { sent: match.key };
+}
+
+// 휴면 시퀀스: standard/pro + postCount >= 1 + 마지막 게시 후 3/7/14일
+async function sendDormantSequence(store, user, blobKey, resend) {
+  if (!user.plan || user.plan === 'trial') return null;
+  if ((user.postCount || 0) < 1) return null;
+  if (!user.lastPostedAt) return null;
+
+  const now = new Date();
+  const lastPosted = new Date(user.lastPostedAt);
+  const diffDays = Math.floor((now - lastPosted) / (1000 * 60 * 60 * 24));
+  const sent = user.retentionEmailsSent || {};
+  const userName = user.name || user.storeName;
+  const email = user.email;
+
+  const sequences = [
+    { day: 3, key: 'dormant_d3', heading: '요즘 게시물이 뜸하시네요', body: '마지막 게시 후 3일이 지났어요. 꾸준한 게시가 인스타그램 노출의 핵심이에요. 오늘 사진 한 장 올려보시는 건 어떨까요?' },
+    { day: 7, key: 'dormant_d7', heading: '일주일째 조용하시네요 🤔', body: '게시물을 올리지 않으면 인스타그램 알고리즘이 가게를 덜 노출시켜요. lumi가 캡션과 해시태그를 자동으로 만들어 드리니, 사진만 찍어주세요!' },
+    { day: 14, key: 'dormant_d14', heading: '가게 홍보, 다시 시작해볼까요?', body: '2주간 게시물이 없으셨어요. 경쟁 가게들은 매주 2~3회 게시하고 있어요. lumi와 함께 다시 시작해보세요. 1분이면 충분합니다.' }
+  ];
+
+  const match = sequences.find(s => s.day === diffDays);
+  if (!match) return null;
+
+  // 이전에 발송했더라도 lastPostedAt이 발송 이후이면 재발송 허용
+  if (sent[match.key]) {
+    const sentAt = new Date(sent[match.key]);
+    if (lastPosted <= sentAt) return null;
+  }
+
+  const html = buildRetentionHtml({
+    heading: match.heading,
+    body: match.body,
+    ctaText: '게시물 만들기',
+    ctaUrl: 'https://lumi.it.kr/dashboard.html',
+    userName,
+    email
+  });
+
+  await sendRetentionEmail(resend, email, match.heading, html);
+
+  sent[match.key] = new Date().toISOString();
+  user.retentionEmailsSent = sent;
+  await store.set(blobKey, JSON.stringify(user));
+  return { sent: match.key };
+}
+
+// 주간 팁: 매주 월요일, standard/pro, 직전 주 게시 1회 이상
+async function sendWeeklyTip(store, user, blobKey, resend) {
+  const now = new Date();
+  if (now.getDay() !== 1) return null; // 월요일만
+
+  if (!user.plan || user.plan === 'trial') return null;
+  if (!user.lastPostedAt) return null;
+
+  const lastPosted = new Date(user.lastPostedAt);
+  const daysSincePost = Math.floor((now - lastPosted) / (1000 * 60 * 60 * 24));
+  if (daysSincePost > 7) return null; // 직전 주 게시 없음
+
+  const sent = user.retentionEmailsSent || {};
+  const weekKey = `weekly_${now.getFullYear()}_W${Math.ceil(((now - new Date(now.getFullYear(), 0, 1)) / 86400000 + new Date(now.getFullYear(), 0, 1).getDay() + 1) / 7)}`;
+  if (sent[weekKey]) return null;
+
+  const userName = user.name || user.storeName;
+  const email = user.email;
+  const tips = [
+    '이번 주는 "비하인드 컷"을 올려보세요. 준비 과정이나 주방 모습은 고객에게 진정성을 전달해요.',
+    '메뉴 클로즈업 사진은 항상 반응이 좋아요. 자연광에서 찍으면 더 맛있어 보입니다!',
+    '고객 후기를 리포스트해보세요. 신뢰도가 올라가고 새 고객 유입에 효과적이에요.',
+    '직원 소개 게시물을 올려보세요. 사람이 보이는 가게에 고객이 더 친근감을 느껴요.',
+    '오늘의 추천 메뉴를 스토리로 올려보세요. 매일 다른 메뉴를 소개하면 팔로워가 매일 확인해요.'
+  ];
+  const tip = tips[Math.floor(Math.random() * tips.length)];
+
+  const html = buildRetentionHtml({
+    heading: '이번 주 게시물 추천 💡',
+    body: tip,
+    ctaText: '게시물 만들기',
+    ctaUrl: 'https://lumi.it.kr/dashboard.html',
+    userName,
+    email
+  });
+
+  await sendRetentionEmail(resend, email, '이번 주 추천 게시 주제', html);
+
+  sent[weekKey] = new Date().toISOString();
+  user.retentionEmailsSent = sent;
+  await store.set(blobKey, JSON.stringify(user));
+  return { sent: weekKey };
+}
+
+// 리텐션 이메일 전체 실행
+async function runRetentionEmails(userStore) {
+  if (!process.env.RESEND_API_KEY) return { skipped: true, reason: 'RESEND_API_KEY 미설정' };
+
+  const resend = new Resend(process.env.RESEND_API_KEY);
+  const { blobs } = await userStore.list({ prefix: 'user:' });
+  const results = { activation: 0, dormant: 0, weeklyTip: 0, skipped: 0 };
+
+  for (const blob of blobs) {
+    try {
+      const raw = await userStore.get(blob.key);
+      if (!raw) continue;
+      const user = JSON.parse(raw);
+      if (!user.email) continue;
+
+      // 마케팅 미동의 또는 수신거부 시 스킵
+      if (!user.agreeMarketing) { results.skipped++; continue; }
+      if (user.retentionUnsubscribed) { results.skipped++; continue; }
+
+      const a = await sendActivationSequence(userStore, user, blob.key, resend);
+      if (a) results.activation++;
+
+      const d = await sendDormantSequence(userStore, user, blob.key, resend);
+      if (d) results.dormant++;
+
+      const w = await sendWeeklyTip(userStore, user, blob.key, resend);
+      if (w) results.weeklyTip++;
+
+      await new Promise(r => setTimeout(r, 100));
+    } catch (e) {
+      console.error('[retention] 발송 실패:', blob.key, e.message);
+    }
+  }
+  return results;
+}
+
 exports.handler = async (event) => {
   // 스케줄 함수 또는 수동 호출
   const isScheduled = !event.httpMethod;
@@ -257,17 +467,18 @@ exports.handler = async (event) => {
       token: process.env.NETLIFY_TOKEN
     });
 
-    const [monthly, season, firstPost, expiry] = await Promise.all([
+    const [monthly, season, firstPost, expiry, retention] = await Promise.all([
       sendMonthlyReport(userStore),
       sendSeasonEventAlert(userStore),
       sendFirstPostCoaching(userStore),
-      sendExpiryAlert(userStore)
+      sendExpiryAlert(userStore),
+      runRetentionEmails(userStore)
     ]);
 
-    console.log('[lumi] 알림 발송 완료:', { monthly, season, firstPost, expiry });
+    console.log('[lumi] 알림 발송 완료:', { monthly, season, firstPost, expiry, retention });
     return {
       statusCode: 200,
-      body: JSON.stringify({ success: true, monthly, season, firstPost, expiry })
+      body: JSON.stringify({ success: true, monthly, season, firstPost, expiry, retention })
     };
   } catch(err) {
     console.error('send-notifications error:', err.message);
