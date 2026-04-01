@@ -47,12 +47,43 @@ const REGION_TO_SIDO = {
   '전북': '37', '전남': '35', '경북': '38', '경남': '39', '제주': '50'
 };
 
-// 지역명 → 시도 날씨 코드 매핑
-const REGION_TO_WEATHER = {
-  '서울': '서울', '부산': '부산', '대구': '대구', '인천': '인천',
-  '광주': '광주', '대전': '대전', '울산': '울산', '세종': '세종',
-  '경기': '경기', '강원': '강원', '충북': '충북', '충남': '충남',
-  '전북': '전북', '전남': '전남', '경북': '경북', '경남': '경남', '제주': '제주'
+// 지역명 → 격자좌표 (단기예보 D+0~D+2용, get-weather-kma.js와 동일)
+const SIDO_GRID = {
+  '서울': { nx: 60, ny: 127 }, '부산': { nx: 98, ny: 76 },
+  '대구': { nx: 89, ny: 90 },  '인천': { nx: 55, ny: 124 },
+  '광주': { nx: 58, ny: 74 },  '대전': { nx: 67, ny: 100 },
+  '울산': { nx: 102, ny: 84 }, '세종': { nx: 66, ny: 103 },
+  '경기': { nx: 60, ny: 120 }, '강원': { nx: 73, ny: 134 },
+  '충북': { nx: 69, ny: 107 }, '충남': { nx: 68, ny: 100 },
+  '전북': { nx: 63, ny: 89 },  '전남': { nx: 51, ny: 67 },
+  '경북': { nx: 91, ny: 106 }, '경남': { nx: 91, ny: 77 },
+  '제주': { nx: 52, ny: 38 }
+};
+
+// 중기육상예보 regId (권역)
+const SIDO_TO_MID_LAND = {
+  '서울': '11B00000', '인천': '11B00000', '경기': '11B00000',
+  '강원': '11D10000',
+  '대전': '11C20000', '세종': '11C20000', '충남': '11C20000',
+  '충북': '11C10000',
+  '광주': '11F20000', '전남': '11F20000',
+  '전북': '11F10000',
+  '대구': '11H10000', '경북': '11H10000',
+  '부산': '11H20000', '울산': '11H20000', '경남': '11H20000',
+  '제주': '11G00000'
+};
+
+// 중기기온예보 regId (도시)
+const SIDO_TO_MID_TA = {
+  '서울': '11B10101', '인천': '11B20201', '경기': '11B20601',
+  '강원': '11D10301',
+  '대전': '11C20401', '세종': '11C20404', '충남': '11C20101',
+  '충북': '11C10301',
+  '광주': '11F20501', '전남': '11F20501',
+  '전북': '11F10201',
+  '대구': '11H10701', '경북': '11H10201',
+  '부산': '11H20201', '울산': '11H20101', '경남': '11H20301',
+  '제주': '11G00201'
 };
 
 function extractSido(region) {
@@ -120,33 +151,139 @@ async function fetchFestivals(sidoCode) {
   return [];
 }
 
-async function fetchWeather(sido, lat, lon) {
-  try {
-    const siteUrl = process.env.URL || 'https://lumi.it.kr';
-    let url = `${siteUrl}/.netlify/functions/get-weather-kma?sido=${encodeURIComponent(sido)}`;
-    if (lat && lon) {
-      url = `${siteUrl}/.netlify/functions/get-weather-kma?lat=${lat}&lon=${lon}`;
-    }
-    const result = await httpsGet(url);
-    if (result.status === 200) {
-      return JSON.parse(result.body);
-    }
-  } catch (e) {
-    console.error('fetchWeather error:', e.message);
+// KST 기준 날짜 문자열 (YYYYMMDD)
+function getKstDateStr(offsetDays = 0) {
+  const now = new Date();
+  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  kst.setUTCDate(kst.getUTCDate() + offsetDays);
+  return kst.toISOString().slice(0, 10).replace(/-/g, '');
+}
+
+// 단기예보 base_time 계산 (0200/0500/0800/1100/1400/1700/2000/2300)
+function getVilageFcstBaseTime() {
+  const now = new Date();
+  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  const hh = kst.getUTCHours();
+  const mm = kst.getUTCMinutes();
+  const baseTimes = [23, 20, 17, 14, 11, 8, 5, 2];
+  let baseHour = 2;
+  for (const bt of baseTimes) {
+    if (hh > bt || (hh === bt && mm >= 10)) { baseHour = bt; break; }
   }
-  return null;
+  let baseDate = getKstDateStr(0);
+  if (baseHour === 23 && hh < 23) baseDate = getKstDateStr(-1);
+  return { baseDate, baseTime: String(baseHour).padStart(2, '0') + '00' };
 }
 
-function buildWeatherDesc(weather) {
-  if (!weather || weather.error) return '날씨 정보 없음';
-  const stateMap = { clear: '맑음', rain: '비', snow: '눈' };
-  const state = stateMap[weather.state] || '맑음';
-  const temp = weather.temperature !== null ? `${weather.temperature}°C` : '';
-  const humidity = weather.humidity ? `습도 ${weather.humidity}%` : '';
-  return [state, temp, humidity].filter(Boolean).join(', ');
+// 중기예보 tmFc 계산 (06시 또는 18시 발표)
+function getMidTmFc() {
+  const now = new Date();
+  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  const hh = kst.getUTCHours();
+  const dateStr = getKstDateStr(hh < 6 ? -1 : 0);
+  const timeStr = hh >= 18 ? '1800' : '0600';
+  return dateStr + timeStr;
 }
 
-async function generateWithGPT(bizCategory, region, weatherDesc, trends, festivals) {
+// D+0~D+2: 단기예보 (getVilageFcst) — 날짜별 최저/최고기온 + 날씨
+async function fetchShortForecast(sido) {
+  const serviceKey = process.env.PUBLIC_DATA_API_KEY;
+  if (!serviceKey) return {};
+
+  const grid = SIDO_GRID[sido] || SIDO_GRID['서울'];
+  const { baseDate, baseTime } = getVilageFcstBaseTime();
+
+  try {
+    const url = `https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst`
+      + `?serviceKey=${serviceKey}&numOfRows=1000&pageNo=1&dataType=JSON`
+      + `&base_date=${baseDate}&base_time=${baseTime}&nx=${grid.nx}&ny=${grid.ny}`;
+
+    const result = await httpsGet(url);
+    if (result.status !== 200) return {};
+
+    const data = JSON.parse(result.body);
+    const items = data?.response?.body?.items?.item || [];
+
+    // 날짜별로 TMN(최저), TMX(최고), SKY(하늘), PTY(강수) 수집
+    const byDate = {};
+    for (const item of items) {
+      const d = item.fcstDate;
+      if (!byDate[d]) byDate[d] = {};
+      if (item.category === 'TMN') byDate[d].min = Math.round(parseFloat(item.fcstValue));
+      if (item.category === 'TMX') byDate[d].max = Math.round(parseFloat(item.fcstValue));
+      if (item.category === 'SKY' && item.fcstTime === '1200') byDate[d].sky = item.fcstValue;
+      if (item.category === 'PTY' && item.fcstTime === '1200') byDate[d].pty = item.fcstValue;
+    }
+
+    // SKY: 1맑음 3구름많음 4흐림, PTY: 0없음 1비 2비/눈 3눈 4소나기
+    const result7 = {};
+    for (const [date, v] of Object.entries(byDate)) {
+      const isoDate = `${date.slice(0,4)}-${date.slice(4,6)}-${date.slice(6,8)}`;
+      const sky = v.sky === '1' ? '맑음' : v.sky === '3' ? '구름많음' : v.sky === '4' ? '흐림' : '';
+      const pty = parseInt(v.pty || '0');
+      const weather = pty === 1 || pty === 4 ? '비' : pty === 2 ? '비/눈' : pty === 3 ? '눈' : sky;
+      const temp = (v.min != null && v.max != null) ? `${v.min}~${v.max}°C` : '';
+      result7[isoDate] = [weather, temp].filter(Boolean).join(', ') || '정보없음';
+    }
+    return result7;
+  } catch (e) {
+    console.error('fetchShortForecast error:', e.message);
+    return {};
+  }
+}
+
+// D+3~D+6: 중기예보 (getMidLandFcst + getMidTa) — 날씨 + 기온
+async function fetchMidForecast(sido) {
+  const serviceKey = process.env.PUBLIC_DATA_API_KEY;
+  if (!serviceKey) return {};
+
+  const landRegId = SIDO_TO_MID_LAND[sido] || '11B00000';
+  const taRegId = SIDO_TO_MID_TA[sido] || '11B10101';
+  const tmFc = getMidTmFc();
+
+  try {
+    const [landResult, taResult] = await Promise.all([
+      httpsGet(`https://apis.data.go.kr/1360000/MidFcstInfoService/getMidLandFcst`
+        + `?serviceKey=${serviceKey}&numOfRows=10&pageNo=1&dataType=JSON&regId=${landRegId}&tmFc=${tmFc}`),
+      httpsGet(`https://apis.data.go.kr/1360000/MidFcstInfoService/getMidTa`
+        + `?serviceKey=${serviceKey}&numOfRows=10&pageNo=1&dataType=JSON&regId=${taRegId}&tmFc=${tmFc}`)
+    ]);
+
+    const landData = landResult.status === 200 ? JSON.parse(landResult.body) : null;
+    const taData = taResult.status === 200 ? JSON.parse(taResult.body) : null;
+
+    const landItem = landData?.response?.body?.items?.item?.[0] || {};
+    const taItem = taData?.response?.body?.items?.item?.[0] || {};
+
+    const result7 = {};
+    for (let d = 3; d <= 7; d++) {
+      const date = new Date();
+      date.setDate(date.getDate() + d);
+      const isoDate = date.toISOString().slice(0, 10);
+
+      const weather = landItem[`wf${d}Am`] || landItem[`wf${d}`] || '';
+      const min = taItem[`taMin${d}`];
+      const max = taItem[`taMax${d}`];
+      const temp = (min != null && max != null) ? `${min}~${max}°C` : '';
+      result7[isoDate] = [weather, temp].filter(Boolean).join(', ') || '정보없음';
+    }
+    return result7;
+  } catch (e) {
+    console.error('fetchMidForecast error:', e.message);
+    return {};
+  }
+}
+
+// 7일 날씨 통합 (단기 D+0~D+2 + 중기 D+3~D+6)
+async function fetch7DayWeather(sido) {
+  const [shortFc, midFc] = await Promise.all([
+    fetchShortForecast(sido),
+    fetchMidForecast(sido)
+  ]);
+  return { ...shortFc, ...midFc };
+}
+
+async function generateWithGPT(bizCategory, region, weatherByDate, trends, festivals) {
   const openaiKey = process.env.OPENAI_API_KEY;
   if (!openaiKey) throw new Error('OpenAI API 키가 설정되지 않았습니다.');
 
@@ -164,14 +301,19 @@ async function generateWithGPT(bizCategory, region, weatherDesc, trends, festiva
 
   const trendText = trends.length > 0 ? trends.join(', ') : '트렌드 데이터 없음';
 
+  const weatherLines = dates.map(d => `  ${d}: ${weatherByDate[d] || '정보없음'}`).join('\n');
+
   const systemPrompt = `당신은 소상공인 인스타그램 마케팅 전문가입니다. 다음 정보를 바탕으로 향후 7일간의 콘텐츠 캘린더를 JSON으로 작성하세요.
 
 - 업종: ${bizCategory}
 - 지역: ${region}
-- 현재 날씨: ${weatherDesc}
+- 7일간 날씨 예보:
+${weatherLines}
 - 트렌드 키워드: ${trendText}
 - 지역 축제/행사: ${festivalText}
 - 날짜 범위: ${dates[0]} ~ ${dates[6]}
+
+날씨에 맞는 촬영 주제와 팁을 제안하세요. 비 오는 날은 실내 촬영, 맑은 날은 야외/자연광 활용 등.
 
 각 날짜에 대해 다음을 제안하세요:
 1. 촬영 주제 (topic) - 구체적이고 실행 가능한 주제
@@ -276,18 +418,15 @@ exports.handler = async (event) => {
     const sido = extractSido(region);
     const sidoCode = REGION_TO_SIDO[sido] || '11';
     const trendCategory = BIZ_TO_TREND[bizCategory] || 'other';
-    const weatherSido = REGION_TO_WEATHER[sido] || '서울';
 
-    const [trends, festivals, weather] = await Promise.all([
+    const [trends, festivals, weatherByDate] = await Promise.all([
       fetchTrends(trendCategory),
       fetchFestivals(sidoCode),
-      fetchWeather(weatherSido, lat || null, lon || null)
+      fetch7DayWeather(sido)
     ]);
 
-    const weatherDesc = buildWeatherDesc(weather);
-
     // GPT로 캘린더 생성
-    const calendar = await generateWithGPT(bizCategory, region, weatherDesc, trends, festivals);
+    const calendar = await generateWithGPT(bizCategory, region, weatherByDate, trends, festivals);
 
     // 성공 후에만 rate limit 카운트 증가
     if (rateCheck.store && rateCheck.key) {
@@ -302,7 +441,7 @@ exports.handler = async (event) => {
         meta: {
           bizCategory,
           region,
-          weather: weatherDesc,
+          weather: weatherByDate,
           trendsCount: trends.length,
           festivalsCount: festivals.length,
           remaining: rateCheck.remaining
