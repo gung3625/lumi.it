@@ -75,10 +75,16 @@ exports.handler = async (event) => {
 
     if (userRaw) {
       const user = JSON.parse(userRaw);
-      user.plan = order.planType;
+      // plan은 standard로 통일
+      user.plan = 'standard';
+      user.billingCycle = order.planType === 'standard_yearly' ? 'yearly' : order.planType === 'standard_3m' ? 'quarterly' : 'monthly';
       user.planStartAt = new Date().toISOString();
-      user.planExpireAt = new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString(); // 31일
-      user.postCount = 0; // 결제 시 게시 횟수 리셋
+      // 기존 기간이 남아있으면 합산
+      const baseDate = (user.planExpireAt && new Date(user.planExpireAt) > new Date()) ? new Date(user.planExpireAt) : new Date();
+      const durationDays = order.durationDays || 31;
+      user.planExpireAt = new Date(baseDate.getTime() + durationDays * 24 * 60 * 60 * 1000).toISOString();
+      user.lastPaymentId = paymentId;
+      user.lastOrderId = orderId;
       user.postCountMonth = new Date().toISOString().slice(0, 7);
       await userStore.set('user:' + order.email, JSON.stringify(user));
     }

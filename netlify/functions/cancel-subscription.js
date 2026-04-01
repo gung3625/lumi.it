@@ -44,6 +44,7 @@ exports.handler = async (event) => {
       return { statusCode: 400, body: JSON.stringify({ error: '활성 구독이 없습니다.' }) };
     }
 
+    // 레거시 빌링키 정리 (일시불 전환 후에도 기존 사용자를 위해 유지)
     // 포트원 빌링키 삭제 (있는 경우)
     if (user.billingKey && PORTONE_API_SECRET) {
       try {
@@ -73,7 +74,7 @@ exports.handler = async (event) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         success: true,
-        message: '구독이 취소됐어요. 현재 결제 기간인 ' + (user.planExpireAt ? user.planExpireAt.slice(0, 10) : '만료일') + '까지는 계속 이용 가능해요.'
+        message: '구독이 취소됐어요. ' + (user.planExpireAt ? new Date(user.planExpireAt).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' }) : '만료일') + '까지는 계속 이용 가능해요.'
       })
     };
 

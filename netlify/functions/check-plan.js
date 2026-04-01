@@ -30,7 +30,9 @@ exports.handler = async (event) => {
     const createdAt = new Date(user.createdAt);
     const diffDays = Math.floor((now - createdAt) / (1000 * 60 * 60 * 24));
     const trialExpired = plan === 'trial' && diffDays >= 7;
-    const canPost = isAdmin || (!trialExpired && postCount < limit);
+    const planExpireAt = user.planExpireAt ? new Date(user.planExpireAt) : null;
+    const standardExpired = plan === 'standard' && planExpireAt && planExpireAt < now;
+    const canPost = isAdmin || (!trialExpired && !standardExpired && postCount < limit);
 
     return {
       statusCode: 200,
@@ -38,6 +40,10 @@ exports.handler = async (event) => {
       body: JSON.stringify({
         plan, postCount, limit, remaining: isAdmin ? 999999 : Math.max(0, limit - postCount),
         canPost, trialExpired, autoRenew: user.autoRenew !== false,
+        billingCycle: user.billingCycle || 'monthly',
+        planExpireAt: user.planExpireAt || null,
+        daysUntilExpire: (plan === 'standard' && planExpireAt && planExpireAt > now) ? Math.ceil((planExpireAt - now) / (1000 * 60 * 60 * 24)) : null,
+        planExpired: standardExpired || false,
         trialDaysLeft: plan === 'trial' ? Math.max(0, 7 - diffDays) : null,
         user: { name: user.name, storeName: user.storeName, instagram: user.instagram, bizCategory: user.bizCategory, captionTone: user.captionTone, tagStyle: user.tagStyle, storeDesc: user.storeDesc, region: user.region }
       })
