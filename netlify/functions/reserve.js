@@ -6,6 +6,13 @@ exports.handler = async (event) => {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
+  // 인증: Bearer 토큰 또는 LUMI_SECRET
+  const authHeader = event.headers['authorization'] || '';
+  const lumiSecret = event.headers['x-lumi-secret'] || '';
+  if (!authHeader.startsWith('Bearer ') && lumiSecret !== process.env.LUMI_SECRET) {
+    return { statusCode: 401, body: JSON.stringify({ error: '인증이 필요합니다.' }) };
+  }
+
   const headers = event.headers;
   const isBase64Encoded = event.isBase64Encoded;
   const bodyBuffer = Buffer.from(event.body, isBase64Encoded ? 'base64' : 'utf8');
