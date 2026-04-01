@@ -1439,10 +1439,9 @@ async function commitPost(type){
     if(type==='now'){
         // 웹훅으로 실제 전송
         const formData = new FormData();
-        // 사진 파일들 추가
-        stagedFiles.forEach((f, i) => formData.append(`photo_${i}`, f, f.name));
-        // 대표 사진 (첫 번째) 별도 전송 - 스토리용
-        if (stagedFiles.length > 0) formData.append('thumbnailFile', stagedFiles[0], stagedFiles[0].name);
+        // 사진 파일들 추가 (클라이언트 리사이징 — 6MB 제한 방지)
+        const resizedFiles = await Promise.all(stagedFiles.map(f => resizeImageForUpload(f)));
+        resizedFiles.forEach((f, i) => formData.append(`photo_${i}`, f, stagedFiles[i].name));
         // 스토리 자동 게시 설정
         const autoStoryOn = userData.autoStory === true;
         formData.append('autoStory', autoStoryOn ? 'true' : 'false');
@@ -1883,6 +1882,31 @@ async function loadAutoReply() {
 
 function removeArchiveItem(id){if(confirm("이 기록을 삭제할까요?")){archive=archive.filter(i=>i.id!==id);syncPersistence();renderArchive();}}
 function resetDashboard(){document.getElementById('ceo-note-input').value='';document.getElementById('ceo-file-selector').value='';stagedFiles=[];renderStagedFiles();_isCommitting=false;}
+
+// 업로드 전 클라이언트 리사이징 — Netlify 6MB 제한 방지
+async function resizeImageForUpload(file) {
+  return new Promise((resolve) => {
+    const MAX_PX = 1920; // 최대 변의 길이
+    const MAX_BYTES = 3 * 1024 * 1024; // 3MB
+    if (file.size <= MAX_BYTES) { resolve(file); return; }
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let w = img.width, h = img.height;
+      if (w > MAX_PX || h > MAX_PX) {
+        if (w > h) { h = Math.round(h * MAX_PX / w); w = MAX_PX; }
+        else { w = Math.round(w * MAX_PX / h); h = MAX_PX; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      canvas.toBlob(blob => resolve(blob || file), 'image/jpeg', 0.85);
+    };
+    img.onerror = () => resolve(file);
+    img.src = url;
+  });
+}
 
 // ── 캡션 대기 + 선택 UI ──
 let _captionPollTimer = null;
