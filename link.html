@@ -94,6 +94,26 @@
     }
     .footer img { height: 20px; vertical-align: middle; margin-bottom: 6px; }
 
+    /* 테마: dark */
+    body.theme-dark { background: linear-gradient(135deg, #1a1a2e, #16213e); color: #fff; }
+    body.theme-dark .profile-name { color: #fff; }
+    body.theme-dark .profile-desc { color: rgba(255,255,255,.7); }
+    body.theme-dark .profile-meta { color: rgba(255,255,255,.5); }
+    body.theme-dark .profile-avatar { background: rgba(255,255,255,.12); box-shadow: 0 4px 20px rgba(0,0,0,.3); }
+    body.theme-dark .link-btn { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.15); color: #fff; box-shadow: 0 2px 12px rgba(0,0,0,.2); }
+    body.theme-dark .link-btn:hover { border-color: rgba(255,255,255,.3); box-shadow: 0 6px 20px rgba(0,0,0,.3); }
+    body.theme-dark .link-btn .icon { background: rgba(255,255,255,.12); }
+    body.theme-dark .link-btn .arrow { color: rgba(255,255,255,.4); }
+    body.theme-dark .footer { color: rgba(255,255,255,.3); }
+    body.theme-dark .footer a { color: #F0849E; }
+
+    /* 테마: minimal */
+    body.theme-minimal { background: #fff; }
+    body.theme-minimal .profile-avatar { background: #f5f5f5; box-shadow: none; }
+    body.theme-minimal .link-btn { background: #f9f9f9; border-color: #eee; box-shadow: none; }
+    body.theme-minimal .link-btn:hover { background: #f0f0f0; box-shadow: none; }
+    body.theme-minimal .link-btn .icon { background: #f0f0f0; }
+
     /* 에러/로딩 */
     .loading { text-align: center; padding: 60px 20px; color: var(--g400); }
     .error-page { text-align: center; padding: 60px 20px; }
@@ -168,6 +188,11 @@ async function loadPage() {
     const res = await fetch(`/.netlify/functions/get-link-page?id=${encodeURIComponent(instaId)}`);
     if (!res.ok) { showError(); return; }
     const data = await res.json();
+
+    // 테마 적용
+    if (data.theme && data.theme !== 'pink') {
+      document.body.classList.add('theme-' + data.theme);
+    }
 
     // 메타태그 업데이트
     document.title = `${data.storeName} | lumi 링크`;

@@ -141,6 +141,28 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
 
         /* 스텝 진행 확장 (스텝 4 추가) */
         .s-dot.on{background:var(--pink);width:20px;border-radius:3px;}
+
+        /* 링크 페이지 편집 */
+        .lp-theme-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
+        .lp-theme-card{padding:12px 8px;border:1.5px solid var(--g200);border-radius:var(--r-md);cursor:pointer;text-align:center;transition:all .2s;background:var(--g50);}
+        .lp-theme-card:hover{border-color:var(--pink-soft);background:var(--pink-ultra);}
+        .lp-theme-card.selected{border-color:var(--pink);background:var(--pink-pale);}
+        .lp-theme-swatch{width:100%;height:28px;border-radius:6px;margin-bottom:4px;}
+        .lp-theme-name{font-size:11px;font-weight:700;color:var(--g900);}
+        .lp-item{background:var(--g50);border-radius:var(--r-md);padding:10px 12px;margin-bottom:8px;border:1px solid var(--g100);}
+        .lp-item-row1{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+        .lp-item-row2{padding-left:28px;}
+        .lp-drag{cursor:grab;color:var(--g400);font-size:13px;flex-shrink:0;width:20px;text-align:center;touch-action:none;}
+        .lp-icon-btn{width:36px;height:36px;border:1.5px solid var(--g200);border-radius:8px;background:#fff;font-size:1rem;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:border-color .15s;}
+        .lp-icon-btn:hover{border-color:var(--pink);}
+        .lp-emoji-pop{position:absolute;z-index:100;background:var(--white);border:1.5px solid var(--g200);border-radius:var(--r-md);padding:6px;box-shadow:0 8px 24px rgba(0,0,0,.12);display:grid;grid-template-columns:repeat(5,1fr);gap:2px;}
+        .lp-emoji-pop button{width:36px;height:36px;border:none;border-radius:6px;background:transparent;font-size:1.1rem;cursor:pointer;}
+        .lp-emoji-pop button:hover{background:var(--pink-pale);}
+        .lp-item-del{background:none;border:none;color:var(--g400);font-size:1rem;cursor:pointer;padding:0 4px;min-width:28px;min-height:28px;display:flex;align-items:center;justify-content:center;}
+        .lp-url-invalid{border-color:#E53E3E !important;}
+        .lp-save-btn.loading{pointer-events:none;opacity:.7;}
+        #lp-preview-overlay{position:fixed;inset:0;z-index:9000;background:rgba(15,10,20,.85);backdrop-filter:blur(16px);display:none;align-items:center;justify-content:center;padding:16px;}
+        #lp-preview-frame{background:linear-gradient(135deg,#fff0f6 0%,#f9f9ff 100%);border-radius:24px;padding:28px 20px;width:100%;max-width:400px;max-height:85vh;overflow-y:auto;position:relative;animation:sheetUp .35s var(--ease);}
 </style>
 </head>
 <body>
@@ -739,26 +761,54 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
                     <p style="font-size:.88rem;font-weight:800;color:var(--g900);margin-bottom:4px;">🔗 내 링크 페이지</p>
                     <p id="link-page-url" style="font-size:.78rem;color:var(--pink);font-weight:600;cursor:pointer;" onclick="copyLinkPageUrl()">불러오는 중...</p>
                 </div>
-                <button onclick="copyLinkPageUrl()" style="background:var(--pink-pale);color:var(--pink);border:none;border-radius:99px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">복사</button>
+                <div style="display:flex;gap:6px;">
+                    <button onclick="openLinkPreview()" style="background:var(--g100);color:var(--g700);border:none;border-radius:99px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">미리보기</button>
+                    <button onclick="copyLinkPageUrl()" style="background:var(--pink-pale);color:var(--pink);border:none;border-radius:99px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">복사</button>
+                </div>
             </div>
             <p style="font-size:.75rem;color:var(--g500);margin-bottom:10px;line-height:1.6;">인스타그램 바이오 링크에 넣으면 방문자가 매장 정보와 여러 링크를 한 번에 볼 수 있어요.</p>
 
-            <!-- 예시 안내 -->
-            <div style="background:var(--g50);border-radius:var(--r-md);padding:12px 14px;margin-bottom:14px;border-left:3px solid var(--pink);">
-                <p style="font-size:11px;font-weight:700;color:var(--pink);margin-bottom:6px;">💡 이런 링크를 추가해보세요</p>
-                <div style="display:flex;flex-direction:column;gap:4px;">
+            <!-- 테마 선택 -->
+            <p style="font-size:.75rem;font-weight:700;color:var(--g500);margin-bottom:6px;">테마</p>
+            <div class="lp-theme-grid" id="lp-theme-grid">
+                <div class="lp-theme-card selected" data-theme="pink" onclick="selectLinkTheme('pink')">
+                    <div class="lp-theme-swatch" style="background:linear-gradient(135deg,#fff0f6,#f9f9ff);border:1px solid var(--g200);"></div>
+                    <div class="lp-theme-name">핑크</div>
+                </div>
+                <div class="lp-theme-card" data-theme="dark" onclick="selectLinkTheme('dark')">
+                    <div class="lp-theme-swatch" style="background:linear-gradient(135deg,#1a1a2e,#16213e);"></div>
+                    <div class="lp-theme-name">다크</div>
+                </div>
+                <div class="lp-theme-card" data-theme="minimal" onclick="selectLinkTheme('minimal')">
+                    <div class="lp-theme-swatch" style="background:#fff;border:1px solid var(--g200);"></div>
+                    <div class="lp-theme-name">미니멀</div>
+                </div>
+            </div>
+
+            <!-- 예시 안내 (접이식) -->
+            <details style="margin-bottom:14px;">
+                <summary style="font-size:11px;font-weight:700;color:var(--pink);cursor:pointer;padding:8px 0;">💡 이런 링크를 추가해보세요</summary>
+                <div style="display:flex;flex-direction:column;gap:4px;padding:8px 0;">
                     <p style="font-size:11px;color:var(--g500);">📍 네이버 지도 — 매장 위치 안내</p>
                     <p style="font-size:11px;color:var(--g500);">☎️ 전화하기 — tel:010XXXX0000 형식</p>
                     <p style="font-size:11px;color:var(--g500);">🛒 배달의민족 / 쿠팡이츠 — 주문 링크</p>
                     <p style="font-size:11px;color:var(--g500);">📅 카카오 예약 — 예약 페이지 링크</p>
                     <p style="font-size:11px;color:var(--g500);">🌐 홈페이지 / 블로그 — 상세 정보</p>
                 </div>
-            </div>
+            </details>
 
             <!-- 링크 목록 -->
-            <div id="link-page-items"></div>
+            <div id="link-page-items" style="position:relative;"></div>
             <button onclick="addLinkItem()" style="width:100%;height:44px;background:var(--g50);border:1.5px dashed var(--g200);border-radius:var(--r-md);font-size:.85rem;font-weight:600;color:var(--g500);cursor:pointer;font-family:inherit;margin-top:8px;">+ 링크 추가</button>
-            <button onclick="saveLinkPage()" class="btn-act-on" style="width:100%;margin-top:10px;padding:12px;">저장하기</button>
+            <button id="lp-save-btn" onclick="saveLinkPage()" class="btn-act-on lp-save-btn" style="width:100%;margin-top:10px;padding:12px;">저장하기</button>
+        </div>
+
+        <!-- 링크 미리보기 모달 -->
+        <div id="lp-preview-overlay" onclick="if(event.target===this)closeLinkPreview()">
+            <div id="lp-preview-frame">
+                <button onclick="closeLinkPreview()" style="position:absolute;top:12px;right:12px;width:44px;height:44px;border-radius:50%;border:none;background:rgba(0,0,0,.08);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+                <div id="lp-preview-content"></div>
+            </div>
         </div>
 
         <!-- 자동 응답 설정 (프로 플랜) -->
@@ -3029,24 +3079,23 @@ async function saveAutoStory(checked) {
 
 // ── 링크 페이지 ──
 let _linkItems = [];
-
+let _linkTheme = 'pink';
 const LINK_ICONS = ['📍','☎️','🛒','📅','📸','🌐','💬','🎁','📌','🔗'];
 
 async function loadLinkPage() {
     const user = JSON.parse(localStorage.getItem('lumi_user') || '{}');
     const instaId = (user.instagram || '').replace('@', '');
     if (!instaId) return;
-
     const url = `https://lumi.it.kr/p/${instaId}`;
     const el = document.getElementById('link-page-url');
     if (el) el.textContent = url;
-
     try {
-        const token = localStorage.getItem('lumi_token');
         const res = await fetch(`/.netlify/functions/get-link-page?id=${instaId}`);
         if (res.ok) {
             const data = await res.json();
             _linkItems = data.links || [];
+            _linkTheme = data.theme || 'pink';
+            selectLinkTheme(_linkTheme);
             renderLinkItems();
         }
     } catch(e) {}
@@ -3055,18 +3104,23 @@ async function loadLinkPage() {
 function renderLinkItems() {
     const el = document.getElementById('link-page-items');
     if (!el) return;
+    // 기존 이모지 피커 닫기
+    document.querySelectorAll('.lp-emoji-pop').forEach(p => p.remove());
     if (_linkItems.length === 0) {
         el.innerHTML = '<p style="font-size:.78rem;color:var(--g400);text-align:center;padding:12px 0;">아직 링크가 없어요. 추가해보세요!</p>';
         return;
     }
     el.innerHTML = _linkItems.map((item, i) => `
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;background:var(--g50);border-radius:var(--r-md);padding:10px 12px;">
-            <select onchange="_linkItems[${i}].icon=this.value" style="width:52px;height:36px;border:1.5px solid var(--g200);border-radius:8px;font-size:1rem;text-align:center;background:#fff;cursor:pointer;">
-                ${LINK_ICONS.map(ic => `<option value="${ic}" ${ic === item.icon ? 'selected' : ''}>${ic}</option>`).join('')}
-            </select>
-            <input type="text" value="${item.label || ''}" placeholder="버튼 이름" class="inp" style="flex:1;height:36px;margin:0;font-size:.83rem;" oninput="_linkItems[${i}].label=this.value">
-            <input type="url" value="${item.url || ''}" placeholder="https://..." class="inp" style="flex:2;height:36px;margin:0;font-size:.83rem;" oninput="_linkItems[${i}].url=this.value">
-            <button onclick="_linkItems.splice(${i},1);renderLinkItems()" style="background:none;border:none;color:var(--g400);font-size:1.1rem;cursor:pointer;padding:0 4px;">✕</button>
+        <div class="lp-item" data-idx="${i}">
+            <div class="lp-item-row1">
+                <span class="lp-drag">≡</span>
+                <button class="lp-icon-btn" onclick="openEmojiPicker(${i},this)">${item.icon || '🔗'}</button>
+                <input type="text" value="${(item.label||'').replace(/"/g,'&quot;')}" placeholder="버튼 이름" class="inp" style="flex:1;height:36px;margin:0;font-size:.83rem;" oninput="_linkItems[${i}].label=this.value">
+                <button class="lp-item-del" onclick="_linkItems.splice(${i},1);renderLinkItems()">✕</button>
+            </div>
+            <div class="lp-item-row2">
+                <input type="url" value="${(item.url||'').replace(/"/g,'&quot;')}" placeholder="https://... 또는 tel:..." class="inp" style="height:36px;margin:0;font-size:.83rem;width:100%;" oninput="_linkItems[${i}].url=this.value" onblur="validateLinkUrl(this)">
+            </div>
         </div>
     `).join('');
 }
@@ -3075,35 +3129,110 @@ function addLinkItem() {
     if (_linkItems.length >= 10) { showToast('링크는 최대 10개까지 추가할 수 있어요.', 'red'); return; }
     _linkItems.push({ icon: '🔗', label: '', url: '' });
     renderLinkItems();
+    // 새 항목으로 스크롤
+    setTimeout(() => { const items = document.querySelectorAll('.lp-item'); if(items.length) items[items.length-1].scrollIntoView({behavior:'smooth',block:'center'}); }, 50);
+}
+
+function selectLinkTheme(theme) {
+    _linkTheme = theme;
+    document.querySelectorAll('.lp-theme-card').forEach(c => {
+        c.classList.toggle('selected', c.dataset.theme === theme);
+    });
+}
+
+function openEmojiPicker(idx, btnEl) {
+    document.querySelectorAll('.lp-emoji-pop').forEach(p => p.remove());
+    const pop = document.createElement('div');
+    pop.className = 'lp-emoji-pop';
+    LINK_ICONS.forEach(ic => {
+        const b = document.createElement('button');
+        b.textContent = ic;
+        b.onclick = (e) => { e.stopPropagation(); _linkItems[idx].icon = ic; btnEl.textContent = ic; pop.remove(); };
+        pop.appendChild(b);
+    });
+    btnEl.parentElement.style.position = 'relative';
+    pop.style.position = 'absolute'; pop.style.top = '40px'; pop.style.left = '20px';
+    btnEl.parentElement.appendChild(pop);
+    setTimeout(() => {
+        const closer = (e) => { if (!pop.contains(e.target)) { pop.remove(); document.removeEventListener('click', closer); } };
+        document.addEventListener('click', closer);
+    }, 10);
+}
+
+function validateLinkUrl(inp) {
+    const v = inp.value.trim();
+    if (!v) { inp.classList.remove('lp-url-invalid'); return true; }
+    const ok = /^(https?:\/\/|tel:|mailto:)/i.test(v);
+    inp.classList.toggle('lp-url-invalid', !ok);
+    return ok;
 }
 
 async function saveLinkPage() {
+    const btn = document.getElementById('lp-save-btn');
+    // URL 유효성 검증
+    let allValid = true;
+    document.querySelectorAll('.lp-item-row2 input').forEach(inp => { if (!validateLinkUrl(inp)) allValid = false; });
+    if (!allValid) { showToast('URL 형식을 확인해주세요.', 'red'); return; }
     const token = localStorage.getItem('lumi_token');
     const validLinks = _linkItems.filter(l => l.label && l.url);
+    btn.classList.add('loading'); btn.textContent = '저장 중...';
     try {
         const res = await fetch('/.netlify/functions/update-link-page', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-            body: JSON.stringify({ links: validLinks })
+            body: JSON.stringify({ links: validLinks, theme: _linkTheme })
         });
         const data = await res.json();
-        if (res.ok) {
-            showToast('링크 페이지가 저장됐어요! 🔗', 'pink');
-        } else {
-            showToast(data.error || '저장 실패', 'red');
-        }
-    } catch(e) {
-        showToast('저장 중 오류가 발생했어요.', 'red');
-    }
+        if (res.ok) { showToast('링크 페이지가 저장됐어요!', 'pink'); }
+        else { showToast(data.error || '저장 실패', 'red'); }
+    } catch(e) { showToast('저장 중 오류가 발생했어요.', 'red'); }
+    finally { btn.classList.remove('loading'); btn.textContent = '저장하기'; }
 }
 
 function copyLinkPageUrl() {
     const user = JSON.parse(localStorage.getItem('lumi_user') || '{}');
     const instaId = (user.instagram || '').replace('@', '');
     const url = `https://lumi.it.kr/p/${instaId}`;
-    navigator.clipboard.writeText(url).then(() => {
-        showToast('링크가 복사됐어요! 인스타 바이오에 붙여넣기 하세요 🔗', 'pink');
-    });
+    navigator.clipboard.writeText(url).then(() => { showToast('링크가 복사됐어요! 인스타 바이오에 붙여넣기 하세요', 'pink'); });
+}
+
+function openLinkPreview() {
+    const user = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+    const validLinks = _linkItems.filter(l => l.label && l.url);
+    const themes = {
+        pink: 'background:linear-gradient(135deg,#fff0f6 0%,#f9f9ff 100%);color:#191F28;',
+        dark: 'background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;',
+        minimal: 'background:#fff;color:#191F28;'
+    };
+    const btnStyles = {
+        pink: 'background:#fff;border:1.5px solid #E8628A;color:#E8628A;',
+        dark: 'background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.3);color:#fff;',
+        minimal: 'background:#f9f9f9;border:1.5px solid #ddd;color:#333;'
+    };
+    const frame = document.getElementById('lp-preview-frame');
+    frame.style.cssText = themes[_linkTheme] || themes.pink;
+    frame.style.borderRadius = '24px'; frame.style.padding = '28px 20px';
+    frame.style.width = '100%'; frame.style.maxWidth = '400px'; frame.style.maxHeight = '85vh';
+    frame.style.overflowY = 'auto'; frame.style.position = 'relative';
+    const content = document.getElementById('lp-preview-content');
+    content.innerHTML = `
+        <div style="text-align:center;padding-top:16px;">
+            <div style="width:72px;height:72px;border-radius:50%;background:${_linkTheme==='dark'?'rgba(255,255,255,.15)':'var(--pink-pale)'};margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:28px;">🏪</div>
+            <h2 style="font-size:1.2rem;font-weight:900;margin-bottom:4px;">${user.storeName || '매장명'}</h2>
+            <p style="font-size:.85rem;opacity:.7;margin-bottom:20px;">${user.storeDesc || ''}</p>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+                ${validLinks.map(l => `<a style="display:flex;align-items:center;gap:10px;padding:14px 18px;border-radius:14px;text-decoration:none;font-weight:700;font-size:.9rem;transition:all .2s;${btnStyles[_linkTheme]||btnStyles.pink}"><span style="font-size:1.2rem;">${l.icon}</span>${l.label}</a>`).join('')}
+            </div>
+            <p style="font-size:.7rem;opacity:.4;margin-top:24px;">Powered by lumi</p>
+        </div>
+    `;
+    document.getElementById('lp-preview-overlay').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeLinkPreview() {
+    document.getElementById('lp-preview-overlay').style.display = 'none';
+    document.body.style.overflow = '';
 }
 
 function initProfileView() {
