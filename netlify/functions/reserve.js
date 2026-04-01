@@ -172,19 +172,19 @@ exports.handler = async (event) => {
         console.log('[reserve] 예약 저장 완료:', reserveKey);
 
         // 즉시 전송: process-and-post Background Function 트리거
+        // Background Function 트리거 — await으로 202 응답 확인 후 진행
+        // (Function 종료 전에 fetch가 완료돼야 함)
         const siteUrl = 'https://lumi.it.kr';
         console.log('[reserve] process-and-post 트리거 시도:', siteUrl);
         try {
-          // Background Function은 즉시 202를 반환 — await 없이 fire-and-forget
-          fetch(`${siteUrl}/.netlify/functions/process-and-post-background`, {
+          const ppRes = await fetch(`${siteUrl}/.netlify/functions/process-and-post-background`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ reservationKey: reserveKey }),
-          }).then(r => console.log('[reserve] process-and-post-background 트리거:', r.status))
-            .catch(e => console.error('[reserve] 트리거 실패:', e.message));
+          });
+          console.log('[reserve] process-and-post-background 트리거:', ppRes.status);
         } catch (ppErr) {
-          console.error('[reserve] process-and-post 트리거 실패:', ppErr.message);
-          // 트리거 실패해도 예약 저장은 완료 — scheduler가 나중에 처리
+          console.error('[reserve] 트리거 실패:', ppErr.message);
         }
 
         resolve({
