@@ -1,7 +1,7 @@
 const { getStore } = require('@netlify/blobs');
 const https = require('https');
 
-function httpsGet(url) {
+function httpsGet(url, timeoutMs = 10000) {
   return new Promise((resolve, reject) => {
     const req = https.get(url, (res) => {
       let data = '';
@@ -9,7 +9,7 @@ function httpsGet(url) {
       res.on('end', () => resolve({ status: res.statusCode, body: data }));
     });
     req.on('error', reject);
-    req.setTimeout(10000, () => { req.destroy(new Error('timeout')); });
+    req.setTimeout(timeoutMs, () => { req.destroy(new Error('timeout')); });
   });
 }
 
@@ -126,7 +126,7 @@ async function checkRateLimit(ip, increment = true) {
 async function fetchTrends(category) {
   try {
     const siteUrl = process.env.URL || 'https://lumi.it.kr';
-    const result = await httpsGet(`${siteUrl}/.netlify/functions/get-trends?category=${category}`);
+    const result = await httpsGet(`${siteUrl}/.netlify/functions/get-trends?category=${category}`, 5000);
     if (result.status === 200) {
       const data = JSON.parse(result.body);
       return data.tags || [];
@@ -140,7 +140,7 @@ async function fetchTrends(category) {
 async function fetchFestivals(sidoCode) {
   try {
     const siteUrl = process.env.URL || 'https://lumi.it.kr';
-    const result = await httpsGet(`${siteUrl}/.netlify/functions/get-festival?sido=${sidoCode}`);
+    const result = await httpsGet(`${siteUrl}/.netlify/functions/get-festival?sido=${sidoCode}`, 5000);
     if (result.status === 200) {
       const data = JSON.parse(result.body);
       return data.festivals || [];
@@ -195,10 +195,10 @@ async function fetchShortForecast(sido) {
 
   try {
     const url = `https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst`
-      + `?serviceKey=${serviceKey}&numOfRows=1000&pageNo=1&dataType=JSON`
+      + `?serviceKey=${serviceKey}&numOfRows=290&pageNo=1&dataType=JSON`
       + `&base_date=${baseDate}&base_time=${baseTime}&nx=${grid.nx}&ny=${grid.ny}`;
 
-    const result = await httpsGet(url);
+    const result = await httpsGet(url, 5000);
     if (result.status !== 200) return {};
 
     const data = JSON.parse(result.body);
@@ -244,9 +244,9 @@ async function fetchMidForecast(sido) {
   try {
     const [landResult, taResult] = await Promise.all([
       httpsGet(`https://apis.data.go.kr/1360000/MidFcstInfoService/getMidLandFcst`
-        + `?serviceKey=${serviceKey}&numOfRows=10&pageNo=1&dataType=JSON&regId=${landRegId}&tmFc=${tmFc}`),
+        + `?serviceKey=${serviceKey}&numOfRows=10&pageNo=1&dataType=JSON&regId=${landRegId}&tmFc=${tmFc}`, 5000),
       httpsGet(`https://apis.data.go.kr/1360000/MidFcstInfoService/getMidTa`
-        + `?serviceKey=${serviceKey}&numOfRows=10&pageNo=1&dataType=JSON&regId=${taRegId}&tmFc=${tmFc}`)
+        + `?serviceKey=${serviceKey}&numOfRows=10&pageNo=1&dataType=JSON&regId=${taRegId}&tmFc=${tmFc}`, 5000)
     ]);
 
     const landData = landResult.status === 200 ? JSON.parse(landResult.body) : null;
