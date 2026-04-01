@@ -299,8 +299,8 @@ async function sendActivationSequence(store, user, blobKey, resend) {
   let sentKey = null;
 
   const sequences = [
-    { day: 1, key: 'activation_d1', heading: '사진 한 장만 올려보세요 📸', body: 'lumi에 가입해 주셔서 감사합니다! 첫 게시물을 올리면 AI가 자동으로 매력적인 캡션과 해시태그를 만들어 드려요. 지금 바로 사진 한 장으로 시작해보세요.' },
-    { day: 3, key: 'activation_d3', heading: '아직 lumi를 안 써보셨네요', body: '무료 체험 기간이 흘러가고 있어요. lumi의 AI 게시물 자동 생성, 한번 경험해보시면 왜 사장님들이 좋아하는지 바로 아실 거예요.' },
+    { day: 1, key: 'activation_d1', heading: '사진 한 장만 올려보세요 📸', body: 'lumi에 가입해 주셔서 감사합니다! 첫 게시물을 올리면 lumi가 자동으로 매력적인 캡션과 해시태그를 만들어 드려요. 지금 바로 사진 한 장으로 시작해보세요.' },
+    { day: 3, key: 'activation_d3', heading: '아직 lumi를 안 써보셨네요', body: '무료 체험 기간이 흘러가고 있어요. lumi의 게시물 자동 생성, 한번 경험해보시면 왜 사장님들이 좋아하는지 바로 아실 거예요.' },
     { day: 5, key: 'activation_d5', heading: '무료 체험 2일 남았어요!', body: '체험 기간이 곧 끝나요. 아직 한 번도 게시물을 올려보지 않으셨다면, 지금이 마지막 기회입니다. 딱 1분이면 첫 게시물을 만들 수 있어요.' }
   ];
 
