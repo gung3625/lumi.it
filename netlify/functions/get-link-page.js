@@ -6,10 +6,13 @@ exports.handler = async (event) => {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
-  const instaId = event.queryStringParameters?.id;
-  if (!instaId) {
+  const rawId = event.queryStringParameters?.id;
+  if (!rawId) {
     return { statusCode: 400, body: JSON.stringify({ error: 'id 파라미터 필요' }) };
   }
+
+  // Instagram URL에서 '.' → '__' 인코딩 역변환 (예: lumi__it → lumi.it)
+  const instaId = rawId.replace(/__/g, '.');
 
   try {
     const store = getStore({
@@ -18,12 +21,15 @@ exports.handler = async (event) => {
       token: process.env.NETLIFY_TOKEN
     });
 
-    // 인스타 ID로 이메일 조회
+    // 인스타 ID로 이메일 조회 (원본 + 역변환 둘 다 시도)
     let email = null;
-    try {
-      const emailRaw = await store.get('insta:' + instaId.replace('@', '').toLowerCase());
-      if (emailRaw) email = emailRaw.trim();
-    } catch(e) {}
+    const candidates = [...new Set([instaId, rawId].map(s => s.replace('@', '').toLowerCase()))];
+    for (const candidate of candidates) {
+      try {
+        const emailRaw = await store.get('insta:' + candidate);
+        if (emailRaw) { email = emailRaw.trim(); break; }
+      } catch(e) {}
+    }
 
     // fallback: user 전체에서 instagram 필드 매칭
     if (!email) {
@@ -35,7 +41,9 @@ exports.handler = async (event) => {
           if (!raw) continue;
           const u = JSON.parse(raw);
           const uInsta = (u.instagram || '').replace('@', '').toLowerCase();
-          if (uInsta === instaId.replace('@', '').toLowerCase()) {
+          const normalizedId = instaId.replace('@', '').toLowerCase();
+          const normalizedRaw = rawId.replace('@', '').toLowerCase();
+          if (uInsta === normalizedId || uInsta === normalizedRaw) {
             email = u.email;
             // 누락된 insta: 키 자동 복구
             await store.set('insta:' + uInsta, email);
