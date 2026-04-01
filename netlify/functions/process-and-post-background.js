@@ -60,6 +60,7 @@ async function processImages(photos, reserveKey) {
   const imgStore = getTempImageStore();
   const imageUrls = [];
   const tempKeys = [];
+  const imageBuffers = []; // GPT-4o base64 직접 전달용
 
   for (let i = 0; i < photos.length; i++) {
     let buffer = Buffer.from(photos[i].base64, 'base64');
@@ -79,13 +80,14 @@ async function processImages(photos, reserveKey) {
     const siteUrl = process.env.URL || 'https://lumi.it.kr';
     imageUrls.push(`${siteUrl}/.netlify/functions/serve-image?key=${encodeURIComponent(tempKey)}`);
     tempKeys.push(tempKey);
+    imageBuffers.push(buffer.toString('base64')); // base64 보관
   }
 
-  return { imageUrls, tempKeys };
+  return { imageUrls, tempKeys, imageBuffers };
 }
 
-// ── GPT-4o 이미지 분석 ──
-async function analyzeImages(imageUrls) {
+// ── GPT-4o 이미지 분석 (base64 직접 전달) ──
+async function analyzeImages(imageBuffers) {
   const prompt = `당신은 소상공인 인스타그램 마케팅 전문 이미지 분석가입니다.
 당신의 분석 결과는 캡션 카피라이터에게 전달되어 최고 품질의 캡션을 만드는 데 쓰입니다.
 분석이 정확하고 풍부할수록 캡션 품질이 올라갑니다.
@@ -95,24 +97,48 @@ async function analyzeImages(imageUrls) {
 
 ## 분석 철학
 사물을 나열하지 마세요.
+"딸기가 있고, 우유가 있고, 잔이 있다" → 실패
+"선명한 딸기 빛이 흰 우유 위에 스며드는 순간을 포착했다" → 성공
+
 보는 사람의 감정을 먼저 읽으세요.
+이 사진을 인스타그램에서 스크롤하다 마주쳤을 때 손가락이 멈추게 만드는 요소가 무엇인지 찾으세요.
 
 ## 분석 항목
-[1. 첫인상] 0.3초 안에 드는 느낌 한 문장.
-[2. 피사체 분석] 구체적으로.
-[3. 감성과 분위기] 구체적 감성 언어.
-[4. 색감과 빛] 주된 색조, 조명.
-[5. 인스타그램 강점] 시선 끄는 요소 1가지.
-[6. 캡션 방향 제안]
+
+**[1. 첫인상]**
+이 사진을 처음 봤을 때 0.3초 안에 드는 느낌을 한 문장으로 쓰세요.
+이것이 캡션 첫 문장의 씨앗이 됩니다.
+
+**[2. 피사체 분석]**
+무엇이 찍혀 있는지 구체적으로 파악하세요.
+- 음식/음료: 어떤 메뉴, 색감, 재료의 신선함, 플레이팅의 감각
+- 공간: 어떤 분위기, 조명의 질감, 인테리어 스타일, 눈에 띄는 소품
+- 제품: 어떤 종류인지, 색상과 질감, 디자인이 주는 인상
+- 사람이 있다면: 어떤 감정인지, 무엇을 하고 있는지
+
+**[3. 감성과 분위기]**
+"예쁜, 맛있어 보이는" 같은 단순 형용사가 아니라
+"첫 데이트 전날 밤 같은 설렘"처럼 구체적인 감성 언어를 쓰세요.
+
+**[4. 색감과 빛]**
+- 주된 색조: 어떤 색이 화면을 지배하는지
+- 조명의 질감: 자연광인지 인공조명인지, 부드러운지 선명한지
+- 밝기와 채도
+
+**[5. 인스타그램 강점]**
+시선을 가장 강하게 끌어당길 요소 한 가지를 꼽으세요.
+
+**[6. 캡션 방향 제안]**
+어떤 이야기로 풀어야 할지 방향을 제시하세요.
 
 ## 출력 형식
-**[분석 요약]** 3~5문장
-**[캡션 핵심 키워드]** 5개
-**[캡션 첫 문장 후보]** 2개`;
+**[분석 요약]** 3~5문장의 브리핑. 사물 나열이 아닌 감성과 스토리 중심.
+**[캡션 핵심 키워드]** 사진의 시각적 특징에서 나온 키워드 5개. 날씨/계절 제외.
+**[캡션 첫 문장 후보]** 스크롤을 멈추게 만드는 첫 문장 2개.`;
 
   const content = [{ type: 'text', text: prompt }];
-  for (const url of imageUrls) {
-    content.push({ type: 'image_url', image_url: { url, detail: 'high' } });
+  for (const b64 of imageBuffers) {
+    content.push({ type: 'image_url', image_url: { url: `data:image/jpeg;base64,${b64}`, detail: 'high' } });
   }
 
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -129,6 +155,7 @@ async function analyzeImages(imageUrls) {
     }),
   });
   const data = await res.json();
+  if (data.error) throw new Error(`GPT-4o 오류: ${data.error.message}`);
   return data.choices?.[0]?.message?.content || '';
 }
 
@@ -407,11 +434,11 @@ exports.handler = async (event) => {
     }
 
     // 1. 이미지 리사이징 + 임시 저장
-    const { imageUrls, tempKeys } = await processImages(item.photos, reservationKey);
+    const { imageUrls, tempKeys, imageBuffers } = await processImages(item.photos, reservationKey);
     console.log('[process-and-post] 이미지 처리 완료');
 
-    // 2. GPT-4o 이미지 분석
-    const imageAnalysis = await analyzeImages(imageUrls);
+    // 2. GPT-4o 이미지 분석 (base64 직접 전달)
+    const imageAnalysis = await analyzeImages(imageBuffers);
     console.log('[process-and-post] 이미지 분석 완료');
 
     // 3. gpt-5.4 캡션 3개 생성
