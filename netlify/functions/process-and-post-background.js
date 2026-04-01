@@ -57,14 +57,15 @@ async function processImages(photos, reserveKey) {
   let sharp;
   try { sharp = require('sharp'); } catch (e) { sharp = null; }
 
+  const siteUrl = process.env.URL || 'https://lumi.it.kr';
   const imgStore = getTempImageStore();
   const imageUrls = [];
   const tempKeys = [];
-  const imageBuffers = []; // GPT-4o base64 직접 전달용 (콜드스타트 없이 빠른 분석)
+  const imageBuffers = [];
 
-  for (let i = 0; i < photos.length; i++) {
-    let buffer = Buffer.from(photos[i].base64, 'base64');
-
+  // 1단계: 모든 이미지 리사이징 (병렬)
+  const buffers = await Promise.all(photos.map(async (photo, i) => {
+    let buffer = Buffer.from(photo.base64, 'base64');
     if (sharp) {
       try {
         buffer = await sharp(buffer)
@@ -73,15 +74,17 @@ async function processImages(photos, reserveKey) {
           .toBuffer();
       } catch (e) { console.error(`이미지 ${i} 리사이징 실패:`, e.message); }
     }
+    return buffer;
+  }));
 
+  // 2단계: Blobs 저장 (병렬)
+  await Promise.all(buffers.map(async (buffer, i) => {
     const tempKey = `temp-img:${reserveKey}:${i}`;
     await imgStore.set(tempKey, buffer, { metadata: { contentType: 'image/jpeg' } });
-
-    const siteUrl = process.env.URL || 'https://lumi.it.kr';
-    imageUrls.push(`${siteUrl}/.netlify/functions/serve-image?key=${encodeURIComponent(tempKey)}`);
-    tempKeys.push(tempKey);
-    imageBuffers.push(buffer.toString('base64')); // Instagram용 URL과 별도로 GPT용 base64 보관
-  }
+    tempKeys[i] = tempKey;
+    imageUrls[i] = `${siteUrl}/.netlify/functions/serve-image?key=${encodeURIComponent(tempKey)}`;
+    imageBuffers[i] = buffer.toString('base64');
+  }));
 
   return { imageUrls, tempKeys, imageBuffers };
 }
@@ -437,11 +440,11 @@ exports.handler = async (event) => {
       item.weather.airQuality = item.airQuality;
     }
 
-    // 1. 이미지 리사이징 + 임시 저장
+    // 1. 이미지 리사이징 + [Blobs저장 & GPT-4o 분석] 병렬 처리
     const { imageUrls, tempKeys, imageBuffers } = await processImages(item.photos, reservationKey);
     console.log('[process-and-post] 이미지 처리 완료');
 
-    // 2. GPT-4o 이미지 분석 (base64 직접 전달)
+    // 2. GPT-4o 분석과 gpt-5.4 캡션 생성 — 분석 완료 후 캡션 생성
     const imageAnalysis = await analyzeImages(imageBuffers);
     console.log('[process-and-post] 이미지 분석 완료');
 
