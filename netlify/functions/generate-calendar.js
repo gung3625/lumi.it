@@ -218,9 +218,12 @@ async function generateWithGPT(bizCategory, region, weatherDesc, trends, festiva
   const data = JSON.parse(result.body);
   const content = data.choices?.[0]?.message?.content || '';
 
-  // JSON 파싱 (코드블록 제거)
-  const jsonStr = content.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-  const calendar = JSON.parse(jsonStr);
+  // JSON 파싱 (코드블록 제거 + 배열 추출)
+  let jsonStr = content.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+  // JSON 배열만 추출 (앞뒤 텍스트 제거)
+  const arrMatch = jsonStr.match(/\[[\s\S]*\]/);
+  if (!arrMatch) throw new Error('AI 응답에서 캘린더 데이터를 찾을 수 없습니다.');
+  const calendar = JSON.parse(arrMatch[0]);
 
   if (!Array.isArray(calendar) || calendar.length === 0) {
     throw new Error('AI 응답 형식이 올바르지 않습니다.');
