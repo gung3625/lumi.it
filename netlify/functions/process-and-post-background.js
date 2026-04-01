@@ -60,23 +60,15 @@ async function processImages(photos, reserveKey) {
   const imgStore = getTempImageStore();
   const imageUrls = [];
   const tempKeys = [];
-  const imageBuffers = []; // GPT-4o 분석용 (512px 소형)
 
   for (let i = 0; i < photos.length; i++) {
     let buffer = Buffer.from(photos[i].base64, 'base64');
-    let smallBuffer = buffer; // 분석용 소형
 
     if (sharp) {
       try {
-        // Instagram용: 1080x1350
         buffer = await sharp(buffer)
           .resize(1080, 1350, { fit: 'cover', position: 'center' })
           .jpeg({ quality: 85 })
-          .toBuffer();
-        // 분석용: 512px (GPT-4o 전송 크기 최소화)
-        smallBuffer = await sharp(Buffer.from(photos[i].base64, 'base64'))
-          .resize(512, 512, { fit: 'inside' })
-          .jpeg({ quality: 70 })
           .toBuffer();
       } catch (e) { console.error(`이미지 ${i} 리사이징 실패:`, e.message); }
     }
@@ -87,14 +79,13 @@ async function processImages(photos, reserveKey) {
     const siteUrl = process.env.URL || 'https://lumi.it.kr';
     imageUrls.push(`${siteUrl}/.netlify/functions/serve-image?key=${encodeURIComponent(tempKey)}`);
     tempKeys.push(tempKey);
-    imageBuffers.push(smallBuffer.toString('base64')); // 소형 base64
   }
 
-  return { imageUrls, tempKeys, imageBuffers };
+  return { imageUrls, tempKeys };
 }
 
-// ── GPT-4o 이미지 분석 (base64 직접 전달) ──
-async function analyzeImages(imageBuffers) {
+// ── GPT-4o 이미지 분석 (serve-image 공개 URL 전달 — Make 방식과 동일) ──
+async function analyzeImages(imageUrls) {
   const prompt = `당신은 소상공인 인스타그램 마케팅 전문 이미지 분석가입니다.
 당신의 분석 결과는 캡션 카피라이터에게 전달되어 최고 품질의 캡션을 만드는 데 쓰입니다.
 분석이 정확하고 풍부할수록 캡션 품질이 올라갑니다.
@@ -144,8 +135,8 @@ async function analyzeImages(imageBuffers) {
 **[캡션 첫 문장 후보]** 스크롤을 멈추게 만드는 첫 문장 2개.`;
 
   const content = [{ type: 'text', text: prompt }];
-  for (const b64 of imageBuffers) {
-    content.push({ type: 'image_url', image_url: { url: `data:image/jpeg;base64,${b64}`, detail: 'low' } });
+  for (const url of imageUrls) {
+    content.push({ type: 'image_url', image_url: { url, detail: 'high' } });
   }
 
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -441,11 +432,11 @@ exports.handler = async (event) => {
     }
 
     // 1. 이미지 리사이징 + 임시 저장
-    const { imageUrls, tempKeys, imageBuffers } = await processImages(item.photos, reservationKey);
+    const { imageUrls, tempKeys } = await processImages(item.photos, reservationKey);
     console.log('[process-and-post] 이미지 처리 완료');
 
-    // 2. GPT-4o 이미지 분석 (base64 직접 전달)
-    const imageAnalysis = await analyzeImages(imageBuffers);
+    // 2. GPT-4o 이미지 분석 (serve-image URL 전달)
+    const imageAnalysis = await analyzeImages(imageUrls);
     console.log('[process-and-post] 이미지 분석 완료');
 
     // 3. gpt-5.4 캡션 3개 생성
