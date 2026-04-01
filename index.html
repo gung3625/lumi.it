@@ -828,6 +828,9 @@ document.addEventListener('DOMContentLoaded', function() {
       if(used >= 3){ alert('오늘 체험 횟수(3회)를 모두 사용했어요!'); return; }
       if(!base64Data || !bizSelect.value) return;
 
+      // 이전 톤 저장 (실패 시 롤백용)
+      var previousTone = currentTone;
+
       // 버튼 상태 업데이트
       toneBtns.forEach(function(b){ b.classList.remove('active'); b.disabled = true; });
       btn.classList.add('active');
@@ -857,6 +860,9 @@ document.addEventListener('DOMContentLoaded', function() {
         updateRemaining();
       } catch(err){
         alert(err.message);
+        // 톤 롤백
+        currentTone = previousTone;
+        toneBtns.forEach(function(b){ b.classList.remove('active'); if(b.getAttribute('data-tone') === previousTone) b.classList.add('active'); });
         captionText.classList.remove('fade-out');
         captionText.classList.add('fade-in');
       } finally {

@@ -68,12 +68,12 @@ function getClientIp(event) {
     || 'unknown';
 }
 
-async function checkRateLimit(ip) {
+async function checkRateLimit(ip, increment = true) {
   try {
     const store = getStore({
       name: 'calendar-rate',
       consistency: 'strong',
-      siteID: process.env.NETLIFY_SITE_ID,
+      siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
       token: process.env.NETLIFY_TOKEN
     });
 
@@ -82,14 +82,13 @@ async function checkRateLimit(ip) {
     const raw = await store.get(key);
     const count = raw ? parseInt(raw, 10) : 0;
 
-    if (count >= 3) return { allowed: false, remaining: 0 };
+    if (count >= 3) return { allowed: false, remaining: 0, store, key, count };
 
-    await store.set(key, String(count + 1));
-    return { allowed: true, remaining: 2 - count };
+    if (increment) await store.set(key, String(count + 1));
+    return { allowed: true, remaining: 2 - count, store, key, count };
   } catch (e) {
     console.error('Rate limit check error:', e.message);
-    // rate limit 실패 시 허용 (서비스 유지)
-    return { allowed: true, remaining: 0 };
+    return { allowed: true, remaining: 0, store: null, key: null, count: 0 };
   }
 }
 
@@ -201,7 +200,7 @@ async function generateWithGPT(bizCategory, region, weatherDesc, trends, festiva
       'Authorization': `Bearer ${openaiKey}`
     },
     {
-      model: 'gpt-4o',
+      model: 'gpt-4o-mini',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: `${bizCategory} 업종, ${region} 지역의 7일 인스타그램 콘텐츠 캘린더를 만들어주세요.` }
@@ -259,9 +258,9 @@ exports.handler = async (event) => {
       };
     }
 
-    // Rate limit 체크
+    // Rate limit 체크 (GPT 성공 후 카운트 증가)
     const ip = getClientIp(event);
-    const rateCheck = await checkRateLimit(ip);
+    const rateCheck = await checkRateLimit(ip, false);
     if (!rateCheck.allowed) {
       return {
         statusCode: 429,
@@ -287,6 +286,11 @@ exports.handler = async (event) => {
     // GPT로 캘린더 생성
     const calendar = await generateWithGPT(bizCategory, region, weatherDesc, trends, festivals);
 
+    // 성공 후에만 rate limit 카운트 증가
+    if (rateCheck.store && rateCheck.key) {
+      try { await rateCheck.store.set(rateCheck.key, String(rateCheck.count + 1)); } catch {}
+    }
+
     return {
       statusCode: 200,
       headers: corsHeaders,
@@ -308,7 +312,7 @@ exports.handler = async (event) => {
     return {
       statusCode: 500,
       headers: corsHeaders,
-      body: JSON.stringify({ error: e.message || '캘린더 생성 중 오류가 발생했습니다.' })
+      body: JSON.stringify({ error: '캘린더 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.' })
     };
   }
 };
