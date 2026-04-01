@@ -172,7 +172,7 @@ exports.handler = async (event) => {
         console.log('[reserve] 예약 저장 완료:', reserveKey);
 
         // 즉시 전송: process-and-post Background Function 트리거
-        const siteUrl = process.env.URL || 'https://lumi.it.kr';
+        const siteUrl = 'https://lumi.it.kr';
         console.log('[reserve] process-and-post 트리거 시도:', siteUrl);
         try {
           // Background Function은 즉시 202를 반환 — await 없이 fire-and-forget

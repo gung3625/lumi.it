@@ -33,7 +33,7 @@ exports.handler = async (event) => {
         if (new Date(item.scheduledAt) > now) continue;
 
         // Background Function은 즉시 202 반환 — fire-and-forget
-        const siteUrl = process.env.URL || 'https://lumi.it.kr';
+        const siteUrl = 'https://lumi.it.kr';
         const res = await fetch(`${siteUrl}/.netlify/functions/process-and-post-background`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
