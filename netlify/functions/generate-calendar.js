@@ -403,15 +403,37 @@ exports.handler = async (event) => {
       };
     }
 
-    // Rate limit 체크 (GPT 성공 후 카운트 증가)
-    const ip = getClientIp(event);
-    const rateCheck = await checkRateLimit(ip, false);
-    if (!rateCheck.allowed) {
-      return {
-        statusCode: 429,
-        headers: corsHeaders,
-        body: JSON.stringify({ error: '오늘 생성 횟수(3회)를 모두 사용했어요. 내일 다시 시도해주세요.' })
-      };
+    // 로그인 사용자 확인 (선택적)
+    let userEmail = null;
+    const authHeader = event.headers['authorization'] || '';
+    if (authHeader.startsWith('Bearer ')) {
+      const token = authHeader.slice(7);
+      try {
+        const usersStore = getStore({
+          name: 'users', consistency: 'strong',
+          siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
+          token: process.env.NETLIFY_TOKEN
+        });
+        const tokenData = await usersStore.get('token:' + token);
+        if (tokenData) {
+          const parsed = JSON.parse(tokenData);
+          userEmail = parsed.email || null;
+        }
+      } catch {}
+    }
+
+    // 비로그인: Rate limit 체크 (GPT 성공 후 카운트 증가)
+    let rateCheck = { allowed: true, remaining: 0, store: null, key: null, count: 0 };
+    if (!userEmail) {
+      const ip = getClientIp(event);
+      rateCheck = await checkRateLimit(ip, false);
+      if (!rateCheck.allowed) {
+        return {
+          statusCode: 429,
+          headers: corsHeaders,
+          body: JSON.stringify({ error: '오늘 생성 횟수(3회)를 모두 사용했어요. 내일 다시 시도해주세요.' })
+        };
+      }
     }
 
     // 데이터 수집 (병렬)
@@ -428,8 +450,26 @@ exports.handler = async (event) => {
     // GPT로 캘린더 생성
     const calendar = await generateWithGPT(bizCategory, region, weatherByDate, trends, festivals);
 
-    // 성공 후에만 rate limit 카운트 증가
-    if (rateCheck.store && rateCheck.key) {
+    // 로그인 사용자: 캘린더 Blobs에 저장
+    if (userEmail) {
+      try {
+        const calStore = getStore({
+          name: 'calendars', consistency: 'strong',
+          siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
+          token: process.env.NETLIFY_TOKEN
+        });
+        await calStore.set('cal:' + userEmail, JSON.stringify({
+          calendar, meta: { bizCategory, region, weather: weatherByDate },
+          createdAt: new Date().toISOString(),
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+        }));
+      } catch (e) {
+        console.error('Calendar save error:', e.message);
+      }
+    }
+
+    // 비로그인: 성공 후에만 rate limit 카운트 증가
+    if (!userEmail && rateCheck.store && rateCheck.key) {
       try { await rateCheck.store.set(rateCheck.key, String(rateCheck.count + 1)); } catch {}
     }
 
@@ -444,7 +484,8 @@ exports.handler = async (event) => {
           weather: weatherByDate,
           trendsCount: trends.length,
           festivalsCount: festivals.length,
-          remaining: rateCheck.remaining
+          remaining: userEmail ? null : rateCheck.remaining,
+          saved: !!userEmail
         }
       })
     };

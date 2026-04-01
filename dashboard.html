@@ -620,6 +620,25 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
             <ul id="lumi-inventory-list" style="list-style:none;padding:0;"></ul>
         </div>
 
+        <!-- 콘텐츠 캘린더 -->
+        <div id="calendar-section" style="margin-bottom:14px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                <p class="dash-lbl" style="margin-bottom:0;">📅 7일 콘텐츠 캘린더</p>
+                <button id="cal-refresh-btn" onclick="refreshCalendar()" style="background:none;border:1px solid var(--pink);color:var(--pink);border-radius:8px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">새로 만들기</button>
+            </div>
+            <div id="cal-content">
+                <div id="cal-loading" style="display:none;text-align:center;padding:24px;">
+                    <div style="width:32px;height:32px;border:3px solid var(--g200);border-top-color:var(--pink);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 12px;"></div>
+                    <p style="font-size:.82rem;color:var(--g500);">캘린더 생성 중... (10~20초)</p>
+                </div>
+                <div id="cal-empty" style="display:none;background:var(--g50);border-radius:var(--r-lg);padding:24px;text-align:center;">
+                    <p style="font-size:.85rem;color:var(--g500);margin-bottom:12px;">아직 캘린더가 없어요.<br>업종과 지역 기반으로 7일 촬영 계획을 만들어드려요!</p>
+                    <button onclick="refreshCalendar()" style="background:var(--pink);color:#fff;border:none;border-radius:12px;padding:10px 24px;font-size:.85rem;font-weight:700;cursor:pointer;font-family:inherit;">캘린더 만들기</button>
+                </div>
+                <div id="cal-cards" style="display:none;"></div>
+            </div>
+        </div>
+
         <div class="upload-card">
             <p class="upload-ttl">오늘의 사진을 올려주세요!</p>
             <div class="drop-zone">
@@ -1725,6 +1744,7 @@ async function grantAccess(){
     loadLinkPage();
     initAutoStory();
     initAutoFestival();
+    loadCalendar();
     if (!JSON.parse(localStorage.getItem('lumi_user') || '{}').sidoCode) {
         initWeather();
     }
@@ -3307,6 +3327,89 @@ document.addEventListener('DOMContentLoaded', function() {
     if (loginBtn) loginBtn.addEventListener('click', function() { openPortal('login'); });
     if (signupBtn) signupBtn.addEventListener('click', function() { location.href='/beta'; });
 });
+// === 캘린더 ===
+const CAL_DAY_NAMES = ['일','월','화','수','목','금','토'];
+function formatCalDate(ds) {
+  const d = new Date(ds + 'T00:00:00');
+  return (d.getMonth()+1) + '/' + d.getDate() + ' ' + CAL_DAY_NAMES[d.getDay()] + '요일';
+}
+function renderCalCards(calendar) {
+  const wrap = document.getElementById('cal-cards');
+  wrap.innerHTML = '';
+  calendar.forEach(function(day) {
+    const tags = (day.hashtags || []).map(function(t){ return '<span style="display:inline-block;padding:3px 8px;background:var(--pink-pale);color:var(--pink);font-size:.7rem;font-weight:700;border-radius:99px;margin:2px;">' + t + '</span>'; }).join('');
+    const event = day.relatedEvent ? '<p style="font-size:.75rem;color:var(--pink);margin-top:6px;">🎪 ' + day.relatedEvent + '</p>' : '';
+    wrap.innerHTML += '<div style="background:#fff;border:1px solid var(--g200);border-radius:var(--r-lg);padding:16px;margin-bottom:10px;">'
+      + '<p style="font-size:.78rem;font-weight:800;color:var(--pink);margin-bottom:6px;">' + formatCalDate(day.date) + '</p>'
+      + '<p style="font-size:.88rem;font-weight:700;color:var(--g900);margin-bottom:6px;">' + day.topic + '</p>'
+      + '<p style="font-size:.78rem;color:var(--g500);line-height:1.6;margin-bottom:6px;">📸 ' + day.shootingTip + '</p>'
+      + '<p style="font-size:.75rem;color:var(--g400);margin-bottom:8px;">🎨 ' + day.captionTone + '</p>'
+      + '<div>' + tags + '</div>'
+      + event
+      + '</div>';
+  });
+  wrap.style.display = 'block';
+}
+async function loadCalendar() {
+  var token = localStorage.getItem('lumi_token');
+  if (!token) return;
+  try {
+    var res = await fetch('/.netlify/functions/get-calendar', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    var data = await res.json();
+    if (data.calendar && data.calendar.length > 0) {
+      document.getElementById('cal-empty').style.display = 'none';
+      renderCalCards(data.calendar);
+      var info = document.getElementById('cal-refresh-btn');
+      if (data.createdAt) {
+        info.textContent = '새로 만들기';
+      }
+    } else {
+      document.getElementById('cal-empty').style.display = 'block';
+      document.getElementById('cal-cards').style.display = 'none';
+    }
+  } catch(e) {
+    document.getElementById('cal-empty').style.display = 'block';
+  }
+}
+async function refreshCalendar() {
+  var token = localStorage.getItem('lumi_token');
+  if (!token) return;
+  var userRaw = localStorage.getItem('lumi_user');
+  if (!userRaw) return;
+  var user;
+  try { user = JSON.parse(userRaw); } catch(e) { return; }
+  var biz = user.bizCategory || 'cafe';
+  var region = user.region || '서울';
+
+  // 업종 한글 매핑
+  var bizMap = { cafe:'카페', food:'음식점', bakery:'베이커리', hair:'미용실', nail:'네일샵', skin:'피부관리', flower:'꽃집', clothes:'옷가게', gym:'헬스장', other:'기타' };
+  var bizKr = bizMap[biz] || '기타';
+
+  document.getElementById('cal-empty').style.display = 'none';
+  document.getElementById('cal-cards').style.display = 'none';
+  document.getElementById('cal-loading').style.display = 'block';
+  document.getElementById('cal-refresh-btn').disabled = true;
+
+  try {
+    var res = await fetch('/.netlify/functions/generate-calendar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ bizCategory: bizKr, region: region })
+    });
+    var data = await res.json();
+    if (!res.ok) throw new Error(data.error || '캘린더 생성 실패');
+    renderCalCards(data.calendar);
+  } catch(e) {
+    document.getElementById('cal-empty').style.display = 'block';
+    document.getElementById('cal-empty').innerHTML = '<p style="font-size:.82rem;color:var(--g500);padding:12px;">' + e.message + '</p><button onclick="refreshCalendar()" style="background:var(--pink);color:#fff;border:none;border-radius:12px;padding:10px 24px;font-size:.85rem;font-weight:700;cursor:pointer;font-family:inherit;margin-top:8px;">다시 시도</button>';
+  } finally {
+    document.getElementById('cal-loading').style.display = 'none';
+    document.getElementById('cal-refresh-btn').disabled = false;
+  }
+}
+
 // Lucide 아이콘 초기화
 if(typeof lucide !== 'undefined') lucide.createIcons();
 </script>
