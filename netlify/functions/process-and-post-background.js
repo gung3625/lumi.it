@@ -420,8 +420,10 @@ exports.handler = async (event) => {
 
     // 4. Blobs에 결과 저장
     item.generatedCaptions = captions;
+    item.captions = captions;
     item.imageAnalysis = imageAnalysis;
     item.imageUrls = imageUrls;
+    item.imageKeys = tempKeys;
     item.tempKeys = tempKeys;
     item.captionsGeneratedAt = new Date().toISOString();
     await store.set(reservationKey, JSON.stringify(item));
@@ -446,9 +448,10 @@ exports.handler = async (event) => {
     }
 
     // 1번 캡션으로 자동 게시
+    const finalCaptions = updated.captions || updated.generatedCaptions || captions;
     console.log('[process-and-post] 자동 게시 실행');
     try {
-      const postId = await postToInstagram(updated, captions[0], imageUrls);
+      const postId = await postToInstagram(updated, finalCaptions[0], imageUrls);
       updated.isSent = true;
       updated.sentAt = new Date().toISOString();
       updated.selectedCaptionIndex = 0;
