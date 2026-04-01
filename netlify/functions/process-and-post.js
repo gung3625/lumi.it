@@ -77,7 +77,7 @@ async function processImages(photos, reserveKey) {
     await imgStore.set(tempKey, buffer, { metadata: { contentType: 'image/jpeg' } });
 
     const siteUrl = process.env.URL || 'https://lumi.it.kr';
-    imageUrls.push(`${siteUrl}/.netlify/blobs/temp-images/${tempKey}`);
+    imageUrls.push(`${siteUrl}/.netlify/functions/serve-image?key=${encodeURIComponent(tempKey)}`);
     tempKeys.push(tempKey);
   }
 
