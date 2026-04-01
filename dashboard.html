@@ -25,6 +25,7 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 @keyframes sheetUp{from{opacity:0;transform:translateY(24px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
 @keyframes pop{0%{transform:scale(.92);opacity:0}100%{transform:scale(1);opacity:1}}
+@keyframes spin{to{transform:rotate(360deg)}}
         .portal-overlay{position:fixed;inset:0;z-index:9000;background:rgba(15,10,20,.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);display:none;align-items:center;justify-content:center;padding:16px;}
         .portal-sheet{background:var(--white);border-radius:24px;padding:28px;width:100%;max-width:420px;max-height:92vh;overflow-y:auto;-webkit-overflow-scrolling:touch;position:relative;animation:sheetUp .35s var(--ease);box-shadow:0 24px 80px rgba(0,0,0,.2);}
         @media(max-width:480px){
@@ -1505,7 +1506,8 @@ async function commitPost(type){
                 body: formData
             });
             if(res.ok){
-                showToast('전송 완료! 🎉','pink');
+                const resData = await res.json();
+                showCaptionWaiting(resData.reservationKey);
                 resetDashboard();
             } else {
                 showToast('전송에 실패했어요. 다시 시도해 주세요.');
@@ -1881,6 +1883,154 @@ async function loadAutoReply() {
 
 function removeArchiveItem(id){if(confirm("이 기록을 삭제할까요?")){archive=archive.filter(i=>i.id!==id);syncPersistence();renderArchive();}}
 function resetDashboard(){document.getElementById('ceo-note-input').value='';document.getElementById('ceo-file-selector').value='';stagedFiles=[];renderStagedFiles();_isCommitting=false;}
+
+// ── 캡션 대기 + 선택 UI ──
+let _captionPollTimer = null;
+
+function showCaptionWaiting(reservationKey) {
+  // 기존 캡션 UI 있으면 제거
+  const old = document.getElementById('caption-select-sheet');
+  if (old) old.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'caption-select-sheet';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:flex-end;justify-content:center;padding:0;';
+
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:24px 24px 0 0;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;padding:28px 24px 40px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <span style="font-size:17px;font-weight:700;color:#1a1a2e;">캡션 생성 중</span>
+        <button onclick="closeCaptionSheet()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#888;">×</button>
+      </div>
+      <div id="caption-waiting-state">
+        <div style="text-align:center;padding:32px 0;">
+          <div style="width:48px;height:48px;border:4px solid #f0f0f0;border-top-color:#E8628A;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px;"></div>
+          <p style="color:#555;font-size:15px;margin:0;">사진을 분석하고 캡션을 만들고 있어요<br><span style="font-size:13px;color:#aaa;">보통 1~2분 정도 걸려요</span></p>
+        </div>
+      </div>
+      <div id="caption-ready-state" style="display:none;">
+        <p style="font-size:14px;color:#888;margin:0 0 16px;">마음에 드는 캡션을 선택해주세요. 선택 즉시 인스타그램에 게시됩니다.</p>
+        <div id="caption-list" style="display:flex;flex-direction:column;gap:12px;"></div>
+        <div style="margin-top:16px;display:flex;gap:10px;align-items:center;">
+          <button id="regen-btn" onclick="regenerateCaption('${reservationKey}')" style="flex:1;padding:12px;border:2px solid #E8628A;background:#fff;color:#E8628A;font-size:14px;font-weight:600;border-radius:12px;cursor:pointer;font-family:inherit;">다시 생성</button>
+          <span id="regen-count" style="font-size:12px;color:#aaa;white-space:nowrap;"></span>
+        </div>
+      </div>
+    </div>`;
+
+  document.body.appendChild(overlay);
+
+  // 폴링 시작 (5초 간격, 최대 5분)
+  startCaptionPolling(reservationKey);
+}
+
+function closeCaptionSheet() {
+  if (_captionPollTimer) { clearInterval(_captionPollTimer); _captionPollTimer = null; }
+  const el = document.getElementById('caption-select-sheet');
+  if (el) el.remove();
+}
+
+function startCaptionPolling(reservationKey) {
+  if (_captionPollTimer) clearInterval(_captionPollTimer);
+  let attempts = 0;
+  const maxAttempts = 60; // 5초 × 60 = 5분
+
+  _captionPollTimer = setInterval(async () => {
+    attempts++;
+    if (attempts > maxAttempts) {
+      clearInterval(_captionPollTimer);
+      showToast('캡션 생성이 지연되고 있어요. 잠시 후 대시보드를 새로고침해 주세요.', 'red');
+      return;
+    }
+    try {
+      const res = await fetch(`/.netlify/functions/get-reservation?key=${encodeURIComponent(reservationKey)}&secret=lumi2026secret`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.generatedCaptions && data.generatedCaptions.length > 0) {
+        clearInterval(_captionPollTimer);
+        showCaptionReady(reservationKey, data.generatedCaptions, data.regenCount || 0);
+      }
+    } catch(e) {}
+  }, 5000);
+}
+
+function showCaptionReady(reservationKey, captions, regenCount) {
+  document.getElementById('caption-waiting-state').style.display = 'none';
+  const readyEl = document.getElementById('caption-ready-state');
+  readyEl.style.display = 'block';
+
+  const list = document.getElementById('caption-list');
+  list.innerHTML = '';
+  captions.forEach((caption, i) => {
+    const card = document.createElement('div');
+    card.style.cssText = 'border:2px solid #f0f0f0;border-radius:14px;padding:16px;cursor:pointer;transition:border-color .2s,background .2s;';
+    card.onmouseover = () => { card.style.borderColor = '#E8628A'; card.style.background = '#fff5f8'; };
+    card.onmouseout = () => { card.style.borderColor = '#f0f0f0'; card.style.background = '#fff'; };
+    card.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span style="font-size:12px;font-weight:600;color:#E8628A;">버전 ${i+1}</span>
+        <button onclick="selectCaption('${reservationKey}', ${i})" style="background:#E8628A;color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">이걸로 올리기</button>
+      </div>
+      <p style="font-size:13px;color:#333;line-height:1.7;margin:0;white-space:pre-wrap;">${caption.substring(0, 200)}${caption.length > 200 ? '...' : ''}</p>`;
+    list.appendChild(card);
+  });
+
+  const regenMax = 3;
+  const remaining = regenMax - regenCount;
+  const regenCountEl = document.getElementById('regen-count');
+  if (regenCountEl) regenCountEl.textContent = `재생성 ${remaining}회 남음`;
+  const regenBtn = document.getElementById('regen-btn');
+  if (regenBtn && remaining <= 0) { regenBtn.disabled = true; regenBtn.style.opacity = '0.4'; regenBtn.style.cursor = 'not-allowed'; }
+}
+
+async function selectCaption(reservationKey, index) {
+  const btn = event.target;
+  btn.disabled = true; btn.textContent = '게시 중...';
+  try {
+    const res = await fetch('/.netlify/functions/select-caption', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reservationKey, captionIndex: index, secret: 'lumi2026secret' })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      closeCaptionSheet();
+      showToast('인스타그램에 게시됐어요! 📸', 'pink');
+    } else {
+      btn.disabled = false; btn.textContent = '이걸로 올리기';
+      showToast(data.error || '게시에 실패했어요.', 'red');
+    }
+  } catch(e) {
+    btn.disabled = false; btn.textContent = '이걸로 올리기';
+    showToast('네트워크 오류가 발생했어요.', 'red');
+  }
+}
+
+async function regenerateCaption(reservationKey) {
+  const btn = document.getElementById('regen-btn');
+  btn.disabled = true; btn.textContent = '생성 중...';
+  document.getElementById('caption-ready-state').style.display = 'none';
+  document.getElementById('caption-waiting-state').style.display = 'block';
+  try {
+    const res = await fetch('/.netlify/functions/regenerate-caption', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reservationKey, secret: 'lumi2026secret', email: (JSON.parse(localStorage.getItem('lumi_user')||'{}').email || '') })
+    });
+    const data = await res.json();
+    if (res.ok && data.captions) {
+      showCaptionReady(reservationKey, data.captions, 3 - (data.remaining || 0));
+    } else {
+      document.getElementById('caption-waiting-state').style.display = 'none';
+      document.getElementById('caption-ready-state').style.display = 'block';
+      btn.disabled = false; btn.textContent = '다시 생성';
+      showToast(data.error || '재생성에 실패했어요.', 'red');
+    }
+  } catch(e) {
+    btn.disabled = false; btn.textContent = '다시 생성';
+    showToast('네트워크 오류가 발생했어요.', 'red');
+  }
+}
 
 
 function checkWithdrawInput(input) {
