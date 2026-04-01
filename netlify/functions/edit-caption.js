@@ -12,6 +12,7 @@ exports.handler = async (event) => {
 
   const authHeader = event.headers['authorization'] || '';
   if (!authHeader.startsWith('Bearer ')) return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증 필요' }) };
+  const bearerToken = authHeader.replace('Bearer ', '').trim();
 
   let body;
   try { body = JSON.parse(event.body); } catch {
@@ -24,6 +25,13 @@ exports.handler = async (event) => {
   }
 
   try {
+    // 토큰 → 이메일 검증
+    const userStore = getStore({ name: 'users', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID, token: process.env.NETLIFY_TOKEN });
+    let tokenRaw;
+    try { tokenRaw = await userStore.get('token:' + bearerToken); } catch { tokenRaw = null; }
+    if (!tokenRaw) return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '유효하지 않은 토큰' }) };
+    const { email } = JSON.parse(tokenRaw);
+
     const store = getStore({
       name: 'reservations',
       consistency: 'strong',
@@ -35,6 +43,9 @@ exports.handler = async (event) => {
     if (!raw) return { statusCode: 404, headers: CORS, body: JSON.stringify({ error: '예약 없음' }) };
 
     const item = JSON.parse(raw);
+
+    // 소유자 검증
+    if (item.storeProfile?.ownerEmail !== email) return { statusCode: 403, headers: CORS, body: JSON.stringify({ error: '권한이 없습니다.' }) };
     if (item.isSent) return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '이미 게시된 항목입니다.' }) };
 
     const captions = item.generatedCaptions || item.captions || [];

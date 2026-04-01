@@ -543,8 +543,8 @@ exports.handler = async (event) => {
     if (isRelayMode) {
       item.captionStatus = 'ready';
       await store.set(reservationKey, JSON.stringify(item));
-      console.log('[process-and-post] 릴레이 모드 — 자동 게시 스킵, 사용자 선택 대기');
       await cleanupTempImages(tempKeys);
+      console.log('[process-and-post] 릴레이 모드 — 자동 게시 스킵, 사용자 선택 대기');
       return;
     }
 

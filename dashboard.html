@@ -3181,8 +3181,8 @@ async function loadRelayQueue() {
                 </div>
                 <p style="font-size:.82rem;color:var(--g900);line-height:1.5;margin:0 0 10px;white-space:pre-wrap;">${esc(preview)}${preview.length >= 80 ? '...' : ''}</p>
                 <div style="display:flex;gap:8px;">
-                    <button onclick="openRelayEdit('${item.key}')" style="flex:1;padding:8px;background:var(--pink);color:#fff;border:none;border-radius:8px;font-size:.78rem;font-weight:700;cursor:pointer;font-family:inherit;">확인·게시</button>
-                    <button onclick="cancelRelayItem('${item.key}')" style="padding:8px 14px;background:var(--g100);color:var(--g600);border:none;border-radius:8px;font-size:.78rem;font-weight:600;cursor:pointer;font-family:inherit;">취소</button>
+                    <button data-key="${esc(item.key)}" onclick="openRelayEdit(this.dataset.key)" style="flex:1;padding:8px;background:var(--pink);color:#fff;border:none;border-radius:8px;font-size:.78rem;font-weight:700;cursor:pointer;font-family:inherit;">확인·게시</button>
+                    <button data-key="${esc(item.key)}" onclick="cancelRelayItem(this.dataset.key)" style="padding:8px 14px;background:var(--g100);color:var(--g600);border:none;border-radius:8px;font-size:.78rem;font-weight:600;cursor:pointer;font-family:inherit;">취소</button>
                 </div>
             </div>`;
         }).join('');
@@ -3221,12 +3221,13 @@ async function openRelayEdit(reservationKey) {
         data.generatedCaptions.forEach((caption, i) => {
             const card = document.createElement('div');
             card.style.cssText = 'border:2px solid #f0f0f0;border-radius:14px;padding:14px;';
+            const safeKey = esc(reservationKey);
             card.innerHTML = `
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
                     <span style="font-size:12px;font-weight:600;color:#E8628A;">버전 ${i+1}</span>
                     <div style="display:flex;gap:6px;">
-                        <button onclick="saveRelayCaption('${reservationKey}',${i})" style="background:#fff;border:1.5px solid #E8628A;color:#E8628A;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">저장</button>
-                        <button onclick="postRelayCaption('${reservationKey}',${i})" style="background:#E8628A;color:#fff;border:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">이걸로 올리기</button>
+                        <button data-key="${safeKey}" data-idx="${i}" onclick="saveRelayCaption(this.dataset.key,+this.dataset.idx)" style="background:#fff;border:1.5px solid #E8628A;color:#E8628A;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">저장</button>
+                        <button data-key="${safeKey}" data-idx="${i}" onclick="postRelayCaption(this.dataset.key,+this.dataset.idx)" style="background:#E8628A;color:#fff;border:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">이걸로 올리기</button>
                     </div>
                 </div>
                 <textarea id="relay-cap-${i}" style="width:100%;min-height:120px;border:1.5px solid #eee;border-radius:10px;padding:10px;font-size:13px;line-height:1.7;color:#333;resize:vertical;font-family:inherit;">${esc(caption)}</textarea>`;
