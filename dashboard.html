@@ -3337,14 +3337,12 @@ function renderCalCards(calendar) {
   const wrap = document.getElementById('cal-cards');
   wrap.innerHTML = '';
   calendar.forEach(function(day) {
-    const tags = (day.hashtags || []).map(function(t){ return '<span style="display:inline-block;padding:3px 8px;background:var(--pink-pale);color:var(--pink);font-size:.7rem;font-weight:700;border-radius:99px;margin:2px;">' + t + '</span>'; }).join('');
     const event = day.relatedEvent ? '<p style="font-size:.75rem;color:var(--pink);margin-top:6px;">🎪 ' + day.relatedEvent + '</p>' : '';
     wrap.innerHTML += '<div style="background:#fff;border:1px solid var(--g200);border-radius:var(--r-lg);padding:16px;margin-bottom:10px;">'
       + '<p style="font-size:.78rem;font-weight:800;color:var(--pink);margin-bottom:6px;">' + formatCalDate(day.date) + '</p>'
       + '<p style="font-size:.88rem;font-weight:700;color:var(--g900);margin-bottom:6px;">' + day.topic + '</p>'
       + '<p style="font-size:.78rem;color:var(--g500);line-height:1.6;margin-bottom:6px;">📸 ' + day.shootingTip + '</p>'
-      + '<p style="font-size:.75rem;color:var(--g400);margin-bottom:8px;">🎨 ' + day.captionTone + '</p>'
-      + '<div>' + tags + '</div>'
+      + '<p style="font-size:.75rem;color:var(--g400);">🎨 ' + day.captionTone + '</p>'
       + event
       + '</div>';
   });

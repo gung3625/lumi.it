@@ -319,8 +319,7 @@ ${weatherLines}
 1. 촬영 주제 (topic) - 구체적이고 실행 가능한 주제
 2. 촬영 팁 (shootingTip) - 앵글, 소품, 조명 등 실질적 팁
 3. 추천 캡션 톤 (captionTone) - 예: "따뜻하고 친근한 톤", "재치 있는 말장난"
-4. 추천 해시태그 5개 (hashtags) - 배열 형태
-5. 관련 행사 (relatedEvent) - 있으면 행사명, 없으면 빈 문자열
+4. 관련 행사 (relatedEvent) - 있으면 행사명, 없으면 빈 문자열
 
 반드시 아래 JSON 형식으로만 응답하세요. 설명 없이 JSON만 출력하세요:
 [
@@ -329,7 +328,6 @@ ${weatherLines}
     "topic": "...",
     "shootingTip": "...",
     "captionTone": "...",
-    "hashtags": ["#...", "#...", "#...", "#...", "#..."],
     "relatedEvent": ""
   }
 ]`;
