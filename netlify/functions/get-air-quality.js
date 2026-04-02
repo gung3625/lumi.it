@@ -55,6 +55,7 @@ function httpsGet(url) {
 
 exports.handler = async (event) => {
   const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' };
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: corsHeaders };
 
   const sido = event.queryStringParameters?.sido || '서울';
   const sidoName = SIDO_MAP[sido] || '서울';

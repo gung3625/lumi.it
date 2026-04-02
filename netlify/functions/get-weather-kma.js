@@ -101,6 +101,8 @@ function httpsGet(url) {
 
 exports.handler = async (event) => {
     const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' };
+    if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: corsHeaders };
+
     const serviceKey = process.env.PUBLIC_DATA_API_KEY;
 
     if (!serviceKey) {

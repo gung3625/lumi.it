@@ -1,14 +1,18 @@
 const { getStore } = require('@netlify/blobs');
 
+const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Content-Type': 'application/json' };
+
 exports.handler = async (event) => {
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS };
+
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
+    return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
   const authHeader = event.headers['authorization'] || '';
   const token = authHeader.replace('Bearer ', '').trim();
   if (!token) {
-    return { statusCode: 401, body: JSON.stringify({ error: '인증이 필요합니다.' }) };
+    return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증이 필요합니다.' }) };
   }
 
   try {
@@ -22,7 +26,7 @@ exports.handler = async (event) => {
     let tokenRaw;
     try { tokenRaw = await store.get('token:' + token); } catch { tokenRaw = null; }
     if (!tokenRaw) {
-      return { statusCode: 401, body: JSON.stringify({ error: '유효하지 않은 토큰입니다.' }) };
+      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '유효하지 않은 토큰입니다.' }) };
     }
     const { email } = JSON.parse(tokenRaw);
 
@@ -49,11 +53,11 @@ exports.handler = async (event) => {
 
     return {
       statusCode: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: CORS,
       body: JSON.stringify({ success: true })
     };
   } catch (err) {
     console.error('disconnect-ig error:', err);
-    return { statusCode: 500, body: JSON.stringify({ error: '처리 중 오류가 발생했습니다.' }) };
+    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '처리 중 오류가 발생했습니다.' }) };
   }
 };

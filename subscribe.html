@@ -67,8 +67,9 @@
         .agree-items{display:flex;flex-direction:column;gap:8px;}
         .agree-item{display:flex;align-items:center;gap:10px;cursor:pointer;font-size:.83rem;color:var(--g700);}
         .agree-item a{color:var(--pink);font-weight:700;text-decoration:underline;}
-        input[type=checkbox]{accent-color:var(--pink);width:16px;height:16px;flex-shrink:0;cursor:pointer;}
-        .agree-all input[type=checkbox]{width:18px;height:18px;}
+        input[type=checkbox]{accent-color:var(--pink);width:20px;height:20px;flex-shrink:0;cursor:pointer;}
+        .agree-all input[type=checkbox]{width:22px;height:22px;}
+        .agree-item,.agree-all{min-height:44px;}
 
         /* 무료체험 안내 */
         .trial-banner{background:linear-gradient(135deg,var(--pink-pale) 0%,var(--pink-ultra) 100%);border:1.5px solid var(--pink-soft);border-radius:14px;padding:16px 20px;margin-top:16px;display:flex;align-items:center;gap:14px;animation:fadeUp .5s var(--ease) .15s both;}
@@ -86,7 +87,7 @@
 
         /* 에러/성공 */
         .field-err{font-size:12px;font-weight:600;color:#E53E3E;margin:6px 0 0 4px;}
-        .toast{position:fixed;bottom:32px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--g900);color:#fff;padding:12px 24px;border-radius:99px;font-size:13px;font-weight:600;z-index:9999;opacity:0;transition:all .35s var(--ease);pointer-events:none;white-space:nowrap;}
+        .toast{position:fixed;bottom:calc(32px + env(safe-area-inset-bottom, 0px));left:50%;transform:translateX(-50%) translateY(16px);background:var(--g900);color:#fff;padding:12px 24px;border-radius:99px;font-size:13px;font-weight:600;z-index:9999;opacity:0;transition:all .35s var(--ease);pointer-events:none;white-space:nowrap;}
         .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
         .toast.pink{background:var(--pink);}
     </style>
@@ -264,6 +265,7 @@
             if (!prepRes.ok) throw new Error(prepData.error || '결제 준비 실패');
 
             // 포트원 결제창 호출
+            if (typeof PortOne === 'undefined') throw new Error('결제 모듈을 불러오지 못했어요. 페이지를 새로고침해 주세요.');
             const response = await PortOne.requestPayment({
                 storeId: 'store-23f87009-a63a-4e6e-831e-a89ea9145102',
                 channelKey: 'channel-key-80e3e34a-9fe6-4bdb-8011-7504f6fb10f7',
