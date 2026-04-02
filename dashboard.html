@@ -2036,6 +2036,7 @@ function showCaptionWaiting(reservationKey) {
         <div style="text-align:center;padding:32px 0;">
           <div style="width:48px;height:48px;border:4px solid #f0f0f0;border-top-color:#E8628A;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px;"></div>
           <p style="color:#555;font-size:15px;margin:0;">사진을 분석하고 캡션을 만들고 있어요<br><span style="font-size:13px;color:#aaa;">보통 1~2분 정도 걸려요</span></p>
+          <button onclick="cancelCurrentReservation('${reservationKey}')" style="margin-top:20px;padding:10px 24px;background:none;border:1.5px solid #ddd;color:#888;font-size:13px;font-weight:600;border-radius:10px;cursor:pointer;font-family:inherit;">취소</button>
         </div>
       </div>
       <div id="caption-ready-state" style="display:none;">
@@ -2046,6 +2047,7 @@ function showCaptionWaiting(reservationKey) {
           <button id="regen-btn" onclick="regenerateCaption('${reservationKey}')" style="flex:1;padding:12px;border:2px solid #E8628A;background:#fff;color:#E8628A;font-size:14px;font-weight:600;border-radius:12px;cursor:pointer;font-family:inherit;">다시 생성</button>
           <span id="regen-count" style="font-size:12px;color:#aaa;white-space:nowrap;"></span>
         </div>
+        <button id="cancel-reserve-btn" onclick="cancelCurrentReservation('${reservationKey}')" style="width:100%;margin-top:10px;padding:12px;background:none;border:1.5px solid #ddd;color:#888;font-size:13px;font-weight:600;border-radius:12px;cursor:pointer;font-family:inherit;">이 게시물 취소</button>
       </div>
     </div>`;
 
@@ -2123,6 +2125,34 @@ function showCaptionReady(reservationKey, captions, regenCount) {
   if (regenCountEl) regenCountEl.textContent = `재생성 ${remaining}회 남음`;
   const regenBtn = document.getElementById('regen-btn');
   if (regenBtn && remaining <= 0) { regenBtn.disabled = true; regenBtn.style.opacity = '0.4'; regenBtn.style.cursor = 'not-allowed'; }
+}
+
+async function cancelCurrentReservation(reservationKey) {
+  if (!confirm('이 게시물을 취소할까요? 생성된 캡션이 삭제됩니다.')) return;
+  const btn = document.getElementById('cancel-reserve-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '취소 중...'; }
+  const token = localStorage.getItem('lumi_token');
+  try {
+    const res = await fetch('/.netlify/functions/cancel-reservation', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ reservationKey })
+    });
+    if (res.ok) {
+      closeCaptionSheet();
+      showToast('게시물이 취소됐어요.', '');
+      // 릴레이 대기열 새로고침
+      const user = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+      if (user.relayMode) loadRelayQueue();
+    } else {
+      const data = await res.json().catch(() => ({}));
+      showToast(data.error || '취소에 실패했어요.', 'red');
+      if (btn) { btn.disabled = false; btn.textContent = '이 게시물 취소'; }
+    }
+  } catch(e) {
+    showToast('네트워크 오류', 'red');
+    if (btn) { btn.disabled = false; btn.textContent = '이 게시물 취소'; }
+  }
 }
 
 async function selectCaption(reservationKey, index) {
