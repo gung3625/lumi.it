@@ -11,7 +11,7 @@ function getBlobStore(name) {
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   'Content-Type': 'application/json',
 };
 
@@ -174,10 +174,13 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Bad Request: 잘못된 JSON' }) };
   }
 
-  const { reservationKey, captionIndex, email, secret } = body;
+  const { reservationKey, captionIndex, email } = body;
 
-  // 인증
-  if (secret !== process.env.LUMI_SECRET) {
+  // 인증: Bearer 토큰 또는 LUMI_SECRET
+  const authHeader = event.headers['authorization'] || '';
+  const hasBearer = authHeader.startsWith('Bearer ') && authHeader.length > 10;
+  const hasSecret = body.secret === process.env.LUMI_SECRET;
+  if (!hasBearer && !hasSecret) {
     return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증 실패' }) };
   }
 

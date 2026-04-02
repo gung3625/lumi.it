@@ -540,10 +540,10 @@ exports.handler = async (event) => {
     }
 
     // 릴레이 모드면 자동 게시 스킵 — 사용자가 직접 선택할 때까지 대기
+    // temp 이미지는 삭제하지 않음 (릴레이 편집 모달에서 미리보기에 필요)
     if (isRelayMode) {
       item.captionStatus = 'ready';
       await store.set(reservationKey, JSON.stringify(item));
-      await cleanupTempImages(tempKeys);
       console.log('[process-and-post] 릴레이 모드 — 자동 게시 스킵, 사용자 선택 대기');
       return;
     }
@@ -566,6 +566,11 @@ exports.handler = async (event) => {
     const updated = JSON.parse(updatedRaw);
     if (updated.isSent) {
       console.log('[process-and-post] 이미 게시됨. 종료.');
+      await cleanupTempImages(tempKeys);
+      return;
+    }
+    if (updated.cancelled) {
+      console.log('[process-and-post] 예약이 취소됨. 종료.');
       await cleanupTempImages(tempKeys);
       return;
     }
