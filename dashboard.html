@@ -183,6 +183,10 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
         .dash-tab-btn .tab-label{font-size:10px;font-weight:700;letter-spacing:-.01em;}
         .dash-body [data-tab]{display:none;}
         .dash-body [data-tab].tab-active{display:block;}
+        .dark-toggle-fab{position:fixed;right:16px;bottom:calc(72px + env(safe-area-inset-bottom, 0px));z-index:8600;width:48px;height:48px;border-radius:50%;border:none;background:var(--white);color:var(--g700);font-size:1.2rem;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.15);display:flex;align-items:center;justify-content:center;transition:all .3s var(--ease);-webkit-tap-highlight-color:transparent;}
+        .dark-toggle-fab:hover{transform:scale(1.08);box-shadow:0 6px 24px rgba(0,0,0,.2);}
+        .dark-toggle-fab:active{transform:scale(.95);}
+        body.dark-mode .dark-toggle-fab{background:#2D3748;color:#F7C948;box-shadow:0 4px 16px rgba(0,0,0,.4);}
 </style>
 </head>
 <body>
@@ -482,21 +486,6 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
 
         <!-- TAB: 설정 -->
         <div data-tab="settings">
-        <!-- 다크모드 토글 -->
-        <div style="background:var(--white);border-radius:var(--r-xl);padding:18px 22px;border:1px solid var(--g200);box-shadow:var(--sh-xs);margin-bottom:16px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;">
-                <div>
-                    <p style="font-size:.88rem;font-weight:800;color:var(--g900);margin-bottom:4px;">🌙 다크 모드</p>
-                    <p style="font-size:.75rem;color:var(--g500);line-height:1.6;">눈이 편한 어두운 화면으로 전환해요.</p>
-                </div>
-                <div style="flex-shrink:0;margin-left:16px;cursor:pointer;" onclick="document.getElementById('dark-mode-toggle').click()">
-                    <input type="checkbox" id="dark-mode-toggle" onchange="toggleDarkMode(this.checked)" style="display:none;">
-                    <div id="dark-mode-slider" style="width:52px;height:28px;border-radius:28px;background:#ccc;border:2px solid #bbb;position:relative;transition:all .3s;cursor:pointer;">
-                        <div id="dark-mode-knob" style="position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .3s;box-shadow:0 2px 6px rgba(0,0,0,.3);"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
         <!-- 프로필 설정 -->
         <div style="background:var(--white);border-radius:var(--r-xl);padding:20px 22px;border:1px solid var(--g200);box-shadow:var(--sh-xs);margin-bottom:16px;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
@@ -917,6 +906,8 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
         </div>
         </div><!-- /TAB: 설정 (final) -->
     </div>
+    <!-- 다크모드 플로팅 버튼 -->
+    <button class="dark-toggle-fab" id="dark-toggle-fab" onclick="toggleDarkMode(!document.body.classList.contains('dark-mode'))" aria-label="다크모드 전환">🌙</button>
     <!-- 링크 미리보기 모달 -->
     <div id="lp-preview-overlay" onclick="if(event.target===this)closeLinkPreview()">
         <div id="lp-preview-frame">
@@ -3182,15 +3173,11 @@ async function saveAutoFestival(checked) {
 function toggleDarkMode(on) {
     document.body.classList.toggle('dark-mode', on);
     localStorage.setItem('lumi_dark_mode', on ? '1' : '0');
-    const slider = document.getElementById('dark-mode-slider');
-    const knob = document.getElementById('dark-mode-knob');
-    if (slider) { slider.style.background = on ? 'var(--pink)' : '#ccc'; slider.style.borderColor = on ? 'var(--pink)' : '#bbb'; }
-    if (knob) { knob.style.transform = on ? 'translateX(24px)' : 'translateX(0)'; }
+    const fab = document.getElementById('dark-toggle-fab');
+    if (fab) fab.textContent = on ? '☀️' : '🌙';
 }
 function initDarkMode() {
     const saved = localStorage.getItem('lumi_dark_mode') === '1';
-    const toggle = document.getElementById('dark-mode-toggle');
-    if (toggle) toggle.checked = saved;
     if (saved) toggleDarkMode(true);
 }
 
