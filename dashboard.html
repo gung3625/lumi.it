@@ -64,7 +64,7 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
         .dash-topbar-logo{height:48px;}
         .dash-back{font-size:15px;font-weight:700;color:var(--white);background:var(--pink);border:none;border-radius:var(--r-md);padding:10px 22px;cursor:pointer;font-family:inherit;transition:background .2s,transform .2s;box-shadow:var(--sh-pink);}
         .dash-back:hover{background:var(--pink-light);transform:translateY(-1px);}
-        .dash-body{max-width:580px;margin:0 auto;width:100%;padding:28px 20px calc(100px + env(safe-area-inset-bottom, 0px));}
+        .dash-body{max-width:580px;margin:0 auto;width:100%;padding:28px 20px calc(80px + env(safe-area-inset-bottom, 0px));}
         .dash-hello{margin-bottom:24px;}
         .dash-hello h2{font-size:1.25rem;font-weight:800;color:var(--g900);}
         .dash-hello p{font-size:.83rem;color:var(--g400);margin-top:3px;}
@@ -163,6 +163,15 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
         .lp-save-btn.loading{pointer-events:none;opacity:.7;}
         #lp-preview-overlay{position:fixed;inset:0;z-index:9000;background:rgba(15,10,20,.85);backdrop-filter:blur(16px);display:none;align-items:center;justify-content:center;padding:16px;}
         #lp-preview-frame{background:linear-gradient(135deg,#fff0f6 0%,#f9f9ff 100%);border-radius:24px;padding:28px 20px;width:100%;max-width:400px;max-height:85vh;overflow-y:auto;position:relative;animation:sheetUp .35s var(--ease);}
+
+        /* ── 하단 탭 네비게이션 ── */
+        .dash-tab-bar{position:fixed;bottom:0;left:0;right:0;height:calc(56px + env(safe-area-inset-bottom, 0px));padding-bottom:env(safe-area-inset-bottom, 0px);background:rgba(255,255,255,.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--g200);display:flex;align-items:center;justify-content:center;z-index:8500;gap:0;}
+        .dash-tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;height:56px;border:none;background:none;cursor:pointer;font-family:inherit;transition:color .2s;color:var(--g400);-webkit-tap-highlight-color:transparent;}
+        .dash-tab-btn.active{color:var(--pink);}
+        .dash-tab-btn .tab-icon{font-size:1.2rem;line-height:1;}
+        .dash-tab-btn .tab-label{font-size:10px;font-weight:700;letter-spacing:-.01em;}
+        .dash-body [data-tab]{display:none;}
+        .dash-body [data-tab].tab-active{display:block;}
 </style>
 </head>
 <body>
@@ -418,6 +427,8 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
             <button onclick="lumiLogout()" style="background:none;border:none;color:#999;font-size:.85rem;cursor:pointer;">로그아웃</button>
         </div>
 
+        <!-- TAB: 홈 -->
+        <div data-tab="home" class="tab-active">
         <div class="dash-hello">
             <h2 id="dash-store-name">안녕하세요.</h2>
             <p>오늘도 lumi가 함께해요.</p>
@@ -456,6 +467,10 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
             </div>
         </div>
 
+        </div><!-- /TAB: 홈 (1/2) -->
+
+        <!-- TAB: 설정 -->
+        <div data-tab="settings">
         <!-- 프로필 설정 -->
         <div style="background:var(--white);border-radius:var(--r-xl);padding:20px 22px;border:1px solid var(--g200);box-shadow:var(--sh-xs);margin-bottom:16px;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
@@ -594,6 +609,10 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
             <input type="hidden" id="dash-region-sigungu-code">
         </div>
 
+        </div><!-- /TAB: 설정 (1/2) -->
+
+        <!-- TAB: 홈 (2/2) -->
+        <div data-tab="home" class="tab-active">
         <div class="weather-card">
             <div class="w-icon" id="dash-w-icon">📍</div>
             <div style="flex:1;">
@@ -634,6 +653,10 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
             <button onclick="dismissToneFeedback()" style="width:100%;margin-top:8px;background:none;border:none;font-size:12px;color:var(--g400);cursor:pointer;padding:4px;font-family:inherit;">다음에 할게요</button>
         </div>
 
+        </div><!-- /TAB: 홈 (2/2) -->
+
+        <!-- TAB: 보관함 -->
+        <div data-tab="archive">
         <!-- 보관함 (예약 게시 현황) -->
         <div style="margin-bottom:14px;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
@@ -661,6 +684,10 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
             </div>
         </div>
 
+        </div><!-- /TAB: 보관함 (1/2) -->
+
+        <!-- TAB: 홈 (3/3 - 업로드) -->
+        <div data-tab="home" class="tab-active">
         <div class="upload-card">
             <p class="upload-ttl">오늘의 사진을 올려주세요!</p>
             <div class="drop-zone">
@@ -703,6 +730,10 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
             </div>
         </div>
 
+        </div><!-- /TAB: 홈 (3/3) -->
+
+        <!-- TAB: 설정 (2/2) -->
+        <div data-tab="settings">
         <!-- 최적 업로드 시간 (PRO 전용) -->
         <div id="best-time-section" style="background:var(--white);border-radius:var(--r-xl);padding:20px 22px;border:1px solid var(--g200);box-shadow:var(--sh-xs);margin-bottom:14px;position:relative;overflow:hidden;">
             <div id="best-time-lock" style="display:none;position:absolute;inset:0;background:rgba(249,250,251,.93);backdrop-filter:blur(3px);z-index:10;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;">
@@ -768,6 +799,10 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
             </div>
         </div>
 
+        </div><!-- /TAB: 설정 (2/2 part1) -->
+
+        <!-- TAB: 보관함 (2/2 - 릴레이) -->
+        <div data-tab="archive">
         <!-- 릴레이 대기열 -->
         <div id="relay-queue-section" style="display:none;margin-bottom:14px;">
             <div style="background:var(--white);border-radius:var(--r-xl);padding:18px 22px;border:1px solid var(--g200);box-shadow:var(--sh-xs);">
@@ -780,7 +815,10 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
                 </div>
             </div>
         </div>
+        </div><!-- /TAB: 보관함 (2/2) -->
 
+        <!-- TAB: 설정 (2/2 part2) -->
+        <div data-tab="settings">
         <!-- 링크 페이지 설정 -->
         <p class="dash-lbl">링크 페이지 설정</p>
         <div style="background:var(--white);border-radius:var(--r-xl);padding:20px 22px;border:1px solid var(--g200);box-shadow:var(--sh-xs);margin-bottom:14px;">
@@ -831,14 +869,6 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
             <button id="lp-save-btn" onclick="saveLinkPage()" class="btn-act-on lp-save-btn" style="width:100%;margin-top:10px;padding:12px;">저장하기</button>
         </div>
 
-        <!-- 링크 미리보기 모달 -->
-        <div id="lp-preview-overlay" onclick="if(event.target===this)closeLinkPreview()">
-            <div id="lp-preview-frame">
-                <button onclick="closeLinkPreview()" style="position:absolute;top:12px;right:12px;width:44px;height:44px;border-radius:50%;border:none;background:rgba(0,0,0,.08);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
-                <div id="lp-preview-content"></div>
-            </div>
-        </div>
-
         <!-- 자동 응답 설정 (프로 플랜) -->
         <p class="dash-lbl">자동 응답 설정 <span style="font-size:10px;font-weight:700;color:var(--pink);background:var(--pink-pale);padding:2px 8px;border-radius:99px;margin-left:4px;">PRO</span></p>
         <div class="auto-reply-card" id="auto-reply-section">
@@ -876,9 +906,45 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
         <div style="text-align:center;margin-top:32px;padding-bottom:20px;">
             <a href="/support" style="font-size:13px;font-weight:600;color:var(--g400);text-decoration:none;display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border:1px solid var(--g200);border-radius:var(--r-full);transition:all .2s;" onmouseover="this.style.background='var(--g50)'" onmouseout="this.style.background=''">💬 고객센터 문의하기</a>
         </div>
+        </div><!-- /TAB: 설정 (final) -->
+    </div>
+    <!-- 링크 미리보기 모달 -->
+    <div id="lp-preview-overlay" onclick="if(event.target===this)closeLinkPreview()">
+        <div id="lp-preview-frame">
+            <button onclick="closeLinkPreview()" style="position:absolute;top:12px;right:12px;width:44px;height:44px;border-radius:50%;border:none;background:rgba(0,0,0,.08);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+            <div id="lp-preview-content"></div>
+        </div>
+    </div>
+    <!-- 하단 탭 바 -->
+    <div class="dash-tab-bar" id="dash-tab-bar">
+        <button class="dash-tab-btn active" data-target="home" onclick="switchDashTab('home')">
+            <span class="tab-icon">🏠</span>
+            <span class="tab-label">홈</span>
+        </button>
+        <button class="dash-tab-btn" data-target="archive" onclick="switchDashTab('archive')">
+            <span class="tab-icon">📁</span>
+            <span class="tab-label">보관함</span>
+        </button>
+        <button class="dash-tab-btn" data-target="settings" onclick="switchDashTab('settings')">
+            <span class="tab-icon">⚙️</span>
+            <span class="tab-label">설정</span>
+        </button>
     </div>
 </div>
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+/* ── 대시보드 탭 전환 ── */
+function switchDashTab(tab){
+    document.querySelectorAll('.dash-body [data-tab]').forEach(el=>{
+        el.classList.toggle('tab-active', el.dataset.tab===tab);
+    });
+    document.querySelectorAll('.dash-tab-btn').forEach(btn=>{
+        btn.classList.toggle('active', btn.dataset.target===tab);
+    });
+    // 탭 전환 시 상단으로 스크롤
+    const dashLayer = document.getElementById('lumi-dashboard-node');
+    if(dashLayer) dashLayer.scrollTop = 0;
+}
+
 /* ── 시나리오 탭 전환 ── */
 function switchScenario(id){
     document.querySelectorAll('.scenario-tab').forEach((t,i)=>{
