@@ -18,6 +18,23 @@
   --r-sm:12px;--r-md:16px;--r-lg:24px;--r-xl:32px;--r-full:999px;
   --ease:cubic-bezier(0.16,1,0.3,1);
 }
+body.dark-mode{
+  --g900:#F2F4F6;--g700:#D1D5DB;--g500:#9CA3AF;--g400:#6B7684;
+  --g200:#2D3748;--g100:#1E2533;--g50:#151B26;--white:#1A202C;
+  --pink-pale:#2D1F2B;--pink-ultra:#1F1923;--pink-soft:#3D2536;
+}
+body.dark-mode .dash-topbar{background:rgba(26,32,44,.94);border-bottom-color:var(--g200);}
+body.dark-mode .portal-sheet{background:var(--white);color:var(--g700);}
+body.dark-mode .portal-x{background:var(--g100);color:var(--g500);}
+body.dark-mode .toast{background:var(--g200);color:var(--g700);}
+body.dark-mode .dash-tab-bar{background:rgba(26,32,44,.97);border-top-color:var(--g200);}
+body.dark-mode .btn-act-off{background:var(--white);color:var(--g700);border-color:var(--g200);}
+body.dark-mode #ig-connect-banner{background:#1F1923;border-color:var(--pink);}
+body.dark-mode #ig-connected-badge{background:#1A2E1F;border-color:#2D6A3B;}
+body.dark-mode .weather-card{background:var(--white);border-color:var(--g200);}
+body.dark-mode select.inp,body.dark-mode .inp{background:var(--g100);border-color:var(--g200);color:var(--g900);}
+body.dark-mode .inp:focus{background:var(--white);}
+body.dark-mode .prev-thumb-del{background:#cc3333;border-color:var(--white);}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased;word-break:keep-all;}
 html{scroll-behavior:smooth;overflow-x:hidden;}
 body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;background:var(--g50);color:var(--g700);overflow-x:hidden;line-height:1.6;font-size:15px;}
@@ -143,12 +160,6 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
         .s-dot.on{background:var(--pink);width:20px;border-radius:3px;}
 
         /* 링크 페이지 편집 */
-        .lp-theme-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
-        .lp-theme-card{padding:12px 8px;border:1.5px solid var(--g200);border-radius:var(--r-md);cursor:pointer;text-align:center;transition:all .2s;background:var(--g50);}
-        .lp-theme-card:hover{border-color:var(--pink-soft);background:var(--pink-ultra);}
-        .lp-theme-card.selected{border-color:var(--pink);background:var(--pink-pale);}
-        .lp-theme-swatch{width:100%;height:28px;border-radius:6px;margin-bottom:4px;}
-        .lp-theme-name{font-size:11px;font-weight:700;color:var(--g900);}
         .lp-item{background:var(--g50);border-radius:var(--r-md);padding:10px 12px;margin-bottom:8px;border:1px solid var(--g100);}
         .lp-item-row1{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
         .lp-item-row2{padding-left:28px;}
@@ -471,6 +482,21 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
 
         <!-- TAB: 설정 -->
         <div data-tab="settings">
+        <!-- 다크모드 토글 -->
+        <div style="background:var(--white);border-radius:var(--r-xl);padding:18px 22px;border:1px solid var(--g200);box-shadow:var(--sh-xs);margin-bottom:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div>
+                    <p style="font-size:.88rem;font-weight:800;color:var(--g900);margin-bottom:4px;">🌙 다크 모드</p>
+                    <p style="font-size:.75rem;color:var(--g500);line-height:1.6;">눈이 편한 어두운 화면으로 전환해요.</p>
+                </div>
+                <div style="flex-shrink:0;margin-left:16px;cursor:pointer;" onclick="document.getElementById('dark-mode-toggle').click()">
+                    <input type="checkbox" id="dark-mode-toggle" onchange="toggleDarkMode(this.checked)" style="display:none;">
+                    <div id="dark-mode-slider" style="width:52px;height:28px;border-radius:28px;background:#ccc;border:2px solid #bbb;position:relative;transition:all .3s;cursor:pointer;">
+                        <div id="dark-mode-knob" style="position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .3s;box-shadow:0 2px 6px rgba(0,0,0,.3);"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
         <!-- 프로필 설정 -->
         <div style="background:var(--white);border-radius:var(--r-xl);padding:20px 22px;border:1px solid var(--g200);box-shadow:var(--sh-xs);margin-bottom:16px;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
@@ -833,23 +859,6 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
                 </div>
             </div>
             <p style="font-size:.75rem;color:var(--g500);margin-bottom:10px;line-height:1.6;">인스타그램 바이오 링크에 넣으면 방문자가 매장 정보와 여러 링크를 한 번에 볼 수 있어요.</p>
-
-            <!-- 테마 선택 -->
-            <p style="font-size:.75rem;font-weight:700;color:var(--g500);margin-bottom:6px;">테마</p>
-            <div class="lp-theme-grid" id="lp-theme-grid">
-                <div class="lp-theme-card selected" data-theme="pink" onclick="selectLinkTheme('pink')">
-                    <div class="lp-theme-swatch" style="background:linear-gradient(135deg,#fff0f6,#f9f9ff);border:1px solid var(--g200);"></div>
-                    <div class="lp-theme-name">핑크</div>
-                </div>
-                <div class="lp-theme-card" data-theme="dark" onclick="selectLinkTheme('dark')">
-                    <div class="lp-theme-swatch" style="background:linear-gradient(135deg,#1a1a2e,#16213e);"></div>
-                    <div class="lp-theme-name">다크</div>
-                </div>
-                <div class="lp-theme-card" data-theme="minimal" onclick="selectLinkTheme('minimal')">
-                    <div class="lp-theme-swatch" style="background:#fff;border:1px solid var(--g200);"></div>
-                    <div class="lp-theme-name">미니멀</div>
-                </div>
-            </div>
 
             <!-- 예시 안내 (접이식) -->
             <details style="margin-bottom:14px;">
@@ -1899,6 +1908,7 @@ async function grantAccess(){
     loadBestTimeForPlan();
     loadToneFeedback();
     loadLinkPage();
+    initDarkMode();
     initAutoStory();
     initAutoFestival();
     initRelayMode();
@@ -3168,6 +3178,22 @@ async function saveAutoFestival(checked) {
     }
 }
 
+// ── 다크모드 ──
+function toggleDarkMode(on) {
+    document.body.classList.toggle('dark-mode', on);
+    localStorage.setItem('lumi_dark_mode', on ? '1' : '0');
+    const slider = document.getElementById('dark-mode-slider');
+    const knob = document.getElementById('dark-mode-knob');
+    if (slider) { slider.style.background = on ? 'var(--pink)' : '#ccc'; slider.style.borderColor = on ? 'var(--pink)' : '#bbb'; }
+    if (knob) { knob.style.transform = on ? 'translateX(24px)' : 'translateX(0)'; }
+}
+function initDarkMode() {
+    const saved = localStorage.getItem('lumi_dark_mode') === '1';
+    const toggle = document.getElementById('dark-mode-toggle');
+    if (toggle) toggle.checked = saved;
+    if (saved) toggleDarkMode(true);
+}
+
 // ── 스토리 자동 게시 ──
 function initAutoStory() {
     const user = JSON.parse(localStorage.getItem('lumi_user') || '{}');
@@ -3422,7 +3448,6 @@ async function cancelRelayItem(reservationKey) {
 
 // ── 링크 페이지 ──
 let _linkItems = [];
-let _linkTheme = 'pink';
 const LINK_ICONS = ['📍','☎️','🛒','📅','📸','🌐','💬','🎁','📌','🔗'];
 
 async function loadLinkPage() {
@@ -3437,8 +3462,6 @@ async function loadLinkPage() {
         if (res.ok) {
             const data = await res.json();
             _linkItems = data.links || [];
-            _linkTheme = data.theme || 'pink';
-            selectLinkTheme(_linkTheme);
             renderLinkItems();
         }
     } catch(e) {}
@@ -3474,13 +3497,6 @@ function addLinkItem() {
     renderLinkItems();
     // 새 항목으로 스크롤
     setTimeout(() => { const items = document.querySelectorAll('.lp-item'); if(items.length) items[items.length-1].scrollIntoView({behavior:'smooth',block:'center'}); }, 50);
-}
-
-function selectLinkTheme(theme) {
-    _linkTheme = theme;
-    document.querySelectorAll('.lp-theme-card').forEach(c => {
-        c.classList.toggle('selected', c.dataset.theme === theme);
-    });
 }
 
 function openEmojiPicker(idx, btnEl) {
@@ -3523,7 +3539,7 @@ async function saveLinkPage() {
         const res = await fetch('/.netlify/functions/update-link-page', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-            body: JSON.stringify({ links: validLinks, theme: _linkTheme })
+            body: JSON.stringify({ links: validLinks })
         });
         const data = await res.json();
         if (res.ok) { showToast('링크 페이지가 저장됐어요!', 'pink'); }
@@ -3542,29 +3558,16 @@ function copyLinkPageUrl() {
 function openLinkPreview() {
     const user = JSON.parse(localStorage.getItem('lumi_user') || '{}');
     const validLinks = _linkItems.filter(l => l.label && l.url);
-    const themes = {
-        pink: 'background:linear-gradient(135deg,#fff0f6 0%,#f9f9ff 100%);color:#191F28;',
-        dark: 'background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;',
-        minimal: 'background:#fff;color:#191F28;'
-    };
-    const btnStyles = {
-        pink: 'background:#fff;border:1.5px solid #E8628A;color:#E8628A;',
-        dark: 'background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.3);color:#fff;',
-        minimal: 'background:#f9f9f9;border:1.5px solid #ddd;color:#333;'
-    };
     const frame = document.getElementById('lp-preview-frame');
-    frame.style.cssText = themes[_linkTheme] || themes.pink;
-    frame.style.borderRadius = '24px'; frame.style.padding = '28px 20px';
-    frame.style.width = '100%'; frame.style.maxWidth = '400px'; frame.style.maxHeight = '85vh';
-    frame.style.overflowY = 'auto'; frame.style.position = 'relative';
+    frame.style.cssText = 'background:linear-gradient(135deg,#fff0f6 0%,#f9f9ff 100%);color:#191F28;border-radius:24px;padding:28px 20px;width:100%;max-width:400px;max-height:85vh;overflow-y:auto;position:relative;';
     const content = document.getElementById('lp-preview-content');
     content.innerHTML = `
         <div style="text-align:center;padding-top:16px;">
-            <div style="width:72px;height:72px;border-radius:50%;background:${_linkTheme==='dark'?'rgba(255,255,255,.15)':'var(--pink-pale)'};margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:28px;">🏪</div>
+            <div style="width:72px;height:72px;border-radius:50%;background:var(--pink-pale);margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:28px;">🏪</div>
             <h2 style="font-size:1.2rem;font-weight:900;margin-bottom:4px;">${user.storeName || '매장명'}</h2>
             <p style="font-size:.85rem;opacity:.7;margin-bottom:20px;">${user.storeDesc || ''}</p>
             <div style="display:flex;flex-direction:column;gap:10px;">
-                ${validLinks.map(l => `<a style="display:flex;align-items:center;gap:10px;padding:14px 18px;border-radius:14px;text-decoration:none;font-weight:700;font-size:.9rem;transition:all .2s;${btnStyles[_linkTheme]||btnStyles.pink}"><span style="font-size:1.2rem;">${l.icon}</span>${l.label}</a>`).join('')}
+                ${validLinks.map(l => `<a style="display:flex;align-items:center;gap:10px;padding:14px 18px;border-radius:14px;text-decoration:none;font-weight:700;font-size:.9rem;transition:all .2s;background:#fff;border:1.5px solid #E8628A;color:#E8628A;"><span style="font-size:1.2rem;">${l.icon}</span>${l.label}</a>`).join('')}
             </div>
             <p style="font-size:.7rem;opacity:.4;margin-top:24px;">Powered by lumi</p>
         </div>
@@ -3801,6 +3804,9 @@ function lumiLogout() {
 })();
 
 // 버튼 이벤트 바인딩 (Cloudflare 스크립트 충돌 방지)
+// 다크모드 즉시 적용 (화면 깜빡임 방지)
+if (localStorage.getItem('lumi_dark_mode') === '1') document.body.classList.add('dark-mode');
+
 document.addEventListener('DOMContentLoaded', function() {
     const loginBtn = document.getElementById('nav-login-btn');
     const signupBtn = document.getElementById('nav-signup-btn');
