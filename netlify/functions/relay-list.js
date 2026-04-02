@@ -63,6 +63,7 @@ exports.handler = async (event) => {
           relayMode: item.relayMode || false,
           captionStatus: item.captionStatus || null,
           photoCount: (item.photos || []).length,
+          imageKeys: (item.imageKeys || item.tempKeys || []).slice(0, 4),
           bizCategory: item.bizCategory,
           userMessage: item.userMessage || '',
         });

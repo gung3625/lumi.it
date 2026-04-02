@@ -3173,12 +3173,16 @@ async function loadRelayQueue() {
             const preview = (item.captions[0] || '').substring(0, 80);
             const time = item.captionsGeneratedAt ? new Date(item.captionsGeneratedAt).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
             const isRelay = item.relayMode;
+            const thumbs = (item.imageKeys || []).map(k =>
+                `<img src="/.netlify/functions/serve-image?key=${encodeURIComponent(k)}" style="width:48px;height:48px;object-fit:cover;border-radius:8px;border:1px solid var(--g200);background:var(--g100);" loading="lazy" alt="">`
+            ).join('');
             return `
             <div style="border:1.5px solid ${isRelay ? 'rgba(232,98,138,.3)' : 'var(--g200)'};border-radius:12px;padding:14px 16px;background:${isRelay ? '#fff8fa' : '#fff'};">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
                     <span style="font-size:.75rem;color:var(--g400);">${time} · 사진 ${item.photoCount}장</span>
                     ${isRelay ? '<span style="font-size:.7rem;background:var(--pink);color:#fff;padding:2px 8px;border-radius:99px;font-weight:600;">릴레이</span>' : ''}
                 </div>
+                ${thumbs ? `<div style="display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;">${thumbs}</div>` : ''}
                 <p style="font-size:.82rem;color:var(--g900);line-height:1.5;margin:0 0 10px;white-space:pre-wrap;">${esc(preview)}${preview.length >= 80 ? '...' : ''}</p>
                 <div style="display:flex;gap:8px;">
                     <button data-key="${esc(item.key)}" onclick="openRelayEdit(this.dataset.key)" style="flex:1;padding:8px;background:var(--pink);color:#fff;border:none;border-radius:8px;font-size:.78rem;font-weight:700;cursor:pointer;font-family:inherit;">확인·게시</button>
@@ -3206,12 +3210,17 @@ async function openRelayEdit(reservationKey) {
         overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
         document.body.style.overflow = 'hidden';
 
+        const imgThumbs = (data.imageKeys || []).map(k =>
+            `<img src="/.netlify/functions/serve-image?key=${encodeURIComponent(k)}" style="width:64px;height:64px;object-fit:cover;border-radius:10px;border:1px solid #eee;" loading="lazy" alt="">`
+        ).join('');
+
         overlay.innerHTML = `
         <div style="background:#fff;border-radius:20px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;padding:28px 24px 32px;box-shadow:0 24px 80px rgba(0,0,0,.2);">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
                 <span style="font-size:17px;font-weight:700;color:#1a1a2e;">캡션 확인·수정</span>
                 <button onclick="closeRelayEdit()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#888;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;">×</button>
             </div>
+            ${imgThumbs ? `<div style="display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;padding-bottom:4px;">${imgThumbs}</div>` : ''}
             <p style="font-size:13px;color:#888;margin:0 0 16px;">캡션을 수정한 뒤 게시하거나, 그대로 선택해서 게시하세요.</p>
             <div id="relay-edit-captions" style="display:flex;flex-direction:column;gap:12px;"></div>
         </div>`;
