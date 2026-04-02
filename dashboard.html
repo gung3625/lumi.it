@@ -601,7 +601,7 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
                     <option value="39">경남</option>
                     <option value="50">제주</option>
                 </select>
-                <select id="dash-sigungu" class="inp" style="height:46px;flex:1;" onchange="updateStoreRegion()" oninput="updateStoreRegion()">
+                <select id="dash-sigungu" class="inp" style="height:46px;flex:1;" onchange="updateStoreRegion()">
                     <option value="">시/군/구 선택</option>
                 </select>
             </div>
@@ -1260,7 +1260,6 @@ async function initWeather() {
 
     await fetchRealWeather(null, null, locationName);
     fetchAirQuality(storeSido);
-    fetchFestivals();
 }
 
 /* ── 파일 업로드 ── */
@@ -1386,17 +1385,24 @@ function restoreRegionDropdown(regionStr, sidoCode, sigunguCode) {
     const sigunguSel = document.getElementById('dash-sigungu');
     if (!sidoSel || !sigunguSel) return;
 
+    // 드롭다운만 세팅 (API 호출 없이)
     sidoSel.value = sidoCode;
-    updateSigunguList();
-    setTimeout(() => {
-        sigunguSel.value = sigunguCode;
-        updateStoreRegion();
-        // 지역 복원 완료 후 날씨/행사 조회
-        setTimeout(() => {
-            fetchFestivals();
-            initWeather();
-        }, 100);
-    }, 50);
+    // updateSigunguList 대신 직접 옵션 세팅 (updateStoreRegion 중복 방지)
+    sigunguSel.innerHTML = '<option value="">시/군/구 선택</option>';
+    if (SIGUNGU_DATA[sidoCode]) {
+        SIGUNGU_DATA[sidoCode].forEach(([code, name]) => {
+            const opt = document.createElement('option');
+            opt.value = code; opt.textContent = name;
+            sigunguSel.appendChild(opt);
+        });
+    }
+    sigunguSel.value = sigunguCode;
+    // 지역 복원 완료 후 1회만 API 호출
+    storeRegion = regionStr || '';
+    document.getElementById('dash-region-sido-code').value = sidoCode;
+    document.getElementById('dash-region-sigungu-code').value = sigunguCode;
+    fetchFestivals();
+    initWeather();
 }
 
 async function fetchFestivals() {
@@ -1754,7 +1760,7 @@ async function loadBestTimeForPlan() {
         // check-plan으로 플랜 확인
         const res = await fetch('/.netlify/functions/check-plan', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (token || '') },
             body: JSON.stringify({ email: user.email })
         });
         const data = await res.json();
@@ -1904,9 +1910,10 @@ async function grantAccess(){
     if (userRaw2) {
         try {
             const user = JSON.parse(userRaw2);
+            const lumiToken = localStorage.getItem('lumi_token') || '';
             const res = await fetch('/.netlify/functions/check-plan', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + lumiToken },
                 body: JSON.stringify({ email: user.email })
             });
             const data = await res.json();
@@ -2481,7 +2488,7 @@ async function cancelSubscription() {
         const user = JSON.parse(userRaw);
         const res = await fetch('/.netlify/functions/check-plan', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('lumi_token') || '') },
             body: JSON.stringify({ email: user.email })
         });
         const data = await res.json();
