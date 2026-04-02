@@ -10,13 +10,13 @@ exports.handler = async (event) => {
 
   let body;
   try { body = JSON.parse(event.body); } catch {
-    return { statusCode: 400, body: JSON.stringify({ error: '잘못된 요청입니다.' }) };
+    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '잘못된 요청입니다.' }) };
   }
 
   const { name, phone, birthdate } = body;
 
   if (!name || !phone || !birthdate) {
-    return { statusCode: 400, body: JSON.stringify({ error: '이름, 전화번호, 생년월일을 모두 입력해주세요.' }) };
+    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '이름, 전화번호, 생년월일을 모두 입력해주세요.' }) };
   }
 
   try {
@@ -57,6 +57,7 @@ exports.handler = async (event) => {
 
     return {
       statusCode: 404,
+      headers: CORS,
       body: JSON.stringify({ error: '일치하는 회원 정보를 찾을 수 없습니다.' })
     };
 
