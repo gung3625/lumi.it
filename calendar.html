@@ -18,6 +18,17 @@
       --r-sm: 12px; --r-md: 16px; --r-lg: 24px; --r-xl: 32px; --r-full: 999px;
       --ease: cubic-bezier(0.16, 1, 0.3, 1);
     }
+    body.dark-mode{
+      --g900:#F2F4F6;--g700:#D1D5DB;--g500:#9CA3AF;--g400:#6B7684;
+      --g200:#2D3748;--g100:#1E2533;--g50:#151B26;--white:#1A202C;
+      --pink-pale:#2D1F2B;--pink-ultra:#1F1923;--pink-soft:#3D2536;
+    }
+    body.dark-mode nav{background:rgba(26,32,44,.94)!important;border-bottom-color:var(--g200)!important;}
+    body.dark-mode .toast{background:var(--g200);color:var(--g700);}
+    body.dark-mode input,body.dark-mode select,body.dark-mode textarea{background:var(--g100);border-color:var(--g200);color:var(--g900);}
+    .dark-toggle-fab{position:fixed;right:16px;bottom:calc(24px + env(safe-area-inset-bottom, 0px));z-index:9999;width:44px;height:44px;border-radius:50%;border:none;background:var(--white);color:var(--g700);font-size:1.1rem;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.15);display:flex;align-items:center;justify-content:center;transition:all .3s;-webkit-tap-highlight-color:transparent;}
+    .dark-toggle-fab:active{transform:scale(.95);}
+    body.dark-mode .dark-toggle-fab{background:#2D3748;color:#F7C948;box-shadow:0 4px 16px rgba(0,0,0,.4);}
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; word-break: keep-all; }
     html { scroll-behavior: smooth; }
     body { font-family: 'Pretendard Variable', 'Pretendard', 'Noto Sans KR', sans-serif; background: var(--g50); color: var(--g700); min-height: 100vh; line-height: 1.6; font-size: 15px; }
@@ -357,6 +368,12 @@
       </div>
     `;
   }
+</script>
+<button class="dark-toggle-fab" id="dark-toggle-fab" onclick="toggleDarkMode(!document.body.classList.contains('dark-mode'))" aria-label="다크모드 전환">🌙</button>
+<script>
+if(localStorage.getItem('lumi_dark_mode')==='1')document.body.classList.add('dark-mode');
+function toggleDarkMode(on){document.body.classList.toggle('dark-mode',on);localStorage.setItem('lumi_dark_mode',on?'1':'0');var f=document.getElementById('dark-toggle-fab');if(f)f.textContent=on?'☀️':'🌙';}
+(function(){var f=document.getElementById('dark-toggle-fab');if(f&&document.body.classList.contains('dark-mode'))f.textContent='☀️';})();
 </script>
 </body>
 </html>
