@@ -117,10 +117,44 @@ body.dark-mode .nav-logo-txt{color:#F2F4F6;}
 .how-text h3{font-size:.95rem;font-weight:800;color:var(--g900);}
 .how-text .how-step{font-size:11px;font-weight:700;color:var(--pink);letter-spacing:.5px;margin-bottom:2px;}
 .how-expand{max-height:0;overflow:hidden;transition:max-height .5s ease,opacity .4s ease;opacity:0;margin-bottom:0;}
-.how-expand.open{max-height:300px;opacity:1;margin-bottom:12px;}
-.how-expand-inner{background:var(--pink-ultra);border:1px solid var(--pink-soft);border-radius:var(--r-xl);padding:20px 22px;margin-top:-4px;}
-.how-expand-inner p{font-size:.88rem;color:var(--g700);line-height:1.8;}
-.how-expand-inner .how-expand-title{font-size:.8rem;font-weight:700;color:var(--pink);margin-bottom:6px;}
+.how-expand.open{max-height:500px;opacity:1;margin-bottom:12px;}
+.how-expand-inner{background:var(--white);border:1px solid var(--pink-soft);border-radius:var(--r-xl);padding:24px 22px;margin-top:-4px;display:flex;gap:20px;align-items:center;}
+.how-expand-inner p{font-size:.85rem;color:var(--g700);line-height:1.8;}
+.how-expand-inner .how-expand-title{font-size:.78rem;font-weight:700;color:var(--pink);margin-bottom:6px;}
+.how-expand-text{flex:1;}
+.how-anim{width:120px;height:120px;min-width:120px;border-radius:var(--r-xl);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;}
+/* STEP 01 — 사진 올리기 */
+.anim-upload{background:linear-gradient(135deg,#fff0f6,#fce4ec);}
+.anim-upload .anim-img{width:64px;height:64px;border-radius:12px;background:linear-gradient(135deg,#f8bbd0,#e8628a);animation:animUpload 2s ease infinite;}
+.anim-upload .anim-plus{position:absolute;bottom:12px;right:12px;width:28px;height:28px;border-radius:50%;background:var(--pink);color:#fff;font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center;animation:animPulse 1.5s ease infinite;}
+@keyframes animUpload{0%,100%{transform:scale(1) translateY(0);}50%{transform:scale(1.05) translateY(-6px);}}
+@keyframes animPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.15);}}
+/* STEP 02 — AI 분석 */
+.anim-scan{background:linear-gradient(135deg,#f3e5f5,#fff0f6);}
+.anim-scan .anim-img{width:64px;height:64px;border-radius:12px;background:linear-gradient(135deg,#ce93d8,#e8628a);position:relative;}
+.anim-scan .anim-line{position:absolute;left:0;width:100%;height:3px;background:linear-gradient(90deg,transparent,#e8628a,transparent);border-radius:2px;animation:animScan 1.8s ease-in-out infinite;}
+@keyframes animScan{0%{top:10px;opacity:0;}20%{opacity:1;}80%{opacity:1;}100%{top:100px;opacity:0;}}
+.anim-scan .anim-spark{position:absolute;width:8px;height:8px;border-radius:50%;background:var(--pink);animation:animSpark 2s ease infinite;}
+.anim-scan .anim-spark:nth-child(2){top:20px;right:15px;animation-delay:.3s;}
+.anim-scan .anim-spark:nth-child(3){bottom:25px;left:18px;animation-delay:.7s;}
+@keyframes animSpark{0%,100%{opacity:0;transform:scale(0);}50%{opacity:1;transform:scale(1);}}
+/* STEP 03 — 캡션 작성 */
+.anim-write{background:linear-gradient(135deg,#e8eaf6,#fff0f6);}
+.anim-write .anim-lines{display:flex;flex-direction:column;gap:6px;width:80px;}
+.anim-write .anim-ln{height:6px;border-radius:3px;background:linear-gradient(90deg,var(--pink),#f8bbd0);animation:animType 2.5s ease infinite;}
+.anim-write .anim-ln:nth-child(1){width:100%;}
+.anim-write .anim-ln:nth-child(2){width:75%;animation-delay:.3s;}
+.anim-write .anim-ln:nth-child(3){width:60%;animation-delay:.6s;}
+.anim-write .anim-cursor{width:2px;height:14px;background:var(--pink);border-radius:1px;position:absolute;right:24px;top:50%;animation:animBlink .8s step-end infinite;}
+@keyframes animType{0%{transform:scaleX(0);transform-origin:left;}40%{transform:scaleX(1);transform-origin:left;}100%{transform:scaleX(1);}}
+@keyframes animBlink{0%,100%{opacity:1;}50%{opacity:0;}}
+/* STEP 04 — 자동 게시 */
+.anim-post{background:linear-gradient(135deg,#fce4ec,#f3e5f5);}
+.anim-post .anim-rocket{font-size:36px;animation:animRocket 2s ease infinite;}
+@keyframes animRocket{0%{transform:translate(0,0) rotate(-45deg);}50%{transform:translate(12px,-12px) rotate(-45deg);}100%{transform:translate(0,0) rotate(-45deg);}}
+.anim-post .anim-trail{position:absolute;bottom:20px;left:15px;width:40px;height:3px;border-radius:2px;background:linear-gradient(90deg,transparent,rgba(232,98,138,.4));animation:animTrail 2s ease infinite;}
+@keyframes animTrail{0%{opacity:0;width:0;}50%{opacity:1;width:40px;}100%{opacity:0;width:0;}}
+@media(max-width:768px){.how-expand-inner{flex-direction:column;}.how-anim{width:100%;height:100px;min-width:auto;}}
 
 /* FEATURES */
 .feat-sec{background:var(--white);}
@@ -361,28 +395,40 @@ body.dark-mode .footer-logo{filter:brightness(1.4);}
         <div class="how-text"><div class="how-step">STEP 01</div><h3>사진 올리기</h3></div>
       </div>
       <div class="how-expand" id="how-expand-0">
-        <div class="how-expand-inner"><p class="how-expand-title">📸 사진 업로드</p><p>오늘 찍은 사진 한 장이면 충분해요. 한 장도, 여러 장도 괜찮아요. 대시보드에서 바로 업로드하세요.</p></div>
+        <div class="how-expand-inner">
+          <div class="how-expand-text"><p class="how-expand-title">📸 사진 업로드</p><p>오늘 찍은 사진 한 장이면 충분해요. 한 장도, 여러 장도 괜찮아요. 대시보드에서 바로 업로드하세요.</p></div>
+          <div class="how-anim anim-upload"><div class="anim-img"></div><div class="anim-plus">+</div></div>
+        </div>
       </div>
       <div class="how-card reveal" data-how="1" onclick="selectHow(1)">
         <div class="how-icon"><i data-lucide="sparkles" style="width:24px;height:24px;color:var(--pink);"></i></div>
         <div class="how-text"><div class="how-step">STEP 02</div><h3>lumi 사진 분석</h3></div>
       </div>
       <div class="how-expand" id="how-expand-1">
-        <div class="how-expand-inner"><p class="how-expand-title">🔍 AI 사진 분석</p><p>사진 속 메뉴, 분위기, 색감, 계절감까지 AI가 읽어내요. 매장의 특색을 정확히 파악합니다.</p></div>
+        <div class="how-expand-inner">
+          <div class="how-expand-text"><p class="how-expand-title">🔍 AI 사진 분석</p><p>사진 속 메뉴, 분위기, 색감, 계절감까지 AI가 읽어내요. 매장의 특색을 정확히 파악합니다.</p></div>
+          <div class="how-anim anim-scan"><div class="anim-img"></div><div class="anim-line"></div><div class="anim-spark"></div><div class="anim-spark"></div></div>
+        </div>
       </div>
       <div class="how-card reveal" data-how="2" onclick="selectHow(2)">
         <div class="how-icon"><i data-lucide="pen-tool" style="width:24px;height:24px;color:var(--pink);"></i></div>
         <div class="how-text"><div class="how-step">STEP 03</div><h3>캡션 자동 작성</h3></div>
       </div>
       <div class="how-expand" id="how-expand-2">
-        <div class="how-expand-inner"><p class="how-expand-title">✍️ 캡션 완성</p><p>오늘 날씨, 트렌드 해시태그, 매장 말투까지 반영해서 자연스러운 캡션을 완성해요.</p></div>
+        <div class="how-expand-inner">
+          <div class="how-expand-text"><p class="how-expand-title">✍️ 캡션 완성</p><p>오늘 날씨, 트렌드 해시태그, 매장 말투까지 반영해서 자연스러운 캡션을 완성해요.</p></div>
+          <div class="how-anim anim-write"><div class="anim-lines"><div class="anim-ln"></div><div class="anim-ln"></div><div class="anim-ln"></div></div><div class="anim-cursor"></div></div>
+        </div>
       </div>
       <div class="how-card reveal" data-how="3" onclick="selectHow(3)">
         <div class="how-icon"><i data-lucide="send" style="width:24px;height:24px;color:var(--pink);"></i></div>
         <div class="how-text"><div class="how-step">STEP 04</div><h3>인스타 자동 게시</h3></div>
       </div>
       <div class="how-expand" id="how-expand-3">
-        <div class="how-expand-inner"><p class="how-expand-title">🚀 자동 게시</p><p>트렌드 해시태그까지 달고, 팔로워가 가장 활발한 최적 시간에 자동으로 올라가요.</p></div>
+        <div class="how-expand-inner">
+          <div class="how-expand-text"><p class="how-expand-title">🚀 자동 게시</p><p>트렌드 해시태그까지 달고, 팔로워가 가장 활발한 최적 시간에 자동으로 올라가요.</p></div>
+          <div class="how-anim anim-post"><div class="anim-rocket">🚀</div><div class="anim-trail"></div></div>
+        </div>
       </div>
     </div>
   </div>
