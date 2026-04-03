@@ -116,30 +116,11 @@ body.dark-mode .nav-logo-txt{color:#F2F4F6;}
 .how-icon svg{width:24px;height:24px;stroke:var(--pink);stroke-width:2;fill:none;}
 .how-text h3{font-size:.95rem;font-weight:800;color:var(--g900);}
 .how-text .how-step{font-size:11px;font-weight:700;color:var(--pink);letter-spacing:.5px;margin-bottom:2px;}
-.how-phone-wrap{display:flex;justify-content:center;margin-top:24px;}
-.how-phone{width:220px;height:420px;background:linear-gradient(145deg,#2a2a3a,#1a1a2a);border-radius:36px;padding:8px;box-shadow:0 32px 80px rgba(25,31,40,.3),0 0 0 1px rgba(255,255,255,.1) inset;}
-.how-phone-screen{background:var(--white);border-radius:28px;height:100%;overflow:hidden;display:flex;flex-direction:column;}
-.how-phone-notch{width:80px;height:22px;background:#1a1a2a;border-radius:0 0 14px 14px;margin:0 auto;}
-.how-phone-body{flex:1;padding:14px;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;}
-.how-phone-icon{font-size:40px;animation:float 3s ease-in-out infinite;}
-.how-phone-title{font-size:13px;font-weight:800;color:var(--g900);}
-.how-phone-desc{font-size:11px;color:var(--g500);line-height:1.6;}
-.how-phone-bar{width:70%;height:6px;border-radius:3px;background:var(--g100);overflow:hidden;margin-top:4px;}
-.how-phone-progress{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--pink),#f8bbd0);animation:howProgress 2s ease-in-out infinite;}
-@keyframes howProgress{0%{width:0;}50%{width:100%;}100%{width:100%;}}
-/* step별 폰 상태 */
-.how-phone-state{display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;height:100%;padding:16px;text-align:center;}
-.how-phone-state.active{display:flex;}
-/* step4 인스타 목업 */
-.how-insta-mock{width:100%;text-align:left;}
-.how-insta-header{display:flex;align-items:center;gap:6px;margin-bottom:8px;}
-.how-insta-avatar{width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#f8bbd0,#e8628a);}
-.how-insta-name{font-size:10px;font-weight:800;color:var(--g900);}
-.how-insta-img{width:100%;aspect-ratio:1;border-radius:8px;background:linear-gradient(135deg,#f5e6d3,#e8d5c4);margin-bottom:8px;display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden;}
-.how-insta-img img{width:100%;height:100%;object-fit:cover;}
-.how-insta-caption{font-size:9px;color:var(--g700);line-height:1.6;}
-.how-insta-tags{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px;}
-.how-insta-tag{font-size:8px;color:var(--pink);font-weight:600;}
+.how-expand{max-height:0;overflow:hidden;transition:max-height .5s var(--ease),opacity .4s ease;opacity:0;}
+.how-expand.open{max-height:600px;opacity:1;margin-bottom:12px;}
+.how-expand-body{display:flex;justify-content:center;padding:16px 0;}
+@keyframes scanLine{0%{top:10%;opacity:0;}10%{opacity:1;}90%{opacity:1;}100%{top:85%;opacity:0;}}
+@keyframes progressBar{0%{width:0;}70%{width:100%;}100%{width:100%;}}
 
 /* FEATURES */
 .feat-sec{background:var(--white);}
@@ -379,63 +360,72 @@ body.dark-mode .footer-logo{filter:brightness(1.4);}
         <div class="how-icon"><i data-lucide="camera" style="width:24px;height:24px;color:var(--pink);"></i></div>
         <div class="how-text"><div class="how-step">STEP 01</div><h3>사진 올리기</h3></div>
       </div>
+      <div class="how-expand" id="how-expand-0"><div class="how-expand-body">
+        <div class="phone" style="width:220px;height:440px;animation:none;">
+          <div class="phone-screen">
+            <div class="phone-notch"></div>
+            <div class="phone-header"><div class="phone-avatar"><img src="https://images.unsplash.com/photo-1559925393-8be0ec4767c8?w=56&h=56&fit=crop&crop=face" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" alt=""></div><div class="phone-name">성수동 카페</div></div>
+            <div class="phone-body" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;">
+              <div style="width:80px;height:80px;border-radius:16px;border:2px dashed var(--pink);display:flex;align-items:center;justify-content:center;animation:float 3s ease-in-out infinite;"><i data-lucide="image-plus" style="width:32px;height:32px;color:var(--pink);"></i></div>
+              <p style="font-size:11px;font-weight:700;color:var(--g900);">사진을 올려주세요</p>
+              <p style="font-size:10px;color:var(--g400);">한 장도, 여러 장도 OK</p>
+            </div>
+          </div>
+        </div>
+      </div></div>
+
       <div class="how-card reveal" data-how="1" onclick="selectHow(1)">
         <div class="how-icon"><i data-lucide="sparkles" style="width:24px;height:24px;color:var(--pink);"></i></div>
         <div class="how-text"><div class="how-step">STEP 02</div><h3>lumi 사진 분석</h3></div>
       </div>
+      <div class="how-expand" id="how-expand-1"><div class="how-expand-body">
+        <div class="phone" style="width:220px;height:440px;animation:none;">
+          <div class="phone-screen">
+            <div class="phone-notch"></div>
+            <div class="phone-header"><div class="phone-avatar"><img src="https://images.unsplash.com/photo-1559925393-8be0ec4767c8?w=56&h=56&fit=crop&crop=face" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" alt=""></div><div class="phone-name">성수동 카페</div></div>
+            <div class="phone-body">
+              <div class="phone-img" style="position:relative;"><img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=400&fit=crop" alt="" loading="lazy"><div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,rgba(232,98,138,.15));border-radius:12px;"></div><div style="position:absolute;left:0;width:100%;height:2px;background:linear-gradient(90deg,transparent,var(--pink),transparent);animation:scanLine 2s ease-in-out infinite;top:30%;"></div></div>
+              <p style="font-size:10px;font-weight:700;color:var(--pink);text-align:center;margin-top:8px;">✨ AI가 분석 중...</p>
+              <div style="width:100%;height:4px;border-radius:2px;background:var(--g100);margin-top:6px;overflow:hidden;"><div style="height:100%;border-radius:2px;background:var(--pink);animation:progressBar 2s ease-in-out infinite;"></div></div>
+            </div>
+          </div>
+        </div>
+      </div></div>
+
       <div class="how-card reveal" data-how="2" onclick="selectHow(2)">
         <div class="how-icon"><i data-lucide="pen-tool" style="width:24px;height:24px;color:var(--pink);"></i></div>
         <div class="how-text"><div class="how-step">STEP 03</div><h3>캡션 자동 작성</h3></div>
       </div>
-      <div class="how-card reveal active" data-how="3" onclick="selectHow(3)">
-        <div class="how-icon"><i data-lucide="send" style="width:24px;height:24px;color:var(--pink);"></i></div>
-        <div class="how-text"><div class="how-step">STEP 04</div><h3>인스타 자동 게시</h3></div>
-      </div>
-    </div>
-    <div class="how-phone-wrap" id="how-phone-wrap">
-      <div class="how-phone">
-        <div class="how-phone-screen">
-          <div class="how-phone-notch"></div>
-          <div class="how-phone-body">
-            <!-- STEP 01 -->
-            <div class="how-phone-state" data-state="0">
-              <div class="how-phone-icon">📸</div>
-              <div class="how-phone-title">사진 업로드</div>
-              <div class="how-phone-desc">오늘 찍은 사진 한 장이면 충분해요.<br>한 장도, 여러 장도 괜찮아요.</div>
-              <div style="width:60px;height:60px;border-radius:12px;background:linear-gradient(135deg,#f5e6d3,#e8d5c4);display:flex;align-items:center;justify-content:center;font-size:24px;margin-top:4px;">🖼️</div>
-            </div>
-            <!-- STEP 02 -->
-            <div class="how-phone-state" data-state="1">
-              <div class="how-phone-icon">✨</div>
-              <div class="how-phone-title">AI가 사진을 분석 중...</div>
-              <div class="how-phone-desc">메뉴, 분위기, 색감, 계절감을<br>자동으로 읽어내요.</div>
-              <div class="how-phone-bar"><div class="how-phone-progress"></div></div>
-            </div>
-            <!-- STEP 03 -->
-            <div class="how-phone-state" data-state="2">
-              <div class="how-phone-icon">✍️</div>
-              <div class="how-phone-title">캡션 작성 중...</div>
-              <div class="how-phone-desc" style="text-align:left;background:var(--g50);border-radius:8px;padding:10px;font-size:10px;color:var(--g700);line-height:1.7;">봄비 내리는 오후, 따뜻한 라떼 한 잔이 생각나는 날 🌧☕ 성수동에서 작은 행복을 찾아보세요.</div>
-            </div>
-            <!-- STEP 04 -->
-            <div class="how-phone-state active" data-state="3">
-              <div class="how-insta-mock">
-                <div class="how-insta-header">
-                  <div class="how-insta-avatar"></div>
-                  <div class="how-insta-name">성수동 카페</div>
-                </div>
-                <div class="how-insta-img"><img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=200&h=200&fit=crop" alt="" loading="lazy"></div>
-                <div class="how-insta-caption">봄비 내리는 오후, 따뜻한 라떼 한 잔 🌧☕</div>
-                <div class="how-insta-tags">
-                  <span class="how-insta-tag">#성수카페</span>
-                  <span class="how-insta-tag">#봄비카페</span>
-                  <span class="how-insta-tag">#라떼맛집</span>
-                </div>
-              </div>
+      <div class="how-expand" id="how-expand-2"><div class="how-expand-body">
+        <div class="phone" style="width:220px;height:440px;animation:none;">
+          <div class="phone-screen">
+            <div class="phone-notch"></div>
+            <div class="phone-header"><div class="phone-avatar"><img src="https://images.unsplash.com/photo-1559925393-8be0ec4767c8?w=56&h=56&fit=crop&crop=face" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" alt=""></div><div class="phone-name">성수동 카페</div></div>
+            <div class="phone-body">
+              <div class="phone-img"><img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=400&fit=crop" alt="" loading="lazy"></div>
+              <div class="phone-caption" style="border-left:2px solid var(--pink);padding-left:8px;">봄비 내리는 오후, 따뜻한 라떼 한 잔이 생각나는 날 🌧☕ 성수동에서 작은 행복을 찾아보세요.<span style="display:inline-block;width:2px;height:12px;background:var(--pink);animation:blink .8s step-end infinite;vertical-align:middle;margin-left:2px;"></span></div>
             </div>
           </div>
         </div>
+      </div></div>
+
+      <div class="how-card reveal" data-how="3" onclick="selectHow(3)">
+        <div class="how-icon"><i data-lucide="send" style="width:24px;height:24px;color:var(--pink);"></i></div>
+        <div class="how-text"><div class="how-step">STEP 04</div><h3>인스타 자동 게시</h3></div>
       </div>
+      <div class="how-expand" id="how-expand-3"><div class="how-expand-body">
+        <div class="phone" style="width:220px;height:440px;animation:none;">
+          <div class="phone-screen">
+            <div class="phone-notch"></div>
+            <div class="phone-header"><div class="phone-avatar"><img src="https://images.unsplash.com/photo-1559925393-8be0ec4767c8?w=56&h=56&fit=crop&crop=face" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" alt=""></div><div class="phone-name">성수동 카페</div></div>
+            <div class="phone-body">
+              <div class="phone-img"><img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=400&fit=crop" alt="" loading="lazy"></div>
+              <div class="phone-caption">봄비 내리는 오후, 따뜻한 라떼 한 잔이 생각나는 날 🌧☕ 성수동에서 작은 행복을 찾아보세요.</div>
+              <div class="phone-tags"><span class="phone-tag">#성수카페</span><span class="phone-tag">#봄비카페</span><span class="phone-tag">#라떼맛집</span></div>
+            </div>
+          </div>
+        </div>
+      </div></div>
     </div>
   </div>
 </section>
@@ -743,16 +733,20 @@ body.dark-mode .footer-logo{filter:brightness(1.4);}
 // Lucide 아이콘 초기화
 if(typeof lucide !== 'undefined') lucide.createIcons();
 
-// How 스텝 선택
+// How 스텝 선택 (아코디언)
 function selectHow(idx){
+  var wasOpen = document.querySelector('.how-card[data-how="'+idx+'"]').classList.contains('active');
   document.querySelectorAll('.how-card').forEach(function(c){c.classList.remove('active');});
-  document.querySelectorAll('.how-phone-state').forEach(function(s){s.classList.remove('active');});
+  document.querySelectorAll('.how-expand').forEach(function(e){e.classList.remove('open');});
+  if(wasOpen) return;
   var card = document.querySelector('.how-card[data-how="'+idx+'"]');
-  var state = document.querySelector('.how-phone-state[data-state="'+idx+'"]');
+  var expand = document.getElementById('how-expand-'+idx);
   if(card) card.classList.add('active');
-  if(state) state.classList.add('active');
-  var phone = document.getElementById('how-phone-wrap');
-  if(phone) setTimeout(function(){ phone.scrollIntoView({behavior:'smooth',block:'center'}); },100);
+  if(expand){
+    expand.classList.add('open');
+    if(typeof lucide!=='undefined') lucide.createIcons();
+    setTimeout(function(){ expand.scrollIntoView({behavior:'smooth',block:'nearest'}); },200);
+  }
 }
 
 // 실시간 베타 카운트
