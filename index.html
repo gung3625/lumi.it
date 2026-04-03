@@ -54,7 +54,7 @@ body::before{content:'';position:fixed;inset:0;z-index:9000;pointer-events:none;
 .reveal.visible{opacity:1;transform:translateY(0);filter:blur(0);}
 
 /* ═══ BANNER ═══ */
-.top-banner{background:linear-gradient(90deg,#08080a,#1a0a1e,#08080a);padding:10px 16px;display:flex;align-items:center;justify-content:center;gap:10px;white-space:nowrap;overflow:hidden;border-bottom:1px solid var(--border);}
+.top-banner{background:linear-gradient(90deg,#08080a,#1a0a1e,#08080a);padding:10px 16px;display:flex;align-items:center;justify-content:center;gap:10px;white-space:nowrap;overflow:hidden;border-bottom:1px solid var(--border);position:relative;z-index:950;}
 .banner-dot{width:6px;height:6px;border-radius:50%;background:var(--pink);animation:pulse 1.5s infinite;flex-shrink:0;}
 .banner-txt{font-size:12px;color:rgba(255,255,255,.6);font-weight:500;letter-spacing:.01em;}
 .banner-txt strong{color:var(--pink);font-weight:700;}
@@ -368,7 +368,7 @@ body.light-mode .dark-toggle-fab{background:rgba(0,0,0,.8);border-color:transpar
 /* ═══ RESPONSIVE ═══ */
 @media(max-width:768px){
   nav{width:calc(100% - 24px);top:10px;height:48px;padding:0 6px 0 16px;}
-  .nav-link{display:none;}
+  .nav-link.nav-hide-mobile{display:none;}
   .nav-logo{height:26px;}.nav-logo-txt{font-size:17px;}
   .hero{min-height:auto;padding:120px 20px 60px;text-align:center;}
   .hero-inner{max-width:100%;}
@@ -416,8 +416,8 @@ body.light-mode .dark-toggle-fab{background:rgba(0,0,0,.8);border-color:transpar
   <div class="nav-inner">
     <a href="/" class="nav-logo-wrap"><img src="https://i.ibb.co/JRd9BZVB/u4775893729-httpss-mj-runk-EY2-VOh-Li-0-910-Letter-L-on-a-white-976b58b9-449a-4aa6-b631-2fbfa668cf17.png" class="nav-logo" alt="lumi"><span class="nav-logo-txt">lumi</span></a>
     <div class="nav-right">
-      <a href="#how" class="nav-link">사용법</a>
-      <a href="#price-sec" class="nav-link">요금</a>
+      <a href="#how" class="nav-link nav-hide-mobile">사용법</a>
+      <a href="#price-sec" class="nav-link nav-hide-mobile">요금</a>
       <button class="nav-link" id="nav-login-btn">로그인</button>
       <button class="nav-cta" id="nav-signup-btn">무료 테스터 신청</button>
       <button class="nav-link" id="nav-logout-btn" style="display:none;">로그아웃</button>
@@ -433,8 +433,8 @@ body.light-mode .dark-toggle-fab{background:rgba(0,0,0,.8);border-color:transpar
     <h1 class="hero-title">사장님, 인스타 올리기<br><span class="acc">귀찮으셨죠?</span></h1>
     <p class="hero-desc">사진 한 장만 올리면,<br>캡션 · 해시태그 · 예약 게시까지 전부 자동.<br>매일 37분 쓰던 시간, 이제 1분이면 끝나요.</p>
     <div class="hero-cta-row">
-      <a href="/beta" class="btn-main">무료로 시작하기 <span class="btn-arrow"><iconify-icon icon="solar:arrow-right-linear" width="16"></iconify-icon></span></a>
-      <a href="#demo" class="btn-sub">캡션 체험하기</a>
+      <a href="#demo" class="btn-main">캡션 먼저 체험하기 <span class="btn-arrow"><iconify-icon icon="solar:arrow-right-linear" width="16"></iconify-icon></span></a>
+      <a href="/beta" class="btn-sub">무료 테스터 신청 →</a>
     </div>
     <div class="hero-mockup">
       <div class="phone">
@@ -1043,7 +1043,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 })();
 </script>
-<button class="dark-toggle-fab" id="dark-toggle-fab" onclick="toggleDarkMode(!document.body.classList.contains('light-mode'))" aria-label="다크모드 전환">☀️</button>
+<button class="dark-toggle-fab" id="dark-toggle-fab" onclick="toggleDarkMode(document.body.classList.contains('light-mode'))" aria-label="다크모드 전환">☀️</button>
 <script>
 if(localStorage.getItem('lumi_dark_mode')==='0')document.body.classList.add('light-mode');
 function toggleDarkMode(on){document.body.classList.toggle('light-mode',!on);localStorage.setItem('lumi_dark_mode',on?'1':'0');var f=document.getElementById('dark-toggle-fab');if(f)f.textContent=on?'☀️':'🌙';}
