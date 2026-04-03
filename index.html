@@ -117,10 +117,63 @@ body.dark-mode .nav-logo-txt{color:#F2F4F6;}
 .how-text h3{font-size:.95rem;font-weight:800;color:var(--g900);}
 .how-text .how-step{font-size:11px;font-weight:700;color:var(--pink);letter-spacing:.5px;margin-bottom:2px;}
 .how-expand{max-height:0;overflow:hidden;transition:max-height .5s var(--ease),opacity .4s ease;opacity:0;}
-.how-expand.open{max-height:600px;opacity:1;margin-bottom:12px;}
+.how-expand.open{max-height:700px;opacity:1;margin-bottom:12px;}
 .how-expand-body{display:flex;justify-content:center;padding:16px 0;}
-@keyframes scanLine{0%{top:10%;opacity:0;}10%{opacity:1;}90%{opacity:1;}100%{top:85%;opacity:0;}}
-@keyframes progressBar{0%{width:0;}70%{width:100%;}100%{width:100%;}}
+/* STEP 01 - 사진 올리기 */
+@keyframes photoStack1{0%{transform:translate(-40px,-60px) rotate(-15deg) scale(.6);opacity:0;}40%{transform:translate(-20px,-8px) rotate(-6deg) scale(1);opacity:1;}100%{transform:translate(-20px,-8px) rotate(-6deg) scale(1);opacity:1;}}
+@keyframes photoStack2{0%,30%{transform:translate(0,0) scale(.6);opacity:0;}60%{transform:translate(0,0) rotate(0deg) scale(1);opacity:1;}100%{transform:translate(0,0) rotate(0deg) scale(1);opacity:1;}}
+@keyframes photoStack3{0%,50%{transform:translate(40px,-60px) rotate(15deg) scale(.6);opacity:0;}80%{transform:translate(18px,-6px) rotate(5deg) scale(1);opacity:1;}100%{transform:translate(18px,-6px) rotate(5deg) scale(1);opacity:1;}}
+@keyframes tapBounce{0%,70%{transform:scale(0);opacity:0;}80%{transform:scale(1.2);opacity:1;}90%{transform:scale(.9);}100%{transform:scale(1);opacity:1;}}
+.step1-photos{position:relative;width:140px;height:120px;margin:0 auto;}
+.step1-photos .sp{position:absolute;width:80px;height:80px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.15);overflow:hidden;}
+.step1-photos .sp img{width:100%;height:100%;object-fit:cover;}
+.step1-photos .sp:nth-child(1){animation:photoStack1 1.5s var(--ease) forwards;}
+.step1-photos .sp:nth-child(2){animation:photoStack2 1.5s var(--ease) forwards;z-index:2;}
+.step1-photos .sp:nth-child(3){animation:photoStack3 1.5s var(--ease) forwards;}
+.step1-check{position:absolute;bottom:-4px;right:20px;width:32px;height:32px;border-radius:50%;background:var(--pink);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;z-index:5;animation:tapBounce 2s var(--ease) forwards;}
+/* STEP 02 - AI 분석 */
+@keyframes scanLine{0%{top:5%;opacity:0;}10%{opacity:1;}90%{opacity:1;}100%{top:90%;opacity:0;}}
+@keyframes labelPop1{0%,40%{transform:scale(0);opacity:0;}50%{transform:scale(1.1);opacity:1;}60%{transform:scale(1);opacity:1;}100%{transform:scale(1);opacity:1;}}
+@keyframes labelPop2{0%,55%{transform:scale(0);opacity:0;}65%{transform:scale(1.1);opacity:1;}75%{transform:scale(1);opacity:1;}100%{transform:scale(1);opacity:1;}}
+@keyframes labelPop3{0%,70%{transform:scale(0);opacity:0;}80%{transform:scale(1.1);opacity:1;}90%{transform:scale(1);opacity:1;}100%{transform:scale(1);opacity:1;}}
+.step2-scan{position:relative;width:100%;aspect-ratio:1;border-radius:12px;overflow:hidden;}
+.step2-scan img{width:100%;height:100%;object-fit:cover;}
+.step2-line{position:absolute;left:0;width:100%;height:2px;background:linear-gradient(90deg,transparent 5%,var(--pink) 50%,transparent 95%);box-shadow:0 0 12px var(--pink);animation:scanLine 2.5s ease-in-out infinite;}
+.step2-label{position:absolute;padding:3px 8px;border-radius:6px;font-size:9px;font-weight:700;color:#fff;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.2);}
+.step2-label:nth-child(3){background:var(--pink);top:20%;left:10%;animation:labelPop1 3s ease infinite;}
+.step2-label:nth-child(4){background:#7c3aed;top:50%;right:8%;animation:labelPop2 3s ease infinite;}
+.step2-label:nth-child(5){background:#0ea5e9;bottom:18%;left:15%;animation:labelPop3 3s ease infinite;}
+/* STEP 03 - 캡션 작성 */
+.step3-editor{background:var(--g50);border-radius:10px;padding:12px;width:100%;text-align:left;}
+.step3-editor .te-label{font-size:8px;font-weight:700;color:var(--pink);margin-bottom:6px;letter-spacing:.5px;}
+.step3-typing{font-size:10px;color:var(--g700);line-height:1.8;min-height:48px;overflow:hidden;}
+.step3-cursor{display:inline-block;width:1.5px;height:12px;background:var(--pink);animation:blink .6s step-end infinite;vertical-align:text-bottom;margin-left:1px;}
+.step3-tags{display:flex;flex-wrap:wrap;gap:3px;margin-top:8px;}
+.step3-tag{font-size:8px;padding:2px 6px;border-radius:99px;font-weight:600;transform:scale(0);animation:tapBounce 1s ease forwards;}
+.step3-tag:nth-child(1){background:#dbeafe;color:#2563eb;animation-delay:2.5s;}
+.step3-tag:nth-child(2){background:#fce7f3;color:#db2777;animation-delay:2.8s;}
+.step3-tag:nth-child(3){background:#d1fae5;color:#059669;animation-delay:3.1s;}
+.step3-tag:nth-child(4){background:#fef3c7;color:#d97706;animation-delay:3.4s;}
+/* STEP 04 - 자동 게시 (Instagram 업로드 프로세스) */
+@keyframes uploadProgress{0%{width:0;}30%{width:40%;}60%{width:75%;}85%{width:95%;}100%{width:100%;}}
+@keyframes uploadFade{0%{opacity:1;}90%{opacity:1;}100%{opacity:0;}}
+@keyframes postReveal{0%,60%{opacity:0;transform:scale(.95);}70%{opacity:1;transform:scale(1);}100%{opacity:1;transform:scale(1);}}
+@keyframes igNotif{0%,70%{transform:translateY(-20px);opacity:0;}80%{transform:translateY(0);opacity:1;}95%{transform:translateY(0);opacity:1;}100%{transform:translateY(0);opacity:1;}}
+@keyframes heartPop{0%,75%{transform:scale(0);opacity:0;}82%{transform:scale(1.4);opacity:1;}90%{transform:scale(1);opacity:1;}100%{transform:scale(1);opacity:1;}}
+@keyframes likesCount{0%,80%{opacity:0;}100%{opacity:1;}}
+.step4-upload{text-align:center;margin-bottom:10px;animation:uploadFade 3s ease forwards;}
+.step4-upload-icon{font-size:20px;margin-bottom:4px;animation:tapBounce 1.5s ease forwards;}
+.step4-upload-text{font-size:8px;font-weight:700;color:var(--g500);margin-bottom:6px;}
+.step4-bar{width:100%;height:3px;background:var(--g200);border-radius:99px;overflow:hidden;}
+.step4-bar-fill{height:100%;background:linear-gradient(90deg,var(--pink),#7c3aed);border-radius:99px;animation:uploadProgress 2.5s ease forwards;}
+.step4-post{animation:postReveal 3.5s ease both;}
+.step4-actions{display:flex;align-items:center;gap:8px;margin-top:6px;padding-top:6px;}
+.step4-heart{color:#ef4444;font-size:14px;animation:heartPop 3.5s ease forwards;}
+.step4-likes{font-size:9px;font-weight:700;color:var(--g900);animation:likesCount 3.5s ease forwards;}
+.step4-notif{display:flex;align-items:center;gap:6px;margin-top:8px;padding:8px 10px;background:var(--white);border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.1);border:1px solid var(--g100);animation:igNotif 4s ease forwards;}
+.step4-notif-icon{width:24px;height:24px;border-radius:6px;background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;}
+.step4-notif-text{font-size:8px;color:var(--g700);line-height:1.4;}
+.step4-notif-text strong{color:var(--g900);font-weight:800;}
 
 /* FEATURES */
 .feat-sec{background:var(--white);}
@@ -365,10 +418,13 @@ body.dark-mode .footer-logo{filter:brightness(1.4);}
           <div class="phone-screen">
             <div class="phone-notch"></div>
             <div class="phone-header"><div class="phone-avatar"><img src="https://images.unsplash.com/photo-1559925393-8be0ec4767c8?w=56&h=56&fit=crop&crop=face" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" alt=""></div><div class="phone-name">성수동 카페</div></div>
-            <div class="phone-body" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;">
-              <div style="width:80px;height:80px;border-radius:16px;border:2px dashed var(--pink);display:flex;align-items:center;justify-content:center;animation:float 3s ease-in-out infinite;"><i data-lucide="image-plus" style="width:32px;height:32px;color:var(--pink);"></i></div>
-              <p style="font-size:11px;font-weight:700;color:var(--g900);">사진을 올려주세요</p>
-              <p style="font-size:10px;color:var(--g400);">한 장도, 여러 장도 OK</p>
+            <div class="phone-body" style="display:flex;align-items:center;justify-content:center;">
+              <div class="step1-photos">
+                <div class="sp"><img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=200&h=200&fit=crop" alt="" loading="lazy"></div>
+                <div class="sp"><img src="https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=200&h=200&fit=crop" alt="" loading="lazy"></div>
+                <div class="sp"><img src="https://images.unsplash.com/photo-1514432324607-a09d9b4aefda?w=200&h=200&fit=crop" alt="" loading="lazy"></div>
+                <div class="step1-check">✓</div>
+              </div>
             </div>
           </div>
         </div>
@@ -384,9 +440,13 @@ body.dark-mode .footer-logo{filter:brightness(1.4);}
             <div class="phone-notch"></div>
             <div class="phone-header"><div class="phone-avatar"><img src="https://images.unsplash.com/photo-1559925393-8be0ec4767c8?w=56&h=56&fit=crop&crop=face" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" alt=""></div><div class="phone-name">성수동 카페</div></div>
             <div class="phone-body">
-              <div class="phone-img" style="position:relative;"><img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=400&fit=crop" alt="" loading="lazy"><div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,rgba(232,98,138,.15));border-radius:12px;"></div><div style="position:absolute;left:0;width:100%;height:2px;background:linear-gradient(90deg,transparent,var(--pink),transparent);animation:scanLine 2s ease-in-out infinite;top:30%;"></div></div>
-              <p style="font-size:10px;font-weight:700;color:var(--pink);text-align:center;margin-top:8px;">✨ AI가 분석 중...</p>
-              <div style="width:100%;height:4px;border-radius:2px;background:var(--g100);margin-top:6px;overflow:hidden;"><div style="height:100%;border-radius:2px;background:var(--pink);animation:progressBar 2s ease-in-out infinite;"></div></div>
+              <div class="step2-scan">
+                <img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=400&fit=crop" alt="" loading="lazy">
+                <div class="step2-line"></div>
+                <div class="step2-label">☕ 라떼</div>
+                <div class="step2-label">🎨 따뜻한 톤</div>
+                <div class="step2-label">🌧 비 오는 날</div>
+              </div>
             </div>
           </div>
         </div>
@@ -402,8 +462,16 @@ body.dark-mode .footer-logo{filter:brightness(1.4);}
             <div class="phone-notch"></div>
             <div class="phone-header"><div class="phone-avatar"><img src="https://images.unsplash.com/photo-1559925393-8be0ec4767c8?w=56&h=56&fit=crop&crop=face" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" alt=""></div><div class="phone-name">성수동 카페</div></div>
             <div class="phone-body">
-              <div class="phone-img"><img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=400&fit=crop" alt="" loading="lazy"></div>
-              <div class="phone-caption" style="border-left:2px solid var(--pink);padding-left:8px;">봄비 내리는 오후, 따뜻한 라떼 한 잔이 생각나는 날 🌧☕ 성수동에서 작은 행복을 찾아보세요.<span style="display:inline-block;width:2px;height:12px;background:var(--pink);animation:blink .8s step-end infinite;vertical-align:middle;margin-left:2px;"></span></div>
+              <div class="step3-editor">
+                <div class="te-label">CAPTION</div>
+                <div class="step3-typing" id="step3-typing"></div>
+                <div class="step3-tags">
+                  <span class="step3-tag">#성수카페</span>
+                  <span class="step3-tag">#봄비카페</span>
+                  <span class="step3-tag">#라떼맛집</span>
+                  <span class="step3-tag">#카페추천</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -419,9 +487,21 @@ body.dark-mode .footer-logo{filter:brightness(1.4);}
             <div class="phone-notch"></div>
             <div class="phone-header"><div class="phone-avatar"><img src="https://images.unsplash.com/photo-1559925393-8be0ec4767c8?w=56&h=56&fit=crop&crop=face" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" alt=""></div><div class="phone-name">성수동 카페</div></div>
             <div class="phone-body">
-              <div class="phone-img"><img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=400&fit=crop" alt="" loading="lazy"></div>
-              <div class="phone-caption">봄비 내리는 오후, 따뜻한 라떼 한 잔이 생각나는 날 🌧☕ 성수동에서 작은 행복을 찾아보세요.</div>
-              <div class="phone-tags"><span class="phone-tag">#성수카페</span><span class="phone-tag">#봄비카페</span><span class="phone-tag">#라떼맛집</span></div>
+              <div class="step4-upload">
+                <div class="step4-upload-icon">📤</div>
+                <div class="step4-upload-text">Instagram에 게시 중...</div>
+                <div class="step4-bar"><div class="step4-bar-fill"></div></div>
+              </div>
+              <div class="step4-post">
+                <div class="phone-img"><img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=400&fit=crop" alt="" loading="lazy"></div>
+                <div class="step4-actions"><span class="step4-heart">♥</span><span class="step4-likes">좋아요 128개</span></div>
+                <div class="phone-caption" style="margin-top:4px;">봄비 내리는 오후, 따뜻한 라떼 한 잔이 생각나는 날 🌧☕</div>
+                <div class="phone-tags"><span class="phone-tag">#성수카페</span><span class="phone-tag">#봄비카페</span><span class="phone-tag">#라떼맛집</span></div>
+              </div>
+              <div class="step4-notif">
+                <div class="step4-notif-icon">📷</div>
+                <div class="step4-notif-text"><strong>성수동 카페</strong>님의 게시물이<br>업로드되었습니다.</div>
+              </div>
             </div>
           </div>
         </div>
@@ -733,20 +813,41 @@ body.dark-mode .footer-logo{filter:brightness(1.4);}
 // Lucide 아이콘 초기화
 if(typeof lucide !== 'undefined') lucide.createIcons();
 
-// How 스텝 선택 (아코디언)
+// How 스텝 선택 (아코디언 + 애니메이션 리셋)
+var step3Timer=null;
 function selectHow(idx){
   var wasOpen = document.querySelector('.how-card[data-how="'+idx+'"]').classList.contains('active');
   document.querySelectorAll('.how-card').forEach(function(c){c.classList.remove('active');});
   document.querySelectorAll('.how-expand').forEach(function(e){e.classList.remove('open');});
+  if(step3Timer){clearInterval(step3Timer);step3Timer=null;}
   if(wasOpen) return;
   var card = document.querySelector('.how-card[data-how="'+idx+'"]');
   var expand = document.getElementById('how-expand-'+idx);
   if(card) card.classList.add('active');
   if(expand){
+    // 애니메이션 리셋: 내부 HTML 재삽입
+    var body=expand.querySelector('.how-expand-body');
+    if(body){var h=body.innerHTML;body.innerHTML='';void body.offsetHeight;body.innerHTML=h;}
     expand.classList.add('open');
     if(typeof lucide!=='undefined') lucide.createIcons();
+    // STEP 03: 타이핑 애니메이션
+    if(idx===2) startStep3Typing();
     setTimeout(function(){ expand.scrollIntoView({behavior:'smooth',block:'nearest'}); },200);
   }
+}
+function startStep3Typing(){
+  var el=document.getElementById('step3-typing');
+  if(!el) return;
+  var text='봄비 내리는 오후,\n따뜻한 라떼 한 잔이\n생각나는 날 🌧☕\n\n성수동에서 발견한\n작은 행복을 나눠볼게요.';
+  var i=0; el.innerHTML='<span class="step3-cursor"></span>';
+  step3Timer=setInterval(function(){
+    if(i<text.length){
+      var ch=text[i];
+      if(ch==='\n') el.insertBefore(document.createElement('br'),el.querySelector('.step3-cursor'));
+      else{var sp=document.createTextNode(ch);el.insertBefore(sp,el.querySelector('.step3-cursor'));}
+      i++;
+    }else{clearInterval(step3Timer);step3Timer=null;}
+  },45);
 }
 
 // 실시간 베타 카운트
