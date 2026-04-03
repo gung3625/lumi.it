@@ -43,16 +43,21 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
 @keyframes blink{0%,100%{border-color:var(--pink)}50%{border-color:transparent}}
 
 /* BANNER */
-.top-banner{background:linear-gradient(90deg,#191F28,#2d0a1e,#191F28);padding:8px 16px;display:flex;align-items:center;justify-content:center;gap:8px;position:fixed;top:0;left:0;width:100%;z-index:1000;white-space:nowrap;overflow:hidden;}
-.banner-dot{width:7px;height:7px;border-radius:50%;background:var(--pink);animation:pulse 1.2s infinite;flex-shrink:0;}
-.banner-txt{font-size:12px;color:#fff;font-weight:600;}
+.top-banner{background:linear-gradient(90deg,#191F28,#2d0a1e,#191F28);padding:4px 16px;display:flex;align-items:center;justify-content:center;gap:6px;position:fixed;top:0;left:0;width:100%;z-index:1000;white-space:nowrap;overflow:hidden;line-height:1;}
+.banner-dot{width:5px;height:5px;border-radius:50%;background:var(--pink);animation:pulse 1.2s infinite;flex-shrink:0;}
+.banner-txt{font-size:11px;color:#fff;font-weight:600;}
 .banner-txt strong{color:var(--pink);}
-.banner-btn{padding:6px 14px;background:var(--pink);color:#fff;font-size:12px;font-weight:800;border-radius:var(--r-full);border:none;cursor:pointer;text-decoration:none;}
+.banner-btn{padding:4px 10px;background:var(--pink);color:#fff;font-size:11px;font-weight:800;border-radius:var(--r-full);border:none;cursor:pointer;text-decoration:none;}
 .banner-close{color:rgba(255,255,255,.4);font-size:16px;cursor:pointer;background:none;border:none;padding:0;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;}
 
 /* NAV */
-nav{position:fixed;top:44px;left:0;width:100%;height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:rgba(255,255,255,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--g100);z-index:900;transition:top .3s;}
-.nav-logo{height:72px;cursor:pointer;}
+nav{position:fixed;top:34px;left:0;width:100%;height:56px;display:flex;align-items:center;justify-content:center;padding:0 24px;background:rgba(255,255,255,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--g100);z-index:900;transition:top .3s;}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:900px;}
+.nav-logo-wrap{display:flex;align-items:center;gap:6px;cursor:pointer;text-decoration:none;}
+.nav-logo{height:44px;}
+.nav-logo-txt{font-size:22px;font-weight:800;color:var(--g900);letter-spacing:-.5px;}
+body.dark-mode .nav-logo{filter:brightness(1.4) contrast(1.1);}
+body.dark-mode .nav-logo-txt{color:#F2F4F6;}
 .nav-right{display:flex;align-items:center;gap:6px;}
 .nav-link{padding:8px 14px;border:none;background:none;font-size:14px;font-weight:600;color:var(--g500);cursor:pointer;border-radius:var(--r-sm);font-family:inherit;text-decoration:none;transition:all .2s;}
 .nav-link:hover{background:var(--g100);color:var(--g900);}
@@ -236,7 +241,10 @@ nav{position:fixed;top:44px;left:0;width:100%;height:56px;display:flex;align-ite
 /* FOOTER */
 footer{background:var(--g50);border-top:1px solid var(--g200);padding:48px 24px 32px;}
 .footer-inner{max-width:1000px;margin:0 auto;display:flex;justify-content:space-between;align-items:flex-start;gap:32px;flex-wrap:wrap;}
-.footer-logo{height:56px;opacity:.5;margin-bottom:12px;}
+.footer-logo-wrap{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.footer-logo{height:48px;opacity:.7;}
+.footer-logo-txt{font-size:20px;font-weight:800;color:var(--g500);letter-spacing:-.5px;}
+body.dark-mode .footer-logo{filter:brightness(1.4);}
 .footer-info{font-size:11px;color:var(--g400);line-height:2.2;}
 .footer-links{display:flex;gap:20px;}
 .footer-links a{font-size:12px;font-weight:600;color:var(--g400);text-decoration:none;transition:color .2s;}
@@ -263,9 +271,11 @@ footer{background:var(--g50);border-top:1px solid var(--g200);padding:48px 24px 
   .demo-upload{padding:28px 16px;}
   .nav-link{display:none;}
   .nav-right{gap:4px;}
-  .top-banner{padding:8px 12px;gap:6px;}
-  .banner-txt{font-size:11px;}
-  .banner-btn{font-size:11px;padding:5px 10px;}
+  .nav-logo{height:36px;}
+  .nav-logo-txt{font-size:18px;}
+  .top-banner{padding:4px 10px;gap:4px;}
+  .banner-txt{font-size:10px;}
+  .banner-btn{font-size:10px;padding:4px 8px;}
   .banner-dot{display:none;}
 }
 </style>
@@ -288,14 +298,16 @@ footer{background:var(--g50);border-top:1px solid var(--g200);padding:48px 24px 
 
 <!-- NAV -->
 <nav>
-  <img src="https://i.ibb.co/JRd9BZVB/u4775893729-httpss-mj-runk-EY2-VOh-Li-0-910-Letter-L-on-a-white-976b58b9-449a-4aa6-b631-2fbfa668cf17.png" class="nav-logo" alt="lumi" width="72" height="72">
-  <div class="nav-right">
-    <a href="#how" class="nav-link">사용법</a>
-    <a href="#price-sec" class="nav-link">요금</a>
-    <button class="nav-link" id="nav-login-btn">로그인</button>
-    <button class="nav-cta" id="nav-signup-btn">무료 테스터 신청</button>
-    <button class="nav-link" id="nav-logout-btn" onclick="lumiLogout()" style="display:none;">로그아웃</button>
-    <button class="nav-cta" id="nav-dashboard-btn" onclick="grantAccess()" style="display:none;">대시보드</button>
+  <div class="nav-inner">
+    <a href="/" class="nav-logo-wrap"><img src="https://i.ibb.co/JRd9BZVB/u4775893729-httpss-mj-runk-EY2-VOh-Li-0-910-Letter-L-on-a-white-976b58b9-449a-4aa6-b631-2fbfa668cf17.png" class="nav-logo" alt="lumi"><span class="nav-logo-txt">lumi</span></a>
+    <div class="nav-right">
+      <a href="#how" class="nav-link">사용법</a>
+      <a href="#price-sec" class="nav-link">요금</a>
+      <button class="nav-link" id="nav-login-btn">로그인</button>
+      <button class="nav-cta" id="nav-signup-btn">무료 테스터 신청</button>
+      <button class="nav-link" id="nav-logout-btn" onclick="lumiLogout()" style="display:none;">로그아웃</button>
+      <button class="nav-cta" id="nav-dashboard-btn" onclick="grantAccess()" style="display:none;">대시보드</button>
+    </div>
   </div>
 </nav>
 
@@ -644,7 +656,7 @@ footer{background:var(--g50);border-top:1px solid var(--g200);padding:48px 24px 
 <footer>
   <div class="footer-inner">
     <div>
-      <img src="https://i.ibb.co/JRd9BZVB/u4775893729-httpss-mj-runk-EY2-VOh-Li-0-910-Letter-L-on-a-white-976b58b9-449a-4aa6-b631-2fbfa668cf17.png" class="footer-logo" alt="lumi">
+      <div class="footer-logo-wrap"><img src="https://i.ibb.co/JRd9BZVB/u4775893729-httpss-mj-runk-EY2-VOh-Li-0-910-Letter-L-on-a-white-976b58b9-449a-4aa6-b631-2fbfa668cf17.png" class="footer-logo" alt="lumi"><span class="footer-logo-txt">lumi</span></div>
       <p class="footer-info">
         상호명: 루미 (lumi) · 대표자: 김현<br>
         사업자 등록번호: 404-09-66416 · 업태: 정보통신업 · 종목: 응용소프트웨어 개발 및 공급업<br>
