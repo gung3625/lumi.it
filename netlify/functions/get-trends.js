@@ -1,181 +1,172 @@
 const { getStore } = require('@netlify/blobs');
-const https = require('https');
+const googleTrends = require('google-trends-api');
 
-const DEFAULT_TRENDS = {
-  cafe: ['#신메뉴출시', '#오늘의커피', '#카페스타그램', '#라떼아트', '#디저트맛집', '#카페투어', '#핸드드립', '#베이커리'],
-  food: ['#신메뉴', '#오늘점심', '#오늘저녁', '#맛집추천', '#맛스타그램', '#주말특선', '#혼밥', '#맛집탐방'],
-  beauty: ['#신규디자인', '#네일스타그램', '#헤어스타일', '#오늘의메이크업', '#젤네일', '#네일아트', '#헤어컬러', '#뷰티스타그램'],
-  other: ['#신메뉴', '#오늘의추천', '#이벤트진행중', '#단골환영', '#오픈이벤트', '#일상스타그램', '#데일리', '#추천']
+// 업종별 Google Trends 카테고리 코드 + 추적 키워드
+const CATEGORY_CONFIG = {
+  cafe: {
+    code: 71, // 음식·음료
+    keywords: ['카페', '커피', '디저트', '베이커리', '브런치', '아메리카노', '라떼', '케이크'],
+    label: '카페·음료'
+  },
+  food: {
+    code: 71,
+    keywords: ['맛집', '점심', '배달', '한식', '파스타', '고기', '회', '라멘'],
+    label: '음식·외식'
+  },
+  beauty: {
+    code: 44, // 뷰티·피트니스
+    keywords: ['네일', '헤어', '피부관리', '속눈썹', '왁싱', '염색', '펌', '메이크업'],
+    label: '뷰티·케어'
+  },
+  other: {
+    code: 18, // 쇼핑
+    keywords: ['이벤트', '할인', '신상', '추천', '인기', '트렌드', '선물', '시즌'],
+    label: '일반'
+  }
 };
 
-const NAVER_KEYWORDS = {
-  cafe: [
-    { groupName: '카페', keywords: ['카페', '커피', '카페스타그램'] },
-    { groupName: '베이커리', keywords: ['베이커리', '빵집', '디저트'] }
-  ],
-  food: [
-    { groupName: '맛집', keywords: ['맛집', '식당', '맛스타그램'] },
-    { groupName: '배달음식', keywords: ['배달음식', '오늘뭐먹지', '혼밥'] }
-  ],
-  beauty: [
-    { groupName: '뷰티', keywords: ['뷰티', '메이크업', '화장품'] },
-    { groupName: '헤어네일', keywords: ['헤어샵', '네일아트', '에스테틱'] }
-  ],
-  other: [
-    { groupName: '소상공인', keywords: ['소상공인', '동네가게', '로컬'] }
-  ]
-};
+const CORS = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' };
 
-// https 모듈로 네이버 API 직접 호출 (fetch 대신)
-function httpsPost(hostname, path, headers, body) {
-  return new Promise((resolve, reject) => {
-    const data = JSON.stringify(body);
-    const options = {
-      hostname,
-      path,
-      method: 'POST',
-      headers: {
-        ...headers,
-        'Content-Length': Buffer.byteLength(data)
+// Google Trends에서 일간 급상승 검색어 가져오기
+async function fetchDailyTrends() {
+  try {
+    const result = await googleTrends.dailyTrends({ geo: 'KR' });
+    const parsed = JSON.parse(result);
+    const days = parsed.default?.trendingSearchesDays || [];
+    const trends = [];
+
+    for (const day of days.slice(0, 2)) { // 최근 2일
+      for (const item of (day.trendingSearches || []).slice(0, 10)) {
+        trends.push({
+          keyword: item.title?.query || '',
+          traffic: item.formattedTraffic || '',
+          articles: (item.articles || []).slice(0, 1).map(a => ({
+            title: a.title || '',
+            source: a.source || ''
+          }))
+        });
       }
-    };
-    const req = https.request(options, (res) => {
-      let responseData = '';
-      res.on('data', (chunk) => { responseData += chunk; });
-      res.on('end', () => {
-        resolve({ status: res.statusCode, body: responseData });
-      });
-    });
-    req.on('error', reject);
-    req.setTimeout(8000, () => { req.destroy(new Error('timeout')); });
-    req.write(data);
-    req.end();
-  });
+    }
+    return trends.slice(0, 15);
+  } catch(e) {
+    console.error('dailyTrends error:', e.message);
+    return [];
+  }
 }
 
-async function fetchNaverTrends(category) {
-  const clientId = process.env.NAVER_CLIENT_ID;
-  const clientSecret = process.env.NAVER_CLIENT_SECRET;
-  if (!clientId || !clientSecret) {
-    console.log('Naver credentials missing - clientId:', !!clientId, 'clientSecret:', !!clientSecret);
-    return null;
-  }
+// 업종별 키워드 관심도 변화 가져오기
+async function fetchKeywordTrends(category) {
+  const config = CATEGORY_CONFIG[category] || CATEGORY_CONFIG.other;
+  const keywords = config.keywords.slice(0, 5); // 최대 5개씩
 
-  const today = new Date();
-  const endDate = today.toISOString().slice(0, 10);
-  const startDate = new Date(today - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-  const keywordGroups = NAVER_KEYWORDS[category] || NAVER_KEYWORDS.other;
-
-  const requestBody = {
-    startDate,
-    endDate,
-    timeUnit: 'week',
-    keywordGroups,
-    device: 'mo',
-    ages: ['2', '3', '4', '5'],
-    gender: 'f'
-  };
+  const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+  const results = [];
 
   try {
-    const result = await httpsPost(
-      'openapi.naver.com',
-      '/v1/datalab/search',
-      {
-        'Content-Type': 'application/json',
-        'X-Naver-Client-Id': clientId,
-        'X-Naver-Client-Secret': clientSecret
-      },
-      requestBody
-    );
+    const data = await googleTrends.interestOverTime({
+      keyword: keywords,
+      geo: 'KR',
+      startTime: twoWeeksAgo,
+      category: config.code
+    });
 
-    console.log('Naver API status:', result.status);
-    console.log('Naver API body:', result.body.substring(0, 500));
+    const parsed = JSON.parse(data);
+    const timeline = parsed.default?.timelineData || [];
 
-    if (result.status !== 200) {
-      console.error('Naver API error:', result.status, result.body);
-      return null;
-    }
+    if (timeline.length < 2) return [];
 
-    const data = JSON.parse(result.body);
-    console.log('Naver data.results:', JSON.stringify(data.results ? data.results.length : 'none'));
-    if (data.results && data.results.length > 0) {
-      const sorted = data.results.sort((a, b) => {
-        const aAvg = a.data.reduce((s, d) => s + d.ratio, 0) / a.data.length;
-        const bAvg = b.data.reduce((s, d) => s + d.ratio, 0) / b.data.length;
-        return bAvg - aAvg;
+    // 전반부(지난주) vs 후반부(이번주) 평균 비교
+    const mid = Math.floor(timeline.length / 2);
+    const lastWeek = timeline.slice(0, mid);
+    const thisWeek = timeline.slice(mid);
+
+    for (let i = 0; i < keywords.length; i++) {
+      const lastAvg = lastWeek.reduce((s, t) => s + (t.value?.[i] || 0), 0) / (lastWeek.length || 1);
+      const thisAvg = thisWeek.reduce((s, t) => s + (t.value?.[i] || 0), 0) / (thisWeek.length || 1);
+
+      let changeRate = 0;
+      if (lastAvg > 0) {
+        changeRate = Math.round(((thisAvg - lastAvg) / lastAvg) * 100);
+      } else if (thisAvg > 0) {
+        changeRate = 100;
+      }
+
+      results.push({
+        keyword: keywords[i],
+        thisWeek: Math.round(thisAvg),
+        lastWeek: Math.round(lastAvg),
+        changeRate,
+        trend: changeRate > 10 ? 'up' : changeRate < -10 ? 'down' : 'stable'
       });
-
-      const baseTags = DEFAULT_TRENDS[category] || DEFAULT_TRENDS.other;
-      const trendTags = sorted.flatMap(g => g.title ? ['#' + g.title.replace(/\s/g, '')] : []);
-      const merged = [...new Set([...trendTags, ...baseTags])].slice(0, 8);
-      return merged;
     }
-    return null;
+
+    // 변화율 절대값 기준 정렬 (가장 큰 변화부터)
+    results.sort((a, b) => Math.abs(b.changeRate) - Math.abs(a.changeRate));
+    return results;
   } catch(e) {
-    console.error('Naver fetch error:', e.message);
-    return null;
+    console.error('interestOverTime error:', e.message);
+    return [];
   }
 }
 
 exports.handler = async (event) => {
-  const corsHeaders = {
-    'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*'
-  };
-
   if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers: corsHeaders, body: '' };
-  }
-
-  if (event.httpMethod !== 'GET' && event.httpMethod !== 'POST') {
-    return { statusCode: 405, headers: corsHeaders, body: JSON.stringify({ error: 'Method not allowed' }) };
+    return { statusCode: 200, headers: CORS, body: '' };
   }
 
   let category = 'cafe';
-  if (event.httpMethod === 'GET') {
-    const params = new URLSearchParams(event.rawQuery || '');
-    category = params.get('category') || 'cafe';
-  } else {
-    try {
-      const body = JSON.parse(event.body || '{}');
-      category = body.category || 'cafe';
-    } catch { category = 'cafe'; }
-  }
+  const params = new URLSearchParams(event.rawQuery || '');
+  category = params.get('category') || 'cafe';
 
   const knownCategories = ['cafe', 'food', 'beauty'];
   const storeKey = knownCategories.includes(category) ? category : 'other';
 
-  // 1. Blobs 캐시 확인
+  // 1. Blobs 캐시 확인 (6시간)
+  let store;
   try {
-    const store = getStore({ name: 'trends', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
+    store = getStore({
+      name: 'trends',
+      consistency: 'strong',
+      siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
+      token: process.env.NETLIFY_TOKEN
+    });
+
     let raw = null;
-    try { raw = await store.get('trends:' + storeKey); } catch(e) { console.log('Blobs get error:', e.message); }
+    try { raw = await store.get('gtrends:' + storeKey); } catch(e) {}
 
     if (raw) {
       const cached = JSON.parse(raw);
-      const hoursDiff = (Date.now() - new Date(cached.updatedAt)) / (1000 * 60 * 60);
-      if (hoursDiff < 12) {
-        return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ category: storeKey, tags: cached.tags, updatedAt: cached.updatedAt, source: 'realtime' }) };
+      const hoursDiff = (Date.now() - cached.timestamp) / (1000 * 60 * 60);
+      if (hoursDiff < 6) {
+        return { statusCode: 200, headers: CORS, body: JSON.stringify(cached.data) };
       }
-    }
-
-    // 2. 네이버 API 호출
-    const naverTags = await fetchNaverTrends(storeKey);
-    if (naverTags) {
-      const updatedAt = new Date().toISOString();
-      try { await store.set('trends:' + storeKey, JSON.stringify({ tags: naverTags, updatedAt })); } catch(e) { console.log('Blobs set error:', e.message); }
-      return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ category: storeKey, tags: naverTags, updatedAt, source: 'realtime' }) };
     }
   } catch(e) {
     console.error('Blobs init error:', e.message);
   }
 
-  // 3. 네이버 API만 (Blobs 없이)
-  const naverTags = await fetchNaverTrends(storeKey);
-  if (naverTags) {
-    return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ category: storeKey, tags: naverTags, updatedAt: new Date().toISOString(), source: 'realtime' }) };
+  // 2. Google Trends 호출
+  const [dailyTrends, keywordTrends] = await Promise.all([
+    fetchDailyTrends(),
+    fetchKeywordTrends(storeKey)
+  ]);
+
+  const config = CATEGORY_CONFIG[storeKey] || CATEGORY_CONFIG.other;
+  const responseData = {
+    category: storeKey,
+    categoryLabel: config.label,
+    daily: dailyTrends,       // 급상승 검색어
+    keywords: keywordTrends,  // 업종별 키워드 변화율
+    updatedAt: new Date().toISOString(),
+    source: dailyTrends.length > 0 || keywordTrends.length > 0 ? 'google' : 'unavailable'
+  };
+
+  // 3. 캐시 저장
+  if (store && (dailyTrends.length > 0 || keywordTrends.length > 0)) {
+    try {
+      await store.set('gtrends:' + storeKey, JSON.stringify({ data: responseData, timestamp: Date.now() }));
+    } catch(e) {}
   }
 
-  // 4. 최종 기본값
-  return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ category: storeKey, tags: DEFAULT_TRENDS[storeKey] || DEFAULT_TRENDS.other, updatedAt: null, source: 'default' }) };
+  return { statusCode: 200, headers: CORS, body: JSON.stringify(responseData) };
 };
