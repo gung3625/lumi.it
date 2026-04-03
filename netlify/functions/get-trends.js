@@ -1,57 +1,57 @@
 const { getStore } = require('@netlify/blobs');
 const googleTrends = require('google-trends-api');
 
-// 업종별 Google Trends 카테고리 코드 + 추적 키워드
+// 월별 시즌 키워드 (소상공인 게시물·캡션용)
+const SEASON_KEYWORDS = {
+  1: ['신년', '새해', '겨울간식', '따뜻한음료', '연말정산'],
+  2: ['발렌타인', '초콜릿', '딸기시즌', '봄신메뉴', '설날'],
+  3: ['벚꽃', '봄나들이', '화이트데이', '개강', '봄맞이'],
+  4: ['봄꽃', '피크닉', '야외테라스', '꽃놀이', '봄한정'],
+  5: ['어버이날', '스승의날', '가정의달', '선물세트', '감사이벤트'],
+  6: ['여름시작', '빙수', '아이스메뉴', '시원한', '냉면'],
+  7: ['빙수', '여름휴가', '수박', '아이스크림', '시즌한정'],
+  8: ['여름끝물', '가을준비', '빙수라스트', '얼리가을', '방학'],
+  9: ['가을신메뉴', '추석', '명절선물', '단풍', '가을감성'],
+  10: ['핼러윈', '단풍', '가을축제', '밤', '고구마'],
+  11: ['수능', '블랙프라이데이', '김장', '겨울준비', '연말'],
+  12: ['크리스마스', '연말파티', '겨울한정', '선물세트', '송년']
+};
+
+// 업종별 Google Trends 카테고리 코드 + 실용 트렌드 키워드
 const CATEGORY_CONFIG = {
   cafe: {
-    code: 71, // 음식·음료
-    keywords: ['카페', '커피', '디저트', '베이커리', '브런치', '아메리카노', '라떼', '케이크'],
+    code: 71,
+    keywords: ['크로플', '약과라떼', '생딸기', '당일케이크', '소금빵', '뚱카롱', '수플레', '흑임자'],
     label: '카페·음료'
   },
   food: {
     code: 71,
-    keywords: ['맛집', '점심', '배달', '한식', '파스타', '고기', '회', '라멘'],
+    keywords: ['오마카세', '숙성고기', '밀키트', '브런치', '비건', '제철해산물', '로컬맛집', '혼밥세트'],
     label: '음식·외식'
   },
   beauty: {
-    code: 44, // 뷰티·피트니스
-    keywords: ['네일', '헤어', '피부관리', '속눈썹', '왁싱', '염색', '펌', '메이크업'],
+    code: 44,
+    keywords: ['글레이즈네일', '레이어드컷', '두피케어', '속눈썹펌', '워터웨이브', '톤온톤염색', '클린뷰티', '피부장벽'],
     label: '뷰티·케어'
   },
   other: {
-    code: 18, // 쇼핑
-    keywords: ['이벤트', '할인', '신상', '추천', '인기', '트렌드', '선물', '시즌'],
+    code: 18,
+    keywords: ['당일배송', '한정판', '콜라보', '팝업스토어', '소량입고', '시즌오프', '얼리버드', '신상입고'],
     label: '일반'
   }
 };
 
 const CORS = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' };
 
-// Google Trends에서 일간 급상승 검색어 가져오기
-async function fetchDailyTrends() {
-  try {
-    const result = await googleTrends.dailyTrends({ geo: 'KR' });
-    const parsed = JSON.parse(result);
-    const days = parsed.default?.trendingSearchesDays || [];
-    const trends = [];
-
-    for (const day of days.slice(0, 2)) { // 최근 2일
-      for (const item of (day.trendingSearches || []).slice(0, 10)) {
-        trends.push({
-          keyword: item.title?.query || '',
-          traffic: item.formattedTraffic || '',
-          articles: (item.articles || []).slice(0, 1).map(a => ({
-            title: a.title || '',
-            source: a.source || ''
-          }))
-        });
-      }
-    }
-    return trends.slice(0, 15);
-  } catch(e) {
-    console.error('dailyTrends error:', e.message);
-    return [];
-  }
+// 현재 월 기반 시즌 키워드 반환
+function getSeasonKeywords() {
+  const month = new Date().getMonth() + 1;
+  const current = SEASON_KEYWORDS[month] || [];
+  const next = SEASON_KEYWORDS[(month % 12) + 1] || [];
+  return {
+    now: current,
+    upcoming: next.slice(0, 3)
+  };
 }
 
 // 업종별 키워드 관심도 변화 가져오기
@@ -145,24 +145,22 @@ exports.handler = async (event) => {
     console.error('Blobs init error:', e.message);
   }
 
-  // 2. Google Trends 호출
-  const [dailyTrends, keywordTrends] = await Promise.all([
-    fetchDailyTrends(),
-    fetchKeywordTrends(storeKey)
-  ]);
+  // 2. Google Trends + 시즌 키워드
+  const keywordTrends = await fetchKeywordTrends(storeKey);
+  const season = getSeasonKeywords();
 
   const config = CATEGORY_CONFIG[storeKey] || CATEGORY_CONFIG.other;
   const responseData = {
     category: storeKey,
     categoryLabel: config.label,
-    daily: dailyTrends,       // 급상승 검색어
     keywords: keywordTrends,  // 업종별 키워드 변화율
+    season,                   // 시즌 키워드 (now + upcoming)
     updatedAt: new Date().toISOString(),
-    source: dailyTrends.length > 0 || keywordTrends.length > 0 ? 'google' : 'unavailable'
+    source: keywordTrends.length > 0 ? 'google' : 'season-only'
   };
 
   // 3. 캐시 저장
-  if (store && (dailyTrends.length > 0 || keywordTrends.length > 0)) {
+  if (store && keywordTrends.length > 0) {
     try {
       await store.set('gtrends:' + storeKey, JSON.stringify({ data: responseData, timestamp: Date.now() }));
     } catch(e) {}

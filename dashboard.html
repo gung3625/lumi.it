@@ -2448,14 +2448,24 @@ async function loadTrends() {
             }).join('');
         }
 
-        // 급상승 검색어
-        if (data.daily && data.daily.length > 0) {
-            html += '<p class="trend-section-lbl">오늘 급상승</p>';
-            html += data.daily.slice(0, 5).map((d, i) => {
+        // 시즌 키워드
+        if (data.season && data.season.now && data.season.now.length > 0) {
+            html += '<p class="trend-section-lbl">📅 이달의 시즌 키워드</p>';
+            html += data.season.now.map((s, i) => {
                 return `<div class="trend-row">
                     <span class="t-rank">${i + 1}</span>
-                    <span class="t-keyword">${d.keyword}</span>
-                    <span class="t-traffic">${d.traffic}</span>
+                    <span class="t-keyword">#${s}</span>
+                    <span class="t-change up">시즌</span>
+                </div>`;
+            }).join('');
+        }
+        if (data.season && data.season.upcoming && data.season.upcoming.length > 0) {
+            html += '<p class="trend-section-lbl">🔜 다음 달 준비</p>';
+            html += data.season.upcoming.map((s, i) => {
+                return `<div class="trend-row">
+                    <span class="t-rank">${i + 1}</span>
+                    <span class="t-keyword">#${s}</span>
+                    <span class="t-change stable">예정</span>
                 </div>`;
             }).join('');
         }
@@ -2464,7 +2474,7 @@ async function loadTrends() {
 
         // realtimeTrends 호환 (캡션 생성에 사용)
         realtimeTrends = (data.keywords || []).map(k => '#' + k.keyword).concat(
-            (data.daily || []).slice(0, 3).map(d => '#' + d.keyword)
+            (data.season?.now || []).map(s => '#' + s)
         );
 
         trendEl.innerHTML = html;
