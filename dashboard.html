@@ -110,11 +110,15 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
         .aq-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:var(--r-full);font-size:11px;font-weight:700;background:var(--g100);color:var(--g700);}
         .dash-lbl{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--g400);margin-bottom:10px;}
         .trend-wrap{display:flex;flex-direction:column;gap:7px;margin-bottom:20px;}
-        .trend-row{background:var(--white);border-radius:var(--r-md);padding:13px 15px;border:1px solid var(--g100);display:flex;align-items:center;gap:10px;transition:transform .2s,box-shadow .2s;justify-content:space-between;}
+        .trend-row{background:var(--white);border-radius:var(--r-md);padding:13px 15px;border:1px solid var(--g100);display:flex;align-items:center;gap:10px;transition:transform .2s,box-shadow .2s;}
         .trend-row:hover{transform:translateY(-1px);box-shadow:var(--sh-xs);}
-        .t-rank{font-size:11px;font-weight:900;color:var(--pink-soft);width:18px;}
-        .t-tag{flex:1;font-size:.87rem;font-weight:700;color:var(--g900);}
-        .t-hot{font-size:10px;font-weight:700;color:var(--pink);background:var(--pink-pale);padding:2px 8px;border-radius:var(--r-full);}
+        .t-keyword{flex:1;font-size:.87rem;font-weight:700;color:var(--g900);}
+        .t-change{font-size:12px;font-weight:800;padding:3px 10px;border-radius:var(--r-full);white-space:nowrap;}
+        .t-change.up{color:#16a34a;background:rgba(22,163,74,.1);}
+        .t-change.down{color:#dc2626;background:rgba(220,38,38,.1);}
+        .t-change.stable{color:var(--g400);background:var(--g100);}
+        .t-traffic{font-size:11px;color:var(--g400);font-weight:600;white-space:nowrap;}
+        .trend-section-lbl{font-size:11px;font-weight:700;color:var(--g400);margin:12px 0 6px;letter-spacing:.03em;}
         .upload-card{background:var(--white);border-radius:var(--r-xl);padding:26px 22px;border:1.5px solid rgba(255,45,138,.15);box-shadow:0 4px 20px rgba(255,45,138,.08);margin-bottom:14px;}
         .auto-reply-card{background:var(--white);border-radius:var(--r-xl);padding:26px 22px;border:1px solid var(--g200);box-shadow:var(--sh-xs);margin-bottom:14px;}
         .keyword-row{display:flex;gap:8px;align-items:center;margin-bottom:10px;}
@@ -679,7 +683,7 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
             <div id="festival-list" style="display:flex;flex-direction:column;gap:8px;"></div>
         </div>
 
-        <p class="dash-lbl">지금 인기 태그</p>
+        <p class="dash-lbl">지금 뜨는 트렌드</p>
         <div class="trend-wrap" id="trend-list-node"></div>
 
         <!-- 말투 피드백 섹션 -->
@@ -2400,7 +2404,6 @@ async function loadTrends() {
     const trendEl = document.getElementById('trend-list-node');
     if (!trendEl) return;
 
-    // 로딩 표시
     trendEl.innerHTML = '<div style="color:var(--g400);font-size:.85rem;padding:8px 0;">트렌드 불러오는 중...</div>';
 
     try {
@@ -2408,19 +2411,45 @@ async function loadTrends() {
         const res = await fetch('/.netlify/functions/get-trends?category=' + encodeURIComponent(category));
         const data = await res.json();
 
-        const tags = data.tags || [];
-        if (tags.length === 0) throw new Error('태그 없음');
+        let html = '';
 
-        realtimeTrends = tags.slice(0, 8);
-        trendEl.innerHTML = tags.slice(0, 8).map((tag, i) =>
-            `<div class="trend-row"><span class="t-rank">0${i+1}</span><span class="t-tag">${tag}</span><span class="t-hot">${data.source === 'realtime' ? '실시간' : '인기'}</span></div>`
-        ).join('');
+        // 업종별 키워드 변화율
+        if (data.keywords && data.keywords.length > 0) {
+            html += '<p class="trend-section-lbl">' + (data.categoryLabel || '업종') + ' 키워드 변화</p>';
+            html += data.keywords.map(k => {
+                const arrow = k.trend === 'up' ? '↑' : k.trend === 'down' ? '↓' : '→';
+                const sign = k.changeRate > 0 ? '+' : '';
+                return `<div class="trend-row">
+                    <span class="t-keyword">${k.keyword}</span>
+                    <span class="t-change ${k.trend}">${sign}${k.changeRate}% ${arrow}</span>
+                </div>`;
+            }).join('');
+        }
+
+        // 급상승 검색어
+        if (data.daily && data.daily.length > 0) {
+            html += '<p class="trend-section-lbl">오늘 급상승</p>';
+            html += data.daily.slice(0, 5).map(d => {
+                return `<div class="trend-row">
+                    <span class="t-keyword">${d.keyword}</span>
+                    <span class="t-traffic">${d.traffic}</span>
+                </div>`;
+            }).join('');
+        }
+
+        if (!html) throw new Error('데이터 없음');
+
+        // realtimeTrends 호환 (캡션 생성에 사용)
+        realtimeTrends = (data.keywords || []).map(k => '#' + k.keyword).concat(
+            (data.daily || []).slice(0, 3).map(d => '#' + d.keyword)
+        );
+
+        trendEl.innerHTML = html;
     } catch(e) {
-        // 실패 시 하드코딩 기본값으로 폴백
         const fallback = LUMI_CORE.trends[bizCat] || LUMI_CORE.trends.cafe;
         realtimeTrends = fallback;
         trendEl.innerHTML = fallback.map((tag, i) =>
-            `<div class="trend-row"><span class="t-rank">0${i+1}</span><span class="t-tag">${tag}</span><span class="t-hot">인기</span></div>`
+            `<div class="trend-row"><span class="t-keyword">${tag}</span><span class="t-change stable">—</span></div>`
         ).join('');
     }
 }
