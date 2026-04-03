@@ -132,7 +132,7 @@ exports.handler = async (event) => {
     });
 
     let raw = null;
-    try { raw = await store.get('gtrends:' + storeKey); } catch(e) {}
+    try { raw = await store.get('gtrends2:' + storeKey); } catch(e) {}
 
     if (raw) {
       const cached = JSON.parse(raw);
@@ -162,7 +162,7 @@ exports.handler = async (event) => {
   // 3. 캐시 저장
   if (store && keywordTrends.length > 0) {
     try {
-      await store.set('gtrends:' + storeKey, JSON.stringify({ data: responseData, timestamp: Date.now() }));
+      await store.set('gtrends2:' + storeKey, JSON.stringify({ data: responseData, timestamp: Date.now() }));
     } catch(e) {}
   }
 
