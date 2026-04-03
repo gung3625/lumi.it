@@ -361,6 +361,14 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
                     <div id="reg-bd-err" class="field-err hidden"></div>
                 </div>
                 <div class="reg-field">
+                    <label class="reg-lbl">성별</label>
+                    <select id="reg-gender-field" class="inp reg-inp">
+                        <option value="">선택</option>
+                        <option value="male">남성</option>
+                        <option value="female">여성</option>
+                    </select>
+                </div>
+                <div class="reg-field">
                     <label class="reg-lbl">휴대폰 번호</label>
                     <input type="tel" id="ph-reg-field" placeholder="01012345678" class="inp reg-inp" inputmode="numeric" oninput="clearFieldErr(this.id,'reg-ph-err')">
                     <div id="reg-ph-err" class="field-err hidden"></div>
@@ -2761,6 +2769,8 @@ function initBirthdateSelects() {
     const monthEl = document.getElementById('birthdate-month');
     const dayEl = document.getElementById('birthdate-day');
     if (!yearEl || !monthEl || !dayEl) return;
+    // 이미 초기화됐으면 스킵
+    if (yearEl.options.length > 1) return;
 
     // 년도 (1940 ~ 올해)
     const curYear = new Date().getFullYear();
@@ -2871,7 +2881,7 @@ async function sendForgotOtp() {
     try {
         const res = await fetch('/.netlify/functions/send-otp', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email })
+            body: JSON.stringify({ email, skipDuplicateCheck: true })
         });
         const data = await res.json();
         if (res.ok) {
@@ -3032,7 +3042,7 @@ async function finishLumiSignup() {
     if (!insta) { showToast('인스타그램 아이디를 입력해주세요.', 'red'); goRegStep(2); return; }
     if (!phone) { showToast('휴대폰 번호를 입력해주세요.', 'red'); goRegStep(2); return; }
     if (!birthdate || birthdate.length < 10) { showToast('생년월일을 선택해주세요.', 'red'); goRegStep(2); return; }
-    const gender = '';
+    const gender = document.getElementById('reg-gender-field')?.value || '';
     if (!window._otpVerified) { showToast('이메일 인증을 완료해주세요.', 'red'); goRegStep(1); return; }
 
     const btn = document.querySelector('#lumi-signup-view .btn-portal[onclick="finishLumiSignup()"]');

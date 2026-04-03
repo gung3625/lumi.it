@@ -13,9 +13,28 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: '잘못된 요청입니다.' }) };
   }
 
-  const { email } = body;
+  const { email, skipDuplicateCheck } = body;
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return { statusCode: 400, body: JSON.stringify({ error: '이메일 형식이 올바르지 않습니다.' }) };
+  }
+
+  // 이메일 중복 체크 (비밀번호 찾기 등에서는 skipDuplicateCheck=true)
+  if (!skipDuplicateCheck) {
+    try {
+      const userStore = getStore({
+        name: 'users', consistency: 'strong',
+        siteID: process.env.SITE_ID || process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
+        token: process.env.NETLIFY_TOKEN
+      });
+      const existing = await userStore.get('user:' + email);
+      if (existing) {
+        return {
+          statusCode: 409,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          body: JSON.stringify({ error: '이미 가입된 이메일이에요. 로그인해주세요.' })
+        };
+      }
+    } catch(e) { /* users store 접근 실패 시 무시하고 진행 */ }
   }
 
   // 6자리 OTP 생성
