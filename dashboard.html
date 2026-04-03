@@ -78,7 +78,7 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
         /* DASHBOARD */
         .dash-layer{position:fixed;inset:0;z-index:8000;background:var(--g50);display:none;flex-direction:column;overflow-y:auto;overscroll-behavior:none;}
         .dash-topbar{position:sticky;top:0;background:rgba(249,250,251,.94);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--g200);padding:0 20px;height:56px;display:flex;align-items:center;justify-content:space-between;z-index:10;}
-        .dash-topbar-logo{height:48px;}
+        .dash-topbar-logo{height:72px;}
         .dash-back{font-size:15px;font-weight:700;color:var(--white);background:var(--pink);border:none;border-radius:var(--r-md);padding:10px 22px;cursor:pointer;font-family:inherit;transition:background .2s,transform .2s;box-shadow:var(--sh-pink);}
         .dash-back:hover{background:var(--pink-light);transform:translateY(-1px);}
         .dash-body{max-width:580px;margin:0 auto;width:100%;padding:28px 20px calc(80px + env(safe-area-inset-bottom, 0px));}
@@ -195,7 +195,7 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
     <div class="portal-sheet">
         <button class="portal-x" onclick="resetToInitialLanding()">✕</button>
         <div style="text-align:center;margin-bottom:16px;">
-            <img src="https://i.ibb.co/ht8MxhY/img-1.png" alt="lumi" style="height:80px;display:block;margin:0 auto;">
+            <img src="https://i.ibb.co/JRd9BZVB/u4775893729-httpss-mj-runk-EY2-VOh-Li-0-910-Letter-L-on-a-white-976b58b9-449a-4aa6-b631-2fbfa668cf17.png" alt="lumi" style="height:120px;display:block;margin:0 auto;">
         </div>
         <div class="portal-tabs">
             <span id="tab-login-btn" class="p-tab active" onclick="setPortalMode('login')">로그인</span>
@@ -429,7 +429,7 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
 <!-- DASHBOARD -->
 <div id="lumi-dashboard-node" class="dash-layer">
     <div class="dash-topbar">
-        <img src="https://i.ibb.co/ht8MxhY/img-1.png" class="dash-topbar-logo" alt="lumi">
+        <img src="https://i.ibb.co/JRd9BZVB/u4775893729-httpss-mj-runk-EY2-VOh-Li-0-910-Letter-L-on-a-white-976b58b9-449a-4aa6-b631-2fbfa668cf17.png" class="dash-topbar-logo" alt="lumi">
         <button class="dash-back" onclick="resetToInitialLanding()">홈으로</button>
     </div>
     <div class="dash-body">
@@ -907,7 +907,7 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
         </div><!-- /TAB: 설정 (final) -->
     </div>
     <!-- 다크모드 플로팅 버튼 -->
-    <button class="dark-toggle-fab" id="dark-toggle-fab" onclick="toggleDarkMode(!document.body.classList.contains('dark-mode'))" aria-label="다크모드 전환">🌙</button>
+    <button class="dark-toggle-fab" id="dark-toggle-fab" onclick="toggleDarkMode(!document.body.classList.contains('dark-mode'))" aria-label="다크모드 전환">☀️</button>
     <!-- 링크 미리보기 모달 -->
     <div id="lp-preview-overlay" onclick="if(event.target===this)closeLinkPreview()">
         <div id="lp-preview-frame">
@@ -3177,7 +3177,7 @@ function toggleDarkMode(on) {
     if (fab) fab.textContent = on ? '☀️' : '🌙';
 }
 function initDarkMode() {
-    const saved = localStorage.getItem('lumi_dark_mode') === '1';
+    const saved = localStorage.getItem('lumi_dark_mode') !== '0';
     if (saved) toggleDarkMode(true);
 }
 
@@ -3792,7 +3792,7 @@ function lumiLogout() {
 
 // 버튼 이벤트 바인딩 (Cloudflare 스크립트 충돌 방지)
 // 다크모드 즉시 적용 (화면 깜빡임 방지)
-if (localStorage.getItem('lumi_dark_mode') === '1') document.body.classList.add('dark-mode');
+if (localStorage.getItem('lumi_dark_mode') !== '0') document.body.classList.add('dark-mode');
 
 document.addEventListener('DOMContentLoaded', function() {
     const loginBtn = document.getElementById('nav-login-btn');
