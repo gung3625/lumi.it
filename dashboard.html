@@ -704,7 +704,7 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
             <div id="festival-list" style="display:flex;flex-direction:column;gap:8px;"></div>
         </div>
 
-        <p class="dash-lbl">지금 뜨는 트렌드</p>
+        <p class="dash-lbl">트렌드 & 추천 키워드</p>
         <div class="trend-wrap" id="trend-list-node"></div>
 
         <!-- 말투 피드백 섹션 -->
@@ -2434,17 +2434,29 @@ async function loadTrends() {
 
         let html = '';
 
-        // 업종별 키워드 변화율
+        // 업종별 키워드
         if (data.keywords && data.keywords.length > 0) {
-            html += '<p class="trend-section-lbl">' + (data.categoryLabel || '업종') + ' 키워드 변화</p>';
+            const isGoogle = data.source === 'google';
+            const sectionTitle = isGoogle
+              ? (data.categoryLabel || '업종') + ' 실시간 트렌드'
+              : '🔥 ' + (data.categoryLabel || '업종') + ' 이달의 추천 키워드';
+            html += '<p class="trend-section-lbl">' + sectionTitle + '</p>';
             html += data.keywords.map((k, i) => {
-                const arrow = k.trend === 'up' ? '↑' : k.trend === 'down' ? '↓' : '→';
-                const sign = k.changeRate > 0 ? '+' : '';
-                return `<div class="trend-row">
-                    <span class="t-rank">${i + 1}</span>
-                    <span class="t-keyword">${k.keyword}</span>
-                    <span class="t-change ${k.trend}">${sign}${k.changeRate}% ${arrow}</span>
-                </div>`;
+                if (isGoogle) {
+                    const arrow = k.trend === 'up' ? '↑' : k.trend === 'down' ? '↓' : '→';
+                    const sign = k.changeRate > 0 ? '+' : '';
+                    return `<div class="trend-row">
+                        <span class="t-rank">${i + 1}</span>
+                        <span class="t-keyword">${k.keyword}</span>
+                        <span class="t-change ${k.trend}">${sign}${k.changeRate}% ${arrow}</span>
+                    </div>`;
+                } else {
+                    return `<div class="trend-row">
+                        <span class="t-rank">${i + 1}</span>
+                        <span class="t-keyword">#${k.keyword}</span>
+                        <span class="t-change up">추천</span>
+                    </div>`;
+                }
             }).join('');
         }
 
