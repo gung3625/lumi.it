@@ -48,10 +48,10 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
 .banner-txt{font-size:11px;color:#fff;font-weight:600;}
 .banner-txt strong{color:var(--pink);}
 .banner-btn{padding:4px 10px;background:var(--pink);color:#fff;font-size:11px;font-weight:800;border-radius:var(--r-full);border:none;cursor:pointer;text-decoration:none;}
-.banner-close{color:rgba(255,255,255,.4);font-size:16px;cursor:pointer;background:none;border:none;padding:0;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;}
+.banner-close{color:rgba(255,255,255,.4);font-size:14px;cursor:pointer;background:none;border:none;padding:4px 8px;display:flex;align-items:center;justify-content:center;}
 
 /* NAV */
-nav{position:fixed;top:34px;left:0;width:100%;height:56px;display:flex;align-items:center;justify-content:center;padding:0 24px;background:rgba(255,255,255,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--g100);z-index:900;transition:top .3s;}
+nav{position:fixed;top:0;left:0;width:100%;height:56px;display:flex;align-items:center;justify-content:center;padding:0 24px;background:rgba(255,255,255,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--g100);z-index:900;transition:top .3s;}
 .nav-inner{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:900px;}
 .nav-logo-wrap{display:flex;align-items:center;gap:6px;cursor:pointer;text-decoration:none;}
 .nav-logo{height:44px;}
@@ -290,7 +290,7 @@ body.dark-mode .footer-logo{filter:brightness(1.4);}
   <button class="banner-close" onclick="document.getElementById('top-banner').style.display='none';document.querySelector('nav').style.top='0'">✕</button>
 </div>
 <script>
-(function(){var b=document.getElementById('top-banner'),n=document.querySelector('nav');if(b&&n){function sync(){if(b.style.display==='none')return;n.style.top=b.offsetHeight+'px';}sync();window.addEventListener('resize',sync);}})();
+(function(){var b=document.getElementById('top-banner'),n=document.querySelector('nav');if(b&&n){function sync(){if(b.style.display==='none'){n.style.top='0';return;}n.style.top=b.offsetHeight+'px';}sync();window.addEventListener('resize',sync);new MutationObserver(sync).observe(b,{attributes:true,attributeFilter:['style']});}})();
 </script>
 
 <!-- LANDING -->
