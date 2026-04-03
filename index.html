@@ -108,20 +108,19 @@ body.dark-mode .nav-logo-txt{color:#F2F4F6;}
 
 /* HOW */
 .how-sec{background:var(--g50);}
-.how-grid{display:flex;flex-direction:column;gap:12px;max-width:600px;margin:0 auto;}
-.how-card{background:var(--white);border-radius:var(--r-xl);padding:18px 22px;border:1px solid var(--g200);text-align:left;transition:all .35s var(--ease);box-shadow:0 2px 12px rgba(0,0,0,.03);cursor:pointer;}
-.how-card:hover{border-color:var(--pink-soft);box-shadow:0 8px 32px rgba(232,98,138,.08);}
-.how-card.active{background:var(--pink-ultra);border-color:var(--pink);box-shadow:0 8px 32px rgba(232,98,138,.15);}
-.how-card-top{display:flex;align-items:center;gap:16px;}
+.how-grid{display:flex;flex-direction:column;gap:0;max-width:600px;margin:0 auto;}
+.how-card{background:var(--white);border-radius:var(--r-xl);padding:18px 22px;border:1px solid var(--g200);text-align:left;transition:all .35s var(--ease);box-shadow:0 2px 12px rgba(0,0,0,.03);cursor:pointer;display:flex;align-items:center;gap:16px;margin-bottom:12px;}
+.how-card:hover{border-color:var(--pink-soft);}
+.how-card.active{border-color:var(--pink);box-shadow:0 8px 32px rgba(232,98,138,.15);}
 .how-icon{width:48px;height:48px;min-width:48px;border-radius:var(--r-lg);background:var(--pink-pale);display:flex;align-items:center;justify-content:center;}
-.how-card.active .how-icon{background:var(--pink);} .how-card.active .how-icon i{color:#fff!important;}
+.how-icon svg{width:24px;height:24px;stroke:var(--pink);stroke-width:2;fill:none;}
 .how-text h3{font-size:.95rem;font-weight:800;color:var(--g900);}
 .how-text .how-step{font-size:11px;font-weight:700;color:var(--pink);letter-spacing:.5px;margin-bottom:2px;}
-.how-detail{max-height:0;overflow:hidden;transition:max-height .5s ease;opacity:0;transition:max-height .5s ease,opacity .3s ease;}
-.how-card.active .how-detail{max-height:200px;opacity:1;padding-top:14px;}
-.how-detail-inner{background:rgba(232,98,138,.06);border-radius:var(--r-md);padding:16px 18px;border-left:3px solid var(--pink);}
-.how-detail-inner p{font-size:.85rem;color:var(--g700);line-height:1.7;}
-.how-icon svg{width:26px;height:26px;stroke:var(--pink);stroke-width:2;fill:none;}
+.how-expand{max-height:0;overflow:hidden;transition:max-height .5s ease,opacity .4s ease;opacity:0;margin-bottom:0;}
+.how-expand.open{max-height:300px;opacity:1;margin-bottom:12px;}
+.how-expand-inner{background:var(--pink-ultra);border:1px solid var(--pink-soft);border-radius:var(--r-xl);padding:20px 22px;margin-top:-4px;}
+.how-expand-inner p{font-size:.88rem;color:var(--g700);line-height:1.8;}
+.how-expand-inner .how-expand-title{font-size:.8rem;font-weight:700;color:var(--pink);margin-bottom:6px;}
 
 /* FEATURES */
 .feat-sec{background:var(--white);}
@@ -357,33 +356,33 @@ body.dark-mode .footer-logo{filter:brightness(1.4);}
     <p class="sec-ey reveal">이렇게 작동해요</p>
     <h2 class="sec-title reveal">사진 한 장이면<br>이 모든 게 자동이에요</h2>
     <div class="how-grid">
-      <div class="how-card reveal" onclick="selectHow(this)">
-        <div class="how-card-top">
-          <div class="how-icon"><i data-lucide="camera" style="width:24px;height:24px;color:var(--pink);"></i></div>
-          <div class="how-text"><div class="how-step">STEP 01</div><h3>사진 올리기</h3></div>
-        </div>
-        <div class="how-detail"><div class="how-detail-inner"><p>오늘 찍은 사진 한 장이면 충분해요. 한 장도, 여러 장도 괜찮아요. 대시보드에서 바로 업로드하세요.</p></div></div>
+      <div class="how-card reveal" data-how="0" onclick="selectHow(0)">
+        <div class="how-icon"><i data-lucide="camera" style="width:24px;height:24px;color:var(--pink);"></i></div>
+        <div class="how-text"><div class="how-step">STEP 01</div><h3>사진 올리기</h3></div>
       </div>
-      <div class="how-card reveal" onclick="selectHow(this)">
-        <div class="how-card-top">
-          <div class="how-icon"><i data-lucide="sparkles" style="width:24px;height:24px;color:var(--pink);"></i></div>
-          <div class="how-text"><div class="how-step">STEP 02</div><h3>lumi 사진 분석</h3></div>
-        </div>
-        <div class="how-detail"><div class="how-detail-inner"><p>사진 속 메뉴, 분위기, 색감, 계절감까지 AI가 읽어내요. 매장의 특색을 정확히 파악합니다.</p></div></div>
+      <div class="how-expand" id="how-expand-0">
+        <div class="how-expand-inner"><p class="how-expand-title">📸 사진 업로드</p><p>오늘 찍은 사진 한 장이면 충분해요. 한 장도, 여러 장도 괜찮아요. 대시보드에서 바로 업로드하세요.</p></div>
       </div>
-      <div class="how-card reveal" onclick="selectHow(this)">
-        <div class="how-card-top">
-          <div class="how-icon"><i data-lucide="pen-tool" style="width:24px;height:24px;color:var(--pink);"></i></div>
-          <div class="how-text"><div class="how-step">STEP 03</div><h3>캡션 자동 작성</h3></div>
-        </div>
-        <div class="how-detail"><div class="how-detail-inner"><p>오늘 날씨, 트렌드 해시태그, 매장 말투까지 반영해서 자연스러운 캡션을 완성해요.</p></div></div>
+      <div class="how-card reveal" data-how="1" onclick="selectHow(1)">
+        <div class="how-icon"><i data-lucide="sparkles" style="width:24px;height:24px;color:var(--pink);"></i></div>
+        <div class="how-text"><div class="how-step">STEP 02</div><h3>lumi 사진 분석</h3></div>
       </div>
-      <div class="how-card reveal active" onclick="selectHow(this)">
-        <div class="how-card-top">
-          <div class="how-icon"><i data-lucide="send" style="width:24px;height:24px;color:var(--pink);"></i></div>
-          <div class="how-text"><div class="how-step">STEP 04</div><h3>인스타 자동 게시</h3></div>
-        </div>
-        <div class="how-detail"><div class="how-detail-inner"><p>트렌드 해시태그까지 달고, 팔로워가 가장 활발한 최적 시간에 자동으로 올라가요.</p></div></div>
+      <div class="how-expand" id="how-expand-1">
+        <div class="how-expand-inner"><p class="how-expand-title">🔍 AI 사진 분석</p><p>사진 속 메뉴, 분위기, 색감, 계절감까지 AI가 읽어내요. 매장의 특색을 정확히 파악합니다.</p></div>
+      </div>
+      <div class="how-card reveal" data-how="2" onclick="selectHow(2)">
+        <div class="how-icon"><i data-lucide="pen-tool" style="width:24px;height:24px;color:var(--pink);"></i></div>
+        <div class="how-text"><div class="how-step">STEP 03</div><h3>캡션 자동 작성</h3></div>
+      </div>
+      <div class="how-expand" id="how-expand-2">
+        <div class="how-expand-inner"><p class="how-expand-title">✍️ 캡션 완성</p><p>오늘 날씨, 트렌드 해시태그, 매장 말투까지 반영해서 자연스러운 캡션을 완성해요.</p></div>
+      </div>
+      <div class="how-card reveal" data-how="3" onclick="selectHow(3)">
+        <div class="how-icon"><i data-lucide="send" style="width:24px;height:24px;color:var(--pink);"></i></div>
+        <div class="how-text"><div class="how-step">STEP 04</div><h3>인스타 자동 게시</h3></div>
+      </div>
+      <div class="how-expand" id="how-expand-3">
+        <div class="how-expand-inner"><p class="how-expand-title">🚀 자동 게시</p><p>트렌드 해시태그까지 달고, 팔로워가 가장 활발한 최적 시간에 자동으로 올라가요.</p></div>
       </div>
     </div>
   </div>
@@ -693,16 +692,18 @@ body.dark-mode .footer-logo{filter:brightness(1.4);}
 if(typeof lucide !== 'undefined') lucide.createIcons();
 
 // How 스텝 선택
-function selectHow(el){
-  if(el.classList.contains('active')) return;
-  document.querySelectorAll('.how-card').forEach(c=>c.classList.remove('active'));
-  el.classList.add('active');
-  setTimeout(function(){
-    var rect = el.getBoundingClientRect();
-    var scrollY = window.pageYOffset || document.documentElement.scrollTop;
-    var target = scrollY + rect.top - 100;
-    window.scrollTo({top: target, behavior: 'smooth'});
-  }, 150);
+function selectHow(idx){
+  document.querySelectorAll('.how-card').forEach(function(c){c.classList.remove('active');});
+  document.querySelectorAll('.how-expand').forEach(function(e){e.classList.remove('open');});
+  var card = document.querySelector('.how-card[data-how="'+idx+'"]');
+  var expand = document.getElementById('how-expand-'+idx);
+  if(card) card.classList.add('active');
+  if(expand){
+    expand.classList.add('open');
+    setTimeout(function(){
+      expand.scrollIntoView({behavior:'smooth',block:'nearest'});
+    },200);
+  }
 }
 
 // 실시간 베타 카운트
