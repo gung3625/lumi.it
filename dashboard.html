@@ -29,9 +29,29 @@ body.dark-mode .portal-x{background:var(--g100);color:var(--g500);}
 body.dark-mode .toast{background:var(--g200);color:var(--g700);}
 body.dark-mode .dash-tab-bar{background:rgba(26,32,44,.97);border-top-color:var(--g200);}
 body.dark-mode .btn-act-off{background:var(--white);color:var(--g700);border-color:var(--g200);}
-#ig-connect-banner{background:#fff0f6;border:1.5px solid var(--pink);}
-body.dark-mode #ig-connect-banner{background:#1F1923;border-color:var(--pink);}
+#ig-connect-banner{display:flex;flex-direction:column;background:var(--pink-pale);border:1.5px solid var(--pink-soft);border-radius:var(--r-xl);padding:20px;margin-bottom:16px;max-width:100%;box-sizing:border-box;overflow:hidden;}
+#ig-connect-banner .ig-b-title{font-size:.92rem;font-weight:800;color:var(--pink);margin-bottom:8px;}
+#ig-connect-banner .ig-b-desc{font-size:.8rem;color:var(--g500);line-height:1.7;margin-bottom:14px;}
+#ig-connect-banner .ig-b-list{font-size:.75rem;color:var(--g500);line-height:1.8;margin-bottom:16px;}
+#ig-connect-banner .ig-b-btn{width:100%;background:var(--pink);color:#fff;border:none;border-radius:var(--r-md);padding:14px;font-size:.88rem;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 4px 16px rgba(255,45,138,.25);transition:opacity .2s;}
+#ig-connect-banner .ig-b-btn:hover{opacity:.9;}
+#ig-connect-banner .ig-b-note{font-size:.72rem;color:var(--g400);text-align:center;margin-top:8px;}
+body.dark-mode #ig-connect-banner{background:var(--pink-ultra);border-color:var(--pink-soft);}
+
+#ig-connected-badge{background:#f0fff4;border:1.5px solid #52c41a;border-radius:var(--r-xl);padding:14px 18px;margin-bottom:16px;}
+#ig-connected-badge .ig-ok-wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+#ig-connected-badge .ig-ok-left{display:flex;align-items:center;gap:8px;}
+#ig-connected-badge .ig-ok-title{font-size:.85rem;font-weight:800;color:#389e0d;margin-bottom:2px;}
+#ig-connected-badge .ig-ok-sub{font-size:.75rem;color:#52c41a;}
+#ig-connected-badge .ig-ok-disconnect{background:none;border:1px solid #ffb3b3;border-radius:99px;padding:5px 12px;font-size:11px;font-weight:700;color:#ff4d4d;cursor:pointer;white-space:nowrap;font-family:inherit;transition:all .2s;}
+#ig-connected-badge .ig-ok-disconnect:hover{background:#fff5f5;}
 body.dark-mode #ig-connected-badge{background:#1A2E1F;border-color:#2D6A3B;}
+body.dark-mode #ig-connected-badge .ig-ok-title{color:#6ee7b7;}
+body.dark-mode #ig-connected-badge .ig-ok-sub{color:#4ade80;}
+body.dark-mode #ig-connected-badge .ig-ok-disconnect{border-color:#7f1d1d;color:#f87171;}
+body.dark-mode #ig-connected-badge .ig-ok-disconnect:hover{background:#2D1F1F;}
+
+.t-rank{width:20px;font-size:.75rem;font-weight:800;color:var(--g400);text-align:center;flex-shrink:0;}
 body.dark-mode .weather-card{background:var(--white);border-color:var(--g200);}
 body.dark-mode select.inp,body.dark-mode .inp{background:var(--g100);border-color:var(--g200);color:var(--g900);}
 body.dark-mode .inp:focus{background:var(--white);}
@@ -496,27 +516,27 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
             </div>
         </div>
         <!-- Instagram 연동 상태 -->
-        <div id="ig-connect-banner" style="display:none;border-radius:var(--r-xl);padding:20px;margin-bottom:16px;max-width:100%;box-sizing:border-box;overflow:hidden;">
-            <p style="font-size:.92rem;font-weight:800;color:var(--pink);margin-bottom:8px;">📸 Instagram 연동이 필요해요</p>
-            <p style="font-size:.8rem;color:var(--g600);line-height:1.7;margin-bottom:14px;">사진을 올리면 lumi가 캡션을 써서 <strong>인스타그램에 자동으로 게시</strong>해드려요.<br>연동하지 않으면 게시물 업로드가 불가능해요.</p>
-            <div style="font-size:.75rem;color:var(--g500);line-height:1.8;margin-bottom:16px;">
+        <div id="ig-connect-banner" style="display:none;">
+            <p class="ig-b-title">📸 Instagram 연동이 필요해요</p>
+            <p class="ig-b-desc">사진을 올리면 lumi가 캡션을 써서 <strong>인스타그램에 자동으로 게시</strong>해드려요.<br>연동하지 않으면 게시물 업로드가 불가능해요.</p>
+            <div class="ig-b-list">
                 ✅ 연동하면 이런 게 가능해요<br>
                 　• 사진 업로드 → lumi 캡션 자동 생성 → 인스타 자동 게시<br>
                 　• 예약 게시, 댓글/DM 자동 응답 (프로 플랜)
             </div>
-            <button onclick="connectInstagram()" style="width:100%;background:var(--pink);color:#fff;border:none;border-radius:var(--r-md);padding:14px;font-size:.88rem;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 4px 16px rgba(255,45,138,.25);">Instagram 연동하기 →</button>
-            <p style="font-size:.72rem;color:var(--g400);text-align:center;margin-top:8px;">비즈니스 또는 크리에이터 계정만 연동 가능해요.</p>
+            <button class="ig-b-btn" onclick="connectInstagram()">Instagram 연동하기 →</button>
+            <p class="ig-b-note">비즈니스 또는 크리에이터 계정만 연동 가능해요.</p>
         </div>
-        <div id="ig-connected-badge" style="display:none;background:#f0fff4;border:1.5px solid #52c41a;border-radius:var(--r-xl);padding:14px 18px;margin-bottom:16px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
-                <div style="display:flex;align-items:center;gap:8px;">
+        <div id="ig-connected-badge" style="display:none;">
+            <div class="ig-ok-wrap">
+                <div class="ig-ok-left">
                     <span style="font-size:1.1rem;">✅</span>
                     <div>
-                        <p style="font-size:.85rem;font-weight:800;color:#389e0d;margin-bottom:2px;">Instagram 연동 완료</p>
-                        <p style="font-size:.75rem;color:#52c41a;">게시물이 자동으로 올라가요</p>
+                        <p class="ig-ok-title">Instagram 연동 완료</p>
+                        <p class="ig-ok-sub">게시물이 자동으로 올라가요</p>
                     </div>
                 </div>
-                <button onclick="disconnectInstagram()" style="background:none;border:1px solid #ffb3b3;border-radius:99px;padding:5px 12px;font-size:11px;font-weight:700;color:#ff4d4d;cursor:pointer;white-space:nowrap;font-family:inherit;transition:all .2s;" onmouseover="this.style.background='#fff5f5'" onmouseout="this.style.background='none'">연동 끊기</button>
+                <button class="ig-ok-disconnect" onclick="disconnectInstagram()">연동 끊기</button>
             </div>
         </div>
 
@@ -2417,10 +2437,11 @@ async function loadTrends() {
         // 업종별 키워드 변화율
         if (data.keywords && data.keywords.length > 0) {
             html += '<p class="trend-section-lbl">' + (data.categoryLabel || '업종') + ' 키워드 변화</p>';
-            html += data.keywords.map(k => {
+            html += data.keywords.map((k, i) => {
                 const arrow = k.trend === 'up' ? '↑' : k.trend === 'down' ? '↓' : '→';
                 const sign = k.changeRate > 0 ? '+' : '';
                 return `<div class="trend-row">
+                    <span class="t-rank">${i + 1}</span>
                     <span class="t-keyword">${k.keyword}</span>
                     <span class="t-change ${k.trend}">${sign}${k.changeRate}% ${arrow}</span>
                 </div>`;
@@ -2430,8 +2451,9 @@ async function loadTrends() {
         // 급상승 검색어
         if (data.daily && data.daily.length > 0) {
             html += '<p class="trend-section-lbl">오늘 급상승</p>';
-            html += data.daily.slice(0, 5).map(d => {
+            html += data.daily.slice(0, 5).map((d, i) => {
                 return `<div class="trend-row">
+                    <span class="t-rank">${i + 1}</span>
                     <span class="t-keyword">${d.keyword}</span>
                     <span class="t-traffic">${d.traffic}</span>
                 </div>`;
@@ -2450,7 +2472,7 @@ async function loadTrends() {
         const fallback = LUMI_CORE.trends[bizCat] || LUMI_CORE.trends.cafe;
         realtimeTrends = fallback;
         trendEl.innerHTML = fallback.map((tag, i) =>
-            `<div class="trend-row"><span class="t-keyword">${tag}</span><span class="t-change stable">—</span></div>`
+            `<div class="trend-row"><span class="t-rank">${i + 1}</span><span class="t-keyword">${tag}</span><span class="t-change stable">—</span></div>`
         ).join('');
     }
 }
