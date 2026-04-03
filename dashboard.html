@@ -29,8 +29,29 @@ body.dark-mode .portal-x{background:var(--g100);color:var(--g500);}
 body.dark-mode .toast{background:var(--g200);color:var(--g700);}
 body.dark-mode .dash-tab-bar{background:rgba(26,32,44,.97);border-top-color:var(--g200);}
 body.dark-mode .btn-act-off{background:var(--white);color:var(--g700);border-color:var(--g200);}
-body.dark-mode #ig-connect-banner{background:#1F1923;border-color:var(--pink);}
+#ig-connect-banner{background:var(--pink-pale);border:1.5px solid var(--pink-soft);border-radius:var(--r-xl);padding:20px;margin-bottom:16px;max-width:100%;box-sizing:border-box;overflow:hidden;}
+#ig-connect-banner .ig-b-title{font-size:.92rem;font-weight:800;color:var(--pink);margin-bottom:8px;}
+#ig-connect-banner .ig-b-desc{font-size:.8rem;color:var(--g500);line-height:1.7;margin-bottom:14px;}
+#ig-connect-banner .ig-b-list{font-size:.75rem;color:var(--g500);line-height:1.8;margin-bottom:16px;}
+#ig-connect-banner .ig-b-btn{width:100%;background:var(--pink);color:#fff;border:none;border-radius:var(--r-md);padding:14px;font-size:.88rem;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 4px 16px rgba(255,45,138,.25);transition:opacity .2s;}
+#ig-connect-banner .ig-b-btn:hover{opacity:.9;}
+#ig-connect-banner .ig-b-note{font-size:.72rem;color:var(--g400);text-align:center;margin-top:8px;}
+body.dark-mode #ig-connect-banner{background:var(--pink-ultra);border-color:var(--pink-soft);}
+
+#ig-connected-badge{background:#f0fff4;border:1.5px solid #52c41a;border-radius:var(--r-xl);padding:14px 18px;margin-bottom:16px;}
+#ig-connected-badge .ig-ok-wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+#ig-connected-badge .ig-ok-left{display:flex;align-items:center;gap:8px;}
+#ig-connected-badge .ig-ok-title{font-size:.85rem;font-weight:800;color:#389e0d;margin-bottom:2px;}
+#ig-connected-badge .ig-ok-sub{font-size:.75rem;color:#52c41a;}
+#ig-connected-badge .ig-ok-disconnect{background:none;border:1px solid #ffb3b3;border-radius:99px;padding:5px 12px;font-size:11px;font-weight:700;color:#ff4d4d;cursor:pointer;white-space:nowrap;font-family:inherit;transition:all .2s;}
+#ig-connected-badge .ig-ok-disconnect:hover{background:#fff5f5;}
 body.dark-mode #ig-connected-badge{background:#1A2E1F;border-color:#2D6A3B;}
+body.dark-mode #ig-connected-badge .ig-ok-title{color:#6ee7b7;}
+body.dark-mode #ig-connected-badge .ig-ok-sub{color:#4ade80;}
+body.dark-mode #ig-connected-badge .ig-ok-disconnect{border-color:#7f1d1d;color:#f87171;}
+body.dark-mode #ig-connected-badge .ig-ok-disconnect:hover{background:#2D1F1F;}
+
+.t-rank{width:20px;font-size:.75rem;font-weight:800;color:var(--g400);text-align:center;flex-shrink:0;}
 body.dark-mode .weather-card{background:var(--white);border-color:var(--g200);}
 body.dark-mode select.inp,body.dark-mode .inp{background:var(--g100);border-color:var(--g200);color:var(--g900);}
 body.dark-mode .inp:focus{background:var(--white);}
@@ -59,13 +80,22 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
         .portal-ttl{font-size:1.1rem;font-weight:900;color:var(--g900);margin-bottom:4px;text-align:center;letter-spacing:-.02em;}
         .portal-sub{font-size:.8rem;color:var(--g400);text-align:center;margin-bottom:16px;line-height:1.6;}
         .inp{width:100%;padding:12px 14px;margin-bottom:8px;border:1.5px solid var(--g200);border-radius:10px;background:var(--g50);font-size:16px;color:var(--g900);font-family:inherit;outline:none;transition:border-color .2s,box-shadow .2s;}
-        /* 회원가입 폼 섹션 */
-        .reg-section{background:var(--g50);border-radius:14px;padding:16px;margin-bottom:12px;border:1px solid var(--g100);}
-        .reg-section-label{font-size:11px;font-weight:800;color:var(--g400);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;}
-        .reg-field{margin-bottom:12px;}
+        /* 회원가입 스텝 */
+        .reg-progress{display:flex;gap:6px;margin-bottom:24px;}
+        .reg-progress-bar{flex:1;height:3px;border-radius:3px;background:var(--g100);transition:background .4s var(--ease);}
+        .reg-progress-bar.active{background:var(--pink);}
+        .reg-step{display:none;animation:fadeUp .35s var(--ease);}
+        .reg-step.active{display:block;}
+        .reg-step-title{font-size:1.2rem;font-weight:900;color:var(--g900);margin-bottom:6px;letter-spacing:-.03em;line-height:1.4;}
+        .reg-step-desc{font-size:.82rem;color:var(--g400);margin-bottom:24px;line-height:1.6;}
+        .reg-field{margin-bottom:16px;}
         .reg-field:last-child{margin-bottom:0;}
-        .reg-lbl{display:block;font-size:12px;font-weight:700;color:var(--g600);margin-bottom:5px;}
-        .reg-inp{margin-bottom:0!important;height:46px;}
+        .reg-lbl{display:block;font-size:13px;font-weight:700;color:var(--g700);margin-bottom:6px;}
+        .reg-lbl-sub{font-weight:400;color:var(--g400);font-size:11px;margin-left:4px;}
+        .reg-inp{margin-bottom:0!important;height:52px;border-radius:12px;font-size:16px;}
+        .reg-back{display:inline-flex;align-items:center;gap:4px;background:none;border:none;color:var(--g400);font-size:13px;font-weight:600;cursor:pointer;padding:0;margin-bottom:16px;font-family:inherit;transition:color .2s;}
+        .reg-back:hover{color:var(--g900);}
+        .btn-portal.disabled{opacity:.4;pointer-events:none;box-shadow:none;}
         .inp:focus{border-color:var(--pink);background:var(--white);box-shadow:0 0 0 3px rgba(255,45,138,.1);}
         .inp::placeholder{color:var(--g400);}
         .inp-otp{text-align:center;font-size:clamp(1.2rem,5vw,1.8rem);font-weight:900;letter-spacing:clamp(6px,3vw,14px);height:60px;}
@@ -101,11 +131,15 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
         .aq-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:var(--r-full);font-size:11px;font-weight:700;background:var(--g100);color:var(--g700);}
         .dash-lbl{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--g400);margin-bottom:10px;}
         .trend-wrap{display:flex;flex-direction:column;gap:7px;margin-bottom:20px;}
-        .trend-row{background:var(--white);border-radius:var(--r-md);padding:13px 15px;border:1px solid var(--g100);display:flex;align-items:center;gap:10px;transition:transform .2s,box-shadow .2s;justify-content:space-between;}
+        .trend-row{background:var(--white);border-radius:var(--r-md);padding:13px 15px;border:1px solid var(--g100);display:flex;align-items:center;gap:10px;transition:transform .2s,box-shadow .2s;}
         .trend-row:hover{transform:translateY(-1px);box-shadow:var(--sh-xs);}
-        .t-rank{font-size:11px;font-weight:900;color:var(--pink-soft);width:18px;}
-        .t-tag{flex:1;font-size:.87rem;font-weight:700;color:var(--g900);}
-        .t-hot{font-size:10px;font-weight:700;color:var(--pink);background:var(--pink-pale);padding:2px 8px;border-radius:var(--r-full);}
+        .t-keyword{flex:1;font-size:.87rem;font-weight:700;color:var(--g900);}
+        .t-change{font-size:12px;font-weight:800;padding:3px 10px;border-radius:var(--r-full);white-space:nowrap;}
+        .t-change.up{color:#16a34a;background:rgba(22,163,74,.1);}
+        .t-change.down{color:#dc2626;background:rgba(220,38,38,.1);}
+        .t-change.stable{color:var(--g400);background:var(--g100);}
+        .t-traffic{font-size:11px;color:var(--g400);font-weight:600;white-space:nowrap;}
+        .trend-section-lbl{font-size:11px;font-weight:700;color:var(--g400);margin:12px 0 6px;letter-spacing:.03em;}
         .upload-card{background:var(--white);border-radius:var(--r-xl);padding:26px 22px;border:1.5px solid rgba(255,45,138,.15);box-shadow:0 4px 20px rgba(255,45,138,.08);margin-bottom:14px;}
         .auto-reply-card{background:var(--white);border-radius:var(--r-xl);padding:26px 22px;border:1px solid var(--g200);box-shadow:var(--sh-xs);margin-bottom:14px;}
         .keyword-row{display:flex;gap:8px;align-items:center;margin-bottom:10px;}
@@ -147,7 +181,7 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
 
 
         /* 에러/성공 메시지 */
-        .field-err{font-size:12px;font-weight:600;color:#E53E3E;margin:-6px 0 10px 4px;animation:fadeUp .25s var(--ease);}
+        .field-err{font-size:12px;font-weight:600;color:#E53E3E;margin:6px 0 10px 4px;animation:fadeUp .25s var(--ease);}
         .field-ok{font-size:12px;font-weight:600;color:#38A169;margin:-6px 0 10px 4px;animation:fadeUp .25s var(--ease);}
         .inp.err{border-color:#E53E3E!important;background:#FFF5F5!important;}
         .inp.ok{border-color:#38A169!important;}
@@ -222,7 +256,7 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
                 <span style="font-size:11px;color:var(--g400);font-weight:600;">계정 찾기</span>
                 <div style="flex:1;height:1px;background:var(--g100);"></div>
             </div>
-            <p style="text-align:center;font-size:13px;color:#999;">
+            <p style="text-align:center;font-size:13px;color:var(--g400);">
                 <button onclick="openFindId()" style="background:none;border:none;color:var(--g400);font-size:13px;cursor:pointer;padding:4px 8px;border-radius:6px;transition:background .2s;" onmouseover="this.style.background='var(--g100)'" onmouseout="this.style.background='none'">아이디 찾기</button>
                 <span style="color:var(--g200);">|</span>
                 <button onclick="openForgotPassword()" style="background:none;border:none;color:var(--pink);font-size:13px;cursor:pointer;font-weight:700;padding:4px 8px;border-radius:6px;transition:background .2s;" onmouseover="this.style.background='var(--pink-pale)'" onmouseout="this.style.background='none'">비밀번호 찾기</button>
@@ -249,8 +283,8 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
                 <button class="btn-portal" onclick="setPortalMode('login')">로그인하러 가기</button>
                 <button class="btn-portal" onclick="openForgotPassword()" style="margin-top:8px;background:var(--g100);color:var(--g700);box-shadow:none;">비밀번호도 잊으셨나요?</button>
             </div>
-            <p style="text-align:center;margin-top:12px;font-size:13px;color:#999;">
-                <button onclick="setPortalMode('login')" style="background:none;border:none;color:#999;font-size:13px;cursor:pointer;text-decoration:underline;padding:0;">로그인으로 돌아가기</button>
+            <p style="text-align:center;margin-top:12px;font-size:13px;color:var(--g400);">
+                <button onclick="setPortalMode('login')" style="background:none;border:none;color:var(--g400);font-size:13px;cursor:pointer;text-decoration:underline;padding:0;">로그인으로 돌아가기</button>
             </p>
         </div>
         <!-- 비밀번호 찾기 -->
@@ -266,7 +300,7 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
                 <input type="text" id="forgot-otp-field" placeholder="000000" class="inp inp-otp" maxlength="6" oninput="clearFieldErr(this.id,'forgot-otp-err')">
                 <div id="forgot-otp-err" class="field-err hidden"></div>
                 <button class="btn-portal" onclick="verifyForgotOtp()">확인</button>
-                <p style="text-align:center;margin-top:12px;font-size:13px;color:#999;"><button onclick="sendForgotOtp()" style="background:none;border:none;color:#FF2D8A;font-size:13px;cursor:pointer;text-decoration:underline;padding:0;">재전송</button></p>
+                <p style="text-align:center;margin-top:12px;font-size:13px;color:var(--g400);"><button onclick="sendForgotOtp()" style="background:none;border:none;color:var(--pink);font-size:13px;cursor:pointer;text-decoration:underline;padding:0;">재전송</button></p>
             </div>
             <div id="forgot-step-3" class="hidden">
                 <input type="password" id="forgot-pw-field" placeholder="새 비밀번호 (특수문자 포함 10자 이상)" class="inp" oninput="clearFieldErr(this.id,'forgot-pw-err')">
@@ -275,39 +309,27 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
                 <div id="forgot-pw-confirm-err" class="field-err hidden"></div>
                 <button class="btn-portal" onclick="resetForgotPassword()">비밀번호 변경</button>
             </div>
-            <p style="text-align:center;margin-top:12px;font-size:13px;color:#999;"><button onclick="setPortalMode('login')" style="background:none;border:none;color:#999;font-size:13px;cursor:pointer;text-decoration:underline;padding:0;">로그인으로 돌아가기</button></p>
+            <p style="text-align:center;margin-top:12px;font-size:13px;color:var(--g400);"><button onclick="setPortalMode('login')" style="background:none;border:none;color:var(--g400);font-size:13px;cursor:pointer;text-decoration:underline;padding:0;">로그인으로 돌아가기</button></p>
         </div>
         <!-- 회원가입 -->
         <div id="lumi-signup-view" class="hidden">
-            <!-- 섹션 1: 기본 정보 -->
-            <div class="reg-section">
-                <p class="reg-section-label">기본 정보</p>
-                <div class="reg-field">
-                    <label class="reg-lbl">이름</label>
-                    <input type="text" id="ceo-name-field" placeholder="대표님 성함" class="inp reg-inp" oninput="clearFieldErr(this.id,'ceo-name-err')">
-                    <div id="ceo-name-err" class="field-err hidden"></div>
-                </div>
-                <div class="reg-field">
-                    <label class="reg-lbl">주민번호 <span style="font-weight:400;color:var(--g400);font-size:11px;">생년월일 + 성별 확인용</span></label>
-                    <div style="display:flex;align-items:center;gap:8px;">
-                        <input type="text" id="jumin-front" placeholder="950906" class="inp reg-inp" style="flex:1;letter-spacing:4px;text-align:center;font-weight:700;margin-bottom:0;" maxlength="6" oninput="onJuminInput(this)" inputmode="numeric">
-                        <span style="color:var(--g400);font-weight:700;font-size:1.1rem;flex-shrink:0;">-</span>
-                        <input type="password" id="jumin-back" placeholder="●" class="inp reg-inp" style="width:48px;text-align:center;font-size:1.2rem;margin-bottom:0;" maxlength="1" oninput="onJuminBackInput(this)" inputmode="numeric">
-                        <span style="color:var(--g300);font-size:.85rem;flex-shrink:0;letter-spacing:2px;">●●●●●●</span>
-                    </div>
-                    <div id="reg-bd-err" class="field-err hidden"></div>
-                </div>
+            <!-- 프로그레스 바 -->
+            <div class="reg-progress">
+                <div class="reg-progress-bar active" id="reg-bar-1"></div>
+                <div class="reg-progress-bar" id="reg-bar-2"></div>
+                <div class="reg-progress-bar" id="reg-bar-3"></div>
             </div>
 
-            <!-- 섹션 2: 계정 정보 -->
-            <div class="reg-section">
-                <p class="reg-section-label">계정 정보</p>
+            <!-- Step 1: 계정 정보 -->
+            <div class="reg-step active" id="reg-step-1">
+                <p class="reg-step-title">먼저, 계정을 만들어요.</p>
+                <p class="reg-step-desc">이메일 인증과 비밀번호를 설정해주세요.</p>
                 <div class="reg-field">
                     <label class="reg-lbl">이메일</label>
-                    <div style="display:flex;border:1.5px solid var(--g200);border-radius:10px;overflow:hidden;background:var(--g50);margin-bottom:0;">
-                        <input type="text" id="id-reg-local" placeholder="아이디" class="inp" autocomplete="email" style="border:none;background:transparent;border-radius:0;flex:1;min-width:0;margin:0;height:46px;" oninput="clearFieldErr('id-reg-field','reg-email-err')">
+                    <div style="display:flex;border:1.5px solid var(--g200);border-radius:12px;overflow:hidden;background:var(--g50);margin-bottom:0;">
+                        <input type="text" id="id-reg-local" placeholder="아이디" class="inp" autocomplete="email" style="border:none;background:transparent;border-radius:0;flex:1;min-width:0;margin:0;height:52px;" oninput="clearFieldErr('id-reg-field','reg-email-err')">
                         <span style="display:flex;align-items:center;padding:0 4px;color:var(--g400);font-size:.85rem;flex-shrink:0;">@</span>
-                        <select id="id-reg-domain-select" class="inp" style="border:none;background:transparent;border-radius:0;border-left:1.5px solid var(--g200);width:120px;margin:0;height:46px;font-size:13px;" onchange="toggleEmailDomain(this.value)">
+                        <select id="id-reg-domain-select" class="inp" style="border:none;background:transparent;border-radius:0;border-left:1.5px solid var(--g200);width:130px;margin:0;height:52px;font-size:13px;" onchange="toggleEmailDomain(this.value)">
                             <option value="gmail.com">gmail.com</option>
                             <option value="naver.com">naver.com</option>
                             <option value="kakao.com">kakao.com</option>
@@ -318,49 +340,113 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
                             <option value="direct">직접 입력</option>
                         </select>
                     </div>
-                    <input type="text" id="id-reg-domain-direct" placeholder="도메인 직접 입력 (예: company.com)" class="inp" style="display:none;margin-top:6px;margin-bottom:0;" oninput="clearFieldErr('id-reg-field','reg-email-err')">
+                    <input type="text" id="id-reg-domain-direct" placeholder="도메인 직접 입력 (예: company.com)" class="inp reg-inp" style="display:none;margin-top:6px;" oninput="clearFieldErr('id-reg-field','reg-email-err')">
                     <input type="hidden" id="id-reg-field">
-                    <button onclick="requestSignupOtp()" id="otp-req-btn" style="width:100%;height:44px;background:var(--pink);color:#fff;border:none;border-radius:10px;font-size:.88rem;font-weight:700;cursor:pointer;margin-top:8px;font-family:inherit;">인증번호 받기</button>
+                    <button onclick="requestSignupOtp()" id="otp-req-btn" style="width:100%;height:48px;background:var(--pink);color:#fff;border:none;border-radius:12px;font-size:.88rem;font-weight:700;cursor:pointer;margin-top:10px;font-family:inherit;transition:all .2s;box-shadow:0 4px 16px rgba(255,45,138,.2);">인증번호 받기</button>
                     <div id="reg-email-err" class="field-err hidden"></div>
-                    <div id="otp-row" class="hidden" style="margin-top:8px;">
+                    <div id="otp-row" class="hidden" style="margin-top:10px;">
                         <div style="display:flex;gap:8px;align-items:center;">
-                            <input type="text" id="id-otp-field" placeholder="인증번호 6자리" class="inp" maxlength="6" style="letter-spacing:6px;font-size:1rem;font-weight:700;flex:1;margin-bottom:0;height:46px;" oninput="onOtpInput(this)">
+                            <input type="text" id="id-otp-field" placeholder="인증번호 6자리" class="inp" maxlength="6" style="letter-spacing:6px;font-size:1rem;font-weight:700;flex:1;margin-bottom:0;height:52px;border-radius:12px;" oninput="onOtpInput(this)">
                             <span id="otp-verified-badge" class="hidden" style="color:#22c55e;font-weight:700;font-size:.85rem;white-space:nowrap;">✓ 인증완료</span>
                         </div>
                         <div id="otp-err" class="field-err hidden"></div>
-                        <p style="font-size:11px;color:#aaa;margin-top:4px;">이메일을 못 받으셨나요? <button onclick="requestSignupOtp()" style="background:none;border:none;color:var(--pink);font-size:11px;cursor:pointer;text-decoration:underline;padding:0;font-family:inherit;">재전송</button></p>
+                        <p style="font-size:11px;color:var(--g400);margin-top:6px;">이메일을 못 받으셨나요? <button onclick="requestSignupOtp()" style="background:none;border:none;color:var(--pink);font-size:11px;cursor:pointer;text-decoration:underline;padding:0;font-family:inherit;">재전송</button></p>
                     </div>
                 </div>
                 <div class="reg-field">
                     <label class="reg-lbl">비밀번호</label>
                     <input type="password" id="id-pw-field" placeholder="특수문자 포함 10자 이상" class="inp reg-inp" autocomplete="new-password" oninput="clearFieldErr(this.id,'pw-err')">
                     <div id="pw-err" class="field-err hidden"></div>
-                    <input type="password" id="id-pw-confirm-field" placeholder="비밀번호 확인" class="inp reg-inp" style="margin-top:6px;" oninput="clearFieldErr(this.id,'pw-confirm-err')">
+                </div>
+                <div class="reg-field">
+                    <label class="reg-lbl">비밀번호 확인</label>
+                    <input type="password" id="id-pw-confirm-field" placeholder="한 번 더 입력해주세요" class="inp reg-inp" oninput="clearFieldErr(this.id,'pw-confirm-err')">
                     <div id="pw-confirm-err" class="field-err hidden"></div>
                 </div>
+                <button class="btn-portal" onclick="goRegStep(2)" style="margin-top:8px;">다음</button>
             </div>
 
-            <!-- 섹션 3: 연락처 & 매장 -->
-            <div class="reg-section">
-                <p class="reg-section-label">연락처 & 매장</p>
+            <!-- Step 2: 기본 정보 -->
+            <div class="reg-step" id="reg-step-2">
+                <button class="reg-back" onclick="goRegStep(1)">← 이전</button>
+                <p class="reg-step-title">매장 정보를 알려주세요.</p>
+                <p class="reg-step-desc">캡션을 더 잘 만들기 위해 필요해요.</p>
                 <div class="reg-field">
-                    <label class="reg-lbl">휴대폰 번호</label>
-                    <input type="tel" id="ph-reg-field" placeholder="숫자만 입력" class="inp reg-inp" oninput="clearFieldErr(this.id,'reg-ph-err')">
-                    <div id="reg-ph-err" class="field-err hidden"></div>
+                    <label class="reg-lbl">대표님 성함</label>
+                    <input type="text" id="ceo-name-field" placeholder="홍길동" class="inp reg-inp" oninput="clearFieldErr(this.id,'ceo-name-err')">
+                    <div id="ceo-name-err" class="field-err hidden"></div>
                 </div>
                 <div class="reg-field">
-                    <label class="reg-lbl">인스타그램 아이디</label>
-                    <input type="text" id="store-insta-field" placeholder="@lumi__it" class="inp reg-inp" oninput="clearFieldErr(this.id,'store-insta-err')">
-                    <div id="store-insta-err" class="field-err hidden"></div>
+                    <label class="reg-lbl">생년월일</label>
+                    <div style="display:flex;gap:8px;">
+                        <select id="birthdate-year" class="inp reg-inp" style="flex:1.2;" onchange="updateBirthdateDays()"><option value="">년</option></select>
+                        <select id="birthdate-month" class="inp reg-inp" style="flex:1;" onchange="updateBirthdateDays()"><option value="">월</option></select>
+                        <select id="birthdate-day" class="inp reg-inp" style="flex:1;"><option value="">일</option></select>
+                    </div>
+                    <div id="reg-bd-err" class="field-err hidden"></div>
+                </div>
+                <div class="reg-field">
+                    <label class="reg-lbl">성별</label>
+                    <select id="reg-gender-field" class="inp reg-inp">
+                        <option value="">선택</option>
+                        <option value="male">남성</option>
+                        <option value="female">여성</option>
+                    </select>
+                </div>
+                <div class="reg-field">
+                    <label class="reg-lbl">휴대폰 번호</label>
+                    <input type="tel" id="ph-reg-field" placeholder="01012345678" class="inp reg-inp" inputmode="numeric" oninput="clearFieldErr(this.id,'reg-ph-err')">
+                    <div id="reg-ph-err" class="field-err hidden"></div>
                 </div>
                 <div class="reg-field">
                     <label class="reg-lbl">매장 이름</label>
                     <input type="text" id="store-name-field" placeholder="카페루미" class="inp reg-inp" oninput="clearFieldErr(this.id,'store-name-err')">
                     <div id="store-name-err" class="field-err hidden"></div>
                 </div>
+                <div class="reg-field">
+                    <label class="reg-lbl">인스타그램 아이디</label>
+                    <input type="text" id="store-insta-field" placeholder="lumi__it" class="inp reg-inp" oninput="clearFieldErr(this.id,'store-insta-err')">
+                    <div id="store-insta-err" class="field-err hidden"></div>
+                </div>
+                <button class="btn-portal" onclick="goRegStep(3)" style="margin-top:8px;">다음</button>
+            </div>
+
+            <!-- Step 3: 약관 동의 -->
+            <div class="reg-step" id="reg-step-3">
+                <button class="reg-back" onclick="goRegStep(2)">← 이전</button>
+                <p class="reg-step-title">거의 다 됐어요!</p>
+                <p class="reg-step-desc">약관에 동의하시면 가입이 완료돼요.</p>
+                <div style="margin-bottom:20px;">
+                    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:14px 16px;background:var(--g50);border-radius:12px;border:1.5px solid var(--g200);margin-bottom:12px;transition:border-color .2s;">
+                        <input type="checkbox" id="agree-all" style="accent-color:var(--pink);width:20px;height:20px;flex-shrink:0;" onchange="toggleAllAgree(this.checked)">
+                        <span style="font-size:.92rem;font-weight:800;color:var(--g900);">전체 동의하기</span>
+                    </label>
+                    <div style="display:flex;flex-direction:column;gap:10px;padding:0 6px;">
+                        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:.84rem;color:var(--g700);">
+                            <input type="checkbox" id="agree-terms" style="margin-top:2px;accent-color:var(--pink);width:18px;height:18px;flex-shrink:0;" onchange="syncAllAgree()">
+                            <span>(필수) <a href="/terms" target="_blank" style="color:var(--pink);font-weight:700;text-decoration:underline;">이용약관</a> 동의</span>
+                        </label>
+                        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:.84rem;color:var(--g700);">
+                            <input type="checkbox" id="agree-privacy" style="margin-top:2px;accent-color:var(--pink);width:18px;height:18px;flex-shrink:0;" onchange="syncAllAgree()">
+                            <span>(필수) <a href="/privacy" target="_blank" style="color:var(--pink);font-weight:700;text-decoration:underline;">개인정보 처리방침</a> 동의</span>
+                        </label>
+                        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:.84rem;color:var(--g700);">
+                            <input type="checkbox" id="agree-refund" style="margin-top:2px;accent-color:var(--pink);width:18px;height:18px;flex-shrink:0;" onchange="syncAllAgree()">
+                            <span>(필수) 유료 서비스 이용 및 <a href="/terms#refund" target="_blank" style="color:var(--pink);font-weight:700;text-decoration:underline;">환불 정책</a> 동의</span>
+                        </label>
+                        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:.84rem;color:var(--g700);padding-top:6px;border-top:1px solid var(--g100);margin-top:2px;">
+                            <input type="checkbox" id="agree-marketing" style="margin-top:2px;accent-color:var(--pink);width:18px;height:18px;flex-shrink:0;" onchange="syncAllAgree()">
+                            <span>(선택) 마케팅 정보 수신 동의</span>
+                        </label>
+                    </div>
+                </div>
+                <div id="agree-err" class="field-err hidden">필수 항목(이용약관, 개인정보 처리방침, 환불 정책)에 모두 동의해 주세요.</div>
+                <button class="btn-portal" onclick="finishLumiSignup()" style="background:var(--pink);">가입 완료</button>
             </div>
 
             <!-- 숨겨진 기본값 필드 -->
+            <input type="hidden" id="jumin-front" value="">
+            <input type="hidden" id="jumin-back" value="">
             <input type="hidden" id="store-desc-field" value="">
             <input type="hidden" id="store-region-field" value="">
             <input type="hidden" id="biz-cat-select" value="cafe">
@@ -369,38 +455,6 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
             <input type="hidden" id="dash-biz-cat" value="cafe">
             <input type="hidden" id="dash-caption-tone" value="">
             <input type="hidden" id="dash-tag-style" value="mid">
-
-            <!-- 약관 동의 체크박스 -->
-            <div style="margin-bottom:4px;">
-                <!-- 전체 동의 -->
-                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:12px 14px;background:var(--g50);border-radius:var(--r-md);border:1.5px solid var(--g200);margin-bottom:10px;">
-                    <input type="checkbox" id="agree-all" style="accent-color:var(--pink);width:18px;height:18px;flex-shrink:0;" onchange="toggleAllAgree(this.checked)">
-                    <span style="font-size:.9rem;font-weight:800;color:var(--g900);">전체 동의하기</span>
-                </label>
-                <div style="display:flex;flex-direction:column;gap:8px;padding:0 4px;">
-                    <!-- 필수 항목들 -->
-                    <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:.83rem;color:var(--g700);">
-                        <input type="checkbox" id="agree-terms" style="margin-top:2px;accent-color:var(--pink);width:16px;height:16px;flex-shrink:0;" onchange="syncAllAgree()">
-                        <span>(필수) <a href="/terms" target="_blank" style="color:var(--pink);font-weight:700;text-decoration:underline;">이용약관</a> 동의</span>
-                    </label>
-                    <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:.83rem;color:var(--g700);">
-                        <input type="checkbox" id="agree-privacy" style="margin-top:2px;accent-color:var(--pink);width:16px;height:16px;flex-shrink:0;" onchange="syncAllAgree()">
-                        <span>(필수) <a href="/privacy" target="_blank" style="color:var(--pink);font-weight:700;text-decoration:underline;">개인정보 처리방침</a> 동의</span>
-                    </label>
-                    <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:.83rem;color:var(--g700);">
-                        <input type="checkbox" id="agree-refund" style="margin-top:2px;accent-color:var(--pink);width:16px;height:16px;flex-shrink:0;" onchange="syncAllAgree()">
-                        <span>(필수) 유료 서비스 이용 및 <a href="/terms#refund" target="_blank" style="color:var(--pink);font-weight:700;text-decoration:underline;">환불 정책</a> 동의</span>
-                    </label>
-                    <!-- 선택 항목 -->
-                    <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:.83rem;color:var(--g700);padding-top:4px;border-top:1px solid var(--g100);margin-top:2px;">
-                        <input type="checkbox" id="agree-marketing" style="margin-top:2px;accent-color:var(--pink);width:16px;height:16px;flex-shrink:0;" onchange="syncAllAgree()">
-                        <span>(선택) 마케팅 정보 수신 동의</span>
-                    </label>
-                </div>
-            </div>
-            <div id="agree-err" class="field-err hidden">필수 항목(이용약관, 개인정보 처리방침, 환불 정책)에 모두 동의해 주세요.</div>
-
-            <button class="btn-portal" onclick="finishLumiSignup()" style="background:var(--pink);">가입 완료</button>
         </div>
     </div>
 </div>
@@ -417,16 +471,16 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
         <p style="font-size:12px;font-weight:700;color:#6B7684;margin-bottom:8px;">취소 사유를 알려주시겠어요? <span style="font-weight:400;">(선택)</span></p>
         <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:20px;">
             <label style="display:flex;align-items:center;gap:10px;padding:11px 14px;border:1.5px solid #E8ECF0;border-radius:12px;cursor:pointer;font-size:.85rem;color:#333D4B;transition:border-color .2s;" onclick="selectCancelReason(this)">
-                <input type="radio" name="cancel-reason" value="비용 부담" style="accent-color:#FF2D8A;"> 비용이 부담돼요
+                <input type="radio" name="cancel-reason" value="비용 부담" style="accent-color:var(--pink);"> 비용이 부담돼요
             </label>
             <label style="display:flex;align-items:center;gap:10px;padding:11px 14px;border:1.5px solid #E8ECF0;border-radius:12px;cursor:pointer;font-size:.85rem;color:#333D4B;transition:border-color .2s;" onclick="selectCancelReason(this)">
-                <input type="radio" name="cancel-reason" value="기능 부족" style="accent-color:#FF2D8A;"> 필요한 기능이 없어요
+                <input type="radio" name="cancel-reason" value="기능 부족" style="accent-color:var(--pink);"> 필요한 기능이 없어요
             </label>
             <label style="display:flex;align-items:center;gap:10px;padding:11px 14px;border:1.5px solid #E8ECF0;border-radius:12px;cursor:pointer;font-size:.85rem;color:#333D4B;transition:border-color .2s;" onclick="selectCancelReason(this)">
-                <input type="radio" name="cancel-reason" value="사용 빈도 낮음" style="accent-color:#FF2D8A;"> 자주 사용하지 않아요
+                <input type="radio" name="cancel-reason" value="사용 빈도 낮음" style="accent-color:var(--pink);"> 자주 사용하지 않아요
             </label>
             <label style="display:flex;align-items:center;gap:10px;padding:11px 14px;border:1.5px solid #E8ECF0;border-radius:12px;cursor:pointer;font-size:.85rem;color:#333D4B;transition:border-color .2s;" onclick="selectCancelReason(this)">
-                <input type="radio" name="cancel-reason" value="기타" style="accent-color:#FF2D8A;"> 기타
+                <input type="radio" name="cancel-reason" value="기타" style="accent-color:var(--pink);"> 기타
             </label>
         </div>
         <button onclick="confirmCancelSubscription()" style="width:100%;padding:13px;background:#ff4d4d;color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:8px;">구독 취소 확정</button>
@@ -447,7 +501,7 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
             <h2 id="paywall-title" style="font-size:1.4rem;font-weight:900;color:#1a1a2e;margin-bottom:8px;">무료체험이 종료됐어요.</h2>
             <p id="paywall-desc" style="font-size:.9rem;color:#666;margin-bottom:32px;line-height:1.6;">lumi를 계속 사용하려면 구독을 시작해주세요.<br>월 49,000원으로 인스타그램 자동화를 시작하세요.</p>
             <button onclick="location.href='#price-sec'" style="background:var(--pink);color:#fff;border:none;border-radius:14px;padding:16px 40px;font-size:1rem;font-weight:700;cursor:pointer;margin-bottom:12px;">구독 시작하기</button>
-            <button onclick="lumiLogout()" style="background:none;border:none;color:#999;font-size:.85rem;cursor:pointer;">로그아웃</button>
+            <button onclick="lumiLogout()" style="background:none;border:none;color:var(--g400);font-size:.85rem;cursor:pointer;">로그아웃</button>
         </div>
 
         <!-- TAB: 홈 -->
@@ -457,36 +511,32 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
             <p>오늘도 lumi가 함께해요.</p>
             <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
                 <span id="post-remain-badge" style="font-size:.75rem;background:#fff0f6;color:var(--pink);padding:4px 10px;border-radius:99px;font-weight:700;"></span>
-                <button onclick="lumiLogout()" style="background:none;border:1px solid #eee;border-radius:8px;padding:6px 14px;font-size:12px;color:#999;cursor:pointer;">로그아웃</button>
+                <button onclick="lumiLogout()" style="background:none;border:1px solid var(--g200);border-radius:8px;padding:6px 14px;font-size:12px;color:var(--g400);cursor:pointer;">로그아웃</button>
                 <button id="cancel-sub-btn" onclick="cancelSubscription()" style="display:none;background:none;border:1px solid #ffcccc;border-radius:8px;padding:6px 14px;font-size:12px;color:#ff4d4d;cursor:pointer;font-weight:600;font-family:inherit;">구독 취소</button>
             </div>
         </div>
         <!-- Instagram 연동 상태 -->
-        <div id="ig-connect-banner" style="display:none;background:#fff0f6;border:1.5px solid var(--pink);border-radius:var(--r-xl);padding:18px 20px;margin-bottom:16px;">
-            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
-                <div style="flex:1;">
-                    <p style="font-size:.88rem;font-weight:800;color:var(--pink);margin-bottom:6px;">📸 Instagram 연동이 필요해요</p>
-                    <p style="font-size:.78rem;color:var(--g600);line-height:1.7;margin-bottom:12px;">사진을 올리면 lumi가 캡션을 써서 <strong>인스타그램에 자동으로 게시</strong>해드려요.<br>연동하지 않으면 게시물 업로드가 불가능해요.</p>
-                    <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:14px;">
-                        <p style="font-size:.75rem;color:var(--g500);">✅ 연동하면 이런 게 가능해요</p>
-                        <p style="font-size:.75rem;color:var(--g500);">　• 사진 업로드 → lumi 캡션 자동 생성 → 인스타 자동 게시</p>
-                        <p style="font-size:.75rem;color:var(--g500);">　• 예약 게시, 댓글/DM 자동 응답 (프로 플랜)</p>
-                    </div>
-                </div>
+        <div id="ig-connect-banner" style="display:none;">
+            <p class="ig-b-title">📸 Instagram 연동이 필요해요</p>
+            <p class="ig-b-desc">사진을 올리면 lumi가 캡션을 써서 <strong>인스타그램에 자동으로 게시</strong>해드려요.<br>연동하지 않으면 게시물 업로드가 불가능해요.</p>
+            <div class="ig-b-list">
+                ✅ 연동하면 이런 게 가능해요<br>
+                　• 사진 업로드 → lumi 캡션 자동 생성 → 인스타 자동 게시<br>
+                　• 예약 게시, 댓글/DM 자동 응답 (프로 플랜)
             </div>
-            <button onclick="connectInstagram()" style="width:100%;background:var(--pink);color:#fff;border:none;border-radius:var(--r-md);padding:13px;font-size:.88rem;font-weight:700;cursor:pointer;font-family:inherit;">Instagram 연동하기 →</button>
-            <p style="font-size:.72rem;color:var(--g400);text-align:center;margin-top:8px;">비즈니스 또는 크리에이터 계정만 연동 가능해요.</p>
+            <button class="ig-b-btn" onclick="connectInstagram()">Instagram 연동하기 →</button>
+            <p class="ig-b-note">비즈니스 또는 크리에이터 계정만 연동 가능해요.</p>
         </div>
-        <div id="ig-connected-badge" style="display:none;background:#f0fff4;border:1.5px solid #52c41a;border-radius:var(--r-xl);padding:14px 18px;margin-bottom:16px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
-                <div style="display:flex;align-items:center;gap:8px;">
+        <div id="ig-connected-badge" style="display:none;">
+            <div class="ig-ok-wrap">
+                <div class="ig-ok-left">
                     <span style="font-size:1.1rem;">✅</span>
                     <div>
-                        <p style="font-size:.85rem;font-weight:800;color:#389e0d;margin-bottom:2px;">Instagram 연동 완료</p>
-                        <p style="font-size:.75rem;color:#52c41a;">게시물이 자동으로 올라가요</p>
+                        <p class="ig-ok-title">Instagram 연동 완료</p>
+                        <p class="ig-ok-sub">게시물이 자동으로 올라가요</p>
                     </div>
                 </div>
-                <button onclick="disconnectInstagram()" style="background:none;border:1px solid #ffb3b3;border-radius:99px;padding:5px 12px;font-size:11px;font-weight:700;color:#ff4d4d;cursor:pointer;white-space:nowrap;font-family:inherit;transition:all .2s;" onmouseover="this.style.background='#fff5f5'" onmouseout="this.style.background='none'">연동 끊기</button>
+                <button class="ig-ok-disconnect" onclick="disconnectInstagram()">연동 끊기</button>
             </div>
         </div>
 
@@ -654,7 +704,7 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
             <div id="festival-list" style="display:flex;flex-direction:column;gap:8px;"></div>
         </div>
 
-        <p class="dash-lbl">지금 인기 태그</p>
+        <p class="dash-lbl">지금 뜨는 트렌드</p>
         <div class="trend-wrap" id="trend-list-node"></div>
 
         <!-- 말투 피드백 섹션 -->
@@ -1845,7 +1895,7 @@ function setPortalMode(mode){
     if(vF)vF.classList.add('hidden');
     if(vFI)vFI.classList.add('hidden');
     if(mode==='login'){vL.classList.remove('hidden');vS.classList.add('hidden');tL.classList.add('active');tS.classList.remove('active');}
-    else{vL.classList.add('hidden');vS.classList.remove('hidden');tL.classList.remove('active');tS.classList.add('active');navNode(1);}
+    else{vL.classList.add('hidden');vS.classList.remove('hidden');tL.classList.remove('active');tS.classList.add('active');goRegStep(1);navNode(1);}
 }
 function openPortal(init){
     window._lumiScrollPos = window.scrollY;
@@ -2116,7 +2166,7 @@ function showCaptionWaiting(reservationKey) {
       </div>
       <div id="caption-waiting-state">
         <div style="text-align:center;padding:32px 0;">
-          <div style="width:48px;height:48px;border:4px solid #f0f0f0;border-top-color:#FF2D8A;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px;"></div>
+          <div style="width:48px;height:48px;border:4px solid #f0f0f0;border-top-color:var(--pink);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px;"></div>
           <p style="color:#555;font-size:15px;margin:0;">사진을 분석하고 캡션을 만들고 있어요<br><span style="font-size:13px;color:#aaa;">보통 1~2분 정도 걸려요</span></p>
           <button onclick="cancelCurrentReservation('${reservationKey}')" style="margin-top:20px;padding:10px 24px;background:none;border:1.5px solid #ddd;color:#888;font-size:13px;font-weight:600;border-radius:10px;cursor:pointer;font-family:inherit;">취소</button>
         </div>
@@ -2126,7 +2176,7 @@ function showCaptionWaiting(reservationKey) {
         <p id="caption-auto-post-notice" style="font-size:12px;color:var(--pink);margin:0 0 16px;line-height:1.5;">⏰ 선택하지 않으면 <strong>30분 후</strong> 첫 번째 캡션으로 자동 게시돼요.</p>
         <div id="caption-list" style="display:flex;flex-direction:column;gap:12px;"></div>
         <div style="margin-top:16px;display:flex;gap:10px;align-items:center;">
-          <button id="regen-btn" onclick="regenerateCaption('${reservationKey}')" style="flex:1;padding:12px;border:2px solid #FF2D8A;background:#fff;color:#FF2D8A;font-size:14px;font-weight:600;border-radius:12px;cursor:pointer;font-family:inherit;">다시 생성</button>
+          <button id="regen-btn" onclick="regenerateCaption('${reservationKey}')" style="flex:1;padding:12px;border:2px solid #FF2D8A;background:#fff;color:var(--pink);font-size:14px;font-weight:600;border-radius:12px;cursor:pointer;font-family:inherit;">다시 생성</button>
           <span id="regen-count" style="font-size:12px;color:#aaa;white-space:nowrap;"></span>
         </div>
         <button id="cancel-reserve-btn" onclick="cancelCurrentReservation('${reservationKey}')" style="width:100%;margin-top:10px;padding:12px;background:none;border:1.5px solid #ddd;color:#888;font-size:13px;font-weight:600;border-radius:12px;cursor:pointer;font-family:inherit;">이 게시물 취소</button>
@@ -2194,7 +2244,7 @@ function showCaptionReady(reservationKey, captions, regenCount) {
     card.onmouseout = () => { card.style.borderColor = '#f0f0f0'; card.style.background = '#fff'; };
     card.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-        <span style="font-size:12px;font-weight:600;color:#FF2D8A;">버전 ${i+1}</span>
+        <span style="font-size:12px;font-weight:600;color:var(--pink);">버전 ${i+1}</span>
         <button onclick="selectCaption('${reservationKey}', ${i})" style="background:#FF2D8A;color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">이걸로 올리기</button>
       </div>
       <p style="font-size:13px;color:#333;line-height:1.7;margin:0;white-space:pre-wrap;">${caption.substring(0, 200)}${caption.length > 200 ? '...' : ''}</p>`;
@@ -2375,7 +2425,6 @@ async function loadTrends() {
     const trendEl = document.getElementById('trend-list-node');
     if (!trendEl) return;
 
-    // 로딩 표시
     trendEl.innerHTML = '<div style="color:var(--g400);font-size:.85rem;padding:8px 0;">트렌드 불러오는 중...</div>';
 
     try {
@@ -2383,19 +2432,47 @@ async function loadTrends() {
         const res = await fetch('/.netlify/functions/get-trends?category=' + encodeURIComponent(category));
         const data = await res.json();
 
-        const tags = data.tags || [];
-        if (tags.length === 0) throw new Error('태그 없음');
+        let html = '';
 
-        realtimeTrends = tags.slice(0, 8);
-        trendEl.innerHTML = tags.slice(0, 8).map((tag, i) =>
-            `<div class="trend-row"><span class="t-rank">0${i+1}</span><span class="t-tag">${tag}</span><span class="t-hot">${data.source === 'realtime' ? '실시간' : '인기'}</span></div>`
-        ).join('');
+        // 업종별 키워드 변화율
+        if (data.keywords && data.keywords.length > 0) {
+            html += '<p class="trend-section-lbl">' + (data.categoryLabel || '업종') + ' 키워드 변화</p>';
+            html += data.keywords.map((k, i) => {
+                const arrow = k.trend === 'up' ? '↑' : k.trend === 'down' ? '↓' : '→';
+                const sign = k.changeRate > 0 ? '+' : '';
+                return `<div class="trend-row">
+                    <span class="t-rank">${i + 1}</span>
+                    <span class="t-keyword">${k.keyword}</span>
+                    <span class="t-change ${k.trend}">${sign}${k.changeRate}% ${arrow}</span>
+                </div>`;
+            }).join('');
+        }
+
+        // 급상승 검색어
+        if (data.daily && data.daily.length > 0) {
+            html += '<p class="trend-section-lbl">오늘 급상승</p>';
+            html += data.daily.slice(0, 5).map((d, i) => {
+                return `<div class="trend-row">
+                    <span class="t-rank">${i + 1}</span>
+                    <span class="t-keyword">${d.keyword}</span>
+                    <span class="t-traffic">${d.traffic}</span>
+                </div>`;
+            }).join('');
+        }
+
+        if (!html) throw new Error('데이터 없음');
+
+        // realtimeTrends 호환 (캡션 생성에 사용)
+        realtimeTrends = (data.keywords || []).map(k => '#' + k.keyword).concat(
+            (data.daily || []).slice(0, 3).map(d => '#' + d.keyword)
+        );
+
+        trendEl.innerHTML = html;
     } catch(e) {
-        // 실패 시 하드코딩 기본값으로 폴백
         const fallback = LUMI_CORE.trends[bizCat] || LUMI_CORE.trends.cafe;
         realtimeTrends = fallback;
         trendEl.innerHTML = fallback.map((tag, i) =>
-            `<div class="trend-row"><span class="t-rank">0${i+1}</span><span class="t-tag">${tag}</span><span class="t-hot">인기</span></div>`
+            `<div class="trend-row"><span class="t-rank">${i + 1}</span><span class="t-keyword">${tag}</span><span class="t-change stable">—</span></div>`
         ).join('');
     }
 }
@@ -2472,13 +2549,13 @@ function showPaywall(type) {
             <h2 style="font-size:1.4rem;font-weight:900;color:#1a1a2e;margin-bottom:12px;">${title}</h2>
             <p style="font-size:.9rem;color:#666;margin-bottom:8px;">${desc}</p>
             <div style="background:#fff0f6;border-radius:16px;padding:20px;margin-bottom:24px;">
-                <div style="font-size:1.1rem;font-weight:900;color:#FF2D8A;margin-bottom:4px;">스탠다드 플랜</div>
-                <div style="font-size:.8rem;color:#999;text-decoration:line-through;margin-bottom:2px;">59,000원/월</div>
+                <div style="font-size:1.1rem;font-weight:900;color:var(--pink);margin-bottom:4px;">스탠다드 플랜</div>
+                <div style="font-size:.8rem;color:var(--g400);text-decoration:line-through;margin-bottom:2px;">59,000원/월</div>
                 <div style="font-size:1.6rem;font-weight:900;color:#1a1a2e;">49,000원<span style="font-size:.85rem;font-weight:500;color:#666;">/월</span></div>
-                <div style="font-size:.75rem;color:#FF2D8A;font-weight:700;margin-top:4px;">🎉 오픈 기념 특별가</div>
+                <div style="font-size:.75rem;color:var(--pink);font-weight:700;margin-top:4px;">🎉 오픈 기념 특별가</div>
             </div>
             <button onclick="startPayment()" style="display:block;width:100%;background:#FF2D8A;color:#fff;border:none;border-radius:12px;padding:16px;font-size:1rem;font-weight:700;cursor:pointer;margin-bottom:12px;">지금 구독하기</button>
-            <button onclick="lumiLogout()" style="background:none;border:none;color:#999;font-size:.85rem;cursor:pointer;">로그아웃</button>
+            <button onclick="lumiLogout()" style="background:none;border:none;color:var(--g400);font-size:.85rem;cursor:pointer;">로그아웃</button>
         </div>
     `;
 }
@@ -2524,7 +2601,7 @@ async function cancelSubscription() {
                 <div style="font-size:.78rem;color:#8B95A1;margin-bottom:8px;">취소해도 아래 기간까지 계속 이용할 수 있어요.</div>
                 <div style="display:flex;justify-content:center;gap:20px;">
                     <div>
-                        <div style="font-size:1.3rem;font-weight:900;color:#FF2D8A;">${diffDays}일</div>
+                        <div style="font-size:1.3rem;font-weight:900;color:var(--pink);">${diffDays}일</div>
                         <div style="font-size:.72rem;color:#8B95A1;margin-top:2px;">남은 기간</div>
                     </div>
                     <div style="width:1px;background:#E8ECF0;"></div>
@@ -2740,6 +2817,8 @@ function initBirthdateSelects() {
     const monthEl = document.getElementById('birthdate-month');
     const dayEl = document.getElementById('birthdate-day');
     if (!yearEl || !monthEl || !dayEl) return;
+    // 이미 초기화됐으면 스킵
+    if (yearEl.options.length > 1) return;
 
     // 년도 (1940 ~ 올해)
     const curYear = new Date().getFullYear();
@@ -2850,7 +2929,7 @@ async function sendForgotOtp() {
     try {
         const res = await fetch('/.netlify/functions/send-otp', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email })
+            body: JSON.stringify({ email, skipDuplicateCheck: true })
         });
         const data = await res.json();
         if (res.ok) {
@@ -2905,6 +2984,44 @@ async function resetForgotPassword() {
             showToast(data.error || '변경 실패', 'red');
         }
     } catch(e) { showToast('네트워크 오류가 발생했습니다.', 'red'); }
+}
+
+/* ── 회원가입 스텝 전환 ── */
+function goRegStep(step) {
+    // Step 1 → 2 검증
+    if (step === 2) {
+        if (!window._otpVerified) { showToast('이메일 인증을 완료해주세요.', 'red'); return; }
+        const pw = document.getElementById('id-pw-field')?.value || '';
+        const pwc = document.getElementById('id-pw-confirm-field')?.value || '';
+        const pwRegex = /^(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{10,}$/;
+        if (!pw || !pwRegex.test(pw)) { showFieldErr('id-pw-field','pw-err','특수문자 포함 10자 이상 입력해주세요.'); return; }
+        if (pw !== pwc) { showFieldErr('id-pw-confirm-field','pw-confirm-err','비밀번호가 일치하지 않아요.'); return; }
+        // 생년월일 드롭다운 초기화
+        initBirthdateSelects();
+    }
+    // Step 2 → 3 검증
+    if (step === 3) {
+        const name = document.getElementById('ceo-name-field')?.value.trim();
+        const sName = document.getElementById('store-name-field')?.value.trim();
+        const insta = document.getElementById('store-insta-field')?.value.trim();
+        const phone = document.getElementById('ph-reg-field')?.value.trim();
+        const bd = getBirthdate();
+        if (!name) { showFieldErr('ceo-name-field','ceo-name-err','성함을 입력해주세요.'); return; }
+        if (!bd || bd.length < 10) { showFieldErr('birthdate-year','reg-bd-err','생년월일을 선택해주세요.'); return; }
+        if (!phone) { showFieldErr('ph-reg-field','reg-ph-err','휴대폰 번호를 입력해주세요.'); return; }
+        if (!sName) { showFieldErr('store-name-field','store-name-err','매장 이름을 입력해주세요.'); return; }
+        if (!insta) { showFieldErr('store-insta-field','store-insta-err','인스타그램 아이디를 입력해주세요.'); return; }
+    }
+    // 스텝 전환
+    document.querySelectorAll('.reg-step').forEach(el => el.classList.remove('active'));
+    document.getElementById('reg-step-' + step)?.classList.add('active');
+    // 프로그레스 바
+    for (let i = 1; i <= 3; i++) {
+        const bar = document.getElementById('reg-bar-' + i);
+        if (bar) bar.classList.toggle('active', i <= step);
+    }
+    // 시트 스크롤 상단으로
+    document.querySelector('.portal-sheet')?.scrollTo({top:0, behavior:'smooth'});
 }
 
 /* ── 회원가입 완료 ── */
@@ -2968,16 +3085,13 @@ async function finishLumiSignup() {
     const storeSidoSel = document.getElementById('dash-sido');
     const storeSido = storeSidoSel?.options[storeSidoSel.selectedIndex]?.text || '';
 
-    if (!name) { showToast('성함을 입력해주세요.', 'red'); return; }
-    if (!sName) { showToast('매장 이름을 입력해주세요.', 'red'); return; }
-    if (!insta) { showToast('인스타그램 아이디를 입력해주세요.', 'red'); return; }
-    if (!phone) { showToast('휴대폰 번호를 입력해주세요.', 'red'); return; }
-    const front = document.getElementById('jumin-front')?.value || '';
-    const back1 = document.getElementById('jumin-back')?.value || '';
-    if (front.length !== 6 || !back1) { showFieldErr('jumin-front','reg-bd-err','주민번호 앞 6자리와 뒷자리 1개를 입력해주세요.'); return; }
-    if (!birthdate || birthdate.length < 10) { showFieldErr('jumin-front','reg-bd-err','생년월일을 올바르게 입력해주세요.'); return; }
-    const gender = getGender();
-    if (!window._otpVerified) { showToast('이메일 인증을 완료해주세요.', 'red'); return; }
+    if (!name) { showToast('성함을 입력해주세요.', 'red'); goRegStep(2); return; }
+    if (!sName) { showToast('매장 이름을 입력해주세요.', 'red'); goRegStep(2); return; }
+    if (!insta) { showToast('인스타그램 아이디를 입력해주세요.', 'red'); goRegStep(2); return; }
+    if (!phone) { showToast('휴대폰 번호를 입력해주세요.', 'red'); goRegStep(2); return; }
+    if (!birthdate || birthdate.length < 10) { showToast('생년월일을 선택해주세요.', 'red'); goRegStep(2); return; }
+    const gender = document.getElementById('reg-gender-field')?.value || '';
+    if (!window._otpVerified) { showToast('이메일 인증을 완료해주세요.', 'red'); goRegStep(1); return; }
 
     const btn = document.querySelector('#lumi-signup-view .btn-portal[onclick="finishLumiSignup()"]');
     if (btn) { btn.disabled = true; btn.textContent = '가입 중...'; }
@@ -3335,7 +3449,7 @@ async function openRelayEdit(reservationKey) {
         document.body.style.overflow = 'hidden';
 
         const imgThumbs = (data.imageKeys || []).map(k =>
-            `<img src="/.netlify/functions/serve-image?key=${encodeURIComponent(k)}" style="width:64px;height:64px;object-fit:cover;border-radius:10px;border:1px solid #eee;" loading="lazy" alt="">`
+            `<img src="/.netlify/functions/serve-image?key=${encodeURIComponent(k)}" style="width:64px;height:64px;object-fit:cover;border-radius:10px;border:1px solid var(--g200);" loading="lazy" alt="">`
         ).join('');
 
         overlay.innerHTML = `
@@ -3357,9 +3471,9 @@ async function openRelayEdit(reservationKey) {
             const safeKey = esc(reservationKey);
             card.innerHTML = `
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                    <span style="font-size:12px;font-weight:600;color:#FF2D8A;">버전 ${i+1}</span>
+                    <span style="font-size:12px;font-weight:600;color:var(--pink);">버전 ${i+1}</span>
                     <div style="display:flex;gap:6px;">
-                        <button data-key="${safeKey}" data-idx="${i}" onclick="saveRelayCaption(this.dataset.key,+this.dataset.idx)" style="background:#fff;border:1.5px solid #FF2D8A;color:#FF2D8A;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">저장</button>
+                        <button data-key="${safeKey}" data-idx="${i}" onclick="saveRelayCaption(this.dataset.key,+this.dataset.idx)" style="background:#fff;border:1.5px solid #FF2D8A;color:var(--pink);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">저장</button>
                         <button data-key="${safeKey}" data-idx="${i}" onclick="postRelayCaption(this.dataset.key,+this.dataset.idx)" style="background:#FF2D8A;color:#fff;border:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">이걸로 올리기</button>
                     </div>
                 </div>
@@ -3562,7 +3676,7 @@ function openLinkPreview() {
             <h2 style="font-size:1.2rem;font-weight:900;margin-bottom:4px;">${user.storeName || '매장명'}</h2>
             <p style="font-size:.85rem;opacity:.7;margin-bottom:20px;">${user.storeDesc || ''}</p>
             <div style="display:flex;flex-direction:column;gap:10px;">
-                ${validLinks.map(l => `<a style="display:flex;align-items:center;gap:10px;padding:14px 18px;border-radius:14px;text-decoration:none;font-weight:700;font-size:.9rem;transition:all .2s;background:#fff;border:1.5px solid #FF2D8A;color:#FF2D8A;"><span style="font-size:1.2rem;">${l.icon}</span>${l.label}</a>`).join('')}
+                ${validLinks.map(l => `<a style="display:flex;align-items:center;gap:10px;padding:14px 18px;border-radius:14px;text-decoration:none;font-weight:700;font-size:.9rem;transition:all .2s;background:#fff;border:1.5px solid #FF2D8A;color:var(--pink);"><span style="font-size:1.2rem;">${l.icon}</span>${l.label}</a>`).join('')}
             </div>
             <p style="font-size:.7rem;opacity:.4;margin-top:24px;">Powered by lumi</p>
         </div>
