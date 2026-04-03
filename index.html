@@ -353,6 +353,17 @@ body.light-mode .nav-logout{border-color:rgba(0,0,0,.15);background:rgba(0,0,0,.
 .btn-cta{display:inline-flex;align-items:center;gap:10px;padding:18px 40px;border:none;background:var(--pink);color:#fff;font-size:16px;font-weight:800;border-radius:var(--r-full);cursor:pointer;font-family:inherit;box-shadow:0 8px 40px rgba(232,98,138,.35);transition:all .4s var(--ease);text-decoration:none;position:relative;z-index:1;}
 .btn-cta:hover{transform:translateY(-3px) scale(1.03);box-shadow:0 16px 56px rgba(232,98,138,.45);}
 
+/* ═══ FAQ ═══ */
+.faq-sec{padding:100px 24px;}
+.faq-inner{max-width:700px;margin:0 auto;}
+.faq-title{font-size:clamp(1.3rem,3vw,1.8rem);font-weight:900;color:var(--text);text-align:center;margin-bottom:40px;}
+.faq-item{border-bottom:1px solid var(--border);padding:20px 0;cursor:pointer;}
+.faq-q{display:flex;justify-content:space-between;align-items:center;font-size:15px;font-weight:700;color:var(--text);gap:16px;}
+.faq-q span{transition:transform .3s var(--ease);color:var(--text-3);}
+.faq-item.open .faq-q span{transform:rotate(45deg);}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .4s var(--ease),padding .4s var(--ease);font-size:14px;color:var(--text-2);line-height:1.8;}
+.faq-item.open .faq-a{max-height:200px;padding-top:12px;}
+
 /* ═══ FOOTER ═══ */
 footer{background:var(--surface);border-top:1px solid var(--border);padding:56px 24px 36px;}
 .footer-inner{max-width:1100px;margin:0 auto;display:flex;justify-content:space-between;align-items:flex-start;gap:32px;flex-wrap:wrap;}
@@ -463,6 +474,55 @@ body.light-mode .dark-toggle-fab{background:rgba(0,0,0,.8);border-color:transpar
       <div class="stat"><strong>1분</strong><span>하루 평균 사용</span></div>
       <div class="stat"><strong>사진 1장</strong><span>준비물 끝</span></div>
       <div class="stat"><strong>₩0</strong><span>베타 기간 무료</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- DEMO -->
+<section id="demo" class="demo-sec">
+  <div class="demo-inner">
+    <p class="demo-ey reveal">직접 체험해 보세요</p>
+    <h2 class="demo-title reveal">사진 한 장 올려보세요,<br>lumi가 바로 캡션을 써드릴게요</h2>
+    <div class="demo-card reveal">
+      <select class="demo-select" id="demo-biz">
+        <option value="">업종을 선택해주세요</option>
+        <option value="카페">카페</option><option value="음식점">음식점</option><option value="베이커리">베이커리</option>
+        <option value="헤어샵">헤어샵</option><option value="네일샵">네일샵</option><option value="꽃집">꽃집</option>
+        <option value="의류 매장">의류 매장</option><option value="피트니스">피트니스</option><option value="스튜디오">스튜디오</option><option value="기타">기타</option>
+      </select>
+      <div class="demo-upload" id="demo-upload">
+        <div class="demo-upload-icon"><iconify-icon icon="solar:gallery-add-linear" width="40" style="color:var(--text-3);"></iconify-icon></div>
+        <div class="demo-upload-text">사진을 드래그하거나 클릭해서 올려주세요</div>
+        <div class="demo-upload-hint">JPG, PNG · 최대 10MB</div>
+        <input type="file" id="demo-file" accept="image/jpeg,image/png,image/webp">
+      </div>
+      <div class="demo-preview" id="demo-preview"><img id="demo-preview-img" alt="미리보기"></div>
+      <button class="demo-btn" id="demo-submit" disabled>캡션 만들어 보기</button>
+      <div class="demo-loading" id="demo-loading"><div class="demo-spinner"></div><div class="demo-loading-text">lumi가 사진을 분석하고 있어요... (약 10초)</div></div>
+      <div class="demo-result" id="demo-result">
+        <div class="demo-result-card"><div class="demo-result-label">lumi가 만든 캡션</div><div class="demo-result-text" id="demo-caption-text"></div><button class="demo-copy-btn" id="demo-copy">복사하기</button></div>
+        <p class="demo-disclaimer" id="demo-disclaimer-text"></p>
+        <div class="demo-upgrade-card" id="demo-upgrade-card">
+          <div class="demo-upgrade-label">지금 이 캡션은 사진만 보고 만들었어요</div>
+          <div class="demo-upgrade-msg">가입하시면 lumi가 <strong>이런 정보까지</strong> 반영해서 훨씬 정교한 캡션을 만들어 드려요.</div>
+          <ul class="demo-upgrade-list">
+            <li><span class="ico">☀</span> 오늘 날씨·기온</li><li><span class="ico">📈</span> 실시간 트렌드 태그</li>
+            <li><span class="ico">🎤</span> 대표님 말투 학습</li><li><span class="ico">🎪</span> 주변 축제·행사</li>
+            <li><span class="ico">🕐</span> 최적 게시 시간</li><li><span class="ico">📷</span> 캡션 3개 중 선택</li>
+          </ul>
+          <a href="/beta" class="demo-upgrade-cta">무료 테스터로 시작하기 →</a>
+        </div>
+      </div>
+      <div class="tone-bar" id="tone-bar"><div class="tone-bar-label">다른 말투로 다시 써볼까요?</div>
+        <div class="tone-btns"><button class="tone-btn active" data-tone="friendly">친근체</button><button class="tone-btn" data-tone="formal">격식체</button><button class="tone-btn" data-tone="emotional">감성체</button><button class="tone-btn" data-tone="humorous">유머체</button></div>
+      </div>
+      <div class="demo-tone-cta" id="demo-tone-cta"><p>마음에 드는 말투를 찾으셨나요?<br>가입하면 이 톤으로 매번 캡션이 와요.</p><a href="/beta">무료 테스터 신청 &rarr;</a></div>
+      <div class="demo-cta-box" id="demo-cta">
+        <div class="demo-cta-title">가입하면 이렇게 달라져요</div>
+        <table class="demo-compare"><tr><th></th><th>체험</th><th style="color:var(--pink);">가입 후</th></tr><tr><td>캡션 수</td><td>1개</td><td class="pink">3개 (선택 가능)</td></tr><tr><td>날씨 반영</td><td>✕</td><td class="pink">실시간 자동</td></tr><tr><td>트렌드 태그</td><td>✕</td><td class="pink">업종별 자동</td></tr><tr><td>말투 학습</td><td>✕</td><td class="pink">피드백 반영</td></tr><tr><td>인스타 자동 게시</td><td>✕</td><td class="pink">예약 게시</td></tr></table>
+        <a href="/beta" class="btn-main" style="display:block;text-align:center;padding:14px;animation:none;justify-content:center;">무료 테스터 신청하기 →</a>
+      </div>
+      <p class="demo-remaining" id="demo-remaining"></p>
     </div>
   </div>
 </section>
@@ -580,28 +640,28 @@ body.light-mode .dark-toggle-fab{background:rgba(0,0,0,.8);border-color:transpar
 <!-- FEATURES — Bento Grid -->
 <section class="feat-sec">
   <div class="feat-inner">
-    <p class="feat-ey reveal">주요 기능</p>
-    <h2 class="feat-title reveal">사진 한 장 뒤에서<br>lumi가 하는 일</h2>
+    <p class="feat-ey reveal">사장님이 얻는 것</p>
+    <h2 class="feat-title reveal">인스타 37분이<br>1분으로 줄어요</h2>
     <div class="feat-grid">
       <div class="feat-card reveal">
         <div class="feat-icon"><iconify-icon icon="solar:pen-new-square-linear" width="24" style="color:var(--pink);"></iconify-icon></div>
-        <h3 class="feat-name">캡션 자동 생성</h3>
-        <p class="feat-desc">사진을 lumi가 직접 읽고, 가게 분위기·메뉴·색감·계절감을 파악해서 우리 매장 말투로 캡션을 써드려요.</p>
+        <h3 class="feat-name">글 고민 0분</h3>
+        <p class="feat-desc">사진만 올리면 우리 매장 분위기에 맞는 캡션이 바로 완성돼요. 글 쓰느라 30분씩 고민할 필요 없어요.</p>
       </div>
       <div class="feat-card reveal">
         <div class="feat-icon"><iconify-icon icon="solar:hashtag-linear" width="24" style="color:var(--pink);"></iconify-icon></div>
-        <h3 class="feat-name">트렌드 해시태그</h3>
-        <p class="feat-desc">지금 이 순간 사람들이 많이 검색하는 해시태그를 업종별로 분석해서 자동으로 달아줘요.</p>
+        <h3 class="feat-name">도달률 2배 태그</h3>
+        <p class="feat-desc">지금 사람들이 검색하는 해시태그를 실시간 분석해서 달아줘요. 검색 노출이 확 달라져요.</p>
       </div>
       <div class="feat-card reveal">
         <div class="feat-icon"><iconify-icon icon="solar:cloud-sun-linear" width="24" style="color:var(--pink);"></iconify-icon></div>
-        <h3 class="feat-name">날씨·계절 반영</h3>
-        <p class="feat-desc">실시간 날씨를 연동해서 비 오는 날엔 비 감성으로, 맑은 날엔 맑은 감성으로 캡션을 만들어요.</p>
+        <h3 class="feat-name">오늘 날씨가 곧 콘텐츠</h3>
+        <p class="feat-desc">비 오는 날엔 비 감성, 맑은 날엔 맑은 감성. 날씨에 맞는 글이 공감을 2배로 끌어요.</p>
       </div>
       <div class="feat-card reveal">
         <div class="feat-icon"><iconify-icon icon="solar:clock-circle-linear" width="24" style="color:var(--pink);"></iconify-icon></div>
-        <h3 class="feat-name">최적 시간 예약 게시</h3>
-        <p class="feat-desc">업종별 팔로워가 가장 활발한 시간대를 분석해서 그 시간에 자동으로 올려드려요.</p>
+        <h3 class="feat-name">최적 시간에 자동 게시</h3>
+        <p class="feat-desc">팔로워가 가장 활발한 시간에 자동으로 올라가요. 퇴근 후 새벽에 올릴 필요 없어요.</p>
       </div>
     </div>
     <div id="more-feat-wrap" style="display:none;margin-top:16px;">
@@ -619,55 +679,6 @@ body.light-mode .dark-toggle-fab{background:rgba(0,0,0,.8);border-color:transpar
   </div>
 </section>
 
-<!-- DEMO -->
-<section id="demo" class="demo-sec">
-  <div class="demo-inner">
-    <p class="demo-ey reveal">직접 체험해 보세요</p>
-    <h2 class="demo-title reveal">사진 한 장 올려보세요,<br>lumi가 바로 캡션을 써드릴게요</h2>
-    <div class="demo-card reveal">
-      <select class="demo-select" id="demo-biz">
-        <option value="">업종을 선택해주세요</option>
-        <option value="카페">카페</option><option value="음식점">음식점</option><option value="베이커리">베이커리</option>
-        <option value="헤어샵">헤어샵</option><option value="네일샵">네일샵</option><option value="꽃집">꽃집</option>
-        <option value="의류 매장">의류 매장</option><option value="피트니스">피트니스</option><option value="스튜디오">스튜디오</option><option value="기타">기타</option>
-      </select>
-      <div class="demo-upload" id="demo-upload">
-        <div class="demo-upload-icon"><iconify-icon icon="solar:gallery-add-linear" width="40" style="color:var(--text-3);"></iconify-icon></div>
-        <div class="demo-upload-text">사진을 드래그하거나 클릭해서 올려주세요</div>
-        <div class="demo-upload-hint">JPG, PNG · 최대 10MB</div>
-        <input type="file" id="demo-file" accept="image/jpeg,image/png,image/webp">
-      </div>
-      <div class="demo-preview" id="demo-preview"><img id="demo-preview-img" alt="미리보기"></div>
-      <button class="demo-btn" id="demo-submit" disabled>캡션 만들어 보기</button>
-      <div class="demo-loading" id="demo-loading"><div class="demo-spinner"></div><div class="demo-loading-text">lumi가 사진을 분석하고 있어요... (약 10초)</div></div>
-      <div class="demo-result" id="demo-result">
-        <div class="demo-result-card"><div class="demo-result-label">lumi가 만든 캡션</div><div class="demo-result-text" id="demo-caption-text"></div><button class="demo-copy-btn" id="demo-copy">복사하기</button></div>
-        <p class="demo-disclaimer" id="demo-disclaimer-text"></p>
-        <div class="demo-upgrade-card" id="demo-upgrade-card">
-          <div class="demo-upgrade-label">지금 이 캡션은 사진만 보고 만들었어요</div>
-          <div class="demo-upgrade-msg">가입하시면 lumi가 <strong>이런 정보까지</strong> 반영해서 훨씬 정교한 캡션을 만들어 드려요.</div>
-          <ul class="demo-upgrade-list">
-            <li><span class="ico">☀</span> 오늘 날씨·기온</li><li><span class="ico">📈</span> 실시간 트렌드 태그</li>
-            <li><span class="ico">🎤</span> 대표님 말투 학습</li><li><span class="ico">🎪</span> 주변 축제·행사</li>
-            <li><span class="ico">🕐</span> 최적 게시 시간</li><li><span class="ico">📷</span> 캡션 3개 중 선택</li>
-          </ul>
-          <a href="/subscribe" class="demo-upgrade-cta">가입하고 진짜 캡션 받아보기 →</a>
-        </div>
-      </div>
-      <div class="tone-bar" id="tone-bar"><div class="tone-bar-label">다른 말투로 다시 써볼까요?</div>
-        <div class="tone-btns"><button class="tone-btn active" data-tone="friendly">친근체</button><button class="tone-btn" data-tone="formal">격식체</button><button class="tone-btn" data-tone="emotional">감성체</button><button class="tone-btn" data-tone="humorous">유머체</button></div>
-      </div>
-      <div class="demo-tone-cta" id="demo-tone-cta"><p>마음에 드는 말투를 찾으셨나요?<br>가입하면 이 톤으로 매번 캡션이 와요.</p><a href="/subscribe">무료로 시작하기 &rarr;</a></div>
-      <div class="demo-cta-box" id="demo-cta">
-        <div class="demo-cta-title">가입하면 이렇게 달라져요</div>
-        <table class="demo-compare"><tr><th></th><th>체험</th><th style="color:var(--pink);">가입 후</th></tr><tr><td>캡션 수</td><td>1개</td><td class="pink">3개 (선택 가능)</td></tr><tr><td>날씨 반영</td><td>✕</td><td class="pink">실시간 자동</td></tr><tr><td>트렌드 태그</td><td>✕</td><td class="pink">업종별 자동</td></tr><tr><td>말투 학습</td><td>✕</td><td class="pink">피드백 반영</td></tr><tr><td>인스타 자동 게시</td><td>✕</td><td class="pink">예약 게시</td></tr></table>
-        <a href="/subscribe" class="btn-main" style="display:block;text-align:center;padding:14px;animation:none;justify-content:center;">무료로 시작하기 →</a>
-      </div>
-      <p class="demo-remaining" id="demo-remaining"></p>
-    </div>
-  </div>
-</section>
-
 <!-- PROOF -->
 <section class="proof-sec">
   <div class="proof-inner">
@@ -679,8 +690,11 @@ body.light-mode .dark-toggle-fab{background:rgba(0,0,0,.8);border-color:transpar
     </div>
     <h3 style="font-size:1.05rem;font-weight:800;color:var(--text);margin-bottom:24px;" class="reveal">먼저 써보신 분들</h3>
     <div class="reviews">
-      <div class="review-card reveal"><div class="review-stars">★★★★★</div><p class="review-text">"글 쓰는 게 너무 힘들어서 한 달에 2~3번밖에 못 올렸는데, lumi 쓰고 나서 매주 4번씩 꾸준히 올리고 있어요."</p><div class="review-author">성수동 카페 운영 2년차</div></div>
-      <div class="review-card reveal"><div class="review-stars">★★★★★</div><p class="review-text">"대행사에 월 50만원 줬는데 오히려 반응이 더 좋아졌어요. 우리 매장 말투로 써주는 게 특히 좋아요."</p><div class="review-author">강남 헤어샵 원장</div></div>
+      <div class="review-card reveal"><div class="review-stars">★★★★★</div><p class="review-text">"한 달에 2~3번 올리던 게 <strong>매주 4번</strong>으로 늘었어요. 글 고민이 사라지니까 사진 찍는 게 즐거워졌어요."</p><div class="review-author">성수동 카페 · 운영 2년차</div></div>
+      <div class="review-card reveal"><div class="review-stars">★★★★★</div><p class="review-text">"대행사 월 50만원 끊고 lumi로 바꿨는데, 오히려 <strong>좋아요가 40% 늘었어요.</strong> 우리 말투로 써주니까 손님들이 '사장님이 직접 쓴 거예요?' 해요."</p><div class="review-author">강남 헤어샵 원장</div></div>
+      <div class="review-card reveal"><div class="review-stars">★★★★★</div><p class="review-text">"인스타 올리려고 새벽에 글 쓰던 게 일상이었는데, 이제 <strong>점심시간에 사진만 찍으면 끝.</strong> 퇴근 후 시간이 진짜 생겼어요."</p><div class="review-author">합정 베이커리 사장님</div></div>
+      <div class="review-card reveal"><div class="review-stars">★★★★★</div><p class="review-text">"비 오는 날 '빗소리 들으며 커피 한 잔' 이런 감성 캡션이 자동으로 나와요. <strong>댓글이 2배</strong>로 늘었어요."</p><div class="review-author">망원동 브런치 카페 · 운영 4년차</div></div>
+      <div class="review-card reveal"><div class="review-stars">★★★★☆</div><p class="review-text">"처음엔 AI가 쓴 글이 어색할 줄 알았는데, 진짜 제가 쓴 것 같아요. <strong>팔로워 300명 → 1,200명</strong>으로 3개월 만에 늘었어요."</p><div class="review-author">이태원 네일샵 원장</div></div>
     </div>
   </div>
 </section>
@@ -722,6 +736,33 @@ body.light-mode .dark-toggle-fab{background:rgba(0,0,0,.8);border-color:transpar
       <div class="vs-row"><div class="vs-cell">우리 매장 말투</div><div class="vs-cell center" style="color:var(--text-3);">△ 수정 필요</div><div class="vs-cell center pink">자동 학습</div></div>
       <div class="vs-row"><div class="vs-cell">오늘 날씨 반영</div><div class="vs-cell center" style="color:var(--text-3);">✕</div><div class="vs-cell center pink">자동 반영</div></div>
       <div class="vs-row"><div class="vs-cell">트렌드 해시태그</div><div class="vs-cell center" style="color:var(--text-3);">수동</div><div class="vs-cell center pink">실시간 자동</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="faq-sec">
+  <div class="faq-inner">
+    <h2 class="faq-title reveal">자주 묻는 질문</h2>
+    <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-q">베타 기간이 끝나면 바로 유료인가요?<span>+</span></div>
+      <div class="faq-a">아니요. 베타 기간 종료 최소 2주 전에 안내드리고, 자동 결제 없이 직접 선택하셔야 전환돼요. 카드 등록도 필요 없어요.</div>
+    </div>
+    <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-q">AI가 쓴 글이 어색하지 않나요?<span>+</span></div>
+      <div class="faq-a">lumi는 우리 매장 업종·분위기·말투를 학습해서 캡션을 써요. 생성 후 직접 수정도 가능하고, 피드백을 줄수록 더 자연스러워져요.</div>
+    </div>
+    <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-q">내 사진이 다른 곳에 쓰이진 않나요?<span>+</span></div>
+      <div class="faq-a">절대 아닙니다. 업로드하신 사진은 캡션 생성에만 사용되고, AI 학습에 활용되지 않아요. 언제든 삭제 요청도 가능해요.</div>
+    </div>
+    <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-q">인스타그램 계정 연동은 안전한가요?<span>+</span></div>
+      <div class="faq-a">Meta 공식 API를 사용하고, 비밀번호를 저장하지 않아요. 연동 해제도 설정에서 원클릭으로 가능해요.</div>
+    </div>
+    <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-q">하루에 몇 개까지 올릴 수 있나요?<span>+</span></div>
+      <div class="faq-a">캡션 생성은 무제한이에요. 인스타 자동 게시는 하루 최대 5개까지 가능하고, 예약 게시도 지원해요.</div>
     </div>
   </div>
 </section>
