@@ -107,7 +107,7 @@ exports.handler = async (event) => {
 <body style="margin:0;padding:0;background:#f9f9f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
   <div style="max-width:560px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08);">
     <div style="background:#FF6B9D;padding:32px 40px;text-align:center;">
-      <img src="https://i.ibb.co/2VRzskd/u4775893729-A-luxury-logo-of-the-letter-L-in-rose-gold-metallic-00fac09a-9c17-42a5-8cc5-4bd25515e648.png" alt="lumi" style="height:48px;">
+      <img src="/assets/logo.png" alt="lumi" style="height:48px;">
     </div>
     <div style="padding:40px;">
       <h2 style="margin:0 0 12px;color:#111;font-size:22px;font-weight:800;">${name}님, 환영해요! 🎉</h2>
