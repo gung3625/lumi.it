@@ -1272,27 +1272,22 @@ async function initWeather() {
     // 날씨/에어코리아 모두 가게 지역 기준 — GPS 사용 안 함
     const lumiUser = JSON.parse(localStorage.getItem('lumi_user') || '{}');
 
-    // storeRegion 변수 우선 사용 (이미 "서울 강서구" 형태로 저장됨)
-    let locationName = storeRegion || lumiUser.region || '';
+    // 시/도 가져오기
+    const sidoSel = document.getElementById('dash-sido');
+    const sidoText = sidoSel?.options[sidoSel.selectedIndex]?.text || '';
+    const storeSido = (sidoText && sidoText !== '시/도 선택') ? sidoText
+        : (lumiUser.storeSido || '서울');
 
-    // storeRegion이 없으면 드롭다운에서 읽기
-    if (!locationName) {
-        const sidoSel = document.getElementById('dash-sido');
-        const sidoText = sidoSel?.options[sidoSel.selectedIndex]?.text || '';
-        const storeSido = (sidoText && sidoText !== '시/도 선택') ? sidoText : '서울';
+    // 시/군/구 가져오기
+    const sigunguSel = document.getElementById('dash-sigungu');
+    const sigunguText = sigunguSel?.options[sigunguSel.selectedIndex]?.text || '';
+    const storeSimgungu = (sigunguText && sigunguText !== '시/군/구 선택') ? sigunguText : '';
 
-        const sigunguSel = document.getElementById('dash-sigungu');
-        const sigunguText = sigunguSel?.options[sigunguSel.selectedIndex]?.text || '';
-        const storeSimgungu = (sigunguText && sigunguText !== '시/군/구 선택') ? sigunguText : '';
-
-        locationName = storeSimgungu ? `${storeSido} ${storeSimgungu}` : storeSido;
-    }
-
-    // 시/도 추출 (에어코리아용)
-    const sidoPart = locationName.split(' ')[0] || '서울';
+    // 시/도 + 시/군/구 조합 (있을 경우)
+    const locationName = storeSimgungu ? `${storeSido} ${storeSimgungu}` : storeSido;
 
     await fetchRealWeather(null, null, locationName);
-    fetchAirQuality(sidoPart);
+    fetchAirQuality(storeSido);
 }
 
 /* ── 파일 업로드 ── */
