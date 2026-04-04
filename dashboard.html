@@ -572,53 +572,12 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
                 <textarea id="profile-edit-desc" class="dash-note" rows="2" placeholder="매장 소개 (lumi 캡션 작성에 활용됩니다)" style="margin-bottom:8px;"></textarea>
                 <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:6px;">업종</p>
                 <select id="profile-edit-bizcat" class="inp" style="height:46px;margin-bottom:6px;" onchange="toggleBizcatDirect(this.value)">
-                    <optgroup label="☕ 카페 / 음료">
-                        <option value="cafe">카페</option>
-                        <option value="bakery">베이커리 / 빵집</option>
-                        <option value="dessert">디저트 / 아이스크림</option>
-                        <option value="juice">주스 / 스무디</option>
-                    </optgroup>
-                    <optgroup label="🍽️ 식음료">
-                        <option value="restaurant">레스토랑</option>
-                        <option value="korean">한식</option>
-                        <option value="chinese">중식</option>
-                        <option value="japanese">일식</option>
-                        <option value="western">양식</option>
-                        <option value="fastfood">분식 / 패스트푸드</option>
-                        <option value="bar">술집 / 펍</option>
-                        <option value="chicken">치킨 / 배달</option>
-                    </optgroup>
-                    <optgroup label="💅 뷰티">
-                        <option value="beauty">뷰티샵 (통합)</option>
-                        <option value="hair">헤어샵</option>
-                        <option value="nail">네일샵</option>
-                        <option value="skincare">피부관리 / 에스테틱</option>
-                        <option value="makeup">메이크업 / 반영구</option>
-                        <option value="massage">마사지 / 스파</option>
-                    </optgroup>
-                    <optgroup label="🛍️ 쇼핑 / 리테일">
-                        <option value="fashion">패션 / 의류</option>
-                        <option value="accessories">액세서리 / 잡화</option>
-                        <option value="flower">꽃집</option>
-                        <option value="pet">반려동물</option>
-                        <option value="kids">아동 / 유아용품</option>
-                        <option value="interior">인테리어 / 가구</option>
-                    </optgroup>
-                    <optgroup label="🏃 운동 / 건강">
-                        <option value="fitness">헬스장 / 피트니스</option>
-                        <option value="yoga">요가 / 필라테스</option>
-                        <option value="sports">스포츠 / 레저</option>
-                        <option value="health">건강식품 / 영양제</option>
-                    </optgroup>
-                    <optgroup label="🎨 라이프스타일">
-                        <option value="photo">사진 / 영상</option>
-                        <option value="art">공방 / 아트클래스</option>
-                        <option value="music">음악 / 학원</option>
-                        <option value="travel">여행 / 숙박</option>
-                    </optgroup>
-                    <optgroup label="✏️ 기타">
-                        <option value="other_input">직접 입력</option>
-                    </optgroup>
+                    <option value="cafe">☕ 카페·베이커리</option>
+                    <option value="food">🍽️ 음식점</option>
+                    <option value="beauty">💅 뷰티·케어</option>
+                    <option value="shopping">🛍️ 쇼핑·리테일</option>
+                    <option value="fitness">🏃 운동·건강</option>
+                    <option value="other_input">✏️ 직접 입력</option>
                 </select>
                 <input type="text" id="profile-edit-bizcat-direct" class="inp" style="height:46px;margin-bottom:8px;display:none;" placeholder="업종을 직접 입력해 주세요 (예: 타투샵, 세탁소)">
                 <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:6px;">글 말투 <span style="font-weight:400;color:var(--g400);">(선택)</span></p>
@@ -3719,7 +3678,7 @@ function initProfileView() {
     document.getElementById('profile-view-store').textContent = user.storeName || '-';
     document.getElementById('profile-view-insta').textContent = user.instagram || '-';
     document.getElementById('profile-view-desc').textContent = user.storeDesc || '-';
-    const bizMap = {cafe:'카페',bakery:'베이커리/빵집',dessert:'디저트',juice:'주스/스무디',restaurant:'레스토랑',korean:'한식',chinese:'중식',japanese:'일식',western:'양식',fastfood:'분식/패스트푸드',bar:'술집/펍',chicken:'치킨/배달',beauty:'뷰티샵',hair:'헤어샵',nail:'네일샵',skincare:'피부관리',makeup:'메이크업',massage:'마사지/스파',fashion:'패션/의류',accessories:'액세서리',flower:'꽃집',pet:'반려동물',kids:'아동용품',interior:'인테리어',fitness:'헬스장',yoga:'요가/필라테스',sports:'스포츠',health:'건강식품',photo:'사진/영상',art:'공방/아트',music:'음악',travel:'여행/숙박'};
+    const bizMap = {cafe:'카페·베이커리',food:'음식점',beauty:'뷰티·케어',shopping:'쇼핑·리테일',fitness:'운동·건강'};
     document.getElementById('profile-view-bizcat').textContent = bizMap[user.bizCategory] || user.bizCategory || '-';
     document.getElementById('profile-view-tone').textContent = user.captionTone || '-';
     const tagMap = {few:'간결하게 (5개 이내)', mid:'적당하게 (10개 내외)', many:'많이 (20개 이상)'};
@@ -3999,7 +3958,7 @@ async function refreshCalendar() {
   var region = user.region || '서울';
 
   // 업종 한글 매핑
-  var bizMap = { cafe:'카페', food:'음식점', bakery:'베이커리', hair:'미용실', nail:'네일샵', skin:'피부관리', flower:'꽃집', clothes:'옷가게', gym:'헬스장', other:'기타' };
+  var bizMap = { cafe:'카페·베이커리', food:'음식점', beauty:'뷰티·케어', shopping:'쇼핑·리테일', fitness:'운동·건강' };
   var bizKr = bizMap[biz] || '기타';
 
   document.getElementById('cal-empty').style.display = 'none';
