@@ -1991,6 +1991,7 @@ async function grantAccess(){
     initAutoFestival();
     initRelayMode();
     loadCalendar();
+    checkServiceFeedback();
     if (!JSON.parse(localStorage.getItem('lumi_user') || '{}').sidoCode) {
         initWeather();
     }
@@ -2287,20 +2288,6 @@ function showCaptionReady(reservationKey, captions, regenCount) {
   const regenBtn = document.getElementById('regen-btn');
   if (regenBtn && remaining <= 0) { regenBtn.disabled = true; regenBtn.style.opacity = '0.4'; regenBtn.style.cursor = 'not-allowed'; }
 
-  // 인라인 피드백 바 추가
-  const existingFb = list.parentElement.querySelector('.inline-feedback-bar');
-  if (existingFb) existingFb.remove();
-  const fbBar = document.createElement('div');
-  fbBar.className = 'inline-feedback-bar';
-  fbBar.style.cssText = 'margin-top:16px;padding:14px 18px;background:var(--pink-pale,#FFF0F6);border-radius:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;animation:fadeUp .4s ease both;';
-  fbBar.innerHTML = `
-    <span style="font-size:.85rem;font-weight:700;color:var(--g700,#333);">이 캡션은 어땠나요?</span>
-    <div style="display:flex;align-items:center;gap:6px;">
-      <button onclick="sendInlineFeedback('좋아요','caption_quality',this)" style="background:none;border:1.5px solid var(--g200,#eee);border-radius:10px;padding:6px 14px;font-size:.95rem;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:4px;color:var(--g700,#333);">👍</button>
-      <button onclick="sendInlineFeedback('아쉬워요','caption_quality',this)" style="background:none;border:1.5px solid var(--g200,#eee);border-radius:10px;padding:6px 14px;font-size:.95rem;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:4px;color:var(--g700,#333);">👎</button>
-    </div>
-  `;
-  list.parentElement.appendChild(fbBar);
 }
 
 async function cancelCurrentReservation(reservationKey) {
@@ -2389,7 +2376,6 @@ function startPostPolling(reservationKey) {
         clearInterval(_postPollTimer);
         closeCaptionSheet();
         showToast('인스타그램에 게시됐어요! 📸', 'pink');
-        showPostFeedbackBar();
       } else if (data.postError) {
         clearInterval(_postPollTimer);
         closeCaptionSheet();
@@ -3461,72 +3447,103 @@ async function submitFeedback() {
     }
 }
 
-// 인라인 피드백 (캡션 카드 하단 👍👎)
-async function sendInlineFeedback(reaction, category, btnEl) {
-    const bar = btnEl.closest('.inline-feedback-bar') || btnEl.closest('.post-feedback-bar');
+// 서비스 전체 피드백 (대시보드 접속 시 조건부 표시)
+function checkServiceFeedback() {
+    const lastFb = localStorage.getItem('lumi_last_feedback');
+    const visitCount = parseInt(localStorage.getItem('lumi_visit_count') || '0') + 1;
+    localStorage.setItem('lumi_visit_count', visitCount);
+
+    // 마지막 피드백으로부터 7일 이내면 안 보여줌
+    if (lastFb) {
+        const daysSince = (Date.now() - parseInt(lastFb)) / (1000 * 60 * 60 * 24);
+        if (daysSince < 7) return;
+    }
+
+    // 3번째 방문부터 표시 (너무 일찍 보여주면 귀찮음)
+    if (visitCount < 3) return;
+
+    // 3초 후 자연스럽게 슬라이드업
+    setTimeout(showServiceFeedbackBar, 3000);
+}
+
+function showServiceFeedbackBar() {
+    const existing = document.querySelector('.service-feedback-bar');
+    if (existing) existing.remove();
+    const bar = document.createElement('div');
+    bar.className = 'service-feedback-bar';
+    bar.style.cssText = 'position:fixed;bottom:calc(24px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%) translateY(80px);background:var(--white,#fff);border:1.5px solid var(--pink-soft,#FADCE6);border-radius:16px;padding:16px 20px;z-index:9000;box-shadow:0 8px 32px rgba(0,0,0,.12);max-width:420px;width:calc(100% - 48px);transition:transform .5s cubic-bezier(.16,1,.3,1),opacity .5s;opacity:0;';
+    bar.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+            <span style="font-size:.88rem;font-weight:700;color:var(--g900,#191F28);">lumi 사용은 어떠세요?</span>
+            <div style="display:flex;align-items:center;gap:6px;">
+                <button onclick="handleServiceFb('좋아요',this)" style="background:none;border:1.5px solid var(--g200,#eee);border-radius:10px;padding:7px 16px;font-size:1rem;cursor:pointer;transition:all .2s;">👍</button>
+                <button onclick="handleServiceFb('아쉬워요',this)" style="background:none;border:1.5px solid var(--g200,#eee);border-radius:10px;padding:7px 16px;font-size:1rem;cursor:pointer;transition:all .2s;">👎</button>
+                <button onclick="dismissServiceFb()" style="background:none;border:none;font-size:.75rem;color:var(--g400,#8B95A1);cursor:pointer;padding:4px 8px;">닫기</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(bar);
+    requestAnimationFrame(() => { bar.style.transform = 'translateX(-50%) translateY(0)'; bar.style.opacity = '1'; });
+}
+
+function dismissServiceFb() {
+    const bar = document.querySelector('.service-feedback-bar');
+    if (bar) { bar.style.transform = 'translateX(-50%) translateY(80px)'; bar.style.opacity = '0'; setTimeout(() => bar.remove(), 500); }
+    localStorage.setItem('lumi_last_feedback', Date.now());
+}
+
+async function handleServiceFb(reaction, btnEl) {
+    const bar = btnEl.closest('.service-feedback-bar');
     const token = localStorage.getItem('lumi_token') || '';
     try {
         await fetch('/.netlify/functions/feedback', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-            body: JSON.stringify({ category, message: reaction, rating: reaction === '좋아요' ? 5 : 2 })
+            body: JSON.stringify({ category: '서비스 전체', message: reaction, rating: reaction === '좋아요' ? 5 : 2 })
         });
     } catch(e) {}
-    // 피드백 후 확장 UI로 전환
+    localStorage.setItem('lumi_last_feedback', Date.now());
+
     if (bar) {
         if (reaction === '좋아요') {
-            bar.innerHTML = `<span style="font-size:.85rem;color:var(--pink,#FF2D8A);font-weight:700;">감사합니다! 더 좋은 캡션을 만들게요 ✨</span>`;
+            bar.innerHTML = `<div style="text-align:center;padding:4px 0;"><span style="font-size:.88rem;color:var(--pink,#FF2D8A);font-weight:700;">감사합니다! 더 좋은 lumi가 될게요 ✨</span></div>`;
+            setTimeout(() => { bar.style.transform = 'translateX(-50%) translateY(80px)'; bar.style.opacity = '0'; setTimeout(() => bar.remove(), 500); }, 2500);
         } else {
+            bar.style.maxWidth = '480px';
             bar.innerHTML = `
-                <div style="width:100%;">
-                    <p style="font-size:.85rem;font-weight:700;color:var(--g700,#333);margin-bottom:10px;">어떤 점이 아쉬웠나요?</p>
-                    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
-                        <button onclick="sendDetailFeedback('말투가 안 맞아요',this)" class="fb-chip" style="background:var(--white,#fff);border:1.5px solid var(--g200,#eee);border-radius:20px;padding:6px 14px;font-size:.78rem;cursor:pointer;color:var(--g700,#333);font-family:inherit;transition:all .2s;">말투가 안 맞아요</button>
-                        <button onclick="sendDetailFeedback('내용이 뻔해요',this)" class="fb-chip" style="background:var(--white,#fff);border:1.5px solid var(--g200,#eee);border-radius:20px;padding:6px 14px;font-size:.78rem;cursor:pointer;color:var(--g700,#333);font-family:inherit;transition:all .2s;">내용이 뻔해요</button>
-                        <button onclick="sendDetailFeedback('너무 길어요',this)" class="fb-chip" style="background:var(--white,#fff);border:1.5px solid var(--g200,#eee);border-radius:20px;padding:6px 14px;font-size:.78rem;cursor:pointer;color:var(--g700,#333);font-family:inherit;transition:all .2s;">너무 길어요</button>
-                        <button onclick="sendDetailFeedback('해시태그가 별로예요',this)" class="fb-chip" style="background:var(--white,#fff);border:1.5px solid var(--g200,#eee);border-radius:20px;padding:6px 14px;font-size:.78rem;cursor:pointer;color:var(--g700,#333);font-family:inherit;transition:all .2s;">해시태그가 별로예요</button>
+                <div>
+                    <p style="font-size:.88rem;font-weight:700;color:var(--g900,#191F28);margin-bottom:12px;">어떤 부분이 아쉬우셨나요?</p>
+                    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
+                        <button onclick="sendServiceDetail('사용법이 어려워요',this)" style="background:var(--g50,#fafafa);border:1.5px solid var(--g200,#eee);border-radius:20px;padding:7px 14px;font-size:.8rem;cursor:pointer;color:var(--g700,#333);font-family:inherit;">사용법이 어려워요</button>
+                        <button onclick="sendServiceDetail('원하는 기능이 없어요',this)" style="background:var(--g50,#fafafa);border:1.5px solid var(--g200,#eee);border-radius:20px;padding:7px 14px;font-size:.8rem;cursor:pointer;color:var(--g700,#333);font-family:inherit;">원하는 기능이 없어요</button>
+                        <button onclick="sendServiceDetail('속도가 느려요',this)" style="background:var(--g50,#fafafa);border:1.5px solid var(--g200,#eee);border-radius:20px;padding:7px 14px;font-size:.8rem;cursor:pointer;color:var(--g700,#333);font-family:inherit;">속도가 느려요</button>
+                        <button onclick="sendServiceDetail('디자인이 불편해요',this)" style="background:var(--g50,#fafafa);border:1.5px solid var(--g200,#eee);border-radius:20px;padding:7px 14px;font-size:.8rem;cursor:pointer;color:var(--g700,#333);font-family:inherit;">디자인이 불편해요</button>
+                        <button onclick="sendServiceDetail('캡션 퀄리티가 아쉬워요',this)" style="background:var(--g50,#fafafa);border:1.5px solid var(--g200,#eee);border-radius:20px;padding:7px 14px;font-size:.8rem;cursor:pointer;color:var(--g700,#333);font-family:inherit;">캡션 퀄리티가 아쉬워요</button>
                     </div>
                     <div style="display:flex;gap:8px;">
-                        <input id="fb-detail-input" type="text" placeholder="직접 입력..." style="flex:1;padding:10px 14px;border:1.5px solid var(--g200,#eee);border-radius:10px;font-size:.82rem;font-family:inherit;background:var(--white,#fff);color:var(--g900,#191F28);">
-                        <button onclick="sendDetailFeedback(document.getElementById('fb-detail-input').value,this)" style="background:var(--pink,#FF2D8A);color:#fff;border:none;border-radius:10px;padding:8px 16px;font-size:.82rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">보내기</button>
+                        <input id="svc-fb-input" type="text" placeholder="직접 입력해주세요..." style="flex:1;padding:10px 14px;border:1.5px solid var(--g200,#eee);border-radius:10px;font-size:.84rem;font-family:inherit;background:var(--white,#fff);color:var(--g900,#191F28);">
+                        <button onclick="sendServiceDetail(document.getElementById('svc-fb-input').value,this)" style="background:var(--pink,#FF2D8A);color:#fff;border:none;border-radius:10px;padding:8px 18px;font-size:.84rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">보내기</button>
                     </div>
                 </div>`;
         }
     }
 }
 
-async function sendDetailFeedback(detail, btnEl) {
+async function sendServiceDetail(detail, btnEl) {
     if (!detail || !detail.trim()) return;
-    const bar = btnEl.closest('.inline-feedback-bar') || btnEl.closest('.post-feedback-bar');
+    const bar = btnEl.closest('.service-feedback-bar');
     const token = localStorage.getItem('lumi_token') || '';
     try {
         await fetch('/.netlify/functions/feedback', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-            body: JSON.stringify({ category: 'caption_detail', message: detail.trim(), rating: 2 })
+            body: JSON.stringify({ category: '서비스 개선', message: detail.trim(), rating: 2 })
         });
     } catch(e) {}
     if (bar) {
-        bar.innerHTML = `<span style="font-size:.85rem;color:var(--pink,#FF2D8A);font-weight:700;">소중한 의견 감사합니다! 반영할게요 🙏</span>`;
+        bar.innerHTML = `<div style="text-align:center;padding:4px 0;"><span style="font-size:.88rem;color:var(--pink,#FF2D8A);font-weight:700;">소중한 의견 감사합니다! 반영할게요 🙏</span></div>`;
+        setTimeout(() => { bar.style.transform = 'translateX(-50%) translateY(80px)'; bar.style.opacity = '0'; setTimeout(() => bar.remove(), 500); }, 2500);
     }
-}
-
-// 게시 완료 후 피드백 바 (대시보드 하단에 표시)
-function showPostFeedbackBar() {
-    const existing = document.querySelector('.post-feedback-bar');
-    if (existing) existing.remove();
-    const bar = document.createElement('div');
-    bar.className = 'post-feedback-bar';
-    bar.style.cssText = 'position:fixed;bottom:calc(24px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--white,#fff);border:1.5px solid var(--pink-soft,#FADCE6);border-radius:16px;padding:14px 20px;display:flex;align-items:center;gap:14px;z-index:9000;box-shadow:0 8px 32px rgba(0,0,0,.12);animation:fadeUp .4s ease both;max-width:420px;width:calc(100% - 48px);';
-    bar.innerHTML = `
-        <span style="font-size:.85rem;font-weight:700;color:var(--g700,#333);flex:1;">이번 게시 어땠나요?</span>
-        <div style="display:flex;gap:6px;">
-            <button onclick="sendInlineFeedback('좋아요','post_quality',this)" style="background:none;border:1.5px solid var(--g200,#eee);border-radius:10px;padding:6px 14px;font-size:.95rem;cursor:pointer;transition:all .2s;">👍</button>
-            <button onclick="sendInlineFeedback('아쉬워요','post_quality',this)" style="background:none;border:1.5px solid var(--g200,#eee);border-radius:10px;padding:6px 14px;font-size:.95rem;cursor:pointer;transition:all .2s;">👎</button>
-        </div>
-    `;
-    document.body.appendChild(bar);
-    setTimeout(() => { if (bar.parentElement) bar.style.opacity = '0'; setTimeout(() => bar.remove(), 500); }, 15000);
 }
 
 // ── 다크모드 ──
