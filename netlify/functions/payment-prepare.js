@@ -44,9 +44,9 @@ exports.handler = async (event) => {
 
   // 플랜별 금액
   const PLANS = {
-    standard:        { amount: 49000,  name: 'lumi 스탠다드 월간',  durationDays: 31 },
-    standard_3m:     { amount: 129000, name: 'lumi 스탠다드 3개월', durationDays: 93 },
-    standard_yearly: { amount: 468000, name: 'lumi 스탠다드 연간',  durationDays: 365 }
+    basic:    { amount: 19000, name: 'lumi 베이직',   durationDays: 31 },
+    standard: { amount: 29000, name: 'lumi 스탠다드', durationDays: 31 },
+    pro:      { amount: 39000, name: 'lumi 프로',     durationDays: 31 }
   };
 
   const plan = PLANS[planType];

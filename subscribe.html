@@ -119,36 +119,25 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,*::-webkit-scrollbar{display:non
 
 <div class="page">
     <h1 class="page-title">구독 시작하기</h1>
-    <p class="page-sub">원하는 플랜을 선택하고 결제하세요.</p>
+    <p class="page-sub">우리 매장에 맞는 플랜을 선택하세요.</p>
 
     <!-- 플랜 선택 -->
     <div class="plan-options">
-        <div class="plan-option" data-plan="standard" onclick="selectPlan(this)">
-            <p class="plan-opt-name">월간</p>
-            <div class="plan-opt-price"><span class="plan-opt-num">49,000</span><span class="plan-opt-unit">원/월</span></div>
+        <div class="plan-option" data-plan="basic" onclick="selectPlan(this)">
+            <p class="plan-opt-name">베이직</p>
+            <div class="plan-opt-price"><span class="plan-opt-num">19,000</span><span class="plan-opt-unit">원/월</span></div>
         </div>
-        <div class="plan-option selected" data-plan="standard_3m" onclick="selectPlan(this)">
-            <div class="plan-opt-badge">인기</div>
-            <p class="plan-opt-name">3개월</p>
-            <div class="plan-opt-price"><span class="plan-opt-num">129,000</span><span class="plan-opt-unit">원</span></div>
-            <p class="plan-opt-per">월 43,000원 · 12% 할인</p>
+        <div class="plan-option selected" data-plan="standard" onclick="selectPlan(this)">
+            <div class="plan-opt-badge">추천</div>
+            <p class="plan-opt-name">스탠다드</p>
+            <div class="plan-opt-price"><span class="plan-opt-num">29,000</span><span class="plan-opt-unit">원/월</span></div>
         </div>
-        <div class="plan-option" data-plan="standard_yearly" onclick="selectPlan(this)">
-            <div class="plan-opt-badge best">BEST</div>
-            <p class="plan-opt-name">연간</p>
-            <div class="plan-opt-price"><span class="plan-opt-num">468,000</span><span class="plan-opt-unit">원</span></div>
-            <p class="plan-opt-per">월 39,000원 · 20% 할인</p>
+        <div class="plan-option" data-plan="pro" onclick="selectPlan(this)">
+            <p class="plan-opt-name">프로</p>
+            <div class="plan-opt-price"><span class="plan-opt-num">39,000</span><span class="plan-opt-unit">원/월</span></div>
         </div>
     </div>
-    <div class="plan-features-common">
-        <div class="plan-feat"><div class="feat-check">✓</div>인스타 자동 게시 월 16회</div>
-        <div class="plan-feat"><div class="feat-check">✓</div>lumi 캡션 + 해시태그 자동 생성</div>
-        <div class="plan-feat"><div class="feat-check">✓</div>날씨 반영 캡션</div>
-        <div class="plan-feat"><div class="feat-check">✓</div>트렌드 태그 자동 업데이트</div>
-        <div class="plan-feat"><div class="feat-check">✓</div>예약 게시</div>
-        <div class="plan-feat"><div class="feat-check">✓</div>1:1 글스타일 커스텀</div>
-        <div class="plan-feat"><div class="feat-check">✓</div>사진 최대 10장 한 번에</div>
-    </div>
+    <div id="plan-features" class="plan-features-common"></div>
 
     <!-- 갱신 알림 배너 -->
     <div class="trial-banner">
@@ -195,8 +184,8 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,*::-webkit-scrollbar{display:non
 
     <!-- CTA -->
     <div class="cta-wrap">
-        <button class="btn-pay" id="pay-btn" onclick="startPayment()">lumi 스탠다드 3개월 결제하기</button>
-        <p class="cta-note">일시불 결제 · 93일간 이용 · 자동 갱신 없음</p>
+        <button class="btn-pay" id="pay-btn" onclick="startPayment()">lumi 스탠다드 결제하기</button>
+        <p class="cta-note">일시불 결제 · 31일간 이용 · 자동 갱신 없음</p>
     </div>
 </div>
 
@@ -204,12 +193,17 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,*::-webkit-scrollbar{display:non
 
 <script>
     let selectedMethod = 'CARD';
-    let selectedPlan = 'standard_3m';
+    let selectedPlan = 'standard';
     const PLAN_DATA = {
-        standard: { amount: 49000, name: 'lumi 스탠다드 월간' },
-        standard_3m: { amount: 129000, name: 'lumi 스탠다드 3개월' },
-        standard_yearly: { amount: 468000, name: 'lumi 스탠다드 연간' }
+        basic:    { amount: 19000, name: 'lumi 베이직', features: ['캡션 주 3개 생성','해시태그 자동 생성','바로 게시'] },
+        standard: { amount: 29000, name: 'lumi 스탠다드', features: ['무제한 캡션 생성','해시태그 자동 생성','예약 게시','날씨·행사 반영 캡션','1:1 말투 학습','사진 최대 10장'] },
+        pro:      { amount: 39000, name: 'lumi 프로', features: ['무제한 캡션 생성','해시태그 자동 생성','예약 게시','날씨·행사 반영 캡션','1:1 말투 학습','사진 최대 10장','캘린더 관리','트렌드 분석','최적 시간 자동 게시','스토리 캡션','링크 페이지'] }
     };
+
+    function renderFeatures(plan) {
+        const box = document.getElementById('plan-features');
+        box.innerHTML = PLAN_DATA[plan].features.map(f => `<div class="plan-feat"><div class="feat-check">✓</div>${f}</div>`).join('');
+    }
 
     function selectPlan(el) {
         document.querySelectorAll('.plan-option').forEach(o => o.classList.remove('selected'));
@@ -217,12 +211,24 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,*::-webkit-scrollbar{display:non
         selectedPlan = el.dataset.plan;
         const p = PLAN_DATA[selectedPlan];
         document.getElementById('pay-btn').textContent = p.name + ' 결제하기';
-        document.querySelector('.cta-note').innerHTML = selectedPlan === 'standard'
-            ? '일시불 결제 · 31일간 이용 · 자동 갱신 없음'
-            : selectedPlan === 'standard_3m'
-            ? '일시불 결제 · 93일간 이용 · 자동 갱신 없음'
-            : '일시불 결제 · 365일간 이용 · 자동 갱신 없음';
+        document.querySelector('.cta-note').innerHTML = '일시불 결제 · 31일간 이용 · 자동 갱신 없음';
+        renderFeatures(selectedPlan);
     }
+
+    // URL 파라미터로 플랜 선택
+    (function() {
+        const params = new URLSearchParams(window.location.search);
+        const planParam = params.get('plan');
+        if (planParam && PLAN_DATA[planParam]) {
+            selectedPlan = planParam;
+            document.querySelectorAll('.plan-option').forEach(o => {
+                o.classList.toggle('selected', o.dataset.plan === planParam);
+            });
+            const p = PLAN_DATA[planParam];
+            document.getElementById('pay-btn').textContent = p.name + ' 결제하기';
+        }
+        renderFeatures(selectedPlan);
+    })();
 
     function selectMethod(el) {
         document.querySelectorAll('.pay-method').forEach(m => m.classList.remove('active'));
