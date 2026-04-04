@@ -775,7 +775,7 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
 
         <!-- 최적 업로드 시간 (PRO 전용) -->
         <div id="best-time-section" style="background:var(--white);border-radius:var(--r-xl);padding:20px 22px;border:1px solid var(--g200);box-shadow:var(--sh-xs);margin-bottom:14px;position:relative;overflow:hidden;">
-            <div id="best-time-lock" style="display:none;position:absolute;inset:0;background:rgba(249,250,251,.93);backdrop-filter:blur(3px);z-index:10;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;">
+            <div id="best-time-lock" style="display:none;position:absolute;inset:0;background:var(--g50);opacity:.97;backdrop-filter:blur(3px);z-index:10;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;">
                 <div style="font-size:1.8rem;margin-bottom:8px;">🔒</div>
                 <p style="font-size:.88rem;font-weight:800;color:var(--g900);margin-bottom:4px;">프로 플랜 전용 기능이에요</p>
                 <p style="font-size:.78rem;color:var(--g500);">프로 플랜으로 업그레이드하면 업종별 최적 업로드 시간을 받아볼 수 있어요.</p>
@@ -1272,22 +1272,27 @@ async function initWeather() {
     // 날씨/에어코리아 모두 가게 지역 기준 — GPS 사용 안 함
     const lumiUser = JSON.parse(localStorage.getItem('lumi_user') || '{}');
 
-    // 시/도 가져오기
-    const sidoSel = document.getElementById('dash-sido');
-    const sidoText = sidoSel?.options[sidoSel.selectedIndex]?.text || '';
-    const storeSido = (sidoText && sidoText !== '시/도 선택') ? sidoText
-        : (lumiUser.storeSido || '서울');
+    // storeRegion 변수 우선 사용 (이미 "서울 강서구" 형태로 저장됨)
+    let locationName = storeRegion || lumiUser.region || '';
 
-    // 시/군/구 가져오기
-    const sigunguSel = document.getElementById('dash-sigungu');
-    const sigunguText = sigunguSel?.options[sigunguSel.selectedIndex]?.text || '';
-    const storeSimgungu = (sigunguText && sigunguText !== '시/군/구 선택') ? sigunguText : '';
+    // storeRegion이 없으면 드롭다운에서 읽기
+    if (!locationName) {
+        const sidoSel = document.getElementById('dash-sido');
+        const sidoText = sidoSel?.options[sidoSel.selectedIndex]?.text || '';
+        const storeSido = (sidoText && sidoText !== '시/도 선택') ? sidoText : '서울';
 
-    // 시/도 + 시/군/구 조합 (있을 경우)
-    const locationName = storeSimgungu ? `${storeSido} ${storeSimgungu}` : storeSido;
+        const sigunguSel = document.getElementById('dash-sigungu');
+        const sigunguText = sigunguSel?.options[sigunguSel.selectedIndex]?.text || '';
+        const storeSimgungu = (sigunguText && sigunguText !== '시/군/구 선택') ? sigunguText : '';
+
+        locationName = storeSimgungu ? `${storeSido} ${storeSimgungu}` : storeSido;
+    }
+
+    // 시/도 추출 (에어코리아용)
+    const sidoPart = locationName.split(' ')[0] || '서울';
 
     await fetchRealWeather(null, null, locationName);
-    fetchAirQuality(storeSido);
+    fetchAirQuality(sidoPart);
 }
 
 /* ── 파일 업로드 ── */
