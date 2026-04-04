@@ -233,6 +233,25 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
 </head>
 <body>
 <!-- AUTH PORTAL -->
+
+<!-- WELCOME MODAL -->
+<div id="lumi-welcome-modal" class="portal-overlay">
+    <div class="portal-sheet" style="max-width:460px;text-align:center;">
+        <div id="welcome-loading" style="padding:40px 0;">
+            <div style="font-size:2.5rem;margin-bottom:16px;">✨</div>
+            <p style="font-size:1.1rem;font-weight:900;color:var(--g900);margin-bottom:8px;" id="welcome-store-title">매장명</p>
+            <p style="font-size:.85rem;color:var(--g500);line-height:1.7;">lumi가 이 매장에 맞는 캡션을<br>미리 써보고 있어요...</p>
+            <div style="margin:24px auto;width:40px;height:40px;border:3px solid var(--g200);border-top-color:var(--pink);border-radius:50%;animation:spin .8s linear infinite;"></div>
+        </div>
+        <div id="welcome-result" class="hidden">
+            <div style="font-size:2.5rem;margin-bottom:12px;">🎉</div>
+            <p style="font-size:1.1rem;font-weight:900;color:var(--g900);margin-bottom:4px;" id="welcome-result-title">매장명</p>
+            <p style="font-size:.82rem;color:var(--g500);margin-bottom:20px;">사진 없이 매장 정보만으로 이만큼 써요.<br>사진까지 올리면 훨씬 더 정확해져요.</p>
+            <div id="welcome-captions" style="text-align:left;display:flex;flex-direction:column;gap:12px;margin-bottom:20px;"></div>
+            <button onclick="closeWelcomeModal()" style="width:100%;padding:14px;border:none;background:var(--pink);color:#fff;font-size:15px;font-weight:700;border-radius:12px;cursor:pointer;font-family:inherit;box-shadow:0 4px 16px rgba(255,45,138,.25);transition:all .2s;">시작하기</button>
+        </div>
+    </div>
+</div>
 <div id="lumi-auth-portal" class="portal-overlay">
     <div class="portal-sheet">
         <button class="portal-x" onclick="resetToInitialLanding()">✕</button>
@@ -3110,7 +3129,7 @@ async function finishLumiSignup() {
             localStorage.setItem('lumi_user', JSON.stringify({ ...data.user, token: data.token }));
             localStorage.setItem('lumi_token', data.token);
             showToast('가입 완료! 환영해요 🎉', 'pink');
-            setTimeout(() => { resetToInitialLanding(); grantAccess(); }, 1000);
+            showWelcomeModal(data.user);
         } else {
             showToast(data.error || '가입에 실패했어요.', 'red');
         }
@@ -3119,6 +3138,47 @@ async function finishLumiSignup() {
     } finally {
         if (btn) { btn.disabled = false; btn.textContent = '가입 완료'; }
     }
+}
+
+/* ── 웰컴 모달 ── */
+async function showWelcomeModal(user) {
+    document.getElementById('lumi-auth-portal').style.display='none';
+    const modal = document.getElementById('lumi-welcome-modal');
+    modal.style.display='flex';
+    const sName = user.storeName || '매장';
+    document.getElementById('welcome-store-title').textContent = sName + '에 어울리는 캡션을 써보는 중...';
+    document.getElementById('welcome-result-title').textContent = sName + ', 이런 캡션 어때요?';
+    document.getElementById('welcome-loading').classList.remove('hidden');
+    document.getElementById('welcome-result').classList.add('hidden');
+    try {
+        const res = await fetch('/.netlify/functions/welcome-caption', {
+            method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+(user.token||localStorage.getItem('lumi_token'))},
+            body: JSON.stringify({ bizCategory: user.bizCategory||'cafe', storeName: sName, region: user.region||'', captionTone: user.captionTone||'friendly' })
+        });
+        const data = await res.json();
+        if (res.ok && data.captions) {
+            const wrap = document.getElementById('welcome-captions');
+            wrap.innerHTML = '';
+            data.captions.forEach(function(c) {
+                const card = document.createElement('div');
+                card.style.cssText = 'background:var(--g50);border:1px solid var(--g200);border-radius:16px;padding:16px;';
+                card.innerHTML = '<p style="font-size:11px;font-weight:700;color:var(--pink);margin-bottom:6px;">'+c.type+'</p><p style="font-size:.85rem;color:var(--g900);line-height:1.75;white-space:pre-wrap;">'+c.caption.replace(/</g,'&lt;')+'</p>';
+                wrap.appendChild(card);
+            });
+            document.getElementById('welcome-loading').classList.add('hidden');
+            document.getElementById('welcome-result').classList.remove('hidden');
+        } else {
+            closeWelcomeModal();
+        }
+    } catch(e) {
+        closeWelcomeModal();
+    }
+}
+function closeWelcomeModal() {
+    document.getElementById('lumi-welcome-modal').style.display='none';
+    document.body.style.overflow='';
+    resetToInitialLanding();
+    grantAccess();
 }
 
 
