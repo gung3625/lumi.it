@@ -408,6 +408,18 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
                     <input type="text" id="store-insta-field" placeholder="lumi__it" class="inp reg-inp" oninput="clearFieldErr(this.id,'store-insta-err')">
                     <div id="store-insta-err" class="field-err hidden"></div>
                 </div>
+                <div class="reg-field">
+                    <label class="reg-lbl">업종</label>
+                    <select id="reg-bizcat-field" class="inp reg-inp" onchange="document.getElementById('reg-bizcat-direct').style.display=this.value==='other_input'?'block':'none'">
+                        <option value="cafe">☕ 카페·베이커리</option>
+                        <option value="food">🍽️ 음식점</option>
+                        <option value="beauty">💅 뷰티·케어</option>
+                        <option value="shopping">🛍️ 쇼핑·리테일</option>
+                        <option value="fitness">🏃 운동·건강</option>
+                        <option value="other_input">✏️ 직접 입력</option>
+                    </select>
+                    <input type="text" id="reg-bizcat-direct" class="inp reg-inp" style="display:none;margin-top:6px;" placeholder="업종을 입력해 주세요 (예: 타투샵)">
+                </div>
                 <button class="btn-portal" onclick="goRegStep(3)" style="margin-top:8px;">다음</button>
             </div>
 
@@ -449,7 +461,6 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
             <input type="hidden" id="jumin-back" value="">
             <input type="hidden" id="store-desc-field" value="">
             <input type="hidden" id="store-region-field" value="">
-            <input type="hidden" id="biz-cat-select" value="cafe">
             <input type="hidden" id="caption-tone-field" value="">
             <input type="hidden" id="tag-style-select" value="mid">
             <input type="hidden" id="dash-biz-cat" value="cafe">
@@ -3045,10 +3056,11 @@ async function finishLumiSignup() {
     if (!password || !pwRegex.test(password)) { showToast('비밀번호는 특수문자를 포함한 10자리 이상이어야 해요.', 'red'); return; }
     if (password !== pwConfirm) { showToast('비밀번호가 일치하지 않아요.', 'red'); return; }
 
-    bizCat = document.getElementById('biz-cat-select').value;
-    if (bizCat === 'other') {
-        const otherVal = document.getElementById('biz-cat-other')?.value.trim();
-        if (!otherVal) { showFieldErr('biz-cat-other','biz-cat-other-err','업종을 입력해 주세요.'); return; }
+    const regBizSel = document.getElementById('reg-bizcat-field');
+    bizCat = regBizSel ? regBizSel.value : document.getElementById('biz-cat-select').value;
+    if (bizCat === 'other_input') {
+        const otherVal = document.getElementById('reg-bizcat-direct')?.value.trim();
+        if (!otherVal) { showToast('업종을 입력해 주세요.', 'red'); goRegStep(2); return; }
         bizCat = otherVal;
     }
 
