@@ -300,9 +300,8 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
                 <button class="btn-portal" onclick="sendForgotOtp()">인증번호 받기</button>
             </div>
             <div id="forgot-step-2" class="hidden">
-                <input type="text" id="forgot-otp-field" placeholder="000000" class="inp inp-otp" maxlength="6" oninput="clearFieldErr(this.id,'forgot-otp-err')">
+                <input type="text" id="forgot-otp-field" placeholder="000000" class="inp inp-otp" maxlength="6" oninput="onForgotOtpInput(this)">
                 <div id="forgot-otp-err" class="field-err hidden"></div>
-                <button class="btn-portal" onclick="verifyForgotOtp()">확인</button>
                 <p style="text-align:center;margin-top:12px;font-size:13px;color:var(--g400);"><button onclick="sendForgotOtp()" style="background:none;border:none;color:var(--pink);font-size:13px;cursor:pointer;text-decoration:underline;padding:0;">재전송</button></p>
             </div>
             <div id="forgot-step-3" class="hidden">
@@ -2940,6 +2939,7 @@ async function sendForgotOtp() {
     } catch(e) { showToast('네트워크 오류가 발생했습니다.', 'red'); }
 }
 
+function onForgotOtpInput(input){clearFieldErr('forgot-otp-field','forgot-otp-err');input.value=input.value.replace(/\D/g,'');if(input.value.length===6)verifyForgotOtp();}
 async function verifyForgotOtp() {
     const email = document.getElementById('forgot-email-field').value.trim();
     const otp = document.getElementById('forgot-otp-field').value.trim();
