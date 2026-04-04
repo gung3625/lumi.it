@@ -250,6 +250,9 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
             <div id="login-email-err" class="field-err hidden"></div>
             <input type="password" id="pw-login-field" placeholder="비밀번호" class="inp" oninput="clearFieldErr(this.id,'login-pw-err')">
             <div id="login-pw-err" class="field-err hidden"></div>
+            <label style="display:flex;align-items:center;gap:6px;margin:8px 0 12px;cursor:pointer;font-size:13px;color:var(--g500);">
+                <input type="checkbox" id="save-id-chk" style="width:16px;height:16px;accent-color:var(--pink);cursor:pointer;">아이디 저장
+            </label>
             <button class="btn-portal" onclick="handleLoginAction()">로그인</button>
             <div style="display:flex;align-items:center;gap:10px;margin:16px 0 4px;">
                 <div style="flex:1;height:1px;background:var(--g100);"></div>
@@ -1141,6 +1144,8 @@ async function handleLoginAction(){
         });
         const data = await res.json();
         if(res.ok){
+            var chk=document.getElementById('save-id-chk');
+            if(chk&&chk.checked){localStorage.setItem('lumi_saved_id',email);}else{localStorage.removeItem('lumi_saved_id');}
             localStorage.setItem('lumi_user', JSON.stringify({ ...data.user, token: data.token }));
             localStorage.setItem('lumi_token', data.token);
             showToast('로그인됐어요!', 'pink');
@@ -1858,13 +1863,14 @@ function renderArchive(){
 }
 
 /* ── 포털 / 네비게이션 ── */
+function restoreSavedId(){var s=localStorage.getItem('lumi_saved_id'),f=document.getElementById('id-login-field'),c=document.getElementById('save-id-chk');if(s&&f){f.value=s;}if(c){c.checked=!!s;}}
 function setPortalMode(mode){
     const vL=document.getElementById('lumi-login-view'),vS=document.getElementById('lumi-signup-view');
     const vF=document.getElementById('lumi-forgot-view'),vFI=document.getElementById('lumi-findid-view');
     const tL=document.getElementById('tab-login-btn'),tS=document.getElementById('tab-signup-btn');
     if(vF)vF.classList.add('hidden');
     if(vFI)vFI.classList.add('hidden');
-    if(mode==='login'){vL.classList.remove('hidden');vS.classList.add('hidden');tL.classList.add('active');tS.classList.remove('active');}
+    if(mode==='login'){vL.classList.remove('hidden');vS.classList.add('hidden');tL.classList.add('active');tS.classList.remove('active');restoreSavedId();}
     else{vL.classList.add('hidden');vS.classList.remove('hidden');tL.classList.remove('active');tS.classList.add('active');goRegStep(1);navNode(1);}
 }
 function openPortal(init){
