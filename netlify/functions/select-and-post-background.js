@@ -124,6 +124,13 @@ async function sendAlimtalk(phone, text) {
 }
 
 exports.handler = async (event) => {
+  // 내부 호출 인증
+  const authHeader = (event.headers['authorization'] || '').replace('Bearer ', '');
+  if (authHeader !== process.env.LUMI_SECRET) {
+    console.error('[select-and-post] 인증 실패');
+    return { statusCode: 401 };
+  }
+
   let reservationKey = null;
   try {
     const body = JSON.parse(event.body || '{}');

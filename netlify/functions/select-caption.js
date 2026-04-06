@@ -120,7 +120,7 @@ exports.handler = async (event) => {
     const ownerEmail = email || item.storeProfile?.ownerEmail;
     const triggerRes = await fetch('https://lumi.it.kr/.netlify/functions/select-and-post-background', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.LUMI_SECRET}` },
       body: JSON.stringify({ reservationKey, captionIndex: idx, email: ownerEmail }),
     });
     console.log('[select-caption] select-and-post-background 트리거:', triggerRes.status);

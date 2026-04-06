@@ -189,7 +189,7 @@ exports.handler = async (event) => {
         try {
           const ppRes = await fetch(`${siteUrl}/.netlify/functions/process-and-post-background`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.LUMI_SECRET}` },
             body: JSON.stringify({ reservationKey: reserveKey }),
           });
           console.log('[reserve] process-and-post-background 트리거:', ppRes.status);
