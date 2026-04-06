@@ -75,21 +75,25 @@ async function postToInstagram(item, caption, imageUrls) {
     postId = pData.id;
   }
 
-  // 스토리 비동기
+  // 스토리 — 유저 액세스 토큰만 사용 (pageAccessToken은 스토리 권한 없음)
   if (item.storyEnabled && imageUrls[0]) {
     try {
+      const storyToken = item.igAccessToken; // 유저 토큰 명시적 사용
+      await sleep(3000); // 피드 게시 후 잠시 대기
       const sRes = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ image_url: imageUrls[0], media_type: 'STORIES', access_token: igAccessToken }),
+        body: new URLSearchParams({ image_url: imageUrls[0], media_type: 'STORIES', access_token: storyToken }),
       });
       const sData = await sRes.json();
-      if (!sData.error) {
-        await sleep(3000);
-        await publishMedia(igUserId, igAccessToken, sData.id);
+      if (sData.error) {
+        console.error('[select-and-post] 스토리 컨테이너 생성 실패:', JSON.stringify(sData.error));
+      } else {
+        await sleep(5000);
+        await publishMedia(igUserId, storyToken, sData.id);
         console.log('[select-and-post] 스토리 게시 완료');
       }
-    } catch (e) { console.error('[select-and-post] 스토리 실패:', e.message); }
+    } catch (e) { console.error('[select-and-post] 스토리 예외:', e.message); }
   }
 
   return postId;
