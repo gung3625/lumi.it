@@ -430,6 +430,13 @@ async function cleanupTempImages(tempKeys) {
 
 // ── 메인 핸들러 (Background Function — export default 최신 문법) ──
 exports.handler = async (event) => {
+  // 내부 호출 인증 (scheduler → background)
+  const authHeader = (event.headers['authorization'] || '').replace('Bearer ', '');
+  if (authHeader !== process.env.LUMI_SECRET) {
+    console.error('[process-and-post] 인증 실패');
+    return { statusCode: 401 };
+  }
+
   let reservationKey = null;
 
   try {

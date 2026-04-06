@@ -1,7 +1,7 @@
 const { getStore } = require('@netlify/blobs');
 const crypto = require('crypto');
 
-const SITE_ID = process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc';
+const SITE_ID = process.env.NETLIFY_SITE_ID;
 const NETLIFY_TOKEN = process.env.NETLIFY_TOKEN;
 
 const TEST_IG_USER_ID = process.env.TEST_IG_USER_ID || '';

@@ -3,7 +3,7 @@ const { getStore } = require('@netlify/blobs');
 const APP_ID = process.env.META_APP_ID || '1233639725586126';
 const APP_SECRET = process.env.META_APP_SECRET;
 const REDIRECT_URI = 'https://lumi.it.kr/.netlify/functions/ig-oauth';
-const SITE_ID = process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc';
+const SITE_ID = process.env.NETLIFY_SITE_ID;
 const NETLIFY_TOKEN = process.env.NETLIFY_TOKEN;
 
 exports.handler = async (event) => {

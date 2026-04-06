@@ -35,7 +35,7 @@ exports.handler = async (event) => {
         const siteUrl = 'https://lumi.it.kr';
         const res = await fetch(`${siteUrl}/.netlify/functions/process-and-post-background`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.LUMI_SECRET}` },
           body: JSON.stringify({ reservationKey: blob.key }),
         });
 

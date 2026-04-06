@@ -26,7 +26,7 @@ exports.handler = async (event) => {
   if (!email) return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '이메일이 필요합니다.' }) };
 
   try {
-    const store = getStore({ name: 'users', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
+    const store = getStore({ name: 'users', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID, token: process.env.NETLIFY_TOKEN });
     let raw;
     try { raw = await store.get('user:' + email); } catch(e) { raw = null; }
     if (!raw) return { statusCode: 404, headers: CORS, body: JSON.stringify({ error: '사용자를 찾을 수 없습니다.' }) };
@@ -35,7 +35,7 @@ exports.handler = async (event) => {
     const now = new Date();
     const thisMonth = now.getFullYear() + '-' + (now.getMonth() + 1);
     const postCount = user.postCountMonth === thisMonth ? (user.postCount || 0) : 0;
-    const limits = { trial: 3, standard: 16, pro: 20 };
+    const limits = { trial: 3, basic: 8, standard: 16, pro: 20 };
     // 대표님 계정 - 프로 플랜 전체 기능 사용
     const ADMIN_EMAIL = 'gung3625@gmail.com';
     const isAdmin = email === ADMIN_EMAIL;
