@@ -25,7 +25,7 @@ exports.handler = async (event) => {
   }
 
   try {
-    const store = getStore({ name: 'orders', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID, token: process.env.NETLIFY_TOKEN });
+    const store = getStore({ name: 'orders', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
 
     // 주문 정보 조회
     let raw;
@@ -72,7 +72,7 @@ exports.handler = async (event) => {
     await store.set('order:' + orderId, JSON.stringify(order));
 
     // 회원 플랜 업데이트
-    const userStore = getStore({ name: 'users', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID, token: process.env.NETLIFY_TOKEN });
+    const userStore = getStore({ name: 'users', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
     let userRaw;
     try { userRaw = await userStore.get('user:' + order.email); } catch { userRaw = null; }
 

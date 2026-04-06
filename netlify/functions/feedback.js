@@ -25,7 +25,7 @@ exports.handler = async (event) => {
     const usersStore = getStore({
       name: 'users',
       consistency: 'strong',
-      siteID: process.env.NETLIFY_SITE_ID,
+      siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
       token: process.env.NETLIFY_TOKEN,
     });
 
@@ -48,7 +48,7 @@ exports.handler = async (event) => {
     const feedbackStore = getStore({
       name: 'feedback',
       consistency: 'strong',
-      siteID: process.env.NETLIFY_SITE_ID,
+      siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
       token: process.env.NETLIFY_TOKEN,
     });
 
