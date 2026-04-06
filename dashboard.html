@@ -55,8 +55,22 @@ body.dark-mode #ig-connected-badge .ig-ok-disconnect:hover{background:#2D1F1F;}
 body.dark-mode .weather-card{background:var(--white);border-color:var(--g200);}
 body.dark-mode select.inp,body.dark-mode .inp{background:var(--g100);border-color:var(--g200);color:var(--g900);}
 body.dark-mode .inp:focus{background:var(--white);}
+body.dark-mode .inp::placeholder{color:var(--g500);}
+body.dark-mode .inp.err{background:rgba(229,62,62,.1)!important;border-color:#E53E3E!important;}
 body.dark-mode .keyword-row .inp-sm{background:var(--g100);border-color:var(--g200);color:var(--g900);}
 body.dark-mode .keyword-row .inp-sm::placeholder{color:var(--g500);}
+body.dark-mode .keyword-row .btn-del{background:var(--g200);color:var(--g500);}
+body.dark-mode .dash-note{background:var(--g100);border-color:var(--g200);color:var(--g900);}
+body.dark-mode .dash-note::placeholder{color:var(--g500);}
+body.dark-mode .dash-note:focus{background:var(--white);}
+body.dark-mode .auto-reply-card{background:var(--g100);border-color:var(--g200);}
+body.dark-mode .tone-card{background:var(--g100);border-color:var(--g200);}
+body.dark-mode .tone-card.selected{background:var(--pink-ultra);border-color:var(--pink);}
+body.dark-mode .lp-item{background:var(--g100);border-color:var(--g200);}
+body.dark-mode .lp-icon-btn{background:var(--g200);border-color:var(--g200);}
+body.dark-mode .lp-emoji-pop{background:var(--g100);border-color:var(--g200);}
+body.dark-mode #fb-category,body.dark-mode #fb-message{background:var(--g100)!important;border-color:var(--g200)!important;color:var(--g900)!important;}
+body.dark-mode #fb-message::placeholder{color:var(--g500)!important;}
 body.dark-mode .prev-thumb-del{background:#cc3333;border-color:var(--white);}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased;word-break:keep-all;}
 html{scroll-behavior:smooth;overflow-x:hidden;}
@@ -623,7 +637,7 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
                     <p style="font-size:12px;font-weight:700;color:var(--pink);margin-bottom:4px;">✍️ 커스텀 말투 학습 <span style="font-weight:400;color:var(--g400);font-size:11px;">(선택, 최대 5개)</span></p>
                     <p style="font-size:11px;color:var(--g500);line-height:1.6;margin-bottom:10px;">직접 작성했거나 마음에 드는 캡션을 입력하면, lumi가 비슷한 스타일로 써드려요.</p>
                     <div id="custom-caption-list"></div>
-                    <button onclick="addCustomCaption()" style="width:100%;height:38px;background:#fff;border:1.5px dashed var(--pink-soft);border-radius:8px;font-size:.8rem;font-weight:600;color:var(--pink);cursor:pointer;font-family:inherit;margin-top:6px;">+ 캡션 샘플 추가</button>
+                    <button onclick="addCustomCaption()" style="width:100%;height:38px;background:var(--white);border:1.5px dashed var(--pink-soft);border-radius:8px;font-size:.8rem;font-weight:600;color:var(--pink);cursor:pointer;font-family:inherit;margin-top:6px;">+ 캡션 샘플 추가</button>
                 </div>
 
                 <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:6px;">해시태그 개수</p>
@@ -2210,7 +2224,7 @@ function showCaptionWaiting(reservationKey) {
         <p id="caption-auto-post-notice" style="font-size:12px;color:var(--pink);margin:0 0 16px;line-height:1.5;">⏰ 선택하지 않으면 <strong>30분 후</strong> 첫 번째 캡션으로 자동 게시돼요.</p>
         <div id="caption-list" style="display:flex;flex-direction:column;gap:12px;"></div>
         <div style="margin-top:16px;">
-          <button id="regen-btn" onclick="regenerateCaption('${reservationKey}')" style="width:100%;padding:12px;border:2px solid #FF2D8A;background:#fff;color:var(--pink);font-size:14px;font-weight:600;border-radius:12px;cursor:pointer;font-family:inherit;">다시 생성</button>
+          <button id="regen-btn" onclick="regenerateCaption('${reservationKey}')" style="width:100%;padding:12px;border:2px solid #FF2D8A;background:var(--white);color:var(--pink);font-size:14px;font-weight:600;border-radius:12px;cursor:pointer;font-family:inherit;">다시 생성</button>
           <p id="regen-count" style="font-size:12px;color:#aaa;text-align:center;margin:6px 0 0;"></p>
         </div>
         <button id="cancel-reserve-btn" onclick="cancelCurrentReservation('${reservationKey}')" style="width:100%;margin-top:10px;padding:12px;background:none;border:1.5px solid #ddd;color:#888;font-size:13px;font-weight:600;border-radius:12px;cursor:pointer;font-family:inherit;">이 게시물 취소</button>
@@ -3732,7 +3746,7 @@ async function openRelayEdit(reservationKey) {
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
                     <span style="font-size:12px;font-weight:600;color:var(--pink);">버전 ${i+1}</span>
                     <div style="display:flex;gap:6px;">
-                        <button data-key="${safeKey}" data-idx="${i}" onclick="saveRelayCaption(this.dataset.key,+this.dataset.idx)" style="background:#fff;border:1.5px solid #FF2D8A;color:var(--pink);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">저장</button>
+                        <button data-key="${safeKey}" data-idx="${i}" onclick="saveRelayCaption(this.dataset.key,+this.dataset.idx)" style="background:var(--white);border:1.5px solid #FF2D8A;color:var(--pink);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">저장</button>
                         <button data-key="${safeKey}" data-idx="${i}" onclick="postRelayCaption(this.dataset.key,+this.dataset.idx)" style="background:#FF2D8A;color:#fff;border:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">이걸로 올리기</button>
                     </div>
                 </div>
