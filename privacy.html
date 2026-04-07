@@ -9,15 +9,17 @@
     <style>
 html::-webkit-scrollbar,body::-webkit-scrollbar,*::-webkit-scrollbar{display:none;}html,body,*{scrollbar-width:none;}
         :root {
-            --pink: #FF2D8A;
-            --g900: #191F28;
-            --g700: #333D4B;
-            --g500: #6B7684;
-            --g200: #F0E4EA;
-            --g100: #FFF3F7;
-            --g50: #FFF6F9;
-            --white: #FFF9FB;
-        }
+  --pink:#C8507A;--accent:#C8507A;
+  --bg:#000000;--surface-2:#272729;
+  --text:#f5f5f7;--text-80:rgba(255,255,255,.8);--text-48:rgba(255,255,255,.48);
+  --nav-bg:rgba(0,0,0,.88);
+  --light-bg:#f5f5f7;--light-surface:#ffffff;--light-text:#1d1d1f;
+  --light-text-80:rgba(0,0,0,.8);--light-text-48:rgba(0,0,0,.48);
+  --light-divider:#d2d2d7;
+  --shadow-card:rgba(0,0,0,.5) 3px 5px 30px 0px;
+  --light-shadow:rgba(0,0,0,.22) 3px 5px 30px 0px;
+  --r-full:980px;--ease:cubic-bezier(0.16,1,0.3,1);
+}
         body.dark-mode{
             --g900:#F2F4F6;--g700:#D1D5DB;--g500:#9CA3AF;--g400:#6B7684;
             --g200:#2D3748;--g100:#1E2533;--g50:#151B26;--white:#1A202C;
@@ -30,7 +32,7 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,*::-webkit-scrollbar{display:non
         .dark-toggle-fab:active{transform:scale(.95);}
         body.dark-mode .dark-toggle-fab{background:#fff;color:#191F28;box-shadow:0 4px 16px rgba(0,0,0,.15);}
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Pretendard Variable', 'Pretendard', 'Noto Sans KR', sans-serif; background: var(--white); color: var(--g700); line-height: 1.8; font-size: 15px; }
+        body { font-family: 'Pretendard Variable', 'Pretendard', 'Noto Sans KR', sans-serif; background: var(--white); color: var(--g700); line-height: 1.8; font-size:17px; }
         nav { position: sticky; top: 0; background: rgba(255,255,255,.95); backdrop-filter: blur(20px); border-bottom: 1px solid var(--g100); padding: 0 24px; height: 60px; display: flex; align-items: center; justify-content: center; z-index: 100; }
         .nav-inner{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:900px;}
         .nav-logo-wrap{display:flex;align-items:center;gap:6px;cursor:pointer;text-decoration:none;}
@@ -241,8 +243,16 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,*::-webkit-scrollbar{display:non
     </ul>
 </div>
 
-<footer>
-    © 2026 lumi (루미) · 사업자등록번호 404-09-66416 · 대표 김현
+<!-- FOOTER -->
+<footer style="background:#000000;border-top:1px solid rgba(255,255,255,.07);padding:48px 32px 32px;">
+  <div style="max-width:980px;margin:0 auto;display:flex;justify-content:space-between;align-items:flex-start;gap:32px;flex-wrap:wrap;">
+    <div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;"><img src="/assets/logo.png" style="height:28px;opacity:.7;filter:brightness(10) grayscale(1);" alt="lumi"><span style="font-size:17px;font-weight:600;letter-spacing:-0.28px;color:rgba(255,255,255,.48);">lumi</span></div>
+      <p style="font-size:12px;color:rgba(255,255,255,.48);line-height:2.2;opacity:.6;">상호명: 루미 (lumi) · 대표자: 김현<br>사업자 등록번호: 404-09-66416 · 업태: 정보통신업<br>서울특별시 용산구 회나무로 32-7 (이태원동)<br>통신판매업 신고번호: 제2024-서울용산-1166호 · 이메일: gung3625@gmail.com</p>
+    </div>
+    <div style="display:flex;gap:20px;"><a href="/terms" style="font-size:14px;color:rgba(255,255,255,.48);text-decoration:none;">이용약관</a><a href="/privacy" style="font-size:14px;color:rgba(255,255,255,.48);text-decoration:none;">개인정보 처리방침</a><a href="/support" style="font-size:14px;color:rgba(255,255,255,.48);text-decoration:none;">고객센터</a></div>
+  </div>
+  <p style="font-size:12px;color:rgba(255,255,255,.48);text-align:center;margin-top:32px;padding-top:24px;border-top:1px solid rgba(255,255,255,.07);opacity:.5;">© 2026 lumi (루미) · 대표 김현</p>
 </footer>
 <button class="dark-toggle-fab" id="dark-toggle-fab" onclick="toggleDarkMode(!document.body.classList.contains('dark-mode'))" aria-label="다크모드 전환">☀️</button>
 <script>
