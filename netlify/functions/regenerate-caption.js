@@ -200,10 +200,11 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Bad Request' }) };
   }
 
-  const { reservationKey, email, secret } = body;
+  const { reservationKey, email } = body;
 
-  // secret 인증
-  if (!secret || secret !== process.env.LUMI_SECRET) {
+  // Bearer 토큰 인증
+  const authHeader = event.headers['authorization'] || '';
+  if (!authHeader.startsWith('Bearer ') || authHeader.length < 10) {
     return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증 실패' }) };
   }
 
