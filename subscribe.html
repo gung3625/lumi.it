@@ -5,47 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>구독 시작 — lumi</title>
     <link href="https://fonts.googleapis.com/css2?family=Pretendard+Variable:wght@400;500;600;700;800;900&family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.portone.io/v2/browser-sdk.js"></script>
     <style>
 html::-webkit-scrollbar,body::-webkit-scrollbar,*::-webkit-scrollbar{display:none;}html,body,*{scrollbar-width:none;}
         :root {
-            --pink: #FF2D8A; --pink-light: #F0849E; --pink-soft: #FADCE6;
-            --pink-pale: #FFF0F6; --pink-ultra: #FFF7FB;
-            --g900: #191F28; --g700: #333D4B; --g500: #6B7684;
-            --g400: #8B95A1; --g200: #F0E4EA; --g100: #FFF3F7; --g50: #FFF6F9;
-            --white: #FFF9FB;
+            --pink: #C8507A; --pink-light: #D4758F; --pink-soft: rgba(200,80,122,.15);
+            --pink-pale: rgba(200,80,122,.08); --pink-ultra: rgba(200,80,122,.04);
+            --g900: #ffffff; --g700: rgba(255,255,255,.8); --g500: rgba(255,255,255,.5);
+            --g400: rgba(255,255,255,.4); --g200: rgba(255,255,255,.08); --g100: rgba(255,255,255,.06); --g50: #000000;
+            --white: rgba(255,255,255,.04);
             --ease: cubic-bezier(0.16,1,0.3,1);
         }
-        body.dark-mode{
-            --g900:#F2F4F6;--g700:#D1D5DB;--g500:#9CA3AF;--g400:#6B7684;
-            --g200:#2D3748;--g100:#1E2533;--g50:#151B26;--white:#1A202C;
-            --pink-pale:#2D1F2B;--pink-ultra:#1F1923;--pink-soft:#3D2536;
-        }
-        body.dark-mode nav{background:rgba(26,32,44,.94)!important;border-bottom-color:var(--g200)!important;}
-        body.dark-mode .toast{background:var(--g200);color:var(--g700);}
-        body.dark-mode input,body.dark-mode select,body.dark-mode textarea{background:var(--g100);border-color:var(--g200);color:var(--g900);}
-        body.dark-mode input::placeholder,body.dark-mode textarea::placeholder{color:var(--g500);}
-        .dark-toggle-fab{position:fixed;right:16px;bottom:calc(24px + env(safe-area-inset-bottom, 0px));z-index:9999;width:44px;height:44px;border-radius:50%;border:none;background:#191F28;color:#fff;font-size:1.1rem;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;transition:all .3s;-webkit-tap-highlight-color:transparent;}
-        .dark-toggle-fab:active{transform:scale(.95);}
-        body.dark-mode .dark-toggle-fab{background:#fff;color:#191F28;box-shadow:0 4px 16px rgba(0,0,0,.15);}
         *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased;word-break:keep-all;}
         body{font-family:'Pretendard Variable','Noto Sans KR',sans-serif;background:var(--g50);color:var(--g700);min-height:100vh;}
-        nav{position:sticky;top:0;background:rgba(255,255,255,.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--g100);padding:0 24px;height:60px;display:flex;align-items:center;justify-content:center;z-index:100;}
+        nav{position:sticky;top:0;background:rgba(0,0,0,.8);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border-bottom:1px solid rgba(255,255,255,.08);padding:0 24px;height:60px;display:flex;align-items:center;justify-content:center;z-index:100;}
         .nav-inner{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:900px;}
         .nav-logo-wrap{display:flex;align-items:center;gap:6px;cursor:pointer;text-decoration:none;}
         .nav-logo{height:44px;width:44px;object-fit:cover;border-radius:50%;}
-        .nav-logo-txt{font-size:22px;font-weight:800;color:var(--g900);letter-spacing:-.5px;}
-        body.dark-mode .nav-logo{filter:brightness(1.4) contrast(1.1);}
-        body.dark-mode .nav-logo-txt{color:#F2F4F6;}
-        .nav-back{font-size:14px;font-weight:600;color:var(--g500);text-decoration:none;transition:color .2s;}
-        .nav-back:hover{color:var(--g900);}
+        .nav-logo-txt{font-size:22px;font-weight:800;color:#ffffff;letter-spacing:-.5px;}
+        .nav-back{font-size:14px;font-weight:600;color:rgba(255,255,255,.5);text-decoration:none;transition:color .2s;}
+        .nav-back:hover{color:#ffffff;}
         .page{max-width:560px;margin:0 auto;padding:48px 24px 100px;}
         @keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
         .page-title{font-size:1.6rem;font-weight:900;color:var(--g900);letter-spacing:-.03em;margin-bottom:6px;animation:fadeUp .5s var(--ease);}
         .page-sub{font-size:.88rem;color:var(--g400);margin-bottom:32px;animation:fadeUp .5s var(--ease) .05s both;}
 
         /* 플랜 카드 */
-        .plan-card{background:var(--white);border-radius:20px;border:2px solid var(--pink);padding:28px 24px;margin-bottom:16px;position:relative;box-shadow:0 8px 32px rgba(255,45,138,.12);animation:fadeUp .5s var(--ease) .1s both;}
+        .plan-card{background:var(--white);border-radius:20px;border:2px solid var(--pink);padding:28px 24px;margin-bottom:16px;position:relative;box-shadow:0 8px 32px rgba(200,80,122,.12);animation:fadeUp .5s var(--ease) .1s both;}
         .plan-badge{position:absolute;top:-12px;left:20px;background:var(--pink);color:#fff;font-size:11px;font-weight:800;padding:4px 14px;border-radius:99px;}
         .plan-name{font-size:.85rem;font-weight:700;color:var(--g500);margin-bottom:8px;}
         .plan-price{display:flex;align-items:baseline;gap:4px;margin-bottom:4px;}
@@ -58,11 +45,11 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,*::-webkit-scrollbar{display:non
         .plan-feat{display:flex;align-items:center;gap:10px;font-size:.85rem;color:var(--g700);}
         .feat-check{width:18px;height:18px;border-radius:50%;background:var(--pink-pale);color:var(--pink);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;font-weight:900;}
         .plan-options{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px;animation:fadeUp .5s var(--ease) .1s both;}
-        .plan-option{background:var(--white);border-radius:16px;border:2px solid var(--g200);padding:20px 16px;text-align:center;cursor:pointer;transition:all .2s;position:relative;}
-        .plan-option:hover{border-color:var(--pink-soft);}
-        .plan-option.selected{border-color:var(--pink);background:var(--pink-ultra);box-shadow:0 4px 20px rgba(255,45,138,.15);}
-        .plan-opt-badge{position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--pink);color:#fff;font-size:11px;font-weight:800;padding:2px 12px;border-radius:99px;white-space:nowrap;}
-        .plan-opt-badge.best{background:var(--g900);}
+        .plan-option{background:rgba(255,255,255,.04);border-radius:16px;border:1px solid rgba(255,255,255,.08);padding:20px 16px;text-align:center;cursor:pointer;transition:all .2s;position:relative;}
+        .plan-option:hover{border-color:rgba(255,255,255,.15);}
+        .plan-option.selected{border-color:#C8507A;background:rgba(200,80,122,.08);box-shadow:none;}
+        .plan-opt-badge{position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:#C8507A;color:#fff;font-size:11px;font-weight:800;padding:2px 12px;border-radius:99px;white-space:nowrap;}
+        .plan-opt-badge.best{background:#ffffff;color:#000000;}
         .plan-opt-name{font-size:.85rem;font-weight:700;color:var(--g500);margin-bottom:8px;}
         .plan-opt-num{font-size:1.5rem;font-weight:900;color:var(--g900);letter-spacing:-.03em;}
         .plan-opt-unit{font-size:.75rem;color:var(--g400);margin-left:2px;}
@@ -73,13 +60,13 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,*::-webkit-scrollbar{display:non
         /* 결제 수단 */
         .section-title{font-size:.8rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--g400);margin-bottom:12px;margin-top:28px;}
         .pay-methods{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
-        .pay-method{padding:14px;border:1.5px solid var(--g200);border-radius:12px;background:var(--white);font-size:.85rem;font-weight:700;color:var(--g700);cursor:pointer;text-align:center;transition:all .2s;}
-        .pay-method:hover{border-color:var(--pink-soft);}
-        .pay-method.active{border-color:var(--pink);background:var(--pink-pale);color:var(--pink);}
+        .pay-method{padding:14px;border:1px solid rgba(255,255,255,.08);border-radius:12px;background:rgba(255,255,255,.04);font-size:.85rem;font-weight:700;color:var(--g700);cursor:pointer;text-align:center;transition:all .2s;}
+        .pay-method:hover{border-color:rgba(255,255,255,.15);}
+        .pay-method.active{border-color:#C8507A;background:rgba(200,80,122,.08);color:#C8507A;}
         .pay-method-icon{font-size:1.2rem;margin-bottom:4px;}
 
         /* 약관 동의 */
-        .agree-wrap{background:var(--white);border-radius:14px;padding:18px 20px;margin-top:16px;border:1.5px solid var(--g200);animation:fadeUp .5s var(--ease) .2s both;}
+        .agree-wrap{background:rgba(255,255,255,.04);border-radius:14px;padding:18px 20px;margin-top:16px;border:1px solid rgba(255,255,255,.08);animation:fadeUp .5s var(--ease) .2s both;}
         .agree-all{display:flex;align-items:center;gap:10px;cursor:pointer;padding-bottom:12px;border-bottom:1px solid var(--g100);margin-bottom:12px;}
         .agree-all span{font-size:.9rem;font-weight:800;color:var(--g900);}
         .agree-items{display:flex;flex-direction:column;gap:8px;}
@@ -90,22 +77,22 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,*::-webkit-scrollbar{display:non
         .agree-item,.agree-all{min-height:44px;}
 
         /* 무료체험 안내 */
-        .trial-banner{background:linear-gradient(135deg,var(--pink-pale) 0%,var(--pink-ultra) 100%);border:1.5px solid var(--pink-soft);border-radius:14px;padding:16px 20px;margin-top:16px;display:flex;align-items:center;gap:14px;animation:fadeUp .5s var(--ease) .15s both;}
+        .trial-banner{background:rgba(200,80,122,.06);border:1px solid rgba(200,80,122,.12);border-radius:14px;padding:16px 20px;margin-top:16px;display:flex;align-items:center;gap:14px;animation:fadeUp .5s var(--ease) .15s both;}
         .trial-icon{font-size:1.8rem;flex-shrink:0;}
         .trial-title{font-size:.88rem;font-weight:800;color:var(--g900);margin-bottom:2px;}
         .trial-desc{font-size:.78rem;color:var(--g500);line-height:1.6;}
 
         /* CTA 버튼 */
         .cta-wrap{margin-top:24px;animation:fadeUp .5s var(--ease) .25s both;}
-        .btn-pay{width:100%;padding:16px;border:none;background:var(--pink);color:#fff;font-size:16px;font-weight:800;border-radius:14px;cursor:pointer;font-family:inherit;transition:all .25s var(--ease);box-shadow:0 6px 24px rgba(255,45,138,.3);letter-spacing:-.01em;}
-        .btn-pay:hover{background:var(--pink-light);transform:translateY(-2px);box-shadow:0 10px 32px rgba(255,45,138,.4);}
+        .btn-pay{width:100%;padding:16px;border:none;background:#C8507A;color:#fff;font-size:16px;font-weight:800;border-radius:980px;cursor:pointer;font-family:inherit;transition:all .25s var(--ease);box-shadow:0 6px 24px rgba(200,80,122,.3);letter-spacing:-.01em;}
+        .btn-pay:hover{background:var(--pink-light);transform:translateY(-2px);box-shadow:0 10px 32px rgba(200,80,122,.4);}
         .btn-pay:active{transform:scale(.98);}
         .btn-pay:disabled{background:var(--g200);color:var(--g400);box-shadow:none;transform:none;cursor:not-allowed;}
         .cta-note{text-align:center;font-size:.75rem;color:var(--g400);margin-top:10px;line-height:1.6;}
 
         /* 에러/성공 */
         .field-err{font-size:12px;font-weight:600;color:#E53E3E;margin:6px 0 0 4px;}
-        .toast{position:fixed;bottom:calc(32px + env(safe-area-inset-bottom, 0px));left:50%;transform:translateX(-50%) translateY(16px);background:var(--g900);color:#fff;padding:12px 24px;border-radius:99px;font-size:13px;font-weight:600;z-index:9999;opacity:0;transition:all .35s var(--ease);pointer-events:none;white-space:nowrap;}
+        .toast{position:fixed;bottom:calc(32px + env(safe-area-inset-bottom, 0px));left:50%;transform:translateX(-50%) translateY(16px);background:rgba(255,255,255,.1);color:#fff;padding:12px 24px;border-radius:99px;font-size:13px;font-weight:600;z-index:9999;opacity:0;transition:all .35s var(--ease);pointer-events:none;white-space:nowrap;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);}
         .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
         .toast.pink{background:var(--pink);}
     </style>
@@ -142,7 +129,7 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,*::-webkit-scrollbar{display:non
 
     <!-- 갱신 알림 배너 -->
     <div class="trial-banner">
-        <div class="trial-icon">🎁</div>
+        <div class="trial-icon"><i data-lucide="gift" style="width:28px;height:28px;color:var(--pink);"></i></div>
         <div>
             <div class="trial-title">만료 전 갱신 알림</div>
             <div class="trial-desc">플랜 만료 7일 전에 이메일로 알려드려요.<br>자동 결제 없이, 원할 때만 갱신하세요.</div>
@@ -153,10 +140,10 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,*::-webkit-scrollbar{display:non
     <div class="section-title">결제 수단</div>
     <div class="pay-methods">
         <div class="pay-method active" data-method="CARD" onclick="selectMethod(this)">
-            <div class="pay-method-icon">💳</div>신용/체크카드
+            <div class="pay-method-icon"><i data-lucide="credit-card" style="width:20px;height:20px;"></i></div>신용/체크카드
         </div>
         <div class="pay-method" data-method="EASY_PAY" onclick="selectMethod(this)">
-            <div class="pay-method-icon">📱</div>간편결제
+            <div class="pay-method-icon"><i data-lucide="smartphone" style="width:20px;height:20px;"></i></div>간편결제
         </div>
     </div>
 
@@ -324,11 +311,6 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,*::-webkit-scrollbar{display:non
         }
     }
 </script>
-<button class="dark-toggle-fab" id="dark-toggle-fab" onclick="toggleDarkMode(!document.body.classList.contains('dark-mode'))" aria-label="다크모드 전환">☀️</button>
-<script>
-if(localStorage.getItem('lumi_dark_mode')!=='0')document.body.classList.add('dark-mode');
-function toggleDarkMode(on){document.body.classList.toggle('dark-mode',on);localStorage.setItem('lumi_dark_mode',on?'1':'0');var f=document.getElementById('dark-toggle-fab');if(f)f.textContent=on?'☀️':'🌙';}
-(function(){var f=document.getElementById('dark-toggle-fab');if(f&&document.body.classList.contains('dark-mode'))f.textContent='☀️';})();
-</script>
+<script>if(typeof lucide!=='undefined')lucide.createIcons();</script>
 </body>
 </html>
