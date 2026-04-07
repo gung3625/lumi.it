@@ -406,7 +406,71 @@ footer { background:#000000; border-top:1px solid rgba(255,255,255,.07); padding
 .sticky-cta { position:fixed; bottom:0; left:0; width:100%; padding:10px 20px calc(10px + env(safe-area-inset-bottom,0px)); background:rgba(0,0,0,.88); backdrop-filter:saturate(180%) blur(20px); border-top:1px solid rgba(255,255,255,.07); z-index:800; display:none; text-align:center; }
 .sticky-cta a { display:block; padding:8px 22px; background:var(--accent); color:#fff; font-size:17px; font-weight:400; letter-spacing:-0.374px; border-radius:980px; text-decoration:none; transition:opacity .15s; }
 .sticky-cta a:hover { opacity:.88; }
-.dark-toggle-fab { display:none!important; }
+/* ── 라이트모드 오버라이드 ── */
+body.light-mode {
+  --bg: #f5f5f7;
+  --surface-1: #ffffff;
+  --surface-2: #ffffff;
+  --surface-3: #f0f0f2;
+  --surface-5: #f5f5f7;
+  --nav-bg: rgba(255,255,255,0.85);
+  --text: #1d1d1f;
+  --text-80: rgba(0,0,0,0.8);
+  --text-48: rgba(0,0,0,0.48);
+  --shadow-card: rgba(0,0,0,0.12) 3px 5px 30px 0px;
+}
+body.light-mode .hero { background:#f5f5f7; }
+body.light-mode .hero-title { color:#1d1d1f; }
+body.light-mode .hero-chip { background:rgba(0,0,0,.04); border-color:rgba(0,0,0,.1); color:var(--accent); }
+body.light-mode .chip-dot { background:var(--accent); }
+body.light-mode .hero-desc { color:rgba(0,0,0,.8); }
+body.light-mode .btn-outline { color:var(--accent); border-color:var(--accent); }
+body.light-mode .phone { background:#e8e8ed; box-shadow:0 40px 80px rgba(0,0,0,.15),0 0 0 1px rgba(0,0,0,.06) inset; }
+body.light-mode .metrics-strip { background:#f5f5f7; border-color:rgba(0,0,0,.08); }
+body.light-mode .metric-num { color:#1d1d1f; }
+body.light-mode .feat-sec { background:#f5f5f7; }
+body.light-mode .feat-card { background:#ffffff; }
+body.light-mode .feat-name { color:#1d1d1f; }
+body.light-mode .feat-desc { color:rgba(0,0,0,.8); }
+body.light-mode .sec-title-dark { color:#1d1d1f; }
+body.light-mode .sec-label-dark { color:rgba(0,0,0,.48); }
+body.light-mode .more-btn { color:rgba(0,0,0,.48); border-color:rgba(0,0,0,.2); }
+body.light-mode .price-sec { background:#f5f5f7; }
+body.light-mode .price-col { background:#ffffff; }
+body.light-mode .price-col.highlight { background:#f0f0f2; }
+body.light-mode .price-amount { color:#1d1d1f; }
+body.light-mode .price-list li { color:rgba(0,0,0,.8); border-color:rgba(0,0,0,.08); }
+body.light-mode .btn-outline[style*="rgba(255,255,255"] { color:rgba(0,0,0,.6); border-color:rgba(0,0,0,.2); }
+body.light-mode .cta-sec { background:#f5f5f7; }
+body.light-mode .cta-box { background:#ffffff; }
+body.light-mode .cta-box h2 { color:#1d1d1f; }
+body.light-mode .cta-box p { color:rgba(0,0,0,.48); }
+body.light-mode .faq-sec { background:#f5f5f7; }
+body.light-mode .faq-title { color:#1d1d1f; }
+body.light-mode .faq-q { color:#1d1d1f; }
+body.light-mode .faq-item { border-color:rgba(0,0,0,.1); }
+body.light-mode .faq-a { color:rgba(0,0,0,.8); }
+body.light-mode footer { background:#f5f5f7; border-color:rgba(0,0,0,.1); }
+body.light-mode .footer-copy { border-color:rgba(0,0,0,.1); }
+body.light-mode nav { color:#1d1d1f; }
+body.light-mode .nav-logo-txt { color:#1d1d1f; }
+body.light-mode .nav-link { color:rgba(0,0,0,.8); }
+body.light-mode .nav-link:hover { color:#1d1d1f; background:rgba(0,0,0,.06); }
+body.light-mode .sticky-cta { background:rgba(255,255,255,.88); border-color:rgba(0,0,0,.1); }
+
+/* ── 다크모드 토글 버튼 ── */
+.dark-toggle-fab {
+  position:fixed; right:16px; bottom:calc(24px + env(safe-area-inset-bottom,0px));
+  z-index:9999; width:44px; height:44px; border-radius:50%;
+  border:1px solid rgba(255,255,255,.15); background:rgba(0,0,0,.6);
+  backdrop-filter:blur(12px); color:#fff; font-size:18px; cursor:pointer;
+  box-shadow:0 4px 20px rgba(0,0,0,.3); display:flex; align-items:center; justify-content:center;
+  transition:all .3s var(--ease); -webkit-tap-highlight-color:transparent; font-family:inherit;
+}
+.dark-toggle-fab:hover { transform:scale(1.1); }
+.dark-toggle-fab:active { transform:scale(.95); }
+body.light-mode .dark-toggle-fab { background:rgba(255,255,255,.8); border-color:rgba(0,0,0,.1); color:#1d1d1f; }
+@media(max-width:768px){ .dark-toggle-fab { bottom:calc(72px + env(safe-area-inset-bottom,0px)); } }
 
 /* ── RESPONSIVE ── */
 @media(max-width:768px){
@@ -831,7 +895,24 @@ footer { background:#000000; border-top:1px solid rgba(255,255,255,.07); padding
 
 <div class="sticky-cta"><a href="/beta">무료 테스터 신청하기</a></div>
 
+<button class="dark-toggle-fab" id="dark-toggle-fab" aria-label="다크/라이트모드 전환"></button>
+
 <script>
+// 다크모드 초기화
+(function(){
+  var isDark = localStorage.getItem('lumi_dark_mode') !== '0';
+  if(!isDark) document.body.classList.add('light-mode');
+  var f = document.getElementById('dark-toggle-fab');
+  if(f) f.textContent = isDark ? '☀' : '☾';
+})();
+
+function toggleDarkMode(){
+  var isLight = document.body.classList.toggle('light-mode');
+  localStorage.setItem('lumi_dark_mode', isLight ? '0' : '1');
+  var f = document.getElementById('dark-toggle-fab');
+  if(f) f.textContent = isLight ? '☾' : '☀';
+}
+document.getElementById('dark-toggle-fab').addEventListener('click', toggleDarkMode);
 var step3Timer=null;
 function selectHow(idx){
   var wasOpen=document.querySelector('.how-card[data-how="'+idx+'"]').classList.contains('active');
