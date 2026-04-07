@@ -116,19 +116,20 @@ nav {
   position: sticky;
   top: 0;
   z-index: 100;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   padding: 0 32px;
   height: 48px;
   background: var(--nav-bg);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
-.nav-logo-wrap { display:flex; align-items:center; gap:10px; text-decoration:none; }
+.nav-logo-wrap { display:flex; align-items:center; gap:10px; text-decoration:none; justify-content:flex-start; }
 .nav-logo { height:28px; width:28px; border-radius:50%; object-fit:cover; }
 .nav-logo-txt { font-size:17px; font-weight:600; color:#f5f5f7; letter-spacing:-0.28px; }
-.nav-links { display:flex; gap:8px; list-style:none; }
+.nav-links { display:flex; gap:8px; list-style:none; justify-content:center; align-items:center; }
+.nav-right { display:flex; align-items:center; gap:8px; justify-content:flex-end; }
 /* nav 링크: preview.html 스펙 12px/400/rgba(255,255,255,0.8) */
 .nav-link { font-size:12px; font-weight:400; color:rgba(255,255,255,0.8); text-decoration:none; padding:6px 14px; border:none; background:none; cursor:pointer; font-family:inherit; transition:color .15s; }
 .nav-link:hover { color:#ffffff; }
@@ -478,7 +479,7 @@ body.light-mode .dark-toggle-fab { background:rgba(255,255,255,.8); border-color
 /* ── RESPONSIVE ── */
 @media(max-width:768px){
   /* 네비 */
-  nav { padding:0 16px; height:44px; }
+  nav { padding:0 16px; height:44px; grid-template-columns:auto 1fr auto; }
   .nav-links { display:none; }
   .nav-logo-txt { font-size:15px; }
   .nav-cta { font-size:11px; padding:4px 10px; }
@@ -566,9 +567,9 @@ body.light-mode .dark-toggle-fab { background:rgba(255,255,255,.8); border-color
   <ul class="nav-links">
     <li><a href="#how" class="nav-link">사용법</a></li>
     <li><a href="#price-sec" class="nav-link">요금</a></li>
-    <li><button class="nav-link" id="nav-login-btn">로그인</button></li>
   </ul>
-  <div style="display:flex;align-items:center;gap:8px;">
+  <div class="nav-right">
+    <button class="nav-link" id="nav-login-btn">로그인</button>
     <button class="nav-cta" id="nav-signup-btn">무료 테스터 신청</button>
     <button class="nav-logout" id="nav-logout-btn" style="display:none">로그아웃</button>
     <button class="nav-cta" id="nav-dashboard-btn" style="display:none">대시보드</button>
