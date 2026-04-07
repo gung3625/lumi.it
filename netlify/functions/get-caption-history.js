@@ -10,11 +10,11 @@ exports.handler = async (event) => {
 
   const authHeader = event.headers['authorization'] || '';
   const token = authHeader.replace('Bearer ', '').trim();
-  if (!token) return { statusCode: 401, body: JSON.stringify({ error: '인증 필요' }) };
+  if (!token) return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증 필요' }) };
 
   let body;
   try { body = JSON.parse(event.body); } catch {
-    return { statusCode: 400, body: JSON.stringify({ error: '잘못된 요청' }) };
+    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '잘못된 요청' }) };
   }
 
   try {
@@ -27,7 +27,7 @@ exports.handler = async (event) => {
     // 토큰으로 이메일 확인
     let tokenRaw;
     try { tokenRaw = await store.get('token:' + token); } catch { tokenRaw = null; }
-    if (!tokenRaw) return { statusCode: 401, body: JSON.stringify({ error: '유효하지 않은 토큰' }) };
+    if (!tokenRaw) return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '유효하지 않은 토큰' }) };
 
     const { email } = JSON.parse(tokenRaw);
 

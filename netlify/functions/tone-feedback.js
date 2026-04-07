@@ -14,17 +14,17 @@ exports.handler = async (event) => {
   const authHeader = event.headers['authorization'] || '';
   const token = authHeader.replace('Bearer ', '').trim();
   if (!token) {
-    return { statusCode: 401, body: JSON.stringify({ error: '인증이 필요합니다.' }) };
+    return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증이 필요합니다.' }) };
   }
 
   let body;
   try { body = JSON.parse(event.body); } catch {
-    return { statusCode: 400, body: JSON.stringify({ error: '잘못된 요청입니다.' }) };
+    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '잘못된 요청입니다.' }) };
   }
 
   const { captionId, feedback } = body; // feedback: 'like' | 'dislike'
   if (!captionId || !['like', 'dislike'].includes(feedback)) {
-    return { statusCode: 400, body: JSON.stringify({ error: 'captionId, feedback(like/dislike) 필수' }) };
+    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'captionId, feedback(like/dislike) 필수' }) };
   }
 
   try {
@@ -37,7 +37,7 @@ exports.handler = async (event) => {
     // 토큰으로 이메일 조회
     let tokenRaw;
     try { tokenRaw = await store.get('token:' + token); } catch { tokenRaw = null; }
-    if (!tokenRaw) return { statusCode: 401, body: JSON.stringify({ error: '유효하지 않은 토큰' }) };
+    if (!tokenRaw) return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '유효하지 않은 토큰' }) };
     const { email } = JSON.parse(tokenRaw);
 
     // 1. caption-history에서 해당 캡션 찾아 피드백 업데이트
@@ -48,7 +48,7 @@ exports.handler = async (event) => {
     } catch { history = []; }
 
     const entry = history.find(h => h.id === captionId);
-    if (!entry) return { statusCode: 404, body: JSON.stringify({ error: '캡션을 찾을 수 없습니다.' }) };
+    if (!entry) return { statusCode: 404, headers: CORS, body: JSON.stringify({ error: '캡션을 찾을 수 없습니다.' }) };
 
     const prevFeedback = entry.feedback;
     entry.feedback = feedback;
