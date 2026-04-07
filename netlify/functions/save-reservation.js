@@ -9,6 +9,12 @@ exports.handler = async (event) => {
     return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
+  // 인증: Bearer 토큰 필수
+  const authHeader = event.headers['authorization'] || '';
+  if (!authHeader.startsWith('Bearer ') || authHeader.length < 10) {
+    return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증이 필요합니다.' }) };
+  }
+
   const headers = event.headers;
   const isBase64Encoded = event.isBase64Encoded;
   const bodyBuffer = Buffer.from(event.body, isBase64Encoded ? 'base64' : 'utf8');
