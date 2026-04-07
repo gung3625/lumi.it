@@ -1,18 +1,25 @@
 const { getStore } = require('@netlify/blobs');
 
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Content-Type': 'application/json',
+};
+
 exports.handler = async (event) => {
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
+    return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
   let body;
   try { body = JSON.parse(event.body); } catch {
-    return { statusCode: 400, body: JSON.stringify({ error: '잘못된 요청입니다.' }) };
+    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '잘못된 요청입니다.' }) };
   }
 
   const { email, token } = body;
   if (!email || !token) {
-    return { statusCode: 400, body: JSON.stringify({ error: '필수 정보가 없습니다.' }) };
+    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '필수 정보가 없습니다.' }) };
   }
 
   const LUMI_SECRET = process.env.LUMI_SECRET;
@@ -23,7 +30,7 @@ exports.handler = async (event) => {
     let raw;
     try { raw = await store.get('user:' + email); } catch { raw = null; }
     if (!raw) {
-      return { statusCode: 404, body: JSON.stringify({ error: '회원 정보를 찾을 수 없습니다.' }) };
+      return { statusCode: 404, headers: CORS, body: JSON.stringify({ error: '회원 정보를 찾을 수 없습니다.' }) };
     }
 
     const user = JSON.parse(raw);
@@ -32,11 +39,11 @@ exports.handler = async (event) => {
     let tokenData;
     try { tokenData = await store.get('token:' + token); } catch { tokenData = null; }
     if (!tokenData) {
-      return { statusCode: 401, body: JSON.stringify({ error: '인증에 실패했습니다.' }) };
+      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증에 실패했습니다.' }) };
     }
     const parsed = JSON.parse(tokenData);
     if (parsed.email !== email) {
-      return { statusCode: 401, body: JSON.stringify({ error: '인증에 실패했습니다.' }) };
+      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증에 실패했습니다.' }) };
     }
 
     // 이미 취소된 경우
@@ -80,6 +87,6 @@ exports.handler = async (event) => {
 
   } catch (err) {
     console.error('cancel-subscription error:', err);
-    return { statusCode: 500, body: JSON.stringify({ error: '처리 중 오류가 발생했습니다.' }) };
+    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '처리 중 오류가 발생했습니다.' }) };
   }
 };
