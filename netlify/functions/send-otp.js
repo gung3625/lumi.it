@@ -3,19 +3,19 @@ const { getStore } = require('@netlify/blobs');
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
+    return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
   let body;
   try {
     body = JSON.parse(event.body);
   } catch {
-    return { statusCode: 400, body: JSON.stringify({ error: '잘못된 요청입니다.' }) };
+    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '잘못된 요청입니다.' }) };
   }
 
   const { email, skipDuplicateCheck } = body;
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return { statusCode: 400, body: JSON.stringify({ error: '이메일 형식이 올바르지 않습니다.' }) };
+    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '이메일 형식이 올바르지 않습니다.' }) };
   }
 
   // 이메일 중복 체크 (비밀번호 찾기 등에서는 skipDuplicateCheck=true)
@@ -52,7 +52,7 @@ exports.handler = async (event) => {
     await store.set('otp:' + email, JSON.stringify({ otp, expiresAt }));
   } catch (err) {
     console.error('Blobs error:', err);
-    return { statusCode: 500, body: JSON.stringify({ error: 'OTP 저장에 실패했습니다.' }) };
+    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: 'OTP 저장에 실패했습니다.' }) };
   }
 
   // Resend로 이메일 발송

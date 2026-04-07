@@ -3,14 +3,14 @@ const { getStore } = require('@netlify/blobs');
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
+    return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
   // 인증: Bearer 토큰 또는 LUMI_SECRET
   const authHeader = event.headers['authorization'] || '';
   const lumiSecret = event.headers['x-lumi-secret'] || '';
   if (!authHeader.startsWith('Bearer ') && lumiSecret !== process.env.LUMI_SECRET) {
-    return { statusCode: 401, body: JSON.stringify({ error: '인증이 필요합니다.' }) };
+    return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증이 필요합니다.' }) };
   }
 
   const headers = event.headers;
@@ -43,7 +43,7 @@ exports.handler = async (event) => {
 
     bb.on('finish', async () => {
       if (photos.length === 0) {
-        return resolve({ statusCode: 400, body: JSON.stringify({ error: '사진이 없습니다.' }) });
+        return resolve({ statusCode: 400, headers: CORS, body: JSON.stringify({ error: '사진이 없습니다.' }) });
       }
 
       try {
@@ -204,7 +204,7 @@ exports.handler = async (event) => {
 
       } catch (err) {
         console.error('reserve error:', err);
-        resolve({ statusCode: 500, body: JSON.stringify({ error: '처리 중 오류가 발생했습니다.' }) });
+        resolve({ statusCode: 500, headers: CORS, body: JSON.stringify({ error: '처리 중 오류가 발생했습니다.' }) });
       }
     });
 

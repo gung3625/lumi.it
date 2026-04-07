@@ -48,7 +48,7 @@ exports.handler = async (event) => {
 
     // 이미 취소된 경우
     if (!user.plan || user.plan === 'none' || user.plan === 'trial') {
-      return { statusCode: 400, body: JSON.stringify({ error: '활성 구독이 없습니다.' }) };
+      return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '활성 구독이 없습니다.' }) };
     }
 
     // 레거시 빌링키 정리 (일시불 전환 후에도 기존 사용자를 위해 유지)

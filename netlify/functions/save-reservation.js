@@ -40,10 +40,10 @@ exports.handler = async (event) => {
 
     bb.on('finish', async () => {
       if (photos.length === 0) {
-        return resolve({ statusCode: 400, body: JSON.stringify({ error: '사진이 없습니다.' }) });
+        return resolve({ statusCode: 400, headers: CORS, body: JSON.stringify({ error: '사진이 없습니다.' }) });
       }
       if (!fields.scheduledAt) {
-        return resolve({ statusCode: 400, body: JSON.stringify({ error: '예약 시간이 없습니다.' }) });
+        return resolve({ statusCode: 400, headers: CORS, body: JSON.stringify({ error: '예약 시간이 없습니다.' }) });
       }
 
       try {

@@ -26,15 +26,15 @@ exports.handler = async (event) => {
       secret = params.get('secret');
     }
   } catch (e) {
-    return { statusCode: 400, body: JSON.stringify({ error: '잘못된 요청입니다.', detail: e.message }) };
+    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '잘못된 요청입니다.', detail: e.message }) };
   }
 
   if (secret !== process.env.LUMI_SECRET) {
-    return { statusCode: 401, body: JSON.stringify({ error: '인증 실패' }) };
+    return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증 실패' }) };
   }
 
   if (!email || !caption) {
-    return { statusCode: 400, body: JSON.stringify({ error: 'email, caption 필수' }) };
+    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'email, caption 필수' }) };
   }
 
   try {

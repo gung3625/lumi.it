@@ -18,12 +18,12 @@ exports.handler = async (event) => {
   }
   let body;
   try { body = JSON.parse(event.body); } catch {
-    return { statusCode: 400, body: JSON.stringify({ error: '잘못된 요청입니다.' }) };
+    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '잘못된 요청입니다.' }) };
   }
 
   const { email, password } = body;
   if (!email || !password) {
-    return { statusCode: 400, body: JSON.stringify({ error: '이메일과 비밀번호를 입력하세요.' }) };
+    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '이메일과 비밀번호를 입력하세요.' }) };
   }
 
   try {

@@ -11,7 +11,7 @@ exports.handler = async (event) => {
 
   const rawId = event.queryStringParameters?.id;
   if (!rawId) {
-    return { statusCode: 400, body: JSON.stringify({ error: 'id 파라미터 필요' }) };
+    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'id 파라미터 필요' }) };
   }
 
   // Instagram URL에서 '.' → '__' 인코딩 역변환 (예: lumi__it → lumi.it)
@@ -57,7 +57,7 @@ exports.handler = async (event) => {
     }
 
     if (!email) {
-      return { statusCode: 404, body: JSON.stringify({ error: '페이지를 찾을 수 없습니다.' }) };
+      return { statusCode: 404, headers: CORS, body: JSON.stringify({ error: '페이지를 찾을 수 없습니다.' }) };
     }
 
     // 유저 정보 조회
@@ -68,7 +68,7 @@ exports.handler = async (event) => {
     } catch(e) {}
 
     if (!user) {
-      return { statusCode: 404, body: JSON.stringify({ error: '페이지를 찾을 수 없습니다.' }) };
+      return { statusCode: 404, headers: CORS, body: JSON.stringify({ error: '페이지를 찾을 수 없습니다.' }) };
     }
 
     // 링크 페이지 설정 조회

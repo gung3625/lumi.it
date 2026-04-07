@@ -57,12 +57,12 @@ function getTodayBestSlot(category) {
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
+    return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
   let body;
   try { body = JSON.parse(event.body); } catch {
-    return { statusCode: 400, body: JSON.stringify({ error: '잘못된 요청' }) };
+    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '잘못된 요청' }) };
   }
 
   const { category } = body;
