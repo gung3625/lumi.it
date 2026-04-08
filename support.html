@@ -380,8 +380,7 @@ document.getElementById('inquiry-form-el').addEventListener('submit', async func
     card.style.display = ''; // 로그인 상태면 카드 표시
 
     const hasPlan = user.plan && user.plan !== 'none' && user.plan !== 'trial';
-    const notExpired = user.planExpireAt && new Date(user.planExpireAt) > new Date();
-    const isSubscribed = hasPlan && notExpired && user.autoRenew !== false;
+    const isSubscribed = hasPlan && (user.autoRenew !== false || (user.planExpireAt && new Date(user.planExpireAt) > new Date()));
 
     if (isSubscribed) {
         desc.textContent = '구독을 먼저 취소해주세요. 구독 중에는 탈퇴할 수 없어요.';
