@@ -141,9 +141,8 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
         .dash-hello{margin-bottom:24px;}
         .dash-hello h2{font-size:1.25rem;font-weight:800;color:var(--g900);}
         .dash-hello p{font-size:.83rem;color:var(--g400);margin-top:3px;}
-        .home-grid{display:grid;grid-template-columns:1.2fr 0.8fr;gap:16px;margin-bottom:20px;align-items:start;}
-        @media(max-width:680px){.home-grid{grid-template-columns:1fr;}}
-        .home-side{display:flex;flex-direction:column;gap:14px;}
+        .home-info-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+        @media(max-width:480px){.home-info-row{grid-template-columns:1fr;}}
         .weather-card{background:var(--white);border-radius:var(--r-lg);padding:18px;border:1px solid var(--g200);display:flex;align-items:center;gap:14px;box-shadow:var(--sh-xs);}
         .w-icon{font-size:1.9rem;width:44px;text-align:center;}
         .w-status{font-size:.88rem;font-weight:700;color:var(--g900);}
@@ -629,10 +628,41 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
             </div>
         </div>
 
-        <!-- ── 메인 2열: 업로드 + 날씨/최적시간 ── -->
-        <div class="home-grid">
-          <!-- 왼쪽: 사진 업로드 (핵심) -->
-          <div class="upload-card">
+        <!-- ── 날씨 + 최적시간 (가로 2열) ── -->
+        <div class="home-info-row">
+          <div class="weather-card" style="margin:0;">
+                <div class="w-icon" id="dash-w-icon">📍</div>
+                <div style="flex:1;">
+                    <div class="w-status" id="dash-w-text">날씨 불러오는 중...</div>
+                    <div class="w-guide" id="dash-w-guide">매장 지역을 설정하면 날씨를 알려드려요</div>
+                    <div class="air-quality-row" id="air-quality-row" style="display:none;">
+                        <span class="aq-badge" id="aq-pm10-badge">미세먼지 -</span>
+                        <span class="aq-badge" id="aq-pm25-badge">초미세먼지 -</span>
+                    </div>
+                </div>
+          </div>
+          <div id="best-time-section" style="background:var(--white);border-radius:var(--r-lg);padding:18px;border:1px solid var(--g200);box-shadow:var(--sh-xs);position:relative;overflow:hidden;">
+                <div id="best-time-lock" style="display:none;position:absolute;inset:0;background:var(--g50);opacity:.97;backdrop-filter:blur(3px);z-index:10;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:16px;">
+                    <div style="font-size:1.4rem;margin-bottom:6px;">🔒</div>
+                    <p style="font-size:.82rem;font-weight:800;color:var(--g900);margin-bottom:2px;">프로 플랜 전용</p>
+                    <p style="font-size:.72rem;color:var(--g500);">업종별 최적 업로드 시간</p>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                    <div style="display:flex;align-items:center;gap:6px;">
+                        <span style="font-size:1rem;">⏰</span>
+                        <p style="font-size:.85rem;font-weight:800;color:var(--g900);">최적 업로드 시간</p>
+                        <span style="font-size:9px;font-weight:700;color:var(--pink);background:var(--pink-pale);padding:2px 6px;border-radius:99px;">PRO</span>
+                    </div>
+                    <span id="best-time-badge" style="font-size:1.1rem;font-weight:900;color:var(--pink);">--:--</span>
+                </div>
+                <p id="best-time-reason" style="font-size:.75rem;color:var(--g500);margin-bottom:6px;">팔로워가 가장 활발한 시간대</p>
+                <div id="best-time-slots" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px;"></div>
+                <p id="best-time-tip" style="font-size:.72rem;color:var(--pink);font-weight:600;"></p>
+          </div>
+        </div>
+
+        <!-- ── 사진 업로드 (핵심) ── -->
+        <div class="upload-card">
             <p class="upload-ttl">오늘의 사진을 올려주세요!</p>
             <div class="drop-zone">
                 <input type="file" id="ceo-file-selector" multiple accept="image/*" onchange="syncBinaryWarehouse()">
@@ -664,39 +694,6 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
             <div class="act-btns">
                 <button class="btn-act-on" onclick="commitPost('now')">바로 올리기</button>
                 <button class="btn-act-off" onclick="commitPost('reserve')">예약 저장</button>
-            </div>
-          </div>
-
-          <!-- 오른쪽: 날씨 + 최적시간 -->
-          <div class="home-side">
-            <div class="weather-card">
-                <div class="w-icon" id="dash-w-icon">📍</div>
-                <div style="flex:1;">
-                    <div class="w-status" id="dash-w-text">날씨 불러오는 중...</div>
-                    <div class="w-guide" id="dash-w-guide">매장 지역을 설정하면 날씨를 알려드려요</div>
-                    <div class="air-quality-row" id="air-quality-row" style="display:none;">
-                        <span class="aq-badge" id="aq-pm10-badge">미세먼지 -</span>
-                        <span class="aq-badge" id="aq-pm25-badge">초미세먼지 -</span>
-                    </div>
-                </div>
-            </div>
-            <div id="best-time-section" style="background:var(--white);border-radius:var(--r-xl);padding:20px 22px;border:1px solid var(--g200);box-shadow:var(--sh-xs);margin-bottom:14px;position:relative;overflow:hidden;">
-                <div id="best-time-lock" style="display:none;position:absolute;inset:0;background:var(--g50);opacity:.97;backdrop-filter:blur(3px);z-index:10;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;">
-                    <div style="font-size:1.8rem;margin-bottom:8px;">🔒</div>
-                    <p style="font-size:.88rem;font-weight:800;color:var(--g900);margin-bottom:4px;">프로 플랜 전용 기능이에요</p>
-                    <p style="font-size:.78rem;color:var(--g500);">프로 플랜으로 업그레이드하면 업종별 최적 업로드 시간을 받아볼 수 있어요.</p>
-                </div>
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-                    <div style="display:flex;align-items:center;gap:8px;">
-                        <span style="font-size:1rem;">⏰</span>
-                        <p style="font-size:.88rem;font-weight:800;color:var(--g900);">오늘 최적 업로드 시간</p>
-                        <span style="font-size:10px;font-weight:700;color:var(--pink);background:var(--pink-pale);padding:2px 8px;border-radius:99px;">PRO</span>
-                    </div>
-                    <span id="best-time-badge" style="font-size:1.2rem;font-weight:900;color:var(--pink);">--:--</span>
-                </div>
-                <p id="best-time-reason" style="font-size:.8rem;color:var(--g500);margin-bottom:10px;">업종 기반으로 팔로워가 가장 활발한 시간대를 분석해요.</p>
-                <div id="best-time-slots" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;"></div>
-                <p id="best-time-tip" style="font-size:.75rem;color:var(--pink);font-weight:600;"></p>
             </div>
           </div>
         </div>
