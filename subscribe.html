@@ -78,6 +78,35 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,*::-webkit-scrollbar{display:non
         .toast{position:fixed;bottom:calc(32px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%) translateY(16px);background:rgba(255,255,255,.1);color:#fff;padding:10px 22px;border-radius:var(--r-full);font-size:14px;font-weight:400;letter-spacing:-0.224px;z-index:9999;opacity:0;transition:all .3s var(--ease);pointer-events:none;backdrop-filter:blur(12px);}
         .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
         .toast.pink{background:var(--accent);}
+        /* ── 라이트모드 ── */
+        body:not(.dark-mode){background:#f5f5f7;color:rgba(0,0,0,.8);}
+        body:not(.dark-mode) nav{background:rgba(255,255,255,.88)!important;border-bottom:1px solid rgba(0,0,0,.08);}
+        body:not(.dark-mode) .nav-logo-txt{color:#1d1d1f;}
+        body:not(.dark-mode) .nav-back{color:rgba(0,0,0,.5);}
+        body:not(.dark-mode) .nav-back:hover{color:#1d1d1f;}
+        body:not(.dark-mode) .page-title{color:#1d1d1f;}
+        body:not(.dark-mode) .page-sub{color:rgba(0,0,0,.48);}
+        body:not(.dark-mode) .plan-option{background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.06);}
+        body:not(.dark-mode) .plan-option.selected{box-shadow:0 0 0 2px var(--accent);}
+        body:not(.dark-mode) .plan-opt-name{color:rgba(0,0,0,.48);}
+        body:not(.dark-mode) .plan-opt-num{color:#1d1d1f;}
+        body:not(.dark-mode) .plan-opt-unit{color:rgba(0,0,0,.48);}
+        body:not(.dark-mode) .plan-features-common{background:#fff;}
+        body:not(.dark-mode) .plan-feat{color:rgba(0,0,0,.7);}
+        body:not(.dark-mode) .section-title{color:rgba(0,0,0,.48);}
+        body:not(.dark-mode) .pay-method{background:#fff;color:rgba(0,0,0,.7);}
+        body:not(.dark-mode) .agree-wrap{background:#fff;}
+        body:not(.dark-mode) .agree-all span{color:#1d1d1f;}
+        body:not(.dark-mode) .agree-all{border-bottom-color:rgba(0,0,0,.08);}
+        body:not(.dark-mode) .agree-item{color:rgba(0,0,0,.7);}
+        body:not(.dark-mode) .trial-banner{background:rgba(200,80,122,.06);}
+        body:not(.dark-mode) .trial-title{color:#1d1d1f;}
+        body:not(.dark-mode) .trial-desc{color:rgba(0,0,0,.6);}
+        body:not(.dark-mode) .btn-pay:disabled{background:rgba(0,0,0,.06);color:rgba(0,0,0,.3);}
+        body:not(.dark-mode) .cta-note{color:rgba(0,0,0,.48);}
+        body:not(.dark-mode) .toast{background:rgba(0,0,0,.8);}
+        .dark-toggle-fab{position:fixed;right:16px;bottom:calc(24px + env(safe-area-inset-bottom,0px));z-index:9999;width:44px;height:44px;border-radius:50%;border:none;background:#191F28;color:#fff;font-size:1.1rem;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;transition:all .3s;}
+        body:not(.dark-mode) .dark-toggle-fab{background:#fff;color:#191F28;box-shadow:0 4px 16px rgba(0,0,0,.1);}
     </style>
 </head>
 <body>
@@ -297,5 +326,11 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,*::-webkit-scrollbar{display:non
     }
 </script>
 <script>if(typeof lucide!=='undefined')lucide.createIcons();</script>
+<button class="dark-toggle-fab" id="dark-toggle-fab" onclick="toggleDarkMode(!document.body.classList.contains('dark-mode'))" aria-label="다크모드 전환">☀️</button>
+<script>
+if(localStorage.getItem('lumi_dark_mode')!=='0')document.body.classList.add('dark-mode');
+function toggleDarkMode(on){document.body.classList.toggle('dark-mode',on);localStorage.setItem('lumi_dark_mode',on?'1':'0');var f=document.getElementById('dark-toggle-fab');if(f)f.textContent=on?'☀️':'🌙';}
+(function(){var f=document.getElementById('dark-toggle-fab');if(f&&document.body.classList.contains('dark-mode'))f.textContent='☀️';else if(f)f.textContent='🌙';})();
+</script>
 </body>
 </html>
