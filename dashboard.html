@@ -28,7 +28,7 @@ body.dark-mode .dash-topbar{background:rgba(26,32,44,.94);border-bottom-color:va
 body.dark-mode .portal-sheet{background:var(--white);color:var(--g700);}
 body.dark-mode .portal-x{background:var(--g100);color:var(--g500);}
 body.dark-mode .toast{background:var(--g200);color:var(--g700);}
-body.dark-mode .dash-tab-bar{background:rgba(26,32,44,.97);border-top-color:var(--g200);}
+body.dark-mode .dash-tab-bar{background:rgba(26,32,44,.97);border-bottom-color:var(--g200);}
 body.dark-mode .btn-act-off{background:var(--white);color:var(--g700);border-color:var(--g200);}
 #ig-connect-banner{display:flex;flex-direction:column;background:var(--pink-pale);border:1.5px solid var(--pink-soft);border-radius:var(--r-xl);padding:20px;margin-bottom:16px;max-width:100%;box-sizing:border-box;overflow:hidden;}
 #ig-connect-banner .ig-b-title{font-size:.92rem;font-weight:800;color:var(--pink);margin-bottom:8px;}
@@ -136,8 +136,8 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
         body.dark-mode .dash-topbar-logo-txt{color:#F2F4F6;}
         .dash-back{font-size:15px;font-weight:700;color:var(--white);background:var(--pink);border:none;border-radius:var(--r-full);padding:12px 28px;cursor:pointer;font-family:inherit;transition:background .2s,transform .2s;box-shadow:var(--sh-pink);}
         .dash-back:hover{background:var(--pink-light);transform:translateY(-1px);}
-        .dash-body{max-width:100%;margin:0 auto;width:100%;padding:28px calc(50% - 270px) calc(80px + env(safe-area-inset-bottom, 0px));overflow-x:hidden;box-sizing:border-box;}
-@media(max-width:580px){.dash-body{padding:28px 20px calc(80px + env(safe-area-inset-bottom, 0px));}}
+        .dash-body{max-width:100%;margin:0 auto;width:100%;padding:28px calc(50% - 270px) 28px;overflow-x:hidden;box-sizing:border-box;}
+@media(max-width:580px){.dash-body{padding:28px 20px 28px;}}
         .dash-hello{margin-bottom:24px;}
         .dash-hello h2{font-size:1.25rem;font-weight:800;color:var(--g900);}
         .dash-hello p{font-size:.83rem;color:var(--g400);margin-top:3px;}
@@ -248,14 +248,14 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
         #lp-preview-frame{background:linear-gradient(135deg,#fff0f6 0%,#f9f9ff 100%);border-radius:24px;padding:28px 20px;width:100%;max-width:400px;max-height:85vh;overflow-y:auto;position:relative;animation:sheetUp .35s var(--ease);}
 
         /* ── 하단 탭 네비게이션 ── */
-        .dash-tab-bar{position:fixed;bottom:0;left:0;right:0;height:calc(56px + env(safe-area-inset-bottom, 0px));padding-bottom:env(safe-area-inset-bottom, 0px);background:rgba(255,255,255,.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--g200);display:flex;align-items:center;justify-content:center;z-index:8500;gap:0;}
-        .dash-tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;height:56px;border:none;background:none;cursor:pointer;font-family:inherit;transition:color .2s;color:var(--g400);-webkit-tap-highlight-color:transparent;}
-        .dash-tab-btn.active{color:var(--pink);}
-        .dash-tab-btn .tab-icon{font-size:1.2rem;line-height:1;}
-        .dash-tab-btn .tab-label{font-size:10px;font-weight:700;letter-spacing:-.01em;}
+        .dash-tab-bar{position:sticky;top:64px;left:0;right:0;height:44px;background:rgba(255,255,255,.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--g200);display:flex;align-items:center;justify-content:center;z-index:8500;gap:0;}
+        .dash-tab-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;height:44px;border:none;background:none;cursor:pointer;font-family:inherit;transition:color .2s;color:var(--g400);-webkit-tap-highlight-color:transparent;}
+        .dash-tab-btn.active{color:var(--pink);border-bottom:2px solid var(--pink);}
+        .dash-tab-btn .tab-icon{font-size:1rem;line-height:1;}
+        .dash-tab-btn .tab-label{font-size:13px;font-weight:700;letter-spacing:-.01em;}
         .dash-body [data-tab]{display:none;overflow-x:hidden;max-width:100%;}
         .dash-body [data-tab].tab-active{display:block;}
-        .dark-toggle-fab{position:fixed;right:16px;bottom:calc(72px + env(safe-area-inset-bottom, 0px));z-index:8600;width:48px;height:48px;border-radius:50%;border:none;background:#191F28;color:#fff;font-size:1.2rem;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;transition:all .3s var(--ease);-webkit-tap-highlight-color:transparent;}
+        .dark-toggle-fab{position:fixed;right:16px;bottom:calc(20px + env(safe-area-inset-bottom, 0px));z-index:8600;width:48px;height:48px;border-radius:50%;border:none;background:#191F28;color:#fff;font-size:1.2rem;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;transition:all .3s var(--ease);-webkit-tap-highlight-color:transparent;}
         .dark-toggle-fab:hover{transform:scale(1.08);box-shadow:0 6px 24px rgba(0,0,0,.3);}
         .dark-toggle-fab:active{transform:scale(.95);}
         body.dark-mode .dark-toggle-fab{background:#fff;color:#191F28;box-shadow:0 4px 16px rgba(0,0,0,.15);}
@@ -561,6 +561,21 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
     <div class="dash-topbar">
         <a href="/" class="dash-topbar-logo-wrap"><img src="/assets/logo.png" class="dash-topbar-logo" alt="lumi"><span class="dash-topbar-logo-txt">lumi</span></a>
         <button class="dash-back" onclick="resetToInitialLanding()">← 홈</button>
+    </div>
+    <!-- 하단 탭 바 -->
+    <div class="dash-tab-bar" id="dash-tab-bar">
+        <button class="dash-tab-btn active" data-target="home" onclick="switchDashTab('home')">
+            <span class="tab-icon">🏠</span>
+            <span class="tab-label">홈</span>
+        </button>
+        <button class="dash-tab-btn" data-target="archive" onclick="switchDashTab('archive')">
+            <span class="tab-icon">📁</span>
+            <span class="tab-label">보관함</span>
+        </button>
+        <button class="dash-tab-btn" data-target="settings" onclick="switchDashTab('settings')">
+            <span class="tab-icon">⚙️</span>
+            <span class="tab-label">설정</span>
+        </button>
     </div>
     <div class="dash-body">
         <!-- 페이월 오버레이 -->
@@ -1026,20 +1041,6 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
             <div id="lp-preview-content"></div>
         </div>
     </div>
-    <!-- 하단 탭 바 -->
-    <div class="dash-tab-bar" id="dash-tab-bar">
-        <button class="dash-tab-btn active" data-target="home" onclick="switchDashTab('home')">
-            <span class="tab-icon">🏠</span>
-            <span class="tab-label">홈</span>
-        </button>
-        <button class="dash-tab-btn" data-target="archive" onclick="switchDashTab('archive')">
-            <span class="tab-icon">📁</span>
-            <span class="tab-label">보관함</span>
-        </button>
-        <button class="dash-tab-btn" data-target="settings" onclick="switchDashTab('settings')">
-            <span class="tab-icon">⚙️</span>
-            <span class="tab-label">설정</span>
-        </button>
     </div>
 </div>
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
