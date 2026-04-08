@@ -2489,10 +2489,16 @@ async function loadTrends() {
         // 업종별 키워드
         if (data.keywords && data.keywords.length > 0) {
             const isGoogle = data.source === 'google';
-            const sectionTitle = isGoogle
-              ? (data.categoryLabel || '업종') + ' 실시간 트렌드'
-              : '🔥 ' + (data.categoryLabel || '업종') + ' 이달의 추천 키워드';
+            const isL30d = data.source === 'last30days';
+            const sectionTitle = isL30d
+              ? '🔥 ' + (data.categoryLabel || '업종') + ' 실시간 트렌드'
+              : isGoogle
+                ? (data.categoryLabel || '업종') + ' 실시간 트렌드'
+                : '🔥 ' + (data.categoryLabel || '업종') + ' 이달의 추천 키워드';
             html += '<p class="trend-section-lbl">' + sectionTitle + '</p>';
+            if (isL30d && data.dataSources) {
+                html += '<p style="font-size:10px;color:var(--g400);margin:-4px 0 6px;">데이터: ' + data.dataSources.join(', ') + ' | 분석 ' + (data.findingsCount || '') + '건</p>';
+            }
             html += data.keywords.map((k, i) => {
                 if (isGoogle) {
                     const arrow = k.trend === 'up' ? '↑' : k.trend === 'down' ? '↓' : '→';
@@ -2501,6 +2507,13 @@ async function loadTrends() {
                         <span class="t-rank">${i + 1}</span>
                         <span class="t-keyword">${k.keyword}</span>
                         <span class="t-change ${k.trend}">${sign}${k.changeRate}% ${arrow}</span>
+                    </div>`;
+                } else if (isL30d) {
+                    const mentionTxt = k.mentions ? k.mentions + '회 언급' : '추천';
+                    return `<div class="trend-row">
+                        <span class="t-rank">${i + 1}</span>
+                        <span class="t-keyword">${k.keyword.startsWith('#') ? k.keyword : '#' + k.keyword}</span>
+                        <span class="t-change up">${mentionTxt}</span>
                     </div>`;
                 } else {
                     return `<div class="trend-row">

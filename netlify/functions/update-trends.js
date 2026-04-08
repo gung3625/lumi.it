@@ -31,8 +31,15 @@ exports.handler = async (event) => {
 
     for (const [category, tags] of Object.entries(trends)) {
       if (!Array.isArray(tags) || tags.length === 0) continue;
-      await store.set('trends:' + category, JSON.stringify({ tags, updatedAt }));
+      await store.set('trends:' + category, JSON.stringify({ tags, updatedAt, source: 'last30days' }));
       updated.push(category);
+    }
+
+    // last30days 상세 데이터 저장 (keywords with scores, sources, findingsCount)
+    if (body.last30days && typeof body.last30days === 'object') {
+      for (const [category, data] of Object.entries(body.last30days)) {
+        await store.set('l30d:' + category, JSON.stringify(data));
+      }
     }
 
     return {

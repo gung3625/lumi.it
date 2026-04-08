@@ -164,7 +164,7 @@ exports.handler = async (event) => {
   const knownCategories = ['cafe', 'food', 'beauty'];
   const storeKey = knownCategories.includes(category) ? category : 'other';
 
-  // 1. Blobs 캐시 확인 (6시간)
+  // 1. last30days Blobs 확인 (최우선)
   let store;
   try {
     store = getStore({
@@ -173,6 +173,54 @@ exports.handler = async (event) => {
       siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
       token: process.env.NETLIFY_TOKEN
     });
+
+    // last30days 상세 데이터 확인
+    let l30dRaw = null;
+    try { l30dRaw = await store.get('l30d:' + storeKey); } catch(e) {}
+    let trendsRaw = null;
+    try { trendsRaw = await store.get('trends:' + storeKey); } catch(e) {}
+
+    if (trendsRaw) {
+      const cached = JSON.parse(trendsRaw);
+      const hoursOld = (Date.now() - new Date(cached.updatedAt).getTime()) / (1000 * 60 * 60);
+
+      // last30days 데이터가 24시간 이내면 바로 사용
+      if (hoursOld < 24 && cached.source === 'last30days') {
+        const l30d = l30dRaw ? JSON.parse(l30dRaw) : null;
+        const keywords = l30d && l30d.keywords ? l30d.keywords.map((k, i) => ({
+          keyword: k.keyword.replace(/^#/, ''),
+          changeRate: 0,
+          trend: 'up',
+          score: k.score || 0,
+          mentions: k.mentions || 0,
+          source: 'last30days'
+        })) : cached.tags.map((tag, i) => ({
+          keyword: tag.replace(/^#/, ''),
+          changeRate: 0,
+          trend: 'up',
+          source: 'last30days'
+        }));
+
+        const biz = BIZ_MONTHLY[storeKey] || BIZ_MONTHLY.other;
+        const season = getSeasonInfo();
+
+        return {
+          statusCode: 200, headers: CORS,
+          body: JSON.stringify({
+            category: storeKey,
+            categoryLabel: biz.label,
+            keywords,
+            season,
+            updatedAt: cached.updatedAt,
+            source: 'last30days',
+            findingsCount: l30d ? l30d.findingsCount : null,
+            dataSources: l30d ? l30d.sources : null,
+          })
+        };
+      }
+    }
+
+    // 기존 Google Trends 캐시 확인 (6시간)
     let raw = null;
     try { raw = await store.get('gtrends3:' + storeKey); } catch(e) {}
     if (raw) {
