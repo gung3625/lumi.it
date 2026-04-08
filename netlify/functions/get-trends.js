@@ -184,8 +184,9 @@ exports.handler = async (event) => {
       const cached = JSON.parse(trendsRaw);
       const hoursOld = (Date.now() - new Date(cached.updatedAt).getTime()) / (1000 * 60 * 60);
 
-      // last30days 데이터가 24시간 이내면 바로 사용
-      if (hoursOld < 24 && cached.source === 'last30days') {
+      // last30days 데이터가 24시간 이내면 바로 사용 (l30d 키 존재 또는 source가 last30days)
+      const isL30d = cached.source === 'last30days' || !!l30dRaw;
+      if (hoursOld < 24 && isL30d) {
         const l30d = l30dRaw ? JSON.parse(l30dRaw) : null;
         const keywords = l30d && l30d.keywords ? l30d.keywords.map((k, i) => ({
           keyword: k.keyword.replace(/^#/, ''),
