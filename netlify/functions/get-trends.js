@@ -174,48 +174,61 @@ exports.handler = async (event) => {
       token: process.env.NETLIFY_TOKEN
     });
 
-    // last30days 상세 데이터 확인
+    // last30days 상세 데이터 확인 (최우선)
     let l30dRaw = null;
     try { l30dRaw = await store.get('l30d:' + storeKey); } catch(e) {}
+
+    // l30d 키가 있으면 last30days 데이터 우선 사용
+    if (l30dRaw) {
+      try {
+        const l30d = JSON.parse(l30dRaw);
+        const l30dAge = l30d.updatedAt ? (Date.now() - new Date(l30d.updatedAt).getTime()) / (1000 * 60 * 60) : 999;
+        if (l30dAge < 48 && l30d.keywords && l30d.keywords.length > 0) {
+          const biz = BIZ_MONTHLY[storeKey] || BIZ_MONTHLY.other;
+          const season = getSeasonInfo();
+          return {
+            statusCode: 200, headers: CORS,
+            body: JSON.stringify({
+              category: storeKey,
+              categoryLabel: biz.label,
+              keywords: l30d.keywords.map(k => ({
+                keyword: k.keyword.replace(/^#/, ''),
+                changeRate: 0,
+                trend: 'up',
+                score: k.score || 0,
+                mentions: k.mentions || 0,
+                source: 'last30days'
+              })),
+              season,
+              updatedAt: l30d.updatedAt,
+              source: 'last30days',
+              findingsCount: l30d.findingsCount || null,
+              dataSources: l30d.sources || null,
+            })
+          };
+        }
+      } catch(e) { console.error('l30d parse error:', e.message); }
+    }
+
+    // trends: 키 확인 (update-trends API로 저장된 태그)
     let trendsRaw = null;
     try { trendsRaw = await store.get('trends:' + storeKey); } catch(e) {}
 
     if (trendsRaw) {
       const cached = JSON.parse(trendsRaw);
       const hoursOld = (Date.now() - new Date(cached.updatedAt).getTime()) / (1000 * 60 * 60);
-
-      // last30days 데이터가 24시간 이내면 바로 사용 (l30d 키 존재 또는 source가 last30days)
-      const isL30d = cached.source === 'last30days' || !!l30dRaw;
-      if (hoursOld < 24 && isL30d) {
-        const l30d = l30dRaw ? JSON.parse(l30dRaw) : null;
-        const keywords = l30d && l30d.keywords ? l30d.keywords.map((k, i) => ({
-          keyword: k.keyword.replace(/^#/, ''),
-          changeRate: 0,
-          trend: 'up',
-          score: k.score || 0,
-          mentions: k.mentions || 0,
-          source: 'last30days'
-        })) : cached.tags.map((tag, i) => ({
-          keyword: tag.replace(/^#/, ''),
-          changeRate: 0,
-          trend: 'up',
-          source: 'last30days'
-        }));
-
+      if (hoursOld < 24 && cached.source === 'last30days' && cached.tags && cached.tags.length > 0) {
         const biz = BIZ_MONTHLY[storeKey] || BIZ_MONTHLY.other;
         const season = getSeasonInfo();
-
         return {
           statusCode: 200, headers: CORS,
           body: JSON.stringify({
             category: storeKey,
             categoryLabel: biz.label,
-            keywords,
+            keywords: cached.tags.map(tag => ({ keyword: tag.replace(/^#/, ''), changeRate: 0, trend: 'up', source: 'last30days' })),
             season,
             updatedAt: cached.updatedAt,
             source: 'last30days',
-            findingsCount: l30d ? l30d.findingsCount : null,
-            dataSources: l30d ? l30d.sources : null,
           })
         };
       }
