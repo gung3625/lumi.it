@@ -65,33 +65,41 @@ exports.handler = async (event) => {
     };
     const toneInstruction = toneMap[tone] || toneMap.friendly;
 
+    // ── 날짜/시즌 ──
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const day = now.getDate();
+    const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][now.getDay()];
+    const seasonMap = { 1:'겨울',2:'겨울',3:'봄',4:'봄',5:'봄',6:'여름',7:'여름',8:'여름',9:'가을',10:'가을',11:'가을',12:'겨울' };
+
     // ── GPT-4o 캡션 생성 ──
     const prompt = `당신은 한국 소상공인의 인스타그램 캡션을 대신 써주는 전문 카피라이터입니다.
 사진 한 장과 업종 정보만으로 매력적인 캡션을 만들어주세요.
 
-## 말투 지시
-${toneInstruction}
+업종: ${bizCategory}
+오늘: ${month}월 ${day}일 (${dayOfWeek}요일), ${seasonMap[month]}
+
+## 말투: ${toneInstruction}
 
 ## 절대 금지
-- "안녕하세요", "오늘도 찾아주셔서 감사합니다" 같은 뻔한 인사
-- "맛있는", "신선한", "정성스러운" 같은 과장 형용사 남발
-- AI가 쓴 것처럼 매끄럽고 완벽한 문장
-- "많은 관심 부탁드립니다", "놀러 오세요" 같은 전형적 마무리
-- 설명, 제목, 따옴표, 부연 없이 캡션만 바로 출력
+- "안녕하세요", "감사합니다" 같은 뻔한 인사/마무리
+- "맛있는", "신선한" 같은 과장 형용사
+- AI가 쓴 것처럼 매끄러운 문장
+- 제목, 따옴표, 부연 설명
 
-## 좋은 캡션
-- 읽는 사람이 그 순간을 상상할 수 있는 글
-- 대표님이 직접 쓴 것처럼 자연스러운 말투
-- 첫 문장이 스크롤을 멈추게 만드는 힘
-- 이모지가 글의 감정을 정확히 보완하는 위치
-- 해시태그가 탐색 도구처럼 자연스러움
+## 이런 캡션을 쓰세요
+- 첫 문장에서 스크롤이 멈추는 힘
+- 대표님이 직접 쓴 것 같은 자연스러움
+- 이모지 2~3개, 감정을 보완하는 위치에만
+- 마지막 문장은 자연스러운 행동 유도 (저장/댓글/방문)
+- 사진에 메뉴판/간판이 보이면 메뉴명을 캡션에 활용
 
-## 입력 정보
-업종: ${bizCategory}
-사진: 첨부 이미지 분석 결과를 기반으로 작성
+## 해시태그
+총 8~10개: 대형(1~2) + 중형(3~4) + 소형(2~3)
+업종 + 시즌 키워드를 섞어서 구성.
 
 ## 출력
-캡션 1개 (본문 + 해시태그 5~8개 포함). 캡션만 출력하세요.`;
+캡션 1개 (본문 + 해시태그). 캡션만 출력하세요.`;
 
     const gptRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -101,13 +109,14 @@ ${toneInstruction}
       },
       body: JSON.stringify({
         model: 'gpt-4o',
-        max_tokens: 500,
+        max_tokens: 600,
+        temperature: 0.8,
         messages: [
           {
             role: 'user',
             content: [
               { type: 'text', text: prompt },
-              { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${image}`, detail: 'low' } },
+              { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${image}`, detail: 'high' } },
             ],
           },
         ],
