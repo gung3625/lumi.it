@@ -685,7 +685,7 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
                 <span style="font-size:1.1rem;">📍</span>
                 <p style="font-size:.92rem;font-weight:800;color:var(--g900);">매장 지역 설정</p>
             </div>
-            <p style="font-size:.78rem;color:var(--g500);line-height:1.7;margin-bottom:12px;">지역을 설정하면 <strong style="color:var(--g700);">날씨·대기오염·주변 행사</strong> 정보를 자동으로 받아볼 수 있어요.<br>캡션에도 지역 분위기가 자연스럽게 반영돼요.</p>
+            <p style="font-size:.78rem;color:var(--g500);line-height:1.7;margin-bottom:12px;">지역을 설정하면 <strong style="color:var(--g700);">날씨·대기오염</strong> 정보를 자동으로 받아볼 수 있어요.<br>캡션에도 지역 분위기가 자연스럽게 반영돼요.</p>
             <div style="display:flex;gap:6px;">
                 <select id="dash-sido" class="inp" style="height:46px;flex:1;" onchange="updateSigunguList()">
                     <option value="">시/도 선택</option>
@@ -731,11 +731,7 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
             </div>
         </div>
 
-        <!-- 주변 행사 섹션 (행사 있을 때만 표시) -->
-        <div id="festival-section" style="display:none;margin-bottom:16px;">
-            <p class="dash-lbl">🎉 주변 행사</p>
-            <div id="festival-list" style="display:flex;flex-direction:column;gap:8px;"></div>
-        </div>
+
 
         <p class="dash-lbl">트렌드 & 추천 키워드</p>
         <div class="trend-dual" id="trend-dual-wrap" style="display:none;">
@@ -879,21 +875,6 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
                 </div>
             </div>
         </div>
-        <div style="background:var(--white);border-radius:var(--r-xl);padding:18px 22px;border:1px solid var(--g200);box-shadow:var(--sh-xs);margin-bottom:14px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;">
-                <div>
-                    <p style="font-size:.88rem;font-weight:800;color:var(--g900);margin-bottom:4px;">🎉 주변 행사 캡션 반영</p>
-                    <p style="font-size:.75rem;color:var(--g500);line-height:1.6;">설정한 지역 근처 행사 정보를 lumi 캡션에 반영해요.<br>OFF 시 행사 정보 없이 캡션이 작성돼요.</p>
-                </div>
-                <div style="flex-shrink:0;margin-left:16px;cursor:pointer;" onclick="document.getElementById('auto-festival-toggle').click()">
-                    <input type="checkbox" id="auto-festival-toggle" onchange="saveAutoFestival(this.checked)" style="display:none;">
-                    <div id="auto-festival-slider" style="width:52px;height:28px;border-radius:28px;background:#ccc;border:2px solid #bbb;position:relative;transition:all .3s;cursor:pointer;">
-                        <div id="auto-festival-knob" style="position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .3s;box-shadow:0 2px 6px rgba(0,0,0,.3);"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <div style="background:var(--white);border-radius:var(--r-xl);padding:18px 22px;border:1px solid var(--g200);box-shadow:var(--sh-xs);margin-bottom:14px;">
             <div style="display:flex;align-items:center;justify-content:space-between;">
                 <div>
@@ -1167,7 +1148,6 @@ const LUMI_CORE = {
 };
 let archive=[],stagedFiles=[],bizCat='cafe',captionTone='warm',ceoName='',storeName='',storeDesc='',storeInsta='',storeRegion='',tagStyle='mid',weatherLoaded=false;
 let currentAirQuality=null;
-let currentFestivals=[];
 let realtimeTrends = [];
 let currentWeatherData = null; // 실제 날씨 데이터 전역 보관
 
@@ -1504,7 +1484,7 @@ function updateStoreRegion() {
             }
         } catch(e) {}
 
-        // 지역 변경 시 날씨/행사 즉시 갱신
+        // 지역 변경 시 날씨 즉시 갱신
         fetchFestivals();
         initWeather();
     }
@@ -1533,94 +1513,9 @@ function restoreRegionDropdown(regionStr, sidoCode, sigunguCode) {
     storeRegion = regionStr || '';
     document.getElementById('dash-region-sido-code').value = sidoCode;
     document.getElementById('dash-region-sigungu-code').value = sigunguCode;
-    fetchFestivals();
     initWeather();
 }
 
-async function fetchFestivals() {
-    try {
-        // 행사는 항상 가게 주소(지역 설정) 기준으로 조회 — GPS 위치 무관
-        let sidoCode = document.getElementById('dash-region-sido-code')?.value || '';
-        let sigunguCode = document.getElementById('dash-region-sigungu-code')?.value || '';
-
-        // 지역 미설정 시 localStorage에서 sidoCode 복구 시도
-        if (!sidoCode) {
-            const lumiUser = JSON.parse(localStorage.getItem('lumi_user') || '{}');
-            sidoCode = lumiUser.sidoCode || '';
-            sigunguCode = lumiUser.sigunguCode || '';
-        }
-
-        if (!sidoCode) return;
-        let festivalUrl = `/.netlify/functions/get-festival?sido=${sidoCode}`;
-        if (sigunguCode) festivalUrl += `&sigungu=${sigunguCode}`;
-        const res = await fetch(festivalUrl);
-        const data = await res.json();
-        currentFestivals = data.festivals || [];
-        console.log('[lumi] 주변 행사:', currentFestivals.length, '개');
-        renderFestivals();
-    } catch(e) {
-        console.log('[lumi] 행사 정보 로딩 실패:', e.message);
-        currentFestivals = [];
-    }
-}
-
-// GPS 좌표 → 한국 시도코드 대략 추정 (행사 조회용)
-function guessSidoFromLatLng(lat, lng) {
-    if (lat >= 37.4 && lat <= 37.7 && lng >= 126.7 && lng <= 127.2) return '11'; // 서울
-    if (lat >= 37.3 && lat <= 37.8 && lng >= 126.5 && lng <= 127.8) return '41'; // 경기
-    if (lat >= 37.2 && lat <= 37.7 && lng >= 126.4 && lng <= 126.9) return '28'; // 인천
-    if (lat >= 35.0 && lat <= 35.4 && lng >= 128.8 && lng <= 129.3) return '26'; // 부산
-    if (lat >= 35.7 && lat <= 36.1 && lng >= 128.4 && lng <= 128.8) return '27'; // 대구
-    if (lat >= 36.2 && lat <= 36.5 && lng >= 127.2 && lng <= 127.6) return '30'; // 대전
-    if (lat >= 35.1 && lat <= 35.3 && lng >= 126.7 && lng <= 126.95) return '29'; // 광주
-    if (lat >= 35.4 && lat <= 35.7 && lng >= 129.1 && lng <= 129.5) return '31'; // 울산
-    if (lat >= 36.4 && lat <= 36.7 && lng >= 127.2 && lng <= 127.6) return '34'; // 세종
-    if (lat >= 36.0 && lat <= 37.2 && lng >= 127.5 && lng <= 129.2) return '43'; // 충북
-    if (lat >= 36.0 && lat <= 37.2 && lng >= 126.3 && lng <= 127.5) return '44'; // 충남
-    if (lat >= 35.0 && lat <= 36.2 && lng >= 127.0 && lng <= 128.0) return '45'; // 전북
-    if (lat >= 34.0 && lat <= 35.2 && lng >= 126.0 && lng <= 127.5) return '46'; // 전남
-    if (lat >= 36.0 && lat <= 37.5 && lng >= 128.0 && lng <= 129.5) return '47'; // 경북
-    if (lat >= 34.7 && lat <= 35.7 && lng >= 127.5 && lng <= 129.3) return '48'; // 경남
-    if (lat >= 33.0 && lat <= 33.6 && lng >= 126.1 && lng <= 126.9) return '50'; // 제주
-    if (lat >= 37.0 && lat <= 38.6 && lng >= 127.7 && lng <= 129.3) return '42'; // 강원
-    return '11'; // 기본값 서울
-}
-
-function renderFestivals() {
-    const section = document.getElementById('festival-section');
-    const list = document.getElementById('festival-list');
-    if (!section || !list) return;
-
-    // autoFestival OFF면 행사 섹션 숨김
-    const user = JSON.parse(localStorage.getItem('lumi_user') || '{}');
-    if (user.autoFestival === false) { section.style.display = 'none'; return; }
-
-    section.style.display = 'block';
-    if (!currentFestivals || currentFestivals.length === 0) {
-        list.innerHTML = '<div style="font-size:.83rem;color:var(--g400);padding:10px 4px;">📭 10km 내 진행 중인 행사가 없어요.</div>';
-        return;
-    }
-
-    section.style.display = 'block';
-    list.innerHTML = currentFestivals.map(f => {
-        const fmt = d => d ? `${parseInt(d.slice(4,6))}/${parseInt(d.slice(6,8))}` : '';
-        const dateStr = f.startDate && f.endDate
-            ? `${fmt(f.startDate)} ~ ${fmt(f.endDate)}`
-            : f.startDate ? fmt(f.startDate) : '';
-        const addr = f.addr ? f.addr.replace('서울특별시 ', '').replace('경기도 ', '') : '';
-
-        return `<div style="background:var(--white);border-radius:var(--r-md);padding:13px 15px;border:1px solid var(--g100);display:flex;align-items:flex-start;gap:10px;">
-            <span style="font-size:1.2rem;margin-top:1px;">🎪</span>
-            <div style="flex:1;min-width:0;">
-                <div style="font-size:.87rem;font-weight:700;color:var(--g900);margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${f.title}</div>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                    ${dateStr ? `<span style="font-size:.75rem;color:var(--pink);font-weight:600;">📅 ${dateStr}</span>` : ''}
-                    ${addr ? `<span style="font-size:.75rem;color:var(--g400);">📌 ${addr}</span>` : ''}
-                </div>
-            </div>
-        </div>`;
-    }).join('');
-}
 
 function renderStagedFiles() {
     const preview = document.getElementById('ceo-preview-box');
@@ -1753,9 +1648,7 @@ async function commitPost(type){
         formData.append('tagStyle', tagStyle);
         formData.append('weather', JSON.stringify(weatherPayload));
         formData.append('airQuality', JSON.stringify(currentAirQuality || {}));
-        // autoFestival OFF면 행사 데이터 전송 안 함
-        const festivalData = (userData.autoFestival === false) ? [] : (currentFestivals || []);
-        formData.append('festivals', JSON.stringify(festivalData));
+        formData.append('festivals', JSON.stringify([]));
         formData.append('trends', JSON.stringify(currentTrends));
         formData.append('storeProfile', JSON.stringify(storeProfile));
         formData.append('photoCount', stagedFiles.length);
@@ -2036,7 +1929,7 @@ async function grantAccess(){
     loadLinkPage();
     initDarkMode();
     initAutoStory();
-    initAutoFestival();
+
     initRelayMode();
     loadCalendar();
     checkServiceFeedback();
@@ -3448,47 +3341,7 @@ function dismissToneFeedback() {
     document.getElementById('tone-feedback-section').style.display = 'none';
 }
 
-// ── 주변 행사 알림 ──
-function initAutoFestival() {
-    const user = JSON.parse(localStorage.getItem('lumi_user') || '{}');
-    const toggle = document.getElementById('auto-festival-toggle');
-    if (!toggle) return;
-    const isOn = user.autoFestival !== false; // 기본값 ON
-    toggle.checked = isOn;
-    updateFestivalToggleUI(isOn);
-}
 
-function updateFestivalToggleUI(isOn) {
-    const slider = document.getElementById('auto-festival-slider');
-    const knob = document.getElementById('auto-festival-knob');
-    if (!slider || !knob) return;
-    slider.style.background = isOn ? 'var(--pink)' : '#ccc';
-    slider.style.borderColor = isOn ? 'var(--pink)' : '#bbb';
-    knob.style.transform = isOn ? 'translateX(24px)' : 'translateX(0)';
-}
-
-async function saveAutoFestival(checked) {
-    updateFestivalToggleUI(checked);
-    const token = localStorage.getItem('lumi_token');
-    try {
-        const res = await fetch('/.netlify/functions/update-profile', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-            body: JSON.stringify({ autoFestival: checked })
-        });
-        if (res.ok) {
-            const user = JSON.parse(localStorage.getItem('lumi_user') || '{}');
-            user.autoFestival = checked;
-            localStorage.setItem('lumi_user', JSON.stringify(user));
-            // 행사 섹션 즉시 표시/숨김
-            const section = document.getElementById('festival-section');
-            if (section) section.style.display = checked ? 'block' : 'none';
-            showToast(checked ? '주변 행사 알림이 켜졌어요 🎉' : '주변 행사 알림이 꺼졌어요', checked ? 'pink' : '');
-        }
-    } catch(e) {
-        showToast('설정 저장 중 오류가 발생했어요.', 'red');
-    }
-}
 
 // ── 피드백 ──
 let fbRating = 0;
