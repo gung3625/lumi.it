@@ -42,6 +42,20 @@ exports.handler = async (event) => {
       }
     }
 
+    // GPT 분류 결과: 국내 트렌드
+    if (body.domestic && typeof body.domestic === 'object') {
+      for (const [category, data] of Object.entries(body.domestic)) {
+        await store.set('l30d-domestic:' + category, JSON.stringify(data));
+      }
+    }
+
+    // GPT 분류 결과: 해외 트렌드
+    if (body.global && typeof body.global === 'object') {
+      for (const [category, data] of Object.entries(body.global)) {
+        await store.set('l30d-global:' + category, JSON.stringify(data));
+      }
+    }
+
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },

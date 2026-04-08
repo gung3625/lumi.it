@@ -727,6 +727,8 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
         </div>
 
         <p class="dash-lbl">트렌드 & 추천 키워드</p>
+        <div class="trend-wrap" id="trend-domestic-node"></div>
+        <div class="trend-wrap" id="trend-global-node"></div>
         <div class="trend-wrap" id="trend-list-node"></div>
 
         <!-- 말투 피드백 섹션 -->
@@ -2486,26 +2488,65 @@ async function confirmWithdraw() {
 }
 function syncWeatherUI(state){const c=LUMI_CORE.weather[state]||LUMI_CORE.weather.clear;const lumiU=JSON.parse(localStorage.getItem('lumi_user')||'{}');const loc=storeRegion||lumiU.region||'서울';document.getElementById('dash-w-icon').innerText=c.icon;document.getElementById('dash-w-text').innerText=loc+': '+c.status;document.getElementById('dash-w-guide').innerText='"'+c.guide+'"';document.getElementById('ceo-note-input').placeholder='예) 신메뉴 출시, 명절 휴무 안내, 이벤트 진행 중';}
 async function loadTrends() {
+    const domesticEl = document.getElementById('trend-domestic-node');
+    const globalEl = document.getElementById('trend-global-node');
     const trendEl = document.getElementById('trend-list-node');
     if (!trendEl) return;
 
     trendEl.innerHTML = '<div style="color:var(--g400);font-size:.85rem;padding:8px 0;">트렌드 불러오는 중...</div>';
+    if (domesticEl) domesticEl.innerHTML = '';
+    if (globalEl) globalEl.innerHTML = '';
 
     try {
         const category = bizCat || 'cafe';
 
-        // 내 업종 + 전체 트렌드 병렬 호출
-        const [myRes, allRes] = await Promise.all([
+        // 국내/해외/기존합산 병렬 호출
+        const [domRes, glbRes, myRes, allRes] = await Promise.all([
+            fetch('/.netlify/functions/get-trends?category=' + encodeURIComponent(category) + '&scope=domestic'),
+            fetch('/.netlify/functions/get-trends?category=' + encodeURIComponent(category) + '&scope=global'),
             fetch('/.netlify/functions/get-trends?category=' + encodeURIComponent(category)),
             category !== 'other' ? fetch('/.netlify/functions/get-trends?category=other') : null,
         ]);
+        const domData = await domRes.json();
+        const glbData = await glbRes.json();
         const myData = await myRes.json();
         const allData = allRes ? await allRes.json() : null;
 
+        let hasDomGlb = false;
+
+        // ── 국내 트렌드 (GPT 분류) ──
+        if (domesticEl && domData.keywords && domData.keywords.length > 0) {
+            hasDomGlb = true;
+            let dHtml = '<p class="trend-section-lbl">🇰🇷 국내 트렌드</p>';
+            if (domData.insight) {
+                dHtml += '<p style="font-size:11px;color:var(--g500);margin:-4px 0 8px;line-height:1.6;">' + domData.insight + '</p>';
+            }
+            dHtml += domData.keywords.map((k, i) => {
+                const kw = k.keyword.startsWith('#') ? k.keyword : '#' + k.keyword;
+                return '<div class="trend-row"><span class="t-rank">' + (i + 1) + '</span><span class="t-keyword">' + kw + '</span><span class="t-change up">국내</span></div>';
+            }).join('');
+            domesticEl.innerHTML = dHtml;
+        }
+
+        // ── 해외 트렌드 (GPT 분류) ──
+        if (globalEl && glbData.keywords && glbData.keywords.length > 0) {
+            hasDomGlb = true;
+            let gHtml = '<p class="trend-section-lbl">🌍 해외 트렌드</p>';
+            if (glbData.insight) {
+                gHtml += '<p style="font-size:11px;color:var(--g500);margin:-4px 0 8px;line-height:1.6;">' + glbData.insight + '</p>';
+            }
+            gHtml += glbData.keywords.map((k, i) => {
+                const kw = k.keyword.startsWith('#') ? k.keyword : '#' + k.keyword;
+                return '<div class="trend-row"><span class="t-rank">' + (i + 1) + '</span><span class="t-keyword">' + kw + '</span><span class="t-change up">해외</span></div>';
+            }).join('');
+            globalEl.innerHTML = gHtml;
+        }
+
+        // ── 기존 합산 트렌드 (GPT 미분류 시 fallback + 시즌) ──
         let html = '';
 
-        // ── 내 업종 트렌드 ──
-        if (myData.keywords && myData.keywords.length > 0) {
+        // GPT 분류가 없을 때만 기존 내 업종 트렌드 표시
+        if (!hasDomGlb && myData.keywords && myData.keywords.length > 0) {
             html += '<p class="trend-section-lbl">🔥 ' + (myData.categoryLabel || '내 업종') + ' 트렌드</p>';
             if (myData.dataSources) {
                 html += '<p style="font-size:10px;color:var(--g400);margin:-4px 0 6px;">분석 ' + (myData.findingsCount || '') + '건 · ' + myData.dataSources.join(', ') + '</p>';
@@ -2513,55 +2554,40 @@ async function loadTrends() {
             html += myData.keywords.map((k, i) => {
                 const kw = k.keyword.startsWith('#') ? k.keyword : '#' + k.keyword;
                 const badge = k.mentions ? k.mentions + '회 언급' : '추천';
-                return `<div class="trend-row">
-                    <span class="t-rank">${i + 1}</span>
-                    <span class="t-keyword">${kw}</span>
-                    <span class="t-change up">${badge}</span>
-                </div>`;
+                return '<div class="trend-row"><span class="t-rank">' + (i + 1) + '</span><span class="t-keyword">' + kw + '</span><span class="t-change up">' + badge + '</span></div>';
             }).join('');
         }
 
-        // ── 시즌 키워드 ──
+        // 시즌 키워드 (항상 표시)
         if (myData.season && myData.season.now && myData.season.now.length > 0) {
             html += '<p class="trend-section-lbl">📅 이달의 시즌 키워드</p>';
-            html += myData.season.now.map((s, i) => `<div class="trend-row">
-                <span class="t-rank">${i + 1}</span>
-                <span class="t-keyword">#${s}</span>
-                <span class="t-change up">시즌</span>
-            </div>`).join('');
+            html += myData.season.now.map((s, i) => '<div class="trend-row"><span class="t-rank">' + (i + 1) + '</span><span class="t-keyword">#' + s + '</span><span class="t-change up">시즌</span></div>').join('');
         }
         if (myData.season && myData.season.upcoming && myData.season.upcoming.length > 0) {
             html += '<p class="trend-section-lbl">🔜 다음 달 준비</p>';
-            html += myData.season.upcoming.map((s, i) => `<div class="trend-row">
-                <span class="t-rank">${i + 1}</span>
-                <span class="t-keyword">#${s}</span>
-                <span class="t-change stable">예정</span>
-            </div>`).join('');
+            html += myData.season.upcoming.map((s, i) => '<div class="trend-row"><span class="t-rank">' + (i + 1) + '</span><span class="t-keyword">#' + s + '</span><span class="t-change stable">예정</span></div>').join('');
         }
 
-        // ── 전체 트렌드 ──
-        if (allData && allData.keywords && allData.keywords.length > 0) {
+        // 전체 소상공인 트렌드 (GPT 미분류 시에만)
+        if (!hasDomGlb && allData && allData.keywords && allData.keywords.length > 0) {
             html += '<p class="trend-section-lbl" style="margin-top:16px;">📊 전체 소상공인 트렌드</p>';
-            if (allData.dataSources) {
-                html += '<p style="font-size:10px;color:var(--g400);margin:-4px 0 6px;">분석 ' + (allData.findingsCount || '') + '건 · ' + allData.dataSources.join(', ') + '</p>';
-            }
             html += allData.keywords.map((k, i) => {
                 const kw = k.keyword.startsWith('#') ? k.keyword : '#' + k.keyword;
                 const badge = k.mentions ? k.mentions + '회 언급' : '추천';
-                return `<div class="trend-row">
-                    <span class="t-rank">${i + 1}</span>
-                    <span class="t-keyword">${kw}</span>
-                    <span class="t-change up">${badge}</span>
-                </div>`;
+                return '<div class="trend-row"><span class="t-rank">' + (i + 1) + '</span><span class="t-keyword">' + kw + '</span><span class="t-change up">' + badge + '</span></div>';
             }).join('');
         }
 
-        if (!html) throw new Error('데이터 없음');
+        if (!html && !hasDomGlb) throw new Error('데이터 없음');
 
-        // realtimeTrends — 내 업종 키워드 + 시즌 (캡션 생성에 사용)
-        realtimeTrends = (myData.keywords || []).map(k => k.keyword.startsWith('#') ? k.keyword : '#' + k.keyword).concat(
-            (myData.season?.now || []).map(s => '#' + s)
-        );
+        // realtimeTrends — 캡션 생성에 사용 (국내+해외+시즌 합산)
+        realtimeTrends = [];
+        if (domData.keywords) realtimeTrends.push(...domData.keywords.map(k => '#' + k.keyword.replace(/^#/, '')));
+        if (glbData.keywords) realtimeTrends.push(...glbData.keywords.map(k => '#' + k.keyword.replace(/^#/, '')));
+        if (myData.season?.now) realtimeTrends.push(...myData.season.now.map(s => '#' + s));
+        if (!realtimeTrends.length && myData.keywords) {
+            realtimeTrends = myData.keywords.map(k => '#' + k.keyword.replace(/^#/, ''));
+        }
 
         trendEl.innerHTML = html;
     } catch(e) {

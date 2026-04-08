@@ -48,6 +48,7 @@ exports.handler = async (event) => {
 
   const params = new URLSearchParams(event.rawQuery || '');
   const category = params.get('category') || 'cafe';
+  const scope = params.get('scope') || '';  // 'domestic', 'global', or '' (default=combined)
   const knownCategories = ['cafe', 'food', 'beauty', 'flower', 'fashion', 'fitness', 'pet', 'interior', 'education', 'laundry', 'studio'];
   const storeKey = knownCategories.includes(category) ? category : 'other';
   const season = getSeasonInfo();
@@ -61,7 +62,49 @@ exports.handler = async (event) => {
       token: process.env.NETLIFY_TOKEN,
     });
 
-    // last30days 상세 데이터 (l30d: 키)
+    // scope=domestic 또는 scope=global → GPT 분류 결과 반환
+    if (scope === 'domestic' || scope === 'global') {
+      const scopeKey = `l30d-${scope}:${storeKey}`;
+      let scopeRaw = null;
+      try { scopeRaw = await store.get(scopeKey); } catch(e) {}
+
+      if (scopeRaw) {
+        const scopeData = JSON.parse(scopeRaw);
+        return {
+          statusCode: 200, headers: CORS,
+          body: JSON.stringify({
+            category: storeKey,
+            categoryLabel: label,
+            scope,
+            keywords: (scopeData.keywords || []).map(k => ({
+              keyword: (k.keyword || '').replace(/^#/, ''),
+              source: k.source || 'gpt-classified',
+            })),
+            insight: scopeData.insight || '',
+            season: scope === 'domestic' ? season : undefined,
+            updatedAt: scopeData.updatedAt || new Date().toISOString(),
+            source: 'gpt-classified',
+          }),
+        };
+      }
+
+      // 데이터 없으면 빈 응답
+      return {
+        statusCode: 200, headers: CORS,
+        body: JSON.stringify({
+          category: storeKey,
+          categoryLabel: label,
+          scope,
+          keywords: [],
+          insight: '',
+          season: scope === 'domestic' ? season : undefined,
+          updatedAt: new Date().toISOString(),
+          source: 'none',
+        }),
+      };
+    }
+
+    // 기존 합산 데이터 (scope 미지정)
     let l30dRaw = null;
     try { l30dRaw = await store.get('l30d:' + storeKey); } catch(e) {}
 
