@@ -149,14 +149,16 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
         .aq-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:var(--r-full);font-size:11px;font-weight:700;background:var(--g100);color:var(--g700);}
         .dash-lbl{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--g400);margin-bottom:10px;}
         .trend-wrap{display:flex;flex-direction:column;gap:7px;margin-bottom:20px;}
-        .trend-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-        @media(max-width:400px){.trend-grid{grid-template-columns:1fr;}}
-        .trend-card{background:var(--white);border-radius:var(--r-md);padding:12px 14px;border:1px solid var(--g100);display:flex;align-items:center;gap:10px;transition:transform .15s,box-shadow .15s;}
+        .trend-dual{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
+        @media(max-width:580px){.trend-dual{grid-template-columns:1fr;gap:12px;}}
+        .trend-col{margin-bottom:0;}
+        .trend-grid{display:flex;flex-direction:column;gap:6px;}
+        .trend-card{background:var(--white);border-radius:var(--r-md);padding:10px 12px;border:1px solid var(--g100);display:flex;align-items:center;gap:8px;transition:transform .15s,box-shadow .15s;}
         .trend-card:hover{transform:translateY(-1px);box-shadow:var(--sh-xs);}
         .trend-card .t-rank{width:22px;height:22px;border-radius:50%;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--g100);color:var(--g500);}
         .trend-card .t-rank.top3{background:var(--pink);color:#fff;}
         .trend-card .t-info{flex:1;min-width:0;}
-        .trend-card .t-keyword{font-size:.82rem;font-weight:700;color:var(--g900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+        .trend-card .t-keyword{font-size:.8rem;font-weight:700;color:var(--g900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;}
         .trend-card .t-badge{flex-shrink:0;}
         .trend-row{background:var(--white);border-radius:var(--r-md);padding:13px 15px;border:1px solid var(--g100);display:flex;align-items:center;gap:10px;transition:transform .2s,box-shadow .2s;}
         .trend-row:hover{transform:translateY(-1px);box-shadow:var(--sh-xs);}
@@ -736,8 +738,10 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
         </div>
 
         <p class="dash-lbl">트렌드 & 추천 키워드</p>
-        <div class="trend-wrap" id="trend-domestic-node"></div>
-        <div class="trend-wrap" id="trend-global-node"></div>
+        <div class="trend-dual" id="trend-dual-wrap" style="display:none;">
+            <div class="trend-wrap trend-col" id="trend-domestic-node"></div>
+            <div class="trend-wrap trend-col" id="trend-global-node"></div>
+        </div>
         <div class="trend-wrap" id="trend-list-node"></div>
 
         <!-- 말투 피드백 섹션 -->
@@ -2499,12 +2503,14 @@ function syncWeatherUI(state){const c=LUMI_CORE.weather[state]||LUMI_CORE.weathe
 async function loadTrends() {
     const domesticEl = document.getElementById('trend-domestic-node');
     const globalEl = document.getElementById('trend-global-node');
+    const dualWrap = document.getElementById('trend-dual-wrap');
     const trendEl = document.getElementById('trend-list-node');
     if (!trendEl) return;
 
     trendEl.innerHTML = '<div style="color:var(--g400);font-size:.85rem;padding:8px 0;">트렌드 불러오는 중...</div>';
     if (domesticEl) domesticEl.innerHTML = '';
     if (globalEl) globalEl.innerHTML = '';
+    if (dualWrap) dualWrap.style.display = 'none';
 
     try {
         const category = bizCat || 'cafe';
@@ -2568,6 +2574,8 @@ async function loadTrends() {
             gHtml += '</div>';
             globalEl.innerHTML = gHtml;
         }
+
+        if (hasDomGlb && dualWrap) dualWrap.style.display = 'grid';
 
         // ── 기존 합산 트렌드 (GPT 미분류 시 fallback + 시즌) ──
         let html = '';
