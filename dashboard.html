@@ -2523,7 +2523,13 @@ async function loadTrends() {
             }
             dHtml += domData.keywords.map((k, i) => {
                 const kw = k.keyword.startsWith('#') ? k.keyword : '#' + k.keyword;
-                return '<div class="trend-row"><span class="t-rank">' + (i + 1) + '</span><span class="t-keyword">' + kw + '</span><span class="t-change up">국내</span></div>';
+                const rc = k.rankChange;
+                let badge = '';
+                if (rc === 'new') badge = '<span class="t-change up">NEW</span>';
+                else if (rc > 0) badge = '<span class="t-change up">▲' + rc + '</span>';
+                else if (rc < 0) badge = '<span class="t-change down">▼' + Math.abs(rc) + '</span>';
+                else badge = '<span class="t-change stable">—</span>';
+                return '<div class="trend-row"><span class="t-rank">' + (i + 1) + '</span><span class="t-keyword">' + kw + '</span>' + badge + '</div>';
             }).join('');
             domesticEl.innerHTML = dHtml;
         }
@@ -2537,7 +2543,13 @@ async function loadTrends() {
             }
             gHtml += glbData.keywords.map((k, i) => {
                 const kw = k.keyword.startsWith('#') ? k.keyword : '#' + k.keyword;
-                return '<div class="trend-row"><span class="t-rank">' + (i + 1) + '</span><span class="t-keyword">' + kw + '</span><span class="t-change up">해외</span></div>';
+                const rc = k.rankChange;
+                let badge = '';
+                if (rc === 'new') badge = '<span class="t-change up">NEW</span>';
+                else if (rc > 0) badge = '<span class="t-change up">▲' + rc + '</span>';
+                else if (rc < 0) badge = '<span class="t-change down">▼' + Math.abs(rc) + '</span>';
+                else badge = '<span class="t-change stable">—</span>';
+                return '<div class="trend-row"><span class="t-rank">' + (i + 1) + '</span><span class="t-keyword">' + kw + '</span>' + badge + '</div>';
             }).join('');
             globalEl.innerHTML = gHtml;
         }

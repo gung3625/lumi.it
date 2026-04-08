@@ -42,16 +42,24 @@ exports.handler = async (event) => {
       }
     }
 
-    // GPT 분류 결과: 국내 트렌드
+    // GPT 분류 결과: 국내 트렌드 (현재→prev 백업 후 저장)
     if (body.domestic && typeof body.domestic === 'object') {
       for (const [category, data] of Object.entries(body.domestic)) {
+        try {
+          const cur = await store.get('l30d-domestic:' + category);
+          if (cur) await store.set('l30d-domestic-prev:' + category, cur);
+        } catch(e) {}
         await store.set('l30d-domestic:' + category, JSON.stringify(data));
       }
     }
 
-    // GPT 분류 결과: 해외 트렌드
+    // GPT 분류 결과: 해외 트렌드 (현재→prev 백업 후 저장)
     if (body.global && typeof body.global === 'object') {
       for (const [category, data] of Object.entries(body.global)) {
+        try {
+          const cur = await store.get('l30d-global:' + category);
+          if (cur) await store.set('l30d-global-prev:' + category, cur);
+        } catch(e) {}
         await store.set('l30d-global:' + category, JSON.stringify(data));
       }
     }

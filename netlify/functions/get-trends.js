@@ -65,21 +65,38 @@ exports.handler = async (event) => {
     // scope=domestic 또는 scope=global → GPT 분류 결과 반환
     if (scope === 'domestic' || scope === 'global') {
       const scopeKey = `l30d-${scope}:${storeKey}`;
+      const prevKey = `l30d-${scope}-prev:${storeKey}`;
       let scopeRaw = null;
+      let prevRaw = null;
       try { scopeRaw = await store.get(scopeKey); } catch(e) {}
+      try { prevRaw = await store.get(prevKey); } catch(e) {}
 
       if (scopeRaw) {
         const scopeData = JSON.parse(scopeRaw);
+        const prevData = prevRaw ? JSON.parse(prevRaw) : null;
+        const prevKeywords = prevData && prevData.keywords ? prevData.keywords.map(k => (k.keyword || '').replace(/^#/, '')) : [];
+
         return {
           statusCode: 200, headers: CORS,
           body: JSON.stringify({
             category: storeKey,
             categoryLabel: label,
             scope,
-            keywords: (scopeData.keywords || []).map(k => ({
-              keyword: (k.keyword || '').replace(/^#/, ''),
-              source: k.source || 'gpt-classified',
-            })),
+            keywords: (scopeData.keywords || []).map((k, i) => {
+              const kw = (k.keyword || '').replace(/^#/, '');
+              const prevIdx = prevKeywords.indexOf(kw);
+              let rankChange = null;
+              if (prevIdx === -1) rankChange = 'new';
+              else if (prevIdx > i) rankChange = prevIdx - i;
+              else if (prevIdx < i) rankChange = prevIdx - i;
+              else rankChange = 0;
+              return {
+                keyword: kw,
+                source: k.source || 'gpt-classified',
+                rank: i + 1,
+                rankChange,
+              };
+            }),
             insight: scopeData.insight || '',
             season: scope === 'domestic' ? season : undefined,
             updatedAt: scopeData.updatedAt || new Date().toISOString(),
