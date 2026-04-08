@@ -141,7 +141,10 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
         .dash-hello{margin-bottom:24px;}
         .dash-hello h2{font-size:1.25rem;font-weight:800;color:var(--g900);}
         .dash-hello p{font-size:.83rem;color:var(--g400);margin-top:3px;}
-        .weather-card{background:var(--white);border-radius:var(--r-lg);padding:18px;border:1px solid var(--g200);display:flex;align-items:center;gap:14px;margin-bottom:16px;box-shadow:var(--sh-xs);}
+        .home-grid{display:grid;grid-template-columns:1.2fr 0.8fr;gap:16px;margin-bottom:20px;align-items:start;}
+        @media(max-width:680px){.home-grid{grid-template-columns:1fr;}}
+        .home-side{display:flex;flex-direction:column;gap:14px;}
+        .weather-card{background:var(--white);border-radius:var(--r-lg);padding:18px;border:1px solid var(--g200);display:flex;align-items:center;gap:14px;box-shadow:var(--sh-xs);}
         .w-icon{font-size:1.9rem;width:44px;text-align:center;}
         .w-status{font-size:.88rem;font-weight:700;color:var(--g900);}
         .w-guide{font-size:.78rem;color:var(--pink);margin-top:3px;font-weight:500;}
@@ -589,6 +592,8 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
 
         <!-- TAB: 홈 -->
         <div data-tab="home" class="tab-active">
+
+        <!-- 인사말 -->
         <div class="dash-hello">
             <h2 id="dash-store-name">안녕하세요.</h2>
             <p>오늘도 lumi가 함께해요.</p>
@@ -598,7 +603,8 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
                 <button id="cancel-sub-btn" onclick="cancelSubscription()" style="display:none;background:none;border:1px solid #ffcccc;border-radius:8px;padding:6px 14px;font-size:12px;color:#ff4d4d;cursor:pointer;font-weight:600;font-family:inherit;">구독 취소</button>
             </div>
         </div>
-        <!-- Instagram 연동 상태 -->
+
+        <!-- Instagram 연동 -->
         <div id="ig-connect-banner" style="display:none;">
             <p class="ig-b-title">📸 Instagram 연동이 필요해요</p>
             <p class="ig-b-desc">사진을 올리면 lumi가 캡션을 써서 <strong>인스타그램에 자동으로 게시</strong>해드려요.<br>연동하지 않으면 게시물 업로드가 불가능해요.</p>
@@ -623,7 +629,106 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
             </div>
         </div>
 
-        </div><!-- /TAB: 홈 (1/2) -->
+        <!-- ── 메인 2열: 업로드 + 날씨/최적시간 ── -->
+        <div class="home-grid">
+          <!-- 왼쪽: 사진 업로드 (핵심) -->
+          <div class="upload-card">
+            <p class="upload-ttl">오늘의 사진을 올려주세요!</p>
+            <div class="drop-zone">
+                <input type="file" id="ceo-file-selector" multiple accept="image/*" onchange="syncBinaryWarehouse()">
+                <div id="ceo-preview-box" class="preview-grid"></div>
+                <div id="ceo-placeholder">
+                    <div class="drop-icon">📸</div>
+                    <p class="drop-txt">사진을 선택하세요</p>
+                </div>
+            </div>
+            <div id="story-photo-notice" style="display:none;background:#FFF8E1;border-radius:var(--r-sm);padding:8px 12px;margin-bottom:8px;border-left:3px solid #FFC107;">
+                <p style="font-size:11px;color:var(--g500);line-height:1.6;">📖 <strong>스토리 자동 게시 ON</strong> — 첫 번째 사진이 대표 사진으로 스토리에 올라가요.</p>
+            </div>
+            <div style="background:var(--g50);border-radius:var(--r-sm);padding:10px 14px;margin-bottom:10px;border-left:3px solid var(--pink);">
+                <p style="font-size:11px;font-weight:700;color:var(--g500);line-height:1.7;">오늘 특별히 전하고 싶은 소식이 있다면 적어주세요.<br>
+                <span style="color:var(--pink);">예) 신메뉴 출시, 명절 휴무 안내, 이벤트 진행 중</span><br>
+                없으면 비워도 돼요. lumi가 사진 보고 알아서 써드려요.</p>
+            </div>
+            <textarea id="ceo-note-input" class="dash-note" rows="3" placeholder="예) 신메뉴 출시, 명절 휴무 안내, 이벤트 진행 중"></textarea>
+            <div style="margin-bottom:14px;">
+                <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:8px;">예약 게시 (선택)</p>
+                <div style="display:flex;gap:8px;">
+                    <select id="reserve-date-select" class="inp" style="height:48px;flex:2;" onchange="updateReserveHint()"><option value="">날짜 선택</option></select>
+                    <select id="reserve-hour-select" class="inp" style="height:48px;flex:1;" onchange="updateReserveHint()"><option value="">시</option></select>
+                    <select id="reserve-min-select" class="inp" style="height:48px;flex:1;" onchange="updateReserveHint()"><option value="">분</option></select>
+                </div>
+                <input type="hidden" id="reserve-time-field">
+                <p id="reserve-time-hint" style="font-size:11px;color:var(--g400);margin-top:4px;display:none;"></p>
+            </div>
+            <div class="act-btns">
+                <button class="btn-act-on" onclick="commitPost('now')">바로 올리기</button>
+                <button class="btn-act-off" onclick="commitPost('reserve')">예약 저장</button>
+            </div>
+          </div>
+
+          <!-- 오른쪽: 날씨 + 최적시간 -->
+          <div class="home-side">
+            <div class="weather-card">
+                <div class="w-icon" id="dash-w-icon">📍</div>
+                <div style="flex:1;">
+                    <div class="w-status" id="dash-w-text">날씨 불러오는 중...</div>
+                    <div class="w-guide" id="dash-w-guide">매장 지역을 설정하면 날씨를 알려드려요</div>
+                    <div class="air-quality-row" id="air-quality-row" style="display:none;">
+                        <span class="aq-badge" id="aq-pm10-badge">미세먼지 -</span>
+                        <span class="aq-badge" id="aq-pm25-badge">초미세먼지 -</span>
+                    </div>
+                </div>
+            </div>
+            <div id="best-time-section" style="background:var(--white);border-radius:var(--r-xl);padding:20px 22px;border:1px solid var(--g200);box-shadow:var(--sh-xs);margin-bottom:14px;position:relative;overflow:hidden;">
+                <div id="best-time-lock" style="display:none;position:absolute;inset:0;background:var(--g50);opacity:.97;backdrop-filter:blur(3px);z-index:10;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;">
+                    <div style="font-size:1.8rem;margin-bottom:8px;">🔒</div>
+                    <p style="font-size:.88rem;font-weight:800;color:var(--g900);margin-bottom:4px;">프로 플랜 전용 기능이에요</p>
+                    <p style="font-size:.78rem;color:var(--g500);">프로 플랜으로 업그레이드하면 업종별 최적 업로드 시간을 받아볼 수 있어요.</p>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="font-size:1rem;">⏰</span>
+                        <p style="font-size:.88rem;font-weight:800;color:var(--g900);">오늘 최적 업로드 시간</p>
+                        <span style="font-size:10px;font-weight:700;color:var(--pink);background:var(--pink-pale);padding:2px 8px;border-radius:99px;">PRO</span>
+                    </div>
+                    <span id="best-time-badge" style="font-size:1.2rem;font-weight:900;color:var(--pink);">--:--</span>
+                </div>
+                <p id="best-time-reason" style="font-size:.8rem;color:var(--g500);margin-bottom:10px;">업종 기반으로 팔로워가 가장 활발한 시간대를 분석해요.</p>
+                <div id="best-time-slots" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;"></div>
+                <p id="best-time-tip" style="font-size:.75rem;color:var(--pink);font-weight:600;"></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── 트렌드 (전체 너비) ── -->
+        <p class="dash-lbl">트렌드 & 추천 키워드</p>
+        <div class="trend-dual" id="trend-dual-wrap" style="display:none;">
+            <div class="trend-wrap trend-col" id="trend-domestic-node"></div>
+            <div class="trend-wrap trend-col" id="trend-global-node"></div>
+        </div>
+        <div class="trend-wrap" id="trend-list-node"></div>
+
+        <!-- ── 말투 피드백 ── -->
+        <div id="tone-feedback-section" style="display:none;background:var(--white);border-radius:var(--r-xl);padding:20px;border:1px solid var(--pink-soft);box-shadow:var(--sh-xs);margin-bottom:14px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                <span style="font-size:1rem;">✍️</span>
+                <p style="font-size:.88rem;font-weight:800;color:var(--g900);">지난번 캡션 어떠셨나요?</p>
+            </div>
+            <p style="font-size:.78rem;color:var(--g500);margin-bottom:14px;line-height:1.6;">👍를 누르면 다음 캡션도 비슷한 톤으로 써드려요. 👎를 누르면 이런 방식은 피해서 작성해요. 최대 5개까지 기억하고 매번 반영돼요. 선택 안 하셔도 괜찮아요.</p>
+            <div id="tone-feedback-caption" style="background:var(--pink-ultra);border-radius:var(--r-md);padding:14px;font-size:.83rem;color:var(--g700);line-height:1.9;margin-bottom:14px;border-left:3px solid var(--pink-soft);white-space:pre-line;"></div>
+            <div style="display:flex;gap:10px;">
+                <button id="tone-like-btn" onclick="submitToneFeedback('like')" style="flex:1;height:48px;background:var(--white);border:1.5px solid var(--g200);border-radius:var(--r-md);font-size:.88rem;font-weight:700;color:var(--g700);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .2s;font-family:inherit;" onmouseover="this.style.borderColor='#22c55e';this.style.background='#f0fff4'" onmouseout="this.style.borderColor='var(--g200)';this.style.background='var(--white)'">
+                    👍 마음에 들어요
+                </button>
+                <button id="tone-dislike-btn" onclick="submitToneFeedback('dislike')" style="flex:1;height:48px;background:var(--white);border:1.5px solid var(--g200);border-radius:var(--r-md);font-size:.88rem;font-weight:700;color:var(--g700);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .2s;font-family:inherit;" onmouseover="this.style.borderColor='#ef4444';this.style.background='#fff5f5'" onmouseout="this.style.borderColor='var(--g200)';this.style.background='var(--white)'">
+                    👎 별로였어요
+                </button>
+            </div>
+            <button onclick="dismissToneFeedback()" style="width:100%;margin-top:8px;background:none;border:none;font-size:12px;color:var(--g400);cursor:pointer;padding:4px;font-family:inherit;">다음에 할게요</button>
+        </div>
+
+        </div><!-- /TAB: 홈 -->
 
         <!-- TAB: 설정 -->
         <div data-tab="settings">
@@ -732,49 +837,6 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
 
         </div><!-- /TAB: 설정 (1/2) -->
 
-        <!-- TAB: 홈 (2/2) -->
-        <div data-tab="home" class="tab-active">
-        <div class="weather-card">
-            <div class="w-icon" id="dash-w-icon">📍</div>
-            <div style="flex:1;">
-                <div class="w-status" id="dash-w-text">날씨 불러오는 중...</div>
-                <div class="w-guide" id="dash-w-guide">매장 지역을 설정하면 날씨를 알려드려요</div>
-                <div class="air-quality-row" id="air-quality-row" style="display:none;">
-                    <span class="aq-badge" id="aq-pm10-badge">미세먼지 -</span>
-                    <span class="aq-badge" id="aq-pm25-badge">초미세먼지 -</span>
-                </div>
-            </div>
-        </div>
-
-
-
-        <p class="dash-lbl">트렌드 & 추천 키워드</p>
-        <div class="trend-dual" id="trend-dual-wrap" style="display:none;">
-            <div class="trend-wrap trend-col" id="trend-domestic-node"></div>
-            <div class="trend-wrap trend-col" id="trend-global-node"></div>
-        </div>
-        <div class="trend-wrap" id="trend-list-node"></div>
-
-        <!-- 말투 피드백 섹션 -->
-        <div id="tone-feedback-section" style="display:none;background:var(--white);border-radius:var(--r-xl);padding:20px;border:1px solid var(--pink-soft);box-shadow:var(--sh-xs);margin-bottom:14px;">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-                <span style="font-size:1rem;">✍️</span>
-                <p style="font-size:.88rem;font-weight:800;color:var(--g900);">지난번 캡션 어떠셨나요?</p>
-            </div>
-            <p style="font-size:.78rem;color:var(--g500);margin-bottom:14px;line-height:1.6;">👍를 누르면 다음 캡션도 비슷한 톤으로 써드려요. 👎를 누르면 이런 방식은 피해서 작성해요. 최대 5개까지 기억하고 매번 반영돼요. 선택 안 하셔도 괜찮아요.</p>
-            <div id="tone-feedback-caption" style="background:var(--pink-ultra);border-radius:var(--r-md);padding:14px;font-size:.83rem;color:var(--g700);line-height:1.9;margin-bottom:14px;border-left:3px solid var(--pink-soft);white-space:pre-line;"></div>
-            <div style="display:flex;gap:10px;">
-                <button id="tone-like-btn" onclick="submitToneFeedback('like')" style="flex:1;height:48px;background:var(--white);border:1.5px solid var(--g200);border-radius:var(--r-md);font-size:.88rem;font-weight:700;color:var(--g700);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .2s;font-family:inherit;" onmouseover="this.style.borderColor='#22c55e';this.style.background='#f0fff4'" onmouseout="this.style.borderColor='var(--g200)';this.style.background='var(--white)'">
-                    👍 마음에 들어요
-                </button>
-                <button id="tone-dislike-btn" onclick="submitToneFeedback('dislike')" style="flex:1;height:48px;background:var(--white);border:1.5px solid var(--g200);border-radius:var(--r-md);font-size:.88rem;font-weight:700;color:var(--g700);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .2s;font-family:inherit;" onmouseover="this.style.borderColor='#ef4444';this.style.background='#fff5f5'" onmouseout="this.style.borderColor='var(--g200)';this.style.background='var(--white)'">
-                    👎 별로였어요
-                </button>
-            </div>
-            <button onclick="dismissToneFeedback()" style="width:100%;margin-top:8px;background:none;border:none;font-size:12px;color:var(--g400);cursor:pointer;padding:4px;font-family:inherit;">다음에 할게요</button>
-        </div>
-
-        </div><!-- /TAB: 홈 (2/2) -->
 
         <!-- TAB: 보관함 -->
         <div data-tab="archive">
@@ -807,70 +869,6 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
 
         </div><!-- /TAB: 보관함 (1/2) -->
 
-        <!-- TAB: 홈 (3/3 - 업로드) -->
-        <div data-tab="home" class="tab-active">
-        <div class="upload-card">
-            <p class="upload-ttl">오늘의 사진을 올려주세요!</p>
-            <div class="drop-zone">
-                <input type="file" id="ceo-file-selector" multiple accept="image/*" onchange="syncBinaryWarehouse()">
-                <div id="ceo-preview-box" class="preview-grid"></div>
-                <div id="ceo-placeholder">
-                    <div class="drop-icon">📸</div>
-                    <p class="drop-txt">사진을 선택하세요</p>
-                </div>
-            </div>
-            <div id="story-photo-notice" style="display:none;background:#FFF8E1;border-radius:var(--r-sm);padding:8px 12px;margin-bottom:8px;border-left:3px solid #FFC107;">
-                <p style="font-size:11px;color:var(--g500);line-height:1.6;">📖 <strong>스토리 자동 게시 ON</strong> — 첫 번째 사진이 대표 사진으로 스토리에 올라가요.</p>
-            </div>
-            <div style="background:var(--g50);border-radius:var(--r-sm);padding:10px 14px;margin-bottom:10px;border-left:3px solid var(--pink);">
-                <p style="font-size:11px;font-weight:700;color:var(--g500);line-height:1.7;">오늘 특별히 전하고 싶은 소식이 있다면 적어주세요.<br>
-                <span style="color:var(--pink);">예) 신메뉴 출시, 명절 휴무 안내, 이벤트 진행 중</span><br>
-                없으면 비워도 돼요. lumi가 사진 보고 알아서 써드려요.</p>
-            </div>
-            <textarea id="ceo-note-input" class="dash-note" rows="3" placeholder="예) 신메뉴 출시, 명절 휴무 안내, 이벤트 진행 중"></textarea>
-            <!-- 예약 게시 -->
-            <div style="margin-bottom:14px;">
-                <p style="font-size:12px;font-weight:700;color:var(--g500);margin-bottom:8px;">예약 게시 (선택)</p>
-                <div style="display:flex;gap:8px;">
-                    <select id="reserve-date-select" class="inp" style="height:48px;flex:2;" onchange="updateReserveHint()">
-                        <option value="">날짜 선택</option>
-                    </select>
-                    <select id="reserve-hour-select" class="inp" style="height:48px;flex:1;" onchange="updateReserveHint()">
-                        <option value="">시</option>
-                    </select>
-                    <select id="reserve-min-select" class="inp" style="height:48px;flex:1;" onchange="updateReserveHint()">
-                        <option value="">분</option>
-                    </select>
-                </div>
-                <input type="hidden" id="reserve-time-field">
-                <p id="reserve-time-hint" style="font-size:11px;color:var(--g400);margin-top:4px;display:none;"></p>
-            </div>
-            <div class="act-btns">
-                <button class="btn-act-on" onclick="commitPost('now')">바로 올리기</button>
-                <button class="btn-act-off" onclick="commitPost('reserve')">예약 저장</button>
-            </div>
-        </div>
-
-        <!-- 최적 업로드 시간 (PRO 전용) -->
-        <div id="best-time-section" style="background:var(--white);border-radius:var(--r-xl);padding:20px 22px;border:1px solid var(--g200);box-shadow:var(--sh-xs);margin-bottom:14px;position:relative;overflow:hidden;">
-            <div id="best-time-lock" style="display:none;position:absolute;inset:0;background:var(--g50);opacity:.97;backdrop-filter:blur(3px);z-index:10;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;">
-                <div style="font-size:1.8rem;margin-bottom:8px;">🔒</div>
-                <p style="font-size:.88rem;font-weight:800;color:var(--g900);margin-bottom:4px;">프로 플랜 전용 기능이에요</p>
-                <p style="font-size:.78rem;color:var(--g500);">프로 플랜으로 업그레이드하면 업종별 최적 업로드 시간을 받아볼 수 있어요.</p>
-            </div>
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-                <div style="display:flex;align-items:center;gap:8px;">
-                    <span style="font-size:1rem;">⏰</span>
-                    <p style="font-size:.88rem;font-weight:800;color:var(--g900);">오늘 최적 업로드 시간</p>
-                    <span style="font-size:10px;font-weight:700;color:var(--pink);background:var(--pink-pale);padding:2px 8px;border-radius:99px;">PRO</span>
-                </div>
-                <span id="best-time-badge" style="font-size:1.2rem;font-weight:900;color:var(--pink);">--:--</span>
-            </div>
-            <p id="best-time-reason" style="font-size:.8rem;color:var(--g500);margin-bottom:10px;">업종 기반으로 팔로워가 가장 활발한 시간대를 분석해요.</p>
-            <div id="best-time-slots" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;"></div>
-            <p id="best-time-tip" style="font-size:.75rem;color:var(--pink);font-weight:600;"></p>
-        </div>
-        </div><!-- /TAB: 홈 (3/3) -->
 
         <!-- TAB: 설정 (2/2) -->
         <div data-tab="settings">
