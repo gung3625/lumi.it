@@ -85,6 +85,7 @@ exports.handler = async (event) => {
             source: 'last30days',
             findingsCount: l30d.findingsCount || null,
             dataSources: l30d.sources || null,
+              insights: l30d.insights || '',
           }),
         };
       }

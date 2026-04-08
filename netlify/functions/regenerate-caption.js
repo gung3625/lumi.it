@@ -109,7 +109,14 @@ function buildCaptionPrompt(item, imageAnalysis, toneGuide) {
 ### ⑤ 트렌드
 트렌드 태그: ${trends}
 태그 스타일: ${item.tagStyle || 'mid'}
-본문에 억지로 넣지 말 것. 1~2개만 문장에 녹이고 나머지는 해시태그.
+
+${item.trendInsights ? `[업종 트렌드 인사이트 — 캡션에 자연스럽게 반영할 것]
+${item.trendInsights}
+
+위 트렌드를 참고하여:
+- 캡션 본문에 요즘 화제인 주제를 자연스럽게 1~2개 녹여주세요
+- 해시태그는 트렌드 태그 중 3~4개를 포함하고, 나머지는 매장 관련 태그로 채우세요
+- 트렌드를 억지로 넣지 말고, 사진/매장과 연결되는 것만 사용하세요` : '본문에 억지로 넣지 말 것. 1~2개만 문장에 녹이고 나머지는 해시태그.'}
 
 ### ⑥ 주변 행사
 근처 행사 여부: ${hasFestival}
@@ -251,7 +258,20 @@ exports.handler = async (event) => {
       return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '이미지 분석 결과가 없어요. 먼저 예약을 처리해주세요.' }) };
     }
 
-    // 4. GPT-5.4로 캡션 3개 재생성 (brief 프롬프트 2 사용)
+    // 4. 최신 트렌드 인사이트 가져오기
+    try {
+      const bizCat = item.bizCategory || (item.storeProfile || {}).category || 'cafe';
+      const trendRes = await fetch(`https://lumi.it.kr/.netlify/functions/get-trends?category=${encodeURIComponent(bizCat)}`);
+      if (trendRes.ok) {
+        const trendData = await trendRes.json();
+        if (trendData.keywords && trendData.keywords.length > 0) {
+          item.trends = trendData.keywords.map(k => k.keyword.startsWith('#') ? k.keyword : '#' + k.keyword);
+        }
+        if (trendData.insights) item.trendInsights = trendData.insights;
+      }
+    } catch (e) { /* 실패해도 캡션 생성은 계속 */ }
+
+    // 5. GPT-5.4로 캡션 3개 재생성
     const toneGuide = buildToneGuide(item.toneLikes, item.toneDislikes);
     const captionPrompt = buildCaptionPrompt(item, imageAnalysis, toneGuide);
 
