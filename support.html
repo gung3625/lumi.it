@@ -269,11 +269,11 @@
             <p class="contact-desc" style="margin-bottom:16px;">구독을 취소하면 다음 결제일부터 자동 결제가 중단돼요. 현재 결제 기간 만료일까지는 계속 이용 가능해요. 위약금은 없어요.</p>
             <a href="mailto:gung3625@gmail.com?subject=구독 취소 요청&body=이메일: %0A이름: %0A취소 사유(선택): " class="contact-btn dark">구독 취소 요청하기</a>
         </div>
-        <div class="contact-card" style="text-align:left;cursor:default;border-color:#ffcccc;background:#fff5f5;">
+        <div class="contact-card" id="withdraw-card" style="text-align:left;cursor:default;border-color:#ffcccc;background:#fff5f5;display:none;">
             <div class="contact-icon">👋</div>
             <div class="contact-name">회원 탈퇴</div>
-            <p class="contact-desc" style="margin-bottom:16px;">탈퇴하면 모든 데이터가 삭제되며 복구가 불가능해요. 탈퇴 전 구독 중인 경우 구독 취소를 먼저 진행해 주세요.</p>
-            <a href="mailto:gung3625@gmail.com?subject=회원 탈퇴 요청&body=이메일: %0A이름: %0A탈퇴 사유(선택): " class="contact-btn" style="background:#ff4d4d;color:#fff;">탈퇴 요청하기</a>
+            <p class="contact-desc" id="withdraw-desc" style="margin-bottom:16px;">탈퇴하면 모든 데이터가 삭제되며 복구가 불가능해요.</p>
+            <a id="withdraw-btn" href="mailto:gung3625@gmail.com?subject=회원 탈퇴 요청&body=이메일: %0A이름: %0A탈퇴 사유(선택): " class="contact-btn" style="background:#ff4d4d;color:#fff;">탈퇴 요청하기</a>
         </div>
     </div>
     <div style="background:var(--g50);border-radius:var(--r-lg);padding:16px 20px;border:1px solid var(--g200);font-size:.85rem;color:var(--g500);line-height:1.8;">
@@ -362,6 +362,40 @@ document.getElementById('inquiry-form-el').addEventListener('submit', async func
         alert('제출 중 오류가 발생했어요. 이메일로 직접 문의해 주세요.');
     }
 });
+
+// 회원탈퇴 카드: 로그인 + 구독 상태 체크
+(function() {
+    const card = document.getElementById('withdraw-card');
+    const desc = document.getElementById('withdraw-desc');
+    const btn = document.getElementById('withdraw-btn');
+    if (!card) return;
+
+    const raw = localStorage.getItem('lumi_user');
+    if (!raw) return; // 비로그인 → 탈퇴 카드 숨김 유지
+
+    let user;
+    try { user = JSON.parse(raw); } catch { return; }
+    if (!user || !user.email) return;
+
+    card.style.display = ''; // 로그인 상태면 카드 표시
+
+    const hasPlan = user.plan && user.plan !== 'none' && user.plan !== 'trial';
+    const notExpired = user.planExpireAt && new Date(user.planExpireAt) > new Date();
+    const isSubscribed = hasPlan && notExpired && user.autoRenew !== false;
+
+    if (isSubscribed) {
+        desc.textContent = '구독을 먼저 취소해주세요. 구독 중에는 탈퇴할 수 없어요.';
+        btn.href = '#';
+        btn.onclick = function(e) { e.preventDefault(); alert('구독을 먼저 취소해주세요.'); };
+        btn.style.background = '#ccc';
+        btn.style.color = '#888';
+        btn.style.cursor = 'not-allowed';
+        btn.textContent = '구독 취소 후 탈퇴 가능';
+    } else {
+        desc.textContent = '탈퇴하면 모든 데이터가 삭제되며 복구가 불가능해요.';
+        btn.href = 'mailto:gung3625@gmail.com?subject=회원 탈퇴 요청&body=이메일: ' + encodeURIComponent(user.email) + '%0A이름: %0A탈퇴 사유(선택): ';
+    }
+})();
 </script>
 
 <button class="dark-toggle-fab" id="dark-toggle-fab" onclick="toggleDarkMode(!document.body.classList.contains('dark-mode'))" aria-label="다크모드 전환">☀️</button>
