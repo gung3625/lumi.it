@@ -59,10 +59,6 @@ function buildCaptionPrompt(item, imageAnalysis, toneGuide) {
     ? `트렌드 태그: ${trends}${item.trendInsights ? '\n\n[업종 트렌드 인사이트]\n' + item.trendInsights + '\n\n위 트렌드를 참고하되 반드시 아래 규칙을 지키세요:\n- 트렌드는 캡션의 분위기/감성에만 반영. 직접 설명하거나 인용하지 마세요\n- 사진에 실제로 보이는 것과 연결되는 트렌드만 활용\n- 경쟁사/타 브랜드명은 절대 언급하지 마세요\n- "요즘 유행", "SNS에서 화제" 같은 직접적 트렌드 언급 금지\n- 해시태그에는 트렌드 키워드 2~3개를 자연스럽게 포함' : '\n1~2개만 본문에 녹이고, 나머지는 해시태그에 포함.'}`
     : '트렌드 정보 없음.';
 
-  const eventBlock = item.nearbyEvent && item.nearbyFestivals
-    ? `근처 행사: ${item.nearbyFestivals}\n자연스럽게 한마디만.`
-    : '';
-
   const storeBlock = [
     sp.name ? `매장명: ${sp.name}` : '',
     sp.category || item.bizCategory ? `업종: ${sp.category || item.bizCategory}` : '',
@@ -125,9 +121,15 @@ function buildCaptionPrompt(item, imageAnalysis, toneGuide) {
 - "손님들이 다 좋아하세요" 같은 고객 반응 날조 금지
 
 ## 이런 캡션을 쓰세요
+- 이미지 분석의 [첫인상]을 캡션 첫 문장의 감성 씨앗으로 활용
 - 첫 문장에서 스크롤이 멈춤
 - 이모지 2~4개, 감정을 보완하는 위치에만 (연속 금지)
-- 마지막 문장은 행동 유도 (저장/공유/댓글/방문 중 자연스러운 것)
+- 마지막 문장은 행동 유도:
+  · 카페/음식: "여기 어디야?" 댓글 유도
+  · 뷰티: "예약/DM 문의" 유도
+  · 꽃집: "누구에게 주고 싶은지" 댓글 유도
+  · 패션: "저장해두세요" 유도
+  · 기타: 저장/공유/댓글/방문 중 자연스러운 것
 
 ---
 
@@ -138,14 +140,13 @@ ${imageAnalysis}
 
 ### 대표님 코멘트
 ${item.userMessage || '(없음)'}
+${item.userMessage ? '\n⚠️ 대표님 코멘트가 있으면 이것이 캡션의 핵심 메시지입니다. 코멘트 내용을 반드시 캡션에 우선 반영하세요.' : ''}
 
 ### 날씨
 ${weatherBlock}
 
 ### 트렌드
 ${trendBlock}
-
-${eventBlock ? '### 주변 행사\n' + eventBlock : ''}
 
 ### 매장 정보
 ${storeBlock || '(정보 없음)'}
@@ -160,6 +161,8 @@ ${storeBlock || '(정보 없음)'}
 - 친근하게: ~했어요, ~더라고요 / 감성적으로: 짧은 문장, 여백 / 재미있게: 유머, 반전 / 시크하게: 말 적고 여백 / 신뢰감 있게: 정중하되 딱딱하지 않게
 
 ${toneGuide ? '### 말투 학습\n' + toneGuide + '\n✅ 좋아요 계승 / ❌ 싫어요 회피' : ''}
+
+${item.customCaptions ? '### 커스텀 캡션 샘플\n대표님이 직접 등록한 캡션 예시입니다. 이 스타일을 참고하세요.\n' + item.customCaptions.split('|||').filter(Boolean).map((c, i) => `샘플 ${i + 1}: ${c.trim()}`).join('\n') : ''}
 
 ---
 
