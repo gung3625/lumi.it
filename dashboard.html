@@ -2775,8 +2775,8 @@ async function startPayment() {
     // 1. 주문 생성
     const prepRes = await fetch('/.netlify/functions/payment-prepare', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: user.email, planType: 'standard' })
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (user.token || '') },
+        body: JSON.stringify({ planType: 'standard' })
     });
     const prepData = await prepRes.json();
     if (!prepRes.ok) {
