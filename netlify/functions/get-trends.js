@@ -5,6 +5,14 @@ const CATEGORY_LABELS = {
   cafe: '카페·음료',
   food: '음식·외식',
   beauty: '뷰티·케어',
+  flower: '꽃집·플라워',
+  fashion: '패션·의류',
+  fitness: '헬스·필라테스',
+  pet: '반려동물·펫',
+  interior: '인테리어·가구',
+  education: '학원·교육',
+  laundry: '세탁·수선',
+  studio: '사진·스튜디오',
   other: '일반',
 };
 
@@ -40,7 +48,7 @@ exports.handler = async (event) => {
 
   const params = new URLSearchParams(event.rawQuery || '');
   const category = params.get('category') || 'cafe';
-  const knownCategories = ['cafe', 'food', 'beauty'];
+  const knownCategories = ['cafe', 'food', 'beauty', 'flower', 'fashion', 'fitness', 'pet', 'interior', 'education', 'laundry', 'studio'];
   const storeKey = knownCategories.includes(category) ? category : 'other';
   const season = getSeasonInfo();
   const label = CATEGORY_LABELS[storeKey] || '일반';

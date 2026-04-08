@@ -454,8 +454,14 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
                         <option value="cafe">☕ 카페·베이커리</option>
                         <option value="food">🍽️ 음식점</option>
                         <option value="beauty">💅 뷰티·케어</option>
-                        <option value="shopping">🛍️ 쇼핑·리테일</option>
-                        <option value="fitness">🏃 운동·건강</option>
+                        <option value="flower">🌸 꽃집·플라워</option>
+                        <option value="fashion">👗 패션·의류</option>
+                        <option value="fitness">🏋️ 헬스·필라테스</option>
+                        <option value="pet">🐶 반려동물·펫</option>
+                        <option value="interior">🏠 인테리어·가구</option>
+                        <option value="education">📚 학원·교육</option>
+                        <option value="laundry">🧹 세탁·수선</option>
+                        <option value="studio">📷 사진·스튜디오</option>
                         <option value="other_input">✏️ 직접 입력</option>
                     </select>
                     <input type="text" id="reg-bizcat-direct" class="inp reg-inp" style="display:none;margin-top:6px;" placeholder="업종을 입력해 주세요 (예: 타투샵)">
@@ -626,8 +632,14 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
                     <option value="cafe">☕ 카페·베이커리</option>
                     <option value="food">🍽️ 음식점</option>
                     <option value="beauty">💅 뷰티·케어</option>
-                    <option value="shopping">🛍️ 쇼핑·리테일</option>
-                    <option value="fitness">🏃 운동·건강</option>
+                    <option value="flower">🌸 꽃집·플라워</option>
+                    <option value="fashion">👗 패션·의류</option>
+                    <option value="fitness">🏋️ 헬스·필라테스</option>
+                    <option value="pet">🐶 반려동물·펫</option>
+                    <option value="interior">🏠 인테리어·가구</option>
+                    <option value="education">📚 학원·교육</option>
+                    <option value="laundry">🧹 세탁·수선</option>
+                    <option value="studio">📷 사진·스튜디오</option>
                     <option value="other_input">✏️ 직접 입력</option>
                 </select>
                 <input type="text" id="profile-edit-bizcat-direct" class="inp" style="height:46px;margin-bottom:8px;display:none;" placeholder="업종을 직접 입력해 주세요 (예: 타투샵, 세탁소)">
@@ -2481,86 +2493,80 @@ async function loadTrends() {
 
     try {
         const category = bizCat || 'cafe';
-        const res = await fetch('/.netlify/functions/get-trends?category=' + encodeURIComponent(category));
-        const data = await res.json();
+
+        // 내 업종 + 전체 트렌드 병렬 호출
+        const [myRes, allRes] = await Promise.all([
+            fetch('/.netlify/functions/get-trends?category=' + encodeURIComponent(category)),
+            category !== 'other' ? fetch('/.netlify/functions/get-trends?category=other') : null,
+        ]);
+        const myData = await myRes.json();
+        const allData = allRes ? await allRes.json() : null;
 
         let html = '';
 
-        // 업종별 키워드
-        if (data.keywords && data.keywords.length > 0) {
-            const isGoogle = data.source === 'google';
-            const isL30d = data.source === 'last30days';
-            const sectionTitle = isL30d
-              ? '🔥 ' + (data.categoryLabel || '업종') + ' 실시간 트렌드'
-              : isGoogle
-                ? (data.categoryLabel || '업종') + ' 실시간 트렌드'
-                : '🔥 ' + (data.categoryLabel || '업종') + ' 이달의 추천 키워드';
-            html += '<p class="trend-section-lbl">' + sectionTitle + '</p>';
-            if (isL30d && data.dataSources) {
-                html += '<p style="font-size:10px;color:var(--g400);margin:-4px 0 6px;">데이터: ' + data.dataSources.join(', ') + ' | 분석 ' + (data.findingsCount || '') + '건</p>';
+        // ── 내 업종 트렌드 ──
+        if (myData.keywords && myData.keywords.length > 0) {
+            html += '<p class="trend-section-lbl">🔥 ' + (myData.categoryLabel || '내 업종') + ' 트렌드</p>';
+            if (myData.dataSources) {
+                html += '<p style="font-size:10px;color:var(--g400);margin:-4px 0 6px;">분석 ' + (myData.findingsCount || '') + '건 · ' + myData.dataSources.join(', ') + '</p>';
             }
-            html += data.keywords.map((k, i) => {
-                if (isGoogle) {
-                    const arrow = k.trend === 'up' ? '↑' : k.trend === 'down' ? '↓' : '→';
-                    const sign = k.changeRate > 0 ? '+' : '';
-                    return `<div class="trend-row">
-                        <span class="t-rank">${i + 1}</span>
-                        <span class="t-keyword">${k.keyword}</span>
-                        <span class="t-change ${k.trend}">${sign}${k.changeRate}% ${arrow}</span>
-                    </div>`;
-                } else if (isL30d) {
-                    const mentionTxt = k.mentions ? k.mentions + '회 언급' : '추천';
-                    return `<div class="trend-row">
-                        <span class="t-rank">${i + 1}</span>
-                        <span class="t-keyword">${k.keyword.startsWith('#') ? k.keyword : '#' + k.keyword}</span>
-                        <span class="t-change up">${mentionTxt}</span>
-                    </div>`;
-                } else {
-                    return `<div class="trend-row">
-                        <span class="t-rank">${i + 1}</span>
-                        <span class="t-keyword">#${k.keyword}</span>
-                        <span class="t-change up">추천</span>
-                    </div>`;
-                }
-            }).join('');
-        }
-
-        // 시즌 키워드
-        if (data.season && data.season.now && data.season.now.length > 0) {
-            html += '<p class="trend-section-lbl">📅 이달의 시즌 키워드</p>';
-            html += data.season.now.map((s, i) => {
+            html += myData.keywords.map((k, i) => {
+                const kw = k.keyword.startsWith('#') ? k.keyword : '#' + k.keyword;
+                const badge = k.mentions ? k.mentions + '회 언급' : '추천';
                 return `<div class="trend-row">
                     <span class="t-rank">${i + 1}</span>
-                    <span class="t-keyword">#${s}</span>
-                    <span class="t-change up">시즌</span>
+                    <span class="t-keyword">${kw}</span>
+                    <span class="t-change up">${badge}</span>
                 </div>`;
             }).join('');
         }
-        if (data.season && data.season.upcoming && data.season.upcoming.length > 0) {
+
+        // ── 시즌 키워드 ──
+        if (myData.season && myData.season.now && myData.season.now.length > 0) {
+            html += '<p class="trend-section-lbl">📅 이달의 시즌 키워드</p>';
+            html += myData.season.now.map((s, i) => `<div class="trend-row">
+                <span class="t-rank">${i + 1}</span>
+                <span class="t-keyword">#${s}</span>
+                <span class="t-change up">시즌</span>
+            </div>`).join('');
+        }
+        if (myData.season && myData.season.upcoming && myData.season.upcoming.length > 0) {
             html += '<p class="trend-section-lbl">🔜 다음 달 준비</p>';
-            html += data.season.upcoming.map((s, i) => {
+            html += myData.season.upcoming.map((s, i) => `<div class="trend-row">
+                <span class="t-rank">${i + 1}</span>
+                <span class="t-keyword">#${s}</span>
+                <span class="t-change stable">예정</span>
+            </div>`).join('');
+        }
+
+        // ── 전체 트렌드 ──
+        if (allData && allData.keywords && allData.keywords.length > 0) {
+            html += '<p class="trend-section-lbl" style="margin-top:16px;">📊 전체 소상공인 트렌드</p>';
+            if (allData.dataSources) {
+                html += '<p style="font-size:10px;color:var(--g400);margin:-4px 0 6px;">분석 ' + (allData.findingsCount || '') + '건 · ' + allData.dataSources.join(', ') + '</p>';
+            }
+            html += allData.keywords.map((k, i) => {
+                const kw = k.keyword.startsWith('#') ? k.keyword : '#' + k.keyword;
+                const badge = k.mentions ? k.mentions + '회 언급' : '추천';
                 return `<div class="trend-row">
                     <span class="t-rank">${i + 1}</span>
-                    <span class="t-keyword">#${s}</span>
-                    <span class="t-change stable">예정</span>
+                    <span class="t-keyword">${kw}</span>
+                    <span class="t-change up">${badge}</span>
                 </div>`;
             }).join('');
         }
 
         if (!html) throw new Error('데이터 없음');
 
-        // realtimeTrends 호환 (캡션 생성에 사용)
-        realtimeTrends = (data.keywords || []).map(k => '#' + k.keyword).concat(
-            (data.season?.now || []).map(s => '#' + s)
+        // realtimeTrends — 내 업종 키워드 + 시즌 (캡션 생성에 사용)
+        realtimeTrends = (myData.keywords || []).map(k => k.keyword.startsWith('#') ? k.keyword : '#' + k.keyword).concat(
+            (myData.season?.now || []).map(s => '#' + s)
         );
 
         trendEl.innerHTML = html;
     } catch(e) {
-        const fallback = LUMI_CORE.trends[bizCat] || LUMI_CORE.trends.cafe;
-        realtimeTrends = fallback;
-        trendEl.innerHTML = fallback.map((tag, i) =>
-            `<div class="trend-row"><span class="t-rank">${i + 1}</span><span class="t-keyword">${tag}</span><span class="t-change stable">—</span></div>`
-        ).join('');
+        realtimeTrends = [];
+        trendEl.innerHTML = '<div style="color:var(--g400);font-size:.85rem;padding:8px 0;">트렌드 데이터가 아직 없어요. 곧 업데이트됩니다.</div>';
     }
 }
 
@@ -3986,7 +3992,7 @@ function initProfileView() {
     document.getElementById('profile-view-store').textContent = user.storeName || '-';
     document.getElementById('profile-view-insta').textContent = user.instagram || '-';
     document.getElementById('profile-view-desc').textContent = user.storeDesc || '-';
-    const bizMap = {cafe:'카페·베이커리',food:'음식점',beauty:'뷰티·케어',shopping:'쇼핑·리테일',fitness:'운동·건강'};
+    const bizMap = {cafe:'카페·베이커리',food:'음식점',beauty:'뷰티·케어',flower:'꽃집·플라워',fashion:'패션·의류',fitness:'헬스·필라테스',pet:'반려동물·펫',interior:'인테리어·가구',education:'학원·교육',laundry:'세탁·수선',studio:'사진·스튜디오'};
     document.getElementById('profile-view-bizcat').textContent = bizMap[user.bizCategory] || user.bizCategory || '-';
     document.getElementById('profile-view-tone').textContent = user.captionTone || '-';
     const tagMap = {few:'간결하게 (5개 이내)', mid:'적당하게 (10개 내외)', many:'많이 (20개 이상)'};
