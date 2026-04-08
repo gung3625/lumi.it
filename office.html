@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>lumi agent office</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" href="/assets/logo.png">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0f0f1a;--wall:#16213e;--floor:#2d2d44;--floor-line:#252540;
+  --pink:#C8507A;--blue:#60a5fa;--green:#4ade80;--yellow:#facc15;
+  --idle:#4b5563;--text:#e2e8f0;--dim:#64748b;--card:#1e293b;
+}
+body{background:var(--bg);color:var(--text);font-family:'Press Start 2P',monospace;min-height:100dvh;overflow-x:hidden;image-rendering:pixelated}
+
+/* AUTH */
+.auth-wall{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:20px}
+.auth-wall.hidden{display:none}
+.auth-title{font-size:12px;color:var(--pink);margin-bottom:8px}
+.auth-sub{font-size:7px;color:var(--dim);margin-bottom:20px}
+.auth-input{background:#1a1a2e;border:2px solid #2a2a3e;border-radius:4px;padding:10px 16px;color:var(--text);font-family:inherit;font-size:8px;width:240px;outline:none}
+.auth-input:focus{border-color:var(--pink)}
+.auth-btn{background:var(--pink);color:#fff;border:none;padding:8px 24px;border-radius:4px;font-family:inherit;font-size:8px;cursor:pointer}
+.auth-err{font-size:7px;color:#ef4444;height:14px}
+
+/* HEADER */
+.hdr{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #1a1a2e}
+.hdr-l{display:flex;align-items:center;gap:10px}
+.logo{font-size:10px;color:var(--pink)}
+.logo-s{font-size:6px;color:var(--dim);margin-top:3px}
+.hdr-r{display:flex;align-items:center;gap:12px}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 2s infinite}
+.dot.off{background:var(--idle);box-shadow:none;animation:none}
+.clk{font-size:7px;color:var(--dim)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* OFFICE CANVAS */
+.office{position:relative;width:100%;max-width:860px;height:360px;margin:16px auto;background:var(--wall);border:2px solid #1a1a2e;border-radius:6px;overflow:hidden}
+.ofloor{position:absolute;bottom:0;left:0;right:0;height:160px;background:var(--floor);
+  background-image:repeating-linear-gradient(90deg,transparent,transparent 49px,var(--floor-line) 49px,var(--floor-line) 50px),
+  repeating-linear-gradient(0deg,transparent,transparent 49px,var(--floor-line) 49px,var(--floor-line) 50px)}
+
+/* WINDOWS */
+.win{position:absolute;top:16px;width:64px;height:80px;border:2px solid #2a2a4e;border-radius:3px;background:linear-gradient(180deg,#0d0d2a,#1a1a3a)}
+.win::after{content:'';position:absolute;top:50%;left:0;right:0;height:2px;background:#2a2a4e}
+.win.l{left:30px}.win.r{right:30px}
+.star{position:absolute;width:2px;height:2px;background:#fff;border-radius:50%;animation:tw 3s infinite}
+@keyframes tw{0%,100%{opacity:1}50%{opacity:.15}}
+
+/* SIGN */
+.sign{position:absolute;top:24px;left:50%;transform:translateX(-50%);font-size:7px;color:var(--pink);border:1.5px solid var(--pink);padding:5px 14px;border-radius:3px;background:rgba(200,80,122,.06);opacity:.7}
+
+/* WORKSTATION */
+.ws{position:absolute;bottom:50px;cursor:pointer;transition:transform .15s}
+.ws:hover{transform:scale(1.06)}
+
+/* DESK */
+.dsk{width:110px;height:36px;position:relative}
+.dsk-top{position:absolute;bottom:0;width:110px;height:7px;background:#5c4033;border-radius:2px;box-shadow:0 2px 0 #4a3728}
+.dsk-leg{position:absolute;bottom:-18px;width:5px;height:18px;background:#4a3728}
+.dsk-leg.l{left:6px}.dsk-leg.r{right:6px}
+
+/* MONITOR */
+.mon{position:absolute;bottom:9px;left:50%;transform:translateX(-50%);width:48px;height:34px;background:#222;border-radius:2px;padding:2px;box-shadow:0 0 10px var(--monitor-glow,rgba(0,255,65,.12))}
+.scr{width:100%;height:100%;background:#0a2a0a;border-radius:1px;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.scr-txt{font-size:3.5px;color:#0f0;white-space:nowrap;animation:scroll 3.5s linear infinite}
+@keyframes scroll{0%{transform:translateY(80%)}100%{transform:translateY(-80%)}}
+.mon-stand{width:6px;height:5px;background:#222;margin:0 auto}
+
+/* PIXEL CHARACTER */
+.chr{position:absolute;bottom:42px;left:50%;transform:translateX(-50%);width:28px;height:28px}
+.px{position:relative;width:28px;height:28px}
+.px-h{position:absolute;top:0;left:7px;width:14px;height:12px;border-radius:3px 3px 1px 1px}
+.px-e{position:absolute;top:5px;left:9px;display:flex;gap:3px}
+.px-eye{width:2.5px;height:2.5px;background:#fff;border-radius:1px}
+.px-b{position:absolute;top:12px;left:7px;width:14px;height:9px;border-radius:1px}
+.px-a{position:absolute;top:13px;width:5px;height:7px;border-radius:1px}
+.px-a.l{left:2px}.px-a.r{right:2px}
+.px-l{position:absolute;bottom:0;width:6px;height:5px;border-radius:0 0 1px 1px}
+.px-l.l{left:7px}.px-l.r{right:7px}
+
+/* ANIMATIONS */
+.typing .px-a.l{animation:tpL .35s infinite alternate}
+.typing .px-a.r{animation:tpR .35s infinite alternate .15s}
+@keyframes tpL{to{transform:rotate(-7deg) translateY(-1px)}}
+@keyframes tpR{to{transform:rotate(7deg) translateY(-1px)}}
+.idle-anim .px{animation:bob 2.5s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+.done-anim .px{animation:jmp .45s ease-out infinite}
+@keyframes jmp{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+
+/* NAME + BADGE */
+.nm{position:absolute;bottom:-14px;left:50%;transform:translateX(-50%);font-size:5px;white-space:nowrap;background:rgba(0,0,0,.55);padding:1.5px 5px;border-radius:2px}
+.badge{position:absolute;top:-7px;left:50%;transform:translateX(-50%);font-size:4px;padding:1.5px 5px;border-radius:6px;white-space:nowrap}
+.badge.working{background:var(--green);color:#000;animation:bp 2s infinite}
+.badge.idle{background:var(--idle);color:#fff}
+.badge.done{background:var(--yellow);color:#000}
+.badge.reading{background:var(--blue);color:#000}
+.badge.writing{background:#a78bfa;color:#000}
+.badge.searching{background:#f472b6;color:#000}
+.badge.running{background:#fb923c;color:#000}
+@keyframes bp{0%,100%{box-shadow:0 0 3px var(--green)}50%{box-shadow:0 0 8px var(--green)}}
+
+/* TOOLTIP */
+.tip{display:none;position:absolute;bottom:calc(100% + 12px);left:50%;transform:translateX(-50%);background:var(--card);border:1.5px solid #2a2a4e;border-radius:6px;padding:10px 14px;min-width:180px;max-width:260px;z-index:50;box-shadow:0 6px 20px rgba(0,0,0,.5)}
+.ws:hover .tip{display:block;animation:tipIn .15s ease-out}
+@keyframes tipIn{from{opacity:0;transform:translateX(-50%) translateY(3px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.tip::after{content:'';position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);border:3px solid transparent;border-top-color:#2a2a4e}
+.tip-t{font-size:7px;margin-bottom:6px}
+.tip-task{font-size:6px;color:var(--text);line-height:1.9;margin-bottom:3px}
+.tip-time{font-size:5px;color:var(--dim)}
+
+/* LOG */
+.panel{max-width:860px;margin:0 auto 20px;padding:0 16px}
+.panel-t{font-size:6px;color:var(--dim);margin-bottom:8px;letter-spacing:1.5px}
+.log{background:#0a0a16;border:1.5px solid #1a1a2e;border-radius:6px;padding:10px;max-height:140px;overflow-y:auto;font-size:6px;line-height:2.2}
+.log::-webkit-scrollbar{width:3px}
+.log::-webkit-scrollbar-thumb{background:#2a2a3e;border-radius:2px}
+.le{display:flex;gap:6px;align-items:baseline}
+.lt{color:var(--dim);flex-shrink:0}
+.la{flex-shrink:0;padding:1px 5px;border-radius:3px;font-size:5px}
+.la.i{background:rgba(96,165,250,.15);color:var(--blue)}
+.la.q{background:rgba(74,222,128,.15);color:var(--green)}
+.la.m{background:rgba(200,80,122,.15);color:var(--pink)}
+.la.s{background:rgba(100,116,139,.15);color:var(--dim)}
+.lm{color:var(--text)}
+
+/* MOBILE */
+@media(max-width:640px){
+  .office{height:300px;margin:10px 8px;border-radius:4px}
+  .ofloor{height:130px}
+  .ws{transform:scale(.8);transform-origin:bottom center}
+  .ws:hover{transform:scale(.86)}
+  .hdr{padding:10px 12px}
+  .sign{font-size:5px;padding:3px 8px}
+  .win{width:44px;height:56px}.win.l{left:14px}.win.r{right:14px}
+}
+</style>
+</head>
+<body>
+
+<!-- AUTH WALL -->
+<div class="auth-wall" id="authWall">
+  <div class="auth-title">LUMI AGENT OFFICE</div>
+  <div class="auth-sub">authorized personnel only</div>
+  <input class="auth-input" id="authInput" type="password" placeholder="access token" autofocus>
+  <button class="auth-btn" id="authBtn" onclick="tryAuth()">ENTER</button>
+  <div class="auth-err" id="authErr"></div>
+</div>
+
+<!-- HEADER -->
+<div class="hdr" id="mainUI" style="display:none">
+  <div class="hdr-l">
+    <div><div class="logo">LUMI OFFICE</div><div class="logo-s">3 agents · live monitor</div></div>
+  </div>
+  <div class="hdr-r">
+    <div class="dot" id="gDot"></div>
+    <span class="clk" id="clk"></span>
+  </div>
+</div>
+
+<!-- OFFICE -->
+<div class="office" id="office" style="display:none">
+  <div class="win l"><div class="star" style="top:12px;left:16px"></div><div class="star" style="top:30px;left:42px;animation-delay:.8s"></div><div class="star" style="top:50px;left:24px;animation-delay:.4s"></div></div>
+  <div class="win r"><div class="star" style="top:16px;left:34px;animation-delay:.2s"></div><div class="star" style="top:44px;left:12px;animation-delay:1s"></div></div>
+  <div class="sign">lumi HQ</div>
+  <div class="ofloor"></div>
+
+  <!-- IMPLEMENTER -->
+  <div class="ws" id="ws-impl" style="left:60px">
+    <div class="tip"><div class="tip-t" style="color:var(--blue)">IMPLEMENTER</div><div class="tip-task" id="tip-impl">대기 중</div><div class="tip-time" id="tipT-impl">--:--</div></div>
+    <div class="badge idle" id="bg-impl">IDLE</div>
+    <div class="chr idle-anim" id="ch-impl">
+      <div class="px">
+        <div class="px-h" style="background:#60a5fa"></div><div class="px-e"><div class="px-eye"></div><div class="px-eye"></div></div>
+        <div class="px-b" style="background:#3b82f6"></div><div class="px-a l" style="background:#3b82f6"></div><div class="px-a r" style="background:#3b82f6"></div>
+        <div class="px-l l" style="background:#1e3a5f"></div><div class="px-l r" style="background:#1e3a5f"></div>
+      </div>
+    </div>
+    <div class="dsk"><div class="mon" style="--monitor-glow:rgba(96,165,250,.12)"><div class="scr"><span class="scr-txt" id="sc-impl">READY_</span></div></div><div class="mon-stand"></div><div class="dsk-top"></div><div class="dsk-leg l"></div><div class="dsk-leg r"></div></div>
+    <div class="nm">IMPLEMENTER</div>
+  </div>
+
+  <!-- QA-TESTER -->
+  <div class="ws" id="ws-qa" style="left:340px">
+    <div class="tip"><div class="tip-t" style="color:var(--green)">QA-TESTER</div><div class="tip-task" id="tip-qa">대기 중</div><div class="tip-time" id="tipT-qa">--:--</div></div>
+    <div class="badge idle" id="bg-qa">IDLE</div>
+    <div class="chr idle-anim" id="ch-qa">
+      <div class="px">
+        <div class="px-h" style="background:#4ade80"></div><div class="px-e"><div class="px-eye"></div><div class="px-eye"></div></div>
+        <div class="px-b" style="background:#22c55e"></div><div class="px-a l" style="background:#22c55e"></div><div class="px-a r" style="background:#22c55e"></div>
+        <div class="px-l l" style="background:#14532d"></div><div class="px-l r" style="background:#14532d"></div>
+      </div>
+    </div>
+    <div class="dsk"><div class="mon" style="--monitor-glow:rgba(74,222,128,.12)"><div class="scr"><span class="scr-txt" id="sc-qa">READY_</span></div></div><div class="mon-stand"></div><div class="dsk-top"></div><div class="dsk-leg l"></div><div class="dsk-leg r"></div></div>
+    <div class="nm">QA-TESTER</div>
+  </div>
+
+  <!-- MARKETER -->
+  <div class="ws" id="ws-mkt" style="left:620px">
+    <div class="tip"><div class="tip-t" style="color:var(--pink)">MARKETER</div><div class="tip-task" id="tip-mkt">대기 중</div><div class="tip-time" id="tipT-mkt">--:--</div></div>
+    <div class="badge idle" id="bg-mkt">IDLE</div>
+    <div class="chr idle-anim" id="ch-mkt">
+      <div class="px">
+        <div class="px-h" style="background:#C8507A"></div><div class="px-e"><div class="px-eye"></div><div class="px-eye"></div></div>
+        <div class="px-b" style="background:#a3405f"></div><div class="px-a l" style="background:#a3405f"></div><div class="px-a r" style="background:#a3405f"></div>
+        <div class="px-l l" style="background:#5c2238"></div><div class="px-l r" style="background:#5c2238"></div>
+      </div>
+    </div>
+    <div class="dsk"><div class="mon" style="--monitor-glow:rgba(200,80,122,.12)"><div class="scr"><span class="scr-txt" id="sc-mkt">READY_</span></div></div><div class="mon-stand"></div><div class="dsk-top"></div><div class="dsk-leg l"></div><div class="dsk-leg r"></div></div>
+    <div class="nm">MARKETER</div>
+  </div>
+</div>
+
+<!-- LOG -->
+<div class="panel" id="logPanel" style="display:none">
+  <div class="panel-t">ACTIVITY LOG</div>
+  <div class="log" id="logList">
+    <div class="le"><span class="lt">--:--:--</span><span class="la s">SYS</span><span class="lm">lumi agent office ready. waiting for auth...</span></div>
+  </div>
+</div>
+
+<script>
+const TOKEN_KEY = 'lumi_office_token';
+
+// Auth
+function tryAuth() {
+  const input = document.getElementById('authInput').value.trim();
+  if (!input) return;
+  localStorage.setItem(TOKEN_KEY, input);
+  verifyToken(input);
+}
+document.getElementById('authInput').addEventListener('keydown', e => { if (e.key === 'Enter') tryAuth(); });
+
+async function verifyToken(token) {
+  try {
+    const r = await fetch('/api/get-agent-status', { headers: { 'Authorization': 'Bearer ' + token } });
+    if (r.ok) {
+      document.getElementById('authWall').classList.add('hidden');
+      document.getElementById('mainUI').style.display = '';
+      document.getElementById('office').style.display = '';
+      document.getElementById('logPanel').style.display = '';
+      addLog('SYS', '인증 성공. 모니터링 시작.');
+      startPolling(token);
+    } else {
+      document.getElementById('authErr').textContent = 'INVALID TOKEN';
+      localStorage.removeItem(TOKEN_KEY);
+    }
+  } catch (e) {
+    document.getElementById('authErr').textContent = 'CONNECTION ERROR';
+  }
+}
+
+// Auto-login
+(function() {
+  const saved = localStorage.getItem(TOKEN_KEY);
+  if (saved) verifyToken(saved);
+})();
+
+// Clock
+function updateClock() {
+  const n = new Date();
+  document.getElementById('clk').textContent =
+    String(n.getHours()).padStart(2,'0') + ':' +
+    String(n.getMinutes()).padStart(2,'0') + ':' +
+    String(n.getSeconds()).padStart(2,'0');
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// Log
+function addLog(agent, msg) {
+  const n = new Date();
+  const t = String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0') + ':' + String(n.getSeconds()).padStart(2,'0');
+  const cls = agent === 'IMPL' ? 'i' : agent === 'QA' ? 'q' : agent === 'MKT' ? 'm' : 's';
+  const el = document.getElementById('logList');
+  el.innerHTML += '<div class="le"><span class="lt">' + t + '</span><span class="la ' + cls + '">' + agent + '</span><span class="lm">' + msg + '</span></div>';
+  el.scrollTop = el.scrollHeight;
+}
+
+// Update agent UI
+const statusLabels = { idle:'IDLE', working:'WORKING', writing:'WRITING', reading:'READING', running:'RUNNING', searching:'SEARCH', done:'DONE' };
+const animClass = { idle:'idle-anim', working:'typing', writing:'typing', reading:'idle-anim', running:'typing', searching:'typing', done:'done-anim' };
+
+function updateAgent(key, data) {
+  const bgEl = document.getElementById('bg-' + key);
+  const chEl = document.getElementById('ch-' + key);
+  const scEl = document.getElementById('sc-' + key);
+  const tipEl = document.getElementById('tip-' + key);
+  const tipTEl = document.getElementById('tipT-' + key);
+
+  if (!bgEl) return;
+
+  const s = data.status || 'idle';
+  bgEl.className = 'badge ' + s;
+  bgEl.textContent = statusLabels[s] || s.toUpperCase();
+
+  chEl.className = 'chr ' + (animClass[s] || 'idle-anim');
+
+  if (data.lastText) tipEl.textContent = data.lastText;
+  if (data.lastTool) scEl.textContent = data.lastTool + '_';
+  if (data.elapsed != null) {
+    const m = Math.floor(data.elapsed / 60);
+    const sec = data.elapsed % 60;
+    tipTEl.textContent = m + '분 ' + sec + '초 전';
+  }
+}
+
+// Polling
+let pollTimer = null;
+function startPolling(token) {
+  async function poll() {
+    try {
+      const r = await fetch('/api/get-agent-status', { headers: { 'Authorization': 'Bearer ' + token } });
+      const d = await r.json();
+      document.getElementById('gDot').className = 'dot';
+
+      if (d.agents && d.agents.length > 0) {
+        const mapped = { implementer: null, 'qa-tester': null, marketer: null };
+        for (const a of d.agents) {
+          if (a.agentType === 'implementer' && !mapped.implementer) mapped.implementer = a;
+          else if (a.agentType === 'qa-tester' && !mapped['qa-tester']) mapped['qa-tester'] = a;
+          else if (a.agentType === 'marketer' && !mapped.marketer) mapped.marketer = a;
+          else if (!mapped.implementer) mapped.implementer = a;
+        }
+        if (mapped.implementer) updateAgent('impl', mapped.implementer);
+        if (mapped['qa-tester']) updateAgent('qa', mapped['qa-tester']);
+        if (mapped.marketer) updateAgent('mkt', mapped.marketer);
+      }
+    } catch (e) {
+      document.getElementById('gDot').className = 'dot off';
+    }
+  }
+  poll();
+  pollTimer = setInterval(poll, 5000);
+}
+</script>
+</body>
+</html>
