@@ -2593,15 +2593,7 @@ async function loadTrends() {
             }).join('');
         }
 
-        // 시즌 키워드 (항상 표시)
-        if (myData.season && myData.season.now && myData.season.now.length > 0) {
-            html += '<p class="trend-section-lbl">📅 이달의 시즌 키워드</p>';
-            html += myData.season.now.map((s, i) => '<div class="trend-row"><span class="t-rank">' + (i + 1) + '</span><span class="t-keyword">#' + s + '</span><span class="t-change up">시즌</span></div>').join('');
-        }
-        if (myData.season && myData.season.upcoming && myData.season.upcoming.length > 0) {
-            html += '<p class="trend-section-lbl">🔜 다음 달 준비</p>';
-            html += myData.season.upcoming.map((s, i) => '<div class="trend-row"><span class="t-rank">' + (i + 1) + '</span><span class="t-keyword">#' + s + '</span><span class="t-change stable">예정</span></div>').join('');
-        }
+
 
         // 전체 소상공인 트렌드 (GPT 미분류 시에만)
         if (!hasDomGlb && allData && allData.keywords && allData.keywords.length > 0) {
@@ -2615,11 +2607,10 @@ async function loadTrends() {
 
         if (!html && !hasDomGlb) throw new Error('데이터 없음');
 
-        // realtimeTrends — 캡션 생성에 사용 (국내+해외+시즌 합산)
+        // realtimeTrends — 캡션 생성에 사용 (국내+해외 합산)
         realtimeTrends = [];
         if (domData.keywords) realtimeTrends.push(...domData.keywords.map(k => '#' + k.keyword.replace(/^#/, '')));
         if (glbData.keywords) realtimeTrends.push(...glbData.keywords.map(k => '#' + k.keyword.replace(/^#/, '')));
-        if (myData.season?.now) realtimeTrends.push(...myData.season.now.map(s => '#' + s));
         if (!realtimeTrends.length && myData.keywords) {
             realtimeTrends = myData.keywords.map(k => '#' + k.keyword.replace(/^#/, ''));
         }
