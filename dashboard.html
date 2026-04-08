@@ -149,6 +149,15 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
         .aq-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:var(--r-full);font-size:11px;font-weight:700;background:var(--g100);color:var(--g700);}
         .dash-lbl{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--g400);margin-bottom:10px;}
         .trend-wrap{display:flex;flex-direction:column;gap:7px;margin-bottom:20px;}
+        .trend-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+        @media(max-width:400px){.trend-grid{grid-template-columns:1fr;}}
+        .trend-card{background:var(--white);border-radius:var(--r-md);padding:12px 14px;border:1px solid var(--g100);display:flex;align-items:center;gap:10px;transition:transform .15s,box-shadow .15s;}
+        .trend-card:hover{transform:translateY(-1px);box-shadow:var(--sh-xs);}
+        .trend-card .t-rank{width:22px;height:22px;border-radius:50%;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--g100);color:var(--g500);}
+        .trend-card .t-rank.top3{background:var(--pink);color:#fff;}
+        .trend-card .t-info{flex:1;min-width:0;}
+        .trend-card .t-keyword{font-size:.82rem;font-weight:700;color:var(--g900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+        .trend-card .t-badge{flex-shrink:0;}
         .trend-row{background:var(--white);border-radius:var(--r-md);padding:13px 15px;border:1px solid var(--g100);display:flex;align-items:center;gap:10px;transition:transform .2s,box-shadow .2s;}
         .trend-row:hover{transform:translateY(-1px);box-shadow:var(--sh-xs);}
         .t-keyword{flex:1;font-size:.87rem;font-weight:700;color:var(--g900);}
@@ -2521,6 +2530,7 @@ async function loadTrends() {
             if (domData.insight) {
                 dHtml += '<p style="font-size:11px;color:var(--g500);margin:-4px 0 8px;line-height:1.6;">' + domData.insight + '</p>';
             }
+            dHtml += '<div class="trend-grid">';
             dHtml += domData.keywords.map((k, i) => {
                 const kw = k.keyword.startsWith('#') ? k.keyword : '#' + k.keyword;
                 const rc = k.rankChange;
@@ -2529,8 +2539,10 @@ async function loadTrends() {
                 else if (rc > 0) badge = '<span class="t-change up">▲' + rc + '</span>';
                 else if (rc < 0) badge = '<span class="t-change down">▼' + Math.abs(rc) + '</span>';
                 else badge = '<span class="t-change stable">—</span>';
-                return '<div class="trend-row"><span class="t-rank">' + (i + 1) + '</span><span class="t-keyword">' + kw + '</span>' + badge + '</div>';
+                const rankCls = i < 3 ? 't-rank top3' : 't-rank';
+                return '<div class="trend-card"><span class="' + rankCls + '">' + (i + 1) + '</span><div class="t-info"><span class="t-keyword">' + kw + '</span></div><span class="t-badge">' + badge + '</span></div>';
             }).join('');
+            dHtml += '</div>';
             domesticEl.innerHTML = dHtml;
         }
 
@@ -2541,6 +2553,7 @@ async function loadTrends() {
             if (glbData.insight) {
                 gHtml += '<p style="font-size:11px;color:var(--g500);margin:-4px 0 8px;line-height:1.6;">' + glbData.insight + '</p>';
             }
+            gHtml += '<div class="trend-grid">';
             gHtml += glbData.keywords.map((k, i) => {
                 const kw = k.keyword.startsWith('#') ? k.keyword : '#' + k.keyword;
                 const rc = k.rankChange;
@@ -2549,8 +2562,10 @@ async function loadTrends() {
                 else if (rc > 0) badge = '<span class="t-change up">▲' + rc + '</span>';
                 else if (rc < 0) badge = '<span class="t-change down">▼' + Math.abs(rc) + '</span>';
                 else badge = '<span class="t-change stable">—</span>';
-                return '<div class="trend-row"><span class="t-rank">' + (i + 1) + '</span><span class="t-keyword">' + kw + '</span>' + badge + '</div>';
+                const rankCls = i < 3 ? 't-rank top3' : 't-rank';
+                return '<div class="trend-card"><span class="' + rankCls + '">' + (i + 1) + '</span><div class="t-info"><span class="t-keyword">' + kw + '</span></div><span class="t-badge">' + badge + '</span></div>';
             }).join('');
+            gHtml += '</div>';
             globalEl.innerHTML = gHtml;
         }
 
