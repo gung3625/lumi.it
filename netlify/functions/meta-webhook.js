@@ -112,11 +112,17 @@ exports.handler = async (event) => {
   }
 
   if (event.httpMethod === 'POST') {
-    // [중요] 모든 신호를 가감 없이 로그로 남깁니다.
-    console.log('[lumi] Webhook RAW DATA:', event.body);
+    // 서명 검증
+    const signature = event.headers['x-hub-signature-256'] || '';
+    if (!verifySignature(event.body, signature)) {
+      console.log('[lumi] Webhook 서명 검증 실패');
+      return { statusCode: 401, body: 'Invalid signature' };
+    }
 
+    // PII 보호: raw body 로깅 제거 (object 타입만 기록)
     let body;
     try { body = JSON.parse(event.body); } catch(e) { return { statusCode: 400 }; }
+    console.log('[lumi] Webhook:', body.object, body.entry?.length, 'entries');
 
     // Instagram 데이터가 아니어도 '성공' 응답은 보내서 Meta의 재전송을 막습니다.
     if (body.object && (body.object !== 'instagram' && body.object !== 'page')) {

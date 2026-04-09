@@ -58,11 +58,11 @@ exports.handler = async (event) => {
 
   const { reservationKey, captionIndex, email } = body;
 
-  // 인증: Bearer 토큰 또는 LUMI_SECRET
+  // 인증: Bearer 토큰 또는 LUMI_SECRET (헤더로만)
   const authHeader = event.headers['authorization'] || '';
-  const hasBearer = authHeader.startsWith('Bearer ') && authHeader.length > 10;
-  const hasSecret = body.secret === process.env.LUMI_SECRET;
-  if (!hasBearer && !hasSecret) {
+  const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+  const hasSecret = event.headers['x-lumi-secret'] === process.env.LUMI_SECRET;
+  if (!bearerToken && !hasSecret) {
     return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증 실패' }) };
   }
 

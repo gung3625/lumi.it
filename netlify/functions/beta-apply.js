@@ -111,7 +111,8 @@ exports.handler = async (event) => {
         body: JSON.stringify({ success: true, remaining }),
       };
     } catch (e) {
-      return { statusCode: 500, headers, body: JSON.stringify({ error: e.message }) };
+      console.error('beta-apply error:', e.message);
+      return { statusCode: 500, headers, body: JSON.stringify({ error: '처리 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.' }) };
     }
   }
 

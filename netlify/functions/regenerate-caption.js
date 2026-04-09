@@ -233,17 +233,28 @@ exports.handler = async (event) => {
 
   const { reservationKey, email } = body;
 
-  // Bearer 토큰 인증
+  // Bearer 토큰 인증 + Blobs 검증
   const authHeader = event.headers['authorization'] || '';
-  if (!authHeader.startsWith('Bearer ') || authHeader.length < 10) {
+  const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+  if (!bearerToken) {
+    return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증 실패' }) };
+  }
+  // 토큰에서 email 추출 (body의 email 무시)
+  try {
+    const userStore = getStore({ name: 'users', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
+    const tokenRaw = await userStore.get('token:' + bearerToken);
+    if (!tokenRaw) return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증 실패' }) };
+    const tokenData = JSON.parse(tokenRaw);
+    if (tokenData.expiresAt && new Date(tokenData.expiresAt) < new Date()) {
+      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '세션 만료' }) };
+    }
+    email = tokenData.email;
+  } catch(e) {
     return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증 실패' }) };
   }
 
   if (!reservationKey) {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'reservationKey 필수' }) };
-  }
-  if (!email) {
-    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'email 필수' }) };
   }
 
   try {

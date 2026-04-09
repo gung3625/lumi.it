@@ -8,6 +8,21 @@ exports.handler = async (event) => {
     return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
+  // IP rate limit: 10분 내 5회 제한
+  const ip = (event.headers['x-nf-client-connection-ip'] || event.headers['client-ip'] || 'unknown');
+  try {
+    const rlStore = getStore({ name: 'rate-limit', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
+    const rlKey = 'findid:' + ip;
+    const rlRaw = await rlStore.get(rlKey).catch(() => null);
+    const rl = rlRaw ? JSON.parse(rlRaw) : { count: 0, firstAt: Date.now() };
+    if (Date.now() - rl.firstAt > 600000) { rl.count = 0; rl.firstAt = Date.now(); }
+    rl.count++;
+    await rlStore.set(rlKey, JSON.stringify(rl));
+    if (rl.count > 5) {
+      return { statusCode: 429, headers: CORS, body: JSON.stringify({ error: '너무 많은 시도입니다. 10분 후 다시 시도해주세요.' }) };
+    }
+  } catch(e) {}
+
   let body;
   try { body = JSON.parse(event.body); } catch {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '잘못된 요청입니다.' }) };

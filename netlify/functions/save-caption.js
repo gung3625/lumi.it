@@ -29,7 +29,9 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '잘못된 요청입니다.', detail: e.message }) };
   }
 
-  if (secret !== process.env.LUMI_SECRET) {
+  // 인증: body.secret 또는 헤더 x-lumi-secret
+  const headerSecret = event.headers['x-lumi-secret'] || '';
+  if (secret !== process.env.LUMI_SECRET && headerSecret !== process.env.LUMI_SECRET) {
     return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증 실패' }) };
   }
 

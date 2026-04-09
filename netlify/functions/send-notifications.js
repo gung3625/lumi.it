@@ -553,7 +553,7 @@ async function runRetentionEmails(userStore) {
 
 exports.handler = async (event) => {
   // 스케줄 함수 또는 수동 호출
-  const isScheduled = !event.httpMethod;
+  const isScheduled = !event.httpMethod && !event.headers;
   if (!isScheduled) {
     const secret = event.headers?.['x-lumi-secret'];
     if (secret !== process.env.LUMI_SECRET) {

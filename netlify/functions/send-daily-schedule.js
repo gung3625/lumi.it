@@ -70,7 +70,7 @@ function normalizeBizCategory(cat) {
 
 exports.handler = async (event) => {
   // 스케줄 함수(Netlify 자동 실행) 또는 수동 호출 모두 허용
-  const isScheduled = !event.httpMethod;
+  const isScheduled = !event.httpMethod && !event.headers;
   if (!isScheduled) {
     const secret = event.headers?.['x-lumi-secret'];
     if (secret !== process.env.LUMI_SECRET) {

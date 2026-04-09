@@ -12,10 +12,11 @@ exports.handler = async (event) => {
     return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
-  // 인증: Bearer 토큰 또는 LUMI_SECRET
+  // 인증: Bearer 토큰 또는 LUMI_SECRET (Bearer는 형식+존재 확인 — multipart에서 Blobs 검증 어려움)
   const authHeader = event.headers['authorization'] || '';
+  const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
   const lumiSecret = event.headers['x-lumi-secret'] || '';
-  if (!authHeader.startsWith('Bearer ') && lumiSecret !== process.env.LUMI_SECRET) {
+  if (!bearerToken && lumiSecret !== process.env.LUMI_SECRET) {
     return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증이 필요합니다.' }) };
   }
 

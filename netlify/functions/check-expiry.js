@@ -58,7 +58,7 @@ exports.handler = async (event) => {
   };
 
   // 스케줄 함수 또는 수동 호출
-  const isScheduled = !event.httpMethod;
+  const isScheduled = !event.httpMethod && !event.headers;
   if (!isScheduled) {
     if (event.httpMethod === 'OPTIONS') {
       return { statusCode: 204, headers, body: '' };
