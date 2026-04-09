@@ -92,45 +92,39 @@ exports.handler = async (event) => {
               siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
               token: process.env.NETLIFY_TOKEN
             });
-            // 1. email-ig:이메일 → igUserId
-            let igUserIdRaw;
-            try { igUserIdRaw = await blobStore.get('email-ig:' + storeProfile.ownerEmail); } catch { igUserIdRaw = null; }
+            // Blob 4개 병렬 읽기 (기존 6개 순차 → 1회 병렬 + 1회 순차)
+            const ownerEmail = storeProfile.ownerEmail;
+            const [igUserIdRaw, likeRaw, dislikeRaw, userDataRaw] = await Promise.all([
+              blobStore.get('email-ig:' + ownerEmail).catch(() => null),
+              blobStore.get('tone-like:' + ownerEmail).catch(() => null),
+              blobStore.get('tone-dislike:' + ownerEmail).catch(() => null),
+              blobStore.get('user:' + ownerEmail).catch(() => null),
+            ]);
 
-            // fallback: user:이메일 에서 igUserId 조회
-            if (!igUserIdRaw) {
-              const userRaw = await blobStore.get('user:' + storeProfile.ownerEmail);
-              if (userRaw) {
-                const userData = JSON.parse(userRaw);
-                igUserId = userData.igUserId || '';
-              }
-            } else {
+            // igUserId
+            if (igUserIdRaw) {
               igUserId = igUserIdRaw.trim();
+            } else if (userDataRaw) {
+              igUserId = JSON.parse(userDataRaw).igUserId || '';
             }
 
-            // tone-like / tone-dislike 조회
-            try {
-              const likeRaw = await blobStore.get('tone-like:' + storeProfile.ownerEmail);
-              if (likeRaw) toneLikes = JSON.parse(likeRaw);
-            } catch {}
-            try {
-              const dislikeRaw = await blobStore.get('tone-dislike:' + storeProfile.ownerEmail);
-              if (dislikeRaw) toneDislikes = JSON.parse(dislikeRaw);
-            } catch {}
+            // tone
+            if (likeRaw) try { toneLikes = JSON.parse(likeRaw); } catch {}
+            if (dislikeRaw) try { toneDislikes = JSON.parse(dislikeRaw); } catch {}
 
-            // 커스텀 캡션 + 릴레이 모드 조회
-            try {
-              const userDataRaw = await blobStore.get('user:' + storeProfile.ownerEmail);
-              if (userDataRaw) {
+            // customCaptions + relayMode (userDataRaw 재사용)
+            if (userDataRaw) {
+              try {
                 const userData = JSON.parse(userDataRaw);
                 const captions = userData.customCaptions || [];
                 customCaptionsStr = captions.filter(c => c && c.trim()).join('|||');
                 relayMode = userData.relayMode === true;
-              }
-            } catch {}
+              } catch {}
+            }
 
-            // 2. ig:igUserId → 토큰 정보
+            // ig 토큰 (igUserId 의존이라 순차)
             if (igUserId) {
-              const igRaw = await blobStore.get('ig:' + igUserId);
+              const igRaw = await blobStore.get('ig:' + igUserId).catch(() => null);
               if (igRaw) {
                 const igData = JSON.parse(igRaw);
                 igAccessToken = igData.accessToken || '';

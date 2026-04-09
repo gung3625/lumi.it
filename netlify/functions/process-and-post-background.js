@@ -36,6 +36,20 @@ function buildToneGuide(likes, dislikes) {
 // ── 유틸 ──
 async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+// Instagram 컨테이너 상태 폴링 (sleep(5000) 대신 — 평균 3~4초 절약)
+async function waitForContainer(containerId, accessToken, maxRetries = 6) {
+  for (let i = 0; i < maxRetries; i++) {
+    await sleep(1000);
+    try {
+      const res = await fetch(`https://graph.facebook.com/v25.0/${containerId}?fields=status_code&access_token=${accessToken}`);
+      const data = await res.json();
+      if (data.status_code === 'FINISHED') return true;
+      if (data.status_code === 'ERROR') return false;
+    } catch(e) {}
+  }
+  return true; // 타임아웃 시 게시 시도
+}
+
 function getReservationStore() {
   return getStore({
     name: 'reservations',
@@ -413,7 +427,8 @@ async function postToInstagram(item, caption, imageUrls) {
   if (imageUrls.length > 1) {
     // 캐러셀: 각 이미지 컨테이너 생성
     const containerIds = [];
-    for (const url of imageUrls) {
+    // 캐러셀 아이템 컨테이너 병렬 생성 (기존 순차 → N-1 × 1.5초 절약)
+    const containerResults = await Promise.all(imageUrls.map(async (url) => {
       const res = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -421,8 +436,9 @@ async function postToInstagram(item, caption, imageUrls) {
       });
       const d = await res.json();
       if (d.error) throw new Error(d.error.message);
-      containerIds.push(d.id);
-    }
+      return d.id;
+    }));
+    containerIds.push(...containerResults);
     // 캐러셀 컨테이너
     const cRes = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media`, {
       method: 'POST',
@@ -431,7 +447,7 @@ async function postToInstagram(item, caption, imageUrls) {
     });
     const cData = await cRes.json();
     if (cData.error) throw new Error(cData.error.message);
-    await sleep(5000);
+    await waitForContainer(cData.id, igAccessToken);
     // 게시
     const pRes = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media_publish`, {
       method: 'POST',
@@ -450,7 +466,7 @@ async function postToInstagram(item, caption, imageUrls) {
     });
     const d = await res.json();
     if (d.error) throw new Error(d.error.message);
-    await sleep(5000);
+    await waitForContainer(d.id, igAccessToken);
     const pRes = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media_publish`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -475,7 +491,7 @@ async function postToInstagram(item, caption, imageUrls) {
       if (sData.error) {
         console.error('[process-and-post] 스토리 컨테이너 생성 실패:', JSON.stringify(sData.error));
       } else {
-        await sleep(5000);
+        await waitForContainer(sData.id, storyToken);
         const spRes = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media_publish`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -598,41 +614,42 @@ exports.handler = async (event) => {
     const { imageUrls, tempKeys, imageBuffers } = await processImages(item.photos, reservationKey);
     console.log('[process-and-post] 이미지 처리 완료');
 
-    // 2. GPT-4o 분석과 gpt-5.4 캡션 생성 — 분석 완료 후 캡션 생성
-    const imageAnalysis = await analyzeImages(imageBuffers, item.bizCategory || sp.category || 'cafe');
-    console.log('[process-and-post] 이미지 분석 완료. 분석 결과 앞 500자:', imageAnalysis.substring(0, 500));
+    // 2. GPT-4o 분석 + 트렌드/캡션뱅크 병렬 처리 (기존: 순차 → 1.5~4초 절약)
+    const bizCat = item.bizCategory || sp.category || 'cafe';
 
-    // 2.5. 최신 트렌드 인사이트 가져오기 (last30days)
-    try {
-      const bizCat = item.bizCategory || sp.category || 'cafe';
-      const trendRes = await fetch(`https://lumi.it.kr/.netlify/functions/get-trends?category=${encodeURIComponent(bizCat)}`);
-      if (trendRes.ok) {
-        const trendData = await trendRes.json();
-        // 트렌드 태그 업데이트 (대시보드에서 보낸 것보다 최신)
-        if (trendData.keywords && trendData.keywords.length > 0) {
-          item.trends = trendData.keywords.map(k => k.keyword.startsWith('#') ? k.keyword : '#' + k.keyword);
-        }
-        // 인사이트를 item에 저장 (캡션 프롬프트에서 사용)
-        if (trendData.insights) {
-          item.trendInsights = trendData.insights;
-        }
-        console.log('[process-and-post] 트렌드 인사이트 로드:', item.trends?.length || 0, '개 태그');
-      }
-    } catch (e) { console.error('[process-and-post] 트렌드 fetch 실패:', e.message); }
-
-    // 2.6. 캡션뱅크 가져오기 (업종별 인기 캡션 참고용)
-    try {
-      const bizCat = item.bizCategory || sp.category || 'cafe';
-      const trendsStore = getTrendsStore();
-      const cbData = await trendsStore.get('caption-bank:' + bizCat);
-      if (cbData) {
-        const capts = JSON.parse(cbData);
-        if (Array.isArray(capts) && capts.length > 0) {
-          item.captionBank = capts.slice(0, 3).map(c => c.caption).join('\n---\n');
-          console.log('[process-and-post] 캡션뱅크 로드:', capts.length, '개');
-        }
-      }
-    } catch (e) { console.error('[process-and-post] 캡션뱅크 fetch 실패:', e.message); }
+    const [imageAnalysis] = await Promise.all([
+      // GPT-4o 이미지 분석 (~5-15초)
+      analyzeImages(imageBuffers, bizCat),
+      // 트렌드 인사이트 (GPT-4o와 병렬, ~1-2초)
+      (async () => {
+        try {
+          const trendRes = await fetch(`https://lumi.it.kr/.netlify/functions/get-trends?category=${encodeURIComponent(bizCat)}`);
+          if (trendRes.ok) {
+            const trendData = await trendRes.json();
+            if (trendData.keywords && trendData.keywords.length > 0) {
+              item.trends = trendData.keywords.map(k => k.keyword.startsWith('#') ? k.keyword : '#' + k.keyword);
+            }
+            if (trendData.insights) item.trendInsights = trendData.insights;
+            console.log('[process-and-post] 트렌드 인사이트 로드:', item.trends?.length || 0, '개 태그');
+          }
+        } catch (e) { console.error('[process-and-post] 트렌드 fetch 실패:', e.message); }
+      })(),
+      // 캡션뱅크 (GPT-4o와 병렬, ~0.3초)
+      (async () => {
+        try {
+          const trendsStore = getTrendsStore();
+          const cbData = await trendsStore.get('caption-bank:' + bizCat);
+          if (cbData) {
+            const capts = JSON.parse(cbData);
+            if (Array.isArray(capts) && capts.length > 0) {
+              item.captionBank = capts.slice(0, 3).map(c => c.caption).join('\n---\n');
+              console.log('[process-and-post] 캡션뱅크 로드:', capts.length, '개');
+            }
+          }
+        } catch (e) { console.error('[process-and-post] 캡션뱅크 fetch 실패:', e.message); }
+      })()
+    ]);
+    console.log('[process-and-post] 이미지 분석 + 트렌드 + 캡션뱅크 병렬 완료');
 
     // 3. gpt-5.4 캡션 3개 생성
     const captions = await generateCaptions(imageAnalysis, item);

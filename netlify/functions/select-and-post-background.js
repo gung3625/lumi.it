@@ -37,6 +37,19 @@ async function publishMedia(igUserId, igAccessToken, creationId) {
 
 async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+async function waitForContainer(containerId, accessToken, maxRetries = 6) {
+  for (let i = 0; i < maxRetries; i++) {
+    await sleep(1000);
+    try {
+      const res = await fetch(`https://graph.facebook.com/v25.0/${containerId}?fields=status_code&access_token=${accessToken}`);
+      const data = await res.json();
+      if (data.status_code === 'FINISHED') return true;
+      if (data.status_code === 'ERROR') return false;
+    } catch(e) {}
+  }
+  return true;
+}
+
 async function postToInstagram(item, caption, imageUrls) {
   const igUserId = item.igUserId;
   const igAccessToken = item.igPageAccessToken || item.igAccessToken;
@@ -45,11 +58,10 @@ async function postToInstagram(item, caption, imageUrls) {
   let postId;
 
   if (imageUrls.length > 1) {
-    const containerIds = [];
-    for (const url of imageUrls) {
-      const id = await createMediaContainer(igUserId, igAccessToken, url, true);
-      containerIds.push(id);
-    }
+    // 캐러셀 아이템 컨테이너 병렬 생성
+    const containerIds = await Promise.all(imageUrls.map(url =>
+      createMediaContainer(igUserId, igAccessToken, url, true)
+    ));
     const cRes = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -57,7 +69,7 @@ async function postToInstagram(item, caption, imageUrls) {
     });
     const cData = await cRes.json();
     if (cData.error) throw new Error(cData.error.message);
-    await sleep(5000);
+    await waitForContainer(cData.id, igAccessToken);
     const pData = await publishMedia(igUserId, igAccessToken, cData.id);
     if (pData.error) throw new Error(pData.error.message);
     postId = pData.id;
@@ -69,7 +81,7 @@ async function postToInstagram(item, caption, imageUrls) {
     });
     const d = await res.json();
     if (d.error) throw new Error(d.error.message);
-    await sleep(5000);
+    await waitForContainer(d.id, igAccessToken);
     const pData = await publishMedia(igUserId, igAccessToken, d.id);
     if (pData.error) throw new Error(pData.error.message);
     postId = pData.id;
@@ -89,7 +101,7 @@ async function postToInstagram(item, caption, imageUrls) {
       if (sData.error) {
         console.error('[select-and-post] 스토리 컨테이너 생성 실패:', JSON.stringify(sData.error));
       } else {
-        await sleep(5000);
+        await waitForContainer(sData.id, storyToken);
         await publishMedia(igUserId, storyToken, sData.id);
         console.log('[select-and-post] 스토리 게시 완료');
       }
