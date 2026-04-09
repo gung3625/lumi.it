@@ -37,7 +37,13 @@ exports.handler = async (event) => {
 
     // 토큰 검증 (token:xxx 키로 저장된 토큰 조회)
     let tokenData;
-    try { tokenData = await store.get('token:' + token); } catch { tokenData = null; }
+    try {
+      tokenData = await store.get('token:' + token);
+      if (tokenData) {
+        const td = JSON.parse(tokenData);
+        if (td.expiresAt && new Date(td.expiresAt) < new Date()) { tokenData = null; }
+      }
+    } catch { tokenData = null; }
     if (!tokenData) {
       return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증에 실패했습니다.' }) };
     }

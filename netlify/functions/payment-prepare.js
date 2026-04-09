@@ -26,7 +26,7 @@ exports.handler = async (event) => {
 
   // Authorization 헤더에서 토큰 → 이메일 역조회
   const authHeader = event.headers?.authorization || event.headers?.Authorization || '';
-  const token = authHeader.replace('Bearer ', '');
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
   if (!token) {
     return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '로그인이 필요합니다.' }) };
   }

@@ -19,7 +19,7 @@ exports.handler = async (event) => {
     try {
       // 토큰으로 이메일 확인
       const authHeader = event.headers['authorization'] || '';
-      const token = authHeader.replace('Bearer ', '');
+      const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
       if (!token) return { statusCode: 401, headers, body: JSON.stringify({ error: '인증 필요' }) };
 
       const tokenStore = getStore({ name: 'users', consistency: 'strong', siteID: SITE_ID, token: NETLIFY_TOKEN });
@@ -41,7 +41,7 @@ exports.handler = async (event) => {
   if (event.httpMethod === 'POST') {
     try {
       const authHeader = event.headers['authorization'] || '';
-      const token = authHeader.replace('Bearer ', '');
+      const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
       if (!token) return { statusCode: 401, headers, body: JSON.stringify({ error: '인증 필요' }) };
 
       const tokenStore = getStore({ name: 'users', consistency: 'strong', siteID: SITE_ID, token: NETLIFY_TOKEN });

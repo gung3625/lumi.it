@@ -12,21 +12,25 @@ exports.handler = async (event) => {
     return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
-  // 인증: Bearer 토큰 필수
+  // 인증: Bearer 토큰 검증
   const authHeader = event.headers['authorization'] || '';
-  if (!authHeader.startsWith('Bearer ') || authHeader.length < 10) {
+  const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+  if (!bearerToken) {
     return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증이 필요합니다.' }) };
   }
 
-  let body;
-  try { body = JSON.parse(event.body); } catch {
-    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '잘못된 요청입니다.' }) };
-  }
-  const { email } = body;
-  if (!email) return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '이메일이 필요합니다.' }) };
-
   try {
     const store = getStore({ name: 'users', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
+
+    // 토큰 Blobs 검증 — email을 토큰에서 가져옴 (body 무시)
+    let tokenRaw;
+    try { tokenRaw = await store.get('token:' + bearerToken); } catch { tokenRaw = null; }
+    if (!tokenRaw) return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증에 실패했습니다.' }) };
+    const tokenData = JSON.parse(tokenRaw);
+    if (tokenData.expiresAt && new Date(tokenData.expiresAt) < new Date()) {
+      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '세션이 만료됐습니다. 다시 로그인해주세요.' }) };
+    }
+    const email = tokenData.email;
     let raw;
     try { raw = await store.get('user:' + email); } catch(e) { raw = null; }
     if (!raw) return { statusCode: 404, headers: CORS, body: JSON.stringify({ error: '사용자를 찾을 수 없습니다.' }) };
@@ -37,7 +41,7 @@ exports.handler = async (event) => {
     const postCount = user.postCountMonth === thisMonth ? (user.postCount || 0) : 0;
     const limits = { trial: 3, basic: 8, standard: 16, pro: 20 };
     // 대표님 계정 - 프로 플랜 전체 기능 사용
-    const ADMIN_EMAIL = 'gung3625@gmail.com';
+    const ADMIN_EMAIL = process.env.ADMIN_EMAIL || '';
     const isAdmin = email === ADMIN_EMAIL;
     const plan = isAdmin ? 'pro' : (user.plan || 'trial');
     const limit = limits[plan] || 3;

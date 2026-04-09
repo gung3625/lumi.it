@@ -9,6 +9,13 @@ exports.handler = async (event) => {
     return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
+  // 인증: Bearer 토큰 검증
+  const authHeader = event.headers['authorization'] || '';
+  const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+  if (!bearerToken) {
+    return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증이 필요합니다.' }) };
+  }
+
   let body;
   try { body = JSON.parse(event.body); } catch {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '잘못된 요청입니다.' }) };

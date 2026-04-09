@@ -12,7 +12,7 @@ exports.handler = async (event) => {
 
   const authHeader = event.headers['authorization'] || '';
   if (!authHeader.startsWith('Bearer ')) return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증 필요' }) };
-  const token = authHeader.replace('Bearer ', '').trim();
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
 
   try {
     const userStore = getStore({

@@ -1,9 +1,17 @@
 const { getStore } = require('@netlify/blobs');
 
 exports.handler = async (event) => {
+  // 인증: Bearer 토큰 또는 LUMI_SECRET
+  const authHeader = event.headers['authorization'] || '';
+  const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+  const secret = event.headers['x-lumi-secret'] || '';
+  if (!bearerToken && secret !== process.env.LUMI_SECRET) {
+    return { statusCode: 401, body: 'unauthorized' };
+  }
+
   const key = event.queryStringParameters?.key;
-  if (!key) {
-    return { statusCode: 400, body: 'key 필수' };
+  if (!key || !key.startsWith('temp-img:')) {
+    return { statusCode: 400, body: 'invalid key' };
   }
 
   try {

@@ -51,8 +51,9 @@ exports.handler = async (event) => {
       return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '비밀번호가 올바르지 않습니다.' }) };
     }
 
-    const token = Buffer.from(email + ':' + Date.now()).toString('base64');
-    await store.set('token:' + token, JSON.stringify({ email, createdAt: new Date().toISOString() }));
+    const token = require('crypto').randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    await store.set('token:' + token, JSON.stringify({ email, createdAt: new Date().toISOString(), expiresAt }));
 
     const { passwordHash, ...safeUser } = user;
 

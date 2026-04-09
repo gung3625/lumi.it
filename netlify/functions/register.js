@@ -81,8 +81,9 @@ exports.handler = async (event) => {
     const instaId = instagram.replace('@', '').toLowerCase();
     if (instaId) await store.set('insta:' + instaId, email);
 
-    const token = Buffer.from(email + ':' + Date.now()).toString('base64');
-    await store.set('token:' + token, JSON.stringify({ email, createdAt: new Date().toISOString() }));
+    const token = require('crypto').randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    await store.set('token:' + token, JSON.stringify({ email, createdAt: new Date().toISOString(), expiresAt }));
 
     const { passwordHash, ...safeUser } = user;
 
