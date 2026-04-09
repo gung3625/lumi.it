@@ -198,11 +198,14 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
         .dash-note{width:100%;padding:13px 15px;border:1.5px solid var(--g200);border-radius:var(--r-md);background:var(--g50);font-size:.87rem;color:var(--g900);font-family:inherit;resize:none;outline:none;line-height:1.75;margin-bottom:14px;transition:border-color .2s,background .2s;}
         .dash-note:focus{border-color:var(--pink);background:var(--white);box-shadow:0 0 0 3px rgba(255,45,138,.08);}
         .dash-note::placeholder{color:var(--g400);}
-        .act-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+        .act-btns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
         .btn-act-on{padding:14px;border:none;background:var(--pink);color:#fff;font-size:15px;font-weight:700;border-radius:var(--r-md);cursor:pointer;font-family:inherit;transition:background .2s,transform .2s,box-shadow .2s;box-shadow:0 4px 16px rgba(255,45,138,.3);}
         .btn-act-on:hover{background:var(--pink-light);transform:translateY(-1px);box-shadow:0 6px 24px rgba(255,45,138,.4);}
+        .btn-act-best{padding:14px;border:none;background:var(--pink-pale,#fff0f6);color:var(--pink);font-size:15px;font-weight:700;border-radius:var(--r-md);cursor:pointer;font-family:inherit;transition:background .2s,transform .2s;border:1.5px solid var(--pink);}
+        .btn-act-best:hover{background:var(--pink);color:#fff;transform:translateY(-1px);}
         .btn-act-off{padding:14px;background:var(--white);color:var(--g700);font-size:15px;font-weight:700;border:1.5px solid var(--g200);border-radius:var(--r-md);cursor:pointer;font-family:inherit;transition:background .2s,border-color .2s;}
         .btn-act-off:hover{background:var(--g50);border-color:var(--g400);}
+        @media(max-width:480px){.act-btns{grid-template-columns:1fr;}.btn-act-on,.btn-act-best,.btn-act-off{font-size:14px;padding:13px;}}
         .arc-card{background:var(--white);border-radius:var(--r-lg);padding:18px;border:1px solid var(--g100);margin-bottom:10px;animation:fadeUp .35s var(--ease);}
         .arc-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
         .arc-time{font-size:10px;font-weight:700;color:var(--pink);letter-spacing:.06em;text-transform:uppercase;}
@@ -693,6 +696,7 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
             </div>
             <div class="act-btns">
                 <button class="btn-act-on" onclick="commitPost('now')">바로 올리기</button>
+                <button class="btn-act-best" onclick="commitPost('besttime')">최적 시간에 올리기</button>
                 <button class="btn-act-off" onclick="commitPost('reserve')">예약 저장</button>
             </div>
           </div>
@@ -1709,6 +1713,96 @@ async function commitPost(type){
             showToast('네트워크 오류가 발생했어요.');
             if (nowBtn) { nowBtn.disabled = false; nowBtn.textContent = '바로 올리기'; }
         } finally {
+            _isCommitting = false;
+        }
+
+    } else if(type==='besttime'){
+        // 최적 시간에 올리기 → get-best-time API에서 가장 가까운 미래 슬롯 계산 → 예약 저장
+        const bestBtn = document.querySelector('.btn-act-best');
+        if (bestBtn) { bestBtn.disabled = true; bestBtn.textContent = '계산 중...'; }
+        try {
+            const btRes = await fetch('/.netlify/functions/get-best-time', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ category: bizCat })
+            });
+            const btData = await btRes.json();
+            if (!btRes.ok) throw new Error(btData.error || '최적 시간 조회 실패');
+
+            // 현재 시점에서 가장 가까운 미래 슬롯 찾기
+            const now = new Date();
+            const today = now.toISOString().slice(0, 10); // YYYY-MM-DD
+            const tomorrow = new Date(now.getTime() + 24*60*60*1000).toISOString().slice(0, 10);
+            let bestSlot = null;
+            let bestDate = null;
+
+            // 오늘 슬롯 중 미래인 것 찾기
+            for (const slot of btData.allSlots) {
+                const [h, m] = slot.time.split(':').map(Number);
+                const slotDate = new Date(now);
+                slotDate.setHours(h, m, 0, 0);
+                if (slotDate > now) {
+                    bestSlot = slot;
+                    bestDate = slotDate;
+                    break;
+                }
+            }
+            // 오늘 남은 슬롯이 없으면 내일 첫 번째 슬롯
+            if (!bestSlot) {
+                bestSlot = btData.allSlots[0];
+                const [h, m] = bestSlot.time.split(':').map(Number);
+                bestDate = new Date(tomorrow + 'T00:00:00');
+                bestDate.setHours(h, m, 0, 0);
+            }
+
+            const scheduledAt = bestDate.toISOString();
+            const timeLabel = bestDate.toLocaleString('ko-KR', { month:'long', day:'numeric', hour:'2-digit', minute:'2-digit' });
+
+            if (bestBtn) { bestBtn.textContent = '저장 중...'; }
+
+            const formData3 = new FormData();
+            stagedFiles.forEach((f, i) => formData3.append(`photo_${i}`, f, f.name));
+            formData3.append('userMessage', notes);
+            formData3.append('bizCategory', bizCat);
+            formData3.append('captionTone', captionTone);
+            formData3.append('tagStyle', tagStyle);
+            formData3.append('weather', JSON.stringify(weatherPayload));
+            formData3.append('trends', JSON.stringify(currentTrends));
+            formData3.append('storeProfile', JSON.stringify(storeProfile));
+            formData3.append('submittedAt', new Date().toISOString());
+            formData3.append('scheduledAt', scheduledAt);
+
+            const res3 = await fetch('/.netlify/functions/save-reservation', {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('lumi_token') || '') },
+                body: formData3
+            });
+            const data3 = await res3.json();
+
+            if (res3.ok) {
+                archive.push({
+                    id: data3.id,
+                    time: new Date().toLocaleString(),
+                    scheduledAt,
+                    content: notes,
+                    photos,
+                    weather: weatherPayload,
+                    trends: currentTrends,
+                    bizCategory: bizCat,
+                    captionTone,
+                    storeProfile
+                });
+                syncPersistence();
+                renderArchive();
+                showToast(timeLabel + '에 자동 게시 예약됐어요!', 'pink');
+                resetDashboard();
+            } else {
+                showToast(data3.error || '예약 저장에 실패했어요.', 'red');
+            }
+        } catch(e) {
+            showToast(e.message || '최적 시간 계산 중 오류가 발생했어요.', 'red');
+        } finally {
+            if (bestBtn) { bestBtn.disabled = false; bestBtn.textContent = '최적 시간에 올리기'; }
             _isCommitting = false;
         }
 
