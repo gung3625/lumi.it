@@ -1019,7 +1019,7 @@ body.light-mode .dark-toggle-fab { background:rgba(255,255,255,.8); border-color
 <section class="cta-sec">
   <div class="cta-box">
     <h2>사장님, 오늘부터<br>인스타 걱정 끝내세요.</h2>
-    <p id="cta-remaining">잔여 --자리 · 정식 출시 전까지 전부 무료 · 카드 등록 없음</p>
+    <p id="cta-remaining"><strong id="cta-count" style="font-size:inherit;font-weight:600;">--</strong>/20 무료 테스터 모집 중 · 카드 등록 없음</p>
     <a href="/beta" class="btn-cta">1분 만에 캡션 받아보기</a>
   </div>
 </section>
@@ -1243,12 +1243,11 @@ document.addEventListener('DOMContentLoaded',function(){
   });
 })();
 
-// 최하단 CTA 잔여석 동적 업데이트
+// 최하단 CTA 잔여석 동적 업데이트 (배너와 동일 형식)
 (function(){
   fetch('/api/beta-apply').then(function(r){return r.json();}).then(function(d){
-    var left=Math.max(0,d.max-d.count);
-    var el=document.getElementById('cta-remaining');
-    if(el) el.textContent='잔여 '+left+'자리 · 정식 출시 전까지 전부 무료 · 카드 등록 없음';
+    var el=document.getElementById('cta-count');
+    if(el&&d.count>0) el.textContent=d.count;
   }).catch(function(){});
 })();
 </script>
