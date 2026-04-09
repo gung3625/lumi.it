@@ -2,36 +2,26 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/assets/logo.png" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏢</text></svg>" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="robots" content="noindex, nofollow">
-    <title>lumi agent office</title>
-    <script>
-      // 관리자 인증 체크 — gung3625@gmail.com만 접근 가능
-      (function() {
-        var ADMIN_EMAIL = 'gung3625@gmail.com';
-        var raw = localStorage.getItem('lumi_user');
-        if (!raw) {
-          // 로그인 안 됨 → 대시보드 로그인으로 보냄
-          alert('로그인이 필요합니다.');
-          window.location.href = '/dashboard';
-          return;
-        }
-        try {
-          var user = JSON.parse(raw);
-          if (user.email !== ADMIN_EMAIL) {
-            alert('접근 권한이 없습니다.');
-            window.location.href = '/';
-            return;
-          }
-        } catch(e) {
-          window.location.href = '/dashboard';
-          return;
-        }
-      })();
-    </script>
+    <title>Lumi Office — AI Agent Workspace</title>
+    <meta name="robots" content="noindex, nofollow" />
     <script type="module" crossorigin src="./assets/index-YEdVLraa.js"></script>
     <link rel="stylesheet" crossorigin href="./assets/index-DD_JabCg.css">
+    <script>
+      // Lumi admin auth gate
+      (function() {
+        var ALLOWED = ['gung3625@gmail.com'];
+        var stored = localStorage.getItem('lumi_office_email');
+        if (stored && ALLOWED.indexOf(stored) !== -1) return;
+        var email = prompt('Lumi Office 접근 인증\n관리자 이메일을 입력하세요:');
+        if (!email || ALLOWED.indexOf(email.trim().toLowerCase()) === -1) {
+          document.documentElement.innerHTML = '<body style="background:#000;color:#fff;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif"><h1>접근 권한이 없습니다</h1></body>';
+          throw new Error('Unauthorized');
+        }
+        localStorage.setItem('lumi_office_email', email.trim().toLowerCase());
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
