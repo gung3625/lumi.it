@@ -181,6 +181,13 @@
     .features-grid .benefit-card{background:#ffffff;box-shadow:rgba(0,0,0,.06) 0 2px 10px;}
     .features-grid .benefit-title{color:#1d1d1f;}
     .features-grid .benefit-desc{color:rgba(0,0,0,.8);}
+    /* 섹션 교차 배경 */
+    .sec-light{background:#f5f5f7;color:#1d1d1f;}
+    .sec-dark{background:#000;color:#fff;}
+    body.dark-mode .sec-light{background:#111!important;color:#f5f5f7!important;}  /* 다크: 어두운 교차 */
+    body.dark-mode .sec-dark{background:#000!important;color:#f5f5f7!important;}
+    body:not(.dark-mode) .sec-light{background:#f5f5f7;color:#1d1d1f;}
+    body:not(.dark-mode) .sec-dark{background:#1d1d1f;color:#f5f5f7;}
     /* 다크모드 토글 */
     /* ── 라이트모드 ── */
     body:not(.dark-mode){background:#f5f5f7;color:#1d1d1f;}
@@ -213,6 +220,7 @@
     body:not(.dark-mode) .faq-item{border-color:rgba(0,0,0,.08);background:#fff!important;}
     body:not(.dark-mode) .faq-q{color:#1d1d1f!important;}
     body:not(.dark-mode) .faq-a{color:rgba(0,0,0,.6)!important;}
+    body:not(.dark-mode) .faq-a-inner{color:rgba(0,0,0,.6)!important;}
     body:not(.dark-mode) footer{background:#f5f5f7!important;border-color:rgba(0,0,0,.08)!important;}
     body:not(.dark-mode) .footer-logo-txt{color:rgba(0,0,0,.48)!important;}
     body:not(.dark-mode) .footer-info{color:rgba(0,0,0,.36)!important;}
@@ -281,7 +289,7 @@
 </section>
 
 <!-- HOW -->
-<section class="sec" style="background:#f5f5f7;color:#1d1d1f;">
+<section class="sec sec-light">
   <div class="sec-inner">
     <div class="sec-ey">이렇게 작동해요</div>
     <h2 class="sec-title">사진 한 장이면<br>이 모든 게 자동으로 돼요.</h2>
@@ -347,7 +355,7 @@
 </section>
 
 <!-- 기능 소개 -->
-<section class="sec" style="background:#f5f5f7;color:#1d1d1f;">
+<section class="sec sec-light">
   <div class="sec-inner">
     <div class="sec-ey">사진 올리면 끝인데, 이것만 되는 게 아니에요</div>
     <h2 class="sec-title" style="margin-bottom:32px;color:#1d1d1f;">사장님을 위한<br>모든 기능이 들어있어요.</h2>
@@ -412,7 +420,7 @@
 </section>
 
 <!-- 소셜 프루프 -->
-<section class="sec" style="background:#000000;color:#ffffff;">
+<section class="sec sec-dark">
   <div class="sec-inner">
     <div class="sec-ey">캡션 품질을 직접 비교해 보세요</div>
     <h2 class="sec-title" style="margin-bottom:32px;color:#ffffff;">직접 쓴 글 vs<br>lumi가 쓴 글.</h2>
@@ -523,7 +531,7 @@
 </section>
 
 <!-- FAQ -->
-<section class="sec" style="background:#000000;color:#ffffff;">
+<section class="sec sec-dark">
   <div class="sec-inner" style="text-align:center;">
     <div class="sec-ey">자주 묻는 질문</div>
     <h2 class="sec-title" style="margin-bottom:32px;color:#ffffff;">궁금한 게 있으신가요?</h2>
@@ -785,7 +793,7 @@ if(typeof lucide !== 'undefined') lucide.createIcons();
 <script>
 if(localStorage.getItem('lumi_dark_mode')!=='0')document.body.classList.add('dark-mode');
 function toggleDarkMode(on){document.body.classList.toggle('dark-mode',on);localStorage.setItem('lumi_dark_mode',on?'1':'0');var f=document.getElementById('dark-toggle-fab');if(f)f.textContent=on?'☀️':'🌙';}
-(function(){var f=document.getElementById('dark-toggle-fab');if(f&&document.body.classList.contains('dark-mode'))f.textContent='☀️';})();
+(function(){var f=document.getElementById('dark-toggle-fab');if(f&&document.body.classList.contains('dark-mode'))f.textContent='☀️';else if(f)f.textContent='🌙';})();
 </script>
 <script>
 // 로그인 상태 nav 버튼 전환
