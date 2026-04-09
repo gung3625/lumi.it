@@ -79,7 +79,7 @@ exports.handler = async (event) => {
             message: {
               to: '01064246284',
               from: '01064246284',
-              text: `[lumi 베타 신청]\n이름: ${name}\n매장: ${storeName}\n업종: ${type}\n연락처: ${phone}\n인스타: ${insta || '미입력'}\n유입: ${referral || utm || '미입력'}\n\n잔여: ${remaining}명`,
+              text: `[lumi 베타 신청]\n이름: ${name}\n매장: ${storeName}\n업종: ${type}\n연락처: ${phone}\n인스타: ${insta || '미입력'}\n유입: ${referral || (utm && utm.source) || '미입력'}\n\n잔여: ${remaining}명`,
             },
           }),
         });
