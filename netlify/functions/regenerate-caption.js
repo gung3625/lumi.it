@@ -25,6 +25,15 @@ function getRegenStore() {
   });
 }
 
+function getTrendsStore() {
+  return getStore({
+    name: 'trends',
+    consistency: 'strong',
+    siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
+    token: process.env.NETLIFY_TOKEN,
+  });
+}
+
 function getMonthKey(email) {
   const now = new Date();
   const yyyy = now.getFullYear();
@@ -123,7 +132,7 @@ function buildCaptionPrompt(item, imageAnalysis, toneGuide) {
 ## 이런 캡션을 쓰세요
 - 이미지 분석의 [첫인상]을 캡션 첫 문장의 감성 씨앗으로 활용
 - 첫 문장에서 스크롤이 멈춤
-- 이모지 2~4개, 감정을 보완하는 위치에만 (연속 금지)
+- 이모지는 캡션의 감정을 보완하는 위치에 자연스럽게 사용. 요즘 인스타그램 트렌드에 맞는 양과 스타일로.
 - 마지막 문장은 행동 유도:
   · 카페/음식: "여기 어디야?" 댓글 유도
   · 뷰티: "예약/DM 문의" 유도
@@ -164,21 +173,25 @@ ${toneGuide ? '### 말투 학습\n' + toneGuide + '\n✅ 좋아요 계승 / ❌ 
 
 ${item.customCaptions ? '### 커스텀 캡션 샘플\n대표님이 직접 등록한 캡션 예시입니다. 이 스타일을 참고하세요.\n' + item.customCaptions.split('|||').filter(Boolean).map((c, i) => `샘플 ${i + 1}: ${c.trim()}`).join('\n') : ''}
 
+${item.captionBank ? '### 업종 인기 캡션 참고\n아래는 같은 업종에서 좋아요가 많은 실제 인스타 캡션입니다. 톤, 문장 구조, 이모지 사용 패턴을 참고하세요. 절대 그대로 베끼지 마세요.\n' + item.captionBank : ''}
+
 ---
 
 ## 해시태그 전략
 
-총 8~12개: 대형(1~2) + 중형(3~4) + 소형(2~3) + 트렌드(사진과 관련 있는 것만 2~3) + 지역(1)
+해시태그 구성: 대형 + 중형 + 소형 + 트렌드(사진 관련만) + 지역
+개수는 인스타그램 트렌드에 맞게 자연스럽게.
 **절대 규칙:** 사진 내용과 직접 관련 없는 해시태그 금지. 트렌드/인기 태그라도 사진과 무관하면 사용 금지.
+현재 시즌과 맞지 않는 해시태그 금지 (예: 4월인데 #크리스마스네일, #빙수맛집 금지).
 캡션 본문 마지막에 줄바꿈 후 한 블록.
 
 ---
 
 ## 캡션 3개 (이전과 완전히 다르게)
 
-**버전 1 — 스토리텔링** (5~8줄)
-**버전 2 — 짧고 강렬** (2~3줄)
-**버전 3 — 정보형** (4~6줄)
+**버전 1 — 스토리텔링**
+**버전 2 — 짧고 강렬**
+**버전 3 — 정보형**
 
 ---CAPTION_1---
 [캡션 본문 + 해시태그]
@@ -279,6 +292,19 @@ exports.handler = async (event) => {
           item.trends = trendData.keywords.map(k => k.keyword.startsWith('#') ? k.keyword : '#' + k.keyword);
         }
         if (trendData.insights) item.trendInsights = trendData.insights;
+      }
+    } catch (e) { /* 실패해도 캡션 생성은 계속 */ }
+
+    // 4.5. 캡션뱅크 가져오기
+    try {
+      const bizCat = item.bizCategory || (item.storeProfile || {}).category || 'cafe';
+      const trendsStore = getTrendsStore();
+      const cbData = await trendsStore.get('caption-bank:' + bizCat);
+      if (cbData) {
+        const capts = JSON.parse(cbData);
+        if (Array.isArray(capts) && capts.length > 0) {
+          item.captionBank = capts.slice(0, 3).map(c => c.caption).join('\n---\n');
+        }
       }
     } catch (e) { /* 실패해도 캡션 생성은 계속 */ }
 

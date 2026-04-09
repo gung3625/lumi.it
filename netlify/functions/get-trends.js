@@ -47,9 +47,33 @@ exports.handler = async (event) => {
   }
 
   const params = new URLSearchParams(event.rawQuery || '');
-  const category = params.get('category') || 'cafe';
+  const rawCategory = (params.get('category') || 'cafe').trim();
   const scope = params.get('scope') || '';  // 'domestic', 'global', or '' (default=combined)
   const knownCategories = ['cafe', 'food', 'beauty', 'flower', 'fashion', 'fitness', 'pet', 'interior', 'education', 'laundry', 'studio'];
+
+  // 카테고리 별칭 매핑 (다양한 입력을 표준 키로 변환)
+  const CATEGORY_ALIAS = {
+    // 한글 별칭
+    '카페': 'cafe', '카페·음료': 'cafe', '카페·베이커리': 'cafe', '커피': 'cafe', '베이커리': 'cafe',
+    '음식점': 'food', '식당': 'food', '식당·음식점': 'food', '맛집': 'food', '레스토랑': 'food',
+    '뷰티': 'beauty', '뷰티·케어': 'beauty', '뷰티·헤어·네일': 'beauty', '네일': 'beauty', '헤어': 'beauty', '미용실': 'beauty',
+    '꽃집': 'flower', '꽃집·플라워': 'flower', '플라워': 'flower',
+    '패션': 'fashion', '패션·의류': 'fashion', '쇼핑·의류': 'fashion', '의류': 'fashion',
+    '헬스': 'fitness', '필라테스': 'fitness', '헬스·필라테스': 'fitness', '요가': 'fitness', '운동': 'fitness',
+    '반려동물': 'pet', '반려동물·펫': 'pet', '펫': 'pet',
+    '인테리어': 'interior', '인테리어·가구': 'interior', '인테리어·소품': 'interior', '가구': 'interior',
+    '학원': 'education', '학원·교육': 'education', '교육': 'education',
+    '세탁': 'laundry', '세탁·수선': 'laundry',
+    '사진': 'studio', '사진·스튜디오': 'studio', '스튜디오': 'studio',
+    '기타': 'other',
+    // 영문 별칭
+    'restaurant': 'food', 'bakery': 'cafe', 'hair': 'beauty', 'nail': 'beauty',
+    'gym': 'fitness', 'pilates': 'fitness', 'yoga': 'fitness',
+    'florist': 'flower', 'clothing': 'fashion',
+    'health_fitness': 'fitness', 'bar': 'food',
+  };
+
+  const category = CATEGORY_ALIAS[rawCategory] || rawCategory;
   const storeKey = knownCategories.includes(category) ? category : 'other';
   const season = getSeasonInfo();
   const label = CATEGORY_LABELS[storeKey] || '일반';

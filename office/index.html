@@ -6,10 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Lumi Office — AI Agent Workspace</title>
     <meta name="robots" content="noindex, nofollow" />
-    <script type="module" crossorigin src="./assets/index-YEdVLraa.js"></script>
+    <script type="module" crossorigin src="./assets/index-BzX4D-bO.js"></script>
     <link rel="stylesheet" crossorigin href="./assets/index-DD_JabCg.css">
     <script>
-      // Lumi admin auth gate
       (function() {
         var ALLOWED = ['gung3625@gmail.com'];
         var stored = localStorage.getItem('lumi_office_email');
@@ -20,6 +19,34 @@
           throw new Error('Unauthorized');
         }
         localStorage.setItem('lumi_office_email', email.trim().toLowerCase());
+      })();
+    </script>
+    <script>
+      (function() {
+        var WS_URL = 'ws://127.0.0.1:7743';
+        var ws;
+        var layoutReady = false;
+        function sendReady() {
+          if (ws && ws.readyState === 1 && layoutReady) {
+            ws.send(JSON.stringify({ type: 'ready' }));
+          }
+        }
+        window.addEventListener('message', function(e) {
+          if (e.data && e.data.type === 'layoutLoaded') {
+            layoutReady = true;
+            sendReady();
+          }
+        });
+        function connect() {
+          try { ws = new WebSocket(WS_URL); } catch(e) { setTimeout(connect, 3000); return; }
+          ws.onopen = function() { document.title = 'Lumi Office — 연결됨'; sendReady(); };
+          ws.onmessage = function(e) {
+            try { window.dispatchEvent(new MessageEvent('message', { data: JSON.parse(e.data) })); } catch(err) {}
+          };
+          ws.onclose = function() { document.title = 'Lumi Office — 연결 끊김'; setTimeout(connect, 3000); };
+          ws.onerror = function() { try { ws.close(); } catch(e) {} };
+        }
+        connect();
       })();
     </script>
   </head>

@@ -64,6 +64,13 @@ exports.handler = async (event) => {
       }
     }
 
+    // 캡션뱅크 (업종별 참고 캡션)
+    if (body.captionBank && typeof body.captionBank === 'object') {
+      for (const [category, captions] of Object.entries(body.captionBank)) {
+        await store.set('caption-bank:' + category, JSON.stringify(captions));
+      }
+    }
+
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
