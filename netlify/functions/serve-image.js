@@ -1,14 +1,7 @@
 const { getStore } = require('@netlify/blobs');
 
 exports.handler = async (event) => {
-  // 인증: Bearer 토큰 또는 LUMI_SECRET
-  const authHeader = event.headers['authorization'] || '';
-  const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
-  const secret = event.headers['x-lumi-secret'] || '';
-  if (!bearerToken && secret !== process.env.LUMI_SECRET) {
-    return { statusCode: 401, body: 'unauthorized' };
-  }
-
+  // img 태그, Instagram Graph API 등에서 헤더 없이 호출되므로 인증 없이 key prefix만 검증
   const key = event.queryStringParameters?.key;
   if (!key || !key.startsWith('temp-img:')) {
     return { statusCode: 400, body: 'invalid key' };

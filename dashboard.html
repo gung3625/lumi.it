@@ -1296,7 +1296,7 @@ async function handleLoginAction(){
 async function disconnectInstagram() {
     if (!confirm('Instagram 연동을 끊으시겠어요?')) return;
     const lumiUser = JSON.parse(localStorage.getItem('lumi_user') || '{}');
-    const token = lumiUser.token || localStorage.getItem('lumi_token') || '';
+    const token = localStorage.getItem('lumi_token') || '';
     try {
         const res = await fetch('/.netlify/functions/disconnect-ig', {
             method: 'POST',
@@ -1321,7 +1321,7 @@ async function disconnectInstagram() {
 
 function connectInstagram() {
     const lumiUser = JSON.parse(localStorage.getItem('lumi_user') || '{}');
-    const token = lumiUser.token || '';
+    const token = localStorage.getItem('lumi_token') || '';
     window.location.href = '/.netlify/functions/ig-oauth?action=start&token=' + token;
 }
 
@@ -1334,8 +1334,8 @@ function checkIgConnection() {
         lumiUser.igConnected = true;
         localStorage.setItem('lumi_user', JSON.stringify(lumiUser));
         // lumi_token이 없으면 user에서 꺼내서 저장 (Instagram 리다이렉트 후 세션 복원)
-        if (!localStorage.getItem('lumi_token') && lumiUser.token) {
-            localStorage.setItem('lumi_token', lumiUser.token);
+        if (false) { // dead code removed
+            // token already in lumi_token
         }
         // URL 파라미터 제거
         window.history.replaceState({}, '', '/');
@@ -1524,7 +1524,7 @@ function updateStoreRegion() {
                 user.storeSido = sidoText; // 날씨/에어코리아 조회용 시도명
                 localStorage.setItem('lumi_user', JSON.stringify(user));
                 // 서버에도 저장 (다음 로그인 시 복원)
-                const lumiToken = user.token || localStorage.getItem('lumi_token') || '';
+                const lumiToken = localStorage.getItem('lumi_token') || '';
                 if (lumiToken) {
                     fetch('/.netlify/functions/update-profile', {
                         method: 'POST',
@@ -1711,7 +1711,7 @@ async function commitPost(type){
 
             // 게시 횟수 카운팅 먼저 확인
             const lumiUserData = JSON.parse(localStorage.getItem('lumi_user') || '{}');
-            const token = lumiUserData.token || '';
+            const token = localStorage.getItem('lumi_token') || '';
             if (token) {
                 const countRes = await fetch('/.netlify/functions/count-post', {
                     method: 'POST',
@@ -2154,7 +2154,7 @@ async function saveAutoReply() {
 
     try {
         const lumiUser = JSON.parse(localStorage.getItem('lumi_user') || '{}');
-        const savedToken = lumiUser.token || '';
+        const savedToken = localStorage.getItem('lumi_token') || '';
         const res = await fetch('/.netlify/functions/save-auto-reply', {
             method: 'POST',
             headers: {
@@ -2177,7 +2177,7 @@ async function saveAutoReply() {
 async function loadAutoReply() {
     try {
         const lumiUser2 = JSON.parse(localStorage.getItem('lumi_user') || '{}');
-        const savedToken = lumiUser2.token || '';
+        const savedToken = localStorage.getItem('lumi_token') || '';
         const res = await fetch('/.netlify/functions/save-auto-reply', {
             headers: { 'Authorization': 'Bearer ' + savedToken }
         });
@@ -2519,12 +2519,12 @@ async function confirmWithdraw() {
     const user = userRaw ? JSON.parse(userRaw) : null;
 
     // 구독 중이면 먼저 취소
-    if (user?.token && user?.email) {
+    if ((localStorage.getItem('lumi_token')) && user?.email) {
         try {
             await fetch('/.netlify/functions/cancel-subscription', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: user.email, token: user.token, reason: '회원탈퇴' })
+                body: JSON.stringify({ email: user.email, token: localStorage.getItem('lumi_token') || '', reason: '회원탈퇴' })
             });
         } catch(e) { console.log('구독 취소 오류(탈퇴):', e); }
     }
@@ -2916,7 +2916,7 @@ async function confirmCancelSubscription() {
         const res = await fetch('/.netlify/functions/cancel-subscription', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: user.email, token: user.token, reason })
+            body: JSON.stringify({ email: user.email, token: localStorage.getItem('lumi_token') || '', reason })
         });
         const data = await res.json();
         if (res.ok) {
@@ -2945,7 +2945,7 @@ async function startPayment() {
     // 1. 주문 생성
     const prepRes = await fetch('/.netlify/functions/payment-prepare', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (user.token || '') },
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('lumi_token') || '') },
         body: JSON.stringify({ planType: 'standard' })
     });
     const prepData = await prepRes.json();
@@ -3410,7 +3410,7 @@ async function showWelcomeModal(user) {
     document.getElementById('welcome-result').classList.add('hidden');
     try {
         const res = await fetch('/.netlify/functions/welcome-caption', {
-            method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+(user.token||localStorage.getItem('lumi_token'))},
+            method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+(localStorage.getItem('lumi_token')||'')},
             body: JSON.stringify({ bizCategory: user.bizCategory||'cafe', storeName: sName, region: user.region||'', captionTone: user.captionTone||'friendly' })
         });
         const data = await res.json();
@@ -4257,7 +4257,7 @@ function saveDashPrefs() {
         if (dashTag) user.tagStyle = dashTag.value;
         localStorage.setItem('lumi_user', JSON.stringify(user));
         // 서버에도 저장 (다음 로그인 시 복원)
-        const lumiToken2 = user.token || localStorage.getItem('lumi_token') || '';
+        const lumiToken2 = localStorage.getItem('lumi_token') || '';
         if (lumiToken2) {
             fetch('/.netlify/functions/update-profile', {
                 method: 'POST',

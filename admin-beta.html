@@ -108,7 +108,7 @@ function login(){
 }
 async function load(){
   try {
-    const res = await fetch(`/api/beta-admin?token=${encodeURIComponent(savedToken)}`);
+    const res = await fetch('/api/beta-admin', { headers: { 'x-admin-token': savedToken } });
     if(res.status===401){alert('인증 실패. 토큰을 확인해주세요.');return;}
     const data = await res.json();
     document.getElementById('login-wrap').style.display='none';
