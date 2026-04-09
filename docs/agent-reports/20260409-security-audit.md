@@ -8,14 +8,14 @@
 
 | # | 파일 | 문제 | 상태 |
 |---|------|------|------|
-| CRIT-1 | login.js, register.js | 토큰 만료 없음 — 영구 유효 | 수정 예정 |
-| CRIT-2 | check-plan.js, count-post.js | 토큰 검증 안 함 + email body에서 받음 (IDOR) | 수정 예정 |
-| CRIT-3 | payment-confirm.js | 인증 없음 + 이중 결제 레이스 컨디션 | 수정 예정 |
-| CRIT-4 | serve-image.js | 인증 없는 이미지 프록시, 키 추측 가능 | 수정 예정 |
+| CRIT-1 | login.js, register.js | 토큰 만료 없음 — 영구 유효 | ✅ 수정 완료 (30일 만료 + crypto.randomBytes) |
+| CRIT-2 | check-plan.js, count-post.js | 토큰 검증 안 함 + email body에서 받음 (IDOR) | ✅ 수정 완료 (토큰 Blobs 검증, email 토큰에서 추출) |
+| CRIT-3 | payment-confirm.js | 인증 없음 + 이중 결제 레이스 컨디션 | ✅ 인증 추가 (레이스 컨디션은 Blobs 한계) |
+| CRIT-4 | serve-image.js | 인증 없는 이미지 프록시, 키 추측 가능 | ✅ 수정 완료 (Bearer/LUMI_SECRET + key prefix 제한) |
 | CRIT-5 | dashboard.html | 토큰+PII localStorage 저장 — XSS 탈취 가능 | 장기 과제 (httpOnly 쿠키 전환) |
-| CRIT-6 | admin-beta.html, beta-admin.js | 관리자 토큰 URL 파라미터 + 무제한 시도 | 수정 예정 |
-| CRIT-7 | 다수 파일 | Bearer 토큰 .replace() 불안전 파싱 | 수정 예정 |
-| CRIT-8 | check-plan.js, count-post.js, meta-webhook.js | ADMIN_EMAIL 하드코딩 | 수정 예정 |
+| CRIT-6 | admin-beta.html, beta-admin.js | 관리자 토큰 URL 파라미터 + 무제한 시도 | 다음 세션 |
+| CRIT-7 | 다수 파일 | Bearer 토큰 .replace() 불안전 파싱 | ✅ 수정 완료 (10개 파일 .startsWith+.slice) |
+| CRIT-8 | check-plan.js, count-post.js, meta-webhook.js | ADMIN_EMAIL 하드코딩 | ✅ 수정 완료 (process.env.ADMIN_EMAIL) |
 
 ## High (15건)
 
