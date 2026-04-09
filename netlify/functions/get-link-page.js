@@ -34,27 +34,8 @@ exports.handler = async (event) => {
       } catch(e) {}
     }
 
-    // fallback: user 전체에서 instagram 필드 매칭
-    if (!email) {
-      try {
-        const list = await store.list();
-        for (const entry of list.blobs) {
-          if (!entry.key.startsWith('user:')) continue;
-          const raw = await store.get(entry.key);
-          if (!raw) continue;
-          const u = JSON.parse(raw);
-          const uInsta = (u.instagram || '').replace('@', '').toLowerCase();
-          const normalizedId = instaId.replace('@', '').toLowerCase();
-          const normalizedRaw = rawId.replace('@', '').toLowerCase();
-          if (uInsta === normalizedId || uInsta === normalizedRaw) {
-            email = u.email;
-            // 누락된 insta: 키 자동 복구
-            await store.set('insta:' + uInsta, email);
-            break;
-          }
-        }
-      } catch(e) {}
-    }
+    // fallback 제거 — 전체 스캔은 DoS 위험. insta: 역인덱스가 없으면 404.
+    // (역인덱스는 register.js, update-profile.js에서 자동 생성됨)
 
     if (!email) {
       return { statusCode: 404, headers: CORS, body: JSON.stringify({ error: '페이지를 찾을 수 없습니다.' }) };

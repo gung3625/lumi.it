@@ -51,7 +51,24 @@ exports.handler = async (event) => {
       const { email } = JSON.parse(tokenData);
       const body = JSON.parse(event.body);
 
-      await store.set('reply:' + email, JSON.stringify(body));
+      // 스키마 검증: 허용 필드만 저장
+      const sanitized = {};
+      if (Array.isArray(body.commentRules)) {
+        sanitized.commentRules = body.commentRules.slice(0, 20).map(r => ({
+          keyword: String(r.keyword || '').slice(0, 100),
+          reply: String(r.reply || '').slice(0, 500)
+        }));
+      }
+      if (Array.isArray(body.dmRules)) {
+        sanitized.dmRules = body.dmRules.slice(0, 20).map(r => ({
+          keyword: String(r.keyword || '').slice(0, 100),
+          reply: String(r.reply || '').slice(0, 500)
+        }));
+      }
+      if (typeof body.commentEnabled === 'boolean') sanitized.commentEnabled = body.commentEnabled;
+      if (typeof body.dmEnabled === 'boolean') sanitized.dmEnabled = body.dmEnabled;
+
+      await store.set('reply:' + email, JSON.stringify(sanitized));
 
       return { statusCode: 200, headers, body: JSON.stringify({ success: true }) };
     } catch(e) {

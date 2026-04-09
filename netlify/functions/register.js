@@ -1,5 +1,6 @@
 const { getStore } = require('@netlify/blobs');
 const crypto = require('crypto');
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
 const CORS = { 'Access-Control-Allow-Origin': 'https://lumi.it.kr', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Content-Type': 'application/json' };
 
@@ -111,7 +112,7 @@ exports.handler = async (event) => {
       <img src="https://lumi.it.kr/assets/logo.png" alt="lumi" style="height:48px;">
     </div>
     <div style="padding:40px;">
-      <h2 style="margin:0 0 12px;color:#111;font-size:22px;font-weight:800;">${name}님, 환영해요!</h2>
+      <h2 style="margin:0 0 12px;color:#111;font-size:22px;font-weight:800;">${esc(name)}님, 환영해요!</h2>
       <p style="margin:0 0 24px;color:#555;font-size:15px;line-height:1.7;">lumi 가입이 완료됐어요.<br>이제 사진 한 장만 올리면, 캡션·해시태그·게시까지 자동이에요.</p>
       <div style="background:#fff0f6;border-radius:12px;padding:20px 24px;margin-bottom:28px;">
         <p style="margin:0 0 8px;font-size:13px;font-weight:700;color:#C8507A;">첫 번째로 할 일</p>

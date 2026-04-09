@@ -7,7 +7,7 @@ exports.handler = async (event) => {
 
   // Make에서 호출 시 간단한 인증 (환경변수로 시크릿 키 확인)
   const authHeader = event.headers['x-lumi-secret'];
-  if (process.env.LUMI_SECRET && authHeader !== process.env.LUMI_SECRET) {
+  if (!process.env.LUMI_SECRET || authHeader !== process.env.LUMI_SECRET) {
     return { statusCode: 401, body: JSON.stringify({ error: '인증 실패' }) };
   }
 
