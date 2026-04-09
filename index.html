@@ -678,7 +678,7 @@ body.light-mode .dark-toggle-fab { background:rgba(255,255,255,.8); border-color
 <!-- HERO -->
 <section class="hero">
   <div class="hero-inner">
-    <div class="hero-chip"><span class="chip-dot"></span>베타 테스터 모집 중</div>
+    <div class="hero-chip"><span class="chip-dot"></span>선착순 20명 무료 체험 중</div>
     <h1 class="hero-title">사진 찍었는데 글이 안 떠오를 때,<br><span class="acc">lumi가 1분 안에 써드려요.</span></h1>
     <p class="hero-desc">매일 37분 → 단 1분. 사진 한 장이면<br>캡션 · 해시태그 · 게시까지 자동.</p>
     <div class="hero-cta-row">
@@ -1011,7 +1011,7 @@ body.light-mode .dark-toggle-fab { background:rgba(255,255,255,.8); border-color
 <section class="cta-sec">
   <div class="cta-box">
     <h2>사장님, 오늘부터<br>인스타 걱정 끝내세요.</h2>
-    <p>잔여 6자리 · 정식 출시 전까지 전부 무료 · 카드 등록 없음</p>
+    <p id="cta-remaining">잔여 --자리 · 정식 출시 전까지 전부 무료 · 카드 등록 없음</p>
     <a href="/beta" class="btn-cta">1분 만에 캡션 받아보기</a>
   </div>
 </section>
@@ -1233,6 +1233,15 @@ document.addEventListener('DOMContentLoaded',function(){
     var text=captionText.textContent;
     if(navigator.clipboard){navigator.clipboard.writeText(text).then(function(){copyBtn.innerHTML='✓ 복사 완료!';setTimeout(function(){copyBtn.innerHTML='복사하기';},2000);});}
   });
+})();
+
+// 최하단 CTA 잔여석 동적 업데이트
+(function(){
+  fetch('/api/beta-apply').then(function(r){return r.json();}).then(function(d){
+    var left=Math.max(0,d.max-d.count);
+    var el=document.getElementById('cta-remaining');
+    if(el) el.textContent='잔여 '+left+'자리 · 정식 출시 전까지 전부 무료 · 카드 등록 없음';
+  }).catch(function(){});
 })();
 </script>
 </body>
