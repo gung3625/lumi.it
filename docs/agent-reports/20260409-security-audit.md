@@ -12,7 +12,7 @@
 | CRIT-2 | check-plan.js, count-post.js | 토큰 검증 안 함 + email body에서 받음 (IDOR) | ✅ 수정 완료 (토큰 Blobs 검증, email 토큰에서 추출) |
 | CRIT-3 | payment-confirm.js | 인증 없음 + 이중 결제 레이스 컨디션 | ✅ 인증 추가 (레이스 컨디션은 Blobs 한계) |
 | CRIT-4 | serve-image.js | 인증 없는 이미지 프록시, 키 추측 가능 | ✅ 수정 완료 (Bearer/LUMI_SECRET + key prefix 제한) |
-| CRIT-5 | dashboard.html | 토큰+PII localStorage 저장 — XSS 탈취 가능 | 장기 과제 (httpOnly 쿠키 전환) |
+| CRIT-5 | dashboard.html | 토큰+PII localStorage 저장 — XSS 탈취 가능 | ✅ 부분 완화 (토큰+passwordHash를 lumi_user에서 제거, 별도 키로 분리) |
 | CRIT-6 | admin-beta.html, beta-admin.js | 관리자 토큰 URL 파라미터 + 무제한 시도 | ✅ 헤더로 이동 + rate limit |
 | CRIT-7 | 다수 파일 | Bearer 토큰 .replace() 불안전 파싱 | ✅ 수정 완료 (10개 파일 .startsWith+.slice) |
 | CRIT-8 | check-plan.js, count-post.js, meta-webhook.js | ADMIN_EMAIL 하드코딩 | ✅ 수정 완료 (process.env.ADMIN_EMAIL) |
@@ -27,15 +27,15 @@
 | HIGH-4 | meta-webhook.js | 서명 검증 함수 호출 안 함 + PII 전체 로깅 | ✅ 서명 검증 호출 + PII 로깅 제거 |
 | HIGH-5 | beta-apply.js | 내부 에러 메시지 클라이언트 노출 | ✅ 일반 에러 메시지로 교체 |
 | HIGH-6 | find-id.js | 인증 없이 전체 사용자 스캔 (DoS+열거) | ✅ IP rate limit 추가 |
-| HIGH-7 | ig-oauth.js | OAuth state CSRF 미검증 | 다음 세션 (OAuth 리팩토링 필요) |
+| HIGH-7 | ig-oauth.js | OAuth state CSRF 미검증 | ✅ nonce 기반 CSRF 방지 + 10분 만료 + 일회용 |
 | HIGH-8 | send-daily-schedule.js, check-expiry.js | httpMethod 없으면 인증 우회 | ✅ 인증 조건 강화 |
-| HIGH-9 | unsubscribe-retention.js | 영구 유효 구독해지 링크 | 다음 세션 (HMAC에 타임스탬프 추가) |
-| HIGH-10 | dashboard.html:4365 | innerHTML 캘린더 데이터 미이스케이프 (XSS) | 다음 세션 |
-| HIGH-11 | dashboard.html:4106 | innerHTML 사용자 프로필 미이스케이프 (XSS) | 다음 세션 |
-| HIGH-12 | dashboard.html:2193 | innerHTML auto-reply 미이스케이프 (XSS) | 다음 세션 |
+| HIGH-9 | unsubscribe-retention.js | 영구 유효 구독해지 링크 | ✅ HMAC 타임스탬프 + 30일 만료 |
+| HIGH-10 | dashboard.html:4365 | innerHTML 캘린더 데이터 미이스케이프 (XSS) | ✅ escapeHtml 적용 |
+| HIGH-11 | dashboard.html:4106 | innerHTML 사용자 프로필 미이스케이프 (XSS) | ✅ escapeHtml 적용 |
+| HIGH-12 | dashboard.html:2193 | innerHTML auto-reply 미이스케이프 (XSS) | ✅ escapeHtml 적용 |
 | HIGH-13 | 전체 42개 함수 | CORS Access-Control-Allow-Origin: * | ✅ 인증 8개 lumi.it.kr 제한 |
 | HIGH-14 | login.js, send-otp.js, verify-otp.js | 로그인/OTP 무제한 시도 | ✅ 로그인 rate limit 추가 |
-| HIGH-15 | dashboard.html:9 | lucide@latest 플로팅 버전 CDN (SRI 없음) | 다음 세션 (버전 고정 필요) |
+| HIGH-15 | dashboard.html:9 | lucide@latest 플로팅 버전 CDN (SRI 없음) | ✅ lucide@0.468.0 버전 고정 |
 
 ## Medium (22건)
 
