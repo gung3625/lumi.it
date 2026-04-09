@@ -141,6 +141,9 @@
     label{display:block;font-size:12px;font-weight:600;color:rgba(0,0,0,.48);margin-bottom:6px;letter-spacing:.05em;text-transform:uppercase;}
     input,select{width:100%;padding:10px 14px;border:1px solid #d2d2d7;border-radius:8px;font-size:17px;color:#1d1d1f;font-family:inherit;outline:none;transition:border-color .15s,box-shadow .15s;margin-bottom:14px;background:#f5f5f7;letter-spacing:-0.374px;}
     input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(200,80,122,.15);background:#fff;}
+    input.field-error,select.field-error{border-color:#e53e3e!important;box-shadow:0 0 0 3px rgba(229,62,62,.15)!important;}
+    .field-error-msg{font-size:12px;color:#e53e3e;margin:-10px 0 14px;display:none;}
+    .field-error-msg.show{display:block;}
     .form-btn{width:100%;padding:8px 22px;background:var(--accent);color:#fff;font-size:17px;font-weight:400;letter-spacing:-0.374px;border:none;border-radius:var(--r-full);cursor:pointer;font-family:inherit;transition:opacity .15s;margin-top:4px;}
     .form-btn:hover{opacity:.88;}
     .form-notice{font-size:12px;font-weight:400;letter-spacing:-0.12px;color:rgba(0,0,0,.48);text-align:center;margin-top:12px;line-height:1.6;}
@@ -430,17 +433,18 @@
     <div class="form-card">
       <div id="form-body">
         <div class="form-badge"><div class="banner-dot"></div>무료 테스터 모집</div>
-        <div class="form-title">lumi를 먼저<br>무료로 써보세요.</div>
-        <div class="form-desc">선착순 <strong>20명</strong>만 받아요. 정식 출시 전까지 전부 무료로 이용하실 수 있어요.</div>
+        <div class="form-title">지금 신청하면<br>무료로 써볼 수 있어요.</div>
+        <div class="form-desc">이름과 연락처만 남겨주세요. 24시간 내 카카오톡으로 안내드려요.</div>
         <div class="slot-progress">
           <div class="slot-bar" id="form-slots" style="display:flex;gap:3px;flex:1;"></div>
           <div class="slot-txt"><strong class="form-slot-count">...</strong>/20 신청</div>
         </div>
         <label>이름</label>
         <input type="text" id="f-name" placeholder="홍길동">
-        <label>매장명</label>
+        <div class="field-error-msg" id="err-name">이름을 입력해주세요.</div>
+        <label>매장명 (선택)</label>
         <input type="text" id="f-store" placeholder="성수 카페 루미">
-        <label>업종</label>
+        <label>업종 (선택)</label>
         <select id="f-type">
           <option value="">선택해주세요</option>
           <option>카페·음료</option>
@@ -455,7 +459,8 @@
           <option>기타</option>
         </select>
         <label>연락처</label>
-        <input type="tel" id="f-phone" placeholder="010-0000-0000">
+        <input type="tel" id="f-phone" placeholder="010-0000-0000" maxlength="13">
+        <div class="field-error-msg" id="err-phone">연락처를 정확히 입력해주세요. (예: 010-1234-5678)</div>
         <label>인스타그램 계정 (선택)</label>
         <input type="text" id="f-insta" placeholder="@우리매장">
         <label>어디서 알게 되셨나요? (선택)</label>
@@ -645,8 +650,34 @@ function faqClose(n){
   document.querySelectorAll('.faq-item')[n].classList.remove('open');
 }
 
+// 연락처 자동 포맷팅 (숫자만 허용 + 하이픈 자동 삽입)
+(function(){
+  var ph=document.getElementById('f-phone');
+  if(!ph)return;
+  ph.addEventListener('input',function(e){
+    var v=this.value.replace(/[^0-9]/g,'');
+    if(v.length>11)v=v.slice(0,11);
+    if(v.length>7)v=v.slice(0,3)+'-'+v.slice(3,7)+'-'+v.slice(7);
+    else if(v.length>3)v=v.slice(0,3)+'-'+v.slice(3);
+    this.value=v;
+  });
+})();
+
+// 인라인 에러 헬퍼
+function showFieldError(id,errId){
+  var el=document.getElementById(id);
+  var err=document.getElementById(errId);
+  if(el)el.classList.add('field-error');
+  if(err)err.classList.add('show');
+}
+function clearFieldErrors(){
+  document.querySelectorAll('.field-error').forEach(function(el){el.classList.remove('field-error');});
+  document.querySelectorAll('.field-error-msg').forEach(function(el){el.classList.remove('show');});
+}
+
 // 신청 폼
 async function submitForm(){
+  clearFieldErrors();
   const name=document.getElementById('f-name').value.trim();
   const store=document.getElementById('f-store').value.trim();
   const phone=document.getElementById('f-phone').value.trim();
@@ -654,7 +685,11 @@ async function submitForm(){
   const insta=document.getElementById('f-insta').value.trim();
   const referral=document.getElementById('f-referral').value;
   const utm=new URLSearchParams(window.location.search).get('utm_source')||'';
-  if(!name||!store||!phone||!type){alert('이름, 매장명, 업종, 연락처를 모두 입력해주세요.');return;}
+  var hasError=false;
+  if(!name){showFieldError('f-name','err-name');hasError=true;}
+  var phoneDigits=phone.replace(/[^0-9]/g,'');
+  if(!phone||phoneDigits.length!==11||!phoneDigits.startsWith('01')){showFieldError('f-phone','err-phone');hasError=true;}
+  if(hasError){document.getElementById('f-name').focus();return;}
   
   const btn = document.querySelector('.form-btn');
   btn.textContent = '신청 중...';
@@ -686,6 +721,16 @@ async function submitForm(){
     btn.disabled = false;
   }
 }
+// 포커스 시 인라인 에러 제거
+['f-name','f-phone'].forEach(function(id){
+  var el=document.getElementById(id);
+  if(el)el.addEventListener('focus',function(){
+    this.classList.remove('field-error');
+    var errEl=document.getElementById('err-'+id.split('-')[1]);
+    if(errEl)errEl.classList.remove('show');
+  });
+});
+
 // Lucide 아이콘 초기화
 if(typeof lucide !== 'undefined') lucide.createIcons();
 
@@ -701,7 +746,7 @@ if(typeof lucide !== 'undefined') lucide.createIcons();
   },{threshold:0.1});
   footerObs.observe(footerEl);
   window.addEventListener('scroll',function(){
-    if(window.scrollY>300&&window.innerWidth<=640&&!footerVisible){sticky.style.display='block';}
+    if(window.scrollY>300&&window.innerWidth<=768&&!footerVisible){sticky.style.display='block';}
     else{sticky.style.display='none';}
   });
 })();
