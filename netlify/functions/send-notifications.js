@@ -353,6 +353,40 @@ async function sendActivationSequence(store, user, blobKey, resend) {
   return { sent: match.key };
 }
 
+// Trial→유료 업셀 시퀀스: trial + postCount >= 1 + D5 (만료 2일 전)
+async function sendTrialUpsellEmail(store, user, blobKey, resend) {
+  if (user.plan !== 'trial') return null;
+  if ((user.postCount || 0) < 1) return null; // 써본 적 있는 사람만
+
+  const now = new Date();
+  const createdAt = new Date(user.createdAt);
+  const diffDays = Math.floor((now - createdAt) / (1000 * 60 * 60 * 24));
+  if (diffDays !== 5) return null; // 가입 5일째 (만료 2일 전)
+
+  const sent = user.retentionEmailsSent || {};
+  if (sent['upsell_d5']) return null;
+
+  const storeName = user.storeName || '';
+  const storeGreeting = storeName ? `${storeName} 사장님` : (user.name || '사장님');
+  const postCount = user.postCount || 0;
+
+  const html = buildRetentionHtml({
+    heading: `${storeGreeting}, 체험 기간이 거의 끝나요`,
+    body: `지금까지 lumi로 ${postCount}개의 게시물을 올리셨어요.\n\n체험이 끝나면 이 기능들을 쓸 수 없게 돼요:\n• 무제한 캡션 생성\n• 날씨·트렌드 반영\n• 예약 게시\n• 말투 학습\n\n월 1.9만원부터, 대행사 비용의 1/10이에요.`,
+    ctaText: '구독 시작하기',
+    ctaUrl: 'https://lumi.it.kr/subscribe',
+    userName: storeGreeting,
+    email: user.email
+  });
+
+  await sendRetentionEmail(resend, user.email, `${storeGreeting}, 체험 기간이 거의 끝나요`, html);
+
+  sent['upsell_d5'] = new Date().toISOString();
+  user.retentionEmailsSent = sent;
+  await store.set(blobKey, JSON.stringify(user));
+  return { sent: 'upsell_d5' };
+}
+
 // 휴면 시퀀스: standard/pro + postCount >= 1 + 마지막 게시 후 3/7/14일
 async function sendDormantSequence(store, user, blobKey, resend) {
   if (!user.plan || user.plan === 'trial') return null;
@@ -442,13 +476,46 @@ async function sendWeeklyTip(store, user, blobKey, resend) {
   return { sent: weekKey };
 }
 
+// NPS 만족도 자동 수집: 첫 게시 3일 후
+async function sendNpsSurveyEmail(store, user, blobKey, resend) {
+  if ((user.postCount || 0) < 1) return null;
+  if (!user.firstPostedAt && !user.lastPostedAt) return null;
+
+  const firstPost = new Date(user.firstPostedAt || user.lastPostedAt);
+  const now = new Date();
+  const diffDays = Math.floor((now - firstPost) / (1000 * 60 * 60 * 24));
+  if (diffDays !== 3) return null;
+
+  const sent = user.retentionEmailsSent || {};
+  if (sent['nps_d3']) return null;
+
+  const storeName = user.storeName || '';
+  const storeGreeting = storeName ? `${storeName} 사장님` : (user.name || '사장님');
+
+  const html = buildRetentionHtml({
+    heading: `${storeGreeting}, lumi 어떠세요?`,
+    body: `게시물을 올려보신 지 며칠 됐는데, 어떠셨어요?\n\n솔직한 피드백 한 줄이면 충분해요. 사장님의 한마디가 lumi를 더 좋게 만들어요.`,
+    ctaText: '피드백 남기기 (30초)',
+    ctaUrl: 'https://lumi.it.kr/support#inquiry-form',
+    userName: storeGreeting,
+    email: user.email
+  });
+
+  await sendRetentionEmail(resend, user.email, `${storeGreeting}, lumi 사용해보니 어때요?`, html);
+
+  sent['nps_d3'] = new Date().toISOString();
+  user.retentionEmailsSent = sent;
+  await store.set(blobKey, JSON.stringify(user));
+  return { sent: 'nps_d3' };
+}
+
 // 리텐션 이메일 전체 실행
 async function runRetentionEmails(userStore) {
   if (!process.env.RESEND_API_KEY) return { skipped: true, reason: 'RESEND_API_KEY 미설정' };
 
   const resend = new Resend(process.env.RESEND_API_KEY);
   const { blobs } = await userStore.list({ prefix: 'user:' });
-  const results = { activation: 0, dormant: 0, weeklyTip: 0, skipped: 0 };
+  const results = { activation: 0, dormant: 0, weeklyTip: 0, upsell: 0, nps: 0, skipped: 0 };
 
   for (const blob of blobs) {
     try {
@@ -469,6 +536,12 @@ async function runRetentionEmails(userStore) {
 
       const w = await sendWeeklyTip(userStore, user, blob.key, resend);
       if (w) results.weeklyTip++;
+
+      const u = await sendTrialUpsellEmail(userStore, user, blob.key, resend);
+      if (u) results.upsell++;
+
+      const n = await sendNpsSurveyEmail(userStore, user, blob.key, resend);
+      if (n) results.nps++;
 
       await new Promise(r => setTimeout(r, 100));
     } catch (e) {
@@ -505,6 +578,41 @@ exports.handler = async (event) => {
     ]);
     // 리텐션 이메일은 순차 실행 (race condition 방지)
     const retention = await runRetentionEmails(userStore);
+
+    // 운영자 일일 리포트 SMS
+    try {
+      const { blobs: allUsers } = await userStore.list({ prefix: 'user:' });
+      let totalUsers = 0, activeToday = 0, totalPosts = 0, trialUsers = 0, paidUsers = 0;
+      const today = new Date().toISOString().slice(0, 10);
+      for (const b of allUsers) {
+        try {
+          const u = JSON.parse(await userStore.get(b.key));
+          totalUsers++;
+          if (u.plan === 'trial') trialUsers++;
+          else if (u.plan) paidUsers++;
+          totalPosts += (u.postCount || 0);
+          if (u.lastPostedAt && u.lastPostedAt.slice(0, 10) === today) activeToday++;
+        } catch(e) {}
+      }
+      const betaStore = getStore({ name: 'beta-applicants', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
+      const betaList = await betaStore.list();
+      const betaCount = betaList.blobs.length;
+
+      const reportText = `[lumi 일일 리포트]\n베타 신청: ${betaCount}/20명\n가입자: ${totalUsers}명 (체험 ${trialUsers} / 유료 ${paidUsers})\n오늘 활성: ${activeToday}명\n총 게시물: ${totalPosts}건`;
+
+      const now = new Date().toISOString();
+      const salt = `report_${Date.now()}`;
+      const crypto = require('crypto');
+      const sig = crypto.createHmac('sha256', process.env.SOLAPI_API_SECRET).update(`${now}${salt}`).digest('hex');
+      await fetch('https://api.solapi.com/messages/v4/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `HMAC-SHA256 ApiKey=${process.env.SOLAPI_API_KEY}, Date=${now}, Salt=${salt}, Signature=${sig}`,
+        },
+        body: JSON.stringify({ message: { to: '01064246284', from: '01064246284', text: reportText } }),
+      });
+    } catch(e) { console.log('일일 리포트 실패:', e.message); }
 
     console.log('[lumi] 알림 발송 완료:', { monthly, season, firstPost, expiry, retention });
     return {

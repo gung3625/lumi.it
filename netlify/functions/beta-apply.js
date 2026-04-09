@@ -83,7 +83,28 @@ exports.handler = async (event) => {
             },
           }),
         });
-      } catch(e) { console.log('알림톡 실패:', e.message); }
+      } catch(e) { console.log('운영자 알림 실패:', e.message); }
+
+      // 신청자에게 자동 응답 SMS
+      try {
+        const now2 = new Date().toISOString();
+        const salt2 = `reply_${Date.now()}`;
+        const sig2 = require('crypto').createHmac('sha256', process.env.SOLAPI_API_SECRET).update(`${now2}${salt2}`).digest('hex');
+        await fetch('https://api.solapi.com/messages/v4/send', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `HMAC-SHA256 ApiKey=${process.env.SOLAPI_API_KEY}, Date=${now2}, Salt=${salt2}, Signature=${sig2}`,
+          },
+          body: JSON.stringify({
+            message: {
+              to: phone,
+              from: '01064246284',
+              text: `[lumi] ${name}님, 베타 테스터 신청이 완료됐어요!\n\n24시간 내로 카카오톡으로 안내드릴게요. 조금만 기다려주세요 :)\n\nlumi.it.kr`,
+            },
+          }),
+        });
+      } catch(e) { console.log('신청자 응답 SMS 실패:', e.message); }
 
       return {
         statusCode: 200, headers,
