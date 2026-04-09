@@ -51,6 +51,10 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,*::-webkit-scrollbar{display:non
         .plan-features-common{background:var(--surface-2);border-radius:8px;padding:20px 24px;display:flex;flex-direction:column;gap:8px;margin-bottom:16px;}
         .plan-feat{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:400;letter-spacing:-0.224px;color:rgba(255,255,255,.7);}
         .feat-check{color:var(--accent);font-weight:600;}
+        .feat-title{font-weight:600;color:#f5f5f7;}
+        .feat-desc{font-size:12px;color:rgba(255,255,255,.48);}
+        body:not(.dark-mode) .feat-title{color:#1d1d1f;}
+        body:not(.dark-mode) .feat-desc{color:rgba(0,0,0,.48);}
         @media(max-width:480px){.plan-options{grid-template-columns:1fr;}.plan-opt-num{font-size:1.3rem;}}
         /* 결제 수단 */
         .section-title{font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:rgba(255,255,255,.48);margin-bottom:12px;margin-top:28px;}
@@ -246,7 +250,7 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,*::-webkit-scrollbar{display:non
         const d = PLAN_DATA[plan];
         let html = `<div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:10px;">${d.target}</div>`;
         html += d.features.map(([title, desc]) =>
-            `<div class="plan-feat"><div class="feat-check">✓</div><div><span style="font-weight:600;color:${document.body.classList.contains('dark-mode')?'#f5f5f7':'#1d1d1f'}">${title}</span><br><span style="font-size:12px;color:${document.body.classList.contains('dark-mode')?'rgba(255,255,255,.48)':'rgba(0,0,0,.48)'}">${desc}</span></div></div>`
+            `<div class="plan-feat"><div class="feat-check">✓</div><div><span class="feat-title">${title}</span><br><span class="feat-desc">${desc}</span></div></div>`
         ).join('');
         box.innerHTML = html;
     }
@@ -360,7 +364,7 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,*::-webkit-scrollbar{display:non
             if (!confirmRes.ok) throw new Error(confirmData.error || '결제 확인 실패');
 
             showToast('구독이 시작됐어요! 🎉', 'pink');
-            setTimeout(() => window.location.href = '/', 2000);
+            setTimeout(() => window.location.href = '/dashboard', 2000);
 
         } catch(e) {
             showToast(e.message || '결제 중 오류가 발생했어요.', '');
