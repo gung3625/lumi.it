@@ -62,7 +62,7 @@ exports.handler = async (event) => {
   }
 
   // 고유 주문 ID 생성
-  const orderId = 'lumi_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+  const orderId = 'lumi_' + Date.now() + '_' + require('crypto').randomBytes(12).toString('hex');
 
   try {
     // 주문 정보 Blobs에 저장 (결제 검증용)

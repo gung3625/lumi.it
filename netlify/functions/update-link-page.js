@@ -1,6 +1,6 @@
 const { getStore } = require('@netlify/blobs');
 
-const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Content-Type': 'application/json' };
+const CORS = { 'Access-Control-Allow-Origin': 'https://lumi.it.kr', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Content-Type': 'application/json' };
 
 // 링크 페이지 저장 (인증 필요)
 exports.handler = async (event) => {

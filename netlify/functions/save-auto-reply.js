@@ -4,7 +4,7 @@ const SITE_ID = process.env.NETLIFY_SITE_ID;
 const NETLIFY_TOKEN = process.env.NETLIFY_TOKEN;
 
 exports.handler = async (event) => {
-  const headers = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Content-Type': 'application/json' };
+  const headers = { 'Access-Control-Allow-Origin': 'https://lumi.it.kr', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Content-Type': 'application/json' };
 
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers, body: '' };
 

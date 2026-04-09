@@ -3,7 +3,7 @@ const { getStore } = require('@netlify/blobs');
 exports.handler = async (event) => {
   const headers = {
     'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': 'https://lumi.it.kr',
   };
 
   // 인증: 헤더로만 받음 (URL 쿼리 파라미터 금지 — 로그 노출 방지)

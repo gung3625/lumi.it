@@ -196,6 +196,14 @@ ${googleStr}
 
 // 메인 핸들러
 exports.handler = async (event) => {
+  // 인증: 스케줄 실행 또는 LUMI_SECRET
+  const isScheduled = !event.httpMethod && !event.headers;
+  if (!isScheduled) {
+    const secret = event.headers?.['x-lumi-secret'] || '';
+    if (secret !== process.env.LUMI_SECRET) {
+      return { statusCode: 401, body: JSON.stringify({ error: '인증 실패' }) };
+    }
+  }
   console.log('[scheduled-trends] 트렌드 자동 업데이트 시작 (네이버+구글+GPT)');
 
   const categories = ['cafe', 'food', 'beauty', 'other'];
