@@ -4,7 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>lumi 베타 테스터 모집 — 선착순 20명 무료</title>
-  <meta name="description" content="lumi 베타 테스터를 모집해요. 선착순 20명, 정식 출시 전까지 전부 무료.">
+  <meta name="description" content="인스타 자동 포스팅 서비스 lumi 베타 테스터 모집. 선착순 20명 한정, 정식 출시 전까지 모든 기능 무료. 카드 등록 없이 바로 시작하세요.">
+  <meta name="keywords" content="소상공인 인스타그램 마케팅, 인스타 캡션 자동화, 인스타 자동 게시, AI 캡션 생성, 인스타 해시태그 추천, 카페 인스타 운영, 무료 베타 테스터, 인스타 자동화 서비스">
   <meta property="og:title" content="lumi 베타 테스터 모집 — 선착순 20명 무료">
   <meta property="og:description" content="사진 한 장이면 인스타 끝. 지금 신청하면 무료로 먼저 써보실 수 있어요.">
   <meta property="og:image" content="https://lumi.it.kr/assets/logo.png">
@@ -16,6 +17,7 @@
   <meta name="twitter:title" content="lumi 베타 테스터 모집 — 선착순 20명 무료">
   <meta name="twitter:description" content="사진 한 장이면 인스타 끝. 지금 신청하면 무료로 먼저 써보실 수 있어요.">
   <meta name="twitter:image" content="https://lumi.it.kr/assets/logo.png">
+  <link rel="canonical" href="https://lumi.it.kr/beta">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -443,6 +445,16 @@
         <input type="tel" id="f-phone" placeholder="010-0000-0000">
         <label>인스타그램 계정 (선택)</label>
         <input type="text" id="f-insta" placeholder="@우리매장">
+        <label>어디서 알게 되셨나요? (선택)</label>
+        <select id="f-referral">
+          <option value="">선택해주세요</option>
+          <option>네이버 검색</option>
+          <option>네이버 카페/블로그</option>
+          <option>인스타그램</option>
+          <option>카카오 오픈채팅</option>
+          <option>지인 추천</option>
+          <option>기타</option>
+        </select>
         <button class="form-btn" onclick="submitForm()">무료 테스터 신청하기 →</button>
         <div style="text-align:center;margin-top:10px;font-size:12px;color:var(--g400);font-weight:600;line-height:1.6;">카드 등록 없음 · 언제든 탈퇴 가능 · 24시간 내 안내</div>
       </div>
@@ -627,6 +639,8 @@ async function submitForm(){
   const phone=document.getElementById('f-phone').value.trim();
   const type=document.getElementById('f-type').value;
   const insta=document.getElementById('f-insta').value.trim();
+  const referral=document.getElementById('f-referral').value;
+  const utm=new URLSearchParams(window.location.search).get('utm_source')||'';
   if(!name||!store||!phone||!type){alert('이름, 매장명, 업종, 연락처를 모두 입력해주세요.');return;}
   
   const btn = document.querySelector('.form-btn');
@@ -637,7 +651,7 @@ async function submitForm(){
     const res = await fetch('/api/beta-apply', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({name, store, type, phone, insta}),
+      body: JSON.stringify({name, store, type, phone, insta, referral, utm}),
     });
     const data = await res.json();
     if(data.success){

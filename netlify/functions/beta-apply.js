@@ -34,7 +34,7 @@ exports.handler = async (event) => {
   // POST: 신청 저장
   if (event.httpMethod === 'POST') {
     try {
-      const { name, store: storeName, type, phone, insta } = JSON.parse(event.body);
+      const { name, store: storeName, type, phone, insta, referral, utm } = JSON.parse(event.body);
       if (!name || !storeName || !type || !phone) {
         return { statusCode: 400, headers, body: JSON.stringify({ error: '필수 항목 누락' }) };
       }
@@ -51,7 +51,8 @@ exports.handler = async (event) => {
         const waitId = `waitlist_${Date.now()}`;
         await waitStore.set(waitId, JSON.stringify({
           id: waitId, name, store: storeName, type, phone,
-          insta: insta || '', appliedAt: new Date().toISOString(),
+          insta: insta || '', referral: referral || '', utm: utm || '',
+          appliedAt: new Date().toISOString(),
         }));
         return { statusCode: 400, headers, body: JSON.stringify({ error: '마감', waitlist: true }) };
       }
@@ -59,7 +60,8 @@ exports.handler = async (event) => {
       const id = `applicant_${Date.now()}`;
       await store.set(id, JSON.stringify({
         id, name, store: storeName, type, phone,
-        insta: insta || '', appliedAt: new Date().toISOString(),
+        insta: insta || '', referral: referral || '', utm: utm || '',
+        appliedAt: new Date().toISOString(),
       }));
 
       // 운영자 알림톡 발송
@@ -77,7 +79,7 @@ exports.handler = async (event) => {
             message: {
               to: '01064246284',
               from: '01064246284',
-              text: `[lumi 베타 신청]\n이름: ${name}\n매장: ${storeName}\n업종: ${type}\n연락처: ${phone}\n인스타: ${insta || '미입력'}\n\n잔여: ${remaining}명`,
+              text: `[lumi 베타 신청]\n이름: ${name}\n매장: ${storeName}\n업종: ${type}\n연락처: ${phone}\n인스타: ${insta || '미입력'}\n유입: ${referral || utm || '미입력'}\n\n잔여: ${remaining}명`,
             },
           }),
         });
