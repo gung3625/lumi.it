@@ -54,6 +54,10 @@ body.dark-mode #ig-connected-badge .ig-ok-disconnect:hover{background:#2D1F1F;}
 
 .t-rank{width:20px;font-size:.75rem;font-weight:800;color:var(--g400);text-align:center;flex-shrink:0;}
 body.dark-mode .weather-card{background:var(--white);border-color:var(--g200);}
+body.dark-mode #onboarding-checklist{background:var(--surface-2);border-color:rgba(255,255,255,.08);}
+body.dark-mode .onboard-item p:first-child{color:#f5f5f7!important;}
+body.dark-mode .onboard-item p:last-child{color:rgba(255,255,255,.48)!important;}
+body.dark-mode #onboard-bar-wrap{background:rgba(255,255,255,.08);}
 body.dark-mode select.inp,body.dark-mode .inp{background:var(--g100);border-color:var(--g200);color:var(--g900);}
 body.dark-mode .inp:focus{background:var(--white);}
 body.dark-mode .inp::placeholder{color:var(--g500);}
@@ -594,6 +598,43 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
 
         <!-- TAB: 홈 -->
         <div data-tab="home" class="tab-active">
+
+        <!-- 온보딩 체크리스트 -->
+        <div id="onboarding-checklist" style="display:none;background:var(--white);border-radius:var(--r-xl);padding:20px 22px;border:1px solid var(--g200);box-shadow:var(--sh-xs);margin-bottom:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+                <p style="font-size:.95rem;font-weight:800;color:var(--g900);">lumi 시작 가이드</p>
+                <span id="onboard-progress" style="font-size:.75rem;font-weight:700;color:var(--pink);">0/5</span>
+            </div>
+            <div id="onboard-bar-wrap" style="height:4px;background:var(--g100);border-radius:4px;margin-bottom:14px;overflow:hidden;">
+                <div id="onboard-bar" style="height:100%;width:0%;background:var(--pink);border-radius:4px;transition:width .4s;"></div>
+            </div>
+            <div id="onboard-items" style="display:flex;flex-direction:column;gap:8px;">
+                <div class="onboard-item" data-step="biz" onclick="onboardAction('biz')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;transition:background .15s;">
+                    <span class="onboard-check" style="width:22px;height:22px;border-radius:50%;border:2px solid var(--g300);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;transition:all .2s;"></span>
+                    <div><p style="font-size:.85rem;font-weight:700;color:var(--g900);">업종 설정하기</p><p style="font-size:.75rem;color:var(--g500);">캡션 스타일이 업종에 맞게 바뀌어요</p></div>
+                </div>
+                <div class="onboard-item" data-step="photo" onclick="onboardAction('photo')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;transition:background .15s;">
+                    <span class="onboard-check" style="width:22px;height:22px;border-radius:50%;border:2px solid var(--g300);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;transition:all .2s;"></span>
+                    <div><p style="font-size:.85rem;font-weight:700;color:var(--g900);">첫 사진 올리기</p><p style="font-size:.75rem;color:var(--g500);">매장 사진 한 장이면 충분해요</p></div>
+                </div>
+                <div class="onboard-item" data-step="caption" onclick="onboardAction('caption')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;transition:background .15s;">
+                    <span class="onboard-check" style="width:22px;height:22px;border-radius:50%;border:2px solid var(--g300);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;transition:all .2s;"></span>
+                    <div><p style="font-size:.85rem;font-weight:700;color:var(--g900);">AI 캡션 확인하기</p><p style="font-size:.75rem;color:var(--g500);">3개 중 마음에 드는 걸 골라요</p></div>
+                </div>
+                <div class="onboard-item" data-step="ig" onclick="onboardAction('ig')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;transition:background .15s;">
+                    <span class="onboard-check" style="width:22px;height:22px;border-radius:50%;border:2px solid var(--g300);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;transition:all .2s;"></span>
+                    <div><p style="font-size:.85rem;font-weight:700;color:var(--g900);">인스타그램 연동하기</p><p style="font-size:.75rem;color:var(--g500);">자동 게시를 위해 연결해요</p></div>
+                </div>
+                <div class="onboard-item" data-step="post" onclick="onboardAction('post')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;transition:background .15s;">
+                    <span class="onboard-check" style="width:22px;height:22px;border-radius:50%;border:2px solid var(--g300);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;transition:all .2s;"></span>
+                    <div><p style="font-size:.85rem;font-weight:700;color:var(--g900);">첫 게시물 올리기</p><p style="font-size:.75rem;color:var(--g500);">여기까지 오면 완벽해요!</p></div>
+                </div>
+            </div>
+            <div id="onboard-done" style="display:none;text-align:center;padding:12px 0;">
+                <p style="font-size:1rem;font-weight:800;color:var(--pink);">축하해요! 모든 설정을 완료했어요 🎉</p>
+                <button onclick="dismissOnboarding()" style="margin-top:8px;background:none;border:1px solid var(--g200);border-radius:8px;padding:6px 16px;font-size:12px;color:var(--g500);cursor:pointer;font-family:inherit;">체크리스트 닫기</button>
+            </div>
+        </div>
 
         <!-- 인사말 -->
         <div class="dash-hello">
@@ -2025,6 +2066,7 @@ async function grantAccess(){
     initRelayMode();
     loadCalendar();
     checkServiceFeedback();
+    initOnboarding();
     if (!JSON.parse(localStorage.getItem('lumi_user') || '{}').sidoCode) {
         initWeather();
     }
@@ -2484,6 +2526,90 @@ async function confirmWithdraw() {
     showToast('계정이 삭제됐어요.', '');
     setTimeout(() => location.reload(), 1200);
 }
+/* ── 온보딩 체크리스트 ── */
+function initOnboarding() {
+    const dismissed = localStorage.getItem('lumi_onboard_dismissed');
+    if (dismissed === '1') return;
+    const user = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+    const ob = JSON.parse(localStorage.getItem('lumi_onboarding') || '{}');
+    // 자동 완료 체크
+    if (user.bizCategory && user.bizCategory !== 'etc') ob.biz = true;
+    if (user.igConnected) ob.ig = true;
+    if ((user.postCount || 0) >= 1) { ob.post = true; ob.caption = true; ob.photo = true; }
+    if (ob.caption) ob.photo = true; // 캡션 봤으면 사진은 올린 것
+    localStorage.setItem('lumi_onboarding', JSON.stringify(ob));
+    const steps = ['biz','photo','caption','ig','post'];
+    const done = steps.filter(s => ob[s]);
+    if (done.length >= 5) {
+        // 전부 완료 — 자동 dismiss
+        localStorage.setItem('lumi_onboard_dismissed', '1');
+        return;
+    }
+    const el = document.getElementById('onboarding-checklist');
+    if (!el) return;
+    el.style.display = 'block';
+    updateOnboardUI();
+}
+function updateOnboardUI() {
+    const ob = JSON.parse(localStorage.getItem('lumi_onboarding') || '{}');
+    const steps = ['biz','photo','caption','ig','post'];
+    const done = steps.filter(s => ob[s]).length;
+    const prog = document.getElementById('onboard-progress');
+    const bar = document.getElementById('onboard-bar');
+    if (prog) prog.textContent = done + '/5';
+    if (bar) bar.style.width = (done / 5 * 100) + '%';
+    steps.forEach(s => {
+        const item = document.querySelector(`.onboard-item[data-step="${s}"]`);
+        if (!item) return;
+        const check = item.querySelector('.onboard-check');
+        if (ob[s]) {
+            check.style.background = 'var(--pink)';
+            check.style.borderColor = 'var(--pink)';
+            check.style.color = '#fff';
+            check.innerHTML = '✓';
+            item.style.opacity = '0.5';
+        } else {
+            check.style.background = 'transparent';
+            check.style.borderColor = 'var(--g300)';
+            check.innerHTML = '';
+            item.style.opacity = '1';
+        }
+    });
+    if (done >= 5) {
+        document.getElementById('onboard-items').style.display = 'none';
+        document.getElementById('onboard-done').style.display = 'block';
+    }
+}
+function onboardAction(step) {
+    const ob = JSON.parse(localStorage.getItem('lumi_onboarding') || '{}');
+    if (ob[step]) return; // 이미 완료
+    if (step === 'biz') switchDashTab('settings');
+    if (step === 'photo' || step === 'caption') {
+        const fileInput = document.getElementById('ceo-file-selector');
+        if (fileInput) fileInput.click();
+    }
+    if (step === 'ig') {
+        const banner = document.getElementById('ig-connect-banner');
+        if (banner) banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    if (step === 'post') {
+        const upload = document.getElementById('ceo-placeholder');
+        if (upload) upload.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
+function completeOnboardStep(step) {
+    const ob = JSON.parse(localStorage.getItem('lumi_onboarding') || '{}');
+    if (ob[step]) return;
+    ob[step] = true;
+    localStorage.setItem('lumi_onboarding', JSON.stringify(ob));
+    updateOnboardUI();
+}
+function dismissOnboarding() {
+    localStorage.setItem('lumi_onboard_dismissed', '1');
+    const el = document.getElementById('onboarding-checklist');
+    if (el) el.style.display = 'none';
+}
+
 function syncWeatherUI(state){const c=LUMI_CORE.weather[state]||LUMI_CORE.weather.clear;const lumiU=JSON.parse(localStorage.getItem('lumi_user')||'{}');const loc=storeRegion||lumiU.region||'서울';document.getElementById('dash-w-icon').innerText=c.icon;document.getElementById('dash-w-text').innerText=loc+': '+c.status;document.getElementById('dash-w-guide').innerText='"'+c.guide+'"';document.getElementById('ceo-note-input').placeholder='예) 신메뉴 출시, 명절 휴무 안내, 이벤트 진행 중';}
 async function loadTrends() {
     const domesticEl = document.getElementById('trend-domestic-node');

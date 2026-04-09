@@ -298,10 +298,38 @@ async function sendActivationSequence(store, user, blobKey, resend) {
   const email = user.email;
   let sentKey = null;
 
+  const storeName = user.storeName || '';
+  const biz = user.bizCategory || 'cafe';
+  const bizExamples = {
+    cafe: '☕ "오늘처럼 흐린 날엔 따뜻한 라떼 한 잔이 답이에요. 창가 자리에서 여유로운 오후, 어때요?"',
+    food: '🍽️ "점심 메뉴 고민 끝! 오늘의 특선은 직접 끓인 된장찌개. 집밥이 그리울 때 오세요."',
+    bakery: '🧁 "갓 구운 크루아상, 버터 향이 매장 가득. 출근길에 하나 들고 가세요!"',
+    beauty: '💇 "이번 시즌 인기 컬러는 애쉬브라운! 자연스러운 톤다운으로 분위기 체인지."',
+    flower: '💐 "오늘의 꽃: 프리지아. 달콤한 향기로 봄을 선물하세요."',
+    fitness: '🏋️ "오늘도 한 세트 더! 꾸준함이 만드는 변화, 함께 만들어가요."'
+  };
+  const captionExample = bizExamples[biz] || bizExamples.cafe;
+  const storeGreeting = storeName ? `${storeName} 사장님` : (userName || '사장님');
+
   const sequences = [
-    { day: 1, key: 'activation_d1', heading: '사진 한 장만 올려보세요 📸', body: 'lumi에 가입해 주셔서 감사합니다! 첫 게시물을 올리면 lumi가 자동으로 매력적인 캡션과 해시태그를 만들어 드려요. 지금 바로 사진 한 장으로 시작해보세요.' },
-    { day: 3, key: 'activation_d3', heading: '아직 lumi를 안 써보셨네요', body: '무료 체험 기간이 흘러가고 있어요. lumi의 게시물 자동 생성, 한번 경험해보시면 왜 사장님들이 좋아하는지 바로 아실 거예요.' },
-    { day: 5, key: 'activation_d5', heading: '무료 체험 2일 남았어요!', body: '체험 기간이 곧 끝나요. 아직 한 번도 게시물을 올려보지 않으셨다면, 지금이 마지막 기회입니다. 딱 1분이면 첫 게시물을 만들 수 있어요.' }
+    {
+      day: 1, key: 'activation_d1',
+      heading: `${storeGreeting}, 첫 캡션을 만들어보세요 📸`,
+      body: `사진 한 장만 올리면, lumi가 이런 캡션을 만들어 드려요.\n\n${captionExample}\n\n우리 매장 사진으로 하면 훨씬 더 잘 나와요. 지금 한번 해보세요!`,
+      ctaText: '첫 사진 올리기',
+    },
+    {
+      day: 3, key: 'activation_d3',
+      heading: `${storeGreeting}, 아직 한번도 안 써보셨네요`,
+      body: `매일 인스타에 뭘 쓸지 고민하는 시간, 37분이래요. lumi는 사진만 올리면 1분이면 끝나요.\n\n다른 사장님들은 벌써 캡션 받아보고 있어요. ${storeName ? storeName + '도' : '우리 매장도'} 시작해볼까요?`,
+      ctaText: '캡션 예시 보러 가기',
+    },
+    {
+      day: 5, key: 'activation_d5',
+      heading: '무료 체험 2일 남았어요!',
+      body: `체험 기간이 곧 끝나요. 딱 1분이면 첫 게시물을 만들 수 있어요.\n\n한 번도 안 써보고 끝나면 아깝잖아요. ${storeName ? storeName + ' 사진' : '매장 사진'} 한 장이면 충분해요!`,
+      ctaText: '마지막 기회 — 지금 시작하기',
+    }
   ];
 
   const match = sequences.find(s => s.day === diffDays);
@@ -311,9 +339,9 @@ async function sendActivationSequence(store, user, blobKey, resend) {
   const html = buildRetentionHtml({
     heading: match.heading,
     body: match.body,
-    ctaText: 'lumi 시작하기',
+    ctaText: match.ctaText,
     ctaUrl: 'https://lumi.it.kr/dashboard.html',
-    userName,
+    userName: storeGreeting,
     email
   });
 
