@@ -287,7 +287,7 @@ body{font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;ba
             <p style="font-size:1.1rem;font-weight:900;color:var(--g900);margin-bottom:4px;" id="welcome-result-title">매장명</p>
             <p style="font-size:.82rem;color:var(--g500);margin-bottom:20px;">사진 없이 매장 정보만으로 이만큼 써요.<br>사진까지 올리면 훨씬 더 정확해져요.</p>
             <div id="welcome-captions" style="text-align:left;display:flex;flex-direction:column;gap:12px;margin-bottom:20px;"></div>
-            <button onclick="closeWelcomeModal()" style="width:100%;padding:14px;border:none;background:var(--pink);color:#fff;font-size:15px;font-weight:700;border-radius:12px;cursor:pointer;font-family:inherit;box-shadow:0 4px 16px rgba(255,45,138,.25);transition:all .2s;">시작하기</button>
+            <button onclick="closeWelcomeModal()" style="width:100%;padding:14px;border:none;background:var(--pink);color:#fff;font-size:15px;font-weight:700;border-radius:12px;cursor:pointer;font-family:inherit;box-shadow:0 4px 16px rgba(200,80,122,.25);transition:all .2s;">첫 사진 올리러 가기 →</button>
         </div>
     </div>
 </div>
@@ -3419,11 +3419,18 @@ async function showWelcomeModal(user) {
             document.getElementById('welcome-loading').classList.add('hidden');
             document.getElementById('welcome-result').classList.remove('hidden');
         } else {
-            closeWelcomeModal();
+            showWelcomeFallback(sName);
         }
     } catch(e) {
-        closeWelcomeModal();
+        showWelcomeFallback(sName);
     }
+}
+function showWelcomeFallback(sName) {
+    document.getElementById('welcome-loading').classList.add('hidden');
+    document.getElementById('welcome-result').classList.remove('hidden');
+    document.getElementById('welcome-result-title').textContent = sName + ', 준비 완료!';
+    const wrap = document.getElementById('welcome-captions');
+    wrap.innerHTML = '<div style="background:var(--g50);border:1px solid var(--g200);border-radius:16px;padding:20px;text-align:center;"><p style="font-size:.9rem;color:var(--g700);line-height:1.7;">캡션 미리보기를 불러오지 못했어요.<br>대시보드에서 사진을 올리면 바로 만들어 드릴게요!</p></div>';
 }
 function closeWelcomeModal() {
     document.getElementById('lumi-welcome-modal').style.display='none';

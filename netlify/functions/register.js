@@ -106,23 +106,23 @@ exports.handler = async (event) => {
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background:#f9f9f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
   <div style="max-width:560px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08);">
-    <div style="background:#FF6B9D;padding:32px 40px;text-align:center;">
+    <div style="background:#C8507A;padding:32px 40px;text-align:center;">
       <img src="https://lumi.it.kr/assets/logo.png" alt="lumi" style="height:48px;">
     </div>
     <div style="padding:40px;">
-      <h2 style="margin:0 0 12px;color:#111;font-size:22px;font-weight:800;">${name}님, 환영해요! 🎉</h2>
-      <p style="margin:0 0 24px;color:#555;font-size:15px;line-height:1.7;">lumi 가입을 완료했어요.<br>이제 사진 한 장만 올리면, 나머지는 lumi가 다 해드릴게요.</p>
+      <h2 style="margin:0 0 12px;color:#111;font-size:22px;font-weight:800;">${name}님, 환영해요!</h2>
+      <p style="margin:0 0 24px;color:#555;font-size:15px;line-height:1.7;">lumi 가입이 완료됐어요.<br>이제 사진 한 장만 올리면, 캡션·해시태그·게시까지 자동이에요.</p>
       <div style="background:#fff0f6;border-radius:12px;padding:20px 24px;margin-bottom:28px;">
-        <p style="margin:0 0 8px;font-size:13px;font-weight:700;color:#FF6B9D;">시작하기 전에 이것만!</p>
-        <p style="margin:0;font-size:14px;color:#555;line-height:1.7;">📸 <strong>인스타그램 계정 연동</strong>을 먼저 해주세요.<br>연동하면 게시물이 자동으로 올라가요.</p>
+        <p style="margin:0 0 8px;font-size:13px;font-weight:700;color:#C8507A;">첫 번째로 할 일</p>
+        <p style="margin:0;font-size:14px;color:#555;line-height:1.7;">📸 대시보드에서 <strong>매장 사진 한 장</strong>을 올려보세요.<br>lumi가 바로 캡션을 만들어 드릴게요.</p>
       </div>
       <div style="text-align:center;">
-        <a href="https://lumi.it.kr" style="display:inline-block;background:#FF6B9D;color:#fff;text-decoration:none;padding:14px 36px;border-radius:99px;font-size:15px;font-weight:700;">lumi 시작하기 →</a>
+        <a href="https://lumi.it.kr/dashboard" style="display:inline-block;background:#C8507A;color:#fff;text-decoration:none;padding:14px 36px;border-radius:99px;font-size:15px;font-weight:700;">첫 사진 올리러 가기 →</a>
       </div>
-      <p style="margin:28px 0 0;font-size:13px;color:#aaa;text-align:center;">무료 체험 기간: 7일 · 언제든지 취소 가능</p>
+      <p style="margin:28px 0 0;font-size:13px;color:#aaa;text-align:center;">정식 출시 전까지 모든 기능 무료 · 언제든지 탈퇴 가능</p>
     </div>
     <div style="background:#f9f9f9;padding:20px 40px;text-align:center;">
-      <p style="margin:0;font-size:12px;color:#bbb;">© 2026 lumi · 서울특별시 용산구 이태원동<br>문의: <a href="https://lumi.it.kr/support" style="color:#FF6B9D;text-decoration:none;">고객센터</a></p>
+      <p style="margin:0;font-size:12px;color:#bbb;">© 2026 lumi · 서울특별시 용산구 이태원동<br>문의: <a href="https://lumi.it.kr/support" style="color:#C8507A;text-decoration:none;">고객센터</a></p>
     </div>
   </div>
 </body>
