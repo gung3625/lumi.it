@@ -28,13 +28,23 @@ exports.handler = async (event) => {
       };
     }
 
-    // HMAC 검증
-    const expectedToken = crypto
-      .createHmac('sha256', process.env.LUMI_SECRET)
-      .update(email)
-      .digest('hex');
-
-    if (token !== expectedToken) {
+    // HMAC 검증 (타임스탬프 포함 토큰 우선, 레거시 호환)
+    let valid = false;
+    // 새 형식: token = hmac(email:timestamp):timestamp
+    if (token.includes(':')) {
+      const [hmacPart, tsPart] = token.split(':');
+      const ts = parseInt(tsPart);
+      if (ts && (Date.now() - ts) < 30 * 24 * 60 * 60 * 1000) { // 30일 만료
+        const expected = crypto.createHmac('sha256', process.env.LUMI_SECRET).update(email + ':' + tsPart).digest('hex');
+        if (hmacPart === expected) valid = true;
+      }
+    }
+    // 레거시 형식: token = hmac(email) — 하위 호환 (추후 제거)
+    if (!valid) {
+      const legacyExpected = crypto.createHmac('sha256', process.env.LUMI_SECRET).update(email).digest('hex');
+      if (token === legacyExpected) valid = true;
+    }
+    if (!valid) {
       return {
         statusCode: 403,
         headers,

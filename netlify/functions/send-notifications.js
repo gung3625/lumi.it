@@ -242,9 +242,11 @@ async function sendExpiryAlert(userStore) {
 
 // === 리텐션 이메일 시스템 ===
 
-// HMAC 토큰 생성 (수신거부 링크용)
+// HMAC 토큰 생성 (수신거부 링크용 — 30일 만료 타임스탬프 포함)
 function generateUnsubToken(email) {
-  return crypto.createHmac('sha256', process.env.LUMI_SECRET).update(email).digest('hex');
+  const ts = Date.now().toString();
+  const hmac = crypto.createHmac('sha256', process.env.LUMI_SECRET).update(email + ':' + ts).digest('hex');
+  return hmac + ':' + ts;
 }
 
 // 리텐션 이메일 HTML 빌드

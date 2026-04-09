@@ -20,12 +20,19 @@ exports.handler = async (event) => {
   // code 없으면 OAuth 시작
   if (!code) {
     const lumiToken = params.get('token') || '';
+    // CSRF 방지: nonce 생성 → Blobs에 토큰 매핑 저장
+    const crypto = require('crypto');
+    const nonce = crypto.randomBytes(16).toString('hex');
+    try {
+      const nonceStore = getStore({ name: 'oauth-nonce', consistency: 'strong', siteID: SITE_ID, token: NETLIFY_TOKEN });
+      await nonceStore.set('nonce:' + nonce, JSON.stringify({ token: lumiToken, createdAt: Date.now() }));
+    } catch(e) {}
     const authUrl = `https://www.facebook.com/dialog/oauth?` +
       `client_id=${APP_ID}` +
       `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
       `&scope=instagram_basic,instagram_content_publish,instagram_manage_comments,instagram_manage_messages,pages_show_list,pages_read_engagement,pages_manage_metadata` +
       `&response_type=code` +
-      `&state=${encodeURIComponent(lumiToken)}`;
+      `&state=${encodeURIComponent(nonce)}`;
     return { statusCode: 302, headers: { Location: authUrl } };
   }
 
@@ -75,13 +82,22 @@ exports.handler = async (event) => {
       return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/?oauth_error=3' } };
     }
 
-    // 4. lumi 사용자 이메일 조회
+    // 4. nonce에서 lumi 토큰 복원 → 이메일 조회
     let email = '';
     if (state) {
       try {
-        const tokenStore = getStore({ name: 'users', consistency: 'strong', siteID: SITE_ID, token: NETLIFY_TOKEN });
-        const td = await tokenStore.get('token:' + state);
-        if (td) email = JSON.parse(td).email || '';
+        const nonceStore = getStore({ name: 'oauth-nonce', consistency: 'strong', siteID: SITE_ID, token: NETLIFY_TOKEN });
+        const nonceRaw = await nonceStore.get('nonce:' + state);
+        if (nonceRaw) {
+          const nonceData = JSON.parse(nonceRaw);
+          // 10분 만료
+          if (Date.now() - nonceData.createdAt < 600000) {
+            const tokenStore = getStore({ name: 'users', consistency: 'strong', siteID: SITE_ID, token: NETLIFY_TOKEN });
+            const td = await tokenStore.get('token:' + nonceData.token);
+            if (td) email = JSON.parse(td).email || '';
+          }
+          await nonceStore.delete('nonce:' + state); // 일회용
+        }
       } catch(e) { console.error('[lumi] 이메일 조회 실패:', e.message); }
     }
 

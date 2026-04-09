@@ -7,7 +7,7 @@
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet">
-<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://unpkg.com/lucide@0.468.0"></script>
 <script src="https://cdn.portone.io/v2/browser-sdk.js" async onerror="console.warn('포트원 SDK 로드 실패')"></script>
 <style>
 :root{
@@ -1202,6 +1202,8 @@ function bootPersistence(){const r=localStorage.getItem('lumi_archive');if(r){tr
 function syncPersistence(){localStorage.setItem('lumi_archive',JSON.stringify(archive));}
 
 /* ── 토스트 알림 ── */
+function escapeHtml(str){if(!str)return '';return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+
 function showToast(msg,type=''){
     let t=document.getElementById('lumi-toast');
     if(!t){t=document.createElement('div');t.id='lumi-toast';t.className='toast';document.body.appendChild(t);}
@@ -1271,7 +1273,7 @@ async function handleLoginAction(){
         if(res.ok){
             var chk=document.getElementById('save-id-chk');
             if(chk&&chk.checked){localStorage.setItem('lumi_saved_id',email);}else{localStorage.removeItem('lumi_saved_id');}
-            localStorage.setItem('lumi_user', JSON.stringify({ ...data.user, token: data.token }));
+            const {passwordHash:_ph, token:_tk, ...safeUserData} = data.user; localStorage.setItem('lumi_user', JSON.stringify(safeUserData));
             localStorage.setItem('lumi_token', data.token);
             showToast('로그인됐어요!', 'pink');
             setTimeout(() => { resetToInitialLanding(); grantAccess(); }, 500);
@@ -2191,8 +2193,8 @@ async function loadAutoReply() {
                 row.className = 'keyword-row';
                 row.dataset.index = idx;
                 row.innerHTML = `
-                    <input type="text" class="inp-sm" placeholder="키워드" id="comment-keyword-${idx}" value="${item.keyword}">
-                    <input type="text" class="inp-sm" placeholder="답변 내용" id="comment-reply-${idx}" value="${item.reply}" style="flex:2;">
+                    <input type="text" class="inp-sm" placeholder="키워드" id="comment-keyword-${idx}" value="${escapeHtml(item.keyword)}">
+                    <input type="text" class="inp-sm" placeholder="답변 내용" id="comment-reply-${idx}" value="${escapeHtml(item.reply)}" style="flex:2;">
                     <button class="btn-del" onclick="removeKeywordRow(this)">✕</button>
                 `;
                 commentWrap.appendChild(row);
@@ -2212,8 +2214,8 @@ async function loadAutoReply() {
                 row.className = 'keyword-row';
                 row.dataset.index = idx;
                 row.innerHTML = `
-                    <input type="text" class="inp-sm" placeholder="키워드" id="dm-keyword-${idx}" value="${item.keyword}">
-                    <input type="text" class="inp-sm" placeholder="답변 내용" id="dm-reply-${idx}" value="${item.reply}" style="flex:2;">
+                    <input type="text" class="inp-sm" placeholder="키워드" id="dm-keyword-${idx}" value="${escapeHtml(item.keyword)}">
+                    <input type="text" class="inp-sm" placeholder="답변 내용" id="dm-reply-${idx}" value="${escapeHtml(item.reply)}" style="flex:2;">
                     <button class="btn-del" onclick="removeKeywordRow(this)">✕</button>
                 `;
                 dmWrap.appendChild(row);
@@ -3382,7 +3384,7 @@ async function finishLumiSignup() {
         });
         const data = await res.json();
         if (res.ok) {
-            localStorage.setItem('lumi_user', JSON.stringify({ ...data.user, token: data.token }));
+            const {passwordHash:_ph, token:_tk, ...safeUserData} = data.user; localStorage.setItem('lumi_user', JSON.stringify(safeUserData));
             localStorage.setItem('lumi_token', data.token);
             showToast('가입 완료! 환영해요 🎉', 'pink');
             showWelcomeModal(data.user);
@@ -4103,10 +4105,10 @@ function openLinkPreview() {
     content.innerHTML = `
         <div style="text-align:center;padding-top:16px;">
             <div style="width:72px;height:72px;border-radius:50%;background:var(--pink-pale);margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:28px;">🏪</div>
-            <h2 style="font-size:1.2rem;font-weight:900;margin-bottom:4px;">${user.storeName || '매장명'}</h2>
-            <p style="font-size:.85rem;opacity:.7;margin-bottom:20px;">${user.storeDesc || ''}</p>
+            <h2 style="font-size:1.2rem;font-weight:900;margin-bottom:4px;">${escapeHtml(user.storeName || '매장명')}</h2>
+            <p style="font-size:.85rem;opacity:.7;margin-bottom:20px;">${escapeHtml(user.storeDesc || '')}</p>
             <div style="display:flex;flex-direction:column;gap:10px;">
-                ${validLinks.map(l => `<a style="display:flex;align-items:center;gap:10px;padding:14px 18px;border-radius:14px;text-decoration:none;font-weight:700;font-size:.9rem;transition:all .2s;background:#fff;border:1.5px solid #FF2D8A;color:var(--pink);"><span style="font-size:1.2rem;">${l.icon}</span>${l.label}</a>`).join('')}
+                ${validLinks.map(l => `<a style="display:flex;align-items:center;gap:10px;padding:14px 18px;border-radius:14px;text-decoration:none;font-weight:700;font-size:.9rem;transition:all .2s;background:#fff;border:1.5px solid #FF2D8A;color:var(--pink);"><span style="font-size:1.2rem;">${escapeHtml(l.icon)}</span>${escapeHtml(l.label)}</a>`).join('')}
             </div>
             <p style="font-size:.7rem;opacity:.4;margin-top:24px;">Powered by lumi</p>
         </div>
@@ -4362,12 +4364,12 @@ function renderCalCards(calendar) {
   const wrap = document.getElementById('cal-cards');
   wrap.innerHTML = '';
   calendar.forEach(function(day) {
-    const event = day.relatedEvent ? '<p style="font-size:.75rem;color:var(--pink);margin-top:6px;">🎪 ' + day.relatedEvent + '</p>' : '';
+    const event = day.relatedEvent ? '<p style="font-size:.75rem;color:var(--pink);margin-top:6px;">🎪 ' + escapeHtml(day.relatedEvent) + '</p>' : '';
     wrap.innerHTML += '<div style="background:#fff;border:1px solid var(--g200);border-radius:var(--r-lg);padding:16px;margin-bottom:10px;">'
-      + '<p style="font-size:.78rem;font-weight:800;color:var(--pink);margin-bottom:6px;">' + formatCalDate(day.date) + '</p>'
-      + '<p style="font-size:.88rem;font-weight:700;color:var(--g900);margin-bottom:6px;">' + day.topic + '</p>'
-      + '<p style="font-size:.78rem;color:var(--g500);line-height:1.6;margin-bottom:6px;">📸 ' + day.shootingTip + '</p>'
-      + '<p style="font-size:.75rem;color:var(--g400);">🎨 ' + day.captionTone + '</p>'
+      + '<p style="font-size:.78rem;font-weight:800;color:var(--pink);margin-bottom:6px;">' + escapeHtml(formatCalDate(day.date)) + '</p>'
+      + '<p style="font-size:.88rem;font-weight:700;color:var(--g900);margin-bottom:6px;">' + escapeHtml(day.topic) + '</p>'
+      + '<p style="font-size:.78rem;color:var(--g500);line-height:1.6;margin-bottom:6px;">📸 ' + escapeHtml(day.shootingTip) + '</p>'
+      + '<p style="font-size:.75rem;color:var(--g400);">🎨 ' + escapeHtml(day.captionTone) + '</p>'
       + event
       + '</div>';
   });
