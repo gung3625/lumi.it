@@ -635,18 +635,18 @@ body.light-mode .nav-logout { color:rgba(0,0,0,.8); border-color:rgba(0,0,0,.2);
 body.light-mode .nav-logout:hover { color:#1d1d1f; }
 body.light-mode .sticky-cta { background:rgba(255,255,255,.88); border-color:rgba(0,0,0,.1); }
 
-/* ── 다크모드 토글 버튼 ── */
+/* ── 다크모드 토글 버튼 (대시보드 동일) ── */
 .dark-toggle-fab {
   position:fixed; right:16px; bottom:calc(20px + env(safe-area-inset-bottom,0px));
   z-index:9999; width:48px; height:48px; border-radius:50%;
-  border:none; background:#191F28;
-  color:#fff; font-size:1.2rem; cursor:pointer;
-  box-shadow:0 4px 16px rgba(0,0,0,.25); display:flex; align-items:center; justify-content:center;
+  border:none; background:#fff; color:#191F28;
+  font-size:1.2rem; cursor:pointer;
+  box-shadow:0 4px 16px rgba(0,0,0,.15); display:flex; align-items:center; justify-content:center;
   transition:all .3s var(--ease); -webkit-tap-highlight-color:transparent; font-family:inherit;
 }
 .dark-toggle-fab:hover { transform:scale(1.08); box-shadow:0 6px 24px rgba(0,0,0,.3); }
 .dark-toggle-fab:active { transform:scale(.95); }
-body.light-mode .dark-toggle-fab { background:#fff; color:#191F28; box-shadow:0 4px 16px rgba(0,0,0,.1); }
+body.light-mode .dark-toggle-fab { background:#191F28; color:#fff; box-shadow:0 4px 16px rgba(0,0,0,.25); }
 @media(max-width:768px){ .dark-toggle-fab { bottom:calc(72px + env(safe-area-inset-bottom,0px)); } }
 
 /* ── RESPONSIVE ── */
@@ -1169,7 +1169,7 @@ body.light-mode .dark-toggle-fab { background:#fff; color:#191F28; box-shadow:0 
 
 <div class="sticky-cta"><a href="/beta">지금 무료로 시작하기</a></div>
 
-<button class="dark-toggle-fab" id="dark-toggle-fab" aria-label="다크/라이트모드 전환"></button>
+<button class="dark-toggle-fab" id="dark-toggle-fab" onclick="toggleDarkMode(!document.body.classList.contains('light-mode'))" aria-label="다크모드 전환">☀️</button>
 
 <script>
 // 새로고침 시 항상 맨 위로 스크롤
@@ -1181,16 +1181,16 @@ window.addEventListener('beforeunload', function(){ window.scrollTo(0, 0); });
   var isDark = localStorage.getItem('lumi_dark_mode') !== '0';
   if(!isDark) document.body.classList.add('light-mode');
   var f = document.getElementById('dark-toggle-fab');
-  if(f) f.textContent = isDark ? '☀' : '☾';
+  if(f) f.textContent = isDark ? '☀️' : '🌙';
 })();
 
-function toggleDarkMode(){
-  var isLight = document.body.classList.toggle('light-mode');
-  localStorage.setItem('lumi_dark_mode', isLight ? '0' : '1');
+function toggleDarkMode(wantLight){
+  if(wantLight) document.body.classList.add('light-mode');
+  else document.body.classList.remove('light-mode');
+  localStorage.setItem('lumi_dark_mode', wantLight ? '0' : '1');
   var f = document.getElementById('dark-toggle-fab');
-  if(f) f.textContent = isLight ? '☾' : '☀';
+  if(f) f.textContent = wantLight ? '🌙' : '☀️';
 }
-document.getElementById('dark-toggle-fab').addEventListener('click', toggleDarkMode);
 var step3Timer=null;
 function selectHow(idx){
   var wasOpen=document.querySelector('.how-card[data-how="'+idx+'"]').classList.contains('active');
