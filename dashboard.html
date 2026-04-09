@@ -1130,10 +1130,11 @@ function smoothScrollTo(id){
 
 const LUMI_CORE = {
     weather: {
-        clear:{icon:"☀️",status:"매우 맑음",guide:"맑은 날 자연광은 최고의 필터입니다! 채광을 살린 사진을 강력 추천해요.",mood:"햇살 가득한 오후, 우리 매장만의 특별한 여유를 담아보세요."},
-        rain: {icon:"💧",status:"비 내림",  guide:"창가 조명을 최대한 활용하세요! 유리창의 물방울 샷이 도달률을 높입니다.",mood:"빗소리와 함께 즐기는 따스한 감성. 아늑한 무드를 선물할게요."},
-        snow: {icon:"❄️",status:"눈 옴",   guide:"따뜻한 김이 모락모락 나는 메뉴 사진이 정답!",mood:"창밖은 하얀 겨울이지만, 여기는 온기가 가득합니다."},
-        dust: {icon:"🌫️",status:"미세먼지",guide:"쾌적한 실내 무드를 강조해 보세요.",mood:"미세먼지 없는 청정 구역! 안심하고 쉴 수 있는 공간으로 초대합니다."}
+        clear:{icon:"☀️",status:"맑음",guide:"맑은 날 자연광은 최고의 필터입니다! 채광을 살린 사진을 강력 추천해요.",mood:"햇살 가득한 오후, 우리 매장만의 특별한 여유를 담아보세요."},
+        partly_cloudy:{icon:"⛅",status:"구름 많음",guide:"부드러운 자연광이 음식·제품 사진에 최적이에요. 그림자 없이 깔끔하게!",mood:"구름 사이로 은은한 빛, 감성 가득한 한 컷을 남겨보세요."},
+        cloudy:{icon:"☁️",status:"흐림",guide:"따뜻한 조명을 활용해 아늑한 실내 분위기를 담아보세요.",mood:"흐린 날에도 우리 매장은 환하게 빛나요."},
+        rain:{icon:"🌧️",status:"비",guide:"창가 조명을 최대한 활용하세요! 유리창의 물방울 샷이 도달률을 높입니다.",mood:"빗소리와 함께 즐기는 따스한 감성. 아늑한 무드를 선물할게요."},
+        snow:{icon:"❄️",status:"눈",guide:"따뜻한 김이 모락모락 나는 메뉴 사진이 정답!",mood:"창밖은 하얀 겨울이지만, 여기는 온기가 가득합니다."}
     },
     trends: {
         cafe:  ["#신메뉴출시","#오늘의커피","#카페스타그램","#라떼아트","#디저트맛집","#카페투어","#핸드드립","#베이커리"],
@@ -1343,7 +1344,10 @@ async function fetchRealWeather(lat, lon, locationName) {
 
     } catch(e) {
         console.error('[lumi] 날씨 API 실패 상세:', e.message, e);
-        syncWeatherUI('clear');
+        weatherLoaded = true;
+        document.getElementById('dash-w-icon').innerText = '⚠️';
+        document.getElementById('dash-w-text').innerText = '날씨 정보를 불러올 수 없어요';
+        document.getElementById('dash-w-guide').innerText = '잠시 후 다시 시도해주세요';
     }
 }
 

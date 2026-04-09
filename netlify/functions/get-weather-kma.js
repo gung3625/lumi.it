@@ -65,17 +65,45 @@ function getPtyState(pty) {
     if (v === 2) return 'rain'; // 비/눈
     if (v === 3) return 'snow';
     if (v === 4) return 'rain'; // 소나기
+    return null; // 강수 없음 → SKY로 판단
+}
+
+// 하늘상태 코드 (초단기예보)
+function getSkyState(sky) {
+    const v = parseInt(sky);
+    if (v === 1) return 'clear';
+    if (v === 3) return 'partly_cloudy';
+    if (v === 4) return 'cloudy';
     return 'clear';
 }
 
 // 기상청 basetime 계산 (초단기실황: 매시 30분 생성, 40분 이후 조회 가능)
-function getBaseDateTime() {
+function getNcstBaseDateTime() {
     const now = new Date();
     const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
     const mm = kst.getUTCMinutes();
 
     let base = new Date(kst);
     if (mm < 40) {
+        base.setUTCHours(base.getUTCHours() - 1);
+    }
+    base.setUTCMinutes(30);
+    base.setUTCSeconds(0);
+
+    const baseDate = base.toISOString().slice(0, 10).replace(/-/g, '');
+    const hh = String(base.getUTCHours()).padStart(2, '0');
+    const baseTime = `${hh}30`;
+    return { baseDate, baseTime };
+}
+
+// 초단기예보 basetime 계산 (매시 30분 생성, 45분 이후 조회 가능)
+function getFcstBaseDateTime() {
+    const now = new Date();
+    const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+    const mm = kst.getUTCMinutes();
+
+    let base = new Date(kst);
+    if (mm < 45) {
         base.setUTCHours(base.getUTCHours() - 1);
     }
     base.setUTCMinutes(30);
@@ -127,31 +155,60 @@ exports.handler = async (event) => {
         locationName = sido;
     }
 
-    const { baseDate, baseTime } = getBaseDateTime();
+    const ncst = getNcstBaseDateTime();
+    const fcst = getFcstBaseDateTime();
 
     try {
-        const url = `https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst`
+        // 초단기실황 + 초단기예보 동시 호출
+        const ncstUrl = `https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst`
             + `?serviceKey=${serviceKey}&numOfRows=10&pageNo=1&dataType=JSON`
-            + `&base_date=${baseDate}&base_time=${baseTime}&nx=${nx}&ny=${ny}`;
+            + `&base_date=${ncst.baseDate}&base_time=${ncst.baseTime}&nx=${nx}&ny=${ny}`;
 
-        const result = await httpsGet(url);
-        if (result.status !== 200) throw new Error('HTTP ' + result.status);
+        const fcstUrl = `https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtFcst`
+            + `?serviceKey=${serviceKey}&numOfRows=60&pageNo=1&dataType=JSON`
+            + `&base_date=${fcst.baseDate}&base_time=${fcst.baseTime}&nx=${nx}&ny=${ny}`;
 
-        const data = JSON.parse(result.body);
-        const header = data?.response?.header;
-        if (header?.resultCode !== '00') throw new Error('기상청 오류: ' + header?.resultMsg);
+        const [ncstResult, fcstResult] = await Promise.all([httpsGet(ncstUrl), httpsGet(fcstUrl)]);
 
-        const items = data?.response?.body?.items?.item || [];
+        // 초단기실황 파싱
+        if (ncstResult.status !== 200) throw new Error('HTTP ' + ncstResult.status);
+        const ncstData = JSON.parse(ncstResult.body);
+        const ncstHeader = ncstData?.response?.header;
+        if (ncstHeader?.resultCode !== '00') throw new Error('기상청 실황 오류: ' + ncstHeader?.resultMsg);
 
+        const ncstItems = ncstData?.response?.body?.items?.item || [];
         const obs = {};
-        items.forEach(item => { obs[item.category] = item.obsrValue; });
+        ncstItems.forEach(item => { obs[item.category] = item.obsrValue; });
 
-        // T1H: 기온, PTY: 강수형태, REH: 습도, WSD: 풍속, RN1: 1시간강수량
         const temp = obs['T1H'] !== undefined ? Math.round(parseFloat(obs['T1H'])) : null;
         const pty = obs['PTY'] || '0';
         const humidity = obs['REH'] || null;
         const windSpeed = obs['WSD'] || null;
-        const state = getPtyState(pty);
+        const rn1 = obs['RN1'] ? parseFloat(obs['RN1']) : 0;
+
+        // 강수형태 우선 판단
+        let state = getPtyState(pty);
+
+        // 강수 없으면 초단기예보의 SKY로 하늘상태 판단
+        if (!state) {
+            try {
+                const fcstData = JSON.parse(fcstResult.body);
+                const fcstHeader = fcstData?.response?.header;
+                if (fcstHeader?.resultCode === '00') {
+                    const fcstItems = fcstData?.response?.body?.items?.item || [];
+                    // 가장 가까운 시간의 SKY 값
+                    const skyItem = fcstItems.find(item => item.category === 'SKY');
+                    if (skyItem) {
+                        state = getSkyState(skyItem.fcstValue);
+                    }
+                }
+            } catch (e) {
+                // 초단기예보 실패해도 실황 데이터는 반환
+            }
+            // RN1 > 0인데 PTY=0인 경우 (약한 비) 보정
+            if (!state && rn1 > 0) state = 'rain';
+            if (!state) state = 'clear';
+        }
 
         return {
             statusCode: 200,
@@ -164,8 +221,9 @@ exports.handler = async (event) => {
                 pty: parseInt(pty),
                 humidity: humidity ? parseInt(humidity) : null,
                 windSpeed: windSpeed ? parseFloat(windSpeed) : null,
-                baseDate,
-                baseTime,
+                rn1,
+                baseDate: ncst.baseDate,
+                baseTime: ncst.baseTime,
                 nx,
                 ny
             })
