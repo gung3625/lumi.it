@@ -101,30 +101,6 @@ nav {
   padding: 0 0 80px;
 }
 
-/* ---- GRIDSTACK v10 COLUMN BUG FIX ----
-   v10 CSS에는 .gs-12와 .gs-1만 포함.
-   grid.column(2) / grid.column(6) 호출 시 .gs-2 / .gs-6 클래스가
-   컨테이너에 추가되지만 대응 CSS가 없어 width 0px 발생.
-   아래에 .gs-2, .gs-6 규칙 추가로 근본 수정. */
-
-/* 2-column (모바일) */
-.gs-2 > .grid-stack-item { width: 50% }
-.gs-2 > .grid-stack-item[gs-w="2"] { width: 100% }
-.gs-2 > .grid-stack-item[gs-x="1"] { left: 50% }
-
-/* 6-column (태블릿) */
-.gs-6 > .grid-stack-item { width: 16.6667% }
-.gs-6 > .grid-stack-item[gs-x="1"] { left: 16.6667% }
-.gs-6 > .grid-stack-item[gs-w="2"] { width: 33.3333% }
-.gs-6 > .grid-stack-item[gs-x="2"] { left: 33.3333% }
-.gs-6 > .grid-stack-item[gs-w="3"] { width: 50% }
-.gs-6 > .grid-stack-item[gs-x="3"] { left: 50% }
-.gs-6 > .grid-stack-item[gs-w="4"] { width: 66.6667% }
-.gs-6 > .grid-stack-item[gs-x="4"] { left: 66.6667% }
-.gs-6 > .grid-stack-item[gs-w="5"] { width: 83.3333% }
-.gs-6 > .grid-stack-item[gs-x="5"] { left: 83.3333% }
-.gs-6 > .grid-stack-item[gs-w="6"] { width: 100% }
-
 /* ---- GRIDSTACK OVERRIDES ---- */
 .grid-stack > .grid-stack-item > .grid-stack-item-content {
   border: none;
@@ -721,6 +697,32 @@ body.dark-mode .grid-stack > .grid-stack-item > .grid-stack-item-content:hover {
 
 <script src="https://cdn.jsdelivr.net/npm/gridstack@10/dist/gridstack-all.min.js"></script>
 <script>
+// ---- GRIDSTACK v10 COLUMN BUG FIX ----
+// v10 CSS에 .gs-1과 .gs-12만 포함, .gs-2~.gs-11 빠져있음
+// grid.column(N) 호출 시 .gs-N 클래스가 추가되지만 대응 CSS 없으면 width 0px
+// 아래 함수가 2~11 전부 동적 생성하여 근본 해결
+(function generateGridstackColumnCSS() {
+  var css = '';
+  for (var col = 2; col <= 11; col++) {
+    var unit = (100 / col);
+    for (var w = 1; w <= col; w++) {
+      var pct = (unit * w).toFixed(4) + '%';
+      if (w === 1) {
+        css += '.gs-' + col + '>.grid-stack-item{width:' + pct + '}';
+      } else {
+        css += '.gs-' + col + '>.grid-stack-item[gs-w="' + w + '"]{width:' + pct + '}';
+      }
+    }
+    for (var x = 1; x < col; x++) {
+      css += '.gs-' + col + '>.grid-stack-item[gs-x="' + x + '"]{left:' + (unit * x).toFixed(4) + '%}';
+    }
+  }
+  var style = document.createElement('style');
+  style.id = 'gs-column-fix';
+  style.textContent = css;
+  document.head.appendChild(style);
+})();
+
 // ---- GRIDSTACK INIT ----
 var grid = GridStack.init({
   column: 12,
