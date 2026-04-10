@@ -447,15 +447,27 @@ nav {
 }
 
 /* ---- RESPONSIVE ---- */
+@media (max-width: 996px) {
+  .grid-wrap { padding: 0 8px 40px; }
+  .card-text.pad-bio { padding: 28px 24px; }
+  .card-text.pad-spot { padding: 24px 20px; }
+  .card-text.pad-blog { padding: 28px 24px; }
+  .card-text.pad-news { padding: 28px 24px; }
+}
 @media (max-width: 768px) {
   nav { padding: 24px 16px 16px; }
   .nav-pills { overflow-x: auto; scrollbar-width: none; }
   .nav-pills::-webkit-scrollbar { display: none; }
   .nav-pill { font-size: 13px; padding: 0 12px; height: 28px; }
   .nav-logo { font-size: 26px; }
+  .bio-text .bio-name { font-size: 32px; }
+  .spot-title { font-size: 20px; }
+  .blog-title { font-size: 20px; line-height: 28px; }
+  .news-title { font-size: 20px; }
 }
 @media (max-width: 480px) {
   .nav-contact { display: none; }
+  .grid-wrap { padding: 0 4px 40px; }
 }
 
 /* ---- DARK MODE ---- */
@@ -739,16 +751,30 @@ function toggleDarkMode() {
   document.documentElement.style.background = isDark ? '#111' : '#f7f2f2';
 }
 
-// ---- MOBILE: disable drag ----
-function checkMobile() {
-  if (window.innerWidth <= 768) {
+// ---- RESPONSIVE: column switching ----
+// columnOpts.breakpoints 사용 금지 (v10 버그)
+// window.matchMedia로 직접 grid.column() 호출
+var mqMobile = window.matchMedia('(max-width: 768px)');
+var mqTablet = window.matchMedia('(min-width: 769px) and (max-width: 1199px)');
+
+function handleResponsive() {
+  if (mqMobile.matches) {
+    grid.column(1);
+    grid.cellHeight(220);
     grid.disable();
-  } else if (!isLocked) {
-    grid.enable();
+  } else if (mqTablet.matches) {
+    grid.column(6);
+    grid.cellHeight(260);
+    if (!isLocked) grid.enable();
+  } else {
+    grid.column(12);
+    grid.cellHeight(280);
+    if (!isLocked) grid.enable();
   }
 }
-window.addEventListener('resize', checkMobile);
-checkMobile();
+mqMobile.addEventListener('change', handleResponsive);
+mqTablet.addEventListener('change', handleResponsive);
+handleResponsive();
 </script>
 </body>
 </html>
