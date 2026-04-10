@@ -751,42 +751,48 @@ function toggleDarkMode() {
   document.documentElement.style.background = isDark ? '#111' : '#f7f2f2';
 }
 
-// ---- RESPONSIVE: column switching ----
-// columnOpts.breakpoints 사용 금지 (v10 버그)
-// window.matchMedia로 직접 grid.column() 호출
+// ---- RESPONSIVE ----
+// gridstack v10 CSS는 12-column 전용 → column() 변경하면 width 0px 버그
+// 해결: column 항상 12 유지, gs-w 값만 변경
 var mqMobile = window.matchMedia('(max-width: 768px)');
 var mqTablet = window.matchMedia('(min-width: 769px) and (max-width: 1199px)');
 
-// 데스크톱 원본 gs-w 저장 (반응형 전환용)
+// 데스크톱 원본 저장
 document.querySelectorAll('.grid-stack-item').forEach(function(item) {
-  item.dataset.desktopW = item.getAttribute('gs-w');
+  item.dataset.dw = item.getAttribute('gs-w');
+  item.dataset.dh = item.getAttribute('gs-h');
 });
 
 function handleResponsive() {
   var items = document.querySelectorAll('.grid-stack-item');
 
   if (mqMobile.matches) {
-    // 모바일: 2열 — 큰 카드(gs-w≥6) 풀폭, 작은 카드(gs-w=3) 반폭
-    grid.column(2);
+    // 모바일: 큰 카드 풀폭(12), 작은 카드 반폭(6) — nevflynn.com 모바일과 동일
     grid.cellHeight(200);
     grid.disable();
     items.forEach(function(item) {
-      var ow = parseInt(item.dataset.desktopW);
-      grid.update(item, { w: ow >= 6 ? 2 : 1 });
+      var ow = parseInt(item.dataset.dw);
+      grid.update(item, { w: ow >= 6 ? 12 : 6 });
     });
     grid.compact();
   } else if (mqTablet.matches) {
-    // 태블릿: 6열
-    grid.column(6);
+    // 태블릿: 큰 카드 풀폭(12), 작은 카드 반폭(6)
     grid.cellHeight(260);
     if (!isLocked) grid.enable();
+    items.forEach(function(item) {
+      var ow = parseInt(item.dataset.dw);
+      grid.update(item, { w: ow >= 6 ? 12 : 6 });
+    });
+    grid.compact();
   } else {
-    // 데스크톱: 12열 원본 복원
-    grid.column(12);
+    // 데스크톱: 원본 복원
     grid.cellHeight(280);
     if (!isLocked) grid.enable();
     items.forEach(function(item) {
-      grid.update(item, { w: parseInt(item.dataset.desktopW) });
+      grid.update(item, {
+        w: parseInt(item.dataset.dw),
+        h: parseInt(item.dataset.dh)
+      });
     });
   }
 }
