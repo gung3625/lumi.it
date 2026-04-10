@@ -102,26 +102,40 @@ nav {
 }
 
 /* ---- GRIDSTACK v10 COLUMN BUG FIX ----
-   v10 CSS는 12-column만 포함. 2/6-column CSS가 없어서 width 0px 버그 발생.
-   아래에 2-column, 6-column 규칙 수동 추가. */
+   v10 CSS는 12-column만 포함. 다른 column 수 CSS 수동 추가.
+   클래스(.gs-N) + 속성([gs-column="N"]) 양쪽 모두 커버 */
 
 /* 2-column grid (모바일) */
-.gs-2 > .grid-stack-item { width: 50% }
-.gs-2 > .grid-stack-item[gs-w="2"] { width: 100% }
-.gs-2 > .grid-stack-item[gs-x="1"] { left: 50% }
+.gs-2 > .grid-stack-item,
+.grid-stack[gs-column="2"] > .grid-stack-item { width: 50% }
+.gs-2 > .grid-stack-item[gs-w="2"],
+.grid-stack[gs-column="2"] > .grid-stack-item[gs-w="2"] { width: 100% }
+.gs-2 > .grid-stack-item[gs-x="1"],
+.grid-stack[gs-column="2"] > .grid-stack-item[gs-x="1"] { left: 50% }
 
 /* 6-column grid (태블릿) */
-.gs-6 > .grid-stack-item { width: 16.6667% }
-.gs-6 > .grid-stack-item[gs-w="2"] { width: 33.3333% }
-.gs-6 > .grid-stack-item[gs-w="3"] { width: 50% }
-.gs-6 > .grid-stack-item[gs-w="4"] { width: 66.6667% }
-.gs-6 > .grid-stack-item[gs-w="5"] { width: 83.3333% }
-.gs-6 > .grid-stack-item[gs-w="6"] { width: 100% }
-.gs-6 > .grid-stack-item[gs-x="1"] { left: 16.6667% }
-.gs-6 > .grid-stack-item[gs-x="2"] { left: 33.3333% }
-.gs-6 > .grid-stack-item[gs-x="3"] { left: 50% }
-.gs-6 > .grid-stack-item[gs-x="4"] { left: 66.6667% }
-.gs-6 > .grid-stack-item[gs-x="5"] { left: 83.3333% }
+.gs-6 > .grid-stack-item,
+.grid-stack[gs-column="6"] > .grid-stack-item { width: 16.6667% }
+.gs-6 > .grid-stack-item[gs-w="2"],
+.grid-stack[gs-column="6"] > .grid-stack-item[gs-w="2"] { width: 33.3333% }
+.gs-6 > .grid-stack-item[gs-w="3"],
+.grid-stack[gs-column="6"] > .grid-stack-item[gs-w="3"] { width: 50% }
+.gs-6 > .grid-stack-item[gs-w="4"],
+.grid-stack[gs-column="6"] > .grid-stack-item[gs-w="4"] { width: 66.6667% }
+.gs-6 > .grid-stack-item[gs-w="5"],
+.grid-stack[gs-column="6"] > .grid-stack-item[gs-w="5"] { width: 83.3333% }
+.gs-6 > .grid-stack-item[gs-w="6"],
+.grid-stack[gs-column="6"] > .grid-stack-item[gs-w="6"] { width: 100% }
+.gs-6 > .grid-stack-item[gs-x="1"],
+.grid-stack[gs-column="6"] > .grid-stack-item[gs-x="1"] { left: 16.6667% }
+.gs-6 > .grid-stack-item[gs-x="2"],
+.grid-stack[gs-column="6"] > .grid-stack-item[gs-x="2"] { left: 33.3333% }
+.gs-6 > .grid-stack-item[gs-x="3"],
+.grid-stack[gs-column="6"] > .grid-stack-item[gs-x="3"] { left: 50% }
+.gs-6 > .grid-stack-item[gs-x="4"],
+.grid-stack[gs-column="6"] > .grid-stack-item[gs-x="4"] { left: 66.6667% }
+.gs-6 > .grid-stack-item[gs-x="5"],
+.grid-stack[gs-column="6"] > .grid-stack-item[gs-x="5"] { left: 83.3333% }
 
 /* ---- GRIDSTACK OVERRIDES ---- */
 .grid-stack > .grid-stack-item > .grid-stack-item-content {
