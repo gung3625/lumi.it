@@ -18,6 +18,7 @@ html {
   background: #f7f2f2;
   scroll-behavior: smooth;
   scrollbar-width: none;
+  transition: background 0.3s;
 }
 html::-webkit-scrollbar { display: none; }
 
@@ -160,6 +161,7 @@ nav {
   justify-content: space-between;
   align-items: flex-start;
   background: #fff;
+  transition: background 0.3s, color 0.3s;
 }
 .card-text.pad-bio { padding: 36px 42px; }
 .card-text.pad-spot { padding: 32px 38px; }
@@ -232,6 +234,7 @@ nav {
   justify-content: center;
   align-items: center;
   position: relative;
+  transition: background 0.3s;
 }
 .map-avatar {
   width: 64px;
@@ -377,7 +380,7 @@ nav {
   justify-content: center;
   align-items: center;
   cursor: pointer;
-  transition: background 0.3s;
+  transition: background 0.3s, color 0.3s;
 }
 .dark-toggle-icon {
   width: 48px;
@@ -470,8 +473,9 @@ nav {
   .grid-wrap { padding: 0 4px 40px; }
 }
 
-/* ---- DARK MODE ---- */
-body.dark-mode { background: #111; color: #f0f2f8; }
+/* ---- DARK MODE (nevflynn.com exact) ---- */
+html.dark-mode { background: #111; }
+body.dark-mode { background: #111; color: #f0f2f8; transition: background 0.3s, color 0.3s; }
 
 body.dark-mode .nav-pill { color: #f0f2f8; }
 body.dark-mode .nav-pills { background: rgba(255,255,255,.08); }
@@ -524,7 +528,9 @@ body.dark-mode .grid-stack > .grid-stack-item > .grid-stack-item-content:hover {
 </head>
 <body>
 <script>
+  // FOUC 방지: body 렌더링 전에 다크모드 즉시 적용
   if (localStorage.getItem('lumi_dark_mode') === '1') {
+    document.documentElement.classList.add('dark-mode');
     document.body.classList.add('dark-mode');
   }
 </script>
@@ -770,11 +776,12 @@ function toggleLockdown() {
   if (label) label.textContent = isLocked ? 'Unlock Grid' : 'Toggle Lockdown';
 }
 
-// ---- DARK MODE ----
+// ---- DARK MODE (nevflynn.com 방식) ----
+// html + body 양쪽에 .dark-mode 클래스 토글 → CSS transition으로 부드러운 전환
 function toggleDarkMode() {
   var isDark = document.body.classList.toggle('dark-mode');
+  document.documentElement.classList.toggle('dark-mode');
   localStorage.setItem('lumi_dark_mode', isDark ? '1' : '0');
-  document.documentElement.style.background = isDark ? '#111' : '#f7f2f2';
 }
 
 // ---- RESPONSIVE ----
