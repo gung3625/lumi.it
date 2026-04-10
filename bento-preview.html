@@ -757,19 +757,37 @@ function toggleDarkMode() {
 var mqMobile = window.matchMedia('(max-width: 768px)');
 var mqTablet = window.matchMedia('(min-width: 769px) and (max-width: 1199px)');
 
+// 데스크톱 원본 gs-w 저장 (반응형 전환용)
+document.querySelectorAll('.grid-stack-item').forEach(function(item) {
+  item.dataset.desktopW = item.getAttribute('gs-w');
+});
+
 function handleResponsive() {
+  var items = document.querySelectorAll('.grid-stack-item');
+
   if (mqMobile.matches) {
-    grid.column(1);
-    grid.cellHeight(220);
+    // 모바일: 2열 — 큰 카드(gs-w≥6) 풀폭, 작은 카드(gs-w=3) 반폭
+    grid.column(2);
+    grid.cellHeight(200);
     grid.disable();
+    items.forEach(function(item) {
+      var ow = parseInt(item.dataset.desktopW);
+      grid.update(item, { w: ow >= 6 ? 2 : 1 });
+    });
+    grid.compact();
   } else if (mqTablet.matches) {
+    // 태블릿: 6열
     grid.column(6);
     grid.cellHeight(260);
     if (!isLocked) grid.enable();
   } else {
+    // 데스크톱: 12열 원본 복원
     grid.column(12);
     grid.cellHeight(280);
     if (!isLocked) grid.enable();
+    items.forEach(function(item) {
+      grid.update(item, { w: parseInt(item.dataset.desktopW) });
+    });
   }
 }
 mqMobile.addEventListener('change', handleResponsive);
