@@ -101,6 +101,28 @@ nav {
   padding: 0 0 80px;
 }
 
+/* ---- GRIDSTACK v10 COLUMN BUG FIX ----
+   v10 CSS는 12-column만 포함. 2/6-column CSS가 없어서 width 0px 버그 발생.
+   아래에 2-column, 6-column 규칙 수동 추가. */
+
+/* 2-column grid (모바일) */
+.gs-2 > .grid-stack-item { width: 50% }
+.gs-2 > .grid-stack-item[gs-w="2"] { width: 100% }
+.gs-2 > .grid-stack-item[gs-x="1"] { left: 50% }
+
+/* 6-column grid (태블릿) */
+.gs-6 > .grid-stack-item { width: 16.6667% }
+.gs-6 > .grid-stack-item[gs-w="2"] { width: 33.3333% }
+.gs-6 > .grid-stack-item[gs-w="3"] { width: 50% }
+.gs-6 > .grid-stack-item[gs-w="4"] { width: 66.6667% }
+.gs-6 > .grid-stack-item[gs-w="5"] { width: 83.3333% }
+.gs-6 > .grid-stack-item[gs-w="6"] { width: 100% }
+.gs-6 > .grid-stack-item[gs-x="1"] { left: 16.6667% }
+.gs-6 > .grid-stack-item[gs-x="2"] { left: 33.3333% }
+.gs-6 > .grid-stack-item[gs-x="3"] { left: 50% }
+.gs-6 > .grid-stack-item[gs-x="4"] { left: 66.6667% }
+.gs-6 > .grid-stack-item[gs-x="5"] { left: 83.3333% }
+
 /* ---- GRIDSTACK OVERRIDES ---- */
 .grid-stack > .grid-stack-item > .grid-stack-item-content {
   border: none;
@@ -752,48 +774,27 @@ function toggleDarkMode() {
 }
 
 // ---- RESPONSIVE ----
-// gridstack v10 CSS는 12-column 전용 → column() 변경하면 width 0px 버그
-// 해결: column 항상 12 유지, gs-w 값만 변경
+// v10 CSS 12-column 전용 버그 → 2/6-column CSS를 위에서 수동 추가했으므로
+// grid.column(2/6/12) 정상 사용 가능
 var mqMobile = window.matchMedia('(max-width: 768px)');
 var mqTablet = window.matchMedia('(min-width: 769px) and (max-width: 1199px)');
 
-// 데스크톱 원본 저장
-document.querySelectorAll('.grid-stack-item').forEach(function(item) {
-  item.dataset.dw = item.getAttribute('gs-w');
-  item.dataset.dh = item.getAttribute('gs-h');
-});
-
 function handleResponsive() {
-  var items = document.querySelectorAll('.grid-stack-item');
-
   if (mqMobile.matches) {
-    // 모바일: 큰 카드 풀폭(12), 작은 카드 반폭(6) — nevflynn.com 모바일과 동일
+    // 모바일 2열: 큰 카드(gs-w≥6) 풀폭, 작은 카드 반폭
+    grid.column(2);
     grid.cellHeight(200);
     grid.disable();
-    items.forEach(function(item) {
-      var ow = parseInt(item.dataset.dw);
-      grid.update(item, { w: ow >= 6 ? 12 : 6 });
-    });
-    grid.compact();
   } else if (mqTablet.matches) {
-    // 태블릿: 큰 카드 풀폭(12), 작은 카드 반폭(6)
+    // 태블릿 6열
+    grid.column(6);
     grid.cellHeight(260);
     if (!isLocked) grid.enable();
-    items.forEach(function(item) {
-      var ow = parseInt(item.dataset.dw);
-      grid.update(item, { w: ow >= 6 ? 12 : 6 });
-    });
-    grid.compact();
   } else {
-    // 데스크톱: 원본 복원
+    // 데스크톱 12열
+    grid.column(12);
     grid.cellHeight(280);
     if (!isLocked) grid.enable();
-    items.forEach(function(item) {
-      grid.update(item, {
-        w: parseInt(item.dataset.dw),
-        h: parseInt(item.dataset.dh)
-      });
-    });
   }
 }
 mqMobile.addEventListener('change', handleResponsive);
