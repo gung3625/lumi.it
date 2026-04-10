@@ -102,40 +102,28 @@ nav {
 }
 
 /* ---- GRIDSTACK v10 COLUMN BUG FIX ----
-   v10 CSS는 12-column만 포함. 다른 column 수 CSS 수동 추가.
-   클래스(.gs-N) + 속성([gs-column="N"]) 양쪽 모두 커버 */
+   v10 CSS에는 .gs-12와 .gs-1만 포함.
+   grid.column(2) / grid.column(6) 호출 시 .gs-2 / .gs-6 클래스가
+   컨테이너에 추가되지만 대응 CSS가 없어 width 0px 발생.
+   아래에 .gs-2, .gs-6 규칙 추가로 근본 수정. */
 
-/* 2-column grid (모바일) */
-.gs-2 > .grid-stack-item,
-.grid-stack[gs-column="2"] > .grid-stack-item { width: 50% }
-.gs-2 > .grid-stack-item[gs-w="2"],
-.grid-stack[gs-column="2"] > .grid-stack-item[gs-w="2"] { width: 100% }
-.gs-2 > .grid-stack-item[gs-x="1"],
-.grid-stack[gs-column="2"] > .grid-stack-item[gs-x="1"] { left: 50% }
+/* 2-column (모바일) */
+.gs-2 > .grid-stack-item { width: 50% }
+.gs-2 > .grid-stack-item[gs-w="2"] { width: 100% }
+.gs-2 > .grid-stack-item[gs-x="1"] { left: 50% }
 
-/* 6-column grid (태블릿) */
-.gs-6 > .grid-stack-item,
-.grid-stack[gs-column="6"] > .grid-stack-item { width: 16.6667% }
-.gs-6 > .grid-stack-item[gs-w="2"],
-.grid-stack[gs-column="6"] > .grid-stack-item[gs-w="2"] { width: 33.3333% }
-.gs-6 > .grid-stack-item[gs-w="3"],
-.grid-stack[gs-column="6"] > .grid-stack-item[gs-w="3"] { width: 50% }
-.gs-6 > .grid-stack-item[gs-w="4"],
-.grid-stack[gs-column="6"] > .grid-stack-item[gs-w="4"] { width: 66.6667% }
-.gs-6 > .grid-stack-item[gs-w="5"],
-.grid-stack[gs-column="6"] > .grid-stack-item[gs-w="5"] { width: 83.3333% }
-.gs-6 > .grid-stack-item[gs-w="6"],
-.grid-stack[gs-column="6"] > .grid-stack-item[gs-w="6"] { width: 100% }
-.gs-6 > .grid-stack-item[gs-x="1"],
-.grid-stack[gs-column="6"] > .grid-stack-item[gs-x="1"] { left: 16.6667% }
-.gs-6 > .grid-stack-item[gs-x="2"],
-.grid-stack[gs-column="6"] > .grid-stack-item[gs-x="2"] { left: 33.3333% }
-.gs-6 > .grid-stack-item[gs-x="3"],
-.grid-stack[gs-column="6"] > .grid-stack-item[gs-x="3"] { left: 50% }
-.gs-6 > .grid-stack-item[gs-x="4"],
-.grid-stack[gs-column="6"] > .grid-stack-item[gs-x="4"] { left: 66.6667% }
-.gs-6 > .grid-stack-item[gs-x="5"],
-.grid-stack[gs-column="6"] > .grid-stack-item[gs-x="5"] { left: 83.3333% }
+/* 6-column (태블릿) */
+.gs-6 > .grid-stack-item { width: 16.6667% }
+.gs-6 > .grid-stack-item[gs-x="1"] { left: 16.6667% }
+.gs-6 > .grid-stack-item[gs-w="2"] { width: 33.3333% }
+.gs-6 > .grid-stack-item[gs-x="2"] { left: 33.3333% }
+.gs-6 > .grid-stack-item[gs-w="3"] { width: 50% }
+.gs-6 > .grid-stack-item[gs-x="3"] { left: 50% }
+.gs-6 > .grid-stack-item[gs-w="4"] { width: 66.6667% }
+.gs-6 > .grid-stack-item[gs-x="4"] { left: 66.6667% }
+.gs-6 > .grid-stack-item[gs-w="5"] { width: 83.3333% }
+.gs-6 > .grid-stack-item[gs-x="5"] { left: 83.3333% }
+.gs-6 > .grid-stack-item[gs-w="6"] { width: 100% }
 
 /* ---- GRIDSTACK OVERRIDES ---- */
 .grid-stack > .grid-stack-item > .grid-stack-item-content {
