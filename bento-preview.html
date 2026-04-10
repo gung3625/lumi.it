@@ -785,27 +785,53 @@ function toggleDarkMode() {
 }
 
 // ---- RESPONSIVE ----
-// v10 CSS 12-column 전용 버그 → 2/6-column CSS를 위에서 수동 추가했으므로
-// grid.column(2/6/12) 정상 사용 가능
+// v10 column CSS 버그 → generateGridstackColumnCSS()로 해결 완료
+// grid.column() 후 gridstack이 gs-w를 비례 축소하므로
+// 큰 카드(데스크톱 gs-w=6)는 수동으로 풀폭 복원 필요
 var mqMobile = window.matchMedia('(max-width: 768px)');
 var mqTablet = window.matchMedia('(min-width: 769px) and (max-width: 1199px)');
 
+// 데스크톱 원본 저장
+document.querySelectorAll('.grid-stack-item').forEach(function(item) {
+  item.dataset.dw = item.getAttribute('gs-w');
+  item.dataset.dh = item.getAttribute('gs-h');
+});
+
 function handleResponsive() {
+  var items = document.querySelectorAll('.grid-stack-item');
+
   if (mqMobile.matches) {
-    // 모바일 2열: 큰 카드(gs-w≥6) 풀폭, 작은 카드 반폭
+    // 모바일 2열: nevflynn.com 모바일과 동일
+    // 데스크톱 gs-w=6 → 풀폭(2), gs-w=3 → 반폭(1)
     grid.column(2);
     grid.cellHeight(200);
     grid.disable();
+    items.forEach(function(item) {
+      var ow = parseInt(item.dataset.dw);
+      grid.update(item, { w: ow >= 6 ? 2 : 1 });
+    });
+    grid.compact();
   } else if (mqTablet.matches) {
-    // 태블릿 6열
+    // 태블릿 6열: 큰 카드 풀폭, 작은 카드 반폭
     grid.column(6);
     grid.cellHeight(260);
     if (!isLocked) grid.enable();
+    items.forEach(function(item) {
+      var ow = parseInt(item.dataset.dw);
+      grid.update(item, { w: ow >= 6 ? 6 : 3 });
+    });
+    grid.compact();
   } else {
-    // 데스크톱 12열
+    // 데스크톱: 원본 복원
     grid.column(12);
     grid.cellHeight(280);
     if (!isLocked) grid.enable();
+    items.forEach(function(item) {
+      grid.update(item, {
+        w: parseInt(item.dataset.dw),
+        h: parseInt(item.dataset.dh)
+      });
+    });
   }
 }
 mqMobile.addEventListener('change', handleResponsive);
