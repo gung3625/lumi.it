@@ -813,19 +813,22 @@ function handleResponsive() {
     grid.column(2);
     grid.cellHeight(200);
     grid.disable();
+    // 컬러 비주얼 카드(.card-visual)만 반폭, 나머지 풀폭
+    // nevflynn.com: Bio·Map·Spotify·Blog·Toggle·Newsletter = 풀폭
+    //              Project(초록·핑크)·Twitter·IG = 반폭 (2열 나란히)
     items.forEach(function(item) {
-      var ow = parseInt(item.dataset.dw);
-      grid.update(item, { w: ow >= 6 ? 2 : 1 });
+      var isVisual = item.querySelector('.card-visual') !== null;
+      grid.update(item, { w: isVisual ? 1 : 2 });
     });
     grid.compact();
   } else if (mqTablet.matches) {
-    // 태블릿 6열: 큰 카드 풀폭, 작은 카드 반폭
+    // 태블릿 6열: 큰 카드 풀폭, 비주얼 카드 반폭
     grid.column(6);
     grid.cellHeight(260);
     if (!isLocked) grid.enable();
     items.forEach(function(item) {
-      var ow = parseInt(item.dataset.dw);
-      grid.update(item, { w: ow >= 6 ? 6 : 3 });
+      var isVisual = item.querySelector('.card-visual') !== null;
+      grid.update(item, { w: isVisual ? 3 : 6 });
     });
     grid.compact();
   } else {
