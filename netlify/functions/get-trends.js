@@ -49,6 +49,8 @@ exports.handler = async (event) => {
   const params = new URLSearchParams(event.rawQuery || '');
   const rawCategory = (params.get('category') || 'cafe').trim();
   const scope = params.get('scope') || '';  // 'domestic', 'global', or '' (default=combined)
+  const fromDate = params.get('from') || '';  // YYYY-MM-DD
+  const toDate = params.get('to') || '';      // YYYY-MM-DD
   const knownCategories = ['cafe', 'food', 'beauty', 'flower', 'fashion', 'fitness', 'pet', 'interior', 'education', 'laundry', 'studio'];
 
   // 카테고리 별칭 매핑 (다양한 입력을 표준 키로 변환)
@@ -85,6 +87,62 @@ exports.handler = async (event) => {
       siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
       token: process.env.NETLIFY_TOKEN,
     });
+
+    // from + to 있으면 날짜 범위 히스토리 조회
+    if (fromDate && toDate) {
+      const fromTs = new Date(fromDate).getTime();
+      const toTs = new Date(toDate).getTime();
+      if (isNaN(fromTs) || isNaN(toTs)) {
+        return {
+          statusCode: 400, headers: CORS,
+          body: JSON.stringify({ error: 'from/to 날짜 형식이 올바르지 않습니다. YYYY-MM-DD 형식을 사용하세요.' }),
+        };
+      }
+
+      // scope 기반 prefix 결정
+      let prefix;
+      if (scope === 'domestic') prefix = `l30d-domestic:${storeKey}:`;
+      else if (scope === 'global') prefix = `l30d-global:${storeKey}:`;
+      else prefix = `l30d:${storeKey}:`;
+
+      const listResult = await store.list({ prefix });
+      const blobs = (listResult && listResult.blobs) ? listResult.blobs : [];
+
+      // 날짜 범위 필터링 후 데이터 조회
+      const inRange = blobs.filter(b => {
+        const match = b.key.match(/:(\d{4}-\d{2}-\d{2})$/);
+        if (!match) return false;
+        const ts = new Date(match[1]).getTime();
+        return ts >= fromTs && ts <= toTs;
+      }).sort((a, b) => {
+        const da = a.key.match(/:(\d{4}-\d{2}-\d{2})$/)[1];
+        const db = b.key.match(/:(\d{4}-\d{2}-\d{2})$/)[1];
+        return da.localeCompare(db);
+      });
+
+      const history = [];
+      for (const blob of inRange) {
+        try {
+          const raw = await store.get(blob.key);
+          if (raw) {
+            const dateMatch = blob.key.match(/:(\d{4}-\d{2}-\d{2})$/);
+            history.push({ date: dateMatch ? dateMatch[1] : null, data: JSON.parse(raw) });
+          }
+        } catch(e) {}
+      }
+
+      return {
+        statusCode: 200, headers: CORS,
+        body: JSON.stringify({
+          category: storeKey,
+          categoryLabel: label,
+          scope: scope || 'combined',
+          from: fromDate,
+          to: toDate,
+          history,
+        }),
+      };
+    }
 
     // scope=domestic 또는 scope=global → GPT 분류 결과 반환
     if (scope === 'domestic' || scope === 'global') {
