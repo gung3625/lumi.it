@@ -88,6 +88,7 @@ exports.handler = async (event) => {
     }
 
     // GPT 분류 결과: 국내 트렌드 (현재→prev 백업 후 저장)
+    const allDomesticKeywords = [];
     if (body.domestic && typeof body.domestic === 'object') {
       for (const [category, data] of Object.entries(body.domestic)) {
         try {
@@ -97,14 +98,31 @@ exports.handler = async (event) => {
         const payload = JSON.stringify(data);
         await store.set('l30d-domestic:' + category, payload);
         await store.set('l30d-domestic:' + category + ':' + dateStr, payload);
+        // 종합 트렌드용 수집
+        if (data.keywords && Array.isArray(data.keywords)) {
+          data.keywords.forEach(k => allDomesticKeywords.push({ ...k, bizCategory: category }));
+        }
+      }
+      // 종합 국내 트렌드 저장 (업종별 상위 키워드 합산, 점수순 정렬)
+      if (allDomesticKeywords.length > 0) {
+        allDomesticKeywords.sort((a, b) => (b.score || 0) - (a.score || 0));
+        const allDomesticData = { keywords: allDomesticKeywords.slice(0, 20), updatedAt, source: 'gpt-classified-all' };
+        const allPayload = JSON.stringify(allDomesticData);
+        try {
+          const cur = await store.get('l30d-domestic:all');
+          if (cur) await store.set('l30d-domestic-prev:all', cur);
+        } catch(e) {}
+        await store.set('l30d-domestic:all', allPayload);
+        await store.set('l30d-domestic:all:' + dateStr, allPayload);
       }
       // l30d-domestic 날짜별 키 cleanup (best-effort)
-      for (const category of Object.keys(body.domestic)) {
+      for (const category of [...Object.keys(body.domestic), 'all']) {
         cleanupOldKeys(store, 'l30d-domestic:' + category + ':').catch(() => {});
       }
     }
 
     // GPT 분류 결과: 해외 트렌드 (현재→prev 백업 후 저장)
+    const allGlobalKeywords = [];
     if (body.global && typeof body.global === 'object') {
       for (const [category, data] of Object.entries(body.global)) {
         try {
@@ -114,9 +132,25 @@ exports.handler = async (event) => {
         const payload = JSON.stringify(data);
         await store.set('l30d-global:' + category, payload);
         await store.set('l30d-global:' + category + ':' + dateStr, payload);
+        // 종합 트렌드용 수집
+        if (data.keywords && Array.isArray(data.keywords)) {
+          data.keywords.forEach(k => allGlobalKeywords.push({ ...k, bizCategory: category }));
+        }
+      }
+      // 종합 해외 트렌드 저장
+      if (allGlobalKeywords.length > 0) {
+        allGlobalKeywords.sort((a, b) => (b.score || 0) - (a.score || 0));
+        const allGlobalData = { keywords: allGlobalKeywords.slice(0, 20), updatedAt, source: 'gpt-classified-all' };
+        const allPayload = JSON.stringify(allGlobalData);
+        try {
+          const cur = await store.get('l30d-global:all');
+          if (cur) await store.set('l30d-global-prev:all', cur);
+        } catch(e) {}
+        await store.set('l30d-global:all', allPayload);
+        await store.set('l30d-global:all:' + dateStr, allPayload);
       }
       // l30d-global 날짜별 키 cleanup (best-effort)
-      for (const category of Object.keys(body.global)) {
+      for (const category of [...Object.keys(body.global), 'all']) {
         cleanupOldKeys(store, 'l30d-global:' + category + ':').catch(() => {});
       }
     }

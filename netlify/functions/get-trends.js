@@ -14,6 +14,7 @@ const CATEGORY_LABELS = {
   laundry: '세탁·수선',
   studio: '사진·스튜디오',
   other: '일반',
+  all: '종합',
 };
 
 // 월별 시즌 키워드 (last30days 데이터 없을 때 최소 fallback)
@@ -51,7 +52,7 @@ exports.handler = async (event) => {
   const scope = params.get('scope') || '';  // 'domestic', 'global', or '' (default=combined)
   const fromDate = params.get('from') || '';  // YYYY-MM-DD
   const toDate = params.get('to') || '';      // YYYY-MM-DD
-  const knownCategories = ['cafe', 'food', 'beauty', 'flower', 'fashion', 'fitness', 'pet', 'interior', 'education', 'laundry', 'studio'];
+  const knownCategories = ['cafe', 'food', 'beauty', 'flower', 'fashion', 'fitness', 'pet', 'interior', 'education', 'laundry', 'studio', 'all'];
 
   // 카테고리 별칭 매핑 (다양한 입력을 표준 키로 변환)
   const CATEGORY_ALIAS = {
@@ -172,12 +173,14 @@ exports.handler = async (event) => {
               else if (prevIdx > i) rankChange = prevIdx - i;
               else if (prevIdx < i) rankChange = prevIdx - i;
               else rankChange = 0;
-              return {
+              const item = {
                 keyword: kw,
                 source: k.source || 'gpt-classified',
                 rank: i + 1,
                 rankChange,
               };
+              if (k.bizCategory) item.bizCategory = k.bizCategory;
+              return item;
             }),
             insight: scopeData.insight || '',
             season: scope === 'domestic' ? season : undefined,
