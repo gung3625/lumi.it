@@ -4,31 +4,32 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>lumi — 사진 한 장이면 인스타 캡션·게시 자동</title>
-<link href="https://cdn.jsdelivr.net/npm/gridstack@10/dist/gridstack.min.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@800&display=swap" rel="stylesheet">
+<!-- React 18 UMD -->
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<!-- react-grid-layout UMD (same lib as nevflynn.com) - CSS inlined, no CDN stylesheet -->
+<script src="https://unpkg.com/react-grid-layout@1.5.0/dist/react-grid-layout.min.js"></script>
 <style>
-/* ============================================
-   NEVFLYNN.COM EXACT COPY — LUMI BENTO GRID
-   ============================================ */
-
-/* Reset */
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
-/* Page */
-html {
-  background: #f7f2f2;
-  scroll-behavior: smooth;
-  scrollbar-width: none;
+@font-face {
+  font-family: 'Jua';
+  src: url('/assets/BMJUA.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
 }
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { background: #fdf2f4; scrollbar-width: none; }
 html::-webkit-scrollbar { display: none; }
-
 body {
-  font-family: -apple-system, "system-ui", "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+  font-family: 'Jua', -apple-system, BlinkMacSystemFont, sans-serif;
   color: #0d1117;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
-/* ---- NAV (nevflynn exact) ---- */
+/* ---- NAV ---- */
 nav {
   display: flex;
   align-items: center;
@@ -37,416 +38,683 @@ nav {
   margin: 0 auto;
   padding: 40px 16px 24px;
 }
-
 .nav-logo {
-  font-size: 32px;
-  font-weight: 700;
-  font-family: Georgia, "Times New Roman", serif;
-  background: linear-gradient(135deg, #e8628a 0%, #d4a0c0 20%, #c4a4d4 40%, #a0c4a8 60%, #7ec8c8 80%, #98d0ff 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  text-decoration: none;
-  letter-spacing: -0.5px;
-  user-select: none;
+  font-size: 42px; font-weight: 800;
+  font-family: 'Nunito', sans-serif;
+  background: linear-gradient(90deg, #FF6B8B 0%, #DDA0DD 50%, #EDD080 85%, #DABA65 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text; text-decoration: none; letter-spacing: -0.5px; user-select: none;
 }
-
-.nav-pills {
-  display: flex;
-  gap: 2px;
-  background: rgba(0, 0, 0, 0.04);
-  padding: 4px;
-  border-radius: 23px;
-}
-
+.nav-pills { display: flex; gap: 2px; background: rgba(0,0,0,0.04); padding: 4px; border-radius: 23px; }
 .nav-pill {
-  border-radius: 50px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 32px;
-  padding: 0 16px;
-  color: #0d1117;
-  font-size: 14px;
-  font-weight: 400;
-  cursor: pointer;
-  background: none;
-  border: none;
-  font-family: inherit;
-  white-space: nowrap;
-  transition: opacity 0.3s, background 0.2s;
+  border-radius: 50px; display: flex; align-items: center; justify-content: center;
+  height: 32px; padding: 0 16px; color: #0d1117; font-size: 14px; font-weight: 400;
+  cursor: pointer; background: none; border: none; font-family: inherit;
+  white-space: nowrap; transition: opacity 0.3s, background 0.2s;
 }
-
-@media (hover: hover) {
-  .nav-pill:hover { opacity: 0.5; transition: opacity 0.25s; }
-}
-
-.nav-pill.active {
-  background: rgba(0, 0, 0, 0.06);
-}
-
-.nav-contact {
-  font-size: 16px;
-  font-weight: 400;
-  color: #000;
-  text-decoration: none;
-  transition: opacity 0.3s;
-}
+@media (hover: hover) { .nav-pill:hover { opacity: 0.5; } }
+.nav-pill.active { background: rgba(0,0,0,0.06); }
+.nav-contact { font-size: 16px; font-weight: 400; color: #000; text-decoration: none; transition: opacity 0.3s; }
 .nav-contact:hover { opacity: 0.5; }
 
-/* ---- GRID CONTAINER ---- */
-.grid-wrap {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 0 80px;
-}
+/* ---- GRID: nevflynn.com CSS 통째 복사 ---- */
 
-/* ---- GRIDSTACK OVERRIDES ---- */
-.grid-stack > .grid-stack-item > .grid-stack-item-content {
-  border: none;
-  box-shadow: none;
-  background: transparent;
-  border-radius: 32px;
-  overflow: hidden;
-  transition: 0.25s;
-}
-.grid-stack > .grid-stack-item > .grid-stack-item-content:hover {
-  cursor: grab;
-  box-shadow: rgba(100, 100, 111, 0.1) 0px 5px 24px 0px;
-}
-.grid-stack > .grid-stack-item > .grid-stack-item-content:active {
-  cursor: grabbing;
-}
+/* RGL base CSS (from nevflynn.com 0fe8871e.css) */
+.react-grid-layout { position: relative; transition: height 0.2s; }
+.react-grid-item { transition: left 0.2s, top; }
+.react-grid-item img { pointer-events: none; user-select: none; }
+.react-grid-item.cssTransforms { transition-property: transform; }
+.react-grid-item.resizing { z-index: 1; will-change: width, height; }
+.react-grid-item.react-draggable-dragging { transition: none; z-index: 3; will-change: transform; }
+.react-grid-item.dropping { visibility: hidden; }
+.react-grid-item.react-grid-placeholder { background: transparent; opacity: 0; transition-duration: 0.1s; z-index: 2; user-select: none; }
+.react-grid-item > .react-resizable-handle { position: absolute; width: 20px; height: 20px; }
+.react-resizable-hide > .react-resizable-handle { display: none; }
 
-/* Drag placeholder */
-.grid-stack > .grid-stack-item.grid-stack-placeholder > .placeholder-content {
-  background: rgba(200, 80, 122, 0.1);
-  border: 2px dashed #C8507A;
-  border-radius: 32px;
-}
+/* nevflynn styled-components: .gjQtXz (ItemGrab) */
+.react-grid-item { overflow: hidden; border-radius: 32px; user-select: none; }
+.react-grid-item:hover { cursor: grab; }
+.react-grid-item:active { cursor: grabbing; }
 
-/* Dragging item */
-.grid-stack > .grid-stack-item.ui-draggable-dragging > .grid-stack-item-content {
-  box-shadow: rgba(0, 0, 0, 0.15) 0 20px 60px !important;
-  z-index: 100;
-}
+/* nevflynn styled-components: .fubZvu (Item) */
+.react-grid-item { transition: 0.25s; }
+.react-grid-item:hover { box-shadow: rgba(100, 100, 111, 0.1) 0px 5px 24px 0px; }
 
-.grid-stack-item {
-  transition: left 0.3s, top 0.3s;
-}
-.grid-stack-item.ui-draggable-dragging {
-  transition: none;
-}
+/* nevflynn styled-components: .iXylth (Grid container) — THIS IS THE KEY */
+.grid-wrap { max-width: 1200px; position: relative; margin: -16px auto 0; padding-bottom: 80px; }
+.grid-wrap .react-grid-item { transition: 500ms; will-change: transform; }
+.grid-wrap .react-grid-item.react-draggable-dragging { transition: none; }
+.grid-wrap .react-grid-item.react-grid-placeholder { opacity: 0.3; background: rgba(200,200,200,.3) !important; border-radius: 32px !important; }
 
-/* Grid height transition */
-.grid-stack {
-  transition: height 0.3s;
-}
+@media (max-width: 1200px) { .grid-wrap { max-width: 800px; } }
+@media (max-width: 799px) { .grid-wrap { max-width: 375px; } }
+@media (max-width: 374px) { .grid-wrap { max-width: 320px; } }
 
-/* ---- BENTO CARD BASE ---- */
+/* ---- BENTO CARD ---- */
 .bento-card {
-  height: 100%;
-  width: 100%;
-  border-radius: 32px;
-  overflow: hidden;
-  box-shadow: transparent 0 0 0 2px inset;
-  transition: all 0.25s;
+  height: 100%; width: 100%; border-radius: 32px; overflow: hidden;
 }
 
-/* White text card */
-.card-text {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: flex-start;
-  background: #fff;
+/* RESIZE HANDLE */
+.react-grid-item > .react-resizable-handle {
+  position:absolute; width:28px; height:28px; bottom:10px; right:10px;
+  cursor:se-resize; z-index:5;
+  background:rgba(255,255,255,.9); border-radius:14px;
+  display:flex; align-items:center; justify-content:center;
+  animation: arrowPulse 2.5s ease-in-out infinite;
 }
-.card-text.pad-bio { padding: 36px 42px; }
+.react-grid-item > .react-resizable-handle::after {
+  content:''; position:absolute;
+  width:10px; height:10px;
+  border-right:2.5px solid #0d1117; border-bottom:2.5px solid #0d1117;
+  border-radius:0 0 2px 0;
+}
+body.dark-mode .react-grid-item > .react-resizable-handle {
+  background:rgba(30,30,30,.9);
+}
+body.dark-mode .react-grid-item > .react-resizable-handle::after {
+  border-right-color:#f0f2f8; border-bottom-color:#f0f2f8;
+}
+.react-resizable-hide > .react-resizable-handle { display:none !important; }
+
+/* RESPONSIVE CARD CONTENT — scales with card size */
+.card-responsive {
+  container-type: size;
+}
+
+/* Upload card responsive */
+@container (min-height: 400px) {
+  .upload-right { justify-content:space-evenly !important; gap:18px !important; }
+  .upload-prompt { font-size:16px !important; }
+  .upload-prompt strong { font-size:32px !important; }
+  .upload-btn { font-size:18px !important; padding:18px 40px !important; }
+  .upload-comment { font-size:15px !important; padding:16px 20px !important; rows:4 !important; min-height:80px !important; }
+  .upload-submit { font-size:16px !important; padding:16px !important; }
+  .upload-schedule-select { font-size:14px !important; padding:14px 16px !important; }
+  .upload-schedule-input { font-size:14px !important; padding:14px 16px !important; }
+  .upload-preview-item { height:90px !important; }
+  .upload-toggle-row { font-size:13px !important; }
+  .upload-toggle { width:42px !important; height:24px !important; }
+  .upload-toggle::after { width:20px !important; height:20px !important; }
+  .upload-toggle.on::after { left:20px !important; }
+}
+@container (min-height: 600px) {
+  .upload-right { gap:24px !important; }
+  .upload-comment { min-height:120px !important; font-size:16px !important; }
+  .upload-submit { font-size:18px !important; padding:20px !important; border-radius:18px !important; }
+  .upload-schedule-select { font-size:15px !important; padding:16px 18px !important; }
+  .upload-btn { font-size:20px !important; padding:22px 48px !important; border-radius:28px !important; }
+}
+@container (min-width: 600px) {
+  .upload-right { padding:32px 56px 32px 32px !important; gap:18px !important; }
+}
+@container (min-width: 800px) {
+  .upload-right { padding:40px 64px 40px 40px !important; gap:22px !important; }
+  .upload-prompt strong { font-size:36px !important; }
+}
+
+/* Demo animation card responsive */
+@container (min-height: 400px) {
+  .demo-caption-text { font-size:22px !important; }
+  .demo-label { font-size:20px !important; }
+  .demo-tag { font-size:18px !important; padding:10px 22px !important; }
+  .demo-check-circle { width:110px !important; height:110px !important; }
+  .demo-check-circle svg { width:55px !important; height:55px !important; }
+  .demo-ig-feed { width:70% !important; }
+  .demo-ig-name { font-size:14px !important; }
+  .demo-ig-caption-preview { font-size:13px !important; }
+}
+@container (min-width: 400px) {
+  .demo-caption-text { font-size:24px !important; }
+  .demo-label { font-size:22px !important; }
+  .demo-tags { gap:14px !important; }
+}
+
+/* Trend card responsive */
+@container (min-height: 400px) {
+  .trend-label { font-size:16px !important; }
+  .trend-text { font-size:14px !important; }
+  .trend-tag { font-size:12px !important; }
+  .trend-rank { font-size:13px !important; }
+  .trend-delta { font-size:12px !important; }
+  .trend-item { padding:10px 14px !important; border-radius:14px !important; }
+}
+@container (min-width: 400px) {
+  .trend-header { padding:24px 28px 14px !important; }
+  .trend-list { padding:0 28px 20px !important; }
+  .trend-label { font-size:18px !important; }
+  .trend-tab { font-size:13px !important; padding:6px 14px !important; }
+}
+
+.card-text {
+  display: flex; flex-direction: column; justify-content: space-between;
+  align-items: flex-start; background: #fff;
+}
+.card-text.pad-bio {
+  padding: 0; overflow:hidden !important; position:relative;
+  background: linear-gradient(90deg, #fff 0%, #fff 100%);
+  box-shadow: 0 4px 24px rgba(0,0,0,.06), 0 0 0 2px rgba(255,255,255,.8);
+}
+.card-text.pad-bio::before {
+  content:''; position:absolute; inset:0; z-index:0;
+  background: linear-gradient(
+    90deg,
+    rgba(255,182,193,.23) 0%,
+    rgba(186,218,255,.23) 20%,
+    rgba(221,160,221,.18) 40%,
+    rgba(255,218,185,.18) 60%,
+    rgba(186,255,201,.15) 80%,
+    rgba(255,182,193,.23) 100%
+  );
+  background-size: 200% 100%;
+  animation: auroraFlow 8s ease-in-out infinite;
+}
+@keyframes auroraFlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.card-text.pad-bio > * { position:relative; z-index:1; }
+
+body.dark-mode .card-text.pad-bio { background:#1c1c1e; }
+body.dark-mode .card-text.pad-bio::before {
+  background: linear-gradient(
+    90deg,
+    rgba(255,107,139,.12) 0%,
+    rgba(100,149,237,.12) 20%,
+    rgba(186,85,211,.1) 40%,
+    rgba(255,165,0,.08) 60%,
+    rgba(46,139,87,.08) 80%,
+    rgba(255,107,139,.12) 100%
+  );
+  background-size: 200% 100%;
+}
 .card-text.pad-spot { padding: 32px 38px; }
 .card-text.pad-blog { padding: 40px 44px; }
 .card-text.pad-news { padding: 40px 44px; }
 
-/* Colored visual card (center content) */
-.card-visual {
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
+.card-visual { display: flex; justify-content: center; align-items: center; position: relative; height: 100%; width: 100%; }
+.card-visual.bg-blue { background: linear-gradient(135deg, #feda75 0%, #fa7e1e 20%, #d62976 45%, #962fbf 70%, #4f5bd5 100%); }
+.card-visual.bg-pink { background: #f5b5c8; }
+.card-visual.bg-green {
+  background: #5bbfa5;
+  overflow: hidden;
   position: relative;
 }
-.card-visual.bg-blue { background: #98d0ff; }
-.card-visual.bg-pink { background: #f5b5c8; }
-.card-visual.bg-green { background: #6ed2b7; }
+.card-visual.bg-green::before {
+  content:''; position:absolute; bottom:-20%; right:-10%; width:70%; height:60%;
+  background:#f5b5c8; border-radius:50%;
+}
+.card-visual.bg-green::after {
+  content:''; position:absolute; top:-15%; left:-10%; width:50%; height:45%;
+  background:rgba(255,255,255,.08); border-radius:50%;
+}
 .card-visual.bg-yellow { background: #f5d89a; }
 
-/* ---- CARD: BIO (card 0) ---- */
-.bio-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  width: 100%;
+/* BIO */
+.bio-top { display: flex; justify-content: space-between; align-items: flex-start; width: 100%; }
+.bio-avatar { width: 200px; height: 200px; object-fit: contain; margin-bottom: -80px; margin-left: -50px; margin-top: -60px; }
+.bio-text { font-size: 16px; line-height: 1.5; color: #0d1117; }
+.bio-text .bio-name { font-size: 40px; font-weight: 400; letter-spacing: -1px; }
+.bio-name-lumi { font-size: 28px; font-weight: 400; letter-spacing: -0.5px; color: #0d1117; }
+.bio-desc { font-size: 15px; font-weight: 400; color: rgba(13,17,23,.5); line-height: 1.7; }
+
+/* UPLOAD CARD */
+.upload-wrap { display:flex; align-items:center; width:100%; height:100%; position:relative; }
+.upload-left { flex:0 0 35%; display:flex; align-items:center; justify-content:center; overflow:visible; position:relative; padding:8px; }
+.upload-left.hidden { display:none; }
+.upload-right { flex:1; display:flex; flex-direction:column; justify-content:center; align-items:flex-start; gap:14px; padding:24px 48px 24px 24px; overflow:hidden; min-height:0; }
+.upload-lumi { width:100%; height:auto; object-fit:contain; cursor:pointer; transition:transform .2s; }
+.upload-lumi { animation: lumiIdle 3s ease-in-out infinite; }
+.upload-lumi:hover { transform:scale(1.05); }
+.upload-lumi.surprised { animation: lumiFloat 2s ease-in-out infinite; }
+@keyframes lumiIdle {
+  0% { transform:translateY(0); }
+  50% { transform:translateY(-6px); }
+  100% { transform:translateY(0); }
 }
-.bio-avatar {
-  width: 75px;
-  height: 105px;
-  object-fit: contain;
-}
-.bio-text {
-  font-size: 16px;
-  line-height: 1.5;
-  color: #0d1117;
-}
-.bio-text .bio-name {
-  font-size: 40px;
-  font-weight: 400;
-  letter-spacing: -1px;
+@keyframes lumiFloat {
+  0% { transform:translateY(0) scale(1); }
+  50% { transform:translateY(-12px) scale(1.03); }
+  100% { transform:translateY(0) scale(1); }
 }
 
-/* Toggle Lockdown button (nevflynn exact) */
+/* 루미 후광 효과 */
+.lumi-aura {
+  position:absolute; top:50%; left:50%;
+  width:200px; height:200px;
+  transform:translate(-50%,-50%);
+  border-radius:50%;
+  background:radial-gradient(circle, rgba(255,107,139,.6) 0%, rgba(221,160,221,.4) 40%, transparent 70%);
+  filter:blur(8px);
+  animation: auraPulse 2.5s ease-in-out infinite;
+  pointer-events:none;
+}
+@keyframes auraPulse {
+  0% { transform:translate(-50%,-50%) scale(.8); opacity:.4; }
+  50% { transform:translate(-50%,-50%) scale(1.15); opacity:.8; }
+  100% { transform:translate(-50%,-50%) scale(.8); opacity:.4; }
+}
+body.dark-mode .lumi-aura {
+  background:radial-gradient(circle, rgba(255,107,139,.5) 0%, rgba(221,160,221,.3) 40%, transparent 70%);
+}
+.upload-prompt { font-size:14px; color:rgba(0,0,0,.4); text-align:center; word-break:keep-all; }
+.upload-prompt strong { color:#0d1117; font-weight:400; }
+.upload-btn {
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  padding:14px 36px; width:100%;
+  border-radius:24px; border:none; background:linear-gradient(135deg,#FF6B8B,#DDA0DD);
+  color:#fff; font-family:inherit; font-size:16px; cursor:pointer;
+  transition:transform .2s, box-shadow .2s;
+}
+.upload-btn:hover { transform:scale(1.04); box-shadow:0 4px 16px rgba(200,80,122,.25); }
+.upload-btn:active { transform:scale(.96); }
+
+/* 상태 전환 애니메이션 */
+.upload-right > * { animation: uploadFadeIn .4s ease-out; }
+@keyframes uploadFadeIn {
+  from { opacity:0; transform:translateY(8px); }
+  to { opacity:1; transform:translateY(0); }
+}
+.upload-thumb-wrap { display:flex; align-items:center; gap:8px; width:100%; flex-wrap:wrap; }
+.upload-thumb {
+  width:48px; height:48px; border-radius:10px; overflow:hidden; flex-shrink:0;
+  box-shadow:0 3px 12px rgba(0,0,0,.1);
+}
+.upload-thumb img { width:100%; height:100%; object-fit:cover; }
+.upload-thumb-more {
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(0,0,0,.06); font-size:12px; color:rgba(0,0,0,.4); font-weight:600;
+}
+body.dark-mode .upload-thumb-more { background:rgba(255,255,255,.08); color:rgba(255,255,255,.4); }
+.upload-preview-grid {
+  display:grid; grid-template-columns:repeat(5,1fr); gap:5px; width:100%;
+}
+.upload-preview-item {
+  height:70px; border-radius:8px; overflow:hidden;
+}
+.upload-preview-item img { width:100%; height:100%; object-fit:cover; }
+.upload-preview-more {
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(0,0,0,.05); font-size:12px; color:rgba(0,0,0,.4); font-weight:600;
+  border-radius:8px; height:70px;
+}
+body.dark-mode .upload-preview-more { background:rgba(255,255,255,.06); color:rgba(255,255,255,.4); }
+.upload-thumb-info { flex:1; }
+.upload-thumb-name { font-size:12px; color:#0d1117; margin-bottom:2px; }
+.upload-thumb-size { font-size:10px; color:rgba(0,0,0,.3); }
+.upload-comment {
+  width:100%; padding:12px 16px; border-radius:16px;
+  border:none; background:linear-gradient(135deg, rgba(255,107,139,.04), rgba(221,160,221,.04));
+  box-shadow:inset 0 0 0 1.5px rgba(200,80,122,.1);
+  font-family:inherit; font-size:13px; color:#0d1117; resize:none;
+  outline:none; transition:box-shadow .2s;
+}
+.upload-comment:focus { box-shadow:inset 0 0 0 1.5px rgba(200,80,122,.35); }
+.upload-comment::placeholder { color:rgba(0,0,0,.2); }
+.upload-submit {
+  width:100%; padding:12px; border-radius:14px; border:none;
+  background:#0d1117; color:#fff; font-family:inherit; font-size:14px;
+  cursor:pointer; transition:transform .2s;
+}
+.upload-schedule-row {
+  display:flex; align-items:center; gap:8px; width:100%;
+}
+.upload-schedule-select {
+  flex:1; padding:10px 14px; border-radius:16px;
+  border:none; background:linear-gradient(135deg, rgba(255,107,139,.06), rgba(221,160,221,.06));
+  font-family:inherit; font-size:12px; color:#0d1117; font-weight:500;
+  outline:none; cursor:pointer; appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5' fill='none' stroke='%23C8507A' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 12px center;
+  box-shadow:inset 0 0 0 1.5px rgba(200,80,122,.12);
+  transition:box-shadow .2s;
+}
+.upload-schedule-select:focus { box-shadow:inset 0 0 0 1.5px rgba(200,80,122,.35); }
+body.dark-mode .upload-schedule-select {
+  background:linear-gradient(135deg, rgba(255,107,139,.08), rgba(221,160,221,.08));
+  box-shadow:inset 0 0 0 1.5px rgba(200,80,122,.15);
+  color:#f0f2f8;
+}
+.upload-schedule-custom {
+  display:flex; gap:8px; width:100%;
+}
+.upload-schedule-input {
+  flex:1; padding:10px 14px; border-radius:16px;
+  border:none; background:linear-gradient(135deg, rgba(255,107,139,.06), rgba(221,160,221,.06));
+  font-family:inherit; font-size:12px; color:#0d1117; font-weight:500;
+  outline:none; cursor:pointer; appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5' fill='none' stroke='%23C8507A' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 12px center;
+  box-shadow:inset 0 0 0 1.5px rgba(200,80,122,.12);
+  transition:box-shadow .2s;
+}
+.upload-schedule-input:focus { box-shadow:inset 0 0 0 1.5px rgba(200,80,122,.35); }
+body.dark-mode .upload-schedule-input {
+  background:linear-gradient(135deg, rgba(255,107,139,.08), rgba(221,160,221,.08));
+  box-shadow:inset 0 0 0 1.5px rgba(200,80,122,.15);
+  color:#f0f2f8;
+}
+.upload-submit:hover { transform:scale(1.02); }
+.upload-submit:active { transform:scale(.97); }
+
+/* 다시 쓰기 토글 */
+.upload-toggle-row {
+  display:flex; align-items:center; justify-content:flex-end;
+  font-size:11px; color:rgba(0,0,0,.4); gap:6px;
+  width:100%; cursor:pointer; background:none; border:none;
+  font-family:inherit; padding:0;
+}
+.upload-toggle {
+  width:36px; height:20px; border-radius:10px; border:none;
+  background:rgba(0,0,0,.1); position:relative; cursor:pointer;
+  transition:background .2s; flex-shrink:0;
+}
+.upload-toggle.on { background:linear-gradient(135deg,#FF6B8B,#DDA0DD); }
+.upload-toggle::after {
+  content:''; position:absolute; top:2px; left:2px;
+  width:16px; height:16px; border-radius:50%; background:#fff;
+  transition:left .2s;
+}
+.upload-toggle.on::after { left:18px; }
+body.dark-mode .upload-toggle-row { color:rgba(240,242,248,.4); }
+body.dark-mode .upload-toggle { background:rgba(255,255,255,.1); }
+
+body.dark-mode .upload-prompt { color:rgba(240,242,248,.4); }
+body.dark-mode .upload-prompt strong { color:#f0f2f8; }
+body.dark-mode .upload-comment { background:linear-gradient(135deg, rgba(255,107,139,.06), rgba(221,160,221,.06)); box-shadow:inset 0 0 0 1.5px rgba(200,80,122,.12); color:#f0f2f8; }
+body.dark-mode .upload-comment:focus { box-shadow:inset 0 0 0 1.5px rgba(200,80,122,.35); }
+body.dark-mode .upload-comment::placeholder { color:rgba(255,255,255,.2); }
+body.dark-mode .upload-thumb-name { color:#f0f2f8; }
+body.dark-mode .upload-thumb-size { color:rgba(255,255,255,.3); }
+body.dark-mode .upload-submit { background:#f0f2f8; color:#0d1117; }
+
 .btn-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 36px;
-  padding: 0 12px;
-  border: none;
-  border-radius: 18px;
-  background: transparent;
-  box-shadow: rgb(240, 242, 248) 0 0 0 2px;
-  color: #0d1117;
-  font-size: 13px;
-  font-weight: 400;
-  cursor: pointer;
-  transition: box-shadow 0.2s ease-out;
-  font-family: inherit;
+  display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px;
+  border: none; border-radius: 18px; background: rgba(255,255,255,.9);
+  color: #0d1117; font-size: 13px;
+  font-weight: 400; cursor: pointer; font-family: inherit;
+  text-decoration: none;
+  animation: arrowPulse 2.5s ease-in-out infinite;
 }
-.btn-pill:hover {
-  box-shadow: rgb(240, 242, 248) 0 0 0 5px;
-}
+.btn-pill:hover { transform: scale(1.1); }
 .btn-pill svg { width: 16px; height: 16px; }
 
-/* ---- CARD: MAP (card 1) ---- */
-.card-map {
-  background: #fff;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: relative;
+/* MAP */
+.card-map { background: #ffffff; display: flex; justify-content: center; align-items: center; position: relative; }
+.map-avatar { width: 120px; height: 120px; border-radius: 50%; background: linear-gradient(135deg, #FF6B8B, #DDA0DD, #EDD080); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.map-avatar img { width: 80px; height: 80px; object-fit: contain; }
+.map-line { position: absolute; bottom: 42%; left: 50%; width: 40px; height: 2px; background: #0d1117; transform: translateX(-50%); }
+
+/* PROJECT */
+.card-project { position: relative; overflow: hidden; }
+.card-project .project-label { position: absolute; top: 20px; left: 24px; font-size: 14px; font-weight: 500; color: rgba(0,0,0,.6); z-index: 2; }
+
+/* LUMI CAPTION DEMO ANIMATION */
+.caption-demo { position:absolute; inset:0; overflow:hidden; }
+.demo-scene {
+  position:absolute; inset:0; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; opacity:0; padding:24px;
 }
-.map-avatar {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: #e8edf2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-.map-avatar img { width: 44px; height: 44px; }
-.map-line {
-  position: absolute;
-  bottom: 42%;
-  left: 50%;
-  width: 40px;
-  height: 2px;
-  background: #0d1117;
-  transform: translateX(-50%);
+.demo-scene:nth-child(1) { animation: scenePlay 18s infinite 0s; }
+.demo-scene:nth-child(2) { animation: scenePlay 18s infinite 3s; }
+.demo-scene:nth-child(3) { animation: scenePlay 18s infinite 6s; }
+.demo-scene:nth-child(4) { animation: scenePlay 18s infinite 9s; }
+.demo-scene:nth-child(5) { animation: scenePlay 18s infinite 12s; }
+.demo-scene:nth-child(6) { animation: scenePlay 18s infinite 15s; }
+@keyframes scenePlay {
+  0% { opacity:0; transform:translateY(16px); }
+  3% { opacity:1; transform:translateY(0); }
+  14% { opacity:1; transform:translateY(0); }
+  18% { opacity:0; transform:translateY(-16px); }
+  100% { opacity:0; }
 }
 
-/* ---- CARD: CASE STUDY / PROJECT (card 2, 5) ---- */
-.card-project {
-  position: relative;
-  overflow: hidden;
+/* scene 1: photo upload — 사진 드롭 애니메이션 */
+.demo-scene.scene-photo {
+  background: linear-gradient(135deg,#a8e6cf 0%,#88d8b0 50%,#dcedc1 100%);
 }
-.card-project .project-label {
-  position: absolute;
-  top: 20px;
-  left: 24px;
-  font-size: 14px;
-  font-weight: 500;
-  color: rgba(0,0,0,.6);
-  z-index: 2;
+.demo-photo-drop {
+  width: 80%; aspect-ratio: 3/4; border-radius: 16px; overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0,0,0,.15);
+  animation: photoDrop 18s infinite;
 }
-.card-project .project-mockup {
-  width: 70%;
-  max-height: 80%;
-  object-fit: contain;
-  position: absolute;
-  bottom: -5%;
-  right: -5%;
-  border-radius: 12px;
-  box-shadow: 0 8px 30px rgba(0,0,0,.08);
+.demo-photo-drop img { width:100%; height:100%; object-fit:cover; }
+body.dark-mode .demo-photo-drop img { filter: grayscale(1) brightness(.8); }
+@keyframes photoDrop {
+  0% { opacity:0; transform:scale(1.15); }
+  2.5% { opacity:1; transform:scale(1); }
+  14% { opacity:1; transform:scale(1); }
+  18% { opacity:0; }
+  100% { opacity:0; }
 }
-/* Arrow link at bottom-left of project cards */
-.card-arrow {
-  position: absolute;
-  bottom: 16px;
-  left: 16px;
-  width: 36px;
-  height: 36px;
-  border-radius: 18px;
-  background: rgba(255,255,255,.9);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-  transition: transform 0.2s;
-  z-index: 3;
+
+/* scene 2: scanning — 카드 전체에 스캔 효과 */
+.demo-scene.scene-scan {
+  background: linear-gradient(135deg,#a8e6cf 0%,#88d8b0 50%,#dcedc1 100%);
 }
+.demo-scan-line {
+  position:absolute; left:0; right:0; height:4px;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,.95) 50%, transparent 100%);
+  box-shadow: 0 0 20px 6px rgba(255,255,255,.5);
+  animation: scanMove 1.8s ease-in-out infinite;
+}
+@keyframes scanMove { 0%{top:5%} 50%{top:90%} 100%{top:5%} }
+.demo-scan-dots {
+  position:absolute; bottom:20%; left:0; right:0; display:flex; justify-content:center; gap:8px;
+}
+.demo-scan-dot {
+  width:10px; height:10px; border-radius:50%; background:rgba(255,255,255,.7);
+  animation: dotPulse 1.2s ease-in-out infinite;
+}
+.demo-scan-dot:nth-child(2) { animation-delay:.2s; }
+.demo-scan-dot:nth-child(3) { animation-delay:.4s; }
+@keyframes dotPulse { 0%,100%{opacity:.3;transform:scale(.8)} 50%{opacity:1;transform:scale(1.3)} }
+
+/* scene 3: caption typing */
+.demo-caption-text {
+  font-size:18px; color:#fff; text-align:center; line-height:1.8;
+  max-width:90%; text-shadow: 0 1px 8px rgba(0,0,0,.1);
+  word-break:keep-all;
+  letter-spacing:-.2px;
+}
+.demo-typing::after {
+  content:'|'; animation: blink .6s steps(2) infinite; margin-left:2px;
+  color:rgba(255,255,255,.7);
+}
+@keyframes blink { 0%{opacity:1} 100%{opacity:0} }
+
+/* scene 4: hashtags */
+.demo-tags {
+  display:flex; flex-wrap:wrap; gap:10px; justify-content:center; max-width:90%; padding:0 8px;
+}
+.demo-tag {
+  font-size:15px; color:#fff; background:rgba(255,255,255,.22); padding:8px 18px;
+  border-radius:20px; backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+  font-weight:500; animation: tagPop .5s cubic-bezier(.34,1.56,.64,1) backwards;
+}
+.demo-tag:nth-child(1) { animation-delay:0s; }
+.demo-tag:nth-child(2) { animation-delay:.12s; }
+.demo-tag:nth-child(3) { animation-delay:.24s; }
+.demo-tag:nth-child(4) { animation-delay:.36s; }
+.demo-tag:nth-child(5) { animation-delay:.48s; }
+@keyframes tagPop { 0%{opacity:0;transform:scale(.4) translateY(10px)} 100%{opacity:1;transform:scale(1) translateY(0)} }
+
+/* scene 5: done */
+.demo-check-circle {
+  width:88px; height:88px; border-radius:50%; background:rgba(255,255,255,.22);
+  display:flex; align-items:center; justify-content:center;
+  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+}
+.demo-check-circle svg { width:44px; height:44px; }
+.demo-check-path {
+  stroke-dasharray: 30; stroke-dashoffset: 30;
+  animation: drawCheck .7s cubic-bezier(.25,.46,.45,.94) .3s forwards;
+}
+@keyframes drawCheck { to { stroke-dashoffset:0; } }
+
+/* scene 6: instagram feed preview */
+.demo-ig-feed {
+  width:80%; background:rgba(255,255,255,.12); border-radius:12px;
+  overflow:hidden; backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+}
+.demo-ig-header {
+  display:flex; align-items:center; gap:8px; padding:10px 12px;
+}
+.demo-ig-avatar {
+  width:28px; height:28px; border-radius:50%;
+  background: linear-gradient(135deg, #FF6B8B, #DDA0DD);
+}
+.demo-ig-name { font-size:12px; color:#fff; font-weight:600; }
+.demo-ig-image {
+  width:100%; aspect-ratio:1; overflow:hidden;
+}
+.demo-ig-image img { width:100%; height:100%; object-fit:cover; }
+body.dark-mode .demo-ig-image img { filter: grayscale(1) brightness(.8); }
+.demo-ig-actions {
+  display:flex; gap:12px; padding:10px 12px;
+}
+.demo-ig-actions svg { width:18px; height:18px; }
+.demo-ig-caption-preview {
+  padding:0 12px 10px; font-size:11px; color:rgba(255,255,255,.7); line-height:1.5;
+}
+.demo-ig-likes {
+  padding:0 12px 4px; font-size:11px; color:#fff; font-weight:600;
+}
+
+.demo-label {
+  font-size:16px; color:#fff; font-weight:600; margin-top:14px;
+  text-shadow: 0 1px 8px rgba(0,0,0,.08); letter-spacing:.2px;
+}
+.card-arrow { position: absolute; bottom: 16px; left: 16px; width: 36px; height: 36px; border-radius: 18px; background: rgba(255,255,255,.9); display: flex; align-items: center; justify-content: center; text-decoration: none; z-index: 3; animation: arrowPulse 2.5s ease-in-out infinite; }
 .card-arrow:hover { transform: scale(1.1); }
 .card-arrow svg { width: 14px; height: 14px; color: #0d1117; }
+@keyframes arrowPulse {
+  0% { transform:translateY(0); box-shadow:0 0 0 0 rgba(200,80,122,.3); }
+  50% { transform:translateY(-3px); box-shadow:0 0 12px 4px rgba(200,80,122,.15); }
+  100% { transform:translateY(0); box-shadow:0 0 0 0 rgba(200,80,122,.3); }
+}
 
-/* ---- CARD: SPOTIFY (card 3) ---- */
-.spot-icon {
-  width: 40px;
-  height: 40px;
-}
+/* SPOTIFY */
+.spot-icon { width: 40px; height: 40px; }
 .spot-icon svg { width: 100%; height: 100%; fill: #1db954; }
-.spot-status {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  color: #6ed2b7;
-}
-.spot-bars {
-  display: flex;
-  gap: 2px;
-  align-items: flex-end;
-  height: 14px;
-}
-.spot-bars span {
-  width: 3px;
-  background: #6ed2b7;
-  border-radius: 1px;
-  animation: playing 0.85s ease-in-out infinite;
-}
+.spot-status { display: flex; align-items: center; gap: 6px; font-size: 14px; color: #6ed2b7; }
+.spot-bars { display: flex; gap: 2px; align-items: flex-end; height: 14px; }
+.spot-bars span { width: 3px; background: #6ed2b7; border-radius: 1px; animation: playing 0.85s ease-in-out infinite; }
 .spot-bars span:nth-child(2) { animation-duration: 1.26s; }
 .spot-bars span:nth-child(3) { animation-duration: 0.62s; }
-
-@keyframes playing {
-  0%, 100% { height: 3px; }
-  50% { height: 12px; }
-}
-
+@keyframes playing { 0%,100% { height: 3px; } 50% { height: 12px; } }
 .spot-title { font-size: 24px; font-weight: 400; color: #0d1117; }
 .spot-artist { font-size: 15px; font-weight: 400; color: #0d1117; }
-.spot-bottom {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  width: 100%;
+.spot-bottom { display: flex; justify-content: space-between; align-items: flex-end; width: 100%; }
+
+/* TREND CARD */
+.card-trend {
+  background: #9DCBF5; overflow:hidden; position:relative;
+}
+.card-trend::before {
+  content:''; position:absolute; top:-25%; right:-15%; width:70%; height:55%;
+  background:#F7B9CB; border-radius:50%;
+}
+body.dark-mode .card-trend { background:#1c1c1e; }
+body.dark-mode .card-trend::before { display:none; }
+.trend-wrap { position:absolute; inset:0; overflow:hidden; display:flex; flex-direction:column; z-index:1; }
+.trend-header { padding:20px 24px 12px; display:flex; align-items:center; justify-content:space-between; z-index:2; }
+.trend-label { font-size:14px; font-weight:500; color:rgba(0,0,0,.6); }
+.trend-tabs { display:flex; gap:4px; }
+.trend-tab { font-size:11px; padding:4px 10px; border-radius:12px; border:none; font-family:inherit; cursor:pointer; }
+.trend-tab.active { background:rgba(0,0,0,.08); color:#0d1117; font-weight:600; }
+.trend-tab:not(.active) { background:transparent; color:rgba(0,0,0,.35); }
+.trend-list { flex:1; padding:0 24px 16px; overflow:hidden; position:relative; }
+.trend-track { position:relative; width:100%; height:100%; }
+.trend-item {
+  position:absolute; left:0; right:0;
+  display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:12px;
+  background:rgba(255,255,255,.65);
+  transition: top .6s cubic-bezier(.4,0,.2,1);
+}
+@keyframes trendSlideIn { from { opacity:0; transform:translateX(-16px); } to { opacity:1; transform:translateX(0); } }
+.trend-rank { font-size:11px; font-weight:600; color:rgba(0,0,0,.3); min-width:16px; }
+.trend-info { flex:1; min-width:0; }
+.trend-text { font-size:12px; color:#0d1117; font-weight:400; line-height:1.3; }
+.trend-tag { font-size:10px; color:rgba(0,0,0,.35); }
+.trend-delta {
+  font-size:10px; font-weight:600; padding:3px 8px; border-radius:8px;
+  display:flex; align-items:center; gap:2px; white-space:nowrap;
+}
+.trend-delta.up { color:#15803d; background:rgba(34,197,94,.15); }
+.trend-delta.down { color:#dc2626; background:rgba(239,68,68,.12); }
+.trend-delta.same { color:rgba(255,255,255,.25); background:transparent; }
+.trend-delta svg { width:8px; height:8px; }
+.trend-cta-bar {
+  padding:12px 24px; padding-bottom:32px; z-index:2;
+  background:linear-gradient(transparent, rgba(157,203,245,.9) 40%);
+}
+.trend-cta-msg { font-size:12px; color:rgba(0,0,0,.5); text-align:center; line-height:1.5; word-break:keep-all; }
+.trend-cta-btn {
+  display:block; margin:8px auto 0; padding:6px 16px; border-radius:14px;
+  background:#0d1117; color:#fff; font-size:12px; font-family:inherit;
+  border:none; cursor:pointer;
 }
 
-/* ---- CARD: TWITTER (card 4) ---- */
-.twitter-icon {
-  width: 80px;
-  height: 80px;
-  color: #fff;
+body.dark-mode .trend-label { color:rgba(240,242,248,.5); }
+body.dark-mode .trend-tab.active { background:rgba(255,255,255,.1); color:#f0f2f8; }
+body.dark-mode .trend-tab:not(.active) { color:rgba(255,255,255,.3); }
+body.dark-mode .trend-item { background:rgba(255,255,255,.06) !important; }
+body.dark-mode .trend-rank { color:rgba(255,255,255,.3); }
+body.dark-mode .trend-text { color:#f0f2f8; }
+body.dark-mode .trend-tag { color:rgba(255,255,255,.3); }
+body.dark-mode .trend-delta.up { color:#4ade80; background:rgba(34,197,94,.12); }
+body.dark-mode .trend-delta.down { color:#f87171; background:rgba(239,68,68,.1); }
+body.dark-mode .trend-delta.same { color:rgba(255,255,255,.2); }
+body.dark-mode .trend-cta-bar { background:linear-gradient(transparent, rgba(28,28,30,.95) 40%); }
+body.dark-mode .trend-cta-msg { color:rgba(255,255,255,.5); }
+body.dark-mode .trend-cta-btn { background:#f0f2f8; color:#0d1117; }
+
+/* TWITTER */
+.twitter-icon { width: 80px; height: 80px; color: #fff; }
+
+/* BLOG */
+.blog-title { font-size: 24px; font-weight: 400; line-height: 32px; color: #0d1117; margin-bottom: 8px; }
+.blog-desc { font-size: 15px; color: rgba(13,17,35,.6); line-height: 1.5; }
+.blog-bottom { display: flex; justify-content: space-between; align-items: flex-end; width: 100%; }
+.blog-date { font-size: 14px; color: rgba(13,17,35,.4); }
+
+/* INSTAGRAM BADGE */
+.ig-badge {
+  background: rgba(255,255,255,0.25); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  border-radius: 20px; padding: 5px 16px; display: flex; align-items: center; gap: 6px;
+  color: #fff; font-size: 12px; font-weight: 600;
 }
 
-/* ---- CARD: BLOG (card 6) ---- */
-.blog-title {
-  font-size: 24px;
-  font-weight: 400;
-  line-height: 32px;
-  color: #0d1117;
-  margin-bottom: 8px;
+/* DARK TOGGLE — nevflynn style sliding switch */
+.card-dark-toggle { background: #fff; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: background 0.3s; }
+.toggle-track {
+  width: 80px; height: 48px; border-radius: 40px; display: flex; align-items: center;
+  position: relative; background: #f0f2f8; box-shadow: transparent 0 0 0 2px inset;
+  transition: background 0.4s;
 }
-.blog-desc {
-  font-size: 15px;
-  color: rgba(13,17,35,.6);
-  line-height: 1.5;
-}
-.blog-bottom {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  width: 100%;
-}
-.blog-date {
-  font-size: 14px;
-  color: rgba(13,17,35,.4);
-}
-
-/* ---- CARD: DARK TOGGLE (card 8) ---- */
-.card-dark-toggle {
-  background: #fff;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+.toggle-ball {
+  width: 36px; height: 36px; border-radius: 30px; background: #0d1117;
+  position: absolute; left: 6px; display: flex; align-items: center; justify-content: center;
+  transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1), background 0.4s, transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
-  transition: background 0.3s;
 }
-.dark-toggle-icon {
-  width: 48px;
-  height: 48px;
-  background: #0d1117;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s;
-  position: relative;
-}
-.dark-toggle-icon::after {
-  content: '';
-  position: absolute;
-  width: 20px;
-  height: 20px;
-  background: #fff;
-  border-radius: 50%;
-  top: 6px;
-  right: 6px;
-}
+.toggle-ball .toggle-icon { font-size: 18px; line-height: 1; transition: opacity 0.3s; }
+body.dark-mode .toggle-track { background: #2c2c2e; }
+body.dark-mode .toggle-ball { left: 38px; background: #f0f2f8; transform: rotate(360deg); }
 
-/* ---- CARD: NEWSLETTER (card 9) ---- */
-.news-title {
-  font-size: 24px;
-  font-weight: 400;
-  color: #0d1117;
-  margin-bottom: 8px;
-}
-.news-desc {
-  font-size: 15px;
-  color: rgba(13,17,35,.6);
-  line-height: 1.5;
-  margin-bottom: 24px;
-}
-.news-input {
-  width: 100%;
-  border: none;
-  border-bottom: 2px solid #f0f2f8;
-  background: transparent;
-  font-size: 16px;
-  font-family: inherit;
-  color: #0d1117;
-  padding: 8px 0;
-  outline: none;
-  margin-bottom: 20px;
-  transition: border-color 0.2s;
-}
+/* NEWSLETTER */
+.news-title { font-size: 24px; font-weight: 400; color: #0d1117; margin-bottom: 8px; }
+.news-desc { font-size: 15px; color: rgba(13,17,35,.6); line-height: 1.5; margin-bottom: 24px; }
+.news-input { width: 100%; border: none; border-bottom: 2px solid #f0f2f8; background: transparent; font-size: 16px; font-family: inherit; color: #0d1117; padding: 8px 0; outline: none; margin-bottom: 20px; transition: border-color 0.2s; }
 .news-input:focus { border-color: #C8507A; }
 .news-input::placeholder { color: rgba(13,17,35,.3); }
-.news-bottom {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-}
-.news-sub-info {
-  font-size: 14px;
-  color: rgba(13,17,35,.4);
-}
-.news-sub-info .sub-num {
-  font-size: 24px;
-  font-weight: 400;
-  color: #0d1117;
-  margin-left: 4px;
-}
+.news-bottom { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+.news-sub-info { font-size: 14px; color: rgba(13,17,35,.4); }
+.news-sub-info .sub-num { font-size: 24px; font-weight: 400; color: #0d1117; margin-left: 4px; }
 
-/* ---- RESPONSIVE ---- */
+/* RESPONSIVE */
 @media (max-width: 768px) {
   nav { padding: 24px 16px 16px; }
   .nav-pills { overflow-x: auto; scrollbar-width: none; }
@@ -454,60 +722,156 @@ nav {
   .nav-pill { font-size: 13px; padding: 0 12px; height: 28px; }
   .nav-logo { font-size: 26px; }
 }
-@media (max-width: 480px) {
-  .nav-contact { display: none; }
-}
+@media (max-width: 480px) { .nav-contact { display: none; } }
 
-/* ---- DARK MODE ---- */
+/* DARK MODE */
 body.dark-mode { background: #111; color: #f0f2f8; }
-
 body.dark-mode .nav-pill { color: #f0f2f8; }
 body.dark-mode .nav-pills { background: rgba(255,255,255,.08); }
 body.dark-mode .nav-pill.active { background: rgba(255,255,255,.12); }
 body.dark-mode .nav-contact { color: #f0f2f8; }
-
 body.dark-mode .card-text { background: #1c1c1e; }
 body.dark-mode .card-map { background: #1c1c1e; }
+.card-logo .logo-dark { display:none; }
+.card-logo .logo-light { display:block; }
+body.dark-mode .card-logo .logo-dark { display:block; }
+body.dark-mode .card-logo .logo-light { display:none; }
 body.dark-mode .card-dark-toggle { background: #1c1c1e; }
-
-body.dark-mode .bio-text,
-body.dark-mode .bio-name,
-body.dark-mode .spot-title,
-body.dark-mode .spot-artist,
-body.dark-mode .blog-title,
-body.dark-mode .news-title { color: #f0f2f8; }
-
-body.dark-mode .blog-desc,
-body.dark-mode .news-desc { color: rgba(240,242,248,.6); }
-body.dark-mode .blog-date,
-body.dark-mode .news-sub-info { color: rgba(240,242,248,.4); }
-
-body.dark-mode .btn-pill { color: #f0f2f8; box-shadow: rgba(255,255,255,.12) 0 0 0 2px; }
-body.dark-mode .btn-pill:hover { box-shadow: rgba(255,255,255,.12) 0 0 0 5px; }
-
+body.dark-mode .bio-text, body.dark-mode .bio-name,
+body.dark-mode .bio-name-lumi,
+body.dark-mode .spot-title, body.dark-mode .spot-artist,
+body.dark-mode .blog-title, body.dark-mode .news-title { color: #f0f2f8; }
+body.dark-mode .bio-desc,
+body.dark-mode .blog-desc, body.dark-mode .news-desc { color: rgba(240,242,248,.6); }
+body.dark-mode .blog-date, body.dark-mode .news-sub-info { color: rgba(240,242,248,.4); }
+body.dark-mode .btn-pill { color: #f0f2f8; background: rgba(30,30,30,.9); }
+body.dark-mode .btn-pill:hover { transform: scale(1.1); }
 body.dark-mode .news-input { color: #f0f2f8; border-color: rgba(255,255,255,.12); }
 body.dark-mode .news-input::placeholder { color: rgba(255,255,255,.3); }
 body.dark-mode .news-input:focus { border-color: #C8507A; }
-
 body.dark-mode .card-arrow { background: rgba(30,30,30,.9); }
 body.dark-mode .card-arrow svg { color: #f0f2f8; }
+body.dark-mode .card-visual.bg-blue { background: #1c1c1e; }
+body.dark-mode .card-visual.bg-pink { background: #1c1c1e; }
+body.dark-mode .card-visual.bg-green { background: #1c1c1e; }
+body.dark-mode .card-visual.bg-green::before { background: transparent; }
+body.dark-mode .card-visual.bg-green::after { background: transparent; }
+body.dark-mode .demo-scene.scene-photo { background: #1c1c1e; }
+body.dark-mode .demo-scene.scene-scan { background: #1c1c1e; }
 
-body.dark-mode .dark-toggle-icon { background: #f0f2f8; }
-body.dark-mode .dark-toggle-icon::after { background: #1c1c1e; }
-
+body.dark-mode .card-visual.bg-yellow { background: #1c1c1e; }
+body.dark-mode .project-label { color: rgba(240,242,248,.6); }
+body.dark-mode .twitter-icon { color: #f0f2f8; }
 body.dark-mode .map-line { background: #f0f2f8; }
-body.dark-mode .map-avatar { background: #2c2c2e; }
+body.dark-mode .map-avatar { background: linear-gradient(135deg, #FF6B8B, #DDA0DD, #EDD080); }
+body.dark-mode .bento-card:hover { box-shadow: rgba(255,255,255,.05) 0px 5px 24px 0px; }
 
-body.dark-mode .grid-stack > .grid-stack-item > .grid-stack-item-content:hover {
-  box-shadow: rgba(255,255,255,.05) 0px 5px 24px 0px;
+/* RESET CARD */
+.reset-card {
+  background:#fff; cursor:pointer; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:14px; position:relative;
+  transition:background .3s;
 }
-
-/* ---- REDUCED MOTION ---- */
-@media (prefers-reduced-motion: reduce) {
-  .spot-bars span { animation: none; height: 6px; }
-  .grid-stack-item { transition: none; }
+.reset-blocks {
+  display:grid; grid-template-columns:repeat(3,1fr); gap:6px;
+  width:80px; height:56px;
 }
-
+.reset-block {
+  border-radius:6px; transition:all .5s cubic-bezier(.4,0,.2,1);
+}
+.rb-1 { background:#FF6B8B; transform:translate(-4px,-6px) rotate(-8deg); }
+.rb-2 { background:#DDA0DD; transform:translate(2px,5px) rotate(5deg); }
+.rb-3 { background:#9DCBF5; transform:translate(6px,-3px) rotate(12deg); }
+.rb-4 { background:#6ED2B7; transform:translate(-3px,4px) rotate(-5deg); }
+.rb-5 { background:#F5D89A; transform:translate(5px,-5px) rotate(10deg); }
+.rb-6 { background:#F5B5C8; transform:translate(-6px,2px) rotate(-12deg); }
+.reset-card:hover .rb-1,
+.reset-card:hover .rb-2,
+.reset-card:hover .rb-3,
+.reset-card:hover .rb-4,
+.reset-card:hover .rb-5,
+.reset-card:hover .rb-6 {
+  transform:translate(0,0) rotate(0deg);
+  border-radius:4px;
+}
+.reset-card:hover .rb-1 { background:#FF6B8B; }
+.reset-card:hover .rb-2 { background:#DDA0DD; }
+.reset-card:hover .rb-3 { background:#9DCBF5; }
+.reset-card:hover .rb-4 { background:#6ED2B7; }
+.reset-card:hover .rb-5 { background:#F5D89A; }
+.reset-card:hover .rb-6 { background:#F5B5C8; }
+.reset-label {
+  font-size:11px; color:rgba(0,0,0,.25); letter-spacing:.5px;
+  transition:color .3s;
+}
+.reset-card:hover .reset-label { color:rgba(0,0,0,.45); }
+body.dark-mode .reset-card { background:#1c1c1e; }
+body.dark-mode .reset-label { color:rgba(255,255,255,.2); }
+body.dark-mode .reset-card:hover .reset-label { color:rgba(255,255,255,.4); }
+/* SIGNUP GRID */
+.signup-grid-wrap{display:none;max-width:1200px;margin:0 auto;padding:24px;}
+.signup-grid-wrap.open{display:block;animation:suGridIn .4s ease-out;}
+@keyframes suGridIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.su-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+.su-card{background:#fff;border-radius:24px;padding:24px;transition:box-shadow .25s;position:relative;}
+.su-card:hover{box-shadow:rgba(100,100,111,.1) 0 5px 24px;}
+.su-card:nth-child(1){animation:suCardIn .4s ease-out 0s both}
+.su-card:nth-child(2){animation:suCardIn .4s ease-out .05s both}
+.su-card:nth-child(3){animation:suCardIn .4s ease-out .1s both}
+.su-card:nth-child(4){animation:suCardIn .4s ease-out .15s both}
+.su-card:nth-child(5){animation:suCardIn .4s ease-out .2s both}
+.su-card:nth-child(6){animation:suCardIn .4s ease-out .25s both}
+.su-card:nth-child(7){animation:suCardIn .4s ease-out .3s both}
+.su-card:nth-child(8){animation:suCardIn .4s ease-out .35s both}
+@keyframes suCardIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.su-label{font-size:11px;font-weight:600;color:rgba(0,0,0,.35);margin-bottom:5px;display:block;letter-spacing:.3px;}
+.su-input{width:100%;padding:11px 14px;border-radius:12px;border:1px solid rgba(0,0,0,.08);background:transparent;font-family:inherit;font-size:14px;color:#0d1117;outline:none;transition:border-color .2s;margin-bottom:10px;}
+.su-input:focus{border-color:rgba(0,0,0,.25);}
+.su-input::placeholder{color:rgba(0,0,0,.2);}
+.su-input-row{display:flex;gap:6px;align-items:center;margin-bottom:10px;}
+.su-input-row .su-input{flex:1;min-width:0;margin-bottom:0;}
+.su-select{width:100%;padding:11px 14px;border-radius:12px;border:1px solid rgba(0,0,0,.08);background:transparent;font-family:inherit;font-size:14px;color:#0d1117;outline:none;appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5' fill='none' stroke='%23999' stroke-width='1.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;margin-bottom:10px;}
+.su-select:focus{border-color:rgba(0,0,0,.25);}
+.su-btn{width:100%;padding:13px;border-radius:980px;border:none;background:#0d1117;color:#fff;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:transform .2s;}
+.su-btn:hover{transform:scale(1.02);}
+.su-btn-outline{width:100%;padding:13px;border-radius:980px;border:1px solid rgba(0,0,0,.15);background:transparent;color:#0d1117;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:transform .2s;margin-bottom:8px;}
+.su-btn-outline:hover{transform:scale(1.02);}
+.su-title{font-size:16px;font-weight:400;color:#0d1117;margin-bottom:12px;}
+.su-biz-grid{display:flex;flex-wrap:wrap;gap:5px;}
+.su-biz-item{display:flex;align-items:center;cursor:pointer;}
+.su-biz-item input{display:none;}
+.su-biz-item span{padding:7px 12px;border-radius:980px;font-size:12px;color:rgba(0,0,0,.45);border:1px solid rgba(0,0,0,.08);background:transparent;cursor:pointer;transition:all .2s;display:block;}
+.su-biz-item input:checked+span{background:#0d1117;color:#fff;border-color:#0d1117;}
+.su-agree label{display:flex;align-items:center;gap:8px;font-size:12px;color:rgba(0,0,0,.4);margin-bottom:6px;cursor:pointer;}
+.su-agree input{accent-color:#0d1117;width:15px;height:15px;flex-shrink:0;}
+.su-agree-all{font-size:13px;font-weight:700;color:#0d1117;padding:12px;background:rgba(0,0,0,.03);border-radius:12px;margin-bottom:8px;}
+.su-lumi-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;}
+.su-lumi-img{width:120px;height:120px;object-fit:contain;animation:lumiIdle 3s ease-in-out infinite;}
+.su-lumi-bubble{background:rgba(0,0,0,.04);border-radius:16px;padding:12px 18px;font-size:14px;color:rgba(0,0,0,.5);text-align:center;line-height:1.5;}
+.su-close{position:absolute;top:12px;right:12px;width:28px;height:28px;border-radius:14px;background:rgba(0,0,0,.06);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.su-close svg{width:10px;height:10px;stroke:#0d1117;stroke-width:2.5;}
+.su-submit-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;}
+.su-otp-area{display:none;margin-top:6px;}
+.su-otp-area.visible{display:block;}
+body.dark-mode .su-card{background:#1c1c1e;}
+body.dark-mode .su-card:hover{box-shadow:rgba(255,255,255,.05) 0 5px 24px;}
+body.dark-mode .su-label{color:rgba(240,242,248,.35);}
+body.dark-mode .su-input{border-color:rgba(255,255,255,.1);color:#f0f2f8;}
+body.dark-mode .su-input:focus{border-color:rgba(255,255,255,.25);}
+body.dark-mode .su-input::placeholder{color:rgba(255,255,255,.2);}
+body.dark-mode .su-select{border-color:rgba(255,255,255,.1);color:#f0f2f8;}
+body.dark-mode .su-btn{background:#f0f2f8;color:#0d1117;}
+body.dark-mode .su-btn-outline{border-color:rgba(255,255,255,.12);color:#f0f2f8;}
+body.dark-mode .su-title{color:#f0f2f8;}
+body.dark-mode .su-biz-item span{border-color:rgba(255,255,255,.1);color:rgba(240,242,248,.45);}
+body.dark-mode .su-biz-item input:checked+span{background:#f0f2f8;color:#0d1117;border-color:#f0f2f8;}
+body.dark-mode .su-agree label{color:rgba(240,242,248,.4);}
+body.dark-mode .su-agree input{accent-color:#f0f2f8;}
+body.dark-mode .su-agree-all{color:#f0f2f8;background:rgba(255,255,255,.04);}
+body.dark-mode .su-lumi-bubble{background:rgba(255,255,255,.06);color:rgba(240,242,248,.5);}
+body.dark-mode .su-close{background:rgba(255,255,255,.08);}
+body.dark-mode .su-close svg{stroke:#f0f2f8;}
+@media(max-width:768px){.su-grid{grid-template-columns:1fr;}.su-card{grid-column:auto!important;}}
 </style>
 </head>
 <body>
@@ -517,7 +881,33 @@ body.dark-mode .grid-stack > .grid-stack-item > .grid-stack-item-content:hover {
   }
 </script>
 
-<!-- NAV -->
+<div id="page-overlay" style="position:fixed;inset:0;z-index:9999;pointer-events:none;"></div>
+<script>
+(function(){
+  var overlay = document.getElementById('page-overlay');
+  var bg = document.body.classList.contains('dark-mode') ? '#111' : '#fdf2f4';
+  overlay.style.background = bg;
+  overlay.style.opacity = '1';
+  overlay.style.transition = 'opacity .4s ease-out';
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){ overlay.style.opacity = '0'; });
+  });
+
+  window.navigateOut = function(url) {
+    overlay.style.transition = 'opacity .3s ease-in';
+    overlay.style.opacity = '1';
+    setTimeout(function(){ window.location.href = url; }, 280);
+  };
+
+  window.addEventListener('pageshow', function(e) {
+    if (e.persisted) {
+      overlay.style.transition = 'opacity .4s ease-out';
+      overlay.style.opacity = '0';
+    }
+  });
+})();
+</script>
+
 <nav>
   <a class="nav-logo" href="/">lumi</a>
   <div class="nav-pills">
@@ -526,229 +916,693 @@ body.dark-mode .grid-stack > .grid-stack-item > .grid-stack-item-content:hover {
     <button class="nav-pill" onclick="filterGrid('feature', this)">기능</button>
     <button class="nav-pill" onclick="filterGrid('price', this)">요금</button>
   </div>
-  <a class="nav-contact" href="/beta">무료 시작</a>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <a class="nav-contact" href="/dashboard" style="opacity:.6;">로그인</a>
+    <a class="nav-contact" href="#" onclick="event.preventDefault();openSignupGrid();">회원가입</a>
+  </div>
 </nav>
 
-<!-- GRID -->
+
+
 <div class="grid-wrap">
-  <div class="grid-stack" id="bento-grid">
+  <div id="grid-root"></div>
+</div>
 
-    <!-- Card 0: Bio (2x1) -->
-    <div class="grid-stack-item" gs-x="0" gs-y="0" gs-w="6" gs-h="1" data-filter="all about">
-      <div class="grid-stack-item-content">
-        <div class="bento-card card-text pad-bio">
-          <div class="bio-top">
-            <img class="bio-avatar" src="/assets/lumi-character.png" alt="lumi 캐릭터">
-            <button class="btn-pill" onclick="toggleLockdown()">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              <span id="lockdown-label">Toggle Lockdown</span>
-            </button>
-          </div>
-          <p class="bio-text">
-            사진 한 장이면 AI가 <span class="bio-name">캡션</span>을 만들고, 해시태그를 달고, 인스타에 바로 올려줘요. 소상공인을 위한 인스타 자동화.
-          </p>
-        </div>
+<div class="signup-grid-wrap" id="signup-grid">
+  <div class="su-grid">
+    <!-- 카드 1: 루미 (col 1-2, row 1) -->
+    <div class="su-card" style="grid-column:1/3;">
+      <button class="su-close" onclick="closeSignupGrid()">
+        <svg viewBox="0 0 12 12" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="11" y2="11"/><line x1="11" y1="1" x2="1" y2="11"/></svg>
+      </button>
+      <div class="su-lumi-wrap">
+        <img class="su-lumi-img" src="/assets/lumi-character.png" alt="lumi">
+        <div class="su-lumi-bubble">반가워요! 같이 시작해볼까요?</div>
       </div>
     </div>
 
-    <!-- Card 1: Map/Avatar (1x1) -->
-    <div class="grid-stack-item" gs-x="6" gs-y="0" gs-w="3" gs-h="1" data-filter="all about">
-      <div class="grid-stack-item-content">
-        <div class="bento-card card-map">
-          <div class="map-avatar">
-            <img src="/assets/lumi-character.png" alt="lumi" style="width:44px;height:44px;border-radius:50%;">
-          </div>
-          <div class="map-line"></div>
-        </div>
+    <!-- 카드 2: 이메일 (col 3-4, row 1) -->
+    <div class="su-card" style="grid-column:3/5;">
+      <span class="su-label">이메일</span>
+      <div class="su-input-row">
+        <input type="text" class="su-input" placeholder="아이디">
+        <span style="color:rgba(0,0,0,.3);font-size:14px;flex-shrink:0;">@</span>
+        <select class="su-select" style="flex:1.2;min-width:0;margin-bottom:0;">
+          <option>gmail.com</option><option>naver.com</option><option>kakao.com</option>
+          <option>daum.net</option><option>nate.com</option><option>icloud.com</option>
+        </select>
+      </div>
+      <button class="su-btn-outline" onclick="document.getElementById('su-otp-area').classList.add('visible')">인증번호 받기</button>
+      <div class="su-otp-area" id="su-otp-area">
+        <input type="text" class="su-input" placeholder="인증번호 6자리" maxlength="6" style="letter-spacing:4px;text-align:center;">
+        <p style="font-size:11px;color:rgba(0,0,0,.35);margin-top:4px;">이메일을 못 받으셨나요? <button onclick="void(0)" style="background:none;border:none;color:rgba(200,80,122,.7);font-size:11px;cursor:pointer;text-decoration:underline;font-family:inherit;">재전송</button></p>
       </div>
     </div>
 
-    <!-- Card 2: Project 1 (1x2 tall) — 초록/민트 -->
-    <div class="grid-stack-item" gs-x="9" gs-y="0" gs-w="3" gs-h="2" data-filter="all feature">
-      <div class="grid-stack-item-content">
-        <div class="bento-card card-visual bg-green card-project">
-          <span class="project-label">AI 캡션</span>
-          <a class="card-arrow" href="#">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
-          </a>
-        </div>
+    <!-- 카드 3: 비밀번호 (col 1, row 2) -->
+    <div class="su-card">
+      <p class="su-title">비밀번호</p>
+      <span class="su-label">비밀번호</span>
+      <input type="password" class="su-input" placeholder="특수문자 포함 10자 이상">
+      <span class="su-label">비밀번호 확인</span>
+      <input type="password" class="su-input" placeholder="한 번 더 입력해주세요">
+    </div>
+
+    <!-- 카드 4: 매장 정보 (col 2, row 2) -->
+    <div class="su-card">
+      <p class="su-title">매장 정보</p>
+      <span class="su-label">대표님 성함</span>
+      <input type="text" class="su-input" placeholder="홍길동">
+      <span class="su-label">매장 이름</span>
+      <input type="text" class="su-input" placeholder="카페루미">
+    </div>
+
+    <!-- 카드 5: 연락처 (col 3, row 2) -->
+    <div class="su-card">
+      <p class="su-title">연락처</p>
+      <span class="su-label">인스타그램 아이디</span>
+      <input type="text" class="su-input" placeholder="lumi__it">
+      <span class="su-label">휴대폰 번호</span>
+      <input type="tel" class="su-input" placeholder="01012345678" inputmode="numeric">
+    </div>
+
+    <!-- 카드 6: 업종 (col 4, row 2) -->
+    <div class="su-card">
+      <p class="su-title">업종</p>
+      <div class="su-biz-grid">
+        <label class="su-biz-item"><input type="radio" name="su-biz" value="cafe" checked><span>카페</span></label>
+        <label class="su-biz-item"><input type="radio" name="su-biz" value="food"><span>음식점</span></label>
+        <label class="su-biz-item"><input type="radio" name="su-biz" value="beauty"><span>뷰티</span></label>
+        <label class="su-biz-item"><input type="radio" name="su-biz" value="flower"><span>꽃집</span></label>
+        <label class="su-biz-item"><input type="radio" name="su-biz" value="fashion"><span>패션</span></label>
+        <label class="su-biz-item"><input type="radio" name="su-biz" value="fitness"><span>피트니스</span></label>
+        <label class="su-biz-item"><input type="radio" name="su-biz" value="pet"><span>반려동물</span></label>
+        <label class="su-biz-item"><input type="radio" name="su-biz" value="interior"><span>인테리어</span></label>
+        <label class="su-biz-item"><input type="radio" name="su-biz" value="education"><span>교육</span></label>
+        <label class="su-biz-item"><input type="radio" name="su-biz" value="studio"><span>스튜디오</span></label>
       </div>
     </div>
 
-    <!-- Card 3: Spotify-style (1x1) — 재생 바 -->
-    <div class="grid-stack-item" gs-x="0" gs-y="1" gs-w="3" gs-h="1" data-filter="all feature">
-      <div class="grid-stack-item-content">
-        <div class="bento-card card-text pad-spot">
-          <div class="spot-icon">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
-          </div>
-          <div>
-            <div class="spot-status">
-              <div class="spot-bars"><span></span><span></span><span></span></div>
-              실시간 트렌드
-            </div>
-            <div class="spot-title">#봄카페추천</div>
-            <div class="spot-artist">카페 · 이번 주 인기</div>
-          </div>
-          <div class="spot-bottom">
-            <a class="card-arrow" href="#" style="position:static;">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
-            </a>
-          </div>
-        </div>
+    <!-- 카드 7: 약관 (col 1-2, row 3) -->
+    <div class="su-card" style="grid-column:1/3;">
+      <div class="su-agree">
+        <label class="su-agree-all"><input type="checkbox" id="su-agree-all" onchange="document.querySelectorAll('.su-agree-each').forEach(function(e){e.checked=this.checked;},this)"><span>전체 동의하기</span></label>
+        <label><input type="checkbox" class="su-agree-each"><span>(필수) <a href="/terms" target="_blank" style="color:rgba(200,80,122,.7);text-decoration:underline;">서비스 이용약관</a> 동의</span></label>
+        <label><input type="checkbox" class="su-agree-each"><span>(필수) <a href="/privacy" target="_blank" style="color:rgba(200,80,122,.7);text-decoration:underline;">개인정보 처리방침</a> 동의</span></label>
+        <label><input type="checkbox" class="su-agree-each"><span>(선택) 마케팅 정보 수신 동의</span></label>
       </div>
     </div>
 
-    <!-- Card 4: Twitter-style (1x1) — 하늘색 아이콘 -->
-    <div class="grid-stack-item" gs-x="3" gs-y="1" gs-w="3" gs-h="1" data-filter="all feature">
-      <div class="grid-stack-item-content">
-        <div class="bento-card card-visual bg-blue">
-          <svg class="twitter-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-        </div>
-      </div>
+    <!-- 카드 8: 가입 버튼 (col 3-4, row 3) -->
+    <div class="su-card su-submit-card" style="grid-column:3/5;">
+      <button class="su-btn" onclick="suGridComplete()" style="font-size:16px;padding:16px;">가입 완료</button>
+      <button class="su-btn-outline" onclick="closeSignupGrid()">취소</button>
     </div>
-
-    <!-- Card 5: Project 2 (1x2 tall) — 핑크 -->
-    <div class="grid-stack-item" gs-x="6" gs-y="1" gs-w="3" gs-h="2" data-filter="all feature">
-      <div class="grid-stack-item-content">
-        <div class="bento-card card-visual bg-pink card-project">
-          <span class="project-label">자동 게시</span>
-          <a class="card-arrow" href="#">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
-          </a>
-        </div>
-      </div>
-    </div>
-
-    <!-- Card 6: Blog-style (2x1) -->
-    <div class="grid-stack-item" gs-x="0" gs-y="2" gs-w="6" gs-h="1" data-filter="all about">
-      <div class="grid-stack-item-content">
-        <div class="bento-card card-text pad-blog">
-          <div>
-            <h2 class="blog-title">ChatGPT로 캡션 쓰는 것 vs lumi</h2>
-            <p class="blog-desc">사진 분석, 트렌드 반영, 해시태그, 인스타 게시까지 — 복사-붙여넣기 없이 1분이면 끝.</p>
-          </div>
-          <div class="blog-bottom">
-            <button class="btn-pill" onclick="location.href='/beta'">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
-              자세히 보기
-            </button>
-            <span class="blog-date">2026</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Card 7: Project 3 (2x1) — 노란색 -->
-    <div class="grid-stack-item" gs-x="0" gs-y="3" gs-w="6" gs-h="1" data-filter="all feature">
-      <div class="grid-stack-item-content">
-        <div class="bento-card card-visual bg-yellow card-project">
-          <span class="project-label">해시태그 자동</span>
-          <a class="card-arrow" href="#">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
-          </a>
-        </div>
-      </div>
-    </div>
-
-    <!-- Card 8: Dark mode toggle (1x1) -->
-    <div class="grid-stack-item" gs-x="9" gs-y="2" gs-w="3" gs-h="1" data-filter="all">
-      <div class="grid-stack-item-content">
-        <div class="bento-card card-dark-toggle" onclick="toggleDarkMode()">
-          <div class="dark-toggle-icon"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Card 9: Newsletter/CTA (2x1) -->
-    <div class="grid-stack-item" gs-x="6" gs-y="3" gs-w="6" gs-h="1" data-filter="all about price">
-      <div class="grid-stack-item-content">
-        <div class="bento-card card-text pad-news">
-          <div style="width:100%">
-            <h2 class="news-title">무료로 시작해볼까요?</h2>
-            <p class="news-desc">선착순 20명 무료 체험 중. 카드 등록 없음, 자동 결제 없음.</p>
-            <input class="news-input" type="email" placeholder="이메일 주소">
-          </div>
-          <div class="news-bottom">
-            <button class="btn-pill" onclick="location.href='/beta'">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
-              시작하기
-            </button>
-            <span class="news-sub-info">남은 자리 <span class="sub-num" id="beta-count">20</span></span>
-          </div>
-        </div>
-      </div>
-    </div>
-
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/gridstack@10/dist/gridstack-all.min.js"></script>
+
 <script>
-// ---- GRIDSTACK INIT ----
-var grid = GridStack.init({
-  column: 12,
-  cellHeight: 280,
-  margin: 16,
-  float: true,
-  animate: true,
-  draggable: { handle: '.bento-card' },
-  resizable: { handles: '' }
-});
+// ============================================================
+// REACT-GRID-LAYOUT — EXACT SAME LIB AS NEVFLYNN.COM
+// Settings extracted from nevflynn.com React Fiber props
+// ============================================================
 
-// ---- FILTER ----
-function filterGrid(category, btnEl) {
-  document.querySelectorAll('.nav-pill').forEach(function(p) {
-    p.classList.remove('active');
-  });
-  if (btnEl) btnEl.classList.add('active');
+var e = React.createElement;
+var RGL = ReactGridLayout;
 
-  document.querySelectorAll('.grid-stack-item').forEach(function(item) {
-    var filters = (item.dataset.filter || '').split(' ');
-    var show = category === 'all' || filters.indexOf(category) !== -1;
-    if (show) {
-      item.style.display = '';
-      item.classList.remove('grid-stack-item-hidden');
+// 드래그 vs 클릭 구분 유틸
+var _mouseDownPos = null;
+function onCardMouseDown(ev) { _mouseDownPos = { x: ev.clientX, y: ev.clientY }; }
+function isRealClick(ev) {
+  if (!_mouseDownPos) return false;
+  var dx = Math.abs(ev.clientX - _mouseDownPos.x);
+  var dy = Math.abs(ev.clientY - _mouseDownPos.y);
+  _mouseDownPos = null;
+  return dx < 5 && dy < 5;
+}
+
+// SVG arrow icon
+var ArrowSVG = e('svg', {xmlns:'http://www.w3.org/2000/svg',viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:'2.5',strokeLinecap:'round',strokeLinejoin:'round',width:14,height:14},
+  e('line',{x1:7,y1:17,x2:17,y2:7}),
+  e('polyline',{points:'7 7 17 7 17 17'})
+);
+
+// Lock SVG
+var LockSVG = e('svg', {xmlns:'http://www.w3.org/2000/svg',viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round',width:16,height:16},
+  e('rect',{x:3,y:11,width:18,height:11,rx:2,ry:2}),
+  e('path',{d:'M7 11V7a5 5 0 0 1 10 0v4'})
+);
+
+// Spotify SVG
+var SpotifySVG = e('svg', {viewBox:'0 0 24 24',xmlns:'http://www.w3.org/2000/svg',width:40,height:40,style:{fill:'#1db954'}},
+  e('path',{d:'M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z'})
+);
+
+// Instagram icon (white for gradient background)
+var InstaSVG = e('svg', {viewBox:'0 0 24 24',xmlns:'http://www.w3.org/2000/svg',width:80,height:80},
+  e('rect', {x:2, y:2, width:20, height:20, rx:5, fill:'none', stroke:'#fff', strokeWidth:2}),
+  e('circle', {cx:12, cy:12, r:5, fill:'none', stroke:'#fff', strokeWidth:2}),
+  e('circle', {cx:17.5, cy:6.5, r:1.5, fill:'#fff'})
+);
+
+// Card contents (static HTML injected via dangerouslySetInnerHTML is avoided; using React elements)
+var cards = {
+  bio: function() {
+    var UploadCard = function() {
+      var st = React.useState('idle'), phase = st[0], setPhase = st[1];
+      var st2 = React.useState(null), file = st2[0], setFile = st2[1];
+      var st5 = React.useState(false), reviewMode = st5[0], setReviewMode = st5[1];
+      var st6 = React.useState(''), scheduleMode = st6[0], setScheduleMode = st6[1];
+      var fileRef = React.useRef(null);
+
+      function handleFileSelect(ev) {
+        var files = ev.target.files;
+        if (!files || files.length === 0) return;
+        if (files.length > 10) {
+          alert('사진은 최대 10장까지 선택할 수 있어요.');
+          fileRef.current.value = '';
+          return;
+        }
+        var list = [];
+        for (var i = 0; i < Math.min(files.length, 10); i++) {
+          list.push({ name: files[i].name, size: (files[i].size/1024).toFixed(0)+'KB', url: URL.createObjectURL(files[i]) });
+        }
+        setFile(list);
+        setPhase('selected');
+      }
+
+      function handleSubmit() {
+        setPhase('uploading');
+        setTimeout(function() {
+          setPhase('done');
+        }, 2000);
+      }
+
+      var lumiSrc = (phase === 'uploading' || phase === 'done')
+        ? '/assets/lumi-surprised.png'
+        : '/assets/lumi-character.png';
+      var lumiClass = 'upload-lumi' + (phase === 'uploading' || phase === 'done' ? ' surprised' : '');
+
+      return e('div', {className:'bento-card card-text pad-bio card-responsive'},
+        e('input', {ref:fileRef, type:'file', accept:'image/*', multiple:true, style:{display:'none'}, onChange:handleFileSelect}),
+        e('div', {className:'upload-wrap'},
+
+          // 루미 캐릭터 (selected/confirmed에서 숨김)
+          e('div', {className:'upload-left'+((phase==='selected'||phase==='confirmed')?' hidden':'')},
+            (phase==='uploading'||phase==='done') ? e('div',{className:'lumi-aura'}) : null,
+            e('img', {className:lumiClass, src:lumiSrc, alt:'lumi', onClick:function(){ if(phase==='idle') fileRef.current.click(); }})
+          ),
+
+          // UI
+          e('div', {className:'upload-right'},
+
+            // 토글 (항상 표시)
+            e('button', {className:'upload-toggle-row', onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(){setReviewMode(!reviewMode);}},
+              e('span', null, '캡션 확인 후 게시'),
+              e('button', {className:'upload-toggle'+(reviewMode?' on':''), style:{pointerEvents:'none'}})
+            ),
+
+            // idle: 기본 상태
+            phase === 'idle' ? e(React.Fragment, null,
+              e('p', {className:'upload-prompt', style:{fontSize:'28px',textAlign:'left',lineHeight:'1.4'}}, e('strong',null,'사진 한 장'), '이면', e('br'), 'lumi가 알아서 해요'),
+              e('p', {style:{fontSize:'14px',color:'rgba(0,0,0,.35)',textAlign:'left',lineHeight:'1.6'}}, '최대 10장까지 선택하면 캐러셀로 올라가요.', e('br'), '코멘트 한 줄이면 휴무일 안내도, 신메뉴 홍보도 알아서.'),
+              e('button', {className:'upload-btn', onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(){ fileRef.current.click(); }},
+                e('svg',{width:14,height:14,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},e('path',{d:'M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4'}),e('polyline',{points:'17 8 12 3 7 8'}),e('line',{x1:12,y1:3,x2:12,y2:15})),
+                '사진 올리기'
+              )
+            ) : null,
+
+            // selected: 사진 확인
+            phase === 'selected' && file ? e(React.Fragment, null,
+              e('div', {className:'upload-preview-grid'},
+                file.slice(0,9).map(function(f,i){
+                  return e('div', {className:'upload-preview-item', key:i}, e('img', {src:f.url, alt:'사진 '+(i+1)}));
+                }),
+                file.length > 9 ? e('div', {className:'upload-preview-item upload-preview-more'}, '+' + (file.length - 9)) : null
+              ),
+              e('p', {className:'upload-prompt', style:{fontSize:'13px',textAlign:'left'}}, file.length + '장 · ' + (file.length > 1 ? '캐러셀 게시물' : '단일 게시물')),
+              e('div', {style:{display:'flex',gap:'8px',width:'100%'}},
+                e('button', {className:'upload-submit', style:{flex:1,background:'rgba(0,0,0,.06)',color:'#0d1117',padding:'8px',fontSize:'12px'}, onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(){setPhase('idle');setFile(null);}}, '다시 선택'),
+                e('button', {className:'upload-submit', style:{flex:2,padding:'8px',fontSize:'12px'}, onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(){setPhase('confirmed');}}, '확인')
+              )
+            ) : null,
+
+            // confirmed: 코멘트 + 예약
+            phase === 'confirmed' && file ? e(React.Fragment, null,
+              e('button', {style:{display:'flex',alignItems:'center',gap:'6px',background:'none',border:'none',cursor:'pointer',padding:'8px 12px',borderRadius:'12px',marginBottom:'4px',transition:'background .2s'}, onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(){setPhase('selected');}, onMouseOver:function(ev){ev.currentTarget.style.background='rgba(0,0,0,.05)';}, onMouseOut:function(ev){ev.currentTarget.style.background='none';}},
+                e('svg',{width:16,height:16,viewBox:'0 0 24 24',fill:'none',stroke:'rgba(0,0,0,.4)',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},e('path',{d:'M19 12H5'}),e('polyline',{points:'12 19 5 12 12 5'})),
+                e('span', {style:{fontSize:'13px',color:'rgba(0,0,0,.4)'}}, '사진 다시 확인')
+              ),
+              e('textarea', {className:'upload-comment', rows:2, placeholder:'코멘트 (선택)\n"오늘 휴무일 안내도 넣어줘"', onMouseDown:function(ev){ev.stopPropagation();}}),
+              e('div', {className:'upload-schedule-row', onMouseDown:function(ev){ev.stopPropagation();}},
+                e('svg',{width:14,height:14,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:1.5,style:{opacity:.4,flexShrink:0}},e('rect',{x:3,y:4,width:18,height:18,rx:2}),e('line',{x1:16,y1:2,x2:16,y2:6}),e('line',{x1:8,y1:2,x2:8,y2:6}),e('line',{x1:3,y1:10,x2:21,y2:10})),
+                e('select', {className:'upload-schedule-select', value:scheduleMode, onChange:function(ev){setScheduleMode(ev.target.value);}, onMouseDown:function(ev){ev.stopPropagation();}},
+                  e('option', {value:''}, '바로 게시'),
+                  e('option', {value:'best'}, 'lumi 추천 시간'),
+                  e('option', {value:'custom'}, '직접 선택')
+                )
+              ),
+              scheduleMode === 'custom' ? e('div', {className:'upload-schedule-custom', onMouseDown:function(ev){ev.stopPropagation();}},
+                e('select', {className:'upload-schedule-input'}, (function(){
+                  var opts = [];
+                  var days = ['일','월','화','수','목','금','토'];
+                  for(var d=0;d<30;d++){
+                    var dt = new Date(Date.now()+d*86400000);
+                    var m = dt.getMonth()+1, dd = dt.getDate(), day = days[dt.getDay()];
+                    var label = d===0?'오늘':d===1?'내일':m+'/'+dd+' ('+day+')';
+                    opts.push(e('option',{key:d,value:dt.toISOString().slice(0,10)},label));
+                  }
+                  return opts;
+                })()),
+                e('select', {className:'upload-schedule-input'}, (function(){
+                  var opts = [];
+                  for(var h=6;h<=23;h++){
+                    opts.push(e('option',{key:h,value:h+':00'},(h<10?'0':'')+h+':00'));
+                    opts.push(e('option',{key:h+'30',value:h+':30'},(h<10?'0':'')+h+':30'));
+                  }
+                  return opts;
+                })())
+              ) : null,
+              e('button', {className:'upload-submit', onMouseDown:function(ev){ev.stopPropagation();}, onClick:handleSubmit}, 'lumi에게 맡기기')
+            ) : null,
+
+            // uploading: 업로드 중 (놀란 루미 보임)
+            phase === 'uploading' ? e('p', {className:'upload-prompt', style:{fontSize:'15px'}}, '사진 분석 중...') : null,
+
+            // done: 완료 (놀란 루미 보임)
+            phase === 'done' ? e('p', {className:'upload-prompt', style:{fontSize:'15px'}}, e('strong',null,'캡션 만드는 중...'), e('br'), '잠시만 기다려주세요') : null
+          )
+        )
+      );
+    };
+    return e(UploadCard);
+  },
+  map: function() {
+    return e('div', {className:'bento-card card-map card-logo', style:{padding:0,overflow:'hidden'}},
+      e('div', {className:'logo-light', style:{position:'absolute',inset:0,backgroundColor:'#fff',backgroundImage:'url(/assets/logo-gradient.jpg)',backgroundSize:'180%',backgroundPosition:'52% 45%',backgroundRepeat:'no-repeat',backgroundBlendMode:'multiply'}}),
+      e('div', {className:'logo-dark', style:{position:'absolute',inset:0,backgroundImage:'url(/assets/logo-dark.jpg)',backgroundSize:'180%',backgroundPosition:'52% 45%',backgroundRepeat:'no-repeat'}})
+    );
+  },
+  project1: function() {
+    var camIcon = e('svg',{viewBox:'0 0 24 24',fill:'none',stroke:'rgba(255,255,255,.5)',strokeWidth:'1.5',strokeLinecap:'round',strokeLinejoin:'round',width:48,height:48},e('rect',{x:2,y:5,width:20,height:15,rx:2}),e('path',{d:'M8 5V3a1 1 0 011-1h6a1 1 0 011 1v2'}),e('circle',{cx:12,cy:13,r:3}));
+    return e('div', {className:'bento-card card-visual bg-green card-project card-responsive', style:{padding:0}},
+      e('div', {className:'caption-demo'},
+        e('div', {className:'demo-scene scene-photo'},
+          e('div', {className:'demo-photo-drop'}, e('img', {src:'/assets/demo-cafe.png', alt:'카페 사진'})),
+          e('p', {className:'demo-label', style:{marginTop:'12px'}}, '사진 업로드')
+        ),
+        e('div', {className:'demo-scene scene-scan'},
+          e('div', {className:'demo-scan-line'}),
+          e('div', {className:'demo-scan-dots'}, e('span',{className:'demo-scan-dot'}),e('span',{className:'demo-scan-dot'}),e('span',{className:'demo-scan-dot'})),
+          e('p', {className:'demo-label'}, 'lumi가 사진을 분석하고 있어요')
+        ),
+        e('div', {className:'demo-scene'},
+          e('p', {className:'demo-caption-text'}, e('span',{className:'demo-typing'},'"이 자리 앉으면 라떼 들고\n한참 멍 때리게 됨\n\n여기 어딘지 궁금하면\n프로필 링크 눌러요 📍"')),
+          e('p', {className:'demo-label', style:{marginTop:'20px'}}, '캡션 생성 완료')
+        ),
+        e('div', {className:'demo-scene'},
+          e('div', {className:'demo-tags'}, e('span',{className:'demo-tag'},'#라떼아트'),e('span',{className:'demo-tag'},'#카페인테리어'),e('span',{className:'demo-tag'},'#감성카페'),e('span',{className:'demo-tag'},'#핑크카페'),e('span',{className:'demo-tag'},'#라떼맛집')),
+          e('p', {className:'demo-label', style:{marginTop:'16px'}}, '해시태그 자동 생성')
+        ),
+        e('div', {className:'demo-scene'},
+          e('div', {className:'demo-check-circle'}, e('svg',{viewBox:'0 0 24 24',fill:'none'},e('path',{className:'demo-check-path',d:'M4 12l6 6L20 6',stroke:'#fff',strokeWidth:'2.5',strokeLinecap:'round',strokeLinejoin:'round'}))),
+          e('p', {className:'demo-label'}, '인스타 게시 완료')
+        ),
+        e('div', {className:'demo-scene'},
+          e('div', {className:'demo-ig-feed'},
+            e('div', {className:'demo-ig-header'},
+              e('div', {className:'demo-ig-avatar'}),
+              e('span', {className:'demo-ig-name'}, 'my_cafe')
+            ),
+            e('div', {className:'demo-ig-image'}, e('img', {src:'/assets/demo-cafe.png', alt:'게시된 사진'})),
+            e('div', {className:'demo-ig-actions'},
+              e('svg',{viewBox:'0 0 24 24',fill:'none',stroke:'#fff',strokeWidth:'2',strokeLinecap:'round',strokeLinejoin:'round'},e('path',{d:'M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 000-7.78z'})),
+              e('svg',{viewBox:'0 0 24 24',fill:'none',stroke:'#fff',strokeWidth:'2',strokeLinecap:'round',strokeLinejoin:'round'},e('path',{d:'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z'})),
+              e('svg',{viewBox:'0 0 24 24',fill:'none',stroke:'#fff',strokeWidth:'2',strokeLinecap:'round',strokeLinejoin:'round'},e('line',{x1:22,y1:2,x2:11,y2:13}),e('polygon',{points:'22 2 15 22 11 13 2 9 22 2'}))
+            ),
+            e('p', {className:'demo-ig-likes'}, '좋아요 42개'),
+            e('p', {className:'demo-ig-caption-preview'}, e('strong',{style:{color:'#fff',display:'block',marginBottom:'4px'}},'my_cafe'), '이 자리 앉으면 라떼 들고', e('br'), '한참 멍 때리게 됨', e('br'), e('br'), '여기 어딘지 궁금하면', e('br'), '프로필 링크 눌러요 📍', e('br'), e('span',{style:{color:'rgba(255,255,255,.45)'}}, '#라떼아트 #카페일상 #핑크카페'))
+          )
+        )
+      ),
+      e('a', {className:'card-arrow', href:'/feature-time.html#process-demo', onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(ev){ev.preventDefault();ev.stopPropagation(); navigateOut('/feature-time.html#process-demo');}}, ArrowSVG)
+    );
+  },
+  spotify: function() {
+    return e('div', {className:'bento-card card-text pad-spot'},
+      e('div', {className:'spot-icon'}, SpotifySVG),
+      e('div', null,
+        e('div', {className:'spot-status'},
+          e('div', {className:'spot-bars'}, e('span'), e('span'), e('span')),
+          '실시간 트렌드'
+        ),
+        e('div', {className:'spot-title'}, '#봄카페추천'),
+        e('div', {className:'spot-artist'}, '카페 · 이번 주 인기')
+      ),
+      e('div', {className:'spot-bottom'},
+        e('a', {className:'card-arrow', href:'#', style:{position:'static'}}, ArrowSVG)
+      )
+    );
+  },
+  twitter: function() {
+    var lumiUser = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+    var isLoggedIn = !!localStorage.getItem('lumi_token');
+    var igConnected = lumiUser.igConnected;
+
+    var badge;
+    var cardStyle = {};
+    var clickHandler;
+
+    if (isLoggedIn && igConnected) {
+      badge = e('div', {className:'ig-badge'},
+        e('svg', {width:12,height:12,viewBox:'0 0 12 12'},
+          e('circle', {cx:6,cy:6,r:6,fill:'#fff'}),
+          e('path', {d:'M3.5 6l2 2 3.5-3.5',stroke:'#d62976',strokeWidth:'1.5',fill:'none',strokeLinecap:'round',strokeLinejoin:'round'})
+        ),
+        e('span', null, '연결됨')
+      );
+      clickHandler = null;
+    } else if (isLoggedIn && !igConnected) {
+      badge = e('div', {className:'ig-badge'},
+        e('span', null, '연동하기'),
+        e('svg', {width:10,height:10,viewBox:'0 0 10 10'},
+          e('path', {d:'M2 8L8 2M8 2H3M8 2v5',stroke:'#fff',strokeWidth:'1.5',fill:'none',strokeLinecap:'round',strokeLinejoin:'round'})
+        )
+      );
+      clickHandler = function() {
+        var token = localStorage.getItem('lumi_token') || '';
+        window.location.href = '/.netlify/functions/ig-oauth?action=start&token=' + token;
+      };
     } else {
-      item.style.display = 'none';
-      item.classList.add('grid-stack-item-hidden');
+      cardStyle = {};
+      badge = e('div', {className:'ig-badge'},
+        e('span', null, '로그인 필요')
+      );
+      clickHandler = function() { window.location.href = '/dashboard'; };
     }
+
+    return e('div', {className:'bento-card card-visual bg-blue', style:Object.assign({flexDirection:'column',gap:'10px',cursor: clickHandler ? 'pointer' : 'default'}, cardStyle), onMouseDown: clickHandler ? onCardMouseDown : null, onMouseUp: clickHandler ? function(ev){ if(isRealClick(ev)) clickHandler(); } : null},
+      InstaSVG,
+      badge
+    );
+  },
+  project2: function() {
+    var isLoggedIn = !!localStorage.getItem('lumi_token');
+    var CATEGORY_KO = {cafe:'카페',food:'맛집',beauty:'뷰티',flower:'꽃집',fashion:'패션',fitness:'피트니스',pet:'반려동물',interior:'인테리어',education:'교육',laundry:'세탁',studio:'스튜디오',other:'일반'};
+    var fallbackDomestic = [
+      {keyword:'크로플',bizCategory:'cafe'},{keyword:'딸기오믈렛',bizCategory:'food'},{keyword:'레이어드컷',bizCategory:'beauty'},
+      {keyword:'오로라네일',bizCategory:'beauty'},{keyword:'말차라떼',bizCategory:'cafe'},{keyword:'당근케이크',bizCategory:'cafe'},
+      {keyword:'로제떡볶이',bizCategory:'food'}
+    ];
+    var fallbackGlobal = [
+      {keyword:'Dubai Chocolate',bizCategory:'cafe'},{keyword:'Dirty Soda',bizCategory:'cafe'},{keyword:'Balayage',bizCategory:'beauty'},
+      {keyword:'Glazed Donut Nails',bizCategory:'beauty'},{keyword:'Birria Tacos',bizCategory:'food'},{keyword:'Matcha Tiramisu',bizCategory:'cafe'},
+      {keyword:'Boba Tea',bizCategory:'cafe'}
+    ];
+    var upArrow = e('svg',{viewBox:'0 0 10 10'},e('path',{d:'M5 2L2 6h6L5 2z',fill:'currentColor'}));
+    var downArrow = e('svg',{viewBox:'0 0 10 10'},e('path',{d:'M5 8L2 4h6L5 8z',fill:'currentColor'}));
+    // 캐시에서 초기 데이터 읽기
+    var _initCache = {domestic:null,global:null};
+    try { var _cc = JSON.parse(localStorage.getItem('lumi_trend_cache')||'null'); if(_cc){_initCache=_cc;} } catch(ex){}
+
+    var TrendCard = function() {
+      var st = React.useState('domestic'), tab = st[0], setTab = st[1];
+      var st2 = React.useState(_initCache), apiData = st2[0], setApiData = st2[1];
+      var st3 = React.useState([0,1,2,3,4,5,6]), prevOrder = st3[0], setPrevOrder = st3[1];
+      var st4 = React.useState([1,0,2,4,3,5,6]), order = st4[0], setOrder = st4[1];
+
+      React.useEffect(function(){
+        var cats = ['cafe','food','beauty','fashion','fitness','pet'];
+        var baseUrl = 'https://lumi.it.kr/.netlify/functions/get-trends';
+        ['domestic','global'].forEach(function(scope){
+          fetch(baseUrl+'?category=all&scope='+scope)
+            .then(function(r){return r.json();})
+            .then(function(data){
+              if(data.keywords && data.keywords.length>0){
+                saveTrends(scope, data.keywords.slice(0,7));
+              } else {
+                Promise.all(cats.map(function(cat){
+                  return fetch(baseUrl+'?category='+cat+'&scope='+scope)
+                    .then(function(r){return r.json();})
+                    .then(function(d){return (d.keywords||[]).map(function(kk){kk.bizCategory=cat;return kk;});})
+                    .catch(function(){return [];});
+                })).then(function(results){
+                  var merged=[];
+                  results.forEach(function(kws){
+                    if(kws.length>0) merged.push(kws[0]);
+                    if(kws.length>1) merged.push(kws[1]);
+                  });
+                  merged = merged.slice(0,7).map(function(kk,i){kk.rank=i+1;return kk;});
+                  if(merged.length>0) saveTrends(scope, merged);
+                });
+              }
+            }).catch(function(){});
+        });
+        function saveTrends(scope, keywords){
+          setApiData(function(prev){
+            var next = {domestic:prev.domestic, global:prev.global};
+            next[scope] = keywords;
+            try{localStorage.setItem('lumi_trend_cache',JSON.stringify({domestic:next.domestic,global:next.global}));}catch(ex){}
+            return next;
+          });
+        }
+      },[]);
+
+      React.useEffect(function(){
+        var iv = setInterval(function(){
+          setOrder(function(prev){
+            setPrevOrder(prev.slice());
+            var next = prev.slice();
+            var a = Math.floor(Math.random()*6);
+            var b = a + 1;
+            var tmp=next[a];next[a]=next[b];next[b]=tmp;
+            if(Math.random()>0.6){
+              var c = Math.floor(Math.random()*5);
+              var d = c + 1 + Math.floor(Math.random()*2);
+              if(d<7){tmp=next[c];next[c]=next[d];next[d]=tmp;}
+            }
+            return next;
+          });
+        }, 5000);
+        return function(){ clearInterval(iv); };
+      },[]);
+
+      var scope = tab;
+      var src = apiData[scope] || (scope==='domestic'?fallbackDomestic:fallbackGlobal);
+      if(src.length>0 && src.length<7){var _s=src.slice();while(src.length<7)src=src.concat(_s);}
+      src=src.slice(0,7);
+      var itemH = 62;
+      var rankMap = {};
+      order.forEach(function(idx,rank){ if(idx<src.length) rankMap[idx]=rank; });
+
+      return e('div', {className:'bento-card card-visual card-project card-trend card-responsive', style:{padding:0}},
+        e('div', {className:'trend-wrap'},
+          e('div', {className:'trend-header'},
+            e('span', {className:'trend-label'}, '종합 트렌드'),
+            e('div', {className:'trend-tabs'},
+              e('span', {className:'trend-tab'+(tab==='domestic'?' active':''), onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(){setTab('domestic');}}, '국내'),
+              e('span', {className:'trend-tab'+(tab==='global'?' active':''), onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(){setTab('global');}}, '해외')
+            )
+          ),
+          e('div', {className:'trend-list'},
+            e('div', {className:'trend-track', key:'track-'+tab},
+              src.map(function(t,idx){
+                var rank = rankMap[idx]!==undefined?rankMap[idx]:idx;
+                var delta = 0;
+                if(prevOrder){
+                  var oldRank = prevOrder.indexOf(idx);
+                  if(oldRank!==-1) delta = oldRank - rank;
+                }
+                if(delta===0 && t.rankChange && t.rankChange!=='new') delta = t.rankChange;
+                var cls = delta>0?'up':delta<0?'down':'same';
+                var deltaEl;
+                if(t.rankChange==='new'){
+                  deltaEl = e('span',{className:'trend-delta up',style:{background:'rgba(34,197,94,.2)'}}, 'NEW');
+                } else if(delta===0){
+                  deltaEl = e('span',{className:'trend-delta same'},'—');
+                } else {
+                  deltaEl = e('span',{className:'trend-delta '+cls}, delta>0?upArrow:downArrow, Math.abs(delta));
+                }
+                var catLabel = (t.bizCategory && CATEGORY_KO[t.bizCategory]) || '종합';
+                var kw = (t.keyword||'').replace(/^#/,'');
+                return e('div',{className:'trend-item',key:scope+'-'+kw,style:{top:(rank*itemH)+'px',animation:'trendSlideIn .35s ease-out '+(rank*0.04)+'s both'}},
+                  e('span',{className:'trend-rank'},rank+1),
+                  e('div',{className:'trend-info'},
+                    e('p',{className:'trend-text'},'#'+kw),
+                    e('p',{className:'trend-tag'},catLabel+' · '+(tab==='domestic'?'국내':'Global'))
+                  ),
+                  deltaEl
+                );
+              })
+            )
+          ),
+          !isLoggedIn ? e('div', {className:'trend-cta-bar'},
+            e('p', {className:'trend-cta-msg'}, '회원가입만 해도 업종별 최신 트렌드를', e('br'), '확인할 수 있어요')
+          ) : null
+        )
+      );
+    };
+    return e(TrendCard);
+  },
+  blog: function() {
+    return e('div', {className:'bento-card card-text pad-blog'},
+      e('div', null,
+        e('p', {className:'blog-desc', style:{marginBottom:'4px'}}, '평균 업로드 시간 37분 → lumi는 1분'),
+        e('h2', {className:'blog-title', style:{marginBottom:'12px'}}, '한 달에 18시간을 아끼세요'),
+        e('p', {className:'blog-desc', style:{lineHeight:'1.7',marginBottom:'0'}},
+          '사진 올리기 → 트렌드 분석 → 업종·말투 매칭 → 캡션 생성 → 게시까지.',
+          e('br'),
+          '여러 장이면 캐러셀로, 코멘트 한 줄이면 휴무일 안내도 알아서.'
+        )
+      ),
+      e('div', {className:'blog-bottom', style:{marginTop:'15px'}},
+        e('a', {className:'btn-pill', href:'/feature-time.html', style:{textDecoration:'none',color:'inherit'}, onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(ev){ev.preventDefault();ev.stopPropagation(); navigateOut('/feature-time.html');}}, ArrowSVG, ' 자세히 보기')
+      )
+    );
+  },
+  project3: function() {
+    return e('div', {className:'bento-card card-visual bg-yellow card-project'},
+      e('span', {className:'project-label'}, '해시태그 자동'),
+      e('a', {className:'card-arrow', href:'#'}, ArrowSVG)
+    );
+  },
+  dark: function() {
+    return e('div', {className:'bento-card card-dark-toggle'},
+      e('div', {className:'toggle-track', onMouseDown: function(ev){ ev.stopPropagation(); }, onClick: function(){ toggleDarkMode(); var icon = document.getElementById('toggle-icon'); if(icon) icon.textContent = document.body.classList.contains('dark-mode') ? '☀️' : '🌙'; }},
+        e('div', {className:'toggle-ball'},
+          e('span', {className:'toggle-icon', id:'toggle-icon'}, document.body.classList.contains('dark-mode') ? '☀️' : '🌙')
+        )
+      )
+    );
+  },
+  empty1: function() {
+    return e('div', {className:'bento-card reset-card', onMouseDown:onCardMouseDown, onMouseUp:function(ev){if(isRealClick(ev))resetGrid();}},
+      e('div', {className:'reset-blocks'},
+        e('div',{className:'reset-block rb-1'}),
+        e('div',{className:'reset-block rb-2'}),
+        e('div',{className:'reset-block rb-3'}),
+        e('div',{className:'reset-block rb-4'}),
+        e('div',{className:'reset-block rb-5'}),
+        e('div',{className:'reset-block rb-6'})
+      ),
+      e('span', {className:'reset-label'}, '\uB9AC\uC14B')
+    );
+  },
+  newsletter: function() {
+    return e('div', {className:'bento-card card-text pad-news'},
+      e('div', {style:{width:'100%'}},
+        e('h2', {className:'news-title'}, '무료로 시작해볼까요?'),
+        e('p', {className:'news-desc'}, '선착순 20명 무료 체험 중. 카드 등록 없음, 자동 결제 없음.'),
+        e('input', {className:'news-input', type:'email', placeholder:'이메일 주소'})
+      ),
+      e('div', {className:'news-bottom'},
+        e('button', {className:'btn-pill', onClick:function(){location.href='/beta'}}, ArrowSVG, ' 시작하기'),
+        e('span', {className:'news-sub-info'}, '남은 자리 ', e('span',{className:'sub-num',id:'beta-count'},'20'))
+      )
+    );
+  }
+};
+
+// Layout — exact same structure as nevflynn.com
+var layout = [
+  {i:'bio',       x:0, y:0, w:2, h:1, isResizable:true, minW:1, maxW:4, minH:1, maxH:3},
+  {i:'empty1',    x:2, y:0, w:1, h:1, isResizable:false},
+  {i:'project1',  x:3, y:0, w:1, h:2, isResizable:true, minW:1, maxW:2, minH:1, maxH:4},
+  {i:'spotify',   x:0, y:1, w:1, h:1, isResizable:false},
+  {i:'twitter',   x:1, y:1, w:1, h:1, isResizable:false},
+  {i:'project2',  x:2, y:1, w:1, h:2, isResizable:true, minW:1, maxW:2, minH:1, maxH:4},
+  {i:'blog',      x:0, y:2, w:2, h:1, isResizable:false},
+  {i:'project3',  x:0, y:3, w:2, h:1, isResizable:false},
+  {i:'dark',      x:3, y:2, w:1, h:1, isResizable:false},
+  {i:'newsletter',x:2, y:3, w:2, h:1, isResizable:false}
+];
+
+// 저장된 레이아웃 불러오기
+// 레이아웃 버전 관리 — 레이아웃 변경 시 버전 올리면 캐시 무시
+var LAYOUT_VERSION = 7;
+var savedLayout = null;
+try {
+  var raw = localStorage.getItem('lumi_grid_layout');
+  var ver = localStorage.getItem('lumi_grid_version');
+  if (raw && Number(ver) === LAYOUT_VERSION) savedLayout = JSON.parse(raw);
+  else localStorage.removeItem('lumi_grid_layout');
+} catch(e) {}
+
+function BentoGrid() {
+  var _useState = React.useState(savedLayout || layout);
+  var currentLayout = _useState[0];
+  var setLayout = _useState[1];
+
+  var children = currentLayout.map(function(item) {
+    var cardFn = cards[item.i];
+    return e('div', {key: item.i}, cardFn ? cardFn() : null);
   });
 
-  if (grid) {
-    grid.compact();
-    setTimeout(function() { grid.compact(); }, 150);
-  }
+  return e(RGL, {
+    className: 'layout',
+    layout: currentLayout,
+    cols: 4,
+    rowHeight: 280,
+    width: 1200,
+    margin: [16, 16],
+    compactType: 'vertical',
+    isDraggable: true,
+    isResizable: true,
+    useCSSTransforms: false,
+    preventCollision: false,
+    onLayoutChange: function(newLayout) { setLayout(newLayout); try { localStorage.setItem('lumi_grid_layout', JSON.stringify(newLayout)); localStorage.setItem('lumi_grid_version', LAYOUT_VERSION); } catch(e) {} }
+  }, children);
 }
 
-// ---- LOCKDOWN TOGGLE ----
-var isLocked = false;
+// ---- Mount ----
+var root = ReactDOM.createRoot(document.getElementById('grid-root'));
+root.render(e(BentoGrid));
+
+function openSignupGrid() {
+  document.querySelector('.grid-wrap').style.display = 'none';
+  document.getElementById('signup-grid').classList.add('open');
+}
+function closeSignupGrid() {
+  document.getElementById('signup-grid').classList.remove('open');
+  document.querySelector('.grid-wrap').style.display = '';
+}
+function suGridComplete() {
+  var required = Array.from(document.querySelectorAll('.su-agree-each')).slice(0, 2);
+  if (!required.every(function(c) { return c.checked; })) {
+    alert('필수 약관에 동의해주세요.');
+    return;
+  }
+  alert('가입 기능은 대시보드 연동 후 활성화됩니다.');
+}
+
+// ---- NON-REACT FUNCTIONS ----
+var characterImages = ['/assets/lumi-character.png', '/assets/lumi-character-2.png'];
+var currentChar = 0;
 function toggleLockdown() {
-  isLocked = !isLocked;
-  if (grid) {
-    isLocked ? grid.disable() : grid.enable();
-  }
-  var label = document.getElementById('lockdown-label');
-  if (label) label.textContent = isLocked ? 'Unlock Grid' : 'Toggle Lockdown';
+  currentChar = (currentChar + 1) % characterImages.length;
+  document.querySelectorAll('.bio-avatar, .map-avatar img').forEach(function(img) {
+    img.src = characterImages[currentChar];
+  });
 }
 
-// ---- DARK MODE ----
 function toggleDarkMode() {
   var isDark = document.body.classList.toggle('dark-mode');
   localStorage.setItem('lumi_dark_mode', isDark ? '1' : '0');
-  document.documentElement.style.background = isDark ? '#111' : '#f7f2f2';
+  document.documentElement.style.background = isDark ? '#111' : '#fdf2f4';
 }
 
-// ---- MOBILE: disable drag ----
-function checkMobile() {
-  if (window.innerWidth <= 768) {
-    grid.disable();
-  } else if (!isLocked) {
-    grid.enable();
-  }
+function filterGrid(category, btnEl) {
+  document.querySelectorAll('.nav-pill').forEach(function(p) { p.classList.remove('active'); });
+  if (btnEl) btnEl.classList.add('active');
+  // TODO: filter implementation with React state
 }
-window.addEventListener('resize', checkMobile);
-checkMobile();
+
+function resetGrid() {
+  localStorage.removeItem('lumi_grid_layout');
+  localStorage.removeItem('lumi_grid_version');
+  location.reload();
+}
 </script>
 </body>
 </html>
