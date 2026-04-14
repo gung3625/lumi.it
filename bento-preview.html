@@ -67,9 +67,9 @@ nav {
 
 /* RGL base CSS (from nevflynn.com 0fe8871e.css) */
 .react-grid-layout { position: relative; transition: height 0.2s; }
-.react-grid-item { transition: left 0.2s, top; }
+.react-grid-item { transition: transform .5s cubic-bezier(.4,0,.2,1), opacity .4s ease; }
 .react-grid-item img { pointer-events: none; user-select: none; }
-.react-grid-item.cssTransforms { transition-property: transform; }
+.react-grid-item.cssTransforms { transition-property: transform, opacity; transition-duration: .5s, .4s; transition-timing-function: cubic-bezier(.4,0,.2,1), ease; }
 .react-grid-item.resizing { z-index: 1; will-change: width, height; }
 .react-grid-item.react-draggable-dragging { transition: none; z-index: 3; will-change: transform; }
 .react-grid-item.dropping { visibility: hidden; }
@@ -83,18 +83,22 @@ nav {
 .react-grid-item:active { cursor: grabbing; }
 
 /* nevflynn styled-components: .fubZvu (Item) */
-.react-grid-item { transition: 0.25s; }
+.react-grid-item { transition: transform .5s cubic-bezier(.4,0,.2,1), opacity .4s ease; }
 .react-grid-item:hover { box-shadow: rgba(100, 100, 111, 0.1) 0px 5px 24px 0px; }
 
 /* nevflynn styled-components: .iXylth (Grid container) — THIS IS THE KEY */
-.grid-wrap { max-width: 1200px; position: relative; margin: -16px auto 0; padding-bottom: 80px; }
-.grid-wrap .react-grid-item { transition: 500ms; will-change: transform; }
+.grid-wrap { max-width: 1200px; width:100%; position: relative; margin: -16px auto 0; padding-bottom: 80px; overflow: hidden; border-radius: 32px; box-sizing:border-box; }
+.grid-glow-line { position:absolute; z-index:99; pointer-events:none; border-radius:32px; opacity:0; transition:opacity .15s; }
+.grid-glow-line.left { top:0; bottom:0; left:0; width:6px; background:linear-gradient(to right, rgba(255,107,139,.6), transparent); box-shadow:-4px 0 20px 4px rgba(255,107,139,.3); }
+.grid-glow-line.right { top:0; bottom:0; right:0; width:6px; background:linear-gradient(to left, rgba(255,107,139,.6), transparent); box-shadow:4px 0 20px 4px rgba(255,107,139,.3); }
+.grid-glow-line.top { left:0; right:0; top:0; height:6px; background:linear-gradient(to bottom, rgba(255,107,139,.6), transparent); box-shadow:0 -4px 20px 4px rgba(255,107,139,.3); }
+.grid-glow-line.bottom { left:0; right:0; bottom:0; height:6px; background:linear-gradient(to top, rgba(255,107,139,.6), transparent); box-shadow:0 4px 20px 4px rgba(255,107,139,.3); }
+.grid-glow-line.active { opacity:1; }
+.grid-wrap .react-grid-item { transition: transform .5s cubic-bezier(.4,0,.2,1); }
 .grid-wrap .react-grid-item.react-draggable-dragging { transition: none; }
 .grid-wrap .react-grid-item.react-grid-placeholder { opacity: 0.3; background: rgba(200,200,200,.3) !important; border-radius: 32px !important; }
 
-@media (max-width: 1200px) { .grid-wrap { max-width: 800px; } }
-@media (max-width: 799px) { .grid-wrap { max-width: 375px; } }
-@media (max-width: 374px) { .grid-wrap { max-width: 320px; } }
+@media (max-width: 1200px) { .grid-wrap { max-width: 100%; padding:0 16px 80px; } }
 
 /* ---- BENTO CARD ---- */
 .bento-card {
@@ -134,7 +138,7 @@ body.dark-mode .react-grid-item > .react-resizable-handle::after {
   .upload-prompt { font-size:16px !important; }
   .upload-prompt strong { font-size:32px !important; }
   .upload-btn { font-size:18px !important; padding:18px 40px !important; }
-  .upload-comment { font-size:15px !important; padding:16px 20px !important; rows:4 !important; min-height:80px !important; }
+  .upload-comment { font-size:15px !important; padding:16px 20px !important; min-height:80px !important; }
   .upload-submit { font-size:16px !important; padding:16px !important; }
   .upload-schedule-select { font-size:14px !important; padding:14px 16px !important; }
   .upload-schedule-input { font-size:14px !important; padding:14px 16px !important; }
@@ -144,12 +148,31 @@ body.dark-mode .react-grid-item > .react-resizable-handle::after {
   .upload-toggle::after { width:20px !important; height:20px !important; }
   .upload-toggle.on::after { left:20px !important; }
 }
-@container (min-height: 600px) {
+@container (min-height: 500px) {
   .upload-right { gap:24px !important; }
-  .upload-comment { min-height:120px !important; font-size:16px !important; }
+  .upload-comment { min-height:100px !important; font-size:16px !important; padding:20px 24px !important; border-radius:20px !important; }
   .upload-submit { font-size:18px !important; padding:20px !important; border-radius:18px !important; }
-  .upload-schedule-select { font-size:15px !important; padding:16px 18px !important; }
+  .upload-schedule-select { font-size:15px !important; padding:16px 18px !important; border-radius:20px !important; }
+  .upload-schedule-input { font-size:15px !important; padding:16px 18px !important; }
   .upload-btn { font-size:20px !important; padding:22px 48px !important; border-radius:28px !important; }
+  .upload-toggle-row { font-size:14px !important; gap:10px !important; }
+  .upload-toggle { width:48px !important; height:28px !important; }
+  .upload-toggle::after { width:24px !important; height:24px !important; }
+  .upload-toggle.on::after { left:22px !important; }
+}
+@container (min-height: 700px) {
+  .upload-right { gap:32px !important; }
+  .upload-comment { min-height:160px !important; font-size:18px !important; padding:24px 28px !important; border-radius:24px !important; }
+  .upload-submit { font-size:20px !important; padding:24px !important; border-radius:22px !important; }
+  .upload-schedule-select { font-size:17px !important; padding:20px 22px !important; border-radius:22px !important; }
+  .upload-schedule-input { font-size:17px !important; padding:20px 22px !important; }
+  .upload-btn { font-size:24px !important; padding:28px 56px !important; border-radius:32px !important; }
+  .upload-toggle-row { font-size:16px !important; gap:12px !important; }
+  .upload-toggle { width:54px !important; height:30px !important; }
+  .upload-toggle::after { width:26px !important; height:26px !important; }
+  .upload-toggle.on::after { left:26px !important; }
+  .upload-preview-item { height:120px !important; }
+  .upload-preview-grid { gap:8px !important; }
 }
 @container (min-width: 600px) {
   .upload-right { padding:32px 56px 32px 32px !important; gap:18px !important; }
@@ -177,6 +200,28 @@ body.dark-mode .react-grid-item > .react-resizable-handle::after {
 }
 
 /* Trend card responsive */
+@container (max-height: 350px) {
+  .trend-header { padding:14px 20px 8px !important; }
+  .trend-label { font-size:15px !important; font-weight:600 !important; }
+  .trend-tab { font-size:12px !important; padding:6px 12px !important; }
+  .trend-list { padding:0 16px 8px !important; }
+  .trend-item { padding:14px 16px !important; gap:12px !important; border-radius:14px !important; }
+  .trend-rank { font-size:18px !important; font-weight:700 !important; min-width:22px !important; }
+  .trend-text { font-size:17px !important; font-weight:500 !important; }
+  .trend-tag { display:none !important; }
+  .trend-delta { font-size:12px !important; padding:5px 10px !important; border-radius:10px !important; }
+  .trend-cta-bar { display:none !important; }
+}
+@container (max-width: 280px) {
+  .trend-header { padding:12px 14px 6px !important; }
+  .trend-label { font-size:11px !important; }
+  .trend-tab { font-size:9px !important; padding:3px 6px !important; }
+  .trend-list { padding:0 14px 8px !important; }
+  .trend-item { padding:4px 8px !important; gap:5px !important; }
+  .trend-text { font-size:10px !important; white-space:nowrap !important; overflow:hidden !important; text-overflow:ellipsis !important; }
+  .trend-tag { display:none !important; }
+  .trend-delta { font-size:8px !important; padding:2px 4px !important; }
+}
 @container (min-height: 400px) {
   .trend-label { font-size:16px !important; }
   .trend-text { font-size:14px !important; }
@@ -202,7 +247,7 @@ body.dark-mode .react-grid-item > .react-resizable-handle::after {
   box-shadow: 0 4px 24px rgba(0,0,0,.06), 0 0 0 2px rgba(255,255,255,.8);
 }
 .card-text.pad-bio::before {
-  content:''; position:absolute; inset:0; z-index:0;
+  content:''; position:absolute; inset:0; z-index:0; pointer-events:none;
   background: linear-gradient(
     90deg,
     rgba(255,182,193,.23) 0%,
@@ -306,6 +351,8 @@ body.dark-mode .lumi-aura {
 }
 .upload-prompt { font-size:clamp(12px, 2vw, 14px); color:rgba(0,0,0,.4); text-align:center; word-break:keep-all; }
 .upload-prompt strong { color:#0d1117; font-weight:400; font-size:clamp(20px, 4vw, 32px); }
+.upload-desc { color:rgba(0,0,0,.35); }
+.lumi-brand { font-family:'Nunito',sans-serif; font-weight:800; }
 .upload-btn {
   display:inline-flex; align-items:center; justify-content:center; gap:8px;
   padding:clamp(12px, 2vw, 14px) clamp(24px, 4vw, 36px); width:100%;
@@ -428,6 +475,9 @@ body.dark-mode .upload-toggle { background:rgba(255,255,255,.1); }
 
 body.dark-mode .upload-prompt { color:rgba(240,242,248,.4); }
 body.dark-mode .upload-prompt strong { color:#f0f2f8; }
+body.dark-mode .upload-right p { color:#f0f2f8; }
+body.dark-mode .upload-right p[style*="rgba(0,0,0"] { color:rgba(240,242,248,.4) !important; }
+body.dark-mode .upload-right .upload-desc { color:rgba(240,242,248,.4) !important; }
 body.dark-mode .upload-comment { background:linear-gradient(135deg, rgba(255,107,139,.06), rgba(221,160,221,.06)); box-shadow:inset 0 0 0 1.5px rgba(200,80,122,.12); color:#f0f2f8; }
 body.dark-mode .upload-comment:focus { box-shadow:inset 0 0 0 1.5px rgba(200,80,122,.35); }
 body.dark-mode .upload-comment::placeholder { color:rgba(255,255,255,.2); }
@@ -640,6 +690,8 @@ body.dark-mode .card-trend::before { display:none; }
   transition: top .6s cubic-bezier(.4,0,.2,1);
 }
 @keyframes trendSlideIn { from { opacity:0; transform:translateX(-16px); } to { opacity:1; transform:translateX(0); } }
+@keyframes igGuideIn { from { opacity:0; transform:translateY(20px) scale(.9); } to { opacity:1; transform:translateY(0) scale(1); } }
+@keyframes igIconPop { from { opacity:0; transform:scale(.3) rotate(-15deg); } to { opacity:1; transform:scale(1) rotate(0deg); } }
 .trend-rank { font-size:11px; font-weight:600; color:rgba(0,0,0,.3); min-width:16px; }
 .trend-info { flex:1; min-width:0; }
 .trend-text { font-size:12px; color:#0d1117; font-weight:400; line-height:1.3; }
@@ -696,19 +748,19 @@ body.dark-mode .trend-cta-btn { background:#f0f2f8; color:#0d1117; }
 /* DARK TOGGLE — nevflynn style sliding switch */
 .card-dark-toggle { background: #fff; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: background 0.3s; }
 .toggle-track {
-  width: 80px; height: 48px; border-radius: 40px; display: flex; align-items: center;
+  width: 100px; height: 56px; border-radius: 40px; display: flex; align-items: center;
   position: relative; background: #f0f2f8; box-shadow: transparent 0 0 0 2px inset;
   transition: background 0.4s;
 }
 .toggle-ball {
-  width: 36px; height: 36px; border-radius: 30px; background: #0d1117;
+  width: 44px; height: 44px; border-radius: 30px; background: #0d1117;
   position: absolute; left: 6px; display: flex; align-items: center; justify-content: center;
   transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1), background 0.4s, transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
 }
-.toggle-ball .toggle-icon { font-size: 18px; line-height: 1; transition: opacity 0.3s; }
+.toggle-ball .toggle-icon { font-size: 22px; line-height: 1; transition: opacity 0.3s; }
 body.dark-mode .toggle-track { background: #2c2c2e; }
-body.dark-mode .toggle-ball { left: 38px; background: #f0f2f8; transform: rotate(360deg); }
+body.dark-mode .toggle-ball { left: 50px; background: #f0f2f8; transform: rotate(360deg); }
 
 /* NEWSLETTER */
 .news-title { font-size: clamp(18px, 3vw, 24px); font-weight: 400; color: #0d1117; margin-bottom: 8px; }
@@ -720,6 +772,70 @@ body.dark-mode .toggle-ball { left: 38px; background: #f0f2f8; transform: rotate
 .news-sub-info { font-size: 14px; color: rgba(13,17,35,.4); }
 .news-sub-info .sub-num { font-size: 24px; font-weight: 400; color: #0d1117; margin-left: 4px; }
 
+/* TUTORIAL CARD (vertical phone-style) */
+.tut-wrap { display:flex; flex-direction:column; height:100%; width:100%; overflow:visible; }
+.tut-lumi-area { flex:0 0 48%; display:flex; align-items:flex-end; justify-content:center; position:relative; padding-bottom:8px; }
+.tut-content { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:16px 20px; gap:10px; overflow:visible; min-height:0; }
+.tut-title { font-size:18px; text-align:center; line-height:1.4; color:#0d1117; }
+.tut-sub { font-size:12px; text-align:center; color:rgba(0,0,0,.35); line-height:1.5; }
+.tut-content-gallery { justify-content:flex-start !important; padding-top:20px !important; }
+.tut-guide-pulse { animation: tutPulse 1.5s ease-in-out infinite !important; }
+@keyframes tutPulse {
+  0%,100% { box-shadow:0 0 0 0 rgba(255,107,139,.3); }
+  50% { box-shadow:0 0 16px 4px rgba(255,107,139,.2); }
+}
+.tut-picker-overlay { position:absolute; inset:0; z-index:10; background:rgba(0,0,0,.4); display:flex; flex-direction:column; justify-content:flex-end; animation:tutFadeIn .3s ease-out; border-radius:32px; overflow:hidden; }
+@keyframes tutFadeIn { from{opacity:0} to{opacity:1} }
+.tut-picker-sheet { background:#fff; border-radius:16px 16px 0 0; padding:8px 12px 16px; animation:tutSlideUp .3s ease-out; }
+@keyframes tutSlideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+.tut-picker-btn { width:100%; padding:14px; border:none; background:transparent; font-family:inherit; font-size:15px; color:#007AFF; cursor:pointer; border-radius:10px; transition:background .2s; }
+.tut-picker-btn:hover { background:rgba(0,0,0,.05); }
+.tut-picker-btn.cancel { color:#FF3B30; margin-top:6px; background:rgba(0,0,0,.03); }
+.tut-picker-divider { height:1px; background:rgba(0,0,0,.08); margin:0 4px; }
+.tut-gallery-header { display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom:12px; }
+.tut-gallery-title { font-size:14px; font-weight:500; color:#0d1117; }
+.tut-back-btn { background:none; border:none; font-size:13px; color:rgba(0,0,0,.4); cursor:pointer; font-family:inherit; padding:4px 8px; }
+.tut-gallery-done { padding:6px 14px; border-radius:980px; border:none; background:linear-gradient(135deg,#FF6B8B,#DDA0DD); color:#fff; font-size:12px; font-family:inherit; cursor:pointer; transition:transform .2s; }
+.tut-gallery-done:hover { transform:scale(1.05); }
+.tut-gallery { display:grid; grid-template-columns:repeat(3,1fr); grid-auto-rows:1fr; gap:6px; width:100%; flex:1; min-height:0; }
+.tut-gallery-item { position:relative; overflow:hidden; cursor:pointer; border-radius:10px; }
+.tut-gallery-item img { width:100%; height:100%; object-fit:cover; display:block; }
+.tut-gallery-item.selected::after { content:'\2713'; position:absolute; top:6px; right:6px; width:22px; height:22px; border-radius:50%; background:linear-gradient(135deg,#FF6B8B,#DDA0DD); color:#fff; font-size:11px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,.2); }
+.tut-feed-card { width:92%; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 4px 20px rgba(0,0,0,.08); animation:tutFeedSlide .6s cubic-bezier(.4,0,.2,1); }
+@keyframes tutFeedSlide { from{transform:translateY(40px);opacity:0} to{transform:translateY(0);opacity:1} }
+.tut-feed-header { display:flex; align-items:center; gap:8px; padding:10px 12px; }
+.tut-feed-avatar { width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,#FF6B8B,#DDA0DD); flex-shrink:0; }
+.tut-feed-name { font-size:12px; font-weight:600; color:#0d1117; }
+.tut-feed-img img { width:100%; aspect-ratio:1; object-fit:cover; display:block; }
+.tut-feed-actions { display:flex; gap:12px; padding:10px 12px; }
+.tut-feed-caption { padding:0 12px 10px; font-size:11px; color:rgba(0,0,0,.6); line-height:1.5; }
+.tut-cta-wrap { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; height:100%; width:100%; animation:tutFadeIn .5s ease-out; }
+.tut-check-circle { width:52px; height:52px; border-radius:50%; background:rgba(255,107,139,.1); display:flex; align-items:center; justify-content:center; }
+.tut-cta-btn { padding:14px 28px; border-radius:980px; border:none; background:linear-gradient(135deg,#FF6B8B,#DDA0DD); color:#fff; font-family:inherit; font-size:15px; font-weight:600; cursor:pointer; transition:transform .2s,box-shadow .2s; }
+.tut-cta-btn:hover { transform:scale(1.05); box-shadow:0 4px 20px rgba(200,80,122,.3); }
+body.dark-mode .tut-title { color:#f0f2f8; }
+body.dark-mode .tut-sub { color:rgba(240,242,248,.35); }
+body.dark-mode .tut-picker-overlay { background:rgba(0,0,0,.6); }
+body.dark-mode .tut-picker-sheet { background:#2c2c2e; }
+body.dark-mode .tut-picker-btn { color:#0A84FF; }
+body.dark-mode .tut-picker-btn:hover { background:rgba(255,255,255,.06); }
+body.dark-mode .tut-picker-btn.cancel { color:#FF453A; background:rgba(255,255,255,.04); }
+body.dark-mode .tut-picker-divider { background:rgba(255,255,255,.1); }
+body.dark-mode .tut-gallery-title { color:#f0f2f8; }
+body.dark-mode .tut-back-btn { color:rgba(240,242,248,.4); }
+body.dark-mode .tut-feed-card { background:#1c1c1e; }
+body.dark-mode .tut-feed-name { color:#f0f2f8; }
+body.dark-mode .tut-feed-caption { color:rgba(240,242,248,.6); }
+body.dark-mode .tut-feed-caption strong { color:#f0f2f8; }
+body.dark-mode .tut-feed-actions svg { stroke:#f0f2f8; }
+body.dark-mode .tut-check-circle { background:rgba(255,107,139,.15); }
+.tut-story-card { position:relative; width:34%; border-radius:10px; overflow:hidden; flex-shrink:0; animation:tutStoryIn .5s cubic-bezier(.4,0,.2,1); box-shadow:0 4px 16px rgba(0,0,0,.12); align-self:stretch; }
+@keyframes tutStoryIn { from{opacity:0;transform:translateX(20px) scale(.9)} to{opacity:1;transform:translateX(0) scale(1)} }
+.tut-story-progress { position:absolute; top:6px; left:6px; right:6px; height:3px; background:rgba(255,255,255,.25); border-radius:2px; z-index:2; overflow:hidden; }
+.tut-story-bar { height:100%; background:#fff; border-radius:2px; animation:storyProgress 2.5s linear forwards; }
+@keyframes storyProgress { from{width:0} to{width:100%} }
+.tut-story-header { position:absolute; top:14px; left:8px; display:flex; align-items:center; gap:5px; z-index:2; }
+
 /* RESPONSIVE */
 @media (max-width: 768px) {
   nav { padding: 24px 16px 16px; }
@@ -729,6 +845,143 @@ body.dark-mode .toggle-ball { left: 38px; background: #f0f2f8; transform: rotate
   .nav-logo { font-size: 26px; }
 }
 @media (max-width: 480px) { .nav-contact { display: none; } }
+
+/* MOBILE CARD RESPONSIVE */
+@media (max-width: 600px) {
+  .react-grid-item { border-radius: 20px !important; }
+  .bento-card { border-radius: 20px !important; }
+
+  /* 카드 기본 패딩 축소 */
+  .bento-card.card-text:not(.pad-bio) { padding: 18px 20px !important; }
+  .card-text.pad-spot { padding: 16px 20px !important; }
+  .card-text.pad-blog { padding: 18px 22px !important; }
+
+  /* Blog */
+  .blog-title { font-size: 17px !important; line-height: 1.3 !important; margin-bottom: 6px !important; }
+  .blog-desc { font-size: 12px !important; line-height: 1.5 !important; }
+
+  /* Spotify */
+  .spot-icon { width: 28px !important; height: 28px !important; }
+  .spot-icon svg { width: 28px !important; height: 28px !important; }
+  .spot-title { font-size: 17px !important; }
+  .spot-artist { font-size: 12px !important; }
+  .spot-status { font-size: 12px !important; }
+
+  /* Price flip */
+  .price-flip-container { margin-top: 8px !important; }
+  .price-flip-inner { height: 36px !important; }
+  .price-flip-front, .price-flip-back { font-size: 12px !important; }
+
+  /* Newsletter / Comparison table */
+  .btn-pill { font-size: 11px !important; height: 30px !important; padding: 0 10px !important; }
+
+  /* Dark toggle */
+  .toggle-track { width: 76px !important; height: 42px !important; }
+  .toggle-ball { width: 34px !important; height: 34px !important; }
+  body.dark-mode .toggle-ball { left: 38px !important; }
+  .toggle-ball .toggle-icon { font-size: 17px !important; }
+
+  /* Tutorial card */
+  .tut-lumi-area { flex: 0 0 34% !important; }
+  .tut-title { font-size: 17px !important; }
+  .tut-sub { font-size: 11px !important; }
+  .tut-content { padding: 12px 16px !important; gap: 8px !important; }
+  .upload-btn { font-size: 13px !important; padding: 10px !important; border-radius: 14px !important; }
+  .tut-picker-btn { font-size: 14px !important; padding: 12px !important; }
+  .tut-picker-sheet { padding: 6px 10px 12px !important; border-radius: 14px 14px 0 0 !important; }
+  .tut-gallery-header { margin-bottom: 4px !important; }
+  .tut-gallery-done { font-size: 11px !important; padding: 5px 12px !important; }
+  .tut-back-btn { font-size: 12px !important; }
+  .tut-feed-card { border-radius: 10px !important; }
+  .tut-feed-name { font-size: 11px !important; }
+  .tut-feed-avatar { width: 24px !important; height: 24px !important; }
+  .tut-feed-header { padding: 8px 10px !important; }
+  .tut-feed-caption { font-size: 10px !important; padding: 0 10px 6px !important; }
+  .tut-feed-actions { padding: 6px 10px !important; }
+  .tut-feed-actions svg { width: 14px !important; height: 14px !important; }
+  .tut-story-card { width: 38% !important; border-radius: 8px !important; }
+  .tut-story-header { top: 10px !important; left: 6px !important; }
+  .tut-story-progress { top: 4px !important; left: 4px !important; right: 4px !important; }
+  .tut-cta-btn { font-size: 14px !important; padding: 12px 24px !important; }
+  .tut-check-circle { width: 44px !important; height: 44px !important; }
+  .tut-check-circle svg { width: 24px !important; height: 24px !important; }
+  .upload-comment { font-size: 11px !important; padding: 10px 14px !important; border-radius: 12px !important; }
+  .upload-submit { font-size: 12px !important; padding: 10px !important; border-radius: 12px !important; }
+
+  /* Demo animation card */
+  .demo-scene { padding: 16px !important; }
+  .demo-caption-text { font-size: 14px !important; line-height: 1.6 !important; }
+  .demo-label { font-size: 12px !important; margin-top: 10px !important; }
+  .demo-tag { font-size: 11px !important; padding: 5px 12px !important; }
+  .demo-tags { gap: 6px !important; }
+  .demo-check-circle { width: 60px !important; height: 60px !important; }
+  .demo-check-circle svg { width: 30px !important; height: 30px !important; }
+  .demo-ig-feed { width: 70% !important; border-radius: 10px !important; }
+  .demo-ig-header { padding: 8px 10px !important; }
+  .demo-ig-name { font-size: 11px !important; }
+  .demo-ig-actions { padding: 8px 10px !important; gap: 8px !important; }
+  .demo-ig-actions svg { width: 14px !important; height: 14px !important; }
+  .demo-ig-caption-preview { font-size: 10px !important; padding: 0 10px 8px !important; }
+  .demo-ig-likes { font-size: 10px !important; padding: 0 10px 2px !important; }
+  .demo-photo-drop { width: 65% !important; border-radius: 12px !important; }
+  .card-arrow { width: 28px !important; height: 28px !important; bottom: 10px !important; left: 10px !important; border-radius: 14px !important; }
+  .card-arrow svg { width: 12px !important; height: 12px !important; }
+
+  /* Feature card (spotify) — 모바일 h:1=280px에 맞추기 */
+  .spot-icon { width: 24px !important; height: 24px !important; }
+  .spot-icon svg { width: 24px !important; height: 24px !important; }
+  .spot-bars { height: 10px !important; }
+  .spot-bars span { width: 2px !important; }
+
+  /* 카드 내부 인라인 패딩 강제 축소 */
+  .bento-card.card-text { overflow: hidden; }
+
+  /* Reset card */
+  .reset-blocks { width: 80px !important; height: 56px !important; gap: 6px !important; }
+  .reset-label { font-size: 10px !important; }
+
+  /* Instagram card */
+  .ig-badge { font-size: 11px !important; padding: 4px 12px !important; }
+
+  /* Instagram guide steps */
+  .card-visual.bg-blue { padding: 16px !important; }
+
+  /* Trend card */
+  .trend-header { padding: 14px 18px 8px !important; }
+  .trend-list { padding: 0 18px 12px !important; }
+  .trend-label { font-size: 13px !important; }
+  .trend-tab { font-size: 10px !important; padding: 4px 8px !important; }
+  .trend-cta-bar { padding: 8px 18px 20px !important; }
+  .trend-cta-msg { font-size: 11px !important; }
+
+  /* Signup grid */
+  .su-grid { grid-template-columns: 1fr !important; }
+  .su-card { grid-column: auto !important; }
+}
+
+/* MOBILE STICKY CTA BAR */
+.mobile-cta-bar { display:none; }
+@media (max-width: 600px) {
+  .mobile-cta-bar {
+    display:flex; position:fixed; bottom:0; left:0; right:0;
+    padding:12px 16px; padding-bottom:max(12px, env(safe-area-inset-bottom));
+    background:rgba(255,255,255,.92); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+    z-index:100; justify-content:center;
+    box-shadow:0 -2px 20px rgba(0,0,0,.06);
+  }
+  .mobile-cta-btn {
+    width:100%; padding:14px; border-radius:980px; border:none;
+    background:linear-gradient(135deg,#FF6B8B,#DDA0DD);
+    color:#fff; font-family:inherit; font-size:15px; font-weight:600;
+    cursor:pointer; transition:transform .2s;
+  }
+  .mobile-cta-btn:active { transform:scale(.97); }
+  body.dark-mode .mobile-cta-bar {
+    background:rgba(17,17,17,.92);
+    box-shadow:0 -2px 20px rgba(0,0,0,.3);
+  }
+  .grid-wrap { padding-bottom:100px !important; }
+}
 
 /* DARK MODE */
 body.dark-mode { background: #111; color: #f0f2f8; }
@@ -772,15 +1025,63 @@ body.dark-mode .map-line { background: #f0f2f8; }
 body.dark-mode .map-avatar { background: linear-gradient(135deg, #FF6B8B, #DDA0DD, #EDD080); }
 body.dark-mode .bento-card:hover { box-shadow: rgba(255,255,255,.05) 0px 5px 24px 0px; }
 
+/* PRICE FLIP CARD */
+.price-flip-container {
+  perspective: 600px;
+  cursor: pointer;
+  margin-top: 16px;
+}
+.price-flip-inner {
+  position: relative;
+  width: 100%;
+  height: 44px;
+  transition: transform 0.6s cubic-bezier(.4,0,.2,1);
+  transform-style: preserve-3d;
+}
+.price-flip-container:hover .price-flip-inner,
+.price-flip-container.flipped .price-flip-inner {
+  transform: rotateX(180deg);
+}
+.price-flip-front, .price-flip-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.3px;
+}
+.price-flip-front {
+  background: #1c1c1e;
+  color: rgba(255,255,255,.8);
+}
+.price-flip-back {
+  background: linear-gradient(135deg, #FF6B9D, #DDA0DD);
+  color: #fff;
+  transform: rotateX(180deg);
+}
+body.dark-mode .price-flip-front {
+  background: #2c2c2e;
+}
+
 /* RESET CARD */
 .reset-card {
   background:#fff; cursor:pointer; display:flex; flex-direction:column;
   align-items:center; justify-content:center; gap:14px; position:relative;
   transition:background .3s;
 }
+.reset-card::after {
+  content:''; position:absolute; inset:-8px; z-index:1;
+}
 .reset-blocks {
-  display:grid; grid-template-columns:repeat(3,1fr); gap:6px;
-  width:80px; height:56px;
+  display:grid; grid-template-columns:repeat(3,1fr); gap:8px;
+  width:120px; height:84px;
 }
 .reset-block {
   border-radius:6px; transition:all .5s cubic-bezier(.4,0,.2,1);
@@ -814,77 +1115,130 @@ body.dark-mode .bento-card:hover { box-shadow: rgba(255,255,255,.05) 0px 5px 24p
 body.dark-mode .reset-card { background:#1c1c1e; }
 body.dark-mode .reset-label { color:rgba(255,255,255,.2); }
 body.dark-mode .reset-card:hover .reset-label { color:rgba(255,255,255,.4); }
-/* SIGNUP GRID */
-.signup-grid-wrap{display:none;max-width:1200px;margin:0 auto;padding:24px;}
-.signup-grid-wrap.open{display:block;animation:suGridIn .4s ease-out;}
-@keyframes suGridIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-.su-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
-.su-card{background:#fff;border-radius:24px;padding:24px;transition:box-shadow .25s;position:relative;}
-.su-card:hover{box-shadow:rgba(100,100,111,.1) 0 5px 24px;}
-.su-card:nth-child(1){animation:suCardIn .4s ease-out 0s both}
-.su-card:nth-child(2){animation:suCardIn .4s ease-out .05s both}
-.su-card:nth-child(3){animation:suCardIn .4s ease-out .1s both}
-.su-card:nth-child(4){animation:suCardIn .4s ease-out .15s both}
-.su-card:nth-child(5){animation:suCardIn .4s ease-out .2s both}
-.su-card:nth-child(6){animation:suCardIn .4s ease-out .25s both}
-.su-card:nth-child(7){animation:suCardIn .4s ease-out .3s both}
-.su-card:nth-child(8){animation:suCardIn .4s ease-out .35s both}
-@keyframes suCardIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+/* SIGNUP CONVERSATION */
+.signup-grid-wrap{display:none;position:fixed;inset:0;z-index:200;}
+.signup-grid-wrap.open{display:flex;align-items:center;justify-content:center;animation:suFadeIn .3s ease-out;}
+@keyframes suFadeIn{from{opacity:0}to{opacity:1}}
+.su-chat-bg{position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);}
+.su-chat-box{position:relative;width:100%;max-width:420px;margin:0 20px;background:#fff;border-radius:32px;z-index:1;display:flex;flex-direction:column;align-items:center;padding:36px 32px 28px;animation:suSlideUp .5s cubic-bezier(.16,1,.3,1);overflow:hidden;}
+body.dark-mode .su-chat-box{background:#1c1c1e;color:#f0f2f8;}
+@keyframes suSlideUp{from{opacity:0;transform:translateY(40px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+.su-chat-close{position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:16px;border:none;background:rgba(0,0,0,.05);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .2s;z-index:2;}
+body.dark-mode .su-chat-close{background:rgba(255,255,255,.1);}
+.su-chat-close:hover{transform:scale(1.1);}
+.su-chat-close svg{width:10px;height:10px;stroke:#0d1117;stroke-width:2.5;}
+body.dark-mode .su-chat-close svg{stroke:#f0f2f8;}
+/* lumi character */
+.su-lumi-big{width:180px;height:180px;object-fit:contain;margin-bottom:8px;animation:lumiFloat 3s ease-in-out infinite;}
+.su-lumi-big.bounce{animation:lumiBigBounce .6s cubic-bezier(.16,1,.3,1), lumiFloat 3s ease-in-out .6s infinite;}
+.su-lumi-big.shake{animation:lumiShake .5s ease-in-out, lumiFloat 3s ease-in-out .5s infinite;}
+@keyframes lumiBigBounce{0%{transform:scale(.7) translateY(20px);opacity:0}50%{transform:scale(1.08) translateY(-5px)}100%{transform:scale(1) translateY(0);opacity:1}}
+@keyframes lumiFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes lumiShake{0%,100%{transform:rotate(0)}20%{transform:rotate(-8deg)}40%{transform:rotate(8deg)}60%{transform:rotate(-5deg)}80%{transform:rotate(5deg)}}
+/* speech bubble */
+.su-speech{position:relative;background:rgba(0,0,0,.04);border-radius:20px;padding:16px 22px;margin-bottom:20px;text-align:center;font-size:16px;line-height:1.7;color:#0d1117;min-height:60px;width:100%;transition:opacity .3s;}
+body.dark-mode .su-speech{background:rgba(255,255,255,.08);color:#f0f2f8;}
+.su-speech::before{content:'';position:absolute;top:-8px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:8px solid rgba(0,0,0,.04);}
+body.dark-mode .su-speech::before{border-bottom-color:rgba(255,255,255,.08);}
+.su-speech-typing{display:flex;gap:5px;justify-content:center;align-items:center;padding:16px 22px;}
+.su-speech-dot{width:8px;height:8px;border-radius:4px;background:rgba(0,0,0,.2);animation:typingBounce 1.2s infinite;}
+body.dark-mode .su-speech-dot{background:rgba(255,255,255,.3);}
+.su-speech-dot:nth-child(2){animation-delay:.2s;}
+.su-speech-dot:nth-child(3){animation-delay:.4s;}
+@keyframes typingBounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+/* progress dots */
+.su-progress{display:flex;gap:6px;justify-content:center;margin-bottom:16px;}
+.su-progress-dot{width:8px;height:8px;border-radius:4px;background:rgba(0,0,0,.1);transition:all .3s;}
+body.dark-mode .su-progress-dot{background:rgba(255,255,255,.15);}
+.su-progress-dot.active{width:20px;background:linear-gradient(135deg,#FF6B8B,#DDA0DD);}
+.su-progress-dot.done{background:#4ade80;}
+/* form area */
+.su-form-area{width:100%;animation:suFormIn .4s cubic-bezier(.16,1,.3,1) both;}
+@keyframes suFormIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .su-label{font-size:11px;font-weight:600;color:rgba(0,0,0,.35);margin-bottom:5px;display:block;letter-spacing:.3px;}
-.su-input{width:100%;padding:11px 14px;border-radius:12px;border:1px solid rgba(0,0,0,.08);background:transparent;font-family:inherit;font-size:14px;color:#0d1117;outline:none;transition:border-color .2s;margin-bottom:10px;}
-.su-input:focus{border-color:rgba(0,0,0,.25);}
+body.dark-mode .su-label{color:rgba(240,242,248,.4);}
+.su-input{width:100%;padding:13px 16px;border-radius:16px;border:1.5px solid rgba(0,0,0,.08);background:#f5f5f7;font-family:inherit;font-size:15px;color:#0d1117;outline:none;transition:border-color .2s,box-shadow .2s;margin-bottom:10px;}
+body.dark-mode .su-input{background:#2a2a2e;}
+body.dark-mode .su-input{border-color:rgba(255,255,255,.12);color:#f0f2f8 !important;-webkit-text-fill-color:#f0f2f8 !important;}
+.su-pw-wrap{position:relative;}
+.su-input:focus{border-color:rgba(200,80,122,.4);box-shadow:0 0 0 3px rgba(200,80,122,.08);}
 .su-input::placeholder{color:rgba(0,0,0,.2);}
+body.dark-mode .su-input::placeholder{color:rgba(255,255,255,.2);}
 .su-input-row{display:flex;gap:6px;align-items:center;margin-bottom:10px;}
 .su-input-row .su-input{flex:1;min-width:0;margin-bottom:0;}
-.su-select{width:100%;padding:11px 14px;border-radius:12px;border:1px solid rgba(0,0,0,.08);background:transparent;font-family:inherit;font-size:14px;color:#0d1117;outline:none;appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5' fill='none' stroke='%23999' stroke-width='1.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;margin-bottom:10px;}
-.su-select:focus{border-color:rgba(0,0,0,.25);}
-.su-btn{width:100%;padding:13px;border-radius:980px;border:none;background:#0d1117;color:#fff;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:transform .2s;}
-.su-btn:hover{transform:scale(1.02);}
-.su-btn-outline{width:100%;padding:13px;border-radius:980px;border:1px solid rgba(0,0,0,.15);background:transparent;color:#0d1117;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:transform .2s;margin-bottom:8px;}
-.su-btn-outline:hover{transform:scale(1.02);}
-.su-title{font-size:16px;font-weight:400;color:#0d1117;margin-bottom:12px;}
-.su-biz-grid{display:flex;flex-wrap:wrap;gap:5px;}
+.su-select{width:100%;padding:13px 16px;border-radius:16px;border:1.5px solid rgba(0,0,0,.08);background:transparent;font-family:inherit;font-size:15px;color:#0d1117;outline:none;appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5' fill='none' stroke='%23999' stroke-width='1.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;margin-bottom:10px;}
+body.dark-mode .su-select{border-color:rgba(255,255,255,.12);color:#f0f2f8;}
+.su-select:focus{border-color:rgba(200,80,122,.4);}
+.su-btn{width:100%;padding:14px;border-radius:980px;border:none;background:linear-gradient(135deg,#FF6B8B,#DDA0DD);color:#fff;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;transition:transform .2s,box-shadow .2s;}
+.su-btn:hover{transform:scale(1.03);box-shadow:0 4px 20px rgba(255,107,139,.25);}
+.su-btn:active{transform:scale(.97);}
+.su-btn-sub{width:100%;padding:12px;border-radius:980px;border:1.5px solid rgba(0,0,0,.1);background:transparent;color:#0d1117;font-family:inherit;font-size:14px;font-weight:500;cursor:pointer;transition:transform .2s;margin-top:8px;}
+body.dark-mode .su-btn-sub{border-color:rgba(255,255,255,.15);color:#f0f2f8;}
+.su-btn-sub:hover{transform:scale(1.02);}
+.su-biz-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
 .su-biz-item{display:flex;align-items:center;cursor:pointer;}
 .su-biz-item input{display:none;}
-.su-biz-item span{padding:7px 12px;border-radius:980px;font-size:12px;color:rgba(0,0,0,.45);border:1px solid rgba(0,0,0,.08);background:transparent;cursor:pointer;transition:all .2s;display:block;}
-.su-biz-item input:checked+span{background:#0d1117;color:#fff;border-color:#0d1117;}
-.su-agree label{display:flex;align-items:center;gap:8px;font-size:12px;color:rgba(0,0,0,.4);margin-bottom:6px;cursor:pointer;}
-.su-agree input{accent-color:#0d1117;width:15px;height:15px;flex-shrink:0;}
-.su-agree-all{font-size:13px;font-weight:700;color:#0d1117;padding:12px;background:rgba(0,0,0,.03);border-radius:12px;margin-bottom:8px;}
-.su-lumi-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;}
-.su-lumi-img{width:120px;height:120px;object-fit:contain;animation:lumiIdle 3s ease-in-out infinite;}
+.su-biz-item span{padding:8px 14px;border-radius:980px;font-size:13px;color:rgba(0,0,0,.45);border:1.5px solid rgba(0,0,0,.08);background:transparent;cursor:pointer;transition:all .2s;display:block;}
+body.dark-mode .su-biz-item span{color:rgba(240,242,248,.5);border-color:rgba(255,255,255,.12);}
+.su-biz-item input:checked+span{background:linear-gradient(135deg,#FF6B8B,#DDA0DD);color:#fff;border-color:transparent;transform:scale(1.05);}
+.su-agree label{display:flex;align-items:center;gap:8px;font-size:13px;color:rgba(0,0,0,.4);margin-bottom:8px;cursor:pointer;transition:background .2s;}
+body.dark-mode .su-agree label{color:rgba(240,242,248,.4);}
+.su-agree label:hover{background:rgba(0,0,0,.02);border-radius:8px;}
+body.dark-mode .su-agree label:hover{background:rgba(255,255,255,.04);}
+.su-agree input{accent-color:#C8507A;width:16px;height:16px;flex-shrink:0;}
+.su-agree-all{font-size:14px;font-weight:700;color:#0d1117;padding:12px;background:rgba(0,0,0,.03);border-radius:14px;margin-bottom:10px;}
+body.dark-mode .su-agree-all{color:#f0f2f8;background:rgba(255,255,255,.06);}
+.su-select:focus{box-shadow:0 0 0 3px rgba(0,0,0,.04);transform:scale(1.01);}
+.su-lumi-img{width:200px;height:200px;object-fit:contain;animation:lumiIdle 3s ease-in-out infinite;}
 .su-lumi-bubble{background:rgba(0,0,0,.04);border-radius:16px;padding:12px 18px;font-size:14px;color:rgba(0,0,0,.5);text-align:center;line-height:1.5;}
-.su-close{position:absolute;top:12px;right:12px;width:28px;height:28px;border-radius:14px;background:rgba(0,0,0,.06);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;}
-.su-close svg{width:10px;height:10px;stroke:#0d1117;stroke-width:2.5;}
+.su-guide{display:flex;flex-direction:column;gap:8px;padding:8px 0;}
+.su-guide-title{font-size:17px;color:#0d1117;margin-bottom:4px;}
+.su-guide-step{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:rgba(0,0,0,.5);line-height:1.5;}
+.su-guide-step strong{color:#0d1117;font-weight:500;}
+.su-guide-num{width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.06);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;color:#0d1117;}
+.su-guide-note{font-size:11px;color:rgba(0,0,0,.2);margin-top:6px;line-height:1.5;}
+.su-close{position:fixed;top:32px;left:50%;transform:translateX(-50%);z-index:201;width:46px;height:46px;border-radius:23px;background:rgba(237,233,233,.9);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .2s,box-shadow .2s;}
+.su-close:hover{transform:translateX(-50%) scale(1.08);box-shadow:0 2px 12px rgba(0,0,0,.08);}
+.su-close svg{width:12px;height:12px;stroke:#0d1117;stroke-width:2.5;}
 .su-submit-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;}
 .su-otp-area{display:none;margin-top:6px;}
 .su-otp-area.visible{display:block;}
 body.dark-mode .su-card{background:#1c1c1e;}
 body.dark-mode .su-card:hover{box-shadow:rgba(255,255,255,.05) 0 5px 24px;}
-body.dark-mode .su-label{color:rgba(240,242,248,.35);}
-body.dark-mode .su-input{border-color:rgba(255,255,255,.1);color:#f0f2f8;}
+body.dark-mode .su-label{color:rgba(240,242,248,.8);}
+body.dark-mode .su-input{border-color:rgba(255,255,255,.1);color:#f0f2f8 !important;-webkit-text-fill-color:#f0f2f8 !important;}
 body.dark-mode .su-input:focus{border-color:rgba(255,255,255,.25);}
-body.dark-mode .su-input::placeholder{color:rgba(255,255,255,.2);}
+body.dark-mode .su-input::placeholder{color:rgba(255,255,255,.4);}
 body.dark-mode .su-select{border-color:rgba(255,255,255,.1);color:#f0f2f8;}
 body.dark-mode .su-btn{background:#f0f2f8;color:#0d1117;}
-body.dark-mode .su-btn-outline{border-color:rgba(255,255,255,.12);color:#f0f2f8;}
+body.dark-mode .su-btn-outline{border-color:rgba(255,255,255,.2);color:#f0f2f8;}
 body.dark-mode .su-title{color:#f0f2f8;}
-body.dark-mode .su-biz-item span{border-color:rgba(255,255,255,.1);color:rgba(240,242,248,.45);}
+body.dark-mode .su-biz-item span{border-color:rgba(255,255,255,.15);color:#f0f2f8;}
 body.dark-mode .su-biz-item input:checked+span{background:#f0f2f8;color:#0d1117;border-color:#f0f2f8;}
-body.dark-mode .su-agree label{color:rgba(240,242,248,.4);}
+body.dark-mode .su-agree label{color:#f0f2f8;}
 body.dark-mode .su-agree input{accent-color:#f0f2f8;}
 body.dark-mode .su-agree-all{color:#f0f2f8;background:rgba(255,255,255,.04);}
-body.dark-mode .su-lumi-bubble{background:rgba(255,255,255,.06);color:rgba(240,242,248,.5);}
-body.dark-mode .su-close{background:rgba(255,255,255,.08);}
+body.dark-mode .su-lumi-bubble{background:rgba(255,255,255,.06);color:#f0f2f8;}
+body.dark-mode .su-guide-title{color:#f0f2f8;}
+body.dark-mode .su-guide-step{color:#f0f2f8;}
+body.dark-mode .su-guide-step strong{color:#f0f2f8;}
+body.dark-mode .su-guide-num{background:rgba(255,255,255,.08);color:#f0f2f8;}
+body.dark-mode .su-guide-note{color:rgba(240,242,248,.6);}
+body.dark-mode .su-close{background:rgba(44,44,46,.9);}
 body.dark-mode .su-close svg{stroke:#f0f2f8;}
 @media(max-width:768px){.su-grid{grid-template-columns:1fr;}.su-card{grid-column:auto!important;}}
 </style>
 </head>
 <body>
 <script>
-  if (localStorage.getItem('lumi_dark_mode') === '1') {
+  var savedDark = localStorage.getItem('lumi_dark_mode');
+  var hour = new Date().getHours();
+  var isNight = hour >= 18 || hour < 6;
+  if (savedDark === '1' || (savedDark === null && isNight)) {
     document.body.classList.add('dark-mode');
   }
+  // 테스트용: 새로고침 시 연동 상태 초기화
+  try{var u=JSON.parse(localStorage.getItem('lumi_user')||'{}');delete u.igConnected;localStorage.setItem('lumi_user',JSON.stringify(u));localStorage.removeItem('lumi_ig_guide');}catch(e){}
 </script>
 
 <div id="page-overlay" style="position:fixed;inset:0;z-index:9999;pointer-events:none;"></div>
@@ -922,10 +1276,17 @@ body.dark-mode .su-close svg{stroke:#f0f2f8;}
     <button class="nav-pill" onclick="filterGrid('feature', this)">기능</button>
     <button class="nav-pill" onclick="filterGrid('price', this)">요금</button>
   </div>
-  <div style="display:flex;align-items:center;gap:12px;">
-    <a class="nav-contact" href="/dashboard" style="opacity:.6;">로그인</a>
-    <a class="nav-contact" href="#" onclick="event.preventDefault();openSignupGrid();">회원가입</a>
-  </div>
+  <div style="display:flex;align-items:center;gap:12px;" id="nav-auth"></div>
+  <script>
+  (function(){
+    var nav = document.getElementById('nav-auth');
+    if (localStorage.getItem('lumi_token')) {
+      nav.innerHTML = '<a class="nav-contact" href="#" onclick="event.preventDefault();logoutLumi();">로그아웃</a>';
+    } else {
+      nav.innerHTML = '<a class="nav-contact" href="#" onclick="event.preventDefault();openLogin();" style="opacity:.6;">로그인</a><a class="nav-contact" href="#" onclick="event.preventDefault();openSignupGrid();">회원가입</a>';
+    }
+  })();
+  </script>
 </nav>
 
 
@@ -934,96 +1295,32 @@ body.dark-mode .su-close svg{stroke:#f0f2f8;}
   <div id="grid-root"></div>
 </div>
 
+<div class="mobile-cta-bar">
+  <button class="mobile-cta-btn" onclick="navigateOut('/beta')">1주일 무료 체험</button>
+</div>
+
+<div class="signup-grid-wrap" id="login-modal">
+  <div class="su-chat-bg" onclick="closeLogin()"></div>
+  <div class="su-chat-box">
+    <button class="su-chat-close" onclick="closeLogin()">
+      <svg viewBox="0 0 12 12" fill="none"><path d="M2 2l8 8M10 2l-8 8" stroke-linecap="round"/></svg>
+    </button>
+    <img class="su-lumi-big" id="li-lumi-img" src="/assets/lumi-smile.png" alt="lumi">
+    <div class="su-speech" id="li-speech"></div>
+    <div class="su-form-area" id="li-form-area"></div>
+  </div>
+</div>
+
 <div class="signup-grid-wrap" id="signup-grid">
-  <div class="su-grid">
-    <!-- 카드 1: 루미 (col 1-2, row 1) -->
-    <div class="su-card" style="grid-column:1/3;">
-      <button class="su-close" onclick="closeSignupGrid()">
-        <svg viewBox="0 0 12 12" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="11" y2="11"/><line x1="11" y1="1" x2="1" y2="11"/></svg>
-      </button>
-      <div class="su-lumi-wrap">
-        <img class="su-lumi-img" src="/assets/lumi-character.png" alt="lumi">
-        <div class="su-lumi-bubble">반가워요! 같이 시작해볼까요?</div>
-      </div>
-    </div>
-
-    <!-- 카드 2: 이메일 (col 3-4, row 1) -->
-    <div class="su-card" style="grid-column:3/5;">
-      <span class="su-label">이메일</span>
-      <div class="su-input-row">
-        <input type="text" class="su-input" placeholder="아이디">
-        <span style="color:rgba(0,0,0,.3);font-size:14px;flex-shrink:0;">@</span>
-        <select class="su-select" style="flex:1.2;min-width:0;margin-bottom:0;">
-          <option>gmail.com</option><option>naver.com</option><option>kakao.com</option>
-          <option>daum.net</option><option>nate.com</option><option>icloud.com</option>
-        </select>
-      </div>
-      <button class="su-btn-outline" onclick="document.getElementById('su-otp-area').classList.add('visible')">인증번호 받기</button>
-      <div class="su-otp-area" id="su-otp-area">
-        <input type="text" class="su-input" placeholder="인증번호 6자리" maxlength="6" style="letter-spacing:4px;text-align:center;">
-        <p style="font-size:11px;color:rgba(0,0,0,.35);margin-top:4px;">이메일을 못 받으셨나요? <button onclick="void(0)" style="background:none;border:none;color:rgba(200,80,122,.7);font-size:11px;cursor:pointer;text-decoration:underline;font-family:inherit;">재전송</button></p>
-      </div>
-    </div>
-
-    <!-- 카드 3: 비밀번호 (col 1, row 2) -->
-    <div class="su-card">
-      <p class="su-title">비밀번호</p>
-      <span class="su-label">비밀번호</span>
-      <input type="password" class="su-input" placeholder="특수문자 포함 10자 이상">
-      <span class="su-label">비밀번호 확인</span>
-      <input type="password" class="su-input" placeholder="한 번 더 입력해주세요">
-    </div>
-
-    <!-- 카드 4: 매장 정보 (col 2, row 2) -->
-    <div class="su-card">
-      <p class="su-title">매장 정보</p>
-      <span class="su-label">대표님 성함</span>
-      <input type="text" class="su-input" placeholder="홍길동">
-      <span class="su-label">매장 이름</span>
-      <input type="text" class="su-input" placeholder="카페루미">
-    </div>
-
-    <!-- 카드 5: 연락처 (col 3, row 2) -->
-    <div class="su-card">
-      <p class="su-title">연락처</p>
-      <span class="su-label">인스타그램 아이디</span>
-      <input type="text" class="su-input" placeholder="lumi__it">
-      <span class="su-label">휴대폰 번호</span>
-      <input type="tel" class="su-input" placeholder="01012345678" inputmode="numeric">
-    </div>
-
-    <!-- 카드 6: 업종 (col 4, row 2) -->
-    <div class="su-card">
-      <p class="su-title">업종</p>
-      <div class="su-biz-grid">
-        <label class="su-biz-item"><input type="radio" name="su-biz" value="cafe" checked><span>카페</span></label>
-        <label class="su-biz-item"><input type="radio" name="su-biz" value="food"><span>음식점</span></label>
-        <label class="su-biz-item"><input type="radio" name="su-biz" value="beauty"><span>뷰티</span></label>
-        <label class="su-biz-item"><input type="radio" name="su-biz" value="flower"><span>꽃집</span></label>
-        <label class="su-biz-item"><input type="radio" name="su-biz" value="fashion"><span>패션</span></label>
-        <label class="su-biz-item"><input type="radio" name="su-biz" value="fitness"><span>피트니스</span></label>
-        <label class="su-biz-item"><input type="radio" name="su-biz" value="pet"><span>반려동물</span></label>
-        <label class="su-biz-item"><input type="radio" name="su-biz" value="interior"><span>인테리어</span></label>
-        <label class="su-biz-item"><input type="radio" name="su-biz" value="education"><span>교육</span></label>
-        <label class="su-biz-item"><input type="radio" name="su-biz" value="studio"><span>스튜디오</span></label>
-      </div>
-    </div>
-
-    <!-- 카드 7: 약관 (col 1-2, row 3) -->
-    <div class="su-card" style="grid-column:1/3;">
-      <div class="su-agree">
-        <label class="su-agree-all"><input type="checkbox" id="su-agree-all" onchange="document.querySelectorAll('.su-agree-each').forEach(function(e){e.checked=this.checked;},this)"><span>전체 동의하기</span></label>
-        <label><input type="checkbox" class="su-agree-each"><span>(필수) <a href="/terms" target="_blank" style="color:rgba(200,80,122,.7);text-decoration:underline;">서비스 이용약관</a> 동의</span></label>
-        <label><input type="checkbox" class="su-agree-each"><span>(필수) <a href="/privacy" target="_blank" style="color:rgba(200,80,122,.7);text-decoration:underline;">개인정보 처리방침</a> 동의</span></label>
-        <label><input type="checkbox" class="su-agree-each"><span>(선택) 마케팅 정보 수신 동의</span></label>
-      </div>
-    </div>
-
-    <!-- 카드 8: 가입 버튼 (col 3-4, row 3) -->
-    <div class="su-card su-submit-card" style="grid-column:3/5;">
-      <button class="su-btn" onclick="suGridComplete()" style="font-size:16px;padding:16px;">가입 완료</button>
-      <button class="su-btn-outline" onclick="closeSignupGrid()">취소</button>
-    </div>
+  <div class="su-chat-bg" onclick="closeSignupGrid()"></div>
+  <div class="su-chat-box">
+    <button class="su-chat-close" onclick="closeSignupGrid()">
+      <svg viewBox="0 0 12 12" fill="none"><path d="M2 2l8 8M10 2l-8 8" stroke-linecap="round"/></svg>
+    </button>
+    <img class="su-lumi-big bounce" id="su-lumi-img" src="/assets/lumi-smile.png" alt="lumi">
+    <div class="su-speech" id="su-speech"></div>
+    <div class="su-progress" id="su-progress"></div>
+    <div class="su-form-area" id="su-form-area"></div>
   </div>
 </div>
 
@@ -1045,7 +1342,7 @@ function isRealClick(ev) {
   var dx = Math.abs(ev.clientX - _mouseDownPos.x);
   var dy = Math.abs(ev.clientY - _mouseDownPos.y);
   _mouseDownPos = null;
-  return dx < 5 && dy < 5;
+  return dx < 10 && dy < 10;
 }
 
 // SVG arrow icon
@@ -1075,134 +1372,341 @@ var InstaSVG = e('svg', {viewBox:'0 0 24 24',xmlns:'http://www.w3.org/2000/svg',
 // Card contents (static HTML injected via dangerouslySetInnerHTML is avoided; using React elements)
 var cards = {
   bio: function() {
-    var UploadCard = function() {
+    var isLoggedIn = !!localStorage.getItem('lumi_token');
+    var TutorialCard = function() {
+      var isDk = document.body.classList.contains('dark-mode');
+      var tc = isDk ? '#f0f2f8' : '#0d1117';
+      var tc2 = isDk ? 'rgba(240,242,248,.6)' : 'rgba(0,0,0,.4)';
+      var bg2 = isDk ? 'rgba(255,255,255,.12)' : 'rgba(0,0,0,.03)';
+      var pinkC = isDk ? '#FF8FAB' : '#C8507A';
+      var lumiUser = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+      var isPro = lumiUser.plan === 'pro';
       var st = React.useState('idle'), phase = st[0], setPhase = st[1];
-      var st2 = React.useState(null), file = st2[0], setFile = st2[1];
-      var st5 = React.useState(false), reviewMode = st5[0], setReviewMode = st5[1];
-      var st6 = React.useState(''), scheduleMode = st6[0], setScheduleMode = st6[1];
-      var fileRef = React.useRef(null);
+      var st2 = React.useState([false,false,false,false,false,false]), sel = st2[0], setSel = st2[1];
+      var st3 = React.useState(''), typedText = st3[0], setTypedText = st3[1];
+      var st4 = React.useState(0), feedIdx = st4[0], setFeedIdx = st4[1];
+      var st6 = React.useState(false), showStory = st6[0], setShowStory = st6[1];
+      var st7 = React.useState([]), realFiles = st7[0], setRealFiles = st7[1];
+      var st8 = React.useState(''), realNote = st8[0], setRealNote = st8[1];
+      var demoSets = [
+        {comment:'\uC624\uB298 \uC2E0\uBA54\uB274 \uC18C\uAC1C\uD574\uC918', caption:'\uC624\uB298\uBD80\uD130 \uC2E0\uBA54\uB274 \uB4F1\uC7A5\n\uB529\uAD74\uB529\uAD74 \uB9E4\uC7A5 \uD06C\uB85C\uD50C\n\uD55C \uC785 \uBCA0\uC5B4 \uBB3C\uBA74 \uBC14\uC0AD\uBC14\uC0AD', tags:'#\uC2E0\uBA54\uB274 #\uCE74\uD398\uD06C\uB85C\uD50C #\uB514\uC800\uD2B8\uCD94\uCC9C'},
+        {comment:'\uC624\uB298 \uD734\uBB34\uC77C \uC548\uB0B4 \uB123\uC5B4\uC918', caption:'\uC624\uB298\uC740 \uC7A0\uC2DC \uC26C\uC5B4\uAC00\uB294 \uB0A0\n\uB0B4\uC77C \uB354 \uB9DB\uC788\uB294 \uCEE4\uD53C\uB85C \uB3CC\uC544\uC62C\uAC8C\uC694\n\uC870\uAE08\uB9CC \uAE30\uB2E4\uB824\uC8FC\uC138\uC694', tags:'#\uCE74\uD398\uD734\uBB34 #\uB0B4\uC77C\uBD10\uC694 #\uC790\uC601\uC5C5\uC790\uC77C\uC0C1'},
+        {comment:'\uBD84\uC704\uAE30 \uC88B\uC740 \uC0AC\uC9C4\uC73C\uB85C \uC62C\uB824\uC918', caption:'\uC774 \uC790\uB9AC \uC549\uC73C\uBA74 \uB77C\uB5BC \uB4E4\uACE0\n\uD55C\uCC38 \uBA4D \uB54C\uB9AC\uAC8C \uB428\n\uC5EC\uAE30 \uC5B4\uB51C\uC9C0 \uAD81\uAE08\uD558\uBA74 \uD504\uB85C\uD544 \uB9C1\uD06C', tags:'#\uAC10\uC131\uCE74\uD398 #\uCE74\uD398\uCD94\uCC9C #\uB77C\uB5BC\uC544\uD2B8'},
+        {comment:'\uC774\uBC88 \uB2EC \uC778\uAE30 \uBA54\uB274 \uCD94\uCC9C\uD574\uC918', caption:'\uC694\uC998 \uC81C\uC77C \uC798 \uB098\uAC00\uB294 \uC870\uD569\n\uB9E4\uC7A5 \uB9D0\uCC28 \uB77C\uB5BC + \uB2F9\uADFC\uCF00\uC775\n\uC774\uAC70 \uBAA8\uB974\uBA74 \uC190\uD574\uC608\uC694', tags:'#\uC778\uAE30\uBA54\uB274 #\uCE74\uD398\uCD94\uCC9C #\uB9E4\uC7A5\uCD94\uCC9C'},
+        {comment:'\uC8FC\uB9D0 \uC774\uBCA4\uD2B8 \uD64D\uBCF4\uD574\uC918', caption:'\uC774\uBC88 \uC8FC\uB9D0 \uD2B9\uBCC4\uD55C \uD558\uB8E8\n\uCEE4\uD53C \uD55C \uC794 \uBB34\uB8CC \uC774\uBCA4\uD2B8\n\uC120\uCC29\uC21C\uC774\uB2C8\uAE4C \uC11C\uB450\uB974\uC138\uC694', tags:'#\uCE74\uD398\uC774\uBCA4\uD2B8 #\uC8FC\uB9D0\uC774\uBCA4\uD2B8 #\uBB34\uB8CC\uCEE4\uD53C'}
+      ];
+      var st5 = React.useState(Math.floor(Math.random()*demoSets.length)), demoIdx = st5[0], setDemoIdx = st5[1];
+      var demoComment = demoSets[demoIdx].comment;
+      var demoCaption = demoSets[demoIdx].caption;
+      var demoTags = demoSets[demoIdx].tags;
+      var demoPhotos = ['/assets/demo-cafe.png','/assets/demo-cafe-2.jpg','/assets/demo-cafe-3.jpg','/assets/demo-cafe-4.jpg','/assets/demo-cafe-5.jpg','/assets/demo-cafe-6.jpg'];
 
-      function handleFileSelect(ev) {
-        var files = ev.target.files;
-        if (!files || files.length === 0) return;
-        if (files.length > 10) {
-          alert('사진은 최대 10장까지 선택할 수 있어요.');
-          fileRef.current.value = '';
-          return;
+      React.useEffect(function(){
+        var t;
+        if(phase === 'processing') t = setTimeout(function(){ setFeedIdx(0); setPhase('feed'); }, 3000);
+        return function(){ if(t) clearTimeout(t); };
+      },[phase]);
+
+      React.useEffect(function(){
+        if(phase !== 'feed') { setShowStory(false); return; }
+        var selectedPhotos = sel.map(function(s,i){return s?i:null;}).filter(function(v){return v!==null;});
+        if(selectedPhotos.length <= 1) {
+          var t2 = setTimeout(function(){ setShowStory(true); },2500);
+          var t3 = setTimeout(function(){ setPhase('cta'); },6000);
+          return function(){clearTimeout(t2);clearTimeout(t3);};
         }
-        var list = [];
-        for (var i = 0; i < Math.min(files.length, 10); i++) {
-          list.push({ name: files[i].name, size: (files[i].size/1024).toFixed(0)+'KB', url: URL.createObjectURL(files[i]) });
+        var iv = setInterval(function(){
+          setFeedIdx(function(prev){
+            if(prev >= selectedPhotos.length - 1) {
+              clearInterval(iv);
+              setTimeout(function(){ setShowStory(true); },1500);
+              setTimeout(function(){ setPhase('cta'); },5000);
+              return prev;
+            }
+            return prev + 1;
+          });
+        }, 1500);
+        return function(){ clearInterval(iv); };
+      },[phase]);
+
+      React.useEffect(function(){
+        if(phase !== 'confirmed') { setTypedText(''); return; }
+        var i = 0;
+        var timeout;
+        function typeNext(){
+          i++;
+          setTypedText(demoComment.slice(0, i));
+          if(i < demoComment.length){
+            var delay = 120 + Math.random() * 100;
+            if(demoComment[i-1] === ' ') delay += 80;
+            timeout = setTimeout(typeNext, delay);
+          }
         }
-        setFile(list);
-        setPhase('selected');
-      }
+        timeout = setTimeout(typeNext, 600);
+        return function(){ clearTimeout(timeout); };
+      },[phase]);
 
-      function handleSubmit() {
-        setPhase('uploading');
-        setTimeout(function() {
-          setPhase('done');
-        }, 2000);
-      }
+      var isDark = document.body.classList.contains('dark-mode');
+      var tc = isDark ? '#f0f2f8' : '#0d1117';
+      var tc2 = isDark ? 'rgba(240,242,248,.4)' : 'rgba(0,0,0,.35)';
+      var showLumi = phase === 'idle' || phase === 'picker' || phase === 'processing';
+      var lumiSrc = phase === 'processing' ? '/assets/lumi-surprised-2.png' : '/assets/lumi-character.png';
+      var lumiClass = 'upload-lumi' + (phase === 'processing' ? ' surprised' : '');
 
-      var lumiSrc = (phase === 'uploading' || phase === 'done')
-        ? '/assets/lumi-surprised.png'
-        : '/assets/lumi-character.png';
-      var lumiClass = 'upload-lumi' + (phase === 'uploading' || phase === 'done' ? ' surprised' : '');
+      return e('div', {className:'bento-card card-text pad-bio card-responsive', style:{padding:0,position:'relative'}},
+        e('div', {className:'tut-wrap'},
 
-      return e('div', {className:'bento-card card-text pad-bio card-responsive'},
-        e('input', {ref:fileRef, type:'file', accept:'image/*', multiple:true, style:{display:'none'}, onChange:handleFileSelect}),
-        e('div', {className:'upload-wrap'},
+          showLumi ? e('div', {className:'tut-lumi-area'},
+            phase === 'processing' ? e('div',{className:'lumi-aura',style:{width:'240px',height:'240px'}}) : null,
+            e('img', {className:lumiClass, src:lumiSrc, alt:'lumi', style:{width:'240px',height:'auto',position:'relative',zIndex:1}})
+          ) : null,
 
-          // 루미 캐릭터 (selected/confirmed에서 숨김)
-          e('div', {className:'upload-left'+((phase==='selected'||phase==='confirmed')?' hidden':'')},
-            (phase==='uploading'||phase==='done') ? e('div',{className:'lumi-aura'}) : null,
-            e('img', {className:lumiClass, src:lumiSrc, alt:'lumi', onClick:function(){ if(phase==='idle') fileRef.current.click(); }})
-          ),
+          e('div', {className:'tut-content'+(phase==='gallery'?' tut-content-gallery':''), style: !showLumi ? {flex:'1 1 100%'} : undefined},
 
-          // UI
-          e('div', {className:'upload-right'},
-
-            // 토글 (항상 표시)
-            e('button', {className:'upload-toggle-row', onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(){setReviewMode(!reviewMode);}},
-              e('span', null, '캡션 확인 후 게시'),
-              e('button', {className:'upload-toggle'+(reviewMode?' on':''), style:{pointerEvents:'none'}})
-            ),
-
-            // idle: 기본 상태
             phase === 'idle' ? e(React.Fragment, null,
-              e('p', {className:'upload-prompt', style:{fontSize:'28px',textAlign:'left',lineHeight:'1.4'}}, e('strong',null,'사진 한 장'), '이면', e('br'), 'lumi가 알아서 해요'),
-              e('p', {style:{fontSize:'14px',color:'rgba(0,0,0,.35)',textAlign:'left',lineHeight:'1.6'}}, '최대 10장까지 선택하면 캐러셀로 올라가요.', e('br'), '코멘트 한 줄이면 휴무일 안내도, 신메뉴 홍보도 알아서.'),
-              e('button', {className:'upload-btn', onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(){ fileRef.current.click(); }},
-                e('svg',{width:14,height:14,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},e('path',{d:'M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4'}),e('polyline',{points:'17 8 12 3 7 8'}),e('line',{x1:12,y1:3,x2:12,y2:15})),
-                '사진 올리기'
+              e('p', {className:'tut-title'}, e('strong',null,'사진 한 장'), '이면', e('br'), e('span',{className:'lumi-brand'},'lumi'), '가 알아서 해요'),
+              e('p', {className:'tut-sub'}, isLoggedIn ? '사진을 올려보세요' : '직접 체험해보세요'),
+              isLoggedIn
+                ? e('label', {className:'upload-btn tut-guide-pulse', style:{width:'100%',borderRadius:'16px',fontSize:'14px',padding:'12px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px'},
+                    onMouseDown:function(ev){ev.stopPropagation();}},
+                    e('input', {type:'file',multiple:true,accept:'image/*',style:{display:'none'},onChange:function(ev){
+                      ev.stopPropagation();
+                      var selected = Array.from(ev.target.files || []);
+                      if(selected.length > 10){ alert('최대 10장까지 선택할 수 있어요.'); selected = selected.slice(0,10); }
+                      if(selected.length > 0){
+                        setRealFiles(selected);
+                        setPhase('real-upload');
+                        // 카드 확장
+                        if(window._setGridLayout && window._currentLayout){
+                          var expanded = window._currentLayout.map(function(l){
+                            if(l.i==='bio') return Object.assign({},l,{w:4,h:2,x:0,y:0});
+                            return Object.assign({},l,{y:l.y+2});
+                          });
+                          window._setGridLayout(expanded);
+                          window._currentLayout = expanded;
+                        }
+                      }
+                    }}),
+                    e('svg',{width:14,height:14,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},e('path',{d:'M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4'}),e('polyline',{points:'17 8 12 3 7 8'}),e('line',{x1:12,y1:3,x2:12,y2:15})),
+                    '사진 올리기'
+                  )
+                : e('button', {className:'upload-btn tut-guide-pulse', style:{width:'100%',borderRadius:'16px',fontSize:'14px',padding:'12px'},
+                    onMouseDown:function(ev){ev.stopPropagation();},
+                    onClick:function(){ setPhase('picker'); }
+                  },
+                    e('svg',{width:14,height:14,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},e('path',{d:'M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4'}),e('polyline',{points:'17 8 12 3 7 8'}),e('line',{x1:12,y1:3,x2:12,y2:15})),
+                    '사진 올리기'
+                  )
+            ) : null,
+
+            phase === 'gallery' ? e(React.Fragment, null,
+              e('div', {className:'tut-gallery-header'},
+                e('button', {className:'tut-back-btn', onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(){ setPhase('picker'); setSel([false,false,false,false,false,false]); }}, '\u2190 \uB4A4\uB85C'),
+                e('span', {className:'tut-gallery-title'}, '\uC0AC\uC9C4 \uBCF4\uAD00\uD568'),
+                e('button', {className:'tut-gallery-done', style:sel.some(Boolean)?{}:{opacity:.4,cursor:'default'},
+                  onMouseDown:function(ev){ev.stopPropagation();},
+                  onClick:function(){ if(sel.some(Boolean)) setPhase('selected'); }
+                }, '\uC644\uB8CC')
+              ),
+              e('div', {className:'tut-gallery', style:{gridTemplateColumns:'repeat(2,1fr)',gap:'4px'}, onMouseDown:function(ev){ev.stopPropagation();}},
+                [0,1,2,3,4,5].map(function(i){
+                  return e('div', {key:i, className:'tut-gallery-item'+(sel[i]?' selected':'')+(!sel.some(Boolean)&&i===0?' tut-guide-pulse':''),
+                    onClick:function(){ setSel(function(p){ var n=p.slice(); n[i]=!n[i]; return n; }); }
+                  },
+                    e('img', {src:demoPhotos[i], alt:'demo '+(i+1)})
+                  );
+                })
               )
             ) : null,
 
-            // selected: 사진 확인
-            phase === 'selected' && file ? e(React.Fragment, null,
-              e('div', {className:'upload-preview-grid'},
-                file.slice(0,9).map(function(f,i){
-                  return e('div', {className:'upload-preview-item', key:i}, e('img', {src:f.url, alt:'사진 '+(i+1)}));
-                }),
-                file.length > 9 ? e('div', {className:'upload-preview-item upload-preview-more'}, '+' + (file.length - 9)) : null
+            phase === 'selected' ? (function(){
+              var cnt = sel.filter(Boolean).length;
+              var cols = cnt === 1 ? 1 : cnt === 2 ? 2 : cnt === 3 ? 3 : cnt === 4 ? 2 : cnt === 5 ? 3 : 2;
+              var ratio = cnt === 1 ? '3/4' : cnt <= 3 ? '1' : '4/3';
+              var imgW = cnt === 1 ? '70%' : '100%';
+              return e('div', {style:{display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'center',width:'100%',height:'100%',gap:'12px'}},
+              e('div', {style:{display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'center',width:'100%',gap:'8px'}},
+                e('div', {style:{display:'grid',gridTemplateColumns:'repeat('+cols+',1fr)',gap:'4px',width:imgW,justifyItems:'center'}},
+                  sel.map(function(s,i){ return s ? e('div',{key:i,style:{borderRadius:'8px',overflow:'hidden',aspectRatio:ratio,width:'100%'}},e('img',{src:demoPhotos[i],alt:'photo '+(i+1),style:{width:'100%',height:'100%',objectFit:'cover',display:'block'}})) : null; })
+                ),
+                e('p', {className:'tut-sub'}, sel.filter(Boolean).length + '\uC7A5 \uC120\uD0DD')
               ),
-              e('p', {className:'upload-prompt', style:{fontSize:'13px',textAlign:'left'}}, file.length + '장 · ' + (file.length > 1 ? '캐러셀 게시물' : '단일 게시물')),
-              e('div', {style:{display:'flex',gap:'8px',width:'100%'}},
-                e('button', {className:'upload-submit', style:{flex:1,background:'rgba(0,0,0,.06)',color:'#0d1117',padding:'8px',fontSize:'12px'}, onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(){setPhase('idle');setFile(null);}}, '다시 선택'),
-                e('button', {className:'upload-submit', style:{flex:2,padding:'8px',fontSize:'12px'}, onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(){setPhase('confirmed');}}, '확인')
+              e('div', {style:{display:'flex',gap:'8px',width:'100%',paddingBottom:'4px'}},
+                e('button', {className:'upload-submit', style:{flex:1,background:isDark?'rgba(255,255,255,.08)':'rgba(0,0,0,.06)',color:tc,fontSize:'11px',padding:'10px',whiteSpace:'nowrap'},
+                  onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(){ setPhase('gallery'); }
+                }, '\uB2E4\uC2DC \uC120\uD0DD'),
+                e('button', {className:'upload-submit tut-guide-pulse', style:{flex:2,fontSize:'11px',padding:'10px',whiteSpace:'nowrap'},
+                  onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(){ setPhase('confirmed'); }
+                }, '\uD655\uC778')
+              )
+            ); })() : null,
+
+            phase === 'confirmed' ? (function(){
+              var cnt = sel.filter(Boolean).length;
+              var cols = cnt === 1 ? 1 : cnt === 2 ? 2 : cnt === 3 ? 3 : cnt === 4 ? 2 : cnt === 5 ? 3 : 2;
+              var ratio = cnt <= 2 ? '1' : '4/3';
+              var imgW = cnt === 1 ? '50%' : '100%';
+              return e('div', {style:{display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'center',width:'100%',height:'100%',gap:'10px'}},
+              e('div', {style:{width:'100%',display:'flex',flexDirection:'column',alignItems:'center',flex:'0 1 auto',overflow:'hidden'}},
+                e('div', {style:{display:'grid',gridTemplateColumns:'repeat('+cols+',1fr)',gap:'3px',width:imgW,maxWidth:'70%',marginBottom:'6px'}},
+                  sel.map(function(s,i){ return s ? e('div',{key:i,style:{borderRadius:'6px',overflow:'hidden',aspectRatio:ratio,width:'100%'}},e('img',{src:demoPhotos[i],alt:'photo '+(i+1),style:{width:'100%',height:'100%',objectFit:'cover',display:'block'}})) : null; })
+                ),
+                e('p', {className:'tut-sub'}, cnt + '\uC7A5 \xB7 \uAC8C\uC2DC\uBB3C')
+              ),
+              e('div', {style:{width:'100%'}},
+                e('textarea', {className:'upload-comment', rows:2, value:typedText, readOnly:true, placeholder:'\uCF54\uBA58\uD2B8 (\uC120\uD0DD)', style:{fontSize:'12px',caretColor:'#C8507A'},
+                  onMouseDown:function(ev){ev.stopPropagation();}}),
+                e('button', {className:'upload-submit tut-guide-pulse', style:{fontSize:'13px',padding:'12px',marginTop:'8px'},
+                  onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(){ setPhase('processing'); }
+                }, e('span',{className:'lumi-brand'},'lumi'), '\uC5D0\uAC8C \uB9E1\uAE30\uAE30')
+              )
+            ); })() : null,
+
+            phase === 'processing' ? e('div', {style:{textAlign:'center'}},
+              e('p', {style:{fontSize:'16px',fontWeight:400,color:tc}}, '\uC0AC\uC9C4\uC744 \uBD84\uC11D\uD558\uACE0 \uC788\uC5B4\uC694'),
+              e('p', {className:'tut-sub',style:{marginTop:'6px'}}, e('span',{className:'lumi-brand'},'lumi'), '\uAC00 \uCEA1\uC158\uC744 \uB9CC\uB4E4\uACE0 \uC788\uC5B4\uC694'),
+              e('div', {style:{marginTop:'12px',display:'flex',justifyContent:'center',gap:'6px'}},
+                e('span',{className:'demo-scan-dot'}),e('span',{className:'demo-scan-dot'}),e('span',{className:'demo-scan-dot'})
               )
             ) : null,
 
-            // confirmed: 코멘트 + 예약
-            phase === 'confirmed' && file ? e(React.Fragment, null,
-              e('button', {style:{display:'flex',alignItems:'center',gap:'6px',background:'none',border:'none',cursor:'pointer',padding:'8px 12px',borderRadius:'12px',marginBottom:'4px',transition:'background .2s'}, onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(){setPhase('selected');}, onMouseOver:function(ev){ev.currentTarget.style.background='rgba(0,0,0,.05)';}, onMouseOut:function(ev){ev.currentTarget.style.background='none';}},
-                e('svg',{width:16,height:16,viewBox:'0 0 24 24',fill:'none',stroke:'rgba(0,0,0,.4)',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},e('path',{d:'M19 12H5'}),e('polyline',{points:'12 19 5 12 12 5'})),
-                e('span', {style:{fontSize:'13px',color:'rgba(0,0,0,.4)'}}, '사진 다시 확인')
-              ),
-              e('textarea', {className:'upload-comment', rows:2, placeholder:'코멘트 (선택)\n"오늘 휴무일 안내도 넣어줘"', onMouseDown:function(ev){ev.stopPropagation();}}),
-              e('div', {className:'upload-schedule-row', onMouseDown:function(ev){ev.stopPropagation();}},
-                e('svg',{width:14,height:14,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:1.5,style:{opacity:.4,flexShrink:0}},e('rect',{x:3,y:4,width:18,height:18,rx:2}),e('line',{x1:16,y1:2,x2:16,y2:6}),e('line',{x1:8,y1:2,x2:8,y2:6}),e('line',{x1:3,y1:10,x2:21,y2:10})),
-                e('select', {className:'upload-schedule-select', value:scheduleMode, onChange:function(ev){setScheduleMode(ev.target.value);}, onMouseDown:function(ev){ev.stopPropagation();}},
-                  e('option', {value:''}, '바로 게시'),
-                  e('option', {value:'best'}, 'lumi 추천 시간'),
-                  e('option', {value:'custom'}, '직접 선택')
+            phase === 'feed' ? (function(){
+              var selectedPhotos = sel.map(function(s,i){return s?i:null;}).filter(function(v){return v!==null;});
+              if(selectedPhotos.length===0) selectedPhotos=[0];
+              return e('div', {style:{display:'flex',flexDirection:'column',alignItems:'center',width:'100%',height:'100%',justifyContent:'center',gap:'8px'}},
+                e('div', {style:{display:'flex',gap:'8px',width:'100%',justifyContent:'center',alignItems:'flex-start',transition:'all .5s ease'}},
+
+                  e('div', {className:'tut-feed-card', style:{transition:'all .5s ease',width:showStory?'58%':'92%',flexShrink:0}},
+                    e('div', {className:'tut-feed-header'},
+                      e('div', {className:'tut-feed-avatar'}),
+                      e('span', {className:'tut-feed-name'}, 'my_cafe')
+                    ),
+                    e('div', {style:{width:'100%',overflow:'hidden',position:'relative'}},
+                      e('div', {style:{display:'flex',transition:'transform .5s cubic-bezier(.4,0,.2,1)',transform:'translateX(-'+(feedIdx*100)+'%)'}},
+                        selectedPhotos.map(function(pi,i){
+                          return e('div',{key:i,style:{minWidth:'100%',aspectRatio:'1'}},
+                            e('img',{src:demoPhotos[pi],alt:'feed '+(i+1),style:{width:'100%',height:'100%',objectFit:'cover',display:'block'}})
+                          );
+                        })
+                      ),
+                      selectedPhotos.length > 1 ? e('div',{style:{position:'absolute',bottom:'6px',left:'50%',transform:'translateX(-50%)',display:'flex',gap:'3px'}},
+                        selectedPhotos.map(function(_,i){
+                          return e('div',{key:i,style:{width:feedIdx===i?'10px':'5px',height:'5px',borderRadius:'3px',background:feedIdx===i?'#fff':'rgba(255,255,255,.5)',transition:'all .3s'}});
+                        })
+                      ) : null
+                    ),
+                    e('div', {className:'tut-feed-actions'},
+                      e('svg',{viewBox:'0 0 24 24',fill:'none',stroke:tc,strokeWidth:'2',width:16,height:16,strokeLinecap:'round',strokeLinejoin:'round'},e('path',{d:'M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 000-7.78z'})),
+                      e('svg',{viewBox:'0 0 24 24',fill:'none',stroke:tc,strokeWidth:'2',width:16,height:16,strokeLinecap:'round',strokeLinejoin:'round'},e('path',{d:'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z'}))
+                    ),
+                    e('p', {className:'tut-feed-caption', style:showStory?{fontSize:'9px',padding:'0 8px 6px'}:{}},
+                      e('strong',{style:{color:tc,display:'block',marginBottom:'2px'}},'my_cafe'),
+                      showStory ? demoCaption.split('\n')[0]+'...' : demoCaption.split('\n').map(function(line,i,arr){ return i<arr.length-1 ? e(React.Fragment,{key:i},line,e('br')) : line; }),
+                      !showStory ? e('br') : null,
+                      !showStory ? e('span',{style:{color:isDark?'rgba(240,242,248,.35)':'rgba(0,0,0,.3)'}}, demoTags) : null
+                    )
+                  ),
+
+                  showStory ? e('div', {className:'tut-story-card'},
+                    e('div', {className:'tut-story-progress'},
+                      e('div', {className:'tut-story-bar'})
+                    ),
+                    e('div', {className:'tut-story-header'},
+                      e('div', {className:'tut-feed-avatar', style:{width:'20px',height:'20px'}}),
+                      e('span', {style:{fontSize:'10px',color:'#fff',fontWeight:600}}, 'my_cafe')
+                    ),
+                    e('img', {src:demoPhotos[selectedPhotos[0]], alt:'story', style:{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',zIndex:0}})
+                  ) : null
+                ),
+
+                showStory ? e('p', {className:'tut-sub', style:{color:isDark?'rgba(240,242,248,.5)':'rgba(0,0,0,.4)',fontSize:'11px',animation:'tutFadeIn .5s ease-out'}},
+                  '\uD53C\uB4DC + \uC2A4\uD1A0\uB9AC \uB3D9\uC2DC \uAC8C\uC2DC \uC644\uB8CC'
+                ) : null
+              );
+            })() : null,
+
+            phase === 'real-upload' ? e('div', {style:{display:'flex',height:'100%',gap:'24px',padding:'4px'}},
+              // 왼쪽: 사진 미리보기
+              e('div', {style:{flex:1,display:'flex',flexDirection:'column',gap:'8px'}},
+                e('p',{style:{fontSize:'14px',fontWeight:600,color:tc,marginBottom:'4px'}}, realFiles.length+'장 선택됨'),
+                e('div', {style:{display:'grid',gridTemplateColumns:'repeat('+Math.min(realFiles.length,5)+',1fr)',gap:'6px',flex:1,alignContent:'start'}},
+                  realFiles.slice(0,10).map(function(f,i){
+                    var url = URL.createObjectURL(f);
+                    return e('div',{key:i,style:{position:'relative',borderRadius:'12px',overflow:'hidden',aspectRatio:'1'}},
+                      e('img',{src:url,style:{width:'100%',height:'100%',objectFit:'cover'}}),
+                      e('button',{style:{position:'absolute',top:'4px',right:'4px',width:'20px',height:'20px',borderRadius:'10px',background:'rgba(0,0,0,.5)',border:'none',color:'#fff',fontSize:'11px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'},onMouseDown:function(ev){ev.stopPropagation();},onClick:function(){var idx=i;setRealFiles(function(prev){return prev.filter(function(_,j){return j!==idx;});});}},'✕')
+                    );
+                  })
+                ),
+                e('label',{style:{display:'flex',alignItems:'center',justifyContent:'center',padding:'10px',borderRadius:'12px',background:bg2,cursor:'pointer',fontSize:'13px',color:tc2,marginTop:'4px'},onMouseDown:function(ev){ev.stopPropagation();}},
+                  e('input',{type:'file',multiple:true,accept:'image/*',style:{display:'none'},onChange:function(ev){
+                    ev.stopPropagation();
+                    var added = Array.from(ev.target.files||[]);
+                    setRealFiles(function(prev){
+                      var total = prev.concat(added);
+                      if(total.length>10){alert('최대 10장까지 선택할 수 있어요.');total=total.slice(0,10);}
+                      return total;
+                    });
+                  }}),
+                  '+ 사진 추가'
                 )
               ),
-              scheduleMode === 'custom' ? e('div', {className:'upload-schedule-custom', onMouseDown:function(ev){ev.stopPropagation();}},
-                e('select', {className:'upload-schedule-input'}, (function(){
-                  var opts = [];
-                  var days = ['일','월','화','수','목','금','토'];
-                  for(var d=0;d<30;d++){
-                    var dt = new Date(Date.now()+d*86400000);
-                    var m = dt.getMonth()+1, dd = dt.getDate(), day = days[dt.getDay()];
-                    var label = d===0?'오늘':d===1?'내일':m+'/'+dd+' ('+day+')';
-                    opts.push(e('option',{key:d,value:dt.toISOString().slice(0,10)},label));
-                  }
-                  return opts;
-                })()),
-                e('select', {className:'upload-schedule-input'}, (function(){
-                  var opts = [];
-                  for(var h=6;h<=23;h++){
-                    opts.push(e('option',{key:h,value:h+':00'},(h<10?'0':'')+h+':00'));
-                    opts.push(e('option',{key:h+'30',value:h+':30'},(h<10?'0':'')+h+':30'));
-                  }
-                  return opts;
-                })())
-              ) : null,
-              e('button', {className:'upload-submit', onMouseDown:function(ev){ev.stopPropagation();}, onClick:handleSubmit}, 'lumi에게 맡기기')
+              // 오른쪽: 코멘트 + 버튼
+              e('div', {style:{width:'280px',display:'flex',flexDirection:'column',justifyContent:'space-between',flexShrink:0}},
+                e('div',{style:{flex:1,display:'flex',flexDirection:'column',gap:'8px'}},
+                  e('p',{style:{fontSize:'14px',fontWeight:600,color:tc,marginBottom:'4px'}},'코멘트'),
+                  e('textarea',{placeholder:'전할 소식이 있다면 적어주세요 (선택)\n예) 신메뉴 출시, 명절 휴무 안내',value:realNote,onChange:function(ev){setRealNote(ev.target.value);},rows:4,style:{width:'100%',padding:'12px 14px',borderRadius:'14px',border:'1.5px solid '+(isDk?'rgba(255,255,255,.1)':'rgba(0,0,0,.08)'),background:'transparent',fontFamily:'inherit',fontSize:'13px',color:tc,outline:'none',resize:'none',boxSizing:'border-box',flex:1},onMouseDown:function(ev){ev.stopPropagation();}})
+                ),
+                e('div',{style:{display:'flex',flexDirection:'column',gap:'8px',marginTop:'12px'}},
+                  e('button',{style:{width:'100%',padding:'14px',borderRadius:'980px',border:'none',background:'linear-gradient(135deg,#FF6B8B,#DDA0DD)',color:'#fff',fontFamily:'inherit',fontSize:'15px',fontWeight:600,cursor:'pointer'},onMouseDown:function(ev){ev.stopPropagation();},onClick:function(){alert('바로 게시 기능은 배포 후 활성화됩니다.');}},'바로 게시'),
+                  e('button',{style:{width:'100%',padding:'12px',borderRadius:'980px',border:'1.5px solid '+(isPro?pinkC:'rgba(0,0,0,.1)'),background:'transparent',color:isPro?pinkC:tc2,fontFamily:'inherit',fontSize:'13px',fontWeight:500,cursor:isPro?'pointer':'default',opacity:isPro?1:0.5},onMouseDown:function(ev){ev.stopPropagation();},onClick:function(){if(!isPro){alert('프로 플랜에서 사용할 수 있어요.');return;}}},
+                    !isPro?e('span',{style:{marginRight:'4px'}},'🔒'):null,'최적 시간에 게시'
+                  ),
+                  e('button',{style:{width:'100%',padding:'12px',borderRadius:'980px',border:'1.5px solid rgba(0,0,0,.1)',background:'transparent',color:tc2,fontFamily:'inherit',fontSize:'13px',fontWeight:500,cursor:isPro?'pointer':'default',opacity:isPro?1:0.5},onMouseDown:function(ev){ev.stopPropagation();},onClick:function(){if(!isPro){alert('프로 플랜에서 사용할 수 있어요.');return;}}},
+                    !isPro?e('span',{style:{marginRight:'4px'}},'🔒'):null,'예약 게시'
+                  ),
+                  e('button',{style:{fontSize:'12px',background:'none',border:'none',color:tc2,cursor:'pointer',fontFamily:'inherit',padding:'6px'},onMouseDown:function(ev){ev.stopPropagation();},onClick:function(){
+                    setRealFiles([]);setRealNote('');setPhase('idle');
+                    if(window._setGridLayout){
+                      window._setGridLayout(layout.map(function(l){return Object.assign({},l);}));
+                      window._currentLayout = layout;
+                    }
+                  }},'← 다시 선택')
+                )
+              )
             ) : null,
 
-            // uploading: 업로드 중 (놀란 루미 보임)
-            phase === 'uploading' ? e('p', {className:'upload-prompt', style:{fontSize:'15px'}}, '사진 분석 중...') : null,
+            phase === 'cta' ? e('div', {className:'tut-cta-wrap'},
+              e('div', {className:'tut-check-circle'},
+                e('svg',{viewBox:'0 0 24 24',fill:'none',width:28,height:28},
+                  e('path',{d:'M4 12l6 6L20 6',stroke:'#FF6B8B',strokeWidth:'2.5',strokeLinecap:'round',strokeLinejoin:'round'}))
+              ),
+              e('p', {className:'tut-title',style:{fontSize:'16px'}}, '\uC774\uB807\uAC8C \uC27D\uAC8C', e('br'), '\uC778\uC2A4\uD0C0 \uAC8C\uC2DC \uC644\uB8CC'),
+              e('button', {className:'tut-cta-btn tut-guide-pulse',
+                onMouseDown:function(ev){ev.stopPropagation();},
+                onClick:function(ev){ ev.stopPropagation(); navigateOut('/beta'); }
+              }, '1\uC8FC\uC77C \uBB34\uB8CC \uCCB4\uD5D8'),
+              e('button', {style:{background:isDark?'rgba(255,255,255,.08)':'rgba(0,0,0,.05)',border:'none',fontFamily:'inherit',fontSize:'13px',color:isDark?'#FF8FAB':'#C8507A',cursor:'pointer',marginTop:'16px',padding:'10px 24px',borderRadius:'980px',transition:'transform .2s'},
+                onMouseDown:function(ev){ev.stopPropagation();},
+                onMouseOver:function(ev){ev.currentTarget.style.transform='scale(1.05)';},
+                onMouseOut:function(ev){ev.currentTarget.style.transform='scale(1)';},
+                onClick:function(){ setSel([false,false,false,false,false,false]); setDemoIdx(Math.floor(Math.random()*demoSets.length)); setPhase('idle'); }
+              }, '\u21BB \uCC98\uC74C\uBD80\uD130 \uB2E4\uC2DC \uBCF4\uAE30')
+            ) : null
+          ),
 
-            // done: 완료 (놀란 루미 보임)
-            phase === 'done' ? e('p', {className:'upload-prompt', style:{fontSize:'15px'}}, e('strong',null,'캡션 만드는 중...'), e('br'), '잠시만 기다려주세요') : null
-          )
+          phase === 'picker' ? e('div', {className:'tut-picker-overlay', onMouseDown:function(ev){ev.stopPropagation();}},
+            e('div', {className:'tut-picker-sheet'},
+              e('button', {className:'tut-picker-btn tut-guide-pulse', onClick:function(){ setPhase('gallery'); }}, '\uC0AC\uC9C4 \uBCF4\uAD00\uD568'),
+              e('div', {className:'tut-picker-divider'}),
+              e('button', {className:'tut-picker-btn', style:{opacity:.5}}, '\uC0AC\uC9C4 \uCC0D\uAE30'),
+              e('button', {className:'tut-picker-btn cancel', onClick:function(){ setPhase('idle'); }}, '\uCDE8\uC18C')
+            )
+          ) : null
         )
       );
     };
-    return e(UploadCard);
+    return e(TutorialCard);
   },
   map: function() {
     return e('div', {className:'bento-card card-map card-logo', style:{padding:0,overflow:'hidden'}},
@@ -1220,8 +1724,12 @@ var cards = {
         ),
         e('div', {className:'demo-scene scene-scan'},
           e('div', {className:'demo-scan-line'}),
+          e('div', {style:{position:'absolute',top:'18%',right:'12%',background:'rgba(255,255,255,.2)',borderRadius:'12px',padding:'5px 10px',backdropFilter:'blur(6px)',WebkitBackdropFilter:'blur(6px)',display:'flex',alignItems:'center',gap:'5px',animation:'tagPop .5s cubic-bezier(.34,1.56,.64,1) .5s backwards'}},
+            e('span', {style:{fontSize:'14px'}}, '\u2600\uFE0F'),
+            e('span', {style:{fontSize:'11px',color:'#fff',fontWeight:500}}, '\uB9D1\uC74C 24\xB0')
+          ),
           e('div', {className:'demo-scan-dots'}, e('span',{className:'demo-scan-dot'}),e('span',{className:'demo-scan-dot'}),e('span',{className:'demo-scan-dot'})),
-          e('p', {className:'demo-label'}, 'lumi가 사진을 분석하고 있어요')
+          e('p', {className:'demo-label'}, e('span',{className:'lumi-brand'},'lumi'), '\uAC00 \uC0AC\uC9C4 \xB7 \uB0A0\uC528\uB97C \uBD84\uC11D\uD558\uACE0 \uC788\uC5B4\uC694')
         ),
         e('div', {className:'demo-scene'},
           e('p', {className:'demo-caption-text'}, e('span',{className:'demo-typing'},'"이 자리 앉으면 라떼 들고\n한참 멍 때리게 됨\n\n여기 어딘지 궁금하면\n프로필 링크 눌러요 📍"')),
@@ -1256,62 +1764,263 @@ var cards = {
     );
   },
   spotify: function() {
-    return e('div', {className:'bento-card card-text pad-spot'},
-      e('div', {className:'spot-icon'}, SpotifySVG),
-      e('div', null,
-        e('div', {className:'spot-status'},
-          e('div', {className:'spot-bars'}, e('span'), e('span'), e('span')),
-          '실시간 트렌드'
-        ),
-        e('div', {className:'spot-title'}, '#봄카페추천'),
-        e('div', {className:'spot-artist'}, '카페 · 이번 주 인기')
-      ),
-      e('div', {className:'spot-bottom'},
-        e('a', {className:'card-arrow', href:'#', style:{position:'static'}}, ArrowSVG)
-      )
-    );
-  },
-  twitter: function() {
-    var lumiUser = JSON.parse(localStorage.getItem('lumi_user') || '{}');
-    var isLoggedIn = !!localStorage.getItem('lumi_token');
-    var igConnected = lumiUser.igConnected;
+    var FeatureCard = function() {
+      var isDk = document.body.classList.contains('dark-mode');
+      var tc = isDk ? '#f0f2f8' : '#0d1117';
+      var tc2 = isDk ? 'rgba(240,242,248,.6)' : 'rgba(0,0,0,.4)';
+      var bg2 = isDk ? 'rgba(255,255,255,.12)' : 'rgba(0,0,0,.03)';
+      var pink = isDk ? '#FF8FAB' : '#C8507A';
+      var border2 = isDk ? 'rgba(255,255,255,.15)' : 'rgba(0,0,0,.08)';
 
-    var badge;
-    var cardStyle = {};
-    var clickHandler;
+      var bizList = [
+        {name:'\uCE74\uD398',icon:'\u2615',caption:'\uC774 \uC790\uB9AC \uC549\uC73C\uBA74 \uB77C\uB5BC \uB4E4\uACE0\n\uD55C\uCC38 \uBA4D \uB54C\uB9AC\uAC8C \uB428',tone:'\uCE5C\uADFC\uD55C \uB9D0\uD22C'},
+        {name:'\uBDF0\uD2F0',icon:'\u2702\uFE0F',caption:'\uB808\uC774\uC5B4\uB4DC\uCEF7 \uD558\uB098\uBA74\n\uBD84\uC704\uAE30 \uD655 \uB2EC\uB77C\uC838\uC694',tone:'\uC804\uBB38\uC801\uC778 \uB9D0\uD22C'},
+        {name:'\uAF43\uC9D1',icon:'\uD83C\uDF38',caption:'\uC624\uB298 \uB4E4\uC5B4\uC628 \uC791\uC57D \uD55C \uB2E4\uBC1C\uC774\uBA74\n\uBC29 \uC804\uCCB4\uAC00 \uBD04\uC774\uC5D0\uC694',tone:'\uB530\uB73B\uD55C \uB9D0\uD22C'},
+        {name:'\uB9DB\uC9D1',icon:'\uD83C\uDF5C',caption:'\uC904 \uC11C\uC11C \uBA39\uB294 \uB370\uB294\n\uC774\uC720\uAC00 \uC788\uC5B4\uC694',tone:'\uC790\uC2E0\uAC10 \uC788\uB294 \uB9D0\uD22C'},
+        {name:'\uD53C\uD2B8\uB2C8\uC2A4',icon:'\uD83D\uDCAA',caption:'\uC624\uB298\uB3C4 \uD55C \uBC1C \uB354\n\uAC00\uAE4C\uC6CC\uC84C\uC5B4\uC694',tone:'\uB3D9\uAE30\uBD80\uC5EC \uB9D0\uD22C'}
+      ];
+      var features = [
+        {label:'\uC5C5\uC885 \uB9DE\uCDA4 \uCEA1\uC158', icon:function(){return bizList[bizCount].icon;}, render:function(){
+          var biz = bizList[bizCount];
+          return e(React.Fragment, null,
+            e('div',{style:{display:'flex',gap:'6px',justifyContent:'center',marginBottom:'10px'}},
+              [0,1,2].map(function(i){
+                return e('span',{key:i,style:{fontSize:'14px',padding:'8px 14px',borderRadius:'980px',background:i===bizCount?'linear-gradient(135deg,#FF6B8B,#DDA0DD)':'transparent',color:i===bizCount?'#fff':tc2,border:i===bizCount?'none':'1px solid '+(isDk?'rgba(255,255,255,.1)':'rgba(0,0,0,.08)'),transition:'all .3s'}},bizList[i].name);
+              })
+            ),
+            e('div',{style:{padding:'14px 16px',borderRadius:'14px',background:bg2,textAlign:'center'}},
+              e('p',{style:{fontSize:'15px',color:tc2,lineHeight:'1.7',whiteSpace:'pre-line'}}, biz.caption)
+            ),
+            e('span',{style:{fontSize:'13px',color:pink,display:'block',textAlign:'center',marginTop:'8px',fontWeight:500}}, biz.tone)
+          );
+        }},
+        {label:'\uCD5C\uC801 \uC2DC\uAC04 \uAC8C\uC2DC', icon:'\u23F0', render:function(){
+          var timeData = [
+            {biz:'\uCE74\uD398',peak:3,peakLabel:'\uC624\uD6C4 6:30',hours:[{h:'09',v:18},{h:'12',v:40},{h:'15',v:27},{h:'18:30',v:80},{h:'21',v:55}]},
+            {biz:'\uBDF0\uD2F0',peak:1,peakLabel:'\uC624\uC804 11:00',hours:[{h:'08',v:25},{h:'11',v:80},{h:'14',v:45},{h:'17',v:35},{h:'20',v:60}]},
+            {biz:'\uB9DB\uC9D1',peak:2,peakLabel:'\uC624\uD6C4 5:00',hours:[{h:'09',v:15},{h:'12',v:55},{h:'17',v:80},{h:'19',v:50},{h:'21',v:30}]}
+          ];
+          var td = timeData[bizCount % timeData.length];
+          return e(React.Fragment, null,
+            e('p',{style:{fontSize:'11px',color:tc2,textAlign:'center',marginBottom:'6px'}}, td.biz + ' \uD314\uB85C\uC6CC \uBD84\uC11D'),
+            e('div',{style:{display:'flex',alignItems:'flex-end',justifyContent:'center',gap:'10px',height:'90px',marginBottom:'10px'}},
+              td.hours.map(function(hr,i){
+                var isPeak = i===td.peak;
+                return e('div',{key:i,style:{display:'flex',flexDirection:'column',alignItems:'center',gap:'4px',flex:1}},
+                  e('div',{style:{width:'100%',maxWidth:'32px',height:hr.v+'px',borderRadius:'8px',background:isPeak?'linear-gradient(180deg,#FF6B8B,#DDA0DD)':bg2}}),
+                  e('span',{style:{fontSize:'9px',color:isPeak?pink:tc2,fontWeight:isPeak?'600':'400'}},hr.h)
+                );
+              })
+            ),
+            e('p',{style:{fontSize:'12px',color:pink,textAlign:'center',fontWeight:500}}, td.peakLabel + ' \uCD94\uCC9C'),
+            e('p',{style:{fontSize:'10px',color:tc2,textAlign:'center',marginTop:'4px'}}, '\uD314\uB85C\uC6CC \uD65C\uB3D9 \uAE30\uBC18 \uB9E4\uC77C \uBD84\uC11D')
+          );
+        }},
+        {label:'\uCE90\uB7EC\uC140 \uC790\uB3D9', icon:'\uD83D\uDDBC\uFE0F', render:function(){
+          return e(React.Fragment, null,
+            e('div',{style:{display:'flex',justifyContent:'center',gap:'8px',marginBottom:'10px'}},
+              [0,1,2].map(function(i){
+                return e('div',{key:i,style:{width:'72px',height:'72px',borderRadius:'12px',overflow:'hidden',transform:'rotate('+(i===0?'-5':i===1?'0':'5')+'deg)',boxShadow:'0 3px 12px rgba(0,0,0,.12)'}},
+                  e('img',{src:'/assets/demo-cafe-'+(i+2)+'.jpg',style:{width:'100%',height:'100%',objectFit:'cover'}})
+                );
+              })
+            ),
+            e('p',{style:{fontSize:'12px',color:tc2,textAlign:'center'}},'\uC5EC\uB7EC \uC7A5 \uC0AC\uC9C4\uC744 \uCE90\uB7EC\uC140\uB85C',e('br'),'\uC790\uB3D9 \uAD6C\uC131')
+          );
+        }},
+        {label:'\uD2B8\uB80C\uB4DC \uBD84\uC11D', icon:'\uD83D\uDCC8', render:function(){
+          return e(React.Fragment, null,
+            e('div',{style:{display:'flex',flexDirection:'column',gap:'6px',marginBottom:'8px'}},
+              [{tag:'#\uD06C\uB85C\uD50C\uB9DB\uC9D1',d:'+42%'},{tag:'#\uBD04\uCE74\uD398',d:'+28%'},{tag:'#\uB77C\uB5BC\uC544\uD2B8',d:'+15%'}].map(function(t,i){
+                return e('div',{key:i,style:{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'6px 10px',borderRadius:'10px',background:bg2}},
+                  e('span',{style:{fontSize:'11px',color:tc}},t.tag),
+                  e('span',{style:{fontSize:'10px',color:'#4ade80',fontWeight:600}},t.d)
+                );
+              })
+            ),
+            e('p',{style:{fontSize:'11px',color:tc2,textAlign:'center'}},'\uC5C5\uC885\uBCC4 \uC2E4\uC2DC\uAC04 \uD2B8\uB80C\uB4DC \uBC18\uC601')
+          );
+        }},
+        {label:'\uC2A4\uD1A0\uB9AC \uC790\uB3D9', icon:'\uD83D\uDCF1', render:function(){
+          return e(React.Fragment, null,
+            e('div',{style:{display:'flex',justifyContent:'center',gap:'10px',alignItems:'center',marginBottom:'10px'}},
+              e('div',{style:{width:'100px',height:'100px',borderRadius:'14px',overflow:'hidden',boxShadow:'0 2px 8px rgba(0,0,0,.1)'}},
+                e('img',{src:'/assets/demo-cafe.png',style:{width:'100%',height:'100%',objectFit:'cover'}})
+              ),
+              e('div',{style:{width:'70px',height:'110px',borderRadius:'14px',overflow:'hidden',border:'2px solid '+(isDk?'rgba(255,255,255,.15)':'rgba(0,0,0,.1)'),position:'relative',boxShadow:'0 2px 8px rgba(0,0,0,.1)'}},
+                e('img',{src:'/assets/demo-cafe.png',style:{width:'100%',height:'100%',objectFit:'cover'}}),
+                e('div',{style:{position:'absolute',top:'3px',left:'3px',right:'3px',height:'2px',borderRadius:'1px',background:'rgba(255,255,255,.3)',overflow:'hidden'}},
+                  e('div',{style:{width:'60%',height:'100%',background:'#fff',borderRadius:'1px'}})
+                )
+              )
+            ),
+            e('p',{style:{fontSize:'12px',color:tc2,textAlign:'center'}},'\uD53C\uB4DC + \uC2A4\uD1A0\uB9AC \uB3D9\uC2DC \uAC8C\uC2DC')
+          );
+        }},
+        {label:'\uCF54\uBA58\uD2B8 \uBC18\uC601', icon:'\uD83D\uDCAC', render:function(){
+          return e(React.Fragment, null,
+            e('div',{style:{padding:'10px 14px',borderRadius:'14px',background:bg2,marginBottom:'8px'}},
+              e('p',{style:{fontSize:'10px',color:tc2,marginBottom:'4px'}},'\uB300\uD45C\uB2D8 \uCF54\uBA58\uD2B8'),
+              e('p',{style:{fontSize:'13px',color:tc,lineHeight:'1.5'}},'\u201C\uC624\uB298 \uD734\uBB34\uC77C \uC548\uB0B4 \uB123\uC5B4\uC918\u201D')
+            ),
+            e('div',{style:{padding:'10px 14px',borderRadius:'14px',border:'1.5px solid '+pink,background:isDk?'rgba(255,107,139,.06)':'rgba(200,80,122,.04)'}},
+              e('p',{style:{fontSize:'10px',color:pink,marginBottom:'4px'}},'\uC0DD\uC131\uB41C \uCEA1\uC158'),
+              e('p',{style:{fontSize:'12px',color:tc,lineHeight:'1.6'}},'\uB0B4\uC77C(\uC6D4\uC694\uC77C)\uC740 \uC26C\uC5B4\uAC11\uB2C8\uB2E4',e('br'),'\uD654\uC694\uC77C\uC5D0 \uB2E4\uC2DC \uB9CC\uB098\uC694 :)')
+            ),
+            e('p',{style:{fontSize:'10px',color:tc2,textAlign:'center',marginTop:'6px'}},'\uD55C \uC904\uC774\uBA74 \uCEA1\uC158\uC774 \uB2EC\uB77C\uC838\uC694')
+          );
+        }},
+        {label:'\uB0A0\uC528 \uBC18\uC601', icon:'\uD83C\uDF24\uFE0F', render:function(){
+          return e(React.Fragment, null,
+            e('div',{style:{display:'flex',alignItems:'center',justifyContent:'center',gap:'10px',marginBottom:'12px'}},
+              e('span',{style:{fontSize:'28px'}}, '\u2600\uFE0F'),
+              e('span',{style:{fontSize:'15px',color:tc,fontWeight:500}}, '\uB9D1\uC74C 24\xB0')
+            ),
+            e('div',{style:{padding:'12px 16px',borderRadius:'14px',background:bg2,textAlign:'center'}},
+              e('p',{style:{fontSize:'13px',color:tc,lineHeight:'1.6'}}, '\uC624\uB298 \uAC19\uC740 \uB0A0\uC740',e('br'),'\uC544\uC774\uC2A4 \uB77C\uB5BC \uD55C \uC794\uC774\uC8E0 \u2615')
+            ),
+            e('p',{style:{fontSize:'10px',color:tc2,textAlign:'center',marginTop:'8px'}},'\uD604\uC7AC \uB0A0\uC528\uB97C \uCEA1\uC158\uC5D0 \uC790\uB3D9 \uBC18\uC601')
+          );
+        }},
+        {label:'\uD574\uC2DC\uD0DC\uADF8 \uC790\uB3D9', icon:'#\uFE0F\u20E3', render:function(){
+          return e(React.Fragment, null,
+            e('div',{style:{display:'flex',flexWrap:'wrap',gap:'8px',justifyContent:'center',marginBottom:'10px'}},
+              ['#\uCE74\uD398\uCD94\uCC9C','#\uB77C\uB5BC\uC544\uD2B8','#\uAC10\uC131\uCE74\uD398','#\uB514\uC800\uD2B8','#\uD648\uCE74\uD398'].map(function(tag,i){
+                return e('span',{key:i,style:{fontSize:'14px',padding:'8px 14px',borderRadius:'14px',background:i<3?'linear-gradient(135deg,rgba(255,107,139,.12),rgba(221,160,221,.12))':bg2,color:i<3?pink:tc2,animation:'tagPop .4s cubic-bezier(.34,1.56,.64,1) '+(i*0.1)+'s both'}},tag);
+              })
+            ),
+            e('p',{style:{fontSize:'13px',color:tc2,textAlign:'center'}},'\uD2B8\uB80C\uB4DC \uAE30\uBC18 \uC790\uB3D9 \uC0DD\uC131')
+          );
+        }}
+      ];
 
-    if (isLoggedIn && igConnected) {
-      badge = e('div', {className:'ig-badge'},
-        e('svg', {width:12,height:12,viewBox:'0 0 12 12'},
-          e('circle', {cx:6,cy:6,r:6,fill:'#fff'}),
-          e('path', {d:'M3.5 6l2 2 3.5-3.5',stroke:'#d62976',strokeWidth:'1.5',fill:'none',strokeLinecap:'round',strokeLinejoin:'round'})
+      var s = React.useState(0), idx = s[0], setIdx = s[1];
+      var s2 = React.useState(false), fade = s2[0], setFade = s2[1];
+      var s4 = React.useState(0), bizCount = s4[0], setBizCount = s4[1];
+      React.useEffect(function(){
+        var delay = idx === 0 ? 3000 : 5000;
+        var iv = setTimeout(function(){
+          setFade(true);
+          setTimeout(function(){
+            if(idx === 0 && bizCount < 2) {
+              setBizCount(function(c){return c+1;});
+            } else {
+              setBizCount(0);
+              setIdx(function(p){ return (p+1)%features.length; });
+            }
+            setFade(false);
+          }, 300);
+        }, delay);
+        return function(){ clearTimeout(iv); };
+      },[idx, bizCount]);
+      var f = features[idx];
+
+      return e('div', {className:'bento-card card-text', style:{padding:'18px 20px',display:'flex',flexDirection:'column',justifyContent:'space-between',overflow:'hidden'}},
+        e('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'4px'}},
+          e('p',{style:{fontSize:'10px',color:tc2,letterSpacing:'.5px'}}, f.label),
+          e('span',{style:{fontSize:'18px'}}, typeof f.icon==='function'?f.icon():f.icon)
         ),
-        e('span', null, '연결됨')
-      );
-      clickHandler = null;
-    } else if (isLoggedIn && !igConnected) {
-      badge = e('div', {className:'ig-badge'},
-        e('span', null, '연동하기'),
-        e('svg', {width:10,height:10,viewBox:'0 0 10 10'},
-          e('path', {d:'M2 8L8 2M8 2H3M8 2v5',stroke:'#fff',strokeWidth:'1.5',fill:'none',strokeLinecap:'round',strokeLinejoin:'round'})
+        e('div', {style:{flex:1,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'center',transition:'opacity .3s, transform .3s',opacity:fade?0:1,transform:fade?'translateY(10px)':'translateY(0)',width:'100%'}},
+          f.render()
+        ),
+        e('div', {style:{display:'flex',gap:'3px',justifyContent:'center',marginTop:'4px'}},
+          features.map(function(_,i){
+            return e('div',{key:i,style:{width:i===idx?'12px':'4px',height:'4px',borderRadius:'2px',background:i===idx?pink:(isDk?'rgba(255,255,255,.15)':'rgba(0,0,0,.1)'),transition:'all .3s'}});
+          })
         )
       );
-      clickHandler = function() {
-        var token = localStorage.getItem('lumi_token') || '';
-        window.location.href = '/.netlify/functions/ig-oauth?action=start&token=' + token;
-      };
-    } else {
-      cardStyle = {};
-      badge = e('div', {className:'ig-badge'},
-        e('span', null, '로그인 필요')
-      );
-      clickHandler = function() { window.location.href = '/dashboard'; };
-    }
+    };
+    return e(FeatureCard);
+  },
+  twitter: function() {
+    var isLoggedIn = !!localStorage.getItem('lumi_token');
+    if (isLoggedIn) {
+      var IgConnectCard = function() {
+        var lumiUser = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+        var igConnected = lumiUser.igConnected;
+        var guideState = JSON.parse(localStorage.getItem('lumi_ig_guide') || '{}');
+        var st = React.useState(igConnected ? 3 : guideState.step2 ? 2 : guideState.step1 ? 1 : 0);
+        var step = st[0], setStep = st[1];
 
-    return e('div', {className:'bento-card card-visual bg-blue', style:Object.assign({flexDirection:'column',gap:'10px',cursor: clickHandler ? 'pointer' : 'default'}, cardStyle), onMouseDown: clickHandler ? onCardMouseDown : null, onMouseUp: clickHandler ? function(ev){ if(isRealClick(ev)) clickHandler(); } : null},
-      InstaSVG,
-      badge
-    );
+        function completeStep(n) {
+          var state = JSON.parse(localStorage.getItem('lumi_ig_guide') || '{}');
+          state['step' + (n + 1)] = true;
+          localStorage.setItem('lumi_ig_guide', JSON.stringify(state));
+          setStep(n + 1);
+        }
+
+        function startOAuth() {
+          // 테스트용: 바로 연동 완료 처리
+          var user = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+          user.igConnected = true;
+          localStorage.setItem('lumi_user', JSON.stringify(user));
+          setStep(3);
+        }
+
+        // 연동 완료 상태
+        if (igConnected || step === 3) {
+          return e('div', {className:'bento-card card-visual bg-blue', style:{flexDirection:'column',justifyContent:'center',alignItems:'center',textAlign:'center',padding:'24px',gap:'0'}},
+            InstaSVG,
+            e('svg', {width:36,height:36,viewBox:'0 0 36 36',fill:'none',style:{marginTop:'12px',marginBottom:'8px'}},
+              e('path', {d:'M8 18l8 8 12-14',stroke:'#fff',strokeWidth:3,strokeLinecap:'round',strokeLinejoin:'round'})
+            ),
+            e('p', {style:{fontSize:'18px',fontWeight:700,color:'#fff',marginBottom:'6px'}}, '연동 완료!'),
+            e('p', {style:{fontSize:'13px',color:'rgba(255,255,255,.7)'}}, '인스타그램이 연결되었어요')
+          );
+        }
+
+        var steps = [
+          {label:'비즈니스 전환', btn:'전환하러 가기', action:function(){window.open('https://www.instagram.com/accounts/professional_account_tools/','_blank');}},
+          {label:'페이스북 연결', btn:'연결하러 가기', action:function(){window.open('https://www.facebook.com/pages/create/','_blank');}},
+          {label:'연동하기', btn:'연동 시작', action:startOAuth}
+        ];
+        var cur = steps[step];
+
+        return e('div', {className:'bento-card card-visual bg-blue', style:{flexDirection:'column',justifyContent:'center',alignItems:'center',textAlign:'center',padding:'24px',gap:'0',position:'relative',overflow:'hidden'}},
+          e('p', {style:{fontSize:'16px',fontWeight:700,color:'#fff',marginBottom:'14px',letterSpacing:'1px'}}, 'STEP ' + (step + 1) + '/3'),
+          // 완료된 단계 표시
+          step > 0 ? e('div', {style:{display:'flex',gap:'8px',justifyContent:'center',marginBottom:'12px'}},
+            Array.apply(null, Array(step)).map(function(_, i) {
+              return e('div', {key:i, style:{fontSize:'12px',color:'rgba(255,255,255,.7)',display:'flex',alignItems:'center',gap:'4px'}},
+                e('span', {style:{color:'#4ade80',fontSize:'14px'}}, '✓'),
+                steps[i].label
+              );
+            })
+          ) : null,
+          e('p', {style:{fontSize:'20px',fontWeight:700,color:'#fff',marginBottom:'20px'}}, cur.label),
+          e('button', {className:'btn-pill', style:{fontSize:'15px',padding:'12px 28px',background:'rgba(255,255,255,.2)',backdropFilter:'blur(10px)',color:'#fff',border:'1px solid rgba(255,255,255,.25)',marginBottom:'16px',cursor:'pointer'}, onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(ev){ev.stopPropagation();cur.action();}}, cur.btn),
+          step < 2 ? e('button', {style:{fontSize:'14px',background:'none',border:'none',color:'rgba(255,255,255,.6)',cursor:'pointer',marginBottom:'14px',fontFamily:'inherit',textDecoration:'underline',padding:'6px'}, onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(ev){ev.stopPropagation();completeStep(step);}}, cur.label + ' 완료했어요') : null,
+          e('button', {style:{fontSize:'12px',background:'none',border:'none',color:'rgba(255,255,255,.4)',cursor:'pointer',fontFamily:'inherit',padding:'6px'}, onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(ev){ev.stopPropagation();navigateOut('/ig-guide.html');}}, '자세히 보기')
+        );
+      };
+      return e(IgConnectCard);
+    }
+    var IgSlideCard = function() {
+      var st = React.useState(0), phase = st[0], setPhase = st[1];
+      React.useEffect(function(){
+        var t = setInterval(function(){ setPhase(function(p){ return (p+1)%5; }); }, 3500);
+        return function(){ clearInterval(t); };
+      }, []);
+      var steps = [
+        {title:'인스타 연동이 필요해요', desc:'lumi가 게시물을 올리려면\n인스타그램 연동이 필수예요', icon:'🔗'},
+        {title:'어렵지 않아요', desc:'lumi가 하나하나\n다 알려드려요', icon:'img'},
+        {title:'3분이면 끝', desc:'버튼 3번이면\n연동 완료!', icon:'⚡'},
+        {title:'비용 0원', desc:'모든 과정 완전 무료\n안심하세요', icon:'💰'},
+        {title:'가입 후 바로 안내', desc:'회원가입하면\n연동 가이드가 나와요', icon:'✨'}
+      ];
+      var s = steps[phase];
+      return e('div', {className:'bento-card card-visual bg-blue', style:{flexDirection:'column',justifyContent:'center',alignItems:'center',textAlign:'center',padding:'20px',gap:'0',position:'relative',overflow:'hidden'}},
+        e('div', {key:phase, style:{display:'flex',flexDirection:'column',alignItems:'center',animation:'igGuideIn .5s cubic-bezier(.16,1,.3,1)'}},
+          s.icon === 'img' ? e('div', {style:{animation:'igIconPop .4s cubic-bezier(.16,1,.3,1) .1s both'}}, e('img', {src:'/assets/lumi-smile.png', style:{width:'120px',height:'120px',objectFit:'contain',marginTop:'-30px'}}), e('p', {style:{fontSize:'16px',fontWeight:700,color:'#fff',marginBottom:'6px',letterSpacing:'-0.3px'}}, s.title), e('p', {style:{fontSize:'13px',color:'rgba(255,255,255,.75)',lineHeight:'1.6',whiteSpace:'pre-line'}}, s.desc)) : e(React.Fragment, null, e('div', {style:{fontSize:'42px',marginBottom:'10px',animation:'igIconPop .4s cubic-bezier(.16,1,.3,1) .1s both'}}, s.icon), e('p', {style:{fontSize:'16px',fontWeight:700,color:'#fff',marginBottom:'6px',letterSpacing:'-0.3px'}}, s.title), e('p', {style:{fontSize:'13px',color:'rgba(255,255,255,.75)',lineHeight:'1.6',whiteSpace:'pre-line'}}, s.desc))
+        ),
+        e('div', {style:{display:'flex',gap:'4px',position:'absolute',bottom:'12px'}},
+          [0,1,2,3,4].map(function(i){
+            return e('div', {key:i, style:{width:i===phase?'14px':'5px',height:'5px',borderRadius:'3px',background:i===phase?'#fff':'rgba(255,255,255,.35)',transition:'all .3s'}});
+          })
+        )
+      );
+    };
+    return e(IgSlideCard);
   },
   project2: function() {
     var isLoggedIn = !!localStorage.getItem('lumi_token');
@@ -1398,11 +2107,31 @@ var cards = {
       var src = apiData[scope] || (scope==='domestic'?fallbackDomestic:fallbackGlobal);
       if(src.length>0 && src.length<7){var _s=src.slice();while(src.length<7)src=src.concat(_s);}
       src=src.slice(0,7);
-      var itemH = 62;
+      var cardRef = React.useRef(null);
+      var st5 = React.useState(62), itemH = st5[0], setItemH = st5[1];
+      var st7 = React.useState(7), visibleCount = st7[0], setVisibleCount = st7[1];
+      React.useEffect(function(){
+        function calcH(){
+          if(!cardRef.current) return;
+          var h = cardRef.current.offsetHeight;
+          var available = h - 80;
+          if(available < 250) {
+            setVisibleCount(3);
+            setItemH(Math.max(50, Math.floor(available / 3.2)));
+          } else {
+            setVisibleCount(7);
+            setItemH(Math.max(32, Math.floor(available / 7)));
+          }
+        }
+        calcH();
+        var ro = new ResizeObserver(calcH);
+        if(cardRef.current) ro.observe(cardRef.current);
+        return function(){ ro.disconnect(); };
+      },[]);
       var rankMap = {};
       order.forEach(function(idx,rank){ if(idx<src.length) rankMap[idx]=rank; });
 
-      return e('div', {className:'bento-card card-visual card-project card-trend card-responsive', style:{padding:0}},
+      return e('div', {ref:cardRef, className:'bento-card card-visual card-project card-trend card-responsive', style:{padding:0}},
         e('div', {className:'trend-wrap'},
           e('div', {className:'trend-header'},
             e('span', {className:'trend-label'}, '종합 트렌드'),
@@ -1413,8 +2142,8 @@ var cards = {
           ),
           e('div', {className:'trend-list'},
             e('div', {className:'trend-track', key:'track-'+tab},
-              src.map(function(t,idx){
-                var rank = rankMap[idx]!==undefined?rankMap[idx]:idx;
+              src.slice(0,visibleCount).map(function(t,idx){
+                var rank = visibleCount < 7 ? idx : (rankMap[idx]!==undefined?rankMap[idx]:idx);
                 var delta = 0;
                 if(prevOrder){
                   var oldRank = prevOrder.indexOf(idx);
@@ -1454,12 +2183,12 @@ var cards = {
   blog: function() {
     return e('div', {className:'bento-card card-text pad-blog'},
       e('div', null,
-        e('p', {className:'blog-desc', style:{marginBottom:'4px'}}, '평균 업로드 시간 37분 → lumi는 1분'),
-        e('h2', {className:'blog-title', style:{marginBottom:'12px'}}, '한 달에 18시간을 아끼세요'),
+        e('p', {className:'blog-desc', style:{marginBottom:'4px'}}, '\uC804\uBB38\uAC00\uB3C4 \uD55C \uAC8C\uC2DC\uBB3C\uC5D0 20~30\uBD84 \xB7 lumi\uB294 1\uBD84'),
+        e('h2', {className:'blog-title', style:{marginBottom:'12px'}}, '\uB204\uAD6C\uB098 \uC804\uBB38\uAC00\uCC98\uB7FC'),
         e('p', {className:'blog-desc', style:{lineHeight:'1.7',marginBottom:'0'}},
-          '사진 올리기 → 트렌드 분석 → 업종·말투 매칭 → 캡션 생성 → 게시까지.',
+          '\uC0AC\uC9C4\uB9CC \uC62C\uB9AC\uBA74 \uD2B8\uB80C\uB4DC \uBD84\uC11D, \uC5C5\uC885\xB7\uB9D0\uD22C \uB9E4\uCE6D, \uCEA1\uC158, \uCD5C\uC801 \uC2DC\uAC04 \uAC8C\uC2DC\uAE4C\uC9C0.',
           e('br'),
-          '여러 장이면 캐러셀로, 코멘트 한 줄이면 휴무일 안내도 알아서.'
+          '\uC9C1\uC811 \uD558\uBA74 30~90\uBD84, lumi\uBA74 1\uBD84. \uADF8\uB9C8\uC800\uB3C4 \uC804\uBB38\uAC00 \uD000\uB9AC\uD2F0.'
         )
       ),
       e('div', {className:'blog-bottom', style:{marginTop:'15px'}},
@@ -1468,9 +2197,38 @@ var cards = {
     );
   },
   project3: function() {
-    return e('div', {className:'bento-card card-visual bg-yellow card-project'},
-      e('span', {className:'project-label'}, '해시태그 자동'),
-      e('a', {className:'card-arrow', href:'#'}, ArrowSVG)
+    var isDk = document.body.classList.contains('dark-mode');
+    var tc = isDk ? '#f0f2f8' : '#0d1117';
+    var tc2 = isDk ? 'rgba(240,242,248,.6)' : 'rgba(0,0,0,.4)';
+    var bg2 = isDk ? 'rgba(255,255,255,.12)' : 'rgba(0,0,0,.03)';
+    var pink = isDk ? '#FF8FAB' : '#C8507A';
+    var cardBg = isDk ? '#272729' : '#fff';
+    var checkColor = isDk ? 'rgba(240,242,248,.5)' : 'rgba(0,0,0,.35)';
+    var check = function(txt){ return e('div',{style:{display:'flex',alignItems:'center',gap:'5px',marginBottom:'4px'}}, e('span',{style:{fontSize:'10px',color:checkColor}},'✓'), e('span',{style:{fontSize:'11px',color:tc2}},txt)); };
+    return e('div', {className:'bento-card card-text', style:{padding:'24px 28px',background:cardBg,display:'flex',flexDirection:'column',justifyContent:'space-between',width:'100%',boxSizing:'border-box'}},
+      e('div', {style:{width:'100%',flex:1,display:'flex',flexDirection:'column'}},
+        e('p', {style:{fontSize:'15px',color:tc,fontWeight:600,letterSpacing:'.5px',marginBottom:'14px',textAlign:'center'}}, '요금'),
+        e('div', {style:{display:'flex',gap:'12px',width:'100%',alignItems:'stretch'}},
+          e('div', {style:{flex:1,padding:'16px 18px',borderRadius:'14px',background:bg2,display:'flex',flexDirection:'column'}},
+            e('p', {style:{fontSize:'10px',color:tc2,marginBottom:'6px',fontWeight:500}}, '스탠다드'),
+            e('p', {style:{fontSize:'22px',fontWeight:400,color:tc,letterSpacing:'-0.5px'}}, '₩9,900'),
+            e('p', {style:{fontSize:'9px',color:tc2,marginTop:'2px',marginBottom:'12px'}}, '/월 · 12건'),
+            check('캡션 + 해시태그'),
+            check('자동 게시'),
+            check('캐러셀'),
+            check('말투 학습')
+          ),
+          e('div', {style:{flex:1,padding:'16px 18px',borderRadius:'14px',background:isDk?'rgba(255,107,139,.08)':'linear-gradient(135deg,rgba(255,107,139,.06),rgba(221,160,221,.06))',outline:'1.5px solid '+(isDk?'rgba(255,143,171,.25)':'rgba(200,80,122,.15)'),display:'flex',flexDirection:'column'}},
+            e('p', {style:{fontSize:'10px',color:pink,marginBottom:'6px',fontWeight:600}}, '추천'),
+            e('p', {style:{fontSize:'22px',fontWeight:400,color:tc,letterSpacing:'-0.5px'}}, '₩29,900'),
+            e('p', {style:{fontSize:'9px',color:tc2,marginTop:'2px',marginBottom:'12px'}}, '/월 · 30건'),
+            check('스탠다드 전부'),
+            check('최적 시간 게시'),
+            check('예약 게시')
+          )
+        )
+      ),
+      e('p', {style:{fontSize:'13px',color:pink,textAlign:'center',marginTop:'14px',fontWeight:600,width:'100%'}}, '1주 무료 체험 · 프로 기능 포함')
     );
   },
   dark: function() {
@@ -1483,7 +2241,13 @@ var cards = {
     );
   },
   empty1: function() {
-    return e('div', {className:'bento-card reset-card', onMouseDown:onCardMouseDown, onMouseUp:function(ev){if(isRealClick(ev))resetGrid();}},
+    var _dt = null;
+    return e('div', {className:'bento-card reset-card',
+      onMouseDown:function(ev){ _dt = Date.now(); },
+      onMouseUp:function(ev){ if(_dt && (Date.now()-_dt)<200) resetGrid(); _dt=null; },
+      onTouchStart:function(ev){ _dt = Date.now(); },
+      onTouchEnd:function(ev){ if(_dt && (Date.now()-_dt)<200) resetGrid(); _dt=null; }
+    },
       e('div', {className:'reset-blocks'},
         e('div',{className:'reset-block rb-1'}),
         e('div',{className:'reset-block rb-2'}),
@@ -1496,37 +2260,81 @@ var cards = {
     );
   },
   newsletter: function() {
-    return e('div', {className:'bento-card card-text pad-news'},
-      e('div', {style:{width:'100%'}},
-        e('h2', {className:'news-title'}, '무료로 시작해볼까요?'),
-        e('p', {className:'news-desc'}, '선착순 20명 무료 체험 중. 카드 등록 없음, 자동 결제 없음.'),
-        e('input', {className:'news-input', type:'email', placeholder:'이메일 주소'})
+    var isDk = document.body.classList.contains('dark-mode');
+    var tc = isDk ? '#f0f2f8' : '#0d1117';
+    var tc2 = isDk ? 'rgba(240,242,248,.6)' : 'rgba(0,0,0,.4)';
+    var bg2 = isDk ? 'rgba(255,255,255,.12)' : 'rgba(0,0,0,.03)';
+    var pink = isDk ? '#FF8FAB' : '#C8507A';
+    var cardBg = isDk ? '#272729' : '#fff';
+    var dimTxt = isDk ? 'rgba(240,242,248,.35)' : 'rgba(0,0,0,.3)';
+    var row = function(label, agency, lumi) {
+      return e('div',{style:{display:'flex',alignItems:'center',padding:'8px 0',borderBottom:'1px solid '+(isDk?'rgba(255,255,255,.06)':'rgba(0,0,0,.04)')}},
+        e('span',{style:{flex:1,fontSize:'13px',color:tc,fontWeight:500}},label),
+        e('span',{style:{flex:1,fontSize:'13px',color:dimTxt,textAlign:'center',textDecoration:'line-through'}},agency),
+        e('span',{style:{flex:1,fontSize:'13px',color:pink,textAlign:'center',fontWeight:600}},lumi)
+      );
+    };
+    return e('div', {className:'bento-card card-text', style:{padding:'24px 28px',background:cardBg,display:'flex',flexDirection:'column',justifyContent:'flex-start',width:'100%',boxSizing:'border-box'}},
+      e('div', {style:{width:'100%',display:'flex',flexDirection:'column'}},
+        e('p', {style:{fontSize:'15px',color:tc,fontWeight:600,letterSpacing:'.5px',marginBottom:'14px',textAlign:'center'}}, '대행사 vs ', e('span',{className:'lumi-brand'},'lumi')),
+        e('div',{style:{display:'flex',alignItems:'center',padding:'8px 0',marginBottom:'4px'}},
+          e('span',{style:{flex:1,fontSize:'12px',color:dimTxt,fontWeight:600}},''),
+          e('span',{style:{flex:1,fontSize:'12px',color:dimTxt,textAlign:'center',fontWeight:600}},'대행사'),
+          e('span',{style:{flex:1,fontSize:'12px',color:pink,textAlign:'center',fontWeight:600}},e('span',{className:'lumi-brand'},'lumi'))
+        ),
+        row('월 비용', '50~100만원', '9,900원~'),
+        row('계약', '최소 3개월', '없음'),
+        row('우리 매장 이해', '낮음', 'AI 학습'),
+        row('게시 속도', '2~3일', '1분')
       ),
-      e('div', {className:'news-bottom'},
-        e('button', {className:'btn-pill', onClick:function(){location.href='/beta'}}, ArrowSVG, ' 시작하기'),
-        e('span', {className:'news-sub-info'}, '남은 자리 ', e('span',{className:'sub-num',id:'beta-count'},'20'))
+      e('div',{style:{display:'flex',justifyContent:'center',alignItems:'center',gap:'12px',marginTop:'16px'}},
+        e('a', {className:'btn-pill', href:'/beta', onMouseDown:function(ev){ev.stopPropagation();}}, ArrowSVG, ' 1주 무료 체험')
       )
     );
   }
 };
 
-// Layout — exact same structure as nevflynn.com
+// Layout — desktop (4 cols)
 var layout = [
-  {i:'bio',       x:0, y:0, w:2, h:1, isResizable:true, minW:1, maxW:4, minH:1, maxH:3},
+  {i:'bio',       x:0, y:0, w:1, h:2, isResizable:false},
+  {i:'spotify',   x:1, y:0, w:1, h:1, isResizable:false},
   {i:'empty1',    x:2, y:0, w:1, h:1, isResizable:false},
-  {i:'project1',  x:3, y:0, w:1, h:2, isResizable:true, minW:1, maxW:2, minH:1, maxH:4},
-  {i:'spotify',   x:0, y:1, w:1, h:1, isResizable:false},
+  {i:'project1',  x:3, y:0, w:1, h:2, isResizable:false},
   {i:'twitter',   x:1, y:1, w:1, h:1, isResizable:false},
-  {i:'project2',  x:2, y:1, w:1, h:2, isResizable:true, minW:1, maxW:2, minH:1, maxH:4},
+  {i:'project2',  x:2, y:1, w:1, h:2, isResizable:false},
   {i:'blog',      x:0, y:2, w:2, h:1, isResizable:false},
-  {i:'project3',  x:0, y:3, w:2, h:1, isResizable:false},
   {i:'dark',      x:3, y:2, w:1, h:1, isResizable:false},
+  {i:'project3',  x:0, y:3, w:2, h:1, isResizable:false},
   {i:'newsletter',x:2, y:3, w:2, h:1, isResizable:false}
+];
+
+// Layout — tablet (2 cols)
+var tabletLayout = [
+  {i:'bio',       x:0, y:0, w:1, h:2, isResizable:false},
+  {i:'project1',  x:1, y:0, w:1, h:2, isResizable:false},
+  {i:'spotify',   x:0, y:2, w:1, h:1, isResizable:false},
+  {i:'twitter',   x:1, y:2, w:1, h:1, isResizable:false},
+  {i:'project2',  x:0, y:3, w:1, h:2, isResizable:false},
+  {i:'blog',      x:1, y:3, w:1, h:1, isResizable:false},
+  {i:'dark',      x:1, y:4, w:1, h:1, isResizable:false},
+  {i:'project3',  x:0, y:5, w:2, h:1, isResizable:false},
+  {i:'newsletter',x:0, y:6, w:2, h:1, isResizable:false},
+  {i:'empty1',    x:0, y:7, w:1, h:1, isResizable:false}
+];
+
+// Layout — mobile (1 col, storytelling flow)
+var mobileLayout = [
+  {i:'bio',       x:0, y:0, w:1, h:2, isResizable:false},
+  {i:'blog',      x:0, y:2, w:1, h:1, isResizable:false},
+  {i:'project1',  x:0, y:3, w:1, h:2, isResizable:false},
+  {i:'spotify',   x:0, y:5, w:1, h:2, isResizable:false},
+  {i:'newsletter',x:0, y:7, w:1, h:1, isResizable:false},
+  {i:'project3',  x:0, y:8, w:1, h:1, isResizable:false}
 ];
 
 // 저장된 레이아웃 불러오기
 // 레이아웃 버전 관리 — 레이아웃 변경 시 버전 올리면 캐시 무시
-var LAYOUT_VERSION = 7;
+var LAYOUT_VERSION = 16;
 var savedLayout = null;
 try {
   var raw = localStorage.getItem('lumi_grid_layout');
@@ -1536,28 +2344,64 @@ try {
 } catch(e) {}
 
 function BentoGrid() {
-  var _useState = React.useState(savedLayout || layout);
-  var currentLayout = _useState[0];
-  var setLayout = _useState[1];
+  // 컨테이너 너비 추적
+  var _ws = React.useState(function(){
+    var root = document.getElementById('grid-root');
+    return root ? root.offsetWidth : Math.min(window.innerWidth, 1200);
+  });
+  var gridWidth = _ws[0], setGridWidth = _ws[1];
 
-  var children = currentLayout.map(function(item) {
+  React.useEffect(function(){
+    function onResize(){
+      var root = document.getElementById('grid-root');
+      setGridWidth(root ? root.offsetWidth : Math.min(window.innerWidth, 1200));
+    }
+    onResize();
+    window.addEventListener('resize', onResize);
+    return function(){ window.removeEventListener('resize', onResize); };
+  },[]);
+
+  // 브레이크포인트 판단
+  var isMobile = gridWidth < 500;
+  var isTablet = gridWidth >= 500 && gridWidth < 900;
+
+  // 데스크톱 레이아웃만 저장/복원
+  var _ls = React.useState(savedLayout || layout);
+  var desktopLayout = _ls[0], setDesktopLayout = _ls[1];
+  window._setGridLayout = setDesktopLayout;
+
+  var cols, rowH, mgn, activeLayout, canDrag;
+  if (isMobile) {
+    cols = 1; rowH = 280; mgn = [12, 12]; activeLayout = mobileLayout; canDrag = false;
+  } else if (isTablet) {
+    cols = 2; rowH = 260; mgn = [14, 14]; activeLayout = tabletLayout; canDrag = false;
+  } else {
+    cols = 4; rowH = 280; mgn = [16, 16]; activeLayout = desktopLayout; canDrag = true;
+  }
+
+  var children = activeLayout.map(function(item) {
     var cardFn = cards[item.i];
     return e('div', {key: item.i}, cardFn ? cardFn() : null);
   });
 
   return e(RGL, {
     className: 'layout',
-    layout: currentLayout,
-    cols: 4,
-    rowHeight: 280,
-    width: 1200,
-    margin: [16, 16],
+    layout: activeLayout,
+    cols: cols,
+    rowHeight: rowH,
+    width: gridWidth,
+    margin: mgn,
     compactType: 'vertical',
-    isDraggable: true,
-    isResizable: true,
-    useCSSTransforms: false,
+    isDraggable: canDrag,
+    isResizable: false,
+    useCSSTransforms: true,
     preventCollision: false,
-    onLayoutChange: function(newLayout) { setLayout(newLayout); try { localStorage.setItem('lumi_grid_layout', JSON.stringify(newLayout)); localStorage.setItem('lumi_grid_version', LAYOUT_VERSION); } catch(e) {} }
+    onLayoutChange: function(newLayout) {
+      if (canDrag) {
+        setDesktopLayout(newLayout);
+        try { localStorage.setItem('lumi_grid_layout', JSON.stringify(newLayout)); localStorage.setItem('lumi_grid_version', LAYOUT_VERSION); } catch(ex) {}
+      }
+    }
   }, children);
 }
 
@@ -1566,20 +2410,447 @@ var root = ReactDOM.createRoot(document.getElementById('grid-root'));
 root.render(e(BentoGrid));
 
 function openSignupGrid() {
-  document.querySelector('.grid-wrap').style.display = 'none';
+  suPhase = 0;
+  suData = {};
   document.getElementById('signup-grid').classList.add('open');
+  var img = document.getElementById('su-lumi-img');
+  img.className = 'su-lumi-big bounce';
+  setTimeout(function() { img.className = 'su-lumi-big'; }, 600);
+  suRunPhase();
 }
 function closeSignupGrid() {
   document.getElementById('signup-grid').classList.remove('open');
-  document.querySelector('.grid-wrap').style.display = '';
 }
-function suGridComplete() {
-  var required = Array.from(document.querySelectorAll('.su-agree-each')).slice(0, 2);
-  if (!required.every(function(c) { return c.checked; })) {
-    alert('필수 약관에 동의해주세요.');
+// ---- SIGNUP CONVERSATION ----
+var suData = {};
+var suPhase = 0;
+var suFlow = [
+  {img:'/assets/lumi-smile.png', msg:'반가워요!\nlumi에 오신 걸 환영해요\n이메일부터 알려주세요!', input:'email'},
+  {img:'/assets/lumi-curious.png', msg:'좋아요!\n비밀번호를 설정해주세요\n특수문자 포함 10자 이상이에요', input:'password'},
+  {img:'/assets/lumi-smile.png', msg:'매장 이름이 뭐예요?\n대표님 성함도 알려주세요!', input:'store'},
+  {img:'/assets/lumi-wink.png', msg:'어떤 업종이에요?\n업종에 맞춰 캡션을 만들어드려요', input:'biz'},
+  {img:'/assets/lumi-smile.png', msg:'거의 다 왔어요!\n마지막으로 약관만 확인해주세요', input:'agree'}
+];
+
+function suRenderProgress() {
+  var el = document.getElementById('su-progress');
+  var html = '';
+  for (var i = 0; i < suFlow.length; i++) {
+    html += '<div class="su-progress-dot' + (i < suPhase ? ' done' : i === suPhase ? ' active' : '') + '"></div>';
+  }
+  el.innerHTML = html;
+}
+
+function suTypeText(text, callback) {
+  var speech = document.getElementById('su-speech');
+  // 타이핑 인디케이터
+  speech.innerHTML = '<div class="su-speech-typing"><div class="su-speech-dot"></div><div class="su-speech-dot"></div><div class="su-speech-dot"></div></div>';
+  setTimeout(function() {
+    // 줄 단위로 부드럽게 나타나기
+    var lines = text.split('\n');
+    var i = 0;
+    speech.innerHTML = '';
+    function showLine() {
+      if (i >= lines.length) { if (callback) callback(); return; }
+      var line = lines[i].replace(/lumi(?!-)/g, '<span class="lumi-brand">lumi</span>');
+      var span = document.createElement('span');
+      span.innerHTML = (i > 0 ? '<br>' : '') + line;
+      span.style.cssText = 'opacity:0;transform:translateY(6px);display:inline;transition:opacity .4s,transform .4s;';
+      speech.appendChild(span);
+      requestAnimationFrame(function(){ requestAnimationFrame(function(){
+        span.style.opacity = '1';
+        span.style.transform = 'translateY(0)';
+      }); });
+      i++;
+      setTimeout(showLine, 500);
+    }
+    showLine();
+  }, 800);
+}
+
+function suChangeLumi(imgSrc, isError) {
+  var img = document.getElementById('su-lumi-img');
+  if (isError) {
+    img.src = imgSrc;
+    img.className = '';
+    void img.offsetHeight;
+    img.className = 'su-lumi-big shake';
+  } else {
+    img.className = 'su-lumi-big';
+    img.style.transform = 'scale(0.7)';
+    img.style.opacity = '0.3';
+    img.style.transition = 'transform .25s, opacity .25s';
+    setTimeout(function() {
+      img.src = imgSrc;
+      img.className = '';
+      void img.offsetHeight;
+      img.className = 'su-lumi-big bounce';
+      img.style.transform = '';
+      img.style.opacity = '';
+      img.style.transition = '';
+    }, 250);
+  }
+}
+
+function suEnter(fn) { return 'onkeydown="if(event.key===\'Enter\'){event.preventDefault();'+fn+'}"'; }
+
+function suShowForm() {
+  var form = document.getElementById('su-form-area');
+  var step = suFlow[suPhase];
+  var isDk = document.body.classList.contains('dark-mode');
+  var atColor = isDk ? 'rgba(255,255,255,.3)' : 'rgba(0,0,0,.3)';
+  var txtColor = isDk ? '#f0f2f8' : '#0d1117';
+  var html = '';
+
+  if (step.input === 'email') {
+    html += '<div class="su-input-row">';
+    html += '<input type="text" class="su-input" id="su-email-id" placeholder="아이디" style="margin-bottom:0;color:'+txtColor+'" '+suEnter('suSkipEmail()')+'>';
+    html += '<span style="color:'+atColor+';font-size:14px;flex-shrink:0;">@</span>';
+    html += '<select class="su-select" id="su-email-domain" style="flex:1.2;min-width:0;margin-bottom:0;color:'+txtColor+'">';
+    html += '<option>gmail.com</option><option>naver.com</option><option>kakao.com</option><option>daum.net</option><option>nate.com</option><option>icloud.com</option>';
+    html += '</select></div>';
+    html += '<button class="su-btn" onclick="suSkipEmail()" style="margin-top:10px">확인</button>';
+  }
+  else if (step.input === 'password') {
+    html += '<input type="text" class="su-input" id="su-pw" placeholder="비밀번호 (특수문자 포함 10자 이상)" style="color:'+txtColor+';" autocomplete="off" '+suEnter('document.getElementById(\\\'su-pw2\\\').focus()')+'>';
+    html += '<input type="text" class="su-input" id="su-pw2" placeholder="비밀번호 확인" style="color:'+txtColor+';" autocomplete="off" '+suEnter('suSubmitPw()')+'>';
+    html += '<button class="su-btn" onclick="suSubmitPw()">확인</button>';
+    html += '<button class="su-btn-sub" onclick="suGoBack()">이전으로</button>';
+  }
+  else if (step.input === 'store') {
+    html += '<input type="text" class="su-input" id="su-name" placeholder="대표님 성함" style="color:'+txtColor+'" '+suEnter('document.getElementById(\\\'su-store\\\').focus()')+'>';
+    html += '<input type="text" class="su-input" id="su-store" placeholder="매장 이름" style="color:'+txtColor+'" '+suEnter('suSubmitStore()')+'>';
+    html += '<button class="su-btn" onclick="suSubmitStore()">확인</button>';
+    html += '<button class="su-btn-sub" onclick="suGoBack()">이전으로</button>';
+  }
+  else if (step.input === 'biz') {
+    html += '<div class="su-biz-grid">';
+    var bizzes = ['카페','음식점','뷰티','꽃집','패션','피트니스','반려동물','인테리어','교육','스튜디오','기타'];
+    var vals = ['cafe','food','beauty','flower','fashion','fitness','pet','interior','education','studio','other'];
+    for (var i = 0; i < bizzes.length; i++) {
+      html += '<label class="su-biz-item"><input type="radio" name="su-biz" value="'+vals[i]+'"'+(i===0?' checked':'')+'><span>'+bizzes[i]+'</span></label>';
+    }
+    html += '</div>';
+    html += '<button class="su-btn" onclick="suSubmitBiz()" style="margin-top:8px">확인</button>';
+    html += '<button class="su-btn-sub" onclick="suGoBack()">이전으로</button>';
+  }
+  else if (step.input === 'agree') {
+    html += '<div class="su-agree">';
+    html += '<label class="su-agree-all"><input type="checkbox" id="su-agree-all" onchange="document.querySelectorAll(\'.su-agree-each\').forEach(function(e){e.checked=this.checked;},this)"><span>전체 동의하기</span></label>';
+    html += '<label><input type="checkbox" class="su-agree-each"><span>(필수) <a href="/terms" target="_blank" style="color:#C8507A;text-decoration:underline;">서비스 이용약관</a> 동의</span></label>';
+    html += '<label><input type="checkbox" class="su-agree-each"><span>(필수) <a href="/privacy" target="_blank" style="color:#C8507A;text-decoration:underline;">개인정보 처리방침</a> 동의</span></label>';
+    html += '<label><input type="checkbox" class="su-agree-each"><span>(선택) 마케팅 정보 수신 동의</span></label>';
+    html += '</div>';
+    html += '<button class="su-btn" onclick="suSubmitAgree()">가입 완료</button>';
+    html += '<button class="su-btn-sub" onclick="suGoBack()">이전으로</button>';
+  }
+
+  form.innerHTML = html;
+  // 첫 번째 input에 자동 포커스
+  var firstInput = form.querySelector('input:not([type=radio]):not([type=checkbox])');
+  if (firstInput) setTimeout(function(){ firstInput.focus(); }, 100);
+}
+
+function suRunPhase() {
+  var step = suFlow[suPhase];
+  suChangeLumi(step.img);
+  suRenderProgress();
+  document.getElementById('su-form-area').innerHTML = '';
+  suTypeText(step.msg, function() { suShowForm(); });
+}
+
+var suPwVisible = false;
+function suTogglePw() {
+  suPwVisible = !suPwVisible;
+  var pw = document.getElementById('su-pw');
+  var pw2 = document.getElementById('su-pw2');
+  var t = suPwVisible ? 'text' : 'password';
+  if (pw) pw.type = t;
+  if (pw2) pw2.type = t;
+}
+
+function suSkipEmail() {
+  var id = document.getElementById('su-email-id').value.trim();
+  var domain = document.getElementById('su-email-domain').value;
+  if (!id) {
+    suChangeLumi('/assets/lumi-sad.png', true);
+    document.getElementById('su-speech').innerHTML = '이메일을 입력해주세요!';
     return;
   }
-  alert('가입 기능은 대시보드 연동 후 활성화됩니다.');
+  if (/[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(id)) {
+    suChangeLumi('/assets/lumi-sad.png', true);
+    document.getElementById('su-speech').innerHTML = '앗! 한글은 입력할 수 없어요<br>영문, 숫자만 사용해주세요';
+    return;
+  }
+  if (!/^[a-zA-Z0-9._-]+$/.test(id)) {
+    suChangeLumi('/assets/lumi-sad.png', true);
+    document.getElementById('su-speech').innerHTML = '이메일에 사용할 수 없는<br>문자가 포함되어 있어요';
+    return;
+  }
+  suData.email = id + '@' + domain;
+  suNextPhase();
+}
+
+function suSendOtp() {
+  var id = document.getElementById('su-email-id').value.trim();
+  var domain = document.getElementById('su-email-domain').value;
+  if (!id) { alert('이메일을 입력해주세요.'); return; }
+  suData.email = id + '@' + domain;
+  var btn = document.getElementById('su-otp-btn');
+  btn.textContent = '전송 중...';
+  btn.disabled = true;
+  fetch('/.netlify/functions/send-otp', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({email: suData.email})
+  }).then(function(r){ return r.json(); }).then(function(data) {
+    if (data.error) { alert(data.error); btn.textContent = '인증번호 받기'; btn.disabled = false; return; }
+    btn.textContent = '전송 완료';
+    document.getElementById('su-otp-area').style.display = 'block';
+    document.getElementById('su-otp-code').focus();
+    // lumi 표정 변경
+    suChangeLumi('/assets/lumi-wink.png');
+    var speech = document.getElementById('su-speech');
+    speech.innerHTML = '인증번호를 보냈어요!<br>이메일을 확인해주세요';
+  }).catch(function() {
+    alert('전송에 실패했어요. 다시 시도해주세요.');
+    btn.textContent = '인증번호 받기';
+    btn.disabled = false;
+  });
+}
+
+function suVerifyOtp() {
+  var otp = document.getElementById('su-otp-code').value.trim();
+  if (!otp || otp.length !== 6) { alert('인증번호 6자리를 입력해주세요.'); return; }
+  fetch('/.netlify/functions/verify-otp', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({email: suData.email, otp: otp})
+  }).then(function(r){ return r.json(); }).then(function(data) {
+    if (data.error) { alert(data.error); return; }
+    suData.emailVerified = true;
+    suNextPhase();
+  }).catch(function() {
+    alert('인증에 실패했어요. 다시 시도해주세요.');
+  });
+}
+function suSubmitPw() {
+  var pw = document.getElementById('su-pw').value;
+  var pw2 = document.getElementById('su-pw2').value;
+  var pwRegex = /^(?=.*[!@#$%^&*()_+\-=\[\]{};':"\|,.<>\/?]).{10,}$/;
+  if (!pw) {
+    suChangeLumi('/assets/lumi-sad.png', true);
+    document.getElementById('su-speech').innerHTML = '비밀번호를 입력해주세요!';
+    return;
+  }
+  if (!pwRegex.test(pw)) {
+    suChangeLumi('/assets/lumi-sad.png', true);
+    document.getElementById('su-speech').innerHTML = '특수문자를 포함해서<br>10자 이상으로 만들어주세요';
+    return;
+  }
+  if (pw !== pw2) {
+    suChangeLumi('/assets/lumi-sad.png', true);
+    document.getElementById('su-speech').innerHTML = '앗! 비밀번호가<br>일치하지 않아요';
+    return;
+  }
+  suData.password = pw;
+  suNextPhase();
+}
+function suSubmitStore() {
+  var name = document.getElementById('su-name').value.trim();
+  var store = document.getElementById('su-store').value.trim();
+  if (!name || !store) {
+    suChangeLumi('/assets/lumi-sad.png', true);
+    document.getElementById('su-speech').innerHTML = '성함과 매장 이름을<br>모두 입력해주세요!';
+    return;
+  }
+  suData.name = name;
+  suData.storeName = store;
+  suNextPhase();
+}
+function suSubmitBiz() {
+  var checked = document.querySelector('input[name="su-biz"]:checked');
+  suData.bizCategory = checked.value;
+  suNextPhase();
+}
+function suSubmitAgree() {
+  var required = Array.from(document.querySelectorAll('.su-agree-each')).slice(0, 2);
+  if (!required.every(function(c) { return c.checked; })) {
+    suChangeLumi('/assets/lumi-sad.png', true);
+    document.getElementById('su-speech').innerHTML = '필수 약관에<br>동의해주세요!';
+    return;
+  }
+  // 완료
+  document.getElementById('su-form-area').innerHTML = '';
+  suChangeLumi('/assets/lumi-smile.png');
+  suTypeText('가입이 완료됐어요!\n이제 lumi의 모든 기능을\n사용할 수 있어요', function() {
+    var form = document.getElementById('su-form-area');
+    form.innerHTML = '<button class="su-btn" onclick="closeSignupGrid()" style="margin-top:12px">시작하기</button>';
+  });
+}
+
+// ---- LOGIN CONVERSATION ----
+var liPhase = 0;
+var liData = {};
+var liFlow = [
+  {img:'/assets/lumi-smile.png', msg:'다시 만나서 반가워요!\n이메일을 알려주세요'},
+  {img:'/assets/lumi-curious.png', msg:'좋아요!\n비밀번호를 입력해주세요'}
+];
+
+function liTypeText(text, el, callback) {
+  var speech = document.getElementById(el);
+  speech.innerHTML = '<div class="su-speech-typing"><div class="su-speech-dot"></div><div class="su-speech-dot"></div><div class="su-speech-dot"></div></div>';
+  setTimeout(function() {
+    var lines = text.split('\n');
+    var i = 0;
+    speech.innerHTML = '';
+    function showLine() {
+      if (i >= lines.length) { if (callback) callback(); return; }
+      var line = lines[i].replace(/lumi(?!-)/g, '<span class="lumi-brand">lumi</span>');
+      var span = document.createElement('span');
+      span.innerHTML = (i > 0 ? '<br>' : '') + line;
+      span.style.cssText = 'opacity:0;transform:translateY(6px);display:inline;transition:opacity .4s,transform .4s;';
+      speech.appendChild(span);
+      requestAnimationFrame(function(){ requestAnimationFrame(function(){
+        span.style.opacity = '1';
+        span.style.transform = 'translateY(0)';
+      }); });
+      i++;
+      setTimeout(showLine, 500);
+    }
+    showLine();
+  }, 800);
+}
+
+function liChangeLumi(imgSrc, isError) {
+  var img = document.getElementById('li-lumi-img');
+  if (isError) {
+    img.src = imgSrc;
+    img.className = '';
+    void img.offsetHeight;
+    img.className = 'su-lumi-big shake';
+  } else {
+    img.className = 'su-lumi-big';
+    img.style.transform = 'scale(0.7)';
+    img.style.opacity = '0.3';
+    img.style.transition = 'transform .25s, opacity .25s';
+    setTimeout(function() {
+      img.src = imgSrc;
+      img.className = '';
+      void img.offsetHeight;
+      img.className = 'su-lumi-big bounce';
+      img.style.transform = '';
+      img.style.opacity = '';
+      img.style.transition = '';
+    }, 250);
+  }
+}
+
+function liShowForm() {
+  var form = document.getElementById('li-form-area');
+  var isDk = document.body.classList.contains('dark-mode');
+  var txtColor = isDk ? '#f0f2f8' : '#0d1117';
+  var atColor = isDk ? 'rgba(255,255,255,.3)' : 'rgba(0,0,0,.3)';
+  var html = '';
+
+  if (liPhase === 0) {
+    html += '<div class="su-input-row">';
+    html += '<input type="text" class="su-input" id="li-email-id" placeholder="아이디" style="margin-bottom:0;color:'+txtColor+';" onkeydown="if(event.key===\'Enter\'){event.preventDefault();liSubmitEmail();}">';
+    html += '<span style="color:'+atColor+';font-size:14px;flex-shrink:0;">@</span>';
+    html += '<select class="su-select" id="li-email-domain" style="flex:1.2;min-width:0;margin-bottom:0;color:'+txtColor+';">';
+    html += '<option>gmail.com</option><option>naver.com</option><option>kakao.com</option><option>daum.net</option><option>nate.com</option><option>icloud.com</option>';
+    html += '</select></div>';
+    html += '<button class="su-btn" onclick="liSubmitEmail()" style="margin-top:10px">확인</button>';
+  }
+  else if (liPhase === 1) {
+    html += '<input type="text" class="su-input" id="li-pw" placeholder="비밀번호" style="color:'+txtColor+';" autocomplete="off" onkeydown="if(event.key===\'Enter\'){event.preventDefault();liSubmitPw();}">';
+    html += '<button class="su-btn" onclick="liSubmitPw()">로그인</button>';
+    html += '<button class="su-btn-sub" onclick="liGoBack()">이전으로</button>';
+  }
+
+  form.innerHTML = html;
+  var firstInput = form.querySelector('input:not([type=radio]):not([type=checkbox])');
+  if (firstInput) setTimeout(function(){ firstInput.focus(); }, 100);
+}
+
+function liRunPhase() {
+  var step = liFlow[liPhase];
+  liChangeLumi(step.img);
+  document.getElementById('li-form-area').innerHTML = '';
+  liTypeText(step.msg, 'li-speech', function() { liShowForm(); });
+}
+
+function liSubmitEmail() {
+  var id = document.getElementById('li-email-id').value.trim();
+  var domain = document.getElementById('li-email-domain').value;
+  if (!id) {
+    liChangeLumi('/assets/lumi-sad.png', true);
+    document.getElementById('li-speech').innerHTML = '이메일을 입력해주세요!';
+    return;
+  }
+  if (/[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(id)) {
+    liChangeLumi('/assets/lumi-sad.png', true);
+    document.getElementById('li-speech').innerHTML = '앗! 한글은 입력할 수 없어요<br>영문, 숫자만 사용해주세요';
+    return;
+  }
+  liData.email = id + '@' + domain;
+  liPhase = 1;
+  liRunPhase();
+}
+
+function liSubmitPw() {
+  var pw = document.getElementById('li-pw').value;
+  if (!pw) {
+    liChangeLumi('/assets/lumi-sad.png', true);
+    document.getElementById('li-speech').innerHTML = '비밀번호를 입력해주세요!';
+    return;
+  }
+  liData.password = pw;
+  // 테스트용: 바로 로그인 성공
+  document.getElementById('li-form-area').innerHTML = '';
+  localStorage.setItem('lumi_token', 'test-token');
+  localStorage.setItem('lumi_user', JSON.stringify({email: liData.email, name:'테스트'}));
+  liChangeLumi('/assets/lumi-smile.png');
+  document.getElementById('li-speech').innerHTML = '로그인 성공!<br>환영해요 🎉';
+  setTimeout(function(){
+    closeLogin();
+    location.reload();
+  }, 1500);
+}
+
+function liGoBack() {
+  liPhase = 0;
+  liRunPhase();
+}
+
+function openLogin() {
+  liPhase = 0;
+  liData = {};
+  document.getElementById('login-modal').classList.add('open');
+  var img = document.getElementById('li-lumi-img');
+  img.className = 'su-lumi-big bounce';
+  liRunPhase();
+}
+
+function closeLogin() {
+  document.getElementById('login-modal').classList.remove('open');
+}
+
+function logoutLumi() {
+  localStorage.removeItem('lumi_token');
+  localStorage.removeItem('lumi_user');
+  location.reload();
+}
+
+function suGoBack() {
+  if (suPhase <= 0) return;
+  suPhase--;
+  suRunPhase();
+}
+
+function suNextPhase() {
+  suPhase++;
+  if (suPhase < suFlow.length) { suRunPhase(); }
 }
 
 // ---- NON-REACT FUNCTIONS ----
@@ -1596,18 +2867,164 @@ function toggleDarkMode() {
   var isDark = document.body.classList.toggle('dark-mode');
   localStorage.setItem('lumi_dark_mode', isDark ? '1' : '0');
   document.documentElement.style.background = isDark ? '#111' : '#fdf2f4';
+  // React 리렌더 (인라인 색상 반영)
+  root.render(e(BentoGrid));
+}
+
+// 방향별 경계 glow 효과
+(function(){
+  var wrap = document.querySelector('.grid-wrap');
+  ['left','right','top','bottom'].forEach(function(dir){
+    var el = document.createElement('div');
+    el.className = 'grid-glow-line ' + dir;
+    wrap.appendChild(el);
+  });
+  var lines = {
+    left: wrap.querySelector('.grid-glow-line.left'),
+    right: wrap.querySelector('.grid-glow-line.right'),
+    top: wrap.querySelector('.grid-glow-line.top'),
+    bottom: wrap.querySelector('.grid-glow-line.bottom')
+  };
+  var clearTimer = null;
+  document.addEventListener('mousemove', function(ev){
+    if(ev.buttons !== 1) { Object.keys(lines).forEach(function(k){lines[k].classList.remove('active');}); return; }
+    var rect = wrap.getBoundingClientRect();
+    var m = 30;
+    lines.left.classList.toggle('active', ev.clientX < rect.left + m);
+    lines.right.classList.toggle('active', ev.clientX > rect.right - m);
+    lines.top.classList.toggle('active', ev.clientY < rect.top + m);
+    lines.bottom.classList.toggle('active', ev.clientY > rect.bottom - m);
+  });
+  document.addEventListener('mouseup', function(){
+    Object.keys(lines).forEach(function(k){lines[k].classList.remove('active');});
+  });
+})();
+
+var cardCategories = {
+  bio: ['feature'],
+  spotify: ['about'],
+  blog: ['about'],
+  project1: ['about'],
+  project2: ['feature'],
+  project3: ['price'],
+  newsletter: ['price'],
+  twitter: ['all'],
+  dark: ['all'],
+  empty1: ['all']
+};
+var currentFilter = 'all';
+var cardSizes = {};
+layout.forEach(function(l){ cardSizes[l.i] = {w:l.w, h:l.h}; });
+
+// 각 탭별 레이아웃을 수동 지정 (빈칸 없이 깔끔하게)
+var filterLayouts = {
+  about: {
+    matched: ['project1','spotify','blog'],
+    layout: [
+      // 매칭 — 상단
+      {i:'project1',  x:0, y:0, w:1, h:2, isResizable:false},
+      {i:'spotify',   x:1, y:0, w:1, h:1, isResizable:false},
+      {i:'blog',      x:2, y:0, w:2, h:1, isResizable:false},
+      // 비매칭 — 하단
+      {i:'bio',       x:1, y:1, w:1, h:2, isResizable:false},
+      {i:'empty1',    x:2, y:1, w:1, h:1, isResizable:false},
+      {i:'twitter',   x:3, y:1, w:1, h:1, isResizable:false},
+      {i:'project2',  x:0, y:2, w:1, h:2, isResizable:false},
+      {i:'dark',      x:2, y:2, w:1, h:1, isResizable:false},
+      {i:'project3',  x:0, y:4, w:2, h:1, isResizable:false},
+      {i:'newsletter',x:2, y:3, w:2, h:1, isResizable:false}
+    ]
+  },
+  feature: {
+    matched: ['project2','bio'],
+    layout: [
+      // 매칭 — 상단
+      {i:'bio',       x:0, y:0, w:1, h:2, isResizable:false},
+      {i:'project2',  x:1, y:0, w:1, h:2, isResizable:false},
+      // 비매칭 — 하단
+      {i:'spotify',   x:2, y:0, w:1, h:1, isResizable:false},
+      {i:'empty1',    x:3, y:0, w:1, h:1, isResizable:false},
+      {i:'twitter',   x:2, y:1, w:1, h:1, isResizable:false},
+      {i:'project1',  x:3, y:1, w:1, h:2, isResizable:false},
+      {i:'blog',      x:0, y:2, w:2, h:1, isResizable:false},
+      {i:'dark',      x:2, y:2, w:1, h:1, isResizable:false},
+      {i:'project3',  x:0, y:3, w:2, h:1, isResizable:false},
+      {i:'newsletter',x:2, y:3, w:2, h:1, isResizable:false}
+    ]
+  },
+  price: {
+    matched: ['project3','newsletter'],
+    layout: [
+      // 매칭 — 상단
+      {i:'project3',  x:0, y:0, w:2, h:1, isResizable:false},
+      {i:'newsletter',x:2, y:0, w:2, h:1, isResizable:false},
+      // 비매칭 — 하단
+      {i:'bio',       x:0, y:1, w:1, h:2, isResizable:false},
+      {i:'spotify',   x:1, y:1, w:1, h:1, isResizable:false},
+      {i:'empty1',    x:2, y:1, w:1, h:1, isResizable:false},
+      {i:'project1',  x:3, y:1, w:1, h:2, isResizable:false},
+      {i:'twitter',   x:1, y:2, w:1, h:1, isResizable:false},
+      {i:'project2',  x:2, y:2, w:1, h:2, isResizable:false},
+      {i:'blog',      x:0, y:3, w:2, h:1, isResizable:false},
+      {i:'dark',      x:3, y:3, w:1, h:1, isResizable:false}
+    ]
+  }
+};
+
+function buildFilterLayout(category) {
+  var fl = filterLayouts[category];
+  return {layout: fl.layout, matchedIds: fl.matched};
+}
+
+function applyCardStyles(matchedIds) {
+  var gridItems = document.querySelectorAll('.react-grid-item');
+  var currentLayout = window._currentLayout || layout;
+  gridItems.forEach(function(el, idx) {
+    if (!currentLayout[idx]) return;
+    var key = currentLayout[idx].i;
+    var isMatch = matchedIds.indexOf(key) !== -1;
+    el.style.opacity = isMatch ? '1' : '0.15';
+    el.style.filter = 'none';
+    el.style.pointerEvents = isMatch ? 'auto' : 'none';
+  });
 }
 
 function filterGrid(category, btnEl) {
   document.querySelectorAll('.nav-pill').forEach(function(p) { p.classList.remove('active'); });
   if (btnEl) btnEl.classList.add('active');
-  // TODO: filter implementation with React state
+  currentFilter = category;
+
+  if (category === 'all') {
+    var origLayout = layout.map(function(l){return Object.assign({},l);});
+    if (window._setGridLayout) {
+      window._setGridLayout(origLayout);
+      window._currentLayout = origLayout;
+    }
+    setTimeout(function() {
+      document.querySelectorAll('.react-grid-item').forEach(function(el) {
+        el.style.transition = 'opacity .4s ease, filter .4s ease, transform .4s ease';
+        el.style.opacity = '1';
+        el.style.filter = 'none';
+        el.style.pointerEvents = 'auto';
+      });
+    }, 50);
+    return;
+  }
+
+  var result = buildFilterLayout(category);
+  if (window._setGridLayout) {
+    window._setGridLayout(result.layout);
+    window._currentLayout = result.layout;
+  }
+  setTimeout(function() {
+    applyCardStyles(result.matchedIds);
+  }, 50);
 }
 
 function resetGrid() {
   localStorage.removeItem('lumi_grid_layout');
   localStorage.removeItem('lumi_grid_version');
-  location.reload();
+  if (window._setGridLayout) window._setGridLayout(layout.map(function(l){return Object.assign({},l);}));
 }
 </script>
 </body>
