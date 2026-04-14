@@ -27,6 +27,7 @@ cd /Users/kimhyun/lumi.it && git add -A && git commit -m "msg" && git push origi
 ```
 
 ## 📚 상세 문서
+- DESIGN.md — AI용 디자인 시스템 (벤토 그리드, 잘림 방지 CSS 규칙)
 - docs/stack.md — 기술스택·환경변수·자주하는실수
 - docs/design.md — 디자인시스템·스킬가이드
 - docs/service.md — 서비스현황·파일구조
