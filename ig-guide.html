@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<script>if(localStorage.getItem('lumi_dark_mode')==='1')document.documentElement.classList.add('dark');window.scrollTo(0,0);</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>lumi — 인스타그램 연동 안내</title>
+<link rel="icon" type="image/png" href="/assets/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@800&display=swap" rel="stylesheet">
+<style>
+@font-face {
+  font-family: 'Jua';
+  src: url('/assets/BMJUA.woff2') format('woff2');
+  font-weight: normal; font-style: normal; font-display: block;
+}
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html { scrollbar-width:none; }
+html.dark { background: #111; }
+html:not(.dark) { background: #fdf2f4; }
+html::-webkit-scrollbar { display:none; }
+body {
+  font-family: 'Jua', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #0d1117; -webkit-font-smoothing: antialiased;
+}
+html.dark body { color: #f0f2f8; }
+
+/* CLOSE BUTTON */
+.close-btn {
+  position: fixed; top: 32px; left: 50%; transform: translateX(-50%); z-index: 100;
+  width: 46px; height: 46px; border-radius: 23px;
+  background: rgba(237,233,233,.9); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: transform .2s, box-shadow .2s;
+}
+html.dark .close-btn { background: rgba(50,50,50,.9); }
+.close-btn:hover { transform: translateX(-50%) scale(1.08); box-shadow: 0 2px 12px rgba(0,0,0,.08); }
+.close-btn svg { width: 12px; height: 12px; stroke: #0d1117; stroke-width: 2.5; }
+html.dark .close-btn svg { stroke: #f0f2f8; }
+
+/* LAYOUT */
+.guide-wrap {
+  max-width: 640px; margin: 0 auto; padding: 100px 24px 80px;
+}
+.guide-header {
+  text-align: center; margin-bottom: 48px;
+  opacity: 0; transform: translateY(20px);
+  animation: slideUp .6s ease-out .2s forwards;
+}
+.guide-title {
+  font-size: 32px; font-weight: 400; letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.guide-subtitle {
+  font-size: 15px; color: rgba(13,17,23,.5); line-height: 1.6;
+}
+html.dark .guide-subtitle { color: rgba(240,242,248,.5); }
+.guide-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-top: 16px; padding: 6px 16px; border-radius: 980px;
+  background: linear-gradient(135deg, rgba(255,107,139,.1), rgba(221,160,221,.1));
+  font-size: 13px; color: #C8507A; font-weight: 600;
+}
+html.dark .guide-badge { color: #FF8FAB; background: rgba(255,107,139,.15); }
+
+@keyframes slideUp {
+  to { opacity:1; transform:translateY(0); }
+}
+
+/* STEP CARD */
+.step-card {
+  border-radius: 20px; padding: 28px; margin-bottom: 16px;
+  background: #fff;
+  opacity: 0; transform: translateY(20px);
+  animation: slideUp .6s ease-out forwards;
+  transition: opacity .4s, filter .4s;
+}
+html.dark .step-card { background: #1c1c1e; }
+.step-card.locked {
+  opacity: .35; filter: grayscale(.5); pointer-events: none;
+}
+.step-card.locked .step-action { display: none; }
+.step-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 14px;
+  background: linear-gradient(135deg, #FF6B8B, #DDA0DD);
+  color: #fff; font-size: 13px; font-weight: 700;
+  margin-bottom: 12px;
+}
+.step-card.done .step-num {
+  background: #4ade80;
+}
+.step-title {
+  font-size: 18px; font-weight: 400; margin-bottom: 8px;
+}
+.step-desc {
+  font-size: 14px; color: rgba(13,17,23,.55); line-height: 1.7; margin-bottom: 16px;
+}
+html.dark .step-desc { color: rgba(240,242,248,.5); }
+.step-action {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+}
+.step-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 10px 20px; border-radius: 980px;
+  background: linear-gradient(135deg, #FF6B8B, #DDA0DD);
+  color: #fff; font-family: inherit; font-size: 14px; font-weight: 600;
+  border: none; cursor: pointer; text-decoration: none;
+  transition: transform .2s, box-shadow .2s;
+}
+.step-btn:hover { transform: scale(1.03); box-shadow: 0 4px 16px rgba(255,107,139,.25); }
+.step-btn svg { width: 14px; height: 14px; }
+.step-check {
+  display: flex; align-items: center; gap: 8px;
+  cursor: pointer; font-size: 14px; color: rgba(13,17,23,.5);
+  user-select: none;
+}
+html.dark .step-check { color: rgba(240,242,248,.5); }
+.step-check input {
+  width: 20px; height: 20px; accent-color: #C8507A; cursor: pointer;
+}
+.step-card.done {
+  outline: 2px solid rgba(74,222,128,.3);
+}
+
+/* STEP 3 — CONNECT */
+.step-btn.connect {
+  background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045);
+}
+
+/* DONE MESSAGE */
+.guide-done {
+  text-align: center; margin-top: 32px; padding: 32px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(255,107,139,.08), rgba(221,160,221,.08));
+  opacity: 0; transform: translateY(20px);
+  transition: opacity .5s, transform .5s;
+}
+.guide-done.visible { opacity: 1; transform: translateY(0); }
+html.dark .guide-done { background: rgba(255,107,139,.1); }
+.guide-done p { font-size: 16px; line-height: 1.7; }
+.guide-done .done-icon { font-size: 40px; margin-bottom: 12px; }
+
+/* MOBILE */
+@media (max-width: 640px) {
+  .guide-wrap { padding: 90px 16px 60px; }
+  .guide-title { font-size: 26px; }
+  .step-card { padding: 22px; }
+  .step-title { font-size: 16px; }
+  .step-action { flex-direction: column; align-items: flex-start; }
+}
+</style>
+</head>
+<body>
+<script>history.scrollRestoration='manual';window.scrollTo(0,0);</script>
+
+<button class="close-btn" onclick="history.back()">
+  <svg viewBox="0 0 12 12" fill="none"><path d="M2 2l8 8M10 2l-8 8"/></svg>
+</button>
+
+<div class="guide-wrap">
+  <div class="guide-header">
+    <h1 class="guide-title">인스타그램 연동</h1>
+    <p class="guide-subtitle">lumi가 인스타그램에 게시물을 올리려면<br>아래 3단계 연동이 필요해요</p>
+    <div class="guide-badge">비용 0원 · 3분이면 완료</div>
+  </div>
+
+  <!-- STEP 1 -->
+  <div class="step-card" id="step1" style="animation-delay:.35s">
+    <div class="step-num">1</div>
+    <h2 class="step-title">비즈니스 계정으로 전환</h2>
+    <p class="step-desc">
+      인스타그램 계정을 비즈니스 계정으로 바꿔야 해요.<br>
+      개인 계정으로는 외부 앱에서 게시할 수 없어요.<br>
+      아래 버튼을 누르면 전환 페이지로 바로 이동해요.
+    </p>
+    <div class="step-action">
+      <a class="step-btn" href="https://www.instagram.com/accounts/professional_account_tools/" target="_blank" rel="noopener">
+        <svg viewBox="0 0 14 14" fill="none"><path d="M3 7h8M8 4l3 3-3 3" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        전환하러 가기
+      </a>
+      <label class="step-check">
+        <input type="checkbox" id="check1" onchange="updateSteps()">
+        완료했어요
+      </label>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="step-card locked" id="step2" style="animation-delay:.5s">
+    <div class="step-num">2</div>
+    <h2 class="step-title">페이스북 페이지 만들기</h2>
+    <p class="step-desc">
+      인스타그램 비즈니스 계정은 페이스북 페이지와 연결해야 해요.<br>
+      페이지 이름은 매장 이름으로 만들면 돼요.<br>
+      이미 있다면 그대로 사용하면 됩니다.
+    </p>
+    <div class="step-action">
+      <a class="step-btn" href="https://www.facebook.com/pages/create/" target="_blank" rel="noopener">
+        <svg viewBox="0 0 14 14" fill="none"><path d="M3 7h8M8 4l3 3-3 3" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        만들러 가기
+      </a>
+      <label class="step-check">
+        <input type="checkbox" id="check2" onchange="updateSteps()">
+        완료했어요
+      </label>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="step-card locked" id="step3" style="animation-delay:.65s">
+    <div class="step-num">3</div>
+    <h2 class="step-title">lumi에서 연동하기</h2>
+    <p class="step-desc">
+      마지막이에요! 아래 버튼을 누르면<br>
+      인스타그램 로그인 창이 뜨고, 허용하면 연동 완료!
+    </p>
+    <div class="step-action">
+      <button class="step-btn connect" id="connectBtn" onclick="startOAuth()">
+        <svg viewBox="0 0 14 14" fill="none"><path d="M3 7h8M8 4l3 3-3 3" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        인스타그램 연동하기
+      </button>
+    </div>
+  </div>
+
+  <!-- DONE -->
+  <div class="guide-done" id="guideDone">
+    <div class="done-icon">🎉</div>
+    <p>연동이 완료되면<br>lumi의 모든 기능을 사용할 수 있어요!</p>
+  </div>
+</div>
+
+<script>
+var STORAGE_KEY = 'lumi_ig_guide';
+
+function loadState() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch(e) { return {}; }
+}
+
+function saveState(state) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function updateSteps() {
+  var c1 = document.getElementById('check1').checked;
+  var c2 = document.getElementById('check2').checked;
+  var step1 = document.getElementById('step1');
+  var step2 = document.getElementById('step2');
+  var step3 = document.getElementById('step3');
+  var done = document.getElementById('guideDone');
+
+  // Step 1 done
+  step1.classList.toggle('done', c1);
+
+  // Step 2 unlock
+  if (c1) {
+    step2.classList.remove('locked');
+  } else {
+    step2.classList.add('locked');
+    document.getElementById('check2').checked = false;
+    c2 = false;
+  }
+  step2.classList.toggle('done', c2);
+
+  // Step 3 unlock
+  if (c1 && c2) {
+    step3.classList.remove('locked');
+  } else {
+    step3.classList.add('locked');
+  }
+
+  // Done message
+  if (c1 && c2) {
+    done.classList.add('visible');
+  } else {
+    done.classList.remove('visible');
+  }
+
+  saveState({ step1: c1, step2: c2 });
+}
+
+function startOAuth() {
+  var token = localStorage.getItem('lumi_token');
+  if (!token) {
+    alert('먼저 lumi에 로그인해주세요.');
+    window.location.href = '/dashboard';
+    return;
+  }
+  window.location.href = '/.netlify/functions/ig-oauth?action=start&token=' + token;
+}
+
+// Restore state on load
+(function() {
+  var state = loadState();
+  if (state.step1) document.getElementById('check1').checked = true;
+  if (state.step2) document.getElementById('check2').checked = true;
+  updateSteps();
+})();
+</script>
+
+</body>
+</html>

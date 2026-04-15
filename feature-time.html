@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<script>if(localStorage.getItem('lumi_dark_mode')==='1')document.documentElement.classList.add('dark');</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>lumi — 한 달에 18시간을 아끼세요</title>
+<link rel="icon" type="image/png" href="/assets/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@800&display=swap" rel="stylesheet">
+<style>
+@font-face {
+  font-family: 'Jua';
+  src: url('/assets/BMJUA.woff2') format('woff2');
+  font-weight: normal; font-style: normal; font-display: block;
+}
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html { scrollbar-width:none; }
+html.dark { background: #111; }
+html:not(.dark) { background: #fdf2f4; }
+html::-webkit-scrollbar { display:none; }
+body {
+  font-family: 'Jua', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #0d1117; -webkit-font-smoothing: antialiased;
+}
+</style>
+<style>
+/* CLOSE BUTTON */
+.close-btn {
+  position: fixed; top: 32px; left: 50%; transform: translateX(-50%); z-index: 100;
+  width: 46px; height: 46px; border-radius: 23px;
+  background: rgba(237,233,233,.9); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: transform .2s, box-shadow .2s;
+}
+.close-btn:hover { transform: translateX(-50%) scale(1.08); box-shadow: 0 2px 12px rgba(0,0,0,.08); }
+.close-btn svg { width: 12px; height: 12px; stroke: #0d1117; stroke-width: 2.5; }
+
+/* CONTENT */
+.detail-wrap {
+  max-width: 1200px; margin: 0 auto; padding: 80px 40px 60px;
+}
+.detail-title {
+  font-size: 42px; font-weight: 400; letter-spacing: -1px; color: #0d1117;
+  margin-bottom: 32px;
+  opacity: 0; transform: translateY(20px);
+  animation: slideUp .6s ease-out .2s forwards;
+}
+@keyframes slideUp {
+  to { opacity:1; transform:translateY(0); }
+}
+.detail-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+  opacity: 0; transform: translateY(20px);
+  animation: slideUp .6s ease-out .35s forwards;
+}
+</style>
+<style>
+.detail-left p.detail-subtitle {
+  font-size: 24px; font-weight: 400; line-height: 1.5;
+  color: #0d1117; margin-bottom: 20px;
+}
+.detail-left .detail-cta {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 0 20px; height: 40px; border-radius: 20px;
+  background: transparent; border: none;
+  box-shadow: rgba(237,233,233) 0 0 0 2px;
+  font-family: inherit; font-size: 14px; color: #0d1117;
+  cursor: pointer; transition: box-shadow .2s;
+  text-decoration: none;
+}
+.detail-left .detail-cta:hover { box-shadow: rgba(237,233,233) 0 0 0 5px; }
+.detail-right {
+  font-size: 15px; line-height: 1.8; color: rgba(13,17,23,.7);
+  letter-spacing: 0.2px;
+}
+.detail-right p { margin-bottom: 16px; }
+.detail-right strong { color: #0d1117; font-weight: 400; }
+</style>
+<style>
+/* TIME COMPARE VISUAL */
+.time-compare {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+  margin-top: 48px;
+  opacity: 0; transform: translateY(20px);
+  animation: slideUp .6s ease-out .5s forwards;
+}
+.time-card {
+  border-radius: 32px; padding: 40px; display: flex; flex-direction: column;
+  justify-content: space-between; min-height: 220px;
+}
+.time-card.before { background: #fff; }
+.time-card.after { background: linear-gradient(135deg, #FF6B8B, #DDA0DD, #EDD080); }
+.time-card .tc-label { font-size: 14px; color: rgba(13,17,23,.5); margin-bottom: 8px; }
+.time-card.after .tc-label { color: rgba(255,255,255,.7); }
+.time-card .tc-number { font-size: 48px; font-weight: 400; letter-spacing: -1px; color: #0d1117; }
+.time-card.after .tc-number { color: #fff; }
+.time-card .tc-calc { font-size: 14px; color: rgba(13,17,23,.4); margin-top: 12px; }
+.time-card.after .tc-calc { color: rgba(255,255,255,.6); }
+.time-card .tc-sub { font-size: 15px; color: rgba(13,17,23,.6); margin-top: 4px; line-height: 1.5; }
+.time-card.after .tc-sub { color: rgba(255,255,255,.8); }
+</style>
+<style>
+/* GALLERY */
+.detail-gallery {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+  margin-top: 48px;
+  opacity: 0; transform: translateY(20px);
+  animation: slideUp .6s ease-out .65s forwards;
+}
+.gallery-card {
+  border-radius: 32px; background: #fff; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  min-height: 280px; padding: 32px;
+  transition: box-shadow .25s;
+}
+.gallery-card:hover { box-shadow: rgba(100,100,111,.1) 0 5px 24px; }
+.gallery-card img { max-width: 100%; max-height: 200px; object-fit: contain; }
+
+/* ===== PROCESS DEMO ===== */
+.process-demo {
+  position:relative; border-radius:24px; overflow:hidden;
+  background:#fff; min-height:520px;
+  margin-top:48px;
+  opacity:0; transform:translateY(20px);
+  animation: slideUp .6s ease-out .65s forwards;
+}
+.pd-scene {
+  position:absolute; inset:0;
+  display:grid; grid-template-columns:1fr 1fr; gap:0;
+  opacity:0;
+}
+.pd-scene.center-layout { display:flex; flex-direction:column; align-items:center; justify-content:center; }
+/* 7씬, 56초 (각 8초) */
+.pd-scene:nth-child(1) { animation: pdScene 56s infinite 0s; }
+.pd-scene:nth-child(2) { animation: pdScene 56s infinite 8s; }
+.pd-scene:nth-child(3) { animation: pdScene 56s infinite 16s; }
+.pd-scene:nth-child(4) { animation: pdScene 56s infinite 24s; }
+.pd-scene:nth-child(5) { animation: pdScene 56s infinite 32s; }
+.pd-scene:nth-child(6) { animation: pdScene 56s infinite 40s; }
+.pd-scene:nth-child(7) { animation: pdScene 56s infinite 44s; }
+@keyframes pdScene {
+  0% { opacity:0; transform:translateY(12px); }
+  2% { opacity:1; transform:translateY(0); }
+  12.5% { opacity:1; }
+  14.5% { opacity:0; transform:translateY(-12px); }
+  100% { opacity:0; }
+}
+/* 레이아웃 */
+.pd-visual { display:flex; align-items:center; justify-content:center; padding:24px; position:relative; }
+.pd-info { display:flex; flex-direction:column; justify-content:center; padding:24px 32px 24px 0; }
+.pd-step { font-size:11px; color:rgba(200,80,122,.6); letter-spacing:1.5px; font-weight:600; margin-bottom:10px; }
+.pd-title { font-size:18px; color:#0d1117; margin-bottom:6px; line-height:1.4; }
+.pd-sub { font-size:13px; color:rgba(0,0,0,.45); line-height:1.7; margin-bottom:12px; }
+.pd-detail-list { list-style:none; display:flex; flex-direction:column; gap:8px; }
+.pd-detail-item {
+  display:flex; align-items:center; gap:8px;
+  font-size:13px; color:rgba(0,0,0,.5); padding:8px 14px;
+  background:rgba(0,0,0,.03); border-radius:12px;
+}
+.pd-detail-icon { width:20px; height:20px; flex-shrink:0; opacity:.5; }
+
+/* 씬1: 카메라 롤 → 사진 선택 → 업로드 */
+.pd-camera-roll {
+  display:grid; grid-template-columns:repeat(3,1fr); gap:8px; width:280px;
+}
+.pd-roll-item {
+  aspect-ratio:1; border-radius:8px; overflow:hidden; position:relative;
+  background:rgba(0,0,0,.06);
+}
+.pd-roll-item img { width:100%; height:100%; object-fit:cover; opacity:.5; transition:opacity .3s; }
+.pd-roll-item.selected { outline:3px solid rgba(200,80,122,.7); outline-offset:-3px; }
+.pd-roll-item.selected img { opacity:1; }
+/* 선택 체크 */
+.pd-roll-check {
+  position:absolute; top:4px; right:4px; width:18px; height:18px;
+  border-radius:50%; background:rgba(200,80,122,.8);
+  display:flex; align-items:center; justify-content:center;
+  opacity:0; transform:scale(0);
+}
+.pd-roll-item.selected .pd-roll-check { opacity:1; transform:scale(1); transition:all .3s ease-out; }
+.pd-roll-check svg { width:10px; height:10px; }
+/* 선택 애니메이션: 2번째 → 5번째 → 6번째 순서대로 선택 (캐러셀) */
+.pd-roll-item:nth-child(2) { animation: pdSelect1 48s ease-out infinite; }
+.pd-roll-item:nth-child(5) { animation: pdSelect2 48s ease-out infinite; }
+.pd-roll-item:nth-child(6) { animation: pdSelect3 48s ease-out infinite; }
+@keyframes pdSelect1 {
+  0%,2% { outline-color:transparent; } 3% { outline:3px solid rgba(200,80,122,.7); outline-offset:-3px; }
+  14% { outline:3px solid rgba(200,80,122,.7); } 17% { outline-color:transparent; } 100% { outline-color:transparent; }
+}
+@keyframes pdSelect2 {
+  0%,4% { outline-color:transparent; } 5% { outline:3px solid rgba(200,80,122,.7); outline-offset:-3px; }
+  14% { outline:3px solid rgba(200,80,122,.7); } 17% { outline-color:transparent; } 100% { outline-color:transparent; }
+}
+@keyframes pdSelect3 {
+  0%,6% { outline-color:transparent; } 7% { outline:3px solid rgba(200,80,122,.7); outline-offset:-3px; }
+  14% { outline:3px solid rgba(200,80,122,.7); } 17% { outline-color:transparent; } 100% { outline-color:transparent; }
+}
+.pd-roll-item:nth-child(2) img { animation: pdSelImg1 48s ease-out infinite; }
+.pd-roll-item:nth-child(5) img { animation: pdSelImg2 48s ease-out infinite; }
+.pd-roll-item:nth-child(6) img { animation: pdSelImg3 48s ease-out infinite; }
+@keyframes pdSelImg1 { 0%,2%{opacity:.5} 3%,14%{opacity:1} 17%{opacity:.5} 100%{opacity:.5} }
+@keyframes pdSelImg2 { 0%,4%{opacity:.5} 5%,14%{opacity:1} 17%{opacity:.5} 100%{opacity:.5} }
+@keyframes pdSelImg3 { 0%,6%{opacity:.5} 7%,14%{opacity:1} 17%{opacity:.5} 100%{opacity:.5} }
+.pd-roll-item:nth-child(2) .pd-roll-check { animation: pdSelChk1 48s ease-out infinite; }
+.pd-roll-item:nth-child(5) .pd-roll-check { animation: pdSelChk2 48s ease-out infinite; }
+.pd-roll-item:nth-child(6) .pd-roll-check { animation: pdSelChk3 48s ease-out infinite; }
+@keyframes pdSelChk1 { 0%,2%{opacity:0;transform:scale(0)} 3.5%{opacity:1;transform:scale(1.1)} 4%,14%{opacity:1;transform:scale(1)} 17%{opacity:0;transform:scale(0)} 100%{opacity:0} }
+@keyframes pdSelChk2 { 0%,4%{opacity:0;transform:scale(0)} 5.5%{opacity:1;transform:scale(1.1)} 6%,14%{opacity:1;transform:scale(1)} 17%{opacity:0;transform:scale(0)} 100%{opacity:0} }
+@keyframes pdSelChk3 { 0%,6%{opacity:0;transform:scale(0)} 7.5%{opacity:1;transform:scale(1.1)} 8%,14%{opacity:1;transform:scale(1)} 17%{opacity:0;transform:scale(0)} 100%{opacity:0} }
+
+.pd-upload-meta { position:absolute; bottom:50px; left:50%; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; gap:6px; }
+.pd-file-name { font-size:13px; color:rgba(0,0,0,.4); background:rgba(0,0,0,.05); padding:6px 16px; border-radius:10px; font-weight:500; animation: pdFileName 48s ease-out infinite; }
+@keyframes pdFileName { 0%,5%{opacity:0} 6%{opacity:1} 14%{opacity:1} 17%{opacity:0} 100%{opacity:0} }
+.pd-progress { width:100px; height:3px; border-radius:2px; background:rgba(0,0,0,.06); overflow:hidden; animation: pdFileName 48s ease-out infinite; }
+.pd-progress-bar { height:100%; background:linear-gradient(90deg,#FF6B8B,#DDA0DD); border-radius:2px; animation: pdProgress 48s ease-out infinite; }
+@keyframes pdProgress { 0%,6%{width:0} 9%{width:100%} 14%{width:100%} 17%{width:0} 100%{width:0} }
+
+body.dark-mode .pd-roll-item { background:rgba(255,255,255,.06); }
+body.dark-mode .pd-roll-item img { filter:grayscale(1) brightness(.7); }
+body.dark-mode .pd-roll-item.selected img, body.dark-mode .pd-roll-item:nth-child(5) img { filter:grayscale(1) brightness(.8); }
+
+/* 씬2: 스캔 */
+.pd-scan-wrap { position:relative; }
+.pd-scan-photo { width:200px; height:266px; border-radius:14px; overflow:hidden; box-shadow:0 8px 32px rgba(0,0,0,.12); }
+.pd-scan-photo img { width:100%; height:100%; object-fit:cover; }
+.pd-scan-line {
+  position:absolute; left:-30px; right:-30px; height:3px;
+  background:linear-gradient(90deg, transparent, rgba(200,80,122,.9), transparent);
+  box-shadow:0 0 24px rgba(200,80,122,.5), 0 0 60px rgba(200,80,122,.15);
+  opacity:0; animation: pdScanMove 48s ease-in-out infinite;
+}
+@keyframes pdScanMove {
+  0%,16% { opacity:0; top:8%; }
+  18% { opacity:1; top:8%; }
+  24% { top:92%; }
+  26% { top:12%; }
+  30% { opacity:1; top:88%; }
+  32% { opacity:0; }
+  100% { opacity:0; }
+}
+.pd-detect-tags { position:absolute; right:-10px; top:20px; display:flex; flex-direction:column; gap:6px; }
+.pd-detect-tag {
+  font-size:10px; padding:4px 10px; border-radius:8px;
+  background:rgba(200,80,122,.08); color:rgba(200,80,122,.7);
+  opacity:0; transform:translateX(8px);
+}
+.pd-detect-tag:nth-child(1) { animation: pdDetect 48s ease-out 7s infinite; }
+.pd-detect-tag:nth-child(2) { animation: pdDetect 48s ease-out 7.4s infinite; }
+.pd-detect-tag:nth-child(3) { animation: pdDetect 48s ease-out 7.8s infinite; }
+@keyframes pdDetect { 0%,0.5%{opacity:0;transform:translateX(8px)} 2%{opacity:1;transform:translateX(0)} 14%{opacity:1} 17%{opacity:0} 100%{opacity:0} }
+
+/* 씬3: 분석 결과 */
+.pd-analysis { display:flex; flex-direction:column; gap:14px; width:100%; }
+.pd-tag-group { display:flex; flex-wrap:wrap; gap:8px; }
+.pd-tag { font-size:13px; padding:8px 16px; border-radius:14px; font-weight:500; }
+.pd-tag.trend { background:rgba(200,80,122,.08); color:rgba(200,80,122,.8); }
+.pd-tag.biz { background:rgba(34,197,94,.1); color:rgba(22,163,74,.8); }
+.pd-tag.tone { background:rgba(59,130,246,.1); color:rgba(37,99,235,.8); }
+.pd-tag-label { font-size:10px; color:rgba(0,0,0,.3); margin-bottom:2px; letter-spacing:.5px; }
+
+/* 씬4: 캡션 */
+/* 코멘트 박스 */
+.pd-comment-box {
+  width:100%; padding:12px 16px; border-radius:12px;
+  background:rgba(59,130,246,.06); border:1.5px dashed rgba(59,130,246,.2);
+}
+.pd-comment-label { font-size:10px; color:rgba(59,130,246,.5); margin-bottom:4px; letter-spacing:.5px; }
+.pd-comment-text { font-size:14px; color:rgba(37,99,235,.7); font-style:italic; }
+body.dark-mode .pd-comment-box { background:rgba(59,130,246,.06); border-color:rgba(96,165,250,.2); }
+body.dark-mode .pd-comment-label { color:rgba(96,165,250,.5); }
+body.dark-mode .pd-comment-text { color:rgba(96,165,250,.7); }
+
+.pd-caption-wrap { width:100%; }
+.pd-caption-bubble {
+  background:rgba(0,0,0,.03); border-radius:16px; padding:24px; margin-bottom:12px;
+}
+.pd-caption-text { font-size:15px; color:#0d1117; line-height:1.7; }
+.pd-cursor { color:rgba(200,80,122,.6); animation: cursorBlink .6s steps(2) infinite; }
+@keyframes cursorBlink { 0%{opacity:1} 100%{opacity:0} }
+.pd-caption-tags { display:flex; gap:8px; flex-wrap:wrap; }
+.pd-caption-tag { font-size:12px; color:rgba(200,80,122,.5); }
+.pd-caption-meta { display:flex; gap:16px; margin-top:12px; }
+.pd-caption-stat { font-size:11px; color:rgba(0,0,0,.3); display:flex; align-items:center; gap:4px; }
+
+/* 씬5: 체크 */
+.pd-check-wrap { display:flex; flex-direction:column; align-items:center; gap:16px; }
+.pd-check {
+  width:72px; height:72px; border-radius:50%;
+  background:linear-gradient(135deg,#FF6B8B,#DDA0DD);
+  display:flex; align-items:center; justify-content:center;
+  animation: pdCheckPop 48s ease-out infinite;
+}
+.pd-check svg { width:36px; height:36px; }
+.pd-check-path { stroke-dasharray:30; stroke-dashoffset:30; animation: pdCheckDraw 48s ease-out infinite; }
+@keyframes pdCheckPop { 0%,66%{transform:scale(0)} 68%{transform:scale(1.15)} 70%,76%{transform:scale(1)} 78%{transform:scale(0)} 100%{transform:scale(0)} }
+@keyframes pdCheckDraw { 0%,67%{stroke-dashoffset:30} 71%,76%{stroke-dashoffset:0} 78%,100%{stroke-dashoffset:30} }
+.pd-check-text { font-size:20px; color:#0d1117; }
+.pd-check-time { font-size:13px; color:rgba(0,0,0,.35); }
+
+/* 씬6: 피드 */
+.pd-feed-clip {
+  width:300px; height:360px; border-radius:16px; overflow:hidden;
+  box-shadow:0 6px 28px rgba(0,0,0,.1);
+}
+.pd-feed {
+  width:100%; border-radius:0; background:#fff;
+  animation: pdFeedScroll 48s ease-in-out infinite;
+}
+@keyframes pdFeedScroll {
+  0%,76% { transform:translateY(0); }
+  78% { transform:translateY(0); }
+  88% { transform:translateY(-45%); }
+  93% { transform:translateY(-45%); }
+  96% { transform:translateY(0); }
+  100% { transform:translateY(0); }
+}
+.pf-head { display:flex; align-items:center; gap:8px; padding:12px 14px; }
+.pf-av { width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,#FF6B8B,#DDA0DD); flex-shrink:0; }
+.pf-nm { font-size:12px; font-weight:600; color:#0d1117; }
+.pf-img { width:100%; aspect-ratio:3/4; overflow:hidden; }
+.pf-img img { width:100%; height:100%; object-fit:cover; }
+.pf-acts { display:flex; gap:10px; padding:10px 14px; }
+.pf-acts svg { width:18px; height:18px; }
+.pf-lk { padding:0 14px 4px; font-size:11px; font-weight:600; color:#0d1117; }
+.pf-cap { padding:2px 14px 12px; font-size:11px; color:rgba(0,0,0,.6); line-height:1.5; }
+.pf-cap strong { color:#0d1117; }
+
+/* DARK MODE */
+body.dark-mode .process-demo { background:#1c1c1e; }
+body.dark-mode .pd-step { color:rgba(200,80,122,.5); }
+body.dark-mode .pd-title { color:#f0f2f8; }
+body.dark-mode .pd-sub { color:rgba(240,242,248,.4); }
+body.dark-mode .pd-detail-item { background:rgba(255,255,255,.05); color:rgba(240,242,248,.5); }
+body.dark-mode .pd-file-name { color:rgba(240,242,248,.3); background:rgba(255,255,255,.05); }
+body.dark-mode .pd-progress { background:rgba(255,255,255,.06); }
+body.dark-mode .pd-photo img, body.dark-mode .pd-scan-photo img { filter:grayscale(1) brightness(.8); }
+body.dark-mode .pd-scan-line { background:linear-gradient(90deg,transparent,rgba(240,242,248,.6),transparent); box-shadow:0 0 20px rgba(240,242,248,.3); }
+body.dark-mode .pd-detect-tag { background:rgba(240,242,248,.06); color:rgba(240,242,248,.5); }
+body.dark-mode .pd-tag.trend { background:rgba(240,242,248,.06); color:rgba(240,242,248,.5); }
+body.dark-mode .pd-tag.biz { background:rgba(34,197,94,.08); color:rgba(74,222,128,.7); }
+body.dark-mode .pd-tag.tone { background:rgba(59,130,246,.08); color:rgba(96,165,250,.7); }
+body.dark-mode .pd-tag-label { color:rgba(240,242,248,.2); }
+body.dark-mode .pd-caption-bubble { background:rgba(255,255,255,.05); }
+body.dark-mode .pd-caption-text { color:#f0f2f8; }
+body.dark-mode .pd-caption-tag { color:rgba(240,242,248,.3); }
+body.dark-mode .pd-caption-stat { color:rgba(240,242,248,.25); }
+body.dark-mode .pd-check-text { color:#f0f2f8; }
+body.dark-mode .pd-check-time { color:rgba(240,242,248,.3); }
+body.dark-mode .pd-feed-clip { box-shadow:0 6px 28px rgba(0,0,0,.4); }
+body.dark-mode .pd-feed { background:#2c2c2e; }
+body.dark-mode .pf-nm, body.dark-mode .pf-lk { color:#f0f2f8; }
+body.dark-mode .pf-cap { color:rgba(240,242,248,.5); }
+body.dark-mode .pf-cap strong { color:#f0f2f8; }
+body.dark-mode .pf-img img { filter:grayscale(1) brightness(.8); }
+
+@media (max-width:768px) {
+  .pd-scene { grid-template-columns:1fr; }
+  .pd-info { padding:20px; }
+  .pd-visual { padding:20px; }
+  .process-demo { min-height:500px; }
+}
+
+/* BOTTOM MESSAGE */
+.detail-bottom {
+  text-align: center; margin-top: 64px; padding-bottom: 80px;
+  opacity: 0; transform: translateY(20px);
+  animation: slideUp .6s ease-out .8s forwards;
+}
+.detail-bottom .bottom-msg {
+  font-size: 20px; color: rgba(13,17,23,.5); line-height: 1.6;
+}
+.detail-bottom .bottom-cta {
+  display: inline-flex; align-items: center; gap: 8px; margin-top: 20px;
+  padding: 12px 28px; border-radius: 28px; background: #0d1117; color: #fff;
+  font-family: inherit; font-size: 15px; border: none; cursor: pointer;
+  transition: transform .2s, box-shadow .2s; text-decoration: none;
+}
+.detail-bottom .bottom-cta:hover { transform: scale(1.03); box-shadow: 0 4px 16px rgba(0,0,0,.15); }
+</style>
+<style>
+/* DARK MODE */
+body.dark-mode { background: #111; color: #f0f2f8; }
+body.dark-mode .close-btn { background: rgba(44,44,46,.9); }
+body.dark-mode .close-btn svg { stroke: #f0f2f8; }
+body.dark-mode .detail-title { color: #f0f2f8; }
+body.dark-mode .detail-left p.detail-subtitle { color: #f0f2f8; }
+body.dark-mode .detail-left .detail-cta { color: #f0f2f8; box-shadow: rgba(255,255,255,.12) 0 0 0 2px; }
+body.dark-mode .detail-left .detail-cta:hover { box-shadow: rgba(255,255,255,.12) 0 0 0 5px; }
+body.dark-mode .detail-right { color: rgba(240,242,248,.6); }
+body.dark-mode .detail-right strong { color: #f0f2f8; }
+body.dark-mode .time-card.before { background: #1c1c1e; }
+body.dark-mode .time-card.before .tc-label { color: rgba(240,242,248,.4); }
+body.dark-mode .time-card.before .tc-number { color: #f0f2f8; }
+body.dark-mode .time-card.before .tc-calc { color: rgba(240,242,248,.3); }
+body.dark-mode .time-card.before .tc-sub { color: rgba(240,242,248,.5); }
+body.dark-mode .gallery-card { background: #1c1c1e; }
+body.dark-mode .gallery-card:hover { box-shadow: rgba(255,255,255,.05) 0 5px 24px; }
+body.dark-mode .gallery-card p { color: rgba(240,242,248,.6) !important; }
+body.dark-mode .gallery-card p[style*="font-size:20px"] { color: #f0f2f8 !important; }
+body.dark-mode .gallery-card p[style*="font-size:13px"] { color: rgba(240,242,248,.35) !important; }
+body.dark-mode .gallery-card p[style*="font-size:12px"] { color: rgba(240,242,248,.4) !important; }
+body.dark-mode .gallery-card p[style*="line-height:1.7"] { color: rgba(240,242,248,.6) !important; }
+body.dark-mode .gallery-card p[style*="line-height:1.7"] span { color: rgba(240,242,248,.35) !important; }
+body.dark-mode .gallery-card[style*="gradient"] p { color: rgba(255,255,255,.6) !important; }
+body.dark-mode .gallery-card[style*="gradient"] p[style*="line-height:1.7"] { color: #fff !important; }
+body.dark-mode .detail-bottom .bottom-msg { color: rgba(240,242,248,.5); }
+body.dark-mode .detail-bottom .bottom-cta { background: #f0f2f8; color: #0d1117; }
+body.dark-mode .time-card.after { background: linear-gradient(135deg, rgba(255,107,139,.25), rgba(221,160,221,.2), rgba(237,208,128,.15)); }
+body.dark-mode .time-card.after .tc-label { color: rgba(240,242,248,.5); }
+body.dark-mode .time-card.after .tc-number { color: #f0f2f8; }
+body.dark-mode .time-card.after .tc-calc { color: rgba(240,242,248,.35); }
+body.dark-mode .time-card.after .tc-sub { color: rgba(240,242,248,.5); }
+body.dark-mode .gallery-card[style*="gradient"] { background: linear-gradient(135deg, rgba(255,107,139,.2), rgba(221,160,221,.15), rgba(237,208,128,.1)) !important; }
+body.dark-mode .gallery-card[style*="gradient"] p { color: rgba(240,242,248,.6) !important; }
+body.dark-mode .gallery-card[style*="gradient"] p[style*="line-height:1.7"] { color: #f0f2f8 !important; }
+body.dark-mode .gallery-card[style*="gradient"] p[style*="line-height:1.7"] span { color: rgba(240,242,248,.4) !important; }
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .detail-wrap { padding: 70px 20px 40px; }
+  .detail-title { font-size: 32px; }
+  .detail-grid { grid-template-columns: 1fr; }
+  .time-compare { grid-template-columns: 1fr; }
+  .detail-gallery { grid-template-columns: 1fr 1fr; }
+  .close-btn { top: 20px; right: 20px; }
+}
+@media (max-width: 480px) {
+  .detail-gallery { grid-template-columns: 1fr; }
+  .detail-title { font-size: 26px; }
+}
+</style>
+</head>
+<body>
+<script>
+  if (localStorage.getItem('lumi_dark_mode') === '1') {
+    document.documentElement.classList.add('dark');
+    document.body.classList.add('dark-mode');
+  }
+</script>
+
+<div id="page-overlay" style="position:fixed;inset:0;z-index:9999;pointer-events:none;"></div>
+
+<script>
+(function(){
+  var overlay = document.getElementById('page-overlay');
+  var bg = document.documentElement.classList.contains('dark') ? '#111' : '#fdf2f4';
+
+  // 진입: 배경색 오버레이 → 서서히 투명
+  overlay.style.background = bg;
+  overlay.style.opacity = '1';
+  overlay.style.transition = 'opacity .4s ease-out';
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){ overlay.style.opacity = '0'; });
+  });
+
+  // 해시 앵커 자동 스크롤
+  if (window.location.hash) {
+    setTimeout(function() {
+      var el = document.querySelector(window.location.hash);
+      if (el) el.scrollIntoView({ behavior:'smooth', block:'center' });
+    }, 600);
+  }
+
+  window.closePage = function() {
+    overlay.style.transition = 'opacity .3s ease-in';
+    overlay.style.opacity = '1';
+    setTimeout(function(){ history.back(); }, 280);
+  };
+
+  // bfcache 복귀 시 오버레이 제거
+  window.addEventListener('pageshow', function(e) {
+    if (e.persisted) {
+      overlay.style.transition = 'opacity .4s ease-out';
+      overlay.style.opacity = '0';
+    }
+  });
+})();
+</script>
+
+<button class="close-btn" onclick="closePage()">
+  <svg viewBox="0 0 12 12" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="1" y1="1" x2="11" y2="11"/><line x1="11" y1="1" x2="1" y2="11"/>
+  </svg>
+</button>
+
+<div class="detail-wrap">
+  <h2 class="detail-title">누구나 전문가처럼.</h2>
+
+  <div class="detail-grid">
+    <div class="detail-left">
+      <p class="detail-subtitle">인스타 전문가도 한 게시물에 20~30분. lumi는 1분이면 전문가 수준으로 올려드려요.</p>
+    </div>
+    <div class="detail-right">
+      <p>인스타 게시물 하나를 올리는 데 직접 하면 <strong>30~90분</strong>이 걸려요. 사진 고르고, 글 쓰고, 해시태그 검색하고, 올리고. 전문 크리에이터도 <strong>20~30분</strong>은 써야 해요.</p>
+      <p>lumi는 이 과정을 <strong>1분</strong>으로 줄여줘요. 사진만 올리면 우리 매장 분위기에 맞는 글을 써주고, 요즘 사람들이 검색하는 태그를 골라 달아주고, <strong>팔로워가 가장 활발한 시간</strong>에 자동으로 올려줘요.</p>
+      <p>인스타를 못해도 괜찮아요. lumi가 전문가 수준의 캡션과 해시태그를 알아서 만들어 드릴게요. 아낀 시간은 매장에 쓰세요.</p>
+    </div>
+  </div>
+
+  <div class="time-compare">
+    <div class="time-card before">
+      <div>
+        <p class="tc-label">직접 올릴 때</p>
+        <p class="tc-number">30~90분</p>
+        <p class="tc-calc">전문가도 20~30분</p>
+      </div>
+      <p class="tc-sub">사진 선택, 글 고민, 태그 검색, 복사-붙여넣기, 업로드</p>
+    </div>
+    <div class="time-card after">
+      <div>
+        <p class="tc-label">lumi와 함께라면</p>
+        <p class="tc-number">1분</p>
+        <p class="tc-calc">1분이면 전문가 퀄리티</p>
+      </div>
+      <p class="tc-sub">사진 올리기, 캡션 확인, 게시. 끝.</p>
+    </div>
+  </div>
+
+  <!-- 프로세스 데모: 2컬럼 씬 전환 -->
+  <div class="process-demo" id="process-demo">
+    <!-- 씬1: 사진 업로드 -->
+    <div class="pd-scene">
+      <div class="pd-visual">
+        <div class="pd-camera-roll">
+          <div class="pd-roll-item"><img src="/assets/demo-cafe.png" alt=""></div>
+          <div class="pd-roll-item"><img src="/assets/demo-cafe-2.jpg" alt=""><div class="pd-roll-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+          <div class="pd-roll-item"><img src="/assets/demo-cafe-3.jpg" alt=""></div>
+          <div class="pd-roll-item"><img src="/assets/demo-cafe-4.jpg" alt=""></div>
+          <div class="pd-roll-item"><img src="/assets/demo-cafe-5.jpg" alt=""><div class="pd-roll-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+          <div class="pd-roll-item"><img src="/assets/demo-cafe-6.jpg" alt=""><div class="pd-roll-check"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+        </div>
+        <div class="pd-upload-meta">
+          <span class="pd-file-name">3장 선택됨</span>
+          <div class="pd-progress"><div class="pd-progress-bar"></div></div>
+        </div>
+      </div>
+      <div class="pd-info">
+        <p class="pd-step">STEP 01</p>
+        <p class="pd-title">사진만 올리면 끝</p>
+        <p class="pd-sub">한 장이면 단일 게시물, 여러 장이면 캐러셀.<br>lumi가 나머지를 전부 해드릴게요.</p>
+        <ul class="pd-detail-list">
+          <li class="pd-detail-item">
+            <svg class="pd-detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+            JPG, PNG, HEIC 모두 지원
+          </li>
+          <li class="pd-detail-item">
+            <svg class="pd-detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 7h20M7 2v20"/></svg>
+            최대 10장, 캐러셀 게시물 자동 생성
+          </li>
+          <li class="pd-detail-item">
+            <svg class="pd-detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2v20M2 12h20"/></svg>
+            세로, 가로, 정사각형 자동 인식
+          </li>
+          <li class="pd-detail-item">
+            <svg class="pd-detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            업로드 소요 시간: 약 3초
+          </li>
+        </ul>
+      </div>
+    </div>
+    <!-- 씬2: lumi 스캔 -->
+    <div class="pd-scene">
+      <div class="pd-visual">
+        <div class="pd-scan-wrap">
+          <div class="pd-scan-photo"><img src="/assets/demo-cafe-2.jpg" alt="분석 중"></div>
+          <div class="pd-scan-line"></div>
+          <div class="pd-detect-tags">
+            <span class="pd-detect-tag">라떼</span>
+            <span class="pd-detect-tag">인테리어</span>
+            <span class="pd-detect-tag">핑크톤</span>
+          </div>
+        </div>
+      </div>
+      <div class="pd-info">
+        <p class="pd-step">STEP 02</p>
+        <p class="pd-title">lumi가 사진을 읽어냅니다</p>
+        <p class="pd-sub">사진 속 음식, 매장 분위기, 색감, 계절감까지<br>lumi가 자동으로 분석해요.</p>
+        <ul class="pd-detail-list">
+          <li class="pd-detail-item">
+            <svg class="pd-detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            음식 종류, 메뉴 자동 감지
+          </li>
+          <li class="pd-detail-item">
+            <svg class="pd-detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/></svg>
+            매장 분위기 · 감성 파악
+          </li>
+          <li class="pd-detail-item">
+            <svg class="pd-detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+            날씨 · 계절 · 시간대 반영
+          </li>
+        </ul>
+      </div>
+    </div>
+    <!-- 씬3: 트렌드 + 업종 + 말투 분석 -->
+    <div class="pd-scene">
+      <div class="pd-visual" style="flex-direction:column;gap:16px;align-items:flex-start;padding:32px 36px;">
+        <div class="pd-analysis">
+          <p class="pd-tag-label">실시간 트렌드</p>
+          <div class="pd-tag-group">
+            <span class="pd-tag trend">#라떼아트</span>
+            <span class="pd-tag trend">#감성카페</span>
+            <span class="pd-tag trend">#핑크카페</span>
+            <span class="pd-tag trend">#카페추천</span>
+          </div>
+          <p class="pd-tag-label" style="margin-top:14px;">업종 매칭</p>
+          <div class="pd-tag-group">
+            <span class="pd-tag biz">카페·음료</span>
+            <span class="pd-tag biz" style="opacity:.4;">음식·외식</span>
+            <span class="pd-tag biz" style="opacity:.4;">뷰티·케어</span>
+            <span class="pd-tag biz" style="opacity:.4;">반려동물</span>
+          </div>
+          <p class="pd-tag-label" style="margin-top:14px;">말투 분석</p>
+          <div class="pd-tag-group">
+            <span class="pd-tag tone">친근한</span>
+            <span class="pd-tag tone" style="opacity:.4;">정중한</span>
+            <span class="pd-tag tone" style="opacity:.4;">유머러스</span>
+            <span class="pd-tag tone" style="opacity:.4;">감성적</span>
+          </div>
+          <p class="pd-tag-label" style="margin-top:14px;">말투 예시</p>
+          <div style="display:flex;flex-direction:column;gap:6px;width:100%;">
+            <div class="pd-detail-item" style="font-size:12px;">
+              <span style="color:rgba(200,80,122,.6);flex-shrink:0;">친근한</span>
+              <span>"근데 이 비주얼 미쳤다"</span>
+            </div>
+            <div class="pd-detail-item" style="font-size:12px;opacity:.4;">
+              <span style="color:rgba(59,130,246,.6);flex-shrink:0;">정중한</span>
+              <span>"정성껏 준비한 라떼를 소개합니다"</span>
+            </div>
+            <div class="pd-detail-item" style="font-size:12px;opacity:.4;">
+              <span style="color:rgba(234,179,8,.7);flex-shrink:0;">유머러스</span>
+              <span>"라떼 찍다가 크림 흘림 (3번째)"</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="pd-info">
+        <p class="pd-step">STEP 03</p>
+        <p class="pd-title">트렌드 · 업종 · 말투까지</p>
+        <p class="pd-sub">요즘 인스타에서 뜨는 해시태그를 실시간으로 받아오고,<br>우리 매장의 업종과 말투 스타일에 맞춰요.</p>
+        <ul class="pd-detail-list">
+          <li class="pd-detail-item">
+            <svg class="pd-detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            국내 · 해외 트렌드 실시간 반영
+          </li>
+          <li class="pd-detail-item">
+            <svg class="pd-detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9h18v10a2 2 0 01-2 2H5a2 2 0 01-2-2V9zM3 9V5a2 2 0 012-2h14a2 2 0 012 2v4"/></svg>
+            12개 업종별 맞춤 분석
+          </li>
+          <li class="pd-detail-item">
+            <svg class="pd-detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            대표님 말투를 학습해서 반영
+          </li>
+        </ul>
+      </div>
+    </div>
+    <!-- 씬4: 캡션 생성 + 코멘트 기능 -->
+    <div class="pd-scene">
+      <div class="pd-visual" style="flex-direction:column;gap:12px;">
+        <div class="pd-comment-box">
+          <p class="pd-comment-label">대표님 코멘트</p>
+          <p class="pd-comment-text">"오늘 휴무일 안내도 넣어줘"</p>
+        </div>
+        <div class="pd-caption-wrap">
+          <div class="pd-caption-bubble">
+            <p class="pd-caption-text">이 자리 앉으면 라떼 들고<br>한참 멍 때리게 됨<br><br>내일(월요일)은 쉬어갑니다<br>화요일에 다시 만나요 :)<br><br>여기 어딘지 궁금하면<br>프로필 링크 눌러요 📍<span class="pd-cursor">|</span></p>
+          </div>
+          <div class="pd-caption-tags">
+            <span class="pd-caption-tag">#라떼아트</span>
+            <span class="pd-caption-tag">#카페인테리어</span>
+            <span class="pd-caption-tag">#감성카페</span>
+            <span class="pd-caption-tag">#핑크카페</span>
+            <span class="pd-caption-tag">#라떼맛집</span>
+          </div>
+        </div>
+      </div>
+      <div class="pd-info">
+        <p class="pd-step">STEP 04</p>
+        <p class="pd-title">코멘트 한 줄이면 캡션이 달라져요</p>
+        <p class="pd-sub">"오늘 휴무일 알려줘", "신메뉴 출시했어" 같은<br>한 줄 코멘트만 남기면 캡션에 최우선 반영돼요.</p>
+        <ul class="pd-detail-list">
+          <li class="pd-detail-item">
+            <svg class="pd-detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            코멘트가 캡션의 핵심 메시지가 됨
+          </li>
+          <li class="pd-detail-item">
+            <svg class="pd-detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            코멘트 없으면 사진 기반으로 자동 작성
+          </li>
+          <li class="pd-detail-item">
+            <svg class="pd-detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2v20M2 12h20"/></svg>
+            마음에 안 들면 다시 쓰기 한 번이면 끝
+          </li>
+          <li class="pd-detail-item">
+            <svg class="pd-detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+            대형 + 중형 + 소형 해시태그 자동 조합
+          </li>
+        </ul>
+      </div>
+    </div>
+    <!-- 씬5: 최적 시간 게시 -->
+    <div class="pd-scene">
+      <div class="pd-visual" style="flex-direction:column;gap:12px;align-items:center;">
+        <div style="display:flex;align-items:flex-end;gap:10px;height:120px;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <div style="width:28px;height:20px;border-radius:6px;background:rgba(0,0,0,.06);"></div>
+            <span style="font-size:10px;color:rgba(0,0,0,.35);">09</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <div style="width:28px;height:48px;border-radius:6px;background:rgba(0,0,0,.06);"></div>
+            <span style="font-size:10px;color:rgba(0,0,0,.35);">12</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <div style="width:28px;height:32px;border-radius:6px;background:rgba(0,0,0,.06);"></div>
+            <span style="font-size:10px;color:rgba(0,0,0,.35);">15</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <div style="width:28px;height:96px;border-radius:6px;background:linear-gradient(180deg,#FF6B8B,#DDA0DD);"></div>
+            <span style="font-size:10px;color:rgba(200,80,122,.7);font-weight:600;">18:30</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <div style="width:28px;height:64px;border-radius:6px;background:rgba(0,0,0,.06);"></div>
+            <span style="font-size:10px;color:rgba(0,0,0,.35);">21</span>
+          </div>
+        </div>
+        <p style="font-size:14px;color:rgba(200,80,122,.7);font-weight:500;margin-top:8px;">오후 6:30 팔로워 활동 피크</p>
+      </div>
+      <div class="pd-info">
+        <p class="pd-step">STEP 05</p>
+        <p class="pd-title">팔로워가 가장 활발한 시간에</p>
+        <p class="pd-sub">lumi가 우리 매장 팔로워의 활동 패턴을 분석해서<br>참여율이 가장 높은 시간에 자동으로 게시해요.</p>
+        <ul class="pd-detail-list">
+          <li class="pd-detail-item">
+            <svg class="pd-detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            팔로워 활동 기반 매일 분석
+          </li>
+          <li class="pd-detail-item">
+            <svg class="pd-detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            바로 게시 · lumi 추천 · 직접 선택 3가지 옵션
+          </li>
+          <li class="pd-detail-item">
+            <svg class="pd-detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            업종별로 최적 시간이 다르게 적용
+          </li>
+        </ul>
+      </div>
+    </div>
+    <!-- 씬6: 게시 완료 -->
+    <div class="pd-scene center-layout">
+      <div class="pd-check-wrap">
+        <div class="pd-check">
+          <svg viewBox="0 0 24 24" fill="none"><path class="pd-check-path" d="M4 12l6 6L20 6" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <p class="pd-check-text">인스타 게시 완료</p>
+        <p class="pd-check-time">소요 시간: 47초</p>
+      </div>
+    </div>
+    <!-- 씬6: 인스타 피드 (스크롤 애니메이션) -->
+    <div class="pd-scene center-layout">
+      <div class="pd-feed-clip"><div class="pd-feed">
+        <div class="pf-head">
+          <div class="pf-av"></div>
+          <span class="pf-nm">my_cafe</span>
+        </div>
+        <div class="pf-img"><img src="/assets/demo-cafe-3.jpg" alt="게시된 사진"></div>
+        <div class="pf-acts">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#0d1117" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 000-7.78z"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#0d1117" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#0d1117" stroke-width="1.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </div>
+        <p class="pf-lk">좋아요 42개</p>
+        <p class="pf-cap"><strong>my_cafe</strong> 이 자리 앉으면 라떼 들고 한참 멍 때리게 됨<br><br>여기 어딘지 궁금하면 프로필 링크 눌러요 📍<br><br>#라떼아트 #카페인테리어 #감성카페 #핑크카페 #라떼맛집</p>
+      </div></div>
+    </div>
+  </div>
+
+  <div class="detail-gallery" style="grid-template-columns:1fr 1fr;margin-top:48px;animation-delay:.8s;">
+    <div class="gallery-card" style="flex-direction:column;align-items:flex-start;gap:12px;min-height:200px;">
+      <p style="font-size:12px;color:rgba(13,17,23,.35);letter-spacing:.5px;">사장님이 5분 고민해서 쓴 글</p>
+      <p style="font-size:15px;line-height:1.7;color:rgba(13,17,23,.7);">신메뉴 딸기 라떼 출시했습니다!<br>많이 와주세요 :)<br><span style="color:rgba(13,17,23,.35);">#카페 #딸기라떼 #신메뉴</span></p>
+    </div>
+    <div class="gallery-card" style="flex-direction:column;align-items:flex-start;gap:12px;min-height:200px;background:linear-gradient(135deg,#FF6B8B,#DDA0DD,#EDD080);">
+      <p style="font-size:12px;color:rgba(255,255,255,.6);letter-spacing:.5px;">lumi가 30초 만에 쓴 글</p>
+      <p style="font-size:15px;line-height:1.7;color:#fff;">딸기 라떼 올리려고 사진 찍다가<br>크림 흘림 (3번째)<br>근데 이 비주얼 미쳤다<br><span style="color:rgba(255,255,255,.6);">#강서구카페 #딸기라떼신메뉴 #카페신메뉴추천 #시즌한정 #라떼맛집</span></p>
+    </div>
+  </div>
+
+  <div class="detail-bottom">
+    <p class="bottom-msg">인스타 못해도 괜찮아요.<br>lumi가 전문가 수준으로 대신 해드릴게요.</p>
+  </div>
+</div>
+
+</body>
+</html>
