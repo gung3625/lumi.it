@@ -1,273 +1,231 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>개인정보처리방침 — lumi</title>
-    <link rel="preconnect" href="https://cdn.jsdelivr.net">
-    <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet">
-    <style>
-html::-webkit-scrollbar,body::-webkit-scrollbar,*::-webkit-scrollbar{display:none;}html,body,*{scrollbar-width:none;}
-        :root {
-  --pink:#C8507A;--accent:#C8507A;
-  --bg:#000000;--surface-2:#272729;
-  --text:#f5f5f7;--text-80:rgba(255,255,255,.8);--text-48:rgba(255,255,255,.48);
-  --nav-bg:rgba(0,0,0,.88);
-  --light-bg:#f5f5f7;--light-surface:#ffffff;--light-text:#1d1d1f;
-  --light-text-80:rgba(0,0,0,.8);--light-text-48:rgba(0,0,0,.48);
-  --light-divider:#d2d2d7;
-  --shadow-card:rgba(0,0,0,.5) 3px 5px 30px 0px;
-  --light-shadow:rgba(0,0,0,.22) 3px 5px 30px 0px;
-  --r-full:980px;--ease:cubic-bezier(0.16,1,0.3,1);
-  --g900:#1d1d1f;--g700:#424245;--g500:#86868b;--g400:#aeaeb2;
-  --g200:#d2d2d7;--g100:#e8e8ed;--g50:#f5f5f7;--white:#ffffff;
-  --pink-pale:#fff0f5;--pink-ultra:#fff5f8;--pink-soft:#ffcce0;
-}
-        body.dark-mode{
-            --g900:#F2F4F6;--g700:#D1D5DB;--g500:#9CA3AF;--g400:#6B7684;
-            --g200:#2D3748;--g100:#1E2533;--g50:#151B26;--white:#1A202C;
-            --pink-pale:#2D1F2B;--pink-ultra:#1F1923;--pink-soft:#3D2536;
-        }
-        body.dark-mode nav{background:rgba(26,32,44,.94)!important;border-bottom-color:var(--g200)!important;}
-        body.dark-mode .toast{background:var(--g200);color:var(--g700);}
-        body.dark-mode input,body.dark-mode select,body.dark-mode textarea{background:var(--g100);border-color:var(--g200);color:var(--g900);}
-        .dark-toggle-fab{position:fixed;right:16px;bottom:calc(20px + env(safe-area-inset-bottom, 0px));z-index:9999;width:48px;height:48px;border-radius:50%;border:none;background:#191F28;color:#fff;font-size:1.2rem;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;transition:all .3s;-webkit-tap-highlight-color:transparent;}
-        .dark-toggle-fab:hover{transform:scale(1.08);box-shadow:0 6px 24px rgba(0,0,0,.3);}
-        .dark-toggle-fab:active{transform:scale(.95);}
-        body.dark-mode .dark-toggle-fab{background:#fff;color:#191F28;box-shadow:0 4px 16px rgba(0,0,0,.15);}
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Pretendard Variable', 'Pretendard', 'Noto Sans KR', sans-serif; background: var(--white); color: var(--g700); line-height: 1.8; font-size:17px; }
-        nav { position: sticky; top: 0; background: rgba(255,255,255,.95); backdrop-filter: blur(20px); border-bottom: 1px solid var(--g100); padding: 0 24px; height: 60px; display: flex; align-items: center; justify-content: center; z-index: 100; }
-        .nav-inner{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:900px;}
-        .nav-logo-wrap{display:flex;align-items:center;gap:6px;cursor:pointer;text-decoration:none;}
-        .nav-logo{height:44px;width:44px;object-fit:cover;border-radius:50%;}
-        .nav-logo-txt{font-size:22px;font-weight:800;color:var(--g900);letter-spacing:-.5px;}
-        body.dark-mode .nav-logo{filter:brightness(1.4) contrast(1.1);}
-        body.dark-mode .nav-logo-txt{color:#F2F4F6;}
-        .nav-back { font-size: 14px; font-weight: 600; color: var(--g500); text-decoration: none; transition: color .2s; }
-        .nav-back:hover { color: var(--g900); }
-        .container { max-width: 760px; margin: 0 auto; padding: 60px 24px 100px; }
-        .page-title { font-size: 1.8rem; font-weight: 900; color: var(--g900); margin-bottom: 8px; }
-        .page-date { font-size: 13px; color: var(--g500); margin-bottom: 48px; }
-        h2 { font-size: 1.05rem; font-weight: 800; color: var(--g900); margin: 40px 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--g200); }
-        h3 { font-size: .95rem; font-weight: 700; color: var(--g900); margin: 20px 0 8px; }
-        p { font-size: .9rem; color: var(--g700); margin-bottom: 10px; line-height: 1.85; }
-        ol, ul { padding-left: 20px; margin-bottom: 10px; }
-        li { font-size: .9rem; color: var(--g700); margin-bottom: 6px; line-height: 1.75; }
-        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: .88rem; }
-        th { background: var(--g50); padding: 10px 14px; text-align: left; font-weight: 700; color: var(--g900); border: 1px solid var(--g200); }
-        td { padding: 10px 14px; border: 1px solid var(--g200); color: var(--g700); vertical-align: top; }
-        .highlight-box { background: var(--g50); border-left: 3px solid var(--pink); border-radius: 8px; padding: 16px 20px; margin: 16px 0; }
-        .highlight-box p { margin: 0; font-size: .88rem; }
-        footer { background: var(--g50); border-top: 1px solid var(--g200); padding: 32px 24px; text-align: center; font-size: 12px; color: var(--g500); }
-        body.dark-mode footer { background:#000; border-top-color:rgba(255,255,255,.07); }
-        body:not(.dark-mode) footer { background:var(--g50)!important; border-top-color:var(--g200)!important; }
-        body:not(.dark-mode) footer span,body:not(.dark-mode) footer p,body:not(.dark-mode) footer a,body:not(.dark-mode) footer div{color:var(--g500)!important;}
-        body:not(.dark-mode) footer img{filter:brightness(0) grayscale(1)!important;opacity:.4!important;}
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>개인정보처리방침 — lumi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@800&display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:'Jua';src:url('/assets/BMJUA.woff2') format('woff2');font-display:block;}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{background:#fdf2f4;scrollbar-width:none;scroll-behavior:smooth;overscroll-behavior:none;}
+html::-webkit-scrollbar{display:none;}
+body{font-family:'Jua',-apple-system,BlinkMacSystemFont,sans-serif;color:#0d1117;-webkit-font-smoothing:antialiased;padding-bottom:80px;overscroll-behavior:none;}
+body.dark-mode{background:#111;color:#f0f2f8;}
+
+nav{max-width:960px;margin:0 auto;padding:32px 24px 0;display:flex;align-items:center;justify-content:space-between;}
+.nav-logo{font-size:28px;font-weight:800;font-family:'Nunito',sans-serif;background:linear-gradient(90deg,#FF6B8B,#DDA0DD 50%,#EDD080 85%,#DABA65);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-decoration:none;}
+.nav-close{width:36px;height:36px;border-radius:50%;border:none;background:rgba(0,0,0,.06);color:#0d1117;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .3s cubic-bezier(.4,0,.2,1),background .3s cubic-bezier(.4,0,.2,1);}
+.nav-close:active{transform:scale(.9);}
+body.dark-mode .nav-close{background:rgba(255,255,255,.08);color:#f0f2f8;}
+
+.hero{max-width:960px;margin:0 auto;padding:48px 24px 40px;text-align:center;display:flex;flex-direction:column;align-items:center;}
+.hero-lumi{width:120px;height:120px;object-fit:contain;animation:lumiBounce 3s ease-in-out infinite;margin-bottom:12px;}
+@keyframes lumiBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.hero h1{font-size:clamp(28px,5vw,44px);margin-bottom:10px;}
+.hero p{font-size:14px;color:rgba(0,0,0,.35);}
+body.dark-mode .hero p{color:rgba(255,255,255,.3);}
+
+.grid{max-width:960px;margin:0 auto;padding:0 24px;display:grid;grid-template-columns:repeat(2,1fr);gap:16px;}
+@media(max-width:700px){.grid{grid-template-columns:1fr;}}
+
+.card{background:#fff;border-radius:24px;padding:28px;display:flex;flex-direction:column;gap:12px;opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease;box-shadow:0 2px 16px rgba(0,0,0,.06);}
+.card.visible{opacity:1;transform:translateY(0);}
+body.dark-mode .card{background:#1c1c1e;box-shadow:none;}
+.card.wide{grid-column:1/-1;}
+.card-num{font-size:11px;color:#fff;background:linear-gradient(135deg,#FF6B8B,#DDA0DD);border-radius:6px;padding:2px 8px;align-self:flex-start;}
+.card h2{font-size:18px;line-height:1.4;}
+.card p,.card li{font-size:13px;line-height:1.8;color:rgba(0,0,0,.55);}
+body.dark-mode .card p,body.dark-mode .card li{color:rgba(255,255,255,.5);}
+.card ul,.card ol{padding-left:18px;display:flex;flex-direction:column;gap:4px;}
+.card a{color:#C8507A;text-decoration:none;}
+
+.tbl{width:100%;border-collapse:collapse;margin-top:4px;font-size:12px;}
+.tbl th{background:rgba(0,0,0,.03);padding:10px 12px;text-align:left;font-weight:600;color:#0d1117;border-bottom:1px solid rgba(0,0,0,.06);}
+.tbl td{padding:10px 12px;color:rgba(0,0,0,.55);border-bottom:1px solid rgba(0,0,0,.04);}
+body.dark-mode .tbl th{background:rgba(255,255,255,.04);color:#f0f2f8;border-bottom-color:rgba(255,255,255,.06);}
+body.dark-mode .tbl td{color:rgba(255,255,255,.45);border-bottom-color:rgba(255,255,255,.04);}
+
+.highlight{background:linear-gradient(135deg,rgba(255,107,139,.06),rgba(221,160,221,.06));border:1px solid rgba(255,107,139,.12);border-radius:14px;padding:16px 20px;margin-top:4px;}
+body.dark-mode .highlight{background:rgba(255,107,139,.04);border-color:rgba(255,107,139,.1);}
+.highlight p{font-size:12px;color:rgba(0,0,0,.5);margin:0;}
+body.dark-mode .highlight p{color:rgba(255,255,255,.45);}
+</style>
 </head>
 <body>
-<script>if(localStorage.getItem("lumi_dark_mode")!=="0")document.body.classList.add("dark-mode");</script>
+<script>if(localStorage.getItem('lumi_dark_mode')!=='0'){document.body.classList.add('dark-mode');document.documentElement.style.background='#111';}</script>
+
 <nav>
-    <div class="nav-inner">
-    <a href="/" class="nav-logo-wrap"><img src="/assets/logo.png" class="nav-logo" alt="lumi"><span class="nav-logo-txt">lumi</span></a>
-    <a href="/" class="nav-back">← 홈으로</a>
-    </div>
+  <a href="/bento-preview.html" class="nav-logo">lumi</a>
+  <button class="nav-close" onclick="location.href='/bento-preview.html'"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
 </nav>
 
-<div class="container">
-    <h1 class="page-title">개인정보처리방침</h1>
-    <p class="page-date">시행일: 2026년 1월 1일 &nbsp;|&nbsp; 최종 수정: 2026년 3월 1일</p>
-
-    <div class="highlight-box">
-        <p>루미(lumi)는 이용자의 개인정보를 소중히 여기며, 개인정보 보호법 및 관련 법령을 준수합니다.</p>
-    </div>
-
-    <h2>제1조 (개인정보의 처리 목적)</h2>
-    <p>회사는 다음의 목적을 위하여 개인정보를 처리합니다.</p>
-    <ol>
-        <li>회원 가입 및 관리: 회원 식별, 서비스 이용 자격 확인, 본인인증</li>
-        <li>서비스 제공: SNS 자동화 서비스 제공, 예약 게시, 콘텐츠 생성</li>
-        <li>결제 및 정산: 유료 서비스 결제 처리, 환불 처리</li>
-        <li>고객 지원: 문의 응대, 불만 처리</li>
-        <li>서비스 개선: 이용 현황 분석, 서비스 품질 향상</li>
-        <li>마케팅 및 광고: 이벤트 안내, 새로운 기능 소식 (동의한 경우에 한함)</li>
-    </ol>
-
-    <h2>제2조 (처리하는 개인정보의 항목)</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>구분</th>
-                <th>수집 항목</th>
-                <th>수집 목적</th>
-                <th>보유 기간</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>필수</td>
-                <td>이름, 이메일, 휴대폰 번호, 생년월일, 비밀번호(암호화)</td>
-                <td>회원 식별, 본인인증</td>
-                <td>회원 탈퇴 시까지</td>
-            </tr>
-            <tr>
-                <td>필수</td>
-                <td>매장명, 인스타그램 아이디</td>
-                <td>서비스 제공</td>
-                <td>회원 탈퇴 시까지</td>
-            </tr>
-            <tr>
-                <td>선택</td>
-                <td>매장 설명, 지역, 업종, 말투 스타일</td>
-                <td>맞춤형 콘텐츠 생성</td>
-                <td>회원 탈퇴 시까지</td>
-            </tr>
-            <tr>
-                <td>결제</td>
-                <td>결제 수단 정보 (카드사에서 직접 처리, 회사 미보유)</td>
-                <td>결제 처리</td>
-                <td>전자상거래법에 따라 5년</td>
-            </tr>
-            <tr>
-                <td>자동 수집</td>
-                <td>서비스 이용 기록, 접속 로그, IP 주소</td>
-                <td>서비스 운영 및 보안</td>
-                <td>3개월</td>
-            </tr>
-            <tr>
-                <td>SNS 연동</td>
-                <td>Instagram 액세스 토큰, Instagram 계정 ID</td>
-                <td>자동 게시 서비스 제공</td>
-                <td>연동 해제 시까지</td>
-            </tr>
-        </tbody>
-    </table>
-
-    <h2>제3조 (개인정보의 처리 및 보유 기간)</h2>
-    <ol>
-        <li>회사는 법령에 따른 개인정보 보유·이용기간 또는 이용자로부터 개인정보를 수집 시 동의받은 개인정보 보유·이용기간 내에서 개인정보를 처리합니다.</li>
-        <li>관련 법령에 의한 보존 기간:
-            <ul>
-                <li>계약 또는 청약철회에 관한 기록: 5년 (전자상거래법)</li>
-                <li>대금결제 및 재화 등의 공급에 관한 기록: 5년 (전자상거래법)</li>
-                <li>소비자 불만 또는 분쟁처리에 관한 기록: 3년 (전자상거래법)</li>
-                <li>접속 로그: 3개월 (통신비밀보호법)</li>
-            </ul>
-        </li>
-    </ol>
-
-    <h2>제4조 (개인정보의 제3자 제공)</h2>
-    <p>회사는 원칙적으로 이용자의 개인정보를 제3자에게 제공하지 않습니다. 다만, 다음의 경우는 예외로 합니다.</p>
-    <ol>
-        <li>이용자가 사전에 동의한 경우</li>
-        <li>법령의 규정에 의거하거나 수사 목적으로 법령에 정해진 절차와 방법에 따라 수사기관의 요구가 있는 경우</li>
-    </ol>
-
-    <h2>제5조 (개인정보 처리 위탁)</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>수탁 업체</th>
-                <th>위탁 업무</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>솔라피 (SOLAPI)</td>
-                <td>카카오 알림톡 발송</td>
-            </tr>
-            <tr>
-                <td>포트원 (PortOne)</td>
-                <td>결제 처리 및 본인인증</td>
-            </tr>
-            <tr>
-                <td>Netlify</td>
-                <td>서버 및 데이터 저장</td>
-            </tr>
-            <tr>
-                <td>OpenAI</td>
-                <td>캡션 생성 (이미지 분석)</td>
-            </tr>
-            <tr>
-                <td>Resend</td>
-                <td>이메일 발송 (OTP 인증)</td>
-            </tr>
-        </tbody>
-    </table>
-
-    <h2>제6조 (이용자의 권리)</h2>
-    <p>이용자는 회사에 대해 언제든지 다음 각 호의 권리를 행사할 수 있습니다.</p>
-    <ol>
-        <li>개인정보 열람 요구</li>
-        <li>오류 등이 있을 경우 정정 요구</li>
-        <li>삭제 요구</li>
-        <li>처리 정지 요구</li>
-    </ol>
-    <p>권리 행사는 gung3625@gmail.com으로 연락하시면 지체 없이 처리하겠습니다.</p>
-
-    <h2>제7조 (개인정보의 파기)</h2>
-    <ol>
-        <li>회사는 개인정보 보유기간 경과, 처리목적 달성 등 개인정보가 불필요하게 되었을 때는 지체없이 해당 개인정보를 파기합니다.</li>
-        <li>전자적 파일 형태의 정보는 복구 및 재생할 수 없는 기술적 방법을 사용하여 완전하게 삭제합니다.</li>
-    </ol>
-
-    <h2>제8조 (개인정보의 안전성 확보 조치)</h2>
-    <ol>
-        <li>비밀번호는 PBKDF2 알고리즘으로 암호화하여 저장합니다.</li>
-        <li>Instagram 액세스 토큰은 암호화하여 저장합니다.</li>
-        <li>개인정보에 대한 접근 권한을 최소한의 인원으로 제한합니다.</li>
-        <li>HTTPS를 통한 암호화 통신을 사용합니다.</li>
-    </ol>
-
-    <h2>제9조 (쿠키의 운용)</h2>
-    <ol>
-        <li>회사는 서비스 제공을 위해 필요한 최소한의 쿠키 및 로컬 스토리지를 사용합니다.</li>
-        <li>이용자는 브라우저 설정을 통해 쿠키 저장을 거부할 수 있으나, 이 경우 서비스 이용에 제한이 있을 수 있습니다.</li>
-    </ol>
-
-    <h2>제10조 (개인정보 보호책임자)</h2>
-    <ul>
-        <li>성명: 김현</li>
-        <li>직책: 대표</li>
-        <li>이메일: gung3625@gmail.com</li>
-        <li>전화: 010-6424-6284</li>
-    </ul>
-    <p style="margin-top:12px;">개인정보 침해에 관한 신고나 상담이 필요한 경우 아래 기관에 문의하실 수 있습니다.</p>
-    <ul>
-        <li>개인정보 침해신고센터: privacy.kisa.or.kr / 118</li>
-        <li>대검찰청 사이버수사과: www.spo.go.kr / 1301</li>
-        <li>경찰청 사이버수사국: ecrm.cyber.go.kr / 182</li>
-    </ul>
-
-    <h2>제11조 (사업자 정보)</h2>
-    <ul>
-        <li>상호명: 루미 (lumi)</li>
-        <li>대표자: 김현</li>
-        <li>사업자등록번호: 404-09-66416</li>
-        <li>통신판매업 신고번호: 제2024-서울용산-1166호</li>
-        <li>사업장 주소: 서울특별시 용산구 회나무로 32-7 (이태원동)</li>
-        <li>업태: 정보통신업 / 종목: 응용소프트웨어 개발 및 공급업</li>
-        <li>문의: gung3625@gmail.com / 010-6424-6284</li>
-    </ul>
+<div class="hero">
+  <img src="/assets/lumi-smile.png" class="hero-lumi" alt="lumi">
+  <h1>개인정보처리방침</h1>
+  <p>시행일 2026.01.01 · 최종 수정 2026.03.01</p>
 </div>
 
-<!-- FOOTER -->
-<footer id="main-footer" style="border-top:1px solid rgba(255,255,255,.07);padding:48px 32px 32px;">
-  <div style="max-width:980px;margin:0 auto;display:flex;justify-content:space-between;align-items:flex-start;gap:32px;flex-wrap:wrap;">
-    <div>
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;"><img src="/assets/logo.png" style="height:28px;opacity:.7;filter:brightness(10) grayscale(1);" alt="lumi"><span style="font-size:17px;font-weight:600;letter-spacing:-0.28px;color:rgba(255,255,255,.48);">lumi</span></div>
-      <p style="font-size:12px;color:rgba(255,255,255,.48);line-height:2.2;opacity:.6;">상호명: 루미 (lumi) · 대표자: 김현<br>사업자 등록번호: 404-09-66416 · 업태: 정보통신업<br>서울특별시 용산구 회나무로 32-7 (이태원동)<br>통신판매업 신고번호: 제2024-서울용산-1166호 · 이메일: gung3625@gmail.com</p>
-    </div>
-    <div style="display:flex;gap:20px;"><a href="/terms" style="font-size:14px;color:rgba(255,255,255,.48);text-decoration:none;">이용약관</a><a href="/privacy" style="font-size:14px;color:rgba(255,255,255,.48);text-decoration:none;">개인정보 처리방침</a><a href="/support" style="font-size:14px;color:rgba(255,255,255,.48);text-decoration:none;">고객센터</a></div>
+<div class="grid">
+
+  <div class="card wide">
+    <span class="card-num">01</span>
+    <h2>수집하는 개인정보</h2>
+    <table class="tbl">
+      <tr><th>구분</th><th>항목</th><th>목적</th><th>보유 기간</th></tr>
+      <tr><td>필수</td><td>이메일, 비밀번호(암호화), 이름, 휴대폰번호</td><td>회원 식별, 본인인증</td><td>탈퇴 시 즉시 파기</td></tr>
+      <tr><td>필수</td><td>매장명, 업종</td><td>맞춤 캡션 생성</td><td>탈퇴 시 즉시 파기</td></tr>
+      <tr><td>선택</td><td>매장 설명, 지역, 말투 스타일</td><td>개인화 콘텐츠</td><td>탈퇴 시 즉시 파기</td></tr>
+      <tr><td>SNS 연동</td><td>Instagram 액세스 토큰, 계정 ID</td><td>자동 게시</td><td>연동 해제 시 즉시 삭제</td></tr>
+      <tr><td>결제</td><td>결제 수단 정보</td><td>구독 결제</td><td>포트원에서 처리, 회사 미보유</td></tr>
+      <tr><td>자동 수집</td><td>IP 주소, 접속 로그</td><td>보안, 이용 제한</td><td>3개월</td></tr>
+    </table>
   </div>
-  <p style="font-size:12px;color:rgba(255,255,255,.48);text-align:center;margin-top:32px;padding-top:24px;border-top:1px solid rgba(255,255,255,.07);opacity:.5;">© 2026 lumi (루미) · 대표 김현</p>
-</footer>
-<button class="dark-toggle-fab" id="dark-toggle-fab" onclick="toggleDarkMode(!document.body.classList.contains('dark-mode'))" aria-label="다크모드 전환">☀️</button>
+
+  <div class="card">
+    <span class="card-num">02</span>
+    <h2>사진 데이터 처리</h2>
+    <p>이용자가 업로드한 사진은 AI 캡션 생성을 위해 OpenAI API로 전송됩니다.</p>
+    <ul>
+      <li>전송 형태: base64 인코딩 이미지</li>
+      <li>OpenAI는 API 데이터를 모델 학습에 사용하지 않습니다 (Zero Data Retention)</li>
+      <li>분석 완료 후 서버에 사진을 저장하지 않습니다</li>
+      <li>사진의 저작권은 이용자에게 있습니다</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <span class="card-num">03</span>
+    <h2>Instagram 토큰 관리</h2>
+    <p>Instagram 연동 시 OAuth 인증을 통해 액세스 토큰을 발급받습니다.</p>
+    <ul>
+      <li>토큰은 암호화하여 Netlify Blobs에 저장</li>
+      <li>접근 권한: 피드 게시, 스토리 게시, 미디어 관리</li>
+      <li>연동 해제 시 토큰 즉시 삭제</li>
+      <li>토큰으로 DM, 팔로워 목록 등에 접근하지 않습니다</li>
+    </ul>
+  </div>
+
+  <div class="card wide">
+    <span class="card-num">04</span>
+    <h2>개인정보 처리 위탁 및 국외 이전</h2>
+    <table class="tbl">
+      <tr><th>수탁자</th><th>위탁 업무</th><th>소재지</th></tr>
+      <tr><td>OpenAI</td><td>사진 분석, AI 캡션 생성</td><td>미국</td></tr>
+      <tr><td>Netlify</td><td>서버 운영, 데이터 저장</td><td>미국</td></tr>
+      <tr><td>포트원 (PortOne)</td><td>결제 처리</td><td>한국</td></tr>
+      <tr><td>솔라피 (Solapi)</td><td>카카오 알림톡 발송</td><td>한국</td></tr>
+      <tr><td>Resend</td><td>이메일 발송 (OTP 인증)</td><td>미국</td></tr>
+    </table>
+    <div class="highlight">
+      <p>국외 이전(OpenAI, Netlify, Resend)은 서비스 제공에 필수적이며, 각 수탁자는 자체 개인정보 보호 정책에 따라 데이터를 안전하게 처리합니다.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="card-num">05</span>
+    <h2>날씨 · 위치 정보</h2>
+    <p>날씨 반영 캡션 생성 시 기상청 API를 호출합니다.</p>
+    <ul>
+      <li>이용자의 매장 지역 정보를 격자좌표로 변환하여 조회</li>
+      <li>정확한 주소나 GPS 좌표를 수집하지 않습니다</li>
+      <li>기상청에 개인정보를 전달하지 않습니다</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <span class="card-num">06</span>
+    <h2>제3자 제공</h2>
+    <p>원칙적으로 개인정보를 제3자에게 제공하지 않습니다.</p>
+    <ul>
+      <li>이용자가 사전 동의한 경우</li>
+      <li>법령에 따른 수사기관 요청</li>
+    </ul>
+    <p>위 경우를 제외하고 어떠한 목적으로도 제3자에게 제공하지 않습니다.</p>
+  </div>
+
+  <div class="card">
+    <span class="card-num">07</span>
+    <h2>이용자의 권리</h2>
+    <p>언제든지 다음 권리를 행사할 수 있습니다.</p>
+    <ul>
+      <li>개인정보 열람 요구</li>
+      <li>오류 정정 요구</li>
+      <li>삭제 요구</li>
+      <li>처리 정지 요구</li>
+    </ul>
+    <p>요청: gung3625@gmail.com으로 연락 시 지체 없이 처리합니다.</p>
+  </div>
+
+  <div class="card">
+    <span class="card-num">08</span>
+    <h2>파기 절차</h2>
+    <ul>
+      <li>탈퇴 시 모든 개인정보 즉시 파기</li>
+      <li>전자 파일은 복구 불가능한 방법으로 완전 삭제</li>
+      <li>법령 보존 의무 항목은 별도 분리 보관 후 기한 만료 시 파기</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <span class="card-num">09</span>
+    <h2>안전성 확보 조치</h2>
+    <ul>
+      <li>비밀번호 PBKDF2 암호화 저장</li>
+      <li>Instagram 토큰 암호화 저장</li>
+      <li>HTTPS 암호화 통신</li>
+      <li>개인정보 접근 권한 최소화</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <span class="card-num">10</span>
+    <h2>법정 보존 기간</h2>
+    <ul>
+      <li>계약 · 청약철회 기록: 5년 (전자상거래법)</li>
+      <li>결제 · 재화 공급 기록: 5년 (전자상거래법)</li>
+      <li>소비자 불만 · 분쟁 기록: 3년 (전자상거래법)</li>
+      <li>접속 로그: 3개월 (통신비밀보호법)</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <span class="card-num">11</span>
+    <h2>쿠키 및 로컬 스토리지</h2>
+    <ul>
+      <li>서비스 제공에 필요한 최소한의 로컬 스토리지 사용</li>
+      <li>다크모드 설정, 로그인 상태, 레이아웃 저장 등</li>
+      <li>브라우저 설정으로 거부 가능 (일부 기능 제한)</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <span class="card-num">12</span>
+    <h2>방침 변경</h2>
+    <p>개인정보처리방침을 변경하는 경우, 시행일 7일 전 서비스 화면을 통해 공지합니다.</p>
+  </div>
+
+  <div class="card wide">
+    <span class="card-num">13</span>
+    <h2>개인정보 보호책임자 · 구제 기관</h2>
+    <ul>
+      <li>보호책임자: 김현 (대표) · gung3625@gmail.com</li>
+    </ul>
+    <p style="margin-top:8px;">개인정보 침해 시 아래 기관에 신고할 수 있습니다.</p>
+    <ul>
+      <li>개인정보 침해신고센터 — privacy.kisa.or.kr / 118</li>
+      <li>대검찰청 사이버수사과 — spo.go.kr / 1301</li>
+      <li>경찰청 사이버수사국 — ecrm.cyber.go.kr / 182</li>
+    </ul>
+  </div>
+
+</div>
+
 <script>
-if(localStorage.getItem('lumi_dark_mode')!=='0')document.body.classList.add('dark-mode');
-function toggleDarkMode(on){document.body.classList.toggle('dark-mode',on);localStorage.setItem('lumi_dark_mode',on?'1':'0');var f=document.getElementById('dark-toggle-fab');if(f)f.textContent=on?'☀️':'🌙';}
-(function(){var f=document.getElementById('dark-toggle-fab');if(f&&document.body.classList.contains('dark-mode'))f.textContent='☀️';else if(f)f.textContent='🌙';})();
+var io=new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting){e.target.classList.add('visible');io.unobserve(e.target);}});},{threshold:0.1});
+document.querySelectorAll('.card').forEach(function(c){io.observe(c);});
 </script>
 </body>
 </html>

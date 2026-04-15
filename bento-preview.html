@@ -27,7 +27,7 @@
 .bento-card h2, .bento-card p, .bento-card span, .bento-card a { min-width: 0; max-width: 100%; }
 .bento-card [class*="btn"], .bento-card button { white-space: nowrap; min-width: fit-content; }
 input, textarea, select { font-size: max(16px, 1em); }
-html { background: #fdf2f4; scrollbar-width: none; }
+html { background: #fdf2f4; scrollbar-width: none; overscroll-behavior: none; }
 html::-webkit-scrollbar { display: none; }
 body {
   font-family: 'Jua', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -54,7 +54,7 @@ nav {
 .nav-pills { display: flex; gap: 2px; background: rgba(0,0,0,0.04); padding: 4px; border-radius: 23px; }
 .nav-pill {
   border-radius: 50px; display: flex; align-items: center; justify-content: center;
-  height: 32px; padding: 0 16px; color: #0d1117; font-size: 14px; font-weight: 400;
+  height: 32px; padding: 0 16px; color: #0d1117; font-size: clamp(12px, 2vw, 14px); font-weight: 400;
   cursor: pointer; background: none; border: none; font-family: inherit;
   white-space: nowrap; transition: opacity 0.3s, background 0.2s;
 }
@@ -103,6 +103,16 @@ nav {
 /* ---- BENTO CARD ---- */
 .bento-card {
   height: 100%; width: 100%; border-radius: 32px; overflow: hidden;
+}
+/* 잘림 방지 — DESIGN.md 방어적 CSS */
+.bento-card * { overflow-wrap: break-word; word-break: keep-all; }
+.bento-card h2, .bento-card p, .bento-card span, .bento-card .bio-text,
+.bento-card .blog-title, .bento-card .blog-desc, .bento-card .spot-title,
+.bento-card .news-title, .bento-card .news-desc, .bento-card .tut-title {
+  min-width: 0; max-width: 100%;
+}
+.upload-btn, .upload-submit, .tut-cta-btn, .tut-gallery-done, .btn-pill, .trend-cta-btn {
+  white-space: nowrap; min-width: fit-content;
 }
 
 /* RESIZE HANDLE */
@@ -305,7 +315,7 @@ body.dark-mode .card-text.pad-bio::before {
 /* BIO */
 .bio-top { display: flex; justify-content: space-between; align-items: flex-start; width: 100%; }
 .bio-avatar { width: 200px; height: 200px; object-fit: contain; margin-bottom: -80px; margin-left: -50px; margin-top: -60px; }
-.bio-text { font-size: 16px; line-height: 1.5; color: #0d1117; }
+.bio-text { font-size: clamp(14px, 2.5vw, 16px); line-height: 1.5; color: #0d1117; }
 .bio-text .bio-name { font-size: clamp(24px, 5vw, 40px); font-weight: 400; letter-spacing: -1px; }
 .bio-name-lumi { font-size: clamp(20px, 3.5vw, 28px); font-weight: 400; letter-spacing: -0.5px; color: #0d1117; }
 .bio-desc { font-size: clamp(13px, 2vw, 15px); font-weight: 400; color: rgba(13,17,23,.5); line-height: 1.7; }
@@ -315,6 +325,7 @@ body.dark-mode .card-text.pad-bio::before {
 .upload-left { flex:0 0 35%; display:flex; align-items:center; justify-content:center; overflow:visible; position:relative; padding:8px; }
 .upload-left.hidden { display:none; }
 .upload-right { flex:1; display:flex; flex-direction:column; justify-content:center; align-items:flex-start; gap:clamp(10px, 2vw, 14px); padding:clamp(16px, 3vw, 24px) clamp(24px, 5vw, 48px) clamp(16px, 3vw, 24px) clamp(16px, 3vw, 24px); overflow:hidden; min-height:0; min-width:0; }
+.upload-right > * { min-width: 0; }
 .upload-lumi { width:100%; height:auto; object-fit:contain; cursor:pointer; transition:transform .2s; }
 .upload-lumi { animation: lumiIdle 3s ease-in-out infinite; }
 .upload-lumi:hover { transform:scale(1.05); }
@@ -416,7 +427,7 @@ body.dark-mode .upload-preview-more { background:rgba(255,255,255,.06); color:rg
 .upload-schedule-select {
   flex:1; padding:clamp(8px, 1.5vw, 10px) clamp(10px, 2vw, 14px); border-radius:16px; min-height:44px;
   border:none; background:linear-gradient(135deg, rgba(255,107,139,.06), rgba(221,160,221,.06));
-  font-family:inherit; font-size:12px; color:#0d1117; font-weight:500;
+  font-family:inherit; font-size:max(16px, 1em); color:#0d1117; font-weight:500;
   outline:none; cursor:pointer; appearance:none;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5' fill='none' stroke='%23C8507A' stroke-width='1.5'/%3E%3C/svg%3E");
   background-repeat:no-repeat; background-position:right 12px center;
@@ -435,7 +446,7 @@ body.dark-mode .upload-schedule-select {
 .upload-schedule-input {
   flex:1; padding:clamp(8px, 1.5vw, 10px) clamp(10px, 2vw, 14px); border-radius:16px; min-height:44px;
   border:none; background:linear-gradient(135deg, rgba(255,107,139,.06), rgba(221,160,221,.06));
-  font-family:inherit; font-size:12px; color:#0d1117; font-weight:500;
+  font-family:inherit; font-size:max(16px, 1em); color:#0d1117; font-weight:500;
   outline:none; cursor:pointer; appearance:none;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5' fill='none' stroke='%23C8507A' stroke-width='1.5'/%3E%3C/svg%3E");
   background-repeat:no-repeat; background-position:right 12px center;
@@ -530,13 +541,60 @@ body.dark-mode .upload-submit { background:#f0f2f8; color:#0d1117; }
 .demo-scene.scene-photo {
   background: linear-gradient(135deg,#a8e6cf 0%,#88d8b0 50%,#dcedc1 100%);
 }
-.demo-photo-drop {
-  width: 80%; aspect-ratio: 3/4; border-radius: 16px; overflow: hidden;
-  box-shadow: 0 8px 24px rgba(0,0,0,.15);
-  animation: photoDrop 18s infinite;
+/* photo fan — 사진 펼쳐지고 선택되는 애니메이션 */
+.photo-fan {
+  position:relative; width:55%; aspect-ratio:3/4;
 }
-.demo-photo-drop img { width:100%; height:100%; object-fit:cover; }
-body.dark-mode .demo-photo-drop img { filter: grayscale(1) brightness(.8); }
+.photo-fan-item {
+  position:absolute; inset:0; border-radius:14px; overflow:hidden;
+  box-shadow:0 4px 20px rgba(0,0,0,.15);
+}
+.photo-fan-item img { width:100%; height:100%; object-fit:cover; }
+/* 왼쪽 사진: 뒤에서 왼쪽으로 펼쳐짐 */
+.photo-fan-item:nth-child(1) { z-index:1; animation: fanLeft 18s infinite; }
+@keyframes fanLeft {
+  0% { opacity:0; transform:scale(.6) translateY(30px) rotate(0deg); }
+  2% { opacity:1; transform:rotate(-8deg) translateX(-18%) scale(.92); }
+  14% { opacity:1; transform:rotate(-8deg) translateX(-18%) scale(.92); }
+  17% { opacity:0; }
+  100% { opacity:0; }
+}
+/* 오른쪽 사진: 뒤에서 오른쪽으로 펼쳐짐 */
+.photo-fan-item:nth-child(2) { z-index:2; animation: fanRight 18s infinite .1s; }
+@keyframes fanRight {
+  0% { opacity:0; transform:scale(.6) translateY(30px) rotate(0deg); }
+  2% { opacity:1; transform:rotate(6deg) translateX(18%) scale(.92); }
+  14% { opacity:1; transform:rotate(6deg) translateX(18%) scale(.92); }
+  17% { opacity:0; }
+  100% { opacity:0; }
+}
+/* 가운데 사진: 등장 후 선택 효과 */
+.photo-fan-item:nth-child(3) { z-index:3; animation: fanCenter 18s infinite .2s; }
+@keyframes fanCenter {
+  0% { opacity:0; transform:scale(.6) translateY(30px); }
+  2% { opacity:1; transform:scale(1); box-shadow:0 4px 20px rgba(0,0,0,.15); }
+  6% { transform:scale(1); box-shadow:0 4px 20px rgba(0,0,0,.15); }
+  8% { transform:scale(1.06); box-shadow:0 8px 32px rgba(255,107,139,.3), 0 0 0 3px rgba(255,107,139,.5); }
+  14% { opacity:1; transform:scale(1.06); box-shadow:0 8px 32px rgba(255,107,139,.3), 0 0 0 3px rgba(255,107,139,.5); }
+  17% { opacity:0; }
+  100% { opacity:0; }
+}
+/* 체크마크: 선택 후 등장 */
+.photo-fan-check {
+  position:absolute; top:8px; right:8px; width:24px; height:24px;
+  border-radius:50%; background:linear-gradient(135deg,#FF6B8B,#DDA0DD);
+  display:flex; align-items:center; justify-content:center;
+  z-index:5; animation: checkPop 18s infinite;
+}
+.photo-fan-check svg { width:14px; height:14px; }
+@keyframes checkPop {
+  0%,7.5% { opacity:0; transform:scale(.3); }
+  9% { opacity:1; transform:scale(1.2); }
+  10% { opacity:1; transform:scale(1); }
+  14% { opacity:1; }
+  17% { opacity:0; }
+  100% { opacity:0; }
+}
 @keyframes photoDrop {
   0% { opacity:0; transform:scale(1.15); }
   2.5% { opacity:1; transform:scale(1); }
@@ -641,6 +699,43 @@ body.dark-mode .demo-ig-image img { filter: grayscale(1) brightness(.8); }
 .demo-label {
   font-size:clamp(13px, 2vw, 16px); color:#fff; font-weight:600; margin-top:clamp(8px, 2vw, 14px);
   text-shadow: 0 1px 8px rgba(0,0,0,.08); letter-spacing:.2px;
+  text-align:center; width:100%;
+}
+/* scan scene — 사진 위 스캔 효과 */
+.scan-photo-bg {
+  position:absolute; inset:0; z-index:0;
+}
+.scan-photo-bg img { width:100%; height:100%; object-fit:cover; }
+.scan-photo-bg::after {
+  content:''; position:absolute; inset:0;
+  background:rgba(0,0,0,.35);
+}
+body.dark-mode .scan-photo-bg::after {
+  background:rgba(0,0,0,.65);
+}
+.demo-scene.scene-scan { background:transparent; }
+.demo-scene.scene-scan > *:not(.scan-photo-bg) { z-index:1; position:relative; }
+/* 날씨 분석 태그들 */
+.scan-weather-tags {
+  display:flex; flex-wrap:wrap; gap:8px; justify-content:center;
+  max-width:90%; padding:0 8px; z-index:2; position:relative;
+}
+.scan-wtag {
+  background:rgba(255,255,255,.22); border-radius:16px;
+  padding:8px 16px; backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+  display:flex; align-items:center; gap:6px; color:#fff;
+  box-shadow:0 2px 12px rgba(0,0,0,.15);
+  animation: wtagPop .5s cubic-bezier(.34,1.56,.64,1) backwards;
+}
+.scan-wtag .wtag-icon { font-size:16px; }
+.scan-wtag .wtag-text { font-size:clamp(11px, 2vw, 13px); font-weight:600; white-space:nowrap; }
+.scan-wtag:nth-child(1) { animation-delay:.2s; }
+.scan-wtag:nth-child(2) { animation-delay:.5s; }
+.scan-wtag:nth-child(3) { animation-delay:.8s; }
+.scan-wtag:nth-child(4) { animation-delay:1.1s; }
+@keyframes wtagPop {
+  0% { opacity:0; transform:scale(.3) translateY(10px); }
+  100% { opacity:1; transform:scale(1) translateY(0); }
 }
 .card-arrow { position: absolute; bottom: 16px; left: 16px; width: 36px; height: 36px; border-radius: 18px; background: rgba(255,255,255,.9); display: flex; align-items: center; justify-content: center; text-decoration: none; z-index: 3; animation: arrowPulse 2.5s ease-in-out infinite; }
 .card-arrow:hover { transform: scale(1.1); }
@@ -663,6 +758,7 @@ body.dark-mode .demo-ig-image img { filter: grayscale(1) brightness(.8); }
 .spot-title { font-size: clamp(18px, 3vw, 24px); font-weight: 400; color: #0d1117; }
 .spot-artist { font-size: clamp(13px, 2vw, 15px); font-weight: 400; color: #0d1117; }
 .spot-bottom { display: flex; justify-content: space-between; align-items: flex-end; width: 100%; }
+.spot-bottom > * { min-width: 0; }
 
 /* TREND CARD */
 .card-trend {
@@ -736,6 +832,7 @@ body.dark-mode .trend-cta-btn { background:#f0f2f8; color:#0d1117; }
 .blog-title { font-size: clamp(18px, 3vw, 24px); font-weight: 400; line-height: 1.33; color: #0d1117; margin-bottom: 8px; }
 .blog-desc { font-size: clamp(13px, 2vw, 15px); color: rgba(13,17,35,.6); line-height: 1.5; }
 .blog-bottom { display: flex; justify-content: space-between; align-items: flex-end; width: 100%; }
+.blog-bottom > * { min-width: 0; }
 .blog-date { font-size: 14px; color: rgba(13,17,35,.4); }
 
 /* INSTAGRAM BADGE */
@@ -769,15 +866,16 @@ body.dark-mode .toggle-ball { left: 50px; background: #f0f2f8; transform: rotate
 .news-input:focus { border-color: #C8507A; }
 .news-input::placeholder { color: rgba(13,17,35,.3); }
 .news-bottom { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+.news-bottom > * { min-width: 0; }
 .news-sub-info { font-size: 14px; color: rgba(13,17,35,.4); }
-.news-sub-info .sub-num { font-size: 24px; font-weight: 400; color: #0d1117; margin-left: 4px; }
+.news-sub-info .sub-num { font-size: clamp(18px, 3vw, 24px); font-weight: 400; color: #0d1117; margin-left: 4px; }
 
 /* TUTORIAL CARD (vertical phone-style) */
 .tut-wrap { display:flex; flex-direction:column; height:100%; width:100%; overflow:visible; }
 .tut-lumi-area { flex:0 0 48%; display:flex; align-items:flex-end; justify-content:center; position:relative; padding-bottom:8px; }
 .tut-content { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:16px 20px; gap:10px; overflow:visible; min-height:0; }
-.tut-title { font-size:18px; text-align:center; line-height:1.4; color:#0d1117; }
-.tut-sub { font-size:12px; text-align:center; color:rgba(0,0,0,.35); line-height:1.5; }
+.tut-title { font-size:clamp(15px, 2.5vw, 18px); text-align:center; line-height:1.4; color:#0d1117; }
+.tut-sub { font-size:clamp(11px, 2vw, 12px); text-align:center; color:rgba(0,0,0,.35); line-height:1.5; }
 .tut-content-gallery { justify-content:flex-start !important; padding-top:20px !important; }
 .tut-guide-pulse { animation: tutPulse 1.5s ease-in-out infinite !important; }
 @keyframes tutPulse {
@@ -983,6 +1081,19 @@ body.dark-mode .tut-check-circle { background:rgba(255,107,139,.15); }
   .grid-wrap { padding-bottom:100px !important; }
 }
 
+/* FOOTER */
+.site-footer{max-width:1200px;margin:0 auto;padding:16px 24px 16px;border-top:1px solid rgba(0,0,0,.06);position:relative;z-index:10;}
+.ft-inner{display:flex;justify-content:space-between;align-items:flex-start;gap:32px;flex-wrap:wrap;}
+.ft-logo{font-size:20px;font-weight:800;font-family:'Nunito',sans-serif;background:linear-gradient(90deg,#FF6B8B 0%,#DDA0DD 35%,#EDD080 70%,#DABA65 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;background-size:100% 100%;margin-bottom:14px;display:inline-block;}
+.ft-info{font-size:12px;color:rgba(0,0,0,.3);line-height:2.2;}
+.ft-links{display:flex;gap:20px;}
+.ft-links a{font-size:13px;color:rgba(0,0,0,.35);text-decoration:none;font-family:'Jua',sans-serif;}
+.ft-copy{font-size:11px;color:rgba(0,0,0,.2);text-align:center;margin-top:32px;padding-top:24px;border-top:1px solid rgba(0,0,0,.06);}
+body.dark-mode .site-footer{border-top-color:rgba(255,255,255,.06);}
+body.dark-mode .ft-info{color:rgba(255,255,255,.25);}
+body.dark-mode .ft-links a{color:rgba(255,255,255,.3);}
+body.dark-mode .ft-copy{color:rgba(255,255,255,.15);border-top-color:rgba(255,255,255,.06);}
+
 /* DARK MODE */
 body.dark-mode { background: #111; color: #f0f2f8; }
 body.dark-mode .nav-pill { color: #f0f2f8; }
@@ -1017,6 +1128,10 @@ body.dark-mode .card-visual.bg-green::before { background: transparent; }
 body.dark-mode .card-visual.bg-green::after { background: transparent; }
 body.dark-mode .demo-scene.scene-photo { background: #1c1c1e; }
 body.dark-mode .demo-scene.scene-scan { background: #1c1c1e; }
+body.dark-mode .demo-scene { background: #1c1c1e; }
+body.dark-mode .photo-fan-item img,
+body.dark-mode .scan-photo-bg img,
+body.dark-mode .demo-ig-image img { filter: brightness(.7) saturate(.6); }
 
 body.dark-mode .card-visual.bg-yellow { background: #1c1c1e; }
 body.dark-mode .project-label { color: rgba(240,242,248,.6); }
@@ -1115,6 +1230,38 @@ body.dark-mode .price-flip-front {
 body.dark-mode .reset-card { background:#1c1c1e; }
 body.dark-mode .reset-label { color:rgba(255,255,255,.2); }
 body.dark-mode .reset-card:hover .reset-label { color:rgba(255,255,255,.4); }
+/* FEATURE TOGGLES CARD */
+.feat-toggle-card{background:#fff;display:flex;flex-direction:column;justify-content:center;gap:0;padding:0;overflow:hidden;}
+body.dark-mode .feat-toggle-card{background:#1c1c1e;}
+.feat-toggle-header{padding:18px 22px 14px;display:flex;align-items:center;gap:8px;border-bottom:1px solid rgba(0,0,0,.06);}
+body.dark-mode .feat-toggle-header{border-bottom-color:rgba(255,255,255,.06);}
+.feat-toggle-header-icon{font-size:16px;}
+.feat-toggle-header-title{font-size:14px;color:#0d1117;}
+body.dark-mode .feat-toggle-header-title{color:#f0f2f8;}
+.feat-toggle-list{display:flex;flex-direction:column;padding:6px 0;}
+.feat-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 22px;transition:background .25s cubic-bezier(.4,0,.2,1);}
+.feat-toggle-row:hover{background:rgba(0,0,0,.02);}
+body.dark-mode .feat-toggle-row:hover{background:rgba(255,255,255,.03);}
+.feat-toggle-info{display:flex;align-items:center;gap:10px;min-width:0;}
+.feat-toggle-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
+.feat-toggle-icon.story{background:linear-gradient(135deg,#F09433,#E6683C,#DC2743,#CC2366,#BC1888);}
+.feat-toggle-icon.thread{background:#000;}
+body.dark-mode .feat-toggle-icon.thread{background:#fff;}
+.feat-toggle-icon.weather{background:linear-gradient(135deg,#56CCF2,#2F80ED);}
+.feat-toggle-text{display:flex;flex-direction:column;gap:1px;min-width:0;}
+.feat-toggle-name{font-size:12px;color:#0d1117;line-height:1.3;}
+body.dark-mode .feat-toggle-name{color:#f0f2f8;}
+.feat-toggle-desc{font-size:10px;color:rgba(0,0,0,.35);line-height:1.3;}
+body.dark-mode .feat-toggle-desc{color:rgba(255,255,255,.3);}
+.feat-toggle-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.feat-toggle-status{font-size:10px;color:rgba(0,0,0,.25);min-width:22px;text-align:right;}
+body.dark-mode .feat-toggle-status{color:rgba(255,255,255,.2);}
+.feat-toggle-status.on{color:#FF6B8B;}
+.feat-toggle{width:42px;height:24px;border-radius:12px;background:rgba(0,0,0,.1);position:relative;cursor:pointer;transition:background .35s cubic-bezier(.4,0,.2,1);flex-shrink:0;border:none;padding:0;}
+.feat-toggle.on{background:linear-gradient(135deg,#FF6B8B,#DDA0DD);}
+.feat-toggle::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .35s cubic-bezier(.4,0,.2,1);box-shadow:0 1px 3px rgba(0,0,0,.15);}
+.feat-toggle.on::after{left:20px;}
+body.dark-mode .feat-toggle{background:rgba(255,255,255,.1);}
 /* SIGNUP CONVERSATION */
 .signup-grid-wrap{display:none;position:fixed;inset:0;z-index:200;}
 .signup-grid-wrap.open{display:flex;align-items:center;justify-content:center;animation:suFadeIn .3s ease-out;}
@@ -1270,12 +1417,23 @@ body.dark-mode .su-close svg{stroke:#f0f2f8;}
 
 <nav>
   <a class="nav-logo" href="/">lumi</a>
-  <div class="nav-pills">
+  <div class="nav-pills" id="nav-pills">
     <button class="nav-pill active" onclick="filterGrid('all', this)">All</button>
     <button class="nav-pill" onclick="filterGrid('about', this)">소개</button>
     <button class="nav-pill" onclick="filterGrid('feature', this)">기능</button>
     <button class="nav-pill" onclick="filterGrid('price', this)">요금</button>
   </div>
+  <script>
+  (function(){
+    if(localStorage.getItem('lumi_token')){
+      var pills=document.getElementById('nav-pills');
+      pills.innerHTML='<a class="nav-pill" href="/guide.html" style="text-decoration:none;">기능 안내</a>'
+        +'<a class="nav-pill" href="/subscribe.html" style="text-decoration:none;">결제</a>'
+        +'<a class="nav-pill" href="/support.html" style="text-decoration:none;">고객센터</a>'
+        +'<a class="nav-pill" href="/settings.html" style="text-decoration:none;">설정</a>';
+    }
+  })();
+  </script>
   <div style="display:flex;align-items:center;gap:12px;" id="nav-auth"></div>
   <script>
   (function(){
@@ -1381,13 +1539,20 @@ var cards = {
       var pinkC = isDk ? '#FF8FAB' : '#C8507A';
       var lumiUser = JSON.parse(localStorage.getItem('lumi_user') || '{}');
       var isPro = lumiUser.plan === 'pro';
-      var st = React.useState('idle'), phase = st[0], setPhase = st[1];
+      var st = React.useState(window._bioPhase || 'idle'), phase = st[0], _setPhase = st[1];
+      var setPhase = function(v){ window._bioPhase = v; _setPhase(v); };
       var st2 = React.useState([false,false,false,false,false,false]), sel = st2[0], setSel = st2[1];
       var st3 = React.useState(''), typedText = st3[0], setTypedText = st3[1];
       var st4 = React.useState(0), feedIdx = st4[0], setFeedIdx = st4[1];
       var st6 = React.useState(false), showStory = st6[0], setShowStory = st6[1];
-      var st7 = React.useState([]), realFiles = st7[0], setRealFiles = st7[1];
-      var st8 = React.useState(''), realNote = st8[0], setRealNote = st8[1];
+      var st7 = React.useState(window._bioRealFiles || []), realFiles = st7[0], _setRealFiles = st7[1];
+      var setRealFiles = function(v){ if(typeof v === 'function'){ _setRealFiles(function(prev){ var next=v(prev); window._bioRealFiles=next; return next; }); } else { window._bioRealFiles = v; _setRealFiles(v); } };
+      var st8 = React.useState(window._bioRealNote || ''), realNote = st8[0], _setRealNote = st8[1];
+      var setRealNote = function(v){ window._bioRealNote = v; _setRealNote(v); };
+      var st12 = React.useState(-1), dragIdx = st12[0], setDragIdx = st12[1];
+      var savedStyle = (JSON.parse(localStorage.getItem('lumi_settings') || '{}')).captionStyle || '';
+      var st9 = React.useState(savedStyle), captionStyle = st9[0], setCaptionStyle = st9[1];
+      var st10 = React.useState(true), showStyle = st10[0], setShowStyle = st10[1];
       var demoSets = [
         {comment:'\uC624\uB298 \uC2E0\uBA54\uB274 \uC18C\uAC1C\uD574\uC918', caption:'\uC624\uB298\uBD80\uD130 \uC2E0\uBA54\uB274 \uB4F1\uC7A5\n\uB529\uAD74\uB529\uAD74 \uB9E4\uC7A5 \uD06C\uB85C\uD50C\n\uD55C \uC785 \uBCA0\uC5B4 \uBB3C\uBA74 \uBC14\uC0AD\uBC14\uC0AD', tags:'#\uC2E0\uBA54\uB274 #\uCE74\uD398\uD06C\uB85C\uD50C #\uB514\uC800\uD2B8\uCD94\uCC9C'},
         {comment:'\uC624\uB298 \uD734\uBB34\uC77C \uC548\uB0B4 \uB123\uC5B4\uC918', caption:'\uC624\uB298\uC740 \uC7A0\uC2DC \uC26C\uC5B4\uAC00\uB294 \uB0A0\n\uB0B4\uC77C \uB354 \uB9DB\uC788\uB294 \uCEE4\uD53C\uB85C \uB3CC\uC544\uC62C\uAC8C\uC694\n\uC870\uAE08\uB9CC \uAE30\uB2E4\uB824\uC8FC\uC138\uC694', tags:'#\uCE74\uD398\uD734\uBB34 #\uB0B4\uC77C\uBD10\uC694 #\uC790\uC601\uC5C5\uC790\uC77C\uC0C1'},
@@ -1476,15 +1641,6 @@ var cards = {
                       if(selected.length > 0){
                         setRealFiles(selected);
                         setPhase('real-upload');
-                        // 카드 확장
-                        if(window._setGridLayout && window._currentLayout){
-                          var expanded = window._currentLayout.map(function(l){
-                            if(l.i==='bio') return Object.assign({},l,{w:4,h:2,x:0,y:0});
-                            return Object.assign({},l,{y:l.y+2});
-                          });
-                          window._setGridLayout(expanded);
-                          window._currentLayout = expanded;
-                        }
                       }
                     }}),
                     e('svg',{width:14,height:14,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},e('path',{d:'M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4'}),e('polyline',{points:'17 8 12 3 7 8'}),e('line',{x1:12,y1:3,x2:12,y2:15})),
@@ -1628,12 +1784,43 @@ var cards = {
             phase === 'real-upload' ? e('div', {style:{display:'flex',height:'100%',gap:'24px',padding:'4px'}},
               // 왼쪽: 사진 미리보기
               e('div', {style:{flex:1,display:'flex',flexDirection:'column',gap:'8px'}},
-                e('p',{style:{fontSize:'14px',fontWeight:600,color:tc,marginBottom:'4px'}}, realFiles.length+'장 선택됨'),
-                e('div', {style:{display:'grid',gridTemplateColumns:'repeat('+Math.min(realFiles.length,5)+',1fr)',gap:'6px',flex:1,alignContent:'start'}},
+                e('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'4px'}},
+                  e('p',{style:{fontSize:'14px',fontWeight:600,color:tc}}, realFiles.length+'\uC7A5 \uC120\uD0DD\uB428'),
+                  e('span',{style:{fontSize:'10px',color:tc2}},'\uC6D0\uBCF8 \uADF8\uB300\uB85C \uC5C5\uB85C\uB4DC\uB3FC\uC694')
+                ),
+                e('div', {style:{display:'grid',gridTemplateColumns:'repeat('+Math.max(Math.min(realFiles.length,5),3)+',1fr)',gap:'6px',flex:1,alignContent:'start'}},
                   realFiles.slice(0,10).map(function(f,i){
                     var url = URL.createObjectURL(f);
-                    return e('div',{key:i,style:{position:'relative',borderRadius:'12px',overflow:'hidden',aspectRatio:'1'}},
-                      e('img',{src:url,style:{width:'100%',height:'100%',objectFit:'cover'}}),
+                    var isFirst = i === 0;
+                    var isDragging = dragIdx === i;
+                    var isOver = dragIdx >= 0 && dragIdx !== i;
+                    return e('div',{key:f.name+f.size+f.lastModified,
+                      onPointerDown:function(ev){
+                        if(ev.target.tagName==='BUTTON') return;
+                        ev.stopPropagation();
+                        setDragIdx(i);
+                        ev.currentTarget.setPointerCapture(ev.pointerId);
+                      },
+                      onPointerMove:function(ev){
+                        if(dragIdx<0) return;
+                        ev.stopPropagation();
+                        var rect = ev.currentTarget.parentElement;
+                        if(!rect) return;
+                        var children = rect.children;
+                        for(var c=0;c<children.length;c++){
+                          var cr = children[c].getBoundingClientRect();
+                          if(ev.clientX>=cr.left && ev.clientX<=cr.right && ev.clientY>=cr.top && ev.clientY<=cr.bottom && c!==dragIdx){
+                            setRealFiles(function(prev){var arr=prev.slice();var item=arr.splice(dragIdx,1)[0];arr.splice(c,0,item);return arr;});
+                            setDragIdx(c);
+                            break;
+                          }
+                        }
+                      },
+                      onPointerUp:function(ev){ev.stopPropagation();setDragIdx(-1);},
+                      onPointerCancel:function(){setDragIdx(-1);},
+                      style:{position:'relative',borderRadius:'12px',overflow:'hidden',aspectRatio:'1',outline:isFirst?'2.5px solid #FF6B8B':'none',outlineOffset:'-2.5px',background:isDk?'rgba(255,255,255,.05)':'rgba(0,0,0,.03)',cursor:'grab',transition:'transform .3s cubic-bezier(.4,0,.2,1),opacity .3s cubic-bezier(.4,0,.2,1),box-shadow .3s cubic-bezier(.4,0,.2,1)',transform:isDragging?'scale(1.08)':'scale(1)',opacity:isDragging?0.85:1,boxShadow:isDragging?'0 8px 32px rgba(0,0,0,.3)':'none',zIndex:isDragging?10:1,touchAction:'none'}},
+                      e('img',{src:url,draggable:false,style:{width:'100%',height:'100%',objectFit:'contain',pointerEvents:'none'}}),
+                      isFirst ? e('span',{style:{position:'absolute',bottom:'4px',left:'4px',fontSize:'9px',background:'linear-gradient(135deg,#FF6B8B,#DDA0DD)',color:'#fff',padding:'2px 8px',borderRadius:'980px',letterSpacing:'.5px'}},'\uB300\uD45C') : null,
                       e('button',{style:{position:'absolute',top:'4px',right:'4px',width:'20px',height:'20px',borderRadius:'10px',background:'rgba(0,0,0,.5)',border:'none',color:'#fff',fontSize:'11px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'},onMouseDown:function(ev){ev.stopPropagation();},onClick:function(){var idx=i;setRealFiles(function(prev){return prev.filter(function(_,j){return j!==idx;});});}},'✕')
                     );
                   })
@@ -1655,7 +1842,22 @@ var cards = {
               e('div', {style:{width:'280px',display:'flex',flexDirection:'column',justifyContent:'space-between',flexShrink:0}},
                 e('div',{style:{flex:1,display:'flex',flexDirection:'column',gap:'8px'}},
                   e('p',{style:{fontSize:'14px',fontWeight:600,color:tc,marginBottom:'4px'}},'코멘트'),
-                  e('textarea',{placeholder:'전할 소식이 있다면 적어주세요 (선택)\n예) 신메뉴 출시, 명절 휴무 안내',value:realNote,onChange:function(ev){setRealNote(ev.target.value);},rows:4,style:{width:'100%',padding:'12px 14px',borderRadius:'14px',border:'1.5px solid '+(isDk?'rgba(255,255,255,.1)':'rgba(0,0,0,.08)'),background:'transparent',fontFamily:'inherit',fontSize:'13px',color:tc,outline:'none',resize:'none',boxSizing:'border-box',flex:1},onMouseDown:function(ev){ev.stopPropagation();}})
+                  e('textarea',{placeholder:'\uC804\uD560 \uC18C\uC2DD\uC774 \uC788\uB2E4\uBA74 \uC801\uC5B4\uC8FC\uC138\uC694 (\uC120\uD0DD)\n\uC608) \uC2E0\uBA54\uB274 \uCD9C\uC2DC, \uBA85\uC808 \uD734\uBB34 \uC548\uB0B4',value:realNote,onChange:function(ev){setRealNote(ev.target.value);},rows:3,style:{width:'100%',padding:'12px 14px',borderRadius:'14px',border:'1.5px solid '+(isDk?'rgba(255,255,255,.1)':'rgba(0,0,0,.08)'),background:'transparent',fontFamily:'inherit',fontSize:'13px',color:tc,outline:'none',resize:'none',boxSizing:'border-box'},onMouseDown:function(ev){ev.stopPropagation();}}),
+                  e('div',{style:{marginTop:'4px'}},
+                    e('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',cursor:'pointer',padding:'6px 0'},onClick:function(){setShowStyle(!showStyle);},onMouseDown:function(ev){ev.stopPropagation();}},
+                      e('span',{style:{fontSize:'12px',color:isDk?'rgba(255,255,255,.4)':'rgba(0,0,0,.35)'}},'\u2728 \uCEA1\uC158 \uC2A4\uD0C0\uC77C'),
+                      e('span',{style:{fontSize:'10px',color:isDk?'rgba(255,255,255,.25)':'rgba(0,0,0,.2)',transition:'transform .3s',transform:showStyle?'rotate(180deg)':'rotate(0)'}},'\u25BC')
+                    ),
+                    showStyle ? e('div',{style:{overflow:'hidden',transition:'max-height .4s cubic-bezier(.4,0,.2,1)'}},
+                      e('textarea',{placeholder:'\uC608) \uCE5C\uADFC\uD55C \uBC18\uB9D0\uB85C \uC368\uC918, \uC774\uBAA8\uD2F0\uCF58 \uB9CE\uC774 \uB123\uC5B4\uC918',value:captionStyle,onChange:function(ev){
+                        setCaptionStyle(ev.target.value);
+                        var s=JSON.parse(localStorage.getItem('lumi_settings')||'{}');
+                        s.captionStyle=ev.target.value;
+                        localStorage.setItem('lumi_settings',JSON.stringify(s));
+                      },rows:2,style:{width:'100%',padding:'10px 14px',borderRadius:'12px',border:'1.5px solid '+(isDk?'rgba(255,255,255,.06)':'rgba(0,0,0,.05)'),background:isDk?'rgba(255,255,255,.04)':'rgba(0,0,0,.02)',fontFamily:'inherit',fontSize:'12px',color:tc,outline:'none',resize:'none',boxSizing:'border-box',marginTop:'4px'},onMouseDown:function(ev){ev.stopPropagation();}}),
+                      e('p',{style:{fontSize:'10px',color:'#C8507A',marginTop:'4px'}},'\uBBFC\uAC10\uD55C \uC694\uCCAD\uC740 \uBC18\uC601\uB418\uC9C0 \uC54A\uC744 \uC218 \uC788\uC2B5\uB2C8\uB2E4.')
+                    ) : null
+                  )
                 ),
                 e('div',{style:{display:'flex',flexDirection:'column',gap:'8px',marginTop:'12px'}},
                   e('button',{style:{width:'100%',padding:'14px',borderRadius:'980px',border:'none',background:'linear-gradient(135deg,#FF6B8B,#DDA0DD)',color:'#fff',fontFamily:'inherit',fontSize:'15px',fontWeight:600,cursor:'pointer'},onMouseDown:function(ev){ev.stopPropagation();},onClick:function(){alert('바로 게시 기능은 배포 후 활성화됩니다.');}},'바로 게시'),
@@ -1667,11 +1869,7 @@ var cards = {
                   ),
                   e('button',{style:{fontSize:'12px',background:'none',border:'none',color:tc2,cursor:'pointer',fontFamily:'inherit',padding:'6px'},onMouseDown:function(ev){ev.stopPropagation();},onClick:function(){
                     setRealFiles([]);setRealNote('');setPhase('idle');
-                    if(window._setGridLayout){
-                      window._setGridLayout(layout.map(function(l){return Object.assign({},l);}));
-                      window._currentLayout = layout;
-                    }
-                  }},'← 다시 선택')
+                  }},'\u2190 \uB2E4\uC2DC \uC120\uD0DD')
                 )
               )
             ) : null,
@@ -1715,18 +1913,80 @@ var cards = {
     );
   },
   project1: function() {
+    var isLoggedIn = !!localStorage.getItem('lumi_token');
+    if (isLoggedIn) {
+      var RecentPostCard = function() {
+        var isDk = document.body.classList.contains('dark-mode');
+        var tc = isDk ? '#f0f2f8' : '#0d1117';
+        var tc2 = isDk ? 'rgba(240,242,248,.6)' : 'rgba(0,0,0,.4)';
+        var bg2 = isDk ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.03)';
+        var lumiUser = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+        var igName = lumiUser.storeName || 'my_cafe';
+        return e('div', {className:'bento-card card-visual card-project card-responsive', style:{padding:0}},
+          e('div', {style:{position:'absolute',inset:0,background:isDk?'#1c1c1e':'#fff',display:'flex',flexDirection:'column',overflow:'hidden',borderRadius:'32px'}},
+            e('div', {style:{display:'flex',alignItems:'center',gap:'8px',padding:'12px 14px'}},
+              e('div', {style:{width:'28px',height:'28px',borderRadius:'50%',background:'linear-gradient(135deg,#FF6B8B,#DDA0DD)',flexShrink:0}}),
+              e('span', {style:{fontSize:'12px',fontWeight:600,color:tc}}, igName),
+              e('span', {style:{fontSize:'10px',color:tc2,marginLeft:'auto'}}, '2\uC2DC\uAC04 \uC804')
+            ),
+            e('div', {style:{flex:1,overflow:'hidden',position:'relative',minHeight:0}},
+              e('img', {src:'/assets/demo-cafe.png', style:{width:'100%',height:'100%',objectFit:'cover',filter:isDk?'brightness(.8) saturate(.6)':'none'}})
+            ),
+            e('div', {style:{padding:'10px 14px 6px',display:'flex',gap:'14px'}},
+              e('svg',{viewBox:'0 0 24 24',fill:'none',stroke:isDk?'#f0f2f8':'#0d1117',strokeWidth:'2',width:20,height:20},e('path',{d:'M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 000-7.78z'})),
+              e('svg',{viewBox:'0 0 24 24',fill:'none',stroke:isDk?'#f0f2f8':'#0d1117',strokeWidth:'2',width:20,height:20},e('path',{d:'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z'})),
+              e('svg',{viewBox:'0 0 24 24',fill:'none',stroke:isDk?'#f0f2f8':'#0d1117',strokeWidth:'2',width:20,height:20},e('line',{x1:22,y1:2,x2:11,y2:13}),e('polygon',{points:'22 2 15 22 11 13 2 9 22 2'}))
+            ),
+            e('div', {style:{padding:'2px 14px 4px'}},
+              e('span', {style:{fontSize:'11px',fontWeight:600,color:tc}}, '\uC88B\uC544\uC694 42\uAC1C')
+            ),
+            e('div', {style:{padding:'0 14px 10px'}},
+              e('p', {style:{fontSize:'11px',color:tc,lineHeight:'1.5'}},
+                e('strong', null, igName), ' \uC774 \uC790\uB9AC \uC549\uC73C\uBA74 \uB77C\uB5BC \uB4E4\uACE0 \uD55C\uCC38 \uBA4D \uB54C\uB9AC\uAC8C \uB428'
+              ),
+              e('p', {style:{fontSize:'10px',color:isDk?'#FF8FAB':'#C8507A',marginTop:'4px'}}, '#\uB77C\uB5BC\uC544\uD2B8 #\uCE74\uD398\uC778\uD14C\uB9AC\uC5B4 #\uAC10\uC131\uCE74\uD398 #\uD551\uD06C\uCE74\uD398 #\uB77C\uB5BC\uB9DB\uC9D1')
+            )
+          )
+        );
+      };
+      return e(RecentPostCard);
+    }
     var camIcon = e('svg',{viewBox:'0 0 24 24',fill:'none',stroke:'rgba(255,255,255,.5)',strokeWidth:'1.5',strokeLinecap:'round',strokeLinejoin:'round',width:48,height:48},e('rect',{x:2,y:5,width:20,height:15,rx:2}),e('path',{d:'M8 5V3a1 1 0 011-1h6a1 1 0 011 1v2'}),e('circle',{cx:12,cy:13,r:3}));
     return e('div', {className:'bento-card card-visual bg-green card-project card-responsive', style:{padding:0}},
       e('div', {className:'caption-demo'},
         e('div', {className:'demo-scene scene-photo'},
-          e('div', {className:'demo-photo-drop'}, e('img', {src:'/assets/demo-cafe.png', alt:'카페 사진'})),
-          e('p', {className:'demo-label', style:{marginTop:'12px'}}, '사진 업로드')
+          e('div', {className:'photo-fan'},
+            e('div', {className:'photo-fan-item'}, e('img', {src:'/assets/demo-cafe-2.jpg', alt:'사진 1'})),
+            e('div', {className:'photo-fan-item'}, e('img', {src:'/assets/demo-cafe-3.jpg', alt:'사진 2'})),
+            e('div', {className:'photo-fan-item'}, e('img', {src:'/assets/demo-cafe.png', alt:'선택된 사진'})),
+            e('div', {className:'photo-fan-check'},
+              e('svg', {viewBox:'0 0 24 24', fill:'none'},
+                e('path', {d:'M5 13l4 4L19 7', stroke:'#fff', strokeWidth:'2.5', strokeLinecap:'round', strokeLinejoin:'round'})
+              )
+            )
+          ),
+          e('p', {className:'demo-label', style:{marginTop:'16px'}}, '사진 선택')
         ),
         e('div', {className:'demo-scene scene-scan'},
+          e('div', {className:'scan-photo-bg'}, e('img', {src:'/assets/demo-cafe.png', alt:'스캔 중'})),
           e('div', {className:'demo-scan-line'}),
-          e('div', {style:{position:'absolute',top:'18%',right:'12%',background:'rgba(255,255,255,.2)',borderRadius:'12px',padding:'5px 10px',backdropFilter:'blur(6px)',WebkitBackdropFilter:'blur(6px)',display:'flex',alignItems:'center',gap:'5px',animation:'tagPop .5s cubic-bezier(.34,1.56,.64,1) .5s backwards'}},
-            e('span', {style:{fontSize:'14px'}}, '\u2600\uFE0F'),
-            e('span', {style:{fontSize:'11px',color:'#fff',fontWeight:500}}, '\uB9D1\uC74C 24\xB0')
+          e('div', {className:'scan-weather-tags'},
+            e('div', {className:'scan-wtag'},
+              e('span', {className:'wtag-icon'}, '\u2600\uFE0F'),
+              e('span', {className:'wtag-text'}, '\uB9D1\uC74C 24\xB0')
+            ),
+            e('div', {className:'scan-wtag'},
+              e('span', {className:'wtag-icon'}, '\uD83D\uDCA7'),
+              e('span', {className:'wtag-text'}, '\uC2B5\uB3C4 45%')
+            ),
+            e('div', {className:'scan-wtag'},
+              e('span', {className:'wtag-icon'}, '\uD83C\uDF05'),
+              e('span', {className:'wtag-text'}, '\uC624\uD6C4 \uBD84\uC704\uAE30')
+            ),
+            e('div', {className:'scan-wtag'},
+              e('span', {className:'wtag-icon'}, '\uD83C\uDF43'),
+              e('span', {className:'wtag-text'}, '\uC678\uCD9C \uC88B\uC740 \uB0A0')
+            )
           ),
           e('div', {className:'demo-scan-dots'}, e('span',{className:'demo-scan-dot'}),e('span',{className:'demo-scan-dot'}),e('span',{className:'demo-scan-dot'})),
           e('p', {className:'demo-label'}, e('span',{className:'lumi-brand'},'lumi'), '\uAC00 \uC0AC\uC9C4 \xB7 \uB0A0\uC528\uB97C \uBD84\uC11D\uD558\uACE0 \uC788\uC5B4\uC694')
@@ -1764,6 +2024,34 @@ var cards = {
     );
   },
   spotify: function() {
+    var isLoggedIn = !!localStorage.getItem('lumi_token');
+    if (isLoggedIn) {
+      var RecommendCard = function() {
+        var isDk = document.body.classList.contains('dark-mode');
+        var tc = isDk ? '#f0f2f8' : '#0d1117';
+        var tc2 = isDk ? 'rgba(240,242,248,.6)' : 'rgba(0,0,0,.4)';
+        var bg2 = isDk ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.03)';
+        var pink = isDk ? '#FF8FAB' : '#C8507A';
+        return e('div', {className:'bento-card card-text', style:{padding:'24px',display:'flex',flexDirection:'column',justifyContent:'space-between'}},
+          e('div', null,
+            e('div', {style:{display:'flex',alignItems:'center',gap:'8px',marginBottom:'14px'}},
+              e('span', {style:{fontSize:'22px'}}, '\uD83C\uDF24\uFE0F'),
+              e('span', {style:{fontSize:'16px',color:tc,fontWeight:600}}, '\uC624\uB298\uC758 \uCD94\uCC9C')
+            ),
+            e('div', {style:{padding:'16px',borderRadius:'16px',background:bg2,marginBottom:'12px'}},
+              e('p', {style:{fontSize:'14px',color:tc,lineHeight:'1.7'}}, '\uB9D1\uC740 \uB0A0\uC528\uC5D0 \uB531\uC778'),
+              e('p', {style:{fontSize:'13px',color:tc2,lineHeight:'1.6',marginTop:'4px'}}, '\uC57C\uC678 \uC0AC\uC9C4\uC774\uB098 \uD14C\uB77C\uC2A4 \uC0AC\uC9C4\uC744\n\uC62C\uB824\uBCF4\uC138\uC694')
+            )
+          ),
+          e('div', {style:{display:'flex',gap:'6px',flexWrap:'wrap'}},
+            ['#\uC57C\uC678\uC11D','\#\uCE74\uD398\uD14C\uB77C\uC2A4','#\uB0A0\uC528\uC88B\uB2E4'].map(function(tag,i){
+              return e('span', {key:i, style:{fontSize:'11px',color:pink,padding:'4px 10px',borderRadius:'980px',background:isDk?'rgba(255,107,139,.1)':'rgba(200,80,122,.06)'}}, tag);
+            })
+          )
+        );
+      };
+      return e(RecommendCard);
+    }
     var FeatureCard = function() {
       var isDk = document.body.classList.contains('dark-mode');
       var tc = isDk ? '#f0f2f8' : '#0d1117';
@@ -1916,9 +2204,9 @@ var cards = {
       var f = features[idx];
 
       return e('div', {className:'bento-card card-text', style:{padding:'18px 20px',display:'flex',flexDirection:'column',justifyContent:'space-between',overflow:'hidden'}},
-        e('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'4px'}},
-          e('p',{style:{fontSize:'10px',color:tc2,letterSpacing:'.5px'}}, f.label),
-          e('span',{style:{fontSize:'18px'}}, typeof f.icon==='function'?f.icon():f.icon)
+        e('div',{style:{display:'flex',alignItems:'center',gap:'8px',marginBottom:'10px'}},
+          e('span',{style:{fontSize:'22px'}}, typeof f.icon==='function'?f.icon():f.icon),
+          e('p',{style:{fontSize:'16px',color:tc,fontWeight:600,letterSpacing:'-.3px'}}, f.label)
         ),
         e('div', {style:{flex:1,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'center',transition:'opacity .3s, transform .3s',opacity:fade?0:1,transform:fade?'translateY(10px)':'translateY(0)',width:'100%'}},
           f.render()
@@ -1957,16 +2245,27 @@ var cards = {
           setStep(3);
         }
 
-        // 연동 완료 상태
+        // 연동 완료 → 다음 게시 카운트다운
         if (igConnected || step === 3) {
-          return e('div', {className:'bento-card card-visual bg-blue', style:{flexDirection:'column',justifyContent:'center',alignItems:'center',textAlign:'center',padding:'24px',gap:'0'}},
-            InstaSVG,
-            e('svg', {width:36,height:36,viewBox:'0 0 36 36',fill:'none',style:{marginTop:'12px',marginBottom:'8px'}},
-              e('path', {d:'M8 18l8 8 12-14',stroke:'#fff',strokeWidth:3,strokeLinecap:'round',strokeLinejoin:'round'})
-            ),
-            e('p', {style:{fontSize:'18px',fontWeight:700,color:'#fff',marginBottom:'6px'}}, '연동 완료!'),
-            e('p', {style:{fontSize:'13px',color:'rgba(255,255,255,.7)'}}, '인스타그램이 연결되었어요')
-          );
+          var CountdownCard = function() {
+            var isDk = document.body.classList.contains('dark-mode');
+            var _t = React.useState(0), tick = _t[0], setTick = _t[1];
+            React.useEffect(function(){ var iv=setInterval(function(){setTick(function(t){return t+1;});},1000); return function(){clearInterval(iv);}; },[]);
+            var totalSec = Math.max(0, 5400 - tick);
+            var h = Math.floor(totalSec/3600);
+            var m = Math.floor((totalSec%3600)/60);
+            var s = totalSec%60;
+            var pad = function(n){return n<10?'0'+n:''+n;};
+            return e('div', {className:'bento-card card-visual bg-blue', style:{flexDirection:'column',justifyContent:'center',alignItems:'center',textAlign:'center',padding:'24px',gap:'8px'}},
+              e('p', {style:{fontSize:'11px',color:'rgba(255,255,255,.5)',letterSpacing:'1px'}}, '\uB2E4\uC74C \uAC8C\uC2DC'),
+              e('p', {style:{fontSize:'32px',fontWeight:400,color:'#fff',letterSpacing:'2px',fontFamily:'\'Nunito\',sans-serif'}}, pad(h)+':'+pad(m)+':'+pad(s)),
+              e('div', {style:{width:'60px',height:'60px',borderRadius:'12px',overflow:'hidden',marginTop:'4px',boxShadow:'0 4px 16px rgba(0,0,0,.2)'}},
+                e('img', {src:'/assets/demo-cafe.png', style:{width:'100%',height:'100%',objectFit:'cover'}})
+              ),
+              e('p', {style:{fontSize:'12px',color:'rgba(255,255,255,.6)',marginTop:'4px'}}, '\uC624\uD6C4 6:30 \uC608\uC57D')
+            );
+          };
+          return e(CountdownCard);
         }
 
         var steps = [
@@ -2181,6 +2480,46 @@ var cards = {
     return e(TrendCard);
   },
   blog: function() {
+    var isLoggedIn = !!localStorage.getItem('lumi_token');
+    if (isLoggedIn) {
+      var ReportCard = function() {
+        var isDk = document.body.classList.contains('dark-mode');
+        var tc = isDk ? '#f0f2f8' : '#0d1117';
+        var tc2 = isDk ? 'rgba(240,242,248,.6)' : 'rgba(0,0,0,.4)';
+        var pink = isDk ? '#FF8FAB' : '#C8507A';
+        var bg2 = isDk ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.03)';
+        var stat = function(num, label) {
+          return e('div', {style:{flex:1,textAlign:'center',padding:'14px 0'}},
+            e('p', {style:{fontSize:'24px',color:tc,marginBottom:'2px'}}, num),
+            e('p', {style:{fontSize:'11px',color:tc2}}, label)
+          );
+        };
+        return e('div', {className:'bento-card card-text', style:{padding:'28px 32px',display:'flex',flexDirection:'column',justifyContent:'space-between',width:'100%'}},
+          e('div', {style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'16px',width:'100%'}},
+            e('div', null,
+              e('p', {style:{fontSize:'12px',color:tc2,marginBottom:'2px'}}, '4\uC6D4 \uB9AC\uD3EC\uD2B8'),
+              e('p', {style:{fontSize:'20px',color:tc}}, '\uC774\uBC88 \uB2EC \uD65C\uB3D9')
+            ),
+            e('span', {style:{fontSize:'13px',color:pink,fontWeight:600}}, '\uC9C0\uB09C\uB2EC \uB300\uBE44 +23%')
+          ),
+          e('div', {style:{display:'flex',gap:'12px',width:'100%'}},
+            e('div', {style:{flex:1,padding:'20px',borderRadius:'16px',background:bg2,textAlign:'center'}},
+              e('p', {style:{fontSize:'32px',color:tc}}, '12'),
+              e('p', {style:{fontSize:'12px',color:tc2,marginTop:'6px'}}, '\uCEA1\uC158 \uC0DD\uC131')
+            ),
+            e('div', {style:{flex:1,padding:'20px',borderRadius:'16px',background:bg2,textAlign:'center'}},
+              e('p', {style:{fontSize:'32px',color:tc}}, '8'),
+              e('p', {style:{fontSize:'12px',color:tc2,marginTop:'6px'}}, '\uAC8C\uC2DC \uC644\uB8CC')
+            ),
+            e('div', {style:{flex:1,padding:'20px',borderRadius:'16px',background:bg2,textAlign:'center'}},
+              e('p', {style:{fontSize:'32px',color:tc}}, '4h'),
+              e('p', {style:{fontSize:'12px',color:tc2,marginTop:'6px'}}, '\uC808\uC57D \uC2DC\uAC04')
+            )
+          )
+        );
+      };
+      return e(ReportCard);
+    }
     return e('div', {className:'bento-card card-text pad-blog'},
       e('div', null,
         e('p', {className:'blog-desc', style:{marginBottom:'4px'}}, '\uC804\uBB38\uAC00\uB3C4 \uD55C \uAC8C\uC2DC\uBB3C\uC5D0 20~30\uBD84 \xB7 lumi\uB294 1\uBD84'),
@@ -2197,6 +2536,38 @@ var cards = {
     );
   },
   project3: function() {
+    var isLoggedIn = !!localStorage.getItem('lumi_token');
+    if (isLoggedIn) {
+      var PlanCard = function() {
+        var isDk = document.body.classList.contains('dark-mode');
+        var tc = isDk ? '#f0f2f8' : '#0d1117';
+        var tc2 = isDk ? 'rgba(240,242,248,.6)' : 'rgba(0,0,0,.4)';
+        var pink = isDk ? '#FF8FAB' : '#C8507A';
+        var bg2 = isDk ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.03)';
+        var lumiUser = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+        var plan = lumiUser.plan || '\uBB34\uB8CC \uCCB4\uD5D8';
+        return e('div', {className:'bento-card card-text', style:{padding:'28px 32px',display:'flex',flexDirection:'column',justifyContent:'space-between',width:'100%'}},
+          e('div', {style:{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:'16px',width:'100%'}},
+            e('div', null,
+              e('p', {style:{fontSize:'12px',color:tc2,marginBottom:'2px'}}, '\uB0B4 \uD50C\uB79C'),
+              e('p', {style:{fontSize:'22px',color:tc}}, plan)
+            ),
+            e('span', {style:{fontSize:'12px',color:tc2}}, 'D-18 \uB0A8\uC74C')
+          ),
+          e('div', {style:{padding:'16px 20px',borderRadius:'16px',background:bg2,width:'100%',marginBottom:'14px'}},
+            e('div', {style:{display:'flex',justifyContent:'space-between',marginBottom:'10px'}},
+              e('span', {style:{fontSize:'13px',color:tc2}}, '\uC0AC\uC6A9\uB7C9'),
+              e('span', {style:{fontSize:'14px',color:pink,fontWeight:600}}, '8 / 12\uAC74')
+            ),
+            e('div', {style:{height:'10px',borderRadius:'5px',background:isDk?'rgba(255,255,255,.06)':'rgba(0,0,0,.06)',width:'100%'}},
+              e('div', {style:{width:'67%',height:'100%',borderRadius:'5px',background:'linear-gradient(90deg,#FF6B8B,#DDA0DD)'}})
+            )
+          ),
+          e('button', {style:{alignSelf:'flex-end',fontSize:'14px',padding:'12px 28px',borderRadius:'980px',border:'none',background:'linear-gradient(135deg,#FF6B8B,#DDA0DD)',color:'#fff',cursor:'pointer',fontFamily:'inherit'}, onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(ev){ev.stopPropagation();navigateOut('/subscribe.html');}}, '\uC5C5\uADF8\uB808\uC774\uB4DC')
+        );
+      };
+      return e(PlanCard);
+    }
     var isDk = document.body.classList.contains('dark-mode');
     var tc = isDk ? '#f0f2f8' : '#0d1117';
     var tc2 = isDk ? 'rgba(240,242,248,.6)' : 'rgba(0,0,0,.4)';
@@ -2241,6 +2612,50 @@ var cards = {
     );
   },
   empty1: function() {
+    var isLoggedIn = !!localStorage.getItem('lumi_token');
+    if (isLoggedIn) {
+      var FeatureToggles = function() {
+        var saved = JSON.parse(localStorage.getItem('lumi_feat_toggles') || '{}');
+        var feats = [
+          {key:'story', label:'\uC2A4\uD1A0\uB9AC \uC790\uB3D9\uAC8C\uC2DC', desc:'\uC2A4\uD1A0\uB9AC \uB3D9\uC2DC \uC5C5\uB85C\uB4DC', icon:'story', iconText:'\uD83D\uDCF7'},
+          {key:'thread', label:'\uC2A4\uB808\uB4DC \uC790\uB3D9\uAC8C\uC2DC', desc:'\uC2A4\uB808\uB4DC \uB3D9\uC2DC \uACF5\uC720', icon:'thread', iconText:'\uD83E\uDDF5'},
+          {key:'weather', label:'\uB0A0\uC528 \uBC18\uC601', desc:'\uCEA1\uC158\uC5D0 \uB0A0\uC528 \uC815\uBCF4 \uBC18\uC601', icon:'weather', iconText:'\u26C5'}
+        ];
+        var states = React.useState(Object.assign({story:true,thread:false,weather:true}, saved));
+        var toggles = states[0], setToggles = states[1];
+        function toggle(key) {
+          var next = Object.assign({}, toggles);
+          next[key] = !next[key];
+          setToggles(next);
+          try { localStorage.setItem('lumi_feat_toggles', JSON.stringify(next)); } catch(ex) {}
+        }
+        return e('div', {className:'bento-card feat-toggle-card'},
+          e('div', {className:'feat-toggle-header'},
+            e('span', {className:'feat-toggle-header-icon'}, '\u2699\uFE0F'),
+            e('span', {className:'feat-toggle-header-title'}, '\uBE60\uB978 \uC124\uC815')
+          ),
+          e('div', {className:'feat-toggle-list'},
+            feats.map(function(f) {
+              var isOn = toggles[f.key];
+              return e('div', {key:f.key, className:'feat-toggle-row'},
+                e('div', {className:'feat-toggle-info'},
+                  e('div', {className:'feat-toggle-icon ' + f.icon}, e('span', {style:{fontSize:'15px'}}, f.iconText)),
+                  e('div', {className:'feat-toggle-text'},
+                    e('span', {className:'feat-toggle-name'}, f.label),
+                    e('span', {className:'feat-toggle-desc'}, f.desc)
+                  )
+                ),
+                e('div', {className:'feat-toggle-right'},
+                  e('span', {className:'feat-toggle-status' + (isOn ? ' on' : '')}, isOn ? 'ON' : 'OFF'),
+                  e('button', {className:'feat-toggle' + (isOn ? ' on' : ''), onClick:function(ev){ev.stopPropagation();toggle(f.key);}})
+                )
+              );
+            })
+          )
+        );
+      };
+      return e(FeatureToggles);
+    }
     var _dt = null;
     return e('div', {className:'bento-card reset-card',
       onMouseDown:function(ev){ _dt = Date.now(); },
@@ -2260,6 +2675,35 @@ var cards = {
     );
   },
   newsletter: function() {
+    var isLoggedIn = !!localStorage.getItem('lumi_token');
+    if (isLoggedIn) {
+      var ScheduleCard = function() {
+        var isDk = document.body.classList.contains('dark-mode');
+        var tc = isDk ? '#f0f2f8' : '#0d1117';
+        var tc2 = isDk ? 'rgba(240,242,248,.6)' : 'rgba(0,0,0,.4)';
+        var bg2 = isDk ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.03)';
+        var pink = isDk ? '#FF8FAB' : '#C8507A';
+        var item = function(time, title, status) {
+          return e('div', {style:{display:'flex',alignItems:'center',gap:'12px',padding:'10px 0',borderBottom:'1px solid '+(isDk?'rgba(255,255,255,.06)':'rgba(0,0,0,.04)')}},
+            e('span', {style:{fontSize:'12px',color:tc2,minWidth:'52px'}}, time),
+            e('span', {style:{fontSize:'13px',color:tc,flex:1}}, title),
+            e('span', {style:{fontSize:'10px',color:status==='\uC608\uC57D'?pink:'#4ade80',padding:'2px 8px',borderRadius:'6px',background:status==='\uC608\uC57D'?(isDk?'rgba(255,107,139,.1)':'rgba(200,80,122,.06)'):'rgba(34,197,94,.1)'}}, status)
+          );
+        };
+        return e('div', {className:'bento-card card-text', style:{padding:'28px 32px',display:'flex',flexDirection:'column',justifyContent:'center',width:'100%',height:'100%'}},
+          e('div', {style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'16px',width:'100%'}},
+            e('p', {style:{fontSize:'17px',color:tc,fontWeight:600}}, '\uC608\uC57D \uAC8C\uC2DC'),
+            e('span', {style:{fontSize:'12px',color:pink,padding:'4px 12px',borderRadius:'980px',background:isDk?'rgba(255,107,139,.1)':'rgba(200,80,122,.06)'}}, '\uC608\uC57D 2\uAC74')
+          ),
+          e('div', {style:{width:'100%'}},
+            item('\uC624\uB298 18:30', '\uCE74\uD398 \uC2E0\uBA54\uB274 \uC18C\uAC1C', '\uC608\uC57D'),
+            item('\uB0B4\uC77C 11:00', '\uC8FC\uB9D0 \uC774\uBCA4\uD2B8 \uC548\uB0B4', '\uC608\uC57D'),
+            item('\uC5B4\uC81C 15:00', '\uB77C\uB5BC\uC544\uD2B8 \uC0AC\uC9C4', '\uC644\uB8CC')
+          )
+        );
+      };
+      return e(ScheduleCard);
+    }
     var isDk = document.body.classList.contains('dark-mode');
     var tc = isDk ? '#f0f2f8' : '#0d1117';
     var tc2 = isDk ? 'rgba(240,242,248,.6)' : 'rgba(0,0,0,.4)';
@@ -2284,7 +2728,7 @@ var cards = {
         ),
         row('월 비용', '50~100만원', '9,900원~'),
         row('계약', '최소 3개월', '없음'),
-        row('우리 매장 이해', '낮음', 'AI 학습'),
+        row('우리 매장 이해', '낮음', 'lumi 학습'),
         row('게시 속도', '2~3일', '1분')
       ),
       e('div',{style:{display:'flex',justifyContent:'center',alignItems:'center',gap:'12px',marginTop:'16px'}},
@@ -2294,19 +2738,32 @@ var cards = {
   }
 };
 
-// Layout — desktop (4 cols)
-var layout = [
-  {i:'bio',       x:0, y:0, w:1, h:2, isResizable:false},
-  {i:'spotify',   x:1, y:0, w:1, h:1, isResizable:false},
-  {i:'empty1',    x:2, y:0, w:1, h:1, isResizable:false},
+// Layout — desktop (4 cols) 비로그인
+var layoutGuest = [
+  {i:'spotify',   x:0, y:0, w:1, h:1, isResizable:false},
+  {i:'bio',       x:1, y:0, w:1, h:2, isResizable:false},
+  {i:'project2',  x:2, y:0, w:1, h:2, isResizable:false},
   {i:'project1',  x:3, y:0, w:1, h:2, isResizable:false},
-  {i:'twitter',   x:1, y:1, w:1, h:1, isResizable:false},
-  {i:'project2',  x:2, y:1, w:1, h:2, isResizable:false},
+  {i:'twitter',   x:0, y:1, w:1, h:1, isResizable:false},
   {i:'blog',      x:0, y:2, w:2, h:1, isResizable:false},
+  {i:'empty1',    x:2, y:2, w:1, h:1, isResizable:false},
   {i:'dark',      x:3, y:2, w:1, h:1, isResizable:false},
   {i:'project3',  x:0, y:3, w:2, h:1, isResizable:false},
   {i:'newsletter',x:2, y:3, w:2, h:1, isResizable:false}
 ];
+var layoutUser = [
+  {i:'bio',       x:0, y:0, w:4, h:2, isResizable:false},
+  {i:'spotify',   x:0, y:2, w:1, h:1, isResizable:false},
+  {i:'empty1',    x:1, y:2, w:1, h:1, isResizable:false},
+  {i:'project2',  x:2, y:2, w:1, h:2, isResizable:false},
+  {i:'project1',  x:3, y:2, w:1, h:2, isResizable:false},
+  {i:'twitter',   x:0, y:3, w:1, h:1, isResizable:false},
+  {i:'dark',      x:1, y:3, w:1, h:1, isResizable:false},
+  {i:'blog',      x:0, y:4, w:2, h:1, isResizable:false},
+  {i:'newsletter',x:2, y:4, w:2, h:1, isResizable:false},
+  {i:'project3',  x:0, y:5, w:2, h:1, isResizable:false}
+];
+var layout = localStorage.getItem('lumi_token') ? layoutUser : layoutGuest;
 
 // Layout — tablet (2 cols)
 var tabletLayout = [
@@ -2334,14 +2791,16 @@ var mobileLayout = [
 
 // 저장된 레이아웃 불러오기
 // 레이아웃 버전 관리 — 레이아웃 변경 시 버전 올리면 캐시 무시
-var LAYOUT_VERSION = 16;
+var LAYOUT_VERSION = 21;
 var savedLayout = null;
-try {
-  var raw = localStorage.getItem('lumi_grid_layout');
-  var ver = localStorage.getItem('lumi_grid_version');
-  if (raw && Number(ver) === LAYOUT_VERSION) savedLayout = JSON.parse(raw);
-  else localStorage.removeItem('lumi_grid_layout');
-} catch(e) {}
+if (!localStorage.getItem('lumi_token')) {
+  try {
+    var raw = localStorage.getItem('lumi_grid_layout');
+    var ver = localStorage.getItem('lumi_grid_version');
+    if (raw && Number(ver) === LAYOUT_VERSION) savedLayout = JSON.parse(raw);
+    else localStorage.removeItem('lumi_grid_layout');
+  } catch(e) {}
+}
 
 function BentoGrid() {
   // 컨테이너 너비 추적
@@ -2369,6 +2828,7 @@ function BentoGrid() {
   var _ls = React.useState(savedLayout || layout);
   var desktopLayout = _ls[0], setDesktopLayout = _ls[1];
   window._setGridLayout = setDesktopLayout;
+  if (!window._currentLayout) window._currentLayout = desktopLayout;
 
   var cols, rowH, mgn, activeLayout, canDrag;
   if (isMobile) {
@@ -2378,6 +2838,11 @@ function BentoGrid() {
   } else {
     cols = 4; rowH = 280; mgn = [16, 16]; activeLayout = desktopLayout; canDrag = true;
   }
+
+  activeLayout = activeLayout.map(function(item) {
+    if (item.i === 'bio') return Object.assign({}, item, {isDraggable: false});
+    return item;
+  });
 
   var children = activeLayout.map(function(item) {
     var cardFn = cards[item.i];
@@ -2537,8 +3002,8 @@ function suShowForm() {
   else if (step.input === 'agree') {
     html += '<div class="su-agree">';
     html += '<label class="su-agree-all"><input type="checkbox" id="su-agree-all" onchange="document.querySelectorAll(\'.su-agree-each\').forEach(function(e){e.checked=this.checked;},this)"><span>전체 동의하기</span></label>';
-    html += '<label><input type="checkbox" class="su-agree-each"><span>(필수) <a href="/terms" target="_blank" style="color:#C8507A;text-decoration:underline;">서비스 이용약관</a> 동의</span></label>';
-    html += '<label><input type="checkbox" class="su-agree-each"><span>(필수) <a href="/privacy" target="_blank" style="color:#C8507A;text-decoration:underline;">개인정보 처리방침</a> 동의</span></label>';
+    html += '<label><input type="checkbox" class="su-agree-each"><span>(필수) <a href="/terms.html" target="_blank" style="color:#C8507A;text-decoration:underline;">서비스 이용약관</a> 동의</span></label>';
+    html += '<label><input type="checkbox" class="su-agree-each"><span>(필수) <a href="/privacy.html" target="_blank" style="color:#C8507A;text-decoration:underline;">개인정보 처리방침</a> 동의</span></label>';
     html += '<label><input type="checkbox" class="su-agree-each"><span>(선택) 마케팅 정보 수신 동의</span></label>';
     html += '</div>';
     html += '<button class="su-btn" onclick="suSubmitAgree()">가입 완료</button>';
@@ -2994,31 +3459,29 @@ function filterGrid(category, btnEl) {
   if (btnEl) btnEl.classList.add('active');
   currentFilter = category;
 
+  var gridItems = document.querySelectorAll('.react-grid-item');
+  var currentLayout = window._currentLayout || layout;
+
   if (category === 'all') {
-    var origLayout = layout.map(function(l){return Object.assign({},l);});
-    if (window._setGridLayout) {
-      window._setGridLayout(origLayout);
-      window._currentLayout = origLayout;
-    }
-    setTimeout(function() {
-      document.querySelectorAll('.react-grid-item').forEach(function(el) {
-        el.style.transition = 'opacity .4s ease, filter .4s ease, transform .4s ease';
-        el.style.opacity = '1';
-        el.style.filter = 'none';
-        el.style.pointerEvents = 'auto';
-      });
-    }, 50);
+    gridItems.forEach(function(el) {
+      el.style.transition = 'opacity .4s ease, filter .4s ease';
+      el.style.opacity = '1';
+      el.style.filter = 'none';
+      el.style.pointerEvents = 'auto';
+    });
     return;
   }
 
-  var result = buildFilterLayout(category);
-  if (window._setGridLayout) {
-    window._setGridLayout(result.layout);
-    window._currentLayout = result.layout;
-  }
-  setTimeout(function() {
-    applyCardStyles(result.matchedIds);
-  }, 50);
+  var matchedIds = filterLayouts[category].matched;
+  gridItems.forEach(function(el, idx) {
+    if (!currentLayout[idx]) return;
+    var key = currentLayout[idx].i;
+    var isMatch = matchedIds.indexOf(key) !== -1;
+    el.style.transition = 'opacity .4s ease, filter .4s ease';
+    el.style.opacity = isMatch ? '1' : '0.12';
+    el.style.filter = isMatch ? 'none' : 'blur(3px)';
+    el.style.pointerEvents = isMatch ? 'auto' : 'none';
+  });
 }
 
 function resetGrid() {
@@ -3027,5 +3490,25 @@ function resetGrid() {
   if (window._setGridLayout) window._setGridLayout(layout.map(function(l){return Object.assign({},l);}));
 }
 </script>
+
+<footer class="site-footer">
+  <div class="ft-inner">
+    <div>
+      <div class="ft-logo">lumi</div>
+      <p class="ft-info">
+        상호명: 루미 (lumi) · 대표자: 김현<br>
+        사업자 등록번호: 404-09-66416 · 업태: 정보통신업<br>
+        서울특별시 용산구 회나무로 32-7 (이태원동)<br>
+        통신판매업 신고번호: 제2024-서울용산-1166호 · 이메일: gung3625@gmail.com
+      </p>
+    </div>
+    <div class="ft-links">
+      <a href="/terms.html">이용약관</a>
+      <a href="/privacy.html">개인정보처리방침</a>
+      <a href="/support.html">고객센터</a>
+    </div>
+  </div>
+  <p class="ft-copy">&copy; <script>document.write(new Date().getFullYear())</script> lumi (루미) · 대표 김현</p>
+</footer>
 </body>
 </html>

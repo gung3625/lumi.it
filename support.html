@@ -1,416 +1,165 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>고객센터 — lumi</title>
-    <link rel="preconnect" href="https://cdn.jsdelivr.net">
-    <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet">
-    <style>
-*::-webkit-scrollbar{display:none;}*{scrollbar-width:none;}
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>고객센터 — lumi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@800&display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:'Jua';src:url('/assets/BMJUA.woff2') format('woff2');font-display:block;}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{background:#fdf2f4;scrollbar-width:none;scroll-behavior:smooth;overscroll-behavior:none;}
+html::-webkit-scrollbar{display:none;}
+body{font-family:'Jua',-apple-system,BlinkMacSystemFont,sans-serif;color:#0d1117;-webkit-font-smoothing:antialiased;padding-bottom:80px;overscroll-behavior:none;}
+body.dark-mode{background:#111;color:#f0f2f8;}
 
-        :root {
-  --pink:#C8507A;--accent:#C8507A;
-  --bg:#000000;--surface-2:#272729;
-  --text:#f5f5f7;--text-80:rgba(255,255,255,.8);--text-48:rgba(255,255,255,.48);
-  --nav-bg:rgba(0,0,0,.88);
-  --light-bg:#f5f5f7;--light-surface:#ffffff;--light-text:#1d1d1f;
-  --light-text-80:rgba(0,0,0,.8);--light-text-48:rgba(0,0,0,.48);
-  --light-divider:#d2d2d7;
-  --shadow-card:rgba(0,0,0,.5) 3px 5px 30px 0px;
-  --light-shadow:rgba(0,0,0,.22) 3px 5px 30px 0px;
-  --r-full:980px;--ease:cubic-bezier(0.16,1,0.3,1);
-  /* 라이트모드 기본값 */
-  --g900:#1d1d1f;--g700:#424245;--g500:#86868b;--g400:#aeaeb2;
-  --g200:#d2d2d7;--g100:#e8e8ed;--g50:#f5f5f7;--white:#ffffff;
-  --pink-pale:#fff0f5;--pink-ultra:#fff5f8;--pink-soft:#ffcce0;
-  --pink-light:#d4618e;
-  --r-xl:16px;--r-lg:12px;--r-md:8px;
-  --sh-md:0 4px 20px rgba(0,0,0,.08);--sh-pink:0 4px 16px rgba(200,80,122,.2);
-}
-        body.dark-mode{
-            --g900:#F2F4F6;--g700:#D1D5DB;--g500:#9CA3AF;--g400:#6B7684;
-            --g200:#2D3748;--g100:#1E2533;--g50:#151B26;--white:#1A202C;
-            --pink-pale:#2D1F2B;--pink-ultra:#1F1923;--pink-soft:#3D2536;
-        }
-        body.dark-mode nav{background:rgba(26,32,44,.94)!important;border-bottom-color:var(--g200)!important;}
-        body.dark-mode .toast{background:var(--g200);color:var(--g700);}
-        body.dark-mode input,body.dark-mode select,body.dark-mode textarea{background:var(--g100);border-color:var(--g200);color:var(--g900);}
-        body.dark-mode input::placeholder,body.dark-mode textarea::placeholder{color:var(--g500);}
-        /* 다크모드 — 카드·버튼·폼 */
-        body.dark-mode .contact-card{background:var(--g100);border-color:var(--g200);}
-        body.dark-mode .contact-card:hover{border-color:var(--pink-soft);box-shadow:0 4px 24px rgba(0,0,0,.3);}
-        body.dark-mode .contact-card.kakao{background:#2D2A1A;border-color:#6B5C00;}
-        body.dark-mode .contact-card.kakao:hover{border-color:#9B8A00;}
-        body.dark-mode .contact-btn.dark{background:var(--g200);color:var(--g900);}
-        body.dark-mode .contact-btn.yellow{background:#6B5C00;color:#FEE500;}
-        body.dark-mode .contact-card[style*="fff5f5"]{background:#2B1A1A!important;border-color:#5C2A2A!important;}
-        body.dark-mode .contact-card[style*="fff5f5"] .contact-btn{background:#8B2020!important;color:#fff!important;}
-        body.dark-mode .form-card{background:var(--g100);border-color:var(--g200);}
-        body.dark-mode .success-msg{background:#1A2B1A;border-color:#2D5A2D;color:#6BCB6B;}
-        body.dark-mode .success-msg p{color:#6BCB6B;}
-        body.dark-mode footer{background:var(--g100);border-top-color:var(--g200);}
-        body.dark-mode details{background:var(--g100);border-color:var(--g200);}
-        body.dark-mode details[open]{border-color:var(--pink-soft);background:var(--pink-ultra);}
-        body.dark-mode .faq-answer{color:var(--g500);border-color:var(--g200);}
-        body.dark-mode details[open] .faq-answer{border-color:var(--pink-soft);}
-        body.dark-mode .hero{background:#0F1318;}
-        /* 라이트모드 오버라이드 */
-        body:not(.dark-mode) nav{background:rgba(255,255,255,.88);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--g200);}
-        body:not(.dark-mode) .nav-logo-txt{color:var(--g900);}
-        body:not(.dark-mode) .nav-back{color:var(--g500);}
-        body:not(.dark-mode) .nav-back:hover{color:var(--g900);}
-        body:not(.dark-mode) .hero{background:var(--g50);}
-        body:not(.dark-mode) .hero-title{color:var(--g900);}
-        body:not(.dark-mode) .hero-desc{color:var(--g500);}
-        body:not(.dark-mode) .hero-chip{background:rgba(200,80,122,.1);color:var(--pink);}
-        body:not(.dark-mode) .contact-btn.dark{background:var(--g900);color:#fff;}
-        body:not(.dark-mode) .section-title{color:var(--g900);}
-        body:not(.dark-mode) summary{color:var(--g900);}
-        body:not(.dark-mode) .contact-name{color:var(--g900);}
-        body:not(.dark-mode) footer{background:var(--g50);border-top-color:var(--g200);}
-        body:not(.dark-mode) footer span,body:not(.dark-mode) footer p{color:var(--g500);}
-        body:not(.dark-mode) footer a{color:var(--g500);}
-        body:not(.dark-mode) footer a:hover{color:var(--g900);}
-        body.dark-mode footer{background:#000!important;border-top-color:rgba(255,255,255,.07)!important;}
-        body:not(.dark-mode) footer{background:var(--g50)!important;border-top-color:var(--g200)!important;}
-        body:not(.dark-mode) footer span,body:not(.dark-mode) footer p,body:not(.dark-mode) footer a,body:not(.dark-mode) footer div{color:var(--g500)!important;}
-        body:not(.dark-mode) footer img{filter:brightness(0) grayscale(1)!important;opacity:.4!important;}
-        body.dark-mode div[style*="background:var(--g50)"]{background:var(--g100)!important;border-color:var(--g200)!important;}
-        .dark-toggle-fab{position:fixed;right:16px;bottom:calc(20px + env(safe-area-inset-bottom, 0px));z-index:9999;width:48px;height:48px;border-radius:50%;border:none;background:#191F28;color:#fff;font-size:1.2rem;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;transition:all .3s;-webkit-tap-highlight-color:transparent;}
-        .dark-toggle-fab:hover{transform:scale(1.08);box-shadow:0 6px 24px rgba(0,0,0,.3);}
-        .dark-toggle-fab:active{transform:scale(.95);}
-        body.dark-mode .dark-toggle-fab{background:#fff;color:#191F28;box-shadow:0 4px 16px rgba(0,0,0,.15);}
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; word-break: keep-all; }
-        body { font-family: 'Pretendard Variable', 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif; background: var(--white); color: var(--g700); line-height: 1.7; font-size:17px; }
+nav{max-width:960px;margin:0 auto;padding:32px 24px 0;display:flex;align-items:center;justify-content:space-between;}
+.nav-logo{font-size:28px;font-weight:800;font-family:'Nunito',sans-serif;background:linear-gradient(90deg,#FF6B8B,#DDA0DD 50%,#EDD080 85%,#DABA65);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-decoration:none;}
+.nav-close{width:36px;height:36px;border-radius:50%;border:none;background:rgba(0,0,0,.06);color:#0d1117;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .3s cubic-bezier(.4,0,.2,1),background .3s cubic-bezier(.4,0,.2,1);}
+.nav-close:active{transform:scale(.9);}
+body.dark-mode .nav-close{background:rgba(255,255,255,.08);color:#f0f2f8;}
 
-        /* NAV — Apple 3분할 */
-        nav{position:sticky;top:0;z-index:100;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 32px;height:48px;background:rgba(0,0,0,.88);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);}
-        .nav-logo-wrap{display:flex;align-items:center;gap:8px;text-decoration:none;justify-content:flex-start;}
-        .nav-logo{height:24px;width:24px;object-fit:cover;border-radius:50%;}
-        .nav-logo-txt{font-size:15px;font-weight:600;color:#f5f5f7;letter-spacing:-0.28px;}
-        .nav-back{font-size:12px;font-weight:400;letter-spacing:-0.12px;color:rgba(255,255,255,.7);text-decoration:none;transition:color .15s;justify-self:end;}
-        .nav-back:hover{color:#f5f5f7;}
+.hero{max-width:960px;margin:0 auto;padding:48px 24px 40px;text-align:center;display:flex;flex-direction:column;align-items:center;}
+.hero-lumi{width:120px;height:120px;object-fit:contain;animation:lumiBounce 3s ease-in-out infinite;margin-bottom:12px;}
+@keyframes lumiBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.hero h1{font-size:clamp(28px,5vw,44px);margin-bottom:10px;}
+.hero p{font-size:14px;color:rgba(0,0,0,.35);}
+body.dark-mode .hero p{color:rgba(255,255,255,.3);}
 
-        /* HERO */
-        .hero { background: var(--g900); padding: 60px 24px 56px; text-align: center; }
-        .hero-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px; border-radius: var(--r-full); background: rgba(255,45,138,.15); color: var(--pink-light); font-size: 12px; font-weight: 700; margin-bottom: 18px; }
-        .hero-title { font-size: clamp(1.6rem, 4vw, 2.2rem); font-weight: 900; color: #fff; margin-bottom: 10px; letter-spacing: -.02em; line-height: 1.3; }
-        .hero-desc { font-size: .88rem; color: rgba(255,255,255,.5); line-height: 1.8; }
+.grid{max-width:960px;margin:0 auto;padding:0 24px;display:grid;grid-template-columns:repeat(2,1fr);gap:16px;}
+@media(max-width:700px){.grid{grid-template-columns:1fr;}}
 
-        /* SECTION */
-        .section { max-width: 760px; margin: 0 auto; padding: 60px 24px 0; }
-        .section-label { font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--pink); margin-bottom: 10px; }
-        .section-title { font-size: 1.2rem; font-weight: 900; color: var(--g900); margin-bottom: 28px; letter-spacing: -.02em; }
+.section-label{max-width:960px;margin:48px auto 16px;padding:0 24px;font-size:13px;color:rgba(0,0,0,.35);}
+body.dark-mode .section-label{color:rgba(255,255,255,.3);}
 
-        /* CONTACT CARDS */
-        .contact-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 64px; }
-        .contact-card { background: var(--white); border: 1px solid var(--g200); border-radius: var(--r-xl); padding: 28px 20px; text-align: center; transition: transform .3s var(--ease), box-shadow .3s, border-color .3s; text-decoration: none; display: block; cursor: pointer; }
-        .contact-card:hover { transform: translateY(-4px); box-shadow: var(--sh-md); border-color: var(--pink-soft); }
-        .contact-card.kakao { border-color: #FEE500; background: #FFFDE7; }
-        .contact-card.kakao:hover { border-color: #F9C93E; }
-        .contact-icon { font-size: 2rem; margin-bottom: 12px; }
-        .contact-name { font-size: .9rem; font-weight: 800; color: var(--g900); margin-bottom: 6px; }
-        .contact-desc { font-size: .78rem; color: var(--g500); line-height:1.47;letter-spacing:-0.374px; margin-bottom: 16px; }
-        .contact-btn { display: inline-block; padding: 12px 20px; border-radius: var(--r-full); font-size: 13px; font-weight: 700; min-height: 44px; text-decoration: none; }
-        .contact-btn.pink { background: var(--pink); color: #fff; }
-        .contact-btn.dark { background: var(--g900); color: #fff; }
-        .contact-btn.yellow { background: #FEE500; color: #3A1D1D; }
+/* CONTACT CARDS */
+.contact-card{background:#fff;border-radius:24px;padding:28px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;text-decoration:none;cursor:pointer;box-shadow:0 2px 16px rgba(0,0,0,.06);opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s cubic-bezier(.4,0,.2,1),box-shadow .4s cubic-bezier(.4,0,.2,1);}
+.contact-card.visible{opacity:1;transform:translateY(0);}
+.contact-card:hover{box-shadow:0 8px 32px rgba(0,0,0,.1);transform:translateY(-4px);}
+.contact-card.visible:hover{transform:translateY(-4px);}
+body.dark-mode .contact-card{background:#1c1c1e;box-shadow:none;}
+body.dark-mode .contact-card:hover{box-shadow:0 8px 32px rgba(0,0,0,.3);}
+.contact-icon{font-size:32px;}
+.contact-name{font-size:17px;font-weight:400;}
+.contact-desc{font-size:12px;color:rgba(0,0,0,.4);line-height:1.6;}
+body.dark-mode .contact-desc{color:rgba(255,255,255,.4);}
+.contact-btn{padding:10px 24px;border-radius:980px;border:none;font-family:inherit;font-size:13px;cursor:pointer;transition:transform .3s cubic-bezier(.4,0,.2,1);}
+.contact-btn:active{transform:scale(.95);}
+.contact-btn.yellow{background:#FEE500;color:#3A1D1D;}
+.contact-btn.dark{background:#0d1117;color:#fff;}
+body.dark-mode .contact-btn.dark{background:#f0f2f8;color:#0d1117;}
+.contact-btn.pink{background:linear-gradient(135deg,#FF6B8B,#DDA0DD);color:#fff;}
 
-        /* FAQ */
-        .faq-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 64px; }
-        details { background: var(--g50); border-radius: var(--r-lg); border: 1px solid var(--g200); overflow: hidden; transition: border-color .2s; }
-        details[open] { border-color: var(--pink-soft); background: var(--pink-ultra); }
-        summary { padding: 20px 24px; font-size: .92rem; font-weight: 700; color: var(--g900); list-style: none; display: flex; justify-content: space-between; align-items: center; cursor: pointer; gap: 12px; }
-        summary::-webkit-details-marker { display: none; }
-        .faq-icon { font-size: 1.1rem; color: var(--pink); flex-shrink: 0; transition: transform .3s var(--ease); }
-        details[open] .faq-icon { transform: rotate(45deg); }
-        .faq-answer { padding: 0 24px 20px; font-size: .88rem; color: var(--g500); line-height: 1.85; border-top: 1px solid var(--g200); padding-top: 16px; margin: 0 24px; }
-        details[open] .faq-answer { border-color: var(--pink-soft); }
+.contact-card.kakao{border:2px solid #FEE500;}
+body.dark-mode .contact-card.kakao{border-color:rgba(254,229,0,.3);}
 
-        /* 1:1 문의 폼 */
-        .form-card { background: var(--g50); border-radius: var(--r-xl); border: 1px solid var(--g200); padding: 36px 32px; margin-bottom: 64px; }
-        .form-row { margin-bottom: 14px; }
-        .form-label { font-size: 12px; font-weight: 700; color: var(--g500); margin-bottom: 6px; display: block; }
-        .form-input { width: 100%; padding: 13px 16px; border: 1.5px solid var(--g200); border-radius: var(--r-md); background: var(--white); font-size: 14px; color: var(--g900); font-family: inherit; outline: none; transition: border-color .2s, box-shadow .2s; }
-        .form-input:focus { border-color: var(--pink); box-shadow: 0 0 0 3px rgba(255,45,138,.1); }
-        .form-input::placeholder { color: var(--g400); }
-        textarea.form-input { resize: none; line-height: 1.75; }
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .btn-submit { width: 100%; padding: 14px; margin-top: 6px; border: none; background: var(--pink); color: #fff; font-size:17px; font-weight: 700; border-radius: var(--r-md); cursor: pointer; font-family: inherit; transition: background .2s, transform .2s; box-shadow: var(--sh-pink); }
-        .btn-submit:hover { background: var(--pink-light); transform: translateY(-1px); }
-        .btn-submit:active { transform: scale(.98); }
-        .form-note { font-size: 12px; color: var(--g400); text-align: center; margin-top: 10px; }
+/* FAQ */
+.faq-wrap{max-width:960px;margin:0 auto;padding:0 24px;display:flex;flex-direction:column;gap:10px;}
+.faq-item{background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,.06);opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease;}
+.faq-item.visible{opacity:1;transform:translateY(0);}
+body.dark-mode .faq-item{background:#1c1c1e;box-shadow:none;}
+.faq-q{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;cursor:pointer;gap:12px;font-size:15px;user-select:none;transition:opacity .3s cubic-bezier(.4,0,.2,1);}
+.faq-q:active{opacity:.7;}
+.faq-arrow{width:18px;height:18px;flex-shrink:0;color:rgba(0,0,0,.25);transition:transform .4s cubic-bezier(.4,0,.2,1);}
+body.dark-mode .faq-arrow{color:rgba(255,255,255,.25);}
+.faq-item.open .faq-arrow{transform:rotate(180deg);}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .5s cubic-bezier(.4,0,.2,1);}
+.faq-item.open .faq-a{max-height:300px;}
+.faq-a-inner{padding:0 24px 20px;font-size:13px;line-height:1.9;color:rgba(0,0,0,.5);border-top:1px solid rgba(0,0,0,.06);}
+body.dark-mode .faq-a-inner{color:rgba(255,255,255,.45);border-top-color:rgba(255,255,255,.06);}
 
-        /* 성공 메시지 */
-        .success-msg { display: none; background: #F0FFF4; border: 1.5px solid #52c41a; border-radius: var(--r-lg); padding: 20px 24px; text-align: center; }
-        .success-msg.show { display: block; }
-        .success-msg p { font-size: .9rem; font-weight: 700; color: #389e0d; }
-
-        /* FOOTER */
-        footer { background: var(--g50); border-top: 1px solid var(--g200); padding: 40px 24px; text-align: center; font-size: 12px; color: var(--g400); line-height: 2; }
-        footer a { color: var(--g400); text-decoration: none; }
-        footer a:hover { color: var(--g900); }
-
-        @media (max-width: 480px) {
-            .form-grid { grid-template-columns: 1fr; }
-            .form-card { padding: 24px 20px; }
-            .hero { padding: 48px 20px 44px; }
-        }
-    </style>
-    <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"홈","item":"https://lumi.it.kr/"},{"@type":"ListItem","position":2,"name":"고객센터","item":"https://lumi.it.kr/support"}]}
-    </script>
+/* ACTION CARDS */
+.action-grid{max-width:960px;margin:0 auto;padding:0 24px;display:grid;grid-template-columns:repeat(2,1fr);gap:16px;}
+@media(max-width:700px){.action-grid{grid-template-columns:1fr;}}
+.action-card{background:#fff;border-radius:24px;padding:28px;box-shadow:0 2px 16px rgba(0,0,0,.06);opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease;}
+.action-card.visible{opacity:1;transform:translateY(0);}
+body.dark-mode .action-card{background:#1c1c1e;box-shadow:none;}
+.action-card h3{font-size:17px;margin-bottom:8px;}
+.action-card p{font-size:13px;color:rgba(0,0,0,.5);line-height:1.8;margin-bottom:16px;}
+body.dark-mode .action-card p{color:rgba(255,255,255,.45);}
+.action-card a{display:inline-block;padding:10px 24px;border-radius:980px;font-size:13px;text-decoration:none;font-family:inherit;transition:transform .3s cubic-bezier(.4,0,.2,1);}
+.action-card a:active{transform:scale(.95);}
+.action-card a.dark{background:#0d1117;color:#fff;}
+body.dark-mode .action-card a.dark{background:#f0f2f8;color:#0d1117;}
+.action-card a.danger{background:rgba(255,59,48,.1);color:#FF3B30;}
+</style>
 </head>
 <body>
-<script>if(localStorage.getItem("lumi_dark_mode")!=="0")document.body.classList.add("dark-mode");</script>
+<script>if(localStorage.getItem('lumi_dark_mode')!=='0'){document.body.classList.add('dark-mode');document.documentElement.style.background='#111';}</script>
 
-<!-- NAV -->
 <nav>
-  <a href="/" class="nav-logo-wrap">
-    <img src="/assets/logo.png" class="nav-logo" alt="lumi">
-    <span class="nav-logo-txt">lumi</span>
-  </a>
-  <span></span>
-  <a href="/" class="nav-back">← 홈으로</a>
+  <a href="/bento-preview.html" class="nav-logo">lumi</a>
+  <button class="nav-close" onclick="location.href='/bento-preview.html'"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
 </nav>
 
-<!-- HERO -->
 <div class="hero">
-    <div class="hero-chip">💬 고객센터</div>
-    <h1 class="hero-title">무엇이든 물어보세요.</h1>
-    <p class="hero-desc">궁금한 점이 있으시면 아래 방법으로 편하게 문의해 주세요.<br>빠르게 도움드릴게요.</p>
+  <img src="/assets/lumi-curious.png" class="hero-lumi" alt="lumi">
+  <h1>무엇이든 물어보세요</h1>
+  <p>편하신 방법으로 연락해 주세요</p>
 </div>
 
 <!-- 연락 방법 -->
-<div class="section" style="padding-top:52px;">
-    <p class="section-label">문의 방법</p>
-    <h2 class="section-title">편하신 방법으로 연락해 주세요.</h2>
-    <div class="contact-grid">
-        <a href="https://pf.kakao.com/_lumi_it" target="_blank" class="contact-card kakao">
-            <div class="contact-icon">💛</div>
-            <div class="contact-name">카카오톡 채널</div>
-            <p class="contact-desc">가장 빠른 응답<br>평일 오전 10시 ~ 오후 6시</p>
-            <span class="contact-btn yellow">채널 추가하기</span>
-        </a>
-        <a href="mailto:gung3625@gmail.com" class="contact-card">
-            <div class="contact-icon">📧</div>
-            <div class="contact-name">이메일 문의</div>
-            <p class="contact-desc">gung3625@gmail.com<br>영업일 기준 1~2일 내 답변</p>
-            <span class="contact-btn dark">메일 보내기</span>
-        </a>
-        <div class="contact-card" onclick="document.getElementById('inquiry-form').scrollIntoView({behavior:'smooth'})">
-            <div class="contact-icon">📝</div>
-            <div class="contact-name">1:1 문의</div>
-            <p class="contact-desc">아래 폼을 작성해 주시면<br>이메일로 답변드려요.</p>
-            <span class="contact-btn pink">문의 작성하기</span>
-        </div>
-    </div>
+<div class="grid">
+  <a href="https://pf.kakao.com/_lumi_it" target="_blank" class="contact-card kakao">
+    <span class="contact-icon">💛</span>
+    <span class="contact-name">카카오톡</span>
+    <span class="contact-desc">가장 빠른 응답<br>평일 10시 ~ 18시</span>
+    <span class="contact-btn yellow">채널 추가</span>
+  </a>
+  <a href="mailto:gung3625@gmail.com" class="contact-card">
+    <span class="contact-icon">📧</span>
+    <span class="contact-name">이메일</span>
+    <span class="contact-desc">gung3625@gmail.com<br>1~2 영업일 내 답변</span>
+    <span class="contact-btn dark">메일 보내기</span>
+  </a>
 </div>
 
 <!-- FAQ -->
-<div class="section">
-    <p class="section-label">FAQ</p>
-    <h2 class="section-title">자주 묻는 질문이에요.</h2>
-    <div class="faq-list">
+<p class="section-label">자주 묻는 질문</p>
+<div class="faq-wrap" id="faq"></div>
 
-        <details>
-            <summary>인스타그램 비밀번호를 알려줘야 하나요? <span class="faq-icon">+</span></summary>
-            <p class="faq-answer">아니요, 비밀번호는 절대 필요하지 않아요. 메타(Meta) 공식 API를 통해 연동하기 때문에 비밀번호 없이 안전하게 연결돼요.</p>
-        </details>
-
-        <details>
-            <summary>7일 무료체험 후 자동으로 결제되나요? <span class="faq-icon">+</span></summary>
-            <p class="faq-answer">아니요, 카드 등록 없이 시작하기 때문에 자동 결제는 없어요. 7일 후에는 서비스 이용이 중단되고, 계속 쓰고 싶으시면 그때 구독을 시작하시면 돼요.</p>
-        </details>
-
-        <details>
-            <summary>구독 취소는 어떻게 하나요? <span class="faq-icon">+</span></summary>
-            <p class="faq-answer">언제든지 취소할 수 있어요. 위약금이나 해지 수수료는 없어요. 서비스 내 대시보드에서 직접 취소하거나, gung3625@gmail.com으로 메일 한 통만 보내주시면 바로 처리해 드려요.</p>
-        </details>
-
-        <details>
-            <summary>환불이 가능한가요? <span class="faq-icon">+</span></summary>
-            <p class="faq-answer">결제 후 7일 이내이고 서비스를 사용하지 않은 경우 전액 환불이 가능해요. 7일이 지난 경우에는 해당 월 서비스를 제공한 것으로 보아 환불이 어렵지만, 다음 결제일 이전에 구독을 취소하면 이후 결제는 진행되지 않아요.</p>
-        </details>
-
-        <details>
-            <summary>게시물이 마음에 안 들면 어떻게 해요? <span class="faq-icon">+</span></summary>
-            <p class="faq-answer">코멘트 칸에 원하는 방향을 적어주시면 그 내용을 반영해서 글을 써요. "좀 더 따뜻하게", "신메뉴 가격도 넣어줘" 같은 메모면 충분해요. 그래도 마음에 안 드시면 인스타그램에서 직접 수정하시면 돼요.</p>
-        </details>
-
-        <details>
-            <summary>인스타그램 비즈니스 계정이 없어도 되나요? <span class="faq-icon">+</span></summary>
-            <p class="faq-answer">자동 게시 기능은 인스타그램 비즈니스 계정 또는 크리에이터 계정이 필요해요. 개인 계정을 비즈니스 계정으로 전환하는 건 인스타그램 앱에서 무료로 할 수 있고, 전환해도 기존 게시물이나 팔로워에는 영향이 없어요.</p>
-        </details>
-
-        <details>
-            <summary>사진은 몇 장까지 올릴 수 있나요? <span class="faq-icon">+</span></summary>
-            <p class="faq-answer">한 번에 최대 10장까지 올릴 수 있어요. 여러 장을 올리면 인스타그램 캐러셀(묶음 게시물) 형태로 자동 업로드돼요.</p>
-        </details>
-
-        <details>
-            <summary>예약 게시는 어떻게 사용하나요? <span class="faq-icon">+</span></summary>
-            <p class="faq-answer">사진과 코멘트를 올린 후, 날짜와 시간을 선택하고 "예약 저장" 버튼을 누르면 돼요. lumi가 해당 시간에 자동으로 게시해드려요.</p>
-        </details>
-
-        <details>
-            <summary>비밀번호를 잊어버렸어요. <span class="faq-icon">+</span></summary>
-            <p class="faq-answer">로그인 화면에서 "비밀번호 찾기"를 클릭하시면 가입하신 이메일로 인증번호를 보내드려요. 인증 후 새 비밀번호로 변경하실 수 있어요.</p>
-        </details>
-
-        <details>
-            <summary>회원 탈퇴는 어떻게 하나요? <span class="faq-icon">+</span></summary>
-            <p class="faq-answer">아래 "탈퇴 요청하기" 버튼을 통해 이메일로 요청해 주시면 영업일 기준 1~2일 내로 처리해드려요. 탈퇴 시 모든 데이터가 삭제되며 복구가 불가능하니 신중하게 결정해 주세요.</p>
-        </details>
-
-    </div>
-</div>
-
-<!-- 구독 취소 / 회원 탈퇴 -->
-<div class="section">
-    <p class="section-label">구독 취소 · 회원 탈퇴</p>
-    <h2 class="section-title">취소 또는 탈퇴를 원하시나요?</h2>
-    <div class="contact-grid" style="margin-bottom:32px;">
-        <div class="contact-card" style="text-align:left;cursor:default;">
-            <div class="contact-icon">🔕</div>
-            <div class="contact-name">구독 취소</div>
-            <p class="contact-desc" style="margin-bottom:16px;">구독을 취소하면 다음 결제일부터 자동 결제가 중단돼요. 현재 결제 기간 만료일까지는 계속 이용 가능해요. 위약금은 없어요.</p>
-            <a href="mailto:gung3625@gmail.com?subject=구독 취소 요청&body=이메일: %0A이름: %0A취소 사유(선택): " class="contact-btn dark">구독 취소 요청하기</a>
-        </div>
-        <div class="contact-card" id="withdraw-card" style="text-align:left;cursor:default;border-color:#ffcccc;background:#fff5f5;display:none;">
-            <div class="contact-icon">👋</div>
-            <div class="contact-name">회원 탈퇴</div>
-            <p class="contact-desc" id="withdraw-desc" style="margin-bottom:16px;">탈퇴하면 모든 데이터가 삭제되며 복구가 불가능해요.</p>
-            <a id="withdraw-btn" href="mailto:gung3625@gmail.com?subject=회원 탈퇴 요청&body=이메일: %0A이름: %0A탈퇴 사유(선택): " class="contact-btn" style="background:#ff4d4d;color:#fff;">탈퇴 요청하기</a>
-        </div>
-    </div>
-    <div style="background:var(--g50);border-radius:var(--r-lg);padding:16px 20px;border:1px solid var(--g200);font-size:.85rem;color:var(--g500);line-height:1.8;">
-        📌 요청 후 <strong style="color:var(--g900);">영업일 기준 1~2일 이내</strong>에 처리되며, 처리 완료 후 이메일로 안내해드려요.
-    </div>
-</div>
-
-<!-- 1:1 문의 폼 -->
-<div class="section" id="inquiry-form">
-    <p class="section-label">1:1 문의</p>
-    <h2 class="section-title">직접 문의해 주세요.</h2>
-    <div class="form-card">
-        <div id="success-message" class="success-msg">
-            <p>✅ 문의가 접수됐어요! 영업일 기준 1~2일 내로 이메일로 답변드릴게요.</p>
-        </div>
-        <form name="lumi-inquiry" method="POST" data-netlify="true" data-netlify-honeypot="bot-field" id="inquiry-form-el">
-            <input type="hidden" name="form-name" value="lumi-inquiry">
-            <input type="hidden" name="bot-field" style="display:none;">
-
-            <div class="form-grid">
-                <div class="form-row">
-                    <label class="form-label">이름 *</label>
-                    <input type="text" name="name" placeholder="대표님 성함" class="form-input" autocomplete="name" required>
-                </div>
-                <div class="form-row">
-                    <label class="form-label">이메일 *</label>
-                    <input type="email" name="email" placeholder="답변받을 이메일" class="form-input" autocomplete="email" required>
-                </div>
-            </div>
-
-            <div class="form-row">
-                <label class="form-label">문의 유형 *</label>
-                <select name="category" class="form-input" required>
-                    <option value="">문의 유형을 선택해 주세요</option>
-                    <option value="서비스 이용">서비스 이용 방법</option>
-                    <option value="결제/환불">결제 및 환불</option>
-                    <option value="계정">계정 관련</option>
-                    <option value="Instagram 연동">Instagram 연동</option>
-                    <option value="오류 신고">오류 신고</option>
-                    <option value="제휴/협력">제휴 및 협력</option>
-                    <option value="기타">기타</option>
-                </select>
-            </div>
-
-            <div class="form-row">
-                <label class="form-label">문의 내용 *</label>
-                <textarea name="message" class="form-input" rows="6" placeholder="문의하실 내용을 자세히 적어주세요." required></textarea>
-            </div>
-
-            <button type="submit" class="btn-submit">문의 보내기</button>
-            <p class="form-note">영업일 기준 1~2일 내로 이메일로 답변드려요.</p>
-        </form>
-    </div>
-</div>
-
-<!-- FOOTER -->
-<footer id="main-footer" style="border-top:1px solid rgba(255,255,255,.07);padding:48px 32px 32px;">
-  <div style="max-width:980px;margin:0 auto;display:flex;justify-content:space-between;align-items:flex-start;gap:32px;flex-wrap:wrap;">
-    <div>
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;"><img src="/assets/logo.png" style="height:28px;opacity:.7;filter:brightness(10) grayscale(1);" alt="lumi"><span style="font-size:17px;font-weight:600;letter-spacing:-0.28px;color:rgba(255,255,255,.48);">lumi</span></div>
-      <p style="font-size:12px;color:rgba(255,255,255,.48);line-height:2.2;opacity:.6;">상호명: 루미 (lumi) · 대표자: 김현<br>사업자 등록번호: 404-09-66416 · 업태: 정보통신업<br>서울특별시 용산구 회나무로 32-7 (이태원동)<br>통신판매업 신고번호: 제2024-서울용산-1166호 · 이메일: gung3625@gmail.com</p>
-    </div>
-    <div style="display:flex;gap:20px;"><a href="/terms" style="font-size:14px;color:rgba(255,255,255,.48);text-decoration:none;">이용약관</a><a href="/privacy" style="font-size:14px;color:rgba(255,255,255,.48);text-decoration:none;">개인정보 처리방침</a><a href="/support" style="font-size:14px;color:rgba(255,255,255,.48);text-decoration:none;">고객센터</a></div>
+<!-- 구독 취소 / 탈퇴 -->
+<p class="section-label">구독 취소 · 회원 탈퇴</p>
+<div class="action-grid">
+  <div class="action-card">
+    <h3>구독 취소</h3>
+    <p>다음 결제일부터 자동결제가 중단돼요. 현재 결제 기간 만료까지 정상 이용 가능하고, 위약금은 없어요.</p>
+    <a href="mailto:gung3625@gmail.com?subject=구독 취소 요청" class="dark">구독 취소 요청</a>
   </div>
-  <p style="font-size:12px;color:rgba(255,255,255,.48);text-align:center;margin-top:32px;padding-top:24px;border-top:1px solid rgba(255,255,255,.07);opacity:.5;">© 2026 lumi (루미) · 대표 김현</p>
-</footer>
+  <div class="action-card">
+    <h3>회원 탈퇴</h3>
+    <p>탈퇴 시 모든 데이터가 삭제되며 복구할 수 없어요. 신중하게 결정해 주세요.</p>
+    <a href="mailto:gung3625@gmail.com?subject=회원 탈퇴 요청" class="danger">탈퇴 요청</a>
+  </div>
+</div>
 
 <script>
-document.getElementById('inquiry-form-el').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const form = e.target;
-    const data = new FormData(form);
-    try {
-        const res = await fetch('/', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams(data).toString()
-        });
-        if (res.ok) {
-            form.style.display = 'none';
-            document.getElementById('success-message').classList.add('show');
-        } else {
-            alert('제출 중 오류가 발생했어요. 이메일로 직접 문의해 주세요.');
-        }
-    } catch(err) {
-        alert('제출 중 오류가 발생했어요. 이메일로 직접 문의해 주세요.');
-    }
+var faqs = [
+  {q:'인스타그램 비밀번호를 알려줘야 하나요?', a:'아니요. Meta 공식 API를 통해 연동하기 때문에 비밀번호 없이 안전하게 연결돼요.'},
+  {q:'7일 무료체험 후 자동으로 결제되나요?', a:'아니요. 카드 등록 없이 시작하기 때문에 자동 결제는 없어요. 7일 후 계속 쓰고 싶으시면 그때 구독을 시작하시면 돼요.'},
+  {q:'구독 취소는 어떻게 하나요?', a:'언제든 취소 가능하고 위약금 없어요. 대시보드에서 직접 취소하거나, gung3625@gmail.com으로 메일 보내주시면 바로 처리해드려요.'},
+  {q:'환불이 가능한가요?', a:'결제 후 7일 이내 + 미이용 시 전액 환불돼요. 7일 경과 시 다음 결제일 전에 취소하면 이후 결제는 진행되지 않아요.'},
+  {q:'게시물이 마음에 안 들면?', a:'코멘트 칸에 원하는 방향을 적어주세요. "좀 더 따뜻하게", "신메뉴 가격도 넣어줘" 같은 메모면 충분해요. 인스타그램에서 직접 수정도 가능해요.'},
+  {q:'비즈니스 계정이 없어도 되나요?', a:'자동 게시는 비즈니스 또는 크리에이터 계정이 필요해요. 개인 → 비즈니스 전환은 인스타 앱에서 무료로 할 수 있고, 기존 게시물이나 팔로워에는 영향 없어요.'},
+  {q:'사진은 몇 장까지?', a:'한 번에 최대 10장. 여러 장이면 캐러셀(묶음 게시물) 형태로 자동 업로드돼요.'},
+  {q:'예약 게시는 어떻게?', a:'사진과 코멘트를 올린 후 날짜·시간 선택하고 "예약 저장"을 누르면 돼요. lumi가 해당 시간에 자동 게시해요.'},
+  {q:'비밀번호를 잊어버렸어요', a:'로그인 화면 → "비밀번호 찾기" → 가입 이메일로 인증번호 → 새 비밀번호 설정'},
+  {q:'회원 탈퇴는?', a:'위 "탈퇴 요청" 버튼 또는 gung3625@gmail.com으로 요청하시면 1~2 영업일 내 처리돼요. 모든 데이터가 삭제되며 복구 불가능해요.'}
+];
+
+var arrow='<svg class="faq-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>';
+var wrap=document.getElementById('faq');
+faqs.forEach(function(f){
+  var el=document.createElement('div');
+  el.className='faq-item';
+  el.innerHTML='<div class="faq-q" onclick="this.parentElement.classList.toggle(\'open\')"><span>'+f.q+'</span>'+arrow+'</div><div class="faq-a"><div class="faq-a-inner">'+f.a+'</div></div>';
+  wrap.appendChild(el);
 });
 
-// 회원탈퇴 카드: 로그인 + 구독 상태 체크
-(function() {
-    const card = document.getElementById('withdraw-card');
-    const desc = document.getElementById('withdraw-desc');
-    const btn = document.getElementById('withdraw-btn');
-    if (!card) return;
-
-    const raw = localStorage.getItem('lumi_user');
-    if (!raw) return; // 비로그인 → 탈퇴 카드 숨김 유지
-
-    let user;
-    try { user = JSON.parse(raw); } catch { return; }
-    if (!user || !user.email) return;
-
-    card.style.display = ''; // 로그인 상태면 카드 표시
-
-    const hasPlan = user.plan && user.plan !== 'none' && user.plan !== 'trial';
-    const isSubscribed = hasPlan && (user.autoRenew !== false || (user.planExpireAt && new Date(user.planExpireAt) > new Date()));
-
-    if (isSubscribed) {
-        desc.textContent = '구독을 먼저 취소해주세요. 구독 중에는 탈퇴할 수 없어요.';
-        btn.href = '#';
-        btn.onclick = function(e) { e.preventDefault(); alert('구독을 먼저 취소해주세요.'); };
-        btn.style.background = '#ccc';
-        btn.style.color = '#888';
-        btn.style.cursor = 'not-allowed';
-        btn.textContent = '구독 취소 후 탈퇴 가능';
-    } else {
-        desc.textContent = '탈퇴하면 모든 데이터가 삭제되며 복구가 불가능해요.';
-        btn.href = 'mailto:gung3625@gmail.com?subject=회원 탈퇴 요청&body=이메일: ' + encodeURIComponent(user.email) + '%0A이름: %0A탈퇴 사유(선택): ';
-    }
-})();
-</script>
-
-<button class="dark-toggle-fab" id="dark-toggle-fab" onclick="toggleDarkMode(!document.body.classList.contains('dark-mode'))" aria-label="다크모드 전환">☀️</button>
-<script>
-if(localStorage.getItem('lumi_dark_mode')!=='0')document.body.classList.add('dark-mode');
-function toggleDarkMode(on){document.body.classList.toggle('dark-mode',on);localStorage.setItem('lumi_dark_mode',on?'1':'0');var f=document.getElementById('dark-toggle-fab');if(f)f.textContent=on?'☀️':'🌙';}
-(function(){var f=document.getElementById('dark-toggle-fab');if(f&&document.body.classList.contains('dark-mode'))f.textContent='☀️';else if(f)f.textContent='🌙';})();
+var io=new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting){e.target.classList.add('visible');io.unobserve(e.target);}});},{threshold:0.1});
+document.querySelectorAll('.contact-card,.faq-item,.action-card').forEach(function(c){io.observe(c);});
 </script>
 </body>
 </html>
