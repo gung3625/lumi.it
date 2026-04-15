@@ -3656,8 +3656,12 @@ function filterGrid(category, btnEl) {
   }
 
   var matchedIds = filterLayouts[category].matched;
-  var needsLayout = category !== 'feature';
-  if (needsLayout && window._setGridLayout) {
+  if (category === 'feature') {
+    if (window._setGridLayout) {
+      window._setGridLayout(layout.map(function(l){return Object.assign({},l);}));
+      window._currentLayout = layout;
+    }
+  } else if (window._setGridLayout) {
     window._setGridLayout(filterLayouts[category].layout.map(function(l){return Object.assign({},l);}));
     window._currentLayout = filterLayouts[category].layout;
   }
