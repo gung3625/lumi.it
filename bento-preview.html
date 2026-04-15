@@ -3021,7 +3021,7 @@ function BentoGrid() {
 
   var children = activeLayout.map(function(item) {
     var cardFn = cards[item.i];
-    return e('div', {key: item.i}, cardFn ? cardFn() : null);
+    return e('div', {key: item.i, 'data-cardid': item.i}, cardFn ? cardFn() : null);
   });
 
   return e(RGL, {
@@ -3635,42 +3635,6 @@ function applyCardStyles(matchedIds) {
   });
 }
 
-function packCards(cards, cols) {
-  var grid = [];
-  function getHeight(){ return grid.length ? grid.length : 0; }
-  function fits(x, y, w, h) {
-    for(var r=y;r<y+h;r++){
-      if(!grid[r]) grid[r] = [];
-      for(var c=x;c<x+w;c++){
-        if(c>=cols || grid[r][c]) return false;
-      }
-    }
-    return true;
-  }
-  function place(x, y, w, h) {
-    for(var r=y;r<y+h;r++){
-      if(!grid[r]) grid[r] = [];
-      for(var c=x;c<x+w;c++) grid[r][c] = true;
-    }
-  }
-  var result = [];
-  cards.forEach(function(card) {
-    for(var y=0;y<100;y++){
-      var found = false;
-      for(var x=0;x<=cols-card.w;x++){
-        if(fits(x, y, card.w, card.h)){
-          place(x, y, card.w, card.h);
-          result.push(Object.assign({}, card, {x:x, y:y}));
-          found = true;
-          break;
-        }
-      }
-      if(found) break;
-    }
-  });
-  return result;
-}
-
 function filterGrid(category, btnEl) {
   document.querySelectorAll('.nav-pill').forEach(function(p) { p.classList.remove('active'); });
   if (btnEl) btnEl.classList.add('active');
@@ -3681,42 +3645,30 @@ function filterGrid(category, btnEl) {
       window._setGridLayout(layout.map(function(l){return Object.assign({},l);}));
       window._currentLayout = layout;
     }
-    setTimeout(function(){
-      document.querySelectorAll('.react-grid-item').forEach(function(el) {
-        el.style.opacity = '1';
-        el.style.filter = 'none';
-        el.style.pointerEvents = 'auto';
-      });
-    }, 50);
+    document.querySelectorAll('[data-cardid]').forEach(function(el) {
+      var item = el.closest('.react-grid-item');
+      if (!item) return;
+      item.style.opacity = '1';
+      item.style.filter = 'none';
+      item.style.pointerEvents = 'auto';
+    });
     return;
   }
 
-  var fl = filterLayouts[category];
-  var matchedIds = fl.matched;
-  var base = layout;
-  var matched = [];
-  var unmatched = [];
-  base.forEach(function(item) {
-    if (matchedIds.indexOf(item.i) !== -1) matched.push(Object.assign({}, item));
-    else unmatched.push(Object.assign({}, item));
-  });
-  var packed = packCards(matched.concat(unmatched), 4);
-
+  var matchedIds = filterLayouts[category].matched;
   if (window._setGridLayout) {
-    window._setGridLayout(packed);
-    window._currentLayout = packed;
+    window._setGridLayout(filterLayouts[category].layout.map(function(l){return Object.assign({},l);}));
+    window._currentLayout = filterLayouts[category].layout;
   }
-  setTimeout(function(){
-    var items = document.querySelectorAll('.react-grid-item');
-    packed.forEach(function(item, idx) {
-      var el = items[idx];
-      if (!el) return;
-      var isMatch = matchedIds.indexOf(item.i) !== -1;
-      el.style.opacity = isMatch ? '1' : '0.12';
-      el.style.filter = isMatch ? 'none' : 'blur(3px)';
-      el.style.pointerEvents = isMatch ? 'auto' : 'none';
-    });
-  }, 50);
+  document.querySelectorAll('[data-cardid]').forEach(function(el) {
+    var id = el.getAttribute('data-cardid');
+    var item = el.closest('.react-grid-item');
+    if (!item) return;
+    var isMatch = matchedIds.indexOf(id) !== -1;
+    item.style.opacity = isMatch ? '1' : '0.12';
+    item.style.filter = isMatch ? 'none' : 'blur(3px)';
+    item.style.pointerEvents = isMatch ? 'auto' : 'none';
+  });
 }
 
 function resetGrid() {
