@@ -1001,13 +1001,6 @@ body.dark-mode .tut-check-circle { background:rgba(255,107,139,.15); }
 }
 @media (max-width: 480px) { .nav-pills { display: none; } }
 
-/* BIO 카드 콘텐츠 잘림 방지 — overflow:hidden 예외 처리 */
-[data-cardid="bio"] .grid-stack-item-content,
-[data-cardid="bio"] > div {
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
-}
 
 /* MOBILE CARD RESPONSIVE */
 @media (max-width: 600px) {
@@ -1101,9 +1094,13 @@ body.dark-mode .tut-check-circle { background:rgba(255,107,139,.15); }
 
   /* 카드 내부 스크롤 — 모바일 200px rowHeight에서 콘텐츠 잘림 방지 */
   .react-grid-item > .bento-card {
-    overflow-y: auto;
+    overflow-y: auto !important;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
+    scrollbar-width: none;
+  }
+  .react-grid-item > .bento-card::-webkit-scrollbar {
+    display: none;
   }
 
   /* project 카드 모바일 축소 */
@@ -3349,7 +3346,7 @@ var cards = {
         ) : null;
 
         var pendingCount = reservations.filter(function(r){return !r.isSent && !r._cancelled;}).length;
-        return e('div', {className:'bento-card card-text', style:{position:'relative',padding:'clamp(16px, 4vw, 28px) clamp(16px, 4vw, 32px)',display:'flex',flexDirection:'column',justifyContent:'center',width:'100%',height:'100%',overflow:'hidden'}},
+        return e('div', {className:'bento-card card-text', style:{position:'relative',padding:'clamp(16px, 4vw, 28px) clamp(16px, 4vw, 32px)',display:'flex',flexDirection:'column',justifyContent:'center',width:'100%',height:'100%'}},
           detailPanel,
           e('div', {style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'16px',width:'100%'}},
             e('p', {style:{fontSize:'17px',color:tc,fontWeight:600}}, '\uC608\uC57D \uAC8C\uC2DC'),
