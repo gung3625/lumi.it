@@ -1820,6 +1820,7 @@ var cards = {
         if (!realFiles.length) { alert('사진을 선택해주세요.'); return; }
         var token = localStorage.getItem('lumi_token');
         if (!token) { alert('로그인이 필요합니다.'); return; }
+        checkPostCount(token, function() {
         setIsPosting(true);
         var cat = lumiUser.bizCategory || lumiUser.storeCategory || 'cafe';
         fetch('/api/get-best-time', {
@@ -1853,6 +1854,7 @@ var cards = {
           setIsPosting(false);
           alert('오류가 발생했습니다: ' + err.message);
         });
+        }); // checkPostCount callback end
       }
 
       // 예약 게시
@@ -1861,6 +1863,7 @@ var cards = {
         if (!realFiles.length) { alert('사진을 선택해주세요.'); return; }
         var token = localStorage.getItem('lumi_token');
         if (!token) { alert('로그인이 필요합니다.'); return; }
+        checkPostCount(token, function() {
         var scheduled = new Date(scheduleTime);
         if (scheduled <= new Date()) { alert('미래 시간을 선택해주세요.'); return; }
         setIsPosting(true);
@@ -1884,6 +1887,7 @@ var cards = {
           setIsPosting(false);
           alert('예약 중 오류가 발생했습니다: ' + err.message);
         });
+        }); // checkPostCount callback end
       }
 
       var demoSets = [
