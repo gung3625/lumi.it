@@ -3420,16 +3420,16 @@ var tabletLayout = [
 
 // Layout — mobile (1 col, storytelling flow)
 var mobileLayout = [
-  {i:'bio',       x:0, y:0, w:1, h:2, isResizable:false},
-  {i:'blog',      x:0, y:2, w:1, h:1, isResizable:false},
-  {i:'project1',  x:0, y:3, w:1, h:2, isResizable:false},
-  {i:'spotify',   x:0, y:5, w:1, h:1, isResizable:false},
-  {i:'project2',  x:0, y:6, w:1, h:2, isResizable:false},
-  {i:'twitter',   x:0, y:8, w:1, h:1, isResizable:false},
-  {i:'newsletter',x:0, y:9, w:1, h:1, isResizable:false},
-  {i:'project3',  x:0, y:10, w:1, h:1, isResizable:false},
-  {i:'empty1',    x:0, y:11, w:1, h:1, isResizable:false},
-  {i:'dark',      x:0, y:12, w:1, h:1, isResizable:false}
+  {i:'bio',       x:0, y:0,  w:1, h:2, isResizable:false},
+  {i:'blog',      x:0, y:2,  w:1, h:1, isResizable:false},
+  {i:'project1',  x:0, y:3,  w:1, h:1, isResizable:false},
+  {i:'spotify',   x:0, y:4,  w:1, h:1, isResizable:false},
+  {i:'project2',  x:0, y:5,  w:1, h:1, isResizable:false},
+  {i:'twitter',   x:0, y:6,  w:1, h:1, isResizable:false},
+  {i:'newsletter',x:0, y:7,  w:1, h:1, isResizable:false},
+  {i:'project3',  x:0, y:8,  w:1, h:1, isResizable:false},
+  {i:'dark',      x:0, y:9,  w:1, h:1, isResizable:false},
+  {i:'empty1',    x:0, y:10, w:1, h:1, isResizable:false}
 ];
 
 // 저장된 레이아웃 불러오기
@@ -3467,6 +3467,15 @@ function BentoGrid() {
   var isMobile = gridWidth < 600;
   var isTablet = gridWidth >= 600 && gridWidth < 900;
 
+  // 브레이크포인트 전환 시 인라인 스타일 초기화
+  React.useEffect(function(){
+    document.querySelectorAll('.react-grid-item').forEach(function(el) {
+      el.style.opacity = '';
+      el.style.filter = '';
+      el.style.pointerEvents = '';
+    });
+  }, [isMobile, isTablet]);
+
   // 데스크톱 레이아웃만 저장/복원
   var _ls = React.useState(savedLayout || layout);
   var desktopLayout = _ls[0], setDesktopLayout = _ls[1];
@@ -3475,7 +3484,7 @@ function BentoGrid() {
 
   var cols, rowH, mgn, activeLayout, canDrag;
   if (isMobile) {
-    cols = 1; rowH = 280; mgn = [12, 12]; activeLayout = mobileLayout; canDrag = false;
+    cols = 1; rowH = 200; mgn = [12, 12]; activeLayout = mobileLayout; canDrag = false;
   } else if (isTablet) {
     cols = 2; rowH = 260; mgn = [14, 14]; activeLayout = tabletLayout; canDrag = false;
   } else {
@@ -4293,15 +4302,14 @@ function buildFilterLayout(category) {
 }
 
 function applyCardStyles(matchedIds) {
-  var gridItems = document.querySelectorAll('.react-grid-item');
-  var currentLayout = window._currentLayout || layout;
-  gridItems.forEach(function(el, idx) {
-    if (!currentLayout[idx]) return;
-    var key = currentLayout[idx].i;
-    var isMatch = matchedIds.indexOf(key) !== -1;
-    el.style.opacity = isMatch ? '1' : '0.15';
-    el.style.filter = 'none';
-    el.style.pointerEvents = isMatch ? 'auto' : 'none';
+  document.querySelectorAll('[data-cardid]').forEach(function(el) {
+    var id = el.getAttribute('data-cardid');
+    var item = el.closest('.react-grid-item');
+    if (!item) return;
+    var isMatch = matchedIds.indexOf(id) !== -1;
+    item.style.opacity = isMatch ? '1' : '0.15';
+    item.style.filter = 'none';
+    item.style.pointerEvents = isMatch ? 'auto' : 'none';
   });
 }
 
