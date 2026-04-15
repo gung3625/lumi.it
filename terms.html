@@ -17,7 +17,7 @@ body.dark-mode{background:#111;color:#f0f2f8;}
 
 nav{max-width:960px;margin:0 auto;padding:32px 24px 0;display:flex;align-items:center;justify-content:space-between;}
 .nav-logo{font-size:28px;font-weight:800;font-family:'Nunito',sans-serif;background:linear-gradient(90deg,#FF6B8B,#DDA0DD 50%,#EDD080 85%,#DABA65);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-decoration:none;}
-.nav-close{width:36px;height:36px;border-radius:50%;border:none;background:rgba(0,0,0,.06);color:#0d1117;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .3s cubic-bezier(.4,0,.2,1),background .3s cubic-bezier(.4,0,.2,1);}
+.nav-close{width:44px;height:44px;border-radius:50%;border:none;background:rgba(0,0,0,.06);color:#0d1117;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .3s cubic-bezier(.4,0,.2,1),background .3s cubic-bezier(.4,0,.2,1);}
 .nav-close:active{transform:scale(.9);}
 body.dark-mode .nav-close{background:rgba(255,255,255,.08);color:#f0f2f8;}
 
@@ -37,7 +37,7 @@ body.dark-mode .card{background:#1c1c1e;box-shadow:none;}
 .card.wide{grid-column:1/-1;}
 .card-num{font-size:11px;color:#fff;background:linear-gradient(135deg,#FF6B8B,#DDA0DD);border-radius:6px;padding:2px 8px;align-self:flex-start;}
 .card h2{font-size:18px;line-height:1.4;}
-.card p,.card li{font-size:13px;line-height:1.8;color:rgba(0,0,0,.55);}
+.card p,.card li{font-size:13px;line-height:1.8;color:rgba(0,0,0,.55);word-break:keep-all;overflow-wrap:break-word;}
 body.dark-mode .card p,body.dark-mode .card li{color:rgba(255,255,255,.5);}
 .card ul,.card ol{padding-left:18px;display:flex;flex-direction:column;gap:4px;}
 .card a{color:#C8507A;text-decoration:none;}
@@ -57,7 +57,6 @@ body.dark-mode .footer-links a{color:rgba(255,255,255,.3);}
 .highlight{word-break:keep-all;overflow-wrap:break-word;}
 @media(max-width:480px){
 nav{padding:20px 16px 0;}
-.nav-close{width:44px;height:44px;}
 .card{padding:20px 16px;}
 .card h2{font-size:16px;}
 .card p,.card li{font-size:12px;}
@@ -70,7 +69,7 @@ nav{padding:20px 16px 0;}
 </style>
 </head>
 <body>
-<script>if(localStorage.getItem('lumi_dark_mode')!=='0'){document.body.classList.add('dark-mode');document.documentElement.style.background='#111';}</script>
+<script>if(localStorage.getItem('lumi_dark_mode')==='1'){document.body.classList.add('dark-mode');document.documentElement.style.background='#111';}</script>
 
 <nav>
   <a href="/bento-preview.html" class="nav-logo">lumi</a>
@@ -252,6 +251,17 @@ nav{padding:20px 16px 0;}
 
 </div>
 
+<footer class="footer">
+  <div class="footer-info">
+    상호명: 루미 (lumi) · 대표자: 김현 · 사업자등록번호: 404-09-66416<br>
+    통신판매업: 제2024-서울용산-1166호 · 서울 용산구 회나무로 32-7<br>
+    문의: gung3625@gmail.com
+  </div>
+  <div class="footer-links">
+    <a href="/privacy.html">개인정보처리방침</a>
+    <a href="/support.html">고객센터</a>
+  </div>
+</footer>
 
 <script>
 var io=new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting){e.target.classList.add('visible');io.unobserve(e.target);}});},{threshold:0.1});

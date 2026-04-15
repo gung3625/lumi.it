@@ -121,7 +121,7 @@ exports.handler = async (event) => {
       } catch(e) { console.error('[lumi] user 업데이트 실패:', e.message); }
     }
 
-    console.log('[lumi] Instagram OAuth 연동 완료:', igUserId, email);
+    console.log('[lumi] Instagram OAuth 연동 완료:', igUserId);
     return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/?oauth_success=1' } };
 
   } catch(e) {

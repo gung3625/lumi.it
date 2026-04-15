@@ -1065,6 +1065,14 @@ body.dark-mode .tut-check-circle { background:rgba(255,107,139,.15); }
   }
 }
 
+/* REAL-UPLOAD LAYOUT */
+.real-upload-layout { flex-direction: row; gap: 24px; }
+.real-upload-right { width: min(280px, 45%); flex-shrink: 0; }
+@media (max-width: 500px) {
+  .real-upload-layout { flex-direction: column !important; gap: 12px !important; }
+  .real-upload-right { width: 100% !important; flex-shrink: unset !important; }
+}
+
 /* MOBILE STICKY CTA BAR */
 .mobile-cta-bar { display:none; }
 @media (max-width: 600px) {
@@ -1558,6 +1566,14 @@ var cards = {
       var st8 = React.useState(window._bioRealNote || ''), realNote = st8[0], _setRealNote = st8[1];
       var setRealNote = function(v){ window._bioRealNote = v; _setRealNote(v); };
       var st12 = React.useState(-1), dragIdx = st12[0], setDragIdx = st12[1];
+      var objUrlsRef = React.useRef([]);
+      React.useEffect(function(){
+        return function(){ objUrlsRef.current.forEach(function(u){try{URL.revokeObjectURL(u);}catch(ex){}}); };
+      },[]);
+      React.useEffect(function(){
+        objUrlsRef.current.forEach(function(u){try{URL.revokeObjectURL(u);}catch(ex){}});
+        objUrlsRef.current = realFiles.map(function(f){return URL.createObjectURL(f);});
+      },[realFiles]);
       var savedStyle = (JSON.parse(localStorage.getItem('lumi_settings') || '{}')).captionStyle || '';
       var st9 = React.useState(savedStyle), captionStyle = st9[0], setCaptionStyle = st9[1];
       var st10 = React.useState(true), showStyle = st10[0], setShowStyle = st10[1];
@@ -1909,7 +1925,7 @@ var cards = {
               );
             })() : null,
 
-            phase === 'real-upload' ? e('div', {style:{display:'flex',flexDirection:window.innerWidth<500?'column':'row',height:'100%',gap:window.innerWidth<500?'12px':'24px',padding:'4px',overflow:'auto'}},
+            phase === 'real-upload' ? e('div', {className:'real-upload-layout', style:{display:'flex',height:'100%',padding:'4px',overflow:'auto'}},
               // 왼쪽: 사진 미리보기
               e('div', {style:{flex:1,display:'flex',flexDirection:'column',gap:'8px'}},
                 e('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'4px'}},
@@ -1918,7 +1934,7 @@ var cards = {
                 ),
                 e('div', {style:{display:'grid',gridTemplateColumns:'repeat('+Math.max(Math.min(realFiles.length,5),3)+',1fr)',gap:'6px',flex:1,alignContent:'start'}},
                   realFiles.slice(0,10).map(function(f,i){
-                    var url = URL.createObjectURL(f);
+                    var url = objUrlsRef.current[i] || URL.createObjectURL(f);
                     var isFirst = i === 0;
                     return e('div',{key:f.name+f.size+f.lastModified,draggable:true,
                       onDragStart:function(ev){ev.dataTransfer.setData('text/plain',String(i));ev.dataTransfer.effectAllowed='move';},
@@ -1945,7 +1961,7 @@ var cards = {
                 )
               ),
               // 오른쪽: 코멘트 + 버튼
-              e('div', {style:{width:window.innerWidth<500?'100%':'280px',display:'flex',flexDirection:'column',justifyContent:'space-between',flexShrink:window.innerWidth<500?undefined:0}},
+              e('div', {className:'real-upload-right', style:{display:'flex',flexDirection:'column',justifyContent:'space-between'}},
                 e('div',{style:{flex:1,display:'flex',flexDirection:'column',gap:'8px'}},
                   e('p',{style:{fontSize:'14px',fontWeight:600,color:tc,marginBottom:'4px'}},'코멘트'),
                   e('textarea',{placeholder:'\uC804\uD560 \uC18C\uC2DD\uC774 \uC788\uB2E4\uBA74 \uC801\uC5B4\uC8FC\uC138\uC694 (\uC120\uD0DD)\n\uC608) \uC2E0\uBA54\uB274 \uCD9C\uC2DC, \uBA85\uC808 \uD734\uBB34 \uC548\uB0B4',value:realNote,onChange:function(ev){setRealNote(ev.target.value);},rows:3,style:{width:'100%',padding:'12px 14px',borderRadius:'14px',border:'1.5px solid '+(isDk?'rgba(255,255,255,.1)':'rgba(0,0,0,.08)'),background:'transparent',fontFamily:'inherit',fontSize:'13px',color:tc,outline:'none',resize:'none',boxSizing:'border-box'},onMouseDown:function(ev){ev.stopPropagation();}}),
@@ -2167,7 +2183,7 @@ var cards = {
         var emoji = _weatherEmojis[state] || '\u2600\uFE0F';
         var tempStr = weather ? ((_weatherLabels[state]||'')+' '+weather.temperature+'\xB0') : '';
         var locStr = weather ? (weather.locationName||'') : '';
-        return e('div', {className:'bento-card card-text', style:{padding:'24px',display:'flex',flexDirection:'column',justifyContent:'space-between'}},
+        return e('div', {className:'bento-card card-text', style:{padding:'clamp(16px, 4vw, 24px)',display:'flex',flexDirection:'column',justifyContent:'space-between'}},
           e('div', null,
             e('div', {style:{display:'flex',alignItems:'center',gap:'8px',marginBottom:'14px'}},
               e('span', {style:{fontSize:'22px'}}, emoji),
@@ -2550,7 +2566,8 @@ var cards = {
       },[]);
 
       var scope = tab;
-      var src = apiData[scope] || (scope==='domestic'?fallbackDomestic:fallbackGlobal);
+      var _srcRaw = apiData[scope] || (scope==='domestic'?fallbackDomestic:fallbackGlobal);
+      var src = _srcRaw.slice();
       if(src.length>0 && src.length<7){var _s=src.slice();while(src.length<7)src=src.concat(_s);}
       src=src.slice(0,7);
       var cardRef = React.useRef(null);
@@ -3451,6 +3468,12 @@ function closeLogin() {
 function logoutLumi() {
   localStorage.removeItem('lumi_token');
   localStorage.removeItem('lumi_user');
+  localStorage.removeItem('lumi_feat_toggles');
+  localStorage.removeItem('lumi_settings');
+  localStorage.removeItem('lumi_trend_cache');
+  localStorage.removeItem('lumi_grid_layout');
+  localStorage.removeItem('lumi_grid_version');
+  localStorage.removeItem('lumi_ig_guide');
   location.reload();
 }
 

@@ -231,7 +231,7 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Bad Request' }) };
   }
 
-  const { reservationKey, email } = body;
+  let { reservationKey, email } = body;
 
   // Bearer 토큰 인증 + Blobs 검증
   const authHeader = event.headers['authorization'] || '';

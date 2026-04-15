@@ -63,7 +63,7 @@ exports.handler = async (event) => {
     console.error('[lumi] 토큰 저장 오류:', e.message);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: '저장 실패', message: e.message })
+      body: JSON.stringify({ error: '저장 실패' })
     };
   }
 };

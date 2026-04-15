@@ -52,7 +52,7 @@ exports.handler = async (event) => {
       if (existing) {
         return {
           statusCode: 409,
-          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          headers: CORS,
           body: JSON.stringify({ error: '이미 가입된 이메일이에요. 로그인해주세요.' })
         };
       }
@@ -102,13 +102,14 @@ exports.handler = async (event) => {
     });
     return {
       statusCode: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: CORS,
       body: JSON.stringify({ success: true, message: '인증번호를 발송했습니다.' })
     };
   } catch (err) {
-    console.error('Resend error:', err);
+    console.error('Resend error:', err.message);
     return {
       statusCode: 500,
+      headers: CORS,
       body: JSON.stringify({ error: '이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.' })
     };
   }
