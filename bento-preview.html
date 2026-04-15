@@ -27,7 +27,7 @@
 .bento-card h2, .bento-card p, .bento-card span, .bento-card a { min-width: 0; max-width: 100%; }
 .bento-card [class*="btn"], .bento-card button { white-space: nowrap; min-width: fit-content; }
 input, textarea, select { font-size: max(16px, 1em); }
-html { background: #fdf2f4; scrollbar-width: none; overscroll-behavior: none; }
+html { background: #fdf2f4; scrollbar-width: none; }
 html::-webkit-scrollbar { display: none; }
 body {
   font-family: 'Jua', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -1055,6 +1055,14 @@ body.dark-mode .tut-check-circle { background:rgba(255,107,139,.15); }
   /* Signup grid */
   .su-grid { grid-template-columns: 1fr !important; }
   .su-card { grid-column: auto !important; }
+
+  /* Real-upload layout: prevent overflow */
+  .tut-wrap > .tut-content > div[style*="display: flex"][style*="height: 100%"],
+  .tut-wrap > .tut-content > div[style*="display:flex"][style*="height:100%"] {
+    flex-direction: column !important;
+    overflow: auto !important;
+    gap: 12px !important;
+  }
 }
 
 /* MOBILE STICKY CTA BAR */
@@ -1622,8 +1630,8 @@ var cards = {
         e('div', {className:'tut-wrap'},
 
           showLumi ? e('div', {className:'tut-lumi-area'},
-            phase === 'processing' ? e('div',{className:'lumi-aura',style:{width:'240px',height:'240px'}}) : null,
-            e('img', {className:lumiClass, src:lumiSrc, alt:'lumi', style:{width:'240px',height:'auto',position:'relative',zIndex:1}})
+            phase === 'processing' ? e('div',{className:'lumi-aura',style:{width:'clamp(160px, 50vw, 240px)',height:'clamp(160px, 50vw, 240px)'}}) : null,
+            e('img', {className:lumiClass, src:lumiSrc, alt:'lumi', style:{width:'clamp(160px, 50vw, 240px)',maxWidth:'100%',height:'auto',position:'relative',zIndex:1}})
           ) : null,
 
           e('div', {className:'tut-content'+(phase==='gallery'?' tut-content-gallery':''), style: !showLumi ? {flex:'1 1 100%'} : undefined},
@@ -1781,7 +1789,7 @@ var cards = {
               );
             })() : null,
 
-            phase === 'real-upload' ? e('div', {style:{display:'flex',height:'100%',gap:'24px',padding:'4px'}},
+            phase === 'real-upload' ? e('div', {style:{display:'flex',flexDirection:window.innerWidth<500?'column':'row',height:'100%',gap:window.innerWidth<500?'12px':'24px',padding:'4px',overflow:'auto'}},
               // 왼쪽: 사진 미리보기
               e('div', {style:{flex:1,display:'flex',flexDirection:'column',gap:'8px'}},
                 e('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'4px'}},
@@ -1817,7 +1825,7 @@ var cards = {
                 )
               ),
               // 오른쪽: 코멘트 + 버튼
-              e('div', {style:{width:'280px',display:'flex',flexDirection:'column',justifyContent:'space-between',flexShrink:0}},
+              e('div', {style:{width:window.innerWidth<500?'100%':'280px',display:'flex',flexDirection:'column',justifyContent:'space-between',flexShrink:window.innerWidth<500?undefined:0}},
                 e('div',{style:{flex:1,display:'flex',flexDirection:'column',gap:'8px'}},
                   e('p',{style:{fontSize:'14px',fontWeight:600,color:tc,marginBottom:'4px'}},'코멘트'),
                   e('textarea',{placeholder:'\uC804\uD560 \uC18C\uC2DD\uC774 \uC788\uB2E4\uBA74 \uC801\uC5B4\uC8FC\uC138\uC694 (\uC120\uD0DD)\n\uC608) \uC2E0\uBA54\uB274 \uCD9C\uC2DC, \uBA85\uC808 \uD734\uBB34 \uC548\uB0B4',value:realNote,onChange:function(ev){setRealNote(ev.target.value);},rows:3,style:{width:'100%',padding:'12px 14px',borderRadius:'14px',border:'1.5px solid '+(isDk?'rgba(255,255,255,.1)':'rgba(0,0,0,.08)'),background:'transparent',fontFamily:'inherit',fontSize:'13px',color:tc,outline:'none',resize:'none',boxSizing:'border-box'},onMouseDown:function(ev){ev.stopPropagation();}}),
@@ -2236,7 +2244,7 @@ var cards = {
             var pad = function(n){return n<10?'0'+n:''+n;};
             return e('div', {className:'bento-card card-visual bg-blue', style:{flexDirection:'column',justifyContent:'center',alignItems:'center',textAlign:'center',padding:'24px',gap:'8px'}},
               e('p', {style:{fontSize:'11px',color:'rgba(255,255,255,.5)',letterSpacing:'1px'}}, '\uB2E4\uC74C \uAC8C\uC2DC'),
-              e('p', {style:{fontSize:'32px',fontWeight:400,color:'#fff',letterSpacing:'2px',fontFamily:'\'Nunito\',sans-serif'}}, pad(h)+':'+pad(m)+':'+pad(s)),
+              e('p', {style:{fontSize:'clamp(22px, 6vw, 32px)',fontWeight:400,color:'#fff',letterSpacing:'2px',fontFamily:'\'Nunito\',sans-serif'}}, pad(h)+':'+pad(m)+':'+pad(s)),
               e('div', {style:{width:'60px',height:'60px',borderRadius:'12px',overflow:'hidden',marginTop:'4px',boxShadow:'0 4px 16px rgba(0,0,0,.2)'}},
                 e('img', {src:'/assets/demo-cafe.png', style:{width:'100%',height:'100%',objectFit:'cover'}})
               ),
@@ -2264,7 +2272,7 @@ var cards = {
               );
             })
           ) : null,
-          e('p', {style:{fontSize:'20px',fontWeight:700,color:'#fff',marginBottom:'20px'}}, cur.label),
+          e('p', {style:{fontSize:'clamp(16px, 4vw, 20px)',fontWeight:700,color:'#fff',marginBottom:'20px'}}, cur.label),
           e('button', {className:'btn-pill', style:{fontSize:'15px',padding:'12px 28px',background:'rgba(255,255,255,.2)',backdropFilter:'blur(10px)',color:'#fff',border:'1px solid rgba(255,255,255,.25)',marginBottom:'16px',cursor:'pointer'}, onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(ev){ev.stopPropagation();cur.action();}}, cur.btn),
           step < 2 ? e('button', {style:{fontSize:'14px',background:'none',border:'none',color:'rgba(255,255,255,.6)',cursor:'pointer',marginBottom:'14px',fontFamily:'inherit',textDecoration:'underline',padding:'6px'}, onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(ev){ev.stopPropagation();completeStep(step);}}, cur.label + ' 완료했어요') : null,
           e('button', {style:{fontSize:'12px',background:'none',border:'none',color:'rgba(255,255,255,.4)',cursor:'pointer',fontFamily:'inherit',padding:'6px'}, onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(ev){ev.stopPropagation();navigateOut('/ig-guide.html');}}, '자세히 보기')
@@ -2288,7 +2296,7 @@ var cards = {
       var s = steps[phase];
       return e('div', {className:'bento-card card-visual bg-blue', style:{flexDirection:'column',justifyContent:'center',alignItems:'center',textAlign:'center',padding:'20px',gap:'0',position:'relative',overflow:'hidden'}},
         e('div', {key:phase, style:{display:'flex',flexDirection:'column',alignItems:'center',animation:'igGuideIn .5s cubic-bezier(.16,1,.3,1)'}},
-          s.icon === 'img' ? e('div', {style:{animation:'igIconPop .4s cubic-bezier(.16,1,.3,1) .1s both'}}, e('img', {src:'/assets/lumi-smile.png', style:{width:'120px',height:'120px',objectFit:'contain',marginTop:'-30px'}}), e('p', {style:{fontSize:'16px',fontWeight:700,color:'#fff',marginBottom:'6px',letterSpacing:'-0.3px'}}, s.title), e('p', {style:{fontSize:'13px',color:'rgba(255,255,255,.75)',lineHeight:'1.6',whiteSpace:'pre-line'}}, s.desc)) : e(React.Fragment, null, e('div', {style:{fontSize:'42px',marginBottom:'10px',animation:'igIconPop .4s cubic-bezier(.16,1,.3,1) .1s both'}}, s.icon), e('p', {style:{fontSize:'16px',fontWeight:700,color:'#fff',marginBottom:'6px',letterSpacing:'-0.3px'}}, s.title), e('p', {style:{fontSize:'13px',color:'rgba(255,255,255,.75)',lineHeight:'1.6',whiteSpace:'pre-line'}}, s.desc))
+          s.icon === 'img' ? e('div', {style:{animation:'igIconPop .4s cubic-bezier(.16,1,.3,1) .1s both'}}, e('img', {src:'/assets/lumi-smile.png', style:{width:'clamp(80px, 25vw, 120px)',height:'clamp(80px, 25vw, 120px)',objectFit:'contain',marginTop:'-30px'}}), e('p', {style:{fontSize:'16px',fontWeight:700,color:'#fff',marginBottom:'6px',letterSpacing:'-0.3px'}}, s.title), e('p', {style:{fontSize:'13px',color:'rgba(255,255,255,.75)',lineHeight:'1.6',whiteSpace:'pre-line'}}, s.desc)) : e(React.Fragment, null, e('div', {style:{fontSize:'clamp(28px, 8vw, 42px)',marginBottom:'10px',animation:'igIconPop .4s cubic-bezier(.16,1,.3,1) .1s both'}}, s.icon), e('p', {style:{fontSize:'16px',fontWeight:700,color:'#fff',marginBottom:'6px',letterSpacing:'-0.3px'}}, s.title), e('p', {style:{fontSize:'13px',color:'rgba(255,255,255,.75)',lineHeight:'1.6',whiteSpace:'pre-line'}}, s.desc))
         ),
         e('div', {style:{display:'flex',gap:'4px',position:'absolute',bottom:'12px'}},
           [0,1,2,3,4].map(function(i){
@@ -2468,29 +2476,29 @@ var cards = {
         var bg2 = isDk ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.03)';
         var stat = function(num, label) {
           return e('div', {style:{flex:1,textAlign:'center',padding:'14px 0'}},
-            e('p', {style:{fontSize:'24px',color:tc,marginBottom:'2px'}}, num),
+            e('p', {style:{fontSize:'clamp(18px, 5vw, 24px)',color:tc,marginBottom:'2px'}}, num),
             e('p', {style:{fontSize:'11px',color:tc2}}, label)
           );
         };
-        return e('div', {className:'bento-card card-text', style:{padding:'28px 32px',display:'flex',flexDirection:'column',justifyContent:'space-between',width:'100%'}},
+        return e('div', {className:'bento-card card-text', style:{padding:'clamp(16px, 4vw, 28px) clamp(16px, 4vw, 32px)',display:'flex',flexDirection:'column',justifyContent:'space-between',width:'100%'}},
           e('div', {style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'16px',width:'100%'}},
             e('div', null,
               e('p', {style:{fontSize:'12px',color:tc2,marginBottom:'2px'}}, '4\uC6D4 \uB9AC\uD3EC\uD2B8'),
-              e('p', {style:{fontSize:'20px',color:tc}}, '\uC774\uBC88 \uB2EC \uD65C\uB3D9')
+              e('p', {style:{fontSize:'clamp(16px, 4vw, 20px)',color:tc}}, '\uC774\uBC88 \uB2EC \uD65C\uB3D9')
             ),
             e('span', {style:{fontSize:'13px',color:pink,fontWeight:600}}, '\uC9C0\uB09C\uB2EC \uB300\uBE44 +23%')
           ),
           e('div', {style:{display:'flex',gap:'12px',width:'100%'}},
             e('div', {style:{flex:1,padding:'20px',borderRadius:'16px',background:bg2,textAlign:'center'}},
-              e('p', {style:{fontSize:'32px',color:tc}}, '12'),
+              e('p', {style:{fontSize:'clamp(22px, 6vw, 32px)',color:tc}}, '12'),
               e('p', {style:{fontSize:'12px',color:tc2,marginTop:'6px'}}, '\uCEA1\uC158 \uC0DD\uC131')
             ),
             e('div', {style:{flex:1,padding:'20px',borderRadius:'16px',background:bg2,textAlign:'center'}},
-              e('p', {style:{fontSize:'32px',color:tc}}, '8'),
+              e('p', {style:{fontSize:'clamp(22px, 6vw, 32px)',color:tc}}, '8'),
               e('p', {style:{fontSize:'12px',color:tc2,marginTop:'6px'}}, '\uAC8C\uC2DC \uC644\uB8CC')
             ),
             e('div', {style:{flex:1,padding:'20px',borderRadius:'16px',background:bg2,textAlign:'center'}},
-              e('p', {style:{fontSize:'32px',color:tc}}, '4h'),
+              e('p', {style:{fontSize:'clamp(22px, 6vw, 32px)',color:tc}}, '4h'),
               e('p', {style:{fontSize:'12px',color:tc2,marginTop:'6px'}}, '\uC808\uC57D \uC2DC\uAC04')
             )
           )
@@ -2524,11 +2532,11 @@ var cards = {
         var bg2 = isDk ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.03)';
         var lumiUser = JSON.parse(localStorage.getItem('lumi_user') || '{}');
         var plan = lumiUser.plan || '\uBB34\uB8CC \uCCB4\uD5D8';
-        return e('div', {className:'bento-card card-text', style:{padding:'28px 32px',display:'flex',flexDirection:'column',justifyContent:'space-between',width:'100%'}},
+        return e('div', {className:'bento-card card-text', style:{padding:'clamp(16px, 4vw, 28px) clamp(16px, 4vw, 32px)',display:'flex',flexDirection:'column',justifyContent:'space-between',width:'100%'}},
           e('div', {style:{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:'16px',width:'100%'}},
             e('div', null,
               e('p', {style:{fontSize:'12px',color:tc2,marginBottom:'2px'}}, '\uB0B4 \uD50C\uB79C'),
-              e('p', {style:{fontSize:'22px',color:tc}}, plan)
+              e('p', {style:{fontSize:'clamp(18px, 4vw, 22px)',color:tc}}, plan)
             ),
             e('span', {style:{fontSize:'12px',color:tc2}}, 'D-18 \uB0A8\uC74C')
           ),
@@ -2554,7 +2562,7 @@ var cards = {
     var cardBg = isDk ? '#272729' : '#fff';
     var checkColor = isDk ? 'rgba(240,242,248,.5)' : 'rgba(0,0,0,.35)';
     var check = function(txt){ return e('div',{style:{display:'flex',alignItems:'center',gap:'5px',marginBottom:'4px'}}, e('span',{style:{fontSize:'10px',color:checkColor}},'✓'), e('span',{style:{fontSize:'11px',color:tc2}},txt)); };
-    return e('div', {className:'bento-card card-text', style:{padding:'24px 28px',background:cardBg,display:'flex',flexDirection:'column',justifyContent:'space-between',width:'100%',boxSizing:'border-box'}},
+    return e('div', {className:'bento-card card-text', style:{padding:'clamp(16px, 4vw, 24px) clamp(18px, 4vw, 28px)',background:cardBg,display:'flex',flexDirection:'column',justifyContent:'space-between',width:'100%',boxSizing:'border-box'}},
       e('div', {style:{width:'100%',flex:1,display:'flex',flexDirection:'column'}},
         e('p', {style:{fontSize:'15px',color:tc,fontWeight:600,letterSpacing:'.5px',marginBottom:'14px',textAlign:'center'}}, '요금'),
         e('div', {style:{display:'flex',gap:'12px',width:'100%',alignItems:'stretch'}},
@@ -2668,7 +2676,7 @@ var cards = {
             e('span', {style:{fontSize:'10px',color:status==='\uC608\uC57D'?pink:'#4ade80',padding:'2px 8px',borderRadius:'6px',background:status==='\uC608\uC57D'?(isDk?'rgba(255,107,139,.1)':'rgba(200,80,122,.06)'):'rgba(34,197,94,.1)'}}, status)
           );
         };
-        return e('div', {className:'bento-card card-text', style:{padding:'28px 32px',display:'flex',flexDirection:'column',justifyContent:'center',width:'100%',height:'100%'}},
+        return e('div', {className:'bento-card card-text', style:{padding:'clamp(16px, 4vw, 28px) clamp(16px, 4vw, 32px)',display:'flex',flexDirection:'column',justifyContent:'center',width:'100%',height:'100%'}},
           e('div', {style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'16px',width:'100%'}},
             e('p', {style:{fontSize:'17px',color:tc,fontWeight:600}}, '\uC608\uC57D \uAC8C\uC2DC'),
             e('span', {style:{fontSize:'12px',color:pink,padding:'4px 12px',borderRadius:'980px',background:isDk?'rgba(255,107,139,.1)':'rgba(200,80,122,.06)'}}, '\uC608\uC57D 2\uAC74')
@@ -2696,7 +2704,7 @@ var cards = {
         e('span',{style:{flex:1,fontSize:'13px',color:pink,textAlign:'center',fontWeight:600}},lumi)
       );
     };
-    return e('div', {className:'bento-card card-text', style:{padding:'24px 28px',background:cardBg,display:'flex',flexDirection:'column',justifyContent:'flex-start',width:'100%',boxSizing:'border-box'}},
+    return e('div', {className:'bento-card card-text', style:{padding:'clamp(16px, 4vw, 24px) clamp(18px, 4vw, 28px)',background:cardBg,display:'flex',flexDirection:'column',justifyContent:'flex-start',width:'100%',boxSizing:'border-box'}},
       e('div', {style:{width:'100%',display:'flex',flexDirection:'column'}},
         e('p', {style:{fontSize:'15px',color:tc,fontWeight:600,letterSpacing:'.5px',marginBottom:'14px',textAlign:'center'}}, '대행사 vs ', e('span',{className:'lumi-brand'},'lumi')),
         e('div',{style:{display:'flex',alignItems:'center',padding:'8px 0',marginBottom:'4px'}},
