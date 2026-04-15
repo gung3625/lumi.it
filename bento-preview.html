@@ -1104,15 +1104,9 @@ body.dark-mode .tut-check-circle { background:rgba(255,107,139,.15); }
   /* 카드 transition 모바일 축소 */
   .react-grid-item { transition-duration: 0.3s !important; }
 
-  /* 카드 내부 스크롤 — 모바일 200px rowHeight에서 콘텐츠 잘림 방지 */
+  /* 카드 내부 스크롤 제거 — 콘텐츠를 200px 안에 맞추고 넘치면 숨김 */
   .react-grid-item > .bento-card {
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
-    scrollbar-width: none;
-  }
-  .react-grid-item > .bento-card::-webkit-scrollbar {
-    display: none;
+    overflow: hidden !important;
   }
 
   /* project 카드 모바일 축소 */
@@ -1202,7 +1196,7 @@ body.dark-mode .tut-check-circle { background:rgba(255,107,139,.15); }
 
   /* ---- twitter: IgConnectCard/IgSlideCard 모바일 200px 잘림 방지 ---- */
   /* padding은 JS inline style(isMobile 분기)이 담당 — CSS override 제거 */
-  .card-visual.bg-blue { overflow-y: auto !important; }
+  .card-visual.bg-blue { overflow: hidden !important; }
   /* 내부 div 컨테이너가 카드 전체 너비를 활용하도록 */
   .card-visual.bg-blue > div { width: 100% !important; box-sizing: border-box !important; }
   /* 인라인 마진을 CSS로 억제하기 어려우므로 내부 p/button 폰트·마진 압축 */
@@ -1212,6 +1206,30 @@ body.dark-mode .tut-check-circle { background:rgba(255,107,139,.15); }
   .card-visual.bg-blue > button { font-size: 12px !important; padding: 8px 16px !important; margin-bottom: 6px !important; }
   /* IgSlideCard 아이콘 축소 */
   .card-visual.bg-blue > div > div[style] > div { font-size: 28px !important; margin-bottom: 6px !important; }
+
+  /* ---- blog 카드 200px 압축 ---- */
+  .card-text.pad-blog { padding: 12px 14px !important; }
+  .card-text.pad-blog .blog-title { font-size: 15px !important; margin-bottom: 4px !important; }
+  .card-text.pad-blog .blog-desc { font-size: 11px !important; line-height: 1.4 !important; }
+
+  /* ---- project3 요금제 카드 200px 압축 ---- */
+  .card-text[style*="space-between"] > div > p[style*="요금"],
+  .card-text[style*="space-between"] > div > p:first-child { margin-bottom: 8px !important; }
+  .card-text[style*="space-between"] > div > div[style*="flex"] > div { padding: 10px 12px !important; }
+  .card-text[style*="space-between"] > div > div[style*="flex"] > div > p:first-child { font-size: 9px !important; margin-bottom: 3px !important; }
+  .card-text[style*="space-between"] > div > div[style*="flex"] > div > p:nth-child(2) { font-size: 18px !important; }
+  .card-text[style*="space-between"] > div > div[style*="flex"] > div > p:nth-child(3) { font-size: 8px !important; margin-bottom: 6px !important; }
+  .card-text[style*="space-between"] > div > div[style*="flex"] > div > div { margin-bottom: 2px !important; }
+  .card-text[style*="space-between"] > div > div[style*="flex"] > div > div > span { font-size: 9px !important; }
+  .card-text[style*="space-between"] > p:last-child { font-size: 11px !important; margin-top: 8px !important; }
+
+  /* ---- newsletter 비교표 카드 200px 압축 ---- */
+  .card-text[style*="flex-start"] > div > p:first-child { font-size: 13px !important; margin-bottom: 8px !important; }
+  .card-text[style*="flex-start"] > div > div[style*="border-bottom"] { padding: 5px 0 !important; }
+  .card-text[style*="flex-start"] > div > div[style*="border-bottom"] > span { font-size: 11px !important; }
+  .card-text[style*="flex-start"] > div > div[style*="padding"] > span { font-size: 10px !important; }
+  .card-text[style*="flex-start"] > div:last-child { margin-top: 8px !important; }
+  .card-text[style*="flex-start"] .btn-pill { font-size: 11px !important; min-height: 36px !important; padding: 0 12px !important; }
 }
 
 /* REAL-UPLOAD LAYOUT */
@@ -3186,8 +3204,8 @@ var cards = {
         e('div', {style:{display:'flex',gap:'12px',width:'100%',alignItems:'stretch'}},
           e('div', {style:{flex:1,padding:'16px 18px',borderRadius:'14px',background:bg2,display:'flex',flexDirection:'column'}},
             e('p', {style:{fontSize:'10px',color:tc2,marginBottom:'6px',fontWeight:500}}, '스탠다드'),
-            e('p', {style:{fontSize:'22px',fontWeight:400,color:tc,letterSpacing:'-0.5px'}}, '₩9,900'),
-            e('p', {style:{fontSize:'9px',color:tc2,marginTop:'2px',marginBottom:'12px'}}, '/월 · 12건'),
+            e('p', {style:{fontSize:'22px',fontWeight:400,color:tc,letterSpacing:'-0.5px'}}, '₩29,000'),
+            e('p', {style:{fontSize:'9px',color:tc2,marginTop:'2px',marginBottom:'12px'}}, '/월 · 건'),
             check('캡션 + 해시태그'),
             check('자동 게시'),
             check('캐러셀'),
@@ -3195,8 +3213,8 @@ var cards = {
           ),
           e('div', {style:{flex:1,padding:'16px 18px',borderRadius:'14px',background:isDk?'rgba(255,107,139,.08)':'linear-gradient(135deg,rgba(255,107,139,.06),rgba(221,160,221,.06))',outline:'1.5px solid '+(isDk?'rgba(255,143,171,.25)':'rgba(200,80,122,.15)'),display:'flex',flexDirection:'column'}},
             e('p', {style:{fontSize:'10px',color:pink,marginBottom:'6px',fontWeight:600}}, '추천'),
-            e('p', {style:{fontSize:'22px',fontWeight:400,color:tc,letterSpacing:'-0.5px'}}, '₩29,900'),
-            e('p', {style:{fontSize:'9px',color:tc2,marginTop:'2px',marginBottom:'12px'}}, '/월 · 30건'),
+            e('p', {style:{fontSize:'22px',fontWeight:400,color:tc,letterSpacing:'-0.5px'}}, '₩39,000'),
+            e('p', {style:{fontSize:'9px',color:tc2,marginTop:'2px',marginBottom:'12px'}}, '/월 · 건'),
             check('스탠다드 전부'),
             check('최적 시간 게시'),
             check('예약 게시')
@@ -3485,7 +3503,7 @@ var cards = {
           e('span',{style:{flex:1,fontSize:'12px',color:dimTxt,textAlign:'center',fontWeight:600}},'대행사'),
           e('span',{style:{flex:1,fontSize:'12px',color:pink,textAlign:'center',fontWeight:600}},e('span',{className:'lumi-brand'},'lumi'))
         ),
-        row('월 비용', '50~100만원', '9,900원~'),
+        row('월 비용', '50~100만원', '29,000원~'),
         row('계약', '최소 3개월', '없음'),
         row('우리 매장 이해', '낮음', 'lumi 학습'),
         row('게시 속도', '2~3일', '1분')
