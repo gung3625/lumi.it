@@ -3671,18 +3671,20 @@ function filterGrid(category, btnEl) {
   }
 
   var fl = filterLayouts[category];
-  if (window._setGridLayout) {
+  var useOwnLayout = category !== 'feature';
+  if (useOwnLayout && window._setGridLayout) {
     window._setGridLayout(fl.layout.map(function(l){return Object.assign({},l);}));
     window._currentLayout = fl.layout;
   }
   setTimeout(function(){
     var items = document.querySelectorAll('.react-grid-item');
-    var newLayout = fl.layout;
+    var refLayout = useOwnLayout ? fl.layout : (window._currentLayout || layout);
     var delay = 0;
     items.forEach(function(el, idx) {
-      if (!newLayout[idx]) return;
-      var key = newLayout[idx].i;
+      if (!refLayout[idx]) return;
+      var key = refLayout[idx].i;
       var isMatch = fl.matched.indexOf(key) !== -1;
+      el.style.transition = 'opacity .5s cubic-bezier(.4,0,.2,1), filter .5s cubic-bezier(.4,0,.2,1)';
       el.style.opacity = isMatch ? '1' : '0.12';
       el.style.filter = isMatch ? 'none' : 'blur(3px)';
       el.style.pointerEvents = isMatch ? 'auto' : 'none';
