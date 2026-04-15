@@ -230,31 +230,82 @@ body.dark-mode .ig-status{background:rgba(255,255,255,.06);}
 <script>
 var user = JSON.parse(localStorage.getItem('lumi_user') || '{}');
 var settings = JSON.parse(localStorage.getItem('lumi_settings') || '{}');
+var authHeaders = function(){
+  return { 'Authorization': 'Bearer ' + localStorage.getItem('lumi_token'), 'Content-Type': 'application/json' };
+};
 
-// 초기값 로드
-if(user.storeName) document.getElementById('s-store').value = user.storeName;
-if(user.bizCategory) document.getElementById('s-biz').value = user.bizCategory;
-if(user.region) document.getElementById('s-region').value = user.region;
-// IG 연동 상태
-if(user.igConnected){
-  document.getElementById('ig-dot').className='ig-dot connected';
-  document.getElementById('ig-text').textContent='연동됨';
-} else {
-  document.getElementById('ig-btn').textContent='연동하기';
-  document.getElementById('ig-btn').className='btn btn-pink';
-  document.getElementById('ig-btn').onclick=function(){location.href='/bento-preview.html';};
+// localStorage 초기값 먼저 로드 (빠른 표시)
+function applyUserToUI(u){
+  if(u.storeName) document.getElementById('s-store').value = u.storeName;
+  if(u.bizCategory) document.getElementById('s-biz').value = u.bizCategory;
+  if(u.region) document.getElementById('s-region').value = u.region;
+  applyIgStatus(u);
 }
+function applyIgStatus(u){
+  if(u.igConnected){
+    document.getElementById('ig-dot').className='ig-dot connected';
+    document.getElementById('ig-text').textContent='연동됨';
+    document.getElementById('ig-btn').textContent='연동 해제';
+    document.getElementById('ig-btn').className='btn btn-danger';
+    document.getElementById('ig-btn').onclick=function(){disconnectIg();};
+  } else {
+    document.getElementById('ig-dot').className='ig-dot disconnected';
+    document.getElementById('ig-text').textContent='연동 안 됨';
+    document.getElementById('ig-btn').textContent='연동하기';
+    document.getElementById('ig-btn').className='btn btn-pink';
+    document.getElementById('ig-btn').onclick=function(){location.href='/bento-preview.html';};
+  }
+}
+applyUserToUI(user);
 
 // 알림 설정 로드
 if(settings.kakaoNotif===false) document.getElementById('t-kakao').classList.remove('on');
 if(settings.emailNotif===false) document.getElementById('t-email').classList.remove('on');
 
+// API에서 최신 프로필 로드 (토큰 있을 때)
+if(localStorage.getItem('lumi_token')){
+  fetch('/api/update-profile', { method:'POST', headers:authHeaders(), body:JSON.stringify({}) })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    if(data.success && data.user){
+      user = Object.assign(user, data.user);
+      localStorage.setItem('lumi_user', JSON.stringify(user));
+      applyUserToUI(user);
+    }
+  })
+  .catch(function(){});
+}
+
 function saveProfile(){
-  user.storeName = document.getElementById('s-store').value;
-  user.bizCategory = document.getElementById('s-biz').value;
-  user.region = document.getElementById('s-region').value;
+  var storeName = document.getElementById('s-store').value;
+  var bizCategory = document.getElementById('s-biz').value;
+  var region = document.getElementById('s-region').value;
+
+  // localStorage 즉시 반영
+  user.storeName = storeName;
+  user.bizCategory = bizCategory;
+  user.region = region;
   localStorage.setItem('lumi_user', JSON.stringify(user));
-  showToast('매장 정보가 저장됐어요');
+
+  if(!localStorage.getItem('lumi_token')){
+    showToast('매장 정보가 저장됐어요');
+    return;
+  }
+
+  fetch('/api/update-profile', {
+    method:'POST', headers:authHeaders(),
+    body: JSON.stringify({ storeName:storeName, bizCategory:bizCategory, region:region })
+  })
+  .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
+  .then(function(res){
+    if(res.ok && res.data.success){
+      if(res.data.user) { user = Object.assign(user, res.data.user); localStorage.setItem('lumi_user', JSON.stringify(user)); }
+      showToast('매장 정보가 저장됐어요');
+    } else {
+      showToast(res.data.error || '저장에 실패했어요');
+    }
+  })
+  .catch(function(){ showToast('네트워크 오류가 발생했어요'); });
 }
 
 function changePw(){
@@ -264,23 +315,58 @@ function changePw(){
   if(!cur||!nw||!cf){showToast('모든 항목을 입력해주세요');return;}
   if(nw!==cf){showToast('새 비밀번호가 일치하지 않아요');return;}
   if(nw.length<10){showToast('10자 이상 입력해주세요');return;}
-  // push 후 API 연동
-  showToast('비밀번호가 변경됐어요');
-  document.getElementById('s-pw-cur').value='';
-  document.getElementById('s-pw-new').value='';
-  document.getElementById('s-pw-confirm').value='';
+
+  if(!localStorage.getItem('lumi_token')){
+    showToast('로그인이 필요합니다');
+    return;
+  }
+
+  var email = user.email || '';
+  if(!email){ showToast('사용자 정보를 찾을 수 없어요'); return; }
+
+  fetch('/api/reset-password', {
+    method:'POST', headers:authHeaders(),
+    body: JSON.stringify({ email:email, currentPassword:cur, password:nw })
+  })
+  .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
+  .then(function(res){
+    if(res.ok && res.data.success){
+      showToast('비밀번호가 변경됐어요');
+      document.getElementById('s-pw-cur').value='';
+      document.getElementById('s-pw-new').value='';
+      document.getElementById('s-pw-confirm').value='';
+    } else {
+      showToast(res.data.error || '비밀번호 변경에 실패했어요');
+    }
+  })
+  .catch(function(){ showToast('네트워크 오류가 발생했어요'); });
 }
 
 function disconnectIg(){
   if(!confirm('인스타그램 연동을 해제할까요?')) return;
+
+  // localStorage 즉시 반영
   user.igConnected = false;
   localStorage.setItem('lumi_user', JSON.stringify(user));
-  document.getElementById('ig-dot').className='ig-dot disconnected';
-  document.getElementById('ig-text').textContent='연동 안 됨';
-  document.getElementById('ig-btn').textContent='연동하기';
-  document.getElementById('ig-btn').className='btn btn-pink';
-  document.getElementById('ig-btn').onclick=function(){location.href='/bento-preview.html';};
-  showToast('연동이 해제됐어요');
+  applyIgStatus(user);
+
+  if(!localStorage.getItem('lumi_token')){
+    showToast('연동이 해제됐어요');
+    return;
+  }
+
+  fetch('/api/disconnect-ig', {
+    method:'POST', headers:authHeaders(), body:'{}'
+  })
+  .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
+  .then(function(res){
+    if(res.ok && res.data.success){
+      showToast('연동이 해제됐어요');
+    } else {
+      showToast(res.data.error || '연동 해제에 실패했어요');
+    }
+  })
+  .catch(function(){ showToast('네트워크 오류가 발생했어요'); });
 }
 
 function saveNotif(){

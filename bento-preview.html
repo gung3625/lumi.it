@@ -1561,6 +1561,126 @@ var cards = {
       var savedStyle = (JSON.parse(localStorage.getItem('lumi_settings') || '{}')).captionStyle || '';
       var st9 = React.useState(savedStyle), captionStyle = st9[0], setCaptionStyle = st9[1];
       var st10 = React.useState(true), showStyle = st10[0], setShowStyle = st10[1];
+      var st11post = React.useState(false), isPosting = st11post[0], setIsPosting = st11post[1];
+      var st11sched = React.useState(false), showSchedulePicker = st11sched[0], setShowSchedulePicker = st11sched[1];
+      var st11time = React.useState(''), scheduleTime = st11time[0], setScheduleTime = st11time[1];
+
+      // 공통: FormData 빌드
+      function buildPostFormData(scheduledAt) {
+        var fd = new FormData();
+        realFiles.forEach(function(f){ fd.append('photos', f, f.name); });
+        fd.append('userMessage', realNote || '');
+        fd.append('captionTone', captionStyle || '');
+        fd.append('bizCategory', lumiUser.bizCategory || lumiUser.storeCategory || 'cafe');
+        fd.append('submittedAt', new Date().toISOString());
+        fd.append('scheduledAt', scheduledAt);
+        var sp = { ownerEmail: lumiUser.email || '', name: lumiUser.storeName || '', phone: lumiUser.phone || '' };
+        fd.append('storeProfile', JSON.stringify(sp));
+        var featToggles = JSON.parse(localStorage.getItem('lumi_feat_toggles') || '{}');
+        fd.append('postToStory', featToggles.story !== false ? 'true' : 'false');
+        fd.append('postToThread', featToggles.thread === true ? 'true' : 'false');
+        fd.append('useWeather', featToggles.weather !== false ? 'true' : 'false');
+        if(lumiUser.region) fd.append('region', lumiUser.region);
+        return fd;
+      }
+
+      // 바로 게시
+      function handlePostNow() {
+        if (!realFiles.length) { alert('사진을 선택해주세요.'); return; }
+        var token = localStorage.getItem('lumi_token');
+        if (!token) { alert('로그인이 필요합니다.'); return; }
+        setIsPosting(true);
+        var fd = buildPostFormData(new Date().toISOString());
+        fetch('/api/reserve', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token },
+          body: fd
+        }).then(function(res){ return res.json(); })
+        .then(function(data){
+          setIsPosting(false);
+          if (data.success) {
+            alert('게시 요청이 완료되었습니다! 잠시 후 인스타그램에 업로드됩니다.');
+            setRealFiles([]); setRealNote(''); setPhase('idle');
+          } else {
+            alert('게시 실패: ' + (data.error || '알 수 없는 오류'));
+          }
+        }).catch(function(err){
+          setIsPosting(false);
+          alert('게시 중 오류가 발생했습니다: ' + err.message);
+        });
+      }
+
+      // 최적 시간에 게시
+      function handleBestTimePost() {
+        if (!realFiles.length) { alert('사진을 선택해주세요.'); return; }
+        var token = localStorage.getItem('lumi_token');
+        if (!token) { alert('로그인이 필요합니다.'); return; }
+        setIsPosting(true);
+        var cat = lumiUser.bizCategory || lumiUser.storeCategory || 'cafe';
+        fetch('/api/get-best-time', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+          body: JSON.stringify({ category: cat })
+        }).then(function(res){ return res.json(); })
+        .then(function(data){
+          if (!data.bestTime) { setIsPosting(false); alert('최적 시간을 가져올 수 없습니다.'); return; }
+          var today = new Date();
+          var parts = data.bestTime.split(':');
+          var scheduled = new Date(today.getFullYear(), today.getMonth(), today.getDate(), parseInt(parts[0]), parseInt(parts[1]));
+          if (scheduled <= new Date()) { scheduled.setDate(scheduled.getDate() + 1); }
+          var fd = buildPostFormData(scheduled.toISOString());
+          return fetch('/api/save-reservation', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token },
+            body: fd
+          }).then(function(res2){ return res2.json(); })
+          .then(function(data2){
+            setIsPosting(false);
+            if (data2.success) {
+              var timeStr = scheduled.getMonth()+1 + '/' + scheduled.getDate() + ' ' + parts[0] + ':' + parts[1];
+              alert('예약 완료! ' + timeStr + '에 게시됩니다.\n(' + data.reason + ')');
+              setRealFiles([]); setRealNote(''); setPhase('idle');
+            } else {
+              alert('예약 실패: ' + (data2.error || '알 수 없는 오류'));
+            }
+          });
+        }).catch(function(err){
+          setIsPosting(false);
+          alert('오류가 발생했습니다: ' + err.message);
+        });
+      }
+
+      // 예약 게시
+      function handleSchedulePost() {
+        if (!scheduleTime) { alert('예약 시간을 선택해주세요.'); return; }
+        if (!realFiles.length) { alert('사진을 선택해주세요.'); return; }
+        var token = localStorage.getItem('lumi_token');
+        if (!token) { alert('로그인이 필요합니다.'); return; }
+        var scheduled = new Date(scheduleTime);
+        if (scheduled <= new Date()) { alert('미래 시간을 선택해주세요.'); return; }
+        setIsPosting(true);
+        setShowSchedulePicker(false);
+        var fd = buildPostFormData(scheduled.toISOString());
+        fetch('/api/save-reservation', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token },
+          body: fd
+        }).then(function(res){ return res.json(); })
+        .then(function(data){
+          setIsPosting(false);
+          if (data.success) {
+            var timeStr = (scheduled.getMonth()+1) + '/' + scheduled.getDate() + ' ' + String(scheduled.getHours()).padStart(2,'0') + ':' + String(scheduled.getMinutes()).padStart(2,'0');
+            alert('예약 완료! ' + timeStr + '에 게시됩니다.');
+            setRealFiles([]); setRealNote(''); setPhase('idle');
+          } else {
+            alert('예약 실패: ' + (data.error || '알 수 없는 오류'));
+          }
+        }).catch(function(err){
+          setIsPosting(false);
+          alert('예약 중 오류가 발생했습니다: ' + err.message);
+        });
+      }
+
       var demoSets = [
         {comment:'\uC624\uB298 \uC2E0\uBA54\uB274 \uC18C\uAC1C\uD574\uC918', caption:'\uC624\uB298\uBD80\uD130 \uC2E0\uBA54\uB274 \uB4F1\uC7A5\n\uB529\uAD74\uB529\uAD74 \uB9E4\uC7A5 \uD06C\uB85C\uD50C\n\uD55C \uC785 \uBCA0\uC5B4 \uBB3C\uBA74 \uBC14\uC0AD\uBC14\uC0AD', tags:'#\uC2E0\uBA54\uB274 #\uCE74\uD398\uD06C\uB85C\uD50C #\uB514\uC800\uD2B8\uCD94\uCC9C'},
         {comment:'\uC624\uB298 \uD734\uBB34\uC77C \uC548\uB0B4 \uB123\uC5B4\uC918', caption:'\uC624\uB298\uC740 \uC7A0\uC2DC \uC26C\uC5B4\uAC00\uB294 \uB0A0\n\uB0B4\uC77C \uB354 \uB9DB\uC788\uB294 \uCEE4\uD53C\uB85C \uB3CC\uC544\uC62C\uAC8C\uC694\n\uC870\uAE08\uB9CC \uAE30\uB2E4\uB824\uC8FC\uC138\uC694', tags:'#\uCE74\uD398\uD734\uBB34 #\uB0B4\uC77C\uBD10\uC694 #\uC790\uC601\uC5C5\uC790\uC77C\uC0C1'},
@@ -1846,13 +1966,17 @@ var cards = {
                   )
                 ),
                 e('div',{style:{display:'flex',flexDirection:'column',gap:'8px',marginTop:'12px'}},
-                  e('button',{style:{width:'100%',padding:'14px',borderRadius:'980px',border:'none',background:'linear-gradient(135deg,#FF6B8B,#DDA0DD)',color:'#fff',fontFamily:'inherit',fontSize:'15px',fontWeight:600,cursor:'pointer'},onMouseDown:function(ev){ev.stopPropagation();},onClick:function(){alert('바로 게시 기능은 배포 후 활성화됩니다.');}},'바로 게시'),
-                  e('button',{style:{width:'100%',padding:'12px',borderRadius:'980px',border:'1.5px solid '+(isPro?pinkC:'rgba(0,0,0,.1)'),background:'transparent',color:isPro?pinkC:tc2,fontFamily:'inherit',fontSize:'13px',fontWeight:500,cursor:isPro?'pointer':'default',opacity:isPro?1:0.5},onMouseDown:function(ev){ev.stopPropagation();},onClick:function(){if(!isPro){alert('프로 플랜에서 사용할 수 있어요.');return;}}},
-                    !isPro?e('span',{style:{marginRight:'4px'}},'🔒'):null,'최적 시간에 게시'
+                  e('button',{style:{width:'100%',padding:'14px',borderRadius:'980px',border:'none',background:isPosting?'#999':'linear-gradient(135deg,#FF6B8B,#DDA0DD)',color:'#fff',fontFamily:'inherit',fontSize:'15px',fontWeight:600,cursor:isPosting?'wait':'pointer',opacity:isPosting?0.7:1},onMouseDown:function(ev){ev.stopPropagation();},onClick:function(){if(!isPosting) handlePostNow();}},isPosting?'게시 중...':'바로 게시'),
+                  e('button',{style:{width:'100%',padding:'12px',borderRadius:'980px',border:'1.5px solid '+(isPro?pinkC:'rgba(0,0,0,.1)'),background:'transparent',color:isPro?pinkC:tc2,fontFamily:'inherit',fontSize:'13px',fontWeight:500,cursor:(isPro&&!isPosting)?'pointer':'default',opacity:(isPro&&!isPosting)?1:0.5},onMouseDown:function(ev){ev.stopPropagation();},onClick:function(){if(!isPro){alert('프로 플랜에서 사용할 수 있어요.');return;}if(!isPosting) handleBestTimePost();}},
+                    !isPro?e('span',{style:{marginRight:'4px'}},'🔒'):null,isPosting?'처리 중...':'최적 시간에 게시'
                   ),
-                  e('button',{style:{width:'100%',padding:'12px',borderRadius:'980px',border:'1.5px solid rgba(0,0,0,.1)',background:'transparent',color:tc2,fontFamily:'inherit',fontSize:'13px',fontWeight:500,cursor:isPro?'pointer':'default',opacity:isPro?1:0.5},onMouseDown:function(ev){ev.stopPropagation();},onClick:function(){if(!isPro){alert('프로 플랜에서 사용할 수 있어요.');return;}}},
+                  e('button',{style:{width:'100%',padding:'12px',borderRadius:'980px',border:'1.5px solid rgba(0,0,0,.1)',background:'transparent',color:tc2,fontFamily:'inherit',fontSize:'13px',fontWeight:500,cursor:(isPro&&!isPosting)?'pointer':'default',opacity:(isPro&&!isPosting)?1:0.5},onMouseDown:function(ev){ev.stopPropagation();},onClick:function(){if(!isPro){alert('프로 플랜에서 사용할 수 있어요.');return;}setShowSchedulePicker(!showSchedulePicker);}},
                     !isPro?e('span',{style:{marginRight:'4px'}},'🔒'):null,'예약 게시'
                   ),
+                  showSchedulePicker ? e('div',{style:{display:'flex',gap:'8px',alignItems:'center',marginTop:'4px'},onMouseDown:function(ev){ev.stopPropagation();}},
+                    e('input',{type:'datetime-local',value:scheduleTime,onChange:function(ev){setScheduleTime(ev.target.value);},style:{flex:1,padding:'10px 12px',borderRadius:'12px',border:'1.5px solid '+(isDk?'rgba(255,255,255,.15)':'rgba(0,0,0,.1)'),background:isDk?'rgba(255,255,255,.08)':'#fff',color:tc,fontFamily:'inherit',fontSize:'13px',outline:'none'}}),
+                    e('button',{style:{padding:'10px 16px',borderRadius:'980px',border:'none',background:pinkC,color:'#fff',fontFamily:'inherit',fontSize:'13px',fontWeight:600,cursor:isPosting?'wait':'pointer',opacity:isPosting?0.7:1,whiteSpace:'nowrap'},onClick:function(){if(!isPosting) handleSchedulePost();}},isPosting?'...':'확인')
+                  ) : null,
                   e('button',{style:{fontSize:'12px',background:'none',border:'none',color:tc2,cursor:'pointer',fontFamily:'inherit',padding:'6px'},onMouseDown:function(ev){ev.stopPropagation();},onClick:function(){
                     setRealFiles([]);setRealNote('');setPhase('idle');
                   }},'\u2190 \uB2E4\uC2DC \uC120\uD0DD')
@@ -2012,25 +2136,51 @@ var cards = {
   spotify: function() {
     var isLoggedIn = !!localStorage.getItem('lumi_token');
     if (isLoggedIn) {
+      var _weatherEmojis = {clear:'\u2600\uFE0F',partly_cloudy:'\u26C5',cloudy:'\u2601\uFE0F',rain:'\uD83C\uDF27\uFE0F',snow:'\u2744\uFE0F'};
+      var _weatherLabels = {clear:'\uB9D1\uC74C',partly_cloudy:'\uAD6C\uB984\uC870\uAE08',cloudy:'\uD750\uB9BC',rain:'\uBE44',snow:'\uB208'};
+      var _weatherTips = {
+        clear:{msg:'\uB9D1\uC740 \uB0A0\uC528\uC5D0 \uB531\uC778',sub:'\uC57C\uC678 \uC0AC\uC9C4\uC774\uB098 \uD14C\uB77C\uC2A4 \uC0AC\uC9C4\uC744\n\uC62C\uB824\uBCF4\uC138\uC694',tags:['#\uC57C\uC678\uC11D','#\uCE74\uD398\uD14C\uB77C\uC2A4','#\uB0A0\uC528\uC88B\uB2E4']},
+        partly_cloudy:{msg:'\uC0B0\uCC45\uD558\uAE30 \uC88B\uC740 \uB0A0',sub:'\uBD80\uB4DC\uB7EC\uC6B4 \uC870\uBA85\uC758\n\uBD84\uC704\uAE30 \uC0AC\uC9C4 \uCD94\uCC9C',tags:['#\uAD6C\uB984\uC0B0\uCC45','#\uBD84\uC704\uAE30\uC0AC\uC9C4','#\uC77C\uC0C1']},
+        cloudy:{msg:'\uD750\uB9B0 \uB0A0\uC758 \uC0AC\uC9C4\uB3C4 \uBA4B\uC838\uC694',sub:'\uC2E4\uB0B4 \uC0AC\uC9C4\uC774\uB098 \uD478\uB4DC \uC0AC\uC9C4\uC744\n\uC62C\uB824\uBCF4\uC138\uC694',tags:['#\uC2E4\uB0B4\uCE74\uD398','#\uD478\uB4DC\uC0AC\uC9C4','#\uBB34\uB4DC']},
+        rain:{msg:'\uBE44 \uC624\uB294 \uB0A0\uC758 \uAC10\uC131',sub:'\uCC3D\uBC16 \uBE57\uC18C\uB9AC\uC640 \uD568\uAED8\uD558\uB294\n\uB530\uB73B\uD55C \uC74C\uB8CC \uC0AC\uC9C4 \uCD94\uCC9C',tags:['#\uBE44\uC624\uB294\uB0A0','#\uBE44\uCE74\uD398','#\uAC10\uC131']},
+        snow:{msg:'\uB208 \uC624\uB294 \uB0A0\uC758 \uD2B9\uBCC4\uD55C \uCEA1\uC158',sub:'\uB208 \uC624\uB294 \uD48D\uACBD\uC744 \uB2F4\uC544\n\uACC4\uC808\uAC10 \uC788\uB294 \uCEA1\uC158 \uCD94\uCC9C',tags:['#\uB208\uC624\uB294\uB0A0','#\uACA8\uC6B8\uCE74\uD398','#\uB530\uB73B\uD55C\uC74C\uB8CC']}
+      };
       var RecommendCard = function() {
         var isDk = document.body.classList.contains('dark-mode');
         var tc = isDk ? '#f0f2f8' : '#0d1117';
         var tc2 = isDk ? 'rgba(240,242,248,.6)' : 'rgba(0,0,0,.4)';
         var bg2 = isDk ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.03)';
         var pink = isDk ? '#FF8FAB' : '#C8507A';
+        var ws = React.useState(null), weather = ws[0], setWeather = ws[1];
+        React.useEffect(function(){
+          var userRegion = '';
+          try { var _wu = JSON.parse(localStorage.getItem('lumi_user')||'{}'); userRegion = _wu.region || ''; } catch(ex){}
+          var sido = '';
+          if(userRegion){ sido = userRegion.split(' ')[0].replace(/특별시|광역시|도$/,''); }
+          var url = '/.netlify/functions/get-weather-kma' + (sido ? '?sido='+encodeURIComponent(sido) : '');
+          fetch(url).then(function(r){return r.json();}).then(function(d){
+            if(!d.error) setWeather(d);
+          }).catch(function(){});
+        },[]);
+        var state = (weather && weather.state) || 'clear';
+        var tip = _weatherTips[state] || _weatherTips.clear;
+        var emoji = _weatherEmojis[state] || '\u2600\uFE0F';
+        var tempStr = weather ? ((_weatherLabels[state]||'')+' '+weather.temperature+'\xB0') : '';
+        var locStr = weather ? (weather.locationName||'') : '';
         return e('div', {className:'bento-card card-text', style:{padding:'24px',display:'flex',flexDirection:'column',justifyContent:'space-between'}},
           e('div', null,
             e('div', {style:{display:'flex',alignItems:'center',gap:'8px',marginBottom:'14px'}},
-              e('span', {style:{fontSize:'22px'}}, '\uD83C\uDF24\uFE0F'),
-              e('span', {style:{fontSize:'16px',color:tc,fontWeight:600}}, '\uC624\uB298\uC758 \uCD94\uCC9C')
+              e('span', {style:{fontSize:'22px'}}, emoji),
+              e('span', {style:{fontSize:'16px',color:tc,fontWeight:600}}, '\uC624\uB298\uC758 \uCD94\uCC9C'),
+              locStr ? e('span', {style:{fontSize:'11px',color:tc2,marginLeft:'auto'}}, locStr+(tempStr?' '+tempStr:'')) : null
             ),
             e('div', {style:{padding:'16px',borderRadius:'16px',background:bg2,marginBottom:'12px'}},
-              e('p', {style:{fontSize:'14px',color:tc,lineHeight:'1.7'}}, '\uB9D1\uC740 \uB0A0\uC528\uC5D0 \uB531\uC778'),
-              e('p', {style:{fontSize:'13px',color:tc2,lineHeight:'1.6',marginTop:'4px'}}, '\uC57C\uC678 \uC0AC\uC9C4\uC774\uB098 \uD14C\uB77C\uC2A4 \uC0AC\uC9C4\uC744\n\uC62C\uB824\uBCF4\uC138\uC694')
+              e('p', {style:{fontSize:'14px',color:tc,lineHeight:'1.7'}}, tip.msg),
+              e('p', {style:{fontSize:'13px',color:tc2,lineHeight:'1.6',marginTop:'4px'}}, tip.sub)
             )
           ),
           e('div', {style:{display:'flex',gap:'6px',flexWrap:'wrap'}},
-            ['#\uC57C\uC678\uC11D','\#\uCE74\uD398\uD14C\uB77C\uC2A4','#\uB0A0\uC528\uC88B\uB2E4'].map(function(tag,i){
+            tip.tags.map(function(tag,i){
               return e('span', {key:i, style:{fontSize:'11px',color:pink,padding:'4px 10px',borderRadius:'980px',background:isDk?'rgba(255,107,139,.1)':'rgba(200,80,122,.06)'}}, tag);
             })
           )
@@ -2310,6 +2460,10 @@ var cards = {
   project2: function() {
     var isLoggedIn = !!localStorage.getItem('lumi_token');
     var CATEGORY_KO = {cafe:'카페',food:'맛집',beauty:'뷰티',flower:'꽃집',fashion:'패션',fitness:'피트니스',pet:'반려동물',interior:'인테리어',education:'교육',laundry:'세탁',studio:'스튜디오',other:'일반'};
+    var _userBizCat = '';
+    try { var _uu = JSON.parse(localStorage.getItem('lumi_user')||'{}'); _userBizCat = _uu.bizCategory || _uu.storeCategory || ''; } catch(ex){}
+    var _trendLabel = (isLoggedIn && _userBizCat && CATEGORY_KO[_userBizCat]) ? CATEGORY_KO[_userBizCat] + ' 트렌드' : '종합 트렌드';
+    var _trendCategory = (isLoggedIn && _userBizCat) ? _userBizCat : 'all';
     var fallbackDomestic = [
       {keyword:'크로플',bizCategory:'cafe'},{keyword:'딸기오믈렛',bizCategory:'food'},{keyword:'레이어드컷',bizCategory:'beauty'},
       {keyword:'오로라네일',bizCategory:'beauty'},{keyword:'말차라떼',bizCategory:'cafe'},{keyword:'당근케이크',bizCategory:'cafe'},
@@ -2336,11 +2490,18 @@ var cards = {
         var cats = ['cafe','food','beauty','fashion','fitness','pet'];
         var baseUrl = 'https://lumi.it.kr/.netlify/functions/get-trends';
         ['domestic','global'].forEach(function(scope){
-          fetch(baseUrl+'?category=all&scope='+scope)
+          fetch(baseUrl+'?category='+encodeURIComponent(_trendCategory)+'&scope='+scope)
             .then(function(r){return r.json();})
             .then(function(data){
               if(data.keywords && data.keywords.length>0){
                 saveTrends(scope, data.keywords.slice(0,7));
+              } else if(_trendCategory !== 'all') {
+                // 업종별 데이터 없으면 종합으로 fallback
+                fetch(baseUrl+'?category=all&scope='+scope)
+                  .then(function(r){return r.json();})
+                  .then(function(d2){
+                    if(d2.keywords && d2.keywords.length>0) saveTrends(scope, d2.keywords.slice(0,7));
+                  }).catch(function(){});
               } else {
                 Promise.all(cats.map(function(cat){
                   return fetch(baseUrl+'?category='+cat+'&scope='+scope)
@@ -2419,7 +2580,7 @@ var cards = {
       return e('div', {ref:cardRef, className:'bento-card card-visual card-project card-trend card-responsive', style:{padding:0}},
         e('div', {className:'trend-wrap'},
           e('div', {className:'trend-header'},
-            e('span', {className:'trend-label'}, '종합 트렌드'),
+            e('span', {className:'trend-label'}, _trendLabel),
             e('div', {className:'trend-tabs'},
               e('span', {className:'trend-tab'+(tab==='domestic'?' active':''), onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(){setTab('domestic');}}, '국내'),
               e('span', {className:'trend-tab'+(tab==='global'?' active':''), onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(){setTab('global');}}, '해외')
