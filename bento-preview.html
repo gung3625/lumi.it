@@ -3656,7 +3656,8 @@ function filterGrid(category, btnEl) {
   }
 
   var matchedIds = filterLayouts[category].matched;
-  if (window._setGridLayout) {
+  var needsLayout = category !== 'feature';
+  if (needsLayout && window._setGridLayout) {
     window._setGridLayout(filterLayouts[category].layout.map(function(l){return Object.assign({},l);}));
     window._currentLayout = filterLayouts[category].layout;
   }
