@@ -953,10 +953,10 @@ body.dark-mode .lumi-caption-textarea { border-color:rgba(255,255,255,.12); colo
 .lumi-caption-actions { display:flex; flex-direction:column; gap:7px; }
 .lumi-btn-post { width:100%; padding:12px; border-radius:980px; border:none; background:linear-gradient(135deg,#FF6B8B,#DDA0DD); color:#fff; font-family:inherit; font-size:14px; font-weight:600; cursor:pointer; transition:opacity .2s; }
 .lumi-btn-post:disabled { opacity:0.55; cursor:wait; }
-.lumi-btn-regen { width:100%; padding:10px; border-radius:980px; border:1.5px solid rgba(200,80,122,.35); background:transparent; color:#C8507A; font-family:inherit; font-size:13px; font-weight:500; cursor:pointer; transition:opacity .2s; }
+.lumi-btn-regen { width:100%; padding:10px; border-radius:980px; border:1.5px solid rgba(200,80,122,.35); background:transparent; color:#C8507A; font-family:inherit; font-size:13px; font-weight:500; cursor:pointer; transition:opacity .2s; min-height:44px; }
 .lumi-btn-regen:disabled { opacity:0.35; cursor:not-allowed; }
 body.dark-mode .lumi-btn-regen { color:#FF8FAB; border-color:rgba(255,143,171,.35); }
-.lumi-btn-back { background:none; border:none; font-family:inherit; font-size:12px; color:rgba(0,0,0,.35); cursor:pointer; padding:4px; text-align:center; }
+.lumi-btn-back { background:none; border:none; font-family:inherit; font-size:12px; color:rgba(0,0,0,.35); cursor:pointer; padding:4px; text-align:center; min-height:44px; display:inline-flex; align-items:center; justify-content:center; }
 body.dark-mode .lumi-btn-back { color:rgba(240,242,248,.35); }
 .tut-feed-header { display:flex; align-items:center; gap:8px; padding:10px 12px; }
 .tut-feed-avatar { width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,#FF6B8B,#DDA0DD); flex-shrink:0; }
@@ -1040,7 +1040,7 @@ body.dark-mode .tut-check-circle { background:rgba(255,107,139,.15); }
   .tut-lumi-area { flex: 0 0 34% !important; }
   .tut-title { font-size: 17px !important; }
   .tut-sub { font-size: 11px !important; }
-  .tut-content { padding: 12px 16px !important; gap: 8px !important; }
+  .tut-content { padding: 12px 16px !important; gap: 8px !important; overflow: auto; }
   .upload-btn { font-size: 13px !important; padding: 10px !important; border-radius: 14px !important; }
   .tut-picker-btn { font-size: 14px !important; padding: 12px !important; }
   .tut-picker-sheet { padding: 6px 10px 12px !important; border-radius: 14px 14px 0 0 !important; }
@@ -1060,7 +1060,7 @@ body.dark-mode .tut-check-circle { background:rgba(255,107,139,.15); }
   .tut-cta-btn { font-size: 14px !important; padding: 12px 24px !important; }
   .tut-check-circle { width: 44px !important; height: 44px !important; }
   .tut-check-circle svg { width: 24px !important; height: 24px !important; }
-  .upload-comment { font-size: 11px !important; padding: 10px 14px !important; border-radius: 12px !important; }
+  .upload-comment { font-size: 16px !important; padding: 10px 14px !important; border-radius: 12px !important; }
   .upload-submit { font-size: 12px !important; padding: 10px !important; border-radius: 12px !important; }
 
   /* Demo animation card */
@@ -1151,7 +1151,7 @@ body.dark-mode .tut-check-circle { background:rgba(255,107,139,.15); }
     background:rgba(17,17,17,.92);
     box-shadow:0 -2px 20px rgba(0,0,0,.3);
   }
-  .grid-wrap { padding-bottom:100px !important; }
+  .grid-wrap { padding-bottom:calc(80px + env(safe-area-inset-bottom, 0px)) !important; }
 }
 
 /* FOOTER */
@@ -1461,8 +1461,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   if (savedDark === '1' || (savedDark === null && isNight)) {
     document.body.classList.add('dark-mode');
   }
-  // 테스트용: 새로고침 시 연동 상태 초기화
-  try{var u=JSON.parse(localStorage.getItem('lumi_user')||'{}');delete u.igConnected;localStorage.setItem('lumi_user',JSON.stringify(u));localStorage.removeItem('lumi_ig_guide');}catch(e){}
 </script>
 
 <div id="page-overlay" style="position:fixed;inset:0;z-index:9999;pointer-events:none;"></div>
@@ -1699,6 +1697,11 @@ var cards = {
               headers: { 'Authorization': 'Bearer ' + token }
             }).then(function(r){ return r.json(); })
             .then(function(d){
+              if (d.captionError) {
+                setIsPosting(false); setPhase('real-upload');
+                alert('캡션 생성 실패: ' + d.captionError);
+                return;
+              }
               if (d.captionStatus === 'ready' && d.generatedCaptions && d.generatedCaptions.length) {
                 setIsPosting(false);
                 setGeneratedCaptions(d.generatedCaptions);
@@ -2203,7 +2206,7 @@ var cards = {
                 e('svg',{viewBox:'0 0 24 24',fill:'none',width:28,height:28},
                   e('path',{d:'M4 12l6 6L20 6',stroke:'#FF6B8B',strokeWidth:'2.5',strokeLinecap:'round',strokeLinejoin:'round'}))
               ),
-              e('p', {className:'tut-title',style:{fontSize:'16px'}}, '\uC774\uB807\uAC8C \uC27D\uAC8C', e('br'), '\uC778\uC2A4\uD0C0 \uAC8C\uC2DC \uC644\uB8CC'),
+              e('p', {className:'tut-title',style:{fontSize:'16px'}}, '\uC774\uB807\uAC8C \uC27D\uAC8C', e('br'), '\uC778\uC2A4\uD0C0 \uAC8C\uC2DC \uC608\uC57D \uC644\uB8CC'),
               e('button', {className:'tut-cta-btn tut-guide-pulse',
                 onMouseDown:function(ev){ev.stopPropagation();},
                 onClick:function(ev){ ev.stopPropagation(); navigateOut('/beta'); }
@@ -2394,9 +2397,10 @@ var cards = {
         var bizCat = lumiUser.bizCategory || lumiUser.storeCategory || 'cafe';
         var bts = React.useState(null), bestTimeData = bts[0], setBestTimeData = bts[1];
         React.useEffect(function(){
+          var _btsToken = localStorage.getItem('lumi_token');
           fetch('/api/get-best-time', {
             method:'POST',
-            headers:{'Content-Type':'application/json'},
+            headers:{'Content-Type':'application/json','Authorization':'Bearer ' + _btsToken},
             body: JSON.stringify({category: bizCat})
           }).then(function(r){return r.json();}).then(function(d){
             if(d && d.bestTime) setBestTimeData(d);
@@ -3159,7 +3163,7 @@ var cards = {
             body: JSON.stringify({ reservationKey: rKey })
           }).then(function(r){ return r.json(); })
           .then(function(d){
-            if (d && d.success !== false) {
+            if (d && d.success === true) {
               setReservations(function(prev){ return prev.map(function(r){ return r.reservationKey === rKey ? Object.assign({}, r, {isCancelled: true, isSent: false, _cancelled: true}) : r; }); });
             } else {
               alert(d.error || '\uCDE8\uC18C \uC2E4\uD328. \uB2E4\uC2DC \uC2DC\uB3C4\uD574\uC8FC\uC138\uC694.');
@@ -3173,10 +3177,9 @@ var cards = {
           setDetailLoading(true);
           setDetailData({ reservationKey: rKey });
           setScRegenCount(0);
-          fetch('/api/get-reservation', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-            body: JSON.stringify({ reservationKey: rKey })
+          fetch('/api/get-reservation?key=' + encodeURIComponent(rKey), {
+            method: 'GET',
+            headers: { 'Authorization': 'Bearer ' + token }
           }).then(function(r){ return r.json(); })
           .then(function(d){
             setDetailLoading(false);
@@ -3235,7 +3238,7 @@ var cards = {
             canCancel ? e('button', {
               onClick: function(ev){ handleCancelRsv(rKey, ev); },
               title:'\uCDE8\uC18C',
-              style:{background:'none',border:'none',cursor:'pointer',color:tc2,fontSize:'14px',lineHeight:1,padding:'2px 4px',borderRadius:'4px',flexShrink:0,opacity:.7,minHeight:'28px',minWidth:'24px',display:'flex',alignItems:'center',justifyContent:'center'}
+              style:{background:'none',border:'none',cursor:'pointer',color:tc2,fontSize:'14px',lineHeight:1,padding:'8px',borderRadius:'4px',flexShrink:0,opacity:.7,minHeight:'44px',minWidth:'44px',display:'flex',alignItems:'center',justifyContent:'center'}
             }, '\u00D7') : null
           );
         };
@@ -3249,7 +3252,7 @@ var cards = {
             e('span', {style:{fontSize:'14px',fontWeight:600,color:tc}}, '\uC608\uC57D \uC0C1\uC138'),
             e('button', {
               onClick: function(ev){ ev.stopPropagation(); setDetailData(null); },
-              style:{background:'none',border:'none',cursor:'pointer',fontSize:'20px',color:tc2,lineHeight:1,padding:'4px',minHeight:'32px',minWidth:'32px',display:'flex',alignItems:'center',justifyContent:'center',borderRadius:'8px'}
+              style:{background:'none',border:'none',cursor:'pointer',fontSize:'20px',color:tc2,lineHeight:1,padding:'4px',minHeight:'44px',minWidth:'44px',display:'flex',alignItems:'center',justifyContent:'center',borderRadius:'8px'}
             }, '\u00D7')
           ),
           detailLoading ? e('div', {style:{flex:1,display:'flex',alignItems:'center',justifyContent:'center',color:tc2,fontSize:'13px'}}, '\uBD88\uB7EC\uC624\uB294 \uC911\u2026') : e('div', {style:{display:'flex',flexDirection:'column',gap:'12px',flex:1}},
@@ -3424,8 +3427,8 @@ function BentoGrid() {
   },[]);
 
   // 브레이크포인트 판단
-  var isMobile = gridWidth < 500;
-  var isTablet = gridWidth >= 500 && gridWidth < 900;
+  var isMobile = gridWidth < 600;
+  var isTablet = gridWidth >= 600 && gridWidth < 900;
 
   // 데스크톱 레이아웃만 저장/복원
   var _ls = React.useState(savedLayout || layout);
@@ -3590,8 +3593,8 @@ function suShowForm() {
     html += '<button class="su-btn" onclick="suSkipEmail()" style="margin-top:10px">확인</button>';
   }
   else if (step.input === 'password') {
-    html += '<input type="text" class="su-input" id="su-pw" placeholder="비밀번호 (특수문자 포함 10자 이상)" style="color:'+txtColor+';" autocomplete="off" '+suEnter('document.getElementById(\\\'su-pw2\\\').focus()')+'>';
-    html += '<input type="text" class="su-input" id="su-pw2" placeholder="비밀번호 확인" style="color:'+txtColor+';" autocomplete="off" '+suEnter('suSubmitPw()')+'>';
+    html += '<input type="password" class="su-input" id="su-pw" placeholder="비밀번호 (특수문자 포함 10자 이상)" style="color:'+txtColor+';" autocomplete="off" '+suEnter('document.getElementById(\\\'su-pw2\\\').focus()')+'>';
+    html += '<input type="password" class="su-input" id="su-pw2" placeholder="비밀번호 확인" style="color:'+txtColor+';" autocomplete="off" '+suEnter('suSubmitPw()')+'>';
     html += '<button class="su-btn" onclick="suSubmitPw()">확인</button>';
     html += '<button class="su-btn-sub" onclick="suGoBack()">이전으로</button>';
   }
@@ -3850,7 +3853,7 @@ function liShowForm() {
     html += '<button class="su-btn" onclick="liSubmitEmail()" style="margin-top:10px">확인</button>';
   }
   else if (liPhase === 1) {
-    html += '<input type="text" class="su-input" id="li-pw" placeholder="비밀번호" style="color:'+txtColor+';" autocomplete="off" onkeydown="if(event.key===\'Enter\'){event.preventDefault();liSubmitPw();}">';
+    html += '<input type="password" class="su-input" id="li-pw" placeholder="비밀번호" style="color:'+txtColor+';" autocomplete="off" onkeydown="if(event.key===\'Enter\'){event.preventDefault();liSubmitPw();}">';
     html += '<button class="su-btn" onclick="liSubmitPw()">로그인</button>';
     html += '<button class="su-btn-sub" onclick="liGoBack()">이전으로</button>';
   }

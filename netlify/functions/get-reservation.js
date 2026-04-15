@@ -2,7 +2,7 @@ const { getStore } = require('@netlify/blobs');
 
 const CORS = {
   'Access-Control-Allow-Origin': 'https://lumi.it.kr',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   'Content-Type': 'application/json',
 };
 
@@ -41,6 +41,7 @@ exports.handler = async (event) => {
         generatedCaptions: item.generatedCaptions || null,
         captionsGeneratedAt: item.captionsGeneratedAt || null,
         captionStatus: item.captionStatus || null,
+        captionError: item.captionError || null,
         selectedCaptionIndex: item.selectedCaptionIndex ?? null,
         autoPostAt: item.autoPostAt || null,
         isSent: item.isSent || false,
