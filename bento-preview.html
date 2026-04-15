@@ -1664,15 +1664,46 @@ var cards = {
         return fd;
       }
 
+      // 게시 횟수 체크 (count-post API)
+      function checkPostCount(token, callback) {
+        var lumiUserData = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+        fetch('/.netlify/functions/count-post', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+          body: JSON.stringify({ token: token, email: lumiUserData.email || '' })
+        }).then(function(res){ return res.json().then(function(d){ return {ok: res.ok, data: d}; }); })
+        .then(function(r){
+          if (!r.ok) {
+            if (r.data.code === 'TRIAL_EXPIRED') {
+              alert('무료 체험 기간이 종료됐어요.\n구독 페이지로 이동합니다.');
+              window.location.href = '/subscribe.html';
+            } else if (r.data.code === 'POST_LIMIT_REACHED') {
+              alert('이번 달 게시 한도에 도달했어요.\n플랜을 업그레이드하거나 다음 달에 다시 이용해 주세요.');
+            } else if (r.data.code === 'PLAN_EXPIRED') {
+              alert('구독이 만료됐어요.\n구독 페이지로 이동합니다.');
+              window.location.href = '/subscribe.html';
+            } else {
+              alert(r.data.error || '게시 오류가 발생했어요.');
+            }
+            return;
+          }
+          callback();
+        }).catch(function(){
+          alert('게시 횟수 확인 중 오류가 발생했어요. 다시 시도해주세요.');
+        });
+      }
+
       // 바로 게시 (릴레이 모드: 캡션 확인 후 게시)
       function handlePostNow() {
         if (!realFiles.length) { alert('사진을 선택해주세요.'); return; }
         var token = localStorage.getItem('lumi_token');
         if (!token) { alert('로그인이 필요합니다.'); return; }
+        checkPostCount(token, function() {
         setIsPosting(true);
         setPhase('uploading');
         var fd = buildPostFormData(new Date().toISOString());
-        fd.append('relayMode', 'true');
+        var captionReview = featToggles.captionReview !== false; // 기본 ON
+        fd.append('relayMode', captionReview ? 'true' : 'false');
         fetch('/api/reserve', {
           method: 'POST',
           headers: { 'Authorization': 'Bearer ' + token },
@@ -1728,6 +1759,7 @@ var cards = {
           setIsPosting(false); setPhase('real-upload');
           alert('게시 중 오류가 발생했습니다: ' + err.message);
         });
+        }); // checkPostCount callback end
       }
 
       // 캡션 재생성
@@ -3067,9 +3099,10 @@ var cards = {
         var feats = [
           {key:'story', label:'\uC2A4\uD1A0\uB9AC \uC790\uB3D9\uAC8C\uC2DC', desc:'\uC2A4\uD1A0\uB9AC \uB3D9\uC2DC \uC5C5\uB85C\uB4DC', icon:'story', iconText:'\uD83D\uDCF7'},
           {key:'thread', label:'\uC2A4\uB808\uB4DC \uC790\uB3D9\uAC8C\uC2DC', desc:'\uC2A4\uB808\uB4DC \uB3D9\uC2DC \uACF5\uC720', icon:'thread', iconText:'\uD83E\uDDF5'},
-          {key:'weather', label:'\uB0A0\uC528 \uBC18\uC601', desc:'\uCEA1\uC158\uC5D0 \uB0A0\uC528 \uC815\uBCF4 \uBC18\uC601', icon:'weather', iconText:'\u26C5'}
+          {key:'weather', label:'\uB0A0\uC528 \uBC18\uC601', desc:'\uCEA1\uC158\uC5D0 \uB0A0\uC528 \uC815\uBCF4 \uBC18\uC601', icon:'weather', iconText:'\u26C5'},
+          {key:'captionReview', label:'\uCEA1\uC158 \uD655\uC778', desc:'\uAC8C\uC2DC \uC804 \uCEA1\uC158 \uD655\uC778\u00B7\uD3B8\uC9D1', icon:'captionReview', iconText:'\u270D\uFE0F'}
         ];
-        var states = React.useState(Object.assign({story:true,thread:false,weather:true}, saved));
+        var states = React.useState(Object.assign({story:true,thread:false,weather:true,captionReview:true}, saved));
         var toggles = states[0], setToggles = states[1];
         function toggle(key) {
           var next = Object.assign({}, toggles);
@@ -3782,6 +3815,7 @@ function suSubmitAgree() {
 // ---- LOGIN CONVERSATION ----
 var liPhase = 0;
 var liData = {};
+var liMode = 'login'; // 'login' | 'find-id' | 'forgot-pw'
 var liFlow = [
   {img:'/assets/lumi-smile.png', msg:'다시 만나서 반가워요!\n이메일을 알려주세요'},
   {img:'/assets/lumi-curious.png', msg:'좋아요!\n비밀번호를 입력해주세요'}
