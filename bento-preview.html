@@ -1175,6 +1175,31 @@ body.dark-mode .tut-check-circle { background:rgba(255,107,139,.15); }
   .feat-toggle::after { width: 18px !important; height: 18px !important; }
   .feat-toggle.on::after { left: 18px !important; }
 
+  /* ---- card-plan: PlanCard 모바일 200px 잘림 방지 ---- */
+  /* 구성: 패딩(16+16=32) + 헤더(12+2+22+16mb=52) + 박스(16+10+10+14mb=50) + 버튼(12+12+14=38) = ~172px OK */
+  .card-plan { padding: 14px 16px !important; }
+  .card-plan > div:first-child { margin-bottom: 10px !important; }
+  .card-plan > div:first-child p:first-child { font-size: 11px !important; margin-bottom: 1px !important; }
+  .card-plan > div:first-child p:last-child { font-size: 18px !important; }
+  .card-plan > div:nth-child(2) { padding: 10px 14px !important; margin-bottom: 10px !important; }
+  .card-plan > div:nth-child(2) > div:first-child { margin-bottom: 6px !important; }
+  .card-plan > div:nth-child(2) > div:first-child span:first-child { font-size: 11px !important; }
+  .card-plan > div:nth-child(2) > div:first-child span:last-child { font-size: 12px !important; }
+  .card-plan > div:nth-child(2) > div:last-child { height: 7px !important; }
+  .card-plan > button { font-size: 12px !important; padding: 9px 20px !important; }
+
+  /* ---- card-recommend: RecommendCard 모바일 200px 잘림 방지 ---- */
+  /* 구성: 패딩(16+16=32) + 헤더행(22emoji+mb12=34) + 콘텐츠박스(10+15+13+6+mb10=54) + 태그행(mb8=28) + 도트(5+mt4=9) = ~157px OK */
+  .card-recommend { padding: 12px 14px !important; }
+  .card-recommend > div:first-child > div:first-child { margin-bottom: 10px !important; }
+  .card-recommend > div:first-child > div:first-child span:first-child { font-size: 18px !important; }
+  .card-recommend > div:first-child > div:first-child span:nth-child(2) { font-size: 13px !important; }
+  .card-recommend > div:first-child > div:nth-child(2) { padding: 10px 12px !important; margin-bottom: 8px !important; }
+  .card-recommend > div:first-child > div:nth-child(2) p:first-child { font-size: 12px !important; line-height: 1.5 !important; }
+  .card-recommend > div:first-child > div:nth-child(2) p:last-child { font-size: 11px !important; margin-top: 4px !important; }
+  .card-recommend > div:first-child > div:nth-child(3) { margin-bottom: 6px !important; }
+  .card-recommend > div:first-child > div:nth-child(3) span { font-size: 10px !important; padding: 3px 8px !important; }
+
   /* ---- twitter: IgConnectCard/IgSlideCard 모바일 200px 잘림 방지 ---- */
   /* padding 24→12px (CSS !important이 inline style보다 우선 적용 안 되므로 max-height+overflow 활용) */
   .card-visual.bg-blue { padding: 12px !important; overflow-y: auto !important; }
@@ -2545,7 +2570,7 @@ var cards = {
           {emoji:'\uD83D\uDCA1', title:'\uCC38\uC5EC\uC728 \uD301', sub:'\uC131\uACFC \uBD84\uC11D', msg:'\uC624\uB298\uC758 \uD301', desc:engTip, tags:['\uCC38\uC5EC\uC728 UP']}
         ];
         var cur = recs[recIdx];
-        return e('div', {className:'bento-card card-text', style:{padding:'clamp(16px, 4vw, 24px)',display:'flex',flexDirection:'column',justifyContent:'center',height:'100%'}},
+        return e('div', {className:'bento-card card-text card-recommend', style:{padding:'clamp(16px, 4vw, 24px)',display:'flex',flexDirection:'column',justifyContent:'center',height:'100%'}},
           e('div', {style:{transition:'opacity .4s ease, transform .4s ease',opacity:fade?0:1,transform:fade?'translateY(8px)':'translateY(0)',width:'100%'}},
             e('div', {style:{display:'flex',alignItems:'center',gap:'8px',marginBottom:'16px'}},
               e('span', {style:{fontSize:'22px',animation:'recBounce 2s ease-in-out infinite'}}, cur.emoji),
@@ -3115,7 +3140,7 @@ var cards = {
         var remaining = planData ? planData.remaining : 0;
         var daysLeft = planData ? (planData.daysUntilExpire||0) : 0;
         var pct = limit > 0 ? Math.min(100, Math.round(used/limit*100)) : 0;
-        return e('div', {className:'bento-card card-text', style:{padding:'clamp(16px, 4vw, 28px) clamp(16px, 4vw, 32px)',display:'flex',flexDirection:'column',justifyContent:'space-between',width:'100%'}},
+        return e('div', {className:'bento-card card-text card-plan', style:{padding:'clamp(16px, 4vw, 28px) clamp(16px, 4vw, 32px)',display:'flex',flexDirection:'column',justifyContent:'space-between',width:'100%'}},
           e('div', {style:{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:'16px',width:'100%'}},
             e('div', null,
               e('p', {style:{fontSize:'12px',color:tc2,marginBottom:'2px'}}, '\uB0B4 \uD50C\uB79C'),
