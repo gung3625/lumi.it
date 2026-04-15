@@ -3676,8 +3676,17 @@ function resetGrid() {
   localStorage.removeItem('lumi_grid_version');
   if (window._setGridLayout) window._setGridLayout(layout.map(function(l){return Object.assign({},l);}));
 }
+function dumpLayout(){
+  var d=localStorage.getItem('lumi_grid_layout');
+  if(!d){alert('저장된 레이아웃 없음');return;}
+  var b=new Blob([d],{type:'text/plain'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(b);
+  a.download='layout.txt';
+  a.click();
+}
 </script>
-
+<button onclick="dumpLayout()" style="position:fixed;bottom:20px;right:20px;z-index:9999;padding:14px 28px;border-radius:980px;border:none;background:linear-gradient(135deg,#FF6B8B,#DDA0DD);color:#fff;font-family:inherit;font-size:15px;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,.3);">현재 배열 저장</button>
 <footer class="site-footer">
   <div class="ft-inner">
     <div>
