@@ -239,16 +239,28 @@ body.dark-mode .react-grid-item > .react-resizable-handle::after {
 }
 
 /* Trend card responsive */
-@container (max-height: 350px) {
+@container (250px < height <= 350px) {
   .trend-header { padding:14px 20px 8px !important; }
   .trend-label { font-size:15px !important; font-weight:600 !important; }
   .trend-tab { font-size:12px !important; padding:6px 12px !important; }
   .trend-list { padding:0 16px 8px !important; }
-  .trend-item { padding:14px 16px !important; gap:12px !important; border-radius:14px !important; }
-  .trend-rank { font-size:18px !important; font-weight:700 !important; min-width:22px !important; }
-  .trend-text { font-size:17px !important; font-weight:500 !important; }
+  .trend-item { padding:8px 10px !important; gap:8px !important; border-radius:10px !important; }
+  .trend-rank { font-size:13px !important; font-weight:700 !important; min-width:18px !important; }
+  .trend-text { font-size:13px !important; font-weight:500 !important; }
   .trend-tag { display:none !important; }
-  .trend-delta { font-size:12px !important; padding:5px 10px !important; border-radius:10px !important; }
+  .trend-delta { font-size:11px !important; padding:3px 8px !important; border-radius:8px !important; }
+  .trend-cta-bar { display:none !important; }
+}
+@container (max-height: 250px) {
+  .trend-header { padding:10px 14px 6px !important; }
+  .trend-label { font-size:12px !important; font-weight:600 !important; }
+  .trend-tab { font-size:10px !important; padding:3px 8px !important; }
+  .trend-list { padding:0 12px 6px !important; overflow-y:auto !important; }
+  .trend-item { padding:5px 8px !important; gap:6px !important; border-radius:8px !important; }
+  .trend-rank { font-size:11px !important; font-weight:700 !important; min-width:14px !important; }
+  .trend-text { font-size:11px !important; font-weight:500 !important; white-space:nowrap !important; overflow:hidden !important; text-overflow:ellipsis !important; }
+  .trend-tag { display:none !important; }
+  .trend-delta { font-size:9px !important; padding:2px 5px !important; border-radius:6px !important; }
   .trend-cta-bar { display:none !important; }
 }
 @container (max-width: 280px) {
@@ -2938,16 +2950,20 @@ var cards = {
       if(src.length>0 && src.length<7){var _s=src.slice();while(src.length<7)src=src.concat(_s);}
       src=src.slice(0,7);
       var cardRef = React.useRef(null);
-      var st5 = React.useState(62), itemH = st5[0], setItemH = st5[1];
-      var st7 = React.useState(7), visibleCount = st7[0], setVisibleCount = st7[1];
+      var st5 = React.useState(36), itemH = st5[0], setItemH = st5[1];
+      var st7 = React.useState(3), visibleCount = st7[0], setVisibleCount = st7[1];
       React.useEffect(function(){
         function calcH(){
           if(!cardRef.current) return;
           var h = cardRef.current.offsetHeight;
           var available = h - 80;
-          if(available < 250) {
+          if(available <= 170) {
+            /* mobile h:1 = 200px card: available ~120px, show 3 items at ~34px each */
             setVisibleCount(3);
-            setItemH(Math.max(50, Math.floor(available / 3.2)));
+            setItemH(Math.max(30, Math.floor(available / 3.5)));
+          } else if(available < 300) {
+            setVisibleCount(5);
+            setItemH(Math.max(34, Math.floor(available / 5.2)));
           } else {
             setVisibleCount(7);
             setItemH(Math.max(32, Math.floor(available / 7)));
