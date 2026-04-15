@@ -1135,8 +1135,8 @@ body.dark-mode .tut-check-circle { background:rgba(255,107,139,.15); }
   /* Instagram card */
   .ig-badge { font-size: 11px !important; padding: 4px 12px !important; }
 
-  /* Instagram guide steps */
-  .card-visual.bg-blue { padding: 16px !important; }
+  /* Instagram guide steps — padding은 JS에서 isMobile 분기로 제어 */
+  /* .card-visual.bg-blue padding은 JS inline style이 담당 */
 
   /* Trend card */
   .trend-header { padding: 14px 18px 8px !important; }
@@ -1201,8 +1201,8 @@ body.dark-mode .tut-check-circle { background:rgba(255,107,139,.15); }
   .card-recommend > div:first-child > div:nth-child(3) span { font-size: 10px !important; padding: 3px 8px !important; }
 
   /* ---- twitter: IgConnectCard/IgSlideCard 모바일 200px 잘림 방지 ---- */
-  /* padding 24→12px (CSS !important이 inline style보다 우선 적용 안 되므로 max-height+overflow 활용) */
-  .card-visual.bg-blue { padding: 12px 14px !important; overflow-y: auto !important; }
+  /* padding은 JS inline style(isMobile 분기)이 담당 — CSS override 제거 */
+  .card-visual.bg-blue { overflow-y: auto !important; }
   /* 내부 div 컨테이너가 카드 전체 너비를 활용하도록 */
   .card-visual.bg-blue > div { width: 100% !important; box-sizing: border-box !important; }
   /* 인라인 마진을 CSS로 억제하기 어려우므로 내부 p/button 폰트·마진 압축 */
@@ -2770,6 +2770,7 @@ var cards = {
     var isLoggedIn = !!localStorage.getItem('lumi_token');
     if (isLoggedIn) {
       var IgConnectCard = function() {
+        var _mob = window.innerWidth <= 600;
         var lumiUser = JSON.parse(localStorage.getItem('lumi_user') || '{}');
         var igConnected = lumiUser.igConnected;
         var guideState = JSON.parse(localStorage.getItem('lumi_ig_guide') || '{}');
@@ -2792,6 +2793,7 @@ var cards = {
         if (igConnected || step === 3) {
           var CountdownCard = function() {
             var isDk = document.body.classList.contains('dark-mode');
+            var _mob = window.innerWidth <= 600;
             var _t = React.useState(0), tick = _t[0], setTick = _t[1];
             var ns = React.useState(null), nextPost = ns[0], setNextPost = ns[1];
             React.useEffect(function(){
@@ -2816,7 +2818,7 @@ var cards = {
             var m = Math.floor((totalSec%3600)/60);
             var s = totalSec%60;
             var pad = function(n){return n<10?'0'+n:''+n;};
-            return e('div', {className:'bento-card card-visual bg-blue', style:{flexDirection:'column',justifyContent:'center',alignItems:'center',textAlign:'center',padding:'24px',gap:'8px'}},
+            return e('div', {className:'bento-card card-visual bg-blue', style:{flexDirection:'column',justifyContent:'center',alignItems:_mob?'stretch':'center',textAlign:'center',padding:_mob?'14px 12px':'24px',gap:'8px'}},
               e('p', {style:{fontSize:'11px',color:'rgba(255,255,255,.5)',letterSpacing:'1px'}}, '\uB2E4\uC74C \uAC8C\uC2DC'),
               nextPost ? e('p', {style:{fontSize:'clamp(22px, 6vw, 32px)',fontWeight:400,color:'#fff',letterSpacing:'2px',fontFamily:'\'Nunito\',sans-serif'}}, pad(h)+':'+pad(m)+':'+pad(s)) : e('p', {style:{fontSize:'14px',color:'rgba(255,255,255,.6)'}}, '\uC608\uC57D\uB41C \uAC8C\uC2DC\uBB3C\uC774 \uC5C6\uC5B4\uC694'),
               e('p', {style:{fontSize:'12px',color:'rgba(255,255,255,.6)',marginTop:'4px'}}, timeLabel)
@@ -2832,7 +2834,7 @@ var cards = {
         ];
         var cur = steps[step];
 
-        return e('div', {className:'bento-card card-visual bg-blue', style:{flexDirection:'column',justifyContent:'center',alignItems:'center',textAlign:'center',padding:'24px',gap:'0',position:'relative',overflow:'hidden'}},
+        return e('div', {className:'bento-card card-visual bg-blue', style:{flexDirection:'column',justifyContent:'center',alignItems:_mob?'stretch':'center',textAlign:'center',padding:_mob?'14px 12px':'24px',gap:'0',position:'relative',overflow:'hidden'}},
           e('p', {style:{fontSize:'12px',color:'rgba(255,255,255,.5)',marginBottom:'4px'}}, '\uC778\uC2A4\uD0C0 \uC5F0\uB3D9'),
           e('p', {style:{fontSize:'16px',fontWeight:700,color:'#fff',marginBottom:'14px',letterSpacing:'1px'}}, 'STEP ' + (step + 1) + '/3'),
           // 완료된 단계 표시
@@ -2853,6 +2855,7 @@ var cards = {
       return e(IgConnectCard);
     }
     var IgSlideCard = function() {
+      var _mob = window.innerWidth <= 600;
       var st = React.useState(0), phase = st[0], setPhase = st[1];
       React.useEffect(function(){
         var t = setInterval(function(){ setPhase(function(p){ return (p+1)%5; }); }, 3500);
@@ -2866,7 +2869,7 @@ var cards = {
         {title:'가입 후 바로 안내', desc:'회원가입하면\n연동 가이드가 나와요', icon:'✨'}
       ];
       var s = steps[phase];
-      return e('div', {className:'bento-card card-visual bg-blue', style:{flexDirection:'column',justifyContent:'center',alignItems:'center',textAlign:'center',padding:'20px',gap:'0',position:'relative',overflow:'hidden'}},
+      return e('div', {className:'bento-card card-visual bg-blue', style:{flexDirection:'column',justifyContent:'center',alignItems:_mob?'stretch':'center',textAlign:'center',padding:_mob?'14px 12px':'20px',gap:'0',position:'relative',overflow:'hidden'}},
         e('div', {key:phase, style:{display:'flex',flexDirection:'column',alignItems:'center',animation:'igGuideIn .5s cubic-bezier(.16,1,.3,1)'}},
           s.icon === 'img' ? e('div', {style:{animation:'igIconPop .4s cubic-bezier(.16,1,.3,1) .1s both'}}, e('img', {src:'/assets/lumi-smile.png', style:{width:'clamp(80px, 25vw, 120px)',height:'clamp(80px, 25vw, 120px)',objectFit:'contain',marginTop:'-30px'}}), e('p', {style:{fontSize:'16px',fontWeight:700,color:'#fff',marginBottom:'6px',letterSpacing:'-0.3px'}}, s.title), e('p', {style:{fontSize:'13px',color:'rgba(255,255,255,.75)',lineHeight:'1.6',whiteSpace:'pre-line'}}, s.desc)) : e(React.Fragment, null, e('div', {style:{fontSize:'clamp(28px, 8vw, 42px)',marginBottom:'10px',animation:'igIconPop .4s cubic-bezier(.16,1,.3,1) .1s both'}}, s.icon), e('p', {style:{fontSize:'16px',fontWeight:700,color:'#fff',marginBottom:'6px',letterSpacing:'-0.3px'}}, s.title), e('p', {style:{fontSize:'13px',color:'rgba(255,255,255,.75)',lineHeight:'1.6',whiteSpace:'pre-line'}}, s.desc))
         ),
@@ -2979,22 +2982,27 @@ var cards = {
       var cardRef = React.useRef(null);
       var st5 = React.useState(36), itemH = st5[0], setItemH = st5[1];
       var st7 = React.useState(3), visibleCount = st7[0], setVisibleCount = st7[1];
+      var st6 = React.useState(null), trackH = st6[0], setTrackH = st6[1];
       React.useEffect(function(){
         function calcH(){
           if(!cardRef.current) return;
           var h = cardRef.current.offsetHeight;
           var available = h - 80;
+          var vc, ih;
           if(available <= 170) {
             /* mobile h:1 = 200px card: available ~120px, show 3 items at ~34px each */
-            setVisibleCount(3);
-            setItemH(Math.max(30, Math.floor(available / 3.5)));
+            vc = 3;
+            ih = Math.max(30, Math.floor(available / 3.5));
           } else if(available < 300) {
-            setVisibleCount(5);
-            setItemH(Math.max(34, Math.floor(available / 5.2)));
+            vc = 5;
+            ih = Math.max(34, Math.floor(available / 5.2));
           } else {
-            setVisibleCount(7);
-            setItemH(Math.max(32, Math.floor(available / 7)));
+            vc = 7;
+            ih = Math.max(32, Math.floor(available / 7));
           }
+          setVisibleCount(vc);
+          setItemH(ih);
+          setTrackH(vc * ih);
         }
         calcH();
         var ro = new ResizeObserver(calcH);
@@ -3014,7 +3022,7 @@ var cards = {
             )
           ),
           e('div', {className:'trend-list'},
-            e('div', {className:'trend-track', key:'track-'+tab},
+            e('div', {className:'trend-track', key:'track-'+tab, style:trackH?{height:trackH+'px'}:{}},
               src.slice(0,visibleCount).map(function(t,idx){
                 var rank = visibleCount < 7 ? idx : (rankMap[idx]!==undefined?rankMap[idx]:idx);
                 var delta = 0;
