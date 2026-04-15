@@ -1107,6 +1107,15 @@ body.dark-mode .tut-check-circle { background:rgba(255,107,139,.15); }
   .card-project .project-label { font-size: 12px !important; top: 12px !important; left: 14px !important; }
   .bento-card.card-project { border-radius: 20px !important; }
 
+  /* project1 데모 애니메이션 — 모바일 h:1(200px)에 맞게 축소 */
+  .demo-ig-feed { width: 62% !important; }
+  .demo-ig-image { aspect-ratio: 1 !important; max-height: 90px !important; }
+  .demo-scene.scene-photo .photo-fan { transform: scale(0.65) !important; transform-origin: center center !important; }
+  .scan-photo-bg { width: 80px !important; height: 80px !important; border-radius: 10px !important; }
+  .scan-weather-tags { gap: 3px !important; margin-top: 6px !important; }
+  .scan-wtag { padding: 2px 6px !important; font-size: 9px !important; }
+  .demo-scan-dots { margin-top: 6px !important; }
+
   /* Reset card */
   .reset-blocks { width: 80px !important; height: 56px !important; gap: 6px !important; }
   .reset-label { font-size: 10px !important; }
@@ -2301,6 +2310,22 @@ var cards = {
         var bg2 = isDk ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.03)';
         var lumiUser = JSON.parse(localStorage.getItem('lumi_user') || '{}');
         var igName = lumiUser.storeName || 'my_cafe';
+        var isMobile = window.innerWidth <= 600;
+        if (isMobile) {
+          // 모바일: 가로 배열 — 썸네일 왼쪽 60x60, 오른쪽 캡션+해시태그+좋아요
+          return e('div', {className:'bento-card card-visual card-project card-responsive', style:{padding:0}},
+            e('div', {style:{position:'absolute',inset:0,background:isDk?'#1c1c1e':'#fff',display:'flex',alignItems:'center',gap:'12px',padding:'14px 16px',overflow:'hidden',borderRadius:'20px'}},
+              e('img', {src:'/assets/demo-cafe.jpg', style:{width:'60px',height:'60px',borderRadius:'12px',objectFit:'cover',flexShrink:0,filter:isDk?'brightness(.8) saturate(.6)':'none'}}),
+              e('div', {style:{flex:1,minWidth:0,display:'flex',flexDirection:'column',gap:'4px'}},
+                e('p', {style:{fontSize:'12px',color:tc,lineHeight:'1.5',fontWeight:400,overflow:'hidden',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical'}},
+                  e('strong', {style:{fontWeight:600}}, igName), '\u00a0\uC774 \uC790\uB9AC \uC549\uC73C\uBA74 \uB77C\uB5BC \uB4E4\uACE0 \uD55C\uCC38 \uBA4D \uB54C\uB9AC\uAC8C \uB428'
+                ),
+                e('p', {style:{fontSize:'10px',color:isDk?'#FF8FAB':'#C8507A',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}, '#\uB77C\uB5BC\uC544\uD2B8 #\uCE74\uD398\uC778\uD14C\uB9AC\uC5B4 #\uAC10\uC131\uCE74\uD398'),
+                e('p', {style:{fontSize:'10px',color:tc2}}, '\uC88B\uC544\uC694 42\uAC1C \u00B7 2\uC2DC\uAC04 \uC804')
+              )
+            )
+          );
+        }
         return e('div', {className:'bento-card card-visual card-project card-responsive', style:{padding:0}},
           e('div', {style:{position:'absolute',inset:0,background:isDk?'#1c1c1e':'#fff',display:'flex',flexDirection:'column',overflow:'hidden',borderRadius:'32px'}},
             e('div', {style:{display:'flex',alignItems:'center',gap:'8px',padding:'12px 14px'}},
