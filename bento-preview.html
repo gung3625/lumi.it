@@ -3635,50 +3635,88 @@ function applyCardStyles(matchedIds) {
   });
 }
 
+function packCards(cards, cols) {
+  var grid = [];
+  function getHeight(){ return grid.length ? grid.length : 0; }
+  function fits(x, y, w, h) {
+    for(var r=y;r<y+h;r++){
+      if(!grid[r]) grid[r] = [];
+      for(var c=x;c<x+w;c++){
+        if(c>=cols || grid[r][c]) return false;
+      }
+    }
+    return true;
+  }
+  function place(x, y, w, h) {
+    for(var r=y;r<y+h;r++){
+      if(!grid[r]) grid[r] = [];
+      for(var c=x;c<x+w;c++) grid[r][c] = true;
+    }
+  }
+  var result = [];
+  cards.forEach(function(card) {
+    for(var y=0;y<100;y++){
+      var found = false;
+      for(var x=0;x<=cols-card.w;x++){
+        if(fits(x, y, card.w, card.h)){
+          place(x, y, card.w, card.h);
+          result.push(Object.assign({}, card, {x:x, y:y}));
+          found = true;
+          break;
+        }
+      }
+      if(found) break;
+    }
+  });
+  return result;
+}
+
 function filterGrid(category, btnEl) {
   document.querySelectorAll('.nav-pill').forEach(function(p) { p.classList.remove('active'); });
   if (btnEl) btnEl.classList.add('active');
   currentFilter = category;
 
-  var gridItems = document.querySelectorAll('.react-grid-item');
-  var currentLayout = window._currentLayout || layout;
-
   if (category === 'all') {
-    gridItems.forEach(function(el) {
-      el.style.transition = 'opacity .5s cubic-bezier(.4,0,.2,1), filter .5s cubic-bezier(.4,0,.2,1)';
-      el.style.opacity = '1';
-      el.style.filter = 'none';
-      el.style.pointerEvents = 'auto';
-      el.children[0].style.transition = 'transform .5s cubic-bezier(.4,0,.2,1), opacity .4s ease';
-      el.children[0].style.transform = 'translateY(0)';
-      el.children[0].style.opacity = '1';
-    });
+    if (window._setGridLayout) {
+      window._setGridLayout(layout.map(function(l){return Object.assign({},l);}));
+      window._currentLayout = layout;
+    }
+    setTimeout(function(){
+      document.querySelectorAll('.react-grid-item').forEach(function(el) {
+        el.style.opacity = '1';
+        el.style.filter = 'none';
+        el.style.pointerEvents = 'auto';
+      });
+    }, 50);
     return;
   }
 
   var fl = filterLayouts[category];
   var matchedIds = fl.matched;
-  var currentLayout = window._currentLayout || layout;
+  var base = layout;
+  var matched = [];
+  var unmatched = [];
+  base.forEach(function(item) {
+    if (matchedIds.indexOf(item.i) !== -1) matched.push(Object.assign({}, item));
+    else unmatched.push(Object.assign({}, item));
+  });
+  var packed = packCards(matched.concat(unmatched), 4);
 
-  gridItems.forEach(function(el, idx) {
-    if (!currentLayout[idx]) return;
-    var key = currentLayout[idx].i;
-    var isMatch = matchedIds.indexOf(key) !== -1;
-    el.style.transition = 'opacity .5s cubic-bezier(.4,0,.2,1), filter .5s cubic-bezier(.4,0,.2,1)';
-    el.style.opacity = isMatch ? '1' : '0.12';
-    el.style.filter = isMatch ? 'none' : 'blur(3px)';
-    el.style.pointerEvents = isMatch ? 'auto' : 'none';
-    if (isMatch) {
-      el.children[0].style.transition = 'none';
-      el.children[0].style.transform = 'translateY(24px)';
-      el.children[0].style.opacity = '0';
-      setTimeout(function(){
-        el.children[0].style.transition = 'transform .6s cubic-bezier(.16,1,.3,1), opacity .5s ease';
-        el.children[0].style.transform = 'translateY(0)';
-          el.children[0].style.opacity = '1';
-        }, 30);
-      }
+  if (window._setGridLayout) {
+    window._setGridLayout(packed);
+    window._currentLayout = packed;
+  }
+  setTimeout(function(){
+    var items = document.querySelectorAll('.react-grid-item');
+    packed.forEach(function(item, idx) {
+      var el = items[idx];
+      if (!el) return;
+      var isMatch = matchedIds.indexOf(item.i) !== -1;
+      el.style.opacity = isMatch ? '1' : '0.12';
+      el.style.filter = isMatch ? 'none' : 'blur(3px)';
+      el.style.pointerEvents = isMatch ? 'auto' : 'none';
     });
+  }, 50);
 }
 
 function resetGrid() {
