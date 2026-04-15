@@ -2434,6 +2434,7 @@ var cards = {
         var cur = steps[step];
 
         return e('div', {className:'bento-card card-visual bg-blue', style:{flexDirection:'column',justifyContent:'center',alignItems:'center',textAlign:'center',padding:'24px',gap:'0',position:'relative',overflow:'hidden'}},
+          e('p', {style:{fontSize:'12px',color:'rgba(255,255,255,.5)',marginBottom:'4px'}}, '\uC778\uC2A4\uD0C0 \uC5F0\uB3D9'),
           e('p', {style:{fontSize:'16px',fontWeight:700,color:'#fff',marginBottom:'14px',letterSpacing:'1px'}}, 'STEP ' + (step + 1) + '/3'),
           // 완료된 단계 표시
           step > 0 ? e('div', {style:{display:'flex',gap:'8px',justifyContent:'center',marginBottom:'12px'}},
@@ -2860,15 +2861,25 @@ var cards = {
             e('span', {style:{fontSize:'10px',color:status==='\uC608\uC57D'?pink:'#4ade80',padding:'2px 8px',borderRadius:'6px',background:status==='\uC608\uC57D'?(isDk?'rgba(255,107,139,.1)':'rgba(200,80,122,.06)'):'rgba(34,197,94,.1)'}}, status)
           );
         };
+        var itemWithTime = function(time, title, status, schedTime) {
+          return e('div', {style:{display:'flex',alignItems:'center',gap:'12px',padding:'10px 0',borderBottom:'1px solid '+(isDk?'rgba(255,255,255,.06)':'rgba(0,0,0,.04)')}},
+            e('span', {style:{fontSize:'12px',color:tc2,minWidth:'52px'}}, time),
+            e('div', {style:{flex:1,display:'flex',flexDirection:'column',gap:'2px'}},
+              e('span', {style:{fontSize:'13px',color:tc}}, title),
+              schedTime ? e('span', {style:{fontSize:'10px',color:tc2}}, schedTime) : null
+            ),
+            e('span', {style:{fontSize:'10px',color:status==='\uC608\uC57D'?pink:status==='\uCD5C\uC801'?'#56CCF2':'#4ade80',padding:'2px 8px',borderRadius:'6px',background:status==='\uC608\uC57D'?(isDk?'rgba(255,107,139,.1)':'rgba(200,80,122,.06)'):status==='\uCD5C\uC801'?(isDk?'rgba(86,204,242,.1)':'rgba(86,204,242,.06)'):'rgba(34,197,94,.1)'}}, status)
+          );
+        };
         return e('div', {className:'bento-card card-text', style:{padding:'clamp(16px, 4vw, 28px) clamp(16px, 4vw, 32px)',display:'flex',flexDirection:'column',justifyContent:'center',width:'100%',height:'100%'}},
           e('div', {style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'16px',width:'100%'}},
             e('p', {style:{fontSize:'17px',color:tc,fontWeight:600}}, '\uC608\uC57D \uAC8C\uC2DC'),
             e('span', {style:{fontSize:'12px',color:pink,padding:'4px 12px',borderRadius:'980px',background:isDk?'rgba(255,107,139,.1)':'rgba(200,80,122,.06)'}}, '\uC608\uC57D 2\uAC74')
           ),
           e('div', {style:{width:'100%'}},
-            item('\uC624\uB298 18:30', '\uCE74\uD398 \uC2E0\uBA54\uB274 \uC18C\uAC1C', '\uC608\uC57D'),
-            item('\uB0B4\uC77C 11:00', '\uC8FC\uB9D0 \uC774\uBCA4\uD2B8 \uC548\uB0B4', '\uC608\uC57D'),
-            item('\uC5B4\uC81C 15:00', '\uB77C\uB5BC\uC544\uD2B8 \uC0AC\uC9C4', '\uC644\uB8CC')
+            itemWithTime('\uC624\uB298 18:30', '\uCE74\uD398 \uC2E0\uBA54\uB274 \uC18C\uAC1C', '\uC608\uC57D', '\uC608\uC57D \uC2DC\uAC04: 18:30'),
+            itemWithTime('\uB0B4\uC77C 11:00', '\uC8FC\uB9D0 \uC774\uBCA4\uD2B8 \uC548\uB0B4', '\uCD5C\uC801', '\uCD5C\uC801 \uC2DC\uAC04: 11:00 \uC5C5\uB85C\uB4DC'),
+            itemWithTime('\uC5B4\uC81C 15:00', '\uB77C\uB5BC\uC544\uD2B8 \uC0AC\uC9C4', '\uC644\uB8CC', null)
           )
         );
       };
@@ -2923,15 +2934,15 @@ var layoutGuest = [
 ];
 var layoutUser = [
   {i:'bio',       x:0, y:0, w:3, h:2, isResizable:false},
-  {i:'spotify',   x:3, y:0, w:1, h:1, isResizable:false},
-  {i:'empty1',    x:3, y:1, w:1, h:1, isResizable:false},
-  {i:'project2',  x:0, y:2, w:1, h:2, isResizable:false},
-  {i:'project1',  x:1, y:2, w:1, h:2, isResizable:false},
-  {i:'twitter',   x:2, y:2, w:1, h:1, isResizable:false},
-  {i:'dark',      x:3, y:2, w:1, h:1, isResizable:false},
-  {i:'blog',      x:2, y:3, w:2, h:1, isResizable:false},
-  {i:'project3',  x:0, y:4, w:2, h:1, isResizable:false},
-  {i:'newsletter',x:2, y:4, w:2, h:1, isResizable:false}
+  {i:'project2',  x:3, y:0, w:1, h:2, isResizable:false},
+  {i:'project3',  x:0, y:2, w:2, h:1, isResizable:false},
+  {i:'empty1',    x:2, y:2, w:1, h:1, isResizable:false},
+  {i:'newsletter',x:0, y:3, w:2, h:1, isResizable:false},
+  {i:'spotify',   x:2, y:3, w:1, h:1, isResizable:false},
+  {i:'project1',  x:3, y:2, w:1, h:2, isResizable:false},
+  {i:'blog',      x:0, y:4, w:2, h:1, isResizable:false},
+  {i:'twitter',   x:2, y:4, w:1, h:1, isResizable:false},
+  {i:'dark',      x:3, y:4, w:1, h:1, isResizable:false}
 ];
 var layout = localStorage.getItem('lumi_token') ? layoutUser : layoutGuest;
 
@@ -2961,7 +2972,7 @@ var mobileLayout = [
 
 // 저장된 레이아웃 불러오기
 // 레이아웃 버전 관리 — 레이아웃 변경 시 버전 올리면 캐시 무시
-var LAYOUT_VERSION = 22;
+var LAYOUT_VERSION = 23;
 var savedLayout = null;
 if (!localStorage.getItem('lumi_token')) {
   try {
@@ -3676,17 +3687,6 @@ function resetGrid() {
   localStorage.removeItem('lumi_grid_version');
   if (window._setGridLayout) window._setGridLayout(layout.map(function(l){return Object.assign({},l);}));
 }
-function dumpLayout(){
-  var d=localStorage.getItem('lumi_grid_layout');
-  if(!d){alert('저장된 레이아웃 없음');return;}
-  var b=new Blob([d],{type:'text/plain'});
-  var a=document.createElement('a');
-  a.href=URL.createObjectURL(b);
-  a.download='layout.txt';
-  a.click();
-}
-</script>
-<button onclick="dumpLayout()" style="position:fixed;bottom:20px;right:20px;z-index:9999;padding:14px 28px;border-radius:980px;border:none;background:linear-gradient(135deg,#FF6B8B,#DDA0DD);color:#fff;font-family:inherit;font-size:15px;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,.3);">현재 배열 저장</button>
 <footer class="site-footer">
   <div class="ft-inner">
     <div>
