@@ -56,7 +56,7 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Bad Request: 잘못된 JSON' }) };
   }
 
-  const { reservationKey, captionIndex, email } = body;
+  const { reservationKey, captionIndex, email, editedCaption } = body;
 
   // 인증: Bearer 토큰 또는 LUMI_SECRET (헤더로만)
   const authHeader = event.headers['authorization'] || '';
@@ -92,12 +92,18 @@ exports.handler = async (event) => {
       return { statusCode: 409, headers: CORS, body: JSON.stringify({ error: '이미 게시된 예약입니다' }) };
     }
 
-    // 2. captions[captionIndex] 가져오기
+    // 2. captions[captionIndex] 가져오기 (editedCaption이 있으면 편집본 우선)
     const captions = item.captions;
     if (!captions || !captions[idx]) {
       return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: `captionIndex ${idx}에 해당하는 캡션 없음` }) };
     }
-    const selectedCaption = captions[idx];
+    // 사용자가 편집한 캡션이 있으면 Blob에 반영 후 사용
+    const selectedCaption = (editedCaption && typeof editedCaption === 'string' && editedCaption.trim())
+      ? editedCaption.trim()
+      : captions[idx];
+    if (editedCaption && editedCaption.trim()) {
+      item.captions[idx] = selectedCaption;
+    }
 
     // 이미지 URL — process-and-post가 저장한 imageUrls 직접 사용, 없으면 imageKeys로 생성
     const imageUrls = item.imageUrls && item.imageUrls.length
