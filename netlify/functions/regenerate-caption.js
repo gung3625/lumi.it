@@ -2,7 +2,7 @@ const { getStore } = require('@netlify/blobs');
 const OpenAI = require('openai');
 
 const CORS = {
-  'Access-Control-Allow-Origin': 'https://lumi.it.kr',
+  'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'Content-Type',
   'Content-Type': 'application/json',
 };
@@ -202,6 +202,7 @@ async function moderateCaption(text) {
       },
       body: JSON.stringify({ input: text }),
     });
+    if (!res.ok) { console.warn('[moderation] API 응답 오류:', res.status); return true; }
     const data = await res.json();
     const result = data.results?.[0];
     if (result?.flagged) {
@@ -375,7 +376,7 @@ exports.handler = async (event) => {
       headers: CORS,
       body: JSON.stringify({
         success: true,
-        captions,
+        captions: safeCaptions,
         remaining: Math.max(0, 3 - (count + 1)),
       }),
     };

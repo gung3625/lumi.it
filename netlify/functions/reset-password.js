@@ -8,7 +8,7 @@ function hashPassword(password) {
 }
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': 'https://lumi.it.kr',
+  'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'Content-Type',
   'Content-Type': 'application/json',
 };

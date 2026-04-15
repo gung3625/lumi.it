@@ -2,7 +2,7 @@ const { getStore } = require('@netlify/blobs');
 const crypto = require('crypto');
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
-const CORS = { 'Access-Control-Allow-Origin': 'https://lumi.it.kr', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Content-Type': 'application/json' };
+const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Content-Type': 'application/json' };
 
 function hashPassword(password) {
   const salt = crypto.randomBytes(16).toString('hex');
@@ -23,14 +23,16 @@ exports.handler = async (event) => {
 
   const { name, storeName, instagram, email, phone, password, birthdate, gender, storeDesc, region, sidoCode, sigunguCode, storeSido, bizCategory, captionTone, tagStyle, agreeMarketing } = body;
 
-  if (!name || !storeName || !instagram || !email || !phone || !password || !birthdate) {
+  if (!name || !storeName || !email || !password) {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '필수 정보가 누락됐습니다.' }) };
   }
 
-  // 생년월일 형식 검사 (YYYY-MM-DD)
-  const bdRegex = /^\d{4}-\d{2}-\d{2}$/;
-  if (!bdRegex.test(birthdate)) {
-    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '생년월일 형식이 올바르지 않습니다. (YYYY-MM-DD)' }) };
+  // 생년월일 형식 검사 (선택 필드 — 입력 시만 검사)
+  if (birthdate) {
+    const bdRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!bdRegex.test(birthdate)) {
+      return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '생년월일 형식이 올바르지 않습니다. (YYYY-MM-DD)' }) };
+    }
   }
 
   const pwRegex = /^(?=.*[!@#$%^&*()_+\-=\[\]{};':"\|,.<>\/?]).{10,}$/;

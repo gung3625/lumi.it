@@ -1,7 +1,7 @@
 const { getStore } = require('@netlify/blobs');
 
 const headers = {
-  'Access-Control-Allow-Origin': 'https://lumi.it.kr',
+  'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   'Content-Type': 'application/json',
 };

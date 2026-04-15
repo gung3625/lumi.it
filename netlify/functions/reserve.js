@@ -2,7 +2,7 @@ const busboy = require('busboy');
 const { getStore } = require('@netlify/blobs');
 
 const CORS = {
-  'Access-Control-Allow-Origin': 'https://lumi.it.kr',
+  'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   'Content-Type': 'application/json',
 };
@@ -203,6 +203,7 @@ exports.handler = async (event) => {
 
         resolve({
           statusCode: 200,
+          headers: CORS,
           body: JSON.stringify({ success: true, reservationKey: reserveKey, photoCount: photos.length })
         });
 

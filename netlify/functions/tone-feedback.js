@@ -1,6 +1,6 @@
 const { getStore } = require('@netlify/blobs');
 
-const CORS = { 'Access-Control-Allow-Origin': 'https://lumi.it.kr', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Content-Type': 'application/json' };
+const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Content-Type': 'application/json' };
 
 // 👍👎 피드백 저장 함수
 // 피드백에 따라 tone-like / tone-dislike 업데이트

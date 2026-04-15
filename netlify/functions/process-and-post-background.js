@@ -37,6 +37,7 @@ async function moderateCaption(text) {
       },
       body: JSON.stringify({ input: text }),
     });
+    if (!res.ok) { console.warn('[moderation] API 응답 오류:', res.status); return true; }
     const data = await res.json();
     const result = data.results?.[0];
     if (result?.flagged) {

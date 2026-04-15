@@ -10,7 +10,7 @@ function getBlobStore(name) {
 }
 
 const CORS = {
-  'Access-Control-Allow-Origin': 'https://lumi.it.kr',
+  'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   'Content-Type': 'application/json',
 };
@@ -35,6 +35,20 @@ async function saveCaptionHistory(email, caption) {
   });
   if (history.length > 20) history = history.slice(0, 20);
   await store.set('caption-history:' + email, JSON.stringify(history));
+}
+
+// ── editedCaption 안전성 검수 ──
+async function moderateCaption(text) {
+  try {
+    const res = await fetch('https://api.openai.com/v1/moderations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + process.env.OPENAI_API_KEY },
+      body: JSON.stringify({ input: text }),
+    });
+    if (!res.ok) { console.warn('[moderation] API 응답 오류:', res.status); return true; }
+    const data = await res.json();
+    return !data.results?.[0]?.flagged;
+  } catch (e) { console.warn('[moderation] 실패, 통과:', e.message); return true; }
 }
 
 // ── 메인 핸들러 ──
@@ -97,7 +111,16 @@ exports.handler = async (event) => {
     if (!captions || !captions[idx]) {
       return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: `captionIndex ${idx}에 해당하는 캡션 없음` }) };
     }
-    // 사용자가 편집한 캡션이 있으면 Blob에 반영 후 사용
+    // 사용자가 편집한 캡션이 있으면 길이 제한 + Moderation 검수 후 Blob에 반영
+    if (editedCaption && typeof editedCaption === 'string' && editedCaption.trim()) {
+      if (editedCaption.length > 2200) {
+        return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '캡션은 2,200자를 초과할 수 없습니다.' }) };
+      }
+      const safe = await moderateCaption(editedCaption);
+      if (!safe) {
+        return { statusCode: 422, headers: CORS, body: JSON.stringify({ error: '캡션이 안전성 검수를 통과하지 못했습니다.' }) };
+      }
+    }
     const selectedCaption = (editedCaption && typeof editedCaption === 'string' && editedCaption.trim())
       ? editedCaption.trim()
       : captions[idx];

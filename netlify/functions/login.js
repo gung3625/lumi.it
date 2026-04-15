@@ -1,7 +1,7 @@
 const { getStore } = require('@netlify/blobs');
 const crypto = require('crypto');
 
-const CORS = { 'Access-Control-Allow-Origin': 'https://lumi.it.kr', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Content-Type': 'application/json' };
+const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Content-Type': 'application/json' };
 
 function verifyPassword(password, stored) {
   if (!stored) return false;
