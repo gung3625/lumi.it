@@ -257,7 +257,7 @@ body.dark-mode .react-grid-item > .react-resizable-handle::after {
   .trend-tab { font-size:9px !important; padding:3px 6px !important; }
   .trend-list { padding:0 14px 8px !important; }
   .trend-item { padding:4px 8px !important; gap:5px !important; }
-  .trend-text { font-size:10px !important; white-space:nowrap !important; overflow:hidden !important; text-overflow:ellipsis !important; }
+  .trend-text { font-size:12px !important; white-space:nowrap !important; overflow:hidden !important; text-overflow:ellipsis !important; }
   .trend-tag { display:none !important; }
   .trend-delta { font-size:8px !important; padding:2px 4px !important; }
 }
@@ -435,7 +435,7 @@ body.dark-mode .upload-thumb-more { background:rgba(255,255,255,.08); color:rgba
 body.dark-mode .upload-preview-more { background:rgba(255,255,255,.06); color:rgba(255,255,255,.4); }
 .upload-thumb-info { flex:1; }
 .upload-thumb-name { font-size:12px; color:#0d1117; margin-bottom:2px; }
-.upload-thumb-size { font-size:10px; color:rgba(0,0,0,.3); }
+.upload-thumb-size { font-size:11px; color:rgba(0,0,0,.3); }
 .upload-comment {
   width:100%; padding:clamp(10px, 2vw, 12px) clamp(12px, 2vw, 16px); border-radius:16px;
   border:none; background:linear-gradient(135deg, rgba(255,107,139,.04), rgba(221,160,221,.04));
@@ -1001,6 +1001,14 @@ body.dark-mode .tut-check-circle { background:rgba(255,107,139,.15); }
 }
 @media (max-width: 480px) { .nav-pills { display: none; } }
 
+/* BIO 카드 콘텐츠 잘림 방지 — overflow:hidden 예외 처리 */
+[data-cardid="bio"] .grid-stack-item-content,
+[data-cardid="bio"] > div {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
 /* MOBILE CARD RESPONSIVE */
 @media (max-width: 600px) {
   .react-grid-item { border-radius: 20px !important; }
@@ -1039,7 +1047,7 @@ body.dark-mode .tut-check-circle { background:rgba(255,107,139,.15); }
   /* Tutorial card */
   .tut-lumi-area { flex: 0 0 34% !important; }
   .tut-title { font-size: 17px !important; }
-  .tut-sub { font-size: 11px !important; }
+  .tut-sub { font-size: 12px !important; }
   .tut-content { padding: 12px 16px !important; gap: 8px !important; overflow: auto; }
   .upload-btn { font-size: 13px !important; padding: 10px !important; border-radius: 14px !important; }
   .tut-picker-btn { font-size: 14px !important; padding: 12px !important; }
@@ -1087,6 +1095,9 @@ body.dark-mode .tut-check-circle { background:rgba(255,107,139,.15); }
   .spot-icon svg { width: 24px !important; height: 24px !important; }
   .spot-bars { height: 10px !important; }
   .spot-bars span { width: 2px !important; }
+
+  /* 카드 transition 모바일 축소 */
+  .react-grid-item { transition-duration: 0.3s !important; }
 
   /* 카드 내부 인라인 패딩 강제 축소 */
   .bento-card.card-text { overflow: hidden; }
@@ -4312,6 +4323,18 @@ function applyCardStyles(matchedIds) {
     item.style.pointerEvents = isMatch ? 'auto' : 'none';
   });
 }
+
+// 480px 이하 nav-pills 숨김 시 currentFilter 리셋
+window.addEventListener('resize', function() {
+  if (window.innerWidth <= 480 && currentFilter !== 'all') {
+    currentFilter = 'all';
+    document.querySelectorAll('.react-grid-item').forEach(function(el) {
+      el.style.opacity = '';
+      el.style.filter = '';
+      el.style.pointerEvents = '';
+    });
+  }
+});
 
 function filterGrid(category, btnEl) {
   document.querySelectorAll('.nav-pill').forEach(function(p) { p.classList.remove('active'); });
