@@ -1202,10 +1202,12 @@ body.dark-mode .tut-check-circle { background:rgba(255,107,139,.15); }
 
   /* ---- twitter: IgConnectCard/IgSlideCard 모바일 200px 잘림 방지 ---- */
   /* padding 24→12px (CSS !important이 inline style보다 우선 적용 안 되므로 max-height+overflow 활용) */
-  .card-visual.bg-blue { padding: 12px !important; overflow-y: auto !important; }
+  .card-visual.bg-blue { padding: 12px 14px !important; overflow-y: auto !important; }
+  /* 내부 div 컨테이너가 카드 전체 너비를 활용하도록 */
+  .card-visual.bg-blue > div { width: 100% !important; box-sizing: border-box !important; }
   /* 인라인 마진을 CSS로 억제하기 어려우므로 내부 p/button 폰트·마진 압축 */
   .card-visual.bg-blue > div > p,
-  .card-visual.bg-blue > p { font-size: 11px !important; margin-bottom: 4px !important; margin-top: 0 !important; }
+  .card-visual.bg-blue > p { font-size: 11px !important; margin-bottom: 4px !important; margin-top: 0 !important; width: 100% !important; }
   .card-visual.bg-blue > div > button,
   .card-visual.bg-blue > button { font-size: 12px !important; padding: 8px 16px !important; margin-bottom: 6px !important; }
   /* IgSlideCard 아이콘 축소 */
