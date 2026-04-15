@@ -655,6 +655,8 @@ body.dark-mode .upload-submit { background:#f0f2f8; color:#0d1117; }
 .demo-tag:nth-child(4) { animation-delay:.36s; }
 .demo-tag:nth-child(5) { animation-delay:.48s; }
 @keyframes tagPop { 0%{opacity:0;transform:scale(.4) translateY(10px)} 100%{opacity:1;transform:scale(1) translateY(0)} }
+@keyframes recBounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
+@keyframes tagFadeIn { 0%{opacity:0;transform:translateY(6px)} 100%{opacity:1;transform:translateY(0)} }
 
 /* scene 5: done */
 .demo-check-circle {
@@ -2174,6 +2176,8 @@ var cards = {
         var bg2 = isDk ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.03)';
         var pink = isDk ? '#FF8FAB' : '#C8507A';
         var ws = React.useState(null), weather = ws[0], setWeather = ws[1];
+        var rs = React.useState(0), recIdx = rs[0], setRecIdx = rs[1];
+        var fs = React.useState(false), fade = fs[0], setFade = fs[1];
         React.useEffect(function(){
           var userRegion = '';
           try { var _wu = JSON.parse(localStorage.getItem('lumi_user')||'{}'); userRegion = _wu.region || ''; } catch(ex){}
@@ -2184,26 +2188,53 @@ var cards = {
             if(!d.error) setWeather(d);
           }).catch(function(){});
         },[]);
+        React.useEffect(function(){
+          var iv = setTimeout(function(){
+            setFade(true);
+            setTimeout(function(){ setRecIdx(function(p){return (p+1)%4;}); setFade(false); }, 400);
+          }, 5000);
+          return function(){ clearTimeout(iv); };
+        },[recIdx]);
         var state = (weather && weather.state) || 'clear';
         var tip = _weatherTips[state] || _weatherTips.clear;
         var emoji = _weatherEmojis[state] || '\u2600\uFE0F';
         var tempStr = weather ? ((_weatherLabels[state]||'')+' '+weather.temperature+'\xB0') : '';
         var locStr = weather ? (weather.locationName||'') : '';
-        return e('div', {className:'bento-card card-text', style:{padding:'clamp(16px, 4vw, 24px)',display:'flex',flexDirection:'column',justifyContent:'space-between'}},
-          e('div', null,
-            e('div', {style:{display:'flex',alignItems:'center',gap:'8px',marginBottom:'14px'}},
-              e('span', {style:{fontSize:'22px'}}, emoji),
-              e('span', {style:{fontSize:'16px',color:tc,fontWeight:600}}, '\uC624\uB298\uC758 \uCD94\uCC9C'),
-              locStr ? e('span', {style:{fontSize:'11px',color:tc2,marginLeft:'auto'}}, locStr+(tempStr?' '+tempStr:'')) : null
+        var lumiUser = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+        var bizCat = lumiUser.bizCategory || lumiUser.storeCategory || 'cafe';
+        var bestTimes = {cafe:'\uC624\uD6C4 6:30',food:'\uC624\uD6C4 5:00',beauty:'\uC624\uC804 11:00',flower:'\uC624\uD6C4 2:00',fashion:'\uC624\uD6C4 8:00',fitness:'\uC624\uC804 7:00',pet:'\uC624\uD6C4 9:00',interior:'\uC624\uD6C4 7:00',education:'\uC624\uC804 10:00',studio:'\uC624\uD6C4 3:00',other:'\uC624\uD6C4 6:00'};
+        var bestTime = bestTimes[bizCat] || '\uC624\uD6C4 6:00';
+        var trendTags = {cafe:['#\uCE74\uD398\uCD94\uCC9C','#\uBD04\uCE74\uD398','#\uB77C\uB5BC\uC544\uD2B8'],food:['#\uB9DB\uC9D1\uCD94\uCC9C','#\uD63C\uBC25','#\uBBF8\uC2DD\uAC00'],beauty:['#\uBDF0\uD2F0\uD300','#\uC624\uB298\uC758\uBA54\uC774\uD06C\uC5C5','#\uC140\uD504\uCF00\uC5B4'],flower:['#\uAF43\uB2E4\uBC1C','#\uBD04\uAF43','#\uD50C\uB77C\uC6CC'],fashion:['#\uC624\uB298\uC758\uCF54\uB514','#\uBD04\uD328\uC158','#\uB370\uC77C\uB9AC\uB8E9'],fitness:['#\uC6B4\uB3D9\uB8E8\uD2F4','#\uD5EC\uC2A4\uC7A5','#\uC624\uB298\uC6B4\uB3D9'],pet:['#\uBC18\uB824\uB3D9\uBB3C','#\uAC95\uC0B0\uCC45','#\uD3AB\uC2A4\uD0C0\uADF8\uB7A8'],other:['#\uC77C\uC0C1','#\uCD94\uCC9C','#\uD314\uB85C\uC6B0']};
+        var myTrends = trendTags[bizCat] || trendTags.other;
+        var engageTips = ['\uCEA1\uC158 \uCCAB \uC904\uC5D0 \uC9C8\uBB38\uC744 \uB123\uC73C\uBA74\n\uB313\uAE00\uC774 2\uBC30 \uB298\uC5B4\uC694','\uC0AC\uC9C4 3\uC7A5 \uC774\uC0C1 \uC62C\uB9AC\uBA74\n\uB3C4\uB2EC\uB960\uC774 40% \uC99D\uAC00\uD574\uC694','\uD574\uC2DC\uD0DC\uADF8\uB294 5~10\uAC1C\uAC00\n\uAC00\uC7A5 \uD6A8\uACFC\uC801\uC774\uC5D0\uC694'];
+        var engTip = engageTips[Math.floor(Date.now()/86400000) % engageTips.length];
+        var recs = [
+          {emoji:emoji, title:'\uB0A0\uC528 \uCD94\uCC9C', sub:locStr+(tempStr?' '+tempStr:''), msg:tip.msg, desc:tip.sub, tags:tip.tags},
+          {emoji:'\u23F0', title:'\uCD5C\uC801 \uAC8C\uC2DC \uC2DC\uAC04', sub:'\uD314\uB85C\uC6CC \uBD84\uC11D \uAE30\uBC18', msg:bestTime+' \uAC8C\uC2DC \uCD94\uCC9C', desc:'\uC5C5\uC885 \uD314\uB85C\uC6CC\uAC00 \uAC00\uC7A5 \uD65C\uBC1C\uD55C \uC2DC\uAC04\uB300\uC5D0\uC694', tags:['\uBC14\uB85C \uAC8C\uC2DC\uD558\uAE30']},
+          {emoji:'\uD83D\uDCC8', title:'\uC624\uB298\uC758 \uD574\uC2DC\uD0DC\uADF8', sub:'\uC2E4\uC2DC\uAC04 \uD2B8\uB80C\uB4DC', msg:'\uC9C0\uAE08 \uB728\uB294 \uD0DC\uADF8', desc:'\uC5C5\uC885\uBCC4 \uC2E4\uC2DC\uAC04 \uD2B8\uB80C\uB4DC\uB97C \uBC18\uC601\uD574\uC694', tags:myTrends},
+          {emoji:'\uD83D\uDCA1', title:'\uCC38\uC5EC\uC728 \uD301', sub:'\uC131\uACFC \uBD84\uC11D', msg:'\uC624\uB298\uC758 \uD301', desc:engTip, tags:['\uCC38\uC5EC\uC728 UP']}
+        ];
+        var cur = recs[recIdx];
+        return e('div', {className:'bento-card card-text', style:{padding:'clamp(16px, 4vw, 24px)',display:'flex',flexDirection:'column',justifyContent:'center',height:'100%'}},
+          e('div', {style:{transition:'opacity .4s ease, transform .4s ease',opacity:fade?0:1,transform:fade?'translateY(8px)':'translateY(0)'}},
+            e('div', {style:{display:'flex',alignItems:'center',gap:'8px',marginBottom:'16px'}},
+              e('span', {style:{fontSize:'22px',animation:'recBounce 2s ease-in-out infinite'}}, cur.emoji),
+              e('span', {style:{fontSize:'16px',color:tc,fontWeight:600}}, cur.title),
+              cur.sub ? e('span', {style:{fontSize:'11px',color:tc2,marginLeft:'auto'}}, cur.sub) : null
             ),
-            e('div', {style:{padding:'16px',borderRadius:'16px',background:bg2,marginBottom:'12px'}},
-              e('p', {style:{fontSize:'14px',color:tc,lineHeight:'1.7'}}, tip.msg),
-              e('p', {style:{fontSize:'13px',color:tc2,lineHeight:'1.6',marginTop:'4px'}}, tip.sub)
+            e('div', {style:{padding:'16px',borderRadius:'16px',background:bg2,marginBottom:'14px'}},
+              e('p', {style:{fontSize:'15px',color:tc,lineHeight:'1.7',fontWeight:500}}, cur.msg),
+              e('p', {style:{fontSize:'13px',color:tc2,lineHeight:'1.6',marginTop:'6px',whiteSpace:'pre-line'}}, cur.desc)
+            ),
+            e('div', {style:{display:'flex',gap:'6px',flexWrap:'wrap',marginBottom:'12px'}},
+              cur.tags.map(function(tag,i){
+                return e('span', {key:i, style:{fontSize:'11px',color:pink,padding:'5px 12px',borderRadius:'980px',background:isDk?'rgba(255,107,139,.1)':'rgba(200,80,122,.06)',animation:'tagFadeIn .5s ease '+(i*0.1)+'s both'}}, tag);
+              })
             )
           ),
-          e('div', {style:{display:'flex',gap:'6px',flexWrap:'wrap'}},
-            tip.tags.map(function(tag,i){
-              return e('span', {key:i, style:{fontSize:'11px',color:pink,padding:'4px 10px',borderRadius:'980px',background:isDk?'rgba(255,107,139,.1)':'rgba(200,80,122,.06)'}}, tag);
+          e('div', {style:{display:'flex',gap:'4px',justifyContent:'center',marginTop:'4px'}},
+            recs.map(function(_,i){
+              return e('div',{key:i,style:{width:i===recIdx?'14px':'5px',height:'5px',borderRadius:'3px',background:i===recIdx?pink:(isDk?'rgba(255,255,255,.15)':'rgba(0,0,0,.1)'),transition:'all .4s ease'}});
             })
           )
         );
