@@ -3640,29 +3640,31 @@ function filterGrid(category, btnEl) {
   if (btnEl) btnEl.classList.add('active');
   currentFilter = category;
 
-  var gridItems = document.querySelectorAll('.react-grid-item');
-  var currentLayout = window._currentLayout || layout;
-
   if (category === 'all') {
-    gridItems.forEach(function(el) {
-      el.style.transition = 'opacity .4s ease, filter .4s ease';
-      el.style.opacity = '1';
-      el.style.filter = 'none';
-      el.style.pointerEvents = 'auto';
-    });
+    if (window._setGridLayout) {
+      window._setGridLayout(layout.map(function(l){return Object.assign({},l);}));
+      window._currentLayout = layout;
+    }
+    setTimeout(function(){
+      var gridItems = document.querySelectorAll('.react-grid-item');
+      gridItems.forEach(function(el) {
+        el.style.transition = 'opacity .4s ease, filter .4s ease';
+        el.style.opacity = '1';
+        el.style.filter = 'none';
+        el.style.pointerEvents = 'auto';
+      });
+    }, 50);
     return;
   }
 
-  var matchedIds = filterLayouts[category].matched;
-  gridItems.forEach(function(el, idx) {
-    if (!currentLayout[idx]) return;
-    var key = currentLayout[idx].i;
-    var isMatch = matchedIds.indexOf(key) !== -1;
-    el.style.transition = 'opacity .4s ease, filter .4s ease';
-    el.style.opacity = isMatch ? '1' : '0.12';
-    el.style.filter = isMatch ? 'none' : 'blur(3px)';
-    el.style.pointerEvents = isMatch ? 'auto' : 'none';
-  });
+  var fl = filterLayouts[category];
+  if (window._setGridLayout) {
+    window._setGridLayout(fl.layout.map(function(l){return Object.assign({},l);}));
+    window._currentLayout = fl.layout;
+  }
+  setTimeout(function(){
+    applyCardStyles(fl.matched);
+  }, 50);
 }
 
 function resetGrid() {
