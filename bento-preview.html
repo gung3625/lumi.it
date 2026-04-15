@@ -1099,8 +1099,16 @@ body.dark-mode .tut-check-circle { background:rgba(255,107,139,.15); }
   /* 카드 transition 모바일 축소 */
   .react-grid-item { transition-duration: 0.3s !important; }
 
-  /* 카드 내부 인라인 패딩 강제 축소 */
-  .bento-card.card-text { overflow: hidden; }
+  /* 카드 내부 스크롤 — 모바일 200px rowHeight에서 콘텐츠 잘림 방지 */
+  .react-grid-item > .bento-card {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  /* project 카드 모바일 축소 */
+  .card-project .project-label { font-size: 12px !important; top: 12px !important; left: 14px !important; }
+  .bento-card.card-project { border-radius: 20px !important; }
 
   /* Reset card */
   .reset-blocks { width: 80px !important; height: 56px !important; gap: 6px !important; }
