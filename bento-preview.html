@@ -3640,31 +3640,53 @@ function filterGrid(category, btnEl) {
   if (btnEl) btnEl.classList.add('active');
   currentFilter = category;
 
+  var gridItems = document.querySelectorAll('.react-grid-item');
+  var currentLayout = window._currentLayout || layout;
+
   if (category === 'all') {
-    if (window._setGridLayout) {
-      window._setGridLayout(layout.map(function(l){return Object.assign({},l);}));
-      window._currentLayout = layout;
-    }
-    setTimeout(function(){
-      var gridItems = document.querySelectorAll('.react-grid-item');
-      gridItems.forEach(function(el) {
-        el.style.transition = 'opacity .4s ease, filter .4s ease';
-        el.style.opacity = '1';
-        el.style.filter = 'none';
-        el.style.pointerEvents = 'auto';
-      });
-    }, 50);
+    var delay = 0;
+    gridItems.forEach(function(el) {
+      el.children[0].style.transition = 'none';
+      el.children[0].style.transform = 'translateY(12px)';
+      el.children[0].style.opacity = '0.5';
+      var d = delay;
+      delay += 40;
+      setTimeout(function(){
+        el.children[0].style.transition = 'transform .6s cubic-bezier(.16,1,.3,1), opacity .4s ease';
+        el.children[0].style.transform = 'translateY(0)';
+        el.children[0].style.opacity = '1';
+      }, 30 + d);
+      el.style.transition = 'opacity .4s cubic-bezier(.4,0,.2,1), filter .4s cubic-bezier(.4,0,.2,1)';
+      el.style.opacity = '1';
+      el.style.filter = 'none';
+      el.style.pointerEvents = 'auto';
+    });
     return;
   }
 
-  var fl = filterLayouts[category];
-  if (window._setGridLayout) {
-    window._setGridLayout(fl.layout.map(function(l){return Object.assign({},l);}));
-    window._currentLayout = fl.layout;
-  }
-  setTimeout(function(){
-    applyCardStyles(fl.matched);
-  }, 50);
+  var matchedIds = filterLayouts[category].matched;
+  var delay = 0;
+  gridItems.forEach(function(el, idx) {
+    if (!currentLayout[idx]) return;
+    var key = currentLayout[idx].i;
+    var isMatch = matchedIds.indexOf(key) !== -1;
+    if (isMatch) {
+      el.children[0].style.transition = 'none';
+      el.children[0].style.transform = 'translateY(20px)';
+      el.children[0].style.opacity = '0';
+      var d = delay;
+      delay += 80;
+      setTimeout(function(){
+        el.children[0].style.transition = 'transform .6s cubic-bezier(.16,1,.3,1), opacity .5s ease';
+        el.children[0].style.transform = 'translateY(-6px)';
+        el.children[0].style.opacity = '1';
+      }, 30 + d);
+    }
+    el.style.transition = 'opacity .4s cubic-bezier(.4,0,.2,1), filter .4s cubic-bezier(.4,0,.2,1)';
+    el.style.opacity = isMatch ? '1' : '0.12';
+    el.style.filter = isMatch ? 'none' : 'blur(3px)';
+    el.style.pointerEvents = isMatch ? 'auto' : 'none';
+  });
 }
 
 function resetGrid() {
