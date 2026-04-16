@@ -3623,7 +3623,7 @@ var mobileLayout = [
 
 // 저장된 레이아웃 불러오기
 // 레이아웃 버전 관리 — 레이아웃 변경 시 버전 올리면 캐시 무시
-var LAYOUT_VERSION = 26;
+var LAYOUT_VERSION = 27;
 var savedLayout = null;
 if (!localStorage.getItem('lumi_token')) {
   try {
@@ -3710,7 +3710,9 @@ function BentoGrid() {
     onLayoutChange: function(newLayout) {
       if (canDrag) {
         setDesktopLayout(newLayout);
-        try { localStorage.setItem('lumi_grid_layout', JSON.stringify(newLayout)); localStorage.setItem('lumi_grid_version', LAYOUT_VERSION); } catch(ex) {}
+        if (!localStorage.getItem('lumi_token')) {
+          try { localStorage.setItem('lumi_grid_layout', JSON.stringify(newLayout)); localStorage.setItem('lumi_grid_version', LAYOUT_VERSION); } catch(ex) {}
+        }
       }
     }
   }, children);
@@ -4365,6 +4367,8 @@ function lumiCheckAuth(response) {
   if (response.status === 401) {
     localStorage.removeItem('lumi_token');
     localStorage.removeItem('lumi_user');
+    localStorage.removeItem('lumi_grid_layout');
+    localStorage.removeItem('lumi_grid_version');
     location.reload();
     throw new Error('auth_expired');
   }
