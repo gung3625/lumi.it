@@ -371,7 +371,7 @@ body.dark-mode .card-text.pad-bio::before {
 .upload-right { flex:1; display:flex; flex-direction:column; justify-content:center; align-items:flex-start; gap:clamp(10px, 2vw, 14px); padding:clamp(16px, 3vw, 24px) clamp(24px, 5vw, 48px) clamp(16px, 3vw, 24px) clamp(16px, 3vw, 24px); overflow:hidden; min-height:0; min-width:0; }
 .upload-right > * { min-width: 0; }
 .upload-lumi { width:100%; height:auto; object-fit:contain; cursor:pointer; transition:transform .2s; }
-.upload-lumi { animation: lumiIdle 3s ease-in-out infinite; }
+.upload-lumi { animation: lumiIdle 3s ease-in-out infinite; will-change: transform; }
 .upload-lumi:hover { transform:scale(1.05); }
 .upload-lumi.surprised { animation: lumiFloat 2s ease-in-out infinite; }
 @keyframes lumiIdle {
@@ -395,6 +395,7 @@ body.dark-mode .card-text.pad-bio::before {
   filter:blur(8px);
   animation: auraPulse 2.5s ease-in-out infinite;
   pointer-events:none;
+  will-change: transform, opacity;
 }
 @keyframes auraPulse {
   0% { transform:translate(-50%,-50%) scale(.8); opacity:.4; }
@@ -656,8 +657,9 @@ body.dark-mode .upload-submit { background:#f0f2f8; color:#0d1117; }
   background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,.95) 50%, transparent 100%);
   box-shadow: 0 0 20px 6px rgba(255,255,255,.5);
   animation: scanMove 1.8s ease-in-out infinite;
+  will-change: transform;
 }
-@keyframes scanMove { 0%{top:5%} 50%{top:90%} 100%{top:5%} }
+@keyframes scanMove { 0%{transform:translateY(0)} 50%{transform:translateY(1400%)} 100%{transform:translateY(0)} }
 .demo-scan-dots {
   position:absolute; bottom:20%; left:0; right:0; display:flex; justify-content:center; gap:8px;
 }
@@ -3610,7 +3612,7 @@ function BentoGrid() {
       setGridWidth(root ? root.offsetWidth : Math.min(window.innerWidth, 1200));
     }
     onResize();
-    window.addEventListener('resize', onResize);
+    var _rt1; window.addEventListener('resize', function(){ clearTimeout(_rt1); _rt1=setTimeout(onResize,150); });
     return function(){ window.removeEventListener('resize', onResize); };
   },[]);
 
@@ -4363,14 +4365,19 @@ function toggleDarkMode() {
     bottom: wrap.querySelector('.grid-glow-line.bottom')
   };
   var clearTimer = null;
+  var _mraf;
   document.addEventListener('mousemove', function(ev){
-    if(ev.buttons !== 1) { Object.keys(lines).forEach(function(k){lines[k].classList.remove('active');}); return; }
-    var rect = wrap.getBoundingClientRect();
-    var m = 30;
-    lines.left.classList.toggle('active', ev.clientX < rect.left + m);
-    lines.right.classList.toggle('active', ev.clientX > rect.right - m);
-    lines.top.classList.toggle('active', ev.clientY < rect.top + m);
-    lines.bottom.classList.toggle('active', ev.clientY > rect.bottom - m);
+    if(_mraf) return;
+    _mraf = requestAnimationFrame(function(){
+      if(ev.buttons !== 1) { Object.keys(lines).forEach(function(k){lines[k].classList.remove('active');}); _mraf=null; return; }
+      var rect = wrap.getBoundingClientRect();
+      var m = 30;
+      lines.left.classList.toggle('active', ev.clientX < rect.left + m);
+      lines.right.classList.toggle('active', ev.clientX > rect.right - m);
+      lines.top.classList.toggle('active', ev.clientY < rect.top + m);
+      lines.bottom.classList.toggle('active', ev.clientY > rect.bottom - m);
+      _mraf = null;
+    });
   });
   document.addEventListener('mouseup', function(){
     Object.keys(lines).forEach(function(k){lines[k].classList.remove('active');});
@@ -4466,7 +4473,7 @@ function applyCardStyles(matchedIds) {
 }
 
 // 480px 이하 nav-pills 숨김 시 currentFilter 리셋
-window.addEventListener('resize', function() {
+var _rt2; window.addEventListener('resize', function() { clearTimeout(_rt2); _rt2=setTimeout(function(){
   if (window.innerWidth <= 480 && currentFilter !== 'all') {
     currentFilter = 'all';
     document.querySelectorAll('.react-grid-item').forEach(function(el) {
@@ -4475,7 +4482,7 @@ window.addEventListener('resize', function() {
       el.style.pointerEvents = '';
     });
   }
-});
+},150); });
 
 function filterGrid(category, btnEl) {
   document.querySelectorAll('.nav-pill').forEach(function(p) { p.classList.remove('active'); });
@@ -4523,6 +4530,13 @@ function resetGrid() {
   localStorage.removeItem('lumi_grid_version');
   if (window._setGridLayout) window._setGridLayout(layout.map(function(l){return Object.assign({},l);}));
 }
+
+var animObserver = new IntersectionObserver(function(entries){
+  entries.forEach(function(e){
+    e.target.style.animationPlayState = e.isIntersecting ? 'running' : 'paused';
+  });
+}, {rootMargin: '50px'});
+document.querySelectorAll('.react-grid-item').forEach(function(el){ animObserver.observe(el); });
 </script>
 <footer class="site-footer">
   <div class="ft-inner">
