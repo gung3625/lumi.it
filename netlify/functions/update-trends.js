@@ -37,11 +37,26 @@ function filterTags(tags) {
 
 function filterKeywords(keywords) {
   if (!Array.isArray(keywords)) return keywords;
-  const filtered = keywords.filter(k => {
-    const kw = (k.keyword || '').replace(/^#/, '').toLowerCase();
+  // 1. 중복 병합 (같은 keyword → score 합산, mentions 합산)
+  const map = new Map();
+  for (const k of keywords) {
+    const key = (k.keyword || '').replace(/^#/, '').trim().toLowerCase();
+    if (!key) continue;
+    if (map.has(key)) {
+      const existing = map.get(key);
+      existing.score = (existing.score || 0) + (k.score || 0);
+      existing.mentions = (existing.mentions || 0) + (k.mentions || 0);
+    } else {
+      map.set(key, { ...k, keyword: k.keyword.replace(/^#/, '').trim() });
+    }
+  }
+  const merged = Array.from(map.values()).sort((a, b) => (b.score || 0) - (a.score || 0));
+  // 2. 블랙리스트 필터
+  const filtered = merged.filter(k => {
+    const kw = (k.keyword || '').toLowerCase();
     return !BLACKLIST.includes(kw);
   });
-  return filtered.length >= 3 ? filtered : keywords;
+  return filtered.length >= 3 ? filtered : merged;
 }
 
 // 오늘 날짜를 YYYY-MM-DD 형식으로 반환
