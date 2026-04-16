@@ -1833,7 +1833,7 @@ var cards = {
       }
 
       // 게시 횟수 체크 (count-post API)
-      function checkPostCount(token, callback) {
+      function checkPostCount(token, callback, onError) {
         var lumiUserData = JSON.parse(localStorage.getItem('lumi_user') || '{}');
         fetch('/.netlify/functions/count-post', {
           method: 'POST',
@@ -1844,20 +1844,25 @@ var cards = {
           if (!r.ok) {
             if (r.data.code === 'TRIAL_EXPIRED') {
               alert('무료 체험 기간이 종료됐어요.\n구독 페이지로 이동합니다.');
+              if (onError) onError();
               window.location.href = '/subscribe.html';
             } else if (r.data.code === 'POST_LIMIT_REACHED') {
               alert('이번 달 게시 한도에 도달했어요.\n플랜을 업그레이드하거나 다음 달에 다시 이용해 주세요.');
+              if (onError) onError();
             } else if (r.data.code === 'PLAN_EXPIRED') {
               alert('구독이 만료됐어요.\n구독 페이지로 이동합니다.');
+              if (onError) onError();
               window.location.href = '/subscribe.html';
             } else {
               alert(r.data.error || '게시 오류가 발생했어요.');
+              if (onError) onError();
             }
             return;
           }
           callback();
         }).catch(function(){
           alert('게시 횟수 확인 중 오류가 발생했어요. 다시 시도해주세요.');
+          if (onError) onError();
         });
       }
 
@@ -1928,7 +1933,7 @@ var cards = {
           setIsPosting(false); setPhase('real-upload');
           alert('게시 중 오류가 발생했습니다: ' + err.message);
         });
-        }); // checkPostCount callback end
+        }, function(){ setPhase('real-upload'); }); // checkPostCount callback end
       }
 
       // 캡션 재생성
@@ -2023,7 +2028,7 @@ var cards = {
           setIsPosting(false);
           alert('오류가 발생했습니다: ' + err.message);
         });
-        }); // checkPostCount callback end
+        }, function(){ setPhase('real-upload'); }); // checkPostCount callback end
       }
 
       // 예약 게시
@@ -2058,7 +2063,7 @@ var cards = {
           setIsPosting(false);
           alert('예약 중 오류가 발생했습니다: ' + err.message);
         });
-        }); // checkPostCount callback end
+        }, function(){ setPhase('real-upload'); }); // checkPostCount callback end
       }
 
       var demoSets = [
