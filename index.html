@@ -3049,9 +3049,15 @@ var cards = {
         function calcH(){
           if(!cardRef.current) return;
           var h = cardRef.current.offsetHeight;
-          var available = h - 80;
+          /* 비로그인: trend-cta-bar (~70px) 공간 추가 차감 */
+          var ctaH = !isLoggedIn ? 70 : 0;
+          var available = h - 80 - ctaH;
           var vc, ih;
-          if(available <= 170) {
+          if(available <= 130) {
+            /* mobile h:1 = 280px 비로그인: available ~130px, 3개를 공간 가득 배치 */
+            vc = 3;
+            ih = Math.max(36, Math.floor(available / 3));
+          } else if(available <= 170) {
             /* mobile h:1 = 200px card: available ~120px, show 4 items at ~28px each */
             vc = 4;
             ih = Math.max(28, Math.floor(available / 4.5));
@@ -3555,7 +3561,7 @@ var cards = {
         e('span',{style:{flex:1,fontSize:'13px',color:pink,textAlign:'center',fontWeight:600}},lumi)
       );
     };
-    return e('div', {className:'bento-card card-text', style:{padding:'clamp(14px, 3vw, 20px) clamp(18px, 4vw, 28px)',background:cardBg,display:'flex',flexDirection:'column',justifyContent:'space-between',width:'100%',boxSizing:'border-box',height:'100%'}},
+    return e('div', {className:'bento-card card-text', style:{padding:'clamp(10px, 2vw, 14px) clamp(14px, 3vw, 20px)',background:cardBg,display:'flex',flexDirection:'column',justifyContent:'space-between',width:'100%',boxSizing:'border-box',height:'100%'}},
       e('div', {style:{width:'100%',display:'flex',flexDirection:'column'}},
         e('p', {style:{fontSize:'15px',color:tc,fontWeight:600,letterSpacing:'.5px',marginBottom:'6px',textAlign:'center'}}, '대행사 vs ', e('span',{className:'lumi-brand'},'lumi')),
         e('div',{style:{display:'flex',alignItems:'center',padding:'3px 0',marginBottom:'2px'}},
@@ -3568,8 +3574,8 @@ var cards = {
         row('우리 매장 이해', '낮음', 'lumi 학습'),
         row('게시 속도', '2~3일', '1분')
       ),
-      e('div',{style:{display:'flex',justifyContent:'center',alignItems:'center',gap:'12px',marginTop:'4px'}},
-        e('a', {className:'btn-pill', href:'#', onClick:function(ev){ev.preventDefault();ev.stopPropagation();openSignupGrid();}, onMouseDown:function(ev){ev.stopPropagation();}}, ArrowSVG, ' 1주 무료 체험')
+      e('div',{style:{display:'flex',justifyContent:'center',alignItems:'center',gap:'12px',marginTop:'2px'}},
+        e('a', {className:'btn-pill', style:{minHeight:'36px',padding:'0 14px',fontSize:'12px'}, href:'#', onClick:function(ev){ev.preventDefault();ev.stopPropagation();openSignupGrid();}, onMouseDown:function(ev){ev.stopPropagation();}}, ArrowSVG, ' 1주 무료 체험')
       )
     );
   }
