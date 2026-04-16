@@ -742,6 +742,8 @@ exports.handler = async (event) => {
       if (phone) {
         await sendAlimtalk(phone, `[lumi] 게시에 실패했어요 😢\n\n원인: ${postErr.message}\n다시 시도하시거나 고객센터에 문의해주세요.`);
       }
+      // 게시 실패 시 이미지 유지 (재시도 가능)
+      return;
     }
 
     await cleanupTempImages(tempKeys);

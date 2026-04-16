@@ -11,6 +11,23 @@ function getBlobStore(name) {
   });
 }
 
+function getTempImageStore() {
+  return getStore({
+    name: 'temp-images',
+    consistency: 'strong',
+    siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
+    token: process.env.NETLIFY_TOKEN,
+  });
+}
+
+async function cleanupTempImages(keys) {
+  if (!keys || !keys.length) return;
+  const imgStore = getTempImageStore();
+  for (const key of keys) {
+    try { await imgStore.delete(key); } catch (e) {}
+  }
+}
+
 const SITE_URL = 'https://lumi.it.kr';
 
 async function createMediaContainer(igUserId, igAccessToken, imageUrl, isCarousel) {
@@ -184,6 +201,10 @@ exports.handler = async (event) => {
     item.selectedCaptionIndex = captionIndex;
     item.postedCaption = selectedCaption;
     await reserveStore.set(reservationKey, JSON.stringify(item));
+
+    // 게시 성공 후 임시 이미지 삭제
+    const tempKeysToDelete = item.imageKeys || item.tempKeys || [];
+    await cleanupTempImages(tempKeysToDelete);
 
     // 캡션 히스토리 저장
     const email = body.email || item.storeProfile?.ownerEmail;
