@@ -2062,7 +2062,7 @@ var cards = {
           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
           body: JSON.stringify({ category: cat })
         }).then(function(res){ return res.json(); })
-        .then(function(data){
+        .then(async function(data){
           if (!data.bestTime) { setIsPosting(false); alert('최적 시간을 가져올 수 없습니다.'); return; }
           var today = new Date();
           var parts = data.bestTime.split(':');
@@ -2097,7 +2097,7 @@ var cards = {
         if (!realFiles.length) { alert('사진을 선택해주세요.'); return; }
         var token = localStorage.getItem('lumi_token');
         if (!token) { alert('로그인이 필요합니다.'); return; }
-        checkPostCount(token, function() {
+        checkPostCount(token, async function() {
         var scheduled = new Date(scheduleTime);
         if (scheduled <= new Date()) { alert('미래 시간을 선택해주세요.'); return; }
         var maxDate = new Date(); maxDate.setDate(maxDate.getDate() + 30);
