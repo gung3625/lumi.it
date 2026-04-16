@@ -1966,6 +1966,7 @@ var cards = {
           setReservationKey(rKey);
           setRegenCount(0);
           setPhase('generating');
+          swrInvalidate('relay-list');
           // 캡션 생성 완료까지 폴링 (최대 2분, 3초 간격)
           var attempts = 0;
           var maxAttempts = 40;
@@ -2084,12 +2085,12 @@ var cards = {
         setIsPosting(true);
         checkPostCount(token, async function() {
         var cat = lumiUser.bizCategory || lumiUser.storeCategory || 'cafe';
-        fetch('/api/get-best-time', {
+        var _btEmail = lumiUser.email || 'u';
+        swrFetch('best-time-'+cat+':'+_btEmail, '/api/get-best-time', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
           body: JSON.stringify({ category: cat })
-        }).then(function(res){ return res.json(); })
-        .then(async function(data){
+        }, 86400000).then(async function(data){
           if (!data.bestTime) { setIsPosting(false); alert('최적 시간을 가져올 수 없습니다.'); return; }
           var today = new Date();
           var parts = data.bestTime.split(':');
@@ -2112,6 +2113,7 @@ var cards = {
             setReservationKey(rKey);
             setRegenCount(0);
             setPhase('generating');
+            swrInvalidate('relay-list');
             window.dispatchEvent(new CustomEvent('lumi:reservation-added'));
             var attempts = 0;
             var maxAttempts = 40;
@@ -2184,6 +2186,7 @@ var cards = {
           setReservationKey(rKey);
           setRegenCount(0);
           setPhase('generating');
+          swrInvalidate('relay-list');
           window.dispatchEvent(new CustomEvent('lumi:reservation-added'));
           var attempts = 0;
           var maxAttempts = 40;
@@ -2788,9 +2791,8 @@ var cards = {
           var sido = '';
           if(_rcUserRegion){ sido = _rcUserRegion.split(' ')[0].replace(/특별시|광역시|도$/,''); }
           var url = '/.netlify/functions/get-weather-kma' + (sido ? '?sido='+encodeURIComponent(sido) : '');
-          fetch(url).then(function(r){if(!r.ok) throw new Error(r.status);return r.json();}).then(function(d){
-            if(!d.error) setWeather(d);
-          }).catch(function(){});
+          swrFetch('weather:'+url, url, {}, 600000)
+          .then(function(d){if(!d.error) setWeather(d);}).catch(function(){});
         },[]);
         React.useEffect(function(){
           var iv = setTimeout(function(){
@@ -2809,11 +2811,14 @@ var cards = {
         var bts = React.useState(null), bestTimeData = bts[0], setBestTimeData = bts[1];
         React.useEffect(function(){
           var _btsToken = localStorage.getItem('lumi_token');
-          fetch('/api/get-best-time', {
+          if (!_btsToken) return;
+          var _btsEmail = '';
+          try { _btsEmail = (JSON.parse(localStorage.getItem('lumi_user')||'{}').email || 'u'); } catch(e){}
+          swrFetch('best-time-'+bizCat+':'+_btsEmail, '/api/get-best-time', {
             method:'POST',
             headers:{'Content-Type':'application/json','Authorization':'Bearer ' + _btsToken},
             body: JSON.stringify({category: bizCat})
-          }).then(function(r){if(!r.ok) throw new Error(r.status);return r.json();}).then(function(d){
+          }, 86400000).then(function(d){
             if(d && d.bestTime) setBestTimeData(d);
           }).catch(function(){});
         },[]);
@@ -2821,8 +2826,8 @@ var cards = {
         var bestTimeReason = bestTimeData ? bestTimeData.reason : '';
         var ts = React.useState(null), trendData = ts[0], setTrendData = ts[1];
         React.useEffect(function(){
-          fetch('/api/get-trends?category='+encodeURIComponent(bizCat))
-          .then(function(r){if(!r.ok) throw new Error(r.status);return r.json();}).then(function(d){if(d&&d.keywords) setTrendData(d);}).catch(function(){});
+          swrFetch('trends-'+bizCat, '/api/get-trends?category='+encodeURIComponent(bizCat), {}, 3600000)
+          .then(function(d){if(d&&d.keywords) setTrendData(d);}).catch(function(){});
         },[]);
         var myTrends = trendData && trendData.keywords ? trendData.keywords.slice(0,3).map(function(k){return '#'+k.keyword;}) : ['#'+bizCat, '#\uCD94\uCC9C', '#\uD314\uB85C\uC6B0'];
         var _categoryTips = {
@@ -3094,9 +3099,8 @@ var cards = {
               var sido = '';
               if(userRegion){ sido = userRegion.split(' ')[0].replace(/특별시|광역시|도$/,''); }
               var url = '/.netlify/functions/get-weather-kma' + (sido ? '?sido='+encodeURIComponent(sido) : '');
-              fetch(url).then(function(r){return r.json();}).then(function(d){
-                if(!d.error) setWeather(d);
-              }).catch(function(){});
+              swrFetch('weather:'+url, url, {}, 600000)
+              .then(function(d){if(!d.error) setWeather(d);}).catch(function(){});
             },[]);
             var state = (weather && weather.state) || 'clear';
             var emoji = _twWeatherEmojis[state] || '☀️';
@@ -3666,8 +3670,11 @@ var cards = {
           function fetchRsvList() {
             var t = localStorage.getItem('lumi_token');
             if (!t) return;
-            fetch('/api/relay-list',{headers:{'Authorization':'Bearer '+t}})
-            .then(lumiCheckAuth).then(function(r){return r.json();}).then(function(d){
+            var _rlEmail = '';
+            try { _rlEmail = (JSON.parse(localStorage.getItem('lumi_user')||'{}').email || 'u'); } catch(e){}
+            var _rlKey = 'relay-list:' + _rlEmail;
+            swrFetch(_rlKey, '/api/relay-list', {headers:{'Authorization':'Bearer '+t}}, 30000)
+            .then(function(d){
               var arr = (d && Array.isArray(d)) ? d : (d && d.items ? d.items : []);
               var mapped = arr
                 .filter(function(item){ return item.postMode !== 'immediate'; })
@@ -3677,7 +3684,7 @@ var cards = {
             }).catch(function(){});
           }
           fetchRsvList();
-          function onRsvRefresh(){ fetchRsvList(); }
+          function onRsvRefresh(){ swrInvalidate('relay-list'); fetchRsvList(); }
           window.addEventListener('lumi:reservation-added', onRsvRefresh);
           return function(){ window.removeEventListener('lumi:reservation-added', onRsvRefresh); };
         },[]);
@@ -3693,6 +3700,7 @@ var cards = {
           }).then(function(r){ return r.json(); })
           .then(function(d){
             if (d && d.success === true) {
+              swrInvalidate('relay-list');
               setReservations(function(prev){ return prev.filter(function(r){ return r.reservationKey !== rKey; }); });
             } else {
               alert(d.error || '\uCDE8\uC18C \uC2E4\uD328. \uB2E4\uC2DC \uC2DC\uB3C4\uD574\uC8FC\uC138\uC694.');
@@ -4677,6 +4685,42 @@ function closeLogin() {
   document.getElementById('login-modal').classList.remove('open');
 }
 
+// SWR(Stale-While-Revalidate) 캐싱 유틸
+function swrFetch(key, url, opts, maxAgeMs) {
+  var storageKey = 'swr:' + key;
+  var cached;
+  try { cached = JSON.parse(localStorage.getItem(storageKey) || 'null'); } catch(e) { cached = null; }
+  var fetchAndStore = function() {
+    return fetch(url, opts || {}).then(function(r){
+      if (r.status === 401) { if(typeof lumiCheckAuth==='function') lumiCheckAuth(r); throw new Error('auth_expired'); }
+      var ct = r.headers.get('content-type') || '';
+      if (!ct.includes('application/json')) throw new Error('non-json response');
+      return r.json();
+    }).then(function(d) {
+      try {
+        var str = JSON.stringify({data: d, ts: Date.now()});
+        if (str.length < 102400) { localStorage.setItem(storageKey, str); }
+      } catch(e) {}
+      return d;
+    });
+  };
+  if (cached && cached.ts && (Date.now() - cached.ts < maxAgeMs)) {
+    if (Date.now() - cached.ts > maxAgeMs / 2) {
+      fetchAndStore().catch(function(){});
+    }
+    return Promise.resolve(cached.data);
+  }
+  return fetchAndStore();
+}
+function swrInvalidate(keyPrefix) {
+  try {
+    var keys = Object.keys(localStorage);
+    keys.forEach(function(k) {
+      if (k.indexOf('swr:' + keyPrefix) === 0) localStorage.removeItem(k);
+    });
+  } catch(e) {}
+}
+
 function logoutLumi() {
   if (!confirm('\uB85C\uADF8\uC544\uC6C3 \uD558\uC2DC\uACA0\uC5B4\uC694?')) return;
   localStorage.removeItem('lumi_token');
@@ -4687,6 +4731,10 @@ function logoutLumi() {
   localStorage.removeItem('lumi_grid_layout');
   localStorage.removeItem('lumi_grid_version');
   localStorage.removeItem('lumi_ig_guide');
+  swrInvalidate('relay-list');
+  swrInvalidate('trends-');
+  swrInvalidate('weather');
+  swrInvalidate('best-time-');
   location.reload();
 }
 // 401 응답 시 만료 토큰 정리 + 재로그인 유도
