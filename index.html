@@ -4485,20 +4485,7 @@ var filterLayouts = {
   },
   feature: {
     matched: ['project2','bio'],
-    layout: [
-      // 매칭 — 상단
-      {i:'bio',       x:0, y:0, w:1, h:2, isResizable:false},
-      {i:'project2',  x:1, y:0, w:1, h:2, isResizable:false},
-      // 비매칭 — 하단
-      {i:'spotify',   x:2, y:0, w:1, h:1, isResizable:false},
-      {i:'empty1',    x:3, y:0, w:1, h:1, isResizable:false},
-      {i:'twitter',   x:2, y:1, w:1, h:1, isResizable:false},
-      {i:'project1',  x:3, y:1, w:1, h:2, isResizable:false},
-      {i:'blog',      x:0, y:2, w:2, h:1, isResizable:false},
-      {i:'dark',      x:2, y:2, w:1, h:1, isResizable:false},
-      {i:'project3',  x:0, y:3, w:2, h:1, isResizable:false},
-      {i:'newsletter',x:2, y:3, w:2, h:1, isResizable:false}
-    ]
+    layout: null
   },
   price: {
     matched: ['project3','newsletter'],
@@ -4572,9 +4559,10 @@ function filterGrid(category, btnEl) {
   }
 
   var matchedIds = filterLayouts[category].matched;
+  var filterLayout = filterLayouts[category].layout || layout;
   if (window._setGridLayout) {
-    window._setGridLayout(filterLayouts[category].layout.map(function(l){return Object.assign({},l);}));
-    window._currentLayout = filterLayouts[category].layout;
+    window._setGridLayout(filterLayout.map(function(l){return Object.assign({},l);}));
+    window._currentLayout = filterLayout;
   }
   // Delay style changes to next frame so RGL transform transition fires first
   requestAnimationFrame(function(){
