@@ -228,6 +228,7 @@ exports.handler = async (event) => {
           const item = JSON.parse(raw);
           item.postError = err.message;
           item.postErrorAt = new Date().toISOString();
+          item.captionStatus = 'failed';
           await store.set(reservationKey, JSON.stringify(item));
         }
       } catch (_) {}
