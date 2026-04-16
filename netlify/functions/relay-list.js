@@ -26,7 +26,11 @@ exports.handler = async (event) => {
     let tokenRaw;
     try { tokenRaw = await userStore.get('token:' + token); } catch { tokenRaw = null; }
     if (!tokenRaw) return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '유효하지 않은 토큰' }) };
-    const { email } = JSON.parse(tokenRaw);
+    const tokenData = JSON.parse(tokenRaw);
+    if (tokenData.expiresAt && new Date(tokenData.expiresAt) < new Date()) {
+      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '세션이 만료됐습니다. 다시 로그인해주세요.' }) };
+    }
+    const { email } = tokenData;
 
     const store = getStore({
       name: 'reservations',
