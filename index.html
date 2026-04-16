@@ -1938,9 +1938,8 @@ var cards = {
         setIsPosting(true);
         setPhase('uploading');
         var fd = await buildPostFormData(new Date().toISOString());
-        var featToggles = JSON.parse(localStorage.getItem('lumi_feat_toggles') || '{}');
-        var captionReview = featToggles.captionReview !== false; // 기본 ON
-        fd.append('relayMode', captionReview ? 'true' : 'false');
+        // 릴레이 모드 폐지됨 — 항상 캡션 확인 후 바로 게시
+        fd.append('relayMode', 'true');
         fetch('/api/reserve', {
           method: 'POST',
           headers: { 'Authorization': 'Bearer ' + token },
@@ -1972,15 +1971,10 @@ var cards = {
               }
               if ((d.captionStatus === 'ready' || (!d.captionStatus && d.generatedCaptions && d.generatedCaptions.length)) && d.generatedCaptions && d.generatedCaptions.length) {
                 setIsPosting(false);
-                if (d.relayMode === false) {
-                  // 캡션 확인 OFF: 자동 게시 예약됨 → cta phase로 바로 전환
-                  setRealFiles([]); setRealNote(''); setPhase('cta');
-                } else {
-                  // 캡션 확인 ON(기본): 캡션 확인 화면 표시
-                  setGeneratedCaptions(d.generatedCaptions);
-                  setEditedCaption(d.generatedCaptions[0]);
-                  setPhase('caption');
-                }
+                // 캡션 확인 화면 표시 (릴레이 모드 폐지 — 항상 캡션 확인)
+                setGeneratedCaptions(d.generatedCaptions);
+                setEditedCaption(d.generatedCaptions[0]);
+                setPhase('caption');
               } else if (d.captionStatus === 'posting' || d.captionStatus === 'posted' || d.isSent) {
                 setIsPosting(false);
                 setRealFiles([]); setRealNote(''); setPhase('cta');

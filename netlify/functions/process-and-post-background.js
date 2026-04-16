@@ -694,105 +694,10 @@ exports.handler = async (event) => {
     //   }
     // }
 
-    // 릴레이 모드면 자동 게시 스킵 — 사용자가 직접 선택할 때까지 대기
-    // temp 이미지는 삭제하지 않음 (릴레이 편집 모달에서 미리보기에 필요)
-    if (isRelayMode) {
-      item.captionStatus = 'ready';
-      await store.set(reservationKey, JSON.stringify(item));
-      console.log('[process-and-post] 릴레이 모드 — 자동 게시 스킵, 사용자 선택 대기');
-      return;
-    }
-
-    // 7. autoPostAt 설정 (scheduler.js가 처리) — Background Function 15분 제한으로 직접 sleep 불가
-    item.autoPostAt = new Date(Date.now() + 30 * 60000).toISOString();
-    await store.set(reservationKey, JSON.stringify(item));
-    console.log('[process-and-post] autoPostAt 설정:', item.autoPostAt, '— scheduler가 자동 게시 처리');
-
-    // 10분 대기 후 아직 선택 안 했으면 자동 게시 시도 (Background Function 15분 내)
-    await sleep(10 * 60 * 1000);
-
-    // 재조회 (고객이 선택했을 수 있음)
-    const updatedRaw = await store.get(reservationKey);
-    if (!updatedRaw) {
-      console.log('[process-and-post] 예약 데이터 삭제됨. 종료.');
-      await cleanupTempImages(tempKeys);
-      return;
-    }
-    const updated = JSON.parse(updatedRaw);
-    if (updated.isSent) {
-      console.log('[process-and-post] 이미 게시됨. 종료.');
-      await cleanupTempImages(tempKeys);
-      return;
-    }
-    if (updated.cancelled) {
-      console.log('[process-and-post] 예약이 취소됨. 종료.');
-      await cleanupTempImages(tempKeys);
-      return;
-    }
-
-    // 아직 autoPostAt이 미래면 scheduler에 위임하고 종료 (이미지는 유지)
-    if (updated.autoPostAt && new Date(updated.autoPostAt).getTime() > Date.now() + 60000) {
-      console.log('[process-and-post] autoPostAt 아직 미래. scheduler에 위임. 이미지 유지.');
-      return;
-    }
-
-    // 1번 캡션으로 자동 게시
-    const phone = sp.phone || sp.ownerPhone || '';
-    const finalCaptions = updated.captions || updated.generatedCaptions || captions;
-    console.log('[process-and-post] 자동 게시 실행');
-    try {
-      const postCaption = finalCaptions[0];
-      const postId = await postToInstagram(updated, postCaption, imageUrls);
-      updated.isSent = true;
-      updated.sentAt = new Date().toISOString();
-      updated.selectedCaptionIndex = 0;
-      updated.postedCaption = postCaption;
-      updated.instagramPostId = postId;
-      await store.set(reservationKey, JSON.stringify(updated));
-      await saveCaptionHistory(sp.ownerEmail, postCaption);
-
-      // Threads 게시 (postToThread 플래그 확인)
-      if (updated.postToThread && imageUrls[0]) {
-        try {
-          console.log('[process-and-post] Threads 게시 시작');
-          const threadsResult = await postToThreads(postCaption, imageUrls[0]);
-          if (threadsResult.error) {
-            console.error('[process-and-post] Threads 게시 실패:', JSON.stringify(threadsResult.error));
-          } else {
-            console.log('[process-and-post] Threads 게시 완료:', threadsResult.id);
-          }
-        } catch (te) {
-          console.error('[process-and-post] Threads 예외:', te.message);
-        }
-      }
-
-      // 말투 자동 학습: 게시된 캡션 = 좋아한 스타일
-      try {
-        const ownerEmail = sp.ownerEmail;
-        if (ownerEmail) {
-          const userStore = getStore({ name: 'users', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
-          const likeRaw = await userStore.get('tone-like:' + ownerEmail).catch(() => null);
-          const likes = likeRaw ? JSON.parse(likeRaw) : [];
-          likes.push({ caption: postCaption, at: new Date().toISOString() });
-          if (likes.length > 20) likes.splice(0, likes.length - 20);
-          await userStore.set('tone-like:' + ownerEmail, JSON.stringify(likes));
-        }
-      } catch (e) { console.warn('[tone-learn] like 저장 실패:', e.message); }
-
-      if (phone) {
-        await sendAlimtalk(phone, `[lumi] 인스타그램에 게시됐어요!\n\n${sp.name || '매장'} 게시물이 자동으로 올라갔어요.\n인스타그램에서 확인해보세요 📸`);
-      }
-      console.log('[process-and-post] 완료:', postId);
-    } catch (postErr) {
-      console.error('[process-and-post] 게시 실패:', postErr.message);
-      if (phone) {
-        await sendAlimtalk(phone, `[lumi] 게시에 실패했어요 😢\n\n원인: ${postErr.message}\n다시 시도하시거나 고객센터에 문의해주세요.`);
-      }
-      // 게시 실패 시 이미지 유지 (재시도 가능)
-      return;
-    }
-
-    await cleanupTempImages(tempKeys);
+    // 릴레이 모드 폐지됨 — 항상 캡션 확인 후 바로 게시
+    // 자동 게시 스킵, 사용자가 캡션 선택할 때까지 대기
+    // temp 이미지는 삭제하지 않음 (캡션 확인 화면 미리보기에 필요)
+    console.log('[process-and-post] 캡션 준비 완료 — 사용자 선택 대기');
     return;
 
   } catch (err) {

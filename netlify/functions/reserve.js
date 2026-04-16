@@ -131,9 +131,8 @@ exports.handler = async (event) => {
                 relayMode = userData.relayMode === true;
               } catch {}
             }
-            // FormData relayMode 필드가 명시적으로 전달된 경우 우선 적용
-            if (fields.relayMode === 'true') relayMode = true;
-            else if (fields.relayMode === 'false') relayMode = false;
+            // 릴레이 모드 폐지됨 — 항상 true (캡션 확인 후 바로 게시)
+            relayMode = true;
 
             // ig 토큰 (igUserId 의존이라 순차)
             if (igUserId) {
@@ -176,7 +175,7 @@ exports.handler = async (event) => {
           },
           trends: Array.isArray(trends) ? trends : [],
           storeProfile: storeProfile,
-          storyEnabled: fields.autoStory === 'true',
+          storyEnabled: fields.postToStory === 'true',
           postToThread: fields.postToThread === 'true',
           nearbyEvent: festivals.length > 0,
           nearbyFestivals: festivals.length > 0
