@@ -128,6 +128,33 @@ async function postToInstagram(item, caption, imageUrls) {
   return postId;
 }
 
+async function postToThreads(caption, imageUrl) {
+  const userId = process.env.THREADS_USER_ID;
+  const token = process.env.THREADS_ACCESS_TOKEN;
+  if (!userId || !token) throw new Error('Threads 환경변수 없음');
+
+  // Step 1: Container 생성
+  const createRes = await fetch(`https://graph.threads.net/v1.0/${userId}/threads`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ media_type: 'IMAGE', image_url: imageUrl, text: caption, access_token: token }),
+  });
+  const createData = await createRes.json();
+  if (createData.error) throw new Error(`Threads container error: ${JSON.stringify(createData.error)}`);
+  const creationId = createData.id;
+
+  // Step 2: 30초 대기
+  await sleep(30000);
+
+  // Step 3: Publish
+  const pubRes = await fetch(`https://graph.threads.net/v1.0/${userId}/threads_publish`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ creation_id: creationId, access_token: token }),
+  });
+  return await pubRes.json();
+}
+
 async function saveCaptionHistory(email, caption) {
   try {
     const store = getBlobStore('users');
@@ -192,6 +219,21 @@ exports.handler = async (event) => {
     console.log(`[select-and-post] 게시 시작: ${reservationKey}, captionIndex=${captionIndex}`);
     const postId = await postToInstagram(item, selectedCaption, imageUrls);
     console.log('[select-and-post] Instagram 게시 완료:', postId);
+
+    // Threads 게시 (postToThread 플래그 확인)
+    if (item.postToThread && imageUrls[0]) {
+      try {
+        console.log('[select-and-post] Threads 게시 시작');
+        const threadsResult = await postToThreads(selectedCaption, imageUrls[0]);
+        if (threadsResult.error) {
+          console.error('[select-and-post] Threads 게시 실패:', JSON.stringify(threadsResult.error));
+        } else {
+          console.log('[select-and-post] Threads 게시 완료:', threadsResult.id);
+        }
+      } catch (te) {
+        console.error('[select-and-post] Threads 예외:', te.message);
+      }
+    }
 
     // 완료 상태 저장
     item.isSent = true;

@@ -167,6 +167,7 @@ exports.handler = async (event) => {
           trends: Array.isArray(trends) ? trends : [],
           storeProfile: storeProfile,
           storyEnabled: fields.autoStory === 'true',
+          postToThread: fields.postToThread === 'true',
           nearbyEvent: festivals.length > 0,
           nearbyFestivals: festivals.length > 0
             ? festivals.map(f => `${f.title}(${f.startDate}~${f.endDate}, ${f.addr}${f.dist ? ', ' + f.dist + 'km' : ''})`).join(' / ')

@@ -495,6 +495,34 @@ async function postToInstagram(item, caption, imageUrls) {
   return postId;
 }
 
+// ── Threads 게시 ──
+async function postToThreads(caption, imageUrl) {
+  const userId = process.env.THREADS_USER_ID;
+  const token = process.env.THREADS_ACCESS_TOKEN;
+  if (!userId || !token) throw new Error('Threads 환경변수 없음');
+
+  // Step 1: Container 생성
+  const createRes = await fetch(`https://graph.threads.net/v1.0/${userId}/threads`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ media_type: 'IMAGE', image_url: imageUrl, text: caption, access_token: token }),
+  });
+  const createData = await createRes.json();
+  if (createData.error) throw new Error(`Threads container error: ${JSON.stringify(createData.error)}`);
+  const creationId = createData.id;
+
+  // Step 2: 30초 대기
+  await sleep(30000);
+
+  // Step 3: Publish
+  const pubRes = await fetch(`https://graph.threads.net/v1.0/${userId}/threads_publish`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ creation_id: creationId, access_token: token }),
+  });
+  return await pubRes.json();
+}
+
 // ── 캡션 히스토리 저장 ──
 async function saveCaptionHistory(email, caption) {
   try {
@@ -722,6 +750,21 @@ exports.handler = async (event) => {
       updated.instagramPostId = postId;
       await store.set(reservationKey, JSON.stringify(updated));
       await saveCaptionHistory(sp.ownerEmail, postCaption);
+
+      // Threads 게시 (postToThread 플래그 확인)
+      if (updated.postToThread && imageUrls[0]) {
+        try {
+          console.log('[process-and-post] Threads 게시 시작');
+          const threadsResult = await postToThreads(postCaption, imageUrls[0]);
+          if (threadsResult.error) {
+            console.error('[process-and-post] Threads 게시 실패:', JSON.stringify(threadsResult.error));
+          } else {
+            console.log('[process-and-post] Threads 게시 완료:', threadsResult.id);
+          }
+        } catch (te) {
+          console.error('[process-and-post] Threads 예외:', te.message);
+        }
+      }
 
       // 말투 자동 학습: 게시된 캡션 = 좋아한 스타일
       try {
