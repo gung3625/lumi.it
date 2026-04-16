@@ -2882,42 +2882,70 @@ var cards = {
           if(token) window.location.href='/.netlify/functions/ig-oauth?action=start&token='+token;
         }
 
-        // 연동 완료 → 다음 게시 카운트다운
+        // 연동 완료 → 날씨 카드
         if (igConnected) {
-          var CountdownCard = function() {
+          var _twWeatherEmojis = {clear:'☀️',partly_cloudy:'⛅',cloudy:'☁️',rain:'🌧️',snow:'❄️'};
+          var _twWeatherLabels = {clear:'맑음',partly_cloudy:'구름조금',cloudy:'흐림',rain:'비',snow:'눈'};
+          var _twWeatherBg = {
+            clear:{from:'#56CCF2',to:'#2F80ED'},
+            partly_cloudy:{from:'#74b9ff',to:'#a29bfe'},
+            cloudy:{from:'#636e72',to:'#2d3436'},
+            rain:{from:'#485563',to:'#29323c'},
+            snow:{from:'#e0eafc',to:'#cfdef3'}
+          };
+          var _twWeatherTips = {
+            clear:'야외 사진 올리기 딱 좋은 날씨예요!',
+            partly_cloudy:'부드러운 조명으로 분위기 사진 어때요?',
+            cloudy:'실내 푸드·무드 사진을 올려보세요',
+            rain:'비 오는 날의 감성 캡션 도전해보세요',
+            snow:'눈 오는 풍경 사진은 저장률이 높아요'
+          };
+          var WeatherIgCard = function() {
             var isDk = document.body.classList.contains('dark-mode');
             var _mob = window.innerWidth <= 600;
-            var _t = React.useState(0), tick = _t[0], setTick = _t[1];
-            var ns = React.useState(null), nextPost = ns[0], setNextPost = ns[1];
+            var ws = React.useState(null), weather = ws[0], setWeather = ws[1];
             React.useEffect(function(){
-              var token = localStorage.getItem('lumi_token');
-              if(!token) return;
-              fetch('/api/relay-list',{headers:{'Authorization':'Bearer '+token}})
-              .then(lumiCheckAuth).then(function(r){return r.json();}).then(function(d){
-                var items = Array.isArray(d) ? d : (d&&d.items?d.items:[]);
-                var pending = items.filter(function(r){return !r.isSent && r.autoPostAt;}).sort(function(a,b){return new Date(a.autoPostAt)-new Date(b.autoPostAt);});
-                if(pending.length > 0) setNextPost(pending[0]);
+              var userRegion = '';
+              try { var _wu = JSON.parse(localStorage.getItem('lumi_user')||'{}'); userRegion = _wu.region || ''; } catch(ex){}
+              var sido = '';
+              if(userRegion){ sido = userRegion.split(' ')[0].replace(/특별시|광역시|도$/,''); }
+              var url = '/.netlify/functions/get-weather-kma' + (sido ? '?sido='+encodeURIComponent(sido) : '');
+              fetch(url).then(function(r){return r.json();}).then(function(d){
+                if(!d.error) setWeather(d);
               }).catch(function(){});
             },[]);
-            React.useEffect(function(){ var iv=setInterval(function(){setTick(function(t){return t+1;});},1000); return function(){clearInterval(iv);}; },[]);
-            var totalSec = 0;
-            var timeLabel = '\uC608\uC57D \uC5C6\uC74C';
-            if(nextPost && nextPost.autoPostAt){
-              totalSec = Math.max(0, Math.floor((new Date(nextPost.autoPostAt).getTime()-Date.now())/1000));
-              var nd = new Date(nextPost.autoPostAt);
-              timeLabel = (nd.getMonth()+1)+'/'+nd.getDate()+' '+String(nd.getHours()).padStart(2,'0')+':'+String(nd.getMinutes()).padStart(2,'0')+' \uC608\uC57D';
-            }
-            var h = Math.floor(totalSec/3600);
-            var m = Math.floor((totalSec%3600)/60);
-            var s = totalSec%60;
-            var pad = function(n){return n<10?'0'+n:''+n;};
-            return e('div', {className:'bento-card card-visual bg-blue', style:{flexDirection:'column',justifyContent:'center',alignItems:_mob?'stretch':'center',textAlign:'center',padding:_mob?'14px 12px':'24px',gap:'8px'}},
-              e('p', {style:{fontSize:'11px',color:'rgba(255,255,255,.5)',letterSpacing:'1px'}}, '\uB2E4\uC74C \uAC8C\uC2DC'),
-              nextPost ? e('p', {style:{fontSize:'clamp(22px, 6vw, 32px)',fontWeight:400,color:'#fff',letterSpacing:'2px',fontFamily:'\'Nunito\',sans-serif'}}, pad(h)+':'+pad(m)+':'+pad(s)) : e('p', {style:{fontSize:'14px',color:'rgba(255,255,255,.6)'}}, '\uC608\uC57D\uB41C \uAC8C\uC2DC\uBB3C\uC774 \uC5C6\uC5B4\uC694'),
-              e('p', {style:{fontSize:'12px',color:'rgba(255,255,255,.6)',marginTop:'4px'}}, timeLabel)
+            var state = (weather && weather.state) || 'clear';
+            var emoji = _twWeatherEmojis[state] || '☀️';
+            var label = _twWeatherLabels[state] || '맑음';
+            var bg = _twWeatherBg[state] || _twWeatherBg.clear;
+            var tip = _twWeatherTips[state] || _twWeatherTips.clear;
+            var tempStr = weather ? weather.temperature + '°' : '';
+            var locStr = weather ? (weather.locationName || '') : '';
+            var snowBg = state === 'snow';
+            var textColor = snowBg ? '#2d3436' : '#fff';
+            var textMuted = snowBg ? 'rgba(45,52,54,.6)' : 'rgba(255,255,255,.7)';
+            return e('div', {className:'bento-card card-visual', style:{
+              background:'linear-gradient(135deg,'+bg.from+','+bg.to+')',
+              flexDirection:'column',justifyContent:'space-between',
+              padding:_mob?'16px 14px':'22px',gap:'0',overflow:'hidden',position:'relative'
+            }},
+              e('div', {style:{display:'flex',alignItems:'flex-start',justifyContent:'space-between'}},
+                e('div', null,
+                  e('p', {style:{fontSize:'11px',color:textMuted,letterSpacing:'1px',marginBottom:'4px'}}, locStr || '내 지역'),
+                  e('p', {style:{fontSize:'clamp(28px,8vw,38px)',lineHeight:'1',marginBottom:'2px'}}, emoji),
+                  e('p', {style:{fontSize:'clamp(22px,6vw,30px)',fontWeight:700,color:textColor,letterSpacing:'-0.5px',fontFamily:'Pretendard,sans-serif'}}, tempStr || '--°')
+                ),
+                e('div', {style:{textAlign:'right'}},
+                  e('p', {style:{fontSize:'clamp(13px,3.5vw,15px)',fontWeight:600,color:textColor}}, label),
+                  e('p', {style:{fontSize:'11px',color:textMuted,marginTop:'4px'}}, new Date().toLocaleDateString('ko-KR',{month:'long',day:'numeric'}))
+                )
+              ),
+              e('div', {style:{background:snowBg?'rgba(45,52,54,.1)':'rgba(255,255,255,.15)',borderRadius:'10px',padding:'10px 12px',marginTop:'8px'}},
+                e('p', {style:{fontSize:'clamp(11px,3vw,13px)',color:textColor,lineHeight:'1.5',fontWeight:500}}, tip)
+              )
             );
           };
-          return e(CountdownCard);
+          return e(WeatherIgCard);
         }
 
         var steps = [
