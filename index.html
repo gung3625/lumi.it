@@ -133,13 +133,13 @@ nav {
 .react-grid-item:hover { box-shadow: rgba(100, 100, 111, 0.1) 0px 5px 24px 0px; }
 
 /* nevflynn styled-components: .iXylth (Grid container) — THIS IS THE KEY */
-.grid-wrap { max-width: 1200px; width:100%; position: relative; margin: -16px auto 0; padding-bottom: 80px; overflow: visible; border-radius: 32px; box-sizing:border-box; }
+.grid-wrap { max-width: 1200px; width:100%; position: relative; margin: -16px auto 0; padding-bottom: 24px; overflow: visible; border-radius: 32px; box-sizing:border-box; }
 .grid-glow-line { display:none; }
 .grid-wrap .react-grid-item { transition: transform .8s cubic-bezier(.4,0,.2,1), opacity .35s ease, filter .35s ease; }
 .grid-wrap .react-grid-item.react-draggable-dragging { transition: none; }
 .grid-wrap .react-grid-item.react-grid-placeholder { opacity: 0; background: transparent !important; }
 
-@media (max-width: 1200px) { .grid-wrap { max-width: 100%; padding:0 16px 80px; } }
+@media (max-width: 1200px) { .grid-wrap { max-width: 100%; padding:0 16px 24px; } }
 
 /* ---- BENTO CARD ---- */
 .bento-card {
@@ -1295,7 +1295,7 @@ body.dark-mode .tut-check-circle { background:rgba(255,107,139,.15); }
     background:rgba(17,17,17,.92);
     box-shadow:0 -2px 20px rgba(0,0,0,.3);
   }
-  .grid-wrap { padding-bottom:calc(80px + env(safe-area-inset-bottom, 0px)) !important; }
+  .grid-wrap { padding-bottom:calc(24px + env(safe-area-inset-bottom, 0px)) !important; }
 }
 
 /* FOOTER */
@@ -2877,6 +2877,14 @@ var cards = {
           state['step' + (n + 1)] = true;
           localStorage.setItem('lumi_ig_guide', JSON.stringify(state));
           setStep(n + 1);
+        }
+
+        function goBack() {
+          if (step <= 0) return;
+          var state = JSON.parse(localStorage.getItem('lumi_ig_guide') || '{}');
+          state['step' + step] = false;
+          localStorage.setItem('lumi_ig_guide', JSON.stringify(state));
+          setStep(step - 1);
         }
 
         function startOAuth() {
