@@ -1907,7 +1907,7 @@ var cards = {
 
       // 캡션 재생성
       function handleRegenCaption() {
-        if (regenCount >= 999) return; // TODO: 정식 출시 시 건당 3회로 변경
+        if (regenCount >= 3) return;
         var token = localStorage.getItem('lumi_token');
         if (!token) return;
         setIsPosting(true);
@@ -3635,6 +3635,10 @@ if (!localStorage.getItem('lumi_token')) {
 }
 
 function BentoGrid() {
+  // 다크모드 상태 (인라인 스타일 리렌더용)
+  var _ds = React.useState(document.body.classList.contains('dark-mode'));
+  window._setDarkRerender = _ds[1];
+
   // 컨테이너 너비 추적
   var _ws = React.useState(function(){
     var root = document.getElementById('grid-root');
@@ -4392,8 +4396,8 @@ function toggleDarkMode() {
   var isDark = document.body.classList.toggle('dark-mode');
   localStorage.setItem('lumi_dark_mode', isDark ? '1' : '0');
   document.documentElement.style.background = isDark ? '#111' : '#fdf2f4';
-  // React 리렌더 (인라인 색상 반영)
-  root.render(e(BentoGrid));
+  // React 상태 업데이트로 인라인 색상 리렌더 (root.render 재호출 제거)
+  if (window._setDarkRerender) window._setDarkRerender(isDark);
 }
 
 // 방향별 경계 glow 효과
