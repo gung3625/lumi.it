@@ -1912,9 +1912,9 @@ var cards = {
               headers: { 'Authorization': 'Bearer ' + token }
             }).then(function(r){ return r.json(); })
             .then(function(d){
-              if (d.captionError) {
+              if (d.captionStatus === 'failed' || d.captionError) {
                 setIsPosting(false); setPhase('real-upload');
-                alert('캡션 생성 실패: ' + d.captionError);
+                alert('캡션 생성 실패: ' + (d.captionError || '다시 시도해주세요.'));
                 return;
               }
               if (d.captionStatus === 'ready' && d.generatedCaptions && d.generatedCaptions.length) {

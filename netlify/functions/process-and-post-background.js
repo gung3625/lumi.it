@@ -726,6 +726,7 @@ exports.handler = async (event) => {
     }
 
     // 1번 캡션으로 자동 게시
+    const phone = sp.phone || sp.ownerPhone || '';
     const finalCaptions = updated.captions || updated.generatedCaptions || captions;
     console.log('[process-and-post] 자동 게시 실행');
     try {
@@ -776,7 +777,8 @@ exports.handler = async (event) => {
         if (raw) {
           const item = JSON.parse(raw);
           item.captionsGeneratedAt = new Date().toISOString();
-          item.captionError = err.message;
+          item.captionStatus = 'failed';
+          item.captionError = err.message || '캡션 생성 중 오류가 발생했습니다.';
           item.generatedCaptions = [];
           await store.set(reservationKey, JSON.stringify(item));
         }
