@@ -46,7 +46,7 @@ body.dark-mode .section-label{color:rgba(255,255,255,.3);}
 .contact-card.visible{opacity:1;transform:translateY(0);}
 .contact-card:hover{box-shadow:0 8px 32px rgba(0,0,0,.1);transform:translateY(-4px);}
 .contact-card.visible:hover{transform:translateY(-4px);}
-body.dark-mode .contact-card{background:#1c1c1e;box-shadow:none;}
+body.dark-mode .contact-card{background:#272729;box-shadow:none;}
 body.dark-mode .contact-card:hover{box-shadow:0 8px 32px rgba(0,0,0,.3);}
 .contact-icon{font-size:32px;}
 .contact-name{font-size:17px;font-weight:400;}
@@ -66,7 +66,7 @@ body.dark-mode .contact-card.kakao{border-color:rgba(254,229,0,.3);}
 .faq-wrap{max-width:960px;margin:0 auto;padding:0 24px;display:flex;flex-direction:column;gap:10px;}
 .faq-item{background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,.06);opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease;}
 .faq-item.visible{opacity:1;transform:translateY(0);}
-body.dark-mode .faq-item{background:#1c1c1e;box-shadow:none;}
+body.dark-mode .faq-item{background:#272729;box-shadow:none;}
 .faq-q{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;cursor:pointer;gap:12px;font-size:15px;user-select:none;transition:opacity .3s cubic-bezier(.4,0,.2,1);}
 .faq-q:active{opacity:.7;}
 .faq-arrow{width:18px;height:18px;flex-shrink:0;color:rgba(0,0,0,.25);transition:transform .4s cubic-bezier(.4,0,.2,1);}
@@ -82,7 +82,7 @@ body.dark-mode .faq-a-inner{color:rgba(255,255,255,.45);border-top-color:rgba(25
 @media(max-width:700px){.action-grid{grid-template-columns:1fr;}}
 .action-card{background:#fff;border-radius:24px;padding:28px;box-shadow:0 2px 16px rgba(0,0,0,.06);opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease;}
 .action-card.visible{opacity:1;transform:translateY(0);}
-body.dark-mode .action-card{background:#1c1c1e;box-shadow:none;}
+body.dark-mode .action-card{background:#272729;box-shadow:none;}
 .action-card h3{font-size:17px;margin-bottom:8px;}
 .action-card p{font-size:13px;color:rgba(0,0,0,.5);line-height:1.8;margin-bottom:16px;}
 body.dark-mode .action-card p{color:rgba(255,255,255,.45);}
@@ -112,7 +112,7 @@ body.dark-mode .action-card a.dark{background:#f0f2f8;color:#0d1117;}
 <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-P29BG2C5"
 height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager (noscript) -->
-<script>if(localStorage.getItem('lumi_dark_mode')!=='0'){document.body.classList.add('dark-mode');document.documentElement.style.background='#111';}</script>
+<script>if(localStorage.getItem('lumi_dark_mode')==='1'){document.body.classList.add('dark-mode');document.documentElement.style.background='#111';}</script>
 
 <nav>
   <a href="/" class="nav-logo">lumi</a>
@@ -159,6 +159,29 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <a href="mailto:gung3625@gmail.com?subject=회원 탈퇴 요청" class="danger">탈퇴 요청</a>
   </div>
 </div>
+
+<!-- 다크모드 FAB -->
+<button id="fab-dark" onclick="toggleDark()" aria-label="다크/라이트 모드 전환" style="position:fixed;bottom:calc(24px + env(safe-area-inset-bottom,0px));right:20px;z-index:200;width:44px;height:44px;border-radius:50%;border:none;background:rgba(0,0,0,.08);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .3s;"></button>
+<script>
+(function(){
+  var btn = document.getElementById('fab-dark');
+  function setIcon(dark) {
+    btn.innerHTML = dark
+      ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#f0f2f8"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>'
+      : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#0d1117"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+    btn.style.background = dark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.08)';
+  }
+  var isDark = document.body.classList.contains('dark-mode');
+  setIcon(isDark);
+  window.toggleDark = function() {
+    isDark = !isDark;
+    document.body.classList.toggle('dark-mode', isDark);
+    document.documentElement.style.background = isDark ? '#111' : '#fdf2f4';
+    localStorage.setItem('lumi_dark_mode', isDark ? '1' : '0');
+    setIcon(isDark);
+  };
+})();
+</script>
 
 <script>
 var faqs = [
