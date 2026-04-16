@@ -1783,6 +1783,13 @@ var cards = {
       React.useEffect(function(){
         return function(){ objUrlsRef.current.forEach(function(u){try{URL.revokeObjectURL(u);}catch(ex){}}); objUrlsRef.current.clear(); };
       },[]);
+      // 로그인 사용자가 cta phase 진입 시 4초 후 idle로 자동 복귀
+      React.useEffect(function(){
+        if (phase === 'cta' && !!localStorage.getItem('lumi_token')) {
+          var t = setTimeout(function(){ setRealFiles([]); setRealNote(''); setPhase('idle'); }, 4000);
+          return function(){ clearTimeout(t); };
+        }
+      }, [phase]);
       React.useEffect(function(){
         var newMap = new Map();
         var currentKeys = new Set();
@@ -2430,22 +2437,39 @@ var cards = {
               )
             ) : null,
 
-            phase === 'cta' ? e('div', {className:'tut-cta-wrap'},
-              e('div', {className:'tut-check-circle'},
-                e('svg',{viewBox:'0 0 24 24',fill:'none',width:28,height:28},
-                  e('path',{d:'M4 12l6 6L20 6',stroke:'#FF6B8B',strokeWidth:'2.5',strokeLinecap:'round',strokeLinejoin:'round'}))
-              ),
-              e('p', {className:'tut-title',style:{fontSize:'16px'}}, '\uC774\uB807\uAC8C \uC27D\uAC8C', e('br'), '\uC778\uC2A4\uD0C0 \uAC8C\uC2DC \uC608\uC57D \uC644\uB8CC'),
-              e('button', {className:'tut-cta-btn tut-guide-pulse',
-                onMouseDown:function(ev){ev.stopPropagation();},
-                onClick:function(ev){ ev.stopPropagation(); openSignupGrid(); }
-              }, '1\uC8FC\uC77C \uBB34\uB8CC \uCCB4\uD5D8'),
-              e('button', {style:{background:isDark?'rgba(255,255,255,.08)':'rgba(0,0,0,.05)',border:'none',fontFamily:'inherit',fontSize:'13px',color:isDark?'#FF8FAB':'#C8507A',cursor:'pointer',marginTop:'16px',padding:'10px 24px',borderRadius:'980px',transition:'transform .2s'},
-                onMouseDown:function(ev){ev.stopPropagation();},
-                onMouseOver:function(ev){ev.currentTarget.style.transform='scale(1.05)';},
-                onMouseOut:function(ev){ev.currentTarget.style.transform='scale(1)';},
-                onClick:function(){ setSel([false,false,false,false,false,false]); setDemoIdx(Math.floor(Math.random()*demoSets.length)); setPhase('idle'); }
-              }, '\u21BB \uCC98\uC74C\uBD80\uD130 \uB2E4\uC2DC \uBCF4\uAE30')
+            phase === 'cta' ? (!!localStorage.getItem('lumi_token') ?
+              e('div', {className:'tut-cta-wrap'},
+                e('div', {className:'tut-check-circle'},
+                  e('svg',{viewBox:'0 0 24 24',fill:'none',width:28,height:28},
+                    e('path',{d:'M4 12l6 6L20 6',stroke:'#FF6B8B',strokeWidth:'2.5',strokeLinecap:'round',strokeLinejoin:'round'}))
+                ),
+                e('p', {className:'tut-title',style:{fontSize:'16px'}}, '\uC608\uC57D \uC644\uB8CC'),
+                e('p', {style:{fontSize:'12px',color:isDark?'rgba(255,255,255,.5)':'rgba(0,0,0,.4)',marginTop:'6px',marginBottom:'0'}}, '\uC608\uC57D\uD55C \uC2DC\uAC04\uC5D0 \uC778\uC2A4\uD0C0\uC5D0 \uAC8C\uC2DC\uB429\uB2C8\uB2E4'),
+                e('button', {style:{background:isDark?'rgba(255,255,255,.08)':'rgba(0,0,0,.05)',border:'none',fontFamily:'inherit',fontSize:'13px',color:isDark?'#FF8FAB':'#C8507A',cursor:'pointer',marginTop:'20px',padding:'10px 24px',borderRadius:'980px',transition:'transform .2s'},
+                  onMouseDown:function(ev){ev.stopPropagation();},
+                  onMouseOver:function(ev){ev.currentTarget.style.transform='scale(1.05)';},
+                  onMouseOut:function(ev){ev.currentTarget.style.transform='scale(1)';},
+                  onClick:function(ev){ ev.stopPropagation(); setRealFiles([]); setRealNote(''); setPhase('idle'); }
+                }, '\uC0C8 \uAC8C\uC2DC\uBB3C \uC62C\uB9AC\uAE30')
+              )
+            :
+              e('div', {className:'tut-cta-wrap'},
+                e('div', {className:'tut-check-circle'},
+                  e('svg',{viewBox:'0 0 24 24',fill:'none',width:28,height:28},
+                    e('path',{d:'M4 12l6 6L20 6',stroke:'#FF6B8B',strokeWidth:'2.5',strokeLinecap:'round',strokeLinejoin:'round'}))
+                ),
+                e('p', {className:'tut-title',style:{fontSize:'16px'}}, '\uC774\uB807\uAC8C \uC27D\uAC8C', e('br'), '\uC778\uC2A4\uD0C0 \uAC8C\uC2DC \uC608\uC57D \uC644\uB8CC'),
+                e('button', {className:'tut-cta-btn tut-guide-pulse',
+                  onMouseDown:function(ev){ev.stopPropagation();},
+                  onClick:function(ev){ ev.stopPropagation(); openSignupGrid(); }
+                }, '1\uC8FC\uC77C \uBB34\uB8CC \uCCB4\uD5D8'),
+                e('button', {style:{background:isDark?'rgba(255,255,255,.08)':'rgba(0,0,0,.05)',border:'none',fontFamily:'inherit',fontSize:'13px',color:isDark?'#FF8FAB':'#C8507A',cursor:'pointer',marginTop:'16px',padding:'10px 24px',borderRadius:'980px',transition:'transform .2s'},
+                  onMouseDown:function(ev){ev.stopPropagation();},
+                  onMouseOver:function(ev){ev.currentTarget.style.transform='scale(1.05)';},
+                  onMouseOut:function(ev){ev.currentTarget.style.transform='scale(1)';},
+                  onClick:function(){ setSel([false,false,false,false,false,false]); setDemoIdx(Math.floor(Math.random()*demoSets.length)); setPhase('idle'); }
+                }, '\u21BB \uCC98\uC74C\uBD80\uD130 \uB2E4\uC2DC \uBCF4\uAE30')
+              )
             ) : null
           ),
 
