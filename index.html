@@ -3051,22 +3051,21 @@ var cards = {
           var h = cardRef.current.offsetHeight;
           /* 비로그인: trend-cta-bar (~70px) 공간 추가 차감 */
           var ctaH = !isLoggedIn ? 70 : 0;
-          var available = h - 80 - ctaH;
+          var available = h - 52 - ctaH;
           var vc, ih;
-          if(available <= 130) {
-            /* mobile h:1 = 280px 비로그인: available ~130px, 3개를 공간 가득 배치 */
+          if(available <= 160) {
+            /* mobile h:1 = 200px 비로그인/로그인: available 100~148px, 3개 균등 배치 */
             vc = 3;
             ih = Math.max(36, Math.floor(available / 3));
-          } else if(available <= 170) {
-            /* mobile h:1 = 200px card: available ~120px, show 4 items at ~28px each */
+          } else if(available <= 220) {
             vc = 4;
-            ih = Math.max(28, Math.floor(available / 4.5));
-          } else if(available < 300) {
+            ih = Math.max(36, Math.floor(available / 4));
+          } else if(available < 350) {
             vc = 5;
-            ih = Math.max(34, Math.floor(available / 5.2));
+            ih = Math.max(36, Math.floor(available / 5));
           } else {
             vc = 7;
-            ih = Math.max(32, Math.floor(available / 7));
+            ih = Math.max(36, Math.floor(available / 7));
           }
           setVisibleCount(vc);
           setItemH(ih);
