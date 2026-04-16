@@ -275,23 +275,23 @@ body.dark-mode .react-grid-item > .react-resizable-handle::after {
   .trend-header { padding:10px 14px 6px !important; }
   .trend-label { font-size:12px !important; font-weight:600 !important; }
   .trend-tab { font-size:10px !important; padding:3px 8px !important; }
-  .trend-list { padding:0 12px 6px !important; overflow:hidden !important; }
+  .trend-list { padding:0 12px 6px !important; overflow:visible !important; }
   .trend-item { padding:5px 8px !important; gap:6px !important; border-radius:8px !important; }
   .trend-rank { font-size:11px !important; font-weight:700 !important; min-width:14px !important; }
   .trend-text { font-size:11px !important; font-weight:500 !important; white-space:nowrap !important; overflow:hidden !important; text-overflow:ellipsis !important; }
   .trend-tag { display:none !important; }
-  .trend-delta { font-size:9px !important; padding:2px 5px !important; border-radius:6px !important; }
+  .trend-delta { font-size:10px !important; padding:2px 5px !important; border-radius:6px !important; }
   .trend-cta-bar { display:none !important; }
 }
 @container (max-width: 280px) {
   .trend-header { padding:12px 14px 6px !important; }
   .trend-label { font-size:11px !important; }
-  .trend-tab { font-size:9px !important; padding:3px 6px !important; }
+  .trend-tab { font-size:10px !important; padding:3px 6px !important; }
   .trend-list { padding:0 14px 8px !important; }
   .trend-item { padding:4px 8px !important; gap:5px !important; }
   .trend-text { font-size:12px !important; white-space:nowrap !important; overflow:hidden !important; text-overflow:ellipsis !important; }
   .trend-tag { display:none !important; }
-  .trend-delta { font-size:8px !important; padding:2px 4px !important; }
+  .trend-delta { font-size:10px !important; padding:2px 4px !important; }
 }
 @container (min-height: 400px) {
   .trend-label { font-size:16px !important; }
@@ -422,6 +422,7 @@ body.dark-mode .card-text.pad-bio::before {
 body.dark-mode .lumi-aura {
   background:radial-gradient(circle, rgba(255,107,139,.5) 0%, rgba(221,160,221,.3) 40%, transparent 70%);
 }
+@media(max-width:600px) { .lumi-aura { display:none !important; } }
 .upload-prompt { font-size:clamp(12px, 2vw, 14px); color:rgba(0,0,0,.4); text-align:center; word-break:keep-all; }
 .upload-prompt strong { color:#0d1117; font-weight:400; font-size:clamp(20px, 4vw, 32px); }
 .upload-desc { color:rgba(0,0,0,.35); }
@@ -545,6 +546,11 @@ body.dark-mode .upload-schedule-input {
 .upload-toggle.on::after { left:18px; }
 body.dark-mode .upload-toggle-row { color:rgba(240,242,248,.4); }
 body.dark-mode .upload-toggle { background:rgba(255,255,255,.1); }
+@media(max-width:600px) {
+  .upload-toggle { width:44px !important; height:24px !important; }
+  .upload-toggle::after { width:20px !important; height:20px !important; }
+  .upload-toggle.on::after { left:22px !important; }
+}
 
 body.dark-mode .upload-prompt { color:rgba(240,242,248,.4); }
 body.dark-mode .upload-prompt strong { color:#f0f2f8; }
@@ -752,7 +758,6 @@ body.dark-mode .upload-submit { background:#f0f2f8; color:#0d1117; }
   width:100%; aspect-ratio:4/3; overflow:hidden; flex-shrink:1; min-height:0;
 }
 .demo-ig-image img { width:100%; height:100%; object-fit:cover; }
-body.dark-mode .demo-ig-image img { filter: grayscale(1) brightness(.8); }
 .demo-ig-actions {
   display:flex; gap:12px; padding:7px 10px; flex-shrink:0;
 }
@@ -1269,7 +1274,7 @@ body.dark-mode .tut-check-circle { background:rgba(255,107,139,.15); }
 /* REAL-UPLOAD LAYOUT */
 .real-upload-layout { flex-direction: row; gap: 24px; }
 .real-upload-right { width: min(280px, 45%); flex-shrink: 0; }
-@media (max-width: 500px) {
+@media (max-width: 600px) {
   .real-upload-layout { flex-direction: column !important; gap: 12px !important; }
   .real-upload-right { width: 100% !important; flex-shrink: unset !important; }
 }
@@ -2646,7 +2651,7 @@ var cards = {
           var sido = '';
           if(userRegion){ sido = userRegion.split(' ')[0].replace(/특별시|광역시|도$/,''); }
           var url = '/.netlify/functions/get-weather-kma' + (sido ? '?sido='+encodeURIComponent(sido) : '');
-          fetch(url).then(function(r){return r.json();}).then(function(d){
+          fetch(url).then(function(r){if(!r.ok) throw new Error(r.status);return r.json();}).then(function(d){
             if(!d.error) setWeather(d);
           }).catch(function(){});
         },[]);
@@ -2671,7 +2676,7 @@ var cards = {
             method:'POST',
             headers:{'Content-Type':'application/json','Authorization':'Bearer ' + _btsToken},
             body: JSON.stringify({category: bizCat})
-          }).then(function(r){return r.json();}).then(function(d){
+          }).then(function(r){if(!r.ok) throw new Error(r.status);return r.json();}).then(function(d){
             if(d && d.bestTime) setBestTimeData(d);
           }).catch(function(){});
         },[]);
@@ -2680,7 +2685,7 @@ var cards = {
         var ts = React.useState(null), trendData = ts[0], setTrendData = ts[1];
         React.useEffect(function(){
           fetch('/api/get-trends?category='+encodeURIComponent(bizCat))
-          .then(function(r){return r.json();}).then(function(d){if(d&&d.keywords) setTrendData(d);}).catch(function(){});
+          .then(function(r){if(!r.ok) throw new Error(r.status);return r.json();}).then(function(d){if(d&&d.keywords) setTrendData(d);}).catch(function(){});
         },[]);
         var myTrends = trendData && trendData.keywords ? trendData.keywords.slice(0,3).map(function(k){return '#'+k.keyword;}) : ['#'+bizCat, '#\uCD94\uCC9C', '#\uD314\uB85C\uC6B0'];
         var _categoryTips = {
@@ -3652,7 +3657,7 @@ var cards = {
         // 상세 패널
         var detailPanel = detailData ? e('div', {
           onClick: function(ev){ ev.stopPropagation(); },
-          style:{position:'absolute',inset:0,borderRadius:'inherit',background:isDk?'#1c1c1e':'#fff',zIndex:10,display:'flex',flexDirection:'column',padding:'16px',overflowY:'auto',WebkitOverflowScrolling:'touch'}
+          style:{position:'absolute',inset:0,borderRadius:'inherit',background:isDk?'#1c1c1e':'#fff',zIndex:10,display:'flex',flexDirection:'column',padding:'clamp(12px, 3vw, 16px)',overflowY:'auto',WebkitOverflowScrolling:'touch'}
         },
           e('div', {style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'12px'}},
             e('span', {style:{fontSize:'14px',fontWeight:600,color:tc}}, '\uC608\uC57D \uC0C1\uC138'),
@@ -3674,7 +3679,7 @@ var cards = {
             // 캡션
             (detailData.generatedCaptions && detailData.generatedCaptions.length > 0) ? e('div', {},
               e('p', {style:{fontSize:'11px',color:tc2,marginBottom:'4px',fontWeight:600,textTransform:'uppercase',letterSpacing:'.5px'}}, '\uCE90\uC158'),
-              e('p', {style:{fontSize:'12px',color:tc,lineHeight:1.6,whiteSpace:'pre-wrap',background:isDk?'rgba(255,255,255,.04)':'rgba(0,0,0,.03)',borderRadius:'8px',padding:'8px 10px',maxHeight:'80px',overflowY:'auto'}}, detailData.generatedCaptions[0])
+              e('p', {style:{fontSize:'12px',color:tc,lineHeight:1.6,whiteSpace:'pre-wrap',background:isDk?'rgba(255,255,255,.04)':'rgba(0,0,0,.03)',borderRadius:'8px',padding:'8px 10px',maxHeight:'clamp(80px, 15vh, 120px)',overflowY:'auto'}}, detailData.generatedCaptions[0])
             ) : null,
             // 해시태그
             detailData.hashtags ? e('div', {},

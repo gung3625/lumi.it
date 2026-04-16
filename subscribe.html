@@ -319,7 +319,7 @@ async function startPayment() {
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
       body: JSON.stringify({ planType: selectedPlan })
     });
-    var prepData = await prepRes.json();
+    var prepData = prepRes.headers.get('content-type')?.includes('application/json') ? await prepRes.json() : {};
     if (!prepRes.ok) {
       showToast(prepData.error || '결제 준비에 실패했어요');
       btn.disabled = false;
@@ -376,7 +376,6 @@ async function startPayment() {
       btn.textContent = '무료 체험 시작하기';
     }
   } catch(e) {
-    console.error('결제 오류 발생');
     showToast('결제 중 오류가 발생했어요');
     btn.disabled = false;
     btn.textContent = '무료 체험 시작하기';
