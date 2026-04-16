@@ -178,6 +178,7 @@ exports.handler = async (event) => {
           igAccessToken,
           igPageAccessToken,
           relayMode,
+          useWeather: fields.useWeather !== 'false',
           isSent: false,
         };
 

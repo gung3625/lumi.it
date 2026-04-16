@@ -59,10 +59,12 @@ function buildCaptionPrompt(item, imageAnalysis, toneGuide) {
   const sp = item.storeProfile || {};
   const trends = Array.isArray(item.trends) ? item.trends.join(', ') : (item.trends || '');
 
-  const weatherBlock = w.status
-    ? `날씨: ${w.status}${w.temperature ? ' / ' + w.temperature + '°C 체감' : ''}${w.mood ? '\n분위기: ' + w.mood : ''}${w.guide ? '\n가이드: ' + w.guide : ''}${w.locationName ? '\n위치: ' + w.locationName : ''}
+  const weatherBlock = (item.useWeather === false)
+    ? '날씨 정보 없음 — 날씨 언급하지 마세요.'
+    : w.status
+      ? `날씨: ${w.status}${w.temperature ? ' / ' + w.temperature + '°C 체감' : ''}${w.mood ? '\n분위기: ' + w.mood : ''}${w.guide ? '\n가이드: ' + w.guide : ''}${w.locationName ? '\n위치: ' + w.locationName : ''}
 숫자 직접 쓰지 말 것. "오늘처럼 선선한 날엔" ✅${w.airQuality ? '\n초미세먼지: ' + w.airQuality + ' (수치/등급 직접 언급 금지)' : ''}`
-    : '날씨 정보 없음 — 날씨 언급하지 마세요.';
+      : '날씨 정보 없음 — 날씨 언급하지 마세요.';
 
   const trendBlock = trends
     ? `트렌드 태그: ${trends}${item.trendInsights ? '\n\n[업종 트렌드 인사이트]\n' + item.trendInsights + '\n\n위 트렌드를 참고하되 반드시 아래 규칙을 지키세요:\n- 트렌드는 캡션의 분위기/감성에만 반영. 직접 설명하거나 인용하지 마세요\n- 사진에 실제로 보이는 것과 연결되는 트렌드만 활용\n- 경쟁사/타 브랜드명은 절대 언급하지 마세요\n- "요즘 유행", "SNS에서 화제" 같은 직접적 트렌드 언급 금지\n- 해시태그에는 트렌드 키워드 2~3개를 자연스럽게 포함' : '\n1~2개만 본문에 녹이고, 나머지는 해시태그에 포함.'}`
