@@ -3463,9 +3463,9 @@ var cards = {
           var dt = r.autoPostAt ? new Date(r.autoPostAt) : null;
           var timeStr = dt ? ((dt.getMonth()+1)+'\uC6D4 '+dt.getDate()+'\uC77C '+String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0')) : '';
           var isCancelled = r._cancelled;
-          var statusMap = {'ready':'\uB300\uAE30\uC911','processing':'\uCC98\uB9AC\uC911','posted':'\uAC8C\uC2DC\uC644\uB8CC','failed':'\uC2E4\uD328','completed':'\uAC8C\uC2DC\uC644\uB8CC'};
+          var statusMap = {'ready':'\uAC8C\uC2DC \uB300\uAE30','processing':'\uCC98\uB9AC\uC911','posted':'\uAC8C\uC2DC\uC644\uB8CC','failed':'\uC2E4\uD328','completed':'\uAC8C\uC2DC\uC644\uB8CC'};
           var rawStatus = r.captionStatus || '';
-          var status = isCancelled ? '\uCDE8\uC18C\uB428' : (r.isSent ? '\uAC8C\uC2DC\uC644\uB8CC' : (statusMap[rawStatus] || '\uB300\uAE30\uC911'));
+          var status = isCancelled ? '\uCDE8\uC18C\uB428' : (r.isSent ? '\uAC8C\uC2DC\uC644\uB8CC' : (statusMap[rawStatus] || '\uAC8C\uC2DC \uB300\uAE30'));
           var statusColor = isCancelled ? tc2 : (r.isSent ? '#4ade80' : (rawStatus==='failed' ? '#ef4444' : (rawStatus==='processing' ? '#f59e0b' : pink)));
           var statusBg = isCancelled ? (isDk?'rgba(255,255,255,.04)':'rgba(0,0,0,.03)') : (r.isSent ? 'rgba(34,197,94,.08)' : (rawStatus==='failed' ? 'rgba(239,68,68,.08)' : (rawStatus==='processing' ? 'rgba(245,158,11,.08)' : (isDk?'rgba(255,107,139,.08)':'rgba(200,80,122,.06)'))));
           var canCancel = !r.isSent && !isCancelled;
@@ -3477,11 +3477,15 @@ var cards = {
           var rKey = r.reservationKey || r.key || String(i);
           var photoNum = r.photoCount || 0;
           return e('div', {key:i,onClick:function(ev){if(!isCancelled)handleOpenDetail(rKey,ev);},style:{display:'flex',gap:'10px',padding:'10px 12px',borderRadius:'10px',background:isDk?'rgba(255,255,255,.03)':'rgba(0,0,0,.02)',marginBottom:i<4?'6px':'0',cursor:isCancelled?'default':'pointer',transition:'background .15s',alignItems:'flex-start'}},
-            e('div',{style:{width:'36px',height:'36px',borderRadius:'8px',background:isDk?'rgba(255,255,255,.06)':'rgba(0,0,0,.04)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,marginTop:'1px'}},
-              photoNum > 0
-                ? e('span',{style:{fontSize:'11px',color:tc2,fontWeight:600}},photoNum)
-                : e('svg',{width:16,height:16,viewBox:'0 0 24 24',fill:'none',stroke:tc2,strokeWidth:1.5,strokeLinecap:'round',strokeLinejoin:'round'},e('rect',{x:3,y:3,width:18,height:18,rx:2}),e('circle',{cx:8.5,cy:8.5,r:1.5}),e('path',{d:'m21 15-5-5L5 21'}))
-            ),
+            (function(){
+              var thumbKey = r.imageKeys && r.imageKeys.length > 0 ? r.imageKeys[0] : null;
+              var thumbUrl = thumbKey ? ('/.netlify/functions/serve-image?key=' + encodeURIComponent(thumbKey)) : null;
+              return e('div',{style:{width:'40px',height:'40px',borderRadius:'8px',background:isDk?'rgba(255,255,255,.06)':'rgba(0,0,0,.04)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,marginTop:'1px',overflow:'hidden'}},
+                thumbUrl
+                  ? e('img',{src:thumbUrl,style:{width:'40px',height:'40px',objectFit:'cover',borderRadius:'8px',display:'block'},onError:function(ev){ev.target.style.display='none';ev.target.parentNode.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="'+tc2+'" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>';}})
+                  : e('svg',{width:16,height:16,viewBox:'0 0 24 24',fill:'none',stroke:tc2,strokeWidth:1.5,strokeLinecap:'round',strokeLinejoin:'round'},e('rect',{x:3,y:3,width:18,height:18,rx:2}),e('circle',{cx:8.5,cy:8.5,r:1.5}),e('path',{d:'m21 15-5-5L5 21'}))
+              );
+            })(),
             e('div',{style:{flex:1,minWidth:0,display:'flex',flexDirection:'column',gap:'3px'}},
               e('div',{style:{display:'flex',alignItems:'center',gap:'6px'}},
                 e('span',{style:{fontSize:'13px',fontWeight:500,color:isCancelled?tc2:tc,lineHeight:1.3}},timeStr||'\uC2DC\uAC04 \uBBF8\uC815'),
