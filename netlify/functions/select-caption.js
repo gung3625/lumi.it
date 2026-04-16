@@ -170,12 +170,29 @@ exports.handler = async (event) => {
       item.captionStatus = 'posting';
       await reserveStore.set(reservationKey, JSON.stringify(item));
 
-      const triggerRes = await fetch('https://lumi.it.kr/.netlify/functions/select-and-post-background', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.LUMI_SECRET}` },
-        body: JSON.stringify({ reservationKey, captionIndex: idx, email: ownerEmail }),
-      });
-      console.log('[select-caption] select-and-post-background 트리거:', triggerRes.status);
+      let triggerOk = false;
+      try {
+        const triggerRes = await fetch('https://lumi.it.kr/.netlify/functions/select-and-post-background', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.LUMI_SECRET}` },
+          body: JSON.stringify({ reservationKey, captionIndex: idx, email: ownerEmail }),
+        });
+        console.log('[select-caption] select-and-post-background 트리거:', triggerRes.status);
+        triggerOk = triggerRes.ok || triggerRes.status === 202;
+      } catch (triggerErr) {
+        console.error('[select-caption] select-and-post-background 트리거 실패:', triggerErr.message);
+      }
+
+      if (!triggerOk) {
+        // 트리거 실패 — captionStatus를 ready로 롤백해 사용자가 재시도 가능하게 함
+        item.captionStatus = 'ready';
+        await reserveStore.set(reservationKey, JSON.stringify(item));
+        return {
+          statusCode: 500,
+          headers: CORS,
+          body: JSON.stringify({ error: '게시 요청 중 오류가 발생했습니다. 다시 시도해주세요.' }),
+        };
+      }
 
       return {
         statusCode: 200,

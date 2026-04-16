@@ -56,6 +56,9 @@ exports.handler = async (event) => {
         // 이미 게시됐거나 취소된 건 제외
         if (item.isSent || item.cancelled) continue;
 
+        // 즉시 게시 모드 건은 예약 목록에서 제외
+        if (item.postMode === 'immediate') continue;
+
         // 캡션이 생성된 것만 (대기 중인 릴레이 항목)
         if (!item.generatedCaptions || item.generatedCaptions.length === 0) continue;
 

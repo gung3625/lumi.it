@@ -31,6 +31,9 @@ exports.handler = async (event) => {
         if (!item.scheduledAt) continue;
         if (new Date(item.scheduledAt) > now) continue;
 
+        // 즉시 게시 모드는 select-caption→select-and-post-background가 전담 — scheduler 불개입
+        if (item.postMode === 'immediate') continue;
+
         // Background Function은 즉시 202 반환 — fire-and-forget
         const siteUrl = 'https://lumi.it.kr';
 
