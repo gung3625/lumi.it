@@ -35,6 +35,13 @@ function filterTags(tags) {
   return filtered.length >= 3 ? filtered : tags;
 }
 
+// 트렌드가 아닌 뻔한 콘텐츠 주제 키워드 (부분 매칭)
+const FILLER_WORDS = [
+  '아이디어', '방법', '추천', '정보', '모음', '리스트', '팁', '가이드',
+  '비교', '순위', '종류', '차이', '후기', '리뷰', '장단점', '선택',
+  '입문', '초보', '기초', '필수', '인기', '베스트', '총정리',
+];
+
 function filterKeywords(keywords) {
   if (!Array.isArray(keywords)) return keywords;
   // 1. 중복 병합 (같은 keyword → score 합산, mentions 합산)
@@ -51,10 +58,12 @@ function filterKeywords(keywords) {
     }
   }
   const merged = Array.from(map.values()).sort((a, b) => (b.score || 0) - (a.score || 0));
-  // 2. 블랙리스트 필터
+  // 2. 블랙리스트 + 뻔한 콘텐츠 주제 필터
   const filtered = merged.filter(k => {
     const kw = (k.keyword || '').toLowerCase();
-    return !BLACKLIST.includes(kw);
+    if (BLACKLIST.includes(kw)) return false;
+    if (FILLER_WORDS.some(fw => kw.includes(fw))) return false;
+    return true;
   });
   return filtered.length >= 3 ? filtered : merged;
 }
