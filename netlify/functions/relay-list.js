@@ -63,6 +63,7 @@ exports.handler = async (event) => {
           key: blob.key,
           captions: item.generatedCaptions,
           captionsGeneratedAt: item.captionsGeneratedAt,
+          scheduledAt: item.scheduledAt || null,
           autoPostAt: item.autoPostAt || null,
           relayMode: item.relayMode || false,
           captionStatus: item.captionStatus || null,

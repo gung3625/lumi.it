@@ -3460,8 +3460,9 @@ var cards = {
         }
 
         var item = function(r,i) {
-          var dt = r.autoPostAt ? new Date(r.autoPostAt) : null;
-          var timeStr = dt ? ((dt.getMonth()+1)+'\uC6D4 '+dt.getDate()+'\uC77C '+String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0')) : '';
+          var rawTime = r.autoPostAt || r.scheduledAt || null;
+          var dt = rawTime ? new Date(rawTime) : null;
+          var timeStr = dt ? ((dt.getMonth()+1)+'/'+dt.getDate()+' '+(dt.getHours()<12?'\uC624\uC804':'\uC624\uD6C4')+' '+(dt.getHours()===0?12:dt.getHours()>12?dt.getHours()-12:dt.getHours())+':'+String(dt.getMinutes()).padStart(2,'0')) : '';
           var isCancelled = r._cancelled;
           var statusMap = {'ready':'\uAC8C\uC2DC \uB300\uAE30','processing':'\uCC98\uB9AC\uC911','posted':'\uAC8C\uC2DC\uC644\uB8CC','failed':'\uC2E4\uD328','completed':'\uAC8C\uC2DC\uC644\uB8CC'};
           var rawStatus = r.captionStatus || '';
