@@ -1917,7 +1917,7 @@ var cards = {
                 alert('캡션 생성 실패: ' + (d.captionError || '다시 시도해주세요.'));
                 return;
               }
-              if (d.captionStatus === 'ready' && d.generatedCaptions && d.generatedCaptions.length) {
+              if ((d.captionStatus === 'ready' || (!d.captionStatus && d.generatedCaptions && d.generatedCaptions.length)) && d.generatedCaptions && d.generatedCaptions.length) {
                 setIsPosting(false);
                 setGeneratedCaptions(d.generatedCaptions);
                 setEditedCaption(d.generatedCaptions[0]);
@@ -1927,7 +1927,7 @@ var cards = {
                 setRealFiles([]); setRealNote(''); setPhase('cta');
               } else if (attempts >= maxAttempts) {
                 setIsPosting(false); setPhase('real-upload');
-                alert('캡션 생성 시간이 초과됐어요. 다시 시도해주세요.');
+                alert('캡션 생성에 시간이 걸리고 있어요. 잠시 후 대시보드에서 확인해주세요.');
               } else {
                 setTimeout(poll, 3000);
               }

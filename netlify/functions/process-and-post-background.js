@@ -646,6 +646,7 @@ exports.handler = async (event) => {
     item.imageKeys = tempKeys;
     item.tempKeys = tempKeys;
     item.captionsGeneratedAt = new Date().toISOString();
+    item.captionStatus = 'ready';
     await store.set(reservationKey, JSON.stringify(item));
 
     // 5. 릴레이 모드 확인
