@@ -3495,7 +3495,7 @@ var cards = {
           }).then(function(r){ return r.json(); })
           .then(function(d){
             if (d && d.success === true) {
-              setReservations(function(prev){ return prev.map(function(r){ return r.reservationKey === rKey ? Object.assign({}, r, {isCancelled: true, isSent: false, _cancelled: true}) : r; }); });
+              setReservations(function(prev){ return prev.filter(function(r){ return r.reservationKey !== rKey; }); });
             } else {
               alert(d.error || '\uCDE8\uC18C \uC2E4\uD328. \uB2E4\uC2DC \uC2DC\uB3C4\uD574\uC8FC\uC138\uC694.');
             }
