@@ -1949,7 +1949,13 @@ var cards = {
           method: 'POST',
           headers: { 'Authorization': 'Bearer ' + token },
           body: fd
-        }).then(function(res){ return res.json(); })
+        }).then(function(res){
+          var ct = res.headers.get('content-type') || '';
+          if (!ct.includes('application/json')) {
+            return res.text().then(function(t){ throw new Error('서버 응답 오류 (' + res.status + ')'); });
+          }
+          return res.json();
+        })
         .then(function(data){
           if (!data.success) {
             setIsPosting(false); setPhase('real-upload');
@@ -2559,10 +2565,10 @@ var cards = {
                 }, isConfirmPosting ? '\uAC8C\uC2DC \uC911...' : '\uC774\uB300\uB85C \uAC8C\uC2DC'),
                 e('button', {
                   className:'lumi-btn-regen',
-                  disabled: isPosting || isConfirmPosting,
+                  disabled: isPosting || isConfirmPosting || regenCount >= 3,
                   onMouseDown: function(ev){ ev.stopPropagation(); },
-                  onClick: function(){ if(!isPosting && !isConfirmPosting) handleRegenCaption(); }
-                }, isPosting ? '\uC7AC\uC0DD\uC131 \uC911...' : '\uC7AC\uC0DD\uC131'), // TODO: 정식 출시 시 횟수 제한 복원
+                  onClick: function(){ if(!isPosting && !isConfirmPosting && regenCount < 3) handleRegenCaption(); }
+                }, isPosting ? '\uC7AC\uC0DD\uC131 \uC911...' : (regenCount >= 3 ? '\uC7AC\uC0DD\uC131 \uD55C\uB3C4 \uC804\uB2E4 \uC4F4\uC5B4\uC694' : '\uC7AC\uC0DD\uC131 (' + (3 - regenCount) + '\uD68C \uB0A8\uC74C)')),
                 e('button', {
                   className:'lumi-btn-back',
                   onMouseDown: function(ev){ ev.stopPropagation(); },
@@ -4672,6 +4678,7 @@ function closeLogin() {
 }
 
 function logoutLumi() {
+  if (!confirm('\uB85C\uADF8\uC544\uC6C3 \uD558\uC2DC\uACA0\uC5B4\uC694?')) return;
   localStorage.removeItem('lumi_token');
   localStorage.removeItem('lumi_user');
   localStorage.removeItem('lumi_feat_toggles');
