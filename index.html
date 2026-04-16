@@ -2964,11 +2964,11 @@ var cards = {
           var _twWeatherEmojis = {clear:'☀️',partly_cloudy:'⛅',cloudy:'☁️',rain:'🌧️',snow:'❄️'};
           var _twWeatherLabels = {clear:'맑음',partly_cloudy:'구름조금',cloudy:'흐림',rain:'비',snow:'눈'};
           var _twWeatherBg = {
-            clear:{from:'#56CCF2',to:'#2F80ED'},
-            partly_cloudy:{from:'#74b9ff',to:'#a29bfe'},
-            cloudy:{from:'#636e72',to:'#2d3436'},
-            rain:{from:'#485563',to:'#29323c'},
-            snow:{from:'#e0eafc',to:'#cfdef3'}
+            clear:{from:'#56CCF2',to:'#2F80ED',darkFrom:'#1a5276',darkTo:'#1B4F72'},
+            partly_cloudy:{from:'#74b9ff',to:'#a29bfe',darkFrom:'#2c3e6b',darkTo:'#3d3472'},
+            cloudy:{from:'#636e72',to:'#2d3436',darkFrom:'#3a3f42',darkTo:'#1a1d1e'},
+            rain:{from:'#485563',to:'#29323c',darkFrom:'#2c3440',darkTo:'#1a2028'},
+            snow:{from:'#e0eafc',to:'#cfdef3',darkFrom:'#4a5568',darkTo:'#2d3748'}
           };
           var _twWeatherTips = {
             clear:'야외 사진 올리기 딱 좋은 날씨예요!',
@@ -2994,31 +2994,25 @@ var cards = {
             var state = (weather && weather.state) || 'clear';
             var emoji = _twWeatherEmojis[state] || '☀️';
             var label = _twWeatherLabels[state] || '맑음';
-            var bg = _twWeatherBg[state] || _twWeatherBg.clear;
+            var _bgRaw = _twWeatherBg[state] || _twWeatherBg.clear;
+            var bg = isDk ? {from:_bgRaw.darkFrom,to:_bgRaw.darkTo} : {from:_bgRaw.from,to:_bgRaw.to};
             var tip = _twWeatherTips[state] || _twWeatherTips.clear;
             var tempStr = weather ? weather.temperature + '°' : '';
             var locStr = weather ? (weather.locationName || '') : '';
-            var snowBg = state === 'snow';
+            var snowBg = state === 'snow' && !isDk;
             var textColor = snowBg ? '#2d3436' : '#fff';
             var textMuted = snowBg ? 'rgba(45,52,54,.6)' : 'rgba(255,255,255,.7)';
-            return e('div', {className:'bento-card card-visual', style:{
+            return e('div', {className:'bento-card', style:{
               background:'linear-gradient(135deg,'+bg.from+','+bg.to+')',
-              flexDirection:'column',justifyContent:'space-between',
-              padding:_mob?'16px 14px':'22px',gap:'0',overflow:'hidden',position:'relative'
+              display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',
+              padding:_mob?'16px':'22px',gap:'0',overflow:'hidden',position:'relative',textAlign:'center'
             }},
-              e('div', {style:{display:'flex',alignItems:'flex-start',justifyContent:'space-between'}},
-                e('div', null,
-                  e('p', {style:{fontSize:'11px',color:textMuted,letterSpacing:'1px',marginBottom:'4px'}}, locStr || '내 지역'),
-                  e('p', {style:{fontSize:'clamp(28px,8vw,38px)',lineHeight:'1',marginBottom:'2px'}}, emoji),
-                  e('p', {style:{fontSize:'clamp(22px,6vw,30px)',fontWeight:700,color:textColor,letterSpacing:'-0.5px',fontFamily:'Pretendard,sans-serif'}}, tempStr || '--°')
-                ),
-                e('div', {style:{textAlign:'right'}},
-                  e('p', {style:{fontSize:'clamp(13px,3.5vw,15px)',fontWeight:600,color:textColor}}, label),
-                  e('p', {style:{fontSize:'11px',color:textMuted,marginTop:'4px'}}, new Date().toLocaleDateString('ko-KR',{month:'long',day:'numeric'}))
-                )
-              ),
-              e('div', {style:{background:snowBg?'rgba(45,52,54,.1)':'rgba(255,255,255,.15)',borderRadius:'10px',padding:'10px 12px',marginTop:'8px'}},
-                e('p', {style:{fontSize:'clamp(11px,3vw,13px)',color:textColor,lineHeight:'1.5',fontWeight:500}}, tip)
+              e('p', {style:{fontSize:'11px',color:textMuted,letterSpacing:'1px',marginBottom:'6px'}}, (locStr || '내 지역') + ' · ' + new Date().toLocaleDateString('ko-KR',{month:'long',day:'numeric'})),
+              e('p', {style:{fontSize:'clamp(48px,14vw,72px)',lineHeight:'1',margin:'4px 0'}}, emoji),
+              e('p', {style:{fontSize:'clamp(28px,8vw,40px)',fontWeight:700,color:textColor,letterSpacing:'-0.5px',fontFamily:'Pretendard,sans-serif',margin:'4px 0'}}, tempStr || '--°'),
+              e('p', {style:{fontSize:'clamp(13px,3.5vw,16px)',fontWeight:600,color:textColor,marginBottom:'8px'}}, label),
+              e('div', {style:{background:snowBg?'rgba(45,52,54,.1)':'rgba(255,255,255,.15)',borderRadius:'10px',padding:'8px 14px',width:'100%',maxWidth:'200px'}},
+                e('p', {style:{fontSize:'clamp(11px,2.5vw,12px)',color:textColor,lineHeight:'1.4',fontWeight:500}}, tip)
               )
             );
           };
