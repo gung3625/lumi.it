@@ -1752,13 +1752,22 @@ var cards = {
       var st8 = React.useState(window._bioRealNote || ''), realNote = st8[0], _setRealNote = st8[1];
       var setRealNote = function(v){ window._bioRealNote = v; _setRealNote(v); };
       var st12 = React.useState(-1), dragIdx = st12[0], setDragIdx = st12[1];
-      var objUrlsRef = React.useRef([]);
+      var objUrlsRef = React.useRef(new Map());
+      var fileKey = function(f){return f.name+'|'+f.size+'|'+f.lastModified;};
       React.useEffect(function(){
-        return function(){ objUrlsRef.current.forEach(function(u){try{URL.revokeObjectURL(u);}catch(ex){}}); };
+        return function(){ objUrlsRef.current.forEach(function(u){try{URL.revokeObjectURL(u);}catch(ex){}}); objUrlsRef.current.clear(); };
       },[]);
       React.useEffect(function(){
-        objUrlsRef.current.forEach(function(u){try{URL.revokeObjectURL(u);}catch(ex){}});
-        objUrlsRef.current = realFiles.map(function(f){return URL.createObjectURL(f);});
+        var newMap = new Map();
+        var currentKeys = new Set();
+        realFiles.forEach(function(f){
+          var k = fileKey(f);
+          currentKeys.add(k);
+          if(objUrlsRef.current.has(k)){newMap.set(k,objUrlsRef.current.get(k));}
+          else{newMap.set(k,URL.createObjectURL(f));}
+        });
+        objUrlsRef.current.forEach(function(url,k){if(!currentKeys.has(k)){try{URL.revokeObjectURL(url);}catch(ex){}}});
+        objUrlsRef.current = newMap;
       },[realFiles]);
       var savedStyle = (JSON.parse(localStorage.getItem('lumi_settings') || '{}')).captionStyle || '';
       var st9 = React.useState(savedStyle), captionStyle = st9[0], setCaptionStyle = st9[1];
@@ -2263,7 +2272,7 @@ var cards = {
                 ),
                 e('div', {style:{display:'grid',gridTemplateColumns:'repeat('+Math.max(Math.min(realFiles.length,5),3)+',1fr)',gap:'6px',flex:1,alignContent:'start'}},
                   realFiles.slice(0,10).map(function(f,i){
-                    var url = objUrlsRef.current[i] || URL.createObjectURL(f);
+                    var url = objUrlsRef.current.get(fileKey(f)) || URL.createObjectURL(f);
                     var isFirst = i === 0;
                     return e('div',{key:f.name+f.size+f.lastModified,draggable:true,
                       onDragStart:function(ev){ev.dataTransfer.setData('text/plain',String(i));ev.dataTransfer.effectAllowed='move';},
