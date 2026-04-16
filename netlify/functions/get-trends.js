@@ -1,5 +1,30 @@
 const { getStore } = require('@netlify/blobs');
 
+// 뻔한 상시 검색어 블랙리스트 (트렌드 카드에서 제외)
+const BLACKLIST = [
+  '맛집', '핫플레이스', '브런치', '카페', '맛집추천', '카페추천',
+  '뷰티', '네일', '헤어', '피부관리', '다이어트',
+  '인스타', '인스타그램', '팔로우', '좋아요',
+  '일상', '데일리', '오늘', '주말',
+  '서울', '강남', '홍대', '이태원', '성수',
+  '맛있는', '예쁜', '좋은', '추천', '인기',
+  '소통', '선팔', '맞팔', '팔로워',
+  '먹스타그램', '카페스타그램', '맛스타그램',
+  '푸드', '디저트', '음식', '요리',
+  '패션', '코디', '스타일', '옷',
+  '운동', '헬스', '피트니스',
+  '반려동물', '강아지', '고양이',
+  '꽃', '플라워', '꽃집',
+];
+
+function filterBlacklist(keywords) {
+  const filtered = keywords.filter(k => {
+    const kw = (k.keyword || '').replace(/^#/, '').toLowerCase();
+    return !BLACKLIST.includes(kw);
+  });
+  return filtered.length >= 3 ? filtered : keywords;
+}
+
 // 업종 라벨
 const CATEGORY_LABELS = {
   cafe: '카페·음료',
@@ -165,23 +190,19 @@ exports.handler = async (event) => {
             category: storeKey,
             categoryLabel: label,
             scope,
-            keywords: (scopeData.keywords || []).map((k, i) => {
-              const kw = (k.keyword || '').replace(/^#/, '');
-              const prevIdx = prevKeywords.indexOf(kw);
-              let rankChange = null;
-              if (prevIdx === -1) rankChange = 'new';
-              else if (prevIdx > i) rankChange = prevIdx - i;
-              else if (prevIdx < i) rankChange = prevIdx - i;
-              else rankChange = 0;
-              const item = {
-                keyword: kw,
-                source: k.source || 'gpt-classified',
-                rank: i + 1,
-                rankChange,
-              };
-              if (k.bizCategory) item.bizCategory = k.bizCategory;
-              return item;
-            }),
+            keywords: filterBlacklist((scopeData.keywords || []).map((k, i) => ({
+              keyword: (k.keyword || '').replace(/^#/, ''),
+              source: k.source || 'gpt-classified',
+              rank: i + 1,
+              rankChange: (() => {
+                const kw = (k.keyword || '').replace(/^#/, '');
+                const prevIdx = prevKeywords.indexOf(kw);
+                if (prevIdx === -1) return 'new';
+                if (prevIdx !== i) return prevIdx - i;
+                return 0;
+              })(),
+              ...(k.bizCategory ? { bizCategory: k.bizCategory } : {}),
+            }))),
             insight: scopeData.insight || '',
             season: scope === 'domestic' ? season : undefined,
             updatedAt: scopeData.updatedAt || new Date().toISOString(),
@@ -218,13 +239,13 @@ exports.handler = async (event) => {
           body: JSON.stringify({
             category: storeKey,
             categoryLabel: label,
-            keywords: l30d.keywords.map(k => ({
+            keywords: filterBlacklist(l30d.keywords.map(k => ({
               keyword: k.keyword.replace(/^#/, ''),
               score: k.score || 0,
               mentions: k.mentions || 0,
               trend: 'up',
               source: 'last30days',
-            })),
+            }))),
             season,
             updatedAt: l30d.updatedAt || new Date().toISOString(),
             source: 'last30days',
@@ -248,11 +269,11 @@ exports.handler = async (event) => {
           body: JSON.stringify({
             category: storeKey,
             categoryLabel: label,
-            keywords: cached.tags.map(tag => ({
+            keywords: filterBlacklist(cached.tags.map(tag => ({
               keyword: tag.replace(/^#/, ''),
               trend: 'up',
               source: cached.source || 'last30days',
-            })),
+            }))),
             season,
             updatedAt: cached.updatedAt || new Date().toISOString(),
             source: cached.source || 'last30days',

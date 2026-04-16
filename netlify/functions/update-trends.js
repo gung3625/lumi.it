@@ -1,5 +1,40 @@
 const { getStore } = require('@netlify/blobs');
 
+// 뻔한 상시 검색어 블랙리스트 (저장 시점에 제거)
+const BLACKLIST = [
+  '맛집', '핫플레이스', '브런치', '카페', '맛집추천', '카페추천',
+  '뷰티', '네일', '헤어', '피부관리', '다이어트',
+  '인스타', '인스타그램', '팔로우', '좋아요',
+  '일상', '데일리', '오늘', '주말',
+  '서울', '강남', '홍대', '이태원', '성수',
+  '맛있는', '예쁜', '좋은', '추천', '인기',
+  '소통', '선팔', '맞팔', '팔로워',
+  '먹스타그램', '카페스타그램', '맛스타그램',
+  '푸드', '디저트', '음식', '요리',
+  '패션', '코디', '스타일', '옷',
+  '운동', '헬스', '피트니스',
+  '반려동물', '강아지', '고양이',
+  '꽃', '플라워', '꽃집',
+];
+
+function filterTags(tags) {
+  if (!Array.isArray(tags)) return tags;
+  const filtered = tags.filter(t => {
+    const kw = (typeof t === 'string' ? t : (t.keyword || '')).replace(/^#/, '').toLowerCase();
+    return !BLACKLIST.includes(kw);
+  });
+  return filtered.length >= 3 ? filtered : tags;
+}
+
+function filterKeywords(keywords) {
+  if (!Array.isArray(keywords)) return keywords;
+  const filtered = keywords.filter(k => {
+    const kw = (k.keyword || '').replace(/^#/, '').toLowerCase();
+    return !BLACKLIST.includes(kw);
+  });
+  return filtered.length >= 3 ? filtered : keywords;
+}
+
 // 오늘 날짜를 YYYY-MM-DD 형식으로 반환
 function getDateStr() {
   const d = new Date();
@@ -64,7 +99,7 @@ exports.handler = async (event) => {
 
     for (const [category, tags] of Object.entries(trends)) {
       if (!Array.isArray(tags) || tags.length === 0) continue;
-      const payload = JSON.stringify({ tags, updatedAt, source: 'last30days' });
+      const payload = JSON.stringify({ tags: filterTags(tags), updatedAt, source: 'last30days' });
       await store.set('trends:' + category, payload);
       await store.set('trends:' + category + ':' + dateStr, payload);
       updated.push(category);
@@ -77,7 +112,8 @@ exports.handler = async (event) => {
     // last30days 상세 데이터 저장 (keywords with scores, sources, findingsCount)
     if (body.last30days && typeof body.last30days === 'object') {
       for (const [category, data] of Object.entries(body.last30days)) {
-        const payload = JSON.stringify(data);
+        const filteredData = data.keywords ? { ...data, keywords: filterKeywords(data.keywords) } : data;
+        const payload = JSON.stringify(filteredData);
         await store.set('l30d:' + category, payload);
         await store.set('l30d:' + category + ':' + dateStr, payload);
       }
@@ -95,7 +131,8 @@ exports.handler = async (event) => {
           const cur = await store.get('l30d-domestic:' + category);
           if (cur) await store.set('l30d-domestic-prev:' + category, cur);
         } catch(e) {}
-        const payload = JSON.stringify(data);
+        const filteredData = data.keywords ? { ...data, keywords: filterKeywords(data.keywords) } : data;
+        const payload = JSON.stringify(filteredData);
         await store.set('l30d-domestic:' + category, payload);
         await store.set('l30d-domestic:' + category + ':' + dateStr, payload);
         // 종합 트렌드용 수집
@@ -129,7 +166,8 @@ exports.handler = async (event) => {
           const cur = await store.get('l30d-global:' + category);
           if (cur) await store.set('l30d-global-prev:' + category, cur);
         } catch(e) {}
-        const payload = JSON.stringify(data);
+        const filteredData = data.keywords ? { ...data, keywords: filterKeywords(data.keywords) } : data;
+        const payload = JSON.stringify(filteredData);
         await store.set('l30d-global:' + category, payload);
         await store.set('l30d-global:' + category + ':' + dateStr, payload);
         // 종합 트렌드용 수집
