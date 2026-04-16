@@ -985,14 +985,23 @@ body.dark-mode .toggle-ball { left: 50px; background: #f0f2f8; transform: rotate
 @keyframes tutFeedSlide { from{transform:translateY(40px);opacity:0} to{transform:translateY(0);opacity:1} }
 
 /* ---- 진행 안내 (uploading / generating) ---- */
-.lumi-progress-wrap { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:20px; flex:1; }
-.lumi-progress-title { font-size:clamp(15px,2.5vw,18px); font-weight:600; text-align:center; color:#0d1117; }
+.lumi-progress-wrap { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:16px; flex:1; }
+.lumi-progress-char { position:relative; display:flex; align-items:center; justify-content:center; }
+.lumi-progress-char img { width:clamp(120px,40vw,180px); height:auto; animation:lumiProgressBounce 2s ease-in-out infinite; position:relative; z-index:1; }
+.lumi-progress-glow { position:absolute; width:clamp(140px,45vw,200px); height:clamp(140px,45vw,200px); border-radius:50%; background:radial-gradient(circle,rgba(255,107,139,.25) 0%,rgba(221,160,221,.15) 40%,transparent 70%); animation:lumiGlowPulse 2.5s ease-in-out infinite; z-index:0; }
+@keyframes lumiProgressBounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+@keyframes lumiGlowPulse { 0%,100%{transform:scale(1);opacity:.6} 50%{transform:scale(1.2);opacity:1} }
+.lumi-progress-title { font-size:clamp(15px,2.5vw,18px); font-weight:600; text-align:center; color:#0d1117; animation:lumiFadeInUp .5s ease-out; }
 .lumi-progress-sub { font-size:clamp(11px,2vw,13px); text-align:center; color:rgba(0,0,0,.4); line-height:1.6; }
+.lumi-progress-dots::after { content:''; animation:lumiDots 1.5s steps(4,end) infinite; }
+@keyframes lumiDots { 0%{content:''} 25%{content:'.'} 50%{content:'..'} 75%{content:'...'} }
+@keyframes lumiFadeInUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
 body.dark-mode .lumi-progress-title { color:#f0f2f8; }
 body.dark-mode .lumi-progress-sub { color:rgba(240,242,248,.4); }
-.lumi-progress-bar { width:80%; max-width:200px; height:4px; background:rgba(0,0,0,.08); border-radius:2px; overflow:hidden; }
-.lumi-progress-fill { height:100%; border-radius:2px; background:linear-gradient(90deg,#FF6B8B,#DDA0DD); animation:lumiProgressAnim 1.8s ease-in-out infinite; }
-@keyframes lumiProgressAnim { 0%{transform:translateX(-100%)} 50%{transform:translateX(0%)} 100%{transform:translateX(100%)} }
+body.dark-mode .lumi-progress-glow { background:radial-gradient(circle,rgba(255,107,139,.2) 0%,rgba(221,160,221,.1) 40%,transparent 70%); }
+.lumi-progress-bar { width:80%; max-width:200px; height:5px; background:rgba(0,0,0,.08); border-radius:3px; overflow:hidden; }
+.lumi-progress-fill { height:100%; border-radius:3px; background:linear-gradient(90deg,#FF6B8B,#DDA0DD,#EDD080); background-size:200% 100%; animation:lumiProgressAnim 2s ease-in-out infinite; }
+@keyframes lumiProgressAnim { 0%{background-position:100% 0;transform:translateX(-100%)} 50%{background-position:0% 0;transform:translateX(0%)} 100%{background-position:100% 0;transform:translateX(100%)} }
 body.dark-mode .lumi-progress-bar { background:rgba(255,255,255,.08); }
 
 /* ---- 캡션 확인 (caption phase) ---- */
@@ -2002,6 +2011,7 @@ var cards = {
         var token = localStorage.getItem('lumi_token');
         if (!token) return;
         setIsPosting(true);
+        setPhase('generating');
         fetch('/api/regenerate-caption', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
@@ -2016,8 +2026,10 @@ var cards = {
           } else {
             alert(d.error || '재생성 실패. 다시 시도해주세요.');
           }
+          setPhase('caption');
         }).catch(function(err){
           setIsPosting(false);
+          setPhase('caption');
           alert('재생성 오류: ' + err.message);
         });
       }
@@ -2431,15 +2443,21 @@ var cards = {
             ) : null,
 
             phase === 'uploading' ? e('div', {className:'lumi-progress-wrap'},
-              e('img', {src:'/assets/lumi-surprised-2.png', alt:'lumi', style:{width:'clamp(80px,25vw,120px)',height:'auto'}}),
-              e('p', {className:'lumi-progress-title'}, '\uC0AC\uC9C4\uC744 \uBD84\uC11D\uD558\uACE0 \uC788\uC5B4\uC694'),
+              e('div', {className:'lumi-progress-char'},
+                e('div', {className:'lumi-progress-glow'}),
+                e('img', {src:'/assets/lumi-surprised-2.png', alt:'lumi'})
+              ),
+              e('p', {className:'lumi-progress-title'}, '\uC0AC\uC9C4\uC744 \uBD84\uC11D\uD558\uACE0 \uC788\uC5B4\uC694', e('span', {className:'lumi-progress-dots'})),
               e('p', {className:'lumi-progress-sub'}, 'lumi\uAC00 \uC0AC\uC9C4 \uC18D \uBD84\uC704\uAE30\uB97C \uC77D\uACE0 \uC788\uC5B4\uC694'),
               e('div', {className:'lumi-progress-bar'}, e('div', {className:'lumi-progress-fill'}))
             ) : null,
 
             phase === 'generating' ? e('div', {className:'lumi-progress-wrap'},
-              e('img', {src:'/assets/lumi-character.png', alt:'lumi', style:{width:'clamp(80px,25vw,120px)',height:'auto',animation:'lumiIdle 3s ease-in-out infinite'}}),
-              e('p', {className:'lumi-progress-title'}, '\uCEA1\uC158 \uB9CC\uB4DC\uB294 \uC911...'),
+              e('div', {className:'lumi-progress-char'},
+                e('div', {className:'lumi-progress-glow'}),
+                e('img', {src:'/assets/lumi-character.png', alt:'lumi'})
+              ),
+              e('p', {className:'lumi-progress-title'}, '\uCEA1\uC158 \uB9CC\uB4DC\uB294 \uC911', e('span', {className:'lumi-progress-dots'})),
               e('p', {className:'lumi-progress-sub'}, '\uC5C5\uC885\uACFC \uD2B8\uB80C\uB4DC\uC5D0 \uB9DE\uB294 \uCEA1\uC158\uC744 \uB9CC\uB4E4\uACE0 \uC788\uC5B4\uC694'),
               e('div', {className:'lumi-progress-bar'}, e('div', {className:'lumi-progress-fill'}))
             ) : null,
