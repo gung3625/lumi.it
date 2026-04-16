@@ -18,9 +18,11 @@ exports.handler = async (event) => {
   try {
     const store = getStore({ name: 'users', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
 
-    // 토큰 Blobs 검증
-    let tokenRaw;
-    try { tokenRaw = await store.get('token:' + bearerToken); } catch { tokenRaw = null; }
+    // 토큰 Blobs 검증 (최대 2회 재시도)
+    let tokenRaw = null;
+    for (let i = 0; i < 2; i++) {
+      try { tokenRaw = await store.get('token:' + bearerToken); break; } catch(e) { if (i === 1) { console.error('[count-post] token fetch error:', e.message); } }
+    }
     if (!tokenRaw) return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증에 실패했습니다.' }) };
     const tokenData = JSON.parse(tokenRaw);
     if (tokenData.expiresAt && new Date(tokenData.expiresAt) < new Date()) {
@@ -43,9 +45,9 @@ exports.handler = async (event) => {
     const limit = limits[plan] || 3;
 
     // 트라이얼 만료 체크
-    const createdAt = new Date(user.createdAt);
+    const createdAt = user.createdAt ? new Date(user.createdAt) : now;
     const diffDays = Math.floor((now - createdAt) / (1000 * 60 * 60 * 24));
-    const trialExpired = plan === 'trial' && diffDays >= 7;
+    const trialExpired = plan === 'trial' && !isNaN(diffDays) && diffDays >= 7;
     if (!isAdmin && trialExpired) {
       return { statusCode: 403, headers: CORS, body: JSON.stringify({ error: '무료 체험 기간이 종료됐어요.', code: 'TRIAL_EXPIRED' }) };
     }
