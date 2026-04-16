@@ -670,17 +670,17 @@ exports.handler = async (event) => {
     // 5. 릴레이 모드 확인
     const isRelayMode = item.relayMode === true;
 
-    // 6. 알림톡 (캡션 준비 완료)
-    const phone = sp.phone || sp.ownerPhone;
-    if (phone) {
-      const previewUrl = `https://lumi.it.kr/dashboard?preview=${encodeURIComponent(reservationKey)}`;
-      if (isRelayMode) {
-        await sendAlimtalk(phone, `[lumi] ${sp.name || '사장'}님, 캡션이 준비됐어요!\n\n3가지 스타일로 만들었어요.\n마음에 드는 캡션을 선택하거나 수정해주세요.\n\n미리보기: ${previewUrl}\n\n릴레이 모드: 직접 선택하기 전까지 자동 게시되지 않아요.`);
-      } else {
-        const autoTime = new Date(Date.now() + 30 * 60000).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
-        await sendAlimtalk(phone, `[lumi] ${sp.name || '사장'}님, 캡션이 준비됐어요!\n\n3가지 스타일로 만들었어요.\n마음에 드는 캡션을 선택해주세요.\n\n미리보기: ${previewUrl}\n\n선택하지 않으면 ${autoTime}에 자동 게시됩니다.`);
-      }
-    }
+    // 6. 알림톡 (캡션 준비 완료) — 솔라피 템플릿 검수 완료 전까지 비활성화
+    // const phone = sp.phone || sp.ownerPhone;
+    // if (phone) {
+    //   const previewUrl = `https://lumi.it.kr/dashboard?preview=${encodeURIComponent(reservationKey)}`;
+    //   if (isRelayMode) {
+    //     await sendAlimtalk(phone, `[lumi] ${sp.name || '사장'}님, 캡션이 준비됐어요!...`);
+    //   } else {
+    //     const autoTime = new Date(Date.now() + 30 * 60000).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+    //     await sendAlimtalk(phone, `[lumi] ${sp.name || '사장'}님, 캡션이 준비됐어요!...`);
+    //   }
+    // }
 
     // 릴레이 모드면 자동 게시 스킵 — 사용자가 직접 선택할 때까지 대기
     // temp 이미지는 삭제하지 않음 (릴레이 편집 모달에서 미리보기에 필요)
