@@ -821,7 +821,7 @@ body.dark-mode .card-trend::before { display:none; }
 .trend-tab { font-size:11px; padding:4px 10px; border-radius:12px; border:none; font-family:inherit; cursor:pointer; }
 .trend-tab.active { background:rgba(0,0,0,.08); color:#0d1117; font-weight:600; }
 .trend-tab:not(.active) { background:transparent; color:rgba(0,0,0,.35); }
-.trend-list { flex:1; padding:0 24px 16px; overflow:hidden; position:relative; }
+.trend-list { flex:1; padding:0 24px 8px; overflow:hidden; position:relative; }
 .trend-track { position:relative; width:100%; height:100%; }
 .trend-item {
   position:absolute; left:0; right:0;
@@ -845,7 +845,7 @@ body.dark-mode .card-trend::before { display:none; }
 .trend-delta.same { color:rgba(255,255,255,.25); background:transparent; }
 .trend-delta svg { width:8px; height:8px; }
 .trend-cta-bar {
-  padding:12px 24px; padding-bottom:32px; z-index:2;
+  padding:12px 24px; padding-bottom:16px; z-index:2;
   background:linear-gradient(transparent, rgba(157,203,245,.9) 40%);
 }
 .trend-cta-msg { font-size:12px; color:rgba(0,0,0,.5); text-align:center; line-height:1.5; word-break:keep-all; }
@@ -1822,6 +1822,7 @@ var cards = {
         setIsPosting(true);
         setPhase('uploading');
         var fd = buildPostFormData(new Date().toISOString());
+        var featToggles = JSON.parse(localStorage.getItem('lumi_feat_toggles') || '{}');
         var captionReview = featToggles.captionReview !== false; // 기본 ON
         fd.append('relayMode', captionReview ? 'true' : 'false');
         fetch('/api/reserve', {
@@ -1884,7 +1885,7 @@ var cards = {
 
       // 캡션 재생성
       function handleRegenCaption() {
-        if (regenCount >= 3) return;
+        if (regenCount >= 999) return; // TODO: 정식 출시 시 건당 3회로 변경
         var token = localStorage.getItem('lumi_token');
         if (!token) return;
         setIsPosting(true);
@@ -2238,7 +2239,7 @@ var cards = {
               );
             })() : null,
 
-            phase === 'real-upload' ? e('div', {className:'real-upload-layout', style:{display:'flex',height:'100%',padding:'4px',overflow:'auto'}},
+            phase === 'real-upload' ? e('div', {className:'real-upload-layout', style:{display:'flex',height:'100%',padding:'4px',overflow:'hidden'}},
               // 왼쪽: 사진 미리보기
               e('div', {style:{flex:1,display:'flex',flexDirection:'column',gap:'8px'}},
                 e('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'4px'}},
@@ -2345,10 +2346,10 @@ var cards = {
                 }, isConfirmPosting ? '\uAC8C\uC2DC \uC911...' : '\uC774\uB300\uB85C \uAC8C\uC2DC'),
                 e('button', {
                   className:'lumi-btn-regen',
-                  disabled: regenCount >= 3 || isPosting || isConfirmPosting,
+                  disabled: isPosting || isConfirmPosting,
                   onMouseDown: function(ev){ ev.stopPropagation(); },
-                  onClick: function(){ if(regenCount < 3 && !isPosting && !isConfirmPosting) handleRegenCaption(); }
-                }, isPosting ? '\uC7AC\uC0DD\uC131 \uC911...' : '\uC7AC\uC0DD\uC131 (' + regenCount + '/3)'),
+                  onClick: function(){ if(!isPosting && !isConfirmPosting) handleRegenCaption(); }
+                }, isPosting ? '\uC7AC\uC0DD\uC131 \uC911...' : '\uC7AC\uC0DD\uC131'), // TODO: 정식 출시 시 횟수 제한 복원
                 e('button', {
                   className:'lumi-btn-back',
                   onMouseDown: function(ev){ ev.stopPropagation(); },
@@ -2818,7 +2819,7 @@ var cards = {
         }
 
         // 연동 완료 → 다음 게시 카운트다운
-        if (igConnected || step === 3) {
+        if (igConnected) {
           var CountdownCard = function() {
             var isDk = document.body.classList.contains('dark-mode');
             var _mob = window.innerWidth <= 600;
@@ -3009,7 +3010,7 @@ var cards = {
       src=src.slice(0,7);
       var cardRef = React.useRef(null);
       var st5 = React.useState(36), itemH = st5[0], setItemH = st5[1];
-      var st7 = React.useState(3), visibleCount = st7[0], setVisibleCount = st7[1];
+      var st7 = React.useState(4), visibleCount = st7[0], setVisibleCount = st7[1];
       var st6 = React.useState(null), trackH = st6[0], setTrackH = st6[1];
       React.useEffect(function(){
         function calcH(){
@@ -3018,9 +3019,9 @@ var cards = {
           var available = h - 80;
           var vc, ih;
           if(available <= 170) {
-            /* mobile h:1 = 200px card: available ~120px, show 3 items at ~34px each */
-            vc = 3;
-            ih = Math.max(30, Math.floor(available / 3.5));
+            /* mobile h:1 = 200px card: available ~120px, show 4 items at ~28px each */
+            vc = 4;
+            ih = Math.max(28, Math.floor(available / 4.5));
           } else if(available < 300) {
             vc = 5;
             ih = Math.max(34, Math.floor(available / 5.2));
@@ -3125,7 +3126,7 @@ var cards = {
               e('p', {style:{fontSize:'12px',color:tc2,marginTop:'6px'}}, '\uAC8C\uC2DC \uC644\uB8CC')
             ),
             e('div', {style:{flex:1,padding:'20px',borderRadius:'16px',background:bg2,textAlign:'center'}},
-              e('p', {style:{fontSize:'clamp(22px, 6vw, 32px)',color:tc}}, rData ? String(rData.remaining) : '-'),
+              e('p', {style:{fontSize:'clamp(22px, 6vw, 32px)',color:tc}}, rData ? (rData.remaining >= 999 ? '\u221E' : String(rData.remaining)) : '-'),
               e('p', {style:{fontSize:'12px',color:tc2,marginTop:'6px'}}, '\uB0A8\uC740 \uD69F\uC218')
             ),
             e('div', {style:{flex:1,padding:'20px',borderRadius:'16px',background:bg2,textAlign:'center'}},
@@ -3478,7 +3479,7 @@ var cards = {
         ) : null;
 
         var pendingCount = reservations.filter(function(r){return !r.isSent && !r._cancelled;}).length;
-        return e('div', {className:'bento-card card-text', style:{position:'relative',padding:'clamp(16px, 4vw, 28px) clamp(16px, 4vw, 32px)',display:'flex',flexDirection:'column',justifyContent:'center',width:'100%',height:'100%'}},
+        return e('div', {className:'bento-card card-text', style:{position:'relative',padding:'clamp(14px, 3vw, 22px) clamp(16px, 4vw, 32px)',display:'flex',flexDirection:'column',justifyContent:'flex-start',width:'100%',height:'100%'}},
           detailPanel,
           e('div', {style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'16px',width:'100%'}},
             e('p', {style:{fontSize:'17px',color:tc,fontWeight:600}}, '\uC608\uC57D \uAC8C\uC2DC'),

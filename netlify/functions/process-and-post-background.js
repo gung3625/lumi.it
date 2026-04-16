@@ -77,7 +77,7 @@ async function waitForContainer(containerId, accessToken, maxRetries = 6) {
       const data = await res.json();
       if (data.status_code === 'FINISHED') return true;
       if (data.status_code === 'ERROR') return false;
-    } catch(e) {}
+    } catch(e) { console.warn('[waitForContainer] poll error:', e.message); }
   }
   return true; // 타임아웃 시 게시 시도
 }

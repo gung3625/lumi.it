@@ -15,9 +15,21 @@ exports.handler = async (event) => {
 
   if (!key) return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'key 필수' }) };
   // Bearer 토큰 또는 LUMI_SECRET으로 인증
-  const hasBearer = authHeader.startsWith('Bearer ') && authHeader.length > 10;
+  const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
   const hasSecret = secret === process.env.LUMI_SECRET;
-  if (!hasBearer && !hasSecret) return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증 실패' }) };
+
+  if (!bearerToken && !hasSecret) {
+    return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증이 필요합니다.' }) };
+  }
+
+  // Bearer 토큰 Blobs 검증
+  if (bearerToken && !hasSecret) {
+    const userStore = getStore({ name: 'users', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
+    const tokenData = await userStore.get('token:' + bearerToken).catch(() => null);
+    if (!tokenData) {
+      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '유효하지 않은 인증입니다.' }) };
+    }
+  }
 
   try {
     const store = getStore({

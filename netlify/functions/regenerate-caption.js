@@ -269,16 +269,10 @@ exports.handler = async (event) => {
       if (countRaw) count = parseInt(countRaw, 10) || 0;
     } catch (_) {}
 
-    if (count >= 3) {
-      return {
-        statusCode: 429,
-        headers: CORS,
-        body: JSON.stringify({
-          error: '이번 달 재생성 횟수를 모두 사용했어요 (월 3회)',
-          remaining: 0,
-        }),
-      };
-    }
+    // TODO: 정식 출시 시 건당 3회로 변경
+    // if (count >= 3) {
+    //   return { statusCode: 429, headers: CORS, body: JSON.stringify({ error: '이번 달 재생성 횟수를 모두 사용했어요 (월 3회)', remaining: 0 }) };
+    // }
 
     // 2. Blobs에서 reservationKey로 예약 데이터 조회
     const raw = await reserveStore.get(reservationKey);
@@ -377,7 +371,7 @@ exports.handler = async (event) => {
       body: JSON.stringify({
         success: true,
         captions: safeCaptions,
-        remaining: Math.max(0, 3 - (count + 1)),
+        remaining: 999, // TODO: 정식 출시 시 Math.max(0, 3 - (count + 1)) 으로 변경
       }),
     };
 
