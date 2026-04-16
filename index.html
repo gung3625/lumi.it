@@ -1496,6 +1496,7 @@ body.dark-mode .su-label{color:rgba(240,242,248,.4);}
 .su-input{width:100%;padding:13px 16px;border-radius:16px;border:1.5px solid rgba(0,0,0,.08);background:#f5f5f7;font-family:inherit;font-size:15px;color:#0d1117;-webkit-text-fill-color:#0d1117;outline:none;transition:border-color .2s,box-shadow .2s;margin-bottom:10px;}
 body.dark-mode .su-input{background:#2a2a2e;}
 body.dark-mode .su-input{border-color:rgba(255,255,255,.12);color:#f0f2f8 !important;-webkit-text-fill-color:#f0f2f8 !important;}
+input[type=password].su-input{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;-webkit-text-fill-color:currentColor;}
 .su-pw-wrap{position:relative;}
 .su-input:focus{border-color:rgba(200,80,122,.4);box-shadow:0 0 0 3px rgba(200,80,122,.08);}
 .su-input::placeholder{color:rgba(0,0,0,.2);}
@@ -1764,7 +1765,13 @@ var cards = {
       var st10 = React.useState(true), showStyle = st10[0], setShowStyle = st10[1];
       var st11post = React.useState(false), isPosting = st11post[0], setIsPosting = st11post[1];
       var st11sched = React.useState(false), showSchedulePicker = st11sched[0], setShowSchedulePicker = st11sched[1];
-      var st11time = React.useState(''), scheduleTime = st11time[0], setScheduleTime = st11time[1];
+      // 기본값: 현재 시간 +1시간 (30분 단위 반올림)
+      var _schedNow = new Date(); _schedNow.setHours(_schedNow.getHours() + 1); _schedNow.setMinutes(_schedNow.getMinutes() >= 30 ? 30 : 0, 0, 0);
+      var _schedDefault = _schedNow.getFullYear() + '-' + String(_schedNow.getMonth()+1).padStart(2,'0') + '-' + String(_schedNow.getDate()).padStart(2,'0') + 'T' + String(_schedNow.getHours()).padStart(2,'0') + ':' + String(_schedNow.getMinutes()).padStart(2,'0');
+      var _schedMin = _schedDefault;
+      var _schedMax30 = new Date(_schedNow); _schedMax30.setDate(_schedMax30.getDate() + 30);
+      var _schedMax = _schedMax30.getFullYear() + '-' + String(_schedMax30.getMonth()+1).padStart(2,'0') + '-' + String(_schedMax30.getDate()).padStart(2,'0') + 'T' + String(_schedMax30.getHours()).padStart(2,'0') + ':' + String(_schedMax30.getMinutes()).padStart(2,'0');
+      var st11time = React.useState(_schedDefault), scheduleTime = st11time[0], setScheduleTime = st11time[1];
       var stRsvKey = React.useState(''), reservationKey = stRsvKey[0], setReservationKey = stRsvKey[1];
       var stCaptions = React.useState([]), generatedCaptions = stCaptions[0], setGeneratedCaptions = stCaptions[1];
       var stEditCap = React.useState(''), editedCaption = stEditCap[0], setEditedCaption = stEditCap[1];
@@ -1993,6 +2000,8 @@ var cards = {
         checkPostCount(token, function() {
         var scheduled = new Date(scheduleTime);
         if (scheduled <= new Date()) { alert('미래 시간을 선택해주세요.'); return; }
+        var maxDate = new Date(); maxDate.setDate(maxDate.getDate() + 30);
+        if (scheduled > maxDate) { alert('최대 30일 이내로 예약할 수 있어요.'); return; }
         setIsPosting(true);
         setShowSchedulePicker(false);
         var fd = buildPostFormData(scheduled.toISOString());
@@ -2302,15 +2311,15 @@ var cards = {
                   )
                 ),
                 e('div',{style:{display:'flex',flexDirection:'column',gap:'8px',marginTop:'12px'}},
-                  e('button',{style:{width:'100%',padding:'14px',borderRadius:'980px',border:'none',background:isPosting?'#999':'linear-gradient(135deg,#FF6B8B,#DDA0DD)',color:'#fff',fontFamily:'inherit',fontSize:'15px',fontWeight:600,cursor:isPosting?'wait':'pointer',opacity:isPosting?0.7:1},onMouseDown:function(ev){ev.stopPropagation();},onClick:function(){if(!isPosting) handlePostNow();}},isPosting?'게시 중...':'바로 게시'),
-                  e('button',{style:{width:'100%',padding:'12px',borderRadius:'980px',border:'1.5px solid '+(isPro?pinkC:'rgba(0,0,0,.1)'),background:'transparent',color:isPro?pinkC:tc2,fontFamily:'inherit',fontSize:'13px',fontWeight:500,cursor:(isPro&&!isPosting)?'pointer':'default',opacity:(isPro&&!isPosting)?1:0.5},onMouseDown:function(ev){ev.stopPropagation();},onClick:function(){if(!isPro){alert('프로 플랜에서 사용할 수 있어요.');return;}if(!isPosting) handleBestTimePost();}},
+                  e('button',{style:{width:'100%',padding:'14px',borderRadius:'980px',border:'none',background:isPosting?'#999':(isDk?'#FF8FAB':'#C8507A'),color:'#fff',fontFamily:'inherit',fontSize:'14px',fontWeight:600,cursor:isPosting?'wait':'pointer',opacity:isPosting?0.7:1},onMouseDown:function(ev){ev.stopPropagation();},onClick:function(){if(!isPosting) handlePostNow();}},isPosting?'게시 중...':'바로 게시'),
+                  e('button',{style:{width:'100%',padding:'14px',borderRadius:'980px',border:'none',background:isPosting?'#999':(isDk?'#7B9CFF':'#4A6CF7'),color:'#fff',fontFamily:'inherit',fontSize:'14px',fontWeight:600,cursor:(isPro&&!isPosting)?'pointer':'default',opacity:(isPro&&!isPosting)?1:0.45},onMouseDown:function(ev){ev.stopPropagation();},onClick:function(){if(!isPro){alert('프로 플랜에서 사용할 수 있어요.');return;}if(!isPosting) handleBestTimePost();}},
                     !isPro?e('span',{style:{marginRight:'4px'}},'🔒'):null,isPosting?'처리 중...':'최적 시간에 게시'
                   ),
-                  e('button',{style:{width:'100%',padding:'12px',borderRadius:'980px',border:'1.5px solid rgba(0,0,0,.1)',background:'transparent',color:tc2,fontFamily:'inherit',fontSize:'13px',fontWeight:500,cursor:(isPro&&!isPosting)?'pointer':'default',opacity:(isPro&&!isPosting)?1:0.5},onMouseDown:function(ev){ev.stopPropagation();},onClick:function(){if(!isPro){alert('프로 플랜에서 사용할 수 있어요.');return;}setShowSchedulePicker(!showSchedulePicker);}},
+                  e('button',{style:{width:'100%',padding:'14px',borderRadius:'980px',border:'none',background:isPosting?'#999':(isDk?'#5AC8A8':'#2A9D7C'),color:'#fff',fontFamily:'inherit',fontSize:'14px',fontWeight:600,cursor:(isPro&&!isPosting)?'pointer':'default',opacity:(isPro&&!isPosting)?1:0.45},onMouseDown:function(ev){ev.stopPropagation();},onClick:function(){if(!isPro){alert('프로 플랜에서 사용할 수 있어요.');return;}setShowSchedulePicker(!showSchedulePicker);}},
                     !isPro?e('span',{style:{marginRight:'4px'}},'🔒'):null,'예약 게시'
                   ),
                   showSchedulePicker ? e('div',{style:{display:'flex',gap:'8px',alignItems:'center',marginTop:'4px'},onMouseDown:function(ev){ev.stopPropagation();}},
-                    e('input',{type:'datetime-local',value:scheduleTime,onChange:function(ev){setScheduleTime(ev.target.value);},style:{flex:1,padding:'10px 12px',borderRadius:'12px',border:'1.5px solid '+(isDk?'rgba(255,255,255,.15)':'rgba(0,0,0,.1)'),background:isDk?'rgba(255,255,255,.08)':'#fff',color:tc,fontFamily:'inherit',fontSize:'13px',outline:'none'}}),
+                    e('input',{type:'datetime-local',value:scheduleTime,min:_schedMin,max:_schedMax,onChange:function(ev){setScheduleTime(ev.target.value);},style:{flex:1,padding:'10px 12px',borderRadius:'12px',border:'1.5px solid '+(isDk?'rgba(255,255,255,.15)':'rgba(0,0,0,.1)'),background:isDk?'rgba(255,255,255,.08)':'#fff',color:tc,fontFamily:'inherit',fontSize:'13px',outline:'none'}}),
                     e('button',{style:{padding:'10px 16px',borderRadius:'980px',border:'none',background:pinkC,color:'#fff',fontFamily:'inherit',fontSize:'13px',fontWeight:600,cursor:isPosting?'wait':'pointer',opacity:isPosting?0.7:1,whiteSpace:'nowrap'},onClick:function(){if(!isPosting) handleSchedulePost();}},isPosting?'...':'확인')
                   ) : null,
                   e('button',{style:{fontSize:'12px',background:'none',border:'none',color:tc2,cursor:'pointer',fontFamily:'inherit',padding:'6px'},onMouseDown:function(ev){ev.stopPropagation();},onClick:function(){
