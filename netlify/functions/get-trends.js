@@ -27,11 +27,20 @@ const BLACKLIST = [
 ];
 
 function filterBlacklist(keywords) {
-  const filtered = keywords.filter(k => {
-    const kw = (k.keyword || '').replace(/^#/, '').toLowerCase();
+  // 1. 중복 제거 (keyword 기준, 첫 등장만 유지)
+  const seen = new Set();
+  const deduped = keywords.filter(k => {
+    const kw = (k.keyword || '').replace(/^#/, '').trim().toLowerCase();
+    if (seen.has(kw)) return false;
+    seen.add(kw);
+    return true;
+  });
+  // 2. 블랙리스트 필터
+  const filtered = deduped.filter(k => {
+    const kw = (k.keyword || '').replace(/^#/, '').trim().toLowerCase();
     return !BLACKLIST.includes(kw);
   });
-  return filtered.length >= 3 ? filtered : keywords;
+  return filtered.length >= 3 ? filtered : deduped;
 }
 
 // 업종 라벨
