@@ -60,7 +60,8 @@ exports.handler = async (event) => {
   }
 
   // 6자리 OTP 생성
-  const otp = String(Math.floor(100000 + Math.random() * 900000));
+  const crypto = require('crypto');
+  const otp = String(crypto.randomInt(100000, 999999));
   const expiresAt = Date.now() + 10 * 60 * 1000; // 10분 유효
 
   // Netlify Blobs에 저장

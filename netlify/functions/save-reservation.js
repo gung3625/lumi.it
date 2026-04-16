@@ -9,10 +9,28 @@ exports.handler = async (event) => {
     return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
-  // 인증: Bearer 토큰 필수
+  // 인증: Bearer 토큰 필수 + Blobs 검증
   const authHeader = event.headers['authorization'] || '';
   if (!authHeader.startsWith('Bearer ') || authHeader.length < 10) {
     return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증이 필요합니다.' }) };
+  }
+  const bearerToken = authHeader.slice(7).trim();
+  try {
+    const tokenStore = getStore({
+      name: 'users', consistency: 'strong',
+      siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
+      token: process.env.NETLIFY_TOKEN
+    });
+    const tokenRaw = await tokenStore.get('token:' + bearerToken);
+    if (!tokenRaw) {
+      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '유효하지 않은 인증입니다.' }) };
+    }
+    const tokenData = JSON.parse(tokenRaw);
+    if (new Date(tokenData.expiresAt) < new Date()) {
+      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증이 만료됐습니다. 다시 로그인해주세요.' }) };
+    }
+  } catch(e) {
+    return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증 확인 중 오류가 발생했습니다.' }) };
   }
 
   const headers = event.headers;
@@ -24,7 +42,12 @@ exports.handler = async (event) => {
     const fields = {};
     const photos = [];
 
+    const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp'];
     bb.on('file', (name, file, info) => {
+      if (!ALLOWED_MIME.includes(info.mimeType)) {
+        file.resume(); // 스트림 소비 후 무시
+        return;
+      }
       const chunks = [];
       file.on('data', (d) => chunks.push(d));
       file.on('end', () => {

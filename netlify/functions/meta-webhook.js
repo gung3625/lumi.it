@@ -46,7 +46,7 @@ async function getAutoReplySettings(email) {
 }
 
 async function getEmailByIgId(igUserId) {
-  if (igUserId === TEST_IG_USER_ID) return 'gung3625@gmail.com';
+  if (igUserId === TEST_IG_USER_ID) return process.env.OWNER_EMAIL || 'gung3625@gmail.com';
   try {
     const store = getStore({ name: 'users', consistency: 'strong', siteID: SITE_ID, token: NETLIFY_TOKEN });
     const raw = await store.get('ig:' + igUserId);

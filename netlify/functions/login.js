@@ -7,8 +7,11 @@ function verifyPassword(password, stored) {
   if (!stored) return false;
   const [salt, hash] = stored.split(':');
   if (!salt || !hash) return false;
-  const verify = crypto.pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex');
-  return verify === hash;
+  // 마이그레이션: 600000으로 먼저 시도, 실패 시 구버전 10000으로 재시도
+  const verify600k = crypto.pbkdf2Sync(password, salt, 600000, 64, 'sha512').toString('hex');
+  if (verify600k === hash) return true;
+  const verify10k = crypto.pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex');
+  return verify10k === hash;
 }
 
 exports.handler = async (event) => {

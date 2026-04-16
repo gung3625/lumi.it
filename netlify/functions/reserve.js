@@ -2,7 +2,7 @@ const busboy = require('busboy');
 const { getStore } = require('@netlify/blobs');
 
 const CORS = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://lumi.it.kr',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   'Content-Type': 'application/json',
 };
@@ -12,12 +12,17 @@ exports.handler = async (event) => {
     return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
-  // 인증: Bearer 토큰 또는 LUMI_SECRET (Bearer는 형식+존재 확인 — multipart에서 Blobs 검증 어려움)
+  // 인증: Bearer 토큰 Blobs 검증 또는 LUMI_SECRET
   const authHeader = event.headers['authorization'] || '';
   const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
   const lumiSecret = event.headers['x-lumi-secret'] || '';
   if (!bearerToken && lumiSecret !== process.env.LUMI_SECRET) {
     return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증이 필요합니다.' }) };
+  }
+  if (bearerToken && lumiSecret !== process.env.LUMI_SECRET) {
+    const userStore = getStore({ name: 'users', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
+    const tokenRaw = await userStore.get('token:' + bearerToken).catch(() => null);
+    if (!tokenRaw) return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증 실패' }) };
   }
 
   const headers = event.headers;
@@ -29,7 +34,12 @@ exports.handler = async (event) => {
     const fields = {};
     const photos = [];
 
+    const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp'];
     bb.on('file', (name, file, info) => {
+      if (!ALLOWED_MIME.includes(info.mimeType)) {
+        file.resume(); // 스트림 소비 후 무시
+        return;
+      }
       const chunks = [];
       file.on('data', (d) => chunks.push(d));
       file.on('end', () => {

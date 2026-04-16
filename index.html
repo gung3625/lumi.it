@@ -49,6 +49,8 @@ gtag('config', 'G-RTY8F34TR7');
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" href="/assets/BMJUA.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="https://fonts.googleapis.com/css2?family=Nunito:wght@800&display=swap" as="style">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@800&display=swap" rel="stylesheet">
 <!-- React 18 UMD -->
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -171,6 +173,7 @@ nav {
   background:rgba(255,255,255,.9); border-radius:14px;
   display:flex; align-items:center; justify-content:center;
   animation: arrowPulse 2.5s ease-in-out infinite;
+  will-change: transform, opacity;
 }
 .react-grid-item > .react-resizable-handle::after {
   content:''; position:absolute;
@@ -330,6 +333,7 @@ body.dark-mode .react-grid-item > .react-resizable-handle::after {
   );
   background-size: 200% 100%;
   animation: auroraFlow 8s ease-in-out infinite;
+  will-change: background-position;
 }
 @keyframes auroraFlow {
   0% { background-position: 0% 50%; }
@@ -571,6 +575,7 @@ body.dark-mode .upload-submit { background:#f0f2f8; color:#0d1117; }
   font-weight: 400; cursor: pointer; font-family: inherit;
   text-decoration: none;
   animation: arrowPulse 2.5s ease-in-out infinite;
+  will-change: transform, opacity;
 }
 .btn-pill:hover { transform: scale(1.1); }
 .btn-pill svg { width: 16px; height: 16px; }
@@ -592,6 +597,7 @@ body.dark-mode .upload-submit { background:#f0f2f8; color:#0d1117; }
 .demo-scene {
   position:absolute; inset:0; display:flex; flex-direction:column;
   align-items:center; justify-content:center; opacity:0; padding:16px;
+  will-change: opacity, transform;
 }
 .demo-scene:nth-child(1) { animation: scenePlay 18s infinite 0s; }
 .demo-scene:nth-child(2) { animation: scenePlay 18s infinite 3s; }
@@ -618,6 +624,7 @@ body.dark-mode .upload-submit { background:#f0f2f8; color:#0d1117; }
 .photo-fan-item {
   position:absolute; inset:0; border-radius:14px; overflow:hidden;
   box-shadow:0 4px 20px rgba(0,0,0,.15);
+  will-change: opacity, transform;
 }
 .photo-fan-item img { width:100%; height:100%; object-fit:cover; }
 /* 왼쪽 사진: 뒤에서 왼쪽으로 펼쳐짐 */
@@ -812,7 +819,7 @@ body.dark-mode .scan-photo-bg::after {
   0% { opacity:0; transform:scale(.3) translateY(10px); }
   100% { opacity:1; transform:scale(1) translateY(0); }
 }
-.card-arrow { position: absolute; bottom: 16px; left: 16px; width: 36px; height: 36px; border-radius: 18px; background: rgba(255,255,255,.9); display: flex; align-items: center; justify-content: center; text-decoration: none; z-index: 3; animation: arrowPulse 2.5s ease-in-out infinite; }
+.card-arrow { position: absolute; bottom: 16px; left: 16px; width: 36px; height: 36px; border-radius: 18px; background: rgba(255,255,255,.9); display: flex; align-items: center; justify-content: center; text-decoration: none; z-index: 3; animation: arrowPulse 2.5s ease-in-out infinite; will-change: transform, opacity; }
 .card-arrow:hover { transform: scale(1.1); }
 .card-arrow svg { width: 14px; height: 14px; color: #0d1117; }
 @keyframes arrowPulse {
@@ -1498,7 +1505,7 @@ body.dark-mode .su-chat-close{background:rgba(255,255,255,.1);}
 .su-chat-close svg{width:10px;height:10px;stroke:#0d1117;stroke-width:2.5;}
 body.dark-mode .su-chat-close svg{stroke:#f0f2f8;}
 /* lumi character */
-.su-lumi-big{width:180px;height:180px;object-fit:contain;margin-bottom:8px;animation:lumiFloat 3s ease-in-out infinite;}
+.su-lumi-big{width:180px;height:180px;object-fit:contain;margin-bottom:8px;animation:lumiFloat 3s ease-in-out infinite;will-change:transform;}
 .su-lumi-big.bounce{animation:lumiBigBounce .6s cubic-bezier(.16,1,.3,1), lumiFloat 3s ease-in-out .6s infinite;}
 .su-lumi-big.shake{animation:lumiShake .5s ease-in-out, lumiFloat 3s ease-in-out .5s infinite;}
 @keyframes lumiBigBounce{0%{transform:scale(.7) translateY(20px);opacity:0}50%{transform:scale(1.08) translateY(-5px)}100%{transform:scale(1) translateY(0);opacity:1}}
@@ -1696,7 +1703,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <button class="su-chat-close" onclick="closeLogin()">
       <svg viewBox="0 0 12 12" fill="none"><path d="M2 2l8 8M10 2l-8 8" stroke-linecap="round"/></svg>
     </button>
-    <img class="su-lumi-big" id="li-lumi-img" src="/assets/lumi-smile.png" alt="lumi">
+    <img class="su-lumi-big" id="li-lumi-img" src="/assets/lumi-smile.png" alt="lumi" loading="lazy">
     <div class="su-speech" id="li-speech"></div>
     <div class="su-form-area" id="li-form-area"></div>
   </div>
@@ -1708,7 +1715,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <button class="su-chat-close" onclick="closeSignupGrid()">
       <svg viewBox="0 0 12 12" fill="none"><path d="M2 2l8 8M10 2l-8 8" stroke-linecap="round"/></svg>
     </button>
-    <img class="su-lumi-big bounce" id="su-lumi-img" src="/assets/lumi-smile.png" alt="lumi">
+    <img class="su-lumi-big bounce" id="su-lumi-img" src="/assets/lumi-smile.png" alt="lumi" loading="lazy">
     <div class="su-speech" id="su-speech"></div>
     <div class="su-progress" id="su-progress"></div>
     <div class="su-form-area" id="su-form-area"></div>
@@ -4215,7 +4222,7 @@ function suSubmitAgree() {
     method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({name:suData.name, storeName:suData.storeName, email:suData.email, password:suData.password, bizCategory:suData.bizCategory, agreeMarketing:marketing?marketing.checked:false})
   }).then(function(r){return r.json();}).then(function(data){
-    if(data.error){suChangeLumi('/assets/lumi-sad.png',true);document.getElementById('su-speech').innerHTML=data.error;setTimeout(function(){suShowForm();},1500);return;}
+    if(data.error){suChangeLumi('/assets/lumi-sad.png',true);document.getElementById('su-speech').textContent=data.error;setTimeout(function(){suShowForm();},1500);return;}
     localStorage.setItem('lumi_token',data.token);
     localStorage.setItem('lumi_user',JSON.stringify(data.user));
     suChangeLumi('/assets/lumi-smile.png');
@@ -4388,13 +4395,13 @@ function liSubmitPw() {
     method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({email:liData.email, password:pw})
   }).then(function(r){return r.json();}).then(function(data){
-    if(data.error){liChangeLumi('/assets/lumi-sad.png',true);document.getElementById('li-speech').innerHTML=data.error;setTimeout(function(){liShowForm();},1500);return;}
+    if(data.error){liChangeLumi('/assets/lumi-sad.png',true);document.getElementById('li-speech').textContent=data.error;setTimeout(function(){liShowForm();},1500);return;}
     localStorage.setItem('lumi_token',data.token);
     localStorage.setItem('lumi_user',JSON.stringify(data.user));
     liChangeLumi('/assets/lumi-smile.png');
-    document.getElementById('li-speech').innerHTML='로그인 성공!';
+    document.getElementById('li-speech').textContent='로그인 성공!';
     setTimeout(function(){closeLogin();location.reload();},1500);
-  }).catch(function(){liChangeLumi('/assets/lumi-sad.png',true);document.getElementById('li-speech').innerHTML='로그인 중 오류가 발생했어요.<br>다시 시도해주세요.';setTimeout(function(){liShowForm();},1500);});
+  }).catch(function(){liChangeLumi('/assets/lumi-sad.png',true);document.getElementById('li-speech').textContent='로그인 중 오류가 발생했어요. 다시 시도해주세요.';setTimeout(function(){liShowForm();},1500);});
 }
 
 function liGoBack() {
@@ -4438,12 +4445,12 @@ async function liHandleFindId() {
       liTypeText('찾았어요!\n아래에서 확인해주세요', 'li-speech', function() { liShowForm(); });
     } else {
       liChangeLumi('/assets/lumi-sad.png', true);
-      document.getElementById('li-speech').innerHTML = data.error || '일치하는 정보를 찾을 수 없어요.';
+      document.getElementById('li-speech').textContent = data.error || '일치하는 정보를 찾을 수 없어요.';
       setTimeout(function(){ liShowForm(); }, 1800);
     }
   } catch(e) {
     liChangeLumi('/assets/lumi-sad.png', true);
-    document.getElementById('li-speech').innerHTML = '네트워크 오류가 발생했어요.';
+    document.getElementById('li-speech').textContent = '네트워크 오류가 발생했어요.';
     setTimeout(function(){ liShowForm(); }, 1800);
   }
 }
@@ -4475,12 +4482,12 @@ async function liSendForgotOtp() {
       liTypeText('인증번호를 보냈어요!\n6자리를 입력해주세요', 'li-speech', function() { liShowForm(); });
     } else {
       liChangeLumi('/assets/lumi-sad.png', true);
-      document.getElementById('li-speech').innerHTML = data.error || '발송에 실패했어요.';
+      document.getElementById('li-speech').textContent = data.error || '발송에 실패했어요.';
       setTimeout(function(){ liShowForm(); }, 1800);
     }
   } catch(e) {
     liChangeLumi('/assets/lumi-sad.png', true);
-    document.getElementById('li-speech').innerHTML = '네트워크 오류가 발생했어요.';
+    document.getElementById('li-speech').textContent = '네트워크 오류가 발생했어요.';
     setTimeout(function(){ liShowForm(); }, 1800);
   }
 }
@@ -4497,7 +4504,7 @@ async function liVerifyForgotOtp() {
       liTypeText('인증 완료!\n새 비밀번호를 설정해주세요', 'li-speech', function() { liShowForm(); });
     } else {
       liChangeLumi('/assets/lumi-sad.png', true);
-      document.getElementById('li-speech').innerHTML = data.error || '인증에 실패했어요.';
+      document.getElementById('li-speech').textContent = data.error || '인증에 실패했어요.';
       setTimeout(function(){ liShowForm(); }, 1800);
     }
   } catch(e) {
@@ -4523,7 +4530,7 @@ async function liResetPassword() {
       liTypeText('비밀번호가 변경됐어요!\n로그인해주세요', 'li-speech', function() { liBackToLogin(); });
     } else {
       liChangeLumi('/assets/lumi-sad.png', true);
-      document.getElementById('li-speech').innerHTML = data.error || '변경에 실패했어요.';
+      document.getElementById('li-speech').textContent = data.error || '변경에 실패했어요.';
       setTimeout(function(){ liShowForm(); }, 1800);
     }
   } catch(e) {
@@ -4784,6 +4791,8 @@ var animObserver = new IntersectionObserver(function(entries){
   });
 }, {rootMargin: '50px'});
 document.querySelectorAll('.react-grid-item').forEach(function(el){ animObserver.observe(el); });
+// 무한 애니메이션 원소들도 뷰포트 밖에서 paused 처리
+document.querySelectorAll('.lumi-aura, .card-arrow, .btn-pill, .upload-lumi, .su-lumi-big, .su-lumi-img').forEach(function(el){ animObserver.observe(el); });
 </script>
 <footer class="site-footer">
   <div class="ft-inner">
