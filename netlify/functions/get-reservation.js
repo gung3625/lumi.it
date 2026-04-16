@@ -61,6 +61,7 @@ exports.handler = async (event) => {
         regenCount: item.regenCount || 0,
         postError: item.postError || null,
         imageKeys: (item.imageKeys || item.tempKeys || []).slice(0, 10),
+        imageAnalysis: hasSecret ? (item.imageAnalysis || null) : undefined,
       }),
     };
   } catch (err) {
