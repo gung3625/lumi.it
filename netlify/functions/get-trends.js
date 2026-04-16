@@ -3,27 +3,29 @@ const { getStore } = require('@netlify/blobs');
 // 뻔한 상시 검색어 블랙리스트 (트렌드 카드에서 제외)
 const BLACKLIST = [
   '맛집', '핫플레이스', '브런치', '카페', '맛집추천', '카페추천',
-  '뷰티', '네일', '헤어', '피부관리', '다이어트',
+  '뷰티', '네일', '헤어', '피부관리', '다이어트', '화장품',
   '인스타', '인스타그램', '팔로우', '좋아요',
   '일상', '데일리', '오늘', '주말',
   '서울', '강남', '홍대', '이태원', '성수',
   '맛있는', '예쁜', '좋은', '추천', '인기',
   '소통', '선팔', '맞팔', '팔로워',
-  '먹스타그램', '카페스타그램', '맛스타그램',
+  '먹스타그램', '카페스타그램', '맛스타그램', '뷰티스타그램', '일상스타그램',
   '푸드', '디저트', '음식', '요리',
   '패션', '코디', '스타일', '옷',
   '운동', '헬스', '피트니스',
   '반려동물', '강아지', '고양이',
   '꽃', '플라워', '꽃집',
-  // 뉴스매체·신문사
+  // 뉴스매체·신문사·패션지
   '중앙일보', '조선일보', '동아일보', '한겨레', '경향신문', '매일경제', '한국경제',
   '푸드투데이', '뉴시스', '연합뉴스', '노컷뉴스', '머니투데이', '헤럴드경제',
+  '코스모폴리탄', '보그', '얼루어', '하퍼스바자', '마리끌레르',
+  'jtbc', 'kbs', 'sbs', 'mbc', 'tvn',
   // 경쟁 브랜드 (캡션 언급 금지 규칙과 동일)
   '스타벅스', '이디야커피', '이디야', '투썸플레이스', '투썸', '메가커피', '컴포즈커피',
   '빽다방', '할리스', '엔제리너스', '폴바셋', '블루보틀', '파스쿠찌',
   // 영어 뻔한 단어
   'coffee', 'cafe', 'desserts', 'dessert', 'menu', 'food', 'world', 'new', 'best',
-  'love', 'like', 'good', 'free', 'sale', 'shop', 'store', 'day', 'time',
+  'love', 'like', 'good', 'free', 'sale', 'shop', 'store', 'day', 'time', 'news',
 ];
 
 // 트렌드가 아닌 뻔한 콘텐츠 주제 키워드 (부분 매칭)
@@ -31,24 +33,35 @@ const FILLER_WORDS = [
   '아이디어', '방법', '추천', '정보', '모음', '리스트', '팁', '가이드',
   '비교', '순위', '종류', '차이', '후기', '리뷰', '장단점', '선택',
   '입문', '초보', '기초', '필수', '인기', '베스트', '총정리',
+  // 뉴스 문장 단편 (기사 제목에서 잘못 추출된 단어)
+  '유행하는', '유행중', '트렌드는', '트렌드가', '트렌드의', '뜨는', '떠오르는',
+  '화제', '화제의', '주목', '주목받는', '밝혀', '밝혔다', '공개',
+  '라고', '이라고', '이라는', '라는', '했다', '이다', '된다',
+  '관계자', '업계', '전문가', '시민', '네티즌',
 ];
+
+function isBadKeyword(raw) {
+  const kw = (raw || '').replace(/^#/, '').trim().toLowerCase();
+  if (!kw) return true;
+  if (kw.length < 2 || kw.length > 25) return true;
+  if (BLACKLIST.includes(kw)) return true;
+  if (FILLER_WORDS.some(fw => kw.includes(fw))) return true;
+  if ((kw.match(/\s/g) || []).length >= 2) return true;
+  if (/[?!,.]/.test(kw)) return true;
+  return false;
+}
 
 function filterBlacklist(keywords) {
   // 1. 중복 제거 (keyword 기준, 첫 등장만 유지)
   const seen = new Set();
   const deduped = keywords.filter(k => {
     const kw = (k.keyword || '').replace(/^#/, '').trim().toLowerCase();
-    if (seen.has(kw)) return false;
+    if (!kw || seen.has(kw)) return false;
     seen.add(kw);
     return true;
   });
-  // 2. 블랙리스트 + 뻔한 콘텐츠 주제 필터
-  const filtered = deduped.filter(k => {
-    const kw = (k.keyword || '').replace(/^#/, '').trim().toLowerCase();
-    if (BLACKLIST.includes(kw)) return false;
-    if (FILLER_WORDS.some(fw => kw.includes(fw))) return false;
-    return true;
-  });
+  // 2. 강화된 블랙리스트 + 필러 + 길이/문장단편 필터
+  const filtered = deduped.filter(k => !isBadKeyword(k.keyword));
   return filtered.length >= 3 ? filtered : deduped;
 }
 
