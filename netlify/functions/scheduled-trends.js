@@ -237,23 +237,20 @@ ${languageRule}
 예시: ${sampleArr}`;
 
   try {
+    const systemPrompt = `인스타그램 해시태그 전문가. ${scope === 'global' ? '영어로만' : '한국어로만'} JSON 배열만 응답. 설명 금지.`;
     const result = await httpsPost(
       'api.openai.com',
-      '/v1/chat/completions',
+      '/v1/responses',
       {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`
       },
       {
-        model: 'gpt-4o-mini',
-        max_tokens: 400,
-        temperature: 0.4,
-        messages: [
-          { role: 'system', content: `인스타그램 해시태그 전문가. ${scope === 'global' ? '영어로만' : '한국어로만'} JSON 배열만 응답. 설명 금지.` },
-          { role: 'user', content: prompt }
-        ]
+        model: 'gpt-5.4',
+        input: `${systemPrompt}\n\n${prompt}`,
+        store: false,
       },
-      20000
+      25000
     );
 
     if (result.status !== 200) {
@@ -262,7 +259,7 @@ ${languageRule}
     }
 
     const data = JSON.parse(result.body);
-    const content = data.choices?.[0]?.message?.content?.trim();
+    const content = (data.output?.[0]?.content?.[0]?.text || data.output_text || '').trim();
     if (!content) return null;
 
     const clean = content.replace(/```json|```/g, '').trim();
@@ -428,5 +425,5 @@ exports.handler = async (event) => {
 };
 
 module.exports.config = {
-  schedule: '0 0 * * *'
+  schedule: '0 15 * * *'
 };

@@ -119,15 +119,23 @@ async function cleanupOldKeys(store, prefix) {
   }
 }
 
+const CORS_HEADERS = {
+  'Content-Type': 'application/json',
+  'Access-Control-Allow-Origin': '*',
+};
+
 exports.handler = async (event) => {
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 204, headers: CORS_HEADERS, body: '' };
+  }
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
+    return { statusCode: 405, headers: CORS_HEADERS, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
-  // Make에서 호출 시 간단한 인증 (환경변수로 시크릿 키 확인)
-  const authHeader = event.headers['x-lumi-secret'];
+  // 인증: LUMI_SECRET 토큰 필수
+  const authHeader = event.headers['x-lumi-secret'] || event.headers['X-Lumi-Secret'] || '';
   if (!process.env.LUMI_SECRET || authHeader !== process.env.LUMI_SECRET) {
-    return { statusCode: 401, body: JSON.stringify({ error: '인증 실패' }) };
+    return { statusCode: 401, headers: CORS_HEADERS, body: JSON.stringify({ error: '인증 실패' }) };
   }
 
   let body;
@@ -254,7 +262,7 @@ exports.handler = async (event) => {
 
     return {
       statusCode: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: CORS_HEADERS,
       body: JSON.stringify({
         success: true,
         updated,
@@ -265,6 +273,7 @@ exports.handler = async (event) => {
     console.error('update-trends error:', err.message);
     return {
       statusCode: 500,
+      headers: CORS_HEADERS,
       body: JSON.stringify({ error: '트렌드 업데이트 중 오류가 발생했습니다.' })
     };
   }
