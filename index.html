@@ -114,8 +114,10 @@ nav {
 
 /* nevflynn styled-components: .gjQtXz (ItemGrab) */
 .react-grid-item { overflow: hidden; border-radius: 32px; user-select: none; }
-.react-grid-item:hover { cursor: grab; }
-.react-grid-item:active { cursor: grabbing; }
+@media (hover: hover) {
+  .react-grid-item:hover { cursor: grab; }
+  .react-grid-item:active { cursor: grabbing; }
+}
 
 /* nevflynn styled-components: .fubZvu (Item) */
 .react-grid-item { transition: transform .8s cubic-bezier(.4,0,.2,1), opacity .4s ease; }
@@ -3659,6 +3661,7 @@ function BentoGrid() {
     margin: mgn,
     compactType: 'vertical',
     isDraggable: canDrag,
+    draggableCancel: 'a,button,input,textarea,select,.no-drag',
     isResizable: false,
     useCSSTransforms: true,
     preventCollision: false,
