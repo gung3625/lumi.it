@@ -60,6 +60,7 @@ exports.handler = async (event) => {
         sentAt: item.sentAt || null,
         regenCount: item.regenCount || 0,
         postError: item.postError || null,
+        relayMode: item.relayMode === true,
         imageKeys: (item.imageKeys || item.tempKeys || []).slice(0, 10),
         imageAnalysis: hasSecret ? (item.imageAnalysis || null) : undefined,
       }),

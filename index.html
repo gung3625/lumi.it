@@ -1919,9 +1919,15 @@ var cards = {
               }
               if ((d.captionStatus === 'ready' || (!d.captionStatus && d.generatedCaptions && d.generatedCaptions.length)) && d.generatedCaptions && d.generatedCaptions.length) {
                 setIsPosting(false);
-                setGeneratedCaptions(d.generatedCaptions);
-                setEditedCaption(d.generatedCaptions[0]);
-                setPhase('caption');
+                if (d.relayMode === false) {
+                  // 캡션 확인 OFF: 자동 게시 예약됨 → cta phase로 바로 전환
+                  setRealFiles([]); setRealNote(''); setPhase('cta');
+                } else {
+                  // 캡션 확인 ON(기본): 캡션 확인 화면 표시
+                  setGeneratedCaptions(d.generatedCaptions);
+                  setEditedCaption(d.generatedCaptions[0]);
+                  setPhase('caption');
+                }
               } else if (d.captionStatus === 'posting' || d.captionStatus === 'posted' || d.isSent) {
                 setIsPosting(false);
                 setRealFiles([]); setRealNote(''); setPhase('cta');
