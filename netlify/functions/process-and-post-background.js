@@ -699,10 +699,9 @@ exports.handler = async (event) => {
       return;
     }
 
-    // 아직 autoPostAt이 미래면 scheduler에 위임하고 종료
+    // 아직 autoPostAt이 미래면 scheduler에 위임하고 종료 (이미지는 유지)
     if (updated.autoPostAt && new Date(updated.autoPostAt).getTime() > Date.now() + 60000) {
-      console.log('[process-and-post] autoPostAt 아직 미래. scheduler에 위임.');
-      await cleanupTempImages(tempKeys);
+      console.log('[process-and-post] autoPostAt 아직 미래. scheduler에 위임. 이미지 유지.');
       return;
     }
 
