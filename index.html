@@ -57,6 +57,8 @@ gtag('config', 'G-RTY8F34TR7');
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <!-- react-grid-layout UMD (same lib as nevflynn.com) - CSS inlined, no CDN stylesheet -->
 <script src="https://unpkg.com/react-grid-layout@1.5.0/dist/react-grid-layout.min.js"></script>
+<!-- Chart.js for trend bar chart -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 @font-face {
   font-family: 'Jua';
@@ -910,6 +912,17 @@ body.dark-mode .trend-delta.same { color:rgba(255,255,255,.2); }
 body.dark-mode .trend-cta-bar { background:linear-gradient(transparent, rgba(28,28,30,.95) 40%); }
 body.dark-mode .trend-cta-msg { color:rgba(255,255,255,.5); }
 body.dark-mode .trend-cta-btn { background:#f0f2f8; color:#0d1117; }
+
+/* TREND CHART VIEW */
+.trend-view-tabs { display:flex; gap:3px; padding:0 24px 8px; }
+.trend-view-tab { font-size:11px; padding:3px 10px; border-radius:980px; border:none; cursor:pointer; font-family:inherit; transition:all .2s; }
+.trend-view-tab.active { background:rgba(0,0,0,.08); color:#0d1117; font-weight:600; }
+.trend-view-tab:not(.active) { background:transparent; color:rgba(0,0,0,.35); }
+body.dark-mode .trend-view-tab.active { background:rgba(255,255,255,.1); color:#f0f2f8; }
+body.dark-mode .trend-view-tab:not(.active) { color:rgba(255,255,255,.3); }
+.trend-chart-wrap { flex:1; padding:0 16px 8px; display:flex; align-items:stretch; min-height:0; }
+.trend-chart-wrap canvas { max-height:200px; }
+@media (max-width:414px) { .trend-chart-wrap canvas { max-height:120px !important; } }
 
 /* TWITTER */
 .twitter-icon { width: 80px; height: 80px; color: #fff; }
@@ -3269,6 +3282,9 @@ var cards = {
       var st2 = React.useState(_initCache), apiData = st2[0], setApiData = st2[1];
       var st3 = React.useState([0,1,2,3,4,5,6]), prevOrder = st3[0], setPrevOrder = st3[1];
       var st4 = React.useState([1,0,2,4,3,5,6]), order = st4[0], setOrder = st4[1];
+      var stView = React.useState('list'), chartView = stView[0], setChartView = stView[1];
+      var chartRef = React.useRef(null);
+      var chartInstanceRef = React.useRef(null);
 
       React.useEffect(function(){
         var cats = ['cafe','food','beauty','fashion','fitness','pet'];
@@ -3376,6 +3392,63 @@ var cards = {
       var rankMap = {};
       order.forEach(function(idx,rank){ if(idx<src.length) rankMap[idx]=rank; });
 
+      // Chart.js — create/update when chart view is active
+      var chartSrc = src.slice(0,8);
+      React.useEffect(function(){
+        if(chartView !== 'chart') {
+          if(chartInstanceRef.current){ chartInstanceRef.current.destroy(); chartInstanceRef.current = null; }
+          return;
+        }
+        if(!chartRef.current) return;
+        if(typeof Chart === 'undefined') return;
+        if(chartInstanceRef.current){ chartInstanceRef.current.destroy(); chartInstanceRef.current = null; }
+        var isDk = document.body.classList.contains('dark-mode');
+        var barColor = isDk ? '#FF8FAB' : '#C8507A';
+        var tickColor = isDk ? 'rgba(240,242,248,.65)' : 'rgba(0,0,0,.55)';
+        var labels = chartSrc.map(function(k){ var kw = (k.keyword||'').replace(/^#/,''); return kw.length > 10 ? kw.slice(0,10)+'…' : kw; });
+        var scores = chartSrc.map(function(k){ return k.score || k.mentions || k.postCount || 0; });
+        // If all scores are 0 (fallback data), use rank-based descending values
+        var hasScores = scores.some(function(s){ return s > 0; });
+        if(!hasScores) scores = chartSrc.map(function(_,i){ return chartSrc.length - i; });
+        chartInstanceRef.current = new Chart(chartRef.current.getContext('2d'), {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [{
+              data: scores,
+              backgroundColor: barColor,
+              borderRadius: 4,
+              borderSkipped: false
+            }]
+          },
+          options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 400, easing: 'easeOutQuart' },
+            plugins: {
+              legend: { display: false },
+              tooltip: { enabled: false }
+            },
+            scales: {
+              x: { display: false, grid: { display: false } },
+              y: {
+                grid: { display: false },
+                border: { display: false },
+                ticks: {
+                  color: tickColor,
+                  font: { size: 11, family: 'Pretendard, -apple-system, sans-serif' },
+                  padding: 4
+                }
+              }
+            }
+          }
+        });
+        return function(){
+          if(chartInstanceRef.current){ chartInstanceRef.current.destroy(); chartInstanceRef.current = null; }
+        };
+      }, [chartView, tab, apiData]);
+
       return e('div', {ref:cardRef, className:'bento-card card-visual card-project card-trend card-responsive', style:{padding:0}},
         e('div', {className:'trend-wrap'},
           e('div', {className:'trend-header'},
@@ -3385,38 +3458,46 @@ var cards = {
               e('span', {className:'trend-tab'+(tab==='global'?' active':''), onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(){setTab('global');}}, '해외')
             )
           ),
-          e('div', {className:'trend-list'},
-            e('div', {className:'trend-track', key:'track-'+tab, style:trackH?{height:trackH+'px'}:{}},
-              src.slice(0,visibleCount).map(function(t,idx){
-                var rank = visibleCount < 7 ? idx : (rankMap[idx]!==undefined?rankMap[idx]:idx);
-                var delta = 0;
-                if(prevOrder){
-                  var oldRank = prevOrder.indexOf(idx);
-                  if(oldRank!==-1) delta = oldRank - rank;
-                }
-                if(delta===0 && t.rankChange && t.rankChange!=='new') delta = t.rankChange;
-                var cls = delta>0?'up':delta<0?'down':'same';
-                var deltaEl;
-                if(t.rankChange==='new'){
-                  deltaEl = e('span',{className:'trend-delta up',style:{background:'rgba(34,197,94,.2)'}}, 'NEW');
-                } else if(delta===0){
-                  deltaEl = e('span',{className:'trend-delta same'},'—');
-                } else {
-                  deltaEl = e('span',{className:'trend-delta '+cls}, delta>0?upArrow:downArrow, Math.abs(delta));
-                }
-                var catLabel = (t.bizCategory && CATEGORY_KO[t.bizCategory]) || '종합';
-                var kw = (t.keyword||'').replace(/^#/,'');
-                return e('div',{className:'trend-item',key:scope+'-'+kw,style:{top:(rank*itemH)+'px',animation:'trendSlideIn .35s ease-out '+(rank*0.04)+'s both'}},
-                  e('span',{className:'trend-rank'},rank+1),
-                  e('div',{className:'trend-info'},
-                    e('p',{className:'trend-text'},'#'+kw),
-                    e('p',{className:'trend-tag'},catLabel+' · '+(tab==='domestic'?'국내':'Global'))
-                  ),
-                  deltaEl
-                );
-              })
-            )
+          e('div', {className:'trend-view-tabs'},
+            e('button', {className:'trend-view-tab'+(chartView==='list'?' active':''), onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(){setChartView('list');}}, '목록'),
+            e('button', {className:'trend-view-tab'+(chartView==='chart'?' active':''), onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(){setChartView('chart');}}, '그래프')
           ),
+          chartView === 'chart'
+            ? e('div', {className:'trend-chart-wrap'},
+                e('canvas', {ref:chartRef, style:{width:'100%'}})
+              )
+            : e('div', {className:'trend-list'},
+                e('div', {className:'trend-track', key:'track-'+tab, style:trackH?{height:trackH+'px'}:{}},
+                  src.slice(0,visibleCount).map(function(t,idx){
+                    var rank = visibleCount < 7 ? idx : (rankMap[idx]!==undefined?rankMap[idx]:idx);
+                    var delta = 0;
+                    if(prevOrder){
+                      var oldRank = prevOrder.indexOf(idx);
+                      if(oldRank!==-1) delta = oldRank - rank;
+                    }
+                    if(delta===0 && t.rankChange && t.rankChange!=='new') delta = t.rankChange;
+                    var cls = delta>0?'up':delta<0?'down':'same';
+                    var deltaEl;
+                    if(t.rankChange==='new'){
+                      deltaEl = e('span',{className:'trend-delta up',style:{background:'rgba(34,197,94,.2)'}}, 'NEW');
+                    } else if(delta===0){
+                      deltaEl = e('span',{className:'trend-delta same'},'—');
+                    } else {
+                      deltaEl = e('span',{className:'trend-delta '+cls}, delta>0?upArrow:downArrow, Math.abs(delta));
+                    }
+                    var catLabel = (t.bizCategory && CATEGORY_KO[t.bizCategory]) || '종합';
+                    var kw = (t.keyword||'').replace(/^#/,'');
+                    return e('div',{className:'trend-item',key:scope+'-'+kw,style:{top:(rank*itemH)+'px',animation:'trendSlideIn .35s ease-out '+(rank*0.04)+'s both'}},
+                      e('span',{className:'trend-rank'},rank+1),
+                      e('div',{className:'trend-info'},
+                        e('p',{className:'trend-text'},'#'+kw),
+                        e('p',{className:'trend-tag'},catLabel+' · '+(tab==='domestic'?'국내':'Global'))
+                      ),
+                      deltaEl
+                    );
+                  })
+                )
+              ),
           !isLoggedIn ? e('div', {className:'trend-cta-bar'},
             e('p', {className:'trend-cta-msg'}, '회원가입만 해도 업종별 최신 트렌드를', e('br'), '확인할 수 있어요')
           ) : null
