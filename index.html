@@ -2100,6 +2100,7 @@ var cards = {
             setReservationKey(rKey);
             setRegenCount(0);
             setPhase('generating');
+            window.dispatchEvent(new CustomEvent('lumi:reservation-added'));
             var attempts = 0;
             var maxAttempts = 40;
             function pollBestTime() {
@@ -2170,6 +2171,7 @@ var cards = {
           setReservationKey(rKey);
           setRegenCount(0);
           setPhase('generating');
+          window.dispatchEvent(new CustomEvent('lumi:reservation-added'));
           var attempts = 0;
           var maxAttempts = 40;
           function pollScheduled() {
@@ -3644,12 +3646,23 @@ var cards = {
         React.useEffect(function(){
           var token = localStorage.getItem('lumi_token');
           if(!token) return;
-          fetch('/api/relay-list',{headers:{'Authorization':'Bearer '+token}})
-          .then(lumiCheckAuth).then(function(r){return r.json();}).then(function(d){
-            var arr = (d && Array.isArray(d)) ? d : (d && d.items ? d.items : []);
-            var mapped = arr.slice(0,5).map(function(item){ return Object.assign({}, item, { reservationKey: item.reservationKey || item.key }); });
-            setReservations(mapped);
-          }).catch(function(){});
+          function fetchRsvList() {
+            var t = localStorage.getItem('lumi_token');
+            if (!t) return;
+            fetch('/api/relay-list',{headers:{'Authorization':'Bearer '+t}})
+            .then(lumiCheckAuth).then(function(r){return r.json();}).then(function(d){
+              var arr = (d && Array.isArray(d)) ? d : (d && d.items ? d.items : []);
+              var mapped = arr
+                .filter(function(item){ return item.postMode !== 'immediate'; })
+                .slice(0,5)
+                .map(function(item){ return Object.assign({}, item, { reservationKey: item.reservationKey || item.key }); });
+              setReservations(mapped);
+            }).catch(function(){});
+          }
+          fetchRsvList();
+          function onRsvRefresh(){ fetchRsvList(); }
+          window.addEventListener('lumi:reservation-added', onRsvRefresh);
+          return function(){ window.removeEventListener('lumi:reservation-added', onRsvRefresh); };
         },[]);
 
         function handleCancelRsv(rKey, ev) {
@@ -3720,6 +3733,8 @@ var cards = {
           var rawTime = r.autoPostAt || r.scheduledAt || null;
           var dt = rawTime ? new Date(rawTime) : null;
           var timeStr = dt ? ((dt.getMonth()+1)+'/'+dt.getDate()+' '+(dt.getHours()<12?'\uC624\uC804':'\uC624\uD6C4')+' '+(dt.getHours()===0?12:dt.getHours()>12?dt.getHours()-12:dt.getHours())+':'+String(dt.getMinutes()).padStart(2,'0')) : '';
+          var createdDt = r.createdAt ? new Date(r.createdAt) : null;
+          var createdStr = createdDt ? ((createdDt.getFullYear())+'.'+String(createdDt.getMonth()+1).padStart(2,'0')+'.'+String(createdDt.getDate()).padStart(2,'0')+' '+String(createdDt.getHours()).padStart(2,'0')+':'+String(createdDt.getMinutes()).padStart(2,'0')) : null;
           var isCancelled = r._cancelled;
           var statusMap = {'ready':'\uAC8C\uC2DC \uB300\uAE30','processing':'\uCC98\uB9AC\uC911','posted':'\uAC8C\uC2DC\uC644\uB8CC','failed':'\uC2E4\uD328','completed':'\uAC8C\uC2DC\uC644\uB8CC'};
           var rawStatus = r.captionStatus || '';
@@ -3749,6 +3764,7 @@ var cards = {
                 e('span',{style:{fontSize:'13px',fontWeight:500,color:isCancelled?tc2:tc,lineHeight:1.3}},timeStr||'\uC2DC\uAC04 \uBBF8\uC815'),
                 e('span',{style:{fontSize:'10px',color:statusColor,padding:'1px 6px',borderRadius:'4px',background:statusBg,fontWeight:500,lineHeight:'16px'}},status)
               ),
+              createdStr ? e('p',{style:{fontSize:'11px',color:tc2,lineHeight:1.3,margin:0}},'\uC2E0\uCCAD '+createdStr) : null,
               captionPreview ? e('p',{style:{fontSize:'12px',color:isDk?'rgba(240,242,248,.5)':'rgba(0,0,0,.45)',lineHeight:1.4,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',margin:0}},captionPreview) : e('p',{style:{fontSize:'12px',color:isDk?'rgba(240,242,248,.3)':'rgba(0,0,0,.25)',lineHeight:1.4,margin:0,fontStyle:'italic'}},'\uCE90\uC158 \uC900\uBE44\uC911\u2026')
             ),
             canCancel ? e('button', {
