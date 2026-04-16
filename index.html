@@ -2767,11 +2767,13 @@ var cards = {
         var ws = React.useState(null), weather = ws[0], setWeather = ws[1];
         var rs = React.useState(0), recIdx = rs[0], setRecIdx = rs[1];
         var fs = React.useState(false), fade = fs[0], setFade = fs[1];
+        var _rcUserRegion = '';
+        try { var _rcWu = JSON.parse(localStorage.getItem('lumi_user')||'{}'); _rcUserRegion = _rcWu.region || ''; } catch(ex){}
+        var _rcRparts = _rcUserRegion ? _rcUserRegion.split(' ') : [];
+        var _rcProfileLoc = _rcRparts.length >= 2 ? _rcRparts[0] + ' ' + _rcRparts[1] : (_rcRparts[0] || '');
         React.useEffect(function(){
-          var userRegion = '';
-          try { var _wu = JSON.parse(localStorage.getItem('lumi_user')||'{}'); userRegion = _wu.region || ''; } catch(ex){}
           var sido = '';
-          if(userRegion){ sido = userRegion.split(' ')[0].replace(/특별시|광역시|도$/,''); }
+          if(_rcUserRegion){ sido = _rcUserRegion.split(' ')[0].replace(/특별시|광역시|도$/,''); }
           var url = '/.netlify/functions/get-weather-kma' + (sido ? '?sido='+encodeURIComponent(sido) : '');
           fetch(url).then(function(r){if(!r.ok) throw new Error(r.status);return r.json();}).then(function(d){
             if(!d.error) setWeather(d);
@@ -2788,7 +2790,7 @@ var cards = {
         var tip = _weatherTips[state] || _weatherTips.clear;
         var emoji = _weatherEmojis[state] || '\u2600\uFE0F';
         var tempStr = weather ? ((_weatherLabels[state]||'')+' '+weather.temperature+'\xB0') : '';
-        var locStr = weather ? (weather.locationName||'') : '';
+        var locStr = _rcProfileLoc || (weather ? (weather.locationName||'') : '');
         var lumiUser = JSON.parse(localStorage.getItem('lumi_user') || '{}');
         var bizCat = lumiUser.bizCategory || lumiUser.storeCategory || 'cafe';
         var bts = React.useState(null), bestTimeData = bts[0], setBestTimeData = bts[1];
@@ -3071,9 +3073,11 @@ var cards = {
             var isDk = document.body.classList.contains('dark-mode');
             var _mob = window.innerWidth <= 600;
             var ws = React.useState(null), weather = ws[0], setWeather = ws[1];
+            var userRegion = '';
+            try { var _wu = JSON.parse(localStorage.getItem('lumi_user')||'{}'); userRegion = _wu.region || ''; } catch(ex){}
+            var _rparts = userRegion ? userRegion.split(' ') : [];
+            var _profileLoc = _rparts.length >= 2 ? _rparts[0] + ' ' + _rparts[1] : (_rparts[0] || '');
             React.useEffect(function(){
-              var userRegion = '';
-              try { var _wu = JSON.parse(localStorage.getItem('lumi_user')||'{}'); userRegion = _wu.region || ''; } catch(ex){}
               var sido = '';
               if(userRegion){ sido = userRegion.split(' ')[0].replace(/특별시|광역시|도$/,''); }
               var url = '/.netlify/functions/get-weather-kma' + (sido ? '?sido='+encodeURIComponent(sido) : '');
@@ -3088,7 +3092,7 @@ var cards = {
             var bg = isDk ? {from:_bgRaw.darkFrom,to:_bgRaw.darkTo} : {from:_bgRaw.from,to:_bgRaw.to};
             var tip = _twWeatherTips[state] || _twWeatherTips.clear;
             var tempStr = weather ? weather.temperature + '°' : '';
-            var locStr = weather ? (weather.locationName || '') : '';
+            var locStr = _profileLoc || (weather ? (weather.locationName || '') : '');
             var snowBg = state === 'snow' && !isDk;
             var textColor = snowBg ? '#2d3436' : '#fff';
             var textMuted = snowBg ? 'rgba(45,52,54,.6)' : 'rgba(255,255,255,.7)';
