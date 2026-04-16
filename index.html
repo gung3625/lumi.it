@@ -1835,11 +1835,17 @@ var cards = {
       // 게시 횟수 체크 (count-post API)
       function checkPostCount(token, callback, onError) {
         var lumiUserData = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+        var controller = new AbortController();
+        var timeoutId = setTimeout(function(){ controller.abort(); }, 15000);
         fetch('/.netlify/functions/count-post', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-          body: JSON.stringify({ token: token, email: lumiUserData.email || '' })
-        }).then(function(res){ return res.json().then(function(d){ return {ok: res.ok, data: d}; }); })
+          body: JSON.stringify({ token: token, email: lumiUserData.email || '' }),
+          signal: controller.signal
+        }).then(function(res){
+          clearTimeout(timeoutId);
+          return res.json().then(function(d){ return {ok: res.ok, data: d}; });
+        })
         .then(function(r){
           if (!r.ok) {
             if (r.data.code === 'TRIAL_EXPIRED') {
@@ -1860,8 +1866,11 @@ var cards = {
             return;
           }
           callback();
-        }).catch(function(){
-          alert('게시 횟수 확인 중 오류가 발생했어요. 다시 시도해주세요.');
+        }).catch(function(err){
+          clearTimeout(timeoutId);
+          var msg = (err && err.name === 'AbortError') ? '요청 시간이 초과됐어요. 네트워크를 확인 후 다시 시도해주세요.' : '게시 횟수 확인 중 오류가 발생했어요. 다시 시도해주세요.';
+          console.error('[count-post]', err);
+          alert(msg);
           if (onError) onError();
         });
       }

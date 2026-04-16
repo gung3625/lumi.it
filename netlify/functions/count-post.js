@@ -39,7 +39,7 @@ exports.handler = async (event) => {
     const ADMIN_EMAIL = process.env.ADMIN_EMAIL || '';
     const isAdmin = email === ADMIN_EMAIL;
     const plan = isAdmin ? 'pro' : (user.plan || 'trial');
-    const limits = { trial: 3, basic: 8, standard: 16, pro: 20 };
+    const limits = { trial: 3, basic: 8, standard: 12, pro: 20 };
     const limit = limits[plan] || 3;
 
     // 트라이얼 만료 체크
@@ -50,10 +50,10 @@ exports.handler = async (event) => {
       return { statusCode: 403, headers: CORS, body: JSON.stringify({ error: '무료 체험 기간이 종료됐어요.', code: 'TRIAL_EXPIRED' }) };
     }
 
-    // 플랜 만료 체크
+    // 플랜 만료 체크 (standard + pro 모두)
     const planExpireAt = user.planExpireAt ? new Date(user.planExpireAt) : null;
-    const standardExpired = plan === 'standard' && planExpireAt && planExpireAt < now;
-    if (!isAdmin && standardExpired) {
+    const planExpired = (plan === 'standard' || plan === 'pro') && planExpireAt && planExpireAt < now;
+    if (!isAdmin && planExpired) {
       return { statusCode: 403, headers: CORS, body: JSON.stringify({ error: '구독이 만료됐어요.', code: 'PLAN_EXPIRED' }) };
     }
 
