@@ -10,7 +10,7 @@ function getBlobStore(name) {
 }
 
 const CORS = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://lumi.it.kr',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   'Content-Type': 'application/json',
 };
@@ -70,7 +70,7 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Bad Request: 잘못된 JSON' }) };
   }
 
-  const { reservationKey, captionIndex, email, editedCaption } = body;
+  const { reservationKey, captionIndex, editedCaption } = body;
 
   // 인증: Bearer 토큰 또는 LUMI_SECRET (헤더로만)
   const authHeader = event.headers['authorization'] || '';
@@ -78,6 +78,21 @@ exports.handler = async (event) => {
   const hasSecret = event.headers['x-lumi-secret'] === process.env.LUMI_SECRET;
   if (!bearerToken && !hasSecret) {
     return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증 실패' }) };
+  }
+
+  // C2/H2: 토큰에서 email 추출 + 만료 체크
+  let tokenEmail = null;
+  if (bearerToken && !hasSecret) {
+    const userStore = getBlobStore('users');
+    const tokenRaw = await userStore.get('token:' + bearerToken).catch(() => null);
+    if (!tokenRaw) {
+      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '유효하지 않은 토큰' }) };
+    }
+    const tokenData = JSON.parse(tokenRaw);
+    if (tokenData.expiresAt && Date.now() > tokenData.expiresAt) {
+      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '토큰이 만료되었습니다.' }) };
+    }
+    tokenEmail = tokenData.email || null;
   }
 
   // 필수 파라미터 검증
@@ -100,6 +115,11 @@ exports.handler = async (event) => {
       return { statusCode: 404, headers: CORS, body: JSON.stringify({ error: '예약 데이터 없음' }) };
     }
     const item = JSON.parse(raw);
+
+    // C2: IDOR 방지 — Bearer 토큰 사용자는 자신의 예약만 선택 가능
+    if (tokenEmail && item.storeProfile?.ownerEmail && tokenEmail !== item.storeProfile.ownerEmail) {
+      return { statusCode: 403, headers: CORS, body: JSON.stringify({ error: '접근 권한이 없습니다.' }) };
+    }
 
     // 이미 게시된 경우 중복 방지
     if (item.isSent || item.captionStatus === 'posted') {
@@ -140,32 +160,48 @@ exports.handler = async (event) => {
 
     console.log(`[select-caption] 캡션 선택: ${reservationKey}, captionIndex=${idx}`);
 
-    // 3. 선택 상태 저장 (게시 중 표시)
-    item.selectedCaptionIndex = idx;
-    item.captionStatus = 'posting';
-    await reserveStore.set(reservationKey, JSON.stringify(item));
+    // 3. postMode 확인: immediate만 즉시 게시, 나머지는 scheduler 대기
+    const postMode = item.postMode || 'immediate';
+    const ownerEmail = tokenEmail || item.storeProfile?.ownerEmail;
 
-    // 4. Background Function에 실제 게시 위임 (await으로 트리거 확인)
-    const ownerEmail = email || item.storeProfile?.ownerEmail;
-    const triggerRes = await fetch('https://lumi.it.kr/.netlify/functions/select-and-post-background', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.LUMI_SECRET}` },
-      body: JSON.stringify({ reservationKey, captionIndex: idx, email: ownerEmail }),
-    });
-    console.log('[select-caption] select-and-post-background 트리거:', triggerRes.status);
+    if (postMode === 'immediate') {
+      // 즉시 게시: 선택 상태 저장 후 Background Function 트리거
+      item.selectedCaptionIndex = idx;
+      item.captionStatus = 'posting';
+      await reserveStore.set(reservationKey, JSON.stringify(item));
 
-    return {
-      statusCode: 200,
-      headers: CORS,
-      body: JSON.stringify({ success: true, status: 'posting' }),
-    };
+      const triggerRes = await fetch('https://lumi.it.kr/.netlify/functions/select-and-post-background', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.LUMI_SECRET}` },
+        body: JSON.stringify({ reservationKey, captionIndex: idx, email: ownerEmail }),
+      });
+      console.log('[select-caption] select-and-post-background 트리거:', triggerRes.status);
+
+      return {
+        statusCode: 200,
+        headers: CORS,
+        body: JSON.stringify({ success: true, status: 'posting' }),
+      };
+    } else {
+      // 예약 게시 (best-time / scheduled): 캡션 선택만 저장, scheduler가 나중에 처리
+      item.selectedCaptionIndex = idx;
+      item.captionStatus = 'scheduled';
+      await reserveStore.set(reservationKey, JSON.stringify(item));
+      console.log(`[select-caption] 예약 저장 완료 (postMode=${postMode}): ${reservationKey}, scheduledAt=${item.scheduledAt}`);
+
+      return {
+        statusCode: 200,
+        headers: CORS,
+        body: JSON.stringify({ success: true, status: 'scheduled', scheduledAt: item.scheduledAt }),
+      };
+    }
 
   } catch (err) {
     console.error('[select-caption] 오류:', err.message);
     return {
       statusCode: 500,
       headers: CORS,
-      body: JSON.stringify({ error: '게시 요청 실패', detail: err.message }),
+      body: JSON.stringify({ error: '게시 요청 실패' }),
     };
   }
 };

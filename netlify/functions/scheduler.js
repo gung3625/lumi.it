@@ -27,23 +27,48 @@ exports.handler = async (event) => {
         const item = JSON.parse(raw);
 
         // 이미 게시됐거나 취소된 항목 스킵
-        if (item.isSent || item.cancelled) continue;
+        if (item.isSent || item.cancelled || item.captionStatus === 'posted') continue;
         if (!item.scheduledAt) continue;
         if (new Date(item.scheduledAt) > now) continue;
 
         // Background Function은 즉시 202 반환 — fire-and-forget
         const siteUrl = 'https://lumi.it.kr';
-        const res = await fetch(`${siteUrl}/.netlify/functions/process-and-post-background`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.LUMI_SECRET}` },
-          body: JSON.stringify({ reservationKey: blob.key }),
-        });
 
-        if (res.ok || res.status === 202) {
-          triggered++;
-          console.log('[scheduler] process-and-post-background 트리거:', blob.key);
+        // captionStatus 기반 분기
+        if (item.captionStatus === 'scheduled' && item.selectedCaptionIndex !== undefined) {
+          // 사용자가 이미 캡션을 선택한 예약건 → select-and-post-background로 IG 게시
+          const res = await fetch(`${siteUrl}/.netlify/functions/select-and-post-background`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.LUMI_SECRET}` },
+            body: JSON.stringify({
+              reservationKey: blob.key,
+              captionIndex: item.selectedCaptionIndex,
+              email: item.storeProfile?.ownerEmail || '',
+            }),
+          });
+          if (res.ok || res.status === 202) {
+            triggered++;
+            console.log('[scheduler] select-and-post-background 트리거:', blob.key);
+          } else {
+            console.error('[scheduler] select-and-post-background 트리거 실패:', blob.key, res.status);
+          }
+        } else if (['ready', 'posting', 'failed'].includes(item.captionStatus)) {
+          // 캡션 선택 대기 중 또는 게시 진행 중 → 스킵
+          console.log('[scheduler] 스킵 (captionStatus=' + item.captionStatus + '):', blob.key);
+          continue;
         } else {
-          console.error('[scheduler] 트리거 실패:', blob.key, res.status);
+          // 캡션 미생성 예약건 → 기존 process-and-post-background 호출
+          const res = await fetch(`${siteUrl}/.netlify/functions/process-and-post-background`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.LUMI_SECRET}` },
+            body: JSON.stringify({ reservationKey: blob.key }),
+          });
+          if (res.ok || res.status === 202) {
+            triggered++;
+            console.log('[scheduler] process-and-post-background 트리거:', blob.key);
+          } else {
+            console.error('[scheduler] 트리거 실패:', blob.key, res.status);
+          }
         }
       } catch(e) {
         console.error('[scheduler] 항목 오류:', blob.key, e.message);

@@ -564,6 +564,12 @@ exports.handler = async (event) => {
     const item = JSON.parse(raw);
     const sp = item.storeProfile || {};
 
+    // 사용자가 이미 캡션을 선택했거나 게시 중/완료된 건은 캡션 덮어쓰기 방지
+    if (item.captionStatus === 'scheduled' || item.captionStatus === 'posting' || item.captionStatus === 'posted') {
+      console.log(`[process-and-post] 이미 처리된 건 스킵: ${reservationKey}, status=${item.captionStatus}`);
+      return { statusCode: 200, headers, body: JSON.stringify({ skipped: true }) };
+    }
+
     console.log(`[process-and-post] 시작: ${reservationKey}, 사진 ${item.photos.length}장`);
 
     // 0. Blobs에서 ig 토큰 + 말투 학습 데이터 조회 (reserve.js 로직 통합)

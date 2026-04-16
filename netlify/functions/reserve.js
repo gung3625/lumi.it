@@ -175,6 +175,7 @@ exports.handler = async (event) => {
           },
           trends: Array.isArray(trends) ? trends : [],
           storeProfile: storeProfile,
+          postMode: fields.postMode || 'immediate',
           storyEnabled: fields.postToStory === 'true',
           postToThread: fields.postToThread === 'true',
           nearbyEvent: festivals.length > 0,
@@ -196,11 +197,10 @@ exports.handler = async (event) => {
         await reserveStore.set(reserveKey, JSON.stringify(reserveData));
         console.log('[reserve] 예약 저장 완료:', reserveKey);
 
-        // 즉시 전송: process-and-post Background Function 트리거
-        // Background Function 트리거 — await으로 202 응답 확인 후 진행
-        // (Function 종료 전에 fetch가 완료돼야 함)
+        // 캡션 생성 Background Function 트리거 (postMode 무관하게 항상 캡션 생성)
         const siteUrl = 'https://lumi.it.kr';
-        console.log('[reserve] process-and-post 트리거 시도:', siteUrl);
+        const postMode = reserveData.postMode || 'immediate';
+        console.log('[reserve] process-and-post 트리거 시도 (postMode:', postMode, ')');
         try {
           const ppRes = await fetch(`${siteUrl}/.netlify/functions/process-and-post-background`, {
             method: 'POST',

@@ -205,6 +205,12 @@ exports.handler = async (event) => {
     const item = JSON.parse(raw);
     if (item.isSent) { console.log('[select-and-post] 이미 게시됨'); return; }
 
+    // 중복 호출 방지: 게시 진행 중 상태로 먼저 저장
+    if (item.captionStatus !== 'posting') {
+      item.captionStatus = 'posting';
+      await reserveStore.set(reservationKey, JSON.stringify(item));
+    }
+
     const captions = item.captions || item.generatedCaptions || [];
     const selectedCaption = captions[captionIndex];
     if (!selectedCaption) { console.error('[select-and-post] 캡션 없음'); return; }
