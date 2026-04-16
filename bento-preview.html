@@ -1043,6 +1043,7 @@ body.dark-mode .tut-check-circle { background:rgba(255,107,139,.15); }
 
   /* Newsletter / Comparison table */
   .btn-pill { font-size: 12px !important; min-height: 44px !important; padding: 0 14px !important; }
+  .card-text.pad-blog .btn-pill { min-height: 36px !important; }
 
   /* Dark toggle */
   .toggle-track { width: 76px !important; height: 42px !important; }
@@ -1639,9 +1640,17 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <div id="grid-root"></div>
 </div>
 
-<div class="mobile-cta-bar">
+<div class="mobile-cta-bar" id="mobile-cta-bar">
   <button class="mobile-cta-btn" onclick="openSignupGrid()">1주일 무료 체험</button>
 </div>
+<script>
+(function(){
+  if(localStorage.getItem('lumi_token')){
+    var bar=document.getElementById('mobile-cta-bar');
+    if(bar) bar.style.display='none';
+  }
+})();
+</script>
 
 <div class="signup-grid-wrap" id="login-modal">
   <div class="su-chat-bg" onclick="closeLogin()"></div>
@@ -3138,7 +3147,7 @@ var cards = {
           '\uC9C1\uC811 \uD558\uBA74 30~90\uBD84, lumi\uBA74 1\uBD84. \uADF8\uB9C8\uC800\uB3C4 \uC804\uBB38\uAC00 \uD000\uB9AC\uD2F0.'
         )
       ),
-      e('div', {className:'blog-bottom', style:{marginTop:'15px'}},
+      e('div', {className:'blog-bottom', style:{marginTop:'8px'}},
         e('a', {className:'btn-pill', href:'/feature-time.html', style:{textDecoration:'none',color:'inherit'}, onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(ev){ev.preventDefault();ev.stopPropagation(); navigateOut('/feature-time.html');}}, ArrowSVG, ' 자세히 보기')
       )
     );
@@ -3199,7 +3208,7 @@ var cards = {
     var cardBg = isDk ? '#272729' : '#fff';
     var checkColor = isDk ? 'rgba(240,242,248,.5)' : 'rgba(0,0,0,.35)';
     var check = function(txt){ return e('div',{style:{display:'flex',alignItems:'center',gap:'5px',marginBottom:'4px'}}, e('span',{style:{fontSize:'10px',color:checkColor}},'✓'), e('span',{style:{fontSize:'11px',color:tc2}},txt)); };
-    return e('div', {className:'bento-card card-text', style:{padding:'clamp(16px, 4vw, 24px) clamp(18px, 4vw, 28px)',background:cardBg,display:'flex',flexDirection:'column',justifyContent:'space-between',width:'100%',boxSizing:'border-box'}},
+    return e('div', {className:'bento-card card-text card-plan', style:{padding:'clamp(16px, 4vw, 24px) clamp(18px, 4vw, 28px)',background:cardBg,display:'flex',flexDirection:'column',justifyContent:'space-between',width:'100%',boxSizing:'border-box'}},
       e('div', {style:{width:'100%',flex:1,display:'flex',flexDirection:'column'}},
         e('p', {style:{fontSize:'15px',color:tc,fontWeight:600,letterSpacing:'.5px',marginBottom:'14px',textAlign:'center'}}, '요금'),
         e('div', {style:{display:'flex',gap:'12px',width:'100%',alignItems:'stretch'}},
@@ -3222,7 +3231,7 @@ var cards = {
           )
         )
       ),
-      e('p', {style:{fontSize:'13px',color:pink,textAlign:'center',marginTop:'14px',fontWeight:600,width:'100%'}}, '1주 무료 체험 · 프로 기능 포함')
+      e('p', {style:{fontSize:'13px',color:pink,textAlign:'center',marginTop:'6px',fontWeight:600,width:'100%'}}, '1주 무료 체험 · 프로 기능 포함')
     );
   },
   dark: function() {
