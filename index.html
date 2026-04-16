@@ -126,7 +126,7 @@ nav {
 /* nevflynn styled-components: .iXylth (Grid container) — THIS IS THE KEY */
 .grid-wrap { max-width: 1200px; width:100%; position: relative; margin: -16px auto 0; padding-bottom: 80px; overflow: visible; border-radius: 32px; box-sizing:border-box; }
 .grid-glow-line { display:none; }
-.grid-wrap .react-grid-item { transition: transform .8s cubic-bezier(.4,0,.2,1); }
+.grid-wrap .react-grid-item { transition: transform .8s cubic-bezier(.4,0,.2,1), opacity .35s ease, filter .35s ease; }
 .grid-wrap .react-grid-item.react-draggable-dragging { transition: none; }
 .grid-wrap .react-grid-item.react-grid-placeholder { opacity: 0; background: transparent !important; }
 
@@ -4506,34 +4506,35 @@ function filterGrid(category, btnEl) {
       window._setGridLayout(layout.map(function(l){return Object.assign({},l);}));
       window._currentLayout = layout;
     }
-    document.querySelectorAll('[data-cardid]').forEach(function(el) {
-      var item = el.closest('.react-grid-item');
-      if (!item) return;
-      item.style.opacity = '1';
-      item.style.filter = 'none';
-      item.style.pointerEvents = 'auto';
+    // Delay style changes to next frame so RGL transform transition fires first
+    requestAnimationFrame(function(){
+      document.querySelectorAll('[data-cardid]').forEach(function(el) {
+        var item = el.closest('.react-grid-item');
+        if (!item) return;
+        item.style.opacity = '1';
+        item.style.filter = 'none';
+        item.style.pointerEvents = 'auto';
+      });
     });
     return;
   }
 
   var matchedIds = filterLayouts[category].matched;
-  if (category === 'feature') {
-    if (window._setGridLayout) {
-      window._setGridLayout(layout.map(function(l){return Object.assign({},l);}));
-      window._currentLayout = layout;
-    }
-  } else if (window._setGridLayout) {
+  if (window._setGridLayout) {
     window._setGridLayout(filterLayouts[category].layout.map(function(l){return Object.assign({},l);}));
     window._currentLayout = filterLayouts[category].layout;
   }
-  document.querySelectorAll('[data-cardid]').forEach(function(el) {
-    var id = el.getAttribute('data-cardid');
-    var item = el.closest('.react-grid-item');
-    if (!item) return;
-    var isMatch = matchedIds.indexOf(id) !== -1;
-    item.style.opacity = isMatch ? '1' : '0.12';
-    item.style.filter = isMatch ? 'none' : 'blur(3px)';
-    item.style.pointerEvents = isMatch ? 'auto' : 'none';
+  // Delay style changes to next frame so RGL transform transition fires first
+  requestAnimationFrame(function(){
+    document.querySelectorAll('[data-cardid]').forEach(function(el) {
+      var id = el.getAttribute('data-cardid');
+      var item = el.closest('.react-grid-item');
+      if (!item) return;
+      var isMatch = matchedIds.indexOf(id) !== -1;
+      item.style.opacity = isMatch ? '1' : '0.12';
+      item.style.filter = isMatch ? 'none' : 'blur(3px)';
+      item.style.pointerEvents = isMatch ? 'auto' : 'none';
+    });
   });
 }
 
