@@ -22,10 +22,21 @@ exports.handler = async (event) => {
       token: process.env.NETLIFY_TOKEN,
     });
 
-    // 토큰 → 이메일 조회
-    let tokenRaw;
-    try { tokenRaw = await userStore.get('token:' + token); } catch { tokenRaw = null; }
-    if (!tokenRaw) return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '유효하지 않은 토큰' }) };
+    // 토큰 → 이메일 조회 — 3회 재시도 (동시 호출 시 Blobs 401 throw → 프론트 자동 로그아웃 방지)
+    let tokenRaw = null;
+    let tokenBlobError = false;
+    for (let i = 0; i < 3; i++) {
+      tokenBlobError = false;
+      try { tokenRaw = await userStore.get('token:' + token); }
+      catch(e) { tokenBlobError = true; console.error('[relay-list] token blob fetch error:', e.message); }
+      if (tokenRaw) break;
+      if (!tokenBlobError) break;
+      if (i < 2) await new Promise(r => setTimeout(r, 300));
+    }
+    if (!tokenRaw) {
+      if (tokenBlobError) return { statusCode: 503, headers: CORS, body: JSON.stringify({ error: '일시적 서버 오류입니다. 잠시 후 다시 시도해주세요.' }) };
+      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '유효하지 않은 토큰' }) };
+    }
     const tokenData = JSON.parse(tokenRaw);
     if (tokenData.expiresAt && new Date(tokenData.expiresAt) < new Date()) {
       return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '세션이 만료됐습니다. 다시 로그인해주세요.' }) };
