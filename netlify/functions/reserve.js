@@ -21,20 +21,22 @@ exports.handler = async (event) => {
     return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증이 필요합니다.' }) };
   }
   if (bearerToken && lumiSecret !== process.env.LUMI_SECRET) {
-    const userStore = getStore({ name: 'users', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
+    // strong 제거 — PAT 동시 호출 경합 완화 (CDN 캐시 경유)
+    const userStore = getStore({ name: 'users', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
     let tokenRaw = null;
     let tokenBlobError = false;
-    for (let i = 0; i < 3; i++) {
+    const RETRY_DELAYS = [200, 400, 800, 1600, 3200]; // 지수 백오프 총 ~6.2s
+    for (let i = 0; i < RETRY_DELAYS.length; i++) {
       tokenBlobError = false;
       try { tokenRaw = await userStore.get('token:' + bearerToken); }
-      catch(e) { tokenBlobError = true; console.error('[reserve] token blob fetch error:', e.message); }
+      catch(e) { tokenBlobError = true; console.error('[reserve] token blob fetch error (attempt ' + (i+1) + '):', e.message); }
       if (tokenRaw) break;
       if (!tokenBlobError) break; // 진짜 없음: 재시도 의미 없음
-      if (i < 2) await new Promise(r => setTimeout(r, 300));
+      if (i < RETRY_DELAYS.length - 1) await new Promise(r => setTimeout(r, RETRY_DELAYS[i]));
     }
     if (!tokenRaw) {
       if (tokenBlobError) {
-        console.warn('[reserve] token blob error after 3 retries, bearer prefix:', bearerToken.substring(0, 8));
+        console.warn('[reserve] token blob error after 5 retries, bearer prefix:', bearerToken.substring(0, 8));
         return { statusCode: 503, headers: CORS, body: JSON.stringify({ error: '일시적 서버 오류입니다. 잠시 후 다시 시도해주세요.' }) };
       }
       console.warn('[reserve] token not found, bearer prefix:', bearerToken.substring(0, 8));
