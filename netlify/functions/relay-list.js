@@ -39,44 +39,37 @@ exports.handler = async (event) => {
       token: process.env.NETLIFY_TOKEN,
     });
 
-    // 모든 예약 조회
-    const { blobs } = await store.list({ prefix: 'reserve:' });
+    // 모든 예약 조회 (병렬 fetch — 시퀀셜 대비 대폭 단축)
+    // 예약 key는 'reserve:{timestamp}' 이므로 내림차순 정렬 후 최근 50건만 fetch
+    const { blobs: allBlobs } = await store.list({ prefix: 'reserve:' });
+    const sortedBlobs = (allBlobs || []).slice().sort((a, b) => (b.key || '').localeCompare(a.key || '')).slice(0, 50);
+    const rawResults = await Promise.all(sortedBlobs.map(b =>
+      store.get(b.key).then(v => ({ key: b.key, raw: v })).catch(() => ({ key: b.key, raw: null }))
+    ));
     const pending = [];
-
-    for (const blob of blobs) {
-      try {
-        const raw = await store.get(blob.key);
-        if (!raw) continue;
-        const item = JSON.parse(raw);
-
-        // 해당 유저의 것만 필터
-        const ownerEmail = item.storeProfile?.ownerEmail || '';
-        if (ownerEmail !== email) continue;
-
-        // 이미 게시됐거나 취소된 건 제외
-        if (item.isSent || item.cancelled) continue;
-
-        // 즉시 게시 모드 건은 예약 목록에서 제외
-        if (item.postMode === 'immediate') continue;
-
-        // 캡션이 생성된 것만 (대기 중인 릴레이 항목)
-        if (!item.generatedCaptions || item.generatedCaptions.length === 0) continue;
-
-        pending.push({
-          key: blob.key,
-          captions: item.generatedCaptions,
-          captionsGeneratedAt: item.captionsGeneratedAt,
-          scheduledAt: item.scheduledAt || null,
-          autoPostAt: item.autoPostAt || null,
-          relayMode: item.relayMode || false,
-          captionStatus: item.captionStatus || null,
-          photoCount: (item.photos || []).length,
-          imageKeys: (item.imageKeys || item.tempKeys || []).slice(0, 4),
-          bizCategory: item.bizCategory,
-          userMessage: item.userMessage || '',
-          submittedAt: item.submittedAt || null,
-        });
-      } catch {}
+    for (const { key, raw } of rawResults) {
+      if (!raw) continue;
+      let item;
+      try { item = JSON.parse(raw); } catch { continue; }
+      const ownerEmail = item.storeProfile?.ownerEmail || '';
+      if (ownerEmail !== email) continue;
+      if (item.isSent || item.cancelled) continue;
+      if (item.postMode === 'immediate') continue;
+      if (!item.generatedCaptions || item.generatedCaptions.length === 0) continue;
+      pending.push({
+        key,
+        captions: item.generatedCaptions,
+        captionsGeneratedAt: item.captionsGeneratedAt,
+        scheduledAt: item.scheduledAt || null,
+        autoPostAt: item.autoPostAt || null,
+        relayMode: item.relayMode || false,
+        captionStatus: item.captionStatus || null,
+        photoCount: (item.photos || []).length,
+        imageKeys: (item.imageKeys || item.tempKeys || []).slice(0, 4),
+        bizCategory: item.bizCategory,
+        userMessage: item.userMessage || '',
+        submittedAt: item.submittedAt || null,
+      });
     }
 
     // 최신순 정렬
