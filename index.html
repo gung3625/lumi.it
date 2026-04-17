@@ -2777,48 +2777,88 @@ var cards = {
         var isDk = document.body.classList.contains('dark-mode');
         var tc = isDk ? '#f0f2f8' : '#0d1117';
         var tc2 = isDk ? 'rgba(240,242,248,.6)' : 'rgba(0,0,0,.4)';
-        var bg2 = isDk ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.03)';
+        var pink = isDk ? '#FF8FAB' : '#C8507A';
         var lumiUser = JSON.parse(localStorage.getItem('lumi_user') || '{}');
-        var igName = lumiUser.storeName || 'my_cafe';
+        var igName = lumiUser.instagram || lumiUser.storeName || 'my_cafe';
         var isMobile = window.innerWidth <= 600;
+        var ps = React.useState(null), post = ps[0], setPost = ps[1];
+        var ls = React.useState(true), loading = ls[0], setLoading = ls[1];
+        React.useEffect(function(){
+          var token = localStorage.getItem('lumi_token');
+          if(!token) { setLoading(false); return; }
+          var email = '';
+          try { email = (JSON.parse(localStorage.getItem('lumi_user')||'{}').email || 'u'); } catch(ex){}
+          swrFetch('last-post:'+email, '/api/last-post', {headers:{'Authorization':'Bearer '+token}}, 60000)
+            .then(function(d){ setPost(d && d.post ? d.post : null); setLoading(false); })
+            .catch(function(){ setLoading(false); });
+        },[]);
+
+        function relTime(iso){
+          if(!iso) return '';
+          var d = new Date(iso); var now = new Date();
+          var diffMin = Math.floor((now - d) / 60000);
+          if (diffMin < 1) return '\uBC29\uAE08';
+          if (diffMin < 60) return diffMin + '\uBD84 \uC804';
+          var diffH = Math.floor(diffMin/60);
+          if (diffH < 24) return diffH + '\uC2DC\uAC04 \uC804';
+          var diffD = Math.floor(diffH/24);
+          if (diffD < 7) return diffD + '\uC77C \uC804';
+          return (d.getMonth()+1) + '/' + d.getDate();
+        }
+
+        var empty = !loading && !post;
+        var captionText = post ? (post.caption || '').split('\n')[0] : '';
+        if (captionText.length > 80) captionText = captionText.substring(0,80) + '\u2026';
+        var thumbUrl = post ? (post.imageUrl || (post.imageKey ? '/.netlify/functions/serve-image?key=' + encodeURIComponent(post.imageKey) : null)) : null;
+        var igLink = post && post.instagramPostId ? ('https://www.instagram.com/p/' + post.instagramPostId + '/') : null;
+
+        var emptyInner = e('div', {style:{position:'absolute',inset:0,background:isDk?'#1c1c1e':'#fff',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'6px',padding:'18px',borderRadius:'20px',textAlign:'center'}},
+          e('p', {style:{fontSize:'13px',color:tc,fontWeight:600}}, '\uCCAB \uAC8C\uC2DC\uBB3C\uC744 \uC62C\uB824\uBCF4\uC138\uC694'),
+          e('p', {style:{fontSize:'11px',color:tc2,lineHeight:1.5}}, '\uC0AC\uC9C4 1\uC7A5 \uC62C\uB9AC\uBA74 lumi\uAC00\n\uCEA1\uC158\uB9CC\uB4E4\uC5B4 \uC62C\uB824\uC90D\uB2C8\uB2E4')
+        );
+        var loadingInner = e('div', {style:{position:'absolute',inset:0,background:isDk?'#1c1c1e':'#fff',display:'flex',alignItems:'center',justifyContent:'center',borderRadius:'20px'}},
+          e('span', {style:{fontSize:'12px',color:tc2}}, '\uBD88\uB7EC\uC624\uB294 \uC911\u2026')
+        );
+
         if (isMobile) {
-          // 모바일: 가로 배열 — 썸네일 왼쪽 60x60, 오른쪽 캡션+해시태그+좋아요
+          if (loading) return e('div', {className:'bento-card card-visual card-project card-responsive', style:{padding:0}}, loadingInner);
+          if (empty) return e('div', {className:'bento-card card-visual card-project card-responsive', style:{padding:0}}, emptyInner);
           return e('div', {className:'bento-card card-visual card-project card-responsive', style:{padding:0}},
-            e('div', {style:{position:'absolute',inset:0,background:isDk?'#1c1c1e':'#fff',display:'flex',alignItems:'center',gap:'12px',padding:'14px 16px',overflow:'hidden',borderRadius:'20px'}},
-              e('img', {src:'/assets/demo-cafe.jpg', style:{width:'60px',height:'60px',borderRadius:'12px',objectFit:'cover',flexShrink:0,filter:isDk?'brightness(.8) saturate(.6)':'none'}}),
+            e(igLink?'a':'div', Object.assign({style:{position:'absolute',inset:0,background:isDk?'#1c1c1e':'#fff',display:'flex',alignItems:'center',gap:'12px',padding:'14px 16px',overflow:'hidden',borderRadius:'20px',textDecoration:'none',color:'inherit'}}, igLink?{href:igLink,target:'_blank',rel:'noopener',onClick:function(ev){ev.stopPropagation();},onMouseDown:function(ev){ev.stopPropagation();}}:{}),
+              thumbUrl
+                ? e('img', {src:thumbUrl, style:{width:'60px',height:'60px',borderRadius:'12px',objectFit:'cover',flexShrink:0,filter:isDk?'brightness(.85)':'none'},onError:function(ev){ev.target.style.display='none';}})
+                : e('div', {style:{width:'60px',height:'60px',borderRadius:'12px',background:isDk?'rgba(255,255,255,.06)':'rgba(0,0,0,.04)',flexShrink:0}}),
               e('div', {style:{flex:1,minWidth:0,display:'flex',flexDirection:'column',gap:'4px'}},
                 e('p', {style:{fontSize:'12px',color:tc,lineHeight:'1.5',fontWeight:400,overflow:'hidden',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical'}},
-                  e('strong', {style:{fontWeight:600}}, igName), '\u00a0\uC774 \uC790\uB9AC \uC549\uC73C\uBA74 \uB77C\uB5BC \uB4E4\uACE0 \uD55C\uCC38 \uBA4D \uB54C\uB9AC\uAC8C \uB428'
+                  e('strong', {style:{fontWeight:600}}, igName), '\u00a0', captionText || '\uAC8C\uC2DC\uBB3C'
                 ),
-                e('p', {style:{fontSize:'10px',color:isDk?'#FF8FAB':'#C8507A',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}, '#\uB77C\uB5BC\uC544\uD2B8 #\uCE74\uD398\uC778\uD14C\uB9AC\uC5B4 #\uAC10\uC131\uCE74\uD398'),
-                e('p', {style:{fontSize:'10px',color:tc2}}, '\uC88B\uC544\uC694 42\uAC1C \u00B7 2\uC2DC\uAC04 \uC804')
+                e('p', {style:{fontSize:'10px',color:tc2}}, '\uAC8C\uC2DC\uC644\uB8CC \xB7 '+relTime(post.sentAt))
               )
             )
           );
         }
+        // 데스크톱
+        if (loading) return e('div', {className:'bento-card card-visual card-project card-responsive', style:{padding:0}}, loadingInner);
+        if (empty) return e('div', {className:'bento-card card-visual card-project card-responsive', style:{padding:0}}, emptyInner);
         return e('div', {className:'bento-card card-visual card-project card-responsive', style:{padding:0}},
-          e('div', {style:{position:'absolute',inset:0,background:isDk?'#1c1c1e':'#fff',display:'flex',flexDirection:'column',overflow:'hidden',borderRadius:'32px'}},
+          e(igLink?'a':'div', Object.assign({style:{position:'absolute',inset:0,background:isDk?'#1c1c1e':'#fff',display:'flex',flexDirection:'column',overflow:'hidden',borderRadius:'32px',textDecoration:'none',color:'inherit'}}, igLink?{href:igLink,target:'_blank',rel:'noopener',onClick:function(ev){ev.stopPropagation();},onMouseDown:function(ev){ev.stopPropagation();}}:{}),
             e('div', {style:{display:'flex',alignItems:'center',gap:'8px',padding:'12px 14px'}},
               e('div', {style:{width:'28px',height:'28px',borderRadius:'50%',background:'linear-gradient(135deg,#FF6B8B,#DDA0DD)',flexShrink:0}}),
               e('span', {style:{fontSize:'12px',fontWeight:600,color:tc}}, igName),
-              e('span', {style:{fontSize:'10px',color:tc2,marginLeft:'auto'}}, '2\uC2DC\uAC04 \uC804')
+              e('span', {style:{fontSize:'10px',color:tc2,marginLeft:'auto'}}, relTime(post.sentAt))
             ),
-            e('div', {style:{flex:1,overflow:'hidden',position:'relative',minHeight:0}},
-              e('img', {src:'/assets/demo-cafe.jpg', style:{width:'100%',height:'100%',objectFit:'cover',filter:isDk?'brightness(.8) saturate(.6)':'none'}})
+            e('div', {style:{flex:1,overflow:'hidden',position:'relative',minHeight:0,background:isDk?'rgba(255,255,255,.04)':'rgba(0,0,0,.03)'}},
+              thumbUrl ? e('img', {src:thumbUrl, style:{width:'100%',height:'100%',objectFit:'cover',filter:isDk?'brightness(.9)':'none'},onError:function(ev){ev.target.style.display='none';}}) : null
             ),
             e('div', {style:{padding:'10px 14px 6px',display:'flex',gap:'14px'}},
               e('svg',{viewBox:'0 0 24 24',fill:'none',stroke:isDk?'#f0f2f8':'#0d1117',strokeWidth:'2',width:20,height:20},e('path',{d:'M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 000-7.78z'})),
               e('svg',{viewBox:'0 0 24 24',fill:'none',stroke:isDk?'#f0f2f8':'#0d1117',strokeWidth:'2',width:20,height:20},e('path',{d:'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z'})),
               e('svg',{viewBox:'0 0 24 24',fill:'none',stroke:isDk?'#f0f2f8':'#0d1117',strokeWidth:'2',width:20,height:20},e('line',{x1:22,y1:2,x2:11,y2:13}),e('polygon',{points:'22 2 15 22 11 13 2 9 22 2'}))
             ),
-            e('div', {style:{padding:'2px 14px 4px'}},
-              e('span', {style:{fontSize:'11px',fontWeight:600,color:tc}}, '\uC88B\uC544\uC694 42\uAC1C')
-            ),
             e('div', {style:{padding:'0 14px 10px'}},
-              e('p', {style:{fontSize:'11px',color:tc,lineHeight:'1.5'}},
-                e('strong', null, igName), ' \uC774 \uC790\uB9AC \uC549\uC73C\uBA74 \uB77C\uB5BC \uB4E4\uACE0 \uD55C\uCC38 \uBA4D \uB54C\uB9AC\uAC8C \uB428'
-              ),
-              e('p', {style:{fontSize:'10px',color:isDk?'#FF8FAB':'#C8507A',marginTop:'4px'}}, '#\uB77C\uB5BC\uC544\uD2B8 #\uCE74\uD398\uC778\uD14C\uB9AC\uC5B4 #\uAC10\uC131\uCE74\uD398 #\uD551\uD06C\uCE74\uD398 #\uB77C\uB5BC\uB9DB\uC9D1')
+              captionText ? e('p', {style:{fontSize:'11px',color:tc,lineHeight:'1.5',overflow:'hidden',display:'-webkit-box',WebkitLineClamp:3,WebkitBoxOrient:'vertical'}},
+                e('strong', null, igName), ' ', captionText
+              ) : null
             )
           )
         );
@@ -3483,8 +3523,8 @@ var cards = {
       var scope = tab;
       var _srcRaw = apiData[scope] || (scope==='domestic'?fallbackDomestic:fallbackGlobal);
       var src = _srcRaw.slice();
-      if(src.length>0 && src.length<7){var _s=src.slice();while(src.length<7)src=src.concat(_s);}
-      src=src.slice(0,7);
+      if(src.length>0 && src.length<5){var _s=src.slice();while(src.length<5)src=src.concat(_s);}
+      src=src.slice(0,5);
       var cardRef = React.useRef(null);
       var st5 = React.useState(36), itemH = st5[0], setItemH = st5[1];
       var st7 = React.useState(4), visibleCount = st7[0], setVisibleCount = st7[1];
@@ -3503,13 +3543,10 @@ var cards = {
             ih = Math.max(36, Math.floor(available / 3));
           } else if(available <= 220) {
             vc = 4;
-            ih = Math.max(36, Math.floor(available / 4));
-          } else if(available < 350) {
-            vc = 5;
-            ih = Math.max(36, Math.floor(available / 5));
+            ih = Math.max(40, Math.floor(available / 4));
           } else {
-            vc = 7;
-            ih = Math.max(36, Math.floor(available / 7));
+            vc = 5;
+            ih = Math.max(44, Math.floor(available / 5));
           }
           setVisibleCount(vc);
           setItemH(ih);
@@ -3619,7 +3656,7 @@ var cards = {
                   : e('div', {className:'trend-list'},
                       e('div', {className:'trend-track', key:'track-'+tab, style:trackH?{height:trackH+'px'}:{}},
                         src.slice(0,visibleCount).map(function(t,idx){
-                          var rank = visibleCount < 7 ? idx : (rankMap[idx]!==undefined?rankMap[idx]:idx);
+                          var rank = visibleCount < 5 ? idx : (rankMap[idx]!==undefined?rankMap[idx]:idx);
                           var delta = 0;
                           if(prevOrder){
                             var oldRank = prevOrder.indexOf(idx);
