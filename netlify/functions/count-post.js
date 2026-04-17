@@ -18,12 +18,17 @@ exports.handler = async (event) => {
   try {
     const store = getStore({ name: 'users', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
 
-    // 토큰 Blobs 검증 (최대 2회 재시도)
+    // 토큰 Blobs 검증 (최대 3회 재시도 — 콜드 스타트 시 strong-consistency 레이스 대응)
     let tokenRaw = null;
-    for (let i = 0; i < 2; i++) {
-      try { tokenRaw = await store.get('token:' + bearerToken); break; } catch(e) { if (i === 1) { console.error('[count-post] token fetch error:', e.message); } }
+    for (let i = 0; i < 3; i++) {
+      try { tokenRaw = await store.get('token:' + bearerToken); } catch(e) { console.error('[count-post] token fetch error:', e.message); }
+      if (tokenRaw) break;
+      if (i < 2) await new Promise(r => setTimeout(r, 300));
     }
-    if (!tokenRaw) return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증에 실패했습니다.' }) };
+    if (!tokenRaw) {
+      console.warn('[count-post] token not found after 3 retries, bearer prefix:', bearerToken.substring(0, 8));
+      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증에 실패했습니다.' }) };
+    }
     const tokenData = JSON.parse(tokenRaw);
     if (tokenData.expiresAt && new Date(tokenData.expiresAt) < new Date()) {
       return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '세션이 만료됐습니다.' }) };
@@ -59,26 +64,50 @@ exports.handler = async (event) => {
       return { statusCode: 403, headers: CORS, body: JSON.stringify({ error: '구독이 만료됐어요.', code: 'PLAN_EXPIRED' }) };
     }
 
-    // 게시 횟수 체크 및 카운팅
-    if (user.postCountMonth !== thisMonth) { user.postCountMonth = thisMonth; user.postCount = 0; }
-    const postCount = user.postCount || 0;
+    // 권위적 카운트: reservations를 스캔해서 이번 달 실제 성공 게시만 카운트
+    let authoritativeCount = 0;
+    try {
+      const reserveStore = getStore({ name: 'reservations', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
+      const { blobs } = await reserveStore.list({ prefix: 'reserve:' });
+      const records = await Promise.all((blobs || []).map(b => reserveStore.get(b.key).catch(() => null)));
+      for (const r of records) {
+        if (!r) continue;
+        try {
+          const it = JSON.parse(r);
+          const ownerEmail = (it.storeProfile && (it.storeProfile.ownerEmail || it.storeProfile.email)) || it.ownerEmail || null;
+          if (ownerEmail !== email) continue;
+          if (!it.isSent) continue;
+          const sentAt = it.sentAt ? new Date(it.sentAt) : null;
+          if (!sentAt || isNaN(sentAt.getTime())) continue;
+          const recMonth = sentAt.getFullYear() + '-' + (sentAt.getMonth() + 1);
+          if (recMonth === thisMonth) authoritativeCount++;
+        } catch(_) {}
+      }
+      // user store도 동기화
+      if (user.postCountMonth !== thisMonth || (user.postCount || 0) !== authoritativeCount) {
+        user.postCountMonth = thisMonth;
+        user.postCount = authoritativeCount;
+        try { await store.set('user:' + email, JSON.stringify(user)); } catch(_) {}
+      }
+    } catch (e) {
+      console.error('[count-post] 권위적 카운트 실패, user.postCount 사용:', e.message);
+      authoritativeCount = user.postCountMonth === thisMonth ? (user.postCount || 0) : 0;
+    }
+    const postCount = authoritativeCount;
+
+    // 게시 횟수 한도 체크
     if (!isAdmin && postCount >= limit) {
       return { statusCode: 403, headers: CORS, body: JSON.stringify({ error: '이번 달 게시 한도에 도달했어요.', code: 'POST_LIMIT_REACHED', limit, postCount }) };
     }
-
-    // 카운팅
-    user.postCount = postCount + 1;
-    user.lastPostedAt = now.toISOString();
-    await store.set('user:' + email, JSON.stringify(user));
 
     return {
       statusCode: 200,
       headers: CORS,
       body: JSON.stringify({
-        counted: true,
-        postCount: user.postCount,
+        counted: false,
+        postCount,
         limit,
-        remaining: isAdmin ? 999999 : Math.max(0, limit - user.postCount),
+        remaining: isAdmin ? 999999 : Math.max(0, limit - postCount),
       })
     };
   } catch (err) {

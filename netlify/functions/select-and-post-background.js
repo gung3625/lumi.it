@@ -285,6 +285,34 @@ exports.handler = async (event) => {
     item.postedCaption = selectedCaption;
     await reserveStore.set(reservationKey, JSON.stringify(item));
 
+    // IG 게시 성공 시점에 postCount 증가 (idempotent — postCountIncremented 플래그로 중복 방지)
+    if (!item.postCountIncremented) {
+      try {
+        const userStore = getBlobStore('users');
+        const postEmail = (item.storeProfile && (item.storeProfile.ownerEmail || item.storeProfile.email)) || null;
+        if (postEmail) {
+          const uRaw = await userStore.get('user:' + postEmail);
+          if (uRaw) {
+            const postUser = JSON.parse(uRaw);
+            const nowTs = new Date();
+            const thisMonthStr = nowTs.getFullYear() + '-' + (nowTs.getMonth() + 1);
+            if (postUser.postCountMonth !== thisMonthStr) {
+              postUser.postCountMonth = thisMonthStr;
+              postUser.postCount = 1;
+            } else {
+              postUser.postCount = (postUser.postCount || 0) + 1;
+            }
+            postUser.lastPostedAt = nowTs.toISOString();
+            await userStore.set('user:' + postEmail, JSON.stringify(postUser));
+            // idempotent 플래그 기록
+            item.postCountIncremented = true;
+            await reserveStore.set(reservationKey, JSON.stringify(item));
+            console.log('[select-and-post] postCount 증가 완료:', postEmail, '→', postUser.postCount);
+          }
+        }
+      } catch (e) { console.error('[select-and-post] postCount 증가 실패:', e.message); }
+    }
+
     // 게시 성공 후 임시 이미지 삭제
     const tempKeysToDelete = item.imageKeys || item.tempKeys || [];
     await cleanupTempImages(tempKeysToDelete);
