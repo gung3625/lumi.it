@@ -51,9 +51,21 @@ exports.handler = async (event) => {
       token: process.env.NETLIFY_TOKEN
     });
 
-    let raw;
-    try { raw = await store.get('user:' + email); } catch(e) { raw = null; }
+    // 3회 재시도 — PAT rate limit(429) → Blobs 401 → catch → null 이 되는 과민반응 방지
+    let raw = null;
+    let blobError = false;
+    for (let i = 0; i < 3; i++) {
+      blobError = false;
+      try { raw = await store.get('user:' + email); }
+      catch(e) { blobError = true; console.error('[login] blob fetch error:', e.message); }
+      if (raw) break;
+      if (!blobError) break; // 진짜 없음: 재시도 의미 없음
+      if (i < 2) await new Promise(r => setTimeout(r, 300));
+    }
     if (!raw) {
+      if (blobError) {
+        return { statusCode: 503, headers: CORS, body: JSON.stringify({ error: '일시적 서버 오류입니다. 잠시 후 다시 시도해주세요.' }) };
+      }
       return { statusCode: 404, headers: CORS, body: JSON.stringify({ error: '가입되지 않은 이메일입니다.' }) };
     }
 
