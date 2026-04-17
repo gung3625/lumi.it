@@ -64,36 +64,16 @@ exports.handler = async (event) => {
       return { statusCode: 403, headers: CORS, body: JSON.stringify({ error: '구독이 만료됐어요.', code: 'PLAN_EXPIRED' }) };
     }
 
-    // 권위적 카운트: reservations를 스캔해서 이번 달 실제 성공 게시만 카운트
-    let authoritativeCount = 0;
-    try {
-      const reserveStore = getStore({ name: 'reservations', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
-      const { blobs } = await reserveStore.list({ prefix: 'reserve:' });
-      const records = await Promise.all((blobs || []).map(b => reserveStore.get(b.key).catch(() => null)));
-      for (const r of records) {
-        if (!r) continue;
-        try {
-          const it = JSON.parse(r);
-          const ownerEmail = (it.storeProfile && (it.storeProfile.ownerEmail || it.storeProfile.email)) || it.ownerEmail || null;
-          if (ownerEmail !== email) continue;
-          if (!it.isSent) continue;
-          const sentAt = it.sentAt ? new Date(it.sentAt) : null;
-          if (!sentAt || isNaN(sentAt.getTime())) continue;
-          const recMonth = sentAt.getFullYear() + '-' + (sentAt.getMonth() + 1);
-          if (recMonth === thisMonth) authoritativeCount++;
-        } catch(_) {}
-      }
-      // user store도 동기화
-      if (user.postCountMonth !== thisMonth || (user.postCount || 0) !== authoritativeCount) {
-        user.postCountMonth = thisMonth;
-        user.postCount = authoritativeCount;
-        try { await store.set('user:' + email, JSON.stringify(user)); } catch(_) {}
-      }
-    } catch (e) {
-      console.error('[count-post] 권위적 카운트 실패, user.postCount 사용:', e.message);
-      authoritativeCount = user.postCountMonth === thisMonth ? (user.postCount || 0) : 0;
+    // user.postCount를 신뢰 (select-and-post-background가 IG 성공 시점에 증가, 실패 시 롤백)
+    // 월이 바뀌었으면 자동 리셋
+    let postCount = 0;
+    if (user.postCountMonth === thisMonth) {
+      postCount = user.postCount || 0;
+    } else {
+      user.postCountMonth = thisMonth;
+      user.postCount = 0;
+      try { await store.set('user:' + email, JSON.stringify(user)); } catch(_) {}
     }
-    const postCount = authoritativeCount;
 
     // 게시 횟수 한도 체크
     if (!isAdmin && postCount >= limit) {
