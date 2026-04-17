@@ -22,8 +22,16 @@ exports.handler = async (event) => {
   }
   if (bearerToken && lumiSecret !== process.env.LUMI_SECRET) {
     const userStore = getStore({ name: 'users', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
-    const tokenRaw = await userStore.get('token:' + bearerToken).catch(() => null);
-    if (!tokenRaw) return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증 실패' }) };
+    let tokenRaw = null;
+    for (let i = 0; i < 3; i++) {
+      try { tokenRaw = await userStore.get('token:' + bearerToken); } catch(e) { console.error('[reserve] token fetch error:', e.message); }
+      if (tokenRaw) break;
+      if (i < 2) await new Promise(r => setTimeout(r, 300));
+    }
+    if (!tokenRaw) {
+      console.warn('[reserve] token not found after 3 retries, bearer prefix:', bearerToken.substring(0, 8));
+      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증 실패' }) };
+    }
   }
 
   const headers = event.headers;
