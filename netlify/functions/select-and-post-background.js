@@ -242,16 +242,37 @@ exports.handler = async (event) => {
 
     // Threads 게시 (postToThread 플래그 확인)
     if (item.postToThread && imageUrls[0]) {
+      let threadsStatus = 'failed';
+      let threadsError = null;
+      let threadsPostId = null;
       try {
         console.log('[select-and-post] Threads 게시 시작');
         const threadsResult = await postToThreads(selectedCaption, imageUrls[0]);
         if (threadsResult.error) {
-          console.error('[select-and-post] Threads 게시 실패:', JSON.stringify(threadsResult.error));
+          threadsError = threadsResult.error.message || JSON.stringify(threadsResult.error);
+          if (threadsResult.error.code === 190) threadsStatus = 'token_expired';
+          console.error('[select-and-post] Threads 게시 실패:', threadsError);
         } else {
-          console.log('[select-and-post] Threads 게시 완료:', threadsResult.id);
+          threadsStatus = 'ok';
+          threadsPostId = threadsResult.id || null;
+          console.log('[select-and-post] Threads 게시 완료:', threadsPostId);
         }
       } catch (te) {
-        console.error('[select-and-post] Threads 예외:', te.message);
+        threadsError = te.message || String(te);
+        if (/code":\s*190|expired|invalid.*token/i.test(threadsError)) threadsStatus = 'token_expired';
+        console.error('[select-and-post] Threads 예외:', threadsError);
+      }
+      item.threadsStatus = threadsStatus;
+      item.threadsError = threadsError;
+      item.threadsPostId = threadsPostId;
+      item.threadsAttemptedAt = new Date().toISOString();
+
+      // 운영자 알림 — 토큰 만료는 긴급
+      if (threadsStatus === 'token_expired') {
+        try {
+          await sendAlimtalk('01064246284',
+            '[lumi] 스레드 토큰 만료\n\n스레드 게시가 실패했어요.\n대시보드 설정에서 스레드 재연동이 필요합니다.\n\n예약: ' + reservationKey);
+        } catch (_) {}
       }
     }
 
