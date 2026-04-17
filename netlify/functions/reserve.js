@@ -206,6 +206,28 @@ exports.handler = async (event) => {
         await reserveStore.set(reserveKey, JSON.stringify(reserveData));
         console.log('[reserve] 예약 저장 완료:', reserveKey);
 
+        // per-user 인덱스 업데이트 (best-effort — 실패해도 예약 자체에는 영향 없음)
+        const indexOwnerEmail = storeProfile && storeProfile.ownerEmail;
+        if (indexOwnerEmail) {
+          try {
+            const indexKey = 'user-index:' + indexOwnerEmail;
+            const existingRaw = await reserveStore.get(indexKey).catch(() => null);
+            let indexArr = [];
+            if (existingRaw) {
+              try {
+                const parsed = JSON.parse(existingRaw);
+                if (Array.isArray(parsed)) indexArr = parsed;
+              } catch {}
+            }
+            if (!indexArr.includes(reserveKey)) {
+              indexArr.push(reserveKey);
+              await reserveStore.set(indexKey, JSON.stringify(indexArr));
+            }
+          } catch (indexErr) {
+            console.warn('[reserve] user-index 업데이트 실패:', indexErr.message);
+          }
+        }
+
         // 캡션 생성 Background Function 트리거 (postMode 무관하게 항상 캡션 생성)
         const siteUrl = 'https://lumi.it.kr';
         const postMode = reserveData.postMode || 'immediate';

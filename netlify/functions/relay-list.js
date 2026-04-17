@@ -39,12 +39,22 @@ exports.handler = async (event) => {
       token: process.env.NETLIFY_TOKEN,
     });
 
-    // 모든 예약 조회 (병렬 fetch — 시퀀셜 대비 대폭 단축)
-    // 예약 key는 'reserve:{timestamp}' 이므로 내림차순 정렬 후 최근 50건만 fetch
-    const { blobs: allBlobs } = await store.list({ prefix: 'reserve:' });
-    const sortedBlobs = (allBlobs || []).slice().sort((a, b) => (b.key || '').localeCompare(a.key || '')).slice(0, 50);
-    const rawResults = await Promise.all(sortedBlobs.map(b =>
-      store.get(b.key).then(v => ({ key: b.key, raw: v })).catch(() => ({ key: b.key, raw: null }))
+    // per-user 인덱스에서 reserveKey 목록 조회 (풀스캔 제거 — PAT rate limit 근본 해결)
+    let userIndex = [];
+    try {
+      const indexRaw = await store.get('user-index:' + email);
+      if (indexRaw) {
+        const parsed = JSON.parse(indexRaw);
+        if (Array.isArray(parsed)) userIndex = parsed;
+      }
+    } catch (idxErr) {
+      console.warn('[relay-list] user-index 조회 실패:', idxErr.message);
+    }
+
+    // 내림차순 정렬 후 최근 50건만 병렬 fetch (key는 'reserve:{timestamp}')
+    const sortedKeys = userIndex.slice().sort((a, b) => (b || '').localeCompare(a || '')).slice(0, 50);
+    const rawResults = await Promise.all(sortedKeys.map(key =>
+      store.get(key).then(v => ({ key, raw: v })).catch(() => ({ key, raw: null }))
     ));
     const pending = [];
     for (const { key, raw } of rawResults) {
