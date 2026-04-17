@@ -1889,6 +1889,7 @@ var cards = {
       var stEditCap = React.useState(''), editedCaption = stEditCap[0], setEditedCaption = stEditCap[1];
       var stRegenCnt = React.useState(0), regenCount = stRegenCnt[0], setRegenCount = stRegenCnt[1];
       var stPosting2 = React.useState(false), isConfirmPosting = stPosting2[0], setIsConfirmPosting = stPosting2[1];
+      var stPostingIG = React.useState(false), isPostingToIG = stPostingIG[0], setIsPostingToIG = stPostingIG[1];
       var stPostMode = React.useState('immediate'), currentPostMode = stPostMode[0], setCurrentPostMode = stPostMode[1];
 
       // 클라이언트 이미지 리사이즈 (canvas, 최대 1080px, quality 0.85)
@@ -2101,10 +2102,10 @@ var cards = {
         .then(function(d){
           setIsConfirmPosting(false);
           if (d.success) {
-            setRealFiles([]); setRealNote(''); setReservationKey('');
-            setGeneratedCaptions([]); setEditedCaption('');
             if (d.status === 'scheduled') {
               // 예약 게시 확정 — 예약 목록에 표시됨
+              setRealFiles([]); setRealNote(''); setReservationKey('');
+              setGeneratedCaptions([]); setEditedCaption('');
               var schedMsg = d.scheduledAt
                 ? '예약 완료! ' + new Date(d.scheduledAt).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) + '에 게시됩니다.'
                 : '예약이 완료됐어요. 대시보드에서 확인하세요.';
@@ -2113,7 +2114,49 @@ var cards = {
               window.dispatchEvent(new CustomEvent('lumi:reservation-added'));
               setPhase('idle');
             } else {
-              setPhase('cta');
+              // 즉시 게시 — 백그라운드 IG 업로드 완료까지 폴링
+              var rKeyForPoll = reservationKey;
+              setIsPostingToIG(true);
+              setPhase('generating'); // 스피너 재활용 ("게시 중..." 문구)
+              var pollAttempts = 0;
+              var pollMax = 40;
+              var tokenForPoll = localStorage.getItem('lumi_token');
+              function pollPostResult() {
+                pollAttempts++;
+                fetch('/api/get-reservation?key=' + encodeURIComponent(rKeyForPoll), {
+                  headers: { 'Authorization': 'Bearer ' + tokenForPoll }
+                }).then(function(r){ return r.json(); })
+                .then(function(pd){
+                  if (pd.captionStatus === 'posted' || pd.isSent === true) {
+                    // 실제 IG 업로드 성공 확인 후 성공 화면 표시
+                    setIsPostingToIG(false);
+                    setRealFiles([]); setRealNote(''); setReservationKey('');
+                    setGeneratedCaptions([]); setEditedCaption('');
+                    swrInvalidate('relay-list');
+                    window.dispatchEvent(new CustomEvent('lumi:reservation-added'));
+                    setPhase('cta');
+                  } else if (pd.captionStatus === 'failed') {
+                    setIsPostingToIG(false);
+                    alert('게시 실패: ' + (pd.captionError || '다시 시도해주세요.'));
+                    setPhase('caption');
+                  } else if (pollAttempts >= pollMax) {
+                    setIsPostingToIG(false);
+                    alert('업로드 확인이 지연되고 있어요. 대시보드에서 확인해주세요.');
+                    setPhase('idle');
+                  } else {
+                    setTimeout(pollPostResult, 3000);
+                  }
+                }).catch(function(){
+                  if (pollAttempts >= pollMax) {
+                    setIsPostingToIG(false);
+                    alert('업로드 확인이 지연되고 있어요. 대시보드에서 확인해주세요.');
+                    setPhase('idle');
+                  } else {
+                    setTimeout(pollPostResult, 3000);
+                  }
+                });
+              }
+              setTimeout(pollPostResult, 3000);
             }
           } else {
             alert(d.error || '게시 실패. 다시 시도해주세요.');
@@ -2594,8 +2637,8 @@ var cards = {
                 e('div', {className:'lumi-progress-glow'}),
                 e('img', {src:'/assets/lumi-character.png', alt:'lumi'})
               ),
-              e('p', {className:'lumi-progress-title'}, '\uCEA1\uC158 \uB9CC\uB4DC\uB294 \uC911', e('span', {className:'lumi-progress-dots'})),
-              e('p', {className:'lumi-progress-sub'}, '\uC5C5\uC885\uACFC \uD2B8\uB80C\uB4DC\uC5D0 \uB9DE\uB294 \uCEA1\uC158\uC744 \uB9CC\uB4E4\uACE0 \uC788\uC5B4\uC694'),
+              e('p', {className:'lumi-progress-title'}, isPostingToIG ? '인스타에 게시 중' : '\uCEA1\uC158 \uB9CC\uB4DC\uB294 \uC911', e('span', {className:'lumi-progress-dots'})),
+              e('p', {className:'lumi-progress-sub'}, isPostingToIG ? '잠시만 기다려주세요. 업로드 완료 후 알려드릴게요.' : '\uC5C5\uC885\uACFC \uD2B8\uB80C\uB4DC\uC5D0 \uB9DE\uB294 \uCEA1\uC158\uC744 \uB9CC\uB4E4\uACE0 \uC788\uC5B4\uC694'),
               e('div', {className:'lumi-progress-bar'}, e('div', {className:'lumi-progress-fill'}))
             ) : null,
 
