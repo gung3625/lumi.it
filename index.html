@@ -1892,23 +1892,45 @@ var cards = {
       var stPostingIG = React.useState(false), isPostingToIG = stPostingIG[0], setIsPostingToIG = stPostingIG[1];
       var stPostMode = React.useState('immediate'), currentPostMode = stPostMode[0], setCurrentPostMode = stPostMode[1];
 
-      // 클라이언트 이미지 리사이즈 (canvas, 최대 1080px, quality 0.85)
+      // 클라이언트 이미지 리사이즈 + IG 비율 보정 (4:5 ~ 1.91:1 범위 밖이면 흰 배경 패딩)
+      // IG Feed 요구: aspect 0.8(4:5) ~ 1.91, 320~1440px. 벗어나면 2207052 에러.
       function resizeImage(file) {
         return new Promise(function(resolve) {
           var MAX = 1080;
+          var MIN_RATIO = 0.8;   // 4:5 portrait 하한
+          var MAX_RATIO = 1.91;  // 1.91:1 landscape 상한
           var img = new Image();
           var url = URL.createObjectURL(file);
           img.onload = function() {
             URL.revokeObjectURL(url);
             var w = img.naturalWidth, h = img.naturalHeight;
-            var ratio = (w > MAX || h > MAX) ? Math.min(MAX / w, MAX / h) : 1;
-            var cw = Math.round(w * ratio), ch = Math.round(h * ratio);
+            var aspect = w / h;
+            var targetW, targetH;
+            if (aspect < MIN_RATIO) {
+              // 너무 세로로 긴 경우 → 4:5로 패딩 (1080x1350)
+              targetW = MAX; targetH = Math.round(MAX / MIN_RATIO);
+            } else if (aspect > MAX_RATIO) {
+              // 너무 가로로 긴 경우 → 1.91:1로 패딩 (1080x566)
+              targetH = Math.round(MAX / MAX_RATIO); targetW = MAX;
+            } else {
+              // 비율 OK — 최대 1080으로만 축소
+              var r = (w > MAX || h > MAX) ? Math.min(MAX / w, MAX / h) : 1;
+              targetW = Math.round(w * r); targetH = Math.round(h * r);
+            }
+            // 원본을 타겟 내부에 contain 배치, 남는 영역 흰 배경
+            var scale = Math.min(targetW / w, targetH / h);
+            var drawW = Math.round(w * scale), drawH = Math.round(h * scale);
+            var dx = Math.round((targetW - drawW) / 2);
+            var dy = Math.round((targetH - drawH) / 2);
             var canvas = document.createElement('canvas');
-            canvas.width = cw; canvas.height = ch;
-            canvas.getContext('2d').drawImage(img, 0, 0, cw, ch);
+            canvas.width = targetW; canvas.height = targetH;
+            var ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, targetW, targetH);
+            ctx.drawImage(img, dx, dy, drawW, drawH);
             canvas.toBlob(function(blob) {
               resolve(blob ? new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' }) : file);
-            }, 'image/jpeg', 0.85);
+            }, 'image/jpeg', 0.9);
           };
           img.onerror = function() { URL.revokeObjectURL(url); resolve(file); };
           img.src = url;
