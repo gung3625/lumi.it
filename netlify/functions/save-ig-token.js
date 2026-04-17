@@ -1,8 +1,5 @@
 const { getStore } = require('@netlify/blobs');
 
-const SITE_ID = process.env.NETLIFY_SITE_ID;
-const NETLIFY_TOKEN = process.env.NETLIFY_TOKEN;
-
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method Not Allowed' }) };
@@ -29,9 +26,7 @@ exports.handler = async (event) => {
 
   try {
     const store = getStore({
-      name: 'users', consistency: 'strong',
-      siteID: SITE_ID,
-      token: NETLIFY_TOKEN
+      name: 'users', consistency: 'strong'
     });
 
     await store.set('ig:' + igUserId, JSON.stringify({

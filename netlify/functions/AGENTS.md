@@ -104,7 +104,7 @@ Serverless backend for lumi.it.kr -- an Instagram marketing SaaS for Korean smal
 ## For AI Agents
 
 ### Working In This Directory
-- All functions use Netlify Blobs with explicit `siteID` + `token` (see `../../.claude/rules/netlify-functions.md`)
+- All functions use Netlify Blobs with runtime auto-context — do NOT pass `siteID`/`token` (see `../../.claude/rules/netlify-functions.md`)
 - Bearer token auth pattern: `Authorization` header, compare with user token from Blobs or `LUMI_SECRET`
 - CORS headers required on every response (`Access-Control-Allow-Origin`)
 - `try/catch` + proper `statusCode` in every handler
@@ -120,8 +120,6 @@ Serverless backend for lumi.it.kr -- an Instagram marketing SaaS for Korean smal
 const store = getStore({
   name: 'store-name',
   consistency: 'strong',
-  siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
-  token: process.env.NETLIFY_TOKEN,
 });
 
 // CORS headers

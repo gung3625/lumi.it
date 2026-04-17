@@ -21,7 +21,7 @@ exports.handler = async (event) => {
     return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증이 필요합니다.' }) };
   }
   if (bearerToken && lumiSecret !== process.env.LUMI_SECRET) {
-    const userStore = getStore({ name: 'users', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
+    const userStore = getStore({ name: 'users', consistency: 'strong' });
     let tokenRaw = null;
     for (let i = 0; i < 3; i++) {
       try { tokenRaw = await userStore.get('token:' + bearerToken); } catch(e) { console.error('[reserve] token fetch error:', e.message); }
@@ -107,9 +107,7 @@ exports.handler = async (event) => {
         if (storeProfile.ownerEmail) {
           try {
             const blobStore = getStore({
-              name: 'users',
-              siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
-              token: process.env.NETLIFY_TOKEN
+              name: 'users'
             });
             // Blob 4개 병렬 읽기 (기존 6개 순차 → 1회 병렬 + 1회 순차)
             const ownerEmail = storeProfile.ownerEmail;
@@ -160,9 +158,7 @@ exports.handler = async (event) => {
         // Blobs에 예약 데이터 저장 (즉시 전송도 예약으로 통합)
         const reserveStore = getStore({
           name: 'reservations',
-          consistency: 'strong',
-          siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
-          token: process.env.NETLIFY_TOKEN,
+          consistency: 'strong'
         });
 
         const reserveKey = `reserve:${Date.now()}`;

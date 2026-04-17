@@ -11,7 +11,7 @@ exports.handler = async (event) => {
   // IP rate limit: 10분 내 5회 제한
   const ip = (event.headers['x-nf-client-connection-ip'] || event.headers['client-ip'] || 'unknown');
   try {
-    const rlStore = getStore({ name: 'rate-limit', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
+    const rlStore = getStore({ name: 'rate-limit', consistency: 'strong' });
     const rlKey = 'findid:' + ip;
     const rlRaw = await rlStore.get(rlKey).catch(() => null);
     const rl = rlRaw ? JSON.parse(rlRaw) : { count: 0, firstAt: Date.now() };
@@ -36,9 +36,7 @@ exports.handler = async (event) => {
 
   try {
     const store = getStore({
-      name: 'users', consistency: 'strong',
-      siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
-      token: process.env.NETLIFY_TOKEN
+      name: 'users', consistency: 'strong'
     });
 
     const { blobs } = await store.list({ prefix: 'user:' });

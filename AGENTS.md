@@ -41,4 +41,4 @@ lumi.it.kr is an AI-powered Instagram caption automation service for Korean smal
 - **Brand color**: `--pink: #C8507A`. Font: Pretendard. Icons: Lucide Icons (no emoji).
 - **Dark/Light mode**: Toggle via `localStorage` key `lumi_dark_mode`. Dark cards use `#272729`, alternating dark sections use `#000` / `#111`.
 - **API calls**: Frontend fetches `/api/*` endpoints, which Netlify redirects to `/.netlify/functions/*`.
-- **Netlify Blobs**: All Blob stores require explicit `siteID` and `token` from environment variables.
+- **Netlify Blobs**: Use runtime auto-context in Functions — do NOT pass `siteID`/`token` (those cause PAT rate limit/401 errors).

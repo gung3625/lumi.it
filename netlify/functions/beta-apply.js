@@ -13,9 +13,7 @@ exports.handler = async (event) => {
 
   const store = getStore({
     name: 'beta-applicants',
-    consistency: 'strong',
-    siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
-    token: process.env.NETLIFY_TOKEN,
+    consistency: 'strong'
   });
 
   // GET: 현재 신청자 수 조회
@@ -44,9 +42,7 @@ exports.handler = async (event) => {
         // 대기 명단에 실제 저장
         const waitStore = getStore({
           name: 'beta-waitlist',
-          consistency: 'strong',
-          siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
-          token: process.env.NETLIFY_TOKEN,
+          consistency: 'strong'
         });
         const waitId = `waitlist_${Date.now()}`;
         await waitStore.set(waitId, JSON.stringify({

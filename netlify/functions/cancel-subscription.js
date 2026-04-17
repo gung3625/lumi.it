@@ -27,7 +27,7 @@ exports.handler = async (event) => {
   const PORTONE_API_SECRET = process.env.PORTONE_API_SECRET;
 
   try {
-    const store = getStore({ name: 'users', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
+    const store = getStore({ name: 'users', consistency: 'strong' });
     let raw;
     try { raw = await store.get('user:' + email); } catch { raw = null; }
     if (!raw) {

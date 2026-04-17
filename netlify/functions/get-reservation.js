@@ -26,7 +26,7 @@ exports.handler = async (event) => {
   // Bearer 토큰 Blobs 검증 + 만료 체크
   let tokenEmail = null;
   if (bearerToken && !hasSecret) {
-    const userStore = getStore({ name: 'users', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
+    const userStore = getStore({ name: 'users', consistency: 'strong' });
     const tokenRaw = await userStore.get('token:' + bearerToken).catch(() => null);
     if (!tokenRaw) {
       return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '유효하지 않은 인증입니다.' }) };
@@ -41,9 +41,7 @@ exports.handler = async (event) => {
   try {
     const store = getStore({
       name: 'reservations',
-      consistency: 'strong',
-      siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
-      token: process.env.NETLIFY_TOKEN,
+      consistency: 'strong'
     });
 
     const raw = await store.get(key);

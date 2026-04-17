@@ -30,7 +30,7 @@ exports.handler = async (event) => {
   if (!token) {
     return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '로그인이 필요합니다.' }) };
   }
-  const userStore = getStore({ name: 'users', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
+  const userStore = getStore({ name: 'users', consistency: 'strong' });
   let tokenData;
   try { tokenData = await userStore.get('token:' + token); } catch { tokenData = null; }
   if (!tokenData) {
@@ -66,7 +66,7 @@ exports.handler = async (event) => {
 
   try {
     // 주문 정보 Blobs에 저장 (결제 검증용)
-    const store = getStore({ name: 'orders', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
+    const store = getStore({ name: 'orders', consistency: 'strong' });
     await store.set('order:' + orderId, JSON.stringify({
       orderId,
       email,

@@ -81,9 +81,7 @@ exports.handler = async (event) => {
   try {
     const userStore = getStore({
       name: 'users',
-      consistency: 'strong',
-      siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
-      token: process.env.NETLIFY_TOKEN
+      consistency: 'strong'
     });
 
     // 트렌드 기본값 (업종별)
@@ -134,7 +132,7 @@ exports.handler = async (event) => {
         // 업종별 트렌드 가져오기
         let userTrendStr = defaultTrends[normalizedCat] || defaultTrends.other;
         try {
-          const trendStore = getStore({ name: 'trends', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
+          const trendStore = getStore({ name: 'trends', consistency: 'strong' });
           const trendRaw = await trendStore.get('trends:' + normalizedCat);
           if (trendRaw) {
             const parsed = JSON.parse(trendRaw);
