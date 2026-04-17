@@ -2262,7 +2262,12 @@ var cards = {
                   setIsPosting(false);
                   setGeneratedCaptions(d.generatedCaptions);
                   setEditedCaption(d.generatedCaptions[0]);
-                  setPhase('caption');
+                  var featT = JSON.parse(localStorage.getItem('lumi_feat_toggles') || '{}');
+                  if (featT.captionReview === false) {
+                    autoSelectAndPost(rKey, d.generatedCaptions[0]);
+                  } else {
+                    setPhase('caption');
+                  }
                 } else if (attempts >= maxAttempts) {
                   setIsPosting(false); setPhase('real-upload');
                   alert('캡션 생성에 시간이 걸리고 있어요. 잠시 후 대시보드에서 확인해주세요.');
@@ -2335,7 +2340,12 @@ var cards = {
                 setIsPosting(false);
                 setGeneratedCaptions(d.generatedCaptions);
                 setEditedCaption(d.generatedCaptions[0]);
-                setPhase('caption');
+                var featT = JSON.parse(localStorage.getItem('lumi_feat_toggles') || '{}');
+                if (featT.captionReview === false) {
+                  autoSelectAndPost(rKey, d.generatedCaptions[0]);
+                } else {
+                  setPhase('caption');
+                }
               } else if (attempts >= maxAttempts) {
                 setIsPosting(false); setPhase('real-upload');
                 alert('캡션 생성에 시간이 걸리고 있어요. 잠시 후 대시보드에서 확인해주세요.');
