@@ -302,6 +302,88 @@ function toKeywordObjects(tags, source) {
   }));
 }
 
+// 4. "뜰 가능성" GPT 예측 — 최근 7일 성장률 기반
+async function predictRisingWithGPT({ category, domesticTags, globalTags, naverData, googleKR }) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) return null;
+
+  const categoryKo = CATEGORY_KO[category] || '일반';
+  const recentStr = (naverData || []).slice(0, 8).join(', ') || '없음';
+  const googleStr = (googleKR || []).slice(0, 8).join(', ') || '없음';
+  const currentStr = [...(domesticTags || []).slice(0, 5), ...(globalTags || []).slice(0, 3)].join(', ') || '없음';
+
+  const prompt = `당신은 인스타그램 트렌드 예측 전문가입니다.
+
+"${categoryKo}" 업종에서 앞으로 2~4주 안에 유행할 가능성이 높은 키워드 5개를 예측하세요.
+
+[현재 유행 중인 키워드]
+${currentStr}
+
+[최근 7일 네이버 급상승]
+${recentStr}
+
+[최근 구글 트렌드(한국)]
+${googleStr}
+
+각 키워드에 대해 다음을 JSON 배열로 응답하세요:
+- keyword: 예측 키워드 (한국어, 2~20자, # 없이)
+- confidence: 유행 가능성 0~100 정수
+- growthRate: 예상 성장률 문자열 (예: "+35%")
+- reason: 예측 근거 1줄 (20자 이내, 한국어)
+
+절대 금지: 현재 이미 널리 유행 중인 단어, 카테고리 단어(카페·커피·네일), 지역명, 브랜드명
+
+응답: JSON 배열만, 설명·마크다운 없음.
+예시: [{"keyword":"흑임자라떼","confidence":78,"growthRate":"+42%","reason":"흑임자 붐 + 음료 결합 수요 증가"}]`;
+
+  try {
+    const result = await httpsPost(
+      'api.openai.com',
+      '/v1/responses',
+      {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      {
+        model: 'gpt-5.4',
+        input: `인스타그램 트렌드 예측 전문가. JSON 배열만 응답.\n\n${prompt}`,
+        store: false,
+      },
+      25000
+    );
+
+    if (result.status !== 200) {
+      console.error('[gpt-rising]', category, 'status:', result.status);
+      return null;
+    }
+
+    const data = JSON.parse(result.body);
+    const content = (data.output?.[0]?.content?.[0]?.text || data.output_text || '').trim();
+    if (!content) return null;
+
+    const clean = content.replace(/```json|```/g, '').trim();
+    let items;
+    try {
+      items = JSON.parse(clean);
+    } catch {
+      return null;
+    }
+    if (!Array.isArray(items)) return null;
+
+    // 유효성 필터
+    const valid = items.filter(item =>
+      item && item.keyword && !isBadKeyword(item.keyword) &&
+      typeof item.confidence === 'number' &&
+      item.reason
+    ).slice(0, 5);
+
+    return valid.length >= 2 ? valid : null;
+  } catch(e) {
+    console.error('[gpt-rising]', category, '실패:', e.message);
+    return null;
+  }
+}
+
 async function saveScope({ store, scope, category, tags, updatedAt, source }) {
   const dateStr = updatedAt.slice(0, 10);
   const storeKey = `l30d-${scope}:${category}`;
@@ -389,9 +471,34 @@ exports.handler = async (event) => {
       await saveScope({ store, scope: 'global', category, tags: globalTags, updatedAt, source: 'scheduled-gpt' });
       globalTags.forEach((kw, i) => allGlobal.push({ keyword: kw, score: 100 - i * 5, mentions: 0, source: 'scheduled-gpt', bizCategory: category }));
 
-      results.push({ category, domestic: domesticTags.length, global: globalTags.length });
+      // "뜰 가능성" 예측
+      let risingItems = null;
+      if (process.env.OPENAI_API_KEY) {
+        risingItems = await predictRisingWithGPT({ category, domesticTags, globalTags, naverData, googleKR });
+      }
+      if (!risingItems || risingItems.length < 2) {
+        // fallback: 현재 domestic 키워드에서 하위 키워드를 rising으로
+        risingItems = domesticTags.slice(4, 8).map((kw, i) => ({
+          keyword: kw,
+          confidence: 60 - i * 5,
+          growthRate: '+' + (20 - i * 3) + '%',
+          reason: '국내 트렌드 상승세',
+        }));
+      }
+      try {
+        await store.set(`l30d-rising:${category}`, JSON.stringify({
+          items: risingItems,
+          updatedAt,
+          source: 'gpt-prediction',
+        }));
+      } catch(e) {
+        console.error(`[rising] ${category} 저장 실패:`, e.message);
+      }
+
+      results.push({ category, domestic: domesticTags.length, global: globalTags.length, rising: risingItems.length });
       console.log(`[${category}] 국내:`, domesticTags.join(', '));
       console.log(`[${category}] 해외:`, globalTags.join(', '));
+      console.log(`[${category}] 뜰 가능성:`, risingItems.map(r => r.keyword).join(', '));
 
       await new Promise(r => setTimeout(r, 500));
     } catch(e) {

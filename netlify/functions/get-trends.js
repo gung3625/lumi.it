@@ -216,8 +216,15 @@ exports.handler = async (event) => {
       const prevKey = `l30d-${scope}-prev:${storeKey}`;
       let scopeRaw = null;
       let prevRaw = null;
+      let risingRaw = null;
       try { scopeRaw = await store.get(scopeKey); } catch(e) {}
       try { prevRaw = await store.get(prevKey); } catch(e) {}
+      if (scope === 'domestic') {
+        try { risingRaw = await store.get(`l30d-rising:${storeKey}`); } catch(e) {}
+      }
+
+      const risingData = risingRaw ? JSON.parse(risingRaw) : null;
+      const rising = risingData && Array.isArray(risingData.items) ? risingData.items : [];
 
       if (scopeRaw) {
         const scopeData = JSON.parse(scopeRaw);
@@ -243,6 +250,7 @@ exports.handler = async (event) => {
               })(),
               ...(k.bizCategory ? { bizCategory: k.bizCategory } : {}),
             }))),
+            rising,
             insight: scopeData.insight || '',
             season: scope === 'domestic' ? season : undefined,
             updatedAt: scopeData.updatedAt || new Date().toISOString(),
@@ -259,6 +267,7 @@ exports.handler = async (event) => {
           categoryLabel: label,
           scope,
           keywords: [],
+          rising,
           insight: '',
           season: scope === 'domestic' ? season : undefined,
           updatedAt: new Date().toISOString(),

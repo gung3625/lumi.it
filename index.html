@@ -280,6 +280,8 @@ body.dark-mode .react-grid-item > .react-resizable-handle::after {
   .trend-header { padding:10px 14px 6px !important; }
   .trend-label { font-size:12px !important; font-weight:600 !important; }
   .trend-tab { font-size:10px !important; padding:3px 8px !important; }
+  .trend-main-tabs { padding:0 14px 4px !important; }
+  .trend-main-tab { font-size:10px !important; padding:3px 8px !important; }
   .trend-list { padding:0 12px 6px !important; overflow:visible !important; }
   .trend-item { padding:5px 8px !important; gap:6px !important; border-radius:8px !important; }
   .trend-rank { font-size:11px !important; font-weight:700 !important; min-width:14px !important; }
@@ -287,6 +289,10 @@ body.dark-mode .react-grid-item > .react-resizable-handle::after {
   .trend-tag { display:none !important; }
   .trend-delta { font-size:10px !important; padding:2px 5px !important; border-radius:6px !important; }
   .trend-cta-bar { display:none !important; }
+  .rising-list { padding:0 12px 4px !important; gap:4px !important; }
+  .rising-item { padding:4px 8px !important; }
+  .rising-kw { font-size:10px !important; }
+  .rising-reason { display:none !important; }
 }
 @container (max-width: 280px) {
   .trend-header { padding:12px 14px 6px !important; }
@@ -913,6 +919,14 @@ body.dark-mode .trend-cta-bar { background:linear-gradient(transparent, rgba(28,
 body.dark-mode .trend-cta-msg { color:rgba(255,255,255,.5); }
 body.dark-mode .trend-cta-btn { background:#f0f2f8; color:#0d1117; }
 
+/* TREND MAIN TABS (지금 유행 / 뜰 가능성) */
+.trend-main-tabs { display:flex; gap:4px; padding:0 20px 6px; }
+.trend-main-tab { font-size:11px; padding:5px 12px; border-radius:980px; border:none; cursor:pointer; font-family:inherit; transition:all .2s; display:flex; align-items:center; gap:4px; }
+.trend-main-tab.active-current { background:#C8507A; color:#fff; font-weight:600; }
+.trend-main-tab.active-rising { background:#2EBFA5; color:#fff; font-weight:600; }
+.trend-main-tab:not(.active-current):not(.active-rising) { background:transparent; color:rgba(0,0,0,.35); }
+body.dark-mode .trend-main-tab:not(.active-current):not(.active-rising) { color:rgba(255,255,255,.3); }
+
 /* TREND CHART VIEW */
 .trend-view-tabs { display:flex; gap:3px; padding:0 24px 8px; }
 .trend-view-tab { font-size:11px; padding:3px 10px; border-radius:980px; border:none; cursor:pointer; font-family:inherit; transition:all .2s; }
@@ -923,6 +937,24 @@ body.dark-mode .trend-view-tab:not(.active) { color:rgba(255,255,255,.3); }
 .trend-chart-wrap { flex:1; padding:0 16px 8px; display:flex; align-items:stretch; min-height:0; }
 .trend-chart-wrap canvas { max-height:200px; }
 @media (max-width:414px) { .trend-chart-wrap canvas { max-height:120px !important; } }
+
+/* RISING CARD LIST */
+.rising-list { flex:1; padding:0 20px 8px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; }
+.rising-item { display:flex; flex-direction:column; gap:3px; padding:8px 12px; border-radius:10px; background:rgba(46,191,165,.12); animation:trendSlideIn .3s ease-out both; }
+.rising-kw { font-size:12px; font-weight:600; color:#1a8a78; display:flex; align-items:center; justify-content:space-between; gap:6px; }
+.rising-kw-text { flex:1; min-width:0; }
+.rising-badges { display:flex; gap:4px; align-items:center; flex-shrink:0; }
+.rising-conf { font-size:10px; font-weight:700; padding:2px 7px; border-radius:8px; background:rgba(46,191,165,.25); color:#1a8a78; white-space:nowrap; }
+.rising-growth { font-size:10px; font-weight:600; padding:2px 7px; border-radius:8px; background:rgba(34,197,94,.18); color:#15803d; white-space:nowrap; }
+.rising-reason { font-size:10px; color:rgba(0,0,0,.4); line-height:1.4; }
+body.dark-mode .rising-item { background:rgba(46,191,165,.1); }
+body.dark-mode .rising-kw { color:#2EBFA5; }
+body.dark-mode .rising-conf { background:rgba(46,191,165,.2); color:#2EBFA5; }
+body.dark-mode .rising-growth { background:rgba(34,197,94,.15); color:#4ade80; }
+body.dark-mode .rising-reason { color:rgba(255,255,255,.4); }
+.rising-empty { display:flex; align-items:center; justify-content:center; flex:1; font-size:12px; color:rgba(0,0,0,.35); text-align:center; padding:20px; }
+body.dark-mode .rising-empty { color:rgba(255,255,255,.3); }
+@media (max-width:768px) { .rising-item { padding:6px 10px; } .rising-kw { font-size:11px; } .rising-reason { font-size:10px; } }
 
 /* TWITTER */
 .twitter-icon { width: 80px; height: 80px; color: #fff; }
@@ -3278,8 +3310,10 @@ var cards = {
     try { var _cc = JSON.parse(localStorage.getItem('lumi_trend_cache')||'null'); if(_cc){_initCache=_cc;} } catch(ex){}
 
     var TrendCard = function() {
+      var stMain = React.useState('current'), mainTab = stMain[0], setMainTab = stMain[1];
       var st = React.useState('domestic'), tab = st[0], setTab = st[1];
       var st2 = React.useState(_initCache), apiData = st2[0], setApiData = st2[1];
+      var stRising = React.useState([]), risingItems = stRising[0], setRisingItems = stRising[1];
       var st3 = React.useState([0,1,2,3,4,5,6]), prevOrder = st3[0], setPrevOrder = st3[1];
       var st4 = React.useState([1,0,2,4,3,5,6]), order = st4[0], setOrder = st4[1];
       var stView = React.useState('list'), chartView = stView[0], setChartView = stView[1];
@@ -3317,6 +3351,10 @@ var cards = {
                   merged = merged.slice(0,7).map(function(kk,i){kk.rank=i+1;return kk;});
                   if(merged.length>0) saveTrends(scope, merged);
                 });
+              }
+              // rising 데이터 — domestic 응답에서 추출
+              if(scope === 'domestic' && data.rising && data.rising.length > 0){
+                setRisingItems(data.rising);
               }
             }).catch(function(){});
         });
@@ -3449,54 +3487,91 @@ var cards = {
         };
       }, [chartView, tab, apiData]);
 
+      var flameIcon = e('svg',{width:'11',height:'11',viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:'2',strokeLinecap:'round',strokeLinejoin:'round'},e('path',{d:'M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z'}));
+      var sproutIcon = e('svg',{width:'11',height:'11',viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:'2',strokeLinecap:'round',strokeLinejoin:'round'},e('path',{d:'M7 20h10'}),e('path',{d:'M10 20c5.5-2.5.8-6.4 3-10'}),e('path',{d:'M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z'}),e('path',{d:'M14.1 6a7 7 0 0 1 1.9 4.5c0 .9-.2 1.7-.5 2.3-2-.5-3.2-1.5-3.8-2.9-.6-1.4-.5-3.1.3-5.4 1.6.5 2.6 1.3 2.9 2.6 0 0 0 0-.8 1'}));
+
       return e('div', {ref:cardRef, className:'bento-card card-visual card-project card-trend card-responsive', style:{padding:0}},
         e('div', {className:'trend-wrap'},
           e('div', {className:'trend-header'},
             e('span', {className:'trend-label'}, _trendLabel),
-            e('div', {className:'trend-tabs'},
-              e('span', {className:'trend-tab'+(tab==='domestic'?' active':''), onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(){setTab('domestic');}}, '국내'),
-              e('span', {className:'trend-tab'+(tab==='global'?' active':''), onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(){setTab('global');}}, '해외')
-            )
-          ),
-          e('div', {className:'trend-view-tabs'},
-            e('button', {className:'trend-view-tab'+(chartView==='list'?' active':''), onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(){setChartView('list');}}, '목록'),
-            e('button', {className:'trend-view-tab'+(chartView==='chart'?' active':''), onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(){setChartView('chart');}}, '그래프')
-          ),
-          chartView === 'chart'
-            ? e('div', {className:'trend-chart-wrap'},
-                e('canvas', {ref:chartRef, style:{width:'100%'}})
-              )
-            : e('div', {className:'trend-list'},
-                e('div', {className:'trend-track', key:'track-'+tab, style:trackH?{height:trackH+'px'}:{}},
-                  src.slice(0,visibleCount).map(function(t,idx){
-                    var rank = visibleCount < 7 ? idx : (rankMap[idx]!==undefined?rankMap[idx]:idx);
-                    var delta = 0;
-                    if(prevOrder){
-                      var oldRank = prevOrder.indexOf(idx);
-                      if(oldRank!==-1) delta = oldRank - rank;
-                    }
-                    if(delta===0 && t.rankChange && t.rankChange!=='new') delta = t.rankChange;
-                    var cls = delta>0?'up':delta<0?'down':'same';
-                    var deltaEl;
-                    if(t.rankChange==='new'){
-                      deltaEl = e('span',{className:'trend-delta up',style:{background:'rgba(34,197,94,.2)'}}, 'NEW');
-                    } else if(delta===0){
-                      deltaEl = e('span',{className:'trend-delta same'},'—');
-                    } else {
-                      deltaEl = e('span',{className:'trend-delta '+cls}, delta>0?upArrow:downArrow, Math.abs(delta));
-                    }
-                    var catLabel = (t.bizCategory && CATEGORY_KO[t.bizCategory]) || '종합';
-                    var kw = (t.keyword||'').replace(/^#/,'');
-                    return e('div',{className:'trend-item',key:scope+'-'+kw,style:{top:(rank*itemH)+'px',animation:'trendSlideIn .35s ease-out '+(rank*0.04)+'s both'}},
-                      e('span',{className:'trend-rank'},rank+1),
-                      e('div',{className:'trend-info'},
-                        e('p',{className:'trend-text'},'#'+kw),
-                        e('p',{className:'trend-tag'},catLabel+' · '+(tab==='domestic'?'국내':'Global'))
-                      ),
-                      deltaEl
-                    );
-                  })
+            mainTab === 'current'
+              ? e('div', {className:'trend-tabs'},
+                  e('span', {className:'trend-tab'+(tab==='domestic'?' active':''), onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(){setTab('domestic');}}, '국내'),
+                  e('span', {className:'trend-tab'+(tab==='global'?' active':''), onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(){setTab('global');}}, '해외')
                 )
+              : null
+          ),
+          e('div', {className:'trend-main-tabs'},
+            e('button', {
+              className:'trend-main-tab'+(mainTab==='current'?' active-current':''),
+              onMouseDown:function(ev){ev.stopPropagation();},
+              onClick:function(){setMainTab('current');}
+            }, flameIcon, '지금 유행'),
+            e('button', {
+              className:'trend-main-tab'+(mainTab==='rising'?' active-rising':''),
+              onMouseDown:function(ev){ev.stopPropagation();},
+              onClick:function(){setMainTab('rising');}
+            }, sproutIcon, '뜰 가능성')
+          ),
+          mainTab === 'current'
+            ? e(React.Fragment, null,
+                e('div', {className:'trend-view-tabs'},
+                  e('button', {className:'trend-view-tab'+(chartView==='list'?' active':''), onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(){setChartView('list');}}, '목록'),
+                  e('button', {className:'trend-view-tab'+(chartView==='chart'?' active':''), onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(){setChartView('chart');}}, '그래프')
+                ),
+                chartView === 'chart'
+                  ? e('div', {className:'trend-chart-wrap'},
+                      e('canvas', {ref:chartRef, style:{width:'100%'}})
+                    )
+                  : e('div', {className:'trend-list'},
+                      e('div', {className:'trend-track', key:'track-'+tab, style:trackH?{height:trackH+'px'}:{}},
+                        src.slice(0,visibleCount).map(function(t,idx){
+                          var rank = visibleCount < 7 ? idx : (rankMap[idx]!==undefined?rankMap[idx]:idx);
+                          var delta = 0;
+                          if(prevOrder){
+                            var oldRank = prevOrder.indexOf(idx);
+                            if(oldRank!==-1) delta = oldRank - rank;
+                          }
+                          if(delta===0 && t.rankChange && t.rankChange!=='new') delta = t.rankChange;
+                          var cls = delta>0?'up':delta<0?'down':'same';
+                          var deltaEl;
+                          if(t.rankChange==='new'){
+                            deltaEl = e('span',{className:'trend-delta up',style:{background:'rgba(34,197,94,.2)'}}, 'NEW');
+                          } else if(delta===0){
+                            deltaEl = e('span',{className:'trend-delta same'},'—');
+                          } else {
+                            deltaEl = e('span',{className:'trend-delta '+cls}, delta>0?upArrow:downArrow, Math.abs(delta));
+                          }
+                          var catLabel = (t.bizCategory && CATEGORY_KO[t.bizCategory]) || '종합';
+                          var kw = (t.keyword||'').replace(/^#/,'');
+                          return e('div',{className:'trend-item',key:scope+'-'+kw,style:{top:(rank*itemH)+'px',animation:'trendSlideIn .35s ease-out '+(rank*0.04)+'s both'}},
+                            e('span',{className:'trend-rank'},rank+1),
+                            e('div',{className:'trend-info'},
+                              e('p',{className:'trend-text'},'#'+kw),
+                              e('p',{className:'trend-tag'},catLabel+' · '+(tab==='domestic'?'국내':'Global'))
+                            ),
+                            deltaEl
+                          );
+                        })
+                      )
+                    )
+              )
+            : e('div', {className:'rising-list'},
+                risingItems.length > 0
+                  ? risingItems.map(function(item, i){
+                      var kw = (item.keyword||'').replace(/^#/,'');
+                      return e('div',{className:'rising-item',key:'rising-'+kw,style:{animationDelay:(i*0.06)+'s'}},
+                        e('div',{className:'rising-kw'},
+                          e('span',{className:'rising-kw-text'},'#'+kw),
+                          e('div',{className:'rising-badges'},
+                            e('span',{className:'rising-conf'},item.confidence+'%'),
+                            item.growthRate ? e('span',{className:'rising-growth'},item.growthRate) : null
+                          )
+                        ),
+                        item.reason ? e('p',{className:'rising-reason'},item.reason) : null
+                      );
+                    })
+                  : e('div',{className:'rising-empty'},'자정 이후 예측 데이터가\n생성됩니다')
               ),
           !isLoggedIn ? e('div', {className:'trend-cta-bar'},
             e('p', {className:'trend-cta-msg'}, '회원가입만 해도 업종별 최신 트렌드를', e('br'), '확인할 수 있어요')
