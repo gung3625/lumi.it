@@ -107,48 +107,22 @@ function getTempImageStore() {
   });
 }
 
-// ── 이미지 리사이징 + Blobs 임시 저장 ──
+// ── 이미지 Blobs 임시 저장 (sharp 제거 — IG API가 리사이즈 처리) ──
 async function processImages(photos, reserveKey) {
-  let sharp;
-  try { sharp = require('sharp'); } catch (e) {
-    throw new Error('이미지 처리 라이브러리 로드 실패. 관리자에게 문의해주세요.');
-  }
-
   const siteUrl = process.env.URL || 'https://lumi.it.kr';
   const imgStore = getTempImageStore();
   const imageUrls = [];
   const tempKeys = [];
   const imageBuffers = [];
 
-  // 1단계: 모든 이미지 리사이징 (병렬)
-  // IG 요구사항: 최소 320x320, 비율 0.8~1.91, 권장 1080x1350(4:5)
-  const buffers = await Promise.all(photos.map(async (photo, i) => {
-    const originalBuffer = Buffer.from(photo.base64, 'base64');
-    try {
-      const buffer = await sharp(originalBuffer)
-        .rotate() // EXIF orientation 자동 반영
-        .resize(1080, 1350, { fit: 'cover', position: 'center', withoutEnlargement: false })
-        .jpeg({ quality: 85 })
-        .toBuffer();
-      const meta = await sharp(buffer).metadata();
-      if (meta.width < 320 || meta.height < 320) {
-        throw new Error(`이미지가 너무 작습니다 (${meta.width}x${meta.height}). 최소 320x320 크기 이미지를 사용해주세요.`);
-      }
-      console.log(`[process-and-post] 이미지 ${i} 리사이즈: ${meta.width}x${meta.height}`);
-      return buffer;
-    } catch (e) {
-      console.error(`[process-and-post] 이미지 ${i} 처리 실패:`, e.message);
-      throw new Error(`이미지 처리 실패: ${e.message}`);
-    }
-  }));
-
-  // 2단계: Blobs 저장 (병렬)
-  await Promise.all(buffers.map(async (buffer, i) => {
+  await Promise.all(photos.map(async (photo, i) => {
+    const buffer = Buffer.from(photo.base64, 'base64');
     const tempKey = `temp-img:${reserveKey}:${i}`;
     await imgStore.set(tempKey, buffer, { metadata: { contentType: 'image/jpeg' } });
     tempKeys[i] = tempKey;
     imageUrls[i] = `${siteUrl}/.netlify/functions/serve-image?key=${encodeURIComponent(tempKey)}`;
-    imageBuffers[i] = buffer.toString('base64');
+    imageBuffers[i] = photo.base64;
+    console.log(`[process-and-post] 이미지 ${i} 저장 완료`);
   }));
 
   return { imageUrls, tempKeys, imageBuffers };
