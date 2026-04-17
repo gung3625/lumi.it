@@ -1889,6 +1889,7 @@ var cards = {
       var stEditCap = React.useState(''), editedCaption = stEditCap[0], setEditedCaption = stEditCap[1];
       var stRegenCnt = React.useState(0), regenCount = stRegenCnt[0], setRegenCount = stRegenCnt[1];
       var stPosting2 = React.useState(false), isConfirmPosting = stPosting2[0], setIsConfirmPosting = stPosting2[1];
+      var stPostMode = React.useState('immediate'), currentPostMode = stPostMode[0], setCurrentPostMode = stPostMode[1];
 
       // 클라이언트 이미지 리사이즈 (canvas, 최대 1080px, quality 0.85)
       function resizeImage(file) {
@@ -1899,8 +1900,7 @@ var cards = {
           img.onload = function() {
             URL.revokeObjectURL(url);
             var w = img.naturalWidth, h = img.naturalHeight;
-            if (w <= MAX && h <= MAX) { resolve(file); return; }
-            var ratio = Math.min(MAX / w, MAX / h);
+            var ratio = (w > MAX || h > MAX) ? Math.min(MAX / w, MAX / h) : 1;
             var cw = Math.round(w * ratio), ch = Math.round(h * ratio);
             var canvas = document.createElement('canvas');
             canvas.width = cw; canvas.height = ch;
@@ -1985,6 +1985,7 @@ var cards = {
         var token = localStorage.getItem('lumi_token');
         if (!token) { alert('로그인이 필요합니다.'); return; }
         setIsPosting(true);
+        setCurrentPostMode('immediate');
         checkPostCount(token, async function() {
         setPhase('uploading');
         var fd = await buildPostFormData(new Date().toISOString());
@@ -2631,8 +2632,8 @@ var cards = {
                   e('svg',{viewBox:'0 0 24 24',fill:'none',width:28,height:28},
                     e('path',{d:'M4 12l6 6L20 6',stroke:'#FF6B8B',strokeWidth:'2.5',strokeLinecap:'round',strokeLinejoin:'round'}))
                 ),
-                e('p', {className:'tut-title',style:{fontSize:'16px'}}, '\uC608\uC57D \uC644\uB8CC'),
-                e('p', {style:{fontSize:'12px',color:isDark?'rgba(255,255,255,.5)':'rgba(0,0,0,.4)',marginTop:'6px',marginBottom:'0'}}, '\uC608\uC57D\uD55C \uC2DC\uAC04\uC5D0 \uC778\uC2A4\uD0C0\uC5D0 \uAC8C\uC2DC\uB429\uB2C8\uB2E4'),
+                e('p', {className:'tut-title',style:{fontSize:'16px'}}, currentPostMode === 'immediate' ? '\uAC8C\uC2DC \uC644\uB8CC' : '\uC608\uC57D \uC644\uB8CC'),
+                e('p', {style:{fontSize:'12px',color:isDark?'rgba(255,255,255,.5)':'rgba(0,0,0,.4)',marginTop:'6px',marginBottom:'0'}}, currentPostMode === 'immediate' ? '\uC778\uC2A4\uD0C0\uADF8\uB7A8\uC5D0 \uAC8C\uC2DC\uB418\uACE0 \uC788\uC5B4\uC694!' : '\uC608\uC57D\uD55C \uC2DC\uAC04\uC5D0 \uC778\uC2A4\uD0C0\uC5D0 \uAC8C\uC2DC\uB429\uB2C8\uB2E4'),
                 e('button', {style:{background:isDark?'rgba(255,255,255,.08)':'rgba(0,0,0,.05)',border:'none',fontFamily:'inherit',fontSize:'13px',color:isDark?'#FF8FAB':'#C8507A',cursor:'pointer',marginTop:'20px',padding:'10px 24px',borderRadius:'980px',transition:'transform .2s'},
                   onMouseDown:function(ev){ev.stopPropagation();},
                   onMouseOver:function(ev){ev.currentTarget.style.transform='scale(1.05)';},
