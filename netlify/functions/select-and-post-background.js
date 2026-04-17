@@ -302,19 +302,40 @@ exports.handler = async (event) => {
 
   } catch (err) {
     console.error('[select-and-post] 에러:', err.message);
-    // 에러 상태 저장
+    // 에러 상태 저장 + 실패 시 postCount 롤백 (실패건은 게시 카운트에서 제외)
     if (reservationKey) {
+      let rollbackEmail = null;
+      let alreadyRolledBack = false;
       try {
         const store = getBlobStore('reservations');
         const raw = await store.get(reservationKey);
         if (raw) {
           const item = JSON.parse(raw);
+          alreadyRolledBack = !!item.postCountRolledBack;
+          rollbackEmail = (item.storeProfile && (item.storeProfile.ownerEmail || item.storeProfile.email)) || item.ownerEmail || null;
           item.postError = err.message;
           item.postErrorAt = new Date().toISOString();
           item.captionStatus = 'failed';
+          item.postCountRolledBack = true;
           await store.set(reservationKey, JSON.stringify(item));
         }
       } catch (_) {}
+      if (rollbackEmail && !alreadyRolledBack) {
+        try {
+          const userStore = getBlobStore('users');
+          const uRaw = await userStore.get('user:' + rollbackEmail);
+          if (uRaw) {
+            const user = JSON.parse(uRaw);
+            const now = new Date();
+            const thisMonth = now.getFullYear() + '-' + (now.getMonth() + 1);
+            if (user.postCountMonth === thisMonth && (user.postCount || 0) > 0) {
+              user.postCount = user.postCount - 1;
+              await userStore.set('user:' + rollbackEmail, JSON.stringify(user));
+              console.log('[select-and-post] postCount 롤백 완료:', rollbackEmail, '→', user.postCount);
+            }
+          }
+        } catch (e) { console.error('[select-and-post] postCount 롤백 실패:', e.message); }
+      }
     }
   }
 };

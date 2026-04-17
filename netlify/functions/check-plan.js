@@ -38,7 +38,38 @@ exports.handler = async (event) => {
     const user = JSON.parse(raw);
     const now = new Date();
     const thisMonth = now.getFullYear() + '-' + (now.getMonth() + 1);
-    const postCount = user.postCountMonth === thisMonth ? (user.postCount || 0) : 0;
+
+    // 권위적 카운트: reservations를 스캔해서 이번 달 실제 성공 게시만 카운트
+    // (count-post 사전 증가가 실패건까지 부풀린 이슈를 해결)
+    let authoritativeCount = 0;
+    try {
+      const reserveStore = getStore({ name: 'reservations', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
+      const { blobs } = await reserveStore.list({ prefix: 'reserve:' });
+      const records = await Promise.all((blobs || []).map(b => reserveStore.get(b.key).catch(() => null)));
+      for (const r of records) {
+        if (!r) continue;
+        try {
+          const it = JSON.parse(r);
+          const ownerEmail = (it.storeProfile && (it.storeProfile.ownerEmail || it.storeProfile.email)) || it.ownerEmail || null;
+          if (ownerEmail !== email) continue;
+          if (!it.isSent) continue;
+          const sentAt = it.sentAt ? new Date(it.sentAt) : null;
+          if (!sentAt || isNaN(sentAt.getTime())) continue;
+          const recMonth = sentAt.getFullYear() + '-' + (sentAt.getMonth() + 1);
+          if (recMonth === thisMonth) authoritativeCount++;
+        } catch(_) {}
+      }
+      // user store도 동기화 (한도 체크가 authoritative와 일치하도록)
+      if (user.postCountMonth !== thisMonth || (user.postCount || 0) !== authoritativeCount) {
+        user.postCountMonth = thisMonth;
+        user.postCount = authoritativeCount;
+        try { await store.set('user:' + email, JSON.stringify(user)); } catch(_) {}
+      }
+    } catch (e) {
+      console.error('[check-plan] 권위적 카운트 실패, user.postCount 사용:', e.message);
+      authoritativeCount = user.postCountMonth === thisMonth ? (user.postCount || 0) : 0;
+    }
+    const postCount = authoritativeCount;
     const limits = { trial: 3, basic: 8, standard: 16, pro: 20 };
     // 대표님 계정 - 프로 플랜 전체 기능 사용
     const ADMIN_EMAIL = process.env.ADMIN_EMAIL || '';
