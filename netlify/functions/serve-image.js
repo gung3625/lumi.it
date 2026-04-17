@@ -7,7 +7,8 @@ exports.handler = async (event) => {
   let key = qp.key;
   if (!key && qp.b64key) {
     try {
-      const b64 = qp.b64key.replace(/-/g, '+').replace(/_/g, '/');
+      const raw = qp.b64key.replace(/\.jpg$/i, '');
+      const b64 = raw.replace(/-/g, '+').replace(/_/g, '/');
       key = Buffer.from(b64, 'base64').toString('utf8');
     } catch {}
   }
