@@ -152,7 +152,7 @@ exports.handler = async (event) => {
     const imageUrls = item.imageUrls && item.imageUrls.length
       ? item.imageUrls
       : (item.imageKeys || item.tempKeys || []).map(k =>
-          `${SITE_URL}/.netlify/functions/serve-image?key=${encodeURIComponent(k)}`
+          `${SITE_URL}/ig-img/${Buffer.from(k).toString('base64').replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'')}.jpg`
         );
     if (!imageUrls.length) {
       return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '게시할 이미지가 없습니다' }) };

@@ -2,7 +2,15 @@ const { getStore } = require('@netlify/blobs');
 
 exports.handler = async (event) => {
   // img 태그, Instagram Graph API 등에서 헤더 없이 호출되므로 인증 없이 key prefix만 검증
-  const key = event.queryStringParameters?.key;
+  // b64key 우선 (Netlify redirect /ig-img/:encoded.jpg → serve-image?b64key=:encoded)
+  const qp = event.queryStringParameters || {};
+  let key = qp.key;
+  if (!key && qp.b64key) {
+    try {
+      const b64 = qp.b64key.replace(/-/g, '+').replace(/_/g, '/');
+      key = Buffer.from(b64, 'base64').toString('utf8');
+    } catch {}
+  }
   if (!key || !key.startsWith('temp-img:')) {
     return { statusCode: 400, body: 'invalid key' };
   }

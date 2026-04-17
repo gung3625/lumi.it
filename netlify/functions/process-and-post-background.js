@@ -120,7 +120,7 @@ async function processImages(photos, reserveKey) {
     const tempKey = `temp-img:${reserveKey}:${i}`;
     await imgStore.set(tempKey, buffer, { metadata: { contentType: 'image/jpeg' } });
     tempKeys[i] = tempKey;
-    imageUrls[i] = `${siteUrl}/.netlify/functions/serve-image?key=${encodeURIComponent(tempKey)}`;
+    imageUrls[i] = `${siteUrl}/ig-img/${Buffer.from(tempKey).toString('base64').replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'')}.jpg`;
     imageBuffers[i] = photo.base64;
     console.log(`[process-and-post] 이미지 ${i} 저장 완료`);
   }));

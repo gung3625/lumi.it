@@ -218,7 +218,7 @@ exports.handler = async (event) => {
     const imageUrls = item.imageUrls && item.imageUrls.length
       ? item.imageUrls
       : (item.imageKeys || item.tempKeys || []).map(k =>
-          `${SITE_URL}/.netlify/functions/serve-image?key=${encodeURIComponent(k)}`
+          `${SITE_URL}/ig-img/${Buffer.from(k).toString('base64').replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'')}.jpg`
         );
     if (!imageUrls.length) { console.error('[select-and-post] 이미지 없음'); return; }
 
