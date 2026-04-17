@@ -2109,6 +2109,8 @@ var cards = {
                 ? '예약 완료! ' + new Date(d.scheduledAt).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) + '에 게시됩니다.'
                 : '예약이 완료됐어요. 대시보드에서 확인하세요.';
               alert(schedMsg);
+              swrInvalidate('relay-list');
+              window.dispatchEvent(new CustomEvent('lumi:reservation-added'));
               setPhase('idle');
             } else {
               setPhase('cta');
@@ -3858,7 +3860,8 @@ var cards = {
           .then(function(d){
             if (d && d.success === true) {
               swrInvalidate('relay-list');
-              setReservations(function(prev){ return prev.filter(function(r){ return r.reservationKey !== rKey; }); });
+              setReservations(function(prev){ return prev.filter(function(r){ return (r.reservationKey || r.key) !== rKey; }); });
+              window.dispatchEvent(new CustomEvent('lumi:reservation-added'));
             } else {
               alert(d.error || '\uCDE8\uC18C \uC2E4\uD328. \uB2E4\uC2DC \uC2DC\uB3C4\uD574\uC8FC\uC138\uC694.');
             }
