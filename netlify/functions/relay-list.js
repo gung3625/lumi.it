@@ -74,6 +74,7 @@ exports.handler = async (event) => {
           imageKeys: (item.imageKeys || item.tempKeys || []).slice(0, 4),
           bizCategory: item.bizCategory,
           userMessage: item.userMessage || '',
+          submittedAt: item.submittedAt || null,
         });
       } catch {}
     }

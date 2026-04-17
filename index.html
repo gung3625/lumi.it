@@ -3914,7 +3914,7 @@ var cards = {
           var rawTime = r.autoPostAt || r.scheduledAt || null;
           var dt = rawTime ? new Date(rawTime) : null;
           var timeStr = dt ? ((dt.getMonth()+1)+'/'+dt.getDate()+' '+(dt.getHours()<12?'\uC624\uC804':'\uC624\uD6C4')+' '+(dt.getHours()===0?12:dt.getHours()>12?dt.getHours()-12:dt.getHours())+':'+String(dt.getMinutes()).padStart(2,'0')) : '';
-          var createdDt = r.createdAt ? new Date(r.createdAt) : null;
+          var createdDt = r.createdAt ? new Date(r.createdAt) : (r.submittedAt ? new Date(r.submittedAt) : null);
           var createdStr = createdDt ? ((createdDt.getFullYear())+'.'+String(createdDt.getMonth()+1).padStart(2,'0')+'.'+String(createdDt.getDate()).padStart(2,'0')+' '+String(createdDt.getHours()).padStart(2,'0')+':'+String(createdDt.getMinutes()).padStart(2,'0')) : null;
           var isCancelled = r._cancelled;
           var statusMap = {'ready':'\uAC8C\uC2DC \uB300\uAE30','processing':'\uCC98\uB9AC\uC911','posted':'\uAC8C\uC2DC\uC644\uB8CC','failed':'\uC2E4\uD328','completed':'\uAC8C\uC2DC\uC644\uB8CC'};
