@@ -2057,10 +2057,15 @@ var cards = {
               }
               if ((d.captionStatus === 'ready' || (!d.captionStatus && d.generatedCaptions && d.generatedCaptions.length)) && d.generatedCaptions && d.generatedCaptions.length) {
                 setIsPosting(false);
-                // 캡션 확인 화면 표시 (릴레이 모드 폐지 — 항상 캡션 확인)
                 setGeneratedCaptions(d.generatedCaptions);
                 setEditedCaption(d.generatedCaptions[0]);
-                setPhase('caption');
+                // 캡션 확인 토글 OFF면 확인 단계 스킵, 바로 게시
+                var featT = JSON.parse(localStorage.getItem('lumi_feat_toggles') || '{}');
+                if (featT.captionReview === false) {
+                  autoSelectAndPost(rKey, d.generatedCaptions[0]);
+                } else {
+                  setPhase('caption');
+                }
               } else if (d.captionStatus === 'posting' || d.captionStatus === 'posted' || d.isSent) {
                 setIsPosting(false);
                 setRealFiles([]); setRealNote(''); setPhase('cta');
@@ -2114,17 +2119,15 @@ var cards = {
         });
       }
 
-      // 캡션 확정 게시
-      function handleConfirmPost() {
+      // 캡션 선택 + 게시 폴링 공통 로직 (캡션 확인 토글 OFF 스킵 경로와 공유)
+      function runSelectAndPost(rKey, captionText) {
         var token = localStorage.getItem('lumi_token');
-        if (!token) return;
-        if (!reservationKey) return;
+        if (!token || !rKey) return;
         setIsConfirmPosting(true);
-        // 편집된 캡션을 선택 0번으로 저장 후 게시
         fetch('/api/select-caption', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-          body: JSON.stringify({ reservationKey: reservationKey, captionIndex: 0, editedCaption: editedCaption })
+          body: JSON.stringify({ reservationKey: rKey, captionIndex: 0, editedCaption: captionText })
         }).then(function(r){ return r.json(); })
         .then(function(d){
           setIsConfirmPosting(false);
@@ -2142,7 +2145,7 @@ var cards = {
               setPhase('idle');
             } else {
               // 즉시 게시 — 백그라운드 IG 업로드 완료까지 폴링
-              var rKeyForPoll = reservationKey;
+              var rKeyForPoll = rKey;
               setIsPostingToIG(true);
               setPhase('generating'); // 스피너 재활용 ("게시 중..." 문구)
               var pollAttempts = 0;
@@ -2192,6 +2195,15 @@ var cards = {
           setIsConfirmPosting(false);
           alert('게시 오류: ' + err.message);
         });
+      }
+
+      // 사용자가 캡션 확인 화면에서 "게시" 눌렀을 때
+      function handleConfirmPost() {
+        runSelectAndPost(reservationKey, editedCaption);
+      }
+      // 캡션 확인 토글 OFF일 때 자동 호출
+      function autoSelectAndPost(rKey, caption) {
+        runSelectAndPost(rKey, caption);
       }
 
       // 최적 시간에 게시
