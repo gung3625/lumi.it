@@ -1,4 +1,12 @@
 const { getStore } = require('@netlify/blobs');
+const crypto = require('crypto');
+
+function checkSecret(provided) {
+  const secret = process.env.LUMI_SECRET;
+  if (!secret) return false;
+  try { return crypto.timingSafeEqual(Buffer.from(provided || ''), Buffer.from(secret)); }
+  catch { return false; }
+}
 
 exports.handler = async (event) => {
   const headers = {
@@ -8,7 +16,7 @@ exports.handler = async (event) => {
 
   // 인증: 헤더로만 받음 (URL 쿼리 파라미터 금지 — 로그 노출 방지)
   const token = event.headers['x-admin-token'] || event.headers['authorization']?.replace('Bearer ', '');
-  if (!process.env.LUMI_SECRET || token !== process.env.LUMI_SECRET) {
+  if (!checkSecret(token)) {
     // IP 기반 rate limit (Blobs에 실패 횟수 기록)
     const ip = (event.headers['x-nf-client-connection-ip'] || event.headers['client-ip'] || 'unknown');
     try {

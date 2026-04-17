@@ -1,4 +1,5 @@
 const { getStore } = require('@netlify/blobs');
+const crypto = require('crypto');
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -6,13 +7,20 @@ const CORS = {
   'Content-Type': 'application/json',
 };
 
+function checkSecret(provided) {
+  const secret = process.env.LUMI_SECRET;
+  if (!secret) return false;
+  try { return crypto.timingSafeEqual(Buffer.from(provided || ''), Buffer.from(secret)); }
+  catch { return false; }
+}
+
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS };
 
   const token = (event.headers['authorization'] || '').replace('Bearer ', '').trim()
     || event.headers['x-admin-token'] || '';
 
-  if (!process.env.LUMI_SECRET || token !== process.env.LUMI_SECRET) {
+  if (!checkSecret(token)) {
     return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증 실패' }) };
   }
 

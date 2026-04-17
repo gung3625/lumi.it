@@ -1,7 +1,15 @@
 const { getStore } = require('@netlify/blobs');
+const crypto = require('crypto');
 
 const SITE_ID = process.env.NETLIFY_SITE_ID;
 const NETLIFY_TOKEN = process.env.NETLIFY_TOKEN;
+
+function checkSecret(provided) {
+  const secret = process.env.LUMI_SECRET;
+  if (!secret) return false;
+  try { return crypto.timingSafeEqual(Buffer.from(provided || ''), Buffer.from(secret)); }
+  catch { return false; }
+}
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -10,7 +18,7 @@ exports.handler = async (event) => {
 
   // LUMI_SECRET 인증
   const secret = event.headers['x-lumi-secret'];
-  if (secret !== process.env.LUMI_SECRET) {
+  if (!checkSecret(secret)) {
     return { statusCode: 401, body: JSON.stringify({ error: '인증 실패' }) };
   }
 

@@ -1,5 +1,12 @@
 const crypto = require('crypto');
 
+function checkSecret(provided) {
+  const secret = process.env.LUMI_SECRET;
+  if (!secret) return false;
+  try { return crypto.timingSafeEqual(Buffer.from(provided || ''), Buffer.from(secret)); }
+  catch { return false; }
+}
+
 const API_KEY = process.env.SOLAPI_API_KEY;
 const API_SECRET = process.env.SOLAPI_API_SECRET;
 const CHANNEL_ID = 'KA01PF26032219112677567W26lSNGQj';
@@ -66,7 +73,7 @@ exports.handler = async (event) => {
 
   // LUMI_SECRET 인증
   const secret = event.headers['x-lumi-secret'];
-  if (secret !== process.env.LUMI_SECRET) {
+  if (!checkSecret(secret)) {
     return { statusCode: 401, body: JSON.stringify({ error: '인증 실패' }) };
   }
 

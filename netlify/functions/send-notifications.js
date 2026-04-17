@@ -2,6 +2,13 @@ const { getStore } = require('@netlify/blobs');
 const crypto = require('crypto');
 const { Resend } = require('resend');
 
+function checkSecret(provided) {
+  const secret = process.env.LUMI_SECRET;
+  if (!secret) return false;
+  try { return crypto.timingSafeEqual(Buffer.from(provided || ''), Buffer.from(secret)); }
+  catch { return false; }
+}
+
 // 솔라피 설정
 const API_KEY = process.env.SOLAPI_API_KEY;
 const API_SECRET = process.env.SOLAPI_API_SECRET;
@@ -558,7 +565,7 @@ exports.handler = async (event) => {
   const isScheduled = !event.httpMethod && !event.headers;
   if (!isScheduled) {
     const secret = event.headers?.['x-lumi-secret'];
-    if (secret !== process.env.LUMI_SECRET) {
+    if (!checkSecret(secret)) {
       return { statusCode: 401, body: JSON.stringify({ error: '인증 실패' }) };
     }
   }
