@@ -59,10 +59,10 @@
   to = "/.netlify/functions/:splat"
   status = 200
 
-# IG 크롤러용 pretty 이미지 URL — splat으로 .jpg 포함 캡처 후 serve-image에서 확장자 제거
+# IG 크롤러용 pretty 이미지 URL — splat을 path로 전달, serve-image가 event.path에서 추출
 [[redirects]]
   from = "/ig-img/*"
-  to = "/.netlify/functions/serve-image?b64key=:splat"
+  to = "/.netlify/functions/serve-image/:splat"
   status = 200
 
 # 대시보드 라우팅

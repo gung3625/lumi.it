@@ -12,6 +12,16 @@ exports.handler = async (event) => {
       key = Buffer.from(b64, 'base64').toString('utf8');
     } catch {}
   }
+  // /ig-img/{b64}.jpg 리라이트 경로에서 추출 (Netlify splat이 query 치환 안됨)
+  if (!key && event.path) {
+    const m = event.path.match(/\/([^\/]+?)(?:\.jpg)?\/?$/i);
+    if (m && m[1] && m[1] !== 'serve-image') {
+      try {
+        const b64 = m[1].replace(/-/g, '+').replace(/_/g, '/');
+        key = Buffer.from(b64, 'base64').toString('utf8');
+      } catch {}
+    }
+  }
   if (!key || !key.startsWith('temp-img:')) {
     return { statusCode: 400, body: 'invalid key' };
   }
