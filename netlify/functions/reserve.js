@@ -23,13 +23,21 @@ exports.handler = async (event) => {
   if (bearerToken && lumiSecret !== process.env.LUMI_SECRET) {
     const userStore = getStore({ name: 'users', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
     let tokenRaw = null;
+    let tokenBlobError = false;
     for (let i = 0; i < 3; i++) {
-      try { tokenRaw = await userStore.get('token:' + bearerToken); } catch(e) { console.error('[reserve] token fetch error:', e.message); }
+      tokenBlobError = false;
+      try { tokenRaw = await userStore.get('token:' + bearerToken); }
+      catch(e) { tokenBlobError = true; console.error('[reserve] token blob fetch error:', e.message); }
       if (tokenRaw) break;
+      if (!tokenBlobError) break; // 진짜 없음: 재시도 의미 없음
       if (i < 2) await new Promise(r => setTimeout(r, 300));
     }
     if (!tokenRaw) {
-      console.warn('[reserve] token not found after 3 retries, bearer prefix:', bearerToken.substring(0, 8));
+      if (tokenBlobError) {
+        console.warn('[reserve] token blob error after 3 retries, bearer prefix:', bearerToken.substring(0, 8));
+        return { statusCode: 503, headers: CORS, body: JSON.stringify({ error: '일시적 서버 오류입니다. 잠시 후 다시 시도해주세요.' }) };
+      }
+      console.warn('[reserve] token not found, bearer prefix:', bearerToken.substring(0, 8));
       return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증 실패' }) };
     }
   }
@@ -111,14 +119,16 @@ exports.handler = async (event) => {
               siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
               token: process.env.NETLIFY_TOKEN
             });
-            // Blob 4개 병렬 읽기 (기존 6개 순차 → 1회 병렬 + 1회 순차)
+            // Blob 순차 읽기 (PAT 동시 호출 → 401 burst 방지, user 먼저)
             const ownerEmail = storeProfile.ownerEmail;
-            const [igUserIdRaw, likeRaw, dislikeRaw, userDataRaw] = await Promise.all([
-              blobStore.get('email-ig:' + ownerEmail).catch(() => null),
-              blobStore.get('tone-like:' + ownerEmail).catch(() => null),
-              blobStore.get('tone-dislike:' + ownerEmail).catch(() => null),
-              blobStore.get('user:' + ownerEmail).catch(() => null),
-            ]);
+            const userDataRaw = await blobStore.get('user:' + ownerEmail)
+              .catch(e => { console.error('[reserve] blob user: fetch error:', e.message); return null; });
+            const igUserIdRaw = await blobStore.get('email-ig:' + ownerEmail)
+              .catch(e => { console.error('[reserve] blob email-ig: fetch error:', e.message); return null; });
+            const likeRaw = await blobStore.get('tone-like:' + ownerEmail)
+              .catch(e => { console.error('[reserve] blob tone-like: fetch error:', e.message); return null; });
+            const dislikeRaw = await blobStore.get('tone-dislike:' + ownerEmail)
+              .catch(e => { console.error('[reserve] blob tone-dislike: fetch error:', e.message); return null; });
 
             // igUserId
             if (igUserIdRaw) {
@@ -145,7 +155,8 @@ exports.handler = async (event) => {
 
             // ig 토큰 (igUserId 의존이라 순차)
             if (igUserId) {
-              const igRaw = await blobStore.get('ig:' + igUserId).catch(() => null);
+              const igRaw = await blobStore.get('ig:' + igUserId)
+                .catch(e => { console.error('[reserve] blob ig: fetch error:', e.message); return null; });
               if (igRaw) {
                 const igData = JSON.parse(igRaw);
                 igAccessToken = igData.accessToken || '';
