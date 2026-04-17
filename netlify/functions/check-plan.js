@@ -20,22 +20,20 @@ exports.handler = async (event) => {
   }
 
   try {
-    const store = getStore({ name: 'users', consistency: 'strong' });
+    const store = getStore({ name: 'users', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
 
     // 토큰 Blobs 검증 — email을 토큰에서 가져옴 (body 무시)
     let tokenRaw;
-    let tokenBlobError = null;
-    try { tokenRaw = await store.get('token:' + bearerToken); } catch(e) { tokenBlobError = e; console.error('[check-plan] token blob get error:', e?.message, e?.stack); tokenRaw = null; }
-    if (!tokenRaw) return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증에 실패했습니다.', debug: tokenBlobError?.message || null }) };
+    try { tokenRaw = await store.get('token:' + bearerToken); } catch { tokenRaw = null; }
+    if (!tokenRaw) return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증에 실패했습니다.' }) };
     const tokenData = JSON.parse(tokenRaw);
     if (tokenData.expiresAt && new Date(tokenData.expiresAt) < new Date()) {
       return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '세션이 만료됐습니다. 다시 로그인해주세요.' }) };
     }
     const email = tokenData.email;
     let raw;
-    let userBlobError = null;
-    try { raw = await store.get('user:' + email); } catch(e) { userBlobError = e; console.error('[check-plan] user blob get error:', e?.message, e?.stack); raw = null; }
-    if (!raw) return { statusCode: 404, headers: CORS, body: JSON.stringify({ error: '사용자를 찾을 수 없습니다.', debug: userBlobError?.message || null }) };
+    try { raw = await store.get('user:' + email); } catch(e) { raw = null; }
+    if (!raw) return { statusCode: 404, headers: CORS, body: JSON.stringify({ error: '사용자를 찾을 수 없습니다.' }) };
 
     const user = JSON.parse(raw);
     const now = new Date();
@@ -45,7 +43,7 @@ exports.handler = async (event) => {
     // (count-post 사전 증가가 실패건까지 부풀린 이슈를 해결)
     let authoritativeCount = 0;
     try {
-      const reserveStore = getStore({ name: 'reservations', consistency: 'strong' });
+      const reserveStore = getStore({ name: 'reservations', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
       const { blobs } = await reserveStore.list({ prefix: 'reserve:' });
       const records = await Promise.all((blobs || []).map(b => reserveStore.get(b.key).catch(() => null)));
       for (const r of records) {
