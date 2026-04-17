@@ -20,7 +20,7 @@ exports.handler = async (event) => {
   }
 
   try {
-    const store = getStore({ name: 'users', consistency: 'strong' });
+    const store = getStore({ name: 'users', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
 
     // 토큰 Blobs 검증 — email을 토큰에서 가져옴 (body 무시)
     let tokenRaw;
@@ -43,7 +43,7 @@ exports.handler = async (event) => {
     // (count-post 사전 증가가 실패건까지 부풀린 이슈를 해결)
     let authoritativeCount = 0;
     try {
-      const reserveStore = getStore({ name: 'reservations', consistency: 'strong' });
+      const reserveStore = getStore({ name: 'reservations', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
       const { blobs } = await reserveStore.list({ prefix: 'reserve:' });
       const records = await Promise.all((blobs || []).map(b => reserveStore.get(b.key).catch(() => null)));
       for (const r of records) {

@@ -24,7 +24,9 @@ exports.handler = async (event) => {
 
     const usersStore = getStore({
       name: 'users',
-      consistency: 'strong'
+      consistency: 'strong',
+      siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
+      token: process.env.NETLIFY_TOKEN,
     });
 
     const tokenData = await usersStore.get('token:' + token);
@@ -45,7 +47,9 @@ exports.handler = async (event) => {
     // 피드백 저장
     const feedbackStore = getStore({
       name: 'feedback',
-      consistency: 'strong'
+      consistency: 'strong',
+      siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
+      token: process.env.NETLIFY_TOKEN,
     });
 
     const feedbackId = 'fb_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);

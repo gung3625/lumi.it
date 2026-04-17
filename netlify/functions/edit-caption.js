@@ -26,7 +26,7 @@ exports.handler = async (event) => {
 
   try {
     // 토큰 → 이메일 검증
-    const userStore = getStore({ name: 'users', consistency: 'strong' });
+    const userStore = getStore({ name: 'users', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
     let tokenRaw;
     try { tokenRaw = await userStore.get('token:' + bearerToken); } catch { tokenRaw = null; }
     if (!tokenRaw) return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '유효하지 않은 토큰' }) };
@@ -34,7 +34,9 @@ exports.handler = async (event) => {
 
     const store = getStore({
       name: 'reservations',
-      consistency: 'strong'
+      consistency: 'strong',
+      siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
+      token: process.env.NETLIFY_TOKEN,
     });
 
     const raw = await store.get(reservationKey);

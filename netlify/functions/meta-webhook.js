@@ -1,6 +1,9 @@
 const { getStore } = require('@netlify/blobs');
 const crypto = require('crypto');
 
+const SITE_ID = process.env.NETLIFY_SITE_ID;
+const NETLIFY_TOKEN = process.env.NETLIFY_TOKEN;
+
 const TEST_IG_USER_ID = process.env.TEST_IG_USER_ID || '';
 const TEST_ACCESS_TOKEN = process.env.TEST_IG_ACCESS_TOKEN || '';
 
@@ -28,7 +31,7 @@ async function callGraphAPI(path, method, body, accessToken) {
 async function getUserToken(igUserId) {
   if (igUserId === TEST_IG_USER_ID) return TEST_ACCESS_TOKEN;
   try {
-    const store = getStore({ name: 'users', consistency: 'strong' });
+    const store = getStore({ name: 'users', consistency: 'strong', siteID: SITE_ID, token: NETLIFY_TOKEN });
     const raw = await store.get('ig:' + igUserId);
     return raw ? JSON.parse(raw).accessToken : null;
   } catch(e) { return null; }
@@ -36,7 +39,7 @@ async function getUserToken(igUserId) {
 
 async function getAutoReplySettings(email) {
   try {
-    const store = getStore({ name: 'auto-replies', consistency: 'strong' });
+    const store = getStore({ name: 'auto-replies', consistency: 'strong', siteID: SITE_ID, token: NETLIFY_TOKEN });
     const raw = await store.get('reply:' + email);
     return raw ? JSON.parse(raw) : null;
   } catch(e) { return null; }
@@ -45,7 +48,7 @@ async function getAutoReplySettings(email) {
 async function getEmailByIgId(igUserId) {
   if (igUserId === TEST_IG_USER_ID) return process.env.OWNER_EMAIL || 'gung3625@gmail.com';
   try {
-    const store = getStore({ name: 'users', consistency: 'strong' });
+    const store = getStore({ name: 'users', consistency: 'strong', siteID: SITE_ID, token: NETLIFY_TOKEN });
     const raw = await store.get('ig:' + igUserId);
     return raw ? JSON.parse(raw).email : null;
   } catch(e) { return null; }

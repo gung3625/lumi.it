@@ -16,7 +16,7 @@ exports.handler = async (event) => {
   }
 
   try {
-    const store = getStore({ name: 'users', consistency: 'strong' });
+    const store = getStore({ name: 'users', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
 
     // 토큰 Blobs 검증 (최대 3회 재시도 — 콜드 스타트 시 strong-consistency 레이스 대응)
     let tokenRaw = null;

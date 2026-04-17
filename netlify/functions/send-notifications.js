@@ -566,7 +566,9 @@ exports.handler = async (event) => {
   try {
     const userStore = getStore({
       name: 'users',
-      consistency: 'strong'
+      consistency: 'strong',
+      siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
+      token: process.env.NETLIFY_TOKEN
     });
 
     // 기존 알림 먼저 실행 (user 객체 write 포함)
@@ -594,7 +596,7 @@ exports.handler = async (event) => {
           if (u.lastPostedAt && u.lastPostedAt.slice(0, 10) === today) activeToday++;
         } catch(e) {}
       }
-      const betaStore = getStore({ name: 'beta-applicants', consistency: 'strong' });
+      const betaStore = getStore({ name: 'beta-applicants', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
       const betaList = await betaStore.list();
       const betaCount = betaList.blobs.length;
 

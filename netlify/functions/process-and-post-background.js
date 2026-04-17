@@ -83,21 +83,27 @@ async function waitForContainer(containerId, accessToken, maxRetries = 6) {
 function getReservationStore() {
   return getStore({
     name: 'reservations',
-    consistency: 'strong'
+    consistency: 'strong',
+    siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
+    token: process.env.NETLIFY_TOKEN,
   });
 }
 
 function getTrendsStore() {
   return getStore({
     name: 'trends',
-    consistency: 'strong'
+    consistency: 'strong',
+    siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
+    token: process.env.NETLIFY_TOKEN,
   });
 }
 
 function getTempImageStore() {
   return getStore({
     name: 'temp-images',
-    consistency: 'strong'
+    consistency: 'strong',
+    siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
+    token: process.env.NETLIFY_TOKEN,
   });
 }
 
@@ -553,7 +559,9 @@ exports.handler = async (event) => {
     // 0. Blobs에서 ig 토큰 + 말투 학습 데이터 조회 (reserve.js 로직 통합)
     const userStore = getStore({
       name: 'users',
-      consistency: 'strong'
+      consistency: 'strong',
+      siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
+      token: process.env.NETLIFY_TOKEN,
     });
 
     if (sp.ownerEmail && !item.igUserId) {

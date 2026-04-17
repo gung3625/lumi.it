@@ -3,6 +3,9 @@ const { getStore } = require('@netlify/blobs');
 const APP_ID = process.env.META_APP_ID || '1233639725586126';
 const APP_SECRET = process.env.META_APP_SECRET;
 const REDIRECT_URI = 'https://lumi.it.kr/.netlify/functions/ig-oauth';
+const SITE_ID = process.env.NETLIFY_SITE_ID;
+const NETLIFY_TOKEN = process.env.NETLIFY_TOKEN;
+
 exports.handler = async (event) => {
   const params = new URLSearchParams(event.rawQuery || '');
   const code = params.get('code');
@@ -21,7 +24,7 @@ exports.handler = async (event) => {
     const crypto = require('crypto');
     const nonce = crypto.randomBytes(16).toString('hex');
     try {
-      const nonceStore = getStore({ name: 'oauth-nonce', consistency: 'strong' });
+      const nonceStore = getStore({ name: 'oauth-nonce', consistency: 'strong', siteID: SITE_ID, token: NETLIFY_TOKEN });
       await nonceStore.set('nonce:' + nonce, JSON.stringify({ token: lumiToken, createdAt: Date.now() }));
     } catch(e) {}
     const authUrl = `https://www.facebook.com/dialog/oauth?` +
@@ -83,13 +86,13 @@ exports.handler = async (event) => {
     let email = '';
     if (state) {
       try {
-        const nonceStore = getStore({ name: 'oauth-nonce', consistency: 'strong' });
+        const nonceStore = getStore({ name: 'oauth-nonce', consistency: 'strong', siteID: SITE_ID, token: NETLIFY_TOKEN });
         const nonceRaw = await nonceStore.get('nonce:' + state);
         if (nonceRaw) {
           const nonceData = JSON.parse(nonceRaw);
           // 10분 만료
           if (Date.now() - nonceData.createdAt < 600000) {
-            const tokenStore = getStore({ name: 'users', consistency: 'strong' });
+            const tokenStore = getStore({ name: 'users', consistency: 'strong', siteID: SITE_ID, token: NETLIFY_TOKEN });
             const td = await tokenStore.get('token:' + nonceData.token);
             if (td) email = JSON.parse(td).email || '';
           }
@@ -99,7 +102,7 @@ exports.handler = async (event) => {
     }
 
     // 5. Blobs에 저장
-    const store = getStore({ name: 'users', consistency: 'strong' });
+    const store = getStore({ name: 'users', consistency: 'strong', siteID: SITE_ID, token: NETLIFY_TOKEN });
     await store.set('ig:' + igUserId, JSON.stringify({
       igUserId, accessToken: longToken, pageAccessToken,
       email, connectedAt: new Date().toISOString()

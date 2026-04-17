@@ -9,21 +9,27 @@ const CORS = {
 function getReservationStore() {
   return getStore({
     name: 'reservations',
-    consistency: 'strong'
+    consistency: 'strong',
+    siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
+    token: process.env.NETLIFY_TOKEN,
   });
 }
 
 function getRegenStore() {
   return getStore({
     name: 'caption-regen',
-    consistency: 'strong'
+    consistency: 'strong',
+    siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
+    token: process.env.NETLIFY_TOKEN,
   });
 }
 
 function getTrendsStore() {
   return getStore({
     name: 'trends',
-    consistency: 'strong'
+    consistency: 'strong',
+    siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
+    token: process.env.NETLIFY_TOKEN,
   });
 }
 
@@ -231,7 +237,7 @@ exports.handler = async (event) => {
   }
   // 토큰에서 email 추출 (body의 email 무시)
   try {
-    const userStore = getStore({ name: 'users', consistency: 'strong' });
+    const userStore = getStore({ name: 'users', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
     const tokenRaw = await userStore.get('token:' + bearerToken);
     if (!tokenRaw) return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증 실패' }) };
     const tokenData = JSON.parse(tokenRaw);
@@ -347,7 +353,7 @@ exports.handler = async (event) => {
     // 말투 자동 학습: 재생성된 = 싫어한 스타일
     try {
       if (email && item.captions && item.captions.length > 0) {
-        const userStore = getStore({ name: 'users', consistency: 'strong' });
+        const userStore = getStore({ name: 'users', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
         const dislikeRaw = await userStore.get('tone-dislike:' + email).catch(() => null);
         const dislikes = dislikeRaw ? JSON.parse(dislikeRaw) : [];
         item.captions.forEach(function(c) { dislikes.push({ caption: c, at: new Date().toISOString() }); });

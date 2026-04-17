@@ -152,7 +152,7 @@ exports.handler = async (event) => {
   }
 
   try {
-    const store = getStore({ name: 'trends', consistency: 'strong' });
+    const store = getStore({ name: 'trends', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
     const updatedAt = new Date().toISOString();
     const dateStr = getDateStr();
     const updated = [];

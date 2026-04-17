@@ -12,7 +12,7 @@ exports.handler = async (event) => {
     // IP 기반 rate limit (Blobs에 실패 횟수 기록)
     const ip = (event.headers['x-nf-client-connection-ip'] || event.headers['client-ip'] || 'unknown');
     try {
-      const rlStore = getStore({ name: 'rate-limit', consistency: 'strong' });
+      const rlStore = getStore({ name: 'rate-limit', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
       const rlKey = 'admin-fail:' + ip;
       const rlRaw = await rlStore.get(rlKey).catch(() => null);
       const rl = rlRaw ? JSON.parse(rlRaw) : { count: 0, firstAt: Date.now() };
@@ -28,7 +28,9 @@ exports.handler = async (event) => {
 
   const store = getStore({
     name: 'beta-applicants',
-    consistency: 'strong'
+    consistency: 'strong',
+    siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
+    token: process.env.NETLIFY_TOKEN,
   });
   const list = await store.list();
 

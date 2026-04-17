@@ -17,7 +17,9 @@ exports.handler = async (event) => {
   try {
     const userStore = getStore({
       name: 'users',
-      consistency: 'strong'
+      consistency: 'strong',
+      siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
+      token: process.env.NETLIFY_TOKEN,
     });
 
     // 토큰 → 이메일 조회
@@ -32,7 +34,9 @@ exports.handler = async (event) => {
 
     const store = getStore({
       name: 'reservations',
-      consistency: 'strong'
+      consistency: 'strong',
+      siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
+      token: process.env.NETLIFY_TOKEN,
     });
 
     // per-user 인덱스에서 reserveKey 목록 조회 (풀스캔 제거 — PAT rate limit 근본 해결)
