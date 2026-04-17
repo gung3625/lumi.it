@@ -222,6 +222,20 @@ exports.handler = async (event) => {
         );
     if (!imageUrls.length) { console.error('[select-and-post] 이미지 없음'); return; }
 
+    // 항상 최신 IG 토큰 재조회 (재연동 후 reservation blob의 구토큰 사용 방지)
+    if (item.igUserId) {
+      try {
+        const userStore = getBlobStore('users');
+        const igRaw = await userStore.get('ig:' + item.igUserId).catch(() => null);
+        if (igRaw) {
+          const igData = JSON.parse(igRaw);
+          item.igAccessToken = igData.accessToken || item.igAccessToken;
+          item.igPageAccessToken = igData.pageAccessToken || igData.accessToken || item.igPageAccessToken;
+          console.log('[select-and-post] IG 토큰 최신 버전으로 갱신 완료');
+        }
+      } catch (e) { console.error('[select-and-post] IG 토큰 재조회 실패:', e.message); }
+    }
+
     console.log(`[select-and-post] 게시 시작: ${reservationKey}, captionIndex=${captionIndex}`);
     const postId = await postToInstagram(item, selectedCaption, imageUrls);
     console.log('[select-and-post] Instagram 게시 완료:', postId);
