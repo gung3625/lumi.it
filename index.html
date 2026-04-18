@@ -875,7 +875,7 @@ body.dark-mode .card-trend::before { display:none; }
 .trend-tab { font-size:11px; padding:4px 10px; border-radius:12px; border:none; font-family:inherit; cursor:pointer; }
 .trend-tab.active { background:rgba(0,0,0,.08); color:#0d1117; font-weight:600; }
 .trend-tab:not(.active) { background:transparent; color:rgba(0,0,0,.35); }
-.trend-list { flex:1; padding:0 16px 6px; overflow:hidden; position:relative; }
+.trend-list { flex:1; padding:8px 16px 6px; overflow:hidden; position:relative; }
 .trend-track { position:relative; width:100%; height:100%; }
 .trend-item {
   position:absolute; left:0; right:0;
@@ -925,7 +925,7 @@ body.dark-mode .trend-cta-msg { color:rgba(255,255,255,.5); }
 body.dark-mode .trend-cta-btn { background:#f0f2f8; color:#0d1117; }
 
 /* TREND MAIN TABS (지금 유행 / 뜰 가능성) */
-.trend-main-tabs { display:flex; gap:4px; padding:0 16px 4px; }
+.trend-main-tabs { display:flex; gap:4px; padding:0 16px 12px; }
 .trend-main-tab { font-size:11px; padding:5px 12px; min-height:32px; border-radius:980px; border:none; cursor:pointer; font-family:inherit; transition:all .2s; display:flex; align-items:center; gap:4px; }
 .trend-main-tab.active-current { background:#C8507A; color:#fff; font-weight:600; }
 .trend-main-tab.active-rising { background:#2EBFA5; color:#fff; font-weight:600; }
@@ -5331,12 +5331,12 @@ var cards = {
           if(!cardRef.current) return;
           var h = cardRef.current.offsetHeight;
           var ctaH = !isLoggedIn ? 60 : 0;
-          /* header(32) + main-tabs(30) + list-padding(8) + buffer(10) = 80 */
-          var available = h - 80 - ctaH;
-          /* 10개 고정, 카드 높이에 맞춰 itemH 자동 조절 (32~48 범위) */
+          /* header(32) + main-tabs(38) + list-padding-top(8) + list-padding-bot(6) + buffer(10) = 94 */
+          var available = h - 94 - ctaH;
+          /* 10개 고정, 카드 높이에 맞춰 itemH 자동 조절 (34~52 범위) */
           var vc = 10;
-          var ih = Math.max(32, Math.min(48, Math.floor(available / vc)));
-          if(available < vc * 32) { vc = Math.max(4, Math.floor(available / 32)); ih = 32; }
+          var ih = Math.max(34, Math.min(52, Math.floor(available / vc)));
+          if(available < vc * 34) { vc = Math.max(4, Math.floor(available / 34)); ih = 34; }
           setVisibleCount(vc);
           setItemH(ih);
           setTrackH(vc * ih);
