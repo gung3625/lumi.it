@@ -85,13 +85,16 @@ body {
 
 /* ---- NAV ---- */
 nav {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   max-width: 1200px;
   margin: 0 auto;
   padding: 40px 16px 24px;
 }
+nav > .nav-logo { justify-self: start; }
+nav > .nav-pills { justify-self: center; }
+nav > *:last-child { justify-self: end; }
 .nav-logo {
   font-size: clamp(26px, 5vw, 42px); font-weight: 800;
   font-family: 'Nunito', sans-serif;
@@ -2843,7 +2846,7 @@ function mInitWave2(){
       flow.thumbUrls.forEach(function(u){ try { URL.revokeObjectURL(u); } catch(e){} });
     }
     flow.thumbUrls = files.map(function(f){ return URL.createObjectURL(f); });
-    flow.step = 0; flow.captions = []; flow.selectedIdx = 0; flow.editedCaption = ''; flow.regenCount = 0; flow.posting = false; flow.userNote = ''; flow.userStyle = '';
+    flow.step = 0; flow.captions = []; flow.selectedIdx = 0; flow.editedCaption = ''; flow.regenCount = 0; flow.posting = false; flow.userNote = '';
     openFlow();
     renderFlow();
   };
@@ -2971,7 +2974,7 @@ function mInitWave2(){
       var savedStyle = '';
       try { savedStyle = (JSON.parse(localStorage.getItem('lumi_settings')||'{}').captionStyle) || ''; } catch(e){}
       var prevNote = flow.userNote || '';
-      var prevStyle = (typeof flow.userStyle === 'string') ? flow.userStyle : savedStyle;
+      var prevStyle = flow.userStyle || savedStyle;
       var styleOpts = [
         {v:'', l:'기본 (내 말투 학습 반영)'},
         {v:'friendly', l:'친근하고 따뜻하게'},
@@ -2993,6 +2996,17 @@ function mInitWave2(){
         '<select id="m-flow-style" class="m-flow-input">'+styleOpts+'</select></div>' +
         '<div class="m-flow-notice" style="margin-top:16px;"><strong>\'캡션 생성\'을 누르면 이번 달 캡션 1회가 차감됩니다.</strong>' + noticeExtra + '</div>' +
         '<button type="button" class="m-cta" onclick="window.mFlowStartGenerate()" style="display:flex;margin:20px auto 0;">캡션 생성하기</button>';
+      var styleSelEl = document.getElementById('m-flow-style');
+      if (styleSelEl) {
+        styleSelEl.addEventListener('change', function(){
+          flow.userStyle = styleSelEl.value;
+          try {
+            var settings = JSON.parse(localStorage.getItem('lumi_settings') || '{}');
+            settings.captionStyle = styleSelEl.value;
+            localStorage.setItem('lumi_settings', JSON.stringify(settings));
+          } catch(e){}
+        });
+      }
     } else if (flow.step === 1) {
       body.innerHTML =
         backBtnHtml('취소', 'window.mCloseCaptionFlow()') +
