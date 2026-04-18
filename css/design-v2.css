@@ -184,6 +184,10 @@ body.dark-mode .m-bottom-cta {
   min-height: 48px;
   font-size: 15px;
 }
+/* 하단 고정 CTA에 가려지지 않도록 로그아웃 뷰 최하단 여백 확보 (CTA 72px + safe-area) */
+#mobile-app-logged-out {
+  padding-bottom: calc(88px + var(--safe-bottom));
+}
 
 /* ---------- Entrance animations ---------- */
 @keyframes v2-rise {
@@ -673,13 +677,66 @@ body.dark-mode .m-flow-progress span { background: rgba(255,255,255,0.12); }
   margin: 0;
   letter-spacing: -0.01em;
 }
+.m-flow-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 10px 8px 6px;
+  margin: 0 0 12px -6px;
+  background: transparent;
+  border: 0;
+  color: var(--ink-2, #6b6b70);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.m-flow-back svg { display: block; }
+.m-flow-back:hover,
+.m-flow-back:active { color: var(--pink, #C8507A); }
+body.dark-mode .m-flow-back { color: #9a9a9e; }
+body.dark-mode .m-flow-back:hover,
+body.dark-mode .m-flow-back:active { color: var(--pink, #C8507A); }
+
 .m-flow-thumb {
   width: 100%;
-  max-height: 240px;
-  object-fit: cover;
+  max-height: 320px;
+  object-fit: contain;
+  background: var(--surface-alt, #f2f2f5);
   border-radius: 16px;
   margin-bottom: 16px;
   display: block;
+}
+body.dark-mode .m-flow-thumb { background: #1c1c1e; }
+.m-flow-carousel {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 -4px 8px;
+  padding: 0 4px 4px;
+  scrollbar-width: none;
+}
+.m-flow-carousel::-webkit-scrollbar { display: none; }
+.m-flow-carousel-img {
+  flex: 0 0 calc(100% - 32px);
+  max-width: calc(100% - 32px);
+  height: 320px;
+  object-fit: contain;
+  background: var(--surface-alt, #f2f2f5);
+  border-radius: 16px;
+  scroll-snap-align: center;
+  display: block;
+}
+body.dark-mode .m-flow-carousel-img { background: #1c1c1e; }
+.m-flow-carousel-meta {
+  font-size: 12px;
+  color: var(--ink-3);
+  text-align: center;
+  margin: 0 0 16px;
+  letter-spacing: 0.01em;
 }
 .m-flow-label {
   font-size: 13px; font-weight: 600;
