@@ -173,7 +173,7 @@ exports.handler = async (event) => {
     };
 
   } catch (err) {
-    console.error('send-daily-schedule error:', err.message);
-    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
+    console.error('send-daily-schedule error:', err);
+    return { statusCode: 500, body: JSON.stringify({ error: '처리 중 오류가 발생했습니다.' }) };
   }
 };

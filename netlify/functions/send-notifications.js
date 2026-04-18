@@ -630,6 +630,6 @@ exports.handler = async (event) => {
     };
   } catch(err) {
     console.error('send-notifications error:', err.message);
-    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
+    return { statusCode: 500, body: JSON.stringify({ error: '알림 처리 중 오류가 발생했습니다.' }) };
   }
 };

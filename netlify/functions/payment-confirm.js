@@ -16,12 +16,29 @@ exports.handler = async (event) => {
     return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증이 필요합니다.' }) };
   }
   {
-    const userStore = getStore({ name: 'users', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
-    const tokenRaw = await userStore.get('token:' + bearerToken).catch(() => null);
-    if (!tokenRaw) return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증 실패' }) };
+    const userStore = getStore({ name: 'users', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
+    let tokenRaw = null;
+    let tokenBlobError = false;
+    const RETRY_DELAYS = [200, 400, 800, 1600, 3200];
+    for (let i = 0; i < RETRY_DELAYS.length; i++) {
+      tokenBlobError = false;
+      try { tokenRaw = await userStore.get('token:' + bearerToken); }
+      catch(e) { tokenBlobError = true; console.error('[payment-confirm] token blob fetch error (attempt ' + (i+1) + '):', e.message); }
+      if (tokenRaw) break;
+      if (!tokenBlobError) break;
+      if (i < RETRY_DELAYS.length - 1) await new Promise(r => setTimeout(r, RETRY_DELAYS[i]));
+    }
+    if (!tokenRaw) {
+      if (tokenBlobError) {
+        console.warn('[payment-confirm] token blob error after 5 retries, bearer prefix:', bearerToken.substring(0, 8));
+        return { statusCode: 503, headers: CORS, body: JSON.stringify({ error: '일시적 서버 오류입니다. 잠시 후 다시 시도해주세요.' }) };
+      }
+      console.warn('[payment-confirm] token not found, bearer prefix:', bearerToken.substring(0, 8));
+      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증에 실패했습니다.' }) };
+    }
     const tokenData = JSON.parse(tokenRaw);
     if (tokenData.expiresAt && Date.now() > tokenData.expiresAt) {
-      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '토큰이 만료되었습니다.' }) };
+      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '세션이 만료됐습니다.' }) };
     }
   }
 
@@ -41,7 +58,7 @@ exports.handler = async (event) => {
   }
 
   try {
-    const store = getStore({ name: 'orders', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
+    const store = getStore({ name: 'orders', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
 
     // 주문 정보 조회
     let raw;
@@ -88,9 +105,9 @@ exports.handler = async (event) => {
     await store.set('order:' + orderId, JSON.stringify(order));
 
     // 회원 플랜 업데이트
-    const userStore = getStore({ name: 'users', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
+    const userStore = getStore({ name: 'users', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
     let userRaw;
-    try { userRaw = await userStore.get('user:' + order.email); } catch { userRaw = null; }
+    try { userRaw = await userStore.get('user:' + order.email); } catch(e) { console.error('[payment-confirm] user blob fetch error:', e.message); userRaw = null; }
 
     if (userRaw) {
       const user = JSON.parse(userRaw);

@@ -138,11 +138,11 @@ exports.handler = async (event) => {
       body: JSON.stringify({ success: true, sent, skipped, errors }),
     };
   } catch (err) {
-    console.error('[check-expiry] error:', err.message);
+    console.error('[check-expiry] error:', err);
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: err.message }),
+      body: JSON.stringify({ error: '처리 중 오류가 발생했습니다.' }),
     };
   }
 };

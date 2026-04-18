@@ -30,13 +30,27 @@ exports.handler = async (event) => {
   if (!token) {
     return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '로그인이 필요합니다.' }) };
   }
-  const userStore = getStore({ name: 'users', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
-  let tokenData;
-  try { tokenData = await userStore.get('token:' + token); } catch { tokenData = null; }
-  if (!tokenData) {
+  const userStore = getStore({ name: 'users', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
+  let tokenRaw = null;
+  let tokenBlobError = false;
+  const RETRY_DELAYS = [200, 400, 800, 1600, 3200];
+  for (let i = 0; i < RETRY_DELAYS.length; i++) {
+    tokenBlobError = false;
+    try { tokenRaw = await userStore.get('token:' + token); }
+    catch(e) { tokenBlobError = true; console.error('[payment-prepare] token blob fetch error (attempt ' + (i+1) + '):', e.message); }
+    if (tokenRaw) break;
+    if (!tokenBlobError) break;
+    if (i < RETRY_DELAYS.length - 1) await new Promise(r => setTimeout(r, RETRY_DELAYS[i]));
+  }
+  if (!tokenRaw) {
+    if (tokenBlobError) {
+      console.warn('[payment-prepare] token blob error after 5 retries, bearer prefix:', token.substring(0, 8));
+      return { statusCode: 503, headers: CORS, body: JSON.stringify({ error: '일시적 서버 오류입니다. 잠시 후 다시 시도해주세요.' }) };
+    }
+    console.warn('[payment-prepare] token not found, bearer prefix:', token.substring(0, 8));
     return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증에 실패했습니다.' }) };
   }
-  const { email } = JSON.parse(tokenData);
+  const { email } = JSON.parse(tokenRaw);
   if (!email) {
     return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증에 실패했습니다.' }) };
   }

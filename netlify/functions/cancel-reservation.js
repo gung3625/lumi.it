@@ -23,11 +23,27 @@ exports.handler = async (event) => {
   if (!reservationKey) return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'reservationKey 필수' }) };
 
   try {
-    // 토큰 → 이메일 검증
-    const userStore = getStore({ name: 'users', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
-    let tokenRaw;
-    try { tokenRaw = await userStore.get('token:' + bearerToken); } catch { tokenRaw = null; }
-    if (!tokenRaw) return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '유효하지 않은 토큰' }) };
+    // 토큰 → 이메일 검증 (5회 지수 백오프)
+    const userStore = getStore({ name: 'users', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
+    let tokenRaw = null;
+    let tokenBlobError = false;
+    const RETRY_DELAYS = [200, 400, 800, 1600, 3200];
+    for (let i = 0; i < RETRY_DELAYS.length; i++) {
+      tokenBlobError = false;
+      try { tokenRaw = await userStore.get('token:' + bearerToken); }
+      catch(e) { tokenBlobError = true; console.error('[cancel-reservation] token blob fetch error (attempt ' + (i+1) + '):', e.message); }
+      if (tokenRaw) break;
+      if (!tokenBlobError) break;
+      if (i < RETRY_DELAYS.length - 1) await new Promise(r => setTimeout(r, RETRY_DELAYS[i]));
+    }
+    if (!tokenRaw) {
+      if (tokenBlobError) {
+        console.warn('[cancel-reservation] token blob error after 5 retries, bearer prefix:', bearerToken.substring(0, 8));
+        return { statusCode: 503, headers: CORS, body: JSON.stringify({ error: '일시적 서버 오류입니다. 잠시 후 다시 시도해주세요.' }) };
+      }
+      console.warn('[cancel-reservation] token not found, bearer prefix:', bearerToken.substring(0, 8));
+      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '유효하지 않은 토큰' }) };
+    }
     const { email } = JSON.parse(tokenRaw);
 
     const store = getStore({

@@ -86,7 +86,7 @@ exports.handler = async (event) => {
       body: JSON.stringify({ success: true, likes: likes.length, dislikes: dislikes.length })
     };
   } catch (err) {
-    console.error('tone-feedback error:', err.message);
-    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '저장 실패', detail: err.message }) };
+    console.error('tone-feedback error:', err);
+    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '저장 실패' }) };
   }
 };

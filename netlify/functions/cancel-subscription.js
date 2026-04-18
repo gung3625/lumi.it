@@ -27,31 +27,43 @@ exports.handler = async (event) => {
   const PORTONE_API_SECRET = process.env.PORTONE_API_SECRET;
 
   try {
-    const store = getStore({ name: 'users', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
+    const store = getStore({ name: 'users', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
+
+    // 토큰 검증 (5회 지수 백오프)
+    let tokenRaw = null;
+    let tokenBlobError = false;
+    const RETRY_DELAYS = [200, 400, 800, 1600, 3200];
+    for (let i = 0; i < RETRY_DELAYS.length; i++) {
+      tokenBlobError = false;
+      try { tokenRaw = await store.get('token:' + token); }
+      catch(e) { tokenBlobError = true; console.error('[cancel-subscription] token blob fetch error (attempt ' + (i+1) + '):', e.message); }
+      if (tokenRaw) break;
+      if (!tokenBlobError) break;
+      if (i < RETRY_DELAYS.length - 1) await new Promise(r => setTimeout(r, RETRY_DELAYS[i]));
+    }
+    if (!tokenRaw) {
+      if (tokenBlobError) {
+        console.warn('[cancel-subscription] token blob error after 5 retries, bearer prefix:', token.substring(0, 8));
+        return { statusCode: 503, headers: CORS, body: JSON.stringify({ error: '일시적 서버 오류입니다. 잠시 후 다시 시도해주세요.' }) };
+      }
+      console.warn('[cancel-subscription] token not found, bearer prefix:', token.substring(0, 8));
+      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증에 실패했습니다.' }) };
+    }
+    const parsed = JSON.parse(tokenRaw);
+    if (parsed.expiresAt && new Date(parsed.expiresAt) < new Date()) {
+      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '세션이 만료됐습니다.' }) };
+    }
+    if (parsed.email !== email) {
+      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증에 실패했습니다.' }) };
+    }
+
     let raw;
-    try { raw = await store.get('user:' + email); } catch { raw = null; }
+    try { raw = await store.get('user:' + email); } catch(e) { console.error('[cancel-subscription] user blob fetch error:', e.message); raw = null; }
     if (!raw) {
       return { statusCode: 404, headers: CORS, body: JSON.stringify({ error: '회원 정보를 찾을 수 없습니다.' }) };
     }
 
     const user = JSON.parse(raw);
-
-    // 토큰 검증 (token:xxx 키로 저장된 토큰 조회)
-    let tokenData;
-    try {
-      tokenData = await store.get('token:' + token);
-      if (tokenData) {
-        const td = JSON.parse(tokenData);
-        if (td.expiresAt && new Date(td.expiresAt) < new Date()) { tokenData = null; }
-      }
-    } catch { tokenData = null; }
-    if (!tokenData) {
-      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증에 실패했습니다.' }) };
-    }
-    const parsed = JSON.parse(tokenData);
-    if (parsed.email !== email) {
-      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증에 실패했습니다.' }) };
-    }
 
     // 이미 취소된 경우
     if (!user.plan || user.plan === 'none' || user.plan === 'trial') {

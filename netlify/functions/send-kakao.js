@@ -122,10 +122,10 @@ exports.handler = async (event) => {
       body: JSON.stringify({ success: true, result })
     };
   } catch(e) {
-    console.error('[lumi] 알림톡 발송 오류:', e.message);
+    console.error('[lumi] 알림톡 발송 오류:', e);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: '발송 실패', message: e.message })
+      body: JSON.stringify({ error: '알림톡 발송 중 오류가 발생했습니다.' })
     };
   }
 };

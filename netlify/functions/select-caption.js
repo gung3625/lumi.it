@@ -84,8 +84,23 @@ exports.handler = async (event) => {
   let tokenEmail = null;
   if (bearerToken && !hasSecret) {
     const userStore = getBlobStore('users');
-    const tokenRaw = await userStore.get('token:' + bearerToken).catch(() => null);
+    let tokenRaw = null;
+    let tokenBlobError = false;
+    const RETRY_DELAYS = [200, 400, 800, 1600, 3200];
+    for (let i = 0; i < RETRY_DELAYS.length; i++) {
+      tokenBlobError = false;
+      try { tokenRaw = await userStore.get('token:' + bearerToken); }
+      catch(e) { tokenBlobError = true; console.error('[select-caption] token blob fetch error (attempt ' + (i+1) + '):', e.message); }
+      if (tokenRaw) break;
+      if (!tokenBlobError) break;
+      if (i < RETRY_DELAYS.length - 1) await new Promise(r => setTimeout(r, RETRY_DELAYS[i]));
+    }
     if (!tokenRaw) {
+      if (tokenBlobError) {
+        console.warn('[select-caption] token blob error after 5 retries, bearer prefix:', bearerToken.substring(0, 8));
+        return { statusCode: 503, headers: CORS, body: JSON.stringify({ error: '일시적 서버 오류입니다. 잠시 후 다시 시도해주세요.' }) };
+      }
+      console.warn('[select-caption] token not found, bearer prefix:', bearerToken.substring(0, 8));
       return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '유효하지 않은 토큰' }) };
     }
     const tokenData = JSON.parse(tokenRaw);

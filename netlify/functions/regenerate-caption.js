@@ -9,7 +9,6 @@ const CORS = {
 function getReservationStore() {
   return getStore({
     name: 'reservations',
-    consistency: 'strong',
     siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
     token: process.env.NETLIFY_TOKEN,
   });
@@ -18,7 +17,6 @@ function getReservationStore() {
 function getRegenStore() {
   return getStore({
     name: 'caption-regen',
-    consistency: 'strong',
     siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
     token: process.env.NETLIFY_TOKEN,
   });
@@ -27,7 +25,6 @@ function getRegenStore() {
 function getTrendsStore() {
   return getStore({
     name: 'trends',
-    consistency: 'strong',
     siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
     token: process.env.NETLIFY_TOKEN,
   });
@@ -235,20 +232,34 @@ exports.handler = async (event) => {
   if (!bearerToken) {
     return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증 실패' }) };
   }
-  // 토큰에서 email 추출 (body의 email 무시)
-  try {
-    const userStore = getStore({ name: 'users', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
-    const tokenRaw = await userStore.get('token:' + bearerToken);
-    if (!tokenRaw) return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증 실패' }) };
+  // 토큰에서 email 추출 (body의 email 무시) — 5회 지수 백오프
+  {
+    const userStore = getStore({ name: 'users', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
+    let tokenRaw = null;
+    let tokenBlobError = false;
+    const RETRY_DELAYS = [200, 400, 800, 1600, 3200];
+    for (let i = 0; i < RETRY_DELAYS.length; i++) {
+      tokenBlobError = false;
+      try { tokenRaw = await userStore.get('token:' + bearerToken); }
+      catch(e) { tokenBlobError = true; console.error('[regenerate-caption] token blob fetch error (attempt ' + (i+1) + '):', e.message); }
+      if (tokenRaw) break;
+      if (!tokenBlobError) break;
+      if (i < RETRY_DELAYS.length - 1) await new Promise(r => setTimeout(r, RETRY_DELAYS[i]));
+    }
+    if (!tokenRaw) {
+      if (tokenBlobError) {
+        console.warn('[regenerate-caption] token blob error after 5 retries, bearer prefix:', bearerToken.substring(0, 8));
+        return { statusCode: 503, headers: CORS, body: JSON.stringify({ error: '일시적 서버 오류입니다. 잠시 후 다시 시도해주세요.' }) };
+      }
+      console.warn('[regenerate-caption] token not found, bearer prefix:', bearerToken.substring(0, 8));
+      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증에 실패했습니다.' }) };
+    }
     const tokenData = JSON.parse(tokenRaw);
     if (tokenData.expiresAt && new Date(tokenData.expiresAt) < new Date()) {
-      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '세션 만료' }) };
+      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '세션이 만료됐습니다.' }) };
     }
     email = tokenData.email;
-  } catch(e) {
-    return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증 실패' }) };
   }
-
   if (!reservationKey) {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'reservationKey 필수' }) };
   }
@@ -385,11 +396,11 @@ exports.handler = async (event) => {
     };
 
   } catch (err) {
-    console.error('[regenerate-caption] 오류:', err.message);
+    console.error('[regenerate-caption] 오류:', err);
     return {
       statusCode: 500,
       headers: CORS,
-      body: JSON.stringify({ error: '재생성 실패', detail: err.message }),
+      body: JSON.stringify({ error: '재생성 실패' }),
     };
   }
 };

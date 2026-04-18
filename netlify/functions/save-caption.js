@@ -26,7 +26,7 @@ exports.handler = async (event) => {
       secret = params.get('secret');
     }
   } catch (e) {
-    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '잘못된 요청입니다.', detail: e.message }) };
+    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '잘못된 요청입니다.' }) };
   }
 
   // 인증: body.secret 또는 헤더 x-lumi-secret
@@ -69,7 +69,7 @@ exports.handler = async (event) => {
       body: JSON.stringify({ success: true, captionId: newEntry.id })
     };
   } catch (err) {
-    console.error('save-caption error:', err.message);
-    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '저장 실패', detail: err.message }) };
+    console.error('save-caption error:', err);
+    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '저장 실패' }) };
   }
 };
