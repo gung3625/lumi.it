@@ -389,6 +389,7 @@ function saveProfile(){
       user = Object.assign(user, { storeName:d.store_name, bizCategory:d.biz_category, region:d.region });
       localStorage.setItem('lumi_user', JSON.stringify(user));
       showToast('매장 정보가 저장됐어요');
+      setTimeout(function(){ location.reload(); }, 500);
     })
     .catch(function(){ showToast('네트워크 오류가 발생했어요'); });
 }
