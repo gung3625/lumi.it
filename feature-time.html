@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/design-v2.css">
 <style>
 @font-face {
   font-family: 'Jua';
@@ -794,5 +795,37 @@ body.dark-mode .gallery-card[style*="gradient"] p[style*="line-height:1.7"] span
   </div>
 </div>
 
+<!-- 모바일 바텀 탭바 (로그인 사용자만) -->
+<nav class="m-tabbar" role="navigation" aria-label="모바일 내비게이션" style="display:none">
+  <a href="/" class="m-tab" data-tab="home">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-6h-2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+    <span>홈</span>
+  </a>
+  <a href="/#upload" class="m-tab" data-tab="upload">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+    <span>업로드</span>
+  </a>
+  <a href="/#history" class="m-tab" data-tab="history">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>
+    <span>히스토리</span>
+  </a>
+  <a href="/settings.html" class="m-tab" data-tab="settings">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    <span>설정</span>
+  </a>
+</nav>
+<script>
+(function(){
+  if(!localStorage.getItem('lumi_token')) return;
+  var tb = document.querySelector('.m-tabbar'); if(!tb) return;
+  tb.style.display = 'flex';
+  document.body.classList.add('has-tabbar');
+  var path = (location.pathname.split('/').pop() || '').toLowerCase();
+  if (path === 'settings.html') {
+    var el = tb.querySelector('[data-tab="settings"]');
+    if (el) el.classList.add('is-active');
+  }
+})();
+</script>
 </body>
 </html>
