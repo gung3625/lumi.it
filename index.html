@@ -2808,7 +2808,7 @@ function mInitWave2(){
   })();
 
   // ---------- 캡션 플로우 (사진 업로드 → 생성 → 옵션 → 완료) ----------
-  window._mFlow = window._mFlow || { step: 0, file: null, reservationKey: null, captions: [], selectedIdx: 0, editedCaption: '', regenCount: 0, postMode: 'immediate', scheduledAt: null };
+  window._mFlow = window._mFlow || { step: 0, file: null, reservationKey: null, captions: [], selectedIdx: 0, editedCaption: '', regenCount: 0, postMode: 'immediate', scheduledAt: null, bestTimeCache: null, bestTimeCacheAt: 0, posting: false };
   var flow = window._mFlow;
   var ov = document.getElementById('m-caption-flow');
   var body = document.getElementById('m-ov-body');
@@ -2926,6 +2926,30 @@ function mInitWave2(){
             var defVal = toLocalDT(d > maxD ? now : d);
             var inp = document.getElementById('m-sched-input');
             if (inp) { inp.min = minVal; inp.max = maxVal; inp.value = defVal; }
+          } else if (flow.postMode === 'best') {
+            if (sp) sp.hidden = true;
+            flow.posting = true;
+            var cached = flow.bestTimeCache && (Date.now() - flow.bestTimeCacheAt < 300000) ? flow.bestTimeCache : null;
+            function applyBestAndPost(bt) {
+              if (bt) {
+                var now2 = new Date();
+                var parts = bt.split(':');
+                var bh = parseInt(parts[0], 10), bm = parseInt(parts[1], 10);
+                var target = new Date(now2); target.setHours(bh, bm, 0, 0);
+                if (target <= now2) target.setDate(target.getDate() + 1);
+                flow.scheduledAt = target.toISOString();
+              }
+              confirmPost();
+            }
+            if (cached) {
+              applyBestAndPost(cached.bestTime);
+            } else {
+              var user2 = getUser();
+              fetch('/api/get-best-time', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+TOKEN}, body: JSON.stringify({category: user2.bizCategory || user2.storeCategory || 'other'}) })
+                .then(function(r){ return r.json(); })
+                .then(function(data){ flow.bestTimeCache = data; flow.bestTimeCacheAt = Date.now(); applyBestAndPost(data.bestTime); })
+                .catch(function(){ applyBestAndPost(null); });
+            }
           } else {
             if (sp) sp.hidden = true;
             flow.posting = true;
@@ -2933,6 +2957,46 @@ function mInitWave2(){
           }
         });
       });
+      // 프로 사용자: 최적 시간 미리 fetch → best 토글 sub-text 갱신
+      if (isPro) {
+        var BTL_CACHE_TTL = 300000;
+        if (!flow.bestTimeCache || (Date.now() - flow.bestTimeCacheAt > BTL_CACHE_TTL)) {
+          var bestSubEl = body.querySelector('.m-post-opt[data-mode="best"] .m-post-opt-sub');
+          if (bestSubEl) bestSubEl.textContent = '최적 시간 계산 중…';
+          var user3 = getUser();
+          fetch('/api/get-best-time', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+TOKEN}, body: JSON.stringify({category: user3.bizCategory || user3.storeCategory || 'other'}) })
+            .then(function(r){ return r.json(); })
+            .then(function(data){
+              flow.bestTimeCache = data; flow.bestTimeCacheAt = Date.now();
+              var el = body.querySelector('.m-post-opt[data-mode="best"] .m-post-opt-sub');
+              if (el && data.bestTime) {
+                var now3 = new Date();
+                var p = data.bestTime.split(':');
+                var t = new Date(now3); t.setHours(parseInt(p[0],10), parseInt(p[1],10), 0, 0);
+                var dayLabel = t > now3 ? '오늘' : '내일';
+                if (t <= now3) t.setDate(t.getDate() + 1);
+                var hh = String(t.getHours()).padStart(2,'0'), mm = String(t.getMinutes()).padStart(2,'0');
+                el.textContent = dayLabel + ' ' + hh + ':' + mm + ' 자동 게시';
+              }
+            })
+            .catch(function(){
+              var el = body.querySelector('.m-post-opt[data-mode="best"] .m-post-opt-sub');
+              if (el) el.textContent = '팔로워가 가장 반응하는 시간';
+            });
+        } else {
+          var cachedData = flow.bestTimeCache;
+          var bestSubEl2 = body.querySelector('.m-post-opt[data-mode="best"] .m-post-opt-sub');
+          if (bestSubEl2 && cachedData && cachedData.bestTime) {
+            var now4 = new Date();
+            var p2 = cachedData.bestTime.split(':');
+            var t2 = new Date(now4); t2.setHours(parseInt(p2[0],10), parseInt(p2[1],10), 0, 0);
+            var dayLabel2 = t2 > now4 ? '오늘' : '내일';
+            if (t2 <= now4) t2.setDate(t2.getDate() + 1);
+            var hh2 = String(t2.getHours()).padStart(2,'0'), mm2 = String(t2.getMinutes()).padStart(2,'0');
+            bestSubEl2.textContent = dayLabel2 + ' ' + hh2 + ':' + mm2 + ' 자동 게시';
+          }
+        }
+      }
       var sc = document.getElementById('m-sched-confirm');
       if (sc) sc.addEventListener('click', function(){
         var inp = document.getElementById('m-sched-input');
@@ -3059,7 +3123,7 @@ function mInitWave2(){
       reservationKey: flow.reservationKey,
       selectedCaption: finalCap,
       postMode: flow.postMode,
-      scheduledAt: flow.postMode === 'scheduled' ? flow.scheduledAt : null
+      scheduledAt: (flow.postMode === 'scheduled' || flow.postMode === 'best') ? flow.scheduledAt : null
     };
     fetch('/api/select-caption', {
       method:'POST',
