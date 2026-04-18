@@ -1,6 +1,10 @@
-const { getStore } = require('@netlify/blobs');
+// get-trends.js — Supabase public.trends 기반 리더 (Phase 1 재구축)
+// scheduled-trends.js 가 저장한 category 키 포맷을 그대로 조회해서 기존 응답 포맷으로 반환
+// 응답 포맷은 변경 없음 (프론트 호환 유지)
 
-// 뻔한 상시 검색어 블랙리스트 (트렌드 카드에서 제외)
+const { getAdminClient } = require('./_shared/supabase-admin');
+
+// 뻔한 상시 검색어 블랙리스트
 const BLACKLIST = [
   '맛집', '핫플레이스', '브런치', '카페', '맛집추천', '카페추천',
   '뷰티', '네일', '헤어', '피부관리', '다이어트', '화장품',
@@ -15,25 +19,20 @@ const BLACKLIST = [
   '운동', '헬스', '피트니스',
   '반려동물', '강아지', '고양이',
   '꽃', '플라워', '꽃집',
-  // 뉴스매체·신문사·패션지
   '중앙일보', '조선일보', '동아일보', '한겨레', '경향신문', '매일경제', '한국경제',
   '푸드투데이', '뉴시스', '연합뉴스', '노컷뉴스', '머니투데이', '헤럴드경제',
   '코스모폴리탄', '보그', '얼루어', '하퍼스바자', '마리끌레르',
   'jtbc', 'kbs', 'sbs', 'mbc', 'tvn',
-  // 경쟁 브랜드 (캡션 언급 금지 규칙과 동일)
   '스타벅스', '이디야커피', '이디야', '투썸플레이스', '투썸', '메가커피', '컴포즈커피',
   '빽다방', '할리스', '엔제리너스', '폴바셋', '블루보틀', '파스쿠찌',
-  // 영어 뻔한 단어
   'coffee', 'cafe', 'desserts', 'dessert', 'menu', 'food', 'world', 'new', 'best',
   'love', 'like', 'good', 'free', 'sale', 'shop', 'store', 'day', 'time', 'news',
 ];
 
-// 트렌드가 아닌 뻔한 콘텐츠 주제 키워드 (부분 매칭)
 const FILLER_WORDS = [
   '아이디어', '방법', '추천', '정보', '모음', '리스트', '팁', '가이드',
   '비교', '순위', '종류', '차이', '후기', '리뷰', '장단점', '선택',
   '입문', '초보', '기초', '필수', '인기', '베스트', '총정리',
-  // 뉴스 문장 단편 (기사 제목에서 잘못 추출된 단어)
   '유행하는', '유행중', '트렌드는', '트렌드가', '트렌드의', '뜨는', '떠오르는',
   '화제', '화제의', '주목', '주목받는', '밝혀', '밝혔다', '공개',
   '라고', '이라고', '이라는', '라는', '했다', '이다', '된다',
@@ -52,7 +51,6 @@ function isBadKeyword(raw) {
 }
 
 function filterBlacklist(keywords) {
-  // 1. 중복 제거 (keyword 기준, 첫 등장만 유지)
   const seen = new Set();
   const deduped = keywords.filter(k => {
     const kw = (k.keyword || '').replace(/^#/, '').trim().toLowerCase();
@@ -60,7 +58,6 @@ function filterBlacklist(keywords) {
     seen.add(kw);
     return true;
   });
-  // 2. 강화된 블랙리스트 + 필러 + 길이/문장단편 필터
   const filtered = deduped.filter(k => !isBadKeyword(k.keyword));
   return filtered.length >= 3 ? filtered : deduped;
 }
@@ -82,7 +79,7 @@ const CATEGORY_LABELS = {
   all: '종합',
 };
 
-// 월별 시즌 키워드 (last30days 데이터 없을 때 최소 fallback)
+// 월별 시즌 키워드 (fallback)
 const SEASON_EVENTS = {
   1: ['신년', '새해', '겨울간식', '따뜻한음료'],
   2: ['발렌타인', '딸기시즌', '봄신메뉴', '설날'],
@@ -107,6 +104,21 @@ function getSeasonInfo() {
   return { now, upcoming: next.slice(0, 3) };
 }
 
+// Supabase 단건 조회 (없으면 null)
+async function fetchTrendRow(supa, categoryKey) {
+  try {
+    const { data, error } = await supa
+      .from('trends')
+      .select('keywords, collected_at')
+      .eq('category', categoryKey)
+      .maybeSingle();
+    if (error) return null;
+    return data || null;
+  } catch(e) {
+    return null;
+  }
+}
+
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers: CORS, body: '' };
@@ -114,14 +126,12 @@ exports.handler = async (event) => {
 
   const params = new URLSearchParams(event.rawQuery || '');
   const rawCategory = (params.get('category') || 'cafe').trim();
-  const scope = params.get('scope') || '';  // 'domestic', 'global', or '' (default=combined)
-  const fromDate = params.get('from') || '';  // YYYY-MM-DD
-  const toDate = params.get('to') || '';      // YYYY-MM-DD
+  const scope = params.get('scope') || '';  // 'domestic', 'global', or ''
+  const fromDate = params.get('from') || '';
+  const toDate = params.get('to') || '';
   const knownCategories = ['cafe', 'food', 'beauty', 'flower', 'fashion', 'fitness', 'pet', 'interior', 'education', 'laundry', 'studio', 'all'];
 
-  // 카테고리 별칭 매핑 (다양한 입력을 표준 키로 변환)
   const CATEGORY_ALIAS = {
-    // 한글 별칭
     '카페': 'cafe', '카페·음료': 'cafe', '카페·베이커리': 'cafe', '커피': 'cafe', '베이커리': 'cafe',
     '음식점': 'food', '식당': 'food', '식당·음식점': 'food', '맛집': 'food', '레스토랑': 'food',
     '뷰티': 'beauty', '뷰티·케어': 'beauty', '뷰티·헤어·네일': 'beauty', '네일': 'beauty', '헤어': 'beauty', '미용실': 'beauty',
@@ -134,7 +144,6 @@ exports.handler = async (event) => {
     '세탁': 'laundry', '세탁·수선': 'laundry',
     '사진': 'studio', '사진·스튜디오': 'studio', '스튜디오': 'studio',
     '기타': 'other',
-    // 영문 별칭
     'restaurant': 'food', 'bakery': 'cafe', 'hair': 'beauty', 'nail': 'beauty',
     'gym': 'fitness', 'pilates': 'fitness', 'yoga': 'fitness',
     'florist': 'flower', 'clothing': 'fashion',
@@ -146,15 +155,27 @@ exports.handler = async (event) => {
   const season = getSeasonInfo();
   const label = CATEGORY_LABELS[storeKey] || '일반';
 
+  let supa;
   try {
-    const store = getStore({
-      name: 'trends',
-      consistency: 'strong',
-      siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
-      token: process.env.NETLIFY_TOKEN,
-    });
+    supa = getAdminClient();
+  } catch(e) {
+    console.error('[get-trends] Supabase 초기화 실패:', e.message);
+    return {
+      statusCode: 200, headers: CORS,
+      body: JSON.stringify({
+        category: storeKey,
+        categoryLabel: label,
+        tags: season.now.map(s => '#' + s),
+        keywords: season.now.map(s => ({ keyword: s, trend: 'up', source: 'season' })),
+        season,
+        updatedAt: new Date().toISOString(),
+        source: 'season',
+      }),
+    };
+  }
 
-    // from + to 있으면 날짜 범위 히스토리 조회
+  try {
+    // --- 날짜 범위 히스토리 ---
     if (fromDate && toDate) {
       const fromTs = new Date(fromDate).getTime();
       const toTs = new Date(toDate).getTime();
@@ -165,37 +186,30 @@ exports.handler = async (event) => {
         };
       }
 
-      // scope 기반 prefix 결정
       let prefix;
       if (scope === 'domestic') prefix = `l30d-domestic:${storeKey}:`;
       else if (scope === 'global') prefix = `l30d-global:${storeKey}:`;
       else prefix = `l30d:${storeKey}:`;
 
-      const listResult = await store.list({ prefix });
-      const blobs = (listResult && listResult.blobs) ? listResult.blobs : [];
+      // category LIKE 로 prefix 검색 (Supabase text PK)
+      const { data: rows, error } = await supa
+        .from('trends')
+        .select('category, keywords, collected_at')
+        .like('category', `${prefix}%`);
 
-      // 날짜 범위 필터링 후 데이터 조회
-      const inRange = blobs.filter(b => {
-        const match = b.key.match(/:(\d{4}-\d{2}-\d{2})$/);
-        if (!match) return false;
-        const ts = new Date(match[1]).getTime();
-        return ts >= fromTs && ts <= toTs;
-      }).sort((a, b) => {
-        const da = a.key.match(/:(\d{4}-\d{2}-\d{2})$/)[1];
-        const db = b.key.match(/:(\d{4}-\d{2}-\d{2})$/)[1];
-        return da.localeCompare(db);
-      });
+      if (error) {
+        console.error('[get-trends] history 조회 실패:', error.message);
+      }
 
       const history = [];
-      for (const blob of inRange) {
-        try {
-          const raw = await store.get(blob.key);
-          if (raw) {
-            const dateMatch = blob.key.match(/:(\d{4}-\d{2}-\d{2})$/);
-            history.push({ date: dateMatch ? dateMatch[1] : null, data: JSON.parse(raw) });
-          }
-        } catch(e) {}
+      for (const row of (rows || [])) {
+        const m = row.category.match(/:(\d{4}-\d{2}-\d{2})$/);
+        if (!m) continue;
+        const ts = new Date(m[1]).getTime();
+        if (ts < fromTs || ts > toTs) continue;
+        history.push({ date: m[1], data: row.keywords });
       }
+      history.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
 
       return {
         statusCode: 200, headers: CORS,
@@ -210,26 +224,29 @@ exports.handler = async (event) => {
       };
     }
 
-    // scope=domestic 또는 scope=global → GPT 분류 결과 반환
+    // --- scope=domestic / scope=global ---
     if (scope === 'domestic' || scope === 'global') {
       const scopeKey = `l30d-${scope}:${storeKey}`;
       const prevKey = `l30d-${scope}-prev:${storeKey}`;
-      let scopeRaw = null;
-      let prevRaw = null;
-      let risingRaw = null;
-      try { scopeRaw = await store.get(scopeKey); } catch(e) {}
-      try { prevRaw = await store.get(prevKey); } catch(e) {}
-      if (scope === 'domestic') {
-        try { risingRaw = await store.get(`l30d-rising:${storeKey}`); } catch(e) {}
-      }
 
-      const risingData = risingRaw ? JSON.parse(risingRaw) : null;
-      const rising = risingData && Array.isArray(risingData.items) ? risingData.items : [];
+      const [scopeRow, prevRow, risingRow] = await Promise.all([
+        fetchTrendRow(supa, scopeKey),
+        fetchTrendRow(supa, prevKey),
+        scope === 'domestic' ? fetchTrendRow(supa, `l30d-rising:${storeKey}`) : Promise.resolve(null),
+      ]);
 
-      if (scopeRaw) {
-        const scopeData = JSON.parse(scopeRaw);
-        const prevData = prevRaw ? JSON.parse(prevRaw) : null;
-        const prevKeywords = prevData && prevData.keywords ? prevData.keywords.map(k => (k.keyword || '').replace(/^#/, '')) : [];
+      const rising = (risingRow && Array.isArray(risingRow.keywords?.items)) ? risingRow.keywords.items : [];
+
+      if (scopeRow && scopeRow.keywords) {
+        const scopeData = scopeRow.keywords;
+        const prevData = prevRow ? prevRow.keywords : null;
+        const prevKeywords = (prevData && Array.isArray(prevData.keywords))
+          ? prevData.keywords.map(k => (k.keyword || '').replace(/^#/, ''))
+          : [];
+        const scopeTags = (scopeData.keywords || [])
+          .map(k => (k.keyword || '').replace(/^#/, ''))
+          .filter(Boolean)
+          .map(k => '#' + k);
 
         return {
           statusCode: 200, headers: CORS,
@@ -237,9 +254,13 @@ exports.handler = async (event) => {
             category: storeKey,
             categoryLabel: label,
             scope,
+            tags: scopeTags,
             keywords: filterBlacklist((scopeData.keywords || []).map((k, i) => ({
               keyword: (k.keyword || '').replace(/^#/, ''),
               source: k.source || 'gpt-classified',
+              score: typeof k.score === 'number' ? k.score : (100 - i * 5),
+              mentions: typeof k.mentions === 'number' ? k.mentions : 0,
+              trend: 'up',
               rank: i + 1,
               rankChange: (() => {
                 const kw = (k.keyword || '').replace(/^#/, '');
@@ -252,23 +273,25 @@ exports.handler = async (event) => {
             }))),
             rising,
             insight: scopeData.insight || '',
+            insights: scopeData.insight || '',
             season: scope === 'domestic' ? season : undefined,
-            updatedAt: scopeData.updatedAt || new Date().toISOString(),
+            updatedAt: scopeData.updatedAt || scopeRow.collected_at || new Date().toISOString(),
             source: 'gpt-classified',
           }),
         };
       }
 
-      // 데이터 없으면 빈 응답
       return {
         statusCode: 200, headers: CORS,
         body: JSON.stringify({
           category: storeKey,
           categoryLabel: label,
           scope,
+          tags: [],
           keywords: [],
           rising,
           insight: '',
+          insights: '',
           season: scope === 'domestic' ? season : undefined,
           updatedAt: new Date().toISOString(),
           source: 'none',
@@ -276,56 +299,57 @@ exports.handler = async (event) => {
       };
     }
 
-    // 기존 합산 데이터 (scope 미지정)
-    let l30dRaw = null;
-    try { l30dRaw = await store.get('l30d:' + storeKey); } catch(e) {}
-
-    if (l30dRaw) {
-      const l30d = JSON.parse(l30dRaw);
-      if (l30d.keywords && l30d.keywords.length > 0) {
+    // --- 기존 합산 데이터 (scope 미지정): trends:{cat} 레거시 키 먼저 조회 ---
+    const trendsRow = await fetchTrendRow(supa, 'trends:' + storeKey);
+    if (trendsRow && trendsRow.keywords) {
+      const cached = trendsRow.keywords;
+      if (Array.isArray(cached.tags) && cached.tags.length > 0) {
         return {
           statusCode: 200, headers: CORS,
           body: JSON.stringify({
             category: storeKey,
             categoryLabel: label,
+            tags: cached.tags,
+            keywords: filterBlacklist(cached.tags.map(tag => ({
+              keyword: (tag || '').replace(/^#/, ''),
+              trend: 'up',
+              source: cached.source || 'last30days',
+            }))),
+            season,
+            updatedAt: cached.updatedAt || trendsRow.collected_at || new Date().toISOString(),
+            source: cached.source || 'last30days',
+          }),
+        };
+      }
+    }
+
+    // --- l30d:{cat} fallback (존재 시) ---
+    const l30dRow = await fetchTrendRow(supa, 'l30d:' + storeKey);
+    if (l30dRow && l30dRow.keywords) {
+      const l30d = l30dRow.keywords;
+      if (Array.isArray(l30d.keywords) && l30d.keywords.length > 0) {
+        return {
+          statusCode: 200, headers: CORS,
+          body: JSON.stringify({
+            category: storeKey,
+            categoryLabel: label,
+            tags: l30d.keywords
+              .map(k => (k.keyword || '').replace(/^#/, ''))
+              .filter(Boolean)
+              .map(k => '#' + k),
             keywords: filterBlacklist(l30d.keywords.map(k => ({
-              keyword: k.keyword.replace(/^#/, ''),
+              keyword: (k.keyword || '').replace(/^#/, ''),
               score: k.score || 0,
               mentions: k.mentions || 0,
               trend: 'up',
               source: 'last30days',
             }))),
             season,
-            updatedAt: l30d.updatedAt || new Date().toISOString(),
+            updatedAt: l30d.updatedAt || l30dRow.collected_at || new Date().toISOString(),
             source: 'last30days',
             findingsCount: l30d.findingsCount || null,
             dataSources: l30d.sources || null,
-              insights: l30d.insights || '',
-          }),
-        };
-      }
-    }
-
-    // trends: 키 fallback (태그만 있는 경우)
-    let trendsRaw = null;
-    try { trendsRaw = await store.get('trends:' + storeKey); } catch(e) {}
-
-    if (trendsRaw) {
-      const cached = JSON.parse(trendsRaw);
-      if (cached.tags && cached.tags.length > 0) {
-        return {
-          statusCode: 200, headers: CORS,
-          body: JSON.stringify({
-            category: storeKey,
-            categoryLabel: label,
-            keywords: filterBlacklist(cached.tags.map(tag => ({
-              keyword: tag.replace(/^#/, ''),
-              trend: 'up',
-              source: cached.source || 'last30days',
-            }))),
-            season,
-            updatedAt: cached.updatedAt || new Date().toISOString(),
-            source: cached.source || 'last30days',
+            insights: l30d.insights || '',
           }),
         };
       }
@@ -334,12 +358,13 @@ exports.handler = async (event) => {
     console.error('get-trends error:', e.message);
   }
 
-  // 데이터 없으면 시즌 키워드만 반환
+  // 최종 fallback: 시즌 키워드
   return {
     statusCode: 200, headers: CORS,
     body: JSON.stringify({
       category: storeKey,
       categoryLabel: label,
+      tags: season.now.map(s => '#' + s),
       keywords: season.now.map(s => ({ keyword: s, trend: 'up', source: 'season' })),
       season,
       updatedAt: new Date().toISOString(),
