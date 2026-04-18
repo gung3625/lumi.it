@@ -1697,6 +1697,38 @@ body.dark-mode .su-close svg{stroke:#f0f2f8;}
       }
     } catch(e) { /* 무시 */ }
   });
+  // 401 자동 refresh + 재시도 래퍼 (preflight 방식 — FormData 재시도 이슈 없음)
+  window.lumiAuthFetch = async function(url, options) {
+    options = options || {};
+    options.headers = options.headers || {};
+    var tok = '';
+    try {
+      var s = await window.lumiSupa.auth.getSession();
+      if (s && s.data && s.data.session && s.data.session.access_token) {
+        tok = s.data.session.access_token;
+        localStorage.setItem('lumi_token', tok);
+      }
+    } catch(e) {}
+    if (!tok) tok = localStorage.getItem('lumi_token') || '';
+    if (tok && !options.headers['Authorization']) {
+      options.headers['Authorization'] = 'Bearer ' + tok;
+    }
+    var res = await fetch(url, options);
+    if (res.status !== 401) return res;
+    // 여기까지 왔다면 SDK 토큰도 유효하지 않음 → 진짜 만료
+    try { await window.lumiSupa.auth.signOut(); } catch(e) {}
+    try { localStorage.removeItem('lumi_token'); localStorage.removeItem('lumi_user'); } catch(e) {}
+    try { window.dispatchEvent(new CustomEvent('lumi:session-expired')); } catch(e) {}
+    return res;
+  };
+  window.addEventListener('lumi:session-expired', function() {
+    try {
+      if (typeof showMobileToast === 'function') {
+        showMobileToast('로그인이 만료됐어요. 다시 로그인해주세요.');
+      }
+    } catch(e) {}
+    setTimeout(function() { try { window.location.href = '/'; } catch(e) {} }, 1500);
+  });
   // 예약 목록 — /api/list-reservations (Bearer 검증, RLS 우회)
   window.lumiRelayList = function() {
     var token = localStorage.getItem('lumi_token') || '';
@@ -1728,7 +1760,7 @@ body.dark-mode .su-close svg{stroke:#f0f2f8;}
   // 플랜 조회 — /api/check-plan (Bearer 검증, admin client로 RLS 우회)
   window.lumiCheckPlan = function() {
     var token = localStorage.getItem('lumi_token') || '';
-    return fetch('/api/check-plan', { method:'GET', headers:{ 'Authorization':'Bearer '+token } })
+    return window.lumiAuthFetch('/api/check-plan', { method:'GET', headers:{ 'Authorization':'Bearer '+token } })
       .then(function(r){ return r.json().catch(function(){ return { error:'플랜 조회 실패' }; }); })
       .then(function(data){
         if (data.error) return { error: data.error };
@@ -1767,7 +1799,7 @@ body.dark-mode .su-close svg{stroke:#f0f2f8;}
   // 예약 단건 조회 — /api/get-reservation (Bearer 토큰으로 서버 검증, RLS 우회)
   window.lumiGetReservation = function(rKey) {
     var token = localStorage.getItem('lumi_token') || '';
-    return fetch('/api/get-reservation?reserveKey=' + encodeURIComponent(rKey), {
+    return window.lumiAuthFetch('/api/get-reservation?reserveKey=' + encodeURIComponent(rKey), {
       method: 'GET',
       headers: { 'Authorization': 'Bearer ' + token }
     }).then(function(r){ return r.json().then(function(d){ return {status:r.status, data:d}; }); })
@@ -2794,7 +2826,7 @@ function mInitWave2(){
         paint();
         localStorage.setItem('lumi_feat_toggles', JSON.stringify(state));
         // sync to server (best effort)
-        fetch('/api/update-profile', {
+        window.lumiAuthFetch('/api/update-profile', {
           method:'POST',
           headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+TOKEN },
           body: JSON.stringify({ featToggles: state })
@@ -3247,12 +3279,23 @@ function mInitWave2(){
         c.width = targetW; c.height = targetH;
         var ctx = c.getContext('2d');
         if (needsPad) {
-          var bgScale = Math.max(targetW / w, targetH / h);
-          var bgW = Math.round(w * bgScale), bgH = Math.round(h * bgScale);
-          var bgDx = Math.round((targetW - bgW) / 2), bgDy = Math.round((targetH - bgH) / 2);
-          ctx.filter = 'blur(40px) brightness(0.85)';
-          ctx.drawImage(img, bgDx, bgDy, bgW, bgH);
-          ctx.filter = 'none';
+          var _sampler = document.createElement('canvas');
+          _sampler.width = w; _sampler.height = h;
+          var _sctx = _sampler.getContext('2d');
+          _sctx.drawImage(img, 0, 0, w, h);
+          var _pts = [[0,0],[w-1,0],[0,h-1],[w-1,h-1]];
+          var _r=0,_g=0,_b=0,_count=0;
+          try {
+            for (var _i=0; _i<_pts.length; _i++){
+              var _px = _sctx.getImageData(_pts[_i][0], _pts[_i][1], 1, 1).data;
+              _r += _px[0]; _g += _px[1]; _b += _px[2]; _count++;
+            }
+          } catch(_e) { /* CORS 오염 등 — 화이트 폴백 */ }
+          var _fill = _count > 0
+            ? 'rgb(' + Math.round(_r/_count) + ',' + Math.round(_g/_count) + ',' + Math.round(_b/_count) + ')'
+            : '#ffffff';
+          ctx.fillStyle = _fill;
+          ctx.fillRect(0, 0, targetW, targetH);
         }
         var fgScale = Math.min(targetW / w, targetH / h);
         var fgW = Math.round(w * fgScale), fgH = Math.round(h * fgScale);
@@ -3307,7 +3350,7 @@ function mInitWave2(){
       }
       return _weatherPromise.then(function(_w){
         if (_w) fd.append('weather', JSON.stringify(_w));
-        return fetch('/api/reserve', { method:'POST', headers:{ 'Authorization':'Bearer '+TOKEN }, body: fd });
+        return window.lumiAuthFetch('/api/reserve', { method:'POST', headers:{ 'Authorization':'Bearer '+TOKEN }, body: fd });
       });
     }).then(function(r){ return r.json(); }).then(function(res){
       if (!res || !res.reservationKey) throw new Error(res && res.error || '예약 실패');
@@ -3315,7 +3358,10 @@ function mInitWave2(){
       if (statusEl) statusEl.textContent = '캡션을 만들고 있어요…';
       pollCaption();
     }).catch(function(err){
-      showMobileToast('캡션 생성 실패: ' + (err.message || '네트워크'));
+      var msg = err && err.message || '';
+      if (msg.indexOf('인증') === -1 && msg.indexOf('로그인') === -1) {
+        showMobileToast('캡션 생성 실패: ' + (msg || '네트워크'));
+      }
       window.mCloseCaptionFlow();
     });
   }
@@ -3324,7 +3370,7 @@ function mInitWave2(){
     var iv = setInterval(function(){
       tries++;
       if (tries > 40) { clearInterval(iv); showMobileToast('시간 초과'); window.mCloseCaptionFlow(); return; }
-      fetch('/api/get-reservation?reserveKey=' + encodeURIComponent(flow.reservationKey), { headers:{ 'Authorization':'Bearer '+TOKEN } })
+      window.lumiAuthFetch('/api/get-reservation?reserveKey=' + encodeURIComponent(flow.reservationKey), { headers:{ 'Authorization':'Bearer '+TOKEN } })
         .then(function(r){ return r.json(); })
         .then(function(d){
           var rsv = d && (d.reservation || d);
@@ -3379,7 +3425,7 @@ function mInitWave2(){
     flow.step = 1; renderFlow();
     var statusEl = document.getElementById('m-flow-status');
     if (statusEl) statusEl.textContent = '캡션을 다시 만들고 있어요…';
-    fetch('/api/regenerate-caption', {
+    window.lumiAuthFetch('/api/regenerate-caption', {
       method:'POST',
       headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+TOKEN },
       body: JSON.stringify({ reservationKey: flow.reservationKey })
@@ -3406,7 +3452,7 @@ function mInitWave2(){
       postMode: flow.postMode,
       scheduledAt: (flow.postMode === 'scheduled' || flow.postMode === 'best') ? flow.scheduledAt : null
     };
-    fetch('/api/select-caption', {
+    window.lumiAuthFetch('/api/select-caption', {
       method:'POST',
       headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+TOKEN },
       body: JSON.stringify(payload)
@@ -3440,7 +3486,7 @@ function mInitWave2(){
         window.mCloseCaptionFlow();
         return;
       }
-      fetch('/api/get-reservation?reserveKey=' + encodeURIComponent(flow.reservationKey), { headers:{ 'Authorization':'Bearer '+TOKEN } })
+      window.lumiAuthFetch('/api/get-reservation?reserveKey=' + encodeURIComponent(flow.reservationKey), { headers:{ 'Authorization':'Bearer '+TOKEN } })
         .then(function(r){ return r.json(); })
         .then(function(d){
           var rsv = d && (d.reservation || d);
@@ -3920,13 +3966,23 @@ var cards = {
             var ctx = canvas.getContext('2d');
 
             if (needsPad) {
-              // 배경: 같은 이미지를 cover로 확대 후 블러
-              var bgScale = Math.max(targetW / w, targetH / h);
-              var bgW = Math.round(w * bgScale), bgH = Math.round(h * bgScale);
-              var bgDx = Math.round((targetW - bgW) / 2), bgDy = Math.round((targetH - bgH) / 2);
-              ctx.filter = 'blur(40px) brightness(0.85)';
-              ctx.drawImage(img, bgDx, bgDy, bgW, bgH);
-              ctx.filter = 'none';
+              var _sampler = document.createElement('canvas');
+              _sampler.width = w; _sampler.height = h;
+              var _sctx = _sampler.getContext('2d');
+              _sctx.drawImage(img, 0, 0, w, h);
+              var _pts = [[0,0],[w-1,0],[0,h-1],[w-1,h-1]];
+              var _r=0,_g=0,_b=0,_count=0;
+              try {
+                for (var _i=0; _i<_pts.length; _i++){
+                  var _px = _sctx.getImageData(_pts[_i][0], _pts[_i][1], 1, 1).data;
+                  _r += _px[0]; _g += _px[1]; _b += _px[2]; _count++;
+                }
+              } catch(_e) { /* CORS 오염 등 — 화이트 폴백 */ }
+              var _fill = _count > 0
+                ? 'rgb(' + Math.round(_r/_count) + ',' + Math.round(_g/_count) + ',' + Math.round(_b/_count) + ')'
+                : '#ffffff';
+              ctx.fillStyle = _fill;
+              ctx.fillRect(0, 0, targetW, targetH);
             }
             // 전경: 원본 contain
             var fgScale = Math.min(targetW / w, targetH / h);
@@ -4016,7 +4072,7 @@ var cards = {
         var fd = await buildPostFormData(new Date().toISOString());
         fd.append('postMode', 'immediate');
         fd.append('relayMode', 'true');
-        fetch('/api/reserve', {
+        window.lumiAuthFetch('/api/reserve', {
           method: 'POST',
           headers: { 'Authorization': 'Bearer ' + token },
           body: fd
@@ -4092,7 +4148,7 @@ var cards = {
         if (!token) return;
         setIsPosting(true);
         setPhase('generating');
-        fetch('/api/regenerate-caption', {
+        window.lumiAuthFetch('/api/regenerate-caption', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
           body: JSON.stringify({ reservationKey: reservationKey })
@@ -4119,7 +4175,7 @@ var cards = {
         var token = localStorage.getItem('lumi_token');
         if (!token || !rKey) return;
         setIsConfirmPosting(true);
-        fetch('/api/select-caption', {
+        window.lumiAuthFetch('/api/select-caption', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
           body: JSON.stringify({ reservationKey: rKey, captionIndex: 0, editedCaption: captionText })
@@ -4218,7 +4274,7 @@ var cards = {
               // scheduledAt을 select-caption payload에 넘기려면 runSelectAndPost 확장 필요
               // 대신 서버측 select-caption이 scheduledAt을 받으므로 직접 fetch
               setIsConfirmPosting(false);
-              fetch('/api/select-caption', {
+              window.lumiAuthFetch('/api/select-caption', {
                 method:'POST',
                 headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
                 body: JSON.stringify({ reservationKey: reservationKey, captionIndex: 0, editedCaption: editedCaption, postMode: 'best-time', scheduledAt: target.toISOString() })
@@ -4254,7 +4310,7 @@ var cards = {
         var maxDate = new Date(); maxDate.setDate(maxDate.getDate() + 30);
         if (scheduled > maxDate) { alert('최대 30일 이내로 예약할 수 있어요.'); return; }
         setIsConfirmPosting(true);
-        fetch('/api/select-caption', {
+        window.lumiAuthFetch('/api/select-caption', {
           method:'POST',
           headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
           body: JSON.stringify({ reservationKey: reservationKey, captionIndex: 0, editedCaption: editedCaption, postMode: 'scheduled', scheduledAt: scheduled.toISOString() })
@@ -4301,7 +4357,7 @@ var cards = {
           if (scheduled <= new Date()) { scheduled.setDate(scheduled.getDate() + 1); }
           var fd = await buildPostFormData(scheduled.toISOString());
           fd.append('postMode', 'best-time');
-          return fetch('/api/reserve', {
+          return window.lumiAuthFetch('/api/reserve', {
             method: 'POST',
             headers: { 'Authorization': 'Bearer ' + token },
             body: fd
@@ -4377,7 +4433,7 @@ var cards = {
         setShowSchedulePicker(false);
         var fd = await buildPostFormData(scheduled.toISOString());
         fd.append('postMode', 'scheduled');
-        fetch('/api/reserve', {
+        window.lumiAuthFetch('/api/reserve', {
           method: 'POST',
           headers: { 'Authorization': 'Bearer ' + token },
           body: fd
@@ -5924,7 +5980,7 @@ var cards = {
           try { localStorage.setItem('lumi_feat_toggles', JSON.stringify(next)); } catch(ex) {}
           var token = localStorage.getItem('lumi_token');
           if (token) {
-            fetch('/api/update-profile', {
+            window.lumiAuthFetch('/api/update-profile', {
               method: 'POST',
               headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token},
               body: JSON.stringify({featToggles: next})
@@ -6054,7 +6110,7 @@ var cards = {
           var rKey = detailData && detailData.reservationKey;
           if (!rKey) return;
           setRegenLoading(true);
-          fetch('/api/regenerate-caption', {
+          window.lumiAuthFetch('/api/regenerate-caption', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
             body: JSON.stringify({ reservationKey: rKey })
