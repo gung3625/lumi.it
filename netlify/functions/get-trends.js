@@ -5,7 +5,7 @@
 const { getAdminClient } = require('./_shared/supabase-admin');
 
 // 뻔한 상시 검색어 블랙리스트
-const BLACKLIST = [
+const BLACKLIST = new Set([
   '맛집', '핫플레이스', '브런치', '카페', '맛집추천', '카페추천',
   '뷰티', '네일', '헤어', '피부관리', '다이어트', '화장품',
   '인스타', '인스타그램', '팔로우', '좋아요',
@@ -27,6 +27,25 @@ const BLACKLIST = [
   '빽다방', '할리스', '엔제리너스', '폴바셋', '블루보틀', '파스쿠찌',
   'coffee', 'cafe', 'desserts', 'dessert', 'menu', 'food', 'world', 'new', 'best',
   'love', 'like', 'good', 'free', 'sale', 'shop', 'store', 'day', 'time', 'news',
+  // 복합 제네릭 카테고리 구문 (정확 매치)
+  '디저트 맛집', '카페 맛집', '맛있는 카페', '핫한 카페', '좋은 카페',
+  '카페 추천', '맛집 추천', '분위기 좋은 카페', '맛있는 디저트', '디저트 추천',
+  '아침밥', '점심메뉴', '저녁메뉴', '브런치 카페',
+  '예쁜 네일', '좋은 미용실', '머리 잘하는 곳', '예쁜 매장', '추천 네일샵',
+  '맛집 탐방', '카페 투어', '디저트 카페', '핫플 카페', '인기 카페',
+  '예쁜 카페', '감성 카페', '분위기 카페', '힙한 카페',
+  '맛있는 음식', '음식 추천', '맛집 소개', '핫한 맛집', '인기 맛집',
+  '예쁜 꽃집', '좋은 꽃집', '꽃집 추천', '플라워 추천',
+  '좋은 헤어샵', '헤어 추천', '네일 추천', '뷰티 추천',
+  '펫샵 추천', '좋은 펫샵', '아동복 추천',
+]);
+
+// 제네릭 카테고리 패턴 정규식 (복합 구문 필터)
+const GENERIC_PATTERNS = [
+  /^.+(맛집|핫플|핫한곳|맛집추천|핫플레이스)$/,
+  /^(맛있는|예쁜|좋은|핫한|분위기\s*좋은|감성적인|힙한|인기\s*있는|유명한|요즘\s*뜨는)\s*.+/,
+  /^.+\s*(추천|소개|맛집|핫플|탐방|투어|모음|리스트)$/,
+  /^(카페|맛집|디저트|헤어|네일|뷰티|꽃집|펫샵|헬스|필라테스)\s*(추천|소개|탐방|투어|모음|가이드|정보|리뷰|후기)$/,
 ];
 
 const FILLER_WORDS = [
@@ -43,10 +62,11 @@ function isBadKeyword(raw) {
   const kw = (raw || '').replace(/^#/, '').trim().toLowerCase();
   if (!kw) return true;
   if (kw.length < 2 || kw.length > 25) return true;
-  if (BLACKLIST.includes(kw)) return true;
+  if (BLACKLIST.has(kw)) return true;
   if (FILLER_WORDS.some(fw => kw.includes(fw))) return true;
-  if ((kw.match(/\s/g) || []).length >= 2) return true;
+  if ((kw.match(/\s/g) || []).length >= 3) return true;
   if (/[?!,.]/.test(kw)) return true;
+  if (GENERIC_PATTERNS.some(re => re.test(kw))) return true;
   return false;
 }
 
