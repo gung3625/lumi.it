@@ -1756,14 +1756,18 @@ body.dark-mode .su-close svg{stroke:#f0f2f8;}
         };
       });
   };
-  // 예약 단건 조회 (기존 /api/get-reservation 응답 포맷과 호환)
+  // 예약 단건 조회 — /api/get-reservation (Bearer 토큰으로 서버 검증, RLS 우회)
   window.lumiGetReservation = function(rKey) {
-    return window.lumiSupa.from('reservations').select().eq('reserve_key', rKey).maybeSingle()
+    var token = localStorage.getItem('lumi_token') || '';
+    return fetch('/api/get-reservation?reserveKey=' + encodeURIComponent(rKey), {
+      method: 'GET',
+      headers: { 'Authorization': 'Bearer ' + token }
+    }).then(function(r){ return r.json().then(function(d){ return {status:r.status, data:d}; }); })
       .then(function(res){
-        if (res.error) return { error: res.error.message || '예약 조회 실패' };
-        if (!res.data) return { error: '예약 없음' };
-        return window.lumiRsvFromRow(res.data) || {};
-      });
+        if (res.status !== 200) return { error: (res.data && res.data.error) || '예약 조회 실패' };
+        return window.lumiRsvFromRow(res.data.reservation) || {};
+      })
+      .catch(function(){ return { error: '예약 조회 실패' }; });
   };
   // Supabase reservations row → 기존 camelCase 프론트 형태로 어댑터
   window.lumiRsvFromRow = function(r) {
