@@ -3,6 +3,7 @@
 // ig_accounts 테이블에는 secret_id(uuid)만 보관 — 평문 토큰 저장 금지.
 const crypto = require('crypto');
 const { getAdminClient } = require('./_shared/supabase-admin');
+const { verifyBearerToken } = require('./_shared/supabase-auth');
 
 const APP_ID = process.env.META_APP_ID || '1233639725586126';
 const APP_SECRET = process.env.META_APP_SECRET;
@@ -42,14 +43,25 @@ exports.handler = async (event) => {
   // ──────────────────────────────────────────────
   if (!code) {
     const lumiToken = params.get('token') || '';
-    const userId = params.get('user_id') || null; // Supabase Auth uid (선택)
+    if (!lumiToken) {
+      console.error('[ig-oauth] OAuth 시작 실패: 토큰 없음');
+      return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/?oauth_error=1' } };
+    }
+
+    const { user, error: authError } = await verifyBearerToken(lumiToken);
+    if (authError || !user) {
+      console.error('[ig-oauth] OAuth 시작 실패: 토큰 검증 실패');
+      return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/?oauth_error=1' } };
+    }
+
+    const userId = user.id;
     const nonce = crypto.randomBytes(16).toString('hex');
 
     try {
       await supabase.from('oauth_nonces').insert({
         nonce: 'ig:' + nonce,
-        user_id: userId || null,
-        lumi_token: lumiToken || null,
+        user_id: userId,
+        lumi_token: null,
       });
     } catch (e) {
       console.error('[ig-oauth] nonce 저장 실패:', e.message);

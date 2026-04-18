@@ -55,7 +55,7 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '잘못된 요청입니다.' }) };
   }
 
-  const { name, storeName, instagram, email, phone, password, birthdate, gender, storeDesc, region, sidoCode, sigunguCode, storeSido, bizCategory, captionTone, tagStyle, agreeMarketing } = body;
+  const { name, storeName, instagram, email, phone, password, birthdate, gender, storeDesc, region, sidoCode, sigunguCode, storeSido, bizCategory, captionTone, tagStyle, agreeMarketing, otpToken } = body;
 
   if (!name || !storeName || !email || !password) {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '필수 정보가 누락됐습니다.' }) };
@@ -72,6 +72,24 @@ exports.handler = async (event) => {
   if (!pwRegex.test(password)) {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '비밀번호는 특수문자를 포함한 10자리 이상이어야 합니다.' }) };
   }
+
+  if (!otpToken) {
+    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '이메일 인증이 필요합니다.' }) };
+  }
+
+  const verifiedKey = 'otp-verified:' + email;
+  const { data: nonceRow } = await supabase.from('oauth_nonces').select('lumi_token').eq('nonce', verifiedKey).maybeSingle();
+  if (!nonceRow) {
+    return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '이메일 인증이 만료되었습니다. 다시 인증해주세요.' }) };
+  }
+  let nonceData;
+  try { nonceData = JSON.parse(nonceRow.lumi_token); } catch {
+    return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '이메일 인증이 만료되었습니다. 다시 인증해주세요.' }) };
+  }
+  if (nonceData.token !== otpToken || nonceData.expiresAt < Date.now()) {
+    return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '이메일 인증이 만료되었습니다. 다시 인증해주세요.' }) };
+  }
+  await supabase.from('oauth_nonces').delete().eq('nonce', verifiedKey);
 
   try {
     // 1) Supabase Auth 계정 생성

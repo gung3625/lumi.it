@@ -3445,7 +3445,7 @@ var cards = {
         );
 
         // 원형 프로그레스 dots: 완료=초록, 현재=흰색 채움, 미완료=흰색 테두리
-        var progressDots = e('div', {style:{display:'flex',gap:'8px',alignItems:'center',marginTop:'10px'}},
+        var progressDots = e('div', {style:{display:'flex',gap:'8px',alignItems:'center',marginTop:'10px',justifyContent:'center'}},
           [0,1,2].map(function(i){
             var isDone = i < step;
             var isCur = i === step;
@@ -3461,7 +3461,7 @@ var cards = {
         );
 
         // 완료된 스텝 뱃지 (헤더 아래 작게)
-        var doneBadges = step > 0 ? e('div', {style:{display:'flex',gap:'5px',flexWrap:'wrap',marginTop:'8px'}},
+        var doneBadges = step > 0 ? e('div', {style:{display:'flex',gap:'5px',flexWrap:'wrap',marginTop:'8px',justifyContent:'center'}},
           Array.apply(null, Array(step)).map(function(_, i) {
             return e('div', {key:i, style:{display:'flex',alignItems:'center',gap:'4px',background:'rgba(74,222,128,.15)',border:'1px solid rgba(74,222,128,.35)',borderRadius:'980px',padding:'2px 8px 2px 5px'}},
               e('svg', {width:'11',height:'11',viewBox:'0 0 12 12',fill:'none'},
@@ -3476,7 +3476,7 @@ var cards = {
         return e('div', {className:'bento-card card-visual bg-blue', style:{flexDirection:'column',justifyContent:'space-between',padding:_mob?'18px 16px':'20px',gap:'0',position:'relative',overflow:'hidden',minHeight:'0'}},
           // 상단 헤더: 로고 + 타이틀 (한 행), dots 아래 별도 행, 완료 뱃지
           e('div', null,
-            e('div', {style:{display:'flex',alignItems:'center',gap:'7px'}},
+            e('div', {style:{display:'flex',alignItems:'center',gap:'7px',justifyContent:'center'}},
               igLogo,
               e('span', {style:{fontSize:'13px',fontWeight:700,color:'rgba(255,255,255,.9)',letterSpacing:'.3px'}}, '인스타 연동')
             ),
@@ -3484,20 +3484,20 @@ var cards = {
             doneBadges
           ),
           // 중앙 콘텐츠 블록
-          e('div', {style:{flex:'1',display:'flex',flexDirection:'column',justifyContent:'center',padding:'14px 0 10px'}},
-            e('p', {style:{fontSize:'11px',color:'rgba(255,255,255,.5)',letterSpacing:'1.2px',marginBottom:'10px',fontWeight:600,textTransform:'uppercase'}}, 'STEP ' + (step + 1) + ' / 3'),
-            e('p', {style:{fontSize:'clamp(16px,4.5vw,20px)',fontWeight:700,color:'#fff',lineHeight:'1.3',marginBottom:'10px',letterSpacing:'-0.3px'}}, cur.label),
-            e('p', {style:{fontSize:'clamp(12px,3vw,14px)',color:'rgba(255,255,255,.7)',lineHeight:'1.55',whiteSpace:'pre-line',margin:'0'}}, cur.desc)
+          e('div', {style:{flex:'1',display:'flex',flexDirection:'column',justifyContent:'center',padding:'14px 0 10px',alignItems:'center'}},
+            e('p', {style:{fontSize:'11px',color:'rgba(255,255,255,.5)',letterSpacing:'1.2px',marginBottom:'10px',fontWeight:600,textTransform:'uppercase',textAlign:'center'}}, 'STEP ' + (step + 1) + ' / 3'),
+            e('p', {style:{fontSize:'clamp(16px,4.5vw,20px)',fontWeight:700,color:'#fff',lineHeight:'1.3',marginBottom:'10px',letterSpacing:'-0.3px',textAlign:'center'}}, cur.label),
+            e('p', {style:{fontSize:'clamp(12px,3vw,14px)',color:'rgba(255,255,255,.7)',lineHeight:'1.55',whiteSpace:'pre-line',margin:'0',textAlign:'center'}}, cur.desc)
           ),
           // 하단 버튼 영역
-          e('div', {style:{display:'flex',alignItems:'center',gap:'8px',flexWrap:'nowrap'}},
+          e('div', {style:{display:'flex',alignItems:'center',gap:'8px',flexWrap:'nowrap',justifyContent:'center'}},
             step > 0 ? e('button', {
               style:{fontSize:'12px',fontWeight:500,padding:'10px 14px',background:'rgba(255,255,255,.12)',backdropFilter:'blur(10px)',color:'rgba(255,255,255,.8)',border:'1px solid rgba(255,255,255,.2)',borderRadius:'980px',cursor:'pointer',whiteSpace:'nowrap',flexShrink:0,fontFamily:'inherit'},
               onMouseDown:function(ev){ev.stopPropagation();},
               onClick:function(ev){ev.stopPropagation();goBack();}
             }, '\u2190 이전') : null,
             e('button', {
-              style:{fontSize:'13px',fontWeight:600,padding:'10px 16px',background:'rgba(255,255,255,.2)',backdropFilter:'blur(10px)',color:'#fff',border:'1px solid rgba(255,255,255,.3)',borderRadius:'980px',cursor:'pointer',whiteSpace:'nowrap',flex:'1',minWidth:'0',overflow:'hidden',textOverflow:'ellipsis',fontFamily:'inherit'},
+              style:{fontSize:'13px',fontWeight:600,padding:'10px 16px',background:'rgba(255,255,255,.2)',backdropFilter:'blur(10px)',color:'#fff',border:'1px solid rgba(255,255,255,.3)',borderRadius:'980px',cursor:'pointer',whiteSpace:'nowrap',fontFamily:'inherit'},
               onMouseDown:function(ev){ev.stopPropagation();},
               onClick:function(ev){ev.stopPropagation();cur.action();}
             }, cur.btn),
@@ -4457,10 +4457,21 @@ function BentoGrid() {
 // ---- OAuth callback check ----
 (function(){
   var params = new URLSearchParams(window.location.search);
-  if(params.get('oauth_success')==='1'||params.get('ig_connected')==='1'){
+  var oauthError = params.get('oauth_error');
+  if(params.get('oauth_success')==='1'||params.get('ig_connected')==='1'||params.get('ig')==='connected'){
     var u=JSON.parse(localStorage.getItem('lumi_user')||'{}');u.igConnected=true;
     localStorage.setItem('lumi_user',JSON.stringify(u));
     window.history.replaceState({},'','/');
+    alert('인스타 연동이 완료됐어요!');
+  } else if(oauthError){
+    window.history.replaceState({},'','/');
+    var msg = {
+      '1': '로그인 세션이 만료됐어요. 다시 로그인해주세요.',
+      '2': '페이스북 인증에 실패했어요. 다시 시도해주세요.',
+      '3': '인스타그램 비즈니스 계정이 필요해요. 프로필을 비즈니스로 전환 후 다시 시도해주세요.',
+      '4': '세션이 만료됐어요. 다시 시도해주세요.'
+    }[oauthError] || '연동 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.';
+    alert(msg);
   }
 })();
 
@@ -4563,12 +4574,16 @@ function suShowForm() {
 
   if (step.input === 'email') {
     html += '<div class="su-input-row">';
-    html += '<input type="text" class="su-input" id="su-email-id" placeholder="아이디" style="margin-bottom:0;color:'+txtColor+'" '+suEnter('suSkipEmail()')+'>';
+    html += '<input type="text" class="su-input" id="su-email-id" placeholder="아이디" style="margin-bottom:0;color:'+txtColor+'" '+suEnter('suSendOtp()')+'>';
     html += '<span style="color:'+atColor+';font-size:14px;flex-shrink:0;">@</span>';
     html += '<select class="su-select" id="su-email-domain" style="flex:1.2;min-width:0;margin-bottom:0;color:'+txtColor+'">';
     html += '<option>gmail.com</option><option>naver.com</option><option>kakao.com</option><option>daum.net</option><option>nate.com</option><option>icloud.com</option>';
     html += '</select></div>';
-    html += '<button class="su-btn" onclick="suSkipEmail()" style="margin-top:10px">확인</button>';
+    html += '<button class="su-btn" id="su-otp-btn" onclick="suSendOtp()" style="margin-top:10px">인증번호 받기</button>';
+    html += '<div id="su-otp-area" style="display:none;margin-top:8px;">';
+    html += '<input type="text" class="su-input" id="su-otp-code" placeholder="인증번호 6자리" inputmode="numeric" maxlength="6" pattern="[0-9]*" style="color:'+txtColor+'" '+suEnter('suVerifyOtp()')+'>';
+    html += '<button class="su-btn" onclick="suVerifyOtp()">인증 확인</button>';
+    html += '</div>';
   }
   else if (step.input === 'password') {
     html += '<input type="password" class="su-input" id="su-pw" placeholder="비밀번호 (특수문자 포함 10자 이상)" style="color:'+txtColor+';" autocomplete="off" '+suEnter('document.getElementById(\\\'su-pw2\\\').focus()')+'>';
@@ -4628,7 +4643,7 @@ function suTogglePw() {
   if (pw2) pw2.type = t;
 }
 
-function suSkipEmail() {
+function suSendOtp() {
   var id = document.getElementById('su-email-id').value.trim();
   var domain = document.getElementById('su-email-domain').value;
   if (!id) {
@@ -4647,14 +4662,6 @@ function suSkipEmail() {
     return;
   }
   suData.email = id + '@' + domain;
-  suNextPhase();
-}
-
-function suSendOtp() {
-  var id = document.getElementById('su-email-id').value.trim();
-  var domain = document.getElementById('su-email-domain').value;
-  if (!id) { alert('이메일을 입력해주세요.'); return; }
-  suData.email = id + '@' + domain;
   var btn = document.getElementById('su-otp-btn');
   btn.textContent = '전송 중...';
   btn.disabled = true;
@@ -4663,16 +4670,21 @@ function suSendOtp() {
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({email: suData.email})
   }).then(function(r){ return r.json(); }).then(function(data) {
-    if (data.error) { alert(data.error); btn.textContent = '인증번호 받기'; btn.disabled = false; return; }
+    if (data.error) {
+      suChangeLumi('/assets/lumi-sad.png', true);
+      document.getElementById('su-speech').innerHTML = data.error;
+      btn.textContent = '인증번호 받기';
+      btn.disabled = false;
+      return;
+    }
     btn.textContent = '전송 완료';
     document.getElementById('su-otp-area').style.display = 'block';
     document.getElementById('su-otp-code').focus();
-    // lumi 표정 변경
     suChangeLumi('/assets/lumi-wink.png');
-    var speech = document.getElementById('su-speech');
-    speech.innerHTML = '인증번호를 보냈어요!<br>이메일을 확인해주세요';
+    document.getElementById('su-speech').innerHTML = '인증번호를 보냈어요!<br>이메일을 확인해주세요';
   }).catch(function() {
-    alert('전송에 실패했어요. 다시 시도해주세요.');
+    suChangeLumi('/assets/lumi-sad.png', true);
+    document.getElementById('su-speech').innerHTML = '전송에 실패했어요.<br>다시 시도해주세요';
     btn.textContent = '인증번호 받기';
     btn.disabled = false;
   });
@@ -4680,17 +4692,27 @@ function suSendOtp() {
 
 function suVerifyOtp() {
   var otp = document.getElementById('su-otp-code').value.trim();
-  if (!otp || otp.length !== 6) { alert('인증번호 6자리를 입력해주세요.'); return; }
+  if (!otp || otp.length !== 6) {
+    suChangeLumi('/assets/lumi-sad.png', true);
+    document.getElementById('su-speech').innerHTML = '인증번호 6자리를<br>입력해주세요';
+    return;
+  }
   fetch('/.netlify/functions/verify-otp', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({email: suData.email, otp: otp})
   }).then(function(r){ return r.json(); }).then(function(data) {
-    if (data.error) { alert(data.error); return; }
+    if (data.error) {
+      suChangeLumi('/assets/lumi-sad.png', true);
+      document.getElementById('su-speech').innerHTML = data.error;
+      return;
+    }
+    suData.otpToken = data.otpToken;
     suData.emailVerified = true;
     suNextPhase();
   }).catch(function() {
-    alert('인증에 실패했어요. 다시 시도해주세요.');
+    suChangeLumi('/assets/lumi-sad.png', true);
+    document.getElementById('su-speech').innerHTML = '인증에 실패했어요.<br>다시 시도해주세요';
   });
 }
 function suSubmitPw() {
@@ -4745,7 +4767,7 @@ function suSubmitAgree() {
   document.getElementById('su-speech').innerHTML = '가입 처리 중...';
   fetch('/api/register', {
     method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({name:suData.name, storeName:suData.storeName, email:suData.email, password:suData.password, bizCategory:suData.bizCategory, agreeMarketing:marketing?marketing.checked:false})
+    body: JSON.stringify({name:suData.name, storeName:suData.storeName, email:suData.email, password:suData.password, bizCategory:suData.bizCategory, agreeMarketing:marketing?marketing.checked:false, otpToken:suData.otpToken})
   }).then(function(r){return r.json();}).then(function(data){
     if(data.error){suChangeLumi('/assets/lumi-sad.png',true);document.getElementById('su-speech').textContent=data.error;setTimeout(function(){suShowForm();},1500);return;}
     localStorage.setItem('lumi_token',data.token);
