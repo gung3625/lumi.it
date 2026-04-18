@@ -3639,8 +3639,8 @@ var cards = {
       var scope = 'domestic';
       var _srcRaw = apiData.domestic || fallbackDomestic;
       var src = _srcRaw.slice();
-      if(src.length>0 && src.length<5){var _s=src.slice();while(src.length<5)src=src.concat(_s);}
-      src=src.slice(0,5);
+      if(src.length>0 && src.length<7){var _s=src.slice();while(src.length<7)src=src.concat(_s);}
+      src=src.slice(0,7);
       var cardRef = React.useRef(null);
       var st5 = React.useState(36), itemH = st5[0], setItemH = st5[1];
       var st7 = React.useState(4), visibleCount = st7[0], setVisibleCount = st7[1];
@@ -3649,21 +3649,12 @@ var cards = {
         function calcH(){
           if(!cardRef.current) return;
           var h = cardRef.current.offsetHeight;
-          /* 비로그인: trend-cta-bar (~70px) 공간 추가 차감 */
           var ctaH = !isLoggedIn ? 70 : 0;
           var available = h - 52 - ctaH;
-          var vc, ih;
-          if(available <= 160) {
-            /* mobile h:1 = 200px 비로그인/로그인: available 100~148px, 3개 균등 배치 */
-            vc = 3;
-            ih = Math.max(36, Math.floor(available / 3));
-          } else if(available <= 220) {
-            vc = 4;
-            ih = Math.max(40, Math.floor(available / 4));
-          } else {
-            vc = 5;
-            ih = Math.max(44, Math.floor(available / 5));
-          }
+          /* 고정 간격(52px)으로 보이는 만큼 채우기. 최소 3개, 최대 7개 */
+          var ih = 52;
+          var vc = Math.max(3, Math.min(7, Math.floor(available / ih)));
+          if(available < vc * 40) { ih = Math.max(36, Math.floor(available / vc)); }
           setVisibleCount(vc);
           setItemH(ih);
           setTrackH(vc * ih);
