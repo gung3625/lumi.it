@@ -195,7 +195,7 @@ async function sendMonthlyReport(supabase, users) {
   let sent = 0;
   for (const user of users) {
     try {
-      if (!user.phone || !user.plan || user.plan === 'trial') continue;
+      if (!user.phone || !user.plan || user.plan === 'trial' || user.plan === 'free') continue;
 
       const used = await countLastMonthPosts(supabase, user.id, lastMonth.toISOString(), lastMonthEnd.toISOString());
       const planLimitMap = { standard: 16, pro: 20 };
@@ -285,7 +285,7 @@ async function sendExpiryAlert(supabase, users) {
 
   for (const user of users) {
     try {
-      if (!user.phone || user.plan === 'trial') continue;
+      if (!user.phone || user.plan === 'trial' || user.plan === 'free') continue;
       if (user.auto_renew === true) continue;
 
       const sub = await getUserSubscription(supabase, user.id);
@@ -440,7 +440,7 @@ async function sendTrialUpsellEmail(supabase, user, stats, resend) {
 }
 
 async function sendDormantSequence(supabase, user, stats, resend) {
-  if (!user.plan || user.plan === 'trial') return null;
+  if (!user.plan || user.plan === 'trial' || user.plan === 'free') return null;
   if (stats.postCount < 1) return null;
   if (!stats.lastPostedAt) return null;
 
@@ -475,7 +475,7 @@ async function sendDormantSequence(supabase, user, stats, resend) {
 async function sendWeeklyTip(supabase, user, stats, resend) {
   const now = new Date();
   if (now.getDay() !== 1) return null;
-  if (!user.plan || user.plan === 'trial') return null;
+  if (!user.plan || user.plan === 'trial' || user.plan === 'free') return null;
   if (!stats.lastPostedAt) return null;
 
   const lastPosted = new Date(stats.lastPostedAt);

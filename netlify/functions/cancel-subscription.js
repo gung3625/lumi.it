@@ -48,20 +48,14 @@ exports.handler = async (event) => {
       return { statusCode: 404, headers: CORS, body: JSON.stringify({ error: '회원 정보를 찾을 수 없습니다.' }) };
     }
 
-    // 활성 유료 구독이 아니면 거부 (스키마 CHECK: trial/standard/pro)
-    if (!profile.plan || profile.plan === 'trial') {
+    if (!profile.plan || profile.plan === 'trial' || profile.plan === 'free') {
       return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '활성 구독이 없습니다.' }) };
     }
 
-    // PortOne 빌링키 삭제는 일시불 전환 이후 미사용. 과거 데이터 보존 필요 시 Functions 외부에서 처리.
-    // (기존 Blobs 기반 user.billingKey 필드는 Supabase 스키마에 없음 → 해지 호출 생략)
-
-    // plan=trial (결제 이전 상태) + auto_renew=false 로 변경
-    // 주의: 스키마 CHECK 제약으로 'free' 는 허용되지 않음. 'trial' 로 다운그레이드.
     const { error: updateErr } = await admin
       .from('users')
       .update({
-        plan: 'trial',
+        plan: 'free',
         auto_renew: false,
       })
       .eq('id', user.id);

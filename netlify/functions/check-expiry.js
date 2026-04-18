@@ -92,7 +92,7 @@ exports.handler = async (event) => {
     const { data: candidates, error: queryErr } = await admin
       .from('users')
       .select('id, email, name, store_name, plan, trial_start')
-      .neq('plan', 'trial')
+      .eq('plan', 'trial')
       .not('trial_start', 'is', null)
       .gte('trial_start', earliestStart)
       .lte('trial_start', latestStart);
