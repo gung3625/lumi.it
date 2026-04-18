@@ -1891,7 +1891,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <h1 class="m-hero-title v2-rise">사진 한 장이면<br>충분해요</h1>
     <p class="m-hero-sub v2-rise d1">lumi가 업종·말투 맞춰 캡션·해시태그 자동 생성.<br>1분이면 인스타 업로드 끝.</p>
     <div class="v2-rise d2" style="width:100%; display:flex; justify-content:center;">
-      <button type="button" class="m-cta" onclick="openSignupGrid()">1주 무료 체험 →</button>
+      <button type="button" class="m-cta" onclick="openMobileTutorial()">체험하기 →</button>
     </div>
   </section>
 
@@ -1933,14 +1933,18 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </div>
   </section>
 
-  <section class="m-section" style="padding-bottom:120px; text-align:center;">
-    <p style="font-size:13px; color:var(--ink-3);">루미 (lumi) · 대표자 김현 · 사업자 404-09-66416</p>
-    <p style="font-size:13px; color:var(--ink-3); margin-top:4px;">통신판매업 제2024-서울용산-1166호</p>
+  <section class="m-out-feature-cta">
+    <p class="m-out-feature-eyebrow">05 · 시간</p>
+    <h3 class="m-out-feature-title">한 달 18시간을 아끼세요</h3>
+    <p class="m-out-feature-desc">루미가 어떻게 도와드리는지 자세히 알아보세요</p>
+    <a href="/feature-time.html" class="m-out-cta-btn">자세히 보기 →</a>
   </section>
+
+  <div style="height:100px"></div>
 
   <div class="m-bottom-cta">
     <a href="#login" class="m-cta ghost" onclick="event.preventDefault();openLogin();">로그인</a>
-    <a href="#signup" class="m-cta" onclick="event.preventDefault();openSignupGrid();">시작하기</a>
+    <a href="#signup" class="m-cta" onclick="event.preventDefault();openSignupGrid();">1주 무료 체험</a>
   </div>
 </div>
 
@@ -1948,15 +1952,15 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
      Visible only at max-width:767px for logged-in users.
      Desktop bento below is completely untouched. -->
 <div class="mobile-dash" id="mobile-app-logged-in" style="display:none">
-  <!-- Top greeting bar -->
-  <header class="m-greeting">
+  <!-- 1. Top greeting bar -->
+  <header class="m-greeting m-greeting-header">
     <div class="m-greeting-text">
       <p class="m-greeting-hi">안녕하세요</p>
       <p class="m-greeting-name" id="m-greeting-name">@lumi</p>
     </div>
   </header>
 
-  <!-- Primary CTA card -->
+  <!-- 2. Primary CTA card (사진 올리기 → 캡션 플로우 진입) -->
   <section class="m-primary-cta v2-rise">
     <div class="m-primary-cta-icon">
       <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
@@ -1966,24 +1970,58 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <p class="m-primary-cta-sub">사진 한 장이면 캡션·해시태그 완성</p>
     </div>
     <button type="button" class="m-primary-cta-btn" onclick="document.getElementById('m-hidden-file').click();">사진 선택</button>
-    <input type="file" id="m-hidden-file" accept="image/*" style="display:none" onchange="(function(e){try{var f=e.target.files&&e.target.files[0];if(f){window._bioRealFiles=[f];window._bioPhase='review';var bio=document.querySelector('.desktop-bento');if(bio){bio.scrollIntoView({behavior:'smooth'});}showMobileToast('사진이 선택됐어요. 대시보드에서 이어서 작성해 주세요.');}}catch(ex){}})(event)">
+    <input type="file" id="m-hidden-file" accept="image/*" style="display:none" onchange="window.mOpenCaptionFlow(event)">
   </section>
 
-  <!-- History strip (horizontal scroll) -->
-  <section class="m-section-mini" id="m-history-section">
-    <div class="m-mini-head">
-      <h3 class="m-mini-title">최근 캡션</h3>
+  <!-- 3. 빠른 설정 -->
+  <section class="m-section-mini" id="m-quick-settings">
+    <div class="m-mini-head"><h3 class="m-mini-title">빠른 설정</h3></div>
+    <div class="m-card m-quick-card" id="m-quick-list">
+      <div class="m-quick-row" data-feat="story">
+        <div class="m-quick-info">
+          <p class="m-quick-label">스토리 자동 게시</p>
+          <p class="m-quick-desc">피드 올릴 때 스토리도 함께</p>
+        </div>
+        <button class="m-toggle" type="button" data-feat="story" aria-label="스토리 자동 게시"></button>
+      </div>
+      <div class="m-quick-row" data-feat="thread">
+        <div class="m-quick-info">
+          <p class="m-quick-label">스레드 자동 게시</p>
+          <p class="m-quick-desc">스레드에 동시 공유</p>
+        </div>
+        <button class="m-toggle" type="button" data-feat="thread" aria-label="스레드 자동 게시"></button>
+      </div>
+      <div class="m-quick-row" data-feat="weather">
+        <div class="m-quick-info">
+          <p class="m-quick-label">날씨 반영</p>
+          <p class="m-quick-desc">캡션에 오늘 날씨를 반영</p>
+        </div>
+        <button class="m-toggle" type="button" data-feat="weather" aria-label="날씨 반영"></button>
+      </div>
+      <div class="m-quick-row" data-feat="captionReview">
+        <div class="m-quick-info">
+          <p class="m-quick-label">캡션 확인</p>
+          <p class="m-quick-desc">게시 전 캡션 확인·편집</p>
+        </div>
+        <button class="m-toggle" type="button" data-feat="captionReview" aria-label="캡션 확인"></button>
+      </div>
     </div>
+  </section>
+
+  <!-- 4. 최근 캡션 -->
+  <section class="m-section-mini" id="m-history-section">
+    <div class="m-mini-head"><h3 class="m-mini-title">최근 캡션</h3></div>
     <div class="m-card m-feat-card" id="m-history-empty">
       <p class="m-feat-body">아직 저장된 캡션이 없어요.</p>
       <button type="button" class="m-feat-ghost" onclick="document.getElementById('m-hidden-file').click();">첫 캡션 만들기 →</button>
     </div>
   </section>
 
-  <!-- Feature sections (vertical) -->
+  <!-- 5. 이번 주 트렌드 (프리뷰 3개) -->
   <section class="m-section-mini" id="m-trend-anchor">
     <div class="m-mini-head">
       <h3 class="m-mini-title">이번 주 트렌드</h3>
+      <button type="button" class="m-mini-more" onclick="window.mOpenTrendView()">전체 보기 →</button>
     </div>
     <div class="m-card m-feat-card" id="m-trend-card">
       <div class="m-feat-chips" id="m-trend-chips">
@@ -1995,36 +2033,64 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </div>
   </section>
 
+  <!-- 6. 최적 게시 시간 -->
   <section class="m-section-mini">
-    <div class="m-mini-head">
-      <h3 class="m-mini-title">최적 게시 시간</h3>
-    </div>
+    <div class="m-mini-head"><h3 class="m-mini-title">최적 게시 시간</h3></div>
     <div class="m-card m-feat-card" id="m-besttime-card">
       <p class="m-feat-highlight">오늘 저녁 7:30</p>
       <p class="m-feat-body">내 팔로워가 가장 많이 반응하는 시간대예요.</p>
     </div>
   </section>
 
-  <section class="m-section-mini">
-    <div class="m-mini-head">
-      <h3 class="m-mini-title">인스타 연동</h3>
-    </div>
-    <div class="m-card m-feat-card">
-      <div class="m-feat-row">
-        <span class="m-feat-dot" id="m-ig-dot"></span>
-        <span class="m-feat-body" id="m-ig-status">연동 상태 확인 중…</span>
+  <!-- 7. 날씨 기반 추천 -->
+  <section class="m-section-mini" id="m-weather-card-section">
+    <div class="m-mini-head"><h3 class="m-mini-title">오늘의 추천</h3></div>
+    <div class="m-card m-feat-card m-weather-card" id="m-weather-card">
+      <div class="m-weather-head">
+        <span class="m-weather-emoji" id="m-weather-emoji">☀️</span>
+        <div class="m-weather-meta">
+          <p class="m-weather-title" id="m-weather-title">날씨 추천</p>
+          <p class="m-weather-sub" id="m-weather-sub">날씨를 확인하고 있어요…</p>
+        </div>
       </div>
-      <button type="button" class="m-feat-ghost" onclick="location.href='/settings.html'">설정에서 관리</button>
+      <p class="m-feat-body" id="m-weather-desc">오늘 날씨에 어울리는 캡션을 제안해 드려요.</p>
+      <div class="m-feat-chips" id="m-weather-chips"></div>
+      <button type="button" class="m-feat-ghost" id="m-weather-cta" onclick="window.mOpenCaptionFromWeather()">이 해시태그로 캡션 만들기 →</button>
     </div>
   </section>
 
-  <section class="m-section-mini">
-    <div class="m-mini-head">
-      <h3 class="m-mini-title">분석 리포트</h3>
+  <!-- 8. 인스타 연동 3단계 가이드 -->
+  <section class="m-section-mini" id="m-ig-guide-section">
+    <div class="m-mini-head"><h3 class="m-mini-title">인스타 연동</h3></div>
+    <div class="m-card m-feat-card m-ig-guide" id="m-ig-guide">
+      <!-- 동적 렌더: renderIgGuide() -->
     </div>
-    <div class="m-card m-feat-card">
-      <p class="m-feat-body">이번 달 게시 성과와 팔로워 반응을 한 눈에 확인할 수 있어요.</p>
-      <button type="button" class="m-feat-ghost" onclick="alert('분석 리포트는 준비 중입니다.');">리포트 열기</button>
+  </section>
+
+  <!-- 9. 예약 게시물 목록 -->
+  <section class="m-section-mini" id="m-schedule-section">
+    <div class="m-mini-head">
+      <h3 class="m-mini-title">예약 게시물</h3>
+      <span class="m-mini-badge" id="m-schedule-count">-</span>
+    </div>
+    <div class="m-card m-feat-card m-schedule" id="m-schedule-list">
+      <p class="m-feat-body" id="m-schedule-empty">예약된 게시물을 불러오는 중…</p>
+    </div>
+  </section>
+
+  <!-- 10. 분석 리포트 -->
+  <section class="m-section-mini" id="m-report-section">
+    <div class="m-mini-head"><h3 class="m-mini-title">분석 리포트</h3></div>
+    <div class="m-card m-feat-card m-report" id="m-report-card">
+      <div class="m-report-head">
+        <p class="m-feat-body" id="m-report-month">이번 달 활동</p>
+        <span class="m-mini-badge" id="m-report-plan">-</span>
+      </div>
+      <div class="m-report-stats">
+        <div class="m-report-stat"><p class="m-report-num" id="m-report-posts">0</p><p class="m-report-label">게시 완료</p></div>
+        <div class="m-report-stat"><p class="m-report-num" id="m-report-remain">-</p><p class="m-report-label">남은 횟수</p></div>
+        <div class="m-report-stat"><p class="m-report-num" id="m-report-saved">-</p><p class="m-report-label">절약 시간</p></div>
+      </div>
     </div>
   </section>
 
@@ -2034,11 +2100,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-6h-2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
       <span>홈</span>
     </button>
-    <button type="button" class="m-tab" data-tab="trends" onclick="var el=document.getElementById('m-trend-anchor')||document.querySelector('.trend-header'); if(el){el.scrollIntoView({behavior:'smooth',block:'start'});} document.querySelectorAll('.m-tab').forEach(function(t){t.classList.remove('is-active');});this.classList.add('is-active');">
+    <button type="button" class="m-tab" data-tab="trends" onclick="window.mOpenTrendView(); document.querySelectorAll('.m-tab').forEach(function(t){t.classList.remove('is-active');});this.classList.add('is-active');">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
       <span>트렌드</span>
     </button>
-    <button type="button" class="m-tab" data-tab="calendar" onclick="alert('캘린더 기능은 준비 중입니다.');">
+    <button type="button" class="m-tab" data-tab="calendar" onclick="var el=document.getElementById('m-schedule-section'); if(el){el.scrollIntoView({behavior:'smooth',block:'start'});} document.querySelectorAll('.m-tab').forEach(function(t){t.classList.remove('is-active');});this.classList.add('is-active');">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
       <span>캘린더</span>
     </button>
@@ -2047,6 +2113,76 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <span>설정</span>
     </button>
   </nav>
+</div>
+
+<!-- ========== MOBILE OVERLAYS (웨이브 2) ==========
+     Full-screen overlays triggered from mobile dash. -->
+<div class="m-overlay" id="m-caption-flow" hidden>
+  <header class="m-ov-header">
+    <button type="button" class="m-ov-close" aria-label="닫기" onclick="window.mCloseCaptionFlow()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <h2 class="m-ov-title" id="m-ov-title">캡션 생성</h2>
+  </header>
+  <div class="m-ov-body" id="m-ov-body"></div>
+</div>
+
+<!-- Mobile tutorial overlay (logged-out 체험하기 진입) -->
+<div class="m-overlay" id="m-tutorial-overlay" hidden>
+  <header class="m-ov-header">
+    <button type="button" class="m-ov-close" aria-label="닫기" onclick="window.closeMobileTutorial()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <h2 class="m-ov-title">루미 체험하기</h2>
+  </header>
+  <div class="m-ov-body" id="m-tutorial-body">
+    <div class="m-tut-step" id="m-tut-step-0">
+      <p class="m-tut-eyebrow">1단계</p>
+      <h3 class="m-tut-title">사진을 골라주세요</h3>
+      <p class="m-tut-sub">체험용 샘플 사진 6장이에요. 원하는 사진을 탭하면<br>루미가 캡션을 만들어줘요.</p>
+      <div class="m-tut-grid" id="m-tut-grid">
+        <button type="button" class="m-tut-cell" data-idx="0"><img src="/assets/demo-cafe.jpg" alt="샘플 1"></button>
+        <button type="button" class="m-tut-cell" data-idx="1"><img src="/assets/demo-cafe-2.jpg" alt="샘플 2"></button>
+        <button type="button" class="m-tut-cell" data-idx="2"><img src="/assets/demo-cafe-3.jpg" alt="샘플 3"></button>
+        <button type="button" class="m-tut-cell" data-idx="3"><img src="/assets/demo-cafe-4.jpg" alt="샘플 4"></button>
+        <button type="button" class="m-tut-cell" data-idx="4"><img src="/assets/demo-cafe-5.jpg" alt="샘플 5"></button>
+        <button type="button" class="m-tut-cell" data-idx="5"><img src="/assets/demo-cafe-6.jpg" alt="샘플 6"></button>
+      </div>
+    </div>
+    <div class="m-tut-step" id="m-tut-step-1" hidden>
+      <p class="m-tut-eyebrow">2단계</p>
+      <h3 class="m-tut-title">루미가 분석 중…</h3>
+      <div class="m-tut-spin"></div>
+      <p class="m-tut-status" id="m-tut-status">사진을 살펴보는 중이에요</p>
+    </div>
+    <div class="m-tut-step" id="m-tut-step-2" hidden>
+      <p class="m-tut-eyebrow">결과</p>
+      <h3 class="m-tut-title">캡션이 완성됐어요</h3>
+      <img class="m-tut-thumb" id="m-tut-thumb" src="" alt="샘플 사진">
+      <div class="m-tut-caption" id="m-tut-caption"></div>
+      <div class="m-tut-tags" id="m-tut-tags"></div>
+      <p class="m-tut-note">실제 서비스는 매장 사진·말투·업종에 맞춰 더 정확한 캡션을 만들어요.</p>
+      <div class="m-tut-cta-row">
+        <button type="button" class="m-cta ghost" onclick="window.mTutRestart()">다시 해보기</button>
+        <button type="button" class="m-cta" onclick="window.closeMobileTutorial(); openSignupGrid();">무료로 시작하기 →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="m-overlay" id="m-trend-fullview" hidden>
+  <header class="m-ov-header">
+    <button type="button" class="m-ov-close" aria-label="닫기" onclick="window.mCloseTrendView()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <h2 class="m-ov-title">이번 주 트렌드</h2>
+  </header>
+  <div class="m-ov-body" id="m-trend-body-full">
+    <div class="m-trend-cats" id="m-trend-cats"></div>
+    <p class="m-trend-updated" id="m-trend-updated"></p>
+    <div class="m-trend-section"><h4 class="m-trend-head">지금 유행 TOP 10</h4><div class="m-trend-rank-list" id="m-trend-rank-list"><p class="m-feat-body">로딩 중…</p></div></div>
+    <div class="m-trend-section" id="m-trend-rising-wrap"><h4 class="m-trend-head">뜰 가능성 있는 키워드</h4><div class="m-trend-rising-list" id="m-trend-rising-list"></div></div>
+  </div>
 </div>
 
 <script>
@@ -2059,6 +2195,87 @@ function showMobileToast(msg) {
   requestAnimationFrame(function(){ t.style.opacity='1'; });
   setTimeout(function(){ t.style.opacity='0'; setTimeout(function(){t.remove();}, 200); }, 2500);
 }
+
+// ============================================================
+// 모바일 로그아웃 튜토리얼 (체험하기 → 6장 샘플 → AI 시뮬레이션 → 결과)
+// ============================================================
+(function(){
+  var demoSets = [
+    {caption:'오늘부터 신메뉴 등장\n딩굴딩굴 매장 크로플\n한 입 베어 물면 바삭바삭', tags:['#신메뉴','#카페크로플','#디저트추천']},
+    {caption:'오늘은 잠시 쉬어가는 날\n내일 더 맛있는 커피로 돌아올게요\n조금만 기다려주세요', tags:['#카페휴무','#내일봐요','#자영업자일상']},
+    {caption:'이 자리 앉으면 라떼 들고\n한참 멍 때리게 됨\n여기 어딘지 궁금하면 프로필 링크', tags:['#감성카페','#카페추천','#라떼아트']},
+    {caption:'요즘 제일 잘 나가는 조합\n매장 말차 라떼 + 당근케익\n이거 모르면 손해예요', tags:['#인기메뉴','#카페추천','#매장추천']},
+    {caption:'이번 주말 특별한 하루\n커피 한 잔 무료 이벤트\n선착순이니까 서두르세요', tags:['#카페이벤트','#주말이벤트','#무료커피']}
+  ];
+  var demoPhotos = ['/assets/demo-cafe.jpg','/assets/demo-cafe-2.jpg','/assets/demo-cafe-3.jpg','/assets/demo-cafe-4.jpg','/assets/demo-cafe-5.jpg','/assets/demo-cafe-6.jpg'];
+  var mTutState = { selectedIdx: -1, timers: [] };
+  function clearTutTimers(){ mTutState.timers.forEach(function(t){ clearTimeout(t); }); mTutState.timers = []; }
+  function showTutStep(n){
+    for (var i = 0; i < 3; i++) {
+      var el = document.getElementById('m-tut-step-' + i);
+      if (el) el.hidden = (i !== n);
+    }
+  }
+  window.openMobileTutorial = function(){
+    var ov = document.getElementById('m-tutorial-overlay');
+    if (!ov) return;
+    ov.hidden = false;
+    document.body.style.overflow = 'hidden';
+    mTutState.selectedIdx = -1;
+    showTutStep(0);
+    try { history.pushState({mTutorial:1}, '', '#tutorial'); } catch(e){}
+  };
+  window.closeMobileTutorial = function(){
+    var ov = document.getElementById('m-tutorial-overlay');
+    if (!ov) return;
+    clearTutTimers();
+    ov.hidden = true;
+    document.body.style.overflow = '';
+  };
+  window.mTutRestart = function(){ mTutState.selectedIdx = -1; showTutStep(0); };
+  // Delegate photo selection
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest && e.target.closest('.m-tut-cell');
+    if (!btn) return;
+    var idx = parseInt(btn.getAttribute('data-idx'), 10);
+    if (isNaN(idx)) return;
+    mTutState.selectedIdx = idx;
+    showTutStep(1);
+    var statusEl = document.getElementById('m-tut-status');
+    var stages = ['사진을 살펴보는 중이에요', '분위기·메뉴 파악 중…', '말투를 맞추는 중…', '캡션 작성 중…'];
+    stages.forEach(function(s, i){
+      mTutState.timers.push(setTimeout(function(){ if (statusEl) statusEl.textContent = s; }, i * 700));
+    });
+    mTutState.timers.push(setTimeout(function(){
+      var set = demoSets[idx % demoSets.length];
+      var thumb = document.getElementById('m-tut-thumb');
+      var cap = document.getElementById('m-tut-caption');
+      var tags = document.getElementById('m-tut-tags');
+      if (thumb) thumb.src = demoPhotos[idx];
+      if (cap) cap.textContent = set.caption;
+      if (tags) {
+        tags.innerHTML = '';
+        set.tags.forEach(function(t){
+          var s = document.createElement('span');
+          s.className = 'm-chip';
+          s.textContent = t;
+          tags.appendChild(s);
+        });
+      }
+      showTutStep(2);
+    }, 2800));
+  });
+  // Back button closes overlays
+  window.addEventListener('popstate', function(){
+    var tov = document.getElementById('m-tutorial-overlay');
+    if (tov && !tov.hidden) { tov.hidden = true; document.body.style.overflow = ''; clearTutTimers(); }
+    var cov = document.getElementById('m-caption-flow');
+    if (cov && !cov.hidden) { cov.hidden = true; document.body.style.overflow = ''; }
+    var rov = document.getElementById('m-trend-fullview');
+    if (rov && !rov.hidden) { rov.hidden = true; document.body.style.overflow = ''; }
+  });
+})();
+
 (function(){
   // Phase B: toggle between logged-out and logged-in mobile app views.
   var loggedIn = !!localStorage.getItem('lumi_token');
@@ -2177,8 +2394,558 @@ function showMobileToast(msg) {
           .catch(function(){});
       }
     } catch(e){}
+    // ===== 웨이브 2: 빠른설정 · 캡션플로우 · 트렌드풀뷰 · IG가이드 · 예약 · 날씨 · 리포트 =====
+    try { mInitWave2(); } catch(e){ console.error('[m-wave2]', e); }
   }
 })();
+
+// ============================================================
+// 웨이브 2 모바일 대시보드 기능 (로그인 사용자 전용)
+// ============================================================
+function mInitWave2(){
+  var TOKEN = localStorage.getItem('lumi_token') || '';
+  if (!TOKEN) return;
+
+  // ---------- 공통 유틸 ----------
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function getUser(){ try { return JSON.parse(localStorage.getItem('lumi_user') || '{}'); } catch(e){ return {}; } }
+  function fmtKoDate(d){ try { return new Date(d).toLocaleDateString('ko-KR',{month:'long',day:'numeric'}); } catch(e){ return ''; } }
+  function fmtKoDateTime(d){ try { return new Date(d).toLocaleString('ko-KR',{month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'}); } catch(e){ return ''; } }
+
+  // ---------- 빠른 설정 (feat toggles) ----------
+  (function(){
+    var defaults = { story: true, thread: false, weather: true, captionReview: true };
+    var saved; try { saved = JSON.parse(localStorage.getItem('lumi_feat_toggles') || '{}'); } catch(e){ saved = {}; }
+    var state = Object.assign({}, defaults, saved);
+    document.querySelectorAll('#m-quick-list .m-toggle').forEach(function(btn){
+      var key = btn.getAttribute('data-feat');
+      function paint(){ btn.classList.toggle('is-on', !!state[key]); btn.setAttribute('aria-pressed', state[key] ? 'true' : 'false'); }
+      paint();
+      btn.addEventListener('click', function(){
+        var prev = !!state[key];
+        state[key] = !prev;
+        paint();
+        localStorage.setItem('lumi_feat_toggles', JSON.stringify(state));
+        // sync to server (best effort)
+        fetch('/api/update-profile', {
+          method:'POST',
+          headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+TOKEN },
+          body: JSON.stringify({ featToggles: state })
+        }).then(function(r){
+          if (!r.ok) throw new Error('sync failed');
+        }).catch(function(){
+          // rollback
+          state[key] = prev;
+          paint();
+          localStorage.setItem('lumi_feat_toggles', JSON.stringify(state));
+          showMobileToast('설정 저장 실패 — 잠시 후 다시 시도해주세요');
+        });
+      });
+    });
+  })();
+
+  // ---------- 캡션 플로우 (사진 업로드 → 생성 → 옵션 → 완료) ----------
+  window._mFlow = window._mFlow || { step: 0, file: null, reservationKey: null, captions: [], selectedIdx: 0, editedCaption: '', regenCount: 0, postMode: 'immediate', scheduledAt: null };
+  var flow = window._mFlow;
+  var ov = document.getElementById('m-caption-flow');
+  var body = document.getElementById('m-ov-body');
+  function openFlow(){
+    if (!ov) return;
+    ov.hidden = false;
+    document.body.style.overflow = 'hidden';
+    try { history.pushState({mFlow:1}, '', '#caption'); } catch(e){}
+  }
+  window.mCloseCaptionFlow = function(){
+    if (!ov) return;
+    ov.hidden = true;
+    document.body.style.overflow = '';
+    flow.step = 0; flow.file = null; flow.reservationKey = null; flow.captions = []; flow.selectedIdx = 0; flow.editedCaption = ''; flow.regenCount = 0;
+    try { var hf = document.getElementById('m-hidden-file'); if (hf) hf.value = ''; } catch(e){}
+  };
+  window.mOpenCaptionFlow = function(ev, prefillTags){
+    var f = ev && ev.target && ev.target.files && ev.target.files[0];
+    if (!f) return;
+    flow.file = f; flow.prefillTags = prefillTags || null;
+    flow.step = 1; flow.captions = []; flow.selectedIdx = 0; flow.editedCaption = ''; flow.regenCount = 0;
+    openFlow();
+    renderFlow();
+    submitReservation();
+  };
+  window.mOpenCaptionFromWeather = function(){
+    var chips = document.getElementById('m-weather-chips');
+    var tags = chips ? Array.prototype.map.call(chips.querySelectorAll('.m-chip'), function(c){ return c.textContent.trim(); }) : [];
+    flow.prefillTags = tags;
+    document.getElementById('m-hidden-file').click();
+  };
+  function renderFlow(){
+    if (!body) return;
+    if (flow.step === 1) {
+      body.innerHTML =
+        '<div class="m-flow-progress"><span class="is-on"></span><span></span><span></span></div>' +
+        '<div class="m-flow-loading">' +
+          '<div class="m-tut-spin"></div>' +
+          '<p class="m-flow-status" id="m-flow-status">사진을 업로드하고 있어요…</p>' +
+        '</div>';
+    } else if (flow.step === 2) {
+      var cap = (flow.editedCaption || flow.captions[flow.selectedIdx] || '').toString();
+      var thumbUrl = flow.file ? URL.createObjectURL(flow.file) : '';
+      body.innerHTML =
+        '<div class="m-flow-progress"><span class="is-on"></span><span class="is-on"></span><span></span></div>' +
+        '<img class="m-flow-thumb" src="' + thumbUrl + '" alt="업로드된 사진">' +
+        '<p class="m-flow-label">캡션</p>' +
+        '<textarea class="m-flow-textarea" id="m-flow-cap" rows="8">' + esc(cap) + '</textarea>' +
+        '<div class="m-flow-regen-row">' +
+          '<span class="m-flow-regen-count">재생성 ' + flow.regenCount + '/3</span>' +
+          '<button type="button" class="m-flow-regen-btn" id="m-flow-regen"' + (flow.regenCount >= 3 ? ' disabled' : '') + '>다시 만들기</button>' +
+        '</div>' +
+        '<button type="button" class="m-cta" id="m-flow-next" style="margin-top:16px;">다음 — 게시 옵션</button>';
+      var ta = document.getElementById('m-flow-cap');
+      if (ta) ta.addEventListener('input', function(){ flow.editedCaption = ta.value; });
+      var rg = document.getElementById('m-flow-regen');
+      if (rg) rg.addEventListener('click', regenerateCaption);
+      var nx = document.getElementById('m-flow-next');
+      if (nx) nx.addEventListener('click', function(){ flow.step = 3; renderFlow(); });
+    } else if (flow.step === 3) {
+      var user = getUser();
+      var isPro = user.plan === 'pro';
+      body.innerHTML =
+        '<div class="m-flow-progress"><span class="is-on"></span><span class="is-on"></span><span class="is-on"></span></div>' +
+        '<h3 class="m-flow-head">언제 게시할까요?</h3>' +
+        '<button type="button" class="m-post-opt" data-mode="immediate"><span class="m-post-opt-title">지금 바로 게시</span><span class="m-post-opt-sub">인스타그램에 즉시 업로드</span></button>' +
+        '<button type="button" class="m-post-opt" data-mode="best"' + (isPro ? '' : ' disabled') + '><span class="m-post-opt-title">최적 시간 자동 예약' + (isPro ? '' : ' <span class="m-post-opt-lock">PRO</span>') + '</span><span class="m-post-opt-sub">팔로워가 가장 반응하는 시간</span></button>' +
+        '<button type="button" class="m-post-opt" data-mode="scheduled"' + (isPro ? '' : ' disabled') + '><span class="m-post-opt-title">시간 예약' + (isPro ? '' : ' <span class="m-post-opt-lock">PRO</span>') + '</span><span class="m-post-opt-sub">원하는 날짜·시간 지정</span></button>' +
+        '<div id="m-sched-picker" hidden><p class="m-flow-label" style="margin-top:16px;">예약 시간</p><input type="datetime-local" id="m-sched-input" class="m-flow-input"><button type="button" class="m-cta" id="m-sched-confirm" style="margin-top:12px;">예약 확정</button></div>' +
+        '<button type="button" class="m-cta" id="m-post-confirm" style="margin-top:20px;display:none;">게시하기</button>';
+      body.querySelectorAll('.m-post-opt').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          if (btn.disabled) return;
+          body.querySelectorAll('.m-post-opt').forEach(function(b){ b.classList.remove('is-sel'); });
+          btn.classList.add('is-sel');
+          flow.postMode = btn.getAttribute('data-mode');
+          var sp = document.getElementById('m-sched-picker');
+          var pc = document.getElementById('m-post-confirm');
+          if (flow.postMode === 'scheduled') {
+            if (sp) sp.hidden = false; if (pc) pc.style.display = 'none';
+            var inp = document.getElementById('m-sched-input');
+            var d = new Date(); d.setHours(d.getHours()+1); d.setMinutes(d.getMinutes()>=30?30:0,0,0);
+            var val = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')+'T'+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+            if (inp) { inp.value = val; inp.min = val; }
+          } else {
+            if (sp) sp.hidden = true; if (pc) pc.style.display = 'block';
+          }
+        });
+      });
+      var sc = document.getElementById('m-sched-confirm');
+      if (sc) sc.addEventListener('click', function(){
+        var inp = document.getElementById('m-sched-input');
+        if (!inp || !inp.value) { showMobileToast('시간을 선택해주세요'); return; }
+        flow.scheduledAt = new Date(inp.value).toISOString();
+        confirmPost();
+      });
+      var pc = document.getElementById('m-post-confirm');
+      if (pc) pc.addEventListener('click', confirmPost);
+    } else if (flow.step === 4) {
+      body.innerHTML =
+        '<div class="m-flow-success">' +
+          '<div class="m-flow-check"><svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>' +
+          '<h3 class="m-flow-head">' + (flow.postMode === 'immediate' ? '게시 완료!' : '예약 완료!') + '</h3>' +
+          '<p class="m-feat-body">' + (flow.postMode === 'immediate' ? '인스타그램에 업로드했어요.' : '예약한 시간에 자동 게시돼요.') + '</p>' +
+          '<button type="button" class="m-cta" onclick="window.mCloseCaptionFlow()" style="margin-top:24px;">홈으로</button>' +
+        '</div>';
+    }
+  }
+  function resizeImageClient(file){
+    return new Promise(function(resolve){
+      var MAX = 1080;
+      var img = new Image();
+      var url = URL.createObjectURL(file);
+      img.onload = function(){
+        URL.revokeObjectURL(url);
+        var w = img.naturalWidth, h = img.naturalHeight;
+        var r = (w > MAX || h > MAX) ? Math.min(MAX/w, MAX/h) : 1;
+        var tw = Math.round(w*r), th = Math.round(h*r);
+        var c = document.createElement('canvas');
+        c.width = tw; c.height = th;
+        c.getContext('2d').drawImage(img, 0, 0, tw, th);
+        c.toBlob(function(blob){ resolve(blob ? new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), {type:'image/jpeg'}) : file); }, 'image/jpeg', 0.92);
+      };
+      img.onerror = function(){ URL.revokeObjectURL(url); resolve(file); };
+      img.src = url;
+    });
+  }
+  function submitReservation(){
+    var user = getUser();
+    var statusEl = document.getElementById('m-flow-status');
+    if (statusEl) statusEl.textContent = '사진을 업로드하고 있어요…';
+    resizeImageClient(flow.file).then(function(resized){
+      var fd = new FormData();
+      fd.append('photos', resized, resized.name);
+      var prefillNote = flow.prefillTags ? flow.prefillTags.join(' ') : '';
+      fd.append('userMessage', prefillNote);
+      fd.append('captionTone', (JSON.parse(localStorage.getItem('lumi_settings')||'{}').captionStyle) || '');
+      fd.append('bizCategory', user.bizCategory || user.storeCategory || 'cafe');
+      fd.append('submittedAt', new Date().toISOString());
+      fd.append('scheduledAt', new Date().toISOString());
+      fd.append('storeProfile', JSON.stringify({ownerEmail:user.email||'', name:user.storeName||'', phone:user.phone||''}));
+      var ft; try { ft = JSON.parse(localStorage.getItem('lumi_feat_toggles')||'{}'); } catch(e){ ft = {}; }
+      fd.append('postToStory', ft.story !== false ? 'true' : 'false');
+      fd.append('postToThread', ft.thread === true ? 'true' : 'false');
+      fd.append('useWeather', ft.weather !== false ? 'true' : 'false');
+      if (user.region) fd.append('region', user.region);
+      return fetch('/api/reserve', { method:'POST', headers:{ 'Authorization':'Bearer '+TOKEN }, body: fd });
+    }).then(function(r){ return r.json(); }).then(function(res){
+      if (!res || !res.reservationKey) throw new Error(res && res.error || '예약 실패');
+      flow.reservationKey = res.reservationKey;
+      if (statusEl) statusEl.textContent = '캡션을 만들고 있어요…';
+      pollCaption();
+    }).catch(function(err){
+      showMobileToast('캡션 생성 실패: ' + (err.message || '네트워크'));
+      window.mCloseCaptionFlow();
+    });
+  }
+  function pollCaption(){
+    var tries = 0;
+    var iv = setInterval(function(){
+      tries++;
+      if (tries > 40) { clearInterval(iv); showMobileToast('시간 초과'); window.mCloseCaptionFlow(); return; }
+      fetch('/api/get-reservation?key=' + encodeURIComponent(flow.reservationKey), { headers:{ 'Authorization':'Bearer '+TOKEN } })
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          var rsv = d && (d.reservation || d);
+          var caps = rsv && (rsv.generated_captions || rsv.generatedCaptions);
+          if (caps && caps.length > 0) {
+            clearInterval(iv);
+            flow.captions = Array.isArray(caps) ? caps : [caps];
+            flow.selectedIdx = 0;
+            flow.editedCaption = flow.captions[0];
+            flow.step = 2;
+            renderFlow();
+          }
+        })
+        .catch(function(){});
+    }, 3000);
+  }
+  function regenerateCaption(){
+    if (flow.regenCount >= 3) return;
+    flow.regenCount++;
+    flow.step = 1; renderFlow();
+    var statusEl = document.getElementById('m-flow-status');
+    if (statusEl) statusEl.textContent = '캡션을 다시 만들고 있어요…';
+    fetch('/api/regenerate-caption', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+TOKEN },
+      body: JSON.stringify({ reservationKey: flow.reservationKey })
+    }).then(function(r){ return r.json(); }).then(function(d){
+      if (d && d.caption) {
+        flow.captions.push(d.caption);
+        flow.selectedIdx = flow.captions.length - 1;
+        flow.editedCaption = d.caption;
+        flow.step = 2; renderFlow();
+      } else {
+        throw new Error(d && d.error || '재생성 실패');
+      }
+    }).catch(function(err){
+      showMobileToast('재생성 실패: ' + (err.message || ''));
+      flow.step = 2; renderFlow();
+    });
+  }
+  function confirmPost(){
+    var finalCap = flow.editedCaption || flow.captions[flow.selectedIdx] || '';
+    var payload = {
+      reservationKey: flow.reservationKey,
+      selectedCaption: finalCap,
+      postMode: flow.postMode,
+      scheduledAt: flow.postMode === 'scheduled' ? flow.scheduledAt : null
+    };
+    fetch('/api/select-caption', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+TOKEN },
+      body: JSON.stringify(payload)
+    }).then(function(r){ return r.json(); }).then(function(d){
+      if (d && (d.ok || d.success)) {
+        flow.step = 4; renderFlow();
+        // refresh schedule list
+        try { loadScheduleList(); } catch(e){}
+      } else {
+        throw new Error(d && d.error || '게시 실패');
+      }
+    }).catch(function(err){
+      showMobileToast('게시 실패: ' + (err.message || ''));
+    });
+  }
+
+  // ---------- 트렌드 풀뷰 ----------
+  var trendRov = document.getElementById('m-trend-fullview');
+  var TREND_CATS = [
+    {id:'cafe', label:'카페·디저트'}, {id:'food', label:'맛집·외식'}, {id:'beauty', label:'뷰티'},
+    {id:'hair', label:'헤어'}, {id:'fashion', label:'패션'}, {id:'pet', label:'반려동물'},
+    {id:'flower', label:'꽃집'}, {id:'health', label:'건강·헬스'}, {id:'kids', label:'키즈'}, {id:'shop', label:'공방·소품'}
+  ];
+  var trendState = { cat: null };
+  window.mOpenTrendView = function(){
+    if (!trendRov) return;
+    trendRov.hidden = false;
+    document.body.style.overflow = 'hidden';
+    try { history.pushState({mTrend:1}, '', '#trend'); } catch(e){}
+    var user = getUser();
+    trendState.cat = trendState.cat || user.bizCategory || user.biz_category || 'cafe';
+    renderTrendCats();
+    loadTrendData(trendState.cat);
+  };
+  window.mCloseTrendView = function(){
+    if (!trendRov) return;
+    trendRov.hidden = true;
+    document.body.style.overflow = '';
+  };
+  function renderTrendCats(){
+    var wrap = document.getElementById('m-trend-cats');
+    if (!wrap) return;
+    wrap.innerHTML = '';
+    TREND_CATS.forEach(function(c){
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'm-trend-cat' + (c.id === trendState.cat ? ' is-on' : '');
+      b.textContent = c.label;
+      b.addEventListener('click', function(){ trendState.cat = c.id; renderTrendCats(); loadTrendData(c.id); });
+      wrap.appendChild(b);
+    });
+  }
+  function loadTrendData(cat){
+    var rankEl = document.getElementById('m-trend-rank-list');
+    var riseEl = document.getElementById('m-trend-rising-list');
+    var upd = document.getElementById('m-trend-updated');
+    if (rankEl) rankEl.innerHTML = '<p class="m-feat-body">로딩 중…</p>';
+    if (riseEl) riseEl.innerHTML = '';
+    fetch('/api/get-trends?category=' + encodeURIComponent(cat) + '&scope=domestic')
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        var kws = (d && Array.isArray(d.keywords)) ? d.keywords.slice(0, 10) : [];
+        var rising = (d && Array.isArray(d.rising)) ? d.rising.slice(0, 5) : [];
+        if (upd && d && d.updatedAt) upd.textContent = fmtKoDate(d.updatedAt) + ' 업데이트';
+        if (rankEl) {
+          if (kws.length === 0) { rankEl.innerHTML = '<p class="m-feat-body">트렌드 데이터를 불러오는 중이에요.</p>'; }
+          else {
+            rankEl.innerHTML = '';
+            kws.forEach(function(k, i){
+              var name = typeof k === 'string' ? k : (k.keyword || k.name || '');
+              var change = typeof k === 'object' ? (k.rankChange || k.change) : null;
+              var badge = '';
+              if (change === 'new' || change === 'NEW') badge = '<span class="m-trend-badge new">NEW</span>';
+              else if (typeof change === 'number' && change > 0) badge = '<span class="m-trend-badge up">&uarr;' + change + '</span>';
+              else if (typeof change === 'number' && change < 0) badge = '<span class="m-trend-badge down">&darr;' + Math.abs(change) + '</span>';
+              var row = document.createElement('div');
+              row.className = 'm-trend-rank-row';
+              row.innerHTML = '<span class="m-trend-rank-num">' + (i+1) + '</span><span class="m-trend-rank-kw">' + esc(name) + '</span>' + badge;
+              rankEl.appendChild(row);
+            });
+          }
+        }
+        if (riseEl) {
+          if (rising.length === 0) { document.getElementById('m-trend-rising-wrap').style.display = 'none'; }
+          else {
+            document.getElementById('m-trend-rising-wrap').style.display = '';
+            riseEl.innerHTML = '';
+            rising.forEach(function(r){
+              var name = r.keyword || r.name || '';
+              var conf = r.confidence != null ? Math.round(r.confidence * 100) + '%' : '';
+              var growth = r.growthRate != null ? '+' + Math.round(r.growthRate * 100) + '%' : '';
+              var reason = r.reason || '';
+              var card = document.createElement('div');
+              card.className = 'm-trend-rise-card';
+              card.innerHTML = '<p class="m-trend-rise-kw">' + esc(name) + '</p>' +
+                '<p class="m-trend-rise-meta">' + (conf ? '신뢰도 ' + conf : '') + (growth ? ' · 성장 ' + growth : '') + '</p>' +
+                (reason ? '<p class="m-trend-rise-reason">' + esc(reason) + '</p>' : '');
+              riseEl.appendChild(card);
+            });
+          }
+        }
+      })
+      .catch(function(){
+        if (rankEl) rankEl.innerHTML = '<p class="m-feat-body">트렌드 분석 중이에요. 잠시 후 다시 확인해 주세요.</p>';
+      });
+  }
+
+  // ---------- IG 연동 가이드 (3단계) ----------
+  function renderIgGuide(){
+    var el = document.getElementById('m-ig-guide');
+    if (!el) return;
+    var user = getUser();
+    var connected = !!(user.igConnected || user.igUserId || user.instagram_handle);
+    var guide; try { guide = JSON.parse(localStorage.getItem('lumi_ig_guide') || '{}'); } catch(e){ guide = {}; }
+    if (connected) {
+      el.innerHTML =
+        '<div class="m-feat-row"><span class="m-feat-dot ok"></span><p class="m-feat-body">인스타그램 연결됨' + (user.instagram_handle ? ' @' + esc(user.instagram_handle) : '') + '</p></div>' +
+        '<button type="button" class="m-feat-ghost" id="m-ig-disconnect">연동 해제</button>';
+      var btn = document.getElementById('m-ig-disconnect');
+      if (btn) btn.addEventListener('click', function(){
+        if (!confirm('인스타그램 연동을 해제할까요?')) return;
+        fetch('/api/disconnect-ig', { method:'POST', headers:{ 'Authorization':'Bearer '+TOKEN } })
+          .then(function(r){ return r.json().catch(function(){ return {}; }); })
+          .then(function(){
+            user.igConnected = false;
+            localStorage.setItem('lumi_user', JSON.stringify(user));
+            showMobileToast('연동이 해제됐어요');
+            renderIgGuide();
+          }).catch(function(){ showMobileToast('해제 실패 — 다시 시도해주세요'); });
+      });
+      return;
+    }
+    var steps = [
+      {key:'step1', label:'인스타그램 비즈니스 계정으로 전환', desc:'인스타 앱 → 설정 → 계정 → 프로페셔널 계정으로 전환'},
+      {key:'step2', label:'페이스북 페이지 연결', desc:'비즈니스 계정을 페이스북 페이지에 연결해주세요'},
+      {key:'connect', label:'루미와 연동', desc:'아래 버튼으로 인스타그램 로그인'}
+    ];
+    var html = '<div class="m-ig-steps">';
+    steps.forEach(function(s, i){
+      var done = (s.key === 'connect') ? false : !!guide[s.key];
+      html += '<div class="m-ig-step' + (done ? ' is-done' : '') + '">' +
+        '<div class="m-ig-step-dot">' + (done ? '&#10003;' : (i+1)) + '</div>' +
+        '<div class="m-ig-step-body">' +
+          '<p class="m-ig-step-label">' + s.label + '</p>' +
+          '<p class="m-ig-step-desc">' + s.desc + '</p>' +
+          (s.key === 'connect'
+            ? '<button type="button" class="m-feat-ghost" id="m-ig-oauth">연동하기</button>'
+            : (done ? '' : '<button type="button" class="m-ig-step-mark" data-step="' + s.key + '">완료로 표시</button>')) +
+        '</div>' +
+      '</div>';
+    });
+    html += '</div>';
+    el.innerHTML = html;
+    el.querySelectorAll('.m-ig-step-mark').forEach(function(b){
+      b.addEventListener('click', function(){
+        guide[b.getAttribute('data-step')] = true;
+        localStorage.setItem('lumi_ig_guide', JSON.stringify(guide));
+        renderIgGuide();
+      });
+    });
+    var ob = document.getElementById('m-ig-oauth');
+    if (ob) ob.addEventListener('click', function(){
+      location.href = '/.netlify/functions/ig-oauth?action=start&token=' + encodeURIComponent(TOKEN);
+    });
+  }
+  renderIgGuide();
+
+  // ---------- 예약 게시물 목록 ----------
+  function loadScheduleList(){
+    var wrap = document.getElementById('m-schedule-list');
+    var cntEl = document.getElementById('m-schedule-count');
+    if (!wrap) return;
+    wrap.innerHTML = '<p class="m-feat-body">불러오는 중…</p>';
+    var prom = (typeof window.lumiRelayList === 'function') ? window.lumiRelayList() : fetch('/api/list-reservations', { headers:{ 'Authorization':'Bearer '+TOKEN } }).then(function(r){ return r.json(); }).then(function(d){ return (d && d.reservations) || []; });
+    Promise.resolve(prom).then(function(list){
+      list = Array.isArray(list) ? list : [];
+      // filter schedule-worthy (non-sent, non-cancelled, non-immediate, has captions)
+      list = list.filter(function(r){
+        if (r.is_sent || r.cancelled) return false;
+        if ((r.post_mode || r.postMode) === 'immediate') return false;
+        var caps = r.generated_captions || r.generatedCaptions;
+        if (!caps || (Array.isArray(caps) && caps.length === 0)) return false;
+        return true;
+      });
+      if (cntEl) cntEl.textContent = list.length + '';
+      if (list.length === 0) {
+        wrap.innerHTML = '<p class="m-feat-body" id="m-schedule-empty">예약된 게시물이 없어요.</p><button type="button" class="m-feat-ghost" onclick="document.getElementById(\'m-hidden-file\').click();">첫 예약 만들기 →</button>';
+        return;
+      }
+      wrap.innerHTML = '';
+      list.slice(0, 5).forEach(function(r){
+        var cap = (r.final_caption || (Array.isArray(r.generated_captions) ? r.generated_captions[r.selected_caption_idx||0] : '') || '').toString();
+        var thumb = (r.image_urls && r.image_urls[0]) || r.image_url || r.thumbnail || '';
+        var when = r.scheduled_at || r.scheduledAt || r.created_at;
+        var mode = r.post_mode || r.postMode;
+        var badge = mode === 'best' ? '최적시간' : '예약';
+        var row = document.createElement('div');
+        row.className = 'm-sched-row';
+        row.innerHTML =
+          (thumb ? '<img class="m-sched-thumb" src="' + esc(thumb) + '" onerror="this.style.display=\'none\'">' : '<div class="m-sched-thumb m-sched-thumb-empty"></div>') +
+          '<div class="m-sched-body">' +
+            '<p class="m-sched-time">' + esc(fmtKoDateTime(when)) + '</p>' +
+            '<p class="m-sched-cap">' + esc(cap.split('\n')[0]) + '</p>' +
+          '</div>' +
+          '<span class="m-sched-badge">' + badge + '</span>';
+        wrap.appendChild(row);
+      });
+    }).catch(function(){
+      wrap.innerHTML = '<p class="m-feat-body">예약 목록을 불러오지 못했어요.</p>';
+    });
+  }
+  window.loadScheduleList = loadScheduleList;
+  loadScheduleList();
+
+  // ---------- 날씨 카드 ----------
+  (function(){
+    var user = getUser();
+    var sido = user.sido || user.region || '서울';
+    var weatherTips = {
+      clear: { emoji:'☀️', title:'맑은 하루', sub:'햇살 가득한 오늘', tags:['#햇살맛집','#오늘의추천','#맑은날'] },
+      partly_cloudy: { emoji:'⛅', title:'구름 조금', sub:'산책하기 좋은 날씨', tags:['#오늘의분위기','#카페타임','#일상'] },
+      cloudy: { emoji:'☁️', title:'흐린 하루', sub:'따뜻한 한 잔이 어울려요', tags:['#흐린날','#따뜻한한잔','#감성카페'] },
+      rain: { emoji:'🌧️', title:'비 오는 날', sub:'비 오는 날엔 매장이 더 포근해요', tags:['#비오는날','#우중감성','#따뜻한하루'] },
+      snow: { emoji:'❄️', title:'눈 오는 날', sub:'하얀 풍경과 함께', tags:['#눈오는날','#겨울감성','#포근한하루'] }
+    };
+    fetch('/.netlify/functions/get-weather-kma?sido=' + encodeURIComponent(sido))
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        var state = (d && d.state) || 'clear';
+        var tip = weatherTips[state] || weatherTips.clear;
+        var emo = document.getElementById('m-weather-emoji');
+        var ttl = document.getElementById('m-weather-title');
+        var sub = document.getElementById('m-weather-sub');
+        var desc = document.getElementById('m-weather-desc');
+        var chips = document.getElementById('m-weather-chips');
+        if (emo) emo.textContent = tip.emoji;
+        if (ttl) ttl.textContent = tip.title + (d && d.tempC != null ? ' · ' + Math.round(d.tempC) + '°' : '');
+        if (sub) sub.textContent = tip.sub;
+        if (desc) desc.textContent = tip.sub + '. 아래 태그로 분위기 담긴 캡션을 만들어보세요.';
+        if (chips) {
+          chips.innerHTML = '';
+          tip.tags.forEach(function(t){ var s = document.createElement('span'); s.className = 'm-chip'; s.textContent = t; chips.appendChild(s); });
+        }
+      })
+      .catch(function(){
+        var sub = document.getElementById('m-weather-sub');
+        if (sub) sub.textContent = '날씨 정보를 불러올 수 없어요';
+      });
+  })();
+
+  // ---------- 분석 리포트 ----------
+  (function(){
+    var postsEl = document.getElementById('m-report-posts');
+    var remainEl = document.getElementById('m-report-remain');
+    var savedEl = document.getElementById('m-report-saved');
+    var planEl = document.getElementById('m-report-plan');
+    var monthEl = document.getElementById('m-report-month');
+    var now = new Date();
+    if (monthEl) monthEl.textContent = (now.getMonth()+1) + '월 활동';
+    var doUpdate = function(data){
+      var postCount = data.postCount || 0;
+      var limit = data.limit || (data.plan === 'pro' ? 20 : 12);
+      var remaining = Math.max(0, limit - postCount);
+      var savedMin = Math.round(postCount * 20); // 게시당 20분 절약 가정
+      if (postsEl) postsEl.textContent = postCount + '';
+      if (remainEl) remainEl.textContent = remaining + '';
+      if (savedEl) savedEl.textContent = savedMin > 60 ? Math.round(savedMin/60) + '시간' : savedMin + '분';
+      if (planEl) planEl.textContent = data.plan === 'pro' ? 'PRO' : '스탠다드';
+    };
+    // 플랜 정보 (lumiCheckPlan) + 게시 수 (count-posts) 병렬 조회
+    var planPromise = (typeof window.lumiCheckPlan === 'function')
+      ? Promise.resolve(window.lumiCheckPlan()).catch(function(){ return {}; })
+      : Promise.resolve({ plan: getUser().plan || 'standard' });
+    var countPromise = fetch('/api/count-posts', { headers:{ 'Authorization':'Bearer '+TOKEN } })
+      .then(function(r){ return r.json(); })
+      .catch(function(){ return {}; });
+    Promise.all([planPromise, countPromise]).then(function(arr){
+      var pRes = arr[0] || {};
+      var cRes = arr[1] || {};
+      var plan = (pRes.user && pRes.user.plan) || pRes.plan || getUser().plan || 'standard';
+      var postCount = (typeof pRes.postCount === 'number') ? pRes.postCount
+                    : (typeof cRes.count === 'number') ? cRes.count
+                    : (typeof cRes.postCount === 'number') ? cRes.postCount : 0;
+      var limit = pRes.limit || cRes.limit || (plan === 'pro' ? 20 : 12);
+      doUpdate({ postCount: postCount, limit: limit, plan: plan });
+    });
+  })();
+}
 </script>
 
 <div class="grid-wrap desktop-bento">
