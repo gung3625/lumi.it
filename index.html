@@ -1970,27 +1970,13 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </section>
 
   <!-- History strip (horizontal scroll) -->
-  <section class="m-section-mini">
+  <section class="m-section-mini" id="m-history-section">
     <div class="m-mini-head">
       <h3 class="m-mini-title">최근 캡션</h3>
-      <button type="button" class="m-mini-more" onclick="var el=document.getElementById('m-history-strip'); if(el){el.scrollIntoView({behavior:'smooth',block:'start'});}">전체 보기</button>
     </div>
-    <div class="m-strip" id="m-history-strip">
-      <article class="m-strip-card">
-        <div class="m-strip-thumb"></div>
-        <p class="m-strip-caption">"오늘 들어온 딸기 한 접시면 봄이 온 거예요"</p>
-        <p class="m-strip-meta">샘플 · 카페</p>
-      </article>
-      <article class="m-strip-card">
-        <div class="m-strip-thumb" style="background:linear-gradient(135deg,#ffc2d4,#ffe3ec)"></div>
-        <p class="m-strip-caption">"창가 자리에서 만난 노을, 오늘의 하이라이트"</p>
-        <p class="m-strip-meta">샘플 · 브런치</p>
-      </article>
-      <article class="m-strip-card">
-        <div class="m-strip-thumb" style="background:linear-gradient(135deg,#fbe6c9,#f7cfa5)"></div>
-        <p class="m-strip-caption">"한 번 더 굽고, 한 번 더 식힌 크러스트"</p>
-        <p class="m-strip-meta">샘플 · 베이커리</p>
-      </article>
+    <div class="m-card m-feat-card" id="m-history-empty">
+      <p class="m-feat-body">아직 저장된 캡션이 없어요.</p>
+      <button type="button" class="m-feat-ghost" onclick="document.getElementById('m-hidden-file').click();">첫 캡션 만들기 →</button>
     </div>
   </section>
 
@@ -1999,13 +1985,13 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div class="m-mini-head">
       <h3 class="m-mini-title">이번 주 트렌드</h3>
     </div>
-    <div class="m-card m-feat-card">
-      <div class="m-feat-chips">
-        <span class="m-chip">#봄나들이</span>
-        <span class="m-chip">#주말카페</span>
-        <span class="m-chip">#신메뉴</span>
+    <div class="m-card m-feat-card" id="m-trend-card">
+      <div class="m-feat-chips" id="m-trend-chips">
+        <span class="m-chip m-chip-skel">로딩 중…</span>
+        <span class="m-chip m-chip-skel">로딩 중…</span>
+        <span class="m-chip m-chip-skel">로딩 중…</span>
       </div>
-      <p class="m-feat-body">네이버·유튜브·인스타에서 이번 주 상승 중인 키워드예요.</p>
+      <p class="m-feat-body" id="m-trend-body">네이버·유튜브·인스타에서 이번 주 상승 중인 키워드예요.</p>
     </div>
   </section>
 
@@ -2040,10 +2026,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <p class="m-feat-body">이번 달 게시 성과와 팔로워 반응을 한 눈에 확인할 수 있어요.</p>
       <button type="button" class="m-feat-ghost" onclick="alert('분석 리포트는 준비 중입니다.');">리포트 열기</button>
     </div>
-  </section>
-
-  <section class="m-section-mini" style="padding-bottom:28px;">
-    <p style="font-size:12px; color:var(--ink-3); text-align:center;">루미 (lumi) · 모바일 베타</p>
   </section>
 
   <!-- Bottom tab bar -->
@@ -2098,9 +2080,33 @@ function showMobileToast(msg) {
       var dot = document.getElementById('m-ig-dot');
       var txt = document.getElementById('m-ig-status');
       var lu2 = JSON.parse(localStorage.getItem('lumi_user') || '{}');
-      var connected = !!(lu2 && (lu2.ig_connected || lu2.igUserId || lu2.instagram_business_account));
-      if (dot) dot.classList.add(connected ? 'ok' : 'off');
-      if (txt) txt.textContent = connected ? '인스타그램 연결됨' : '아직 연결 안 됨';
+      var connected = !!(lu2 && (lu2.igConnected || lu2.igUserId || lu2.instagram_business_account || lu2.instagram));
+      if (dot) { dot.className = 'm-feat-dot'; dot.classList.add(connected ? 'ok' : 'off'); }
+      if (txt) txt.textContent = connected ? ('인스타그램 연결됨' + (lu2.instagram_handle ? ' @' + lu2.instagram_handle : '')) : '아직 연결 안 됨';
+      // Real-time check via /api/get-profile
+      var _tokIG = localStorage.getItem('lumi_token') || '';
+      if (_tokIG) {
+        fetch('/api/get-profile', { headers: { 'Authorization': 'Bearer ' + _tokIG } })
+          .then(function(r){ return r.json().catch(function(){ return {}; }); })
+          .then(function(res){
+            var u = res && res.user;
+            if (!u) return;
+            var igOk = !!(u.instagram_handle || u.ig_user_id);
+            var handle = u.instagram_handle || '';
+            if (dot) { dot.className = 'm-feat-dot'; dot.classList.add(igOk ? 'ok' : 'off'); }
+            if (txt) txt.textContent = igOk ? ('인스타그램 연결됨' + (handle ? ' @' + handle : '')) : '아직 연결 안 됨';
+            // sync to localStorage
+            if (igOk) {
+              try {
+                var _lu = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+                _lu.igConnected = true;
+                if (handle) _lu.instagram_handle = handle;
+                localStorage.setItem('lumi_user', JSON.stringify(_lu));
+              } catch(e2){}
+            }
+          })
+          .catch(function(){});
+      }
     } catch(e){}
     // 최적 게시 시간: 프로 전용. 비(非)프로면 잠금 카드로 전환
     try {
@@ -2111,6 +2117,64 @@ function showMobileToast(msg) {
           bt.classList.add('is-locked');
           bt.innerHTML = '<div class="m-lock-row"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span>프로 전용 기능이에요</span></div><p class="m-feat-body">팔로워가 가장 많이 반응하는 시간을 매일 알려드려요.</p><button type="button" class="m-feat-ghost" onclick="location.href=\'/subscribe.html\'">프로 체험하기 →</button>';
         }
+      }
+    } catch(e){}
+    // 이번 주 트렌드 실데이터 연결
+    try {
+      var lu4 = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+      var cat = lu4.bizCategory || lu4.biz_category || 'cafe';
+      var chipsEl = document.getElementById('m-trend-chips');
+      var bodyEl = document.getElementById('m-trend-body');
+      fetch('/api/get-trends?category=' + encodeURIComponent(cat))
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          var tags = (d && Array.isArray(d.tags)) ? d.tags.filter(Boolean).slice(0, 3) : [];
+          if (tags.length === 0) {
+            if (chipsEl) chipsEl.style.display = 'none';
+            if (bodyEl) bodyEl.textContent = '트렌드 분석 중이에요. 잠시 후 다시 확인해 주세요.';
+            return;
+          }
+          if (chipsEl) {
+            chipsEl.innerHTML = '';
+            tags.forEach(function(t){
+              var s = document.createElement('span');
+              s.className = 'm-chip';
+              s.textContent = t.indexOf('#') === 0 ? t : '#' + t;
+              chipsEl.appendChild(s);
+            });
+          }
+          if (bodyEl) {
+            var label = d.categoryLabel || '업종';
+            bodyEl.textContent = label + ' 업종에서 이번 주 상승 중인 키워드예요.';
+          }
+        })
+        .catch(function(){
+          if (chipsEl) chipsEl.style.display = 'none';
+          if (bodyEl) bodyEl.textContent = '트렌드 분석 중이에요. 잠시 후 다시 확인해 주세요.';
+        });
+    } catch(e){}
+    // 최근 캡션 실데이터 연결
+    try {
+      var _tokH = localStorage.getItem('lumi_token') || '';
+      if (_tokH) {
+        fetch('/api/last-post', { headers: { 'Authorization': 'Bearer ' + _tokH } })
+          .then(function(r){ return r.json().catch(function(){ return {}; }); })
+          .then(function(res){
+            var p = res && res.post;
+            if (!p) return;
+            var emptyEl = document.getElementById('m-history-empty');
+            if (!emptyEl) return;
+            var caption = p.final_caption || p.caption || '';
+            if (!caption) return;
+            var thumb = p.image_url || p.ig_media_url || '';
+            var dateStr = p.posted_at ? new Date(p.posted_at).toLocaleDateString('ko-KR', {month:'long', day:'numeric'}) : '';
+            emptyEl.className = 'm-card m-feat-card m-history-card';
+            emptyEl.innerHTML =
+              (thumb ? '<img src="' + thumb + '" alt="" class="m-history-thumb" onerror="this.style.display=\'none\'">' : '') +
+              (dateStr ? '<p class="m-history-date">' + dateStr + ' 게시</p>' : '') +
+              '<p class="m-history-caption">' + caption.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</p>';
+          })
+          .catch(function(){});
       }
     } catch(e){}
   }

@@ -516,3 +516,24 @@ body.dark-mode .m-tabbar {
     bottom: calc(72px + env(safe-area-inset-bottom, 0px)) !important;
   }
 }
+
+/* 트렌드 chip skeleton */
+.m-chip-skel { background: linear-gradient(90deg, rgba(0,0,0,0.06) 0%, rgba(0,0,0,0.12) 50%, rgba(0,0,0,0.06) 100%); background-size: 200% 100%; animation: mChipShimmer 1.2s ease-in-out infinite; color: transparent !important; border-color: transparent !important; }
+body.dark-mode .m-chip-skel { background: linear-gradient(90deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.14) 50%, rgba(255,255,255,0.06) 100%); background-size: 200% 100%; }
+@keyframes mChipShimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+/* 최근 캡션 카드 */
+.m-history-card { display: flex; flex-direction: column; gap: 8px; }
+.m-history-thumb { width: 100%; max-height: 180px; object-fit: cover; border-radius: 8px; }
+.m-history-date { font-size: 12px; color: var(--ink-3, #86868b); margin: 0; font-weight: 500; }
+body.dark-mode .m-history-date { color: #98989d; }
+.m-history-caption {
+  font-size: 14px; line-height: 1.5; color: var(--ink-1, #1d1d1f); margin: 0;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+  overflow: hidden; text-overflow: ellipsis; white-space: pre-wrap;
+}
+body.dark-mode .m-history-caption { color: #f0f2f8; }
+
+/* 푸터가 탭바에 가리는 문제 — 탭바 있을 때 하단 패딩 확보 */
+body.has-tabbar .site-footer { padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)) !important; }
+body.has-tabbar { padding-bottom: 0; }
