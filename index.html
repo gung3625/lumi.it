@@ -2848,6 +2848,9 @@ function mInitWave2(){
     }
     flow.thumbUrls = files.map(function(f){ return URL.createObjectURL(f); });
     flow.step = 0; flow.captions = []; flow.selectedIdx = 0; flow.editedCaption = ''; flow.regenCount = 0; flow.posting = false; flow.userNote = '';
+    var _mft; try { _mft = JSON.parse(localStorage.getItem('lumi_feat_toggles')||'{}'); } catch(e){ _mft = {}; }
+    flow.postMode = (_mft.captionReview === false) ? null : 'immediate';
+    flow.scheduledAt = null;
     openFlow();
     renderFlow();
   };
@@ -2889,6 +2892,22 @@ function mInitWave2(){
     var styleEl = document.getElementById('m-flow-style');
     flow.userNote = noteEl ? noteEl.value.trim() : '';
     flow.userStyle = styleEl ? styleEl.value : '';
+    // captionReview OFF: postMode 선택 여부 검증
+    var _mft2; try { _mft2 = JSON.parse(localStorage.getItem('lumi_feat_toggles')||'{}'); } catch(e){ _mft2 = {}; }
+    if (_mft2.captionReview === false) {
+      if (!flow.postMode) { showMobileToast('게시 시간을 선택해주세요'); return; }
+      if (flow.postMode === 'scheduled') {
+        var dSel0 = document.getElementById('m-sched-date');
+        var tSel0 = document.getElementById('m-sched-time');
+        if (!dSel0 || !tSel0 || !dSel0.value || !tSel0.value) { showMobileToast('예약 시간을 선택해주세요'); return; }
+        var chosen0 = new Date(dSel0.value + 'T' + tSel0.value + ':00');
+        var now0 = new Date();
+        var maxD0 = new Date(now0); maxD0.setDate(maxD0.getDate()+30);
+        if (isNaN(chosen0.getTime()) || chosen0 <= now0) { showMobileToast('현재 시각 이후로 선택해주세요'); return; }
+        if (chosen0 > maxD0) { showMobileToast('1개월 이내로 선택해주세요'); return; }
+        flow.scheduledAt = chosen0.toISOString();
+      }
+    }
     flow.step = 1;
     renderFlow();
     submitReservation();
@@ -2986,8 +3005,51 @@ function mInitWave2(){
         '<textarea id="m-flow-note" class="m-flow-textarea" rows="3" placeholder="예: 신메뉴 출시, 할인 이벤트, 영업시간 변경 등 캡션에 꼭 반영할 정보">'+esc(prevNote)+'</textarea></div>' +
         '<div class="m-flow-field"><label class="m-flow-field-label" for="m-flow-style">캡션 스타일 (선택)</label>' +
         '<input type="text" id="m-flow-style" class="m-flow-input" maxlength="200" placeholder="예: 따뜻하지만 너무 감성적이진 않게, 이모지는 2개 이내" value="'+esc(prevStyle)+'"></div>' +
-        '<div class="m-flow-notice" style="margin-top:16px;"><strong>\'캡션 생성\'을 누르면 이번 달 캡션 1회가 차감됩니다.</strong>' + noticeExtra + '</div>' +
-        '<button type="button" class="m-cta" onclick="window.mFlowStartGenerate()" style="display:flex;margin:20px auto 0;">캡션 생성하기</button>';
+        '<div class="m-flow-notice" style="margin-top:16px;"><strong>\'캡션 생성\'을 누르면 이번 달 캡션 1회가 차감됩니다.</strong>' + noticeExtra + '</div>';
+      var _mft3; try { _mft3 = JSON.parse(localStorage.getItem('lumi_feat_toggles')||'{}'); } catch(e){ _mft3 = {}; }
+      var _isPro3 = false; try { _isPro3 = (JSON.parse(localStorage.getItem('lumi_user')||'{}').plan === 'pro'); } catch(e){}
+      if (_mft3.captionReview === false) {
+        body.innerHTML +=
+          '<p class="m-flow-label" style="margin-top:24px;">언제 게시할까요?</p>' +
+          '<div class="m-post-opts" id="m-post-opts">' +
+            '<button type="button" class="m-post-opt" data-mode="immediate"><span class="m-post-opt-title">지금 바로 게시</span><span class="m-post-opt-sub">인스타그램에 즉시 업로드</span></button>' +
+            '<button type="button" class="m-post-opt" data-mode="best"' + (_isPro3 ? '' : ' disabled') + '><span class="m-post-opt-title">최적 시간 자동 예약' + (_isPro3 ? '' : ' <span class="m-post-opt-lock">PRO</span>') + '</span><span class="m-post-opt-sub">팔로워가 가장 반응하는 시간</span></button>' +
+            '<button type="button" class="m-post-opt" data-mode="scheduled"' + (_isPro3 ? '' : ' disabled') + '><span class="m-post-opt-title">시간 예약' + (_isPro3 ? '' : ' <span class="m-post-opt-lock">PRO</span>') + '</span><span class="m-post-opt-sub">원하는 날짜·시간 지정</span></button>' +
+          '</div>' +
+          '<div id="m-sched-picker" hidden><p class="m-flow-label" style="margin-top:16px;">예약 시간</p><div class="m-sched-row"><select id="m-sched-date" class="m-flow-input"></select><select id="m-sched-time" class="m-flow-input"></select></div></div>' +
+          '<button type="button" class="m-cta" id="m-step0-cta" onclick="window.mFlowStartGenerate()" style="display:flex;margin:20px auto 0;opacity:0.45;" disabled>게시하기</button>';
+        // 게시 옵션 선택 이벤트
+        body.querySelectorAll('.m-post-opt').forEach(function(btn){
+          btn.addEventListener('click', function(){
+            if (btn.disabled) return;
+            body.querySelectorAll('.m-post-opt').forEach(function(b){ b.classList.remove('is-sel'); });
+            btn.classList.add('is-sel');
+            flow.postMode = btn.getAttribute('data-mode');
+            var sp = document.getElementById('m-sched-picker');
+            if (flow.postMode === 'scheduled') {
+              if (sp) sp.hidden = false;
+              window.mPopulateSchedPicker && window.mPopulateSchedPicker();
+            } else if (flow.postMode === 'best') {
+              if (sp) sp.hidden = true;
+              // 최적 시간 미리 fetch (백그라운드)
+              if (!flow.bestTimeCache || (Date.now() - flow.bestTimeCacheAt > 300000)) {
+                var u3 = getUser();
+                fetch('/api/get-best-time', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+TOKEN}, body: JSON.stringify({category: u3.bizCategory || u3.storeCategory || 'other'}) })
+                  .then(function(r){ return r.json(); })
+                  .then(function(data){ flow.bestTimeCache = data; flow.bestTimeCacheAt = Date.now(); })
+                  .catch(function(){});
+              }
+            } else {
+              if (sp) sp.hidden = true;
+            }
+            // CTA 활성화
+            var cta0 = document.getElementById('m-step0-cta');
+            if (cta0) { cta0.disabled = false; cta0.style.opacity = '1'; }
+          });
+        });
+      } else {
+        body.innerHTML += '<button type="button" class="m-cta" onclick="window.mFlowStartGenerate()" style="display:flex;margin:20px auto 0;">캡션 생성하기</button>';
+      }
       var styleSelEl = document.getElementById('m-flow-style');
       if (styleSelEl) {
         var persistStyle = function(){
@@ -3252,8 +3314,40 @@ function mInitWave2(){
             flow.captions = Array.isArray(caps) ? caps : [caps];
             flow.selectedIdx = 0;
             flow.editedCaption = flow.captions[0];
-            flow.step = 2;
-            renderFlow();
+            var _pcft; try { _pcft = JSON.parse(localStorage.getItem('lumi_feat_toggles')||'{}'); } catch(e){ _pcft = {}; }
+            if (_pcft.captionReview === false) {
+              // captionReview OFF: step 2 스킵 → 바로 게시
+              if (flow.postMode === 'best') {
+                // 최적 시간: 캐시된 값 또는 API 조회
+                var _applyBestPost = function(bt) {
+                  if (bt) {
+                    var _now = new Date();
+                    var _parts = bt.split(':');
+                    var _target = new Date(_now); _target.setHours(parseInt(_parts[0],10), parseInt(_parts[1],10), 0, 0);
+                    if (_target <= _now) _target.setDate(_target.getDate() + 1);
+                    flow.scheduledAt = _target.toISOString();
+                  }
+                  flow.posting = true;
+                  confirmPost();
+                };
+                var _cached = flow.bestTimeCache && (Date.now() - flow.bestTimeCacheAt < 300000) ? flow.bestTimeCache : null;
+                if (_cached) {
+                  _applyBestPost(_cached.bestTime);
+                } else {
+                  var _u4 = getUser();
+                  fetch('/api/get-best-time', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+TOKEN}, body: JSON.stringify({category: _u4.bizCategory || _u4.storeCategory || 'other'}) })
+                    .then(function(r){ return r.json(); })
+                    .then(function(d){ flow.bestTimeCache = d; flow.bestTimeCacheAt = Date.now(); _applyBestPost(d.bestTime); })
+                    .catch(function(){ _applyBestPost(null); });
+                }
+              } else {
+                flow.posting = true;
+                confirmPost();
+              }
+            } else {
+              flow.step = 2;
+              renderFlow();
+            }
           }
         })
         .catch(function(){});
@@ -3619,6 +3713,8 @@ function mInitWave2(){
                     : (typeof cRes.postCount === 'number') ? cRes.postCount : 0;
       var limit = pRes.limit || cRes.limit || (plan === 'pro' ? 20 : 12);
       doUpdate({ postCount: postCount, limit: limit, plan: plan });
+      // featToggles 서버 → localStorage 동기화
+      if (pRes.featToggles) { try { localStorage.setItem('lumi_feat_toggles', JSON.stringify(pRes.featToggles)); } catch(ex) {} }
     });
   })();
 }
@@ -4069,6 +4165,81 @@ var cards = {
       function handleConfirmPost() {
         runSelectAndPost(reservationKey, editedCaption);
       }
+      // 캡션 단계에서 최적 시간 게시 (기존 reservationKey 재사용)
+      function handleConfirmBestTimePost() {
+        if (isConfirmPosting || isPosting) return;
+        var token = localStorage.getItem('lumi_token');
+        if (!token) { alert('로그인이 필요합니다.'); return; }
+        var cat = lumiUser.bizCategory || lumiUser.storeCategory || 'cafe';
+        setIsConfirmPosting(true);
+        fetch('/api/get-best-time', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}, body: JSON.stringify({category: cat}) })
+          .then(function(r){ return r.json(); })
+          .then(function(data){
+            var bt = data && data.bestTime;
+            if (bt) {
+              var today = new Date();
+              var parts = bt.split(':');
+              var target = new Date(today.getFullYear(), today.getMonth(), today.getDate(), parseInt(parts[0]), parseInt(parts[1]));
+              if (target <= new Date()) target.setDate(target.getDate() + 1);
+              // scheduledAt을 select-caption payload에 넘기려면 runSelectAndPost 확장 필요
+              // 대신 서버측 select-caption이 scheduledAt을 받으므로 직접 fetch
+              setIsConfirmPosting(false);
+              fetch('/api/select-caption', {
+                method:'POST',
+                headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+                body: JSON.stringify({ reservationKey: reservationKey, captionIndex: 0, editedCaption: editedCaption, postMode: 'best-time', scheduledAt: target.toISOString() })
+              }).then(function(r){ return r.json(); }).then(function(d){
+                if (d && (d.ok || d.success)) {
+                  var schedMsg = d.scheduledAt
+                    ? '예약 완료! ' + new Date(d.scheduledAt).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) + '에 게시됩니다.'
+                    : '최적 시간에 예약됐어요. 대시보드에서 확인하세요.';
+                  alert(schedMsg);
+                  setRealFiles([]); setRealNote(''); setReservationKey(''); setGeneratedCaptions([]); setEditedCaption('');
+                  swrInvalidate('relay-list');
+                  var _em3 = ''; try { _em3 = (JSON.parse(localStorage.getItem('lumi_user')||'{}').email || 'u'); } catch(ex){}
+                  swrInvalidate('last-post:'+_em3);
+                  window.dispatchEvent(new CustomEvent('lumi:reservation-added'));
+                  setPhase('idle');
+                } else { alert(d && d.error || '게시 실패'); }
+              }).catch(function(err){ alert('오류: ' + err.message); });
+            } else {
+              setIsConfirmPosting(false);
+              alert('최적 시간을 가져올 수 없어요. 직접 예약해주세요.');
+            }
+          })
+          .catch(function(err){ setIsConfirmPosting(false); alert('오류: ' + err.message); });
+      }
+      // 캡션 단계에서 예약 게시 (기존 reservationKey 재사용)
+      function handleConfirmSchedulePost() {
+        if (isConfirmPosting || isPosting) return;
+        if (!scheduleTime) { alert('예약 시간을 선택해주세요.'); return; }
+        var token = localStorage.getItem('lumi_token');
+        if (!token) { alert('로그인이 필요합니다.'); return; }
+        var scheduled = new Date(scheduleTime);
+        if (scheduled <= new Date()) { alert('미래 시간을 선택해주세요.'); return; }
+        var maxDate = new Date(); maxDate.setDate(maxDate.getDate() + 30);
+        if (scheduled > maxDate) { alert('최대 30일 이내로 예약할 수 있어요.'); return; }
+        setIsConfirmPosting(true);
+        fetch('/api/select-caption', {
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+          body: JSON.stringify({ reservationKey: reservationKey, captionIndex: 0, editedCaption: editedCaption, postMode: 'scheduled', scheduledAt: scheduled.toISOString() })
+        }).then(function(r){ return r.json(); }).then(function(d){
+          setIsConfirmPosting(false);
+          if (d && (d.ok || d.success)) {
+            var schedMsg2 = d.scheduledAt
+              ? '예약 완료! ' + new Date(d.scheduledAt).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) + '에 게시됩니다.'
+              : '예약이 완료됐어요. 대시보드에서 확인하세요.';
+            alert(schedMsg2);
+            setRealFiles([]); setRealNote(''); setReservationKey(''); setGeneratedCaptions([]); setEditedCaption('');
+            swrInvalidate('relay-list');
+            var _em4 = ''; try { _em4 = (JSON.parse(localStorage.getItem('lumi_user')||'{}').email || 'u'); } catch(ex){}
+            swrInvalidate('last-post:'+_em4);
+            window.dispatchEvent(new CustomEvent('lumi:reservation-added'));
+            setPhase('idle');
+          } else { alert(d && d.error || '게시 실패'); }
+        }).catch(function(err){ setIsConfirmPosting(false); alert('오류: ' + err.message); });
+      }
       // 캡션 확인 토글 OFF일 때 자동 호출
       function autoSelectAndPost(rKey, caption) {
         runSelectAndPost(rKey, caption);
@@ -4516,23 +4687,39 @@ var cards = {
                     ) : null
                   )
                 ),
-                e('div',{style:{display:'flex',flexDirection:'column',gap:'8px',marginTop:'12px'}},
-                  e('p',{style:{fontSize:'11px',color:tc2,textAlign:'center',marginBottom:'2px'}},'\uC378\uB124\uC77C\uC774 \uB9DE\uB294\uC9C0 \uD655\uC778\uD558\uACE0 \uB208\uB7EC\uC8FC\uC138\uC694'),
-                  e('button',{style:{width:'100%',padding:'14px',borderRadius:'980px',border:'none',background:isPosting?'#999':(isDk?'#FF8FAB':'#C8507A'),color:'#fff',fontFamily:'inherit',fontSize:'14px',fontWeight:600,cursor:isPosting?'wait':'pointer',opacity:isPosting?0.7:1},onMouseDown:function(ev){ev.stopPropagation();},onClick:function(){if(!isPosting) handlePostNow();}},isPosting?'게시 중...':'바로 게시'),
-                  e('button',{style:{width:'100%',padding:'14px',borderRadius:'980px',border:'none',background:isPosting?'#999':(isDk?'#7B9CFF':'#4A6CF7'),color:'#fff',fontFamily:'inherit',fontSize:'14px',fontWeight:600,cursor:(isPro&&!isPosting)?'pointer':'default',opacity:(isPro&&!isPosting)?1:0.45},onMouseDown:function(ev){ev.stopPropagation();},onClick:function(){if(!isPro){alert('프로 플랜에서 사용할 수 있어요.');return;}if(!isPosting) handleBestTimePost();}},
-                    !isPro?e('span',{style:{marginRight:'4px'}},'🔒'):null,isPosting?'처리 중...':'최적 시간에 게시'
-                  ),
-                  e('button',{style:{width:'100%',padding:'14px',borderRadius:'980px',border:'none',background:isPosting?'#999':(isDk?'#5AC8A8':'#2A9D7C'),color:'#fff',fontFamily:'inherit',fontSize:'14px',fontWeight:600,cursor:(isPro&&!isPosting)?'pointer':'default',opacity:(isPro&&!isPosting)?1:0.45},onMouseDown:function(ev){ev.stopPropagation();},onClick:function(){if(!isPro){alert('프로 플랜에서 사용할 수 있어요.');return;}setShowSchedulePicker(!showSchedulePicker);}},
-                    !isPro?e('span',{style:{marginRight:'4px'}},'🔒'):null,'예약 게시'
-                  ),
-                  showSchedulePicker ? e('div',{style:{display:'flex',gap:'8px',alignItems:'center',marginTop:'4px'},onMouseDown:function(ev){ev.stopPropagation();}},
-                    e('input',{type:'datetime-local',value:scheduleTime,min:_schedMin,max:_schedMax,onChange:function(ev){setScheduleTime(ev.target.value);},style:{flex:1,padding:'10px 12px',borderRadius:'12px',border:'1.5px solid '+(isDk?'rgba(255,255,255,.15)':'rgba(0,0,0,.1)'),background:isDk?'rgba(255,255,255,.08)':'#fff',color:tc,fontFamily:'inherit',fontSize:'13px',outline:'none'}}),
-                    e('button',{style:{padding:'10px 16px',borderRadius:'980px',border:'none',background:pinkC,color:'#fff',fontFamily:'inherit',fontSize:'13px',fontWeight:600,cursor:isPosting?'wait':'pointer',opacity:isPosting?0.7:1,whiteSpace:'nowrap'},onClick:function(){if(!isPosting) handleSchedulePost();}},isPosting?'...':'확인')
-                  ) : null,
-                  e('button',{style:{fontSize:'12px',background:'none',border:'none',color:tc2,cursor:'pointer',fontFamily:'inherit',padding:'6px'},onMouseDown:function(ev){ev.stopPropagation();},onClick:function(){
-                    setRealFiles([]);setRealNote('');setPhase('idle');
-                  }},'\u2190 \uB2E4\uC2DC \uC120\uD0DD')
-                )
+                (function(){
+                  var _dFeatT = {}; try { _dFeatT = JSON.parse(localStorage.getItem('lumi_feat_toggles')||'{}'); } catch(ex){}
+                  var _captionReviewOn = _dFeatT.captionReview !== false;
+                  if (_captionReviewOn) {
+                    // captionReview ON: 캡션 생성 단일 CTA
+                    return e('div',{style:{display:'flex',flexDirection:'column',gap:'8px',marginTop:'12px'}},
+                      e('p',{style:{fontSize:'11px',color:tc2,textAlign:'center',marginBottom:'2px'}},'캡션을 생성한 뒤 게시 시간을 선택할 수 있어요'),
+                      e('button',{style:{width:'100%',padding:'14px',borderRadius:'980px',border:'none',background:isPosting?'#999':(isDk?'#FF8FAB':'#C8507A'),color:'#fff',fontFamily:'inherit',fontSize:'14px',fontWeight:600,cursor:isPosting?'wait':'pointer',opacity:isPosting?0.7:1},onMouseDown:function(ev){ev.stopPropagation();},onClick:function(){if(!isPosting) handlePostNow();}},isPosting?'캡션 생성 중...':'캡션 생성하기'),
+                      e('button',{style:{fontSize:'12px',background:'none',border:'none',color:tc2,cursor:'pointer',fontFamily:'inherit',padding:'6px'},onMouseDown:function(ev){ev.stopPropagation();},onClick:function(){
+                        setRealFiles([]);setRealNote('');setPhase('idle');
+                      }},'\u2190 \uB2E4\uC2DC \uC120\uD0DD')
+                    );
+                  } else {
+                    // captionReview OFF: 게시 옵션 3개 노출 (기존 동작)
+                    return e('div',{style:{display:'flex',flexDirection:'column',gap:'8px',marginTop:'12px'}},
+                      e('p',{style:{fontSize:'11px',color:tc2,textAlign:'center',marginBottom:'2px'}},'\uC378\uB124\uC77C\uC774 \uB9DE\uB294\uC9C0 \uD655\uC778\uD558\uACE0 \uB208\uB7EC\uC8FC\uC138\uC694'),
+                      e('button',{style:{width:'100%',padding:'14px',borderRadius:'980px',border:'none',background:isPosting?'#999':(isDk?'#FF8FAB':'#C8507A'),color:'#fff',fontFamily:'inherit',fontSize:'14px',fontWeight:600,cursor:isPosting?'wait':'pointer',opacity:isPosting?0.7:1},onMouseDown:function(ev){ev.stopPropagation();},onClick:function(){if(!isPosting) handlePostNow();}},isPosting?'게시 중...':'바로 게시'),
+                      e('button',{style:{width:'100%',padding:'14px',borderRadius:'980px',border:'none',background:isPosting?'#999':(isDk?'#7B9CFF':'#4A6CF7'),color:'#fff',fontFamily:'inherit',fontSize:'14px',fontWeight:600,cursor:(isPro&&!isPosting)?'pointer':'default',opacity:(isPro&&!isPosting)?1:0.45},onMouseDown:function(ev){ev.stopPropagation();},onClick:function(){if(!isPro){alert('프로 플랜에서 사용할 수 있어요.');return;}if(!isPosting) handleBestTimePost();}},
+                        !isPro?e('span',{style:{marginRight:'4px'}},'🔒'):null,isPosting?'처리 중...':'최적 시간에 게시'
+                      ),
+                      e('button',{style:{width:'100%',padding:'14px',borderRadius:'980px',border:'none',background:isPosting?'#999':(isDk?'#5AC8A8':'#2A9D7C'),color:'#fff',fontFamily:'inherit',fontSize:'14px',fontWeight:600,cursor:(isPro&&!isPosting)?'pointer':'default',opacity:(isPro&&!isPosting)?1:0.45},onMouseDown:function(ev){ev.stopPropagation();},onClick:function(){if(!isPro){alert('프로 플랜에서 사용할 수 있어요.');return;}setShowSchedulePicker(!showSchedulePicker);}},
+                        !isPro?e('span',{style:{marginRight:'4px'}},'🔒'):null,'예약 게시'
+                      ),
+                      showSchedulePicker ? e('div',{style:{display:'flex',gap:'8px',alignItems:'center',marginTop:'4px'},onMouseDown:function(ev){ev.stopPropagation();}},
+                        e('input',{type:'datetime-local',value:scheduleTime,min:_schedMin,max:_schedMax,onChange:function(ev){setScheduleTime(ev.target.value);},style:{flex:1,padding:'10px 12px',borderRadius:'12px',border:'1.5px solid '+(isDk?'rgba(255,255,255,.15)':'rgba(0,0,0,.1)'),background:isDk?'rgba(255,255,255,.08)':'#fff',color:tc,fontFamily:'inherit',fontSize:'13px',outline:'none'}}),
+                        e('button',{style:{padding:'10px 16px',borderRadius:'980px',border:'none',background:pinkC,color:'#fff',fontFamily:'inherit',fontSize:'13px',fontWeight:600,cursor:isPosting?'wait':'pointer',opacity:isPosting?0.7:1,whiteSpace:'nowrap'},onClick:function(){if(!isPosting) handleSchedulePost();}},isPosting?'...':'확인')
+                      ) : null,
+                      e('button',{style:{fontSize:'12px',background:'none',border:'none',color:tc2,cursor:'pointer',fontFamily:'inherit',padding:'6px'},onMouseDown:function(ev){ev.stopPropagation();},onClick:function(){
+                        setRealFiles([]);setRealNote('');setPhase('idle');
+                      }},'\u2190 \uB2E4\uC2DC \uC120\uD0DD')
+                    );
+                  }
+                })()
               )
             ) : null,
 
@@ -4565,18 +4752,53 @@ var cards = {
                 onMouseDown: function(ev){ ev.stopPropagation(); }
               }),
               e('div', {className:'lumi-caption-actions'},
-                e('button', {
-                  className:'lumi-btn-post',
-                  disabled: isConfirmPosting,
-                  onMouseDown: function(ev){ ev.stopPropagation(); },
-                  onClick: function(){ if(!isConfirmPosting) handleConfirmPost(); }
-                }, isConfirmPosting ? '\uAC8C\uC2DC \uC911...' : '\uC774\uB300\uB85C \uAC8C\uC2DC'),
-                e('button', {
-                  className:'lumi-btn-regen',
-                  disabled: isPosting || isConfirmPosting || regenCount >= 3,
-                  onMouseDown: function(ev){ ev.stopPropagation(); },
-                  onClick: function(){ if(!isPosting && !isConfirmPosting && regenCount < 3) handleRegenCaption(); }
-                }, isPosting ? '\uC7AC\uC0DD\uC131 \uC911...' : (regenCount >= 3 ? '\uC7AC\uC0DD\uC131 \uD55C\uB3C4 \uC804\uB2E4 \uC4F4\uC5B4\uC694' : '\uC7AC\uC0DD\uC131 (' + (3 - regenCount) + '\uD68C \uB0A8\uC74C)'))
+                (function(){
+                  var _cFeatT = {}; try { _cFeatT = JSON.parse(localStorage.getItem('lumi_feat_toggles')||'{}'); } catch(ex){}
+                  var _captionReviewOn = _cFeatT.captionReview !== false;
+                  if (_captionReviewOn) {
+                    // captionReview ON: 캡션 단계에서 게시 옵션 3개 노출
+                    return e('div', {style:{display:'flex',flexDirection:'column',gap:'8px',width:'100%'}},
+                      e('button', {
+                        className:'lumi-btn-post',
+                        disabled: isPosting || isConfirmPosting,
+                        onMouseDown: function(ev){ ev.stopPropagation(); },
+                        onClick: function(){ if(!isPosting && !isConfirmPosting) handleConfirmPost(); }
+                      }, isConfirmPosting ? '\uAC8C\uC2DC \uC911...' : '\uBC14\uB85C \uAC8C\uC2DC'),
+                      e('button', {
+                        style:{width:'100%',padding:'10px',borderRadius:'980px',border:'none',background:(isPosting||isConfirmPosting)?'#999':(isDk?'#7B9CFF':'#4A6CF7'),color:'#fff',fontFamily:'inherit',fontSize:'13px',fontWeight:600,cursor:(isPro&&!isPosting&&!isConfirmPosting)?'pointer':'default',opacity:(isPro&&!isPosting&&!isConfirmPosting)?1:0.45},
+                        disabled: !isPro || isPosting || isConfirmPosting,
+                        onMouseDown: function(ev){ ev.stopPropagation(); },
+                        onClick: function(){ if(!isPro){alert('프로 플랜에서 사용할 수 있어요.');return;}if(!isPosting&&!isConfirmPosting) handleConfirmBestTimePost(); }
+                      }, !isPro ? '🔒 최적 시간에 게시' : (isConfirmPosting ? '처리 중...' : '최적 시간에 게시')),
+                      e('button', {
+                        style:{width:'100%',padding:'10px',borderRadius:'980px',border:'none',background:(isPosting||isConfirmPosting)?'#999':(isDk?'#5AC8A8':'#2A9D7C'),color:'#fff',fontFamily:'inherit',fontSize:'13px',fontWeight:600,cursor:(isPro&&!isPosting&&!isConfirmPosting)?'pointer':'default',opacity:(isPro&&!isPosting&&!isConfirmPosting)?1:0.45},
+                        disabled: !isPro || isPosting || isConfirmPosting,
+                        onMouseDown: function(ev){ ev.stopPropagation(); },
+                        onClick: function(){ if(!isPro){alert('프로 플랜에서 사용할 수 있어요.');return;}setShowSchedulePicker(!showSchedulePicker); }
+                      }, !isPro ? '🔒 예약 게시' : '예약 게시'),
+                      showSchedulePicker ? e('div',{style:{display:'flex',gap:'8px',alignItems:'center',marginTop:'4px'},onMouseDown:function(ev){ev.stopPropagation();}},
+                        e('input',{type:'datetime-local',value:scheduleTime,min:_schedMin,max:_schedMax,onChange:function(ev){setScheduleTime(ev.target.value);},style:{flex:1,padding:'8px 12px',borderRadius:'12px',border:'1.5px solid '+(isDk?'rgba(255,255,255,.15)':'rgba(0,0,0,.1)'),background:isDk?'rgba(255,255,255,.08)':'#fff',color:tc,fontFamily:'inherit',fontSize:'13px',outline:'none'}}),
+                        e('button',{style:{padding:'8px 14px',borderRadius:'980px',border:'none',background:pinkC,color:'#fff',fontFamily:'inherit',fontSize:'13px',fontWeight:600,cursor:(isPosting||isConfirmPosting)?'wait':'pointer',opacity:(isPosting||isConfirmPosting)?0.7:1,whiteSpace:'nowrap'},onClick:function(){if(!isPosting&&!isConfirmPosting) handleConfirmSchedulePost();}},isConfirmPosting?'...':'확인')
+                      ) : null,
+                      e('button', {
+                        className:'lumi-btn-regen',
+                        disabled: isPosting || isConfirmPosting || regenCount >= 3,
+                        onMouseDown: function(ev){ ev.stopPropagation(); },
+                        onClick: function(){ if(!isPosting && !isConfirmPosting && regenCount < 3) handleRegenCaption(); }
+                      }, isPosting ? '\uC7AC\uC0DD\uC131 \uC911...' : (regenCount >= 3 ? '\uC7AC\uC0DD\uC131 \uD55C\uB3C4 \uC804\uB2E4 \uC4F4\uC5B4\uC694' : '\uC7AC\uC0DD\uC131 (' + (3 - regenCount) + '\uD68C \uB0A8\uC74C)'))
+                    );
+                  } else {
+                    // captionReview OFF: 이 경로는 pollCaption에서 건너뜀 (방어 코드)
+                    return e('div', null,
+                      e('button', {
+                        className:'lumi-btn-post',
+                        disabled: isConfirmPosting,
+                        onMouseDown: function(ev){ ev.stopPropagation(); },
+                        onClick: function(){ if(!isConfirmPosting) handleConfirmPost(); }
+                      }, isConfirmPosting ? '\uAC8C\uC2DC \uC911...' : '\uC774\uB300\uB85C \uAC8C\uC2DC')
+                    );
+                  }
+                })()
               )
             ) : null,
 
