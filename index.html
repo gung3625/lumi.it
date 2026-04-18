@@ -3145,6 +3145,13 @@ function mInitWave2(){
         flow.scheduledAt = chosen.toISOString();
         confirmPost();
       });
+    } else if (flow.step === 4) {
+      body.innerHTML =
+        '<div class="m-flow-progress"><span class="is-on"></span><span class="is-on"></span><span class="is-on"></span></div>' +
+        '<div class="m-flow-loading">' +
+          '<div class="m-tut-spin"></div>' +
+          '<p class="m-flow-status">인스타그램에 업로드 중이에요…<br><span style="color:var(--ink-3);font-size:13px;">보통 10~30초 정도 걸려요</span></p>' +
+        '</div>';
     } else if (flow.step === 3) {
       body.innerHTML =
         '<div class="m-flow-success">' +
@@ -3270,9 +3277,15 @@ function mInitWave2(){
       body: JSON.stringify(payload)
     }).then(function(r){ return r.json(); }).then(function(d){
       if (d && (d.ok || d.success)) {
-        flow.posting = false;
-        flow.step = 3; renderFlow();
-        try { loadScheduleList(); } catch(e){}
+        if (flow.postMode === 'immediate') {
+          // 실제 인스타 업로드 완료까지 폴링
+          flow.step = 4; renderFlow();
+          pollPostStatus();
+        } else {
+          flow.posting = false;
+          flow.step = 3; renderFlow();
+          try { loadScheduleList(); } catch(e){}
+        }
       } else {
         throw new Error(d && d.error || '게시 실패');
       }
@@ -3280,6 +3293,40 @@ function mInitWave2(){
       flow.posting = false;
       showMobileToast('게시 실패: ' + (err.message || ''));
     });
+  }
+  function pollPostStatus(){
+    var tries = 0;
+    var iv = setInterval(function(){
+      tries++;
+      if (tries > 40) {
+        clearInterval(iv);
+        flow.posting = false;
+        showMobileToast('업로드가 평소보다 오래 걸려요. 잠시 후 홈 화면에서 확인해주세요.');
+        window.mCloseCaptionFlow();
+        return;
+      }
+      fetch('/api/get-reservation?reserveKey=' + encodeURIComponent(flow.reservationKey), { headers:{ 'Authorization':'Bearer '+TOKEN } })
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          var rsv = d && (d.reservation || d);
+          if (!rsv) return;
+          var st = rsv.caption_status || rsv.captionStatus;
+          var sent = rsv.is_sent || rsv.isSent;
+          if (sent || st === 'posted') {
+            clearInterval(iv);
+            flow.posting = false;
+            flow.step = 3; renderFlow();
+            try { loadScheduleList(); } catch(e){}
+            try { if (typeof loadLastPost === 'function') loadLastPost(); } catch(e){}
+          } else if (st === 'failed' || st === 'error') {
+            clearInterval(iv);
+            flow.posting = false;
+            showMobileToast('인스타그램 업로드에 실패했어요. 다시 시도해주세요.');
+            flow.step = 2; renderFlow();
+          }
+        })
+        .catch(function(){});
+    }, 3000);
   }
 
   // ---------- 트렌드 풀뷰 ----------
