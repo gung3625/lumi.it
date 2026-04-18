@@ -36,25 +36,29 @@ async function rollLastPostImages(email, tempKeys, caption, instagramPostId, igU
 
     // 기존 last-post-images 키 전체 삭제 (롤링)
     const { blobs: oldBlobs } = await lpStore.list({ prefix: 'last-post:' + email + ':' });
+    console.log('[select-and-post] 기존 롤링 이미지 삭제 개수:', (oldBlobs || []).length, 'email prefix:', email.substring(0, 4));
     for (const b of (oldBlobs || [])) {
       try { await lpStore.delete(b.key); } catch (e) {}
     }
 
     // temp-images → last-post-images 복사
     const uploadedAt = new Date().toISOString();
+    let savedCount = 0;
     await Promise.all(tempKeys.map(async (tempKey, i) => {
       try {
         const buf = await imgStore.get(tempKey, { type: 'arrayBuffer' });
-        if (!buf) return;
+        if (!buf) { console.warn('[select-and-post] temp-image 조회 null:', tempKey); return; }
         const destKey = 'last-post:' + email + ':' + i;
         await lpStore.set(destKey, Buffer.from(buf), {
           metadata: { contentType: 'image/jpeg', uploadedAt, caption, instagramPostId: instagramPostId || '', igUsername: igUsername || '' },
         });
+        savedCount++;
       } catch (e) {
         console.warn('[select-and-post] last-post-images 복사 실패 index=' + i + ':', e.message);
       }
     }));
 
+    console.log('[select-and-post] 롤링 저장 완료. 저장된 개수:', savedCount, '/', tempKeys.length);
     console.log('[select-and-post] last-post-images 롤링 완료, email prefix:', email.substring(0, 4));
   } catch (e) {
     console.warn('[select-and-post] last-post-images 롤링 전체 실패:', e.message);
@@ -357,6 +361,8 @@ exports.handler = async (event) => {
     // 게시 성공 후: last-post-images 롤링 저장 → temp-images 삭제
     const tempKeysToDelete = item.imageKeys || item.tempKeys || [];
     const postEmail = (item.storeProfile && (item.storeProfile.ownerEmail || item.storeProfile.email)) || body.email || null;
+    console.log('[select-and-post] 이전 게시물 롤링 시작. postEmail:', postEmail ? postEmail.substring(0, 4) + '...' : 'NULL',
+      'tempKeys 개수:', tempKeysToDelete.length, 'reservation:', reservationKey);
     if (postEmail && tempKeysToDelete.length > 0) {
       await rollLastPostImages(
         postEmail,

@@ -2141,6 +2141,8 @@ var cards = {
                 : '예약이 완료됐어요. 대시보드에서 확인하세요.';
               alert(schedMsg);
               swrInvalidate('relay-list');
+              var _em2 = ''; try { _em2 = (JSON.parse(localStorage.getItem('lumi_user')||'{}').email || 'u'); } catch(ex){}
+              swrInvalidate('last-post:'+_em2);
               window.dispatchEvent(new CustomEvent('lumi:reservation-added'));
               setPhase('idle');
             } else {
@@ -2163,7 +2165,10 @@ var cards = {
                     setRealFiles([]); setRealNote(''); setReservationKey('');
                     setGeneratedCaptions([]); setEditedCaption('');
                     swrInvalidate('relay-list');
+                    var _em = ''; try { _em = (JSON.parse(localStorage.getItem('lumi_user')||'{}').email || 'u'); } catch(ex){}
+                    swrInvalidate('last-post:'+_em);
                     window.dispatchEvent(new CustomEvent('lumi:reservation-added'));
+                    window.dispatchEvent(new CustomEvent('lumi:post-success'));
                     setPhase('cta');
                   } else if (pd.captionStatus === 'failed') {
                     setIsPostingToIG(false);
@@ -2791,6 +2796,18 @@ var cards = {
           swrFetch('last-post:'+email, '/api/last-post', {headers:{'Authorization':'Bearer '+token}}, 60000)
             .then(function(d){ setPost(d && d.post ? d.post : null); setLoading(false); })
             .catch(function(){ setLoading(false); });
+          function onPostSuccess(){
+            var tk = localStorage.getItem('lumi_token');
+            var em = '';
+            try { em = (JSON.parse(localStorage.getItem('lumi_user')||'{}').email || 'u'); } catch(ex){}
+            if(!tk) return;
+            swrInvalidate('last-post:'+em);
+            swrFetch('last-post:'+em, '/api/last-post', {headers:{'Authorization':'Bearer '+tk}}, 0)
+              .then(function(d){ setPost(d && d.post ? d.post : null); })
+              .catch(function(){});
+          }
+          window.addEventListener('lumi:post-success', onPostSuccess);
+          return function(){ window.removeEventListener('lumi:post-success', onPostSuccess); };
         },[]);
 
         function relTime(iso){
@@ -2807,8 +2824,8 @@ var cards = {
         }
 
         var empty = !loading && !post;
-        var captionText = post ? (post.caption || '').split('\n')[0] : '';
-        if (captionText.length > 80) captionText = captionText.substring(0,80) + '\u2026';
+        var captionText = post ? (post.caption || '') : '';
+        if (captionText.length > 150) captionText = captionText.substring(0,150) + '\u2026';
         var token = localStorage.getItem('lumi_token') || '';
         var firstImageKey = post ? ((post.imageKeys && post.imageKeys[0]) || post.imageKey || null) : null;
         var imageCount = post ? ((post.imageKeys && post.imageKeys.length) || (post.imageKey ? 1 : 0)) : 0;
@@ -2832,7 +2849,7 @@ var cards = {
                 ? e('img', {src:thumbUrl, style:{width:'64px',height:'64px',borderRadius:'12px',objectFit:'cover',flexShrink:0,filter:isDk?'brightness(.85)':'none'},onError:function(ev){ev.target.style.display='none';}})
                 : e('div', {style:{width:'64px',height:'64px',borderRadius:'12px',background:isDk?'rgba(255,255,255,.06)':'rgba(0,0,0,.04)',flexShrink:0}}),
               e('div', {style:{flex:1,minWidth:0,display:'flex',flexDirection:'column',gap:'4px'}},
-                e('p', {style:{fontSize:'12px',color:tc,lineHeight:'1.5',fontWeight:400,overflow:'hidden',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical'}},
+                e('p', {style:{fontSize:'12px',color:tc,lineHeight:'1.5',fontWeight:400,overflow:'hidden',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',whiteSpace:'pre-wrap'}},
                   e('strong', {style:{fontWeight:600}}, igName), '\u00a0', captionText || '\uAC8C\uC2DC\uBB3C'
                 ),
                 e('p', {style:{fontSize:'10px',color:tc2}}, '\uAC8C\uC2DC\uC644\uB8CC \xB7 '+relTime(post.sentAt))
@@ -2860,7 +2877,7 @@ var cards = {
               e('svg',{viewBox:'0 0 24 24',fill:'none',stroke:isDk?'#f0f2f8':'#0d1117',strokeWidth:'2',width:16,height:16},e('line',{x1:22,y1:2,x2:11,y2:13}),e('polygon',{points:'22 2 15 22 11 13 2 9 22 2'}))
             ),
             e('div', {style:{padding:'0 12px 10px'}},
-              captionText ? e('p', {style:{fontSize:'11px',color:tc,lineHeight:'1.5',overflow:'hidden',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical'}},
+              captionText ? e('p', {style:{fontSize:'11px',color:tc,lineHeight:'1.5',overflow:'hidden',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',whiteSpace:'pre-wrap'}},
                 e('strong', null, igName), ' ', captionText
               ) : null
             )
