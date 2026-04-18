@@ -1805,6 +1805,7 @@ body.dark-mode .su-close svg{stroke:#f0f2f8;}
     };
   };
 </script>
+<link rel="stylesheet" href="/css/design-v2.css">
 </head>
 <body>
 <!-- Google Tag Manager (noscript) -->
@@ -1881,7 +1882,234 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
 
 
-<div class="grid-wrap">
+<!-- ========== MOBILE APP VIEW (Phase A, logged-out) ==========
+     Visible only at max-width:767px via /css/design-v2.css.
+     Desktop bento below is completely untouched. -->
+<div class="mobile-app" id="mobile-app-logged-out">
+  <section class="m-hero">
+    <img src="/assets/lumi-character.png" alt="Lumi" class="m-hero-character v2-float" onerror="this.style.display='none'">
+    <h1 class="m-hero-title v2-rise">사진 한 장이면<br>충분해요</h1>
+    <p class="m-hero-sub v2-rise d1">lumi가 업종·말투 맞춰 캡션·해시태그 자동 생성.<br>1분이면 인스타 업로드 끝.</p>
+    <div class="v2-rise d2" style="width:100%; display:flex; justify-content:center;">
+      <button type="button" class="m-cta" onclick="openSignupGrid()">1주 무료 체험 →</button>
+    </div>
+  </section>
+
+  <section class="m-section">
+    <p class="m-section-eyebrow">01 · 분석</p>
+    <h2 class="m-section-title">사진만 올리면<br>lumi가 다 파악해요</h2>
+    <p class="m-section-body">메뉴, 인테리어, 분위기까지 AI가 읽고 업종·말투에 맞는 캡션을 제안해요.</p>
+    <div class="m-card" style="margin-top:24px; background:var(--pink-soft); border:1px solid rgba(200,80,122,0.15);">
+      <p style="font-style:italic; color:var(--ink);">"오늘 들어온 딸기 한 접시면 봄이 온 거예요 🌸"</p>
+      <p style="font-size:13px; color:var(--ink-3); margin-top:8px;">— 카페 사장님이 실제로 업로드한 캡션</p>
+    </div>
+  </section>
+
+  <section class="m-section" style="background:var(--surface-alt);">
+    <p class="m-section-eyebrow">02 · 속도</p>
+    <h2 class="m-section-title">직접 30~90분<br>lumi로 1분</h2>
+    <p class="m-section-body">사진 고르기, 글 쓰기, 해시태그 검색, 복붙까지. 그 모든 과정이 1분으로 줄어요.</p>
+  </section>
+
+  <section class="m-section">
+    <p class="m-section-eyebrow">03 · 트렌드</p>
+    <h2 class="m-section-title">이번 주 뜨는<br>키워드까지 반영</h2>
+    <p class="m-section-body">네이버·유튜브·인스타 트렌드 10개 카테고리 실시간 분석. 팔로워가 반응하는 태그만 골라 붙여요.</p>
+  </section>
+
+  <section class="m-section">
+    <p class="m-section-eyebrow">04 · 요금</p>
+    <h2 class="m-section-title">월 19,900원부터</h2>
+    <div class="m-card" style="margin-top:20px;">
+      <p style="font-size:13px; color:var(--ink-3); font-weight:600;">스탠다드</p>
+      <p style="font-size:28px; font-weight:700; color:var(--ink); margin-top:4px;">₩19,900<span style="font-size:14px; color:var(--ink-3); font-weight:400;"> / 월</span></p>
+      <p style="font-size:14px; color:var(--ink-2); margin-top:8px;">월 12회 캡션 · 자동 게시 · 말투 학습 · 트렌드 키워드</p>
+    </div>
+    <div class="m-card" style="background:linear-gradient(135deg, rgba(255,143,171,0.15), rgba(200,80,122,0.08)); border:1.5px solid var(--pink);">
+      <p style="font-size:13px; color:var(--pink); font-weight:600;">프로 · 추천</p>
+      <p style="font-size:28px; font-weight:700; color:var(--ink); margin-top:4px;">₩29,900<span style="font-size:14px; color:var(--ink-3); font-weight:400;"> / 월</span></p>
+      <p style="font-size:14px; color:var(--ink-2); margin-top:8px;">월 20회 · 예약 게시 · 캘린더 · 최적 시간 · 링크인바이오</p>
+      <p style="font-size:13px; color:var(--pink); font-weight:600; margin-top:12px;">7일 무료 체험 제공</p>
+    </div>
+  </section>
+
+  <section class="m-section" style="padding-bottom:120px; text-align:center;">
+    <p style="font-size:13px; color:var(--ink-3);">루미 (lumi) · 대표자 김현 · 사업자 404-09-66416</p>
+    <p style="font-size:13px; color:var(--ink-3); margin-top:4px;">통신판매업 제2024-서울용산-1166호</p>
+  </section>
+
+  <div class="m-bottom-cta">
+    <a href="#login" class="m-cta ghost" onclick="event.preventDefault();openLogin();">로그인</a>
+    <a href="#signup" class="m-cta" onclick="event.preventDefault();openSignupGrid();">시작하기</a>
+  </div>
+</div>
+
+<!-- ========== MOBILE APP VIEW (Phase B, logged-in) ==========
+     Visible only at max-width:767px for logged-in users.
+     Desktop bento below is completely untouched. -->
+<div class="mobile-app" id="mobile-app-logged-in" style="display:none">
+  <!-- Top greeting bar -->
+  <header class="m-greeting">
+    <div class="m-greeting-text">
+      <p class="m-greeting-hi">안녕하세요</p>
+      <p class="m-greeting-name" id="m-greeting-name">@lumi</p>
+    </div>
+    <button type="button" class="m-greeting-bell" aria-label="알림" onclick="showMobileToast('알림은 곧 제공돼요.')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+    </button>
+  </header>
+
+  <!-- Primary CTA card -->
+  <section class="m-primary-cta v2-rise">
+    <div class="m-primary-cta-icon">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+    </div>
+    <div class="m-primary-cta-body">
+      <p class="m-primary-cta-title">사진 올리기 → 캡션 1분</p>
+      <p class="m-primary-cta-sub">사진 한 장이면 캡션·해시태그 완성</p>
+    </div>
+    <button type="button" class="m-primary-cta-btn" onclick="document.getElementById('m-hidden-file').click();">사진 선택</button>
+    <input type="file" id="m-hidden-file" accept="image/*" capture="environment" style="display:none" onchange="(function(e){try{var f=e.target.files&&e.target.files[0];if(f){window._bioRealFiles=[f];window._bioPhase='review';var bio=document.querySelector('.desktop-bento');if(bio){bio.scrollIntoView({behavior:'smooth'});}showMobileToast('사진이 선택됐어요. 대시보드에서 이어서 작성해 주세요.');}}catch(ex){}})(event)">
+  </section>
+
+  <!-- History strip (horizontal scroll) -->
+  <section class="m-section-mini">
+    <div class="m-mini-head">
+      <h3 class="m-mini-title">최근 캡션</h3>
+      <button type="button" class="m-mini-more" onclick="location.href='/dashboard.html'">전체 보기</button>
+    </div>
+    <div class="m-strip" id="m-history-strip">
+      <article class="m-strip-card">
+        <div class="m-strip-thumb"></div>
+        <p class="m-strip-caption">"오늘 들어온 딸기 한 접시면 봄이 온 거예요"</p>
+        <p class="m-strip-meta">샘플 · 카페</p>
+      </article>
+      <article class="m-strip-card">
+        <div class="m-strip-thumb" style="background:linear-gradient(135deg,#ffc2d4,#ffe3ec)"></div>
+        <p class="m-strip-caption">"창가 자리에서 만난 노을, 오늘의 하이라이트"</p>
+        <p class="m-strip-meta">샘플 · 브런치</p>
+      </article>
+      <article class="m-strip-card">
+        <div class="m-strip-thumb" style="background:linear-gradient(135deg,#fbe6c9,#f7cfa5)"></div>
+        <p class="m-strip-caption">"한 번 더 굽고, 한 번 더 식힌 크러스트"</p>
+        <p class="m-strip-meta">샘플 · 베이커리</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- Feature sections (vertical) -->
+  <section class="m-section-mini">
+    <div class="m-mini-head">
+      <h3 class="m-mini-title">이번 주 트렌드</h3>
+    </div>
+    <div class="m-card m-feat-card">
+      <div class="m-feat-chips">
+        <span class="m-chip">#봄나들이</span>
+        <span class="m-chip">#주말카페</span>
+        <span class="m-chip">#신메뉴</span>
+      </div>
+      <p class="m-feat-body">네이버·유튜브·인스타에서 이번 주 상승 중인 키워드예요.</p>
+    </div>
+  </section>
+
+  <section class="m-section-mini">
+    <div class="m-mini-head">
+      <h3 class="m-mini-title">최적 게시 시간</h3>
+    </div>
+    <div class="m-card m-feat-card">
+      <p class="m-feat-highlight">오늘 저녁 7:30</p>
+      <p class="m-feat-body">내 팔로워가 가장 많이 반응하는 시간대예요.</p>
+    </div>
+  </section>
+
+  <section class="m-section-mini">
+    <div class="m-mini-head">
+      <h3 class="m-mini-title">인스타 연동</h3>
+    </div>
+    <div class="m-card m-feat-card">
+      <div class="m-feat-row">
+        <span class="m-feat-dot" id="m-ig-dot"></span>
+        <span class="m-feat-body" id="m-ig-status">연동 상태 확인 중…</span>
+      </div>
+      <button type="button" class="m-feat-ghost" onclick="location.href='/settings.html'">설정에서 관리</button>
+    </div>
+  </section>
+
+  <section class="m-section-mini">
+    <div class="m-mini-head">
+      <h3 class="m-mini-title">분석 리포트</h3>
+    </div>
+    <div class="m-card m-feat-card">
+      <p class="m-feat-body">이번 달 게시 성과와 팔로워 반응을 한 눈에 확인할 수 있어요.</p>
+      <button type="button" class="m-feat-ghost" onclick="location.href='/dashboard.html#report'">리포트 열기</button>
+    </div>
+  </section>
+
+  <section class="m-section-mini" style="padding-bottom:28px;">
+    <p style="font-size:12px; color:var(--ink-3); text-align:center;">루미 (lumi) · 모바일 베타</p>
+  </section>
+
+  <!-- Bottom tab bar -->
+  <nav class="m-tabbar" role="navigation" aria-label="모바일 내비게이션">
+    <button type="button" class="m-tab is-active" data-tab="home" onclick="window.scrollTo({top:0,behavior:'smooth'});document.querySelectorAll('.m-tab').forEach(function(t){t.classList.remove('is-active');});this.classList.add('is-active');">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-6h-2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+      <span>홈</span>
+    </button>
+    <button type="button" class="m-tab" data-tab="upload" onclick="document.getElementById('m-hidden-file').click();">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      <span>업로드</span>
+    </button>
+    <button type="button" class="m-tab" data-tab="history" onclick="var el=document.getElementById('m-history-strip'); if(el){el.scrollIntoView({behavior:'smooth',block:'center'});} document.querySelectorAll('.m-tab').forEach(function(t){t.classList.remove('is-active');});this.classList.add('is-active');">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/><path d="M12 7v5l4 2"/></svg>
+      <span>히스토리</span>
+    </button>
+    <button type="button" class="m-tab" data-tab="settings" onclick="location.href='/settings.html';">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span>설정</span>
+    </button>
+  </nav>
+</div>
+
+<script>
+// Simple DOM toast for mobile Phase B feedback (replaces blocking alert)
+function showMobileToast(msg) {
+  var t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.85);color:#fff;padding:10px 20px;border-radius:20px;z-index:9999;font-size:14px;opacity:0;transition:opacity 0.2s';
+  document.body.appendChild(t);
+  requestAnimationFrame(function(){ t.style.opacity='1'; });
+  setTimeout(function(){ t.style.opacity='0'; setTimeout(function(){t.remove();}, 200); }, 2500);
+}
+(function(){
+  // Phase B: toggle between logged-out and logged-in mobile app views.
+  var loggedIn = !!localStorage.getItem('lumi_token');
+  var out = document.getElementById('mobile-app-logged-out');
+  var inn = document.getElementById('mobile-app-logged-in');
+  if (loggedIn) {
+    if (out) out.style.setProperty('display', 'none', 'important');
+    if (inn) inn.style.display = 'block';
+    document.body.classList.add('has-tabbar');
+    // greet by username/email prefix
+    try {
+      var lu = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+      var handle = lu.username || lu.name || (lu.email ? String(lu.email).split('@')[0] : '') || 'lumi';
+      var nameEl = document.getElementById('m-greeting-name');
+      if (nameEl) nameEl.textContent = '@' + handle;
+    } catch(e){}
+    // IG status probe (best effort, non-blocking)
+    try {
+      var dot = document.getElementById('m-ig-dot');
+      var txt = document.getElementById('m-ig-status');
+      var lu2 = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+      var connected = !!(lu2 && (lu2.ig_connected || lu2.igUserId || lu2.instagram_business_account));
+      if (dot) dot.classList.add(connected ? 'ok' : 'off');
+      if (txt) txt.textContent = connected ? '인스타그램 연결됨' : '아직 연결 안 됨';
+    } catch(e){}
+  }
+})();
+</script>
+
+<div class="grid-wrap desktop-bento">
   <div id="grid-root"></div>
 </div>
 

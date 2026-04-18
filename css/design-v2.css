@@ -1,0 +1,496 @@
+/* =========================================================
+ * lumi design-v2.css
+ * Phase A: Mobile-first tokens + mobile-app container
+ * Only affects .mobile-app subtree + desktop/mobile visibility toggle.
+ * DO NOT touch desktop bento.
+ * ========================================================= */
+
+:root {
+  --pink: #C8507A;
+  --pink-soft: rgba(200,80,122,0.08);
+  --pink-grad: linear-gradient(135deg, #FF8FAB 0%, #C8507A 100%);
+  --ink: #1d1d1f;
+  --ink-2: #494949;
+  --ink-3: #86868b;
+  --surface: #ffffff;
+  --surface-alt: #f5f5f7;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.06);
+  --shadow-md: 0 2px 4px rgba(0,0,0,0.05), 0 8px 24px rgba(0,0,0,0.08);
+  --shadow-pink: 0 8px 24px rgba(200,80,122,0.25);
+  --ease-smooth: cubic-bezier(.22,.94,.36,1);
+  --dur-fast: .18s;
+  --dur-med: .35s;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+body.dark-mode {
+  --ink: #f5f5f7;
+  --ink-2: rgba(255,255,255,.72);
+  --ink-3: rgba(255,255,255,.5);
+  --surface: #1c1c1e;
+  --surface-alt: #2c2c2e;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.3), 0 2px 8px rgba(0,0,0,.35);
+}
+
+/* ---------- Desktop / Mobile switch ---------- */
+.mobile-app { display: none; }
+.desktop-bento { display: block; }
+
+@media (max-width: 767px) {
+  .mobile-app { display: block; }
+  .desktop-bento { display: none !important; }
+  /* Make sure nav still breathes (it already scales via clamp) */
+  body { padding-top: 0; }
+  /* Hide legacy mobile-cta-bar when new mobile-app is active
+     (the new design provides its own fixed bottom CTA) */
+  .mobile-cta-bar { display: none !important; }
+}
+
+/* ---------- Mobile utilities ---------- */
+.m-container { padding: 0 20px; }
+
+.m-hero {
+  min-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: calc(24px + var(--safe-top)) 20px 32px;
+  text-align: center;
+  position: relative;
+}
+.m-hero-title {
+  font-size: clamp(32px, 8vw, 44px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: var(--ink);
+  margin-bottom: 16px;
+  word-break: keep-all;
+}
+.m-hero-sub {
+  font-size: clamp(16px, 4vw, 18px);
+  color: var(--ink-2);
+  line-height: 1.5;
+  margin-bottom: 40px;
+  word-break: keep-all;
+  max-width: 320px;
+}
+.m-hero-character {
+  width: 140px;
+  height: 140px;
+  margin-bottom: 32px;
+  object-fit: contain;
+}
+
+.m-section {
+  padding: 64px 20px;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+body.dark-mode .m-section { border-bottom-color: rgba(255,255,255,0.08); }
+
+.m-section-eyebrow {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pink);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.m-section-title {
+  font-size: clamp(24px, 6vw, 32px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--ink);
+  margin-bottom: 16px;
+  word-break: keep-all;
+}
+.m-section-body {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink-2);
+  word-break: keep-all;
+}
+
+/* ---------- Cards ---------- */
+.m-card {
+  background: var(--surface);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+  margin: 16px 0;
+  min-width: 0;
+  max-width: 100%;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- CTA buttons ---------- */
+.m-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 56px;
+  padding: 0 32px;
+  border-radius: 999px;
+  background: var(--pink-grad);
+  color: #fff;
+  font-weight: 600;
+  font-size: 17px;
+  border: none;
+  box-shadow: var(--shadow-pink);
+  transition: transform var(--dur-fast) var(--ease-smooth);
+  cursor: pointer;
+  width: 100%;
+  max-width: 320px;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  font-family: inherit;
+}
+.m-cta:active { transform: scale(0.97); }
+.m-cta.ghost {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ---------- Bottom fixed CTA bar (logged-out) ---------- */
+.m-bottom-cta {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  padding: 12px 20px calc(12px + var(--safe-bottom));
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(0,0,0,0.06);
+  display: flex;
+  gap: 12px;
+}
+body.dark-mode .m-bottom-cta {
+  background: color-mix(in srgb, #1c1c1e 88%, transparent);
+  border-top-color: rgba(255,255,255,0.08);
+}
+.m-bottom-cta .m-cta {
+  flex: 1;
+  min-height: 48px;
+  font-size: 15px;
+}
+
+/* ---------- Entrance animations ---------- */
+@keyframes v2-rise {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.v2-rise {
+  opacity: 0;
+  animation: v2-rise .7s var(--ease-smooth) forwards;
+}
+.v2-rise.d1 { animation-delay: .1s; }
+.v2-rise.d2 { animation-delay: .2s; }
+.v2-rise.d3 { animation-delay: .3s; }
+
+/* Character float */
+@keyframes v2-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-8px); }
+}
+.v2-float { animation: v2-float 3s ease-in-out infinite; }
+
+/* =========================================================
+ * Phase B: mobile-app-logged-in components
+ * Scoped to #mobile-app-logged-in so desktop bento is untouched.
+ * ========================================================= */
+
+#mobile-app-logged-in { padding-bottom: 88px; }
+
+/* Greeting bar */
+.m-greeting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(14px + var(--safe-top)) 20px 10px;
+  gap: 12px;
+}
+.m-greeting-text { min-width: 0; }
+.m-greeting-hi {
+  font-size: 13px;
+  color: var(--ink-3);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+.m-greeting-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 2px 0 0;
+  letter-spacing: -0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.m-greeting-bell {
+  width: 40px; height: 40px;
+  border-radius: 999px;
+  border: none;
+  background: var(--surface-alt);
+  color: var(--ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+body.dark-mode .m-greeting-bell { background: rgba(255,255,255,0.08); }
+
+/* Primary CTA card */
+.m-primary-cta {
+  margin: 12px 16px 20px;
+  padding: 20px;
+  border-radius: 20px;
+  background: var(--pink-grad);
+  color: #fff;
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  grid-template-rows: auto auto;
+  gap: 4px 14px;
+  align-items: center;
+  box-shadow: var(--shadow-pink);
+}
+.m-primary-cta-icon {
+  grid-row: 1 / span 2;
+  width: 56px; height: 56px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.18);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.m-primary-cta-body { grid-column: 2; min-width: 0; }
+.m-primary-cta-title {
+  font-size: 17px;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+.m-primary-cta-sub {
+  font-size: 13px;
+  margin: 2px 0 0;
+  color: rgba(255,255,255,0.85);
+  letter-spacing: -0.01em;
+}
+.m-primary-cta-btn {
+  grid-column: 1 / -1;
+  margin-top: 12px;
+  height: 48px;
+  border-radius: 999px;
+  border: none;
+  background: #fff;
+  color: var(--pink);
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  font-family: inherit;
+  letter-spacing: -0.01em;
+}
+.m-primary-cta-btn:active { transform: scale(0.97); }
+
+/* Mini sections (used inside logged-in view) */
+.m-section-mini { padding: 16px 16px 4px; }
+.m-mini-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 4px 4px 10px;
+}
+.m-mini-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+.m-mini-more {
+  font-size: 13px;
+  color: var(--pink);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 600;
+  padding: 4px 6px;
+}
+
+/* Horizontal history strip */
+.m-strip {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px 4px 16px;
+  margin: 0 -4px;
+  scrollbar-width: none;
+}
+.m-strip::-webkit-scrollbar { display: none; }
+.m-strip-card {
+  flex: 0 0 72%;
+  max-width: 260px;
+  scroll-snap-align: start;
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 14px;
+  box-shadow: var(--shadow-sm);
+}
+.m-strip-thumb {
+  width: 100%;
+  aspect-ratio: 4/3;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ffd9e4, #ffb8cd);
+  margin-bottom: 10px;
+}
+.m-strip-caption {
+  font-size: 14px;
+  color: var(--ink);
+  line-height: 1.4;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  letter-spacing: -0.01em;
+}
+.m-strip-meta {
+  font-size: 12px;
+  color: var(--ink-3);
+  margin: 6px 0 0;
+}
+
+/* Feature cards */
+.m-feat-card {
+  margin: 0;
+  border-radius: 16px;
+  padding: 18px;
+}
+.m-feat-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.m-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--pink-soft);
+  color: var(--pink);
+  font-size: 13px;
+  font-weight: 600;
+}
+.m-feat-body {
+  font-size: 14px;
+  color: var(--ink-2);
+  line-height: 1.5;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+.m-feat-highlight {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 6px;
+  letter-spacing: -0.02em;
+}
+.m-feat-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.m-feat-dot {
+  width: 10px; height: 10px;
+  border-radius: 999px;
+  background: var(--ink-3);
+  flex-shrink: 0;
+}
+.m-feat-dot.ok { background: #30c26a; }
+.m-feat-dot.off { background: var(--ink-3); }
+.m-feat-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 16px;
+  margin-top: 12px;
+  border-radius: 999px;
+  background: var(--surface-alt);
+  color: var(--ink);
+  border: none;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: inherit;
+}
+body.dark-mode .m-feat-ghost { background: rgba(255,255,255,0.08); }
+
+/* Bottom tab bar */
+.m-tabbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 120;
+  display: none;
+  height: calc(56px + var(--safe-bottom));
+  padding-bottom: var(--safe-bottom);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(0,0,0,0.06);
+}
+body.dark-mode .m-tabbar {
+  background: color-mix(in srgb, #1c1c1e 88%, transparent);
+  border-top-color: rgba(255,255,255,0.08);
+}
+.m-tab {
+  flex: 1;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  background: none;
+  border: none;
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 6px 0;
+}
+.m-tab svg { opacity: 0.85; }
+.m-tab.is-active { color: var(--pink); }
+.m-tab.is-active svg { opacity: 1; }
+
+/* Only show logged-in tabbar on mobile when the view is active */
+@media (max-width: 767px) {
+  body.has-tabbar .m-tabbar,
+  #mobile-app-logged-in .m-tabbar { display: flex; }
+}
+/* Safety: hide logged-in view on >=768px just like the logged-out one */
+@media (min-width: 768px) {
+  #mobile-app-logged-in { display: none !important; }
+}
+
+/* Accessibility: respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .v2-rise, .v2-float, .mobile-app .card { animation: none !important; transition: none !important; }
+  .v2-rise, .v2-float { opacity: 1 !important; transform: none !important; }
+}
