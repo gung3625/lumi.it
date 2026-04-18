@@ -233,7 +233,7 @@ exports.handler = async (event) => {
           weather: { ...weather, airQuality: airGrade },
           trends: Array.isArray(trends) ? trends : [],
           store_profile: storeProfile,
-          post_mode: postMode === 'scheduled' ? 'scheduled' : 'immediate',
+          post_mode: (postMode === 'scheduled' || postMode === 'best-time') ? postMode : 'immediate',
           scheduled_at: scheduledAt,
           submitted_at: submittedAt,
           story_enabled: fields.postToStory === 'true',
