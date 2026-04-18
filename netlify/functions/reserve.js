@@ -5,6 +5,35 @@
 // - 처리 완료 후 process-and-post-background 트리거
 const crypto = require('crypto');
 const busboy = require('busboy');
+const sharp = require('sharp');
+
+// Instagram 비율 정규화: 세로 이미지 → 4:5(0.8), 그 외 → 1:1
+// 부족한 영역은 흰색 패딩(crop 없음), 모든 이미지를 동일 비율로 통일
+async function normalizeBatch(photos) {
+  const firstMeta = await sharp(photos[0].buffer).metadata();
+  const firstRatio = firstMeta.width / firstMeta.height;
+  const targetRatio = firstRatio < 1 ? 0.8 : 1;
+
+  const normalized = [];
+  for (const p of photos) {
+    const meta = await sharp(p.buffer).metadata();
+    const curRatio = meta.width / meta.height;
+    let targetW, targetH;
+    if (curRatio > targetRatio) {
+      targetW = meta.width;
+      targetH = Math.round(meta.width / targetRatio);
+    } else {
+      targetH = meta.height;
+      targetW = Math.round(meta.height * targetRatio);
+    }
+    const buf = await sharp(p.buffer)
+      .resize({ width: targetW, height: targetH, fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
+      .jpeg({ quality: 90 })
+      .toBuffer();
+    normalized.push({ ...p, buffer: buf, mimeType: 'image/jpeg' });
+  }
+  return normalized;
+}
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
 
@@ -189,16 +218,17 @@ exports.handler = async (event) => {
         const imageKeys = [];
         const uploadedPaths = [];
         try {
-          for (let i = 0; i < photos.length; i++) {
-            const p = photos[i];
+          // Instagram 비율 제약(4:5~1.91:1, 캐러셀 동일 비율) 충족을 위해 정규화
+          const normalizedPhotos = await normalizeBatch(photos);
+          for (let i = 0; i < normalizedPhotos.length; i++) {
+            const p = normalizedPhotos[i];
             const nonce = crypto.randomBytes(8).toString('hex');
             const ts = Date.now();
-            const ext = contentTypeToExt(p.mimeType);
-            const path = `${user.id}/${reserveKey}/${ts}-${nonce}.${ext}`;
+            const path = `${user.id}/${reserveKey}/${ts}-${nonce}.jpg`;
 
             const { error: upErr } = await supabase.storage
               .from(BUCKET)
-              .upload(path, p.buffer, { contentType: p.mimeType, upsert: false });
+              .upload(path, p.buffer, { contentType: 'image/jpeg', upsert: false });
             if (upErr) {
               console.error('[reserve] Storage 업로드 실패:', upErr.message);
               throw new Error('이미지 업로드 실패');
