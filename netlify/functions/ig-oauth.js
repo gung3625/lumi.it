@@ -167,36 +167,16 @@ exports.handler = async (event) => {
     }
 
     // ────────────────────────────────────────────
-    // 6) ig_accounts 기본 row upsert (토큰 컬럼 제외)
-    //    → Vault 저장 후 secret_id만 update
+    // 6) 기존 secret_id 조회 (재연동 시 같은 Vault 레코드에 덮어쓰기)
     // ────────────────────────────────────────────
-    // 기존 secret_id 조회 (재연동 시 같은 Vault 레코드에 덮어쓰기)
     const { data: existingRow } = await supabase
       .from('ig_accounts')
       .select('access_token_secret_id, page_access_token_secret_id')
       .eq('ig_user_id', igUserId)
       .maybeSingle();
 
-    const nowIso = new Date().toISOString();
-    const { error: upsertErr } = await supabase
-      .from('ig_accounts')
-      .upsert({
-        ig_user_id: igUserId,
-        user_id: userId,
-        ig_username: igUsername,
-        page_id: pageId,
-        token_expires_at: expiresAt,
-        connected_at: nowIso,
-        updated_at: nowIso,
-      }, { onConflict: 'ig_user_id' });
-
-    if (upsertErr) {
-      console.error('[ig-oauth] ig_accounts upsert 실패:', upsertErr.message);
-      return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/?oauth_error=5' } };
-    }
-
     // ────────────────────────────────────────────
-    // 7) Vault RPC로 토큰 암호화 저장
+    // 7) Vault RPC로 토큰 암호화 저장 (upsert 전에 secret_id 확보)
     // ────────────────────────────────────────────
     const { data: accessSecretId, error: accessErr } = await supabase.rpc('set_ig_access_token', {
       p_ig_user_id: igUserId,
@@ -216,25 +196,33 @@ exports.handler = async (event) => {
         p_page_token: pageAccessToken,
       });
       if (pageErr) {
-        console.error('[ig-oauth] set_ig_page_access_token 실패:', pageErr.message);
+        console.warn('[ig-oauth] set_ig_page_access_token 실패 (무시하고 진행):', pageErr.message);
       } else {
         pageSecretId = pSecretId;
       }
     }
 
-    // secret_id를 ig_accounts에 업데이트
-    const { error: idUpdateErr } = await supabase
+    // ────────────────────────────────────────────
+    // 8) ig_accounts upsert (secret_id 포함 — NOT NULL 제약 충족)
+    // ────────────────────────────────────────────
+    const nowIso = new Date().toISOString();
+    const { error: upsertErr } = await supabase
       .from('ig_accounts')
-      .update({
+      .upsert({
+        ig_user_id: igUserId,
+        user_id: userId,
+        ig_username: igUsername,
+        page_id: pageId,
+        token_expires_at: expiresAt,
+        connected_at: nowIso,
+        updated_at: nowIso,
         access_token_secret_id: accessSecretId,
         page_access_token_secret_id: pageSecretId,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('ig_user_id', igUserId);
+      }, { onConflict: 'ig_user_id' });
 
-    if (idUpdateErr) {
-      console.error('[ig-oauth] secret_id 업데이트 실패:', idUpdateErr.message);
-      return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/?oauth_error=7' } };
+    if (upsertErr) {
+      console.error('[ig-oauth] ig_accounts upsert 실패:', upsertErr.message);
+      return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/?oauth_error=5' } };
     }
 
     // 토큰/secret_id는 절대 로그에 남기지 않음. ig_user_id만.
