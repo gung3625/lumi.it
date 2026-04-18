@@ -2096,26 +2096,29 @@ var cards = {
         return fd;
       }
 
-      // 게시 횟수 체크 (Supabase reservations COUNT 직접 조회)
+      // 게시 횟수 체크 (/api/count-posts — 서버에서 Bearer 검증 후 집계)
       function checkPostCount(token, callback, onError) {
         var timeoutId = setTimeout(function(){
           alert('요청 시간이 초과됐어요. 네트워크를 확인 후 다시 시도해주세요.');
           if (onError) onError();
         }, 15000);
-        var now = new Date();
-        var monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-        window.lumiSupa.from('reservations')
-          .select('*', { count: 'exact', head: true })
-          .gte('created_at', monthStart)
-          .then(function(r){
+        fetch('/api/count-posts', { method:'GET', headers:{ 'Authorization':'Bearer '+token } })
+          .then(function(r){ return r.json().then(function(d){ return {status:r.status, data:d}; }); })
+          .then(function(res){
             clearTimeout(timeoutId);
-            if (r.error) {
-              console.error('[count-post]', r.error.message);
-              alert('게시 횟수 확인 중 오류가 발생했어요. 다시 시도해주세요.');
+            if (res.status !== 200) {
+              console.error('[count-post]', res.data && res.data.error);
+              alert((res.data && res.data.error) || '게시 횟수 확인 중 오류가 발생했어요. 다시 시도해주세요.');
               if (onError) onError();
               return;
             }
             callback();
+          })
+          .catch(function(err){
+            clearTimeout(timeoutId);
+            console.error('[count-post] fetch error', err);
+            alert('게시 횟수 확인 중 오류가 발생했어요. 다시 시도해주세요.');
+            if (onError) onError();
           });
       }
 
@@ -4772,10 +4775,16 @@ function suSubmitAgree() {
     if(data.error){suChangeLumi('/assets/lumi-sad.png',true);document.getElementById('su-speech').textContent=data.error;setTimeout(function(){suShowForm();},1500);return;}
     localStorage.setItem('lumi_token',data.token);
     localStorage.setItem('lumi_user',JSON.stringify(data.user));
-    suChangeLumi('/assets/lumi-smile.png');
-    suTypeText('가입이 완료됐어요!\n이제 lumi의 모든 기능을\n사용할 수 있어요',function(){
-      document.getElementById('su-form-area').innerHTML='<button class="su-btn" onclick="closeSignupGrid();location.reload();" style="margin-top:12px">시작하기</button>';
-    });
+    var afterSuSession=function(){
+      suChangeLumi('/assets/lumi-smile.png');
+      suTypeText('가입이 완료됐어요!\n이제 lumi의 모든 기능을\n사용할 수 있어요',function(){
+        document.getElementById('su-form-area').innerHTML='<button class="su-btn" onclick="closeSignupGrid();location.reload();" style="margin-top:12px">시작하기</button>';
+      });
+    };
+    if(data.refreshToken && window.lumiSupa){
+      window.lumiSupa.auth.setSession({access_token:data.token, refresh_token:data.refreshToken})
+        .then(afterSuSession).catch(afterSuSession);
+    } else { afterSuSession(); }
   }).catch(function(){suChangeLumi('/assets/lumi-sad.png',true);document.getElementById('su-speech').innerHTML='가입 중 오류가 발생했어요.<br>다시 시도해주세요.';setTimeout(function(){suShowForm();},1500);});
 }
 
@@ -4945,9 +4954,15 @@ function liSubmitPw() {
     if(data.error){liChangeLumi('/assets/lumi-sad.png',true);document.getElementById('li-speech').textContent=data.error;setTimeout(function(){liShowForm();},1500);return;}
     localStorage.setItem('lumi_token',data.token);
     localStorage.setItem('lumi_user',JSON.stringify(data.user));
-    liChangeLumi('/assets/lumi-smile.png');
-    document.getElementById('li-speech').textContent='로그인 성공!';
-    setTimeout(function(){closeLogin();location.reload();},1500);
+    var afterSession=function(){
+      liChangeLumi('/assets/lumi-smile.png');
+      document.getElementById('li-speech').textContent='로그인 성공!';
+      setTimeout(function(){closeLogin();location.reload();},1500);
+    };
+    if(data.refreshToken && window.lumiSupa){
+      window.lumiSupa.auth.setSession({access_token:data.token, refresh_token:data.refreshToken})
+        .then(afterSession).catch(afterSession);
+    } else { afterSession(); }
   }).catch(function(){liChangeLumi('/assets/lumi-sad.png',true);document.getElementById('li-speech').textContent='로그인 중 오류가 발생했어요. 다시 시도해주세요.';setTimeout(function(){liShowForm();},1500);});
 }
 

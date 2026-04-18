@@ -157,6 +157,7 @@ exports.handler = async (event) => {
     }
 
     const token = signInData.session.access_token;
+    const refreshToken = signInData.session.refresh_token;
     const safeUser = {
       name: profileRow.name,
       storeName: profileRow.store_name,
@@ -252,7 +253,7 @@ exports.handler = async (event) => {
     return {
       statusCode: 200,
       headers: CORS,
-      body: JSON.stringify({ success: true, token, user: safeUser })
+      body: JSON.stringify({ success: true, token, refreshToken, user: safeUser })
     };
   } catch (err) {
     console.error('register error:', err && err.message);

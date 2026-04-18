@@ -107,6 +107,7 @@ exports.handler = async (event) => {
     }
 
     const token = signInData.session.access_token;
+    const refreshToken = signInData.session.refresh_token;
 
     // 3) IG 연동 여부 조회
     let hasIg = false;
@@ -124,7 +125,7 @@ exports.handler = async (event) => {
     return {
       statusCode: 200,
       headers: CORS,
-      body: JSON.stringify({ success: true, token, user: safeUser })
+      body: JSON.stringify({ success: true, token, refreshToken, user: safeUser })
     };
   } catch (err) {
     console.error('login error:', err && err.message);
