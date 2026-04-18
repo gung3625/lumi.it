@@ -37,7 +37,7 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Bad Request: 잘못된 JSON' }) };
   }
 
-  const { reservationKey, captionIndex, editedCaption } = body;
+  const { reservationKey, captionIndex, editedCaption, postMode: bodyPostMode, scheduledAt: bodyScheduledAt } = body;
 
   // Bearer 토큰 검증
   const token = extractBearerToken(event);
@@ -145,8 +145,21 @@ exports.handler = async (event) => {
       });
     } catch (e) { console.warn('[tone-learn] like 저장 실패:', e.message); }
 
-    // 4. postMode 확인
-    const postMode = reservation.post_mode || 'immediate';
+    // 4. postMode 확인 (body 우선, 없으면 reservation row)
+    let postMode = reservation.post_mode || 'immediate';
+    let effectiveScheduledAt = reservation.scheduled_at;
+    if (bodyPostMode) {
+      const normalized = bodyPostMode === 'best' ? 'best-time' : bodyPostMode;
+      if (['immediate', 'scheduled', 'best-time'].includes(normalized)) {
+        postMode = normalized;
+      }
+    }
+    if (bodyScheduledAt && (postMode === 'scheduled' || postMode === 'best-time')) {
+      const parsed = new Date(bodyScheduledAt);
+      if (!isNaN(parsed.getTime())) {
+        effectiveScheduledAt = parsed.toISOString();
+      }
+    }
 
     if (postMode === 'immediate') {
       // 즉시 게시: 선택 상태 저장 후 Background Function 트리거
@@ -156,6 +169,8 @@ exports.handler = async (event) => {
           selected_caption_index: idx,
           captions: updatedCaptions,
           caption_status: 'posting',
+          post_mode: postMode,
+          scheduled_at: effectiveScheduledAt,
         })
         .eq('reserve_key', reservationKey)
         .eq('user_id', user.id);
@@ -205,6 +220,8 @@ exports.handler = async (event) => {
           selected_caption_index: idx,
           captions: updatedCaptions,
           caption_status: 'scheduled',
+          post_mode: postMode,
+          scheduled_at: effectiveScheduledAt,
         })
         .eq('reserve_key', reservationKey)
         .eq('user_id', user.id);
