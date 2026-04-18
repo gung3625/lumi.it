@@ -1687,16 +1687,19 @@ body.dark-mode .su-close svg{stroke:#f0f2f8;}
       }
     } catch(e) { /* 무시 */ }
   });
-  // 예약 목록 (기존 /api/relay-list 응답 포맷 { items } 유지, RLS로 본인 예약만 반환)
+  // 예약 목록 — /api/list-reservations (Bearer 검증, RLS 우회)
   window.lumiRelayList = function() {
-    return window.lumiSupa.from('reservations').select().order('created_at', { ascending: false }).limit(50)
+    var token = localStorage.getItem('lumi_token') || '';
+    return fetch('/api/list-reservations', { method:'GET', headers:{ 'Authorization':'Bearer '+token } })
+      .then(function(r){ return r.json().catch(function(){ return { items: [] }; }); })
       .then(function(res){
-        if (res.error || !res.data) return { items: [] };
-        var items = res.data
+        if (!res || !Array.isArray(res.items)) return { items: [] };
+        var items = res.items
           .filter(function(r){ return !r.is_sent && !r.cancelled && r.post_mode !== 'immediate' && Array.isArray(r.generated_captions) && r.generated_captions.length > 0; })
           .map(function(r){ return window.lumiRsvFromRow(r); });
         return { items: items };
-      });
+      })
+      .catch(function(){ return { items: [] }; });
   };
   // 예약 취소 (status 컬럼은 없으므로 cancelled 플래그 사용)
   window.lumiCancelReservation = function(rKey) {
@@ -1728,17 +1731,14 @@ body.dark-mode .su-close svg{stroke:#f0f2f8;}
         });
     });
   };
-  // 최근 게시물 1건 조회 (기존 /api/last-post 응답 포맷 { post } 유지)
+  // 최근 게시물 1건 조회 — /api/last-post (Bearer 검증, RLS 우회)
   window.lumiLastPost = function() {
-    return window.lumiSupa.from('reservations')
-      .select()
-      .eq('caption_status', 'posted')
-      .order('posted_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-      .then(function(res){
-        if (res.error || !res.data) return { post: null };
-        var r = res.data;
+    var token = localStorage.getItem('lumi_token') || '';
+    return fetch('/api/last-post', { method:'GET', headers:{ 'Authorization':'Bearer '+token } })
+      .then(function(r){ return r.json().catch(function(){ return {}; }); })
+      .then(function(data){
+        var r = data && data.post ? data.post : null;
+        if (!r) return { post: null };
         var captions = r.generated_captions;
         var idx = (r.selected_caption_index == null) ? 0 : r.selected_caption_index;
         var caption = '';
@@ -1754,7 +1754,8 @@ body.dark-mode .su-close svg{stroke:#f0f2f8;}
             igUsername: null,
           }
         };
-      });
+      })
+      .catch(function(){ return { post: null }; });
   };
   // 예약 단건 조회 — /api/get-reservation (Bearer 토큰으로 서버 검증, RLS 우회)
   window.lumiGetReservation = function(rKey) {
