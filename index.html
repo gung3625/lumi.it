@@ -2843,7 +2843,7 @@ function mInitWave2(){
       flow.thumbUrls.forEach(function(u){ try { URL.revokeObjectURL(u); } catch(e){} });
     }
     flow.thumbUrls = files.map(function(f){ return URL.createObjectURL(f); });
-    flow.step = 0; flow.captions = []; flow.selectedIdx = 0; flow.editedCaption = ''; flow.regenCount = 0; flow.posting = false;
+    flow.step = 0; flow.captions = []; flow.selectedIdx = 0; flow.editedCaption = ''; flow.regenCount = 0; flow.posting = false; flow.userNote = ''; flow.userStyle = '';
     openFlow();
     renderFlow();
   };
@@ -2881,9 +2881,58 @@ function mInitWave2(){
     renderFlow();
   };
   window.mFlowStartGenerate = function(){
+    var noteEl = document.getElementById('m-flow-note');
+    var styleEl = document.getElementById('m-flow-style');
+    flow.userNote = noteEl ? noteEl.value.trim() : '';
+    flow.userStyle = styleEl ? styleEl.value : '';
     flow.step = 1;
     renderFlow();
     submitReservation();
+  };
+  window.mPopulateSchedPicker = function(){
+    var dSel = document.getElementById('m-sched-date');
+    var tSel = document.getElementById('m-sched-time');
+    if (!dSel || !tSel) return;
+    var now = new Date();
+    var weekdays = ['일','월','화','수','목','금','토'];
+    function pad(n){ return n < 10 ? '0'+n : ''+n; }
+    function dateValue(dt){ return dt.getFullYear()+'-'+pad(dt.getMonth()+1)+'-'+pad(dt.getDate()); }
+    function dateLabel(dt, offset){
+      var prefix = offset===0 ? '오늘' : offset===1 ? '내일' : offset===2 ? '모레' : weekdays[dt.getDay()]+'요일';
+      return prefix + ' ('+(dt.getMonth()+1)+'/'+dt.getDate()+')';
+    }
+    var dateOpts = '';
+    for (var i=0; i<=30; i++) {
+      var dt = new Date(now); dt.setDate(dt.getDate()+i); dt.setHours(0,0,0,0);
+      dateOpts += '<option value="'+dateValue(dt)+'">'+dateLabel(dt, i)+'</option>';
+    }
+    dSel.innerHTML = dateOpts;
+    function renderTimes(){
+      var sel = dSel.value;
+      var isToday = sel === dateValue(now);
+      var startMin;
+      if (isToday) {
+        var cur = now.getHours()*60 + now.getMinutes() + 15;
+        startMin = Math.ceil(cur/30) * 30;
+      } else {
+        startMin = 0;
+      }
+      var opts = '';
+      for (var m=startMin; m<24*60; m+=30) {
+        var hh = Math.floor(m/60), mm = m%60;
+        var val = pad(hh)+':'+pad(mm);
+        var period = hh<12 ? '오전' : '오후';
+        var h12 = hh===0 ? 12 : hh>12 ? hh-12 : hh;
+        var label = period+' '+h12+':'+pad(mm);
+        opts += '<option value="'+val+'">'+label+'</option>';
+      }
+      if (!opts) {
+        opts = '<option value="" disabled>선택 가능한 시간 없음 — 내일 이후로 선택해주세요</option>';
+      }
+      tSel.innerHTML = opts;
+    }
+    renderTimes();
+    dSel.onchange = renderTimes;
   };
   function backBtnHtml(label, handler){
     return '<button type="button" class="m-flow-back" onclick="' + handler + '">' +
@@ -2919,13 +2968,30 @@ function mInitWave2(){
           }
         }
       } catch(e){}
+      var savedStyle = '';
+      try { savedStyle = (JSON.parse(localStorage.getItem('lumi_settings')||'{}').captionStyle) || ''; } catch(e){}
+      var prevNote = flow.userNote || '';
+      var prevStyle = (typeof flow.userStyle === 'string') ? flow.userStyle : savedStyle;
+      var styleOpts = [
+        {v:'', l:'기본 (내 말투 학습 반영)'},
+        {v:'friendly', l:'친근하고 따뜻하게'},
+        {v:'casual', l:'가볍고 편하게'},
+        {v:'polite', l:'공손하고 단정하게'},
+        {v:'witty', l:'재치있고 위트있게'},
+        {v:'emotional', l:'감성적이고 서정적으로'},
+        {v:'professional', l:'전문적이고 신뢰감 있게'}
+      ].map(function(o){ return '<option value="'+o.v+'"'+(o.v===prevStyle?' selected':'')+'>'+o.l+'</option>'; }).join('');
       body.innerHTML =
         backBtnHtml('사진 다시 선택', 'window.mFlowBackFromStep0()') +
         '<div class="m-flow-progress"><span class="is-on"></span><span></span><span></span></div>' +
         '<p class="m-flow-step0-title">사진 확인 & 대표사진 선택</p>' +
         '<p class="m-flow-step0-sub">대표사진은 스토리 자동게시에 사용돼요</p>' +
         '<div class="m-flow-thumbs">' + thumbsHtml + '</div>' +
-        '<div class="m-flow-notice"><strong>\'캡션 생성\'을 누르면 이번 달 캡션 1회가 차감됩니다.</strong>' + noticeExtra + '</div>' +
+        '<div class="m-flow-field"><label class="m-flow-field-label" for="m-flow-note">이번 게시 특이사항 (선택)</label>' +
+        '<textarea id="m-flow-note" class="m-flow-textarea" rows="3" placeholder="예: 신메뉴 출시, 할인 이벤트, 영업시간 변경 등 캡션에 꼭 반영할 정보">'+esc(prevNote)+'</textarea></div>' +
+        '<div class="m-flow-field"><label class="m-flow-field-label" for="m-flow-style">캡션 스타일</label>' +
+        '<select id="m-flow-style" class="m-flow-input">'+styleOpts+'</select></div>' +
+        '<div class="m-flow-notice" style="margin-top:16px;"><strong>\'캡션 생성\'을 누르면 이번 달 캡션 1회가 차감됩니다.</strong>' + noticeExtra + '</div>' +
         '<button type="button" class="m-cta" onclick="window.mFlowStartGenerate()" style="display:flex;margin:20px auto 0;">캡션 생성하기</button>';
     } else if (flow.step === 1) {
       body.innerHTML =
@@ -2967,7 +3033,7 @@ function mInitWave2(){
           '<button type="button" class="m-post-opt" data-mode="best"' + (isPro ? '' : ' disabled') + '><span class="m-post-opt-title">최적 시간 자동 예약' + (isPro ? '' : ' <span class="m-post-opt-lock">PRO</span>') + '</span><span class="m-post-opt-sub">팔로워가 가장 반응하는 시간</span></button>' +
           '<button type="button" class="m-post-opt" data-mode="scheduled"' + (isPro ? '' : ' disabled') + '><span class="m-post-opt-title">시간 예약' + (isPro ? '' : ' <span class="m-post-opt-lock">PRO</span>') + '</span><span class="m-post-opt-sub">원하는 날짜·시간 지정</span></button>' +
         '</div>' +
-        '<div id="m-sched-picker" hidden><p class="m-flow-label" style="margin-top:16px;">예약 시간</p><input type="datetime-local" id="m-sched-input" class="m-flow-input"><button type="button" class="m-cta" id="m-sched-confirm" style="display:flex;margin:12px auto 0;">예약 확정</button></div>';
+        '<div id="m-sched-picker" hidden><p class="m-flow-label" style="margin-top:16px;">예약 시간</p><div class="m-sched-row"><select id="m-sched-date" class="m-flow-input"></select><select id="m-sched-time" class="m-flow-input"></select></div><button type="button" class="m-cta" id="m-sched-confirm" style="display:flex;margin:12px auto 0;">예약 확정</button></div>';
       var ta = document.getElementById('m-flow-cap');
       if (ta) ta.addEventListener('input', function(){ flow.editedCaption = ta.value; });
       var rg = document.getElementById('m-flow-regen');
@@ -2982,15 +3048,7 @@ function mInitWave2(){
           var sp = document.getElementById('m-sched-picker');
           if (flow.postMode === 'scheduled') {
             if (sp) sp.hidden = false;
-            var now = new Date();
-            var d = new Date(now); d.setHours(d.getHours()+1); d.setMinutes(d.getMinutes()>=30?30:0,0,0);
-            var maxD = new Date(now); maxD.setDate(maxD.getDate()+30);
-            function toLocalDT(dt){ return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0')+'T'+String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0'); }
-            var minVal = toLocalDT(now);
-            var maxVal = toLocalDT(maxD);
-            var defVal = toLocalDT(d > maxD ? now : d);
-            var inp = document.getElementById('m-sched-input');
-            if (inp) { inp.min = minVal; inp.max = maxVal; inp.value = defVal; }
+            window.mPopulateSchedPicker && window.mPopulateSchedPicker();
           } else if (flow.postMode === 'best') {
             if (sp) sp.hidden = true;
             flow.posting = true;
@@ -3064,11 +3122,13 @@ function mInitWave2(){
       }
       var sc = document.getElementById('m-sched-confirm');
       if (sc) sc.addEventListener('click', function(){
-        var inp = document.getElementById('m-sched-input');
-        if (!inp || !inp.value) { showMobileToast('시간을 선택해주세요'); return; }
-        var chosen = new Date(inp.value);
+        var dSel = document.getElementById('m-sched-date');
+        var tSel = document.getElementById('m-sched-time');
+        if (!dSel || !tSel || !dSel.value || !tSel.value) { showMobileToast('시간을 선택해주세요'); return; }
+        var chosen = new Date(dSel.value + 'T' + tSel.value + ':00');
         var now = new Date();
         var maxD = new Date(now); maxD.setDate(maxD.getDate()+30);
+        if (isNaN(chosen.getTime())) { showMobileToast('시간을 선택해주세요'); return; }
         if (chosen <= now) { showMobileToast('현재 시각 이후로 선택해주세요'); return; }
         if (chosen > maxD) { showMobileToast('1개월 이내로 선택해주세요'); return; }
         if (flow.posting) return;
@@ -3113,9 +3173,13 @@ function mInitWave2(){
     Promise.all(files.map(function(f){ return resizeImageClient(f); })).then(function(resizedList){
       var fd = new FormData();
       resizedList.forEach(function(rf){ fd.append('photos', rf, rf.name); });
-      var prefillNote = flow.prefillTags ? flow.prefillTags.join(' ') : '';
-      fd.append('userMessage', prefillNote);
-      fd.append('captionTone', (JSON.parse(localStorage.getItem('lumi_settings')||'{}').captionStyle) || '');
+      var noteParts = [];
+      if (flow.prefillTags && flow.prefillTags.length) noteParts.push(flow.prefillTags.join(' '));
+      if (flow.userNote) noteParts.push(flow.userNote);
+      fd.append('userMessage', noteParts.join(' / '));
+      var defaultStyle = '';
+      try { defaultStyle = (JSON.parse(localStorage.getItem('lumi_settings')||'{}').captionStyle) || ''; } catch(e){}
+      fd.append('captionTone', flow.userStyle || defaultStyle);
       fd.append('bizCategory', user.bizCategory || user.storeCategory || 'cafe');
       fd.append('submittedAt', new Date().toISOString());
       fd.append('scheduledAt', new Date().toISOString());
