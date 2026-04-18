@@ -16,7 +16,7 @@ exports.handler = async (event) => {
 
   try {
     // strong 제거 — PAT 동시 호출 경합 완화 (CDN 캐시 경유)
-    const userStore = getStore({ name: 'users', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
+    const userStore = getStore({ name: 'users' });
 
     // 토큰 Blobs 검증 (5회 지수 백오프 — PAT rate-limit 대응)
     let tokenRaw = null;
@@ -43,7 +43,7 @@ exports.handler = async (event) => {
     }
     const { email } = tokenData;
 
-    const reserveStore = getStore({ name: 'reservations', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
+    const reserveStore = getStore({ name: 'reservations' });
     const { blobs } = await reserveStore.list({ prefix: 'reserve:' });
     // key는 'reserve:{timestamp}' — 내림차순 정렬 후 최근 60건만 fetch (성능)
     const sorted = (blobs || []).slice().sort((a, b) => (b.key || '').localeCompare(a.key || '')).slice(0, 60);
@@ -82,7 +82,7 @@ exports.handler = async (event) => {
     // last-post-images store에서 imageKeys 배열 조회
     let imageKeys = [];
     try {
-      const lpStore = getStore({ name: 'last-post-images', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
+      const lpStore = getStore({ name: 'last-post-images' });
       const { blobs: lpBlobs } = await lpStore.list({ prefix: 'last-post:' + email + ':' });
       if (lpBlobs && lpBlobs.length > 0) {
         imageKeys = lpBlobs
