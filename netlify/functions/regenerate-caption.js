@@ -117,8 +117,23 @@ ${carouselGuide}
 
 ## 말투
 
-스타일: ${item.caption_tone || item.captionTone || '친근하게'}
-- 친근하게: ~했어요, ~더라고요 / 감성적으로: 짧은 문장, 여백 / 재미있게: 유머, 반전 / 시크하게: 말 적고 여백 / 신뢰감 있게: 정중하되 딱딱하지 않게
+${(() => {
+  const tone = (item.caption_tone || item.captionTone || '').trim();
+  const presets = {
+    '친근하게': '~했어요, ~더라고요',
+    '감성적으로': '짧은 문장, 여백',
+    '재미있게': '유머, 반전',
+    '시크하게': '말 적고 여백',
+    '신뢰감 있게': '정중하되 딱딱하지 않게',
+  };
+  if (!tone) {
+    return `스타일: 친근하게\n- 친근하게: ${presets['친근하게']}`;
+  }
+  if (presets[tone]) {
+    return `스타일: ${tone}\n- ${tone}: ${presets[tone]}`;
+  }
+  return `대표님이 직접 지정한 말투 지시 (최우선 준수):\n"${tone}"\n\n위 지시를 캡션의 톤·어미·문장 길이·이모지 사용량에 그대로 반영하세요. 프리셋 설명을 참고하지 말고 지시 그대로 작성합니다.`;
+})()}
 
 ${toneGuide ? `### 말투 학습 (매우 중요)
 ${toneGuide}
