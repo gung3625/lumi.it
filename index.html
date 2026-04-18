@@ -3286,9 +3286,29 @@ function mInitWave2(){
       var ft; try { ft = JSON.parse(localStorage.getItem('lumi_feat_toggles')||'{}'); } catch(e){ ft = {}; }
       fd.append('postToStory', ft.story !== false ? 'true' : 'false');
       fd.append('postToThread', ft.thread === true ? 'true' : 'false');
-      fd.append('useWeather', ft.weather !== false ? 'true' : 'false');
+      var _useWeather = ft.weather !== false;
+      fd.append('useWeather', _useWeather ? 'true' : 'false');
       if (user.region) fd.append('region', user.region);
-      return fetch('/api/reserve', { method:'POST', headers:{ 'Authorization':'Bearer '+TOKEN }, body: fd });
+      var _weatherPromise;
+      if (_useWeather) {
+        var _sido = (user.sido || user.region || '서울').split(' ')[0].replace(/특별시|광역시|도$/, '');
+        _weatherPromise = fetch('/.netlify/functions/get-weather-kma?sido=' + encodeURIComponent(_sido))
+          .then(function(r){ return r.json(); })
+          .then(function(d){
+            if (!d || d.error) return null;
+            var statusMap = { clear:'맑음', partly_cloudy:'구름 조금', cloudy:'흐림', rain:'비', snow:'눈' };
+            var status = statusMap[d.state];
+            if (!status) return null;
+            return { status: status, temperature: d.temperature, locationName: d.locationName || '' };
+          })
+          .catch(function(){ return null; });
+      } else {
+        _weatherPromise = Promise.resolve(null);
+      }
+      return _weatherPromise.then(function(_w){
+        if (_w) fd.append('weather', JSON.stringify(_w));
+        return fetch('/api/reserve', { method:'POST', headers:{ 'Authorization':'Bearer '+TOKEN }, body: fd });
+      });
     }).then(function(r){ return r.json(); }).then(function(res){
       if (!res || !res.reservationKey) throw new Error(res && res.error || '예약 실패');
       flow.reservationKey = res.reservationKey;
@@ -3940,6 +3960,20 @@ var cards = {
         fd.append('postToThread', featToggles.thread === true ? 'true' : 'false');
         fd.append('useWeather', featToggles.weather !== false ? 'true' : 'false');
         if(lumiUser.region) fd.append('region', lumiUser.region);
+        if (featToggles.weather !== false) {
+          try {
+            var _sido = (lumiUser.sido || lumiUser.region || '서울').split(' ')[0].replace(/특별시|광역시|도$/, '');
+            var _wRes = await fetch('/.netlify/functions/get-weather-kma?sido=' + encodeURIComponent(_sido));
+            var _wD = await _wRes.json();
+            if (_wD && !_wD.error) {
+              var statusMap = { clear:'맑음', partly_cloudy:'구름 조금', cloudy:'흐림', rain:'비', snow:'눈' };
+              var status = statusMap[_wD.state];
+              if (status) {
+                fd.append('weather', JSON.stringify({ status: status, temperature: _wD.temperature, locationName: _wD.locationName || '' }));
+              }
+            }
+          } catch (_we) { /* swallow */ }
+        }
         return fd;
       }
 
