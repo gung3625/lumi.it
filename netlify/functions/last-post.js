@@ -79,14 +79,33 @@ exports.handler = async (event) => {
       return { statusCode: 200, headers: CORS, body: JSON.stringify({ post: null }) };
     }
 
+    // last-post-images store에서 imageKeys 배열 조회
+    let imageKeys = [];
+    try {
+      const lpStore = getStore({ name: 'last-post-images', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
+      const { blobs: lpBlobs } = await lpStore.list({ prefix: 'last-post:' + email + ':' });
+      if (lpBlobs && lpBlobs.length > 0) {
+        imageKeys = lpBlobs
+          .map(b => b.key)
+          .sort((a, b) => {
+            const ai = parseInt(a.split(':').pop(), 10) || 0;
+            const bi = parseInt(b.split(':').pop(), 10) || 0;
+            return ai - bi;
+          });
+      }
+    } catch (e) {
+      console.warn('[last-post] last-post-images 조회 실패:', e.message);
+    }
+
     return {
       statusCode: 200,
       headers: CORS,
       body: JSON.stringify({
         post: {
           caption: best.caption,
-          imageKey: best.imageKey,
-          imageUrl: best.imageUrl,
+          imageKeys: imageKeys,
+          imageKey: imageKeys[0] || best.imageKey,
+          imageUrl: imageKeys.length > 0 ? null : best.imageUrl,
           instagramPostId: best.instagramPostId,
           sentAt: best.sentAt,
           igUsername: best.igUsername,

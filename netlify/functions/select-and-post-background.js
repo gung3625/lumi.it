@@ -20,6 +20,47 @@ function getTempImageStore() {
   });
 }
 
+function getLastPostImageStore() {
+  return getStore({
+    name: 'last-post-images',
+    consistency: 'strong',
+    siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
+    token: process.env.NETLIFY_TOKEN,
+  });
+}
+
+async function rollLastPostImages(email, tempKeys, caption, instagramPostId, igUsername) {
+  try {
+    const imgStore = getTempImageStore();
+    const lpStore = getLastPostImageStore();
+
+    // 기존 last-post-images 키 전체 삭제 (롤링)
+    const { blobs: oldBlobs } = await lpStore.list({ prefix: 'last-post:' + email + ':' });
+    for (const b of (oldBlobs || [])) {
+      try { await lpStore.delete(b.key); } catch (e) {}
+    }
+
+    // temp-images → last-post-images 복사
+    const uploadedAt = new Date().toISOString();
+    await Promise.all(tempKeys.map(async (tempKey, i) => {
+      try {
+        const buf = await imgStore.get(tempKey, { type: 'arrayBuffer' });
+        if (!buf) return;
+        const destKey = 'last-post:' + email + ':' + i;
+        await lpStore.set(destKey, Buffer.from(buf), {
+          metadata: { contentType: 'image/jpeg', uploadedAt, caption, instagramPostId: instagramPostId || '', igUsername: igUsername || '' },
+        });
+      } catch (e) {
+        console.warn('[select-and-post] last-post-images 복사 실패 index=' + i + ':', e.message);
+      }
+    }));
+
+    console.log('[select-and-post] last-post-images 롤링 완료, email prefix:', email.substring(0, 4));
+  } catch (e) {
+    console.warn('[select-and-post] last-post-images 롤링 전체 실패:', e.message);
+  }
+}
+
 async function cleanupTempImages(keys) {
   if (!keys || !keys.length) return;
   const imgStore = getTempImageStore();
@@ -313,8 +354,18 @@ exports.handler = async (event) => {
       } catch (e) { console.error('[select-and-post] postCount 증가 실패:', e.message); }
     }
 
-    // 게시 성공 후 임시 이미지 삭제
+    // 게시 성공 후: last-post-images 롤링 저장 → temp-images 삭제
     const tempKeysToDelete = item.imageKeys || item.tempKeys || [];
+    const postEmail = (item.storeProfile && (item.storeProfile.ownerEmail || item.storeProfile.email)) || body.email || null;
+    if (postEmail && tempKeysToDelete.length > 0) {
+      await rollLastPostImages(
+        postEmail,
+        tempKeysToDelete,
+        selectedCaption,
+        postId,
+        (item.storeProfile && item.storeProfile.instagram) || null
+      );
+    }
     await cleanupTempImages(tempKeysToDelete);
 
     // 캡션 히스토리 저장

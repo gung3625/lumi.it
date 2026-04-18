@@ -2809,7 +2809,10 @@ var cards = {
         var empty = !loading && !post;
         var captionText = post ? (post.caption || '').split('\n')[0] : '';
         if (captionText.length > 80) captionText = captionText.substring(0,80) + '\u2026';
-        var thumbUrl = post ? (post.imageUrl || (post.imageKey ? '/.netlify/functions/serve-image?key=' + encodeURIComponent(post.imageKey) : null)) : null;
+        var token = localStorage.getItem('lumi_token') || '';
+        var firstImageKey = post ? ((post.imageKeys && post.imageKeys[0]) || post.imageKey || null) : null;
+        var imageCount = post ? ((post.imageKeys && post.imageKeys.length) || (post.imageKey ? 1 : 0)) : 0;
+        var thumbUrl = post ? (firstImageKey ? '/api/serve-image?key=' + encodeURIComponent(firstImageKey) + '&t=' + encodeURIComponent(token) : (post.imageUrl || null)) : null;
         var igLink = post && post.instagramPostId ? ('https://www.instagram.com/p/' + post.instagramPostId + '/') : null;
 
         var emptyInner = e('div', {style:{position:'absolute',inset:0,background:isDk?'#1c1c1e':'#fff',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'6px',padding:'18px',borderRadius:'20px',textAlign:'center'}},
@@ -2826,8 +2829,8 @@ var cards = {
           return e('div', {className:'bento-card card-visual card-project card-responsive', style:{padding:0}},
             e(igLink?'a':'div', Object.assign({style:{position:'absolute',inset:0,background:isDk?'#1c1c1e':'#fff',display:'flex',alignItems:'center',gap:'12px',padding:'14px 16px',overflow:'hidden',borderRadius:'20px',textDecoration:'none',color:'inherit'}}, igLink?{href:igLink,target:'_blank',rel:'noopener',onClick:function(ev){ev.stopPropagation();},onMouseDown:function(ev){ev.stopPropagation();}}:{}),
               thumbUrl
-                ? e('img', {src:thumbUrl, style:{width:'60px',height:'60px',borderRadius:'12px',objectFit:'cover',flexShrink:0,filter:isDk?'brightness(.85)':'none'},onError:function(ev){ev.target.style.display='none';}})
-                : e('div', {style:{width:'60px',height:'60px',borderRadius:'12px',background:isDk?'rgba(255,255,255,.06)':'rgba(0,0,0,.04)',flexShrink:0}}),
+                ? e('img', {src:thumbUrl, style:{width:'64px',height:'64px',borderRadius:'12px',objectFit:'cover',flexShrink:0,filter:isDk?'brightness(.85)':'none'},onError:function(ev){ev.target.style.display='none';}})
+                : e('div', {style:{width:'64px',height:'64px',borderRadius:'12px',background:isDk?'rgba(255,255,255,.06)':'rgba(0,0,0,.04)',flexShrink:0}}),
               e('div', {style:{flex:1,minWidth:0,display:'flex',flexDirection:'column',gap:'4px'}},
                 e('p', {style:{fontSize:'12px',color:tc,lineHeight:'1.5',fontWeight:400,overflow:'hidden',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical'}},
                   e('strong', {style:{fontWeight:600}}, igName), '\u00a0', captionText || '\uAC8C\uC2DC\uBB3C'
@@ -2842,21 +2845,22 @@ var cards = {
         if (empty) return e('div', {className:'bento-card card-visual card-project card-responsive', style:{padding:0}}, emptyInner);
         return e('div', {className:'bento-card card-visual card-project card-responsive', style:{padding:0}},
           e(igLink?'a':'div', Object.assign({style:{position:'absolute',inset:0,background:isDk?'#1c1c1e':'#fff',display:'flex',flexDirection:'column',overflow:'hidden',borderRadius:'32px',textDecoration:'none',color:'inherit'}}, igLink?{href:igLink,target:'_blank',rel:'noopener',onClick:function(ev){ev.stopPropagation();},onMouseDown:function(ev){ev.stopPropagation();}}:{}),
-            e('div', {style:{display:'flex',alignItems:'center',gap:'8px',padding:'12px 14px'}},
-              e('div', {style:{width:'28px',height:'28px',borderRadius:'50%',background:'linear-gradient(135deg,#FF6B8B,#DDA0DD)',flexShrink:0}}),
+            e('div', {style:{display:'flex',alignItems:'center',gap:'8px',padding:'10px 12px'}},
+              e('div', {style:{width:'24px',height:'24px',borderRadius:'50%',background:'linear-gradient(135deg,#FF6B8B,#DDA0DD)',flexShrink:0}}),
               e('span', {style:{fontSize:'12px',fontWeight:600,color:tc}}, igName),
               e('span', {style:{fontSize:'10px',color:tc2,marginLeft:'auto'}}, relTime(post.sentAt))
             ),
-            e('div', {style:{flex:1,overflow:'hidden',position:'relative',minHeight:0,background:isDk?'rgba(255,255,255,.04)':'rgba(0,0,0,.03)'}},
-              thumbUrl ? e('img', {src:thumbUrl, style:{width:'100%',height:'100%',objectFit:'cover',filter:isDk?'brightness(.9)':'none'},onError:function(ev){ev.target.style.display='none';}}) : null
+            e('div', {style:{position:'relative',width:'100%',aspectRatio:'4/5',overflow:'hidden',background:isDk?'rgba(255,255,255,.04)':'rgba(0,0,0,.03)',flexShrink:0}},
+              thumbUrl ? e('img', {src:thumbUrl, style:{width:'100%',height:'100%',objectFit:'cover',filter:isDk?'brightness(.9)':'none'},onError:function(ev){ev.target.style.display='none';}}) : null,
+              imageCount > 1 ? e('div', {style:{position:'absolute',top:'8px',right:'8px',background:'rgba(0,0,0,.55)',color:'#fff',fontSize:'10px',fontWeight:600,padding:'2px 6px',borderRadius:'10px',lineHeight:'16px'}}, '1/' + imageCount) : null
             ),
-            e('div', {style:{padding:'10px 14px 6px',display:'flex',gap:'14px'}},
-              e('svg',{viewBox:'0 0 24 24',fill:'none',stroke:isDk?'#f0f2f8':'#0d1117',strokeWidth:'2',width:20,height:20},e('path',{d:'M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 000-7.78z'})),
-              e('svg',{viewBox:'0 0 24 24',fill:'none',stroke:isDk?'#f0f2f8':'#0d1117',strokeWidth:'2',width:20,height:20},e('path',{d:'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z'})),
-              e('svg',{viewBox:'0 0 24 24',fill:'none',stroke:isDk?'#f0f2f8':'#0d1117',strokeWidth:'2',width:20,height:20},e('line',{x1:22,y1:2,x2:11,y2:13}),e('polygon',{points:'22 2 15 22 11 13 2 9 22 2'}))
+            e('div', {style:{padding:'8px 12px 4px',display:'flex',gap:'10px'}},
+              e('svg',{viewBox:'0 0 24 24',fill:'none',stroke:isDk?'#f0f2f8':'#0d1117',strokeWidth:'2',width:16,height:16},e('path',{d:'M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 000-7.78z'})),
+              e('svg',{viewBox:'0 0 24 24',fill:'none',stroke:isDk?'#f0f2f8':'#0d1117',strokeWidth:'2',width:16,height:16},e('path',{d:'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z'})),
+              e('svg',{viewBox:'0 0 24 24',fill:'none',stroke:isDk?'#f0f2f8':'#0d1117',strokeWidth:'2',width:16,height:16},e('line',{x1:22,y1:2,x2:11,y2:13}),e('polygon',{points:'22 2 15 22 11 13 2 9 22 2'}))
             ),
-            e('div', {style:{padding:'0 14px 10px'}},
-              captionText ? e('p', {style:{fontSize:'11px',color:tc,lineHeight:'1.5',overflow:'hidden',display:'-webkit-box',WebkitLineClamp:3,WebkitBoxOrient:'vertical'}},
+            e('div', {style:{padding:'0 12px 10px'}},
+              captionText ? e('p', {style:{fontSize:'11px',color:tc,lineHeight:'1.5',overflow:'hidden',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical'}},
                 e('strong', null, igName), ' ', captionText
               ) : null
             )
