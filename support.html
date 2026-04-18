@@ -15,95 +15,105 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@800&display=swap" rel="stylesheet">
 <style>
+@font-face{font-family:'Pretendard';src:url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/packages/pretendard/dist/web/static/woff2/Pretendard-Regular.woff2') format('woff2');font-weight:400;font-display:swap;}
+@font-face{font-family:'Pretendard';src:url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/packages/pretendard/dist/web/static/woff2/Pretendard-SemiBold.woff2') format('woff2');font-weight:600;font-display:swap;}
 @font-face{font-family:'Jua';src:url('/assets/BMJUA.woff2') format('woff2');font-display:block;}
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
-html{background:#fdf2f4;scrollbar-width:none;scroll-behavior:smooth;}
+html{background:#f5f5f7;scrollbar-width:none;scroll-behavior:smooth;}
 html::-webkit-scrollbar{display:none;}
-body{font-family:'Jua',-apple-system,BlinkMacSystemFont,sans-serif;color:#0d1117;-webkit-font-smoothing:antialiased;padding-bottom:80px;}
+body{font-family:'Pretendard','Jua',-apple-system,BlinkMacSystemFont,sans-serif;font-size:17px;font-weight:400;line-height:1.47;letter-spacing:-.374px;color:#1d1d1f;-webkit-font-smoothing:antialiased;padding-bottom:80px;}
 body.dark-mode{background:#111;color:#f0f2f8;}
 
-nav{max-width:960px;margin:0 auto;padding:32px 24px 0;display:flex;align-items:center;justify-content:space-between;}
-.nav-logo{font-size:28px;font-weight:800;font-family:'Nunito',sans-serif;background:linear-gradient(90deg,#FF6B8B,#DDA0DD 50%,#EDD080 85%,#DABA65);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-decoration:none;}
-.nav-close{width:44px;height:44px;border-radius:50%;border:none;background:rgba(0,0,0,.06);color:#0d1117;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .3s cubic-bezier(.4,0,.2,1),background .3s cubic-bezier(.4,0,.2,1);}
+nav{position:sticky;top:0;z-index:100;max-width:100%;padding:0 24px;height:48px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;background:rgba(245,245,247,.88);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);}
+body.dark-mode nav{background:rgba(0,0,0,.88);}
+.nav-logo{font-size:22px;font-weight:800;font-family:'Nunito',sans-serif;background:linear-gradient(90deg,#FF6B8B,#DDA0DD 50%,#EDD080 85%,#DABA65);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-decoration:none;justify-self:center;}
+.nav-close{width:44px;height:44px;border-radius:50%;border:none;background:rgba(0,0,0,.06);color:#1d1d1f;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .25s,filter .25s;justify-self:end;}
+.nav-close:hover{filter:brightness(.85);}
 .nav-close:active{transform:scale(.9);}
-body.dark-mode .nav-close{background:rgba(255,255,255,.08);color:#f0f2f8;}
+body.dark-mode .nav-close{background:rgba(255,255,255,.1);color:#f0f2f8;}
 
 .hero{max-width:960px;margin:0 auto;padding:48px 24px 40px;text-align:center;display:flex;flex-direction:column;align-items:center;}
 .hero-lumi{width:120px;height:120px;object-fit:contain;animation:lumiBounce 3s ease-in-out infinite;margin-bottom:12px;}
 @keyframes lumiBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
-.hero h1{font-size:clamp(28px,5vw,44px);margin-bottom:10px;}
-.hero p{font-size:14px;color:rgba(0,0,0,.35);}
-body.dark-mode .hero p{color:rgba(255,255,255,.3);}
+.hero h1{font-size:clamp(28px,5vw,40px);font-weight:600;letter-spacing:-.5px;margin-bottom:8px;}
+.hero p{font-size:15px;color:#6e6e73;}
+body.dark-mode .hero p{color:rgba(255,255,255,.5);}
 
 .grid{max-width:960px;margin:0 auto;padding:0 24px;display:grid;grid-template-columns:repeat(2,1fr);gap:16px;}
 @media(max-width:700px){.grid{grid-template-columns:1fr;}}
 
-.section-label{max-width:960px;margin:48px auto 16px;padding:0 24px;font-size:13px;color:rgba(0,0,0,.35);}
-body.dark-mode .section-label{color:rgba(255,255,255,.3);}
+.section-label{max-width:960px;margin:48px auto 14px;padding:0 24px;font-size:13px;font-weight:600;color:#6e6e73;letter-spacing:.3px;}
+body.dark-mode .section-label{color:rgba(255,255,255,.5);}
 
 /* CONTACT CARDS */
-.contact-card{background:#fff;border-radius:24px;padding:28px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;text-decoration:none;cursor:pointer;box-shadow:0 2px 16px rgba(0,0,0,.06);opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s cubic-bezier(.4,0,.2,1),box-shadow .4s cubic-bezier(.4,0,.2,1);}
+.contact-card{background:#fff;border-radius:8px;padding:24px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;text-decoration:none;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.06);opacity:0;transform:translateY(16px);transition:opacity .5s cubic-bezier(.4,0,.2,1),transform .5s cubic-bezier(.4,0,.2,1),box-shadow .25s;}
 .contact-card.visible{opacity:1;transform:translateY(0);}
-.contact-card:hover{box-shadow:0 8px 32px rgba(0,0,0,.1);transform:translateY(-4px);}
-.contact-card.visible:hover{transform:translateY(-4px);}
+@media(hover:hover){.contact-card:hover{box-shadow:0 6px 24px rgba(0,0,0,.1);transform:translateY(-3px);}}
 body.dark-mode .contact-card{background:#272729;box-shadow:none;}
-body.dark-mode .contact-card:hover{box-shadow:0 8px 32px rgba(0,0,0,.3);}
-.contact-icon{font-size:32px;}
-.contact-name{font-size:17px;font-weight:400;}
-.contact-desc{font-size:12px;color:rgba(0,0,0,.4);line-height:1.6;}
-body.dark-mode .contact-desc{color:rgba(255,255,255,.4);}
-.contact-btn{padding:12px 28px;border-radius:980px;border:none;font-family:inherit;font-size:14px;cursor:pointer;min-height:44px;transition:transform .3s cubic-bezier(.4,0,.2,1);}
-.contact-btn:active{transform:scale(.95);}
-.contact-btn.yellow{background:#FEE500;color:#3A1D1D;}
-.contact-btn.dark{background:#0d1117;color:#fff;}
-body.dark-mode .contact-btn.dark{background:#f0f2f8;color:#0d1117;}
-.contact-btn.pink{background:linear-gradient(135deg,#FF6B8B,#DDA0DD);color:#fff;}
+.contact-icon{display:flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:12px;background:rgba(200,80,122,.08);color:#C8507A;}
+body.dark-mode .contact-icon{background:rgba(255,143,171,.1);color:#FF8FAB;}
+.contact-name{font-size:17px;font-weight:600;}
+.contact-desc{font-size:13px;color:#6e6e73;line-height:1.6;}
+body.dark-mode .contact-desc{color:rgba(255,255,255,.5);}
+.contact-btn{padding:11px 24px;border-radius:980px;border:none;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;min-height:44px;transition:transform .2s,filter .2s;}
+.contact-btn:hover{filter:brightness(1.08);}
+.contact-btn:active{transform:scale(.96);}
+.contact-btn.yellow{background:#FEE500;color:#2a1400;}
+.contact-btn.dark{background:#1d1d1f;color:#fff;}
+body.dark-mode .contact-btn.dark{background:#f0f2f8;color:#1d1d1f;}
+.contact-btn.pink{background:#C8507A;color:#fff;}
 
-.contact-card.kakao{border:2px solid #FEE500;}
-body.dark-mode .contact-card.kakao{border-color:rgba(254,229,0,.3);}
+.contact-card.kakao{border:1.5px solid rgba(254,229,0,.6);}
+body.dark-mode .contact-card.kakao{border-color:rgba(254,229,0,.25);}
 
 /* FAQ */
-.faq-wrap{max-width:960px;margin:0 auto;padding:0 24px;display:flex;flex-direction:column;gap:10px;}
-.faq-item{background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,.06);opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease;}
+.faq-wrap{max-width:960px;margin:0 auto;padding:0 24px;display:flex;flex-direction:column;gap:8px;}
+.faq-item{background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);opacity:0;transform:translateY(16px);transition:opacity .5s cubic-bezier(.4,0,.2,1),transform .5s cubic-bezier(.4,0,.2,1);}
 .faq-item.visible{opacity:1;transform:translateY(0);}
 body.dark-mode .faq-item{background:#272729;box-shadow:none;}
-.faq-q{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;cursor:pointer;gap:12px;font-size:15px;user-select:none;transition:opacity .3s cubic-bezier(.4,0,.2,1);}
-.faq-q:active{opacity:.7;}
-.faq-arrow{width:18px;height:18px;flex-shrink:0;color:rgba(0,0,0,.25);transition:transform .4s cubic-bezier(.4,0,.2,1);}
-body.dark-mode .faq-arrow{color:rgba(255,255,255,.25);}
+.faq-q{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;cursor:pointer;gap:12px;font-size:15px;font-weight:600;user-select:none;transition:background .2s;}
+.faq-q:hover{background:rgba(0,0,0,.02);}
+body.dark-mode .faq-q:hover{background:rgba(255,255,255,.03);}
+.faq-arrow{width:16px;height:16px;flex-shrink:0;color:#6e6e73;transition:transform .35s cubic-bezier(.4,0,.2,1);}
 .faq-item.open .faq-arrow{transform:rotate(180deg);}
-.faq-a{max-height:0;overflow:hidden;transition:max-height .5s cubic-bezier(.4,0,.2,1);}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .45s cubic-bezier(.4,0,.2,1);}
 .faq-item.open .faq-a{max-height:600px;}
-.faq-a-inner{padding:0 24px 20px;font-size:13px;line-height:1.9;color:rgba(0,0,0,.5);border-top:1px solid rgba(0,0,0,.06);}
-body.dark-mode .faq-a-inner{color:rgba(255,255,255,.45);border-top-color:rgba(255,255,255,.06);}
+.faq-a-inner{padding:0 22px 18px;font-size:14px;line-height:1.8;color:#494949;border-top:1px solid rgba(0,0,0,.06);}
+body.dark-mode .faq-a-inner{color:rgba(255,255,255,.65);border-top-color:rgba(255,255,255,.08);}
 
 /* ACTION CARDS */
 .action-grid{max-width:960px;margin:0 auto;padding:0 24px;display:grid;grid-template-columns:repeat(2,1fr);gap:16px;}
 @media(max-width:700px){.action-grid{grid-template-columns:1fr;}}
-.action-card{background:#fff;border-radius:24px;padding:28px;box-shadow:0 2px 16px rgba(0,0,0,.06);opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease;}
+.action-card{background:#fff;border-radius:8px;padding:24px;box-shadow:0 1px 4px rgba(0,0,0,.06);opacity:0;transform:translateY(16px);transition:opacity .5s cubic-bezier(.4,0,.2,1),transform .5s cubic-bezier(.4,0,.2,1);}
 .action-card.visible{opacity:1;transform:translateY(0);}
 body.dark-mode .action-card{background:#272729;box-shadow:none;}
-.action-card h3{font-size:17px;margin-bottom:8px;}
-.action-card p{font-size:13px;color:rgba(0,0,0,.5);line-height:1.8;margin-bottom:16px;}
-body.dark-mode .action-card p{color:rgba(255,255,255,.45);}
-.action-card a{display:inline-block;padding:12px 28px;border-radius:980px;font-size:14px;text-decoration:none;font-family:inherit;min-height:44px;transition:transform .3s cubic-bezier(.4,0,.2,1);}
-.action-card a:active{transform:scale(.95);}
-.action-card a.dark{background:#0d1117;color:#fff;}
-body.dark-mode .action-card a.dark{background:#f0f2f8;color:#0d1117;}
-.action-card a.danger{background:rgba(255,59,48,.1);color:#FF3B30;}
+.action-card h3{font-size:17px;font-weight:600;margin-bottom:8px;}
+.action-card p{font-size:14px;color:#494949;line-height:1.75;margin-bottom:16px;}
+body.dark-mode .action-card p{color:rgba(255,255,255,.65);}
+.action-card a{display:inline-flex;align-items:center;padding:11px 24px;border-radius:980px;font-size:14px;font-weight:600;text-decoration:none;font-family:inherit;min-height:44px;transition:transform .2s,filter .2s;}
+.action-card a:hover{filter:brightness(1.08);}
+.action-card a:active{transform:scale(.96);}
+.action-card a.dark{background:#1d1d1f;color:#fff;}
+body.dark-mode .action-card a.dark{background:#f0f2f8;color:#1d1d1f;}
+.action-card a.danger{background:rgba(255,59,48,.08);color:#d70015;}
+body.dark-mode .action-card a.danger{color:#ff6961;}
+
+/* FAB */
+#fab-dark{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom,0px));right:20px;z-index:200;width:44px;height:44px;border-radius:50%;border:none;background:rgba(0,0,0,.07);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .3s,transform .2s;}
+#fab-dark:hover{transform:scale(1.08);}
+body.dark-mode #fab-dark{background:rgba(255,255,255,.1);}
 
 @media(max-width:480px){
-  nav{padding:20px 16px 0;}
   .hero{padding:32px 16px 28px;}
   .hero-lumi{width:88px;height:88px;}
   .grid{padding:0 16px;gap:12px;}
-  .section-label{padding:0 16px;margin:36px auto 12px;}
-  .faq-wrap{padding:0 16px;gap:8px;}
-  .faq-q{padding:16px 16px;min-height:48px;font-size:14px;}
-  .faq-a-inner{padding:0 16px 16px;font-size:12px;}
+  .section-label{padding:0 16px;margin:36px auto 10px;}
+  .faq-wrap{padding:0 16px;gap:6px;}
+  .faq-q{padding:16px;min-height:48px;font-size:14px;}
+  .faq-a-inner{padding:0 16px 16px;font-size:13px;}
   .action-grid{padding:0 16px;gap:12px;}
-  .action-card{padding:22px 20px;}
-  .contact-card{padding:22px 20px;}
+  .action-card{padding:20px;}
+  .contact-card{padding:20px;}
 }
 </style>
 </head>
@@ -115,8 +125,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <script>if(localStorage.getItem('lumi_dark_mode')==='1'){document.body.classList.add('dark-mode');document.documentElement.style.background='#111';}</script>
 
 <nav>
+  <span></span>
   <a href="/" class="nav-logo">lumi</a>
-  <button class="nav-close" onclick="location.href='/'"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+  <button class="nav-close" onclick="location.href='/'" aria-label="닫기"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
 </nav>
 
 <div class="hero">
@@ -128,13 +139,13 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- 연락 방법 -->
 <div class="grid">
   <a href="https://pf.kakao.com/_lumi_it" target="_blank" class="contact-card kakao">
-    <span class="contact-icon">💛</span>
+    <span class="contact-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
     <span class="contact-name">카카오톡</span>
     <span class="contact-desc">가장 빠른 응답<br>평일 10시 ~ 18시</span>
     <span class="contact-btn yellow">채널 추가</span>
   </a>
   <a href="mailto:gung3625@gmail.com" class="contact-card">
-    <span class="contact-icon">📧</span>
+    <span class="contact-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span>
     <span class="contact-name">이메일</span>
     <span class="contact-desc">gung3625@gmail.com<br>1~2 영업일 내 답변</span>
     <span class="contact-btn dark">메일 보내기</span>
@@ -206,8 +217,8 @@ faqs.forEach(function(f){
   wrap.appendChild(el);
 });
 
-var io=new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting){e.target.classList.add('visible');io.unobserve(e.target);}});},{threshold:0.1});
-document.querySelectorAll('.contact-card,.faq-item,.action-card').forEach(function(c){io.observe(c);});
+var io=new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting){var delay=parseInt(e.target.dataset.delay||0);setTimeout(function(){e.target.classList.add('visible');},delay);io.unobserve(e.target);}});},{threshold:0.06});
+document.querySelectorAll('.contact-card,.faq-item,.action-card').forEach(function(c,i){c.dataset.delay=i*50;io.observe(c);});
 </script>
 </body>
 </html>
