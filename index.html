@@ -2816,16 +2816,19 @@ function mInitWave2(){
     var defaults = { story: true, thread: false, weather: true, captionReview: true };
     var saved; try { saved = JSON.parse(localStorage.getItem('lumi_feat_toggles') || '{}'); } catch(e){ saved = {}; }
     var state = Object.assign({}, defaults, saved);
-    document.querySelectorAll('#m-quick-list .m-toggle').forEach(function(btn){
-      var key = btn.getAttribute('data-feat');
+    document.querySelectorAll('#m-quick-list .m-quick-row').forEach(function(row){
+      var key = row.getAttribute('data-feat');
+      var btn = row.querySelector('.m-toggle');
+      if (!key || !btn) return;
       function paint(){ btn.classList.toggle('is-on', !!state[key]); btn.setAttribute('aria-pressed', state[key] ? 'true' : 'false'); }
       paint();
-      btn.addEventListener('click', function(){
+      function toggle(e){
+        if (e) { e.preventDefault(); e.stopPropagation(); }
         var prev = !!state[key];
         state[key] = !prev;
         paint();
+        try { if (navigator.vibrate) navigator.vibrate(8); } catch(_v) {}
         localStorage.setItem('lumi_feat_toggles', JSON.stringify(state));
-        // sync to server (best effort)
         window.lumiAuthFetch('/api/update-profile', {
           method:'POST',
           headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+TOKEN },
@@ -2833,13 +2836,13 @@ function mInitWave2(){
         }).then(function(r){
           if (!r.ok) throw new Error('sync failed');
         }).catch(function(){
-          // rollback
           state[key] = prev;
           paint();
           localStorage.setItem('lumi_feat_toggles', JSON.stringify(state));
           showMobileToast('설정 저장 실패 — 잠시 후 다시 시도해주세요');
         });
-      });
+      }
+      row.addEventListener('click', toggle);
     });
   })();
 
