@@ -2808,7 +2808,7 @@ function mInitWave2(){
   })();
 
   // ---------- 캡션 플로우 (사진 업로드 → 생성 → 옵션 → 완료) ----------
-  window._mFlow = window._mFlow || { step: 0, file: null, reservationKey: null, captions: [], selectedIdx: 0, editedCaption: '', regenCount: 0, postMode: 'immediate', scheduledAt: null, bestTimeCache: null, bestTimeCacheAt: 0, posting: false };
+  window._mFlow = window._mFlow || { step: 0, file: null, reservationKey: null, captions: [], selectedIdx: 0, editedCaption: '', regenCount: 0, postMode: 'immediate', scheduledAt: null, bestTimeCache: null, bestTimeCacheAt: 0, posting: false, thumbUrls: [] };
   var flow = window._mFlow;
   var ov = document.getElementById('m-caption-flow');
   var body = document.getElementById('m-ov-body');
@@ -2822,7 +2822,10 @@ function mInitWave2(){
     if (!ov) return;
     ov.hidden = true;
     document.body.style.overflow = '';
-    flow.step = 0; flow.files = []; flow.reservationKey = null; flow.captions = []; flow.selectedIdx = 0; flow.editedCaption = ''; flow.regenCount = 0;
+    if (flow.thumbUrls && flow.thumbUrls.length) {
+      flow.thumbUrls.forEach(function(u){ try { URL.revokeObjectURL(u); } catch(e){} });
+    }
+    flow.step = 0; flow.files = []; flow.thumbUrls = []; flow.reservationKey = null; flow.captions = []; flow.selectedIdx = 0; flow.editedCaption = ''; flow.regenCount = 0;
     try { var hf = document.getElementById('m-hidden-file'); if (hf) hf.value = ''; } catch(e){}
   };
   window.mOpenCaptionFlow = function(ev, prefillTags){
@@ -2835,10 +2838,14 @@ function mInitWave2(){
     }
     var files = Array.prototype.slice.call(fl);
     flow.files = files; flow.prefillTags = prefillTags || null;
-    flow.step = 1; flow.captions = []; flow.selectedIdx = 0; flow.editedCaption = ''; flow.regenCount = 0;
+    // 썸네일 URL 캐시 초기화
+    if (flow.thumbUrls && flow.thumbUrls.length) {
+      flow.thumbUrls.forEach(function(u){ try { URL.revokeObjectURL(u); } catch(e){} });
+    }
+    flow.thumbUrls = files.map(function(f){ return URL.createObjectURL(f); });
+    flow.step = 0; flow.captions = []; flow.selectedIdx = 0; flow.editedCaption = ''; flow.regenCount = 0;
     openFlow();
     renderFlow();
-    submitReservation();
   };
   window.mOpenCaptionFromWeather = function(){
     var chips = document.getElementById('m-weather-chips');
@@ -2848,11 +2855,35 @@ function mInitWave2(){
   };
   window.mFlowBackFromCaption = function(){
     try {
-      var sure = window.confirm('작성 중인 캡션과 선택한 사진이 사라져요. 사진을 다시 선택할까요?');
+      var sure = window.confirm('작성 중인 캡션은 사라져요. 재생성 시 1회가 추가 차감됩니다. 사진 선택 화면으로 돌아갈까요?');
       if (!sure) return;
     } catch(e){}
+    // step 2 → step 0 (파일 재선택 없이 썸네일 검토로 복귀)
+    flow.step = 0; flow.captions = []; flow.editedCaption = ''; flow.regenCount = 0; flow.reservationKey = null;
+    renderFlow();
+  };
+  window.mFlowBackFromStep0 = function(){
+    // step 0 뒤로가기: 이 시점엔 reserve 호출 전이므로 크레딧 소모 없음
     window.mCloseCaptionFlow();
     setTimeout(function(){ var hf = document.getElementById('m-hidden-file'); if (hf) hf.click(); }, 150);
+  };
+  window.mFlowSelectCover = function(idx){
+    var files = flow.files || [];
+    var thumbUrls = flow.thumbUrls || [];
+    if (idx === 0 || idx >= files.length) return;
+    // 선택한 사진을 index 0으로 이동
+    var f = files.splice(idx, 1)[0];
+    files.unshift(f);
+    var u = thumbUrls.splice(idx, 1)[0];
+    thumbUrls.unshift(u);
+    flow.files = files;
+    flow.thumbUrls = thumbUrls;
+    renderFlow();
+  };
+  window.mFlowStartGenerate = function(){
+    flow.step = 1;
+    renderFlow();
+    submitReservation();
   };
   function backBtnHtml(label, handler){
     return '<button type="button" class="m-flow-back" onclick="' + handler + '">' +
@@ -2862,10 +2893,44 @@ function mInitWave2(){
   }
   function renderFlow(){
     if (!body) return;
-    if (flow.step === 1) {
+    if (flow.step === 0) {
+      // step 0: 썸네일 검토 + 대표사진 선택 + 캡션 생성 CTA
+      var files = flow.files || [];
+      var thumbUrls = flow.thumbUrls || [];
+      var thumbsHtml = files.map(function(f, i){
+        var url = thumbUrls[i] || '';
+        var isCover = (i === 0);
+        return '<button type="button" class="m-flow-thumb-item' + (isCover ? ' is-cover' : '') + '" onclick="window.mFlowSelectCover(' + i + ')">' +
+          '<img src="' + url + '" alt="사진 ' + (i+1) + '">' +
+          (isCover ? '<span class="m-flow-thumb-cover">대표</span>' : '') +
+          '<span class="m-flow-thumb-badge">#' + (i+1) + '</span>' +
+        '</button>';
+      }).join('');
+      // 사용 가능 횟수 표시 시도
+      var noticeExtra = '';
+      try {
+        var lu = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+        if (lu.plan) {
+          var planLimit = lu.plan === 'pro' ? 20 : 12;
+          var used = (typeof lu.captionUsed === 'number') ? lu.captionUsed : null;
+          if (used !== null) {
+            var remaining = Math.max(0, planLimit - used);
+            noticeExtra = '<br><span style="color:var(--ink-3);font-size:12px;">사용 가능: ' + remaining + '/' + planLimit + '회</span>';
+          }
+        }
+      } catch(e){}
+      body.innerHTML =
+        backBtnHtml('사진 다시 선택', 'window.mFlowBackFromStep0()') +
+        '<div class="m-flow-progress"><span class="is-on"></span><span></span><span></span></div>' +
+        '<p class="m-flow-step0-title">사진 확인 & 대표사진 선택</p>' +
+        '<p class="m-flow-step0-sub">대표사진은 스토리 자동게시에 사용돼요</p>' +
+        '<div class="m-flow-thumbs">' + thumbsHtml + '</div>' +
+        '<div class="m-flow-notice"><strong>\'캡션 생성\'을 누르면 이번 달 캡션 1회가 차감됩니다.</strong>' + noticeExtra + '</div>' +
+        '<button type="button" class="m-cta" onclick="window.mFlowStartGenerate()">캡션 생성하기</button>';
+    } else if (flow.step === 1) {
       body.innerHTML =
         backBtnHtml('취소', 'window.mCloseCaptionFlow()') +
-        '<div class="m-flow-progress"><span class="is-on"></span><span></span></div>' +
+        '<div class="m-flow-progress"><span class="is-on"></span><span class="is-on"></span><span></span></div>' +
         '<div class="m-flow-loading">' +
           '<div class="m-tut-spin"></div>' +
           '<p class="m-flow-status" id="m-flow-status">사진을 업로드하고 있어요…</p>' +
@@ -2888,7 +2953,7 @@ function mInitWave2(){
       var isPro = user.plan === 'pro';
       body.innerHTML =
         backBtnHtml('사진 다시 선택', 'window.mFlowBackFromCaption()') +
-        '<div class="m-flow-progress"><span class="is-on"></span><span class="is-on"></span></div>' +
+        '<div class="m-flow-progress"><span class="is-on"></span><span class="is-on"></span><span class="is-on"></span></div>' +
         carouselHtml +
         '<p class="m-flow-label">캡션</p>' +
         '<textarea class="m-flow-textarea" id="m-flow-cap" rows="8">' + esc(cap) + '</textarea>' +
@@ -3312,7 +3377,7 @@ function mInitWave2(){
       });
       if (cntEl) cntEl.textContent = list.length + '';
       if (list.length === 0) {
-        wrap.innerHTML = '<p class="m-feat-body" id="m-schedule-empty">예약된 게시물이 없어요.</p><button type="button" class="m-feat-ghost" onclick="document.getElementById(\'m-hidden-file\').click();">첫 예약 만들기 →</button>';
+        wrap.innerHTML = '<p class="m-feat-body" id="m-schedule-empty">예약된 게시물이 없어요.</p>';
         return;
       }
       wrap.innerHTML = '';
