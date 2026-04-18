@@ -774,18 +774,18 @@ exports.handler = async (event) => {
   const googleKR = await fetchGoogleTrendsLib('KR');
   console.log(`[sources] google-kr: ${googleKR.length}`);
 
-  // 업종별 소스 수집 (소스별 실패는 빈 배열로 격리)
-  const rawByCategory = {};
-  for (const category of categories) {
+  // 업종별 소스 수집 — 10 카테고리 병렬 (타임아웃 방지)
+  const rawEntries = await Promise.all(categories.map(async (category) => {
     const [naverData, blogData, ytKR, igTexts] = await Promise.all([
       fetchNaverDatalab(category),
       fetchNaverBlogs(category),
       fetchYouTube(category),
       fetchInstagram(category),
     ]);
-    rawByCategory[category] = { naverData, blogData, ytKR, igTexts };
     console.log(`[${category}] naver=${naverData.length} blog=${blogData.length} yt-kr=${ytKR.length} ig=${igTexts.length}`);
-  }
+    return [category, { naverData, blogData, ytKR, igTexts }];
+  }));
+  const rawByCategory = Object.fromEntries(rawEntries);
 
   // --- 2단계: gpt-4o-mini 배치 분류 (국내 1회) ---
   const domesticTexts = {};
@@ -805,43 +805,40 @@ exports.handler = async (event) => {
     domesticClassified = await classifyBatchWithGPT({ rawTextsByCategory: domesticTexts });
   }
 
-  // --- 3단계: 저장 + rising 예측 ---
-  const results = [];
+  // --- 3단계: 저장 + rising 예측 (10 카테고리 병렬) ---
   const allDomestic = [];
-
-  for (const category of categories) {
+  const results = await Promise.all(categories.map(async (category) => {
     try {
       const r = rawByCategory[category];
 
       // 국내 태그 선정
       let domesticTags = (domesticClassified && domesticClassified[category]) || [];
       if (!domesticTags || domesticTags.length < 3) {
-        // fallback: 네이버 데이터랩 타이틀 + DEFAULT
         const fromNaver = (r.naverData || []).map(normalize).filter(kw => !isBadKeyword(kw));
         domesticTags = [...new Set([...domesticTags, ...fromNaver, ...(DEFAULT_TRENDS[category] || [])])].slice(0, 10);
       } else if (domesticTags.length < 10) {
-        // 분류 결과가 10개 미만이면 DEFAULT_TRENDS로 보충
         domesticTags = [...new Set([...domesticTags, ...(DEFAULT_TRENDS[category] || [])])].slice(0, 10);
       } else {
         domesticTags = domesticTags.slice(0, 10);
       }
-      await saveScope({ supa, scope: 'domestic', category, tags: domesticTags, updatedAt, source: 'gpt-4o-mini' });
+
+      // 뜰 가능성 예측과 saveScope 병렬
+      const [_, risingItemsRaw] = await Promise.all([
+        saveScope({ supa, scope: 'domestic', category, tags: domesticTags, updatedAt, source: 'gpt-4o-mini' }),
+        process.env.OPENAI_API_KEY
+          ? predictRisingWithGPT({
+              category, domesticTags,
+              naverData: r.naverData, blogData: r.blogData,
+              youtubeData: r.ytKR, googleKR,
+            })
+          : Promise.resolve(null),
+      ]);
+
       domesticTags.forEach((kw, i) => allDomestic.push({
         keyword: kw, score: 100 - i * 5, mentions: 0, source: 'gpt-4o-mini', bizCategory: category
       }));
 
-      // 뜰 가능성 예측
-      let risingItems = null;
-      if (process.env.OPENAI_API_KEY) {
-        risingItems = await predictRisingWithGPT({
-          category,
-          domesticTags,
-          naverData: r.naverData,
-          blogData: r.blogData,
-          youtubeData: r.ytKR,
-          googleKR,
-        });
-      }
+      let risingItems = risingItemsRaw;
       if (!risingItems || risingItems.length < 2) {
         const pool = (domesticTags.length >= 10 ? domesticTags.slice(0, 10) : [...domesticTags, ...(DEFAULT_TRENDS[category] || [])].slice(0, 10));
         risingItems = pool.map((kw, i) => ({
@@ -853,34 +850,24 @@ exports.handler = async (event) => {
       }
       try {
         await supa.from('trends').upsert(
-          {
-            category: `l30d-rising:${category}`,
-            keywords: { items: risingItems, updatedAt, source: 'gpt-prediction' },
-            collected_at: updatedAt,
-          },
+          { category: `l30d-rising:${category}`, keywords: { items: risingItems, updatedAt, source: 'gpt-prediction' }, collected_at: updatedAt },
           { onConflict: 'category' }
         );
       } catch(e) {
         console.error(`[rising] ${category} 저장 실패:`, e.message);
       }
 
-      results.push({
-        category,
-        domestic: domesticTags.length,
-        rising: risingItems.length,
-      });
-      console.log(`[${category}] 국내:`, domesticTags.join(', '));
-      console.log(`[${category}] 뜰 가능성:`, risingItems.map(r => r.keyword).join(', '));
-
-      await new Promise(r => setTimeout(r, 300));
+      console.log(`[${category}] 국내(${domesticTags.length}):`, domesticTags.join(', '));
+      console.log(`[${category}] 뜰(${risingItems.length}):`, risingItems.map(r => r.keyword).join(', '));
+      return { category, domestic: domesticTags.length, rising: risingItems.length };
     } catch(e) {
       console.error(`[scheduled-trends] ${category} 실패:`, e.message);
       try {
         await saveScope({ supa, scope: 'domestic', category, tags: DEFAULT_TRENDS[category] || [], updatedAt, source: 'fallback' });
       } catch(e2) {}
-      results.push({ category, error: e.message });
+      return { category, error: e.message };
     }
-  }
+  }));
 
   // --- 4단계: 종합(all) 저장 ---
   try {
