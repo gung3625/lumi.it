@@ -1719,3 +1719,38 @@ body.dark-mode .m-trust-badge { background: #272729; }
   .m-out-compare .m-compare-row { grid-template-columns: 1.1fr 1fr 1fr 1fr; }
   .m-out-compare .m-compare-cell { font-size: 12px; padding: 10px 4px; }
 }
+
+/* =========================================================
+ * 모바일 iOS 수정: 입력 자동 확대 방지 + 가로 스크롤 제거
+ * ========================================================= */
+
+/* 1. iOS Safari zoom-on-focus 방지: 모바일 입력 요소 font-size 최소 16px */
+@media (max-width: 767px) {
+  #mobile-app-logged-in input,
+  #mobile-app-logged-in textarea,
+  #mobile-app-logged-in select,
+  #mobile-app-logged-out input,
+  #mobile-app-logged-out textarea,
+  #mobile-app-logged-out select,
+  #signup-grid input,
+  #signup-grid textarea,
+  #signup-grid select,
+  .signup-grid-wrap input,
+  .signup-grid-wrap textarea,
+  .signup-grid-wrap select,
+  #m-caption-flow input,
+  #m-caption-flow textarea,
+  #m-caption-flow select {
+    font-size: 16px;
+  }
+}
+
+/* 2. 가로 스크롤 제거: 서드파티 위젯 등 viewport 바깥 요소 클리핑 */
+@media (max-width: 767px) {
+  body,
+  #mobile-app-logged-in,
+  #mobile-app-logged-out {
+    overflow-x: clip;
+    overflow-x: hidden; /* clip 미지원 브라우저 fallback */
+  }
+}
