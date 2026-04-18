@@ -2950,15 +2950,15 @@ var cards = {
           if (loading) return e('div', {className:'bento-card card-visual card-project card-responsive', style:{padding:0}}, loadingInner);
           if (empty) return e('div', {className:'bento-card card-visual card-project card-responsive', style:{padding:0}}, emptyInner);
           return e('div', {className:'bento-card card-visual card-project card-responsive', style:{padding:0}},
-            e(igLink?'a':'div', Object.assign({style:{position:'absolute',inset:0,background:isDk?'#1c1c1e':'#fff',display:'flex',alignItems:'center',gap:'12px',padding:'14px 16px',overflow:'hidden',borderRadius:'20px',textDecoration:'none',color:'inherit'}}, igLink?{href:igLink,target:'_blank',rel:'noopener',onClick:function(ev){ev.stopPropagation();},onMouseDown:function(ev){ev.stopPropagation();}}:{}),
+            e(igLink?'a':'div', Object.assign({style:{position:'absolute',inset:0,background:isDk?'#1c1c1e':'#fff',display:'flex',alignItems:'stretch',gap:'12px',padding:'14px 16px',overflow:'hidden',borderRadius:'20px',textDecoration:'none',color:'inherit'}}, igLink?{href:igLink,target:'_blank',rel:'noopener',onClick:function(ev){ev.stopPropagation();},onMouseDown:function(ev){ev.stopPropagation();}}:{}),
               thumbUrl
-                ? e('img', {src:thumbUrl, style:{width:'64px',height:'64px',borderRadius:'12px',objectFit:'cover',flexShrink:0,filter:isDk?'brightness(.85)':'none'},onError:function(ev){ev.target.style.display='none';}})
-                : e('div', {style:{width:'64px',height:'64px',borderRadius:'12px',background:isDk?'rgba(255,255,255,.06)':'rgba(0,0,0,.04)',flexShrink:0}}),
-              e('div', {style:{flex:1,minWidth:0,display:'flex',flexDirection:'column',gap:'4px'}},
-                e('p', {style:{fontSize:'12px',color:tc,lineHeight:'1.5',fontWeight:400,overflow:'hidden',display:'-webkit-box',WebkitLineClamp:4,WebkitBoxOrient:'vertical',whiteSpace:'pre-wrap'}},
+                ? e('img', {src:thumbUrl, style:{width:'64px',height:'64px',borderRadius:'12px',objectFit:'cover',flexShrink:0,alignSelf:'center',filter:isDk?'brightness(.85)':'none'},onError:function(ev){ev.target.style.display='none';}})
+                : e('div', {style:{width:'64px',height:'64px',borderRadius:'12px',background:isDk?'rgba(255,255,255,.06)':'rgba(0,0,0,.04)',flexShrink:0,alignSelf:'center'}}),
+              e('div', {style:{flex:1,minWidth:0,display:'flex',flexDirection:'column',gap:'4px',overflow:'hidden'}},
+                e('p', {style:{fontSize:'12px',color:tc,lineHeight:'1.5',fontWeight:400,whiteSpace:'pre-wrap',wordBreak:'break-word',flex:1,minHeight:0,overflowY:'auto',WebkitOverflowScrolling:'touch'},onClick:function(ev){ev.stopPropagation();},onMouseDown:function(ev){ev.stopPropagation();}},
                   e('strong', {style:{fontWeight:600}}, igName), '\u00a0', captionText || '\uAC8C\uC2DC\uBB3C'
                 ),
-                e('p', {style:{fontSize:'10px',color:tc2}}, '\uAC8C\uC2DC\uC644\uB8CC \xB7 '+relTime(post.sentAt))
+                e('p', {style:{fontSize:'10px',color:tc2,flexShrink:0}}, '\uAC8C\uC2DC\uC644\uB8CC \xB7 '+relTime(post.sentAt))
               )
             )
           );
@@ -2982,7 +2982,7 @@ var cards = {
               e('svg',{viewBox:'0 0 24 24',fill:'none',stroke:isDk?'#f0f2f8':'#0d1117',strokeWidth:'2',width:16,height:16},e('path',{d:'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z'})),
               e('svg',{viewBox:'0 0 24 24',fill:'none',stroke:isDk?'#f0f2f8':'#0d1117',strokeWidth:'2',width:16,height:16},e('line',{x1:22,y1:2,x2:11,y2:13}),e('polygon',{points:'22 2 15 22 11 13 2 9 22 2'}))
             ),
-            e('div', {style:{padding:'0 12px 10px'}},
+            e('div', {style:{padding:'0 12px 10px',flex:1,minHeight:0,overflowY:'auto',WebkitOverflowScrolling:'touch'},onClick:function(ev){ev.stopPropagation();},onMouseDown:function(ev){ev.stopPropagation();}},
               captionText ? e('p', {style:{fontSize:'11px',color:tc,lineHeight:'1.5',whiteSpace:'pre-wrap',wordBreak:'break-word'}},
                 e('strong', null, igName), ' ', captionText
               ) : null
