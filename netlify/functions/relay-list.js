@@ -15,26 +15,30 @@ exports.handler = async (event) => {
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
 
   try {
+    // strong 제거 — PAT 동시 호출 경합 완화 (CDN 캐시 경유)
     const userStore = getStore({
       name: 'users',
-      consistency: 'strong',
       siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
       token: process.env.NETLIFY_TOKEN,
     });
 
-    // 토큰 → 이메일 조회 — 3회 재시도 (동시 호출 시 Blobs 401 throw → 프론트 자동 로그아웃 방지)
+    // 토큰 → 이메일 조회 — 5회 지수 백오프 (PAT rate-limit 대응)
     let tokenRaw = null;
     let tokenBlobError = false;
-    for (let i = 0; i < 3; i++) {
+    const RETRY_DELAYS = [200, 400, 800, 1600, 3200];
+    for (let i = 0; i < RETRY_DELAYS.length; i++) {
       tokenBlobError = false;
       try { tokenRaw = await userStore.get('token:' + token); }
-      catch(e) { tokenBlobError = true; console.error('[relay-list] token blob fetch error:', e.message); }
+      catch(e) { tokenBlobError = true; console.error('[relay-list] token blob fetch error (attempt ' + (i+1) + '):', e.message); }
       if (tokenRaw) break;
       if (!tokenBlobError) break;
-      if (i < 2) await new Promise(r => setTimeout(r, 300));
+      if (i < RETRY_DELAYS.length - 1) await new Promise(r => setTimeout(r, RETRY_DELAYS[i]));
     }
     if (!tokenRaw) {
-      if (tokenBlobError) return { statusCode: 503, headers: CORS, body: JSON.stringify({ error: '일시적 서버 오류입니다. 잠시 후 다시 시도해주세요.' }) };
+      if (tokenBlobError) {
+        console.warn('[relay-list] token blob error after 5 retries, bearer prefix:', token.substring(0, 8));
+        return { statusCode: 503, headers: CORS, body: JSON.stringify({ error: '일시적 서버 오류입니다. 잠시 후 다시 시도해주세요.' }) };
+      }
       return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '유효하지 않은 토큰' }) };
     }
     const tokenData = JSON.parse(tokenRaw);
@@ -43,9 +47,9 @@ exports.handler = async (event) => {
     }
     const { email } = tokenData;
 
+    // strong 제거 — PAT 동시 호출 경합 완화
     const store = getStore({
       name: 'reservations',
-      consistency: 'strong',
       siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
       token: process.env.NETLIFY_TOKEN,
     });

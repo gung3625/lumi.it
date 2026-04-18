@@ -3575,9 +3575,8 @@ var cards = {
         var tickColor = isDk ? 'rgba(240,242,248,.65)' : 'rgba(0,0,0,.55)';
         var labels = chartSrc.map(function(k){ var kw = (k.keyword||'').replace(/^#/,''); return kw.length > 10 ? kw.slice(0,10)+'…' : kw; });
         var scores = chartSrc.map(function(k){ return k.score || k.mentions || k.postCount || 0; });
-        // If all scores are 0 (fallback data), use rank-based descending values
         var hasScores = scores.some(function(s){ return s > 0; });
-        if(!hasScores) scores = chartSrc.map(function(_,i){ return chartSrc.length - i; });
+        if(!hasScores) return; // 점수 데이터 없으면 차트 생성 안 함 (빈 상태 UI가 대신 표시)
         chartInstanceRef.current = new Chart(chartRef.current.getContext('2d'), {
           type: 'bar',
           data: {
@@ -4977,9 +4976,13 @@ function swrFetch(key, url, opts, maxAgeMs) {
   var storageKey = 'swr:' + key;
   var cached;
   try { cached = JSON.parse(localStorage.getItem(storageKey) || 'null'); } catch(e) { cached = null; }
-  var fetchAndStore = function() {
+  var fetchAndStore = function(isBackground) {
     return fetch(url, opts || {}).then(function(r){
-      if (r.status === 401) { if(typeof lumiCheckAuth==='function') lumiCheckAuth(r); throw new Error('auth_expired'); }
+      if (r.status === 401) {
+        // 백그라운드 revalidation 시 로그아웃 트리거 스킵 — 단순 throw만
+        if (!isBackground && typeof lumiCheckAuth === 'function') lumiCheckAuth(r);
+        throw new Error('auth_expired');
+      }
       var ct = r.headers.get('content-type') || '';
       if (!ct.includes('application/json')) throw new Error('non-json response');
       return r.json();
@@ -4993,11 +4996,11 @@ function swrFetch(key, url, opts, maxAgeMs) {
   };
   if (cached && cached.ts && (Date.now() - cached.ts < maxAgeMs)) {
     if (Date.now() - cached.ts > maxAgeMs / 2) {
-      fetchAndStore().catch(function(){});
+      fetchAndStore(true).catch(function(){});
     }
     return Promise.resolve(cached.data);
   }
-  return fetchAndStore();
+  return fetchAndStore(false);
 }
 function swrInvalidate(keyPrefix) {
   try {
@@ -5024,14 +5027,37 @@ function logoutLumi() {
   swrInvalidate('best-time-');
   location.reload();
 }
-// 401 응답 시 만료 토큰 정리 + 재로그인 유도
+// 401 응답 시 재검증 후 로그아웃 (Blobs 일시 장애와 진짜 인증 실패 구분)
+var __lumiAuthRecheckInFlight = null;
 function lumiCheckAuth(response) {
   if (response.status === 401) {
-    localStorage.removeItem('lumi_token');
-    localStorage.removeItem('lumi_user');
-    localStorage.removeItem('lumi_grid_layout');
-    localStorage.removeItem('lumi_grid_version');
-    location.reload();
+    if (!__lumiAuthRecheckInFlight) {
+      __lumiAuthRecheckInFlight = new Promise(function(resolve) {
+        setTimeout(function() {
+          var t = localStorage.getItem('lumi_token');
+          if (!t) { resolve('no_token'); return; }
+          fetch('/api/check-plan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + t },
+            body: JSON.stringify({})
+          }).then(function(r) {
+            resolve(r.status);
+          }).catch(function() {
+            resolve('network_error');
+          });
+        }, 300);
+      }).then(function(status) {
+        __lumiAuthRecheckInFlight = null;
+        if (status === 401) {
+          localStorage.removeItem('lumi_token');
+          localStorage.removeItem('lumi_user');
+          localStorage.removeItem('lumi_grid_layout');
+          localStorage.removeItem('lumi_grid_version');
+          location.reload();
+        }
+        // 200/503/network_error/no_token(없으면 이미 로그아웃 상태) — 비-401은 무시
+      });
+    }
     throw new Error('auth_expired');
   }
   return response;

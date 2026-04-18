@@ -6,15 +6,6 @@ const CORS = {
   'Content-Type': 'application/json',
 };
 
-function makeStore(name) {
-  return getStore({
-    name,
-    consistency: 'strong',
-    siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
-    token: process.env.NETLIFY_TOKEN,
-  });
-}
-
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS };
   if (event.httpMethod !== 'GET') return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method Not Allowed' }) };
@@ -24,16 +15,35 @@ exports.handler = async (event) => {
   if (!token) return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증 필요' }) };
 
   try {
-    const userStore = makeStore('users');
-    const tokenRaw = await userStore.get('token:' + token).catch(() => null);
-    if (!tokenRaw) return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '유효하지 않은 토큰' }) };
+    // strong 제거 — PAT 동시 호출 경합 완화 (CDN 캐시 경유)
+    const userStore = getStore({ name: 'users', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
+
+    // 토큰 Blobs 검증 (5회 지수 백오프 — PAT rate-limit 대응)
+    let tokenRaw = null;
+    let tokenBlobError = false;
+    const RETRY_DELAYS = [200, 400, 800, 1600, 3200];
+    for (let i = 0; i < RETRY_DELAYS.length; i++) {
+      tokenBlobError = false;
+      try { tokenRaw = await userStore.get('token:' + token); }
+      catch(e) { tokenBlobError = true; console.error('[last-post] token blob fetch error (attempt ' + (i+1) + '):', e.message); }
+      if (tokenRaw) break;
+      if (!tokenBlobError) break;
+      if (i < RETRY_DELAYS.length - 1) await new Promise(r => setTimeout(r, RETRY_DELAYS[i]));
+    }
+    if (!tokenRaw) {
+      if (tokenBlobError) {
+        console.warn('[last-post] token blob error after 5 retries, bearer prefix:', token.substring(0, 8));
+        return { statusCode: 503, headers: CORS, body: JSON.stringify({ error: '일시적 서버 오류입니다. 잠시 후 다시 시도해주세요.' }) };
+      }
+      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '유효하지 않은 토큰' }) };
+    }
     const tokenData = JSON.parse(tokenRaw);
     if (tokenData.expiresAt && new Date(tokenData.expiresAt) < new Date()) {
       return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '세션 만료' }) };
     }
     const { email } = tokenData;
 
-    const reserveStore = makeStore('reservations');
+    const reserveStore = getStore({ name: 'reservations', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
     const { blobs } = await reserveStore.list({ prefix: 'reserve:' });
     // key는 'reserve:{timestamp}' — 내림차순 정렬 후 최근 60건만 fetch (성능)
     const sorted = (blobs || []).slice().sort((a, b) => (b.key || '').localeCompare(a.key || '')).slice(0, 60);
