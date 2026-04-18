@@ -1739,10 +1739,12 @@ body.dark-mode .su-close svg{stroke:#f0f2f8;}
       .then(function(data){
         var r = data && data.post ? data.post : null;
         if (!r) return { post: null };
-        var captions = r.generated_captions;
+        var edited = Array.isArray(r.captions) && r.captions.length ? r.captions : null;
+        var generated = Array.isArray(r.generated_captions) && r.generated_captions.length ? r.generated_captions : null;
+        var captions = edited || generated || [];
         var idx = (r.selected_caption_index == null) ? 0 : r.selected_caption_index;
         var caption = '';
-        if (Array.isArray(captions) && captions.length) caption = captions[idx] || captions[0] || '';
+        if (captions.length) caption = captions[idx] || captions[0] || '';
         return {
           post: {
             caption: caption,
