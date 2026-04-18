@@ -73,9 +73,7 @@ const CATEGORY_LABELS = {
   pet: '반려동물·펫',
   interior: '인테리어·가구',
   education: '학원·교육',
-  laundry: '세탁·수선',
   studio: '사진·스튜디오',
-  other: '일반',
   all: '종합',
 };
 
@@ -126,10 +124,10 @@ exports.handler = async (event) => {
 
   const params = new URLSearchParams(event.rawQuery || '');
   const rawCategory = (params.get('category') || 'cafe').trim();
-  const scope = params.get('scope') || '';  // 'domestic', 'global', or ''
+  const scope = params.get('scope') || '';  // 'domestic' or ''
   const fromDate = params.get('from') || '';
   const toDate = params.get('to') || '';
-  const knownCategories = ['cafe', 'food', 'beauty', 'flower', 'fashion', 'fitness', 'pet', 'interior', 'education', 'laundry', 'studio', 'all'];
+  const knownCategories = ['cafe', 'food', 'beauty', 'flower', 'fashion', 'fitness', 'pet', 'interior', 'education', 'studio', 'all'];
 
   const CATEGORY_ALIAS = {
     '카페': 'cafe', '카페·음료': 'cafe', '카페·베이커리': 'cafe', '커피': 'cafe', '베이커리': 'cafe',
@@ -141,9 +139,7 @@ exports.handler = async (event) => {
     '반려동물': 'pet', '반려동물·펫': 'pet', '펫': 'pet',
     '인테리어': 'interior', '인테리어·가구': 'interior', '인테리어·소품': 'interior', '가구': 'interior',
     '학원': 'education', '학원·교육': 'education', '교육': 'education',
-    '세탁': 'laundry', '세탁·수선': 'laundry',
     '사진': 'studio', '사진·스튜디오': 'studio', '스튜디오': 'studio',
-    '기타': 'other',
     'restaurant': 'food', 'bakery': 'cafe', 'hair': 'beauty', 'nail': 'beauty',
     'gym': 'fitness', 'pilates': 'fitness', 'yoga': 'fitness',
     'florist': 'flower', 'clothing': 'fashion',
@@ -151,7 +147,7 @@ exports.handler = async (event) => {
   };
 
   const category = CATEGORY_ALIAS[rawCategory] || rawCategory;
-  const storeKey = knownCategories.includes(category) ? category : 'other';
+  const storeKey = knownCategories.includes(category) ? category : 'cafe';
   const season = getSeasonInfo();
   const label = CATEGORY_LABELS[storeKey] || '일반';
 
@@ -186,10 +182,7 @@ exports.handler = async (event) => {
         };
       }
 
-      let prefix;
-      if (scope === 'domestic') prefix = `l30d-domestic:${storeKey}:`;
-      else if (scope === 'global') prefix = `l30d-global:${storeKey}:`;
-      else prefix = `l30d:${storeKey}:`;
+      const prefix = `l30d-domestic:${storeKey}:`;
 
       // category LIKE 로 prefix 검색 (Supabase text PK)
       const { data: rows, error } = await supa
@@ -224,15 +217,15 @@ exports.handler = async (event) => {
       };
     }
 
-    // --- scope=domestic / scope=global ---
-    if (scope === 'domestic' || scope === 'global') {
-      const scopeKey = `l30d-${scope}:${storeKey}`;
-      const prevKey = `l30d-${scope}-prev:${storeKey}`;
+    // --- scope=domestic ---
+    if (scope === 'domestic') {
+      const scopeKey = `l30d-domestic:${storeKey}`;
+      const prevKey = `l30d-domestic-prev:${storeKey}`;
 
       const [scopeRow, prevRow, risingRow] = await Promise.all([
         fetchTrendRow(supa, scopeKey),
         fetchTrendRow(supa, prevKey),
-        scope === 'domestic' ? fetchTrendRow(supa, `l30d-rising:${storeKey}`) : Promise.resolve(null),
+        fetchTrendRow(supa, `l30d-rising:${storeKey}`),
       ]);
 
       const rising = (risingRow && Array.isArray(risingRow.keywords?.items)) ? risingRow.keywords.items : [];
@@ -274,7 +267,7 @@ exports.handler = async (event) => {
             rising,
             insight: scopeData.insight || '',
             insights: scopeData.insight || '',
-            season: scope === 'domestic' ? season : undefined,
+            season,
             updatedAt: scopeData.updatedAt || scopeRow.collected_at || new Date().toISOString(),
             source: 'gpt-classified',
           }),
@@ -292,7 +285,7 @@ exports.handler = async (event) => {
           rising,
           insight: '',
           insights: '',
-          season: scope === 'domestic' ? season : undefined,
+          season,
           updatedAt: new Date().toISOString(),
           source: 'none',
         }),

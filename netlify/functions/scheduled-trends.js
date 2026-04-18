@@ -22,6 +22,8 @@ const BLACKLIST = [
   '운동', '헬스', '피트니스',
   '반려동물', '강아지', '고양이',
   '꽃', '플라워', '꽃집',
+  // 메타 접미사 배제
+  '동네맛집', '밀면맛집', '소자본창업', '뷰티샵창업', '이벤트', '체험이벤트',
   // 뉴스매체·패션지
   '중앙일보', '조선일보', '동아일보', '한겨레', '경향신문', '매일경제', '한국경제',
   '푸드투데이', '뉴시스', '연합뉴스', '노컷뉴스', '머니투데이', '헤럴드경제',
@@ -65,14 +67,13 @@ const DEFAULT_TRENDS = {
   cafe: ['말차라떼', '크로플', '핸드드립', '시즌음료', '디저트플레이팅', '에스프레소바', '바닐라라떼', '케이크'],
   food: ['오마카세', '파스타', '한식주점', '수제버거', '베이글', '스몰디쉬', '구이전문점', '와인바'],
   beauty: ['젤네일', '큐빅네일', '볼륨펌', '뿌리염색', '레이어드컷', '속눈썹펌', '글로우메이크업', '립틴트'],
-  other: ['시즌이벤트', '오픈특가', '단골쿠폰', '리뉴얼', '주말한정', '신상품', '감사이벤트', '포토존'],
-};
-
-const DEFAULT_GLOBAL_TRENDS = {
-  cafe: ['matcha latte', 'dirty chai', 'cortado', 'oat milk', 'cold brew', 'specialty coffee', 'drip bar', 'espresso tonic'],
-  food: ['smash burger', 'girl dinner', 'protein bowl', 'pasta night', 'omakase', 'ramen', 'sourdough', 'tapas'],
-  beauty: ['glazed nails', 'chrome nails', 'glass skin', 'latte makeup', 'clean girl', 'ombre lips', 'lash lift', 'body oil'],
-  other: ['pop up shop', 'local love', 'small biz', 'community event', 'limited drop', 'weekend special', 'seasonal launch', 'founder story'],
+  flower: ['수국드라이플라워', '팜파스그라스', '유칼립투스리스', '목화솜부케', '라넌큘러스', '프리지어', '샴페인장미', '버드나무가지'],
+  fashion: ['오버핏블레이저', 'Y2K패션', '셔츠워머', '롱스커트', '와이드팬츠', '카라니트', '청재킷', '레이어드룩'],
+  fitness: ['크로스핏박스', '필라테스리포머', '맨몸운동루틴', '짐복합운동', '케틀벨스윙', '힙쓰러스트', '폼롤러스트레칭', '요가플로우'],
+  pet: ['생식사료', '수제간식', '강아지유산균', '고양이캣타워', '반려견수영', '펫보험', '노즈워크', '슬링백'],
+  interior: ['집꾸미기선반', '원목협탁', '패브릭포스터', '버티컬블라인드', '디퓨저향', '무드등조명', '빈티지러그', '테이블플랜트'],
+  education: ['영어회화수업', '코딩부트캠프', '입시미술', '속독훈련', '수학올림피아드', '유아체능단', '독서토론', '악기레슨'],
+  studio: ['무드컨셉샷', '셀프스튜디오', '4컷필름사진', '프로필촮영', '커플화보', '흑백필름', '스냅웨딩', '인생네컷'],
 };
 
 // ---------------- 업종별 시드 ----------------
@@ -89,38 +90,75 @@ const NAVER_KEYWORDS = {
     { groupName: '뷰티', keywords: ['뷰티', '메이크업', '화장품'] },
     { groupName: '헤어네일', keywords: ['헤어샵', '네일아트', '에스테틱'] }
   ],
-  other: [
-    { groupName: '소상공인', keywords: ['소상공인', '동네가게', '로컬'] }
+  flower: [
+    { groupName: '플라워', keywords: ['플라워샵', '꽃다발', '드라이플라워'] },
+    { groupName: '리스부케', keywords: ['웨딩부케', '꽃바구니', '원데이클래스'] }
+  ],
+  fashion: [
+    { groupName: '패션', keywords: ['오버핏', '빈티지패션', '코디'] },
+    { groupName: '의류', keywords: ['Y2K', '트렌드룩', '레이어드'] }
+  ],
+  fitness: [
+    { groupName: '피트니스', keywords: ['필라테스', '크로스핏', '홈트'] },
+    { groupName: '운동', keywords: ['케틀벨', '요가', '근력운동'] }
+  ],
+  pet: [
+    { groupName: '반려견', keywords: ['강아지용품', '반려견훈련', '강아지간식'] },
+    { groupName: '반려묘', keywords: ['고양이용품', '캣타워', '고양이간식'] }
+  ],
+  interior: [
+    { groupName: '인테리어', keywords: ['인테리어소품', '집꾸미기', '리모델링'] },
+    { groupName: '가구조명', keywords: ['원목가구', '무드등', '커튼블라인드'] }
+  ],
+  education: [
+    { groupName: '학원', keywords: ['영어학원', '코딩학원', '입시미술'] },
+    { groupName: '교육', keywords: ['온라인강의', '자격증', '성인교육'] }
+  ],
+  studio: [
+    { groupName: '스튜디오', keywords: ['셀프스튜디오', '프로필촬영', '증명사진'] },
+    { groupName: '포토', keywords: ['4컷사진', '필름카메라', '커플사진'] }
   ]
 };
 
 // 네이버 검색(블로그) 시드 — 업종별로 트렌드 도출용 검색어
 const BLOG_SEARCH_SEEDS = {
-  cafe: ['신메뉴 카페', '카페 신상', '요즘 카페 트렌드', '새로 생긴 디저트'],
-  food: ['요즘 뜨는 맛집', '신상 맛집', '핫한 메뉴'],
-  beauty: ['요즘 네일', '최신 헤어 트렌드', '신상 메이크업', '화장품 신상'],
-  other: ['동네 이벤트', '소상공인 팝업', '로컬 신상'],
+  cafe: ['말차라떼 디저트', '크로플 카페', '비건 베이커리 메뉴', '스페셜티 핸드드립'],
+  food: ['오마카세 코스요리', '수제버거 패티', '와인바 안주', '한식주점 메뉴'],
+  beauty: ['젤네일 디자인', '레이어드컷 헤어', '속눈썹펌 후기', '글로우 메이크업'],
+  flower: ['수국 드라이플라워 리스', '팜파스 부케 제작', '유칼립투스 화환', '라넌큘러스 꽃다발'],
+  fashion: ['오버핏 블레이저 코디', 'Y2K 빈티지 스타일', '롱스커트 레이어드', '셔츠워머 착용법'],
+  fitness: ['필라테스 리포머 운동', '케틀벨 스윙 루틴', '크로스핏 와드', '홈트 맨몸운동'],
+  pet: ['강아지 생식사료 후기', '고양이 캣타워 추천', '반려견 노즈워크 방법', '펫 수제간식 만들기'],
+  interior: ['원목 선반 집꾸미기', '버티컬 블라인드 설치', '무드등 조명 인테리어', '빈티지 러그 코디'],
+  education: ['영어회화 수업 후기', '코딩 부트캠프 커리큘럼', '입시미술 포트폴리오', '성인 악기레슨'],
+  studio: ['셀프스튜디오 컨셉샷', '4컷 필름사진 촬영', '프로필사진 무드', '흑백필름 스냅촬영'],
 };
 
 // YouTube 검색 시드 — 트렌드 영상 탐색용
 const YOUTUBE_SEEDS_KR = {
   cafe: ['카페 신메뉴 리뷰', '디저트 브이로그'],
-  food: ['맛집 브이로그', '신상 메뉴 리뷰'],
-  beauty: ['뷰티 신상 리뷰', '네일 트렌드'],
-  other: ['소상공인 브이로그', '팝업스토어 방문'],
-};
-const YOUTUBE_SEEDS_US = {
-  cafe: ['coffee trends', 'cafe menu review'],
-  food: ['food trend review', 'new restaurant menu'],
-  beauty: ['beauty trend review', 'nail art trend'],
-  other: ['small business vlog', 'pop up event'],
+  food: ['맛집 브이로그', '오마카세 리뷰'],
+  beauty: ['네일 트렌드 디자인', '헤어 컷 스타일'],
+  flower: ['플라워 클래스 브이로그', '드라이플라워 리스 만들기'],
+  fashion: ['오버핏 코디 브이로그', 'Y2K 패션 하울'],
+  fitness: ['필라테스 운동 루틴', '크로스핏 홈트 브이로그'],
+  pet: ['강아지 일상 브이로그', '고양이 용품 추천'],
+  interior: ['집 인테리어 셀프 리모델링', '집꾸미기 소품 하울'],
+  education: ['영어회화 수업 후기', '코딩 독학 브이로그'],
+  studio: ['셀프스튜디오 촬영 브이로그', '4컷 필름사진 리뷰'],
 };
 
 const CATEGORY_KO = {
   cafe: '카페/베이커리',
   food: '음식점/맛집',
   beauty: '뷰티/헤어/네일',
-  other: '소상공인 일반'
+  flower: '꽃집/플라워샵',
+  fashion: '패션/의류',
+  fitness: '피트니스/헬스',
+  pet: '반려동물',
+  interior: '인테리어',
+  education: '교육/학원',
+  studio: '스튜디오/포토',
 };
 
 // ---------------- HTTP helpers ----------------
@@ -172,7 +210,7 @@ async function fetchNaverDatalab(category) {
   const today = new Date();
   const endDate = today.toISOString().slice(0, 10);
   const startDate = new Date(today - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-  const keywordGroups = NAVER_KEYWORDS[category] || NAVER_KEYWORDS.other;
+  const keywordGroups = NAVER_KEYWORDS[category] || NAVER_KEYWORDS.cafe;
 
   try {
     const result = await httpsPost(
@@ -206,7 +244,7 @@ async function fetchNaverBlogs(category) {
   const clientSecret = process.env.NAVER_CLIENT_SECRET;
   if (!clientId || !clientSecret) return [];
 
-  const seeds = BLOG_SEARCH_SEEDS[category] || BLOG_SEARCH_SEEDS.other;
+  const seeds = BLOG_SEARCH_SEEDS[category] || BLOG_SEARCH_SEEDS.cafe;
   const texts = [];
   for (const query of seeds) {
     try {
@@ -286,20 +324,18 @@ async function fetchGoogleRSS(geo) {
 }
 
 // ---------------- 소스 4. YouTube Data API v3 ----------------
-async function fetchYouTube(category, regionCode) {
+async function fetchYouTube(category) {
   const apiKey = process.env.YOUTUBE_API_KEY;
   if (!apiKey) return [];
 
-  const seeds = regionCode === 'KR'
-    ? (YOUTUBE_SEEDS_KR[category] || YOUTUBE_SEEDS_KR.other)
-    : (YOUTUBE_SEEDS_US[category] || YOUTUBE_SEEDS_US.other);
+  const seeds = YOUTUBE_SEEDS_KR[category] || YOUTUBE_SEEDS_KR.cafe;
   const titles = [];
 
   for (const query of seeds) {
     try {
       // search.list: 최근 7일 인기 영상 제목 수집
       const searchPath = `/youtube/v3/search?part=snippet&type=video&order=viewCount&maxResults=10` +
-        `&regionCode=${regionCode}` +
+        `&regionCode=KR` +
         `&publishedAfter=${encodeURIComponent(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())}` +
         `&q=${encodeURIComponent(query)}` +
         `&key=${apiKey}`;
@@ -343,7 +379,13 @@ async function fetchInstagram(category) {
     cafe: 'cafetrend',
     food: 'foodtrend',
     beauty: 'beautytrend',
-    other: 'smallbiz',
+    flower: 'flowertrend',
+    fashion: 'fashiontrend',
+    fitness: 'fitnesskorea',
+    pet: 'pettrend',
+    interior: 'interiortrend',
+    education: 'edutrend',
+    studio: 'photostudio',
   })[category] || 'trend';
 
   try {
@@ -381,15 +423,10 @@ async function fetchInstagram(category) {
 
 // ---------------- 분류기: gpt-4o-mini ----------------
 // 5개 소스에서 수집한 원시 텍스트를 하나의 배치로 gpt-4o-mini에 투입
-// 반환: { cafe: [...], food: [...], beauty: [...], other: [...] }
-async function classifyBatchWithGPT({ scope, rawTextsByCategory }) {
+// 반환: { cafe: [...], food: [...], beauty: [...], flower: [...], fashion: [...], fitness: [...], pet: [...], interior: [...], education: [...], studio: [...] }
+async function classifyBatchWithGPT({ rawTextsByCategory }) {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
-
-  const localeLabel = scope === 'domestic' ? '국내(한국)' : '해외(영미권)';
-  const languageRule = scope === 'domestic'
-    ? '- 한국어 단어만 (예: 말차라떼 O, matcha latte X)'
-    : '- 영어 단어만 (예: matcha latte O, 말차라떼 X)';
 
   // 각 카테고리 컨텍스트를 제한된 길이로 포맷
   const sections = Object.entries(rawTextsByCategory).map(([cat, lines]) => {
@@ -397,7 +434,7 @@ async function classifyBatchWithGPT({ scope, rawTextsByCategory }) {
     return `## ${CATEGORY_KO[cat] || cat} (key=${cat})\n${clip || '없음'}`;
   }).join('\n\n');
 
-  const prompt = `당신은 "${localeLabel}" 소상공인(카페/음식점/뷰티/기타) 인스타그램 트렌드 분석 전문가입니다.
+  const prompt = `당신은 국내(한국) 소상공인(카페·음식점·뷰티·꽃집·패션·피트니스·반려동물·인테리어·교육·스튜디오) 인스타그램 트렌드 분석 전문가입니다.
 
 아래 5개 외부 소스(네이버 데이터랩·네이버 블로그·구글 트렌드·YouTube·Instagram)에서 수집한 원시 텍스트를 읽고,
 각 업종 카테고리에서 실제 유행하는 **트렌드 대상** 키워드 8~12개씩 선별해 JSON으로 반환하세요.
@@ -436,12 +473,12 @@ ${sections}
 - NO, 여러 종류가 떠오름 → 무효 (예: 신상음료 → 수십 종류)
 
 ## 언어 규칙
-${languageRule}
+- 한국어 단어만 (예: 말차라떼 O, matcha latte X)
 
 ## 출력 형식 (엄격)
 JSON 객체만 반환. 설명·마크다운·코드블록 금지.
 스키마:
-{"cafe": ["키워드1", ...], "food": ["키워드1", ...], "beauty": ["키워드1", ...], "other": ["키워드1", ...]}
+{"cafe": ["키워드1", ...], "food": ["키워드1", ...], "beauty": ["키워드1", ...], "flower": ["키워드1", ...], "fashion": ["키워드1", ...], "fitness": ["키워드1", ...], "pet": ["키워드1", ...], "interior": ["키워드1", ...], "education": ["키워드1", ...], "studio": ["키워드1", ...]}
 
 - 각 배열 8~12개 (데이터 부족 시 더 적어도 됨)
 - 각 키워드: 2~20자, # 없이, 한 단어 또는 공백 없는 합성어 우선(최대 두 단어)
@@ -497,7 +534,7 @@ JSON 객체만 반환. 설명·마크다운·코드블록 금지.
 
     // 카테고리별 정규화 + 필터
     const out = {};
-    for (const cat of ['cafe', 'food', 'beauty', 'other']) {
+    for (const cat of ['cafe', 'food', 'beauty', 'flower', 'fashion', 'fitness', 'pet', 'interior', 'education', 'studio']) {
       const arr = Array.isArray(parsed[cat]) ? parsed[cat] : [];
       const seen = new Set();
       const cleaned = [];
@@ -520,7 +557,7 @@ JSON 객체만 반환. 설명·마크다운·코드블록 금지.
 }
 
 // ---------------- "뜰 가능성" 예측 (gpt-4o-mini) ----------------
-async function predictRisingWithGPT({ category, domesticTags, globalTags, naverData, blogData, youtubeData, googleKR }) {
+async function predictRisingWithGPT({ category, domesticTags, naverData, blogData, youtubeData, googleKR }) {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
 
@@ -529,7 +566,7 @@ async function predictRisingWithGPT({ category, domesticTags, globalTags, naverD
   const blogStr = (blogData || []).slice(0, 6).join(' | ').slice(0, 500) || '없음';
   const ytStr = (youtubeData || []).slice(0, 6).join(' | ').slice(0, 500) || '없음';
   const googleStr = (googleKR || []).slice(0, 8).join(', ') || '없음';
-  const currentStr = [...(domesticTags || []).slice(0, 5), ...(globalTags || []).slice(0, 3)].join(', ') || '없음';
+  const currentStr = (domesticTags || []).slice(0, 8).join(', ') || '없음';
 
   const prompt = `당신은 인스타그램 트렌드 예측 전문가입니다.
 
@@ -723,37 +760,31 @@ exports.handler = async (event) => {
     };
   }
 
-  const categories = ['cafe', 'food', 'beauty', 'other'];
+  const categories = ['cafe', 'food', 'beauty', 'flower', 'fashion', 'fitness', 'pet', 'interior', 'education', 'studio'];
   const updatedAt = new Date().toISOString();
 
   // --- 1단계: 전 업종 병렬 수집 ---
   // 구글 트렌드는 업종 무관하므로 1회만
-  const [googleKR, googleUS] = await Promise.all([
-    fetchGoogleTrendsLib('KR'),
-    fetchGoogleTrendsLib('US'),
-  ]);
-  console.log(`[sources] google-kr: ${googleKR.length}, google-us: ${googleUS.length}`);
+  const googleKR = await fetchGoogleTrendsLib('KR');
+  console.log(`[sources] google-kr: ${googleKR.length}`);
 
   // 업종별 소스 수집 (소스별 실패는 빈 배열로 격리)
   const rawByCategory = {};
   for (const category of categories) {
-    const [naverData, blogData, ytKR, ytUS, igTexts] = await Promise.all([
+    const [naverData, blogData, ytKR, igTexts] = await Promise.all([
       fetchNaverDatalab(category),
       fetchNaverBlogs(category),
       fetchYouTube(category, 'KR'),
-      fetchYouTube(category, 'US'),
       fetchInstagram(category),
     ]);
-    rawByCategory[category] = { naverData, blogData, ytKR, ytUS, igTexts };
-    console.log(`[${category}] naver=${naverData.length} blog=${blogData.length} yt-kr=${ytKR.length} yt-us=${ytUS.length} ig=${igTexts.length}`);
+    rawByCategory[category] = { naverData, blogData, ytKR, igTexts };
+    console.log(`[${category}] naver=${naverData.length} blog=${blogData.length} yt-kr=${ytKR.length} ig=${igTexts.length}`);
   }
 
-  // --- 2단계: gpt-4o-mini 배치 분류 (국내/해외 각 1회) ---
+  // --- 2단계: gpt-4o-mini 배치 분류 (국내 1회) ---
   const domesticTexts = {};
-  const globalTexts = {};
   for (const cat of categories) {
     const r = rawByCategory[cat];
-    // 국내: 네이버 데이터랩 + 블로그 + YouTube KR + 구글 KR + IG (한국어 우세)
     domesticTexts[cat] = [
       ...r.naverData,
       ...r.blogData,
@@ -761,26 +792,16 @@ exports.handler = async (event) => {
       ...googleKR,
       ...r.igTexts,
     ];
-    // 해외: YouTube US + 구글 US (영어 위주)
-    globalTexts[cat] = [
-      ...r.ytUS,
-      ...googleUS,
-    ];
   }
 
   let domesticClassified = null;
-  let globalClassified = null;
   if (process.env.OPENAI_API_KEY) {
-    [domesticClassified, globalClassified] = await Promise.all([
-      classifyBatchWithGPT({ scope: 'domestic', rawTextsByCategory: domesticTexts }),
-      classifyBatchWithGPT({ scope: 'global', rawTextsByCategory: globalTexts }),
-    ]);
+    domesticClassified = await classifyBatchWithGPT({ rawTextsByCategory: domesticTexts });
   }
 
   // --- 3단계: 저장 + rising 예측 ---
   const results = [];
   const allDomestic = [];
-  const allGlobal = [];
 
   for (const category of categories) {
     try {
@@ -791,7 +812,7 @@ exports.handler = async (event) => {
       if (!domesticTags || domesticTags.length < 3) {
         // fallback: 네이버 데이터랩 타이틀 + DEFAULT
         const fromNaver = (r.naverData || []).map(normalize).filter(kw => !isBadKeyword(kw));
-        domesticTags = [...new Set([...fromNaver, ...DEFAULT_TRENDS[category]])].slice(0, 10);
+        domesticTags = [...new Set([...fromNaver, ...(DEFAULT_TRENDS[category] || [])])].slice(0, 10);
       } else {
         domesticTags = domesticTags.slice(0, 10);
       }
@@ -800,25 +821,12 @@ exports.handler = async (event) => {
         keyword: kw, score: 100 - i * 5, mentions: 0, source: 'gpt-4o-mini', bizCategory: category
       }));
 
-      // 해외 태그 선정
-      let globalTags = (globalClassified && globalClassified[category]) || [];
-      if (!globalTags || globalTags.length < 3) {
-        globalTags = [...DEFAULT_GLOBAL_TRENDS[category]].slice(0, 10);
-      } else {
-        globalTags = globalTags.slice(0, 10);
-      }
-      await saveScope({ supa, scope: 'global', category, tags: globalTags, updatedAt, source: 'gpt-4o-mini' });
-      globalTags.forEach((kw, i) => allGlobal.push({
-        keyword: kw, score: 100 - i * 5, mentions: 0, source: 'gpt-4o-mini', bizCategory: category
-      }));
-
-      // 뜰 가능성 예측 (domestic 한정)
+      // 뜰 가능성 예측
       let risingItems = null;
       if (process.env.OPENAI_API_KEY) {
         risingItems = await predictRisingWithGPT({
           category,
           domesticTags,
-          globalTags,
           naverData: r.naverData,
           blogData: r.blogData,
           youtubeData: r.ytKR,
@@ -849,19 +857,16 @@ exports.handler = async (event) => {
       results.push({
         category,
         domestic: domesticTags.length,
-        global: globalTags.length,
         rising: risingItems.length,
       });
       console.log(`[${category}] 국내:`, domesticTags.join(', '));
-      console.log(`[${category}] 해외:`, globalTags.join(', '));
       console.log(`[${category}] 뜰 가능성:`, risingItems.map(r => r.keyword).join(', '));
 
       await new Promise(r => setTimeout(r, 300));
     } catch(e) {
       console.error(`[scheduled-trends] ${category} 실패:`, e.message);
       try {
-        await saveScope({ supa, scope: 'domestic', category, tags: DEFAULT_TRENDS[category], updatedAt, source: 'fallback' });
-        await saveScope({ supa, scope: 'global', category, tags: DEFAULT_GLOBAL_TRENDS[category], updatedAt, source: 'fallback' });
+        await saveScope({ supa, scope: 'domestic', category, tags: DEFAULT_TRENDS[category] || [], updatedAt, source: 'fallback' });
       } catch(e2) {}
       results.push({ category, error: e.message });
     }
@@ -870,7 +875,6 @@ exports.handler = async (event) => {
   // --- 4단계: 종합(all) 저장 ---
   try {
     allDomestic.sort((a, b) => (b.score || 0) - (a.score || 0));
-    allGlobal.sort((a, b) => (b.score || 0) - (a.score || 0));
 
     try {
       const { data: curD } = await supa.from('trends').select('keywords').eq('category', 'l30d-domestic:all').single();
@@ -879,20 +883,9 @@ exports.handler = async (event) => {
         { onConflict: 'category' }
       );
     } catch(e) {}
-    try {
-      const { data: curG } = await supa.from('trends').select('keywords').eq('category', 'l30d-global:all').single();
-      if (curG) await supa.from('trends').upsert(
-        { category: 'l30d-global-prev:all', keywords: curG.keywords, collected_at: updatedAt },
-        { onConflict: 'category' }
-      );
-    } catch(e) {}
 
     await supa.from('trends').upsert(
-      { category: 'l30d-domestic:all', keywords: { keywords: allDomestic.slice(0, 20), updatedAt, source: 'scheduled-gpt-all' }, collected_at: updatedAt },
-      { onConflict: 'category' }
-    );
-    await supa.from('trends').upsert(
-      { category: 'l30d-global:all', keywords: { keywords: allGlobal.slice(0, 20), updatedAt, source: 'scheduled-gpt-all' }, collected_at: updatedAt },
+      { category: 'l30d-domestic:all', keywords: { keywords: allDomestic.slice(0, 30), updatedAt, source: 'scheduled-gpt-all' }, collected_at: updatedAt },
       { onConflict: 'category' }
     );
   } catch(e) {

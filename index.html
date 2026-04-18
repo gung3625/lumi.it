@@ -3560,71 +3560,58 @@ var cards = {
       {keyword:'오로라네일',bizCategory:'beauty'},{keyword:'말차라떼',bizCategory:'cafe'},{keyword:'당근케이크',bizCategory:'cafe'},
       {keyword:'로제떡볶이',bizCategory:'food'}
     ];
-    var fallbackGlobal = [
-      {keyword:'Dubai Chocolate',bizCategory:'cafe'},{keyword:'Dirty Soda',bizCategory:'cafe'},{keyword:'Balayage',bizCategory:'beauty'},
-      {keyword:'Glazed Donut Nails',bizCategory:'beauty'},{keyword:'Birria Tacos',bizCategory:'food'},{keyword:'Matcha Tiramisu',bizCategory:'cafe'},
-      {keyword:'Boba Tea',bizCategory:'cafe'}
-    ];
     var upArrow = e('svg',{viewBox:'0 0 10 10'},e('path',{d:'M5 2L2 6h6L5 2z',fill:'currentColor'}));
     var downArrow = e('svg',{viewBox:'0 0 10 10'},e('path',{d:'M5 8L2 4h6L5 8z',fill:'currentColor'}));
     // 캐시에서 초기 데이터 읽기
-    var _initCache = {domestic:null,global:null};
+    var _initCache = {domestic:null};
     try { var _cc = JSON.parse(localStorage.getItem('lumi_trend_cache')||'null'); if(_cc){_initCache=_cc;} } catch(ex){}
 
     var TrendCard = function() {
       var stMain = React.useState('current'), mainTab = stMain[0], setMainTab = stMain[1];
-      var st = React.useState('domestic'), tab = st[0], setTab = st[1];
       var st2 = React.useState(_initCache), apiData = st2[0], setApiData = st2[1];
       var stRising = React.useState([]), risingItems = stRising[0], setRisingItems = stRising[1];
       var st3 = React.useState([0,1,2,3,4,5,6]), prevOrder = st3[0], setPrevOrder = st3[1];
       var st4 = React.useState([1,0,2,4,3,5,6]), order = st4[0], setOrder = st4[1];
-      var stView = React.useState('list'), chartView = stView[0], setChartView = stView[1];
-      var chartRef = React.useRef(null);
-      var chartInstanceRef = React.useRef(null);
 
       React.useEffect(function(){
         var cats = ['cafe','food','beauty','fashion','fitness','pet'];
         var baseUrl = 'https://lumi.it.kr/.netlify/functions/get-trends';
-        ['domestic','global'].forEach(function(scope){
-          fetch(baseUrl+'?category='+encodeURIComponent(_trendCategory)+'&scope='+scope)
-            .then(function(r){return r.json();})
-            .then(function(data){
-              if(data.keywords && data.keywords.length>0){
-                saveTrends(scope, data.keywords.slice(0,7));
-              } else if(_trendCategory !== 'all') {
-                // 업종별 데이터 없으면 종합으로 fallback
-                fetch(baseUrl+'?category=all&scope='+scope)
+        var scope = 'domestic';
+        fetch(baseUrl+'?category='+encodeURIComponent(_trendCategory)+'&scope='+scope)
+          .then(function(r){return r.json();})
+          .then(function(data){
+            if(data.keywords && data.keywords.length>0){
+              saveTrends(data.keywords.slice(0,7));
+            } else if(_trendCategory !== 'all') {
+              fetch(baseUrl+'?category=all&scope='+scope)
+                .then(function(r){return r.json();})
+                .then(function(d2){
+                  if(d2.keywords && d2.keywords.length>0) saveTrends(d2.keywords.slice(0,7));
+                }).catch(function(){});
+            } else {
+              Promise.all(cats.map(function(cat){
+                return fetch(baseUrl+'?category='+cat+'&scope='+scope)
                   .then(function(r){return r.json();})
-                  .then(function(d2){
-                    if(d2.keywords && d2.keywords.length>0) saveTrends(scope, d2.keywords.slice(0,7));
-                  }).catch(function(){});
-              } else {
-                Promise.all(cats.map(function(cat){
-                  return fetch(baseUrl+'?category='+cat+'&scope='+scope)
-                    .then(function(r){return r.json();})
-                    .then(function(d){return (d.keywords||[]).map(function(kk){kk.bizCategory=cat;return kk;});})
-                    .catch(function(){return [];});
-                })).then(function(results){
-                  var merged=[];
-                  results.forEach(function(kws){
-                    if(kws.length>0) merged.push(kws[0]);
-                    if(kws.length>1) merged.push(kws[1]);
-                  });
-                  merged = merged.slice(0,7).map(function(kk,i){kk.rank=i+1;return kk;});
-                  if(merged.length>0) saveTrends(scope, merged);
+                  .then(function(d){return (d.keywords||[]).map(function(kk){kk.bizCategory=cat;return kk;});})
+                  .catch(function(){return [];});
+              })).then(function(results){
+                var merged=[];
+                results.forEach(function(kws){
+                  if(kws.length>0) merged.push(kws[0]);
+                  if(kws.length>1) merged.push(kws[1]);
                 });
-              }
-              // rising 데이터 — domestic 응답에서 추출
-              if(scope === 'domestic' && data.rising && data.rising.length > 0){
-                setRisingItems(data.rising);
-              }
-            }).catch(function(){});
-        });
-        function saveTrends(scope, keywords){
+                merged = merged.slice(0,7).map(function(kk,i){kk.rank=i+1;return kk;});
+                if(merged.length>0) saveTrends(merged);
+              });
+            }
+            if(data.rising && data.rising.length > 0){
+              setRisingItems(data.rising);
+            }
+          }).catch(function(){});
+        function saveTrends(keywords){
           setApiData(function(prev){
-            var next = {domestic:prev.domestic, global:prev.global};
-            next[scope] = keywords;
-            try{localStorage.setItem('lumi_trend_cache',JSON.stringify({domestic:next.domestic,global:next.global}));}catch(ex){}
+            var next = {domestic:keywords};
+            try{localStorage.setItem('lumi_trend_cache',JSON.stringify(next));}catch(ex){}
             return next;
           });
         }
@@ -3649,8 +3636,8 @@ var cards = {
         return function(){ clearInterval(iv); };
       },[]);
 
-      var scope = tab;
-      var _srcRaw = apiData[scope] || (scope==='domestic'?fallbackDomestic:fallbackGlobal);
+      var scope = 'domestic';
+      var _srcRaw = apiData.domestic || fallbackDomestic;
       var src = _srcRaw.slice();
       if(src.length>0 && src.length<5){var _s=src.slice();while(src.length<5)src=src.concat(_s);}
       src=src.slice(0,5);
@@ -3689,75 +3676,13 @@ var cards = {
       var rankMap = {};
       order.forEach(function(idx,rank){ if(idx<src.length) rankMap[idx]=rank; });
 
-      // Chart.js — create/update when chart view is active
-      var chartSrc = src.slice(0,8);
-      React.useEffect(function(){
-        if(chartView !== 'chart') {
-          if(chartInstanceRef.current){ chartInstanceRef.current.destroy(); chartInstanceRef.current = null; }
-          return;
-        }
-        if(!chartRef.current) return;
-        if(typeof Chart === 'undefined') return;
-        if(chartInstanceRef.current){ chartInstanceRef.current.destroy(); chartInstanceRef.current = null; }
-        var isDk = document.body.classList.contains('dark-mode');
-        var barColor = isDk ? '#FF8FAB' : '#C8507A';
-        var tickColor = isDk ? 'rgba(240,242,248,.65)' : 'rgba(0,0,0,.55)';
-        var labels = chartSrc.map(function(k){ var kw = (k.keyword||'').replace(/^#/,''); return kw.length > 10 ? kw.slice(0,10)+'…' : kw; });
-        var scores = chartSrc.map(function(k){ return k.score || k.mentions || k.postCount || 0; });
-        var hasScores = scores.some(function(s){ return s > 0; });
-        if(!hasScores) return; // 점수 데이터 없으면 차트 생성 안 함 (빈 상태 UI가 대신 표시)
-        chartInstanceRef.current = new Chart(chartRef.current.getContext('2d'), {
-          type: 'bar',
-          data: {
-            labels: labels,
-            datasets: [{
-              data: scores,
-              backgroundColor: barColor,
-              borderRadius: 4,
-              borderSkipped: false
-            }]
-          },
-          options: {
-            indexAxis: 'y',
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: { duration: 400, easing: 'easeOutQuart' },
-            plugins: {
-              legend: { display: false },
-              tooltip: { enabled: false }
-            },
-            scales: {
-              x: { display: false, grid: { display: false } },
-              y: {
-                grid: { display: false },
-                border: { display: false },
-                ticks: {
-                  color: tickColor,
-                  font: { size: 11, family: 'Pretendard, -apple-system, sans-serif' },
-                  padding: 4
-                }
-              }
-            }
-          }
-        });
-        return function(){
-          if(chartInstanceRef.current){ chartInstanceRef.current.destroy(); chartInstanceRef.current = null; }
-        };
-      }, [chartView, tab, apiData]);
-
       var flameIcon = e('svg',{width:'11',height:'11',viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:'2',strokeLinecap:'round',strokeLinejoin:'round'},e('path',{d:'M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z'}));
       var sproutIcon = e('svg',{width:'11',height:'11',viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:'2',strokeLinecap:'round',strokeLinejoin:'round'},e('path',{d:'M7 20h10'}),e('path',{d:'M10 20c5.5-2.5.8-6.4 3-10'}),e('path',{d:'M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z'}),e('path',{d:'M14.1 6a7 7 0 0 1 1.9 4.5c0 .9-.2 1.7-.5 2.3-2-.5-3.2-1.5-3.8-2.9-.6-1.4-.5-3.1.3-5.4 1.6.5 2.6 1.3 2.9 2.6 0 0 0 0-.8 1'}));
 
       return e('div', {ref:cardRef, className:'bento-card card-visual card-project card-trend card-responsive', style:{padding:0}},
         e('div', {className:'trend-wrap'},
           e('div', {className:'trend-header'},
-            e('span', {className:'trend-label'}, _trendLabel),
-            mainTab === 'current'
-              ? e('div', {className:'trend-tabs'},
-                  e('span', {className:'trend-tab'+(tab==='domestic'?' active':''), onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(){setTab('domestic');}}, '국내'),
-                  e('span', {className:'trend-tab'+(tab==='global'?' active':''), onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(){setTab('global');}}, '해외')
-                )
-              : null
+            e('span', {className:'trend-label'}, _trendLabel)
           ),
           e('div', {className:'trend-main-tabs'},
             e('button', {
@@ -3772,47 +3697,37 @@ var cards = {
             }, sproutIcon, '뜰 가능성')
           ),
           mainTab === 'current'
-            ? e(React.Fragment, null,
-                e('div', {className:'trend-view-tabs'},
-                  e('button', {className:'trend-view-tab'+(chartView==='list'?' active':''), onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(){setChartView('list');}}, '목록'),
-                  e('button', {className:'trend-view-tab'+(chartView==='chart'?' active':''), onMouseDown:function(ev){ev.stopPropagation();}, onClick:function(){setChartView('chart');}}, '그래프')
-                ),
-                chartView === 'chart'
-                  ? e('div', {className:'trend-chart-wrap'},
-                      e('canvas', {ref:chartRef, style:{width:'100%'}})
-                    )
-                  : e('div', {className:'trend-list'},
-                      e('div', {className:'trend-track', key:'track-'+tab, style:trackH?{height:trackH+'px'}:{}},
-                        src.slice(0,visibleCount).map(function(t,idx){
-                          var rank = visibleCount < 5 ? idx : (rankMap[idx]!==undefined?rankMap[idx]:idx);
-                          var delta = 0;
-                          if(prevOrder){
-                            var oldRank = prevOrder.indexOf(idx);
-                            if(oldRank!==-1) delta = oldRank - rank;
-                          }
-                          if(delta===0 && t.rankChange && t.rankChange!=='new') delta = t.rankChange;
-                          var cls = delta>0?'up':delta<0?'down':'same';
-                          var deltaEl;
-                          if(t.rankChange==='new'){
-                            deltaEl = e('span',{className:'trend-delta up',style:{background:'rgba(34,197,94,.2)'}}, 'NEW');
-                          } else if(delta===0){
-                            deltaEl = e('span',{className:'trend-delta same'},'—');
-                          } else {
-                            deltaEl = e('span',{className:'trend-delta '+cls}, delta>0?upArrow:downArrow, Math.abs(delta));
-                          }
-                          var catLabel = (t.bizCategory && CATEGORY_KO[t.bizCategory]) || '종합';
-                          var kw = (t.keyword||'').replace(/^#/,'');
-                          return e('div',{className:'trend-item',key:scope+'-'+kw,style:{top:(rank*itemH)+'px',animation:'trendSlideIn .35s ease-out '+(rank*0.04)+'s both'}},
-                            e('span',{className:'trend-rank'},rank+1),
-                            e('div',{className:'trend-info'},
-                              e('p',{className:'trend-text'},'#'+kw),
-                              e('p',{className:'trend-tag'},catLabel+' · '+(tab==='domestic'?'국내':'Global'))
-                            ),
-                            deltaEl
-                          );
-                        })
-                      )
-                    )
+            ? e('div', {className:'trend-list'},
+                e('div', {className:'trend-track', key:'track-domestic', style:trackH?{height:trackH+'px'}:{}},
+                  src.slice(0,visibleCount).map(function(t,idx){
+                    var rank = visibleCount < 5 ? idx : (rankMap[idx]!==undefined?rankMap[idx]:idx);
+                    var delta = 0;
+                    if(prevOrder){
+                      var oldRank = prevOrder.indexOf(idx);
+                      if(oldRank!==-1) delta = oldRank - rank;
+                    }
+                    if(delta===0 && t.rankChange && t.rankChange!=='new') delta = t.rankChange;
+                    var cls = delta>0?'up':delta<0?'down':'same';
+                    var deltaEl;
+                    if(t.rankChange==='new'){
+                      deltaEl = e('span',{className:'trend-delta up',style:{background:'rgba(34,197,94,.2)'}}, 'NEW');
+                    } else if(delta===0){
+                      deltaEl = e('span',{className:'trend-delta same'},'—');
+                    } else {
+                      deltaEl = e('span',{className:'trend-delta '+cls}, delta>0?upArrow:downArrow, Math.abs(delta));
+                    }
+                    var catLabel = (t.bizCategory && CATEGORY_KO[t.bizCategory]) || '종합';
+                    var kw = (t.keyword||'').replace(/^#/,'');
+                    return e('div',{className:'trend-item',key:'domestic-'+kw,style:{top:(rank*itemH)+'px',animation:'trendSlideIn .35s ease-out '+(rank*0.04)+'s both'}},
+                      e('span',{className:'trend-rank'},rank+1),
+                      e('div',{className:'trend-info'},
+                        e('p',{className:'trend-text'},'#'+kw),
+                        e('p',{className:'trend-tag'},catLabel)
+                      ),
+                      deltaEl
+                    );
+                  })
+                )
               )
             : e('div', {className:'rising-list'},
                 risingItems.length > 0
@@ -4602,8 +4517,8 @@ function suShowForm() {
   }
   else if (step.input === 'biz') {
     html += '<div class="su-biz-grid">';
-    var bizzes = ['카페','음식점','뷰티','꽃집','패션','피트니스','반려동물','인테리어','교육','스튜디오','기타'];
-    var vals = ['cafe','food','beauty','flower','fashion','fitness','pet','interior','education','studio','other'];
+    var bizzes = ['카페','음식점','뷰티','꽃집','패션','피트니스','반려동물','인테리어','교육','스튜디오'];
+    var vals = ['cafe','food','beauty','flower','fashion','fitness','pet','interior','education','studio'];
     for (var i = 0; i < bizzes.length; i++) {
       html += '<label class="su-biz-item"><input type="radio" name="su-biz" value="'+vals[i]+'"'+(i===0?' checked':'')+'><span>'+bizzes[i]+'</span></label>';
     }
