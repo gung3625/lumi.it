@@ -1715,26 +1715,16 @@ body.dark-mode .su-close svg{stroke:#f0f2f8;}
       })
       .catch(function(){ return { success: false, error: '예약 취소 실패' }; });
   };
-  // 플랜 조회 (Supabase users.plan). 기존 /api/check-plan 응답 중 plan·user 부분만 채움.
+  // 플랜 조회 — /api/check-plan (Bearer 검증, admin client로 RLS 우회)
   window.lumiCheckPlan = function() {
-    return window.lumiSupa.auth.getUser().then(function(u){
-      var uid = u && u.data && u.data.user ? u.data.user.id : null;
-      if (!uid) return { error: '인증이 필요합니다.' };
-      return window.lumiSupa.from('users').select('plan, name, store_name, instagram_handle, biz_category, caption_tone, tag_style, store_desc, region, sido_code, sigungu_code, auto_story, auto_festival').eq('id', uid).single()
-        .then(function(res){
-          if (res.error || !res.data) return { error: res.error ? res.error.message : '사용자 조회 실패' };
-          var d = res.data;
-          return {
-            plan: d.plan || 'trial',
-            user: {
-              name: d.name, storeName: d.store_name, instagram: d.instagram_handle,
-              bizCategory: d.biz_category, captionTone: d.caption_tone, tagStyle: d.tag_style,
-              storeDesc: d.store_desc, region: d.region, autoStory: d.auto_story, autoFestival: d.auto_festival,
-              sidoCode: d.sido_code, sigunguCode: d.sigungu_code,
-            }
-          };
-        });
-    });
+    var token = localStorage.getItem('lumi_token') || '';
+    return fetch('/api/check-plan', { method:'GET', headers:{ 'Authorization':'Bearer '+token } })
+      .then(function(r){ return r.json().catch(function(){ return { error:'플랜 조회 실패' }; }); })
+      .then(function(data){
+        if (data.error) return { error: data.error };
+        return { plan: data.plan || 'trial', user: data.user, igConnected: !!data.igConnected };
+      })
+      .catch(function(){ return { error: '플랜 조회 실패' }; });
   };
   // 최근 게시물 1건 조회 — /api/last-post (Bearer 검증, RLS 우회)
   window.lumiLastPost = function() {

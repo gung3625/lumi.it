@@ -450,12 +450,11 @@ function showToast(msg) {
   var token = localStorage.getItem('lumi_token');
   if (!token) return;
   try {
-    var ures = await window.lumiSupa.auth.getUser();
-    var uid = ures && ures.data && ures.data.user ? ures.data.user.id : null;
-    if (!uid) return;
-    var pres = await window.lumiSupa.from('users').select('plan').eq('id', uid).single();
-    if (pres.error || !pres.data) return;
-    var data = { plan: pres.data.plan, planExpireAt: null, remaining: null, postCount: null };
+    var token = localStorage.getItem('lumi_token') || '';
+    var resP = await fetch('/api/check-plan', { method:'GET', headers:{ 'Authorization':'Bearer '+token } });
+    var pd = await resP.json();
+    var plan = pd && pd.plan ? pd.plan : 'trial';
+    var data = { plan: plan, planExpireAt: null, remaining: null, postCount: null };
     if (data.plan && data.plan !== 'trial') {
       var planLabels = { standard: '스탠다드', pro: '프로' };
       var label = planLabels[data.plan] || data.plan;
