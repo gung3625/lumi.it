@@ -360,8 +360,15 @@ body.dark-mode .pf-img img { filter:grayscale(1) brightness(.8); }
 @media (max-width:768px) {
   .pd-scene { grid-template-columns:1fr; }
   .pd-info { padding:20px; }
-  .pd-visual { padding:20px; }
-  .process-demo { min-height:500px; }
+  .pd-visual { padding:20px; overflow:hidden; }
+  .process-demo { min-height:500px; overflow:hidden; }
+  /* 씬1: 카메라롤 고정폭 → 유동 */
+  .pd-camera-roll { width:min(280px, 100%); }
+  /* 씬2: 스캔 사진 고정폭 → 유동 */
+  .pd-scan-photo { width:min(200px, 70%); height:auto; aspect-ratio:3/4; }
+  .pd-detect-tags { right:0; }
+  /* 씬3: .pd-scene 내부 .pd-visual 패딩 축소 (인라인 style 덮어쓰기) */
+  .pd-scene .pd-visual { padding:20px !important; }
 }
 
 /* BOTTOM MESSAGE */
