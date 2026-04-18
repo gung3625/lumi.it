@@ -3165,16 +3165,37 @@ function mInitWave2(){
   function resizeImageClient(file){
     return new Promise(function(resolve){
       var MAX = 1080;
+      var MIN_RATIO = 0.8;
+      var MAX_RATIO = 1.91;
       var img = new Image();
       var url = URL.createObjectURL(file);
       img.onload = function(){
         URL.revokeObjectURL(url);
         var w = img.naturalWidth, h = img.naturalHeight;
-        var r = (w > MAX || h > MAX) ? Math.min(MAX/w, MAX/h) : 1;
-        var tw = Math.round(w*r), th = Math.round(h*r);
+        var aspect = w / h;
+        var needsPad = aspect < MIN_RATIO || aspect > MAX_RATIO;
+        var targetW, targetH;
+        if (aspect < MIN_RATIO) { targetW = MAX; targetH = Math.round(MAX / MIN_RATIO); }
+        else if (aspect > MAX_RATIO) { targetH = Math.round(MAX / MAX_RATIO); targetW = MAX; }
+        else {
+          var r = (w > MAX || h > MAX) ? Math.min(MAX / w, MAX / h) : 1;
+          targetW = Math.round(w * r); targetH = Math.round(h * r);
+        }
         var c = document.createElement('canvas');
-        c.width = tw; c.height = th;
-        c.getContext('2d').drawImage(img, 0, 0, tw, th);
+        c.width = targetW; c.height = targetH;
+        var ctx = c.getContext('2d');
+        if (needsPad) {
+          var bgScale = Math.max(targetW / w, targetH / h);
+          var bgW = Math.round(w * bgScale), bgH = Math.round(h * bgScale);
+          var bgDx = Math.round((targetW - bgW) / 2), bgDy = Math.round((targetH - bgH) / 2);
+          ctx.filter = 'blur(40px) brightness(0.85)';
+          ctx.drawImage(img, bgDx, bgDy, bgW, bgH);
+          ctx.filter = 'none';
+        }
+        var fgScale = Math.min(targetW / w, targetH / h);
+        var fgW = Math.round(w * fgScale), fgH = Math.round(h * fgScale);
+        var fgDx = Math.round((targetW - fgW) / 2), fgDy = Math.round((targetH - fgH) / 2);
+        ctx.drawImage(img, fgDx, fgDy, fgW, fgH);
         c.toBlob(function(blob){ resolve(blob ? new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), {type:'image/jpeg'}) : file); }, 'image/jpeg', 0.92);
       };
       img.onerror = function(){ URL.revokeObjectURL(url); resolve(file); };
@@ -4443,7 +4464,7 @@ var cards = {
               e('div', {style:{flex:1,display:'flex',flexDirection:'column',gap:'8px'}},
                 e('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'4px'}},
                   e('p',{style:{fontSize:'14px',fontWeight:600,color:tc}}, realFiles.length+'\uC7A5 \uC120\uD0DD\uB428'),
-                  e('span',{style:{fontSize:'10px',color:tc2}},'\uC6D0\uBCF8 \uADF8\uB300\uB85C \uC5C5\uB85C\uB4DC\uB3FC\uC694')
+                  e('span',{style:{fontSize:'10px',color:tc2}},'\uBE44\uC728 \uC790\uB3D9 \uBCF4\uC815\uB418\uC5B4 \uC5C5\uB85C\uB4DC\uB3FC\uC694')
                 ),
                 e('div', {style:{display:'grid',gridTemplateColumns:'repeat('+Math.max(Math.min(realFiles.length,5),3)+',1fr)',gap:'6px',flex:1,alignContent:'start'}},
                   realFiles.slice(0,10).map(function(f,i){
@@ -4496,6 +4517,7 @@ var cards = {
                   )
                 ),
                 e('div',{style:{display:'flex',flexDirection:'column',gap:'8px',marginTop:'12px'}},
+                  e('p',{style:{fontSize:'11px',color:tc2,textAlign:'center',marginBottom:'2px'}},'\uD37C\uB0B4\uC77C\uC774 \uB9DE\uB294\uC9C0 \uD655\uC778\uD558\uACE0 \uB208\uB7EC\uC8FC\uC138\uC694'),
                   e('button',{style:{width:'100%',padding:'14px',borderRadius:'980px',border:'none',background:isPosting?'#999':(isDk?'#FF8FAB':'#C8507A'),color:'#fff',fontFamily:'inherit',fontSize:'14px',fontWeight:600,cursor:isPosting?'wait':'pointer',opacity:isPosting?0.7:1},onMouseDown:function(ev){ev.stopPropagation();},onClick:function(){if(!isPosting) handlePostNow();}},isPosting?'게시 중...':'바로 게시'),
                   e('button',{style:{width:'100%',padding:'14px',borderRadius:'980px',border:'none',background:isPosting?'#999':(isDk?'#7B9CFF':'#4A6CF7'),color:'#fff',fontFamily:'inherit',fontSize:'14px',fontWeight:600,cursor:(isPro&&!isPosting)?'pointer':'default',opacity:(isPro&&!isPosting)?1:0.45},onMouseDown:function(ev){ev.stopPropagation();},onClick:function(){if(!isPro){alert('프로 플랜에서 사용할 수 있어요.');return;}if(!isPosting) handleBestTimePost();}},
                     !isPro?e('span',{style:{marginRight:'4px'}},'🔒'):null,isPosting?'처리 중...':'최적 시간에 게시'
