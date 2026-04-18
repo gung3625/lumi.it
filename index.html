@@ -2975,15 +2975,6 @@ function mInitWave2(){
       try { savedStyle = (JSON.parse(localStorage.getItem('lumi_settings')||'{}').captionStyle) || ''; } catch(e){}
       var prevNote = flow.userNote || '';
       var prevStyle = flow.userStyle || savedStyle;
-      var styleOpts = [
-        {v:'', l:'기본 (내 말투 학습 반영)'},
-        {v:'friendly', l:'친근하고 따뜻하게'},
-        {v:'casual', l:'가볍고 편하게'},
-        {v:'polite', l:'공손하고 단정하게'},
-        {v:'witty', l:'재치있고 위트있게'},
-        {v:'emotional', l:'감성적이고 서정적으로'},
-        {v:'professional', l:'전문적이고 신뢰감 있게'}
-      ].map(function(o){ return '<option value="'+o.v+'"'+(o.v===prevStyle?' selected':'')+'>'+o.l+'</option>'; }).join('');
       body.innerHTML =
         backBtnHtml('사진 다시 선택', 'window.mFlowBackFromStep0()') +
         '<div class="m-flow-progress"><span class="is-on"></span><span></span><span></span></div>' +
@@ -2992,20 +2983,23 @@ function mInitWave2(){
         '<div class="m-flow-thumbs">' + thumbsHtml + '</div>' +
         '<div class="m-flow-field"><label class="m-flow-field-label" for="m-flow-note">이번 게시 특이사항 (선택)</label>' +
         '<textarea id="m-flow-note" class="m-flow-textarea" rows="3" placeholder="예: 신메뉴 출시, 할인 이벤트, 영업시간 변경 등 캡션에 꼭 반영할 정보">'+esc(prevNote)+'</textarea></div>' +
-        '<div class="m-flow-field"><label class="m-flow-field-label" for="m-flow-style">캡션 스타일</label>' +
-        '<select id="m-flow-style" class="m-flow-input">'+styleOpts+'</select></div>' +
+        '<div class="m-flow-field"><label class="m-flow-field-label" for="m-flow-style">캡션 스타일 (선택)</label>' +
+        '<input type="text" id="m-flow-style" class="m-flow-input" maxlength="200" placeholder="예: 따뜻하지만 너무 감성적이진 않게, 이모지는 2개 이내" value="'+esc(prevStyle)+'"></div>' +
         '<div class="m-flow-notice" style="margin-top:16px;"><strong>\'캡션 생성\'을 누르면 이번 달 캡션 1회가 차감됩니다.</strong>' + noticeExtra + '</div>' +
         '<button type="button" class="m-cta" onclick="window.mFlowStartGenerate()" style="display:flex;margin:20px auto 0;">캡션 생성하기</button>';
       var styleSelEl = document.getElementById('m-flow-style');
       if (styleSelEl) {
-        styleSelEl.addEventListener('change', function(){
-          flow.userStyle = styleSelEl.value;
+        var persistStyle = function(){
+          var v = (styleSelEl.value || '').trim();
+          flow.userStyle = v;
           try {
             var settings = JSON.parse(localStorage.getItem('lumi_settings') || '{}');
-            settings.captionStyle = styleSelEl.value;
+            settings.captionStyle = v;
             localStorage.setItem('lumi_settings', JSON.stringify(settings));
           } catch(e){}
-        });
+        };
+        styleSelEl.addEventListener('change', persistStyle);
+        styleSelEl.addEventListener('blur', persistStyle);
       }
     } else if (flow.step === 1) {
       body.innerHTML =
