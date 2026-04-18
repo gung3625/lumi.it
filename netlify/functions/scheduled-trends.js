@@ -73,7 +73,7 @@ const DEFAULT_TRENDS = {
   pet: ['생식사료', '수제간식', '강아지유산균', '고양이캣타워', '반려견수영', '펫보험', '노즈워크', '슬링백'],
   interior: ['집꾸미기선반', '원목협탁', '패브릭포스터', '버티컬블라인드', '디퓨저향', '무드등조명', '빈티지러그', '테이블플랜트'],
   education: ['영어회화수업', '코딩부트캠프', '입시미술', '속독훈련', '수학올림피아드', '유아체능단', '독서토론', '악기레슨'],
-  studio: ['무드컨셉샷', '셀프스튜디오', '4컷필름사진', '프로필촮영', '커플화보', '흑백필름', '스냅웨딩', '인생네컷'],
+  studio: ['무드컨셉샷', '셀프스튜디오', '4컷필름사진', '프로필촬영', '커플화보', '흑백필름', '스냅웨딩', '인생네컷'],
 };
 
 // ---------------- 업종별 시드 ----------------
@@ -236,7 +236,16 @@ async function fetchNaverDatalab(category) {
       const bAvg = b.data.reduce((s, d) => s + d.ratio, 0) / b.data.length;
       return bAvg - aAvg;
     });
-    return sorted.map(g => g.title).filter(Boolean);
+    // DataLab 결과에서 groupName(시드 레이블) 대신 실제 검색했던 키워드들을 인기 순으로 반환
+    const titleToKeywords = new Map(
+      (keywordGroups || []).map(g => [g.groupName, g.keywords || []])
+    );
+    const ordered = [];
+    for (const g of sorted) {
+      const kws = titleToKeywords.get(g.title) || [];
+      for (const kw of kws) if (kw) ordered.push(kw);
+    }
+    return ordered;
   } catch(e) {
     console.error('[naver-datalab]', category, 'error:', e.message);
     return [];
