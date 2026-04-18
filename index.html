@@ -2843,7 +2843,7 @@ function mInitWave2(){
       flow.thumbUrls.forEach(function(u){ try { URL.revokeObjectURL(u); } catch(e){} });
     }
     flow.thumbUrls = files.map(function(f){ return URL.createObjectURL(f); });
-    flow.step = 0; flow.captions = []; flow.selectedIdx = 0; flow.editedCaption = ''; flow.regenCount = 0;
+    flow.step = 0; flow.captions = []; flow.selectedIdx = 0; flow.editedCaption = ''; flow.regenCount = 0; flow.posting = false;
     openFlow();
     renderFlow();
   };
@@ -2859,7 +2859,7 @@ function mInitWave2(){
       if (!sure) return;
     } catch(e){}
     // step 2 → step 0 (파일 재선택 없이 썸네일 검토로 복귀)
-    flow.step = 0; flow.captions = []; flow.editedCaption = ''; flow.regenCount = 0; flow.reservationKey = null;
+    flow.step = 0; flow.captions = []; flow.editedCaption = ''; flow.regenCount = 0; flow.reservationKey = null; flow.posting = false;
     renderFlow();
   };
   window.mFlowBackFromStep0 = function(){
@@ -2926,7 +2926,7 @@ function mInitWave2(){
         '<p class="m-flow-step0-sub">대표사진은 스토리 자동게시에 사용돼요</p>' +
         '<div class="m-flow-thumbs">' + thumbsHtml + '</div>' +
         '<div class="m-flow-notice"><strong>\'캡션 생성\'을 누르면 이번 달 캡션 1회가 차감됩니다.</strong>' + noticeExtra + '</div>' +
-        '<button type="button" class="m-cta" onclick="window.mFlowStartGenerate()">캡션 생성하기</button>';
+        '<button type="button" class="m-cta" onclick="window.mFlowStartGenerate()" style="display:flex;width:100%;margin-top:20px;">캡션 생성하기</button>';
     } else if (flow.step === 1) {
       body.innerHTML =
         backBtnHtml('취소', 'window.mCloseCaptionFlow()') +
@@ -3196,13 +3196,14 @@ function mInitWave2(){
       body: JSON.stringify(payload)
     }).then(function(r){ return r.json(); }).then(function(d){
       if (d && (d.ok || d.success)) {
+        flow.posting = false;
         flow.step = 3; renderFlow();
-        // refresh schedule list
         try { loadScheduleList(); } catch(e){}
       } else {
         throw new Error(d && d.error || '게시 실패');
       }
     }).catch(function(err){
+      flow.posting = false;
       showMobileToast('게시 실패: ' + (err.message || ''));
     });
   }
@@ -3211,7 +3212,7 @@ function mInitWave2(){
   var trendRov = document.getElementById('m-trend-fullview');
   var TREND_CATS = [
     {id:'cafe', label:'카페·디저트'}, {id:'food', label:'맛집·외식'}, {id:'beauty', label:'뷰티'},
-    {id:'hair', label:'헤어'}, {id:'fashion', label:'패션'}, {id:'pet', label:'반려동물'},
+    {id:'nail', label:'네일'}, {id:'hair', label:'헤어'}, {id:'fashion', label:'패션'}, {id:'pet', label:'반려동물'},
     {id:'flower', label:'꽃집'}, {id:'health', label:'건강·헬스'}, {id:'kids', label:'키즈'}, {id:'shop', label:'공방·소품'}
   ];
   var trendState = { cat: null };
