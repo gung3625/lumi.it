@@ -1701,14 +1701,19 @@ body.dark-mode .su-close svg{stroke:#f0f2f8;}
       })
       .catch(function(){ return { items: [] }; });
   };
-  // 예약 취소 (status 컬럼은 없으므로 cancelled 플래그 사용)
+  // 예약 취소 — /api/cancel-reservation (Bearer 검증, RLS 우회)
   window.lumiCancelReservation = function(rKey) {
-    return window.lumiSupa.from('reservations').update({ cancelled: true }).eq('reserve_key', rKey).select().maybeSingle()
+    var token = localStorage.getItem('lumi_token') || '';
+    return fetch('/api/cancel-reservation', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'Authorization':'Bearer '+token },
+      body: JSON.stringify({ reserveKey: rKey })
+    }).then(function(r){ return r.json().then(function(d){ return {status:r.status, data:d}; }); })
       .then(function(res){
-        if (res.error) return { success: false, error: res.error.message };
-        if (!res.data) return { success: false, error: '예약을 찾을 수 없습니다.' };
+        if (res.status !== 200) return { success: false, error: (res.data && res.data.error) || '예약 취소 실패' };
         return { success: true };
-      });
+      })
+      .catch(function(){ return { success: false, error: '예약 취소 실패' }; });
   };
   // 플랜 조회 (Supabase users.plan). 기존 /api/check-plan 응답 중 plan·user 부분만 채움.
   window.lumiCheckPlan = function() {
