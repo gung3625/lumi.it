@@ -1,4 +1,4 @@
-const { getStore } = require('@netlify/blobs');
+const { getAdminClient } = require('./_shared/supabase-admin');
 
 exports.handler = async (event) => {
   const headers = {
@@ -11,22 +11,26 @@ exports.handler = async (event) => {
     return { statusCode: 200, headers, body: '' };
   }
 
-  const store = getStore({
-    name: 'beta-applicants',
-    consistency: 'strong',
-    siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
-    token: process.env.NETLIFY_TOKEN,
-  });
+  let supa;
+  try {
+    supa = getAdminClient();
+  } catch(e) {
+    console.error('[beta-apply] Supabase 초기화 실패:', e.message);
+    return { statusCode: 500, headers, body: JSON.stringify({ error: '서버 오류가 발생했어요. 잠시 후 다시 시도해주세요.' }) };
+  }
 
   // GET: 현재 신청자 수 조회
   if (event.httpMethod === 'GET') {
     try {
-      const list = await store.list();
+      const { count, error } = await supa
+        .from('beta_applicants')
+        .select('*', { count: 'exact', head: true });
+      if (error) throw error;
       return {
         statusCode: 200, headers,
-        body: JSON.stringify({ count: list.blobs.length, max: 20 }),
+        body: JSON.stringify({ count: count || 0, max: 20 }),
       };
-    } catch {
+    } catch(e) {
       return { statusCode: 200, headers, body: JSON.stringify({ count: 0, max: 20 }) };
     }
   }
@@ -39,41 +43,53 @@ exports.handler = async (event) => {
         return { statusCode: 400, headers, body: JSON.stringify({ error: '필수 항목 누락' }) };
       }
 
-      const list = await store.list();
-      if (list.blobs.length >= 20) {
-        // 대기 명단에 실제 저장
-        const waitStore = getStore({
-          name: 'beta-waitlist',
-          consistency: 'strong',
-          siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
-          token: process.env.NETLIFY_TOKEN,
+      // 현재 신청자 수 확인
+      const { count: applicantCount, error: countErr } = await supa
+        .from('beta_applicants')
+        .select('*', { count: 'exact', head: true });
+      if (countErr) throw countErr;
+
+      const currentCount = applicantCount || 0;
+
+      if (currentCount >= 20) {
+        // 대기 명단에 저장
+        const { error: waitErr } = await supa.from('beta_waitlist').insert({
+          name,
+          store_name: storeName,
+          store_type: type,
+          phone,
+          insta: insta || null,
+          referral: referral || null,
+          utm: utm ? (typeof utm === 'object' ? utm : { raw: utm }) : null,
         });
-        const waitId = `waitlist_${Date.now()}`;
-        await waitStore.set(waitId, JSON.stringify({
-          id: waitId, name, store: storeName, type, phone,
-          insta: insta || '', referral: referral || '', utm: utm || '',
-          appliedAt: new Date().toISOString(),
-        }));
+        if (waitErr) throw waitErr;
         return { statusCode: 400, headers, body: JSON.stringify({ error: '마감', waitlist: true }) };
       }
 
-      const id = `applicant_${Date.now()}`;
-      await store.set(id, JSON.stringify({
-        id, name, store: storeName, type, phone,
-        insta: insta || '', referral: referral || '', utm: utm || '',
-        appliedAt: new Date().toISOString(),
-      }));
+      // 신청자 저장
+      const { error: insertErr } = await supa.from('beta_applicants').insert({
+        name,
+        store_name: storeName,
+        store_type: type,
+        phone,
+        insta: insta || null,
+        referral: referral || null,
+        utm: utm ? (typeof utm === 'object' ? utm : { raw: utm }) : null,
+      });
+      if (insertErr) throw insertErr;
+
+      const remaining = 20 - currentCount - 1;
 
       // 운영자 알림톡 발송
-      const remaining = 20 - list.blobs.length - 1;
       try {
+        const msgId = `apply_${Date.now()}`;
         const now = new Date().toISOString();
-        const signature = require('crypto').createHmac('sha256', process.env.SOLAPI_API_SECRET).update(`${now}${id}`).digest('hex');
+        const signature = require('crypto').createHmac('sha256', process.env.SOLAPI_API_SECRET).update(`${now}${msgId}`).digest('hex');
         await fetch('https://api.solapi.com/messages/v4/send', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `HMAC-SHA256 ApiKey=${process.env.SOLAPI_API_KEY}, Date=${now}, Salt=${id}, Signature=${signature}`,
+            'Authorization': `HMAC-SHA256 ApiKey=${process.env.SOLAPI_API_KEY}, Date=${now}, Salt=${msgId}, Signature=${signature}`,
           },
           body: JSON.stringify({
             message: {
@@ -83,7 +99,7 @@ exports.handler = async (event) => {
             },
           }),
         });
-      } catch(e) { console.log('운영자 알림 실패:', e.message); }
+      } catch(e) { console.log('[beta-apply] 운영자 알림 실패:', e.message); }
 
       // 신청자에게 자동 응답 SMS
       try {
@@ -104,14 +120,15 @@ exports.handler = async (event) => {
             },
           }),
         });
-      } catch(e) { console.log('신청자 응답 SMS 실패:', e.message); }
+      } catch(e) { console.log('[beta-apply] 신청자 응답 SMS 실패:', e.message); }
 
+      console.log('[beta-apply] 신청 처리 완료');
       return {
         statusCode: 200, headers,
         body: JSON.stringify({ success: true, remaining }),
       };
     } catch (e) {
-      console.error('beta-apply error:', e.message);
+      console.error('[beta-apply] error:', e.message);
       return { statusCode: 500, headers, body: JSON.stringify({ error: '처리 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.' }) };
     }
   }

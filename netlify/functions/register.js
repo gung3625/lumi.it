@@ -1,13 +1,40 @@
-const { getStore } = require('@netlify/blobs');
-const crypto = require('crypto');
+const { getAdminClient } = require('./_shared/supabase-admin');
+
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Content-Type': 'application/json' };
 
-function hashPassword(password) {
-  const salt = crypto.randomBytes(16).toString('hex');
-  const hash = crypto.pbkdf2Sync(password, salt, 600000, 64, 'sha512').toString('hex');
-  return salt + ':' + hash;
+// IP 기반 rate-limit: public.rate_limits 테이블 업서트 후 count 검사
+async function checkRateLimit(supabase, kind, ip, { windowSeconds = 600, max = 5 } = {}) {
+  const nowIso = new Date().toISOString();
+  try {
+    const { data: existing } = await supabase
+      .from('rate_limits')
+      .select('count, first_at')
+      .eq('kind', kind)
+      .eq('ip', ip)
+      .maybeSingle();
+
+    if (existing) {
+      const age = (Date.now() - new Date(existing.first_at).getTime()) / 1000;
+      if (age > windowSeconds) {
+        await supabase.from('rate_limits')
+          .update({ count: 1, first_at: nowIso, last_at: nowIso })
+          .eq('kind', kind).eq('ip', ip);
+        return { ok: true, count: 1 };
+      }
+      const nextCount = existing.count + 1;
+      await supabase.from('rate_limits')
+        .update({ count: nextCount, last_at: nowIso })
+        .eq('kind', kind).eq('ip', ip);
+      return { ok: nextCount <= max, count: nextCount };
+    }
+    await supabase.from('rate_limits').insert({ kind, ip, count: 1, first_at: nowIso, last_at: nowIso });
+    return { ok: true, count: 1 };
+  } catch (e) {
+    // rate-limit 저장 실패해도 요청은 통과시킴 (fail-open)
+    return { ok: true, count: 0 };
+  }
 }
 
 exports.handler = async (event) => {
@@ -16,20 +43,12 @@ exports.handler = async (event) => {
     return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
-  // IP rate limit: 10분 내 5회 제한
+  const supabase = getAdminClient();
   const ip = (event.headers['x-nf-client-connection-ip'] || event.headers['client-ip'] || 'unknown');
-  try {
-    const rlStore = getStore({ name: 'rate-limit', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
-    const rlKey = 'register:' + ip;
-    const rlRaw = await rlStore.get(rlKey).catch(() => null);
-    const rl = rlRaw ? JSON.parse(rlRaw) : { count: 0, firstAt: Date.now() };
-    if (Date.now() - rl.firstAt > 600000) { rl.count = 0; rl.firstAt = Date.now(); }
-    rl.count++;
-    await rlStore.set(rlKey, JSON.stringify(rl));
-    if (rl.count > 5) {
-      return { statusCode: 429, headers: CORS, body: JSON.stringify({ error: '가입 시도가 너무 많습니다. 10분 후 다시 시도해주세요.' }) };
-    }
-  } catch(e) {}
+  const rl = await checkRateLimit(supabase, 'register', ip, { windowSeconds: 600, max: 5 });
+  if (!rl.ok) {
+    return { statusCode: 429, headers: CORS, body: JSON.stringify({ error: '가입 시도가 너무 많습니다. 10분 후 다시 시도해주세요.' }) };
+  }
 
   let body;
   try { body = JSON.parse(event.body); } catch {
@@ -42,7 +61,6 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '필수 정보가 누락됐습니다.' }) };
   }
 
-  // 생년월일 형식 검사 (선택 필드 — 입력 시만 검사)
   if (birthdate) {
     const bdRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (!bdRegex.test(birthdate)) {
@@ -56,56 +74,96 @@ exports.handler = async (event) => {
   }
 
   try {
-    const store = getStore({
-      name: 'users', consistency: 'strong',
-      siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
-      token: process.env.NETLIFY_TOKEN
+    // 1) Supabase Auth 계정 생성
+    const { data: createData, error: createErr } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,  // OTP 플로우를 이미 거친 상태라고 가정 — 프론트에서 OTP 검증 후 호출
+      user_metadata: { name, storeName },
     });
 
-    let existing;
-    try { existing = await store.get('user:' + email); } catch(e) { existing = null; }
-    if (existing) {
-      return { statusCode: 409, headers: CORS, body: JSON.stringify({ error: '이미 가입된 이메일입니다.' }) };
+    if (createErr) {
+      const msg = String(createErr.message || '');
+      if (/already|registered|exists/i.test(msg)) {
+        return { statusCode: 409, headers: CORS, body: JSON.stringify({ error: '이미 가입된 이메일입니다.' }) };
+      }
+      console.error('[register] auth.admin.createUser error:', msg);
+      return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '가입 처리 중 오류가 발생했습니다.' }) };
     }
 
-    const user = {
-      name,
-      storeName,
-      instagram: instagram.replace('@', ''),
+    const authUser = createData.user;
+    const userId = authUser.id;
+
+    // 2) public.users 프로필 insert
+    const instaHandle = (instagram || '').replace('@', '').toLowerCase() || null;
+    const profileRow = {
+      id: userId,
       email,
-      phone,
-      birthdate,
-      gender: gender || '',
-      passwordHash: hashPassword(password),
-      storeDesc: storeDesc || '',
-      region: region || '',
-      sidoCode: sidoCode || '',
-      sigunguCode: sigunguCode || '',
-      storeSido: storeSido || '',
-      bizCategory: bizCategory || 'cafe',
-      captionTone: captionTone || 'warm',
-      tagStyle: tagStyle || 'mid',
-      agreeMarketing: agreeMarketing === true,
-      agreeMarketingAt: agreeMarketing === true ? new Date().toISOString() : null,
+      name,
+      store_name: storeName,
+      phone: phone || null,
+      birthdate: birthdate || null,
+      gender: gender || null,
+      instagram_handle: instaHandle,
+      store_desc: storeDesc || null,
+      region: region || null,
+      sido_code: sidoCode || null,
+      sigungu_code: sigunguCode || null,
+      store_sido: storeSido || null,
+      biz_category: bizCategory || 'cafe',
+      caption_tone: captionTone || 'warm',
+      tag_style: tagStyle || 'mid',
+      agree_marketing: agreeMarketing === true,
+      agree_marketing_at: agreeMarketing === true ? new Date().toISOString() : null,
       plan: 'trial',
-      trialStart: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-      autoRenew: true
+      trial_start: new Date().toISOString(),
+      auto_renew: true,
     };
 
-    await store.set('user:' + email, JSON.stringify(user));
+    const { error: insertErr } = await supabase.from('users').insert(profileRow);
+    if (insertErr) {
+      // instagram_handle UNIQUE 충돌 등 — auth 유저 롤백
+      console.error('[register] users insert error:', insertErr.message);
+      try { await supabase.auth.admin.deleteUser(userId); } catch (e) {}
+      if (/duplicate|unique/i.test(insertErr.message || '')) {
+        return { statusCode: 409, headers: CORS, body: JSON.stringify({ error: '이미 사용 중인 인스타그램 아이디입니다.' }) };
+      }
+      return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '가입 처리 중 오류가 발생했습니다.' }) };
+    }
 
-    // insta: 역조회 키 저장 — get-link-page, update-link-page에서 사용
-    const instaId = instagram.replace('@', '').toLowerCase();
-    if (instaId) await store.set('insta:' + instaId, email);
+    // 3) 세션 발급 (access_token 반환을 위해 비밀번호로 로그인)
+    const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
+    if (signInErr || !signInData || !signInData.session) {
+      console.error('[register] signInWithPassword error:', signInErr && signInErr.message);
+      return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '세션 생성 중 오류가 발생했습니다.' }) };
+    }
 
-    const token = require('crypto').randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-    await store.set('token:' + token, JSON.stringify({ email, createdAt: new Date().toISOString(), expiresAt }));
+    const token = signInData.session.access_token;
+    const safeUser = {
+      name: profileRow.name,
+      storeName: profileRow.store_name,
+      instagram: profileRow.instagram_handle || '',
+      email: profileRow.email,
+      phone: profileRow.phone || '',
+      birthdate: profileRow.birthdate || '',
+      gender: profileRow.gender || '',
+      storeDesc: profileRow.store_desc || '',
+      region: profileRow.region || '',
+      sidoCode: profileRow.sido_code || '',
+      sigunguCode: profileRow.sigungu_code || '',
+      storeSido: profileRow.store_sido || '',
+      bizCategory: profileRow.biz_category,
+      captionTone: profileRow.caption_tone,
+      tagStyle: profileRow.tag_style,
+      agreeMarketing: profileRow.agree_marketing,
+      agreeMarketingAt: profileRow.agree_marketing_at,
+      plan: profileRow.plan,
+      trialStart: profileRow.trial_start,
+      autoRenew: profileRow.auto_renew,
+      igConnected: false,
+    };
 
-    const { passwordHash, ...safeUser } = user;
-
-    // 웰컴 이메일 발송 (Resend)
+    // 4) Resend 웰컴 메일 (기존 그대로)
     try {
       const RESEND_API_KEY = process.env.RESEND_API_KEY;
       if (RESEND_API_KEY) {
@@ -152,10 +210,9 @@ exports.handler = async (event) => {
       }
     } catch(emailErr) {
       console.error('[lumi] 웰컴 이메일 발송 실패:', emailErr.message);
-      // 이메일 실패해도 가입은 성공으로 처리
     }
 
-    // 솔라피 웰컴 알림톡 발송
+    // 5) 솔라피 웰컴 알림톡 (기존 그대로)
     try {
       await fetch('https://lumi.it.kr/.netlify/functions/send-kakao', {
         method: 'POST',
@@ -180,7 +237,7 @@ exports.handler = async (event) => {
       body: JSON.stringify({ success: true, token, user: safeUser })
     };
   } catch (err) {
-    console.error('register error:', err);
+    console.error('register error:', err && err.message);
     return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '가입 처리 중 오류가 발생했습니다.' }) };
   }
 };

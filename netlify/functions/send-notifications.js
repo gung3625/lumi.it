@@ -1,6 +1,22 @@
-const { getStore } = require('@netlify/blobs');
+// 종합 알림 cron — Supabase 기반 (Blobs 완전 제거)
+// - 월간 리포트, 시즌 이벤트 D-7, 첫 게시 코칭, 구독 만료 D-7
+// - 리텐션 이메일 (활성화/휴면/주간팁/upsell/NPS) via Resend
+// - 운영자 일일 리포트 SMS
+//
+// 스키마 제약:
+//   public.users 에는 post_count/lastPostedAt/retentionEmailsSent 등 컬럼이 없음.
+//   - 게시 통계는 public.caption_history 집계로 계산.
+//   - 발송 이력은 public.rate_limits 테이블에 kind='notif:<key>:<user_id>' 로 저장.
+//   - 구독 만료일은 public.orders 최신 결제 + 30일 기준 계산.
+//   - retention_unsubscribed / agree_marketing 은 users 컬럼 그대로 사용.
 const crypto = require('crypto');
 const { Resend } = require('resend');
+const { getAdminClient } = require('./_shared/supabase-admin');
+
+const CORS = {
+  'Content-Type': 'application/json',
+  'Access-Control-Allow-Origin': '*',
+};
 
 function checkSecret(provided) {
   const secret = process.env.LUMI_SECRET;
@@ -9,20 +25,18 @@ function checkSecret(provided) {
   catch { return false; }
 }
 
-// 솔라피 설정
+// Solapi
 const API_KEY = process.env.SOLAPI_API_KEY;
 const API_SECRET = process.env.SOLAPI_API_SECRET;
 const CHANNEL_ID = 'KA01PF26032219112677567W26lSNGQj';
 
-// 알림 타입별 템플릿 (솔라피에 등록 후 ID 업데이트 필요)
 const TEMPLATES = {
-  monthly_report:   { id: 'KA01TP_MONTHLY_REPORT' },   // 월간 리포트
-  season_event:     { id: 'KA01TP_SEASON_EVENT' },     // 시즌/이벤트 알림
-  first_post_coach: { id: 'KA01TP_FIRST_POST' },       // 첫 게시물 코칭
-  expiry_d7:        { id: 'KA01TP_EXPIRY_D7' }         // 구독 만료 D-7
+  monthly_report:   { id: 'KA01TP_MONTHLY_REPORT' },
+  season_event:     { id: 'KA01TP_SEASON_EVENT' },
+  first_post_coach: { id: 'KA01TP_FIRST_POST' },
+  expiry_d7:        { id: 'KA01TP_EXPIRY_D7' }
 };
 
-// 솔라피 HMAC 인증 헤더
 function getAuthHeader() {
   const date = new Date().toISOString();
   const salt = Math.random().toString(36).substring(2, 12);
@@ -33,36 +47,108 @@ function getAuthHeader() {
   return `HMAC-SHA256 apiKey=${API_KEY}, date=${date}, salt=${salt}, signature=${signature}`;
 }
 
-// 알림톡 발송
 async function sendAlimtalk(to, templateId, variables) {
   const body = {
     message: {
       to,
       from: CHANNEL_ID,
       type: 'ATA',
-      kakaoOptions: {
-        pfId: CHANNEL_ID,
-        templateId,
-        variables
-      }
+      kakaoOptions: { pfId: CHANNEL_ID, templateId, variables }
     }
   };
-
   const res = await fetch('https://api.solapi.com/messages/v4/send', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': getAuthHeader()
-    },
+    headers: { 'Content-Type': 'application/json', 'Authorization': getAuthHeader() },
     body: JSON.stringify(body)
   });
-
   const data = await res.json();
   console.log('[lumi] 알림톡 발송 완료:', templateId, res.status);
   return data;
 }
 
-// 한국 주요 시즌/이벤트 캘린더
+// ============================================================
+// 발송 이력 저장: rate_limits 테이블 재활용
+//   kind = 'notif:<key>:<user_id>' (PK: kind + ip)
+//   ip   = 'notification' (고정 placeholder)
+//   first_at = 발송 시각
+// ============================================================
+const NOTIF_IP = 'notification';
+function notifKind(key, userId) { return `notif:${key}:${userId}`; }
+
+async function markNotifSent(supabase, key, userId) {
+  const nowIso = new Date().toISOString();
+  const kind = notifKind(key, userId);
+  try {
+    await supabase.from('rate_limits').upsert({
+      kind, ip: NOTIF_IP, count: 1, first_at: nowIso, last_at: nowIso,
+    }, { onConflict: 'kind,ip' });
+  } catch (e) { /* noop */ }
+}
+
+async function hasNotifSent(supabase, key, userId, afterIso = null) {
+  try {
+    const { data } = await supabase
+      .from('rate_limits')
+      .select('first_at')
+      .eq('kind', notifKind(key, userId))
+      .eq('ip', NOTIF_IP)
+      .maybeSingle();
+    if (!data) return false;
+    if (afterIso && new Date(data.first_at) < new Date(afterIso)) return false;
+    return true;
+  } catch (e) { return false; }
+}
+
+// ============================================================
+// 유저 통계 (caption_history + orders 에서 도출)
+// ============================================================
+async function getUserPostStats(supabase, userId) {
+  const { data: rows } = await supabase
+    .from('caption_history')
+    .select('created_at')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(1000);
+  const list = rows || [];
+  return {
+    postCount: list.length,
+    firstPostedAt: list.length ? list[list.length - 1].created_at : null,
+    lastPostedAt: list.length ? list[0].created_at : null,
+  };
+}
+
+async function getUserSubscription(supabase, userId) {
+  const { data: last } = await supabase
+    .from('orders')
+    .select('plan, status, created_at')
+    .eq('user_id', userId)
+    .eq('status', 'paid')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!last) return { subscriptionStart: null, subscriptionEnd: null };
+  const start = new Date(last.created_at);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 30);
+  return {
+    subscriptionStart: start.toISOString(),
+    subscriptionEnd: end.toISOString(),
+  };
+}
+
+async function countLastMonthPosts(supabase, userId, startIso, endIso) {
+  const { count } = await supabase
+    .from('caption_history')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .gte('created_at', startIso)
+    .lt('created_at', endIso);
+  return count || 0;
+}
+
+// ============================================================
+// 시즌 캘린더
+// ============================================================
 const SEASON_EVENTS = [
   { month: 1, day: 1,  name: '신정',        tip: '새해 첫날 특별 메뉴나 이벤트를 미리 준비해보세요!' },
   { month: 1, day: 24, name: '설날',         tip: '명절 연휴 전후 영업 안내 게시물을 미리 올려두세요.' },
@@ -83,7 +169,6 @@ const SEASON_EVENTS = [
   { month: 12, day: 31, name: '연말',        tip: '한 해 마무리 감사 인사와 새해 계획을 공유해보세요.' }
 ];
 
-// 오늘로부터 7일 후 이벤트 찾기
 function getUpcomingEvent() {
   const now = new Date();
   const target = new Date(now);
@@ -96,39 +181,38 @@ function getUpcomingEvent() {
   }) || null;
 }
 
-// 월간 리포트 발송 (매월 1일)
-async function sendMonthlyReport(userStore) {
+// ============================================================
+// 알림톡 4종
+// ============================================================
+async function sendMonthlyReport(supabase, users) {
   const now = new Date();
   if (now.getDate() !== 1) return { skipped: true, reason: '월 1일이 아님' };
 
   const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 1);
   const lastMonthStr = `${lastMonth.getFullYear()}-${lastMonth.getMonth() + 1}`;
 
-  const { blobs } = await userStore.list({ prefix: 'user:' });
   let sent = 0;
-
-  for (const blob of blobs) {
+  for (const user of users) {
     try {
-      const raw = await userStore.get(blob.key);
-      if (!raw) continue;
-      const user = JSON.parse(raw);
       if (!user.phone || !user.plan || user.plan === 'trial') continue;
 
+      const used = await countLastMonthPosts(supabase, user.id, lastMonth.toISOString(), lastMonthEnd.toISOString());
       const planLimitMap = { standard: 16, pro: 20 };
       const limit = planLimitMap[user.plan] || 16;
-      const used = user.postCountMonth === lastMonthStr ? (user.postCount || 0) : 0;
       const remaining = Math.max(0, limit - used);
 
-      // 다음 결제일 계산
+      // 다음 결제일 계산: 최근 결제 + 30일
+      const sub = await getUserSubscription(supabase, user.id);
       let nextBillingStr = '갱신일 미정';
-      if (user.subscriptionStart) {
-        const nextBilling = new Date(user.subscriptionStart);
+      if (sub.subscriptionStart) {
+        const nextBilling = new Date(sub.subscriptionStart);
         nextBilling.setMonth(nextBilling.getMonth() + 1);
         nextBillingStr = `${nextBilling.getMonth() + 1}월 ${nextBilling.getDate()}일`;
       }
 
       await sendAlimtalk(user.phone, TEMPLATES.monthly_report.id, {
-        '#{이름}': user.name || user.storeName || '대표님',
+        '#{이름}': user.name || user.store_name || '대표님',
         '#{지난달}': `${lastMonth.getMonth() + 1}월`,
         '#{게시횟수}': String(used),
         '#{남은횟수}': String(remaining),
@@ -136,127 +220,105 @@ async function sendMonthlyReport(userStore) {
       });
       sent++;
       await new Promise(r => setTimeout(r, 200));
-    } catch(e) {
-      console.error('[monthly_report] 발송 실패:', blob.key, e.message);
+    } catch (e) {
+      console.error('[monthly_report] 발송 실패:', user.id, e.message);
     }
   }
-  return { sent };
+  return { sent, month: lastMonthStr };
 }
 
-// 시즌/이벤트 D-7 알림
-async function sendSeasonEventAlert(userStore) {
+async function sendSeasonEventAlert(supabase, users) {
   const event = getUpcomingEvent();
   if (!event) return { skipped: true, reason: '7일 내 이벤트 없음' };
 
-  const { blobs } = await userStore.list({ prefix: 'user:' });
   let sent = 0;
-
-  for (const blob of blobs) {
+  for (const user of users) {
     try {
-      const raw = await userStore.get(blob.key);
-      if (!raw) continue;
-      const user = JSON.parse(raw);
-      if (!user.phone) continue; // trial 포함 전체 발송
+      if (!user.phone) continue;
 
       await sendAlimtalk(user.phone, TEMPLATES.season_event.id, {
-        '#{이름}': user.name || user.storeName || '대표님',
+        '#{이름}': user.name || user.store_name || '대표님',
         '#{이벤트}': event.name,
         '#{팁}': event.tip
       });
       sent++;
       await new Promise(r => setTimeout(r, 200));
-    } catch(e) {
-      console.error('[season_event] 발송 실패:', blob.key, e.message);
+    } catch (e) {
+      console.error('[season_event] 발송 실패:', user.id, e.message);
     }
   }
   return { sent, event: event.name };
 }
 
-// 첫 게시물 코칭 (가입 후 3일 미업로드)
-async function sendFirstPostCoaching(userStore) {
+async function sendFirstPostCoaching(supabase, users) {
   const now = new Date();
-  const { blobs } = await userStore.list({ prefix: 'user:' });
   let sent = 0;
 
-  for (const blob of blobs) {
+  for (const user of users) {
     try {
-      const raw = await userStore.get(blob.key);
-      if (!raw) continue;
-      const user = JSON.parse(raw);
       if (!user.phone) continue;
-
-      const createdAt = new Date(user.createdAt);
+      const createdAt = new Date(user.created_at);
       const diffDays = Math.floor((now - createdAt) / (1000 * 60 * 60 * 24));
-
-      // 가입 후 정확히 3일째이고 게시물이 없는 경우
       if (diffDays !== 3) continue;
-      if ((user.postCount || 0) > 0) continue;
-      // 이미 코칭 발송했으면 스킵
-      if (user.firstPostCoachSent) continue;
+
+      const stats = await getUserPostStats(supabase, user.id);
+      if (stats.postCount > 0) continue;
+      if (await hasNotifSent(supabase, 'first_post_coach', user.id)) continue;
 
       await sendAlimtalk(user.phone, TEMPLATES.first_post_coach.id, {
-        '#{이름}': user.name || user.storeName || '대표님'
+        '#{이름}': user.name || user.store_name || '대표님'
       });
 
-      // 발송 기록
-      user.firstPostCoachSent = true;
-      await userStore.set(blob.key.replace('user:', 'user:'), JSON.stringify(user));
+      await markNotifSent(supabase, 'first_post_coach', user.id);
       sent++;
       await new Promise(r => setTimeout(r, 200));
-    } catch(e) {
-      console.error('[first_post_coach] 발송 실패:', blob.key, e.message);
+    } catch (e) {
+      console.error('[first_post_coach] 발송 실패:', user.id, e.message);
     }
   }
   return { sent };
 }
 
-// 구독 만료 D-7 알림
-async function sendExpiryAlert(userStore) {
+async function sendExpiryAlert(supabase, users) {
   const now = new Date();
-  const targetDate = new Date(now);
-  targetDate.setDate(targetDate.getDate() + 7);
-  const { blobs } = await userStore.list({ prefix: 'user:' });
   let sent = 0;
 
-  for (const blob of blobs) {
+  for (const user of users) {
     try {
-      const raw = await userStore.get(blob.key);
-      if (!raw) continue;
-      const user = JSON.parse(raw);
-      if (!user.phone || !user.subscriptionEnd) continue;
-      if (user.plan === 'trial') continue;
-      if (user.autoRenew === true) continue; // 자동갱신이면 스킵
+      if (!user.phone || user.plan === 'trial') continue;
+      if (user.auto_renew === true) continue;
 
-      const expiryDate = new Date(user.subscriptionEnd);
+      const sub = await getUserSubscription(supabase, user.id);
+      if (!sub.subscriptionEnd) continue;
+      const expiryDate = new Date(sub.subscriptionEnd);
       const diffDays = Math.floor((expiryDate - now) / (1000 * 60 * 60 * 24));
       if (diffDays !== 7) continue;
 
       const expiryStr = `${expiryDate.getMonth() + 1}월 ${expiryDate.getDate()}일`;
 
       await sendAlimtalk(user.phone, TEMPLATES.expiry_d7.id, {
-        '#{이름}': user.name || user.storeName || '대표님',
+        '#{이름}': user.name || user.store_name || '대표님',
         '#{만료일}': expiryStr,
         '#{플랜}': user.plan === 'pro' ? '프로' : '스탠다드'
       });
       sent++;
       await new Promise(r => setTimeout(r, 200));
-    } catch(e) {
-      console.error('[expiry_d7] 발송 실패:', blob.key, e.message);
+    } catch (e) {
+      console.error('[expiry_d7] 발송 실패:', user.id, e.message);
     }
   }
   return { sent };
 }
 
-// === 리텐션 이메일 시스템 ===
-
-// HMAC 토큰 생성 (수신거부 링크용 — 30일 만료 타임스탬프 포함)
+// ============================================================
+// 리텐션 이메일 (Resend)
+// ============================================================
 function generateUnsubToken(email) {
   const ts = Date.now().toString();
   const hmac = crypto.createHmac('sha256', process.env.LUMI_SECRET).update(email + ':' + ts).digest('hex');
   return hmac + ':' + ts;
 }
 
-// 리텐션 이메일 HTML 빌드
 function buildRetentionHtml({ heading, body, ctaText, ctaUrl, userName, email }) {
   const unsubToken = generateUnsubToken(email);
   const unsubUrl = `https://lumi.it.kr/api/unsubscribe-retention?email=${encodeURIComponent(email)}&token=${unsubToken}`;
@@ -283,7 +345,6 @@ function buildRetentionHtml({ heading, body, ctaText, ctaUrl, userName, email })
 </body></html>`;
 }
 
-// Resend로 이메일 발송
 async function sendRetentionEmail(resend, to, subject, htmlContent) {
   const result = await resend.emails.send({
     from: 'lumi <noreply@lumi.it.kr>',
@@ -294,21 +355,16 @@ async function sendRetentionEmail(resend, to, subject, htmlContent) {
   return result;
 }
 
-// 활성화 시퀀스: trial + postCount === 0
-async function sendActivationSequence(store, user, blobKey, resend) {
+async function sendActivationSequence(supabase, user, stats, resend) {
   if (user.plan !== 'trial') return null;
-  if ((user.postCount || 0) > 0) return null;
+  if (stats.postCount > 0) return null;
 
   const now = new Date();
-  const createdAt = new Date(user.createdAt);
+  const createdAt = new Date(user.created_at);
   const diffDays = Math.floor((now - createdAt) / (1000 * 60 * 60 * 24));
-  const sent = user.retentionEmailsSent || {};
-  const userName = user.name || user.storeName;
-  const email = user.email;
-  let sentKey = null;
 
-  const storeName = user.storeName || '';
-  const biz = user.bizCategory || 'cafe';
+  const storeName = user.store_name || '';
+  const biz = user.biz_category || 'cafe';
   const bizExamples = {
     cafe: '☕ "오늘처럼 흐린 날엔 따뜻한 라떼 한 잔이 답이에요. 창가 자리에서 여유로운 오후, 어때요?"',
     food: '🍽️ "점심 메뉴 고민 끝! 오늘의 특선은 직접 끓인 된장찌개. 집밥이 그리울 때 오세요."',
@@ -318,6 +374,7 @@ async function sendActivationSequence(store, user, blobKey, resend) {
     fitness: '🏋️ "오늘도 한 세트 더! 꾸준함이 만드는 변화, 함께 만들어가요."'
   };
   const captionExample = bizExamples[biz] || bizExamples.cafe;
+  const userName = user.name || user.store_name;
   const storeGreeting = storeName ? `${storeName} 사장님` : (userName || '사장님');
 
   const sequences = [
@@ -343,71 +400,54 @@ async function sendActivationSequence(store, user, blobKey, resend) {
 
   const match = sequences.find(s => s.day === diffDays);
   if (!match) return null;
-  if (sent[match.key]) return null;
+  if (await hasNotifSent(supabase, match.key, user.id)) return null;
 
   const html = buildRetentionHtml({
-    heading: match.heading,
-    body: match.body,
-    ctaText: match.ctaText,
+    heading: match.heading, body: match.body, ctaText: match.ctaText,
     ctaUrl: 'https://lumi.it.kr/dashboard.html',
-    userName: storeGreeting,
-    email
+    userName: storeGreeting, email: user.email
   });
 
-  await sendRetentionEmail(resend, email, match.heading, html);
-
-  sent[match.key] = new Date().toISOString();
-  user.retentionEmailsSent = sent;
-  await store.set(blobKey, JSON.stringify(user));
+  await sendRetentionEmail(resend, user.email, match.heading, html);
+  await markNotifSent(supabase, match.key, user.id);
   return { sent: match.key };
 }
 
-// Trial→유료 업셀 시퀀스: trial + postCount >= 1 + D5 (만료 2일 전)
-async function sendTrialUpsellEmail(store, user, blobKey, resend) {
+async function sendTrialUpsellEmail(supabase, user, stats, resend) {
   if (user.plan !== 'trial') return null;
-  if ((user.postCount || 0) < 1) return null; // 써본 적 있는 사람만
+  if (stats.postCount < 1) return null;
 
   const now = new Date();
-  const createdAt = new Date(user.createdAt);
+  const createdAt = new Date(user.created_at);
   const diffDays = Math.floor((now - createdAt) / (1000 * 60 * 60 * 24));
-  if (diffDays !== 5) return null; // 가입 5일째 (만료 2일 전)
+  if (diffDays !== 5) return null;
+  if (await hasNotifSent(supabase, 'upsell_d5', user.id)) return null;
 
-  const sent = user.retentionEmailsSent || {};
-  if (sent['upsell_d5']) return null;
-
-  const storeName = user.storeName || '';
+  const storeName = user.store_name || '';
   const storeGreeting = storeName ? `${storeName} 사장님` : (user.name || '사장님');
-  const postCount = user.postCount || 0;
 
   const html = buildRetentionHtml({
     heading: `${storeGreeting}, 체험 기간이 거의 끝나요`,
-    body: `지금까지 lumi로 ${postCount}개의 게시물을 올리셨어요.\n\n체험이 끝나면 이 기능들을 쓸 수 없게 돼요:\n• 무제한 캡션 생성\n• 날씨·트렌드 반영\n• 예약 게시\n• 말투 학습\n\n월 1.9만원부터, 대행사 비용의 1/10이에요.`,
+    body: `지금까지 lumi로 ${stats.postCount}개의 게시물을 올리셨어요.\n\n체험이 끝나면 이 기능들을 쓸 수 없게 돼요:\n• 무제한 캡션 생성\n• 날씨·트렌드 반영\n• 예약 게시\n• 말투 학습\n\n월 1.9만원부터, 대행사 비용의 1/10이에요.`,
     ctaText: '구독 시작하기',
     ctaUrl: 'https://lumi.it.kr/subscribe',
-    userName: storeGreeting,
-    email: user.email
+    userName: storeGreeting, email: user.email
   });
 
   await sendRetentionEmail(resend, user.email, `${storeGreeting}, 체험 기간이 거의 끝나요`, html);
-
-  sent['upsell_d5'] = new Date().toISOString();
-  user.retentionEmailsSent = sent;
-  await store.set(blobKey, JSON.stringify(user));
+  await markNotifSent(supabase, 'upsell_d5', user.id);
   return { sent: 'upsell_d5' };
 }
 
-// 휴면 시퀀스: standard/pro + postCount >= 1 + 마지막 게시 후 3/7/14일
-async function sendDormantSequence(store, user, blobKey, resend) {
+async function sendDormantSequence(supabase, user, stats, resend) {
   if (!user.plan || user.plan === 'trial') return null;
-  if ((user.postCount || 0) < 1) return null;
-  if (!user.lastPostedAt) return null;
+  if (stats.postCount < 1) return null;
+  if (!stats.lastPostedAt) return null;
 
   const now = new Date();
-  const lastPosted = new Date(user.lastPostedAt);
+  const lastPosted = new Date(stats.lastPostedAt);
   const diffDays = Math.floor((now - lastPosted) / (1000 * 60 * 60 * 24));
-  const sent = user.retentionEmailsSent || {};
-  const userName = user.name || user.storeName;
-  const email = user.email;
+  const userName = user.name || user.store_name;
 
   const sequences = [
     { day: 3, key: 'dormant_d3', heading: '요즘 게시물이 뜸하시네요', body: '마지막 게시 후 3일이 지났어요. 꾸준한 게시가 인스타그램 노출의 핵심이에요. 오늘 사진 한 장 올려보시는 건 어떨까요?' },
@@ -417,48 +457,35 @@ async function sendDormantSequence(store, user, blobKey, resend) {
 
   const match = sequences.find(s => s.day === diffDays);
   if (!match) return null;
-
-  // 이전에 발송했더라도 lastPostedAt이 발송 이후이면 재발송 허용
-  if (sent[match.key]) {
-    const sentAt = new Date(sent[match.key]);
-    if (lastPosted <= sentAt) return null;
-  }
+  // 이전 발송 이력이 lastPosted 이후면 재발송 금지
+  if (await hasNotifSent(supabase, match.key, user.id, stats.lastPostedAt)) return null;
 
   const html = buildRetentionHtml({
-    heading: match.heading,
-    body: match.body,
+    heading: match.heading, body: match.body,
     ctaText: '게시물 만들기',
     ctaUrl: 'https://lumi.it.kr/dashboard.html',
-    userName,
-    email
+    userName, email: user.email
   });
 
-  await sendRetentionEmail(resend, email, match.heading, html);
-
-  sent[match.key] = new Date().toISOString();
-  user.retentionEmailsSent = sent;
-  await store.set(blobKey, JSON.stringify(user));
+  await sendRetentionEmail(resend, user.email, match.heading, html);
+  await markNotifSent(supabase, match.key, user.id);
   return { sent: match.key };
 }
 
-// 주간 팁: 매주 월요일, standard/pro, 직전 주 게시 1회 이상
-async function sendWeeklyTip(store, user, blobKey, resend) {
+async function sendWeeklyTip(supabase, user, stats, resend) {
   const now = new Date();
-  if (now.getDay() !== 1) return null; // 월요일만
-
+  if (now.getDay() !== 1) return null;
   if (!user.plan || user.plan === 'trial') return null;
-  if (!user.lastPostedAt) return null;
+  if (!stats.lastPostedAt) return null;
 
-  const lastPosted = new Date(user.lastPostedAt);
+  const lastPosted = new Date(stats.lastPostedAt);
   const daysSincePost = Math.floor((now - lastPosted) / (1000 * 60 * 60 * 24));
-  if (daysSincePost > 7) return null; // 직전 주 게시 없음
+  if (daysSincePost > 7) return null;
 
-  const sent = user.retentionEmailsSent || {};
   const weekKey = `weekly_${now.getFullYear()}_W${Math.ceil(((now - new Date(now.getFullYear(), 0, 1)) / 86400000 + new Date(now.getFullYear(), 0, 1).getDay() + 1) / 7)}`;
-  if (sent[weekKey]) return null;
+  if (await hasNotifSent(supabase, weekKey, user.id)) return null;
 
-  const userName = user.name || user.storeName;
-  const email = user.email;
+  const userName = user.name || user.store_name;
   const tips = [
     '이번 주는 "비하인드 컷"을 올려보세요. 준비 과정이나 주방 모습은 고객에게 진정성을 전달해요.',
     '메뉴 클로즈업 사진은 항상 반응이 좋아요. 자연광에서 찍으면 더 맛있어 보입니다!',
@@ -469,36 +496,29 @@ async function sendWeeklyTip(store, user, blobKey, resend) {
   const tip = tips[Math.floor(Math.random() * tips.length)];
 
   const html = buildRetentionHtml({
-    heading: '이번 주 게시물 추천 💡',
-    body: tip,
+    heading: '이번 주 게시물 추천 💡', body: tip,
     ctaText: '게시물 만들기',
     ctaUrl: 'https://lumi.it.kr/dashboard.html',
-    userName,
-    email
+    userName, email: user.email
   });
 
-  await sendRetentionEmail(resend, email, '이번 주 추천 게시 주제', html);
-
-  sent[weekKey] = new Date().toISOString();
-  user.retentionEmailsSent = sent;
-  await store.set(blobKey, JSON.stringify(user));
+  await sendRetentionEmail(resend, user.email, '이번 주 추천 게시 주제', html);
+  await markNotifSent(supabase, weekKey, user.id);
   return { sent: weekKey };
 }
 
-// NPS 만족도 자동 수집: 첫 게시 3일 후
-async function sendNpsSurveyEmail(store, user, blobKey, resend) {
-  if ((user.postCount || 0) < 1) return null;
-  if (!user.firstPostedAt && !user.lastPostedAt) return null;
+async function sendNpsSurveyEmail(supabase, user, stats, resend) {
+  if (stats.postCount < 1) return null;
+  const firstPostedAt = stats.firstPostedAt || stats.lastPostedAt;
+  if (!firstPostedAt) return null;
 
-  const firstPost = new Date(user.firstPostedAt || user.lastPostedAt);
+  const firstPost = new Date(firstPostedAt);
   const now = new Date();
   const diffDays = Math.floor((now - firstPost) / (1000 * 60 * 60 * 24));
   if (diffDays !== 3) return null;
+  if (await hasNotifSent(supabase, 'nps_d3', user.id)) return null;
 
-  const sent = user.retentionEmailsSent || {};
-  if (sent['nps_d3']) return null;
-
-  const storeName = user.storeName || '';
+  const storeName = user.store_name || '';
   const storeGreeting = storeName ? `${storeName} 사장님` : (user.name || '사장님');
 
   const html = buildRetentionHtml({
@@ -506,130 +526,160 @@ async function sendNpsSurveyEmail(store, user, blobKey, resend) {
     body: `게시물을 올려보신 지 며칠 됐는데, 어떠셨어요?\n\n솔직한 피드백 한 줄이면 충분해요. 사장님의 한마디가 lumi를 더 좋게 만들어요.`,
     ctaText: '피드백 남기기 (30초)',
     ctaUrl: 'https://lumi.it.kr/support#inquiry-form',
-    userName: storeGreeting,
-    email: user.email
+    userName: storeGreeting, email: user.email
   });
 
   await sendRetentionEmail(resend, user.email, `${storeGreeting}, lumi 사용해보니 어때요?`, html);
-
-  sent['nps_d3'] = new Date().toISOString();
-  user.retentionEmailsSent = sent;
-  await store.set(blobKey, JSON.stringify(user));
+  await markNotifSent(supabase, 'nps_d3', user.id);
   return { sent: 'nps_d3' };
 }
 
-// 리텐션 이메일 전체 실행
-async function runRetentionEmails(userStore) {
+async function runRetentionEmails(supabase, users) {
   if (!process.env.RESEND_API_KEY) return { skipped: true, reason: 'RESEND_API_KEY 미설정' };
 
   const resend = new Resend(process.env.RESEND_API_KEY);
-  const { blobs } = await userStore.list({ prefix: 'user:' });
   const results = { activation: 0, dormant: 0, weeklyTip: 0, upsell: 0, nps: 0, skipped: 0 };
 
-  for (const blob of blobs) {
+  for (const user of users) {
     try {
-      const raw = await userStore.get(blob.key);
-      if (!raw) continue;
-      const user = JSON.parse(raw);
       if (!user.email) continue;
+      if (!user.agree_marketing) { results.skipped++; continue; }
+      if (user.retention_unsubscribed) { results.skipped++; continue; }
 
-      // 마케팅 미동의 또는 수신거부 시 스킵
-      if (!user.agreeMarketing) { results.skipped++; continue; }
-      if (user.retentionUnsubscribed) { results.skipped++; continue; }
+      const stats = await getUserPostStats(supabase, user.id);
 
-      const a = await sendActivationSequence(userStore, user, blob.key, resend);
+      const a = await sendActivationSequence(supabase, user, stats, resend);
       if (a) results.activation++;
 
-      const d = await sendDormantSequence(userStore, user, blob.key, resend);
+      const d = await sendDormantSequence(supabase, user, stats, resend);
       if (d) results.dormant++;
 
-      const w = await sendWeeklyTip(userStore, user, blob.key, resend);
+      const w = await sendWeeklyTip(supabase, user, stats, resend);
       if (w) results.weeklyTip++;
 
-      const u = await sendTrialUpsellEmail(userStore, user, blob.key, resend);
+      const u = await sendTrialUpsellEmail(supabase, user, stats, resend);
       if (u) results.upsell++;
 
-      const n = await sendNpsSurveyEmail(userStore, user, blob.key, resend);
+      const n = await sendNpsSurveyEmail(supabase, user, stats, resend);
       if (n) results.nps++;
 
       await new Promise(r => setTimeout(r, 100));
     } catch (e) {
-      console.error('[retention] 발송 실패:', blob.key, e.message);
+      console.error('[retention] 발송 실패:', user.id, e.message);
     }
   }
   return results;
 }
 
+// ============================================================
+// 운영자 일일 리포트 SMS
+// ============================================================
+async function sendAdminDailyReport(supabase, users) {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const todayStart = new Date(today + 'T00:00:00.000Z').toISOString();
+
+    let totalUsers = 0, trialUsers = 0, paidUsers = 0, totalPosts = 0;
+    for (const u of users) {
+      totalUsers++;
+      if (u.plan === 'trial') trialUsers++;
+      else if (u.plan) paidUsers++;
+    }
+
+    // 오늘 활성: caption_history 에 오늘 게시한 user_id distinct count
+    let activeToday = 0;
+    try {
+      const { data: todayRows } = await supabase
+        .from('caption_history')
+        .select('user_id')
+        .gte('created_at', todayStart);
+      const uniq = new Set((todayRows || []).map(r => r.user_id));
+      activeToday = uniq.size;
+    } catch (e) { /* noop */ }
+
+    // 총 게시물
+    try {
+      const { count } = await supabase
+        .from('caption_history')
+        .select('*', { count: 'exact', head: true });
+      totalPosts = count || 0;
+    } catch (e) { /* noop */ }
+
+    // 베타 신청자 수
+    let betaCount = 0;
+    try {
+      const { count } = await supabase
+        .from('beta_applicants')
+        .select('*', { count: 'exact', head: true });
+      betaCount = count || 0;
+    } catch (e) { /* noop */ }
+
+    const reportText = `[lumi 일일 리포트]\n베타 신청: ${betaCount}/20명\n가입자: ${totalUsers}명 (체험 ${trialUsers} / 유료 ${paidUsers})\n오늘 활성: ${activeToday}명\n총 게시물: ${totalPosts}건`;
+
+    const now = new Date().toISOString();
+    const salt = `report_${Date.now()}`;
+    const sig = crypto.createHmac('sha256', process.env.SOLAPI_API_SECRET).update(`${now}${salt}`).digest('hex');
+    await fetch('https://api.solapi.com/messages/v4/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `HMAC-SHA256 ApiKey=${process.env.SOLAPI_API_KEY}, Date=${now}, Salt=${salt}, Signature=${sig}`,
+      },
+      body: JSON.stringify({ message: { to: '01064246284', from: '01064246284', text: reportText } }),
+    });
+  } catch (e) {
+    console.log('일일 리포트 실패:', e.message);
+  }
+}
+
+// ============================================================
+// Handler
+// ============================================================
 exports.handler = async (event) => {
-  // 스케줄 함수 또는 수동 호출
   const isScheduled = !event.httpMethod && !event.headers;
   if (!isScheduled) {
     const secret = event.headers?.['x-lumi-secret'];
     if (!checkSecret(secret)) {
-      return { statusCode: 401, body: JSON.stringify({ error: '인증 실패' }) };
+      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증 실패' }) };
     }
   }
 
   try {
-    const userStore = getStore({
-      name: 'users',
-      consistency: 'strong',
-      siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
-      token: process.env.NETLIFY_TOKEN
-    });
+    const supabase = getAdminClient();
 
-    // 기존 알림 먼저 실행 (user 객체 write 포함)
+    // 전체 유저 한 번에 로드 (기존 Blobs list 대체)
+    const { data: users, error: userErr } = await supabase
+      .from('users')
+      .select('id, email, name, store_name, phone, plan, biz_category, auto_renew, agree_marketing, retention_unsubscribed, created_at');
+    if (userErr) {
+      console.error('[send-notifications] users 조회 실패:', userErr.message);
+      return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '조회 실패' }) };
+    }
+
+    const userList = users || [];
+
+    // 알림톡 4종 (독립적으로 병렬 실행)
     const [monthly, season, firstPost, expiry] = await Promise.all([
-      sendMonthlyReport(userStore),
-      sendSeasonEventAlert(userStore),
-      sendFirstPostCoaching(userStore),
-      sendExpiryAlert(userStore)
+      sendMonthlyReport(supabase, userList),
+      sendSeasonEventAlert(supabase, userList),
+      sendFirstPostCoaching(supabase, userList),
+      sendExpiryAlert(supabase, userList),
     ]);
-    // 리텐션 이메일은 순차 실행 (race condition 방지)
-    const retention = await runRetentionEmails(userStore);
 
-    // 운영자 일일 리포트 SMS
-    try {
-      const { blobs: allUsers } = await userStore.list({ prefix: 'user:' });
-      let totalUsers = 0, activeToday = 0, totalPosts = 0, trialUsers = 0, paidUsers = 0;
-      const today = new Date().toISOString().slice(0, 10);
-      for (const b of allUsers) {
-        try {
-          const u = JSON.parse(await userStore.get(b.key));
-          totalUsers++;
-          if (u.plan === 'trial') trialUsers++;
-          else if (u.plan) paidUsers++;
-          totalPosts += (u.postCount || 0);
-          if (u.lastPostedAt && u.lastPostedAt.slice(0, 10) === today) activeToday++;
-        } catch(e) {}
-      }
-      const betaStore = getStore({ name: 'beta-applicants', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
-      const betaList = await betaStore.list();
-      const betaCount = betaList.blobs.length;
+    // 리텐션 이메일 (순차)
+    const retention = await runRetentionEmails(supabase, userList);
 
-      const reportText = `[lumi 일일 리포트]\n베타 신청: ${betaCount}/20명\n가입자: ${totalUsers}명 (체험 ${trialUsers} / 유료 ${paidUsers})\n오늘 활성: ${activeToday}명\n총 게시물: ${totalPosts}건`;
-
-      const now = new Date().toISOString();
-      const salt = `report_${Date.now()}`;
-      const crypto = require('crypto');
-      const sig = crypto.createHmac('sha256', process.env.SOLAPI_API_SECRET).update(`${now}${salt}`).digest('hex');
-      await fetch('https://api.solapi.com/messages/v4/send', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `HMAC-SHA256 ApiKey=${process.env.SOLAPI_API_KEY}, Date=${now}, Salt=${salt}, Signature=${sig}`,
-        },
-        body: JSON.stringify({ message: { to: '01064246284', from: '01064246284', text: reportText } }),
-      });
-    } catch(e) { console.log('일일 리포트 실패:', e.message); }
+    // 운영자 리포트
+    await sendAdminDailyReport(supabase, userList);
 
     console.log('[lumi] 알림 발송 완료:', { monthly, season, firstPost, expiry, retention });
     return {
       statusCode: 200,
+      headers: CORS,
       body: JSON.stringify({ success: true, monthly, season, firstPost, expiry, retention })
     };
-  } catch(err) {
+  } catch (err) {
     console.error('send-notifications error:', err.message);
-    return { statusCode: 500, body: JSON.stringify({ error: '알림 처리 중 오류가 발생했습니다.' }) };
+    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '알림 처리 중 오류가 발생했습니다.' }) };
   }
 };

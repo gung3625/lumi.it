@@ -139,6 +139,30 @@ input[type=checkbox]{width:24px;height:24px;}
 .toast{position:fixed;bottom:calc(32px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%) translateY(16px);background:linear-gradient(135deg,#FF6B8B,#DDA0DD);color:#fff;padding:12px 28px;border-radius:980px;font-size:14px;font-family:inherit;z-index:99;opacity:0;transition:all .4s cubic-bezier(.4,0,.2,1);pointer-events:none;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.103.3/dist/umd/supabase.min.js"></script>
+<script>
+  window.lumiSupa = window.supabase.createClient(
+    'https://cldsozdocxpvkbuxwqep.supabase.co',
+    'sb_publishable_WjWg5o05Y7lhib674Cr_fw_0mpY-ccG',
+    { auth: { persistSession: true, autoRefreshToken: true, storageKey: 'lumi-auth' } }
+  );
+  window.lumiSupa.auth.onAuthStateChange(function(event, session){
+    try {
+      if (session && session.access_token) {
+        localStorage.setItem('lumi_token', session.access_token);
+        var u = session.user || {};
+        var meta = u.user_metadata || {};
+        var prev = {};
+        try { prev = JSON.parse(localStorage.getItem('lumi_user') || '{}'); } catch(e){}
+        var merged = Object.assign({}, prev, { email: u.email || prev.email, id: u.id || prev.id }, meta);
+        localStorage.setItem('lumi_user', JSON.stringify(merged));
+      } else if (event === 'SIGNED_OUT') {
+        localStorage.removeItem('lumi_token');
+        localStorage.removeItem('lumi_user');
+      }
+    } catch(e) { /* 무시 */ }
+  });
+</script>
 </head>
 <body>
 <!-- Google Tag Manager (noscript) -->
@@ -426,12 +450,12 @@ function showToast(msg) {
   var token = localStorage.getItem('lumi_token');
   if (!token) return;
   try {
-    var res = await fetch('/.netlify/functions/check-plan', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }
-    });
-    if (!res.ok) return;
-    var data = await res.json();
+    var ures = await window.lumiSupa.auth.getUser();
+    var uid = ures && ures.data && ures.data.user ? ures.data.user.id : null;
+    if (!uid) return;
+    var pres = await window.lumiSupa.from('users').select('plan').eq('id', uid).single();
+    if (pres.error || !pres.data) return;
+    var data = { plan: pres.data.plan, planExpireAt: null, remaining: null, postCount: null };
     if (data.plan && data.plan !== 'trial') {
       var planLabels = { standard: '스탠다드', pro: '프로' };
       var label = planLabels[data.plan] || data.plan;

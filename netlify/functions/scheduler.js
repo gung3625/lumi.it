@@ -1,84 +1,87 @@
-const { getStore } = require('@netlify/blobs');
+// 1분 cron — 예약 게시 트리거.
+// public.reservations 에서 pending/scheduled 상태 + scheduled_at <= now() 조회 후
+// process-and-post-background / select-and-post-background 로 위임.
+const { getAdminClient } = require('./_shared/supabase-admin');
 
-exports.handler = async (event) => {
+exports.handler = async () => {
   try {
-    const store = getStore({
-      name: 'reservations',
-      consistency: 'strong',
-      siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
-      token: process.env.NETLIFY_TOKEN,
-    });
+    const supabase = getAdminClient();
+    const nowIso = new Date().toISOString();
 
-    const now = new Date();
-    let list;
-    try { list = await store.list({ prefix: 'reserve:' }); } catch(e) {
-      console.log('[scheduler] 예약 목록 없음:', e.message);
-      return { statusCode: 200 };
+    // 처리 대상: 아직 게시되지 않고 취소되지 않았으며 scheduled_at 이 지난 예약
+    // caption_status 는 뒤에서 분기 처리.
+    const { data: rows, error } = await supabase
+      .from('reservations')
+      .select('reserve_key, caption_status, selected_caption_index, post_mode, scheduled_at, is_sent, cancelled, user_id')
+      .eq('is_sent', false)
+      .eq('cancelled', false)
+      .not('scheduled_at', 'is', null)
+      .lte('scheduled_at', nowIso)
+      .order('scheduled_at', { ascending: true })
+      .limit(50);
+
+    if (error) {
+      console.error('[scheduler] reservations 조회 실패:', error.message);
+      return { statusCode: 500 };
     }
 
-    if (!list.blobs || list.blobs.length === 0) return { statusCode: 200 };
+    if (!rows || rows.length === 0) return { statusCode: 200 };
 
+    const siteUrl = 'https://lumi.it.kr';
     let triggered = 0;
 
-    for (const blob of list.blobs) {
+    for (const row of rows) {
       try {
-        const raw = await store.get(blob.key);
-        if (!raw) continue;
-        const item = JSON.parse(raw);
+        // 즉시 게시 모드는 select-caption → select-and-post-background 가 전담 — scheduler 불개입
+        if (row.post_mode === 'immediate') continue;
 
-        // 이미 게시됐거나 취소된 항목 스킵
-        if (item.isSent || item.cancelled || item.captionStatus === 'posted') continue;
-        if (!item.scheduledAt) continue;
-        if (new Date(item.scheduledAt) > now) continue;
-
-        // 즉시 게시 모드는 select-caption→select-and-post-background가 전담 — scheduler 불개입
-        if (item.postMode === 'immediate') continue;
-
-        // Background Function은 즉시 202 반환 — fire-and-forget
-        const siteUrl = 'https://lumi.it.kr';
-
-        // captionStatus 기반 분기
-        if (item.captionStatus === 'scheduled' && item.selectedCaptionIndex !== undefined) {
-          // 사용자가 이미 캡션을 선택한 예약건 → select-and-post-background로 IG 게시
+        // captionStatus 분기
+        if (row.caption_status === 'scheduled' && row.selected_caption_index !== null && row.selected_caption_index !== undefined) {
+          // 사용자가 이미 캡션을 선택한 예약 → select-and-post-background 로 IG 게시
           const res = await fetch(`${siteUrl}/.netlify/functions/select-and-post-background`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.LUMI_SECRET}` },
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${process.env.LUMI_SECRET}`,
+            },
             body: JSON.stringify({
-              reservationKey: blob.key,
-              captionIndex: item.selectedCaptionIndex,
-              email: item.storeProfile?.ownerEmail || '',
+              reservationKey: row.reserve_key,
+              captionIndex: row.selected_caption_index,
             }),
           });
           if (res.ok || res.status === 202) {
             triggered++;
-            console.log('[scheduler] select-and-post-background 트리거:', blob.key);
+            console.log('[scheduler] select-and-post-background 트리거:', row.reserve_key);
           } else {
-            console.error('[scheduler] select-and-post-background 트리거 실패:', blob.key, res.status);
+            console.error('[scheduler] select-and-post-background 트리거 실패:', row.reserve_key, res.status);
           }
-        } else if (['ready', 'posting', 'failed'].includes(item.captionStatus)) {
-          // 캡션 선택 대기 중 또는 게시 진행 중 → 스킵
-          console.log('[scheduler] 스킵 (captionStatus=' + item.captionStatus + '):', blob.key);
+        } else if (['ready', 'posting', 'failed'].includes(row.caption_status)) {
+          // 캡션 선택 대기 중 또는 진행 중 / 실패 — 스킵
+          console.log('[scheduler] 스킵 caption_status=' + row.caption_status + ':', row.reserve_key);
           continue;
         } else {
-          // 캡션 미생성 예약건 → 기존 process-and-post-background 호출
+          // 캡션 미생성 (pending 등) → 캡션 생성 + 게시 파이프라인 트리거
           const res = await fetch(`${siteUrl}/.netlify/functions/process-and-post-background`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.LUMI_SECRET}` },
-            body: JSON.stringify({ reservationKey: blob.key }),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${process.env.LUMI_SECRET}`,
+            },
+            body: JSON.stringify({ reservationKey: row.reserve_key }),
           });
           if (res.ok || res.status === 202) {
             triggered++;
-            console.log('[scheduler] process-and-post-background 트리거:', blob.key);
+            console.log('[scheduler] process-and-post-background 트리거:', row.reserve_key);
           } else {
-            console.error('[scheduler] 트리거 실패:', blob.key, res.status);
+            console.error('[scheduler] process-and-post-background 트리거 실패:', row.reserve_key, res.status);
           }
         }
-      } catch(e) {
-        console.error('[scheduler] 항목 오류:', blob.key, e.message);
+      } catch (e) {
+        console.error('[scheduler] 항목 오류:', row.reserve_key, e.message);
       }
     }
 
-    console.log(`[scheduler] 완료: ${triggered}건 트리거`);
+    console.log(`[scheduler] 완료: ${triggered}건 트리거 / ${rows.length}건 조회`);
     return { statusCode: 200 };
 
   } catch (err) {

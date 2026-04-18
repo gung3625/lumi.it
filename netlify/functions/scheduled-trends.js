@@ -1,8 +1,8 @@
 // scheduled-trends.js — 네이버 데이터랩 + 구글 트렌드 + GPT 파이프라인
-// 매일 자정 l30d-domestic:{cat} / l30d-global:{cat} blob 생성
+// 매일 자정 l30d-domestic:{cat} / l30d-global:{cat} 트렌드 생성 → Supabase public.trends 저장
 // (외부 릴레이 푸시는 폐지, CLAUDE.md 참조)
 
-const { getStore } = require('@netlify/blobs');
+const { getAdminClient } = require('./_shared/supabase-admin');
 const https = require('https');
 
 // ---------------- 필터 ----------------
@@ -384,30 +384,59 @@ ${googleStr}
   }
 }
 
-async function saveScope({ store, scope, category, tags, updatedAt, source }) {
-  const dateStr = updatedAt.slice(0, 10);
-  const storeKey = `l30d-${scope}:${category}`;
+// Supabase public.trends에 upsert
+// category 컬럼 = "{scope}:{category}" 형태로 복합 키 역할 (예: "l30d-domestic:cafe")
+async function saveScope({ supa, scope, category, tags, updatedAt, source }) {
+  const scopeKey = `l30d-${scope}:${category}`;
   const prevKey = `l30d-${scope}-prev:${category}`;
+  const dateStr = updatedAt.slice(0, 10);
   const dateKey = `l30d-${scope}:${category}:${dateStr}`;
 
-  try {
-    const cur = await store.get(storeKey);
-    if (cur) await store.set(prevKey, cur);
-  } catch(e) {}
-
-  const payload = JSON.stringify({
+  const payload = {
     keywords: toKeywordObjects(tags, source),
     insight: '',
     updatedAt,
     source,
-  });
-  await store.set(storeKey, payload);
-  await store.set(dateKey, payload);
+  };
+
+  // prev 백업 먼저 읽기
+  try {
+    const { data: cur } = await supa
+      .from('trends')
+      .select('keywords')
+      .eq('category', scopeKey)
+      .single();
+    if (cur) {
+      await supa.from('trends').upsert(
+        { category: prevKey, keywords: cur.keywords, collected_at: new Date().toISOString() },
+        { onConflict: 'category' }
+      );
+    }
+  } catch(e) {}
+
+  // 현재 데이터 upsert
+  await supa.from('trends').upsert(
+    { category: scopeKey, keywords: payload, collected_at: updatedAt },
+    { onConflict: 'category' }
+  );
+
+  // 날짜별 스냅샷
+  await supa.from('trends').upsert(
+    { category: dateKey, keywords: payload, collected_at: updatedAt },
+    { onConflict: 'category' }
+  );
 
   // 레거시 호환: trends:{cat} (해시태그 배열) — domestic만 업데이트
   if (scope === 'domestic') {
     const tagsWithHash = tags.map(t => '#' + t);
-    await store.set('trends:' + category, JSON.stringify({ tags: tagsWithHash, updatedAt, source: 'scheduled-trends' }));
+    await supa.from('trends').upsert(
+      {
+        category: 'trends:' + category,
+        keywords: { tags: tagsWithHash, updatedAt, source: 'scheduled-trends' },
+        collected_at: updatedAt,
+      },
+      { onConflict: 'category' }
+    );
   }
 }
 
@@ -423,13 +452,19 @@ exports.handler = async (event) => {
   }
   console.log('[scheduled-trends] 국내·해외 파이프라인 시작 (naver + google + gpt)');
 
+  let supa;
+  try {
+    supa = getAdminClient();
+  } catch(e) {
+    console.error('[scheduled-trends] Supabase 초기화 실패:', e.message);
+    return {
+      statusCode: 500,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ error: 'Supabase 초기화 실패' }),
+    };
+  }
+
   const categories = ['cafe', 'food', 'beauty', 'other'];
-  const store = getStore({
-    name: 'trends',
-    consistency: 'strong',
-    siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
-    token: process.env.NETLIFY_TOKEN,
-  });
   const updatedAt = new Date().toISOString();
 
   // 구글 RSS는 업종 무관 → 1회만 조회
@@ -457,7 +492,7 @@ exports.handler = async (event) => {
         const fromNaver = (naverData || []).map(normalize).filter(kw => !isBadKeyword(kw));
         domesticTags = [...new Set([...fromNaver, ...DEFAULT_TRENDS[category]])].slice(0, 8);
       }
-      await saveScope({ store, scope: 'domestic', category, tags: domesticTags, updatedAt, source: 'scheduled-gpt' });
+      await saveScope({ supa, scope: 'domestic', category, tags: domesticTags, updatedAt, source: 'scheduled-gpt' });
       domesticTags.forEach((kw, i) => allDomestic.push({ keyword: kw, score: 100 - i * 5, mentions: 0, source: 'scheduled-gpt', bizCategory: category }));
 
       // 해외 분류
@@ -468,7 +503,7 @@ exports.handler = async (event) => {
       if (!globalTags || globalTags.length < 3) {
         globalTags = [...DEFAULT_GLOBAL_TRENDS[category]].slice(0, 8);
       }
-      await saveScope({ store, scope: 'global', category, tags: globalTags, updatedAt, source: 'scheduled-gpt' });
+      await saveScope({ supa, scope: 'global', category, tags: globalTags, updatedAt, source: 'scheduled-gpt' });
       globalTags.forEach((kw, i) => allGlobal.push({ keyword: kw, score: 100 - i * 5, mentions: 0, source: 'scheduled-gpt', bizCategory: category }));
 
       // "뜰 가능성" 예측
@@ -486,11 +521,14 @@ exports.handler = async (event) => {
         }));
       }
       try {
-        await store.set(`l30d-rising:${category}`, JSON.stringify({
-          items: risingItems,
-          updatedAt,
-          source: 'gpt-prediction',
-        }));
+        await supa.from('trends').upsert(
+          {
+            category: `l30d-rising:${category}`,
+            keywords: { items: risingItems, updatedAt, source: 'gpt-prediction' },
+            collected_at: updatedAt,
+          },
+          { onConflict: 'category' }
+        );
       } catch(e) {
         console.error(`[rising] ${category} 저장 실패:`, e.message);
       }
@@ -504,8 +542,8 @@ exports.handler = async (event) => {
     } catch(e) {
       console.error(`[scheduled-trends] ${category} 실패:`, e.message);
       try {
-        await saveScope({ store, scope: 'domestic', category, tags: DEFAULT_TRENDS[category], updatedAt, source: 'fallback' });
-        await saveScope({ store, scope: 'global', category, tags: DEFAULT_GLOBAL_TRENDS[category], updatedAt, source: 'fallback' });
+        await saveScope({ supa, scope: 'domestic', category, tags: DEFAULT_TRENDS[category], updatedAt, source: 'fallback' });
+        await saveScope({ supa, scope: 'global', category, tags: DEFAULT_GLOBAL_TRENDS[category], updatedAt, source: 'fallback' });
       } catch(e2) {}
       results.push({ category, error: e.message });
     }
@@ -515,10 +553,25 @@ exports.handler = async (event) => {
   try {
     allDomestic.sort((a, b) => (b.score || 0) - (a.score || 0));
     allGlobal.sort((a, b) => (b.score || 0) - (a.score || 0));
-    try { const cur = await store.get('l30d-domestic:all'); if (cur) await store.set('l30d-domestic-prev:all', cur); } catch(e) {}
-    try { const cur = await store.get('l30d-global:all'); if (cur) await store.set('l30d-global-prev:all', cur); } catch(e) {}
-    await store.set('l30d-domestic:all', JSON.stringify({ keywords: allDomestic.slice(0, 20), updatedAt, source: 'scheduled-gpt-all' }));
-    await store.set('l30d-global:all', JSON.stringify({ keywords: allGlobal.slice(0, 20), updatedAt, source: 'scheduled-gpt-all' }));
+
+    // prev 백업
+    try {
+      const { data: curD } = await supa.from('trends').select('keywords').eq('category', 'l30d-domestic:all').single();
+      if (curD) await supa.from('trends').upsert({ category: 'l30d-domestic-prev:all', keywords: curD.keywords, collected_at: updatedAt }, { onConflict: 'category' });
+    } catch(e) {}
+    try {
+      const { data: curG } = await supa.from('trends').select('keywords').eq('category', 'l30d-global:all').single();
+      if (curG) await supa.from('trends').upsert({ category: 'l30d-global-prev:all', keywords: curG.keywords, collected_at: updatedAt }, { onConflict: 'category' });
+    } catch(e) {}
+
+    await supa.from('trends').upsert(
+      { category: 'l30d-domestic:all', keywords: { keywords: allDomestic.slice(0, 20), updatedAt, source: 'scheduled-gpt-all' }, collected_at: updatedAt },
+      { onConflict: 'category' }
+    );
+    await supa.from('trends').upsert(
+      { category: 'l30d-global:all', keywords: { keywords: allGlobal.slice(0, 20), updatedAt, source: 'scheduled-gpt-all' }, collected_at: updatedAt },
+      { onConflict: 'category' }
+    );
   } catch(e) {
     console.error('[all] 실패:', e.message);
   }

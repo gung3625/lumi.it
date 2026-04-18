@@ -1,5 +1,17 @@
-const { getStore } = require('@netlify/blobs');
+// 7일 인스타 캘린더 생성 — Supabase 기반 (Blobs 완전 제거)
+// - 비로그인 사용자: IP 기반 rate_limits (kind='calendar', 1일 3회)
+// - 로그인 사용자: Bearer 토큰 검증 → reservations 테이블에 post_mode='scheduled' 로 저장
+//   (전용 calendar 테이블이 없으므로 reservations.reserve_key 에 'cal:{user_id}' 저장)
 const https = require('https');
+const { getAdminClient } = require('./_shared/supabase-admin');
+const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
+
+const CORS = {
+  'Content-Type': 'application/json',
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
 
 function httpsGet(url, timeoutMs = 10000) {
   return new Promise((resolve, reject) => {
@@ -39,7 +51,6 @@ const BIZ_TO_TREND = {
   '꽃집': 'other', '옷가게': 'other', '헬스장': 'other', '기타': 'other'
 };
 
-// 지역명 → 시도코드 매핑 (축제 API용)
 const REGION_TO_SIDO = {
   '서울': '11', '부산': '21', '대구': '22', '인천': '23',
   '광주': '24', '대전': '25', '울산': '26', '세종': '36',
@@ -47,7 +58,6 @@ const REGION_TO_SIDO = {
   '전북': '37', '전남': '35', '경북': '38', '경남': '39', '제주': '50'
 };
 
-// 지역명 → 격자좌표 (단기예보 D+0~D+2용, get-weather-kma.js와 동일)
 const SIDO_GRID = {
   '서울': { nx: 60, ny: 127 }, '부산': { nx: 98, ny: 76 },
   '대구': { nx: 89, ny: 90 },  '인천': { nx: 55, ny: 124 },
@@ -60,7 +70,6 @@ const SIDO_GRID = {
   '제주': { nx: 52, ny: 38 }
 };
 
-// 중기육상예보 regId (권역)
 const SIDO_TO_MID_LAND = {
   '서울': '11B00000', '인천': '11B00000', '경기': '11B00000',
   '강원': '11D10000',
@@ -73,7 +82,6 @@ const SIDO_TO_MID_LAND = {
   '제주': '11G00000'
 };
 
-// 중기기온예보 regId (도시)
 const SIDO_TO_MID_TA = {
   '서울': '11B10101', '인천': '11B20201', '경기': '11B20601',
   '강원': '11D10301',
@@ -96,30 +104,53 @@ function extractSido(region) {
 function getClientIp(event) {
   return event.headers['x-forwarded-for']?.split(',')[0]?.trim()
     || event.headers['client-ip']
+    || event.headers['x-nf-client-connection-ip']
     || 'unknown';
 }
 
-async function checkRateLimit(ip, increment = true) {
+// 비로그인 IP rate limit: 하루 3회 (rate_limits 테이블)
+async function checkCalendarRateLimit(supabase, ip, increment = true) {
+  const kind = 'calendar';
+  const nowIso = new Date().toISOString();
+  const windowMs = 24 * 60 * 60 * 1000;
+
   try {
-    const store = getStore({
-      name: 'calendar-rate',
-      consistency: 'strong',
-      siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
-      token: process.env.NETLIFY_TOKEN
-    });
+    const { data: existing } = await supabase
+      .from('rate_limits')
+      .select('count, first_at')
+      .eq('kind', kind)
+      .eq('ip', ip)
+      .maybeSingle();
 
-    const today = new Date().toISOString().slice(0, 10);
-    const key = `rate:${ip}:${today}`;
-    const raw = await store.get(key);
-    const count = raw ? parseInt(raw, 10) : 0;
+    const age = existing ? (Date.now() - new Date(existing.first_at).getTime()) : null;
 
-    if (count >= 3) return { allowed: false, remaining: 0, store, key, count };
+    // 창이 만료되었거나 행이 없음 → 신규 집계
+    if (!existing || age > windowMs) {
+      if (increment) {
+        if (existing) {
+          await supabase.from('rate_limits')
+            .update({ count: 1, first_at: nowIso, last_at: nowIso })
+            .eq('kind', kind).eq('ip', ip);
+        } else {
+          await supabase.from('rate_limits').insert({ kind, ip, count: 1, first_at: nowIso, last_at: nowIso });
+        }
+      }
+      return { allowed: true, remaining: 2, currentCount: increment ? 1 : 0 };
+    }
 
-    if (increment) await store.set(key, String(count + 1));
-    return { allowed: true, remaining: 2 - count, store, key, count };
+    if (existing.count >= 3) {
+      return { allowed: false, remaining: 0, currentCount: existing.count };
+    }
+
+    if (increment) {
+      await supabase.from('rate_limits')
+        .update({ count: existing.count + 1, last_at: nowIso })
+        .eq('kind', kind).eq('ip', ip);
+    }
+    return { allowed: true, remaining: Math.max(0, 2 - existing.count), currentCount: existing.count + (increment ? 1 : 0) };
   } catch (e) {
-    console.error('Rate limit check error:', e.message);
-    return { allowed: true, remaining: 0, store: null, key: null, count: 0 };
+    console.error('[generate-calendar] rate limit 오류:', e.message);
+    return { allowed: true, remaining: 0, currentCount: 0 };
   }
 }
 
@@ -151,7 +182,6 @@ async function fetchFestivals(sidoCode) {
   return [];
 }
 
-// KST 기준 날짜 문자열 (YYYYMMDD)
 function getKstDateStr(offsetDays = 0) {
   const now = new Date();
   const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
@@ -159,7 +189,6 @@ function getKstDateStr(offsetDays = 0) {
   return kst.toISOString().slice(0, 10).replace(/-/g, '');
 }
 
-// 단기예보 base_time 계산 (0200/0500/0800/1100/1400/1700/2000/2300)
 function getVilageFcstBaseTime() {
   const now = new Date();
   const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
@@ -175,7 +204,6 @@ function getVilageFcstBaseTime() {
   return { baseDate, baseTime: String(baseHour).padStart(2, '0') + '00' };
 }
 
-// 중기예보 tmFc 계산 (06시 또는 18시 발표)
 function getMidTmFc() {
   const now = new Date();
   const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
@@ -185,7 +213,6 @@ function getMidTmFc() {
   return dateStr + timeStr;
 }
 
-// D+0~D+2: 단기예보 (getVilageFcst) — 날짜별 최저/최고기온 + 날씨
 async function fetchShortForecast(sido) {
   const serviceKey = process.env.PUBLIC_DATA_API_KEY;
   if (!serviceKey) return {};
@@ -204,7 +231,6 @@ async function fetchShortForecast(sido) {
     const data = JSON.parse(result.body);
     const items = data?.response?.body?.items?.item || [];
 
-    // 날짜별로 TMN(최저), TMX(최고), SKY(하늘), PTY(강수) 수집
     const byDate = {};
     for (const item of items) {
       const d = item.fcstDate;
@@ -215,7 +241,6 @@ async function fetchShortForecast(sido) {
       if (item.category === 'PTY' && item.fcstTime === '1200') byDate[d].pty = item.fcstValue;
     }
 
-    // SKY: 1맑음 3구름많음 4흐림, PTY: 0없음 1비 2비/눈 3눈 4소나기
     const result7 = {};
     for (const [date, v] of Object.entries(byDate)) {
       const isoDate = `${date.slice(0,4)}-${date.slice(4,6)}-${date.slice(6,8)}`;
@@ -232,7 +257,6 @@ async function fetchShortForecast(sido) {
   }
 }
 
-// D+3~D+6: 중기예보 (getMidLandFcst + getMidTa) — 날씨 + 기온
 async function fetchMidForecast(sido) {
   const serviceKey = process.env.PUBLIC_DATA_API_KEY;
   if (!serviceKey) return {};
@@ -274,7 +298,6 @@ async function fetchMidForecast(sido) {
   }
 }
 
-// 7일 날씨 통합 (단기 D+0~D+2 + 중기 D+3~D+6)
 async function fetch7DayWeather(sido) {
   const [shortFc, midFc] = await Promise.all([
     fetchShortForecast(sido),
@@ -358,9 +381,7 @@ ${weatherLines}
   const data = JSON.parse(result.body);
   const content = data.choices?.[0]?.message?.content || '';
 
-  // JSON 파싱 (코드블록 제거 + 배열 추출)
   let jsonStr = content.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-  // JSON 배열만 추출 (앞뒤 텍스트 제거)
   const arrMatch = jsonStr.match(/\[[\s\S]*\]/);
   if (!arrMatch) throw new Error('캘린더 데이터를 찾을 수 없습니다.');
   const calendar = JSON.parse(arrMatch[0]);
@@ -373,62 +394,45 @@ ${weatherLines}
 }
 
 exports.handler = async (event) => {
-  const corsHeaders = {
-    'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS'
-  };
-
   if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers: corsHeaders, body: '' };
+    return { statusCode: 200, headers: CORS, body: '' };
   }
 
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, headers: corsHeaders, body: JSON.stringify({ error: 'Method not allowed' }) };
+    return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
   try {
-    // 요청 파싱
     const body = JSON.parse(event.body || '{}');
-    const { bizCategory, region, lat, lon } = body;
+    const { bizCategory, region } = body;
 
     if (!bizCategory || !region) {
       return {
         statusCode: 400,
-        headers: corsHeaders,
+        headers: CORS,
         body: JSON.stringify({ error: '업종과 지역을 입력해주세요.' })
       };
     }
 
+    const supabase = getAdminClient();
+
     // 로그인 사용자 확인 (선택적)
-    let userEmail = null;
-    const authHeader = event.headers['authorization'] || '';
-    if (authHeader.startsWith('Bearer ')) {
-      const token = authHeader.slice(7);
-      try {
-        const usersStore = getStore({
-          name: 'users', consistency: 'strong',
-          siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
-          token: process.env.NETLIFY_TOKEN
-        });
-        const tokenData = await usersStore.get('token:' + token);
-        if (tokenData) {
-          const parsed = JSON.parse(tokenData);
-          userEmail = parsed.email || null;
-        }
-      } catch {}
+    let userId = null;
+    const token = extractBearerToken(event);
+    if (token) {
+      const { user } = await verifyBearerToken(token);
+      if (user) userId = user.id;
     }
 
     // 비로그인: Rate limit 체크 (GPT 성공 후 카운트 증가)
-    let rateCheck = { allowed: true, remaining: 0, store: null, key: null, count: 0 };
-    if (!userEmail) {
+    let rateCheck = { allowed: true, remaining: 0, currentCount: 0 };
+    if (!userId) {
       const ip = getClientIp(event);
-      rateCheck = await checkRateLimit(ip, false);
+      rateCheck = await checkCalendarRateLimit(supabase, ip, false);
       if (!rateCheck.allowed) {
         return {
           statusCode: 429,
-          headers: corsHeaders,
+          headers: CORS,
           body: JSON.stringify({ error: '오늘 생성 횟수(3회)를 모두 사용했어요. 내일 다시 시도해주세요.' })
         };
       }
@@ -448,32 +452,44 @@ exports.handler = async (event) => {
     // GPT로 캘린더 생성
     const calendar = await generateWithGPT(bizCategory, region, weatherByDate, trends, festivals);
 
-    // 로그인 사용자: 캘린더 Blobs에 저장
-    if (userEmail) {
+    // 로그인 사용자: reservations 에 post_mode='scheduled' 로 저장 (reserve_key='cal:{user_id}' 단건 유지)
+    if (userId) {
       try {
-        const calStore = getStore({
-          name: 'calendars', consistency: 'strong',
-          siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
-          token: process.env.NETLIFY_TOKEN
-        });
-        await calStore.set('cal:' + userEmail, JSON.stringify({
-          calendar, meta: { bizCategory, region, weather: weatherByDate },
-          createdAt: new Date().toISOString(),
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-        }));
+        const reserveKey = 'cal:' + userId;
+        const payload = {
+          reserve_key: reserveKey,
+          user_id: userId,
+          biz_category: bizCategory,
+          post_mode: 'scheduled',
+          weather: weatherByDate,
+          trends: { keywords: trends, festivals },
+          store_profile: { region, calendar },
+          caption_status: 'pending',
+          is_sent: false,
+          cancelled: false,
+          submitted_at: new Date().toISOString(),
+          scheduled_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        };
+        const { error: upsertErr } = await supabase
+          .from('reservations')
+          .upsert(payload, { onConflict: 'reserve_key' });
+        if (upsertErr) {
+          console.error('[generate-calendar] 캘린더 저장 실패:', upsertErr.message);
+        }
       } catch (e) {
-        console.error('Calendar save error:', e.message);
+        console.error('[generate-calendar] 저장 오류:', e.message);
       }
     }
 
     // 비로그인: 성공 후에만 rate limit 카운트 증가
-    if (!userEmail && rateCheck.store && rateCheck.key) {
-      try { await rateCheck.store.set(rateCheck.key, String(rateCheck.count + 1)); } catch {}
+    if (!userId) {
+      const ip = getClientIp(event);
+      await checkCalendarRateLimit(supabase, ip, true);
     }
 
     return {
       statusCode: 200,
-      headers: corsHeaders,
+      headers: CORS,
       body: JSON.stringify({
         calendar,
         meta: {
@@ -482,8 +498,8 @@ exports.handler = async (event) => {
           weather: weatherByDate,
           trendsCount: trends.length,
           festivalsCount: festivals.length,
-          remaining: userEmail ? null : rateCheck.remaining,
-          saved: !!userEmail
+          remaining: userId ? null : Math.max(0, rateCheck.remaining - 1),
+          saved: !!userId
         }
       })
     };
@@ -492,7 +508,7 @@ exports.handler = async (event) => {
     console.error('generate-calendar error:', e.message);
     return {
       statusCode: 500,
-      headers: corsHeaders,
+      headers: CORS,
       body: JSON.stringify({ error: '캘린더 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.' })
     };
   }

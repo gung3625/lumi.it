@@ -1,5 +1,12 @@
+// 예약 생성 — Supabase DB + Storage 기반
+// - 이미지: Supabase Storage `lumi-images` 버킷에 업로드 (10MB 제한, JPEG/PNG/WebP)
+// - 예약 레코드: public.reservations insert
+// - IG 토큰: public.ig_accounts_decrypted 뷰 조회 (service_role)
+// - 처리 완료 후 process-and-post-background 트리거
+const crypto = require('crypto');
 const busboy = require('busboy');
-const { getStore } = require('@netlify/blobs');
+const { getAdminClient } = require('./_shared/supabase-admin');
+const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
 
 const CORS = {
   'Access-Control-Allow-Origin': 'https://lumi.it.kr',
@@ -7,41 +14,41 @@ const CORS = {
   'Content-Type': 'application/json',
 };
 
+const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp'];
+const BUCKET = 'lumi-images';
+const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+
+// 초미세먼지(PM2.5) 등급 계산
+function getPm25Grade(v) {
+  const val = parseInt(v);
+  if (isNaN(val)) return '알 수 없음';
+  if (val <= 15) return '좋음';
+  if (val <= 35) return '보통';
+  if (val <= 75) return '나쁨';
+  return '매우 나쁨';
+}
+
+function contentTypeToExt(mime) {
+  if (mime === 'image/png') return 'png';
+  if (mime === 'image/webp') return 'webp';
+  return 'jpg';
+}
+
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
-  // 인증: Bearer 토큰 Blobs 검증 또는 LUMI_SECRET
-  const authHeader = event.headers['authorization'] || '';
-  const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
-  const lumiSecret = event.headers['x-lumi-secret'] || '';
-  if (!bearerToken && lumiSecret !== process.env.LUMI_SECRET) {
-    return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증이 필요합니다.' }) };
+  // Supabase Bearer 토큰 검증
+  const token = extractBearerToken(event);
+  if (!token) {
+    return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '로그인이 필요합니다.' }) };
   }
-  if (bearerToken && lumiSecret !== process.env.LUMI_SECRET) {
-    // strong 제거 — PAT 동시 호출 경합 완화 (CDN 캐시 경유)
-    const userStore = getStore({ name: 'users', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
-    let tokenRaw = null;
-    let tokenBlobError = false;
-    const RETRY_DELAYS = [200, 400, 800, 1600, 3200]; // 지수 백오프 총 ~6.2s
-    for (let i = 0; i < RETRY_DELAYS.length; i++) {
-      tokenBlobError = false;
-      try { tokenRaw = await userStore.get('token:' + bearerToken); }
-      catch(e) { tokenBlobError = true; console.error('[reserve] token blob fetch error (attempt ' + (i+1) + '):', e.message); }
-      if (tokenRaw) break;
-      if (!tokenBlobError) break; // 진짜 없음: 재시도 의미 없음
-      if (i < RETRY_DELAYS.length - 1) await new Promise(r => setTimeout(r, RETRY_DELAYS[i]));
-    }
-    if (!tokenRaw) {
-      if (tokenBlobError) {
-        console.warn('[reserve] token blob error after 5 retries, bearer prefix:', bearerToken.substring(0, 8));
-        return { statusCode: 503, headers: CORS, body: JSON.stringify({ error: '일시적 서버 오류입니다. 잠시 후 다시 시도해주세요.' }) };
-      }
-      console.warn('[reserve] token not found, bearer prefix:', bearerToken.substring(0, 8));
-      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증 실패' }) };
-    }
+  const { user, error: authErr } = await verifyBearerToken(token);
+  if (authErr || !user) {
+    console.warn('[reserve] 토큰 검증 실패');
+    return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증에 실패했습니다.' }) };
   }
 
   const headers = event.headers;
@@ -49,26 +56,29 @@ exports.handler = async (event) => {
   const bodyBuffer = Buffer.from(event.body, isBase64Encoded ? 'base64' : 'utf8');
 
   return new Promise((resolve) => {
-    const bb = busboy({ headers });
+    const bb = busboy({ headers, limits: { fileSize: MAX_BYTES } });
     const fields = {};
     const photos = [];
+    let oversize = false;
 
-    const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp'];
     bb.on('file', (name, file, info) => {
       if (!ALLOWED_MIME.includes(info.mimeType)) {
-        file.resume(); // 스트림 소비 후 무시
+        file.resume();
         return;
       }
       const chunks = [];
+      let truncated = false;
       file.on('data', (d) => chunks.push(d));
+      file.on('limit', () => { truncated = true; oversize = true; });
       file.on('end', () => {
+        if (truncated) return; // 10MB 초과는 버림 → 전체 요청 거부 처리
         const fileData = {
           fieldName: name,
           fileName: info.filename,
           mimeType: info.mimeType,
-          buffer: Buffer.concat(chunks)
+          buffer: Buffer.concat(chunks),
         };
-        // thumbnailFile은 스토리용 별도 파일 - photos 배열에서 제외
+        // thumbnailFile은 스토리용 별도 — photos 배열에서 제외
         if (name !== 'thumbnailFile') {
           photos.push(fileData);
         }
@@ -78,9 +88,14 @@ exports.handler = async (event) => {
     bb.on('field', (name, val) => { fields[name] = val; });
 
     bb.on('finish', async () => {
+      if (oversize) {
+        return resolve({ statusCode: 413, headers: CORS, body: JSON.stringify({ error: '이미지 한 장당 10MB를 초과할 수 없습니다.' }) });
+      }
       if (photos.length === 0) {
         return resolve({ statusCode: 400, headers: CORS, body: JSON.stringify({ error: '사진이 없습니다.' }) });
       }
+
+      const supabase = getAdminClient();
 
       try {
         let weather = {};
@@ -94,156 +109,163 @@ exports.handler = async (event) => {
         try { airQuality = JSON.parse(fields.airQuality || '{}'); } catch(e) {}
         try { festivals = JSON.parse(fields.festivals || '[]'); } catch(e) {}
 
-        // 초미세먼지(PM2.5) 등급만 사용
-        function getPm25Grade(v) {
-          const val = parseInt(v);
-          if (isNaN(val)) return '알 수 없음';
-          if (val <= 15) return '좋음';
-          if (val <= 35) return '보통';
-          if (val <= 75) return '나쁨';
-          return '매우 나쁨';
-        }
         const airGrade = airQuality.pm25Grade || (airQuality.pm25Value ? getPm25Grade(airQuality.pm25Value) : '알 수 없음');
 
-        // Blob에서 ig 토큰 조회
-        // ig-oauth.js는 email-ig:이메일 → igUserId, ig:igUserId → 토큰 구조로 저장
+        // IG 계정/토큰 조회 (public.ig_accounts + ig_accounts_decrypted 뷰)
         let igUserId = '';
-        let igAccessToken = '';   // 장기 유저 토큰
-        let igPageAccessToken = ''; // 페이지 액세스 토큰 (게시에 필요)
+        let igAccessToken = '';
+        let igPageAccessToken = '';
+        try {
+          const { data: igRow, error: igErr } = await supabase
+            .from('ig_accounts')
+            .select('ig_user_id')
+            .eq('user_id', user.id)
+            .maybeSingle();
+          if (igErr) {
+            console.error('[reserve] ig_accounts 조회 오류:', igErr.message);
+          } else if (igRow && igRow.ig_user_id) {
+            igUserId = igRow.ig_user_id;
+            const { data: dec, error: decErr } = await supabase
+              .from('ig_accounts_decrypted')
+              .select('access_token, page_access_token')
+              .eq('ig_user_id', igUserId)
+              .maybeSingle();
+            if (decErr) {
+              console.error('[reserve] ig_accounts_decrypted 조회 오류:', decErr.message);
+            } else if (dec) {
+              igAccessToken = dec.access_token || '';
+              igPageAccessToken = dec.page_access_token || dec.access_token || '';
+            }
+          }
+        } catch (e) {
+          console.error('[reserve] IG 토큰 조회 실패:', e.message);
+        }
+
+        // 말투 학습 피드백(like/dislike) 조회 — 최근 20개 롤링 윈도우
         let toneLikes = [];
         let toneDislikes = [];
-        let customCaptionsStr = '';
-        let relayMode = false;
-        if (storeProfile.ownerEmail) {
-          try {
-            const blobStore = getStore({
-              name: 'users',
-              siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
-              token: process.env.NETLIFY_TOKEN
-            });
-            // Blob 순차 읽기 (PAT 동시 호출 → 401 burst 방지, user 먼저)
-            const ownerEmail = storeProfile.ownerEmail;
-            const userDataRaw = await blobStore.get('user:' + ownerEmail)
-              .catch(e => { console.error('[reserve] blob user: fetch error:', e.message); return null; });
-            const igUserIdRaw = await blobStore.get('email-ig:' + ownerEmail)
-              .catch(e => { console.error('[reserve] blob email-ig: fetch error:', e.message); return null; });
-            const likeRaw = await blobStore.get('tone-like:' + ownerEmail)
-              .catch(e => { console.error('[reserve] blob tone-like: fetch error:', e.message); return null; });
-            const dislikeRaw = await blobStore.get('tone-dislike:' + ownerEmail)
-              .catch(e => { console.error('[reserve] blob tone-dislike: fetch error:', e.message); return null; });
-
-            // igUserId
-            if (igUserIdRaw) {
-              igUserId = igUserIdRaw.trim();
-            } else if (userDataRaw) {
-              igUserId = JSON.parse(userDataRaw).igUserId || '';
-            }
-
-            // tone
-            if (likeRaw) try { toneLikes = JSON.parse(likeRaw); } catch {}
-            if (dislikeRaw) try { toneDislikes = JSON.parse(dislikeRaw); } catch {}
-
-            // customCaptions + relayMode (userDataRaw 재사용)
-            if (userDataRaw) {
-              try {
-                const userData = JSON.parse(userDataRaw);
-                const captions = userData.customCaptions || [];
-                customCaptionsStr = captions.filter(c => c && c.trim()).join('|||');
-                relayMode = userData.relayMode === true;
-              } catch {}
-            }
-            // 릴레이 모드 폐지됨 — 항상 true (캡션 확인 후 바로 게시)
-            relayMode = true;
-
-            // ig 토큰 (igUserId 의존이라 순차)
-            if (igUserId) {
-              const igRaw = await blobStore.get('ig:' + igUserId)
-                .catch(e => { console.error('[reserve] blob ig: fetch error:', e.message); return null; });
-              if (igRaw) {
-                const igData = JSON.parse(igRaw);
-                igAccessToken = igData.accessToken || '';
-                igPageAccessToken = igData.pageAccessToken || igData.accessToken || '';
-              }
-            }
-          } catch(e) {
-            console.error('[reserve] ig 토큰 조회 실패:', e.message);
-          }
+        try {
+          const { data: likeRows } = await supabase
+            .from('tone_feedback')
+            .select('caption')
+            .eq('user_id', user.id).eq('kind', 'like')
+            .order('created_at', { ascending: false })
+            .limit(20);
+          const { data: dislikeRows } = await supabase
+            .from('tone_feedback')
+            .select('caption')
+            .eq('user_id', user.id).eq('kind', 'dislike')
+            .order('created_at', { ascending: false })
+            .limit(20);
+          toneLikes = Array.isArray(likeRows) ? likeRows : [];
+          toneDislikes = Array.isArray(dislikeRows) ? dislikeRows : [];
+        } catch (e) {
+          console.error('[reserve] tone_feedback 조회 실패:', e.message);
         }
 
-        // Blobs에 예약 데이터 저장 (즉시 전송도 예약으로 통합)
-        const reserveStore = getStore({
-          name: 'reservations',
-          consistency: 'strong',
-          siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
-          token: process.env.NETLIFY_TOKEN,
-        });
+        // 유저 프로필(custom_captions) 조회
+        let customCaptionsStr = '';
+        try {
+          const { data: profile } = await supabase
+            .from('users')
+            .select('custom_captions')
+            .eq('id', user.id)
+            .maybeSingle();
+          if (profile && Array.isArray(profile.custom_captions)) {
+            customCaptionsStr = profile.custom_captions.filter(c => c && c.trim()).join('|||');
+          }
+        } catch (e) {
+          console.error('[reserve] users 프로필 조회 실패:', e.message);
+        }
+
+        // 릴레이 모드 폐지됨 — 항상 true (캡션 확인 후 바로 게시)
+        const relayMode = true;
 
         const reserveKey = `reserve:${Date.now()}`;
-        const reserveData = {
-          photos: photos.map(p => ({
-            fileName: p.fileName,
-            mimeType: p.mimeType,
-            base64: p.buffer.toString('base64'),
-          })),
-          userMessage: fields.userMessage || '',
-          bizCategory: fields.bizCategory || 'cafe',
-          captionTone: fields.captionTone || '',
-          tagStyle: fields.tagStyle || 'mid',
-          submittedAt: fields.submittedAt || new Date().toISOString(),
-          scheduledAt: fields.scheduledAt || new Date().toISOString(), // 즉시 전송이면 현재 시간
-          weather: {
-            ...weather,
-            airQuality: airGrade,
-          },
+
+        // Storage 업로드 경로 포맷: {user_id}/{reserveKey}/{timestamp}-{nonce}.ext
+        // nonce = 8바이트 hex → 예측 불가
+        const imageUrls = [];
+        const imageKeys = [];
+        const uploadedPaths = [];
+        try {
+          for (let i = 0; i < photos.length; i++) {
+            const p = photos[i];
+            const nonce = crypto.randomBytes(8).toString('hex');
+            const ts = Date.now();
+            const ext = contentTypeToExt(p.mimeType);
+            const path = `${user.id}/${reserveKey}/${ts}-${nonce}.${ext}`;
+
+            const { error: upErr } = await supabase.storage
+              .from(BUCKET)
+              .upload(path, p.buffer, { contentType: p.mimeType, upsert: false });
+            if (upErr) {
+              console.error('[reserve] Storage 업로드 실패:', upErr.message);
+              throw new Error('이미지 업로드 실패');
+            }
+            const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path);
+            imageUrls.push(pub && pub.publicUrl ? pub.publicUrl : '');
+            imageKeys.push(path);
+            uploadedPaths.push(path);
+          }
+        } catch (uploadErr) {
+          // 롤백: 이미 업로드된 파일 제거 (best-effort)
+          if (uploadedPaths.length) {
+            try { await supabase.storage.from(BUCKET).remove(uploadedPaths); }
+            catch (e) { console.error('[reserve] 롤백 실패:', e.message); }
+          }
+          console.error('[reserve] 업로드 중 오류:', uploadErr.message);
+          return resolve({ statusCode: 500, headers: CORS, body: JSON.stringify({ error: '이미지 업로드에 실패했습니다.' }) });
+        }
+
+        const postMode = fields.postMode || 'immediate';
+        const scheduledAt = fields.scheduledAt || new Date().toISOString();
+        const submittedAt = fields.submittedAt || new Date().toISOString();
+
+        // reservations insert
+        const reservationRow = {
+          reserve_key: reserveKey,
+          user_id: user.id,
+          user_message: fields.userMessage || '',
+          biz_category: fields.bizCategory || 'cafe',
+          caption_tone: fields.captionTone || '',
+          tag_style: fields.tagStyle || 'mid',
+          weather: { ...weather, airQuality: airGrade },
           trends: Array.isArray(trends) ? trends : [],
-          storeProfile: storeProfile,
-          postMode: fields.postMode || 'immediate',
-          storyEnabled: fields.postToStory === 'true',
-          postToThread: fields.postToThread === 'true',
-          nearbyEvent: festivals.length > 0,
-          nearbyFestivals: festivals.length > 0
+          store_profile: storeProfile,
+          post_mode: postMode === 'scheduled' ? 'scheduled' : 'immediate',
+          scheduled_at: scheduledAt,
+          submitted_at: submittedAt,
+          story_enabled: fields.postToStory === 'true',
+          post_to_thread: fields.postToThread === 'true',
+          nearby_event: festivals.length > 0,
+          nearby_festivals: festivals.length > 0
             ? festivals.map(f => `${f.title}(${f.startDate}~${f.endDate}, ${f.addr}${f.dist ? ', ' + f.dist + 'km' : ''})`).join(' / ')
             : '',
-          toneLikes: toneLikes.length > 0 ? toneLikes.map(t => t.caption).join('|||') : '',
-          toneDislikes: toneDislikes.length > 0 ? toneDislikes.map(t => t.caption).join('|||') : '',
-          customCaptions: customCaptionsStr,
-          igUserId,
-          igAccessToken,
-          igPageAccessToken,
-          relayMode,
-          useWeather: fields.useWeather !== 'false',
-          isSent: false,
+          tone_likes: toneLikes.length > 0 ? toneLikes.map(t => t.caption).join('|||') : '',
+          tone_dislikes: toneDislikes.length > 0 ? toneDislikes.map(t => t.caption).join('|||') : '',
+          custom_captions: customCaptionsStr,
+          relay_mode: relayMode,
+          use_weather: fields.useWeather !== 'false',
+          is_sent: false,
+          caption_status: 'pending',
+          image_urls: imageUrls,
+          image_keys: imageKeys,
         };
 
-        console.log('[reserve] Blobs 저장 시작:', reserveKey, '사진:', reserveData.photos.length, '장');
-        await reserveStore.set(reserveKey, JSON.stringify(reserveData));
-        console.log('[reserve] 예약 저장 완료:', reserveKey);
-
-        // per-user 인덱스 업데이트 (best-effort — 실패해도 예약 자체에는 영향 없음)
-        const indexOwnerEmail = storeProfile && storeProfile.ownerEmail;
-        if (indexOwnerEmail) {
-          try {
-            const indexKey = 'user-index:' + indexOwnerEmail;
-            const existingRaw = await reserveStore.get(indexKey).catch(() => null);
-            let indexArr = [];
-            if (existingRaw) {
-              try {
-                const parsed = JSON.parse(existingRaw);
-                if (Array.isArray(parsed)) indexArr = parsed;
-              } catch {}
-            }
-            if (!indexArr.includes(reserveKey)) {
-              indexArr.push(reserveKey);
-              await reserveStore.set(indexKey, JSON.stringify(indexArr));
-            }
-          } catch (indexErr) {
-            console.warn('[reserve] user-index 업데이트 실패:', indexErr.message);
-          }
+        const { error: insertErr } = await supabase.from('reservations').insert(reservationRow);
+        if (insertErr) {
+          console.error('[reserve] reservations insert 오류:', insertErr.message);
+          // 롤백: Storage 업로드 제거 (best-effort)
+          try { await supabase.storage.from(BUCKET).remove(uploadedPaths); }
+          catch (e) { console.error('[reserve] 롤백 실패:', e.message); }
+          return resolve({ statusCode: 500, headers: CORS, body: JSON.stringify({ error: '예약 저장에 실패했습니다.' }) });
         }
+
+        console.log('[reserve] 예약 저장 완료:', reserveKey, '사진:', imageUrls.length, '장');
 
         // 캡션 생성 Background Function 트리거 (postMode 무관하게 항상 캡션 생성)
         const siteUrl = 'https://lumi.it.kr';
-        const postMode = reserveData.postMode || 'immediate';
         console.log('[reserve] process-and-post 트리거 시도 (postMode:', postMode, ')');
         try {
           const ppRes = await fetch(`${siteUrl}/.netlify/functions/process-and-post-background`, {
@@ -256,16 +278,27 @@ exports.handler = async (event) => {
           console.error('[reserve] 트리거 실패:', ppErr.message);
         }
 
+        // 응답: reservationKey(기존 프론트 호환) + reserveKey(신규 스펙)
         resolve({
           statusCode: 200,
           headers: CORS,
-          body: JSON.stringify({ success: true, reservationKey: reserveKey, photoCount: photos.length })
+          body: JSON.stringify({
+            success: true,
+            reserveKey,
+            reservationKey: reserveKey,
+            photoCount: photos.length,
+          }),
         });
 
       } catch (err) {
-        console.error('reserve error:', err);
+        console.error('[reserve] error:', err.message);
         resolve({ statusCode: 500, headers: CORS, body: JSON.stringify({ error: '처리 중 오류가 발생했습니다.' }) });
       }
+    });
+
+    bb.on('error', (err) => {
+      console.error('[reserve] busboy error:', err.message);
+      resolve({ statusCode: 400, headers: CORS, body: JSON.stringify({ error: '요청 형식이 올바르지 않습니다.' }) });
     });
 
     bb.end(bodyBuffer);

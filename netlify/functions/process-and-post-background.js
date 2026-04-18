@@ -1,14 +1,17 @@
-const { getStore } = require('@netlify/blobs');
+// Background Function — 캡션 생성 + (예약에 따라) Instagram 게시 트리거 대기.
+// 데이터 저장: public.reservations (Supabase).
+// 이미지: reservations.image_urls (Supabase Storage public URL).
+// IG 토큰: ig_accounts_decrypted 뷰 (service_role 전용). 평문 저장/로그 금지.
 const { createHmac } = require('crypto');
-
+const { getAdminClient } = require('./_shared/supabase-admin');
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   'Content-Type': 'application/json',
 };
 
-// ── 캡션 파싱 ──
+// ─────────── 캡션 파싱 ───────────
 function parseCaptions(text) {
   const captions = [];
   const regex = new RegExp(`---CAPTION_1---([\\s\\S]*?)---END_1---`);
@@ -21,114 +24,69 @@ function parseScores(text) {
   const match = text.match(/---SCORE---([\s\S]*?)---END_SCORE---/);
   if (!match) return [];
   const scores = match[1].match(/\d+:\s*(\d+)/g);
-  return scores ? scores.map(s => parseInt(s.split(':')[1])) : [];
+  return scores ? scores.map((s) => parseInt(s.split(':')[1])) : [];
 }
 
-// ── 캡션 안전성 검수 (OpenAI Moderation API) ──
+// ─────────── Moderation ───────────
 async function moderateCaption(text) {
   try {
     const res = await fetch('https://api.openai.com/v1/moderations', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` },
       body: JSON.stringify({ input: text }),
     });
     if (!res.ok) { console.warn('[moderation] API 응답 오류:', res.status); return true; }
     const data = await res.json();
     const result = data.results?.[0];
     if (result?.flagged) {
-      console.log('[moderation] 캡션 차단됨. 카테고리:', Object.entries(result.categories).filter(([,v]) => v).map(([k]) => k).join(', '));
+      console.log(
+        '[moderation] 캡션 차단됨. 카테고리:',
+        Object.entries(result.categories).filter(([, v]) => v).map(([k]) => k).join(', ')
+      );
       return false;
     }
     return true;
   } catch (e) {
     console.warn('[moderation] API 호출 실패, 통과 처리:', e.message);
-    return true; // API 실패 시 캡션 통과 (서비스 중단 방지)
+    return true;
   }
 }
 
-// ── 말투 학습 데이터 가공 ──
+// ─────────── 말투 가이드 빌드 ───────────
 function buildToneGuide(likes, dislikes) {
   let guide = '';
   if (likes) {
     const items = likes.split('|||').filter(Boolean);
-    if (items.length) guide += '✅ 좋아했던 스타일:\n' + items.map(s => `- ${s}`).join('\n') + '\n\n';
+    if (items.length) guide += '✅ 좋아했던 스타일:\n' + items.map((s) => `- ${s}`).join('\n') + '\n\n';
   }
   if (dislikes) {
     const items = dislikes.split('|||').filter(Boolean);
-    if (items.length) guide += '❌ 싫어했던 스타일:\n' + items.map(s => `- ${s}`).join('\n');
+    if (items.length) guide += '❌ 싫어했던 스타일:\n' + items.map((s) => `- ${s}`).join('\n');
   }
   return guide;
 }
 
-// ── 유틸 ──
-async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
 
-// Instagram 컨테이너 상태 폴링 (sleep(5000) 대신 — 평균 3~4초 절약)
-async function waitForContainer(containerId, accessToken, maxRetries = 6) {
-  for (let i = 0; i < maxRetries; i++) {
-    await sleep(1000);
+// ─────────── Storage 이미지 → base64 로드 (GPT-4o 분석용) ───────────
+// image_urls 가 Supabase Storage public URL 이라고 가정. 원격 fetch 후 base64 변환.
+async function loadImagesAsBase64(imageUrls) {
+  const out = [];
+  for (const url of imageUrls) {
     try {
-      const res = await fetch(`https://graph.facebook.com/v25.0/${containerId}?fields=status_code&access_token=${accessToken}`);
-      const data = await res.json();
-      if (data.status_code === 'FINISHED') return true;
-      if (data.status_code === 'ERROR') return false;
-    } catch(e) { console.warn('[waitForContainer] poll error:', e.message); }
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('fetch ' + res.status);
+      const buf = Buffer.from(await res.arrayBuffer());
+      out.push(buf.toString('base64'));
+    } catch (e) {
+      console.error('[process-and-post] 이미지 로드 실패:', e.message);
+      throw new Error('이미지를 불러올 수 없습니다.');
+    }
   }
-  return true; // 타임아웃 시 게시 시도
+  return out;
 }
 
-function getReservationStore() {
-  return getStore({
-    name: 'reservations',
-    consistency: 'strong',
-    siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
-    token: process.env.NETLIFY_TOKEN,
-  });
-}
-
-function getTrendsStore() {
-  return getStore({
-    name: 'trends',
-    consistency: 'strong',
-    siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
-    token: process.env.NETLIFY_TOKEN,
-  });
-}
-
-function getTempImageStore() {
-  return getStore({
-    name: 'temp-images',
-    consistency: 'strong',
-    siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
-    token: process.env.NETLIFY_TOKEN,
-  });
-}
-
-// ── 이미지 Blobs 임시 저장 (sharp 제거 — IG API가 리사이즈 처리) ──
-async function processImages(photos, reserveKey) {
-  const siteUrl = process.env.URL || 'https://lumi.it.kr';
-  const imgStore = getTempImageStore();
-  const imageUrls = [];
-  const tempKeys = [];
-  const imageBuffers = [];
-
-  await Promise.all(photos.map(async (photo, i) => {
-    const buffer = Buffer.from(photo.base64, 'base64');
-    const tempKey = `temp-img:${reserveKey}:${i}`;
-    await imgStore.set(tempKey, buffer, { metadata: { contentType: 'image/jpeg' } });
-    tempKeys[i] = tempKey;
-    imageUrls[i] = `${siteUrl}/ig-img/${Buffer.from(tempKey).toString('base64').replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'')}.jpg`;
-    imageBuffers[i] = photo.base64;
-    console.log(`[process-and-post] 이미지 ${i} 저장 완료`);
-  }));
-
-  return { imageUrls, tempKeys, imageBuffers };
-}
-
-// ── GPT-4o 이미지 분석 (base64 직접 전달 — URL fetch 콜드스타트 없음) ──
+// ─────────── GPT-4o 이미지 분석 ───────────
 async function analyzeImages(imageBuffers, bizCategory) {
   const photoCount = imageBuffers.length;
   const multiGuide = photoCount > 1
@@ -184,29 +142,20 @@ async function analyzeImages(imageBuffers, bizCategory) {
 
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      messages: [{ role: 'user', content }],
-      max_tokens: 1024,
-      temperature: 0.35,
-    }),
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` },
+    body: JSON.stringify({ model: 'gpt-4o', messages: [{ role: 'user', content }], max_tokens: 1024, temperature: 0.35 }),
   });
   const data = await res.json();
   if (data.error) throw new Error(`GPT-4o 오류: ${data.error.message}`);
   return data.choices?.[0]?.message?.content || '';
 }
 
-// ── gpt-5.4 캡션 생성 ──
+// ─────────── gpt-5.4 캡션 생성 (Responses API) ───────────
 async function generateCaptions(imageAnalysis, item) {
   const w = item.weather || {};
   const sp = item.storeProfile || {};
   const toneGuide = buildToneGuide(item.toneLikes, item.toneDislikes);
 
-  // 빈 데이터 노이즈 제거 — 값이 있는 것만 포함
   const weatherBlock = (item.useWeather === false)
     ? '날씨 정보 없음 — 날씨 언급하지 마세요.'
     : w.status
@@ -279,7 +228,7 @@ ${trendBlock}
 ### 매장 정보
 ${storeBlock || '(정보 없음)'}
 
-### 사진 수: ${item.photos ? item.photos.length : 1}장${item.photos && item.photos.length > 1 ? ' (캐러셀 — 직접 언급 금지, 흐름 의식)' : ''}
+### 사진 수: ${item.photoCount || 1}장${(item.photoCount || 1) > 1 ? ' (캐러셀 — 직접 언급 금지, 흐름 의식)' : ''}
 
 ---
 
@@ -308,7 +257,7 @@ ${item.captionBank ? '### 업종 인기 캡션 참고\n아래는 같은 업종�
 - many: 20개 이상
 아래 비율로 구성:
 - 대형 (검색량 많은): 1~2개 (예: #카페스타그램, #맛집추천)
-- 중형 (적당한): 여러 개 (예: #성수카페, #봄디저트)  
+- 중형 (적당한): 여러 개 (예: #성수카페, #봄디저트)
 - 소형 (구체적): 여러 개 (예: #성수동카페추천, #딸기라떼맛집)
 - 트렌드: 사진 내용과 직접 관련 있는 트렌드 태그 포함
 - 지역 태그: 매장 지역이 있으면 포함
@@ -339,10 +288,7 @@ ${item.captionBank ? '### 업종 인기 캡션 참고\n아래는 같은 업종�
 
   const res = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-    },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` },
     body: JSON.stringify({ model: 'gpt-5.4', input: prompt, store: true }),
   });
   const data = await res.json();
@@ -354,8 +300,7 @@ ${item.captionBank ? '### 업종 인기 캡션 참고\n아래는 같은 업종�
   const scores = parseScores(text);
   if (scores.length) console.log('[process-and-post] 캡션 품질 점수:', scores.join(', '));
 
-  // Moderation API 검수
-  const moderationResults = await Promise.all(captions.map(c => moderateCaption(c)));
+  const moderationResults = await Promise.all(captions.map((c) => moderateCaption(c)));
   const safeCaptions = captions.filter((_, i) => moderationResults[i]);
   if (safeCaptions.length === 0) {
     console.error('[process-and-post] 모든 캡션이 Moderation 검수 실패');
@@ -367,7 +312,7 @@ ${item.captionBank ? '### 업종 인기 캡션 참고\n아래는 같은 업종�
   return safeCaptions;
 }
 
-// ── 알림톡 발송 ──
+// ─────────── 알림톡 ───────────
 async function sendAlimtalk(phone, text) {
   try {
     const now = new Date().toISOString();
@@ -381,152 +326,60 @@ async function sendAlimtalk(phone, text) {
       },
       body: JSON.stringify({ message: { to: phone, from: '01064246284', text } }),
     });
-  } catch (e) { console.error('알림톡 실패:', e.message); }
+  } catch (e) { console.error('[process-and-post] 알림톡 실패:', e.message); }
 }
 
-// ── Instagram 게시 ──
-async function postToInstagram(item, caption, imageUrls) {
-  const { igUserId, storyEnabled } = item;
-  // pageAccessToken 우선, 없으면 accessToken 사용
-  const igAccessToken = item.igPageAccessToken || item.igAccessToken;
-  if (!igUserId || !igAccessToken) throw new Error('Instagram 연동 정보 없음');
-
-  let postId;
-
-  if (imageUrls.length > 1) {
-    // 캐러셀: 각 이미지 컨테이너 생성
-    const containerIds = [];
-    // 캐러셀 아이템 컨테이너 병렬 생성 (기존 순차 → N-1 × 1.5초 절약)
-    const containerResults = await Promise.all(imageUrls.map(async (url) => {
-      const res = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ image_url: url, is_carousel_item: 'true', access_token: igAccessToken }),
-      });
-      const d = await res.json();
-      if (d.error) throw new Error(d.error.message);
-      return d.id;
-    }));
-    containerIds.push(...containerResults);
-    // 캐러셀 컨테이너
-    const cRes = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ media_type: 'CAROUSEL', children: containerIds.join(','), caption, access_token: igAccessToken }),
-    });
-    const cData = await cRes.json();
-    if (cData.error) throw new Error(cData.error.message);
-    await waitForContainer(cData.id, igAccessToken);
-    // 게시
-    const pRes = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media_publish`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ creation_id: cData.id, access_token: igAccessToken }),
-    });
-    const pData = await pRes.json();
-    if (pData.error) throw new Error(pData.error.message);
-    postId = pData.id;
-  } else {
-    // 단일 이미지
-    const res = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ image_url: imageUrls[0], media_type: 'IMAGE', caption, access_token: igAccessToken }),
-    });
-    const d = await res.json();
-    if (d.error) throw new Error(d.error.message);
-    await waitForContainer(d.id, igAccessToken);
-    const pRes = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media_publish`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ creation_id: d.id, access_token: igAccessToken }),
-    });
-    const pData = await pRes.json();
-    if (pData.error) throw new Error(pData.error.message);
-    postId = pData.id;
-  }
-
-  // 스토리 — 유저 액세스 토큰만 사용 (pageAccessToken은 스토리 권한 없음)
-  if (storyEnabled && imageUrls[0]) {
-    try {
-      const storyToken = item.igAccessToken; // 유저 토큰 명시적 사용
-      await sleep(3000); // 피드 게시 후 잠시 대기
-      const sRes = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ image_url: imageUrls[0], media_type: 'STORIES', access_token: storyToken }),
-      });
-      const sData = await sRes.json();
-      if (sData.error) {
-        console.error('[process-and-post] 스토리 컨테이너 생성 실패:', JSON.stringify(sData.error));
-      } else {
-        await waitForContainer(sData.id, storyToken);
-        const spRes = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media_publish`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({ creation_id: sData.id, access_token: storyToken }),
-        });
-        const spData = await spRes.json();
-        if (spData.error) {
-          console.error('[process-and-post] 스토리 게시 실패:', JSON.stringify(spData.error));
-        } else {
-          console.log('[process-and-post] 스토리 게시 완료:', spData.id);
-        }
-      }
-    } catch (e) { console.error('[process-and-post] 스토리 예외:', e.message); }
-  }
-
-  return postId;
-}
-
-// ── Threads 게시 ──
-async function postToThreads(caption, imageUrl) {
-  const userId = process.env.THREADS_USER_ID;
-  const token = process.env.THREADS_ACCESS_TOKEN;
-  if (!userId || !token) throw new Error('Threads 환경변수 없음');
-
-  // Step 1: Container 생성
-  const createRes = await fetch(`https://graph.threads.net/v1.0/${userId}/threads`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ media_type: 'IMAGE', image_url: imageUrl, text: caption, access_token: token }),
-  });
-  const createData = await createRes.json();
-  if (createData.error) throw new Error(`Threads container error: ${JSON.stringify(createData.error)}`);
-  const creationId = createData.id;
-
-  // Step 2: 30초 대기
-  await sleep(30000);
-
-  // Step 3: Publish
-  const pubRes = await fetch(`https://graph.threads.net/v1.0/${userId}/threads_publish`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ creation_id: creationId, access_token: token }),
-  });
-  return await pubRes.json();
-}
-
-// ── 캡션 히스토리 저장 ──
-async function saveCaptionHistory(email, caption) {
+// ─────────── 트렌드/캡션뱅크 조회 (Supabase) ───────────
+async function loadTrends(supabase, category) {
   try {
-    await fetch('https://lumi.it.kr/.netlify/functions/save-caption', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, caption, secret: process.env.LUMI_SECRET }),
-    });
-  } catch (e) { console.error('캡션 저장 실패:', e.message); }
-}
-
-// ── 임시 이미지 정리 ──
-async function cleanupTempImages(tempKeys) {
-  const imgStore = getTempImageStore();
-  for (const key of tempKeys) {
-    try { await imgStore.delete(key); } catch (e) {}
+    const { data } = await supabase
+      .from('trends')
+      .select('keywords, insights')
+      .eq('category', category)
+      .maybeSingle();
+    if (!data) return null;
+    const keywords = Array.isArray(data.keywords) ? data.keywords : [];
+    return { keywords, insights: data.insights || null };
+  } catch (e) {
+    console.error('[process-and-post] trends 조회 실패:', e.message);
+    return null;
   }
 }
 
-// ── 메인 핸들러 (Background Function — export default 최신 문법) ──
+async function loadCaptionBank(supabase, category) {
+  try {
+    const { data } = await supabase
+      .from('caption_bank')
+      .select('caption')
+      .eq('category', category)
+      .order('rank', { ascending: true })
+      .limit(3);
+    if (!data || !data.length) return null;
+    return data.map((r) => r.caption).join('\n---\n');
+  } catch (e) {
+    console.error('[process-and-post] caption_bank 조회 실패:', e.message);
+    return null;
+  }
+}
+
+async function loadToneFeedback(supabase, userId, kind) {
+  try {
+    const { data } = await supabase
+      .from('tone_feedback')
+      .select('caption')
+      .eq('user_id', userId)
+      .eq('kind', kind)
+      .order('created_at', { ascending: false })
+      .limit(20);
+    if (!data || !data.length) return '';
+    return data.map((r) => r.caption).join('|||');
+  } catch (e) {
+    console.error('[process-and-post] tone_feedback 조회 실패:', e.message);
+    return '';
+  }
+}
+
+// ─────────── 메인 핸들러 ───────────
 exports.handler = async (event) => {
   // 내부 호출 인증 (scheduler → background)
   const authHeader = (event.headers['authorization'] || '').replace('Bearer ', '');
@@ -535,6 +388,7 @@ exports.handler = async (event) => {
     return { statusCode: 401 };
   }
 
+  const supabase = getAdminClient();
   let reservationKey = null;
 
   try {
@@ -542,171 +396,130 @@ exports.handler = async (event) => {
     reservationKey = body.reservationKey;
     if (!reservationKey) return;
 
-    const store = getReservationStore();
-    const raw = await store.get(reservationKey);
-    if (!raw) return;
-    const item = JSON.parse(raw);
-    const sp = item.storeProfile || {};
+    // 1) 예약 조회
+    const { data: reservation, error: resErr } = await supabase
+      .from('reservations')
+      .select('*')
+      .eq('reserve_key', reservationKey)
+      .maybeSingle();
+    if (resErr || !reservation) {
+      console.error('[process-and-post] 예약 조회 실패:', resErr?.message || 'not found');
+      return;
+    }
 
-    // 사용자가 이미 캡션을 선택했거나 게시 중/완료된 건은 캡션 덮어쓰기 방지
-    if (item.captionStatus === 'scheduled' || item.captionStatus === 'posting' || item.captionStatus === 'posted') {
-      console.log(`[process-and-post] 이미 처리된 건 스킵: ${reservationKey}, status=${item.captionStatus}`);
+    // 사용자가 이미 캡션을 선택했거나 게시 중/완료된 건은 스킵
+    if (['scheduled', 'posting', 'posted'].includes(reservation.caption_status)) {
+      console.log(`[process-and-post] 이미 처리된 건 스킵: ${reservationKey}, status=${reservation.caption_status}`);
       return { statusCode: 200, headers, body: JSON.stringify({ skipped: true }) };
     }
 
-    console.log(`[process-and-post] 시작: ${reservationKey}, 사진 ${item.photos.length}장`);
-
-    // 0. Blobs에서 ig 토큰 + 말투 학습 데이터 조회 (reserve.js 로직 통합)
-    const userStore = getStore({
-      name: 'users',
-      consistency: 'strong',
-      siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
-      token: process.env.NETLIFY_TOKEN,
-    });
-
-    if (sp.ownerEmail && !item.igUserId) {
-      try {
-        // ig 토큰 조회
-        let igUserId = '';
-        let igAccessToken = '';
-        const igUserIdRaw = await userStore.get('email-ig:' + sp.ownerEmail).catch(() => null);
-        if (igUserIdRaw) {
-          igUserId = igUserIdRaw.trim();
-        } else {
-          const userRaw = await userStore.get('user:' + sp.ownerEmail).catch(() => null);
-          if (userRaw) igUserId = JSON.parse(userRaw).igUserId || '';
-        }
-        if (igUserId) {
-          const igRaw = await userStore.get('ig:' + igUserId).catch(() => null);
-          if (igRaw) {
-            const igData = JSON.parse(igRaw);
-            igAccessToken = igData.accessToken || '';
-            item.igPageAccessToken = igData.pageAccessToken || igData.accessToken || '';
-          }
-        }
-        item.igUserId = igUserId;
-        item.igAccessToken = igAccessToken;
-
-        // tone-like / tone-dislike 조회
-        if (!item.toneLikes) {
-          const likeRaw = await userStore.get('tone-like:' + sp.ownerEmail).catch(() => null);
-          if (likeRaw) item.toneLikes = JSON.parse(likeRaw).map(t => t.caption).join('|||');
-        }
-        if (!item.toneDislikes) {
-          const dislikeRaw = await userStore.get('tone-dislike:' + sp.ownerEmail).catch(() => null);
-          if (dislikeRaw) item.toneDislikes = JSON.parse(dislikeRaw).map(t => t.caption).join('|||');
-        }
-
-        // customCaptions 조회
-        if (!item.customCaptions) {
-          const userData = await userStore.get('user:' + sp.ownerEmail).catch(() => null);
-          if (userData) {
-            const captions = JSON.parse(userData).customCaptions || [];
-            item.customCaptions = captions.filter(c => c && c.trim()).join('|||');
-          }
-        }
-      } catch (e) { console.error('[process-and-post] 사용자 데이터 조회 실패:', e.message); }
+    const imageUrls = Array.isArray(reservation.image_urls) ? reservation.image_urls : [];
+    if (!imageUrls.length) {
+      console.error('[process-and-post] image_urls 비어있음:', reservationKey);
+      await supabase.from('reservations').update({
+        caption_status: 'failed',
+        caption_error: '이미지가 없습니다.',
+      }).eq('reserve_key', reservationKey);
+      return;
     }
 
-    // airQuality 등급 변환
-    if (item.weather && !item.weather.airQuality && item.airQuality) {
-      item.weather.airQuality = item.airQuality;
-    }
+    console.log(`[process-and-post] 시작: ${reservationKey}, 사진 ${imageUrls.length}장`);
 
-    // 1. 이미지 리사이징 + [Blobs저장 & GPT-4o 분석] 병렬 처리
-    const { imageUrls, tempKeys, imageBuffers } = await processImages(item.photos, reservationKey);
-    console.log('[process-and-post] 이미지 처리 완료');
+    // 2) 사용자 프로필 + 말투 학습 데이터 로드 (Supabase 직접 조회)
+    const { data: userProfile } = await supabase
+      .from('users')
+      .select('biz_category, caption_tone, tag_style, custom_captions, phone')
+      .eq('id', reservation.user_id)
+      .maybeSingle();
 
-    // 2. GPT-4o 분석 + 트렌드/캡션뱅크 병렬 처리 (기존: 순차 → 1.5~4초 절약)
-    const bizCat = item.bizCategory || sp.category || 'cafe';
+    const sp = reservation.store_profile || {};
+    const bizCat = reservation.biz_category || userProfile?.biz_category || sp.category || 'cafe';
+    const captionTone = reservation.caption_tone || userProfile?.caption_tone || '친근하게';
 
-    const [imageAnalysis] = await Promise.all([
-      // GPT-4o 이미지 분석 (~5-15초)
-      analyzeImages(imageBuffers, bizCat),
-      // 트렌드 인사이트 (GPT-4o와 병렬, ~1-2초)
-      (async () => {
-        try {
-          const trendRes = await fetch(`https://lumi.it.kr/.netlify/functions/get-trends?category=${encodeURIComponent(bizCat)}`);
-          if (trendRes.ok) {
-            const trendData = await trendRes.json();
-            if (trendData.keywords && trendData.keywords.length > 0) {
-              item.trends = trendData.keywords.map(k => k.keyword.startsWith('#') ? k.keyword : '#' + k.keyword);
-            }
-            if (trendData.insights) item.trendInsights = trendData.insights;
-            console.log('[process-and-post] 트렌드 인사이트 로드:', item.trends?.length || 0, '개 태그');
-          }
-        } catch (e) { console.error('[process-and-post] 트렌드 fetch 실패:', e.message); }
-      })(),
-      // 캡션뱅크 (GPT-4o와 병렬, ~0.3초)
-      (async () => {
-        try {
-          const trendsStore = getTrendsStore();
-          const cbData = await trendsStore.get('caption-bank:' + bizCat);
-          if (cbData) {
-            const capts = JSON.parse(cbData);
-            if (Array.isArray(capts) && capts.length > 0) {
-              item.captionBank = capts.slice(0, 3).map(c => c.caption).join('\n---\n');
-              console.log('[process-and-post] 캡션뱅크 로드:', capts.length, '개');
-            }
-          }
-        } catch (e) { console.error('[process-and-post] 캡션뱅크 fetch 실패:', e.message); }
-      })()
+    const customCaptions = (userProfile?.custom_captions || [])
+      .filter((c) => c && c.trim())
+      .join('|||');
+
+    const [toneLikes, toneDislikes] = await Promise.all([
+      loadToneFeedback(supabase, reservation.user_id, 'like'),
+      loadToneFeedback(supabase, reservation.user_id, 'dislike'),
     ]);
+
+    // 3) 이미지 분석 + 트렌드 + 캡션뱅크 병렬
+    const imageBuffers = await loadImagesAsBase64(imageUrls);
+
+    const [imageAnalysis, trendResult, captionBank] = await Promise.all([
+      analyzeImages(imageBuffers, bizCat),
+      loadTrends(supabase, bizCat),
+      loadCaptionBank(supabase, bizCat),
+    ]);
+
+    const trendKeywords = trendResult?.keywords?.length
+      ? trendResult.keywords.map((k) => {
+          const kw = typeof k === 'string' ? k : (k.keyword || '');
+          return kw.startsWith('#') ? kw : '#' + kw;
+        })
+      : [];
+
     console.log('[process-and-post] 이미지 분석 + 트렌드 + 캡션뱅크 병렬 완료');
 
-    // 3. gpt-5.4 캡션 3개 생성
-    const captions = await generateCaptions(imageAnalysis, item);
+    // 4) 캡션 생성
+    const captionInput = {
+      weather: reservation.weather || {},
+      storeProfile: sp,
+      bizCategory: bizCat,
+      captionTone,
+      userMessage: reservation.user_message || '',
+      toneLikes,
+      toneDislikes,
+      customCaptions,
+      captionBank,
+      trends: trendKeywords,
+      trendInsights: trendResult?.insights || '',
+      useWeather: reservation.use_weather !== false,
+      photoCount: imageUrls.length,
+    };
+
+    const captions = await generateCaptions(imageAnalysis, captionInput);
     console.log('[process-and-post] 캡션 생성 완료:', captions.length, '개');
 
-    // 4. Blobs에 결과 저장
-    item.generatedCaptions = captions;
-    item.captions = captions;
-    item.imageAnalysis = imageAnalysis;
-    item.imageUrls = imageUrls;
-    item.imageKeys = tempKeys;
-    item.tempKeys = tempKeys;
-    item.captionsGeneratedAt = new Date().toISOString();
-    item.captionStatus = 'ready';
-    await store.set(reservationKey, JSON.stringify(item));
+    // 5) 예약 업데이트 (ready)
+    const { error: updErr } = await supabase
+      .from('reservations')
+      .update({
+        generated_captions: captions,
+        captions,
+        image_analysis: imageAnalysis,
+        captions_generated_at: new Date().toISOString(),
+        caption_status: 'ready',
+      })
+      .eq('reserve_key', reservationKey);
+    if (updErr) console.error('[process-and-post] 예약 업데이트 실패:', updErr.message);
 
-    // 5. 릴레이 모드 확인
-    const isRelayMode = item.relayMode === true;
+    // 6) 알림톡 (솔라피 템플릿 승인 전까지 비활성화 — 기존 동작 유지)
+    // const phone = userProfile?.phone || sp.phone || sp.ownerPhone;
+    // if (phone) { await sendAlimtalk(phone, ...); }
 
-    // 6. 알림톡 (캡션 준비 완료) — 솔라피 템플릿 검수 완료 전까지 비활성화
-    // const phone = sp.phone || sp.ownerPhone;
-    // if (phone) {
-    //   const previewUrl = `https://lumi.it.kr/dashboard?preview=${encodeURIComponent(reservationKey)}`;
-    //   if (isRelayMode) {
-    //     await sendAlimtalk(phone, `[lumi] ${sp.name || '사장'}님, 캡션이 준비됐어요!...`);
-    //   } else {
-    //     const autoTime = new Date(Date.now() + 30 * 60000).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
-    //     await sendAlimtalk(phone, `[lumi] ${sp.name || '사장'}님, 캡션이 준비됐어요!...`);
-    //   }
-    // }
-
-    // 릴레이 모드 폐지됨 — 항상 캡션 확인 후 바로 게시
-    // 자동 게시 스킵, 사용자가 캡션 선택할 때까지 대기
-    // temp 이미지는 삭제하지 않음 (캡션 확인 화면 미리보기에 필요)
     console.log('[process-and-post] 캡션 준비 완료 — 사용자 선택 대기');
     return;
 
   } catch (err) {
     console.error('[process-and-post] 에러:', err.message);
-    // 에러 발생 시 Blobs에 에러 상태 저장 → 폴링 무한루프 방지
     if (reservationKey) {
       try {
-        const store = getReservationStore();
-        const raw = await store.get(reservationKey);
-        if (raw) {
-          const item = JSON.parse(raw);
-          item.captionsGeneratedAt = new Date().toISOString();
-          item.captionStatus = 'failed';
-          item.captionError = err.message || '캡션 생성 중 오류가 발생했습니다.';
-          item.generatedCaptions = [];
-          await store.set(reservationKey, JSON.stringify(item));
-        }
-      } catch (_) {}
+        await supabase
+          .from('reservations')
+          .update({
+            captions_generated_at: new Date().toISOString(),
+            caption_status: 'failed',
+            caption_error: err.message || '캡션 생성 중 오류가 발생했습니다.',
+            generated_captions: [],
+          })
+          .eq('reserve_key', reservationKey);
+      } catch (_) { /* noop */ }
     }
     return;
   }
-}
+};
+
+exports.headers = headers;

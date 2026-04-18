@@ -1,13 +1,5 @@
-const { getStore } = require('@netlify/blobs');
-
-function getBlobStore(name) {
-  return getStore({
-    name,
-    consistency: 'strong',
-    siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
-    token: process.env.NETLIFY_TOKEN,
-  });
-}
+const { getAdminClient } = require('./_shared/supabase-admin');
+const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
 
 const CORS = {
   'Access-Control-Allow-Origin': 'https://lumi.it.kr',
@@ -17,27 +9,6 @@ const CORS = {
 
 const SITE_URL = process.env.URL || 'https://lumi.it.kr';
 
-// ── 캡션 히스토리 저장 (save-caption 로직 인라인) ──
-
-async function saveCaptionHistory(email, caption) {
-  const store = getBlobStore('users');
-  let history = [];
-  try {
-    const raw = await store.get('caption-history:' + email);
-    if (raw) history = JSON.parse(raw);
-  } catch { history = []; }
-
-  history.unshift({
-    id: Date.now(),
-    caption: caption.trim(),
-    createdAt: new Date().toISOString(),
-    feedback: null,
-  });
-  if (history.length > 20) history = history.slice(0, 20);
-  await store.set('caption-history:' + email, JSON.stringify(history));
-}
-
-// ── editedCaption 안전성 검수 ──
 async function moderateCaption(text) {
   try {
     const res = await fetch('https://api.openai.com/v1/moderations', {
@@ -51,10 +22,7 @@ async function moderateCaption(text) {
   } catch (e) { console.warn('[moderation] 실패, 통과:', e.message); return true; }
 }
 
-// ── 메인 핸들러 ──
-
 exports.handler = async (event) => {
-  // CORS preflight
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 204, headers: CORS };
   }
@@ -62,7 +30,6 @@ exports.handler = async (event) => {
     return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method Not Allowed' }) };
   }
 
-  // Body 파싱
   let body;
   try {
     body = JSON.parse(event.body);
@@ -72,42 +39,14 @@ exports.handler = async (event) => {
 
   const { reservationKey, captionIndex, editedCaption } = body;
 
-  // 인증: Bearer 토큰 또는 LUMI_SECRET (헤더로만)
-  const authHeader = event.headers['authorization'] || '';
-  const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
-  const hasSecret = event.headers['x-lumi-secret'] === process.env.LUMI_SECRET;
-  if (!bearerToken && !hasSecret) {
+  // Bearer 토큰 검증
+  const token = extractBearerToken(event);
+  if (!token) {
     return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증 실패' }) };
   }
-
-  // C2/H2: 토큰에서 email 추출 + 만료 체크
-  let tokenEmail = null;
-  if (bearerToken && !hasSecret) {
-    const userStore = getBlobStore('users');
-    let tokenRaw = null;
-    let tokenBlobError = false;
-    const RETRY_DELAYS = [200, 400, 800, 1600, 3200];
-    for (let i = 0; i < RETRY_DELAYS.length; i++) {
-      tokenBlobError = false;
-      try { tokenRaw = await userStore.get('token:' + bearerToken); }
-      catch(e) { tokenBlobError = true; console.error('[select-caption] token blob fetch error (attempt ' + (i+1) + '):', e.message); }
-      if (tokenRaw) break;
-      if (!tokenBlobError) break;
-      if (i < RETRY_DELAYS.length - 1) await new Promise(r => setTimeout(r, RETRY_DELAYS[i]));
-    }
-    if (!tokenRaw) {
-      if (tokenBlobError) {
-        console.warn('[select-caption] token blob error after 5 retries, bearer prefix:', bearerToken.substring(0, 8));
-        return { statusCode: 503, headers: CORS, body: JSON.stringify({ error: '일시적 서버 오류입니다. 잠시 후 다시 시도해주세요.' }) };
-      }
-      console.warn('[select-caption] token not found, bearer prefix:', bearerToken.substring(0, 8));
-      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '유효하지 않은 토큰' }) };
-    }
-    const tokenData = JSON.parse(tokenRaw);
-    if (tokenData.expiresAt && Date.now() > tokenData.expiresAt) {
-      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '토큰이 만료되었습니다.' }) };
-    }
-    tokenEmail = tokenData.email || null;
+  const { user, error: authError } = await verifyBearerToken(token);
+  if (authError || !user) {
+    return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '유효하지 않은 토큰' }) };
   }
 
   // 필수 파라미터 검증
@@ -119,34 +58,33 @@ exports.handler = async (event) => {
   }
 
   const idx = Number(captionIndex);
+  const admin = getAdminClient();
 
   try {
-    const reserveStore = getBlobStore('reservations');
-    const tempStore = getBlobStore('temp-images');
+    // 1. 예약 조회 + user_id 검증 (IDOR 방지)
+    const { data: reservation, error: resErr } = await admin
+      .from('reservations')
+      .select('*')
+      .eq('reserve_key', reservationKey)
+      .eq('user_id', user.id)
+      .single();
 
-    // 1. Blobs에서 예약 데이터 조회
-    const raw = await reserveStore.get(reservationKey);
-    if (!raw) {
+    if (resErr || !reservation) {
       return { statusCode: 404, headers: CORS, body: JSON.stringify({ error: '예약 데이터 없음' }) };
-    }
-    const item = JSON.parse(raw);
-
-    // C2: IDOR 방지 — Bearer 토큰 사용자는 자신의 예약만 선택 가능
-    if (tokenEmail && item.storeProfile?.ownerEmail && tokenEmail !== item.storeProfile.ownerEmail) {
-      return { statusCode: 403, headers: CORS, body: JSON.stringify({ error: '접근 권한이 없습니다.' }) };
     }
 
     // 이미 게시된 경우 중복 방지
-    if (item.isSent || item.captionStatus === 'posted') {
+    if (reservation.is_sent || reservation.caption_status === 'posted') {
       return { statusCode: 409, headers: CORS, body: JSON.stringify({ error: '이미 게시된 예약입니다' }) };
     }
 
-    // 2. captions[captionIndex] 가져오기 (editedCaption이 있으면 편집본 우선)
-    const captions = item.captions;
-    if (!captions || !captions[idx]) {
+    // 2. 캡션 가져오기 (editedCaption 있으면 우선)
+    const captions = Array.isArray(reservation.captions) ? reservation.captions : [];
+    if (!captions[idx]) {
       return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: `captionIndex ${idx}에 해당하는 캡션 없음` }) };
     }
-    // 사용자가 편집한 캡션이 있으면 길이 제한 + Moderation 검수 후 Blob에 반영
+
+    // editedCaption 검증
     if (editedCaption && typeof editedCaption === 'string' && editedCaption.trim()) {
       if (editedCaption.length > 2200) {
         return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '캡션은 2,200자를 초과할 수 없습니다.' }) };
@@ -156,17 +94,22 @@ exports.handler = async (event) => {
         return { statusCode: 422, headers: CORS, body: JSON.stringify({ error: '캡션이 안전성 검수를 통과하지 못했습니다.' }) };
       }
     }
+
     const selectedCaption = (editedCaption && typeof editedCaption === 'string' && editedCaption.trim())
       ? editedCaption.trim()
       : captions[idx];
+
+    // editedCaption이 있으면 captions 배열 업데이트
+    let updatedCaptions = captions;
     if (editedCaption && editedCaption.trim()) {
-      item.captions[idx] = selectedCaption;
+      updatedCaptions = [...captions];
+      updatedCaptions[idx] = selectedCaption;
     }
 
-    // 이미지 URL — process-and-post가 저장한 imageUrls 직접 사용, 없으면 imageKeys로 생성
-    const imageUrls = item.imageUrls && item.imageUrls.length
-      ? item.imageUrls
-      : (item.imageKeys || item.tempKeys || []).map(k =>
+    // 이미지 URL 구성
+    const imageUrls = reservation.image_urls && reservation.image_urls.length
+      ? reservation.image_urls
+      : (reservation.image_keys || []).map(k =>
           `${SITE_URL}/ig-img/${Buffer.from(k).toString('base64').replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'')}.jpg`
         );
     if (!imageUrls.length) {
@@ -175,22 +118,59 @@ exports.handler = async (event) => {
 
     console.log(`[select-caption] 캡션 선택: ${reservationKey}, captionIndex=${idx}`);
 
-    // 3. postMode 확인: immediate만 즉시 게시, 나머지는 scheduler 대기
-    const postMode = item.postMode || 'immediate';
-    const ownerEmail = tokenEmail || item.storeProfile?.ownerEmail;
+    // 3. 말투 피드백 저장: 선택한 캡션 → like (20개 롤링)
+    try {
+      const { data: existingFeedback } = await admin
+        .from('tone_feedback')
+        .select('id, created_at')
+        .eq('user_id', user.id)
+        .eq('kind', 'like')
+        .order('created_at', { ascending: true });
+
+      const totalAfterInsert = (existingFeedback ? existingFeedback.length : 0) + 1;
+      if (totalAfterInsert > 20) {
+        const deleteCount = totalAfterInsert - 20;
+        const idsToDelete = (existingFeedback || []).slice(0, deleteCount).map(r => r.id);
+        if (idsToDelete.length > 0) {
+          await admin.from('tone_feedback').delete().in('id', idsToDelete);
+        }
+      }
+
+      await admin.from('tone_feedback').insert({
+        user_id: user.id,
+        kind: 'like',
+        caption: selectedCaption,
+        reservation_id: reservation.id,
+        created_at: new Date().toISOString(),
+      });
+    } catch (e) { console.warn('[tone-learn] like 저장 실패:', e.message); }
+
+    // 4. postMode 확인
+    const postMode = reservation.post_mode || 'immediate';
 
     if (postMode === 'immediate') {
       // 즉시 게시: 선택 상태 저장 후 Background Function 트리거
-      item.selectedCaptionIndex = idx;
-      item.captionStatus = 'posting';
-      await reserveStore.set(reservationKey, JSON.stringify(item));
+      const { error: updateErr } = await admin
+        .from('reservations')
+        .update({
+          selected_caption_index: idx,
+          captions: updatedCaptions,
+          caption_status: 'posting',
+        })
+        .eq('reserve_key', reservationKey)
+        .eq('user_id', user.id);
+
+      if (updateErr) {
+        console.error('[select-caption] 업데이트 실패:', updateErr.message);
+        return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '게시 요청 실패' }) };
+      }
 
       let triggerOk = false;
       try {
         const triggerRes = await fetch('https://lumi.it.kr/.netlify/functions/select-and-post-background', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.LUMI_SECRET}` },
-          body: JSON.stringify({ reservationKey, captionIndex: idx, email: ownerEmail }),
+          body: JSON.stringify({ reservationKey, captionIndex: idx, userId: user.id }),
         });
         console.log('[select-caption] select-and-post-background 트리거:', triggerRes.status);
         triggerOk = triggerRes.ok || triggerRes.status === 202;
@@ -199,9 +179,12 @@ exports.handler = async (event) => {
       }
 
       if (!triggerOk) {
-        // 트리거 실패 — captionStatus를 ready로 롤백해 사용자가 재시도 가능하게 함
-        item.captionStatus = 'ready';
-        await reserveStore.set(reservationKey, JSON.stringify(item));
+        // 트리거 실패 — caption_status 롤백
+        await admin
+          .from('reservations')
+          .update({ caption_status: 'ready' })
+          .eq('reserve_key', reservationKey)
+          .eq('user_id', user.id);
         return {
           statusCode: 500,
           headers: CORS,
@@ -215,16 +198,28 @@ exports.handler = async (event) => {
         body: JSON.stringify({ success: true, status: 'posting' }),
       };
     } else {
-      // 예약 게시 (best-time / scheduled): 캡션 선택만 저장, scheduler가 나중에 처리
-      item.selectedCaptionIndex = idx;
-      item.captionStatus = 'scheduled';
-      await reserveStore.set(reservationKey, JSON.stringify(item));
-      console.log(`[select-caption] 예약 저장 완료 (postMode=${postMode}): ${reservationKey}, scheduledAt=${item.scheduledAt}`);
+      // 예약 게시: 캡션 선택만 저장, scheduler가 나중에 처리
+      const { error: updateErr } = await admin
+        .from('reservations')
+        .update({
+          selected_caption_index: idx,
+          captions: updatedCaptions,
+          caption_status: 'scheduled',
+        })
+        .eq('reserve_key', reservationKey)
+        .eq('user_id', user.id);
+
+      if (updateErr) {
+        console.error('[select-caption] 예약 저장 실패:', updateErr.message);
+        return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '게시 요청 실패' }) };
+      }
+
+      console.log(`[select-caption] 예약 저장 완료 (postMode=${postMode}): ${reservationKey}, scheduledAt=${reservation.scheduled_at}`);
 
       return {
         statusCode: 200,
         headers: CORS,
-        body: JSON.stringify({ success: true, status: 'scheduled', scheduledAt: item.scheduledAt }),
+        body: JSON.stringify({ success: true, status: 'scheduled', scheduledAt: reservation.scheduled_at }),
       };
     }
 

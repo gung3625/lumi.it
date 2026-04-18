@@ -1,6 +1,37 @@
-const { getStore } = require('@netlify/blobs');
+const { getAdminClient } = require('./_shared/supabase-admin');
 
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Content-Type': 'application/json' };
+
+async function checkRateLimit(supabase, kind, ip, { windowSeconds = 600, max = 5 } = {}) {
+  const nowIso = new Date().toISOString();
+  try {
+    const { data: existing } = await supabase
+      .from('rate_limits')
+      .select('count, first_at')
+      .eq('kind', kind)
+      .eq('ip', ip)
+      .maybeSingle();
+
+    if (existing) {
+      const age = (Date.now() - new Date(existing.first_at).getTime()) / 1000;
+      if (age > windowSeconds) {
+        await supabase.from('rate_limits')
+          .update({ count: 1, first_at: nowIso, last_at: nowIso })
+          .eq('kind', kind).eq('ip', ip);
+        return { ok: true, count: 1 };
+      }
+      const nextCount = existing.count + 1;
+      await supabase.from('rate_limits')
+        .update({ count: nextCount, last_at: nowIso })
+        .eq('kind', kind).eq('ip', ip);
+      return { ok: nextCount <= max, count: nextCount };
+    }
+    await supabase.from('rate_limits').insert({ kind, ip, count: 1, first_at: nowIso, last_at: nowIso });
+    return { ok: true, count: 1 };
+  } catch (e) {
+    return { ok: true, count: 0 };
+  }
+}
 
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
@@ -8,20 +39,12 @@ exports.handler = async (event) => {
     return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
-  // IP rate limit: 10분 내 5회 제한
+  const supabase = getAdminClient();
   const ip = (event.headers['x-nf-client-connection-ip'] || event.headers['client-ip'] || 'unknown');
-  try {
-    const rlStore = getStore({ name: 'rate-limit', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
-    const rlKey = 'findid:' + ip;
-    const rlRaw = await rlStore.get(rlKey).catch(() => null);
-    const rl = rlRaw ? JSON.parse(rlRaw) : { count: 0, firstAt: Date.now() };
-    if (Date.now() - rl.firstAt > 600000) { rl.count = 0; rl.firstAt = Date.now(); }
-    rl.count++;
-    await rlStore.set(rlKey, JSON.stringify(rl));
-    if (rl.count > 5) {
-      return { statusCode: 429, headers: CORS, body: JSON.stringify({ error: '너무 많은 시도입니다. 10분 후 다시 시도해주세요.' }) };
-    }
-  } catch(e) {}
+  const rl = await checkRateLimit(supabase, 'find-id', ip, { windowSeconds: 600, max: 5 });
+  if (!rl.ok) {
+    return { statusCode: 429, headers: CORS, body: JSON.stringify({ error: '너무 많은 시도입니다. 10분 후 다시 시도해주세요.' }) };
+  }
 
   let body;
   try { body = JSON.parse(event.body); } catch {
@@ -35,49 +58,39 @@ exports.handler = async (event) => {
   }
 
   try {
-    const store = getStore({
-      name: 'users', consistency: 'strong',
-      siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
-      token: process.env.NETLIFY_TOKEN
-    });
+    const { data: match, error } = await supabase
+      .from('users')
+      .select('email')
+      .eq('name', name)
+      .eq('phone', phone)
+      .eq('birthdate', birthdate)
+      .maybeSingle();
 
-    const { blobs } = await store.list({ prefix: 'user:' });
-
-    for (const blob of blobs) {
-      let user;
-      try {
-        const raw = await store.get(blob.key);
-        user = JSON.parse(raw);
-      } catch {
-        continue;
-      }
-
-      if (
-        user.name === name &&
-        user.phone === phone &&
-        user.birthdate === birthdate
-      ) {
-        // 이메일 일부 마스킹 처리 (예: ab***@gmail.com)
-        const [localPart, domain] = user.email.split('@');
-        const maskedLocal = localPart.slice(0, 2) + '***';
-        const maskedEmail = maskedLocal + '@' + domain;
-
-        return {
-          statusCode: 200,
-          headers: CORS,
-          body: JSON.stringify({ success: true, email: maskedEmail })
-        };
-      }
+    if (error) {
+      console.error('[find-id] query error:', error.message);
+      return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '처리 중 오류가 발생했습니다.' }) };
     }
 
-    return {
-      statusCode: 404,
-      headers: CORS,
-      body: JSON.stringify({ error: '일치하는 회원 정보를 찾을 수 없습니다.' })
-    };
+    if (!match || !match.email) {
+      return {
+        statusCode: 404,
+        headers: CORS,
+        body: JSON.stringify({ error: '일치하는 회원 정보를 찾을 수 없습니다.' })
+      };
+    }
 
+    // 이메일 마스킹 (예: ab***@gmail.com) — 로그에는 출력하지 않음
+    const [localPart, domain] = match.email.split('@');
+    const maskedLocal = (localPart || '').slice(0, 2) + '***';
+    const maskedEmail = maskedLocal + '@' + (domain || '');
+
+    return {
+      statusCode: 200,
+      headers: CORS,
+      body: JSON.stringify({ success: true, email: maskedEmail })
+    };
   } catch (err) {
-    console.error('find-id error:', err);
+    console.error('find-id error:', err && err.message);
     return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '처리 중 오류가 발생했습니다.' }) };
   }
 };

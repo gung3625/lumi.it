@@ -1,10 +1,13 @@
-const { getStore } = require('@netlify/blobs');
+const { getAdminClient } = require('./_shared/supabase-admin');
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'Content-Type',
   'Content-Type': 'application/json',
 };
+
+// demo-caption 1일 제한 횟수
+const DEMO_DAILY_LIMIT = 3;
 
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
@@ -32,23 +35,30 @@ exports.handler = async (event) => {
       }
     }
 
-    // ── IP 기반 영구 3회 제한 ──
+    // ── IP 기반 하루 N회 제한 (rate_limits 테이블, service_role) ──
     const ip = (event.headers['x-forwarded-for'] || event.headers['client-ip'] || 'unknown').split(',')[0].trim();
-    const rateLimitKey = `demo-rate:${ip}`;
-    const store = getStore({
-      name: 'demo-rate',
-      consistency: 'strong',
-      siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
-      token: process.env.NETLIFY_TOKEN,
-    });
+    const admin = getAdminClient();
 
-    let count = 0;
+    const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    const rateKind = `demo-caption:${today}`;
+
+    let currentCount = 0;
     try {
-      const existing = await store.get(rateLimitKey);
-      if (existing) count = parseInt(existing, 10) || 0;
-    } catch (e) { /* first use */ }
+      const { data: rateRow } = await admin
+        .from('rate_limits')
+        .select('count, first_at')
+        .eq('kind', rateKind)
+        .eq('ip', ip)
+        .maybeSingle();
 
-    if (count >= 3) {
+      if (rateRow) {
+        currentCount = rateRow.count || 0;
+      }
+    } catch (e) {
+      console.warn('[demo-caption] rate_limits 조회 실패:', e.message);
+    }
+
+    if (currentCount >= DEMO_DAILY_LIMIT) {
       return { statusCode: 429, headers, body: JSON.stringify({ error: '체험 횟수(3회)를 모두 사용했어요. 더 다양한 캡션을 원하시면 무료로 가입해보세요!' }) };
     }
 
@@ -75,13 +85,12 @@ exports.handler = async (event) => {
 
     // ── 트렌드 가져오기 ──
     let trendBlock = '트렌드 정보 없음.';
-    let trendTags = [];
     try {
       const tRes = await fetch(`https://lumi.it.kr/.netlify/functions/get-trends?category=${encodeURIComponent(bizCategory)}&scope=domestic`);
       if (tRes.ok) {
         const tData = await tRes.json();
         if (tData.keywords && tData.keywords.length > 0) {
-          trendTags = tData.keywords.map(k => k.keyword.startsWith('#') ? k.keyword : '#' + k.keyword);
+          const trendTags = tData.keywords.map(k => k.keyword.startsWith('#') ? k.keyword : '#' + k.keyword);
           trendBlock = `트렌드 태그: ${trendTags.join(', ')}${tData.insight ? '\n인사이트: ' + tData.insight : ''}
 사진 내용과 관련 있는 트렌드만 해시태그에 2~3개 포함. 무관한 트렌드 태그 사용 금지.`;
         }
@@ -237,8 +246,22 @@ ${trendBlock}
     const caption = captionData.output?.[0]?.content?.[0]?.text || captionData.output_text || '';
     if (!caption) throw new Error('캡션 생성 실패');
 
-    // ── rate limit 카운트 증가 ──
-    await store.set(rateLimitKey, String(count + 1));
+    // ── rate limit 카운트 증가 (upsert) ──
+    try {
+      const nowIso = new Date().toISOString();
+      await admin.from('rate_limits').upsert(
+        {
+          kind: rateKind,
+          ip,
+          count: currentCount + 1,
+          first_at: currentCount === 0 ? nowIso : undefined,
+          last_at: nowIso,
+        },
+        { onConflict: 'kind,ip', ignoreDuplicates: false }
+      );
+    } catch (e) {
+      console.warn('[demo-caption] rate_limits upsert 실패:', e.message);
+    }
 
     return {
       statusCode: 200,

@@ -1,4 +1,4 @@
-const { getStore } = require('@netlify/blobs');
+const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
@@ -15,22 +15,13 @@ exports.handler = async (event) => {
   }
 
   try {
-    // ── 토큰 인증 ──
-    const authHeader = event.headers['authorization'] || event.headers['Authorization'] || '';
-    const token = authHeader.replace(/^Bearer\s+/i, '');
+    // ── Bearer 토큰 검증 ──
+    const token = extractBearerToken(event);
     if (!token) {
       return { statusCode: 401, headers, body: JSON.stringify({ error: '로그인이 필요합니다.' }) };
     }
-
-    const usersStore = getStore({
-      name: 'users',
-      consistency: 'strong',
-      siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
-      token: process.env.NETLIFY_TOKEN,
-    });
-
-    const tokenData = await usersStore.get('token:' + token);
-    if (!tokenData) {
+    const { user, error: authError } = await verifyBearerToken(token);
+    if (authError || !user) {
       return { statusCode: 401, headers, body: JSON.stringify({ error: '유효하지 않은 인증입니다.' }) };
     }
 
@@ -125,12 +116,7 @@ ${toneInstruction}
       body: JSON.stringify({
         model: 'gpt-4o',
         max_tokens: 1500,
-        messages: [
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
+        messages: [{ role: 'user', content: prompt }],
       }),
     });
 
@@ -151,6 +137,7 @@ ${toneInstruction}
       throw new Error('캡션 파싱 실패');
     }
 
+    // DB 저장 없음 — welcome-caption은 응답만 반환 (첫 방문 데모)
     return {
       statusCode: 200,
       headers,

@@ -1,46 +1,49 @@
+// 만료 임박 알림 (cron)
+// public.users 에서 trial_start 기준 만료 임박 사용자 → Resend 이메일
+// service role 사용 (RLS 우회, 개인정보 로그 금지)
 const { Resend } = require('resend');
-const { getStore } = require('@netlify/blobs');
+const { getAdminClient } = require('./_shared/supabase-admin');
 
-// 알림 타이밍 설정 (만료일 기준 일수 → 메시지)
+// 체험 기간 기본 7일 (schema users.trial_start 기반)
+const TRIAL_DAYS = 7;
+
+// 알림 타이밍 설정 (만료일까지 남은 일수 → 메시지)
 const NOTICE_RULES = [
   { daysUntilExpiry: 7,  key: 'd7',  subject: '플랜이 7일 후 만료됩니다', heading: '플랜 만료 7일 전이에요', body: '지금 갱신하시면 서비스가 끊기지 않아요.' },
   { daysUntilExpiry: 3,  key: 'd3',  subject: '플랜 만료가 3일 남았어요', heading: '플랜 만료까지 3일!', body: '서비스 이용이 곧 중단됩니다. 미리 갱신해주세요.' },
-  { daysUntilExpiry: 0,  key: 'd0',  subject: '오늘 플랜이 만료됩니다', heading: '오늘 플랜이 만료돼요', body: '오늘 자정 이후 서비스 이용이 제한됩니다.' },
-  { daysUntilExpiry: -1, key: 'd-1', subject: '플랜이 만료됐어요. 갱신하세요', heading: '플랜이 만료되었습니다', body: '갱신하시면 바로 다시 이용할 수 있어요.' },
+  { daysUntilExpiry: 1,  key: 'd1',  subject: '내일 플랜이 만료됩니다', heading: '플랜 만료 하루 전이에요', body: '내일 자정 이후 서비스 이용이 제한됩니다.' },
 ];
 
-// 오늘 날짜 문자열 (KST 기준, YYYY-MM-DD)
 function getTodayKST() {
   const now = new Date();
   const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
   return kst.toISOString().slice(0, 10);
 }
 
-// 만료일까지 남은 일수 계산 (KST 기준)
-function getDaysUntilExpiry(planExpireAt) {
+// 만료일까지 남은 일수 (KST 기준, expiryIso = trial_start + TRIAL_DAYS)
+function getDaysUntilExpiry(expiryIso) {
   const now = new Date();
   const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
   const todayMidnight = new Date(kst.toISOString().slice(0, 10) + 'T00:00:00Z');
-  const expiryMidnight = new Date(planExpireAt.slice(0, 10) + 'T00:00:00Z');
+  const expiryMidnight = new Date(expiryIso.slice(0, 10) + 'T00:00:00Z');
   return Math.round((expiryMidnight - todayMidnight) / (1000 * 60 * 60 * 24));
 }
 
-// 이메일 HTML 템플릿
 function buildEmailHtml({ heading, body, userName }) {
   return `
-    <div style="font-family:'Noto Sans KR',sans-serif;max-width:480px;margin:0 auto;padding:40px 24px;">
+    <div style="font-family:Pretendard,sans-serif;max-width:480px;margin:0 auto;padding:40px 24px;">
       <div style="text-align:center;margin-bottom:32px;">
-        <span style="font-size:28px;font-weight:900;color:#FF6B9D;">lumi</span>
+        <span style="font-size:28px;font-weight:900;color:#C8507A;">lumi</span>
       </div>
       <h2 style="font-size:20px;font-weight:700;color:#1a1a2e;margin-bottom:8px;">${heading}</h2>
       <p style="color:#666;margin-bottom:8px;">${userName}님, ${body}</p>
       <div style="background:#fff0f6;border-radius:16px;padding:24px;text-align:center;margin:24px 0;">
-        <p style="font-size:15px;color:#FF6B9D;font-weight:700;margin:0 0 8px 0;">🎉 연간 플랜으로 갱신하면 20% 할인!</p>
-        <p style="font-size:13px;color:#999;margin:0;">더 저렴하게 lumi를 이용해보세요.</p>
+        <p style="font-size:15px;color:#C8507A;font-weight:700;margin:0 0 8px 0;">지금 갱신하면 서비스가 끊기지 않아요</p>
+        <p style="font-size:13px;color:#999;margin:0;">대시보드에서 바로 갱신할 수 있어요.</p>
       </div>
       <div style="text-align:center;margin:32px 0;">
         <a href="https://lumi.it.kr/subscribe"
-           style="display:inline-block;padding:14px 40px;background:#FF6B9D;color:#fff;font-size:16px;font-weight:700;border-radius:12px;text-decoration:none;">
+           style="display:inline-block;padding:14px 40px;background:#C8507A;color:#fff;font-size:16px;font-weight:700;border-radius:980px;text-decoration:none;">
           지금 갱신하기
         </a>
       </div>
@@ -69,47 +72,57 @@ exports.handler = async (event) => {
     }
   }
 
-  try {
-    const store = getStore({
-      name: 'users',
-      consistency: 'strong',
-      siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
-      token: process.env.NETLIFY_TOKEN,
-    });
+  if (!process.env.RESEND_API_KEY) {
+    return { statusCode: 500, headers, body: JSON.stringify({ error: '메일 설정 오류입니다.' }) };
+  }
 
-    const resend = new Resend(process.env.RESEND_API_KEY);
-    const todayStr = getTodayKST();
-    const { blobs } = await store.list({ prefix: 'user:' });
+  const admin = getAdminClient();
+  const resend = new Resend(process.env.RESEND_API_KEY);
+  const todayStr = getTodayKST();
+
+  try {
+    // trial_start + TRIAL_DAYS 가 내일~일주일 내인 유저 조회
+    // 필터 범위: now - TRIAL_DAYS + 1day ≤ trial_start ≤ now - TRIAL_DAYS + 7day
+    //   (즉, 만료까지 1~7일 남은 경우)
+    const now = Date.now();
+    const MS_DAY = 24 * 60 * 60 * 1000;
+    const earliestStart = new Date(now - (TRIAL_DAYS - 1) * MS_DAY).toISOString();       // 만료 1일 전
+    const latestStart = new Date(now - (TRIAL_DAYS - 7) * MS_DAY).toISOString();         // 만료 7일 전
+
+    const { data: candidates, error: queryErr } = await admin
+      .from('users')
+      .select('id, email, name, store_name, plan, trial_start')
+      .neq('plan', 'trial')
+      .not('trial_start', 'is', null)
+      .gte('trial_start', earliestStart)
+      .lte('trial_start', latestStart);
+
+    if (queryErr) {
+      console.error('[check-expiry] users 쿼리 오류:', queryErr.message);
+      return { statusCode: 500, headers, body: JSON.stringify({ error: '처리 중 오류가 발생했습니다.' }) };
+    }
 
     let sent = 0;
     let skipped = 0;
     let errors = 0;
 
-    for (const blob of blobs) {
+    for (const row of (candidates || [])) {
       try {
-        const raw = await store.get(blob.key);
-        if (!raw) continue;
-        const user = JSON.parse(raw);
+        if (!row.email || !row.trial_start) { skipped++; continue; }
 
-        // planExpireAt 필드가 없으면 스킵
-        if (!user.planExpireAt || !user.email) continue;
-
-        const daysLeft = getDaysUntilExpiry(user.planExpireAt);
+        // 만료일 = trial_start + TRIAL_DAYS
+        const expiry = new Date(new Date(row.trial_start).getTime() + TRIAL_DAYS * MS_DAY).toISOString();
+        const daysLeft = getDaysUntilExpiry(expiry);
         const rule = NOTICE_RULES.find(r => r.daysUntilExpiry === daysLeft);
-        if (!rule) continue;
+        if (!rule) { skipped++; continue; }
 
-        // 중복 발송 방지: 같은 날 같은 key로 이미 발송했으면 스킵
-        const noticeTag = `${todayStr}:${rule.key}`;
-        if (user.lastExpiryNotice === noticeTag) {
-          skipped++;
-          continue;
-        }
-
-        const userName = user.storeName || user.name || '고객';
-
+        // 중복 발송 방지 기록 필드가 스키마에 없음 → 동일 사용자에게 하루 1회 제약을
+        // 외부에서 관리할 수 없는 상황. 현재는 cron 주기 1일 전제(현 send-notifications
+        // 패턴 참조)로 단순 발송.
+        const userName = row.store_name || row.name || '고객';
         await resend.emails.send({
           from: 'lumi <noreply@lumi.it.kr>',
-          to: user.email,
+          to: row.email,
           subject: `[lumi] ${rule.subject}`,
           html: buildEmailHtml({
             heading: rule.heading,
@@ -118,27 +131,22 @@ exports.handler = async (event) => {
           }),
         });
 
-        // 발송 기록 저장
-        user.lastExpiryNotice = noticeTag;
-        await store.set(blob.key, JSON.stringify(user));
         sent++;
-
-        // Resend rate limit 대비
         await new Promise(r => setTimeout(r, 200));
       } catch (e) {
-        console.error('[check-expiry] 발송 실패:', blob.key, e.message);
+        console.error('[check-expiry] 발송 실패:', e.message);
         errors++;
       }
     }
 
-    console.log('[lumi] check-expiry 완료:', { sent, skipped, errors });
+    console.log('[check-expiry] 완료:', { date: todayStr, sent, skipped, errors });
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({ success: true, sent, skipped, errors }),
     };
   } catch (err) {
-    console.error('[check-expiry] error:', err);
+    console.error('[check-expiry] error:', err.message);
     return {
       statusCode: 500,
       headers,

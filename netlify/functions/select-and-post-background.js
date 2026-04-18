@@ -1,79 +1,31 @@
-// Background Function — 캡션 선택 후 실제 Instagram 게시 처리
-const { getStore } = require('@netlify/blobs');
+// Background Function — 캡션 선택 후 Instagram 게시.
+// 데이터 저장: public.reservations (Supabase).
+// 토큰 조회: ig_accounts_decrypted 뷰 (service_role 전용) — 절대 로그/응답에 노출 금지.
+// 이미지: reservations.image_urls (Supabase Storage public URL 권장).
 const { createHmac } = require('crypto');
+const { getAdminClient } = require('./_shared/supabase-admin');
 
-function getBlobStore(name) {
-  return getStore({
-    name,
-    consistency: 'strong',
-    siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
-    token: process.env.NETLIFY_TOKEN,
-  });
-}
+const headers = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Content-Type': 'application/json',
+};
 
-function getTempImageStore() {
-  return getStore({
-    name: 'temp-images',
-    consistency: 'strong',
-    siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
-    token: process.env.NETLIFY_TOKEN,
-  });
-}
+async function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
 
-function getLastPostImageStore() {
-  return getStore({
-    name: 'last-post-images',
-    consistency: 'strong',
-    siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
-    token: process.env.NETLIFY_TOKEN,
-  });
-}
-
-async function rollLastPostImages(email, tempKeys, caption, instagramPostId, igUsername) {
-  try {
-    const imgStore = getTempImageStore();
-    const lpStore = getLastPostImageStore();
-
-    // 기존 last-post-images 키 전체 삭제 (롤링)
-    const { blobs: oldBlobs } = await lpStore.list({ prefix: 'last-post:' + email + ':' });
-    console.log('[select-and-post] 기존 롤링 이미지 삭제 개수:', (oldBlobs || []).length, 'email prefix:', email.substring(0, 4));
-    for (const b of (oldBlobs || [])) {
-      try { await lpStore.delete(b.key); } catch (e) {}
-    }
-
-    // temp-images → last-post-images 복사
-    const uploadedAt = new Date().toISOString();
-    let savedCount = 0;
-    await Promise.all(tempKeys.map(async (tempKey, i) => {
-      try {
-        const buf = await imgStore.get(tempKey, { type: 'arrayBuffer' });
-        if (!buf) { console.warn('[select-and-post] temp-image 조회 null:', tempKey); return; }
-        const destKey = 'last-post:' + email + ':' + i;
-        await lpStore.set(destKey, Buffer.from(buf), {
-          metadata: { contentType: 'image/jpeg', uploadedAt, caption, instagramPostId: instagramPostId || '', igUsername: igUsername || '' },
-        });
-        savedCount++;
-      } catch (e) {
-        console.warn('[select-and-post] last-post-images 복사 실패 index=' + i + ':', e.message);
-      }
-    }));
-
-    console.log('[select-and-post] 롤링 저장 완료. 저장된 개수:', savedCount, '/', tempKeys.length);
-    console.log('[select-and-post] last-post-images 롤링 완료, email prefix:', email.substring(0, 4));
-  } catch (e) {
-    console.warn('[select-and-post] last-post-images 롤링 전체 실패:', e.message);
+// ─────────── Instagram Graph API 호출 헬퍼 ───────────
+async function waitForContainer(containerId, accessToken, maxRetries = 6) {
+  for (let i = 0; i < maxRetries; i++) {
+    await sleep(1000);
+    try {
+      const res = await fetch(`https://graph.facebook.com/v25.0/${containerId}?fields=status_code&access_token=${accessToken}`);
+      const data = await res.json();
+      if (data.status_code === 'FINISHED') return true;
+      if (data.status_code === 'ERROR') return false;
+    } catch (e) { /* 다음 retry */ }
   }
+  return true;
 }
-
-async function cleanupTempImages(keys) {
-  if (!keys || !keys.length) return;
-  const imgStore = getTempImageStore();
-  for (const key of keys) {
-    try { await imgStore.delete(key); } catch (e) {}
-  }
-}
-
-const SITE_URL = 'https://lumi.it.kr';
 
 async function createMediaContainer(igUserId, igAccessToken, imageUrl, isCarousel) {
   const params = new URLSearchParams({ image_url: imageUrl, access_token: igAccessToken });
@@ -84,7 +36,7 @@ async function createMediaContainer(igUserId, igAccessToken, imageUrl, isCarouse
     body: params,
   });
   const data = await res.json();
-  if (data.error) throw new Error(`IG container error: ${JSON.stringify(data.error)}`);
+  if (data.error) throw new Error(`IG container error: ${data.error.message || 'unknown'}`);
   return data.id;
 }
 
@@ -97,37 +49,21 @@ async function publishMedia(igUserId, igAccessToken, creationId) {
   return res.json();
 }
 
-async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-async function waitForContainer(containerId, accessToken, maxRetries = 6) {
-  for (let i = 0; i < maxRetries; i++) {
-    await sleep(1000);
-    try {
-      const res = await fetch(`https://graph.facebook.com/v25.0/${containerId}?fields=status_code&access_token=${accessToken}`);
-      const data = await res.json();
-      if (data.status_code === 'FINISHED') return true;
-      if (data.status_code === 'ERROR') return false;
-    } catch(e) {}
-  }
-  return true;
-}
-
-async function postToInstagram(item, caption, imageUrls) {
-  const igUserId = item.igUserId;
-  const igAccessToken = item.igPageAccessToken || item.igAccessToken;
+async function postToInstagram({ igUserId, igAccessToken, igUserAccessToken, storyEnabled }, caption, imageUrls) {
   if (!igUserId || !igAccessToken) throw new Error('Instagram 연동 정보 없음');
-
   let postId;
 
   if (imageUrls.length > 1) {
-    // 캐러셀 아이템 컨테이너 병렬 생성
-    const containerIds = await Promise.all(imageUrls.map(url =>
-      createMediaContainer(igUserId, igAccessToken, url, true)
-    ));
+    const containerIds = await Promise.all(imageUrls.map((url) => createMediaContainer(igUserId, igAccessToken, url, true)));
     const cRes = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ media_type: 'CAROUSEL', children: containerIds.join(','), caption, access_token: igAccessToken }),
+      body: new URLSearchParams({
+        media_type: 'CAROUSEL',
+        children: containerIds.join(','),
+        caption,
+        access_token: igAccessToken,
+      }),
     });
     const cData = await cRes.json();
     if (cData.error) throw new Error(cData.error.message);
@@ -149,11 +85,11 @@ async function postToInstagram(item, caption, imageUrls) {
     postId = pData.id;
   }
 
-  // 스토리 — 유저 액세스 토큰만 사용 (pageAccessToken은 스토리 권한 없음)
-  if (item.storyEnabled && imageUrls[0]) {
+  // 스토리 — 유저 액세스 토큰만 사용 (pageAccessToken 은 스토리 권한 없음)
+  if (storyEnabled && imageUrls[0]) {
     try {
-      const storyToken = item.igAccessToken; // 유저 토큰 명시적 사용
-      await sleep(3000); // 피드 게시 후 잠시 대기
+      const storyToken = igUserAccessToken || igAccessToken;
+      await sleep(3000);
       const sRes = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -161,7 +97,7 @@ async function postToInstagram(item, caption, imageUrls) {
       });
       const sData = await sRes.json();
       if (sData.error) {
-        console.error('[select-and-post] 스토리 컨테이너 생성 실패:', JSON.stringify(sData.error));
+        console.error('[select-and-post] 스토리 컨테이너 생성 실패');
       } else {
         await waitForContainer(sData.id, storyToken);
         await publishMedia(igUserId, storyToken, sData.id);
@@ -178,38 +114,23 @@ async function postToThreads(caption, imageUrl) {
   const token = process.env.THREADS_ACCESS_TOKEN;
   if (!userId || !token) throw new Error('Threads 환경변수 없음');
 
-  // Step 1: Container 생성
   const createRes = await fetch(`https://graph.threads.net/v1.0/${userId}/threads`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ media_type: 'IMAGE', image_url: imageUrl, text: caption, access_token: token }),
   });
   const createData = await createRes.json();
-  if (createData.error) throw new Error(`Threads container error: ${JSON.stringify(createData.error)}`);
+  if (createData.error) throw new Error(`Threads container error: ${createData.error.message || 'unknown'}`);
   const creationId = createData.id;
 
-  // Step 2: 30초 대기
   await sleep(30000);
 
-  // Step 3: Publish
   const pubRes = await fetch(`https://graph.threads.net/v1.0/${userId}/threads_publish`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ creation_id: creationId, access_token: token }),
   });
-  return await pubRes.json();
-}
-
-async function saveCaptionHistory(email, caption) {
-  try {
-    const store = getBlobStore('users');
-    let history = [];
-    const raw = await store.get('caption-history:' + email).catch(() => null);
-    if (raw) history = JSON.parse(raw);
-    history.unshift({ id: Date.now(), caption: caption.trim(), createdAt: new Date().toISOString(), feedback: null });
-    if (history.length > 20) history = history.slice(0, 20);
-    await store.set('caption-history:' + email, JSON.stringify(history));
-  } catch (e) { console.error('[select-and-post] 캡션 히스토리 저장 실패:', e.message); }
+  return pubRes.json();
 }
 
 async function sendAlimtalk(phone, text) {
@@ -228,6 +149,16 @@ async function sendAlimtalk(phone, text) {
   } catch (e) { console.error('[select-and-post] 알림톡 실패:', e.message); }
 }
 
+async function saveCaptionHistory(supabase, userId, caption) {
+  try {
+    await supabase.from('caption_history').insert({
+      user_id: userId,
+      caption: caption.trim(),
+      caption_type: 'posted',
+    });
+  } catch (e) { console.error('[select-and-post] 캡션 히스토리 저장 실패:', e.message); }
+}
+
 exports.handler = async (event) => {
   // 내부 호출 인증
   const authHeader = (event.headers['authorization'] || '').replace('Bearer ', '');
@@ -236,57 +167,74 @@ exports.handler = async (event) => {
     return { statusCode: 401 };
   }
 
+  const supabase = getAdminClient();
   let reservationKey = null;
+
   try {
     const body = JSON.parse(event.body || '{}');
     reservationKey = body.reservationKey;
     const captionIndex = Number(body.captionIndex);
     if (!reservationKey) return;
 
-    const reserveStore = getBlobStore('reservations');
-    const raw = await reserveStore.get(reservationKey);
-    if (!raw) return;
+    // 1) reservation 조회
+    const { data: reservation, error: resErr } = await supabase
+      .from('reservations')
+      .select('*')
+      .eq('reserve_key', reservationKey)
+      .maybeSingle();
+    if (resErr || !reservation) {
+      console.error('[select-and-post] 예약 조회 실패:', resErr?.message || 'not found');
+      return;
+    }
+    if (reservation.is_sent) { console.log('[select-and-post] 이미 게시됨'); return; }
 
-    const item = JSON.parse(raw);
-    if (item.isSent) { console.log('[select-and-post] 이미 게시됨'); return; }
-
-    // 중복 호출 방지: 게시 진행 중 상태로 먼저 저장
-    if (item.captionStatus !== 'posting') {
-      item.captionStatus = 'posting';
-      await reserveStore.set(reservationKey, JSON.stringify(item));
+    // 2) 중복 호출 방지 — posting 상태로 선 마킹
+    if (reservation.caption_status !== 'posting') {
+      await supabase
+        .from('reservations')
+        .update({ caption_status: 'posting' })
+        .eq('reserve_key', reservationKey);
     }
 
-    const captions = item.captions || item.generatedCaptions || [];
-    const selectedCaption = captions[captionIndex];
+    const captions = reservation.generated_captions || reservation.captions || [];
+    const selectedCaption = Array.isArray(captions) ? captions[captionIndex] : null;
     if (!selectedCaption) { console.error('[select-and-post] 캡션 없음'); return; }
 
-    const imageUrls = item.imageUrls && item.imageUrls.length
-      ? item.imageUrls
-      : (item.imageKeys || item.tempKeys || []).map(k =>
-          `${SITE_URL}/ig-img/${Buffer.from(k).toString('base64').replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'')}.jpg`
-        );
+    const imageUrls = Array.isArray(reservation.image_urls) ? reservation.image_urls : [];
     if (!imageUrls.length) { console.error('[select-and-post] 이미지 없음'); return; }
 
-    // 항상 최신 IG 토큰 재조회 (재연동 후 reservation blob의 구토큰 사용 방지)
-    if (item.igUserId) {
-      try {
-        const userStore = getBlobStore('users');
-        const igRaw = await userStore.get('ig:' + item.igUserId).catch(() => null);
-        if (igRaw) {
-          const igData = JSON.parse(igRaw);
-          item.igAccessToken = igData.accessToken || item.igAccessToken;
-          item.igPageAccessToken = igData.pageAccessToken || igData.accessToken || item.igPageAccessToken;
-          console.log('[select-and-post] IG 토큰 최신 버전으로 갱신 완료');
-        }
-      } catch (e) { console.error('[select-and-post] IG 토큰 재조회 실패:', e.message); }
+    // 3) IG 토큰 조회 (Vault 복호화 뷰, service_role 전용)
+    const { data: igRow, error: igErr } = await supabase
+      .from('ig_accounts_decrypted')
+      .select('ig_user_id, access_token, page_access_token')
+      .eq('user_id', reservation.user_id)
+      .maybeSingle();
+    if (igErr || !igRow || !igRow.access_token) {
+      console.error('[select-and-post] IG 토큰 조회 실패');
+      await supabase.from('reservations').update({
+        caption_status: 'failed',
+        caption_error: 'Instagram 연동 정보를 찾을 수 없습니다.',
+      }).eq('reserve_key', reservationKey);
+      return;
     }
 
+    const igUserId = igRow.ig_user_id;
+    const igUserAccessToken = igRow.access_token;
+    const igAccessToken = igRow.page_access_token || igRow.access_token;
+
     console.log(`[select-and-post] 게시 시작: ${reservationKey}, captionIndex=${captionIndex}`);
-    const postId = await postToInstagram(item, selectedCaption, imageUrls);
+
+    // 4) Instagram 게시
+    const postId = await postToInstagram(
+      { igUserId, igAccessToken, igUserAccessToken, storyEnabled: reservation.story_enabled },
+      selectedCaption,
+      imageUrls
+    );
     console.log('[select-and-post] Instagram 게시 완료:', postId);
 
-    // Threads 게시 (postToThread 플래그 확인)
-    if (item.postToThread && imageUrls[0]) {
+    // 5) Threads 게시 (옵션)
+    let threadsUpdate = {};
+    if (reservation.post_to_thread && imageUrls[0]) {
       let threadsStatus = 'failed';
       let threadsError = null;
       let threadsPostId = null;
@@ -294,9 +242,9 @@ exports.handler = async (event) => {
         console.log('[select-and-post] Threads 게시 시작');
         const threadsResult = await postToThreads(selectedCaption, imageUrls[0]);
         if (threadsResult.error) {
-          threadsError = threadsResult.error.message || JSON.stringify(threadsResult.error);
+          threadsError = threadsResult.error.message || 'threads error';
           if (threadsResult.error.code === 190) threadsStatus = 'token_expired';
-          console.error('[select-and-post] Threads 게시 실패:', threadsError);
+          console.error('[select-and-post] Threads 게시 실패');
         } else {
           threadsStatus = 'ok';
           threadsPostId = threadsResult.id || null;
@@ -305,122 +253,63 @@ exports.handler = async (event) => {
       } catch (te) {
         threadsError = te.message || String(te);
         if (/code":\s*190|expired|invalid.*token/i.test(threadsError)) threadsStatus = 'token_expired';
-        console.error('[select-and-post] Threads 예외:', threadsError);
+        console.error('[select-and-post] Threads 예외');
       }
-      item.threadsStatus = threadsStatus;
-      item.threadsError = threadsError;
-      item.threadsPostId = threadsPostId;
-      item.threadsAttemptedAt = new Date().toISOString();
-
-      // 운영자 알림 — 토큰 만료는 긴급
+      threadsUpdate = {
+        // reservations 테이블에는 threads 전용 컬럼이 없음 — 현재 스키마 유지 범위에서는 로그만.
+      };
       if (threadsStatus === 'token_expired') {
         try {
-          await sendAlimtalk('01064246284',
-            '[lumi] 스레드 토큰 만료\n\n스레드 게시가 실패했어요.\n대시보드 설정에서 스레드 재연동이 필요합니다.\n\n예약: ' + reservationKey);
-        } catch (_) {}
+          await sendAlimtalk(
+            '01064246284',
+            '[lumi] 스레드 토큰 만료\n\n스레드 게시가 실패했어요.\n대시보드 설정에서 스레드 재연동이 필요합니다.\n\n예약: ' + reservationKey
+          );
+        } catch (_) { /* noop */ }
       }
     }
 
-    // 완료 상태 저장
-    item.isSent = true;
-    item.sentAt = new Date().toISOString();
-    item.captionStatus = 'posted';
-    item.instagramPostId = postId;
-    item.selectedCaptionIndex = captionIndex;
-    item.postedCaption = selectedCaption;
-    await reserveStore.set(reservationKey, JSON.stringify(item));
+    // 6) 예약 상태 업데이트 (posted)
+    const postedAt = new Date().toISOString();
+    const { error: updErr } = await supabase
+      .from('reservations')
+      .update({
+        is_sent: true,
+        caption_status: 'posted',
+        selected_caption_index: captionIndex,
+        ig_post_id: String(postId),
+        posted_at: postedAt,
+      })
+      .eq('reserve_key', reservationKey);
+    if (updErr) console.error('[select-and-post] 예약 업데이트 실패:', updErr.message);
 
-    // IG 게시 성공 시점에 postCount 증가 (idempotent — postCountIncremented 플래그로 중복 방지)
-    if (!item.postCountIncremented) {
-      try {
-        const userStore = getBlobStore('users');
-        const postEmail = (item.storeProfile && (item.storeProfile.ownerEmail || item.storeProfile.email)) || null;
-        if (postEmail) {
-          const uRaw = await userStore.get('user:' + postEmail);
-          if (uRaw) {
-            const postUser = JSON.parse(uRaw);
-            const nowTs = new Date();
-            const thisMonthStr = nowTs.getFullYear() + '-' + (nowTs.getMonth() + 1);
-            if (postUser.postCountMonth !== thisMonthStr) {
-              postUser.postCountMonth = thisMonthStr;
-              postUser.postCount = 1;
-            } else {
-              postUser.postCount = (postUser.postCount || 0) + 1;
-            }
-            postUser.lastPostedAt = nowTs.toISOString();
-            await userStore.set('user:' + postEmail, JSON.stringify(postUser));
-            // idempotent 플래그 기록
-            item.postCountIncremented = true;
-            await reserveStore.set(reservationKey, JSON.stringify(item));
-            console.log('[select-and-post] postCount 증가 완료:', postEmail, '→', postUser.postCount);
-          }
-        }
-      } catch (e) { console.error('[select-and-post] postCount 증가 실패:', e.message); }
-    }
+    // 7) 캡션 히스토리 저장
+    if (reservation.user_id) await saveCaptionHistory(supabase, reservation.user_id, selectedCaption);
 
-    // 게시 성공 후: last-post-images 롤링 저장 → temp-images 삭제
-    const tempKeysToDelete = item.imageKeys || item.tempKeys || [];
-    const postEmail = (item.storeProfile && (item.storeProfile.ownerEmail || item.storeProfile.email)) || body.email || null;
-    console.log('[select-and-post] 이전 게시물 롤링 시작. postEmail:', postEmail ? postEmail.substring(0, 4) + '...' : 'NULL',
-      'tempKeys 개수:', tempKeysToDelete.length, 'reservation:', reservationKey);
-    if (postEmail && tempKeysToDelete.length > 0) {
-      await rollLastPostImages(
-        postEmail,
-        tempKeysToDelete,
-        selectedCaption,
-        postId,
-        (item.storeProfile && item.storeProfile.instagram) || null
-      );
-    }
-    await cleanupTempImages(tempKeysToDelete);
-
-    // 캡션 히스토리 저장
-    const email = body.email || item.storeProfile?.ownerEmail;
-    if (email) await saveCaptionHistory(email, selectedCaption);
-
-    // 완료 알림톡
-    const phone = item.storeProfile?.phone || item.storeProfile?.ownerPhone;
-    const sp = item.storeProfile || {};
+    // 8) 완료 알림톡 (storeProfile 에서 phone + 매장명 추출)
+    const sp = reservation.store_profile || {};
+    const phone = sp.phone || sp.ownerPhone;
     if (phone) {
-      await sendAlimtalk(phone, `[lumi] 인스타그램에 게시됐어요! 📸\n\n${sp.name || '매장'} 게시물이 올라갔어요.\n인스타그램에서 확인해보세요!`);
+      await sendAlimtalk(
+        phone,
+        `[lumi] 인스타그램에 게시됐어요! 📸\n\n${sp.name || '매장'} 게시물이 올라갔어요.\n인스타그램에서 확인해보세요!`
+      );
     }
 
   } catch (err) {
     console.error('[select-and-post] 에러:', err.message);
-    // 에러 상태 저장 + 실패 시 postCount 롤백 (실패건은 게시 카운트에서 제외)
     if (reservationKey) {
-      let rollbackEmail = null;
-      let alreadyRolledBack = false;
       try {
-        const store = getBlobStore('reservations');
-        const raw = await store.get(reservationKey);
-        if (raw) {
-          const item = JSON.parse(raw);
-          alreadyRolledBack = !!item.postCountRolledBack;
-          rollbackEmail = (item.storeProfile && (item.storeProfile.ownerEmail || item.storeProfile.email)) || item.ownerEmail || null;
-          item.postError = err.message;
-          item.postErrorAt = new Date().toISOString();
-          item.captionStatus = 'failed';
-          item.postCountRolledBack = true;
-          await store.set(reservationKey, JSON.stringify(item));
-        }
-      } catch (_) {}
-      if (rollbackEmail && !alreadyRolledBack) {
-        try {
-          const userStore = getBlobStore('users');
-          const uRaw = await userStore.get('user:' + rollbackEmail);
-          if (uRaw) {
-            const user = JSON.parse(uRaw);
-            const now = new Date();
-            const thisMonth = now.getFullYear() + '-' + (now.getMonth() + 1);
-            if (user.postCountMonth === thisMonth && (user.postCount || 0) > 0) {
-              user.postCount = user.postCount - 1;
-              await userStore.set('user:' + rollbackEmail, JSON.stringify(user));
-              console.log('[select-and-post] postCount 롤백 완료:', rollbackEmail, '→', user.postCount);
-            }
-          }
-        } catch (e) { console.error('[select-and-post] postCount 롤백 실패:', e.message); }
-      }
+        await supabase
+          .from('reservations')
+          .update({
+            caption_status: 'failed',
+            caption_error: err.message || '게시 중 오류가 발생했습니다.',
+          })
+          .eq('reserve_key', reservationKey);
+      } catch (_) { /* noop */ }
     }
   }
 };
+
+// 프론트 호환: 일부 호출자는 import 형태로 headers 참조. 안전하게 export.
+exports.headers = headers;

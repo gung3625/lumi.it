@@ -1663,6 +1663,140 @@ body.dark-mode .su-close{background:rgba(44,44,46,.9);}
 body.dark-mode .su-close svg{stroke:#f0f2f8;}
 @media(max-width:768px){.su-grid{grid-template-columns:1fr;}.su-card{grid-column:auto!important;}}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.103.3/dist/umd/supabase.min.js"></script>
+<script>
+  window.lumiSupa = window.supabase.createClient(
+    'https://cldsozdocxpvkbuxwqep.supabase.co',
+    'sb_publishable_WjWg5o05Y7lhib674Cr_fw_0mpY-ccG',
+    { auth: { persistSession: true, autoRefreshToken: true, storageKey: 'lumi-auth' } }
+  );
+  // Supabase 세션 ↔ 기존 localStorage(lumi_token/lumi_user) 동기화 브리지
+  window.lumiSupa.auth.onAuthStateChange(function(event, session){
+    try {
+      if (session && session.access_token) {
+        localStorage.setItem('lumi_token', session.access_token);
+        var u = session.user || {};
+        var meta = u.user_metadata || {};
+        var prev = {};
+        try { prev = JSON.parse(localStorage.getItem('lumi_user') || '{}'); } catch(e){}
+        var merged = Object.assign({}, prev, { email: u.email || prev.email, id: u.id || prev.id }, meta);
+        localStorage.setItem('lumi_user', JSON.stringify(merged));
+      } else if (event === 'SIGNED_OUT') {
+        localStorage.removeItem('lumi_token');
+        localStorage.removeItem('lumi_user');
+      }
+    } catch(e) { /* 무시 */ }
+  });
+  // 예약 목록 (기존 /api/relay-list 응답 포맷 { items } 유지, RLS로 본인 예약만 반환)
+  window.lumiRelayList = function() {
+    return window.lumiSupa.from('reservations').select().order('created_at', { ascending: false }).limit(50)
+      .then(function(res){
+        if (res.error || !res.data) return { items: [] };
+        var items = res.data
+          .filter(function(r){ return !r.is_sent && !r.cancelled && r.post_mode !== 'immediate' && Array.isArray(r.generated_captions) && r.generated_captions.length > 0; })
+          .map(function(r){ return window.lumiRsvFromRow(r); });
+        return { items: items };
+      });
+  };
+  // 예약 취소 (status 컬럼은 없으므로 cancelled 플래그 사용)
+  window.lumiCancelReservation = function(rKey) {
+    return window.lumiSupa.from('reservations').update({ cancelled: true }).eq('reserve_key', rKey).select().maybeSingle()
+      .then(function(res){
+        if (res.error) return { success: false, error: res.error.message };
+        if (!res.data) return { success: false, error: '예약을 찾을 수 없습니다.' };
+        return { success: true };
+      });
+  };
+  // 플랜 조회 (Supabase users.plan). 기존 /api/check-plan 응답 중 plan·user 부분만 채움.
+  window.lumiCheckPlan = function() {
+    return window.lumiSupa.auth.getUser().then(function(u){
+      var uid = u && u.data && u.data.user ? u.data.user.id : null;
+      if (!uid) return { error: '인증이 필요합니다.' };
+      return window.lumiSupa.from('users').select('plan, name, store_name, instagram_handle, biz_category, caption_tone, tag_style, store_desc, region, sido_code, sigungu_code, auto_story, auto_festival').eq('id', uid).single()
+        .then(function(res){
+          if (res.error || !res.data) return { error: res.error ? res.error.message : '사용자 조회 실패' };
+          var d = res.data;
+          return {
+            plan: d.plan || 'trial',
+            user: {
+              name: d.name, storeName: d.store_name, instagram: d.instagram_handle,
+              bizCategory: d.biz_category, captionTone: d.caption_tone, tagStyle: d.tag_style,
+              storeDesc: d.store_desc, region: d.region, autoStory: d.auto_story, autoFestival: d.auto_festival,
+              sidoCode: d.sido_code, sigunguCode: d.sigungu_code,
+            }
+          };
+        });
+    });
+  };
+  // 최근 게시물 1건 조회 (기존 /api/last-post 응답 포맷 { post } 유지)
+  window.lumiLastPost = function() {
+    return window.lumiSupa.from('reservations')
+      .select()
+      .eq('caption_status', 'posted')
+      .order('posted_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(function(res){
+        if (res.error || !res.data) return { post: null };
+        var r = res.data;
+        var captions = r.generated_captions;
+        var idx = (r.selected_caption_index == null) ? 0 : r.selected_caption_index;
+        var caption = '';
+        if (Array.isArray(captions) && captions.length) caption = captions[idx] || captions[0] || '';
+        return {
+          post: {
+            caption: caption,
+            imageKeys: Array.isArray(r.image_keys) ? r.image_keys : [],
+            imageKey: (Array.isArray(r.image_keys) && r.image_keys.length) ? r.image_keys[0] : null,
+            imageUrl: (Array.isArray(r.image_urls) && r.image_urls.length) ? r.image_urls[0] : null,
+            instagramPostId: r.ig_post_id || null,
+            sentAt: r.posted_at || null,
+            igUsername: null,
+          }
+        };
+      });
+  };
+  // 예약 단건 조회 (기존 /api/get-reservation 응답 포맷과 호환)
+  window.lumiGetReservation = function(rKey) {
+    return window.lumiSupa.from('reservations').select().eq('reserve_key', rKey).maybeSingle()
+      .then(function(res){
+        if (res.error) return { error: res.error.message || '예약 조회 실패' };
+        if (!res.data) return { error: '예약 없음' };
+        return window.lumiRsvFromRow(res.data) || {};
+      });
+  };
+  // Supabase reservations row → 기존 camelCase 프론트 형태로 어댑터
+  window.lumiRsvFromRow = function(r) {
+    if (!r) return null;
+    return {
+      reservationKey: r.reserve_key,
+      key: r.reserve_key,
+      captionStatus: r.caption_status || null,
+      captionError: r.caption_error || null,
+      generatedCaptions: r.generated_captions || null,
+      captionsGeneratedAt: r.captions_generated_at || null,
+      selectedCaptionIndex: (r.selected_caption_index == null ? null : r.selected_caption_index),
+      autoPostAt: r.scheduled_at || null,
+      scheduledAt: r.scheduled_at || null,
+      submittedAt: r.submitted_at || null,
+      createdAt: r.created_at || null,
+      postedAt: r.posted_at || null,
+      isSent: !!r.is_sent,
+      cancelled: !!r.cancelled,
+      _cancelled: !!r.cancelled,
+      postMode: r.post_mode || null,
+      imageKeys: Array.isArray(r.image_keys) ? r.image_keys.slice(0, 10) : [],
+      imageUrls: Array.isArray(r.image_urls) ? r.image_urls : [],
+      bizCategory: r.biz_category || null,
+      userMessage: r.user_message || '',
+      photoCount: Array.isArray(r.image_keys) ? r.image_keys.length : 0,
+      captions: r.generated_captions || null,
+      hashtags: null,
+      instagramPostId: r.ig_post_id || null,
+      sentAt: r.posted_at || null,
+    };
+  };
+</script>
 </head>
 <body>
 <!-- Google Tag Manager (noscript) -->
@@ -1962,48 +2096,27 @@ var cards = {
         return fd;
       }
 
-      // 게시 횟수 체크 (count-post API)
+      // 게시 횟수 체크 (Supabase reservations COUNT 직접 조회)
       function checkPostCount(token, callback, onError) {
-        var lumiUserData = JSON.parse(localStorage.getItem('lumi_user') || '{}');
-        var controller = new AbortController();
-        var timeoutId = setTimeout(function(){ controller.abort(); }, 15000);
-        fetch('/.netlify/functions/count-post', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-          body: JSON.stringify({ token: token, email: lumiUserData.email || '' }),
-          signal: controller.signal
-        }).then(function(res){
-          clearTimeout(timeoutId);
-          var status = res.status;
-          return res.json().then(function(d){ return {ok: res.ok, status: status, data: d}; }).catch(function(){ return {ok: false, status: status, data: {error: '서버 응답 오류 ('+status+'). 잠시 후 다시 시도해주세요.'}}; });
-        })
-        .then(function(r){
-          if (!r.ok) {
-            if (r.data.code === 'TRIAL_EXPIRED') {
-              alert('무료 체험 기간이 종료됐어요.\n구독 페이지로 이동합니다.');
-              if (onError) onError();
-              window.location.href = '/subscribe.html';
-            } else if (r.data.code === 'POST_LIMIT_REACHED') {
-              alert('이번 달 게시 한도에 도달했어요.\n플랜을 업그레이드하거나 다음 달에 다시 이용해 주세요.');
-              if (onError) onError();
-            } else if (r.data.code === 'PLAN_EXPIRED') {
-              alert('구독이 만료됐어요.\n구독 페이지로 이동합니다.');
-              if (onError) onError();
-              window.location.href = '/subscribe.html';
-            } else {
-              alert(r.data.error || '게시 오류가 발생했어요.');
-              if (onError) onError();
-            }
-            return;
-          }
-          callback();
-        }).catch(function(err){
-          clearTimeout(timeoutId);
-          var msg = (err && err.name === 'AbortError') ? '요청 시간이 초과됐어요. 네트워크를 확인 후 다시 시도해주세요.' : '게시 횟수 확인 중 오류가 발생했어요. 다시 시도해주세요.';
-          console.error('[count-post]', err);
-          alert(msg);
+        var timeoutId = setTimeout(function(){
+          alert('요청 시간이 초과됐어요. 네트워크를 확인 후 다시 시도해주세요.');
           if (onError) onError();
-        });
+        }, 15000);
+        var now = new Date();
+        var monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+        window.lumiSupa.from('reservations')
+          .select('*', { count: 'exact', head: true })
+          .gte('created_at', monthStart)
+          .then(function(r){
+            clearTimeout(timeoutId);
+            if (r.error) {
+              console.error('[count-post]', r.error.message);
+              alert('게시 횟수 확인 중 오류가 발생했어요. 다시 시도해주세요.');
+              if (onError) onError();
+              return;
+            }
+            callback();
+          });
       }
 
       // 바로 게시 (릴레이 모드: 캡션 확인 후 게시)
@@ -2046,9 +2159,7 @@ var cards = {
           var maxAttempts = 40;
           function poll() {
             attempts++;
-            fetch('/api/get-reservation?key=' + encodeURIComponent(rKey), {
-              headers: { 'Authorization': 'Bearer ' + token }
-            }).then(function(r){ return r.json(); })
+            window.lumiGetReservation(rKey)
             .then(function(d){
               if (d.captionStatus === 'failed' || d.captionError) {
                 setIsPosting(false); setPhase('real-upload');
@@ -2155,9 +2266,7 @@ var cards = {
               var tokenForPoll = localStorage.getItem('lumi_token');
               function pollPostResult() {
                 pollAttempts++;
-                fetch('/api/get-reservation?key=' + encodeURIComponent(rKeyForPoll), {
-                  headers: { 'Authorization': 'Bearer ' + tokenForPoll }
-                }).then(function(r){ return r.json(); })
+                window.lumiGetReservation(rKeyForPoll)
                 .then(function(pd){
                   if (pd.captionStatus === 'posted' || pd.isSent === true) {
                     // 실제 IG 업로드 성공 확인 후 성공 화면 표시
@@ -2254,9 +2363,7 @@ var cards = {
             var maxAttempts = 40;
             function pollBestTime() {
               attempts++;
-              fetch('/api/get-reservation?key=' + encodeURIComponent(rKey), {
-                headers: { 'Authorization': 'Bearer ' + token }
-              }).then(function(r){ return r.json(); })
+              window.lumiGetReservation(rKey)
               .then(function(d){
                 if (d.captionStatus === 'failed' || d.captionError) {
                   setIsPosting(false); setPhase('real-upload');
@@ -2332,9 +2439,7 @@ var cards = {
           var maxAttempts = 40;
           function pollScheduled() {
             attempts++;
-            fetch('/api/get-reservation?key=' + encodeURIComponent(rKey), {
-              headers: { 'Authorization': 'Bearer ' + token }
-            }).then(function(r){ return r.json(); })
+            window.lumiGetReservation(rKey)
             .then(function(d){
               if (d.captionStatus === 'failed' || d.captionError) {
                 setIsPosting(false); setPhase('real-upload');
@@ -2793,16 +2898,13 @@ var cards = {
           if(!token) { setLoading(false); return; }
           var email = '';
           try { email = (JSON.parse(localStorage.getItem('lumi_user')||'{}').email || 'u'); } catch(ex){}
-          swrFetch('last-post:'+email, '/api/last-post', {headers:{'Authorization':'Bearer '+token}}, 60000)
+          window.lumiLastPost()
             .then(function(d){ setPost(d && d.post ? d.post : null); setLoading(false); })
             .catch(function(){ setLoading(false); });
           function onPostSuccess(){
             var tk = localStorage.getItem('lumi_token');
-            var em = '';
-            try { em = (JSON.parse(localStorage.getItem('lumi_user')||'{}').email || 'u'); } catch(ex){}
             if(!tk) return;
-            swrInvalidate('last-post:'+em);
-            swrFetch('last-post:'+em, '/api/last-post', {headers:{'Authorization':'Bearer '+tk}}, 0)
+            window.lumiLastPost()
               .then(function(d){ setPost(d && d.post ? d.post : null); })
               .catch(function(){});
           }
@@ -3022,8 +3124,10 @@ var cards = {
         var bestTimeReason = bestTimeData ? bestTimeData.reason : '';
         var ts = React.useState(null), trendData = ts[0], setTrendData = ts[1];
         React.useEffect(function(){
-          swrFetch('trends-'+bizCat, '/api/get-trends?category='+encodeURIComponent(bizCat), {}, 3600000)
-          .then(function(d){if(d&&d.keywords) setTrendData(d);}).catch(function(){});
+          window.lumiSupa.from('trends').select().eq('category', bizCat).maybeSingle()
+          .then(function(res){
+            if (res && !res.error && res.data && res.data.keywords) setTrendData(res.data);
+          });
         },[]);
         var myTrends = trendData && trendData.keywords ? trendData.keywords.slice(0,3).map(function(k){return '#'+k.keyword;}) : ['#'+bizCat, '#\uCD94\uCC9C', '#\uD314\uB85C\uC6B0'];
         var _categoryTips = {
@@ -3744,8 +3848,7 @@ var cards = {
         React.useEffect(function(){
           var token = localStorage.getItem('lumi_token');
           if(!token) return;
-          fetch('/api/check-plan',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}})
-          .then(lumiCheckAuth).then(function(r){return r.json();}).then(function(d){
+          window.lumiCheckPlan().then(function(d){
             if(!d.error) setRData(d);
             if(d.featToggles) { try { localStorage.setItem('lumi_feat_toggles', JSON.stringify(d.featToggles)); } catch(ex) {} }
           }).catch(function(){});
@@ -3807,8 +3910,7 @@ var cards = {
         React.useEffect(function(){
           var token = localStorage.getItem('lumi_token');
           if(!token) return;
-          fetch('/api/check-plan',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}})
-          .then(lumiCheckAuth).then(function(r){return r.json();}).then(function(d){
+          window.lumiCheckPlan().then(function(d){
             if(!d.error) setPlanData(d);
             if(d.featToggles) { try { localStorage.setItem('lumi_feat_toggles', JSON.stringify(d.featToggles)); } catch(ex) {} }
           }).catch(function(){});
@@ -3979,9 +4081,9 @@ var cards = {
             var _rlEmail = '';
             try { _rlEmail = (JSON.parse(localStorage.getItem('lumi_user')||'{}').email || 'u'); } catch(e){}
             var _rlKey = 'relay-list:' + _rlEmail;
-            swrFetch(_rlKey, '/api/relay-list', {headers:{'Authorization':'Bearer '+t}}, 30000)
+            window.lumiRelayList()
             .then(function(d){
-              var arr = (d && Array.isArray(d)) ? d : (d && d.items ? d.items : []);
+              var arr = (d && d.items) ? d.items : [];
               var mapped = arr
                 .filter(function(item){ return item.postMode !== 'immediate'; })
                 .slice(0,20)
@@ -3999,11 +4101,7 @@ var cards = {
           ev.stopPropagation();
           if (!confirm('\uC774 \uC608\uC57D\uC744 \uCDE8\uC18C\uD560\uAE4C\uC694?')) return;
           var token = localStorage.getItem('lumi_token');
-          fetch('/api/cancel-reservation', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-            body: JSON.stringify({ reservationKey: rKey })
-          }).then(function(r){ return r.json(); })
+          window.lumiCancelReservation(rKey)
           .then(function(d){
             if (d && d.success === true) {
               swrInvalidate('relay-list');
@@ -4021,10 +4119,7 @@ var cards = {
           setDetailLoading(true);
           setDetailData({ reservationKey: rKey });
           setScRegenCount(0);
-          fetch('/api/get-reservation?key=' + encodeURIComponent(rKey), {
-            method: 'GET',
-            headers: { 'Authorization': 'Bearer ' + token }
-          }).then(function(r){ return r.json(); })
+          window.lumiGetReservation(rKey)
           .then(function(d){
             setDetailLoading(false);
             setDetailData(d);
@@ -4929,6 +5024,7 @@ async function liVerifyForgotOtp() {
     var res = await fetch('/api/verify-otp', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({email: liData.forgotEmail, otp: otp}) });
     var data = await res.json();
     if (res.ok) {
+      if (data && data.otpToken) { liData.otpToken = data.otpToken; }
       liPhase = 2;
       liChangeLumi('/assets/lumi-smile.png');
       liTypeText('인증 완료!\n새 비밀번호를 설정해주세요', 'li-speech', function() { liShowForm(); });
@@ -4953,7 +5049,7 @@ async function liResetPassword() {
   var btn = document.querySelector('#li-form-area .su-btn');
   if (btn) { btn.disabled = true; btn.textContent = '변경 중...'; }
   try {
-    var res = await fetch('/api/reset-password', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({email: liData.forgotEmail, password: pw}) });
+    var res = await fetch('/api/reset-password', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({email: liData.forgotEmail, password: pw, otpToken: liData.otpToken}) });
     var data = await res.json();
     if (res.ok) {
       liChangeLumi('/assets/lumi-smile.png');
@@ -5057,12 +5153,9 @@ function lumiCheckAuth(response) {
         setTimeout(function() {
           var t = localStorage.getItem('lumi_token');
           if (!t) { resolve('no_token'); return; }
-          fetch('/api/check-plan', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + t },
-            body: JSON.stringify({})
-          }).then(function(r) {
-            resolve(r.status);
+          window.lumiSupa.auth.getUser().then(function(r) {
+            // Supabase에 유효 세션이 있으면 200, 없으면 401 상당
+            resolve((r && r.data && r.data.user) ? 200 : 401);
           }).catch(function() {
             resolve('network_error');
           });

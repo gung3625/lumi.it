@@ -1,11 +1,19 @@
-// 결제 준비 - 포트원 v2 + 토스페이먼츠
-// 프론트에서 결제 시작 전 호출 → 결제 금액 검증용 orderId 생성
-const { getStore } = require('@netlify/blobs');
+// 결제 준비 - PortOne v2
+// 프론트 결제 시작 전 호출 → orderId 발급 + public.orders 사전 등록
+const crypto = require('crypto');
+const { getAdminClient } = require('./_shared/supabase-admin');
+const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   'Content-Type': 'application/json',
+};
+
+// 플랜별 금액 (현 요금제: 스탠다드/프로)
+const PLANS = {
+  standard: { amount: 19900, name: 'lumi 스탠다드', durationDays: 31 },
+  pro:      { amount: 29900, name: 'lumi 프로',     durationDays: 31 },
 };
 
 exports.handler = async (event) => {
@@ -24,73 +32,65 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '필수 정보가 없습니다.' }) };
   }
 
-  // Authorization 헤더에서 토큰 → 이메일 역조회
-  const authHeader = event.headers?.authorization || event.headers?.Authorization || '';
-  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
-  if (!token) {
-    return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '로그인이 필요합니다.' }) };
-  }
-  const userStore = getStore({ name: 'users', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
-  let tokenRaw = null;
-  let tokenBlobError = false;
-  const RETRY_DELAYS = [200, 400, 800, 1600, 3200];
-  for (let i = 0; i < RETRY_DELAYS.length; i++) {
-    tokenBlobError = false;
-    try { tokenRaw = await userStore.get('token:' + token); }
-    catch(e) { tokenBlobError = true; console.error('[payment-prepare] token blob fetch error (attempt ' + (i+1) + '):', e.message); }
-    if (tokenRaw) break;
-    if (!tokenBlobError) break;
-    if (i < RETRY_DELAYS.length - 1) await new Promise(r => setTimeout(r, RETRY_DELAYS[i]));
-  }
-  if (!tokenRaw) {
-    if (tokenBlobError) {
-      console.warn('[payment-prepare] token blob error after 5 retries, bearer prefix:', token.substring(0, 8));
-      return { statusCode: 503, headers: CORS, body: JSON.stringify({ error: '일시적 서버 오류입니다. 잠시 후 다시 시도해주세요.' }) };
-    }
-    console.warn('[payment-prepare] token not found, bearer prefix:', token.substring(0, 8));
-    return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증에 실패했습니다.' }) };
-  }
-  const { email } = JSON.parse(tokenRaw);
-  if (!email) {
-    return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증에 실패했습니다.' }) };
-  }
-
-  // 사용자 정보 조회 (결제창에 이름/이메일 전달용)
-  let userName = '고객';
-  try {
-    const userRaw = await userStore.get('user:' + email);
-    if (userRaw) { const u = JSON.parse(userRaw); userName = u.name || u.storeName || '고객'; }
-  } catch {}
-
-
-  // 플랜별 금액
-  const PLANS = {
-    basic:    { amount: 19000, name: 'lumi 베이직',   durationDays: 31 },
-    standard: { amount: 29000, name: 'lumi 스탠다드', durationDays: 31 },
-    pro:      { amount: 39000, name: 'lumi 프로',     durationDays: 31 }
-  };
-
   const plan = PLANS[planType];
   if (!plan) {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '잘못된 플랜입니다.' }) };
   }
 
-  // 고유 주문 ID 생성
-  const orderId = 'lumi_' + Date.now() + '_' + require('crypto').randomBytes(12).toString('hex');
+  // Supabase Bearer 토큰 검증
+  const token = extractBearerToken(event);
+  if (!token) {
+    return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '로그인이 필요합니다.' }) };
+  }
+  const { user, error: authErr } = await verifyBearerToken(token);
+  if (authErr || !user) {
+    console.warn('[payment-prepare] 토큰 검증 실패');
+    return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증에 실패했습니다.' }) };
+  }
+
+  const admin = getAdminClient();
+
+  // 사용자 정보 조회 (결제창에 이름/이메일 전달용)
+  let userName = '고객';
+  let userEmail = user.email || '';
+  try {
+    const { data: profile } = await admin
+      .from('users')
+      .select('name, store_name, email')
+      .eq('id', user.id)
+      .single();
+    if (profile) {
+      userName = profile.name || profile.store_name || '고객';
+      userEmail = profile.email || userEmail;
+    }
+  } catch (e) {
+    console.error('[payment-prepare] 사용자 조회 오류:', e.message);
+  }
+
+  // 고유 주문 ID 생성 (PortOne v2 paymentId = 클라이언트 생성)
+  const orderId = 'lumi_' + Date.now() + '_' + crypto.randomBytes(12).toString('hex');
 
   try {
-    // 주문 정보 Blobs에 저장 (결제 검증용)
-    const store = getStore({ name: 'orders', consistency: 'strong', siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc', token: process.env.NETLIFY_TOKEN });
-    await store.set('order:' + orderId, JSON.stringify({
-      orderId,
-      email,
-      planType,
-      amount: plan.amount,
-      orderName: plan.name,
-      durationDays: plan.durationDays,
-      status: 'pending',
-      createdAt: new Date().toISOString()
-    }));
+    // public.orders 사전 등록
+    const { error: insertErr } = await admin
+      .from('orders')
+      .insert({
+        user_id: user.id,
+        portone_payment_id: orderId,
+        amount: plan.amount,
+        plan: planType,
+        status: 'prepared',
+        raw: {
+          orderName: plan.name,
+          durationDays: plan.durationDays,
+          createdAt: new Date().toISOString(),
+        },
+      });
+
+    if (insertErr) {
+      console.error('[payment-prepare] orders insert 오류:', insertErr.message);
+      return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '주문 생성에 실패했습니다.' }) };
+    }
 
     return {
       statusCode: 200,
@@ -100,12 +100,12 @@ exports.handler = async (event) => {
         orderId,
         amount: plan.amount,
         orderName: plan.name,
-        email,
-        name: userName
-      })
+        email: userEmail,
+        name: userName,
+      }),
     };
   } catch (err) {
-    console.error('payment-prepare error:', err);
+    console.error('[payment-prepare] error:', err.message);
     return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '주문 생성에 실패했습니다.' }) };
   }
 };

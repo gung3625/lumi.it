@@ -1,10 +1,28 @@
-const { getStore } = require('@netlify/blobs');
+// Facebook Login + Instagram 연동 OAuth 핸들러
+// 토큰은 반드시 Supabase Vault(set_ig_access_token / set_ig_page_access_token RPC)로 저장.
+// ig_accounts 테이블에는 secret_id(uuid)만 보관 — 평문 토큰 저장 금지.
+const crypto = require('crypto');
+const { getAdminClient } = require('./_shared/supabase-admin');
 
 const APP_ID = process.env.META_APP_ID || '1233639725586126';
 const APP_SECRET = process.env.META_APP_SECRET;
 const REDIRECT_URI = 'https://lumi.it.kr/.netlify/functions/ig-oauth';
-const SITE_ID = process.env.NETLIFY_SITE_ID;
-const NETLIFY_TOKEN = process.env.NETLIFY_TOKEN;
+const SCOPES = [
+  'instagram_basic',
+  'instagram_content_publish',
+  'instagram_manage_comments',
+  'instagram_manage_messages',
+  'pages_show_list',
+  'pages_read_engagement',
+  'pages_manage_metadata',
+].join(',');
+
+// 장기 토큰 만료 추정 (60일)
+function computeExpiresAt(expiresInSec) {
+  const secs = Number(expiresInSec);
+  if (!secs || Number.isNaN(secs)) return null;
+  return new Date(Date.now() + secs * 1000).toISOString();
+}
 
 exports.handler = async (event) => {
   const params = new URLSearchParams(event.rawQuery || '');
@@ -13,31 +31,44 @@ exports.handler = async (event) => {
   const error = params.get('error');
 
   if (error) {
-    console.error('[lumi] OAuth 에러:', error);
+    console.error('[ig-oauth] OAuth 에러:', error);
     return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/?oauth_error=1' } };
   }
 
-  // code 없으면 OAuth 시작
+  const supabase = getAdminClient();
+
+  // ──────────────────────────────────────────────
+  // 1) code 없음 → OAuth 시작 (nonce 발급 + Facebook 인증 리다이렉트)
+  // ──────────────────────────────────────────────
   if (!code) {
     const lumiToken = params.get('token') || '';
-    // CSRF 방지: nonce 생성 → Blobs에 토큰 매핑 저장
-    const crypto = require('crypto');
+    const userId = params.get('user_id') || null; // Supabase Auth uid (선택)
     const nonce = crypto.randomBytes(16).toString('hex');
+
     try {
-      const nonceStore = getStore({ name: 'oauth-nonce', consistency: 'strong', siteID: SITE_ID, token: NETLIFY_TOKEN });
-      await nonceStore.set('nonce:' + nonce, JSON.stringify({ token: lumiToken, createdAt: Date.now() }));
-    } catch(e) {}
-    const authUrl = `https://www.facebook.com/dialog/oauth?` +
+      await supabase.from('oauth_nonces').insert({
+        nonce: 'ig:' + nonce,
+        user_id: userId || null,
+        lumi_token: lumiToken || null,
+      });
+    } catch (e) {
+      console.error('[ig-oauth] nonce 저장 실패:', e.message);
+    }
+
+    const authUrl =
+      `https://www.facebook.com/dialog/oauth?` +
       `client_id=${APP_ID}` +
       `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
-      `&scope=instagram_basic,instagram_content_publish,instagram_manage_comments,instagram_manage_messages,pages_show_list,pages_read_engagement,pages_manage_metadata` +
+      `&scope=${encodeURIComponent(SCOPES)}` +
       `&response_type=code` +
       `&state=${encodeURIComponent(nonce)}`;
     return { statusCode: 302, headers: { Location: authUrl } };
   }
 
   try {
-    // 1. code → access token 교환
+    // ────────────────────────────────────────────
+    // 2) code → 단기 토큰 교환
+    // ────────────────────────────────────────────
     const tokenRes = await fetch(
       `https://graph.facebook.com/v25.0/oauth/access_token?` +
       `client_id=${APP_ID}&client_secret=${APP_SECRET}` +
@@ -45,11 +76,13 @@ exports.handler = async (event) => {
     );
     const tokenData = await tokenRes.json();
     if (!tokenData.access_token) {
-      console.error('[lumi] 토큰 교환 실패:', JSON.stringify(tokenData));
+      console.error('[ig-oauth] 단기 토큰 교환 실패 (access_token 없음)');
       return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/?oauth_error=2' } };
     }
 
-    // 2. 장기 토큰으로 교환 (60일)
+    // ────────────────────────────────────────────
+    // 3) 장기 토큰 교환 (60일)
+    // ────────────────────────────────────────────
     const longTokenRes = await fetch(
       `https://graph.facebook.com/v25.0/oauth/access_token?` +
       `grant_type=fb_exchange_token&client_id=${APP_ID}&client_secret=${APP_SECRET}` +
@@ -57,75 +90,147 @@ exports.handler = async (event) => {
     );
     const longTokenData = await longTokenRes.json();
     const longToken = longTokenData.access_token || tokenData.access_token;
+    const expiresAt = computeExpiresAt(longTokenData.expires_in);
 
-    // 3. Instagram User ID 조회
+    // ────────────────────────────────────────────
+    // 4) Facebook Pages → Instagram Business Account 탐색
+    // ────────────────────────────────────────────
     const igRes = await fetch(`https://graph.facebook.com/v25.0/me/accounts?access_token=${longToken}`);
     const igData = await igRes.json();
 
     let igUserId = null;
+    let igUsername = null;
+    let pageId = null;
     let pageAccessToken = null;
 
     for (const page of (igData.data || [])) {
       const igAccountRes = await fetch(
-        `https://graph.facebook.com/v25.0/${page.id}?fields=instagram_business_account&access_token=${page.access_token}`
+        `https://graph.facebook.com/v25.0/${page.id}?fields=instagram_business_account{id,username}&access_token=${page.access_token}`
       );
       const igAccountData = await igAccountRes.json();
-      if (igAccountData.instagram_business_account?.id) {
-        igUserId = igAccountData.instagram_business_account.id;
+      const biz = igAccountData.instagram_business_account;
+      if (biz && biz.id) {
+        igUserId = biz.id;
+        igUsername = biz.username || null;
+        pageId = page.id;
         pageAccessToken = page.access_token;
         break;
       }
     }
 
     if (!igUserId) {
-      console.error('[lumi] Instagram 비즈니스 계정 없음');
+      console.error('[ig-oauth] Instagram 비즈니스 계정 없음');
       return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/?oauth_error=3' } };
     }
 
-    // 4. nonce에서 lumi 토큰 복원 → 이메일 조회
-    let email = '';
+    // ────────────────────────────────────────────
+    // 5) nonce → user_id 복원 (oauth_nonces)
+    //    10분 만료 & 일회용
+    // ────────────────────────────────────────────
+    let userId = null;
     if (state) {
       try {
-        const nonceStore = getStore({ name: 'oauth-nonce', consistency: 'strong', siteID: SITE_ID, token: NETLIFY_TOKEN });
-        const nonceRaw = await nonceStore.get('nonce:' + state);
-        if (nonceRaw) {
-          const nonceData = JSON.parse(nonceRaw);
-          // 10분 만료
-          if (Date.now() - nonceData.createdAt < 600000) {
-            const tokenStore = getStore({ name: 'users', consistency: 'strong', siteID: SITE_ID, token: NETLIFY_TOKEN });
-            const td = await tokenStore.get('token:' + nonceData.token);
-            if (td) email = JSON.parse(td).email || '';
+        const nonceKey = 'ig:' + state;
+        const { data: nonceRow } = await supabase
+          .from('oauth_nonces')
+          .select('user_id, lumi_token, created_at')
+          .eq('nonce', nonceKey)
+          .maybeSingle();
+        if (nonceRow) {
+          const ageMs = Date.now() - new Date(nonceRow.created_at).getTime();
+          if (ageMs < 10 * 60 * 1000) {
+            userId = nonceRow.user_id || null;
           }
-          await nonceStore.delete('nonce:' + state); // 일회용
+          // 일회용: 즉시 삭제
+          await supabase.from('oauth_nonces').delete().eq('nonce', nonceKey);
         }
-      } catch(e) { console.error('[lumi] 이메일 조회 실패:', e.message); }
+      } catch (e) {
+        console.error('[ig-oauth] nonce 조회 실패:', e.message);
+      }
     }
 
-    // 5. Blobs에 저장
-    const store = getStore({ name: 'users', consistency: 'strong', siteID: SITE_ID, token: NETLIFY_TOKEN });
-    await store.set('ig:' + igUserId, JSON.stringify({
-      igUserId, accessToken: longToken, pageAccessToken,
-      email, connectedAt: new Date().toISOString()
-    }));
-    if (email) {
-      await store.set('email-ig:' + email, igUserId);
-      // user:이메일에도 igUserId, igConnected 저장
-      try {
-        const userRaw = await store.get('user:' + email);
-        if (userRaw) {
-          const userData = JSON.parse(userRaw);
-          userData.igUserId = igUserId;
-          userData.igConnected = true;
-          await store.set('user:' + email, JSON.stringify(userData));
-        }
-      } catch(e) { console.error('[lumi] user 업데이트 실패:', e.message); }
+    if (!userId) {
+      console.error('[ig-oauth] user_id 확인 불가 (nonce 만료 또는 세션 없음)');
+      return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/?oauth_error=4' } };
     }
 
-    console.log('[lumi] Instagram OAuth 연동 완료:', igUserId);
-    return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/?oauth_success=1' } };
+    // ────────────────────────────────────────────
+    // 6) ig_accounts 기본 row upsert (토큰 컬럼 제외)
+    //    → Vault 저장 후 secret_id만 update
+    // ────────────────────────────────────────────
+    // 기존 secret_id 조회 (재연동 시 같은 Vault 레코드에 덮어쓰기)
+    const { data: existingRow } = await supabase
+      .from('ig_accounts')
+      .select('access_token_secret_id, page_access_token_secret_id')
+      .eq('ig_user_id', igUserId)
+      .maybeSingle();
 
-  } catch(e) {
-    console.error('[lumi] OAuth 처리 오류:', e.message);
+    const nowIso = new Date().toISOString();
+    const { error: upsertErr } = await supabase
+      .from('ig_accounts')
+      .upsert({
+        ig_user_id: igUserId,
+        user_id: userId,
+        ig_username: igUsername,
+        page_id: pageId,
+        token_expires_at: expiresAt,
+        connected_at: nowIso,
+        updated_at: nowIso,
+      }, { onConflict: 'ig_user_id' });
+
+    if (upsertErr) {
+      console.error('[ig-oauth] ig_accounts upsert 실패:', upsertErr.message);
+      return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/?oauth_error=5' } };
+    }
+
+    // ────────────────────────────────────────────
+    // 7) Vault RPC로 토큰 암호화 저장
+    // ────────────────────────────────────────────
+    const { data: accessSecretId, error: accessErr } = await supabase.rpc('set_ig_access_token', {
+      p_ig_user_id: igUserId,
+      p_existing_secret: existingRow?.access_token_secret_id ?? null,
+      p_access_token: longToken,
+    });
+    if (accessErr) {
+      console.error('[ig-oauth] set_ig_access_token 실패:', accessErr.message);
+      return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/?oauth_error=6' } };
+    }
+
+    let pageSecretId = null;
+    if (pageAccessToken) {
+      const { data: pSecretId, error: pageErr } = await supabase.rpc('set_ig_page_access_token', {
+        p_ig_user_id: igUserId,
+        p_existing_secret: existingRow?.page_access_token_secret_id ?? null,
+        p_page_token: pageAccessToken,
+      });
+      if (pageErr) {
+        console.error('[ig-oauth] set_ig_page_access_token 실패:', pageErr.message);
+      } else {
+        pageSecretId = pSecretId;
+      }
+    }
+
+    // secret_id를 ig_accounts에 업데이트
+    const { error: idUpdateErr } = await supabase
+      .from('ig_accounts')
+      .update({
+        access_token_secret_id: accessSecretId,
+        page_access_token_secret_id: pageSecretId,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('ig_user_id', igUserId);
+
+    if (idUpdateErr) {
+      console.error('[ig-oauth] secret_id 업데이트 실패:', idUpdateErr.message);
+      return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/?oauth_error=7' } };
+    }
+
+    // 토큰/secret_id는 절대 로그에 남기지 않음. ig_user_id만.
+    console.log('[ig-oauth] Instagram 연동 완료. ig_user_id:', igUserId);
+    return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/?ig=connected' } };
+
+  } catch (e) {
+    console.error('[ig-oauth] OAuth 처리 오류:', e.message);
     return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/?oauth_error=99' } };
   }
 };

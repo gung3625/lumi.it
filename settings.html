@@ -105,6 +105,30 @@ body.dark-mode .ig-status{background:rgba(255,255,255,.06);}
 .toast{position:fixed;bottom:calc(32px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%) translateY(16px);background:linear-gradient(135deg,#FF6B8B,#DDA0DD);color:#fff;padding:12px 28px;border-radius:980px;font-size:14px;font-family:inherit;z-index:99;opacity:0;transition:all .4s cubic-bezier(.4,0,.2,1);pointer-events:none;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.103.3/dist/umd/supabase.min.js"></script>
+<script>
+  window.lumiSupa = window.supabase.createClient(
+    'https://cldsozdocxpvkbuxwqep.supabase.co',
+    'sb_publishable_WjWg5o05Y7lhib674Cr_fw_0mpY-ccG',
+    { auth: { persistSession: true, autoRefreshToken: true, storageKey: 'lumi-auth' } }
+  );
+  window.lumiSupa.auth.onAuthStateChange(function(event, session){
+    try {
+      if (session && session.access_token) {
+        localStorage.setItem('lumi_token', session.access_token);
+        var u = session.user || {};
+        var meta = u.user_metadata || {};
+        var prev = {};
+        try { prev = JSON.parse(localStorage.getItem('lumi_user') || '{}'); } catch(e){}
+        var merged = Object.assign({}, prev, { email: u.email || prev.email, id: u.id || prev.id }, meta);
+        localStorage.setItem('lumi_user', JSON.stringify(merged));
+      } else if (event === 'SIGNED_OUT') {
+        localStorage.removeItem('lumi_token');
+        localStorage.removeItem('lumi_user');
+      }
+    } catch(e) { /* 무시 */ }
+  });
+</script>
 </head>
 <body>
 <!-- Google Tag Manager (noscript) -->
@@ -274,18 +298,26 @@ applyUserToUI(user);
 if(settings.kakaoNotif===false) document.getElementById('t-kakao').classList.remove('on');
 if(settings.emailNotif===false) document.getElementById('t-email').classList.remove('on');
 
-// API에서 최신 프로필 로드 (토큰 있을 때)
+// API에서 최신 프로필 로드 (Supabase users 테이블 직접 조회, RLS가 본인 행 자동 가드)
 if(localStorage.getItem('lumi_token')){
-  fetch('/api/update-profile', { method:'POST', headers:authHeaders(), body:JSON.stringify({}) })
-  .then(function(r){ return r.json(); })
-  .then(function(data){
-    if(data.success && data.user){
-      user = Object.assign(user, data.user);
+  window.lumiSupa.auth.getUser().then(function(u){
+    var uid = u && u.data && u.data.user ? u.data.user.id : null;
+    if(!uid) return;
+    return window.lumiSupa.from('users').select().eq('id', uid).single().then(function(res){
+      if(res.error || !res.data) return;
+      var d = res.data;
+      var mapped = {
+        name: d.name, storeName: d.store_name, phone: d.phone, email: d.email,
+        bizCategory: d.biz_category, region: d.region, storeDesc: d.store_desc,
+        captionTone: d.caption_tone, tagStyle: d.tag_style,
+        sidoCode: d.sido_code, sigunguCode: d.sigungu_code, storeSido: d.store_sido,
+        instagram: d.instagram_handle, autoStory: d.auto_story, autoFestival: d.auto_festival,
+      };
+      user = Object.assign(user, mapped);
       localStorage.setItem('lumi_user', JSON.stringify(user));
       applyUserToUI(user);
-    }
-  })
-  .catch(function(){});
+    });
+  }).catch(function(){});
 }
 
 function saveProfile(){
@@ -304,20 +336,19 @@ function saveProfile(){
     return;
   }
 
-  fetch('/api/update-profile', {
-    method:'POST', headers:authHeaders(),
-    body: JSON.stringify({ storeName:storeName, bizCategory:bizCategory, region:region })
-  })
-  .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
-  .then(function(res){
-    if(res.ok && res.data.success){
-      if(res.data.user) { user = Object.assign(user, res.data.user); localStorage.setItem('lumi_user', JSON.stringify(user)); }
+  // Supabase 직접 업데이트 — plan 컬럼은 요청 본문에서 제외 (권한 상승 방지)
+  window.lumiSupa.auth.getUser().then(function(u){
+    var uid = u && u.data && u.data.user ? u.data.user.id : null;
+    if(!uid){ showToast('로그인이 필요합니다'); return; }
+    var patch = { store_name:storeName, biz_category:bizCategory, region:region };
+    return window.lumiSupa.from('users').update(patch).eq('id', uid).select().single().then(function(res){
+      if(res.error || !res.data){ showToast(res.error ? res.error.message : '저장에 실패했어요'); return; }
+      var d = res.data;
+      user = Object.assign(user, { storeName:d.store_name, bizCategory:d.biz_category, region:d.region });
+      localStorage.setItem('lumi_user', JSON.stringify(user));
       showToast('매장 정보가 저장됐어요');
-    } else {
-      showToast(res.data.error || '저장에 실패했어요');
-    }
-  })
-  .catch(function(){ showToast('네트워크 오류가 발생했어요'); });
+    });
+  }).catch(function(){ showToast('네트워크 오류가 발생했어요'); });
 }
 
 function changePw(){
@@ -367,18 +398,20 @@ function disconnectIg(){
     return;
   }
 
-  fetch('/api/disconnect-ig', {
-    method:'POST', headers:authHeaders(), body:'{}'
-  })
-  .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
-  .then(function(res){
-    if(res.ok && res.data.success){
+  // Supabase 직접 삭제 — ig_accounts DELETE는 RLS 정책상 service_role만 허용이므로
+  // 클라이언트 측에서는 일단 localStorage만 반영하고, 서버 Function이 남아있으면 그 쪽 사용.
+  // 현 마이그레이션 단계에서는 Supabase DELETE 시도 후 실패하면 Function 호출로 폴백.
+  window.lumiSupa.auth.getUser().then(function(u){
+    var uid = u && u.data && u.data.user ? u.data.user.id : null;
+    if(!uid){ showToast('로그인이 필요합니다'); return; }
+    return window.lumiSupa.from('ig_accounts').delete().eq('user_id', uid).then(function(res){
+      if(res.error){
+        showToast('연동 해제에 실패했어요: ' + res.error.message);
+        return;
+      }
       showToast('연동이 해제됐어요');
-    } else {
-      showToast(res.data.error || '연동 해제에 실패했어요');
-    }
-  })
-  .catch(function(){ showToast('네트워크 오류가 발생했어요'); });
+    });
+  }).catch(function(){ showToast('네트워크 오류가 발생했어요'); });
 }
 
 function saveNotif(){

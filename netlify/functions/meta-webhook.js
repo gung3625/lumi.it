@@ -1,19 +1,20 @@
-const { getStore } = require('@netlify/blobs');
+// Meta (Facebook/Instagram) Webhook — DM/댓글 수신 & 자동 응답
+// 토큰은 ig_accounts_decrypted 뷰(service_role)에서만 조회. 평문 저장/로그 금지.
 const crypto = require('crypto');
-
-const SITE_ID = process.env.NETLIFY_SITE_ID;
-const NETLIFY_TOKEN = process.env.NETLIFY_TOKEN;
+const { getAdminClient } = require('./_shared/supabase-admin');
 
 const TEST_IG_USER_ID = process.env.TEST_IG_USER_ID || '';
 const TEST_ACCESS_TOKEN = process.env.TEST_IG_ACCESS_TOKEN || '';
 
-// --- [기존 헬퍼 함수 유지] ---
 function verifySignature(payload, signature) {
   const appSecret = process.env.META_APP_SECRET;
   if (!appSecret) return true;
   const expected = 'sha256=' + crypto.createHmac('sha256', appSecret).update(payload).digest('hex');
-  try { return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected)); } 
-  catch(e) { return false; }
+  try {
+    return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+  } catch (e) {
+    return false;
+  }
 }
 
 async function callGraphAPI(path, method, body, accessToken) {
@@ -21,37 +22,52 @@ async function callGraphAPI(path, method, body, accessToken) {
   const res = await fetch(url, {
     method,
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
-    body: body ? JSON.stringify(body) : undefined
+    body: body ? JSON.stringify(body) : undefined,
   });
   const data = await res.json();
-  console.log(`[lumi] Graph API ${method} ${path}:`, JSON.stringify(data));
+  // 시크릿/토큰이 포함될 수 있는 응답은 로그에서 제외 — 경로와 상태만 기록
+  console.log(`[meta-webhook] Graph API ${method} ${path}`, data?.error ? 'error' : 'ok');
   return data;
 }
 
-async function getUserToken(igUserId) {
-  if (igUserId === TEST_IG_USER_ID) return TEST_ACCESS_TOKEN;
+// ig_accounts_decrypted 뷰에서 access_token + user_id 한 번에 조회 (service_role 전용)
+async function getIgContext(supabase, igUserId) {
+  if (igUserId === TEST_IG_USER_ID) {
+    return {
+      accessToken: TEST_ACCESS_TOKEN,
+      userId: null,
+      email: process.env.OWNER_EMAIL || 'gung3625@gmail.com',
+    };
+  }
   try {
-    const store = getStore({ name: 'users', consistency: 'strong', siteID: SITE_ID, token: NETLIFY_TOKEN });
-    const raw = await store.get('ig:' + igUserId);
-    return raw ? JSON.parse(raw).accessToken : null;
-  } catch(e) { return null; }
+    const { data, error } = await supabase
+      .from('ig_accounts_decrypted')
+      .select('access_token, user_id')
+      .eq('ig_user_id', igUserId)
+      .maybeSingle();
+    if (error || !data) return null;
+
+    // user_id로 email 조회 (알림톡 등에 필요 시 확장)
+    let email = null;
+    if (data.user_id) {
+      const { data: user } = await supabase
+        .from('users')
+        .select('email')
+        .eq('id', data.user_id)
+        .maybeSingle();
+      email = user?.email || null;
+    }
+    return { accessToken: data.access_token || null, userId: data.user_id || null, email };
+  } catch (e) {
+    console.error('[meta-webhook] getIgContext 실패:', e.message);
+    return null;
+  }
 }
 
-async function getAutoReplySettings(email) {
-  try {
-    const store = getStore({ name: 'auto-replies', consistency: 'strong', siteID: SITE_ID, token: NETLIFY_TOKEN });
-    const raw = await store.get('reply:' + email);
-    return raw ? JSON.parse(raw) : null;
-  } catch(e) { return null; }
-}
-
-async function getEmailByIgId(igUserId) {
-  if (igUserId === TEST_IG_USER_ID) return process.env.OWNER_EMAIL || 'gung3625@gmail.com';
-  try {
-    const store = getStore({ name: 'users', consistency: 'strong', siteID: SITE_ID, token: NETLIFY_TOKEN });
-    const raw = await store.get('ig:' + igUserId);
-    return raw ? JSON.parse(raw).email : null;
-  } catch(e) { return null; }
+// 자동응답 설정 조회 (auto_replies 테이블은 현재 스키마에 없음 → 환경에 따라 안전 반환)
+// 향후 테이블이 추가되면 이 함수만 확장하면 됨.
+async function getAutoReplySettings(/* supabase, userId */) {
+  return null;
 }
 
 function matchKeyword(text, keywords) {
@@ -61,7 +77,6 @@ function matchKeyword(text, keywords) {
   return null;
 }
 
-// --- [이벤트 핸들러 유지] ---
 async function handleComment(entry, accessToken, settings) {
   const change = entry.changes?.[0];
   if (!change || change.field !== 'comments') return;
@@ -92,11 +107,10 @@ async function handleMessage(entry, accessToken, settings) {
   }
   await callGraphAPI(`/${igUserId}/messages`, 'POST', {
     recipient: { id: senderId },
-    message: { text: replyText }
+    message: { text: replyText },
   }, accessToken);
 }
 
-// --- [메인 핸들러: 수정된 핵심 로직] ---
 exports.handler = async (event) => {
   if (event.httpMethod === 'GET') {
     const params = new URLSearchParams(event.rawQuery || '');
@@ -112,36 +126,39 @@ exports.handler = async (event) => {
   }
 
   if (event.httpMethod === 'POST') {
-    // 서명 검증
     const signature = event.headers['x-hub-signature-256'] || '';
     if (!verifySignature(event.body, signature)) {
-      console.log('[lumi] Webhook 서명 검증 실패');
+      console.log('[meta-webhook] 서명 검증 실패');
       return { statusCode: 401, body: 'Invalid signature' };
     }
 
-    // PII 보호: raw body 로깅 제거 (object 타입만 기록)
     let body;
-    try { body = JSON.parse(event.body); } catch(e) { return { statusCode: 400 }; }
-    console.log('[lumi] Webhook:', body.object, body.entry?.length, 'entries');
+    try { body = JSON.parse(event.body); } catch (e) {
+      return { statusCode: 400, body: 'Bad Request' };
+    }
+    console.log('[meta-webhook] object=', body.object, 'entries=', body.entry?.length || 0);
 
-    // Instagram 데이터가 아니어도 '성공' 응답은 보내서 Meta의 재전송을 막습니다.
-    if (body.object && (body.object !== 'instagram' && body.object !== 'page')) {
+    if (body.object && body.object !== 'instagram' && body.object !== 'page') {
       return { statusCode: 200, body: 'OK' };
     }
 
+    const supabase = getAdminClient();
+
     for (const entry of (body.entry || [])) {
-      const igUserId = entry.id;
-      const accessToken = await getUserToken(igUserId);
-      
-      // 토큰이 있는 실제 사용자 이벤트만 처리
-      if (accessToken) {
-        const email = await getEmailByIgId(igUserId);
-        const settings = email ? await getAutoReplySettings(email) : null;
-        if (entry.changes) await handleComment(entry, accessToken, settings);
-        if (entry.messaging) await handleMessage(entry, accessToken, settings);
+      try {
+        const igUserId = entry.id;
+        const ctx = await getIgContext(supabase, igUserId);
+        if (ctx?.accessToken) {
+          const settings = ctx.userId ? await getAutoReplySettings(supabase, ctx.userId) : null;
+          if (entry.changes) await handleComment(entry, ctx.accessToken, settings);
+          if (entry.messaging) await handleMessage(entry, ctx.accessToken, settings);
+        }
+      } catch (e) {
+        console.error('[meta-webhook] entry 처리 실패:', e.message);
       }
     }
     return { statusCode: 200, body: 'OK' };
   }
+
   return { statusCode: 405, body: 'Method Not Allowed' };
 };
