@@ -34,6 +34,7 @@ body.dark-mode {
 
 /* ---------- Desktop / Mobile switch ---------- */
 .mobile-app { display: none; }
+.mobile-dash { display: none; }
 .desktop-bento { display: block; }
 
 @media (max-width: 767px) {
@@ -44,6 +45,10 @@ body.dark-mode {
   /* Hide legacy mobile-cta-bar when new mobile-app is active
      (the new design provides its own fixed bottom CTA) */
   .mobile-cta-bar { display: none !important; }
+}
+@media (min-width: 768px) {
+  .mobile-dash { display: none !important; }
+  .m-tabbar { display: none !important; }
 }
 
 /* ---------- Mobile utilities ---------- */
@@ -205,7 +210,8 @@ body.dark-mode .m-bottom-cta {
  * Scoped to #mobile-app-logged-in so desktop bento is untouched.
  * ========================================================= */
 
-#mobile-app-logged-in { padding-bottom: 88px; }
+#mobile-app-logged-in,
+.mobile-dash { padding-bottom: calc(72px + var(--safe-bottom)); }
 
 /* Greeting bar */
 .m-greeting {
@@ -482,7 +488,10 @@ body.dark-mode .m-tabbar {
 /* Only show logged-in tabbar on mobile when the view is active */
 @media (max-width: 767px) {
   body.has-tabbar .m-tabbar,
-  #mobile-app-logged-in .m-tabbar { display: flex; }
+  #mobile-app-logged-in .m-tabbar,
+  .mobile-dash .m-tabbar { display: flex; }
+  /* When logged-in mobile dash is active, show it as block */
+  body.has-tabbar .mobile-dash { display: block; }
 }
 /* Safety: hide logged-in view on >=768px just like the logged-out one */
 @media (min-width: 768px) {
