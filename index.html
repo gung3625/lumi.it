@@ -2939,7 +2939,7 @@ var cards = {
         var token = localStorage.getItem('lumi_token') || '';
         var firstImageKey = post ? ((post.imageKeys && post.imageKeys[0]) || post.imageKey || null) : null;
         var imageCount = post ? ((post.imageKeys && post.imageKeys.length) || (post.imageKey ? 1 : 0)) : 0;
-        var thumbUrl = post ? (firstImageKey ? '/api/serve-image?key=' + encodeURIComponent(firstImageKey) + '&t=' + encodeURIComponent(token) : (post.imageUrl || null)) : null;
+        var thumbUrl = post ? (post.imageUrl || null) : null;
         var igLink = post && post.instagramPostId ? ('https://www.instagram.com/p/' + post.instagramPostId + '/') : null;
 
         var emptyInner = e('div', {style:{position:'absolute',inset:0,background:isDk?'#1c1c1e':'#fff',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'6px',padding:'18px',borderRadius:'20px',textAlign:'center'}},
@@ -4186,8 +4186,7 @@ var cards = {
           var photoNum = r.photoCount || 0;
           return e('div', {key:i,onClick:function(ev){if(!isCancelled)handleOpenDetail(rKey,ev);},style:{display:'flex',gap:'10px',padding:'10px 12px',borderRadius:'10px',background:isDk?'rgba(255,255,255,.03)':'rgba(0,0,0,.02)',marginBottom:'6px',cursor:isCancelled?'default':'pointer',transition:'background .15s',alignItems:'flex-start'}},
             (function(){
-              var thumbKey = r.imageKeys && r.imageKeys.length > 0 ? r.imageKeys[0] : null;
-              var thumbUrl = thumbKey ? ('/.netlify/functions/serve-image?key=' + encodeURIComponent(thumbKey)) : null;
+              var thumbUrl = (r.imageUrls && r.imageUrls.length > 0 && r.imageUrls[0]) ? r.imageUrls[0] : null;
               return e('div',{style:{width:'40px',height:'40px',borderRadius:'8px',background:isDk?'rgba(255,255,255,.06)':'rgba(0,0,0,.04)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,marginTop:'1px',overflow:'hidden'}},
                 thumbUrl
                   ? e('img',{src:thumbUrl,style:{width:'40px',height:'40px',objectFit:'cover',borderRadius:'8px',display:'block'},onError:function(ev){ev.target.style.display='none';ev.target.parentNode.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="'+tc2+'" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>';}})
