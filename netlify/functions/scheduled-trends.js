@@ -99,24 +99,29 @@ const NAVER_KEYWORDS = {
     { groupName: '의류', keywords: ['Y2K', '트렌드룩', '레이어드'] }
   ],
   fitness: [
-    { groupName: '피트니스', keywords: ['필라테스', '크로스핏', '홈트'] },
-    { groupName: '운동', keywords: ['케틀벨', '요가', '근력운동'] }
+    { groupName: '필라테스', keywords: ['필라테스', '리포머', '기구필라테스'] },
+    { groupName: '운동루틴', keywords: ['홈트', '케틀벨', '요가플로우'] },
+    { groupName: '다이어트', keywords: ['체형교정', '코어운동', '바디프로필'] }
   ],
   pet: [
-    { groupName: '반려견', keywords: ['강아지용품', '반려견훈련', '강아지간식'] },
-    { groupName: '반려묘', keywords: ['고양이용품', '캣타워', '고양이간식'] }
+    { groupName: '강아지용품', keywords: ['강아지간식', '노즈워크', '펫프렌들리'] },
+    { groupName: '고양이용품', keywords: ['캣타워', '자동급식기', '고양이모래'] },
+    { groupName: '반려생활', keywords: ['반려견미용', '펫호텔', '반려동물보험'] }
   ],
   interior: [
-    { groupName: '인테리어', keywords: ['인테리어소품', '집꾸미기', '리모델링'] },
-    { groupName: '가구조명', keywords: ['원목가구', '무드등', '커튼블라인드'] }
+    { groupName: '집꾸미기', keywords: ['셀프인테리어', '원룸인테리어', '오픈선반'] },
+    { groupName: '무드등조명', keywords: ['무드등', '플로어램프', '버티컬블라인드'] },
+    { groupName: '가구소품', keywords: ['원목테이블', '패브릭포스터', '빈티지러그'] }
   ],
   education: [
-    { groupName: '학원', keywords: ['영어학원', '코딩학원', '입시미술'] },
-    { groupName: '교육', keywords: ['온라인강의', '자격증', '성인교육'] }
+    { groupName: '성인교육', keywords: ['영어회화', '코딩부트캠프', '자격증준비'] },
+    { groupName: '입시학원', keywords: ['입시미술', '수학학원', '논술학원'] },
+    { groupName: '취미수업', keywords: ['독서모임', '악기레슨', '원데이클래스'] }
   ],
   studio: [
-    { groupName: '스튜디오', keywords: ['셀프스튜디오', '프로필촬영', '증명사진'] },
-    { groupName: '포토', keywords: ['4컷사진', '필름카메라', '커플사진'] }
+    { groupName: '프로필촬영', keywords: ['프로필사진', '이력서사진', '작가사진'] },
+    { groupName: '셀프스튜디오', keywords: ['셀프스튜디오', '인생네컷', '4컷필름'] },
+    { groupName: '웨딩스냅', keywords: ['웨딩스냅', '커플스냅', '가족스냅'] }
   ]
 };
 
@@ -127,11 +132,11 @@ const BLOG_SEARCH_SEEDS = {
   beauty: ['젤네일 디자인', '레이어드컷 헤어', '속눈썹펌 후기', '글로우 메이크업'],
   flower: ['수국 드라이플라워 리스', '팜파스 부케 제작', '유칼립투스 화환', '라넌큘러스 꽃다발'],
   fashion: ['오버핏 블레이저 코디', 'Y2K 빈티지 스타일', '롱스커트 레이어드', '셔츠워머 착용법'],
-  fitness: ['필라테스 리포머 운동', '케틀벨 스윙 루틴', '크로스핏 와드', '홈트 맨몸운동'],
-  pet: ['강아지 생식사료 후기', '고양이 캣타워 추천', '반려견 노즈워크 방법', '펫 수제간식 만들기'],
-  interior: ['원목 선반 집꾸미기', '버티컬 블라인드 설치', '무드등 조명 인테리어', '빈티지 러그 코디'],
-  education: ['영어회화 수업 후기', '코딩 부트캠프 커리큘럼', '입시미술 포트폴리오', '성인 악기레슨'],
-  studio: ['셀프스튜디오 컨셉샷', '4컷 필름사진 촬영', '프로필사진 무드', '흑백필름 스냅촬영'],
+  fitness: ['필라테스 리포머 기구', '케틀벨 스윙 루틴', '맨몸운동 홈트 프로그램', '기능성 트레이닝 센터', '코어 강화 운동', '바디프로필 준비', '요가 플로우 자세', '스피닝 클래스 후기'],
+  pet: ['강아지 생식사료 브랜드', '고양이 자동급식기 추천', '반려견 노즈워크 매트', '펫 수제간식 레시피', '강아지 수영장 후기', '고양이 캣휠 트레이닝', '반려견 미용 스타일', '펫 호텔 프리미엄'],
+  interior: ['원목 오픈선반 집꾸미기', '버티컬 블라인드 셀프시공', '무드등 플로어램프 조명', '빈티지 페르시안 러그', '원룸 침실 레이아웃', '북유럽 가구 배치', '패브릭 아트포스터 벽', '셀프 페인팅 벽면 리폼'],
+  education: ['영어회화 1대1 수업', '코딩 부트캠프 취업률', '입시미술 포트폴리오 준비', '성인 악기레슨 피아노', '원데이클래스 공예', '독서모임 커리큘럼', '자격증 단기합격 후기', '유아 체능단 프로그램'],
+  studio: ['셀프스튜디오 무드 컨셉샷', '4컷 필름사진 부산', '프로필사진 작가 후기', '흑백필름 스냅촬영', '웨딩스냅 야외 촬영', '가족 스튜디오 촬영', '커플 화보 컨셉', '강아지 반려동물 스튜디오'],
 };
 
 // YouTube 검색 시드 — 트렌드 영상 탐색용
@@ -141,11 +146,11 @@ const YOUTUBE_SEEDS_KR = {
   beauty: ['네일 트렌드 디자인', '헤어 컷 스타일'],
   flower: ['플라워 클래스 브이로그', '드라이플라워 리스 만들기'],
   fashion: ['오버핏 코디 브이로그', 'Y2K 패션 하울'],
-  fitness: ['필라테스 운동 루틴', '크로스핏 홈트 브이로그'],
-  pet: ['강아지 일상 브이로그', '고양이 용품 추천'],
-  interior: ['집 인테리어 셀프 리모델링', '집꾸미기 소품 하울'],
-  education: ['영어회화 수업 후기', '코딩 독학 브이로그'],
-  studio: ['셀프스튜디오 촬영 브이로그', '4컷 필름사진 리뷰'],
+  fitness: ['필라테스 리포머 운동', '크로스핏 홈트 브이로그', '바디프로필 준비 식단', '맨몸운동 루틴'],
+  pet: ['강아지 일상 브이로그', '고양이 용품 추천', '반려견 수제간식 만들기', '펫 호텔 후기'],
+  interior: ['집 인테리어 셀프 리모델링', '집꾸미기 소품 하울', '원룸 셀프 인테리어', '북유럽 무드 인테리어'],
+  education: ['영어회화 수업 후기', '코딩 독학 브이로그', '입시미술 포트폴리오', '성인 취미 원데이클래스'],
+  studio: ['셀프스튜디오 촬영 브이로그', '4컷 필름사진 리뷰', '웨딩스냅 촬영 후기', '프로필 사진 컨셉'],
 };
 
 const CATEGORY_KO = {
@@ -437,7 +442,8 @@ async function classifyBatchWithGPT({ rawTextsByCategory }) {
   const prompt = `당신은 국내(한국) 소상공인(카페·음식점·뷰티·꽃집·패션·피트니스·반려동물·인테리어·교육·스튜디오) 인스타그램 트렌드 분석 전문가입니다.
 
 아래 5개 외부 소스(네이버 데이터랩·네이버 블로그·구글 트렌드·YouTube·Instagram)에서 수집한 원시 텍스트를 읽고,
-각 업종 카테고리에서 실제 유행하는 **트렌드 대상** 키워드 8~12개씩 선별해 JSON으로 반환하세요.
+각 업종 카테고리에서 실제 유행하는 **트렌드 대상** 키워드 5~12개씩 선별해 JSON으로 반환하세요.
+(데이터가 부족한 카테고리 — 피트니스·반려동물·인테리어·교육·스튜디오 — 는 시드 키워드 관련 구체적 상품·스타일·기법이면 넓게 포함 가능)
 
 [원시 수집 텍스트]
 ${sections}
@@ -480,7 +486,7 @@ JSON 객체만 반환. 설명·마크다운·코드블록 금지.
 스키마:
 {"cafe": ["키워드1", ...], "food": ["키워드1", ...], "beauty": ["키워드1", ...], "flower": ["키워드1", ...], "fashion": ["키워드1", ...], "fitness": ["키워드1", ...], "pet": ["키워드1", ...], "interior": ["키워드1", ...], "education": ["키워드1", ...], "studio": ["키워드1", ...]}
 
-- 각 배열 8~12개 (데이터 부족 시 더 적어도 됨)
+- 각 배열 5~12개 (데이터가 충분히 많은 cafe/food/beauty/fashion은 8~12, 나머지는 5~12로 최대한 채우기)
 - 각 키워드: 2~20자, # 없이, 한 단어 또는 공백 없는 합성어 우선(최대 두 단어)
 - 배열 내 중복 금지`;
 
@@ -503,7 +509,7 @@ JSON 객체만 반환. 설명·마크다운·코드블록 금지.
     );
 
     if (result.status !== 200) {
-      console.error('[gpt-classify]', scope, 'status:', result.status);
+      console.error('[gpt-classify] status:', result.status);
       return null;
     }
 
@@ -528,7 +534,7 @@ JSON 객체만 반환. 설명·마크다운·코드블록 금지.
     try {
       parsed = JSON.parse(match[0]);
     } catch(e) {
-      console.error('[gpt-classify]', scope, 'JSON parse 실패');
+      console.error('[gpt-classify] JSON parse 실패');
       return null;
     }
 
@@ -551,7 +557,7 @@ JSON 객체만 반환. 설명·마크다운·코드블록 금지.
     }
     return out;
   } catch(e) {
-    console.error('[gpt-classify]', scope, '실패:', e.message);
+    console.error('[gpt-classify] 실패:', e.message);
     return null;
   }
 }
@@ -570,7 +576,7 @@ async function predictRisingWithGPT({ category, domesticTags, naverData, blogDat
 
   const prompt = `당신은 인스타그램 트렌드 예측 전문가입니다.
 
-"${categoryKo}" 업종에서 앞으로 2~4주 안에 유행할 가능성이 높은 키워드 5개를 예측하세요.
+"${categoryKo}" 업종에서 앞으로 2~4주 안에 유행할 가능성이 높은 키워드 10개를 예측하세요.
 
 [현재 유행 중]
 ${currentStr}
@@ -610,10 +616,10 @@ ${googleStr}
         model: 'gpt-4o-mini',
         input: prompt,
         temperature: 0.4,
-        max_output_tokens: 700,
+        max_output_tokens: 1400,
         store: false,
       },
-      25000
+      30000
     );
 
     if (result.status !== 200) {
@@ -648,7 +654,7 @@ ${googleStr}
       item && item.keyword && !isBadKeyword(item.keyword) &&
       typeof item.confidence === 'number' &&
       item.reason
-    ).slice(0, 5);
+    ).slice(0, 10);
 
     return valid.length >= 2 ? valid : null;
   } catch(e) {
@@ -774,7 +780,7 @@ exports.handler = async (event) => {
     const [naverData, blogData, ytKR, igTexts] = await Promise.all([
       fetchNaverDatalab(category),
       fetchNaverBlogs(category),
-      fetchYouTube(category, 'KR'),
+      fetchYouTube(category),
       fetchInstagram(category),
     ]);
     rawByCategory[category] = { naverData, blogData, ytKR, igTexts };
@@ -812,7 +818,10 @@ exports.handler = async (event) => {
       if (!domesticTags || domesticTags.length < 3) {
         // fallback: 네이버 데이터랩 타이틀 + DEFAULT
         const fromNaver = (r.naverData || []).map(normalize).filter(kw => !isBadKeyword(kw));
-        domesticTags = [...new Set([...fromNaver, ...(DEFAULT_TRENDS[category] || [])])].slice(0, 10);
+        domesticTags = [...new Set([...domesticTags, ...fromNaver, ...(DEFAULT_TRENDS[category] || [])])].slice(0, 10);
+      } else if (domesticTags.length < 10) {
+        // 분류 결과가 10개 미만이면 DEFAULT_TRENDS로 보충
+        domesticTags = [...new Set([...domesticTags, ...(DEFAULT_TRENDS[category] || [])])].slice(0, 10);
       } else {
         domesticTags = domesticTags.slice(0, 10);
       }
@@ -834,10 +843,11 @@ exports.handler = async (event) => {
         });
       }
       if (!risingItems || risingItems.length < 2) {
-        risingItems = domesticTags.slice(4, 8).map((kw, i) => ({
+        const pool = (domesticTags.length >= 10 ? domesticTags.slice(0, 10) : [...domesticTags, ...(DEFAULT_TRENDS[category] || [])].slice(0, 10));
+        risingItems = pool.map((kw, i) => ({
           keyword: kw,
-          confidence: 60 - i * 5,
-          growthRate: '+' + (20 - i * 3) + '%',
+          confidence: Math.max(30, 75 - i * 5),
+          growthRate: '+' + Math.max(5, 25 - i * 2) + '%',
           reason: '국내 트렌드 상승세',
         }));
       }
