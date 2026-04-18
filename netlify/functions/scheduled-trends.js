@@ -66,7 +66,9 @@ function normalize(raw) {
 const DEFAULT_TRENDS = {
   cafe: ['말차라떼', '크로플', '핸드드립', '시즌음료', '디저트플레이팅', '에스프레소바', '바닐라라떼', '케이크'],
   food: ['오마카세', '파스타', '한식주점', '수제버거', '베이글', '스몰디쉬', '구이전문점', '와인바'],
-  beauty: ['젤네일', '큐빅네일', '볼륨펌', '뿌리염색', '레이어드컷', '속눈썹펌', '글로우메이크업', '립틴트'],
+  beauty: ['글로우메이크업', '립틴트', '속눈썹펌', '피부장벽크림', '비건쿠션', '선크림', '아이섀도팔레트', '클렌징밤'],
+  nail: ['젤네일', '큐빅네일', '오로라네일', '글리터젤', '봄컬러네일', '프렌치네일', '플라워네일아트', '그라데이션네일'],
+  hair: ['볼륨펌', '뿌리염색', '레이어드컷', '두피스케일링', '매직스트레이트', '컬링아이롱', '앞머리펌', '단발컷'],
   flower: ['수국드라이플라워', '팜파스그라스', '유칼립투스리스', '목화솜부케', '라넌큘러스', '프리지어', '샴페인장미', '버드나무가지'],
   fashion: ['오버핏블레이저', 'Y2K패션', '셔츠워머', '롱스커트', '와이드팬츠', '카라니트', '청재킷', '레이어드룩'],
   fitness: ['크로스핏박스', '필라테스리포머', '맨몸운동루틴', '짐복합운동', '케틀벨스윙', '힙쓰러스트', '폼롤러스트레칭', '요가플로우'],
@@ -457,6 +459,17 @@ async function classifyBatchWithGPT({ rawTextsByCategory }) {
 [원시 수집 텍스트]
 ${sections}
 
+## 카테고리별 범위 (중복 배치 금지 — 각 키워드는 가장 구체적인 카테고리 하나에만)
+- beauty: 스킨케어, 메이크업, 파운데이션, 립, 아이섀도, 속눈썹 연장, 왁싱, 바디케어, 피부관리, 화장품 신제품
+  예) 글로우메이크업, 선크림, 비건쿠션, 속눈썹펌, 피부장벽크림
+  ※ 네일·헤어 키워드는 beauty에 넣지 말 것
+- nail (네일): 젤네일, 네일아트, 패디큐어, 네일케어, 큐빅네일, 프렌치네일, 글리터네일, 오프젤, 네일컬러
+  예) 오로라네일, 글리터젤, 봄컬러네일, 플라워네일아트
+  ※ beauty/hair와 별개. 네일 관련 키워드는 반드시 nail 배열에만
+- hair (헤어): 헤어커트, 펌, 염색, 볼륨, 레이어드컷, 탈모케어, 두피관리, 헤어스타일링, 앞머리, 단발
+  예) 볼륨매직, 레이어드컷, 뿌리염색, 두피스케일링, 컬링아이롱
+  ※ beauty/nail와 별개. 헤어 관련 키워드는 반드시 hair 배열에만
+
 ## 절대 준수 — "트렌드 자체" vs "트렌드를 찾기 위한 검색어" 엄격 구분
 - 유효(선별 O): 구체적 대상·제품·메뉴·스타일·기법
   예) 말차라떼, 크로플, 글레이즈드네일, 오마카세, 팝업스토어, 뉴트로, matcha latte, smash burger, glazed nails
@@ -493,9 +506,10 @@ ${sections}
 ## 출력 형식 (엄격)
 JSON 객체만 반환. 설명·마크다운·코드블록 금지.
 스키마:
-{"cafe": ["키워드1", ...], "food": ["키워드1", ...], "beauty": ["키워드1", ...], "flower": ["키워드1", ...], "fashion": ["키워드1", ...], "fitness": ["키워드1", ...], "pet": ["키워드1", ...], "interior": ["키워드1", ...], "education": ["키워드1", ...], "studio": ["키워드1", ...]}
+{"cafe": ["키워드1", ...], "food": ["키워드1", ...], "beauty": ["키워드1", ...], "nail": ["키워드1", ...], "hair": ["키워드1", ...], "flower": ["키워드1", ...], "fashion": ["키워드1", ...], "fitness": ["키워드1", ...], "pet": ["키워드1", ...], "interior": ["키워드1", ...], "education": ["키워드1", ...], "studio": ["키워드1", ...]}
 
-- 각 배열 5~12개 (데이터가 충분히 많은 cafe/food/beauty/fashion은 8~12, 나머지는 5~12로 최대한 채우기)
+- 각 배열 5~12개 (데이터가 충분히 많은 cafe/food/beauty/nail/hair/fashion은 8~12, 나머지는 5~12로 최대한 채우기)
+- beauty/nail/hair는 서로 겹치는 키워드 없이 완전히 분리
 - 각 키워드: 2~20자, # 없이, 한 단어 또는 공백 없는 합성어 우선(최대 두 단어)
 - 배열 내 중복 금지`;
 
@@ -549,7 +563,7 @@ JSON 객체만 반환. 설명·마크다운·코드블록 금지.
 
     // 카테고리별 정규화 + 필터
     const out = {};
-    for (const cat of ['cafe', 'food', 'beauty', 'flower', 'fashion', 'fitness', 'pet', 'interior', 'education', 'studio']) {
+    for (const cat of ['cafe', 'food', 'beauty', 'nail', 'hair', 'flower', 'fashion', 'fitness', 'pet', 'interior', 'education', 'studio']) {
       const arr = Array.isArray(parsed[cat]) ? parsed[cat] : [];
       const seen = new Set();
       const cleaned = [];
@@ -775,7 +789,9 @@ exports.handler = async (event) => {
     };
   }
 
-  const categories = ['cafe', 'food', 'beauty', 'flower', 'fashion', 'fitness', 'pet', 'interior', 'education', 'studio'];
+  // nail/hair는 beauty 수집 데이터를 공유 — GPT 프롬프트에서 3분할 분류
+  const categories = ['cafe', 'food', 'beauty', 'nail', 'hair', 'flower', 'fashion', 'fitness', 'pet', 'interior', 'education', 'studio'];
+  const COLLECT_CATEGORIES = ['cafe', 'food', 'beauty', 'flower', 'fashion', 'fitness', 'pet', 'interior', 'education', 'studio'];
   const updatedAt = new Date().toISOString();
 
   // --- 1단계: 전 업종 병렬 수집 ---
@@ -783,8 +799,8 @@ exports.handler = async (event) => {
   const googleKR = await fetchGoogleTrendsLib('KR');
   console.log(`[sources] google-kr: ${googleKR.length}`);
 
-  // 업종별 소스 수집 — 10 카테고리 병렬 (타임아웃 방지)
-  const rawEntries = await Promise.all(categories.map(async (category) => {
+  // 업종별 소스 수집 — 수집 카테고리만 (nail/hair는 beauty 공유)
+  const rawEntries = await Promise.all(COLLECT_CATEGORIES.map(async (category) => {
     const [naverData, blogData, ytKR, igTexts] = await Promise.all([
       fetchNaverDatalab(category),
       fetchNaverBlogs(category),
@@ -795,6 +811,9 @@ exports.handler = async (event) => {
     return [category, { naverData, blogData, ytKR, igTexts }];
   }));
   const rawByCategory = Object.fromEntries(rawEntries);
+  // nail/hair는 beauty 수집 데이터 공유
+  rawByCategory.nail = rawByCategory.beauty;
+  rawByCategory.hair = rawByCategory.beauty;
 
   // --- 2단계: gpt-4o-mini 배치 분류 (국내 1회) ---
   const domesticTexts = {};

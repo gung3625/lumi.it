@@ -105,16 +105,46 @@ function filterBlacklist(keywords) {
 const CATEGORY_LABELS = {
   cafe: '카페·음료',
   food: '음식·외식',
-  beauty: '뷰티·케어',
+  beauty: '뷰티·스킨케어',
+  hair: '헤어',
+  nail: '네일',
   flower: '꽃집·플라워',
   fashion: '패션·의류',
   fitness: '헬스·필라테스',
+  health: '건강·헬스',
   pet: '반려동물·펫',
   interior: '인테리어·가구',
   education: '학원·교육',
   studio: '사진·스튜디오',
+  kids: '키즈',
+  shop: '공방·소품',
   all: '종합',
 };
+
+// hair/nail 서빙 시점 분리 필터
+// beauty DB row에서 카테고리별로 해당 키워드만 추출
+const HAIR_PATTERN = /펌|염색|커트|컷|헤어|볼륨|레이어드|탈모|두피|스타일링|매직|리본펌|세미|데미지|트리트먼트|샴푸|컬|웨이브|앞머리|뱅|단발|장발|중단발|아이롱|고데기/;
+const NAIL_PATTERN = /네일|젤|아트|패디큐어|매니큐어|큐빅|오프|글리터|프렌치|누드네일|글로우네일|스톤네일|케어풀|젤네일|손톱|발톱/;
+const BEAUTY_ONLY_PATTERN = /스킨|피부|메이크업|파운데이션|쿠션|립|아이섀도|마스카라|선크림|선블록|보습|세럼|에센스|앰플|클렌징|왁싱|속눈썹|눈썹|바디|향수|팩|마스크팩|토너|미스트|로션|크림|비비|씨씨|쿠션팩트/;
+
+function splitBeautyCategory(keywords, requestedCat) {
+  if (requestedCat === 'hair') {
+    return keywords.filter(k => HAIR_PATTERN.test(k.keyword || ''));
+  }
+  if (requestedCat === 'nail') {
+    return keywords.filter(k => NAIL_PATTERN.test(k.keyword || ''));
+  }
+  if (requestedCat === 'beauty') {
+    // 헤어·네일 명확히 해당되는 것만 제외, 나머지는 beauty로 포함
+    return keywords.filter(k => {
+      const kw = k.keyword || '';
+      const isHair = HAIR_PATTERN.test(kw) && !BEAUTY_ONLY_PATTERN.test(kw);
+      const isNail = NAIL_PATTERN.test(kw) && !BEAUTY_ONLY_PATTERN.test(kw);
+      return !(isHair || isNail);
+    });
+  }
+  return keywords;
+}
 
 // 월별 시즌 키워드 (fallback)
 const SEASON_EVENTS = {
@@ -166,29 +196,47 @@ exports.handler = async (event) => {
   const scope = params.get('scope') || '';  // 'domestic' or ''
   const fromDate = params.get('from') || '';
   const toDate = params.get('to') || '';
-  const knownCategories = ['cafe', 'food', 'beauty', 'flower', 'fashion', 'fitness', 'pet', 'interior', 'education', 'studio', 'all'];
+  // hair/nail/health/kids/shop 포함 — 프론트 TREND_CATS와 1:1 대응
+  const knownCategories = ['cafe', 'food', 'beauty', 'hair', 'nail', 'flower', 'fashion', 'fitness', 'health', 'pet', 'interior', 'education', 'studio', 'kids', 'shop', 'all'];
 
   const CATEGORY_ALIAS = {
     '카페': 'cafe', '카페·음료': 'cafe', '카페·베이커리': 'cafe', '커피': 'cafe', '베이커리': 'cafe',
     '음식점': 'food', '식당': 'food', '식당·음식점': 'food', '맛집': 'food', '레스토랑': 'food',
-    '뷰티': 'beauty', '뷰티·케어': 'beauty', '뷰티·헤어·네일': 'beauty', '네일': 'beauty', '헤어': 'beauty', '미용실': 'beauty',
+    '뷰티': 'beauty', '뷰티·케어': 'beauty', '뷰티·스킨케어': 'beauty', '화장품': 'beauty', '스킨케어': 'beauty',
+    '뷰티·헤어·네일': 'beauty',
+    '헤어': 'hair', '미용실': 'hair', '헤어샵': 'hair', '헤어살롱': 'hair',
+    '네일': 'nail', '네일샵': 'nail', '네일아트': 'nail',
     '꽃집': 'flower', '꽃집·플라워': 'flower', '플라워': 'flower',
     '패션': 'fashion', '패션·의류': 'fashion', '쇼핑·의류': 'fashion', '의류': 'fashion',
     '헬스': 'fitness', '필라테스': 'fitness', '헬스·필라테스': 'fitness', '요가': 'fitness', '운동': 'fitness',
+    '건강': 'health', '건강·헬스': 'health',
     '반려동물': 'pet', '반려동물·펫': 'pet', '펫': 'pet',
     '인테리어': 'interior', '인테리어·가구': 'interior', '인테리어·소품': 'interior', '가구': 'interior',
     '학원': 'education', '학원·교육': 'education', '교육': 'education',
     '사진': 'studio', '사진·스튜디오': 'studio', '스튜디오': 'studio',
-    'restaurant': 'food', 'bakery': 'cafe', 'hair': 'beauty', 'nail': 'beauty',
+    '키즈': 'kids', '아동': 'kids', '어린이': 'kids',
+    '공방': 'shop', '소품': 'shop', '공방·소품': 'shop',
+    'restaurant': 'food', 'bakery': 'cafe',
     'gym': 'fitness', 'pilates': 'fitness', 'yoga': 'fitness',
     'florist': 'flower', 'clothing': 'fashion',
     'health_fitness': 'fitness', 'bar': 'food',
   };
 
   const category = CATEGORY_ALIAS[rawCategory] || rawCategory;
-  const storeKey = knownCategories.includes(category) ? category : 'cafe';
+  // hair/nail/health/kids/shop은 beauty/fitness/cafe DB row를 활용 — DB key 매핑
+  const DB_KEY_MAP = {
+    hair: 'beauty',
+    nail: 'beauty',
+    health: 'fitness',
+    kids: 'cafe',  // fallback: 향후 별도 수집 시 변경
+    shop: 'cafe',  // fallback: 향후 별도 수집 시 변경
+  };
+  const storeKey = knownCategories.includes(category) ? (DB_KEY_MAP[category] || category) : 'cafe';
+  // 서빙 시 분리 필터 적용 여부 (beauty DB row를 hair/nail로 분리)
+  const beautySubcat = (category === 'hair' || category === 'nail' || category === 'beauty') ? category : null;
   const season = getSeasonInfo();
-  const label = CATEGORY_LABELS[storeKey] || '일반';
+  // label은 요청 카테고리 기준 (hair/nail은 storeKey=beauty이지만 라벨은 각자)
+  const label = CATEGORY_LABELS[category] || CATEGORY_LABELS[storeKey] || '일반';
 
   let supa;
   try {
@@ -275,34 +323,40 @@ exports.handler = async (event) => {
         const prevKeywords = (prevData && Array.isArray(prevData.keywords))
           ? prevData.keywords.map(k => (k.keyword || '').replace(/^#/, ''))
           : [];
-        const scopeTags = (scopeData.keywords || [])
-          .map(k => (k.keyword || '').replace(/^#/, ''))
-          .filter(Boolean)
-          .map(k => '#' + k);
+
+        // beauty DB row를 hair/nail/beauty로 분리 서빙
+        let rawKeywords = (scopeData.keywords || []).map((k, i) => ({
+          keyword: (k.keyword || '').replace(/^#/, ''),
+          source: k.source || 'gpt-classified',
+          score: typeof k.score === 'number' ? k.score : (100 - i * 5),
+          mentions: typeof k.mentions === 'number' ? k.mentions : 0,
+          trend: 'up',
+          rank: i + 1,
+          rankChange: (() => {
+            const kw = (k.keyword || '').replace(/^#/, '');
+            const prevIdx = prevKeywords.indexOf(kw);
+            if (prevIdx === -1) return 'new';
+            if (prevIdx !== i) return prevIdx - i;
+            return 0;
+          })(),
+          ...(k.bizCategory ? { bizCategory: k.bizCategory } : {}),
+        }));
+
+        if (beautySubcat) {
+          rawKeywords = splitBeautyCategory(rawKeywords, beautySubcat);
+        }
+
+        const filteredKeywords = filterBlacklist(rawKeywords);
+        const scopeTags = filteredKeywords.map(k => '#' + k.keyword).filter(Boolean);
 
         return {
           statusCode: 200, headers: CORS,
           body: JSON.stringify({
-            category: storeKey,
+            category,
             categoryLabel: label,
             scope,
             tags: scopeTags,
-            keywords: filterBlacklist((scopeData.keywords || []).map((k, i) => ({
-              keyword: (k.keyword || '').replace(/^#/, ''),
-              source: k.source || 'gpt-classified',
-              score: typeof k.score === 'number' ? k.score : (100 - i * 5),
-              mentions: typeof k.mentions === 'number' ? k.mentions : 0,
-              trend: 'up',
-              rank: i + 1,
-              rankChange: (() => {
-                const kw = (k.keyword || '').replace(/^#/, '');
-                const prevIdx = prevKeywords.indexOf(kw);
-                if (prevIdx === -1) return 'new';
-                if (prevIdx !== i) return prevIdx - i;
-                return 0;
-              })(),
-              ...(k.bizCategory ? { bizCategory: k.bizCategory } : {}),
-            }))),
+            keywords: filteredKeywords,
             rising,
             insight: scopeData.insight || '',
             insights: scopeData.insight || '',
@@ -336,17 +390,20 @@ exports.handler = async (event) => {
     if (trendsRow && trendsRow.keywords) {
       const cached = trendsRow.keywords;
       if (Array.isArray(cached.tags) && cached.tags.length > 0) {
+        let kwList = cached.tags.map(tag => ({
+          keyword: (tag || '').replace(/^#/, ''),
+          trend: 'up',
+          source: cached.source || 'last30days',
+        }));
+        if (beautySubcat) kwList = splitBeautyCategory(kwList, beautySubcat);
+        const filteredKw = filterBlacklist(kwList);
         return {
           statusCode: 200, headers: CORS,
           body: JSON.stringify({
-            category: storeKey,
+            category,
             categoryLabel: label,
-            tags: cached.tags,
-            keywords: filterBlacklist(cached.tags.map(tag => ({
-              keyword: (tag || '').replace(/^#/, ''),
-              trend: 'up',
-              source: cached.source || 'last30days',
-            }))),
+            tags: filteredKw.map(k => '#' + k.keyword),
+            keywords: filteredKw,
             season,
             updatedAt: cached.updatedAt || trendsRow.collected_at || new Date().toISOString(),
             source: cached.source || 'last30days',
@@ -360,22 +417,22 @@ exports.handler = async (event) => {
     if (l30dRow && l30dRow.keywords) {
       const l30d = l30dRow.keywords;
       if (Array.isArray(l30d.keywords) && l30d.keywords.length > 0) {
+        let kwList = l30d.keywords.map(k => ({
+          keyword: (k.keyword || '').replace(/^#/, ''),
+          score: k.score || 0,
+          mentions: k.mentions || 0,
+          trend: 'up',
+          source: 'last30days',
+        }));
+        if (beautySubcat) kwList = splitBeautyCategory(kwList, beautySubcat);
+        const filteredKw = filterBlacklist(kwList);
         return {
           statusCode: 200, headers: CORS,
           body: JSON.stringify({
-            category: storeKey,
+            category,
             categoryLabel: label,
-            tags: l30d.keywords
-              .map(k => (k.keyword || '').replace(/^#/, ''))
-              .filter(Boolean)
-              .map(k => '#' + k),
-            keywords: filterBlacklist(l30d.keywords.map(k => ({
-              keyword: (k.keyword || '').replace(/^#/, ''),
-              score: k.score || 0,
-              mentions: k.mentions || 0,
-              trend: 'up',
-              source: 'last30days',
-            }))),
+            tags: filteredKw.map(k => '#' + k.keyword).filter(Boolean),
+            keywords: filteredKw,
             season,
             updatedAt: l30d.updatedAt || l30dRow.collected_at || new Date().toISOString(),
             source: 'last30days',
