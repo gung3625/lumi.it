@@ -242,7 +242,8 @@ ${analysisFormat}`;
 }
 
 // ─────────── gpt-4o 캡션 생성 (Responses API) ───────────
-async function generateCaptions(imageAnalysis, item) {
+async function generateCaptions(imageAnalysis, item, progress) {
+  const mark = async (tag) => { try { if (progress) await progress(tag); } catch(_) {} };
   const w = item.weather || {};
   const sp = item.storeProfile || {};
   const toneGuide = buildToneGuide(item.toneLikes, item.toneDislikes);
@@ -419,6 +420,7 @@ ${photoCount > 1 ? '- 캐러셀: 특정 한 장 기준이 아닌 세트 전체�
 7점 미만이면 폐기하고 새로 작성하세요.
 ---END_SCORE---`;
 
+  await mark('gen_fetching');
   const capCtrl = new AbortController();
   const capTid = setTimeout(() => capCtrl.abort(), 90_000);
   let res;
@@ -437,11 +439,13 @@ ${photoCount > 1 ? '- 캐러셀: 특정 한 장 기준이 아닌 세트 전체�
   } finally {
     clearTimeout(capTid);
   }
+  await mark('gen_fetch_done');
   if (!res.ok) {
     const errBody = await res.text().catch(() => '');
     throw new Error(`gpt-4o HTTP ${res.status}: ${errBody.substring(0, 200)}`);
   }
   const data = await res.json();
+  await mark('gen_parsed');
   if (data.error) throw new Error(`gpt-4o 오류: ${data.error.message || JSON.stringify(data.error)}`);
   const text = data.choices?.[0]?.message?.content || '';
   if (!text) throw new Error('gpt-4o 응답 없음');
@@ -450,7 +454,9 @@ ${photoCount > 1 ? '- 캐러셀: 특정 한 장 기준이 아닌 세트 전체�
   const scores = parseScores(text);
   if (scores.length) console.log('[process-and-post] 캡션 품질 점수:', scores.join(', '));
 
+  await mark('gen_moderating');
   const moderationResults = await Promise.all(captions.map((c) => moderateCaption(c)));
+  await mark('gen_moderated');
   const safeCaptions = captions.filter((_, i) => moderationResults[i]);
   if (safeCaptions.length === 0) {
     console.error('[process-and-post] 모든 캡션이 Moderation 검수 실패');
@@ -749,7 +755,10 @@ exports.handler = async (event) => {
       mediaType,
     };
 
-    const captions = await generateCaptions(imageAnalysis, captionInput);
+    const captionProgress = async (tag) => {
+      await supabase.from('reservations').update({ caption_error: 'STAGE:' + tag }).eq('reserve_key', reservationKey);
+    };
+    const captions = await generateCaptions(imageAnalysis, captionInput, captionProgress);
     console.log('[process-and-post] 캡션 생성 완료:', captions.length, '개');
 
     // 4.5) REELS 전용: SRT 생성 + Modal burn-in + video_url 갱신 (best-effort)
