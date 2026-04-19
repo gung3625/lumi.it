@@ -1008,7 +1008,7 @@ body.dark-mode .toggle-ball { left: 50px; background: #f0f2f8; transform: rotate
 
 /* TUTORIAL CARD (vertical phone-style) */
 .tut-wrap { display:flex; flex-direction:column; height:100%; width:100%; overflow:visible; }
-.tut-lumi-area { flex:0 0 48%; display:flex; align-items:flex-end; justify-content:center; position:relative; padding-bottom:8px; }
+.tut-lumi-area { flex:0 0 auto; display:flex; align-items:flex-end; justify-content:center; position:relative; padding-bottom:8px; }
 .tut-content { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:16px 20px; gap:10px; overflow:visible; min-height:0; }
 .tut-title { font-size:clamp(15px, 2.5vw, 18px); text-align:center; line-height:1.4; color:#0d1117; }
 .tut-sub { font-size:clamp(11px, 2vw, 12px); text-align:center; color:rgba(0,0,0,.35); line-height:1.5; }
@@ -1104,6 +1104,17 @@ body.dark-mode .tut-check-circle { background:rgba(255,107,139,.15); }
 .tut-story-bar { height:100%; background:#fff; border-radius:2px; animation:storyProgress 2.5s linear forwards; }
 @keyframes storyProgress { from{width:0} to{width:100%} }
 .tut-story-header { position:absolute; top:14px; left:8px; display:flex; align-items:center; gap:5px; z-index:2; }
+/* 영상 권장 스펙 안내 */
+.video-spec-guide { display:flex; flex-direction:column; gap:4px; margin-top:8px; padding:8px 10px; border-radius:8px; background:rgba(200,80,122,.06); border:1px solid rgba(200,80,122,.15); }
+.video-spec-guide-row { display:flex; align-items:center; gap:6px; font-size:11px; color:rgba(0,0,0,.5); line-height:1.4; }
+.video-spec-guide-row svg { flex-shrink:0; }
+body.light-mode .video-spec-guide, .video-spec-guide { background:rgba(200,80,122,.06); border-color:rgba(200,80,122,.15); }
+body.light-mode .video-spec-guide-row { color:rgba(0,0,0,.5); }
+body.dark-mode .video-spec-guide { background:rgba(200,80,122,.08); border-color:rgba(200,80,122,.2); }
+body.dark-mode .video-spec-guide-row { color:rgba(240,242,248,.45); }
+/* 영상 메타 경고 배지 */
+.video-warn-badge { display:inline-flex; align-items:center; gap:4px; font-size:10px; padding:3px 8px; border-radius:980px; background:rgba(255,159,10,.15); color:#b87400; border:1px solid rgba(255,159,10,.3); margin-right:4px; margin-top:2px; }
+body.dark-mode .video-warn-badge { background:rgba(255,159,10,.12); color:#ffb340; border-color:rgba(255,159,10,.25); }
 
 /* RESPONSIVE */
 @media (max-width: 768px) {
@@ -1849,6 +1860,146 @@ body.dark-mode .su-close svg{stroke:#f0f2f8;}
   };
 </script>
 <link rel="stylesheet" href="/css/design-v2.css">
+<style>
+  /* === 모바일 캡션 flow: 게시 옵션 토글 UX 개선 (2026-04-19) === */
+  /* 즉시 실행 + 강한 시각 피드백. design-v2.css 기본 룰을 의도적으로 덮어씁니다. */
+  .m-post-opts {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 10px 0 4px;
+  }
+  .m-post-opt {
+    position: relative;
+    width: 100%;
+    padding: 16px 18px 16px 44px;
+    margin: 0;
+    border-radius: 12px;
+    border: 1.5px solid rgba(0,0,0,0.08);
+    background: #f5f5f7;
+    color: var(--ink);
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    cursor: pointer;
+    font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
+    transition: border-color .15s ease, background .15s ease, transform .15s ease, box-shadow .15s ease, color .15s ease;
+  }
+  body.dark-mode .m-post-opt {
+    border-color: rgba(255,255,255,0.1);
+    background: #272729;
+  }
+  /* 왼쪽 라디오 도트 (기본: 회색 링) */
+  .m-post-opt::before {
+    content: "";
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid rgba(0,0,0,0.18);
+    background: transparent;
+    transition: border-color .15s ease, background .15s ease;
+  }
+  body.dark-mode .m-post-opt::before { border-color: rgba(255,255,255,0.25); }
+  /* 선택 상태 체크 아이콘 (Lucide check) — is-sel일 때만 보임 */
+  .m-post-opt::after {
+    content: "";
+    position: absolute;
+    left: 19px;
+    top: 50%;
+    width: 12px;
+    height: 12px;
+    transform: translateY(-50%) scale(0);
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 6 9 17 4 12'/></svg>");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+    opacity: 0;
+    transition: transform .18s cubic-bezier(.34,1.56,.64,1), opacity .15s ease;
+    pointer-events: none;
+  }
+  /* Hover (데스크톱 미리보기 / 키보드 focus) */
+  .m-post-opt:hover:not(:disabled):not(.is-sel) {
+    border-color: rgba(200,80,122,0.35);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  }
+  body.dark-mode .m-post-opt:hover:not(:disabled):not(.is-sel) {
+    border-color: rgba(255,143,171,0.4);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+  /* Active (클릭 순간 피드백) */
+  .m-post-opt:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+  /* Selected 상태 — pink border 2px + tint 배경 + 체크 + 색상 강조 */
+  .m-post-opt.is-sel {
+    border: 2px solid var(--pink);
+    background: rgba(200,80,122,0.08);
+    padding-top: 15.5px;
+    padding-bottom: 15.5px;
+    padding-left: 43.5px;
+    box-shadow: 0 0 0 4px rgba(200,80,122,0.08);
+  }
+  body.dark-mode .m-post-opt.is-sel {
+    background: rgba(200,80,122,0.15);
+    box-shadow: 0 0 0 4px rgba(200,80,122,0.12);
+  }
+  .m-post-opt.is-sel::before {
+    border-color: var(--pink);
+    background: var(--pink);
+  }
+  .m-post-opt.is-sel::after {
+    transform: translateY(-50%) scale(1);
+    opacity: 1;
+  }
+  .m-post-opt.is-sel .m-post-opt-title { color: var(--pink); }
+  body.dark-mode .m-post-opt.is-sel .m-post-opt-title { color: #FF8FAB; }
+  /* Disabled */
+  .m-post-opt:disabled,
+  .m-post-opt[disabled] {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+  /* 타이틀 / 서브 / PRO 뱃지 */
+  .m-post-opt-title {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    line-height: 1.3;
+  }
+  .m-post-opt-sub {
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--ink-2);
+    letter-spacing: -0.01em;
+    line-height: 1.35;
+  }
+  .m-post-opt.is-sel .m-post-opt-sub { color: var(--ink-2); }
+  .m-post-opt-lock {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--pink);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0;
+    line-height: 1.2;
+  }
+</style>
 </head>
 <body>
 <!-- Google Tag Manager (noscript) -->
@@ -2959,7 +3110,7 @@ function mInitWave2(){
       flow.files = [];
       flow.thumbUrls = [];
       flow.prefillTags = prefillTags || null;
-      flow.step = 0; flow.captions = []; flow.selectedIdx = 0; flow.editedCaption = ''; flow.regenCount = 0; flow.posting = false; flow.userNote = '';
+      flow.step = 0; flow.captions = []; flow.selectedIdx = 0; flow.editedCaption = ''; flow.regenCount = 0; flow.posting = false; flow.starting = false; flow.userNote = '';
       var _mftV; try { _mftV = JSON.parse(localStorage.getItem('lumi_feat_toggles')||'{}'); } catch(e){ _mftV = {}; }
       flow.postMode = (_mftV.captionReview === false) ? null : 'immediate';
       flow.scheduledAt = null;
@@ -2982,7 +3133,7 @@ function mInitWave2(){
       flow.thumbUrls.forEach(function(u){ try { URL.revokeObjectURL(u); } catch(e){} });
     }
     flow.thumbUrls = files.map(function(f){ return URL.createObjectURL(f); });
-    flow.step = 0; flow.captions = []; flow.selectedIdx = 0; flow.editedCaption = ''; flow.regenCount = 0; flow.posting = false; flow.userNote = '';
+    flow.step = 0; flow.captions = []; flow.selectedIdx = 0; flow.editedCaption = ''; flow.regenCount = 0; flow.posting = false; flow.starting = false; flow.userNote = '';
     var _mft; try { _mft = JSON.parse(localStorage.getItem('lumi_feat_toggles')||'{}'); } catch(e){ _mft = {}; }
     flow.postMode = (_mft.captionReview === false) ? null : 'immediate';
     flow.scheduledAt = null;
@@ -3001,7 +3152,7 @@ function mInitWave2(){
       if (!sure) return;
     } catch(e){}
     // step 2 → step 0 (파일 재선택 없이 썸네일 검토로 복귀)
-    flow.step = 0; flow.captions = []; flow.editedCaption = ''; flow.regenCount = 0; flow.reservationKey = null; flow.posting = false;
+    flow.step = 0; flow.captions = []; flow.editedCaption = ''; flow.regenCount = 0; flow.reservationKey = null; flow.posting = false; flow.starting = false;
     renderFlow();
   };
   window.mFlowBackFromStep0 = function(){
@@ -3114,10 +3265,21 @@ function mInitWave2(){
         var durSec = flow.videoDuration ? Math.round(flow.videoDuration) + '초' : '';
         var dimStr = (flow.videoWidth && flow.videoHeight) ? flow.videoWidth + '×' + flow.videoHeight : '';
         var metaStr = [durSec, dimStr].filter(Boolean).join(' · ');
+        var warnBadges = '';
+        if (flow.videoWidth && flow.videoHeight) {
+          var warnSvg = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+          if (Math.min(flow.videoWidth, flow.videoHeight) < 1080) {
+            warnBadges += '<span class="video-warn-badge">' + warnSvg + '해상도가 낮아 품질이 떨어질 수 있어요</span>';
+          }
+          if (Math.abs(flow.videoWidth / flow.videoHeight - 9 / 16) > 0.05) {
+            warnBadges += '<span class="video-warn-badge">' + warnSvg + '릴스는 9:16 세로 영상에 최적화돼요</span>';
+          }
+        }
         mediaHtml = '<div style="margin:12px 0;border-radius:12px;overflow:hidden;background:#000;max-height:240px;display:flex;align-items:center;justify-content:center;">' +
           '<video src="' + videoObjUrl + '" controls muted playsinline style="width:100%;max-height:240px;object-fit:contain;display:block;"></video>' +
           '</div>' +
-          (metaStr ? '<p style="text-align:center;font-size:12px;color:var(--ink-3);margin-bottom:8px;">' + metaStr + '</p>' : '');
+          (metaStr ? '<p style="text-align:center;font-size:12px;color:var(--ink-3);margin-bottom:8px;">' + metaStr + '</p>' : '') +
+          (warnBadges ? '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;">' + warnBadges + '</div>' : '');
       } else {
         var thumbsHtml = files.map(function(f, i){
           var url = thumbUrls[i] || '';
@@ -3150,11 +3312,24 @@ function mInitWave2(){
       var backLabel = isVideoMode ? '영상 다시 선택' : '사진 다시 선택';
       var step0Title = isVideoMode ? '영상 확인' : '사진 확인 & 대표사진 선택';
       var step0Sub = isVideoMode ? '영상 캡션·해시태그를 생성해요' : '대표사진은 스토리 자동게시에 사용돼요';
+      var videoSpecHtml = isVideoMode ? (
+        '<div class="video-spec-guide" style="margin:8px 0;">' +
+          '<div class="video-spec-guide-row">' +
+            '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C8507A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg>' +
+            '권장: 9:16 세로, 1080×1920, 30fps 이상, H.264/HEVC' +
+          '</div>' +
+          '<div class="video-spec-guide-row">' +
+            '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C8507A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>' +
+            '원본 해상도가 낮으면 재인코딩 후 품질이 떨어질 수 있어요' +
+          '</div>' +
+        '</div>'
+      ) : '';
       body.innerHTML =
         backBtnHtml(backLabel, 'window.mFlowBackFromStep0()') +
         '<div class="m-flow-progress"><span class="is-on"></span><span></span><span></span></div>' +
         '<p class="m-flow-step0-title">' + step0Title + '</p>' +
         '<p class="m-flow-step0-sub">' + step0Sub + '</p>' +
+        videoSpecHtml +
         mediaHtml +
         '<div class="m-flow-field"><label class="m-flow-field-label" for="m-flow-note">이번 게시 특이사항 (선택)</label>' +
         '<textarea id="m-flow-note" class="m-flow-textarea" rows="3" placeholder="예: 신메뉴 출시, 할인 이벤트, 영업시간 변경 등 캡션에 꼭 반영할 정보">'+esc(prevNote)+'</textarea></div>' +
@@ -3171,36 +3346,69 @@ function mInitWave2(){
             '<button type="button" class="m-post-opt" data-mode="best"' + (_isPro3 ? '' : ' disabled') + '><span class="m-post-opt-title">최적 시간 자동 예약' + (_isPro3 ? '' : ' <span class="m-post-opt-lock">PRO</span>') + '</span><span class="m-post-opt-sub">팔로워가 가장 반응하는 시간</span></button>' +
             '<button type="button" class="m-post-opt" data-mode="scheduled"' + (_isPro3 ? '' : ' disabled') + '><span class="m-post-opt-title">시간 예약' + (_isPro3 ? '' : ' <span class="m-post-opt-lock">PRO</span>') + '</span><span class="m-post-opt-sub">원하는 날짜·시간 지정</span></button>' +
           '</div>' +
-          '<div id="m-sched-picker" hidden><p class="m-flow-label" style="margin-top:16px;">예약 시간</p><div class="m-sched-row"><select id="m-sched-date" class="m-flow-input"></select><select id="m-sched-time" class="m-flow-input"></select></div></div>' +
-          '<button type="button" class="m-cta" id="m-step0-cta" onclick="window.mFlowStartGenerate()" style="display:flex;margin:20px auto 0;opacity:0.45;" disabled>게시하기</button>';
-        // 게시 옵션 선택 이벤트
+          '<div id="m-sched-picker" hidden><p class="m-flow-label" style="margin-top:16px;">예약 시간</p><div class="m-sched-row"><select id="m-sched-date" class="m-flow-input"></select><select id="m-sched-time" class="m-flow-input"></select></div><button type="button" class="m-cta" id="m-step0-sched-confirm" style="display:flex;margin:12px auto 0;">예약 확정</button></div>';
+        // 게시 옵션 선택 이벤트 — 선택 즉시 실행
         body.querySelectorAll('.m-post-opt').forEach(function(btn){
           btn.addEventListener('click', function(){
             if (btn.disabled) return;
+            if (flow.starting) return; // 중복 클릭 방지
             body.querySelectorAll('.m-post-opt').forEach(function(b){ b.classList.remove('is-sel'); });
             btn.classList.add('is-sel');
             flow.postMode = btn.getAttribute('data-mode');
             var sp = document.getElementById('m-sched-picker');
             if (flow.postMode === 'scheduled') {
+              // 예약: picker 노출, 확정 버튼 클릭까지 대기
               if (sp) sp.hidden = false;
               window.mPopulateSchedPicker && window.mPopulateSchedPicker();
             } else if (flow.postMode === 'best') {
               if (sp) sp.hidden = true;
-              // 최적 시간 미리 fetch (백그라운드)
-              if (!flow.bestTimeCache || (Date.now() - flow.bestTimeCacheAt > 300000)) {
+              flow.starting = true;
+              var BTL_CACHE_TTL_S0 = 300000;
+              var cachedS0 = flow.bestTimeCache && (Date.now() - flow.bestTimeCacheAt < BTL_CACHE_TTL_S0) ? flow.bestTimeCache : null;
+              function applyBestAndStartS0(bt) {
+                if (bt) {
+                  var nowS0 = new Date();
+                  var partsS0 = bt.split(':');
+                  var bhS0 = parseInt(partsS0[0], 10), bmS0 = parseInt(partsS0[1], 10);
+                  var targetS0 = new Date(nowS0); targetS0.setHours(bhS0, bmS0, 0, 0);
+                  if (targetS0 <= nowS0) targetS0.setDate(targetS0.getDate() + 1);
+                  flow.scheduledAt = targetS0.toISOString();
+                }
+                window.mFlowStartGenerate();
+              }
+              if (cachedS0) {
+                applyBestAndStartS0(cachedS0.bestTime);
+              } else {
                 var u3 = getUser();
                 fetch('/api/get-best-time', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+TOKEN}, body: JSON.stringify({category: u3.bizCategory || u3.storeCategory || 'other'}) })
                   .then(function(r){ return r.json(); })
-                  .then(function(data){ flow.bestTimeCache = data; flow.bestTimeCacheAt = Date.now(); })
-                  .catch(function(){});
+                  .then(function(data){ flow.bestTimeCache = data; flow.bestTimeCacheAt = Date.now(); applyBestAndStartS0(data && data.bestTime); })
+                  .catch(function(){ applyBestAndStartS0(null); });
               }
             } else {
+              // immediate: 즉시 실행
               if (sp) sp.hidden = true;
+              flow.starting = true;
+              window.mFlowStartGenerate();
             }
-            // CTA 활성화
-            var cta0 = document.getElementById('m-step0-cta');
-            if (cta0) { cta0.disabled = false; cta0.style.opacity = '1'; }
           });
+        });
+        // 예약 확정 버튼: 날짜/시간 유효성 검사 후 실행
+        var scS0 = document.getElementById('m-step0-sched-confirm');
+        if (scS0) scS0.addEventListener('click', function(){
+          if (flow.starting) return;
+          var dSel = document.getElementById('m-sched-date');
+          var tSel = document.getElementById('m-sched-time');
+          if (!dSel || !tSel || !dSel.value || !tSel.value) { showMobileToast('시간을 선택해주세요'); return; }
+          var chosen = new Date(dSel.value + 'T' + tSel.value + ':00');
+          var nowS0c = new Date();
+          var maxDS0 = new Date(nowS0c); maxDS0.setDate(maxDS0.getDate()+30);
+          if (isNaN(chosen.getTime())) { showMobileToast('시간을 선택해주세요'); return; }
+          if (chosen <= nowS0c) { showMobileToast('현재 시각 이후로 선택해주세요'); return; }
+          if (chosen > maxDS0) { showMobileToast('1개월 이내로 선택해주세요'); return; }
+          flow.starting = true;
+          flow.scheduledAt = chosen.toISOString();
+          window.mFlowStartGenerate();
         });
       } else {
         body.innerHTML += '<button type="button" class="m-cta" onclick="window.mFlowStartGenerate()" style="display:flex;margin:20px auto 0;">캡션 생성하기</button>';
@@ -3223,9 +3431,15 @@ function mInitWave2(){
       body.innerHTML =
         backBtnHtml('취소', 'window.mCloseCaptionFlow()') +
         '<div class="m-flow-progress"><span class="is-on"></span><span class="is-on"></span><span></span></div>' +
-        '<div class="m-flow-loading">' +
-          '<div class="m-tut-spin"></div>' +
-          '<p class="m-flow-status" id="m-flow-status">사진을 업로드하고 있어요…</p>' +
+        '<div class="lumi-progress-wrap" style="padding:40px 20px;">' +
+          '<div class="lumi-progress-char">' +
+            '<div class="lumi-progress-glow"></div>' +
+            '<img src="/assets/lumi-surprised-2.png" alt="lumi" onerror="this.src=\'/assets/lumi-character.png\'">' +
+          '</div>' +
+          '<p class="lumi-progress-title" id="m-flow-status">' + (flow.isVideo ? '영상을 업로드하고 있어요' : '사진을 업로드하고 있어요') + '<span class="lumi-progress-dots"></span></p>' +
+          '<p class="lumi-progress-sub" id="m-flow-substatus">잠시만 기다려주세요</p>' +
+          '<div class="lumi-progress-bar"><div class="lumi-progress-fill"></div></div>' +
+          '<p id="m-flow-errcode" style="display:none;font-size:11px;color:var(--ink-3,#999);margin-top:12px;font-family:monospace;"></p>' +
         '</div>';
     } else if (flow.step === 2) {
       var cap = (flow.editedCaption || flow.captions[flow.selectedIdx] || '').toString();
@@ -3365,9 +3579,15 @@ function mInitWave2(){
     } else if (flow.step === 4) {
       body.innerHTML =
         '<div class="m-flow-progress"><span class="is-on"></span><span class="is-on"></span><span class="is-on"></span></div>' +
-        '<div class="m-flow-loading">' +
-          '<div class="m-tut-spin"></div>' +
-          '<p class="m-flow-status">인스타그램에 업로드 중이에요…<br><span style="color:var(--ink-3);font-size:13px;">보통 10~30초 정도 걸려요</span></p>' +
+        '<div class="lumi-progress-wrap" style="padding:40px 20px;">' +
+          '<div class="lumi-progress-char">' +
+            '<div class="lumi-progress-glow"></div>' +
+            '<img src="/assets/lumi-surprised-2.png" alt="lumi" onerror="this.src=\'/assets/lumi-character.png\'">' +
+          '</div>' +
+          '<p class="lumi-progress-title" id="m-flow-status">' + (flow.isVideo ? '릴스를 게시 중' : '인스타그램에 게시 중') + '<span class="lumi-progress-dots"></span></p>' +
+          '<p class="lumi-progress-sub" id="m-flow-substatus">보통 10~30초 정도 걸려요</p>' +
+          '<div class="lumi-progress-bar"><div class="lumi-progress-fill"></div></div>' +
+          '<p id="m-flow-errcode" style="display:none;font-size:11px;color:var(--ink-3,#999);margin-top:12px;font-family:monospace;"></p>' +
         '</div>';
     } else if (flow.step === 3) {
       body.innerHTML =
@@ -3651,85 +3871,169 @@ function mInitWave2(){
     for (var i = 0; i < len; i++) arr[i] = bin.charCodeAt(i);
     return new Blob([arr], { type: mime });
   }
-  function submitReservation(){
-    var user = getUser();
-    var statusEl = document.getElementById('m-flow-status');
-    // C4: 영상 분기 (기존 이미지 경로와 독립)
-    if (flow.isVideo === true && flow.videoFile) {
-      if (statusEl) statusEl.textContent = '영상을 업로드하고 있어요…';
-      var userId = user.id || user.email || 'anon';
-      // 클라이언트 임시 reserveKey (Supabase 저장 경로 생성용) — 서버가 최종 reservationKey 를 발급하므로 혼동 방지 위해 prefix
-      var _nonceBytes = crypto.getRandomValues(new Uint8Array(6));
-      var _nonce = Array.from(_nonceBytes).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
-      var clientReserveKey = 'pending-' + Date.now() + '-' + _nonce;
-      var videoFileRef = flow.videoFile;
-      var utils = window.lumiVideoUtils;
-      if (!utils) {
-        if (statusEl) statusEl.textContent = '영상 업로드 준비에 실패했어요.';
-        flow.posting = false;
-        return;
+  // ---------- FlowError & 단계별 진행 UI 헬퍼 ----------
+  function FlowError(code, userMsg, devMsg) {
+    this.name = 'FlowError';
+    this.code = code || 'UNKNOWN';
+    this.userMsg = userMsg || '문제가 발생했어요';
+    this.devMsg = devMsg || '';
+    this.message = this.userMsg;
+  }
+  FlowError.prototype = Object.create(Error.prototype);
+  FlowError.prototype.constructor = FlowError;
+
+  window.mFlowSetProgress = function(title, sub, errCode){
+    var titleEl = document.getElementById('m-flow-status');
+    var subEl = document.getElementById('m-flow-substatus');
+    var errEl = document.getElementById('m-flow-errcode');
+    if (titleEl) {
+      // .lumi-progress-dots span 유지 (텍스트 노드만 교체)
+      var dotsSpan = titleEl.querySelector('.lumi-progress-dots');
+      titleEl.textContent = title || '';
+      if (dotsSpan) {
+        titleEl.appendChild(dotsSpan);
+      } else {
+        var newDots = document.createElement('span');
+        newDots.className = 'lumi-progress-dots';
+        titleEl.appendChild(newDots);
       }
-      Promise.resolve()
-        .then(function(){ return utils.extractVideoFrames(videoFileRef, 7); })
-        .then(function(frames){
-          flow._videoFrames = frames || [];
-          if (statusEl) statusEl.textContent = '영상을 업로드하고 있어요… 잠시만요';
-          return utils.uploadVideoToSupabase(videoFileRef, userId, clientReserveKey);
-        })
-        .then(function(upload){
-          var fd = new FormData();
-          // 프레임 7장을 frameImages 로 전송
-          (flow._videoFrames || []).forEach(function(frame, idx){
-            try {
-              var blob = dataURLtoBlob(frame);
-              fd.append('frameImages', blob, 'frame_' + idx + '.jpg');
-            } catch(e){}
-          });
-          fd.append('mediaType', 'REELS');
-          fd.append('videoUrl', upload.publicUrl || '');
-          fd.append('videoKey', upload.storagePath || '');
-          if (flow.videoDuration) fd.append('videoDuration', String(flow.videoDuration));
-          if (flow.videoWidth) fd.append('videoWidth', String(flow.videoWidth));
-          if (flow.videoHeight) fd.append('videoHeight', String(flow.videoHeight));
-          // 기존 reserve 필드 세트
-          var noteParts = [];
-          if (flow.prefillTags && flow.prefillTags.length) noteParts.push(flow.prefillTags.join(' '));
-          if (flow.userNote) noteParts.push(flow.userNote);
-          fd.append('userMessage', noteParts.join(' / '));
-          var defaultStyle = '';
-          try { defaultStyle = (JSON.parse(localStorage.getItem('lumi_settings')||'{}').captionStyle) || ''; } catch(e){}
-          fd.append('captionTone', flow.userStyle || defaultStyle);
-          fd.append('bizCategory', user.bizCategory || user.storeCategory || 'cafe');
-          fd.append('submittedAt', new Date().toISOString());
-          fd.append('scheduledAt', new Date().toISOString());
-          fd.append('storeProfile', JSON.stringify({ownerEmail:user.email||'', name:user.storeName||'', phone:user.phone||''}));
-          var ft2; try { ft2 = JSON.parse(localStorage.getItem('lumi_feat_toggles')||'{}'); } catch(e){ ft2 = {}; }
-          fd.append('postToStory', ft2.story !== false ? 'true' : 'false');
-          fd.append('postToThread', ft2.thread === true ? 'true' : 'false');
-          fd.append('useWeather', ft2.weather !== false ? 'true' : 'false');
-          if (user.region) fd.append('region', user.region);
-          if (flow.postMode) fd.append('postMode', flow.postMode);
-          return window.lumiAuthFetch('/api/reserve', { method:'POST', headers:{ 'Authorization':'Bearer '+TOKEN }, body: fd });
-        })
-        .then(function(r){ return r.json(); })
-        .then(function(res){
-          if (!res || !res.reservationKey) throw new Error(res && res.error || '예약 실패');
-          flow.reservationKey = res.reservationKey;
-          if (statusEl) statusEl.textContent = '캡션을 만들고 있어요…';
-          pollCaption();
-        })
-        .catch(function(err){
-          console.warn('[m-reserve-video]', (err && (err.message || err.name)) || 'error');
-          if (statusEl) statusEl.textContent = '업로드에 실패했어요. 잠시 후 다시 시도해주세요.';
-          showMobileToast('영상 업로드 실패: 잠시 후 다시 시도해주세요.');
-          flow.posting = false;
-          window.mCloseCaptionFlow();
-        });
+    }
+    if (subEl) subEl.textContent = sub || '';
+    if (errEl) {
+      if (errCode) { errEl.style.display = 'block'; errEl.textContent = errCode; }
+      else { errEl.style.display = 'none'; errEl.textContent = ''; }
+    }
+  };
+
+  function showFlowError(err) {
+    if (!body) return;
+    var code = (err && err.code) || 'UNKNOWN';
+    var userMsg = (err && err.userMsg) || (err && err.message) || '문제가 발생했어요';
+    var devMsg = (err && err.devMsg) || '';
+    var devSuffix = devMsg ? ' · ' + String(devMsg).slice(0, 80) : '';
+    try { console.warn('[m-flow-error]', code, devMsg); } catch(e){}
+    flow.starting = false;
+    flow.posting = false;
+    body.innerHTML =
+      '<div class="m-flow-loading" style="padding:40px 20px;text-align:center;">' +
+        '<img src="/assets/lumi-sad.png" onerror="this.src=\'/assets/lumi-character.png\'" alt="lumi" style="width:120px;height:auto;margin:0 auto 20px;display:block;animation:lumiShake 0.5s ease-out;">' +
+        '<p style="font-size:17px;font-weight:600;color:var(--ink);">' + esc(userMsg) + '</p>' +
+        '<p style="font-size:14px;color:var(--ink-2);margin-top:8px;">문제가 계속되면 문의해주세요</p>' +
+        '<p style="font-size:11px;color:var(--ink-3,#999);margin-top:16px;font-family:monospace;word-break:break-all;">error: ' + esc(code) + esc(devSuffix) + '</p>' +
+        '<div style="display:flex;gap:10px;margin-top:24px;justify-content:center;flex-wrap:wrap;">' +
+          '<button class="m-cta ghost" onclick="window.mCloseCaptionFlow()">홈으로</button>' +
+          '<button class="m-cta" onclick="window.mFlowRetry && window.mFlowRetry()">다시 시도</button>' +
+        '</div>' +
+      '</div>';
+  }
+
+  window.mFlowRetry = function(){
+    flow.starting = false;
+    flow.posting = false;
+    // reservationKey 가 있고 캡션 생성만 실패한 경우엔 pollCaption 재개
+    if (flow.reservationKey && !flow.captions.length) {
+      flow.step = 1; renderFlow();
+      mFlowSetProgress('캡션을 만드는 중', flow.isVideo ? '릴스에 어울리는 카피를 짓고 있어요' : '업종과 트렌드에 맞는 캡션을 만들고 있어요', '');
+      pollCaption();
       return;
     }
+    // 처음부터 재시도
+    flow.reservationKey = null;
+    flow.captions = [];
+    flow.editedCaption = '';
+    flow.step = 1; renderFlow();
+    submitReservation();
+  };
+
+  async function submitReservation(){
+    var user = getUser();
+    // 영상 분기
+    if (flow.isVideo === true && flow.videoFile) {
+      return submitVideoReservation(user);
+    }
+    return submitImageReservation(user);
+  }
+
+  async function submitVideoReservation(user){
+    var utils = window.lumiVideoUtils;
+    if (!utils) { return showFlowError(new FlowError('VIDEO_UTILS_MISSING', '영상 업로드 준비에 실패했어요', '')); }
+    var videoFileRef = flow.videoFile;
+    var userId = user.id || user.email || 'anon';
+    var _nonceBytes = crypto.getRandomValues(new Uint8Array(6));
+    var _nonce = Array.from(_nonceBytes).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+    var clientReserveKey = 'pending-' + Date.now() + '-' + _nonce;
+    try {
+      mFlowSetProgress('영상을 분석 중', '7장의 프레임을 뽑고 있어요', '');
+      var frames;
+      try { frames = await utils.extractVideoFrames(videoFileRef, 7); }
+      catch (e) { throw new FlowError('VIDEO_FRAMES_FAIL', '영상 프레임을 읽을 수 없어요', (e && e.message) || ''); }
+      flow._videoFrames = frames || [];
+
+      mFlowSetProgress('영상을 업로드 중', '고화질로 올리고 있어요', '');
+      var upload;
+      try { upload = await utils.uploadVideoToSupabase(videoFileRef, userId, clientReserveKey); }
+      catch (e) { throw new FlowError('VIDEO_UPLOAD_FAIL', '영상 업로드에 실패했어요 · 네트워크를 확인해주세요', (e && e.message) || ''); }
+
+      mFlowSetProgress('lumi가 영상을 분석 중', '훅·엔딩·장면 흐름을 읽고 있어요', '');
+      var fd = new FormData();
+      (flow._videoFrames || []).forEach(function(frame, idx){
+        try {
+          var blob = dataURLtoBlob(frame);
+          fd.append('frameImages', blob, 'frame_' + idx + '.jpg');
+        } catch(e){}
+      });
+      fd.append('mediaType', 'REELS');
+      fd.append('videoUrl', upload.publicUrl || '');
+      fd.append('videoKey', upload.storagePath || '');
+      if (flow.videoDuration) fd.append('videoDuration', String(flow.videoDuration));
+      if (flow.videoWidth) fd.append('videoWidth', String(flow.videoWidth));
+      if (flow.videoHeight) fd.append('videoHeight', String(flow.videoHeight));
+      var noteParts = [];
+      if (flow.prefillTags && flow.prefillTags.length) noteParts.push(flow.prefillTags.join(' '));
+      if (flow.userNote) noteParts.push(flow.userNote);
+      fd.append('userMessage', noteParts.join(' / '));
+      var defaultStyle = '';
+      try { defaultStyle = (JSON.parse(localStorage.getItem('lumi_settings')||'{}').captionStyle) || ''; } catch(e){}
+      fd.append('captionTone', flow.userStyle || defaultStyle);
+      fd.append('bizCategory', user.bizCategory || user.storeCategory || 'cafe');
+      fd.append('submittedAt', new Date().toISOString());
+      fd.append('scheduledAt', new Date().toISOString());
+      fd.append('storeProfile', JSON.stringify({ownerEmail:user.email||'', name:user.storeName||'', phone:user.phone||''}));
+      var ft2; try { ft2 = JSON.parse(localStorage.getItem('lumi_feat_toggles')||'{}'); } catch(e){ ft2 = {}; }
+      fd.append('postToStory', ft2.story !== false ? 'true' : 'false');
+      fd.append('postToThread', ft2.thread === true ? 'true' : 'false');
+      fd.append('useWeather', ft2.weather !== false ? 'true' : 'false');
+      if (user.region) fd.append('region', user.region);
+      if (flow.postMode) fd.append('postMode', flow.postMode);
+
+      var res;
+      try {
+        var r = await window.lumiAuthFetch('/api/reserve', { method:'POST', headers:{ 'Authorization':'Bearer '+TOKEN }, body: fd });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        res = await r.json();
+      } catch (e) { throw new FlowError('RESERVE_FAIL', '서버에 요청할 수 없어요 · 잠시 후 다시 시도해주세요', (e && e.message) || ''); }
+      if (!res || !res.reservationKey) throw new FlowError('RESERVE_INVALID', '예약 생성 실패: ' + ((res && res.error) || '서버 응답 오류'), '');
+      flow.reservationKey = res.reservationKey;
+
+      mFlowSetProgress('캡션을 만드는 중', '릴스에 어울리는 카피를 짓고 있어요', '');
+      pollCaption();
+    } catch (err) {
+      showFlowError(err);
+    }
+  }
+
+  async function submitImageReservation(user){
     var files = flow.files || [];
-    if (statusEl) statusEl.textContent = files.length > 1 ? ('사진 ' + files.length + '장을 업로드하고 있어요…') : '사진을 업로드하고 있어요…';
-    Promise.all(files.map(function(f){ return resizeImageClient(f); })).then(function(resizedList){
+    try {
+      mFlowSetProgress(
+        files.length > 1 ? ('사진 ' + files.length + '장을 업로드하고 있어요') : '사진을 업로드하고 있어요',
+        'lumi가 최적 크기로 조정 중이에요', ''
+      );
+      var resizedList;
+      try { resizedList = await Promise.all(files.map(function(f){ return resizeImageClient(f); })); }
+      catch (e) { throw new FlowError('IMG_RESIZE_FAIL', '사진을 처리할 수 없어요 · 다른 사진을 선택해주세요', (e && e.message) || ''); }
+
+      mFlowSetProgress('lumi가 사진을 분석 중', '사진 속 분위기를 읽고 있어요', '');
       var fd = new FormData();
       resizedList.forEach(function(rf){ fd.append('photos', rf, rf.name); });
       var noteParts = [];
@@ -3749,49 +4053,64 @@ function mInitWave2(){
       var _useWeather = ft.weather !== false;
       fd.append('useWeather', _useWeather ? 'true' : 'false');
       if (user.region) fd.append('region', user.region);
-      var _weatherPromise;
       if (_useWeather) {
-        var _sido = (user.sido || user.region || '서울').split(' ')[0].replace(/특별시|광역시|도$/, '');
-        _weatherPromise = fetch('/.netlify/functions/get-weather-kma?sido=' + encodeURIComponent(_sido))
-          .then(function(r){ return r.json(); })
-          .then(function(d){
-            if (!d || d.error) return null;
+        try {
+          var _sido = (user.sido || user.region || '서울').split(' ')[0].replace(/특별시|광역시|도$/, '');
+          var _wr = await fetch('/.netlify/functions/get-weather-kma?sido=' + encodeURIComponent(_sido));
+          var _w = await _wr.json();
+          if (_w && !_w.error) {
             var statusMap = { clear:'맑음', partly_cloudy:'구름 조금', cloudy:'흐림', rain:'비', snow:'눈' };
-            var status = statusMap[d.state];
-            if (!status) return null;
-            return { status: status, temperature: d.temperature, locationName: d.locationName || '' };
-          })
-          .catch(function(){ return null; });
-      } else {
-        _weatherPromise = Promise.resolve(null);
+            var status = statusMap[_w.state];
+            if (status) fd.append('weather', JSON.stringify({ status: status, temperature: _w.temperature, locationName: _w.locationName || '' }));
+          }
+        } catch(e){ /* weather 실패는 무시 */ }
       }
-      return _weatherPromise.then(function(_w){
-        if (_w) fd.append('weather', JSON.stringify(_w));
-        return window.lumiAuthFetch('/api/reserve', { method:'POST', headers:{ 'Authorization':'Bearer '+TOKEN }, body: fd });
-      });
-    }).then(function(r){ return r.json(); }).then(function(res){
-      if (!res || !res.reservationKey) throw new Error(res && res.error || '예약 실패');
+
+      var res;
+      try {
+        var r = await window.lumiAuthFetch('/api/reserve', { method:'POST', headers:{ 'Authorization':'Bearer '+TOKEN }, body: fd });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        res = await r.json();
+      } catch (e) {
+        var msg = (e && e.message) || '';
+        if (msg.indexOf('인증') !== -1 || msg.indexOf('로그인') !== -1) {
+          throw new FlowError('AUTH_FAIL', '로그인 정보가 만료됐어요 · 다시 로그인해주세요', msg);
+        }
+        throw new FlowError('RESERVE_FAIL', '서버에 요청할 수 없어요 · 잠시 후 다시 시도해주세요', msg);
+      }
+      if (!res || !res.reservationKey) throw new FlowError('RESERVE_INVALID', '예약 생성 실패: ' + ((res && res.error) || '서버 응답 오류'), '');
       flow.reservationKey = res.reservationKey;
-      if (statusEl) statusEl.textContent = '캡션을 만들고 있어요…';
+
+      mFlowSetProgress('캡션을 만드는 중', '업종과 트렌드에 맞는 캡션을 만들고 있어요', '');
       pollCaption();
-    }).catch(function(err){
-      var msg = err && err.message || '';
-      if (msg.indexOf('인증') === -1 && msg.indexOf('로그인') === -1) {
-        showMobileToast('캡션 생성 실패: ' + (msg || '네트워크'));
-      }
-      window.mCloseCaptionFlow();
-    });
+    } catch (err) {
+      showFlowError(err);
+    }
   }
+
   function pollCaption(){
     var tries = 0;
     var iv = setInterval(function(){
       tries++;
-      if (tries > 40) { clearInterval(iv); showMobileToast('시간 초과'); window.mCloseCaptionFlow(); return; }
+      if (tries > 40) {
+        clearInterval(iv);
+        showFlowError(new FlowError('POLL_TIMEOUT', '캡션 생성이 오래 걸려요 · 잠시 후 대시보드에서 확인해주세요', ''));
+        return;
+      }
       window.lumiAuthFetch('/api/get-reservation?reserveKey=' + encodeURIComponent(flow.reservationKey), { headers:{ 'Authorization':'Bearer '+TOKEN } })
-        .then(function(r){ return r.json(); })
+        .then(function(r){
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.json();
+        })
         .then(function(d){
           var rsv = d && (d.reservation || d);
           var caps = rsv && (rsv.generated_captions || rsv.generatedCaptions);
+          var st = rsv && (rsv.caption_status || rsv.captionStatus);
+          if (st === 'failed' || st === 'error') {
+            clearInterval(iv);
+            showFlowError(new FlowError('CAPTION_FAIL', '캡션 생성에 실패했어요 · 다시 시도해주세요', ''));
+            return;
+          }
           if (caps && caps.length > 0) {
             clearInterval(iv);
             flow.captions = Array.isArray(caps) ? caps : [caps];
@@ -3801,7 +4120,6 @@ function mInitWave2(){
             if (_pcft.captionReview === false) {
               // captionReview OFF: step 2 스킵 → 바로 게시
               if (flow.postMode === 'best') {
-                // 최적 시간: 캐시된 값 또는 API 조회
                 var _applyBestPost = function(bt) {
                   if (bt) {
                     var _now = new Date();
@@ -3811,6 +4129,7 @@ function mInitWave2(){
                     flow.scheduledAt = _target.toISOString();
                   }
                   flow.posting = true;
+                  mFlowSetProgress(flow.isVideo ? '릴스를 게시 중' : '인스타그램에 게시 중', '잠시만요, 업로드 완료하면 알려드릴게요', '');
                   confirmPost();
                 };
                 var _cached = flow.bestTimeCache && (Date.now() - flow.bestTimeCacheAt < 300000) ? flow.bestTimeCache : null;
@@ -3825,6 +4144,7 @@ function mInitWave2(){
                 }
               } else {
                 flow.posting = true;
+                mFlowSetProgress(flow.isVideo ? '릴스를 게시 중' : '인스타그램에 게시 중', '잠시만요, 업로드 완료하면 알려드릴게요', '');
                 confirmPost();
               }
             } else {
@@ -3833,20 +4153,25 @@ function mInitWave2(){
             }
           }
         })
-        .catch(function(){});
+        .catch(function(e){
+          // 단일 fetch 실패는 일시적일 수 있어 재시도. tries 초과시 POLL_TIMEOUT 경로에서 처리됨
+          try { console.warn('[pollCaption] tick fail', (e && e.message) || ''); } catch(_e){}
+        });
     }, 3000);
   }
   function regenerateCaption(){
     if (flow.regenCount >= 3) return;
     flow.regenCount++;
     flow.step = 1; renderFlow();
-    var statusEl = document.getElementById('m-flow-status');
-    if (statusEl) statusEl.textContent = '캡션을 다시 만들고 있어요…';
+    mFlowSetProgress('캡션을 다시 만드는 중', '더 잘 어울리는 카피를 찾고 있어요', '');
     window.lumiAuthFetch('/api/regenerate-caption', {
       method:'POST',
       headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+TOKEN },
       body: JSON.stringify({ reservationKey: flow.reservationKey })
-    }).then(function(r){ return r.json(); }).then(function(d){
+    }).then(function(r){
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }).then(function(d){
       if (d && d.caption) {
         flow.captions.push(d.caption);
         flow.selectedIdx = flow.captions.length - 1;
@@ -3873,7 +4198,10 @@ function mInitWave2(){
       method:'POST',
       headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+TOKEN },
       body: JSON.stringify(payload)
-    }).then(function(r){ return r.json(); }).then(function(d){
+    }).then(function(r){
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }).then(function(d){
       if (d && (d.ok || d.success)) {
         if (flow.postMode === 'immediate') {
           // 실제 인스타 업로드 완료까지 폴링
@@ -3888,8 +4216,7 @@ function mInitWave2(){
         throw new Error(d && d.error || '게시 실패');
       }
     }).catch(function(err){
-      flow.posting = false;
-      showMobileToast('게시 실패: ' + (err.message || ''));
+      showFlowError(new FlowError('POST_FAIL', '게시에 실패했어요 · 다시 시도해주세요', (err && err.message) || ''));
     });
   }
   function pollPostStatus(){
@@ -3898,13 +4225,14 @@ function mInitWave2(){
       tries++;
       if (tries > 40) {
         clearInterval(iv);
-        flow.posting = false;
-        showMobileToast('업로드가 평소보다 오래 걸려요. 잠시 후 홈 화면에서 확인해주세요.');
-        window.mCloseCaptionFlow();
+        showFlowError(new FlowError('POST_TIMEOUT', '업로드가 평소보다 오래 걸려요 · 잠시 후 대시보드에서 확인해주세요', ''));
         return;
       }
       window.lumiAuthFetch('/api/get-reservation?reserveKey=' + encodeURIComponent(flow.reservationKey), { headers:{ 'Authorization':'Bearer '+TOKEN } })
-        .then(function(r){ return r.json(); })
+        .then(function(r){
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.json();
+        })
         .then(function(d){
           var rsv = d && (d.reservation || d);
           if (!rsv) return;
@@ -3919,8 +4247,7 @@ function mInitWave2(){
           } else if (st === 'failed' || st === 'error') {
             clearInterval(iv);
             flow.posting = false;
-            showMobileToast('인스타그램 업로드에 실패했어요. 다시 시도해주세요.');
-            flow.step = 2; renderFlow();
+            showFlowError(new FlowError('IG_POST_FAIL', '인스타그램 업로드에 실패했어요 · 다시 시도해주세요', ''));
           }
         })
         .catch(function(){});
@@ -5040,7 +5367,7 @@ var cards = {
               e('p', {className:'tut-title'}, e('strong',null,'사진 한 장'), '이면', e('br'), e('span',{className:'lumi-brand'},'lumi'), '가 알아서 해요'),
               e('p', {className:'tut-sub'}, isLoggedIn ? '사진을 올려보세요' : '직접 체험해보세요'),
               isLoggedIn
-                ? e('label', {className:'upload-btn tut-guide-pulse', style:{width:'100%',borderRadius:'16px',fontSize:'14px',padding:'12px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px'},
+                ? e('label', {className:'upload-btn tut-guide-pulse', style:{maxWidth:'220px',width:'auto',borderRadius:'16px',fontSize:'14px',padding:'12px 24px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px'},
                     onMouseDown:function(ev){ev.stopPropagation();}},
                     e('input', {type:'file',multiple:true,accept:'image/*,video/*,.mp4,.mov,.m4v,.MP4,.MOV',style:{display:'none'},onChange:async function(ev){
                       ev.stopPropagation();
@@ -5079,13 +5406,23 @@ var cards = {
                     e('svg',{width:14,height:14,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},e('path',{d:'M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4'}),e('polyline',{points:'17 8 12 3 7 8'}),e('line',{x1:12,y1:3,x2:12,y2:15})),
                     '사진 올리기'
                   )
-                : e('button', {className:'upload-btn tut-guide-pulse', style:{width:'100%',borderRadius:'16px',fontSize:'14px',padding:'12px'},
+                : e('button', {className:'upload-btn tut-guide-pulse', style:{maxWidth:'220px',width:'auto',borderRadius:'16px',fontSize:'14px',padding:'12px 24px'},
                     onMouseDown:function(ev){ev.stopPropagation();},
                     onClick:function(){ setPhase('picker'); }
                   },
                     e('svg',{width:14,height:14,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},e('path',{d:'M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4'}),e('polyline',{points:'17 8 12 3 7 8'}),e('line',{x1:12,y1:3,x2:12,y2:15})),
                     '사진 올리기'
-                  )
+                  ),
+              e('div', {className:'video-spec-guide'},
+                e('div', {className:'video-spec-guide-row'},
+                  e('svg',{width:12,height:12,viewBox:'0 0 24 24',fill:'none',stroke:'#C8507A',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},e('rect',{x:2,y:2,width:20,height:20,rx:2.18,ry:2.18}),e('line',{x1:7,y1:2,x2:7,y2:22}),e('line',{x1:17,y1:2,x2:17,y2:22}),e('line',{x1:2,y1:12,x2:22,y2:12}),e('line',{x1:2,y1:7,x2:7,y2:7}),e('line',{x1:2,y1:17,x2:7,y2:17}),e('line',{x1:17,y1:17,x2:22,y2:17}),e('line',{x1:17,y1:7,x2:22,y2:7})),
+                  '영상 권장: 9:16 세로, 1080×1920, 30fps 이상, H.264/HEVC'
+                ),
+                e('div', {className:'video-spec-guide-row'},
+                  e('svg',{width:12,height:12,viewBox:'0 0 24 24',fill:'none',stroke:'#C8507A',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},e('circle',{cx:12,cy:12,r:10}),e('line',{x1:12,y1:8,x2:12,y2:12}),e('line',{x1:12,y1:16,x2:'12.01',y2:16})),
+                  '원본 해상도가 낮으면 인스타그램 재인코딩 후 품질이 떨어질 수 있어요'
+                )
+              )
             ) : null,
 
             phase === 'gallery' ? e(React.Fragment, null,
@@ -5223,6 +5560,16 @@ var cards = {
                         e('p',{style:{fontSize:'14px',fontWeight:600,color:tc}},'영상 선택됨'),
                         videoMeta ? e('span',{style:{fontSize:'10px',color:tc2}}, Math.round(videoMeta.duration)+'초 · '+videoMeta.width+'×'+videoMeta.height) : null
                       ),
+                      videoMeta ? e('div',{style:{display:'flex',flexWrap:'wrap',gap:'4px',marginBottom:'6px'}},
+                        Math.min(videoMeta.width,videoMeta.height) < 1080 ? e('span',{className:'video-warn-badge'},
+                          e('svg',{width:10,height:10,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2.5,strokeLinecap:'round',strokeLinejoin:'round'},e('path',{d:'M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z'}),e('line',{x1:12,y1:9,x2:12,y2:13}),e('line',{x1:12,y1:17,x2:'12.01',y2:17})),
+                          '해상도가 낮아 품질이 떨어질 수 있어요'
+                        ) : null,
+                        Math.abs(videoMeta.width/videoMeta.height - 9/16) > 0.05 ? e('span',{className:'video-warn-badge'},
+                          e('svg',{width:10,height:10,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2.5,strokeLinecap:'round',strokeLinejoin:'round'},e('path',{d:'M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z'}),e('line',{x1:12,y1:9,x2:12,y2:13}),e('line',{x1:12,y1:17,x2:'12.01',y2:17})),
+                          '릴스는 9:16 세로 영상에 최적화돼요'
+                        ) : null
+                      ) : null,
                       e('div',{style:{borderRadius:'12px',overflow:'hidden',background:'#000',flex:1,display:'flex',alignItems:'center',justifyContent:'center',width:'100%',minHeight:0,outline:'2.5px solid #FF6B8B',outlineOffset:'-2.5px',position:'relative'}},
                         e('video',{src:videoUrlRef.current,controls:true,muted:true,playsInline:true,style:{width:'100%',height:'100%',objectFit:'contain',display:'block'}}),
                         e('span',{style:{position:'absolute',bottom:'6px',left:'6px',fontSize:'9px',background:'linear-gradient(135deg,#FF6B8B,#DDA0DD)',color:'#fff',padding:'2px 8px',borderRadius:'980px',letterSpacing:'.5px',zIndex:2}},'영상')

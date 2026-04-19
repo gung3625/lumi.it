@@ -433,6 +433,105 @@ ${photoCount > 1 ? '- 캐러셀: 특정 한 장 기준이 아닌 세트 전체�
   return safeCaptions;
 }
 
+// ─────────── REELS 자막 burn-in (Phase 2b) ───────────
+// 캡션 본문을 기반으로 GPT-4o-mini가 짧은 한국어 SRT(3~5블록)를 생성.
+// 실패해도 절대 throw 하지 않음 — fallback으로 빈 문자열 반환.
+async function generateSubtitleSrt(captionText, durationSec) {
+  try {
+    const clean = String(captionText || '').replace(/#\S+/g, '').trim().slice(0, 600);
+    if (!clean) return '';
+    const dur = Math.max(5, Math.min(Number(durationSec) || 15, 60));
+    const prompt = `다음은 인스타그램 릴스(짧은 영상)의 캡션입니다. 이 캡션의 핵심 감성을 ${dur}초 이내 영상에 넣을 한국어 자막으로 재구성하세요.
+
+규칙:
+- 자막 블록 3~5개
+- 각 자막 2~3초, 최대 12자
+- 0초부터 ${dur}초 사이에 겹치지 않게 배치
+- 해시태그/이모지/영어/따옴표 제외
+- SRT 표준 형식(번호, 타임코드, 본문, 빈 줄)만 출력. 설명/제목 없이 SRT 본문만.
+
+캡션:
+${clean}
+
+출력 예:
+1
+00:00:00,500 --> 00:00:02,500
+첫 자막 내용
+
+2
+00:00:03,000 --> 00:00:05,000
+다음 자막 내용`;
+
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 512,
+        temperature: 0.3,
+      }),
+    });
+    if (!res.ok) {
+      console.warn('[process-and-post] SRT 생성 API 오류:', res.status);
+      return '';
+    }
+    const data = await res.json();
+    let srt = data.choices?.[0]?.message?.content || '';
+    // 코드펜스 제거
+    srt = srt.replace(/^```[a-zA-Z]*\n?/, '').replace(/\n?```$/, '').trim();
+    // 최소 검증: "-->" 포함한 줄이 1개 이상
+    if (!/-->/.test(srt)) {
+      console.warn('[process-and-post] SRT 파싱 실패(--> 없음)');
+      return '';
+    }
+    return srt;
+  } catch (e) {
+    console.warn('[process-and-post] SRT 생성 실패:', e.message);
+    return '';
+  }
+}
+
+// Netlify 래퍼 `/api/burn-subtitles` 호출.
+// 실패 시 null 반환(throw 금지). 원본 video_url 유지.
+async function burnSubtitlesViaModal({ reservationKey, videoUrl, srt, userId }) {
+  try {
+    if (!process.env.MODAL_BURN_SUBTITLES_URL) {
+      console.log('[process-and-post] MODAL_BURN_SUBTITLES_URL 미설정 — 자막 스킵');
+      return null;
+    }
+    const base = process.env.URL || process.env.DEPLOY_URL || 'https://lumi.it.kr';
+    const endpoint = `${base.replace(/\/$/, '')}/api/burn-subtitles`;
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), 315_000);
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.LUMI_SECRET}`,
+        },
+        body: JSON.stringify({ reservationKey, videoUrl, srt, userId }),
+        signal: controller.signal,
+      });
+      const text = await res.text();
+      let data = null;
+      try { data = text ? JSON.parse(text) : null; } catch (_) { /* noop */ }
+      if (!res.ok || !data?.success || !data?.videoUrl) {
+        const msg = (data && (data.error || data.detail)) || `status=${res.status}`;
+        console.warn('[process-and-post] burn-subtitles 실패:', String(msg).slice(0, 200));
+        return null;
+      }
+      return data;
+    } finally {
+      clearTimeout(t);
+    }
+  } catch (e) {
+    console.warn('[process-and-post] burn-subtitles 예외:', e.message);
+    return null;
+  }
+}
+
 // ─────────── 알림톡 ───────────
 async function sendAlimtalk(phone, text) {
   try {
@@ -608,16 +707,59 @@ exports.handler = async (event) => {
     const captions = await generateCaptions(imageAnalysis, captionInput);
     console.log('[process-and-post] 캡션 생성 완료:', captions.length, '개');
 
+    // 4.5) REELS 전용: SRT 생성 + Modal burn-in + video_url 갱신 (best-effort)
+    //      실패해도 원본 video_url로 그대로 진행. 이미지 플로우엔 영향 없음.
+    let finalVideoUrl = reservation.video_url || null;
+    let subtitleStatus = null;
+    let subtitleSrt = null;
+    if (isReels && reservation.video_url) {
+      try {
+        const primaryCaption = captions[0] || '';
+        const srt = await generateSubtitleSrt(primaryCaption, 15);
+        if (!srt) {
+          console.log('[process-and-post] SRT 미생성 — 자막 스킵:', reservationKey);
+          subtitleStatus = 'skipped';
+        } else {
+          subtitleSrt = srt;
+          const burnResult = await burnSubtitlesViaModal({
+            reservationKey,
+            videoUrl: reservation.video_url,
+            srt,
+            userId: reservation.user_id,
+          });
+          if (burnResult && burnResult.videoUrl) {
+            finalVideoUrl = burnResult.videoUrl;
+            subtitleStatus = 'applied';
+            console.log('[process-and-post] 자막 burn-in 적용:', reservationKey);
+          } else {
+            subtitleStatus = 'skipped';
+            console.log('[process-and-post] burn-in 결과 없음 — 원본 유지:', reservationKey);
+          }
+        }
+      } catch (e) {
+        console.warn('[process-and-post] 자막 파이프라인 예외:', e.message);
+        subtitleStatus = 'skipped';
+      }
+    }
+
     // 5) 예약 업데이트 (ready)
+    const updatePayload = {
+      generated_captions: captions,
+      captions,
+      image_analysis: imageAnalysis,
+      captions_generated_at: new Date().toISOString(),
+      caption_status: 'ready',
+    };
+    if (isReels) {
+      if (finalVideoUrl && finalVideoUrl !== reservation.video_url) {
+        updatePayload.video_url = finalVideoUrl;
+      }
+      if (subtitleStatus) updatePayload.subtitle_status = subtitleStatus;
+      if (subtitleSrt) updatePayload.subtitle_srt = subtitleSrt;
+    }
     const { error: updErr } = await supabase
       .from('reservations')
-      .update({
-        generated_captions: captions,
-        captions,
-        image_analysis: imageAnalysis,
-        captions_generated_at: new Date().toISOString(),
-        caption_status: 'ready',
-      })
+      .update(updatePayload)
       .eq('reserve_key', reservationKey);
     if (updErr) console.error('[process-and-post] 예약 업데이트 실패:', updErr.message);
 

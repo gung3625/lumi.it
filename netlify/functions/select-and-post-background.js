@@ -76,7 +76,26 @@ async function postToInstagram({ igUserId, igAccessToken, igUserAccessToken, sto
     if (pData.error) throw new Error(pData.error.message || 'Reels 컨테이너 생성 실패');
     postId = pData.id;
 
-    // 영상 스토리는 별도 flow 필요 — 추후 지원. 현재는 storyEnabled 무시.
+    // 영상 스토리 게시 (storyEnabled + videoUrl 모두 있을 때)
+    if (storyEnabled && videoUrl) {
+      try {
+        const storyToken = igUserAccessToken || igAccessToken;
+        await sleep(3000);
+        const sRes = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({ media_type: 'STORIES', video_url: videoUrl, access_token: storyToken }),
+        });
+        const sData = await sRes.json();
+        if (sData.error) {
+          console.error('[select-and-post] REELS 스토리 컨테이너 생성 실패');
+        } else {
+          await waitForContainer(sData.id, storyToken);
+          await publishMedia(igUserId, storyToken, sData.id);
+          console.log('[select-and-post] REELS 스토리 게시 완료');
+        }
+      } catch (e) { console.error('[select-and-post] REELS 스토리 예외:', e.message); }
+    }
     return postId;
   }
 
@@ -136,15 +155,19 @@ async function postToInstagram({ igUserId, igAccessToken, igUserAccessToken, sto
   return postId;
 }
 
-async function postToThreads(caption, imageUrl) {
+async function postToThreads(caption, imageUrl, videoUrl) {
   const userId = process.env.THREADS_USER_ID;
   const token = process.env.THREADS_ACCESS_TOKEN;
   if (!userId || !token) throw new Error('Threads 환경변수 없음');
 
+  const body = videoUrl
+    ? { media_type: 'VIDEO', video_url: videoUrl, text: caption, access_token: token }
+    : { media_type: 'IMAGE', image_url: imageUrl, text: caption, access_token: token };
+
   const createRes = await fetch(`https://graph.threads.net/v1.0/${userId}/threads`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ media_type: 'IMAGE', image_url: imageUrl, text: caption, access_token: token }),
+    body: JSON.stringify(body),
   });
   const createData = await createRes.json();
   if (createData.error) throw new Error(`Threads container error: ${createData.error.message || 'unknown'}`);
@@ -280,13 +303,15 @@ exports.handler = async (event) => {
 
     // 5) Threads 게시 (옵션)
     let threadsUpdate = {};
-    if (reservation.post_to_thread && imageUrls[0] && mediaType !== 'REELS') {
+    if (reservation.post_to_thread && (imageUrls[0] || mediaType === 'REELS')) {
       let threadsStatus = 'failed';
       let threadsError = null;
       let threadsPostId = null;
       try {
         console.log('[select-and-post] Threads 게시 시작');
-        const threadsResult = await postToThreads(selectedCaption, imageUrls[0]);
+        const threadsResult = mediaType === 'REELS'
+          ? await postToThreads(selectedCaption, null, reservation.video_url)
+          : await postToThreads(selectedCaption, imageUrls[0]);
         if (threadsResult.error) {
           threadsError = threadsResult.error.message || 'threads error';
           if (threadsResult.error.code === 190) threadsStatus = 'token_expired';
