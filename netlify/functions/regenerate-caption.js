@@ -330,20 +330,28 @@ exports.handler = async (event) => {
       }
     } catch (e) { console.warn('[tone-learn] 말투 데이터 조회 실패:', e.message); }
 
-    // 6. GPT-5.4로 캡션 재생성
+    // 6. GPT-4o로 캡션 재생성 (재생성은 속도 우선 — 4o 사용)
     const toneGuide = buildToneGuide(toneLikes, toneDislikes);
     const captionPrompt = buildCaptionPrompt(item, imageAnalysis, toneGuide);
 
-    const gptHttpRes = await fetch('https://api.openai.com/v1/responses', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({ model: 'gpt-5.4', input: captionPrompt, store: true }),
-    });
+    const regenCtrl = new AbortController();
+    const regenTid = setTimeout(() => regenCtrl.abort(), 60_000);
+    let gptHttpRes;
+    try {
+      gptHttpRes = await fetch('https://api.openai.com/v1/responses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify({ model: 'gpt-4o', input: captionPrompt, store: true }),
+        signal: regenCtrl.signal,
+      });
+    } finally {
+      clearTimeout(regenTid);
+    }
     const gptData = await gptHttpRes.json();
-    if (gptData.error) throw new Error(`gpt-5.4 오류: ${gptData.error.message || JSON.stringify(gptData.error)}`);
+    if (gptData.error) throw new Error(`gpt-4o 오류: ${gptData.error.message || JSON.stringify(gptData.error)}`);
 
     let outputText = gptData.output_text || '';
     if (!outputText && Array.isArray(gptData.output)) {

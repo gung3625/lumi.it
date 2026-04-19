@@ -71,28 +71,19 @@ function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
 // ─────────── Storage 이미지 → base64 로드 (GPT-4o 분석용) ───────────
 // image_urls 가 Supabase Storage public URL 이라고 가정. 원격 fetch 후 base64 변환.
 async function loadImagesAsBase64(imageUrls) {
-  const out = [];
-  for (let i = 0; i < imageUrls.length; i++) {
-    const url = imageUrls[i];
+  return Promise.all(imageUrls.map(async (url, i) => {
     if (!url || typeof url !== 'string') {
       console.error('[process-and-post] 이미지 URL 비어있음: idx=' + i);
       throw new Error('이미지 URL이 비어 있습니다. (idx=' + i + ')');
     }
-    try {
-      const res = await fetch(url);
-      if (!res.ok) {
-        const body = await res.text().catch(() => '');
-        console.error('[process-and-post] 이미지 로드 실패: idx=' + i + ' status=' + res.status + ' url=' + url.slice(0, 120) + ' body=' + body.slice(0, 200));
-        throw new Error('이미지 다운로드 실패 (status=' + res.status + ', idx=' + i + ')');
-      }
-      const buf = Buffer.from(await res.arrayBuffer());
-      out.push(buf.toString('base64'));
-    } catch (e) {
-      console.error('[process-and-post] 이미지 로드 예외: idx=' + i + ' url=' + String(url).slice(0, 120) + ' err=' + e.message);
-      throw new Error(e.message || '이미지를 불러올 수 없습니다.');
+    const res = await fetch(url);
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      console.error('[process-and-post] 이미지 로드 실패: idx=' + i + ' status=' + res.status + ' url=' + url.slice(0, 120) + ' body=' + body.slice(0, 200));
+      throw new Error('이미지 다운로드 실패 (status=' + res.status + ', idx=' + i + ')');
     }
-  }
-  return out;
+    return Buffer.from(await res.arrayBuffer()).toString('base64');
+  }));
 }
 
 // ─────────── GPT-4o 이미지 분석 ───────────
@@ -123,14 +114,22 @@ async function analyzeImages(imageBuffers, bizCategory, mediaType) {
 
     const reelsContent = [{ type: 'text', text: reelsPrompt }];
     for (const b64 of imageBuffers) {
-      reelsContent.push({ type: 'image_url', image_url: { url: `data:image/jpeg;base64,${b64}`, detail: 'high' } });
+      reelsContent.push({ type: 'image_url', image_url: { url: `data:image/jpeg;base64,${b64}`, detail: 'low' } });
     }
 
-    const reelsRes = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` },
-      body: JSON.stringify({ model: 'gpt-4o', messages: [{ role: 'user', content: reelsContent }], max_tokens: 1536, temperature: 0.35 }),
-    });
+    const reelsCtrl = new AbortController();
+    const reelsTid = setTimeout(() => reelsCtrl.abort(), 120_000);
+    let reelsRes;
+    try {
+      reelsRes = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` },
+        body: JSON.stringify({ model: 'gpt-4o', messages: [{ role: 'user', content: reelsContent }], max_tokens: 1536, temperature: 0.35 }),
+        signal: reelsCtrl.signal,
+      });
+    } finally {
+      clearTimeout(reelsTid);
+    }
     const reelsData = await reelsRes.json();
     if (reelsData.error) throw new Error(`GPT-4o 오류: ${reelsData.error.message}`);
     return reelsData.choices?.[0]?.message?.content || '';
@@ -219,11 +218,19 @@ ${analysisFormat}`;
   // 멀티 사진은 섹션 수가 늘어나므로 max_tokens 증가
   const maxTokens = photoCount > 1 ? 1536 : 1024;
 
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` },
-    body: JSON.stringify({ model: 'gpt-4o', messages: [{ role: 'user', content }], max_tokens: maxTokens, temperature: 0.35 }),
-  });
+  const imgCtrl = new AbortController();
+  const imgTid = setTimeout(() => imgCtrl.abort(), 90_000);
+  let res;
+  try {
+    res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` },
+      body: JSON.stringify({ model: 'gpt-4o', messages: [{ role: 'user', content }], max_tokens: maxTokens, temperature: 0.35 }),
+      signal: imgCtrl.signal,
+    });
+  } finally {
+    clearTimeout(imgTid);
+  }
   const data = await res.json();
   if (data.error) throw new Error(`GPT-4o 오류: ${data.error.message}`);
   return data.choices?.[0]?.message?.content || '';
@@ -407,11 +414,19 @@ ${photoCount > 1 ? '- 캐러셀: 특정 한 장 기준이 아닌 세트 전체�
 7점 미만이면 폐기하고 새로 작성하세요.
 ---END_SCORE---`;
 
-  const res = await fetch('https://api.openai.com/v1/responses', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` },
-    body: JSON.stringify({ model: 'gpt-5.4', input: prompt, store: true }),
-  });
+  const capCtrl = new AbortController();
+  const capTid = setTimeout(() => capCtrl.abort(), 90_000);
+  let res;
+  try {
+    res = await fetch('https://api.openai.com/v1/responses', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` },
+      body: JSON.stringify({ model: 'gpt-5.4', input: prompt, store: true }),
+      signal: capCtrl.signal,
+    });
+  } finally {
+    clearTimeout(capTid);
+  }
   const data = await res.json();
   if (data.error) throw new Error(`gpt-5.4 오류: ${data.error.message || JSON.stringify(data.error)}`);
   const text = data.output?.[0]?.content?.[0]?.text || data.output_text || '';
@@ -774,7 +789,7 @@ exports.handler = async (event) => {
     console.error('[process-and-post] 에러:', err.message);
     if (reservationKey) {
       try {
-        await supabase
+        const { error: upErr } = await supabase
           .from('reservations')
           .update({
             captions_generated_at: new Date().toISOString(),
@@ -783,7 +798,10 @@ exports.handler = async (event) => {
             generated_captions: [],
           })
           .eq('reserve_key', reservationKey);
-      } catch (_) { /* noop */ }
+        if (upErr) console.error('[process-and-post] status=failed 기록 실패:', upErr.message);
+      } catch (e) {
+        console.error('[process-and-post] status=failed 업데이트 예외:', e.message);
+      }
     }
     return;
   }
