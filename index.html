@@ -4107,7 +4107,7 @@ function mInitWave2(){
     var tries = 0;
     var iv = setInterval(function(){
       tries++;
-      if (tries > 40) {
+      if (tries > 200) {
         clearInterval(iv);
         showFlowError(new FlowError('POLL_TIMEOUT', '캡션 생성이 오래 걸려요 · 잠시 후 대시보드에서 확인해주세요', ''));
         return;
@@ -4238,7 +4238,7 @@ function mInitWave2(){
     var tries = 0;
     var iv = setInterval(function(){
       tries++;
-      if (tries > 40) {
+      if (tries > 200) {
         clearInterval(iv);
         showFlowError(new FlowError('POST_TIMEOUT', '업로드가 평소보다 오래 걸려요 · 잠시 후 대시보드에서 확인해주세요', ''));
         return;
@@ -7414,12 +7414,7 @@ function suShowForm() {
   var html = '';
 
   if (step.input === 'email') {
-    html += '<div class="su-input-row">';
-    html += '<input type="text" class="su-input" id="su-email-id" placeholder="아이디" style="margin-bottom:0;color:'+txtColor+'" '+suEnter('suSendOtp()')+'>';
-    html += '<span style="color:'+atColor+';font-size:14px;flex-shrink:0;">@</span>';
-    html += '<select class="su-select" id="su-email-domain" style="flex:1.2;min-width:0;margin-bottom:0;color:'+txtColor+'">';
-    html += '<option>gmail.com</option><option>naver.com</option><option>kakao.com</option><option>daum.net</option><option>nate.com</option><option>icloud.com</option>';
-    html += '</select></div>';
+    html += '<input type="email" class="su-input" id="su-email" placeholder="example@email.com" style="width:100%;box-sizing:border-box;color:'+txtColor+'" '+suEnter('suSendOtp()')+'>';
     html += '<button class="su-btn" id="su-otp-btn" onclick="suSendOtp()" style="margin-top:10px">인증번호 받기</button>';
     html += '<div id="su-otp-area" style="display:none;margin-top:8px;">';
     html += '<input type="text" class="su-input" id="su-otp-code" placeholder="인증번호 6자리" inputmode="numeric" maxlength="6" pattern="[0-9]*" style="color:'+txtColor+'" '+suEnter('suVerifyOtp()')+'>';
@@ -7485,24 +7480,18 @@ function suTogglePw() {
 }
 
 function suSendOtp() {
-  var id = document.getElementById('su-email-id').value.trim();
-  var domain = document.getElementById('su-email-domain').value;
-  if (!id) {
+  var email = document.getElementById('su-email').value.trim();
+  if (!email) {
     suChangeLumi('/assets/lumi-sad.png', true);
     document.getElementById('su-speech').innerHTML = '이메일을 입력해주세요!';
     return;
   }
-  if (/[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(id)) {
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     suChangeLumi('/assets/lumi-sad.png', true);
-    document.getElementById('su-speech').innerHTML = '앗! 한글은 입력할 수 없어요<br>영문, 숫자만 사용해주세요';
+    document.getElementById('su-speech').innerHTML = '올바른 이메일 형식으로<br>입력해주세요';
     return;
   }
-  if (!/^[a-zA-Z0-9._-]+$/.test(id)) {
-    suChangeLumi('/assets/lumi-sad.png', true);
-    document.getElementById('su-speech').innerHTML = '이메일에 사용할 수 없는<br>문자가 포함되어 있어요';
-    return;
-  }
-  suData.email = id + '@' + domain;
+  suData.email = email;
   var btn = document.getElementById('su-otp-btn');
   btn.textContent = '전송 중...';
   btn.disabled = true;
@@ -7694,10 +7683,7 @@ function liShowForm() {
 
   if (liMode === 'login') {
     // 단일 페이지: 이메일 + 비밀번호 + 체크박스 + 로그인
-    html += '<div class="su-input-row">';
-    html += '<input type="text" class="su-input" id="li-email-id" placeholder="아이디" style="margin-bottom:0;color:'+txtColor+';" onkeydown="if(event.key===\'Enter\'){event.preventDefault();var pw=document.getElementById(\'li-pw\');if(pw)pw.focus();}">';
-    html += '<span style="color:'+atColor+';font-size:14px;flex-shrink:0;">@</span>';
-    html += '<select class="su-select" id="li-email-domain" style="flex:1.2;min-width:0;margin-bottom:0;color:'+txtColor+';">'+domOpts+'</select></div>';
+    html += '<input type="email" class="su-input" id="li-email" placeholder="example@email.com" style="width:100%;box-sizing:border-box;color:'+txtColor+';" onkeydown="if(event.key===\'Enter\'){event.preventDefault();var pw=document.getElementById(\'li-pw\');if(pw)pw.focus();}">';
     html += '<input type="password" class="su-input" id="li-pw" placeholder="비밀번호" style="margin-top:10px;color:'+txtColor+';" autocomplete="current-password" onkeydown="if(event.key===\'Enter\'){event.preventDefault();liSubmitLogin();}">';
     html += '<div class="login-options" style="display:flex;gap:16px;margin:12px 0;font-size:14px;color:'+(isDk?'rgba(240,242,248,.7)':'#555')+';">';
     html += '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="login-remember-email" style="accent-color:#C8507A;"><span>아이디 저장</span></label>';
@@ -7725,10 +7711,7 @@ function liShowForm() {
     }
   } else if (liMode === 'forgot-pw') {
     if (liPhase === 0) {
-      html += '<div class="su-input-row">';
-      html += '<input type="text" class="su-input" id="li-forgot-email-id" placeholder="아이디" style="margin-bottom:0;color:'+txtColor+';">';
-      html += '<span style="color:'+atColor+';font-size:14px;flex-shrink:0;">@</span>';
-      html += '<select class="su-select" id="li-forgot-email-domain" style="flex:1.2;min-width:0;margin-bottom:0;color:'+txtColor+';">'+domOpts+'</select></div>';
+      html += '<input type="email" class="su-input" id="li-forgot-email" placeholder="example@email.com" style="width:100%;box-sizing:border-box;color:'+txtColor+';">';
       html += '<button class="su-btn" onclick="liSendForgotOtp()" style="margin-top:10px">인증번호 받기</button>';
       html += '<button class="su-btn-sub" onclick="liBackToLogin()">로그인으로 돌아가기</button>';
     } else if (liPhase === 1) {
@@ -7746,23 +7729,10 @@ function liShowForm() {
   if (liMode === 'login') {
     try {
       var saved = localStorage.getItem('lumi_saved_email') || '';
-      var prefillId = liData._prefillId || '';
-      var prefillDomain = liData._prefillDomain || '';
-      if (!prefillId && saved && saved.indexOf('@') !== -1) {
-        var parts0 = saved.split('@');
-        prefillId = parts0[0];
-        prefillDomain = parts0[1];
-      }
-      var elId = document.getElementById('li-email-id');
-      var elDom = document.getElementById('li-email-domain');
-      if (elId && prefillId) elId.value = prefillId;
-      if (elDom && prefillDomain) {
-        var found = false;
-        for (var i = 0; i < elDom.options.length; i++) {
-          if (elDom.options[i].value === prefillDomain) { elDom.selectedIndex = i; found = true; break; }
-        }
-        if (!found) elDom.value = prefillDomain;
-      }
+      var prefillEmail = liData._prefillEmail || '';
+      if (!prefillEmail && saved) prefillEmail = saved;
+      var elEmail = document.getElementById('li-email');
+      if (elEmail && prefillEmail) elEmail.value = prefillEmail;
       var cbRemember = document.getElementById('login-remember-email');
       var cbAuto = document.getElementById('login-auto-login');
       if (cbRemember) cbRemember.checked = (localStorage.getItem('lumi_remember_email') === '1');
@@ -7785,20 +7755,18 @@ function liRunPhase() {
 }
 
 function liSubmitLogin() {
-  var idEl = document.getElementById('li-email-id');
-  var domEl = document.getElementById('li-email-domain');
+  var emailEl = document.getElementById('li-email');
   var pwEl = document.getElementById('li-pw');
-  var id = idEl ? idEl.value.trim() : '';
-  var domain = domEl ? domEl.value : '';
+  var email = emailEl ? emailEl.value.trim() : '';
   var pw = pwEl ? pwEl.value : '';
-  if (!id) {
+  if (!email) {
     liChangeLumi('/assets/lumi-sad.png', true);
     document.getElementById('li-speech').innerHTML = '이메일을 입력해주세요!';
     return;
   }
-  if (/[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(id)) {
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     liChangeLumi('/assets/lumi-sad.png', true);
-    document.getElementById('li-speech').innerHTML = '앗! 한글은 입력할 수 없어요<br>영문, 숫자만 사용해주세요';
+    document.getElementById('li-speech').innerHTML = '올바른 이메일 형식으로<br>입력해주세요';
     return;
   }
   if (!pw) {
@@ -7806,7 +7774,7 @@ function liSubmitLogin() {
     document.getElementById('li-speech').innerHTML = '비밀번호를 입력해주세요!';
     return;
   }
-  liData.email = id + '@' + domain;
+  liData.email = email;
   // 체크박스 값을 제출 직전 캡처 (form innerHTML 초기화 전에)
   var cbRnow = document.getElementById('login-remember-email');
   var cbAnow = document.getElementById('login-auto-login');
@@ -7906,11 +7874,10 @@ function liStartForgotPw() {
 }
 
 async function liSendForgotOtp() {
-  var id = (document.getElementById('li-forgot-email-id') || {}).value || '';
-  var domain = (document.getElementById('li-forgot-email-domain') || {}).value || '';
-  id = id.trim();
-  if (!id) { liChangeLumi('/assets/lumi-sad.png', true); document.getElementById('li-speech').innerHTML = '이메일을 입력해주세요!'; return; }
-  var email = id + '@' + domain;
+  var email = (document.getElementById('li-forgot-email') || {}).value || '';
+  email = email.trim();
+  if (!email) { liChangeLumi('/assets/lumi-sad.png', true); document.getElementById('li-speech').innerHTML = '이메일을 입력해주세요!'; return; }
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { liChangeLumi('/assets/lumi-sad.png', true); document.getElementById('li-speech').innerHTML = '올바른 이메일 형식으로<br>입력해주세요'; return; }
   liData.forgotEmail = email;
   var btn = document.querySelector('#li-form-area .su-btn');
   if (btn) { btn.disabled = true; btn.textContent = '전송 중...'; }
