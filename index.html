@@ -5223,8 +5223,9 @@ var cards = {
                         e('p',{style:{fontSize:'14px',fontWeight:600,color:tc}},'영상 선택됨'),
                         videoMeta ? e('span',{style:{fontSize:'10px',color:tc2}}, Math.round(videoMeta.duration)+'초 · '+videoMeta.width+'×'+videoMeta.height) : null
                       ),
-                      e('div',{style:{borderRadius:'12px',overflow:'hidden',background:'#000',flex:1,display:'flex',alignItems:'center',justifyContent:'center',maxHeight:'200px'}},
-                        e('video',{src:videoUrlRef.current,controls:true,muted:true,playsInline:true,style:{width:'100%',maxHeight:'200px',objectFit:'contain',display:'block'}})
+                      e('div',{style:{borderRadius:'12px',overflow:'hidden',background:'#000',flex:1,display:'flex',alignItems:'center',justifyContent:'center',width:'100%',minHeight:0,outline:'2.5px solid #FF6B8B',outlineOffset:'-2.5px',position:'relative'}},
+                        e('video',{src:videoUrlRef.current,controls:true,muted:true,playsInline:true,style:{width:'100%',height:'100%',objectFit:'contain',display:'block'}}),
+                        e('span',{style:{position:'absolute',bottom:'6px',left:'6px',fontSize:'9px',background:'linear-gradient(135deg,#FF6B8B,#DDA0DD)',color:'#fff',padding:'2px 8px',borderRadius:'980px',letterSpacing:'.5px',zIndex:2}},'영상')
                       )
                     )
                   : e(React.Fragment, null,
@@ -7268,8 +7269,7 @@ var liPhase = 0;
 var liData = {};
 var liMode = 'login'; // 'login' | 'find-id' | 'forgot-pw'
 var liFlow = [
-  {img:'/assets/lumi-smile.png', msg:'다시 만나서 반가워요!\n이메일을 알려주세요'},
-  {img:'/assets/lumi-curious.png', msg:'좋아요!\n비밀번호를 입력해주세요'}
+  {img:'/assets/lumi-smile.png', msg:'다시 만나서 반가워요!\n이메일과 비밀번호를 입력해주세요'}
 ];
 
 function liTypeText(text, el, callback) {
@@ -7331,26 +7331,22 @@ function liShowForm() {
   var html = '';
 
   if (liMode === 'login') {
-    if (liPhase === 0) {
-      html += '<div class="su-input-row">';
-      html += '<input type="text" class="su-input" id="li-email-id" placeholder="아이디" style="margin-bottom:0;color:'+txtColor+';" onkeydown="if(event.key===\'Enter\'){event.preventDefault();liSubmitEmail();}">';
-      html += '<span style="color:'+atColor+';font-size:14px;flex-shrink:0;">@</span>';
-      html += '<select class="su-select" id="li-email-domain" style="flex:1.2;min-width:0;margin-bottom:0;color:'+txtColor+';">'+domOpts+'</select></div>';
-      html += '<button class="su-btn" onclick="liSubmitEmail()" style="margin-top:10px">확인</button>';
-      html += '<div style="display:flex;justify-content:center;gap:16px;margin-top:12px;">';
-      html += '<button style="'+linkStyle+'" onclick="liStartFindId()">아이디 찾기</button>';
-      html += '<span style="color:'+atColor+';font-size:13px;line-height:1;">|</span>';
-      html += '<button style="'+linkStyle+'" onclick="liStartForgotPw()">비밀번호 재설정</button>';
-      html += '</div>';
-    } else if (liPhase === 1) {
-      html += '<input type="password" class="su-input" id="li-pw" placeholder="비밀번호" style="color:'+txtColor+';" autocomplete="off" onkeydown="if(event.key===\'Enter\'){event.preventDefault();liSubmitPw();}">';
-      html += '<div class="login-options" style="display:flex;gap:16px;margin:12px 0;font-size:14px;color:'+(isDk?'rgba(240,242,248,.7)':'#555')+';">';
-      html += '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="login-remember-email" style="accent-color:#C8507A;"><span>아이디 저장</span></label>';
-      html += '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="login-auto-login" style="accent-color:#C8507A;"><span>자동 로그인</span></label>';
-      html += '</div>';
-      html += '<button class="su-btn" onclick="liSubmitPw()">로그인</button>';
-      html += '<button class="su-btn-sub" onclick="liGoBack()">이전으로</button>';
-    }
+    // 단일 페이지: 이메일 + 비밀번호 + 체크박스 + 로그인
+    html += '<div class="su-input-row">';
+    html += '<input type="text" class="su-input" id="li-email-id" placeholder="아이디" style="margin-bottom:0;color:'+txtColor+';" onkeydown="if(event.key===\'Enter\'){event.preventDefault();var pw=document.getElementById(\'li-pw\');if(pw)pw.focus();}">';
+    html += '<span style="color:'+atColor+';font-size:14px;flex-shrink:0;">@</span>';
+    html += '<select class="su-select" id="li-email-domain" style="flex:1.2;min-width:0;margin-bottom:0;color:'+txtColor+';">'+domOpts+'</select></div>';
+    html += '<input type="password" class="su-input" id="li-pw" placeholder="비밀번호" style="margin-top:10px;color:'+txtColor+';" autocomplete="current-password" onkeydown="if(event.key===\'Enter\'){event.preventDefault();liSubmitLogin();}">';
+    html += '<div class="login-options" style="display:flex;gap:16px;margin:12px 0;font-size:14px;color:'+(isDk?'rgba(240,242,248,.7)':'#555')+';">';
+    html += '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="login-remember-email" style="accent-color:#C8507A;"><span>아이디 저장</span></label>';
+    html += '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="login-auto-login" style="accent-color:#C8507A;"><span>자동 로그인</span></label>';
+    html += '</div>';
+    html += '<button class="su-btn" onclick="liSubmitLogin()">로그인</button>';
+    html += '<div style="display:flex;justify-content:center;gap:16px;margin-top:12px;">';
+    html += '<button style="'+linkStyle+'" onclick="liStartFindId()">아이디 찾기</button>';
+    html += '<span style="color:'+atColor+';font-size:13px;line-height:1;">|</span>';
+    html += '<button style="'+linkStyle+'" onclick="liStartForgotPw()">비밀번호 재설정</button>';
+    html += '</div>';
   } else if (liMode === 'find-id') {
     if (liPhase === 0) {
       html += '<input type="text" class="su-input" id="li-findid-name" placeholder="이름" style="color:'+txtColor+';">';
@@ -7384,34 +7380,36 @@ function liShowForm() {
   }
 
   form.innerHTML = html;
-  // 아이디 저장 prefill (이메일 입력 화면)
-  if (liMode === 'login' && liPhase === 0 && liData._prefillId) {
+  // login 단일 페이지: prefill + 체크박스 상태 복원
+  if (liMode === 'login') {
     try {
+      var saved = localStorage.getItem('lumi_saved_email') || '';
+      var prefillId = liData._prefillId || '';
+      var prefillDomain = liData._prefillDomain || '';
+      if (!prefillId && saved && saved.indexOf('@') !== -1) {
+        var parts0 = saved.split('@');
+        prefillId = parts0[0];
+        prefillDomain = parts0[1];
+      }
       var elId = document.getElementById('li-email-id');
       var elDom = document.getElementById('li-email-domain');
-      if (elId) elId.value = liData._prefillId;
-      if (elDom && liData._prefillDomain) {
-        // select에 해당 옵션이 있으면 선택, 없으면 값 직접 설정
+      if (elId && prefillId) elId.value = prefillId;
+      if (elDom && prefillDomain) {
         var found = false;
         for (var i = 0; i < elDom.options.length; i++) {
-          if (elDom.options[i].value === liData._prefillDomain) { elDom.selectedIndex = i; found = true; break; }
+          if (elDom.options[i].value === prefillDomain) { elDom.selectedIndex = i; found = true; break; }
         }
-        if (!found) elDom.value = liData._prefillDomain;
+        if (!found) elDom.value = prefillDomain;
       }
-    } catch(e) {}
-  }
-  if (liMode === 'find-id' && liPhase === 1 && liData.foundEmail) {
-    var el = document.getElementById('li-findid-result');
-    if (el) el.textContent = liData.foundEmail;
-  }
-  // 아이디 저장·자동 로그인 체크박스 상태 복원
-  if (liMode === 'login' && liPhase === 1) {
-    try {
       var cbRemember = document.getElementById('login-remember-email');
       var cbAuto = document.getElementById('login-auto-login');
       if (cbRemember) cbRemember.checked = (localStorage.getItem('lumi_remember_email') === '1');
       if (cbAuto) cbAuto.checked = (localStorage.getItem('lumi_auto_login') !== '0');
     } catch(e) {}
+  }
+  if (liMode === 'find-id' && liPhase === 1 && liData.foundEmail) {
+    var el = document.getElementById('li-findid-result');
+    if (el) el.textContent = liData.foundEmail;
   }
   var firstInput = form.querySelector('input:not([type=radio]):not([type=checkbox])');
   if (firstInput) setTimeout(function(){ firstInput.focus(); }, 100);
@@ -7424,9 +7422,13 @@ function liRunPhase() {
   liTypeText(step.msg, 'li-speech', function() { liShowForm(); });
 }
 
-function liSubmitEmail() {
-  var id = document.getElementById('li-email-id').value.trim();
-  var domain = document.getElementById('li-email-domain').value;
+function liSubmitLogin() {
+  var idEl = document.getElementById('li-email-id');
+  var domEl = document.getElementById('li-email-domain');
+  var pwEl = document.getElementById('li-pw');
+  var id = idEl ? idEl.value.trim() : '';
+  var domain = domEl ? domEl.value : '';
+  var pw = pwEl ? pwEl.value : '';
   if (!id) {
     liChangeLumi('/assets/lumi-sad.png', true);
     document.getElementById('li-speech').innerHTML = '이메일을 입력해주세요!';
@@ -7437,18 +7439,17 @@ function liSubmitEmail() {
     document.getElementById('li-speech').innerHTML = '앗! 한글은 입력할 수 없어요<br>영문, 숫자만 사용해주세요';
     return;
   }
-  liData.email = id + '@' + domain;
-  liPhase = 1;
-  liRunPhase();
-}
-
-function liSubmitPw() {
-  var pw = document.getElementById('li-pw').value;
   if (!pw) {
     liChangeLumi('/assets/lumi-sad.png', true);
     document.getElementById('li-speech').innerHTML = '비밀번호를 입력해주세요!';
     return;
   }
+  liData.email = id + '@' + domain;
+  // 체크박스 값을 제출 직전 캡처 (form innerHTML 초기화 전에)
+  var cbRnow = document.getElementById('login-remember-email');
+  var cbAnow = document.getElementById('login-auto-login');
+  liData._rememberEmail = !!(cbRnow && cbRnow.checked);
+  liData._autoLogin = !cbAnow || cbAnow.checked;
   document.getElementById('li-form-area').innerHTML = '';
   document.getElementById('li-speech').innerHTML = '로그인 중...';
   fetch('/api/login', {
@@ -7458,19 +7459,16 @@ function liSubmitPw() {
     if(data.error){liChangeLumi('/assets/lumi-sad.png',true);document.getElementById('li-speech').textContent=data.error;setTimeout(function(){liShowForm();},1500);return;}
     localStorage.setItem('lumi_token',data.token);
     localStorage.setItem('lumi_user',JSON.stringify(data.user));
-    // 아이디 저장 / 자동 로그인 처리
+    // 아이디 저장 / 자동 로그인 처리 (제출 전 캡처된 값 사용)
     try {
-      var cbR = document.getElementById('login-remember-email');
-      var cbA = document.getElementById('login-auto-login');
-      if (cbR && cbR.checked) {
+      if (liData._rememberEmail) {
         localStorage.setItem('lumi_remember_email','1');
         localStorage.setItem('lumi_saved_email', liData.email || '');
       } else {
         localStorage.removeItem('lumi_remember_email');
         localStorage.removeItem('lumi_saved_email');
       }
-      var autoOn = !cbA || cbA.checked;
-      localStorage.setItem('lumi_auto_login', autoOn ? '1' : '0');
+      localStorage.setItem('lumi_auto_login', liData._autoLogin ? '1' : '0');
       sessionStorage.setItem('lumi_session_active','1');
     } catch(e) {}
     var afterSession=function(){
