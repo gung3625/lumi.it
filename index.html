@@ -3259,6 +3259,177 @@ function mInitWave2(){
         '</div>';
     }
   }
+  // Phase 2: Video helpers (validate / extract frames / upload)
+  function readVideoMetadata(file) {
+    return new Promise(function(resolve) {
+      var video = document.createElement('video');
+      video.preload = 'metadata';
+      video.muted = true;
+      var url = URL.createObjectURL(file);
+      var settled = false;
+      var to;
+      function cleanup() {
+        if (settled) return;
+        settled = true;
+        if (to) clearTimeout(to);
+        URL.revokeObjectURL(url);
+      }
+      video.onloadedmetadata = function() {
+        var result = {
+          duration: video.duration,
+          width: video.videoWidth,
+          height: video.videoHeight,
+        };
+        cleanup();
+        resolve(result);
+      };
+      video.onerror = function() {
+        cleanup();
+        resolve(null);
+      };
+      to = setTimeout(function() {
+        cleanup();
+        resolve(null);
+      }, 10000);
+      video.src = url;
+    });
+  }
+
+  async function validateVideoFile(file) {
+    if (!['video/mp4', 'video/quicktime'].includes(file.type)) {
+      return { valid: false, error: '영상은 MP4 또는 MOV 파일만 가능해요' };
+    }
+    if (file.size > 104857600) {
+      var mb = (file.size / 1024 / 1024).toFixed(1);
+      return { valid: false, error: '영상은 100MB 이하만 가능해요 (현재 ' + mb + 'MB)' };
+    }
+    var meta = await readVideoMetadata(file);
+    if (!meta) return { valid: false, error: '영상 파일을 읽을 수 없어요' };
+    var duration = meta.duration;
+    var width = meta.width;
+    var height = meta.height;
+    if (duration < 3) return { valid: false, error: '영상은 최소 3초 이상이어야 해요' };
+    if (duration > 90) return { valid: false, error: '영상은 최대 90초까지만 가능해요 (현재 ' + Math.round(duration) + '초)' };
+    var warnings = [];
+    if (Math.min(width, height) < 720) warnings.push('720p 이상을 권장해요 (현재 ' + width + 'x' + height + ')');
+    if (Math.abs(width / height - 9 / 16) > 0.05) warnings.push('세로 9:16 비율이 릴스에 최적이에요');
+    return {
+      valid: true,
+      duration: duration,
+      width: width,
+      height: height,
+      warning: warnings.length ? warnings.join(' · ') : undefined,
+    };
+  }
+
+  async function extractVideoFrames(file, count) {
+    if (count === undefined) count = 7;
+    var url = URL.createObjectURL(file);
+    try {
+      var video = document.createElement('video');
+      video.src = url;
+      video.muted = true;
+      video.playsInline = true;
+
+      await new Promise(function(resolve, reject) {
+        var settled = false;
+        var to = setTimeout(function() {
+          if (settled) return;
+          settled = true;
+          reject(new Error('영상을 불러오는 중 시간이 초과됐어요'));
+        }, 10000);
+        video.onloadedmetadata = function() {
+          if (settled) return;
+          settled = true;
+          clearTimeout(to);
+          resolve();
+        };
+        video.onerror = function() {
+          if (settled) return;
+          settled = true;
+          clearTimeout(to);
+          reject(new Error('영상 파일을 읽을 수 없어요'));
+        };
+      });
+
+      if (!video.videoWidth || !video.videoHeight) {
+        throw new Error('영상 메타데이터를 읽을 수 없어요');
+      }
+
+      var duration = video.duration;
+      var timestamps;
+      if (count === 7) {
+        timestamps = [
+          0,
+          Math.min(3, duration * 0.15),
+          duration * 0.25,
+          duration * 0.5,
+          duration * 0.75,
+          Math.max(0.1, duration - 3),
+          duration - 0.1,
+        ];
+      } else {
+        timestamps = Array.from({ length: count }, function(_, i) { return (duration * i) / (count - 1); });
+      }
+
+      var canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      var ctx = canvas.getContext('2d');
+
+      var frames = [];
+      for (var i = 0; i < timestamps.length; i++) {
+        var t = timestamps[i];
+        await new Promise(function(resolve, reject) {
+          var done = false;
+          var to = setTimeout(function() {
+            if (done) return;
+            done = true;
+            reject(new Error('영상 프레임을 읽는 중 시간이 초과됐어요'));
+          }, 5000);
+          video.onseeked = function() {
+            if (done) return;
+            done = true;
+            clearTimeout(to);
+            resolve();
+          };
+          video.currentTime = Math.max(0, Math.min(t, duration - 0.01));
+        });
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        frames.push(canvas.toDataURL('image/jpeg', 0.85));
+      }
+
+      return frames;
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  async function uploadVideoToSupabase(file, userId, reserveKey) {
+    if (!window.lumiSupa) throw new Error('Supabase 클라이언트가 초기화되지 않았어요');
+    var ext = file.type === 'video/mp4' ? 'mp4' : 'mov';
+    var timestamp = Date.now();
+    var nonceBytes = crypto.getRandomValues(new Uint8Array(8));
+    var nonce = Array.from(nonceBytes).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+    var path = userId + '/' + reserveKey + '/' + timestamp + '-' + nonce + '.' + ext;
+
+    var result = await window.lumiSupa.storage
+      .from('lumi-videos')
+      .upload(path, file, {
+        contentType: file.type,
+        upsert: false,
+      });
+    if (result.error) {
+      console.warn('[uploadVideo] supabase error:', result.error.message);
+      throw new Error('영상 업로드에 실패했어요. 잠시 후 다시 시도해주세요.');
+    }
+
+    var urlResult = window.lumiSupa.storage
+      .from('lumi-videos')
+      .getPublicUrl(path);
+    return { publicUrl: urlResult.data.publicUrl, storagePath: path };
+  }
+
   function resizeImageClient(file){
     return new Promise(function(resolve){
       var MAX = 1080;
