@@ -91,7 +91,20 @@ exports.handler = async (event) => {
       if (oversize) {
         return resolve({ statusCode: 413, headers: CORS, body: JSON.stringify({ error: '이미지 한 장당 10MB를 초과할 수 없습니다.' }) });
       }
-      if (photos.length === 0) {
+
+      // mediaType 분기 (기본 IMAGE)
+      const mediaType = (fields.mediaType === 'REELS') ? 'REELS' : 'IMAGE';
+      const videoUrl = fields.videoUrl || '';
+      const videoKey = fields.videoKey || '';
+
+      if (mediaType === 'REELS') {
+        if (!videoUrl) {
+          return resolve({ statusCode: 400, headers: CORS, body: JSON.stringify({ error: '영상 URL이 필요합니다' }) });
+        }
+        if (photos.length === 0) {
+          return resolve({ statusCode: 400, headers: CORS, body: JSON.stringify({ error: '프레임 이미지가 필요합니다' }) });
+        }
+      } else if (photos.length === 0) {
         return resolve({ statusCode: 400, headers: CORS, body: JSON.stringify({ error: '사진이 없습니다.' }) });
       }
 
@@ -251,6 +264,10 @@ exports.handler = async (event) => {
           caption_status: 'pending',
           image_urls: imageUrls,
           image_keys: imageKeys,
+          media_type: mediaType,
+          video_url: mediaType === 'REELS' ? videoUrl : null,
+          video_key: mediaType === 'REELS' ? (videoKey || null) : null,
+          frame_urls: mediaType === 'REELS' ? imageUrls : [],
         };
 
         const { error: insertErr } = await supabase.from('reservations').insert(reservationRow);
@@ -262,7 +279,11 @@ exports.handler = async (event) => {
           return resolve({ statusCode: 500, headers: CORS, body: JSON.stringify({ error: '예약 저장에 실패했습니다.' }) });
         }
 
-        console.log('[reserve] 예약 저장 완료:', reserveKey, '사진:', imageUrls.length, '장');
+        if (mediaType === 'REELS') {
+          console.log('[reserve] REELS 예약 생성', { reservationKey: reserveKey, hasVideo: !!videoUrl, frameCount: imageUrls.length });
+        } else {
+          console.log('[reserve] 예약 저장 완료:', reserveKey, '사진:', imageUrls.length, '장');
+        }
 
         // 캡션 생성 Background Function 트리거 (postMode 무관하게 항상 캡션 생성)
         const siteUrl = 'https://lumi.it.kr';
