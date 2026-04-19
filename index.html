@@ -1721,6 +1721,13 @@ body.dark-mode .su-close svg{stroke:#f0f2f8;}
     try { window.dispatchEvent(new CustomEvent('lumi:session-expired')); } catch(e) {}
     return res;
   };
+  // 자동 로그인 OFF 상태에서 새 브라우저 세션이면 토큰 무효화
+  try {
+    if (localStorage.getItem('lumi_auto_login') === '0' && !sessionStorage.getItem('lumi_session_active')) {
+      localStorage.removeItem('lumi_token');
+      localStorage.removeItem('lumi_user');
+    }
+  } catch(e) { /* 무시 */ }
   window.addEventListener('lumi:session-expired', function() {
     try {
       if (typeof showMobileToast === 'function') {
@@ -7277,6 +7284,10 @@ function liShowForm() {
       html += '</div>';
     } else if (liPhase === 1) {
       html += '<input type="password" class="su-input" id="li-pw" placeholder="비밀번호" style="color:'+txtColor+';" autocomplete="off" onkeydown="if(event.key===\'Enter\'){event.preventDefault();liSubmitPw();}">';
+      html += '<div class="login-options" style="display:flex;gap:16px;margin:12px 0;font-size:14px;color:'+(isDk?'rgba(240,242,248,.7)':'#555')+';">';
+      html += '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="login-remember-email" style="accent-color:#C8507A;"><span>아이디 저장</span></label>';
+      html += '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="login-auto-login" style="accent-color:#C8507A;"><span>자동 로그인</span></label>';
+      html += '</div>';
       html += '<button class="su-btn" onclick="liSubmitPw()">로그인</button>';
       html += '<button class="su-btn-sub" onclick="liGoBack()">이전으로</button>';
     }
@@ -7313,9 +7324,34 @@ function liShowForm() {
   }
 
   form.innerHTML = html;
+  // 아이디 저장 prefill (이메일 입력 화면)
+  if (liMode === 'login' && liPhase === 0 && liData._prefillId) {
+    try {
+      var elId = document.getElementById('li-email-id');
+      var elDom = document.getElementById('li-email-domain');
+      if (elId) elId.value = liData._prefillId;
+      if (elDom && liData._prefillDomain) {
+        // select에 해당 옵션이 있으면 선택, 없으면 값 직접 설정
+        var found = false;
+        for (var i = 0; i < elDom.options.length; i++) {
+          if (elDom.options[i].value === liData._prefillDomain) { elDom.selectedIndex = i; found = true; break; }
+        }
+        if (!found) elDom.value = liData._prefillDomain;
+      }
+    } catch(e) {}
+  }
   if (liMode === 'find-id' && liPhase === 1 && liData.foundEmail) {
     var el = document.getElementById('li-findid-result');
     if (el) el.textContent = liData.foundEmail;
+  }
+  // 아이디 저장·자동 로그인 체크박스 상태 복원
+  if (liMode === 'login' && liPhase === 1) {
+    try {
+      var cbRemember = document.getElementById('login-remember-email');
+      var cbAuto = document.getElementById('login-auto-login');
+      if (cbRemember) cbRemember.checked = (localStorage.getItem('lumi_remember_email') === '1');
+      if (cbAuto) cbAuto.checked = (localStorage.getItem('lumi_auto_login') !== '0');
+    } catch(e) {}
   }
   var firstInput = form.querySelector('input:not([type=radio]):not([type=checkbox])');
   if (firstInput) setTimeout(function(){ firstInput.focus(); }, 100);
@@ -7362,6 +7398,21 @@ function liSubmitPw() {
     if(data.error){liChangeLumi('/assets/lumi-sad.png',true);document.getElementById('li-speech').textContent=data.error;setTimeout(function(){liShowForm();},1500);return;}
     localStorage.setItem('lumi_token',data.token);
     localStorage.setItem('lumi_user',JSON.stringify(data.user));
+    // 아이디 저장 / 자동 로그인 처리
+    try {
+      var cbR = document.getElementById('login-remember-email');
+      var cbA = document.getElementById('login-auto-login');
+      if (cbR && cbR.checked) {
+        localStorage.setItem('lumi_remember_email','1');
+        localStorage.setItem('lumi_saved_email', liData.email || '');
+      } else {
+        localStorage.removeItem('lumi_remember_email');
+        localStorage.removeItem('lumi_saved_email');
+      }
+      var autoOn = !cbA || cbA.checked;
+      localStorage.setItem('lumi_auto_login', autoOn ? '1' : '0');
+      sessionStorage.setItem('lumi_session_active','1');
+    } catch(e) {}
     var afterSession=function(){
       liChangeLumi('/assets/lumi-smile.png');
       document.getElementById('li-speech').textContent='로그인 성공!';
@@ -7523,6 +7574,17 @@ function openLogin() {
   liPhase = 0;
   liMode = 'login';
   liData = {};
+  // 아이디 저장 prefill
+  try {
+    if (localStorage.getItem('lumi_remember_email') === '1') {
+      var savedEmail = localStorage.getItem('lumi_saved_email') || '';
+      if (savedEmail && savedEmail.indexOf('@') > 0) {
+        var parts = savedEmail.split('@');
+        liData._prefillId = parts[0];
+        liData._prefillDomain = parts[1];
+      }
+    }
+  } catch(e) {}
   document.getElementById('login-modal').classList.add('open');
   var img = document.getElementById('li-lumi-img');
   img.className = 'su-lumi-big bounce';
