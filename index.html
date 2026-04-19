@@ -2320,7 +2320,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <p class="m-primary-cta-sub">사진·영상 한 개면 캡션·해시태그 완성</p>
     </div>
     <button type="button" class="m-primary-cta-btn" onclick="document.getElementById('m-hidden-file').click();">사진 선택</button>
-    <input type="file" id="m-hidden-file" accept="image/*,video/*,.mp4,.mov,.m4v,.MP4,.MOV" multiple style="display:none" onchange="(function(e){try{var f=e&&e.target&&e.target.files;var n=f&&f.length?f.length:0;try{showMobileToast('파일 '+n+'개 감지 — 처리 중…');}catch(_){}if(typeof window.mOpenCaptionFlow==='function'){window.mOpenCaptionFlow(e);}else{console.error('[m-hidden-file] mOpenCaptionFlow undefined');showMobileToast('로그인 세션이 만료됐어요. 새로고침해주세요');}}catch(err){console.error('[m-hidden-file]',err);try{showMobileToast('오류: '+(err&&err.message||err));}catch(_){}}})(event)">
+    <input type="file" id="m-hidden-file" accept="image/*,video/*,.mp4,.mov,.m4v,.MP4,.MOV" multiple style="position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;pointer-events:none" onchange="window.__mHandleFile(event)">
   </section>
 
   <!-- 3. 빠른 설정 -->
@@ -2543,6 +2543,27 @@ function showMobileToast(msg) {
   requestAnimationFrame(function(){ t.style.opacity='1'; });
   setTimeout(function(){ t.style.opacity='0'; setTimeout(function(){t.remove();}, 200); }, 2500);
 }
+
+// 파일 선택 진단 + dispatch (항상 전역 — mInitWave2 로그인 게이트와 무관)
+window.__mHandleFile = function(e){
+  try {
+    var f = e && e.target && e.target.files;
+    var n = f && f.length ? f.length : 0;
+    var meta = n > 0 ? (f[0].name + ' / ' + (f[0].type || '(no-mime)') + ' / ' + f[0].size + 'B') : '';
+    try { console.log('[__mHandleFile]', n, meta); } catch(_){}
+    if (n === 0) { showMobileToast('선택된 파일이 없어요'); return; }
+    showMobileToast('파일 ' + n + '개 감지 — 처리 중…');
+    if (typeof window.mOpenCaptionFlow === 'function') {
+      window.mOpenCaptionFlow(e);
+    } else {
+      console.error('[__mHandleFile] mOpenCaptionFlow undefined — loggedIn?', !!localStorage.getItem('lumi_token'));
+      showMobileToast(localStorage.getItem('lumi_token') ? '페이지를 새로고침해주세요' : '로그인이 필요해요');
+    }
+  } catch(err) {
+    try { console.error('[__mHandleFile]', err); } catch(_){}
+    try { showMobileToast('오류: ' + (err && err.message || err)); } catch(_){}
+  }
+};
 
 // ============================================================
 // 로그아웃 뷰: 종합 트렌드 실데이터 프리뷰 (웨이브3)
