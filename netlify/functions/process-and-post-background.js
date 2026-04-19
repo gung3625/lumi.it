@@ -87,8 +87,45 @@ async function loadImagesAsBase64(imageUrls) {
 }
 
 // ─────────── GPT-4o 이미지 분석 ───────────
-async function analyzeImages(imageBuffers, bizCategory) {
+async function analyzeImages(imageBuffers, bizCategory, mediaType) {
   const photoCount = imageBuffers.length;
+  const isReels = mediaType === 'REELS';
+
+  // ── REELS 경로: 7프레임 영상 분석 프롬프트 ──
+  if (isReels) {
+    const reelsPrompt = `당신은 소상공인 인스타그램 릴스(짧은 영상) 마케팅 전문 분석가입니다.
+아래는 영상에서 추출한 7개 프레임입니다.
+프레임 순서: [0s(시작) / 3s(훅 종료) / 1/4 / 중간 / 3/4 / 끝-3s(엔딩 전) / 끝]
+
+## 분석 원칙 (Opus Clip 릴스 성공 공식)
+- 첫 3초(프레임 1~2)가 이탈 여부를 결정 — 훅 강도를 특히 주목
+- 1.5~3초마다 컷 전환이 있으면 시청 지속률↑ — 장면 다양성 평가
+- 마지막 3초는 CTA 또는 여운 — 엔딩 프레임의 마무리 완성도 평가
+
+## 출력 형식
+**[영상 개요]** 이 릴스가 보여주는 것을 한 문장으로.
+**[훅 강도]** 첫 3초(프레임 1~2)가 시선을 잡는지 / 1~5점.
+**[장면 흐름]** 7프레임의 시간 순서에 따른 서사 흐름 3~5문장.
+**[핵심 장면]** 가장 임팩트 있는 프레임과 그 이유.
+**[엔딩 완성도]** 마지막 3초가 마무리·CTA로 완결되는지 / 1~5점.
+**[감성/분위기]** 영상 전체의 톤.
+**[캡션 키워드]** 영상 기반 한국어 키워드 5개.
+**[영상 품질]** 분석 가능 여부.`;
+
+    const reelsContent = [{ type: 'text', text: reelsPrompt }];
+    for (const b64 of imageBuffers) {
+      reelsContent.push({ type: 'image_url', image_url: { url: `data:image/jpeg;base64,${b64}`, detail: 'high' } });
+    }
+
+    const reelsRes = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` },
+      body: JSON.stringify({ model: 'gpt-4o', messages: [{ role: 'user', content: reelsContent }], max_tokens: 1536, temperature: 0.35 }),
+    });
+    const reelsData = await reelsRes.json();
+    if (reelsData.error) throw new Error(`GPT-4o 오류: ${reelsData.error.message}`);
+    return reelsData.choices?.[0]?.message?.content || '';
+  }
 
   // ── 사진 수에 따라 분석 구조를 분기 ──
   const analysisFormat = photoCount === 1
@@ -209,9 +246,13 @@ async function generateCaptions(imageAnalysis, item) {
   ].filter(Boolean).join('\n');
 
   const photoCount = item.photoCount || 1;
+  const isReels = item.mediaType === 'REELS';
+  const reelsGuide = isReels
+    ? '이 캡션은 인스타그램 릴스(짧은 영상)에 붙습니다. 영상의 움직임, 변화, 과정을 문장에 녹이세요.'
+    : '';
 
-  // ── 캐러셀 구조 앵커 (2장 이상) ──
-  const carouselGuide = photoCount > 1
+  // ── 캐러셀 구조 앵커 (2장 이상, REELS는 단일 미디어이므로 제외) ──
+  const carouselGuide = (!isReels && photoCount > 1)
     ? `### 캐러셀 스토리텔링 구조 (${photoCount}장)
 이미지 분석의 [대표사진 · 훅] / [중간 사진들 · 디테일] / [마지막 사진 · 클로저] / [스토리 아크]를 활용하세요.
 
@@ -276,7 +317,9 @@ ${trendBlock}
 ### 매장 정보
 ${storeBlock || '(정보 없음)'}
 
-### 사진 수: ${photoCount}장${photoCount > 1 ? ' (캐러셀 — 사진 번호/순서 직접 언급 금지)' : ''}
+### 미디어: ${isReels ? '릴스(짧은 영상, 단일 미디어)' : `사진 ${photoCount}장${photoCount > 1 ? ' (캐러셀 — 사진 번호/순서 직접 언급 금지)' : ''}`}
+
+${reelsGuide}
 
 ${carouselGuide}
 
@@ -517,8 +560,11 @@ exports.handler = async (event) => {
     // 3) 이미지 분석 + 트렌드 + 캡션뱅크 병렬
     const imageBuffers = await loadImagesAsBase64(imageUrls);
 
+    const mediaType = reservation.media_type || 'IMAGE';
+    const isReels = mediaType === 'REELS';
+
     const [imageAnalysis, trendResult, captionBank] = await Promise.all([
-      analyzeImages(imageBuffers, bizCat),
+      analyzeImages(imageBuffers, bizCat, mediaType),
       loadTrends(supabase, bizCat),
       loadCaptionBank(supabase, bizCat),
     ]);
@@ -546,7 +592,8 @@ exports.handler = async (event) => {
       trends: trendKeywords,
       trendInsights: trendResult?.insights || '',
       useWeather: reservation.use_weather !== false,
-      photoCount: imageUrls.length,
+      photoCount: isReels ? 1 : imageUrls.length,
+      mediaType,
     };
 
     const captions = await generateCaptions(imageAnalysis, captionInput);
