@@ -4,6 +4,7 @@
 // IG 토큰: ig_accounts_decrypted 뷰 (service_role 전용). 평문 저장/로그 금지.
 const { createHmac } = require('crypto');
 const { getAdminClient } = require('./_shared/supabase-admin');
+const { deleteReservationStorage } = require('./_shared/storage-cleanup');
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
@@ -837,6 +838,31 @@ exports.handler = async (event) => {
         if (upErr) console.error('[process-and-post] status=failed 기록 실패:', upErr.message);
       } catch (e) {
         console.error('[process-and-post] status=failed 업데이트 예외:', e.message);
+      }
+
+      // 실패한 예약의 스토리지 파일 정리 — row는 에러 기록 보존 위해 유지
+      try {
+        const { data: resRow } = await supabase
+          .from('reservations')
+          .select('image_keys, video_key')
+          .eq('reserve_key', reservationKey)
+          .maybeSingle();
+        if (resRow) {
+          const cleanup = await deleteReservationStorage(supabase, resRow);
+          console.log(
+            `[process-and-post] 실패 스토리지 정리: images=${cleanup.imagesDeleted} video=${cleanup.videoDeleted} errors=${cleanup.errors.length}`
+          );
+          if (cleanup.errors.length) {
+            console.warn('[process-and-post] 스토리지 정리 경고:', cleanup.errors.join(' | '));
+          }
+          // 중복 삭제 방지 — keys 컬럼 비우기
+          await supabase
+            .from('reservations')
+            .update({ image_keys: [], video_key: null })
+            .eq('reserve_key', reservationKey);
+        }
+      } catch (cleanErr) {
+        console.error('[process-and-post] 스토리지 정리 예외:', cleanErr.message);
       }
     }
     return;

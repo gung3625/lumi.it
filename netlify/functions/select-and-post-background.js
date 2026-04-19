@@ -4,6 +4,7 @@
 // 이미지: reservations.image_urls (Supabase Storage public URL 권장).
 const { createHmac } = require('crypto');
 const { getAdminClient } = require('./_shared/supabase-admin');
+const { deleteReservationStorage } = require('./_shared/storage-cleanup');
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
@@ -352,6 +353,27 @@ exports.handler = async (event) => {
       })
       .eq('reserve_key', reservationKey);
     if (updErr) console.error('[select-and-post] 예약 업데이트 실패:', updErr.message);
+
+    // 6-1) 게시 완료 후 스토리지 정리 — row는 히스토리 용도로 유지
+    // 실패는 게시 성공 상태에 영향을 주지 않음
+    if (!updErr) {
+      try {
+        const cleanup = await deleteReservationStorage(supabase, reservation);
+        console.log(
+          `[select-and-post] 게시 후 스토리지 정리: images=${cleanup.imagesDeleted} video=${cleanup.videoDeleted} errors=${cleanup.errors.length}`
+        );
+        if (cleanup.errors.length) {
+          console.warn('[select-and-post] 스토리지 정리 경고:', cleanup.errors.join(' | '));
+        }
+        // row에서 keys 컬럼 비우기 — 중복 삭제 방지
+        await supabase
+          .from('reservations')
+          .update({ image_keys: [], video_key: null })
+          .eq('reserve_key', reservationKey);
+      } catch (cleanErr) {
+        console.error('[select-and-post] 스토리지 정리 예외:', cleanErr.message);
+      }
+    }
 
     // 7) 캡션 히스토리 저장
     if (reservation.user_id) await saveCaptionHistory(supabase, reservation.user_id, selectedCaption);
