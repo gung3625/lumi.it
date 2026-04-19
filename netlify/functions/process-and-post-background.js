@@ -72,15 +72,24 @@ function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
 // image_urls 가 Supabase Storage public URL 이라고 가정. 원격 fetch 후 base64 변환.
 async function loadImagesAsBase64(imageUrls) {
   const out = [];
-  for (const url of imageUrls) {
+  for (let i = 0; i < imageUrls.length; i++) {
+    const url = imageUrls[i];
+    if (!url || typeof url !== 'string') {
+      console.error('[process-and-post] 이미지 URL 비어있음: idx=' + i);
+      throw new Error('이미지 URL이 비어 있습니다. (idx=' + i + ')');
+    }
     try {
       const res = await fetch(url);
-      if (!res.ok) throw new Error('fetch ' + res.status);
+      if (!res.ok) {
+        const body = await res.text().catch(() => '');
+        console.error('[process-and-post] 이미지 로드 실패: idx=' + i + ' status=' + res.status + ' url=' + url.slice(0, 120) + ' body=' + body.slice(0, 200));
+        throw new Error('이미지 다운로드 실패 (status=' + res.status + ', idx=' + i + ')');
+      }
       const buf = Buffer.from(await res.arrayBuffer());
       out.push(buf.toString('base64'));
     } catch (e) {
-      console.error('[process-and-post] 이미지 로드 실패:', e.message);
-      throw new Error('이미지를 불러올 수 없습니다.');
+      console.error('[process-and-post] 이미지 로드 예외: idx=' + i + ' url=' + String(url).slice(0, 120) + ' err=' + e.message);
+      throw new Error(e.message || '이미지를 불러올 수 없습니다.');
     }
   }
   return out;
