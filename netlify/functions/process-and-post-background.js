@@ -27,13 +27,16 @@ function parseScores(text) {
   return scores ? scores.map((s) => parseInt(s.split(':')[1])) : [];
 }
 
-// ─────────── Moderation ───────────
+// ─────────── Moderation (15초 타임아웃) ───────────
 async function moderateCaption(text) {
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), 15_000);
   try {
     const res = await fetch('https://api.openai.com/v1/moderations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` },
       body: JSON.stringify({ input: text }),
+      signal: ctrl.signal,
     });
     if (!res.ok) { console.warn('[moderation] API 응답 오류:', res.status); return true; }
     const data = await res.json();
@@ -49,6 +52,8 @@ async function moderateCaption(text) {
   } catch (e) {
     console.warn('[moderation] API 호출 실패, 통과 처리:', e.message);
     return true;
+  } finally {
+    clearTimeout(tid);
   }
 }
 
@@ -418,18 +423,27 @@ ${photoCount > 1 ? '- 캐러셀: 특정 한 장 기준이 아닌 세트 전체�
   const capTid = setTimeout(() => capCtrl.abort(), 90_000);
   let res;
   try {
-    res = await fetch('https://api.openai.com/v1/responses', {
+    res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` },
-      body: JSON.stringify({ model: 'gpt-4o', input: prompt, store: true }),
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 1536,
+        temperature: 0.8,
+      }),
       signal: capCtrl.signal,
     });
   } finally {
     clearTimeout(capTid);
   }
+  if (!res.ok) {
+    const errBody = await res.text().catch(() => '');
+    throw new Error(`gpt-4o HTTP ${res.status}: ${errBody.substring(0, 200)}`);
+  }
   const data = await res.json();
   if (data.error) throw new Error(`gpt-4o 오류: ${data.error.message || JSON.stringify(data.error)}`);
-  const text = data.output?.[0]?.content?.[0]?.text || data.output_text || '';
+  const text = data.choices?.[0]?.message?.content || '';
   if (!text) throw new Error('gpt-4o 응답 없음');
   const captions = parseCaptions(text);
   if (!captions.length) throw new Error(`캡션 파싱 실패. 응답: ${text.substring(0, 200)}`);
