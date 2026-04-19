@@ -236,7 +236,7 @@ ${analysisFormat}`;
   return data.choices?.[0]?.message?.content || '';
 }
 
-// ─────────── gpt-5.4 캡션 생성 (Responses API) ───────────
+// ─────────── gpt-4o 캡션 생성 (Responses API) ───────────
 async function generateCaptions(imageAnalysis, item) {
   const w = item.weather || {};
   const sp = item.storeProfile || {};
@@ -421,16 +421,16 @@ ${photoCount > 1 ? '- 캐러셀: 특정 한 장 기준이 아닌 세트 전체�
     res = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` },
-      body: JSON.stringify({ model: 'gpt-5.4', input: prompt, store: true }),
+      body: JSON.stringify({ model: 'gpt-4o', input: prompt, store: true }),
       signal: capCtrl.signal,
     });
   } finally {
     clearTimeout(capTid);
   }
   const data = await res.json();
-  if (data.error) throw new Error(`gpt-5.4 오류: ${data.error.message || JSON.stringify(data.error)}`);
+  if (data.error) throw new Error(`gpt-4o 오류: ${data.error.message || JSON.stringify(data.error)}`);
   const text = data.output?.[0]?.content?.[0]?.text || data.output_text || '';
-  if (!text) throw new Error('gpt-5.4 응답 없음');
+  if (!text) throw new Error('gpt-4o 응답 없음');
   const captions = parseCaptions(text);
   if (!captions.length) throw new Error(`캡션 파싱 실패. 응답: ${text.substring(0, 200)}`);
   const scores = parseScores(text);
@@ -691,17 +691,22 @@ exports.handler = async (event) => {
       loadToneFeedback(supabase, reservation.user_id, 'dislike'),
     ]);
 
+    // 관찰용: 진행단계 표시
+    try { await supabase.from('reservations').update({ caption_error: 'STAGE:loading_images' }).eq('reserve_key', reservationKey); } catch(_) {}
+
     // 3) 이미지 분석 + 트렌드 + 캡션뱅크 병렬
     const imageBuffers = await loadImagesAsBase64(imageUrls);
 
     const mediaType = reservation.media_type || 'IMAGE';
     const isReels = mediaType === 'REELS';
 
+    try { await supabase.from('reservations').update({ caption_error: 'STAGE:analyzing' }).eq('reserve_key', reservationKey); } catch(_) {}
     const [imageAnalysis, trendResult, captionBank] = await Promise.all([
       analyzeImages(imageBuffers, bizCat, mediaType),
       loadTrends(supabase, bizCat),
       loadCaptionBank(supabase, bizCat),
     ]);
+    try { await supabase.from('reservations').update({ caption_error: 'STAGE:generating' }).eq('reserve_key', reservationKey); } catch(_) {}
 
     const trendKeywords = trendResult?.keywords?.length
       ? trendResult.keywords.map((k) => {
@@ -775,6 +780,7 @@ exports.handler = async (event) => {
       image_analysis: imageAnalysis,
       captions_generated_at: new Date().toISOString(),
       caption_status: 'ready',
+      caption_error: null,
     };
     if (isReels) {
       if (finalVideoUrl && finalVideoUrl !== reservation.video_url) {
