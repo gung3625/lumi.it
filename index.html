@@ -2864,7 +2864,8 @@ function mInitWave2(){
     if (flow.thumbUrls && flow.thumbUrls.length) {
       flow.thumbUrls.forEach(function(u){ try { URL.revokeObjectURL(u); } catch(e){} });
     }
-    flow.step = 0; flow.files = []; flow.thumbUrls = []; flow.reservationKey = null; flow.captions = []; flow.selectedIdx = 0; flow.editedCaption = ''; flow.regenCount = 0; flow.isVideo = false; flow.videoFile = null; flow.videoDuration = 0; flow.videoWidth = 0; flow.videoHeight = 0;
+    if (flow._videoObjectUrl) { try { URL.revokeObjectURL(flow._videoObjectUrl); } catch(e){} flow._videoObjectUrl = null; }
+    flow.step = 0; flow.files = []; flow.thumbUrls = []; flow.reservationKey = null; flow.captions = []; flow.selectedIdx = 0; flow.editedCaption = ''; flow.regenCount = 0; flow.isVideo = false; flow.videoFile = null; flow.videoDuration = 0; flow.videoWidth = 0; flow.videoHeight = 0; flow._videoFrames = null;
     try { var hf = document.getElementById('m-hidden-file'); if (hf) hf.value = ''; } catch(e){}
   };
   window.mOpenCaptionFlow = async function(ev, prefillTags){
@@ -3071,8 +3072,10 @@ function mInitWave2(){
       var thumbUrls = flow.thumbUrls || [];
       var mediaHtml;
       if (isVideoMode && flow.videoFile) {
-        // C3: 영상 미리보기
+        // C3: 영상 미리보기 — 기존 Object URL 이 있으면 revoke 후 재생성 (C4: 누수 방지)
+        if (flow._videoObjectUrl) { try { URL.revokeObjectURL(flow._videoObjectUrl); } catch(e){} }
         var videoObjUrl = URL.createObjectURL(flow.videoFile);
+        flow._videoObjectUrl = videoObjUrl;
         var durSec = flow.videoDuration ? Math.round(flow.videoDuration) + '초' : '';
         var dimStr = (flow.videoWidth && flow.videoHeight) ? flow.videoWidth + '×' + flow.videoHeight : '';
         var metaStr = [durSec, dimStr].filter(Boolean).join(' · ');
@@ -3573,9 +3576,94 @@ function mInitWave2(){
       img.src = url;
     });
   }
+  // C4: data URL(JPEG) → Blob 변환 (FormData append 용)
+  function dataURLtoBlob(dataUrl){
+    var parts = String(dataUrl).split(',');
+    var header = parts[0] || '';
+    var b64 = parts[1] || '';
+    var mime = (header.match(/:(.*?);/) || [,'image/jpeg'])[1];
+    var bin = atob(b64);
+    var len = bin.length;
+    var arr = new Uint8Array(len);
+    for (var i = 0; i < len; i++) arr[i] = bin.charCodeAt(i);
+    return new Blob([arr], { type: mime });
+  }
   function submitReservation(){
     var user = getUser();
     var statusEl = document.getElementById('m-flow-status');
+    // C4: 영상 분기 (기존 이미지 경로와 독립)
+    if (flow.isVideo === true && flow.videoFile) {
+      if (statusEl) statusEl.textContent = '영상을 업로드하고 있어요…';
+      var userId = user.id || user.email || 'anon';
+      // 클라이언트 임시 reserveKey (Supabase 저장 경로 생성용) — 서버가 최종 reservationKey 를 발급하므로 혼동 방지 위해 prefix
+      var _nonceBytes = crypto.getRandomValues(new Uint8Array(6));
+      var _nonce = Array.from(_nonceBytes).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+      var clientReserveKey = 'pending-' + Date.now() + '-' + _nonce;
+      var videoFileRef = flow.videoFile;
+      var utils = window.lumiVideoUtils;
+      if (!utils) {
+        if (statusEl) statusEl.textContent = '영상 업로드 준비에 실패했어요.';
+        flow.posting = false;
+        return;
+      }
+      Promise.resolve()
+        .then(function(){ return utils.extractVideoFrames(videoFileRef, 7); })
+        .then(function(frames){
+          flow._videoFrames = frames || [];
+          if (statusEl) statusEl.textContent = '영상을 업로드하고 있어요… 잠시만요';
+          return utils.uploadVideoToSupabase(videoFileRef, userId, clientReserveKey);
+        })
+        .then(function(upload){
+          var fd = new FormData();
+          // 프레임 7장을 frameImages 로 전송
+          (flow._videoFrames || []).forEach(function(frame, idx){
+            try {
+              var blob = dataURLtoBlob(frame);
+              fd.append('frameImages', blob, 'frame_' + idx + '.jpg');
+            } catch(e){}
+          });
+          fd.append('mediaType', 'REELS');
+          fd.append('videoUrl', upload.publicUrl || '');
+          fd.append('videoKey', upload.storagePath || '');
+          if (flow.videoDuration) fd.append('videoDuration', String(flow.videoDuration));
+          if (flow.videoWidth) fd.append('videoWidth', String(flow.videoWidth));
+          if (flow.videoHeight) fd.append('videoHeight', String(flow.videoHeight));
+          // 기존 reserve 필드 세트
+          var noteParts = [];
+          if (flow.prefillTags && flow.prefillTags.length) noteParts.push(flow.prefillTags.join(' '));
+          if (flow.userNote) noteParts.push(flow.userNote);
+          fd.append('userMessage', noteParts.join(' / '));
+          var defaultStyle = '';
+          try { defaultStyle = (JSON.parse(localStorage.getItem('lumi_settings')||'{}').captionStyle) || ''; } catch(e){}
+          fd.append('captionTone', flow.userStyle || defaultStyle);
+          fd.append('bizCategory', user.bizCategory || user.storeCategory || 'cafe');
+          fd.append('submittedAt', new Date().toISOString());
+          fd.append('scheduledAt', new Date().toISOString());
+          fd.append('storeProfile', JSON.stringify({ownerEmail:user.email||'', name:user.storeName||'', phone:user.phone||''}));
+          var ft2; try { ft2 = JSON.parse(localStorage.getItem('lumi_feat_toggles')||'{}'); } catch(e){ ft2 = {}; }
+          fd.append('postToStory', ft2.story !== false ? 'true' : 'false');
+          fd.append('postToThread', ft2.thread === true ? 'true' : 'false');
+          fd.append('useWeather', ft2.weather !== false ? 'true' : 'false');
+          if (user.region) fd.append('region', user.region);
+          if (flow.postMode) fd.append('postMode', flow.postMode);
+          return window.lumiAuthFetch('/api/reserve', { method:'POST', headers:{ 'Authorization':'Bearer '+TOKEN }, body: fd });
+        })
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+          if (!res || !res.reservationKey) throw new Error(res && res.error || '예약 실패');
+          flow.reservationKey = res.reservationKey;
+          if (statusEl) statusEl.textContent = '캡션을 만들고 있어요…';
+          pollCaption();
+        })
+        .catch(function(err){
+          console.warn('[m-reserve-video]', (err && (err.message || err.name)) || 'error');
+          if (statusEl) statusEl.textContent = '업로드에 실패했어요. 잠시 후 다시 시도해주세요.';
+          showMobileToast('영상 업로드 실패: 잠시 후 다시 시도해주세요.');
+          flow.posting = false;
+          window.mCloseCaptionFlow();
+        });
+      return;
+    }
     var files = flow.files || [];
     if (statusEl) statusEl.textContent = files.length > 1 ? ('사진 ' + files.length + '장을 업로드하고 있어요…') : '사진을 업로드하고 있어요…';
     Promise.all(files.map(function(f){ return resizeImageClient(f); })).then(function(resizedList){
@@ -4210,12 +4298,15 @@ var cards = {
       var stVideoMeta = React.useState(null), videoMeta = stVideoMeta[0], setVideoMeta = stVideoMeta[1];
       var videoUrlRef = React.useRef(null);
       React.useEffect(function(){
-        if(videoFile) {
-          if(videoUrlRef.current) { try { URL.revokeObjectURL(videoUrlRef.current); } catch(ex){} }
+        if (videoFile) {
+          if (videoUrlRef.current) { try { URL.revokeObjectURL(videoUrlRef.current); } catch(ex){} }
           videoUrlRef.current = URL.createObjectURL(videoFile);
         } else {
-          if(videoUrlRef.current) { try { URL.revokeObjectURL(videoUrlRef.current); } catch(ex){} videoUrlRef.current = null; }
+          if (videoUrlRef.current) { try { URL.revokeObjectURL(videoUrlRef.current); } catch(ex){} videoUrlRef.current = null; }
         }
+        return function cleanup(){
+          if (videoUrlRef.current) { try { URL.revokeObjectURL(videoUrlRef.current); } catch(ex){} videoUrlRef.current = null; }
+        };
       }, [videoFile]);
 
       // 클라이언트 이미지 리사이즈 + IG 비율 보정 (4:5 ~ 1.91:1)
@@ -4279,10 +4370,46 @@ var cards = {
       }
 
       // 공통: FormData 빌드 (async — 업로드 전 클라이언트 리사이즈)
+      // C4: data URL(JPEG) → Blob (데스크톱 영상 프레임 전송용)
+      function _dataURLtoBlobD(dataUrl){
+        var parts = String(dataUrl).split(',');
+        var header = parts[0] || '';
+        var b64 = parts[1] || '';
+        var mime = (header.match(/:(.*?);/) || [,'image/jpeg'])[1];
+        var bin = atob(b64);
+        var len = bin.length;
+        var arr = new Uint8Array(len);
+        for (var i = 0; i < len; i++) arr[i] = bin.charCodeAt(i);
+        return new Blob([arr], { type: mime });
+      }
       async function buildPostFormData(scheduledAt) {
-        var resized = await Promise.all(realFiles.map(resizeImage));
         var fd = new FormData();
-        resized.forEach(function(f){ fd.append('photos', f, f.name); });
+        // C4: 영상 분기
+        if (isVideo === true && videoFile) {
+          var utils = window.lumiVideoUtils;
+          if (!utils) throw new Error('영상 업로드 유틸이 로드되지 않았어요');
+          var userId = lumiUser.id || lumiUser.email || 'anon';
+          var _nb = crypto.getRandomValues(new Uint8Array(6));
+          var _nc = Array.from(_nb).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+          var clientReserveKey = 'pending-' + Date.now() + '-' + _nc;
+          var frames = await utils.extractVideoFrames(videoFile, 7);
+          var upload = await utils.uploadVideoToSupabase(videoFile, userId, clientReserveKey);
+          (frames || []).forEach(function(frame, idx){
+            try {
+              var blob = _dataURLtoBlobD(frame);
+              fd.append('frameImages', blob, 'frame_' + idx + '.jpg');
+            } catch(e){}
+          });
+          fd.append('mediaType', 'REELS');
+          fd.append('videoUrl', upload.publicUrl || '');
+          fd.append('videoKey', upload.storagePath || '');
+          if (videoMeta && videoMeta.duration) fd.append('videoDuration', String(videoMeta.duration));
+          if (videoMeta && videoMeta.width) fd.append('videoWidth', String(videoMeta.width));
+          if (videoMeta && videoMeta.height) fd.append('videoHeight', String(videoMeta.height));
+        } else {
+          var resized = await Promise.all(realFiles.map(resizeImage));
+          resized.forEach(function(f){ fd.append('photos', f, f.name); });
+        }
         fd.append('userMessage', realNote || '');
         fd.append('captionTone', captionStyle || '');
         fd.append('bizCategory', lumiUser.bizCategory || lumiUser.storeCategory || 'cafe');
@@ -4341,7 +4468,7 @@ var cards = {
       // 바로 게시 (릴레이 모드: 캡션 확인 후 게시)
       function handlePostNow() {
         if (isPosting) return;
-        if (!realFiles.length) { alert('사진을 선택해주세요.'); return; }
+        if (!realFiles.length && !(isVideo && videoFile)) { alert('사진 또는 영상을 선택해주세요.'); return; }
         var token = localStorage.getItem('lumi_token');
         if (!token) { alert('로그인이 필요합니다.'); return; }
         setIsPosting(true);
@@ -4617,7 +4744,7 @@ var cards = {
       // 최적 시간에 게시
       function handleBestTimePost() {
         if (isPosting) return;
-        if (!realFiles.length) { alert('사진을 선택해주세요.'); return; }
+        if (!realFiles.length && !(isVideo && videoFile)) { alert('사진 또는 영상을 선택해주세요.'); return; }
         var token = localStorage.getItem('lumi_token');
         if (!token) { alert('로그인이 필요합니다.'); return; }
         setIsPosting(true);
@@ -4700,7 +4827,7 @@ var cards = {
       function handleSchedulePost() {
         if (isPosting) return;
         if (!scheduleTime) { alert('예약 시간을 선택해주세요.'); return; }
-        if (!realFiles.length) { alert('사진을 선택해주세요.'); return; }
+        if (!realFiles.length && !(isVideo && videoFile)) { alert('사진 또는 영상을 선택해주세요.'); return; }
         var token = localStorage.getItem('lumi_token');
         if (!token) { alert('로그인이 필요합니다.'); return; }
         setIsPosting(true);
