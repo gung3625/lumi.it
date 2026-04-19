@@ -4359,17 +4359,17 @@ var cards = {
       var stIsVideo = React.useState(false), isVideo = stIsVideo[0], setIsVideo = stIsVideo[1];
       var stVideoFile = React.useState(null), videoFile = stVideoFile[0], setVideoFile = stVideoFile[1];
       var stVideoMeta = React.useState(null), videoMeta = stVideoMeta[0], setVideoMeta = stVideoMeta[1];
-      var videoUrlRef = React.useRef(null);
+      // state로 전환 — ref는 첫 렌더 시점에 null이라 UI 조건문이 false로 떨어지는 버그 수정
+      var stVideoUrl = React.useState(''), videoUrl = stVideoUrl[0], setVideoUrl = stVideoUrl[1];
+      var videoUrlRef = { current: videoUrl }; // 하위 참조 호환
       React.useEffect(function(){
         if (videoFile) {
-          if (videoUrlRef.current) { try { URL.revokeObjectURL(videoUrlRef.current); } catch(ex){} }
-          videoUrlRef.current = URL.createObjectURL(videoFile);
+          var u = URL.createObjectURL(videoFile);
+          setVideoUrl(u);
+          return function(){ try { URL.revokeObjectURL(u); } catch(ex){} };
         } else {
-          if (videoUrlRef.current) { try { URL.revokeObjectURL(videoUrlRef.current); } catch(ex){} videoUrlRef.current = null; }
+          setVideoUrl('');
         }
-        return function cleanup(){
-          if (videoUrlRef.current) { try { URL.revokeObjectURL(videoUrlRef.current); } catch(ex){} videoUrlRef.current = null; }
-        };
       }, [videoFile]);
 
       // 클라이언트 이미지 리사이즈 + IG 비율 보정 (4:5 ~ 1.91:1)
