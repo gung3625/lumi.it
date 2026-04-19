@@ -14,9 +14,10 @@ const headers = {
 async function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
 
 // ─────────── Instagram Graph API 호출 헬퍼 ───────────
+// Reels 인코딩 대기: 5초 × 24회 (최대 2분)
 async function waitForContainer(containerId, accessToken, maxRetries = 6) {
   for (let i = 0; i < maxRetries; i++) {
-    await sleep(1000);
+    await sleep(5000);
     try {
       const res = await fetch(`https://graph.facebook.com/v25.0/${containerId}?fields=status_code&access_token=${accessToken}`);
       const data = await res.json();
@@ -49,9 +50,35 @@ async function publishMedia(igUserId, igAccessToken, creationId) {
   return res.json();
 }
 
-async function postToInstagram({ igUserId, igAccessToken, igUserAccessToken, storyEnabled }, caption, imageUrls) {
+async function postToInstagram({ igUserId, igAccessToken, igUserAccessToken, storyEnabled, mediaType, videoUrl }, caption, imageUrls) {
   if (!igUserId || !igAccessToken) throw new Error('Instagram 연동 정보 없음');
   let postId;
+
+  // REELS 게시 (영상) — IMAGE 경로와 분리된 분기
+  if (mediaType === 'REELS') {
+    if (!videoUrl) throw new Error('Reels 영상 URL 없음');
+    const params = new URLSearchParams({
+      media_type: 'REELS',
+      video_url: videoUrl,
+      caption,
+      access_token: igAccessToken,
+    });
+    const res = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params,
+    });
+    const d = await res.json();
+    if (d.error) throw new Error(d.error.message || 'Reels 컨테이너 생성 실패');
+    const ready = await waitForContainer(d.id, igAccessToken, 24);
+    if (!ready) throw new Error('Reels 컨테이너 처리 시간 초과');
+    const pData = await publishMedia(igUserId, igAccessToken, d.id);
+    if (pData.error) throw new Error(pData.error.message || 'Reels 컨테이너 생성 실패');
+    postId = pData.id;
+
+    // 영상 스토리는 별도 flow 필요 — 추후 지원. 현재는 storyEnabled 무시.
+    return postId;
+  }
 
   if (imageUrls.length > 1) {
     const containerIds = await Promise.all(imageUrls.map((url) => createMediaContainer(igUserId, igAccessToken, url, true)));
@@ -201,7 +228,19 @@ exports.handler = async (event) => {
     if (!selectedCaption) { console.error('[select-and-post] 캡션 없음'); return; }
 
     const imageUrls = Array.isArray(reservation.image_urls) ? reservation.image_urls : [];
-    if (!imageUrls.length) { console.error('[select-and-post] 이미지 없음'); return; }
+    const mediaType = reservation.media_type || 'IMAGE';
+    if (mediaType === 'REELS') {
+      if (!reservation.video_url) {
+        console.error('[select-and-post] 영상 URL 없음');
+        await supabase.from('reservations').update({
+          caption_status: 'failed',
+          caption_error: '영상 URL을 찾을 수 없습니다.',
+        }).eq('reserve_key', reservationKey);
+        return;
+      }
+    } else if (!imageUrls.length) {
+      console.error('[select-and-post] 이미지 없음'); return;
+    }
 
     // 3) IG 토큰 조회 (Vault 복호화 뷰, service_role 전용)
     const { data: igRow, error: igErr } = await supabase
@@ -226,7 +265,14 @@ exports.handler = async (event) => {
 
     // 4) Instagram 게시
     const postId = await postToInstagram(
-      { igUserId, igAccessToken, igUserAccessToken, storyEnabled: reservation.story_enabled },
+      {
+        igUserId,
+        igAccessToken,
+        igUserAccessToken,
+        storyEnabled: reservation.story_enabled,
+        mediaType,
+        videoUrl: reservation.video_url,
+      },
       selectedCaption,
       imageUrls
     );
@@ -234,7 +280,7 @@ exports.handler = async (event) => {
 
     // 5) Threads 게시 (옵션)
     let threadsUpdate = {};
-    if (reservation.post_to_thread && imageUrls[0]) {
+    if (reservation.post_to_thread && imageUrls[0] && mediaType !== 'REELS') {
       let threadsStatus = 'failed';
       let threadsError = null;
       let threadsPostId = null;
