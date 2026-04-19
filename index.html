@@ -3445,24 +3445,11 @@ function mInitWave2(){
         '</div>';
     } else if (flow.step === 2) {
       var cap = (flow.editedCaption || flow.captions[flow.selectedIdx] || '').toString();
-      var files = flow.files || [];
-      var carouselHtml;
-      if (files.length > 1) {
-        var slides = files.map(function(f, i){
-          return '<img class="m-flow-carousel-img" src="' + URL.createObjectURL(f) + '" alt="사진 ' + (i+1) + '">';
-        }).join('');
-        carouselHtml = '<div class="m-flow-carousel" role="list">' + slides + '</div>' +
-          '<p class="m-flow-carousel-meta">' + files.length + '장의 사진 · 옆으로 밀어 확인</p>';
-      } else {
-        var thumbUrl = files[0] ? URL.createObjectURL(files[0]) : '';
-        carouselHtml = '<img class="m-flow-thumb" src="' + thumbUrl + '" alt="업로드된 사진">';
-      }
       var user = getUser();
       var isPro = user.plan === 'pro';
       body.innerHTML =
         backBtnHtml('사진 다시 선택', 'window.mFlowBackFromCaption()') +
         '<div class="m-flow-progress"><span class="is-on"></span><span class="is-on"></span><span class="is-on"></span></div>' +
-        carouselHtml +
         '<p class="m-flow-label">캡션</p>' +
         '<textarea class="m-flow-textarea" id="m-flow-cap" rows="8">' + esc(cap) + '</textarea>' +
         '<div class="m-flow-regen-row">' +
