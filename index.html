@@ -5042,14 +5042,18 @@ var cards = {
               isLoggedIn
                 ? e('label', {className:'upload-btn tut-guide-pulse', style:{width:'100%',borderRadius:'16px',fontSize:'14px',padding:'12px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px'},
                     onMouseDown:function(ev){ev.stopPropagation();}},
-                    e('input', {type:'file',multiple:true,accept:'image/*,video/mp4,video/quicktime',style:{display:'none'},onChange:async function(ev){
+                    e('input', {type:'file',multiple:true,accept:'image/*,video/*,.mp4,.mov,.m4v,.MP4,.MOV',style:{display:'none'},onChange:async function(ev){
                       ev.stopPropagation();
                       var selected = Array.from(ev.target.files || []);
-                      // C3: 영상 감지
+                      // C3: 영상 감지 (MIME + 확장자 fallback — 모바일/PC 공통)
+                      var isVid = function(f){
+                        if (f.type && f.type.indexOf('video/')===0) return true;
+                        return /\.(mp4|mov|m4v|qt|3gp|3gpp)$/i.test(String(f.name||''));
+                      };
                       var vf = null; var imgs = [];
-                      selected.forEach(function(f){ if(f.type && f.type.indexOf('video/')===0) vf=f; else imgs.push(f); });
+                      selected.forEach(function(f){ if(isVid(f)) vf=f; else imgs.push(f); });
                       if(vf) {
-                        var vcnt = selected.filter(function(f){return f.type&&f.type.indexOf('video/')===0;}).length;
+                        var vcnt = selected.filter(isVid).length;
                         if(vcnt > 1){ alert('영상은 한 번에 1개만 올릴 수 있어요'); return; }
                         if(imgs.length > 0){ alert('사진과 영상은 함께 올릴 수 없어요'); return; }
                         var utils = window.lumiVideoUtils;
