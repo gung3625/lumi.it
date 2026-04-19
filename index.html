@@ -3773,9 +3773,22 @@ function mInitWave2(){
     }
   }
 
+  function pickVideoMime(file) {
+    var name = (file && file.name ? file.name : '').toLowerCase();
+    var t = (file && file.type) || '';
+    if (t === 'video/mp4' || t === 'video/quicktime') return t;
+    if (/\.mov$/.test(name)) return 'video/quicktime';
+    if (/\.(mp4|m4v)$/.test(name)) return 'video/mp4';
+    if (/\.webm$/.test(name)) return 'video/webm';
+    if (/\.mkv$/.test(name)) return 'video/x-matroska';
+    if (/\.3gp$/.test(name)) return 'video/3gpp';
+    return 'video/mp4';
+  }
+
   async function uploadVideoToSupabase(file, userId, reserveKey) {
     if (!window.lumiSupa) throw new Error('Supabase 클라이언트가 초기화되지 않았어요');
-    var ext = file.type === 'video/mp4' ? 'mp4' : 'mov';
+    var mime = pickVideoMime(file);
+    var ext = mime === 'video/quicktime' ? 'mov' : (mime === 'video/webm' ? 'webm' : (mime === 'video/x-matroska' ? 'mkv' : (mime === 'video/3gpp' ? '3gp' : 'mp4')));
     var timestamp = Date.now();
     var nonceBytes = crypto.getRandomValues(new Uint8Array(8));
     var nonce = Array.from(nonceBytes).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
@@ -3784,12 +3797,14 @@ function mInitWave2(){
     var result = await window.lumiSupa.storage
       .from('lumi-videos')
       .upload(path, file, {
-        contentType: file.type,
+        contentType: mime,
         upsert: false,
       });
     if (result.error) {
       console.warn('[uploadVideo] supabase error:', result.error.message);
-      throw new Error('영상 업로드에 실패했어요. 잠시 후 다시 시도해주세요.');
+      var st = (result.error.statusCode || result.error.status) || '?';
+      var msg = result.error.message || 'unknown';
+      throw new Error('supabase_upload_error: ' + st + ' ' + msg);
     }
 
     var urlResult = window.lumiSupa.storage
