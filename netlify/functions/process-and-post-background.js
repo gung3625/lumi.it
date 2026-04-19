@@ -616,20 +616,30 @@ async function loadToneFeedback(supabase, userId, kind) {
 
 // ─────────── 메인 핸들러 ───────────
 exports.handler = async (event) => {
+  console.log('[process-and-post] HANDLER_ENTRY');
   // 내부 호출 인증 (scheduler → background)
   const authHeader = (event.headers['authorization'] || '').replace('Bearer ', '');
   if (authHeader !== process.env.LUMI_SECRET) {
-    console.error('[process-and-post] 인증 실패');
+    console.error('[process-and-post] 인증 실패 — LUMI_SECRET 불일치 또는 미설정');
     return { statusCode: 401 };
   }
+  console.log('[process-and-post] AUTH_OK');
 
-  const supabase = getAdminClient();
+  let supabase;
+  try {
+    supabase = getAdminClient();
+    console.log('[process-and-post] SUPABASE_CLIENT_OK');
+  } catch (clientErr) {
+    console.error('[process-and-post] getAdminClient 실패:', clientErr.message);
+    return;
+  }
   let reservationKey = null;
 
   try {
     const body = JSON.parse(event.body || '{}');
     reservationKey = body.reservationKey;
-    if (!reservationKey) return;
+    console.log('[process-and-post] BODY_PARSED reservationKey=', reservationKey);
+    if (!reservationKey) { console.warn('[process-and-post] reservationKey 없음 — 종료'); return; }
 
     // 1) 예약 조회
     const { data: reservation, error: resErr } = await supabase
@@ -641,6 +651,7 @@ exports.handler = async (event) => {
       console.error('[process-and-post] 예약 조회 실패:', resErr?.message || 'not found');
       return;
     }
+    console.log('[process-and-post] RESERVATION_LOADED status=', reservation.caption_status);
 
     // 사용자가 이미 캡션을 선택했거나 게시 중/완료된 건은 스킵
     if (['scheduled', 'posting', 'posted'].includes(reservation.caption_status)) {
