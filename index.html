@@ -8013,8 +8013,9 @@ function swrInvalidate(keyPrefix) {
   } catch(e) {}
 }
 
-function logoutLumi() {
+async function logoutLumi() {
   if (!confirm('\uB85C\uADF8\uC544\uC6C3 \uD558\uC2DC\uACA0\uC5B4\uC694?')) return;
+  try { if (window.lumiSupa && window.lumiSupa.auth) await window.lumiSupa.auth.signOut(); } catch(e) {}
   localStorage.removeItem('lumi_token');
   localStorage.removeItem('lumi_user');
   localStorage.removeItem('lumi_feat_toggles');
@@ -8023,6 +8024,12 @@ function logoutLumi() {
   localStorage.removeItem('lumi_grid_layout');
   localStorage.removeItem('lumi_grid_version');
   localStorage.removeItem('lumi_ig_guide');
+  localStorage.removeItem('lumi-auth');
+  try {
+    Object.keys(localStorage).forEach(function(k){
+      if (k.indexOf('sb-') === 0 || k.indexOf('supabase.auth') !== -1) localStorage.removeItem(k);
+    });
+  } catch(e) {}
   swrInvalidate('relay-list');
   swrInvalidate('trends-');
   swrInvalidate('weather');
