@@ -497,16 +497,24 @@ ${clean}
 00:00:03,000 --> 00:00:05,000
 다음 자막 내용`;
 
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 512,
-        temperature: 0.3,
-      }),
-    });
+    const srtCtrl = new AbortController();
+    const srtTid = setTimeout(() => srtCtrl.abort(), 20_000);
+    let res;
+    try {
+      res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: 512,
+          temperature: 0.3,
+        }),
+        signal: srtCtrl.signal,
+      });
+    } finally {
+      clearTimeout(srtTid);
+    }
     if (!res.ok) {
       console.warn('[process-and-post] SRT 생성 API 오류:', res.status);
       return '';
@@ -768,8 +776,10 @@ exports.handler = async (event) => {
     let subtitleSrt = null;
     if (isReels && reservation.video_url) {
       try {
+        await supabase.from('reservations').update({ caption_error: 'STAGE:subtitle_srt' }).eq('reserve_key', reservationKey);
         const primaryCaption = captions[0] || '';
         const srt = await generateSubtitleSrt(primaryCaption, 15);
+        await supabase.from('reservations').update({ caption_error: 'STAGE:subtitle_burn' }).eq('reserve_key', reservationKey);
         if (!srt) {
           console.log('[process-and-post] SRT 미생성 — 자막 스킵:', reservationKey);
           subtitleStatus = 'skipped';
