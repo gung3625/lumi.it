@@ -998,7 +998,7 @@ body.dark-mode .toggle-ball { left: 50px; background: #f0f2f8; transform: rotate
 /* NEWSLETTER */
 .news-title { font-size: clamp(18px, 3vw, 24px); font-weight: 400; color: #0d1117; margin-bottom: 8px; }
 .news-desc { font-size: clamp(13px, 2vw, 15px); color: rgba(13,17,35,.6); line-height: 1.5; margin-bottom: clamp(12px, 3vw, 24px); }
-.news-input { width: 100%; border: none; border-bottom: 2px solid #f0f2f8; background: transparent; font-size: 16px; font-family: inherit; color: #0d1117; padding: 8px 0; outline: none; margin-bottom: clamp(12px, 3vw, 20px); transition: border-color 0.2s; min-height: 44px; }
+.news-input { width: 100%; border: none; border-bottom: 2px solid #f0f2f8; background: transparent; font-size: 16px; font-family: inherit; color: #0d1117; padding: 8px 0; outline: none; margin-bottom: clamp(12px, 3vw, 20px); transition: border-color 0.15s ease; min-height: 44px; }
 .news-input:focus { border-color: #C8507A; }
 .news-input::placeholder { color: rgba(13,17,35,.3); }
 .news-bottom { display: flex; justify-content: space-between; align-items: center; width: 100%; }
@@ -1685,6 +1685,55 @@ body.dark-mode .su-guide-note{color:rgba(240,242,248,.6);}
 body.dark-mode .su-close{background:rgba(44,44,46,.9);}
 body.dark-mode .su-close svg{stroke:#f0f2f8;}
 @media(max-width:768px){.su-grid{grid-template-columns:1fr;}.su-card{grid-column:auto!important;}}
+
+/* ---- Mobile responsive fixes (10 issues) ---- */
+/* Issue 3: 다크모드 토글 ball 위치 - 600px 구간 */
+@media (max-width: 600px) {
+  .toggle-track { width: 68px !important; height: 38px !important; }
+  .toggle-ball { width: 30px !important; height: 30px !important; }
+  body.dark-mode .toggle-ball { left: 36px !important; }
+}
+
+/* Issue 6: mobile-cta-bar safe-area padding */
+@media (max-width: 600px) {
+  .grid-wrap { padding-bottom: max(100px, calc(24px + env(safe-area-inset-bottom))) !important; }
+  .mobile-cta-btn { min-height: 48px; }
+}
+
+/* Issue 1, 2, 4, 8: 480px 구간 */
+@media (max-width: 480px) {
+  /* 이슈 1: nav-contact 오버플로우 */
+  #nav-auth { flex-wrap: wrap; gap: 6px; }
+  .nav-contact { padding: 10px 6px !important; font-size: 13px !important; flex: 1 1 auto; min-width: fit-content; }
+
+  /* 이슈 2: 회원가입 모달 폼 가려짐 */
+  .su-chat-box { padding: 20px 20px 16px !important; max-width: calc(100% - 32px) !important; }
+  .su-lumi-big { width: 120px !important; height: 120px !important; margin-bottom: 4px !important; }
+  .su-form-area { max-height: calc(100vh - 320px); overflow-y: auto; }
+
+  /* 이슈 4: su-input-row 두 필드 나란히 */
+  .su-input-row { flex-direction: column !important; gap: 10px !important; }
+  .su-input-row .su-input { flex: 1 1 100% !important; margin-bottom: 0 !important; }
+
+  /* 이슈 8: news-input 모바일 고정 폰트 */
+  .news-input { font-size: 15px !important; padding: 6px 0 !important; }
+}
+
+/* Issue 3: card-dark-toggle padding - 414px 구간 */
+@media (max-width: 414px) {
+  .card-dark-toggle { padding: 8px !important; }
+}
+
+/* Issue 5, 7: 360px 구간 */
+@media (max-width: 360px) {
+  nav { padding: 20px 12px 12px; }
+  .nav-logo { font-size: clamp(20px, 4vw, 26px); }
+  .grid-wrap { padding: 0 8px 24px; }
+  .bento-card { border-radius: 16px; }
+  .news-title { font-size: 14px !important; }
+  .blog-title { font-size: 16px !important; line-height: 1.2 !important; }
+  .blog-desc { font-size: 12px !important; line-height: 1.4 !important; margin-bottom: 4px !important; }
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.103.3/dist/umd/supabase.min.js"></script>
 <script>
@@ -7234,7 +7283,10 @@ function BentoGrid() {
 
   var cols, rowH, mgn, activeLayout, canDrag;
   if (isMobile) {
-    cols = 1; rowH = 200; mgn = [12, 12]; activeLayout = mobileLayout; canDrag = false;
+    cols = 1;
+    rowH = gridWidth < 375 ? 220 : gridWidth < 414 ? 240 : 260;
+    mgn = [10, 10];
+    activeLayout = mobileLayout; canDrag = false;
   } else if (isTablet) {
     cols = 2; rowH = 260; mgn = [14, 14]; activeLayout = tabletLayout; canDrag = false;
   } else {
@@ -7301,6 +7353,7 @@ var root = ReactDOM.createRoot(document.getElementById('grid-root'));
 root.render(e(BentoGrid));
 
 function openSignupGrid() {
+  document.body.style.overflow = 'hidden';
   suPhase = 0;
   suData = {};
   document.getElementById('signup-grid').classList.add('open');
@@ -7311,6 +7364,7 @@ function openSignupGrid() {
 }
 function closeSignupGrid() {
   document.getElementById('signup-grid').classList.remove('open');
+  document.body.style.overflow = '';
 }
 // ---- SIGNUP CONVERSATION ----
 var suData = {};
@@ -7938,6 +7992,7 @@ function liBackToLogin() {
 }
 
 function openLogin() {
+  document.body.style.overflow = 'hidden';
   liPhase = 0;
   liMode = 'login';
   liData = {};
@@ -7960,6 +8015,7 @@ function openLogin() {
 
 function closeLogin() {
   document.getElementById('login-modal').classList.remove('open');
+  document.body.style.overflow = '';
 }
 
 // SWR(Stale-While-Revalidate) 캐싱 유틸
@@ -8274,7 +8330,8 @@ document.querySelectorAll('.lumi-aura, .card-arrow, .btn-pill, .upload-lumi, .su
         상호명: 루미 (lumi) · 대표자: 김현<br>
         사업자 등록번호: 404-09-66416 · 업태: 정보통신업<br>
         서울특별시 용산구 회나무로 32-7 (이태원동)<br>
-        통신판매업 신고번호: 제2024-서울용산-1166호 · 이메일: gung3625@gmail.com
+        통신판매업 신고번호: 제2024-서울용산-1166호<br>
+        비즈니스 전화번호: <a href="tel:01064246284" style="color:inherit;text-decoration:none;">010-6424-6284</a> · 이메일: gung3625@gmail.com
       </p>
     </div>
     <div class="ft-links">
