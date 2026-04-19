@@ -978,22 +978,50 @@ body.dark-mode .rising-empty { color:rgba(255,255,255,.3); }
   color: #fff; font-size: 12px; font-weight: 600;
 }
 
-/* DARK TOGGLE — nevflynn style sliding switch */
+/* DARK TOGGLE — gradient sky style sliding switch */
 .card-dark-toggle { background: #fff; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: background 0.3s; }
 .toggle-track {
   width: 100px; height: 56px; border-radius: 40px; display: flex; align-items: center;
-  position: relative; background: #f0f2f8; box-shadow: transparent 0 0 0 2px inset;
-  transition: background 0.4s;
+  position: relative; overflow: hidden;
+  background: linear-gradient(135deg, #87CEEB 0%, #B8D8F0 50%, #FDB6C6 100%);
+  box-shadow: 0 4px 16px rgba(135,206,235,0.25);
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .toggle-ball {
-  width: 44px; height: 44px; border-radius: 30px; background: #0d1117;
+  width: 44px; height: 44px; border-radius: 50%; background: #FFF9E6;
   position: absolute; left: 6px; display: flex; align-items: center; justify-content: center;
-  transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1), background 0.4s, transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
 }
-.toggle-ball .toggle-icon { font-size: 22px; line-height: 1; transition: opacity 0.3s; }
-body.dark-mode .toggle-track { background: #2c2c2e; }
-body.dark-mode .toggle-ball { left: 50px; background: #f0f2f8; transform: rotate(360deg); }
+.toggle-ball:hover { box-shadow: 0 2px 6px rgba(0,0,0,0.15), 0 0 0 3px rgba(200,80,122,0.3); }
+.toggle-sun, .toggle-moon {
+  position: absolute; transition: opacity 0.4s ease, transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.toggle-sun { opacity: 1; transform: rotate(0deg); }
+.toggle-moon { opacity: 0; transform: rotate(-360deg); }
+body.dark-mode .toggle-sun { opacity: 0; transform: rotate(360deg); }
+body.dark-mode .toggle-moon { opacity: 1; transform: rotate(0deg); }
+.toggle-clouds { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); display: flex; gap: 4px; pointer-events: none; transition: opacity 0.4s ease; }
+.toggle-cloud { width: 10px; height: 6px; background: #fff; border-radius: 6px; opacity: 0.8; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+.toggle-cloud.c2 { width: 7px; height: 4px; opacity: 0.6; }
+.toggle-stars { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); display: flex; gap: 5px; align-items: center; pointer-events: none; opacity: 0; transition: opacity 0.4s ease; }
+.toggle-stars .star {
+  width: 3px; height: 3px; background: #fff; border-radius: 50%;
+  box-shadow: 0 0 4px rgba(255,255,255,0.9);
+  animation: twinkle 2s ease-in-out infinite;
+}
+.toggle-stars .star.s2 { width: 2px; height: 2px; animation-delay: 0.6s; }
+.toggle-stars .star.s3 { width: 2.5px; height: 2.5px; animation-delay: 1.2s; }
+@keyframes twinkle { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+body.dark-mode .toggle-track {
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 40%, #6b21a8 100%);
+  box-shadow: 0 4px 16px rgba(107,33,168,0.3);
+}
+body.dark-mode .toggle-ball { left: 50px; background: #1c1c1e; box-shadow: 0 2px 6px rgba(0,0,0,0.4); }
+body.dark-mode .toggle-ball:hover { box-shadow: 0 2px 6px rgba(0,0,0,0.4), 0 0 0 3px rgba(200,80,122,0.3); }
+body.dark-mode .toggle-clouds { opacity: 0; }
+body.dark-mode .toggle-stars { opacity: 1; }
 
 /* NEWSLETTER */
 .news-title { font-size: clamp(18px, 3vw, 24px); font-weight: 400; color: #0d1117; margin-bottom: 8px; }
@@ -1160,8 +1188,10 @@ body.dark-mode .video-warn-badge { background:rgba(255,159,10,.12); color:#ffb34
   /* Dark toggle */
   .toggle-track { width: 76px !important; height: 42px !important; }
   .toggle-ball { width: 34px !important; height: 34px !important; }
-  body.dark-mode .toggle-ball { left: 38px !important; }
-  .toggle-ball .toggle-icon { font-size: 17px !important; }
+  body.dark-mode .toggle-ball { left: 36px !important; }
+  .toggle-sun, .toggle-moon { transform: scale(0.8); }
+  body.dark-mode .toggle-sun { transform: scale(0.8) rotate(360deg); }
+  body.dark-mode .toggle-moon { transform: scale(0.8) rotate(0deg); }
 
   /* Tutorial card */
   .tut-lumi-area { flex: 0 0 34% !important; }
@@ -1691,7 +1721,7 @@ body.dark-mode .su-close svg{stroke:#f0f2f8;}
 @media (max-width: 600px) {
   .toggle-track { width: 68px !important; height: 38px !important; }
   .toggle-ball { width: 30px !important; height: 30px !important; }
-  body.dark-mode .toggle-ball { left: 36px !important; }
+  body.dark-mode .toggle-ball { left: 32px !important; }
 }
 
 /* Issue 6: mobile-cta-bar safe-area padding */
@@ -6850,11 +6880,32 @@ var cards = {
     );
   },
   dark: function() {
+    var sunSvg = e('svg', {
+      className: 'toggle-sun', width: 20, height: 20, viewBox: '0 0 24 24',
+      fill: 'none', stroke: '#FFB800', strokeWidth: 2,
+      strokeLinecap: 'round', strokeLinejoin: 'round'
+    },
+      e('circle', {cx: 12, cy: 12, r: 4, fill: '#FFB800'}),
+      e('path', {d: 'M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41'})
+    );
+    var moonSvg = e('svg', {
+      className: 'toggle-moon', width: 20, height: 20, viewBox: '0 0 24 24',
+      fill: '#F5F5DC', stroke: '#F5F5DC', strokeWidth: 1
+    },
+      e('path', {d: 'M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z'})
+    );
     return e('div', {className:'bento-card card-dark-toggle'},
-      e('div', {className:'toggle-track', onMouseDown: function(ev){ ev.stopPropagation(); }, onClick: function(){ toggleDarkMode(); var icon = document.getElementById('toggle-icon'); if(icon) icon.textContent = document.body.classList.contains('dark-mode') ? '☀️' : '🌙'; }},
-        e('div', {className:'toggle-ball'},
-          e('span', {className:'toggle-icon', id:'toggle-icon'}, document.body.classList.contains('dark-mode') ? '☀️' : '🌙')
-        )
+      e('div', {className:'toggle-track', onMouseDown: function(ev){ ev.stopPropagation(); }, onClick: function(){ toggleDarkMode(); }},
+        e('div', {className: 'toggle-stars'},
+          e('span', {className: 'star s1'}),
+          e('span', {className: 'star s2'}),
+          e('span', {className: 'star s3'})
+        ),
+        e('div', {className: 'toggle-clouds'},
+          e('span', {className: 'toggle-cloud c1'}),
+          e('span', {className: 'toggle-cloud c2'})
+        ),
+        e('div', {className:'toggle-ball'}, sunSvg, moonSvg)
       )
     );
   },
