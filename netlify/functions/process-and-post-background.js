@@ -769,45 +769,8 @@ exports.handler = async (event) => {
     const captions = await generateCaptions(imageAnalysis, captionInput, captionProgress);
     console.log('[process-and-post] 캡션 생성 완료:', captions.length, '개');
 
-    // 4.5) REELS 전용: SRT 생성 + Modal burn-in + video_url 갱신 (best-effort)
-    //      실패해도 원본 video_url로 그대로 진행. 이미지 플로우엔 영향 없음.
-    let finalVideoUrl = reservation.video_url || null;
-    let subtitleStatus = null;
-    let subtitleSrt = null;
-    if (isReels && reservation.video_url) {
-      try {
-        await supabase.from('reservations').update({ caption_error: 'STAGE:subtitle_srt' }).eq('reserve_key', reservationKey);
-        const primaryCaption = captions[0] || '';
-        const srt = await generateSubtitleSrt(primaryCaption, 15);
-        await supabase.from('reservations').update({ caption_error: 'STAGE:subtitle_burn' }).eq('reserve_key', reservationKey);
-        if (!srt) {
-          console.log('[process-and-post] SRT 미생성 — 자막 스킵:', reservationKey);
-          subtitleStatus = 'skipped';
-        } else {
-          subtitleSrt = srt;
-          const burnResult = await burnSubtitlesViaModal({
-            reservationKey,
-            videoUrl: reservation.video_url,
-            srt,
-            userId: reservation.user_id,
-          });
-          if (burnResult && burnResult.videoUrl) {
-            finalVideoUrl = burnResult.videoUrl;
-            subtitleStatus = 'applied';
-            console.log('[process-and-post] 자막 burn-in 적용:', reservationKey);
-          } else {
-            subtitleStatus = 'skipped';
-            console.log('[process-and-post] burn-in 결과 없음 — 원본 유지:', reservationKey);
-          }
-        }
-      } catch (e) {
-        console.warn('[process-and-post] 자막 파이프라인 예외:', e.message);
-        subtitleStatus = 'skipped';
-      }
-    }
-
-    // 5) 예약 업데이트 (ready)
-    const updatePayload = {
+    // 4.5) 캡션 즉시 저장 (ready) — 사용자 UX: 자막 처리와 분리
+    const readyPayload = {
       generated_captions: captions,
       captions,
       image_analysis: imageAnalysis,
@@ -815,18 +778,45 @@ exports.handler = async (event) => {
       caption_status: 'ready',
       caption_error: null,
     };
-    if (isReels) {
-      if (finalVideoUrl && finalVideoUrl !== reservation.video_url) {
-        updatePayload.video_url = finalVideoUrl;
-      }
-      if (subtitleStatus) updatePayload.subtitle_status = subtitleStatus;
-      if (subtitleSrt) updatePayload.subtitle_srt = subtitleSrt;
+    {
+      const { error: readyErr } = await supabase
+        .from('reservations')
+        .update(readyPayload)
+        .eq('reserve_key', reservationKey);
+      if (readyErr) console.error('[process-and-post] ready 저장 실패:', readyErr.message);
     }
-    const { error: updErr } = await supabase
-      .from('reservations')
-      .update(updatePayload)
-      .eq('reserve_key', reservationKey);
-    if (updErr) console.error('[process-and-post] 예약 업데이트 실패:', updErr.message);
+
+    // 5) REELS 전용: SRT 생성 + Modal burn-in (best-effort, 사용자에겐 이미 캡션 완료 상태)
+    //      실패해도 원본 video_url로 그대로 진행.
+    if (isReels && reservation.video_url) {
+      try {
+        const primaryCaption = captions[0] || '';
+        const srt = await generateSubtitleSrt(primaryCaption, 15);
+        const videoUpdate = {};
+        if (!srt) {
+          videoUpdate.subtitle_status = 'skipped';
+        } else {
+          videoUpdate.subtitle_srt = srt;
+          const burnResult = await burnSubtitlesViaModal({
+            reservationKey,
+            videoUrl: reservation.video_url,
+            srt,
+            userId: reservation.user_id,
+          });
+          if (burnResult && burnResult.videoUrl) {
+            videoUpdate.video_url = burnResult.videoUrl;
+            videoUpdate.subtitle_status = 'applied';
+          } else {
+            videoUpdate.subtitle_status = 'skipped';
+          }
+        }
+        if (Object.keys(videoUpdate).length) {
+          await supabase.from('reservations').update(videoUpdate).eq('reserve_key', reservationKey);
+        }
+      } catch (e) {
+        console.warn('[process-and-post] 자막 파이프라인 예외:', e.message);
+      }
+    }
 
     // 6) 알림톡 (솔라피 템플릿 승인 전까지 비활성화 — 기존 동작 유지)
     // const phone = userProfile?.phone || sp.phone || sp.ownerPhone;
