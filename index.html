@@ -2320,7 +2320,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <p class="m-primary-cta-sub">사진·영상 한 개면 캡션·해시태그 완성</p>
     </div>
     <button type="button" class="m-primary-cta-btn" onclick="document.getElementById('m-hidden-file').click();">사진 선택</button>
-    <input type="file" id="m-hidden-file" accept="image/*,video/mp4,video/quicktime" multiple style="display:none" onchange="window.mOpenCaptionFlow(event)">
+    <input type="file" id="m-hidden-file" accept="image/*,video/*,.mp4,.mov,.m4v,.MP4,.MOV" multiple style="display:none" onchange="(function(e){try{if(typeof window.mOpenCaptionFlow==='function'){window.mOpenCaptionFlow(e);}else{console.error('[m-hidden-file] mOpenCaptionFlow undefined');showMobileToast('로그인 세션이 만료됐어요. 새로고침해주세요');}}catch(err){console.error('[m-hidden-file]',err);showMobileToast('파일을 읽는 중 오류가 발생했어요');}})(event)">
   </section>
 
   <!-- 3. 빠른 설정 -->
@@ -2880,22 +2880,29 @@ function mInitWave2(){
     if (!fl || !fl.length) return;
     var allFiles = Array.prototype.slice.call(fl);
 
-    // C3: 영상 파일 감지
+    // C3: 영상 파일 감지 (MIME 우선, 확장자 fallback — 모바일 MIME 빈값 대응)
+    function isVideoFile(f){
+      if (!f) return false;
+      if (f.type && f.type.indexOf('video/') === 0) return true;
+      var nm = String(f.name||'').toLowerCase();
+      return /\.(mp4|mov|m4v|qt|3gp|3gpp)$/.test(nm);
+    }
     var videoFile = null;
     var imageFiles = [];
     for (var _i = 0; _i < allFiles.length; _i++) {
-      if (allFiles[_i].type && allFiles[_i].type.indexOf('video/') === 0) {
+      if (isVideoFile(allFiles[_i])) {
         videoFile = allFiles[_i];
       } else {
         imageFiles.push(allFiles[_i]);
       }
     }
+    try { console.log('[mOpenCaptionFlow] files:', allFiles.length, 'video:', !!videoFile, videoFile ? (videoFile.name + ' ' + videoFile.type + ' ' + videoFile.size) : '-'); } catch(e){}
 
     if (videoFile) {
       // 다중 영상 금지
       var videoCount = 0;
       for (var _j = 0; _j < allFiles.length; _j++) {
-        if (allFiles[_j].type && allFiles[_j].type.indexOf('video/') === 0) videoCount++;
+        if (isVideoFile(allFiles[_j])) videoCount++;
       }
       if (videoCount > 1) {
         showMobileToast('영상은 한 번에 1개만 올릴 수 있어요');
@@ -3357,6 +3364,7 @@ function mInitWave2(){
       var video = document.createElement('video');
       video.preload = 'metadata';
       video.muted = true;
+      video.playsInline = true;
       var url = URL.createObjectURL(file);
       var settled = false;
       var to;
@@ -3364,22 +3372,45 @@ function mInitWave2(){
         if (settled) return;
         settled = true;
         if (to) clearTimeout(to);
-        URL.revokeObjectURL(url);
+        try { URL.revokeObjectURL(url); } catch(e){}
       }
-      video.onloadedmetadata = function() {
+      function finish(duration) {
         var result = {
-          duration: video.duration,
+          duration: duration,
           width: video.videoWidth,
           height: video.videoHeight,
         };
         cleanup();
         resolve(result);
+      }
+      video.onloadedmetadata = function() {
+        // iOS/Android 일부 mp4에서 duration=Infinity — 끝으로 seek 강제
+        if (!isFinite(video.duration) || video.duration === 0) {
+          try {
+            video.currentTime = 1e101;
+            video.ontimeupdate = function() {
+              video.ontimeupdate = null;
+              video.currentTime = 0;
+              finish(video.duration);
+            };
+            // timeupdate 안 오면 3초 후 폴백
+            setTimeout(function(){
+              if (!settled) finish(video.duration);
+            }, 3000);
+          } catch(e) {
+            finish(video.duration);
+          }
+          return;
+        }
+        finish(video.duration);
       };
       video.onerror = function() {
+        try { console.error('[readVideoMetadata] error', video.error && video.error.code); } catch(e){}
         cleanup();
         resolve(null);
       };
       to = setTimeout(function() {
+        try { console.error('[readVideoMetadata] timeout'); } catch(e){}
         cleanup();
         resolve(null);
       }, 10000);
@@ -3388,7 +3419,10 @@ function mInitWave2(){
   }
 
   async function validateVideoFile(file) {
-    if (!['video/mp4', 'video/quicktime'].includes(file.type)) {
+    // MIME 우선, 확장자 fallback (모바일 브라우저 MIME 빈값 대응)
+    var mimeOk = file.type && ['video/mp4', 'video/quicktime', 'video/x-m4v', 'video/mov'].indexOf(file.type) !== -1;
+    var extOk = /\.(mp4|mov|m4v|qt)$/i.test(String(file.name || ''));
+    if (!mimeOk && !extOk) {
       return { valid: false, error: '영상은 MP4 또는 MOV 파일만 가능해요' };
     }
     if (file.size > 104857600) {
@@ -3400,6 +3434,7 @@ function mInitWave2(){
     var duration = meta.duration;
     var width = meta.width;
     var height = meta.height;
+    if (!isFinite(duration) || duration <= 0) return { valid: false, error: '영상 길이를 확인할 수 없어요. 다른 영상을 선택해주세요' };
     if (duration < 3) return { valid: false, error: '영상은 최소 3초 이상이어야 해요' };
     if (duration > 90) return { valid: false, error: '영상은 최대 90초까지만 가능해요 (현재 ' + Math.round(duration) + '초)' };
     var warnings = [];
