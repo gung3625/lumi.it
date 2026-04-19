@@ -786,35 +786,31 @@ exports.handler = async (event) => {
       if (readyErr) console.error('[process-and-post] ready 저장 실패:', readyErr.message);
     }
 
-    // 5) REELS 전용: SRT 생성 + Modal burn-in (best-effort, 사용자에겐 이미 캡션 완료 상태)
-    //      실패해도 원본 video_url로 그대로 진행.
+    // 5) REELS 전용: 블러 패딩 + 자막 burn-in (fire-and-forget, 사용자에겐 이미 캡션 완료 상태)
+    //     process-video-background가 ffmpeg로 후처리 후 video_url 갱신.
     if (isReels && reservation.video_url) {
       try {
         const primaryCaption = captions[0] || '';
         const srt = await generateSubtitleSrt(primaryCaption, 15);
-        const videoUpdate = {};
-        if (!srt) {
-          videoUpdate.subtitle_status = 'skipped';
-        } else {
-          videoUpdate.subtitle_srt = srt;
-          const burnResult = await burnSubtitlesViaModal({
+        if (srt) {
+          await supabase.from('reservations').update({ subtitle_srt: srt }).eq('reserve_key', reservationKey);
+        }
+        const base = process.env.URL || process.env.DEPLOY_URL || 'https://lumi.it.kr';
+        fetch(`${base.replace(/\/$/, '')}/.netlify/functions/process-video-background`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.LUMI_SECRET}`,
+          },
+          body: JSON.stringify({
             reservationKey,
             videoUrl: reservation.video_url,
-            srt,
+            srt: srt || null,
             userId: reservation.user_id,
-          });
-          if (burnResult && burnResult.videoUrl) {
-            videoUpdate.video_url = burnResult.videoUrl;
-            videoUpdate.subtitle_status = 'applied';
-          } else {
-            videoUpdate.subtitle_status = 'skipped';
-          }
-        }
-        if (Object.keys(videoUpdate).length) {
-          await supabase.from('reservations').update(videoUpdate).eq('reserve_key', reservationKey);
-        }
+          }),
+        }).catch((e) => console.warn('[process-and-post] process-video 트리거 실패:', e.message));
       } catch (e) {
-        console.warn('[process-and-post] 자막 파이프라인 예외:', e.message);
+        console.warn('[process-and-post] 영상 후처리 트리거 예외:', e.message);
       }
     }
 
