@@ -43,6 +43,15 @@
 [functions."scheduler"]
   schedule = "* * * * *"
 
+# 매일 KST 08:00 (= UTC 23:00 전날) 브랜드 자동 게시 파이프라인
+# 라이브러리 pickup → reservations insert (image 1 + video 1)
+[functions."daily-content-background"]
+  schedule = "0 23 * * *"
+
+# 매주 월요일 KST 03:00 (= UTC 일요일 18:00) 요일↔업종 주간 셔플
+[functions."scheduled-weekday-shuffle-background"]
+  schedule = "0 18 * * 0"
+
 # 포스트 프로세싱 비활성화 (이메일 난독화 등 JS 삽입 방지)
 [build.processing]
   skip_processing = true

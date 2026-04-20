@@ -5,6 +5,7 @@
 const { createHmac } = require('crypto');
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { deleteReservationStorage } = require('./_shared/storage-cleanup');
+const { generateBrandFooter } = require('./_shared/brand-footer');
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
@@ -770,10 +771,38 @@ exports.handler = async (event) => {
     const captions = await generateCaptions(imageAnalysis, captionInput, captionProgress);
     console.log('[process-and-post] 캡션 생성 완료:', captions.length, '개');
 
+    // 4.1) 브랜드 자동 게시(is_brand_auto=true)만: lumi 홍보 footer append
+    //       일반 사용자 예약에는 영향 제로 (플래그 false면 분기 미실행)
+    let finalCaptions = captions;
+    if (reservation.is_brand_auto === true) {
+      try {
+        const footer = await generateBrandFooter({
+          industry: reservation.industry || bizCat,
+          openaiKey: process.env.OPENAI_API_KEY,
+        });
+        if (footer && typeof footer === 'string') {
+          finalCaptions = captions.map((c) => (c ? `${c}\n\n${footer}` : c));
+          console.log('[process-and-post] brand-auto footer 적용 완료');
+        }
+      } catch (e) {
+        console.warn('[process-and-post] brand-auto footer 예외(스킵):', e.message);
+      }
+    }
+
     // 4.5) 캡션 즉시 저장 (ready) — 사용자 UX: 자막 처리와 분리
-    const readyPayload = {
-      generated_captions: captions,
-      captions,
+    //       brand-auto: 자동 게시 위해 status=scheduled + selected_caption_index=0 으로 즉시 확정
+    const isBrandAuto = reservation.is_brand_auto === true;
+    const readyPayload = isBrandAuto ? {
+      generated_captions: finalCaptions,
+      captions: finalCaptions,
+      image_analysis: imageAnalysis,
+      captions_generated_at: new Date().toISOString(),
+      caption_status: 'scheduled',
+      selected_caption_index: 0,
+      caption_error: null,
+    } : {
+      generated_captions: finalCaptions,
+      captions: finalCaptions,
       image_analysis: imageAnalysis,
       captions_generated_at: new Date().toISOString(),
       caption_status: 'ready',

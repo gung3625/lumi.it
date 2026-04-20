@@ -126,4 +126,90 @@ Output only the prompt text, no explanation.`;
   return await callGptMini(systemPrompt, userPrompt);
 }
 
-module.exports = { getImagePrompt, getVideoPrompt, INDUSTRY_CONCEPTS };
+// 업종 한글 라벨 (캡션 생성 프롬프트용)
+const INDUSTRY_LABELS = {
+  cafe:       '카페',
+  restaurant: '음식점',
+  beauty:     '뷰티샵',
+  nail:       '네일샵',
+  flower:     '꽃집',
+  clothing:   '의류 편집샵',
+  gym:        '피트니스 센터',
+};
+
+/**
+ * 브랜드 자동 게시용 캡션 생성 (GPT-4o-mini).
+ * 업종별로 친근한 자영업 톤 + 해시태그 3~5개. 브랜드 푸터는 호출측에서 append.
+ * @param {'cafe'|'restaurant'|'beauty'|'nail'|'flower'|'clothing'|'gym'} industry
+ * @param {'image'|'video'} contentType
+ * @returns {Promise<{ caption: string }>}
+ */
+async function getBrandCaption(industry, contentType) {
+  const industryLabel = INDUSTRY_LABELS[industry] || '소상공인';
+  const mediaLabel = contentType === 'video' ? '짧은 릴스 영상' : '감성 이미지';
+
+  const systemPrompt = `당신은 한국 자영업자의 인스타 캡션을 대신 써주는 카피라이터입니다.
+말투는 동네 단골한테 이야기하듯 친근하고 담백하게. 광고 티 없이.
+이모지 금지. 과장 표현("최고","유일한","완벽한") 금지. 효능·의료 표현 금지.`;
+
+  const userPrompt = `아래 조건으로 인스타 피드 캡션을 1개만 작성하세요.
+
+업종: ${industryLabel}
+미디어: ${mediaLabel}
+
+[캡션 규칙]
+- 본문 2~4줄. 한 줄은 짧게 끊어서.
+- 첫 문장은 스크롤을 멈추게 하는 감성 한 문장.
+- 이모지 사용 금지 (텍스트만).
+- 가격·시간·수치 단정 금지. 특정 메뉴 이름 지어내지 말 것.
+- 경쟁사/타 브랜드 언급 금지.
+
+[해시태그]
+- 본문 마지막 줄바꿈 후 한 블록으로.
+- 3~5개. 업종과 직접 관련된 것만.
+- 예시: #${industry === 'cafe' ? '카페스타그램' : industry === 'restaurant' ? '맛집추천' : industry === 'beauty' ? '뷰티스타그램' : industry === 'nail' ? '네일아트' : industry === 'flower' ? '플라워샵' : industry === 'clothing' ? '데일리룩' : '오운완'}
+
+[출력 형식]
+설명/제목/따옴표 없이 캡션 본문 + 해시태그만 출력.`;
+
+  const apiKey = requireApiKey();
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), PROMPT_TIMEOUT_MS);
+  let res;
+  try {
+    res = await fetch(`${OPENAI_BASE}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        max_tokens: 400,
+        temperature: 0.85,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+      }),
+      signal: ctrl.signal,
+    });
+  } catch (e) {
+    clearTimeout(tid);
+    throw new Error(`getBrandCaption 요청 실패: ${e.message || 'network error'}`);
+  }
+  clearTimeout(tid);
+
+  if (!res.ok) {
+    let snippet = '';
+    try { snippet = (await res.text()).slice(0, 200); } catch (_) {}
+    throw new Error(`getBrandCaption HTTP ${res.status}: ${snippet}`);
+  }
+
+  const data = await res.json();
+  const text = data?.choices?.[0]?.message?.content?.trim();
+  if (!text) throw new Error('getBrandCaption 응답이 비어 있습니다.');
+  return { caption: text };
+}
+
+module.exports = { getImagePrompt, getVideoPrompt, getBrandCaption, INDUSTRY_CONCEPTS, INDUSTRY_LABELS };
