@@ -72,19 +72,81 @@ body.dark-mode #admin-loading{background:#111;}
 #fab-dark:hover{transform:scale(1.08);}
 body.dark-mode #fab-dark{background:rgba(255,255,255,.1);}
 
+/* library grid */
+.lib-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px;}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:980px;border:none;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .2s,transform .15s;min-height:44px;}
+.btn:active{transform:scale(.95);}
+.btn-primary{background:#C8507A;color:#fff;}
+.btn-primary:hover{opacity:.88;}
+.btn-secondary{background:rgba(0,0,0,.07);color:#1d1d1f;}
+.btn-secondary:hover{opacity:.75;}
+body.dark-mode .btn-secondary{background:rgba(255,255,255,.1);color:#f0f2f8;}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+
+.industry-group{display:flex;flex-direction:column;gap:10px;}
+.industry-label{font-size:13px;font-weight:600;color:#6e6e73;letter-spacing:.3px;text-transform:uppercase;}
+body.dark-mode .industry-label{color:rgba(255,255,255,.4);}
+.lib-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;}
+.lib-card{background:#f5f5f7;border-radius:8px;overflow:hidden;display:flex;flex-direction:column;}
+body.dark-mode .lib-card{background:#1c1c1e;}
+.lib-thumb{width:100%;aspect-ratio:9/16;object-fit:cover;background:#e5e5ea;display:flex;align-items:center;justify-content:center;color:#c7c7cc;}
+body.dark-mode .lib-thumb{background:#2c2c2e;}
+.lib-thumb img,.lib-thumb video{width:100%;height:100%;object-fit:cover;}
+.lib-thumb-placeholder{display:flex;align-items:center;justify-content:center;width:100%;height:100%;aspect-ratio:9/16;background:#e5e5ea;}
+body.dark-mode .lib-thumb-placeholder{background:#2c2c2e;}
+.lib-info{padding:10px 12px;display:flex;flex-direction:column;gap:6px;}
+.lib-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.lib-type-badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:980px;letter-spacing:.3px;}
+.lib-type-badge.image{background:rgba(200,80,122,.12);color:#C8507A;}
+.lib-type-badge.video{background:rgba(52,120,246,.12);color:#3478f6;}
+.status-badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:980px;}
+.status-badge.ready{background:rgba(52,199,89,.12);color:#34c759;}
+.status-badge.generating{background:rgba(255,159,10,.12);color:#ff9f0a;}
+.status-badge.failed{background:rgba(255,59,48,.12);color:#ff3b30;}
+.lib-date{font-size:11px;color:#6e6e73;}
+body.dark-mode .lib-date{color:rgba(255,255,255,.55);}
+.lib-count{font-size:11px;color:#6e6e73;}
+body.dark-mode .lib-count{color:rgba(255,255,255,.55);}
+.lib-regen-btn{margin:0 12px 12px;padding:6px 0;border-radius:980px;border:none;background:rgba(0,0,0,.06);color:#1d1d1f;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;transition:opacity .2s;min-height:44px;}
+.lib-regen-btn:hover{opacity:.7;}
+body.dark-mode .lib-regen-btn{background:rgba(255,255,255,.08);color:#f0f2f8;}
+
+/* schedule table */
+.schedule-actions{display:flex;align-items:center;gap:10px;margin-bottom:4px;}
+.schedule-table{width:100%;border-collapse:collapse;}
+.schedule-table th,.schedule-table td{padding:10px 14px;text-align:left;font-size:14px;border-bottom:1px solid rgba(0,0,0,.06);}
+body.dark-mode .schedule-table th,body.dark-mode .schedule-table td{border-color:rgba(255,255,255,.06);}
+.schedule-table th{font-weight:600;color:#6e6e73;font-size:12px;letter-spacing:.3px;text-transform:uppercase;}
+body.dark-mode .schedule-table th{color:rgba(255,255,255,.4);}
+.schedule-table tr:last-child td{border-bottom:none;}
+.schedule-table tbody tr:hover{background:rgba(0,0,0,.02);}
+body.dark-mode .schedule-table tbody tr:hover{background:rgba(255,255,255,.03);}
+.weekday-label{font-weight:600;}
+.today-row{background:rgba(200,80,122,.04);}
+body.dark-mode .today-row{background:rgba(200,80,122,.06);}
+
+/* modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;}
+.modal-box{background:#fff;border-radius:16px;padding:28px;max-width:380px;width:100%;display:flex;flex-direction:column;gap:16px;box-shadow:0 20px 60px rgba(0,0,0,.2);}
+body.dark-mode .modal-box{background:#272729;}
+.modal-title{font-size:18px;font-weight:600;}
+.modal-desc{font-size:14px;color:#6e6e73;line-height:1.6;}
+body.dark-mode .modal-desc{color:rgba(255,255,255,.5);}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;}
+
+/* toast */
+.toast{position:fixed;bottom:calc(80px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:#1d1d1f;color:#fff;font-size:14px;font-weight:500;padding:10px 20px;border-radius:980px;z-index:600;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
+body.dark-mode .toast{background:#f0f2f8;color:#1d1d1f;}
+.toast.show{opacity:1;}
+
 @media(max-width:767px){
   .hero{padding:32px 20px 24px;}
   .section-card{padding:20px 18px;}
+  .lib-cards{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));}
+  .schedule-table th,.schedule-table td{padding:8px 10px;font-size:13px;}
+  .modal-box{padding:22px;}
 }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.103.3/dist/umd/supabase.min.js"></script>
-<script>
-  window.lumiSupa = window.supabase.createClient(
-    'https://cldsozdocxpvkbuxwqep.supabase.co',
-    'sb_publishable_WjWg5o05Y7lhib674Cr_fw_0mpY-ccG',
-    { auth: { persistSession: true, autoRefreshToken: true, storageKey: 'lumi-auth' } }
-  );
-</script>
 </head>
 <body>
 <!-- Google Tag Manager (noscript) -->
@@ -122,11 +184,23 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
       </span>
       <span class="section-card-title">콘텐츠 라이브러리</span>
-      <span class="section-card-badge">묶음 2</span>
+      <span class="section-card-badge">7업종 × 4 = 28개</span>
     </div>
-    <div class="placeholder-body">
-      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
-      <p>생성된 이미지·영상 라이브러리 뷰어<br>재생성 · 셔플 기능<br><strong>묶음 2에서 구현 예정</strong></p>
+    <div class="lib-actions">
+      <button class="btn btn-primary" id="btn-gen-all" onclick="confirmGenAll()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        전체 생성
+      </button>
+      <button class="btn btn-secondary" onclick="loadLibrary()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        새로고침
+      </button>
+    </div>
+    <div id="library-body">
+      <div class="placeholder-body">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+        <p>불러오는 중...</p>
+      </div>
     </div>
   </div>
 
@@ -137,11 +211,18 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
       </span>
       <span class="section-card-title">요일 스케줄</span>
-      <span class="section-card-badge">묶음 2</span>
+      <span class="section-card-badge">주간 셔플</span>
     </div>
-    <div class="placeholder-body">
-      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-      <p>요일별 업종 회전 설정<br>이미지/영상 게시 시간 조정<br><strong>묶음 2에서 구현 예정</strong></p>
+    <div class="schedule-actions">
+      <button class="btn btn-primary" id="btn-shuffle" onclick="confirmShuffle()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
+        주간 셔플
+      </button>
+    </div>
+    <div id="schedule-body">
+      <div class="placeholder-body">
+        <p>불러오는 중...</p>
+      </div>
     </div>
   </div>
 
@@ -165,34 +246,280 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- 다크모드 FAB -->
 <button id="fab-dark" onclick="toggleDark()" aria-label="다크/라이트 모드 전환"></button>
 
+<!-- 확인 모달 -->
+<div id="modal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true">
+  <div class="modal-box">
+    <div class="modal-title" id="modal-title"></div>
+    <div class="modal-desc" id="modal-desc"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal()">취소</button>
+      <button class="btn btn-primary" id="modal-confirm-btn">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- 토스트 -->
+<div id="toast" class="toast"></div>
+
 <script>
-// admin 인증 체크 — 실패 시 index로 리다이렉트
+// ── 업종 한글 매핑
+var INDUSTRY_KO = {cafe:'카페',restaurant:'음식점',beauty:'뷰티샵',nail:'네일샵',flower:'꽃집',clothing:'의류매장',gym:'헬스장'};
+var WEEKDAY_KO = ['일','월','화','수','목','금','토'];
+var INDUSTRIES = ['cafe','restaurant','beauty','nail','flower','clothing','gym'];
+
+// ── 인증 토큰
+function getToken() { return localStorage.getItem('lumi_token') || ''; }
+function authHeaders() { return { 'Authorization': 'Bearer ' + getToken(), 'Content-Type': 'application/json' }; }
+
+// ── 토스트
+var toastTimer;
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function() { t.classList.remove('show'); }, 3000);
+}
+
+// ── 모달
+var modalCallback = null;
+function showModal(title, desc, cb) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-desc').textContent = desc;
+  modalCallback = cb;
+  document.getElementById('modal').style.display = 'flex';
+}
+function closeModal() {
+  document.getElementById('modal').style.display = 'none';
+  modalCallback = null;
+}
+document.getElementById('modal-confirm-btn').onclick = function() {
+  closeModal();
+  if (modalCallback) modalCallback();
+};
+document.getElementById('modal').onclick = function(e) { if (e.target === this) closeModal(); };
+
+// ── admin 인증 체크
 (function() {
-  var token = localStorage.getItem('lumi_token');
-  if (!token) {
-    window.location = '/';
-    return;
-  }
-  fetch('/api/admin-auth-check', {
-    method: 'POST',
-    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
-  })
-  .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
-  .then(function(res) {
-    if (!res.ok || !res.data || !res.data.is_admin) {
-      window.location = '/';
-      return;
-    }
-    // 인증 성공 — 로딩 제거
-    var loading = document.getElementById('admin-loading');
-    if (loading) loading.style.display = 'none';
-  })
-  .catch(function() {
-    window.location = '/';
-  });
+  var token = getToken();
+  if (!token) { window.location = '/'; return; }
+  fetch('/api/admin-auth-check', { method: 'POST', headers: authHeaders() })
+    .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
+    .then(function(res) {
+      if (!res.ok || !res.data || !res.data.is_admin) { window.location = '/'; return; }
+      var loading = document.getElementById('admin-loading');
+      if (loading) loading.style.display = 'none';
+      loadLibrary();
+    })
+    .catch(function() { window.location = '/'; });
 })();
 
-// 다크모드 FAB
+// ── 라이브러리 로드
+function loadLibrary() {
+  fetch('/api/admin-library-list', { method: 'GET', headers: authHeaders() })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      renderLibrary(d.library || []);
+      renderSchedule(d.schedule || []);
+    })
+    .catch(function(e) {
+      var p = document.createElement('p');
+      p.style.cssText = 'color:#ff3b30;font-size:14px;padding:16px 0;';
+      p.textContent = '라이브러리 로드 실패: ' + e.message;
+      var el = document.getElementById('library-body');
+      el.innerHTML = '';
+      el.appendChild(p);
+    });
+}
+
+// ── 라이브러리 렌더링
+function renderLibrary(library) {
+  var body = document.getElementById('library-body');
+  if (!library.length) {
+    body.innerHTML = '<div class="placeholder-body"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg><p>생성된 콘텐츠가 없습니다.<br>전체 생성 버튼으로 시작하세요.</p></div>';
+    return;
+  }
+
+  // 업종별 그룹화
+  var grouped = {};
+  INDUSTRIES.forEach(function(ind) { grouped[ind] = { image: [], video: [] }; });
+  library.forEach(function(item) {
+    if (grouped[item.industry] && grouped[item.industry][item.content_type]) {
+      grouped[item.industry][item.content_type].push(item);
+    }
+  });
+
+  var html = '';
+  INDUSTRIES.forEach(function(ind) {
+    html += '<div class="industry-group" style="margin-bottom:20px;">';
+    html += '<div class="industry-label">' + INDUSTRY_KO[ind] + '</div>';
+    html += '<div class="lib-cards">';
+    ['image','video'].forEach(function(ct) {
+      var slots = grouped[ind][ct];
+      // 항상 2슬롯 표시
+      for (var i = 0; i < 2; i++) {
+        var item = slots[i];
+        html += renderLibCard(ind, ct, i, item);
+      }
+    });
+    html += '</div></div>';
+  });
+  body.innerHTML = html;
+}
+
+function renderLibCard(industry, ct, slotIdx, item) {
+  var statusLabel = item ? item.status : 'none';
+  var statusText = {ready:'준비완료', generating:'생성중', failed:'실패', none:'미생성'}[statusLabel] || statusLabel;
+  var statusClass = {ready:'ready', generating:'generating', failed:'failed', none:'failed'}[statusLabel] || 'failed';
+
+  var thumbHtml = '<div class="lib-thumb-placeholder"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity=".3"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg></div>';
+  if (item && item.status === 'ready' && item.public_url) {
+    if (ct === 'image') {
+      thumbHtml = '<div class="lib-thumb"><img src="' + item.public_url + '" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;aspect-ratio:9/16;"></div>';
+    } else {
+      thumbHtml = '<div class="lib-thumb"><video src="' + item.public_url + '" muted loop playsinline style="width:100%;height:100%;object-fit:cover;aspect-ratio:9/16;" onmouseenter="this.play()" onmouseleave="this.pause()"></video></div>';
+    }
+  } else {
+    thumbHtml = '<div class="lib-thumb-placeholder" style="aspect-ratio:9/16;">' + thumbHtml + '</div>';
+  }
+
+  var lastUsed = item && item.last_used_at ? new Date(item.last_used_at).toLocaleDateString('ko-KR') : '-';
+  var useCount = item ? (item.use_count || 0) : 0;
+  var genDate = item && item.generated_at ? new Date(item.generated_at).toLocaleDateString('ko-KR') : '-';
+
+  var regenDisabled = item && item.status === 'generating' ? 'disabled' : '';
+  var regenLabel = item && item.status === 'generating' ? '생성중...' : '재생성';
+
+  return '<div class="lib-card">'
+    + thumbHtml
+    + '<div class="lib-info">'
+    + '<div class="lib-meta">'
+    + '<span class="lib-type-badge ' + ct + '">' + (ct === 'image' ? '이미지' : '영상') + '</span>'
+    + (item ? '<span class="status-badge ' + statusClass + '">' + statusText + '</span>' : '<span class="status-badge failed">미생성</span>')
+    + '</div>'
+    + '<div class="lib-date">생성 ' + genDate + '</div>'
+    + '<div class="lib-count">사용 ' + useCount + '회 · 최근 ' + lastUsed + '</div>'
+    + '</div>'
+    + '<button class="lib-regen-btn" ' + regenDisabled + ' onclick="regenSlot(\'' + industry + '\',\'' + ct + '\',' + slotIdx + ',this)">' + regenLabel + '</button>'
+    + '</div>';
+}
+
+// ── 전체 생성 확인
+function confirmGenAll() {
+  showModal(
+    '전체 라이브러리 생성',
+    '28개(7업종 × 이미지 2 + 영상 2)를 새로 생성합니다. 기존 콘텐츠는 덮어씌워지고 약 15~30분 소요됩니다. 계속하시겠습니까?',
+    function() { triggerGenAll(); }
+  );
+}
+
+function triggerGenAll() {
+  var btn = document.getElementById('btn-gen-all');
+  btn.disabled = true;
+  btn.textContent = '생성중...';
+  showToast('전체 생성이 시작되었습니다. 완료까지 15~30분 소요됩니다.');
+
+  fetch('/api/generate-library-background', {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({})
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    showToast('생성 완료: ' + (d.succeeded || 0) + '개 성공, ' + (d.failed || 0) + '개 실패');
+    loadLibrary();
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg> 전체 생성';
+  })
+  .catch(function(e) {
+    showToast('생성 중 오류: ' + e.message);
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg> 전체 생성';
+  });
+}
+
+// ── 단일 슬롯 재생성
+function regenSlot(industry, contentType, slotIndex, btnEl) {
+  btnEl.disabled = true;
+  btnEl.textContent = '요청중...';
+  showToast(INDUSTRY_KO[industry] + ' ' + (contentType === 'image' ? '이미지' : '영상') + ' 재생성 요청...');
+
+  fetch('/api/admin-library-regenerate', {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({ industry: industry, content_type: contentType, slot_index: slotIndex })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    showToast(d.message || '재생성 시작됨');
+    btnEl.textContent = '생성중...';
+    // 30초 후 자동 새로고침
+    setTimeout(function() { loadLibrary(); }, 30000);
+  })
+  .catch(function(e) {
+    showToast('재생성 요청 실패: ' + e.message);
+    btnEl.disabled = false;
+    btnEl.textContent = '재생성';
+  });
+}
+
+// ── 스케줄 렌더링
+function renderSchedule(schedule) {
+  var body = document.getElementById('schedule-body');
+  if (!schedule.length) {
+    body.innerHTML = '<div class="placeholder-body"><p>스케줄 데이터가 없습니다.</p></div>';
+    return;
+  }
+
+  var todayWeekday = new Date().getDay();
+  var html = '<div style="overflow-x:auto;"><table class="schedule-table"><thead><tr><th>요일</th><th>업종</th><th>설정일</th></tr></thead><tbody>';
+  schedule.forEach(function(row) {
+    var isToday = row.weekday === todayWeekday;
+    var weekStartStr = row.week_start_date ? new Date(row.week_start_date).toLocaleDateString('ko-KR') : '-';
+    html += '<tr class="' + (isToday ? 'today-row' : '') + '">'
+      + '<td><span class="weekday-label">' + WEEKDAY_KO[row.weekday] + '요일</span>' + (isToday ? ' <span style="font-size:10px;color:#C8507A;font-weight:600;">오늘</span>' : '') + '</td>'
+      + '<td>' + (INDUSTRY_KO[row.industry] || row.industry) + '</td>'
+      + '<td><span class="lib-date">' + weekStartStr + '~</span></td>'
+      + '</tr>';
+  });
+  html += '</tbody></table></div>';
+  body.innerHTML = html;
+}
+
+// ── 셔플 확인
+function confirmShuffle() {
+  showModal(
+    '주간 셔플',
+    '요일별 업종 배정을 무작위로 새로 섞습니다. 이번 주 배정이 즉시 변경됩니다. 계속하시겠습니까?',
+    function() { triggerShuffle(); }
+  );
+}
+
+function triggerShuffle() {
+  var btn = document.getElementById('btn-shuffle');
+  btn.disabled = true;
+  btn.textContent = '셔플중...';
+
+  fetch('/api/admin-shuffle-weekday', {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({})
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    showToast('셔플 완료. 새 배정이 적용되었습니다.');
+    renderSchedule(d.schedule || []);
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg> 주간 셔플';
+  })
+  .catch(function(e) {
+    showToast('셔플 실패: ' + e.message);
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg> 주간 셔플';
+  });
+}
+
+// ── 다크모드 FAB
 (function() {
   var btn = document.getElementById('fab-dark');
   function setIcon(dark) {
