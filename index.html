@@ -1591,6 +1591,8 @@ body.dark-mode .feat-toggle-row:hover{background:rgba(255,255,255,.03);}
 .feat-toggle-icon.thread{background:#000;}
 body.dark-mode .feat-toggle-icon.thread{background:#fff;}
 .feat-toggle-icon.weather{background:linear-gradient(135deg,#56CCF2,#2F80ED);}
+.feat-toggle-icon.captionReview{background:linear-gradient(135deg,#8E8E93,#48484A);}
+.feat-toggle-icon.linkinbio{background:linear-gradient(135deg,#C8507A,#9B3D5E);}
 .feat-toggle-text{display:flex;flex-direction:column;gap:1px;min-width:0;}
 .feat-toggle-name{font-size:12px;color:#0d1117;line-height:1.3;}
 body.dark-mode .feat-toggle-name{color:#f0f2f8;}
@@ -6971,7 +6973,7 @@ var cards = {
           {key:'thread', label:'\uC2A4\uB808\uB4DC \uC790\uB3D9\uAC8C\uC2DC', desc:'\uC2A4\uB808\uB4DC \uB3D9\uC2DC \uACF5\uC720', icon:'thread', iconText:'\uD83E\uDDF5'},
           {key:'weather', label:'\uB0A0\uC528 \uBC18\uC601', desc:'\uCEA1\uC158\uC5D0 \uB0A0\uC528 \uC815\uBCF4 \uBC18\uC601', icon:'weather', iconText:'\u26C5'},
           {key:'captionReview', label:'\uCEA1\uC158 \uD655\uC778', desc:'\uAC8C\uC2DC \uC804 \uCEA1\uC158 \uD655\uC778\u00B7\uD3B8\uC9D1', icon:'captionReview', iconText:'\u270D\uFE0F'},
-          {key:'linkinbio', label:'\uB9C1\uD06C\uC778\uBC14\uC774\uC624', desc:'\uD504\uB85C\uD544 \uB9C1\uD06C \uD398\uC774\uC9C0 \uD45C\uC2DC', icon:'feat-icon-linkinbio', iconText:'\uD83D\uDD17'}
+          {key:'linkinbio', label:'\uB9C1\uD06C\uC778\uBC14\uC774\uC624', desc:'\uD504\uB85C\uD544 \uB9C1\uD06C \uD398\uC774\uC9C0 \uD45C\uC2DC', icon:'linkinbio', iconText:'\uD83D\uDD17'}
         ];
         var states = React.useState(Object.assign({story:true,thread:false,weather:true,captionReview:true,linkinbio:false}, saved));
         var toggles = states[0], setToggles = states[1];
@@ -7341,17 +7343,17 @@ var layoutGuest = [
   {i:'newsletter',x:2, y:3, w:2, h:1, isResizable:false}
 ];
 var layoutUser = [
-  {i:'bio',        x:0, y:0, w:1, h:2, isResizable:false},
-  {i:'linkinbio',  x:1, y:0, w:2, h:2, isResizable:false},
+  {i:'bio',        x:0, y:0, w:2, h:2, isResizable:false},
+  {i:'linkinbio',  x:2, y:0, w:1, h:2, isResizable:false},
   {i:'project2',   x:3, y:0, w:1, h:2, isResizable:false},
   {i:'empty1',     x:0, y:2, w:1, h:1, isResizable:false},
   {i:'newsletter', x:1, y:2, w:2, h:1, isResizable:false},
+  {i:'project1',   x:3, y:2, w:1, h:2, isResizable:false},
   {i:'blog',       x:0, y:3, w:2, h:1, isResizable:false},
   {i:'spotify',    x:2, y:3, w:1, h:1, isResizable:false},
-  {i:'project1',   x:3, y:2, w:1, h:2, isResizable:false},
   {i:'project3',   x:0, y:4, w:2, h:1, isResizable:false},
   {i:'twitter',    x:2, y:4, w:1, h:1, isResizable:false},
-  {i:'dark',       x:3, y:4, w:1, h:1, isResizable:false}
+  {i:'dark',       x:0, y:5, w:1, h:1, isResizable:false}
 ];
 var layout = localStorage.getItem('lumi_token') ? layoutUser : layoutGuest;
 
@@ -7387,7 +7389,7 @@ var mobileLayout = [
 
 // 저장된 레이아웃 불러오기
 // 레이아웃 버전 관리 — 레이아웃 변경 시 버전 올리면 캐시 무시
-var LAYOUT_VERSION = 31;
+var LAYOUT_VERSION = 33;
 var savedLayout = null;
 if (!localStorage.getItem('lumi_token')) {
   try {
