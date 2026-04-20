@@ -4525,21 +4525,21 @@ function mInitWave2(){
         '<div class="m-ig-step-body">' +
           '<p class="m-ig-step-label">' + s.label + '</p>';
       if (done) {
-        html += '<div style="display:flex;justify-content:center;margin-top:4px;"><button type="button" class="m-ig-step-undo" data-step="' + s.key + '" style="background:none;border:0;padding:4px 0;color:#C8507A;text-decoration:underline;cursor:pointer;font-size:13px;">완료 취소</button></div>';
+        html += '<button type="button" class="m-ig-step-undo" data-step="' + s.key + '" style="background:none;border:0;padding:4px 0;color:#C8507A;text-decoration:underline;cursor:pointer;font-size:13px;">완료 취소</button>';
       } else if (isCurrent) {
         if (s.key === 'connect') {
-          html += '<p class="m-ig-step-desc">' + s.desc + '</p><div style="display:flex;justify-content:center;margin-top:8px;"><button type="button" class="m-feat-ghost" id="m-ig-oauth" style="margin-top:0;">연동하기</button></div>';
+          html += '<p class="m-ig-step-desc">' + s.desc + '</p><button type="button" class="m-feat-ghost" id="m-ig-oauth">연동하기</button>';
         } else if (s.key === 'step3') {
           html += '<p class="m-ig-step-desc">' + s.desc + '</p><div id="m-tester-form"><input type="text" id="m-tester-handle" placeholder="@인스타그램 닉네임" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid rgba(200,80,122,.4);font-size:14px;margin:8px 0;background:transparent;color:inherit;font-family:inherit;" /><button type="button" class="m-feat-ghost" id="m-tester-submit">테스터 등록 요청</button></div><p id="m-tester-done" style="display:none;color:var(--pink,#C8507A);font-size:13px;font-weight:600;margin-top:8px;">접수됐어요</p>';
         } else if (s.key === 'step4') {
           html += '<div id="m-invite-status"><p class="m-ig-step-desc" id="m-invite-desc">상태 확인 중…</p><a id="m-invite-link" href="https://www.instagram.com/accounts/manage_access/" target="_blank" rel="noopener" style="display:none;" class="m-feat-ghost">초대 수락하러 가기</a></div>';
         } else {
           html += '<p class="m-ig-step-desc">' + s.desc + '</p>';
-          html += '<div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:8px;">';
+          html += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">';
           if (s.link) {
-            html += '<a href="' + s.link + '" target="_blank" rel="noopener" class="m-feat-ghost" style="margin-top:0;text-decoration:none;">' + s.linkLabel + '</a>';
+            html += '<a href="' + s.link + '" target="_blank" rel="noopener" data-force-external="1" style="display:inline-flex;align-items:center;padding:10px 16px;border-radius:999px;background:#C8507A;color:#fff;font-size:14px;font-weight:600;text-decoration:none;line-height:1.2;white-space:nowrap;">' + s.linkLabel + '</a>';
           }
-          html += '<button type="button" class="m-ig-step-mark" data-step="' + s.key + '" style="height:40px;padding:0 16px;font-size:14px;">완료</button>';
+          html += '<button type="button" class="m-ig-step-mark" data-step="' + s.key + '" style="padding:10px 16px;height:auto;line-height:1.2;">완료</button>';
           html += '</div>';
         }
       }
@@ -4559,6 +4559,14 @@ function mInitWave2(){
         guide[b.getAttribute('data-step')] = false;
         localStorage.setItem('lumi_ig_guide', JSON.stringify(guide));
         renderIgGuide();
+      });
+    });
+    el.querySelectorAll('[data-force-external]').forEach(function(a){
+      a.addEventListener('click', function(ev){
+        var url = a.getAttribute('href');
+        if (!url) return;
+        ev.preventDefault();
+        window.open(url, '_blank', 'noopener,noreferrer');
       });
     });
     var ob = document.getElementById('m-ig-oauth');
