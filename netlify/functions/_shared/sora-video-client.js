@@ -43,12 +43,17 @@ async function generateVideo({ prompt, size = '720x1280', seconds = 8 } = {}) {
   }
   const apiKey = requireApiKey();
 
+  // Sora 2 API: seconds 는 문자열 enum ('4' | '8' | '12') 만 허용.
+  const allowedSeconds = ['4', '8', '12'];
+  const secondsStr = String(seconds);
+  const secondsParam = allowedSeconds.includes(secondsStr) ? secondsStr : '8';
+
   // 1) Job 생성
   const jobBody = {
     model: VIDEO_MODEL,
     prompt,
     size,
-    seconds,
+    seconds: secondsParam,
   };
 
   const jobCtrl = new AbortController();
