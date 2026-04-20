@@ -7,15 +7,16 @@
 const OPENAI_BASE = 'https://api.openai.com/v1';
 const PROMPT_TIMEOUT_MS = 30_000;
 
-// 업종별 베이스 컨셉 (영문)
+// 업종별 베이스 컨셉 (영문) — 한국 동네 자영업 평균 현실감 톤
+// 매거진 편집샷 금지, 스마트폰 스냅처럼 자연스럽고 평범하게.
 const INDUSTRY_CONCEPTS = {
-  cafe:       'cozy modern cafe, golden hour light, steam rising from latte art, warm bokeh background, artisan coffee close-up',
-  restaurant: 'plated gourmet dish close-up, Korean fine dining, dramatic overhead shot, sauce texture, garnish detail',
-  beauty:     'serene salon interior, soft natural light, skincare bottles macro shot, clean white marble surface, dewy skin texture',
-  nail:       'nail art close-up, pastel gel polish, delicate floral detail, hands resting on linen texture, soft studio light',
-  flower:     'fresh floral arrangement, morning dew on petals, florist studio, shallow depth of field, muted earth tones',
-  clothing:   'fashion editorial flatlay, minimalist Korean style, fabric texture detail, neutral background, soft diffused light',
-  gym:        'modern gym interior, equipment detail, chalk dust in air, motivational atmosphere, industrial warm light',
+  cafe:       'typical Korean neighborhood cafe interior, plain wooden table, ordinary latte in a regular ceramic mug, natural daylight through window, realistic everyday atmosphere',
+  restaurant: 'everyday Korean restaurant dish on a simple plate, 반찬 side dishes in small bowls visible, ordinary stainless or melamine tableware, typical casual 식당 table setting',
+  beauty:     'everyday Korean skincare routine shelf, a mix of mid-range product bottles, normal bathroom or vanity lighting, realistic home setup',
+  nail:       'regular Korean nail salon hand close-up, realistic gel polish, ordinary manicure table, standard fluorescent salon light',
+  flower:     'neighborhood Korean flower shop bouquet wrapped in kraft paper, shop counter with scissors and ribbon, casual everyday florist vibe',
+  clothing:   'everyday clothing rack inside a small Korean boutique, casual hanger shot, ordinary store lighting, realistic retail floor',
+  gym:        'regular Korean neighborhood gym with ordinary equipment, fluorescent ceiling lights, realistic sweat towel on bench, no-frills practical setup',
 };
 
 // 구도 variation 풀 (variationSeed로 선택)
@@ -29,7 +30,7 @@ const COMPOSITION_VARIANTS = [
   'diagonal dynamic composition',
 ];
 
-const SHARED_CONSTRAINTS = 'cinematic color grade, no text, no logos, no watermarks, no human faces, photorealistic, professional photography';
+const SHARED_CONSTRAINTS = 'photorealistic everyday scene, natural unfiltered color, smartphone snapshot feel, no text, no logos, no watermarks, no human faces, avoid luxury/editorial/magazine aesthetic, avoid dramatic cinematic lighting, show average Korean small-business reality';
 
 function requireApiKey() {
   const key = process.env.OPENAI_API_KEY;
@@ -114,9 +115,9 @@ async function getVideoPrompt(industry, variationSeed = 0) {
 
   const composition = COMPOSITION_VARIANTS[variationSeed % COMPOSITION_VARIANTS.length];
 
-  const systemPrompt = `You are a professional video director specializing in Korean SNS Reels.
+  const systemPrompt = `You are writing a realistic phone-shot style video prompt for a Korean small-business SNS Reel.
 Generate a single English video generation prompt (max 120 words) for an 8-second 9:16 Sora 2 video.
-Rules: ${SHARED_CONSTRAINTS}. Subtle camera movement only. No jump cuts. Smooth cinematic motion.`;
+Rules: ${SHARED_CONSTRAINTS}. Subtle handheld or locked camera — no dramatic zooms, no jump cuts, no cinematic dolly moves. Natural everyday motion only.`;
 
   const userPrompt = `Create a video prompt for: ${concept}.
 Use camera style: ${composition} with slow smooth movement.
