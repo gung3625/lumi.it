@@ -7867,7 +7867,9 @@ function liShowForm() {
       if (elEmail && prefillEmail) elEmail.value = prefillEmail;
       var cbRemember = document.getElementById('login-remember-email');
       var cbAuto = document.getElementById('login-auto-login');
-      if (cbRemember) cbRemember.checked = (localStorage.getItem('lumi_remember_email') === '1');
+      var _rememberFlag = localStorage.getItem('lumi_remember_email');
+      var _savedEmailForCb = localStorage.getItem('lumi_saved_email');
+      if (cbRemember) cbRemember.checked = (_rememberFlag === '1') || !!_savedEmailForCb;
       if (cbAuto) cbAuto.checked = (localStorage.getItem('lumi_auto_login') !== '0');
     } catch(e) {}
   }
