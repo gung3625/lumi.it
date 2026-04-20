@@ -2139,6 +2139,26 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         +'<a class="nav-pill" href="/subscribe.html" style="text-decoration:none;">결제</a>'
         +'<a class="nav-pill" href="/support.html" style="text-decoration:none;">고객센터</a>'
         +'<a class="nav-pill" href="/settings.html" style="text-decoration:none;">설정</a>';
+      // 관리자 체크 공용 Promise (nav 관리자 버튼 + 왕관 아이콘 공유)
+      window._lumiAdminCheck = window._lumiAdminCheck || (function(){
+        var _t = localStorage.getItem('lumi_token');
+        if (!_t) return Promise.resolve(null);
+        return fetch('/api/admin-auth-check', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + _t, 'Content-Type': 'application/json' }
+        }).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; });
+      })();
+      window._lumiAdminCheck.then(function(d){
+        if (d && d.is_admin) {
+          var adminLink = document.createElement('a');
+          adminLink.className = 'nav-pill';
+          adminLink.href = '/brand-admin.html';
+          adminLink.style.textDecoration = 'none';
+          adminLink.style.color = '#C8507A';
+          adminLink.textContent = '관리자';
+          document.getElementById('nav-pills').appendChild(adminLink);
+        }
+      });
     }
   })();
   </script>
@@ -2949,6 +2969,33 @@ window.__mHandleFile = function(e){
           var handle = lu.username || lu.name || (lu.email ? String(lu.email).split('@')[0] : '') || 'lumi';
           nameEl.textContent = '@' + handle;
         }
+        // 관리자 왕관 마크 — 공용 Promise 재사용, 클릭 시 brand-admin.html 이동 (모바일 admin 진입점)
+        window._lumiAdminCheck = window._lumiAdminCheck || (function(){
+          var _t = localStorage.getItem('lumi_token');
+          if (!_t) return Promise.resolve(null);
+          return fetch('/api/admin-auth-check', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + _t, 'Content-Type': 'application/json' }
+          }).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; });
+        })();
+        window._lumiAdminCheck.then(function(d){
+          if (d && d.is_admin) {
+            var crownLink = document.createElement('a');
+            crownLink.id = 'admin-crown';
+            crownLink.href = '/brand-admin.html';
+            crownLink.title = '관리자 페이지';
+            crownLink.style.cssText = 'display:inline-flex;align-items:center;flex-shrink:0;color:#C8507A;text-decoration:none;';
+            crownLink.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C8507A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 12h14l3-12-6 7.5-4-6-4 6L2 4z"/></svg>';
+            var el = document.getElementById('m-greeting-name');
+            if (el && el.parentNode) {
+              var wrapper = document.createElement('div');
+              wrapper.style.cssText = 'display:flex;align-items:center;gap:6px;max-width:100%;';
+              el.parentNode.insertBefore(wrapper, el);
+              wrapper.appendChild(el);
+              wrapper.appendChild(crownLink);
+            }
+          }
+        });
       }
     } catch(e){}
     // IG status probe (best effort, non-blocking)
