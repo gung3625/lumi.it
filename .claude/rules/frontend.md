@@ -33,6 +33,6 @@ globs: "*.html"
 ## 커밋 전 필수 QA (하나라도 빠지면 커밋 금지)
 - 라이트모드 + 다크모드 양쪽에서 텍스트·버튼 색상 대비 확인
 - nav 버튼(로그인/회원가입/로그아웃/대시보드) 존재 + 보임 + 클릭 동작 확인
-- 수정한 페이지뿐 아니라 index.html, beta.html, dashboard.html 모두 확인
+- 수정한 페이지뿐 아니라 index.html과 주요 서브페이지(guide/settings/subscribe/support/privacy/terms/ig-guide) 크로스체크
 - 기존 기능(폼, 링크, JS 이벤트) 깨지지 않았는지 확인
 - 모바일(768px 이하) 레이아웃 깨짐 확인

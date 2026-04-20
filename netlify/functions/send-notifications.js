@@ -605,16 +605,7 @@ async function sendAdminDailyReport(supabase, users) {
       totalPosts = count || 0;
     } catch (e) { /* noop */ }
 
-    // 베타 신청자 수
-    let betaCount = 0;
-    try {
-      const { count } = await supabase
-        .from('beta_applicants')
-        .select('*', { count: 'exact', head: true });
-      betaCount = count || 0;
-    } catch (e) { /* noop */ }
-
-    const reportText = `[lumi 일일 리포트]\n베타 신청: ${betaCount}/20명\n가입자: ${totalUsers}명 (체험 ${trialUsers} / 유료 ${paidUsers})\n오늘 활성: ${activeToday}명\n총 게시물: ${totalPosts}건`;
+    const reportText = `[lumi 일일 리포트]\n가입자: ${totalUsers}명 (체험 ${trialUsers} / 유료 ${paidUsers})\n오늘 활성: ${activeToday}명\n총 게시물: ${totalPosts}건`;
 
     const now = new Date().toISOString();
     const salt = `report_${Date.now()}`;
