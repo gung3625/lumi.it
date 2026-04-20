@@ -1596,14 +1596,23 @@ body.dark-mode .m-out-gallery .m-gallery-item { background: #272729; }
 .m-out-gallery .m-gallery-caption {
   font-size: 13px;
   color: var(--ink);
-  line-height: 1.45;
+  line-height: 1.5;
   margin: 0;
   padding: 10px 12px 6px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  max-height: 72px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   word-break: keep-all;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(200,80,122,0.4) transparent;
+}
+.m-out-gallery .m-gallery-caption::-webkit-scrollbar {
+  width: 3px;
+}
+.m-out-gallery .m-gallery-caption::-webkit-scrollbar-thumb {
+  background: rgba(200,80,122,0.4);
+  border-radius: 3px;
 }
 .m-out-gallery .m-gallery-tags {
   display: flex;
