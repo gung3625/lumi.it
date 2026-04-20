@@ -4532,7 +4532,7 @@ function mInitWave2(){
         } else if (s.key === 'step3') {
           html += '<p class="m-ig-step-desc">' + s.desc + '</p><div id="m-tester-form"><input type="text" id="m-tester-handle" placeholder="@인스타그램 닉네임" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid rgba(200,80,122,.4);font-size:14px;margin:8px 0;background:transparent;color:inherit;font-family:inherit;" /><button type="button" class="m-feat-ghost" id="m-tester-submit">테스터 등록 요청</button></div><p id="m-tester-done" style="display:none;color:var(--pink,#C8507A);font-size:13px;font-weight:600;margin-top:8px;">접수됐어요</p>';
         } else if (s.key === 'step4') {
-          html += '<div id="m-invite-status"><p class="m-ig-step-desc" id="m-invite-desc">상태 확인 중…</p><a id="m-invite-link" href="https://www.instagram.com/accounts/manage_access/" target="_blank" rel="noopener" style="display:none;" class="m-feat-ghost">초대 수락하러 가기</a></div>';
+          html += '<div id="m-invite-status"><p class="m-ig-step-desc" id="m-invite-desc">상태 확인 중…</p><a id="m-invite-link" href="https://www.instagram.com/accounts/manage_access/" target="_blank" rel="noopener" data-force-external="1" style="display:none;" class="m-feat-ghost">초대 수락하러 가기</a></div>';
         } else {
           html += '<p class="m-ig-step-desc">' + s.desc + '</p>';
           html += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">';
@@ -6691,6 +6691,7 @@ var cards = {
                           e('a', {
                             href:'https://www.instagram.com/accounts/manage_access/',
                             target:'_blank', rel:'noopener',
+                            onClick:function(ev){ ev.preventDefault(); window.open('https://www.instagram.com/accounts/manage_access/','_blank','noopener,noreferrer'); },
                             style:{display:'inline-block',fontSize:'13px',fontWeight:600,padding:'10px 16px',background:'rgba(255,255,255,.2)',backdropFilter:'blur(10px)',color:'#fff',border:'1px solid rgba(255,255,255,.3)',borderRadius:'980px',cursor:'pointer',whiteSpace:'nowrap',textDecoration:'none'}
                           }, '초대 수락하러 가기')
                         )
