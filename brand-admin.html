@@ -111,6 +111,15 @@ body.dark-mode .lib-count{color:rgba(255,255,255,.55);}
 .lib-regen-btn:hover{opacity:.7;}
 body.dark-mode .lib-regen-btn{background:rgba(255,255,255,.08);color:#f0f2f8;}
 
+/* progress bar */
+.progress-wrap{display:none;margin:12px 0 4px;padding:14px 16px;background:rgba(200,80,122,.08);border-radius:12px;}
+.progress-wrap.active{display:block;}
+.progress-label{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:#C8507A;font-weight:600;margin-bottom:10px;}
+.progress-bar{height:8px;background:rgba(200,80,122,.15);border-radius:4px;overflow:hidden;}
+.progress-fill{height:100%;background:linear-gradient(90deg,#C8507A,#f093b0);border-radius:4px;transition:width .5s ease;width:0%;}
+body.dark-mode .progress-wrap{background:rgba(200,80,122,.14);}
+body.dark-mode .progress-bar{background:rgba(200,80,122,.22);}
+
 /* schedule table */
 .schedule-actions{display:flex;align-items:center;gap:10px;margin-bottom:4px;}
 .schedule-table{width:100%;border-collapse:collapse;}
@@ -195,6 +204,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
         새로고침
       </button>
+    </div>
+    <div class="progress-wrap" id="gen-progress">
+      <div class="progress-label"><span id="gen-progress-text">생성 중</span><span id="gen-progress-count">0 / 0</span></div>
+      <div class="progress-bar"><div class="progress-fill" id="gen-progress-fill"></div></div>
     </div>
     <div id="library-body">
       <div class="placeholder-body">
@@ -415,17 +428,16 @@ function triggerGenAll() {
   btn.textContent = '생성중...';
   showToast('전체 생성이 시작되었습니다. 완료까지 15~30분 소요됩니다.');
 
-  fetch('/api/generate-library-background', {
+  fetch('/api/admin-library-regenerate', {
     method: 'POST',
     headers: authHeaders(),
-    body: JSON.stringify({})
+    body: JSON.stringify({ mode: 'all' })
   })
-  .then(function(r) { return r.json(); })
-  .then(function(d) {
-    showToast('생성 완료: ' + (d.succeeded || 0) + '개 성공, ' + (d.failed || 0) + '개 실패');
-    loadLibrary();
-    btn.disabled = false;
-    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg> 전체 생성';
+  .then(function(r) { return r.json().then(function(d){ return { ok:r.ok, d:d }; }); })
+  .then(function(res) {
+    if (!res.ok) throw new Error(res.d && res.d.error || '트리거 실패');
+    showToast(res.d.message || '생성 트리거 완료');
+    startGenProgress('전체 생성 중', 28);
   })
   .catch(function(e) {
     showToast('생성 중 오류: ' + e.message);
@@ -445,18 +457,87 @@ function regenSlot(industry, contentType, slotIndex, btnEl) {
     headers: authHeaders(),
     body: JSON.stringify({ industry: industry, content_type: contentType, slot_index: slotIndex })
   })
-  .then(function(r) { return r.json(); })
-  .then(function(d) {
-    showToast(d.message || '재생성 시작됨');
+  .then(function(r) { return r.json().then(function(d){ return { ok:r.ok, d:d }; }); })
+  .then(function(res) {
+    if (!res.ok) throw new Error(res.d && res.d.error || '요청 실패');
+    showToast(res.d.message || '재생성 시작됨');
     btnEl.textContent = '생성중...';
-    // 30초 후 자동 새로고침
-    setTimeout(function() { loadLibrary(); }, 30000);
+    startGenProgress(INDUSTRY_KO[industry] + ' ' + (contentType === 'image' ? '이미지' : '영상') + ' 생성 중', 1);
   })
   .catch(function(e) {
     showToast('재생성 요청 실패: ' + e.message);
     btnEl.disabled = false;
     btnEl.textContent = '재생성';
   });
+}
+
+// ── 생성 진행 게이지바 (자동 폴링)
+var genPollTimer = null;
+var genPollExpected = 0;
+var genPollBaseline = 0;
+var genPollStartAt = 0;
+
+function startGenProgress(label, expectedDelta) {
+  // 현재 이미 ready/failed 인 항목 수를 baseline 으로 기록 → 이후 증가분을 진행률로 계산
+  fetch('/api/admin-library-list', { method: 'GET', headers: authHeaders() })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      var lib = d.library || [];
+      genPollBaseline = lib.filter(function(i){ return i.status === 'ready' || i.status === 'failed'; }).length;
+      genPollExpected = expectedDelta;
+      genPollStartAt = Date.now();
+
+      var wrap = document.getElementById('gen-progress');
+      wrap.classList.add('active');
+      document.getElementById('gen-progress-text').textContent = label;
+      document.getElementById('gen-progress-count').textContent = '0 / ' + expectedDelta;
+      document.getElementById('gen-progress-fill').style.width = '0%';
+
+      if (genPollTimer) clearInterval(genPollTimer);
+      pollGenProgress();
+      genPollTimer = setInterval(pollGenProgress, 3000);
+    });
+}
+
+function pollGenProgress() {
+  // 안전 타임아웃 45분
+  if (Date.now() - genPollStartAt > 45 * 60 * 1000) {
+    stopGenProgress('시간 초과 (45분) — 수동으로 확인해주세요');
+    return;
+  }
+  fetch('/api/admin-library-list', { method: 'GET', headers: authHeaders() })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      var lib = d.library || [];
+      var doneNow = lib.filter(function(i){ return i.status === 'ready' || i.status === 'failed'; }).length;
+      var progress = Math.max(0, doneNow - genPollBaseline);
+      if (progress > genPollExpected) progress = genPollExpected;
+      var pct = Math.min(100, Math.round(progress / genPollExpected * 100));
+      var failedCount = lib.filter(function(i){ return i.status === 'failed'; }).length;
+      document.getElementById('gen-progress-count').textContent = progress + ' / ' + genPollExpected + (failedCount ? ' (실패 ' + failedCount + ')' : '');
+      document.getElementById('gen-progress-fill').style.width = pct + '%';
+      renderLibrary(lib);
+      renderSchedule(d.schedule || []);
+      if (progress >= genPollExpected) {
+        stopGenProgress('생성 완료');
+      }
+    })
+    .catch(function(){});
+}
+
+function stopGenProgress(finalText) {
+  if (genPollTimer) { clearInterval(genPollTimer); genPollTimer = null; }
+  document.getElementById('gen-progress-text').textContent = finalText || '완료';
+  document.getElementById('gen-progress-fill').style.width = '100%';
+  var btn = document.getElementById('btn-gen-all');
+  if (btn) {
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg> 전체 생성';
+  }
+  setTimeout(function() {
+    var wrap = document.getElementById('gen-progress');
+    if (wrap) wrap.classList.remove('active');
+  }, 4000);
 }
 
 // ── 스케줄 렌더링
