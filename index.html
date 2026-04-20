@@ -715,16 +715,22 @@ body.dark-mode .upload-submit { background:#f0f2f8; color:#0d1117; }
   will-change: transform;
 }
 @keyframes scanMove { 0%{transform:translateY(0)} 50%{transform:translateY(1400%)} 100%{transform:translateY(0)} }
-.demo-scan-dots {
-  position:absolute; bottom:12%; left:0; right:0; display:flex; justify-content:center; gap:6px;
-}
-.demo-scan-dot {
-  width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,.7);
+.demo-inline-dots { display:inline-flex; gap:3px; margin-left:6px; vertical-align:baseline; }
+.demo-inline-dots span {
+  width:4px; height:4px; border-radius:50%; background:rgba(255,255,255,.85);
   animation: dotPulse 1.2s ease-in-out infinite;
+  display:inline-block; align-self:center;
+}
+.demo-inline-dots span:nth-child(2) { animation-delay:.2s; }
+.demo-inline-dots span:nth-child(3) { animation-delay:.4s; }
+.demo-scan-dot {
+  width:8px; height:8px; border-radius:50%; background:rgba(200,80,122,.75);
+  animation: dotPulse 1.2s ease-in-out infinite;
+  display:inline-block;
 }
 .demo-scan-dot:nth-child(2) { animation-delay:.2s; }
 .demo-scan-dot:nth-child(3) { animation-delay:.4s; }
-@keyframes dotPulse { 0%,100%{opacity:.3;transform:scale(.8)} 50%{opacity:1;transform:scale(1.3)} }
+@keyframes dotPulse { 0%,100%{opacity:.3;transform:scale(.7)} 50%{opacity:1;transform:scale(1.2)} }
 
 /* scene 3: caption typing */
 .demo-caption-text {
@@ -2211,7 +2217,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <h2 class="m-section-title">올리기만 하면<br>lumi가 다 파악해요</h2>
     <p class="m-section-body">메뉴, 인테리어, 분위기까지 lumi가 읽고 업종·말투에 맞는 캡션을 제안해요.</p>
     <div class="m-card" style="margin-top:24px; background:var(--pink-soft); border:1px solid rgba(200,80,122,0.15);">
-      <p style="font-style:italic; color:var(--ink);">"오늘 들어온 딸기 한 접시면 봄이 온 거예요 🌸"</p>
+      <p style="font-style:italic; color:var(--ink);">"오늘 들어온 딸기는 설향이에요. 이 빛깔이면 오늘 메뉴 소개는 끝난 거죠 🌸 화·목마다 새 딸기 들어와요"</p>
       <p style="font-size:13px; color:var(--ink-3); margin-top:8px;">— 카페 사장님이 실제로 업로드한 캡션</p>
     </div>
   </section>
@@ -2259,11 +2265,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         </div>
         <div class="m-caption-row m-caption-row-after">
           <p class="m-caption-label">lumi</p>
-          <p class="m-caption-after">향긋한 에티오피아 원두, 오늘의 한 잔으로 추천드려요 ☕</p>
+          <p class="m-caption-after">이번 달 원두는 에티오피아 예가체프예요.&#10;꽃향에 살구 같은 산미가 부드럽게 올라와요 ☕&#10;오늘 아이스로 한 잔 어떠세요. 프로필 링크에서 예약 받습니다.</p>
           <div class="m-caption-tags">
-            <span class="m-chip">#원두향가득</span>
-            <span class="m-chip">#오늘의커피</span>
-            <span class="m-chip">#카페추천</span>
+            <span class="m-chip">#오늘의원두</span>
+            <span class="m-chip">#에티오피아예가체프</span>
+            <span class="m-chip">#시즌커피</span>
           </div>
         </div>
       </article>
@@ -2275,11 +2281,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         </div>
         <div class="m-caption-row m-caption-row-after">
           <p class="m-caption-label">lumi</p>
-          <p class="m-caption-after">봄맞이 신메뉴, 봄나물 비빔밥 — 오늘부터 만나보세요 🌱</p>
+          <p class="m-caption-after">오늘부터 봄나물 비빔밥 시작해요 🌱&#10;달래·취나물·냉이까지 통으로 올려드려요.&#10;4월 한 달 한정 메뉴, 점심엔 된장국까지 같이 나옵니다.</p>
           <div class="m-caption-tags">
-            <span class="m-chip">#신메뉴</span>
-            <span class="m-chip">#봄나물</span>
-            <span class="m-chip">#건강한맛집</span>
+            <span class="m-chip">#봄나물비빔밥</span>
+            <span class="m-chip">#4월한정메뉴</span>
+            <span class="m-chip">#건강한한끼</span>
           </div>
         </div>
       </article>
@@ -2291,11 +2297,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         </div>
         <div class="m-caption-row m-caption-row-after">
           <p class="m-caption-label">lumi</p>
-          <p class="m-caption-after">봄맞이 스페셜, 이번 달만 네일 20% 할인! 💅</p>
+          <p class="m-caption-after">봄엔 손끝부터 달라지니까요 💅&#10;4월 한 달만 전 메뉴 20% 할인해요.&#10;젤·연장·케어 전부 포함이고, DM으로 예약 받습니다.</p>
           <div class="m-caption-tags">
             <span class="m-chip">#4월이벤트</span>
+            <span class="m-chip">#네일20프로할인</span>
             <span class="m-chip">#봄네일</span>
-            <span class="m-chip">#네일할인</span>
           </div>
         </div>
       </article>
@@ -2349,11 +2355,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <img src="/assets/demo-cafe.jpg" alt="딸기 크림 라떼가 놓인 따뜻한 오크 테이블" loading="lazy" decoding="async" onerror="this.style.display='none';this.parentElement.classList.add('m-gallery-img-fallback');">
           <span class="m-gallery-biz-label">카페·음료</span>
         </div>
-        <p class="m-gallery-caption">세 겹으로 나눠 담은 딸기 크림 라떼. 창가 자리, 햇살 한 줌이면 오늘 메뉴 소개는 끝이에요 🍓</p>
+        <p class="m-gallery-caption">세 겹으로 나눠 담은 딸기 크림 라떼 🍓 창가 자리 햇살 한 줌이면 오늘 메뉴 소개는 끝이에요. 딸기 철 끝나기 전, 이번 주까지만 2,500원 할인합니다.</p>
         <div class="m-gallery-tags">
           <span class="m-chip">#딸기라떼</span>
           <span class="m-chip">#봄신메뉴</span>
-          <span class="m-chip">#창가자리</span>
+          <span class="m-chip">#이번주할인</span>
         </div>
       </article>
       <article class="m-gallery-item">
@@ -2361,11 +2367,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <img src="/assets/demo-cafe-2.jpg" alt="마블 위에 놓인 크루아상과 에스프레소" loading="lazy" decoding="async" onerror="this.style.display='none';this.parentElement.classList.add('m-gallery-img-fallback');">
           <span class="m-gallery-biz-label">음식·외식</span>
         </div>
-        <p class="m-gallery-caption">결결이 살아 있는 크루아상 한 개와 진한 에스프레소. 아침 오픈 10시, 가장 먼저 구워 나옵니다.</p>
+        <p class="m-gallery-caption">결결이 살아 있는 크루아상 한 개와 진한 에스프레소 한 잔. 10시 오픈, 가장 먼저 구워 나옵니다. 모닝세트는 11시까지만 4,500원, 평일에도 운영해요 ☕</p>
         <div class="m-gallery-tags">
-          <span class="m-chip">#크루아상</span>
-          <span class="m-chip">#모닝세트</span>
-          <span class="m-chip">#오픈런</span>
+          <span class="m-chip">#갓구운크루아상</span>
+          <span class="m-chip">#모닝세트4500</span>
+          <span class="m-chip">#10시오픈런</span>
         </div>
       </article>
       <article class="m-gallery-item">
@@ -2373,11 +2379,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <img src="/assets/demo-cafe-3.jpg" alt="블러시 핑크 젤네일이 실크 위에 놓인 모습" loading="lazy" decoding="async" onerror="this.style.display='none';this.parentElement.classList.add('m-gallery-img-fallback');">
           <span class="m-gallery-biz-label">뷰티·케어</span>
         </div>
-        <p class="m-gallery-caption">은은한 블러시 핑크에 글로시 탑코트 한 겹. 과하지 않게, 손끝부터 봄을 올렸어요.</p>
+        <p class="m-gallery-caption">블러시 핑크에 글로시 탑코트 한 겹. 과하지 않게, 손끝부터 봄을 올렸어요 💅 4월 한 달 전 메뉴 20% 할인 중, DM으로 예약 받아요.</p>
         <div class="m-gallery-tags">
-          <span class="m-chip">#블러시핑크</span>
+          <span class="m-chip">#블러시핑크네일</span>
           <span class="m-chip">#아몬드쉐입</span>
-          <span class="m-chip">#봄네일</span>
+          <span class="m-chip">#4월20프로할인</span>
         </div>
       </article>
       <article class="m-gallery-item">
@@ -2385,11 +2391,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <img src="/assets/demo-cafe-4.jpg" alt="크라프트지로 감싼 봄 꽃다발" loading="lazy" decoding="async" onerror="this.style.display='none';this.parentElement.classList.add('m-gallery-img-fallback');">
           <span class="m-gallery-biz-label">꽃집·플라워</span>
         </div>
-        <p class="m-gallery-caption">라넌큘러스·튤립·리시안셔스에 유칼립투스 한 줄기. 크라프트지와 피치 리본으로 마무리한 오늘의 꽃다발이에요.</p>
+        <p class="m-gallery-caption">라넌큘러스·튤립·리시안셔스에 유칼립투스 한 줄기. 크라프트지와 피치 리본으로 마무리한 오늘의 꽃다발이에요 🌷 이번 주 금요일까지 봄 꽃다발 15% 할인, 픽업·배송 둘 다 가능합니다.</p>
         <div class="m-gallery-tags">
           <span class="m-chip">#오늘의꽃다발</span>
-          <span class="m-chip">#라넌큘러스</span>
-          <span class="m-chip">#동네꽃집</span>
+          <span class="m-chip">#라넌큘러스튤립</span>
+          <span class="m-chip">#금요일까지15프로</span>
         </div>
       </article>
     </div>
@@ -6043,15 +6049,14 @@ var cards = {
               e('span', {className:'wtag-text'}, '\uC678\uCD9C \uC88B\uC740 \uB0A0')
             )
           ),
-          e('div', {className:'demo-scan-dots'}, e('span',{className:'demo-scan-dot'}),e('span',{className:'demo-scan-dot'}),e('span',{className:'demo-scan-dot'})),
-          e('p', {className:'demo-label'}, e('span',{className:'lumi-brand'},'lumi'), '\uAC00 \uC0AC\uC9C4 \xB7 \uB0A0\uC528\uB97C \uBD84\uC11D\uD558\uACE0 \uC788\uC5B4\uC694')
+          e('p', {className:'demo-label'}, e('span',{className:'lumi-brand'},'lumi'), '\uAC00 \uC0AC\uC9C4 \xB7 \uB0A0\uC528\uB97C \uBD84\uC11D\uD558\uACE0 \uC788\uC5B4\uC694', e('span',{className:'demo-inline-dots'}, e('span'), e('span'), e('span')))
         ),
         e('div', {className:'demo-scene'},
-          e('p', {className:'demo-caption-text'}, e('span',{className:'demo-typing'},'"3단으로 쌓은 딸기 크림 라떼\n창가 햇살 한 줌이면\n오늘 메뉴 사진은 끝 🍓"')),
+          e('p', {className:'demo-caption-text'}, e('span',{className:'demo-typing'},'"3단으로 쌓은 딸기 크림 라떼 🍓\n한 모금에 봄 한 조각\n이번 주까지 2,500원 할인해요"')),
           e('p', {className:'demo-label', style:{marginTop:'20px'}}, '캡션 생성 완료')
         ),
         e('div', {className:'demo-scene'},
-          e('div', {className:'demo-tags'}, e('span',{className:'demo-tag'},'#딸기라떼'),e('span',{className:'demo-tag'},'#봄신메뉴'),e('span',{className:'demo-tag'},'#창가자리'),e('span',{className:'demo-tag'},'#감성카페'),e('span',{className:'demo-tag'},'#동네카페')),
+          e('div', {className:'demo-tags'}, e('span',{className:'demo-tag'},'#딸기라떼'),e('span',{className:'demo-tag'},'#봄신메뉴'),e('span',{className:'demo-tag'},'#이번주할인'),e('span',{className:'demo-tag'},'#창가자리'),e('span',{className:'demo-tag'},'#동네카페')),
           e('p', {className:'demo-label', style:{marginTop:'16px'}}, '해시태그 자동 생성')
         ),
         e('div', {className:'demo-scene'},
@@ -6071,7 +6076,7 @@ var cards = {
               e('svg',{viewBox:'0 0 24 24',fill:'none',stroke:'#fff',strokeWidth:'2',strokeLinecap:'round',strokeLinejoin:'round'},e('line',{x1:22,y1:2,x2:11,y2:13}),e('polygon',{points:'22 2 15 22 11 13 2 9 22 2'}))
             ),
             e('p', {className:'demo-ig-likes'}, '좋아요 42개'),
-            e('p', {className:'demo-ig-caption-preview'}, e('strong',{style:{color:'#fff',display:'block',marginBottom:'4px'}},'my_cafe'), '3단으로 쌓은 딸기 크림 라떼 🍓', e('br'), '창가 햇살 한 줌이면 오늘 메뉴 사진 끝', e('br'), e('span',{style:{color:'rgba(255,255,255,.45)'}}, '#딸기라떼 #봄신메뉴 #창가자리'))
+            e('p', {className:'demo-ig-caption-preview'}, e('strong',{style:{color:'#fff',display:'block',marginBottom:'4px'}},'my_cafe'), '3단으로 쌓은 딸기 크림 라떼 🍓', e('br'), '한 모금에 봄 한 조각', e('br'), '이번 주까지 2,500원 할인해요', e('br'), e('span',{style:{color:'rgba(255,255,255,.45)'}}, '#딸기라떼 #봄신메뉴 #이번주할인'))
           )
         )
       ),
