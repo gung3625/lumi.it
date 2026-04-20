@@ -1519,36 +1519,62 @@ body.dark-mode .m-out-trend .m-out-trend-lock { background: #272729; border-colo
   max-width: 100%;
 }
 
-/* 🆕 4. 날씨/시즌 기반 추천 예시 */
-.m-out-weather .m-weather-demo-card {
-  margin-top: 20px;
+/* 🆕 4. 날씨별 캡션 예시 슬라이더 (4 카드) */
+.m-out-weather .m-weather-slider {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px 20px 14px;
+  margin: 0 -20px;
+  scrollbar-width: none;
+}
+.m-out-weather .m-weather-slider::-webkit-scrollbar { display: none; }
+.m-out-weather .m-weather-mini {
+  flex: 0 0 74%;
+  max-width: 260px;
+  scroll-snap-align: start;
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 22px 18px;
+  box-shadow: var(--shadow-sm);
   text-align: center;
-  padding: 28px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
-.m-weather-emoji {
-  font-size: 44px;
-  margin: 0 0 8px;
-  line-height: 1;
-}
-.m-weather-msg {
-  font-size: 18px;
+body.dark-mode .m-out-weather .m-weather-mini { background: #272729; }
+.m-weather-mini-emoji { font-size: 42px; line-height: 1; margin: 0 0 6px; }
+.m-weather-mini-msg {
+  font-size: 17px;
   font-weight: 700;
   color: var(--ink);
-  margin: 0 0 4px;
+  margin: 0;
   letter-spacing: -0.02em;
 }
-.m-weather-sub {
-  font-size: 14px;
+.m-weather-mini-sub {
+  font-size: 13px;
   color: var(--ink-2);
-  margin: 0 0 16px;
+  margin: 2px 0 12px;
   letter-spacing: -0.01em;
   word-break: keep-all;
+  line-height: 1.45;
 }
-.m-weather-chips {
+.m-weather-mini-chips {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   justify-content: center;
+  margin-top: auto;
+}
+.m-weather-hint {
+  margin: 14px 0 0;
+  font-size: 13px;
+  color: var(--ink-3);
+  text-align: center;
+  letter-spacing: -0.01em;
 }
 
 /* 🆕 1. 실제 게시물 갤러리 */

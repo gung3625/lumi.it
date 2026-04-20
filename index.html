@@ -2328,20 +2328,54 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </div>
   </section>
 
-  <!-- 🆕 4. 날씨/시즌 기반 추천 예시 -->
+  <!-- 🆕 4. 날씨별 캡션 예시 (4가지 상태 프리뷰) -->
   <section class="m-section m-out-weather" id="m-out-weather">
-    <p class="m-section-eyebrow">오늘 같은 날</p>
-    <h2 class="m-section-title">날씨에 맞는<br>캡션도 알려줘요</h2>
-    <div class="m-card m-weather-demo-card">
-      <p class="m-weather-emoji" id="m-weather-emoji">☀️</p>
-      <p class="m-weather-msg" id="m-weather-msg">맑은 날에 딱인</p>
-      <p class="m-weather-sub" id="m-weather-sub">야외 사진이나 테라스 사진을 올려보세요</p>
-      <div class="m-weather-chips" id="m-weather-chips">
-        <span class="m-chip">#야외석</span>
-        <span class="m-chip">#카페테라스</span>
-        <span class="m-chip">#날씨좋다</span>
-      </div>
+    <p class="m-section-eyebrow">04 · 날씨</p>
+    <h2 class="m-section-title">날씨에 맞춰<br>캡션이 달라져요</h2>
+    <p class="m-section-body" style="margin-bottom:20px;">맑으면 테라스, 비 오면 창가. 기상청 실시간 날씨를 읽어 그날 어울리는 글과 태그를 붙여드려요.</p>
+    <div class="m-weather-slider" role="list">
+      <article class="m-weather-mini" role="listitem">
+        <p class="m-weather-mini-emoji">☀️</p>
+        <p class="m-weather-mini-msg">맑은 날엔</p>
+        <p class="m-weather-mini-sub">야외석·테라스 사진 먼저 올려드려요</p>
+        <div class="m-weather-mini-chips">
+          <span class="m-chip">#야외석</span>
+          <span class="m-chip">#테라스자리</span>
+          <span class="m-chip">#날씨좋다</span>
+        </div>
+      </article>
+      <article class="m-weather-mini" role="listitem">
+        <p class="m-weather-mini-emoji">☁️</p>
+        <p class="m-weather-mini-msg">흐린 날엔</p>
+        <p class="m-weather-mini-sub">잔잔한 실내 인테리어 컷이 어울려요</p>
+        <div class="m-weather-mini-chips">
+          <span class="m-chip">#실내감성</span>
+          <span class="m-chip">#잔잔한하루</span>
+          <span class="m-chip">#오늘의분위기</span>
+        </div>
+      </article>
+      <article class="m-weather-mini" role="listitem">
+        <p class="m-weather-mini-emoji">🌧️</p>
+        <p class="m-weather-mini-msg">비 오는 날엔</p>
+        <p class="m-weather-mini-sub">창가 자리와 따뜻한 한 잔을 담아드려요</p>
+        <div class="m-weather-mini-chips">
+          <span class="m-chip">#비오는날</span>
+          <span class="m-chip">#창가자리</span>
+          <span class="m-chip">#따뜻한한잔</span>
+        </div>
+      </article>
+      <article class="m-weather-mini" role="listitem">
+        <p class="m-weather-mini-emoji">❄️</p>
+        <p class="m-weather-mini-msg">추운 날엔</p>
+        <p class="m-weather-mini-sub">계절감이 느껴지는 따뜻한 컷이 좋아요</p>
+        <div class="m-weather-mini-chips">
+          <span class="m-chip">#겨울감성</span>
+          <span class="m-chip">#따뜻한공간</span>
+          <span class="m-chip">#오늘의한잔</span>
+        </div>
+      </article>
     </div>
+    <p class="m-weather-hint">좌우로 넘겨보세요 · 가입하면 오늘 날씨로 자동 반영돼요</p>
   </section>
 
   <!-- 🆕 1. 실제 게시물 갤러리 -->
@@ -2825,31 +2859,6 @@ window.__mHandleFile = function(e){
     });
 })();
 
-// ============================================================
-// 로그아웃 뷰: 날씨/시즌 기반 추천 카드 (웨이브3, 월별 정적 매핑)
-// ============================================================
-(function(){
-  if (window.matchMedia && !window.matchMedia('(max-width: 767px)').matches) return;
-  var emojiEl = document.getElementById('m-weather-emoji');
-  if (!emojiEl) return;
-  var month = new Date().getMonth() + 1; // 1~12
-  // 월별 대표 날씨/시즌 팔레트 4종
-  var palettes = {
-    sunny: { emoji:'☀️', msg:'맑은 날에 딱인', sub:'야외 사진이나 테라스 사진을 올려보세요', chips:['#야외석','#카페테라스','#날씨좋다'] },
-    cloudy:{ emoji:'☁️', msg:'흐린 날에 어울리는', sub:'따뜻한 분위기 인테리어 샷을 올려보세요', chips:['#실내감성','#오늘의분위기','#잔잔한하루'] },
-    rainy: { emoji:'🌧️', msg:'비 오는 날에 딱인', sub:'따뜻한 음료나 감성 창가 샷을 올려보세요', chips:['#비오는날','#창가자리','#따뜻한한잔'] },
-    snowy: { emoji:'❄️', msg:'추운 날에 어울리는', sub:'계절감이 느껴지는 따뜻한 사진을 올려보세요', chips:['#겨울감성','#따뜻한공간','#오늘의한잔'] }
-  };
-  var monthMap = {1:'snowy',2:'snowy',3:'cloudy',4:'sunny',5:'sunny',6:'rainy',7:'rainy',8:'sunny',9:'sunny',10:'cloudy',11:'cloudy',12:'snowy'};
-  var p = palettes[monthMap[month]] || palettes.sunny;
-  emojiEl.textContent = p.emoji;
-  var msgEl = document.getElementById('m-weather-msg'); if (msgEl) msgEl.textContent = p.msg;
-  var subEl = document.getElementById('m-weather-sub'); if (subEl) subEl.textContent = p.sub;
-  var chipsEl = document.getElementById('m-weather-chips');
-  if (chipsEl) {
-    chipsEl.innerHTML = p.chips.map(function(c){ return '<span class="m-chip">' + c + '</span>'; }).join('');
-  }
-})();
 
 // ============================================================
 // 모바일 로그아웃 튜토리얼 (체험하기 → 6장 샘플 → AI 시뮬레이션 → 결과)
