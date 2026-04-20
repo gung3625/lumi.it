@@ -771,34 +771,37 @@ body.dark-mode .upload-submit { background:#f0f2f8; color:#0d1117; }
 @keyframes drawCheck { to { stroke-dashoffset:0; } }
 
 /* scene 6: instagram feed preview */
+.demo-scene.scene-ig { padding:0 !important; justify-content:flex-start; align-items:stretch; }
+.scene-ig .demo-ig-feed { width:100% !important; height:100%; border-radius:0 !important; }
 .demo-ig-feed {
-  width:80%; background:rgba(255,255,255,.12); border-radius:12px;
-  overflow:hidden; backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  width:100%; height:100%;
+  background:rgba(0,0,0,.22);
+  border-radius:0; overflow:hidden;
+  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
   display:flex; flex-direction:column;
 }
 .demo-ig-header {
-  display:flex; align-items:center; gap:8px; padding:7px 10px; flex-shrink:0;
+  display:flex; align-items:center; gap:10px; padding:12px 14px; flex-shrink:0;
 }
 .demo-ig-avatar {
-  width:24px; height:24px; border-radius:50%;
+  width:32px; height:32px; border-radius:50%;
   background: linear-gradient(135deg, #FF6B8B, #DDA0DD);
 }
-.demo-ig-name { font-size:11px; color:#fff; font-weight:600; }
+.demo-ig-name { font-size:14px; color:#fff; font-weight:600; }
 .demo-ig-image {
-  width:100%; aspect-ratio:4/3; overflow:hidden; flex-shrink:1; min-height:0;
+  width:100%; aspect-ratio:1/1; overflow:hidden; flex:none;
 }
-.demo-ig-image img { width:100%; height:100%; object-fit:cover; }
+.demo-ig-image img { width:100%; height:100%; object-fit:cover; display:block; }
 .demo-ig-actions {
-  display:flex; gap:12px; padding:7px 10px; flex-shrink:0;
+  display:flex; gap:16px; padding:10px 14px 6px; flex-shrink:0;
 }
-.demo-ig-actions svg { width:16px; height:16px; }
+.demo-ig-actions svg { width:22px; height:22px; }
 .demo-ig-caption-preview {
-  padding:0 10px 8px; font-size:10px; color:rgba(255,255,255,.7); line-height:1.4;
-  overflow:hidden; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;
-  flex-shrink:0;
+  padding:0 14px 14px; font-size:13px; color:rgba(255,255,255,.78); line-height:1.5;
+  flex:1 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch;
 }
 .demo-ig-likes {
-  padding:0 10px 3px; font-size:10px; color:#fff; font-weight:600; flex-shrink:0;
+  padding:2px 14px 4px; font-size:13px; color:#fff; font-weight:600; flex-shrink:0;
 }
 
 .demo-label {
@@ -6055,7 +6058,7 @@ var cards = {
           e('div', {className:'demo-check-circle'}, e('svg',{viewBox:'0 0 24 24',fill:'none'},e('path',{className:'demo-check-path',d:'M4 12l6 6L20 6',stroke:'#fff',strokeWidth:'2.5',strokeLinecap:'round',strokeLinejoin:'round'}))),
           e('p', {className:'demo-label'}, '인스타 게시 완료')
         ),
-        e('div', {className:'demo-scene'},
+        e('div', {className:'demo-scene scene-ig'},
           e('div', {className:'demo-ig-feed'},
             e('div', {className:'demo-ig-header'},
               e('div', {className:'demo-ig-avatar'}),
