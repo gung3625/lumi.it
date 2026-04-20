@@ -335,12 +335,8 @@ function loadLibrary() {
 // ── 라이브러리 렌더링
 function renderLibrary(library) {
   var body = document.getElementById('library-body');
-  if (!library.length) {
-    body.innerHTML = '<div class="placeholder-body"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg><p>생성된 콘텐츠가 없습니다.<br>전체 생성 버튼으로 시작하세요.</p></div>';
-    return;
-  }
 
-  // 업종별 그룹화
+  // 업종별 그룹화 — 라이브러리가 비어 있어도 28개 빈 슬롯 카드 렌더
   var grouped = {};
   INDUSTRIES.forEach(function(ind) { grouped[ind] = { image: [], video: [] }; });
   library.forEach(function(item) {
