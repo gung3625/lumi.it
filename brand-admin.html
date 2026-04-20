@@ -208,6 +208,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div class="progress-wrap" id="gen-progress">
       <div class="progress-label"><span id="gen-progress-text">생성 중</span><span id="gen-progress-count">0 / 0</span></div>
       <div class="progress-bar"><div class="progress-fill" id="gen-progress-fill"></div></div>
+      <div id="gen-progress-note" style="display:none;margin-top:8px;font-size:12px;color:#ff3b30;line-height:1.4;word-break:break-all;"></div>
     </div>
     <div id="library-body">
       <div class="placeholder-body">
@@ -502,30 +503,56 @@ function startGenProgress(label, expectedDelta) {
 function pollGenProgress() {
   // 안전 타임아웃 45분
   if (Date.now() - genPollStartAt > 45 * 60 * 1000) {
-    stopGenProgress('시간 초과 (45분) — 수동으로 확인해주세요');
+    stopGenProgress('시간 초과 (45분) — 수동으로 확인해주세요', null);
     return;
   }
   fetch('/api/admin-library-list', { method: 'GET', headers: authHeaders() })
     .then(function(r) { return r.json(); })
     .then(function(d) {
       var lib = d.library || [];
-      var doneNow = lib.filter(function(i){ return i.status === 'ready' || i.status === 'failed'; }).length;
+      var doneItems = lib.filter(function(i){ return i.status === 'ready' || i.status === 'failed'; });
+      var failedItems = lib.filter(function(i){ return i.status === 'failed'; });
+      var doneNow = doneItems.length;
       var progress = Math.max(0, doneNow - genPollBaseline);
       if (progress > genPollExpected) progress = genPollExpected;
       var pct = Math.min(100, Math.round(progress / genPollExpected * 100));
-      var failedCount = lib.filter(function(i){ return i.status === 'failed'; }).length;
+      var failedCount = failedItems.length;
       document.getElementById('gen-progress-count').textContent = progress + ' / ' + genPollExpected + (failedCount ? ' (실패 ' + failedCount + ')' : '');
       document.getElementById('gen-progress-fill').style.width = pct + '%';
+
+      // 최근 실패 메시지 노출 (개인정보 없음 — OpenAI/Storage 에러 그대로)
+      var noteEl = document.getElementById('gen-progress-note');
+      if (failedCount > 0 && noteEl) {
+        var latestFail = failedItems.sort(function(a,b){ return (b.generated_at || '').localeCompare(a.generated_at || ''); })[0];
+        var msg = latestFail && latestFail.error_message ? latestFail.error_message : '알 수 없는 오류';
+        // OpenAI 크레딧/쿼터 에러 친절한 힌트
+        var hint = '';
+        if (/insufficient|quota|credit|billing|payment/i.test(msg)) hint = ' — OpenAI 크레딧/결제 확인 필요';
+        else if (/organization|verification|verify/i.test(msg)) hint = ' — OpenAI 조직 인증 필요';
+        else if (/rate|429/i.test(msg)) hint = ' — 요청 속도 제한 (잠시 후 재시도)';
+        noteEl.style.display = 'block';
+        noteEl.textContent = '최근 실패: ' + msg + hint;
+      } else if (noteEl) {
+        noteEl.style.display = 'none';
+        noteEl.textContent = '';
+      }
+
       renderLibrary(lib);
       renderSchedule(d.schedule || []);
+
       if (progress >= genPollExpected) {
-        stopGenProgress('생성 완료');
+        var succCount = progress - failedCount;
+        var summary;
+        if (failedCount === 0) summary = '완료 ✓ 성공 ' + progress + '개';
+        else if (succCount === 0) summary = '완료 — 전부 실패 ' + failedCount + '개';
+        else summary = '완료 — 성공 ' + succCount + '개 / 실패 ' + failedCount + '개';
+        stopGenProgress(summary, failedItems);
       }
     })
     .catch(function(){});
 }
 
-function stopGenProgress(finalText) {
+function stopGenProgress(finalText, failedItems) {
   if (genPollTimer) { clearInterval(genPollTimer); genPollTimer = null; }
   document.getElementById('gen-progress-text').textContent = finalText || '완료';
   document.getElementById('gen-progress-fill').style.width = '100%';
@@ -534,10 +561,19 @@ function stopGenProgress(finalText) {
     btn.disabled = false;
     btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg> 전체 생성';
   }
-  setTimeout(function() {
-    var wrap = document.getElementById('gen-progress');
-    if (wrap) wrap.classList.remove('active');
-  }, 4000);
+  // 실패 있으면 토스트로도 명시 — 실패 없으면 성공 토스트
+  if (failedItems && failedItems.length) {
+    showToast('일부 실패: ' + failedItems.length + '개 — 아래 메시지 확인');
+  } else if (failedItems) {
+    showToast('생성 완료 ✓');
+  }
+  // 실패 없을 때만 자동 숨김, 실패 있으면 계속 노출해 에러 확인 가능
+  if (!failedItems || !failedItems.length) {
+    setTimeout(function() {
+      var wrap = document.getElementById('gen-progress');
+      if (wrap) wrap.classList.remove('active');
+    }, 5000);
+  }
 }
 
 // ── 스케줄 렌더링
