@@ -4503,36 +4503,58 @@ function mInitWave2(){
       {key:'step2', label:'페이스북 페이지 연결', desc:'비즈니스 계정을 페이스북 페이지에 연결해주세요', link:'https://www.facebook.com/pages/create/', linkLabel:'만들러 가기'}
     ];
     if (window.LUMI_BETA_MODE) {
-      steps.push({key:'step3', label:'테스터 등록 신청', desc:'루미는 지금 Meta 심사 중이에요. 심사 통과 전까지는 지정 테스터만 인스타와 연결할 수 있어요. 핸들만 알려주시면 초대장을 보내드릴게요.'});
+      steps.push({key:'step3', label:'테스터 등록 신청', desc:'루미는 지금 Meta 심사 중이에요. 심사 통과 전까지는 지정 테스터만 인스타와 연결할 수 있어요. 닉네임만 알려주시면 초대장을 보내드릴게요.'});
       steps.push({key:'step4', label:'초대장 수락', desc:''});
     } else {
       steps.push({key:'connect', label:'루미와 연동', desc:'아래 버튼으로 인스타그램 로그인'});
     }
+    function isStepDone(s){
+      return (s.key === 'connect' || s.key === 'step3' || s.key === 'step4') ? false : !!guide[s.key];
+    }
+    var currentIdx = -1;
+    for (var k = 0; k < steps.length; k++) {
+      if (!isStepDone(steps[k])) { currentIdx = k; break; }
+    }
     var html = '<div class="m-ig-steps">';
     steps.forEach(function(s, i){
-      var done = (s.key === 'connect' || s.key === 'step3' || s.key === 'step4') ? false : !!guide[s.key];
-      html += '<div class="m-ig-step' + (done ? ' is-done' : '') + '">' +
+      var done = isStepDone(s);
+      var isCurrent = (i === currentIdx);
+      var isLocked = (currentIdx >= 0 && i > currentIdx);
+      html += '<div class="m-ig-step' + (done ? ' is-done' : '') + (isLocked ? ' is-locked' : '') + (isCurrent ? ' is-current' : '') + '" style="' + (isLocked ? 'opacity:.45;pointer-events:none;' : '') + '">' +
         '<div class="m-ig-step-dot">' + (done ? '&#10003;' : (i+1)) + '</div>' +
         '<div class="m-ig-step-body">' +
-          '<p class="m-ig-step-label">' + s.label + '</p>' +
-          (s.key !== 'step3' && s.key !== 'step4' ? '<p class="m-ig-step-desc">' + s.desc + '</p>' : '') +
-          (s.key === 'connect'
-            ? '<button type="button" class="m-feat-ghost" id="m-ig-oauth">연동하기</button>'
-            : (s.key === 'step3'
-              ? '<p class="m-ig-step-desc">' + s.desc + '</p><div id="m-tester-form"><input type="text" id="m-tester-handle" placeholder="@인스타그램 핸들" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid rgba(200,80,122,.4);font-size:14px;margin:8px 0;background:transparent;color:inherit;font-family:inherit;" /><button type="button" class="m-feat-ghost" id="m-tester-submit">테스터 등록 요청</button></div><p id="m-tester-done" style="display:none;color:var(--pink,#C8507A);font-size:13px;font-weight:600;margin-top:8px;">접수됐어요</p>'
-              : (s.key === 'step4'
-                ? '<div id="m-invite-status"><p class="m-ig-step-desc" id="m-invite-desc">상태 확인 중…</p><a id="m-invite-link" href="https://www.instagram.com/accounts/manage_access/" target="_blank" rel="noopener" style="display:none;" class="m-feat-ghost">초대 수락하러 가기</a></div>'
-                : (s.link
-                  ? '<a href="' + s.link + '" target="_blank" rel="noopener" class="m-feat-ghost" style="display:inline-block;margin-right:6px;margin-bottom:6px;">' + s.linkLabel + '</a>' + (done ? '' : '<button type="button" class="m-ig-step-mark" data-step="' + s.key + '">완료로 표시</button>')
-                  : (done ? '' : '<button type="button" class="m-ig-step-mark" data-step="' + s.key + '">완료로 표시</button>'))))) +
-        '</div>' +
-      '</div>';
+          '<p class="m-ig-step-label">' + s.label + '</p>';
+      if (done) {
+        html += '<button type="button" class="m-ig-step-undo" data-step="' + s.key + '" style="background:none;border:0;padding:4px 0;color:#C8507A;text-decoration:underline;cursor:pointer;font-size:13px;">완료 취소</button>';
+      } else if (isCurrent) {
+        if (s.key === 'connect') {
+          html += '<p class="m-ig-step-desc">' + s.desc + '</p><button type="button" class="m-feat-ghost" id="m-ig-oauth">연동하기</button>';
+        } else if (s.key === 'step3') {
+          html += '<p class="m-ig-step-desc">' + s.desc + '</p><div id="m-tester-form"><input type="text" id="m-tester-handle" placeholder="@인스타그램 닉네임" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid rgba(200,80,122,.4);font-size:14px;margin:8px 0;background:transparent;color:inherit;font-family:inherit;" /><button type="button" class="m-feat-ghost" id="m-tester-submit">테스터 등록 요청</button></div><p id="m-tester-done" style="display:none;color:var(--pink,#C8507A);font-size:13px;font-weight:600;margin-top:8px;">접수됐어요</p>';
+        } else if (s.key === 'step4') {
+          html += '<div id="m-invite-status"><p class="m-ig-step-desc" id="m-invite-desc">상태 확인 중…</p><a id="m-invite-link" href="https://www.instagram.com/accounts/manage_access/" target="_blank" rel="noopener" style="display:none;" class="m-feat-ghost">초대 수락하러 가기</a></div>';
+        } else {
+          html += '<p class="m-ig-step-desc">' + s.desc + '</p>';
+          if (s.link) {
+            html += '<a href="' + s.link + '" target="_blank" rel="noopener" class="m-feat-ghost" style="display:inline-block;margin-right:6px;margin-bottom:6px;">' + s.linkLabel + '</a>';
+          }
+          html += '<button type="button" class="m-ig-step-mark" data-step="' + s.key + '">완료로 표시</button>';
+        }
+      }
+      html += '</div></div>';
     });
     html += '</div>';
     el.innerHTML = html;
     el.querySelectorAll('.m-ig-step-mark').forEach(function(b){
       b.addEventListener('click', function(){
         guide[b.getAttribute('data-step')] = true;
+        localStorage.setItem('lumi_ig_guide', JSON.stringify(guide));
+        renderIgGuide();
+      });
+    });
+    el.querySelectorAll('.m-ig-step-undo').forEach(function(b){
+      b.addEventListener('click', function(){
+        guide[b.getAttribute('data-step')] = false;
         localStorage.setItem('lumi_ig_guide', JSON.stringify(guide));
         renderIgGuide();
       });
@@ -4547,7 +4569,7 @@ function mInitWave2(){
       submitBtn.addEventListener('click', function(){
         var handleInput = document.getElementById('m-tester-handle');
         var handle = (handleInput ? handleInput.value : '').replace(/^@/, '').trim();
-        if (!handle) { showMobileToast('핸들을 입력해주세요'); return; }
+        if (!handle) { showMobileToast('닉네임을 입력해주세요'); return; }
         fetch('/api/tester-register', {
           method: 'POST',
           headers: { 'Authorization': 'Bearer ' + TOKEN, 'Content-Type': 'application/json' },
@@ -6533,7 +6555,7 @@ var cards = {
         var steps = _betaMode ? [
           {label:'비즈니스 계정 전환', desc:'인스타그램을 프로 계정으로\n전환해야 자동 게시가 가능해요', btn:'전환하러 가기', action:function(){window.open('https://www.instagram.com/accounts/professional_account_tools/','_blank');}},
           {label:'페이스북 페이지 만들기', desc:'매장 이름으로 페이지를\n만들면 됩니다', btn:'만들러 가기', action:function(){window.open('https://www.facebook.com/pages/create/','_blank');}},
-          {label:'테스터 등록 신청', desc:'루미는 지금 Meta 심사 중이에요. 심사 통과 전까지는 지정 테스터만 인스타와 연결할 수 있어요. 핸들만 알려주시면 초대장을 보내드릴게요.', btn:null, action:null},
+          {label:'테스터 등록 신청', desc:'루미는 지금 Meta 심사 중이에요. 심사 통과 전까지는 지정 테스터만 인스타와 연결할 수 있어요. 닉네임만 알려주시면 초대장을 보내드릴게요.', btn:null, action:null},
           {label:'초대장 수락', desc:'', btn:null, action:null}
         ] : [
           {label:'비즈니스 계정 전환', desc:'인스타그램을 프로 계정으로\n전환해야 자동 게시가 가능해요', btn:'전환하러 가기', action:function(){window.open('https://www.instagram.com/accounts/professional_account_tools/','_blank');}},
@@ -6626,7 +6648,7 @@ var cards = {
                     ? e('div', null,
                         e('p', {style:{fontSize:'clamp(12px,3vw,13px)',color:'rgba(255,255,255,.7)',lineHeight:'1.55',margin:'0 0 10px',textAlign:'center'}}, cur.desc),
                         e('input', {
-                          type:'text', placeholder:'@인스타그램 핸들',
+                          type:'text', placeholder:'@인스타그램 닉네임',
                           value:_betaHandle,
                           onChange:function(ev){ _setBetaHandle(ev.target.value); },
                           style:{width:'100%',padding:'8px 12px',borderRadius:'8px',border:'1px solid rgba(255,255,255,.3)',background:'rgba(255,255,255,.1)',color:'#fff',fontSize:'14px',marginBottom:'8px',fontFamily:'inherit',boxSizing:'border-box'}
