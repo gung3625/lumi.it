@@ -7740,6 +7740,7 @@ function suShowForm() {
     html += '<div id="su-otp-area" style="display:none;margin-top:8px;">';
     html += '<input type="text" class="su-input" id="su-otp-code" placeholder="인증번호 6자리" inputmode="numeric" maxlength="6" pattern="[0-9]*" style="color:'+txtColor+'" '+suEnter('suVerifyOtp()')+'>';
     html += '<button class="su-btn" onclick="suVerifyOtp()">인증 확인</button>';
+    html += '<p style="text-align:center;margin-top:10px;font-size:13px;color:'+atColor+';">인증번호가 오지 않았나요? <button type="button" onclick="suSendOtp()" style="background:none;border:0;padding:0;color:#C8507A;text-decoration:underline;cursor:pointer;font-size:13px;">재전송</button></p>';
     html += '</div>';
   }
   else if (step.input === 'password') {
@@ -7826,9 +7827,10 @@ function suSendOtp() {
       document.getElementById('su-speech').innerHTML = data.error;
       btn.textContent = '인증번호 받기';
       btn.disabled = false;
+      btn.style.display = '';
       return;
     }
-    btn.textContent = '전송 완료';
+    btn.style.display = 'none';
     document.getElementById('su-otp-area').style.display = 'block';
     document.getElementById('su-otp-code').focus();
     suChangeLumi('/assets/lumi-wink.png');
@@ -7838,6 +7840,7 @@ function suSendOtp() {
     document.getElementById('su-speech').innerHTML = '전송에 실패했어요.<br>다시 시도해주세요';
     btn.textContent = '인증번호 받기';
     btn.disabled = false;
+    btn.style.display = '';
   });
 }
 
