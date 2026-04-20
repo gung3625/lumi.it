@@ -7841,19 +7841,23 @@ function suSendOtp() {
   });
 }
 
+var suOtpVerifying = false;
 function suVerifyOtp() {
+  if (suOtpVerifying) return;
   var otp = document.getElementById('su-otp-code').value.trim();
   if (!otp || otp.length !== 6) {
     suChangeLumi('/assets/lumi-sad.png', true);
     document.getElementById('su-speech').innerHTML = '인증번호 6자리를<br>입력해주세요';
     return;
   }
+  suOtpVerifying = true;
   fetch('/.netlify/functions/verify-otp', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({email: suData.email, otp: otp})
   }).then(function(r){ return r.json(); }).then(function(data) {
     if (data.error) {
+      suOtpVerifying = false;
       suChangeLumi('/assets/lumi-sad.png', true);
       document.getElementById('su-speech').innerHTML = data.error;
       return;
@@ -7861,7 +7865,9 @@ function suVerifyOtp() {
     suData.otpToken = data.otpToken;
     suData.emailVerified = true;
     suNextPhase();
+    suOtpVerifying = false;
   }).catch(function() {
+    suOtpVerifying = false;
     suChangeLumi('/assets/lumi-sad.png', true);
     document.getElementById('su-speech').innerHTML = '인증에 실패했어요.<br>다시 시도해주세요';
   });
@@ -8238,9 +8244,12 @@ async function liSendForgotOtp() {
   }
 }
 
+var liOtpVerifying = false;
 async function liVerifyForgotOtp() {
+  if (liOtpVerifying) return;
   var otp = (document.getElementById('li-forgot-otp') || {}).value || '';
   if (!otp || otp.length !== 6) return;
+  liOtpVerifying = true;
   try {
     var res = await fetch('/api/verify-otp', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({email: liData.forgotEmail, otp: otp}) });
     var data = await res.json();
@@ -8250,11 +8259,13 @@ async function liVerifyForgotOtp() {
       liChangeLumi('/assets/lumi-smile.png');
       liTypeText('인증 완료!\n새 비밀번호를 설정해주세요', 'li-speech', function() { liShowForm(); });
     } else {
+      liOtpVerifying = false;
       liChangeLumi('/assets/lumi-sad.png', true);
       document.getElementById('li-speech').textContent = data.error || '인증에 실패했어요.';
       setTimeout(function(){ liShowForm(); }, 1800);
     }
   } catch(e) {
+    liOtpVerifying = false;
     liChangeLumi('/assets/lumi-sad.png', true);
     document.getElementById('li-speech').innerHTML = '네트워크 오류가 발생했어요.';
     setTimeout(function(){ liShowForm(); }, 1800);
