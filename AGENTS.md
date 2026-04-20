@@ -25,9 +25,9 @@ lumi.it.kr is an AI-powered Instagram caption automation service for Korean smal
 ## For AI Agents
 
 ### Working In This Directory
-- **bento-preview.html is the primary work target.** All new feature work and UI changes go here.
-- Old site files (index.html, beta.html, dashboard.html, etc.) are being replaced and will be deleted when migration completes. Do not invest effort in them.
-- netlify/functions/ is the shared backend and persists across the migration.
+- **index.html is the primary work target.** 단일 HTML에 게스트/로그인 상태 모두 담겨 있고, 로그인 후 벤토 그리드 대시보드도 이 파일 안에 있음.
+- 서브 페이지: settings / subscribe / support / privacy / terms / guide / ig-guide / feature-time / office/index
+- netlify/functions/ 는 공유 백엔드.
 - Always read a file before editing it. Use the Edit tool with minimal, surgical changes — never do a full rewrite.
 - Mobile-first: always verify the mobile (1-column) layout after any changes.
 - Deploy command:
