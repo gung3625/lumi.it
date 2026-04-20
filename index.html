@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>lumi — 사진·영상 한 번이면 인스타 캡션·게시 자동</title>
+<!-- BETA MODE FLAG — false로 바꾸면 모든 BETA UI 비활성화 -->
+<script>window.LUMI_BETA_MODE = true;</script>
 <!-- Google Tag Manager -->
 <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -2146,7 +2148,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 </script>
 
 <nav>
-  <a class="nav-logo" href="/">lumi</a>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <a class="nav-logo" href="/">lumi</a>
+    <script>if(window.LUMI_BETA_MODE){document.write('<span style="border:1px solid var(--pink,#C8507A);color:var(--pink,#C8507A);border-radius:980px;padding:2px 8px;font-size:10px;font-weight:700;letter-spacing:0.5px;line-height:1.4;">BETA<\/span>');}</script>
+  </div>
   <div class="nav-pills" id="nav-pills">
     <button class="nav-pill active" onclick="filterGrid('all', this)">All</button>
     <button class="nav-pill" onclick="filterGrid('about', this)">소개</button>
@@ -2204,6 +2209,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
      Desktop bento below is completely untouched. -->
 <div class="mobile-app" id="mobile-app-logged-out">
   <section class="m-hero">
+    <script>if(window.LUMI_BETA_MODE){document.write('<p style="color:var(--pink,#C8507A);font-size:11px;letter-spacing:2px;font-weight:600;margin-bottom:8px;text-align:center;">BETA \u00b7 지정 테스터 모집 중<\/p>');}</script>
     <img src="/assets/lumi-character.png" alt="Lumi" class="m-hero-character v2-float" onerror="this.style.display='none'">
     <h1 class="m-hero-title v2-rise">사진·영상 한 번이면<br>충분해요</h1>
     <p class="m-hero-sub v2-rise d1">lumi가 업종·말투에 맞게 캡션·해시태그까지 써줘요.<br>1분이면 인스타 업로드 끝.</p>
@@ -4494,20 +4500,29 @@ function mInitWave2(){
     }
     var steps = [
       {key:'step1', label:'인스타그램 비즈니스 계정으로 전환', desc:'인스타 앱 → 설정 → 계정 → 프로페셔널 계정으로 전환'},
-      {key:'step2', label:'페이스북 페이지 연결', desc:'비즈니스 계정을 페이스북 페이지에 연결해주세요'},
-      {key:'connect', label:'루미와 연동', desc:'아래 버튼으로 인스타그램 로그인'}
+      {key:'step2', label:'페이스북 페이지 연결', desc:'비즈니스 계정을 페이스북 페이지에 연결해주세요'}
     ];
+    if (window.LUMI_BETA_MODE) {
+      steps.push({key:'step3', label:'테스터 등록 신청', desc:'루미는 지금 Meta 심사 중이에요. 심사 통과 전까지는 지정 테스터만 인스타와 연결할 수 있어요. 핸들만 알려주시면 초대장을 보내드릴게요.'});
+      steps.push({key:'step4', label:'초대장 수락', desc:''});
+    } else {
+      steps.push({key:'connect', label:'루미와 연동', desc:'아래 버튼으로 인스타그램 로그인'});
+    }
     var html = '<div class="m-ig-steps">';
     steps.forEach(function(s, i){
-      var done = (s.key === 'connect') ? false : !!guide[s.key];
+      var done = (s.key === 'connect' || s.key === 'step3' || s.key === 'step4') ? false : !!guide[s.key];
       html += '<div class="m-ig-step' + (done ? ' is-done' : '') + '">' +
         '<div class="m-ig-step-dot">' + (done ? '&#10003;' : (i+1)) + '</div>' +
         '<div class="m-ig-step-body">' +
           '<p class="m-ig-step-label">' + s.label + '</p>' +
-          '<p class="m-ig-step-desc">' + s.desc + '</p>' +
+          (s.key !== 'step3' && s.key !== 'step4' ? '<p class="m-ig-step-desc">' + s.desc + '</p>' : '') +
           (s.key === 'connect'
             ? '<button type="button" class="m-feat-ghost" id="m-ig-oauth">연동하기</button>'
-            : (done ? '' : '<button type="button" class="m-ig-step-mark" data-step="' + s.key + '">완료로 표시</button>')) +
+            : (s.key === 'step3'
+              ? '<p class="m-ig-step-desc">' + s.desc + '</p><div id="m-tester-form"><input type="text" id="m-tester-handle" placeholder="@인스타그램 핸들" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid rgba(200,80,122,.4);font-size:14px;margin:8px 0;background:transparent;color:inherit;font-family:inherit;" /><button type="button" class="m-feat-ghost" id="m-tester-submit">테스터 등록 요청</button></div><p id="m-tester-done" style="display:none;color:var(--pink,#C8507A);font-size:13px;font-weight:600;margin-top:8px;">접수됐어요</p>'
+              : (s.key === 'step4'
+                ? '<div id="m-invite-status"><p class="m-ig-step-desc" id="m-invite-desc">상태 확인 중…</p><a id="m-invite-link" href="https://www.instagram.com/accounts/manage_access/" target="_blank" rel="noopener" style="display:none;" class="m-feat-ghost">초대 수락하러 가기</a></div>'
+                : (done ? '' : '<button type="button" class="m-ig-step-mark" data-step="' + s.key + '">완료로 표시</button>')))) +
         '</div>' +
       '</div>';
     });
@@ -4524,6 +4539,56 @@ function mInitWave2(){
     if (ob) ob.addEventListener('click', function(){
       location.href = '/.netlify/functions/ig-oauth?action=start&token=' + encodeURIComponent(TOKEN);
     });
+    // BETA MODE: 테스터 등록 제출
+    var submitBtn = document.getElementById('m-tester-submit');
+    if (submitBtn) {
+      submitBtn.addEventListener('click', function(){
+        var handleInput = document.getElementById('m-tester-handle');
+        var handle = (handleInput ? handleInput.value : '').replace(/^@/, '').trim();
+        if (!handle) { showMobileToast('핸들을 입력해주세요'); return; }
+        fetch('/api/tester-register', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + TOKEN, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ig_handle: handle })
+        }).then(function(r){ return r.json(); }).then(function(d){
+          if (d.success) {
+            var form = document.getElementById('m-tester-form');
+            var done = document.getElementById('m-tester-done');
+            if (form) form.style.display = 'none';
+            if (done) done.style.display = 'block';
+          } else {
+            showMobileToast(d.error || '등록 실패 — 다시 시도해주세요');
+          }
+        }).catch(function(){ showMobileToast('오류가 발생했어요. 다시 시도해주세요.'); });
+      });
+    }
+    // BETA MODE: 초대 상태 조회
+    var inviteDesc = document.getElementById('m-invite-desc');
+    var inviteLink = document.getElementById('m-invite-link');
+    if (inviteDesc && window.LUMI_BETA_MODE) {
+      fetch('/api/tester-register', { headers: { 'Authorization': 'Bearer ' + TOKEN } })
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          if (d.status === 'invited') {
+            inviteDesc.textContent = '아래 링크로 들어가서 초대를 수락하면 연동 단계가 열려요.';
+            if (inviteLink) inviteLink.style.display = 'inline-block';
+            // 해당 스텝 레이블 업데이트
+            var labelEl = inviteDesc.closest('.m-ig-step-body');
+            if (labelEl) {
+              var lbl = labelEl.querySelector('.m-ig-step-label');
+              if (lbl) lbl.textContent = '초대장이 도착했어요';
+            }
+          } else {
+            inviteDesc.textContent = '담당자가 초대장을 보내고 있어요. 보통 24시간 안에 도착해요.';
+            // 해당 스텝 레이블 업데이트
+            var labelEl2 = inviteDesc.closest('.m-ig-step-body');
+            if (labelEl2) {
+              var lbl2 = labelEl2.querySelector('.m-ig-step-label');
+              if (lbl2) lbl2.textContent = '초대장 발송 대기 중';
+            }
+          }
+        }).catch(function(){ if (inviteDesc) inviteDesc.textContent = '상태를 불러올 수 없어요.'; });
+    }
   }
   renderIgGuide();
 
@@ -6462,12 +6527,42 @@ var cards = {
           return e(WeatherIgCard);
         }
 
-        var steps = [
+        var _betaMode = window.LUMI_BETA_MODE === true;
+        var steps = _betaMode ? [
+          {label:'비즈니스 계정 전환', desc:'인스타그램을 프로 계정으로\n전환해야 자동 게시가 가능해요', btn:'전환하러 가기', action:function(){window.open('https://www.instagram.com/accounts/professional_account_tools/','_blank');}},
+          {label:'페이스북 페이지 만들기', desc:'매장 이름으로 페이지를\n만들면 됩니다', btn:'만들러 가기', action:function(){window.open('https://www.facebook.com/pages/create/','_blank');}},
+          {label:'테스터 등록 신청', desc:'루미는 지금 Meta 심사 중이에요. 심사 통과 전까지는 지정 테스터만 인스타와 연결할 수 있어요. 핸들만 알려주시면 초대장을 보내드릴게요.', btn:null, action:null},
+          {label:'초대장 수락', desc:'', btn:null, action:null}
+        ] : [
           {label:'비즈니스 계정 전환', desc:'인스타그램을 프로 계정으로\n전환해야 자동 게시가 가능해요', btn:'전환하러 가기', action:function(){window.open('https://www.instagram.com/accounts/professional_account_tools/','_blank');}},
           {label:'페이스북 페이지 만들기', desc:'매장 이름으로 페이지를\n만들면 됩니다', btn:'만들러 가기', action:function(){window.open('https://www.facebook.com/pages/create/','_blank');}},
           {label:'lumi와 연동하기', desc:'버튼 하나로 lumi가\n인스타에 대신 올려드려요', btn:'연동 시작', action:startOAuth}
         ];
+        var totalSteps = steps.length;
         var cur = steps[step];
+
+        // BETA: 테스터 등록 상태
+        var _betaHandleState = React.useState('');
+        var _betaHandle = _betaHandleState[0], _setBetaHandle = _betaHandleState[1];
+        var _betaSubmittedState = React.useState(false);
+        var _betaSubmitted = _betaSubmittedState[0], _setBetaSubmitted = _betaSubmittedState[1];
+        var _betaInviteState = React.useState(null);
+        var _betaInviteStatus = _betaInviteState[0], _setBetaInviteStatus = _betaInviteState[1];
+
+        React.useEffect(function(){
+          if (!_betaMode) return;
+          var token = localStorage.getItem('lumi_token');
+          if (!token) return;
+          fetch('/api/tester-register', { headers: { 'Authorization': 'Bearer ' + token } })
+            .then(function(r){ return r.json(); })
+            .then(function(d){
+              if (d.status && d.status !== 'none') {
+                _setBetaSubmitted(true);
+                _setBetaInviteStatus(d.status);
+                if (d.ig_handle) _setBetaHandle(d.ig_handle);
+              }
+            }).catch(function(){});
+        }, []);
 
         // 인스타 SVG 로고 (인라인)
         var igLogo = e('svg', {width:'20',height:'20',viewBox:'0 0 24 24',fill:'none',xmlns:'http://www.w3.org/2000/svg',style:{flexShrink:0}},
@@ -6478,7 +6573,7 @@ var cards = {
 
         // 원형 프로그레스 dots: 완료=초록, 현재=흰색 채움, 미완료=흰색 테두리
         var progressDots = e('div', {style:{display:'flex',gap:'8px',alignItems:'center',marginTop:'10px',justifyContent:'center'}},
-          [0,1,2].map(function(i){
+          Array.apply(null, Array(totalSteps)).map(function(_,i){
             var isDone = i < step;
             var isCur = i === step;
             return e('div', {key:i, style:{
@@ -6517,9 +6612,57 @@ var cards = {
           ),
           // 중앙 콘텐츠 블록
           e('div', {style:{flex:'1',display:'flex',flexDirection:'column',justifyContent:'center',padding:'14px 0 10px',alignItems:'center'}},
-            e('p', {style:{fontSize:'11px',color:'rgba(255,255,255,.5)',letterSpacing:'1.2px',marginBottom:'10px',fontWeight:600,textTransform:'uppercase',textAlign:'center'}}, 'STEP ' + (step + 1) + ' / 3'),
-            e('p', {style:{fontSize:'clamp(16px,4.5vw,20px)',fontWeight:700,color:'#fff',lineHeight:'1.3',marginBottom:'10px',letterSpacing:'-0.3px',textAlign:'center'}}, cur.label),
-            e('p', {style:{fontSize:'clamp(12px,3vw,14px)',color:'rgba(255,255,255,.7)',lineHeight:'1.55',whiteSpace:'pre-line',margin:'0',textAlign:'center'}}, cur.desc)
+            e('p', {style:{fontSize:'11px',color:'rgba(255,255,255,.5)',letterSpacing:'1.2px',marginBottom:'10px',fontWeight:600,textTransform:'uppercase',textAlign:'center'}}, 'STEP ' + (step + 1) + ' / ' + totalSteps),
+            e('p', {style:{fontSize:'clamp(16px,4.5vw,20px)',fontWeight:700,color:'#fff',lineHeight:'1.3',marginBottom:'10px',letterSpacing:'-0.3px',textAlign:'center'}},
+              (_betaMode && step === 3 && _betaInviteStatus === 'invited') ? '초대장이 도착했어요' :
+              (_betaMode && step === 3) ? '초대장 발송 대기 중' :
+              cur.label
+            ),
+            (_betaMode && step === 2)
+              ? e('div', {style:{width:'100%'}},
+                  !_betaSubmitted
+                    ? e('div', null,
+                        e('p', {style:{fontSize:'clamp(12px,3vw,13px)',color:'rgba(255,255,255,.7)',lineHeight:'1.55',margin:'0 0 10px',textAlign:'center'}}, cur.desc),
+                        e('input', {
+                          type:'text', placeholder:'@인스타그램 핸들',
+                          value:_betaHandle,
+                          onChange:function(ev){ _setBetaHandle(ev.target.value); },
+                          style:{width:'100%',padding:'8px 12px',borderRadius:'8px',border:'1px solid rgba(255,255,255,.3)',background:'rgba(255,255,255,.1)',color:'#fff',fontSize:'14px',marginBottom:'8px',fontFamily:'inherit',boxSizing:'border-box'}
+                        }),
+                        e('button', {
+                          style:{fontSize:'13px',fontWeight:600,padding:'10px 16px',background:'rgba(255,255,255,.2)',backdropFilter:'blur(10px)',color:'#fff',border:'1px solid rgba(255,255,255,.3)',borderRadius:'980px',cursor:'pointer',whiteSpace:'nowrap',fontFamily:'inherit',width:'100%'},
+                          onMouseDown:function(ev){ev.stopPropagation();},
+                          onClick:function(ev){
+                            ev.stopPropagation();
+                            var handle = _betaHandle.replace(/^@/,'').trim();
+                            if (!handle) return;
+                            var token = localStorage.getItem('lumi_token');
+                            fetch('/api/tester-register', {
+                              method:'POST',
+                              headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
+                              body:JSON.stringify({ig_handle:handle})
+                            }).then(function(r){return r.json();}).then(function(d){
+                              if (d.success) { _setBetaSubmitted(true); _setBetaInviteStatus('pending'); setStep(3); }
+                            }).catch(function(){});
+                          }
+                        }, '테스터 등록 요청')
+                      )
+                    : e('p', {style:{color:'#C8507A',fontSize:'13px',fontWeight:600,textAlign:'center'}}, '접수됐어요')
+                )
+              : (_betaMode && step === 3)
+                ? e('div', {style:{width:'100%',textAlign:'center'}},
+                    _betaInviteStatus === 'invited'
+                      ? e('div', null,
+                          e('p', {style:{fontSize:'clamp(12px,3vw,13px)',color:'rgba(255,255,255,.7)',lineHeight:'1.55',margin:'0 0 10px'}}, '아래 링크로 들어가서 초대를 수락하면 연동 단계가 열려요.'),
+                          e('a', {
+                            href:'https://www.instagram.com/accounts/manage_access/',
+                            target:'_blank', rel:'noopener',
+                            style:{display:'inline-block',fontSize:'13px',fontWeight:600,padding:'10px 16px',background:'rgba(255,255,255,.2)',backdropFilter:'blur(10px)',color:'#fff',border:'1px solid rgba(255,255,255,.3)',borderRadius:'980px',cursor:'pointer',whiteSpace:'nowrap',textDecoration:'none'}
+                          }, '초대 수락하러 가기')
+                        )
+                      : e('p', {style:{fontSize:'clamp(12px,3vw,13px)',color:'rgba(255,255,255,.7)',lineHeight:'1.55',margin:'0'}}, '담당자가 초대장을 보내고 있어요. 보통 24시간 안에 도착해요.')
+                  )
+                : e('p', {style:{fontSize:'clamp(12px,3vw,14px)',color:'rgba(255,255,255,.7)',lineHeight:'1.55',whiteSpace:'pre-line',margin:'0',textAlign:'center'}}, cur.desc)
           ),
           // 하단 버튼 영역
           e('div', {style:{display:'flex',alignItems:'center',gap:'8px',flexWrap:'nowrap',justifyContent:'center'}},
@@ -6528,12 +6671,12 @@ var cards = {
               onMouseDown:function(ev){ev.stopPropagation();},
               onClick:function(ev){ev.stopPropagation();goBack();}
             }, '이전') : null,
-            e('button', {
+            (_betaMode && (step === 2 || step === 3)) ? null : e('button', {
               style:{fontSize:'13px',fontWeight:600,padding:'10px 16px',background:'rgba(255,255,255,.2)',backdropFilter:'blur(10px)',color:'#fff',border:'1px solid rgba(255,255,255,.3)',borderRadius:'980px',cursor:'pointer',whiteSpace:'nowrap',fontFamily:'inherit'},
               onMouseDown:function(ev){ev.stopPropagation();},
               onClick:function(ev){ev.stopPropagation();cur.action();}
             }, cur.btn),
-            step < 2 ? e('button', {
+            (step < totalSteps - 1 && !(_betaMode && step >= 2)) ? e('button', {
               style:{fontSize:'12px',fontWeight:500,padding:'10px 14px',background:'rgba(255,255,255,.12)',backdropFilter:'blur(10px)',color:'rgba(255,255,255,.8)',border:'1px solid rgba(255,255,255,.2)',borderRadius:'980px',cursor:'pointer',whiteSpace:'nowrap',flexShrink:0,fontFamily:'inherit'},
               onMouseDown:function(ev){ev.stopPropagation();},
               onClick:function(ev){ev.stopPropagation();completeStep(step);}
