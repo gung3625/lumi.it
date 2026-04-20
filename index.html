@@ -4499,8 +4499,8 @@ function mInitWave2(){
       return;
     }
     var steps = [
-      {key:'step1', label:'인스타그램 비즈니스 계정으로 전환', desc:'인스타 앱 → 설정 → 계정 → 프로페셔널 계정으로 전환'},
-      {key:'step2', label:'페이스북 페이지 연결', desc:'비즈니스 계정을 페이스북 페이지에 연결해주세요'}
+      {key:'step1', label:'인스타그램 비즈니스 계정으로 전환', desc:'인스타 앱 → 설정 → 계정 → 프로페셔널 계정으로 전환', link:'https://www.instagram.com/accounts/professional_account_tools/', linkLabel:'전환하러 가기'},
+      {key:'step2', label:'페이스북 페이지 연결', desc:'비즈니스 계정을 페이스북 페이지에 연결해주세요', link:'https://www.facebook.com/pages/create/', linkLabel:'만들러 가기'}
     ];
     if (window.LUMI_BETA_MODE) {
       steps.push({key:'step3', label:'테스터 등록 신청', desc:'루미는 지금 Meta 심사 중이에요. 심사 통과 전까지는 지정 테스터만 인스타와 연결할 수 있어요. 핸들만 알려주시면 초대장을 보내드릴게요.'});
@@ -4522,7 +4522,9 @@ function mInitWave2(){
               ? '<p class="m-ig-step-desc">' + s.desc + '</p><div id="m-tester-form"><input type="text" id="m-tester-handle" placeholder="@인스타그램 핸들" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid rgba(200,80,122,.4);font-size:14px;margin:8px 0;background:transparent;color:inherit;font-family:inherit;" /><button type="button" class="m-feat-ghost" id="m-tester-submit">테스터 등록 요청</button></div><p id="m-tester-done" style="display:none;color:var(--pink,#C8507A);font-size:13px;font-weight:600;margin-top:8px;">접수됐어요</p>'
               : (s.key === 'step4'
                 ? '<div id="m-invite-status"><p class="m-ig-step-desc" id="m-invite-desc">상태 확인 중…</p><a id="m-invite-link" href="https://www.instagram.com/accounts/manage_access/" target="_blank" rel="noopener" style="display:none;" class="m-feat-ghost">초대 수락하러 가기</a></div>'
-                : (done ? '' : '<button type="button" class="m-ig-step-mark" data-step="' + s.key + '">완료로 표시</button>')))) +
+                : (s.link
+                  ? '<a href="' + s.link + '" target="_blank" rel="noopener" class="m-feat-ghost" style="display:inline-block;margin-right:6px;margin-bottom:6px;">' + s.linkLabel + '</a>' + (done ? '' : '<button type="button" class="m-ig-step-mark" data-step="' + s.key + '">완료로 표시</button>')
+                  : (done ? '' : '<button type="button" class="m-ig-step-mark" data-step="' + s.key + '">완료로 표시</button>'))))) +
         '</div>' +
       '</div>';
     });
@@ -7660,6 +7662,7 @@ var suFlow = [
   {img:'/assets/lumi-smile.png', msg:'반가워요!\nlumi에 오신 걸 환영해요\n이메일부터 알려주세요!', input:'email'},
   {img:'/assets/lumi-curious.png', msg:'좋아요!\n비밀번호를 설정해주세요\n특수문자 포함 10자 이상이에요', input:'password'},
   {img:'/assets/lumi-smile.png', msg:'매장 이름이 뭐예요?\n대표님 성함도 알려주세요!', input:'store'},
+  {img:'/assets/lumi-curious.png', msg:'휴대폰 번호를 알려주세요\n예약·게시 알림에 사용돼요', input:'phone'},
   {img:'/assets/lumi-wink.png', msg:'어떤 업종이에요?\n업종에 맞춰 캡션을 만들어드려요', input:'biz'},
   {img:'/assets/lumi-smile.png', msg:'거의 다 왔어요!\n마지막으로 약관만 확인해주세요', input:'agree'}
 ];
@@ -7753,6 +7756,11 @@ function suShowForm() {
     html += '<input type="text" class="su-input" id="su-name" placeholder="대표님 성함" style="color:'+txtColor+'" '+suEnter('document.getElementById(\\\'su-store\\\').focus()')+'>';
     html += '<input type="text" class="su-input" id="su-store" placeholder="매장 이름" style="color:'+txtColor+'" '+suEnter('suSubmitStore()')+'>';
     html += '<button class="su-btn" onclick="suSubmitStore()">확인</button>';
+    html += '<button class="su-btn-sub" onclick="suGoBack()">이전으로</button>';
+  }
+  else if (step.input === 'phone') {
+    html += '<input type="tel" class="su-input" id="su-phone" placeholder="010-1234-5678" inputmode="numeric" style="color:'+txtColor+'" oninput="this.value=this.value.replace(/[^0-9-]/g,\'\')" '+suEnter('suSubmitPhone()')+'>';
+    html += '<button class="su-btn" onclick="suSubmitPhone()">확인</button>';
     html += '<button class="su-btn-sub" onclick="suGoBack()">이전으로</button>';
   }
   else if (step.input === 'biz') {
@@ -7909,6 +7917,22 @@ function suSubmitStore() {
   suData.storeName = store;
   suNextPhase();
 }
+function suSubmitPhone() {
+  var raw = (document.getElementById('su-phone').value || '').replace(/[^0-9]/g, '');
+  if (!raw) {
+    suChangeLumi('/assets/lumi-sad.png', true);
+    document.getElementById('su-speech').innerHTML = '휴대폰 번호를 입력해주세요!';
+    return;
+  }
+  if (!/^01[016789][0-9]{7,8}$/.test(raw)) {
+    suChangeLumi('/assets/lumi-sad.png', true);
+    document.getElementById('su-speech').innerHTML = '올바른 휴대폰 번호를<br>입력해주세요';
+    return;
+  }
+  var formatted = raw.length === 11 ? raw.slice(0,3)+'-'+raw.slice(3,7)+'-'+raw.slice(7) : raw.slice(0,3)+'-'+raw.slice(3,6)+'-'+raw.slice(6);
+  suData.phone = formatted;
+  suNextPhase();
+}
 function suSubmitBiz() {
   var checked = document.querySelector('input[name="su-biz"]:checked');
   suData.bizCategory = checked.value;
@@ -7927,7 +7951,7 @@ function suSubmitAgree() {
   document.getElementById('su-speech').innerHTML = '가입 처리 중...';
   fetch('/api/register', {
     method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({name:suData.name, storeName:suData.storeName, email:suData.email, password:suData.password, bizCategory:suData.bizCategory, agreeMarketing:marketing?marketing.checked:false, otpToken:suData.otpToken})
+    body: JSON.stringify({name:suData.name, storeName:suData.storeName, email:suData.email, phone:suData.phone, password:suData.password, bizCategory:suData.bizCategory, agreeMarketing:marketing?marketing.checked:false, otpToken:suData.otpToken})
   }).then(function(r){return r.json();}).then(function(data){
     if(data.error){suChangeLumi('/assets/lumi-sad.png',true);document.getElementById('su-speech').textContent=data.error;setTimeout(function(){suShowForm();},1500);return;}
     localStorage.setItem('lumi_token',data.token);
