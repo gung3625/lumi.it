@@ -35,7 +35,7 @@
 - Netlify Functions + Netlify Blobs
 - OpenAI GPT-4o (이미지 분석) + GPT-5.4 (캡션 생성) via Responses API
 - OpenAI Moderation API (캡션 안전성 필터링)
-- 말투 자동학습 (게시=like, 재생성=dislike, 20개 롤링 윈도우)
+- 말투 자동학습 (다음 방문 시 지난 캡션 이연 명시평가, 20개 롤링 윈도우)
 
 ## 📸 캡션 플로우
 - 사진 업로드 1회 → 캡션 1개 생성
