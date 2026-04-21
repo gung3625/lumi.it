@@ -1,7 +1,9 @@
-// scheduled-trends.js — 5개 외부 소스 + gpt-4o-mini 분류 파이프라인 (Phase 1 재구축)
+// scheduled-trends-background.js — 5개 외부 소스 + gpt-4o-mini 분류 파이프라인 (Phase 1 재구축)
 // 소스: 네이버 데이터랩, 네이버 검색(블로그), 구글 트렌드, YouTube Data API v3, Instagram Graph API(스켈레톤)
 // 저장: Supabase public.trends (category 컬럼을 복합 키로 사용)
 // 매일 자정(UTC 15:00 / KST 00:00) cron 실행
+// -background 접미사: Netlify 백그라운드 함수(15분 타임아웃)로 실행
+// 기존 동기 scheduled function은 10~26초 내에 끝나야 하나, 5소스 + GPT 호출은 그보다 오래 걸려 타임아웃됨 → 3일 연속 업데이트 누락
 
 const { getAdminClient } = require('./_shared/supabase-admin');
 const https = require('https');
@@ -775,7 +777,7 @@ exports.handler = async (event) => {
       };
     }
   }
-  console.log('[scheduled-trends] Phase 1 재구축 파이프라인 시작 (5소스 + gpt-4o-mini)');
+  console.log('[scheduled-trends-background] Phase 1 재구축 파이프라인 시작 (5소스 + gpt-4o-mini)');
 
   let supa;
   try {
