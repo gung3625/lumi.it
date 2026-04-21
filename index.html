@@ -1913,12 +1913,18 @@ body.dark-mode .su-close svg{stroke:#f0f2f8;}
         var idx = (r.selected_caption_index == null) ? 0 : r.selected_caption_index;
         var caption = '';
         if (captions.length) caption = captions[idx] || captions[0] || '';
+        var imgUrls = Array.isArray(r.image_urls) ? r.image_urls : [];
+        var frameUrls = Array.isArray(r.frame_urls) ? r.frame_urls : [];
         return {
           post: {
             caption: caption,
             imageKeys: Array.isArray(r.image_keys) ? r.image_keys : [],
             imageKey: (Array.isArray(r.image_keys) && r.image_keys.length) ? r.image_keys[0] : null,
-            imageUrl: (Array.isArray(r.image_urls) && r.image_urls.length) ? r.image_urls[0] : null,
+            imageUrl: imgUrls[0] || frameUrls[0] || null,
+            imageUrls: imgUrls,
+            frameUrls: frameUrls,
+            videoUrl: r.video_url || null,
+            mediaType: r.media_type || null,
             instagramPostId: r.ig_post_id || null,
             sentAt: r.posted_at || null,
             igUsername: null,
@@ -6119,16 +6125,17 @@ var cards = {
         }
 
         var empty = !loading && !post;
-        var captionText = post ? (post.caption || post.final_caption || '') : '';
+        var captionText = post ? (post.caption || '') : '';
         var token = localStorage.getItem('lumi_token') || '';
-        var isReels = post && (post.media_type === 'REELS' || !!post.video_url);
-        var imageArr = post && Array.isArray(post.image_urls) ? post.image_urls : [];
-        var frameArr = post && Array.isArray(post.frame_urls) ? post.frame_urls : [];
-        var imageCount = imageArr.length || frameArr.length || 0;
-        var thumbUrl = post ? (imageArr[0] || frameArr[0] || null) : null;
-        var videoUrl = post ? (post.video_url || null) : null;
-        var postedIso = post ? (post.posted_at || post.sentAt || post.created_at || null) : null;
-        var igPostId = post ? (post.ig_post_id || post.instagram_post_id || post.instagramPostId || null) : null;
+        var videoUrl = post ? (post.videoUrl || post.video_url || null) : null;
+        var mediaType = post ? (post.mediaType || post.media_type || null) : null;
+        var isReels = !!videoUrl || mediaType === 'REELS';
+        var imageArr = post && Array.isArray(post.imageUrls) ? post.imageUrls : (post && Array.isArray(post.image_urls) ? post.image_urls : []);
+        var frameArr = post && Array.isArray(post.frameUrls) ? post.frameUrls : (post && Array.isArray(post.frame_urls) ? post.frame_urls : []);
+        var thumbUrl = post ? (post.imageUrl || imageArr[0] || frameArr[0] || null) : null;
+        var imageCount = imageArr.length || frameArr.length || (thumbUrl ? 1 : 0);
+        var postedIso = post ? (post.sentAt || post.posted_at || post.created_at || null) : null;
+        var igPostId = post ? (post.instagramPostId || post.ig_post_id || null) : null;
         var igLink = igPostId ? ('https://www.instagram.com/p/' + igPostId + '/') : null;
 
         var emptyInner = e('div', {style:{position:'absolute',inset:0,background:isDk?'#1c1c1e':'#fff',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'6px',padding:'18px',borderRadius:'20px',textAlign:'center'}},
