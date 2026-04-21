@@ -51,16 +51,28 @@ exports.handler = async (event) => {
       return { statusCode: 400, headers, body: JSON.stringify({ error: '허용되지 않은 마이그레이션', allowed: Object.keys(MIGRATIONS) }) };
     }
 
-    // Netlify AWS 런타임은 direct DB 호스트(db.*.supabase.co)를 IPv6 전용이라 resolve 실패.
-    // SUPABASE_DB_URL을 pooler URL로 변환: 호스트→aws-0-ap-northeast-2.pooler.supabase.com, 유저→postgres.<REF>.
+    // Netlify AWS 런타임은 direct DB 호스트(db.*.supabase.co) IPv6 전용이라 resolve 실패.
+    // 프로젝트 리전이 불명확해서 pooler 리전을 브루트포스.
     const direct = new URL(process.env.SUPABASE_DB_URL);
     const ref = direct.hostname.replace(/^db\./, '').split('.')[0];
-    const poolerUrl = `postgresql://postgres.${ref}:${direct.password}@aws-0-ap-northeast-2.pooler.supabase.com:5432${direct.pathname}`;
+    const REGIONS = [
+      'ap-northeast-2', 'ap-northeast-1', 'ap-southeast-1', 'ap-southeast-2', 'ap-south-1',
+      'us-east-1', 'us-east-2', 'us-west-1', 'us-west-2',
+      'eu-west-1', 'eu-west-2', 'eu-central-1', 'sa-east-1', 'ca-central-1',
+    ];
+    const attempts = REGIONS.map((r) => [
+      r,
+      `postgresql://postgres.${ref}:${direct.password}@aws-0-${r}.pooler.supabase.com:5432${direct.pathname}`,
+    ]);
 
     const errors = [];
     let applied = false;
-    for (const [label, connStr] of [['pooler', poolerUrl], ['direct', process.env.SUPABASE_DB_URL]]) {
-      const client = new Client({ connectionString: connStr, ssl: { rejectUnauthorized: false } });
+    for (const [label, connStr] of attempts) {
+      const client = new Client({
+        connectionString: connStr,
+        ssl: { rejectUnauthorized: false },
+        connectionTimeoutMillis: 3000,
+      });
       try {
         await client.connect();
         await client.query(sql);
