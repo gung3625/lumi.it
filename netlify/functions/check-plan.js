@@ -25,7 +25,7 @@ exports.handler = async (event) => {
 
     const { data: userData, error: userErr } = await admin
       .from('users')
-      .select('plan, name, store_name, instagram_handle, biz_category, caption_tone, tag_style, store_desc, region, sido_code, sigungu_code, auto_story, auto_festival')
+      .select('plan, name, store_name, instagram_handle, biz_category, caption_tone, tag_style, store_desc, region, sido_code, sigungu_code, auto_story, auto_festival, trial_start')
       .eq('id', user.id)
       .single();
 
@@ -45,6 +45,7 @@ exports.handler = async (event) => {
       headers: CORS,
       body: JSON.stringify({
         plan: userData.plan || 'trial',
+        trialStart: userData.trial_start || null,
         user: {
           name: userData.name,
           storeName: userData.store_name,

@@ -4718,17 +4718,34 @@ function mInitWave2(){
     var monthEl = document.getElementById('m-report-month');
     var now = new Date();
     if (monthEl) monthEl.textContent = (now.getMonth()+1) + '월 활동';
-    var planLabels = { trial:'무료 체험', basic:'베이직', standard:'스탠다드', pro:'프로' };
+    var PAID_LABELS = { basic:'베이직', standard:'스탠다드', pro:'프로' };
     var planLimit = function(p){ return p === 'pro' || p === 'trial' ? 20 : p === 'standard' ? 12 : 0; };
+    // trial_start 기준 남은 일수 (7일 체험)
+    var trialDaysLeft = function(startIso){
+      if (!startIso) return null;
+      var start = new Date(startIso).getTime();
+      if (isNaN(start)) return null;
+      var elapsedMs = Date.now() - start;
+      var left = 7 - Math.floor(elapsedMs / 86400000);
+      return left;
+    };
     var doUpdate = function(data){
       var postCount = data.postCount || 0;
-      var limit = data.limit || planLimit(data.plan);
-      var remaining = Math.max(0, limit - postCount);
+      var left = data.plan === 'trial' ? trialDaysLeft(data.trialStart) : null;
+      var expired = data.plan === 'trial' && left !== null && left <= 0;
+      var effectiveLimit = expired ? 0 : (data.limit || planLimit(data.plan));
+      var remaining = Math.max(0, effectiveLimit - postCount);
       var savedMin = Math.round(postCount * 20); // 게시당 20분 절약 가정
       if (postsEl) postsEl.textContent = postCount + '';
-      if (remainEl) remainEl.textContent = remaining + '';
+      if (remainEl) remainEl.textContent = expired ? '구매 필요' : (remaining + '');
       if (savedEl) savedEl.textContent = savedMin > 60 ? Math.round(savedMin/60) + '시간' : savedMin + '분';
-      if (planEl) planEl.textContent = planLabels[data.plan] || '무료 체험';
+      if (planEl) {
+        if (data.plan === 'trial') {
+          planEl.textContent = expired ? '요금제를 구매해주세요' : (left !== null ? '무료 체험 D-' + Math.max(0, left) : '무료 체험');
+        } else {
+          planEl.textContent = PAID_LABELS[data.plan] || '무료 체험';
+        }
+      }
     };
     // 플랜 정보 (lumiCheckPlan) + 게시 수 (count-posts) 병렬 조회
     var planPromise = (typeof window.lumiCheckPlan === 'function')
@@ -4741,11 +4758,12 @@ function mInitWave2(){
       var pRes = arr[0] || {};
       var cRes = arr[1] || {};
       var plan = (pRes.user && pRes.user.plan) || pRes.plan || getUser().plan || 'trial';
+      var trialStart = pRes.trialStart || (pRes.user && pRes.user.trialStart) || null;
       var postCount = (typeof pRes.postCount === 'number') ? pRes.postCount
                     : (typeof cRes.count === 'number') ? cRes.count
                     : (typeof cRes.postCount === 'number') ? cRes.postCount : 0;
       var limit = pRes.limit || cRes.limit || planLimit(plan);
-      doUpdate({ postCount: postCount, limit: limit, plan: plan });
+      doUpdate({ postCount: postCount, limit: limit, plan: plan, trialStart: trialStart });
       // featToggles 서버 → localStorage 동기화
       if (pRes.featToggles) { try { localStorage.setItem('lumi_feat_toggles', JSON.stringify(pRes.featToggles)); } catch(ex) {} }
     });
