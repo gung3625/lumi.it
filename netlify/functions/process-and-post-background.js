@@ -275,6 +275,22 @@ async function generateCaptions(imageAnalysis, item, progress) {
     ? '이 캡션은 인스타그램 릴스(짧은 영상)에 붙습니다. 영상의 움직임, 변화, 과정을 문장에 녹이세요.'
     : '';
 
+  // ── 링크인바이오 유도 (ON이면 본문 마무리를 프로필 링크 유도로) ──
+  const linkInBioGuide = item.linkinbio === true
+    ? `### 링크인바이오 유도 (중요)
+이 게시물은 본문 맨 아래에 시스템이 **프로필 링크 URL 한 줄만 자동으로 붙입니다**. 당신은 URL을 직접 쓰지 마세요.
+대신 본문의 마지막 1~2문장을 "프로필 링크를 눌러볼 이유"가 자연스럽게 느껴지도록 마무리하세요.
+
+- 금지 표현: "프로필 링크에서 만나요", "프로필에서 확인", "링크인바이오", "바이오 확인", "프로필 클릭" 같은 AI 상투 문구
+- 금지: URL 직접 기재, "👇" 같은 뻔한 유도 이모지, "더 많은 정보는"/"자세한 건" 같은 기계적 연결
+- 권장: 메뉴/예약/위치/문의가 필요한 맥락을 본문에 자연스럽게 심어두기
+  · 카페/음식: "오늘 신메뉴 리스트 정리해뒀어요", "예약 받고 있어요"
+  · 뷰티: "이번 달 시술 일정 열어뒀어요", "상담은 편하게 남겨주세요"
+  · 꽃집: "주문 가능한 꽃들 올려뒀어요"
+  · 기타: 매장 성격에 맞는 "가볼 이유"를 한 문장으로
+- 마지막 문장은 짧고 담백하게. 유도 톤이 너무 세면 안 됨. 암시적으로.`
+    : '';
+
   // ── 캐러셀 구조 앵커 (2장 이상, REELS는 단일 미디어이므로 제외) ──
   const carouselGuide = (!isReels && photoCount > 1)
     ? `### 캐러셀 스토리텔링 구조 (${photoCount}장)
@@ -346,6 +362,8 @@ ${storeBlock || '(정보 없음)'}
 ${reelsGuide}
 
 ${carouselGuide}
+
+${linkInBioGuide}
 
 ---
 
@@ -704,9 +722,25 @@ exports.handler = async (event) => {
     // 2) 사용자 프로필 + 말투 학습 데이터 로드 (Supabase 직접 조회)
     const { data: userProfile } = await supabase
       .from('users')
-      .select('biz_category, caption_tone, tag_style, custom_captions, phone')
+      .select('biz_category, caption_tone, tag_style, custom_captions, phone, feat_toggles')
       .eq('id', reservation.user_id)
       .maybeSingle();
+
+    // 링크인바이오 슬러그 조회
+    let linkInBioSlug = '';
+    const featToggles = userProfile?.feat_toggles || {};
+    if (featToggles.linkinbio === true) {
+      try {
+        const { data: linkPage } = await supabase
+          .from('link_pages')
+          .select('slug')
+          .eq('user_id', reservation.user_id)
+          .maybeSingle();
+        linkInBioSlug = linkPage?.slug || '';
+      } catch (e) {
+        console.warn('[process-and-post] link_pages 조회 실패:', e.message);
+      }
+    }
 
     const sp = reservation.store_profile || {};
     const bizCat = reservation.biz_category || userProfile?.biz_category || sp.category || 'cafe';
@@ -763,6 +797,7 @@ exports.handler = async (event) => {
       useWeather: reservation.use_weather !== false,
       photoCount: isReels ? 1 : imageUrls.length,
       mediaType,
+      linkinbio: featToggles.linkinbio === true && !!linkInBioSlug,
     };
 
     const captionProgress = async (tag) => {

@@ -267,8 +267,8 @@ exports.handler = async (event) => {
           .maybeSingle();
         const slug = linkPageRow && linkPageRow.slug;
         if (slug && !selectedCaption.includes('lumi.it.kr/p/')) {
-          selectedCaption = selectedCaption + '\n\n프로필 링크에서 만나요\nhttps://lumi.it.kr/p/' + slug;
-          console.log('[select-and-post] 링크인바이오 꼬리 삽입 완료');
+          selectedCaption = selectedCaption + '\n\nhttps://lumi.it.kr/p/' + slug;
+          console.log('[select-and-post] 링크인바이오 URL 삽입 완료');
         }
       }
     } catch (libErr) {

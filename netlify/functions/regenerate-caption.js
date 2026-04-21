@@ -46,6 +46,18 @@ function buildCaptionPrompt(item, imageAnalysis, toneGuide) {
 
   const photoCount = item.photo_count || (item.image_urls ? item.image_urls.length : 1);
 
+  // ── 링크인바이오 유도 (ON이면 본문 마무리를 프로필 링크 유도로) ──
+  const linkInBioGuide = item.linkinbio === true
+    ? `### 링크인바이오 유도 (중요)
+이 게시물은 본문 맨 아래에 시스템이 **프로필 링크 URL 한 줄만 자동으로 붙입니다**. 당신은 URL을 직접 쓰지 마세요.
+대신 본문의 마지막 1~2문장을 "프로필 링크를 눌러볼 이유"가 자연스럽게 느껴지도록 마무리하세요.
+
+- 금지 표현: "프로필 링크에서 만나요", "프로필에서 확인", "링크인바이오", "바이오 확인", "프로필 클릭" 같은 AI 상투 문구
+- 금지: URL 직접 기재, "👇" 같은 뻔한 유도 이모지, "더 많은 정보는"/"자세한 건" 같은 기계적 연결
+- 권장: 메뉴/예약/위치/문의가 필요한 맥락을 본문에 자연스럽게 심어두기
+- 마지막 문장은 짧고 담백하게. 유도 톤이 너무 세면 안 됨. 암시적으로.`
+    : '';
+
   // ── 캐러셀 구조 앵커 (2장 이상) ──
   const carouselGuide = photoCount > 1
     ? `### 캐러셀 스토리텔링 구조 (${photoCount}장)
@@ -112,6 +124,8 @@ ${storeBlock || '(정보 없음)'}
 ### 사진 수: ${photoCount}장${photoCount > 1 ? ' (캐러셀 — 사진 번호/순서 직접 언급 금지)' : ''}
 
 ${carouselGuide}
+
+${linkInBioGuide}
 
 ---
 
@@ -329,6 +343,18 @@ exports.handler = async (event) => {
         toneDislikes = dislikeRows.map(r => r.caption).join('|||');
       }
     } catch (e) { console.warn('[tone-learn] 말투 데이터 조회 실패:', e.message); }
+
+    // 5.5. 링크인바이오 토글 조회 (캡션 AI에 유도 지시 전달용)
+    try {
+      const { data: userRow } = await admin
+        .from('users').select('feat_toggles').eq('id', user.id).maybeSingle();
+      const ft = (userRow && userRow.feat_toggles) || {};
+      if (ft.linkinbio === true) {
+        const { data: linkPage } = await admin
+          .from('link_pages').select('slug').eq('user_id', user.id).maybeSingle();
+        if (linkPage && linkPage.slug) item.linkinbio = true;
+      }
+    } catch (e) { console.warn('[regen] linkinbio 조회 실패:', e.message); }
 
     // 6. GPT-4o로 캡션 재생성 (재생성은 속도 우선 — 4o 사용)
     const toneGuide = buildToneGuide(toneLikes, toneDislikes);

@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="index,follow">
+<title>링크 페이지 · 루미</title>
+<meta property="og:type" content="website">
+<meta property="og:title" content="루미 링크 페이지">
+<meta property="og:description" content="인스타 프로필 한 페이지에 매장 정보를 전부 모았어요.">
+<meta property="og:image" content="/assets/og-default.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+:root{
+  --pink:#C8507A;
+  --pink-soft:rgba(200,80,122,.08);
+  --ink:#1d1d1f;
+  --ink-2:#494949;
+  --ink-3:#86868b;
+  --surface:#ffffff;
+  --surface-alt:#f5f5f7;
+  --border:rgba(0,0,0,.08);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.04),0 2px 8px rgba(0,0,0,.06);
+  --shadow-md:0 2px 4px rgba(0,0,0,.05),0 8px 24px rgba(0,0,0,.08);
+  --radius-card:8px;
+  --radius-pill:980px;
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+body.dark-mode{
+  --ink:#f5f5f7;
+  --ink-2:rgba(255,255,255,.72);
+  --ink-3:rgba(255,255,255,.5);
+  --surface:#000000;
+  --surface-alt:#111111;
+  --border:rgba(255,255,255,.1);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.3),0 2px 8px rgba(0,0,0,.35);
+  --shadow-md:0 2px 4px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.4);
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:'Pretendard','Pretendard Variable',-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+  background:var(--surface-alt);
+  color:var(--ink);
+  font-size:17px;line-height:1.47;letter-spacing:-0.374px;
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+}
+.lk-wrap{
+  max-width:520px;margin:0 auto;
+  padding:32px 20px calc(120px + var(--safe-bottom));
+}
+@media (max-width:420px){.lk-wrap{padding:20px 16px calc(100px + var(--safe-bottom))}}
+
+/* Header (프로필) */
+.lk-header{text-align:center;margin-bottom:24px}
+.lk-avatar{
+  width:96px;height:96px;border-radius:50%;
+  background:var(--surface);box-shadow:var(--shadow-md);
+  margin:0 auto 14px;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+  border:2px solid var(--surface);
+}
+.lk-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.lk-avatar-ph{
+  width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#FF8FAB 0%,#C8507A 100%);color:#fff;
+  font-size:36px;font-weight:700;
+}
+.lk-name{
+  font-size:22px;font-weight:700;margin:0 0 4px;letter-spacing:-0.02em;
+  word-break:keep-all;overflow-wrap:anywhere;
+}
+.lk-head{
+  font-size:14px;font-weight:500;color:var(--ink-2);margin:0 0 6px;
+  word-break:keep-all;overflow-wrap:anywhere;
+}
+.lk-bio{
+  font-size:13px;color:var(--ink-3);margin:0;line-height:1.5;
+  word-break:keep-all;overflow-wrap:anywhere;
+}
+
+/* Social icons row */
+.lk-social-row{
+  display:flex;gap:10px;justify-content:center;flex-wrap:wrap;
+  margin:18px 0 8px;
+}
+.lk-social{
+  width:42px;height:42px;border-radius:50%;
+  background:var(--surface);box-shadow:var(--shadow-sm);
+  display:inline-flex;align-items:center;justify-content:center;
+  color:var(--ink-2);text-decoration:none;
+  transition:transform .15s ease,color .15s ease;
+}
+.lk-social:hover{transform:translateY(-1px);color:var(--pink)}
+.lk-social svg{width:20px;height:20px}
+
+/* Blocks list */
+.lk-blocks{display:flex;flex-direction:column;gap:12px;margin-top:14px}
+.lk-card{
+  background:var(--surface);border-radius:var(--radius-card);
+  box-shadow:var(--shadow-sm);
+  padding:16px;
+  animation:lkIn .28s cubic-bezier(.22,.94,.36,1) both;
+}
+@keyframes lkIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* link block (pill button) */
+.lk-link{
+  display:flex;align-items:center;gap:12px;
+  padding:14px 16px;min-height:48px;
+  background:var(--surface);border-radius:var(--radius-pill);
+  box-shadow:var(--shadow-sm);
+  color:var(--ink);text-decoration:none;
+  transition:transform .15s ease,box-shadow .15s ease;
+}
+.lk-link:hover{transform:translateY(-1px);box-shadow:var(--shadow-md)}
+.lk-link-thumb{
+  width:32px;height:32px;border-radius:50%;overflow:hidden;
+  background:var(--pink-soft);display:flex;align-items:center;justify-content:center;
+  color:var(--pink);flex-shrink:0;
+}
+.lk-link-thumb img{width:100%;height:100%;object-fit:cover}
+.lk-link-text{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.lk-link-label{
+  font-size:15px;font-weight:600;color:var(--ink);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.lk-link-sub{
+  font-size:12px;color:var(--ink-3);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.lk-link-arrow{flex-shrink:0;color:var(--ink-3)}
+
+/* Hours block */
+.lk-hours-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.lk-hours-title{font-size:15px;font-weight:700;margin:0;color:var(--ink)}
+.lk-hours-badge{
+  font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;
+  background:#e6f7ea;color:#138a2b;
+}
+.lk-hours-badge.closed{background:#efefef;color:#6e6e73}
+body.dark-mode .lk-hours-badge{background:rgba(19,138,43,.15);color:#5dd478}
+body.dark-mode .lk-hours-badge.closed{background:rgba(255,255,255,.08);color:rgba(255,255,255,.6)}
+.lk-hours-list{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:13px}
+.lk-hours-day{color:var(--ink-2);font-weight:600}
+.lk-hours-day.today{color:var(--pink)}
+.lk-hours-time{color:var(--ink-2);font-variant-numeric:tabular-nums}
+.lk-hours-time.closed{color:var(--ink-3)}
+
+/* Map block */
+.lk-map-addr{font-size:14px;color:var(--ink);margin:0 0 10px;word-break:keep-all}
+.lk-map-cta-row{display:flex;gap:8px;flex-wrap:wrap}
+.lk-map-cta{
+  flex:1;min-height:40px;border-radius:var(--radius-pill);
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  text-decoration:none;font-size:13px;font-weight:600;
+  background:var(--surface-alt);color:var(--ink);padding:0 14px;
+  border:1px solid var(--border);
+}
+.lk-map-cta:hover{background:var(--pink-soft);color:var(--pink);border-color:transparent}
+
+/* Menu block */
+.lk-menu-title{font-size:15px;font-weight:700;margin:0 0 10px;color:var(--ink)}
+.lk-menu-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.lk-menu-item{
+  background:var(--surface-alt);border-radius:var(--radius-card);overflow:hidden;
+  display:flex;flex-direction:column;
+}
+.lk-menu-img{aspect-ratio:1/1;background:var(--pink-soft);display:flex;align-items:center;justify-content:center;color:var(--pink)}
+.lk-menu-img img{width:100%;height:100%;object-fit:cover}
+.lk-menu-info{padding:8px 10px}
+.lk-menu-name{font-size:13px;font-weight:600;color:var(--ink);margin:0;line-height:1.3;word-break:keep-all;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.lk-menu-price{font-size:12px;color:var(--pink);font-weight:700;margin:2px 0 0}
+
+/* Notice block */
+.lk-notice{border-left:4px solid var(--pink);padding-left:12px;margin:-4px 0}
+.lk-notice-title{font-size:14px;font-weight:700;margin:0 0 6px;color:var(--ink)}
+.lk-notice-body{font-size:13px;color:var(--ink-2);margin:0;line-height:1.55;white-space:pre-wrap;word-break:keep-all}
+
+/* Kakao button */
+.lk-kakao{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  min-height:48px;border-radius:var(--radius-pill);
+  background:#FEE500;color:#000;text-decoration:none;
+  font-size:15px;font-weight:700;padding:0 16px;
+}
+.lk-kakao svg{width:18px;height:18px}
+
+/* Phone button */
+.lk-phone{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  min-height:48px;border-radius:var(--radius-pill);
+  background:linear-gradient(135deg,#FF8FAB 0%,#C8507A 100%);color:#fff;text-decoration:none;
+  font-size:15px;font-weight:700;padding:0 16px;
+  box-shadow:0 6px 16px rgba(200,80,122,.25);
+}
+
+/* Delivery block */
+.lk-delivery-title{font-size:13px;font-weight:700;margin:0 0 8px;color:var(--ink-2)}
+.lk-delivery-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.lk-delivery-btn{
+  min-height:44px;border-radius:var(--radius-pill);
+  display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  text-decoration:none;font-size:12px;font-weight:700;
+  background:var(--surface-alt);color:var(--ink);padding:0 8px;
+  border:1px solid var(--border);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.lk-delivery-btn[data-p="baemin"]{background:#2AC1BC;color:#fff;border-color:transparent}
+.lk-delivery-btn[data-p="yogiyo"]{background:#FA0050;color:#fff;border-color:transparent}
+.lk-delivery-btn[data-p="coupang"]{background:#FFC200;color:#000;border-color:transparent}
+
+/* Footer */
+.lk-footer{
+  text-align:center;margin-top:32px;padding-top:16px;
+  font-size:11px;color:var(--ink-3);
+}
+.lk-footer a{color:var(--ink-3);text-decoration:none}
+.lk-footer a:hover{color:var(--pink)}
+
+/* Loading / empty */
+.lk-state{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:70vh;gap:12px;text-align:center;padding:20px;
+}
+.lk-spinner{
+  width:32px;height:32px;border-radius:50%;
+  border:3px solid var(--pink-soft);border-top-color:var(--pink);
+  animation:lkSpin 0.9s linear infinite;
+}
+@keyframes lkSpin{to{transform:rotate(360deg)}}
+.lk-error-title{font-size:17px;font-weight:700;margin:0;color:var(--ink)}
+.lk-error-sub{font-size:13px;color:var(--ink-3);margin:0}
+.lk-error-cta{
+  margin-top:12px;min-height:40px;padding:0 18px;
+  border-radius:var(--radius-pill);background:var(--pink);color:#fff;
+  text-decoration:none;font-size:13px;font-weight:700;
+  display:inline-flex;align-items:center;
+}
+
+/* FAB theme toggle */
+.lk-fab{
+  position:fixed;right:16px;bottom:calc(16px + var(--safe-bottom));
+  width:44px;height:44px;border-radius:50%;
+  background:var(--surface);color:var(--ink);
+  border:1px solid var(--border);box-shadow:var(--shadow-md);
+  display:inline-flex;align-items:center;justify-content:center;cursor:pointer;
+  z-index:20;
+}
+.lk-fab:hover{color:var(--pink)}
+.lk-fab svg{width:20px;height:20px}
+</style>
+</head>
+<body>
+<div class="lk-wrap" id="lk-root">
+  <div class="lk-state">
+    <div class="lk-spinner" aria-hidden="true"></div>
+    <p class="lk-error-sub">불러오는 중…</p>
+  </div>
+</div>
+
+<button type="button" class="lk-fab" id="lk-fab-theme" aria-label="다크모드 전환">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M4.93 19.07l1.41-1.41"/><path d="M17.66 6.34l1.41-1.41"/></svg>
+</button>
+
+<script>
+(function(){
+  'use strict';
+
+  // ---------- Theme init (FAB toggle) ----------
+  function applyTheme(isDark){
+    document.body.classList.toggle('dark-mode', !!isDark);
+    try { localStorage.setItem('lumi_dark_mode', isDark ? '1' : '0'); } catch(_){}
+  }
+  var storedTheme = null;
+  try { storedTheme = localStorage.getItem('lumi_dark_mode'); } catch(_){}
+  if (storedTheme === '1') applyTheme(true);
+  else if (storedTheme === '0') applyTheme(false);
+
+  document.getElementById('lk-fab-theme').addEventListener('click', function(){
+    applyTheme(!document.body.classList.contains('dark-mode'));
+  });
+
+  // ---------- Utils ----------
+  function qs(name, url){
+    var u = new URL(url || window.location.href);
+    return u.searchParams.get(name);
+  }
+  function slugFromPath(){
+    // /p/{slug} 또는 ?slug=xxx
+    var m = window.location.pathname.match(/^\/p\/([^\/?#]+)/i);
+    if (m) return decodeURIComponent(m[1]);
+    return qs('slug') || '';
+  }
+  function esc(s){
+    return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+  function safeUrl(u){
+    try {
+      var s = String(u || '').trim();
+      if (!s) return '';
+      if (/^(javascript|data):/i.test(s)) return '';
+      if (!/^https?:\/\//i.test(s) && !/^\/\//.test(s) && !/^mailto:/i.test(s) && !/^tel:/i.test(s) && !/^\//.test(s)) {
+        s = 'https://' + s;
+      }
+      return s;
+    } catch(_) { return ''; }
+  }
+
+  var DOW_KO = ['일','월','화','수','목','금','토'];
+  function todayHoursInfo(schedule){
+    // schedule: [{day:'월', open:'10:00', close:'22:00'}]
+    if (!Array.isArray(schedule) || schedule.length === 0) return {open:false};
+    var today = new Date();
+    var dayKo = DOW_KO[today.getDay()];
+    var row = null;
+    for (var i = 0; i < schedule.length; i++) {
+      if (schedule[i] && schedule[i].day === dayKo) { row = schedule[i]; break; }
+    }
+    if (!row || !row.open || !row.close) return {open:false, day:dayKo};
+    var now = today.getHours() * 60 + today.getMinutes();
+    var o = timeToMin(row.open), c = timeToMin(row.close);
+    var isOpen = (o != null && c != null) ? (now >= o && now <= c) : false;
+    return {open:isOpen, day:dayKo, openAt:row.open, closeAt:row.close};
+  }
+  function timeToMin(s){
+    var m = String(s || '').match(/^(\d{1,2}):(\d{2})$/);
+    if (!m) return null;
+    return parseInt(m[1],10)*60 + parseInt(m[2],10);
+  }
+
+  // ---------- Block renderers ----------
+  function iconSvg(name){
+    var paths = {
+      'instagram': '<rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>',
+      'youtube': '<path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/>',
+      'tiktok': '<path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/>',
+      'blog': '<path d="M4 4h16v16H4z"/><path d="M4 9h16"/><path d="M9 9v11"/>',
+      'link': '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+      'twitter': '<path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/>',
+      'default': '<circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>',
+    };
+    var p = paths[name] || paths['default'];
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + p + '</svg>';
+  }
+
+  function renderHeader(page){
+    var initial = (page.store_name || '·').slice(0,1);
+    var avatar = page.profile_image_url
+      ? '<img src="'+esc(page.profile_image_url)+'" alt="">'
+      : '<span class="lk-avatar-ph">'+esc(initial)+'</span>';
+    return '<header class="lk-header">'
+      + '<div class="lk-avatar">'+avatar+'</div>'
+      + '<h1 class="lk-name">'+esc(page.store_name || '내 매장')+'</h1>'
+      + (page.headline ? '<p class="lk-head">'+esc(page.headline)+'</p>' : '')
+      + (page.bio ? '<p class="lk-bio">'+esc(page.bio)+'</p>' : '')
+      + '</header>';
+  }
+
+  function renderSocial(data){
+    var items = Array.isArray(data.items) ? data.items : [];
+    if (items.length === 0) return '';
+    var html = '<div class="lk-social-row">';
+    for (var i = 0; i < items.length; i++) {
+      var it = items[i] || {};
+      var url = safeUrl(it.url);
+      if (!url) continue;
+      var p = (it.platform || 'default').toLowerCase();
+      html += '<a class="lk-social" href="'+esc(url)+'" target="_blank" rel="noopener noreferrer" aria-label="'+esc(p)+'">'+iconSvg(p)+'</a>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  function renderLink(data){
+    var url = safeUrl(data.url);
+    if (!url) return '';
+    var thumb = data.icon
+      ? '<img src="'+esc(safeUrl(data.icon))+'" alt="">'
+      : iconSvg('link');
+    return '<a class="lk-link" href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">'
+      + '<span class="lk-link-thumb">'+thumb+'</span>'
+      + '<span class="lk-link-text">'
+      +   '<span class="lk-link-label">'+esc(data.label || '링크')+'</span>'
+      +   (data.subtitle ? '<span class="lk-link-sub">'+esc(data.subtitle)+'</span>' : '')
+      + '</span>'
+      + '<svg class="lk-link-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>'
+      + '</a>';
+  }
+
+  function renderHours(data){
+    var sch = Array.isArray(data.schedule) ? data.schedule : [];
+    var info = todayHoursInfo(sch);
+    var badge = info.open
+      ? '<span class="lk-hours-badge">영업중</span>'
+      : '<span class="lk-hours-badge closed">영업종료</span>';
+    var rows = sch.map(function(r){
+      var isToday = r.day === info.day;
+      var closed = !r.open || !r.close;
+      var time = closed ? '휴무' : (r.open + ' - ' + r.close);
+      return '<span class="lk-hours-day'+(isToday?' today':'')+'">'+esc(r.day||'')+'</span>'
+           + '<span class="lk-hours-time'+(closed?' closed':'')+'">'+esc(time)+'</span>';
+    }).join('');
+    return '<div class="lk-card">'
+      + '<div class="lk-hours-head"><p class="lk-hours-title">영업시간</p>'+badge+'</div>'
+      + '<div class="lk-hours-list">'+rows+'</div>'
+      + '</div>';
+  }
+
+  function renderMap(data){
+    var addr = (data.address || '').trim();
+    if (!addr) return '';
+    var q = encodeURIComponent(addr);
+    return '<div class="lk-card">'
+      + '<p class="lk-map-addr">'+esc(addr)+'</p>'
+      + '<div class="lk-map-cta-row">'
+      +   '<a class="lk-map-cta" href="https://map.kakao.com/?q='+q+'" target="_blank" rel="noopener noreferrer">카카오맵</a>'
+      +   '<a class="lk-map-cta" href="https://map.naver.com/v5/search/'+q+'" target="_blank" rel="noopener noreferrer">네이버지도</a>'
+      + '</div></div>';
+  }
+
+  function renderMenu(data){
+    var items = Array.isArray(data.items) ? data.items : [];
+    if (items.length === 0) return '';
+    var html = '<div class="lk-card">'
+      + '<p class="lk-menu-title">'+esc(data.title || '대표 메뉴')+'</p>'
+      + '<div class="lk-menu-grid">';
+    items.forEach(function(m){
+      var img = m.image ? '<img src="'+esc(safeUrl(m.image))+'" alt="">' : iconSvg('default');
+      html += '<div class="lk-menu-item">'
+        + '<div class="lk-menu-img">'+img+'</div>'
+        + '<div class="lk-menu-info">'
+        +   '<p class="lk-menu-name">'+esc(m.name || '')+'</p>'
+        +   (m.price ? '<p class="lk-menu-price">'+esc(m.price)+'</p>' : '')
+        + '</div></div>';
+    });
+    html += '</div></div>';
+    return html;
+  }
+
+  function renderNotice(data){
+    return '<div class="lk-card"><div class="lk-notice">'
+      + '<p class="lk-notice-title">'+esc(data.title || '공지')+'</p>'
+      + (data.body ? '<p class="lk-notice-body">'+esc(data.body)+'</p>' : '')
+      + '</div></div>';
+  }
+
+  function renderKakao(data){
+    var url = safeUrl(data.channelUrl || data.url);
+    if (!url) return '';
+    return '<a class="lk-kakao" href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">'
+      + '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 3C6.5 3 2 6.6 2 11c0 2.7 1.8 5.1 4.5 6.5L5.2 21l4.3-2.6c.8.1 1.7.2 2.5.2 5.5 0 10-3.6 10-8S17.5 3 12 3z"/></svg>'
+      + '카톡 채널 문의하기</a>';
+  }
+
+  function renderPhone(data){
+    var num = String(data.number || '').replace(/[^\d+]/g,'');
+    if (!num) return '';
+    var label = data.label || '지금 전화하기';
+    return '<a class="lk-phone" href="tel:'+esc(num)+'">'
+      + '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>'
+      + esc(label) + '</a>';
+  }
+
+  function renderDelivery(data){
+    var items = [
+      { key:'baemin',  url:safeUrl(data.baemin),  name:'배민' },
+      { key:'yogiyo',  url:safeUrl(data.yogiyo),  name:'요기요' },
+      { key:'coupang', url:safeUrl(data.coupang), name:'쿠팡이츠' },
+    ].filter(function(x){ return !!x.url; });
+    if (items.length === 0) return '';
+    var html = '<div class="lk-card">'
+      + '<p class="lk-delivery-title">배달 주문</p>'
+      + '<div class="lk-delivery-grid" style="grid-template-columns:repeat('+items.length+',1fr)">';
+    items.forEach(function(it){
+      html += '<a class="lk-delivery-btn" data-p="'+it.key+'" href="'+esc(it.url)+'" target="_blank" rel="noopener noreferrer">'+it.name+'</a>';
+    });
+    html += '</div></div>';
+    return html;
+  }
+
+  function renderBlock(block){
+    var d = (block && block.data) || {};
+    switch (block && block.block_type) {
+      case 'social': return renderSocial(d);
+      case 'link': return renderLink(d);
+      case 'hours': return renderHours(d);
+      case 'map': return renderMap(d);
+      case 'menu': return renderMenu(d);
+      case 'notice': return renderNotice(d);
+      case 'kakao': return renderKakao(d);
+      case 'phone': return renderPhone(d);
+      case 'delivery': return renderDelivery(d);
+      case 'header': return ''; // header는 별도로 상단에 렌더
+      default: return '';
+    }
+  }
+
+  function applyThemeFromPage(theme){
+    // 페이지 저장 theme가 있으면 localStorage 없을 때 기본 적용
+    var stored = null;
+    try { stored = localStorage.getItem('lumi_dark_mode'); } catch(_){}
+    if (stored === '1' || stored === '0') return; // 사용자 선택 우선
+    applyTheme(theme === 'dark');
+  }
+
+  function setOg(page){
+    try {
+      document.title = (page.store_name || '링크 페이지') + ' · 루미';
+      var setMeta = function(prop, val){
+        var m = document.querySelector('meta[property="'+prop+'"]');
+        if (m && val) m.setAttribute('content', val);
+      };
+      setMeta('og:title', page.store_name || '루미 링크 페이지');
+      setMeta('og:description', page.headline || page.bio || '인스타 프로필 한 페이지에 매장 정보를 전부 모았어요.');
+      if (page.profile_image_url) setMeta('og:image', page.profile_image_url);
+    } catch(_){}
+  }
+
+  function render(page, blocks){
+    applyThemeFromPage(page.theme);
+    setOg(page);
+
+    // 블록을 position 오름차순으로 정렬 (API가 이미 정렬하지만 안전망)
+    var sorted = (blocks || []).slice().sort(function(a,b){ return (a.position||0) - (b.position||0); });
+
+    // social 블록이 있으면 헤더 직후에 배치, 나머지는 순서대로
+    var socialBlocks = sorted.filter(function(b){ return b.block_type === 'social'; });
+    var otherBlocks = sorted.filter(function(b){ return b.block_type !== 'social' && b.block_type !== 'header'; });
+
+    var html = '';
+    html += renderHeader(page);
+    socialBlocks.forEach(function(b){ html += renderBlock(b); });
+    html += '<div class="lk-blocks">';
+    otherBlocks.forEach(function(b){
+      var h = renderBlock(b);
+      if (h) html += h;
+    });
+    html += '</div>';
+    html += '<footer class="lk-footer">Powered by <a href="/" target="_blank" rel="noopener noreferrer">루미</a></footer>';
+
+    document.getElementById('lk-root').innerHTML = html;
+  }
+
+  function renderError(msg, sub){
+    var html = '<div class="lk-state">'
+      + '<p class="lk-error-title">'+esc(msg || '페이지를 찾을 수 없어요')+'</p>'
+      + (sub ? '<p class="lk-error-sub">'+esc(sub)+'</p>' : '')
+      + '<a class="lk-error-cta" href="/">루미로 이동</a>'
+      + '</div>';
+    document.getElementById('lk-root').innerHTML = html;
+  }
+
+  // ---------- Main ----------
+  var slug = slugFromPath();
+  if (!slug) {
+    renderError('주소가 비어있어요', 'URL 형식: /p/{slug}');
+    return;
+  }
+
+  fetch('/api/get-link-page?slug=' + encodeURIComponent(slug))
+    .then(function(r){
+      if (r.status === 404) throw new Error('not_found');
+      if (!r.ok) throw new Error('http_' + r.status);
+      return r.json();
+    })
+    .then(function(json){
+      if (!json || !json.page) throw new Error('bad_response');
+      render(json.page, json.blocks || []);
+    })
+    .catch(function(err){
+      console.warn('[link] fetch error', err && err.message);
+      if (err && err.message === 'not_found') {
+        renderError('페이지를 찾을 수 없어요', '주소가 맞는지 다시 확인해주세요.');
+      } else {
+        renderError('잠시 후 다시 시도해주세요', '네트워크 오류가 발생했어요.');
+      }
+    });
+})();
+</script>
+</body>
+</html>
