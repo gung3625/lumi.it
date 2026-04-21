@@ -240,7 +240,19 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </div>
   </div>
 
-  <!-- 섹션 3: 로그 -->
+  <!-- 섹션 3: 베타 테스터 신청 -->
+  <div class="section-card" id="sec-testers">
+    <div class="section-card-header">
+      <span class="section-card-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </span>
+      <span class="section-card-title">베타 테스터 신청</span>
+      <span class="section-card-badge" id="testers-count">불러오는 중…</span>
+    </div>
+    <div id="testers-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+  </div>
+
+  <!-- 섹션 4: 로그 -->
   <div class="section-card">
     <div class="section-card-header">
       <span class="section-card-icon">
@@ -324,6 +336,7 @@ document.getElementById('modal').onclick = function(e) { if (e.target === this) 
       var loading = document.getElementById('admin-loading');
       if (loading) loading.style.display = 'none';
       loadLibrary();
+      loadTesters();
     })
     .catch(function() { window.location = '/'; });
 })();
@@ -650,6 +663,121 @@ function triggerShuffle() {
     setIcon(isDark);
   };
 })();
+
+// ── 베타 테스터 신청 목록
+function escapeHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function formatDateShort(iso) {
+  if (!iso) return '';
+  try {
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    var mm = String(d.getMonth() + 1).padStart(2, '0');
+    var dd = String(d.getDate()).padStart(2, '0');
+    var hh = String(d.getHours()).padStart(2, '0');
+    var mi = String(d.getMinutes()).padStart(2, '0');
+    return mm + '/' + dd + ' ' + hh + ':' + mi;
+  } catch (_) { return ''; }
+}
+
+function loadTesters() {
+  var list = document.getElementById('testers-list');
+  var countEl = document.getElementById('testers-count');
+  if (list) list.innerHTML = '<p style="font-size:13px;color:#6e6e73;margin:0;">불러오는 중…</p>';
+  fetch('/api/admin-list-testers', { method: 'GET', headers: authHeaders() })
+    .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
+    .then(function(res) {
+      if (!res.ok) { throw new Error((res.data && res.data.error) || '조회 실패'); }
+      renderTesters(res.data.testers || []);
+    })
+    .catch(function(e) {
+      if (list) list.innerHTML = '<p style="font-size:13px;color:#C8507A;margin:0;">' + escapeHtml(e.message || '조회 실패') + '</p>';
+      if (countEl) countEl.textContent = '오류';
+    });
+}
+
+function renderTesters(testers) {
+  var list = document.getElementById('testers-list');
+  var countEl = document.getElementById('testers-count');
+  if (!list) return;
+
+  var pending = testers.filter(function(t) { return t.tester_invite_status !== 'invited'; }).length;
+  if (countEl) countEl.textContent = '신청 ' + testers.length + '명 · 대기 ' + pending + '명';
+
+  if (testers.length === 0) {
+    list.innerHTML = '<p style="font-size:13px;color:#6e6e73;margin:0;">아직 신청한 테스터가 없어요.</p>';
+    return;
+  }
+
+  var isDark = document.body.classList.contains('dark-mode');
+  var rowBg = isDark ? 'rgba(255,255,255,.04)' : '#f5f5f7';
+  var subColor = isDark ? 'rgba(255,255,255,.55)' : '#6e6e73';
+  var pink = '#C8507A';
+
+  list.innerHTML = testers.map(function(t) {
+    var invited = t.tester_invite_status === 'invited';
+    var handle = t.tester_ig_handle ? '@' + t.tester_ig_handle : '(핸들 없음)';
+    var who = [t.name || '', t.email || ''].filter(Boolean).join(' · ');
+    var when = formatDateShort(t.tester_submitted_at);
+    var btnLabel = invited ? '대기로 되돌리기' : '초대 완료';
+    var btnBg = invited ? (isDark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.06)') : pink;
+    var btnColor = invited ? (isDark ? '#f0f2f8' : '#1d1d1f') : '#fff';
+    var statusBadge = invited
+      ? '<span style="font-size:11px;font-weight:600;color:' + pink + ';background:rgba(200,80,122,.1);padding:3px 10px;border-radius:980px;">초대 완료</span>'
+      : '<span style="font-size:11px;font-weight:600;color:' + subColor + ';background:rgba(0,0,0,.05);padding:3px 10px;border-radius:980px;">대기</span>';
+
+    var igLink = t.tester_ig_handle
+      ? '<a href="https://instagram.com/' + escapeHtml(t.tester_ig_handle) + '" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;">' + escapeHtml(handle) + '</a>'
+      : escapeHtml(handle);
+
+    return (
+      '<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:' + rowBg + ';border-radius:8px;flex-wrap:wrap;">' +
+        '<div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:0;">' +
+          '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+            '<span style="font-size:14px;font-weight:600;">' + igLink + '</span>' +
+            statusBadge +
+          '</div>' +
+          '<span style="font-size:12px;color:' + subColor + ';">' + escapeHtml(who) + (when ? ' · ' + escapeHtml(when) : '') + '</span>' +
+        '</div>' +
+        '<button class="tester-btn" data-user-id="' + escapeHtml(t.id) + '" data-action="' + (invited ? 'pending' : 'invited') + '" ' +
+          'style="border:none;border-radius:980px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;background:' + btnBg + ';color:' + btnColor + ';white-space:nowrap;">' +
+          btnLabel +
+        '</button>' +
+      '</div>'
+    );
+  }).join('');
+
+  Array.prototype.forEach.call(list.querySelectorAll('.tester-btn'), function(btn) {
+    btn.onclick = function() {
+      var uid = btn.getAttribute('data-user-id');
+      var action = btn.getAttribute('data-action');
+      markTesterInvited(uid, action, btn);
+    };
+  });
+}
+
+function markTesterInvited(userId, nextStatus, btnEl) {
+  if (!userId) return;
+  if (btnEl) { btnEl.disabled = true; btnEl.textContent = '처리 중…'; btnEl.style.opacity = '.6'; }
+  fetch('/api/admin-mark-invited', {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({ user_id: userId, status: nextStatus }),
+  })
+    .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
+    .then(function(res) {
+      if (!res.ok) throw new Error((res.data && res.data.error) || '업데이트 실패');
+      showToast(nextStatus === 'invited' ? '초대 완료로 표시했어요' : '대기 상태로 되돌렸어요');
+      loadTesters();
+    })
+    .catch(function(e) {
+      showToast(e.message || '업데이트 실패');
+      if (btnEl) { btnEl.disabled = false; btnEl.style.opacity = '1'; }
+    });
+}
 </script>
 </body>
 </html>
