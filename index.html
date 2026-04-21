@@ -6915,9 +6915,13 @@ var cards = {
 
       var scope = 'domestic';
       var _srcRaw = apiData.domestic || fallbackDomestic;
-      var src = _srcRaw.slice();
-      if(src.length>0 && src.length<10){var _s=src.slice();while(src.length<10)src=src.concat(_s);}
-      src=src.slice(0,10);
+      var _seenKw = {};
+      var src = _srcRaw.filter(function(t){
+        var kk = (t && t.keyword || '').replace(/^#/,'').trim().toLowerCase();
+        if (!kk || _seenKw[kk]) return false;
+        _seenKw[kk] = 1;
+        return true;
+      }).slice(0,10);
       var cardRef = React.useRef(null);
       var st5 = React.useState(36), itemH = st5[0], setItemH = st5[1];
       var st7 = React.useState(4), visibleCount = st7[0], setVisibleCount = st7[1];
