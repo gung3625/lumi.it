@@ -85,7 +85,11 @@ exports.handler = async (event) => {
         try { await client.end(); } catch (_) {}
       }
     }
-    if (!applied) throw new Error(errors.join(' | '));
+    if (!applied) {
+      // 디버그: 실제 host와 ref 공개 (비밀번호는 제외).
+      const dbg = `direct_host=${direct.hostname} ref=${ref} supabase_url=${process.env.SUPABASE_URL || ''}`;
+      throw new Error(`${dbg} | ${errors.join(' | ')}`);
+    }
 
     console.log(`[admin-apply-migration] applied: ${file}`);
     return { statusCode: 200, headers, body: JSON.stringify({ success: true, file }) };
