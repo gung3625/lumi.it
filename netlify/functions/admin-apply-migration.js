@@ -51,16 +51,28 @@ exports.handler = async (event) => {
       return { statusCode: 400, headers, body: JSON.stringify({ error: '허용되지 않은 마이그레이션', allowed: Object.keys(MIGRATIONS) }) };
     }
 
-    const client = new Client({
-      connectionString: process.env.SUPABASE_DB_URL,
-      ssl: { rejectUnauthorized: false },
-    });
-    await client.connect();
-    try {
-      await client.query(sql);
-    } finally {
-      await client.end();
+    // Netlify AWS 런타임은 direct DB 호스트(db.*.supabase.co)를 IPv6 전용이라 resolve 실패.
+    // SUPABASE_DB_URL을 pooler URL로 변환: 호스트→aws-0-ap-northeast-2.pooler.supabase.com, 유저→postgres.<REF>.
+    const direct = new URL(process.env.SUPABASE_DB_URL);
+    const ref = direct.hostname.replace(/^db\./, '').split('.')[0];
+    const poolerUrl = `postgresql://postgres.${ref}:${direct.password}@aws-0-ap-northeast-2.pooler.supabase.com:5432${direct.pathname}`;
+
+    let lastErr;
+    let applied = false;
+    for (const connStr of [poolerUrl, process.env.SUPABASE_DB_URL]) {
+      const client = new Client({ connectionString: connStr, ssl: { rejectUnauthorized: false } });
+      try {
+        await client.connect();
+        await client.query(sql);
+        applied = true;
+        await client.end();
+        break;
+      } catch (e) {
+        lastErr = e;
+        try { await client.end(); } catch (_) {}
+      }
     }
+    if (!applied) throw lastErr || new Error('DB 연결 실패');
 
     console.log(`[admin-apply-migration] applied: ${file}`);
     return { statusCode: 200, headers, body: JSON.stringify({ success: true, file }) };
