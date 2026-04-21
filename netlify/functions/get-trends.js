@@ -309,13 +309,49 @@ exports.handler = async (event) => {
       const scopeKey = `l30d-domestic:${storeKey}`;
       const prevKey = `l30d-domestic-prev:${storeKey}`;
 
-      const [scopeRow, prevRow, risingRow] = await Promise.all([
+      // category=all 일 때 l30d-rising:all 행이 존재하지 않으므로
+      // 개별 카테고리 l30d-rising:* 행을 모두 조회해 on-the-fly 집계
+      let risingPromise;
+      if (category === 'all') {
+        risingPromise = (async () => {
+          try {
+            const { data: risingRows, error: risingErr } = await supa
+              .from('trends')
+              .select('category, keywords')
+              .like('category', 'l30d-rising:%')
+              .neq('category', 'l30d-rising:all');
+            if (risingErr || !risingRows || risingRows.length === 0) return [];
+            // 모든 카테고리 items 병합
+            const seen = new Set();
+            const merged = [];
+            for (const row of risingRows) {
+              const items = row.keywords && Array.isArray(row.keywords.items) ? row.keywords.items : [];
+              for (const item of items) {
+                const key = (item.keyword || '').toLowerCase().trim();
+                if (!key || seen.has(key)) continue;
+                seen.add(key);
+                merged.push(item);
+              }
+            }
+            // confidence 내림차순 정렬 후 상위 15개
+            merged.sort((a, b) => (b.confidence || 0) - (a.confidence || 0));
+            return merged.slice(0, 15);
+          } catch(e) {
+            console.error('[get-trends] rising:all 집계 실패:', e.message);
+            return [];
+          }
+        })();
+      } else {
+        risingPromise = fetchTrendRow(supa, `l30d-rising:${storeKey}`).then(
+          risingRow => (risingRow && Array.isArray(risingRow.keywords?.items)) ? risingRow.keywords.items : []
+        );
+      }
+
+      const [scopeRow, prevRow, rising] = await Promise.all([
         fetchTrendRow(supa, scopeKey),
         fetchTrendRow(supa, prevKey),
-        fetchTrendRow(supa, `l30d-rising:${storeKey}`),
+        risingPromise,
       ]);
-
-      const rising = (risingRow && Array.isArray(risingRow.keywords?.items)) ? risingRow.keywords.items : [];
 
       if (scopeRow && scopeRow.keywords) {
         const scopeData = scopeRow.keywords;
