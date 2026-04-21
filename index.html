@@ -4718,31 +4718,33 @@ function mInitWave2(){
     var monthEl = document.getElementById('m-report-month');
     var now = new Date();
     if (monthEl) monthEl.textContent = (now.getMonth()+1) + '월 활동';
+    var planLabels = { trial:'무료 체험', basic:'베이직', standard:'스탠다드', pro:'프로' };
+    var planLimit = function(p){ return p === 'pro' || p === 'trial' ? 20 : p === 'standard' ? 12 : 0; };
     var doUpdate = function(data){
       var postCount = data.postCount || 0;
-      var limit = data.limit || (data.plan === 'pro' ? 20 : 12);
+      var limit = data.limit || planLimit(data.plan);
       var remaining = Math.max(0, limit - postCount);
       var savedMin = Math.round(postCount * 20); // 게시당 20분 절약 가정
       if (postsEl) postsEl.textContent = postCount + '';
       if (remainEl) remainEl.textContent = remaining + '';
       if (savedEl) savedEl.textContent = savedMin > 60 ? Math.round(savedMin/60) + '시간' : savedMin + '분';
-      if (planEl) planEl.textContent = data.plan === 'pro' ? 'PRO' : '스탠다드';
+      if (planEl) planEl.textContent = planLabels[data.plan] || '무료 체험';
     };
     // 플랜 정보 (lumiCheckPlan) + 게시 수 (count-posts) 병렬 조회
     var planPromise = (typeof window.lumiCheckPlan === 'function')
       ? Promise.resolve(window.lumiCheckPlan()).catch(function(){ return {}; })
-      : Promise.resolve({ plan: getUser().plan || 'standard' });
+      : Promise.resolve({ plan: getUser().plan || 'trial' });
     var countPromise = fetch('/api/count-posts', { headers:{ 'Authorization':'Bearer '+TOKEN } })
       .then(function(r){ return r.json(); })
       .catch(function(){ return {}; });
     Promise.all([planPromise, countPromise]).then(function(arr){
       var pRes = arr[0] || {};
       var cRes = arr[1] || {};
-      var plan = (pRes.user && pRes.user.plan) || pRes.plan || getUser().plan || 'standard';
+      var plan = (pRes.user && pRes.user.plan) || pRes.plan || getUser().plan || 'trial';
       var postCount = (typeof pRes.postCount === 'number') ? pRes.postCount
                     : (typeof cRes.count === 'number') ? cRes.count
                     : (typeof cRes.postCount === 'number') ? cRes.postCount : 0;
-      var limit = pRes.limit || cRes.limit || (plan === 'pro' ? 20 : 12);
+      var limit = pRes.limit || cRes.limit || planLimit(plan);
       doUpdate({ postCount: postCount, limit: limit, plan: plan });
       // featToggles 서버 → localStorage 동기화
       if (pRes.featToggles) { try { localStorage.setItem('lumi_feat_toggles', JSON.stringify(pRes.featToggles)); } catch(ex) {} }
