@@ -1,7 +1,5 @@
-// 관리자 전용 DB 마이그레이션 실행기 — docs/sql/ 내 SQL 파일을 이름으로 지정해 실행.
-// 인증: Authorization: Bearer ${LUMI_SECRET}. 허용 파일명 화이트리스트로 제한.
-const fs = require('fs');
-const path = require('path');
+// 관리자 전용 DB 마이그레이션 실행기 — 인라인 SQL 딕셔너리에서 이름으로 지정.
+// 인증: Authorization: Bearer ${LUMI_SECRET}. SQL은 본 파일에 하드코딩해 임의 실행 차단.
 const { Client } = require('pg');
 
 const headers = {
@@ -10,11 +8,27 @@ const headers = {
   'Content-Type': 'application/json',
 };
 
-// 허용된 마이그레이션 파일명 화이트리스트 (임의 SQL 실행 차단)
-const ALLOWED = new Set([
-  'promo_schedule.sql',
-  'link_in_bio.sql',
-]);
+// 마이그레이션 SQL — 이름 → SQL 본문. 새 마이그레이션 추가 시 여기 등록.
+const MIGRATIONS = {
+  'promo_schedule.sql': `
+create table if not exists public.promo_schedule (
+  id bigserial primary key,
+  scheduled_at timestamptz not null,
+  image_url text not null,
+  caption text not null,
+  label text,
+  status text not null default 'pending',
+  post_id text,
+  last_error text,
+  attempts int not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists idx_promo_schedule_pending
+  on public.promo_schedule(scheduled_at)
+  where status='pending';
+`,
+};
 
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers, body: '' };
@@ -32,15 +46,10 @@ exports.handler = async (event) => {
     if (!file || typeof file !== 'string') {
       return { statusCode: 400, headers, body: JSON.stringify({ error: 'file 필드 필요' }) };
     }
-    if (!ALLOWED.has(file)) {
-      return { statusCode: 400, headers, body: JSON.stringify({ error: '허용되지 않은 파일', allowed: Array.from(ALLOWED) }) };
+    const sql = MIGRATIONS[file];
+    if (!sql) {
+      return { statusCode: 400, headers, body: JSON.stringify({ error: '허용되지 않은 마이그레이션', allowed: Object.keys(MIGRATIONS) }) };
     }
-
-    const sqlPath = path.join(__dirname, '..', '..', 'docs', 'sql', file);
-    if (!fs.existsSync(sqlPath)) {
-      return { statusCode: 404, headers, body: JSON.stringify({ error: 'SQL 파일을 찾을 수 없음' }) };
-    }
-    const sql = fs.readFileSync(sqlPath, 'utf8');
 
     const client = new Client({
       connectionString: process.env.SUPABASE_DB_URL,
