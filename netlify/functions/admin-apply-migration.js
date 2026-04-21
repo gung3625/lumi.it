@@ -57,22 +57,23 @@ exports.handler = async (event) => {
     const ref = direct.hostname.replace(/^db\./, '').split('.')[0];
     const poolerUrl = `postgresql://postgres.${ref}:${direct.password}@aws-0-ap-northeast-2.pooler.supabase.com:5432${direct.pathname}`;
 
-    let lastErr;
+    const errors = [];
     let applied = false;
-    for (const connStr of [poolerUrl, process.env.SUPABASE_DB_URL]) {
+    for (const [label, connStr] of [['pooler', poolerUrl], ['direct', process.env.SUPABASE_DB_URL]]) {
       const client = new Client({ connectionString: connStr, ssl: { rejectUnauthorized: false } });
       try {
         await client.connect();
         await client.query(sql);
         applied = true;
         await client.end();
+        console.log(`[admin-apply-migration] connected via ${label}`);
         break;
       } catch (e) {
-        lastErr = e;
+        errors.push(`${label}: ${e.message}`);
         try { await client.end(); } catch (_) {}
       }
     }
-    if (!applied) throw lastErr || new Error('DB 연결 실패');
+    if (!applied) throw new Error(errors.join(' | '));
 
     console.log(`[admin-apply-migration] applied: ${file}`);
     return { statusCode: 200, headers, body: JSON.stringify({ success: true, file }) };
