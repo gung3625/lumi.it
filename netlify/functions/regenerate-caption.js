@@ -403,39 +403,7 @@ exports.handler = async (event) => {
       return { statusCode: 422, headers: CORS, body: JSON.stringify({ error: '캡션 안전성 검수를 통과하지 못했습니다. 다시 시도해주세요.' }) };
     }
 
-    // 7. 말투 피드백 저장: 기존 캡션 → dislike (20개 롤링)
-    const existingCaptions = Array.isArray(reservation.captions) ? reservation.captions : [];
-    if (existingCaptions.length > 0) {
-      try {
-        // 20개 롤링: 오래된 행 삭제 후 insert
-        const { data: existingFeedback } = await admin
-          .from('tone_feedback')
-          .select('id, created_at')
-          .eq('user_id', user.id)
-          .eq('kind', 'dislike')
-          .order('created_at', { ascending: true });
-
-        const totalAfterInsert = (existingFeedback ? existingFeedback.length : 0) + existingCaptions.length;
-        if (totalAfterInsert > 20) {
-          const deleteCount = totalAfterInsert - 20;
-          const idsToDelete = (existingFeedback || []).slice(0, deleteCount).map(r => r.id);
-          if (idsToDelete.length > 0) {
-            await admin.from('tone_feedback').delete().in('id', idsToDelete);
-          }
-        }
-
-        const dislikeRows = existingCaptions.map(captionText => ({
-          user_id: user.id,
-          kind: 'dislike',
-          caption: typeof captionText === 'string' ? captionText : JSON.stringify(captionText),
-          reservation_id: reservation.id,
-          created_at: new Date().toISOString(),
-        }));
-        await admin.from('tone_feedback').insert(dislikeRows);
-      } catch (e) { console.warn('[tone-learn] dislike 저장 실패:', e.message); }
-    }
-
-    // 8. 예약 업데이트: 새 캡션 + 재생성 횟수 +1
+    // 7. 예약 업데이트: 새 캡션 + 재생성 횟수 +1
     const newCount = currentCount + 1;
     const { error: updateErr } = await admin
       .from('reservations')

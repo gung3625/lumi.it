@@ -118,33 +118,6 @@ exports.handler = async (event) => {
 
     console.log(`[select-caption] 캡션 선택: ${reservationKey}, captionIndex=${idx}`);
 
-    // 3. 말투 피드백 저장: 선택한 캡션 → like (20개 롤링)
-    try {
-      const { data: existingFeedback } = await admin
-        .from('tone_feedback')
-        .select('id, created_at')
-        .eq('user_id', user.id)
-        .eq('kind', 'like')
-        .order('created_at', { ascending: true });
-
-      const totalAfterInsert = (existingFeedback ? existingFeedback.length : 0) + 1;
-      if (totalAfterInsert > 20) {
-        const deleteCount = totalAfterInsert - 20;
-        const idsToDelete = (existingFeedback || []).slice(0, deleteCount).map(r => r.id);
-        if (idsToDelete.length > 0) {
-          await admin.from('tone_feedback').delete().in('id', idsToDelete);
-        }
-      }
-
-      await admin.from('tone_feedback').insert({
-        user_id: user.id,
-        kind: 'like',
-        caption: selectedCaption,
-        reservation_id: reservation.id,
-        created_at: new Date().toISOString(),
-      });
-    } catch (e) { console.warn('[tone-learn] like 저장 실패:', e.message); }
-
     // 4. postMode 확인 (body 우선, 없으면 reservation row)
     let postMode = reservation.post_mode || 'immediate';
     let effectiveScheduledAt = reservation.scheduled_at;

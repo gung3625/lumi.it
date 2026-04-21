@@ -10,6 +10,12 @@ const headers = {
 
 // 마이그레이션 SQL — 이름 → SQL 본문. 새 마이그레이션 추가 시 여기 등록.
 const MIGRATIONS = {
+  'reservations_tone_rated.sql': `
+alter table public.reservations add column if not exists tone_rated boolean not null default false;
+create index if not exists idx_reservations_pending_rating
+  on public.reservations(user_id, created_at desc)
+  where caption_status='posted' and is_sent=true and tone_rated=false;
+`,
   'promo_schedule.sql': `
 create table if not exists public.promo_schedule (
   id bigserial primary key,
