@@ -60,10 +60,15 @@ exports.handler = async (event) => {
       'us-east-1', 'us-east-2', 'us-west-1', 'us-west-2',
       'eu-west-1', 'eu-west-2', 'eu-central-1', 'sa-east-1', 'ca-central-1',
     ];
-    const attempts = REGIONS.map((r) => [
-      r,
-      `postgresql://postgres.${ref}:${direct.password}@aws-0-${r}.pooler.supabase.com:5432${direct.pathname}`,
-    ]);
+    const attempts = [];
+    for (const r of REGIONS) {
+      for (const prefix of ['aws-1', 'aws-0']) {
+        attempts.push([
+          `${prefix}-${r}`,
+          `postgresql://postgres.${ref}:${direct.password}@${prefix}-${r}.pooler.supabase.com:5432${direct.pathname}`,
+        ]);
+      }
+    }
 
     const errors = [];
     let applied = false;
