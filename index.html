@@ -9061,8 +9061,7 @@ document.querySelectorAll('.lumi-aura, .card-arrow, .btn-pill, .upload-lumi, .su
   function updateSaveEnabled(){
     var btn = q('#lib-save-btn');
     if (!btn) return;
-    var slugOk = slugAvailable === true;
-    btn.disabled = !slugOk;
+    btn.disabled = false;
   }
 
   // ------- 블록 렌더 -------
@@ -9220,7 +9219,6 @@ document.querySelectorAll('.lumi-aura, .card-arrow, .btn-pill, .upload-lumi, .su
 
   // ------- 저장 -------
   function doSave(){
-    if (slugAvailable !== true) { toast('사용 가능한 URL을 먼저 확인해주세요', 'err'); return; }
     if (!getToken()) { toast('로그인이 필요해요', 'err'); return; }
 
     // position 재계산
@@ -9251,11 +9249,13 @@ document.querySelectorAll('.lumi-aura, .card-arrow, .btn-pill, .upload-lumi, .su
       if (res.status === 409) { toast('이미 사용 중인 URL이에요', 'err'); return; }
       if (res.status === 401 || res.status === 403) { toast('인증이 만료됐어요. 다시 로그인해주세요', 'err'); return; }
       if (!res.ok) { toast((res.body && res.body.error) || '저장 실패', 'err'); return; }
-      try { localStorage.setItem('lumi_link_slug', payload.page.slug); } catch(_){}
+      var assignedSlug = (res.body && res.body.slug) || payload.page.slug || '';
+      state.slug = assignedSlug;
+      try { localStorage.setItem('lumi_link_slug', assignedSlug); } catch(_){}
       initialSnapshot = JSON.stringify(state);
-      toast('저장 완료 — lumi.it.kr/p/'+payload.page.slug);
+      toast('저장 완료 — lumi.it.kr/p/'+assignedSlug);
       var pub = q('#lib-public-url');
-      if (pub) pub.textContent = 'https://lumi.it.kr/p/' + payload.page.slug;
+      if (pub) pub.textContent = 'https://lumi.it.kr/p/' + assignedSlug;
     }).catch(function(e){
       console.error('[lib] save error', e);
       toast('네트워크 오류. 잠시 후 다시 시도해주세요', 'err');
@@ -9283,16 +9283,13 @@ document.querySelectorAll('.lumi-aura, .card-arrow, .btn-pill, .upload-lumi, .su
       '<div class="lib-body">'+
         '<div class="lib-wrap">'+
 
-          // URL
+          // URL (자동 부여)
           '<section class="lib-card">'+
             '<p class="lib-card-title">공개 URL</p>'+
             '<div class="lib-row">'+
-              '<div class="lib-slug-row">'+
-                '<span class="lib-slug-prefix">lumi.it.kr/p/</span>'+
-                '<input id="lib-slug" type="text" maxlength="32" autocomplete="off" spellcheck="false" placeholder="mystore">'+
-              '</div>'+
-              '<p class="lib-hint" id="lib-slug-hint">영문 소문자·숫자·하이픈 2~32자</p>'+
+              '<p class="lib-hint" id="lib-slug-hint" style="margin-top:4px">가입하신 순번으로 자동 부여돼요 · 저장하면 URL이 확정됩니다.</p>'+
               '<p class="lib-pub-url" id="lib-public-url"></p>'+
+              '<input id="lib-slug" type="hidden">'+
             '</div>'+
           '</section>'+
 
@@ -9342,16 +9339,8 @@ document.querySelectorAll('.lumi-aura, .card-arrow, .btn-pill, .upload-lumi, .su
     q('#lib-save-btn', root).addEventListener('click', doSave);
     q('#lib-preview-btn', root).addEventListener('click', function(){
       var slug = (state.slug||'').toLowerCase().trim();
-      if (!slug) { toast('먼저 URL을 입력해주세요', 'err'); return; }
+      if (!slug) { toast('먼저 저장하면 URL이 자동 부여돼요', 'err'); return; }
       window.open('/p/' + slug, '_blank', 'noopener');
-    });
-
-    // slug
-    var slugInput = q('#lib-slug', root);
-    slugInput.addEventListener('input', function(){
-      state.slug = (slugInput.value||'').toLowerCase().replace(/[^a-z0-9-]/g,'');
-      if (slugInput.value !== state.slug) slugInput.value = state.slug;
-      scheduleSlugCheck();
     });
 
     // 프로필 텍스트
@@ -9471,7 +9460,8 @@ document.querySelectorAll('.lumi-aura, .card-arrow, .btn-pill, .upload-lumi, .su
 
   // ------- 초기 데이터 로드 -------
   function populateFromState(){
-    q('#lib-slug').value = state.slug || '';
+    var slugField = q('#lib-slug');
+    if (slugField) slugField.value = state.slug || '';
     q('#lib-store').value = state.store_name || '';
     q('#lib-headline').value = state.headline || '';
     q('#lib-bio').value = state.bio || '';
@@ -9481,9 +9471,12 @@ document.querySelectorAll('.lumi-aura, .card-arrow, .btn-pill, .upload-lumi, .su
     refreshAvatar();
     q('#lib-avatar-remove').style.display = state.profile_image_url ? '' : 'none';
     renderBlocksList();
-    if (state.slug) scheduleSlugCheck();
+    slugAvailable = true;
     var pub = q('#lib-public-url');
     if (pub) pub.textContent = state.slug ? ('https://lumi.it.kr/p/' + state.slug) : '';
+    var hint = q('#lib-slug-hint');
+    if (hint) hint.textContent = state.slug ? '내 링크 주소 · 변경 불가' : '가입하신 순번으로 자동 부여돼요 · 저장하면 URL이 확정됩니다.';
+    updateSaveEnabled();
   }
 
   function loadPage(slug){

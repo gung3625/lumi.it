@@ -37,10 +37,44 @@ exports.handler = async (event) => {
   const page = body.page || {};
   const blocks = Array.isArray(body.blocks) ? body.blocks : [];
 
-  // slug 검증
-  const slug = String(page.slug || '').toLowerCase().trim();
+  // slug 자동 할당 (기존 row 있으면 유지, 없으면 순번 기반 신규 발급)
+  let slug;
+  try {
+    const adminSlug = getAdminClient();
+    const { data: existing, error: exErr } = await adminSlug
+      .from('link_pages')
+      .select('slug')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (exErr) {
+      console.error('[save-link-page] slug lookup error:', exErr.message);
+      return bad('저장 실패', 500);
+    }
+    if (existing && existing.slug) {
+      slug = existing.slug;
+    } else {
+      const { data: rows, error: listErr } = await adminSlug
+        .from('link_pages')
+        .select('slug');
+      if (listErr) {
+        console.error('[save-link-page] slug list error:', listErr.message);
+        return bad('저장 실패', 500);
+      }
+      let maxNum = 0;
+      (rows || []).forEach(function(r){
+        if (r && /^\d+$/.test(r.slug || '')) {
+          const n = parseInt(r.slug, 10);
+          if (n > maxNum) maxNum = n;
+        }
+      });
+      slug = String(maxNum + 1).padStart(2, '0');
+    }
+  } catch (err) {
+    console.error('[save-link-page] slug assign failed:', err && err.message);
+    return bad('저장 실패', 500);
+  }
   if (!SLUG_RE.test(slug)) {
-    return bad('URL 주소는 영문 소문자·숫자·하이픈 2~32자만 가능합니다.');
+    return bad('URL 주소 자동 할당 실패', 500);
   }
 
   const theme = page.theme === 'dark' ? 'dark' : 'light';
