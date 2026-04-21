@@ -1,10 +1,12 @@
 // Meta (Facebook/Instagram) Webhook — DM/댓글 수신 & 자동 응답
 // 토큰은 ig_accounts_decrypted 뷰(service_role)에서만 조회. 평문 저장/로그 금지.
+// 플랜별 분기: standard=응답 없음 / pro=키워드 매칭 / business=AI 자동응답
+// Shadow mode 기본값=true (발송 없이 로그만 기록)
 const crypto = require('crypto');
 const { getAdminClient } = require('./_shared/supabase-admin');
 
 const TEST_IG_USER_ID = process.env.TEST_IG_USER_ID || '';
-const TEST_ACCESS_TOKEN = process.env.TEST_IG_ACCESS_TOKEN || '';
+const TEST_ACCESS_TOKEN = process.env.TEST_ACCESS_TOKEN || '';
 
 function verifySignature(payload, signature) {
   const appSecret = process.env.META_APP_SECRET;
@@ -47,7 +49,6 @@ async function getIgContext(supabase, igUserId) {
       .maybeSingle();
     if (error || !data) return null;
 
-    // user_id로 email 조회 (알림톡 등에 필요 시 확장)
     let email = null;
     if (data.user_id) {
       const { data: user } = await supabase
@@ -64,51 +65,345 @@ async function getIgContext(supabase, igUserId) {
   }
 }
 
-// 자동응답 설정 조회 (auto_replies 테이블은 현재 스키마에 없음 → 환경에 따라 안전 반환)
-// 향후 테이블이 추가되면 이 함수만 확장하면 됨.
-async function getAutoReplySettings(/* supabase, userId */) {
-  return null;
+// users 테이블에서 plan 조회
+async function getUserPlan(supabase, userId) {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('plan, store_name, store_desc')
+      .eq('id', userId)
+      .maybeSingle();
+    if (error || !data) return { plan: null, storeName: null, storeDesc: null };
+    return { plan: data.plan || null, storeName: data.store_name || null, storeDesc: data.store_desc || null };
+  } catch (e) {
+    console.error('[meta-webhook] getUserPlan 실패:', e.message);
+    return { plan: null, storeName: null, storeDesc: null };
+  }
 }
 
-function matchKeyword(text, keywords) {
-  for (const item of keywords) {
+// store_context 조회. 없으면 빈 객체 반환.
+async function getStoreContext(supabase, userId) {
+  try {
+    const { data, error } = await supabase
+      .from('store_context')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (error) {
+      console.error('[meta-webhook] getStoreContext 오류:', error.message);
+      return {};
+    }
+    return data || {};
+  } catch (e) {
+    console.error('[meta-webhook] getStoreContext 실패:', e.message);
+    return {};
+  }
+}
+
+// auto_reply_settings 조회. 없으면 기본값 insert 후 반환.
+async function getOrCreateAutoReplySettings(supabase, userId) {
+  try {
+    const { data, error } = await supabase
+      .from('auto_reply_settings')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (error) {
+      console.error('[meta-webhook] auto_reply_settings 조회 오류:', error.message);
+      return null;
+    }
+    if (data) return data;
+
+    // 없으면 기본값 insert
+    const defaults = {
+      user_id: userId,
+      enabled: false,
+      shadow_mode: true,
+      keyword_rules: [],
+      default_comment_reply: '감사합니다 😊 궁금한 점은 DM으로 문의해 주세요!',
+      default_dm_reply: '안녕하세요! 메시지 감사해요 😊',
+      negative_keyword_blocklist: ['비싸','별로','불만','환불','최악','맛없','이상해','짜증','실망'],
+      ai_mode: false,
+      ai_confidence_threshold: 0.85,
+    };
+    const { data: inserted, error: insertErr } = await supabase
+      .from('auto_reply_settings')
+      .insert(defaults)
+      .select()
+      .single();
+    if (insertErr) {
+      console.error('[meta-webhook] auto_reply_settings insert 실패:', insertErr.message);
+      return defaults;
+    }
+    return inserted;
+  } catch (e) {
+    console.error('[meta-webhook] getOrCreateAutoReplySettings 실패:', e.message);
+    return null;
+  }
+}
+
+// auto_reply_log에 수신/판정/응답 기록
+async function writeLog(supabase, logEntry) {
+  try {
+    await supabase.from('auto_reply_log').insert(logEntry);
+  } catch (e) {
+    console.error('[meta-webhook] writeLog 실패:', e.message);
+  }
+}
+
+// 키워드 매칭 — pro 플랜용
+function matchKeyword(text, keywordRules) {
+  for (const item of (keywordRules || [])) {
     if (item.keyword && text.includes(item.keyword)) return item.reply;
   }
   return null;
 }
 
-async function handleComment(entry, accessToken, settings) {
-  const change = entry.changes?.[0];
-  if (!change || change.field !== 'comments') return;
-  const commentId = change.value?.id;
-  const commentText = change.value?.text || '';
-  if (!commentId || !accessToken) return;
-
-  let replyText = settings?.comment?.defaultReply || '감사합니다 😊 궁금한 점은 DM으로 문의해 주세요!';
-  if (settings?.comment?.keywords?.length > 0) {
-    const matched = matchKeyword(commentText, settings.comment.keywords);
-    if (matched) replyText = matched;
-  }
-  await callGraphAPI(`/${commentId}/replies`, 'POST', { message: replyText }, accessToken);
+// 부정 키워드 블록리스트 검사
+function hasNegativeKeyword(text, blocklist) {
+  return (blocklist || []).some((kw) => text.includes(kw));
 }
 
-async function handleMessage(entry, accessToken, settings) {
-  const messaging = entry.messaging?.[0];
-  if (!messaging) return;
-  const senderId = messaging.sender?.id;
-  const messageText = messaging.message?.text || '';
-  const igUserId = entry.id;
-  if (!senderId || !accessToken) return;
+// OpenAI 4o-mini 호출 — business 플랜 전용
+async function callAIReply(receivedText, eventType, storeName, storeDesc, storeCtx) {
+  const ctx = storeCtx || {};
+  const storeBlock = [
+    '[매장 정보]',
+    `- 매장명: ${ctx.store_name || storeName || ''}`,
+    `- 주소: ${ctx.address || ''}`,
+    `- 전화: ${ctx.phone || ''}`,
+    `- 영업시간: ${ctx.hours ? JSON.stringify(ctx.hours) : ''}`,
+    `- 메뉴/서비스: ${ctx.menu_or_services || storeDesc || ''}`,
+    `- 주차: ${ctx.parking || ''}`,
+    `- 예약: ${ctx.reservation_url || ''}`,
+    `- 오시는 길: ${ctx.directions || ''}`,
+    `- 응대 말투: ${ctx.tone || '친근'}`,
+    `- 특이사항: ${ctx.custom_notes || ''}`,
+    '이 정보만 근거로 답변하고, 정보에 없는 내용은 "확인 후 답변드릴게요"로 회피.',
+  ].join('\n');
 
-  let replyText = settings?.dm?.defaultReply || '안녕하세요! 메시지 감사해요 😊';
-  if (settings?.dm?.keywords?.length > 0) {
-    const matched = matchKeyword(messageText, settings.dm.keywords);
-    if (matched) replyText = matched;
+  const systemPrompt = `당신은 인스타그램 매장 자동응답 AI입니다.
+${storeBlock}
+
+수신된 ${eventType === 'comment' ? '댓글' : 'DM'}에 대해 아래 JSON 형식으로만 응답하세요.
+답변은 친절하고 자연스러운 한국어로 작성하고, 30~80자 이내로 간결하게 작성하세요.
+부정적이거나 민감한 내용은 escalate=true로 표시하고 reply는 빈 문자열로 두세요.
+
+{
+  "category": "spam|faq|booking|complaint|feedback|other",
+  "sub_category": "string",
+  "sentiment": "positive|negative|neutral",
+  "confidence": 0.0~1.0,
+  "escalate": true|false,
+  "reply": "답변 텍스트 또는 빈 문자열"
+}`;
+
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      max_tokens: 300,
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: receivedText },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`OpenAI API 오류: ${response.status}`);
   }
-  await callGraphAPI(`/${igUserId}/messages`, 'POST', {
-    recipient: { id: senderId },
-    message: { text: replyText },
-  }, accessToken);
+
+  const result = await response.json();
+  const content = result.choices?.[0]?.message?.content || '{}';
+  return JSON.parse(content);
+}
+
+// store_context 플레이스홀더 치환 — 값이 null/undefined면 플레이스홀더 삭제
+function applyStoreContextPlaceholders(text, ctx) {
+  if (!text || !ctx) return text;
+  const hoursStr = ctx.hours ? JSON.stringify(ctx.hours) : null;
+  return text
+    .replace(/\{store_name\}/g, ctx.store_name || '')
+    .replace(/\{address\}/g, ctx.address || '')
+    .replace(/\{phone\}/g, ctx.phone || '')
+    .replace(/\{hours\}/g, hoursStr || '')
+    .replace(/\{reservation_url\}/g, ctx.reservation_url || '')
+    .replace(/\{directions\}/g, ctx.directions || '');
+}
+
+// pro 플랜: 키워드 매칭 처리
+async function handleKeywordReply(supabase, receivedText, eventType, senderId, igUserId, userId, settings, accessToken, storeCtx) {
+  const matched = matchKeyword(receivedText, settings.keyword_rules);
+  const rawReply = matched || (eventType === 'comment' ? settings.default_comment_reply : settings.default_dm_reply);
+  const replyText = applyStoreContextPlaceholders(rawReply, storeCtx);
+
+  const logEntry = {
+    user_id: userId,
+    ig_user_id: igUserId,
+    event_type: eventType,
+    received_text: receivedText,
+    sender_id: senderId,
+    category: matched ? 'faq' : 'other',
+    sub_category: matched ? 'keyword_match' : 'default',
+    sentiment: null,
+    confidence: matched ? 1.0 : null,
+    replied: false,
+    reply_text: replyText,
+    escalated: false,
+    escalation_reason: null,
+    shadow_mode: settings.shadow_mode,
+  };
+
+  if (!settings.shadow_mode) {
+    await sendReply(eventType, igUserId, senderId, replyText, accessToken);
+    logEntry.replied = true;
+  }
+
+  await writeLog(supabase, logEntry);
+  console.log(`[meta-webhook] pro keyword reply — shadow=${settings.shadow_mode} matched=${!!matched}`);
+}
+
+// business 플랜: AI 자동응답 처리
+async function handleAIReply(supabase, receivedText, eventType, senderId, igUserId, userId, settings, accessToken, storeName, storeDesc, storeCtx) {
+  let aiResult = null;
+  let escalated = false;
+  let escalationReason = null;
+  let replyText = '';
+  let category = 'other';
+  let subCategory = null;
+  let sentiment = null;
+  let confidence = null;
+
+  try {
+    aiResult = await callAIReply(receivedText, eventType, storeName, storeDesc, storeCtx);
+    category = aiResult.category || 'other';
+    subCategory = aiResult.sub_category || null;
+    sentiment = aiResult.sentiment || null;
+    confidence = typeof aiResult.confidence === 'number' ? aiResult.confidence : null;
+    escalated = aiResult.escalate || false;
+    replyText = aiResult.reply || '';
+  } catch (e) {
+    console.error('[meta-webhook] AI 호출 실패:', e.message);
+    escalated = true;
+    escalationReason = 'ai_error';
+  }
+
+  // 3단 안전장치
+  if (!escalated && sentiment === 'negative') {
+    escalated = true;
+    escalationReason = 'negative_sentiment';
+    replyText = '';
+  }
+  if (!escalated && hasNegativeKeyword(receivedText, settings.negative_keyword_blocklist)) {
+    escalated = true;
+    escalationReason = 'negative_keyword';
+    replyText = '';
+  }
+  if (!escalated && confidence !== null && confidence < settings.ai_confidence_threshold) {
+    escalated = true;
+    escalationReason = 'low_confidence';
+    replyText = '';
+  }
+
+  const logEntry = {
+    user_id: userId,
+    ig_user_id: igUserId,
+    event_type: eventType,
+    received_text: receivedText,
+    sender_id: senderId,
+    category,
+    sub_category: subCategory,
+    sentiment,
+    confidence,
+    replied: false,
+    reply_text: replyText || null,
+    escalated,
+    escalation_reason: escalationReason,
+    shadow_mode: settings.shadow_mode,
+  };
+
+  if (!escalated && replyText && !settings.shadow_mode) {
+    await sendReply(eventType, igUserId, senderId, replyText, accessToken);
+    logEntry.replied = true;
+  }
+
+  await writeLog(supabase, logEntry);
+  console.log(`[meta-webhook] business AI reply — shadow=${settings.shadow_mode} escalated=${escalated} category=${category}`);
+}
+
+// Graph API 실발송 공통
+async function sendReply(eventType, igUserId, senderId, replyText, accessToken) {
+  if (eventType === 'comment') {
+    await callGraphAPI(`/${senderId}/replies`, 'POST', { message: replyText }, accessToken);
+  } else {
+    await callGraphAPI(`/${igUserId}/messages`, 'POST', {
+      recipient: { id: senderId },
+      message: { text: replyText },
+    }, accessToken);
+  }
+}
+
+// 단일 이벤트(댓글 또는 DM) 처리 진입점
+async function processEvent(supabase, entry, igUserId, userId, accessToken, planInfo) {
+  const { plan, storeName, storeDesc } = planInfo;
+
+  // standard 플랜: 자동응답 없음
+  if (!plan || plan === 'standard' || plan === 'trial' || plan === 'free') {
+    console.log(`[meta-webhook] plan=${plan} — 자동응답 건너뜀`);
+    return;
+  }
+
+  const settings = await getOrCreateAutoReplySettings(supabase, userId);
+  if (!settings) {
+    console.error('[meta-webhook] settings 조회 실패 — 건너뜀');
+    return;
+  }
+
+  // enabled=false: 로그 없이 종료 (아직 활성화 전)
+  if (!settings.enabled) {
+    console.log('[meta-webhook] auto_reply disabled — 건너뜀');
+    return;
+  }
+
+  const storeCtx = await getStoreContext(supabase, userId);
+
+  // 댓글 처리
+  if (entry.changes) {
+    for (const change of (entry.changes || [])) {
+      if (change.field !== 'comments') continue;
+      const commentId = change.value?.id;
+      const commentText = change.value?.text || '';
+      if (!commentId) continue;
+
+      if (plan === 'pro') {
+        await handleKeywordReply(supabase, commentText, 'comment', commentId, igUserId, userId, settings, accessToken, storeCtx);
+      } else if (plan === 'business') {
+        await handleAIReply(supabase, commentText, 'comment', commentId, igUserId, userId, settings, accessToken, storeName, storeDesc, storeCtx);
+      }
+    }
+  }
+
+  // DM 처리
+  if (entry.messaging) {
+    for (const messaging of (entry.messaging || [])) {
+      const senderId = messaging.sender?.id;
+      const messageText = messaging.message?.text || '';
+      if (!senderId) continue;
+
+      if (plan === 'pro') {
+        await handleKeywordReply(supabase, messageText, 'dm', senderId, igUserId, userId, settings, accessToken, storeCtx);
+      } else if (plan === 'business') {
+        await handleAIReply(supabase, messageText, 'dm', senderId, igUserId, userId, settings, accessToken, storeName, storeDesc, storeCtx);
+      }
+    }
+  }
 }
 
 exports.handler = async (event) => {
@@ -148,11 +443,10 @@ exports.handler = async (event) => {
       try {
         const igUserId = entry.id;
         const ctx = await getIgContext(supabase, igUserId);
-        if (ctx?.accessToken) {
-          const settings = ctx.userId ? await getAutoReplySettings(supabase, ctx.userId) : null;
-          if (entry.changes) await handleComment(entry, ctx.accessToken, settings);
-          if (entry.messaging) await handleMessage(entry, ctx.accessToken, settings);
-        }
+        if (!ctx?.accessToken || !ctx.userId) continue;
+
+        const planInfo = await getUserPlan(supabase, ctx.userId);
+        await processEvent(supabase, entry, igUserId, ctx.userId, ctx.accessToken, planInfo);
       } catch (e) {
         console.error('[meta-webhook] entry 처리 실패:', e.message);
       }

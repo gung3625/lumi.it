@@ -34,6 +34,65 @@ create index if not exists idx_promo_schedule_pending
   on public.promo_schedule(scheduled_at)
   where status='pending';
 `,
+  'store_context.sql': `
+create table if not exists public.store_context (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  store_name text,
+  address text,
+  phone text,
+  hours jsonb default '{}'::jsonb,
+  menu_or_services text,
+  parking text,
+  reservation_url text,
+  directions text,
+  tone text default '친근',
+  custom_notes text,
+  updated_at timestamptz not null default now()
+);
+create index if not exists idx_store_context_updated on public.store_context(updated_at desc);
+`,
+  'auto_reply_tables.sql': `
+-- auto_reply_settings: 사장님별 자동응답 설정
+create table if not exists public.auto_reply_settings (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  enabled boolean not null default false,
+  shadow_mode boolean not null default true,
+  keyword_rules jsonb not null default '[]'::jsonb,
+  default_comment_reply text default '감사합니다 😊 궁금한 점은 DM으로 문의해 주세요!',
+  default_dm_reply text default '안녕하세요! 메시지 감사해요 😊',
+  negative_keyword_blocklist text[] not null default array['비싸','별로','불만','환불','최악','맛없','이상해','짜증','실망'],
+  ai_mode boolean not null default false,
+  ai_confidence_threshold numeric not null default 0.85,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+-- auto_reply_log: 모든 수신/판정/응답 로그
+create table if not exists public.auto_reply_log (
+  id bigserial primary key,
+  user_id uuid references auth.users(id) on delete set null,
+  ig_user_id text,
+  event_type text not null,
+  received_text text,
+  sender_id text,
+  category text,
+  sub_category text,
+  sentiment text,
+  confidence numeric,
+  replied boolean not null default false,
+  reply_text text,
+  escalated boolean not null default false,
+  escalation_reason text,
+  shadow_mode boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_auto_reply_log_user_created
+  on public.auto_reply_log(user_id, created_at desc);
+create index if not exists idx_auto_reply_log_escalated
+  on public.auto_reply_log(user_id, created_at desc)
+  where escalated = true;
+`,
 };
 
 exports.handler = async (event) => {
