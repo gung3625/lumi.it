@@ -121,6 +121,37 @@ body.dark-mode .ig-text{color:#f0f2f8;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 body.dark-mode .toast{background:#f0f2f8;color:#1d1d1f;}
 
+/* AI 모드 섹션 다크 */
+body.dark-mode #ar-learn-box{background:rgba(200,80,122,.12);border-color:rgba(200,80,122,.28);}
+body.dark-mode #ar-rating-box{background:rgba(255,255,255,.06);}
+body.dark-mode .ar-rating-card{background:#1d1d1f;}
+.ar-rating-card{padding:12px 14px;border-radius:8px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.05);display:flex;flex-direction:column;gap:8px;transition:opacity .3s;}
+.ar-rating-card.fading{opacity:0;}
+.ar-rating-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px;color:#6e6e73;}
+body.dark-mode .ar-rating-meta{color:rgba(255,255,255,.55);}
+.ar-rating-badge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:rgba(200,80,122,.12);color:#C8507A;}
+.ar-rating-badge.shadow{background:rgba(0,122,255,.12);color:#0066cc;}
+body.dark-mode .ar-rating-badge.shadow{background:rgba(100,160,255,.18);color:#8ab4f8;}
+.ar-rating-text{font-size:14px;line-height:1.5;color:#1d1d1f;white-space:pre-wrap;word-break:break-word;}
+body.dark-mode .ar-rating-text{color:#f0f2f8;}
+.ar-rating-text.label{font-size:11px;font-weight:600;color:#6e6e73;margin-bottom:2px;}
+body.dark-mode .ar-rating-text.label{color:rgba(255,255,255,.55);}
+.ar-rating-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.ar-btn-icon{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:980px;border:none;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;min-height:32px;transition:filter .2s,transform .2s;}
+.ar-btn-icon:hover{filter:brightness(1.08);}
+.ar-btn-icon:active{transform:scale(.97);}
+.ar-btn-up{background:rgba(48,209,88,.12);color:#1c7a36;}
+body.dark-mode .ar-btn-up{background:rgba(48,209,88,.18);color:#7ce495;}
+.ar-btn-down{background:rgba(255,59,48,.1);color:#d70015;}
+body.dark-mode .ar-btn-down{background:rgba(255,59,48,.18);color:#ff6961;}
+.ar-correct-box{display:none;flex-direction:column;gap:8px;padding-top:4px;}
+.ar-correct-box.open{display:flex;}
+@media(max-width:768px){
+.ar-rating-actions{flex-direction:column;}
+.ar-btn-icon{width:100%;justify-content:center;}
+.ar-rating-card textarea{min-height:64px!important;}
+}
+
 /* FAB */
 #fab-dark{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom,0px));right:20px;z-index:200;width:44px;height:44px;border-radius:50%;border:none;background:rgba(0,0,0,.07);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .3s,transform .2s;}
 #fab-dark:hover{transform:scale(1.08);}
@@ -305,10 +336,47 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- Shadow 모드 -->
     <div class="toggle-row">
       <div>
-        <p class="toggle-label">Shadow 모드</p>
-        <p class="toggle-desc">Meta 고급권한 승인 전에는 반드시 켜두세요. 승인되면 끄고 실제 발송을 시작할 수 있어요.</p>
+        <p class="toggle-label"><strong>Shadow 모드</strong></p>
+        <p class="toggle-desc">실제 발송 없이 판정 결과만 로그에 쌓는 테스트 모드. 새 키워드 규칙이나 AI 답변 품질을 실전 DM으로 안전하게 검증할 때 켜세요. Meta 고급권한 승인 대기 중에도 필수입니다.</p>
       </div>
       <button class="toggle on" id="ar-shadow" onclick="this.classList.toggle('on')"></button>
+    </div>
+
+    <!-- AI 자동응답 모드 (비즈니스 전용) -->
+    <div class="toggle-row" id="ar-ai-mode-row">
+      <div>
+        <p class="toggle-label">
+          AI 자동응답 모드
+          <span id="ar-ai-mode-badge" style="display:none;margin-left:6px;font-size:11px;font-weight:600;background:rgba(200,80,122,.12);color:#C8507A;border-radius:6px;padding:2px 8px;vertical-align:middle;">비즈니스 전용</span>
+        </p>
+        <p class="toggle-desc">켜면 AI가 고객 메시지에 맞춤 답변을 생성합니다. 끄면 키워드 규칙만 적용돼요.</p>
+      </div>
+      <button class="toggle" id="ar-ai-mode" onclick="arHandleAiToggle()"></button>
+    </div>
+
+    <!-- 과거 DM 학습 (business + ai_mode=true 전용) -->
+    <div class="field" id="ar-learn-box" style="display:none;padding:16px 18px;border-radius:8px;background:rgba(200,80,122,.06);border:1px solid rgba(200,80,122,.18);gap:10px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C8507A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        <span class="field-label" style="color:#C8507A;">과거 DM 학습</span>
+      </div>
+      <span class="field-note">지금까지 받은 DM과 사장님의 답변을 AI에게 학습시키면, 처음부터 사장님 말투로 응답해요. 최근 6개월 대화에서 최대 50개 샘플을 가져옵니다.</span>
+      <button class="btn btn-pink" id="ar-learn-btn" onclick="arImportDMHistory()" style="align-self:flex-start;font-size:14px;padding:10px 20px;min-height:40px;">학습 시작</button>
+      <span class="field-note" id="ar-learn-status" style="display:none;"></span>
+    </div>
+
+    <!-- 자동응답 평가 (business + ai_mode=true 전용) -->
+    <div class="field" id="ar-rating-box" style="display:none;padding:16px 18px;border-radius:8px;background:rgba(0,0,0,.03);gap:12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C8507A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <span class="field-label">자동응답 평가 <span style="font-weight:400;color:#6e6e73;">(학습 중)</span></span>
+        </div>
+        <button type="button" class="btn btn-dark" id="ar-rating-refresh" onclick="arLoadPendingRatings()" style="font-size:12px;padding:6px 14px;min-height:32px;">새로고침</button>
+      </div>
+      <span class="field-note" id="ar-rating-count">지금까지 0개 평가했어요</span>
+      <div id="ar-rating-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+      <span class="field-note" id="ar-rating-empty" style="display:none;color:#6e6e73;">평가할 자동응답이 없어요</span>
     </div>
 
     <!-- 기본 DM 답변 -->
@@ -643,10 +711,18 @@ function arAddRule() {
   arRenderRules();
 }
 
+var arCurrentPlan = 'free';
+var arCurrentAiMode = false;
+var arRatedCount = 0;
+var arSavingAiMode = false;
+
 function arApplyPlan(plan) {
+  arCurrentPlan = plan || 'free';
   var overlay = document.getElementById('ar-lock-overlay');
   var confInput = document.getElementById('ar-confidence');
   var confBadge = document.getElementById('ar-biz-badge');
+  var aiToggle = document.getElementById('ar-ai-mode');
+  var aiBadge = document.getElementById('ar-ai-mode-badge');
   var isDark = document.body.classList.contains('dark-mode');
   if (overlay) {
     if (plan === 'pro' || plan === 'business') {
@@ -662,10 +738,300 @@ function arApplyPlan(plan) {
   if (plan === 'business') {
     if (confInput) { confInput.disabled = false; confInput.style.cursor = 'pointer'; confInput.style.opacity = '1'; }
     if (confBadge) confBadge.style.display = 'none';
+    if (aiBadge) aiBadge.style.display = 'none';
   } else {
     if (confInput) { confInput.disabled = true; confInput.style.cursor = 'not-allowed'; confInput.style.opacity = '.45'; }
     if (confBadge) confBadge.style.display = (plan === 'pro') ? 'inline-flex' : 'none';
+    if (aiBadge) aiBadge.style.display = 'inline-block';
   }
+  if (aiToggle) {
+    if (plan === 'business') {
+      aiToggle.style.opacity = '1';
+      aiToggle.style.cursor = 'pointer';
+      aiToggle.removeAttribute('data-locked');
+    } else {
+      aiToggle.style.opacity = '.45';
+      aiToggle.style.cursor = 'not-allowed';
+      aiToggle.setAttribute('data-locked', '1');
+      aiToggle.classList.remove('on');
+    }
+  }
+  arApplyAiModeUI();
+}
+
+function arApplyAiModeUI() {
+  var learnBox = document.getElementById('ar-learn-box');
+  var ratingBox = document.getElementById('ar-rating-box');
+  var show = (arCurrentPlan === 'business') && arCurrentAiMode === true;
+  if (learnBox) learnBox.style.display = show ? 'flex' : 'none';
+  if (ratingBox) ratingBox.style.display = show ? 'flex' : 'none';
+  if (show) arLoadPendingRatings();
+}
+
+function arHandleAiToggle() {
+  var toggle = document.getElementById('ar-ai-mode');
+  if (!toggle) return;
+  if (toggle.getAttribute('data-locked') === '1') {
+    showToast('AI 모드는 비즈니스 플랜 전용이에요. /subscribe 에서 업그레이드할 수 있어요.');
+    return;
+  }
+  if (arSavingAiMode) return;
+  var wasOn = toggle.classList.contains('on');
+  toggle.classList.toggle('on');
+  var nowOn = toggle.classList.contains('on');
+  arSavingAiMode = true;
+  arFetch('/api/auto-reply-settings', { method: 'POST', body: JSON.stringify({ ai_mode: nowOn }) })
+    .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
+    .then(function(res) {
+      arSavingAiMode = false;
+      if (res.ok && res.data && res.data.success) {
+        arCurrentAiMode = nowOn;
+        showToast('AI 모드 ' + (nowOn ? 'ON' : 'OFF') + ' 저장됐어요');
+        arApplyAiModeUI();
+      } else {
+        // 원상복구
+        toggle.classList.toggle('on', wasOn);
+        showToast('저장 실패. 잠시 후 다시 시도해 주세요.');
+      }
+    })
+    .catch(function() {
+      arSavingAiMode = false;
+      toggle.classList.toggle('on', wasOn);
+      showToast('저장 실패. 잠시 후 다시 시도해 주세요.');
+    });
+}
+
+var AR_CATEGORY_KO = { menu: '문의', booking: '예약', price: '가격', location: '위치', hours: '시간', complaint: '불만', greeting: '인사', other: '기타' };
+
+function arImportDMHistory() {
+  var btn = document.getElementById('ar-learn-btn');
+  var status = document.getElementById('ar-learn-status');
+  if (!btn || !status) return;
+  btn.disabled = true;
+  var prevText = btn.textContent;
+  btn.textContent = '학습 중…';
+  status.style.display = 'inline';
+  status.style.color = '#6e6e73';
+  status.textContent = '대화 불러오는 중... 약 30~60초 걸려요';
+
+  var controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+  var timeoutId = setTimeout(function() { if (controller) controller.abort(); }, 90000);
+
+  arFetch('/api/import-dm-history', {
+    method: 'POST',
+    body: JSON.stringify({}),
+    signal: controller ? controller.signal : undefined,
+  })
+    .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, status: r.status, data: d }; }); })
+    .then(function(res) {
+      clearTimeout(timeoutId);
+      btn.disabled = false;
+      if (res.ok && res.data && res.data.success) {
+        var imported = res.data.imported || 0;
+        var by = res.data.by_category || {};
+        var parts = [];
+        Object.keys(AR_CATEGORY_KO).forEach(function(k) { if (by[k] && by[k] > 0) parts.push(AR_CATEGORY_KO[k] + ' ' + by[k]); });
+        status.style.color = '#1c7a36';
+        status.textContent = imported + '개 샘플을 배웠어요' + (parts.length ? ' (' + parts.join(', ') + ')' : '');
+        btn.textContent = '다시 학습하기';
+        showToast('과거 DM 학습이 완료됐어요');
+      } else {
+        btn.textContent = prevText;
+        var err = (res.data && res.data.error) || '학습에 실패했어요';
+        if (res.status === 403) err = '비즈니스 플랜이 필요해요';
+        else if (res.status === 400) err = '인스타 연동 먼저 해주세요';
+        else if (res.status === 502) err = '인스타 토큰이 만료됐어요. 재연동이 필요해요';
+        status.style.color = '#d70015';
+        status.textContent = err;
+      }
+    })
+    .catch(function(e) {
+      clearTimeout(timeoutId);
+      btn.disabled = false;
+      btn.textContent = prevText;
+      status.style.color = '#d70015';
+      status.textContent = (e && e.name === 'AbortError') ? '응답이 너무 오래 걸려요. 다시 시도해 주세요.' : '네트워크 오류가 발생했어요';
+    });
+}
+
+function arLoadPendingRatings() {
+  var list = document.getElementById('ar-rating-list');
+  var empty = document.getElementById('ar-rating-empty');
+  var countEl = document.getElementById('ar-rating-count');
+  if (!list) return;
+  list.innerHTML = '';
+  if (empty) empty.style.display = 'none';
+
+  arFetch('/api/pending-auto-reply-rating?limit=20', { method: 'GET' })
+    .then(function(r) { return r.json().catch(function() { return {}; }); })
+    .then(function(res) {
+      if (!res || !res.success) {
+        if (empty) { empty.style.display = 'inline'; empty.textContent = '평가 목록을 불러오지 못했어요'; }
+        return;
+      }
+      arRatedCount = res.rated_count || 0;
+      if (countEl) countEl.textContent = '지금까지 ' + arRatedCount + '개 평가했어요';
+      var items = res.items || [];
+      if (!items.length) { if (empty) { empty.style.display = 'inline'; empty.textContent = '평가할 자동응답이 없어요'; } return; }
+      items.forEach(function(it) { list.appendChild(arBuildRatingCard(it)); });
+    })
+    .catch(function() {
+      if (empty) { empty.style.display = 'inline'; empty.textContent = '평가 목록을 불러오지 못했어요'; }
+    });
+}
+
+function arBuildRatingCard(item) {
+  var card = document.createElement('div');
+  card.className = 'ar-rating-card';
+  card.setAttribute('data-log-id', String(item.id));
+
+  var dateStr = '';
+  try {
+    if (item.created_at) {
+      var d = new Date(item.created_at);
+      var pad = function(n) { return n < 10 ? '0' + n : '' + n; };
+      dateStr = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+    }
+  } catch (e) {}
+  var catKo = AR_CATEGORY_KO[item.category] || item.category || '기타';
+
+  var meta = document.createElement('div');
+  meta.className = 'ar-rating-meta';
+  var badge = document.createElement('span');
+  badge.className = 'ar-rating-badge';
+  badge.textContent = catKo;
+  meta.appendChild(badge);
+  var dateSpan = document.createElement('span');
+  dateSpan.textContent = dateStr;
+  meta.appendChild(dateSpan);
+  if (item.shadow_mode) {
+    var sb = document.createElement('span');
+    sb.className = 'ar-rating-badge shadow';
+    sb.textContent = 'Shadow';
+    meta.appendChild(sb);
+  }
+  card.appendChild(meta);
+
+  var recvLabel = document.createElement('div');
+  recvLabel.className = 'ar-rating-text label';
+  recvLabel.textContent = '고객';
+  card.appendChild(recvLabel);
+  var recv = document.createElement('div');
+  recv.className = 'ar-rating-text';
+  recv.textContent = item.received_text || '(고객 메시지 없음)';
+  card.appendChild(recv);
+
+  var replyLabel = document.createElement('div');
+  replyLabel.className = 'ar-rating-text label';
+  replyLabel.textContent = 'AI 답변';
+  card.appendChild(replyLabel);
+  var reply = document.createElement('div');
+  reply.className = 'ar-rating-text';
+  reply.textContent = item.reply_text || '';
+  card.appendChild(reply);
+
+  var actions = document.createElement('div');
+  actions.className = 'ar-rating-actions';
+  var upBtn = document.createElement('button');
+  upBtn.type = 'button';
+  upBtn.className = 'ar-btn-icon ar-btn-up';
+  upBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H7V10l5-8 1.5 1.15a1 1 0 0 1 .37 1.04z"/></svg>좋아요';
+  upBtn.onclick = function() { arSubmitRating(item.id, 1, null, card); };
+  actions.appendChild(upBtn);
+  var downBtn = document.createElement('button');
+  downBtn.type = 'button';
+  downBtn.className = 'ar-btn-icon ar-btn-down';
+  downBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 14V2"/><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H17v12l-5 8-1.5-1.15a1 1 0 0 1-.37-1.04z"/></svg>별로에요';
+  downBtn.onclick = function() { arOpenCorrectBox(card); };
+  actions.appendChild(downBtn);
+  card.appendChild(actions);
+
+  var correctBox = document.createElement('div');
+  correctBox.className = 'ar-correct-box';
+  var tip = document.createElement('span');
+  tip.className = 'field-note';
+  tip.textContent = '사장님의 올바른 답변을 알려주세요 (최소 2자)';
+  correctBox.appendChild(tip);
+  var ta = document.createElement('textarea');
+  ta.className = 'field-input';
+  ta.style.minHeight = '72px';
+  ta.style.fontSize = '14px';
+  correctBox.appendChild(ta);
+  var btnRow = document.createElement('div');
+  btnRow.style.cssText = 'display:flex;gap:8px;';
+  var saveBtn = document.createElement('button');
+  saveBtn.type = 'button';
+  saveBtn.className = 'ar-btn-icon ar-btn-down';
+  saveBtn.style.background = '#C8507A';
+  saveBtn.style.color = '#fff';
+  saveBtn.textContent = '저장';
+  saveBtn.onclick = function() {
+    var txt = (ta.value || '').trim();
+    if (txt.length < 2) { showToast('2자 이상 입력해 주세요'); return; }
+    arSubmitRating(item.id, -1, txt, card);
+  };
+  btnRow.appendChild(saveBtn);
+  var cancelBtn = document.createElement('button');
+  cancelBtn.type = 'button';
+  cancelBtn.className = 'ar-btn-icon';
+  cancelBtn.style.background = 'rgba(0,0,0,.06)';
+  cancelBtn.style.color = '#1d1d1f';
+  cancelBtn.textContent = '취소';
+  cancelBtn.onclick = function() { correctBox.classList.remove('open'); ta.value = ''; };
+  btnRow.appendChild(cancelBtn);
+  correctBox.appendChild(btnRow);
+  card.appendChild(correctBox);
+
+  return card;
+}
+
+function arOpenCorrectBox(card) {
+  // 다른 카드의 열린 박스 닫기
+  var all = document.querySelectorAll('#ar-rating-list .ar-correct-box.open');
+  all.forEach(function(el) { if (el.closest('.ar-rating-card') !== card) el.classList.remove('open'); });
+  var box = card.querySelector('.ar-correct-box');
+  if (box) {
+    box.classList.toggle('open');
+    if (box.classList.contains('open')) {
+      var ta = box.querySelector('textarea');
+      if (ta) setTimeout(function() { ta.focus(); }, 50);
+    }
+  }
+}
+
+function arSubmitRating(logId, rating, correctedReply, card) {
+  var body = { log_id: Number(logId), rating: rating };
+  if (correctedReply) body.corrected_reply = correctedReply;
+  // 버튼 disable
+  var btns = card.querySelectorAll('button');
+  btns.forEach(function(b) { b.disabled = true; });
+
+  arFetch('/api/rate-auto-reply', { method: 'POST', body: JSON.stringify(body) })
+    .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
+    .then(function(res) {
+      if (res.ok && res.data && res.data.success) {
+        if (rating === -1) {
+          showToast(res.data.learned ? '배웠어요! 다음부터 이렇게 답할게요' : '저장됐어요');
+        }
+        arRatedCount += 1;
+        var countEl = document.getElementById('ar-rating-count');
+        if (countEl) countEl.textContent = '지금까지 ' + arRatedCount + '개 평가했어요';
+        card.classList.add('fading');
+        setTimeout(function() {
+          if (card.parentNode) card.parentNode.removeChild(card);
+          var list = document.getElementById('ar-rating-list');
+          var empty = document.getElementById('ar-rating-empty');
+          if (list && empty && !list.children.length) { empty.style.display = 'inline'; empty.textContent = '평가할 자동응답이 없어요'; }
+        }, 300);
+      } else {
+        btns.forEach(function(b) { b.disabled = false; });
+        showToast((res.data && res.data.error) || '평가 저장에 실패했어요');
+      }
+    })
+    .catch(function() {
+      btns.forEach(function(b) { b.disabled = false; });
+      showToast('네트워크 오류가 발생했어요');
+    });
 }
 
 function arLoad() {
@@ -684,8 +1050,12 @@ function arLoad() {
       var s = (res && res.settings) || {};
       var enBtn = document.getElementById('ar-enabled');
       var shBtn = document.getElementById('ar-shadow');
+      var aiBtn = document.getElementById('ar-ai-mode');
       if (enBtn) { if (s.enabled) enBtn.classList.add('on'); else enBtn.classList.remove('on'); }
       if (shBtn) { if (s.shadow_mode !== false) shBtn.classList.add('on'); else shBtn.classList.remove('on'); }
+      arCurrentAiMode = !!s.ai_mode;
+      if (aiBtn) { if (arCurrentAiMode && plan === 'business') aiBtn.classList.add('on'); else aiBtn.classList.remove('on'); }
+      arApplyAiModeUI();
       var dmEl = document.getElementById('ar-dm-reply');
       var cmEl = document.getElementById('ar-comment-reply');
       if (dmEl && s.default_dm_reply) dmEl.value = s.default_dm_reply;

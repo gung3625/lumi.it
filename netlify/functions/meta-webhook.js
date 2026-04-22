@@ -165,7 +165,8 @@ function hasNegativeKeyword(text, blocklist) {
 }
 
 // OpenAI 4o-mini 호출 — business 플랜 전용
-async function callAIReply(receivedText, eventType, storeName, storeDesc, storeCtx) {
+// userId + supabase를 받아 auto_reply_corrections에서 최근 10개 샘플을 few-shot으로 주입
+async function callAIReply(receivedText, eventType, storeName, storeDesc, storeCtx, userId, supabase) {
   const ctx = storeCtx || {};
   const storeBlock = [
     '[매장 정보]',
@@ -182,8 +183,31 @@ async function callAIReply(receivedText, eventType, storeName, storeDesc, storeC
     '이 정보만 근거로 답변하고, 정보에 없는 내용은 "확인 후 답변드릴게요"로 회피.',
   ].join('\n');
 
+  // 사장님이 과거에 직접 답한 샘플 조회 (few-shot learning)
+  let learningBlock = '';
+  if (userId && supabase) {
+    try {
+      const { data: corrections } = await supabase
+        .from('auto_reply_corrections')
+        .select('category, customer_message, correct_reply')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      const fewShot = (corrections || []).map((c) =>
+        `[category=${c.category}] 고객: "${c.customer_message}" → 사장님 정답: "${c.correct_reply}"`
+      ).join('\n');
+
+      if (fewShot) {
+        learningBlock = `\n\n## 사장님이 과거에 직접 답한 모범 예시 (반드시 이 톤·정보를 따를 것)\n${fewShot}\n`;
+      }
+    } catch (e) {
+      console.error('[meta-webhook] corrections 조회 실패:', e.message);
+    }
+  }
+
   const systemPrompt = `당신은 인스타그램 매장 자동응답 AI입니다.
-${storeBlock}
+${storeBlock}${learningBlock}
 
 수신된 ${eventType === 'comment' ? '댓글' : 'DM'}에 대해 아래 JSON 형식으로만 응답하세요.
 답변은 친절하고 자연스러운 한국어로 작성하고, 30~80자 이내로 간결하게 작성하세요.
@@ -271,7 +295,14 @@ async function handleKeywordReply(supabase, receivedText, eventType, senderId, i
 }
 
 // business 플랜: AI 자동응답 처리
+// ai_mode=false면 키워드 매칭으로 폴백 (사장님이 AI 토글 끈 상태)
 async function handleAIReply(supabase, receivedText, eventType, senderId, igUserId, userId, settings, accessToken, storeName, storeDesc, storeCtx) {
+  if (!settings.ai_mode) {
+    console.log('[meta-webhook] business plan but ai_mode=false — 키워드 폴백');
+    await handleKeywordReply(supabase, receivedText, eventType, senderId, igUserId, userId, settings, accessToken, storeCtx);
+    return;
+  }
+
   let aiResult = null;
   let escalated = false;
   let escalationReason = null;
@@ -282,7 +313,7 @@ async function handleAIReply(supabase, receivedText, eventType, senderId, igUser
   let confidence = null;
 
   try {
-    aiResult = await callAIReply(receivedText, eventType, storeName, storeDesc, storeCtx);
+    aiResult = await callAIReply(receivedText, eventType, storeName, storeDesc, storeCtx, userId, supabase);
     category = aiResult.category || 'other';
     subCategory = aiResult.sub_category || null;
     sentiment = aiResult.sentiment || null;
