@@ -9697,12 +9697,52 @@ document.querySelectorAll('.lumi-aura, .card-arrow, .btn-pill, .upload-lumi, .su
   }
 
   // ------- 프로필 이미지 업로드 -------
-  function handleAvatarUpload(file){
+  // 업로드 전 자동 리사이즈: max 1200px, JPEG 0.85. EXIF 회전은 createImageBitmap({imageOrientation:'from-image'})이 처리.
+  async function resizeForBio(file){
+    var MAX = 1200;
+    var bitmap;
+    try {
+      bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+    } catch(_){
+      // 구형 Safari 폴백 — EXIF 회전은 드물게 잘못될 수 있으나 대부분의 iOS는 업로드 시 자동 정방향화
+      var img = new Image();
+      var url = URL.createObjectURL(file);
+      await new Promise(function(res, rej){ img.onload=res; img.onerror=rej; img.src=url; });
+      URL.revokeObjectURL(url);
+      bitmap = img;
+    }
+    var w = bitmap.width || bitmap.naturalWidth;
+    var h = bitmap.height || bitmap.naturalHeight;
+    var r = (w > MAX || h > MAX) ? Math.min(MAX / w, MAX / h) : 1;
+    var tw = Math.round(w * r), th = Math.round(h * r);
+    var c = document.createElement('canvas');
+    c.width = tw; c.height = th;
+    var ctx = c.getContext('2d');
+    // PNG 투명 배경은 흰색으로 (JPEG 변환 시 검정 방지)
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, tw, th);
+    ctx.drawImage(bitmap, 0, 0, tw, th);
+    if (bitmap.close) { try { bitmap.close(); } catch(_){} }
+    var blob = await new Promise(function(res){ c.toBlob(res, 'image/jpeg', 0.85); });
+    if (!blob) throw new Error('canvas-toblob-failed');
+    return new File([blob], 'avatar.jpg', { type: 'image/jpeg' });
+  }
+
+  async function handleAvatarUpload(file){
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { toast('이미지는 5MB 이하만 가능해요', 'err'); return; }
-    var fd = new FormData();
-    fd.append('file', file);
+    // 원본 상한 20MB (리사이즈 후 서버에 전송되는 건 보통 ~300KB)
+    if (file.size > 20 * 1024 * 1024) { toast('이미지는 20MB 이하만 가능해요', 'err'); return; }
     toast('업로드 중…');
+    var toUpload;
+    try {
+      toUpload = await resizeForBio(file);
+    } catch(e){
+      console.error('[lib] resize error', e);
+      toast('이미지를 읽을 수 없어요. 다른 파일로 시도해주세요', 'err');
+      return;
+    }
+    var fd = new FormData();
+    fd.append('file', toUpload);
     api('/api/upload-link-image', { method:'POST', body: fd }).then(function(r){
       if (!r.ok) throw new Error('upload-fail-' + r.status);
       return r.json();
