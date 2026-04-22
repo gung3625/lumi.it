@@ -79,7 +79,7 @@ exports.handler = async (event) => {
       }
       const { error: updErr } = await supabase
         .from('reservations')
-        .update({ cancelled: true, caption_status: 'cancelled' })
+        .update({ cancelled: true })
         .in('reserve_key', keys);
       if (updErr) return { statusCode: 500, headers, body: JSON.stringify({ error: updErr.message }) };
       return { statusCode: 200, headers, body: JSON.stringify({ cancelled: keys.length, keys }) };
