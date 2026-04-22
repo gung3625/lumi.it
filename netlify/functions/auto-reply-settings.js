@@ -3,7 +3,7 @@
 // POST: 설정 upsert (ai_mode는 plan 기반으로만 결정, POST로 변경 불가)
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
-const { isAdminEmail } = require('./_shared/admin');
+const { isAdminEmail, isAdminUserId } = require('./_shared/admin');
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -96,7 +96,7 @@ exports.handler = async (event) => {
       return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '사용자 조회 실패' }) };
     }
     const plan = userData.plan || 'trial';
-    const isAdmin = isAdminEmail(user.email) || isAdminEmail(userData.email) || userData.is_admin === true;
+    const isAdmin = isAdminEmail(user.email) || isAdminEmail(userData.email) || userData.is_admin === true || isAdminUserId(user.id);
     const effectivePlan = isAdmin ? 'business' : plan;
 
     // GET: 설정 반환

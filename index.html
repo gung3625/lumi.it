@@ -7248,16 +7248,13 @@ var cards = {
                           else {deltaEl = e('span',{className:'trend-delta '+cls},delta>0?upArrow:downArrow,Math.abs(delta));}
                           var catLabel = (t.bizCategory && CATEGORY_KO[t.bizCategory]) || '종합';
                           var kw = (t.keyword||'').replace(/^#/,'');
-                          // B5: 로그인 사용자 캡션 CTA (600px 이하 숨김 — CSS로 처리)
-                          var ctaBtn = e('a',{className:'trend-cta-kw',href:'/#upload?keyword='+encodeURIComponent(kw),style:{fontSize:'10px',color:'#C8507A',textDecoration:'none',flexShrink:0,marginLeft:'4px'},onClick:function(ev){ev.stopPropagation();}}, '글쓰기');
                           return e('div',{className:'trend-item',key:'domestic-'+kw,style:{top:(rank*itemH)+'px',animation:'trendSlideIn .35s ease-out '+(rank*0.04)+'s both'}},
                             e('span',{className:'trend-rank'},rank+1),
                             e('div',{className:'trend-info'},
                               e('p',{className:'trend-text'},'#'+kw),
                               e('p',{className:'trend-tag'},catLabel)
                             ),
-                            deltaEl,
-                            ctaBtn
+                            deltaEl
                           );
                         })
                       )
