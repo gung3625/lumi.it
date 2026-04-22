@@ -2001,6 +2001,67 @@ body.dark-mode .su-close svg{stroke:#f0f2f8;}
     gap: 10px;
     margin: 10px 0 4px;
   }
+  /* 최적 시간 게시 확인 모달 (Promise 기반 mShowBestTimeConfirm) */
+  .m-confirm-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.55);
+    z-index: 10000;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    transition: opacity .18s ease;
+  }
+  .m-confirm-overlay.is-on { opacity: 1; }
+  .m-confirm-card {
+    width: 100%; max-width: 360px;
+    background: #fff;
+    color: var(--ink, #1d1d1f);
+    border-radius: 16px;
+    padding: 24px 20px 16px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+    transform: translateY(8px);
+    transition: transform .18s cubic-bezier(.34,1.56,.64,1);
+  }
+  .m-confirm-overlay.is-on .m-confirm-card { transform: translateY(0); }
+  body.dark-mode .m-confirm-card { background: #272729; color: #f5f5f7; }
+  .m-confirm-title {
+    font-size: 18px; font-weight: 700;
+    margin: 0 0 8px; letter-spacing: -0.3px;
+  }
+  .m-confirm-body {
+    font-size: 14px; line-height: 1.5;
+    color: var(--ink-2, #6e6e73);
+    margin: 0 0 4px;
+  }
+  body.dark-mode .m-confirm-body { color: #a1a1a6; }
+  .m-confirm-tip {
+    font-size: 12px; line-height: 1.5;
+    color: var(--ink-3, #86868b);
+    margin: 8px 0 0;
+  }
+  .m-confirm-actions {
+    display: flex; gap: 8px;
+    margin-top: 20px;
+  }
+  .m-confirm-ok, .m-confirm-cancel {
+    flex: 1;
+    height: 44px;
+    border-radius: 980px;
+    border: none;
+    font-size: 15px; font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .m-confirm-ok {
+    background: var(--pink, #C8507A);
+    color: #fff;
+  }
+  .m-confirm-cancel {
+    background: rgba(0,0,0,0.06);
+    color: var(--ink, #1d1d1f);
+  }
+  body.dark-mode .m-confirm-cancel { background: rgba(255,255,255,0.1); color: #f5f5f7; }
   .m-post-opt {
     position: relative;
     width: 100%;
@@ -2872,6 +2933,52 @@ function showMobileToast(msg) {
   setTimeout(function(){ t.style.opacity='0'; setTimeout(function(){t.remove();}, 200); }, 2500);
 }
 
+// 최적 시간 예약 확인 모달 — Promise<boolean>(true=확정, false=취소).
+// bestTime: 'HH:MM', reason: 문구, tip: 선택적 팁, source: 'meta-online-followers'|'user-history'|'industry-seed'
+function mShowBestTimeConfirm(bestTime, reason, tip, source) {
+  return new Promise(function(resolve){
+    if (!bestTime || typeof bestTime !== 'string') { resolve(true); return; }
+    var parts = bestTime.split(':');
+    var bh = parseInt(parts[0],10), bm = parseInt(parts[1],10);
+    if (isNaN(bh) || isNaN(bm)) { resolve(true); return; }
+    var now = new Date();
+    var target = new Date(now); target.setHours(bh, bm, 0, 0);
+    var day = target > now ? '오늘' : '내일';
+    if (target <= now) target.setDate(target.getDate()+1);
+    var ampm = target.getHours() < 12 ? '오전' : '오후';
+    var disp12 = target.getHours() % 12; if (disp12 === 0) disp12 = 12;
+    var mm = String(target.getMinutes()).padStart(2,'0');
+    var timeLabel = day + ' ' + ampm + ' ' + disp12 + ':' + mm;
+    var srcLabel = '';
+    if (source === 'meta-online-followers') srcLabel = '내 팔로워 접속 데이터';
+    else if (source === 'user-history') srcLabel = '내 게시 이력';
+    else srcLabel = '업종 벤치마크';
+
+    var overlay = document.createElement('div');
+    overlay.className = 'm-confirm-overlay';
+    overlay.innerHTML =
+      '<div class="m-confirm-card">' +
+        '<h3 class="m-confirm-title">' + timeLabel + '에 예약할게요</h3>' +
+        '<p class="m-confirm-body">' + (reason ? reason.replace(/</g,'&lt;') : '팔로워가 가장 반응하는 시간') + ' · <span style="opacity:.7">' + srcLabel + '</span></p>' +
+        (tip ? '<p class="m-confirm-tip">' + tip.replace(/</g,'&lt;') + '</p>' : '') +
+        '<div class="m-confirm-actions">' +
+          '<button type="button" class="m-confirm-cancel" id="m-confirm-cancel">취소</button>' +
+          '<button type="button" class="m-confirm-ok" id="m-confirm-ok">확정</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(overlay);
+    requestAnimationFrame(function(){ overlay.classList.add('is-on'); });
+    function close(v){
+      overlay.classList.remove('is-on');
+      setTimeout(function(){ overlay.remove(); resolve(v); }, 180);
+    }
+    overlay.querySelector('#m-confirm-ok').addEventListener('click', function(){ close(true); });
+    overlay.querySelector('#m-confirm-cancel').addEventListener('click', function(){ close(false); });
+    overlay.addEventListener('click', function(e){ if (e.target === overlay) close(false); });
+  });
+}
+window.mShowBestTimeConfirm = mShowBestTimeConfirm;
+
 // 파일 선택 진단 + dispatch (항상 전역 — mInitWave2 로그인 게이트와 무관)
 window.__mHandleFile = function(e){
   try {
@@ -3082,14 +3189,39 @@ window.__mHandleFile = function(e){
           .catch(function(){});
       }
     } catch(e){}
-    // 최적 게시 시간: 프로 전용. 비(非)프로면 잠금 카드로 전환
+    // 최적 게시 시간: 프로 전용. 비(非)프로면 잠금 카드로 전환, 프로면 실시간 계산 반영
     try {
       var lu3 = JSON.parse(localStorage.getItem('lumi_user') || '{}');
-      if (lu3.plan !== 'pro' && localStorage.getItem('lumi_is_admin') !== '1') {
-        var bt = document.getElementById('m-besttime-card');
+      var isProDash = (lu3.plan === 'pro') || (localStorage.getItem('lumi_is_admin') === '1');
+      var bt = document.getElementById('m-besttime-card');
+      if (!isProDash) {
         if (bt) {
           bt.classList.add('is-locked');
           bt.innerHTML = '<div class="m-lock-row"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span>프로 전용 기능이에요</span></div><p class="m-feat-body">팔로워가 가장 많이 반응하는 시간을 매일 알려드려요.</p><button type="button" class="m-feat-ghost" onclick="location.href=\'/subscribe.html\'">프로 체험하기 →</button>';
+        }
+      } else if (bt) {
+        var _btTok = localStorage.getItem('lumi_token') || '';
+        if (_btTok) {
+          fetch('/api/get-best-time', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+_btTok}, body: JSON.stringify({category: lu3.bizCategory || lu3.storeCategory || 'other'}) })
+            .then(function(r){ return r.json(); })
+            .then(function(d){
+              if (!d || !d.bestTime) return;
+              var parts = d.bestTime.split(':');
+              var bh = parseInt(parts[0],10), bm = parseInt(parts[1],10);
+              if (isNaN(bh)) return;
+              var now = new Date();
+              var tg = new Date(now); tg.setHours(bh, bm, 0, 0);
+              var day = tg > now ? '오늘' : '내일';
+              if (tg <= now) tg.setDate(tg.getDate()+1);
+              var ampm = tg.getHours() < 12 ? '오전' : '오후';
+              var d12 = tg.getHours() % 12; if (d12 === 0) d12 = 12;
+              var mm = String(tg.getMinutes()).padStart(2,'0');
+              var hiEl = bt.querySelector('.m-feat-highlight');
+              var bodyEl = bt.querySelector('.m-feat-body');
+              if (hiEl) hiEl.textContent = day + ' ' + ampm + ' ' + d12 + ':' + mm;
+              if (bodyEl) bodyEl.textContent = d.reason || '팔로워가 가장 반응하는 시간대예요.';
+            })
+            .catch(function(){});
         }
       }
     } catch(e){}
@@ -3555,13 +3687,25 @@ function mInitWave2(){
                 }
                 window.mFlowStartGenerate();
               }
+              function confirmThenStartS0(data) {
+                var bt = data && data.bestTime;
+                if (!bt) { applyBestAndStartS0(null); return; }
+                window.mShowBestTimeConfirm(bt, data.reason, data.tip, data.source).then(function(ok){
+                  if (!ok) {
+                    flow.starting = false;
+                    body.querySelectorAll('.m-post-opt').forEach(function(b){ b.classList.remove('is-sel'); });
+                    return;
+                  }
+                  applyBestAndStartS0(bt);
+                });
+              }
               if (cachedS0) {
-                applyBestAndStartS0(cachedS0.bestTime);
+                confirmThenStartS0(cachedS0);
               } else {
                 var u3 = getUser();
                 fetch('/api/get-best-time', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+TOKEN}, body: JSON.stringify({category: u3.bizCategory || u3.storeCategory || 'other'}) })
                   .then(function(r){ return r.json(); })
-                  .then(function(data){ flow.bestTimeCache = data; flow.bestTimeCacheAt = Date.now(); applyBestAndStartS0(data && data.bestTime); })
+                  .then(function(data){ flow.bestTimeCache = data; flow.bestTimeCacheAt = Date.now(); confirmThenStartS0(data); })
                   .catch(function(){ applyBestAndStartS0(null); });
               }
             } else {
@@ -3676,13 +3820,25 @@ function mInitWave2(){
               }
               confirmPost();
             }
+            function confirmThenPost(data) {
+              var bt = data && data.bestTime;
+              if (!bt) { applyBestAndPost(null); return; }
+              window.mShowBestTimeConfirm(bt, data.reason, data.tip, data.source).then(function(ok){
+                if (!ok) {
+                  flow.posting = false;
+                  body.querySelectorAll('.m-post-opt').forEach(function(b){ b.classList.remove('is-sel'); });
+                  return;
+                }
+                applyBestAndPost(bt);
+              });
+            }
             if (cached) {
-              applyBestAndPost(cached.bestTime);
+              confirmThenPost(cached);
             } else {
               var user2 = getUser();
               fetch('/api/get-best-time', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+TOKEN}, body: JSON.stringify({category: user2.bizCategory || user2.storeCategory || 'other'}) })
                 .then(function(r){ return r.json(); })
-                .then(function(data){ flow.bestTimeCache = data; flow.bestTimeCacheAt = Date.now(); applyBestAndPost(data.bestTime); })
+                .then(function(data){ flow.bestTimeCache = data; flow.bestTimeCacheAt = Date.now(); confirmThenPost(data); })
                 .catch(function(){ applyBestAndPost(null); });
             }
           } else {
