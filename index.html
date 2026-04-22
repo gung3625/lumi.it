@@ -7103,8 +7103,9 @@ var cards = {
           if(!cardRef.current) return;
           var h = cardRef.current.offsetHeight;
           var ctaH = !isLoggedIn ? 60 : 0;
-          /* header(32) + main-tabs(38) + list-padding-top(8) + list-padding-bot(6) + buffer(10) = 94 */
-          var available = h - 94 - ctaH;
+          /* header(32) + main-tabs(38) + list-padding(14) + buffer(10) = 94, + season(30) = 124 */
+          var seasonH = 30;
+          var available = h - 94 - ctaH - seasonH;
           /* 10개 고정, 카드 높이에 맞춰 itemH 자동 조절 (34~52 범위) */
           var vc = 10;
           var ih = Math.max(34, Math.min(52, Math.floor(available / vc)));
@@ -7144,7 +7145,7 @@ var cards = {
         var upChips = (seasonData.upcoming||[]).slice(0,3).map(function(kw,i){
           return e('span',{key:'su'+i,style:chipStyle},(kw||'').replace(/^#/,''));
         });
-        seasonSection = e('div',{style:{padding:'5px 10px 6px',fontSize:'10px',opacity:.75,display:'flex',flexWrap:'wrap',alignItems:'center',gap:'2px',borderTop:'1px solid rgba(128,128,128,.15)',flexShrink:0}},
+        seasonSection = e('div',{style:{padding:'5px 10px 6px',fontSize:'10px',opacity:.75,display:'flex',flexWrap:'nowrap',alignItems:'center',gap:'2px',borderTop:'1px solid rgba(128,128,128,.15)',flexShrink:0,height:'30px',boxSizing:'border-box',overflowX:'auto',overflowY:'hidden',whiteSpace:'nowrap',WebkitOverflowScrolling:'touch'}},
           leafIcon,
           e('span',{style:{marginLeft:'4px',marginRight:'6px',fontWeight:600}},'계절'),
           nowChips,

@@ -89,14 +89,14 @@ exports.handler = async (event) => {
     // plan 조회
     const { data: userData, error: userErr } = await admin
       .from('users')
-      .select('plan')
+      .select('plan, is_admin, email')
       .eq('id', user.id)
       .maybeSingle();
     if (userErr || !userData) {
       return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '사용자 조회 실패' }) };
     }
     const plan = userData.plan || 'trial';
-    const isAdmin = isAdminEmail(user.email);
+    const isAdmin = isAdminEmail(user.email) || isAdminEmail(userData.email) || userData.is_admin === true;
     const effectivePlan = isAdmin ? 'business' : plan;
 
     // GET: 설정 반환

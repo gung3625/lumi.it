@@ -26,7 +26,7 @@ exports.handler = async (event) => {
 
     const { data: userData, error: userErr } = await admin
       .from('users')
-      .select('plan, name, store_name, instagram_handle, biz_category, caption_tone, tag_style, store_desc, region, sido_code, sigungu_code, auto_story, auto_festival, trial_start')
+      .select('plan, name, store_name, instagram_handle, biz_category, caption_tone, tag_style, store_desc, region, sido_code, sigungu_code, auto_story, auto_festival, trial_start, is_admin, email')
       .eq('id', user.id)
       .single();
 
@@ -41,7 +41,7 @@ exports.handler = async (event) => {
       .eq('user_id', user.id)
       .maybeSingle();
 
-    const isAdmin = isAdminEmail(user.email);
+    const isAdmin = isAdminEmail(user.email) || isAdminEmail(userData.email) || userData.is_admin === true;
 
     return {
       statusCode: 200,
