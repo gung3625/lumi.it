@@ -8265,6 +8265,16 @@ function closeSignupGrid() {
   document.getElementById('signup-grid').classList.remove('open');
   document.body.style.overflow = '';
 }
+// /tester.html 등 외부 랜딩에서 ?signup=1 로 돌려보내면 자동 회원가입 모달 오픈
+try {
+  var _urlp = new URLSearchParams(window.location.search);
+  if (_urlp.get('signup') === '1' && !localStorage.getItem('lumi_token')) {
+    setTimeout(function(){ try { openSignupGrid(); } catch(_){} }, 300);
+    if (window.history && window.history.replaceState) {
+      window.history.replaceState({}, '', window.location.pathname + window.location.hash);
+    }
+  }
+} catch(_){}
 // ---- SIGNUP CONVERSATION ----
 var suData = {};
 var suPhase = 0;
