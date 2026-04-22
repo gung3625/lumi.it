@@ -23,6 +23,67 @@ exports.handler = async (event) => {
     return { statusCode: 401, headers, body: JSON.stringify({ error: 'unauthorized' }) };
   }
 
+  // ── mode=generate-images: 7업종 × image 2슬롯 = 14개 생성 트리거 ──
+  if (body.mode === 'generate-images') {
+    const siteUrl = process.env.URL || 'https://lumi.it.kr';
+    const target = `${siteUrl}/.netlify/functions/generate-library-background`;
+    const onlyIndustries = Array.isArray(body.industries) && body.industries.length
+      ? body.industries.filter((i) => ALL_INDUSTRIES.includes(i))
+      : ALL_INDUSTRIES;
+    const slotsPerType = Number.isInteger(body.slotsPerIndustry) ? body.slotsPerIndustry : 2;
+
+    const tasks = [];
+    for (const ind of onlyIndustries) {
+      for (let i = 0; i < slotsPerType; i++) {
+        tasks.push({ industry: ind, content_type: 'image', slot_index: i });
+      }
+    }
+
+    let triggered = 0, failed = 0;
+    const results = [];
+    for (const t of tasks) {
+      try {
+        const res = await fetch(target, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.LUMI_SECRET}`,
+          },
+          body: JSON.stringify(t),
+        });
+        if (res.status === 202 || res.status === 200) { triggered++; results.push({ ...t, status: 'triggered' }); }
+        else { failed++; const txt = await res.text().catch(() => ''); results.push({ ...t, status: `HTTP ${res.status}`, detail: txt.slice(0, 120) }); }
+      } catch (e) {
+        failed++;
+        results.push({ ...t, status: 'error', detail: e.message });
+      }
+      await new Promise((r) => setTimeout(r, 150));
+    }
+    return { statusCode: 200, headers, body: JSON.stringify({ triggered, failed, total: tasks.length, results }) };
+  }
+
+  // ── mode=post-all: daily-content-background의 post-all 모드 트리거 ──
+  if (body.mode === 'post-all') {
+    const siteUrl = process.env.URL || 'https://lumi.it.kr';
+    const target = `${siteUrl}/.netlify/functions/daily-content-background`;
+    try {
+      const res = await fetch(target, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          adminSecret: process.env.LUMI_SECRET,
+          mode: 'post-all',
+          skipVideo: body.skipVideo === true,
+          skipImage: body.skipImage === true,
+          industries: body.industries,
+        }),
+      });
+      return { statusCode: 202, headers, body: JSON.stringify({ triggered: true, status: res.status }) };
+    } catch (e) {
+      return { statusCode: 500, headers, body: JSON.stringify({ error: e.message }) };
+    }
+  }
+
   try {
     const supabase = getAdminClient();
 

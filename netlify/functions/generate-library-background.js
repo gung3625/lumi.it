@@ -22,8 +22,13 @@ const INDUSTRIES = ['cafe', 'restaurant', 'beauty', 'nail', 'flower', 'clothing'
 const SLOTS_PER_TYPE = 2;  // 업종당 이미지 2 + 영상 2
 
 // admin JWT 검증 + is_admin 확인 → { userId } | throw
+// LUMI_SECRET Bearer도 허용 (내부 오케스트레이션 경로)
 async function requireAdmin(event) {
   const token = extractBearerToken(event);
+  // 내부 오케스트레이션: Bearer === LUMI_SECRET
+  if (token && process.env.LUMI_SECRET && token === process.env.LUMI_SECRET) {
+    return { userId: 'LUMI_INTERNAL' };
+  }
   const { user, error: authErr } = await verifyBearerToken(token);
   if (authErr || !user) throw Object.assign(new Error('인증이 필요합니다.'), { statusCode: 401 });
 
