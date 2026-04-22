@@ -9463,7 +9463,8 @@ document.querySelectorAll('.lumi-aura, .card-arrow, .btn-pill, .upload-lumi, .su
     '.lib-theme{display:flex;gap:8px}'+
     '.lib-theme button{flex:1;padding:10px;border-radius:8px;border:1px solid rgba(0,0,0,.12);background:#fff;color:#1d1d1f;font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}'+
     '.lib-ov.dark .lib-theme button{background:#1c1c1e;color:#f5f5f7;border-color:rgba(255,255,255,.14)}'+
-    '.lib-theme button.active{border-color:#C8507A;color:#C8507A}'+
+    '.lib-theme button.active{background:#C8507A;border-color:#C8507A;color:#fff;font-weight:600}'+
+    '.lib-ov.dark .lib-theme button.active{background:#C8507A;border-color:#C8507A;color:#fff}'+
     '.lib-avatar{display:flex;align-items:center;gap:12px}'+
     '.lib-avatar-img{width:64px;height:64px;border-radius:50%;background:rgba(0,0,0,.06);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;color:#86868b}'+
     '.lib-ov.dark .lib-avatar-img{background:rgba(255,255,255,.08)}'+
@@ -9916,6 +9917,7 @@ document.querySelectorAll('.lumi-aura, .card-arrow, .btn-pill, .upload-lumi, .su
         state.theme = b.getAttribute('data-theme');
         qa('#lib-theme button', root).forEach(function(x){ x.classList.remove('active'); });
         b.classList.add('active');
+        toast((state.theme === 'dark' ? '다크' : '라이트') + ' 테마 선택됨');
       });
     });
 
