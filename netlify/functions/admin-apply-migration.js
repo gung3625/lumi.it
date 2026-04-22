@@ -54,6 +54,36 @@ create index if not exists idx_store_context_updated on public.store_context(upd
   'pgrst_reload.sql': `
 notify pgrst, 'reload schema';
 `,
+  'auto_reply_learning.sql': `
+-- 평가·수정 필드
+alter table public.auto_reply_log
+  add column if not exists rating smallint,
+  add column if not exists corrected_reply text,
+  add column if not exists feedback_note text,
+  add column if not exists rated_at timestamptz;
+
+create index if not exists idx_auto_reply_log_rated
+  on public.auto_reply_log(user_id, rated_at desc)
+  where rating is not null;
+
+create index if not exists idx_auto_reply_log_pending
+  on public.auto_reply_log(user_id, created_at desc)
+  where rating is null;
+
+-- 학습 샘플 테이블 (few-shot 주입용)
+create table if not exists public.auto_reply_corrections (
+  id bigserial primary key,
+  user_id uuid references auth.users(id) on delete cascade,
+  category text,
+  customer_message text not null,
+  correct_reply text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists idx_arc_user_cat
+  on public.auto_reply_corrections(user_id, category, created_at desc);
+create index if not exists idx_arc_user_recent
+  on public.auto_reply_corrections(user_id, created_at desc);
+`,
   'auto_reply_tables.sql': `
 -- auto_reply_settings: 사장님별 자동응답 설정
 create table if not exists public.auto_reply_settings (
