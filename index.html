@@ -7103,9 +7103,8 @@ var cards = {
           if(!cardRef.current) return;
           var h = cardRef.current.offsetHeight;
           var ctaH = !isLoggedIn ? 60 : 0;
-          /* header(32) + main-tabs(38) + list-padding(14) + buffer(10) = 94, + season(30) = 124 */
-          var seasonH = 30;
-          var available = h - 94 - ctaH - seasonH;
+          /* header(32) + main-tabs(38) + list-padding-top(8) + list-padding-bot(6) + buffer(10) = 94 */
+          var available = h - 94 - ctaH;
           /* 10개 고정, 카드 높이에 맞춰 itemH 자동 조절 (34~52 범위) */
           var vc = 10;
           var ih = Math.max(34, Math.min(52, Math.floor(available / vc)));
@@ -7290,7 +7289,6 @@ var cards = {
                     })
                   : e('div',{className:'rising-empty'},'자정 이후 예측 데이터가\n생성됩니다')
               ),
-          seasonSection,
           !isLoggedIn ? e('div', {className:'trend-cta-bar'},
             e('p', {className:'trend-cta-msg'}, '회원가입만 해도 업종별 최신 트렌드를', e('br'), '확인할 수 있어요')
           ) : null
