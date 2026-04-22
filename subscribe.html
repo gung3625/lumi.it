@@ -47,8 +47,8 @@ body.dark-mode .hero p{color:rgba(255,255,255,.5);}
 .wrap{max-width:960px;margin:0 auto;padding:0 24px;}
 
 /* 플랜 카드 */
-.plans{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:24px;}
-@media(max-width:600px){.plans{grid-template-columns:1fr;}}
+.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;}
+@media(max-width:900px){.plans{grid-template-columns:1fr;}}
 .plan{background:#fff;border-radius:8px;padding:28px;display:flex;flex-direction:column;gap:14px;cursor:pointer;transition:box-shadow .3s,transform .3s,outline .15s;position:relative;box-shadow:0 1px 4px rgba(0,0,0,.06);}
 @media(hover:hover){.plan:hover{transform:translateY(-3px);box-shadow:0 6px 24px rgba(0,0,0,.1);}}
 .plan.selected{outline:2px solid #C8507A;box-shadow:0 4px 20px rgba(200,80,122,.15);}
@@ -222,6 +222,18 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <span class="plan-feat">링크인바이오</span>
       </div>
     </div>
+    <div class="plan" data-plan="business" data-price="39900" onclick="selectPlan(this)">
+      <p class="plan-name">비즈니스</p>
+      <p class="plan-price">₩39,900</p>
+      <p class="plan-unit">월 · 30건</p>
+      <div class="plan-features">
+        <span class="plan-feat">프로 전체 포함</span>
+        <span class="plan-feat">DM 루미 전자동 응답</span>
+        <span class="plan-feat">의도 + 감정 분류</span>
+        <span class="plan-feat">매장 컨텍스트 학습</span>
+        <span class="plan-feat">스팸 자동 차단</span>
+      </div>
+    </div>
   </div>
 
   <!-- 무료 체험 배너 -->
@@ -316,16 +328,34 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 </script>
 
 <script>
+var planLabelMap = { standard: '스탠다드', pro: '프로', business: '비즈니스' };
 var selectedPlan = 'pro';
 var selectedPrice = 29900;
 var selectedMethod = 'CARD';
+
+// URL 쿼리 ?plan=business 지원
+(function initPlanFromQuery() {
+  var params = new URLSearchParams(location.search);
+  var planFromQuery = params.get('plan');
+  if (!planFromQuery) return;
+  var target = document.querySelector('.plan[data-plan="' + planFromQuery + '"]');
+  if (!target) return;
+  document.querySelectorAll('.plan').forEach(function(p){ p.classList.remove('selected'); });
+  target.classList.add('selected');
+  selectedPlan = target.dataset.plan;
+  selectedPrice = parseInt(target.dataset.price);
+  var sp = document.getElementById('sum-plan');
+  if (sp) sp.textContent = planLabelMap[selectedPlan] || selectedPlan;
+  var spr = document.getElementById('sum-price');
+  if (spr) spr.textContent = '₩' + selectedPrice.toLocaleString() + '/월';
+})();
 
 function selectPlan(el) {
   document.querySelectorAll('.plan').forEach(function(p){p.classList.remove('selected');});
   el.classList.add('selected');
   selectedPlan = el.dataset.plan;
   selectedPrice = parseInt(el.dataset.price);
-  document.getElementById('sum-plan').textContent = selectedPlan === 'pro' ? '프로' : '스탠다드';
+  document.getElementById('sum-plan').textContent = planLabelMap[selectedPlan] || selectedPlan;
   document.getElementById('sum-price').textContent = '₩' + selectedPrice.toLocaleString() + '/월';
 }
 
@@ -468,7 +498,7 @@ function showToast(msg) {
     var plan = pd && pd.plan ? pd.plan : 'trial';
     var data = { plan: plan, planExpireAt: null, remaining: null, postCount: null };
     if (data.plan && data.plan !== 'trial') {
-      var planLabels = { standard: '스탠다드', pro: '프로' };
+      var planLabels = { standard: '스탠다드', pro: '프로', business: '비즈니스' };
       var label = planLabels[data.plan] || data.plan;
       var expireText = '';
       if (data.planExpireAt) {

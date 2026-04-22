@@ -10,10 +10,11 @@ const CORS = {
   'Content-Type': 'application/json',
 };
 
-// 플랜별 금액 (현 요금제: 스탠다드/프로)
+// 플랜별 금액 (현 요금제: 스탠다드/프로/비즈니스)
 const PLANS = {
   standard: { amount: 19900, name: 'lumi 스탠다드', durationDays: 31 },
   pro:      { amount: 29900, name: 'lumi 프로',     durationDays: 31 },
+  business: { amount: 39900, name: 'lumi 비즈니스', durationDays: 31 },
 };
 
 exports.handler = async (event) => {

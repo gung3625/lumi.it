@@ -141,7 +141,7 @@ exports.handler = async (event) => {
       const { Resend } = require('resend');
       if (userRow?.email && process.env.RESEND_API_KEY) {
         const resend = new Resend(process.env.RESEND_API_KEY);
-        const planNameMap = { standard: '스탠다드', pro: '프로' };
+        const planNameMap = { standard: '스탠다드', pro: '프로', business: '비즈니스' };
         const planLabel = planNameMap[order.plan] || order.plan;
         await resend.emails.send({
           from: 'lumi <no-reply@lumi.it.kr>',
