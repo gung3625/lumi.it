@@ -218,21 +218,23 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <span class="card-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
       <span class="card-title">비밀번호 변경</span>
     </div>
-    <div class="field">
-      <span class="field-label">현재 비밀번호</span>
-      <input class="field-input" type="password" id="s-pw-cur" placeholder="현재 비밀번호">
-    </div>
-    <div class="field">
-      <span class="field-label">새 비밀번호</span>
-      <input class="field-input" type="password" id="s-pw-new" placeholder="새 비밀번호 (특수문자 포함 10자 이상)">
-    </div>
-    <div class="field">
-      <span class="field-label">새 비밀번호 확인</span>
-      <input class="field-input" type="password" id="s-pw-confirm" placeholder="새 비밀번호 다시 입력">
-    </div>
-    <div class="btn-row">
-      <button class="btn btn-dark" onclick="changePw()">변경</button>
-    </div>
+    <form onsubmit="event.preventDefault(); changePw();" autocomplete="off">
+      <div class="field">
+        <span class="field-label">현재 비밀번호</span>
+        <input class="field-input" type="password" id="s-pw-cur" placeholder="현재 비밀번호" autocomplete="current-password">
+      </div>
+      <div class="field">
+        <span class="field-label">새 비밀번호</span>
+        <input class="field-input" type="password" id="s-pw-new" placeholder="새 비밀번호 (특수문자 포함 10자 이상)" autocomplete="new-password">
+      </div>
+      <div class="field">
+        <span class="field-label">새 비밀번호 확인</span>
+        <input class="field-input" type="password" id="s-pw-confirm" placeholder="새 비밀번호 다시 입력" autocomplete="new-password">
+      </div>
+      <div class="btn-row">
+        <button type="submit" class="btn btn-dark">변경</button>
+      </div>
+    </form>
   </div>
 
   <!-- 인스타 연동 -->
