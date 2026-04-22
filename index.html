@@ -287,6 +287,7 @@ body.dark-mode .react-grid-item > .react-resizable-handle::after {
   .trend-rank { font-size:13px !important; font-weight:700 !important; min-width:18px !important; }
   .trend-text { font-size:13px !important; font-weight:500 !important; }
   .trend-tag { display:none !important; }
+  .trend-cta-kw { display:none !important; }
   .trend-delta { font-size:11px !important; padding:3px 8px !important; border-radius:8px !important; }
   .trend-cta-bar { display:none !important; }
 }
@@ -925,6 +926,8 @@ body.dark-mode .card-trend::before { display:none; }
 .trend-delta.down { color:#dc2626; background:rgba(239,68,68,.12); }
 .trend-delta.same { color:rgba(255,255,255,.25); background:transparent; }
 .trend-delta svg { width:8px; height:8px; }
+.trend-cta-kw { display:inline-block; font-size:10px; color:#C8507A; text-decoration:none; flex-shrink:0; margin-left:4px; white-space:nowrap; }
+body.light-mode .trend-cta-kw { color:#C8507A; }
 .trend-cta-bar {
   padding:8px 20px 14px; z-index:2;
   background:linear-gradient(transparent, rgba(157,203,245,.9) 40%);
@@ -1903,7 +1906,9 @@ body.dark-mode .su-close svg{stroke:#f0f2f8;}
       .then(function(r){ return r.json().catch(function(){ return { error:'플랜 조회 실패' }; }); })
       .then(function(data){
         if (data.error) return { error: data.error };
-        return { plan: data.plan || 'trial', user: data.user, igConnected: !!data.igConnected };
+        // 관리자 플래그 localStorage 저장
+        try { localStorage.setItem('lumi_is_admin', data.isAdmin ? '1' : '0'); } catch(ex) {}
+        return { plan: data.plan || 'trial', isAdmin: !!data.isAdmin, user: data.user, igConnected: !!data.igConnected };
       })
       .catch(function(){ return { error: '플랜 조회 실패' }; });
   };
@@ -2775,7 +2780,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
       <span>트렌드</span>
     </button>
-    <button type="button" class="m-tab" data-tab="linkinbio" onclick="(function(btn){try{var u=JSON.parse(localStorage.getItem('lumi_user')||'{}');var isPro=u.plan==='pro';if(!localStorage.getItem('lumi_token')){openSignupGrid();return;}if(isPro){window.openLinkInBioEditor();}else{location.href='/subscribe';}}catch(e){location.href='/subscribe';}document.querySelectorAll('.m-tab').forEach(function(t){t.classList.remove('is-active');});btn.classList.add('is-active');})(this);">
+    <button type="button" class="m-tab" data-tab="linkinbio" onclick="(function(btn){try{var u=JSON.parse(localStorage.getItem('lumi_user')||'{}');var _adm=localStorage.getItem('lumi_is_admin')==='1';var isPro=_adm||u.plan==='pro';if(!localStorage.getItem('lumi_token')){openSignupGrid();return;}if(isPro){window.openLinkInBioEditor();}else{location.href='/subscribe';}}catch(e){location.href='/subscribe';}document.querySelectorAll('.m-tab').forEach(function(t){t.classList.remove('is-active');});btn.classList.add('is-active');})(this);">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
       <span>링크인바이오</span>
     </button>
@@ -3080,7 +3085,7 @@ window.__mHandleFile = function(e){
     // 최적 게시 시간: 프로 전용. 비(非)프로면 잠금 카드로 전환
     try {
       var lu3 = JSON.parse(localStorage.getItem('lumi_user') || '{}');
-      if (lu3.plan !== 'pro') {
+      if (lu3.plan !== 'pro' && localStorage.getItem('lumi_is_admin') !== '1') {
         var bt = document.getElementById('m-besttime-card');
         if (bt) {
           bt.classList.add('is-locked');
@@ -4817,6 +4822,8 @@ function mInitWave2(){
                     : (typeof cRes.count === 'number') ? cRes.count
                     : (typeof cRes.postCount === 'number') ? cRes.postCount : 0;
       var limit = pRes.limit || cRes.limit || planLimit(plan);
+      // 관리자 플래그 저장 (lumiCheckPlan 미경유 경로 대비)
+      if (typeof pRes.isAdmin === 'boolean') { try { localStorage.setItem('lumi_is_admin', pRes.isAdmin ? '1' : '0'); } catch(ex) {} }
       doUpdate({ postCount: postCount, limit: limit, plan: plan, trialStart: trialStart });
       // featToggles 서버 → localStorage 동기화
       if (pRes.featToggles) { try { localStorage.setItem('lumi_feat_toggles', JSON.stringify(pRes.featToggles)); } catch(ex) {} }
@@ -5793,7 +5800,9 @@ var cards = {
           e('div', {className:'tut-content'+(phase==='gallery'?' tut-content-gallery':''), style: !showLumi ? {flex:'1 1 100%'} : undefined},
 
             phase === 'idle' ? e(React.Fragment, null,
-              e('p', {className:'tut-title'}, e('strong',null,'가게는 보시고'), e('br'), e('span',{className:'lumi-brand'},'lumi'), '가 인스타 맡을게요'),
+              e('p', {className:'tut-title'}, e('strong',null,'가게는 보시고'), e('br'), e('span',{className:'lumi-brand'},'lumi'), '가 인스타 맡을게요',
+                localStorage.getItem('lumi_is_admin') === '1' ? e('span',{style:{display:'inline-block',marginLeft:'8px',padding:'2px 8px',borderRadius:'980px',fontSize:'10px',fontWeight:700,background:'#C8507A',color:'#fff',letterSpacing:'.5px',verticalAlign:'middle'}},'ADMIN') : null
+              ),
               e('p', {className:'tut-sub'}, isLoggedIn ? '사진·영상을 올려보세요' : '직접 체험해보세요'),
               isLoggedIn
                 ? e('label', {className:'upload-btn tut-guide-pulse', style:{maxWidth:'220px',width:'auto',borderRadius:'16px',fontSize:'14px',padding:'12px 24px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px'},
@@ -6981,21 +6990,28 @@ var cards = {
     try { var _uu = JSON.parse(localStorage.getItem('lumi_user')||'{}'); _userBizCat = _uu.bizCategory || _uu.storeCategory || ''; } catch(ex){}
     var _trendLabel = (isLoggedIn && _userBizCat && CATEGORY_KO[_userBizCat]) ? CATEGORY_KO[_userBizCat] + ' 트렌드' : '종합 트렌드';
     var _trendCategory = (isLoggedIn && _userBizCat) ? _userBizCat : 'all';
+    // B7: fallback 10개로 보완
     var fallbackDomestic = [
       {keyword:'크로플',bizCategory:'cafe'},{keyword:'딸기오믈렛',bizCategory:'food'},{keyword:'레이어드컷',bizCategory:'beauty'},
       {keyword:'오로라네일',bizCategory:'beauty'},{keyword:'말차라떼',bizCategory:'cafe'},{keyword:'당근케이크',bizCategory:'cafe'},
-      {keyword:'로제떡볶이',bizCategory:'food'}
+      {keyword:'로제떡볶이',bizCategory:'food'},{keyword:'탕후루',bizCategory:'food'},{keyword:'비건케이크',bizCategory:'cafe'},
+      {keyword:'숏컷펌',bizCategory:'beauty'}
     ];
     var upArrow = e('svg',{viewBox:'0 0 10 10'},e('path',{d:'M5 2L2 6h6L5 2z',fill:'currentColor'}));
     var downArrow = e('svg',{viewBox:'0 0 10 10'},e('path',{d:'M5 8L2 4h6L5 8z',fill:'currentColor'}));
-    // 캐시에서 초기 데이터 읽기
+    // B1: 캐시 키를 업종별로 분리. 이전 고정 키 1회 삭제
+    try { localStorage.removeItem('lumi_trend_cache'); } catch(ex){}
+    var _cacheKey = 'lumi_trend_cache_' + _trendCategory;
     var _initCache = {domestic:null};
-    try { var _cc = JSON.parse(localStorage.getItem('lumi_trend_cache')||'null'); if(_cc){_initCache=_cc;} } catch(ex){}
+    try { var _cc = JSON.parse(localStorage.getItem(_cacheKey)||'null'); if(_cc){_initCache=_cc;} } catch(ex){}
 
     var TrendCard = function() {
       var stMain = React.useState('current'), mainTab = stMain[0], setMainTab = stMain[1];
       var st2 = React.useState(_initCache), apiData = st2[0], setApiData = st2[1];
+      var stEmpty = React.useState(false), emptyState = stEmpty[0], setEmptyState = stEmpty[1];
       var stRising = React.useState([]), risingItems = stRising[0], setRisingItems = stRising[1];
+      var stSeasonData = React.useState(null), seasonData = stSeasonData[0], setSeasonData = stSeasonData[1];
+      var stRisingAvg = React.useState(null), risingAvgGrowth = stRisingAvg[0], setRisingAvgGrowth = stRisingAvg[1];
       var st3 = React.useState([0,1,2,3,4,5,6,7,8,9]), prevOrder = st3[0], setPrevOrder = st3[1];
       var st4 = React.useState([1,0,2,4,3,5,6,8,7,9]), order = st4[0], setOrder = st4[1];
 
@@ -7006,15 +7022,11 @@ var cards = {
         fetch(baseUrl+'?category='+encodeURIComponent(_trendCategory)+'&scope='+scope)
           .then(function(r){return r.json();})
           .then(function(data){
+            // B1: 업종 데이터 없으면 폴백 없이 빈 상태 표시. 'all' 카테고리(게스트)는 머지 유지.
             if(data.keywords && data.keywords.length>0){
-              saveTrends(data.keywords.slice(0,7));
-            } else if(_trendCategory !== 'all') {
-              fetch(baseUrl+'?category=all&scope='+scope)
-                .then(function(r){return r.json();})
-                .then(function(d2){
-                  if(d2.keywords && d2.keywords.length>0) saveTrends(d2.keywords.slice(0,7));
-                }).catch(function(){});
-            } else {
+              saveTrends(data.keywords.slice(0,10));
+            } else if(_trendCategory === 'all') {
+              // 게스트/all: 기존 multi-cat 머지 유지
               Promise.all(cats.map(function(cat){
                 return fetch(baseUrl+'?category='+cat+'&scope='+scope)
                   .then(function(r){return r.json();})
@@ -7026,18 +7038,30 @@ var cards = {
                   if(kws.length>0) merged.push(kws[0]);
                   if(kws.length>1) merged.push(kws[1]);
                 });
-                merged = merged.slice(0,7).map(function(kk,i){kk.rank=i+1;return kk;});
+                merged = merged.slice(0,10).map(function(kk,i){kk.rank=i+1;return kk;});
                 if(merged.length>0) saveTrends(merged);
+                else setEmptyState(true);
               });
+            } else {
+              // B1: 업종 데이터 없음 → 빈 상태
+              setEmptyState(true);
             }
             if(data.rising && data.rising.length > 0){
               setRisingItems(data.rising);
+              // B4: rising 평균 growthRate 계산
+              var rates = data.rising.filter(function(r){ return r.growthRate && typeof r.growthRate === 'number'; }).map(function(r){ return r.growthRate; });
+              if(rates.length > 0){
+                var avg = Math.round(rates.reduce(function(a,b){return a+b;},0) / rates.length);
+                setRisingAvgGrowth(avg);
+              }
             }
+            // B6: 계절 데이터
+            if(data.season){ setSeasonData(data.season); }
           }).catch(function(){});
         function saveTrends(keywords){
           setApiData(function(prev){
             var next = {domestic:keywords};
-            try{localStorage.setItem('lumi_trend_cache',JSON.stringify(next));}catch(ex){}
+            try{localStorage.setItem(_cacheKey,JSON.stringify(next));}catch(ex){}
             return next;
           });
         }
@@ -7062,7 +7086,6 @@ var cards = {
         return function(){ clearInterval(iv); };
       },[]);
 
-      var scope = 'domestic';
       var _srcRaw = apiData.domestic || fallbackDomestic;
       var _seenKw = {};
       var src = _srcRaw.filter(function(t){
@@ -7101,11 +7124,40 @@ var cards = {
 
       var flameIcon = e('svg',{width:'11',height:'11',viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:'2',strokeLinecap:'round',strokeLinejoin:'round'},e('path',{d:'M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z'}));
       var sproutIcon = e('svg',{width:'11',height:'11',viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:'2',strokeLinecap:'round',strokeLinejoin:'round'},e('path',{d:'M7 20h10'}),e('path',{d:'M10 20c5.5-2.5.8-6.4 3-10'}),e('path',{d:'M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z'}),e('path',{d:'M14.1 6a7 7 0 0 1 1.9 4.5c0 .9-.2 1.7-.5 2.3-2-.5-3.2-1.5-3.8-2.9-.6-1.4-.5-3.1.3-5.4 1.6.5 2.6 1.3 2.9 2.6 0 0 0 0-.8 1'}));
+      // B6: leaf 아이콘
+      var leafIcon = e('svg',{width:'11',height:'11',viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:'2',strokeLinecap:'round',strokeLinejoin:'round'},e('path',{d:'M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z'}),e('path',{d:'M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12'}));
+      // B2: 자물쇠 아이콘
+      var lockIcon = e('svg',{width:'12',height:'12',viewBox:'0 0 24 24',fill:'none',stroke:'#C8507A',strokeWidth:'2',strokeLinecap:'round',strokeLinejoin:'round'},e('rect',{x:'3',y:'11',width:'18',height:'11',rx:'2',ry:'2'}),e('path',{d:'M7 11V7a5 5 0 0 1 10 0v4'}));
+
+      // B4: 급상승 뱃지 (rising 데이터 있을 때만)
+      var growthBadge = (risingAvgGrowth !== null && risingAvgGrowth > 0)
+        ? e('span',{style:{marginLeft:'6px',padding:'2px 7px',borderRadius:'980px',fontSize:'10px',fontWeight:700,background:'rgba(200,80,122,.15)',color:'#C8507A',letterSpacing:'.3px'}},'급상승 +'+risingAvgGrowth+'%')
+        : null;
+
+      // B6: 계절 칩 렌더
+      var seasonSection = null;
+      if(seasonData && ((seasonData.now && seasonData.now.length > 0) || (seasonData.upcoming && seasonData.upcoming.length > 0))){
+        var chipStyle = {display:'inline-block',padding:'2px 8px',borderRadius:'980px',border:'1px solid rgba(200,80,122,.3)',fontSize:'10px',marginRight:'4px',color:'inherit'};
+        var nowChips = (seasonData.now||[]).slice(0,3).map(function(kw,i){
+          return e('span',{key:'sn'+i,style:chipStyle},(kw||'').replace(/^#/,''));
+        });
+        var upChips = (seasonData.upcoming||[]).slice(0,3).map(function(kw,i){
+          return e('span',{key:'su'+i,style:chipStyle},(kw||'').replace(/^#/,''));
+        });
+        seasonSection = e('div',{style:{padding:'6px 10px 8px',fontSize:'10px',opacity:.75,display:'flex',flexWrap:'wrap',alignItems:'center',gap:'2px',borderTop:'1px solid rgba(128,128,128,.15)'}},
+          leafIcon,
+          e('span',{style:{marginLeft:'4px',marginRight:'6px',fontWeight:600}},'계절'),
+          nowChips,
+          upChips.length > 0 ? e('span',{style:{marginLeft:'4px',marginRight:'4px',opacity:.6}},'→') : null,
+          upChips
+        );
+      }
 
       return e('div', {ref:cardRef, className:'bento-card card-visual card-project card-trend card-responsive', style:{padding:0}},
         e('div', {className:'trend-wrap'},
           e('div', {className:'trend-header'},
-            e('span', {className:'trend-label'}, _trendLabel)
+            e('span', {className:'trend-label'}, _trendLabel),
+            growthBadge
           ),
           e('div', {className:'trend-main-tabs'},
             e('button', {
@@ -7121,44 +7173,87 @@ var cards = {
           ),
           mainTab === 'current'
             ? e('div', {className:'trend-list'},
-                e('div', {className:'trend-track', key:'track-domestic', style:{height:(shownCount*itemH)+'px'}},
-                  src.slice(0,shownCount).map(function(t,idx){
-                    var rank = shownCount < 5 ? idx : (rankMap[idx]!==undefined?rankMap[idx]:idx);
-                    var delta = 0;
-                    if(prevOrder){
-                      var oldRank = prevOrder.indexOf(idx);
-                      if(oldRank!==-1) delta = oldRank - rank;
-                    }
-                    if(delta===0 && t.rankChange && t.rankChange!=='new') delta = t.rankChange;
-                    var cls = delta>0?'up':delta<0?'down':'same';
-                    var deltaEl;
-                    if(t.rankChange==='new'){
-                      deltaEl = e('span',{className:'trend-delta up',style:{background:'rgba(34,197,94,.2)'}}, 'NEW');
-                    } else if(delta===0){
-                      deltaEl = e('span',{className:'trend-delta same'},'—');
-                    } else {
-                      deltaEl = e('span',{className:'trend-delta '+cls}, delta>0?upArrow:downArrow, Math.abs(delta));
-                    }
-                    var catLabel = (t.bizCategory && CATEGORY_KO[t.bizCategory]) || '종합';
-                    var kw = (t.keyword||'').replace(/^#/,'');
-                    return e('div',{className:'trend-item',key:'domestic-'+kw,style:{top:(rank*itemH)+'px',animation:'trendSlideIn .35s ease-out '+(rank*0.04)+'s both'}},
-                      e('span',{className:'trend-rank'},rank+1),
-                      e('div',{className:'trend-info'},
-                        e('p',{className:'trend-text'},'#'+kw),
-                        e('p',{className:'trend-tag'},catLabel)
-                      ),
-                      deltaEl
-                    );
-                  })
-                )
+                // B2: 비회원 상위 3개 블러 오버레이
+                !isLoggedIn ? e('div',{style:{position:'relative'}},
+                  e('div',{style:{position:'absolute',top:0,left:0,right:0,height:(Math.min(3,shownCount)*itemH)+'px',zIndex:2,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'4px',pointerEvents:'none'}},
+                    e('div',{style:{background:'rgba(0,0,0,.55)',borderRadius:'8px',padding:'6px 12px',textAlign:'center',backdropFilter:'blur(4px)',WebkitBackdropFilter:'blur(4px)'}},
+                      e('p',{style:{fontSize:'11px',fontWeight:600,color:'#fff',margin:'0 0 4px',lineHeight:1.4}},'Top 3는 회원만 볼 수 있어요'),
+                      e('button',{style:{fontSize:'11px',fontWeight:700,color:'#C8507A',background:'rgba(255,255,255,.15)',border:'none',borderRadius:'980px',padding:'3px 10px',cursor:'pointer',pointerEvents:'auto'},onClick:function(ev){ev.stopPropagation();if(typeof openSignupGrid==='function')openSignupGrid();}},'무료 회원가입')
+                    )
+                  ),
+                  e('div', {className:'trend-track', key:'track-domestic', style:{height:(shownCount*itemH)+'px'}},
+                    src.slice(0,shownCount).map(function(t,idx){
+                      var rank = shownCount < 5 ? idx : (rankMap[idx]!==undefined?rankMap[idx]:idx);
+                      var delta = 0;
+                      if(prevOrder){var oldRank = prevOrder.indexOf(idx);if(oldRank!==-1) delta = oldRank - rank;}
+                      if(delta===0 && t.rankChange && t.rankChange!=='new') delta = t.rankChange;
+                      var cls = delta>0?'up':delta<0?'down':'same';
+                      var deltaEl;
+                      if(t.rankChange==='new'){deltaEl = e('span',{className:'trend-delta up',style:{background:'rgba(34,197,94,.2)'}},'NEW');}
+                      else if(delta===0){deltaEl = e('span',{className:'trend-delta same'},'—');}
+                      else {deltaEl = e('span',{className:'trend-delta '+cls},delta>0?upArrow:downArrow,Math.abs(delta));}
+                      var catLabel = (t.bizCategory && CATEGORY_KO[t.bizCategory]) || '종합';
+                      var kw = (t.keyword||'').replace(/^#/,'');
+                      var isBlurred = rank < 3;
+                      return e('div',{className:'trend-item',key:'domestic-'+kw,style:{top:(rank*itemH)+'px',animation:'trendSlideIn .35s ease-out '+(rank*0.04)+'s both'}},
+                        e('span',{className:'trend-rank'},rank+1),
+                        e('div',{className:'trend-info',style:isBlurred?{filter:'blur(6px)',userSelect:'none'}:undefined},
+                          e('p',{className:'trend-text'},'#'+kw),
+                          e('p',{className:'trend-tag'},catLabel)
+                        ),
+                        isBlurred ? e('span',{style:{position:'absolute',left:'50%',transform:'translateX(-50%)',opacity:.7}},lockIcon) : null,
+                        deltaEl
+                      );
+                    })
+                  )
+                ) : (
+                  emptyState
+                    ? e('div',{style:{padding:'24px 12px',textAlign:'center',fontSize:'12px',opacity:.6,lineHeight:1.6}},'이 업종은 데이터 수집 중이에요')
+                    : e('div', {className:'trend-track', key:'track-domestic', style:{height:(shownCount*itemH)+'px'}},
+                        src.slice(0,shownCount).map(function(t,idx){
+                          var rank = shownCount < 5 ? idx : (rankMap[idx]!==undefined?rankMap[idx]:idx);
+                          var delta = 0;
+                          if(prevOrder){var oldRank = prevOrder.indexOf(idx);if(oldRank!==-1) delta = oldRank - rank;}
+                          if(delta===0 && t.rankChange && t.rankChange!=='new') delta = t.rankChange;
+                          var cls = delta>0?'up':delta<0?'down':'same';
+                          var deltaEl;
+                          if(t.rankChange==='new'){deltaEl = e('span',{className:'trend-delta up',style:{background:'rgba(34,197,94,.2)'}},'NEW');}
+                          else if(delta===0){deltaEl = e('span',{className:'trend-delta same'},'—');}
+                          else {deltaEl = e('span',{className:'trend-delta '+cls},delta>0?upArrow:downArrow,Math.abs(delta));}
+                          var catLabel = (t.bizCategory && CATEGORY_KO[t.bizCategory]) || '종합';
+                          var kw = (t.keyword||'').replace(/^#/,'');
+                          // B5: 로그인 사용자 캡션 CTA (600px 이하 숨김 — CSS로 처리)
+                          var ctaBtn = e('a',{className:'trend-cta-kw',href:'/#upload?keyword='+encodeURIComponent(kw),style:{fontSize:'10px',color:'#C8507A',textDecoration:'none',flexShrink:0,marginLeft:'4px'},onClick:function(ev){ev.stopPropagation();}}, '글쓰기');
+                          return e('div',{className:'trend-item',key:'domestic-'+kw,style:{top:(rank*itemH)+'px',animation:'trendSlideIn .35s ease-out '+(rank*0.04)+'s both'}},
+                            e('span',{className:'trend-rank'},rank+1),
+                            e('div',{className:'trend-info'},
+                              e('p',{className:'trend-text'},'#'+kw),
+                              e('p',{className:'trend-tag'},catLabel)
+                            ),
+                            deltaEl,
+                            ctaBtn
+                          );
+                        })
+                      )
+                ),
+                seasonSection
               )
             : e('div', {className:'rising-list'},
                 risingItems.length > 0
                   ? risingItems.map(function(item, i){
                       var kw = (item.keyword||'').replace(/^#/,'');
+                      // B3: rising 키워드 인스타 검색 링크
+                      var kwEl = e('a',{
+                        className:'rising-kw-text',
+                        href:'https://www.instagram.com/explore/tags/'+encodeURIComponent(kw),
+                        target:'_blank',
+                        rel:'noopener noreferrer',
+                        style:{textDecoration:'none',color:'inherit'},
+                        onClick:function(ev){ev.stopPropagation();}
+                      },'#'+kw);
                       return e('div',{className:'rising-item',key:'rising-'+kw,style:{animationDelay:(i*0.06)+'s'}},
                         e('div',{className:'rising-kw'},
-                          e('span',{className:'rising-kw-text'},'#'+kw),
+                          kwEl,
                           e('div',{className:'rising-badges'},
                             e('span',{className:'rising-conf'},item.confidence+'%'),
                             item.growthRate ? e('span',{className:'rising-growth'},item.growthRate) : null
@@ -7678,7 +7773,8 @@ var cards = {
     var isLoggedIn = !!localStorage.getItem('lumi_token');
     var lumiUser = JSON.parse(localStorage.getItem('lumi_user') || '{}');
     var plan = lumiUser.plan || '';
-    var isProOrBiz = plan === 'pro' || plan === 'business';
+    var lumiIsAdmin = localStorage.getItem('lumi_is_admin') === '1';
+    var isProOrBiz = lumiIsAdmin || plan === 'pro' || plan === 'business';
 
     var MsgIcon = e('svg', {width:24, height:24, viewBox:'0 0 24 24', fill:'none', stroke:pink, strokeWidth:2, strokeLinecap:'round', strokeLinejoin:'round', style:{flexShrink:0}},
       e('path', {d:'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'})
@@ -7761,7 +7857,8 @@ var cards = {
     var cardBg = isDk ? '#272729' : '#fff';
     var isLoggedIn = !!localStorage.getItem('lumi_token');
     var lumiUser = JSON.parse(localStorage.getItem('lumi_user') || '{}');
-    var isPro = lumiUser.plan === 'pro';
+    var lumiIsAdmin = localStorage.getItem('lumi_is_admin') === '1';
+    var isPro = lumiIsAdmin || lumiUser.plan === 'pro';
 
     // 링크 아이콘 (Lucide link)
     var LinkIcon = e('svg', {width:28, height:28, viewBox:'0 0 24 24', fill:'none', stroke:pink, strokeWidth:2, strokeLinecap:'round', strokeLinejoin:'round', style:{flexShrink:0}},

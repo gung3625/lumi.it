@@ -3,6 +3,7 @@
 // POST: 설정 upsert (ai_mode는 plan 기반으로만 결정, POST로 변경 불가)
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
+const { isAdminEmail } = require('./_shared/admin');
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -95,14 +96,16 @@ exports.handler = async (event) => {
       return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '사용자 조회 실패' }) };
     }
     const plan = userData.plan || 'trial';
+    const isAdmin = isAdminEmail(user.email);
+    const effectivePlan = isAdmin ? 'business' : plan;
 
     // GET: 설정 반환
     if (event.httpMethod === 'GET') {
-      const settings = await getOrCreateSettings(admin, user.id, plan);
+      const settings = await getOrCreateSettings(admin, user.id, effectivePlan);
       return {
         statusCode: 200,
         headers: CORS,
-        body: JSON.stringify({ success: true, settings, plan }),
+        body: JSON.stringify({ success: true, settings, plan: effectivePlan, isAdmin }),
       };
     }
 
@@ -126,8 +129,8 @@ exports.handler = async (event) => {
     for (const field of ALLOWED_FIELDS) {
       if (body[field] !== undefined) update[field] = body[field];
     }
-    // ai_mode는 plan 기반으로만 결정
-    update.ai_mode = resolveAiMode(plan);
+    // ai_mode는 effectivePlan 기반으로만 결정 (관리자는 항상 true)
+    update.ai_mode = resolveAiMode(effectivePlan);
 
     const { data: upserted, error: upsertErr } = await admin
       .from('auto_reply_settings')
@@ -140,11 +143,11 @@ exports.handler = async (event) => {
       return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '설정 저장 실패' }) };
     }
 
-    console.log(`[auto-reply-settings] upsert 완료 user=${user.id} plan=${plan}`);
+    console.log(`[auto-reply-settings] upsert 완료 user=${user.id} plan=${effectivePlan}`);
     return {
       statusCode: 200,
       headers: CORS,
-      body: JSON.stringify({ success: true, settings: upserted, plan }),
+      body: JSON.stringify({ success: true, settings: upserted, plan: effectivePlan, isAdmin }),
     };
   } catch (err) {
     console.error('[auto-reply-settings] 예외:', err.message);

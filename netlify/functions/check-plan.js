@@ -1,6 +1,7 @@
 // 플랜 조회 — Bearer 토큰 검증 후 admin client로 RLS 우회.
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
+const { isAdminEmail } = require('./_shared/admin');
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -40,11 +41,14 @@ exports.handler = async (event) => {
       .eq('user_id', user.id)
       .maybeSingle();
 
+    const isAdmin = isAdminEmail(user.email);
+
     return {
       statusCode: 200,
       headers: CORS,
       body: JSON.stringify({
-        plan: userData.plan || 'trial',
+        plan: isAdmin ? 'business' : (userData.plan || 'trial'),
+        isAdmin: isAdmin,
         trialStart: userData.trial_start || null,
         user: {
           name: userData.name,

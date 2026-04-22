@@ -167,7 +167,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
 <div class="hero">
   <img src="/assets/lumi-smile.png" class="hero-lumi" alt="lumi">
-  <h1>설정</h1>
+  <h1>설정<span id="admin-badge" style="display:none;margin-left:8px;padding:2px 10px;border-radius:980px;font-size:11px;font-weight:700;background:#C8507A;color:#fff;letter-spacing:.5px;vertical-align:middle;">ADMIN</span></h1>
   <p>내 정보와 서비스 환경을 관리해요</p>
 </div>
 
@@ -670,7 +670,13 @@ function arLoad() {
   arFetch('/api/auto-reply-settings', { method: 'GET' })
     .then(function(r) { return r.json().catch(function() { return {}; }); })
     .then(function(res) {
-      var plan = (res && res.plan) || 'free';
+      var isAdmin = !!(res && res.isAdmin);
+      var plan = isAdmin ? 'business' : ((res && res.plan) || 'free');
+      // 관리자 배지 표시
+      if (isAdmin) {
+        var badge = document.getElementById('admin-badge');
+        if (badge) badge.style.display = 'inline';
+      }
       arApplyPlan(plan);
       var s = (res && res.settings) || {};
       var enBtn = document.getElementById('ar-enabled');
