@@ -169,6 +169,8 @@ async function buildReservationRow({
   return row;
 }
 
+const ALL_INDUSTRIES = ['cafe', 'restaurant', 'beauty', 'nail', 'flower', 'clothing', 'gym'];
+
 exports.handler = async (event) => {
   console.log('[daily-content] HANDLER_ENTRY');
 
@@ -186,6 +188,126 @@ exports.handler = async (event) => {
     return { statusCode: 500, headers, body: JSON.stringify({ error: 'Supabase 클라이언트 초기화 실패' }) };
   }
 
+  // ── 수동 관리 모드 (LUMI_SECRET 인증) ──
+  let adminBody = {};
+  try { adminBody = JSON.parse(event.body || '{}'); } catch (_) {}
+  const adminAuthed = adminBody.adminSecret && adminBody.adminSecret === process.env.LUMI_SECRET;
+
+  if (adminAuthed && adminBody.mode === 'status') {
+    // library 현황 조회 (업종×타입별 ready 슬롯 수)
+    try {
+      const { data: rows, error: libErr } = await supabase
+        .from('brand_content_library')
+        .select('industry, content_type, status, public_url')
+        .in('industry', ALL_INDUSTRIES);
+      if (libErr) return { statusCode: 500, headers, body: JSON.stringify({ error: libErr.message }) };
+      const summary = {};
+      for (const ind of ALL_INDUSTRIES) summary[ind] = { image_ready: 0, video_ready: 0, image_failed: 0, video_failed: 0 };
+      for (const r of rows || []) {
+        const bucket = summary[r.industry];
+        if (!bucket) continue;
+        if (r.status === 'ready' && r.public_url) bucket[`${r.content_type}_ready`]++;
+        else if (r.status === 'failed') bucket[`${r.content_type}_failed`]++;
+      }
+      return { statusCode: 200, headers, body: JSON.stringify({ summary }) };
+    } catch (e) {
+      return { statusCode: 500, headers, body: JSON.stringify({ error: e.message }) };
+    }
+  }
+
+  if (adminAuthed && adminBody.mode === 'post-all') {
+    // 7업종 전부 오늘 최적시간에 예약 생성. 이미지만, 영상은 skipVideo=true로 제외 가능.
+    const skipVideo = adminBody.skipVideo === true;
+    const skipImage = adminBody.skipImage === true;
+    const requestedIndustries = Array.isArray(adminBody.industries) && adminBody.industries.length
+      ? adminBody.industries.filter((i) => ALL_INDUSTRIES.includes(i))
+      : ALL_INDUSTRIES;
+
+    const kstDateStr = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+    const reservationRows = [];
+    const libraryIdsToMark = [];
+    const report = [];
+
+    for (const ind of requestedIndustries) {
+      // 멱등성: 당일 해당 업종·타입 예약 이미 있으면 스킵
+      const existingKeys = [];
+      if (!skipImage) existingKeys.push(`brand-auto:${kstDateStr}:image:${ind}`);
+      if (!skipVideo) existingKeys.push(`brand-auto:${kstDateStr}:video:${ind}`);
+      const { data: dup } = await supabase
+        .from('reservations').select('reserve_key').in('reserve_key', existingKeys);
+      const dupSet = new Set((dup || []).map((r) => r.reserve_key));
+
+      // image
+      if (!skipImage) {
+        const reserveKey = `brand-auto:${kstDateStr}:image:${ind}`;
+        if (dupSet.has(reserveKey)) {
+          report.push({ industry: ind, type: 'image', status: 'skipped-duplicate' });
+        } else {
+          const imgRow = await pickupLibraryRow(supabase, ind, 'image');
+          if (!imgRow) {
+            report.push({ industry: ind, type: 'image', status: 'no-library' });
+          } else {
+            const row = await buildReservationRow({
+              brandUserId, industry: ind, contentType: 'image',
+              libraryRow: imgRow,
+              scheduledAtIso: buildScheduledAtIso(ind, 0),
+              bizCategoryFallback: ind,
+            });
+            reservationRows.push(row);
+            libraryIdsToMark.push(imgRow.id);
+            report.push({ industry: ind, type: 'image', status: 'queued', scheduled: row.scheduled_at });
+          }
+        }
+      }
+      // video
+      if (!skipVideo) {
+        const reserveKey = `brand-auto:${kstDateStr}:video:${ind}`;
+        if (dupSet.has(reserveKey)) {
+          report.push({ industry: ind, type: 'video', status: 'skipped-duplicate' });
+        } else {
+          const vidRow = await pickupLibraryRow(supabase, ind, 'video');
+          if (!vidRow) {
+            report.push({ industry: ind, type: 'video', status: 'no-library' });
+          } else {
+            const row = await buildReservationRow({
+              brandUserId, industry: ind, contentType: 'video',
+              libraryRow: vidRow,
+              scheduledAtIso: buildScheduledAtIso(ind, 4),
+              bizCategoryFallback: ind,
+            });
+            reservationRows.push(row);
+            libraryIdsToMark.push(vidRow.id);
+            report.push({ industry: ind, type: 'video', status: 'queued', scheduled: row.scheduled_at });
+          }
+        }
+      }
+    }
+
+    if (reservationRows.length) {
+      const { error: insErr } = await supabase.from('reservations').insert(reservationRows);
+      if (insErr) {
+        console.error('[daily-content] post-all insert 실패:', insErr.message);
+        return { statusCode: 500, headers, body: JSON.stringify({ error: insErr.message, report }) };
+      }
+      const nowIso = new Date().toISOString();
+      for (const libId of libraryIdsToMark) {
+        try {
+          const { data: cur } = await supabase.from('brand_content_library').select('use_count').eq('id', libId).maybeSingle();
+          await supabase.from('brand_content_library')
+            .update({ last_used_at: nowIso, use_count: (cur?.use_count || 0) + 1 })
+            .eq('id', libId);
+        } catch (_) {}
+      }
+    }
+
+    return { statusCode: 200, headers, body: JSON.stringify({
+      inserted: reservationRows.length,
+      total_requested: requestedIndustries.length * ((skipImage ? 0 : 1) + (skipVideo ? 0 : 1)),
+      report,
+    }) };
+  }
+
+  // ── 기존 cron 모드: 요일 매핑 1업종 ──
   try {
     const weekday = getTodayWeekdayKST();
     console.log('[daily-content] 오늘 KST 요일:', weekday);
