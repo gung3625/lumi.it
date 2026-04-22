@@ -7557,20 +7557,25 @@ var cards = {
       var phoneIcon = e('svg',{width:12,height:12,viewBox:'0 0 24 24',fill:'none',stroke:pink,strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},e('path',{d:'M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z'}));
 
       var sampleRow = function(icon, label){
-        return e('div', {style:{display:'flex',alignItems:'center',gap:'6px',padding:'6px 10px',borderRadius:'8px',background:isDk?'rgba(255,255,255,.06)':'#fff',width:'100%',boxSizing:'border-box'}},
+        return e('div', {style:{display:'flex',alignItems:'center',gap:'8px',padding:'9px 12px',borderRadius:'10px',background:isDk?'rgba(255,255,255,.06)':'#fff',width:'100%',boxSizing:'border-box'}},
           icon,
-          e('span', {style:{fontSize:'10px',fontWeight:600,color:tc,lineHeight:1.2}}, label)
+          e('span', {style:{fontSize:'11px',fontWeight:600,color:tc,lineHeight:1.2}}, label)
         );
       };
 
-      var preview = e('div', {style:{marginTop:'6px',padding:'12px 10px',borderRadius:'14px',background:isDk?'rgba(255,255,255,.04)':'#f5f5f7',display:'flex',flexDirection:'column',alignItems:'center',gap:'6px'}},
-        e('div', {style:{width:'38px',height:'38px',borderRadius:'50%',background:'linear-gradient(135deg,#FFB6C1,#C8507A)',flexShrink:0}}),
-        e('p', {style:{fontSize:'11px',fontWeight:700,color:tc,margin:0,lineHeight:1.2}}, '카페루미'),
-        e('p', {style:{fontSize:'9px',color:tc2,margin:'0 0 4px',lineHeight:1.2,textAlign:'center'}}, '하루를 따뜻하게 시작하는 곳'),
+      var menuIcon = e('svg',{width:12,height:12,viewBox:'0 0 24 24',fill:'none',stroke:pink,strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},e('path',{d:'M3 11l18-5v12L3 14v-3z'}),e('path',{d:'M11.6 16.8a3 3 0 1 1-5.8-1.6'}));
+      var igIcon = e('svg',{width:12,height:12,viewBox:'0 0 24 24',fill:'none',stroke:pink,strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},e('rect',{x:2,y:2,width:20,height:20,rx:5}),e('path',{d:'M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z'}),e('line',{x1:17.5,y1:6.5,x2:17.51,y2:6.5}));
+
+      var preview = e('div', {style:{flex:1,minHeight:0,marginTop:'6px',padding:'14px 12px',borderRadius:'14px',background:isDk?'rgba(255,255,255,.04)':'#f5f5f7',display:'flex',flexDirection:'column',alignItems:'center',gap:'7px',overflow:'hidden'}},
+        e('div', {style:{width:'44px',height:'44px',borderRadius:'50%',background:'linear-gradient(135deg,#FFB6C1,#C8507A)',flexShrink:0}}),
+        e('p', {style:{fontSize:'12px',fontWeight:700,color:tc,margin:0,lineHeight:1.2}}, '카페루미'),
+        e('p', {style:{fontSize:'10px',color:tc2,margin:'0 0 4px',lineHeight:1.3,textAlign:'center'}}, '하루를 따뜻하게 시작하는 곳'),
         sampleRow(clockIcon, '영업시간'),
         sampleRow(mapIcon, '오시는 길'),
+        sampleRow(menuIcon, '메뉴 보기'),
         sampleRow(chatIcon, '카카오톡 문의'),
-        sampleRow(phoneIcon, '전화 예약')
+        sampleRow(phoneIcon, '전화 예약'),
+        sampleRow(igIcon, '인스타그램')
       );
 
       return e('div', {className:'bento-card card-text', style:{padding:'clamp(14px,3vw,20px)',background:cardBg,display:'flex',flexDirection:'column',justifyContent:'space-between',width:'100%',height:'100%',boxSizing:'border-box',position:'relative'}},
@@ -7578,12 +7583,13 @@ var cards = {
           e('div', {style:{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'8px'}},
             e('div', {style:{display:'flex',flexDirection:'column',gap:'4px',flex:1}},
               e('p', {style:{fontSize:'clamp(13px,2vw,15px)',fontWeight:700,color:tc,margin:0,lineHeight:1.3}}, '링크인바이오'),
-              e('p', {style:{fontSize:'clamp(11px,1.5vw,12px)',color:tc2,margin:0,lineHeight:1.4}}, '이런 페이지를 한 번에')
+              e('p', {style:{fontSize:'clamp(11px,1.5vw,12px)',color:tc2,margin:0,lineHeight:1.4}}, '인스타 프로필 링크에 이렇게 연결돼요')
             ),
             LinkIcon
           ),
           isPro ? null : e('span', {style:{alignSelf:'flex-start',fontSize:'10px',fontWeight:600,color:pink,background:isDk?'rgba(255,107,139,.12)':'rgba(200,80,122,.08)',padding:'2px 8px',borderRadius:'980px'}}, 'PRO 전용'),
-          preview
+          preview,
+          e('p', {style:{fontSize:'10px',color:tc2,margin:'4px 0 0',lineHeight:1.4,textAlign:'center'}}, '인스타 프로필 ‘링크’ 한 번으로 고객이 이 페이지를 봐요')
         ),
         e('button', {
           onMouseDown: function(ev){ ev.stopPropagation(); },
