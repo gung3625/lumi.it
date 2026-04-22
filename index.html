@@ -1799,6 +1799,14 @@ body.dark-mode .su-close svg{stroke:#f0f2f8;}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.103.3/dist/umd/supabase.min.js"></script>
 <script>
+  // 자동 로그인 OFF + 새 브라우저 세션이면 SDK 세션까지 완전 제거 (createClient 이전에 실행)
+  try {
+    if (localStorage.getItem('lumi_auto_login') === '0' && !sessionStorage.getItem('lumi_session_active')) {
+      localStorage.removeItem('lumi-auth');
+      localStorage.removeItem('lumi_token');
+      localStorage.removeItem('lumi_user');
+    }
+  } catch(e) { /* 무시 */ }
   window.lumiSupa = window.supabase.createClient(
     'https://cldsozdocxpvkbuxwqep.supabase.co',
     'sb_publishable_WjWg5o05Y7lhib674Cr_fw_0mpY-ccG',
