@@ -4911,6 +4911,140 @@ var InstaSVG = e('svg', {viewBox:'0 0 24 24',xmlns:'http://www.w3.org/2000/svg',
   e('circle', {cx:17.5, cy:6.5, r:1.5, fill:'#fff'})
 );
 
+// 링크인바이오 카드 — 카드 자체가 프리뷰, 실제 사용자 데이터 렌더
+function LinkInBioCard() {
+  var isDk = document.body.classList.contains('dark-mode');
+  var tc = isDk ? '#f0f2f8' : '#0d1117';
+  var tc2 = isDk ? 'rgba(240,242,248,.6)' : 'rgba(0,0,0,.4)';
+  var pink = isDk ? '#FF8FAB' : '#C8507A';
+  var cardBg = isDk ? '#272729' : '#fff';
+  var lumiUser = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+  var isPro = lumiUser.plan === 'pro';
+
+  var _ps = React.useState(null); var page = _ps[0], setPage = _ps[1];
+  var _bs = React.useState([]);   var blocks = _bs[0], setBlocks = _bs[1];
+  var _ls = React.useState(true); var loading = _ls[0], setLoading = _ls[1];
+
+  React.useEffect(function(){
+    var cancelled = false;
+    if (!isPro) { setLoading(false); return; }
+    (async function(){
+      try {
+        var res = await window.lumiAuthFetch('/api/get-my-link-page', { method:'GET' });
+        if (!res || !res.ok) { if(!cancelled) setLoading(false); return; }
+        var j = await res.json();
+        if (cancelled) return;
+        setPage(j.page || null);
+        setBlocks(Array.isArray(j.blocks) ? j.blocks : []);
+      } catch(e){} finally { if(!cancelled) setLoading(false); }
+    })();
+    return function(){ cancelled = true; };
+  }, []);
+
+  var s = 14, sw = 2;
+  var mkIcon = function(paths){ return e('svg',{width:s,height:s,viewBox:'0 0 24 24',fill:'none',stroke:pink,strokeWidth:sw,strokeLinecap:'round',strokeLinejoin:'round'}, paths); };
+  var icons = {
+    clock: mkIcon([e('circle',{key:'c',cx:12,cy:12,r:10}), e('polyline',{key:'p',points:'12 6 12 12 16 14'})]),
+    map:   mkIcon([e('path',{key:'p',d:'M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z'}), e('circle',{key:'c',cx:12,cy:10,r:3})]),
+    menu:  mkIcon([e('path',{key:'p1',d:'M3 11l18-5v12L3 14v-3z'}), e('path',{key:'p2',d:'M11.6 16.8a3 3 0 1 1-5.8-1.6'})]),
+    chat:  mkIcon([e('path',{key:'p',d:'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'})]),
+    phone: mkIcon([e('path',{key:'p',d:'M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z'})]),
+    ig:    mkIcon([e('rect',{key:'r',x:2,y:2,width:20,height:20,rx:5}), e('path',{key:'p',d:'M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z'}), e('line',{key:'l',x1:17.5,y1:6.5,x2:17.51,y2:6.5})]),
+    link:  mkIcon([e('path',{key:'p1',d:'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71'}), e('path',{key:'p2',d:'M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71'})]),
+    bell:  mkIcon([e('path',{key:'p',d:'M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9'}), e('path',{key:'p2',d:'M13.73 21a2 2 0 0 1-3.46 0'})]),
+    truck: mkIcon([e('rect',{key:'r',x:1,y:3,width:15,height:13}), e('polygon',{key:'p',points:'16 8 20 8 23 11 23 16 16 16 16 8'}), e('circle',{key:'c1',cx:5.5,cy:18.5,r:2.5}), e('circle',{key:'c2',cx:18.5,cy:18.5,r:2.5})])
+  };
+
+  function labelForBlock(b){
+    var d = b.data || {};
+    switch(b.block_type){
+      case 'hours':    return { icon: icons.clock, label: d.title || '영업시간' };
+      case 'map':      return { icon: icons.map,   label: d.title || '오시는 길' };
+      case 'menu':     return { icon: icons.menu,  label: d.title || '메뉴 보기' };
+      case 'kakao':    return { icon: icons.chat,  label: d.title || '카카오톡 문의' };
+      case 'phone':    return { icon: icons.phone, label: d.title || '전화 예약' };
+      case 'social':   return { icon: icons.ig,    label: d.title || '인스타그램' };
+      case 'notice':   return { icon: icons.bell,  label: d.title || '공지사항' };
+      case 'delivery': return { icon: icons.truck, label: d.title || '배달 주문' };
+      case 'link':     return { icon: icons.link,  label: d.title || '바로가기' };
+      default:         return null;
+    }
+  }
+
+  var hasPage = !!page;
+  var displayName, displayBio, displayAvatar, displayRows;
+
+  if (hasPage) {
+    displayName = page.store_name || '내 매장';
+    displayBio = page.headline || page.bio || '';
+    displayAvatar = page.profile_image_url || '';
+    displayRows = blocks.filter(function(b){ return b.block_type !== 'header'; })
+      .map(labelForBlock).filter(Boolean).slice(0, 6);
+    if (!displayRows.length) {
+      displayRows = [
+        { icon: icons.link, label: '링크 추가해보세요' }
+      ];
+    }
+  } else {
+    displayName = '카페루미';
+    displayBio = '하루를 따뜻하게 시작하는 곳';
+    displayAvatar = '';
+    displayRows = [
+      { icon: icons.clock, label: '영업시간' },
+      { icon: icons.map,   label: '오시는 길' },
+      { icon: icons.menu,  label: '메뉴 보기' },
+      { icon: icons.chat,  label: '카카오톡 문의' },
+      { icon: icons.phone, label: '전화 예약' },
+      { icon: icons.ig,    label: '인스타그램' }
+    ];
+  }
+
+  var rowBg = isDk ? 'rgba(255,255,255,.06)' : '#f5f5f7';
+  var rowEl = function(r, idx){
+    return e('div', {key:'row-'+idx, style:{display:'flex',alignItems:'center',gap:'8px',padding:'9px 12px',borderRadius:'10px',background:rowBg,width:'100%',boxSizing:'border-box'}},
+      r.icon,
+      e('span', {style:{fontSize:'11px',fontWeight:600,color:tc,lineHeight:1.2}}, r.label)
+    );
+  };
+
+  var avatar = displayAvatar
+    ? e('img', {src: displayAvatar, alt:'', style:{width:'48px',height:'48px',borderRadius:'50%',objectFit:'cover',flexShrink:0}})
+    : e('div', {style:{width:'48px',height:'48px',borderRadius:'50%',background:'linear-gradient(135deg,#FFB6C1,#C8507A)',flexShrink:0}});
+
+  var ctaLabel, ctaAction;
+  if (!isPro) {
+    ctaLabel = '프로 요금제 보기';
+    ctaAction = function(){ window.location.href = '/subscribe'; };
+  } else if (hasPage) {
+    ctaLabel = '편집하기';
+    ctaAction = function(){ if(window.openLinkInBioEditor) window.openLinkInBioEditor(); };
+  } else {
+    ctaLabel = '내 페이지 만들기';
+    ctaAction = function(){ if(window.openLinkInBioEditor) window.openLinkInBioEditor(); };
+  }
+
+  var ribbon = !hasPage ? e('span', {style:{position:'absolute',top:'10px',right:'12px',fontSize:'9px',fontWeight:700,color:pink,background:isDk?'rgba(255,107,139,.14)':'rgba(200,80,122,.08)',padding:'3px 8px',borderRadius:'980px',letterSpacing:'.3px'}}, '예시') : null;
+  var proBadge = (!isPro && !hasPage) ? e('span', {style:{position:'absolute',top:'10px',left:'12px',fontSize:'9px',fontWeight:700,color:pink,background:isDk?'rgba(255,107,139,.14)':'rgba(200,80,122,.08)',padding:'3px 8px',borderRadius:'980px',letterSpacing:'.3px'}}, 'PRO') : null;
+
+  return e('div', {className:'bento-card card-text', style:{padding:'16px 14px 12px',background:cardBg,display:'flex',flexDirection:'column',width:'100%',height:'100%',boxSizing:'border-box',position:'relative',overflow:'hidden'}},
+    ribbon, proBadge,
+    e('div', {style:{display:'flex',flexDirection:'column',alignItems:'center',gap:'4px',marginTop:'14px',flexShrink:0}},
+      avatar,
+      e('p', {style:{fontSize:'13px',fontWeight:700,color:tc,margin:'6px 0 0',lineHeight:1.2,textAlign:'center',maxWidth:'100%',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}, displayName),
+      displayBio ? e('p', {style:{fontSize:'10.5px',color:tc2,margin:0,lineHeight:1.3,textAlign:'center',maxWidth:'100%',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}, displayBio) : null
+    ),
+    e('div', {style:{display:'flex',flexDirection:'column',gap:'5px',flex:1,minHeight:0,overflow:'hidden',marginTop:'10px',width:'100%'}},
+      displayRows.map(rowEl)
+    ),
+    e('button', {
+      onMouseDown: function(ev){ ev.stopPropagation(); },
+      onTouchStart: function(ev){ ev.stopPropagation(); },
+      onClick: function(ev){ ev.stopPropagation(); ctaAction(); },
+      style:{marginTop:'10px',padding:'9px 0',borderRadius:'980px',border:'none',cursor:'pointer',background:pink,color:'#fff',fontSize:'12px',fontWeight:600,fontFamily:'inherit',width:'100%',minHeight:'34px',flexShrink:0}
+    }, ctaLabel)
+  );
+}
+
 // Card contents (static HTML injected via dangerouslySetInnerHTML is avoided; using React elements)
 var cards = {
   bio: function() {
@@ -7551,52 +7685,7 @@ var cards = {
     );
 
     if (isLoggedIn) {
-      var mapIcon = e('svg',{width:12,height:12,viewBox:'0 0 24 24',fill:'none',stroke:pink,strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},e('path',{d:'M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z'}),e('circle',{cx:12,cy:10,r:3}));
-      var clockIcon = e('svg',{width:12,height:12,viewBox:'0 0 24 24',fill:'none',stroke:pink,strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},e('circle',{cx:12,cy:12,r:10}),e('polyline',{points:'12 6 12 12 16 14'}));
-      var chatIcon = e('svg',{width:12,height:12,viewBox:'0 0 24 24',fill:'none',stroke:pink,strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},e('path',{d:'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'}));
-      var phoneIcon = e('svg',{width:12,height:12,viewBox:'0 0 24 24',fill:'none',stroke:pink,strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},e('path',{d:'M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z'}));
-
-      var sampleRow = function(icon, label){
-        return e('div', {style:{display:'flex',alignItems:'center',gap:'8px',padding:'9px 12px',borderRadius:'10px',background:isDk?'rgba(255,255,255,.06)':'#fff',width:'100%',boxSizing:'border-box'}},
-          icon,
-          e('span', {style:{fontSize:'11px',fontWeight:600,color:tc,lineHeight:1.2}}, label)
-        );
-      };
-
-      var menuIcon = e('svg',{width:12,height:12,viewBox:'0 0 24 24',fill:'none',stroke:pink,strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},e('path',{d:'M3 11l18-5v12L3 14v-3z'}),e('path',{d:'M11.6 16.8a3 3 0 1 1-5.8-1.6'}));
-      var igIcon = e('svg',{width:12,height:12,viewBox:'0 0 24 24',fill:'none',stroke:pink,strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},e('rect',{x:2,y:2,width:20,height:20,rx:5}),e('path',{d:'M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z'}),e('line',{x1:17.5,y1:6.5,x2:17.51,y2:6.5}));
-
-      var preview = e('div', {style:{flex:1,minHeight:0,marginTop:'6px',padding:'14px 12px',borderRadius:'14px',background:isDk?'rgba(255,255,255,.04)':'#f5f5f7',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'7px',overflow:'hidden'}},
-        e('div', {style:{width:'44px',height:'44px',borderRadius:'50%',background:'linear-gradient(135deg,#FFB6C1,#C8507A)',flexShrink:0}}),
-        e('p', {style:{fontSize:'12px',fontWeight:700,color:tc,margin:0,lineHeight:1.2}}, '카페루미'),
-        e('p', {style:{fontSize:'10px',color:tc2,margin:'0 0 4px',lineHeight:1.3,textAlign:'center'}}, '하루를 따뜻하게 시작하는 곳'),
-        sampleRow(clockIcon, '영업시간'),
-        sampleRow(mapIcon, '오시는 길'),
-        sampleRow(menuIcon, '메뉴 보기'),
-        sampleRow(chatIcon, '카카오톡 문의'),
-        sampleRow(phoneIcon, '전화 예약'),
-        sampleRow(igIcon, '인스타그램')
-      );
-
-      return e('div', {className:'bento-card card-text', style:{padding:'clamp(14px,3vw,20px)',background:cardBg,display:'flex',flexDirection:'column',justifyContent:'space-between',width:'100%',height:'100%',boxSizing:'border-box',position:'relative'}},
-        e('div', {style:{display:'flex',flexDirection:'column',gap:'8px',flex:1,minHeight:0,overflow:'hidden'}},
-          e('div', {style:{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'8px'}},
-            e('div', {style:{display:'flex',flexDirection:'column',gap:'4px',flex:1}},
-              e('p', {style:{fontSize:'clamp(13px,2vw,15px)',fontWeight:700,color:tc,margin:0,lineHeight:1.3}}, '링크인바이오'),
-              e('p', {style:{fontSize:'clamp(11px,1.5vw,12px)',color:tc2,margin:0,lineHeight:1.4}}, '인스타 프로필 링크에 이렇게 연결돼요')
-            ),
-            LinkIcon
-          ),
-          isPro ? null : e('span', {style:{alignSelf:'flex-start',fontSize:'10px',fontWeight:600,color:pink,background:isDk?'rgba(255,107,139,.12)':'rgba(200,80,122,.08)',padding:'2px 8px',borderRadius:'980px'}}, 'PRO 전용'),
-          preview
-        ),
-        e('button', {
-          onMouseDown: function(ev){ ev.stopPropagation(); },
-          onTouchStart: function(ev){ ev.stopPropagation(); },
-          onClick: function(ev){ ev.stopPropagation(); if(isPro){ window.openLinkInBioEditor(); } else { window.location.href='/subscribe'; } },
-          style:{marginTop:'10px',padding:'9px 0',borderRadius:'980px',border:'none',cursor:'pointer',background:isPro?pink:'rgba(200,80,122,.12)',color:isPro?'#fff':pink,fontSize:'12px',fontWeight:600,fontFamily:'inherit',width:'100%',minHeight:'36px'}
-        }, isPro ? '내 페이지 만들기' : '프로 요금제 보기')
-      );
+      return e(LinkInBioCard);
     } else {
       return e('div', {className:'bento-card card-text', style:{padding:'clamp(12px,2.5vw,16px)',background:cardBg,display:'flex',flexDirection:'column',justifyContent:'space-between',width:'100%',height:'100%',boxSizing:'border-box'}},
         e('div', {style:{display:'flex',flexDirection:'column',gap:'6px',flex:1}},
