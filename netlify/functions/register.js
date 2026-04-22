@@ -133,7 +133,8 @@ exports.handler = async (event) => {
       tag_style: tagStyle || 'mid',
       agree_marketing: agreeMarketing === true,
       agree_marketing_at: agreeMarketing === true ? new Date().toISOString() : null,
-      plan: 'trial',
+      // 베타 테스터 기간: 가입 시 전원 'pro' 부여 (정식 오픈 시 'trial'로 되돌릴 것)
+      plan: 'pro',
       trial_start: new Date().toISOString(),
       auto_renew: true,
     };
