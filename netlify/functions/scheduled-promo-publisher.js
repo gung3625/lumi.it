@@ -2,6 +2,7 @@
 // 스케줄: 매 5분마다 (exports.config.schedule). 수동 트리거: POST /api/scheduled-promo-publisher (LUMI_SECRET 필요).
 // 토큰·이메일·이름 절대 로그 노출 금지.
 const { getAdminClient } = require('./_shared/supabase-admin');
+const { toProxyUrl } = require('./_shared/ig-image-url');
 
 exports.config = { schedule: '*/5 * * * *' };
 
@@ -127,8 +128,8 @@ exports.handler = async (event) => {
     for (const row of rows) {
       const updatedAt = new Date().toISOString();
       try {
-        // 3) 단일 이미지 컨테이너 생성
-        const creationId = await createSingleImageContainer(igUserId, igAccessToken, row.image_url, row.caption);
+        // 3) 단일 이미지 컨테이너 생성 (IG crawler가 Supabase 도메인 fetch 못하므로 lumi.it.kr 프록시 URL 사용)
+        const creationId = await createSingleImageContainer(igUserId, igAccessToken, toProxyUrl(row.image_url), row.caption);
 
         // 4) 처리 완료 대기
         const ready = await waitForContainer(creationId, igAccessToken);

@@ -1,6 +1,7 @@
 // 관리자 전용 홍보 게시 — 공개 이미지 URL 배열 + 캡션 → 관리자 IG 피드에 게시(단일 또는 캐러셀).
 // 인증: Authorization: Bearer ${LUMI_SECRET}. 토큰/이메일/이름 절대 노출 금지.
 const { getAdminClient } = require('./_shared/supabase-admin');
+const { toProxyUrl } = require('./_shared/ig-image-url');
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
@@ -139,12 +140,15 @@ exports.handler = async (event) => {
 
     console.log(`[admin-promo-publish] 게시 시작: imageCount=${imageUrls.length}`);
 
+    // IG crawler가 Supabase 도메인 fetch 못하므로 lumi.it.kr 프록시 URL로 변환
+    const proxiedUrls = imageUrls.map(toProxyUrl);
+
     let creationId;
-    if (imageUrls.length === 1) {
-      creationId = await createSingleImageContainer(igUserId, igAccessToken, imageUrls[0], caption);
+    if (proxiedUrls.length === 1) {
+      creationId = await createSingleImageContainer(igUserId, igAccessToken, proxiedUrls[0], caption);
     } else {
       const childIds = [];
-      for (const url of imageUrls) {
+      for (const url of proxiedUrls) {
         const id = await createImageContainer(igUserId, igAccessToken, url, true);
         childIds.push(id);
       }

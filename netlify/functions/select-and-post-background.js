@@ -5,6 +5,7 @@
 const { createHmac } = require('crypto');
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { deleteReservationStorage } = require('./_shared/storage-cleanup');
+const { toProxyUrl } = require('./_shared/ig-image-url');
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
@@ -53,6 +54,8 @@ async function publishMedia(igUserId, igAccessToken, creationId) {
 
 async function postToInstagram({ igUserId, igAccessToken, igUserAccessToken, storyEnabled, mediaType, videoUrl }, caption, imageUrls) {
   if (!igUserId || !igAccessToken) throw new Error('Instagram 연동 정보 없음');
+  // IG crawler가 Supabase 도메인 fetch 못하므로 lumi.it.kr 프록시 URL로 변환
+  imageUrls = Array.isArray(imageUrls) ? imageUrls.map(toProxyUrl) : imageUrls;
   let postId;
 
   // REELS 게시 (영상) — IMAGE 경로와 분리된 분기
