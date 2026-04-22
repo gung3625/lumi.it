@@ -62,6 +62,32 @@ exports.handler = async (event) => {
     return { statusCode: 200, headers, body: JSON.stringify({ triggered, failed, total: tasks.length, results }) };
   }
 
+  // ── mode=cancel-all-pending: 아직 게시 안 된 is_brand_auto 예약 전부 cancelled=true ──
+  if (body.mode === 'cancel-all-pending') {
+    try {
+      const supabase = getAdminClient();
+      const { data: rows, error: selErr } = await supabase
+        .from('reservations')
+        .select('reserve_key, industry, scheduled_at, caption_status, is_sent, cancelled')
+        .eq('is_brand_auto', true)
+        .eq('is_sent', false)
+        .or('cancelled.is.null,cancelled.eq.false');
+      if (selErr) return { statusCode: 500, headers, body: JSON.stringify({ error: selErr.message }) };
+      const keys = (rows || []).map(r => r.reserve_key);
+      if (keys.length === 0) {
+        return { statusCode: 200, headers, body: JSON.stringify({ cancelled: 0, message: '취소할 예약 없음' }) };
+      }
+      const { error: updErr } = await supabase
+        .from('reservations')
+        .update({ cancelled: true, caption_status: 'cancelled' })
+        .in('reserve_key', keys);
+      if (updErr) return { statusCode: 500, headers, body: JSON.stringify({ error: updErr.message }) };
+      return { statusCode: 200, headers, body: JSON.stringify({ cancelled: keys.length, keys }) };
+    } catch (e) {
+      return { statusCode: 500, headers, body: JSON.stringify({ error: e.message }) };
+    }
+  }
+
   // ── mode=post-all: daily-content-background의 post-all 모드 트리거 ──
   if (body.mode === 'post-all') {
     const siteUrl = process.env.URL || 'https://lumi.it.kr';
