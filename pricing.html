@@ -628,6 +628,19 @@ faqs.forEach(function(f){
   tb.style.display = 'flex';
   document.body.classList.add('has-tabbar');
 })();
+
+// 플랜 카드 전체 클릭 시 CTA 링크로 이동 (a/button 직접 클릭은 기본 동작 유지)
+(function(){
+  document.querySelectorAll('.plan-card').forEach(function(card){
+    var cta = card.querySelector('.plan-cta');
+    if(!cta || !cta.getAttribute('href')) return;
+    card.style.cursor = 'pointer';
+    card.addEventListener('click', function(ev){
+      if(ev.target.closest('a,button')) return;
+      location.href = cta.getAttribute('href');
+    });
+  });
+})();
 </script>
 </body>
 </html>
