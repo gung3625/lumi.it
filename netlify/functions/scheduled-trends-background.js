@@ -1,5 +1,5 @@
-// scheduled-trends-background.js — 5개 외부 소스 + gpt-4o-mini 분류 파이프라인 (Phase 1 재구축)
-// 소스: 네이버 데이터랩, 네이버 검색(블로그), 구글 트렌드, YouTube Data API v3, Instagram Graph API(스켈레톤)
+// scheduled-trends-background.js — 5개 외부 소스 (IG는 주간 캐시) + gpt-4o-mini 분류 파이프라인 (Phase 1 재구축)
+// 소스: 네이버 데이터랩, 네이버 검색(블로그), 구글 트렌드, YouTube Data API v3, Instagram Graph API(주간 캐시 읽기)
 // 저장: Supabase public.trends (category 컬럼을 복합 키로 사용)
 // 매일 자정(UTC 15:00 / KST 00:00) cron 실행
 // -background 접미사: Netlify 백그라운드 함수(15분 타임아웃)로 실행
@@ -380,61 +380,22 @@ async function fetchYouTube(category) {
   return titles;
 }
 
-// ---------------- 소스 5. Instagram Graph API (스켈레톤) ----------------
-// ⚠️ 제약: 공개 해시태그 조회(/ig_hashtag_search + /media)는
-// Instagram Business 계정 ID + Long-lived User Access Token + 심사 통과가 필요함.
-// META_APP_ID/SECRET만으로는 호출 불가. 심사 통과 시 INSTAGRAM_BUSINESS_ID + INSTAGRAM_ACCESS_TOKEN
-// 환경변수를 추가하고 아래 구현을 활성화할 것.
-async function fetchInstagram(category) {
-  const businessId = process.env.INSTAGRAM_BUSINESS_ID;
-  const accessToken = process.env.INSTAGRAM_ACCESS_TOKEN;
-  if (!businessId || !accessToken) {
-    // 1차 구현: 토큰 없으면 조용히 skip
-    return [];
-  }
-
-  const seedTag = ({
-    cafe: 'cafetrend',
-    food: 'foodtrend',
-    beauty: 'beautytrend',
-    flower: 'flowertrend',
-    fashion: 'fashiontrend',
-    fitness: 'fitnesskorea',
-    pet: 'pettrend',
-    interior: 'interiortrend',
-    education: 'edutrend',
-    studio: 'photostudio',
-  })[category] || 'trend';
-
+// ---------------- 소스 5. Instagram (주간 캐시 읽기) ----------------
+// scheduled-ig-hashtag-background.js가 매주 월요일 KST 00:00에 갱신하는 Supabase 캐시를 읽음.
+// rate limit(7일당 30개 고유 해시태그) 회피를 위해 직접 Graph API 호출하지 않음.
+async function fetchInstagram(supa, category) {
+  // scheduled-ig-hashtag-background가 주 1회 갱신하는 캐시 읽기
   try {
-    // Step 1: hashtag id 조회
-    const searchPath = `/v19.0/ig_hashtag_search?user_id=${encodeURIComponent(businessId)}` +
-      `&q=${encodeURIComponent(seedTag)}&access_token=${encodeURIComponent(accessToken)}`;
-    const idRes = await httpsGetRaw({
-      hostname: 'graph.facebook.com',
-      path: searchPath,
-      method: 'GET',
-    }, 8000);
-    if (idRes.status !== 200) return [];
-    const idData = JSON.parse(idRes.body);
-    const tagId = idData?.data?.[0]?.id;
-    if (!tagId) return [];
-
-    // Step 2: top_media 제목/캡션 조회
-    const mediaPath = `/v19.0/${tagId}/top_media?user_id=${encodeURIComponent(businessId)}` +
-      `&fields=caption&limit=25&access_token=${encodeURIComponent(accessToken)}`;
-    const mRes = await httpsGetRaw({
-      hostname: 'graph.facebook.com',
-      path: mediaPath,
-      method: 'GET',
-    }, 8000);
-    if (mRes.status !== 200) return [];
-    const mData = JSON.parse(mRes.body);
-    return (mData?.data || [])
-      .map(x => (x.caption || '').slice(0, 200))
-      .filter(Boolean);
-  } catch(e) {
-    console.error('[instagram]', category, 'skip:', e.message);
+    const { data, error } = await supa
+      .from('trends')
+      .select('keywords, collected_at')
+      .eq('category', `ig-hashtag-cache:${category}`)
+      .maybeSingle();
+    if (error || !data || !data.keywords) return [];
+    const captions = Array.isArray(data.keywords.captions) ? data.keywords.captions : [];
+    return captions;
+  } catch (e) {
+    console.error('[instagram-cache]', category, 'skip:', e.message);
     return [];
   }
 }
@@ -807,7 +768,7 @@ exports.handler = async (event) => {
       fetchNaverDatalab(category),
       fetchNaverBlogs(category),
       fetchYouTube(category),
-      fetchInstagram(category),
+      fetchInstagram(supa, category),
     ]);
     console.log(`[${category}] naver=${naverData.length} blog=${blogData.length} yt-kr=${ytKR.length} ig=${igTexts.length}`);
     return [category, { naverData, blogData, ytKR, igTexts }];
