@@ -9732,29 +9732,35 @@ document.querySelectorAll('.lumi-aura, .card-arrow, .btn-pill, .upload-lumi, .su
     if (!file) return;
     // 원본 상한 20MB (리사이즈 후 서버에 전송되는 건 보통 ~300KB)
     if (file.size > 20 * 1024 * 1024) { toast('이미지는 20MB 이하만 가능해요', 'err'); return; }
+    console.log('[lib] 업로드 시작', { name: file.name, size: file.size, type: file.type });
     toast('업로드 중…');
     var toUpload;
     try {
       toUpload = await resizeForBio(file);
+      console.log('[lib] 리사이즈 완료', { size: toUpload.size, type: toUpload.type });
     } catch(e){
       console.error('[lib] resize error', e);
-      toast('이미지를 읽을 수 없어요. 다른 파일로 시도해주세요', 'err');
+      toast('이미지 변환 실패: ' + (e && e.message ? e.message : 'unknown'), 'err');
       return;
     }
     var fd = new FormData();
     fd.append('file', toUpload);
-    api('/api/upload-link-image', { method:'POST', body: fd }).then(function(r){
-      if (!r.ok) throw new Error('upload-fail-' + r.status);
-      return r.json();
-    }).then(function(j){
-      if (!j.url) throw new Error('no-url');
+    try {
+      var r = await api('/api/upload-link-image', { method:'POST', body: fd });
+      if (!r.ok) {
+        var errText = '';
+        try { var ej = await r.json(); errText = ej && ej.error ? ej.error : ''; } catch(_){}
+        throw new Error('HTTP ' + r.status + (errText ? ' — ' + errText : ''));
+      }
+      var j = await r.json();
+      if (!j.url) throw new Error('응답에 URL 없음');
       state.profile_image_url = j.url;
       refreshAvatar();
       toast('업로드 완료');
-    }).catch(function(e){
+    } catch(e){
       console.error('[lib] avatar upload error', e);
-      toast('업로드 실패. 잠시 후 다시 시도해주세요', 'err');
-    });
+      toast('업로드 실패: ' + (e && e.message ? e.message : 'unknown'), 'err');
+    }
   }
 
   function refreshAvatar(){
