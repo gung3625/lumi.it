@@ -137,7 +137,7 @@ exports.handler = async (event) => {
     const kstStart = new Date(`${kstDateStr}T00:00:00+09:00`).toISOString();
     const { data: todayRows } = await supabase
       .from('reservations')
-      .select('reserve_key, industry, media_type, caption_status, scheduled_at')
+      .select('reserve_key, industry, media_type, caption_status, scheduled_at, cancelled, is_sent')
       .eq('is_brand_auto', true)
       .gte('submitted_at', kstStart)
       .order('scheduled_at', { ascending: true });
