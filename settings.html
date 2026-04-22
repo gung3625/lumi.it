@@ -899,10 +899,10 @@ function arImportDMHistory() {
         showToast('과거 DM 학습이 완료됐어요');
       } else {
         btn.textContent = prevText;
+        // 백엔드에서 내려주는 구체 메시지를 최우선 사용 (code/reason 포함)
         var err = (res.data && res.data.error) || '학습에 실패했어요';
-        if (res.status === 403) err = '비즈니스 플랜이 필요해요';
-        else if (res.status === 400) err = '인스타 연동 먼저 해주세요';
-        else if (res.status === 502) err = '인스타 토큰이 만료됐어요. 재연동이 필요해요';
+        if (res.status === 403 && !(res.data && res.data.error)) err = '비즈니스 플랜이 필요해요';
+        else if (res.status === 400 && !(res.data && res.data.error)) err = '인스타 연동 먼저 해주세요';
         status.style.color = '#d70015';
         status.textContent = err;
       }

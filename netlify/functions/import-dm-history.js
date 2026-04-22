@@ -210,11 +210,38 @@ exports.handler = async (event) => {
       );
       conversations = Array.isArray(convResp?.data) ? convResp.data : [];
     } catch (e) {
-      console.error('[import-dm-history] conversations 조회 실패:', e.message);
+      const gErr = e.graphError || {};
+      const code = Number(gErr.code);
+      const subcode = Number(gErr.error_subcode);
+      const gMsg = gErr.message || e.message || '';
+      console.error(`[import-dm-history] conversations 실패 code=${code} subcode=${subcode} msg=${gMsg}`);
+
+      let userMsg;
+      let reason; // 내부 분류 태그
+      if (code === 3 || /capability to make this API call/i.test(gMsg)) {
+        userMsg = '루미가 아직 메타의 DM 접근 권한 심사를 받고 있어요. 심사 통과 후 자동으로 사용할 수 있어요.';
+        reason = 'app_review_pending';
+      } else if (code === 190) {
+        userMsg = '인스타 토큰이 만료됐어요. 설정에서 재연동해주세요.';
+        reason = 'token_expired';
+      } else if (code === 10 || code === 200 || code === 803 || /permission|scope|messag(e|ing)/i.test(gMsg)) {
+        userMsg = 'DM 조회 권한이 없어요. 재연동 시 메시지 권한(instagram_manage_messages)을 허용해주세요.';
+        reason = 'permission_missing';
+      } else if (code === 4 || code === 17 || code === 32 || code === 613) {
+        userMsg = '메타 API 요청 한도를 초과했어요. 잠시 후 다시 시도해주세요.';
+        reason = 'rate_limited';
+      } else if (code === 100) {
+        userMsg = '인스타 계정이 비즈니스 계정으로 전환되지 않았어요. 프로필 → 계정 유형 전환 후 재연동해주세요.';
+        reason = 'not_business_account';
+      } else {
+        userMsg = `DM 불러오기에 실패했어요 (code=${code || '?'}).`;
+        reason = 'graph_unknown';
+      }
+
       return {
         statusCode: 502,
         headers: CORS,
-        body: JSON.stringify({ error: 'IG 토큰이 만료되었거나 권한이 없어요. 재연동이 필요할 수 있어요.' }),
+        body: JSON.stringify({ error: userMsg, reason, code: code || null, subcode: subcode || null }),
       };
     }
 
