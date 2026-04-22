@@ -9728,25 +9728,39 @@ document.querySelectorAll('.lumi-aura, .card-arrow, .btn-pill, .upload-lumi, .su
     return new File([blob], 'avatar.jpg', { type: 'image/jpeg' });
   }
 
+  // Blob → base64 (헤더 제외 순수 base64 문자열)
+  function blobToBase64(blob){
+    return new Promise(function(resolve, reject){
+      var reader = new FileReader();
+      reader.onload = function(){
+        var s = String(reader.result || '');
+        var comma = s.indexOf(',');
+        resolve(comma >= 0 ? s.slice(comma + 1) : s);
+      };
+      reader.onerror = function(){ reject(new Error('파일 읽기 실패')); };
+      reader.readAsDataURL(blob);
+    });
+  }
+
   async function handleAvatarUpload(file){
     if (!file) return;
-    // 원본 상한 20MB (리사이즈 후 서버에 전송되는 건 보통 ~300KB)
     if (file.size > 20 * 1024 * 1024) { toast('이미지는 20MB 이하만 가능해요', 'err'); return; }
-    console.log('[lib] 업로드 시작', { name: file.name, size: file.size, type: file.type });
     toast('업로드 중…');
-    var toUpload;
+    var resized;
     try {
-      toUpload = await resizeForBio(file);
-      console.log('[lib] 리사이즈 완료', { size: toUpload.size, type: toUpload.type });
+      resized = await resizeForBio(file);
     } catch(e){
       console.error('[lib] resize error', e);
       toast('이미지 변환 실패: ' + (e && e.message ? e.message : 'unknown'), 'err');
       return;
     }
-    var fd = new FormData();
-    fd.append('file', toUpload);
     try {
-      var r = await api('/api/upload-link-image', { method:'POST', body: fd });
+      var b64 = await blobToBase64(resized);
+      var r = await api('/api/upload-link-image', {
+        method:'POST',
+        headers: { 'Content-Type':'application/json' },
+        body: JSON.stringify({ filename:'avatar.jpg', contentType:'image/jpeg', base64: b64 })
+      });
       if (!r.ok) {
         var errText = '';
         try { var ej = await r.json(); errText = ej && ej.error ? ej.error : ''; } catch(_){}

@@ -1,4 +1,4 @@
-// upload-link-image — POST multipart/form-data, Bearer 인증
+// upload-link-image — POST JSON {filename, contentType, base64}, Bearer 인증
 // Supabase Storage 'link-assets/{user_id}/{uuid}.{ext}' 업로드 후 public URL 반환
 const crypto = require('crypto');
 const { getAdminClient } = require('./_shared/supabase-admin');
@@ -24,42 +24,6 @@ function extFromMime(mime) {
   }
 }
 
-// multipart/form-data 파싱 (단일 file 필드만 기대)
-function parseMultipart(buffer, boundary) {
-  const delim = Buffer.from('--' + boundary);
-  const crlf = Buffer.from('\r\n');
-  let idx = buffer.indexOf(delim);
-  if (idx < 0) return null;
-  idx += delim.length;
-  while (idx < buffer.length) {
-    // 각 파트 시작: \r\n (헤더블록) \r\n\r\n (바디) ... \r\n--boundary
-    if (buffer.slice(idx, idx + 2).toString() === '--') return null; // 종료
-    if (buffer.slice(idx, idx + 2).equals(crlf)) idx += 2;
-    const headerEnd = buffer.indexOf(Buffer.from('\r\n\r\n'), idx);
-    if (headerEnd < 0) return null;
-    const headerStr = buffer.slice(idx, headerEnd).toString('utf8');
-    const bodyStart = headerEnd + 4;
-    const nextBoundary = buffer.indexOf(delim, bodyStart);
-    if (nextBoundary < 0) return null;
-    const bodyEnd = nextBoundary - 2; // 직전 \r\n 제거
-    const body = buffer.slice(bodyStart, bodyEnd);
-
-    const nameMatch = headerStr.match(/name="([^"]+)"/i);
-    const filenameMatch = headerStr.match(/filename="([^"]*)"/i);
-    const ctMatch = headerStr.match(/content-type:\s*([^\r\n;]+)/i);
-
-    if (nameMatch && nameMatch[1] === 'file') {
-      return {
-        filename: filenameMatch ? filenameMatch[1] : 'upload',
-        contentType: ctMatch ? ctMatch[1].trim().toLowerCase() : 'application/octet-stream',
-        data: body,
-      };
-    }
-    idx = nextBoundary + delim.length;
-  }
-  return null;
-}
-
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
   if (event.httpMethod !== 'POST') {
@@ -72,44 +36,39 @@ exports.handler = async (event) => {
     return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증이 필요합니다.' }) };
   }
 
-  const contentType = (event.headers['content-type'] || event.headers['Content-Type'] || '').toLowerCase();
-  if (!contentType.startsWith('multipart/form-data')) {
-    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'multipart/form-data 만 허용됩니다.' }) };
-  }
-  const boundaryMatch = contentType.match(/boundary=([^;]+)/i);
-  if (!boundaryMatch) {
-    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'multipart boundary 누락' }) };
-  }
-  const boundary = boundaryMatch[1].replace(/^"|"$/g, '').trim();
-
-  const raw = event.isBase64Encoded
-    ? Buffer.from(event.body || '', 'base64')
-    : Buffer.from(event.body || '', 'utf8');
-
-  if (raw.length > MAX_BYTES + 1024) {
-    return { statusCode: 413, headers: CORS, body: JSON.stringify({ error: '파일이 너무 커요 (최대 5MB).' }) };
+  let body;
+  try {
+    body = JSON.parse(event.body || '{}');
+  } catch (_) {
+    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'JSON 본문 파싱 실패' }) };
   }
 
-  const file = parseMultipart(raw, boundary);
-  if (!file) {
-    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '파일을 찾을 수 없어요.' }) };
-  }
-  if (!ALLOWED_MIME.has(file.contentType)) {
+  const contentType = (body.contentType || '').toLowerCase();
+  if (!ALLOWED_MIME.has(contentType)) {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '이미지 형식(JPG/PNG/WebP/GIF)만 업로드 가능해요.' }) };
   }
-  if (file.data.length > MAX_BYTES) {
+  const base64 = typeof body.base64 === 'string' ? body.base64.replace(/^data:[^;]+;base64,/, '') : '';
+  if (!base64) {
+    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'base64 본문이 비어있어요.' }) };
+  }
+
+  const buffer = Buffer.from(base64, 'base64');
+  if (!buffer.length) {
+    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'base64 디코딩 실패' }) };
+  }
+  if (buffer.length > MAX_BYTES) {
     return { statusCode: 413, headers: CORS, body: JSON.stringify({ error: '파일이 너무 커요 (최대 5MB).' }) };
   }
 
   try {
     const admin = getAdminClient();
-    const ext = extFromMime(file.contentType);
+    const ext = extFromMime(contentType);
     const objectPath = `${user.id}/${crypto.randomUUID()}.${ext}`;
 
     const { error: upErr } = await admin.storage
       .from('link-assets')
-      .upload(objectPath, file.data, {
-        contentType: file.contentType,
+      .upload(objectPath, buffer, {
+        contentType,
         cacheControl: '31536000',
         upsert: false,
       });
