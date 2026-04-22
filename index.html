@@ -34,7 +34,7 @@ gtag('config', 'G-RTY8F34TR7');
 <meta property="og:site_name" content="lumi">
 <meta property="og:locale" content="ko_KR">
 <meta property="og:title" content="가게는 보시고, 인스타는 맡기세요 — 사진 한 장이면 끝 | lumi">
-<meta property="og:description" content="내 가게 전담 루미. 올릴 때마다 우리 매장 말투를 1:1로 학습해 쓸수록 나에게 맞춰져요. 대행사 비용의 1/25.">
+<meta property="og:description" content="내 가게 전담 루미. 올릴 때마다 우리 매장 말투를 학습해, 쓸수록 더 나에게 맞춰져요. 월 19,900원부터 구독.">
 <meta property="og:image" content="https://lumi.it.kr/assets/logo.png">
 <meta property="og:image:width" content="2048">
 <meta property="og:image:height" content="2048">
@@ -2482,7 +2482,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div class="m-card" style="margin-top:20px;">
       <p style="font-size:13px; color:var(--ink-3); font-weight:600;">스탠다드</p>
       <p style="font-size:28px; font-weight:700; color:var(--ink); margin-top:4px;">₩19,900<span style="font-size:14px; color:var(--ink-3); font-weight:400;"> / 월</span></p>
-      <p style="font-size:14px; color:var(--ink-2); margin-top:8px;">월 12회 캡션 · 자동 게시 · 말투 학습 · 트렌드 키워드</p>
+      <p style="font-size:14px; color:var(--ink-2); margin-top:8px;">월 12회 캡션 · 예약 게시 · AI가 평가 학습 · 트렌드 키워드</p>
       <a href="/pricing.html#standard" style="display:inline-block;margin-top:12px;font-size:13px;color:var(--pink);text-decoration:none;font-weight:600;">자세히 보기 →</a>
     </div>
     <!-- 프로 -->
@@ -4777,7 +4777,7 @@ function mInitWave2(){
     var monthEl = document.getElementById('m-report-month');
     var now = new Date();
     if (monthEl) monthEl.textContent = (now.getMonth()+1) + '월 활동';
-    var PAID_LABELS = { basic:'베이직', standard:'스탠다드', pro:'프로' };
+    var PAID_LABELS = { standard:'스탠다드', pro:'프로' };
     var planLimit = function(p){ return p === 'pro' || p === 'trial' ? 20 : p === 'standard' ? 12 : 0; };
     // trial_start 기준 남은 일수 (7일 체험)
     var trialDaysLeft = function(startIso){
@@ -7374,7 +7374,7 @@ var cards = {
             if(d.featToggles) { try { localStorage.setItem('lumi_feat_toggles', JSON.stringify(d.featToggles)); } catch(ex) {} }
           }).catch(function(){});
         },[]);
-        var planNames = {trial:'\uBB34\uB8CC \uCCB4\uD5D8',basic:'\uBCA0\uC774\uC9C1',standard:'\uC2A4\uD0E0\uB2E4\uB4DC',pro:'\uD504\uB85C'};
+        var planNames = {trial:'\uBB34\uB8CC \uCCB4\uD5D8',standard:'\uC2A4\uD0E0\uB2E4\uB4DC',pro:'\uD504\uB85C'};
         var plan = planData ? (planNames[planData.plan]||planData.plan) : '\uB85C\uB529...';
         var used = planData ? planData.postCount : 0;
         var limit = planData ? planData.limit : 0;
@@ -7421,7 +7421,7 @@ var cards = {
             e('p', {style:{fontSize:isMobile?'16px':'20px',fontWeight:400,color:tc,letterSpacing:'-0.5px'}}, '₩19,900'),
             e('p', {style:{fontSize:'9px',color:tc2,marginTop:'2px',marginBottom:isMobile?'6px':'8px'}}, '/월 · 12건'),
             check('월 12회 캡션 생성'),
-            check('자동 게시'),
+            check('예약 게시'),
             check('트렌드 키워드')
           ),
           e('div', {className:'price-box', onClick:function(){location.href='/pricing.html#pro';}, style:{flex:1,padding:isMobile?'8px 10px':'12px 14px',borderRadius:'14px',background:isDk?'rgba(255,107,139,.08)':'linear-gradient(135deg,rgba(255,107,139,.06),rgba(221,160,221,.06))',outline:'1.5px solid '+(isDk?'rgba(255,143,171,.25)':'rgba(200,80,122,.15)'),display:'flex',flexDirection:'column'}},
@@ -8231,8 +8231,10 @@ function suShowForm() {
   else if (step.input === 'agree') {
     html += '<div class="su-agree">';
     html += '<label class="su-agree-all"><input type="checkbox" id="su-agree-all" onchange="document.querySelectorAll(\'.su-agree-each\').forEach(function(e){e.checked=this.checked;},this)"><span>전체 동의하기</span></label>';
+    html += '<label><input type="checkbox" class="su-agree-each"><span>(필수) 만 14세 이상입니다</span></label>';
     html += '<label><input type="checkbox" class="su-agree-each"><span>(필수) <a href="/terms.html" target="_blank" style="color:#C8507A;text-decoration:underline;">서비스 이용약관</a> 동의</span></label>';
     html += '<label><input type="checkbox" class="su-agree-each"><span>(필수) <a href="/privacy.html" target="_blank" style="color:#C8507A;text-decoration:underline;">개인정보 처리방침</a> 동의</span></label>';
+    html += '<label><input type="checkbox" class="su-agree-each"><span>(필수) 개인정보 <a href="/privacy.html#intl-transfer" target="_blank" style="color:#C8507A;text-decoration:underline;">국외 이전</a> 동의 (Supabase·OpenAI·Meta·Netlify 등 미국 소재 수탁사)</span></label>';
     html += '<label><input type="checkbox" class="su-agree-each"><span>(선택) 마케팅 정보 수신 동의</span></label>';
     html += '</div>';
     html += '<button class="su-btn" onclick="suSubmitAgree()">가입 완료</button>';
@@ -8393,19 +8395,20 @@ function suSubmitBiz() {
   suNextPhase();
 }
 function suSubmitAgree() {
-  var required = Array.from(document.querySelectorAll('.su-agree-each')).slice(0, 2);
+  var all = Array.from(document.querySelectorAll('.su-agree-each'));
+  var required = all.slice(0, 4); // age14 + terms + privacy + intl-transfer
   if (!required.every(function(c) { return c.checked; })) {
     suChangeLumi('/assets/lumi-sad.png', true);
-    document.getElementById('su-speech').innerHTML = '필수 약관에<br>동의해주세요!';
+    document.getElementById('su-speech').innerHTML = '필수 약관(연령·이용약관·개인정보·국외이전)에<br>모두 동의해주세요!';
     return;
   }
-  var marketing = document.querySelectorAll('.su-agree-each')[2];
+  var marketing = all[4];
   document.getElementById('su-form-area').innerHTML = '';
   suChangeLumi('/assets/lumi-curious.png');
   document.getElementById('su-speech').innerHTML = '가입 처리 중...';
   fetch('/api/register', {
     method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({name:suData.name, storeName:suData.storeName, email:suData.email, phone:suData.phone, password:suData.password, bizCategory:suData.bizCategory, agreeMarketing:marketing?marketing.checked:false, otpToken:suData.otpToken})
+    body: JSON.stringify({name:suData.name, storeName:suData.storeName, email:suData.email, phone:suData.phone, password:suData.password, bizCategory:suData.bizCategory, agreeMarketing:marketing?marketing.checked:false, agreeAge14:true, agreeIntlTransfer:true, otpToken:suData.otpToken})
   }).then(function(r){return r.json();}).then(function(data){
     if(data.error){suChangeLumi('/assets/lumi-sad.png',true);document.getElementById('su-speech').textContent=data.error;setTimeout(function(){suShowForm();},1500);return;}
     localStorage.setItem('lumi_token',data.token);
