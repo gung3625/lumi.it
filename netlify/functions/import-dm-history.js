@@ -183,21 +183,23 @@ exports.handler = async (event) => {
       return { statusCode: 403, headers: CORS, body: JSON.stringify({ error: '비즈니스 플랜에서만 사용할 수 있어요.' }) };
     }
 
-    // 3. IG 계정 조회 (access_token 평문은 ig_accounts_decrypted 뷰에서)
+    // 3. IG 계정 조회 (평문 토큰은 ig_accounts_decrypted 뷰에서)
+    //    /{ig_user}/conversations 는 page access token 필수 → page_access_token 우선.
     const { data: igAccount, error: igErr } = await admin
       .from('ig_accounts_decrypted')
-      .select('ig_user_id, access_token')
+      .select('ig_user_id, access_token, page_access_token')
       .eq('user_id', user.id)
       .maybeSingle();
     if (igErr) {
       console.error('[import-dm-history] ig_accounts 조회 오류:', igErr.message);
       return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: 'IG 계정 조회 실패' }) };
     }
-    if (!igAccount || !igAccount.ig_user_id || !igAccount.access_token) {
+    if (!igAccount || !igAccount.ig_user_id || !(igAccount.page_access_token || igAccount.access_token)) {
       return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'IG 연동 필요' }) };
     }
 
-    const { ig_user_id: igUserId, access_token: accessToken } = igAccount;
+    const igUserId = igAccount.ig_user_id;
+    const accessToken = igAccount.page_access_token || igAccount.access_token;
 
     // 4. conversations 목록 조회
     let conversations;

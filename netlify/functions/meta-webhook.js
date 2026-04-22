@@ -50,7 +50,7 @@ async function getIgContext(supabase, igUserId) {
   try {
     const { data, error } = await supabase
       .from('ig_accounts_decrypted')
-      .select('access_token, user_id')
+      .select('access_token, page_access_token, user_id')
       .eq('ig_user_id', igUserId)
       .maybeSingle();
     if (error || !data) return null;
@@ -64,7 +64,7 @@ async function getIgContext(supabase, igUserId) {
         .maybeSingle();
       email = user?.email || null;
     }
-    return { accessToken: data.access_token || null, userId: data.user_id || null, email };
+    return { accessToken: data.page_access_token || data.access_token || null, userId: data.user_id || null, email };
   } catch (e) {
     console.error('[meta-webhook] getIgContext 실패:', e.message);
     return null;
