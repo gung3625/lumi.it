@@ -51,6 +51,9 @@ create table if not exists public.store_context (
 );
 create index if not exists idx_store_context_updated on public.store_context(updated_at desc);
 `,
+  'pgrst_reload.sql': `
+notify pgrst, 'reload schema';
+`,
   'auto_reply_tables.sql': `
 -- auto_reply_settings: 사장님별 자동응답 설정
 create table if not exists public.auto_reply_settings (
