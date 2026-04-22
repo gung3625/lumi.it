@@ -7668,6 +7668,91 @@ var cards = {
       )
     );
   },
+  autoreply: function() {
+    var isDk = document.body.classList.contains('dark-mode');
+    var tc = isDk ? '#f0f2f8' : '#0d1117';
+    var tc2 = isDk ? 'rgba(240,242,248,.6)' : 'rgba(0,0,0,.4)';
+    var pink = isDk ? '#FF8FAB' : '#C8507A';
+    var cardBg = isDk ? '#272729' : '#fff';
+    var badgeBg = isDk ? 'rgba(255,255,255,.12)' : 'rgba(0,0,0,.06)';
+    var isLoggedIn = !!localStorage.getItem('lumi_token');
+    var lumiUser = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+    var plan = lumiUser.plan || '';
+    var isProOrBiz = plan === 'pro' || plan === 'business';
+
+    var MsgIcon = e('svg', {width:24, height:24, viewBox:'0 0 24 24', fill:'none', stroke:pink, strokeWidth:2, strokeLinecap:'round', strokeLinejoin:'round', style:{flexShrink:0}},
+      e('path', {d:'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'})
+    );
+
+    if (!isLoggedIn || !isProOrBiz) {
+      return e('div', {
+        className: 'bento-card card-text',
+        style: {padding:'clamp(12px,2.5vw,16px)',background:cardBg,display:'flex',flexDirection:'column',justifyContent:'space-between',width:'100%',height:'100%',boxSizing:'border-box'},
+        onMouseDown: function(ev){ ev.stopPropagation(); },
+        onTouchStart: function(ev){ ev.stopPropagation(); }
+      },
+        e('div', {style:{display:'flex',flexDirection:'column',gap:'6px',flex:1}},
+          e('div', {style:{display:'flex',alignItems:'center',gap:'8px',marginBottom:'4px'}},
+            MsgIcon,
+            e('span', {style:{fontSize:'10px',fontWeight:600,color:tc2,letterSpacing:'.5px',textTransform:'uppercase'}}, 'DM·댓글 자동응답')
+          ),
+          e('p', {style:{fontSize:'clamp(12px,1.8vw,13px)',fontWeight:700,color:tc,margin:0,lineHeight:1.3}}, '고객 메시지에 즉시 대응'),
+          e('p', {style:{fontSize:'clamp(10px,1.5vw,11px)',color:tc2,margin:0,lineHeight:1.5}}, '프로·비즈니스 전용 기능')
+        ),
+        e('a', {
+          className: 'btn-pill',
+          href: '/subscribe',
+          onMouseDown: function(ev){ ev.stopPropagation(); },
+          onClick: function(ev){ ev.stopPropagation(); },
+          style: {marginTop:'10px',display:'flex',alignItems:'center',justifyContent:'center',minHeight:'34px',padding:'0 12px',fontSize:'11px'}
+        }, '업그레이드')
+      );
+    }
+
+    var AutoReplyCard = function() {
+      var st = React.useState(null), arData = st[0], setArData = st[1];
+      React.useEffect(function(){
+        var tok = localStorage.getItem('lumi_token');
+        if (!tok) return;
+        fetch('/api/auto-reply-settings', { method:'GET', headers:{ 'Authorization':'Bearer '+tok, 'Content-Type':'application/json' } })
+          .then(function(r){ return r.json().catch(function(){ return {}; }); })
+          .then(function(res){ if (res && res.settings) setArData(res.settings); })
+          .catch(function(){});
+      }, []);
+
+      var enabled = arData && arData.enabled;
+      var shadow = arData && arData.shadow_mode !== false;
+      var badgeText, badgeColor, badgeFg;
+      if (enabled && !shadow) { badgeText = '켜짐'; badgeColor = isDk ? 'rgba(200,80,122,.25)' : 'rgba(200,80,122,.12)'; badgeFg = pink; }
+      else if (enabled && shadow) { badgeText = 'Shadow (로그만)'; badgeColor = badgeBg; badgeFg = tc2; }
+      else { badgeText = '꺼짐'; badgeColor = badgeBg; badgeFg = tc2; }
+
+      return e('div', {
+        className: 'bento-card card-text',
+        style: {padding:'clamp(12px,2.5vw,16px)',background:cardBg,display:'flex',flexDirection:'column',justifyContent:'space-between',width:'100%',height:'100%',boxSizing:'border-box'},
+        onMouseDown: function(ev){ ev.stopPropagation(); },
+        onTouchStart: function(ev){ ev.stopPropagation(); }
+      },
+        e('div', {style:{display:'flex',flexDirection:'column',gap:'6px',flex:1}},
+          e('div', {style:{display:'flex',alignItems:'center',gap:'8px',marginBottom:'2px'}},
+            MsgIcon,
+            e('span', {style:{fontSize:'clamp(12px,1.8vw,14px)',fontWeight:700,color:tc}}, 'DM·댓글 자동응답')
+          ),
+          e('p', {style:{fontSize:'clamp(10px,1.5vw,11px)',color:tc2,margin:0,lineHeight:1.4}}, '고객 메시지에 즉시 대응'),
+          e('span', {style:{display:'inline-block',marginTop:'8px',padding:'3px 10px',borderRadius:'980px',fontSize:'11px',fontWeight:600,background:badgeColor,color:badgeFg}}, badgeText || '로딩 중…')
+        ),
+        e('button', {
+          className: 'btn-pill',
+          onClick: function(ev){ ev.stopPropagation(); window.location.href = '/settings#auto-reply'; },
+          onMouseDown: function(ev){ ev.stopPropagation(); },
+          onTouchStart: function(ev){ ev.stopPropagation(); },
+          style: {marginTop:'10px',width:'100%',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',minHeight:'34px',padding:'0 12px',fontSize:'11px'}
+        }, '설정')
+      );
+    };
+
+    return e(AutoReplyCard);
+  },
   linkinbio: function() {
     var isDk = document.body.classList.contains('dark-mode');
     var tc = isDk ? '#f0f2f8' : '#0d1117';
@@ -7730,6 +7815,7 @@ var layoutUser = [
   {i:'project1',   x:3, y:2, w:1, h:2, isResizable:false},
   {i:'blog',       x:0, y:3, w:2, h:1, isResizable:false},
   {i:'spotify',    x:2, y:3, w:1, h:1, isResizable:false},
+  {i:'autoreply',  x:3, y:3, w:1, h:1, isResizable:false},
   {i:'project3',   x:0, y:4, w:2, h:1, isResizable:false},
   {i:'twitter',    x:2, y:4, w:1, h:1, isResizable:false},
   {i:'dark',       x:3, y:4, w:1, h:1, isResizable:false}
@@ -7743,11 +7829,12 @@ var tabletLayout = [
   {i:'empty1',    x:0, y:2, w:1, h:1, isResizable:false},
   {i:'twitter',   x:1, y:2, w:1, h:1, isResizable:false},
   {i:'linkinbio', x:0, y:3, w:1, h:1, isResizable:false},
-  {i:'spotify',   x:1, y:3, w:1, h:1, isResizable:false},
-  {i:'project2',  x:0, y:4, w:1, h:2, isResizable:false},
-  {i:'blog',      x:1, y:4, w:1, h:1, isResizable:false},
-  {i:'dark',      x:1, y:5, w:1, h:1, isResizable:false},
-  {i:'project3',  x:0, y:6, w:1, h:1, isResizable:false},
+  {i:'autoreply', x:1, y:3, w:1, h:1, isResizable:false},
+  {i:'spotify',   x:0, y:4, w:1, h:1, isResizable:false},
+  {i:'project2',  x:1, y:4, w:1, h:2, isResizable:false},
+  {i:'blog',      x:0, y:5, w:1, h:1, isResizable:false},
+  {i:'dark',      x:0, y:6, w:1, h:1, isResizable:false},
+  {i:'project3',  x:1, y:6, w:1, h:1, isResizable:false},
   {i:'newsletter',x:0, y:7, w:2, h:1, isResizable:false}
 ];
 
@@ -7755,20 +7842,21 @@ var tabletLayout = [
 var mobileLayout = [
   {i:'bio',       x:0, y:0,  w:1, h:2, isResizable:false},
   {i:'linkinbio', x:0, y:2,  w:1, h:1, isResizable:false},
-  {i:'empty1',    x:0, y:3,  w:1, h:1, isResizable:false},
-  {i:'blog',      x:0, y:4,  w:1, h:1, isResizable:false},
-  {i:'project1',  x:0, y:5,  w:1, h:1, isResizable:false},
-  {i:'spotify',   x:0, y:6,  w:1, h:1, isResizable:false},
-  {i:'project2',  x:0, y:7,  w:1, h:2, isResizable:false},
-  {i:'twitter',   x:0, y:9,  w:1, h:1, isResizable:false},
-  {i:'newsletter',x:0, y:10, w:1, h:1, isResizable:false},
-  {i:'project3',  x:0, y:11, w:1, h:1, isResizable:false},
-  {i:'dark',      x:0, y:12, w:1, h:1, isResizable:false}
+  {i:'autoreply', x:0, y:3,  w:1, h:1, isResizable:false},
+  {i:'empty1',    x:0, y:4,  w:1, h:1, isResizable:false},
+  {i:'blog',      x:0, y:5,  w:1, h:1, isResizable:false},
+  {i:'project1',  x:0, y:6,  w:1, h:1, isResizable:false},
+  {i:'spotify',   x:0, y:7,  w:1, h:1, isResizable:false},
+  {i:'project2',  x:0, y:8,  w:1, h:2, isResizable:false},
+  {i:'twitter',   x:0, y:10, w:1, h:1, isResizable:false},
+  {i:'newsletter',x:0, y:11, w:1, h:1, isResizable:false},
+  {i:'project3',  x:0, y:12, w:1, h:1, isResizable:false},
+  {i:'dark',      x:0, y:13, w:1, h:1, isResizable:false}
 ];
 
 // 저장된 레이아웃 불러오기
 // 레이아웃 버전 관리 — 레이아웃 변경 시 버전 올리면 캐시 무시
-var LAYOUT_VERSION = 35;
+var LAYOUT_VERSION = 36;
 var savedLayout = null;
 if (!localStorage.getItem('lumi_token')) {
   try {

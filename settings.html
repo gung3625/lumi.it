@@ -274,6 +274,97 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </div>
   </div>
 
+  <!-- DM·댓글 자동응답 -->
+  <div class="card wide" id="auto-reply" style="position:relative;overflow:hidden;">
+    <span class="card-num">05</span>
+    <div class="card-header">
+      <span class="card-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+      <span class="card-title">DM·댓글 자동응답</span>
+    </div>
+    <p class="field-note" style="margin-bottom:4px;">고객 DM과 댓글에 키워드 규칙과 기본 답변을 미리 세팅하면, 루미가 대신 응답해요. Meta 심사 통과 전까지는 Shadow 모드(로그만 쌓이고 실제 발송은 멈춤)로 동작합니다.</p>
+
+    <!-- 잠금 오버레이 (standard/trial/free) -->
+    <div id="ar-lock-overlay" style="display:none;position:absolute;inset:0;background:rgba(245,245,247,.93);z-index:10;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:32px;text-align:center;">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#C8507A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <p style="font-size:16px;font-weight:600;color:#1d1d1f;margin:0;" id="ar-lock-msg">DM·댓글 자동응답은 프로·비즈니스 플랜에서 사용할 수 있어요</p>
+      <a href="/subscribe" class="btn btn-pink" style="text-decoration:none;display:inline-flex;align-items:center;">플랜 업그레이드</a>
+    </div>
+
+    <!-- 자동응답 켜기 -->
+    <div class="toggle-row">
+      <div>
+        <p class="toggle-label">자동응답 켜기</p>
+        <p class="toggle-desc">꺼두면 수신만 기록하고 응답은 보내지 않아요.</p>
+      </div>
+      <button class="toggle" id="ar-enabled" onclick="this.classList.toggle('on')"></button>
+    </div>
+
+    <!-- Shadow 모드 -->
+    <div class="toggle-row">
+      <div>
+        <p class="toggle-label">Shadow 모드</p>
+        <p class="toggle-desc">Meta 고급권한 승인 전에는 반드시 켜두세요. 승인되면 끄고 실제 발송을 시작할 수 있어요.</p>
+      </div>
+      <button class="toggle on" id="ar-shadow" onclick="this.classList.toggle('on')"></button>
+    </div>
+
+    <!-- 기본 DM 답변 -->
+    <div class="field">
+      <span class="field-label">기본 DM 답변</span>
+      <textarea class="field-input" id="ar-dm-reply" placeholder="안녕하세요! 메시지 감사해요 😊" maxlength="200" style="min-height:80px;"></textarea>
+      <span class="field-note">키워드 규칙에 매칭되지 않는 DM에 보내는 기본 답변입니다. 200자 이내.</span>
+    </div>
+
+    <!-- 기본 댓글 답변 -->
+    <div class="field">
+      <span class="field-label">기본 댓글 답변</span>
+      <textarea class="field-input" id="ar-comment-reply" placeholder="감사합니다 😊 궁금한 점은 DM으로 문의해 주세요!" maxlength="200" style="min-height:80px;"></textarea>
+      <span class="field-note">댓글에 달리는 기본 답변입니다. 200자 이내.</span>
+    </div>
+
+    <!-- 키워드 규칙 -->
+    <div class="field">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+        <span class="field-label">키워드 규칙</span>
+        <span class="field-note" id="ar-rules-count" style="color:#6e6e73;font-size:12px;">0 / 20</span>
+      </div>
+      <span class="field-note" style="margin-bottom:8px;">고객 메시지에 아래 키워드가 들어가면 지정한 답변을 보내요. 예: 키워드 '예약, 웨이팅' → 답변 '예약은 카톡 @카페루미로 부탁드려요!'</span>
+      <div id="ar-rules-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+      <button class="btn btn-dark" id="ar-add-rule" onclick="arAddRule()" style="margin-top:10px;align-self:flex-start;font-size:13px;padding:8px 18px;min-height:36px;">+ 규칙 추가</button>
+    </div>
+
+    <!-- 응답 차단 키워드 -->
+    <div class="field">
+      <span class="field-label">응답 차단 키워드</span>
+      <span class="field-note" style="margin-bottom:8px;">이 단어가 포함된 메시지는 자동 응답하지 않고 알림만 사장님께 보내요. 부정/민감 키워드 추천.</span>
+      <div id="ar-blocklist-tags" style="display:flex;flex-wrap:wrap;gap:6px;min-height:36px;padding:10px 14px;border-radius:8px;background:rgba(0,0,0,.04);cursor:text;" onclick="document.getElementById('ar-blocklist-input').focus()"></div>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <input class="field-input" id="ar-blocklist-input" placeholder="키워드 입력 후 Enter 또는 쉼표" style="flex:1;min-height:44px;" onkeydown="arBlocklistKeydown(event)">
+      </div>
+    </div>
+
+    <!-- AI 자신감 기준 -->
+    <div class="field" id="ar-confidence-field">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <span class="field-label">AI 자신감 기준</span>
+        <span id="ar-biz-badge" style="display:none;font-size:11px;font-weight:600;background:rgba(200,80,122,.12);color:#C8507A;border-radius:6px;padding:2px 8px;">비즈니스 전용</span>
+      </div>
+      <input type="range" id="ar-confidence" min="0.70" max="0.95" step="0.05" value="0.85" style="width:100%;accent-color:#C8507A;cursor:not-allowed;opacity:.45;" disabled>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:#6e6e73;">
+        <span>낮음(빠른 응답)</span>
+        <span id="ar-confidence-val" style="font-weight:600;color:#C8507A;">0.85</span>
+        <span>높음(정확도 우선)</span>
+      </div>
+      <span class="field-note">루미 AI가 이 자신감 이상일 때만 자동 발송. 낮출수록 반응↑·오답 리스크↑, 높일수록 정확도↑·놓칠 확률↑.</span>
+    </div>
+
+    <!-- 저장 버튼 -->
+    <div class="btn-row" style="margin-top:4px;">
+      <span id="ar-error" style="font-size:13px;color:#d70015;display:none;flex:1;"></span>
+      <button class="btn btn-pink" id="ar-save-btn" onclick="saveAutoReply()">저장</button>
+    </div>
+  </div>
+
   <!-- 로그아웃 -->
   <div style="grid-column:1/-1;display:flex;justify-content:center;padding:16px 0 0;">
     <button class="btn btn-danger" style="width:100%;max-width:400px;" onclick="if(confirm('로그아웃 하시겠어요?')){localStorage.removeItem('lumi_token');localStorage.removeItem('lumi_user');localStorage.removeItem('lumi_settings');location.href='/';}">로그아웃</button>
@@ -476,6 +567,192 @@ function showToast(msg){
 
 var io=new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting){var delay=parseInt(e.target.dataset.delay||0);setTimeout(function(){e.target.classList.add('visible');},delay);io.unobserve(e.target);}});},{threshold:0.08});
 document.querySelectorAll('.card').forEach(function(c,i){c.dataset.delay=i*60;io.observe(c);});
+
+// ---- DM·댓글 자동응답 ----
+var arBlocklist = ['비싸','별로','불만','환불','최악','맛없','이상해','짜증','실망'];
+var arRules = [];
+
+function arFetch(url, opts) {
+  var tok = localStorage.getItem('lumi_token');
+  var headers = Object.assign({ 'Content-Type': 'application/json' }, opts && opts.headers || {});
+  if (tok) headers['Authorization'] = 'Bearer ' + tok;
+  return fetch(url, Object.assign({}, opts, { headers: headers }));
+}
+
+function arRenderBlocklist() {
+  var container = document.getElementById('ar-blocklist-tags');
+  if (!container) return;
+  container.innerHTML = '';
+  arBlocklist.forEach(function(tag, idx) {
+    var span = document.createElement('span');
+    span.style.cssText = 'display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:980px;background:#C8507A;color:#fff;font-size:13px;font-weight:600;';
+    span.textContent = tag;
+    var x = document.createElement('button');
+    x.type = 'button';
+    x.textContent = '×';
+    x.style.cssText = 'background:none;border:none;color:#fff;cursor:pointer;font-size:15px;line-height:1;padding:0 0 0 2px;';
+    x.onclick = function(ev) { ev.stopPropagation(); arBlocklist.splice(idx, 1); arRenderBlocklist(); };
+    span.appendChild(x);
+    container.appendChild(span);
+  });
+}
+
+function arBlocklistKeydown(ev) {
+  if (ev.key === 'Enter' || ev.key === ',') {
+    ev.preventDefault();
+    var val = ev.target.value.replace(/,/g, '').trim();
+    if (val && arBlocklist.indexOf(val) === -1) { arBlocklist.push(val); arRenderBlocklist(); }
+    ev.target.value = '';
+  }
+}
+
+function arRenderRules() {
+  var list = document.getElementById('ar-rules-list');
+  var count = document.getElementById('ar-rules-count');
+  var addBtn = document.getElementById('ar-add-rule');
+  if (!list) return;
+  list.innerHTML = '';
+  arRules.forEach(function(rule, idx) {
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;flex-direction:column;gap:6px;padding:12px 14px;border-radius:8px;background:rgba(0,0,0,.03);position:relative;';
+    row.innerHTML =
+      '<div style="display:flex;gap:8px;align-items:center;">' +
+        '<input class="field-input" style="flex:1;min-height:40px;font-size:14px;" placeholder="키워드 (쉼표 구분)" value="' + arEsc(rule.keywords) + '" oninput="arRules[' + idx + '].keywords=this.value" />' +
+        '<select class="field-input" style="width:110px;min-height:40px;font-size:13px;" onchange="arRules[' + idx + '].channel=this.value">' +
+          '<option value="both"' + (rule.channel==='both'?' selected':'') + '>DM+댓글</option>' +
+          '<option value="dm"' + (rule.channel==='dm'?' selected':'') + '>DM만</option>' +
+          '<option value="comment"' + (rule.channel==='comment'?' selected':'') + '>댓글만</option>' +
+        '</select>' +
+        '<button type="button" onclick="arRules.splice(' + idx + ',1);arRenderRules();" style="width:32px;height:32px;border-radius:50%;border:none;background:rgba(255,59,48,.1);color:#d70015;cursor:pointer;font-size:16px;flex-shrink:0;">×</button>' +
+      '</div>' +
+      '<textarea class="field-input" style="min-height:60px;font-size:14px;" placeholder="이 키워드에 보낼 답변" oninput="arRules[' + idx + '].reply=this.value">' + arEsc(rule.reply) + '</textarea>';
+    list.appendChild(row);
+  });
+  if (count) count.textContent = arRules.length + ' / 20';
+  if (addBtn) addBtn.disabled = arRules.length >= 20;
+}
+
+function arEsc(str) { return (str || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function arAddRule() {
+  if (arRules.length >= 20) return;
+  arRules.push({ keywords: '', reply: '', channel: 'both' });
+  arRenderRules();
+}
+
+function arApplyPlan(plan) {
+  var overlay = document.getElementById('ar-lock-overlay');
+  var confInput = document.getElementById('ar-confidence');
+  var confBadge = document.getElementById('ar-biz-badge');
+  var isDark = document.body.classList.contains('dark-mode');
+  if (overlay) {
+    if (plan === 'pro' || plan === 'business') {
+      overlay.style.display = 'none';
+    } else {
+      overlay.style.display = 'flex';
+      if (isDark) {
+        overlay.style.background = 'rgba(17,17,17,.93)';
+        overlay.querySelector('p').style.color = '#f0f2f8';
+      }
+    }
+  }
+  if (plan === 'business') {
+    if (confInput) { confInput.disabled = false; confInput.style.cursor = 'pointer'; confInput.style.opacity = '1'; }
+    if (confBadge) confBadge.style.display = 'none';
+  } else {
+    if (confInput) { confInput.disabled = true; confInput.style.cursor = 'not-allowed'; confInput.style.opacity = '.45'; }
+    if (confBadge) confBadge.style.display = (plan === 'pro') ? 'inline-flex' : 'none';
+  }
+}
+
+function arLoad() {
+  if (!localStorage.getItem('lumi_token')) { arApplyPlan('free'); arRenderBlocklist(); arRenderRules(); return; }
+  arFetch('/api/auto-reply-settings', { method: 'GET' })
+    .then(function(r) { return r.json().catch(function() { return {}; }); })
+    .then(function(res) {
+      var plan = (res && res.plan) || 'free';
+      arApplyPlan(plan);
+      var s = (res && res.settings) || {};
+      var enBtn = document.getElementById('ar-enabled');
+      var shBtn = document.getElementById('ar-shadow');
+      if (enBtn) { if (s.enabled) enBtn.classList.add('on'); else enBtn.classList.remove('on'); }
+      if (shBtn) { if (s.shadow_mode !== false) shBtn.classList.add('on'); else shBtn.classList.remove('on'); }
+      var dmEl = document.getElementById('ar-dm-reply');
+      var cmEl = document.getElementById('ar-comment-reply');
+      if (dmEl && s.default_dm_reply) dmEl.value = s.default_dm_reply;
+      if (cmEl && s.default_comment_reply) cmEl.value = s.default_comment_reply;
+      if (s.negative_keyword_blocklist && Array.isArray(s.negative_keyword_blocklist)) arBlocklist = s.negative_keyword_blocklist.slice();
+      if (s.keyword_rules && Array.isArray(s.keyword_rules)) {
+        arRules = s.keyword_rules.map(function(r) {
+          return { keywords: Array.isArray(r.keywords) ? r.keywords.join(', ') : (r.keywords || ''), reply: r.reply || '', channel: r.channel || 'both' };
+        });
+      }
+      var confEl = document.getElementById('ar-confidence');
+      var confVal = document.getElementById('ar-confidence-val');
+      if (confEl && s.ai_confidence_threshold) { confEl.value = s.ai_confidence_threshold; if (confVal) confVal.textContent = String(s.ai_confidence_threshold); }
+    })
+    .catch(function() { arApplyPlan('free'); })
+    .then(function() { arRenderBlocklist(); arRenderRules(); });
+}
+
+function saveAutoReply() {
+  var errEl = document.getElementById('ar-error');
+  var btn = document.getElementById('ar-save-btn');
+  if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+  if (btn) { btn.disabled = true; btn.textContent = '저장 중…'; }
+
+  var enabled = document.getElementById('ar-enabled') ? document.getElementById('ar-enabled').classList.contains('on') : false;
+  var shadow_mode = document.getElementById('ar-shadow') ? document.getElementById('ar-shadow').classList.contains('on') : true;
+  var default_dm_reply = (document.getElementById('ar-dm-reply') || {}).value || '';
+  var default_comment_reply = (document.getElementById('ar-comment-reply') || {}).value || '';
+  var ai_confidence_threshold = parseFloat((document.getElementById('ar-confidence') || {}).value || '0.85');
+
+  var keyword_rules = arRules.map(function(r) {
+    var kws = (r.keywords || '').split(',').map(function(k) { return k.trim(); }).filter(function(k) { return k.length > 0; });
+    return { keywords: kws, reply: r.reply || '', channel: r.channel || 'both' };
+  }).filter(function(r) { return r.keywords.length > 0 && r.reply.trim().length > 0; });
+
+  var body = { enabled: enabled, shadow_mode: shadow_mode, keyword_rules: keyword_rules, default_comment_reply: default_comment_reply, default_dm_reply: default_dm_reply, negative_keyword_blocklist: arBlocklist, ai_confidence_threshold: ai_confidence_threshold };
+
+  arFetch('/api/auto-reply-settings', { method: 'POST', body: JSON.stringify(body) })
+    .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
+    .then(function(res) {
+      if (btn) { btn.disabled = false; btn.textContent = '저장'; }
+      if (res.ok && res.data && res.data.success) {
+        showToast('저장되었습니다');
+      } else {
+        var msg = (res.data && res.data.error) || '저장에 실패했어요';
+        if (errEl) { errEl.textContent = msg; errEl.style.display = 'inline'; }
+        showToast(msg);
+      }
+    })
+    .catch(function() {
+      if (btn) { btn.disabled = false; btn.textContent = '저장'; }
+      var msg = '네트워크 오류가 발생했어요';
+      if (errEl) { errEl.textContent = msg; errEl.style.display = 'inline'; }
+      showToast(msg);
+    });
+}
+
+// confidence 슬라이더 실시간 표시
+(function() {
+  var el = document.getElementById('ar-confidence');
+  var val = document.getElementById('ar-confidence-val');
+  if (el && val) el.oninput = function() { val.textContent = el.value; };
+})();
+
+// dark-mode 오버레이 배경 보정
+(function() {
+  var overlay = document.getElementById('ar-lock-overlay');
+  if (!overlay) return;
+  if (document.body.classList.contains('dark-mode')) {
+    overlay.style.background = 'rgba(17,17,17,.93)';
+    var p = overlay.querySelector('p');
+    if (p) p.style.color = '#f0f2f8';
+  }
+})();
+
+arLoad();
 </script>
 <!-- 모바일 바텀 탭바 (로그인 사용자만) -->
 <nav class="m-tabbar" role="navigation" aria-label="모바일 내비게이션" style="display:none">
