@@ -7144,7 +7144,7 @@ var cards = {
         var upChips = (seasonData.upcoming||[]).slice(0,3).map(function(kw,i){
           return e('span',{key:'su'+i,style:chipStyle},(kw||'').replace(/^#/,''));
         });
-        seasonSection = e('div',{style:{padding:'6px 10px 8px',fontSize:'10px',opacity:.75,display:'flex',flexWrap:'wrap',alignItems:'center',gap:'2px',borderTop:'1px solid rgba(128,128,128,.15)'}},
+        seasonSection = e('div',{style:{padding:'5px 10px 6px',fontSize:'10px',opacity:.75,display:'flex',flexWrap:'wrap',alignItems:'center',gap:'2px',borderTop:'1px solid rgba(128,128,128,.15)',flexShrink:0}},
           leafIcon,
           e('span',{style:{marginLeft:'4px',marginRight:'6px',fontWeight:600}},'계절'),
           nowChips,
@@ -7173,14 +7173,8 @@ var cards = {
           ),
           mainTab === 'current'
             ? e('div', {className:'trend-list'},
-                // B2: 비회원 상위 3개 블러 오버레이
+                // B2: 비회원 상위 3개 블러 + 회원가입 유도 오버레이
                 !isLoggedIn ? e('div',{style:{position:'relative'}},
-                  e('div',{style:{position:'absolute',top:0,left:0,right:0,height:(Math.min(3,shownCount)*itemH)+'px',zIndex:2,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'4px',pointerEvents:'none'}},
-                    e('div',{style:{background:'rgba(0,0,0,.55)',borderRadius:'8px',padding:'6px 12px',textAlign:'center',backdropFilter:'blur(4px)',WebkitBackdropFilter:'blur(4px)'}},
-                      e('p',{style:{fontSize:'11px',fontWeight:600,color:'#fff',margin:'0 0 4px',lineHeight:1.4}},'Top 3는 회원만 볼 수 있어요'),
-                      e('button',{style:{fontSize:'11px',fontWeight:700,color:'#C8507A',background:'rgba(255,255,255,.15)',border:'none',borderRadius:'980px',padding:'3px 10px',cursor:'pointer',pointerEvents:'auto'},onClick:function(ev){ev.stopPropagation();if(typeof openSignupGrid==='function')openSignupGrid();}},'무료 회원가입')
-                    )
-                  ),
                   e('div', {className:'trend-track', key:'track-domestic', style:{height:(shownCount*itemH)+'px'}},
                     src.slice(0,shownCount).map(function(t,idx){
                       var rank = shownCount < 5 ? idx : (rankMap[idx]!==undefined?rankMap[idx]:idx);
@@ -7195,16 +7189,48 @@ var cards = {
                       var catLabel = (t.bizCategory && CATEGORY_KO[t.bizCategory]) || '종합';
                       var kw = (t.keyword||'').replace(/^#/,'');
                       var isBlurred = rank < 3;
-                      return e('div',{className:'trend-item',key:'domestic-'+kw,style:{top:(rank*itemH)+'px',animation:'trendSlideIn .35s ease-out '+(rank*0.04)+'s both'}},
+                      var itemStyle = {top:(rank*itemH)+'px',animation:'trendSlideIn .35s ease-out '+(rank*0.04)+'s both'};
+                      if(isBlurred){ itemStyle.filter = 'blur(7px)'; itemStyle.pointerEvents = 'none'; itemStyle.userSelect = 'none'; itemStyle.opacity = .85; }
+                      return e('div',{className:'trend-item',key:'domestic-'+kw,style:itemStyle},
                         e('span',{className:'trend-rank'},rank+1),
-                        e('div',{className:'trend-info',style:isBlurred?{filter:'blur(6px)',userSelect:'none'}:undefined},
+                        e('div',{className:'trend-info'},
                           e('p',{className:'trend-text'},'#'+kw),
                           e('p',{className:'trend-tag'},catLabel)
                         ),
-                        isBlurred ? e('span',{style:{position:'absolute',left:'50%',transform:'translateX(-50%)',opacity:.7}},lockIcon) : null,
                         deltaEl
                       );
                     })
+                  ),
+                  // 블러 영역 위에 올라가는 회원가입 CTA 카드
+                  e('div',{
+                    style:{
+                      position:'absolute',top:0,left:0,right:0,
+                      height:(Math.min(3,shownCount)*itemH)+'px',
+                      zIndex:3,display:'flex',alignItems:'center',justifyContent:'center',
+                      padding:'0 12px',pointerEvents:'none'
+                    }
+                  },
+                    e('div',{
+                      style:{
+                        background:'#fff',borderRadius:'14px',
+                        padding:'12px 16px',textAlign:'center',
+                        boxShadow:'0 10px 32px rgba(200,80,122,.28), 0 2px 6px rgba(0,0,0,.06)',
+                        display:'flex',alignItems:'center',gap:'10px',
+                        maxWidth:'100%',pointerEvents:'auto'
+                      }
+                    },
+                      e('span',{style:{display:'inline-flex',alignItems:'center',justifyContent:'center',width:'30px',height:'30px',borderRadius:'50%',background:'rgba(200,80,122,.12)',flexShrink:0}},
+                        e('svg',{width:'16',height:'16',viewBox:'0 0 24 24',fill:'none',stroke:'#C8507A',strokeWidth:'2.2',strokeLinecap:'round',strokeLinejoin:'round'},e('rect',{x:'3',y:'11',width:'18',height:'11',rx:'2',ry:'2'}),e('path',{d:'M7 11V7a5 5 0 0 1 10 0v4'}))
+                      ),
+                      e('div',{style:{textAlign:'left',flex:'1',minWidth:0}},
+                        e('p',{style:{fontSize:'12px',fontWeight:700,color:'#1d1d1f',margin:0,lineHeight:1.35,letterSpacing:'-.2px'}},'Top 3는 회원만 볼 수 있어요'),
+                        e('p',{style:{fontSize:'10.5px',fontWeight:500,color:'#6e6e73',margin:'2px 0 0',lineHeight:1.35}},'가입하고 업종별 인기 키워드를 확인하세요')
+                      ),
+                      e('button',{
+                        style:{fontSize:'11.5px',fontWeight:700,color:'#fff',background:'#C8507A',border:'none',borderRadius:'980px',padding:'7px 14px',cursor:'pointer',flexShrink:0,whiteSpace:'nowrap',letterSpacing:'-.2px'},
+                        onClick:function(ev){ev.stopPropagation();if(typeof openSignupGrid==='function')openSignupGrid();}
+                      },'무료 시작')
+                    )
                   )
                 ) : (
                   emptyState
@@ -7235,8 +7261,7 @@ var cards = {
                           );
                         })
                       )
-                ),
-                seasonSection
+                )
               )
             : e('div', {className:'rising-list'},
                 risingItems.length > 0
@@ -7264,6 +7289,7 @@ var cards = {
                     })
                   : e('div',{className:'rising-empty'},'자정 이후 예측 데이터가\n생성됩니다')
               ),
+          seasonSection,
           !isLoggedIn ? e('div', {className:'trend-cta-bar'},
             e('p', {className:'trend-cta-msg'}, '회원가입만 해도 업종별 최신 트렌드를', e('br'), '확인할 수 있어요')
           ) : null
