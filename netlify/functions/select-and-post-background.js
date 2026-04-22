@@ -378,6 +378,52 @@ exports.handler = async (event) => {
       .eq('reserve_key', reservationKey);
     if (updErr) console.error('[select-and-post] 예약 업데이트 실패:', updErr.message);
 
+    // 6-0) Instagram CDN URL 역조회 — Supabase Storage URL 대신 IG CDN URL로 교체
+    // 스토리지 정리 전에 실행해야 이후 대시보드에서 사진/영상이 보임
+    try {
+      const igCtrl = new AbortController();
+      const igTid = setTimeout(() => igCtrl.abort(), 10000);
+      let igMediaRes;
+      try {
+        igMediaRes = await fetch(
+          `https://graph.facebook.com/v25.0/${postId}?fields=media_type,media_url,thumbnail_url,children{media_url,thumbnail_url}&access_token=${igAccessToken}`,
+          { signal: igCtrl.signal }
+        );
+      } finally {
+        clearTimeout(igTid);
+      }
+      if (igMediaRes.ok) {
+        const igMedia = await igMediaRes.json();
+        if (!igMedia.error) {
+          const mt = igMedia.media_type;
+          const cdnUpdate = {};
+          if (mt === 'CAROUSEL_ALBUM' && igMedia.children && igMedia.children.data) {
+            cdnUpdate.image_urls = igMedia.children.data.map((c) => c.media_url).filter(Boolean);
+          } else if (mt === 'IMAGE') {
+            if (igMedia.media_url) cdnUpdate.image_urls = [igMedia.media_url];
+          } else if (mt === 'VIDEO' || mt === 'REELS') {
+            const cdnUrl = igMedia.media_url || igMedia.thumbnail_url;
+            if (cdnUrl) cdnUpdate.image_urls = [cdnUrl];
+            if (igMedia.media_url) cdnUpdate.video_url = igMedia.media_url;
+          }
+          if (Object.keys(cdnUpdate).length) {
+            const { error: cdnErr } = await supabase
+              .from('reservations')
+              .update(cdnUpdate)
+              .eq('reserve_key', reservationKey);
+            if (cdnErr) console.error('[select-and-post] CDN URL 저장 실패:', cdnErr.message);
+            else console.log('[select-and-post] IG CDN URL 교체 완료 media_type=' + mt);
+          }
+        } else {
+          console.warn('[select-and-post] IG media 조회 API 오류:', igMedia.error.message);
+        }
+      } else {
+        console.warn('[select-and-post] IG media 조회 HTTP 오류:', igMediaRes.status);
+      }
+    } catch (cdnErr) {
+      console.warn('[select-and-post] IG CDN URL 조회 예외(무시):', cdnErr.message);
+    }
+
     // 6-1) 게시 완료 후 스토리지 정리 — row는 히스토리 용도로 유지
     // 실패는 게시 성공 상태에 영향을 주지 않음
     if (!updErr) {
