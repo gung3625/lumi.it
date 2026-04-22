@@ -9385,9 +9385,8 @@ document.querySelectorAll('.lumi-aura, .card-arrow, .btn-pill, .upload-lumi, .su
   }
 
   function toast(msg, kind){
-    try {
-      if (typeof showMobileToast === 'function') { showMobileToast(msg); return; }
-    } catch(_){}
+    // 전역 showMobileToast는 top:20px에 위치해 링크인바이오 편집기 헤더와 겹치므로
+    // 이 편집기 내부에서는 항상 하단(bottom:84px) 로컬 토스트 사용
     var t = document.createElement('div');
     t.textContent = msg;
     t.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:84px;z-index:100000;background:'+(kind==='err'?'#C8507A':'rgba(30,30,30,.95)')+';color:#fff;padding:10px 18px;border-radius:980px;font-size:14px;font-weight:500;box-shadow:0 8px 20px rgba(0,0,0,.2);pointer-events:none;opacity:0;transition:opacity .2s';
