@@ -66,6 +66,8 @@ exports.handler = async (event) => {
 ${toneInstruction}
 
 ## 절대 금지
+- 매장명("${storeName}") 본문 직접 언급 금지 — 프로필에 이미 노출되므로 "${storeName}에서", "${storeName} 오늘은" 같이 매장명으로 시작·포함되는 문장 금지
+- 해시태그에 매장명 태그(#${storeName}, #${(storeName || '').replace(/\s+/g,'')}) 금지
 - "안녕하세요", "오늘도 찾아주셔서 감사합니다" 같은 뻔한 인사
 - "맛있는", "신선한", "정성스러운" 같은 과장 형용사 남발
 - AI가 쓴 것처럼 매끄럽고 완벽한 문장
