@@ -4,13 +4,7 @@
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
 const { isAdminEmail, isAdminUserId } = require('./_shared/admin');
-
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Content-Type': 'application/json',
-};
+const { corsHeaders, getOrigin } = require('./_shared/auth');
 
 const GRAPH_VERSION = 'v25.0';
 const MAX_CONVERSATIONS = 25;
@@ -86,12 +80,28 @@ function dedupePairs(pairs) {
   return out;
 }
 
+// 정규식 기반 기본 PII 마스킹 — OpenAI 단계를 우회해도 원문이 저장되지 않게 belt-and-suspenders.
+function maskPII(text) {
+  if (!text) return text;
+  return String(text)
+    // 주민등록번호 (6자리-7자리)
+    .replace(/\b\d{6}[-\s]?[1-4]\d{6}\b/g, '[주민번호]')
+    // 신용카드 번호 (13~19자리 연속 또는 4자리-4자리 패턴)
+    .replace(/\b\d{4}[-\s]\d{4}[-\s]\d{4}[-\s]\d{4}\b/g, '[카드]')
+    .replace(/\b\d{13,19}\b/g, '[번호]')
+    // 전화번호 (국내 휴대폰 + 국번)
+    .replace(/\b01[016789][-\s]?\d{3,4}[-\s]?\d{4}\b/g, '[전화]')
+    .replace(/\b0\d{1,2}[-\s]?\d{3,4}[-\s]?\d{4}\b/g, '[전화]')
+    // 이메일
+    .replace(/[\w.+-]+@[\w-]+\.[\w.-]+/g, '[이메일]');
+}
+
 // OpenAI gpt-4o-mini로 카테고리 분류 + 개인정보 마스킹
 async function classifyAndSanitize(pair) {
   const sys = [
     '다음 IG DM 대화를 카테고리 분류하고 개인정보를 마스킹하라.',
     '카테고리는 menu/booking/price/location/hours/complaint/greeting/other 중 하나.',
-    '전화번호·이름·주소·이메일·실명을 [전화]/[이름]/[주소]/[이메일]로 치환.',
+    '전화번호·이름·주소·이메일·실명·주민번호·카드번호를 [전화]/[이름]/[주소]/[이메일]/[주민번호]/[카드]로 치환.',
     'JSON 반환: {category, customer_message_sanitized, correct_reply_sanitized}',
   ].join('\n');
   const user = `고객 메시지: ${pair.customer_message}\n사장님 답변: ${pair.correct_reply}`;
@@ -120,8 +130,9 @@ async function classifyAndSanitize(pair) {
   try { parsed = JSON.parse(content); } catch { parsed = {}; }
   const allowed = ['menu','booking','price','location','hours','complaint','greeting','other'];
   const category = allowed.includes(parsed.category) ? parsed.category : 'other';
-  const customer = (parsed.customer_message_sanitized || '').trim();
-  const reply = (parsed.correct_reply_sanitized || '').trim();
+  // 2차 정규식 마스킹 — OpenAI 결과에 PII가 남아있을 가능성 차단 (belt-and-suspenders)
+  const customer = maskPII((parsed.customer_message_sanitized || '').trim());
+  const reply = maskPII((parsed.correct_reply_sanitized || '').trim());
   if (!customer || !reply) return null;
   return { category, customer_message: customer, correct_reply: reply };
 }
@@ -140,6 +151,7 @@ async function classifyInBatches(pairs, concurrency) {
 }
 
 exports.handler = async (event) => {
+  const CORS = corsHeaders(getOrigin(event), { 'Access-Control-Allow-Methods': 'POST, OPTIONS' });
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method not allowed' }) };

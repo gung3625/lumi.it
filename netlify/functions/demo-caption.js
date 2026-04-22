@@ -26,10 +26,24 @@ exports.handler = async (event) => {
       return { statusCode: 400, headers, body: JSON.stringify({ error: '사진과 업종을 입력해주세요.' }) };
     }
 
-    // ── reCAPTCHA v3 검증 ──
-    if (process.env.RECAPTCHA_SECRET_KEY && recaptchaToken) {
-      const rcRes = await fetch(`https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${recaptchaToken}`);
-      const rcData = await rcRes.json();
+    // ── reCAPTCHA v3 검증 (fail-closed) ──
+    // RECAPTCHA_SECRET_KEY가 설정돼 있으면 토큰 필수 + API 호출 실패 시 차단.
+    // Google reCAPTCHA 다운 시 일시 중단이 DoS보다 안전.
+    if (process.env.RECAPTCHA_SECRET_KEY) {
+      if (!recaptchaToken) {
+        return { statusCode: 403, headers, body: JSON.stringify({ error: '보안 검증 토큰이 필요해요. 페이지를 새로고침 후 다시 시도해주세요.' }) };
+      }
+      let rcData;
+      try {
+        const rcRes = await fetch(`https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${encodeURIComponent(recaptchaToken)}`, {
+          method: 'POST',
+        });
+        if (!rcRes.ok) throw new Error(`reCAPTCHA API ${rcRes.status}`);
+        rcData = await rcRes.json();
+      } catch (e) {
+        console.error('[demo-caption] reCAPTCHA API 호출 실패:', e.message);
+        return { statusCode: 403, headers, body: JSON.stringify({ error: '보안 검증을 완료할 수 없어요. 잠시 후 다시 시도해주세요.' }) };
+      }
       if (!rcData.success || (rcData.score != null && rcData.score < 0.3)) {
         return { statusCode: 403, headers, body: JSON.stringify({ error: '보안 검증에 실패했어요. 다시 시도해주세요.' }) };
       }

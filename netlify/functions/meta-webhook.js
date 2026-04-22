@@ -8,12 +8,18 @@ const { getAdminClient } = require('./_shared/supabase-admin');
 const TEST_IG_USER_ID = process.env.TEST_IG_USER_ID || '';
 const TEST_ACCESS_TOKEN = process.env.TEST_ACCESS_TOKEN || '';
 
+// fail-closed: appSecret 미설정 시 false (모든 요청 차단).
+// "환경변수 부재"는 프로덕션 설정 오류로 간주하고 상위에서 503 반환.
 function verifySignature(payload, signature) {
   const appSecret = process.env.META_APP_SECRET;
-  if (!appSecret) return true;
+  if (!appSecret) return false;
+  if (!signature) return false;
   const expected = 'sha256=' + crypto.createHmac('sha256', appSecret).update(payload).digest('hex');
   try {
-    return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+    const sigBuf = Buffer.from(signature);
+    const expBuf = Buffer.from(expected);
+    if (sigBuf.length !== expBuf.length) return false;
+    return crypto.timingSafeEqual(sigBuf, expBuf);
   } catch (e) {
     return false;
   }
@@ -452,6 +458,11 @@ exports.handler = async (event) => {
   }
 
   if (event.httpMethod === 'POST') {
+    // META_APP_SECRET 미설정은 프로덕션 설정 오류 — 503 반환 (fail-closed)
+    if (!process.env.META_APP_SECRET) {
+      console.error('[meta-webhook] META_APP_SECRET 미설정 — 요청 차단');
+      return { statusCode: 503, body: 'Service Unavailable' };
+    }
     const signature = event.headers['x-hub-signature-256'] || '';
     if (!verifySignature(event.body, signature)) {
       console.log('[meta-webhook] 서명 검증 실패');

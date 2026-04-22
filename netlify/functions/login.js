@@ -2,15 +2,18 @@ const { getAdminClient } = require('./_shared/supabase-admin');
 
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Content-Type': 'application/json' };
 
+// fail-closed 전환: 정상 쿼리 실패 시 1회 재시도 후에도 실패하면 차단.
+// 공격자가 rate_limits 테이블을 DOS해서 무제한 요청을 통과시키는 것 방지.
 async function checkRateLimit(supabase, kind, ip, { windowSeconds = 600, max = 10 } = {}) {
   const nowIso = new Date().toISOString();
-  try {
-    const { data: existing } = await supabase
+  async function runOnce() {
+    const { data: existing, error: selErr } = await supabase
       .from('rate_limits')
       .select('count, first_at')
       .eq('kind', kind)
       .eq('ip', ip)
       .maybeSingle();
+    if (selErr) throw selErr;
 
     if (existing) {
       const age = (Date.now() - new Date(existing.first_at).getTime()) / 1000;
@@ -28,8 +31,18 @@ async function checkRateLimit(supabase, kind, ip, { windowSeconds = 600, max = 1
     }
     await supabase.from('rate_limits').insert({ kind, ip, count: 1, first_at: nowIso, last_at: nowIso });
     return { ok: true, count: 1 };
-  } catch (e) {
-    return { ok: true, count: 0 };
+  }
+
+  try {
+    return await runOnce();
+  } catch (e1) {
+    console.error(`[rate-limit:${kind}] 1차 실패, 재시도:`, e1.message);
+    try {
+      return await runOnce();
+    } catch (e2) {
+      console.error(`[rate-limit:${kind}] 2차 실패 — fail-closed 차단:`, e2.message);
+      return { ok: false, count: 0, failClosed: true };
+    }
   }
 }
 
@@ -85,31 +98,33 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '이메일과 비밀번호를 입력하세요.' }) };
   }
 
+  // 계정 열거 방지: 이메일 존재/비번 불일치 모두 동일한 401 메시지로 통일.
+  // 타이밍 공격 방지: 계정 조회와 인증 요청을 병렬 실행 → 응답 시간 편차 최소화.
+  const AUTH_ERROR_BODY = JSON.stringify({ error: '이메일 또는 비밀번호가 올바르지 않습니다.' });
+
   try {
-    // 1) 계정 존재 여부 먼저 확인 (에러 메시지 분기를 위해)
-    const { data: profile, error: profileErr } = await supabase
-      .from('users')
-      .select('*')
-      .eq('email', email)
-      .maybeSingle();
+    // 1) 인증 + 프로필 조회 병렬 실행 (존재 여부에 관계없이 양쪽 호출 → timing 균등화)
+    const [signInResult, profileResult] = await Promise.all([
+      supabase.auth.signInWithPassword({ email, password }),
+      supabase.from('users').select('*').eq('email', email).maybeSingle(),
+    ]);
+
+    const { data: signInData, error: signInErr } = signInResult;
+    const { data: profile, error: profileErr } = profileResult;
 
     if (profileErr) {
       console.error('[login] users select error:', profileErr.message);
     }
-    if (!profile) {
-      return { statusCode: 404, headers: CORS, body: JSON.stringify({ error: '가입되지 않은 이메일입니다.' }) };
-    }
 
-    // 2) Supabase Auth 로그인
-    const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
-    if (signInErr || !signInData || !signInData.session) {
-      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '비밀번호가 올바르지 않습니다.' }) };
+    // 계정 없음 OR 비번 틀림 → 동일 응답 (enumeration 방지)
+    if (!profile || signInErr || !signInData || !signInData.session) {
+      return { statusCode: 401, headers: CORS, body: AUTH_ERROR_BODY };
     }
 
     const token = signInData.session.access_token;
     const refreshToken = signInData.session.refresh_token;
 
-    // 3) IG 연동 여부 조회
+    // 2) IG 연동 여부 조회
     let hasIg = false;
     try {
       const { data: ig } = await supabase

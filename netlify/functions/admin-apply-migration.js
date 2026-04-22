@@ -1,6 +1,7 @@
 // 관리자 전용 DB 마이그레이션 실행기 — 인라인 SQL 딕셔너리에서 이름으로 지정.
 // 인증: Authorization: Bearer ${LUMI_SECRET}. SQL은 본 파일에 하드코딩해 임의 실행 차단.
 const { Client } = require('pg');
+const { verifyLumiSecret } = require('./_shared/auth');
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
@@ -126,6 +127,166 @@ create index if not exists idx_auto_reply_log_escalated
   on public.auto_reply_log(user_id, created_at desc)
   where escalated = true;
 `,
+  'security_hardening.sql': `
+-- RLS 정책 보강 + FK CASCADE 조정 + 탈퇴 감사 로그 + 마스킹 뷰
+-- Part 1. auto_reply_log.user_id FK → on delete cascade
+do $$
+begin
+  if to_regclass('public.auto_reply_log') is not null then
+    execute 'alter table public.auto_reply_log drop constraint if exists auto_reply_log_user_id_fkey';
+    execute $sql$
+      alter table public.auto_reply_log
+        add constraint auto_reply_log_user_id_fkey
+        foreign key (user_id) references auth.users(id) on delete cascade
+    $sql$;
+  end if;
+end $$;
+
+-- Part 2. 누락 테이블 RLS enable + 4종 정책
+do $$
+begin
+  if to_regclass('public.auto_reply_settings') is not null then
+    execute 'alter table public.auto_reply_settings enable row level security';
+    execute 'drop policy if exists "auto_reply_settings_select_own" on public.auto_reply_settings';
+    execute 'drop policy if exists "auto_reply_settings_insert_own" on public.auto_reply_settings';
+    execute 'drop policy if exists "auto_reply_settings_update_own" on public.auto_reply_settings';
+    execute 'drop policy if exists "auto_reply_settings_delete_own" on public.auto_reply_settings';
+    execute 'create policy "auto_reply_settings_select_own" on public.auto_reply_settings for select using (auth.uid() = user_id)';
+    execute 'create policy "auto_reply_settings_insert_own" on public.auto_reply_settings for insert with check (auth.uid() = user_id)';
+    execute 'create policy "auto_reply_settings_update_own" on public.auto_reply_settings for update using (auth.uid() = user_id) with check (auth.uid() = user_id)';
+    execute 'create policy "auto_reply_settings_delete_own" on public.auto_reply_settings for delete using (auth.uid() = user_id)';
+  end if;
+end $$;
+
+do $$
+begin
+  if to_regclass('public.auto_reply_log') is not null then
+    execute 'alter table public.auto_reply_log enable row level security';
+    execute 'drop policy if exists "auto_reply_log_select_own" on public.auto_reply_log';
+    execute 'drop policy if exists "auto_reply_log_insert_own" on public.auto_reply_log';
+    execute 'drop policy if exists "auto_reply_log_update_own" on public.auto_reply_log';
+    execute 'drop policy if exists "auto_reply_log_delete_own" on public.auto_reply_log';
+    execute 'create policy "auto_reply_log_select_own" on public.auto_reply_log for select using (auth.uid() = user_id)';
+    execute 'create policy "auto_reply_log_insert_own" on public.auto_reply_log for insert with check (auth.uid() = user_id)';
+    execute 'create policy "auto_reply_log_update_own" on public.auto_reply_log for update using (auth.uid() = user_id) with check (auth.uid() = user_id)';
+    execute 'create policy "auto_reply_log_delete_own" on public.auto_reply_log for delete using (auth.uid() = user_id)';
+  end if;
+end $$;
+
+do $$
+begin
+  if to_regclass('public.auto_reply_corrections') is not null then
+    execute 'alter table public.auto_reply_corrections enable row level security';
+    execute 'drop policy if exists "auto_reply_corrections_select_own" on public.auto_reply_corrections';
+    execute 'drop policy if exists "auto_reply_corrections_insert_own" on public.auto_reply_corrections';
+    execute 'drop policy if exists "auto_reply_corrections_update_own" on public.auto_reply_corrections';
+    execute 'drop policy if exists "auto_reply_corrections_delete_own" on public.auto_reply_corrections';
+    execute 'create policy "auto_reply_corrections_select_own" on public.auto_reply_corrections for select using (auth.uid() = user_id)';
+    execute 'create policy "auto_reply_corrections_insert_own" on public.auto_reply_corrections for insert with check (auth.uid() = user_id)';
+    execute 'create policy "auto_reply_corrections_update_own" on public.auto_reply_corrections for update using (auth.uid() = user_id) with check (auth.uid() = user_id)';
+    execute 'create policy "auto_reply_corrections_delete_own" on public.auto_reply_corrections for delete using (auth.uid() = user_id)';
+  end if;
+end $$;
+
+do $$
+begin
+  if to_regclass('public.store_context') is not null then
+    execute 'alter table public.store_context enable row level security';
+    execute 'drop policy if exists "store_context_select_own" on public.store_context';
+    execute 'drop policy if exists "store_context_insert_own" on public.store_context';
+    execute 'drop policy if exists "store_context_update_own" on public.store_context';
+    execute 'drop policy if exists "store_context_delete_own" on public.store_context';
+    execute 'create policy "store_context_select_own" on public.store_context for select using (auth.uid() = user_id)';
+    execute 'create policy "store_context_insert_own" on public.store_context for insert with check (auth.uid() = user_id)';
+    execute 'create policy "store_context_update_own" on public.store_context for update using (auth.uid() = user_id) with check (auth.uid() = user_id)';
+    execute 'create policy "store_context_delete_own" on public.store_context for delete using (auth.uid() = user_id)';
+  end if;
+end $$;
+
+do $$
+declare
+  has_user_id boolean;
+begin
+  if to_regclass('public.promo_schedule') is null then
+    return;
+  end if;
+  select exists(
+    select 1 from information_schema.columns
+    where table_schema='public' and table_name='promo_schedule' and column_name='user_id'
+  ) into has_user_id;
+  execute 'alter table public.promo_schedule enable row level security';
+  execute 'drop policy if exists "promo_schedule_select_own" on public.promo_schedule';
+  execute 'drop policy if exists "promo_schedule_insert_own" on public.promo_schedule';
+  execute 'drop policy if exists "promo_schedule_update_own" on public.promo_schedule';
+  execute 'drop policy if exists "promo_schedule_delete_own" on public.promo_schedule';
+  if has_user_id then
+    execute 'create policy "promo_schedule_select_own" on public.promo_schedule for select using (auth.uid() = user_id)';
+    execute 'create policy "promo_schedule_insert_own" on public.promo_schedule for insert with check (auth.uid() = user_id)';
+    execute 'create policy "promo_schedule_update_own" on public.promo_schedule for update using (auth.uid() = user_id) with check (auth.uid() = user_id)';
+    execute 'create policy "promo_schedule_delete_own" on public.promo_schedule for delete using (auth.uid() = user_id)';
+  end if;
+end $$;
+
+do $$
+begin
+  if to_regclass('public.brand_content_library') is not null then
+    execute 'alter table public.brand_content_library enable row level security';
+    execute 'drop policy if exists "brand_content_library_read" on public.brand_content_library';
+    execute 'create policy "brand_content_library_read" on public.brand_content_library for select to authenticated using (true)';
+  end if;
+end $$;
+
+do $$
+begin
+  if to_regclass('public.brand_weekday_schedule') is not null then
+    execute 'alter table public.brand_weekday_schedule enable row level security';
+    execute 'drop policy if exists "brand_weekday_schedule_read" on public.brand_weekday_schedule';
+    execute 'create policy "brand_weekday_schedule_read" on public.brand_weekday_schedule for select to authenticated using (true)';
+  end if;
+end $$;
+
+-- Part 3. account_deletion_log — 탈퇴 감사 로그
+create table if not exists public.account_deletion_log (
+  id uuid primary key default gen_random_uuid(),
+  user_id_hash text not null,
+  deleted_at timestamptz not null default now(),
+  deleter_ip inet,
+  retained_records text[],
+  notes text
+);
+create index if not exists idx_account_deletion_log_deleted_at
+  on public.account_deletion_log(deleted_at desc);
+alter table public.account_deletion_log enable row level security;
+drop policy if exists "account_deletion_log_read" on public.account_deletion_log;
+drop policy if exists "account_deletion_log_insert" on public.account_deletion_log;
+
+-- Part 4. auto_reply_log_safe — PII 마스킹 뷰
+do $$
+begin
+  if to_regclass('public.auto_reply_log') is not null then
+    execute $v$
+      create or replace view public.auto_reply_log_safe as
+      select
+        id, user_id, ig_user_id, event_type,
+        case
+          when received_text is null then null
+          when length(received_text) <= 8 then repeat('*', length(received_text))
+          else substr(received_text, 1, 8) || '…(' || length(received_text) || 'c)'
+        end as received_text_masked,
+        sender_id, category, sub_category, sentiment, confidence, replied,
+        case
+          when reply_text is null then null
+          when length(reply_text) <= 8 then repeat('*', length(reply_text))
+          else substr(reply_text, 1, 8) || '…(' || length(reply_text) || 'c)'
+        end as reply_text_masked,
+        escalated, escalation_reason, shadow_mode, rating, rated_at, created_at
+      from public.auto_reply_log
+    $v$;
+  end if;
+end $$;
+
+notify pgrst, 'reload schema';
+`,
 };
 
 exports.handler = async (event) => {
@@ -135,7 +296,7 @@ exports.handler = async (event) => {
   }
 
   const auth = (event.headers.authorization || event.headers.Authorization || '').replace('Bearer ', '');
-  if (!process.env.LUMI_SECRET || auth !== process.env.LUMI_SECRET) {
+  if (!verifyLumiSecret(auth)) {
     return { statusCode: 401, headers, body: JSON.stringify({ error: '인증 실패' }) };
   }
 
@@ -189,15 +350,17 @@ exports.handler = async (event) => {
       }
     }
     if (!applied) {
-      // 디버그: 실제 host와 ref 공개 (비밀번호는 제외).
+      // 내부 로그에만 디버그 상세, 응답은 안전한 메시지.
       const dbg = `direct_host=${direct.hostname} ref=${ref} supabase_url=${process.env.SUPABASE_URL || ''}`;
-      throw new Error(`${dbg} | ${errors.join(' | ')}`);
+      console.error(`[admin-apply-migration] DB 연결 실패: ${dbg} | ${errors.join(' | ')}`);
+      return { statusCode: 500, headers, body: JSON.stringify({ error: '마이그레이션 적용 실패' }) };
     }
 
     console.log(`[admin-apply-migration] applied: ${file}`);
     return { statusCode: 200, headers, body: JSON.stringify({ success: true, file }) };
   } catch (err) {
+    // 스키마/쿼리 상세 노출 방지 — 내부 로그에만 상세 기록.
     console.error('[admin-apply-migration] 예외:', err.message);
-    return { statusCode: 500, headers, body: JSON.stringify({ error: err.message || '실행 실패' }) };
+    return { statusCode: 500, headers, body: JSON.stringify({ error: '마이그레이션 적용 실패' }) };
   }
 };
