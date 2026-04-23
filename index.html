@@ -3346,9 +3346,14 @@ body.dark-mode .pc-footer-col ul li a { color: #A8B3C0; }
   function initPcLanding() {
     var isDesktop = window.innerWidth >= 1024;
     var isLoggedIn = !!(localStorage.getItem('lumi_token') || localStorage.getItem('lumi_user'));
+    // ?stay=1 파라미터 있으면 로그인이어도 PC 랜딩 노출 (홈 돌아오기용)
+    var stayMode = false;
+    try {
+      stayMode = new URLSearchParams(location.search || '').get('stay') === '1';
+    } catch(_){}
     var el = document.getElementById('pc-landing');
     if (!el) return;
-    if (isDesktop && !isLoggedIn) {
+    if (isDesktop && (!isLoggedIn || stayMode)) {
       el.style.display = 'block';
       // 기존 nav 숨김 (PC 랜딩의 sticky nav로 대체)
       var mainNav = document.querySelector('body > nav');
@@ -3436,6 +3441,10 @@ body.dark-mode .pc-footer-col ul li a { color: #A8B3C0; }
     if (window.lumiSupa && lumiSupa.auth && typeof lumiSupa.auth.onAuthStateChange === 'function') {
       lumiSupa.auth.onAuthStateChange(function(event, session) {
         if (event === 'SIGNED_IN' && session) {
+          // stay=1 모드면 PC 랜딩 유지
+          var stayMode = false;
+          try { stayMode = new URLSearchParams(location.search || '').get('stay') === '1'; } catch(_){}
+          if (stayMode) return;
           var el = document.getElementById('pc-landing');
           if (el) el.style.display = 'none';
         }
