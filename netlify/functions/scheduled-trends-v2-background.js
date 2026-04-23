@@ -657,6 +657,14 @@ function classifySaturation(total) {
   return 'saturated';
 }
 
+function classifyNewConfidence(isNew, saturationTotal) {
+  if (!isNew) return null;
+  if (saturationTotal == null) return 'medium';  // 데이터 없으면 중간
+  if (saturationTotal < 100) return 'high';
+  if (saturationTotal < 1000) return 'medium';
+  return 'low';
+}
+
 async function fetchGoogleTrendsLib(geo) {
   try {
     const googleTrends = require('google-trends-api');
@@ -1374,6 +1382,7 @@ async function saveTrendKeywordsV2({ supa, category, enrichedKeywords, collected
       raw_mentions: {
         saturation_total: item.saturationTotal ?? null,
         saturation_level: item.saturationLevel ?? null,
+        is_new_confidence: item.isNewConfidence ?? null,
       },
     };
   });
@@ -1535,6 +1544,7 @@ exports.handler = runGuarded({
             const isNew = await checkIsNew({ supa, keyword, category });
             const saturationTotal = await fetchKeywordSaturation(keyword);
             const saturationLevel = classifySaturation(saturationTotal);
+            const isNewConfidence = classifyNewConfidence(isNew, saturationTotal);
 
             return {
               keyword,
@@ -1544,6 +1554,7 @@ exports.handler = runGuarded({
               weightedScore,
               velocityPct,
               isNew,
+              isNewConfidence,
               counts,
               saturationTotal,
               saturationLevel,

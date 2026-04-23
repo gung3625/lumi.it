@@ -223,6 +223,7 @@ async function mergeV2Fields(supa, keywords, category, collectedDate, axisFilter
         origin: v2.origin ?? null,
         saturationTotal: v2.raw_mentions?.saturation_total ?? undefined,
         saturationLevel: v2.raw_mentions?.saturation_level ?? undefined,
+        isNewConfidence: v2.raw_mentions?.is_new_confidence ?? undefined,
       };
     });
   } catch(e) {
