@@ -116,6 +116,16 @@ const NAVER_KEYWORDS = {
     { groupName: '뷰티', keywords: ['뷰티', '메이크업', '화장품'] },
     { groupName: '헤어네일', keywords: ['헤어샵', '네일아트', '에스테틱'] }
   ],
+  hair: [
+    { groupName: '헤어컷', keywords: ['레이어드컷', '단발컷', '뱅헤어'] },
+    { groupName: '헤어펌', keywords: ['볼륨펌', '매직스트레이트', '뿌리염색'] },
+    { groupName: '두피케어', keywords: ['두피스케일링', '탈모', '헤어클리닉'] }
+  ],
+  nail: [
+    { groupName: '네일디자인', keywords: ['젤네일', '프렌치네일', '큐빅네일'] },
+    { groupName: '네일케어', keywords: ['페디큐어', '큐티클', '오로라네일'] },
+    { groupName: '네일아트', keywords: ['플라워네일', '글리터젤', '누드네일'] }
+  ],
   flower: [
     { groupName: '플라워', keywords: ['플라워샵', '꽃다발', '드라이플라워'] },
     { groupName: '리스부케', keywords: ['웨딩부케', '꽃바구니', '원데이클래스'] }
@@ -155,6 +165,8 @@ const BLOG_SEARCH_SEEDS = {
   cafe: ['말차라떼 디저트', '크로플 카페', '비건 베이커리 메뉴', '스페셜티 핸드드립'],
   food: ['오마카세 코스요리', '수제버거 패티', '와인바 안주', '한식주점 메뉴'],
   beauty: ['젤네일 디자인', '레이어드컷 헤어', '속눈썹펌 후기', '글로우 메이크업'],
+  hair: ['볼륨매직 펌 추천', '레이어드컷 스타일', '탈모 두피케어', '뿌리염색 컬러', '허쉬컷 얼굴형', '뱅헤어 2024 트렌드'],
+  nail: ['젤네일 디자인', '봄 네일아트', '플라워 네일', '누드네일 오피스', '글리터젤 파티', '페디큐어 관리'],
   flower: ['수국 드라이플라워 리스', '팜파스 부케 제작', '유칼립투스 화환', '라넌큘러스 꽃다발'],
   fashion: ['오버핏 블레이저 코디', 'Y2K 빈티지 스타일', '롱스커트 레이어드', '셔츠워머 착용법'],
   fitness: ['필라테스 리포머 기구', '케틀벨 스윙 루틴', '맨몸운동 홈트 프로그램', '기능성 트레이닝 센터', '코어 강화 운동', '바디프로필 준비', '요가 플로우 자세', '스피닝 클래스 후기'],
@@ -168,6 +180,8 @@ const YOUTUBE_SEEDS_KR = {
   cafe: ['카페 신메뉴 리뷰', '디저트 브이로그'],
   food: ['맛집 브이로그', '오마카세 리뷰'],
   beauty: ['네일 트렌드 디자인', '헤어 컷 스타일'],
+  hair: ['헤어 트렌드 2024', '미용실 시술 후기', '홈케어 헤어'],
+  nail: ['네일 트렌드 디자인', '셀프네일 튜토리얼', '네일샵 후기'],
   flower: ['플라워 클래스 브이로그', '드라이플라워 리스 만들기'],
   fashion: ['오버핏 코디 브이로그', 'Y2K 패션 하울'],
   fitness: ['필라테스 리포머 운동', '크로스핏 홈트 브이로그', '바디프로필 준비 식단', '맨몸운동 루틴'],
@@ -563,11 +577,9 @@ ${exampleStr}
 // Phase 2: narrative + origin 통합 GPT-4o 호출
 // 모든 키워드 배치 처리 (signal_tier 무관 — 최상위 품질)
 // ─────────────────────────────────────────────
-async function generateNarrativeAndOriginBatch({ keywords, category, rawTexts }) {
-  // keywords: [{keyword, signalTier, ...}, ...]
-  // rawTexts: 해당 카테고리 원시 텍스트 배열 (blogData + ytKR + igTexts 등)
-  if (!keywords || keywords.length === 0) return {};
 
+// 순수 GPT 호출 함수 — 키워드 목록 → {keyword: {narrative, origin}} 맵 반환
+async function callGPTNarrative({ keywords, category, rawTexts }) {
   const contextSnippet = (rawTexts || []).slice(0, 30).join(' | ').slice(0, 2000);
   const keywordList = keywords.map(k => k.keyword);
 
@@ -599,30 +611,79 @@ ${keywordList.join(', ')}
 예시:
 [{"keyword":"말차라떼","narrative":"말차 열풍이 카페 업계 전반으로 확산되며...","origin":{"firstSeenAt":null,"sourceType":"social","sourceRef":null,"mediaTitle":null}}]`;
 
+  const content = await callGPT({ prompt, maxTokens: 1800, temperature: 0.2 });
+  if (!content) return {};
+
+  const clean = content.replace(/```json|```/g, '').trim();
+  const match = clean.match(/\[[\s\S]*\]/);
+  if (!match) throw new Error(`JSON 배열 없음 (raw: ${content.slice(0, 200)})`);
+
+  let items;
+  try { items = JSON.parse(match[0]); } catch(e) { throw new Error(`JSON 파싱 실패: ${e.message} (raw: ${match[0].slice(0, 200)})`); }
+  if (!Array.isArray(items)) throw new Error('응답이 배열 아님');
+
   const result = {};
-  try {
-    const content = await callGPT({ prompt, maxTokens: 1800, temperature: 0.2 });
-    if (!content) return result;
-
-    const clean = content.replace(/```json|```/g, '').trim();
-    const match = clean.match(/\[[\s\S]*\]/);
-    if (!match) return result;
-
-    let items;
-    try { items = JSON.parse(match[0]); } catch { return result; }
-    if (!Array.isArray(items)) return result;
-
-    for (const item of items) {
-      if (!item || !item.keyword) continue;
-      result[item.keyword] = {
-        narrative: item.narrative || null,
-        origin: item.origin || null,
-      };
-    }
-  } catch(e) {
-    console.error('[narrative-origin]', category, '실패:', e.message);
+  for (const item of items) {
+    if (!item || !item.keyword) continue;
+    result[item.keyword] = {
+      narrative: item.narrative || null,
+      origin: item.origin || null,
+    };
   }
   return result;
+}
+
+async function generateNarrativeAndOriginBatch({ keywords, category, rawTexts }) {
+  // keywords: [{keyword, signalTier, ...}, ...]
+  // rawTexts: 해당 카테고리 원시 텍스트 배열 (blogData + ytKR + igTexts 등)
+  if (!keywords || keywords.length === 0) return {};
+
+  try {
+    // 1차: 배치 호출
+    const result = await callGPTNarrative({ keywords, category, rawTexts });
+
+    // 실패한 키워드 확인
+    const missing = keywords.filter(k => !result[k.keyword] || !result[k.keyword].narrative);
+
+    if (missing.length === 0) return result;
+
+    console.log(`[narrative-retry] ${category} 배치 후 narrative 누락 ${missing.length}개, 개별 재시도 시작`);
+
+    // 2차: 누락 키워드 개별 재시도 (최대 3개)
+    const retryBudget = Math.min(missing.length, 3);
+    for (let i = 0; i < retryBudget; i++) {
+      const item = missing[i];
+      try {
+        const single = await callGPTNarrative({ keywords: [item], category, rawTexts });
+        if (single[item.keyword]) {
+          result[item.keyword] = single[item.keyword];
+          console.log(`[narrative-retry] ${item.keyword} 재시도 성공`);
+        }
+      } catch(e) {
+        console.error(`[narrative-retry] ${item.keyword} 재시도 실패:`, e.message);
+      }
+    }
+
+    const narrativeCount = Object.values(result).filter(v => v && v.narrative).length;
+    console.log(`[narrative-origin] ${category} 최종 narrative ${narrativeCount}/${keywords.length}개`);
+    return result;
+
+  } catch(batchErr) {
+    // 전체 배치 실패 — 개별 재시도 (최대 5개)
+    console.error(`[narrative-batch] ${category} 배치 전체 실패:`, batchErr.message);
+    const result = {};
+    const budget = Math.min(keywords.length, 5);
+    for (let i = 0; i < budget; i++) {
+      try {
+        const single = await callGPTNarrative({ keywords: [keywords[i]], category, rawTexts });
+        Object.assign(result, single);
+        console.log(`[narrative-fallback] ${keywords[i].keyword} 개별 호출 성공`);
+      } catch(e) {
+        console.error(`[narrative-fallback] ${keywords[i].keyword} 실패:`, e.message);
+      }
+    }
+    return result;
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -1049,7 +1110,7 @@ exports.handler = runGuarded({
     }
 
     const categories = ['cafe', 'food', 'beauty', 'nail', 'hair', 'flower', 'fashion', 'fitness', 'pet', 'interior', 'education', 'studio'];
-    const COLLECT_CATEGORIES = ['cafe', 'food', 'beauty', 'flower', 'fashion', 'fitness', 'pet', 'interior', 'education', 'studio'];
+    const COLLECT_CATEGORIES = ['cafe', 'food', 'beauty', 'hair', 'nail', 'flower', 'fashion', 'fitness', 'pet', 'interior', 'education', 'studio'];
     const updatedAt = new Date().toISOString();
     const collectedDate = updatedAt.slice(0, 10);
 
@@ -1075,9 +1136,6 @@ exports.handler = runGuarded({
       return [category, { naverData, blogData, ytKR, igTexts }];
     }));
     const rawByCategory = Object.fromEntries(rawEntries);
-    // nail/hair는 beauty 수집 데이터 공유
-    rawByCategory.nail = rawByCategory.beauty;
-    rawByCategory.hair = rawByCategory.beauty;
 
     // ─── 2단계: 크로스 소스 맵 구축 ─────────────
     await ctx.stage('cross-source', {});
