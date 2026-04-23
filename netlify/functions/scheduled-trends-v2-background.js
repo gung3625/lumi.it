@@ -52,6 +52,7 @@ const SOURCE_WEIGHTS = {
   ig: 2,
   google: 1,
   news: 2,  // 뉴스는 신뢰도 높음
+  community: 2,  // 커뮤니티 (맘카페·디시·더쿠 등)
 };
 
 // ─────────────────────────────────────────────
@@ -787,6 +788,23 @@ async function fetchInstagram(supa, category) {
 }
 
 // ─────────────────────────────────────────────
+// 커뮤니티 트렌드 데이터 로드 (scheduled-community-trends 수집분)
+// ─────────────────────────────────────────────
+async function fetchCommunityData(supa, category) {
+  try {
+    const { data } = await supa
+      .from('trends')
+      .select('keywords')
+      .eq('category', `community:${category}`)
+      .maybeSingle();
+    if (!data?.keywords?.items) return [];
+    return data.keywords.items.map(i => i.keyword).filter(Boolean);
+  } catch (e) {
+    return [];
+  }
+}
+
+// ─────────────────────────────────────────────
 // GPT 호출 헬퍼 (gpt-4o 우선, 실패 시 gpt-4o-mini 폴백)
 // ─────────────────────────────────────────────
 async function callGPT({ prompt, maxTokens = 1200, temperature = 0.2, preferMini = false }) {
@@ -1316,7 +1334,7 @@ ${googleStr}
 // 크로스 소스 검증
 // keyword → Set<sourceType> 매핑
 // ─────────────────────────────────────────────
-function buildCrossSourceCount({ keyword, naverData, blogData, ytKR, igTexts, googleKR, newsData }) {
+function buildCrossSourceCount({ keyword, naverData, blogData, ytKR, igTexts, googleKR, newsData, communityData }) {
   const norm = normalize(keyword).toLowerCase();
 
   function countMatches(arr) {
@@ -1331,6 +1349,7 @@ function buildCrossSourceCount({ keyword, naverData, blogData, ytKR, igTexts, go
     ig: countMatches(igTexts),
     google: countMatches(googleKR),
     news: countMatches(newsData),
+    community: countMatches(communityData),
   };
 }
 
@@ -1592,15 +1611,16 @@ exports.handler = runGuarded({
     console.log(`[sources] google-kr: ${googleKR.length}`);
 
     const rawEntries = await Promise.all(COLLECT_CATEGORIES.map(async (category) => {
-      const [naverData, blogData, ytKR, igTexts, newsData] = await Promise.all([
+      const [naverData, blogData, ytKR, igTexts, newsData, communityData] = await Promise.all([
         fetchNaverDatalab(category),
         fetchNaverBlogs(category),
         fetchYouTube(category),
         fetchInstagram(supa, category),
         fetchNaverNews(category),  // 신규: 뉴스 소스
+        fetchCommunityData(supa, category),  // 커뮤니티 트렌드 (맘카페·디시·더쿠 등)
       ]);
-      console.log(`[${category}] naver=${naverData.length} blog=${blogData.length} yt-kr=${ytKR.length} ig=${igTexts.length} news=${newsData.length}`);
-      return [category, { naverData, blogData, ytKR, igTexts, newsData }];
+      console.log(`[${category}] naver=${naverData.length} blog=${blogData.length} yt-kr=${ytKR.length} ig=${igTexts.length} news=${newsData.length} community=${communityData.length}`);
+      return [category, { naverData, blogData, ytKR, igTexts, newsData, communityData }];
     }));
     const rawByCategory = Object.fromEntries(rawEntries);
 
@@ -1620,6 +1640,7 @@ exports.handler = runGuarded({
         ...googleKR,
         ...r.igTexts,
         ...(r.newsData || []),
+        ...(r.communityData || []),  // 커뮤니티 트렌드 (맘카페·디시·더쿠 등)
       ];
     }
 
@@ -1664,6 +1685,7 @@ exports.handler = runGuarded({
               igTexts: r.igTexts,
               googleKR,
               newsData: r.newsData,
+              communityData: r.communityData,
             });
 
             const crossSourceCount = Object.values(counts).filter(c => c > 0).length;

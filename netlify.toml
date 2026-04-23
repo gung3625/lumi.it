@@ -69,6 +69,11 @@
 [functions."scheduled-weekday-shuffle-background"]
   schedule = "0 18 * * 0"
 
+# 커뮤니티 트렌드 수집 (GPT 웹 검색, 주 1회)
+# 맘카페·디시·더쿠 등 공식 API 없는 소스 — 매주 수요일 KST 02:00 (= UTC 화요일 17:00)
+[functions."scheduled-community-trends-background"]
+  schedule = "0 17 * * 2"
+
 # 포스트 프로세싱 비활성화 (이메일 난독화 등 JS 삽입 방지)
 [build.processing]
   skip_processing = true
@@ -111,6 +116,12 @@
 [[redirects]]
   from = "/api/scheduled-trends"
   to = "/.netlify/functions/scheduled-trends-v2-background"
+  status = 200
+
+# 커뮤니티 트렌드 수집 수동 트리거용 리다이렉트
+[[redirects]]
+  from = "/api/scheduled-community-trends"
+  to = "/.netlify/functions/scheduled-community-trends-background"
   status = 200
 
 [[redirects]]
