@@ -3514,6 +3514,15 @@ body.dark-mode .pc-footer-col ul li a { color: #A8B3C0; }
     renderTrendCards(grid, _pcTrendData);
     if (_pcTrendTickTimer) clearInterval(_pcTrendTickTimer);
     if (_pcTrendShuffleTimer) clearInterval(_pcTrendShuffleTimer);
+    if (!startTrendLivePreview._visWired) {
+      startTrendLivePreview._visWired = true;
+      document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+          if (_pcTrendTickTimer) { clearInterval(_pcTrendTickTimer); _pcTrendTickTimer = null; }
+          if (_pcTrendShuffleTimer) { clearInterval(_pcTrendShuffleTimer); _pcTrendShuffleTimer = null; }
+        }
+      });
+    }
     // velocity 미세 변동 (2초마다 ±3%)
     _pcTrendTickTimer = setInterval(function() {
       _pcTrendData.forEach(function(k) {
