@@ -178,7 +178,7 @@ async function mergeV2Fields(supa, keywords, category, collectedDate, axisFilter
 
     let query = supa
       .from('trend_keywords')
-      .select('keyword, cross_source_count, weighted_score, velocity_pct, signal_tier, is_new, axis, narrative, origin')
+      .select('keyword, cross_source_count, weighted_score, velocity_pct, signal_tier, is_new, axis, narrative, origin, raw_mentions')
       .eq('category', category)
       .gte('collected_date', cutoff)
       .order('collected_date', { ascending: false });
@@ -221,6 +221,8 @@ async function mergeV2Fields(supa, keywords, category, collectedDate, axisFilter
         axis: v2.axis ?? undefined,
         narrative: v2.narrative ?? null,
         origin: v2.origin ?? null,
+        saturationTotal: v2.raw_mentions?.saturation_total ?? undefined,
+        saturationLevel: v2.raw_mentions?.saturation_level ?? undefined,
       };
     });
   } catch(e) {

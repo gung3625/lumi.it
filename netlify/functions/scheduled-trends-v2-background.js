@@ -624,6 +624,39 @@ async function fetchNaverNews(category) {
   return texts;
 }
 
+async function fetchKeywordSaturation(keyword) {
+  const clientId = process.env.NAVER_CLIENT_ID;
+  const clientSecret = process.env.NAVER_CLIENT_SECRET;
+  if (!clientId || !clientSecret) return null;
+
+  try {
+    const path = `/v1/search/blog.json?query=${encodeURIComponent(keyword)}&display=1&sort=sim`;
+    const result = await httpsGetWithHeaders(
+      'openapi.naver.com',
+      path,
+      {
+        'X-Naver-Client-Id': clientId,
+        'X-Naver-Client-Secret': clientSecret
+      },
+      5000
+    );
+    if (result.status !== 200) return null;
+    const data = JSON.parse(result.body);
+    return typeof data.total === 'number' ? data.total : null;
+  } catch(e) {
+    console.error('[saturation]', keyword, 'error:', e.message);
+    return null;
+  }
+}
+
+function classifySaturation(total) {
+  if (total == null) return null;
+  if (total < 500) return 'blue_ocean';
+  if (total < 5000) return 'growing';
+  if (total < 50000) return 'established';
+  return 'saturated';
+}
+
 async function fetchGoogleTrendsLib(geo) {
   try {
     const googleTrends = require('google-trends-api');
@@ -1338,6 +1371,10 @@ async function saveTrendKeywordsV2({ supa, category, enrichedKeywords, collected
       sources: sourcesObj,  // DB 스키마의 sources jsonb 컬럼
       narrative: item.narrative || null,
       origin: item.origin || null,
+      raw_mentions: {
+        saturation_total: item.saturationTotal ?? null,
+        saturation_level: item.saturationLevel ?? null,
+      },
     };
   });
 
@@ -1496,6 +1533,8 @@ exports.handler = runGuarded({
             const todayScore = 100 - idx * 5;
             const velocityPct = await computeVelocity({ supa, keyword, category, todayCount: todayScore });
             const isNew = await checkIsNew({ supa, keyword, category });
+            const saturationTotal = await fetchKeywordSaturation(keyword);
+            const saturationLevel = classifySaturation(saturationTotal);
 
             return {
               keyword,
@@ -1506,6 +1545,8 @@ exports.handler = runGuarded({
               velocityPct,
               isNew,
               counts,
+              saturationTotal,
+              saturationLevel,
               axis: 'general',  // Phase 2에서 덮어씌워짐
             };
           }));
