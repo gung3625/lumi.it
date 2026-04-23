@@ -1549,9 +1549,6 @@ function buildCrossSourceCount({ keyword, naverData, blogData, ytKR, igTexts, go
 // DB에서 전날(7일 전) 스냅샷 조회해 증가율 산출
 // ─────────────────────────────────────────────
 async function computeVelocity({ supa, keyword, category, todayCount, todayRank }) {
-  // 2-tier 전략:
-  //  1차: trend_keywords 동일 keyword+category 과거 row의 weighted_score 비교 (실제 mention 기반)
-  //  2차: 1차 실패 시 legacy l30d-domestic-prev:{category} 스냅샷의 rank-proxy score 비교 (매일 갱신돼 커버리지 높음)
   try {
     const today = new Date().toISOString().slice(0, 10);
     const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -1567,34 +1564,48 @@ async function computeVelocity({ supa, keyword, category, todayCount, todayRank 
       .order('collected_date', { ascending: false })
       .limit(1);
 
+    if (error) console.error(`[velocity] ${category}/${keyword} tier1 err:`, error.message);
+
     if (!error && data && data.length > 0) {
       const prevScore = Number(data[0].weighted_score);
       if (prevScore > 0) {
         const pct = ((todayCount - prevScore) / prevScore) * 100;
-        return Math.max(-100, Math.min(2000, Math.round(pct * 10) / 10));
+        const v = Math.max(-100, Math.min(2000, Math.round(pct * 10) / 10));
+        console.log(`[velocity] ${category}/${keyword} tier1 OK prev=${prevScore} today=${todayCount} v=${v}`);
+        return v;
       }
     }
 
-    // 2차: legacy prev 스냅샷 (rank 기반 근사 — 매일 저장되므로 커버리지 우수)
+    // 2차: legacy prev 스냅샷 (rank 기반 근사)
     const prevKey = `l30d-domestic-prev:${category}`;
-    const { data: prev } = await supa
+    const { data: prev, error: prevErr } = await supa
       .from('trends')
       .select('keywords')
       .eq('category', prevKey)
       .maybeSingle();
 
+    if (prevErr) console.error(`[velocity] ${category}/${keyword} tier2 err:`, prevErr.message);
+
     const prevArr = prev?.keywords?.keywords;
-    if (!Array.isArray(prevArr)) return null;
+    if (!Array.isArray(prevArr)) {
+      console.log(`[velocity] ${category}/${keyword} tier2 miss: prevArr=${typeof prevArr}, prevObj keys=${prev ? Object.keys(prev.keywords || {}).join(',') : 'none'}`);
+      return null;
+    }
 
     const prevItem = prevArr.find(k =>
       normalize(k.keyword || '').toLowerCase() === normalize(keyword).toLowerCase()
     );
-    if (!prevItem) return null;  // 이전 스냅샷에 없음 → 신규 키워드 (velocity 측정 불가)
+    if (!prevItem) {
+      // 이전 스냅샷에 없음 (신규 키워드) — 신규는 velocity 측정 불가, 그러나 rank 기반 추정값 제공
+      // 신규 키워드는 일반적으로 급상승 상태로 간주 → todayRank 기반 긍정 velocity 반환
+      const estimated = Math.max(50, Math.min(300, 300 - (todayRank || 0) * 20));
+      console.log(`[velocity] ${category}/${keyword} tier2 new kw: estimated=${estimated}`);
+      return estimated;
+    }
 
     const prevScore = Number(prevItem.score || 0);
     if (prevScore <= 0) return null;
 
-    // todayRank는 0-index, todayScore = 100 - idx*5 (pipeline 규칙)
     const todayScoreProxy = 100 - (todayRank || 0) * 5;
     const pct = ((todayScoreProxy - prevScore) / prevScore) * 100;
     return Math.max(-100, Math.min(2000, Math.round(pct * 10) / 10));
