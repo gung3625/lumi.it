@@ -1405,38 +1405,6 @@ body {
       <div id="category-list"></div>
     </div>
 
-    <!-- 축 필터 -->
-    <div class="sidebar-section" id="axis-section" style="display:none;">
-      <div class="sidebar-section-label">분류 축</div>
-      <div class="sidebar-chip-group" id="axis-chips">
-        <div class="sidebar-chip active" data-axis="">전체</div>
-        <div class="sidebar-chip" data-axis="menu">메뉴</div>
-        <div class="sidebar-chip" data-axis="interior">인테리어</div>
-        <div class="sidebar-chip" data-axis="goods">상품</div>
-        <div class="sidebar-chip" data-axis="experience">경험</div>
-      </div>
-    </div>
-
-    <!-- 신호 필터 -->
-    <div class="sidebar-section">
-      <div class="sidebar-section-label">신호 강도</div>
-      <div class="sidebar-chip-group" id="tier-chips">
-        <div class="sidebar-chip active" data-tier="">전체</div>
-        <div class="sidebar-chip" data-tier="real">Real 신호</div>
-        <div class="sidebar-chip" data-tier="weak">Weak 포함</div>
-      </div>
-    </div>
-
-    <!-- 정렬 -->
-    <div class="sidebar-section">
-      <div class="sidebar-section-label">정렬 기준</div>
-      <div class="sidebar-chip-group" id="sort-chips">
-        <div class="sidebar-chip active" data-sort="velocity">급상승</div>
-        <div class="sidebar-chip" data-sort="score">점수순</div>
-        <div class="sidebar-chip" data-sort="alpha">가나다</div>
-      </div>
-    </div>
-
   </aside>
 
   <!-- MAIN CANVAS -->
@@ -1754,43 +1722,9 @@ function selectCategory(catId) {
   state.axis = '';
   state.showCount = 20;
   renderCategories();
-  resetAxisChips();
   loadTrends();
 }
 
-function resetAxisChips() {
-  document.querySelectorAll('#axis-chips .sidebar-chip').forEach(c => {
-    c.classList.toggle('active', c.dataset.axis === state.axis);
-  });
-}
-
-// ── 필터 칩 이벤트 ──
-document.querySelectorAll('#axis-chips .sidebar-chip').forEach(chip => {
-  chip.addEventListener('click', () => {
-    state.axis = chip.dataset.axis;
-    document.querySelectorAll('#axis-chips .sidebar-chip').forEach(c => c.classList.remove('active'));
-    chip.classList.add('active');
-    applyFiltersAndRender();
-  });
-});
-
-document.querySelectorAll('#tier-chips .sidebar-chip').forEach(chip => {
-  chip.addEventListener('click', () => {
-    state.tier = chip.dataset.tier;
-    document.querySelectorAll('#tier-chips .sidebar-chip').forEach(c => c.classList.remove('active'));
-    chip.classList.add('active');
-    applyFiltersAndRender();
-  });
-});
-
-document.querySelectorAll('#sort-chips .sidebar-chip').forEach(chip => {
-  chip.addEventListener('click', () => {
-    state.sort = chip.dataset.sort;
-    document.querySelectorAll('#sort-chips .sidebar-chip').forEach(c => c.classList.remove('active'));
-    chip.classList.add('active');
-    applyFiltersAndRender();
-  });
-});
 
 // ── API 호출 ──
 async function fetchTrends(category, axis) {
@@ -1917,24 +1851,8 @@ function axisLabel(axis) {
 // ── 필터 + 정렬 + 렌더 ──
 function applyFiltersAndRender() {
   let kws = [...state.keywords];
-
-  // axis 필터
-  if (state.axis) {
-    kws = kws.filter(k => k.axis === state.axis || (state.axis === 'general' && (k.axis === 'general' || k.axis === 'domestic')));
-  }
-  // tier 필터
-  if (state.tier === 'real') {
-    kws = kws.filter(k => k.signalTier === 'real');
-  }
-  // 정렬
-  if (state.sort === 'velocity') {
-    kws.sort((a, b) => (b.velocityPct || 0) - (a.velocityPct || 0));
-  } else if (state.sort === 'score') {
-    kws.sort((a, b) => (b.weightedScore || 0) - (a.weightedScore || 0));
-  } else {
-    kws.sort((a, b) => (a.keyword || '').localeCompare(b.keyword || '', 'ko'));
-  }
-
+  // 정렬: velocity 내림차순 고정
+  kws.sort((a, b) => (b.velocityPct || 0) - (a.velocityPct || 0));
   renderGrid(kws);
 }
 
