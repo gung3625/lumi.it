@@ -46,6 +46,7 @@ gtag('config', 'G-RTY8F34TR7');
 <meta name="twitter:image" content="https://lumi.it.kr/assets/logo.png">
 <meta name="twitter:image:alt" content="lumi — 소상공인 인스타그램 자동 포스팅 서비스 루미">
 <link rel="icon" type="image/png" href="/assets/favicon.png">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <link rel="canonical" href="https://lumi.it.kr/">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"SoftwareApplication","name":"lumi","description":"소상공인 인스타그램 자동 포스팅 서비스. 사진·영상 한 번만 올리면 루미가 캡션·해시태그를 쓰고 바로 게시합니다.","url":"https://lumi.it.kr/","applicationCategory":"BusinessApplication","operatingSystem":"Web","author":{"@type":"Organization","name":"lumi","url":"https://lumi.it.kr/"},"offers":{"@type":"AggregateOffer","lowPrice":"19900","highPrice":"29900","priceCurrency":"KRW"}}
@@ -113,6 +114,7 @@ nav > script { display: none; }
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   background-clip: text; text-decoration: none; letter-spacing: -0.5px; user-select: none;
 }
+.nav-logo img { height: 1.3em; width: auto; display: block; }
 .nav-pills { display: flex; gap: 2px; background: rgba(0,0,0,0.04); padding: 4px; border-radius: 23px; }
 .nav-pill {
   border-radius: 50px; display: flex; align-items: center; justify-content: center;
@@ -461,6 +463,21 @@ body.dark-mode .lumi-aura {
   background:radial-gradient(circle, rgba(255,107,139,.5) 0%, rgba(221,160,221,.3) 40%, transparent 70%);
 }
 @media(max-width:600px) { .lumi-aura { display:none !important; } }
+
+/* 구름 로고 — 옆으로 흘러가는 드리프트 감성 (정체성 아바타 전용) */
+.lumi-cloud,
+img.lumi-cloud,
+.m-hero-character.lumi-cloud,
+.upload-lumi.lumi-cloud,
+.bio-avatar.lumi-cloud { animation: lumiCloudDrift 7.5s ease-in-out infinite !important; will-change: transform; }
+@keyframes lumiCloudDrift {
+  0%,100% { transform: translateX(-8px) translateY(0); }
+  25%     { transform: translateX(0)    translateY(-4px); }
+  50%     { transform: translateX(8px)  translateY(0); }
+  75%     { transform: translateX(0)    translateY(-4px); }
+}
+.lumi-cloud { filter: drop-shadow(0 8px 18px rgba(255,107,139,.18)); }
+body.dark-mode .lumi-cloud { filter: drop-shadow(0 8px 22px rgba(221,160,221,.28)); }
 .upload-prompt { font-size:clamp(12px, 2vw, 14px); color:rgba(0,0,0,.4); text-align:center; word-break:keep-all; }
 .upload-prompt strong { color:#0d1117; font-weight:400; font-size:clamp(20px, 4vw, 32px); }
 .upload-desc { color:rgba(0,0,0,.35); }
@@ -1455,7 +1472,7 @@ body.dark-mode .video-warn-badge { background:rgba(255,159,10,.12); color:#ffb34
 /* FOOTER */
 .site-footer{max-width:1200px;margin:0 auto;padding:16px 24px 16px;border-top:1px solid rgba(0,0,0,.06);position:relative;z-index:10;}
 .ft-inner{display:flex;justify-content:space-between;align-items:flex-start;gap:32px;flex-wrap:wrap;}
-.ft-logo{font-size:20px;font-weight:800;font-family:'Nunito',sans-serif;background:linear-gradient(90deg,#FF6B8B 0%,#DDA0DD 35%,#EDD080 70%,#DABA65 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;background-size:100% 100%;margin-bottom:14px;display:inline-block;}
+.ft-logo{font-size:20px;font-weight:800;font-family:'Nunito',sans-serif;background:linear-gradient(90deg,#FF6B8B 0%,#DDA0DD 35%,#EDD080 70%,#DABA65 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;background-size:100% 100%;margin-bottom:14px;display:inline-block;}.ft-logo img{height:2em;width:auto;display:block;}
 .ft-info{font-size:12px;color:rgba(0,0,0,.3);line-height:2.2;}
 .ft-links{display:flex;gap:20px;}
 .ft-links a{font-size:13px;color:rgba(0,0,0,.35);text-decoration:none;font-family:'Jua',sans-serif;}
@@ -2237,7 +2254,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
 <nav>
   <div style="display:flex;align-items:center;gap:8px;">
-    <a class="nav-logo" href="/">lumi</a>
+    <a class="nav-logo" href="/"><img src="/assets/logo-wordmark.png" alt="lumi"></a>
     <script>if(window.LUMI_BETA_MODE){document.write('<span style="border:1px solid var(--pink,#C8507A);color:var(--pink,#C8507A);border-radius:980px;padding:2px 8px;font-size:10px;font-weight:700;letter-spacing:0.5px;line-height:1.4;">BETA<\/span>');}</script>
   </div>
   <div class="nav-pills" id="nav-pills">
@@ -2298,7 +2315,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <div class="mobile-app" id="mobile-app-logged-out">
   <section class="m-hero">
     <script>if(window.LUMI_BETA_MODE){document.write('<p style="color:var(--pink,#C8507A);font-size:11px;letter-spacing:2px;font-weight:600;margin-bottom:8px;text-align:center;">BETA \u00b7 지정 테스터 모집 중<\/p>');}</script>
-    <img src="/assets/lumi-character.png" alt="Lumi" class="m-hero-character v2-float" onerror="this.style.display='none'">
+    <img src="/assets/logo-cloud.png" alt="Lumi" class="m-hero-character lumi-cloud" onerror="this.style.display='none'">
     <h1 class="m-hero-title v2-rise">가게는 보시고,<br>인스타는 맡기세요</h1>
     <p class="m-hero-sub v2-rise d1">내 가게 전담 루미가 사진 한 장으로 캡션·릴스까지 자동.<br>올릴 때마다 우리 매장을 학습해, 쓸수록 더 '우리 가게답게' 써드려요.</p>
     <div class="v2-rise d2" style="width:100%; display:flex; justify-content:center;">
@@ -3757,7 +3774,7 @@ function mInitWave2(){
         '<div class="lumi-progress-wrap" style="padding:40px 20px;">' +
           '<div class="lumi-progress-char">' +
             '<div class="lumi-progress-glow"></div>' +
-            '<img src="/assets/lumi-surprised-2.png" alt="lumi" onerror="this.src=\'/assets/lumi-character.png\'">' +
+            '<img src="/assets/lumi-surprised-2.png" alt="lumi" onerror="this.src=\'/assets/logo-cloud.png\'">' +
           '</div>' +
           '<p class="lumi-progress-title" id="m-flow-status">' + (flow.isVideo ? '영상을 업로드하고 있어요' : '사진을 업로드하고 있어요') + '<span class="lumi-progress-dots"></span></p>' +
           '<p class="lumi-progress-sub" id="m-flow-substatus">잠시만 기다려주세요</p>' +
@@ -3910,7 +3927,7 @@ function mInitWave2(){
         '<div class="lumi-progress-wrap" style="padding:40px 20px;">' +
           '<div class="lumi-progress-char">' +
             '<div class="lumi-progress-glow"></div>' +
-            '<img src="/assets/lumi-surprised-2.png" alt="lumi" onerror="this.src=\'/assets/lumi-character.png\'">' +
+            '<img src="/assets/lumi-surprised-2.png" alt="lumi" onerror="this.src=\'/assets/logo-cloud.png\'">' +
           '</div>' +
           '<p class="lumi-progress-title" id="m-flow-status">' + (flow.isVideo ? '릴스를 게시 중' : '인스타그램에 게시 중') + '<span class="lumi-progress-dots"></span></p>' +
           '<p class="lumi-progress-sub" id="m-flow-substatus">보통 10~30초 정도 걸려요</p>' +
@@ -5942,8 +5959,8 @@ var cards = {
       var tc = isDark ? '#f0f2f8' : '#0d1117';
       var tc2 = isDark ? 'rgba(240,242,248,.4)' : 'rgba(0,0,0,.35)';
       var showLumi = phase === 'idle' || phase === 'picker' || phase === 'processing';
-      var lumiSrc = phase === 'processing' ? '/assets/lumi-surprised-2.png' : '/assets/lumi-character.png';
-      var lumiClass = 'upload-lumi' + (phase === 'processing' ? ' surprised' : '');
+      var lumiSrc = phase === 'processing' ? '/assets/lumi-surprised-2.png' : '/assets/logo-cloud.png';
+      var lumiClass = 'upload-lumi' + (phase === 'processing' ? ' surprised' : ' lumi-cloud');
 
       return e('div', {className:'bento-card card-text pad-bio card-responsive', style:{padding:0,position:'relative'}},
         e('div', {className:'tut-wrap'},
@@ -9091,12 +9108,13 @@ function suNextPhase() {
 }
 
 // ---- NON-REACT FUNCTIONS ----
-var characterImages = ['/assets/lumi-character.png', '/assets/lumi-character-2.png'];
+var characterImages = ['/assets/logo-cloud.png'];
 var currentChar = 0;
 function toggleLockdown() {
   currentChar = (currentChar + 1) % characterImages.length;
   document.querySelectorAll('.bio-avatar, .map-avatar img').forEach(function(img) {
     img.src = characterImages[currentChar];
+    img.classList.add('lumi-cloud');
   });
 }
 
@@ -9290,7 +9308,7 @@ document.querySelectorAll('.lumi-aura, .card-arrow, .btn-pill, .upload-lumi, .su
 <footer class="site-footer">
   <div class="ft-inner">
     <div>
-      <div class="ft-logo">lumi</div>
+      <div class="ft-logo"><img src="/assets/logo-wordmark.png" alt="lumi"></div>
       <p class="ft-info">
         상호명: 루미 (lumi) · 대표자: 김현<br>
         사업자 등록번호: 404-09-66416 · 업태: 정보통신업<br>
