@@ -331,7 +331,21 @@ exports.handler = async (event) => {
   const DB_KEY_MAP = {
     health: 'fitness',
   };
-  const storeKey = knownCategories.includes(category) ? (DB_KEY_MAP[category] || category) : 'cafe';
+  // 미지 카테고리: cafe로 silent 폴백하지 않음 (오데이터 배포 방지) — 빈 응답 + 안내
+  if (!knownCategories.includes(category)) {
+    return {
+      statusCode: 200, headers: CORS,
+      body: JSON.stringify({
+        category, categoryLabel: '지원하지 않는 업종',
+        tags: [], keywords: [],
+        season: getSeasonInfo(),
+        updatedAt: new Date().toISOString(),
+        source: 'unsupported-category',
+        error: `Unknown category '${category}'. Supported: ${knownCategories.join(', ')}`,
+      }),
+    };
+  }
+  const storeKey = DB_KEY_MAP[category] || category;
   // splitBeautyCategory 분리 필터 비활성 (hair/nail 자체 row 사용)
   const beautySubcat = null;
   const season = getSeasonInfo();
