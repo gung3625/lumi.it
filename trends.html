@@ -1954,12 +1954,7 @@ function renderGrid(kws) {
             <i data-lucide="${isHot ? 'flame' : 'trending-up'}" style="width:10px;height:10px;"></i>
             <span id="vel-${i}" data-target="${Math.round(vel || 0)}">+${Math.round(vel || 0)}%</span>
           </span>` : ''}
-          ${kw.isNew ? (() => {
-            const conf = kw.isNewConfidence;
-            if (conf === 'high') return '<span class="new-badge-high">신조어</span>';
-            if (conf === 'medium') return '<span class="new-badge-medium">신조어?</span>';
-            return '<span class="new-badge-low">신조어?</span>';
-          })() : ''}
+          ${kw.isNew && kw.isNewConfidence === 'high' ? '<span class="new-badge-high">신조어</span>' : ''}
           ${kw.subCategory ? `<span class="subcategory-badge">${kw.subCategory}</span>` : ''}
           ${kw.saturationLevel ? (() => {
             const sat = kw.saturationLevel;
@@ -2164,8 +2159,8 @@ function renderRightPanel() {
     risingEl.innerHTML = `<div style="font-size:12px;color:var(--text-tertiary);">예측 데이터 없음</div>`;
   }
 
-  // 신조어 (isNew + signalTier=real)
-  const newKws = state.keywords.filter(k => k.isNew && k.signalTier === 'real').slice(0, 5);
+  // 신조어 (isNew + signalTier=real + isNewConfidence=high) — 확정된 신조어만
+  const newKws = state.keywords.filter(k => k.isNew && k.signalTier === 'real' && k.isNewConfidence === 'high').slice(0, 5);
   const newEl = document.getElementById('panel-new');
   const newSection = document.getElementById('panel-new-section');
   if (newKws.length) {
@@ -2225,8 +2220,7 @@ function openModal(kw) {
     ${kw.isNew ? (() => {
       const conf = kw.isNewConfidence;
       if (conf === 'high') return '<span class="new-badge-high">신조어 확정</span>';
-      if (conf === 'medium') return '<span class="new-badge-medium">신조어 가능성</span>';
-      return '<span class="new-badge-low">신조어 추정</span>';
+      return '';
     })() : ''}
     ${kw.crossSourceCount ? `<span style="font-size:12px;color:var(--text-tertiary);">소스 ${kw.crossSourceCount}종 확인</span>` : ''}
     ${kw.weightedScore ? `<span class="modal-score-badge"><i data-lucide="star" style="width:11px;height:11px;"></i> ${kw.weightedScore.toFixed(1)}</span>` : ''}
