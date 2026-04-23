@@ -1131,6 +1131,97 @@ JSON 객체만 반환. 설명·마크다운·코드블록 금지.
 }
 
 // ─────────────────────────────────────────────
+// 예측 적중률 평가 (28일 전 예측 vs 오늘 실제 데이터)
+// ─────────────────────────────────────────────
+async function evaluatePredictionAccuracy({ supa, category }) {
+  try {
+    // 1. 28일 전 날짜 계산
+    const cutoff = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000);
+    const cutoffStr = cutoff.toISOString().slice(0, 10);
+
+    // 2. 28일 전 스냅샷 조회
+    const { data: oldPrediction } = await supa
+      .from('trends')
+      .select('keywords')
+      .eq('category', `l30d-rising:${category}:${cutoffStr}`)
+      .maybeSingle();
+
+    if (!oldPrediction?.keywords?.items) return null;
+
+    const predictedKeywords = oldPrediction.keywords.items.map(i => i.keyword).slice(0, 10);
+    if (predictedKeywords.length === 0) return null;
+
+    // 3. 오늘의 trend_keywords 조회 (signal_tier='real' 또는 velocity_pct>50)
+    const today = new Date().toISOString().slice(0, 10);
+    const { data: todayRows } = await supa
+      .from('trend_keywords')
+      .select('keyword, signal_tier, velocity_pct')
+      .eq('category', category)
+      .eq('collected_date', today);
+
+    const todayMap = new Map();
+    (todayRows || []).forEach(r => {
+      todayMap.set((r.keyword || '').toLowerCase().trim(), r);
+    });
+
+    // 4. 적중 판정 (엄격: signal_tier=real OR velocity_pct>50)
+    let matched = 0;
+    const hitKeywords = [];
+    for (const kw of predictedKeywords) {
+      const r = todayMap.get((kw || '').toLowerCase().trim());
+      if (r && (r.signal_tier === 'real' || (r.velocity_pct != null && r.velocity_pct > 50))) {
+        matched++;
+        hitKeywords.push(kw);
+      }
+    }
+
+    // 5. 누적 적중률 조회/업데이트
+    const { data: prevAccuracy } = await supa
+      .from('trends')
+      .select('keywords')
+      .eq('category', `prediction-accuracy:${category}`)
+      .maybeSingle();
+
+    const prevCumulative = prevAccuracy?.keywords?.cumulative || { total_predicted: 0, total_matched: 0 };
+
+    const newCumulative = {
+      total_predicted: prevCumulative.total_predicted + predictedKeywords.length,
+      total_matched: prevCumulative.total_matched + matched,
+      accuracy: 0,
+      updated_at: new Date().toISOString(),
+    };
+    newCumulative.accuracy = Math.round(newCumulative.total_matched / newCumulative.total_predicted * 1000) / 10;
+
+    const recent28d = {
+      total_predicted: predictedKeywords.length,
+      total_matched: matched,
+      accuracy: Math.round(matched / predictedKeywords.length * 1000) / 10,
+      hit_keywords: hitKeywords.slice(0, 5),
+    };
+
+    // 6. 저장
+    await supa.from('trends').upsert(
+      {
+        category: `prediction-accuracy:${category}`,
+        keywords: {
+          cumulative: newCumulative,
+          recent_28d: recent28d,
+          last_evaluated_batch: cutoffStr,
+        },
+        collected_at: new Date().toISOString(),
+      },
+      { onConflict: 'category' }
+    );
+
+    console.log(`[accuracy] ${category} 적중: ${matched}/${predictedKeywords.length} (${recent28d.accuracy}%)`);
+    return recent28d;
+  } catch(e) {
+    console.error(`[accuracy] ${category} 실패:`, e.message);
+    return null;
+  }
+}
+
+// ─────────────────────────────────────────────
 // Rising 예측 (gpt-4o + gpt-4o-mini 폴백)
 // ─────────────────────────────────────────────
 async function predictRisingWithGPT({ category, domesticTags, naverData, blogData, youtubeData, googleKR }) {
@@ -1672,6 +1763,12 @@ exports.handler = runGuarded({
             { category: `l30d-rising:${category}`, keywords: { items: risingItems, updatedAt, source: 'gpt-prediction' }, collected_at: updatedAt },
             { onConflict: 'category' }
           );
+          // 날짜별 스냅샷 저장 (28일 후 적중률 검증용)
+          const todaySnap = updatedAt.slice(0, 10);
+          await supa.from('trends').upsert(
+            { category: `l30d-rising:${category}:${todaySnap}`, keywords: { items: risingItems, updatedAt, source: 'gpt-prediction' }, collected_at: updatedAt },
+            { onConflict: 'category' }
+          );
         } catch(e) {
           console.error(`[rising] ${category} 저장 실패:`, e.message);
         }
@@ -1721,6 +1818,12 @@ exports.handler = runGuarded({
 
     // ─── 8단계: Rising 예측 완료 ────────────────
     await ctx.stage('rising-prediction', {});
+
+    // ─── 9단계: 예측 적중률 평가 (28일 전 예측 vs 오늘 실제) ─────
+    await ctx.stage('accuracy-evaluation', {});
+    await Promise.all(categories.map(async (cat) => {
+      await evaluatePredictionAccuracy({ supa, category: cat });
+    }));
 
     console.log('[trends-v2] 완료:', JSON.stringify(results));
 

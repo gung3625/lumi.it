@@ -410,11 +410,13 @@ exports.handler = async (event) => {
         );
       }
 
-      const [scopeRow, prevRow, rising] = await Promise.all([
+      const [scopeRow, prevRow, rising, accRow] = await Promise.all([
         fetchTrendRow(supa, scopeKey),
         fetchTrendRow(supa, prevKey),
         risingPromise,
+        fetchTrendRow(supa, `prediction-accuracy:${storeKey}`),
       ]);
+      const predictionAccuracy = accRow?.keywords || null;
 
       if (scopeRow && scopeRow.keywords) {
         const scopeData = scopeRow.keywords;
@@ -473,6 +475,7 @@ exports.handler = async (event) => {
             season,
             updatedAt: scopeData.updatedAt || scopeRow.collected_at || new Date().toISOString(),
             source: 'gpt-classified',
+            predictionAccuracy,
           }),
         };
       }
@@ -491,6 +494,7 @@ exports.handler = async (event) => {
           season,
           updatedAt: new Date().toISOString(),
           source: 'none',
+          predictionAccuracy,
         }),
       };
     }
