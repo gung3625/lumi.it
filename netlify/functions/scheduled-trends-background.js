@@ -726,168 +726,174 @@ async function saveScope({ supa, scope, category, tags, updatedAt, source }) {
 }
 
 // ---------------- 메인 핸들러 ----------------
-exports.handler = async (event) => {
-  const isScheduled = !event || !event.httpMethod;
-  if (!isScheduled) {
-    const secret = (event.headers && (event.headers['x-lumi-secret'] || event.headers['X-Lumi-Secret'])) || '';
-    if (!process.env.LUMI_SECRET || secret !== process.env.LUMI_SECRET) {
+const { runGuarded } = require('./_shared/cron-guard');
+
+exports.handler = runGuarded({
+  name: 'scheduled-trends',
+  handler: async (event) => {
+    const isScheduled = !event || !event.httpMethod;
+    if (!isScheduled) {
+      const secret = (event.headers && (event.headers['x-lumi-secret'] || event.headers['X-Lumi-Secret'])) || '';
+      if (!process.env.LUMI_SECRET || secret !== process.env.LUMI_SECRET) {
+        return {
+          statusCode: 401,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          body: JSON.stringify({ error: '인증 실패' }),
+        };
+      }
+    }
+    console.log('[scheduled-trends-background] Phase 1 재구축 파이프라인 시작 (5소스 + gpt-4o-mini)');
+
+    let supa;
+    try {
+      supa = getAdminClient();
+    } catch(e) {
+      console.error('[scheduled-trends] Supabase 초기화 실패:', e.message);
       return {
-        statusCode: 401,
+        statusCode: 500,
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ error: '인증 실패' }),
+        body: JSON.stringify({ error: 'Supabase 초기화 실패' }),
       };
     }
-  }
-  console.log('[scheduled-trends-background] Phase 1 재구축 파이프라인 시작 (5소스 + gpt-4o-mini)');
 
-  let supa;
-  try {
-    supa = getAdminClient();
-  } catch(e) {
-    console.error('[scheduled-trends] Supabase 초기화 실패:', e.message);
-    return {
-      statusCode: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ error: 'Supabase 초기화 실패' }),
-    };
-  }
+    // nail/hair는 beauty 수집 데이터를 공유 — GPT 프롬프트에서 3분할 분류
+    const categories = ['cafe', 'food', 'beauty', 'nail', 'hair', 'flower', 'fashion', 'fitness', 'pet', 'interior', 'education', 'studio'];
+    const COLLECT_CATEGORIES = ['cafe', 'food', 'beauty', 'flower', 'fashion', 'fitness', 'pet', 'interior', 'education', 'studio'];
+    const updatedAt = new Date().toISOString();
 
-  // nail/hair는 beauty 수집 데이터를 공유 — GPT 프롬프트에서 3분할 분류
-  const categories = ['cafe', 'food', 'beauty', 'nail', 'hair', 'flower', 'fashion', 'fitness', 'pet', 'interior', 'education', 'studio'];
-  const COLLECT_CATEGORIES = ['cafe', 'food', 'beauty', 'flower', 'fashion', 'fitness', 'pet', 'interior', 'education', 'studio'];
-  const updatedAt = new Date().toISOString();
-
-  // --- 1단계: 전 업종 병렬 수집 ---
-  // 구글 트렌드는 업종 무관하므로 1회만
-  const googleKR = await fetchGoogleTrendsLib('KR');
-  console.log(`[sources] google-kr: ${googleKR.length}`);
-
-  // 업종별 소스 수집 — 수집 카테고리만 (nail/hair는 beauty 공유)
-  const rawEntries = await Promise.all(COLLECT_CATEGORIES.map(async (category) => {
-    const [naverData, blogData, ytKR, igTexts] = await Promise.all([
-      fetchNaverDatalab(category),
-      fetchNaverBlogs(category),
-      fetchYouTube(category),
-      fetchInstagram(supa, category),
-    ]);
-    console.log(`[${category}] naver=${naverData.length} blog=${blogData.length} yt-kr=${ytKR.length} ig=${igTexts.length}`);
-    return [category, { naverData, blogData, ytKR, igTexts }];
-  }));
-  const rawByCategory = Object.fromEntries(rawEntries);
-  // nail/hair는 beauty 수집 데이터 공유
-  rawByCategory.nail = rawByCategory.beauty;
-  rawByCategory.hair = rawByCategory.beauty;
-
-  // --- 2단계: gpt-4o-mini 배치 분류 (국내 1회) ---
-  const domesticTexts = {};
-  for (const cat of categories) {
-    const r = rawByCategory[cat];
-    domesticTexts[cat] = [
-      ...r.naverData,
-      ...r.blogData,
-      ...r.ytKR,
-      ...googleKR,
-      ...r.igTexts,
-    ];
-  }
-
-  let domesticClassified = null;
-  if (process.env.OPENAI_API_KEY) {
-    domesticClassified = await classifyBatchWithGPT({ rawTextsByCategory: domesticTexts });
-  }
-
-  // --- 3단계: 저장 + rising 예측 (10 카테고리 병렬) ---
-  const allDomestic = [];
-  const results = await Promise.all(categories.map(async (category) => {
+    // --- 1단계: 전 업종 병렬 수집 ---
+    // 구글 트렌드는 업종 무관하므로 1회만 — 개별 try/catch로 상위 전파 차단
+    let googleKR = [];
     try {
-      const r = rawByCategory[category];
+      googleKR = await fetchGoogleTrendsLib('KR');
+    } catch(e) {
+      console.error('[sources] google-kr 수집 실패 (계속 진행):', e.message);
+    }
+    console.log(`[sources] google-kr: ${googleKR.length}`);
 
-      // 국내 태그 선정
-      let domesticTags = (domesticClassified && domesticClassified[category]) || [];
-      if (!domesticTags || domesticTags.length < 3) {
-        const fromNaver = (r.naverData || []).map(normalize).filter(kw => !isBadKeyword(kw));
-        domesticTags = [...new Set([...domesticTags, ...fromNaver, ...(DEFAULT_TRENDS[category] || [])])].slice(0, 10);
-      } else if (domesticTags.length < 10) {
-        domesticTags = [...new Set([...domesticTags, ...(DEFAULT_TRENDS[category] || [])])].slice(0, 10);
-      } else {
-        domesticTags = domesticTags.slice(0, 10);
-      }
-
-      // 뜰 가능성 예측과 saveScope 병렬
-      const [_, risingItemsRaw] = await Promise.all([
-        saveScope({ supa, scope: 'domestic', category, tags: domesticTags, updatedAt, source: 'gpt-4o-mini' }),
-        process.env.OPENAI_API_KEY
-          ? predictRisingWithGPT({
-              category, domesticTags,
-              naverData: r.naverData, blogData: r.blogData,
-              youtubeData: r.ytKR, googleKR,
-            })
-          : Promise.resolve(null),
+    // 업종별 소스 수집 — 수집 카테고리만 (nail/hair는 beauty 공유)
+    const rawEntries = await Promise.all(COLLECT_CATEGORIES.map(async (category) => {
+      const [naverData, blogData, ytKR, igTexts] = await Promise.all([
+        fetchNaverDatalab(category),
+        fetchNaverBlogs(category),
+        fetchYouTube(category),
+        fetchInstagram(supa, category),
       ]);
+      console.log(`[${category}] naver=${naverData.length} blog=${blogData.length} yt-kr=${ytKR.length} ig=${igTexts.length}`);
+      return [category, { naverData, blogData, ytKR, igTexts }];
+    }));
+    const rawByCategory = Object.fromEntries(rawEntries);
+    // nail/hair는 beauty 수집 데이터 공유
+    rawByCategory.nail = rawByCategory.beauty;
+    rawByCategory.hair = rawByCategory.beauty;
 
-      domesticTags.forEach((kw, i) => allDomestic.push({
-        keyword: kw, score: 100 - i * 5, mentions: 0, source: 'gpt-4o-mini', bizCategory: category
-      }));
+    // --- 2단계: gpt-4o-mini 배치 분류 (국내 1회) ---
+    const domesticTexts = {};
+    for (const cat of categories) {
+      const r = rawByCategory[cat];
+      domesticTexts[cat] = [
+        ...r.naverData,
+        ...r.blogData,
+        ...r.ytKR,
+        ...googleKR,
+        ...r.igTexts,
+      ];
+    }
 
-      let risingItems = risingItemsRaw;
-      if (!risingItems || risingItems.length < 2) {
-        const pool = (domesticTags.length >= 10 ? domesticTags.slice(0, 10) : [...domesticTags, ...(DEFAULT_TRENDS[category] || [])].slice(0, 10));
-        risingItems = pool.map((kw, i) => ({
-          keyword: kw,
-          confidence: Math.max(30, 75 - i * 5),
-          growthRate: '+' + Math.max(5, 25 - i * 2) + '%',
-          reason: '국내 트렌드 상승세',
-        }));
-      }
+    let domesticClassified = null;
+    if (process.env.OPENAI_API_KEY) {
+      domesticClassified = await classifyBatchWithGPT({ rawTextsByCategory: domesticTexts });
+    }
+
+    // --- 3단계: 저장 + rising 예측 (10 카테고리 병렬) ---
+    const allDomestic = [];
+    const results = await Promise.all(categories.map(async (category) => {
       try {
-        await supa.from('trends').upsert(
-          { category: `l30d-rising:${category}`, keywords: { items: risingItems, updatedAt, source: 'gpt-prediction' }, collected_at: updatedAt },
+        const r = rawByCategory[category];
+
+        // 국내 태그 선정
+        let domesticTags = (domesticClassified && domesticClassified[category]) || [];
+        if (!domesticTags || domesticTags.length < 3) {
+          const fromNaver = (r.naverData || []).map(normalize).filter(kw => !isBadKeyword(kw));
+          domesticTags = [...new Set([...domesticTags, ...fromNaver, ...(DEFAULT_TRENDS[category] || [])])].slice(0, 10);
+        } else if (domesticTags.length < 10) {
+          domesticTags = [...new Set([...domesticTags, ...(DEFAULT_TRENDS[category] || [])])].slice(0, 10);
+        } else {
+          domesticTags = domesticTags.slice(0, 10);
+        }
+
+        // 뜰 가능성 예측과 saveScope 병렬
+        const [_, risingItemsRaw] = await Promise.all([
+          saveScope({ supa, scope: 'domestic', category, tags: domesticTags, updatedAt, source: 'gpt-4o-mini' }),
+          process.env.OPENAI_API_KEY
+            ? predictRisingWithGPT({
+                category, domesticTags,
+                naverData: r.naverData, blogData: r.blogData,
+                youtubeData: r.ytKR, googleKR,
+              })
+            : Promise.resolve(null),
+        ]);
+
+        domesticTags.forEach((kw, i) => allDomestic.push({
+          keyword: kw, score: 100 - i * 5, mentions: 0, source: 'gpt-4o-mini', bizCategory: category
+        }));
+
+        let risingItems = risingItemsRaw;
+        if (!risingItems || risingItems.length < 2) {
+          const pool = (domesticTags.length >= 10 ? domesticTags.slice(0, 10) : [...domesticTags, ...(DEFAULT_TRENDS[category] || [])].slice(0, 10));
+          risingItems = pool.map((kw, i) => ({
+            keyword: kw,
+            confidence: Math.max(30, 75 - i * 5),
+            growthRate: '+' + Math.max(5, 25 - i * 2) + '%',
+            reason: '국내 트렌드 상승세',
+          }));
+        }
+        try {
+          await supa.from('trends').upsert(
+            { category: `l30d-rising:${category}`, keywords: { items: risingItems, updatedAt, source: 'gpt-prediction' }, collected_at: updatedAt },
+            { onConflict: 'category' }
+          );
+        } catch(e) {
+          console.error(`[rising] ${category} 저장 실패:`, e.message);
+        }
+
+        console.log(`[${category}] 국내(${domesticTags.length}):`, domesticTags.join(', '));
+        console.log(`[${category}] 뜰(${risingItems.length}):`, risingItems.map(r => r.keyword).join(', '));
+        return { category, domestic: domesticTags.length, rising: risingItems.length };
+      } catch(e) {
+        console.error(`[scheduled-trends] ${category} 실패:`, e.message);
+        try {
+          await saveScope({ supa, scope: 'domestic', category, tags: DEFAULT_TRENDS[category] || [], updatedAt, source: 'fallback' });
+        } catch(e2) {}
+        return { category, error: e.message };
+      }
+    }));
+
+    // --- 4단계: 종합(all) 저장 ---
+    try {
+      allDomestic.sort((a, b) => (b.score || 0) - (a.score || 0));
+
+      try {
+        const { data: curD } = await supa.from('trends').select('keywords').eq('category', 'l30d-domestic:all').single();
+        if (curD) await supa.from('trends').upsert(
+          { category: 'l30d-domestic-prev:all', keywords: curD.keywords, collected_at: updatedAt },
           { onConflict: 'category' }
         );
-      } catch(e) {
-        console.error(`[rising] ${category} 저장 실패:`, e.message);
-      }
+      } catch(e) {}
 
-      console.log(`[${category}] 국내(${domesticTags.length}):`, domesticTags.join(', '));
-      console.log(`[${category}] 뜰(${risingItems.length}):`, risingItems.map(r => r.keyword).join(', '));
-      return { category, domestic: domesticTags.length, rising: risingItems.length };
-    } catch(e) {
-      console.error(`[scheduled-trends] ${category} 실패:`, e.message);
-      try {
-        await saveScope({ supa, scope: 'domestic', category, tags: DEFAULT_TRENDS[category] || [], updatedAt, source: 'fallback' });
-      } catch(e2) {}
-      return { category, error: e.message };
-    }
-  }));
-
-  // --- 4단계: 종합(all) 저장 ---
-  try {
-    allDomestic.sort((a, b) => (b.score || 0) - (a.score || 0));
-
-    try {
-      const { data: curD } = await supa.from('trends').select('keywords').eq('category', 'l30d-domestic:all').single();
-      if (curD) await supa.from('trends').upsert(
-        { category: 'l30d-domestic-prev:all', keywords: curD.keywords, collected_at: updatedAt },
+      await supa.from('trends').upsert(
+        { category: 'l30d-domestic:all', keywords: { keywords: allDomestic.slice(0, 30), updatedAt, source: 'scheduled-gpt-all' }, collected_at: updatedAt },
         { onConflict: 'category' }
       );
-    } catch(e) {}
+    } catch(e) {
+      console.error('[all] 실패:', e.message);
+    }
 
-    await supa.from('trends').upsert(
-      { category: 'l30d-domestic:all', keywords: { keywords: allDomestic.slice(0, 30), updatedAt, source: 'scheduled-gpt-all' }, collected_at: updatedAt },
-      { onConflict: 'category' }
-    );
-  } catch(e) {
-    console.error('[all] 실패:', e.message);
-  }
-
-  console.log('[scheduled-trends] 완료:', JSON.stringify(results));
-  return {
-    statusCode: 200,
-    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-    body: JSON.stringify({ success: true, updatedAt, results }),
-  };
-};
-
-module.exports.config = {
-  schedule: '0 15 * * *'
-};
+    console.log('[scheduled-trends] 완료:', JSON.stringify(results));
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ success: true, updatedAt, results }),
+    };
+  },
+});
