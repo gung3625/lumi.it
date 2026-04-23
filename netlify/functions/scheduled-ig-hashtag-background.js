@@ -1,26 +1,52 @@
-// scheduled-ig-hashtag-background.js — 주간 IG 해시태그 트렌드 수집 (rate limit 회피용 캐시)
-// IG Graph API ig_hashtag_search + top_media 호출을 "주 1회" 배치로 몰아서 실행.
+// scheduled-ig-hashtag-background.js — 매일 IG 해시태그 트렌드 수집 (3일 업종 로테이션)
+// IG Graph API rate limit 회피: 하루 3업종 × 3태그 = 9개/일, 고유 27개/주 (한도 30개 이내)
 // scheduled-trends-background.js의 fetchInstagram은 여기서 쓴 캐시만 읽음.
-// 스케줄: 매주 월요일 KST 00:00 (= 일요일 UTC 15:00)
+// 스케줄: 매일 UTC 18:00 = KST 03:00
 
 const { getAdminClient } = require('./_shared/supabase-admin');
 const https = require('https');
 
-// 업종별 seed hashtag
-const IG_SEED_TAGS = {
-  cafe: 'cafetrend',
-  food: 'foodtrend',
-  beauty: 'beautytrend',
-  flower: 'flowertrend',
-  fashion: 'fashiontrend',
-  fitness: 'fitnesskorea',
-  pet: 'pettrend',
-  interior: 'interiortrend',
-  education: 'edutrend',
-  studio: 'photostudio',
-  nail: 'nailartkorea',
-  hair: 'hairtrendkorea',
+// 9업종 × 3개 해시태그 (고유 27개, 주 30개 한도 이내)
+const IG_HASHTAGS = {
+  cafe:    ['카페추천', '디저트', '카페스타그램'],
+  food:    ['맛집', '오마카세', '맛스타그램'],
+  beauty:  ['뷰티', '화장품', '피부관리'],
+  hair:    ['헤어스타일', '미용실', '펌'],
+  nail:    ['네일아트', '젤네일', '네일샵'],
+  flower:  ['꽃집', '드라이플라워', '플라워샵'],
+  fashion: ['패션', '코디', 'Y2K'],
+  fitness: ['필라테스', '바디프로필', '헬스타그램'],
+  pet:     ['강아지', '고양이', '반려동물'],
 };
+
+// 3일 주기 로테이션 그룹
+const ROTATION_GROUPS = [
+  ['cafe', 'food', 'beauty'],    // rotation 0
+  ['hair', 'nail', 'flower'],    // rotation 1
+  ['fashion', 'fitness', 'pet'], // rotation 2
+];
+
+// 오늘의 3업종 반환 (연중 일수 % 3)
+function getTodayCategories() {
+  const now = new Date();
+  const startOfYear = new Date(now.getFullYear(), 0, 0);
+  const dayOfYear = Math.floor((now - startOfYear) / (24 * 60 * 60 * 1000));
+  const rotation = dayOfYear % 3;
+  return ROTATION_GROUPS[rotation];
+}
+
+// trends 테이블 캐시로 7일 신선도 판단
+async function isCategoryStale(supa, category) {
+  const { data } = await supa
+    .from('trends')
+    .select('collected_at')
+    .eq('category', `ig-hashtag-cache:${category}`)
+    .maybeSingle();
+  if (!data) return true;
+  const lastFetched = new Date(data.collected_at).getTime();
+  const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  return lastFetched < sevenDaysAgo;
+}
 
 function httpsGetRaw(urlOrOptions, timeoutMs = 10000) {
   return new Promise((resolve, reject) => {
@@ -93,7 +119,7 @@ exports.handler = async (event) => {
 
   const supa = getAdminClient();
 
-  // 1) 브랜드 IG 토큰 조회 (admin-promo-publish.js:129-139 패턴)
+  // 1) 브랜드 IG 토큰 조회
   const { data: igRow, error: igErr } = await supa
     .from('ig_accounts_decrypted')
     .select('ig_user_id, access_token, page_access_token')
@@ -110,29 +136,49 @@ exports.handler = async (event) => {
   const businessId = igRow.ig_user_id;
   const accessToken = igRow.page_access_token || igRow.access_token;
 
-  // 2) 12업종 순차 수집 (병렬 금지 — rate limit 보호)
+  // 2) 오늘 로테이션 업종 선택
+  const todayCats = getTodayCategories();
+  console.log(`[ig-rotation] today's cats: [${todayCats.join(', ')}]`);
+
+  // 3) 업종별 수집 (7일 신선도 체크 후 skip 또는 fetch)
   const updatedAt = new Date().toISOString();
   const results = {};
-  for (const [category, tag] of Object.entries(IG_SEED_TAGS)) {
-    try {
-      const captions = await fetchIgHashtag({ businessId, accessToken, tag });
-      results[category] = captions;
-      console.log(`[ig-hashtag] ${category} (${tag}): ${captions.length}건`);
-      // Supabase 캐시 저장
-      await supa.from('trends').upsert(
-        {
-          category: `ig-hashtag-cache:${category}`,
-          keywords: { captions, tag, updatedAt },
-          collected_at: updatedAt,
-        },
-        { onConflict: 'category' }
-      );
-      // rate limit 여유 (호출 간 1초)
-      await new Promise(r => setTimeout(r, 1000));
-    } catch (e) {
-      console.error(`[ig-hashtag] ${category} 실패:`, e.message);
-      results[category] = [];
+  const skipped = [];
+
+  for (const cat of todayCats) {
+    const stale = await isCategoryStale(supa, cat);
+    if (!stale) {
+      console.log(`[ig-rotation] ${cat}: 7일 이내 갱신됨, skip`);
+      skipped.push(cat);
+      continue;
     }
+
+    const tags = IG_HASHTAGS[cat] || [];
+    const allCaptions = [];
+
+    for (const tag of tags) {
+      try {
+        const captions = await fetchIgHashtag({ businessId, accessToken, tag });
+        allCaptions.push(...captions);
+        console.log(`[ig-hashtag] ${cat}/${tag}: ${captions.length}건`);
+        // rate limit 여유 (호출 간 1초)
+        await new Promise(r => setTimeout(r, 1000));
+      } catch (e) {
+        console.error(`[ig-hashtag] ${cat}/${tag} 실패:`, e.message);
+      }
+    }
+
+    results[cat] = allCaptions;
+
+    // Supabase 캐시 저장 (기존 키 형식 유지 — scheduled-trends-v2 읽기 쪽 호환)
+    await supa.from('trends').upsert(
+      {
+        category: `ig-hashtag-cache:${cat}`,
+        keywords: { captions: allCaptions, tags, updatedAt },
+        collected_at: updatedAt,
+      },
+      { onConflict: 'category' }
+    );
   }
 
   return {
@@ -141,11 +187,13 @@ exports.handler = async (event) => {
     body: JSON.stringify({
       success: true,
       updatedAt,
+      rotation: todayCats,
+      skipped,
       counts: Object.fromEntries(Object.entries(results).map(([k, v]) => [k, v.length])),
     }),
   };
 };
 
 module.exports.config = {
-  schedule: '0 15 * * 0', // 매주 월요일 KST 00:00 (= 일요일 UTC 15:00)
+  schedule: '0 18 * * *', // 매일 KST 03:00 (= UTC 18:00)
 };
