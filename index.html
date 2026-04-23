@@ -8403,7 +8403,8 @@ function verifyAuthConsent() {
 function authKakao() {
   if (!verifyAuthConsent()) return;
   var redirectUri = encodeURIComponent(location.origin + '/api/auth/kakao/callback');
-  var scope = encodeURIComponent('profile_nickname,account_email,age_range,phone_number,gender');
+  // gender는 카카오 심사 승인 후 추가 예정 — 현재 KOE205 회피를 위해 제외
+  var scope = encodeURIComponent('profile_nickname,account_email,age_range,phone_number');
   location.href = 'https://kauth.kakao.com/oauth/authorize?client_id=' + KAKAO_CLIENT_ID + '&redirect_uri=' + redirectUri + '&response_type=code&scope=' + scope;
 }
 
