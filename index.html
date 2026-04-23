@@ -1703,26 +1703,33 @@ body.dark-mode .auth-google:hover{box-shadow:0 4px 12px rgba(0,0,0,.4);}
 /* 가입 시 수집 항목 (카카오 심사용) */
 .auth-collect{background:rgba(0,0,0,.035);border-radius:12px;padding:14px 16px;margin:0 0 18px;opacity:0;animation:authItemIn .4s cubic-bezier(.16,1,.3,1) .27s forwards;}
 body.dark-mode .auth-collect{background:rgba(255,255,255,.045);}
-.auth-collect-title{font-size:12px;font-weight:700;color:#0d1117;letter-spacing:-0.1px;margin:0 0 8px;}
+.auth-collect-title{font-size:12px;font-weight:700;color:#0d1117;letter-spacing:-0.1px;margin:0 0 10px;}
 body.dark-mode .auth-collect-title{color:#f0f2f8;}
-.auth-collect-row{display:flex;align-items:center;gap:10px;padding:3px 0;}
-.auth-collect-badge{flex:0 0 auto;min-width:38px;text-align:center;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:-0.1px;}
+.auth-collect-group{margin:0 0 10px;}
+.auth-collect-group:last-child{margin-bottom:0;}
+.auth-collect-group-head{margin:0 0 6px;}
+.auth-collect-badge{display:inline-block;min-width:38px;text-align:center;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:-0.1px;}
 .auth-collect-badge.required{background:rgba(200,80,122,.12);color:#C8507A;}
 .auth-collect-badge.optional{background:rgba(0,0,0,.07);color:#6e6e73;}
 body.dark-mode .auth-collect-badge.optional{background:rgba(255,255,255,.1);color:#a1a1a6;}
-.auth-collect-items{font-size:12.5px;color:#424245;letter-spacing:-0.15px;line-height:1.4;}
-body.dark-mode .auth-collect-items{color:#c7c7cc;}
+.auth-collect-list{list-style:none;margin:0;padding:0;}
+.auth-collect-list li{display:flex;align-items:baseline;gap:8px;padding:3px 0 3px 4px;font-size:12.5px;line-height:1.4;}
+.auth-collect-field{flex:0 0 auto;min-width:54px;font-weight:600;color:#0d1117;letter-spacing:-0.15px;}
+body.dark-mode .auth-collect-field{color:#f0f2f8;}
+.auth-collect-reason{flex:1 1 auto;color:#6e6e73;letter-spacing:-0.15px;}
+body.dark-mode .auth-collect-reason{color:#a1a1a6;}
 /* mobile */
 @media(max-width:480px){
   .auth-card{padding:32px 20px;}
   .auth-h1{font-size:24px;letter-spacing:-0.4px;}
   .auth-social-btn{font-size:15px;height:52px;}
   .auth-collect{padding:12px 14px;}
-  .auth-collect-items{font-size:12px;}
+  .auth-collect-list li{font-size:12px;}
 }
 @media(max-width:360px){
   .auth-social-btn{font-size:14px;gap:8px;}
-  .auth-collect-items{font-size:11.5px;}
+  .auth-collect-list li{font-size:11.5px;gap:6px;}
+  .auth-collect-field{min-width:46px;}
 }
 /* landscape small screen scroll */
 @media(max-height:600px){
@@ -5022,14 +5029,24 @@ function mInitWave2(){
       </button>
     </div>
     <div class="auth-collect" aria-label="가입 시 수집되는 개인정보">
-      <p class="auth-collect-title">가입 시 수집하는 정보</p>
-      <div class="auth-collect-row">
-        <span class="auth-collect-badge required">필수</span>
-        <span class="auth-collect-items">이름 · 연령대 · 전화번호</span>
+      <p class="auth-collect-title">가입 시 수집 항목 및 이용 목적</p>
+      <div class="auth-collect-group">
+        <div class="auth-collect-group-head">
+          <span class="auth-collect-badge required">필수</span>
+        </div>
+        <ul class="auth-collect-list">
+          <li><span class="auth-collect-field">이름</span><span class="auth-collect-reason">회원 식별</span></li>
+          <li><span class="auth-collect-field">연령대</span><span class="auth-collect-reason">만 14세 이상 확인</span></li>
+          <li><span class="auth-collect-field">전화번호</span><span class="auth-collect-reason">본인 확인 · 중복 가입 방지</span></li>
+        </ul>
       </div>
-      <div class="auth-collect-row">
-        <span class="auth-collect-badge optional">선택</span>
-        <span class="auth-collect-items">성별</span>
+      <div class="auth-collect-group">
+        <div class="auth-collect-group-head">
+          <span class="auth-collect-badge optional">선택</span>
+        </div>
+        <ul class="auth-collect-list">
+          <li><span class="auth-collect-field">성별</span><span class="auth-collect-reason">맞춤 콘텐츠 추천</span></li>
+        </ul>
       </div>
     </div>
     <p class="auth-legal">
