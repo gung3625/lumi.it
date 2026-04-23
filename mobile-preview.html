@@ -534,8 +534,178 @@ img, svg { display: block; max-width: 100%; }
 .tab-plus svg { width: 26px; height: 26px; stroke-width: 2.6; }
 
 /* ═══════════════════════════════════════════════════════════
-   UPLOAD / TRENDS / MYSTORE (placeholder skeletons)
+   UPLOAD (올리기)
 ═══════════════════════════════════════════════════════════ */
+.upload-hero {
+  background: var(--bg);
+  border-radius: var(--cloud-radius-lg);
+  padding: 24px 22px;
+  box-shadow: var(--cloud-shadow);
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.upload-hero::before {
+  content: '';
+  position: absolute;
+  top: -50px; right: -40px;
+  width: 160px; height: 160px;
+  background: radial-gradient(circle, rgba(221,160,221,0.25) 0%, transparent 65%);
+  filter: blur(10px);
+  z-index: -1;
+}
+.upload-hero h3 {
+  font-family: 'Jua', sans-serif;
+  font-size: 22px;
+  color: var(--ink-1);
+  margin-bottom: 6px;
+  letter-spacing: -0.3px;
+}
+.upload-hero p {
+  font-size: 13px;
+  color: var(--ink-2);
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+.upload-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.upload-opt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px 12px;
+  border-radius: 16px;
+  background: var(--bg-alt);
+  color: var(--ink-1);
+  font-size: 13px;
+  font-weight: 700;
+  transition: transform .2s var(--ease-soft), box-shadow .2s;
+  position: relative;
+  overflow: hidden;
+}
+.upload-opt:active { transform: scale(0.97); }
+.upload-opt.primary {
+  background: var(--brand-gradient);
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(255,107,139,0.3);
+}
+.upload-opt-icon {
+  width: 42px; height: 42px;
+  border-radius: 14px;
+  background: color-mix(in srgb, currentColor 12%, transparent);
+  display: flex; align-items: center; justify-content: center;
+}
+.upload-opt-icon svg { width: 22px; height: 22px; stroke-width: 2.2; }
+.upload-opt.primary .upload-opt-icon {
+  background: rgba(255,255,255,0.2);
+}
+
+/* Quick toggles */
+.quick-toggles {
+  background: var(--bg);
+  border-radius: 16px;
+  padding: 6px;
+  box-shadow: var(--cloud-shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.qt-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 12px;
+  border-radius: 12px;
+  transition: background .15s;
+}
+.qt-row:active { background: var(--bg-alt); }
+.qt-icon {
+  width: 32px; height: 32px;
+  border-radius: 10px;
+  background: var(--pink-soft);
+  color: var(--pink);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.qt-icon svg { width: 16px; height: 16px; stroke-width: 2.2; }
+.qt-body { flex: 1; min-width: 0; }
+.qt-body b {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-1);
+  display: block;
+}
+.qt-body span {
+  font-size: 11px;
+  color: var(--ink-3);
+  display: block;
+  margin-top: 1px;
+}
+.toggle-sw {
+  flex-shrink: 0;
+  width: 40px; height: 24px;
+  border-radius: 12px;
+  background: var(--ink-4);
+  position: relative;
+  transition: background .2s var(--ease-soft);
+}
+.toggle-sw::after {
+  content: '';
+  position: absolute;
+  left: 2px; top: 2px;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform .25s var(--ease);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+.toggle-sw.on { background: var(--pink); }
+.toggle-sw.on::after { transform: translateX(16px); }
+
+/* Schedule preview */
+.schedule-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg);
+  border-radius: 14px;
+  padding: 12px 14px;
+  box-shadow: var(--cloud-shadow-sm);
+}
+.schedule-thumb {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #FFE6EE, #E8D6FF);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  color: var(--pink);
+}
+.schedule-thumb svg { width: 20px; stroke-width: 2; }
+.schedule-body { flex: 1; min-width: 0; }
+.schedule-body b {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-1);
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.schedule-body span {
+  font-size: 11px;
+  color: var(--pink);
+  display: block;
+  margin-top: 2px;
+  font-weight: 600;
+}
+.schedule-body span.past { color: var(--ink-3); }
+
+/* Placeholder (빈 상태용 & DM 탭) */
 .placeholder {
   margin-top: 40px;
   text-align: center;
@@ -555,6 +725,113 @@ img, svg { display: block; max-width: 100%; }
   font-size: 13px;
   color: var(--ink-3);
   line-height: 1.5;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DM (대화 — 숨김 탭)
+═══════════════════════════════════════════════════════════ */
+.dm-status {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--bg);
+  border-radius: var(--cloud-radius);
+  padding: 16px 18px;
+  box-shadow: var(--cloud-shadow);
+  margin-bottom: 16px;
+}
+.dm-status-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: #22C55E;
+  box-shadow: 0 0 0 0 rgba(34,197,94,0.5);
+  animation: pulse 1.8s ease-out infinite;
+  flex-shrink: 0;
+}
+.dm-status-body { flex: 1; min-width: 0; }
+.dm-status-body b {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink-1);
+  display: block;
+}
+.dm-status-body span {
+  font-size: 11px;
+  color: var(--ink-3);
+  display: block;
+}
+.dm-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.dm-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--bg);
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: var(--cloud-shadow-sm);
+  transition: transform .15s var(--ease-soft);
+}
+.dm-row:active { transform: scale(0.98); }
+.dm-avatar {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: var(--pink-soft);
+  color: var(--pink);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Jua', sans-serif;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.dm-content { flex: 1; min-width: 0; }
+.dm-content-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.dm-content-head b {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dm-content-head em {
+  font-style: normal;
+  font-size: 10px;
+  color: var(--ink-3);
+  flex-shrink: 0;
+}
+.dm-msg {
+  font-size: 12px;
+  color: var(--ink-2);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.4;
+}
+.dm-lumi-reply {
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: var(--pink-soft);
+  border-radius: 10px 10px 10px 4px;
+  font-size: 12px;
+  color: var(--pink-deep);
+  line-height: 1.4;
+}
+.dm-lumi-reply em {
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--pink);
+  display: block;
+  margin-bottom: 2px;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -921,10 +1198,122 @@ body.dark-mode .dark-fab .moon { display: none; }
 
     <!-- ═════════ 올리기 (UPLOAD) ═════════ -->
     <section class="screen" data-screen="upload">
-      <div class="placeholder">
-        <img src="/assets/logo-cloud.png" alt="루미">
-        <h4>업로드 플로우 빌드 중</h4>
-        <p>사진·영상 통합 picker → 캡션 → 게시<br>Phase 2에서 완성됩니다 ☁</p>
+
+      <!-- 업로드 진입 히어로 -->
+      <article class="upload-hero">
+        <h3>새 게시물 올리기</h3>
+        <p>사진 한 장이면 루미가 캡션·해시태그까지 자동으로 써드려요</p>
+        <div class="upload-options">
+          <button class="upload-opt primary" onclick="openPicker('photo')">
+            <div class="upload-opt-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 16V8a2 2 0 0 0-2-2h-3l-2-3h-4l-2 3H4a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2Z"/><circle cx="12" cy="12" r="3.2"/></svg>
+            </div>
+            사진
+          </button>
+          <button class="upload-opt" onclick="openPicker('video')">
+            <div class="upload-opt-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+            </div>
+            영상
+          </button>
+        </div>
+      </article>
+
+      <!-- 이번 게시 빠른 설정 -->
+      <div class="section-head"><h3>이번 게시 설정</h3></div>
+      <div class="quick-toggles">
+        <div class="qt-row">
+          <div class="qt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="3"/><path d="M12 18h.01"/></svg></div>
+          <div class="qt-body">
+            <b>스토리에도 올리기</b>
+            <span>24시간 노출 추가</span>
+          </div>
+          <div class="toggle-sw on" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="qt-row">
+          <div class="qt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+          <div class="qt-body">
+            <b>스레드에도 올리기</b>
+            <span>텍스트 자동 변환</span>
+          </div>
+          <div class="toggle-sw" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="qt-row">
+          <div class="qt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+          <div class="qt-body">
+            <b>날씨 반영하기</b>
+            <span>오늘 날씨·계절 맥락 추가</span>
+          </div>
+          <div class="toggle-sw on" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="qt-row">
+          <div class="qt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div class="qt-body">
+            <b>게시 전 캡션 확인</b>
+            <span>끄면 바로 올림</span>
+          </div>
+          <div class="toggle-sw on" onclick="this.classList.toggle('on')"></div>
+        </div>
+      </div>
+
+      <!-- 예약된 게시물 -->
+      <div class="section-head">
+        <h3>예약 게시물</h3>
+        <span style="font-size:12px;color:var(--ink-3);">2건 대기 중</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div class="schedule-item">
+          <div class="schedule-thumb">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+          </div>
+          <div class="schedule-body">
+            <b>오늘의 시그니처 커피 ☕</b>
+            <span>오늘 오후 6:00 게시 예정</span>
+          </div>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="color:var(--ink-4);"><path d="M9 6l6 6-6 6"/></svg>
+        </div>
+        <div class="schedule-item">
+          <div class="schedule-thumb">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+          </div>
+          <div class="schedule-body">
+            <b>신메뉴 소개 릴스</b>
+            <span>내일 오전 11:00 게시 예정</span>
+          </div>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="color:var(--ink-4);"><path d="M9 6l6 6-6 6"/></svg>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ═════════ 대화 (DM — 숨김) ═════════ -->
+    <section class="screen" data-screen="dm" hidden>
+      <div class="dm-status">
+        <div class="dm-status-dot"></div>
+        <div class="dm-status-body">
+          <b>lumi 자동응답 켜짐</b>
+          <span>최근 24시간 · 루미가 12건 답변</span>
+        </div>
+        <div class="toggle-sw on" onclick="this.classList.toggle('on')"></div>
+      </div>
+      <div class="section-head"><h3>받은 DM</h3></div>
+      <div class="dm-list">
+        <div class="dm-row">
+          <div class="dm-avatar">민</div>
+          <div class="dm-content">
+            <div class="dm-content-head"><b>민수_coffee</b><em>5분 전</em></div>
+            <div class="dm-msg">오늘 몇시까지 영업하세요? 저녁에 가보고 싶은데요.</div>
+            <div class="dm-lumi-reply"><em>루미 답변 예시</em>안녕하세요 😊 오늘 밤 10시까지 영업해요. 편하게 오세요!</div>
+          </div>
+        </div>
+        <div class="dm-row">
+          <div class="dm-avatar">예</div>
+          <div class="dm-content">
+            <div class="dm-content-head"><b>예진.s2</b><em>1시간 전</em></div>
+            <div class="dm-msg">말차라떼 진짜 맛있어 보여요! 당도 조절 되나요?</div>
+            <div class="dm-lumi-reply"><em>루미 답변 예시</em>감사합니다 ☁ 당도 덜 / 적당 / 진하게 3단계로 맞춰드려요!</div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -1090,6 +1479,11 @@ function goTab(id) {
 document.querySelectorAll('.tab, .tab-plus').forEach(btn => {
   btn.addEventListener('click', () => goTab(btn.dataset.tab));
 });
+
+// 업로드 picker (프리뷰 — 실 구현은 index.html __mHandleFile 재사용 예정)
+function openPicker(kind) {
+  alert(kind === 'video' ? '영상 선택 (프리뷰)' : '사진 선택 (프리뷰)');
+}
 
 // 카테고리 칩 (트렌드 탭)
 document.querySelectorAll('.cat-chip').forEach(chip => {
