@@ -29,6 +29,7 @@ const SOURCE_WEIGHTS = {
   youtube: 2,
   ig: 2,
   google: 1,
+  news: 2,  // 뉴스는 신뢰도 높음
 };
 
 // ─────────────────────────────────────────────
@@ -324,6 +325,46 @@ const BLOG_SEARCH_SEEDS_BASE = {
   ],
 };
 
+// 업종별 뉴스 검색 시드 — 드라마·PPL·이슈·신상 제품 중심
+const NEWS_SEARCH_SEEDS = {
+  cafe: [
+    '카페 트렌드', '신상 음료', '디저트 신메뉴',
+    '인기 카페', '카페 오픈', '스페셜티 커피'
+  ],
+  food: [
+    '외식 트렌드', '신상 맛집', '요즘 인기 음식',
+    '맛집 오픈', '신메뉴 출시', '미쉐린 가이드'
+  ],
+  beauty: [
+    '뷰티 트렌드', '신상 화장품', '인기 브랜드',
+    '뷰티 신제품', '립스틱 신상', '스킨케어 트렌드'
+  ],
+  hair: [
+    '헤어 트렌드', '연예인 헤어스타일', '펌 신상',
+    '염색 트렌드', '미용실 인기', '헤어 시술'
+  ],
+  nail: [
+    '네일 트렌드', '네일아트 신상', '젤네일 유행',
+    '연예인 네일', '네일 디자인 인기'
+  ],
+  flower: [
+    '플라워 트렌드', '웨딩 부케', '꽃 선물 트렌드',
+    '드라이플라워 인기', '플라워샵 오픈', '꽃 배달'
+  ],
+  fashion: [
+    '패션 트렌드', '신상 의류', 'Y2K 패션',
+    '연예인 패션', '가을 트렌드', '브랜드 런칭'
+  ],
+  fitness: [
+    '피트니스 트렌드', '필라테스 유행', '운동 트렌드',
+    '다이어트 신상', '바디프로필 인기', '홈트 신제품'
+  ],
+  pet: [
+    '반려동물 트렌드', '펫 신상품', '강아지 간식 인기',
+    '고양이 용품 트렌드', '펫호텔 오픈', '반려견 서비스'
+  ]
+};
+
 // 계절 동적 확장 시드 (업종별 계절 키워드)
 const SEASONAL_EXTENSIONS = {
   cafe: ['카페 음료', '디저트', '카페 메뉴'],
@@ -535,6 +576,49 @@ async function fetchNaverBlogs(category) {
       await new Promise(r => setTimeout(r, 200));
     } catch(e) {
       console.error('[naver-blog]', category, query, 'error:', e.message);
+    }
+  }
+  return texts;
+}
+
+async function fetchNaverNews(category) {
+  const clientId = process.env.NAVER_CLIENT_ID;
+  const clientSecret = process.env.NAVER_CLIENT_SECRET;
+  if (!clientId || !clientSecret) return [];
+
+  const seeds = NEWS_SEARCH_SEEDS[category] || NEWS_SEARCH_SEEDS.cafe;
+  const texts = [];
+  for (const query of seeds) {
+    try {
+      const path = `/v1/search/news.json?query=${encodeURIComponent(query)}&display=30&sort=date`;
+      const result = await httpsGetWithHeaders(
+        'openapi.naver.com',
+        path,
+        {
+          'X-Naver-Client-Id': clientId,
+          'X-Naver-Client-Secret': clientSecret
+        },
+        10000
+      );
+      if (result.status !== 200) continue;
+      const data = JSON.parse(result.body);
+      if (!data.items) continue;
+
+      const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+      for (const item of data.items) {
+        // pubDate: "Thu, 23 Apr 2026 10:00:00 +0900" 형식
+        const pubDate = new Date(item.pubDate || '');
+        if (isNaN(pubDate) || pubDate < cutoff) continue;  // 30일 이내만
+
+        const title = (item.title || '').replace(/<[^>]+>/g, '').trim();
+        const desc = (item.description || '').replace(/<[^>]+>/g, '').trim();
+        if (title) texts.push(title);
+        if (desc) texts.push(desc.slice(0, 120));
+      }
+      await new Promise(r => setTimeout(r, 200));
+    } catch(e) {
+      console.error('[naver-news]', category, query, 'error:', e.message);
     }
   }
   return texts;
@@ -1064,7 +1148,7 @@ ${googleStr}
 // 크로스 소스 검증
 // keyword → Set<sourceType> 매핑
 // ─────────────────────────────────────────────
-function buildCrossSourceCount({ keyword, naverData, blogData, ytKR, igTexts, googleKR }) {
+function buildCrossSourceCount({ keyword, naverData, blogData, ytKR, igTexts, googleKR, newsData }) {
   const norm = normalize(keyword).toLowerCase();
 
   function countMatches(arr) {
@@ -1078,6 +1162,7 @@ function buildCrossSourceCount({ keyword, naverData, blogData, ytKR, igTexts, go
     youtube: countMatches(ytKR),
     ig: countMatches(igTexts),
     google: countMatches(googleKR),
+    news: countMatches(newsData),
   };
 }
 
@@ -1331,14 +1416,15 @@ exports.handler = runGuarded({
     console.log(`[sources] google-kr: ${googleKR.length}`);
 
     const rawEntries = await Promise.all(COLLECT_CATEGORIES.map(async (category) => {
-      const [naverData, blogData, ytKR, igTexts] = await Promise.all([
+      const [naverData, blogData, ytKR, igTexts, newsData] = await Promise.all([
         fetchNaverDatalab(category),
         fetchNaverBlogs(category),
         fetchYouTube(category),
         fetchInstagram(supa, category),
+        fetchNaverNews(category),  // 신규: 뉴스 소스
       ]);
-      console.log(`[${category}] naver=${naverData.length} blog=${blogData.length} yt-kr=${ytKR.length} ig=${igTexts.length}`);
-      return [category, { naverData, blogData, ytKR, igTexts }];
+      console.log(`[${category}] naver=${naverData.length} blog=${blogData.length} yt-kr=${ytKR.length} ig=${igTexts.length} news=${newsData.length}`);
+      return [category, { naverData, blogData, ytKR, igTexts, newsData }];
     }));
     const rawByCategory = Object.fromEntries(rawEntries);
 
@@ -1357,6 +1443,7 @@ exports.handler = runGuarded({
         ...r.ytKR,
         ...googleKR,
         ...r.igTexts,
+        ...(r.newsData || []),
       ];
     }
 
@@ -1400,6 +1487,7 @@ exports.handler = runGuarded({
               ytKR: r.ytKR,
               igTexts: r.igTexts,
               googleKR,
+              newsData: r.newsData,
             });
 
             const crossSourceCount = Object.values(counts).filter(c => c > 0).length;
