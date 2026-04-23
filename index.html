@@ -10966,6 +10966,11 @@ document.querySelectorAll('.lumi-aura, .card-arrow, .btn-pill, .upload-lumi').fo
   function tryRedirectToTrends() {
     if (location.pathname === '/trends' || location.pathname === '/trends.html') return;
     if (!isPC()) return;
+    // ?stay=1 파라미터 있으면 리다이렉트 스킵 (트렌드에서 홈 돌아오기용)
+    try {
+      var params = new URLSearchParams(location.search || '');
+      if (params.get('stay') === '1') return;
+    } catch(_){}
     var hasSession = !!localStorage.getItem('lumi_token') || !!localStorage.getItem('lumi_user');
     if (!hasSession) return;
     location.href = '/trends';
