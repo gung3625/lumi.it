@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>lumi · 모바일 리뉴얼 프리뷰</title>
+<link rel="icon" type="image/png" href="/assets/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800&display=swap" rel="stylesheet">
+<link rel="preload" href="/assets/BMJUA.woff2" as="font" type="font/woff2" crossorigin>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+/* ═══════════════════════════════════════════════════════════
+   LUMI MOBILE · DAWN CLOUD AESTHETIC
+   Design tokens + component system
+═══════════════════════════════════════════════════════════ */
+@font-face{font-family:'Jua';src:url('/assets/BMJUA.woff2') format('woff2');font-display:block;}
+
+:root {
+  /* ─ Brand ─ */
+  --pink: #C8507A;
+  --pink-soft: #FFE6EE;
+  --pink-deep: #A13D61;
+
+  /* ─ 4-color dawn gradient ─ */
+  --brand-gradient: linear-gradient(135deg, #FF6B8B 0%, #DDA0DD 45%, #EDD080 80%, #DABA65 100%);
+  --brand-gradient-soft: linear-gradient(180deg, #fff9fb 0%, #fff 48%);
+  --brand-gradient-text: linear-gradient(90deg, #FF6B8B, #DDA0DD 50%, #EDD080 85%, #DABA65);
+
+  /* ─ Surfaces (light) ─ */
+  --bg: #fff;
+  --bg-soft: #fff9fb;
+  --bg-alt: #f5f5f7;
+  --ink-1: #0d1117;
+  --ink-2: #4E5968;
+  --ink-3: #8B95A1;
+  --ink-4: #C7CED6;
+  --line: rgba(13,17,23,0.06);
+
+  /* ─ Cloud details ─ */
+  --cloud-radius: 20px 20px 14px 14px;
+  --cloud-radius-lg: 28px 28px 18px 18px;
+  --cloud-shadow-sm: 0 2px 8px rgba(255,107,139,0.06);
+  --cloud-shadow: 0 6px 24px rgba(255,107,139,0.08), 0 1px 3px rgba(13,17,23,0.04);
+  --cloud-shadow-lg: 0 12px 40px rgba(255,107,139,0.14), 0 2px 6px rgba(13,17,23,0.04);
+  --cloud-glow: 0 0 30px rgba(200,80,122,0.18);
+
+  /* ─ Layout ─ */
+  --tab-h: 72px;
+  --top-h: 56px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bot: env(safe-area-inset-bottom, 0px);
+
+  /* ─ Motion ─ */
+  --ease: cubic-bezier(.16,1,.3,1);
+  --ease-soft: cubic-bezier(.4,0,.2,1);
+}
+
+body.dark-mode {
+  --bg: #0a0a0c;
+  --bg-soft: #15111a;
+  --bg-alt: #1a1520;
+  --ink-1: #f5f5f7;
+  --ink-2: #A8B3C0;
+  --ink-3: #6E7783;
+  --ink-4: #3E4651;
+  --line: rgba(255,255,255,0.06);
+  --pink-soft: rgba(200,80,122,0.14);
+  --brand-gradient-soft: linear-gradient(180deg, #1a0f15 0%, #0a0a0c 48%);
+  --cloud-shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
+  --cloud-shadow: 0 6px 24px rgba(0,0,0,0.4), 0 1px 3px rgba(255,107,139,0.08);
+  --cloud-shadow-lg: 0 12px 40px rgba(0,0,0,0.5), 0 2px 6px rgba(255,107,139,0.14);
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html { background: var(--bg); scrollbar-width: none; scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+html::-webkit-scrollbar { display: none; }
+body {
+  font-family: 'Pretendard Variable','Pretendard',-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Segoe UI',Roboto,sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.47;
+  letter-spacing: -0.32px;
+  color: var(--ink-1);
+  background: var(--brand-gradient-soft);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+button, input, textarea, select { font: inherit; color: inherit; }
+button { border: none; background: none; cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+img, svg { display: block; max-width: 100%; }
+
+.jua { font-family: 'Jua', sans-serif; letter-spacing: 0; }
+
+/* ═══════════════════════════════════════════════════════════
+   APP SHELL
+═══════════════════════════════════════════════════════════ */
+#app {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  min-height: 100dvh;
+  position: relative;
+}
+
+/* ─ Top bar ─ */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  height: calc(var(--top-h) + var(--safe-top));
+  padding: var(--safe-top) 20px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter: blur(20px) saturate(1.2);
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
+  border-bottom: 1px solid var(--line);
+}
+.topbar-mascot {
+  width: 32px; height: 32px;
+  flex-shrink: 0;
+}
+.topbar-greeting {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+.topbar-greeting b {
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink-1);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.topbar-greeting span {
+  font-size: 11px;
+  color: var(--ink-3);
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+.topbar-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.topbar-btn {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--bg-alt);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--ink-2);
+  transition: transform .2s var(--ease-soft), background .2s;
+  position: relative;
+}
+.topbar-btn:active { transform: scale(0.92); }
+.topbar-btn[data-badge]::after {
+  content: attr(data-badge);
+  position: absolute;
+  top: 2px; right: 2px;
+  min-width: 16px; height: 16px; padding: 0 4px;
+  border-radius: 10px;
+  background: var(--pink);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid var(--bg);
+  box-sizing: content-box;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MAIN CONTENT
+═══════════════════════════════════════════════════════════ */
+.main {
+  padding: 20px 16px calc(var(--tab-h) + var(--safe-bot) + 32px);
+}
+.screen { display: none; animation: fadeUp .4s var(--ease) both; }
+.screen.active { display: block; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0 4px;
+  margin: 28px 0 12px;
+}
+.section-head:first-child { margin-top: 4px; }
+.section-head h3 {
+  font-family: 'Jua', sans-serif;
+  font-size: 18px;
+  font-weight: 400;
+  letter-spacing: -0.3px;
+  color: var(--ink-1);
+}
+.section-head a, .section-head button {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-3);
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.section-head a:active, .section-head button:active { color: var(--pink); }
+
+/* ─ Text gradient ─ */
+.grad-text {
+  background: var(--brand-gradient-text);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   오늘 (HOME)
+═══════════════════════════════════════════════════════════ */
+/* ─ Hero mission card ─ */
+.mission {
+  position: relative;
+  border-radius: var(--cloud-radius-lg);
+  padding: 22px 22px 24px;
+  background: var(--bg);
+  box-shadow: var(--cloud-shadow);
+  overflow: hidden;
+  isolation: isolate;
+}
+.mission::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--brand-gradient);
+  opacity: 0.08;
+  z-index: -1;
+}
+.mission::after {
+  content: '';
+  position: absolute;
+  top: -40px; right: -30px;
+  width: 180px; height: 180px;
+  background: radial-gradient(circle, rgba(255,107,139,0.22) 0%, transparent 65%);
+  filter: blur(8px);
+  z-index: -1;
+  animation: breathe 7s var(--ease) infinite;
+}
+@keyframes breathe {
+  0%, 100% { transform: translate(0,0) scale(1); opacity: 0.9; }
+  50% { transform: translate(-6px, 10px) scale(1.08); opacity: 1; }
+}
+.mission-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--pink);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.mission-label::before {
+  content: '';
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--pink);
+  box-shadow: 0 0 0 0 rgba(200,80,122,0.5);
+  animation: pulse 1.6s ease-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(200,80,122,0.5); }
+  70% { box-shadow: 0 0 0 8px rgba(200,80,122,0); }
+}
+.mission-title {
+  font-family: 'Jua', sans-serif;
+  font-size: clamp(22px, 6vw, 26px);
+  letter-spacing: -0.4px;
+  color: var(--ink-1);
+  line-height: 1.25;
+  margin-bottom: 8px;
+  word-break: keep-all;
+}
+.mission-desc {
+  font-size: 14px;
+  color: var(--ink-2);
+  line-height: 1.55;
+  margin-bottom: 20px;
+  word-break: keep-all;
+}
+.mission-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 22px;
+  background: var(--brand-gradient);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  box-shadow: 0 6px 18px rgba(255,107,139,0.35);
+  transition: transform .2s var(--ease-soft), box-shadow .2s;
+}
+.mission-cta:active {
+  transform: translateY(1px) scale(0.98);
+  box-shadow: 0 3px 12px rgba(255,107,139,0.3);
+}
+.mission-cta svg { width: 16px; height: 16px; stroke-width: 2.4; }
+
+/* ─ Stat row ─ */
+.stat-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+.stat {
+  background: var(--bg);
+  border-radius: 16px;
+  padding: 14px 14px 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: var(--cloud-shadow-sm);
+  min-width: 0;
+}
+.stat-icon {
+  width: 36px; height: 36px;
+  border-radius: 12px;
+  background: var(--pink-soft);
+  color: var(--pink);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.stat-icon svg { width: 18px; height: 18px; stroke-width: 2.2; }
+.stat-body { min-width: 0; flex: 1; }
+.stat-body em {
+  font-style: normal;
+  font-family: 'Jua', sans-serif;
+  font-size: 18px;
+  color: var(--ink-1);
+  display: block;
+  line-height: 1.1;
+}
+.stat-body em .grad-text { font-family: inherit; }
+.stat-body span {
+  font-size: 11px;
+  color: var(--ink-3);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+/* ─ Trend mini row (horizontal scroll chips) ─ */
+.chip-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 2px 16px;
+  margin: 0 -16px;
+}
+.chip-scroll::-webkit-scrollbar { display: none; }
+.trend-chip {
+  flex-shrink: 0;
+  background: var(--bg);
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: var(--cloud-shadow-sm);
+  min-width: 134px;
+  transition: transform .2s var(--ease-soft);
+}
+.trend-chip:active { transform: scale(0.97); }
+.trend-chip-rank {
+  font-family: 'Jua', sans-serif;
+  font-size: 11px;
+  color: var(--ink-3);
+  letter-spacing: 0.4px;
+}
+.trend-chip-kw {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--ink-1);
+  letter-spacing: -0.3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.trend-chip-vel {
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.trend-chip-vel.up { color: #E8446B; }
+.trend-chip-vel.down { color: #4683E8; }
+
+/* ─ Recent post strip ─ */
+.recent-post {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--bg);
+  border-radius: 18px;
+  padding: 12px 14px 12px 12px;
+  box-shadow: var(--cloud-shadow-sm);
+}
+.recent-post-thumb {
+  width: 56px; height: 56px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #FFE6EE, #FFF5DC);
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--pink);
+}
+.recent-post-thumb svg { width: 24px; stroke-width: 2; }
+.recent-post-body { flex: 1; min-width: 0; }
+.recent-post-body p {
+  font-size: 13px;
+  color: var(--ink-1);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.recent-post-body span {
+  font-size: 11px;
+  color: var(--ink-3);
+  margin-top: 3px;
+  display: block;
+}
+.recent-post-arrow {
+  color: var(--ink-3);
+  flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TAB BAR
+═══════════════════════════════════════════════════════════ */
+.tabbar {
+  position: fixed;
+  bottom: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  height: calc(var(--tab-h) + var(--safe-bot));
+  padding: 0 12px var(--safe-bot);
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter: blur(24px) saturate(1.3);
+  -webkit-backdrop-filter: blur(24px) saturate(1.3);
+  border-top: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  z-index: 100;
+}
+.tab {
+  flex: 1;
+  height: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  color: var(--ink-3);
+  position: relative;
+  transition: color .2s;
+  min-width: 0;
+}
+.tab svg { width: 22px; height: 22px; stroke-width: 2; transition: stroke-width .2s, transform .25s var(--ease); }
+.tab span {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: -0.1px;
+  white-space: nowrap;
+}
+.tab.active { color: var(--pink); }
+.tab.active svg { stroke-width: 2.5; transform: translateY(-1px); }
+.tab.active::after {
+  content: '';
+  position: absolute;
+  top: 4px; left: 50%;
+  transform: translateX(-50%);
+  width: 26px; height: 3px;
+  border-radius: 2px;
+  background: var(--brand-gradient);
+}
+
+/* ─ Primary + tab (upload) ─ */
+.tab-plus {
+  flex: 0 0 auto;
+  width: 56px; height: 56px;
+  margin: -24px 0 0;
+  border-radius: 50%;
+  background: var(--brand-gradient);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(255,107,139,0.4), 0 2px 6px rgba(255,107,139,0.3);
+  transition: transform .25s var(--ease), box-shadow .25s;
+  position: relative;
+}
+.tab-plus::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: inherit;
+  opacity: 0.25;
+  filter: blur(12px);
+  z-index: -1;
+}
+.tab-plus:active { transform: scale(0.93); box-shadow: 0 4px 14px rgba(255,107,139,0.35); }
+.tab-plus svg { width: 26px; height: 26px; stroke-width: 2.6; }
+
+/* ═══════════════════════════════════════════════════════════
+   UPLOAD / TRENDS / MYSTORE (placeholder skeletons)
+═══════════════════════════════════════════════════════════ */
+.placeholder {
+  margin-top: 40px;
+  text-align: center;
+  padding: 48px 32px;
+  background: var(--bg);
+  border-radius: var(--cloud-radius-lg);
+  box-shadow: var(--cloud-shadow-sm);
+}
+.placeholder img { width: 80px; margin: 0 auto 16px; opacity: 0.85; }
+.placeholder h4 {
+  font-family: 'Jua', sans-serif;
+  font-size: 18px;
+  color: var(--ink-1);
+  margin-bottom: 6px;
+}
+.placeholder p {
+  font-size: 13px;
+  color: var(--ink-3);
+  line-height: 1.5;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TREND FULL (4번 탭)
+═══════════════════════════════════════════════════════════ */
+.cat-chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 6px 16px 10px;
+  margin: 0 -16px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.cat-chips::-webkit-scrollbar { display: none; }
+.cat-chip {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  border-radius: 18px;
+  background: var(--bg-alt);
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  transition: background .2s, color .2s, transform .15s var(--ease-soft);
+}
+.cat-chip:active { transform: scale(0.95); }
+.cat-chip.active {
+  background: var(--brand-gradient);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(255,107,139,0.3);
+}
+.kw-list { display: flex; flex-direction: column; gap: 8px; }
+.kw-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg);
+  border-radius: 16px;
+  padding: 12px 14px;
+  box-shadow: var(--cloud-shadow-sm);
+  transition: transform .15s var(--ease-soft);
+}
+.kw-row:active { transform: scale(0.98); }
+.kw-rank {
+  font-family: 'Jua', sans-serif;
+  font-size: 20px;
+  width: 32px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.kw-rank.gold { color: #E8B93D; }
+.kw-rank.silver { color: #A8AFBA; }
+.kw-rank.bronze { color: #C88A5F; }
+.kw-info { flex: 1; min-width: 0; }
+.kw-info b {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--ink-1);
+  letter-spacing: -0.3px;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.kw-info span {
+  font-size: 11px;
+  color: var(--ink-3);
+  margin-top: 2px;
+  display: block;
+}
+.kw-vel {
+  font-size: 12px;
+  font-weight: 800;
+  flex-shrink: 0;
+  padding: 4px 9px;
+  border-radius: 10px;
+}
+.kw-vel.up { color: #E8446B; background: rgba(232,68,107,0.1); }
+.kw-vel.down { color: #4683E8; background: rgba(70,131,232,0.1); }
+.kw-vel.flat { color: var(--ink-3); background: var(--bg-alt); }
+
+/* ═══════════════════════════════════════════════════════════
+   내 가게 TAB
+═══════════════════════════════════════════════════════════ */
+.profile-card {
+  background: var(--bg);
+  border-radius: var(--cloud-radius-lg);
+  padding: 20px;
+  box-shadow: var(--cloud-shadow);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.profile-avatar {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  background: var(--brand-gradient);
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff;
+  font-family: 'Jua', sans-serif;
+  font-size: 20px;
+}
+.profile-body { flex: 1; min-width: 0; }
+.profile-body b {
+  font-size: 16px;
+  color: var(--ink-1);
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.profile-body span {
+  font-size: 12px;
+  color: var(--ink-3);
+  display: block;
+  margin-top: 2px;
+}
+.profile-edit {
+  color: var(--ink-3);
+  flex-shrink: 0;
+  padding: 8px;
+}
+
+/* ─ Tone learning gauge ─ */
+.tone-gauge {
+  background: var(--bg);
+  border-radius: 18px;
+  padding: 16px;
+  box-shadow: var(--cloud-shadow-sm);
+  margin-bottom: 12px;
+}
+.tone-gauge-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.tone-gauge-head b {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink-1);
+}
+.tone-gauge-head em {
+  font-family: 'Jua', sans-serif;
+  font-size: 16px;
+  font-style: normal;
+}
+.tone-gauge-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--bg-alt);
+  overflow: hidden;
+}
+.tone-gauge-fill {
+  height: 100%;
+  background: var(--brand-gradient);
+  border-radius: 4px;
+  transition: width 1s var(--ease);
+}
+.tone-gauge-note {
+  font-size: 11px;
+  color: var(--ink-3);
+  margin-top: 8px;
+  line-height: 1.5;
+}
+
+/* ─ Menu list ─ */
+.menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--bg);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: var(--cloud-shadow-sm);
+}
+.menu-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  color: var(--ink-1);
+  background: var(--bg);
+  transition: background .15s;
+}
+.menu-row:active { background: var(--bg-alt); }
+.menu-row + .menu-row { border-top: 1px solid var(--line); }
+.menu-row-icon {
+  width: 32px; height: 32px;
+  border-radius: 10px;
+  background: var(--pink-soft);
+  color: var(--pink);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.menu-row-icon svg { width: 16px; height: 16px; stroke-width: 2.2; }
+.menu-row-label {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-1);
+}
+.menu-row-meta {
+  font-size: 12px;
+  color: var(--ink-3);
+  flex-shrink: 0;
+}
+.menu-row-arrow {
+  color: var(--ink-4);
+  flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DARK MODE FAB
+═══════════════════════════════════════════════════════════ */
+.dark-fab {
+  position: fixed;
+  right: 16px;
+  bottom: calc(var(--tab-h) + var(--safe-bot) + 16px);
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--ink-1);
+  box-shadow: var(--cloud-shadow);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 90;
+  transition: transform .25s var(--ease);
+}
+.dark-fab:active { transform: scale(0.9) rotate(20deg); }
+.dark-fab svg { width: 18px; height: 18px; stroke-width: 2.2; }
+body.dark-mode .dark-fab .sun { display: block; }
+body.dark-mode .dark-fab .moon { display: none; }
+.dark-fab .sun { display: none; }
+.dark-fab .moon { display: block; }
+
+/* ═══════════════════════════════════════════════════════════
+   PREVIEW-ONLY BANNER (프리뷰 파일임 표시)
+═══════════════════════════════════════════════════════════ */
+.preview-banner {
+  position: fixed;
+  top: calc(var(--top-h) + var(--safe-top) + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 10px;
+  background: var(--brand-gradient);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  border-radius: 999px;
+  letter-spacing: 0.5px;
+  z-index: 200;
+  box-shadow: 0 4px 12px rgba(255,107,139,0.4);
+  pointer-events: none;
+}
+</style>
+</head>
+<body>
+<!-- App shell -->
+<div id="app">
+
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <img class="topbar-mascot" src="/assets/logo-cloud.png" alt="루미" onerror="this.style.display='none'">
+    <div class="topbar-greeting">
+      <b>안녕하세요 사장님 <span style="font-family:'Jua',sans-serif;">☁</span></b>
+      <span>오늘도 루미가 함께해요</span>
+    </div>
+    <div class="topbar-actions">
+      <button class="topbar-btn" aria-label="알림">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <span class="preview-banner">PREVIEW · v3</span>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- ═════════ 오늘 (HOME) ═════════ -->
+    <section class="screen active" data-screen="today">
+
+      <!-- 미션 카드 -->
+      <article class="mission">
+        <div class="mission-label">오늘의 미션</div>
+        <h2 class="mission-title">비 오는 화요일,<br>따뜻한 메뉴 한 컷 올려볼까요?</h2>
+        <p class="mission-desc">오늘 비 내리는 날씨에 <b class="grad-text" style="font-weight:700;">따뜻한 라떼</b>나 수프 같은 위로 음식 사진이 특히 잘 반응해요.</p>
+        <button class="mission-cta">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M20 16V8a2 2 0 0 0-2-2h-3l-2-3h-4l-2 3H4a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2Z"/></svg>
+          사진 올리러 가기
+        </button>
+      </article>
+
+      <!-- 성과 -->
+      <div class="stat-row">
+        <div class="stat">
+          <div class="stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.6a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78Z"/></svg>
+          </div>
+          <div class="stat-body">
+            <em><span class="grad-text">+12</span></em>
+            <span>어제 좋아요</span>
+          </div>
+        </div>
+        <div class="stat">
+          <div class="stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="m22 11-3 3-2-2"/></svg>
+          </div>
+          <div class="stat-body">
+            <em><span class="grad-text">+3</span></em>
+            <span>새 팔로워</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 이번주 트렌드 -->
+      <div class="section-head">
+        <h3>이번 주 카페 트렌드</h3>
+        <button onclick="goTab('trends')">전체 보기 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></button>
+      </div>
+      <div class="chip-scroll">
+        <div class="trend-chip">
+          <div class="trend-chip-rank">#1 급상승</div>
+          <div class="trend-chip-kw">말차라떼</div>
+          <div class="trend-chip-vel up">▲ 340%</div>
+        </div>
+        <div class="trend-chip">
+          <div class="trend-chip-rank">#2</div>
+          <div class="trend-chip-kw">오트밀크</div>
+          <div class="trend-chip-vel up">▲ 215%</div>
+        </div>
+        <div class="trend-chip">
+          <div class="trend-chip-rank">#3 NEW</div>
+          <div class="trend-chip-kw">쑥크림라떼</div>
+          <div class="trend-chip-vel up">▲ 189%</div>
+        </div>
+        <div class="trend-chip">
+          <div class="trend-chip-rank">#4</div>
+          <div class="trend-chip-kw">구름케이크</div>
+          <div class="trend-chip-vel up">▲ 156%</div>
+        </div>
+      </div>
+
+      <!-- 최근 게시 -->
+      <div class="section-head">
+        <h3>최근 게시</h3>
+        <button>전체 보기 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></button>
+      </div>
+      <div class="recent-post">
+        <div class="recent-post-thumb">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+        </div>
+        <div class="recent-post-body">
+          <p>오늘의 시그니처 ☕️ 깊이있는 에스프레소와 부드러운 스팀밀크…</p>
+          <span>2일 전 · 좋아요 24</span>
+        </div>
+        <svg class="recent-post-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+
+    </section>
+
+    <!-- ═════════ 올리기 (UPLOAD) ═════════ -->
+    <section class="screen" data-screen="upload">
+      <div class="placeholder">
+        <img src="/assets/logo-cloud.png" alt="루미">
+        <h4>업로드 플로우 빌드 중</h4>
+        <p>사진·영상 통합 picker → 캡션 → 게시<br>Phase 2에서 완성됩니다 ☁</p>
+      </div>
+    </section>
+
+    <!-- ═════════ 트렌드 (TRENDS) ═════════ -->
+    <section class="screen" data-screen="trends">
+      <div class="cat-chips">
+        <button class="cat-chip active">☕ 카페·음료</button>
+        <button class="cat-chip">🍽 음식·외식</button>
+        <button class="cat-chip">💄 뷰티</button>
+        <button class="cat-chip">💇 헤어</button>
+        <button class="cat-chip">💅 네일</button>
+        <button class="cat-chip">💐 꽃집</button>
+        <button class="cat-chip">👗 패션</button>
+        <button class="cat-chip">🏋️ 피트니스</button>
+        <button class="cat-chip">🐾 반려동물</button>
+      </div>
+      <div class="kw-list" id="kw-list">
+        <!-- 동적 -->
+      </div>
+    </section>
+
+    <!-- ═════════ 내 가게 (MYSTORE) ═════════ -->
+    <section class="screen" data-screen="mystore">
+
+      <!-- 매장 프로필 -->
+      <div class="profile-card">
+        <div class="profile-avatar">카</div>
+        <div class="profile-body">
+          <b>카페 구름</b>
+          <span>카페·음료 · 서울 성수동</span>
+        </div>
+        <button class="profile-edit" aria-label="프로필 편집">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+        </button>
+      </div>
+
+      <!-- 말투 학습 게이지 -->
+      <div class="tone-gauge">
+        <div class="tone-gauge-head">
+          <b>우리 가게 말투 학습</b>
+          <em class="grad-text">72%</em>
+        </div>
+        <div class="tone-gauge-bar"><div class="tone-gauge-fill" style="width:72%"></div></div>
+        <p class="tone-gauge-note">루미가 사장님 말투를 72% 배웠어요. 10번만 더 평가하면 완성이에요 ☁</p>
+      </div>
+
+      <!-- 메뉴 리스트 -->
+      <div class="section-head"><h3>관리</h3></div>
+      <div class="menu-list">
+        <a class="menu-row">
+          <div class="menu-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg></div>
+          <span class="menu-row-label">빠른 설정 (5)</span>
+          <span class="menu-row-meta">스토리 · 스레드 · 날씨</span>
+          <svg class="menu-row-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
+        </a>
+        <a class="menu-row">
+          <div class="menu-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
+          <span class="menu-row-label">링크인바이오</span>
+          <span class="menu-row-meta">편집하기</span>
+          <svg class="menu-row-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
+        </a>
+        <a class="menu-row">
+          <div class="menu-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></div>
+          <span class="menu-row-label">분석 리포트</span>
+          <span class="menu-row-meta">이번 달</span>
+          <svg class="menu-row-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
+        </a>
+        <a class="menu-row">
+          <div class="menu-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg></div>
+          <span class="menu-row-label">인스타그램 연동</span>
+          <span class="menu-row-meta">연결됨</span>
+          <svg class="menu-row-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
+        </a>
+        <a class="menu-row">
+          <div class="menu-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/></svg></div>
+          <span class="menu-row-label">구독 관리</span>
+          <span class="menu-row-meta grad-text" style="font-weight:700;">스탠다드</span>
+          <svg class="menu-row-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
+        </a>
+      </div>
+
+      <div style="height:20px;"></div>
+
+      <div class="menu-list">
+        <a class="menu-row">
+          <div class="menu-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg></div>
+          <span class="menu-row-label">도움말 & 문의</span>
+          <svg class="menu-row-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
+        </a>
+        <a class="menu-row">
+          <div class="menu-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></div>
+          <span class="menu-row-label" style="color:#E8446B;">로그아웃</span>
+          <svg class="menu-row-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
+        </a>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- TAB BAR -->
+  <nav class="tabbar">
+    <button class="tab active" data-tab="today">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>오늘</span>
+    </button>
+    <button class="tab" data-tab="trends">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+      <span>트렌드</span>
+    </button>
+    <button class="tab-plus" data-tab="upload" aria-label="올리기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+    <button class="tab" data-tab="mystore">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M3 9 5 3h14l2 6"/><path d="M12 3v6"/></svg>
+      <span>내 가게</span>
+    </button>
+    <!-- DM 탭: 숨김, Meta 승인 후 flag로 노출
+    <button class="tab" data-tab="dm">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z"/></svg>
+      <span>대화</span>
+    </button>
+    -->
+  </nav>
+
+  <!-- DARK MODE FAB -->
+  <button class="dark-fab" onclick="toggleDark()" aria-label="다크모드 토글">
+    <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
+    <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+  </button>
+
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   PREVIEW JS — 탭 라우팅 + 다크모드 + 트렌드 데이터
+═══════════════════════════════════════════════════════════ */
+
+// 다크모드 복원
+(function(){
+  if (localStorage.getItem('lumi_dark_mode') === '1') {
+    document.body.classList.add('dark-mode');
+    document.documentElement.style.background = '#0a0a0c';
+  }
+})();
+function toggleDark() {
+  const on = document.body.classList.toggle('dark-mode');
+  localStorage.setItem('lumi_dark_mode', on ? '1' : '0');
+  document.documentElement.style.background = on ? '#0a0a0c' : '#fff';
+  if (on) {
+    document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0a0a0c');
+  } else {
+    document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff');
+  }
+}
+
+// 탭 라우팅
+function goTab(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.dataset.screen === id));
+  document.querySelectorAll('.tab, .tab-plus').forEach(b => b.classList.toggle('active', b.dataset.tab === id));
+  window.scrollTo({ top: 0, behavior: 'instant' });
+}
+document.querySelectorAll('.tab, .tab-plus').forEach(btn => {
+  btn.addEventListener('click', () => goTab(btn.dataset.tab));
+});
+
+// 카테고리 칩 (트렌드 탭)
+document.querySelectorAll('.cat-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    renderKeywords(); // 추후 실 API 호출로 교체
+  });
+});
+
+// 더미 키워드 렌더 (나중에 /api/get-trends로 교체)
+function renderKeywords() {
+  const list = document.getElementById('kw-list');
+  if (!list) return;
+  const mock = [
+    { rank: 1, kw: '말차라떼', sub: '카페·음료', vel: '+340%', trend: 'up' },
+    { rank: 2, kw: '오트밀크', sub: '카페·음료', vel: '+215%', trend: 'up' },
+    { rank: 3, kw: '쑥크림라떼', sub: '카페·음료 · NEW', vel: '+189%', trend: 'up' },
+    { rank: 4, kw: '구름케이크', sub: '디저트 · NEW', vel: '+156%', trend: 'up' },
+    { rank: 5, kw: '복숭아에이드', sub: '시즌 음료', vel: '+134%', trend: 'up' },
+    { rank: 6, kw: '핸드드립', sub: '카페·음료', vel: '+8%', trend: 'up' },
+    { rank: 7, kw: '플랫화이트', sub: '카페·음료', vel: '+5%', trend: 'up' },
+    { rank: 8, kw: '콜드브루', sub: '시즌 음료', vel: '-4%', trend: 'down' },
+    { rank: 9, kw: '감성소품', sub: '인테리어', vel: '-', trend: 'flat' },
+    { rank: 10, kw: '테라스석', sub: '공간', vel: '-', trend: 'flat' },
+  ];
+  list.innerHTML = mock.map(k => `
+    <div class="kw-row">
+      <div class="kw-rank ${k.rank === 1 ? 'gold' : k.rank === 2 ? 'silver' : k.rank === 3 ? 'bronze' : ''}">${k.rank}</div>
+      <div class="kw-info">
+        <b>${k.kw}</b>
+        <span>${k.sub}</span>
+      </div>
+      <div class="kw-vel ${k.trend}">${k.vel}</div>
+    </div>
+  `).join('');
+}
+
+// 초기 렌더
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    renderKeywords();
+    if (window.lucide) lucide.createIcons();
+  });
+} else {
+  renderKeywords();
+  if (window.lucide) lucide.createIcons();
+}
+</script>
+</body>
+</html>
