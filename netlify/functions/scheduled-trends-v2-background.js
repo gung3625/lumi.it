@@ -1550,32 +1550,35 @@ function buildCrossSourceCount({ keyword, naverData, blogData, ytKR, igTexts, go
 // ─────────────────────────────────────────────
 async function computeVelocity({ supa, keyword, category, todayCount }) {
   // todayCount는 이제 weighted_score (실제 mention 기반) — rank 프록시 아님
+  // 전략: trend_keywords에서 같은 keyword+category의 오늘 이전 row 중 가장 최근 row 사용
+  //       1~30일 전 어느 날이든 OK (GPT 키워드 discovery는 매일 달라져 엄격한 7일 비교는 대부분 null)
   try {
     const today = new Date().toISOString().slice(0, 10);
-    const cutoff = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-    const upperBound = new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
-    // trend_keywords 테이블에서 동일 keyword + category의 4~14일 전 row (weighted_score 비교)
     const { data, error } = await supa
       .from('trend_keywords')
       .select('weighted_score, collected_date')
       .eq('keyword', keyword)
       .eq('category', category)
       .gte('collected_date', cutoff)
-      .lte('collected_date', upperBound)
+      .lt('collected_date', today)
       .order('collected_date', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .limit(1);
 
-    if (error || !data || !data.weighted_score) return null;
-    const prevScore = Number(data.weighted_score);
+    if (error) {
+      console.error(`[velocity] ${category}/${keyword} 쿼리 오류:`, error.message);
+      return null;
+    }
+    if (!data || data.length === 0) return null;
+    const prevScore = Number(data[0].weighted_score);
     if (!prevScore || prevScore <= 0) return null;
 
     const pct = ((todayCount - prevScore) / prevScore) * 100;
-    // 극단값 클램프 (-100% ~ +2000%)
     const clamped = Math.max(-100, Math.min(2000, pct));
     return Math.round(clamped * 10) / 10;
   } catch(e) {
+    console.error(`[velocity] ${category}/${keyword} 예외:`, e.message);
     return null;
   }
 }
