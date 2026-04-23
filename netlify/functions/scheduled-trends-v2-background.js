@@ -21,6 +21,28 @@ const https = require('https');
 const AXIS_CATEGORIES = ['cafe', 'food', 'flower', 'fashion', 'pet'];
 
 // ─────────────────────────────────────────────
+// 지역 분할 (Phase 1: 구조 준비, 실제 수집은 Phase 2)
+// ─────────────────────────────────────────────
+const REGIONS = ['all', 'seoul', 'busan', 'daegu', 'incheon', 'daejeon', 'gwangju'];
+
+const REGION_LABELS = {
+  all: '전국',
+  seoul: '서울',
+  busan: '부산',
+  daegu: '대구',
+  incheon: '인천',
+  daejeon: '대전',
+  gwangju: '광주',
+};
+
+// 지역별 블로그 시드 확장 (Phase 2에서 실제 지역별 수집 시 사용)
+function expandSeedsWithRegion(baseSeeds, region) {
+  if (region === 'all') return baseSeeds;
+  const regionLabel = REGION_LABELS[region];
+  return baseSeeds.map(seed => `${regionLabel} ${seed}`);
+}
+
+// ─────────────────────────────────────────────
 // 소스 가중치
 // ─────────────────────────────────────────────
 const SOURCE_WEIGHTS = {
@@ -1461,7 +1483,7 @@ async function saveScope({ supa, scope, category, tags, updatedAt, source }) {
 // ─────────────────────────────────────────────
 // trend_keywords 테이블 upsert (v2 신규)
 // ─────────────────────────────────────────────
-async function saveTrendKeywordsV2({ supa, category, enrichedKeywords, collectedDate }) {
+async function saveTrendKeywordsV2({ supa, category, enrichedKeywords, collectedDate, region = 'all' }) {
   if (!enrichedKeywords || enrichedKeywords.length === 0) return;
 
   // sources: counts object → { datalab: 3, blog: 15, ... } 형태로 jsonb 저장
@@ -1475,6 +1497,7 @@ async function saveTrendKeywordsV2({ supa, category, enrichedKeywords, collected
       category,
       axis,
       sub_category: '',  // empty string (NULL 회피 — 인덱스 dedup 일관성)
+      region,            // 지역 분할 (Phase 1: 항상 'all', Phase 2에서 지역별 수집 시 변경)
       collected_date: collectedDate,
       signal_tier: item.signalTier,
       cross_source_count: item.crossSourceCount,
@@ -1495,18 +1518,20 @@ async function saveTrendKeywordsV2({ supa, category, enrichedKeywords, collected
   try {
     // delete + insert 패턴 (daily overwrite)
     // Phase 2: axis가 general/menu/interior/goods/experience 모두 포함하여 삭제
+    // region 포함하여 삭제 (같은 region 데이터만 overwrite)
     await supa
       .from('trend_keywords')
       .delete()
       .eq('category', category)
       .eq('collected_date', collectedDate)
+      .eq('region', region)
       .in('axis', ['general', 'menu', 'interior', 'goods', 'experience', 'domestic']);
 
     await supa
       .from('trend_keywords')
       .insert(rows);
 
-    console.log(`[trend_keywords] ${category} ${rows.length}건 저장`);
+    console.log(`[trend_keywords] ${category}/${region} ${rows.length}건 저장`);
   } catch(e) {
     console.error('[trend_keywords] 저장 실패 (계속 진행):', e.message);
   }
@@ -1731,7 +1756,7 @@ exports.handler = runGuarded({
           saveScope({ supa, scope: 'domestic', category, tags: domesticTags, updatedAt, source: 'gpt-4o' }),
           (async () => {
             if (isV2Cat && enrichedKeywords.length > 0) {
-              return saveTrendKeywordsV2({ supa, category, enrichedKeywords, collectedDate });
+              return saveTrendKeywordsV2({ supa, category, enrichedKeywords, collectedDate, region: 'all' });
             }
           })(),
           process.env.OPENAI_API_KEY

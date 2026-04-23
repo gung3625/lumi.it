@@ -172,7 +172,7 @@ function getSeasonInfo() {
 // ─── v2: trend_keywords 조회 후 keywords 배열에 merge ───
 // 조회 실패 시 기존 응답 그대로 (silent fallback)
 // axisFilter: 'menu'|'interior'|'goods'|'experience'|'general'|null (null이면 모든 axis)
-async function mergeV2Fields(supa, keywords, category, collectedDate, axisFilter) {
+async function mergeV2Fields(supa, keywords, category, collectedDate, axisFilter, region = 'all') {
   try {
     const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
@@ -180,6 +180,7 @@ async function mergeV2Fields(supa, keywords, category, collectedDate, axisFilter
       .from('trend_keywords')
       .select('keyword, cross_source_count, weighted_score, velocity_pct, signal_tier, is_new, axis, narrative, origin, raw_mentions')
       .eq('category', category)
+      .eq('region', region)
       .gte('collected_date', cutoff)
       .order('collected_date', { ascending: false });
 
@@ -282,6 +283,16 @@ exports.handler = async (event) => {
   const VALID_AXES = ['menu', 'interior', 'goods', 'experience', 'general'];
   const axisParam = params.get('axis') || '';
   const axisFilter = VALID_AXES.includes(axisParam) ? axisParam : null;
+  // 지역 파라미터 (all|seoul|busan|daegu|incheon|daejeon|gwangju, 기본값 'all')
+  const VALID_REGIONS = ['all', 'seoul', 'busan', 'daegu', 'incheon', 'daejeon', 'gwangju'];
+  const regionParam = (params.get('region') || 'all').trim();
+  if (!VALID_REGIONS.includes(regionParam)) {
+    return {
+      statusCode: 400, headers: CORS,
+      body: JSON.stringify({ error: `유효하지 않은 region 값: ${regionParam}. 허용값: ${VALID_REGIONS.join(', ')}` }),
+    };
+  }
+  const region = regionParam;
   // hair/nail/health/kids/shop 포함 — 프론트 TREND_CATS와 1:1 대응
   const knownCategories = ['cafe', 'food', 'beauty', 'hair', 'nail', 'flower', 'fashion', 'fitness', 'health', 'pet', 'kids', 'shop', 'all'];
 
@@ -473,7 +484,7 @@ exports.handler = async (event) => {
 
         // v2 필드 merge (실패 시 silent fallback — filteredKeywords 그대로)
         // Phase 2: axisFilter 전달 + axis 필터링 (axisFilter 있으면 해당 axis 키워드만)
-        let mergedKeywords = await mergeV2Fields(supa, filteredKeywords, storeKey, collectedDate, axisFilter);
+        let mergedKeywords = await mergeV2Fields(supa, filteredKeywords, storeKey, collectedDate, axisFilter, region);
 
         // axis 필터가 있을 경우 응답 키워드를 해당 axis만으로 좁힘
         if (axisFilter) {
