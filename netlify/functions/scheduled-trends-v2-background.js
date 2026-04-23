@@ -1,4 +1,6 @@
 // scheduled-trends-v2-background.js — Trend Hub v2 Phase 1
+// Lumi 지원 업종 (9개): cafe, food, beauty, hair, nail, flower, fashion, fitness, pet
+// 제거됨: education, interior, studio (2026-04-23, 소상공인 인스타 SaaS 타깃 불일치)
 // 변경 사항 (v1 대비):
 //   - gpt-4o 전환 (분류·예측·스토리 전부), 전처리만 mini 폴백 가능
 //   - 크로스 소스 검증: 2+ 소스 → signal_tier='real', 1소스 → 'weak'
@@ -16,7 +18,7 @@ const https = require('https');
 // ─────────────────────────────────────────────
 // Phase 2: 4축 분할 대상 카테고리
 // ─────────────────────────────────────────────
-const AXIS_CATEGORIES = ['cafe', 'food', 'flower', 'fashion', 'pet', 'interior'];
+const AXIS_CATEGORIES = ['cafe', 'food', 'flower', 'fashion', 'pet'];
 
 // ─────────────────────────────────────────────
 // 소스 가중치
@@ -95,9 +97,6 @@ const DEFAULT_TRENDS = {
   fashion: ['오버핏블레이저', 'Y2K패션', '셔츠워머', '롱스커트', '와이드팬츠', '카라니트', '청재킷', '레이어드룩'],
   fitness: ['크로스핏박스', '필라테스리포머', '맨몸운동루틴', '짐복합운동', '케틀벨스윙', '힙쓰러스트', '폼롤러스트레칭', '요가플로우'],
   pet: ['생식사료', '수제간식', '강아지유산균', '고양이캣타워', '반려견수영', '펫보험', '노즈워크', '슬링백'],
-  interior: ['집꾸미기선반', '원목협탁', '패브릭포스터', '버티컬블라인드', '디퓨저향', '무드등조명', '빈티지러그', '테이블플랜트'],
-  education: ['영어회화수업', '코딩부트캠프', '입시미술', '속독훈련', '수학올림피아드', '유아체능단', '독서토론', '악기레슨'],
-  studio: ['무드컨셉샷', '셀프스튜디오', '4컷필름사진', '프로필촬영', '커플화보', '흑백필름', '스냅웨딩', '인생네컷'],
 };
 
 // ─────────────────────────────────────────────
@@ -192,27 +191,6 @@ const NAVER_KEYWORDS = {
     { groupName: '반려동물미용', keywords: ['강아지미용', '반려견스타일', '펫그루밍'] },
     { groupName: '펫서비스', keywords: ['펫호텔', '반려견유치원', '도그카페'] }
   ],
-  interior: [
-    { groupName: '공간별인테리어', keywords: ['원룸인테리어', '거실꾸미기', '침실인테리어'] },
-    { groupName: '셀프인테리어', keywords: ['셀프인테리어', '집꾸미기소품', '오픈선반'] },
-    { groupName: '가구트렌드', keywords: ['원목가구추천', '빈티지가구', '미니멀가구'] },
-    { groupName: '조명소품', keywords: ['무드등추천', '플로어램프', '간접조명'] },
-    { groupName: '스타일', keywords: ['북유럽인테리어', '호텔식인테리어', '빈티지러그'] }
-  ],
-  education: [
-    { groupName: '성인영어', keywords: ['영어회화수업', '영어1대1레슨', '성인영어학원'] },
-    { groupName: '자격증취업', keywords: ['코딩부트캠프', '자격증단기합격', 'IT자격증'] },
-    { groupName: '입시학원', keywords: ['입시미술포트폴리오', '수학학원추천', '논술학원'] },
-    { groupName: '유아교육', keywords: ['유아체능단', '어린이영어', '유아미술'] },
-    { groupName: '취미클래스', keywords: ['원데이클래스', '악기레슨', '독서모임'] }
-  ],
-  studio: [
-    { groupName: '프로필촬영', keywords: ['프로필사진', '배우프로필', '직장인프로필'] },
-    { groupName: '셀프스튜디오', keywords: ['셀프스튜디오', '인생네컷', '4컷필름'] },
-    { groupName: '웨딩스냅', keywords: ['웨딩스냅촬영', '야외웨딩스냅', '본식스냅'] },
-    { groupName: '가족반려동물', keywords: ['가족사진스튜디오', '반려동물스튜디오', '커플화보'] },
-    { groupName: '컨셉촬영', keywords: ['무드컨셉샷', '필름스냅', '흑백필름사진'] }
-  ]
 };
 
 const BLOG_SEARCH_SEEDS_BASE = {
@@ -314,38 +292,6 @@ const BLOG_SEARCH_SEEDS_BASE = {
     '고양이 행동 이해', '반려견 산책 용품',
     '이색 반려동물 키우기', '펫 브이로그',
   ],
-  interior: [
-    '원룸 인테리어 추천', '거실 꾸미기 아이디어',
-    '침실 인테리어 소품', '주방 인테리어 팁',
-    '셀프 인테리어 시작', '집꾸미기 소품 추천',
-    '오픈 선반 인테리어', '원목 가구 추천',
-    '버티컬 블라인드 후기', '무드등 추천',
-    '북유럽 인테리어 스타일', '미니멀 인테리어',
-    '빈티지 러그 추천', '포스터 인테리어',
-    '조명 인테리어 팁', '플랜트 인테리어',
-    '욕실 인테리어 셀프', '작은방 인테리어',
-  ],
-  education: [
-    '영어 회화 1대1 추천', '영어 학원 추천',
-    '코딩 부트캠프 후기', '코딩 독학 방법',
-    '입시 미술 포트폴리오', '수학 학원 추천',
-    '성인 악기 레슨 피아노', '기타 레슨 추천',
-    '원데이클래스 공예', '도예 클래스 후기',
-    '독서 모임 커리큘럼', '자격증 단기 합격',
-    '유아 체능단 프로그램', '어린이 영어',
-    '자격증 공부 방법', '직무 교육 추천',
-    '성인 미술 취미', '온라인 강의 추천',
-  ],
-  studio: [
-    '프로필 사진 촬영 추천', '배우 프로필 사진',
-    '셀프 스튜디오 추천', '인생네컷 추천',
-    '4컷 필름 사진', '흑백 필름 스냅',
-    '웨딩 스냅 야외 촬영', '본식 스냅 추천',
-    '가족 스튜디오 촬영', '반려동물 스튜디오',
-    '커플 화보 컨셉', '무드 컨셉샷 추천',
-    '졸업 사진 스튜디오', '연예인 프로필 컨셉',
-    '스튜디오 예약 팁', '사진 보정 스타일',
-  ],
 };
 
 // 계절 동적 확장 시드 (업종별 계절 키워드)
@@ -359,9 +305,6 @@ const SEASONAL_EXTENSIONS = {
   fashion: ['코디', '패션 아이템'],
   fitness: ['운동', '다이어트'],
   pet: ['반려동물 용품'],
-  interior: ['인테리어'],
-  education: ['클래스 추천'],
-  studio: ['촬영 컨셉'],
 };
 
 const BLOG_SEARCH_SEEDS = Object.fromEntries(
@@ -427,24 +370,6 @@ const YOUTUBE_SEEDS_KR = {
     '강아지 훈련 방법', '펫 호텔 후기',
     '반려동물 미용 브이로그', '이색 반려동물 소개',
   ],
-  interior: [
-    '원룸 인테리어 셀프 리모델링', '집꾸미기 소품 하울',
-    '북유럽 무드 인테리어', '집 꾸미기 브이로그',
-    '조명 인테리어 추천', '빈티지 인테리어 DIY',
-    '미니멀 인테리어 소개', '작은 방 인테리어 팁',
-  ],
-  education: [
-    '영어 회화 수업 후기', '코딩 독학 브이로그',
-    '입시 미술 포트폴리오', '성인 취미 원데이클래스',
-    '악기 레슨 브이로그', '자격증 합격 후기',
-    '유아 교육 추천', '온라인 강의 후기',
-  ],
-  studio: [
-    '셀프 스튜디오 촬영 브이로그', '4컷 필름사진 리뷰',
-    '웨딩 스냅 촬영 후기', '프로필 사진 컨셉',
-    '인생네컷 투어', '흑백 필름 스냅 영상',
-    '반려동물 사진 촬영', '커플 화보 브이로그',
-  ],
 };
 
 const CATEGORY_KO = {
@@ -457,9 +382,6 @@ const CATEGORY_KO = {
   fashion: '패션/의류',
   fitness: '피트니스/헬스',
   pet: '반려동물',
-  interior: '인테리어',
-  education: '교육/학원',
-  studio: '스튜디오/포토',
 };
 
 // ─────────────────────────────────────────────
@@ -990,7 +912,7 @@ ${sections}
 ## 출력 형식 (엄격)
 JSON 객체만 반환. 설명·마크다운·코드블록 금지.
 스키마:
-{"cafe": ["키워드1", ...], "food": ["키워드1", ...], "beauty": ["키워드1", ...], "nail": ["키워드1", ...], "hair": ["키워드1", ...], "flower": ["키워드1", ...], "fashion": ["키워드1", ...], "fitness": ["키워드1", ...], "pet": ["키워드1", ...], "interior": ["키워드1", ...], "education": ["키워드1", ...], "studio": ["키워드1", ...]}
+{"cafe": ["키워드1", ...], "food": ["키워드1", ...], "beauty": ["키워드1", ...], "nail": ["키워드1", ...], "hair": ["키워드1", ...], "flower": ["키워드1", ...], "fashion": ["키워드1", ...], "fitness": ["키워드1", ...], "pet": ["키워드1", ...]}
 
 - 각 배열 5~12개
 - beauty/nail/hair는 서로 겹치는 키워드 없이 완전히 분리
@@ -1013,7 +935,7 @@ JSON 객체만 반환. 설명·마크다운·코드블록 금지.
     }
 
     const out = {};
-    for (const cat of ['cafe', 'food', 'beauty', 'nail', 'hair', 'flower', 'fashion', 'fitness', 'pet', 'interior', 'education', 'studio']) {
+    for (const cat of ['cafe', 'food', 'beauty', 'nail', 'hair', 'flower', 'fashion', 'fitness', 'pet']) {
       const arr = Array.isArray(parsed[cat]) ? parsed[cat] : [];
       const seen = new Set();
       const cleaned = [];
@@ -1365,8 +1287,8 @@ exports.handler = runGuarded({
       };
     }
 
-    const categories = ['cafe', 'food', 'beauty', 'nail', 'hair', 'flower', 'fashion', 'fitness', 'pet', 'interior', 'education', 'studio'];
-    const COLLECT_CATEGORIES = ['cafe', 'food', 'beauty', 'hair', 'nail', 'flower', 'fashion', 'fitness', 'pet', 'interior', 'education', 'studio'];
+    const categories = ['cafe', 'food', 'beauty', 'nail', 'hair', 'flower', 'fashion', 'fitness', 'pet'];
+    const COLLECT_CATEGORIES = ['cafe', 'food', 'beauty', 'hair', 'nail', 'flower', 'fashion', 'fitness', 'pet'];
     const updatedAt = new Date().toISOString();
     const collectedDate = updatedAt.slice(0, 10);
 

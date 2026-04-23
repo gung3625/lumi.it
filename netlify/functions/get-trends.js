@@ -114,9 +114,6 @@ const CATEGORY_LABELS = {
   fitness: '헬스·필라테스',
   health: '건강·헬스',
   pet: '반려동물·펫',
-  interior: '인테리어·가구',
-  education: '학원·교육',
-  studio: '사진·스튜디오',
   kids: '키즈',
   shop: '공방·소품',
   all: '종합',
@@ -262,7 +259,7 @@ exports.handler = async (event) => {
   const axisParam = params.get('axis') || '';
   const axisFilter = VALID_AXES.includes(axisParam) ? axisParam : null;
   // hair/nail/health/kids/shop 포함 — 프론트 TREND_CATS와 1:1 대응
-  const knownCategories = ['cafe', 'food', 'beauty', 'hair', 'nail', 'flower', 'fashion', 'fitness', 'health', 'pet', 'interior', 'education', 'studio', 'kids', 'shop', 'all'];
+  const knownCategories = ['cafe', 'food', 'beauty', 'hair', 'nail', 'flower', 'fashion', 'fitness', 'health', 'pet', 'kids', 'shop', 'all'];
 
   const CATEGORY_ALIAS = {
     '카페': 'cafe', '카페·음료': 'cafe', '카페·베이커리': 'cafe', '커피': 'cafe', '베이커리': 'cafe',
@@ -276,9 +273,6 @@ exports.handler = async (event) => {
     '헬스': 'fitness', '필라테스': 'fitness', '헬스·필라테스': 'fitness', '요가': 'fitness', '운동': 'fitness',
     '건강': 'health', '건강·헬스': 'health',
     '반려동물': 'pet', '반려동물·펫': 'pet', '펫': 'pet',
-    '인테리어': 'interior', '인테리어·가구': 'interior', '인테리어·소품': 'interior', '가구': 'interior',
-    '학원': 'education', '학원·교육': 'education', '교육': 'education',
-    '사진': 'studio', '사진·스튜디오': 'studio', '스튜디오': 'studio',
     '키즈': 'kids', '아동': 'kids', '어린이': 'kids',
     '공방': 'shop', '소품': 'shop', '공방·소품': 'shop',
     'restaurant': 'food', 'bakery': 'cafe',
