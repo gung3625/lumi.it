@@ -897,13 +897,24 @@ async function fetchInstagram(supa, category) {
 // ─────────────────────────────────────────────
 async function fetchCommunityData(supa, category) {
   try {
-    const { data } = await supa
+    const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const { data: rows } = await supa
       .from('trends')
-      .select('keywords')
-      .eq('category', `community:${category}`)
-      .maybeSingle();
-    if (!data?.keywords?.items) return [];
-    return data.keywords.items.map(i => i.keyword).filter(Boolean);
+      .select('keywords, collected_at')
+      .or(`category.eq.community:${category},category.like.community:${category}:%`)
+      .gte('collected_at', cutoff + 'T00:00:00Z');
+
+    if (!rows || rows.length === 0) return [];
+
+    // items 병합 + keyword로 중복 제거
+    const merged = new Set();
+    for (const row of rows) {
+      const items = row.keywords?.items || [];
+      items.forEach(it => {
+        if (it?.keyword) merged.add(it.keyword);
+      });
+    }
+    return Array.from(merged);
   } catch (e) {
     return [];
   }

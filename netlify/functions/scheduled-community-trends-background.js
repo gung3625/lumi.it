@@ -219,20 +219,38 @@ exports.handler = runGuarded({
         console.log(`[community] ${category} validated 수:`, validated.length);
 
         // Supabase 저장 (trends 테이블 재사용)
+        const updatedAt = new Date().toISOString();
+        const today = updatedAt.slice(0, 10); // YYYY-MM-DD
+        const keywordsPayload = {
+          items: validated.slice(0, 10),
+          updatedAt,
+          source: 'gpt-web-search',
+        };
+
+        // 1. 최신 행 (메인 파이프라인이 읽는 키)
         const { error: upsertError } = await supa.from('trends').upsert({
           category: `community:${category}`,
-          keywords: {
-            items: validated.slice(0, 10),
-            updatedAt: new Date().toISOString(),
-            source: 'gpt-web-search',
-          },
-          collected_at: new Date().toISOString(),
+          keywords: keywordsPayload,
+          collected_at: updatedAt,
         }, { onConflict: 'category' });
 
         if (upsertError) {
           console.error(`[community] ${category} upsert 오류:`, upsertError.message);
         } else {
           console.log(`[community] ${category} upsert 성공`);
+        }
+
+        // 2. 날짜별 스냅샷 (누적 데이터)
+        const { error: snapError } = await supa.from('trends').upsert({
+          category: `community:${category}:${today}`,
+          keywords: keywordsPayload,
+          collected_at: updatedAt,
+        }, { onConflict: 'category' });
+
+        if (snapError) {
+          console.error(`[community] ${category} snapshot upsert 오류:`, snapError.message);
+        } else {
+          console.log(`[community] ${category} snapshot ${today} 저장 성공`);
         }
         console.log(`[community] ${category}: ${validated.length}개 저장`);
         return { category, count: validated.length };
@@ -247,5 +265,5 @@ exports.handler = runGuarded({
   },
 });
 
-// 주 1회 — 매주 수요일 KST 02:00 (= UTC 화요일 17:00)
-module.exports.config = { schedule: '0 17 * * 2' };
+// 매일 KST 02:00 (= UTC 17:00)
+module.exports.config = { schedule: '0 17 * * *' };
