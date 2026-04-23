@@ -25,9 +25,12 @@ CREATE TABLE IF NOT EXISTS public.trend_keywords (
   raw_mentions       jsonb DEFAULT '{}',
   collected_date     date NOT NULL DEFAULT CURRENT_DATE,
   collected_at       timestamptz NOT NULL DEFAULT now(),
-  pipeline_version   smallint DEFAULT 2,
-  UNIQUE (keyword, category, axis, sub_category, collected_date)
+  pipeline_version   smallint DEFAULT 2
 );
+
+-- UNIQUE 제약을 인덱스로 분리 — COALESCE로 NULL sub_category도 중복 감지
+CREATE UNIQUE INDEX IF NOT EXISTS idx_tk_dedup ON public.trend_keywords
+  (keyword, category, axis, COALESCE(sub_category, ''), collected_date);
 
 -- pgvector extension + embedding column은 Phase 4에서 추가 예정
 -- (Supabase Dashboard → Database → Extensions → vector 활성화 필요)
@@ -73,8 +76,20 @@ ALTER TABLE public.trend_snapshots ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.trend_subcategories ENABLE ROW LEVEL SECURITY;
 
 -- Admin client (service_role)만 쓰기 가능, 공개 읽기는 허용
-CREATE POLICY "Public read" ON public.trend_keywords FOR SELECT USING (true);
-CREATE POLICY "Public read" ON public.trend_snapshots FOR SELECT USING (true);
-CREATE POLICY "Public read" ON public.trend_subcategories FOR SELECT USING (true);
+-- CREATE POLICY는 IF NOT EXISTS 미지원 → DO 블록으로 idempotent 처리
+DO $$ BEGIN
+  CREATE POLICY "Public read" ON public.trend_keywords FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE POLICY "Public read" ON public.trend_snapshots FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE POLICY "Public read" ON public.trend_subcategories FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- service_role은 RLS 우회하므로 write는 자동 허용됨
