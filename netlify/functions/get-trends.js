@@ -1,6 +1,7 @@
 // get-trends.js — Supabase public.trends 기반 리더 (Phase 1 재구축)
 // scheduled-trends.js 가 저장한 category 키 포맷을 그대로 조회해서 기존 응답 포맷으로 반환
 // 응답 포맷은 변경 없음 (프론트 호환 유지)
+// v2: trend_keywords 테이블에서 crossSourceCount, weightedScore, velocityPct, signalTier, isNew 선택적 merge
 
 const { getAdminClient } = require('./_shared/supabase-admin');
 
@@ -171,6 +172,50 @@ function getSeasonInfo() {
   return { now, upcoming: next.slice(0, 3) };
 }
 
+// ─── v2: trend_keywords 조회 후 keywords 배열에 merge ───
+// 조회 실패 시 기존 응답 그대로 (silent fallback)
+async function mergeV2Fields(supa, keywords, category, collectedDate) {
+  try {
+    // 오늘 날짜 기준 (없으면 최근 7일 이내)
+    const dateStr = collectedDate || new Date().toISOString().slice(0, 10);
+    const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+    const { data, error } = await supa
+      .from('trend_keywords')
+      .select('keyword, cross_source_count, weighted_score, velocity_pct, signal_tier, is_new')
+      .eq('category', category)
+      .eq('axis', 'domestic')
+      .gte('collected_date', cutoff)
+      .order('collected_date', { ascending: false });
+
+    if (error || !data || data.length === 0) return keywords;
+
+    // 최신 날짜 기준 keyword → row 맵 구성
+    const v2Map = new Map();
+    for (const row of data) {
+      const key = (row.keyword || '').toLowerCase().trim();
+      if (!v2Map.has(key)) v2Map.set(key, row);
+    }
+
+    return keywords.map(kw => {
+      const key = (kw.keyword || '').toLowerCase().trim();
+      const v2 = v2Map.get(key);
+      if (!v2) return kw;
+      return {
+        ...kw,
+        crossSourceCount: v2.cross_source_count ?? undefined,
+        weightedScore: v2.weighted_score ?? undefined,
+        velocityPct: v2.velocity_pct ?? undefined,
+        signalTier: v2.signal_tier ?? undefined,
+        isNew: v2.is_new ?? undefined,
+      };
+    });
+  } catch(e) {
+    // silent fallback — v2 조회 실패해도 기존 응답 유지
+    return keywords;
+  }
+}
+
 // Supabase 단건 조회 (없으면 null)
 async function fetchTrendRow(supa, categoryKey) {
   try {
@@ -306,6 +351,7 @@ exports.handler = async (event) => {
 
     // --- scope=domestic ---
     if (scope === 'domestic') {
+      const collectedDate = new Date().toISOString().slice(0, 10);
       const scopeKey = `l30d-domestic:${storeKey}`;
       const prevKey = `l30d-domestic-prev:${storeKey}`;
 
@@ -385,6 +431,9 @@ exports.handler = async (event) => {
         const filteredKeywords = filterBlacklist(rawKeywords);
         const scopeTags = filteredKeywords.map(k => '#' + k.keyword).filter(Boolean);
 
+        // v2 필드 merge (실패 시 silent fallback — filteredKeywords 그대로)
+        const mergedKeywords = await mergeV2Fields(supa, filteredKeywords, storeKey, collectedDate);
+
         return {
           statusCode: 200, headers: CORS,
           body: JSON.stringify({
@@ -392,7 +441,7 @@ exports.handler = async (event) => {
             categoryLabel: label,
             scope,
             tags: scopeTags,
-            keywords: filteredKeywords,
+            keywords: mergedKeywords,
             rising,
             insight: scopeData.insight || '',
             insights: scopeData.insight || '',

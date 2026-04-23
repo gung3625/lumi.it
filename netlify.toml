@@ -25,7 +25,12 @@
 # 매일 자정 KST 기준 전후 트렌드 수집 (naver + google + gpt 파이프라인)
 # 외부 릴레이 푸시는 폐지, scheduled-trends 자체 실행
 # -background 접미사로 15분 타임아웃 확보 (5소스 + GPT 파이프라인은 30초 초과 가능)
-[functions."scheduled-trends-background"]
+# v1 롤백용 보존 — 필요 시 주석 해제
+# [functions."scheduled-trends-background"]
+#   schedule = "0 15 * * *"
+
+# v2: gpt-4o + 크로스소스검증 + velocity + 가중치 + 신조어
+[functions."scheduled-trends-v2-background"]
   schedule = "0 15 * * *"
 
 # 매일 오전 9시 KST (= UTC 00:00) 데일리 스케줄 알림톡 발송
@@ -89,11 +94,11 @@
   to = "/.netlify/functions/process-video-background"
   status = 200
 
-# 트렌드 파이프라인 수동 트리거용 리다이렉트
-# -background 접미사 없이도 기존 /api/scheduled-trends 경로로 호출 가능하게 유지
+# 트렌드 파이프라인 수동 트리거용 리다이렉트 (v2로 전환)
+# v1 롤백: to = "/.netlify/functions/scheduled-trends-background"
 [[redirects]]
   from = "/api/scheduled-trends"
-  to = "/.netlify/functions/scheduled-trends-background"
+  to = "/.netlify/functions/scheduled-trends-v2-background"
   status = 200
 
 [[redirects]]
