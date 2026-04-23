@@ -14,7 +14,7 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
-const CRON_NAMES = ['scheduled-trends'];
+const CRON_NAMES = ['scheduled-trends', 'scheduled-community-trends'];
 
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
