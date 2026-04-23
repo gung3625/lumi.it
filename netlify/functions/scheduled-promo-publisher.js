@@ -1,4 +1,4 @@
-const { corsHeaders, getOrigin } = require('./_shared/auth');
+const { corsHeaders, getOrigin, verifyLumiSecret } = require('./_shared/auth');
 // 예약된 홍보 게시 스케줄러 — promo_schedule 테이블에서 pending 행을 polling해 IG에 게시.
 // 스케줄: 매 5분마다 (exports.config.schedule). 수동 트리거: POST /api/scheduled-promo-publisher (LUMI_SECRET 필요).
 // 토큰·이메일·이름 절대 로그 노출 금지.
@@ -86,8 +86,8 @@ exports.handler = async (event) => {
 
   // 수동 HTTP 트리거 시 인증 검사 (스케줄 호출은 httpMethod가 없음)
   if (event.httpMethod === 'POST') {
-    const auth = (event.headers.authorization || event.headers.Authorization || '').replace('Bearer ', '');
-    if (!process.env.LUMI_SECRET || auth !== process.env.LUMI_SECRET) {
+    const auth = (event.headers.authorization || event.headers.Authorization || '');
+    if (!verifyLumiSecret(auth)) {
       return { statusCode: 401, headers, body: JSON.stringify({ error: '인증 실패' }) };
     }
   } else if (event.httpMethod && event.httpMethod !== 'POST') {

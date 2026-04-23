@@ -1,4 +1,4 @@
-const { corsHeaders, getOrigin } = require('./_shared/auth');
+const { corsHeaders, getOrigin, verifyLumiSecret } = require('./_shared/auth');
 // 관리자 전용 홍보 이미지 업로드 — base64 이미지 1장을 Supabase Storage(link-assets) 에 저장 후 공개 URL 반환.
 // 인증: Authorization: Bearer ${LUMI_SECRET}. 로그·응답에 토큰/사용자 식별자 노출 금지.
 const { getAdminClient } = require('./_shared/supabase-admin');
@@ -18,8 +18,8 @@ exports.handler = async (event) => {
     return { statusCode: 405, headers, body: JSON.stringify({ error: 'POST 전용 엔드포인트입니다.' }) };
   }
 
-  const authHeader = (event.headers.authorization || event.headers.Authorization || '').replace('Bearer ', '');
-  if (!process.env.LUMI_SECRET || authHeader !== process.env.LUMI_SECRET) {
+  const authHeader = (event.headers.authorization || event.headers.Authorization || '');
+  if (!verifyLumiSecret(authHeader)) {
     return { statusCode: 401, headers, body: JSON.stringify({ error: '인증 실패' }) };
   }
 

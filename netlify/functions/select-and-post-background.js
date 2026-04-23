@@ -1,4 +1,4 @@
-const { corsHeaders, getOrigin } = require('./_shared/auth');
+const { corsHeaders, getOrigin, verifyLumiSecret } = require('./_shared/auth');
 // Background Function — 캡션 선택 후 Instagram 게시.
 // 데이터 저장: public.reservations (Supabase).
 // 토큰 조회: ig_accounts_decrypted 뷰 (service_role 전용) — 절대 로그/응답에 노출 금지.
@@ -212,8 +212,8 @@ async function saveCaptionHistory(supabase, userId, caption) {
 exports.handler = async (event) => {
   const headers = corsHeaders(getOrigin(event));
   // 내부 호출 인증
-  const authHeader = (event.headers['authorization'] || '').replace('Bearer ', '');
-  if (authHeader !== process.env.LUMI_SECRET) {
+  const authHeader = (event.headers['authorization'] || '');
+  if (!verifyLumiSecret(authHeader)) {
     console.error('[select-and-post] 인증 실패');
     return { statusCode: 401 };
   }

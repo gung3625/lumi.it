@@ -255,6 +255,26 @@ ${storeBlock}${learningBlock}
   return JSON.parse(content);
 }
 
+// 프롬프트 인젝션 출력 필터 — AI 응답에서 store 민감정보 및 인젝션 패턴 제거
+function sanitizeDmReply(reply, storeCtx) {
+  let clean = String(reply || '');
+  const ctx = storeCtx || {};
+  // 전화번호 패턴 마스킹
+  if (ctx.phone) {
+    const phoneRe = new RegExp(String(ctx.phone).replace(/[-\s]/g, '[-\\s]?'), 'g');
+    clean = clean.replace(phoneRe, '[연락처 문의]');
+  }
+  // 주소 패턴 마스킹
+  if (ctx.address) {
+    clean = clean.replace(new RegExp(String(ctx.address).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), '[매장 주소]');
+  }
+  // 인젝션 시도 감지 시 fallback
+  if (/시스템 프롬프트|ignore\s+(all\s+|previous\s+)?instructions|너의 지시|role\s*:?\s*system/i.test(clean)) {
+    return '안녕하세요! 더 자세한 내용은 사장님께 직접 문의해주세요 🙏';
+  }
+  return clean;
+}
+
 // store_context 플레이스홀더 치환 — 값이 null/undefined면 플레이스홀더 삭제
 function applyStoreContextPlaceholders(text, ctx) {
   if (!text || !ctx) return text;
@@ -367,8 +387,10 @@ async function handleAIReply(supabase, receivedText, eventType, senderId, igUser
   };
 
   if (!escalated && replyText && !settings.shadow_mode) {
-    await sendReply(eventType, igUserId, senderId, replyText, accessToken);
+    const safeReply = sanitizeDmReply(replyText, storeCtx);
+    await sendReply(eventType, igUserId, senderId, safeReply, accessToken);
     logEntry.replied = true;
+    logEntry.reply_text = safeReply || null;
   }
 
   await writeLog(supabase, logEntry);

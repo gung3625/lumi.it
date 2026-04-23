@@ -1,4 +1,4 @@
-const { corsHeaders, getOrigin } = require('./_shared/auth');
+const { corsHeaders, getOrigin, verifyLumiSecret } = require('./_shared/auth');
 // Background Function — 캡션 생성 + (예약에 따라) Instagram 게시 트리거 대기.
 // 데이터 저장: public.reservations (Supabase).
 // 이미지: reservations.image_urls (Supabase Storage public URL).
@@ -668,8 +668,8 @@ exports.handler = async (event) => {
   const headers = corsHeaders(getOrigin(event));
   console.log('[process-and-post] HANDLER_ENTRY');
   // 내부 호출 인증 (scheduler → background)
-  const authHeader = (event.headers['authorization'] || '').replace('Bearer ', '');
-  if (authHeader !== process.env.LUMI_SECRET) {
+  const authHeader = (event.headers['authorization'] || '');
+  if (!verifyLumiSecret(authHeader)) {
     console.error('[process-and-post] 인증 실패 — LUMI_SECRET 불일치 또는 미설정');
     return { statusCode: 401 };
   }
