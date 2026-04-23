@@ -1001,9 +1001,15 @@ exports.handler = runGuarded({
           }));
         }
 
-        // Rising 예측과 saveScope 병렬
-        const [_, risingItemsRaw] = await Promise.all([
+        // Rising 예측, saveScope, v2 trend_keywords 저장 병렬
+        const collectedDate = updatedAt.slice(0, 10);
+        const [_, __, risingItemsRaw] = await Promise.all([
           saveScope({ supa, scope: 'domestic', category, tags: domesticTags, updatedAt, source: 'gpt-4o' }),
+          (async () => {
+            if (isV2Cat && enrichedKeywords.length > 0) {
+              return saveTrendKeywordsV2({ supa, category, enrichedKeywords, collectedDate });
+            }
+          })(),
           process.env.OPENAI_API_KEY
             ? predictRisingWithGPT({
                 category, domesticTags,
