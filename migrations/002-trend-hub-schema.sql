@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS public.trend_keywords (
   narrative          text DEFAULT NULL,
   origin             jsonb DEFAULT NULL,
   related_keywords   text[] DEFAULT '{}',
-  embedding          vector(1536) DEFAULT NULL,
+  -- embedding은 Phase 4에서 pgvector 활성화 후 ALTER TABLE로 추가
   thumbnail_urls     jsonb DEFAULT NULL,
   sources            jsonb DEFAULT '{}',
   raw_mentions       jsonb DEFAULT '{}',
@@ -29,8 +29,8 @@ CREATE TABLE IF NOT EXISTS public.trend_keywords (
   UNIQUE (keyword, category, axis, sub_category, collected_date)
 );
 
--- pgvector extension 활성화 (Phase 4 대비)
-CREATE EXTENSION IF NOT EXISTS vector;
+-- pgvector extension + embedding column은 Phase 4에서 추가 예정
+-- (Supabase Dashboard → Database → Extensions → vector 활성화 필요)
 
 -- 인덱스
 CREATE INDEX IF NOT EXISTS idx_tk_cat_date ON trend_keywords (category, collected_date DESC);
