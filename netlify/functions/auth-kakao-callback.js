@@ -123,10 +123,11 @@ exports.handler = async (event) => {
       userId = newUser.user.id;
     }
 
-    // 4. Magic link 생성 → 세션 발급
+    // 4. Magic link 생성 → 세션 발급 (redirectTo 명시해 Supabase Site URL 의존 제거)
     const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
       type: 'magiclink',
       email,
+      options: { redirectTo: 'https://lumi.it.kr/' },
     });
 
     if (linkErr || !linkData?.properties) {
