@@ -9830,6 +9830,40 @@ document.querySelectorAll('.lumi-aura, .card-arrow, .btn-pill, .upload-lumi').fo
   }
 
 })();
+
+// ─── PC 로그인 자동 트렌드 이동 ───
+(function() {
+  function isPC() {
+    return window.innerWidth >= 1024;
+  }
+
+  function tryRedirectToTrends() {
+    if (location.pathname === '/trends' || location.pathname === '/trends.html') return;
+    if (!isPC()) return;
+    var hasSession = !!localStorage.getItem('lumi_token') || !!localStorage.getItem('lumi_user');
+    if (!hasSession) return;
+    location.href = '/trends';
+  }
+
+  if (document.readyState === 'complete') {
+    tryRedirectToTrends();
+  } else {
+    window.addEventListener('load', tryRedirectToTrends, { once: true });
+  }
+
+  function wireSupabase() {
+    if (window.lumiSupa && lumiSupa.auth && typeof lumiSupa.auth.onAuthStateChange === 'function') {
+      lumiSupa.auth.onAuthStateChange(function(event, session) {
+        if (event === 'SIGNED_IN' && session) {
+          setTimeout(tryRedirectToTrends, 200);
+        }
+      });
+    } else {
+      setTimeout(wireSupabase, 500);
+    }
+  }
+  wireSupabase();
+})();
 </script>
 </body>
 </html>
