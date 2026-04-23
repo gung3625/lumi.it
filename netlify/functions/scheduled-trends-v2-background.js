@@ -807,27 +807,41 @@ async function saveScope({ supa, scope, category, tags, updatedAt, source }) {
 async function saveTrendKeywordsV2({ supa, category, enrichedKeywords, collectedDate }) {
   if (!enrichedKeywords || enrichedKeywords.length === 0) return;
 
-  const rows = enrichedKeywords.map(item => ({
-    keyword: item.keyword,
-    category,
-    axis: 'domestic',
-    sub_category: null,
-    collected_date: collectedDate,
-    signal_tier: item.signalTier,
-    cross_source_count: item.crossSourceCount,
-    weighted_score: item.weightedScore,
-    velocity_pct: item.velocityPct,
-    is_new: item.isNew,
-    source_tags: Array.from(item.sourcesSet || []),
-  }));
+  // sources: Set → { naver_datalab: 1, blog: 1, ... } 형태로 변환해 jsonb 저장
+  const rows = enrichedKeywords.map(item => {
+    const sourcesObj = {};
+    for (const s of (item.sourcesSet || [])) sourcesObj[s] = 1;
+    return {
+      keyword: item.keyword,
+      category,
+      axis: 'domestic',
+      sub_category: '',  // empty string (NULL 회피 — 인덱스 dedup 일관성)
+      collected_date: collectedDate,
+      signal_tier: item.signalTier,
+      cross_source_count: item.crossSourceCount,
+      weighted_score: item.weightedScore,
+      velocity_pct: item.velocityPct,
+      is_new: item.isNew,
+      sources: sourcesObj,  // DB 스키마의 sources jsonb 컬럼
+    };
+  });
 
   try {
+    // delete + insert 패턴 (daily overwrite — idx_tk_dedup functional index 충돌 회피)
     await supa
       .from('trend_keywords')
-      .upsert(rows, { onConflict: 'idx_tk_dedup' });
+      .delete()
+      .eq('category', category)
+      .eq('axis', 'domestic')
+      .eq('collected_date', collectedDate);
+
+    await supa
+      .from('trend_keywords')
+      .insert(rows);
+
+    console.log(`[trend_keywords] ${category} ${rows.length}건 저장`);
   } catch(e) {
-    // 테이블 미존재 등 에러 — 레거시 저장에 영향 없도록 silent
-    console.error('[trend_keywords] upsert 실패 (계속 진행):', e.message);
+    console.error('[trend_keywords] 저장 실패 (계속 진행):', e.message);
   }
 }
 
