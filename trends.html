@@ -1132,6 +1132,84 @@ body {
   white-space: nowrap;
 }
 
+/* ── NEW FIELD BADGES ── */
+.new-badge-high {
+  font-size: 10px; font-weight: 700; color: #fff;
+  background: var(--red); padding: 2px 7px;
+  border-radius: 4px; letter-spacing: 0.3px;
+}
+.new-badge-medium {
+  font-size: 10px; font-weight: 700;
+  color: var(--amber); background: rgba(255,149,0,0.12);
+  padding: 2px 7px; border-radius: 4px; letter-spacing: 0.3px;
+  border: 1px solid rgba(255,149,0,0.3);
+}
+.new-badge-low {
+  font-size: 10px; font-weight: 700;
+  color: var(--text-tertiary); background: var(--bg-alt);
+  padding: 2px 7px; border-radius: 4px; letter-spacing: 0.3px;
+  border: 1px solid var(--border);
+}
+.subcategory-badge {
+  font-size: 10px; font-weight: 600;
+  color: var(--text-tertiary); background: var(--bg-alt);
+  padding: 2px 8px; border-radius: 4px;
+  border: 1px solid var(--border);
+}
+/* 포화도 배지 */
+.sat-blue-ocean { font-size: 10px; font-weight: 700; color: #3B82F6; background: rgba(59,130,246,0.10); padding: 2px 7px; border-radius: 4px; }
+.sat-growing    { font-size: 10px; font-weight: 700; color: var(--green); background: rgba(0,195,123,0.10); padding: 2px 7px; border-radius: 4px; }
+.sat-established{ font-size: 10px; font-weight: 700; color: var(--amber); background: rgba(255,149,0,0.10); padding: 2px 7px; border-radius: 4px; }
+.sat-saturated  { font-size: 10px; font-weight: 700; color: var(--red);  background: rgba(255,59,48,0.10);  padding: 2px 7px; border-radius: 4px; }
+/* 소스 바차트 */
+.sources-chart {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.source-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+.source-label {
+  width: 56px;
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+  font-weight: 600;
+  text-align: right;
+}
+.source-bar-wrap {
+  flex: 1;
+  height: 6px;
+  background: var(--bg-alt);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.source-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+.source-count {
+  width: 22px;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  font-weight: 700;
+  font-size: 11px;
+}
+/* 모달 추가 필드 */
+.modal-extra-section {
+  margin-top: 16px;
+}
+.modal-score-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 12px; font-weight: 800; color: var(--pink);
+  background: rgba(200,80,122,0.10); padding: 4px 10px; border-radius: 980px;
+}
+
 /* ════════════════════════════════════════════════════
    FAB (DARK MODE TOGGLE)
 ════════════════════════════════════════════════════ */
@@ -1531,11 +1609,11 @@ const CATEGORIES = [
 const DEMO_DATA = {
   cafe: {
     keywords: [
-      { keyword: '말차라떼', rank: 1, rankChange: 3, velocityPct: 340, signalTier: 'real', crossSourceCount: 4, isNew: false, axis: 'menu', narrative: '말차 붐이 카페를 넘어 편의점·베이커리까지 확산 중. 20대 여성 중심으로 SNS 인증샷 수요 폭증. 일본 말차 전문 브랜드 진출로 고급화 트렌드 가속.' },
-      { keyword: '오트밀크', rank: 2, rankChange: 1, velocityPct: 215, signalTier: 'real', crossSourceCount: 3, isNew: false, axis: 'menu', narrative: '비건·유당불내증 고객 수요 급증. 스타벅스 오트 음료 출시 이후 소규모 카페로 트렌드 확산. 가격 프리미엄 허용도 높아 마진율 개선 효과.' },
-      { keyword: '쑥크림라떼', rank: 3, rankChange: 5, velocityPct: 189, signalTier: 'real', crossSourceCount: 3, isNew: true, axis: 'menu', narrative: '전통 재료 현대화 트렌드. 쑥 특유의 향을 크림으로 중화해 MZ세대 입맛 공략. 봄 시즌 한정 메뉴로 희소성 마케팅 효과 극대화.' },
-      { keyword: '구름케이크', rank: 4, rankChange: 2, velocityPct: 156, signalTier: 'real', crossSourceCount: 3, isNew: true, axis: 'menu', narrative: '시각적 임팩트 극대화 디저트. 인증샷 욕구 자극으로 SNS 확산력 탁월. 원가 대비 가격 프리미엄 유지 가능.' },
-      { keyword: '복숭아에이드', rank: 5, rankChange: -1, velocityPct: 134, signalTier: 'real', crossSourceCount: 4, isNew: false, axis: 'menu', narrative: '여름 시즌 음료 수요 선취. 신선 복숭아 사용 강조로 프리미엄 포지셔닝. 유리잔 비주얼이 SNS 확산 핵심.' },
+      { keyword: '말차라떼', rank: 1, rankChange: 3, velocityPct: 340, signalTier: 'real', crossSourceCount: 4, weightedScore: 9.2, isNew: false, axis: 'menu', subCategory: '시즌음료', saturationLevel: 'growing', narrative: '말차 붐이 카페를 넘어 편의점·베이커리까지 확산 중. 20대 여성 중심으로 SNS 인증샷 수요 폭증. 일본 말차 전문 브랜드 진출로 고급화 트렌드 가속.', sources: { naver_search: 82, instagram: 74, youtube: 41, google: 38, naver_blog: 29, pinterest: 12 } },
+      { keyword: '오트밀크', rank: 2, rankChange: 1, velocityPct: 215, signalTier: 'real', crossSourceCount: 3, weightedScore: 8.1, isNew: false, axis: 'menu', subCategory: '대체유', saturationLevel: 'growing', narrative: '비건·유당불내증 고객 수요 급증. 스타벅스 오트 음료 출시 이후 소규모 카페로 트렌드 확산. 가격 프리미엄 허용도 높아 마진율 개선 효과.', sources: { instagram: 61, google: 44, youtube: 33, naver_search: 28 } },
+      { keyword: '쑥크림라떼', rank: 3, rankChange: 5, velocityPct: 189, signalTier: 'real', crossSourceCount: 3, weightedScore: 7.8, isNew: true, isNewConfidence: 'high', axis: 'menu', subCategory: '전통재료', saturationLevel: 'blue_ocean', narrative: '전통 재료 현대화 트렌드. 쑥 특유의 향을 크림으로 중화해 MZ세대 입맛 공략. 봄 시즌 한정 메뉴로 희소성 마케팅 효과 극대화.', sources: { naver_search: 54, instagram: 49, naver_blog: 31 } },
+      { keyword: '구름케이크', rank: 4, rankChange: 2, velocityPct: 156, signalTier: 'real', crossSourceCount: 3, weightedScore: 7.3, isNew: true, isNewConfidence: 'medium', axis: 'menu', subCategory: '디저트', saturationLevel: 'blue_ocean', narrative: '시각적 임팩트 극대화 디저트. 인증샷 욕구 자극으로 SNS 확산력 탁월. 원가 대비 가격 프리미엄 유지 가능.', sources: { instagram: 88, pinterest: 52, youtube: 27 } },
+      { keyword: '복숭아에이드', rank: 5, rankChange: -1, velocityPct: 134, signalTier: 'real', crossSourceCount: 4, weightedScore: 6.9, isNew: false, axis: 'menu', subCategory: '시즌음료', saturationLevel: 'established', narrative: '여름 시즌 음료 수요 선취. 신선 복숭아 사용 강조로 프리미엄 포지셔닝. 유리잔 비주얼이 SNS 확산 핵심.', sources: { naver_search: 67, instagram: 59, google: 35, naver_blog: 22 } },
       { keyword: '핸드드립', rank: 6, rankChange: 0, velocityPct: 98, signalTier: 'real', crossSourceCount: 2, isNew: false, axis: 'experience', narrative: '커피 전문성 어필. 고객 체류시간 증가로 객단가 상승 효과.' },
       { keyword: '플랫화이트', rank: 7, rankChange: 4, velocityPct: 87, signalTier: 'real', crossSourceCount: 2, isNew: false, axis: 'menu', narrative: '에스프레소 농축도 높은 호주 스타일 음료. 커피 마니아층 타깃.' },
       { keyword: '콜드브루', rank: 8, rankChange: -2, velocityPct: 76, signalTier: 'weak', crossSourceCount: 1, isNew: false, axis: 'menu', narrative: '여름 시즌 기본 아이템으로 안정적 수요 유지.' },
@@ -1882,7 +1960,19 @@ function renderGrid(kws) {
             <i data-lucide="${isHot ? 'flame' : 'trending-up'}" style="width:10px;height:10px;"></i>
             <span id="vel-${i}" data-target="${Math.round(vel || 0)}">+${Math.round(vel || 0)}%</span>
           </span>` : ''}
-          ${kw.isNew ? `<span class="new-badge">NEW</span>` : ''}
+          ${kw.isNew ? (() => {
+            const conf = kw.isNewConfidence;
+            if (conf === 'high') return '<span class="new-badge-high">신조어</span>';
+            if (conf === 'medium') return '<span class="new-badge-medium">신조어?</span>';
+            return '<span class="new-badge-low">신조어?</span>';
+          })() : ''}
+          ${kw.subCategory ? `<span class="subcategory-badge">${kw.subCategory}</span>` : ''}
+          ${kw.saturationLevel ? (() => {
+            const sat = kw.saturationLevel;
+            const labels = { blue_ocean: '블루오션', growing: '성장중', established: '안착', saturated: '포화' };
+            const cls = { blue_ocean: 'sat-blue-ocean', growing: 'sat-growing', established: 'sat-established', saturated: 'sat-saturated' };
+            return `<span class="${cls[sat] || 'sat-established'}">${labels[sat] || sat}</span>`;
+          })() : ''}
         </div>
         ${kw.narrative ? `<div class="kw-narrative">${kw.narrative}</div>` : ''}
         <div class="kw-feedback" data-kw="${encodeURIComponent(kw.keyword)}" data-cat="${state.category}">
@@ -2138,8 +2228,21 @@ function openModal(kw) {
       +${Math.round(vel)}% 급상승
     </span>` : ''}
     <span class="tier-badge ${kw.signalTier === 'real' ? 'tier-real' : 'tier-weak'}">${kw.signalTier === 'real' ? 'REAL 신호' : 'WEAK 신호'}</span>
-    ${kw.isNew ? '<span class="new-badge">NEW</span>' : ''}
+    ${kw.isNew ? (() => {
+      const conf = kw.isNewConfidence;
+      if (conf === 'high') return '<span class="new-badge-high">신조어 확정</span>';
+      if (conf === 'medium') return '<span class="new-badge-medium">신조어 가능성</span>';
+      return '<span class="new-badge-low">신조어 추정</span>';
+    })() : ''}
     ${kw.crossSourceCount ? `<span style="font-size:12px;color:var(--text-tertiary);">소스 ${kw.crossSourceCount}종 확인</span>` : ''}
+    ${kw.weightedScore ? `<span class="modal-score-badge"><i data-lucide="star" style="width:11px;height:11px;"></i> ${kw.weightedScore.toFixed(1)}</span>` : ''}
+    ${kw.saturationLevel ? (() => {
+      const sat = kw.saturationLevel;
+      const labels = { blue_ocean: '블루오션', growing: '성장중', established: '안착', saturated: '포화' };
+      const cls = { blue_ocean: 'sat-blue-ocean', growing: 'sat-growing', established: 'sat-established', saturated: 'sat-saturated' };
+      return `<span class="${cls[sat] || 'sat-established'}">${labels[sat] || sat}</span>`;
+    })() : ''}
+    ${kw.subCategory ? `<span class="subcategory-badge">${kw.subCategory}</span>` : ''}
   `;
 
   // 7일 모의 차트 데이터 (실제 데이터 없으므로 velocity 기반 시뮬레이션)
@@ -2166,6 +2269,42 @@ function openModal(kw) {
           ${kw.origin.sourceType ? `<div><strong>소스</strong>: ${kw.origin.sourceType}</div>` : ''}
           ${kw.origin.mediaTitle ? `<div><strong>미디어</strong>: ${kw.origin.mediaTitle}</div>` : ''}
         </div>` : ''}
+      ${kw.sources && Object.keys(kw.sources).length ? (() => {
+        const sourceColors = {
+          naver_search: '#03C75A',
+          naver_blog:   '#00B900',
+          google:       '#4285F4',
+          youtube:      '#FF0000',
+          instagram:    '#E1306C',
+          pinterest:    '#E60023'
+        };
+        const sourceLabels = {
+          naver_search: '네이버검색',
+          naver_blog:   '네이버블로그',
+          google:       '구글',
+          youtube:      '유튜브',
+          instagram:    '인스타',
+          pinterest:    '핀터레스트'
+        };
+        const maxVal = Math.max(...Object.values(kw.sources), 1);
+        const rows = Object.entries(kw.sources)
+          .filter(([, v]) => v > 0)
+          .sort(([, a], [, b]) => b - a)
+          .map(([src, cnt]) => {
+            const pct = Math.round((cnt / maxVal) * 100);
+            const color = sourceColors[src] || 'var(--pink)';
+            const label = sourceLabels[src] || src;
+            return `<div class="source-row">
+              <span class="source-label">${label}</span>
+              <div class="source-bar-wrap"><div class="source-bar-fill" style="width:${pct}%;background:${color};"></div></div>
+              <span class="source-count">${cnt}</span>
+            </div>`;
+          }).join('');
+        return `<div class="modal-extra-section">
+          <div class="modal-col-label" style="margin-bottom:8px;">소스별 언급</div>
+          <div class="sources-chart">${rows}</div>
+        </div>`;
+      })() : ''}
     </div>
     <div>
       <div class="modal-col-label">7일 추이 (시뮬레이션)</div>

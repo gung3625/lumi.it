@@ -2323,6 +2323,1132 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
 
 
+<!-- ========== PC LANDING (비로그인 데스크톱 전용) ==========
+     min-width: 1024px 이상, 로그인 시 JS로 숨김.
+     모바일 섹션(mobile-app)과 완전 분리. ========== -->
+<div id="pc-landing" style="display:none;">
+<style>
+/* ──────────────────────────────────────────────
+   PC LANDING — design tokens 동일 사용
+────────────────────────────────────────────── */
+#pc-landing {
+  font-family: 'Pretendard Variable','Pretendard',-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo',sans-serif;
+  color: var(--ink, #0d1117);
+  overflow-x: hidden;
+}
+
+/* sticky nav (PC용 — 기존 nav는 모바일 포함 공통) */
+#pc-sticky-nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 56px;
+  background: rgba(255,255,255,0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  padding: 0 40px;
+  gap: 0;
+}
+body.dark-mode #pc-sticky-nav {
+  background: rgba(0,0,0,0.88);
+  border-bottom-color: rgba(255,255,255,0.07);
+}
+#pc-sticky-nav .pn-logo {
+  font-family: 'Nunito', sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  background: linear-gradient(90deg,#FF6B8B 0%,#DDA0DD 50%,#EDD080 85%,#DABA65 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-decoration: none;
+  letter-spacing: -0.5px;
+  flex-shrink: 0;
+}
+#pc-sticky-nav .pn-links {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 32px;
+  flex: 1;
+}
+#pc-sticky-nav .pn-link {
+  font-size: 14px;
+  font-weight: 500;
+  color: #0d1117;
+  text-decoration: none;
+  padding: 6px 14px;
+  border-radius: 980px;
+  transition: background 0.18s, opacity 0.18s;
+  white-space: nowrap;
+}
+body.dark-mode #pc-sticky-nav .pn-link { color: #f5f5f7; }
+#pc-sticky-nav .pn-link:hover { background: rgba(0,0,0,0.06); }
+body.dark-mode #pc-sticky-nav .pn-link:hover { background: rgba(255,255,255,0.08); }
+#pc-sticky-nav .pn-auth {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.pn-btn-ghost {
+  font-size: 14px;
+  font-weight: 500;
+  color: #0d1117;
+  background: none;
+  border: 1px solid rgba(0,0,0,0.15);
+  padding: 7px 18px;
+  border-radius: 980px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.18s, background 0.18s;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+body.dark-mode .pn-btn-ghost { color: #f5f5f7; border-color: rgba(255,255,255,0.2); }
+.pn-btn-ghost:hover { background: rgba(0,0,0,0.05); }
+.pn-btn-pink {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  background: #C8507A;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 980px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.18s, transform 0.12s;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+.pn-btn-pink:hover { opacity: 0.88; transform: translateY(-1px); }
+
+/* section scaffold */
+.pc-section {
+  width: 100%;
+  padding: 100px 40px;
+  box-sizing: border-box;
+}
+.pc-section-inner {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+.pc-eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #C8507A;
+  margin-bottom: 16px;
+}
+.pc-h2 {
+  font-size: clamp(36px,4vw,60px);
+  font-weight: 900;
+  letter-spacing: -2px;
+  line-height: 1.08;
+  word-break: keep-all;
+  color: #0d1117;
+  margin-bottom: 20px;
+}
+body.dark-mode .pc-h2 { color: #f5f5f7; }
+.pc-h3 {
+  font-size: clamp(24px,2.4vw,34px);
+  font-weight: 800;
+  letter-spacing: -1px;
+  line-height: 1.15;
+  word-break: keep-all;
+  color: #0d1117;
+  margin-bottom: 12px;
+}
+body.dark-mode .pc-h3 { color: #f5f5f7; }
+.pc-body {
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.6;
+  color: #4E5968;
+  word-break: keep-all;
+  max-width: 560px;
+}
+body.dark-mode .pc-body { color: #A8B3C0; }
+
+/* ── HERO ── */
+#pc-hero {
+  padding-top: 140px;
+  padding-bottom: 80px;
+  background: #fff;
+}
+body.dark-mode #pc-hero { background: #000; }
+.pc-hero-inner {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 40px;
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: 60px;
+  align-items: center;
+}
+.pc-hero-left {}
+.pc-hero-title {
+  font-size: clamp(44px,5.5vw,80px);
+  font-weight: 900;
+  letter-spacing: -3px;
+  line-height: 1.05;
+  word-break: keep-all;
+  color: #0d1117;
+  margin-bottom: 24px;
+}
+body.dark-mode .pc-hero-title { color: #f5f5f7; }
+.pc-hero-title .hl { color: #C8507A; }
+.pc-hero-sub {
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.6;
+  color: #4E5968;
+  margin-bottom: 36px;
+  max-width: 480px;
+  word-break: keep-all;
+}
+body.dark-mode .pc-hero-sub { color: #A8B3C0; }
+.pc-hero-cta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.pc-hero-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 32px;
+  border-radius: 980px;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: inherit;
+  background: #C8507A;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.18s, transform 0.12s;
+}
+.pc-hero-cta-btn:hover { opacity: 0.88; transform: translateY(-2px); }
+.pc-hero-cta-link {
+  font-size: 15px;
+  font-weight: 500;
+  color: #4E5968;
+  text-decoration: none;
+  transition: color 0.18s;
+}
+.pc-hero-cta-link:hover { color: #C8507A; }
+body.dark-mode .pc-hero-cta-link { color: #A8B3C0; }
+.pc-hero-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.pc-hero-mascot {
+  width: 260px;
+  height: auto;
+  filter: drop-shadow(0 16px 48px rgba(200,80,122,0.22));
+  animation: mascot-float 4s ease-in-out infinite;
+}
+@keyframes mascot-float {
+  0%,100% { transform: translateY(0); }
+  50% { transform: translateY(-14px); }
+}
+.pc-hero-proof {
+  display: flex;
+  gap: 24px;
+  margin-top: 40px;
+}
+.pc-hero-proof-item {
+  text-align: center;
+}
+.pc-hero-proof-num {
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: -1px;
+  color: #C8507A;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.pc-hero-proof-label {
+  font-size: 12px;
+  color: #8B95A1;
+  font-weight: 500;
+}
+
+/* ── FEATURES 4-GRID ── */
+#pc-features {
+  background: #f5f5f7;
+}
+body.dark-mode #pc-features { background: #111; }
+.pc-feat-grid {
+  display: grid;
+  grid-template-columns: repeat(4,1fr);
+  gap: 16px;
+  margin-top: 48px;
+}
+.pc-feat-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+body.dark-mode .pc-feat-card { background: #272729; }
+.pc-feat-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.10); }
+.pc-feat-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(200,80,122,0.10);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #C8507A;
+}
+.pc-feat-title {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  color: #0d1117;
+  word-break: keep-all;
+}
+body.dark-mode .pc-feat-title { color: #f5f5f7; }
+.pc-feat-desc {
+  font-size: 14px;
+  line-height: 1.55;
+  color: #4E5968;
+  word-break: keep-all;
+  flex: 1;
+}
+body.dark-mode .pc-feat-desc { color: #A8B3C0; }
+
+/* ── TREND PREVIEW ── */
+#pc-trends {
+  background: #fff;
+}
+body.dark-mode #pc-trends { background: #000; }
+.pc-trends-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-top: 32px;
+  position: relative;
+}
+.pc-trend-card {
+  background: #f5f5f7;
+  border-radius: 12px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+}
+body.dark-mode .pc-trend-card { background: #1A1A1C; }
+.pc-trend-rank {
+  font-size: 11px;
+  font-weight: 700;
+  color: #8B95A1;
+  letter-spacing: 0.5px;
+}
+.pc-trend-kw {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: #0d1117;
+}
+body.dark-mode .pc-trend-kw { color: #f5f5f7; }
+.pc-trend-vel {
+  font-size: 12px;
+  font-weight: 700;
+  color: #00C37B;
+}
+.pc-trend-vel.hot { color: #FF3B30; }
+.pc-trends-lock {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 30%, rgba(255,255,255,0.95) 70%);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 24px;
+  border-radius: 12px;
+}
+body.dark-mode .pc-trends-lock {
+  background: linear-gradient(to bottom, transparent 30%, rgba(0,0,0,0.95) 70%);
+}
+.pc-trends-lock-cta {
+  text-align: center;
+}
+.pc-trends-lock-cta p {
+  font-size: 15px;
+  font-weight: 600;
+  color: #0d1117;
+  margin-bottom: 12px;
+  word-break: keep-all;
+}
+body.dark-mode .pc-trends-lock-cta p { color: #f5f5f7; }
+
+/* ── PRICING ── */
+#pc-pricing {
+  background: #f5f5f7;
+}
+body.dark-mode #pc-pricing { background: #111; }
+.pc-plans-wrap {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  max-width: 760px;
+  margin: 40px auto 0;
+}
+.pc-plan-card {
+  background: #fff;
+  border-radius: 20px;
+  padding: 32px 28px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 2px solid transparent;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  position: relative;
+}
+body.dark-mode .pc-plan-card { background: #1A1A1C; }
+.pc-plan-card.featured {
+  border-color: #C8507A;
+  box-shadow: 0 0 0 4px rgba(200,80,122,0.08);
+}
+.pc-plan-badge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #C8507A;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 4px 14px;
+  border-radius: 980px;
+  white-space: nowrap;
+}
+.pc-plan-name {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #8B95A1;
+  margin-bottom: 8px;
+}
+.pc-plan-price {
+  font-size: 40px;
+  font-weight: 900;
+  letter-spacing: -2px;
+  color: #0d1117;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+body.dark-mode .pc-plan-price { color: #f5f5f7; }
+.pc-plan-price span {
+  font-size: 16px;
+  font-weight: 500;
+  color: #8B95A1;
+  letter-spacing: 0;
+}
+.pc-plan-desc {
+  font-size: 13px;
+  color: #8B95A1;
+  margin-bottom: 24px;
+}
+.pc-plan-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+.pc-plan-features li {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 14px;
+  color: #191F28;
+}
+body.dark-mode .pc-plan-features li { color: #F5F6F8; }
+.pc-plan-features li svg { flex-shrink: 0; color: #C8507A; }
+.pc-plan-cta {
+  display: block;
+  width: 100%;
+  padding: 13px 20px;
+  border-radius: 980px;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: inherit;
+  text-align: center;
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity 0.18s, transform 0.12s;
+  border: none;
+}
+.pc-plan-cta:hover { opacity: 0.85; transform: translateY(-1px); }
+.pc-plan-cta.primary { background: #C8507A; color: #fff; }
+.pc-plan-cta.outline { background: transparent; color: #0d1117; border: 1.5px solid rgba(0,0,0,0.18); }
+body.dark-mode .pc-plan-cta.outline { color: #f5f5f7; border-color: rgba(255,255,255,0.2); }
+
+/* ── TESTIMONIALS ── */
+#pc-testimonials {
+  background: #fff;
+}
+body.dark-mode #pc-testimonials { background: #000; }
+.pc-testi-grid {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: 20px;
+  margin-top: 40px;
+}
+.pc-testi-card {
+  background: #f5f5f7;
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+body.dark-mode .pc-testi-card { background: #1A1A1C; }
+.pc-testi-quote {
+  font-size: 15px;
+  line-height: 1.65;
+  color: #191F28;
+  word-break: keep-all;
+  flex: 1;
+  font-style: italic;
+}
+body.dark-mode .pc-testi-quote { color: #F5F6F8; }
+.pc-testi-author {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.pc-testi-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(200,80,122,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  flex-shrink: 0;
+}
+.pc-testi-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0d1117;
+}
+body.dark-mode .pc-testi-name { color: #f5f5f7; }
+.pc-testi-biz {
+  font-size: 12px;
+  color: #8B95A1;
+}
+
+/* ── FAQ ── */
+#pc-faq {
+  background: #f5f5f7;
+}
+body.dark-mode #pc-faq { background: #111; }
+.pc-faq-list {
+  margin-top: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(0,0,0,0.06);
+}
+body.dark-mode .pc-faq-list { border-color: rgba(255,255,255,0.07); }
+.pc-faq-item {
+  background: #fff;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+body.dark-mode .pc-faq-item { background: #1A1A1C; border-bottom-color: rgba(255,255,255,0.07); }
+.pc-faq-item:last-child { border-bottom: none; }
+.pc-faq-q {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #0d1117;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  gap: 16px;
+  word-break: keep-all;
+}
+body.dark-mode .pc-faq-q { color: #f5f5f7; }
+.pc-faq-q:hover { background: rgba(0,0,0,0.02); }
+body.dark-mode .pc-faq-q:hover { background: rgba(255,255,255,0.03); }
+.pc-faq-chevron {
+  flex-shrink: 0;
+  transition: transform 0.22s;
+  color: #8B95A1;
+}
+.pc-faq-item.open .pc-faq-chevron { transform: rotate(180deg); }
+.pc-faq-a {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+  font-size: 14px;
+  line-height: 1.65;
+  color: #4E5968;
+  word-break: keep-all;
+}
+body.dark-mode .pc-faq-a { color: #A8B3C0; }
+.pc-faq-item.open .pc-faq-a { max-height: 300px; }
+.pc-faq-a-inner { padding: 0 24px 20px; }
+
+/* ── SUPPORT CTA ── */
+#pc-support {
+  background: #fff;
+}
+body.dark-mode #pc-support { background: #000; }
+.pc-support-inner {
+  text-align: center;
+  max-width: 600px;
+  margin: 0 auto;
+}
+.pc-support-links {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 32px;
+  flex-wrap: wrap;
+}
+
+/* ── FOOTER ── */
+#pc-footer {
+  background: #f5f5f7;
+  padding: 48px 40px;
+}
+body.dark-mode #pc-footer { background: #111; }
+.pc-footer-inner {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+.pc-footer-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 40px;
+  padding-bottom: 32px;
+  border-bottom: 1px solid rgba(0,0,0,0.07);
+  margin-bottom: 24px;
+}
+body.dark-mode .pc-footer-top { border-bottom-color: rgba(255,255,255,0.07); }
+.pc-footer-brand {}
+.pc-footer-logo {
+  font-family: 'Nunito', sans-serif;
+  font-size: 24px;
+  font-weight: 800;
+  background: linear-gradient(90deg,#FF6B8B,#DDA0DD,#EDD080);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-decoration: none;
+  display: inline-block;
+  margin-bottom: 8px;
+}
+.pc-footer-tagline {
+  font-size: 13px;
+  color: #8B95A1;
+  max-width: 240px;
+  line-height: 1.5;
+  word-break: keep-all;
+}
+.pc-footer-links {
+  display: flex;
+  gap: 48px;
+}
+.pc-footer-col-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #8B95A1;
+  margin-bottom: 12px;
+}
+.pc-footer-col ul {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pc-footer-col ul li a {
+  font-size: 13px;
+  color: #4E5968;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+body.dark-mode .pc-footer-col ul li a { color: #A8B3C0; }
+.pc-footer-col ul li a:hover { color: #C8507A; }
+.pc-footer-biz {
+  font-size: 11px;
+  color: #8B95A1;
+  line-height: 1.7;
+}
+.pc-footer-biz a { color: #8B95A1; text-decoration: none; }
+.pc-footer-biz a:hover { color: #C8507A; }
+
+/* trend preview loading skeleton */
+.pc-trend-skel {
+  background: linear-gradient(90deg,var(--bg-alt,#f2f2f5) 25%,rgba(0,0,0,0.04) 50%,var(--bg-alt,#f2f2f5) 75%);
+  background-size: 200% 100%;
+  animation: skel-sweep 1.4s ease-in-out infinite;
+  border-radius: 8px;
+  height: 14px;
+}
+@keyframes skel-sweep { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+/* only show on desktop */
+@media (max-width: 1023px) {
+  #pc-landing { display: none !important; }
+}
+/* scroll padding for anchor nav */
+#pc-features, #pc-trends, #pc-pricing, #pc-testimonials, #pc-faq, #pc-support {
+  scroll-margin-top: 56px;
+}
+</style>
+
+<!-- PC STICKY NAV -->
+<div id="pc-sticky-nav">
+  <a class="pn-logo" href="/">lumi</a>
+  <nav class="pn-links" aria-label="PC 랜딩 네비게이션">
+    <a class="pn-link" href="#pc-features">기능</a>
+    <a class="pn-link" href="#pc-trends">트렌드</a>
+    <a class="pn-link" href="#pc-pricing">요금제</a>
+    <a class="pn-link" href="#pc-faq">FAQ</a>
+    <a class="pn-link" href="#pc-support">고객센터</a>
+  </nav>
+  <div class="pn-auth" id="pn-auth">
+    <button class="pn-btn-ghost" onclick="openLogin()">로그인</button>
+    <button class="pn-btn-pink" onclick="openSignupGrid()">1주 무료 체험</button>
+  </div>
+</div>
+
+<!-- HERO -->
+<section id="pc-hero">
+  <div class="pc-hero-inner">
+    <div class="pc-hero-left">
+      <p class="pc-eyebrow">소상공인 인스타그램 자동화</p>
+      <h1 class="pc-hero-title">인스타그램,<br>AI로 <span class="hl">5분</span>이면<br>충분해요</h1>
+      <p class="pc-hero-sub">사진 한 장이면 캡션·해시태그·릴스까지 자동으로. 올릴 때마다 우리 가게 말투를 학습해, 쓸수록 더 '우리 가게답게' 써드려요.</p>
+      <div class="pc-hero-cta">
+        <button class="pc-hero-cta-btn" onclick="openSignupGrid()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          1주 무료 체험 시작
+        </button>
+        <a class="pc-hero-cta-link" href="#pc-features">기능 둘러보기 →</a>
+      </div>
+      <div class="pc-hero-proof">
+        <div class="pc-hero-proof-item">
+          <p class="pc-hero-proof-num">월 18h</p>
+          <p class="pc-hero-proof-label">절약 시간</p>
+        </div>
+        <div class="pc-hero-proof-item">
+          <p class="pc-hero-proof-num">1분</p>
+          <p class="pc-hero-proof-label">캡션 생성</p>
+        </div>
+        <div class="pc-hero-proof-item">
+          <p class="pc-hero-proof-num">10개</p>
+          <p class="pc-hero-proof-label">지원 업종</p>
+        </div>
+      </div>
+    </div>
+    <div class="pc-hero-right">
+      <img class="pc-hero-mascot" src="/assets/logo-cloud.png" alt="lumi 마스코트" onerror="this.style.display='none'">
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="pc-section" id="pc-features">
+  <div class="pc-section-inner">
+    <p class="pc-eyebrow">핵심 기능</p>
+    <h2 class="pc-h2">하나씩 쌓이면<br>전부 자동으로</h2>
+    <div class="pc-feat-grid">
+      <div class="pc-feat-card">
+        <div class="pc-feat-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </div>
+        <div>
+          <p class="pc-feat-title">캡션 AI</p>
+          <p class="pc-feat-desc">사진·영상 한 장 올리면 업종·분위기에 딱 맞는 캡션과 해시태그를 자동으로 만들어요. 마음에 안 들면 3번까지 재생성.</p>
+        </div>
+      </div>
+      <div class="pc-feat-card">
+        <div class="pc-feat-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <div>
+          <p class="pc-feat-title">자동·예약 게시</p>
+          <p class="pc-feat-desc">캡션이 완성되면 인스타그램에 바로 게시하거나 원하는 시간에 예약. Meta 공식 API 사용으로 계정 안전.</p>
+        </div>
+      </div>
+      <div class="pc-feat-card">
+        <div class="pc-feat-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <div>
+          <p class="pc-feat-title">트렌드 분석</p>
+          <p class="pc-feat-desc">네이버·구글·유튜브·인스타 등 6개 소스를 매일 분석해 업종별 인기 키워드를 알려드려요. 경쟁사보다 하루 먼저.</p>
+        </div>
+      </div>
+      <div class="pc-feat-card">
+        <div class="pc-feat-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        </div>
+        <div>
+          <p class="pc-feat-title">말투 학습</p>
+          <p class="pc-feat-desc">게시할 때마다 우리 매장 말투를 배워요. "좋아요/별로예요" 한 번만 눌러도 다음 캡션에 바로 반영돼요.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TREND PREVIEW -->
+<section class="pc-section" id="pc-trends">
+  <div class="pc-section-inner">
+    <p class="pc-eyebrow">실시간 트렌드</p>
+    <h2 class="pc-h2">지금 이 업종에서<br>뭐가 뜨고 있나요?</h2>
+    <p class="pc-body">카페·음식점·뷰티샵 등 업종별 인기 키워드를 실시간으로 확인하세요. 로그인하면 전체 데이터와 상세 분석을 볼 수 있어요.</p>
+    <div id="pc-trends-container" style="position:relative;">
+      <div class="pc-trends-grid" id="pc-trends-grid">
+        <!-- JS로 채움 -->
+        <div class="pc-trend-card"><div class="pc-trend-skel" style="width:40%;margin-bottom:8px;"></div><div class="pc-trend-skel" style="width:70%;height:20px;"></div></div>
+        <div class="pc-trend-card"><div class="pc-trend-skel" style="width:40%;margin-bottom:8px;"></div><div class="pc-trend-skel" style="width:70%;height:20px;"></div></div>
+        <div class="pc-trend-card"><div class="pc-trend-skel" style="width:40%;margin-bottom:8px;"></div><div class="pc-trend-skel" style="width:70%;height:20px;"></div></div>
+        <div class="pc-trend-card"><div class="pc-trend-skel" style="width:40%;margin-bottom:8px;"></div><div class="pc-trend-skel" style="width:70%;height:20px;"></div></div>
+        <div class="pc-trend-card"><div class="pc-trend-skel" style="width:40%;margin-bottom:8px;"></div><div class="pc-trend-skel" style="width:70%;height:20px;"></div></div>
+      </div>
+      <div class="pc-trends-lock" id="pc-trends-lock">
+        <div class="pc-trends-lock-cta">
+          <p>전체 트렌드는 로그인 후 무료로 확인하세요</p>
+          <button class="pc-hero-cta-btn" onclick="openSignupGrid()" style="margin:0 auto;">
+            무료로 전체 보기 →
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pc-section" id="pc-pricing">
+  <div class="pc-section-inner">
+    <p class="pc-eyebrow">요금제</p>
+    <h2 class="pc-h2">대행사 비용의<br>1/30 가격</h2>
+    <p class="pc-body" style="text-align:center;max-width:100%;margin-bottom:0;">7일 무료 체험 후 마음에 드시면 구독하세요. 카드 등록 없이 시작.</p>
+    <div class="pc-plans-wrap">
+      <div class="pc-plan-card">
+        <p class="pc-plan-name">스탠다드</p>
+        <p class="pc-plan-price">₩19,900<span>/월</span></p>
+        <p class="pc-plan-desc">카페·음식점·뷰티 사장님 기본</p>
+        <ul class="pc-plan-features">
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>캡션 생성 월 12회</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>자동 게시 (즉시)</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>말투 AI 학습</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>트렌드 키워드</li>
+        </ul>
+        <a class="pc-plan-cta outline" href="/subscribe.html?plan=standard">스탠다드 시작하기</a>
+      </div>
+      <div class="pc-plan-card featured">
+        <div class="pc-plan-badge">추천 · 7일 무료</div>
+        <p class="pc-plan-name">프로</p>
+        <p class="pc-plan-price">₩29,900<span>/월</span></p>
+        <p class="pc-plan-desc">더 많이 올리고 싶은 분</p>
+        <ul class="pc-plan-features">
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>캡션 생성 월 20회</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>자동 + 예약 게시</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>최적 시간 자동 게시</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>링크인바이오</li>
+        </ul>
+        <button class="pc-plan-cta primary" onclick="openSignupGrid()">프로 7일 무료 시작</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="pc-section" id="pc-testimonials">
+  <div class="pc-section-inner">
+    <p class="pc-eyebrow">사용 후기</p>
+    <h2 class="pc-h2">사장님들의<br>실제 이야기</h2>
+    <div class="pc-testi-grid">
+      <div class="pc-testi-card">
+        <p class="pc-testi-quote">"전에는 캡션 쓰다가 30분씩 날렸는데, 지금은 사진 올리고 1분이면 끝이에요. 해시태그도 알아서 달아주니까 팔로워도 조금씩 늘고 있어요."</p>
+        <div class="pc-testi-author">
+          <div class="pc-testi-avatar">☕</div>
+          <div>
+            <p class="pc-testi-name">박OO 사장님</p>
+            <p class="pc-testi-biz">서울 마포 카페 운영</p>
+          </div>
+        </div>
+      </div>
+      <div class="pc-testi-card">
+        <p class="pc-testi-quote">"처음엔 AI가 우리 가게 말투를 알까 싶었는데, 몇 번 쓰다 보니까 진짜 우리 가게 느낌이 나더라고요. 손님들이 '직접 쓰신 거예요?'라고 물어봐요."</p>
+        <div class="pc-testi-author">
+          <div class="pc-testi-avatar">💅</div>
+          <div>
+            <p class="pc-testi-name">이OO 원장님</p>
+            <p class="pc-testi-biz">부산 해운대 네일샵</p>
+          </div>
+        </div>
+      </div>
+      <div class="pc-testi-card">
+        <p class="pc-testi-quote">"대행사는 한 달에 60만 원이었는데 루미는 3만 원도 안 해요. 수정도 직접 바로 하니까 오히려 더 편하고, 비용도 훨씬 적게 들어요."</p>
+        <div class="pc-testi-author">
+          <div class="pc-testi-avatar">🌸</div>
+          <div>
+            <p class="pc-testi-name">김OO 대표님</p>
+            <p class="pc-testi-biz">경기 수원 꽃집·플라워</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="pc-section" id="pc-faq">
+  <div class="pc-section-inner">
+    <p class="pc-eyebrow">자주 묻는 질문</p>
+    <h2 class="pc-h2">궁금한 게 있으신가요?</h2>
+    <div class="pc-faq-list" id="pc-faq-list">
+      <div class="pc-faq-item">
+        <button class="pc-faq-q" aria-expanded="false">
+          무료 체험 끝나면 자동 결제되나요?
+          <svg class="pc-faq-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="pc-faq-a"><div class="pc-faq-a-inner">아니요. 7일 무료 체험 종료 후 자동으로 결제되지 않아요. 직접 구독을 선택하셔야 전환됩니다. 카드 등록도 체험 시작 시에는 필요 없어요.</div></div>
+      </div>
+      <div class="pc-faq-item">
+        <button class="pc-faq-q" aria-expanded="false">
+          루미가 쓴 티 안 나나요?
+          <svg class="pc-faq-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="pc-faq-a"><div class="pc-faq-a-inner">lumi는 우리 매장 업종·분위기·말투를 학습해서 캡션을 써요. 쓸수록 내 가게 느낌에 가까워지고, 생성 후 직접 수정도 자유롭게 가능해요.</div></div>
+      </div>
+      <div class="pc-faq-item">
+        <button class="pc-faq-q" aria-expanded="false">
+          인스타그램 비밀번호를 넘겨야 하나요?
+          <svg class="pc-faq-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="pc-faq-a"><div class="pc-faq-a-inner">비밀번호는 전혀 필요 없어요. Meta 공식 API를 통해 안전하게 연동되고, 설정에서 원클릭으로 연동 해제도 가능해요.</div></div>
+      </div>
+      <div class="pc-faq-item">
+        <button class="pc-faq-q" aria-expanded="false">
+          ChatGPT로 직접 쓰면 안 되나요?
+          <svg class="pc-faq-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="pc-faq-a"><div class="pc-faq-a-inner">lumi는 사진·영상을 자동 분석하고, 트렌드 해시태그를 달고, 인스타에 바로 게시까지 해줘요. ChatGPT는 사진 분석·게시 연동이 없어서 복사·붙여넣기만 15분 이상 걸려요.</div></div>
+      </div>
+      <div class="pc-faq-item">
+        <button class="pc-faq-q" aria-expanded="false">
+          내 사진·영상이 다른 곳에 쓰이진 않나요?
+          <svg class="pc-faq-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="pc-faq-a"><div class="pc-faq-a-inner">절대 아닙니다. 업로드하신 사진·영상은 캡션 생성에만 사용되고, 외부 AI 학습이나 다른 고객에게 절대 사용되지 않아요. 언제든 삭제 요청도 가능해요.</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SUPPORT -->
+<section class="pc-section" id="pc-support">
+  <div class="pc-section-inner">
+    <div class="pc-support-inner">
+      <p class="pc-eyebrow">고객센터</p>
+      <h2 class="pc-h2" style="text-align:center;">도움이 필요하세요?</h2>
+      <p class="pc-body" style="text-align:center;max-width:100%;">카카오 채널로 빠르게 답변드려요. 평일 오전 10시 ~ 오후 6시.</p>
+      <div class="pc-support-links">
+        <a class="pc-hero-cta-btn" href="https://pf.kakao.com/_lumi" target="_blank" rel="noopener" style="text-decoration:none;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3C6.48 3 2 6.48 2 10.8c0 2.8 1.86 5.26 4.64 6.64l-1.18 4.32c-.1.38.3.68.64.48L11.2 19c.26.02.53.04.8.04 5.52 0 10-3.48 10-7.8S17.52 3 12 3z"/></svg>
+          카카오 채널 문의
+        </a>
+        <a class="pn-btn-ghost" href="/support.html" style="text-decoration:none;">자주 묻는 질문 전체 보기</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PC FOOTER -->
+<footer id="pc-footer">
+  <div class="pc-footer-inner">
+    <div class="pc-footer-top">
+      <div class="pc-footer-brand">
+        <a class="pc-footer-logo" href="/">lumi</a>
+        <p class="pc-footer-tagline">소상공인 인스타그램 자동화.<br>올릴 때마다 우리 가게답게.</p>
+      </div>
+      <div class="pc-footer-links">
+        <div class="pc-footer-col">
+          <p class="pc-footer-col-title">서비스</p>
+          <ul>
+            <li><a href="#pc-features">기능 소개</a></li>
+            <li><a href="#pc-pricing">요금제</a></li>
+            <li><a href="/trends">트렌드 허브</a></li>
+            <li><a href="/guide.html">이용 가이드</a></li>
+          </ul>
+        </div>
+        <div class="pc-footer-col">
+          <p class="pc-footer-col-title">법적 정보</p>
+          <ul>
+            <li><a href="/terms.html">이용약관</a></li>
+            <li><a href="/privacy.html">개인정보처리방침</a></li>
+            <li><a href="/refund.html">환불정책</a></li>
+          </ul>
+        </div>
+        <div class="pc-footer-col">
+          <p class="pc-footer-col-title">고객지원</p>
+          <ul>
+            <li><a href="/support.html">고객센터</a></li>
+            <li><a href="https://pf.kakao.com/_lumi" target="_blank" rel="noopener">카카오 채널</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <p class="pc-footer-biz">
+      루미 · 대표: 김현 · 사업자등록번호: 등록 준비 중 · 통신판매업신고: 준비 중<br>
+      이메일: <a href="mailto:support@lumi.it.kr">support@lumi.it.kr</a> ·
+      <a href="/terms.html">이용약관</a> · <a href="/privacy.html">개인정보처리방침</a> · <a href="/refund.html">환불정책</a>
+    </p>
+  </div>
+</footer>
+
+<script>
+(function() {
+  // PC 랜딩: 데스크톱 + 비로그인일 때만 표시
+  function initPcLanding() {
+    var isDesktop = window.innerWidth >= 1024;
+    var isLoggedIn = !!(localStorage.getItem('lumi_token') || localStorage.getItem('lumi_user'));
+    var el = document.getElementById('pc-landing');
+    if (!el) return;
+    if (isDesktop && !isLoggedIn) {
+      el.style.display = 'block';
+      // 기존 nav 숨김 (PC 랜딩의 sticky nav로 대체)
+      var mainNav = document.querySelector('body > nav');
+      if (mainNav) mainNav.style.display = 'none';
+      loadTrendPreview();
+      initFaqAccordion();
+      initPcNavSmooth();
+    } else {
+      el.style.display = 'none';
+    }
+  }
+
+  function loadTrendPreview() {
+    var grid = document.getElementById('pc-trends-grid');
+    if (!grid) return;
+    // 데모 데이터로 프리뷰 (카페 업종 상위 5개)
+    var preview = [
+      { keyword: '말차라떼', rank: 1, velocityPct: 340, signalTier: 'real' },
+      { keyword: '오트밀크', rank: 2, velocityPct: 215, signalTier: 'real' },
+      { keyword: '쑥크림라떼', rank: 3, velocityPct: 189, signalTier: 'real' },
+      { keyword: '구름케이크', rank: 4, velocityPct: 156, signalTier: 'real' },
+      { keyword: '복숭아에이드', rank: 5, velocityPct: 134, signalTier: 'real' },
+    ];
+    // 실 API 호출 시도 (실패 시 데모)
+    fetch('/api/get-trends?category=cafe&scope=domestic')
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        var kws = (data && data.keywords) ? data.keywords.slice(0,5) : preview;
+        renderTrendCards(grid, kws);
+      })
+      .catch(function(){ renderTrendCards(grid, preview); });
+  }
+
+  function renderTrendCards(grid, kws) {
+    grid.innerHTML = kws.map(function(kw, i) {
+      var vel = kw.velocityPct;
+      var isHot = vel && vel > 100;
+      return '<div class="pc-trend-card">'
+        + '<p class="pc-trend-rank">#' + (kw.rank || (i+1)) + ' · 카페·음료</p>'
+        + '<p class="pc-trend-kw">' + kw.keyword + '</p>'
+        + (vel ? '<p class="pc-trend-vel' + (isHot ? ' hot' : '') + '">+' + Math.round(vel) + '% 급상승</p>' : '')
+        + '</div>';
+    }).join('');
+  }
+
+  function initFaqAccordion() {
+    var items = document.querySelectorAll('#pc-faq-list .pc-faq-item');
+    items.forEach(function(item) {
+      var btn = item.querySelector('.pc-faq-q');
+      if (!btn) return;
+      btn.addEventListener('click', function() {
+        var isOpen = item.classList.contains('open');
+        // close all
+        items.forEach(function(it) { it.classList.remove('open'); it.querySelector('.pc-faq-q').setAttribute('aria-expanded','false'); });
+        if (!isOpen) {
+          item.classList.add('open');
+          btn.setAttribute('aria-expanded','true');
+        }
+      });
+    });
+  }
+
+  function initPcNavSmooth() {
+    document.querySelectorAll('#pc-sticky-nav .pn-link').forEach(function(a) {
+      a.addEventListener('click', function(e) {
+        var href = a.getAttribute('href');
+        if (href && href.startsWith('#')) {
+          e.preventDefault();
+          var target = document.querySelector(href);
+          if (target) target.scrollIntoView({ behavior: 'smooth' });
+        }
+      });
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initPcLanding);
+  } else {
+    initPcLanding();
+  }
+
+  // 로그인 상태 변경 시 재평가 (Supabase 이벤트 대기)
+  var _wireAttempts = 0;
+  function wirePcLandingAuth() {
+    if (window.lumiSupa && lumiSupa.auth && typeof lumiSupa.auth.onAuthStateChange === 'function') {
+      lumiSupa.auth.onAuthStateChange(function(event, session) {
+        if (event === 'SIGNED_IN' && session) {
+          var el = document.getElementById('pc-landing');
+          if (el) el.style.display = 'none';
+        }
+      });
+    } else if (_wireAttempts++ < 20) {
+      setTimeout(wirePcLandingAuth, 400);
+    }
+  }
+  wirePcLandingAuth();
+})();
+</script>
+</div>
+
 <!-- ========== MOBILE APP VIEW (Phase A, logged-out) ==========
      Visible only at max-width:767px via /css/design-v2.css.
      Desktop bento below is completely untouched. -->
