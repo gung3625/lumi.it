@@ -17,6 +17,13 @@
 [functions."admin-apply-regions-migration"]
   included_files = ["migrations/**"]
 
+[functions."admin-apply-subcats-migration"]
+  included_files = ["migrations/**"]
+
+# Phase 3 Long-tail 서브카테고리 주간 분류 cron (월요일 KST 04:00 = UTC 일요일 19:00)
+[functions."scheduled-trends-longtail-background"]
+  schedule = "0 19 * * 0"
+
 # 보안 헤더
 [[headers]]
   for = "/*"
@@ -137,6 +144,16 @@
 [[redirects]]
   from = "/api/admin-apply-regions-migration"
   to = "/.netlify/functions/admin-apply-regions-migration"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin-apply-subcats-migration"
+  to = "/.netlify/functions/admin-apply-subcats-migration"
+  status = 200
+
+[[redirects]]
+  from = "/api/scheduled-trends-longtail"
+  to = "/.netlify/functions/scheduled-trends-longtail-background"
   status = 200
 
 [[redirects]]

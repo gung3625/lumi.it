@@ -172,17 +172,23 @@ function getSeasonInfo() {
 // ─── v2: trend_keywords 조회 후 keywords 배열에 merge ───
 // 조회 실패 시 기존 응답 그대로 (silent fallback)
 // axisFilter: 'menu'|'interior'|'goods'|'experience'|'general'|null (null이면 모든 axis)
-async function mergeV2Fields(supa, keywords, category, collectedDate, axisFilter, region = 'all') {
+// subcatFilter: 서브카테고리 키 (예: 'cafe-specialty') 또는 null
+async function mergeV2Fields(supa, keywords, category, collectedDate, axisFilter, region = 'all', subcatFilter = null) {
   try {
     const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
     let query = supa
       .from('trend_keywords')
-      .select('keyword, cross_source_count, weighted_score, velocity_pct, signal_tier, is_new, axis, narrative, origin, raw_mentions')
+      .select('keyword, cross_source_count, weighted_score, velocity_pct, signal_tier, is_new, axis, narrative, origin, raw_mentions, sub_category')
       .eq('category', category)
       .eq('region', region)
       .gte('collected_date', cutoff)
       .order('collected_date', { ascending: false });
+
+    // Phase 3: 서브카테고리 필터
+    if (subcatFilter) {
+      query = query.eq('sub_category', subcatFilter);
+    }
 
     // Phase 2: axis 필터 적용
     // 'domestic'은 레거시값이므로 general과 동일 취급하여 모두 포함
@@ -241,6 +247,7 @@ async function mergeV2Fields(supa, keywords, category, collectedDate, axisFilter
         saturationTotal: v2.raw_mentions?.saturation_total ?? undefined,
         saturationLevel: v2.raw_mentions?.saturation_level ?? undefined,
         isNewConfidence: v2.raw_mentions?.is_new_confidence ?? undefined,
+        subCategory: v2.sub_category ?? null,
       } : kw;
       if (fb) {
         base.likes = fb.likes;
@@ -293,6 +300,8 @@ exports.handler = async (event) => {
     };
   }
   const region = regionParam;
+  // Phase 3: 서브카테고리 필터 (예: cafe-specialty, food-japanese)
+  const subcatParam = (params.get('subcat') || '').trim() || null;
   // hair/nail/health/kids/shop 포함 — 프론트 TREND_CATS와 1:1 대응
   const knownCategories = ['cafe', 'food', 'beauty', 'hair', 'nail', 'flower', 'fashion', 'fitness', 'health', 'pet', 'kids', 'shop', 'all'];
 
@@ -484,7 +493,8 @@ exports.handler = async (event) => {
 
         // v2 필드 merge (실패 시 silent fallback — filteredKeywords 그대로)
         // Phase 2: axisFilter 전달 + axis 필터링 (axisFilter 있으면 해당 axis 키워드만)
-        let mergedKeywords = await mergeV2Fields(supa, filteredKeywords, storeKey, collectedDate, axisFilter, region);
+        // Phase 3: subcatParam 전달 (서브카테고리 필터)
+        let mergedKeywords = await mergeV2Fields(supa, filteredKeywords, storeKey, collectedDate, axisFilter, region, subcatParam);
 
         // axis 필터가 있을 경우 응답 키워드를 해당 axis만으로 좁힘
         if (axisFilter) {
