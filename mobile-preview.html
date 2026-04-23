@@ -1337,15 +1337,15 @@ body.dark-mode .dark-fab .moon { display: none; }
     <!-- ═════════ 트렌드 (TRENDS) ═════════ -->
     <section class="screen" data-screen="trends">
       <div class="cat-chips">
-        <button class="cat-chip active">☕ 카페·음료</button>
-        <button class="cat-chip">🍽 음식·외식</button>
-        <button class="cat-chip">💄 뷰티</button>
-        <button class="cat-chip">💇 헤어</button>
-        <button class="cat-chip">💅 네일</button>
-        <button class="cat-chip">💐 꽃집</button>
-        <button class="cat-chip">👗 패션</button>
-        <button class="cat-chip">🏋️ 피트니스</button>
-        <button class="cat-chip">🐾 반려동물</button>
+        <button class="cat-chip active" data-cat="cafe">카페·음료</button>
+        <button class="cat-chip" data-cat="food">음식·외식</button>
+        <button class="cat-chip" data-cat="beauty">뷰티</button>
+        <button class="cat-chip" data-cat="hair">헤어</button>
+        <button class="cat-chip" data-cat="nail">네일</button>
+        <button class="cat-chip" data-cat="flower">꽃집</button>
+        <button class="cat-chip" data-cat="fashion">패션</button>
+        <button class="cat-chip" data-cat="fitness">피트니스</button>
+        <button class="cat-chip" data-cat="pet">반려동물</button>
       </div>
       <div class="kw-list" id="kw-list">
         <!-- 동적 -->
@@ -1512,51 +1512,72 @@ function openPicker(kind) {
 }
 
 // 카테고리 칩 (트렌드 탭)
+let currentCat = 'cafe';
 document.querySelectorAll('.cat-chip').forEach(chip => {
   chip.addEventListener('click', () => {
     document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'));
     chip.classList.add('active');
-    renderKeywords(); // 추후 실 API 호출로 교체
+    currentCat = chip.dataset.cat || 'cafe';
+    fetchTrends(currentCat);
   });
 });
 
-// 더미 키워드 렌더 (나중에 /api/get-trends로 교체)
-function renderKeywords() {
+// 실 API 호출
+async function fetchTrends(category) {
   const list = document.getElementById('kw-list');
   if (!list) return;
-  const mock = [
-    { rank: 1, kw: '말차라떼', sub: '카페·음료', vel: '+340%', trend: 'up' },
-    { rank: 2, kw: '오트밀크', sub: '카페·음료', vel: '+215%', trend: 'up' },
-    { rank: 3, kw: '쑥크림라떼', sub: '카페·음료 · NEW', vel: '+189%', trend: 'up' },
-    { rank: 4, kw: '구름케이크', sub: '디저트 · NEW', vel: '+156%', trend: 'up' },
-    { rank: 5, kw: '복숭아에이드', sub: '시즌 음료', vel: '+134%', trend: 'up' },
-    { rank: 6, kw: '핸드드립', sub: '카페·음료', vel: '+8%', trend: 'up' },
-    { rank: 7, kw: '플랫화이트', sub: '카페·음료', vel: '+5%', trend: 'up' },
-    { rank: 8, kw: '콜드브루', sub: '시즌 음료', vel: '-4%', trend: 'down' },
-    { rank: 9, kw: '감성소품', sub: '인테리어', vel: '-', trend: 'flat' },
-    { rank: 10, kw: '테라스석', sub: '공간', vel: '-', trend: 'flat' },
-  ];
-  list.innerHTML = mock.map(k => `
-    <div class="kw-row">
-      <div class="kw-rank ${k.rank === 1 ? 'gold' : k.rank === 2 ? 'silver' : k.rank === 3 ? 'bronze' : ''}">${k.rank}</div>
-      <div class="kw-info">
-        <b>${k.kw}</b>
-        <span>${k.sub}</span>
-      </div>
-      <div class="kw-vel ${k.trend}">${k.vel}</div>
-    </div>
-  `).join('');
+  list.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--ink-3);font-size:13px;">루미가 수집 중이에요 ☁</div>';
+  try {
+    const res = await fetch(`/api/get-trends?category=${category}&scope=domestic`);
+    const data = await res.json();
+    const kws = (data.keywords || []).slice(0, 10);
+    if (kws.length === 0) {
+      list.innerHTML = '<div style="text-align:center;padding:40px 16px;color:var(--ink-3);font-size:13px;line-height:1.6;">아직 수집 중이에요<br><span style="font-size:11px;">내일 자정 업데이트 후 다시 확인해주세요 ☁</span></div>';
+      return;
+    }
+    list.innerHTML = kws.map((k, i) => {
+      const rank = k.rank || (i + 1);
+      const rankClass = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : '';
+      const vel = k.velocityPct;
+      const velTrend = vel == null ? 'flat' : (vel > 0 ? 'up' : vel < 0 ? 'down' : 'flat');
+      const velStr = vel == null ? '-' : (vel > 0 ? `+${Math.round(vel)}%` : `${Math.round(vel)}%`);
+      const isNew = k.isNew && k.isNewConfidence === 'high';
+      const sub = k.signalTier === 'real' ? `신호 강함${isNew ? ' · NEW' : ''}` : (isNew ? 'NEW' : '관찰 중');
+      return `
+        <div class="kw-row" onclick="pickKeyword('${(k.keyword||'').replace(/'/g,'')}')">
+          <div class="kw-rank ${rankClass}">${rank}</div>
+          <div class="kw-info">
+            <b>${escapeHtml(k.keyword || '')}</b>
+            <span>${sub}</span>
+          </div>
+          <div class="kw-vel ${velTrend}">${velStr}</div>
+        </div>`;
+    }).join('');
+  } catch (e) {
+    list.innerHTML = `<div style="text-align:center;padding:40px 16px;color:var(--ink-3);font-size:13px;">불러올 수 없어요<br><button onclick="fetchTrends('${category}')" style="margin-top:12px;color:var(--pink);font-weight:700;">다시 시도</button></div>`;
+  }
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function pickKeyword(kw) {
+  // 트렌드 → 올리기 탭 연결 (프리뷰 — 실 구현은 캡션 생성 플로우에 키워드 주입)
+  if (!kw) return;
+  goTab('upload');
+  setTimeout(() => alert(`"${kw}" 키워드로 캡션 만들기 (프리뷰)`), 300);
 }
 
 // 초기 렌더
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    renderKeywords();
-    if (window.lucide) lucide.createIcons();
-  });
-} else {
-  renderKeywords();
+function init() {
+  fetchTrends('cafe');
   if (window.lucide) lucide.createIcons();
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
 }
 </script>
 </body>
