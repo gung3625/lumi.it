@@ -41,8 +41,9 @@ exports.handler = async (event) => {
     const direct = new URL(process.env.SUPABASE_DB_URL);
     const ref = direct.hostname.replace(/^db\./, '').split('.')[0];
     // 검증된 지역 우선 (이전 성공 로그 = aws-1-ap-northeast-2)
-    // 특수문자 포함 password URL 인코딩
-    const pwd = encodeURIComponent(direct.password);
+    // password는 URL에서 이미 decoded 상태이지만 pg client가 재파싱하므로 raw 사용
+    // (encodeURIComponent 하면 이중 인코딩되어 auth 실패)
+    const pwd = direct.password;
     const attempts = [
       ['aws-1-ap-northeast-2', `postgresql://postgres.${ref}:${pwd}@aws-1-ap-northeast-2.pooler.supabase.com:5432${direct.pathname}`],
       // Fallback (프로젝트 이전 등 예외 케이스)
