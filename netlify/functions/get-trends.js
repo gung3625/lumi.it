@@ -251,10 +251,8 @@ async function mergeV2Fields(supa, keywords, category, collectedDate, axisFilter
         relatedKeywords: v2.related_keywords || [],
         sources: v2.sources || {},
       } : kw;
-      if (fb) {
-        base.likes = fb.likes;
-        base.dislikes = fb.dislikes;
-      }
+      base.likes = fb ? fb.likes : 0;
+      base.dislikes = fb ? fb.dislikes : 0;
       return base;
     });
   } catch(e) {
