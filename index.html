@@ -2637,6 +2637,29 @@ body.dark-mode .pc-feat-desc { color: #A8B3C0; }
   background: #fff;
 }
 body.dark-mode #pc-trends { background: #000; }
+.pc-trends-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #FF3B30;
+  letter-spacing: 0.5px;
+}
+.pc-trends-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #FF3B30;
+  box-shadow: 0 0 0 0 rgba(255,59,48,0.7);
+  animation: pcLivePulse 1.6s ease-out infinite;
+}
+@keyframes pcLivePulse {
+  0%   { box-shadow: 0 0 0 0    rgba(255,59,48,0.7); }
+  70%  { box-shadow: 0 0 0 10px rgba(255,59,48,0);   }
+  100% { box-shadow: 0 0 0 0    rgba(255,59,48,0);   }
+}
 .pc-trends-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -2652,13 +2675,42 @@ body.dark-mode #pc-trends { background: #000; }
   flex-direction: column;
   gap: 6px;
   position: relative;
+  overflow: hidden;
+  transition: transform 0.35s cubic-bezier(.2,.7,.2,1), background-color 0.3s;
+}
+.pc-trend-card.flash {
+  background: #fff6f9;
+  transform: translateY(-3px);
 }
 body.dark-mode .pc-trend-card { background: #1A1A1C; }
+body.dark-mode .pc-trend-card.flash { background: #2a1820; }
+.pc-trend-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(200,80,122,0.08), transparent);
+  animation: pcTrendSheen 3.4s ease-in-out infinite;
+}
+@keyframes pcTrendSheen {
+  0%   { left: -60%; }
+  60%  { left: 120%; }
+  100% { left: 120%; }
+}
 .pc-trend-rank {
   font-size: 11px;
   font-weight: 700;
   color: #8B95A1;
   letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pc-trend-rank-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #00C37B;
+  animation: pcLivePulse 2s ease-out infinite;
 }
 .pc-trend-kw {
   font-size: 18px;
@@ -2671,8 +2723,32 @@ body.dark-mode .pc-trend-kw { color: #f5f5f7; }
   font-size: 12px;
   font-weight: 700;
   color: #00C37B;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 .pc-trend-vel.hot { color: #FF3B30; }
+.pc-trend-vel-arrow {
+  display: inline-block;
+  animation: pcTrendArrow 1.4s ease-in-out infinite;
+}
+@keyframes pcTrendArrow {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-2px); }
+}
+.pc-trend-bar {
+  height: 3px;
+  margin-top: 4px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #C8507A, #FF3B30);
+  transform-origin: left center;
+  animation: pcTrendBar 2.8s ease-in-out infinite;
+}
+@keyframes pcTrendBar {
+  0%   { transform: scaleX(0.2); opacity: 0.6; }
+  50%  { transform: scaleX(1);   opacity: 1;   }
+  100% { transform: scaleX(0.2); opacity: 0.6; }
+}
 .pc-trends-lock {
   position: absolute;
   inset: 0;
@@ -2690,13 +2766,24 @@ body.dark-mode .pc-trends-lock {
   text-align: center;
 }
 .pc-trends-lock-cta p {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
   color: #0d1117;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   word-break: keep-all;
 }
+.pc-trends-lock-cta p .pc-free-hi {
+  color: #C8507A;
+}
+.pc-trends-lock-cta .pc-free-mini {
+  font-size: 12px;
+  font-weight: 500;
+  color: #8B95A1;
+  margin-top: 10px;
+  margin-bottom: 0;
+}
 body.dark-mode .pc-trends-lock-cta p { color: #f5f5f7; }
+body.dark-mode .pc-trends-lock-cta .pc-free-mini { color: #A8B3C0; }
 
 /* ── PRICING ── */
 #pc-pricing {
@@ -3136,7 +3223,8 @@ body.dark-mode .pc-footer-col ul li a { color: #A8B3C0; }
   <div class="pc-section-inner">
     <p class="pc-eyebrow">실시간 트렌드</p>
     <h2 class="pc-h2">지금 이 업종에서<br>뭐가 뜨고 있나요?</h2>
-    <p class="pc-body">카페·음식점·뷰티샵 등 업종별 인기 키워드를 실시간으로 확인하세요. 로그인하면 전체 데이터와 상세 분석을 볼 수 있어요.</p>
+    <p class="pc-body">카페·음식점·뷰티샵 등 9개 업종 트렌드가 매일 자동으로 업데이트돼요.</p>
+    <p class="pc-trends-live"><span class="pc-trends-live-dot"></span>LIVE · 방금 업데이트</p>
     <div id="pc-trends-container" style="position:relative;">
       <div class="pc-trends-grid" id="pc-trends-grid">
         <!-- JS로 채움 -->
@@ -3148,10 +3236,11 @@ body.dark-mode .pc-footer-col ul li a { color: #A8B3C0; }
       </div>
       <div class="pc-trends-lock" id="pc-trends-lock">
         <div class="pc-trends-lock-cta">
-          <p>전체 트렌드는 로그인 후 무료로 확인하세요</p>
+          <p><span class="pc-free-hi">회원가입만 하면</span> 9개 업종 전체 트렌드 무료</p>
           <button class="pc-hero-cta-btn" onclick="openSignupGrid()" style="margin:0 auto;">
-            무료로 전체 보기 →
+            무료 회원가입하고 전체 보기 →
           </button>
+          <p class="pc-free-mini">30초 가입 · 카드 등록 없음 · 매일 자동 업데이트</p>
         </div>
       </div>
     </div>
@@ -3366,15 +3455,19 @@ body.dark-mode .pc-footer-col ul li a { color: #A8B3C0; }
     }
   }
 
+  var _pcTrendData = [];
+  var _pcTrendTickTimer = null;
+  var _pcTrendShuffleTimer = null;
+
   function loadTrendPreview() {
     var grid = document.getElementById('pc-trends-grid');
     if (!grid) return;
     // 데모 데이터로 프리뷰 (카페 업종 상위 5개)
     var preview = [
-      { keyword: '말차라떼', rank: 1, velocityPct: 340, signalTier: 'real' },
-      { keyword: '오트밀크', rank: 2, velocityPct: 215, signalTier: 'real' },
-      { keyword: '쑥크림라떼', rank: 3, velocityPct: 189, signalTier: 'real' },
-      { keyword: '구름케이크', rank: 4, velocityPct: 156, signalTier: 'real' },
+      { keyword: '말차라떼',     rank: 1, velocityPct: 340, signalTier: 'real' },
+      { keyword: '오트밀크',     rank: 2, velocityPct: 215, signalTier: 'real' },
+      { keyword: '쑥크림라떼',   rank: 3, velocityPct: 189, signalTier: 'real' },
+      { keyword: '구름케이크',   rank: 4, velocityPct: 156, signalTier: 'real' },
       { keyword: '복숭아에이드', rank: 5, velocityPct: 134, signalTier: 'real' },
     ];
     // 실 API 호출 시도 (실패 시 데모)
@@ -3382,21 +3475,76 @@ body.dark-mode .pc-footer-col ul li a { color: #A8B3C0; }
       .then(function(r){ return r.json(); })
       .then(function(data){
         var kws = (data && data.keywords) ? data.keywords.slice(0,5) : preview;
-        renderTrendCards(grid, kws);
+        startTrendLivePreview(grid, kws);
       })
-      .catch(function(){ renderTrendCards(grid, preview); });
+      .catch(function(){ startTrendLivePreview(grid, preview); });
+  }
+
+  function startTrendLivePreview(grid, kws) {
+    // 깊은 복사 + velocity 기본값
+    _pcTrendData = kws.slice(0, 5).map(function(kw, i) {
+      return {
+        keyword: kw.keyword,
+        rank: kw.rank || (i+1),
+        velocityPct: Math.round(kw.velocityPct || (100 + Math.random()*200)),
+      };
+    });
+    renderTrendCards(grid, _pcTrendData);
+    if (_pcTrendTickTimer) clearInterval(_pcTrendTickTimer);
+    if (_pcTrendShuffleTimer) clearInterval(_pcTrendShuffleTimer);
+    // velocity 미세 변동 (2초마다 ±3%)
+    _pcTrendTickTimer = setInterval(function() {
+      _pcTrendData.forEach(function(k) {
+        var delta = (Math.random() * 6 - 3);
+        k.velocityPct = Math.max(50, Math.round(k.velocityPct + delta));
+      });
+      updateTrendVelocities(grid);
+    }, 2000);
+    // 순위 shuffle (6초마다 두 개 스왑 + flash)
+    _pcTrendShuffleTimer = setInterval(function() {
+      if (_pcTrendData.length < 2) return;
+      var a = Math.floor(Math.random() * _pcTrendData.length);
+      var b = Math.floor(Math.random() * _pcTrendData.length);
+      if (a === b) b = (b + 1) % _pcTrendData.length;
+      var tmpVel = _pcTrendData[a].velocityPct;
+      _pcTrendData[a].velocityPct = _pcTrendData[b].velocityPct + 2;
+      _pcTrendData[b].velocityPct = tmpVel;
+      _pcTrendData.sort(function(x, y) { return y.velocityPct - x.velocityPct; });
+      _pcTrendData.forEach(function(k, i) { k.rank = i + 1; });
+      renderTrendCards(grid, _pcTrendData);
+      var cards = grid.querySelectorAll('.pc-trend-card');
+      [a, b].forEach(function(idx) {
+        var el = cards[Math.min(idx, cards.length - 1)];
+        if (!el) return;
+        el.classList.add('flash');
+        setTimeout(function(){ el.classList.remove('flash'); }, 700);
+      });
+    }, 6000);
   }
 
   function renderTrendCards(grid, kws) {
     grid.innerHTML = kws.map(function(kw, i) {
       var vel = kw.velocityPct;
-      var isHot = vel && vel > 100;
-      return '<div class="pc-trend-card">'
-        + '<p class="pc-trend-rank">#' + (kw.rank || (i+1)) + ' · 카페·음료</p>'
+      var isHot = vel && vel > 200;
+      return '<div class="pc-trend-card" data-idx="' + i + '">'
+        + '<p class="pc-trend-rank"><span class="pc-trend-rank-dot"></span>#' + (kw.rank || (i+1)) + ' · 카페·음료</p>'
         + '<p class="pc-trend-kw">' + kw.keyword + '</p>'
-        + (vel ? '<p class="pc-trend-vel' + (isHot ? ' hot' : '') + '">+' + Math.round(vel) + '% 급상승</p>' : '')
+        + (vel ? '<p class="pc-trend-vel' + (isHot ? ' hot' : '') + '"><span class="pc-trend-vel-arrow">▲</span><span class="pc-trend-vel-num">' + Math.round(vel) + '</span>% 급상승</p>' : '')
+        + '<div class="pc-trend-bar"></div>'
         + '</div>';
     }).join('');
+  }
+
+  function updateTrendVelocities(grid) {
+    var cards = grid.querySelectorAll('.pc-trend-card');
+    _pcTrendData.forEach(function(k, i) {
+      var el = cards[i];
+      if (!el) return;
+      var velEl = el.querySelector('.pc-trend-vel-num');
+      if (velEl) velEl.textContent = Math.round(k.velocityPct);
+      var velP = el.querySelector('.pc-trend-vel');
+      if (velP) velP.classList.toggle('hot', k.velocityPct > 200);
+    });
   }
 
   function initFaqAccordion() {
