@@ -24,6 +24,13 @@
 [functions."scheduled-trends-longtail-background"]
   schedule = "0 19 * * 0"
 
+# Phase 4 임베딩 + 클러스터 cron (매주 화요일 KST 03:00 = UTC 월요일 18:00)
+[functions."scheduled-trends-embeddings-background"]
+  schedule = "0 18 * * 1"
+
+[functions."admin-apply-embeddings-migration"]
+  included_files = ["migrations/**"]
+
 # 보안 헤더
 [[headers]]
   for = "/*"
@@ -149,6 +156,16 @@
 [[redirects]]
   from = "/api/admin-apply-subcats-migration"
   to = "/.netlify/functions/admin-apply-subcats-migration"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin-apply-embeddings-migration"
+  to = "/.netlify/functions/admin-apply-embeddings-migration"
+  status = 200
+
+[[redirects]]
+  from = "/api/scheduled-trends-embeddings"
+  to = "/.netlify/functions/scheduled-trends-embeddings-background"
   status = 200
 
 [[redirects]]
