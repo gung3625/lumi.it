@@ -561,15 +561,18 @@ ${exampleStr}
 
 // ─────────────────────────────────────────────
 // Phase 2: narrative + origin 통합 GPT-4o 호출
-// 모든 키워드 배치 처리 (signal_tier 무관)
+// signal_tier === 'real' 키워드 배치 처리
 // ─────────────────────────────────────────────
 async function generateNarrativeAndOriginBatch({ keywords, category, rawTexts }) {
   // keywords: [{keyword, signalTier, ...}, ...]
   // rawTexts: 해당 카테고리 원시 텍스트 배열 (blogData + ytKR + igTexts 등)
   if (!keywords || keywords.length === 0) return {};
 
+  const realKeywords = keywords.filter(k => k.signalTier === 'real');
+  if (realKeywords.length === 0) return {};
+
   const contextSnippet = (rawTexts || []).slice(0, 30).join(' | ').slice(0, 2000);
-  const keywordList = keywords.map(k => k.keyword);
+  const keywordList = realKeywords.map(k => k.keyword);
 
   const prompt = `당신은 한국 소상공인 인스타그램 트렌드 분석 전문가입니다.
 아래 원시 텍스트를 참고해, 각 키워드가 "왜 지금 뜨는가"를 분석하세요.
@@ -1199,9 +1202,10 @@ exports.handler = runGuarded({
             const BATCH_SIZE = 5;
             const narrativeMap = {};
 
-            // 배치 분할 (모든 키워드 대상 — signal_tier 무관)
-            for (let i = 0; i < enrichedKeywords.length; i += BATCH_SIZE) {
-              const batch = enrichedKeywords.slice(i, i + BATCH_SIZE);
+            // 배치 분할 (real 키워드만 대상)
+            const realItems = enrichedKeywords.filter(k => k.signalTier === 'real');
+            for (let i = 0; i < realItems.length; i += BATCH_SIZE) {
+              const batch = realItems.slice(i, i + BATCH_SIZE);
               const batchResult = await generateNarrativeAndOriginBatch({
                 keywords: batch,
                 category,
