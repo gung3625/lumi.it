@@ -21,9 +21,12 @@ const COMMUNITY_QUERIES = {
   pet: '맘카페 더쿠 등에서 최근 화제 중인 반려동물 용품·서비스 트렌드 키워드 10개',
 };
 
-async function callGPTCommunitySearch(query) {
+async function callGPTCommunitySearch(category, query) {
   const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return null;
+  if (!apiKey) {
+    console.error('[community] OPENAI_API_KEY 없음');
+    return null;
+  }
 
   const prompt = `${query}
 
@@ -41,10 +44,19 @@ JSON 배열로만 응답하세요. 각 항목:
 - source_url은 검색된 실제 URL이어야 함
 - excerpt는 원문에서 직접 인용 (요약 금지)
 - 명확한 트렌드 근거 없으면 빈 배열 반환
-- temperature 낮춤 처리됨
 - 설명·마크다운 없이 JSON 배열만 출력`;
 
+  console.log(`[community] ${category} API 호출 시작 (model: gpt-4o-mini-search-preview)`);
+
   return new Promise((resolve) => {
+    const payload = JSON.stringify({
+      model: 'gpt-4o-mini-search-preview',
+      input: prompt,
+      tools: [{ type: 'web_search_preview' }],
+      max_output_tokens: 2000,
+      store: false,
+    });
+
     const req = https.request({
       hostname: 'api.openai.com',
       path: '/v1/responses',
@@ -52,43 +64,64 @@ JSON 배열로만 응답하세요. 각 항목:
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
+        'Content-Length': Buffer.byteLength(payload),
       },
     }, (res) => {
       let body = '';
       res.on('data', c => body += c);
       res.on('end', () => {
+        console.log(`[community] ${category} 응답 status:`, res.statusCode);
+        console.log(`[community] ${category} 응답 body 일부:`, body.slice(0, 500));
         try {
           const data = JSON.parse(body);
-          let content = data.output_text || '';
-          if (!content && Array.isArray(data.output)) {
+
+          // Responses API 구조: output[] 배열에서 type==="message" 항목의 content[0].text 추출
+          let content = '';
+          if (Array.isArray(data.output)) {
             for (const item of data.output) {
-              for (const part of (item?.content || [])) {
-                if (part?.text) content += part.text;
+              if (item?.type === 'message' && Array.isArray(item.content)) {
+                for (const part of item.content) {
+                  if (part?.type === 'output_text' && part?.text) content += part.text;
+                  else if (part?.text) content += part.text;
+                }
               }
             }
           }
+          // fallback: output_text 최상위 필드
+          if (!content && data.output_text) content = data.output_text;
+
+          console.log(`[community] ${category} 추출된 content 길이:`, content.length);
+          if (!content) {
+            console.error(`[community] ${category} content 없음. data.error:`, JSON.stringify(data.error || data.message || ''));
+            return resolve([]);
+          }
+
           const clean = content.replace(/```json|```/g, '').trim();
           const match = clean.match(/\[[\s\S]*\]/);
-          if (!match) return resolve([]);
+          if (!match) {
+            console.error(`[community] ${category} JSON 배열 파싱 실패. content:`, content.slice(0, 200));
+            return resolve([]);
+          }
           const parsed = JSON.parse(match[0]);
-          resolve(Array.isArray(parsed) ? parsed : []);
+          const result = Array.isArray(parsed) ? parsed : [];
+          console.log(`[community] ${category} 파싱 결과 수:`, result.length);
+          resolve(result);
         } catch (e) {
-          console.error('[community-search] parse 실패:', e.message);
+          console.error(`[community] ${category} parse 실패:`, e.message, body.slice(0, 300));
           resolve([]);
         }
       });
     });
-    req.on('error', () => resolve([]));
-    req.setTimeout(60000, () => req.destroy());
+    req.on('error', (e) => {
+      console.error(`[community] ${category} 요청 오류:`, e.message);
+      resolve([]);
+    });
+    req.setTimeout(90000, () => {
+      console.error(`[community] ${category} 타임아웃`);
+      req.destroy();
+    });
 
-    req.write(JSON.stringify({
-      model: 'gpt-4o-mini',
-      input: prompt,
-      tools: [{ type: 'web_search_preview' }],
-      temperature: 0.1,
-      max_output_tokens: 2000,
-      store: false,
-    }));
+    req.write(payload);
     req.end();
   });
 }
@@ -125,7 +158,8 @@ exports.handler = runGuarded({
 
     const results = await Promise.all(CATEGORIES.map(async (category) => {
       try {
-        const rawItems = await callGPTCommunitySearch(COMMUNITY_QUERIES[category]);
+        console.log(`[community] ${category} 처리 시작`);
+        const rawItems = await callGPTCommunitySearch(category, COMMUNITY_QUERIES[category]);
 
         // URL 검증 제거 — 커뮤니티 사이트는 봇 차단으로 HEAD 항상 실패
         // confidence + keyword + excerpt 기반 필터만 적용
@@ -135,9 +169,10 @@ exports.handler = runGuarded({
           if (typeof item.confidence !== 'number' || item.confidence < 50) continue;
           validated.push(item);
         }
+        console.log(`[community] ${category} validated 수:`, validated.length);
 
         // Supabase 저장 (trends 테이블 재사용)
-        await supa.from('trends').upsert({
+        const { error: upsertError } = await supa.from('trends').upsert({
           category: `community:${category}`,
           keywords: {
             items: validated.slice(0, 10),
@@ -147,6 +182,11 @@ exports.handler = runGuarded({
           collected_at: new Date().toISOString(),
         }, { onConflict: 'category' });
 
+        if (upsertError) {
+          console.error(`[community] ${category} upsert 오류:`, upsertError.message);
+        } else {
+          console.log(`[community] ${category} upsert 성공`);
+        }
         console.log(`[community] ${category}: ${validated.length}개 저장`);
         return { category, count: validated.length };
       } catch (e) {
