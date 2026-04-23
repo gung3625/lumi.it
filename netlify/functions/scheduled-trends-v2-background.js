@@ -80,8 +80,38 @@ function isBadKeyword(raw) {
   return false;
 }
 
+// 한영 동의어 사전 (보수적, 확실한 것만)
+const EN_KO_ALIAS = {
+  'matcha': '말차',
+  'latte': '라떼',
+  'cafe': '카페',
+  'coffee': '커피',
+  'dessert': '디저트',
+  'cream': '크림',
+  'beauty': '뷰티',
+  'nail': '네일',
+  'hair': '헤어',
+  'fashion': '패션',
+};
+
+function applyAliases(text) {
+  let out = text;
+  for (const [en, ko] of Object.entries(EN_KO_ALIAS)) {
+    out = out.replace(new RegExp(en, 'g'), ko);
+  }
+  return out;
+}
+
 function normalize(raw) {
-  return (raw || '').replace(/^#/, '').replace(/\s+/g, '').trim();
+  if (!raw) return '';
+  const step1 = String(raw)
+    .normalize('NFC')                                        // Unicode 정규화
+    .replace(/^#/, '')                                       // 해시태그 #
+    .replace(/[\s\t\u3000]+/g, '')                          // 공백·전각공백 제거
+    .replace(/[_\-·・。、,()（）\[\]「」『』]/g, '')           // 특수문자 제거
+    .trim()
+    .toLowerCase();                                          // 소문자
+  return applyAliases(step1);
 }
 
 // ─────────────────────────────────────────────
@@ -482,7 +512,7 @@ async function fetchNaverBlogs(category) {
   const texts = [];
   for (const query of seeds) {
     try {
-      const path = `/v1/search/blog.json?query=${encodeURIComponent(query)}&display=15&sort=date`;
+      const path = `/v1/search/blog.json?query=${encodeURIComponent(query)}&display=100&sort=date`;
       const result = await httpsGetWithHeaders(
         'openapi.naver.com',
         path,
@@ -492,7 +522,11 @@ async function fetchNaverBlogs(category) {
       if (result.status !== 200) continue;
       const data = JSON.parse(result.body);
       if (!data.items) continue;
+      const blogCutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const blogCutoffStr = blogCutoff.toISOString().slice(0, 10).replace(/-/g, '');  // YYYYMMDD
       for (const item of data.items) {
+        const postdate = item.postdate || '';  // "20260401" 형식
+        if (postdate && postdate < blogCutoffStr) continue;  // 30일 이전 skip
         const title = (item.title || '').replace(/<[^>]+>/g, '').trim();
         const desc = (item.description || '').replace(/<[^>]+>/g, '').trim();
         if (title) texts.push(title);
@@ -561,9 +595,9 @@ async function fetchYouTube(category) {
 
   for (const query of seeds) {
     try {
-      const searchPath = `/youtube/v3/search?part=snippet&type=video&order=viewCount&maxResults=10` +
+      const searchPath = `/youtube/v3/search?part=snippet&type=video&order=viewCount&maxResults=50` +
         `&regionCode=KR` +
-        `&publishedAfter=${encodeURIComponent(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())}` +
+        `&publishedAfter=${encodeURIComponent(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())}` +
         `&q=${encodeURIComponent(query)}` +
         `&key=${apiKey}`;
       const result = await httpsGetRaw({
@@ -1030,17 +1064,21 @@ ${googleStr}
 // 크로스 소스 검증
 // keyword → Set<sourceType> 매핑
 // ─────────────────────────────────────────────
-function buildCrossSourceMap({ keyword, naverData, blogData, ytKR, igTexts, googleKR }) {
+function buildCrossSourceCount({ keyword, naverData, blogData, ytKR, igTexts, googleKR }) {
   const norm = normalize(keyword).toLowerCase();
-  const sources = new Set();
 
-  if ((naverData || []).some(t => normalize(t).toLowerCase().includes(norm))) sources.add('datalab');
-  if ((blogData || []).some(t => normalize(t).toLowerCase().includes(norm))) sources.add('blog');
-  if ((ytKR || []).some(t => normalize(t).toLowerCase().includes(norm))) sources.add('youtube');
-  if ((igTexts || []).some(t => normalize(t).toLowerCase().includes(norm))) sources.add('ig');
-  if ((googleKR || []).some(t => normalize(t).toLowerCase().includes(norm))) sources.add('google');
+  function countMatches(arr) {
+    if (!arr) return 0;
+    return arr.filter(t => normalize(t).toLowerCase().includes(norm)).length;
+  }
 
-  return sources;
+  return {
+    datalab: countMatches(naverData),
+    blog: countMatches(blogData),
+    youtube: countMatches(ytKR),
+    ig: countMatches(igTexts),
+    google: countMatches(googleKR),
+  };
 }
 
 // ─────────────────────────────────────────────
@@ -1103,24 +1141,14 @@ async function checkIsNew({ supa, keyword, category }) {
 // ─────────────────────────────────────────────
 // 가중치 스코어 계산
 // ─────────────────────────────────────────────
-function computeWeightedScore({ keyword, naverData, blogData, ytKR, igTexts, googleKR }) {
-  const norm = normalize(keyword).toLowerCase();
-
-  const countIn = (arr) => (arr || []).filter(t => normalize(t).toLowerCase().includes(norm)).length;
-
-  const dlCount = countIn(naverData);
-  const blogCount = countIn(blogData);
-  const ytCount = countIn(ytKR);
-  const igCount = countIn(igTexts);
-  const googleCount = countIn(googleKR);
-
-  return (
-    dlCount * SOURCE_WEIGHTS.datalab +
-    blogCount * SOURCE_WEIGHTS.blog +
-    ytCount * SOURCE_WEIGHTS.youtube +
-    igCount * SOURCE_WEIGHTS.ig +
-    googleCount * SOURCE_WEIGHTS.google
-  );
+function computeWeightedScore(counts) {
+  let score = 0;
+  for (const [src, cnt] of Object.entries(counts)) {
+    if (cnt > 0) {
+      score += (SOURCE_WEIGHTS[src] || 1) * Math.log(cnt + 1);  // log 스케일로 급증 완화
+    }
+  }
+  return Math.round(score * 10) / 10;
 }
 
 // ─────────────────────────────────────────────
@@ -1205,10 +1233,9 @@ async function saveScope({ supa, scope, category, tags, updatedAt, source }) {
 async function saveTrendKeywordsV2({ supa, category, enrichedKeywords, collectedDate }) {
   if (!enrichedKeywords || enrichedKeywords.length === 0) return;
 
-  // sources: Set → { naver_datalab: 1, blog: 1, ... } 형태로 변환해 jsonb 저장
+  // sources: counts object → { datalab: 3, blog: 15, ... } 형태로 jsonb 저장
   const rows = enrichedKeywords.map(item => {
-    const sourcesObj = {};
-    for (const s of (item.sourcesSet || [])) sourcesObj[s] = 1;
+    const sourcesObj = item.counts || {};
     // axis: Phase 2 분류 결과 (menu/interior/goods/experience) 또는 'general' 기본값
     // 'domestic'은 이 컬럼 의미와 충돌하므로 사용 안 함
     const axis = item.axis || 'general';
@@ -1366,7 +1393,7 @@ exports.handler = runGuarded({
         let enrichedKeywords = [];
         if (isV2Cat) {
           enrichedKeywords = await Promise.all(domesticTags.map(async (keyword, idx) => {
-            const sourcesSet = buildCrossSourceMap({
+            const counts = buildCrossSourceCount({
               keyword,
               naverData: r.naverData,
               blogData: r.blogData,
@@ -1375,16 +1402,9 @@ exports.handler = runGuarded({
               googleKR,
             });
 
-            const crossSourceCount = sourcesSet.size;
+            const crossSourceCount = Object.values(counts).filter(c => c > 0).length;
             const signalTier = crossSourceCount >= 2 ? 'real' : 'weak';
-            const weightedScore = computeWeightedScore({
-              keyword,
-              naverData: r.naverData,
-              blogData: r.blogData,
-              ytKR: r.ytKR,
-              igTexts: r.igTexts,
-              googleKR,
-            });
+            const weightedScore = computeWeightedScore(counts);
             const todayScore = 100 - idx * 5;
             const velocityPct = await computeVelocity({ supa, keyword, category, todayCount: todayScore });
             const isNew = await checkIsNew({ supa, keyword, category });
@@ -1397,7 +1417,7 @@ exports.handler = runGuarded({
               weightedScore,
               velocityPct,
               isNew,
-              sourcesSet,
+              counts,
               axis: 'general',  // Phase 2에서 덮어씌워짐
             };
           }));
