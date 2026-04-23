@@ -10,41 +10,74 @@ const https = require('https');
 const CATEGORIES = ['cafe', 'food', 'beauty', 'hair', 'nail', 'flower', 'fashion', 'fitness', 'pet'];
 
 const COMMUNITY_QUERIES = {
-  cafe: '맘카페 디시인사이드 더쿠 등 한국 주요 커뮤니티에서 최근 1주일간 화제 중인 카페·음료·디저트 트렌드 키워드 10개',
-  food: '맘카페 에펨코리아 루리웹 등 커뮤니티에서 최근 화제 중인 외식·맛집·신상 음식 트렌드 키워드 10개',
-  beauty: '맘카페 더쿠 등 커뮤니티에서 최근 여성들이 주목하는 뷰티·스킨케어·메이크업 트렌드 키워드 10개',
-  hair: '맘카페 더쿠 등 커뮤니티에서 최근 관심받는 헤어 스타일·시술 트렌드 키워드 10개',
-  nail: '맘카페 디시 등 커뮤니티에서 최근 인기 네일 디자인·아트 트렌드 키워드 10개',
-  flower: '맘카페 더쿠 등에서 화제 중인 꽃·부케·꽃다발 선물 트렌드 키워드 10개',
-  fashion: '맘카페 더쿠 디시 등에서 최근 화제 중인 패션·의류·악세서리 트렌드 키워드 10개',
-  fitness: '맘카페 에펨코리아 등에서 최근 인기 피트니스·필라테스·홈트 트렌드 키워드 10개',
-  pet: '맘카페 더쿠 등에서 최근 화제 중인 반려동물 용품·서비스 트렌드 키워드 10개',
+  cafe: {
+    communities: ['맘카페', '디시인사이드 카페 갤러리', '인스타그램 카페 해시태그'],
+    context: '요즘 카페 사장님들이 신메뉴·디저트로 주목하는 키워드',
+  },
+  food: {
+    communities: ['맘카페', '에펨코리아', '식당 리뷰 블로그'],
+    context: '요즘 외식업계에서 화제 중인 메뉴·식당',
+  },
+  beauty: {
+    communities: ['맘카페', '더쿠', '파우더룸 뷰티 카테고리'],
+    context: '요즘 여성들이 입소문으로 주목하는 뷰티 제품·성분',
+  },
+  hair: {
+    communities: ['맘카페', '더쿠 미용실', '헤어 인스타그램 태그'],
+    context: '요즘 유행하는 헤어 스타일·시술·염색 컬러',
+  },
+  nail: {
+    communities: ['맘카페', '디시 네일 갤러리', '더쿠 네일'],
+    context: '요즘 유행하는 네일 디자인·아트·컬러',
+  },
+  flower: {
+    communities: ['맘카페', '더쿠 꽃집', '플라워 인스타그램'],
+    context: '요즘 꽃 선물·웨딩 부케·플라워샵 트렌드',
+  },
+  fashion: {
+    communities: ['맘카페', '더쿠 패션', '디시 패션 갤러리', '인스타 패션 태그'],
+    context: '요즘 여성·남성이 주목하는 패션 아이템·브랜드·스타일',
+  },
+  fitness: {
+    communities: ['맘카페', '에펨코리아 헬창', '필라테스 인스타'],
+    context: '요즘 피트니스·필라테스·홈트레이닝 트렌드',
+  },
+  pet: {
+    communities: ['맘카페', '더쿠 반려동물', '펫 인스타 태그'],
+    context: '요즘 반려동물 사료·간식·용품 브랜드 트렌드',
+  },
 };
 
-async function callGPTCommunitySearch(category, query) {
+function buildPrompt(category, config) {
+  return `다음 한국 커뮤니티에서 실제 검색을 수행해 정보를 찾아주세요:
+${config.communities.join(', ')}
+
+주제: ${config.context}
+
+**반드시 실제 웹 검색 결과에서 나온 정보만** JSON 배열로 반환. 각 항목:
+{
+  "keyword": "구체적 트렌드 키워드 (한글 2-15자)",
+  "source_url": "실제 검색 결과 URL",
+  "excerpt": "원문에서 직접 인용 30자 이상",
+  "community": "출처 커뮤니티명",
+  "confidence": 60-100 (확신 정도)
+}
+
+엄격 규칙:
+- confidence 60 미만은 반환 금지 (불확실하면 아예 빼기)
+- source_url은 검색 결과에서 실제 본 URL만
+- excerpt는 원문에서 그대로 복붙 (요약·변형 금지)
+- 트렌드가 명확하지 않으면 적게 반환해도 됨 (거짓 키워드 금지)
+- 최대한 3개 이상 찾도록 노력. 못 찾으면 빈 배열 []
+- 설명·마크다운 없이 JSON 배열만 출력`;
+}
+
+async function callGPTCommunitySearch(category, prompt) {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     console.error('[community] OPENAI_API_KEY 없음');
     return null;
   }
-
-  const prompt = `${query}
-
-JSON 배열로만 응답하세요. 각 항목:
-{
-  "keyword": "키워드 (한글 2-15자)",
-  "source_url": "검색 결과 실제 URL",
-  "excerpt": "원문 인용 30자 이상",
-  "community": "맘카페|디시|더쿠|에펨코리아|뽐뿌|클리앙|기타",
-  "confidence": 0-100 정수
-}
-
-엄격 규칙:
-- 검색 결과에 없는 정보 금지 (환각 금지)
-- source_url은 검색된 실제 URL이어야 함
-- excerpt는 원문에서 직접 인용 (요약 금지)
-- 명확한 트렌드 근거 없으면 빈 배열 반환
-- 설명·마크다운 없이 JSON 배열만 출력`;
 
   // Responses API: gpt-4o-mini + web_search_preview 도구 사용
   // (gpt-4o-mini-search-preview는 Chat Completions 전용 — Responses API에서 미지원)
@@ -128,6 +161,18 @@ JSON 배열로만 응답하세요. 각 항목:
   });
 }
 
+async function fetchCommunityForCategory(category, config) {
+  const primary = buildPrompt(category, config);
+  let result = await callGPTCommunitySearch(category, primary);
+
+  if (!result || result.length === 0) {
+    console.log(`[community] ${category} 1차 결과 없음 → 재시도`);
+    const fallback = `"${category}" 업종의 최근 한국 커뮤니티·블로그·뉴스 트렌드 5개를 JSON 배열로. ${primary.slice(500)}`;
+    result = await callGPTCommunitySearch(category, fallback);
+  }
+  return result;
+}
+
 async function validateUrl(item) {
   // 최소 검증: URL 존재 여부만 HEAD 체크 (빠름)
   if (!item?.source_url) return false;
@@ -161,7 +206,7 @@ exports.handler = runGuarded({
     const results = await Promise.all(CATEGORIES.map(async (category) => {
       try {
         console.log(`[community] ${category} 처리 시작`);
-        const rawItems = await callGPTCommunitySearch(category, COMMUNITY_QUERIES[category]);
+        const rawItems = await fetchCommunityForCategory(category, COMMUNITY_QUERIES[category]);
 
         // URL 검증 제거 — 커뮤니티 사이트는 봇 차단으로 HEAD 항상 실패
         // confidence + keyword + excerpt 기반 필터만 적용
