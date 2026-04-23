@@ -127,14 +127,13 @@ exports.handler = runGuarded({
       try {
         const rawItems = await callGPTCommunitySearch(COMMUNITY_QUERIES[category]);
 
-        // URL 검증 필터
+        // URL 검증 제거 — 커뮤니티 사이트는 봇 차단으로 HEAD 항상 실패
+        // confidence + keyword + excerpt 기반 필터만 적용
         const validated = [];
         for (const item of (rawItems || [])) {
-          if (!item?.keyword || !item?.source_url) continue;
-          if (typeof item.confidence !== 'number' || item.confidence < 30) continue;
-
-          const urlOk = await validateUrl(item);
-          if (urlOk) validated.push(item);
+          if (!item?.keyword || !item?.source_url || !item?.excerpt) continue;
+          if (typeof item.confidence !== 'number' || item.confidence < 50) continue;
+          validated.push(item);
         }
 
         // Supabase 저장 (trends 테이블 재사용)

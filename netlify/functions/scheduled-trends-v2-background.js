@@ -979,9 +979,9 @@ const AXIS_EXAMPLES = {
   },
   food: {
     menu: '흑임자파스타, 수제버거, 코스요리',
-    interior: '오픈키친, 한옥인테리어, 테라스석',
+    interior: '오픈키친, 한옥인테리어, 우드인테리어',
     goods: '밀키트, 소스패키지, 굿즈',
-    experience: '셰프테이블, 쿠킹클래스, 런치세트',
+    experience: '야장감성, 테라스뷰, 셰프테이블, 쿠킹클래스, 런치세트',
   },
   flower: {
     menu: '수국부케, 라넌큘러스, 팜파스',
@@ -1500,12 +1500,26 @@ ${googleStr}
 // 크로스 소스 검증
 // keyword → Set<sourceType> 매핑
 // ─────────────────────────────────────────────
-function buildCrossSourceCount({ keyword, naverData, blogData, ytKR, igTexts, googleKR, newsData, communityData }) {
-  const norm = normalize(keyword).toLowerCase();
+// 6글자 이상 복합어는 분해 부분 매칭 추가 (예: '야장감성' = '야장'+'감성')
+function textMatchKeyword(text, keyword) {
+  const t = normalize(text).toLowerCase();
+  const k = normalize(keyword).toLowerCase();
+  if (t.includes(k)) return true;
+  if (k.length >= 6) {
+    const parts = [];
+    for (let i = 0; i < k.length; i += 2) {
+      parts.push(k.slice(i, Math.min(i + 3, k.length)));
+    }
+    const matches = parts.filter(p => p.length >= 2 && t.includes(p));
+    if (matches.length >= Math.ceil(parts.length / 2)) return true;
+  }
+  return false;
+}
 
+function buildCrossSourceCount({ keyword, naverData, blogData, ytKR, igTexts, googleKR, newsData, communityData }) {
   function countMatches(arr) {
     if (!arr) return 0;
-    return arr.filter(t => normalize(t).toLowerCase().includes(norm)).length;
+    return arr.filter(t => textMatchKeyword(String(t), keyword)).length;
   }
 
   return {
