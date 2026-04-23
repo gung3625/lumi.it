@@ -207,11 +207,27 @@ async function mergeV2Fields(supa, keywords, category, collectedDate, axisFilter
       if (!v2Map.has(key)) v2Map.set(key, row);
     }
 
+    // feedback 집계 (실패 시 silent fallback)
+    let fbMap = new Map();
+    try {
+      const { data: feedbacks } = await supa
+        .from('user_trend_feedback')
+        .select('keyword, rating')
+        .eq('category', category)
+        .in('keyword', keywords.map(k => k.keyword));
+      (feedbacks || []).forEach(f => {
+        const cur = fbMap.get(f.keyword) || { likes: 0, dislikes: 0 };
+        if (f.rating === 1) cur.likes++;
+        else if (f.rating === -1) cur.dislikes++;
+        fbMap.set(f.keyword, cur);
+      });
+    } catch(_) {}
+
     return keywords.map(kw => {
       const key = (kw.keyword || '').toLowerCase().trim();
       const v2 = v2Map.get(key);
-      if (!v2) return kw;
-      return {
+      const fb = fbMap.get(kw.keyword);
+      const base = v2 ? {
         ...kw,
         crossSourceCount: v2.cross_source_count ?? undefined,
         weightedScore: v2.weighted_score ?? undefined,
@@ -224,7 +240,12 @@ async function mergeV2Fields(supa, keywords, category, collectedDate, axisFilter
         saturationTotal: v2.raw_mentions?.saturation_total ?? undefined,
         saturationLevel: v2.raw_mentions?.saturation_level ?? undefined,
         isNewConfidence: v2.raw_mentions?.is_new_confidence ?? undefined,
-      };
+      } : kw;
+      if (fb) {
+        base.likes = fb.likes;
+        base.dislikes = fb.dislikes;
+      }
+      return base;
     });
   } catch(e) {
     // silent fallback — v2 조회 실패해도 기존 응답 유지
