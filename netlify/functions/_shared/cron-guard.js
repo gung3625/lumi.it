@@ -44,6 +44,36 @@ function runGuarded({ name, handler }) {
       };
     }
 
+    // stage 트래킹 헬퍼 — cron-stage:{name} row upsert
+    const stageKey = `cron-stage:${name}`;
+    const stageHistory = [];
+    const ctx = {
+      /**
+       * 현재 단계를 기록. 호출 실패해도 메인 흐름에 영향 없음.
+       * @param {string} stageName - 단계 이름 (예: 'collecting', 'classification')
+       * @param {object} [meta] - 추가 메타데이터 (예: { itemCount: 120 })
+       */
+      stage: async (stageName, meta = {}) => {
+        const stageEntry = { stage: stageName, startedAt: new Date().toISOString(), ...meta };
+        stageHistory.push(stageEntry);
+        try {
+          await supa.from('trends').upsert(
+            {
+              category: stageKey,
+              keywords: {
+                current: stageName,
+                history: stageHistory,
+              },
+              collected_at: stageEntry.startedAt,
+            },
+            { onConflict: 'category' }
+          );
+        } catch (stageErr) {
+          console.error(`[cron-guard:${name}] stage 쓰기 실패 (계속 진행):`, stageErr.message);
+        }
+      },
+    };
+
     // 1. Sentinel heartbeat — 진입 즉시 기록 (실패해도 계속 진행)
     try {
       await supa.from('trends').upsert(
@@ -67,7 +97,7 @@ function runGuarded({ name, handler }) {
     // 2. 전역 try/catch — 핸들러 실행
     let result;
     try {
-      result = await handler(event, context);
+      result = await handler(event, ctx);
     } catch (handlerErr) {
       console.error(`[cron-guard:${name}] 핸들러 크래시:`, handlerErr.message, handlerErr.stack);
 

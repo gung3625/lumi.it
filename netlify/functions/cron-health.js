@@ -36,10 +36,11 @@ exports.handler = async (event) => {
   const now = Date.now();
 
   try {
-    // heartbeat 및 error 행 일괄 조회
+    // heartbeat, error, stage 행 일괄 조회
     const keys = [
       ...CRON_NAMES.map(n => `cron-heartbeat:${n}`),
       ...CRON_NAMES.map(n => `cron-last-error:${n}`),
+      ...CRON_NAMES.map(n => `cron-stage:${n}`),
     ];
 
     const { data: rows, error } = await supa
@@ -57,6 +58,7 @@ exports.handler = async (event) => {
     for (const name of CRON_NAMES) {
       const hbRow = rowMap[`cron-heartbeat:${name}`];
       const errRow = rowMap[`cron-last-error:${name}`];
+      const stageRow = rowMap[`cron-stage:${name}`];
 
       if (hbRow && hbRow.keywords) {
         const kw = hbRow.keywords;
@@ -87,6 +89,17 @@ exports.handler = async (event) => {
         };
       } else {
         health[`cron-last-error:${name}`] = null;
+      }
+
+      // stage 트래킹 — 없으면 null (옵셔널)
+      if (stageRow && stageRow.keywords) {
+        const kw = stageRow.keywords;
+        health[`cron-stage:${name}`] = {
+          current: kw.current || null,
+          history: kw.history || [],
+        };
+      } else {
+        health[`cron-stage:${name}`] = null;
       }
     }
 
