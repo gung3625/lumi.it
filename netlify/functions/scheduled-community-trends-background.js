@@ -46,11 +46,13 @@ JSON 배열로만 응답하세요. 각 항목:
 - 명확한 트렌드 근거 없으면 빈 배열 반환
 - 설명·마크다운 없이 JSON 배열만 출력`;
 
-  console.log(`[community] ${category} API 호출 시작 (model: gpt-4o-mini-search-preview)`);
+  // Responses API: gpt-4o-mini + web_search_preview 도구 사용
+  // (gpt-4o-mini-search-preview는 Chat Completions 전용 — Responses API에서 미지원)
+  console.log(`[community] ${category} API 호출 시작 (model: gpt-4o-mini + web_search_preview)`);
 
   return new Promise((resolve) => {
     const payload = JSON.stringify({
-      model: 'gpt-4o-mini-search-preview',
+      model: 'gpt-4o-mini',
       input: prompt,
       tools: [{ type: 'web_search_preview' }],
       max_output_tokens: 2000,
