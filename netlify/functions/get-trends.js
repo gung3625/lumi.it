@@ -326,17 +326,15 @@ exports.handler = async (event) => {
   };
 
   const category = CATEGORY_ALIAS[rawCategory] || rawCategory;
-  // hair/nail/health/kids/shop은 beauty/fitness/cafe DB row를 활용 — DB key 매핑
+  // hair/nail은 자체 수집·저장하므로 DB_KEY_MAP에서 제거 (beauty row 읽지 않음)
   const DB_KEY_MAP = {
-    hair: 'beauty',
-    nail: 'beauty',
     health: 'fitness',
-    kids: 'cafe',  // fallback: 향후 별도 수집 시 변경
-    shop: 'cafe',  // fallback: 향후 별도 수집 시 변경
+    kids: 'cafe',  // fallback
+    shop: 'cafe',  // fallback
   };
   const storeKey = knownCategories.includes(category) ? (DB_KEY_MAP[category] || category) : 'cafe';
-  // 서빙 시 분리 필터 적용 여부 (beauty DB row를 hair/nail로 분리)
-  const beautySubcat = (category === 'hair' || category === 'nail' || category === 'beauty') ? category : null;
+  // splitBeautyCategory 분리 필터 비활성 (hair/nail 자체 row 사용)
+  const beautySubcat = null;
   const season = getSeasonInfo();
   // label은 요청 카테고리 기준 (hair/nail은 storeKey=beauty이지만 라벨은 각자)
   const label = CATEGORY_LABELS[category] || CATEGORY_LABELS[storeKey] || '일반';
