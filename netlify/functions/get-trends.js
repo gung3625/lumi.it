@@ -302,8 +302,8 @@ exports.handler = async (event) => {
   const region = regionParam;
   // Phase 3: 서브카테고리 필터 (예: cafe-specialty, food-japanese)
   const subcatParam = (params.get('subcat') || '').trim() || null;
-  // hair/nail/health/kids/shop 포함 — 프론트 TREND_CATS와 1:1 대응
-  const knownCategories = ['cafe', 'food', 'beauty', 'hair', 'nail', 'flower', 'fashion', 'fitness', 'health', 'pet', 'kids', 'shop', 'all'];
+  // 프론트 TREND_CATS 9개 + health(fitness 별칭) + all(종합)
+  const knownCategories = ['cafe', 'food', 'beauty', 'hair', 'nail', 'flower', 'fashion', 'fitness', 'health', 'pet', 'all'];
 
   const CATEGORY_ALIAS = {
     '카페': 'cafe', '카페·음료': 'cafe', '카페·베이커리': 'cafe', '커피': 'cafe', '베이커리': 'cafe',
