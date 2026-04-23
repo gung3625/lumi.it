@@ -174,19 +174,32 @@ function getSeasonInfo() {
 
 // ─── v2: trend_keywords 조회 후 keywords 배열에 merge ───
 // 조회 실패 시 기존 응답 그대로 (silent fallback)
-async function mergeV2Fields(supa, keywords, category, collectedDate) {
+// axisFilter: 'menu'|'interior'|'goods'|'experience'|'general'|null (null이면 모든 axis)
+async function mergeV2Fields(supa, keywords, category, collectedDate, axisFilter) {
   try {
-    // 오늘 날짜 기준 (없으면 최근 7일 이내)
-    const dateStr = collectedDate || new Date().toISOString().slice(0, 10);
     const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
-    const { data, error } = await supa
+    let query = supa
       .from('trend_keywords')
-      .select('keyword, cross_source_count, weighted_score, velocity_pct, signal_tier, is_new')
+      .select('keyword, cross_source_count, weighted_score, velocity_pct, signal_tier, is_new, axis, narrative, origin')
       .eq('category', category)
-      .eq('axis', 'domestic')
       .gte('collected_date', cutoff)
       .order('collected_date', { ascending: false });
+
+    // Phase 2: axis 필터 적용
+    // 'domestic'은 레거시값이므로 general과 동일 취급하여 모두 포함
+    if (axisFilter) {
+      // 특정 axis만 필터링 (domestic 레거시 포함)
+      const axisValues = axisFilter === 'general'
+        ? ['general', 'domestic']
+        : [axisFilter];
+      query = query.in('axis', axisValues);
+    } else {
+      // 모든 유효한 axis 포함 (backward compat)
+      query = query.in('axis', ['general', 'menu', 'interior', 'goods', 'experience', 'domestic']);
+    }
+
+    const { data, error } = await query;
 
     if (error || !data || data.length === 0) return keywords;
 
@@ -208,6 +221,9 @@ async function mergeV2Fields(supa, keywords, category, collectedDate) {
         velocityPct: v2.velocity_pct ?? undefined,
         signalTier: v2.signal_tier ?? undefined,
         isNew: v2.is_new ?? undefined,
+        axis: v2.axis ?? undefined,
+        narrative: v2.narrative ?? null,
+        origin: v2.origin ?? null,
       };
     });
   } catch(e) {
@@ -241,6 +257,10 @@ exports.handler = async (event) => {
   const scope = params.get('scope') || '';  // 'domestic' or ''
   const fromDate = params.get('from') || '';
   const toDate = params.get('to') || '';
+  // Phase 2: axis 파라미터 (menu|interior|goods|experience|general, 없으면 null=전체)
+  const VALID_AXES = ['menu', 'interior', 'goods', 'experience', 'general'];
+  const axisParam = params.get('axis') || '';
+  const axisFilter = VALID_AXES.includes(axisParam) ? axisParam : null;
   // hair/nail/health/kids/shop 포함 — 프론트 TREND_CATS와 1:1 대응
   const knownCategories = ['cafe', 'food', 'beauty', 'hair', 'nail', 'flower', 'fashion', 'fitness', 'health', 'pet', 'interior', 'education', 'studio', 'kids', 'shop', 'all'];
 
@@ -432,7 +452,14 @@ exports.handler = async (event) => {
         const scopeTags = filteredKeywords.map(k => '#' + k.keyword).filter(Boolean);
 
         // v2 필드 merge (실패 시 silent fallback — filteredKeywords 그대로)
-        const mergedKeywords = await mergeV2Fields(supa, filteredKeywords, storeKey, collectedDate);
+        // Phase 2: axisFilter 전달 + axis 필터링 (axisFilter 있으면 해당 axis 키워드만)
+        let mergedKeywords = await mergeV2Fields(supa, filteredKeywords, storeKey, collectedDate, axisFilter);
+
+        // axis 필터가 있을 경우 응답 키워드를 해당 axis만으로 좁힘
+        if (axisFilter) {
+          const axisEquiv = axisFilter === 'general' ? ['general', 'domestic', undefined] : [axisFilter];
+          mergedKeywords = mergedKeywords.filter(k => axisEquiv.includes(k.axis) || !k.axis);
+        }
 
         return {
           statusCode: 200, headers: CORS,
@@ -440,7 +467,8 @@ exports.handler = async (event) => {
             category,
             categoryLabel: label,
             scope,
-            tags: scopeTags,
+            axis: axisFilter || null,
+            tags: mergedKeywords.map(k => '#' + k.keyword).filter(Boolean),
             keywords: mergedKeywords,
             rising,
             insight: scopeData.insight || '',

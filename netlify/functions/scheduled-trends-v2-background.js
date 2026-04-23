@@ -14,6 +14,11 @@ const { runGuarded } = require('./_shared/cron-guard');
 const https = require('https');
 
 // ─────────────────────────────────────────────
+// Phase 2: 4축 분할 대상 카테고리
+// ─────────────────────────────────────────────
+const AXIS_CATEGORIES = ['cafe', 'food', 'flower', 'fashion', 'pet', 'interior'];
+
+// ─────────────────────────────────────────────
 // 소스 가중치
 // ─────────────────────────────────────────────
 const SOURCE_WEIGHTS = {
@@ -467,6 +472,163 @@ async function callGPT({ prompt, maxTokens = 1200, temperature = 0.2, preferMini
 }
 
 // ─────────────────────────────────────────────
+// Phase 2: 4축 분할 (6 제품 중심 카테고리)
+// ─────────────────────────────────────────────
+const AXIS_EXAMPLES = {
+  cafe: {
+    menu: '말차라떼, 크로플, 시즌음료',
+    interior: '원목테이블, 빈티지체어, 무드조명',
+    goods: '로고텀블러, 에코백, 키링',
+    experience: '팝업스토어, 브루잉클래스, 원데이클래스',
+  },
+  food: {
+    menu: '흑임자파스타, 수제버거, 코스요리',
+    interior: '오픈키친, 한옥인테리어, 테라스석',
+    goods: '밀키트, 소스패키지, 굿즈',
+    experience: '셰프테이블, 쿠킹클래스, 런치세트',
+  },
+  flower: {
+    menu: '수국부케, 라넌큘러스, 팜파스',
+    interior: '오브제조화, 드라이플라워벽장식, 테이블화병',
+    goods: '리스, 화분, 플라워박스',
+    experience: '플라워클래스, 원데이부케, 웨딩부케',
+  },
+  fashion: {
+    menu: '오버핏블레이저, 롱스커트, 레이어드룩',
+    interior: '피팅룸인테리어, 행거디스플레이, 쇼룸',
+    goods: '에코백, 폰케이스, 모자',
+    experience: '스타일링상담, 팝업스토어, 트렁크쇼',
+  },
+  pet: {
+    menu: '생식사료, 수제간식, 유산균',
+    interior: '캣타워, 펫침대, 노즈워크매트',
+    goods: '하네스, 리드줄, 장난감',
+    experience: '반려견수영장, 펫호텔, 펫카페',
+  },
+  interior: {
+    menu: '디퓨저향, 캔들, 방향제',
+    interior: '원목선반, 버티컬블라인드, 패브릭포스터',
+    goods: '미니화분, 빈티지소품, 테이블조명',
+    experience: '셀프인테리어클래스, 가구배치상담, 컬러컨설팅',
+  },
+};
+
+async function splitKeywordsByAxis(keywords, category) {
+  if (!keywords || keywords.length === 0) return null;
+
+  const examples = AXIS_EXAMPLES[category] || {};
+  const exampleStr = Object.entries(examples)
+    .map(([axis, ex]) => `- ${axis}: ${ex}`)
+    .join('\n');
+
+  const prompt = `다음은 "${CATEGORY_KO[category] || category}" 업종의 트렌드 키워드 목록입니다.
+각 키워드를 아래 4개 축 중 가장 적합한 하나로 분류해 JSON으로 반환하세요.
+
+축 정의:
+- menu: 먹는/마시는 제품, 메뉴, 식재료
+- interior: 공간 집기, 가구, 소품, 인테리어 요소
+- goods: 텀블러, 키링, 굿즈 등 판매 상품
+- experience: 컨셉, 이벤트, 클래스, 팝업 등 체험
+
+업종별 예시:
+${exampleStr}
+
+키워드 목록: ${keywords.join(', ')}
+
+규칙:
+- 애매한 키워드는 menu에 배정
+- 각 키워드는 반드시 하나의 축에만 배정
+- 출력: JSON 객체만 ({"menu":["..."],"interior":["..."],"goods":["..."],"experience":["..."]})`;
+
+  try {
+    const content = await callGPT({ prompt, maxTokens: 600, temperature: 0.1 });
+    if (!content) return null;
+    const clean = content.replace(/```json|```/g, '').trim();
+    const match = clean.match(/\{[\s\S]*\}/);
+    if (!match) return null;
+    const parsed = JSON.parse(match[0]);
+    // validate: all 4 axes present as arrays
+    const axes = ['menu', 'interior', 'goods', 'experience'];
+    for (const ax of axes) {
+      if (!Array.isArray(parsed[ax])) parsed[ax] = [];
+    }
+    return parsed;
+  } catch(e) {
+    console.error('[axis-split]', category, '실패:', e.message);
+    return null;
+  }
+}
+
+// ─────────────────────────────────────────────
+// Phase 2: narrative + origin 통합 GPT-4o 호출
+// signal_tier === 'real' 키워드 배치 처리
+// ─────────────────────────────────────────────
+async function generateNarrativeAndOriginBatch({ keywords, category, rawTexts }) {
+  // keywords: [{keyword, signalTier, ...}, ...]
+  // rawTexts: 해당 카테고리 원시 텍스트 배열 (blogData + ytKR + igTexts 등)
+  if (!keywords || keywords.length === 0) return {};
+
+  const realKeywords = keywords.filter(k => k.signalTier === 'real');
+  if (realKeywords.length === 0) return {};
+
+  const contextSnippet = (rawTexts || []).slice(0, 30).join(' | ').slice(0, 2000);
+  const keywordList = realKeywords.map(k => k.keyword);
+
+  const prompt = `당신은 한국 소상공인 인스타그램 트렌드 분석 전문가입니다.
+아래 원시 텍스트를 참고해, 각 키워드가 "왜 지금 뜨는가"를 분석하세요.
+
+[수집된 원시 텍스트 (일부)]
+${contextSnippet || '없음'}
+
+[분석 대상 키워드]
+${keywordList.join(', ')}
+
+각 키워드에 대해 다음을 JSON 배열로 반환하세요:
+- keyword: 분석 대상 키워드 (원본 그대로)
+- narrative: 왜 뜨는가 3-4줄 한국어 설명 (셀럽/드라마/뉴스 언급 시 출처 명시). 근거 없으면 null
+- origin: {
+    "firstSeenAt": "YYYY-MM-DD 또는 null",
+    "sourceType": "drama|celebrity|news|product|social|null",
+    "sourceRef": "구체적 출처 (있는 경우만, 없으면 null)",
+    "mediaTitle": "매체명 (있는 경우만, 없으면 null)"
+  }
+
+규칙:
+- narrative: 추측 아닌 텍스트 근거 기반. 근거 부족 시 null
+- origin.firstSeenAt: 텍스트에 날짜 근거 없으면 null (추측 금지)
+- origin.sourceType: 명확하지 않으면 null
+- 출력: JSON 배열만, 마크다운 없음
+
+예시:
+[{"keyword":"말차라떼","narrative":"말차 열풍이 카페 업계 전반으로 확산되며...","origin":{"firstSeenAt":null,"sourceType":"social","sourceRef":null,"mediaTitle":null}}]`;
+
+  const result = {};
+  try {
+    const content = await callGPT({ prompt, maxTokens: 1800, temperature: 0.2 });
+    if (!content) return result;
+
+    const clean = content.replace(/```json|```/g, '').trim();
+    const match = clean.match(/\[[\s\S]*\]/);
+    if (!match) return result;
+
+    let items;
+    try { items = JSON.parse(match[0]); } catch { return result; }
+    if (!Array.isArray(items)) return result;
+
+    for (const item of items) {
+      if (!item || !item.keyword) continue;
+      result[item.keyword] = {
+        narrative: item.narrative || null,
+        origin: item.origin || null,
+      };
+    }
+  } catch(e) {
+    console.error('[narrative-origin]', category, '실패:', e.message);
+  }
+  return result;
+}
+
+// ─────────────────────────────────────────────
 // 분류기: gpt-4o (+ gpt-4o-mini 폴백)
 // ─────────────────────────────────────────────
 async function classifyBatchWithGPT({ rawTextsByCategory }) {
@@ -811,10 +973,13 @@ async function saveTrendKeywordsV2({ supa, category, enrichedKeywords, collected
   const rows = enrichedKeywords.map(item => {
     const sourcesObj = {};
     for (const s of (item.sourcesSet || [])) sourcesObj[s] = 1;
+    // axis: Phase 2 분류 결과 (menu/interior/goods/experience) 또는 'general' 기본값
+    // 'domestic'은 이 컬럼 의미와 충돌하므로 사용 안 함
+    const axis = item.axis || 'general';
     return {
       keyword: item.keyword,
       category,
-      axis: 'domestic',
+      axis,
       sub_category: '',  // empty string (NULL 회피 — 인덱스 dedup 일관성)
       collected_date: collectedDate,
       signal_tier: item.signalTier,
@@ -823,17 +988,20 @@ async function saveTrendKeywordsV2({ supa, category, enrichedKeywords, collected
       velocity_pct: item.velocityPct,
       is_new: item.isNew,
       sources: sourcesObj,  // DB 스키마의 sources jsonb 컬럼
+      narrative: item.narrative || null,
+      origin: item.origin || null,
     };
   });
 
   try {
-    // delete + insert 패턴 (daily overwrite — idx_tk_dedup functional index 충돌 회피)
+    // delete + insert 패턴 (daily overwrite)
+    // Phase 2: axis가 general/menu/interior/goods/experience 모두 포함하여 삭제
     await supa
       .from('trend_keywords')
       .delete()
       .eq('category', category)
-      .eq('axis', 'domestic')
-      .eq('collected_date', collectedDate);
+      .eq('collected_date', collectedDate)
+      .in('axis', ['general', 'menu', 'interior', 'goods', 'experience', 'domestic']);
 
     await supa
       .from('trend_keywords')
@@ -997,8 +1165,67 @@ exports.handler = runGuarded({
               velocityPct,
               isNew,
               sourcesSet,
+              axis: 'general',  // Phase 2에서 덮어씌워짐
             };
           }));
+        }
+
+        // Phase 2: 4축 분할 (AXIS_CATEGORIES에 속한 카테고리만)
+        if (isV2Cat && AXIS_CATEGORIES.includes(category) && enrichedKeywords.length > 0) {
+          try {
+            const axisResult = await splitKeywordsByAxis(domesticTags, category);
+            if (axisResult) {
+              // keyword → axis 매핑
+              const keywordAxisMap = {};
+              for (const [axis, kws] of Object.entries(axisResult)) {
+                for (const kw of (kws || [])) {
+                  keywordAxisMap[kw] = axis;
+                }
+              }
+              enrichedKeywords = enrichedKeywords.map(item => ({
+                ...item,
+                axis: keywordAxisMap[item.keyword] || 'general',
+              }));
+              console.log(`[axis-split] ${category} 완료:`, JSON.stringify(
+                Object.fromEntries(Object.entries(axisResult).map(([k, v]) => [k, v.length]))
+              ));
+            }
+          } catch(e) {
+            console.error('[axis-split]', category, '실패 (fallback general):', e.message);
+          }
+        }
+
+        // Phase 2: narrative + origin 배치 생성 (real 키워드만, 최대 5개씩 배치)
+        if (isV2Cat && process.env.OPENAI_API_KEY) {
+          try {
+            const rawTexts = [...(r.blogData || []), ...(r.ytKR || []), ...(r.igTexts || [])];
+            const BATCH_SIZE = 5;
+            const narrativeMap = {};
+
+            // 배치 분할 (real 키워드만 대상)
+            const realItems = enrichedKeywords.filter(k => k.signalTier === 'real');
+            for (let i = 0; i < realItems.length; i += BATCH_SIZE) {
+              const batch = realItems.slice(i, i + BATCH_SIZE);
+              const batchResult = await generateNarrativeAndOriginBatch({
+                keywords: batch,
+                category,
+                rawTexts,
+              });
+              Object.assign(narrativeMap, batchResult);
+            }
+
+            // enrichedKeywords에 narrative/origin 병합
+            enrichedKeywords = enrichedKeywords.map(item => {
+              const extra = narrativeMap[item.keyword];
+              if (!extra) return item;
+              return { ...item, narrative: extra.narrative, origin: extra.origin };
+            });
+
+            const narrativeCount = Object.keys(narrativeMap).length;
+            console.log(`[narrative-origin] ${category} ${narrativeCount}개 생성`);
+          } catch(e) {
+            console.error('[narrative-origin]', category, '실패 (계속 진행):', e.message);
+          }
         }
 
         // Rising 예측, saveScope, v2 trend_keywords 저장 병렬
