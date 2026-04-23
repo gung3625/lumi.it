@@ -8331,7 +8331,17 @@ function closeSignupGrid() { closeAuthModal(); }
 function openAuthModal() {
   document.body.style.overflow = 'hidden';
   document.getElementById('auth-modal').classList.add('open');
-  try { if (typeof updateAuthButtons === 'function') updateAuthButtons(); } catch(_){}
+  try {
+    var returning = !!(localStorage.getItem('lumi_token') || localStorage.getItem('lumi_consented') === '1');
+    var wrap = document.querySelector('.auth-consent-wrap');
+    if (wrap) wrap.style.display = returning ? 'none' : '';
+    if (returning) {
+      var btns = document.querySelectorAll('.auth-btn-wrap .auth-social-btn');
+      btns.forEach(function(b){ b.disabled = false; });
+    } else {
+      if (typeof updateAuthButtons === 'function') updateAuthButtons();
+    }
+  } catch(_){}
 }
 function closeAuthModal() {
   document.getElementById('auth-modal').classList.remove('open');
@@ -8377,9 +8387,16 @@ function onConsentChange() {
   updateAuthButtons();
 }
 function verifyAuthConsent() {
+  // 기존 회원(토큰 보유 또는 과거 동의 이력)은 동의 UI 스킵
+  if (localStorage.getItem('lumi_token') || localStorage.getItem('lumi_consented') === '1') return true;
   var reqs = getAuthConsentReqs();
   var ok = reqs.length > 0 && reqs.every(function(c){ return c.checked; });
   if (!ok) { alert('필수 약관에 모두 동의해주세요.'); return false; }
+  try { localStorage.setItem('lumi_consented', '1'); } catch(_){}
+  try {
+    var gender = document.getElementById('auth-c-gender');
+    localStorage.setItem('lumi_gender_consent', gender && gender.checked ? '1' : '0');
+  } catch(_){}
   return true;
 }
 
