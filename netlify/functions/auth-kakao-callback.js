@@ -69,7 +69,8 @@ exports.handler = async (event) => {
     const profile = kakaoAccount.profile || {};
 
     const email = kakaoAccount.email || `kakao_${kakaoId}@lumi.it.kr`;
-    const nickname = profile.nickname || '';
+    // 카카오 승인 scope = name (profile_nickname은 '사용 안 함' 상태)
+    const name = kakaoAccount.name || profile.nickname || '';
     const ageRange = kakaoAccount.age_range || '';
     const gender = kakaoAccount.gender || '';
     const phoneNumber = kakaoAccount.phone_number || '';
@@ -92,7 +93,7 @@ exports.handler = async (event) => {
         user_metadata: {
           ...existingUser.user_metadata,
           kakao_id: kakaoId,
-          nickname,
+          name,
           phone: phoneNumber,
           age_range: ageRange,
           gender,
@@ -106,7 +107,7 @@ exports.handler = async (event) => {
         email_confirm: true,
         user_metadata: {
           kakao_id: kakaoId,
-          nickname,
+          name,
           phone: phoneNumber,
           age_range: ageRange,
           gender,
