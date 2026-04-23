@@ -337,7 +337,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div class="toggle-row">
       <div>
         <p class="toggle-label"><strong>Shadow 모드</strong></p>
-        <p class="toggle-desc">실제 발송 없이 판정 결과만 로그에 쌓는 테스트 모드. 새 키워드 규칙이나 AI 답변 품질을 실전 DM으로 안전하게 검증할 때 켜세요. Meta 고급권한 승인 대기 중에도 필수입니다.</p>
+        <p class="toggle-desc">실제 발송 없이 판정 결과만 로그에 쌓는 테스트 모드. 새 키워드 규칙이나 루미 답변 품질을 실전 DM으로 안전하게 검증할 때 켜세요. Meta 고급권한 승인 대기 중에도 필수입니다.</p>
       </div>
       <button class="toggle on" id="ar-shadow" onclick="this.classList.toggle('on')"></button>
     </div>
@@ -346,10 +346,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div class="toggle-row" id="ar-ai-mode-row">
       <div>
         <p class="toggle-label">
-          AI 자동응답 모드
+          루미 자동응답 모드
           <span id="ar-ai-mode-badge" style="display:none;margin-left:6px;font-size:11px;font-weight:600;background:rgba(200,80,122,.12);color:#C8507A;border-radius:6px;padding:2px 8px;vertical-align:middle;">비즈니스 전용</span>
         </p>
-        <p class="toggle-desc">켜면 AI가 고객 메시지에 맞춤 답변을 생성합니다. 끄면 키워드 규칙만 적용돼요.</p>
+        <p class="toggle-desc">켜면 루미가 고객 메시지에 맞춤 답변을 생성합니다. 끄면 키워드 규칙만 적용돼요.</p>
       </div>
       <button class="toggle" id="ar-ai-mode" onclick="arHandleAiToggle()"></button>
     </div>
@@ -360,7 +360,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C8507A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
         <span class="field-label" style="color:#C8507A;">과거 DM 학습</span>
       </div>
-      <span class="field-note">지금까지 받은 DM과 사장님의 답변을 AI에게 학습시키면, 처음부터 사장님 말투로 응답해요. 최근 6개월 대화에서 최대 50개 샘플을 가져옵니다.</span>
+      <span class="field-note">지금까지 받은 DM과 사장님의 답변을 루미에게 학습시키면, 처음부터 사장님 말투로 응답해요. 최근 6개월 대화에서 최대 50개 샘플을 가져옵니다.</span>
       <button class="btn btn-pink" id="ar-learn-btn" onclick="arImportDMHistory()" style="align-self:flex-start;font-size:14px;padding:10px 20px;min-height:40px;">학습 시작</button>
       <span class="field-note" id="ar-learn-status" style="display:none;"></span>
     </div>
@@ -417,7 +417,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- AI 자신감 기준 -->
     <div class="field" id="ar-confidence-field">
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-        <span class="field-label">AI 자신감 기준</span>
+        <span class="field-label">루미 자신감 기준</span>
         <span id="ar-biz-badge" style="display:none;font-size:11px;font-weight:600;background:rgba(200,80,122,.12);color:#C8507A;border-radius:6px;padding:2px 8px;">비즈니스 전용</span>
       </div>
       <input type="range" id="ar-confidence" min="0.70" max="0.95" step="0.05" value="0.85" style="width:100%;accent-color:#C8507A;cursor:not-allowed;opacity:.45;" disabled>
@@ -426,7 +426,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <span id="ar-confidence-val" style="font-weight:600;color:#C8507A;">0.85</span>
         <span>높음(정확도 우선)</span>
       </div>
-      <span class="field-note">루미 AI가 이 자신감 이상일 때만 자동 발송. 낮출수록 반응↑·오답 리스크↑, 높일수록 정확도↑·놓칠 확률↑.</span>
+      <span class="field-note">루미가 이 자신감 이상일 때만 자동 발송. 낮출수록 반응↑·오답 리스크↑, 높일수록 정확도↑·놓칠 확률↑.</span>
     </div>
 
     <!-- 저장 버튼 -->
@@ -834,7 +834,7 @@ function arHandleAiToggle() {
   var toggle = document.getElementById('ar-ai-mode');
   if (!toggle) return;
   if (toggle.getAttribute('data-locked') === '1') {
-    showToast('AI 모드는 비즈니스 플랜 전용이에요. /subscribe 에서 업그레이드할 수 있어요.');
+    showToast('루미 자동응답은 비즈니스 플랜 전용이에요. /subscribe 에서 업그레이드할 수 있어요.');
     return;
   }
   if (arSavingAiMode) return;
@@ -848,7 +848,7 @@ function arHandleAiToggle() {
       arSavingAiMode = false;
       if (res.ok && res.data && res.data.success) {
         arCurrentAiMode = nowOn;
-        showToast('AI 모드 ' + (nowOn ? 'ON' : 'OFF') + ' 저장됐어요');
+        showToast('루미 자동응답 ' + (nowOn ? 'ON' : 'OFF') + ' 저장됐어요');
         arApplyAiModeUI();
       } else {
         // 원상복구
@@ -985,7 +985,7 @@ function arBuildRatingCard(item) {
 
   var replyLabel = document.createElement('div');
   replyLabel.className = 'ar-rating-text label';
-  replyLabel.textContent = 'AI 답변';
+  replyLabel.textContent = '루미 답변';
   card.appendChild(replyLabel);
   var reply = document.createElement('div');
   reply.className = 'ar-rating-text';
