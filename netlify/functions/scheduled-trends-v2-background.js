@@ -1549,28 +1549,32 @@ function buildCrossSourceCount({ keyword, naverData, blogData, ytKR, igTexts, go
 // DB에서 전날(7일 전) 스냅샷 조회해 증가율 산출
 // ─────────────────────────────────────────────
 async function computeVelocity({ supa, keyword, category, todayCount }) {
+  // todayCount는 이제 weighted_score (실제 mention 기반) — rank 프록시 아님
   try {
-    const prevDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-    const prevKey = `l30d-domestic:${category}:${prevDate}`;
-    const { data } = await supa
-      .from('trends')
-      .select('keywords')
-      .eq('category', prevKey)
+    const today = new Date().toISOString().slice(0, 10);
+    const cutoff = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const upperBound = new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+    // trend_keywords 테이블에서 동일 keyword + category의 4~14일 전 row (weighted_score 비교)
+    const { data, error } = await supa
+      .from('trend_keywords')
+      .select('weighted_score, collected_date')
+      .eq('keyword', keyword)
+      .eq('category', category)
+      .gte('collected_date', cutoff)
+      .lte('collected_date', upperBound)
+      .order('collected_date', { ascending: false })
+      .limit(1)
       .maybeSingle();
 
-    if (!data || !data.keywords) return null;
-    const prevKeywords = Array.isArray(data.keywords.keywords)
-      ? data.keywords.keywords
-      : Array.isArray(data.keywords) ? data.keywords : [];
-
-    const prevItem = prevKeywords.find(k =>
-      normalize(k.keyword || '').toLowerCase() === normalize(keyword).toLowerCase()
-    );
-    const prevScore = prevItem ? (prevItem.score || prevItem.mentions || 0) : 0;
-    if (prevScore === 0) return null;
+    if (error || !data || !data.weighted_score) return null;
+    const prevScore = Number(data.weighted_score);
+    if (!prevScore || prevScore <= 0) return null;
 
     const pct = ((todayCount - prevScore) / prevScore) * 100;
-    return Math.round(pct * 10) / 10;
+    // 극단값 클램프 (-100% ~ +2000%)
+    const clamped = Math.max(-100, Math.min(2000, pct));
+    return Math.round(clamped * 10) / 10;
   } catch(e) {
     return null;
   }
@@ -1581,6 +1585,14 @@ async function computeVelocity({ supa, keyword, category, todayCount }) {
 // ─────────────────────────────────────────────
 async function checkIsNew({ supa, keyword, category }) {
   try {
+    // Bootstrap 가드: 카테고리 전체 누적 행 < 50이면 신조어 판별 비활성 (테이블이 아직 young)
+    const { count: totalCount } = await supa
+      .from('trend_keywords')
+      .select('id', { count: 'exact', head: true })
+      .eq('category', category);
+
+    if (!totalCount || totalCount < 50) return false;
+
     const cutoff = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
     const { data, error } = await supa
       .from('trend_keywords')
@@ -1591,7 +1603,6 @@ async function checkIsNew({ supa, keyword, category }) {
       .limit(1);
 
     if (error) {
-      // trend_keywords 테이블 미존재 등 에러 → 신조어 판별 불가, false 반환
       return false;
     }
     // 90일 이전 기록이 없으면 신조어
@@ -1880,7 +1891,8 @@ exports.handler = runGuarded({
             const signalTier = crossSourceCount >= 2 ? 'real' : 'weak';
             const weightedScore = computeWeightedScore(counts);
             const todayScore = 100 - idx * 5;
-            const velocityPct = await computeVelocity({ supa, keyword, category, todayCount: todayScore });
+            // velocity는 실제 mention 기반(weighted_score) 7일 전 대비 (rank 프록시 아님)
+            const velocityPct = await computeVelocity({ supa, keyword, category, todayCount: weightedScore });
             const isNew = await checkIsNew({ supa, keyword, category });
             const saturationTotal = await fetchKeywordSaturation(keyword);
             const saturationLevel = classifySaturation(saturationTotal);

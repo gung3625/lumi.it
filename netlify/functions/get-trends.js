@@ -84,7 +84,7 @@ function isBadKeyword(raw) {
   if (kw.length < 2 || kw.length > 25) return true;
   if (BLACKLIST.has(kw)) return true;
   if (FILLER_WORDS.some(fw => kw.includes(fw))) return true;
-  if ((kw.match(/\s/g) || []).length >= 3) return true;
+  if ((kw.match(/\s/g) || []).length >= 2) return true;
   if (/[?!,.]/.test(kw)) return true;
   if (GENERIC_PATTERNS.some(re => re.test(kw))) return true;
   return false;
@@ -327,10 +327,9 @@ exports.handler = async (event) => {
 
   const category = CATEGORY_ALIAS[rawCategory] || rawCategory;
   // hair/nail은 자체 수집·저장하므로 DB_KEY_MAP에서 제거 (beauty row 읽지 않음)
+  // kids/shop 제거: UI에 노출되지 않는 dormant 코드였고, cafe로 silent 폴백은 데이터 오배포 리스크
   const DB_KEY_MAP = {
     health: 'fitness',
-    kids: 'cafe',  // fallback
-    shop: 'cafe',  // fallback
   };
   const storeKey = knownCategories.includes(category) ? (DB_KEY_MAP[category] || category) : 'cafe';
   // splitBeautyCategory 분리 필터 비활성 (hair/nail 자체 row 사용)
