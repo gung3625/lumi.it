@@ -1,12 +1,8 @@
+const { corsHeaders, getOrigin } = require('./_shared/auth');
 // 관리자 전용 홍보 이미지 업로드 — base64 이미지 1장을 Supabase Storage(link-assets) 에 저장 후 공개 URL 반환.
 // 인증: Authorization: Bearer ${LUMI_SECRET}. 로그·응답에 토큰/사용자 식별자 노출 금지.
 const { getAdminClient } = require('./_shared/supabase-admin');
 
-const headers = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Content-Type': 'application/json',
-};
 
 function sanitizeFilename(name) {
   // 영숫자, 하이픈, 점만 허용 — 그 외 문자는 '-' 로 치환
@@ -14,6 +10,7 @@ function sanitizeFilename(name) {
 }
 
 exports.handler = async (event) => {
+  const headers = corsHeaders(getOrigin(event));
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 204, headers, body: '' };
   }

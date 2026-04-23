@@ -1,11 +1,7 @@
+const { corsHeaders, getOrigin } = require('./_shared/auth');
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
 
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Content-Type': 'application/json',
-};
 
 function buildToneGuide(toneLikes, toneDislikes) {
   let guide = '';
@@ -239,33 +235,34 @@ async function moderateCaption(text) {
 }
 
 exports.handler = async (event) => {
+  const headers = corsHeaders(getOrigin(event));
   if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 204, headers: CORS };
+    return { statusCode: 204, headers: headers };
   }
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method Not Allowed' }) };
+    return { statusCode: 405, headers: headers, body: JSON.stringify({ error: 'Method Not Allowed' }) };
   }
 
   let body;
   try {
     body = JSON.parse(event.body);
   } catch {
-    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Bad Request' }) };
+    return { statusCode: 400, headers: headers, body: JSON.stringify({ error: 'Bad Request' }) };
   }
 
   const { reservationKey } = body;
   if (!reservationKey) {
-    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'reservationKey 필수' }) };
+    return { statusCode: 400, headers: headers, body: JSON.stringify({ error: 'reservationKey 필수' }) };
   }
 
   // Bearer 토큰 검증
   const token = extractBearerToken(event);
   if (!token) {
-    return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증 실패' }) };
+    return { statusCode: 401, headers: headers, body: JSON.stringify({ error: '인증 실패' }) };
   }
   const { user, error: authError } = await verifyBearerToken(token);
   if (authError || !user) {
-    return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증에 실패했습니다.' }) };
+    return { statusCode: 401, headers: headers, body: JSON.stringify({ error: '인증에 실패했습니다.' }) };
   }
 
   const admin = getAdminClient();
@@ -280,19 +277,19 @@ exports.handler = async (event) => {
       .single();
 
     if (resErr || !reservation) {
-      return { statusCode: 404, headers: CORS, body: JSON.stringify({ error: '예약 데이터를 찾을 수 없어요' }) };
+      return { statusCode: 404, headers: headers, body: JSON.stringify({ error: '예약 데이터를 찾을 수 없어요' }) };
     }
 
     // 2. 재생성 횟수 제한 확인 (건당 최대 3회)
     const currentCount = reservation.regenerate_count || 0;
     if (currentCount >= 3) {
-      return { statusCode: 429, headers: CORS, body: JSON.stringify({ error: '재생성은 최대 3회까지 가능합니다', remaining: 0 }) };
+      return { statusCode: 429, headers: headers, body: JSON.stringify({ error: '재생성은 최대 3회까지 가능합니다', remaining: 0 }) };
     }
 
     // 3. 이미지 분석 결과 확인
     const imageAnalysis = reservation.image_analysis;
     if (!imageAnalysis) {
-      return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '이미지 분석 결과가 없어요. 먼저 예약을 처리해주세요.' }) };
+      return { statusCode: 400, headers: headers, body: JSON.stringify({ error: '이미지 분석 결과가 없어요. 먼저 예약을 처리해주세요.' }) };
     }
 
     // 4. 최신 트렌드 가져오기
@@ -397,7 +394,7 @@ exports.handler = async (event) => {
     const captions = parseCaptions(outputText);
     if (!captions.length) {
       console.error('[regenerate-caption] 파싱 실패. GPT 원문:', outputText.substring(0, 500));
-      return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '캡션 파싱 실패. 다시 시도해주세요.' }) };
+      return { statusCode: 500, headers: headers, body: JSON.stringify({ error: '캡션 파싱 실패. 다시 시도해주세요.' }) };
     }
     const scores = parseScores(outputText);
     if (scores.length) console.log('[regenerate-caption] 캡션 품질 점수:', scores.join(', '));
@@ -405,7 +402,7 @@ exports.handler = async (event) => {
     const moderationResults = await Promise.all(captions.map(c => moderateCaption(c)));
     const safeCaptions = captions.filter((_, i) => moderationResults[i]);
     if (safeCaptions.length === 0) {
-      return { statusCode: 422, headers: CORS, body: JSON.stringify({ error: '캡션 안전성 검수를 통과하지 못했습니다. 다시 시도해주세요.' }) };
+      return { statusCode: 422, headers: headers, body: JSON.stringify({ error: '캡션 안전성 검수를 통과하지 못했습니다. 다시 시도해주세요.' }) };
     }
 
     // 7. 예약 업데이트: 새 캡션 + 재생성 횟수 +1
@@ -424,14 +421,14 @@ exports.handler = async (event) => {
 
     if (updateErr) {
       console.error('[regenerate-caption] 업데이트 실패:', updateErr.message);
-      return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '재생성 실패' }) };
+      return { statusCode: 500, headers: headers, body: JSON.stringify({ error: '재생성 실패' }) };
     }
 
     console.log(`[regenerate-caption] 완료: ${reservationKey}, 재생성 횟수: ${newCount}`);
 
     return {
       statusCode: 200,
-      headers: CORS,
+      headers: headers,
       body: JSON.stringify({
         success: true,
         captions: safeCaptions,
@@ -443,7 +440,7 @@ exports.handler = async (event) => {
     console.error('[regenerate-caption] 오류:', err.message);
     return {
       statusCode: 500,
-      headers: CORS,
+      headers: headers,
       body: JSON.stringify({ error: '재생성 실패' }),
     };
   }

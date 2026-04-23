@@ -1,13 +1,9 @@
+const { corsHeaders, getOrigin } = require('./_shared/auth');
 // 관리자 전용 홍보 게시 — 공개 이미지 URL 배열 + 캡션 → 관리자 IG 피드에 게시(단일 또는 캐러셀).
 // 인증: Authorization: Bearer ${LUMI_SECRET}. 토큰/이메일/이름 절대 노출 금지.
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { toProxyUrl } = require('./_shared/ig-image-url');
 
-const headers = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Content-Type': 'application/json',
-};
 
 const GRAPH = 'https://graph.facebook.com/v25.0';
 
@@ -84,6 +80,7 @@ async function publishMedia(igUserId, igAccessToken, creationId) {
 }
 
 exports.handler = async (event) => {
+  const headers = corsHeaders(getOrigin(event));
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 204, headers, body: '' };
   }

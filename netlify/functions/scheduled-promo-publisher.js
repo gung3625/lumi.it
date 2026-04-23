@@ -1,3 +1,4 @@
+const { corsHeaders, getOrigin } = require('./_shared/auth');
 // 예약된 홍보 게시 스케줄러 — promo_schedule 테이블에서 pending 행을 polling해 IG에 게시.
 // 스케줄: 매 5분마다 (exports.config.schedule). 수동 트리거: POST /api/scheduled-promo-publisher (LUMI_SECRET 필요).
 // 토큰·이메일·이름 절대 로그 노출 금지.
@@ -6,11 +7,6 @@ const { toProxyUrl } = require('./_shared/ig-image-url');
 
 exports.config = { schedule: '*/5 * * * *' };
 
-const headers = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Content-Type': 'application/json',
-};
 
 const GRAPH = 'https://graph.facebook.com/v25.0';
 
@@ -82,6 +78,7 @@ async function fetchAdminIgTokens(supabase) {
 }
 
 exports.handler = async (event) => {
+  const headers = corsHeaders(getOrigin(event));
   // HTTP OPTIONS preflight
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 204, headers, body: '' };

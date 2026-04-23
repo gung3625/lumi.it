@@ -1,12 +1,9 @@
+const { corsHeaders, getOrigin } = require('./_shared/auth');
 const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
 
-const headers = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Content-Type': 'application/json',
-};
 
 exports.handler = async (event) => {
+  const headers = corsHeaders(getOrigin(event));
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 204, headers, body: '' };
   }

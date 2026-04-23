@@ -1,26 +1,22 @@
+const { corsHeaders, getOrigin } = require('./_shared/auth');
 // get-my-link-page — GET, Bearer 인증
 // 현재 로그인 사용자의 링크인바이오 페이지 + 블록 반환.
 // 대시보드 카드 미리보기에 사용.
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
 
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  'Content-Type': 'application/json',
-};
 
 exports.handler = async (event) => {
-  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
+  const headers = corsHeaders(getOrigin(event));
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: headers, body: '' };
   if (event.httpMethod !== 'GET') {
-    return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method Not Allowed' }) };
+    return { statusCode: 405, headers: headers, body: JSON.stringify({ error: 'Method Not Allowed' }) };
   }
 
   const token = extractBearerToken(event);
   const { user, error: authErr } = await verifyBearerToken(token);
   if (authErr || !user) {
-    return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증이 필요합니다.' }) };
+    return { statusCode: 401, headers: headers, body: JSON.stringify({ error: '인증이 필요합니다.' }) };
   }
 
   try {
@@ -32,10 +28,10 @@ exports.handler = async (event) => {
       .maybeSingle();
     if (pageErr) {
       console.error('[get-my-link-page] page select error:', pageErr.message);
-      return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '조회 실패' }) };
+      return { statusCode: 500, headers: headers, body: JSON.stringify({ error: '조회 실패' }) };
     }
     if (!pageRow) {
-      return { statusCode: 200, headers: CORS, body: JSON.stringify({ page: null, blocks: [] }) };
+      return { statusCode: 200, headers: headers, body: JSON.stringify({ page: null, blocks: [] }) };
     }
 
     const { data: blocks, error: blockErr } = await admin
@@ -45,16 +41,16 @@ exports.handler = async (event) => {
       .order('position', { ascending: true });
     if (blockErr) {
       console.error('[get-my-link-page] blocks select error:', blockErr.message);
-      return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '조회 실패' }) };
+      return { statusCode: 500, headers: headers, body: JSON.stringify({ error: '조회 실패' }) };
     }
 
     return {
       statusCode: 200,
-      headers: CORS,
+      headers: headers,
       body: JSON.stringify({ page: pageRow, blocks: blocks || [] }),
     };
   } catch (err) {
     console.error('[get-my-link-page] unexpected:', err && err.message);
-    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '서버 오류' }) };
+    return { statusCode: 500, headers: headers, body: JSON.stringify({ error: '서버 오류' }) };
   }
 };

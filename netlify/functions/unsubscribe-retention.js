@@ -1,11 +1,12 @@
 const crypto = require('crypto');
 const { getAdminClient } = require('./_shared/supabase-admin');
 
+const headers = {
+  'Access-Control-Allow-Origin': '*',
+  'Content-Type': 'text/html; charset=utf-8',
+};
+
 exports.handler = async (event) => {
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Content-Type': 'text/html; charset=utf-8',
-  };
 
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers, body: '' };
   if (event.httpMethod !== 'GET') {

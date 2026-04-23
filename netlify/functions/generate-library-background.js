@@ -1,3 +1,4 @@
+const { corsHeaders, getOrigin } = require('./_shared/auth');
 // Background Function — 브랜드 라이브러리 콘텐츠 생성.
 // 매개변수: { industry?, content_type?, slot_index? }
 //   - 전체 생성 모드: 파라미터 없음 → 7업종 × 이미지2 + 영상2 = 28개 순차 생성
@@ -12,11 +13,6 @@ const { generateImage } = require('./_shared/openai-image-client');
 const { generateVideo } = require('./_shared/sora-video-client');
 const { getImagePrompt, getVideoPrompt } = require('./_shared/brand-prompts');
 
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Content-Type': 'application/json',
-};
 
 const INDUSTRIES = ['cafe', 'restaurant', 'beauty', 'nail', 'flower', 'clothing', 'gym'];
 const SLOTS_PER_TYPE = 2;  // 업종당 이미지 2 + 영상 2
@@ -148,9 +144,10 @@ async function generateSlot(supabase, { industry, contentType, slotIndex }) {
 }
 
 exports.handler = async (event) => {
-  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
+  const headers = corsHeaders(getOrigin(event));
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: headers, body: '' };
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method not allowed' }) };
+    return { statusCode: 405, headers: headers, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
   try {
@@ -158,7 +155,7 @@ exports.handler = async (event) => {
   } catch (err) {
     return {
       statusCode: err.statusCode || 401,
-      headers: CORS,
+      headers: headers,
       body: JSON.stringify({ error: err.message }),
     };
   }
@@ -173,15 +170,15 @@ exports.handler = async (event) => {
     // 특정 슬롯 재생성 모드
     if (industry && contentType && typeof slotIndex === 'number') {
       if (!['cafe','restaurant','beauty','nail','flower','clothing','gym'].includes(industry)) {
-        return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '유효하지 않은 업종입니다.' }) };
+        return { statusCode: 400, headers: headers, body: JSON.stringify({ error: '유효하지 않은 업종입니다.' }) };
       }
       if (!['image','video'].includes(contentType)) {
-        return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '유효하지 않은 content_type입니다.' }) };
+        return { statusCode: 400, headers: headers, body: JSON.stringify({ error: '유효하지 않은 content_type입니다.' }) };
       }
       const result = await generateSlot(supabase, { industry, contentType, slotIndex });
       return {
         statusCode: result.success ? 200 : 500,
-        headers: CORS,
+        headers: headers,
         body: JSON.stringify(result),
       };
     }
@@ -190,11 +187,11 @@ exports.handler = async (event) => {
     // 이 함수는 단일 슬롯 모드만 지원
     return {
       statusCode: 400,
-      headers: CORS,
+      headers: headers,
       body: JSON.stringify({ error: 'industry, content_type, slot_index 파라미터가 모두 필요합니다. 전체 생성은 /api/admin-library-regenerate?mode=all 을 사용하세요.' }),
     };
   } catch (err) {
     console.error('[generate-library] 예기치 않은 오류:', err.message);
-    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '서버 오류가 발생했습니다.' }) };
+    return { statusCode: 500, headers: headers, body: JSON.stringify({ error: '서버 오류가 발생했습니다.' }) };
   }
 };

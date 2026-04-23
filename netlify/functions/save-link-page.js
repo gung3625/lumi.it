@@ -3,36 +3,31 @@
 // 동작: link_pages upsert → 기존 blocks 전체 삭제 → 새 blocks 재삽입
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
-
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Content-Type': 'application/json',
-};
+const { corsHeaders, getOrigin } = require('./_shared/auth');
 
 const ALLOWED_BLOCK_TYPES = new Set([
   'header','social','link','hours','map','menu','notice','kakao','phone','delivery'
 ]);
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$|^[a-z0-9]{2,32}$/;
 
-function ok(data) {
-  return { statusCode: 200, headers: CORS, body: JSON.stringify(data) };
+function ok(headers, data) {
+  return { statusCode: 200, headers, body: JSON.stringify(data) };
 }
-function bad(msg, code = 400) {
-  return { statusCode: code, headers: CORS, body: JSON.stringify({ error: msg }) };
+function bad(headers, msg, code = 400) {
+  return { statusCode: code, headers, body: JSON.stringify({ error: msg }) };
 }
 
 exports.handler = async (event) => {
-  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
-  if (event.httpMethod !== 'POST') return bad('Method Not Allowed', 405);
+  const headers = corsHeaders(getOrigin(event));
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers, body: '' };
+  if (event.httpMethod !== 'POST') return bad(headers, 'Method Not Allowed', 405);
 
   const token = extractBearerToken(event);
   const { user, error: authErr } = await verifyBearerToken(token);
-  if (authErr || !user) return bad('인증이 필요합니다.', 401);
+  if (authErr || !user) return bad(headers, '인증이 필요합니다.', 401);
 
   let body;
-  try { body = JSON.parse(event.body || '{}'); } catch { return bad('Bad JSON'); }
+  try { body = JSON.parse(event.body || '{}'); } catch { return bad(headers, 'Bad JSON'); }
 
   const page = body.page || {};
   const blocks = Array.isArray(body.blocks) ? body.blocks : [];
@@ -48,7 +43,7 @@ exports.handler = async (event) => {
       .maybeSingle();
     if (exErr) {
       console.error('[save-link-page] slug lookup error:', exErr.message);
-      return bad('저장 실패', 500);
+      return bad(headers, '저장 실패', 500);
     }
     if (existing && existing.slug) {
       slug = existing.slug;
@@ -58,7 +53,7 @@ exports.handler = async (event) => {
         .select('slug');
       if (listErr) {
         console.error('[save-link-page] slug list error:', listErr.message);
-        return bad('저장 실패', 500);
+        return bad(headers, '저장 실패', 500);
       }
       let maxNum = 0;
       (rows || []).forEach(function(r){
@@ -71,10 +66,10 @@ exports.handler = async (event) => {
     }
   } catch (err) {
     console.error('[save-link-page] slug assign failed:', err && err.message);
-    return bad('저장 실패', 500);
+    return bad(headers, '저장 실패', 500);
   }
   if (!SLUG_RE.test(slug)) {
-    return bad('URL 주소 자동 할당 실패', 500);
+    return bad(headers, 'URL 주소 자동 할당 실패', 500);
   }
 
   const theme = page.theme === 'dark' ? 'dark' : 'light';
@@ -95,9 +90,9 @@ exports.handler = async (event) => {
       .maybeSingle();
     if (dupErr) {
       console.error('[save-link-page] slug dup check error:', dupErr.message);
-      return bad('저장 실패', 500);
+      return bad(headers, '저장 실패', 500);
     }
-    if (dup) return bad('이미 사용 중인 URL이에요. 다른 이름을 써주세요.', 409);
+    if (dup) return bad(headers, '이미 사용 중인 URL이에요. 다른 이름을 써주세요.', 409);
 
     // 2) link_pages upsert
     const pageRow = {
@@ -114,7 +109,7 @@ exports.handler = async (event) => {
       .upsert(pageRow, { onConflict: 'user_id' });
     if (upErr) {
       console.error('[save-link-page] upsert error:', upErr.message);
-      return bad('저장 실패', 500);
+      return bad(headers, '저장 실패', 500);
     }
 
     // 3) 기존 blocks 전체 삭제 후 재삽입 (간단한 전체 교체 전략)
@@ -124,7 +119,7 @@ exports.handler = async (event) => {
       .eq('page_id', user.id);
     if (delErr) {
       console.error('[save-link-page] delete blocks error:', delErr.message);
-      return bad('저장 실패', 500);
+      return bad(headers, '저장 실패', 500);
     }
 
     if (blocks.length > 0) {
@@ -143,20 +138,20 @@ exports.handler = async (event) => {
         });
       }
       if (rows.length > 50) {
-        return bad('블록은 최대 50개까지 추가할 수 있어요.', 400);
+        return bad(headers, '블록은 최대 50개까지 추가할 수 있어요.', 400);
       }
       if (rows.length > 0) {
         const { error: insErr } = await admin.from('link_blocks').insert(rows);
         if (insErr) {
           console.error('[save-link-page] insert blocks error:', insErr.message);
-          return bad('저장 실패', 500);
+          return bad(headers, '저장 실패', 500);
         }
       }
     }
 
-    return ok({ success: true, slug });
+    return ok(headers, { success: true, slug });
   } catch (err) {
     console.error('[save-link-page] unexpected:', err && err.message);
-    return bad('서버 오류', 500);
+    return bad(headers, '서버 오류', 500);
   }
 };

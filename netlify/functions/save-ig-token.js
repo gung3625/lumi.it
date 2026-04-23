@@ -3,13 +3,9 @@
 // - Supabase Vault RPC(set_ig_access_token / set_ig_page_access_token)로 암호화 저장
 // - ig_accounts 테이블 upsert (secret_id uuid만 보관, 평문 토큰 저장 금지)
 const crypto = require('crypto');
+const { corsHeaders, getOrigin } = require('./_shared/auth');
 const { getAdminClient } = require('./_shared/supabase-admin');
 
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type, x-lumi-secret',
-  'Content-Type': 'application/json',
-};
 
 function checkSecret(provided) {
   const secret = process.env.LUMI_SECRET;
@@ -19,27 +15,28 @@ function checkSecret(provided) {
 }
 
 exports.handler = async (event) => {
-  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
+  const headers = corsHeaders(getOrigin(event));
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: headers, body: '' };
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method Not Allowed' }) };
+    return { statusCode: 405, headers: headers, body: JSON.stringify({ error: 'Method Not Allowed' }) };
   }
 
   const secret = event.headers['x-lumi-secret'];
   if (!checkSecret(secret)) {
-    return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증 실패' }) };
+    return { statusCode: 401, headers: headers, body: JSON.stringify({ error: '인증 실패' }) };
   }
 
   let body;
   try {
     body = JSON.parse(event.body);
   } catch (e) {
-    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Bad Request' }) };
+    return { statusCode: 400, headers: headers, body: JSON.stringify({ error: 'Bad Request' }) };
   }
 
   const { igUserId, accessToken, pageAccessToken, igUsername, pageId, email, tokenExpiresAt } = body;
 
   if (!igUserId || !accessToken) {
-    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'igUserId, accessToken 필수' }) };
+    return { statusCode: 400, headers: headers, body: JSON.stringify({ error: 'igUserId, accessToken 필수' }) };
   }
 
   try {
@@ -67,7 +64,7 @@ exports.handler = async (event) => {
     }
 
     if (!userId) {
-      return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'user_id 해석 실패 (email 또는 기존 연동 필요)' }) };
+      return { statusCode: 400, headers: headers, body: JSON.stringify({ error: 'user_id 해석 실패 (email 또는 기존 연동 필요)' }) };
     }
 
     // 2) ig_accounts 기본 row upsert
@@ -87,7 +84,7 @@ exports.handler = async (event) => {
       .upsert(upsertPayload, { onConflict: 'ig_user_id' });
     if (upsertErr) {
       console.error('[save-ig-token] ig_accounts upsert 실패:', upsertErr.message);
-      return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '저장 실패' }) };
+      return { statusCode: 500, headers: headers, body: JSON.stringify({ error: '저장 실패' }) };
     }
 
     // 3) Vault RPC — access_token (필수)
@@ -98,7 +95,7 @@ exports.handler = async (event) => {
     });
     if (accessErr) {
       console.error('[save-ig-token] set_ig_access_token 실패:', accessErr.message);
-      return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '토큰 암호화 실패' }) };
+      return { statusCode: 500, headers: headers, body: JSON.stringify({ error: '토큰 암호화 실패' }) };
     }
 
     // 4) Vault RPC — page_access_token (옵션)
@@ -129,20 +126,20 @@ exports.handler = async (event) => {
       .eq('ig_user_id', igUserId);
     if (idUpdateErr) {
       console.error('[save-ig-token] secret_id 업데이트 실패:', idUpdateErr.message);
-      return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '토큰 저장 실패' }) };
+      return { statusCode: 500, headers: headers, body: JSON.stringify({ error: '토큰 저장 실패' }) };
     }
 
     console.log('[lumi] Instagram 토큰 저장 완료:', igUserId);
     return {
       statusCode: 200,
-      headers: CORS,
+      headers: headers,
       body: JSON.stringify({ success: true, igUserId })
     };
   } catch (e) {
     console.error('[save-ig-token] 오류:', e.message);
     return {
       statusCode: 500,
-      headers: CORS,
+      headers: headers,
       body: JSON.stringify({ error: '저장 실패' })
     };
   }

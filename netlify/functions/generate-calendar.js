@@ -3,15 +3,10 @@
 // - 로그인 사용자: Bearer 토큰 검증 → reservations 테이블에 post_mode='scheduled' 로 저장
 //   (전용 calendar 테이블이 없으므로 reservations.reserve_key 에 'cal:{user_id}' 저장)
 const https = require('https');
+const { corsHeaders, getOrigin } = require('./_shared/auth');
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
 
-const CORS = {
-  'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
 
 function httpsGet(url, timeoutMs = 10000) {
   return new Promise((resolve, reject) => {
@@ -394,12 +389,13 @@ ${weatherLines}
 }
 
 exports.handler = async (event) => {
+  const headers = corsHeaders(getOrigin(event));
   if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers: CORS, body: '' };
+    return { statusCode: 200, headers: headers, body: '' };
   }
 
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method not allowed' }) };
+    return { statusCode: 405, headers: headers, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
   try {
@@ -409,7 +405,7 @@ exports.handler = async (event) => {
     if (!bizCategory || !region) {
       return {
         statusCode: 400,
-        headers: CORS,
+        headers: headers,
         body: JSON.stringify({ error: '업종과 지역을 입력해주세요.' })
       };
     }
@@ -432,7 +428,7 @@ exports.handler = async (event) => {
       if (!rateCheck.allowed) {
         return {
           statusCode: 429,
-          headers: CORS,
+          headers: headers,
           body: JSON.stringify({ error: '오늘 생성 횟수(3회)를 모두 사용했어요. 내일 다시 시도해주세요.' })
         };
       }
@@ -489,7 +485,7 @@ exports.handler = async (event) => {
 
     return {
       statusCode: 200,
-      headers: CORS,
+      headers: headers,
       body: JSON.stringify({
         calendar,
         meta: {
@@ -508,7 +504,7 @@ exports.handler = async (event) => {
     console.error('generate-calendar error:', e.message);
     return {
       statusCode: 500,
-      headers: CORS,
+      headers: headers,
       body: JSON.stringify({ error: '캘린더 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.' })
     };
   }

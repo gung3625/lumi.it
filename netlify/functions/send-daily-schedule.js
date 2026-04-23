@@ -3,6 +3,7 @@
 // - public.trends 에서 업종별 키워드 조회
 // - 유저별 최적 시간 + 트렌드 안내를 Solapi 알림톡으로 발송
 const crypto = require('crypto');
+const { corsHeaders, getOrigin } = require('./_shared/auth');
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { getTodayBestSlot } = require('./get-best-time');
 
@@ -11,10 +12,6 @@ const API_SECRET = process.env.SOLAPI_API_SECRET;
 const CHANNEL_ID = 'KA01PF26032219112677567W26lSNGQj';
 const SCHEDULE_TEMPLATE_ID = 'KA01TP260322191942267zoXVvaI7xav';
 
-const CORS = {
-  'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': '*',
-};
 
 function checkSecret(provided) {
   const secret = process.env.LUMI_SECRET;
@@ -81,12 +78,13 @@ function normalizeBizCategory(cat) {
 }
 
 exports.handler = async (event) => {
+  const headers = corsHeaders(getOrigin(event));
   // 스케줄 함수(Netlify 자동 실행) 또는 수동 호출 모두 허용
   const isScheduled = !event.httpMethod && !event.headers;
   if (!isScheduled) {
     const secret = event.headers?.['x-lumi-secret'];
     if (!checkSecret(secret)) {
-      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증 실패' }) };
+      return { statusCode: 401, headers: headers, body: JSON.stringify({ error: '인증 실패' }) };
     }
   }
 
@@ -123,7 +121,7 @@ exports.handler = async (event) => {
 
     if (userErr) {
       console.error('[send-daily-schedule] users 조회 실패:', userErr.message);
-      return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '조회 실패' }) };
+      return { statusCode: 500, headers: headers, body: JSON.stringify({ error: '조회 실패' }) };
     }
 
     // 업종별 트렌드 캐시 로드 (한 번만)
@@ -180,12 +178,12 @@ exports.handler = async (event) => {
     console.log(`데일리 알림톡 완료: 성공 ${sent}건, 실패 ${failed}건`);
     return {
       statusCode: 200,
-      headers: CORS,
+      headers: headers,
       body: JSON.stringify({ success: true, sent, failed })
     };
 
   } catch (err) {
     console.error('send-daily-schedule error:', err.message);
-    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '처리 중 오류가 발생했습니다.' }) };
+    return { statusCode: 500, headers: headers, body: JSON.stringify({ error: '처리 중 오류가 발생했습니다.' }) };
   }
 };

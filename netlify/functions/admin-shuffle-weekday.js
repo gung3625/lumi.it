@@ -1,3 +1,4 @@
+const { corsHeaders, getOrigin } = require('./_shared/auth');
 // admin-shuffle-weekday.js — 요일↔업종 매핑 Fisher-Yates 셔플 (admin-only).
 // POST /api/admin-shuffle-weekday
 // Response: { schedule: [{ weekday, industry, week_start_date }] }
@@ -5,11 +6,6 @@
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
 
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Content-Type': 'application/json',
-};
 
 const INDUSTRIES = ['cafe', 'restaurant', 'beauty', 'nail', 'flower', 'clothing', 'gym'];
 
@@ -46,9 +42,10 @@ function getThisMonday() {
 }
 
 exports.handler = async (event) => {
-  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
+  const headers = corsHeaders(getOrigin(event));
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: headers, body: '' };
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method not allowed' }) };
+    return { statusCode: 405, headers: headers, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
   try {
@@ -56,7 +53,7 @@ exports.handler = async (event) => {
   } catch (err) {
     return {
       statusCode: err.statusCode || 401,
-      headers: CORS,
+      headers: headers,
       body: JSON.stringify({ error: err.message }),
     };
   }
@@ -81,7 +78,7 @@ exports.handler = async (event) => {
 
     if (upsertErr) {
       console.error('[admin-shuffle-weekday] upsert 실패:', upsertErr.message);
-      return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '스케줄 셔플 실패' }) };
+      return { statusCode: 500, headers: headers, body: JSON.stringify({ error: '스케줄 셔플 실패' }) };
     }
 
     // 결과 재조회
@@ -92,18 +89,18 @@ exports.handler = async (event) => {
 
     if (selectErr) {
       console.error('[admin-shuffle-weekday] 결과 조회 실패:', selectErr.message);
-      return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '스케줄 조회 실패' }) };
+      return { statusCode: 500, headers: headers, body: JSON.stringify({ error: '스케줄 조회 실패' }) };
     }
 
     console.log('[admin-shuffle-weekday] 셔플 완료. week_start_date:', weekStartDate);
 
     return {
       statusCode: 200,
-      headers: CORS,
+      headers: headers,
       body: JSON.stringify({ schedule: schedule || [], week_start_date: weekStartDate }),
     };
   } catch (err) {
     console.error('[admin-shuffle-weekday] 예기치 않은 오류:', err.message);
-    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '서버 오류가 발생했습니다.' }) };
+    return { statusCode: 500, headers: headers, body: JSON.stringify({ error: '서버 오류가 발생했습니다.' }) };
   }
 };

@@ -1,3 +1,4 @@
+const { corsHeaders, getOrigin } = require('./_shared/auth');
 // 업종별 인스타그램 최적 게시 시간 (3-tier 하이브리드)
 // - Tier 1a: Meta online_followers + 최근 게시물 reach (계정 성숙 시)
 // - Tier 1b: 본인 게시 이력 posted_at 최빈 시간 (3건 이상)
@@ -164,29 +165,25 @@ function calcBestFromHistory(history) {
   return { time: bestKey, sampleSize: history.length, count: bestCount };
 }
 
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Content-Type': 'application/json',
-};
 
 exports.handler = async (event) => {
-  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
+  const headers = corsHeaders(getOrigin(event));
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: headers, body: '' };
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method not allowed' }) };
+    return { statusCode: 405, headers: headers, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
   const token = extractBearerToken(event);
-  if (!token) return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '로그인이 필요합니다.' }) };
+  if (!token) return { statusCode: 401, headers: headers, body: JSON.stringify({ error: '로그인이 필요합니다.' }) };
   const { user, error: authErr } = await verifyBearerToken(token);
   if (authErr || !user) {
     console.warn('[get-best-time] 토큰 검증 실패');
-    return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증에 실패했습니다.' }) };
+    return { statusCode: 401, headers: headers, body: JSON.stringify({ error: '인증에 실패했습니다.' }) };
   }
 
   let body = {};
   try { body = JSON.parse(event.body || '{}'); } catch {
-    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '잘못된 요청' }) };
+    return { statusCode: 400, headers: headers, body: JSON.stringify({ error: '잘못된 요청' }) };
   }
   const cat = normalizeCategory(body.category);
 
@@ -209,7 +206,7 @@ exports.handler = async (event) => {
         const hh = String(peak.hour).padStart(2, '0');
         return {
           statusCode: 200,
-          headers: CORS,
+          headers: headers,
           body: JSON.stringify({
             category: cat,
             bestTime: `${hh}:00`,
@@ -235,7 +232,7 @@ exports.handler = async (event) => {
     if (fromHistory) {
       return {
         statusCode: 200,
-        headers: CORS,
+        headers: headers,
         body: JSON.stringify({
           category: cat,
           bestTime: fromHistory.time,
@@ -254,7 +251,7 @@ exports.handler = async (event) => {
   // Tier 3: 업종 시드 매트릭스
   return {
     statusCode: 200,
-    headers: CORS,
+    headers: headers,
     body: JSON.stringify({
       category: cat,
       bestTime: seed.time,

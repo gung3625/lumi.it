@@ -1,27 +1,24 @@
+const { corsHeaders, getOrigin } = require('./_shared/auth');
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
 
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Content-Type': 'application/json',
-};
 
 exports.handler = async (event) => {
+  const headers = corsHeaders(getOrigin(event));
   if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 204, headers: CORS, body: '' };
+    return { statusCode: 204, headers: headers, body: '' };
   }
   if (event.httpMethod !== 'GET') {
-    return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'GET 전용' }) };
+    return { statusCode: 405, headers: headers, body: JSON.stringify({ error: 'GET 전용' }) };
   }
 
   const token = extractBearerToken(event);
   if (!token) {
-    return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증 필요' }) };
+    return { statusCode: 401, headers: headers, body: JSON.stringify({ error: '인증 필요' }) };
   }
   const { user, error: authError } = await verifyBearerToken(token);
   if (authError || !user) {
-    return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '유효하지 않은 토큰' }) };
+    return { statusCode: 401, headers: headers, body: JSON.stringify({ error: '유효하지 않은 토큰' }) };
   }
 
   try {
@@ -41,11 +38,11 @@ exports.handler = async (event) => {
 
     if (resErr) {
       console.error('[pending-caption-rating] 조회 실패:', resErr.message);
-      return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '조회 실패' }) };
+      return { statusCode: 500, headers: headers, body: JSON.stringify({ error: '조회 실패' }) };
     }
 
     if (!reservation) {
-      return { statusCode: 200, headers: CORS, body: JSON.stringify({ pending: false }) };
+      return { statusCode: 200, headers: headers, body: JSON.stringify({ pending: false }) };
     }
 
     // 캡션 텍스트 추출
@@ -83,7 +80,7 @@ exports.handler = async (event) => {
 
     return {
       statusCode: 200,
-      headers: CORS,
+      headers: headers,
       body: JSON.stringify({
         pending: true,
         reservation_id: reservation.id,
@@ -95,6 +92,6 @@ exports.handler = async (event) => {
     };
   } catch (err) {
     console.error('[pending-caption-rating] 예외:', err.message);
-    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '서버 오류' }) };
+    return { statusCode: 500, headers: headers, body: JSON.stringify({ error: '서버 오류' }) };
   }
 };

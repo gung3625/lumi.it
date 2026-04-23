@@ -8,13 +8,9 @@ const { spawn } = require('child_process');
 const { pipeline } = require('stream/promises');
 const { Readable } = require('stream');
 const ffmpegPath = require('ffmpeg-static');
+const { corsHeaders, getOrigin } = require('./_shared/auth');
 const { getAdminClient } = require('./_shared/supabase-admin');
 
-const headers = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Content-Type': 'application/json',
-};
 
 const TARGET_W = 1080;
 const TARGET_H = 1920;
@@ -127,6 +123,7 @@ function safeEqual(a, b) {
 }
 
 exports.handler = async (event) => {
+  const headers = corsHeaders(getOrigin(event));
   const authHeader = (event.headers['authorization'] || '').replace('Bearer ', '');
   if (!safeEqual(authHeader, process.env.LUMI_SECRET)) {
     console.error('[process-video] 인증 실패');

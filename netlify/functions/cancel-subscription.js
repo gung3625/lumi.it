@@ -1,3 +1,4 @@
+const { corsHeaders, getOrigin } = require('./_shared/auth');
 // 구독 해지
 // Supabase Bearer 토큰 검증 → public.users.auto_renew=false (plan 유지: 기간 끝까지 이용)
 const { getAdminClient } = require('./_shared/supabase-admin');
@@ -11,27 +12,23 @@ function esc(s) {
     .replace(/"/g, '&quot;');
 }
 
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Content-Type': 'application/json',
-};
 
 exports.handler = async (event) => {
-  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
+  const headers = corsHeaders(getOrigin(event));
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: headers, body: '' };
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method not allowed' }) };
+    return { statusCode: 405, headers: headers, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
   // Bearer 토큰 검증
   const token = extractBearerToken(event);
   if (!token) {
-    return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증이 필요합니다.' }) };
+    return { statusCode: 401, headers: headers, body: JSON.stringify({ error: '인증이 필요합니다.' }) };
   }
   const { user, error: authErr } = await verifyBearerToken(token);
   if (authErr || !user) {
     console.warn('[cancel-subscription] 토큰 검증 실패');
-    return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증에 실패했습니다.' }) };
+    return { statusCode: 401, headers: headers, body: JSON.stringify({ error: '인증에 실패했습니다.' }) };
   }
 
   const admin = getAdminClient();
@@ -45,11 +42,11 @@ exports.handler = async (event) => {
       .single();
 
     if (fetchErr || !profile) {
-      return { statusCode: 404, headers: CORS, body: JSON.stringify({ error: '회원 정보를 찾을 수 없습니다.' }) };
+      return { statusCode: 404, headers: headers, body: JSON.stringify({ error: '회원 정보를 찾을 수 없습니다.' }) };
     }
 
     if (!profile.plan || profile.plan === 'trial' || profile.plan === 'free') {
-      return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '활성 구독이 없습니다.' }) };
+      return { statusCode: 400, headers: headers, body: JSON.stringify({ error: '활성 구독이 없습니다.' }) };
     }
 
     const { error: updateErr } = await admin
@@ -62,7 +59,7 @@ exports.handler = async (event) => {
 
     if (updateErr) {
       console.error('[cancel-subscription] users update 오류:', updateErr.message);
-      return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '처리 중 오류가 발생했습니다.' }) };
+      return { statusCode: 500, headers: headers, body: JSON.stringify({ error: '처리 중 오류가 발생했습니다.' }) };
     }
 
     // 이탈 방지 이메일 발송
@@ -87,7 +84,7 @@ exports.handler = async (event) => {
 
     return {
       statusCode: 200,
-      headers: CORS,
+      headers: headers,
       body: JSON.stringify({
         success: true,
         message: '구독이 취소됐어요. 자동 갱신이 해제됐어요.',
@@ -96,6 +93,6 @@ exports.handler = async (event) => {
 
   } catch (err) {
     console.error('[cancel-subscription] error:', err.message);
-    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '처리 중 오류가 발생했습니다.' }) };
+    return { statusCode: 500, headers: headers, body: JSON.stringify({ error: '처리 중 오류가 발생했습니다.' }) };
   }
 };

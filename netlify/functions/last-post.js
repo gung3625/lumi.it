@@ -1,12 +1,8 @@
+const { corsHeaders, getOrigin } = require('./_shared/auth');
 // 최근 게시물 1건 조회 — Bearer 토큰 검증.
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
 
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Content-Type': 'application/json',
-};
 
 // Supabase Storage URL 여부 판단
 function isSupabaseUrl(url) {
@@ -24,15 +20,16 @@ function needsRefresh(row) {
 }
 
 exports.handler = async (event) => {
-  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
+  const headers = corsHeaders(getOrigin(event));
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: headers, body: '' };
   if (event.httpMethod !== 'GET' && event.httpMethod !== 'POST') {
-    return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method not allowed' }) };
+    return { statusCode: 405, headers: headers, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
   const token = extractBearerToken(event);
   const { user, error: authErr } = await verifyBearerToken(token);
   if (authErr || !user) {
-    return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증이 필요합니다.' }) };
+    return { statusCode: 401, headers: headers, body: JSON.stringify({ error: '인증이 필요합니다.' }) };
   }
 
   try {
@@ -47,7 +44,7 @@ exports.handler = async (event) => {
       .maybeSingle();
     if (error) {
       console.error('[last-post] select error:', error.message);
-      return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '최근 게시물 조회 실패' }) };
+      return { statusCode: 500, headers: headers, body: JSON.stringify({ error: '최근 게시물 조회 실패' }) };
     }
 
     // fallback refresh: Supabase Storage URL이거나 image_urls가 비어 있으면 IG CDN URL로 교체 시도
@@ -95,7 +92,7 @@ exports.handler = async (event) => {
                   .eq('reserve_key', data.reserve_key);
                 console.log('[last-post] IG CDN URL 갱신 완료 media_type=' + mt);
                 // 갱신된 값으로 응답
-                return { statusCode: 200, headers: CORS, body: JSON.stringify({ post: { ...data, ...cdnUpdate } }) };
+                return { statusCode: 200, headers: headers, body: JSON.stringify({ post: { ...data, ...cdnUpdate } }) };
               }
             } else {
               console.warn('[last-post] IG media API 오류:', igMedia.error.message);
@@ -109,9 +106,9 @@ exports.handler = async (event) => {
       }
     }
 
-    return { statusCode: 200, headers: CORS, body: JSON.stringify({ post: data || null }) };
+    return { statusCode: 200, headers: headers, body: JSON.stringify({ post: data || null }) };
   } catch (err) {
     console.error('[last-post] unexpected:', err && err.message);
-    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '서버 오류' }) };
+    return { statusCode: 500, headers: headers, body: JSON.stringify({ error: '서버 오류' }) };
   }
 };

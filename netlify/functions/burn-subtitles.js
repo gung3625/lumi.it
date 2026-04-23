@@ -1,3 +1,4 @@
+const { corsHeaders, getOrigin } = require('./_shared/auth');
 // Netlify Function: /api/burn-subtitles
 // 내부 호출 전용(LUMI_SECRET) 래퍼.
 // Modal endpoint (MODAL_BURN_SUBTITLES_URL) 호출 → 결과 MP4를 Supabase Storage `lumi-videos`에 업로드 → public URL 반환.
@@ -5,11 +6,6 @@
 
 const { getAdminClient } = require('./_shared/supabase-admin');
 
-const headers = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Content-Type': 'application/json',
-};
 
 // 최대 대기: Modal timeout(300s) 여유분 +10초
 const MODAL_TIMEOUT_MS = 310_000;
@@ -42,6 +38,7 @@ async function callModal(url, body) {
 }
 
 exports.handler = async (event) => {
+  const headers = corsHeaders(getOrigin(event));
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 204, headers, body: '' };
   }

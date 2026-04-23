@@ -1,12 +1,8 @@
+const { corsHeaders, getOrigin } = require('./_shared/auth');
 // 베타 테스터 등록 — GET: 상태 조회 / POST: 핸들 등록
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
 
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Content-Type': 'application/json',
-};
 
 // 핸들 유효성: 1~30자, 영문/숫자/._ 만 허용
 function isValidHandle(handle) {
@@ -14,12 +10,13 @@ function isValidHandle(handle) {
 }
 
 exports.handler = async (event) => {
-  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
+  const headers = corsHeaders(getOrigin(event));
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: headers, body: '' };
 
   const token = extractBearerToken(event);
   const { user, error: authErr } = await verifyBearerToken(token);
   if (authErr || !user) {
-    return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증이 필요합니다.' }) };
+    return { statusCode: 401, headers: headers, body: JSON.stringify({ error: '인증이 필요합니다.' }) };
   }
 
   const admin = getAdminClient();
@@ -35,7 +32,7 @@ exports.handler = async (event) => {
 
       if (error) {
         console.error('[tester-register] GET error:', error.message);
-        return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '조회 실패' }) };
+        return { statusCode: 500, headers: headers, body: JSON.stringify({ error: '조회 실패' }) };
       }
 
       let status = 'none';
@@ -45,10 +42,10 @@ exports.handler = async (event) => {
 
       const resp = { status };
       if (data && data.tester_ig_handle) resp.ig_handle = data.tester_ig_handle;
-      return { statusCode: 200, headers: CORS, body: JSON.stringify(resp) };
+      return { statusCode: 200, headers: headers, body: JSON.stringify(resp) };
     } catch (err) {
       console.error('[tester-register] GET unexpected:', err && err.message);
-      return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '서버 오류' }) };
+      return { statusCode: 500, headers: headers, body: JSON.stringify({ error: '서버 오류' }) };
     }
   }
 
@@ -60,7 +57,7 @@ exports.handler = async (event) => {
 
       const rawHandle = (body.ig_handle || '').replace(/^@/, '').trim();
       if (!rawHandle || !isValidHandle(rawHandle)) {
-        return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '유효하지 않은 핸들이에요. 영문, 숫자, ., _ 만 사용 가능해요.' }) };
+        return { statusCode: 400, headers: headers, body: JSON.stringify({ error: '유효하지 않은 핸들이에요. 영문, 숫자, ., _ 만 사용 가능해요.' }) };
       }
 
       const { error } = await admin
@@ -74,16 +71,16 @@ exports.handler = async (event) => {
 
       if (error) {
         console.error('[tester-register] POST update error:', error.message);
-        return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '등록 실패' }) };
+        return { statusCode: 500, headers: headers, body: JSON.stringify({ error: '등록 실패' }) };
       }
 
       console.log('[tester-register] 테스터 등록 완료');
-      return { statusCode: 200, headers: CORS, body: JSON.stringify({ success: true, status: 'pending' }) };
+      return { statusCode: 200, headers: headers, body: JSON.stringify({ success: true, status: 'pending' }) };
     } catch (err) {
       console.error('[tester-register] POST unexpected:', err && err.message);
-      return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '서버 오류' }) };
+      return { statusCode: 500, headers: headers, body: JSON.stringify({ error: '서버 오류' }) };
     }
   }
 
-  return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method not allowed' }) };
+  return { statusCode: 405, headers: headers, body: JSON.stringify({ error: 'Method not allowed' }) };
 };

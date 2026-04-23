@@ -1,17 +1,14 @@
+const { corsHeaders, getOrigin } = require('./_shared/auth');
 // admin-brand-status.js — LUMI_SECRET 인증 기반 브랜드 라이브러리 현황 조회.
 // Background Function이 아닌 regular function이라 즉시 응답 반환.
 // POST { adminSecret }
 const { getAdminClient } = require('./_shared/supabase-admin');
 
-const headers = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type',
-  'Content-Type': 'application/json',
-};
 
 const ALL_INDUSTRIES = ['cafe', 'restaurant', 'beauty', 'nail', 'flower', 'clothing', 'gym'];
 
 exports.handler = async (event) => {
+  const headers = corsHeaders(getOrigin(event));
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers, body: '' };
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, headers, body: JSON.stringify({ error: 'POST only' }) };

@@ -10,13 +10,10 @@
 //   - 구독 만료일은 public.orders 최신 결제 + 30일 기준 계산.
 //   - retention_unsubscribed / agree_marketing 은 users 컬럼 그대로 사용.
 const crypto = require('crypto');
+const { corsHeaders, getOrigin } = require('./_shared/auth');
 const { Resend } = require('resend');
 const { getAdminClient } = require('./_shared/supabase-admin');
 
-const CORS = {
-  'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': '*',
-};
 
 function checkSecret(provided) {
   const secret = process.env.LUMI_SECRET;
@@ -627,11 +624,12 @@ async function sendAdminDailyReport(supabase, users) {
 // Handler
 // ============================================================
 exports.handler = async (event) => {
+  const headers = corsHeaders(getOrigin(event));
   const isScheduled = !event.httpMethod && !event.headers;
   if (!isScheduled) {
     const secret = event.headers?.['x-lumi-secret'];
     if (!checkSecret(secret)) {
-      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증 실패' }) };
+      return { statusCode: 401, headers: headers, body: JSON.stringify({ error: '인증 실패' }) };
     }
   }
 
@@ -644,7 +642,7 @@ exports.handler = async (event) => {
       .select('id, email, name, store_name, phone, plan, biz_category, auto_renew, agree_marketing, retention_unsubscribed, created_at');
     if (userErr) {
       console.error('[send-notifications] users 조회 실패:', userErr.message);
-      return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '조회 실패' }) };
+      return { statusCode: 500, headers: headers, body: JSON.stringify({ error: '조회 실패' }) };
     }
 
     const userList = users || [];
@@ -666,11 +664,11 @@ exports.handler = async (event) => {
     console.log('[lumi] 알림 발송 완료:', { monthly, season, firstPost, expiry, retention });
     return {
       statusCode: 200,
-      headers: CORS,
+      headers: headers,
       body: JSON.stringify({ success: true, monthly, season, firstPost, expiry, retention })
     };
   } catch (err) {
     console.error('send-notifications error:', err.message);
-    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '알림 처리 중 오류가 발생했습니다.' }) };
+    return { statusCode: 500, headers: headers, body: JSON.stringify({ error: '알림 처리 중 오류가 발생했습니다.' }) };
   }
 };

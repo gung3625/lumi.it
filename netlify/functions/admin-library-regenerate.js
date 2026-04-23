@@ -1,3 +1,4 @@
+const { corsHeaders, getOrigin } = require('./_shared/auth');
 // admin-library-regenerate.js — 특정 슬롯 재생성 트리거 (admin-only).
 // POST /api/admin-library-regenerate
 // Body: { industry, content_type, slot_index }
@@ -6,11 +7,6 @@
 const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
 const { getAdminClient } = require('./_shared/supabase-admin');
 
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Content-Type': 'application/json',
-};
 
 const VALID_INDUSTRIES = ['cafe', 'restaurant', 'beauty', 'nail', 'flower', 'clothing', 'gym'];
 const CONTENT_TYPES = ['image', 'video'];
@@ -30,9 +26,10 @@ async function requireAdmin(event) {
 }
 
 exports.handler = async (event) => {
-  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
+  const headers = corsHeaders(getOrigin(event));
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: headers, body: '' };
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method not allowed' }) };
+    return { statusCode: 405, headers: headers, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
   try {
@@ -40,7 +37,7 @@ exports.handler = async (event) => {
   } catch (err) {
     return {
       statusCode: err.statusCode || 401,
-      headers: CORS,
+      headers: headers,
       body: JSON.stringify({ error: err.message }),
     };
   }
@@ -96,7 +93,7 @@ exports.handler = async (event) => {
       console.log(`[admin-library-regenerate] 전체 생성 트리거 완료: 성공 ${triggered} / 실패 ${failed}`);
       return {
         statusCode: 202,
-        headers: CORS,
+        headers: headers,
         body: JSON.stringify({
           message: `전체 라이브러리 재생성이 트리거되었습니다. (성공 ${triggered} / 실패 ${failed}) 잠시 후 목록을 새로고침하세요.`,
           triggered,
@@ -105,19 +102,19 @@ exports.handler = async (event) => {
       };
     } catch (err) {
       console.error('[admin-library-regenerate] 전체 생성 오류:', err.message);
-      return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '서버 오류가 발생했습니다.' }) };
+      return { statusCode: 500, headers: headers, body: JSON.stringify({ error: '서버 오류가 발생했습니다.' }) };
     }
   }
 
   // 단일 슬롯 재생성 모드
   if (!industry || !VALID_INDUSTRIES.includes(industry)) {
-    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '유효하지 않은 업종입니다.' }) };
+    return { statusCode: 400, headers: headers, body: JSON.stringify({ error: '유효하지 않은 업종입니다.' }) };
   }
   if (!contentType || !['image', 'video'].includes(contentType)) {
-    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '유효하지 않은 content_type입니다. (image | video)' }) };
+    return { statusCode: 400, headers: headers, body: JSON.stringify({ error: '유효하지 않은 content_type입니다. (image | video)' }) };
   }
   if (typeof slotIndex !== 'number' || slotIndex < 0 || slotIndex > 1) {
-    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'slot_index는 0 또는 1이어야 합니다.' }) };
+    return { statusCode: 400, headers: headers, body: JSON.stringify({ error: 'slot_index는 0 또는 1이어야 합니다.' }) };
   }
 
   try {
@@ -136,14 +133,14 @@ exports.handler = async (event) => {
       let snippet = '';
       try { snippet = res ? (await res.text()).slice(0, 150) : 'no response'; } catch (_) {}
       console.error(`[admin-library-regenerate] 트리거 실패 ${industry}/${contentType}[${slotIndex}]: ${res?.status} ${snippet}`);
-      return { statusCode: 502, headers: CORS, body: JSON.stringify({ error: '생성 함수 트리거에 실패했습니다.' }) };
+      return { statusCode: 502, headers: headers, body: JSON.stringify({ error: '생성 함수 트리거에 실패했습니다.' }) };
     }
 
     console.log(`[admin-library-regenerate] 재생성 트리거: ${industry}/${contentType}[${slotIndex}]`);
 
     return {
       statusCode: 202,
-      headers: CORS,
+      headers: headers,
       body: JSON.stringify({
         message: `${industry} ${contentType} 슬롯 ${slotIndex} 재생성이 시작되었습니다. 잠시 후 라이브러리를 새로고침하세요.`,
         industry,
@@ -153,6 +150,6 @@ exports.handler = async (event) => {
     };
   } catch (err) {
     console.error('[admin-library-regenerate] 예기치 않은 오류:', err.message);
-    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '서버 오류가 발생했습니다.' }) };
+    return { statusCode: 500, headers: headers, body: JSON.stringify({ error: '서버 오류가 발생했습니다.' }) };
   }
 };

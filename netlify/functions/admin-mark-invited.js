@@ -1,3 +1,4 @@
+const { corsHeaders, getOrigin } = require('./_shared/auth');
 // admin-mark-invited.js — 베타 테스터 초대 상태 토글 (admin-only).
 // POST /api/admin-mark-invited
 // body: { user_id: string, status: 'invited' | 'pending' }
@@ -6,11 +7,6 @@
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
 
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Content-Type': 'application/json',
-};
 
 async function requireAdmin(event) {
   const token = extractBearerToken(event);
@@ -26,15 +22,16 @@ async function requireAdmin(event) {
 }
 
 exports.handler = async (event) => {
-  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
+  const headers = corsHeaders(getOrigin(event));
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: headers, body: '' };
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method not allowed' }) };
+    return { statusCode: 405, headers: headers, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
   try {
     await requireAdmin(event);
   } catch (err) {
-    return { statusCode: err.statusCode || 401, headers: CORS, body: JSON.stringify({ error: err.message }) };
+    return { statusCode: err.statusCode || 401, headers: headers, body: JSON.stringify({ error: err.message }) };
   }
 
   let body = {};
@@ -43,7 +40,7 @@ exports.handler = async (event) => {
   const targetId = String(body.user_id || '').trim();
   const nextStatus = body.status === 'pending' ? 'pending' : 'invited';
   if (!targetId) {
-    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'user_id 필수' }) };
+    return { statusCode: 400, headers: headers, body: JSON.stringify({ error: 'user_id 필수' }) };
   }
 
   try {
@@ -55,12 +52,12 @@ exports.handler = async (event) => {
 
     if (error) {
       console.error('[admin-mark-invited] update error:', error.message);
-      return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '업데이트 실패' }) };
+      return { statusCode: 500, headers: headers, body: JSON.stringify({ error: '업데이트 실패' }) };
     }
 
-    return { statusCode: 200, headers: CORS, body: JSON.stringify({ success: true, status: nextStatus }) };
+    return { statusCode: 200, headers: headers, body: JSON.stringify({ success: true, status: nextStatus }) };
   } catch (err) {
     console.error('[admin-mark-invited] unexpected:', err && err.message);
-    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '서버 오류' }) };
+    return { statusCode: 500, headers: headers, body: JSON.stringify({ error: '서버 오류' }) };
   }
 };

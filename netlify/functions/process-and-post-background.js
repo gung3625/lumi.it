@@ -1,3 +1,4 @@
+const { corsHeaders, getOrigin } = require('./_shared/auth');
 // Background Function — 캡션 생성 + (예약에 따라) Instagram 게시 트리거 대기.
 // 데이터 저장: public.reservations (Supabase).
 // 이미지: reservations.image_urls (Supabase Storage public URL).
@@ -7,11 +8,6 @@ const { getAdminClient } = require('./_shared/supabase-admin');
 const { deleteReservationStorage } = require('./_shared/storage-cleanup');
 const { generateBrandFooter } = require('./_shared/brand-footer');
 
-const headers = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Content-Type': 'application/json',
-};
 
 // ─────────── 캡션 파싱 ───────────
 function parseCaptions(text) {
@@ -669,6 +665,7 @@ async function loadToneFeedback(supabase, userId, kind) {
 
 // ─────────── 메인 핸들러 ───────────
 exports.handler = async (event) => {
+  const headers = corsHeaders(getOrigin(event));
   console.log('[process-and-post] HANDLER_ENTRY');
   // 내부 호출 인증 (scheduler → background)
   const authHeader = (event.headers['authorization'] || '').replace('Bearer ', '');

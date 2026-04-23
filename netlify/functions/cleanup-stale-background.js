@@ -1,3 +1,4 @@
+const { corsHeaders, getOrigin } = require('./_shared/auth');
 // Scheduled Background Function — 스테일/실패/완료 예약 자동 정리.
 // Netlify 스케줄러가 내부 트리거로 실행 (LUMI_SECRET 불필요).
 // 매시간 실행 (netlify.toml: "0 * * * *").
@@ -11,11 +12,6 @@
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { deleteReservationStorage, deleteReservationRow } = require('./_shared/storage-cleanup');
 
-const headers = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Content-Type': 'application/json',
-};
 
 const LIMIT = 100;
 const THIRTY_MIN_MS = 30 * 60 * 1000;
@@ -118,6 +114,7 @@ async function cleanupPostedStorage(supabase) {
 }
 
 exports.handler = async () => {
+  const headers = corsHeaders(getOrigin(event));
   try {
     const supabase = getAdminClient();
     const [pending, failed, posted] = await Promise.all([
