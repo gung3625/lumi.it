@@ -4945,6 +4945,18 @@ body.dark-mode .pc-footer-col ul li a { color: #A8B3C0; }
         </div>
       </div>
 
+      <!-- 말투 학습 게이지 (캡션 평가 기반 롤링 20개) -->
+      <div class="v3-tone-gauge" id="v3-tone-gauge" style="background:var(--v3-bg);border-radius:18px;padding:16px 18px;margin:12px 0 0;box-shadow:var(--v3-cloud-shadow-sm);">
+        <div class="v3-tone-gauge-head" style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;">
+          <b style="font-size:14px;color:var(--v3-ink-1);">말투 학습</b>
+          <em id="v3-tone-gauge-pct" style="font-size:13px;font-weight:700;font-style:normal;color:var(--v3-pink);">—</em>
+        </div>
+        <div class="v3-tone-gauge-bar" style="height:8px;background:var(--v3-line);border-radius:999px;overflow:hidden;">
+          <div class="v3-tone-gauge-fill" id="v3-tone-gauge-fill" style="height:100%;width:0%;background:linear-gradient(90deg,var(--v3-pink),var(--v3-peach,#f8b4b4));border-radius:999px;transition:width .45s cubic-bezier(.2,.7,.2,1);"></div>
+        </div>
+        <p id="v3-tone-gauge-note" style="margin:10px 0 0;font-size:12px;color:var(--v3-ink-3);line-height:1.5;">첫 캡션 평가 후 게이지가 채워져요 ☁</p>
+      </div>
+
       <div class="v3-section-head"><h3>관리</h3></div>
       <div class="v3-menu-list">
         <button type="button" class="v3-menu-row" onclick="location.href='/settings.html';">
@@ -5696,19 +5708,19 @@ window.__v3InitDash = function(){
   setTimeout(function(){ v3RenderHomeTrendChips(v3CurrentCat()); }, 200);
 
   // ---------- 내 가게 탭: 프로필 동기화 ----------
-  function v3SyncProfile(){
+  var V3_CAT_KO = {cafe:'카페·음료',food:'맛집·외식',beauty:'뷰티',hair:'헤어',nail:'네일',flower:'꽃집',fashion:'패션',fitness:'피트니스',pet:'반려동물',interior:'인테리어',education:'교육',other:'일반'};
+  function v3PaintProfile(src){
     try {
-      var lu = JSON.parse(localStorage.getItem('lumi_user') || '{}');
       var nameEl = document.getElementById('v3-profile-name');
       var subEl = document.getElementById('v3-profile-sub');
       var avEl = document.getElementById('v3-profile-avatar');
       var igStatusEl = document.getElementById('v3-ig-status');
       var planEl = document.getElementById('v3-plan-label');
-      var name = lu.storeName || lu.store_name || lu.shopName || lu.name || lu.username || (lu.email ? String(lu.email).split('@')[0] : '') || '내 가게';
-      var CAT_KO = {cafe:'카페·음료',food:'맛집·외식',beauty:'뷰티',hair:'헤어',nail:'네일',flower:'꽃집',fashion:'패션',fitness:'피트니스',pet:'반려동물',interior:'인테리어',education:'교육',other:'일반'};
-      var cat = lu.bizCategory || lu.biz_category;
-      var region = lu.region || lu.city || '';
-      var sub = (cat && CAT_KO[cat] ? CAT_KO[cat] : (cat || '')) + (region ? ' · ' + region : '');
+      var greetNameEl = document.getElementById('m-greeting-name');
+      var name = src.storeName || src.store_name || src.shopName || src.name || src.username || (src.email ? String(src.email).split('@')[0] : '') || '내 가게';
+      var cat = src.bizCategory || src.biz_category;
+      var region = src.region || src.city || '';
+      var sub = (cat && V3_CAT_KO[cat] ? V3_CAT_KO[cat] : (cat || '')) + (region ? ' · ' + region : '');
       if (!sub.trim()) sub = '프로필을 완성해주세요';
       if (nameEl) nameEl.textContent = name;
       if (subEl) subEl.textContent = sub;
@@ -5716,17 +5728,91 @@ window.__v3InitDash = function(){
         var initial = (name || '☁').trim().charAt(0);
         avEl.textContent = initial || '☁';
       }
+      // 홈 탭 인삿말도 같이 동기화 (실 매장명 우선)
+      if (greetNameEl && (src.storeName || src.store_name)) {
+        greetNameEl.textContent = src.storeName || src.store_name;
+      }
       if (igStatusEl) {
-        var igOk = !!(lu.igConnected || lu.igUserId || lu.instagram_handle);
+        var igOk = !!(src.igConnected || src.igUserId || src.instagram_handle || src.instagram);
         igStatusEl.textContent = igOk ? '연결됨' : '미연결';
       }
       if (planEl) {
-        var plan = lu.plan || 'trial';
-        var isAdmin = localStorage.getItem('lumi_is_admin') === '1';
-        var label = isAdmin ? '관리자' : (plan === 'pro' ? '프로' : plan === 'standard' ? '스탠다드' : '무료 체험');
+        var plan = src.plan || 'trial';
+        var isAdmin = src.isAdmin || localStorage.getItem('lumi_is_admin') === '1';
+        var label = isAdmin ? '관리자' : (plan === 'pro' ? '프로' : plan === 'standard' ? '스탠다드' : plan === 'business' ? '비즈니스' : '무료 체험');
         planEl.textContent = label;
       }
-    } catch(e){ console.error('[v3SyncProfile]', e); }
+    } catch(e){ console.error('[v3PaintProfile]', e); }
+  }
+  function v3SyncProfile(){
+    // 1) localStorage fallback로 즉시 그림
+    try {
+      var lu = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+      v3PaintProfile(lu);
+    } catch(e){}
+    // 2) 토큰 있으면 /api/check-plan 호출 → 실데이터로 덮어쓰기 (silent fallback)
+    var TOKEN = localStorage.getItem('lumi_token') || '';
+    if (!TOKEN) return;
+    try {
+      var doFetch = (typeof window.lumiAuthFetch === 'function')
+        ? window.lumiAuthFetch('/api/check-plan', { method:'GET', headers:{ 'Authorization':'Bearer '+TOKEN } })
+        : fetch('/api/check-plan', { method:'GET', headers:{ 'Authorization':'Bearer '+TOKEN } });
+      Promise.resolve(doFetch)
+        .then(function(r){ return r.json().catch(function(){ return {}; }); })
+        .then(function(data){
+          if (!data || data.error) return;
+          var src = Object.assign({}, (data.user || {}), {
+            plan: data.plan,
+            isAdmin: !!data.isAdmin,
+            igConnected: !!data.igConnected
+          });
+          v3PaintProfile(src);
+          // localStorage도 최신값으로 sync (다음 렌더 즉시 반영)
+          try {
+            var lu2 = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+            if (src.storeName) lu2.storeName = src.storeName;
+            if (src.bizCategory) lu2.bizCategory = src.bizCategory;
+            if (src.region) lu2.region = src.region;
+            if (src.plan) lu2.plan = src.plan;
+            if (src.igConnected) lu2.igConnected = true;
+            if (src.instagram) lu2.instagram_handle = src.instagram;
+            localStorage.setItem('lumi_user', JSON.stringify(lu2));
+          } catch(_){}
+        })
+        .catch(function(){ /* silent */ });
+    } catch(e){}
+    // 3) 말투 학습 게이지 — 최근 20개 예약 중 tone_rated=true 비율
+    try {
+      var doFetch2 = (typeof window.lumiAuthFetch === 'function')
+        ? window.lumiAuthFetch('/api/list-reservations', { method:'GET', headers:{ 'Authorization':'Bearer '+TOKEN } })
+        : fetch('/api/list-reservations', { method:'GET', headers:{ 'Authorization':'Bearer '+TOKEN } });
+      Promise.resolve(doFetch2)
+        .then(function(r){ return r.json().catch(function(){ return {}; }); })
+        .then(function(data){
+          var list = (data && Array.isArray(data.items)) ? data.items : (data && Array.isArray(data.reservations)) ? data.reservations : [];
+          // 게시 완료된 예약만 (평가 대상) — 최근순 20개
+          var posted = list.filter(function(r){ return r && r.caption_status === 'posted' && r.is_sent === true; }).slice(0, 20);
+          var rated = posted.filter(function(r){ return r.tone_rated === true; }).length;
+          var total = posted.length;
+          var pct = total === 0 ? 0 : Math.min(100, Math.round((rated / 20) * 100));
+          var pctEl = document.getElementById('v3-tone-gauge-pct');
+          var fillEl = document.getElementById('v3-tone-gauge-fill');
+          var noteEl = document.getElementById('v3-tone-gauge-note');
+          if (pctEl) pctEl.textContent = pct + '%';
+          if (fillEl) fillEl.style.width = pct + '%';
+          if (noteEl) {
+            if (total === 0) {
+              noteEl.textContent = '첫 캡션 평가 후 게이지가 채워져요 ☁';
+            } else if (pct >= 100) {
+              noteEl.textContent = '루미가 사장님 말투를 충분히 배웠어요 ☁';
+            } else {
+              var remain = 20 - rated;
+              noteEl.textContent = '루미가 사장님 말투를 ' + pct + '% 배웠어요. ' + remain + '번만 더 평가하면 완성이에요 ☁';
+            }
+          }
+        })
+        .catch(function(){ /* silent — 기본 placeholder 유지 */ });
+    } catch(e){}
   }
   v3SyncProfile();
 
