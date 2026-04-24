@@ -4932,6 +4932,12 @@ body.dark-mode .pc-footer-col ul li a { color: #A8B3C0; }
         </div>
       </div>
 
+      <!-- 예약 게시물 목록 (올리기 탭용 — 홈 탭과 분리 DOM) -->
+      <div class="v3-section-head"><h3>예약된 게시물</h3><span class="m-mini-badge" id="v3-upload-sched-count">-</span></div>
+      <div class="v3-upload-sched" id="v3-upload-sched-list" style="background:var(--v3-bg);border-radius:18px;padding:14px 16px;box-shadow:var(--v3-cloud-shadow-sm);">
+        <p class="m-feat-body" id="v3-upload-sched-empty" style="margin:0;font-size:13px;color:var(--v3-ink-3);">예약된 게시물을 불러오는 중…</p>
+      </div>
+
     </section>
 
     <!-- ═════════ 내 가게 (MYSTORE) ═════════ -->
@@ -5565,6 +5571,10 @@ window.__v3InitDash = function(){
     if (id === 'mystore') {
       try { v3SyncProfile(); } catch(e){}
     }
+    // 탭 전환 시 올리기 탭이면 예약 목록 동기화
+    if (id === 'upload') {
+      try { v3LoadUploadSchedule(); } catch(e){}
+    }
     try { window.scrollTo({ top: 0, behavior: 'instant' }); } catch(e){ window.scrollTo(0, 0); }
   };
 
@@ -5815,6 +5825,77 @@ window.__v3InitDash = function(){
     } catch(e){}
   }
   v3SyncProfile();
+
+  // ---------- 올리기 탭: 예약된 게시물 목록 ----------
+  function v3FmtKoDateTime(d){ try { return new Date(d).toLocaleString('ko-KR',{month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'}); } catch(e){ return ''; } }
+  function v3LoadUploadSchedule(){
+    var wrap = document.getElementById('v3-upload-sched-list');
+    var cntEl = document.getElementById('v3-upload-sched-count');
+    if (!wrap) return;
+    var TOKEN = localStorage.getItem('lumi_token') || '';
+    if (!TOKEN) {
+      wrap.innerHTML = '<p class="m-feat-body" style="margin:0;font-size:13px;color:var(--v3-ink-3);">로그인 후 확인할 수 있어요</p>';
+      if (cntEl) cntEl.textContent = '-';
+      return;
+    }
+    wrap.innerHTML = '<p class="m-feat-body" style="margin:0;font-size:13px;color:var(--v3-ink-3);">불러오는 중…</p>';
+    var doFetch = (typeof window.lumiAuthFetch === 'function')
+      ? window.lumiAuthFetch('/api/list-reservations', { method:'GET', headers:{ 'Authorization':'Bearer '+TOKEN } })
+      : fetch('/api/list-reservations', { method:'GET', headers:{ 'Authorization':'Bearer '+TOKEN } });
+    Promise.resolve(doFetch)
+      .then(function(r){ return r.json().catch(function(){ return {}; }); })
+      .then(function(d){
+        var list = (d && Array.isArray(d.items)) ? d.items : (d && Array.isArray(d.reservations)) ? d.reservations : [];
+        // 예약 대상만: 미게시·미취소·non-immediate + 캡션 준비된 것만
+        list = list.filter(function(r){
+          if (!r) return false;
+          if (r.is_sent || r.cancelled) return false;
+          var mode = r.post_mode || r.postMode;
+          if (mode === 'immediate') return false;
+          var caps = r.generated_captions || r.generatedCaptions;
+          if (!caps || (Array.isArray(caps) && caps.length === 0)) return false;
+          return true;
+        });
+        if (cntEl) cntEl.textContent = list.length + '';
+        if (list.length === 0) {
+          wrap.innerHTML = '<p class="m-feat-body" id="v3-upload-sched-empty" style="margin:0;font-size:13px;color:var(--v3-ink-3);">예약된 게시물이 없어요</p>';
+          return;
+        }
+        wrap.innerHTML = '';
+        list.slice(0, 5).forEach(function(r){
+          var cap = (r.final_caption || (Array.isArray(r.generated_captions) ? r.generated_captions[r.selected_caption_idx||0] : '') || '').toString();
+          var thumb = (r.image_urls && r.image_urls[0]) || r.image_url || r.thumbnail || '';
+          var when = r.scheduled_at || r.scheduledAt || r.created_at;
+          var mode = r.post_mode || r.postMode;
+          var badge = mode === 'best' ? '최적시간' : '예약';
+          var row = document.createElement('div');
+          row.className = 'v3-sched-row';
+          row.style.cssText = 'display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--v3-line);';
+          row.innerHTML =
+            (thumb ? '<img src="' + v3EscHtml(thumb) + '" onerror="this.style.display=\'none\'" style="width:44px;height:44px;border-radius:10px;object-fit:cover;flex-shrink:0;">' : '<div style="width:44px;height:44px;border-radius:10px;background:var(--v3-line);flex-shrink:0;"></div>') +
+            '<div style="flex:1;min-width:0;">' +
+              '<p style="margin:0 0 3px;font-size:12px;color:var(--v3-ink-3);font-weight:600;">' + v3EscHtml(v3FmtKoDateTime(when)) + '</p>' +
+              '<p style="margin:0;font-size:13px;color:var(--v3-ink-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + v3EscHtml(cap.split('\n')[0]) + '</p>' +
+            '</div>' +
+            '<span style="font-size:11px;font-weight:700;color:var(--v3-pink);padding:4px 8px;border-radius:999px;background:rgba(200,80,122,.08);flex-shrink:0;">' + badge + '</span>';
+          // 마지막 행은 border 제거
+          if (list.indexOf(r) === Math.min(list.length, 5) - 1) row.style.borderBottom = 'none';
+          // 클릭 시 기존 m-schedule 항목 클릭과 같은 경로 (재사용) — 우선 홈 탭 m-schedule-list로 이동해 상세 보기
+          row.addEventListener('click', function(){
+            try { window.v3GoTab('today'); } catch(e){}
+            setTimeout(function(){
+              var sec = document.getElementById('m-schedule-section');
+              if (sec) sec.scrollIntoView({ behavior:'smooth', block:'start' });
+            }, 200);
+          });
+          wrap.appendChild(row);
+        });
+      })
+      .catch(function(){
+        wrap.innerHTML = '<p class="m-feat-body" style="margin:0;font-size:13px;color:var(--v3-ink-3);">예약 목록을 불러오지 못했어요</p>';
+      });
+  }
+  window.v3LoadUploadSchedule = v3LoadUploadSchedule;
 
   // ---------- 초기 카테고리 칩 렌더 (트렌드 탭에 들어가기 전에도 준비) ----------
   v3RenderCatChips(v3CurrentCat());
