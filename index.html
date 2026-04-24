@@ -5455,8 +5455,233 @@ window.__mHandleFile = function(e){
     } catch(e){}
     // ===== 웨이브 2: 빠른설정 · 캡션플로우 · 트렌드풀뷰 · IG가이드 · 예약 · 날씨 · 리포트 =====
     try { mInitWave2(); } catch(e){ console.error('[m-wave2]', e); }
+    // ===== Phase 6: v3 탭 라우팅 + 트렌드 탭 + 프로필 + 홈 트렌드 칩 v3 렌더 =====
+    try { window.__v3InitDash(); } catch(e){ console.error('[v3-dash]', e); }
   }
 })();
+
+// ============================================================
+// Phase 6: 모바일 v3 Dawn Cloud 4탭 대시보드 로직
+// (탭 라우팅, 다크모드 FAB, 트렌드 탭, 내 가게 탭, 홈 트렌드 칩)
+// ============================================================
+window.__v3InitDash = function(){
+  // 이미 초기화했으면 skip (중복 호출 방지)
+  if (window.__v3Inited) return;
+  window.__v3Inited = true;
+
+  // ---------- 탭 라우팅 ----------
+  window.v3GoTab = function(id){
+    var dash = document.getElementById('mobile-app-logged-in');
+    if (!dash) return;
+    var screens = dash.querySelectorAll('.v3-screen');
+    screens.forEach(function(s){
+      var active = s.getAttribute('data-screen') === id;
+      // DM 숨김 탭 보호 (FEATURE_FLAGS)
+      if (s.getAttribute('data-screen') === 'dm' && !(window.FEATURE_FLAGS && window.FEATURE_FLAGS.dm_tab)) {
+        s.hidden = true;
+        s.classList.remove('is-active');
+        return;
+      }
+      s.classList.toggle('is-active', active);
+      if (active) {
+        // animation 재시작
+        s.style.animation = 'none';
+        void s.offsetWidth;
+        s.style.animation = '';
+      }
+    });
+    var tabs = dash.querySelectorAll('.v3-tab, .v3-tab-plus');
+    tabs.forEach(function(b){
+      b.classList.toggle('is-active', b.getAttribute('data-tab') === id);
+    });
+    // 탭 전환 시 트렌드 탭이면 데이터 로드
+    if (id === 'trends' && !window.__v3TrendLoaded) {
+      try { v3LoadTrends(v3CurrentCat()); } catch(e){}
+    }
+    // 탭 전환 시 내 가게 탭이면 프로필 동기화
+    if (id === 'mystore') {
+      try { v3SyncProfile(); } catch(e){}
+    }
+    try { window.scrollTo({ top: 0, behavior: 'instant' }); } catch(e){ window.scrollTo(0, 0); }
+  };
+
+  // ---------- 다크모드 토글 (전역 FAB와 호환) ----------
+  window.v3ToggleDark = function(){
+    var on = document.body.classList.toggle('dark-mode');
+    try { localStorage.setItem('lumi_dark_mode', on ? '1' : '0'); } catch(e){}
+    try {
+      var meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', on ? '#0a0a0c' : '#ffffff');
+    } catch(e){}
+  };
+  // 다크모드 복원 (저장값 있으면)
+  try {
+    if (localStorage.getItem('lumi_dark_mode') === '1') {
+      document.body.classList.add('dark-mode');
+    }
+  } catch(e){}
+
+  // ---------- 트렌드 탭 카테고리 & 데이터 ----------
+  var V3_CATS = [
+    {id:'cafe', label:'카페·음료'}, {id:'food', label:'맛집·외식'}, {id:'beauty', label:'뷰티'},
+    {id:'hair', label:'헤어'}, {id:'nail', label:'네일'}, {id:'flower', label:'꽃집'},
+    {id:'fashion', label:'패션'}, {id:'fitness', label:'피트니스'}, {id:'pet', label:'반려동물'}
+  ];
+  function v3CurrentCat(){
+    try {
+      var u = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+      return window.__v3Cat || u.bizCategory || u.biz_category || 'cafe';
+    } catch(e){ return 'cafe'; }
+  }
+  function v3EscHtml(s){
+    return String(s==null?'':s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; });
+  }
+  function v3RenderCatChips(activeCat){
+    var wrap = document.getElementById('v3-cat-chips');
+    if (!wrap) return;
+    wrap.innerHTML = '';
+    V3_CATS.forEach(function(c){
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'v3-cat-chip' + (c.id === activeCat ? ' is-active' : '');
+      b.setAttribute('data-cat', c.id);
+      b.textContent = c.label;
+      b.addEventListener('click', function(){
+        window.__v3Cat = c.id;
+        v3RenderCatChips(c.id);
+        v3LoadTrends(c.id);
+      });
+      wrap.appendChild(b);
+    });
+  }
+  function v3LoadTrends(cat){
+    window.__v3TrendLoaded = true;
+    var list = document.getElementById('v3-kw-list');
+    var upd = document.getElementById('m-trend-updated');
+    if (!list) return;
+    v3RenderCatChips(cat);
+    list.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--v3-ink-3);font-size:13px;">루미가 수집 중이에요 ☁</div>';
+    fetch('/api/get-trends?category=' + encodeURIComponent(cat) + '&scope=domestic')
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        var kws = (d && Array.isArray(d.keywords)) ? d.keywords.slice(0, 10) : [];
+        if (upd && d && d.updatedAt) {
+          try { upd.textContent = new Date(d.updatedAt).toLocaleDateString('ko-KR',{month:'long',day:'numeric'}) + ' 업데이트'; } catch(e){}
+        }
+        if (kws.length === 0) {
+          list.innerHTML = '<div style="text-align:center;padding:40px 16px;color:var(--v3-ink-3);font-size:13px;line-height:1.6;">아직 수집 중이에요<br><span style="font-size:11px;">내일 자정 업데이트 후 다시 확인해주세요 ☁</span></div>';
+          return;
+        }
+        list.innerHTML = '';
+        kws.forEach(function(k, i){
+          var rank = k.rank || (i + 1);
+          var rankClass = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : '';
+          var vel = k.velocityPct;
+          var velTrend = vel == null ? 'flat' : (vel > 0 ? 'up' : vel < 0 ? 'down' : 'flat');
+          var velStr = vel == null ? '-' : (vel > 0 ? '+' + Math.round(vel) + '%' : Math.round(vel) + '%');
+          var isNew = k.isNew && k.isNewConfidence === 'high';
+          var sub = k.signalTier === 'real' ? ('신호 강함' + (isNew ? ' · NEW' : '')) : (isNew ? 'NEW' : '관찰 중');
+          var kw = k.keyword || k.name || '';
+          var row = document.createElement('button');
+          row.type = 'button';
+          row.className = 'v3-kw-row';
+          row.innerHTML = '<span class="v3-kw-rank ' + rankClass + '">' + rank + '</span>' +
+            '<span class="v3-kw-info"><b>' + v3EscHtml(kw) + '</b><span>' + v3EscHtml(sub) + '</span></span>' +
+            '<span class="v3-kw-vel ' + velTrend + '">' + velStr + '</span>';
+          row.addEventListener('click', function(){
+            // 키워드 선택 → 올리기 탭 이동 + localStorage 저장 → 업로드 flow가 prefillTags 로 사용
+            try { localStorage.setItem('lumi_prefill_trend_kw', kw); } catch(e){}
+            window.v3GoTab('upload');
+          });
+          list.appendChild(row);
+        });
+      })
+      .catch(function(){
+        list.innerHTML = '<div style="text-align:center;padding:40px 16px;color:var(--v3-ink-3);font-size:13px;">불러올 수 없어요<br><button type="button" onclick="v3LoadTrends(\'' + cat + '\')" style="margin-top:12px;color:var(--v3-pink);font-weight:700;background:none;border:none;cursor:pointer;">다시 시도</button></div>';
+      });
+  }
+  window.v3LoadTrends = v3LoadTrends;
+
+  // ---------- 홈 탭: 이번 주 트렌드 칩 (v3 스타일로 렌더) ----------
+  function v3RenderHomeTrendChips(cat){
+    var chips = document.getElementById('m-trend-chips');
+    if (!chips) return;
+    // 로딩 유지 — 기존 skeleton
+    fetch('/api/get-trends?category=' + encodeURIComponent(cat) + '&scope=domestic')
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        var kws = (d && Array.isArray(d.keywords)) ? d.keywords.slice(0, 4) : [];
+        if (kws.length === 0) {
+          chips.innerHTML = '<div class="v3-trend-chip v3-trend-chip-skel"><div class="v3-trend-chip-rank">수집 중</div><div class="v3-trend-chip-kw">☁</div></div>';
+          return;
+        }
+        chips.innerHTML = '';
+        kws.forEach(function(k, i){
+          var rank = k.rank || (i + 1);
+          var isNew = k.isNew && k.isNewConfidence === 'high';
+          var rankLabel = rank === 1 ? '#1 급상승' : ('#' + rank + (isNew ? ' NEW' : ''));
+          var vel = k.velocityPct;
+          var velTrend = vel == null ? '' : (vel > 0 ? 'up' : 'down');
+          var velStr = vel == null ? '' : (vel > 0 ? '▲ ' + Math.round(vel) + '%' : '▼ ' + Math.abs(Math.round(vel)) + '%');
+          var kw = k.keyword || k.name || '';
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'v3-trend-chip';
+          btn.innerHTML = '<div class="v3-trend-chip-rank">' + v3EscHtml(rankLabel) + '</div>' +
+            '<div class="v3-trend-chip-kw">' + v3EscHtml(kw) + '</div>' +
+            (velStr ? '<div class="v3-trend-chip-vel ' + velTrend + '">' + velStr + '</div>' : '');
+          btn.addEventListener('click', function(){
+            try { localStorage.setItem('lumi_prefill_trend_kw', kw); } catch(e){}
+            window.v3GoTab('upload');
+          });
+          chips.appendChild(btn);
+        });
+      })
+      .catch(function(){
+        chips.innerHTML = '<div class="v3-trend-chip v3-trend-chip-skel"><div class="v3-trend-chip-rank">분석 중</div><div class="v3-trend-chip-kw">☁</div></div>';
+      });
+  }
+  // 홈 진입 시 1회 로드
+  setTimeout(function(){ v3RenderHomeTrendChips(v3CurrentCat()); }, 200);
+
+  // ---------- 내 가게 탭: 프로필 동기화 ----------
+  function v3SyncProfile(){
+    try {
+      var lu = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+      var nameEl = document.getElementById('v3-profile-name');
+      var subEl = document.getElementById('v3-profile-sub');
+      var avEl = document.getElementById('v3-profile-avatar');
+      var igStatusEl = document.getElementById('v3-ig-status');
+      var planEl = document.getElementById('v3-plan-label');
+      var name = lu.storeName || lu.store_name || lu.shopName || lu.name || lu.username || (lu.email ? String(lu.email).split('@')[0] : '') || '내 가게';
+      var CAT_KO = {cafe:'카페·음료',food:'맛집·외식',beauty:'뷰티',hair:'헤어',nail:'네일',flower:'꽃집',fashion:'패션',fitness:'피트니스',pet:'반려동물',interior:'인테리어',education:'교육',other:'일반'};
+      var cat = lu.bizCategory || lu.biz_category;
+      var region = lu.region || lu.city || '';
+      var sub = (cat && CAT_KO[cat] ? CAT_KO[cat] : (cat || '')) + (region ? ' · ' + region : '');
+      if (!sub.trim()) sub = '프로필을 완성해주세요';
+      if (nameEl) nameEl.textContent = name;
+      if (subEl) subEl.textContent = sub;
+      if (avEl) {
+        var initial = (name || '☁').trim().charAt(0);
+        avEl.textContent = initial || '☁';
+      }
+      if (igStatusEl) {
+        var igOk = !!(lu.igConnected || lu.igUserId || lu.instagram_handle);
+        igStatusEl.textContent = igOk ? '연결됨' : '미연결';
+      }
+      if (planEl) {
+        var plan = lu.plan || 'trial';
+        var isAdmin = localStorage.getItem('lumi_is_admin') === '1';
+        var label = isAdmin ? '관리자' : (plan === 'pro' ? '프로' : plan === 'standard' ? '스탠다드' : '무료 체험');
+        planEl.textContent = label;
+      }
+    } catch(e){ console.error('[v3SyncProfile]', e); }
+  }
+  v3SyncProfile();
+
+  // ---------- 초기 카테고리 칩 렌더 (트렌드 탭에 들어가기 전에도 준비) ----------
+  v3RenderCatChips(v3CurrentCat());
+};
 
 // ============================================================
 // 웨이브 2 모바일 대시보드 기능 (로그인 사용자 전용)
