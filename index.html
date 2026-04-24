@@ -2164,16 +2164,22 @@ body.dark-mode .mobile-dash {
   transform: translateX(-50%);
   width: 100%;
   max-width: 480px;
-  height: calc(var(--v3-tab-h) + var(--v3-safe-bot));
-  padding: 0 12px var(--v3-safe-bot);
+  height: calc(var(--v3-tab-h) + var(--v3-safe-bot)) !important;
+  padding: 0 12px var(--v3-safe-bot) !important;
   background: color-mix(in srgb, var(--v3-bg) 82%, transparent);
   backdrop-filter: blur(24px) saturate(1.3);
   -webkit-backdrop-filter: blur(24px) saturate(1.3);
   border-top: 1px solid var(--v3-line);
-  display: flex;
+  display: flex !important;
   align-items: center;
   justify-content: space-around;
   z-index: 100;
+  overflow: visible;
+  box-sizing: border-box;
+}
+/* 모바일 1023px 이하에서 확실히 표시 (기존 m-tabbar 767px 제한 우회) */
+@media (max-width: 1023px) {
+  .mobile-dash.v3 .v3-tabbar { display: flex !important; }
 }
 .v3-tab {
   flex: 1; height: 52px;
@@ -2204,24 +2210,24 @@ body.dark-mode .mobile-dash {
 }
 .v3-tab-plus {
   flex: 0 0 auto;
-  width: 56px; height: 56px;
-  margin: -24px 0 0;
+  width: 48px; height: 48px;
   border-radius: 50%;
   background: var(--v3-grad);
   display: flex; align-items: center; justify-content: center;
   color: #fff;
-  box-shadow: 0 8px 24px rgba(255,107,139,0.4), 0 2px 6px rgba(255,107,139,0.3);
+  box-shadow: 0 6px 18px rgba(255,107,139,0.38), 0 2px 6px rgba(255,107,139,0.25);
   transition: transform .25s var(--v3-ease), box-shadow .25s;
   position: relative;
   border: none; cursor: pointer;
+  padding: 0;
 }
 .v3-tab-plus::before {
-  content: ''; position: absolute; inset: -6px;
+  content: ''; position: absolute; inset: -4px;
   border-radius: 50%; background: inherit;
-  opacity: 0.25; filter: blur(12px); z-index: -1;
+  opacity: 0.22; filter: blur(10px); z-index: -1;
 }
-.v3-tab-plus:active { transform: scale(0.93); box-shadow: 0 4px 14px rgba(255,107,139,0.35); }
-.v3-tab-plus svg { width: 26px; height: 26px; stroke-width: 2.6; }
+.v3-tab-plus:active { transform: scale(0.93); box-shadow: 0 3px 10px rgba(255,107,139,0.32); }
+.v3-tab-plus svg { width: 24px; height: 24px; stroke-width: 2.6; }
 
 /* ═══════════════════════════════════════════════════════════
    UPLOAD SCREEN
@@ -4886,7 +4892,7 @@ body.dark-mode .pc-footer-col ul li a { color: #A8B3C0; }
             <b class="m-quick-label">스토리 자동 게시</b>
             <span class="m-quick-desc">피드 올릴 때 스토리도 함께</span>
           </div>
-          <button class="v3-toggle-sw m-toggle" type="button" data-feat="story" aria-label="스토리 자동 게시"></button>
+          <button class="v3-toggle-sw" type="button" data-feat="story" aria-label="스토리 자동 게시"></button>
         </div>
         <div class="v3-qt-row m-quick-row" data-feat="thread">
           <div class="v3-qt-icon m-quick-info-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
@@ -4894,7 +4900,7 @@ body.dark-mode .pc-footer-col ul li a { color: #A8B3C0; }
             <b class="m-quick-label">스레드 자동 게시</b>
             <span class="m-quick-desc">스레드에 동시 공유</span>
           </div>
-          <button class="v3-toggle-sw m-toggle" type="button" data-feat="thread" aria-label="스레드 자동 게시"></button>
+          <button class="v3-toggle-sw" type="button" data-feat="thread" aria-label="스레드 자동 게시"></button>
         </div>
         <div class="v3-qt-row m-quick-row" data-feat="weather">
           <div class="v3-qt-icon m-quick-info-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
@@ -4902,7 +4908,7 @@ body.dark-mode .pc-footer-col ul li a { color: #A8B3C0; }
             <b class="m-quick-label">날씨 반영</b>
             <span class="m-quick-desc">캡션에 오늘 날씨를 반영</span>
           </div>
-          <button class="v3-toggle-sw m-toggle" type="button" data-feat="weather" aria-label="날씨 반영"></button>
+          <button class="v3-toggle-sw" type="button" data-feat="weather" aria-label="날씨 반영"></button>
         </div>
         <div class="v3-qt-row m-quick-row" data-feat="captionReview">
           <div class="v3-qt-icon m-quick-info-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
@@ -4910,7 +4916,7 @@ body.dark-mode .pc-footer-col ul li a { color: #A8B3C0; }
             <b class="m-quick-label">캡션 확인</b>
             <span class="m-quick-desc">게시 전 캡션 확인·편집</span>
           </div>
-          <button class="v3-toggle-sw m-toggle" type="button" data-feat="captionReview" aria-label="캡션 확인"></button>
+          <button class="v3-toggle-sw" type="button" data-feat="captionReview" aria-label="캡션 확인"></button>
         </div>
         <div class="v3-qt-row m-quick-row" data-feat="linkinbio">
           <div class="v3-qt-icon m-quick-info-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
@@ -4918,7 +4924,7 @@ body.dark-mode .pc-footer-col ul li a { color: #A8B3C0; }
             <b class="m-quick-label">링크인바이오</b>
             <span class="m-quick-desc">게시물 하단에 프로필 링크 자동 삽입</span>
           </div>
-          <button class="v3-toggle-sw m-toggle" type="button" data-feat="linkinbio" aria-label="링크인바이오"></button>
+          <button class="v3-toggle-sw" type="button" data-feat="linkinbio" aria-label="링크인바이오"></button>
         </div>
       </div>
 
@@ -4997,7 +5003,7 @@ body.dark-mode .pc-footer-col ul li a { color: #A8B3C0; }
   </main>
 
   <!-- ─ BOTTOM TAB BAR v3 ─ -->
-  <nav class="v3-tabbar m-tabbar" role="navigation" aria-label="모바일 내비게이션">
+  <nav class="v3-tabbar" role="navigation" aria-label="모바일 내비게이션">
     <button type="button" class="v3-tab m-tab is-active" data-tab="today" onclick="window.v3GoTab('today');">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
       <span>오늘</span>
@@ -5703,7 +5709,7 @@ function mInitWave2(){
     var state = Object.assign({}, defaults, saved);
     document.querySelectorAll('#m-quick-list .m-quick-row').forEach(function(row){
       var key = row.getAttribute('data-feat');
-      var btn = row.querySelector('.m-toggle');
+      var btn = row.querySelector('.v3-toggle-sw, .m-toggle');
       if (!key || !btn) return;
       function paint(){ btn.classList.toggle('is-on', !!state[key]); btn.setAttribute('aria-pressed', state[key] ? 'true' : 'false'); }
       paint();
