@@ -5475,6 +5475,47 @@ window.__v3InitDash = function(){
   if (window.__v3Inited) return;
   window.__v3Inited = true;
 
+  // ---------- 빠른 설정 토글 (독립, 토큰 무관) ----------
+  // 로컬 상태는 항상 반영, API 동기화는 별도 IIFE에서 (TOKEN 있을 때만)
+  (function(){
+    var defaults = { story: true, thread: false, weather: true, captionReview: true, linkinbio: false };
+    var state;
+    try { state = Object.assign({}, defaults, JSON.parse(localStorage.getItem('lumi_feat_toggles') || '{}')); }
+    catch(e){ state = Object.assign({}, defaults); }
+
+    function paintAll(){
+      document.querySelectorAll('#m-quick-list .m-quick-row').forEach(function(row){
+        var key = row.getAttribute('data-feat');
+        var btn = row.querySelector('.v3-toggle-sw, .m-toggle');
+        if (!key || !btn) return;
+        btn.classList.toggle('is-on', !!state[key]);
+        btn.setAttribute('aria-pressed', state[key] ? 'true' : 'false');
+      });
+    }
+    paintAll();
+
+    document.querySelectorAll('#m-quick-list .m-quick-row').forEach(function(row){
+      var key = row.getAttribute('data-feat');
+      if (!key) return;
+      row.addEventListener('click', function(e){
+        e.preventDefault();
+        state[key] = !state[key];
+        try { localStorage.setItem('lumi_feat_toggles', JSON.stringify(state)); } catch(_){}
+        paintAll();
+        try { if (navigator.vibrate) navigator.vibrate(8); } catch(_){}
+        // API 동기화 (실패해도 UI 유지)
+        var TOKEN = localStorage.getItem('lumi_token') || '';
+        if (TOKEN && typeof window.lumiAuthFetch === 'function') {
+          window.lumiAuthFetch('/api/update-profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TOKEN },
+            body: JSON.stringify({ featToggles: state })
+          }).catch(function(){ /* silent — 로컬은 이미 저장됨 */ });
+        }
+      });
+    });
+  })();
+
   // ---------- 탭 라우팅 ----------
   window.v3GoTab = function(id){
     var dash = document.getElementById('mobile-app-logged-in');
@@ -5689,6 +5730,16 @@ window.__v3InitDash = function(){
   v3RenderCatChips(v3CurrentCat());
 };
 
+// v3 대시보드 자동 초기화 — 토큰 유무와 무관하게 항상 탭 라우팅/토글 작동 보장
+(function bootV3(){
+  function go(){ try { window.__v3InitDash(); } catch(e){ console.error('[v3-dash boot]', e); } }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', go, { once: true });
+  } else {
+    go();
+  }
+})();
+
 // ============================================================
 // 웨이브 2 모바일 대시보드 기능 (로그인 사용자 전용)
 // ============================================================
@@ -5702,40 +5753,8 @@ function mInitWave2(){
   function fmtKoDate(d){ try { return new Date(d).toLocaleDateString('ko-KR',{month:'long',day:'numeric'}); } catch(e){ return ''; } }
   function fmtKoDateTime(d){ try { return new Date(d).toLocaleString('ko-KR',{month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'}); } catch(e){ return ''; } }
 
-  // ---------- 빠른 설정 (feat toggles) ----------
-  (function(){
-    var defaults = { story: true, thread: false, weather: true, captionReview: true, linkinbio: false };
-    var saved; try { saved = JSON.parse(localStorage.getItem('lumi_feat_toggles') || '{}'); } catch(e){ saved = {}; }
-    var state = Object.assign({}, defaults, saved);
-    document.querySelectorAll('#m-quick-list .m-quick-row').forEach(function(row){
-      var key = row.getAttribute('data-feat');
-      var btn = row.querySelector('.v3-toggle-sw, .m-toggle');
-      if (!key || !btn) return;
-      function paint(){ btn.classList.toggle('is-on', !!state[key]); btn.setAttribute('aria-pressed', state[key] ? 'true' : 'false'); }
-      paint();
-      function toggle(e){
-        if (e) { e.preventDefault(); e.stopPropagation(); }
-        var prev = !!state[key];
-        state[key] = !prev;
-        paint();
-        try { if (navigator.vibrate) navigator.vibrate(8); } catch(_v) {}
-        localStorage.setItem('lumi_feat_toggles', JSON.stringify(state));
-        window.lumiAuthFetch('/api/update-profile', {
-          method:'POST',
-          headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+TOKEN },
-          body: JSON.stringify({ featToggles: state })
-        }).then(function(r){
-          if (!r.ok) throw new Error('sync failed');
-        }).catch(function(){
-          state[key] = prev;
-          paint();
-          localStorage.setItem('lumi_feat_toggles', JSON.stringify(state));
-          showMobileToast('설정 저장 실패 — 잠시 후 다시 시도해주세요');
-        });
-      }
-      row.addEventListener('click', toggle);
-    });
-  })();
+  // ---------- 빠른 설정 토글 ----------
+  // (토글 바인딩은 window.__v3InitDash 안에서 독립으로 처리됨, 중복 방지 위해 여기선 skip)
 
   // ---------- 캡션 플로우 (사진 업로드 → 생성 → 옵션 → 완료) ----------
   window._mFlow = window._mFlow || { step: 0, file: null, reservationKey: null, captions: [], selectedIdx: 0, editedCaption: '', regenCount: 0, postMode: 'immediate', scheduledAt: null, bestTimeCache: null, bestTimeCacheAt: 0, posting: false, thumbUrls: [], isVideo: false, videoFile: null, videoDuration: 0, videoWidth: 0, videoHeight: 0 };
