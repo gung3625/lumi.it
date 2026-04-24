@@ -112,45 +112,52 @@ exports.handler = async (event) => {
     } catch (e) { console.log('[demo-caption] 트렌드 fetch 실패:', e.message); }
 
     // ══════════════════════════════════════
-    // STEP 1: GPT-4o 이미지 분석
+    // STEP 1: GPT-4o 이미지 분석 (Emotion-first, JSON 출력)
     // ══════════════════════════════════════
-    const analysisPrompt = `당신은 소상공인 인스타그램 마케팅 전문 이미지 분석가입니다.
-분석 결과는 캡션 카피라이터에게 전달됩니다.
 
-업종: ${bizCategory}
+    // 업종별 분석 힌트 (해당 업종만 노출 — prompt bloat 방지)
+    const CATEGORY_HINTS = {
+      'cafe': '잔·컵 디자인, 크림·거품의 층, 토핑의 손길, 빛이 음료를 통과하는 방식',
+      'food': '플레이팅의 여백, 김·연기·기름의 윤기, 재료 단면, 식기의 질감',
+      'beauty': '피부결, 컬러 톤의 미묘한 전환, 광택/매트, 시술 직후의 살아있는 느낌',
+      'nail': '손의 결, 네일 아트의 미세한 패턴, 손톱 끝의 마감, 컬러 깊이',
+      'hair': '머릿결의 흐름, 컬의 탄력, 컬러 레이어드, 빛이 머리에 떨어지는 각도',
+      'flower': '꽃잎의 생기, 색 대비, 포장지 질감, 잎과 꽃의 리듬',
+      'fashion': '핏/실루엣, 소재 주름, 컬러 매칭, 착용자의 자세',
+      'fitness': '움직임의 순간, 근육의 텐션, 공간의 에너지, 땀/햇빛',
+      'pet': '동물의 눈빛·표정, 털·수염의 디테일, 순간 포즈, 인간과의 거리감',
+    };
+    const hint = CATEGORY_HINTS[bizCategory] || '사진의 주인공과 주변의 관계, 빛이 만드는 분위기';
 
-## 업종별 분석 포인트
-- 카페/베이커리: 음료 색감, 토핑, 크림 질감, 잔/컵 디자인, 디저트 단면
-- 음식점: 메뉴 구성, 플레이팅, 김/연기(온도감), 소스/토핑 디테일
-- 뷰티/네일/헤어: 시술 결과물, 컬러 톤, 디자인 패턴, 질감(광택/매트)
-- 꽃집: 꽃 품종, 색 조합, 포장 스타일, 리본/소품
-- 패션: 코디 구성, 컬러 매칭, 핏/실루엣, 소재감
-- 피트니스: 운동 동작, 기구, 공간 분위기, 에너지
-- 펫: 동물 표정/포즈, 용품, 간식, 인터랙션
-- 인테리어: 공간 스타일, 컬러 팔레트, 조명, 소품 배치
-- 스튜디오: 조명 셋업, 포즈, 배경, 보정 스타일
+    const analysisPrompt = `당신은 한국 소상공인 인스타그램 캡션 카피라이터의 파트너 이미지 분석가입니다.
+결과는 JSON으로만 출력하세요. 다른 설명 없이.
 
-## 분석 원칙 (절대 준수)
-- **사진에 실제로 보이는 것만 분석하세요.** 사진에 없는 것을 추측/지어내기 금지.
-- 사진이 업종과 무관해 보이면 솔직히 밝히고 보이는 것을 있는 그대로 분석하세요.
-- 사물 나열 금지. "딸기가 있고, 잔이 있다" → 실패. "선명한 딸기 빛이 우유 위에 스며드는 순간" → 성공.
-- 메뉴판, 간판, 가격표, 로고 등 텍스트가 보이면 반드시 읽어서 포함.
-- **사진에 없는 음식, 음료, 제품을 절대 언급 금지.**
-- 인스타그램 피드에서 스크롤을 멈추게 만드는 요소가 무엇인지 찾으세요.
+## 업종: ${bizCategory}
+## 이 업종에서 주목할 점: ${hint}
 
-## 출력
+## 분석 원칙 (절대)
+1. 사진에 **실제 보이는 것만** — 추측·지어내기 금지
+2. **Feature가 아니라 Emotion** — "녹색과 크림의 대비" ❌ / "오후 3시에 쉬고 싶을 때 딱 생각나는 색" ✅
+3. 메뉴판·간판·가격표 텍스트가 보이면 그대로 읽기
+4. 사진이 업종과 무관하면 솔직히 표시 (category_match: false)
 
-**[첫인상]** 이 사진을 처음 본 0.3초의 느낌. 한 문장. 이것이 캡션 첫 문장의 씨앗.
+## 출력 (JSON만, 마크다운 코드펜스 없이)
 
-**[핵심 분석]** 3~5문장:
-- 피사체: 무엇이 찍혀 있는지 (메뉴명, 제품명 구체적으로)
-- 감성: "예쁜" 말고 "비 오는 오후 창가에 혼자 앉은 느낌" 수준의 구체적 감성
-- 시각: 주된 색조, 빛의 질감(자연광/인공), 구도의 특징
-- 공간: 분위기, 인테리어, 눈에 띄는 소품
-
-**[캡션 키워드]** 사진의 시각적 특징에서 나온 한국어 키워드 5개. (날씨/계절 제외)
-
-**[첫 문장 후보]** 캡션 첫 문장 3개 (질문형 / 감성형 / 직관형). 각각 완전히 다른 접근.`;
+{
+  "first_impression": "0.3초의 인상 한 문장 (감정 우선, 서술형)",
+  "subject": "피사체 핵심 (메뉴/제품명 구체)",
+  "mood": "구체적 감성 ('예쁜' 금지, 상황·시간·인물까지 연결)",
+  "visual_hook": "스크롤을 멈추게 할 시각적 한 포인트",
+  "keywords": ["한국어 명사 5개, 날씨·계절 제외"],
+  "first_sentence_candidates": {
+    "question": "질문형 첫 문장 후보",
+    "emotional": "감성형 첫 문장 후보 (명사 문장 가능)",
+    "direct": "직관형 첫 문장 후보 (짧고 단호)",
+    "observational": "관찰형 첫 문장 후보 ('~더라고요')",
+    "conversational": "대화형 첫 문장 후보 ('~잖아요')"
+  },
+  "category_match": true
+}`;
 
     const analysisRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -160,8 +167,9 @@ exports.handler = async (event) => {
       },
       body: JSON.stringify({
         model: 'gpt-4o',
-        max_tokens: 1024,
-        temperature: 0.6,
+        max_tokens: 700,
+        temperature: 0.4, // 분석은 일관성 우선
+        response_format: { type: 'json_object' },
         messages: [{
           role: 'user',
           content: [
@@ -174,25 +182,66 @@ exports.handler = async (event) => {
 
     const analysisData = await analysisRes.json();
     if (analysisData.error) throw new Error(`이미지 분석 오류: ${analysisData.error.message}`);
-    const imageAnalysis = analysisData.choices?.[0]?.message?.content?.trim();
-    if (!imageAnalysis) throw new Error('이미지 분석 실패');
+    const rawAnalysis = analysisData.choices?.[0]?.message?.content?.trim();
+    if (!rawAnalysis) throw new Error('이미지 분석 실패');
 
-    console.log('[demo-caption] 이미지 분석 완료:', imageAnalysis.substring(0, 200));
+    let analysis;
+    try {
+      analysis = JSON.parse(rawAnalysis);
+    } catch (e) {
+      // JSON 파싱 실패 시 원본 문자열 그대로 사용 (fallback)
+      analysis = { _raw: rawAnalysis };
+    }
+
+    console.log('[demo-caption] 분석 완료:', (analysis.first_impression || rawAnalysis).substring(0, 150));
 
     // ══════════════════════════════════════
-    // STEP 2: gpt-5.4 캡션 생성
+    // STEP 2: gpt-5.4 캡션 생성 (Emotion-first, 랜덤 앵글, 범위 제약)
     // ══════════════════════════════════════
-    const captionPrompt = `당신은 한국 소상공인의 인스타그램 캡션을 대신 써주는 전문 카피라이터입니다.
-이미지 분석 결과를 바탕으로 매력적인 캡션 1개를 만들어주세요.
 
-## 입력 정보
+    // 랜덤 샘플링 — 매 호출마다 다른 캡션이 나오는 핵심
+    const angles = ['question','emotional','direct','observational','conversational'];
+    const chosenAngle = angles[Math.floor(Math.random() * angles.length)];
+    const angleMap = {
+      question: '질문형 — 독자가 답하고 싶어지는 질문 1개',
+      emotional: '감성형 — 명사 문장 or 짧은 장면 묘사, 여백 있게',
+      direct: '직관형 — 짧고 단호, 수식어 최소',
+      observational: '관찰형 — "~더라고요", "~네요" 어미로 일상적 관찰',
+      conversational: '대화형 — "~잖아요", "~지 않아요?" 상대를 끌어들임',
+    };
+    const angleHint = angleMap[chosenAngle];
+    const pickedFirst = (analysis.first_sentence_candidates && analysis.first_sentence_candidates[chosenAngle]) || '';
 
-### 이미지 분석
-${imageAnalysis}
+    // CTA 포함 여부 70:30 — 때로는 pure moment로 끝나는 게 더 강함
+    const includeCta = Math.random() < 0.7;
+    const ctaIntents = {
+      'cafe': '장소/방문 호기심 — 구체 문구는 직접 만들 것',
+      'food': '메뉴/맛 호기심 — 구체 문구는 직접 만들 것',
+      'beauty': '예약·DM 문의 유도 — 부드럽게',
+      'nail': '예약·DM 문의 유도 — 부드럽게',
+      'hair': '예약·DM 문의 유도 — 부드럽게',
+      'flower': '선물 대상 상상하게 하기',
+      'fashion': '저장해두고 싶게 하기',
+      'fitness': '동료 태그 유도 — "같이 할 사람?" 같은 상투어는 피할 것',
+      'pet': '공감·경험 공유 유도',
+    };
+    const ctaHint = ctaIntents[bizCategory] || '저장/공유/댓글/방문 중 자연스러운 것';
 
-### 매장 정보
+    const analysisForPrompt = analysis._raw
+      ? analysis._raw
+      : JSON.stringify(analysis, null, 2);
+
+    const captionPrompt = `당신은 한국 소상공인 대신 인스타 캡션을 써주는 전문 카피라이터입니다.
+목표: "사장님이 직접 쓴 거지?" 느끼게 하기. AI 티가 나면 실패.
+
+## 입력
+
+### 이미지 분석 (JSON)
+${analysisForPrompt}
+
+### 매장·시점
 업종: ${bizCategory}
-오늘: ${month}월 ${day}일 (${dayOfWeek}요일), ${season}
+오늘: ${month}월 ${day}일(${dayOfWeek}), ${season}
 
 ### 날씨
 ${weatherBlock}
@@ -200,53 +249,42 @@ ${weatherBlock}
 ### 트렌드
 ${trendBlock}
 
-## 말투: 편하게 말하듯이, ~요 체, 이모지 적절히 사용
+## 이번 캡션 지시 (매번 달라짐)
+- 첫 문장 앵글: **${chosenAngle}** → ${angleHint}
+- 참고 초안(베끼지 말고 변형): "${pickedFirst}"
+- CTA 포함: ${includeCta ? `예 — ${ctaHint}` : '아니오 — pure moment로 마무리, 행동 유도 없이 여운만'}
 
-## 절대 금지
-- "안녕하세요", "감사합니다" 같은 뻔한 인사/마무리
-- "맛있는", "신선한", "정성스러운" 같은 과장 형용사
-- AI가 쓴 것처럼 매끄러운 문장
-- 제목, 따옴표, 부연 설명
-- 경쟁사/타 브랜드 이름 언급 금지
-- "업계 1위", "최고", "가성비 최강" 같은 과대광고
-- 의학적/건강 효능 단정 금지
-- 종교/정치/사회적 논란 이슈 언급 금지
-- "무첨가", "100% 천연", "유기농" 등 법적 위험 표현 금지
-- 고객 비하, 강요, 불안 조성 표현 금지
-- 성적/선정적 표현, 외모 평가 금지
-- 욕설, 비속어, 은어 금지
-- 저작권 있는 노래 가사/영화 대사 인용 금지
-- 연예인/유명인 이름 동의 없이 사용 금지
-- 사진에 없는 메뉴를 트렌드라고 넣지 말 것
-- 이미지 분석에 나온 피사체만 캡션에 활용. 분석에 없는 것을 지어내지 말 것
-- "이번 주까지만", "곧 품절" 같은 시간/시기 단정 금지
-- "손님들이 다 좋아하세요" 같은 고객 반응 날조 금지
-- 트렌드를 직접 설명하지 말 것 → 분위기/감성으로만 녹일 것
+## 실패 예시 (이런 문장은 절대 금지)
+❌ "안녕하세요 사장입니다 🌸 오늘 특별한 신메뉴를 소개합니다"
+❌ "여러분 저희 가게에 오시면 후회 없으실 거예요 💖"
+❌ "맛있는 커피와 신선한 디저트가 기다리고 있어요"
+❌ "많은 관심과 사랑 부탁드립니다 😊"
+❌ "놀러 오세요 🙌 기다리고 있을게요"
+❌ "녹색의 진한 대비와 부드러운 크림이 어우러진..." (feature 나열)
 
-## 이런 캡션을 쓰세요
-- 이미지 분석의 [첫인상]을 캡션 첫 문장의 감성 씨앗으로 활용
-- [첫 문장 후보]를 참고하되 그대로 베끼지 말 것
-- 첫 문장에서 스크롤이 멈춤
-- 대표님이 직접 쓴 것 같은 자연스러움
-- 이모지는 캡션의 감정을 보완하는 위치에 자연스럽게. 요즘 인스타그램 트렌드에 맞게.
-- 날씨를 자연스럽게 한 문장에 녹일 것 (기온 숫자 직접 쓰지 말 것)
-- 마지막 문장은 자연스러운 행동 유도:
-  · 카페/음식: "여기 어디야?" 댓글 유도
-  · 뷰티: "예약/DM 문의" 유도
-  · 꽃집: "누구에게 주고 싶은지" 댓글 유도
-  · 패션: "저장해두세요" 유도
-  · 피트니스: "같이 할 사람?" 태그 유도
-  · 펫: "우리 아이도 이래요" 공감 유도
-  · 기타: 저장/공유/댓글/방문 중 자연스러운 것
+## 성공 예시 (이런 온도)
+✅ "비 오는 날엔 이게 더 맛있어요. 왜인진 모르겠는데"
+✅ "3시쯤 오세요. 빵 나와요."
+✅ "이거 만들 때마다 한 번씩 실수함. 근데 오늘은 됐다."
+✅ "오후 3시, 창가 자리 비어있으면 좋은 날"
 
-## 해시태그
-해시태그 구성: 대형 + 중형 + 소형 + 트렌드(사진 관련만)
-개수와 스타일은 요즘 인스타그램 트렌드에 맞게 자연스럽게.
-사진과 무관한 해시태그 금지. 현재 시즌과 맞지 않는 해시태그 금지.
-캡션 본문 마지막에 줄바꿈 후 한 블록.
+## 형식 (범위 — 엄격한 고정 X)
+- 본문 **3~7줄 이내** (사진의 강도에 맞춰 자연스럽게)
+- 이모지 **0~4개** (강제 X, 있으면 감정·대상 뒤에 자연 배치)
+- 해시태그 **5~8개** — 대형 2 / 중형 2 / 소형 1~2 / 트렌드(사진 관련만) 1~2
+- 매장명·자기 소개·고객 호칭("여러분")·"~드립니다"체 금지
+- 분석의 subject·keywords에서 실제 보이는 것만 활용
+- 날씨는 자연스럽게 한 문장에 녹일 것 (기온 숫자 직접 쓰지 말 것)
+- 트렌드는 **본문에 직접 언급 금지**, 해시태그로만
+
+## 법적·윤리 금지
+- 과대광고("최고","1위","가성비 최강"), 효능 단정
+- "무첨가","100% 천연" 등 미인증 표시
+- 경쟁사·타 브랜드·연예인 언급, 저작권 가사·대사 인용
+- 시간 단정("이번 주까지만"), 고객 반응 날조
 
 ## 출력
-캡션 1개 (본문 + 해시태그). 캡션만 출력하세요. 다른 텍스트 없이.`;
+캡션 1개만. 본문 + 줄바꿈 + 해시태그 블록. 그 외 텍스트·따옴표·제목 없이.`;
 
     const captionRes = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
@@ -254,13 +292,26 @@ ${trendBlock}
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
       },
-      body: JSON.stringify({ model: 'gpt-5.4', input: captionPrompt }),
+      body: JSON.stringify({
+        model: 'gpt-5.4',
+        input: captionPrompt,
+        temperature: 0.78, // 변주↑ (AI slop 완화)
+      }),
     });
 
     const captionData = await captionRes.json();
     if (captionData.error) throw new Error(`캡션 생성 오류: ${captionData.error.message || JSON.stringify(captionData.error)}`);
     const caption = captionData.output?.[0]?.content?.[0]?.text || captionData.output_text || '';
     if (!caption) throw new Error('캡션 생성 실패');
+
+    // ── Post-gen 검증 (비용 추가 없이 품질 로그) ──
+    try {
+      const body = caption.trim();
+      const hashtagCount = (body.match(/#[^\s#]+/g) || []).length;
+      const banned = /(안녕하세요|많은\s*관심|놀러\s*오세요|최고|업계\s*1위|100%\s*천연|무첨가|정성스럽|드립니다)/;
+      const bannedHit = banned.test(body);
+      console.log(`[demo-caption] quality: len=${body.length} hashtags=${hashtagCount} bannedHit=${bannedHit} angle=${chosenAngle} cta=${includeCta}`);
+    } catch(_){}
 
     // ── rate limit 카운트 증가 (upsert) ──
     try {

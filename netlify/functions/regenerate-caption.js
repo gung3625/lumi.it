@@ -68,15 +68,47 @@ function buildCaptionPrompt(item, imageAnalysis, toneGuide) {
 해시태그는 특정 한 장이 아닌 **세트 전체** 기준으로 선정하세요.`
     : '';
 
+  // 랜덤 앵글 샘플링 — 재생성마다 다른 첫 문장 접근
+  const angles = ['question','emotional','direct','observational','conversational'];
+  const chosenAngle = angles[Math.floor(Math.random() * angles.length)];
+  const angleMap = {
+    question: '질문형 — 독자가 답하고 싶어지는 질문 1개',
+    emotional: '감성형 — 명사 문장 or 짧은 장면 묘사, 여백 있게',
+    direct: '직관형 — 짧고 단호, 수식어 최소',
+    observational: '관찰형 — "~더라고요", "~네요" 어미로 일상적 관찰',
+    conversational: '대화형 — "~잖아요", "~지 않아요?" 상대를 끌어들임',
+  };
+  // CTA 70:30 — 때론 pure moment로 끝나는 게 더 강함
+  const includeCta = Math.random() < 0.7;
+
   return `당신은 한국 소상공인의 인스타그램 캡션을 대신 써주는 전문 카피라이터입니다.
 이전 캡션과 완전히 다른 새로운 캡션 1개를 만들어주세요.
 
+## 이번 캡션 지시 (매번 달라짐)
+- 첫 문장 앵글: **${chosenAngle}** → ${angleMap[chosenAngle]}
+- CTA 포함: ${includeCta ? '예 — 자연스럽게, 상투어 피해서' : '아니오 — pure moment로 마무리, 행동 유도 없이 여운만'}
+
+## 실패 예시 (이런 문장은 절대 금지)
+❌ "안녕하세요 사장입니다 🌸 오늘 특별한 신메뉴를 소개합니다"
+❌ "여러분 저희 가게에 오시면 후회 없으실 거예요 💖"
+❌ "맛있는 커피와 신선한 디저트가 기다리고 있어요"
+❌ "많은 관심과 사랑 부탁드립니다 😊"
+❌ "놀러 오세요 🙌 기다리고 있을게요"
+❌ "녹색의 진한 대비와 부드러운 크림이 어우러진..." (feature 나열)
+
+## 성공 예시 (이런 온도)
+✅ "비 오는 날엔 이게 더 맛있어요. 왜인진 모르겠는데"
+✅ "3시쯤 오세요. 빵 나와요."
+✅ "이거 만들 때마다 한 번씩 실수함. 근데 오늘은 됐다."
+✅ "오후 3시, 창가 자리 비어있으면 좋은 날"
+
 ## 절대 금지 (핵심 5가지)
 1. 사진에 없는 것 언급 금지 — 이미지 분석에 나온 피사체만 활용. 분석에 없는 것을 업종에 맞춰 지어내지 말 것
-2. AI스러운 뻔한 표현 금지 — "안녕하세요", "맛있는", "신선한", "정성스러운", "놀러 오세요", "많은 관심 부탁드립니다"
+2. AI스러운 뻔한 표현 금지 — "안녕하세요", "맛있는", "신선한", "정성스러운", "놀러 오세요", "많은 관심 부탁드립니다", "드립니다" 체
 3. 경쟁사/타 브랜드 언급 금지 — 트렌드도 직접 설명 말고 분위기/감성으로만 녹일 것
 4. 법적 위험 표현 금지 — 과대광고, 의료 효능, 미인증 표시("무첨가","유기농"), 가격 단정, 고객 반응 날조
 5. 기온/미세먼지 수치, 시간/시기 단정("이번 주까지만"), 제목/따옴표/부연 설명 없이 캡션만 출력
+6. Feature 나열 금지 — "녹색과 크림의 대비" ❌ / 감정·맥락으로 전환 필수
 
 ## 톤 안전장치 (Moderation API 보완)
 - 특정 기업/브랜드/개인 비방 금지
@@ -372,7 +404,7 @@ exports.handler = async (event) => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
         },
-        body: JSON.stringify({ model: 'gpt-4o', input: captionPrompt, store: true }),
+        body: JSON.stringify({ model: 'gpt-4o', input: captionPrompt, store: true, temperature: 0.78 }),
         signal: regenCtrl.signal,
       });
     } finally {
