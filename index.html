@@ -4726,176 +4726,300 @@ body.dark-mode .pc-footer-col ul li a { color: #A8B3C0; }
   </div>
 </div>
 
-<!-- ========== MOBILE DASH VIEW (Phase B, logged-in) ==========
-     Visible only at max-width:767px for logged-in users.
-     Desktop bento below is completely untouched. -->
-<div class="mobile-dash" id="mobile-app-logged-in" style="display:none">
-  <!-- 1. Top greeting bar -->
-  <header class="m-greeting m-greeting-header">
-    <div class="m-greeting-text">
-      <p class="m-greeting-hi">안녕하세요</p>
-      <p class="m-greeting-name" id="m-greeting-name">@lumi</p>
+<!-- ========== MOBILE DASH v3 (Phase 6, Dawn Cloud 4탭 IA, logged-in) ==========
+     Visible only at max-width:1023px for logged-in users.
+     PC bento(1024+) is completely untouched. -->
+<script>window.FEATURE_FLAGS = window.FEATURE_FLAGS || {}; window.FEATURE_FLAGS.dm_tab = false;</script>
+<div class="mobile-dash v3" id="mobile-app-logged-in" style="display:none">
+
+  <!-- ─ TOPBAR ─ -->
+  <header class="v3-topbar m-greeting m-greeting-header">
+    <img class="v3-topbar-mascot" src="/assets/logo-cloud.png" alt="루미" onerror="this.style.display='none'">
+    <div class="v3-topbar-greeting m-greeting-text">
+      <b><span class="m-greeting-name" id="m-greeting-name">@lumi</span></b>
+      <span class="m-greeting-hi">오늘도 루미가 함께해요</span>
+    </div>
+    <div class="v3-topbar-actions">
+      <button type="button" class="v3-topbar-btn" aria-label="알림" onclick="location.href='/settings.html#notifications';">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+      </button>
     </div>
   </header>
 
-  <!-- 2. Primary CTA card (사진 올리기 → 캡션 플로우 진입) -->
-  <section class="m-primary-cta v2-rise">
-    <div class="m-primary-cta-icon">
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-    </div>
-    <div class="m-primary-cta-body">
-      <p class="m-primary-cta-title">사진·영상 올리기 → 캡션 1분</p>
-      <p class="m-primary-cta-sub">사진·영상 한 개면 캡션·해시태그 완성</p>
-    </div>
-    <button type="button" class="m-primary-cta-btn" onclick="document.getElementById('m-hidden-file').click();">사진 선택</button>
-    <input type="file" id="m-hidden-file" accept="image/*,video/*,.mp4,.mov,.m4v,.MP4,.MOV" multiple style="position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;pointer-events:none" onchange="window.__mHandleFile(event)">
-  </section>
+  <!-- Shared file input (전역, 탭 어디서나 클릭 가능) -->
+  <input type="file" id="m-hidden-file" accept="image/*,video/*,.mp4,.mov,.m4v,.MP4,.MOV" multiple style="position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;pointer-events:none" onchange="window.__mHandleFile(event)">
 
-  <!-- 3. 빠른 설정 -->
-  <section class="m-section-mini" id="m-quick-settings">
-    <div class="m-mini-head"><h3 class="m-mini-title">빠른 설정</h3></div>
-    <div class="m-card m-quick-card" id="m-quick-list">
-      <div class="m-quick-row" data-feat="story">
-        <div class="m-quick-info">
-          <p class="m-quick-label">스토리 자동 게시</p>
-          <p class="m-quick-desc">피드 올릴 때 스토리도 함께</p>
-        </div>
-        <button class="m-toggle" type="button" data-feat="story" aria-label="스토리 자동 게시"></button>
-      </div>
-      <div class="m-quick-row" data-feat="thread">
-        <div class="m-quick-info">
-          <p class="m-quick-label">스레드 자동 게시</p>
-          <p class="m-quick-desc">스레드에 동시 공유</p>
-        </div>
-        <button class="m-toggle" type="button" data-feat="thread" aria-label="스레드 자동 게시"></button>
-      </div>
-      <div class="m-quick-row" data-feat="weather">
-        <div class="m-quick-info">
-          <p class="m-quick-label">날씨 반영</p>
-          <p class="m-quick-desc">캡션에 오늘 날씨를 반영</p>
-        </div>
-        <button class="m-toggle" type="button" data-feat="weather" aria-label="날씨 반영"></button>
-      </div>
-      <div class="m-quick-row" data-feat="captionReview">
-        <div class="m-quick-info">
-          <p class="m-quick-label">캡션 확인</p>
-          <p class="m-quick-desc">게시 전 캡션 확인·편집</p>
-        </div>
-        <button class="m-toggle" type="button" data-feat="captionReview" aria-label="캡션 확인"></button>
-      </div>
-      <div class="m-quick-row" data-feat="linkinbio">
-        <div class="m-quick-info">
-          <p class="m-quick-label">링크인바이오</p>
-          <p class="m-quick-desc">게시물 하단에 프로필 링크 자동 삽입</p>
-        </div>
-        <button class="m-toggle" type="button" data-feat="linkinbio" aria-label="링크인바이오"></button>
-      </div>
-    </div>
-  </section>
+  <main class="v3-main">
 
-  <!-- 4. 최근 캡션 -->
-  <section class="m-section-mini" id="m-history-section">
-    <div class="m-mini-head"><h3 class="m-mini-title">최근 캡션</h3></div>
-    <div class="m-card m-feat-card" id="m-history-empty">
-      <p class="m-feat-body">아직 저장된 캡션이 없어요.</p>
-    </div>
-  </section>
+    <!-- ═════════ 오늘 (HOME) ═════════ -->
+    <section class="v3-screen is-active" data-screen="today">
 
-  <!-- 5. 이번 주 트렌드 (프리뷰 3개) -->
-  <section class="m-section-mini" id="m-trend-anchor">
-    <div class="m-mini-head">
-      <h3 class="m-mini-title">이번 주 트렌드</h3>
-      <button type="button" class="m-mini-more" onclick="window.mOpenTrendView()">전체 보기 →</button>
-    </div>
-    <div class="m-card m-feat-card" id="m-trend-card">
-      <div class="m-feat-chips" id="m-trend-chips">
-        <span class="m-chip m-chip-skel">로딩 중…</span>
-        <span class="m-chip m-chip-skel">로딩 중…</span>
-        <span class="m-chip m-chip-skel">로딩 중…</span>
+      <!-- 미션 카드 → 사진 올리기 진입 -->
+      <article class="v3-mission">
+        <div class="v3-mission-label">오늘의 미션</div>
+        <h2 class="v3-mission-title">오늘 한 컷,<br>루미가 캡션까지 1분 안에!</h2>
+        <p class="v3-mission-desc">사진 한 장이면 <b class="v3-grad-text" style="font-weight:700;">캡션·해시태그</b>를 루미가 써드려요.</p>
+        <button type="button" class="v3-mission-cta" onclick="document.getElementById('m-hidden-file').click();">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M20 16V8a2 2 0 0 0-2-2h-3l-2-3h-4l-2 3H4a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2Z"/></svg>
+          사진 올리러 가기
+        </button>
+      </article>
+
+      <!-- 이번 주 트렌드 프리뷰 (상위 4개) -->
+      <div class="v3-section-head">
+        <h3>이번 주 트렌드</h3>
+        <button type="button" onclick="window.v3GoTab('trends')">전체 보기 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></button>
       </div>
-      <p class="m-feat-body" id="m-trend-body">네이버·유튜브·인스타에서 이번 주 상승 중인 키워드예요.</p>
-    </div>
-  </section>
+      <div class="v3-chip-scroll" id="m-trend-chips">
+        <div class="v3-trend-chip v3-trend-chip-skel"><div class="v3-trend-chip-rank">로딩 중…</div></div>
+        <div class="v3-trend-chip v3-trend-chip-skel"><div class="v3-trend-chip-rank">로딩 중…</div></div>
+        <div class="v3-trend-chip v3-trend-chip-skel"><div class="v3-trend-chip-rank">로딩 중…</div></div>
+      </div>
 
-  <!-- 6. 최적 게시 시간 -->
-  <section class="m-section-mini">
-    <div class="m-mini-head"><h3 class="m-mini-title">최적 게시 시간</h3></div>
-    <div class="m-card m-feat-card" id="m-besttime-card">
-      <p class="m-feat-highlight">오늘 저녁 7:30</p>
-      <p class="m-feat-body">내 팔로워가 가장 많이 반응하는 시간대예요.</p>
-    </div>
-  </section>
-
-  <!-- 7. 날씨 기반 추천 -->
-  <section class="m-section-mini" id="m-weather-card-section">
-    <div class="m-mini-head"><h3 class="m-mini-title">오늘의 추천</h3></div>
-    <div class="m-card m-feat-card m-weather-card" id="m-weather-card">
-      <div class="m-weather-head">
-        <span class="m-weather-emoji" id="m-weather-emoji">☀️</span>
-        <div class="m-weather-meta">
-          <p class="m-weather-title" id="m-weather-title">날씨 추천</p>
-          <p class="m-weather-sub" id="m-weather-sub">날씨를 확인하고 있어요…</p>
+      <!-- 날씨 반영 (기존 로직 보존, 미니 카드로 표현) -->
+      <div class="v3-section-head" id="m-weather-card-section">
+        <h3>오늘의 추천</h3>
+      </div>
+      <div class="v3-weather-mini m-weather-card" id="m-weather-card">
+        <span class="v3-weather-mini-emoji m-weather-emoji" id="m-weather-emoji">☁️</span>
+        <div class="v3-weather-mini-body m-weather-meta">
+          <b class="m-weather-title" id="m-weather-title">날씨 추천</b>
+          <span class="m-weather-sub" id="m-weather-sub">날씨를 확인하고 있어요…</span>
         </div>
       </div>
-      <p class="m-feat-body" id="m-weather-desc">오늘 날씨에 어울리는 캡션을 제안해 드려요.</p>
-      <div class="m-feat-chips" id="m-weather-chips"></div>
-    </div>
-  </section>
+      <!-- 기존 날씨 칩 로직을 위한 숨김 DOM (JS 호환용) -->
+      <p class="m-feat-body" id="m-weather-desc" hidden></p>
+      <div class="m-feat-chips" id="m-weather-chips" hidden></div>
 
-  <!-- 8. 인스타 연동 3단계 가이드 -->
-  <section class="m-section-mini" id="m-ig-guide-section">
-    <div class="m-mini-head"><h3 class="m-mini-title">인스타 연동</h3></div>
-    <div class="m-card m-feat-card m-ig-guide" id="m-ig-guide">
-      <!-- 동적 렌더: renderIgGuide() -->
-    </div>
-  </section>
-
-  <!-- 9. 예약 게시물 목록 -->
-  <section class="m-section-mini" id="m-schedule-section">
-    <div class="m-mini-head">
-      <h3 class="m-mini-title">예약 게시물</h3>
-      <span class="m-mini-badge" id="m-schedule-count">-</span>
-    </div>
-    <div class="m-card m-feat-card m-schedule" id="m-schedule-list">
-      <p class="m-feat-body" id="m-schedule-empty">예약된 게시물을 불러오는 중…</p>
-    </div>
-  </section>
-
-  <!-- 10. 분석 리포트 -->
-  <section class="m-section-mini" id="m-report-section">
-    <div class="m-mini-head"><h3 class="m-mini-title">분석 리포트</h3></div>
-    <div class="m-card m-feat-card m-report" id="m-report-card">
-      <div class="m-report-head">
-        <p class="m-feat-body" id="m-report-month">이번 달 활동</p>
+      <!-- 분석 리포트 (stat-row 재활용) -->
+      <div class="v3-section-head" id="m-report-section">
+        <h3 id="m-report-month">이번 달 활동</h3>
         <span class="m-mini-badge" id="m-report-plan">-</span>
       </div>
-      <div class="m-report-stats">
-        <div class="m-report-stat"><p class="m-report-num" id="m-report-posts">0</p><p class="m-report-label">게시 완료</p></div>
-        <div class="m-report-stat"><p class="m-report-num" id="m-report-remain">-</p><p class="m-report-label">남은 횟수</p></div>
-        <div class="m-report-stat"><p class="m-report-num" id="m-report-saved">-</p><p class="m-report-label">절약 시간</p></div>
+      <div class="v3-stat-row m-report-stats">
+        <div class="v3-stat m-report-stat">
+          <div class="v3-stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div class="v3-stat-body">
+            <em><span class="v3-grad-text m-report-num" id="m-report-posts">0</span></em>
+            <span class="m-report-label">게시 완료</span>
+          </div>
+        </div>
+        <div class="v3-stat m-report-stat">
+          <div class="v3-stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          </div>
+          <div class="v3-stat-body">
+            <em><span class="v3-grad-text m-report-num" id="m-report-remain">-</span></em>
+            <span class="m-report-label">남은 횟수</span>
+          </div>
+        </div>
       </div>
-    </div>
-  </section>
+      <!-- 절약 시간은 숨김 DOM으로 보관 (JS 호환) -->
+      <span class="m-report-num" id="m-report-saved" hidden>-</span>
 
-  <!-- Bottom tab bar -->
-  <nav class="m-tabbar" role="navigation" aria-label="모바일 내비게이션">
-    <button type="button" class="m-tab is-active" data-tab="home" onclick="window.scrollTo({top:0,behavior:'smooth'});document.querySelectorAll('.m-tab').forEach(function(t){t.classList.remove('is-active');});this.classList.add('is-active');">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-6h-2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-      <span>홈</span>
+      <!-- 인스타 연동 가이드 -->
+      <div class="v3-section-head" id="m-ig-guide-section">
+        <h3>인스타 연동</h3>
+      </div>
+      <div class="m-card m-feat-card m-ig-guide" id="m-ig-guide" style="background:var(--v3-bg);border-radius:18px;padding:16px;box-shadow:var(--v3-cloud-shadow-sm);">
+        <!-- 동적 렌더: renderIgGuide() -->
+      </div>
+
+      <!-- 최근 캡션 (기존 IDs 보존) -->
+      <div class="v3-section-head" id="m-history-section">
+        <h3>최근 캡션</h3>
+      </div>
+      <div class="v3-recent-empty m-card m-feat-card" id="m-history-empty">
+        아직 저장된 캡션이 없어요.
+      </div>
+
+      <!-- 예약 게시물 (기존 IDs 보존) -->
+      <div class="v3-section-head" id="m-schedule-section">
+        <h3>예약 게시물</h3>
+        <span class="m-mini-badge" id="m-schedule-count">-</span>
+      </div>
+      <div class="v3-recent-empty m-card m-feat-card m-schedule" id="m-schedule-list">
+        <span class="m-feat-body" id="m-schedule-empty">예약된 게시물을 불러오는 중…</span>
+      </div>
+
+    </section>
+
+    <!-- ═════════ 트렌드 (TRENDS) ═════════ -->
+    <section class="v3-screen" data-screen="trends">
+      <div class="v3-cat-chips" id="v3-cat-chips"></div>
+      <div class="v3-kw-list" id="v3-kw-list">
+        <div style="text-align:center;padding:40px 16px;color:var(--v3-ink-3);font-size:13px;">트렌드 탭을 열면 로딩됩니다 ☁</div>
+      </div>
+      <p class="m-trend-updated" id="m-trend-updated" style="font-size:11px;color:var(--v3-ink-3);margin-top:12px;text-align:center;"></p>
+    </section>
+
+    <!-- ═════════ 올리기 (UPLOAD) ═════════ -->
+    <section class="v3-screen" data-screen="upload">
+
+      <article class="v3-upload-hero">
+        <h3>새 게시물 올리기</h3>
+        <p>사진 한 장이면 루미가 캡션·해시태그까지 자동으로 써드려요</p>
+        <div class="v3-upload-options">
+          <button type="button" class="v3-upload-opt primary" onclick="document.getElementById('m-hidden-file').click();">
+            <div class="v3-upload-opt-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 16V8a2 2 0 0 0-2-2h-3l-2-3h-4l-2 3H4a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2Z"/><circle cx="12" cy="12" r="3.2"/></svg>
+            </div>
+            사진
+          </button>
+          <button type="button" class="v3-upload-opt" onclick="document.getElementById('m-hidden-file').click();">
+            <div class="v3-upload-opt-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+            </div>
+            영상
+          </button>
+        </div>
+      </article>
+
+      <!-- 빠른 설정 — 기존 JS 바인딩(#m-quick-list .m-quick-row[data-feat]) 보존 -->
+      <div class="v3-section-head" id="m-quick-settings"><h3>이번 게시 설정</h3></div>
+      <div class="v3-quick-toggles m-card m-quick-card" id="m-quick-list">
+        <div class="v3-qt-row m-quick-row" data-feat="story">
+          <div class="v3-qt-icon m-quick-info-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="3"/><path d="M12 18h.01"/></svg></div>
+          <div class="v3-qt-body m-quick-info">
+            <b class="m-quick-label">스토리 자동 게시</b>
+            <span class="m-quick-desc">피드 올릴 때 스토리도 함께</span>
+          </div>
+          <button class="v3-toggle-sw m-toggle" type="button" data-feat="story" aria-label="스토리 자동 게시"></button>
+        </div>
+        <div class="v3-qt-row m-quick-row" data-feat="thread">
+          <div class="v3-qt-icon m-quick-info-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+          <div class="v3-qt-body m-quick-info">
+            <b class="m-quick-label">스레드 자동 게시</b>
+            <span class="m-quick-desc">스레드에 동시 공유</span>
+          </div>
+          <button class="v3-toggle-sw m-toggle" type="button" data-feat="thread" aria-label="스레드 자동 게시"></button>
+        </div>
+        <div class="v3-qt-row m-quick-row" data-feat="weather">
+          <div class="v3-qt-icon m-quick-info-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+          <div class="v3-qt-body m-quick-info">
+            <b class="m-quick-label">날씨 반영</b>
+            <span class="m-quick-desc">캡션에 오늘 날씨를 반영</span>
+          </div>
+          <button class="v3-toggle-sw m-toggle" type="button" data-feat="weather" aria-label="날씨 반영"></button>
+        </div>
+        <div class="v3-qt-row m-quick-row" data-feat="captionReview">
+          <div class="v3-qt-icon m-quick-info-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div class="v3-qt-body m-quick-info">
+            <b class="m-quick-label">캡션 확인</b>
+            <span class="m-quick-desc">게시 전 캡션 확인·편집</span>
+          </div>
+          <button class="v3-toggle-sw m-toggle" type="button" data-feat="captionReview" aria-label="캡션 확인"></button>
+        </div>
+        <div class="v3-qt-row m-quick-row" data-feat="linkinbio">
+          <div class="v3-qt-icon m-quick-info-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
+          <div class="v3-qt-body m-quick-info">
+            <b class="m-quick-label">링크인바이오</b>
+            <span class="m-quick-desc">게시물 하단에 프로필 링크 자동 삽입</span>
+          </div>
+          <button class="v3-toggle-sw m-toggle" type="button" data-feat="linkinbio" aria-label="링크인바이오"></button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ═════════ 내 가게 (MYSTORE) ═════════ -->
+    <section class="v3-screen" data-screen="mystore">
+
+      <div class="v3-profile-card">
+        <div class="v3-profile-avatar" id="v3-profile-avatar">☁</div>
+        <div class="v3-profile-body">
+          <b id="v3-profile-name">내 가게</b>
+          <span id="v3-profile-sub">프로필 정보를 불러오는 중…</span>
+        </div>
+      </div>
+
+      <div class="v3-section-head"><h3>관리</h3></div>
+      <div class="v3-menu-list">
+        <button type="button" class="v3-menu-row" onclick="location.href='/settings.html';">
+          <div class="v3-menu-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+          <span class="v3-menu-row-label">빠른 설정</span>
+          <span class="v3-menu-row-meta">스토리·스레드·날씨</span>
+          <svg class="v3-menu-row-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+        <button type="button" class="v3-menu-row" onclick="(function(){try{var u=JSON.parse(localStorage.getItem('lumi_user')||'{}');var _adm=localStorage.getItem('lumi_is_admin')==='1';var isPro=_adm||u.plan==='pro';if(!localStorage.getItem('lumi_token')){openSignupGrid();return;}if(isPro && window.openLinkInBioEditor){window.openLinkInBioEditor();}else{location.href='/subscribe';}}catch(e){location.href='/subscribe';}})();">
+          <div class="v3-menu-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
+          <span class="v3-menu-row-label">링크인바이오</span>
+          <span class="v3-menu-row-meta">편집하기</span>
+          <svg class="v3-menu-row-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+        <button type="button" class="v3-menu-row" onclick="window.v3GoTab('today');setTimeout(function(){var el=document.getElementById('m-report-section');if(el)el.scrollIntoView({behavior:'smooth',block:'start'});},200);">
+          <div class="v3-menu-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></div>
+          <span class="v3-menu-row-label">분석 리포트</span>
+          <span class="v3-menu-row-meta">이번 달</span>
+          <svg class="v3-menu-row-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+        <button type="button" class="v3-menu-row" onclick="window.v3GoTab('today');setTimeout(function(){var el=document.getElementById('m-ig-guide-section');if(el)el.scrollIntoView({behavior:'smooth',block:'start'});},200);">
+          <div class="v3-menu-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg></div>
+          <span class="v3-menu-row-label">인스타그램 연동</span>
+          <span class="v3-menu-row-meta" id="v3-ig-status">확인</span>
+          <svg class="v3-menu-row-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+        <button type="button" class="v3-menu-row" onclick="location.href='/subscribe.html';">
+          <div class="v3-menu-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/></svg></div>
+          <span class="v3-menu-row-label">구독 관리</span>
+          <span class="v3-menu-row-meta v3-grad-text" id="v3-plan-label" style="font-weight:700;">-</span>
+          <svg class="v3-menu-row-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+      </div>
+
+      <div style="height:20px;"></div>
+
+      <div class="v3-menu-list">
+        <button type="button" class="v3-menu-row" onclick="location.href='/support.html';">
+          <div class="v3-menu-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg></div>
+          <span class="v3-menu-row-label">도움말 & 문의</span>
+          <svg class="v3-menu-row-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+        <button type="button" class="v3-menu-row" onclick="if(typeof logoutLumi==='function'){logoutLumi();}else{localStorage.removeItem('lumi_token');location.href='/';}">
+          <div class="v3-menu-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></div>
+          <span class="v3-menu-row-label" style="color:#E8446B;">로그아웃</span>
+          <svg class="v3-menu-row-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+      </div>
+
+    </section>
+
+    <!-- ═════════ 대화 (DM — 숨김, FEATURE_FLAGS.dm_tab=false) ═════════ -->
+    <section class="v3-screen" data-screen="dm" hidden>
+      <div class="v3-placeholder">
+        <h4>루미 DM 자동 답변</h4>
+        <p>Meta 심사 완료 후 공개돼요.<br>지금은 사장님 DM을 수집해 루미가 학습 중이에요 ☁</p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ─ BOTTOM TAB BAR v3 ─ -->
+  <nav class="v3-tabbar m-tabbar" role="navigation" aria-label="모바일 내비게이션">
+    <button type="button" class="v3-tab m-tab is-active" data-tab="today" onclick="window.v3GoTab('today');">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>오늘</span>
     </button>
-    <button type="button" class="m-tab" data-tab="trends" onclick="window.mOpenTrendView(); document.querySelectorAll('.m-tab').forEach(function(t){t.classList.remove('is-active');});this.classList.add('is-active');">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+    <button type="button" class="v3-tab m-tab" data-tab="trends" onclick="window.v3GoTab('trends');">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
       <span>트렌드</span>
     </button>
-    <button type="button" class="m-tab" data-tab="linkinbio" onclick="(function(btn){try{var u=JSON.parse(localStorage.getItem('lumi_user')||'{}');var _adm=localStorage.getItem('lumi_is_admin')==='1';var isPro=_adm||u.plan==='pro';if(!localStorage.getItem('lumi_token')){openSignupGrid();return;}if(isPro){window.openLinkInBioEditor();}else{location.href='/subscribe';}}catch(e){location.href='/subscribe';}document.querySelectorAll('.m-tab').forEach(function(t){t.classList.remove('is-active');});btn.classList.add('is-active');})(this);">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-      <span>링크인바이오</span>
+    <button type="button" class="v3-tab-plus" data-tab="upload" aria-label="올리기" onclick="window.v3GoTab('upload');">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
     </button>
-    <button type="button" class="m-tab" data-tab="settings" onclick="location.href='/settings.html';">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      <span>설정</span>
+    <button type="button" class="v3-tab m-tab" data-tab="mystore" onclick="window.v3GoTab('mystore');">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M3 9 5 3h14l2 6"/><path d="M12 3v6"/></svg>
+      <span>내 가게</span>
     </button>
   </nav>
+
+  <!-- ─ DARK MODE FAB ─ -->
+  <button type="button" class="v3-dark-fab" onclick="if(typeof window.v3ToggleDark==='function'){window.v3ToggleDark();}" aria-label="다크모드 토글">
+    <svg class="v3-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
+    <svg class="v3-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+  </button>
 </div>
 
 <!-- ========== MOBILE OVERLAYS (웨이브 2) ==========
