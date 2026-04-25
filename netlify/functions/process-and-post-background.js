@@ -663,14 +663,45 @@ async function loadToneFeedback(supabase, userId, kind) {
   }
 }
 
+// ─────────── PostgREST 직접 업데이트 (supabase client 없이도 동작) ───────────
+async function pgRestUpdate(reserveKey, body) {
+  if (!reserveKey || !process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) return;
+  try {
+    await fetch(`${process.env.SUPABASE_URL}/rest/v1/reservations?reserve_key=eq.${encodeURIComponent(reserveKey)}`, {
+      method: 'PATCH',
+      headers: {
+        'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
+        'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+  } catch(_) {}
+}
+
 // ─────────── 메인 핸들러 ───────────
 exports.handler = async (event) => {
   const headers = corsHeaders(getOrigin(event));
   console.log('[process-and-post] HANDLER_ENTRY');
+
+  // body를 미리 parse — AUTH 실패/getAdminClient 실패 시 reservationKey로 status 업데이트 가능
+  let earlyReservationKey = null;
+  try {
+    const earlyBody = JSON.parse(event.body || '{}');
+    earlyReservationKey = earlyBody.reservationKey || null;
+    console.log('[process-and-post] EARLY_BODY_PARSED reservationKey=', earlyReservationKey);
+  } catch (_) {
+    console.warn('[process-and-post] early body parse 실패 — reservationKey 없이 진행');
+  }
+
+  // 00_entry 마커 — 함수 진입 즉시 기록
+  await pgRestUpdate(earlyReservationKey, { caption_error: 'STAGE:00_entry' });
+
   // 내부 호출 인증 (scheduler → background)
   const authHeader = (event.headers['authorization'] || '');
   if (!verifyLumiSecret(authHeader)) {
     console.error('[process-and-post] 인증 실패 — LUMI_SECRET 불일치 또는 미설정');
+    await pgRestUpdate(earlyReservationKey, { caption_status: 'failed', caption_error: 'AUTH_FAILED' });
     return { statusCode: 401 };
   }
   console.log('[process-and-post] AUTH_OK');
@@ -681,6 +712,7 @@ exports.handler = async (event) => {
     console.log('[process-and-post] SUPABASE_CLIENT_OK');
   } catch (clientErr) {
     console.error('[process-and-post] getAdminClient 실패:', clientErr.message);
+    await pgRestUpdate(earlyReservationKey, { caption_status: 'failed', caption_error: 'ADMIN_CLIENT_FAILED: ' + clientErr.message });
     return;
   }
   let reservationKey = null;
@@ -692,7 +724,14 @@ exports.handler = async (event) => {
   };
 
   try {
-    const body = JSON.parse(event.body || '{}');
+    let body;
+    try {
+      body = JSON.parse(event.body || '{}');
+    } catch (parseErr) {
+      console.error('[process-and-post] body parse 실패:', parseErr.message);
+      await pgRestUpdate(earlyReservationKey, { caption_status: 'failed', caption_error: 'BODY_PARSE_FAILED: ' + parseErr.message });
+      return;
+    }
     reservationKey = body.reservationKey;
     console.log('[process-and-post] BODY_PARSED reservationKey=', reservationKey);
     if (!reservationKey) { console.warn('[process-and-post] reservationKey 없음 — 종료'); return; }
