@@ -685,11 +685,18 @@ exports.handler = async (event) => {
   }
   let reservationKey = null;
 
+  // 진단용 STAGE 마커 헬퍼 — 어디서 죽는지 즉시 추적
+  const markStage = async (stage) => {
+    if (!reservationKey) return;
+    try { await supabase.from('reservations').update({ caption_error: 'STAGE:' + stage }).eq('reserve_key', reservationKey); } catch(_) {}
+  };
+
   try {
     const body = JSON.parse(event.body || '{}');
     reservationKey = body.reservationKey;
     console.log('[process-and-post] BODY_PARSED reservationKey=', reservationKey);
     if (!reservationKey) { console.warn('[process-and-post] reservationKey 없음 — 종료'); return; }
+    await markStage('01_body_parsed');
 
     // 1) 예약 조회
     const { data: reservation, error: resErr } = await supabase
@@ -699,9 +706,11 @@ exports.handler = async (event) => {
       .maybeSingle();
     if (resErr || !reservation) {
       console.error('[process-and-post] 예약 조회 실패:', resErr?.message || 'not found');
+      try { await supabase.from('reservations').update({ caption_status: 'failed', caption_error: '예약 조회 실패: ' + (resErr?.message || 'not found') }).eq('reserve_key', reservationKey); } catch(_) {}
       return;
     }
     console.log('[process-and-post] RESERVATION_LOADED status=', reservation.caption_status);
+    await markStage('02_reservation_loaded');
 
     // 사용자가 이미 캡션을 선택했거나 게시 중/완료된 건은 스킵
     if (['scheduled', 'posting', 'posted'].includes(reservation.caption_status)) {
@@ -720,6 +729,7 @@ exports.handler = async (event) => {
     }
 
     console.log(`[process-and-post] 시작: ${reservationKey}, 사진 ${imageUrls.length}장`);
+    await markStage('03_images_validated');
 
     // 2) 사용자 프로필 + 말투 학습 데이터 로드 (Supabase 직접 조회)
     const { data: userProfile } = await supabase
@@ -727,6 +737,7 @@ exports.handler = async (event) => {
       .select('biz_category, caption_tone, tag_style, custom_captions, phone, feat_toggles')
       .eq('id', reservation.user_id)
       .maybeSingle();
+    await markStage('04_user_profile_loaded');
 
     // 링크인바이오 슬러그 조회
     let linkInBioSlug = '';
@@ -743,6 +754,7 @@ exports.handler = async (event) => {
         console.warn('[process-and-post] link_pages 조회 실패:', e.message);
       }
     }
+    await markStage('05_link_loaded');
 
     const sp = reservation.store_profile || {};
     const bizCat = reservation.biz_category || userProfile?.biz_category || sp.category || 'cafe';
@@ -756,6 +768,7 @@ exports.handler = async (event) => {
       loadToneFeedback(supabase, reservation.user_id, 'like'),
       loadToneFeedback(supabase, reservation.user_id, 'dislike'),
     ]);
+    await markStage('06_tone_feedback_loaded');
 
     // 관찰용: 진행단계 표시
     try { await supabase.from('reservations').update({ caption_error: 'STAGE:loading_images' }).eq('reserve_key', reservationKey); } catch(_) {}
