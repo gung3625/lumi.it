@@ -138,4 +138,3 @@ exports.handler = async () => {
   }
 };
 
-exports.headers = headers;

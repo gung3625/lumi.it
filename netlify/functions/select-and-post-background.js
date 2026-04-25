@@ -474,5 +474,3 @@ exports.handler = async (event) => {
   }
 };
 
-// 프론트 호환: 일부 호출자는 import 형태로 headers 참조. 안전하게 export.
-exports.headers = headers;

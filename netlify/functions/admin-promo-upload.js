@@ -78,4 +78,3 @@ exports.handler = async (event) => {
   }
 };
 
-exports.headers = headers;
