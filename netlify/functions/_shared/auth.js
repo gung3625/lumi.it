@@ -18,10 +18,12 @@ function safeEqual(a, b) {
 }
 
 // LUMI_SECRET 비교 전용 — 미설정 시 항상 false (fail-closed).
+// caller가 'Bearer xxx' 형태로 보내든 raw 'xxx'로 보내든 둘 다 허용.
 function verifyLumiSecret(provided) {
   const secret = process.env.LUMI_SECRET;
   if (!secret) return false;
-  return safeEqual(provided, secret);
+  const cleaned = String(provided || '').replace(/^Bearer\s+/i, '');
+  return safeEqual(cleaned, secret);
 }
 
 // 인증 필요한 endpoint용 origin allowlist.
