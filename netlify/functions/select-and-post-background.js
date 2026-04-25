@@ -121,7 +121,7 @@ async function postToInstagram({ igUserId, igAccessToken, igUserAccessToken, sto
     const res = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ image_url: imageUrls[0], media_type: 'IMAGE', caption, access_token: igAccessToken }),
+      body: new URLSearchParams({ image_url: imageUrls[0], caption, access_token: igAccessToken }),
     });
     const d = await res.json();
     if (d.error) throw new Error(d.error.message);
