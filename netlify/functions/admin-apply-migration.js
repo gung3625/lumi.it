@@ -142,6 +142,35 @@ left join public.users pu on pu.id = au.id
 where pu.id is null
 on conflict (id) do nothing;
 `,
+  'auth_trigger_func_only.sql': `
+-- trigger 함수만 생성 (auth.users DDL 없음, public schema만)
+create or replace function public.handle_auth_user_sync()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.users (id, email, created_at, name, store_name, biz_category, caption_tone, tag_style, agree_marketing, auto_renew, plan)
+  values (
+    new.id,
+    new.email,
+    coalesce(new.created_at, now()),
+    coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name', split_part(new.email, '@', 1)),
+    'lumi',
+    'cafe',
+    'warm',
+    'mid',
+    false,
+    true,
+    'trial'
+  )
+  on conflict (id) do update
+    set email = excluded.email;
+  return new;
+end;
+$$;
+`,
   'auth_users_sync.sql': `
 -- auth.users → public.users 영구 동기화
 
