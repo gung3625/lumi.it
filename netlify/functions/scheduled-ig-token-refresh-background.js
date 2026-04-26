@@ -55,13 +55,32 @@ exports.handler = async (event) => {
   const sevenDaysLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
   const twentyFourHoursLater = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
 
+  // force=true: token_expires_at IS NULL인 행도 포함 (백필용)
+  let force = false;
+  if (!isScheduled && event.body) {
+    try {
+      const parsed = JSON.parse(event.body);
+      force = parsed.force === true;
+    } catch (_) {}
+  }
+
   // ig_accounts_decrypted view에서 plaintext 토큰 조회 (service_role만 접근 가능)
   // view에 access_token_secret_id 없으므로 ig_accounts에서 별도 조회
-  const { data: accounts, error: fetchErr } = await supa
+  let accountsQuery = supa
     .from('ig_accounts_decrypted')
-    .select('ig_user_id, user_id, access_token, token_expires_at')
-    .lt('token_expires_at', sevenDaysLater)
-    .gt('token_expires_at', twentyFourHoursLater);
+    .select('ig_user_id, user_id, access_token, token_expires_at');
+
+  if (force) {
+    // force 모드: token_expires_at IS NULL인 행 + 만료 임박 행 모두 처리
+    accountsQuery = accountsQuery.or(`token_expires_at.is.null,token_expires_at.lt.${sevenDaysLater}`);
+    console.log('[ig-token-refresh] force 모드 — token_expires_at IS NULL 포함');
+  } else {
+    accountsQuery = accountsQuery
+      .lt('token_expires_at', sevenDaysLater)
+      .gt('token_expires_at', twentyFourHoursLater);
+  }
+
+  const { data: accounts, error: fetchErr } = await accountsQuery;
 
   if (fetchErr) {
     console.error('[ig-token-refresh] 계정 조회 실패:', fetchErr.message);
