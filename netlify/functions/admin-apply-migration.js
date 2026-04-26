@@ -246,6 +246,12 @@ left join public.users pu on pu.id = au.id
 where pu.id is null
 on conflict (id) do nothing;
 `,
+  'ig_token_expiry.sql': `
+alter table public.ig_accounts add column if not exists user_token_expires_at timestamptz;
+alter table public.ig_accounts add column if not exists last_refreshed_at timestamptz;
+create index if not exists idx_ig_accounts_expiry on public.ig_accounts(user_token_expires_at)
+  where user_token_expires_at is not null;
+`,
   'security_hardening.sql': `
 -- RLS 정책 보강 + FK CASCADE 조정 + 탈퇴 감사 로그 + 마스킹 뷰
 -- Part 1. auto_reply_log.user_id FK → on delete cascade
