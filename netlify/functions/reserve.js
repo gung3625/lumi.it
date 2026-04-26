@@ -235,6 +235,16 @@ exports.handler = async (event) => {
         const scheduledAt = fields.scheduledAt || new Date().toISOString();
         const submittedAt = fields.submittedAt || new Date().toISOString();
 
+        // 모든 OAuth provider 케이스 커버: public.users에 user_id 없으면 자동 생성
+        try {
+          await supabase.from('users').upsert({
+            id: user.id,
+            email: user.email || '',
+          }, { onConflict: 'id', ignoreDuplicates: true });
+        } catch (e) {
+          console.error('[reserve] users upsert 실패(non-fatal):', e.message);
+        }
+
         // reservations insert
         const reservationRow = {
           reserve_key: reserveKey,

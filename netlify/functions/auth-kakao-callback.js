@@ -123,6 +123,16 @@ exports.handler = async (event) => {
       userId = newUser.user.id;
     }
 
+    // public.users 동기화 (reservations FK 보장 — 신규/기존 유저 모두)
+    try {
+      await admin.from('users').upsert({
+        id: userId,
+        email,
+      }, { onConflict: 'id' });
+    } catch (e) {
+      console.error('[auth-kakao-callback] public.users upsert 실패:', e.message);
+    }
+
     // 4. Magic link 생성 → 세션 발급 (redirectTo 명시해 Supabase Site URL 의존 제거)
     const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
       type: 'magiclink',
