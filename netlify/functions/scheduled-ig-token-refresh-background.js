@@ -56,11 +56,12 @@ exports.handler = async (event) => {
   const twentyFourHoursLater = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
 
   // ig_accounts_decrypted view에서 plaintext 토큰 조회 (service_role만 접근 가능)
+  // view에 access_token_secret_id 없으므로 ig_accounts에서 별도 조회
   const { data: accounts, error: fetchErr } = await supa
     .from('ig_accounts_decrypted')
-    .select('ig_user_id, user_id, access_token, access_token_secret_id, user_token_expires_at')
-    .lt('user_token_expires_at', sevenDaysLater)
-    .gt('user_token_expires_at', twentyFourHoursLater);
+    .select('ig_user_id, user_id, access_token, token_expires_at')
+    .lt('token_expires_at', sevenDaysLater)
+    .gt('token_expires_at', twentyFourHoursLater);
 
   if (fetchErr) {
     console.error('[ig-token-refresh] 계정 조회 실패:', fetchErr.message);
@@ -130,10 +131,17 @@ exports.handler = async (event) => {
       const newExpiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
       const refreshedAt = new Date().toISOString();
 
+      // ig_accounts에서 access_token_secret_id 조회 (view에 없으므로)
+      const { data: accRow } = await supa
+        .from('ig_accounts')
+        .select('access_token_secret_id')
+        .eq('ig_user_id', igUserId)
+        .maybeSingle();
+
       // Vault RPC로 새 토큰 암호화 저장
       const { error: vaultErr } = await supa.rpc('set_ig_access_token', {
         p_ig_user_id: igUserId,
-        p_existing_secret: account.access_token_secret_id ?? null,
+        p_existing_secret: accRow?.access_token_secret_id ?? null,
         p_access_token: newToken,
       });
 
@@ -148,7 +156,7 @@ exports.handler = async (event) => {
       const { error: updateErr } = await supa
         .from('ig_accounts')
         .update({
-          user_token_expires_at: newExpiresAt,
+          token_expires_at: newExpiresAt,
           last_refreshed_at: refreshedAt,
           updated_at: refreshedAt,
         })
@@ -188,5 +196,5 @@ exports.handler = async (event) => {
 };
 
 module.exports.config = {
-  schedule: '0 21 * * *', // 매일 KST 06:00 (= UTC 21:00 전날)
+  schedule: '0 6 * * *', // 매일 KST 15:00 (= UTC 06:00)
 };
