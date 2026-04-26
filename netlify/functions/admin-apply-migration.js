@@ -154,8 +154,19 @@ create trigger on_auth_user_updated
   for each row execute function public.handle_auth_user_sync();
 
 -- 4) 백필: 현재 누락된 auth.users 를 public.users에 일괄 insert
-insert into public.users (id, email, created_at)
-select au.id, au.email, au.created_at
+-- NOT NULL 컬럼에 안전한 기본값 지정 (name, biz_category, caption_tone, tag_style, agree_marketing, auto_renew, plan)
+insert into public.users (id, email, created_at, name, biz_category, caption_tone, tag_style, agree_marketing, auto_renew, plan)
+select
+  au.id,
+  au.email,
+  au.created_at,
+  coalesce(au.raw_user_meta_data->>'full_name', au.raw_user_meta_data->>'name', split_part(au.email, '@', 1)) as name,
+  'cafe' as biz_category,
+  'warm' as caption_tone,
+  'mid' as tag_style,
+  false as agree_marketing,
+  true as auto_renew,
+  'trial' as plan
 from auth.users au
 left join public.users pu on pu.id = au.id
 where pu.id is null
