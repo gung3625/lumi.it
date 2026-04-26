@@ -5,7 +5,7 @@
 const crypto = require('crypto');
 const { corsHeaders, getOrigin } = require('./_shared/auth');
 const { getAdminClient } = require('./_shared/supabase-admin');
-const { getTodayBestSlot } = require('./get-best-time');
+const { getSeedSlot } = require('./get-best-time');
 
 const API_KEY = process.env.SOLAPI_API_KEY;
 const API_SECRET = process.env.SOLAPI_API_SECRET;
@@ -151,7 +151,7 @@ exports.handler = async (event) => {
         if (!user.phone) continue;
 
         const normalizedCat = normalizeBizCategory(user.biz_category);
-        const bestTimeData = getTodayBestSlot(normalizedCat);
+        const bestTimeData = getSeedSlot(normalizedCat);
         const bestTimeStr = `오늘 최적 시간: ${bestTimeData.time} (${bestTimeData.reason})`;
         const userTrendStr = trendCache[normalizedCat] || defaultTrends[normalizedCat] || defaultTrends.other;
 

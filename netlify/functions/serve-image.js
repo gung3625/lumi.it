@@ -6,7 +6,7 @@ const SUPA_URL = process.env.SUPABASE_URL;
 const ANON_KEY = process.env.SUPABASE_ANON_KEY;
 
 // 허용된 버킷 목록 (실제 사용 버킷만)
-const ALLOWED_BUCKETS = new Set(['link-assets', 'reservation-images', 'ig-media', 'lumi-images']);
+const ALLOWED_BUCKETS = new Set(['link-assets', 'reservation-images', 'ig-media', 'lumi-images', 'lumi-videos']);
 
 const BASE_HEADERS = {
   'Access-Control-Allow-Origin': '*',
