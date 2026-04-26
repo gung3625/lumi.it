@@ -29,22 +29,38 @@ async function waitForContainer(containerId, accessToken, maxRetries = 6) {
 async function createMediaContainer(igUserId, igAccessToken, imageUrl, isCarousel) {
   const params = new URLSearchParams({ image_url: imageUrl, access_token: igAccessToken });
   if (isCarousel) params.set('is_carousel_item', 'true');
-  const res = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: params,
-  });
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), 60_000);
+  let res;
+  try {
+    res = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params,
+      signal: ctrl.signal,
+    });
+  } finally {
+    clearTimeout(tid);
+  }
   const data = await res.json();
   if (data.error) throw new Error(`IG container error: ${data.error.message || 'unknown'}`);
   return data.id;
 }
 
 async function publishMedia(igUserId, igAccessToken, creationId) {
-  const res = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media_publish`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ creation_id: creationId, access_token: igAccessToken }),
-  });
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), 60_000);
+  let res;
+  try {
+    res = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media_publish`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ creation_id: creationId, access_token: igAccessToken }),
+      signal: ctrl.signal,
+    });
+  } finally {
+    clearTimeout(tid);
+  }
   return res.json();
 }
 
@@ -63,11 +79,19 @@ async function postToInstagram({ igUserId, igAccessToken, igUserAccessToken, sto
       caption,
       access_token: igAccessToken,
     });
-    const res = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: params,
-    });
+    const reelsCtrl = new AbortController();
+    const reelsTid = setTimeout(() => reelsCtrl.abort(), 90_000);
+    let res;
+    try {
+      res = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params,
+        signal: reelsCtrl.signal,
+      });
+    } finally {
+      clearTimeout(reelsTid);
+    }
     const d = await res.json();
     if (d.error) throw new Error(d.error.message || 'Reels 컨테이너 생성 실패');
     const ready = await waitForContainer(d.id, igAccessToken, 24);
@@ -81,11 +105,19 @@ async function postToInstagram({ igUserId, igAccessToken, igUserAccessToken, sto
       try {
         const storyToken = igUserAccessToken || igAccessToken;
         await sleep(3000);
-        const sRes = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({ media_type: 'STORIES', video_url: videoUrl, access_token: storyToken }),
-        });
+        const sCtrl = new AbortController();
+        const sTid = setTimeout(() => sCtrl.abort(), 60_000);
+        let sRes;
+        try {
+          sRes = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ media_type: 'STORIES', video_url: videoUrl, access_token: storyToken }),
+            signal: sCtrl.signal,
+          });
+        } finally {
+          clearTimeout(sTid);
+        }
         const sData = await sRes.json();
         if (sData.error) {
           console.error('[select-and-post] REELS 스토리 컨테이너 생성 실패');
@@ -101,16 +133,24 @@ async function postToInstagram({ igUserId, igAccessToken, igUserAccessToken, sto
 
   if (imageUrls.length > 1) {
     const containerIds = await Promise.all(imageUrls.map((url) => createMediaContainer(igUserId, igAccessToken, url, true)));
-    const cRes = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        media_type: 'CAROUSEL',
-        children: containerIds.join(','),
-        caption,
-        access_token: igAccessToken,
-      }),
-    });
+    const cCtrl = new AbortController();
+    const cTid = setTimeout(() => cCtrl.abort(), 60_000);
+    let cRes;
+    try {
+      cRes = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          media_type: 'CAROUSEL',
+          children: containerIds.join(','),
+          caption,
+          access_token: igAccessToken,
+        }),
+        signal: cCtrl.signal,
+      });
+    } finally {
+      clearTimeout(cTid);
+    }
     const cData = await cRes.json();
     if (cData.error) throw new Error(cData.error.message);
     await waitForContainer(cData.id, igAccessToken);
@@ -118,11 +158,19 @@ async function postToInstagram({ igUserId, igAccessToken, igUserAccessToken, sto
     if (pData.error) throw new Error(pData.error.message);
     postId = pData.id;
   } else {
-    const res = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ image_url: imageUrls[0], caption, access_token: igAccessToken }),
-    });
+    const imgCtrl = new AbortController();
+    const imgTid = setTimeout(() => imgCtrl.abort(), 60_000);
+    let res;
+    try {
+      res = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ image_url: imageUrls[0], caption, access_token: igAccessToken }),
+        signal: imgCtrl.signal,
+      });
+    } finally {
+      clearTimeout(imgTid);
+    }
     const d = await res.json();
     if (d.error) throw new Error(d.error.message);
     await waitForContainer(d.id, igAccessToken);
@@ -136,11 +184,19 @@ async function postToInstagram({ igUserId, igAccessToken, igUserAccessToken, sto
     try {
       const storyToken = igUserAccessToken || igAccessToken;
       await sleep(3000);
-      const sRes = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ image_url: imageUrls[0], media_type: 'STORIES', access_token: storyToken }),
-      });
+      const stCtrl = new AbortController();
+      const stTid = setTimeout(() => stCtrl.abort(), 60_000);
+      let sRes;
+      try {
+        sRes = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({ image_url: imageUrls[0], media_type: 'STORIES', access_token: storyToken }),
+          signal: stCtrl.signal,
+        });
+      } finally {
+        clearTimeout(stTid);
+      }
       const sData = await sRes.json();
       if (sData.error) {
         console.error('[select-and-post] 스토리 컨테이너 생성 실패');
@@ -164,22 +220,38 @@ async function postToThreads(caption, imageUrl, videoUrl) {
     ? { media_type: 'VIDEO', video_url: videoUrl, text: caption, access_token: token }
     : { media_type: 'IMAGE', image_url: imageUrl, text: caption, access_token: token };
 
-  const createRes = await fetch(`https://graph.threads.net/v1.0/${userId}/threads`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
+  const tCreateCtrl = new AbortController();
+  const tCreateTid = setTimeout(() => tCreateCtrl.abort(), 60_000);
+  let createRes;
+  try {
+    createRes = await fetch(`https://graph.threads.net/v1.0/${userId}/threads`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: tCreateCtrl.signal,
+    });
+  } finally {
+    clearTimeout(tCreateTid);
+  }
   const createData = await createRes.json();
   if (createData.error) throw new Error(`Threads container error: ${createData.error.message || 'unknown'}`);
   const creationId = createData.id;
 
   await sleep(30000);
 
-  const pubRes = await fetch(`https://graph.threads.net/v1.0/${userId}/threads_publish`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ creation_id: creationId, access_token: token }),
-  });
+  const tPubCtrl = new AbortController();
+  const tPubTid = setTimeout(() => tPubCtrl.abort(), 60_000);
+  let pubRes;
+  try {
+    pubRes = await fetch(`https://graph.threads.net/v1.0/${userId}/threads_publish`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ creation_id: creationId, access_token: token }),
+      signal: tPubCtrl.signal,
+    });
+  } finally {
+    clearTimeout(tPubTid);
+  }
   return pubRes.json();
 }
 

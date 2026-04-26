@@ -2567,6 +2567,22 @@ body.dark-mode .v3-dark-fab .v3-moon { display: none; }
         localStorage.setItem('lumi_user', JSON.stringify(merged));
         if (event === 'SIGNED_IN') {
           setTimeout(function(){ try { maybeShowOnboarding(); } catch(e){} }, 400);
+          // POLL_TIMEOUT 후 재방문 시 pending 캡션 자동 재개
+          setTimeout(function(){
+            try {
+              var pendingKey = localStorage.getItem('lumi_pending_caption_key');
+              if (pendingKey) {
+                localStorage.removeItem('lumi_pending_caption_key');
+                if (typeof flow !== 'undefined' && typeof pollCaption === 'function') {
+                  flow.reservationKey = pendingKey;
+                  flow.step = 1;
+                  if (typeof renderFlow === 'function') renderFlow();
+                  if (typeof mFlowSetProgress === 'function') mFlowSetProgress('캡션을 만드는 중', '이전에 시작한 캡션을 확인하고 있어요', '');
+                  pollCaption();
+                }
+              }
+            } catch(e) {}
+          }, 1200);
         }
       } else if (event === 'SIGNED_OUT') {
         localStorage.removeItem('lumi_token');
@@ -7070,6 +7086,11 @@ function mInitWave2(){
       tries++;
       if (tries > 200) {
         clearInterval(iv);
+        try {
+          if (flow.reservationKey) {
+            localStorage.setItem('lumi_pending_caption_key', flow.reservationKey);
+          }
+        } catch(_) {}
         showFlowError(new FlowError('POLL_TIMEOUT', '캡션 생성이 오래 걸려요 · 잠시 후 대시보드에서 확인해주세요', ''));
         return;
       }

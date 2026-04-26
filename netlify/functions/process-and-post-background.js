@@ -79,7 +79,14 @@ async function loadImagesAsBase64(imageUrls) {
       console.error('[process-and-post] 이미지 URL 비어있음: idx=' + i);
       throw new Error('이미지 URL이 비어 있습니다. (idx=' + i + ')');
     }
-    const res = await fetch(url);
+    const imgFetchCtrl = new AbortController();
+    const imgFetchTid = setTimeout(() => imgFetchCtrl.abort(), 30_000);
+    let res;
+    try {
+      res = await fetch(url, { signal: imgFetchCtrl.signal });
+    } finally {
+      clearTimeout(imgFetchTid);
+    }
     if (!res.ok) {
       const body = await res.text().catch(() => '');
       console.error('[process-and-post] 이미지 로드 실패: idx=' + i + ' status=' + res.status + ' url=' + url.slice(0, 120) + ' body=' + body.slice(0, 200));
@@ -676,7 +683,9 @@ async function pgRestUpdate(reserveKey, body) {
       },
       body: JSON.stringify(body),
     });
-  } catch(_) {}
+  } catch(e) {
+    console.error('[process-and-post] pgRestUpdate 실패:', e.message);
+  }
 }
 
 // ─────────── 메인 핸들러 ───────────
