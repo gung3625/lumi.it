@@ -142,6 +142,18 @@ left join public.users pu on pu.id = au.id
 where pu.id is null
 on conflict (id) do nothing;
 `,
+  'auth_trigger_attach.sql': `
+-- auth.users에 trigger 연결 (requires superuser on auth schema)
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_auth_user_sync();
+
+drop trigger if exists on_auth_user_updated on auth.users;
+create trigger on_auth_user_updated
+  after update of email on auth.users
+  for each row execute function public.handle_auth_user_sync();
+`,
   'auth_trigger_func_only.sql': `
 -- trigger 함수만 생성 (auth.users DDL 없음, public schema만)
 create or replace function public.handle_auth_user_sync()
