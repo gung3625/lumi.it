@@ -1,7 +1,7 @@
 // 관리자 전용 DB 마이그레이션 실행기 — 인라인 SQL 딕셔너리에서 이름으로 지정.
 // 인증: Authorization: Bearer ${LUMI_SECRET}. SQL은 본 파일에 하드코딩해 임의 실행 차단.
 const { Client } = require('pg');
-const { verifyLumiSecret } = require('./_shared/auth');
+const { verifyLumiSecret, corsHeaders, getOrigin } = require('./_shared/auth');
 
 
 // 마이그레이션 SQL — 이름 → SQL 본문. 새 마이그레이션 추가 시 여기 등록.
