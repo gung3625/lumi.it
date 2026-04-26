@@ -122,6 +122,45 @@ create index if not exists idx_auto_reply_log_escalated
   on public.auto_reply_log(user_id, created_at desc)
   where escalated = true;
 `,
+  'auth_users_sync.sql': `
+-- auth.users → public.users 영구 동기화
+
+-- 1) handle_auth_user_sync 함수: auth.users INSERT/UPDATE 시 public.users upsert
+create or replace function public.handle_auth_user_sync()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.users (id, email, created_at)
+  values (new.id, new.email, coalesce(new.created_at, now()))
+  on conflict (id) do update
+    set email = excluded.email;
+  return new;
+end;
+$$;
+
+-- 2) trigger: auth.users INSERT 시
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_auth_user_sync();
+
+-- 3) trigger: auth.users UPDATE 시 (이메일 변경 등)
+drop trigger if exists on_auth_user_updated on auth.users;
+create trigger on_auth_user_updated
+  after update of email on auth.users
+  for each row execute function public.handle_auth_user_sync();
+
+-- 4) 백필: 현재 누락된 auth.users 를 public.users에 일괄 insert
+insert into public.users (id, email, created_at)
+select au.id, au.email, au.created_at
+from auth.users au
+left join public.users pu on pu.id = au.id
+where pu.id is null
+on conflict (id) do nothing;
+`,
   'security_hardening.sql': `
 -- RLS 정책 보강 + FK CASCADE 조정 + 탈퇴 감사 로그 + 마스킹 뷰
 -- Part 1. auto_reply_log.user_id FK → on delete cascade
