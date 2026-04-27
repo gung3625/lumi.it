@@ -1,0 +1,714 @@
+/* register-product.css — Sprint 2
+ * 단일 흐름 카드 + 모바일 우선 + PC 반응형
+ * 4색 그라데이션 시그니처 (project_brand_gradient_signature.md)
+ */
+
+:root {
+  --pink-500: #FF6B8B;
+  --pink-50: #FFF1F4;
+  --lavender: #DDA0DD;
+  --gold-soft: #EDD080;
+  --beige-warm: #DABA65;
+  --ink: #15171c;
+  --ink-soft: #4b4d56;
+  --ink-mute: #8a8d96;
+  --line: rgba(0,0,0,0.08);
+  --line-strong: rgba(0,0,0,0.14);
+  --bg: #ffffff;
+  --bg-soft: #f7f7f9;
+  --shadow-card: 0 4px 24px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04);
+  --shadow-card-strong: 0 12px 40px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.06);
+  --gradient-h: linear-gradient(90deg, #FF6B8B 0%, #DDA0DD 50%, #EDD080 85%, #DABA65 100%);
+  --gradient-cta: linear-gradient(135deg, #FF6B8B, #DDA0DD);
+  --gradient-soft: linear-gradient(135deg, rgba(255,107,139,.06), rgba(221,160,221,.06));
+  --radius-card: 20px;
+  --radius-btn: 980px;
+  --radius-input: 12px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-size: 17px;
+  line-height: 1.47;
+  letter-spacing: -0.374px;
+  color: var(--ink);
+  background: var(--bg-soft);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* =================================================================
+ * App shell
+ * ================================================================= */
+.rp-app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.rp-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 16px;
+  align-items: center;
+  padding: 12px 16px;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: saturate(180%) blur(16px);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+  border-bottom: 1px solid var(--line);
+}
+
+.rp-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: var(--ink);
+}
+.rp-logo-mark { height: 28px; width: auto; }
+.rp-logo-text { font-weight: 700; font-size: 17px; letter-spacing: -0.4px; }
+
+.rp-progress-wrapper {
+  min-width: 0;
+}
+.rp-progress-label {
+  font-size: 12px;
+  color: var(--ink-mute);
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rp-progress {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  height: 4px;
+}
+.rp-progress-step {
+  height: 100%;
+  background: rgba(0,0,0,0.08);
+  border-radius: 2px;
+}
+.rp-progress-step.active {
+  background: var(--gradient-h);
+}
+
+.rp-cancel {
+  font-size: 14px;
+  color: var(--ink-mute);
+  text-decoration: none;
+  padding: 8px 6px;
+}
+
+.rp-body {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  padding: 16px;
+}
+
+/* =================================================================
+ * Card / Screen
+ * ================================================================= */
+.rp-screen {
+  width: 100%;
+  max-width: 540px;
+  margin: 0 auto;
+}
+
+.rp-card {
+  background: var(--bg);
+  border-radius: var(--radius-card);
+  padding: 24px 20px 20px;
+  box-shadow: var(--shadow-card);
+  margin-bottom: 16px;
+}
+
+.rp-mascot {
+  width: 96px;
+  height: 96px;
+  margin: 0 auto 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.rp-mascot img { width: 100%; height: 100%; object-fit: contain; }
+
+.rp-title {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  text-align: center;
+  margin: 0 0 8px;
+  color: var(--ink);
+}
+
+.rp-sub {
+  font-size: 15px;
+  color: var(--ink-soft);
+  text-align: center;
+  margin: 0 0 20px;
+  line-height: 1.5;
+}
+
+/* =================================================================
+ * Upload zone (Screen 1)
+ * ================================================================= */
+.rp-upload {
+  position: relative;
+  border: 2px dashed rgba(255,107,139,0.3);
+  border-radius: var(--radius-input);
+  background: var(--gradient-soft);
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+}
+.rp-upload:hover {
+  border-color: var(--pink-500);
+}
+.rp-upload-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  border: 0;
+}
+
+.rp-upload-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px;
+  text-align: center;
+  pointer-events: none;
+}
+.rp-upload-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.rp-upload-hint {
+  font-size: 13px;
+  color: var(--ink-mute);
+}
+
+.rp-upload-preview {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px;
+}
+.rp-upload-thumb {
+  max-width: 100%;
+  max-height: 280px;
+  border-radius: 12px;
+  object-fit: cover;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+}
+.rp-upload-replace {
+  margin-top: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 14px;
+  background: rgba(255,255,255,0.96);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-btn);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-soft);
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.rp-progress-bar {
+  margin: 12px 0;
+}
+.rp-progress-fill {
+  height: 6px;
+  background: var(--gradient-h);
+  border-radius: 3px;
+  width: 0%;
+  transition: width .3s ease;
+}
+.rp-progress-text {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--ink-mute);
+  text-align: center;
+}
+
+/* =================================================================
+ * Buttons
+ * ================================================================= */
+.rp-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.rp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px 22px;
+  border: 0;
+  border-radius: var(--radius-btn);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform .15s, box-shadow .2s, opacity .2s;
+}
+.rp-btn-block { width: 100%; }
+.rp-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.rp-btn-primary {
+  background: var(--gradient-cta);
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(255,107,139,0.28);
+}
+.rp-btn-primary:not(:disabled):hover { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(255,107,139,0.35); }
+
+.rp-btn-secondary {
+  background: #fff;
+  color: var(--ink);
+  border: 1px solid var(--line-strong);
+}
+
+.rp-error {
+  font-size: 13px;
+  color: #d23f5e;
+  background: #fff1f4;
+  border-left: 3px solid #d23f5e;
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin: 10px 0;
+}
+
+/* =================================================================
+ * Review deck (Screen 2) — 5 카드 스택
+ * ================================================================= */
+.rp-deck-wrap {
+  position: relative;
+  height: 460px;
+  margin: 8px 0 12px;
+}
+.rp-deck {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.rp-rcard {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  border-radius: var(--radius-card);
+  padding: 22px 18px 18px;
+  box-shadow: var(--shadow-card-strong);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform-origin: bottom;
+  transition: transform .35s cubic-bezier(.2,.7,.3,1.2), opacity .25s;
+  border: 1px solid var(--line);
+  touch-action: pan-y;
+}
+
+.rp-rcard.rp-rcard-leave-right {
+  transform: translateX(120%) rotate(8deg);
+  opacity: 0;
+}
+.rp-rcard.rp-rcard-leave-left {
+  transform: translateX(-120%) rotate(-8deg);
+  opacity: 0;
+}
+.rp-rcard.rp-rcard-leave-down {
+  transform: translateY(120%) scale(0.85);
+  opacity: 0;
+}
+
+.rp-rcard-step {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-mute);
+  letter-spacing: 0.4px;
+}
+
+.rp-rcard-question {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 4px 0 16px;
+  letter-spacing: -0.3px;
+}
+
+.rp-rcard-content {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.rp-rcard-label {
+  font-size: 12px;
+  color: var(--ink-mute);
+  margin: 0 0 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.rp-rcard-value {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--ink);
+  word-break: keep-all;
+}
+.rp-rcard-title {
+  font-size: 22px;
+  line-height: 1.32;
+}
+.rp-rcard-price {
+  font-size: 28px;
+  background: var(--gradient-cta);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.6px;
+}
+
+.rp-rcard-meta {
+  font-size: 12px;
+  color: var(--ink-mute);
+  margin: 6px 0 0;
+}
+
+.rp-rcard-edit {
+  display: none;
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-input);
+  font-family: inherit;
+  font-size: 16px;
+  background: var(--bg-soft);
+  outline: none;
+  transition: border-color .15s, background .15s;
+}
+.rp-rcard.rp-editing .rp-rcard-edit { display: block; }
+.rp-rcard-edit:focus { border-color: var(--pink-500); background: #fff; }
+
+.rp-options-list { display: flex; flex-direction: column; gap: 10px; }
+.rp-option-row {
+  background: var(--bg-soft);
+  padding: 10px 12px;
+  border-radius: 10px;
+}
+.rp-option-name {
+  font-size: 13px;
+  color: var(--ink-mute);
+  margin: 0 0 4px;
+}
+.rp-option-values {
+  font-size: 15px;
+  color: var(--ink);
+  margin: 0;
+  font-weight: 500;
+}
+
+.rp-keywords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.rp-keyword-chip {
+  display: inline-block;
+  padding: 5px 11px;
+  background: var(--pink-50);
+  color: #b1406a;
+  border-radius: 980px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.rp-policy { display: flex; flex-direction: column; gap: 8px; }
+.rp-policy-clean {
+  padding: 10px 12px;
+  background: #ecfdf3;
+  color: #0f6b3e;
+  border-radius: 10px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.rp-policy-warn {
+  padding: 10px 12px;
+  background: #fff5e6;
+  border-left: 3px solid #e09732;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #6b4205;
+}
+.rp-policy-warn-word {
+  font-weight: 600;
+  color: #d23f5e;
+  margin-right: 4px;
+}
+
+.rp-rcard-actions {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.rp-rcard-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: var(--radius-btn);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform .12s, opacity .15s;
+}
+.rp-rcard-actions button:active { transform: scale(0.96); }
+.rp-rcard-actions button i { width: 14px; height: 14px; }
+
+.rp-rcard-no {
+  background: #fff;
+  color: var(--ink-soft);
+  border: 1px solid var(--line-strong) !important;
+}
+.rp-rcard-edit-btn {
+  background: var(--bg-soft);
+  color: var(--ink);
+  padding: 10px 12px !important;
+}
+.rp-rcard-yes {
+  background: var(--gradient-cta);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(255,107,139,0.25);
+}
+
+.rp-deck-hint {
+  font-size: 12px;
+  color: var(--ink-mute);
+  text-align: center;
+  margin: 0;
+}
+
+/* =================================================================
+ * Markets (Screen 3)
+ * ================================================================= */
+.rp-markets {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.rp-market {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 16px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-input);
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+  position: relative;
+}
+.rp-market:has(input[type="checkbox"]:checked) {
+  border-color: var(--pink-500);
+  background: var(--pink-50);
+}
+.rp-market.rp-market-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.rp-market-icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--pink-50);
+  color: var(--pink-500);
+  border-radius: 10px;
+}
+
+.rp-market-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.rp-market-name {
+  font-size: 16px;
+  font-weight: 600;
+}
+.rp-market-status {
+  font-size: 12px;
+  color: var(--ink-mute);
+}
+.rp-market-status[data-state="connected"] { color: #0f6b3e; }
+.rp-market-status[data-state="missing"] { color: #d23f5e; }
+
+.rp-market input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.rp-market-switch {
+  width: 44px;
+  height: 26px;
+  background: rgba(0,0,0,0.12);
+  border-radius: 980px;
+  position: relative;
+  transition: background .2s;
+}
+.rp-market-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 22px;
+  height: 22px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  transition: transform .22s;
+}
+.rp-market input[type="checkbox"]:checked + .rp-market-switch {
+  background: var(--gradient-cta);
+}
+.rp-market input[type="checkbox"]:checked + .rp-market-switch::after {
+  transform: translateX(18px);
+}
+
+.rp-distribute-progress {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.rp-distribute-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--bg-soft);
+  border-radius: 10px;
+  font-size: 14px;
+}
+.rp-distribute-state[data-state="processing"] { color: var(--pink-500); }
+.rp-distribute-state[data-state="success"] { color: #0f6b3e; font-weight: 600; }
+.rp-distribute-state[data-state="failed"] { color: #d23f5e; }
+.rp-distribute-state[data-state="queued"] { color: #c98314; }
+
+.rp-results {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.rp-results-title {
+  font-size: 17px;
+  font-weight: 700;
+  margin: 0 0 10px;
+}
+.rp-results-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.rp-results-list li {
+  background: var(--bg-soft);
+  padding: 12px 14px;
+  border-radius: 10px;
+}
+.rp-results-list a {
+  color: var(--pink-500);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 15px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.rp-results-list a:hover { text-decoration: underline; }
+.rp-results-market {
+  font-size: 12px;
+  color: var(--ink-mute);
+  margin: 0 0 4px;
+}
+
+/* =================================================================
+ * PC reactivity (768px+)
+ * ================================================================= */
+@media (min-width: 768px) {
+  .rp-body { padding: 32px 24px; }
+  .rp-card { padding: 32px 28px 28px; }
+  .rp-screen { max-width: 580px; }
+  .rp-title { font-size: 28px; }
+  .rp-sub { font-size: 16px; }
+  .rp-deck-wrap { height: 480px; }
+  .rp-mascot { width: 110px; height: 110px; }
+  .rp-progress-label { font-size: 13px; }
+}
+
+@media (min-width: 1024px) {
+  .rp-card { padding: 40px 36px 32px; }
+}
+
+/* =================================================================
+ * Reduced motion
+ * ================================================================= */
+@media (prefers-reduced-motion: reduce) {
+  .rp-rcard, .rp-progress-fill, .rp-btn, .rp-market-switch, .rp-market-switch::after {
+    transition: none !important;
+  }
+}
