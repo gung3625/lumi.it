@@ -75,6 +75,50 @@
   }
 
   // ================================================================
+  // 디바이스 감지 (모바일 = 터치 + 화면 768px 미만)
+  // ================================================================
+  function isMobile() {
+    return window.innerWidth < 768 || ('ontouchstart' in window && window.innerWidth < 1024);
+  }
+
+  function initDeviceContext() {
+    const pcExtra = $('[data-pc-extra]');
+    const mobilLimit = $('[data-mobile-limit]');
+    const subMobile = $('.rp-sub-mobile');
+    const subPc = $('.rp-sub-pc');
+
+    if (isMobile()) {
+      if (subMobile) subMobile.style.display = '';
+      if (subPc) subPc.style.display = 'none';
+      if (pcExtra) pcExtra.style.display = 'none';
+      if (mobilLimit) mobilLimit.style.display = '';
+    } else {
+      if (subMobile) subMobile.style.display = 'none';
+      if (subPc) subPc.style.display = '';
+      if (pcExtra) pcExtra.style.display = '';
+      if (mobilLimit) mobilLimit.style.display = 'none';
+    }
+
+    // "PC에서 이어가기" — 현재 URL을 복사해 데스크톱에서 열 수 있도록 클립보드에 저장
+    const pcBtn = $('[data-action="continue-on-pc"]');
+    if (pcBtn) {
+      pcBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const url = window.location.href;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(url).then(() => {
+            pcBtn.textContent = '링크 복사됨! PC에서 열어보세요';
+          }).catch(() => {
+            pcBtn.textContent = url;
+          });
+        } else {
+          pcBtn.textContent = url;
+        }
+      });
+    }
+  }
+
+  // ================================================================
   // 화면 1: 사진 업로드
   // ================================================================
   function initUpload() {
@@ -492,6 +536,7 @@
   // ================================================================
   document.addEventListener('DOMContentLoaded', () => {
     setProgress(1);
+    initDeviceContext();
     initUpload();
     if (window.lucide) window.lucide.createIcons();
   });
