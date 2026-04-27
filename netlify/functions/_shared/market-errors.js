@@ -100,6 +100,62 @@ const GENERIC_ERROR = {
   action: '잠시 후 다시 시도해주세요. 계속되면 고객센터로 문의해주세요.',
 };
 
+// 사업자 진위·상태 확인 (국세청 공공 API)
+const BUSINESS_VERIFY_ERROR_MAP = {
+  mismatch: {
+    title: '사업자 정보가 일치하지 않아요',
+    cause: '사업자번호와 입력하신 대표자명·개업일이 국세청 자료와 다릅니다.',
+    action: '사업자등록증을 다시 확인해 주세요. 띄어쓰기·법인 한자 표기까지 동일해야 통과됩니다.',
+    deepLink: 'business.identity_check',
+  },
+  closed_temporary: {
+    title: '휴업 중인 사업자입니다',
+    cause: '국세청 자료상 현재 휴업 상태로 등록되어 있어요.',
+    action: '재개업 후 다시 시도해 주세요. 휴업 해제는 홈택스에서 신청할 수 있어요.',
+    deepLink: 'business.reopen',
+  },
+  closed_permanent: {
+    title: '폐업된 사업자입니다',
+    cause: '국세청 자료상 폐업 상태로 등록되어 있어요.',
+    action: '신규 사업자등록 후 다시 시도해 주세요.',
+    deepLink: 'business.reopen',
+  },
+  unknown_state: {
+    title: '사업자 상태를 확인할 수 없어요',
+    cause: '국세청 응답이 예상과 달라요.',
+    action: '사업자등록번호를 다시 확인하시거나, 잠시 후 다시 시도해 주세요.',
+  },
+  network_error: {
+    title: '사업자 인증 서버 일시 오류',
+    cause: '국세청 사업자 진위확인 서버와 통신할 수 없어요.',
+    action: '1분 후 다시 시도해 주세요.',
+    autoRetry: true,
+  },
+  config_missing: {
+    title: '사업자 인증을 일시적으로 사용할 수 없어요',
+    cause: '인증 서비스 설정에 문제가 있어요.',
+    action: '잠시 후 다시 시도하시거나 고객센터(gung3625@gmail.com)로 문의해 주세요.',
+  },
+};
+
+/**
+ * 사업자 진위확인 에러 → 친화 카드
+ * @param {string} key - mismatch | closed_temporary | closed_permanent | unknown_state | network_error | config_missing
+ * @returns {object}
+ */
+function translateBusinessVerifyError(key) {
+  const entry = BUSINESS_VERIFY_ERROR_MAP[key];
+  if (entry) return { ...entry, statusCode: keyToStatusCode(key) };
+  return { ...GENERIC_ERROR };
+}
+
+function keyToStatusCode(key) {
+  if (key === 'mismatch' || key === 'closed_temporary' || key === 'closed_permanent' || key === 'unknown_state') return 409;
+  if (key === 'network_error') return 502;
+  if (key === 'config_missing') return 503;
+  return 500;
+}
+
 /**
  * 마켓 + status 코드 → 루미 친화 에러 객체
  * @param {'coupang'|'naver'} market
@@ -121,4 +177,10 @@ function translateMarketError(market, status, fallback) {
   };
 }
 
-module.exports = { translateMarketError, COUPANG_ERROR_MAP, NAVER_ERROR_MAP };
+module.exports = {
+  translateMarketError,
+  translateBusinessVerifyError,
+  COUPANG_ERROR_MAP,
+  NAVER_ERROR_MAP,
+  BUSINESS_VERIFY_ERROR_MAP,
+};

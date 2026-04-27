@@ -60,18 +60,12 @@ function gate(name, pass, detail) {
   gate('1. /signup 페이지 200 + 5단계 마크업', r1.status === 200 && hasStep1 && hasStep5,
        `status=${r1.status} step1=${hasStep1} step5=${hasStep5}`);
 
-  // ===== Gate 2: 사업자 인증 =====
-  const r2 = await request('POST', `${BASE}/api/business-verify`, {
-    businessNumber: '123-45-67890',
-    ownerName: '테스트사장',
-    birthDate: '1990-01-01',
-    phone: '010-1234-5678',
-  });
-  // 123-45-67890 = 1234567890 → 체크섬은 0이 맞아야 정상. 다른 유효 번호로 테스트:
-  // 실제 유효 사업자번호 예시: 220-81-62517 (한국전력)
+  // ===== Gate 2: 사업자 인증 (모킹 모드 — local 환경) =====
+  // 실연동 검증은 게이트 11에서 별도로 진행
   const r2b = await request('POST', `${BASE}/api/business-verify`, {
     businessNumber: '220-81-62517',
     ownerName: '테스트사장',
+    startDate: '2020-01-15',
     birthDate: '1990-01-01',
     phone: '010-1234-5678',
   });
@@ -164,13 +158,25 @@ function gate(name, pass, detail) {
   gate('10. GET /api/market-guides?market=coupang → 200 + 가이드 ≥2건',
        hasGuides, `status=${r10.status} count=${guides.length} fallback=${Boolean(r10.json?.fallback)}`);
 
+  // ===== Gate 11: 국세청 공공 API 실연동 (별도 스크립트 호출) =====
+  // sprint1-verify/business-verify-real.js — Stage A(/status) + B(/validate) + C(handler 통합)
+  const realRun = spawnSync('node', [path.resolve(__dirname, 'business-verify-real.js')], {
+    encoding: 'utf8',
+    env: Object.assign({}, process.env),
+    timeout: 30000,
+  });
+  const realOut = (realRun.stdout || '') + (realRun.stderr || '');
+  const realPass = realRun.status === 0 && /게이트 11: 국세청 공공 API 실연동 검증/.test(realOut);
+  gate('11. 국세청 공공 API 실연동 (status + validate + handler)',
+       realPass, realPass ? 'A+B+C 통과 (계속사업자=01)' : (realOut.split('\n').filter((l) => l.startsWith('[FAIL]')).slice(0, 2).join(' | ') || 'no output'));
+
   // ===== Bonus: 네이버 TEST_OK =====
   const rN = await request('POST', `${BASE}/api/connect-naver`, {
     applicationId: 'TEST_OK',
     applicationSecret: '0123456789abcdef',
   }, { Authorization: `Bearer ${TOKEN || ''}` });
   const nOk = rN.status === 200 && rN.json?.success === true && rN.json?.verified === true;
-  gate('11. (bonus) 네이버 TEST_OK → 200 verified=true', nOk, `status=${rN.status} verified=${rN.json?.verified}`);
+  gate('12. (bonus) 네이버 TEST_OK → 200 verified=true', nOk, `status=${rN.status} verified=${rN.json?.verified}`);
 
   // ===== Bonus: 말투 학습 저장 =====
   const rT = await request('POST', `${BASE}/api/signup-tone-samples`, {
@@ -179,7 +185,7 @@ function gate(name, pass, detail) {
     skipped: false,
   }, { Authorization: `Bearer ${TOKEN || ''}` });
   const tOk = rT.status === 200 && rT.json?.success === true && rT.json?.stored >= 2;
-  gate('12. (bonus) /api/signup-tone-samples → 200 stored≥2',
+  gate('13. (bonus) /api/signup-tone-samples → 200 stored≥2',
        tOk, `status=${rT.status} stored=${rT.json?.stored}`);
 
   // ===== 결과 =====

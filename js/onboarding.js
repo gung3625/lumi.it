@@ -23,6 +23,7 @@
     business: {
       businessNumber: '',
       ownerName: '',
+      startDate: '',
       birthDate: '',
       phone: '',
       storeName: '',
@@ -306,6 +307,7 @@
   function initStep1() {
     const bizInput = document.querySelector('[data-input="businessNumber"]');
     const ownerInput = document.querySelector('[data-input="ownerName"]');
+    const startInput = document.querySelector('[data-input="startDate"]');
     const birthInput = document.querySelector('[data-input="birthDate"]');
     const phoneInput = document.querySelector('[data-input="phone"]');
     const storeInput = document.querySelector('[data-input="storeName"]');
@@ -319,6 +321,7 @@
       });
     }
     if (ownerInput) ownerInput.value = state.business.ownerName || ownerInput.value || '';
+    if (startInput) startInput.value = state.business.startDate || startInput.value || '';
     if (birthInput) birthInput.value = state.business.birthDate || birthInput.value || '';
     if (phoneInput) {
       phoneInput.value = state.business.phone || phoneInput.value || '';
@@ -335,11 +338,18 @@
       }
     }
 
+    // 'YYYY-MM-DD' 또는 'YYYYMMDD' → 8자리 숫자
+    function normalizeStartDate(s) {
+      const d = String(s || '').replace(/\D/g, '');
+      return /^\d{8}$/.test(d) ? d : '';
+    }
+
     if (submit) {
       submit.addEventListener('click', async function () {
         setError('');
         const businessNumber = normalizeBusinessNumber(bizInput?.value);
         const ownerName = (ownerInput?.value || '').trim();
+        const startDate = normalizeStartDate(startInput?.value);
         const birthDate = (birthInput?.value || '').trim();
         const phone = normalizePhone(phoneInput?.value);
         const storeName = (storeInput?.value || '').trim();
@@ -356,6 +366,12 @@
           return;
         }
         ownerInput?.classList.remove('error');
+        if (!startDate) {
+          setError('개업일을 정확히 입력해주세요. (예: 2024-01-15)');
+          startInput?.classList.add('error');
+          return;
+        }
+        startInput?.classList.remove('error');
         if (!isValidPhone(phone)) {
           setError('휴대폰 번호를 정확히 입력해주세요. (예: 010-1234-5678)');
           phoneInput?.classList.add('error');
@@ -368,17 +384,28 @@
         submit.innerHTML = '<span class="spinner"></span> 인증 중...';
 
         try {
-          // 1) 사업자 인증 호출
+          // 1) 사업자 인증 호출 (국세청 진위확인)
           const verifyRes = await api('/api/business-verify', {
             method: 'POST',
-            body: JSON.stringify({ businessNumber, ownerName, birthDate, phone }),
+            body: JSON.stringify({
+              businessNumber, ownerName, startDate,
+              businessName: storeName || undefined,
+              birthDate, phone,
+            }),
           });
           if (verifyRes.status !== 200 || !verifyRes.data || !verifyRes.data.success) {
-            setError(verifyRes.data?.error || '인증에 실패했습니다. 잠시 후 다시 시도해주세요.');
+            const errPayload = verifyRes.data?.error;
+            // 친화 에러 객체이면 토스트 카드, 아니면 인라인 텍스트
+            if (errPayload && typeof errPayload === 'object' && errPayload.title) {
+              showFriendlyError(errPayload);
+              setError(errPayload.cause || '');
+            } else {
+              setError(errPayload || '인증에 실패했습니다. 잠시 후 다시 시도해주세요.');
+            }
             return;
           }
 
-          state.business = { businessNumber, ownerName, birthDate, phone, storeName, verified: true };
+          state.business = { businessNumber, ownerName, startDate, birthDate, phone, storeName, verified: true };
           saveDraft();
 
           // 2) 셀러 row 생성 (signup_step=1, 토큰 발급)
