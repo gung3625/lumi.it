@@ -1,18 +1,14 @@
-// 사업자 인증 — Sprint 1 (국세청 진위확인 API 실연동)
+// 사업자 인증 — Sprint 1 (국세청 휴폐업 자동 검증 + 백그라운드 사진 검토)
 // POST /api/business-verify
-// body: { businessNumber, ownerName, startDate, businessName?, birthDate?, phone? }
-// 응답: { success: true, verified: true, method: 'nts_public'|'mock', stateCode }
+// body: { businessNumber, ownerName, businessName?, birthDate?, phone?, startDate? }
+// 응답: { success: true, verified: true, method: 'nts_status_only'|'nts_public'|'mock', stateCode }
 //
-// 정책:
-// - BUSINESS_VERIFY_MOCK=false (기본) → 국세청 공공 API 실호출 (status + validate)
+// 정책 (2026-04-27 변경):
+// - 기본 흐름 = 사업자번호 → 국세청 /status 자동 검증만 (휴폐업 거르기)
+// - 사진 검증 = /api/upload-business-license 별도 endpoint, 백그라운드 검토
+// - startDate 옵션: 제공 시 /validate까지 호출(이중 검증), 없으면 status만으로 즉시 통과
 // - BUSINESS_VERIFY_MOCK=true → 형식+체크섬만 검증 (개발/테스트용)
-// - PUBLIC_DATA_API_KEY 미설정 시 → 502 + 관리자 안내 (모킹 fallback X)
-//
-// 흐름:
-//  1) 형식·체크섬 검증
-//  2) /status 호출 — 휴폐업 사업자 즉시 거부
-//  3) /validate 호출 — 진위 확인 (b_no + p_nm + start_dt)
-//  4) 둘 다 통과 → verified=true
+// - PUBLIC_DATA_API_KEY 미설정 시 → 503 + 관리자 안내
 //
 // 보안:
 // - 사업자번호/휴대폰/생년월일/대표자명은 마스킹 후만 로그
@@ -122,10 +118,8 @@ exports.handler = async (event) => {
     return jsonError(503, CORS, { error: translateBusinessVerifyError('config_missing') });
   }
 
-  // 진위확인은 startDate 필수
-  if (!startDate) {
-    return jsonError(400, CORS, { error: '개업일을 입력해주세요. (예: 2024-01-15)' });
-  }
+  // startDate는 옵션 (제공 시 진위 일치까지 이중 검증, 없으면 status만으로 통과)
+  const hasStartDate = Boolean(startDate);
 
   // 4. 휴폐업 상태 조회 (네트워크 1회로 폐업·휴업 즉시 거부)
   let stateCode = null;
@@ -162,39 +156,42 @@ exports.handler = async (event) => {
     return jsonError(502, CORS, { error: translateBusinessVerifyError('network_error') });
   }
 
-  // 5. 진위 확인 (b_no + p_nm + start_dt 일치 검증)
-  let validCode = null;
-  try {
-    const validateRes = await validateBusinessIdentity({
-      businessNumber, ownerName, startDate,
-      businessName: businessName || undefined,
-      serviceKey,
-    });
-    if (!validateRes.ok) {
-      console.error(`[business-verify] /validate http=${validateRes.httpStatus} biz=${maskBusinessNumber(businessNumber)}`);
+  // 5. 진위 확인 (b_no + p_nm + start_dt 일치 검증) — startDate 제공된 경우만
+  if (hasStartDate) {
+    let validCode = null;
+    try {
+      const validateRes = await validateBusinessIdentity({
+        businessNumber, ownerName, startDate,
+        businessName: businessName || undefined,
+        serviceKey,
+      });
+      if (!validateRes.ok) {
+        console.error(`[business-verify] /validate http=${validateRes.httpStatus} biz=${maskBusinessNumber(businessNumber)}`);
+        return jsonError(502, CORS, { error: translateBusinessVerifyError('network_error') });
+      }
+      validCode = validateRes.valid;
+      if (validCode !== '01') {
+        // 진위 불일치
+        await safeAudit({
+          action: 'business_verify', businessNumber, method: 'nts_public',
+          verified: false, reason: 'mismatch',
+          ownerName, phone, birthDate, startDate, event,
+        });
+        return jsonError(409, CORS, { error: translateBusinessVerifyError('mismatch') });
+      }
+    } catch (e) {
+      console.error('[business-verify] /validate throw:', e.message);
       return jsonError(502, CORS, { error: translateBusinessVerifyError('network_error') });
     }
-    validCode = validateRes.valid;
-    if (validCode !== '01') {
-      // 진위 불일치
-      await safeAudit({
-        action: 'business_verify', businessNumber, method: 'nts_public',
-        verified: false, reason: 'mismatch',
-        ownerName, phone, birthDate, startDate, event,
-      });
-      return jsonError(409, CORS, { error: translateBusinessVerifyError('mismatch') });
-    }
-  } catch (e) {
-    console.error('[business-verify] /validate throw:', e.message);
-    return jsonError(502, CORS, { error: translateBusinessVerifyError('network_error') });
   }
 
-  // 6. 모두 통과
+  // 6. 모두 통과 — method는 startDate 제공 여부에 따라 분기
+  const method = hasStartDate ? 'nts_public' : 'nts_status_only';
   await safeAudit({
-    action: 'business_verify', businessNumber, method: 'nts_public',
+    action: 'business_verify', businessNumber, method,
     verified: true, ownerName, phone, birthDate, startDate, event,
   });
-  console.log(`[business-verify] nts_public biz=${maskBusinessNumber(businessNumber)} phone=${phone ? maskPhone(phone) : 'none'} verified=true stateCode=${stateCode}`);
+  console.log(`[business-verify] ${method} biz=${maskBusinessNumber(businessNumber)} phone=${phone ? maskPhone(phone) : 'none'} verified=true stateCode=${stateCode}`);
 
   return {
     statusCode: 200,
@@ -202,7 +199,7 @@ exports.handler = async (event) => {
     body: JSON.stringify({
       success: true,
       verified: true,
-      method: 'nts_public',
+      method,
       stateCode,
       normalized: { businessNumberDigits: businessNumber },
     }),

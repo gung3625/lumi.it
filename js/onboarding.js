@@ -1,7 +1,8 @@
 // =====================================================
 // 루미 Sprint 1 — 가입 플로우 (5단계)
 // API:
-//   POST /api/business-verify
+//   POST /api/business-verify              (국세청 휴폐업 자동 검증)
+//   POST /api/upload-business-license      (사업자등록증 사진 업로드 — 백그라운드 검토)
 //   POST /api/connect-coupang
 //   POST /api/connect-naver
 //   POST /api/signup-create-seller
@@ -15,15 +16,23 @@
   const STORAGE_USER = 'lumi_user';
   const STORAGE_DRAFT = 'lumi_signup_draft_v1';
 
+  const LICENSE_MAX_BYTES = 10 * 1024 * 1024; // 10MB
+  const LICENSE_ALLOWED_MIME = [
+    'image/jpeg', 'image/jpg', 'image/png',
+    'image/heic', 'image/heif', 'image/webp',
+    'application/pdf',
+  ];
+
   // -------- 상태 --------
   const state = {
     step: 1,                // 1..5
     token: null,
     sellerId: null,
+    licenseFile: null,           // File 객체 (가입 submit 시 업로드)
+    licenseFileUrl: null,        // 업로드 후 받은 fileUrl
     business: {
       businessNumber: '',
       ownerName: '',
-      startDate: '',
       birthDate: '',
       phone: '',
       storeName: '',
@@ -307,10 +316,10 @@
   function initStep1() {
     const bizInput = document.querySelector('[data-input="businessNumber"]');
     const ownerInput = document.querySelector('[data-input="ownerName"]');
-    const startInput = document.querySelector('[data-input="startDate"]');
     const birthInput = document.querySelector('[data-input="birthDate"]');
     const phoneInput = document.querySelector('[data-input="phone"]');
     const storeInput = document.querySelector('[data-input="storeName"]');
+    const licenseInput = document.querySelector('[data-input="licenseFile"]');
     const submit = document.querySelector('[data-action="step1-submit"]');
     const errEl = document.querySelector('[data-error="step1"]');
 
@@ -321,7 +330,6 @@
       });
     }
     if (ownerInput) ownerInput.value = state.business.ownerName || ownerInput.value || '';
-    if (startInput) startInput.value = state.business.startDate || startInput.value || '';
     if (birthInput) birthInput.value = state.business.birthDate || birthInput.value || '';
     if (phoneInput) {
       phoneInput.value = state.business.phone || phoneInput.value || '';
@@ -331,6 +339,8 @@
     }
     if (storeInput) storeInput.value = state.business.storeName || storeInput.value || '';
 
+    initLicenseUpload(licenseInput);
+
     function setError(msg) {
       if (errEl) {
         errEl.textContent = msg || '';
@@ -338,18 +348,11 @@
       }
     }
 
-    // 'YYYY-MM-DD' 또는 'YYYYMMDD' → 8자리 숫자
-    function normalizeStartDate(s) {
-      const d = String(s || '').replace(/\D/g, '');
-      return /^\d{8}$/.test(d) ? d : '';
-    }
-
     if (submit) {
       submit.addEventListener('click', async function () {
         setError('');
         const businessNumber = normalizeBusinessNumber(bizInput?.value);
         const ownerName = (ownerInput?.value || '').trim();
-        const startDate = normalizeStartDate(startInput?.value);
         const birthDate = (birthInput?.value || '').trim();
         const phone = normalizePhone(phoneInput?.value);
         const storeName = (storeInput?.value || '').trim();
@@ -366,29 +369,27 @@
           return;
         }
         ownerInput?.classList.remove('error');
-        if (!startDate) {
-          setError('개업일을 정확히 입력해주세요. (예: 2024-01-15)');
-          startInput?.classList.add('error');
-          return;
-        }
-        startInput?.classList.remove('error');
         if (!isValidPhone(phone)) {
           setError('휴대폰 번호를 정확히 입력해주세요. (예: 010-1234-5678)');
           phoneInput?.classList.add('error');
           return;
         }
         phoneInput?.classList.remove('error');
+        if (!state.licenseFile) {
+          setError('사업자등록증 사진 또는 PDF를 올려주세요.');
+          return;
+        }
 
         submit.disabled = true;
         const orig = submit.innerHTML;
         submit.innerHTML = '<span class="spinner"></span> 인증 중...';
 
         try {
-          // 1) 사업자 인증 호출 (국세청 진위확인)
+          // 1) 사업자 인증 호출 (국세청 휴폐업 자동 확인 — startDate 불필요)
           const verifyRes = await api('/api/business-verify', {
             method: 'POST',
             body: JSON.stringify({
-              businessNumber, ownerName, startDate,
+              businessNumber, ownerName,
               businessName: storeName || undefined,
               birthDate, phone,
             }),
@@ -405,7 +406,7 @@
             return;
           }
 
-          state.business = { businessNumber, ownerName, startDate, birthDate, phone, storeName, verified: true };
+          state.business = { businessNumber, ownerName, birthDate, phone, storeName, verified: true };
           saveDraft();
 
           // 2) 셀러 row 생성 (signup_step=1, 토큰 발급)
@@ -433,7 +434,31 @@
           try { localStorage.setItem(STORAGE_TOKEN, state.token); } catch (_) {}
           try { localStorage.setItem(STORAGE_USER, JSON.stringify(createRes.data.seller)); } catch (_) {}
 
-          showToast('사업자 인증이 완료됐어요', 'success');
+          // 3) 사업자등록증 업로드 (가입은 막지 않음 — 실패해도 다음 단계 진행)
+          submit.innerHTML = '<span class="spinner"></span> 등록증 업로드 중...';
+          try {
+            const licenseUrl = await uploadLicenseFile(state.licenseFile, state.token);
+            if (licenseUrl) {
+              state.licenseFileUrl = licenseUrl;
+              // 셀러 row에 fileUrl 연결
+              await api('/api/signup-create-seller', {
+                method: 'POST',
+                body: JSON.stringify({
+                  businessNumber, ownerName, phone, birthDate, storeName, email: null,
+                  marketingConsent: state.consent.marketing,
+                  privacyConsent: true, termsConsent: true,
+                  signupStep: 1,
+                  licenseFileUrl: licenseUrl,
+                }),
+              }).catch(function () { /* best-effort */ });
+            }
+          } catch (uploadErr) {
+            // 업로드 실패해도 가입 흐름은 계속 (셀러 막지 않음)
+            console.error('[step1] 업로드 실패:', uploadErr.message || uploadErr);
+            showToast('사진 업로드는 나중에 다시 할 수 있어요. 가입은 정상 진행돼요.', 'info');
+          }
+
+          showToast('사업자 인증이 완료됐어요. 사진 검토는 백그라운드로 진행됩니다.', 'success');
           showStep(2);
         } catch (e) {
           setError('네트워크 오류가 발생했습니다. 다시 시도해주세요.');
@@ -444,6 +469,160 @@
         }
       });
     }
+  }
+
+  // -------- 사업자등록증 업로드 UI --------
+  function initLicenseUpload(licenseInput) {
+    if (!licenseInput) return;
+    const dropzone = document.querySelector('[data-license-dropzone]');
+    const empty = document.querySelector('[data-license-empty]');
+    const preview = document.querySelector('[data-license-preview]');
+    const thumb = document.querySelector('[data-license-thumb]');
+    const nameEl = document.querySelector('[data-license-name]');
+    const sizeEl = document.querySelector('[data-license-size]');
+    const removeBtn = document.querySelector('[data-license-remove]');
+
+    function showFile(file) {
+      state.licenseFile = file;
+      if (empty) empty.style.display = 'none';
+      if (preview) preview.style.display = 'flex';
+      if (dropzone) dropzone.classList.add('has-file');
+      if (nameEl) nameEl.textContent = file.name;
+      if (sizeEl) sizeEl.textContent = formatBytes(file.size);
+      // 이미지면 썸네일, PDF면 PDF 아이콘
+      if (thumb) {
+        if (file.type === 'application/pdf') {
+          thumb.src = '';
+          thumb.style.display = 'none';
+        } else if (file.type.startsWith('image/')) {
+          thumb.style.display = 'block';
+          const reader = new FileReader();
+          reader.onload = function (ev) { thumb.src = ev.target.result; };
+          reader.readAsDataURL(file);
+        }
+      }
+    }
+
+    function clearFile() {
+      state.licenseFile = null;
+      state.licenseFileUrl = null;
+      if (licenseInput) licenseInput.value = '';
+      if (empty) empty.style.display = 'flex';
+      if (preview) preview.style.display = 'none';
+      if (dropzone) dropzone.classList.remove('has-file');
+      if (thumb) thumb.src = '';
+    }
+
+    function handleFile(file) {
+      if (!file) { clearFile(); return; }
+      // MIME 검증
+      if (!LICENSE_ALLOWED_MIME.includes(file.type) && !/\.(jpe?g|png|heic|heif|webp|pdf)$/i.test(file.name)) {
+        showToast('사진 또는 PDF만 올릴 수 있어요. (JPG·PNG·HEIC·PDF)', 'error');
+        clearFile();
+        return;
+      }
+      // 크기 검증
+      if (file.size > LICENSE_MAX_BYTES) {
+        showToast(`파일이 너무 커요. 10MB 이하로 올려주세요. (현재 ${formatBytes(file.size)})`, 'error');
+        clearFile();
+        return;
+      }
+      showFile(file);
+    }
+
+    licenseInput.addEventListener('change', function (e) {
+      const file = e.target.files && e.target.files[0];
+      handleFile(file);
+    });
+
+    if (removeBtn) {
+      removeBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        clearFile();
+      });
+    }
+
+    // 드래그 & 드롭 (PC)
+    if (dropzone) {
+      ['dragenter', 'dragover'].forEach(function (ev) {
+        dropzone.addEventListener(ev, function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          dropzone.classList.add('dragover');
+        });
+      });
+      ['dragleave', 'drop'].forEach(function (ev) {
+        dropzone.addEventListener(ev, function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          dropzone.classList.remove('dragover');
+        });
+      });
+      dropzone.addEventListener('drop', function (e) {
+        const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+        if (file) handleFile(file);
+      });
+    }
+  }
+
+  function formatBytes(bytes) {
+    if (!bytes) return '0 B';
+    const units = ['B', 'KB', 'MB'];
+    let v = bytes;
+    let i = 0;
+    while (v >= 1024 && i < units.length - 1) { v /= 1024; i += 1; }
+    return v.toFixed(v >= 10 || i === 0 ? 0 : 1) + ' ' + units[i];
+  }
+
+  // 사업자등록증 업로드 — XHR로 진행률 갱신
+  async function uploadLicenseFile(file, token) {
+    return new Promise(function (resolve, reject) {
+      const progressEl = document.querySelector('[data-license-progress]');
+      const fillEl = document.querySelector('[data-license-progress-fill]');
+      const labelEl = document.querySelector('[data-license-progress-label]');
+      if (progressEl) progressEl.style.display = 'block';
+
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('originalName', file.name);
+
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', window.location.origin + '/api/upload-business-license', true);
+      if (token) xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+
+      xhr.upload.addEventListener('progress', function (e) {
+        if (!e.lengthComputable) return;
+        const pct = Math.round((e.loaded / e.total) * 100);
+        if (fillEl) fillEl.style.width = pct + '%';
+        if (labelEl) labelEl.textContent = pct + '%';
+      });
+
+      xhr.addEventListener('load', function () {
+        if (progressEl) {
+          setTimeout(function () { progressEl.style.display = 'none'; }, 600);
+        }
+        let data;
+        try { data = JSON.parse(xhr.responseText); } catch { data = null; }
+        if (xhr.status === 200 && data && data.success && data.fileUrl) {
+          resolve(data.fileUrl);
+        } else {
+          const err = data && data.error;
+          const msg = (typeof err === 'string') ? err : (err && err.cause) || '업로드에 실패했어요';
+          reject(new Error(msg));
+        }
+      });
+      xhr.addEventListener('error', function () {
+        if (progressEl) progressEl.style.display = 'none';
+        reject(new Error('네트워크 오류'));
+      });
+      xhr.addEventListener('abort', function () {
+        if (progressEl) progressEl.style.display = 'none';
+        reject(new Error('업로드 취소됨'));
+      });
+
+      xhr.send(fd);
+    });
   }
 
   // =====================================================

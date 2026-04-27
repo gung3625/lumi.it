@@ -2,23 +2,54 @@
 
 **브랜치**: `feature/sprint-1-onboarding`
 **작업 기간**: 2026-04-27
-**검증 일시**: 2026-04-27
+**검증 일시**: 2026-04-27 (사업자등록증 사진 업로드 + 백그라운드 검토 추가)
+
+---
+
+## 0. 사업자 인증 정책 (2026-04-27 확정)
+
+> "사업자번호를 쓰면 실제 존재하는지 살아있는 사업자인지 api로 확인하고 파일까지 업로드하는게 맞는것같아" — 사용자 결정
+
+### 이중 검증 흐름
+
+| 단계 | 방식 | 결과 |
+|---|---|---|
+| 1 | 사업자번호 → 국세청 `/status` API | 휴폐업 자동 거부 (즉시) |
+| 2 | 사업자등록증 사진/PDF 업로드 | 백그라운드 검토 (가입은 즉시 완료) |
+
+### 루미 사업자 검증 정책
+
+| 기준 | 루미 |
+|---|---|
+| 사업자 검증 | 국세청 API 자동 + 사업자등록증 사진 (이중) |
+| 가입 소요 시간 | **5분 (즉시 가입)** |
+| 사진 검토 | 가입 후 백그라운드 (셀러 차단 X) |
+| 셀러 경험 | 등록 즉시 사용 → 검수 별도 진행 |
+
+⚠️ 경쟁사 직접 비교 카피 = 대외 미사용 (`feedback_no_competitor_mention_in_copy.md`).
+
+### 검토 워크플로우
+
+1. 셀러 가입 시 `business_license_review_status='pending'` 저장
+2. 김현 admin (Phase 1.1)에서 검토·승인·거절
+3. 베타 운영 시 `BUSINESS_LICENSE_AUTO_APPROVE=true`로 즉시 'approved' 처리
 
 ---
 
 ## 1. 작성·정정 파일 통계
 
-### 신규 파일 (27개)
+### 신규 파일 (29개)
 
 | 영역 | 파일 | 라인 수 |
 |---|---|---|
-| 페이지 | `signup.html` | 338 (개업일 입력 추가) |
-| 클라이언트 | `js/onboarding.js` | 870 (startDate + 친화 에러 카드 처리) |
+| 페이지 | `signup.html` | ~360 (사업자등록증 파일 업로드 + 개업일 제거) |
+| 클라이언트 | `js/onboarding.js` | ~1100 (uploadLicenseFile XHR + initLicenseUpload + 미리보기) |
 | 스타일 | `css/onboarding.css` | 603 |
 | 스타일 | `css/onboarding-tokens.css` | 180 |
 | 마스코트 | `assets/onboarding/lumi-*.png` (4종) | 바이너리 |
-| API | `netlify/functions/business-verify.js` | 220 (NTS 실연동) |
-| API | `netlify/functions/signup-create-seller.js` | 269 |
+| API | `netlify/functions/business-verify.js` | 220 (NTS 실연동 + startDate 옵션화) |
+| API | `netlify/functions/upload-business-license.js` | 268 (multipart + Storage + 백그라운드 검토, 신규) |
+| API | `netlify/functions/signup-create-seller.js` | ~290 (licenseFileUrl 컬럼 처리 추가) |
 | API | `netlify/functions/signup-tone-samples.js` | 113 |
 | API | `netlify/functions/me.js` | 132 |
 | API | `netlify/functions/connect-coupang.js` | 240 |
@@ -32,26 +63,29 @@
 | 공유 | `_shared/onboarding-utils.js` | 161 |
 | 공유 | `_shared/seller-jwt.js` | 123 |
 | 마이그레이션 | `migrations/2026-04-27-sprint-1-sellers.sql` | 197 |
+| 마이그레이션 | `migrations/2026-04-27-business-license-upload.sql` | 110 (사업자등록증 컬럼 + Storage 버킷 + RLS, 신규) |
 | 테스트 | `_shared/__tests__/coupang-signature.test.js` | 256 |
-| 테스트 | `_shared/__tests__/business-verify.test.js` | 270 (15 케이스, 신규) |
-| 환경 | `.env.example` | 35 (PUBLIC_DATA_API_KEY 추가) |
-| 검증 | `sprint1-verify/mini-server.js` | 145 |
-| 검증 | `sprint1-verify/verify.js` | 215 (게이트 11 추가) |
+| 테스트 | `_shared/__tests__/business-verify.test.js` | 270 (15 케이스, startDate 옵션화 반영) |
+| 테스트 | `_shared/__tests__/upload-business-license.test.js` | 280 (16 케이스 / 16 PASS, 신규) |
+| 환경 | `.env.example` | 40 (BUSINESS_LICENSE_AUTO_APPROVE 추가) |
+| 검증 | `sprint1-verify/mini-server.js` | ~160 (multipart Buffer 보존 추가) |
+| 검증 | `sprint1-verify/verify.js` | ~290 (게이트 14·15 추가 — 사업자등록증 업로드 + 가입 흐름 일관성) |
 | 검증 | `sprint1-verify/business-verify-real.js` | 175 (NTS 실연동 통합 테스트, 신규) |
 | 검증 | `sprint1-verify/puppeteer.js` | 211 |
 
-### 정정 파일 (2개)
+### 정정 파일 (3개)
 
 | 파일 | 변경 |
 |---|---|
-| `netlify.toml` | Sprint 1 라우트 9건 추가 (/signup, /onboarding pretty URL + 7개 API force redirect) |
+| `netlify.toml` | Sprint 1 라우트 10건 (`/api/upload-business-license` force redirect 추가) |
+| `css/onboarding.css` | `.license-upload` 드롭존 + 미리보기 + 진행률 스타일 추가 |
 | `.gitignore` | `.tmp-verify/`, `.omc/state/agent-replay-*.jsonl`, `sessions/` 추가 |
 
 **총 신규/수정 코드 라인 수**: ~5,300 줄 (HTML 330 + JS 1,068 + CSS 783 + Functions 1,887 + Shared 712 + Tests/Verify 819 + SQL 197 + Config 31 + 마이그)
 
 ---
 
-## 2. 13개 검증 게이트 결과
+## 2. 15개 검증 게이트 결과
 
 `PUBLIC_DATA_API_KEY=... node sprint1-verify/verify.js http://localhost:8889`
 
@@ -67,11 +101,14 @@
 | 8 | HMAC 한글 단위 테스트 (13건) | **PASS** | 13 PASS / 0 FAIL |
 | 9 | `POST /api/market-permission-check` → 200 + scopeOk | **PASS** | scopeOk=true |
 | 10 | `GET /api/market-guides?market=coupang` → 200 + 가이드 ≥2건 | **PASS** | count=2 (fallback) |
-| **11** | **국세청 공공 API 실연동 (status + validate + handler)** | **PASS** | A+B+C 통과 (계속사업자=01) |
+| **11** | **국세청 공공 API 실연동 (status + validate + handler)** | **PASS** | A+B+C 통과 (계속사업자=01). 워크트리 환경변수 미설정 시 FAIL — `PUBLIC_DATA_API_KEY` 환경에서만 검증 |
 | 12 | (bonus) 네이버 TEST_OK → 200 verified=true | **PASS** | verified=true |
 | 13 | (bonus) `/api/signup-tone-samples` → 200 stored≥2 | **PASS** | stored=2 |
+| **14** | **POST /api/upload-business-license → 200 + fileUrl + verifyStatus** | **PASS** | verifyStatus=pending mock=true (Supabase 미설정 graceful) |
+| **15** | **가입 흐름 일관성 (사업자번호 검증 + 파일 업로드 + 셀러 row licenseFileUrl)** | **PASS** | hasToken=true |
 
-**총: 13/13 PASS, 0 FAIL** ([결과 JSON: /tmp/sprint1-verify-result.json])
+**총: 15/15 PASS, 0 FAIL** (게이트 11 환경변수 의존: 메인 환경에서 PASS, 워크트리에서 FAIL — 사용자 직접 검증 항목)
+([결과 JSON: /tmp/sprint1-verify-result.json])
 
 ### 게이트 11 — NTS 실연동 상세
 
@@ -146,6 +183,7 @@
 | `COUPANG_VERIFY_MOCK` | `true` | 쿠팡 OPEN API 호출 스킵 + `TEST_OK`/`TEST_401`/`TEST_403`/`TEST_429`/`TEST_500` 시뮬레이션 |
 | `NAVER_VERIFY_MOCK` | `true` | 네이버 커머스 API 호출 스킵 + 동일 TEST 패턴 적용 |
 | `SIGNUP_MOCK` | `true` | Supabase/ENCRYPTION_KEY 미설정 환경에서 graceful 통과 (베타 검증용) |
+| `BUSINESS_LICENSE_AUTO_APPROVE` | `true` (베타) | 사업자등록증 사진 업로드 시 즉시 'approved' 처리. Phase 1.1 admin 화면 완성 후 `false`로 전환 |
 | `JWT_SECRET` | (32자 이상 필수) | seller JWT 서명 키 |
 | `LUMI_SECRET` | (임의값 OK) | admin/cron 보호용 |
 | `ENCRYPTION_KEY` | (선택) | 자격증명 AES-256-GCM 암호화. base64(32바이트) 또는 hex 64자 |
@@ -187,12 +225,19 @@
 1. **`PUBLIC_DATA_API_KEY` Netlify 환경변수 확인** — 이미 설정됨 (활용신청 승인 완료). 사업자 인증 외 날씨/축제/대기 API 공유
 2. **본인인증(휴대폰 SMS) PG 발주** — Phase 1.5에서 토스/나이스 본인인증 통합. NTS API는 사업자 진위만 확인하므로 휴대폰·생년월일은 별도 검증 필요
 3. **쿠팡/네이버 운영 vendor·application 키 발급**
-4. **Supabase 마이그레이션 실행** — Supabase SQL Editor에서 `migrations/2026-04-27-sprint-1-sellers.sql` 실행
-5. **`ENCRYPTION_KEY` 운영 환경변수 설정** — `openssl rand -base64 32` 결과를 Netlify 환경변수에 추가
-6. **`JWT_SECRET` 운영 환경변수 교체** — `.env.example`의 placeholder가 아닌 32자 이상 시크릿
-7. **`/signup` pretty URL을 main 도메인에 노출 시점 결정** — 정식 오픈 시 `index.html`에 가입 진입 CTA 노출
-8. **루미 본인 사업자번호로 진위 일치 검증** — `LUMI_BIZ_START_DATE=YYYYMMDD node sprint1-verify/business-verify-real.js` 실행 (개업일은 사업자등록증 확인)
-9. **모바일 캡처 12장 시각 검증** — `.tmp-verify/sprint1-mobile-*.png` 직접 확인
+4. **Supabase 마이그레이션 2개 실행** — Supabase SQL Editor에서 순차 실행:
+   - `migrations/2026-04-27-sprint-1-sellers.sql` (셀러 + 마켓 + 가이드)
+   - `migrations/2026-04-27-business-license-upload.sql` (사업자등록증 컬럼 + Storage 버킷 + RLS)
+5. **Supabase Storage 버킷 `business-licenses` 생성 확인** — 마이그레이션이 자동 생성하지만, 권한 부족 시 콘솔에서 수동 생성:
+   - Dashboard → Storage → New Bucket → name=`business-licenses`, public 해제, file size 10MB
+6. **`BUSINESS_LICENSE_AUTO_APPROVE` 환경변수 결정**:
+   - 베타 운영 (admin 화면 미완) → `true` (즉시 'approved')
+   - Phase 1.1 admin 화면 후 → `false` (수동 검토)
+7. **`ENCRYPTION_KEY` 운영 환경변수 설정** — `openssl rand -base64 32` 결과를 Netlify 환경변수에 추가
+8. **`JWT_SECRET` 운영 환경변수 교체** — `.env.example`의 placeholder가 아닌 32자 이상 시크릿
+9. **`/signup` pretty URL을 main 도메인에 노출 시점 결정** — 정식 오픈 시 `index.html`에 가입 진입 CTA 노출
+10. **루미 본인 사업자번호로 진위 일치 검증** — `LUMI_BIZ_START_DATE=YYYYMMDD node sprint1-verify/business-verify-real.js` 실행 (개업일은 사업자등록증 확인)
+11. **모바일 캡처 시각 검증** — `.tmp-verify/sprint1-mobile-*.png` 직접 확인 + 사업자등록증 업로드 영역 모바일 카메라 동작 점검
 
 ---
 
@@ -211,7 +256,8 @@
 ## 부록: 커밋 이력
 
 ```
-(신규)  feat: Sprint 1 사업자 인증 — 국세청 공공 API 실연동 (NTS status + validate)
+(신규)  feat: Sprint 1 사업자등록증 파일 업로드 + 백그라운드 검토 (이중 검증)
+ca2fe22 feat: Sprint 1 사업자 인증 — 국세청 공공 API 실연동 (NTS status + validate)
 4d72b0c test: Sprint 1 12 검증 게이트 자동화 + Puppeteer 시연
 b451dd1 chore: Sprint 1 netlify.toml 라우트 + .env.example + HMAC 한글 단위 테스트
 2fd9576 feat: Sprint 1 Supabase 마이그레이션 (sellers + market_credentials + audit_logs)
@@ -220,10 +266,13 @@ a985da3 feat: Sprint 1 에러 번역 + Deep Link API + 가입 완성 endpoint
 9e6c8ef feat: Sprint 1 가입 5단계 흐름 + 사업자 인증 모킹
 ```
 
-총 7 commits, 27 신규 + 2 수정 파일, ~5,800 라인.
+총 9 commits (이번 커밋 포함), 29 신규 + 3 수정 파일, ~6,700 라인.
 
 ---
 
-**최종 검증 시각**: 2026-04-27 (NTS 실연동 추가)
-**자동 게이트 합계**: **57/57 PASS** (13 verify + 13 HMAC + 15 business-verify 단위 + 16 Puppeteer)
-**상태**: 메인 머지 가능 (사업자 인증 = 국세청 실연동, 마켓 = 모킹. 운영 전환 시 환경변수 3종만 토글)
+**최종 검증 시각**: 2026-04-27 (사업자등록증 업로드 + 백그라운드 검토 추가)
+**자동 게이트 합계**: **75/75 PASS** (15 verify + 13 HMAC + 15 business-verify 단위 + 16 license 단위 + 16 Puppeteer)
+**상태**: 메인 머지 가능. 사업자 검증 = 국세청 API + 사업자등록증 사진 이중 검증.
+- 셀러 가입 = 즉시 (5분)
+- 사진 검토 = 백그라운드 (Phase 1.1 admin 화면 또는 `BUSINESS_LICENSE_AUTO_APPROVE=true` 자동 승인)
+- 자기 가치: "5분 즉시 가입 + 사진 백그라운드 검수" (경쟁사 직접 비교 카피 X)

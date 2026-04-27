@@ -43,15 +43,15 @@
 
         <!-- ============ STEP 1: 사업자 인증 ============ -->
         <section class="wizard-card" data-step="1">
-          <span class="wizard-step-num">STEP 1 / 5 · 30초</span>
+          <span class="wizard-step-num">STEP 1 / 5 · 1분</span>
           <h2 class="wizard-title">사장님 정보를 알려주세요</h2>
-          <p class="wizard-sub">사업자등록번호로 본인 확인을 합니다. 별도 서류 없이 30초면 끝나요.</p>
+          <p class="wizard-sub">사업자등록번호 자동 검증 + 사업자등록증 사진 한 장. 가입은 즉시 완료돼요.</p>
 
           <div class="form-row">
             <label class="form-label" for="biz-input">사업자등록번호 <span class="required">*</span></label>
             <input id="biz-input" type="text" inputmode="numeric" autocomplete="off"
                    class="form-input" placeholder="123-45-67890" data-input="businessNumber" />
-            <p class="form-help">하이픈 포함 또는 숫자 10자리</p>
+            <p class="form-help">하이픈 포함 또는 숫자 10자리. 국세청에서 휴폐업 여부 자동 확인.</p>
           </div>
 
           <div class="form-row">
@@ -59,13 +59,6 @@
             <input id="owner-input" type="text" autocomplete="name" class="form-input"
                    placeholder="홍길동" data-input="ownerName" />
             <p class="form-help">사업자등록증의 대표자명과 동일하게 입력해 주세요.</p>
-          </div>
-
-          <div class="form-row">
-            <label class="form-label" for="start-input">개업일 <span class="required">*</span></label>
-            <input id="start-input" type="text" inputmode="numeric" autocomplete="off"
-                   class="form-input" placeholder="2024-01-15" data-input="startDate" />
-            <p class="form-help">사업자등록증에 표기된 개업연월일이에요. 국세청 진위 확인에 사용됩니다.</p>
           </div>
 
           <div class="form-row inline">
@@ -86,6 +79,38 @@
             <input id="store-input" type="text" class="form-input"
                    placeholder="청춘마켓" data-input="storeName" />
             <p class="form-help">고객에게 보일 이름이에요. 나중에 변경할 수 있습니다.</p>
+          </div>
+
+          <!-- 사업자등록증 파일 업로드 -->
+          <div class="form-row">
+            <label class="form-label" for="license-input">사업자등록증 사진 또는 PDF <span class="required">*</span></label>
+            <div class="license-upload" data-license-dropzone>
+              <input id="license-input" type="file"
+                     accept="image/jpeg,image/jpg,image/png,image/heic,image/heif,image/webp,application/pdf"
+                     capture="environment"
+                     data-input="licenseFile"
+                     class="license-file-input" />
+              <label for="license-input" class="license-upload-label" data-license-empty>
+                <i data-lucide="upload-cloud" style="width:32px;height:32px;color:var(--pink-500);"></i>
+                <span class="license-upload-title">사업자등록증을 올려주세요</span>
+                <span class="license-upload-hint">사진 촬영 · 갤러리 · PDF (최대 10MB)</span>
+              </label>
+              <div class="license-preview" data-license-preview style="display:none;">
+                <img class="license-preview-img" data-license-thumb alt="사업자등록증 미리보기" />
+                <div class="license-preview-meta" data-license-meta>
+                  <p class="license-preview-name" data-license-name></p>
+                  <p class="license-preview-size" data-license-size></p>
+                </div>
+                <button type="button" class="license-preview-remove" data-license-remove aria-label="파일 삭제">
+                  <i data-lucide="x" style="width:16px;height:16px;"></i>
+                </button>
+              </div>
+              <div class="license-upload-progress" data-license-progress style="display:none;">
+                <div class="license-progress-bar"><span data-license-progress-fill></span></div>
+                <p class="license-progress-label" data-license-progress-label>0%</p>
+              </div>
+            </div>
+            <p class="form-help">사장님 정보가 사진과 일치하는지 백그라운드에서 확인할게요. 가입은 즉시 가능해요.</p>
           </div>
 
           <p class="form-error" data-error="step1" style="display:none;"></p>

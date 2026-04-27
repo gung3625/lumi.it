@@ -1,7 +1,8 @@
 // 셀러 가입 (5단계 마지막) — Sprint 1
 // POST /api/signup-create-seller
 // body: { businessNumber, ownerName, phone, email, birthDate, storeName,
-//         marketingConsent, privacyConsent, termsConsent, signupStep }
+//         marketingConsent, privacyConsent, termsConsent, signupStep,
+//         licenseFileUrl? }
 // 응답: { success: true, token, seller: { id, ownerName, plan, signupStep } }
 //
 // 동작:
@@ -51,6 +52,8 @@ exports.handler = async (event) => {
   const privacyConsent = body.privacyConsent === true;
   const termsConsent = body.termsConsent === true;
   const signupStep = VALID_STEPS.includes(Number(body.signupStep)) ? Number(body.signupStep) : 5;
+  const licenseFileUrl = (body.licenseFileUrl && typeof body.licenseFileUrl === 'string')
+    ? body.licenseFileUrl.trim() : null;
 
   // 검증
   if (!isValidBusinessNumber(businessNumber)) {
@@ -165,6 +168,12 @@ exports.handler = async (event) => {
       signup_completed_at: isCompleted ? (existing.signup_completed_at || now) : existing.signup_completed_at,
       updated_at: now,
     };
+    if (licenseFileUrl) {
+      update.business_license_file_url = licenseFileUrl;
+      update.business_license_uploaded_at = now;
+      update.business_license_review_status =
+        (process.env.BUSINESS_LICENSE_AUTO_APPROVE || 'false').toLowerCase() === 'true' ? 'approved' : 'pending';
+    }
     const { error: upErr } = await admin.from('sellers').update(update).eq('id', sellerId);
     if (upErr) {
       console.error('[signup-create-seller] update 오류:', upErr.message);
@@ -194,6 +203,12 @@ exports.handler = async (event) => {
       plan: 'trial',
       referral_code: referralCode,
     };
+    if (licenseFileUrl) {
+      insert.business_license_file_url = licenseFileUrl;
+      insert.business_license_uploaded_at = now;
+      insert.business_license_review_status =
+        (process.env.BUSINESS_LICENSE_AUTO_APPROVE || 'false').toLowerCase() === 'true' ? 'approved' : 'pending';
+    }
     const { data: inserted, error: insErr } = await admin
       .from('sellers')
       .insert(insert)

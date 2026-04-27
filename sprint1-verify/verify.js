@@ -188,6 +188,80 @@ function gate(name, pass, detail) {
   gate('13. (bonus) /api/signup-tone-samples → 200 stored≥2',
        tOk, `status=${rT.status} stored=${rT.json?.stored}`);
 
+  // ===== Gate 14: 사업자등록증 업로드 =====
+  // multipart/form-data — http 모듈로 직접 멀티파트 빌드
+  async function uploadFile(token) {
+    const boundary = '----LumiVerifyBoundary' + Math.random().toString(16).slice(2);
+    const CRLF = '\r\n';
+    // JPEG 매직 바이트 + 1KB 더미 페이로드
+    const head = Buffer.from([0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46, 0x00, 0x01]);
+    const tail = Buffer.alloc(1024, 0x00);
+    const fileBuf = Buffer.concat([head, tail]);
+    const partsHead = Buffer.from(
+      `--${boundary}${CRLF}` +
+      `Content-Disposition: form-data; name="file"; filename="biz-license.jpg"${CRLF}` +
+      `Content-Type: image/jpeg${CRLF}${CRLF}`,
+      'utf8'
+    );
+    const partsTail = Buffer.from(`${CRLF}--${boundary}--${CRLF}`, 'utf8');
+    const body = Buffer.concat([partsHead, fileBuf, partsTail]);
+
+    return new Promise((resolve) => {
+      const url = new URL(`${BASE}/api/upload-business-license`);
+      const opts = {
+        method: 'POST',
+        hostname: url.hostname,
+        port: url.port || 80,
+        path: url.pathname,
+        headers: {
+          'Content-Type': `multipart/form-data; boundary=${boundary}`,
+          'Content-Length': body.length,
+          Authorization: `Bearer ${token}`,
+        },
+        timeout: 15000,
+      };
+      const req = http.request(opts, (res) => {
+        let chunks = '';
+        res.setEncoding('utf8');
+        res.on('data', (c) => { chunks += c; });
+        res.on('end', () => {
+          let parsed = null;
+          try { parsed = JSON.parse(chunks); } catch (_) { /* */ }
+          resolve({ status: res.statusCode, body: chunks, json: parsed });
+        });
+      });
+      req.on('error', (e) => resolve({ status: 0, error: e.message, json: null }));
+      req.on('timeout', () => { req.destroy(); resolve({ status: 0, error: 'timeout', json: null }); });
+      req.write(body);
+      req.end();
+    });
+  }
+  const r14 = await uploadFile(TOKEN || '');
+  const upOk = r14.status === 200 && r14.json?.success === true
+    && typeof r14.json.fileUrl === 'string' && r14.json.fileUrl.length > 0
+    && ['pending', 'approved'].includes(r14.json.verifyStatus);
+  gate('14. POST /api/upload-business-license → 200 + fileUrl + verifyStatus',
+       upOk, `status=${r14.status} verifyStatus=${r14.json?.verifyStatus} mock=${Boolean(r14.json?.mock)}`);
+
+  // ===== Gate 15: 가입 흐름 일관성 (verify + upload + create-seller licenseFileUrl) =====
+  // 동일 토큰으로 licenseFileUrl을 같이 보내 셀러 row에 저장되는지 검증
+  const r15 = await request('POST', `${BASE}/api/signup-create-seller`, {
+    businessNumber: '220-81-62517',
+    ownerName: '테스트사장',
+    phone: '01012345678',
+    birthDate: '1990-01-01',
+    storeName: '테스트매장',
+    email: null,
+    marketingConsent: false,
+    privacyConsent: true,
+    termsConsent: true,
+    signupStep: 1,
+    licenseFileUrl: r14.json?.fileUrl || 'mock://test',
+  }, { Authorization: `Bearer ${TOKEN || ''}` });
+  const consistencyOk = r15.status === 200 && r15.json?.success === true && r15.json?.token;
+  gate('15. 가입 흐름 일관성 (사업자번호 검증 + 파일 업로드 + 셀러 row licenseFileUrl)',
+       consistencyOk, `status=${r15.status} hasToken=${Boolean(r15.json?.token)}`);
+
   // ===== 결과 =====
   const passCount = gates.filter((g) => g.pass).length;
   const failCount = gates.length - passCount;

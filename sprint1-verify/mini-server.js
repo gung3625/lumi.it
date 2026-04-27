@@ -36,12 +36,16 @@ const API_ROUTES = {
   '/api/business-verify': 'business-verify',
   '/api/signup-create-seller': 'signup-create-seller',
   '/api/signup-tone-samples': 'signup-tone-samples',
+  '/api/upload-business-license': 'upload-business-license',
   '/api/me': 'me',
   '/api/connect-coupang': 'connect-coupang',
   '/api/connect-naver': 'connect-naver',
   '/api/market-permission-check': 'market-permission-check',
   '/api/market-guides': 'market-guides',
 };
+
+// multipart/form-data를 받아야 하는 엔드포인트 (Buffer 보존)
+const MULTIPART_ROUTES = new Set(['/api/upload-business-license']);
 
 // pretty URL 라우트
 const PAGE_ROUTES = {
@@ -60,16 +64,19 @@ const STATIC_TYPES = {
   '.json': 'application/json',
 };
 
-function readBody(req) {
+function readBody(req, asBuffer) {
   return new Promise((resolve) => {
     const chunks = [];
     req.on('data', (c) => chunks.push(c));
-    req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
-    req.on('error', () => resolve(''));
+    req.on('end', () => {
+      const buf = Buffer.concat(chunks);
+      resolve(asBuffer ? buf : buf.toString('utf8'));
+    });
+    req.on('error', () => resolve(asBuffer ? Buffer.alloc(0) : ''));
   });
 }
 
-async function invokeHandler(funcName, req, body) {
+async function invokeHandler(funcName, req, body, isBase64Encoded) {
   const filePath = path.join(FUNCTIONS_DIR, funcName + '.js');
   if (!fs.existsSync(filePath)) {
     return { statusCode: 404, headers: {}, body: JSON.stringify({ error: `function ${funcName} not found` }) };
@@ -98,7 +105,7 @@ async function invokeHandler(funcName, req, body) {
     path: url.pathname,
     body: body || null,
     rawUrl: req.url,
-    isBase64Encoded: false,
+    isBase64Encoded: Boolean(isBase64Encoded),
   };
 
   try {
@@ -144,8 +151,17 @@ const server = http.createServer(async (req, res) => {
 
   // /api/* 핸들러 호출
   if (API_ROUTES[pathname]) {
-    const body = await readBody(req);
-    const out = await invokeHandler(API_ROUTES[pathname], req, body);
+    const isMultipart = MULTIPART_ROUTES.has(pathname);
+    let body;
+    let isBase64 = false;
+    if (isMultipart) {
+      const buf = await readBody(req, true);
+      body = buf.toString('base64');
+      isBase64 = true;
+    } else {
+      body = await readBody(req, false);
+    }
+    const out = await invokeHandler(API_ROUTES[pathname], req, body, isBase64);
     const headers = Object.assign({}, out.headers || {});
     res.writeHead(out.statusCode || 200, headers);
     res.end(out.body || '');

@@ -205,11 +205,11 @@ function makeEvent(body) {
     }
   });
 
-  // 9. handler — startDate 없음 → 400
-  await test('9. handler — startDate 누락 → 400', async () => {
+  // 9. handler — startDate 옵션화 (사진 업로드 도입 후): MOCK으로 통과
+  // 정책: startDate 없어도 status API만으로 통과 가능 (사진은 백그라운드 검토)
+  await test('9. handler — startDate 없어도 MOCK 통과 → 200 + verified', async () => {
     const oldMock = process.env.BUSINESS_VERIFY_MOCK;
-    process.env.BUSINESS_VERIFY_MOCK = 'false';
-    process.env.PUBLIC_DATA_API_KEY = 'TEST_KEY';
+    process.env.BUSINESS_VERIFY_MOCK = 'true';
     try {
       const { handler } = loadHandler();
       const res = await handler(makeEvent({
@@ -217,12 +217,12 @@ function makeEvent(body) {
         ownerName: '김현',
         phone: '010-1234-5678',
       }));
-      assert.strictEqual(res.statusCode, 400);
+      assert.strictEqual(res.statusCode, 200);
       const json = JSON.parse(res.body);
-      assert.ok(/개업일/.test(json.error));
+      assert.strictEqual(json.success, true);
+      assert.strictEqual(json.verified, true);
     } finally {
       if (oldMock !== undefined) process.env.BUSINESS_VERIFY_MOCK = oldMock; else delete process.env.BUSINESS_VERIFY_MOCK;
-      delete process.env.PUBLIC_DATA_API_KEY;
     }
   });
 
