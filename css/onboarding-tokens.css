@@ -1,0 +1,180 @@
+/* =====================================================
+   루미 Phase 1 디자인 토큰
+   출처: DESIGN-v2.md §3~§8 + frontend.md
+   격리 프리뷰 — main 푸시 X
+   ===================================================== */
+
+:root {
+  /* ----- Brand Signature (그라데이션 — production 4색 시그니처) ----- */
+  --brand-gradient-h: linear-gradient(90deg, #FF6B8B 0%, #DDA0DD 50%, #EDD080 85%, #DABA65 100%);
+  --brand-gradient-v: linear-gradient(180deg, #FF6B8B 0%, #DDA0DD 50%, #EDD080 85%, #DABA65 100%);
+  --brand-gradient-cta: linear-gradient(135deg, #FF6B8B, #DDA0DD);
+  --brand-gradient-accent: linear-gradient(135deg, #FF6B8B, #DDA0DD, #EDD080);
+  --brand-gradient-soft: linear-gradient(135deg, rgba(255,107,139,.04), rgba(221,160,221,.04));
+  --brand-gradient-radial: radial-gradient(circle, rgba(255,107,139,.6) 0%, rgba(221,160,221,.4) 40%, transparent 70%);
+  --brand-gradient-dark: linear-gradient(90deg, #FF6B8B, #DDA0DD);
+
+  /* ----- Brand 단색 (4색 시그니처) ----- */
+  --pink-500: #FF6B8B;
+  --lavender: #DDA0DD;
+  --gold-soft: #EDD080;
+  --beige-warm: #DABA65;
+  --pink-300: #FFA8BD;
+  --pink-700: #E04D77;
+  --pink-soft: rgba(255, 107, 139, 0.08);
+  --pink-dark: #FF6B8B;
+
+  /* ----- Neutral 8단계 (라이트 베이스) ----- */
+  --neutral-0: #ffffff;
+  --neutral-50: #fafafa;
+  --neutral-100: #f4f4f5;
+  --neutral-200: #e4e4e7;
+  --neutral-300: #d4d4d8;
+  --neutral-400: #a1a1aa;
+  --neutral-600: #52525b;
+  --neutral-800: #27272a;
+  --neutral-950: #0a0a0c;
+
+  /* ----- Dark Mode ----- */
+  --dark-bg-0: #000000;
+  --dark-bg-1: #111111;
+  --dark-card: #272729;
+  --dark-text: #f4f4f5;
+  --dark-text-2: #a1a1aa;
+  --dark-border: rgba(255, 255, 255, 0.08);
+
+  /* ----- Semantic ----- */
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --info: #3b82f6;
+
+  /* ----- Typography ----- */
+  --font-sans: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui,
+    'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* Type Scale */
+  --text-display: 32px;
+  --text-h1: 28px;
+  --text-h2: 24px;
+  --text-h3: 20px;
+  --text-body-lg: 18px;
+  --text-body: 17px;
+  --text-body-sm: 15px;
+  --text-caption: 13px;
+
+  /* Weight */
+  --w-regular: 400;
+  --w-medium: 500;
+  --w-semibold: 600;
+  --w-bold: 700;
+
+  /* ----- Spacing 8pt ----- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+
+  /* ----- Radius ----- */
+  --radius-input: 10px;
+  --radius-mini: 8px;
+  --radius-card: 12px;
+  --radius-modal: 16px;
+  --radius-chip: 20px;
+  --radius-button: 980px;
+
+  /* ----- Shadow ----- */
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04), 0 8px 32px rgba(0, 0, 0, 0.07);
+  --shadow-modal: 0 4px 12px rgba(0, 0, 0, 0.08), 0 16px 48px rgba(0, 0, 0, 0.12);
+  --shadow-card-dark: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --shadow-modal-dark: inset 0 0 0 1px rgba(255, 255, 255, 0.08), 0 16px 48px rgba(0, 0, 0, 0.6);
+
+  /* ----- Motion ----- */
+  --motion-fast: 100ms;
+  --motion-base: 200ms;
+  --motion-slow: 400ms;
+  --ease-standard: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-emphasis: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ----- 시맨틱 ----- */
+  --bg-app: var(--neutral-0);
+  --bg-section: var(--neutral-50);
+  --bg-card: var(--neutral-0);
+  --bg-hover: var(--neutral-100);
+  --border-subtle: var(--neutral-200);
+  --text-primary: var(--neutral-800);
+  --text-secondary: var(--neutral-600);
+  --text-muted: var(--neutral-400);
+  --link: var(--pink-500);
+}
+
+/* ----- Dark Mode ----- */
+body.dark-mode {
+  --bg-app: var(--dark-bg-0);
+  --bg-section: var(--dark-bg-1);
+  --bg-card: var(--dark-card);
+  --bg-hover: rgba(255, 255, 255, 0.04);
+  --border-subtle: var(--dark-border);
+  --text-primary: var(--dark-text);
+  --text-secondary: var(--dark-text-2);
+  --text-muted: rgba(255, 255, 255, 0.4);
+  --link: var(--pink-dark);
+  --shadow-card: var(--shadow-card-dark);
+  --shadow-modal: var(--shadow-modal-dark);
+}
+
+/* ----- Reset ----- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg-app);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  font-weight: var(--w-regular);
+  line-height: 1.47;
+  letter-spacing: -0.374px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background var(--motion-base) var(--ease-standard),
+    color var(--motion-base) var(--ease-standard);
+}
+
+a {
+  color: var(--link);
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: inherit;
+}
