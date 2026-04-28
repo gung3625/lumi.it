@@ -343,99 +343,385 @@
     });
   }
 
-  // ─── 트렌드 카드 (Canvas 풍) ───
+  // ─── 트렌드 카드 (Canvas 풍, 시장 중심 카드 양식) ───
+  // 메모리 project_market_centric_pivot_0428.md: 키워드 + 증가율 + 카테고리 + 타겟 + 평균가 + CTA
   function renderTrends(trend) {
     const wrap = document.getElementById('trendCanvasCards');
     if (!wrap) return;
     const cards = (trend && trend.cards) || [];
     if (cards.length === 0) {
-      wrap.innerHTML = '<div class="widget__empty">키워드를 모으는 중이에요</div>';
+      wrap.innerHTML = `
+        <div class="canvas-empty">
+          <div class="canvas-empty__icon">↗</div>
+          <p class="canvas-empty__title">아직 트렌드가 모이지 않았어요</p>
+          <p>잠시 후 자동으로 갱신돼요</p>
+        </div>`;
       return;
     }
-    wrap.innerHTML = cards.slice(0, 4).map((c, i) => `
-      <article class="trend-card-c" data-keyword="${escapeHtml(c.keyword)}" data-href="${escapeHtml(c.register_href || '/register-product')}">
-        <span class="trend-card-c__rank">#${i + 1}</span>
-        <h4 class="trend-card-c__keyword">${escapeHtml(c.keyword)}</h4>
-        <span class="trend-card-c__velocity">+${c.velocity_pct || 0}% 급상승</span>
-        <p class="trend-card-c__reason">${escapeHtml(c.match_reason || '관심 가질 만한 키워드')}</p>
-      </article>
-    `).join('');
-    wrap.querySelectorAll('.trend-card-c').forEach((el) => {
-      el.addEventListener('click', () => {
+    wrap.innerHTML = cards.slice(0, 4).map((c, i) => {
+      const velocity = c.velocity_pct || 0;
+      const category = c.category_label || c.category || '';
+      const target = c.target_demo || c.audience || '';
+      const minP = c.estimated_revenue_min || c.avg_price_min || 0;
+      const maxP = c.estimated_revenue_max || c.avg_price_max || 0;
+      const priceRange = (minP && maxP) ? `평균가 ₩${fmt(minP)}~₩${fmt(maxP)}` : '';
+      const href = c.register_href || (`/register-product?from=trend&keyword=${encodeURIComponent(c.keyword)}` + (c.category ? `&category=${encodeURIComponent(c.category)}` : ''));
+      return `
+        <article class="trend-card-c" data-href="${escapeHtml(href)}">
+          <span class="trend-card-c__rank">#${i + 1}</span>
+          <h4 class="trend-card-c__keyword">${escapeHtml(c.keyword)}</h4>
+          <span class="trend-card-c__velocity">+${velocity}% 급상승</span>
+          ${category ? `<p class="trend-card-c__meta">${escapeHtml(category)}${target ? ` · ${escapeHtml(target)}` : ''}</p>` : ''}
+          ${priceRange ? `<p class="trend-card-c__price">${escapeHtml(priceRange)}</p>` : ''}
+          <p class="trend-card-c__reason">${escapeHtml(c.match_reason || '관심 가질 만한 키워드')}</p>
+          <button type="button" class="trend-card-c__cta" data-href="${escapeHtml(href)}">이 상품 등록하기 →</button>
+        </article>
+      `;
+    }).join('');
+    wrap.querySelectorAll('[data-href]').forEach((el) => {
+      el.addEventListener('click', (ev) => {
+        ev.stopPropagation();
         const href = el.dataset.href;
         if (href) window.location.href = href;
       });
     });
   }
 
-  // ─── Profit ───
+  // ─── Profit (period toggle + breakdown) ───
+  let _profitPeriod = 'week';
+  let _profitLastResp = null;
+
+  const PERIOD_LABEL = { day: '오늘', week: '이번 주', month: '이번 달' };
+  const PERIOD_COMPARE_LABEL = { day: '어제 대비', week: '지난 주 대비', month: '지난 달 대비' };
+
   function renderProfit(profit) {
     const amt = document.getElementById('profitCanvasAmount');
     const delta = document.getElementById('profitCanvasDelta');
+    const sub = document.getElementById('profitSubtitle');
+    const breakdownEl = document.getElementById('profitBreakdownList');
+    if (sub) sub.textContent = `${PERIOD_LABEL[_profitPeriod] || '이번 주'} · 수수료·광고·포장 차감`;
+
     if (!profit) {
-      if (amt) amt.textContent = '₩—';
-      if (delta) delta.textContent = '계산 중…';
+      if (amt) amt.textContent = '₩0';
+      if (delta) {
+        delta.textContent = '아직 주문이 없어요';
+        delta.className = 'profit-canvas__delta';
+      }
+      if (breakdownEl) { breakdownEl.hidden = true; breakdownEl.innerHTML = ''; }
       return;
     }
-    if (amt) amt.textContent = fmtKR(profit.net_profit);
+    const net = profit.net_profit ?? profit.netProfit ?? 0;
+    if (amt) amt.textContent = fmtKR(net);
     if (delta) {
       const dp = profit.delta_pct;
+      const compareLabel = PERIOD_COMPARE_LABEL[_profitPeriod] || '지난 기간 대비';
       if (dp === null || dp === undefined) {
         delta.textContent = `${profit.order_count || 0}건 주문`;
         delta.className = 'profit-canvas__delta';
       } else if (dp > 0) {
-        delta.textContent = `지난 주 대비 +${dp}%`;
+        delta.textContent = `${compareLabel} +${dp}%`;
         delta.className = 'profit-canvas__delta profit-canvas__delta--up';
       } else if (dp < 0) {
-        delta.textContent = `지난 주 대비 ${dp}%`;
+        delta.textContent = `${compareLabel} ${dp}%`;
         delta.className = 'profit-canvas__delta profit-canvas__delta--down';
       } else {
-        delta.textContent = '지난 주와 비슷해요';
+        delta.textContent = `${compareLabel} 비슷해요`;
         delta.className = 'profit-canvas__delta';
+      }
+    }
+
+    if (breakdownEl) {
+      const b = profit.breakdown || {};
+      const gross = profit.gross_revenue ?? profit.grossRevenue ?? 0;
+      const items = [
+        { label: '총 매출', value: gross, kind: 'plus' },
+        { label: '마켓 수수료', value: -(b.market_fees || 0), kind: 'minus' },
+        { label: '광고비', value: -(b.ad_spend || 0), kind: 'minus' },
+        { label: '포장·배송비', value: -((b.packaging || 0) + (b.shipping || 0)), kind: 'minus' },
+      ];
+      const hasAny = gross > 0 || (b.market_fees || 0) > 0 || (b.ad_spend || 0) > 0;
+      if (!hasAny) {
+        breakdownEl.hidden = true;
+        breakdownEl.innerHTML = '';
+      } else {
+        breakdownEl.hidden = false;
+        breakdownEl.innerHTML = items.map((it) => `
+          <div class="profit-breakdown__row">
+            <span class="profit-breakdown__label">${escapeHtml(it.label)}</span>
+            <span class="profit-breakdown__value profit-breakdown__value--${it.kind}">${it.value < 0 ? '-' : ''}${fmtKR(Math.abs(it.value))}</span>
+          </div>
+        `).join('');
       }
     }
   }
 
-  // ─── 처리할 일 ───
-  function renderTodos(priority) {
-    const wrap = document.getElementById('todoList');
-    if (!wrap) return;
-    const cards = (priority && priority.cards) || [];
-    if (cards.length === 0) {
-      wrap.innerHTML = '<div class="widget__empty">밀린 작업이 없어요</div>';
-      return;
+  async function loadProfitForPeriod(period) {
+    _profitPeriod = period;
+    try {
+      const r = await fetch(`/api/profit-summary?period=${encodeURIComponent(period)}`, { headers: authHeaders() });
+      if (!r.ok) {
+        // 401/500: 빈 상태
+        renderProfit(null);
+        return;
+      }
+      const data = await r.json();
+      _profitLastResp = data;
+      const t = data.totals || {};
+      const profit = {
+        net_profit: t.netProfit || 0,
+        gross_revenue: t.grossRevenue || 0,
+        delta_pct: data.deltaPct ?? null,
+        order_count: t.orderCount || 0,
+        breakdown: {
+          market_fees: t.marketFees || 0,
+          ad_spend: t.adSpend || 0,
+          packaging: t.packagingCost || 0,
+          shipping: t.shippingCost || 0,
+          payment_fees: t.paymentFees || 0,
+          vat: t.vat || 0,
+        },
+      };
+      renderProfit(profit);
+    } catch (_) {
+      renderProfit(null);
     }
-    wrap.innerHTML = cards.slice(0, 5).map((c) => `
-      <div class="todo-row">
-        <div class="todo-row__icon">!</div>
-        <div class="todo-row__title">${escapeHtml(c.title)}</div>
-        <div class="todo-row__count">${escapeHtml(c.message || '')}</div>
-      </div>
-    `).join('');
+  }
+
+  function bindProfitPeriod() {
+    const toggle = document.getElementById('profitPeriodToggle');
+    if (!toggle) return;
+    toggle.querySelectorAll('[data-period]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        toggle.querySelectorAll('[data-period]').forEach((n) => n.classList.remove('view-toggle__btn--active'));
+        btn.classList.add('view-toggle__btn--active');
+        loadProfitForPeriod(btn.dataset.period);
+      });
+    });
+  }
+
+  // ─── 우선순위 큐 (긴급·VIP·일반 3-column) ───
+  // 긴급: priority>=90 (송장·CS) 또는 type∈(shipping,return,cs)
+  // VIP: card.vip || metadata.is_vip
+  // 일반: 그 외
+  function classifyPriority(card) {
+    if (card.bucket) return card.bucket;
+    if (card.vip || (card.metadata && card.metadata.is_vip)) return 'vip';
+    if ((card.priority || 0) >= 90) return 'urgent';
+    if (['shipping', 'return', 'cs'].includes(card.type)) return 'urgent';
+    return 'normal';
+  }
+
+  function renderPriorityQueue(priority) {
+    const buckets = { urgent: [], vip: [], normal: [] };
+    const cards = (priority && priority.cards) || [];
+    cards.forEach((c) => {
+      const b = classifyPriority(c);
+      buckets[b].push(c);
+    });
+
+    function paint(targetId, list) {
+      const el = document.getElementById(targetId);
+      if (!el) return;
+      if (list.length === 0) {
+        el.innerHTML = '<div class="widget__empty">없음</div>';
+        return;
+      }
+      el.innerHTML = list.slice(0, 5).map((c) => `
+        <a class="priority-row" href="${escapeHtml(c.href || '/tasks')}">
+          <span class="priority-row__icon">!</span>
+          <div class="priority-row__body">
+            <p class="priority-row__title">${escapeHtml(c.title || '처리할 일')}</p>
+            <p class="priority-row__msg">${escapeHtml(c.message || '')}</p>
+          </div>
+          ${c.count ? `<span class="priority-row__count">${escapeHtml(String(c.count))}</span>` : ''}
+        </a>
+      `).join('');
+    }
+
+    paint('priorityUrgent', buckets.urgent);
+    paint('priorityVip', buckets.vip);
+    paint('priorityNormal', buckets.normal);
+
+    const setNum = (id, n) => { const el = document.getElementById(id); if (el) el.textContent = String(n); };
+    setNum('priorityUrgentCount', buckets.urgent.length);
+    setNum('priorityVipCount', buckets.vip.length);
+    setNum('priorityNormalCount', buckets.normal.length);
+
     const badge = document.getElementById('navTaskBadge');
-    const total = (priority && priority.totals && priority.totals.total_tasks) || 0;
+    const total = (priority && priority.totals && priority.totals.total_tasks) || cards.length;
     if (badge) {
       if (total > 0) { badge.textContent = total; badge.hidden = false; }
       else { badge.hidden = true; }
     }
+
+    const hint = document.getElementById('priorityHint');
+    if (hint) {
+      if (cards.length === 0) hint.textContent = '처리할 일이 없어요. 잠시 쉬셔도 돼요';
+      else hint.textContent = `긴급 ${buckets.urgent.length} · VIP ${buckets.vip.length} · 일반 ${buckets.normal.length}`;
+    }
   }
 
-  // ─── Live Stream ───
+  // ─── Live Stream (Realtime + 최근 이벤트) ───
+  let _realtimeChannel = null;
+
   function renderLive(live) {
     const wrap = document.getElementById('liveStream');
     if (!wrap) return;
     const evts = (live && live.events) || [];
     if (evts.length === 0) {
-      wrap.innerHTML = '<div class="widget__empty">최근 알림이 없어요</div>';
+      wrap.innerHTML = '<div class="widget__empty">최근 알림이 없어요. 새 주문·반품·CS가 들어오면 여기에 바로 표시돼요</div>';
       return;
     }
-    wrap.innerHTML = evts.slice(0, 8).map((e) => `
-      <div class="live-row">
-        <span class="live-row__dot live-row__dot--${escapeHtml(e.severity || 'info')}"></span>
-        <span class="live-row__msg">${escapeHtml(e.title || e.message || '알림')}</span>
+    wrap.innerHTML = evts.slice(0, 12).map((e) => liveRowHtml(e)).join('');
+  }
+
+  function liveRowHtml(e, isFresh) {
+    const sev = (e.severity || 'info').toLowerCase();
+    const title = e.title || e.message || '알림';
+    const market = (e.metadata && e.metadata.market) || e.market || '';
+    return `
+      <div class="live-row${isFresh ? ' live-row--fresh' : ''}" data-id="${escapeHtml(String(e.id || ''))}">
+        <span class="live-row__dot live-row__dot--${escapeHtml(sev)}"></span>
+        <span class="live-row__msg">${escapeHtml(title)}${market ? ` · ${escapeHtml(market)}` : ''}</span>
         <span class="live-row__time">${timeAgo(e.created_at)}</span>
-      </div>
-    `).join('');
+      </div>`;
+  }
+
+  function setLiveStatus(text, ok) {
+    const status = document.getElementById('liveStatus');
+    const indicator = document.getElementById('liveIndicator');
+    if (status) status.textContent = text;
+    if (indicator) indicator.classList.toggle('live-stream__indicator--on', !!ok);
+  }
+
+  function decodeJwtPayload(tok) {
+    try {
+      const parts = tok.split('.');
+      if (parts.length !== 3) return null;
+      return JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+    } catch (_) { return null; }
+  }
+
+  function subscribeRealtime() {
+    if (_realtimeChannel) return;
+    const SUPABASE_URL = window.SUPABASE_URL || 'https://kfacacxqshpnipngdsuk.supabase.co';
+    const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || '';
+    if (!window.supabase || !SUPABASE_ANON_KEY) {
+      setLiveStatus('대기 중', false);
+      return;
+    }
+    const tok = getToken();
+    const payload = tok ? decodeJwtPayload(tok) : null;
+    const sellerId = payload && payload.seller_id;
+    if (!sellerId) {
+      setLiveStatus('대기 중', false);
+      return;
+    }
+    try {
+      const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      const ch = client.channel(`seller:${sellerId}:dashboard-live`);
+      const onInsert = (table) => (payload) => {
+        const ev = payload.new || {};
+        // 표준화: 테이블별 표시 텍스트
+        let title = '';
+        let severity = 'info';
+        if (table === 'live_events') { title = ev.title || ev.message || '새 알림'; severity = ev.severity || 'info'; }
+        else if (table === 'marketplace_orders') { title = `새 주문 · ${(ev.market || '').toUpperCase()}`; severity = 'success'; }
+        else if (table === 'cs_messages') { title = '새 CS 메시지'; severity = 'warning'; }
+        else if (table === 'returns') { title = '반품 요청'; severity = 'error'; }
+
+        const row = { id: ev.id, title, severity, created_at: ev.created_at || new Date().toISOString(), metadata: { market: ev.market } };
+        const wrap = document.getElementById('liveStream');
+        if (!wrap) return;
+        const empty = wrap.querySelector('.widget__empty');
+        if (empty) empty.remove();
+        wrap.insertAdjacentHTML('afterbegin', liveRowHtml(row, true));
+        // 12개 초과 시 트림
+        const rows = wrap.querySelectorAll('.live-row');
+        if (rows.length > 12) rows[rows.length - 1].remove();
+      };
+
+      ch.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'live_events', filter: `seller_id=eq.${sellerId}` }, onInsert('live_events'));
+      ch.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'marketplace_orders', filter: `seller_id=eq.${sellerId}` }, onInsert('marketplace_orders'));
+      ch.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'cs_messages', filter: `seller_id=eq.${sellerId}` }, onInsert('cs_messages'));
+
+      ch.subscribe((status) => {
+        if (status === 'SUBSCRIBED') setLiveStatus('실시간 연결됨', true);
+        else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') setLiveStatus('재연결 중', false);
+      });
+      _realtimeChannel = ch;
+    } catch (_) {
+      setLiveStatus('대기 중', false);
+    }
+  }
+
+  // ─── Kill Switch ───
+  function bindKillSwitch() {
+    const open = document.getElementById('killSwitchOpen');
+    const modal = document.getElementById('killModal');
+    if (!open || !modal) return;
+    const result = document.getElementById('killResult');
+
+    function setHidden(hidden) {
+      modal.hidden = hidden;
+      document.body.style.overflow = hidden ? '' : 'hidden';
+      if (hidden && result) { result.hidden = true; result.innerHTML = ''; }
+    }
+
+    open.addEventListener('click', () => setHidden(false));
+    modal.querySelectorAll('[data-kill-close]').forEach((el) => el.addEventListener('click', () => setHidden(true)));
+
+    const confirm = document.getElementById('killConfirmBtn');
+    if (!confirm) return;
+    confirm.addEventListener('click', async () => {
+      const scopeRaw = (modal.querySelector('input[name="killScope"]:checked') || {}).value || 'market:all';
+      const [scopeType, scopeValue] = scopeRaw.split(':');
+      const reason = (document.getElementById('killReason') || {}).value || '';
+      confirm.disabled = true;
+      confirm.textContent = '처리 중…';
+      try {
+        const body = {
+          scope: scopeType,
+          action: 'stop',
+          reason: reason || '대시보드 긴급 차단',
+        };
+        if (scopeValue && scopeValue !== 'all') body.market = scopeValue;
+        const r = await fetch('/api/kill-switch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...authHeaders() },
+          body: JSON.stringify(body),
+        });
+        const data = await r.json().catch(() => ({}));
+        if (result) {
+          result.hidden = false;
+          if (r.ok) {
+            const lines = [`<p class="kill-modal__result-msg">${escapeHtml(data.message || '판매를 즉시 중지했어요')}</p>`];
+            const rs = Array.isArray(data.results) ? data.results : [];
+            if (rs.length > 0) {
+              lines.push('<ul class="kill-modal__result-list">');
+              rs.forEach((row) => {
+                const ok = row.ok;
+                lines.push(`<li class="${ok ? 'is-ok' : 'is-fail'}">${escapeHtml(row.market || '')} · ${ok ? '성공' : '실패'}${row.error ? ` (${escapeHtml(row.error)})` : ''}${row.mocked ? ' (모킹)' : ''}</li>`);
+              });
+              lines.push('</ul>');
+            }
+            result.innerHTML = lines.join('');
+            confirm.textContent = '완료';
+          } else {
+            result.innerHTML = `<p class="kill-modal__result-msg kill-modal__result-msg--err">${escapeHtml(data.error || '차단에 실패했어요. 잠시 후 다시 시도해 주세요')}</p>`;
+            confirm.textContent = '다시 시도';
+            confirm.disabled = false;
+          }
+        }
+      } catch (_) {
+        if (result) {
+          result.hidden = false;
+          result.innerHTML = '<p class="kill-modal__result-msg kill-modal__result-msg--err">네트워크 오류. 잠시 후 다시 시도해 주세요</p>';
+        }
+        confirm.textContent = '다시 시도';
+        confirm.disabled = false;
+      }
+    });
   }
 
   // ─── 카테고리별 상품 카운트 위젯 (필수) ───
@@ -661,8 +947,8 @@
         // 로그인 필요 — 데모 빈 상태 유지 (베타 셀러 가입 X 시나리오 보호)
         renderTrends({ cards: [] });
         renderProfit(null);
-        renderTodos(null);
-        renderLive(null);
+        renderPriorityQueue({ cards: [], totals: {} });
+        renderLive({ events: [] });
         return;
       }
       if (!r.ok) return;
@@ -674,7 +960,7 @@
       const cards = data.cards || {};
       renderTrends(cards.trend);
       renderProfit(cards.profit);
-      renderTodos(cards.priority);
+      renderPriorityQueue(cards.priority);
       renderLive(cards.live);
     } catch (e) {
       console.error('[dashboard-canvas] 로드 실패');
@@ -688,9 +974,15 @@
     bindCmdK();
     bindSlideOver();
     bindCategoryViewToggle();
+    bindProfitPeriod();
+    bindKillSwitch();
     renderActionAgents();
     loadDashboard();
     loadCategoryCounts();
+    // Profit 위젯은 period 토글에 따라 별도 호출 (초기엔 dashboard-summary의 week값으로 충분, but 통일을 위해 period API 한번 호출)
+    setTimeout(() => loadProfitForPeriod('week'), 50);
+    // Realtime 구독 (Live Stream)
+    subscribeRealtime();
     setInterval(loadDashboard, 30000);
   });
 })();
