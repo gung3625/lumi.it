@@ -214,6 +214,59 @@
             </div>
           </section>
 
+          <!-- 이달 정산 -->
+          <section class="widget" aria-label="이달 정산">
+            <div class="widget__header">
+              <div>
+                <h2 class="widget__title">이달 정산</h2>
+                <p class="widget__subtitle" id="settlementSubtitle">매출·수수료·VAT·순이익 한눈에</p>
+              </div>
+              <button type="button" class="widget__action" id="settlementCsvBtn" aria-label="세무사 CSV 받기">세무사 CSV 받기</button>
+            </div>
+            <div class="settlement-canvas">
+              <div class="settlement-canvas__row">
+                <div class="settlement-canvas__cell">
+                  <p class="settlement-canvas__label">매출</p>
+                  <p class="settlement-canvas__value" id="settlementGross">₩—</p>
+                </div>
+                <div class="settlement-canvas__cell">
+                  <p class="settlement-canvas__label">수수료</p>
+                  <p class="settlement-canvas__value settlement-canvas__value--minus" id="settlementFees">₩—</p>
+                </div>
+                <div class="settlement-canvas__cell">
+                  <p class="settlement-canvas__label">부가세</p>
+                  <p class="settlement-canvas__value settlement-canvas__value--minus" id="settlementVat">₩—</p>
+                </div>
+                <div class="settlement-canvas__cell settlement-canvas__cell--net">
+                  <p class="settlement-canvas__label">순이익</p>
+                  <p class="settlement-canvas__value settlement-canvas__value--net" id="settlementNet">₩—</p>
+                </div>
+              </div>
+              <p class="settlement-canvas__delta" id="settlementDelta">전월 대비 계산 중…</p>
+              <p class="settlement-canvas__hint" id="settlementHint" hidden></p>
+            </div>
+          </section>
+
+          <!-- AI 인사이트 (주간/월간 자동 보고서) -->
+          <section class="widget widget--insight" id="insightWidget" aria-label="AI 인사이트">
+            <div class="widget__header">
+              <div>
+                <h2 class="widget__title">AI 인사이트</h2>
+                <p class="widget__subtitle" id="insightSubtitle">주간 자동 보고서</p>
+              </div>
+              <div class="view-toggle" id="insightPeriodToggle" role="tablist" aria-label="보고서 종류">
+                <button class="view-toggle__btn view-toggle__btn--active" type="button" data-insight="weekly" role="tab">주간</button>
+                <button class="view-toggle__btn" type="button" data-insight="monthly" role="tab">월간</button>
+              </div>
+            </div>
+            <div class="insight-canvas" id="insightCanvas">
+              <p class="insight-canvas__period" id="insightPeriod">불러오는 중…</p>
+              <p class="insight-canvas__summary" id="insightSummary">매출·주문·트렌드 통합 보고서를 준비하고 있어요.</p>
+              <div class="insight-canvas__actions" id="insightActions"></div>
+              <button type="button" class="insight-canvas__expand" id="insightExpandBtn">전체 보기 →</button>
+            </div>
+          </section>
+
           <!-- Kill Switch -->
           <section class="widget widget--kill" aria-label="긴급 차단">
             <div class="widget__header">

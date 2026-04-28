@@ -278,6 +278,88 @@ async function processRefund({ market_order_id, reason, type, credentials, acces
   return { ok: false, error: '네이버 환불 실연동은 곧 지원돼요. 모킹 모드를 활성화해주세요.', retryable: false };
 }
 
+/**
+ * 네이버 반품·교환·부분환불 풀 사이클 처리
+ *   refund → POST /external/v1/pay-order/seller/product-orders/{id}/return/approve
+ *   exchange → POST /external/v1/pay-order/seller/product-orders/{id}/exchange/approve
+ *   partial_refund → POST /external/v1/pay-order/seller/product-orders/{id}/return/partial-approve
+ *
+ * @param {Object} params
+ * @param {string} params.market_order_id
+ * @param {string} [params.reason]
+ * @param {'refund'|'exchange'|'partial_refund'} [params.type='refund']
+ * @param {number} [params.amount]
+ * @param {string} [params.exchange_product_id]
+ * @param {Object} [params.credentials]
+ * @param {Object} [params.access_token_encrypted]
+ * @param {string} [params.token_expires_at]
+ * @param {boolean} [params.mock]
+ */
+async function processReturn({ market_order_id, reason, type, amount, exchange_product_id, credentials, access_token_encrypted, token_expires_at, mock }) {
+  if (!market_order_id) {
+    return { ok: false, error: '주문번호가 필요해요.', retryable: false };
+  }
+  const t = (type === 'exchange' || type === 'partial_refund') ? type : 'refund';
+  if (t === 'partial_refund' && (!Number.isFinite(amount) || amount <= 0)) {
+    return { ok: false, error: '부분환불 금액은 0원 초과여야 해요.', retryable: false };
+  }
+  if (isMockMode(mock)) {
+    return {
+      ok: true,
+      mocked: true,
+      market_order_id,
+      type: t,
+      refund_id: `NV_RET_${Date.now()}`,
+      amount: t === 'partial_refund' ? amount : undefined,
+    };
+  }
+  const tk = await ensureToken({ credentials, access_token_encrypted, token_expires_at });
+  if (!tk.ok) return { ok: false, error: tk.error, retryable: false };
+
+  let path;
+  let body;
+  if (t === 'exchange') {
+    path = `/external/v1/pay-order/seller/product-orders/${encodeURIComponent(market_order_id)}/exchange/approve`;
+    body = { exchangeReason: reason || '셀러 처리', newProductOrderId: exchange_product_id || undefined };
+  } else if (t === 'partial_refund') {
+    path = `/external/v1/pay-order/seller/product-orders/${encodeURIComponent(market_order_id)}/return/partial-approve`;
+    body = { refundAmount: Math.trunc(amount), returnReason: reason || '셀러 처리' };
+  } else {
+    path = `/external/v1/pay-order/seller/product-orders/${encodeURIComponent(market_order_id)}/return/approve`;
+    body = { returnReason: reason || '셀러 처리' };
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 12000);
+  try {
+    const res = await fetch(`${NAVER_API_HOST}${path}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${tk.accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    const txt = await res.text();
+    let json = null; try { json = JSON.parse(txt); } catch { /* */ }
+    if (!res.ok) {
+      const retryable = [408, 429, 500, 502, 503, 504].includes(res.status);
+      return { ok: false, error: json?.message || `네이버 반품 처리 실패 (${res.status})`, status: res.status, retryable };
+    }
+    return {
+      ok: true,
+      market_order_id,
+      type: t,
+      refund_id: String(json?.data?.returnId || json?.data?.exchangeId || json?.returnId || ''),
+      amount: t === 'partial_refund' ? amount : undefined,
+      raw: json,
+    };
+  } catch (e) {
+    clearTimeout(timeout);
+    const retryable = e.name === 'AbortError' || /ECONN|timeout/i.test(e.message);
+    return { ok: false, error: '네이버 반품 처리 네트워크 오류', retryable };
+  }
+}
+
 module.exports = {
   fetchNewOrders,
   normalizeNaverOrder,
@@ -289,4 +371,5 @@ module.exports = {
   updatePrice,
   updateProduct,
   processRefund,
+  processReturn,
 };

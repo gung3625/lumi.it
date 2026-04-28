@@ -1458,3 +1458,168 @@ body.page-dashboard {
   from { opacity: 0; transform: translateY(-8px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* 정산 위젯 (이달 정산) */
+.settlement-canvas {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.settlement-canvas__row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+.settlement-canvas__cell {
+  background: var(--canvas-card);
+  border-radius: 8px;
+  padding: 10px 12px;
+  min-width: 0;
+}
+.settlement-canvas__cell--net {
+  background: rgba(255, 107, 139, 0.08);
+}
+.settlement-canvas__label {
+  font-size: 11px;
+  font-weight: 500;
+  margin: 0 0 4px 0;
+  color: var(--canvas-text-soft);
+}
+.settlement-canvas__value {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.settlement-canvas__value--minus { color: #DC2626; }
+.settlement-canvas__value--net {
+  font-size: 18px;
+  background: var(--canvas-gradient-cta);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.settlement-canvas__delta {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--canvas-text-soft);
+  margin: 0;
+}
+.settlement-canvas__delta--up { color: #16A34A; }
+.settlement-canvas__delta--down { color: #DC2626; }
+.settlement-canvas__hint {
+  font-size: 12px;
+  color: var(--canvas-text-soft);
+  margin: 0;
+}
+@media (max-width: 768px) {
+  .settlement-canvas__row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .settlement-canvas__value { font-size: 15px; }
+  .settlement-canvas__value--net { font-size: 17px; }
+}
+.dark-mode .settlement-canvas__cell {
+  background: rgba(255, 255, 255, 0.04);
+}
+.dark-mode .settlement-canvas__cell--net {
+  background: rgba(255, 107, 139, 0.14);
+}
+
+/* ─── AI 인사이트 위젯 ─── */
+.widget--insight {}
+.insight-canvas {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.insight-canvas__period {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--canvas-text-soft);
+  margin: 0;
+  letter-spacing: .01em;
+}
+.insight-canvas__summary {
+  font-size: 15px;
+  line-height: 1.55;
+  margin: 0;
+  color: var(--canvas-text);
+}
+.insight-canvas__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.insight-action-chip {
+  background: rgba(200, 80, 122, 0.10);
+  color: var(--pink, #C8507A);
+  border: none;
+  border-radius: 980px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background .15s;
+  white-space: nowrap;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.insight-action-chip:hover {
+  background: rgba(200, 80, 122, 0.18);
+}
+.insight-canvas__expand {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  color: var(--pink, #C8507A);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  margin-top: 2px;
+}
+.insight-canvas__expand:hover { opacity: .75; }
+
+/* SlideOver 인사이트 내부 리스트 */
+.insight-so__list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.insight-so__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  gap: 8px;
+}
+.insight-so__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.insight-so__val {
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--pink, #C8507A);
+}
+
+/* 다크모드 */
+.dark-mode .insight-action-chip {
+  background: rgba(200, 80, 122, 0.15);
+}
+.dark-mode .insight-action-chip:hover {
+  background: rgba(200, 80, 122, 0.25);
+}
+@media (max-width: 768px) {
+  .insight-canvas__summary { font-size: 14px; }
+  .insight-action-chip { max-width: 180px; }
+}

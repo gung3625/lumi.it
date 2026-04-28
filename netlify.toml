@@ -61,6 +61,10 @@
 [functions."send-notifications"]
   schedule = "0 0 * * *"
 
+# 매일 오전 9시 KST - 송장 미입력 24h 알림톡 발송 (Sprint 6)
+[functions."alimtalk-tracking-overdue-cron"]
+  schedule = "0 0 * * *"
+
 # 매일 오전 9시 KST (= UTC 00:00) 플랜 만료 알림 이메일 발송
 # 베타 테스터 기간 중단 — 정식 오픈 시 주석 해제
 # [functions."check-expiry"]
@@ -97,6 +101,15 @@
 # 매일 KST 04:30 (= UTC 19:30) — trends-v2(15UTC)·longtail(19UTC 일요일)과 다른 시간대
 [functions."scheduled-shopping-insight-background"]
   schedule = "30 19 * * *"
+
+# AI 인사이트 주간 보고서 — 매주 월요일 KST 09:00 (= UTC 일요일 00:00)
+# Tier 2 (gpt-4o) 셀러당 ₩50, 월 ₩200 한도 (insight_cost_ledger)
+[functions."scheduled-insight-weekly-background"]
+  schedule = "0 0 * * 1"
+
+# AI 인사이트 월간 보고서 — 매월 1일 KST 09:00 (= UTC 0일 00:00)
+[functions."scheduled-insight-monthly-background"]
+  schedule = "0 0 1 * *"
 
 # 포스트 프로세싱 비활성화 (이메일 난독화 등 JS 삽입 방지)
 [build.processing]
@@ -285,6 +298,25 @@
   status = 200
   force = true
 
+# 반품·교환 풀 워크플로우 (사장님 승인 게이트 + Audit)
+[[redirects]]
+  from = "/api/return-request-list"
+  to = "/.netlify/functions/return-request-list"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/return-process"
+  to = "/.netlify/functions/return-process"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/return-history"
+  to = "/.netlify/functions/return-history"
+  status = 200
+  force = true
+
 # Sprint 5 — 마켓 통합 기본기 4종 (재고·가격·상품수정·환불)
 [[redirects]]
   from = "/api/sync-inventory"
@@ -334,6 +366,31 @@
   status = 200
   force = true
 
+# Sprint 6 — 카카오 알림톡 셀러 자동 발송 시스템
+[[redirects]]
+  from = "/api/alimtalk-send"
+  to = "/.netlify/functions/alimtalk-send"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/alimtalk-templates"
+  to = "/.netlify/functions/alimtalk-templates"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/alimtalk-history"
+  to = "/.netlify/functions/alimtalk-history"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/alimtalk-config"
+  to = "/.netlify/functions/alimtalk-config"
+  status = 200
+  force = true
+
 # Sprint 4 — 대시보드 + 시장 중심 피벗 (트렌드 메인 카드)
 [[redirects]]
   from = "/api/trend-recommendations"
@@ -374,6 +431,25 @@
 [[redirects]]
   from = "/api/dashboard-summary"
   to = "/.netlify/functions/dashboard-summary"
+  status = 200
+  force = true
+
+# 정산·세무 — 월별 정산 + 세무사 CSV + 분기별 부가세 양식
+[[redirects]]
+  from = "/api/settlement-monthly"
+  to = "/.netlify/functions/settlement-monthly"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/settlement-csv"
+  to = "/.netlify/functions/settlement-csv"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/settlement-vat-form"
+  to = "/.netlify/functions/settlement-vat-form"
   status = 200
   force = true
 
@@ -434,6 +510,17 @@
 [[redirects]]
   from = "/api/scheduled-shopping-insight"
   to = "/.netlify/functions/scheduled-shopping-insight-background"
+  status = 200
+
+# AI 인사이트 주간/월간 cron 수동 트리거 (x-lumi-secret 헤더 필요)
+[[redirects]]
+  from = "/api/scheduled-insight-weekly"
+  to = "/.netlify/functions/scheduled-insight-weekly-background"
+  status = 200
+
+[[redirects]]
+  from = "/api/scheduled-insight-monthly"
+  to = "/.netlify/functions/scheduled-insight-monthly-background"
   status = 200
 
 # 쇼핑인사이트 통합 조회 (셀러용)

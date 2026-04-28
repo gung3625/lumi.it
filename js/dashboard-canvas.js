@@ -499,6 +499,121 @@
     });
   }
 
+  // ─── 정산 위젯 (이달 매출·수수료·VAT·순이익) ───
+  function currentPeriod() {
+    const d = new Date();
+    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+  }
+
+  function renderSettlement(data) {
+    const grossEl = document.getElementById('settlementGross');
+    const feesEl = document.getElementById('settlementFees');
+    const vatEl = document.getElementById('settlementVat');
+    const netEl = document.getElementById('settlementNet');
+    const subEl = document.getElementById('settlementSubtitle');
+    const deltaEl = document.getElementById('settlementDelta');
+    const hintEl = document.getElementById('settlementHint');
+    const period = data?.period || currentPeriod();
+    const monthLabel = period.replace('-', '년 ') + '월';
+    if (subEl) subEl.textContent = `${monthLabel} · 매출·수수료·VAT·순이익`;
+
+    if (!data || !data.summary) {
+      if (grossEl) grossEl.textContent = '₩0';
+      if (feesEl) feesEl.textContent = '-₩0';
+      if (vatEl) vatEl.textContent = '-₩0';
+      if (netEl) netEl.textContent = '₩0';
+      if (deltaEl) {
+        deltaEl.textContent = '아직 거래가 없어요';
+        deltaEl.className = 'settlement-canvas__delta';
+      }
+      if (hintEl) hintEl.hidden = true;
+      return;
+    }
+    const s = data.summary;
+    if (grossEl) grossEl.textContent = fmtKR(s.gross_revenue || 0);
+    if (feesEl) feesEl.textContent = '-' + fmtKR(s.marketplace_fees_total || 0);
+    if (vatEl) vatEl.textContent = '-' + fmtKR(s.vat_payable || 0);
+    if (netEl) netEl.textContent = fmtKR(s.net_profit || 0);
+
+    if (deltaEl) {
+      const dp = data.previous?.delta_pct;
+      if (dp === null || dp === undefined) {
+        deltaEl.textContent = `${s.order_count || 0}건 거래`;
+        deltaEl.className = 'settlement-canvas__delta';
+      } else if (dp > 0) {
+        deltaEl.textContent = `전월 대비 +${dp}%`;
+        deltaEl.className = 'settlement-canvas__delta settlement-canvas__delta--up';
+      } else if (dp < 0) {
+        deltaEl.textContent = `전월 대비 ${dp}%`;
+        deltaEl.className = 'settlement-canvas__delta settlement-canvas__delta--down';
+      } else {
+        deltaEl.textContent = '전월과 비슷해요';
+        deltaEl.className = 'settlement-canvas__delta';
+      }
+    }
+
+    if (hintEl) {
+      const refundable = s.vat_refundable || 0;
+      if (refundable > 0) {
+        hintEl.textContent = `매입세액 환급 가능 ₩${fmt(refundable)} (마켓 수수료·광고비 부가세)`;
+        hintEl.hidden = false;
+      } else {
+        hintEl.hidden = true;
+      }
+    }
+  }
+
+  async function loadSettlement() {
+    try {
+      const period = currentPeriod();
+      const r = await fetch(`/api/settlement-monthly?period=${encodeURIComponent(period)}`, { headers: authHeaders() });
+      if (!r.ok) {
+        renderSettlement(null);
+        return;
+      }
+      const data = await r.json();
+      renderSettlement(data);
+    } catch (_) {
+      renderSettlement(null);
+    }
+  }
+
+  function bindSettlementCsv() {
+    const btn = document.getElementById('settlementCsvBtn');
+    if (!btn) return;
+    btn.addEventListener('click', async () => {
+      const period = currentPeriod();
+      const token = getToken();
+      if (!token) {
+        alert('로그인이 필요해요.');
+        return;
+      }
+      btn.disabled = true;
+      const original = btn.textContent;
+      btn.textContent = '내려받는 중…';
+      try {
+        const r = await fetch(`/api/settlement-csv?period=${encodeURIComponent(period)}`, {
+          headers: authHeaders(),
+        });
+        if (!r.ok) throw new Error('CSV 받기 실패');
+        const blob = await r.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `lumi-settlement-${period}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } catch (e) {
+        alert('CSV를 받지 못했어요. 다시 시도해 주세요.');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = original;
+      }
+    });
+  }
+
   // ─── 우선순위 큐 (긴급·VIP·일반 3-column) ───
   // 긴급: priority>=90 (송장·CS) 또는 type∈(shipping,return,cs)
   // VIP: card.vip || metadata.is_vip
@@ -939,6 +1054,142 @@
     });
   }
 
+  // ─── AI 인사이트 위젯 ───
+  let _insightType = 'weekly';
+  let _insightData = null;
+
+  function renderInsight(data) {
+    const periodEl = document.getElementById('insightPeriod');
+    const summaryEl = document.getElementById('insightSummary');
+    const actionsEl = document.getElementById('insightActions');
+    const subEl = document.getElementById('insightSubtitle');
+
+    if (!data || !data.report) {
+      if (periodEl) periodEl.textContent = '아직 보고서가 없어요';
+      if (summaryEl) summaryEl.textContent = _insightType === 'weekly' ? '주간 보고서는 매주 월요일 자동으로 만들어져요.' : '월간 보고서는 매월 1일 자동으로 만들어져요.';
+      if (actionsEl) actionsEl.innerHTML = '';
+      return;
+    }
+    const r = data.report;
+    if (periodEl) periodEl.textContent = r.period || '';
+    if (summaryEl) summaryEl.textContent = r.summary || '';
+    if (subEl) subEl.textContent = (_insightType === 'weekly' ? '주간' : '월간') + ' 자동 보고서' + (data.cached ? ' (캐시)' : '');
+
+    if (actionsEl) {
+      const actions = Array.isArray(r.actions) ? r.actions.slice(0, 3) : [];
+      if (actions.length === 0) {
+        actionsEl.innerHTML = '';
+      } else {
+        actionsEl.innerHTML = actions.map((a) => {
+          const title = typeof a === 'string' ? a : (a.title || '');
+          return `<button type="button" class="insight-action-chip" data-insight-action="${escapeHtml(title)}">${escapeHtml(title)}</button>`;
+        }).join('');
+        actionsEl.querySelectorAll('[data-insight-action]').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const chatInput = document.getElementById('chatInput');
+            if (chatInput) {
+              chatInput.value = btn.dataset.insightAction || '';
+              chatInput.dispatchEvent(new Event('input'));
+              chatInput.focus();
+            }
+          });
+        });
+      }
+    }
+  }
+
+  function buildInsightSlideoverBody(data) {
+    if (!data || !data.report) return '<div class="widget__empty">보고서 데이터가 없어요</div>';
+    const r = data.report;
+    const parts = [];
+
+    // 요약
+    parts.push(`<p style="font-size:15px;line-height:1.6;margin-bottom:16px;">${escapeHtml(r.summary || '')}</p>`);
+
+    // 상위 상품
+    if (r.top_performers && r.top_performers.length > 0) {
+      parts.push('<h3 style="font-size:13px;font-weight:600;color:var(--text-secondary,#888);letter-spacing:.04em;text-transform:uppercase;margin:0 0 8px;">TOP 상품</h3>');
+      parts.push('<div class="insight-so__list">');
+      r.top_performers.forEach((p) => {
+        parts.push(`<div class="insight-so__row"><span class="insight-so__name">${escapeHtml(p.name || '(상품명)')}</span><span class="insight-so__val">${fmtKR(p.revenue || 0)}</span></div>`);
+      });
+      parts.push('</div>');
+    }
+
+    // 트렌드 매칭
+    if (r.trend_match && r.trend_match.length > 0) {
+      parts.push('<h3 style="font-size:13px;font-weight:600;color:var(--text-secondary,#888);letter-spacing:.04em;text-transform:uppercase;margin:16px 0 8px;">트렌드 매칭</h3>');
+      parts.push('<div class="insight-so__list">');
+      r.trend_match.forEach((t) => {
+        const badge = t.match_in_store ? '<span style="color:#22c55e;font-size:12px;">보유</span>' : '<span style="color:#f59e0b;font-size:12px;">미보유</span>';
+        parts.push(`<div class="insight-so__row"><span class="insight-so__name">${escapeHtml(t.trend || '')}</span>${badge}</div>`);
+        if (t.suggestion) parts.push(`<p style="font-size:12px;color:var(--text-secondary,#888);margin:-4px 0 8px 0;">${escapeHtml(t.suggestion)}</p>`);
+      });
+      parts.push('</div>');
+    }
+
+    // 예측
+    if (r.predictions) {
+      const pred = r.predictions;
+      parts.push('<h3 style="font-size:13px;font-weight:600;color:var(--text-secondary,#888);letter-spacing:.04em;text-transform:uppercase;margin:16px 0 8px;">예측</h3>');
+      parts.push(`<p style="font-size:14px;margin-bottom:6px;">다음 ${_insightType === 'weekly' ? '주' : '달'} 예상 매출: <strong>${fmtKR(pred.next_week_revenue || 0)}</strong> (신뢰도 ${Math.round((pred.confidence || 0.5) * 100)}%)</p>`);
+      if (Array.isArray(pred.risks) && pred.risks.length > 0) {
+        parts.push(`<p style="font-size:12px;color:#f59e0b;">위험: ${pred.risks.map(escapeHtml).join(' / ')}</p>`);
+      }
+    }
+
+    // 액션 전체
+    if (r.actions && r.actions.length > 0) {
+      parts.push('<h3 style="font-size:13px;font-weight:600;color:var(--text-secondary,#888);letter-spacing:.04em;text-transform:uppercase;margin:16px 0 8px;">액션 제안</h3>');
+      parts.push('<ol style="padding-left:18px;margin:0;">');
+      r.actions.forEach((a) => {
+        const title = typeof a === 'string' ? a : (a.title || '');
+        parts.push(`<li style="font-size:14px;line-height:1.7;">${escapeHtml(title)}</li>`);
+      });
+      parts.push('</ol>');
+    }
+
+    return parts.join('');
+  }
+
+  async function loadInsight(type) {
+    _insightType = type || 'weekly';
+    const endpoint = _insightType === 'monthly' ? '/api/insight-monthly' : '/api/insight-weekly';
+    try {
+      const r = await fetch(endpoint, { headers: authHeaders() });
+      if (r.status === 401) { renderInsight(null); return; }
+      if (!r.ok) { renderInsight(null); return; }
+      const data = await r.json();
+      _insightData = data;
+      renderInsight(data);
+    } catch (_) {
+      renderInsight(null);
+    }
+  }
+
+  function bindInsightWidget() {
+    const toggle = document.getElementById('insightPeriodToggle');
+    if (toggle) {
+      toggle.querySelectorAll('[data-insight]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          toggle.querySelectorAll('[data-insight]').forEach((n) => n.classList.remove('view-toggle__btn--active'));
+          btn.classList.add('view-toggle__btn--active');
+          loadInsight(btn.dataset.insight);
+        });
+      });
+    }
+    const expandBtn = document.getElementById('insightExpandBtn');
+    if (expandBtn) {
+      expandBtn.addEventListener('click', () => {
+        openSlideOver({
+          title: (_insightType === 'weekly' ? '주간' : '월간') + ' AI 인사이트',
+          body: buildInsightSlideoverBody(_insightData),
+          footer: `<a href="/api/insight-on-demand" class="action-agent__cta" style="text-decoration:none;font-size:13px;" onclick="return false;">수동 요청은 명령창에 "인사이트 다시 만들어 줘" 입력</a>`,
+        });
+      });
+    }
+  }
+
   // ─── 메인 dashboard-summary 로드 ───
   async function loadDashboard() {
     try {
@@ -975,12 +1226,18 @@
     bindSlideOver();
     bindCategoryViewToggle();
     bindProfitPeriod();
+    bindSettlementCsv();
     bindKillSwitch();
+    bindInsightWidget();
     renderActionAgents();
     loadDashboard();
     loadCategoryCounts();
     // Profit 위젯은 period 토글에 따라 별도 호출 (초기엔 dashboard-summary의 week값으로 충분, but 통일을 위해 period API 한번 호출)
     setTimeout(() => loadProfitForPeriod('week'), 50);
+    // AI 인사이트 위젯 (주간 기본)
+    setTimeout(() => loadInsight('weekly'), 120);
+    // 정산 위젯 (이달)
+    setTimeout(loadSettlement, 80);
     // Realtime 구독 (Live Stream)
     subscribeRealtime();
     setInterval(loadDashboard, 30000);

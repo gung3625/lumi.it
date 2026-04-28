@@ -381,6 +381,95 @@ async function processRefund({ market_order_id, reason, type, credentials, marke
   return { ok: false, error: '쿠팡 환불 실연동은 곧 지원돼요. 모킹 모드를 활성화해주세요.', retryable: false };
 }
 
+/**
+ * 반품·교환·부분환불 풀 사이클 처리 — 쿠팡 returnRequests 승인 + 환불 트리거
+ * @param {Object} params
+ * @param {string} params.market_order_id
+ * @param {string} [params.reason]
+ * @param {'refund'|'exchange'|'partial_refund'} [params.type='refund']
+ * @param {number} [params.amount] - 부분환불 금액 (KRW)
+ * @param {string} [params.exchange_product_id] - 교환 시 새 상품 ID
+ * @param {Object} [params.credentials]
+ * @param {string} [params.market_seller_id]
+ * @param {boolean} [params.mock]
+ */
+async function processReturn({ market_order_id, reason, type, amount, exchange_product_id, credentials, market_seller_id, mock }) {
+  if (!market_order_id) {
+    return { ok: false, error: '주문번호가 필요해요.', retryable: false };
+  }
+  const t = (type === 'exchange' || type === 'partial_refund') ? type : 'refund';
+  if (t === 'partial_refund' && (!Number.isFinite(amount) || amount <= 0)) {
+    return { ok: false, error: '부분환불 금액은 0원 초과여야 해요.', retryable: false };
+  }
+  if (t === 'exchange' && !exchange_product_id && !mock) {
+    // mock 모드면 통과, 실연동에서 교환 상품 ID 필수
+    if (!isMockMode(mock)) {
+      return { ok: false, error: '교환 처리 시 새 상품 ID가 필요해요.', retryable: false };
+    }
+  }
+  if (isMockMode(mock)) {
+    return {
+      ok: true,
+      mocked: true,
+      market_order_id,
+      type: t,
+      refund_id: `CP_RET_${Date.now()}`,
+      amount: t === 'partial_refund' ? amount : undefined,
+    };
+  }
+  let creds;
+  try {
+    creds = (credentials && credentials.ciphertext) ? decrypt(credentials) : credentials;
+  } catch {
+    return { ok: false, error: '쿠팡 자격증명 복호화 실패', retryable: false };
+  }
+  const vendorId = market_seller_id || creds?.vendorId;
+  if (!vendorId || !creds?.accessKey || !creds?.secretKey) {
+    return { ok: false, error: '쿠팡 자격증명 누락', retryable: false };
+  }
+  // 쿠팡 returnRequests 승인 — POST /v2/providers/openapi/apis/api/v4/vendors/{vendorId}/returnRequests/{receiptId}/approval
+  const path = `/v2/providers/openapi/apis/api/v4/vendors/${vendorId}/returnRequests/${encodeURIComponent(market_order_id)}/approval`;
+  const body = {
+    vendorId,
+    cancelType: t === 'exchange' ? 'EXCHANGE' : (t === 'partial_refund' ? 'PARTIAL_REFUND' : 'CANCEL'),
+    refundAmount: t === 'partial_refund' ? Math.trunc(amount) : undefined,
+    cancelReasonCode: 'CHANGEMIND',
+    cancelReason: reason || '셀러 처리',
+  };
+  const bodyStr = JSON.stringify(body);
+  const { authorization } = signCoupang({ method: 'POST', path, query: '', accessKey: creds.accessKey, secretKey: creds.secretKey });
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 12000);
+  try {
+    const res = await fetch(`${COUPANG_API_HOST}${path}`, {
+      method: 'POST',
+      headers: { Authorization: authorization, 'Content-Type': 'application/json;charset=UTF-8' },
+      body: bodyStr,
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    const txt = await res.text();
+    let json = null; try { json = JSON.parse(txt); } catch { /* */ }
+    if (!res.ok) {
+      const retryable = [408, 429, 500, 502, 503, 504].includes(res.status);
+      return { ok: false, error: json?.message || `쿠팡 반품 처리 실패 (${res.status})`, status: res.status, retryable };
+    }
+    return {
+      ok: true,
+      market_order_id,
+      type: t,
+      refund_id: String(json?.data?.cancelId || json?.data?.receiptId || ''),
+      amount: t === 'partial_refund' ? amount : undefined,
+      raw: json,
+    };
+  } catch (e) {
+    clearTimeout(timeout);
+    const retryable = e.name === 'AbortError' || /ECONN|timeout/i.test(e.message);
+    return { ok: false, error: '쿠팡 반품 처리 네트워크 오류', retryable };
+  }
+}
+
 module.exports = {
   fetchNewOrders,
   normalizeCoupangOrder,
@@ -392,4 +481,5 @@ module.exports = {
   updatePrice,
   updateProduct,
   processRefund,
+  processReturn,
 };
