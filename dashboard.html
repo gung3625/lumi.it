@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>대시보드 — 루미</title>
+  <meta name="description" content="시장 트렌드 + 셀러 운영을 한 화면에" />
+  <meta name="theme-color" content="#FFE7F1" />
+  <link rel="stylesheet" href="/css/sprint4.css" />
+</head>
+<body class="page-dashboard">
+
+  <div class="pc-shell">
+    <!-- PC 사이드바 (768px+) -->
+    <aside class="pc-sidebar" aria-label="메인 메뉴">
+      <a href="/" class="pc-sidebar__brand">루미</a>
+      <nav class="pc-sidebar__nav">
+        <!-- 시장 중심 피벗: 트렌드 1번 -->
+        <a href="/dashboard" class="pc-sidebar__link pc-sidebar__link--active" data-icon="flame">
+          홈 · 트렌드
+        </a>
+        <a href="/trends" class="pc-sidebar__link" data-icon="trending-up">
+          트렌드 분석
+          <span class="pc-sidebar__badge" id="navTrendCount" hidden>NEW</span>
+        </a>
+        <a href="/tasks" class="pc-sidebar__link" data-icon="check-square">
+          처리할 일
+          <span class="pc-sidebar__badge" id="navTaskCount" hidden>0</span>
+        </a>
+        <a href="/orders" class="pc-sidebar__link" data-icon="shopping-bag">주문</a>
+        <a href="/cs-inbox" class="pc-sidebar__link" data-icon="message-circle">CS</a>
+        <a href="/register-product" class="pc-sidebar__link" data-icon="plus-circle">상품 등록</a>
+        <a href="/settings" class="pc-sidebar__link" data-icon="settings">설정</a>
+      </nav>
+    </aside>
+
+    <!-- 메인 -->
+    <main class="pc-main" id="dashboardMain">
+      <!-- 모바일 인사 -->
+      <header class="dash-greeting">
+        <p class="dash-greeting__hello" id="greetHello">안녕하세요</p>
+        <h1 class="dash-greeting__title" id="greetTitle">대시보드를 가져오는 중…</h1>
+      </header>
+
+      <!-- Kill Switch FAB (전 화면 우상단) -->
+      <button class="kill-switch kill-switch--fixed" type="button" id="killSwitchBtn" aria-label="긴급 차단" data-tap-mode="confirm">
+        <span class="kill-switch__dot" aria-hidden="true"></span>
+        <span class="kill-switch__label">긴급 차단</span>
+      </button>
+
+      <div class="pc-grid">
+        <!-- 1. 트렌드 메인 카드 (모바일 1번 + PC 8칸) -->
+        <section class="trend-hero pc-grid__col-8" id="trendHero" aria-live="polite">
+          <h2 class="trend-hero__title">
+            <span aria-hidden="true">🔥</span>
+            <span data-bind="trend_headline">오늘 사장님께 어울리는 키워드</span>
+          </h2>
+          <p class="trend-hero__sub" data-bind="trend_sub">시장에서 지금 뜨고 있는 상품을 골라봤어요</p>
+          <div class="trend-cards" id="trendCards">
+            <div class="empty-trend">트렌드를 불러오는 중…</div>
+          </div>
+          <div class="trend-hero__more">
+            <a href="/trends">전체 트렌드 분석 보기 →</a>
+          </div>
+        </section>
+
+        <!-- 2. Profit Card (모바일 3번 + PC 4칸 우측) -->
+        <section class="profit-card pc-grid__col-4" id="profitCard">
+          <p class="profit-card__label">이번 주 통장에 남는 돈</p>
+          <p class="profit-card__amount" id="profitAmount">₩—</p>
+          <p class="profit-card__delta" id="profitDelta">계산 중…</p>
+          <div class="profit-card__breakdown" id="profitBreakdown" hidden>
+            <div class="profit-card__breakdown-item">
+              <span class="profit-card__breakdown-label">매출</span>
+              <span class="profit-card__breakdown-value" data-bind="gross">—</span>
+            </div>
+            <div class="profit-card__breakdown-item">
+              <span class="profit-card__breakdown-label">마켓 수수료</span>
+              <span class="profit-card__breakdown-value" data-bind="market_fees">—</span>
+            </div>
+            <div class="profit-card__breakdown-item">
+              <span class="profit-card__breakdown-label">광고비</span>
+              <span class="profit-card__breakdown-value" data-bind="ad_spend">—</span>
+            </div>
+            <div class="profit-card__breakdown-item">
+              <span class="profit-card__breakdown-label">포장·송장</span>
+              <span class="profit-card__breakdown-value" data-bind="logistics">—</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. Sync Status (모바일 5번 + PC 4칸) -->
+        <section class="sync-card pc-grid__col-4" id="syncCard">
+          <h3 class="sync-card__headline" id="syncHeadline">마켓 헬스 확인 중…</h3>
+          <div id="syncRows"></div>
+        </section>
+
+        <!-- 4. 처리할 일 (모바일 2번 + PC 4칸) -->
+        <section class="sync-card pc-grid__col-4" id="priorityCard" aria-label="처리할 일">
+          <h3 class="sync-card__headline" id="priorityHeadline">처리할 일을 확인 중…</h3>
+          <div id="priorityRows"></div>
+          <a href="/tasks" class="trend-card__cta" style="margin-top:12px;">전체 보기</a>
+        </section>
+
+        <!-- 5. Live Stream Feed (모바일 5번 + PC 4칸) -->
+        <section class="live-feed pc-grid__col-4" id="liveFeed">
+          <h3 class="live-feed__title" id="liveHeadline">실시간 알림</h3>
+          <div id="liveEvents">
+            <div class="live-feed__empty">최근 알림이 없어요</div>
+          </div>
+        </section>
+
+        <!-- 6. PC 풀 차트 (이번 주 매출 추이, 모바일 숨김) -->
+        <section class="pc-chart pc-grid__col-12" id="profitChart">
+          <h3 class="pc-chart__title">이번 주 매출 추이</h3>
+          <div class="pc-chart__bars" id="chartBars"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- Kill Switch 모달 (Sprint 3 동일) -->
+  <div class="modal" id="killModal" hidden role="dialog" aria-modal="true" aria-labelledby="killModalTitle">
+    <div class="modal__backdrop" data-modal-close></div>
+    <div class="modal__content">
+      <h2 id="killModalTitle" class="modal__title">정말 즉시 중지할까요?</h2>
+      <p class="modal__body">선택한 마켓의 판매가 곧바로 멈춰요. 다시 시작은 같은 자리에서 누르면 돼요.</p>
+      <div class="modal__choices">
+        <label class="choice"><input type="radio" name="killScope" value="market:coupang" /> 쿠팡만 중지</label>
+        <label class="choice"><input type="radio" name="killScope" value="market:naver" /> 네이버만 중지</label>
+        <label class="choice"><input type="radio" name="killScope" value="market:all" checked /> 모든 마켓 중지</label>
+      </div>
+      <div class="modal__actions">
+        <button class="btn btn--ghost" type="button" data-modal-close>취소</button>
+        <button class="btn btn--danger" type="button" id="killConfirm">중지</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.103.3/dist/umd/supabase.min.js"></script>
+  <script src="/js/sprint4-dashboard.js"></script>
+</body>
+</html>
