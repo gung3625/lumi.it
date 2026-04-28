@@ -322,7 +322,12 @@ async function handleKeywordReply(supabase, receivedText, eventType, senderId, i
 
 // business 플랜: AI 자동응답 처리
 // ai_mode=false면 키워드 매칭으로 폴백 (사장님이 AI 토글 끈 상태)
+// Phase 1 게이트: PHASE1_DISABLE_AI_REPLY=true면 분기 진입 자체 차단 (Meta 심사·별도 동의 전 비활성)
 async function handleAIReply(supabase, receivedText, eventType, senderId, igUserId, userId, settings, accessToken, storeName, storeDesc, storeCtx) {
+  if (process.env.PHASE1_DISABLE_AI_REPLY === 'true') {
+    console.log('[meta-webhook] PHASE1_DISABLE_AI_REPLY=true — business AI 자동응답 비활성');
+    return;
+  }
   if (!settings.ai_mode) {
     console.log('[meta-webhook] business plan but ai_mode=false — 키워드 폴백');
     await handleKeywordReply(supabase, receivedText, eventType, senderId, igUserId, userId, settings, accessToken, storeCtx);
