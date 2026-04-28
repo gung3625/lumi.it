@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>오늘 처리할 일 — 루미</title>
+  <meta name="description" content="우선순위 카드로 오늘 해야 할 일만 빠르게" />
+  <meta name="theme-color" content="#FFE7F1" />
+  <link rel="stylesheet" href="/css/sprint3.css" />
+</head>
+<body class="page-tasks">
+  <header class="topbar" role="banner">
+    <a href="/" class="topbar__brand" aria-label="루미 홈">
+      <span class="topbar__logo">루미</span>
+    </a>
+    <nav class="topbar__nav" aria-label="메인">
+      <a href="/tasks">오늘</a>
+      <a href="/orders">주문</a>
+      <a href="/cs-inbox">CS</a>
+    </nav>
+    <button class="kill-switch" type="button" id="killSwitchBtn" aria-label="긴급 차단" data-tap-mode="confirm">
+      <span class="kill-switch__dot" aria-hidden="true"></span>
+      <span class="kill-switch__label">긴급 차단</span>
+    </button>
+  </header>
+
+  <main class="page-main" id="mainContent">
+    <section class="hero">
+      <p class="hero__greeting">안녕하세요, 사장님</p>
+      <h1 class="hero__title" data-bind="ai_message">오늘 처리할 일을 가져오는 중…</h1>
+      <p class="hero__sub" data-bind="totals_summary">잠시만 기다려 주세요</p>
+    </section>
+
+    <section class="filter-chips" aria-label="원터치 필터">
+      <button class="chip chip--active" data-filter="all">전체</button>
+      <button class="chip" data-filter="pending_shipping">송장 입력</button>
+      <button class="chip" data-filter="pending_cs">CS 대기</button>
+      <button class="chip" data-filter="pending_return">반품 처리</button>
+      <button class="chip" data-filter="in_transit">배송 중</button>
+    </section>
+
+    <section class="priority-cards" id="priorityCards" aria-live="polite">
+      <div class="empty-state" data-state="loading">
+        <div class="empty-state__spinner" aria-hidden="true"></div>
+        <p>오늘 할 일을 정리하고 있어요…</p>
+      </div>
+    </section>
+
+    <section class="batch-actions" id="batchActions" hidden>
+      <div class="batch-actions__hint">
+        <strong data-bind="batch_title">AI 제안</strong>
+        <p data-bind="batch_message">송장 미입력 5건을 일괄 처리할 수 있어요.</p>
+      </div>
+      <div class="batch-actions__buttons">
+        <button class="btn btn--primary" type="button" id="batchYes">네, 일괄로</button>
+        <button class="btn btn--ghost" type="button" id="batchSkip">하나씩 볼게요</button>
+      </div>
+    </section>
+
+    <section class="pc-hint" aria-label="PC 안내">
+      <p>PC에서 일괄로 더 빠르게 처리할 수 있어요. <a href="/orders">주문 보드 열기 →</a></p>
+    </section>
+  </main>
+
+  <!-- Kill Switch 확인 모달 -->
+  <div class="modal" id="killModal" hidden role="dialog" aria-modal="true" aria-labelledby="killModalTitle">
+    <div class="modal__backdrop" data-modal-close></div>
+    <div class="modal__content">
+      <h2 id="killModalTitle" class="modal__title">정말 즉시 중지할까요?</h2>
+      <p class="modal__body">선택한 마켓의 판매가 곧바로 멈춰요. 다시 시작은 같은 자리에서 누르면 돼요.</p>
+      <div class="modal__choices">
+        <label class="choice"><input type="radio" name="killScope" value="market:coupang" /> 쿠팡만 중지</label>
+        <label class="choice"><input type="radio" name="killScope" value="market:naver" /> 네이버만 중지</label>
+        <label class="choice"><input type="radio" name="killScope" value="market:all" checked /> 모든 마켓 중지</label>
+      </div>
+      <div class="modal__actions">
+        <button class="btn btn--ghost" type="button" data-modal-close>취소</button>
+        <button class="btn btn--danger" type="button" id="killConfirm">중지</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/sprint3-tasks.js"></script>
+</body>
+</html>
