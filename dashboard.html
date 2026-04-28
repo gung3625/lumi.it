@@ -4,227 +4,270 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>대시보드 — 루미</title>
-  <meta name="description" content="명령창 + Action Agent + 카테고리 카운트 — 루미 작업대" />
+  <meta name="description" content="채팅형 명령창으로 오늘 가게의 모든 일을 처리해요" />
   <meta name="theme-color" content="#FFE7F1" />
   <link rel="icon" href="/assets/logo-cloud.png" />
   <link rel="stylesheet" href="/css/brand-tokens.css" />
   <link rel="stylesheet" href="/css/dashboard-canvas.css" />
+  <link rel="stylesheet" href="/css/dashboard-chat.css" />
 </head>
-<body class="page-dashboard">
+<body class="page-dashboard page-dashboard-chat">
 
-  <div class="canvas-shell">
-    <!-- 사이드바 (PC 768px+) -->
-    <aside class="canvas-sidebar" aria-label="메인 메뉴">
-      <a href="/" class="canvas-sidebar__brand" aria-label="루미 홈">
-        <img src="/assets/logo-wordmark.png" alt="루미" />
-      </a>
-      <nav class="canvas-nav" aria-label="대시보드 메뉴">
-        <span class="canvas-nav__group-label">시장</span>
-        <a href="/dashboard" class="canvas-nav__link canvas-nav__link--active">
-          <span class="canvas-nav__icon">●</span>
-          <span>홈 · 트렌드</span>
-        </a>
-        <a href="/trends" class="canvas-nav__link">
-          <span class="canvas-nav__icon">↗</span>
-          <span>트렌드 분석</span>
-        </a>
+  <div class="chat-shell">
 
-        <span class="canvas-nav__group-label">운영</span>
-        <a href="/register-product" class="canvas-nav__link">
-          <span class="canvas-nav__icon">+</span>
-          <span>상품</span>
+    <!-- ==================== 좌측: 업무 히스토리 사이드바 ==================== -->
+    <aside class="chat-sidebar" id="chatSidebar" aria-label="업무 히스토리">
+      <div class="chat-sidebar__top">
+        <a href="/" class="chat-sidebar__brand" aria-label="루미 홈">
+          <img src="/assets/logo-cloud.png" alt="" />
+          <span>루미</span>
         </a>
-        <a href="/orders" class="canvas-nav__link">
-          <span class="canvas-nav__icon">○</span>
-          <span>주문</span>
-        </a>
-        <a href="/tasks" class="canvas-nav__link">
-          <span class="canvas-nav__icon">!</span>
-          <span>처리할 일</span>
-          <span class="canvas-nav__badge" id="navTaskBadge" hidden>0</span>
-        </a>
-        <a href="/cs-inbox" class="canvas-nav__link">
-          <span class="canvas-nav__icon">✉</span>
-          <span>CS</span>
-        </a>
+        <button type="button" class="chat-sidebar__new" id="newCommandBtn" aria-label="새 명령">
+          <span class="chat-sidebar__new-icon">+</span>
+          <span>새 명령</span>
+        </button>
+      </div>
 
-        <span class="canvas-nav__group-label">재고·통계</span>
-        <a href="/orders" class="canvas-nav__link">
-          <span class="canvas-nav__icon">▦</span>
-          <span>재고</span>
+      <div class="chat-sidebar__scroll" id="sidebarScroll">
+        <!-- 즐겨찾기 영역 -->
+        <section class="chat-sidebar__section" aria-label="즐겨찾기">
+          <h3 class="chat-sidebar__section-title">즐겨찾기</h3>
+          <div class="chat-sidebar__list" id="sidebarFavorites">
+            <div class="chat-sidebar__empty">불러오는 중…</div>
+          </div>
+        </section>
+
+        <!-- 히스토리 영역 (오늘 / 어제 / 7일 / 30일) -->
+        <section class="chat-sidebar__section" aria-label="업무 히스토리">
+          <h3 class="chat-sidebar__section-title">업무 히스토리</h3>
+          <div id="sidebarHistory">
+            <div class="chat-sidebar__empty">아직 내역이 없어요. 명령창에 입력해 보세요</div>
+          </div>
+        </section>
+      </div>
+
+      <div class="chat-sidebar__bottom">
+        <a href="/settings" class="chat-sidebar__bottom-link">
+          <span>⚙</span><span>설정</span>
         </a>
-        <a href="/orders" class="canvas-nav__link">
-          <span class="canvas-nav__icon">≡</span>
-          <span>통계</span>
+        <a href="/" class="chat-sidebar__bottom-link" id="logoutLink">
+          <span>↗</span><span>로그아웃</span>
         </a>
-        <a href="/settings" class="canvas-nav__link">
-          <span class="canvas-nav__icon">⚙</span>
-          <span>설정</span>
-        </a>
-      </nav>
+      </div>
     </aside>
 
-    <!-- 메인 캔버스 -->
-    <main class="canvas-main" id="canvasMain">
+    <!-- 모바일 사이드바 backdrop -->
+    <div class="chat-sidebar__backdrop" id="chatSidebarBackdrop"></div>
 
-      <!-- D. Action Agent TopBar (mock 3개, 사용자 닫기 가능) -->
-      <div class="action-agent-stack" id="actionAgentStack" aria-label="루미가 발견한 자동화 기회"></div>
+    <!-- ==================== 우측: 메인 영역 ==================== -->
+    <main class="chat-main" id="chatMain">
 
-      <!-- A. Command Palette (메인 명령창 — ChatGPT 스타일) -->
-      <section class="command-hero" aria-label="명령창">
-        <div class="command-hero__inner">
-          <p class="command-hero__greeting" id="greetHello">오늘 사장님의 시장</p>
-          <h1 class="command-hero__title" id="greetTitle">루미에게 말씀하세요</h1>
-
-          <button type="button" class="command-input" id="cmdHeroTrigger" aria-label="명령 입력 열기">
-            <span class="command-input__icon">⌕</span>
-            <span class="command-input__placeholder">이 명령은 곧 실행됩니다 — 검색·메뉴 이동은 지금 작동해요</span>
-            <span class="command-input__kbd">⌘ K</span>
-          </button>
-
-          <div class="suggest-cards" aria-label="시작 명령 예시">
-            <button class="suggest-card" type="button" data-suggest="상품 등록">상품 등록</button>
-            <button class="suggest-card" type="button" data-suggest="오늘 주문">오늘 주문</button>
-            <button class="suggest-card" type="button" data-suggest="트렌드">오늘 뜨는 키워드</button>
-            <button class="suggest-card" type="button" data-suggest="CS">CS 인박스</button>
-            <button class="suggest-card" type="button" data-suggest="처리할 일">처리할 일</button>
+      <!-- ────── Top Action Agent (자동 제안 1줄) ────── -->
+      <div class="top-action-agent" id="topActionAgent" aria-live="polite" hidden>
+        <div class="top-action-agent__inner">
+          <span class="top-action-agent__avatar" aria-hidden="true">
+            <img src="/assets/logo-cloud.png" alt="" />
+          </span>
+          <p class="top-action-agent__msg" id="topAgentMsg">루미가 오늘의 첫 제안을 준비 중이에요</p>
+          <div class="top-action-agent__actions">
+            <button type="button" class="top-action-agent__yes" id="topAgentYes">예</button>
+            <button type="button" class="top-action-agent__no" id="topAgentNo" aria-label="다음 제안">→</button>
           </div>
+        </div>
+      </div>
+
+      <!-- ────── 모바일 헤더 (햄버거 + 타이틀) ────── -->
+      <header class="chat-mobile-header">
+        <button type="button" class="chat-mobile-header__menu" id="mobileMenuBtn" aria-label="메뉴">
+          <span></span><span></span><span></span>
+        </button>
+        <div class="chat-mobile-header__title">루미 명령창</div>
+        <button type="button" class="chat-mobile-header__theme" id="mobileThemeBtn" aria-label="다크 모드">☾</button>
+      </header>
+
+      <!-- ────── 캔버스: 결과 영역 ────── -->
+      <section class="canvas-area" id="canvasArea" aria-label="결과 캔버스">
+        <!-- 기본 = 오늘 요약. 명령 입력 시 = 결과 카드로 갱신 -->
+
+        <!-- 인사 + 미니 헤드 -->
+        <div class="canvas-greet" id="canvasGreet">
+          <p class="canvas-greet__hello" id="greetHello">오늘 사장님의 시장</p>
+          <h1 class="canvas-greet__title" id="greetTitle">무엇을 도와드릴까요?</h1>
+          <p class="canvas-greet__sub">아래 명령창에 자연어로 입력하시거나, 즐겨찾기를 눌러 보세요</p>
+        </div>
+
+        <!-- 오늘 요약 위젯들 (기본 진입 화면) -->
+        <div class="canvas-default" id="canvasDefault">
+
+          <!-- 카테고리별 상품 카운트 -->
+          <section class="widget" id="categoryWidget" aria-label="내 상품 카테고리">
+            <div class="widget__header">
+              <div>
+                <h2 class="widget__title">내 상품</h2>
+                <p class="widget__subtitle">카테고리·마켓 분포</p>
+              </div>
+              <div class="view-toggle" id="catViewToggle" role="tablist" aria-label="뷰 전환">
+                <button class="view-toggle__btn view-toggle__btn--active" type="button" data-view="list" role="tab">List</button>
+                <button class="view-toggle__btn" type="button" data-view="tree" role="tab">Tree</button>
+                <button class="view-toggle__btn" type="button" data-view="chart" role="tab">Chart</button>
+              </div>
+            </div>
+            <div class="cat-widget__total">
+              <span class="cat-widget__total-num" id="catTotalNum">0</span>
+              <span class="cat-widget__total-label">개 등록</span>
+            </div>
+            <div class="cat-widget__market-row" id="catMarketRow"></div>
+            <div id="catBody"></div>
+          </section>
+
+          <!-- 트렌드 카드 -->
+          <section class="widget" aria-label="오늘 뜨는 상품">
+            <div class="widget__header">
+              <div>
+                <h2 class="widget__title">오늘 뜨는 상품</h2>
+                <p class="widget__subtitle">시장에서 지금 급상승</p>
+              </div>
+              <a href="/trends" class="widget__action">전체 →</a>
+            </div>
+            <div class="trend-cards-canvas" id="trendCanvasCards">
+              <div class="widget__empty">트렌드를 불러오는 중…</div>
+            </div>
+          </section>
+
+          <!-- Profit -->
+          <section class="widget" aria-label="실수익">
+            <div class="widget__header">
+              <div>
+                <h2 class="widget__title">통장에 남는 돈</h2>
+                <p class="widget__subtitle" id="profitSubtitle">이번 주 · 수수료·광고·포장 차감</p>
+              </div>
+              <div class="view-toggle" id="profitPeriodToggle" role="tablist" aria-label="기간 전환">
+                <button class="view-toggle__btn" type="button" data-period="day" role="tab">오늘</button>
+                <button class="view-toggle__btn view-toggle__btn--active" type="button" data-period="week" role="tab">이번 주</button>
+                <button class="view-toggle__btn" type="button" data-period="month" role="tab">이번 달</button>
+              </div>
+            </div>
+            <div class="profit-canvas">
+              <p class="profit-canvas__amount" id="profitCanvasAmount">₩—</p>
+              <p class="profit-canvas__delta" id="profitCanvasDelta">계산 중…</p>
+              <div class="profit-breakdown" id="profitBreakdownList" hidden></div>
+            </div>
+          </section>
+
+          <!-- 우선순위 큐 -->
+          <section class="widget" aria-label="처리할 일 우선순위">
+            <div class="widget__header">
+              <div>
+                <h2 class="widget__title">처리할 일</h2>
+                <p class="widget__subtitle" id="priorityHint">긴급·VIP·일반 자동 정렬</p>
+              </div>
+              <a href="/tasks" class="widget__action">전체 →</a>
+            </div>
+            <div class="priority-cols" id="priorityCols">
+              <div class="priority-col" data-bucket="urgent">
+                <div class="priority-col__head">
+                  <span class="priority-col__dot priority-col__dot--urgent"></span>
+                  <span class="priority-col__label">긴급</span>
+                  <span class="priority-col__count" id="priorityUrgentCount">0</span>
+                </div>
+                <div class="priority-col__list" id="priorityUrgent">
+                  <div class="widget__empty">없음</div>
+                </div>
+              </div>
+              <div class="priority-col" data-bucket="vip">
+                <div class="priority-col__head">
+                  <span class="priority-col__dot priority-col__dot--vip"></span>
+                  <span class="priority-col__label">VIP</span>
+                  <span class="priority-col__count" id="priorityVipCount">0</span>
+                </div>
+                <div class="priority-col__list" id="priorityVip">
+                  <div class="widget__empty">없음</div>
+                </div>
+              </div>
+              <div class="priority-col" data-bucket="normal">
+                <div class="priority-col__head">
+                  <span class="priority-col__dot priority-col__dot--normal"></span>
+                  <span class="priority-col__label">일반</span>
+                  <span class="priority-col__count" id="priorityNormalCount">0</span>
+                </div>
+                <div class="priority-col__list" id="priorityNormal">
+                  <div class="widget__empty">없음</div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Live Stream -->
+          <section class="widget" aria-label="실시간 알림">
+            <div class="widget__header">
+              <div>
+                <h2 class="widget__title">실시간 알림</h2>
+                <p class="widget__subtitle" id="liveSubtitle">새 이벤트가 위에서 슬라이드 인</p>
+              </div>
+              <span class="live-stream__indicator" id="liveIndicator" aria-live="polite">
+                <span class="live-stream__pulse"></span>
+                <span id="liveStatus">대기 중</span>
+              </span>
+            </div>
+            <div class="live-stream" id="liveStream">
+              <div class="widget__empty">최근 알림이 없어요</div>
+            </div>
+          </section>
+
+          <!-- Kill Switch -->
+          <section class="widget widget--kill" aria-label="긴급 차단">
+            <div class="widget__header">
+              <div>
+                <h2 class="widget__title">긴급 차단</h2>
+                <p class="widget__subtitle">위험 발견 시 1탭 정지</p>
+              </div>
+            </div>
+            <div class="kill-switch">
+              <p class="kill-switch__desc">광고비 폭주·CS 폭주 등 위험 발견 시 마켓 판매를 즉시 멈춰요</p>
+              <button type="button" class="kill-switch__btn" id="killSwitchOpen">긴급 차단 열기</button>
+            </div>
+          </section>
+
+        </div>
+
+        <!-- 명령 결과 카드 (명령 입력 시 갱신) -->
+        <div class="canvas-result" id="canvasResult" hidden>
+          <!-- JS로 동적 채움 -->
         </div>
       </section>
 
-      <!-- 위젯 그리드 -->
-      <div class="widget-grid">
+      <!-- ────── 하단: Command Line (메인 자리, 항상 노출) ────── -->
+      <div class="chat-command" id="chatCommand">
 
-        <!-- 카테고리별 상품 카운트 (필수) -->
-        <section class="widget widget--6" id="categoryWidget" aria-label="내 상품 카테고리">
-          <div class="widget__header">
-            <div>
-              <h2 class="widget__title">내 상품</h2>
-              <p class="widget__subtitle">카테고리·마켓 분포</p>
-            </div>
-            <div class="view-toggle" id="catViewToggle" role="tablist" aria-label="뷰 전환">
-              <button class="view-toggle__btn view-toggle__btn--active" type="button" data-view="list" role="tab">List</button>
-              <button class="view-toggle__btn" type="button" data-view="tree" role="tab">Tree</button>
-              <button class="view-toggle__btn" type="button" data-view="chart" role="tab">Chart</button>
-            </div>
-          </div>
+        <!-- Suggest Cards (입력 비어있을 때) -->
+        <div class="chat-suggests" id="chatSuggests">
+          <button class="chat-suggest" type="button" data-suggest="오늘 뜨는 상품 추천해 줘">오늘 뜨는 상품</button>
+          <button class="chat-suggest" type="button" data-suggest="쿠팡 가격 점검해 줘">쿠팡 가격 점검</button>
+          <button class="chat-suggest" type="button" data-suggest="재고 5개 이하 상품">재고 부족</button>
+          <button class="chat-suggest" type="button" data-suggest="이번 주 매출">이번 주 매출</button>
+          <button class="chat-suggest" type="button" data-suggest="오늘 날씨">날씨</button>
+          <button class="chat-suggest" type="button" data-suggest="환율">환율</button>
+        </div>
 
-          <div class="cat-widget__total">
-            <span class="cat-widget__total-num" id="catTotalNum">0</span>
-            <span class="cat-widget__total-label">개 등록</span>
-          </div>
-          <div class="cat-widget__market-row" id="catMarketRow"></div>
-          <div id="catBody"></div>
-        </section>
-
-        <!-- 트렌드 카드 (시장 중심 1번) -->
-        <section class="widget widget--6" aria-label="오늘 뜨는 상품">
-          <div class="widget__header">
-            <div>
-              <h2 class="widget__title">오늘 뜨는 상품</h2>
-              <p class="widget__subtitle">시장에서 지금 급상승 중 — 클릭하면 등록</p>
-            </div>
-            <a href="/trends" class="widget__action">전체 트렌드 →</a>
-          </div>
-          <div class="trend-cards-canvas" id="trendCanvasCards">
-            <div class="widget__empty">트렌드를 불러오는 중…</div>
-          </div>
-        </section>
-
-        <!-- Profit (오늘·이번 주·이번 달 토글) -->
-        <section class="widget widget--6" aria-label="실수익">
-          <div class="widget__header">
-            <div>
-              <h2 class="widget__title">통장에 남는 돈</h2>
-              <p class="widget__subtitle" id="profitSubtitle">이번 주 · 수수료·광고·포장 차감</p>
-            </div>
-            <div class="view-toggle" id="profitPeriodToggle" role="tablist" aria-label="기간 전환">
-              <button class="view-toggle__btn" type="button" data-period="day" role="tab">오늘</button>
-              <button class="view-toggle__btn view-toggle__btn--active" type="button" data-period="week" role="tab">이번 주</button>
-              <button class="view-toggle__btn" type="button" data-period="month" role="tab">이번 달</button>
-            </div>
-          </div>
-          <div class="profit-canvas">
-            <p class="profit-canvas__amount" id="profitCanvasAmount">₩—</p>
-            <p class="profit-canvas__delta" id="profitCanvasDelta">계산 중…</p>
-            <div class="profit-breakdown" id="profitBreakdownList" hidden></div>
-          </div>
-        </section>
-
-        <!-- 우선순위 큐 (긴급·VIP·일반) -->
-        <section class="widget widget--8" aria-label="처리할 일 우선순위">
-          <div class="widget__header">
-            <div>
-              <h2 class="widget__title">처리할 일</h2>
-              <p class="widget__subtitle" id="priorityHint">긴급·VIP·일반 자동 정렬</p>
-            </div>
-            <a href="/tasks" class="widget__action">전체 →</a>
-          </div>
-          <div class="priority-cols" id="priorityCols">
-            <div class="priority-col" data-bucket="urgent">
-              <div class="priority-col__head">
-                <span class="priority-col__dot priority-col__dot--urgent"></span>
-                <span class="priority-col__label">긴급</span>
-                <span class="priority-col__count" id="priorityUrgentCount">0</span>
-              </div>
-              <div class="priority-col__list" id="priorityUrgent">
-                <div class="widget__empty">없음</div>
-              </div>
-            </div>
-            <div class="priority-col" data-bucket="vip">
-              <div class="priority-col__head">
-                <span class="priority-col__dot priority-col__dot--vip"></span>
-                <span class="priority-col__label">VIP</span>
-                <span class="priority-col__count" id="priorityVipCount">0</span>
-              </div>
-              <div class="priority-col__list" id="priorityVip">
-                <div class="widget__empty">없음</div>
-              </div>
-            </div>
-            <div class="priority-col" data-bucket="normal">
-              <div class="priority-col__head">
-                <span class="priority-col__dot priority-col__dot--normal"></span>
-                <span class="priority-col__label">일반</span>
-                <span class="priority-col__count" id="priorityNormalCount">0</span>
-              </div>
-              <div class="priority-col__list" id="priorityNormal">
-                <div class="widget__empty">없음</div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- Kill Switch (위험 상품 즉시 정지) -->
-        <section class="widget widget--4" aria-label="긴급 차단">
-          <div class="widget__header">
-            <div>
-              <h2 class="widget__title">긴급 차단</h2>
-              <p class="widget__subtitle">위험 발견 시 1탭 정지</p>
-            </div>
-          </div>
-          <div class="kill-switch">
-            <p class="kill-switch__desc">광고비 폭주·CS 폭주 등 위험 발견 시 마켓 판매를 즉시 멈춰요</p>
-            <button type="button" class="kill-switch__btn" id="killSwitchOpen">긴급 차단 열기</button>
-          </div>
-        </section>
-
-        <!-- Live Stream Feed (Supabase Realtime) -->
-        <section class="widget widget--full" aria-label="실시간 알림">
-          <div class="widget__header">
-            <div>
-              <h2 class="widget__title">실시간 알림</h2>
-              <p class="widget__subtitle" id="liveSubtitle">주문·반품·CS — 새 이벤트가 위에서 슬라이드 인</p>
-            </div>
-            <span class="live-stream__indicator" id="liveIndicator" aria-live="polite">
-              <span class="live-stream__pulse"></span>
-              <span id="liveStatus">대기 중</span>
-            </span>
-          </div>
-          <div class="live-stream" id="liveStream">
-            <div class="widget__empty">최근 알림이 없어요</div>
-          </div>
-        </section>
-
+        <form class="chat-input-form" id="chatForm" autocomplete="off">
+          <button type="button" class="chat-input-attach" id="chatAttach" aria-label="첨부 (사진·파일)" title="첨부 (사진·파일)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 17.93 8.83l-8.59 8.57a2 2 0 1 1-2.83-2.83l8.49-8.48"/></svg>
+          </button>
+          <input type="file" id="chatFile" accept="image/*" hidden />
+          <textarea
+            class="chat-input"
+            id="chatInput"
+            placeholder="명령을 입력하세요. 예: '오늘 뜨는 상품', '쿠팡 가격 500원 내려'"
+            rows="1"
+            maxlength="500"
+            aria-label="명령 입력"
+          ></textarea>
+          <span class="chat-kbd" aria-hidden="true">⌘ K</span>
+          <button type="submit" class="chat-input-send" id="chatSend" aria-label="명령 보내기" disabled>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l14 0"/><path d="M13 6l6 6-6 6"/></svg>
+          </button>
+        </form>
+        <p class="chat-hint" id="chatHint">베타 단계 — 명령 분류·외부 API·계산은 작동, 마켓 자동 실행은 정식 출시 시</p>
       </div>
 
       <!-- Kill Switch 모달 -->
@@ -257,68 +300,27 @@
         </div>
       </div>
 
+      <!-- Progressive Detail SlideOver -->
+      <div class="slideover" id="slideover" role="dialog" aria-modal="true" aria-labelledby="slideoverTitle">
+        <div class="slideover__backdrop"></div>
+        <div class="slideover__panel">
+          <div class="slideover__header">
+            <h2 class="slideover__title" id="slideoverTitle">상세</h2>
+            <button class="slideover__close" type="button" id="slideoverClose" aria-label="닫기">×</button>
+          </div>
+          <div class="slideover__body" id="slideoverBody"></div>
+          <div class="slideover__footer" id="slideoverFooter"></div>
+        </div>
+      </div>
+
     </main>
   </div>
 
-  <!-- 하단 탭바 (모바일 768px 이하) -->
-  <nav class="canvas-tabbar" aria-label="모바일 메뉴">
-    <a href="/dashboard" class="canvas-tabbar__link canvas-tabbar__link--active">
-      <span class="canvas-tabbar__icon">●</span>
-      <span>홈</span>
-    </a>
-    <a href="/trends" class="canvas-tabbar__link">
-      <span class="canvas-tabbar__icon">↗</span>
-      <span>트렌드</span>
-    </a>
-    <a href="/register-product" class="canvas-tabbar__link">
-      <span class="canvas-tabbar__icon">+</span>
-      <span>등록</span>
-    </a>
-    <a href="/orders" class="canvas-tabbar__link">
-      <span class="canvas-tabbar__icon">○</span>
-      <span>주문</span>
-    </a>
-    <a href="/cs-inbox" class="canvas-tabbar__link">
-      <span class="canvas-tabbar__icon">✉</span>
-      <span>CS</span>
-    </a>
-  </nav>
-
-  <!-- A. Command Palette (⌘K) Modal -->
-  <div class="cmdk" id="cmdk" role="dialog" aria-modal="true" aria-label="명령창">
-    <div class="cmdk__panel">
-      <div class="cmdk__header">
-        <span class="cmdk__icon">⌕</span>
-        <input type="text" class="cmdk__input" id="cmdkInput" placeholder="명령 또는 검색어를 입력하세요…" autocomplete="off" />
-        <button class="cmdk__close" type="button" id="cmdkClose" aria-label="닫기">esc</button>
-      </div>
-      <div class="cmdk__list" id="cmdkList"></div>
-      <div class="cmdk__footer">
-        <span><kbd>↑</kbd><kbd>↓</kbd> 이동</span>
-        <span><kbd>↵</kbd> 실행</span>
-        <span><kbd>esc</kbd> 닫기</span>
-        <span style="margin-left:auto;">베타: 자연어 명령은 정식 출시 시 작동</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- B. Progressive Detail SlideOver -->
-  <div class="slideover" id="slideover" role="dialog" aria-modal="true" aria-labelledby="slideoverTitle">
-    <div class="slideover__backdrop"></div>
-    <div class="slideover__panel">
-      <div class="slideover__header">
-        <h2 class="slideover__title" id="slideoverTitle">상세</h2>
-        <button class="slideover__close" type="button" id="slideoverClose" aria-label="닫기">×</button>
-      </div>
-      <div class="slideover__body" id="slideoverBody"></div>
-      <div class="slideover__footer" id="slideoverFooter"></div>
-    </div>
-  </div>
-
-  <!-- 다크 모드 토글 FAB -->
+  <!-- 다크 모드 토글 FAB (PC 우하단) -->
   <button class="theme-fab" id="themeFab" type="button" aria-label="다크 모드 전환">☾</button>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.103.3/dist/umd/supabase.min.js"></script>
   <script src="/js/dashboard-canvas.js"></script>
+  <script src="/js/dashboard-chat.js"></script>
 </body>
 </html>
