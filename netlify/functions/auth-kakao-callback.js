@@ -174,7 +174,7 @@ exports.handler = async (event) => {
 
     return errorRedirect('로그인 링크 생성에 실패했습니다.');
   } catch (err) {
-    console.error('[auth-kakao-callback] 예외:', err.message);
-    return errorRedirect('카카오 로그인 처리 중 오류가 발생했습니다.');
+    console.error('[auth-kakao-callback] 예외:', err.message, err.stack);
+    return errorRedirect(`카카오 처리 예외: ${(err.message || 'unknown').slice(0, 200)}`);
   }
 };
