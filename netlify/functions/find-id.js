@@ -1,6 +1,7 @@
 const { getAdminClient } = require('./_shared/supabase-admin');
+const { corsHeaders, getOrigin } = require('./_shared/auth');
 
-const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Content-Type': 'application/json' };
+// H5 — CORS는 handler 안에서 동적 origin 화이트리스트 적용
 
 // fail-closed 전환: 재시도 후에도 실패하면 429 차단.
 async function checkRateLimit(supabase, kind, ip, { windowSeconds = 600, max = 5 } = {}) {
@@ -46,6 +47,7 @@ async function checkRateLimit(supabase, kind, ip, { windowSeconds = 600, max = 5
 }
 
 exports.handler = async (event) => {
+  const CORS = { ...corsHeaders(getOrigin(event)), 'Content-Type': 'application/json' };
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method not allowed' }) };

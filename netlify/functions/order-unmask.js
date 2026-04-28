@@ -15,11 +15,12 @@ exports.handler = async (event) => {
   }
 
   const tok = (event.headers.authorization || event.headers.Authorization || '').replace(/^Bearer\s+/i, '');
-  let claims;
-  try { claims = verifySellerToken(tok); } catch {
+  // H4 — verifySellerToken은 throw 안 함, payload·error 객체 반환
+  const { payload, error: jwtErr } = verifySellerToken(tok);
+  if (jwtErr || !payload?.seller_id) {
     return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증이 필요합니다.' }) };
   }
-  const sellerId = claims.seller_id;
+  const sellerId = payload.seller_id;
 
   let body = {};
   try { body = JSON.parse(event.body || '{}'); } catch { /* ignore */ }

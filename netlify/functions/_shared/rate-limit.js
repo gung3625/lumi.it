@@ -36,8 +36,9 @@ async function checkLimit(sellerId, tierKey) {
 
   let admin;
   try { admin = getAdminClient(); } catch (_) {
-    // DB 미가용 시 통과 (fail-open) — 모니터링 별도
-    return { allowed: true, used: 0, limit: limit.daily };
+    // H3 — DB 미가용 시 fail-closed (LLM 비용 폭주 방지)
+    console.error('[rate-limit] DB unavailable — fail-closed for cost protection');
+    return { allowed: false, used: 0, limit: limit.daily, reason: '시스템 점검 중이에요. 잠시 후 다시 시도해 주세요.' };
   }
 
   try {
@@ -66,6 +67,8 @@ async function checkLimit(sellerId, tierKey) {
 
 /**
  * Tier 한도 차감 (호출 후 카운터 +1)
+ * Race-safe: bump_rate_limit_atomic RPC 사용 (INSERT ... ON CONFLICT DO UPDATE)
+ * RPC 미배포 시 SELECT-then-UPDATE fallback (legacy)
  */
 async function bumpLimit(sellerId, tierKey) {
   if (!sellerId || !tierKey) return;
@@ -74,7 +77,13 @@ async function bumpLimit(sellerId, tierKey) {
 
   const today = todayDateString();
   try {
-    // upsert: 동일 (seller_id, tier_key, bucket_date) 있으면 call_count + 1
+    const { error: rpcErr } = await admin.rpc('bump_rate_limit_atomic', {
+      p_seller_id: sellerId,
+      p_tier_key: tierKey,
+      p_bucket_date: today,
+    });
+    if (!rpcErr) return;
+    // RPC 미배포(404)·권한 오류 → fallback (best-effort, race 가능)
     const { data: existing } = await admin
       .from('rate_limit_counters')
       .select('id, call_count')
@@ -82,7 +91,6 @@ async function bumpLimit(sellerId, tierKey) {
       .eq('tier_key', tierKey)
       .eq('bucket_date', today)
       .maybeSingle();
-
     if (existing) {
       await admin
         .from('rate_limit_counters')

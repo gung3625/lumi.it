@@ -1,6 +1,7 @@
 const { getAdminClient } = require('./_shared/supabase-admin');
+const { corsHeaders, getOrigin } = require('./_shared/auth');
 
-const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Content-Type': 'application/json' };
+// H5 — CORS는 handler 안에서 동적 origin 화이트리스트 적용 (corsHeaders + getOrigin)
 
 // fail-closed 전환: 정상 쿼리 실패 시 1회 재시도 후에도 실패하면 차단.
 // 공격자가 rate_limits 테이블을 DOS해서 무제한 요청을 통과시키는 것 방지.
@@ -76,6 +77,7 @@ function toSafeUser(profile, hasIg) {
 }
 
 exports.handler = async (event) => {
+  const CORS = { ...corsHeaders(getOrigin(event)), 'Content-Type': 'application/json' };
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method not allowed' }) };
