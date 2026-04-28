@@ -17,6 +17,7 @@
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
   <link rel="stylesheet" href="/css/onboarding-tokens.css" />
   <link rel="stylesheet" href="/css/register-product.css" />
+  <link rel="stylesheet" href="/css/canvas.css" />
 </head>
 <body>
 
@@ -34,8 +35,27 @@
           <span class="rp-progress-step" data-progress-step></span>
         </div>
       </div>
-      <a href="/" class="rp-cancel">취소</a>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button class="cmdk-trigger" type="button" data-cmdk-open aria-label="명령창 열기">
+          <span aria-hidden="true">⌘</span>
+          <span>명령</span>
+          <kbd>⌘K</kbd>
+        </button>
+        <a href="/" class="rp-cancel">취소</a>
+      </div>
     </header>
+
+    <!-- D. Action Agent — 트렌드 카테고리 추천 -->
+    <section class="action-agent" id="actionAgent" aria-live="polite">
+      <span class="action-agent__icon" aria-hidden="true">
+        <img src="/assets/logo-cloud.png" alt="" />
+      </span>
+      <div class="action-agent__text">
+        <strong>트렌드 +400% 카테고리 발견</strong> · 어버이날 D-14, 카네이션 키워드 급상승
+      </div>
+      <button class="action-agent__cta" type="button" data-action-cta>관련 상품 등록</button>
+      <button class="action-agent__dismiss" type="button" data-action-dismiss aria-label="제안 닫기">×</button>
+    </section>
 
     <div class="rp-body">
 
@@ -126,16 +146,26 @@
               </div>
             </article>
 
-            <!-- 카드 2: 카테고리 -->
+            <!-- 카드 2: 카테고리 (번개장터 패턴 — [변경] 항상 노출, 신뢰도 별점·%) -->
             <article class="rp-rcard" data-rcard data-card-id="category" style="z-index:4;">
               <div class="rp-rcard-step">2 / 5</div>
               <h2 class="rp-rcard-question">카테고리도 어울리나요?</h2>
               <div class="rp-rcard-content">
                 <p class="rp-rcard-label">쿠팡</p>
                 <p class="rp-rcard-value" data-bind="category-coupang">—</p>
+                <div class="confidence-row">
+                  <span class="confidence-row__stars" aria-hidden="true">★★★★★</span>
+                  <span class="confidence-row__pct" data-confidence-pct="coupang">95%</span>
+                  <button type="button" class="confidence-row__change" data-change-category="coupang">변경</button>
+                </div>
                 <p class="rp-rcard-label" style="margin-top:14px;">네이버</p>
                 <p class="rp-rcard-value" data-bind="category-naver">—</p>
-                <p class="rp-rcard-meta" data-bind="category-confidence">—</p>
+                <div class="confidence-row">
+                  <span class="confidence-row__stars" aria-hidden="true">★★★★★</span>
+                  <span class="confidence-row__pct" data-confidence-pct="naver">95%</span>
+                  <button type="button" class="confidence-row__change" data-change-category="naver">변경</button>
+                </div>
+                <p class="rp-rcard-meta" data-bind="category-confidence">사장님이 바꿀수록 루미가 똑똑해져요</p>
               </div>
               <div class="rp-rcard-actions">
                 <button class="rp-rcard-no" data-card-action="reject"><i data-lucide="x"></i> 다시</button>
@@ -266,6 +296,85 @@
     </div>
   </main>
 
+  <script src="/js/canvas.js" defer></script>
   <script src="/js/register-product.js" defer></script>
+  <script defer>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!window.LumiCanvas) return;
+      window.LumiCanvas.init({
+        commands: [
+          { section: '등록', icon: '📷', title: '사진 업로드', sub: '카메라 또는 갤러리', action: () => document.getElementById('photo-input')?.click() },
+          { section: '등록', icon: '🔥', title: '트렌드 카테고리', sub: '+400% 카네이션', action: () => location.href = '/dashboard?focus=trend' },
+          { section: '등록', icon: '✨', title: '루미에게 맡기기', action: () => document.querySelector('[data-action="upload-and-analyze"]')?.click() },
+          { section: '이동', icon: '🏠', title: '대시보드', href: '/dashboard' },
+          { section: '이동', icon: '📦', title: '주문 보드', href: '/orders' },
+          { section: '이동', icon: '🔁', title: '마이그레이션', href: '/migration-wizard.html' },
+          { section: '이동', icon: '✓', title: '오늘 처리할 일', href: '/tasks' },
+        ],
+      });
+
+      // Action Agent
+      document.querySelector('[data-action-cta]')?.addEventListener('click', () => {
+        location.href = '/dashboard?focus=trend';
+      });
+      document.querySelector('[data-action-dismiss]')?.addEventListener('click', () => {
+        document.getElementById('actionAgent').style.display = 'none';
+      });
+
+      // 카테고리 변경 슬라이드오버 (번개장터 패턴)
+      const categoryTree = [
+        { id: 'fashion-women', name: '패션여성', children: [
+          { id: 'fw-outer', name: '아우터', children: [
+            { id: 'fw-coat', name: '코트' }, { id: 'fw-jacket', name: '자켓' }, { id: 'fw-padding', name: '패딩' },
+          ] },
+          { id: 'fw-top', name: '상의', children: [
+            { id: 'fw-knit', name: '니트' }, { id: 'fw-tee', name: '티셔츠' }, { id: 'fw-blouse', name: '블라우스' },
+          ] },
+          { id: 'fw-bottom', name: '하의' },
+          { id: 'fw-dress', name: '원피스' },
+        ] },
+        { id: 'fashion-men', name: '패션남성' },
+        { id: 'beauty', name: '뷰티' },
+        { id: 'kids', name: '키즈' },
+        { id: 'living', name: '리빙·홈데코' },
+        { id: 'food', name: '식품' },
+      ];
+
+      function buildTreeHtml(nodes, depth) {
+        return nodes.map((n) => {
+          const has = Array.isArray(n.children) && n.children.length > 0;
+          let html = `<li class="tree-list__item tree-list__item--depth-${depth}" data-cat-id="${n.id}" data-cat-name="${n.name}">${n.name}</li>`;
+          if (has) html += buildTreeHtml(n.children, depth + 1);
+          return html;
+        }).join('');
+      }
+
+      document.querySelectorAll('[data-change-category]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const market = btn.dataset.changeCategory;
+          const body = document.createElement('div');
+          body.innerHTML = `
+            <p style="margin:0 0 12px;color:#555;font-size:14px;">${market === 'coupang' ? '쿠팡' : '네이버'} 카테고리를 골라주세요. 1탭으로 끝.</p>
+            <ul class="tree-list">${buildTreeHtml(categoryTree, 1)}</ul>
+            <p style="margin:14px 0 0;font-size:12px;color:#888;">사장님이 바꿀수록 루미가 똑똑해져요.</p>
+          `;
+          window.LumiCanvas.openSlideOver({
+            title: (market === 'coupang' ? '쿠팡' : '네이버') + ' 카테고리 변경',
+            body,
+          });
+          body.querySelectorAll('[data-cat-id]').forEach((li) => {
+            li.addEventListener('click', () => {
+              const name = li.dataset.catName;
+              const target = document.querySelector(`[data-bind="category-${market}"]`);
+              if (target) target.textContent = name;
+              const pct = document.querySelector(`[data-confidence-pct="${market}"]`);
+              if (pct) pct.textContent = '100%'; // 사장님 직접 = 골드 라벨
+              window.LumiCanvas.closeSlideOver();
+            });
+          });
+        });
+      });
+    });
+  </script>
 </body>
 </html>

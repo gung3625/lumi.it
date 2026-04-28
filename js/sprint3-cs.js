@@ -25,6 +25,8 @@
       root.innerHTML = `<div class="empty-state"><p>대기 중인 문의가 없어요.</p></div>`;
       return;
     }
+    // 메모리 project_ai_capability_boundary.md — AI 자동 답변 X.
+    // 분류·우선순위·1탭 빠른 답장 템플릿까지만, 답변은 사장님이 직접.
     root.innerHTML = threads.map((t) => `
       <article class="cs-card" data-thread-id="${escapeHtml(t.id)}">
         <div class="cs-card__head">
@@ -32,27 +34,15 @@
           <span class="cs-card__buyer">${escapeHtml(t.buyer_name_masked || '')} · ${escapeHtml(t.market || '')}</span>
         </div>
         <p class="cs-card__message">${escapeHtml(t.preview_text || '')}</p>
-        ${t.ai_suggested_response ? `
-          <div class="cs-card__ai-suggestion">
-            <span class="cs-card__ai-label">루미가 미리 만들었어요</span>
-            <div>${escapeHtml(t.ai_suggested_response).replace(/\n/g, '<br>')}</div>
-          </div>
-          <textarea class="cs-card__editor" data-editor data-thread-id="${escapeHtml(t.id)}">${escapeHtml(t.ai_suggested_response)}</textarea>
-        ` : `
-          <textarea class="cs-card__editor" data-editor data-thread-id="${escapeHtml(t.id)}" placeholder="답변을 작성해주세요"></textarea>
-        `}
+        <textarea class="cs-card__editor" data-editor data-thread-id="${escapeHtml(t.id)}" placeholder="사장님이 직접 답장해주세요"></textarea>
         <div class="cs-card__actions">
           <button class="btn btn--primary" data-action="send" data-thread-id="${escapeHtml(t.id)}">전송하기</button>
-          <button class="btn btn--ghost" data-action="suggest" data-thread-id="${escapeHtml(t.id)}">다시 제안</button>
         </div>
       </article>
     `).join('');
 
     root.querySelectorAll('[data-action="send"]').forEach((btn) => {
       btn.addEventListener('click', () => sendReply(btn.dataset.threadId));
-    });
-    root.querySelectorAll('[data-action="suggest"]').forEach((btn) => {
-      btn.addEventListener('click', () => regenerateSuggest(btn.dataset.threadId));
     });
   }
 
@@ -78,19 +68,34 @@
     const t = allThreads.find((x) => x.id === threadId);
     const root = document.getElementById('csDesktopDetail');
     if (!t) { root.innerHTML = '<p class="muted">선택된 문의가 없어요.</p>'; return; }
+    // AI 자동 답변 X — 사장님이 직접 작성. 1탭 템플릿만 보조.
+    const templates = [
+      { label: '발송 안내', text: '안녕하세요 사장님이에요. 주문하신 상품 오늘 발송할게요. 송장번호 곧 보내드릴게요.' },
+      { label: '환불 안내', text: '불편 드려 죄송해요. 반품 절차 안내해 드릴게요. 회수 후 영업일 1-2일 내 환불 처리됩니다.' },
+      { label: '재고 확인', text: '문의 감사합니다. 재고 확인해 보고 빠르게 답 드릴게요.' },
+      { label: '교환 절차', text: '교환 도와드릴게요. 회수 → 검수 → 재발송 순서로 진행됩니다.' },
+    ];
     root.innerHTML = `
       <h2 style="margin:0 0 4px">${escapeHtml(t.buyer_name_masked || '')} · ${categoryLabel(t.category)}</h2>
       <p class="muted" style="margin:0 0 16px">${escapeHtml(t.market || '')} · ${escapeHtml(t.preview_text || '').slice(0, 200)}</p>
       <div class="cs-card__message" style="margin:0 0 16px">${escapeHtml(t.preview_text || '')}</div>
-      ${t.ai_suggested_response ? `<div class="cs-card__ai-suggestion"><span class="cs-card__ai-label">루미가 미리 만들었어요</span><div>${escapeHtml(t.ai_suggested_response).replace(/\n/g, '<br>')}</div></div>` : ''}
-      <textarea class="cs-card__editor" data-editor data-thread-id="${escapeHtml(t.id)}">${escapeHtml(t.ai_suggested_response || '')}</textarea>
+      <p class="quick-reply-hint">1탭 빠른 답장 템플릿 — 답장은 사장님이 직접 보내주세요.</p>
+      <div class="quick-reply-chips" data-tpl-chips data-thread-id="${escapeHtml(t.id)}">
+        ${templates.map((tpl, i) => `<button type="button" class="quick-reply-chip" data-tpl="${i}">${escapeHtml(tpl.label)}</button>`).join('')}
+      </div>
+      <textarea class="cs-card__editor" data-editor data-thread-id="${escapeHtml(t.id)}" placeholder="사장님이 직접 답장해주세요"></textarea>
       <div class="cs-card__actions">
         <button class="btn btn--primary" data-action="send" data-thread-id="${escapeHtml(t.id)}">전송</button>
-        <button class="btn btn--ghost" data-action="suggest" data-thread-id="${escapeHtml(t.id)}">다시 제안</button>
       </div>
     `;
     root.querySelectorAll('[data-action="send"]').forEach((b) => b.addEventListener('click', () => sendReply(b.dataset.threadId)));
-    root.querySelectorAll('[data-action="suggest"]').forEach((b) => b.addEventListener('click', () => regenerateSuggest(b.dataset.threadId)));
+    root.querySelectorAll('[data-tpl]').forEach((chip) => {
+      chip.addEventListener('click', () => {
+        const idx = parseInt(chip.getAttribute('data-tpl'), 10);
+        const editor = root.querySelector(`textarea[data-editor][data-thread-id="${threadId}"]`);
+        if (editor) editor.value = templates[idx].text;
+      });
+    });
   }
 
   async function sendReply(threadId) {
@@ -112,19 +117,7 @@
     } catch { alert('네트워크 오류'); }
   }
 
-  async function regenerateSuggest(threadId) {
-    try {
-      const res = await authFetch('/api/cs-suggest-reply', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ thread_id: threadId }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        const editor = document.querySelector(`textarea[data-editor][data-thread-id="${threadId}"]`);
-        if (editor) editor.value = data.response;
-      }
-    } catch { /* */ }
-  }
+  // regenerateSuggest 제거 (메모리 project_ai_capability_boundary.md — AI 자동 답변 X)
 
   async function load() {
     const root = document.getElementById('csMobile');

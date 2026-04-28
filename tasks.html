@@ -7,6 +7,7 @@
   <meta name="description" content="우선순위 카드로 오늘 해야 할 일만 빠르게" />
   <meta name="theme-color" content="#FFE7F1" />
   <link rel="stylesheet" href="/css/sprint4.css" />
+  <link rel="stylesheet" href="/css/canvas.css" />
 </head>
 <body class="page-tasks">
   <header class="topbar" role="banner">
@@ -14,15 +15,34 @@
       <img class="topbar__logo" src="/assets/logo-wordmark.png" alt="루미" style="height:36px;width:auto;display:block;" />
     </a>
     <nav class="topbar__nav" aria-label="메인">
-      <a href="/tasks">오늘</a>
+      <a href="/tasks" class="active">오늘</a>
       <a href="/orders">주문</a>
       <a href="/cs-inbox">CS</a>
     </nav>
-    <button class="kill-switch" type="button" id="killSwitchBtn" aria-label="긴급 차단" data-tap-mode="confirm">
-      <span class="kill-switch__dot" aria-hidden="true"></span>
-      <span class="kill-switch__label">긴급 차단</span>
-    </button>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button class="cmdk-trigger" type="button" data-cmdk-open aria-label="명령창 열기">
+        <span aria-hidden="true">⌘</span>
+        <span>명령</span>
+        <kbd>⌘K</kbd>
+      </button>
+      <button class="kill-switch" type="button" id="killSwitchBtn" aria-label="긴급 차단" data-tap-mode="confirm">
+        <span class="kill-switch__dot" aria-hidden="true"></span>
+        <span class="kill-switch__label">긴급 차단</span>
+      </button>
+    </div>
   </header>
+
+  <!-- D. Action Agent TopBar — 자동화 제안 -->
+  <section class="action-agent" id="actionAgent" aria-live="polite">
+    <span class="action-agent__icon" aria-hidden="true">
+      <img src="/assets/logo-cloud.png" alt="" />
+    </span>
+    <div class="action-agent__text" data-action-text>
+      <strong>긴급 처리 3건</strong> · 송장 미입력 · 30분 안에 처리하면 마켓 페널티 없음
+    </div>
+    <button class="action-agent__cta" type="button" data-action-cta>모두 처리</button>
+    <button class="action-agent__dismiss" type="button" data-action-dismiss aria-label="제안 닫기">×</button>
+  </section>
 
   <main class="page-main" id="mainContent">
     <!-- 시장 중심 피벗: 트렌드 메인 카드 = 1번 (메모리 project_market_centric_pivot_0428.md) -->
@@ -95,7 +115,38 @@
     </div>
   </div>
 
+  <script src="/js/canvas.js"></script>
   <script src="/js/sprint3-tasks.js"></script>
   <script src="/js/sprint4-tasks-trend.js"></script>
+  <script>
+    // tasks.html — Canvas 4축 wiring
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!window.LumiCanvas) return;
+      window.LumiCanvas.init({
+        commands: [
+          { section: '오늘 처리할 일', icon: '!', title: '긴급 처리 카드', sub: '송장·CS 30분 경과 우선', shortcut: '⌘1',
+            action: () => document.getElementById('priorityCards')?.scrollIntoView({ behavior: 'smooth' }) },
+          { section: '오늘 처리할 일', icon: '🚚', title: '긴급 송장 입력', sub: '미입력 5건 일괄 처리', href: '/orders?filter=pending_shipping' },
+          { section: '오늘 처리할 일', icon: '↩', title: '반품 처리', sub: '대기 중인 반품 보기', href: '/orders?filter=returned' },
+          { section: '이동', icon: '📦', title: '주문 보드', sub: 'Kanban 뷰', href: '/orders' },
+          { section: '이동', icon: '💬', title: 'CS 인박스', sub: '긴급·VIP 우선', href: '/cs-inbox' },
+          { section: '이동', icon: '🛍', title: '상품 등록', sub: '사진 1장 → 마켓', href: '/register-product.html' },
+          { section: '이동', icon: '🔁', title: '마이그레이션', sub: '엑셀 한 장이면 끝', href: '/migration-wizard.html' },
+          { section: '이동', icon: '🏠', title: '대시보드', sub: '카테고리 카운트·트렌드', href: '/dashboard' },
+          { section: '필터', icon: '⏳', title: '송장 입력만 보기', action: () => document.querySelector('[data-filter="pending_shipping"]')?.click() },
+          { section: '필터', icon: '💬', title: 'CS 대기만 보기', action: () => document.querySelector('[data-filter="pending_cs"]')?.click() },
+          { section: '필터', icon: '🔄', title: '전체 보기', action: () => document.querySelector('[data-filter="all"]')?.click() },
+        ],
+      });
+
+      // Action Agent dismiss
+      document.querySelector('[data-action-dismiss]')?.addEventListener('click', () => {
+        document.getElementById('actionAgent').style.display = 'none';
+      });
+      document.querySelector('[data-action-cta]')?.addEventListener('click', () => {
+        location.href = '/orders?filter=pending_shipping';
+      });
+    });
+  </script>
 </body>
 </html>

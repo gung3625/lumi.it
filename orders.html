@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
   <title>주문 — 루미</title>
   <link rel="stylesheet" href="/css/sprint3.css" />
+  <link rel="stylesheet" href="/css/canvas.css" />
 </head>
 <body class="page-orders">
   <header class="topbar" role="banner">
@@ -14,16 +15,42 @@
       <a href="/orders" class="active">주문</a>
       <a href="/cs-inbox">CS</a>
     </nav>
-    <button class="kill-switch" type="button" id="killSwitchBtn" aria-label="긴급 차단">
-      <span class="kill-switch__dot"></span>
-      <span class="kill-switch__label">긴급 차단</span>
-    </button>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button class="cmdk-trigger" type="button" data-cmdk-open aria-label="명령창 열기">
+        <span aria-hidden="true">⌘</span>
+        <span>명령</span>
+        <kbd>⌘K</kbd>
+      </button>
+      <button class="kill-switch" type="button" id="killSwitchBtn" aria-label="긴급 차단">
+        <span class="kill-switch__dot"></span>
+        <span class="kill-switch__label">긴급 차단</span>
+      </button>
+    </div>
   </header>
 
+  <!-- D. Action Agent TopBar -->
+  <section class="action-agent" id="actionAgent" aria-live="polite">
+    <span class="action-agent__icon" aria-hidden="true">
+      <img src="/assets/logo-cloud.png" alt="" />
+    </span>
+    <div class="action-agent__text">
+      <strong>송장 미입력 5건</strong> · PC에서 1분이면 끝나요
+    </div>
+    <button class="action-agent__cta" type="button" data-action-cta>일괄 입력</button>
+    <button class="action-agent__dismiss" type="button" data-action-dismiss aria-label="제안 닫기">×</button>
+  </section>
+
   <main class="page-main">
-    <section class="hero hero--compact">
-      <h1 class="hero__title">주문</h1>
-      <p class="hero__sub" data-bind="orders_summary">전체 0건</p>
+    <section class="hero hero--compact hero--with-toggle">
+      <div>
+        <h1 class="hero__title">주문</h1>
+        <p class="hero__sub" data-bind="orders_summary">전체 0건</p>
+      </div>
+      <!-- C. View Toggle (Kanban / List) -->
+      <div class="view-toggle" role="tablist" aria-label="주문 뷰">
+        <button class="view-toggle__btn" data-view="kanban" data-active="true" role="tab">Kanban</button>
+        <button class="view-toggle__btn" data-view="list" data-active="false" role="tab">List</button>
+      </div>
     </section>
 
     <section class="filter-chips" aria-label="주문 필터">
@@ -35,16 +62,41 @@
       <button class="chip" data-filter="cancelled">취소</button>
     </section>
 
+    <!-- C. Kanban View (수집 → 송장 → 완료) -->
+    <section class="kanban-board" id="kanbanBoard" data-view-pane="kanban" aria-label="Kanban 보드">
+      <div class="kanban-col" data-col="pending_shipping">
+        <header class="kanban-col__head">
+          <h3 class="kanban-col__title">수집·송장 대기</h3>
+          <span class="kanban-col__count" data-col-count="pending_shipping">0</span>
+        </header>
+        <div class="kanban-col__list" data-col-list="pending_shipping"></div>
+      </div>
+      <div class="kanban-col" data-col="in_transit">
+        <header class="kanban-col__head">
+          <h3 class="kanban-col__title">배송 중</h3>
+          <span class="kanban-col__count" data-col-count="in_transit">0</span>
+        </header>
+        <div class="kanban-col__list" data-col-list="in_transit"></div>
+      </div>
+      <div class="kanban-col" data-col="delivered">
+        <header class="kanban-col__head">
+          <h3 class="kanban-col__title">완료</h3>
+          <span class="kanban-col__count" data-col-count="delivered">0</span>
+        </header>
+        <div class="kanban-col__list" data-col-list="delivered"></div>
+      </div>
+    </section>
+
     <!-- 모바일 = 카드 (selective) -->
-    <section class="orders-mobile" id="ordersMobile" aria-label="주문 카드 리스트">
+    <section class="orders-mobile" id="ordersMobile" data-view-pane="list" data-pane-hidden="true" aria-label="주문 카드 리스트">
       <div class="empty-state" data-state="loading">
         <div class="empty-state__spinner"></div>
         <p>주문을 가져오는 중…</p>
       </div>
     </section>
 
-    <!-- PC = 풀 테이블 -->
-    <section class="orders-desktop" aria-label="주문 테이블">
+    <!-- PC = 풀 테이블 (List 뷰일 때만 노출) -->
+    <section class="orders-desktop" data-view-pane="list" data-pane-hidden="true" aria-label="주문 테이블">
       <div class="batch-bar" id="batchBar">
         <label class="batch-bar__select-all">
           <input type="checkbox" id="selectAllOrders" />
@@ -100,6 +152,95 @@
     </div>
   </div>
 
+  <script src="/js/canvas.js"></script>
   <script src="/js/sprint3-orders.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!window.LumiCanvas) return;
+      window.LumiCanvas.init({
+        commands: [
+          { section: '오늘 주문', icon: '📅', title: '오늘 주문 보기', sub: '오늘 들어온 주문', action: () => document.querySelector('[data-filter="all"]')?.click() },
+          { section: '오늘 주문', icon: '🚚', title: '송장 미입력만', sub: '바로 처리해야 할 주문', action: () => document.querySelector('[data-filter="pending_shipping"]')?.click() },
+          { section: '오늘 주문', icon: '🔁', title: '환불 대기', sub: '반품 처리 필요', action: () => document.querySelector('[data-filter="returned"]')?.click() },
+          { section: '뷰', icon: '📋', title: 'Kanban 뷰', action: () => switchView('kanban') },
+          { section: '뷰', icon: '📃', title: 'List 뷰', action: () => switchView('list') },
+          { section: '이동', icon: '🏠', title: '대시보드', href: '/dashboard' },
+          { section: '이동', icon: '✓', title: '오늘 처리할 일', href: '/tasks' },
+          { section: '이동', icon: '💬', title: 'CS 인박스', href: '/cs-inbox' },
+          { section: '이동', icon: '🛍', title: '상품 등록', href: '/register-product.html' },
+        ],
+      });
+
+      // C. View Toggle
+      function switchView(name) {
+        document.querySelectorAll('.view-toggle__btn').forEach((b) => {
+          b.dataset.active = (b.dataset.view === name) ? 'true' : 'false';
+        });
+        document.querySelectorAll('[data-view-pane]').forEach((el) => {
+          el.dataset.paneHidden = (el.dataset.viewPane === name) ? 'false' : 'true';
+        });
+      }
+      document.querySelectorAll('.view-toggle__btn').forEach((btn) => {
+        btn.addEventListener('click', () => switchView(btn.dataset.view));
+      });
+      // 초기: kanban
+      switchView('kanban');
+
+      // Kanban 렌더 — sprint3-orders.js의 모바일 카드 데이터를 활용
+      // 기존 sprint3-orders.js가 ordersMobile에 그리면 동일 데이터로 kanban도 채움
+      function renderKanban() {
+        const mobile = document.getElementById('ordersMobile');
+        if (!mobile) return;
+        const cards = mobile.querySelectorAll('.order-card');
+        const groups = { pending_shipping: [], in_transit: [], delivered: [] };
+        cards.forEach((c) => {
+          const status = c.querySelector('[data-status]')?.dataset.status || '';
+          let bucket = 'pending_shipping';
+          if (status === 'shipping' || status === 'in_transit') bucket = 'in_transit';
+          else if (status === 'delivered') bucket = 'delivered';
+          else if (status === 'paid') bucket = 'pending_shipping';
+          const title = c.querySelector('.order-card__title')?.textContent || '';
+          const meta = c.querySelector('.order-card__meta')?.textContent || '';
+          groups[bucket].push({ title, meta });
+        });
+        Object.keys(groups).forEach((k) => {
+          const list = document.querySelector(`[data-col-list="${k}"]`);
+          const count = document.querySelector(`[data-col-count="${k}"]`);
+          if (count) count.textContent = groups[k].length;
+          if (!list) return;
+          if (groups[k].length === 0) {
+            list.innerHTML = `<p style="color:#888;font-size:13px;margin:0;padding:8px;">없음</p>`;
+            return;
+          }
+          list.innerHTML = groups[k].map((it) => `
+            <article class="kanban-card">
+              <h4 class="kanban-card__title">${escapeHtml(it.title)}</h4>
+              <p class="kanban-card__meta">${escapeHtml(it.meta)}</p>
+            </article>
+          `).join('');
+        });
+      }
+      // sprint3-orders.js가 비동기로 데이터 채우므로 폴링으로 갱신
+      let kanbanTries = 0;
+      const kanbanTimer = setInterval(() => {
+        renderKanban();
+        kanbanTries += 1;
+        if (kanbanTries > 20) clearInterval(kanbanTimer);
+      }, 800);
+
+      function escapeHtml(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+      }
+
+      // Action Agent
+      document.querySelector('[data-action-cta]')?.addEventListener('click', () => {
+        document.querySelector('[data-filter="pending_shipping"]')?.click();
+        switchView('list');
+      });
+      document.querySelector('[data-action-dismiss]')?.addEventListener('click', () => {
+        document.getElementById('actionAgent').style.display = 'none';
+      });
+    });
+  </script>
 </body>
 </html>

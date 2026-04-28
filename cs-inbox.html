@@ -3,8 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-  <title>CS 통합 — 루미</title>
+  <title>CS 통합 인박스 — 루미</title>
+  <meta name="description" content="긴급 문의 먼저 보여드려요. 분류는 루미가, 답장은 사장님이." />
   <link rel="stylesheet" href="/css/sprint3.css" />
+  <link rel="stylesheet" href="/css/canvas.css" />
 </head>
 <body class="page-cs">
   <header class="topbar" role="banner">
@@ -14,14 +16,44 @@
       <a href="/orders">주문</a>
       <a href="/cs-inbox" class="active">CS</a>
     </nav>
-    <span></span>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button class="cmdk-trigger" type="button" data-cmdk-open aria-label="명령창 열기">
+        <span aria-hidden="true">⌘</span>
+        <span>명령</span>
+        <kbd>⌘K</kbd>
+      </button>
+    </div>
   </header>
 
+  <!-- D. Action Agent — VIP 30분 경과 알림 -->
+  <section class="action-agent" id="actionAgent" aria-live="polite">
+    <span class="action-agent__icon" aria-hidden="true">
+      <img src="/assets/logo-cloud.png" alt="" />
+    </span>
+    <div class="action-agent__text">
+      <strong>VIP 문의 1건 30분 경과</strong> · 단골 응대 중요해요
+    </div>
+    <button class="action-agent__cta" type="button" data-action-cta>먼저 답장</button>
+    <button class="action-agent__dismiss" type="button" data-action-dismiss aria-label="제안 닫기">×</button>
+  </section>
+
   <main class="page-main">
-    <section class="hero hero--compact">
-      <h1 class="hero__title">CS 답변</h1>
-      <p class="hero__sub" data-bind="cs_summary">대기 중인 문의를 가져오는 중…</p>
+    <section class="hero hero--compact hero--with-toggle">
+      <div>
+        <h1 class="hero__title">CS 통합 인박스</h1>
+        <p class="hero__sub" data-bind="cs_summary">긴급 문의 먼저 보여드려요</p>
+      </div>
+      <div class="view-toggle" role="tablist" aria-label="CS 뷰">
+        <button class="view-toggle__btn" data-view="card" data-active="true" role="tab">우선순위 카드</button>
+        <button class="view-toggle__btn" data-view="list" data-active="false" role="tab">List</button>
+      </div>
     </section>
+
+    <!-- 정직 카피 배너 (메모리 project_ai_capability_boundary.md) -->
+    <div class="cs-truth-banner" role="note">
+      <strong>분류는 루미가, 답장은 사장님이.</strong>
+      쿠팡·네이버·인스타·카카오 한 곳에서, 1탭 빠른 답장 템플릿으로 도와드릴게요.
+    </div>
 
     <section class="filter-chips">
       <button class="chip chip--active" data-filter="pending">대기</button>
@@ -29,16 +61,41 @@
       <button class="chip" data-filter="all">전체</button>
     </section>
 
-    <!-- 모바일 = 한 카드씩 (selective) -->
-    <section class="cs-mobile" id="csMobile" aria-label="CS 카드 스택">
+    <!-- C. Card View = 우선순위 그룹 (긴급·VIP·일반) -->
+    <section class="cs-card-board" id="csCardBoard" data-view-pane="card" aria-label="우선순위 카드">
+      <div class="cs-priority-section cs-priority-section--urgent">
+        <header class="cs-priority-section__head">
+          <h3 class="cs-priority-section__title">긴급 (환불·이슈)</h3>
+          <span class="kanban-col__count" data-priority-count="urgent">0</span>
+        </header>
+        <div class="cs-card-list" data-priority-list="urgent"></div>
+      </div>
+      <div class="cs-priority-section cs-priority-section--vip">
+        <header class="cs-priority-section__head">
+          <h3 class="cs-priority-section__title">VIP·재구매 고객</h3>
+          <span class="kanban-col__count" data-priority-count="vip">0</span>
+        </header>
+        <div class="cs-card-list" data-priority-list="vip"></div>
+      </div>
+      <div class="cs-priority-section cs-priority-section--normal">
+        <header class="cs-priority-section__head">
+          <h3 class="cs-priority-section__title">일반</h3>
+          <span class="kanban-col__count" data-priority-count="normal">0</span>
+        </header>
+        <div class="cs-card-list" data-priority-list="normal"></div>
+      </div>
+    </section>
+
+    <!-- List 뷰 (기존 모바일 카드) -->
+    <section class="cs-mobile" id="csMobile" data-view-pane="list" data-pane-hidden="true" aria-label="CS 카드 스택">
       <div class="empty-state" data-state="loading">
         <div class="empty-state__spinner"></div>
         <p>문의를 가져오는 중…</p>
       </div>
     </section>
 
-    <!-- PC = 분할 뷰 (리스트 + 본문) -->
-    <section class="cs-desktop">
+    <!-- PC 분할 뷰 (List 뷰일 때만) -->
+    <section class="cs-desktop" data-view-pane="list" data-pane-hidden="true">
       <aside class="cs-desktop__list" id="csDesktopList" aria-label="CS 리스트">
         <ul id="csList"></ul>
       </aside>
@@ -48,6 +105,148 @@
     </section>
   </main>
 
+  <script src="/js/canvas.js"></script>
   <script src="/js/sprint3-cs.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!window.LumiCanvas) return;
+      window.LumiCanvas.init({
+        commands: [
+          { section: 'CS', icon: '!', title: 'VIP 문의 먼저 보기', sub: '재구매·단골 우선', action: () => document.querySelector('[data-priority-list="vip"]')?.scrollIntoView({ behavior: 'smooth' }) },
+          { section: 'CS', icon: '↩', title: '환불 문의', sub: '긴급 분류', action: () => document.querySelector('[data-priority-list="urgent"]')?.scrollIntoView({ behavior: 'smooth' }) },
+          { section: 'CS', icon: '⏳', title: '대기만 보기', action: () => document.querySelector('[data-filter="pending"]')?.click() },
+          { section: '뷰', icon: '🗂', title: '우선순위 카드 뷰', action: () => switchView('card') },
+          { section: '뷰', icon: '📃', title: 'List 뷰', action: () => switchView('list') },
+          { section: '이동', icon: '🏠', title: '대시보드', href: '/dashboard' },
+          { section: '이동', icon: '📦', title: '주문 보드', href: '/orders' },
+          { section: '이동', icon: '✓', title: '오늘 처리할 일', href: '/tasks' },
+        ],
+      });
+
+      function switchView(name) {
+        document.querySelectorAll('.view-toggle__btn').forEach((b) => {
+          b.dataset.active = (b.dataset.view === name) ? 'true' : 'false';
+        });
+        document.querySelectorAll('[data-view-pane]').forEach((el) => {
+          el.dataset.paneHidden = (el.dataset.viewPane === name) ? 'false' : 'true';
+        });
+      }
+      document.querySelectorAll('.view-toggle__btn').forEach((btn) => {
+        btn.addEventListener('click', () => switchView(btn.dataset.view));
+      });
+      switchView('card');
+
+      // 우선순위 카드 그룹 렌더 (csMobile 데이터 폴링)
+      function renderPriority() {
+        const mobile = document.getElementById('csMobile');
+        if (!mobile) return;
+        const cards = mobile.querySelectorAll('.cs-card');
+        const groups = { urgent: [], vip: [], normal: [] };
+        cards.forEach((c) => {
+          const cat = (c.querySelector('.cs-card__category')?.textContent || '').trim();
+          const buyer = (c.querySelector('.cs-card__buyer')?.textContent || '').trim();
+          const msg = (c.querySelector('.cs-card__message')?.textContent || '').trim();
+          const tid = c.dataset.threadId || '';
+          let bucket = 'normal';
+          if (cat === '환불' || cat === '교환') bucket = 'urgent';
+          else if (/VIP|단골|재구매/i.test(buyer)) bucket = 'vip';
+          groups[bucket].push({ tid, cat, buyer, msg });
+        });
+        Object.keys(groups).forEach((k) => {
+          const list = document.querySelector(`[data-priority-list="${k}"]`);
+          const count = document.querySelector(`[data-priority-count="${k}"]`);
+          if (count) count.textContent = groups[k].length;
+          if (!list) return;
+          if (groups[k].length === 0) {
+            list.innerHTML = `<p style="color:#888;font-size:13px;margin:0;padding:8px;">없음</p>`;
+            return;
+          }
+          list.innerHTML = groups[k].map((it) => `
+            <article class="kanban-card" data-open-thread="${escapeHtml(it.tid)}">
+              <h4 class="kanban-card__title">${escapeHtml(it.cat)} · ${escapeHtml(it.buyer)}</h4>
+              <p class="kanban-card__meta">${escapeHtml(it.msg.slice(0, 80))}</p>
+            </article>
+          `).join('');
+          list.querySelectorAll('[data-open-thread]').forEach((el) => {
+            el.addEventListener('click', () => openReplySlideOver(el.dataset.openThread));
+          });
+        });
+      }
+
+      function openReplySlideOver(threadId) {
+        // 기존 List 뷰의 textarea를 재활용해 빠른 답장 템플릿 슬라이드오버 (B. Progressive Detail)
+        // AI 자동 답변 X — 1탭 빠른 답장 템플릿만
+        const templates = [
+          { label: '발송 안내', text: '안녕하세요 사장님이에요. 주문하신 상품 오늘 발송할게요. 송장번호 곧 보내드릴게요.' },
+          { label: '환불 안내', text: '불편 드려 죄송해요. 반품 절차 안내해 드릴게요. 회수 후 영업일 1-2일 내 환불 처리됩니다.' },
+          { label: '재고 확인', text: '문의 감사합니다. 재고 확인해 보고 빠르게 답 드릴게요.' },
+          { label: '교환 절차', text: '교환 도와드릴게요. 회수 → 검수 → 재발송 순서로 진행됩니다.' },
+        ];
+        const body = document.createElement('div');
+        body.innerHTML = `
+          <p class="quick-reply-hint">1탭 빠른 답장 템플릿 — 사장님이 직접 보내주세요. AI 자동 답장은 안 합니다.</p>
+          <div class="quick-reply-chips" data-quick-chips>
+            ${templates.map((t, i) => `<button class="quick-reply-chip" type="button" data-tpl="${i}">${escapeHtml(t.label)}</button>`).join('')}
+          </div>
+          <textarea class="cs-card__editor" data-reply-editor placeholder="답변을 작성해주세요" rows="6"></textarea>
+        `;
+        const foot = document.createElement('div');
+        foot.style.display = 'flex';
+        foot.style.gap = '8px';
+        foot.innerHTML = `
+          <button class="btn btn--ghost" data-slide-close style="flex:1;">취소</button>
+          <button class="btn btn--primary" data-send-reply style="flex:1;">전송하기</button>
+        `;
+        window.LumiCanvas.openSlideOver({ title: '문의 답장', body, footer: foot });
+
+        body.querySelectorAll('[data-tpl]').forEach((chip) => {
+          chip.addEventListener('click', () => {
+            const idx = parseInt(chip.dataset.tpl, 10);
+            const editor = body.querySelector('[data-reply-editor]');
+            if (editor) editor.value = templates[idx].text;
+          });
+        });
+        foot.querySelector('[data-send-reply]').addEventListener('click', async () => {
+          const content = body.querySelector('[data-reply-editor]')?.value.trim() || '';
+          if (!content) { alert('답변을 입력해주세요.'); return; }
+          try {
+            const token = localStorage.getItem('lumi_seller_token') || '';
+            const res = await fetch('/api/cs-send-reply', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+              body: JSON.stringify({ thread_id: threadId, content }),
+            });
+            const data = await res.json();
+            if (data.success) {
+              alert('답변을 보냈어요.');
+              window.LumiCanvas.closeSlideOver();
+              location.reload();
+            } else {
+              alert((data.results || [])[0]?.error?.title || '전송 실패');
+            }
+          } catch { alert('네트워크 오류'); }
+        });
+      }
+
+      let csTries = 0;
+      const csTimer = setInterval(() => {
+        renderPriority();
+        csTries += 1;
+        if (csTries > 20) clearInterval(csTimer);
+      }, 800);
+
+      function escapeHtml(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+      }
+
+      // Action Agent
+      document.querySelector('[data-action-cta]')?.addEventListener('click', () => {
+        document.querySelector('[data-priority-list="vip"]')?.scrollIntoView({ behavior: 'smooth' });
+      });
+      document.querySelector('[data-action-dismiss]')?.addEventListener('click', () => {
+        document.getElementById('actionAgent').style.display = 'none';
+      });
+    });
+  </script>
 </body>
 </html>

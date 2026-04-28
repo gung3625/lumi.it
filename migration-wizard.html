@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
   <link rel="stylesheet" href="/css/onboarding.css" />
+  <link rel="stylesheet" href="/css/canvas.css" />
   <style>
     .mig-dropzone {
       border: 2px dashed var(--border-strong, #d0d0d2);
@@ -82,8 +83,27 @@
           <span class="wizard-progress-step" data-progress-step></span>
         </div>
       </div>
-      <a href="/signup.html" class="cancel-link">취소</a>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button class="cmdk-trigger" type="button" data-cmdk-open aria-label="명령창 열기">
+          <span aria-hidden="true">⌘</span>
+          <span>명령</span>
+          <kbd>⌘K</kbd>
+        </button>
+        <a href="/signup.html" class="cancel-link">취소</a>
+      </div>
     </header>
+
+    <!-- D. Action Agent — 양식 자동 인식 -->
+    <section class="action-agent" id="actionAgent" aria-live="polite">
+      <span class="action-agent__icon" aria-hidden="true">
+        <img src="/assets/logo-cloud.png" alt="" />
+      </span>
+      <div class="action-agent__text">
+        <strong>양식 자동 인식 준비 완료</strong> · 사방넷·플레이오토 표준 양식 모두 지원
+      </div>
+      <button class="action-agent__cta" type="button" data-action-cta>업로드 시작</button>
+      <button class="action-agent__dismiss" type="button" data-action-dismiss aria-label="제안 닫기">×</button>
+    </section>
 
     <div class="wizard-body">
       <div style="width:100%;max-width:720px;">
@@ -200,6 +220,29 @@
     </div>
   </main>
 
+  <script src="/js/canvas.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!window.LumiCanvas) return;
+      window.LumiCanvas.init({
+        commands: [
+          { section: '마이그레이션', icon: '📤', title: '양식 업로드', sub: '엑셀 한 장이면 끝', action: () => document.querySelector('[data-file-input]')?.click() },
+          { section: '마이그레이션', icon: '🔍', title: '매핑 검수', sub: 'STEP 2 — 분홍색만 확인', action: () => document.querySelector('[data-step="2"]')?.scrollIntoView({ behavior: 'smooth' }) },
+          { section: '마이그레이션', icon: '👀', title: '미리보기', sub: 'STEP 3 — 5개 상품 확인', action: () => document.querySelector('[data-step="3"]')?.scrollIntoView({ behavior: 'smooth' }) },
+          { section: '이동', icon: '🏠', title: '대시보드', href: '/dashboard' },
+          { section: '이동', icon: '📦', title: '주문 보드', href: '/orders' },
+          { section: '이동', icon: '🛍', title: '상품 등록', href: '/register-product.html' },
+        ],
+      });
+
+      document.querySelector('[data-action-cta]')?.addEventListener('click', () => {
+        document.querySelector('[data-file-input]')?.click();
+      });
+      document.querySelector('[data-action-dismiss]')?.addEventListener('click', () => {
+        document.getElementById('actionAgent').style.display = 'none';
+      });
+    });
+  </script>
   <script>
     (function () {
       const $ = (s) => document.querySelector(s);
