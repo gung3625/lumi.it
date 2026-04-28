@@ -482,6 +482,10 @@
           <h2 class="wizard-title">마지막 한 단계 남았어요</h2>
           <p class="wizard-sub">아래 약관에 동의하시면 사장님 첫 쇼핑몰이 시작됩니다.</p>
 
+          <p style="margin:0 0 var(--space-3);font-size:var(--text-caption);color:var(--text-secondary);line-height:1.5;">
+            사장님 정보를 안전하게 보관해도 될까요?
+          </p>
+
           <div style="background:var(--bg-section);border-radius:var(--radius-card);padding:var(--space-4);">
             <div class="consent-row">
               <input type="checkbox" id="consent-all" data-consent="all" />
@@ -490,19 +494,38 @@
             <hr class="consent-divider" />
             <div class="consent-row">
               <input type="checkbox" id="consent-terms" data-consent="terms" />
-              <label for="consent-terms" style="cursor:pointer;">
-                <strong>(필수)</strong> <a href="/terms" target="_blank" rel="noopener">이용약관</a>에 동의합니다.
+              <label for="consent-terms" style="cursor:pointer;flex:1;">
+                <strong>(필수)</strong> 이용약관 동의
               </label>
+              <button type="button" class="consent-view-btn" data-consent-view="terms" aria-label="이용약관 전문 보기">전문 보기</button>
             </div>
             <div class="consent-row">
               <input type="checkbox" id="consent-privacy" data-consent="privacy" />
-              <label for="consent-privacy" style="cursor:pointer;">
-                <strong>(필수)</strong> <a href="/privacy" target="_blank" rel="noopener">개인정보 처리방침</a>에 동의합니다.
+              <label for="consent-privacy" style="cursor:pointer;flex:1;">
+                <strong>(필수)</strong> 개인정보처리방침 동의
               </label>
+              <button type="button" class="consent-view-btn" data-consent-view="privacy" aria-label="개인정보처리방침 전문 보기">전문 보기</button>
             </div>
             <div class="consent-row">
+              <input type="checkbox" id="consent-refund" data-consent="refund" />
+              <label for="consent-refund" style="cursor:pointer;flex:1;">
+                <strong>(필수)</strong> 환불약관 동의
+              </label>
+              <button type="button" class="consent-view-btn" data-consent-view="refund" aria-label="환불약관 전문 보기">전문 보기</button>
+            </div>
+            <div class="consent-row">
+              <input type="checkbox" id="consent-openai" data-consent="openai" />
+              <label for="consent-openai" style="cursor:pointer;flex:1;">
+                <strong>(선택)</strong> OpenAI 국외이전 동의 — AI 캡션·CS 답변·말투 학습
+              </label>
+              <button type="button" class="consent-view-btn" data-consent-view="openai" aria-label="OpenAI 국외이전 안내 보기">전문 보기</button>
+            </div>
+            <p style="margin:var(--space-2) 0 0;padding:0 var(--space-2);font-size:11px;color:var(--text-muted);line-height:1.5;">
+              OpenAI 동의를 안 하시면 AI 보조 기능 일부가 제한될 수 있어요.
+            </p>
+            <div class="consent-row">
               <input type="checkbox" id="consent-marketing" data-consent="marketing" />
-              <label for="consent-marketing" style="cursor:pointer;">
+              <label for="consent-marketing" style="cursor:pointer;flex:1;">
                 (선택) 마케팅·신규 기능 안내를 받아보겠습니다.
               </label>
             </div>
@@ -551,6 +574,124 @@
   </button>
 
   <script src="/js/components/ClipboardDetector.js"></script>
+
+  <!-- Sprint 3.6: 약관 전문 보기 모달 -->
+  <div id="consent-modal" class="consent-modal" role="dialog" aria-modal="true" aria-labelledby="consent-modal-title" style="display:none;">
+    <div class="consent-modal-backdrop" data-consent-close></div>
+    <div class="consent-modal-panel">
+      <header class="consent-modal-header">
+        <h3 id="consent-modal-title" class="consent-modal-title">약관 전문</h3>
+        <button type="button" class="consent-modal-close" data-consent-close aria-label="닫기">
+          <i data-lucide="x" style="width:18px;height:18px;"></i>
+        </button>
+      </header>
+      <div class="consent-modal-body" data-consent-content>
+        <!-- 전문 iframe 로딩 -->
+      </div>
+      <footer class="consent-modal-footer">
+        <button type="button" class="btn btn-secondary" data-consent-close>닫기</button>
+        <button type="button" class="btn btn-primary" data-consent-agree>이 약관에 동의해요</button>
+      </footer>
+    </div>
+  </div>
+
+  <style>
+    .consent-row{display:flex;align-items:center;gap:10px;padding:10px 0;}
+    .consent-row input[type="checkbox"]{flex-shrink:0;}
+    .consent-divider{border:none;border-top:1px solid var(--border-subtle);margin:8px 0;}
+    .consent-view-btn{flex-shrink:0;background:transparent;border:none;color:var(--pink-500,#C8507A);font-size:12px;font-weight:600;cursor:pointer;padding:4px 6px;text-decoration:underline;}
+    .consent-view-btn:hover{opacity:.8;}
+
+    .consent-modal{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px;}
+    .consent-modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);}
+    .consent-modal-panel{position:relative;width:min(640px,100%);max-height:90vh;display:flex;flex-direction:column;background:var(--bg-card,#fff);border-radius:16px;box-shadow:0 24px 48px rgba(0,0,0,.18);overflow:hidden;}
+    body.dark-mode .consent-modal-panel{background:#272729;}
+    .consent-modal-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border-subtle,rgba(0,0,0,.08));}
+    .consent-modal-title{margin:0;font-size:17px;font-weight:700;}
+    .consent-modal-close{width:32px;height:32px;border-radius:50%;border:none;background:rgba(0,0,0,.06);cursor:pointer;display:flex;align-items:center;justify-content:center;}
+    body.dark-mode .consent-modal-close{background:rgba(255,255,255,.1);color:#f0f2f8;}
+    .consent-modal-body{flex:1;overflow-y:auto;padding:0;}
+    .consent-modal-body iframe{width:100%;height:100%;min-height:50vh;border:none;display:block;background:#fff;}
+    .consent-modal-footer{display:flex;justify-content:flex-end;gap:8px;padding:14px 20px;border-top:1px solid var(--border-subtle,rgba(0,0,0,.08));}
+  </style>
+
+  <script>
+    // Sprint 3.6 — 동의 모달 핸들러 (전문 보기 + 이 약관 동의 버튼)
+    (function () {
+      const modal = document.getElementById('consent-modal');
+      if (!modal) return;
+      const titleEl = modal.querySelector('[id="consent-modal-title"]');
+      const bodyEl = modal.querySelector('[data-consent-content]');
+      const agreeBtn = modal.querySelector('[data-consent-agree]');
+      let activeKey = null;
+
+      const TARGET = {
+        terms:   { title: '이용약관',         url: '/terms.html',   checkbox: 'consent-terms' },
+        privacy: { title: '개인정보처리방침', url: '/privacy.html', checkbox: 'consent-privacy' },
+        refund:  { title: '환불약관',         url: '/refund.html',  checkbox: 'consent-refund' },
+        openai:  { title: 'OpenAI 국외이전 안내', url: '',          checkbox: 'consent-openai',
+          html: '<div style="padding:20px;line-height:1.7;font-size:14px;">' +
+                '<p><strong>OpenAI(미국)에 다음 데이터가 이전됩니다.</strong></p>' +
+                '<ul style="padding-left:18px;margin:8px 0;">' +
+                '<li>AI 캡션·상세설명 초안 생성용 상품 텍스트·이미지</li>' +
+                '<li>CS 답변 초안 생성용 문의 본문 (PII 마스킹 후 전송)</li>' +
+                '<li>매장 말투 학습용 샘플 (사장님이 직접 입력한 5문장)</li>' +
+                '<li>카테고리 자동 매핑·정책 위반 단어 사전 검사</li>' +
+                '</ul>' +
+                '<p>OpenAI는 API 데이터를 모델 학습에 사용하지 않으며(Zero Data Retention), 30일 이내 폐기됩니다.</p>' +
+                '<p style="margin-top:12px;color:#6e6e73;font-size:13px;">동의를 안 하시면 위 AI 보조 기능 일부가 제한될 수 있어요. 가입 후 [설정 → 알림·동의] 메뉴에서 언제든 변경할 수 있습니다.</p>' +
+                '</div>' },
+      };
+
+      function open(key) {
+        const t = TARGET[key];
+        if (!t) return;
+        activeKey = key;
+        titleEl.textContent = t.title;
+        bodyEl.innerHTML = '';
+        if (t.html) {
+          bodyEl.innerHTML = t.html;
+        } else if (t.url) {
+          const iframe = document.createElement('iframe');
+          iframe.src = t.url;
+          iframe.title = t.title + ' 전문';
+          iframe.setAttribute('loading', 'lazy');
+          bodyEl.appendChild(iframe);
+        }
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+      }
+      function close() {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+        activeKey = null;
+      }
+
+      document.querySelectorAll('[data-consent-view]').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          open(btn.getAttribute('data-consent-view'));
+        });
+      });
+      modal.querySelectorAll('[data-consent-close]').forEach((b) => {
+        b.addEventListener('click', close);
+      });
+      agreeBtn.addEventListener('click', () => {
+        if (!activeKey) return close();
+        const t = TARGET[activeKey];
+        const cb = t && document.getElementById(t.checkbox);
+        if (cb) {
+          cb.checked = true;
+          cb.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        close();
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.style.display !== 'none') close();
+      });
+    })();
+  </script>
+
   <script src="/js/onboarding.js"></script>
 </body>
 </html>

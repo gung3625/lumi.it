@@ -1,5 +1,5 @@
-// Privacy-by-Design 마스킹 유틸 — Sprint 3
-// 구매자 이름·전화·주소를 평문 저장하기 전에 모두 이 모듈을 거친다.
+// Privacy-by-Design 마스킹 유틸 — Sprint 3, Sprint 3.6 보강
+// 구매자 이름·전화·주소·이메일을 평문으로 응답·로그에 노출하기 전에 모두 이 모듈을 거친다.
 // 메모리 feedback_market_integration_principles.md (Privacy-by-Design)
 
 /**
@@ -63,6 +63,38 @@ function maskAddress(address) {
 }
 
 /**
+ * 이메일 마스킹 — "kimhyun@gmail.com" → "kim***@gmail.com"
+ * @param {string} email
+ */
+function maskEmail(email) {
+  const trimmed = String(email || '').trim();
+  if (!trimmed || !trimmed.includes('@')) return '';
+  const [local, domain] = trimmed.split('@');
+  if (!local) return '';
+  const visible = local.slice(0, Math.min(3, local.length));
+  return `${visible}${'*'.repeat(Math.max(1, local.length - visible.length))}@${domain || ''}`;
+}
+
+/**
+ * 사업자번호 마스킹 — "1234567890" → "123-45-***90"
+ */
+function maskBusinessNumber(input) {
+  const num = String(input || '').replace(/\D/g, '');
+  if (num.length !== 10) return '***';
+  return `${num.slice(0, 3)}-${num.slice(3, 5)}-***${num.slice(8)}`;
+}
+
+/**
+ * 자격증명 마스킹 — 중간을 ●로, 마지막 4자리만 노출
+ */
+function maskCredential(input) {
+  const s = String(input || '');
+  if (!s) return '';
+  if (s.length <= 4) return '*'.repeat(s.length);
+  return '●'.repeat(Math.max(4, s.length - 4)) + s.slice(-4);
+}
+
+/**
  * 마켓 raw 주문 → 마스킹된 buyer 필드 묶음
  * @param {Object} raw
  * @returns {{ buyer_name_masked: string, buyer_phone_masked: string, buyer_address_masked: string }}
@@ -75,9 +107,52 @@ function maskBuyerFields(raw) {
   };
 }
 
+/**
+ * 응답 객체에 마스킹된 필드만 포함하도록 정리. (주문 응답 표준 미들웨어)
+ * unmask=true일 때만 평문 _plain 필드를 포함.
+ * @param {Object} order DB row
+ * @param {{ unmask?: boolean }} options
+ */
+function maskOrderForResponse(order, options = {}) {
+  if (!order || typeof order !== 'object') return order;
+  const out = { ...order };
+  // 평문 필드는 항상 제거하고, unmask 옵션이 true일 때만 별도 _plain으로 명시 노출
+  const plainName = order.buyer_name;
+  const plainPhone = order.buyer_phone;
+  const plainAddress = order.buyer_address;
+  delete out.buyer_name;
+  delete out.buyer_phone;
+  delete out.buyer_address;
+
+  out.buyer_name_masked = order.buyer_name_masked || maskName(plainName || '');
+  out.buyer_phone_masked = order.buyer_phone_masked || maskPhone(plainPhone || '');
+  out.buyer_address_masked = order.buyer_address_masked || maskAddress(plainAddress || '');
+
+  if (options.unmask) {
+    out.buyer_name_plain = plainName || null;
+    out.buyer_phone_plain = plainPhone || null;
+    out.buyer_address_plain = plainAddress || null;
+  }
+  return out;
+}
+
+/**
+ * 객체 키가 PII에 해당하는지 판정 — 로그 sanitize용
+ */
+function isPiiKey(key) {
+  const k = String(key || '').toLowerCase();
+  return /(name|phone|address|email|password|token|secret|access_key|card)/.test(k)
+    && !/(masked|hash|count|id_only)/.test(k);
+}
+
 module.exports = {
   maskName,
   maskPhone,
   maskAddress,
+  maskEmail,
+  maskBusinessNumber,
+  maskCredential,
   maskBuyerFields,
+  maskOrderForResponse,
+  isPiiKey,
 };

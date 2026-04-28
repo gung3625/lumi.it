@@ -51,6 +51,8 @@
     consent: {
       privacy: false,
       terms: false,
+      refund: false,
+      openai: false,
       marketing: false,
     },
   };
@@ -1373,35 +1375,39 @@
     const allChk = document.querySelector('[data-consent="all"]');
     const termsChk = document.querySelector('[data-consent="terms"]');
     const privacyChk = document.querySelector('[data-consent="privacy"]');
+    const refundChk = document.querySelector('[data-consent="refund"]');
+    const openaiChk = document.querySelector('[data-consent="openai"]');
     const marketingChk = document.querySelector('[data-consent="marketing"]');
     const submit = document.querySelector('[data-action="step5-submit"]');
     const back = document.querySelector('[data-action="step5-back"]');
     const errEl = document.querySelector('[data-error="step5"]');
 
+    const allBoxes = [termsChk, privacyChk, refundChk, openaiChk, marketingChk];
+
     function syncAll() {
-      const all = termsChk?.checked && privacyChk?.checked && marketingChk?.checked;
+      const all = allBoxes.every(function (b) { return b && b.checked; });
       if (allChk) allChk.checked = Boolean(all);
     }
     if (allChk) {
       allChk.addEventListener('change', function () {
         const v = allChk.checked;
-        if (termsChk) termsChk.checked = v;
-        if (privacyChk) privacyChk.checked = v;
-        if (marketingChk) marketingChk.checked = v;
+        allBoxes.forEach(function (b) { if (b) b.checked = v; });
       });
     }
-    [termsChk, privacyChk, marketingChk].forEach(function (el) {
+    allBoxes.forEach(function (el) {
       if (el) el.addEventListener('change', syncAll);
     });
 
     if (submit) submit.addEventListener('click', async function () {
       if (errEl) errEl.textContent = '';
-      if (!termsChk?.checked || !privacyChk?.checked) {
-        if (errEl) errEl.textContent = '필수 항목 (이용약관, 개인정보 처리방침)에 동의해주세요.';
+      if (!termsChk?.checked || !privacyChk?.checked || !refundChk?.checked) {
+        if (errEl) errEl.textContent = '필수 항목 (이용약관·개인정보처리방침·환불약관)에 모두 동의해주세요.';
         return;
       }
       state.consent.terms = true;
       state.consent.privacy = true;
+      state.consent.refund = true;
+      state.consent.openai = Boolean(openaiChk?.checked);
       state.consent.marketing = Boolean(marketingChk?.checked);
 
       submit.disabled = true;
@@ -1421,6 +1427,8 @@
             marketingConsent: state.consent.marketing,
             privacyConsent: true,
             termsConsent: true,
+            refundConsent: true,
+            openaiConsent: state.consent.openai,
             signupStep: 5,
           }),
         });
