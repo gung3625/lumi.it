@@ -1502,6 +1502,26 @@
         // /api/me 호출로 검증 (성공 시 done 화면)
         const meRes = await api('/api/me', { method: 'GET' });
         if (meRes.status === 200 && meRes.data?.success) {
+          // onboarding 완료 플래그를 Supabase user_metadata에 기록
+          try {
+            if (window.lumiSupa) {
+              await window.lumiSupa.auth.updateUser({
+                data: {
+                  onboarded: true,
+                  business_no: state.business.businessNumber,
+                  business_name: meRes.data.seller.businessName || state.business.storeName,
+                  representative: state.business.ownerName,
+                  consent_terms: true,
+                  consent_privacy: true,
+                  consent_refund: true,
+                  consent_openai: Boolean(state.consent.openai),
+                  consent_marketing: Boolean(state.consent.marketing),
+                  onboarded_at: new Date().toISOString(),
+                  store_name: state.business.storeName,
+                }
+              });
+            }
+          } catch (_) {}
           showDone();
           // 셀러 이름 동적 표시
           const nameEl = document.querySelector('[data-done-name]');

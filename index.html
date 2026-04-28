@@ -2130,13 +2130,29 @@ window.lumiSupa = window.supabase.createClient(
 );
 
 /* ---------- 로그인 후 라우팅 ---------- */
-function routeToDashboard() {
+async function routeAfterAuth() {
   // ?stay=1 이면 랜딩 유지 (홈 돌아오기 모드)
-  var stay = false;
-  try { stay = new URLSearchParams(location.search || '').get('stay') === '1'; } catch (e) {}
-  if (stay) return;
-  window.location.href = '/dashboard.html';
+  try {
+    if (new URLSearchParams(location.search || '').get('stay') === '1') return;
+  } catch (e) {}
+
+  // onboarding 상태 확인 후 분기
+  try {
+    var res = await window.lumiSupa.auth.getUser();
+    var meta = (res && res.data && res.data.user && res.data.user.user_metadata) || {};
+    var isOnboarded = meta.onboarded === true || (meta.business_no && meta.consent_terms);
+    if (isOnboarded) {
+      window.location.href = '/dashboard.html';
+    } else {
+      window.location.href = '/signup';
+    }
+  } catch (e) {
+    console.warn('[auth] route check', e);
+    window.location.href = '/signup';
+  }
 }
+// 하위 호환 alias
+var routeToDashboard = routeAfterAuth;
 
 window.lumiSupa.auth.onAuthStateChange(function (event, session) {
   try {
@@ -2149,18 +2165,18 @@ window.lumiSupa.auth.onAuthStateChange(function (event, session) {
       var merged = Object.assign({}, prev, { email: u.email || prev.email, id: u.id || prev.id }, meta);
       localStorage.setItem('lumi_user', JSON.stringify(merged));
       if (event === 'SIGNED_IN') {
-        setTimeout(routeToDashboard, 300);
+        setTimeout(routeAfterAuth, 300);
       }
     }
   } catch (e) { console.warn('[auth] state sync', e); }
 });
 
-// 페이지 진입 시 이미 로그인되어 있으면 바로 대시보드로
+// 페이지 진입 시 이미 로그인되어 있으면 라우팅 분기
 (async function () {
   try {
     var r = await window.lumiSupa.auth.getSession();
     if (r && r.data && r.data.session && r.data.session.access_token) {
-      routeToDashboard();
+      routeAfterAuth();
     }
   } catch (e) {}
 })();
