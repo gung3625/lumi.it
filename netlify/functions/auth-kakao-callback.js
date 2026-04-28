@@ -117,25 +117,21 @@ exports.handler = async (event) => {
     // 3. Supabase 유저 upsert
     const admin = getAdminClient();
 
-    // 기존 유저 확인 — M7: O(1) email 직접 조회 (전체 페이지네이션 → O(N) 제거)
+    // 기존 유저 확인 — listUsers 페이지네이션 후 클라이언트 filter (SDK getUserByEmail 미지원)
     let existingUser = null;
-    try {
-      const { data: { user: byEmail } } = await admin.auth.admin.getUserByEmail(email);
-      if (byEmail) {
-        existingUser = byEmail;
-      }
-    } catch (_) {
-      // getUserByEmail 미지원 시 filter 방식으로 fallback
-      const { data: listData } = await admin.auth.admin.listUsers({ filter: `email.eq.${email}`, perPage: 1 });
-      existingUser = listData?.users?.[0] || null;
+    let allUsers = [];
+    let page = 1;
+    while (true) {
+      const { data: pageData, error: listErr } = await admin.auth.admin.listUsers({ page, perPage: 200 });
+      if (listErr || !pageData?.users?.length) break;
+      allUsers = allUsers.concat(pageData.users);
+      if (pageData.users.length < 200) break;
+      page++;
+      if (page > 50) break; // 안전 limit (10,000명)
     }
-    // kakao_id 기준 보조 조회 (이메일 없이 가입한 경우)
-    if (!existingUser) {
-      try {
-        const { data: listData } = await admin.auth.admin.listUsers({ filter: `user_metadata.kakao_id.eq.${kakaoId}`, perPage: 1 });
-        existingUser = listData?.users?.[0] || null;
-      } catch (_) { /* silent */ }
-    }
+    existingUser = allUsers.find(
+      (u) => u.email === email || (u.user_metadata && u.user_metadata.kakao_id === kakaoId)
+    ) || null;
 
     let userId;
     let isNewUser = false;
