@@ -41,8 +41,9 @@ exports.handler = async (event) => {
     });
 
     if (!tokenRes.ok) {
-      console.error('[auth-kakao-callback] 토큰 교환 실패:', tokenRes.status);
-      return errorRedirect('카카오 로그인 처리 중 오류가 발생했습니다.');
+      const errBody = await tokenRes.text().catch(() => '');
+      console.error('[auth-kakao-callback] 토큰 교환 실패:', tokenRes.status, errBody);
+      return errorRedirect(`카카오 토큰 교환 실패 (${tokenRes.status}): ${errBody.slice(0, 200)}`);
     }
 
     const tokenData = await tokenRes.json();
