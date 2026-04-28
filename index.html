@@ -2126,7 +2126,15 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 /* ---------- Supabase 클라이언트 ---------- */
 window.lumiSupa = window.supabase.createClient(
   'https://cldsozdocxpvkbuxwqep.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsZHNvemRvY3hwdmtidXh3cWVwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM2NjEyMTQsImV4cCI6MjA0OTIzNzIxNH0.eOilLhNm3HF3K1zRyNS3kbtvnPYRuXHXcXSx8Q9gOTU'
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsZHNvemRvY3hwdmtidXh3cWVwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM2NjEyMTQsImV4cCI6MjA0OTIzNzIxNH0.eOilLhNm3HF3K1zRyNS3kbtvnPYRuXHXcXSx8Q9gOTU',
+  {
+    auth: {
+      flowType: 'pkce',
+      detectSessionInUrl: true,
+      persistSession: true,
+      autoRefreshToken: true,
+    }
+  }
 );
 
 /* ---------- 로그인 후 라우팅 ---------- */
@@ -2169,6 +2177,8 @@ window.lumiSupa.auth.onAuthStateChange(function (event, session) {
       if (event === 'SIGNED_IN') {
         if (window.location.hash && window.location.hash.indexOf('access_token') !== -1) {
           window.history.replaceState({}, '', window.location.pathname + window.location.search);
+        } else if (window.location.search && window.location.search.indexOf('code=') !== -1) {
+          window.history.replaceState({}, '', window.location.pathname);
         }
         setTimeout(routeAfterAuth, 300);
       }

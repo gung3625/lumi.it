@@ -595,7 +595,15 @@
     // Supabase 클라이언트 (signup 전용)
     window.lumiSupa = window.supabase.createClient(
       'https://cldsozdocxpvkbuxwqep.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsZHNvemRvY3hwdmtidXh3cWVwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM2NjEyMTQsImV4cCI6MjA0OTIzNzIxNH0.eOilLhNm3HF3K1zRyNS3kbtvnPYRuXHXcXSx8Q9gOTU'
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsZHNvemRvY3hwdmtidXh3cWVwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM2NjEyMTQsImV4cCI6MjA0OTIzNzIxNH0.eOilLhNm3HF3K1zRyNS3kbtvnPYRuXHXcXSx8Q9gOTU',
+      {
+        auth: {
+          flowType: 'pkce',
+          detectSessionInUrl: true,
+          persistSession: true,
+          autoRefreshToken: true,
+        }
+      }
     );
 
     // CSRF 방어: 서버(/api/auth/kakao/start)가 nonce 발급 + state 주입 + authorize URL 302
