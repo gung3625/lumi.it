@@ -67,6 +67,8 @@ async function getCached(key) {
  */
 async function setCached(key, result, { kind = 'default', tier = 0 } = {}) {
   if (!key || !result) return;
+  // 빈 객체·빈 배열·문자열만 들어온 응답은 캐싱 금지 (다음 요청 시 재시도하도록)
+  if (typeof result === 'object' && Object.keys(result).length === 0) return;
   let admin;
   try { admin = getAdminClient(); } catch (_) { return; }
 

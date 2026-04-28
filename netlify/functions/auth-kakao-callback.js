@@ -26,6 +26,43 @@ exports.handler = async (event) => {
     return errorRedirect('카카오 인증 코드가 없습니다.');
   }
 
+  // H1 — CSRF: state nonce 검증 (oauth_nonces 테이블, 'kakao:' prefix, 10분 TTL, 일회용)
+  // 32 hex 형식의 nonce만 검증 대상. 'signup' 같은 정적 state는 레거시 호환을 위해 통과
+  // (auth-kakao-start.js 경유로 state=nonce를 발급받는 흐름이 신규 표준)
+  let resolvedIntent = null;
+  if (state && /^[a-f0-9]{32}$/i.test(state)) {
+    try {
+      const adminInit = getAdminClient();
+      const nonceKey = 'kakao:' + state;
+      const { data: nonceRow } = await adminInit
+        .from('oauth_nonces')
+        .select('user_id, lumi_token, created_at')
+        .eq('nonce', nonceKey)
+        .maybeSingle();
+
+      if (!nonceRow) {
+        console.error('[auth-kakao-callback] CSRF 검증 실패 (nonce 없음)');
+        return errorRedirect('CSRF 검증 실패. 다시 시도해 주세요.');
+      }
+      const ageMs = Date.now() - new Date(nonceRow.created_at).getTime();
+      if (ageMs > 10 * 60 * 1000) {
+        await adminInit.from('oauth_nonces').delete().eq('nonce', nonceKey);
+        console.error('[auth-kakao-callback] CSRF 검증 실패 (nonce 만료)');
+        return errorRedirect('인증 시간이 만료됐어요. 다시 시도해 주세요.');
+      }
+      // 일회용 — 즉시 삭제
+      await adminInit.from('oauth_nonces').delete().eq('nonce', nonceKey);
+      // intent 복원 (auth-kakao-start.js가 lumi_token에 JSON으로 저장)
+      try {
+        const meta = nonceRow.lumi_token ? JSON.parse(nonceRow.lumi_token) : null;
+        if (meta && meta.intent) resolvedIntent = String(meta.intent);
+      } catch (_) { /* ignore parse error */ }
+    } catch (e) {
+      console.error('[auth-kakao-callback] nonce 검증 예외:', e.message);
+      return errorRedirect('CSRF 검증 실패. 다시 시도해 주세요.');
+    }
+  }
+
   try {
     // 1. code → access_token 교환
     const tokenRes = await fetch(KAKAO_TOKEN_URL, {
@@ -41,9 +78,10 @@ exports.handler = async (event) => {
     });
 
     if (!tokenRes.ok) {
+      // H2 — 외부 응답 본문은 서버 로그에만, 사용자 redirect URL에는 노출 X (XSS·정보누출 방지)
       const errBody = await tokenRes.text().catch(() => '');
       console.error('[auth-kakao-callback] 토큰 교환 실패:', tokenRes.status, errBody);
-      return errorRedirect(`카카오 토큰 교환 실패 (${tokenRes.status}): ${errBody.slice(0, 200)}`);
+      return errorRedirect('카카오 토큰 교환 실패. 다시 시도해 주세요.');
     }
 
     const tokenData = await tokenRes.json();
@@ -79,20 +117,25 @@ exports.handler = async (event) => {
     // 3. Supabase 유저 upsert
     const admin = getAdminClient();
 
-    // 기존 유저 확인 (페이지네이션 루프 — 51번째 이후 가입자 누락 방지)
-    let allUsers = [];
-    let page = 1;
-    while (true) {
-      const { data: pageData, error: listErr } = await admin.auth.admin.listUsers({ page, perPage: 200 });
-      if (listErr || !pageData?.users?.length) break;
-      allUsers = allUsers.concat(pageData.users);
-      if (pageData.users.length < 200) break;
-      page++;
-      if (page > 50) break; // 안전 limit (10,000명)
+    // 기존 유저 확인 — M7: O(1) email 직접 조회 (전체 페이지네이션 → O(N) 제거)
+    let existingUser = null;
+    try {
+      const { data: { user: byEmail } } = await admin.auth.admin.getUserByEmail(email);
+      if (byEmail) {
+        existingUser = byEmail;
+      }
+    } catch (_) {
+      // getUserByEmail 미지원 시 filter 방식으로 fallback
+      const { data: listData } = await admin.auth.admin.listUsers({ filter: `email.eq.${email}`, perPage: 1 });
+      existingUser = listData?.users?.[0] || null;
     }
-    const existingUser = allUsers.find(
-      (u) => u.email === email || (u.user_metadata && u.user_metadata.kakao_id === kakaoId)
-    );
+    // kakao_id 기준 보조 조회 (이메일 없이 가입한 경우)
+    if (!existingUser) {
+      try {
+        const { data: listData } = await admin.auth.admin.listUsers({ filter: `user_metadata.kakao_id.eq.${kakaoId}`, perPage: 1 });
+        existingUser = listData?.users?.[0] || null;
+      } catch (_) { /* silent */ }
+    }
 
     let userId;
     let isNewUser = false;
@@ -146,8 +189,8 @@ exports.handler = async (event) => {
     }
 
     // 4. Magic link 생성 → 세션 발급 (신규=가입 흐름, 기존=대시보드)
-    // state='signup'이면 기존 유저도 signup으로 → 온보딩 상태 재확인
-    const fromSignup = state === 'signup';
+    // state='signup' (레거시) 또는 nonce row의 intent='signup'이면 기존 유저도 signup 흐름
+    const fromSignup = state === 'signup' || resolvedIntent === 'signup';
     const afterAuth = (isNewUser || fromSignup) ? 'https://lumi.it.kr/signup' : 'https://lumi.it.kr/';
     const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
       type: 'magiclink',
@@ -174,7 +217,8 @@ exports.handler = async (event) => {
 
     return errorRedirect('로그인 링크 생성에 실패했습니다.');
   } catch (err) {
+    // H2 — 예외 메시지를 사용자 redirect URL에 노출 X (XSS·정보누출 방지)
     console.error('[auth-kakao-callback] 예외:', err.message, err.stack);
-    return errorRedirect(`카카오 처리 예외: ${(err.message || 'unknown').slice(0, 200)}`);
+    return errorRedirect('카카오 로그인 처리 중 오류가 발생했어요. 다시 시도해 주세요.');
   }
 };

@@ -126,11 +126,11 @@
 ### 3.3 미세 5단계 위자드 (위자드 안의 위자드)
 - 진행 바 = 5개 점 + 4개 라인 (현재 단계 핑크 그라데이션 강조 + scale 1.08 + 그림자, 완료 단계 녹색 체크)
 - 마스코트 단계별 표정:
-  - 1/5: lumi-curious (호기심·시작)
-  - 2/5: lumi-character (안내)
-  - 3/5: lumi-surprised-2 (감지)
-  - 4/5: lumi-character (확인)
-  - 5/5: lumi-wink (완료)
+  - 1/5: logo-cloud.png (호기심·시작)
+  - 2/5: logo-cloud.png (안내)
+  - 3/5: logo-cloud.png (감지)
+  - 4/5: logo-cloud.png (확인)
+  - 5/5: logo-cloud.png (완료)
 - 시간 안내: "예상 소요 30초" → "앞으로 약 20초" → ... → "완료"
 
 ### 3.4 Progressive Validation 3-Phase

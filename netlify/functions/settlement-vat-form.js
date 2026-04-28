@@ -180,6 +180,7 @@ exports.handler = async (event) => {
           order_count: m.order_count,
         })),
         message: buildVatMessage(vatDue),
+        vat_disclaimer: '본 자료는 추정치이며 실 신고는 세금계산서 첨부 필수. 세무사 검토 권고',
         updatedAt: new Date().toISOString(),
       }),
     };

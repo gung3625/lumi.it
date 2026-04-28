@@ -287,6 +287,14 @@ async function checkCostLimit(admin, sellerId) {
 async function bumpCost(admin, sellerId, costKrw) {
   const monthBucket = new Date().toISOString().slice(0, 7) + '-01';
   try {
+    // M6: atomic upsert via RPC (INSERT … ON CONFLICT DO UPDATE, race-safe)
+    const { error: rpcErr } = await admin.rpc('bump_insight_cost_atomic', {
+      p_seller_id: sellerId,
+      p_bucket_month: monthBucket,
+      p_cost_krw: costKrw,
+    });
+    if (!rpcErr) return;
+    // RPC 미배포 fallback — SELECT-then-UPDATE (best-effort)
     const { data: existing } = await admin
       .from('insight_cost_ledger')
       .select('id, total_cost_krw, call_count')

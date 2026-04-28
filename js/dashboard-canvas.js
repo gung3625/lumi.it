@@ -304,8 +304,9 @@
     const dismissed = JSON.parse(localStorage.getItem('lumi_aa_dismissed') || '[]');
     const visible = ACTION_AGENT_MOCKS.filter((m) => !dismissed.includes(m.id));
     if (visible.length === 0) {
-      stack.innerHTML = '';
-      stack.style.display = 'none';
+      // M11: 모든 제안이 닫혔거나 없을 때 — 빈 상태 정직 표기
+      stack.innerHTML = '<div class="action-agent action-agent--empty"><p class="action-agent__msg" style="color:var(--text-secondary,#888);font-size:13px;padding:12px 16px;">아직 제안할 게 없어요. 명령창에 입력해 주세요</p></div>';
+      stack.style.display = '';
       return;
     }
     stack.style.display = '';
@@ -554,8 +555,12 @@
 
     if (hintEl) {
       const refundable = s.vat_refundable || 0;
-      if (refundable > 0) {
-        hintEl.textContent = `매입세액 환급 가능 ₩${fmt(refundable)} (마켓 수수료·광고비 부가세)`;
+      const disclaimer = data.summary?.vat_disclaimer || s.vat_disclaimer || '';
+      const parts = [];
+      if (refundable > 0) parts.push(`매입세액 환급 가능 ₩${fmt(refundable)} (마켓 수수료·광고비 부가세)`);
+      if (disclaimer) parts.push(disclaimer);
+      if (parts.length > 0) {
+        hintEl.textContent = parts.join(' · ');
         hintEl.hidden = false;
       } else {
         hintEl.hidden = true;

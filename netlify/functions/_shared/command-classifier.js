@@ -18,7 +18,26 @@ const { makeCacheKey, getCached, setCached } = require('./llm-cache');
 // Pre-filter (gate 1) — Shell 즉시 처리
 const BLOCKLIST = [
   '시발', '씨발', 'fuck', 'shit',
+  '병신', '븅신', '꺼져', '존나', '졸라', '쩔어', '시팔', '씨팔',
+  '새끼', '쌔끼', '개새', '미친놈', '좆', '좃', '꼴받', '닥쳐',
+  '엿먹', '엿이나', '뒤져', '죽어', '쉣',
   // 명백한 욕설만 추가. 정치·종교는 non_related로 분류
+];
+
+// 자모 분리·은어 정규식 (음절 분리·중간 공백·반복 자모)
+const BLOCKLIST_REGEX = [
+  /ㅅ\s*ㅂ/,      // ㅅㅂ → 시발
+  /ㅂ\s*ㅅ/,      // ㅂㅅ → 병신
+  /ㅈ\s*ㄴ/,      // ㅈㄴ → 존나
+  /ㄲ\s*ㅈ/,      // ㄲㅈ → 꺼져
+  /ㅁ\s*ㅊ/,      // ㅁㅊ → 미친
+  /ㅆ\s*ㄲ/,      // ㅆㄲ → 새끼
+  /시[\s.]*발/,
+  /씨[\s.]*발/,
+  /시[\s.]*팔/,
+  /병[\s.]*신/,
+  /존[\s.]*나/,
+  /개[\s.]*새/,
 ];
 
 const GREETING_PATTERNS = [
@@ -54,9 +73,15 @@ function preFilter(input) {
 
   const lower = text.toLowerCase();
 
-  // 욕설 차단
+  // 욕설 차단 — 단어 기반 (음절 포함)
   for (const w of BLOCKLIST) {
     if (lower.includes(w.toLowerCase())) {
+      return { intent: 'abuse', fast: true, reason: '그런 표현은 응답하지 않아요' };
+    }
+  }
+  // 욕설 차단 — 자모/분리/은어 정규식
+  for (const re of BLOCKLIST_REGEX) {
+    if (re.test(text)) {
       return { intent: 'abuse', fast: true, reason: '그런 표현은 응답하지 않아요' };
     }
   }
@@ -159,4 +184,4 @@ async function classify(input, sellerContext = {}) {
   return { ...mini, fast: false };
 }
 
-module.exports = { classify, preFilter, classifyWithMini, BLOCKLIST };
+module.exports = { classify, preFilter, classifyWithMini, BLOCKLIST, BLOCKLIST_REGEX };
