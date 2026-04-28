@@ -227,7 +227,8 @@ CREATE TABLE IF NOT EXISTS seller_trend_matches (
 );
 
 CREATE INDEX IF NOT EXISTS idx_seller_trend_matches_seller ON seller_trend_matches(seller_id, match_score DESC);
-CREATE INDEX IF NOT EXISTS idx_seller_trend_matches_active ON seller_trend_matches(seller_id, created_at DESC) WHERE dismissed_at IS NULL AND (expires_at IS NULL OR expires_at > NOW());
+-- 부분 인덱스 WHERE에는 IMMUTABLE 함수만 허용 — NOW() 제거, expires_at 필터는 쿼리에서 적용
+CREATE INDEX IF NOT EXISTS idx_seller_trend_matches_active ON seller_trend_matches(seller_id, created_at DESC) WHERE dismissed_at IS NULL;
 
 ALTER TABLE seller_trend_matches ENABLE ROW LEVEL SECURITY;
 
