@@ -128,6 +128,10 @@ exports.handler = async (event) => {
   if (!ALLOWED_MIME.has(contentType.toLowerCase())) {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '지원하지 않는 이미지 형식입니다. (JPG/PNG/WebP/HEIC만)' }) };
   }
+  // BUG-01: 0-byte 파일 통과 차단
+  if (!fileData || fileData.length === 0) {
+    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '파일이 비어있습니다.' }) };
+  }
   if (fileData.length > MAX_BYTES) {
     return { statusCode: 413, headers: CORS, body: JSON.stringify({ error: '파일이 너무 큽니다 (최대 10MB).' }) };
   }

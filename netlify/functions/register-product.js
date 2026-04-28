@@ -20,9 +20,10 @@ const { tryAcquire, adaptFromHeaders, applyBackoff } = require('./_shared/thrott
 const retryEngine = require('./_shared/retry-engine');
 const coupangAdapter = require('./_shared/market-adapters/coupang-adapter');
 const naverAdapter = require('./_shared/market-adapters/naver-adapter');
+const tossAdapter = require('./_shared/market-adapters/toss-adapter');
 const { translateMarketError } = require('./_shared/market-errors');
 
-const SUPPORTED_MARKETS = new Set(['coupang', 'naver']);
+const SUPPORTED_MARKETS = new Set(['coupang', 'naver', 'toss']);
 
 async function distributeToMarket({ market, lumiProduct, sellerCredentials, store_id, mock }) {
   // Throttle 체크
@@ -62,6 +63,18 @@ async function distributeToMarket({ market, lumiProduct, sellerCredentials, stor
         adaptFromHeaders(market, sellerCredentials?.market_seller_id, result.rateLimit);
       }
       // 429 → backoff
+      if (result.status === 429) {
+        applyBackoff(market, sellerCredentials?.market_seller_id, 60_000);
+      }
+      return { market, ...result };
+    }
+    if (market === 'toss') {
+      const result = await tossAdapter.registerProduct({
+        lumiProduct,
+        credentials: sellerCredentials?.credentials_encrypted,
+        market_seller_id: sellerCredentials?.market_seller_id,
+        mock,
+      });
       if (result.status === 429) {
         applyBackoff(market, sellerCredentials?.market_seller_id, 60_000);
       }
@@ -108,7 +121,8 @@ exports.handler = async (event) => {
 
   const isSignupMock = (process.env.SIGNUP_MOCK || 'false').toLowerCase() === 'true';
   const adaptersForceMock = (process.env.COUPANG_VERIFY_MOCK || 'true').toLowerCase() !== 'false'
-    || (process.env.NAVER_VERIFY_MOCK || 'true').toLowerCase() !== 'false';
+    || (process.env.NAVER_VERIFY_MOCK || 'true').toLowerCase() !== 'false'
+    || (process.env.TOSS_VERIFY_MOCK || 'true').toLowerCase() !== 'false';
 
   // 3. Supabase 연결 (mock 환경에서는 graceful)
   let admin;
@@ -137,7 +151,13 @@ exports.handler = async (event) => {
       primary_image_url: lumiProduct.image_urls?.[0] || null,
       category_suggestions: lumiProduct.category_suggestions,
       keywords: lumiProduct.keywords,
-      market_overrides: lumiProduct.market_overrides || {},
+      market_overrides: {
+        ...(lumiProduct.market_overrides || {}),
+        // Phase: title 3안·후킹·상세레이아웃 보존 (추후 칼럼 정식화 전 임시)
+        title_options: Array.isArray(lumiProduct.title_options) ? lumiProduct.title_options : null,
+        hook_caption: lumiProduct.hook_caption || null,
+        detail_layout: lumiProduct.detail_layout || null,
+      },
       policy_warnings: lumiProduct.policy_warnings,
       raw_ai: lumiProduct.raw_ai || null,
       status: 'registering',

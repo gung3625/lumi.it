@@ -131,26 +131,10 @@
 
         <div class="rp-deck-wrap">
           <div class="rp-deck" data-deck>
-            <!-- 카드 1: 상품명 -->
-            <article class="rp-rcard" data-rcard data-card-id="title" style="z-index:5;">
-              <div class="rp-rcard-step">1 / 5</div>
-              <h2 class="rp-rcard-question">이렇게 어때요?</h2>
-              <div class="rp-rcard-content">
-                <p class="rp-rcard-label">상품명</p>
-                <p class="rp-rcard-value rp-rcard-title" data-bind="title">—</p>
-                <input type="text" class="rp-rcard-edit" data-edit="title" maxlength="100" placeholder="직접 수정" />
-              </div>
-              <div class="rp-rcard-actions">
-                <button class="rp-rcard-no" data-card-action="reject"><i data-lucide="x"></i> 다시</button>
-                <button class="rp-rcard-edit-btn" data-card-action="edit"><i data-lucide="pencil"></i> 수정</button>
-                <button class="rp-rcard-yes" data-card-action="approve"><i data-lucide="check"></i> 좋아요</button>
-              </div>
-            </article>
-
-            <!-- 카드 2: 카테고리 (번개장터 패턴 — [변경] 항상 노출, 신뢰도 별점·%) -->
-            <article class="rp-rcard" data-rcard data-card-id="category" style="z-index:4;">
-              <div class="rp-rcard-step">2 / 5</div>
-              <h2 class="rp-rcard-question">카테고리도 어울리나요?</h2>
+            <!-- 카드 1: 카테고리 (번개장터 패턴 — [변경] 항상 노출, 신뢰도 별점·%) -->
+            <article class="rp-rcard" data-rcard data-card-id="category" style="z-index:6;">
+              <div class="rp-rcard-step">1 / 6</div>
+              <h2 class="rp-rcard-question">카테고리부터 맞춰볼게요</h2>
               <div class="rp-rcard-content">
                 <p class="rp-rcard-label">쿠팡</p>
                 <p class="rp-rcard-value" data-bind="category-coupang">—</p>
@@ -166,6 +150,13 @@
                   <span class="confidence-row__pct" data-confidence-pct="naver">95%</span>
                   <button type="button" class="confidence-row__change" data-change-category="naver">변경</button>
                 </div>
+                <p class="rp-rcard-label" style="margin-top:14px;">토스쇼핑</p>
+                <p class="rp-rcard-value" data-bind="category-toss">—</p>
+                <div class="confidence-row">
+                  <span class="confidence-row__stars" aria-hidden="true">★★★★★</span>
+                  <span class="confidence-row__pct" data-confidence-pct="toss">95%</span>
+                  <button type="button" class="confidence-row__change" data-change-category="toss">변경</button>
+                </div>
                 <p class="rp-rcard-meta" data-bind="category-confidence">사장님이 바꿀수록 루미가 똑똑해져요</p>
               </div>
               <div class="rp-rcard-actions">
@@ -174,9 +165,45 @@
               </div>
             </article>
 
-            <!-- 카드 3: 가격 -->
+            <!-- 카드 2: 상품명 3안 (라디오 선택) + 후킹 카피 -->
+            <article class="rp-rcard" data-rcard data-card-id="title" style="z-index:5;">
+              <div class="rp-rcard-step">2 / 6</div>
+              <h2 class="rp-rcard-question">상품명 3안 중 어떤게 좋아요?</h2>
+              <div class="rp-rcard-content">
+                <p class="rp-rcard-label">루미가 만든 3안</p>
+                <div class="rp-title-options" data-bind="title-options" role="radiogroup" aria-label="상품명 3안 선택"></div>
+
+                <p class="rp-rcard-label" style="margin-top:18px;">후킹 카피 (마켓 상단 1줄)</p>
+                <p class="rp-rcard-hook" data-bind="hook-caption">—</p>
+                <input type="text" class="rp-rcard-edit" data-edit="hook" maxlength="60" placeholder="후킹 카피 직접 수정" />
+
+                <input type="text" class="rp-rcard-edit" data-edit="title" maxlength="100" placeholder="상품명 직접 수정" style="margin-top:10px;" />
+              </div>
+              <div class="rp-rcard-actions">
+                <button class="rp-rcard-no" data-card-action="reject"><i data-lucide="x"></i> 다시</button>
+                <button class="rp-rcard-edit-btn" data-card-action="edit"><i data-lucide="pencil"></i> 수정</button>
+                <button class="rp-rcard-yes" data-card-action="approve"><i data-lucide="check"></i> 좋아요</button>
+              </div>
+            </article>
+
+            <!-- 카드 3: 상세페이지 레이아웃 미리보기 (블록 단위) -->
+            <article class="rp-rcard" data-rcard data-card-id="detail" style="z-index:4;">
+              <div class="rp-rcard-step">3 / 6</div>
+              <h2 class="rp-rcard-question">상세페이지는 이렇게 짜볼게요</h2>
+              <div class="rp-rcard-content">
+                <div class="rp-detail-preview" data-bind="detail-layout">
+                  <p class="rp-rcard-meta">루미가 블록 단위로 미리 짜드려요</p>
+                </div>
+              </div>
+              <div class="rp-rcard-actions">
+                <button class="rp-rcard-no" data-card-action="reject"><i data-lucide="x"></i> 다시</button>
+                <button class="rp-rcard-yes" data-card-action="approve"><i data-lucide="check"></i> 좋아요</button>
+              </div>
+            </article>
+
+            <!-- 카드 4: 가격 -->
             <article class="rp-rcard" data-rcard data-card-id="price" style="z-index:3;">
-              <div class="rp-rcard-step">3 / 5</div>
+              <div class="rp-rcard-step">4 / 6</div>
               <h2 class="rp-rcard-question">권장 판매가는요?</h2>
               <div class="rp-rcard-content">
                 <p class="rp-rcard-label">루미가 추천하는 가격</p>
@@ -191,9 +218,9 @@
               </div>
             </article>
 
-            <!-- 카드 4: 옵션 -->
+            <!-- 카드 5: 옵션·재고 -->
             <article class="rp-rcard" data-rcard data-card-id="options" style="z-index:2;">
-              <div class="rp-rcard-step">4 / 5</div>
+              <div class="rp-rcard-step">5 / 6</div>
               <h2 class="rp-rcard-question">옵션은 이정도면 충분?</h2>
               <div class="rp-rcard-content">
                 <div class="rp-options-list" data-bind="options"></div>
@@ -205,9 +232,9 @@
               </div>
             </article>
 
-            <!-- 카드 5: 정책 + 키워드 -->
+            <!-- 카드 6: 정책 + 키워드 -->
             <article class="rp-rcard" data-rcard data-card-id="policy" style="z-index:1;">
-              <div class="rp-rcard-step">5 / 5</div>
+              <div class="rp-rcard-step">6 / 6</div>
               <h2 class="rp-rcard-question">마지막 점검할게요</h2>
               <div class="rp-rcard-content">
                 <p class="rp-rcard-label">검색 키워드</p>
@@ -258,6 +285,18 @@
             <input type="checkbox" data-market-toggle="naver" />
             <span class="rp-market-switch" aria-hidden="true"></span>
           </label>
+
+          <label class="rp-market" data-market="toss">
+            <span class="rp-market-icon">
+              <i data-lucide="store" style="width:22px;height:22px;"></i>
+            </span>
+            <span class="rp-market-text">
+              <span class="rp-market-name">토스쇼핑</span>
+              <span class="rp-market-status" data-market-status="toss">연결 확인 중…</span>
+            </span>
+            <input type="checkbox" data-market-toggle="toss" />
+            <span class="rp-market-switch" aria-hidden="true"></span>
+          </label>
         </div>
 
         <p class="rp-error" data-error="distribute" style="display:none;"></p>
@@ -278,6 +317,10 @@
           <div class="rp-distribute-row" data-distribute-row="naver" style="display:none;">
             <span class="rp-distribute-name">네이버</span>
             <span class="rp-distribute-state" data-distribute-state="naver">대기</span>
+          </div>
+          <div class="rp-distribute-row" data-distribute-row="toss" style="display:none;">
+            <span class="rp-distribute-name">토스쇼핑</span>
+            <span class="rp-distribute-state" data-distribute-state="toss">대기</span>
           </div>
         </div>
 
@@ -367,7 +410,7 @@
             <p style="margin:14px 0 0;font-size:12px;color:#888;">사장님이 바꿀수록 루미가 똑똑해져요.</p>
           `;
           window.LumiCanvas.openSlideOver({
-            title: (market === 'coupang' ? '쿠팡' : '네이버') + ' 카테고리 변경',
+            title: (market === 'coupang' ? '쿠팡' : market === 'naver' ? '네이버' : '토스쇼핑') + ' 카테고리 변경',
             body,
           });
           body.querySelectorAll('[data-cat-id]').forEach((li) => {

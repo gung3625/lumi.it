@@ -30,9 +30,22 @@
  */
 
 /**
+ * @typedef {Object} DetailLayout
+ * @property {string} [header_image]
+ * @property {string[]} [key_points]
+ * @property {Array<Object>} [size_table]
+ * @property {string} [model_styling]
+ * @property {string} [fabric_care]
+ * @property {Array<{q:string,a:string}>} [faq]
+ */
+
+/**
  * @typedef {Object} LumiProduct
- * @property {string} title - 표준 상품명
- * @property {Object<string, CategorySuggestion>} category_suggestions - { coupang, naver }
+ * @property {string} title - 표준 상품명 (선택된 1안)
+ * @property {string[]} [title_options] - 3안 (사용자 라디오 선택)
+ * @property {string} [hook_caption] - 후킹 카피 1줄
+ * @property {DetailLayout} [detail_layout] - 상세페이지 블록 미리보기
+ * @property {Object<string, CategorySuggestion>} category_suggestions - { coupang, naver, toss }
  * @property {number} price_suggested - 권장가 (원)
  * @property {ProductOption[]} options
  * @property {string[]} keywords - SEO·검색 태그 (≤20)
@@ -89,9 +102,13 @@ function validateLumiProduct(product) {
 function emptyLumiProduct() {
   return {
     title: '',
+    title_options: [],
+    hook_caption: '',
+    detail_layout: null,
     category_suggestions: {
       coupang: { tree: [], confidence: 0 },
       naver: { tree: [], confidence: 0 },
+      toss: { tree: [], confidence: 0 },
     },
     price_suggested: 0,
     options: [],
@@ -112,12 +129,45 @@ function emptyLumiProduct() {
 function fromAiResponse(aiRaw, imageUrls = []) {
   const safe = aiRaw && typeof aiRaw === 'object' ? aiRaw : {};
   const baseTree = Array.isArray(safe.category) ? safe.category : (typeof safe.category === 'string' ? safe.category.split(/[>\/]/).map((s) => s.trim()).filter(Boolean) : []);
+  const conf = typeof safe.category_confidence === 'number' ? safe.category_confidence : 0.7;
+
+  // 3안 보정: 누락 시 product_name 기반 합성
+  const baseTitle = String(safe.product_name || safe.title || '').slice(0, 100);
+  let titleOptions = Array.isArray(safe.title_options)
+    ? safe.title_options.filter((t) => typeof t === 'string' && t.trim()).slice(0, 3).map((t) => String(t).slice(0, 100))
+    : [];
+  if (titleOptions.length === 0 && baseTitle) titleOptions = [baseTitle];
+  // 항상 첫 번째 = title 기준
+  if (titleOptions[0] !== baseTitle && baseTitle) titleOptions[0] = baseTitle;
+
+  // 상세 레이아웃 sanitize
+  const dlRaw = safe.detail_layout && typeof safe.detail_layout === 'object' ? safe.detail_layout : null;
+  const detailLayout = dlRaw ? {
+    header_image: String(dlRaw.header_image || '').slice(0, 200),
+    key_points: Array.isArray(dlRaw.key_points) ? dlRaw.key_points.slice(0, 6).map((s) => String(s).slice(0, 60)) : [],
+    size_table: Array.isArray(dlRaw.size_table) ? dlRaw.size_table.slice(0, 12).map((row) => {
+      if (!row || typeof row !== 'object') return null;
+      const out = {};
+      for (const k of Object.keys(row)) out[String(k).slice(0, 20)] = String(row[k]).slice(0, 40);
+      return out;
+    }).filter(Boolean) : [],
+    model_styling: String(dlRaw.model_styling || '').slice(0, 120),
+    fabric_care: String(dlRaw.fabric_care || '').slice(0, 200),
+    faq: Array.isArray(dlRaw.faq) ? dlRaw.faq.slice(0, 6).map((f) => ({
+      q: String(f?.q || '').slice(0, 120),
+      a: String(f?.a || '').slice(0, 240),
+    })).filter((f) => f.q && f.a) : [],
+  } : null;
 
   return {
-    title: String(safe.product_name || safe.title || '').slice(0, 100),
+    title: baseTitle,
+    title_options: titleOptions,
+    hook_caption: String(safe.hook_caption || '').slice(0, 60),
+    detail_layout: detailLayout,
     category_suggestions: {
-      coupang: { tree: baseTree, confidence: typeof safe.category_confidence === 'number' ? safe.category_confidence : 0.7 },
-      naver: { tree: baseTree, confidence: typeof safe.category_confidence === 'number' ? safe.category_confidence : 0.7 },
+      coupang: { tree: baseTree, confidence: conf },
+      naver: { tree: baseTree, confidence: conf },
+      toss: { tree: baseTree, confidence: conf },
     },
     price_suggested: Number(safe.price_suggested || safe.price || 0),
     options: Array.isArray(safe.options) ? safe.options.map((o) => ({

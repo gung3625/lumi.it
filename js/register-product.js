@@ -12,8 +12,8 @@
     photoFile: null,
     imageUrl: null,
     lumiProduct: null,        // AI 분석 결과 (Lumi 표준 스키마)
-    cardIndex: 0,             // 0~4
-    cardOrder: ['title', 'category', 'price', 'options', 'policy'],
+    cardIndex: 0,             // 0~5 (6 cards)
+    cardOrder: ['category', 'title', 'detail', 'price', 'options', 'policy'],
     connectedMarkets: new Set(), // me API 결과
     selectedMarkets: new Set(),
     distributeResult: null,
@@ -225,22 +225,56 @@
     const product = state.lumiProduct;
     if (!product) return;
 
-    // 카드 1: 상품명
-    const titleEl = $('[data-bind="title"]');
-    if (titleEl) titleEl.textContent = product.title || '—';
+    // 카드 (상품명): title 3안 라디오 + 후킹 카피
+    const titleOptionsBox = $('[data-bind="title-options"]');
+    if (titleOptionsBox) {
+      titleOptionsBox.innerHTML = '';
+      const opts = Array.isArray(product.title_options) && product.title_options.length > 0
+        ? product.title_options
+        : (product.title ? [product.title] : []);
+      opts.forEach((label, idx) => {
+        const id = `title-opt-${idx}`;
+        const wrap = document.createElement('label');
+        wrap.className = 'rp-title-option';
+        wrap.innerHTML = `<input type="radio" name="title-option" value="${escapeHtml(label)}" id="${id}" ${idx === 0 ? 'checked' : ''} />
+          <span class="rp-title-option-tag">${idx === 0 ? 'A · 감성' : (idx === 1 ? 'B · 스펙' : 'C · 가격')}</span>
+          <span class="rp-title-option-text">${escapeHtml(label)}</span>`;
+        titleOptionsBox.appendChild(wrap);
+      });
+      titleOptionsBox.querySelectorAll('input[type="radio"]').forEach((r) => {
+        r.addEventListener('change', () => {
+          if (r.checked) state.lumiProduct.title = r.value;
+        });
+      });
+    }
     const titleEdit = $('[data-edit="title"]');
     if (titleEdit) titleEdit.value = product.title || '';
 
-    // 카드 2: 카테고리
+    // 후킹 카피
+    const hookEl = $('[data-bind="hook-caption"]');
+    if (hookEl) hookEl.textContent = product.hook_caption || '—';
+    const hookEdit = $('[data-edit="hook"]');
+    if (hookEdit) hookEdit.value = product.hook_caption || '';
+
+    // 카드 (카테고리): 쿠팡 / 네이버 / 토스
     const cTree = product.category_suggestions?.coupang?.tree || [];
     const nTree = product.category_suggestions?.naver?.tree || [];
+    const tTree = product.category_suggestions?.toss?.tree || [];
     const cConf = product.category_suggestions?.coupang?.confidence || 0;
     const cpEl = $('[data-bind="category-coupang"]');
     if (cpEl) cpEl.textContent = cTree.length ? cTree.join(' > ') : '추천 없음';
     const nvEl = $('[data-bind="category-naver"]');
     if (nvEl) nvEl.textContent = nTree.length ? nTree.join(' > ') : '추천 없음';
+    const tsEl = $('[data-bind="category-toss"]');
+    if (tsEl) tsEl.textContent = tTree.length ? tTree.slice(0, 3).join(' > ') : '추천 없음';
     const cMeta = $('[data-bind="category-confidence"]');
     if (cMeta) cMeta.textContent = `루미 신뢰도 ${Math.round((cConf || 0) * 100)}%`;
+
+    // 카드 (상세 레이아웃) — 블록 단위 미리보기
+    const detailBox = $('[data-bind="detail-layout"]');
+    if (detailBox) {
+      detailBox.innerHTML = renderDetailLayout(product.detail_layout);
+    }
 
     // 카드 3: 가격
     const priceEl = $('[data-bind="price"]');
@@ -310,21 +344,44 @@
     if (window.lucide) window.lucide.createIcons();
   }
 
+  function persistCardEdits(cardId, card) {
+    // title 카드 = 라디오 + 직접 수정 input 두 개 (title / hook)
+    if (cardId === 'title') {
+      const titleInput = $('[data-edit="title"]', card);
+      const hookInput = $('[data-edit="hook"]', card);
+      if (titleInput && titleInput.value.trim()) {
+        state.lumiProduct.title = titleInput.value.trim();
+      } else {
+        // 라디오 선택 값 적용
+        const checked = card.querySelector('input[name="title-option"]:checked');
+        if (checked) state.lumiProduct.title = checked.value;
+      }
+      if (hookInput && hookInput.value.trim()) {
+        state.lumiProduct.hook_caption = hookInput.value.trim();
+      }
+      const hookEl = $('[data-bind="hook-caption"]', card);
+      if (hookEl) hookEl.textContent = state.lumiProduct.hook_caption || '—';
+      return;
+    }
+    if (cardId === 'price') {
+      const input = $('[data-edit="price"]', card);
+      if (input) {
+        state.lumiProduct.price_suggested = Number(input.value) || state.lumiProduct.price_suggested;
+        const priceEl = $('[data-bind="price"]');
+        if (priceEl) priceEl.textContent = formatPrice(state.lumiProduct.price_suggested);
+      }
+      return;
+    }
+  }
+
   function handleCardAction(cardId, action, card) {
     if (action === 'edit') {
       card.classList.toggle('rp-editing');
-      const input = $('[data-edit]', card);
-      if (input) {
-        if (card.classList.contains('rp-editing')) {
-          setTimeout(() => input.focus(), 50);
-        } else {
-          // 편집 종료 시 저장
-          if (cardId === 'title') state.lumiProduct.title = input.value.trim() || state.lumiProduct.title;
-          if (cardId === 'price') state.lumiProduct.price_suggested = Number(input.value) || state.lumiProduct.price_suggested;
-          // 디스플레이 갱신
-          if (cardId === 'title') $('[data-bind="title"]').textContent = state.lumiProduct.title;
-          if (cardId === 'price') $('[data-bind="price"]').textContent = formatPrice(state.lumiProduct.price_suggested);
-        }
+      if (card.classList.contains('rp-editing')) {
+        const focusable = $('[data-edit]', card);
+        if (focusable) setTimeout(() => focusable.focus(), 50);
+      } else {
+        persistCardEdits(cardId, card);
       }
       return;
     }
@@ -339,12 +396,11 @@
     if (action === 'approve') {
       // 편집 중이었다면 저장
       if (card.classList.contains('rp-editing')) {
-        const input = $('[data-edit]', card);
-        if (input) {
-          if (cardId === 'title') state.lumiProduct.title = input.value.trim() || state.lumiProduct.title;
-          if (cardId === 'price') state.lumiProduct.price_suggested = Number(input.value) || state.lumiProduct.price_suggested;
-        }
+        persistCardEdits(cardId, card);
         card.classList.remove('rp-editing');
+      } else if (cardId === 'title') {
+        // 라디오 선택값 반영 (편집 모드 아니어도)
+        persistCardEdits(cardId, card);
       }
       // 카드 우측 슬라이드
       card.classList.add('rp-rcard-leave-right');
@@ -388,7 +444,7 @@
       });
     } catch (e) { /* mock 환경 */ }
 
-    ['coupang', 'naver'].forEach((market) => {
+    ['coupang', 'naver', 'toss'].forEach((market) => {
       const row = $(`[data-market="${market}"]`);
       const status = $(`[data-market-status="${market}"]`);
       const toggle = $(`[data-market-toggle="${market}"]`);
@@ -412,7 +468,7 @@
   }
 
   function bindDistribute() {
-    ['coupang', 'naver'].forEach((market) => {
+    ['coupang', 'naver', 'toss'].forEach((market) => {
       const toggle = $(`[data-market-toggle="${market}"]`);
       if (!toggle) return;
       toggle.onchange = () => {
@@ -495,7 +551,10 @@
     let anyLink = false;
     (res.body.registrations || []).forEach((r) => {
       const li = document.createElement('li');
-      const marketName = r.market === 'coupang' ? '쿠팡' : (r.market === 'naver' ? '네이버 스마트스토어' : r.market);
+      const marketName = r.market === 'coupang' ? '쿠팡'
+        : r.market === 'naver' ? '네이버 스마트스토어'
+        : r.market === 'toss' ? '토스쇼핑'
+        : r.market;
       if (r.success && r.direct_link) {
         anyLink = true;
         li.innerHTML = `<p class="rp-results-market">${marketName}</p><a href="${escapeHtml(r.direct_link)}" target="_blank" rel="noopener">상품 보러 가기 <i data-lucide="external-link" style="width:14px;height:14px;"></i></a>`;
@@ -529,6 +588,42 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
+  }
+
+  function renderDetailLayout(dl) {
+    if (!dl || typeof dl !== 'object') {
+      return '<p class="rp-rcard-meta">상세 레이아웃 정보가 없어요. 직접 입력은 PC에서 가능해요.</p>';
+    }
+    const blocks = [];
+    if (dl.header_image) {
+      blocks.push(`<div class="rp-detail-block rp-detail-block-hero"><span class="rp-detail-block-tag">대표</span><p>${escapeHtml(dl.header_image)}</p></div>`);
+    }
+    if (Array.isArray(dl.key_points) && dl.key_points.length > 0) {
+      const items = dl.key_points.map((k) => `<li>${escapeHtml(k)}</li>`).join('');
+      blocks.push(`<div class="rp-detail-block"><span class="rp-detail-block-tag">셀링포인트</span><ul class="rp-detail-keypoints">${items}</ul></div>`);
+    }
+    if (Array.isArray(dl.size_table) && dl.size_table.length > 0) {
+      const cols = Object.keys(dl.size_table[0] || {});
+      const head = `<tr>${cols.map((c) => `<th>${escapeHtml(c)}</th>`).join('')}</tr>`;
+      const rows = dl.size_table.map((row) => {
+        return `<tr>${cols.map((c) => `<td>${escapeHtml(row[c] || '')}</td>`).join('')}</tr>`;
+      }).join('');
+      blocks.push(`<div class="rp-detail-block"><span class="rp-detail-block-tag">사이즈표</span><table class="rp-detail-sizetable"><thead>${head}</thead><tbody>${rows}</tbody></table></div>`);
+    }
+    if (dl.model_styling) {
+      blocks.push(`<div class="rp-detail-block"><span class="rp-detail-block-tag">모델</span><p>${escapeHtml(dl.model_styling)}</p></div>`);
+    }
+    if (dl.fabric_care) {
+      blocks.push(`<div class="rp-detail-block"><span class="rp-detail-block-tag">소재·세탁</span><p>${escapeHtml(dl.fabric_care)}</p></div>`);
+    }
+    if (Array.isArray(dl.faq) && dl.faq.length > 0) {
+      const items = dl.faq.map((f) => `<li><strong>Q. ${escapeHtml(f.q)}</strong><br />A. ${escapeHtml(f.a)}</li>`).join('');
+      blocks.push(`<div class="rp-detail-block"><span class="rp-detail-block-tag">FAQ</span><ul class="rp-detail-faq">${items}</ul></div>`);
+    }
+    if (blocks.length === 0) {
+      return '<p class="rp-rcard-meta">루미가 상세 레이아웃을 더 가다듬을 수 있어요. 좋아요 누르면 다음 카드로 갈게요.</p>';
+    }
+    return blocks.join('');
   }
 
   // ================================================================
