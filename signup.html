@@ -122,7 +122,7 @@
           </div>
         </section>
 
-        <!-- ============ STEP 2: 마켓 OAuth ============ -->
+        <!-- ============ STEP 2: 마켓 OAuth — 위자드 안의 위자드 (Sprint 1.5) ============ -->
         <section class="wizard-card" data-step="2" style="display:none;">
           <span class="wizard-step-num">STEP 2 / 5 · 핵심 단계</span>
           <h2 class="wizard-title">어느 마켓에 올리시겠어요?</h2>
@@ -140,37 +140,114 @@
               <span class="choice-status"></span>
             </div>
 
+            <!-- 쿠팡 미세 위자드 (Sprint 1.5) -->
             <div class="connect-form" data-form="coupang" style="display:none;">
-              <div class="connect-guide" data-guide="coupang" style="display:none;">
-                <strong>쿠팡 OPEN API 키 발급 안내</strong>
-                <ol>
-                  <li>쿠팡 Wing 로그인 → 우상단 [판매자명]</li>
-                  <li>[추가판매정보] → [OPEN API 키 발급]</li>
-                  <li>약관 동의 → 사용 목적: <strong>OPEN API</strong> 선택</li>
-                  <li>발급된 Vendor ID / Access Key / Secret Key를 아래에 입력</li>
-                </ol>
-                <p style="margin:8px 0 0;"><button type="button" class="toast-deeplink" data-deeplink="coupang.api_key_issue">쿠팡 Wing 가이드 →</button></p>
-              </div>
-              <button type="button" class="connect-guide-toggle" data-guide-toggle="coupang">키 발급 방법 보기</button>
+              <div class="micro-wizard" data-micro-wizard="coupang" data-micro-step="1">
+                <!-- 미세 5단계 진행 바 -->
+                <div class="micro-progress" role="progressbar" aria-valuemin="1" aria-valuemax="5">
+                  <span class="micro-progress-step active" data-mp-step="1" data-mp-label="발급 안내">1</span>
+                  <span class="micro-progress-line"></span>
+                  <span class="micro-progress-step" data-mp-step="2" data-mp-label="키 복사">2</span>
+                  <span class="micro-progress-line"></span>
+                  <span class="micro-progress-step" data-mp-step="3" data-mp-label="입력">3</span>
+                  <span class="micro-progress-line"></span>
+                  <span class="micro-progress-step" data-mp-step="4" data-mp-label="검증">4</span>
+                  <span class="micro-progress-line"></span>
+                  <span class="micro-progress-step" data-mp-step="5" data-mp-label="완료">5</span>
+                </div>
+                <p class="micro-progress-time" data-mp-time>예상 소요 30초</p>
 
-              <div class="form-row">
-                <label class="form-label">Vendor ID</label>
-                <input type="text" class="form-input" placeholder="A00012345" data-input="coupangVendor" autocomplete="off" />
-              </div>
-              <div class="form-row">
-                <label class="form-label">Access Key</label>
-                <input type="text" class="form-input" placeholder="32~64자" data-input="coupangAccess" autocomplete="off" />
-              </div>
-              <div class="form-row">
-                <label class="form-label">Secret Key</label>
-                <input type="password" class="form-input" placeholder="저장 후 마스킹 처리" data-input="coupangSecret" autocomplete="off" />
-                <p class="form-help">서버에서 암호화 저장합니다. 사장님 화면에는 마지막 4자리만 표시돼요.</p>
-              </div>
-              <p class="form-error" data-error="coupang"></p>
-              <div class="connect-form-actions">
-                <button type="button" class="btn btn-primary" data-action="connect-coupang">
-                  <i data-lucide="check" style="width:16px;height:16px;"></i> 연결 검증
-                </button>
+                <!-- 마스코트 + 카피 영역 -->
+                <div class="micro-mascot-row">
+                  <img class="micro-mascot" src="/assets/onboarding/lumi-curious.png" alt="루미" data-mp-mascot />
+                  <div class="micro-copy">
+                    <p class="micro-copy-title" data-mp-title>쿠팡 키 발급하러 가요</p>
+                    <p class="micro-copy-sub" data-mp-sub>쿠팡 Wing에서 OPEN API 키를 발급받고, 두 키를 복사해 주세요.</p>
+                  </div>
+                </div>
+
+                <!-- 미세 단계 1: 발급 안내 -->
+                <div class="micro-pane" data-mp-pane="1">
+                  <div class="connect-guide">
+                    <ol>
+                      <li>쿠팡 Wing 로그인 → 우상단 [판매자명]</li>
+                      <li>[추가판매정보] → [OPEN API 키 발급]</li>
+                      <li>약관 동의 → 사용 목적: <strong>OPEN API</strong> 선택</li>
+                      <li>발급된 Vendor ID / Access Key / Secret Key를 복사</li>
+                    </ol>
+                  </div>
+                  <button type="button" class="btn btn-primary btn-block" data-action="mp-coupang-go">
+                    <i data-lucide="external-link" style="width:16px;height:16px;"></i> 쿠팡 Wing 새 탭으로 열기
+                  </button>
+                </div>
+
+                <!-- 미세 단계 2: 키 복사 안내 -->
+                <div class="micro-pane" data-mp-pane="2" style="display:none;">
+                  <div class="connect-guide">
+                    <strong>쿠팡 페이지에서 두 키를 복사해 주세요</strong>
+                    <ol>
+                      <li>발급된 Vendor ID 복사</li>
+                      <li>Access Key 복사</li>
+                      <li>Secret Key 복사 (가장 긴 키)</li>
+                    </ol>
+                    <p style="margin:8px 0 0;font-size:var(--text-caption);">루미로 돌아오시면 자동으로 감지해 입력해 드릴게요.</p>
+                  </div>
+                  <div class="micro-pane-actions">
+                    <button type="button" class="btn btn-secondary" data-action="mp-coupang-back">이전</button>
+                    <button type="button" class="btn btn-primary" data-action="mp-coupang-input">키 입력하기 →</button>
+                  </div>
+                </div>
+
+                <!-- 미세 단계 3: 입력 (Smart Clipboard 자동 감지) -->
+                <div class="micro-pane" data-mp-pane="3" style="display:none;">
+                  <div class="form-row">
+                    <label class="form-label">Vendor ID</label>
+                    <input type="text" class="form-input" placeholder="A00012345" data-input="coupangVendor" data-clipboard-target="vendorId" autocomplete="off" />
+                  </div>
+                  <div class="form-row">
+                    <label class="form-label">Access Key</label>
+                    <input type="text" class="form-input" placeholder="32~64자" data-input="coupangAccess" data-clipboard-target="accessKey" autocomplete="off" />
+                  </div>
+                  <div class="form-row">
+                    <label class="form-label">Secret Key</label>
+                    <input type="password" class="form-input" placeholder="저장 후 마스킹 처리" data-input="coupangSecret" data-clipboard-target="secretKey" autocomplete="off" />
+                    <p class="form-help">서버에서 암호화 저장합니다. 사장님 화면에는 마지막 4자리만 표시돼요.</p>
+                  </div>
+                  <p class="form-error" data-error="coupang"></p>
+                  <div class="micro-pane-actions">
+                    <button type="button" class="btn btn-secondary" data-action="mp-coupang-back">이전</button>
+                    <button type="button" class="btn btn-primary" data-action="connect-coupang">
+                      <i data-lucide="check" style="width:16px;height:16px;"></i> 검증 시작
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 미세 단계 4: 검증 중 -->
+                <div class="micro-pane" data-mp-pane="4" style="display:none;">
+                  <div class="micro-validate">
+                    <div class="micro-validate-row" data-mp-phase="1">
+                      <span class="micro-validate-icon" data-mp-phase-icon="1"><i data-lucide="loader-2" style="width:18px;height:18px;"></i></span>
+                      <span class="micro-validate-label">형식 확인</span>
+                    </div>
+                    <div class="micro-validate-row" data-mp-phase="2">
+                      <span class="micro-validate-icon" data-mp-phase-icon="2"><i data-lucide="circle" style="width:18px;height:18px;"></i></span>
+                      <span class="micro-validate-label">쿠팡 인증</span>
+                    </div>
+                    <div class="micro-validate-row" data-mp-phase="3">
+                      <span class="micro-validate-icon" data-mp-phase-icon="3"><i data-lucide="circle" style="width:18px;height:18px;"></i></span>
+                      <span class="micro-validate-label">판매 권한 확인 (백그라운드)</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 미세 단계 5: 완료 -->
+                <div class="micro-pane" data-mp-pane="5" style="display:none;">
+                  <div class="micro-success">
+                    <i data-lucide="check-circle-2" style="width:36px;height:36px;color:var(--success);" class="micro-success-icon"></i>
+                    <p class="micro-success-title" data-mp-success-title>쿠팡 연결 완료!</p>
+                    <p class="micro-success-sub">다음은 네이버를 연결해 보세요.</p>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -185,32 +262,101 @@
               <span class="choice-status"></span>
             </div>
 
+            <!-- 네이버 미세 위자드 (Sprint 1.5) -->
             <div class="connect-form" data-form="naver" style="display:none;">
-              <div class="connect-guide" data-guide="naver" style="display:none;">
-                <strong>네이버 커머스 API 등록 안내</strong>
-                <ol>
-                  <li>네이버 커머스 API 센터 로그인</li>
-                  <li>[애플리케이션 등록] → 사용자 직접 사용 (SELF) 선택</li>
-                  <li>발급된 Application ID / Secret을 아래에 입력</li>
-                  <li>스코프(상품/주문 등)를 활성화해야 판매 권한이 생겨요</li>
-                </ol>
-                <p style="margin:8px 0 0;"><button type="button" class="toast-deeplink" data-deeplink="naver.app_register">네이버 커머스 API 센터 →</button></p>
-              </div>
-              <button type="button" class="connect-guide-toggle" data-guide-toggle="naver">키 발급 방법 보기</button>
+              <div class="micro-wizard" data-micro-wizard="naver" data-micro-step="1">
+                <div class="micro-progress" role="progressbar" aria-valuemin="1" aria-valuemax="5">
+                  <span class="micro-progress-step active" data-mp-step="1" data-mp-label="발급 안내">1</span>
+                  <span class="micro-progress-line"></span>
+                  <span class="micro-progress-step" data-mp-step="2" data-mp-label="키 복사">2</span>
+                  <span class="micro-progress-line"></span>
+                  <span class="micro-progress-step" data-mp-step="3" data-mp-label="입력">3</span>
+                  <span class="micro-progress-line"></span>
+                  <span class="micro-progress-step" data-mp-step="4" data-mp-label="검증">4</span>
+                  <span class="micro-progress-line"></span>
+                  <span class="micro-progress-step" data-mp-step="5" data-mp-label="완료">5</span>
+                </div>
+                <p class="micro-progress-time" data-mp-time>예상 소요 60초</p>
 
-              <div class="form-row">
-                <label class="form-label">Application ID</label>
-                <input type="text" class="form-input" placeholder="네이버 커머스 API 센터에서 발급" data-input="naverApp" autocomplete="off" />
-              </div>
-              <div class="form-row">
-                <label class="form-label">Application Secret</label>
-                <input type="password" class="form-input" placeholder="저장 후 마스킹 처리" data-input="naverSecret" autocomplete="off" />
-              </div>
-              <p class="form-error" data-error="naver"></p>
-              <div class="connect-form-actions">
-                <button type="button" class="btn btn-primary" data-action="connect-naver">
-                  <i data-lucide="check" style="width:16px;height:16px;"></i> 연결 검증
-                </button>
+                <div class="micro-mascot-row">
+                  <img class="micro-mascot" src="/assets/onboarding/lumi-curious.png" alt="루미" data-mp-mascot />
+                  <div class="micro-copy">
+                    <p class="micro-copy-title" data-mp-title>네이버 키 발급하러 가요</p>
+                    <p class="micro-copy-sub" data-mp-sub>네이버 커머스 API 센터에서 애플리케이션을 등록하고, ID와 Secret을 복사해 주세요.</p>
+                  </div>
+                </div>
+
+                <div class="micro-pane" data-mp-pane="1">
+                  <div class="connect-guide">
+                    <ol>
+                      <li>네이버 커머스 API 센터 로그인</li>
+                      <li>[애플리케이션 등록] → 사용자 직접 사용 (SELF) 선택</li>
+                      <li>발급된 Application ID / Secret을 복사</li>
+                      <li>스코프(상품/주문 등)를 활성화해야 판매 권한이 생겨요</li>
+                    </ol>
+                  </div>
+                  <button type="button" class="btn btn-primary btn-block" data-action="mp-naver-go">
+                    <i data-lucide="external-link" style="width:16px;height:16px;"></i> 네이버 커머스 API 센터 새 탭으로 열기
+                  </button>
+                </div>
+
+                <div class="micro-pane" data-mp-pane="2" style="display:none;">
+                  <div class="connect-guide">
+                    <strong>네이버 페이지에서 두 키를 복사해 주세요</strong>
+                    <ol>
+                      <li>Application ID 복사</li>
+                      <li>Application Secret 복사 (긴 키)</li>
+                    </ol>
+                    <p style="margin:8px 0 0;font-size:var(--text-caption);">루미로 돌아오시면 자동으로 감지해 입력해 드릴게요.</p>
+                  </div>
+                  <div class="micro-pane-actions">
+                    <button type="button" class="btn btn-secondary" data-action="mp-naver-back">이전</button>
+                    <button type="button" class="btn btn-primary" data-action="mp-naver-input">키 입력하기 →</button>
+                  </div>
+                </div>
+
+                <div class="micro-pane" data-mp-pane="3" style="display:none;">
+                  <div class="form-row">
+                    <label class="form-label">Application ID</label>
+                    <input type="text" class="form-input" placeholder="네이버 커머스 API 센터에서 발급" data-input="naverApp" data-clipboard-target="applicationId" autocomplete="off" />
+                  </div>
+                  <div class="form-row">
+                    <label class="form-label">Application Secret</label>
+                    <input type="password" class="form-input" placeholder="저장 후 마스킹 처리" data-input="naverSecret" data-clipboard-target="applicationSecret" autocomplete="off" />
+                  </div>
+                  <p class="form-error" data-error="naver"></p>
+                  <div class="micro-pane-actions">
+                    <button type="button" class="btn btn-secondary" data-action="mp-naver-back">이전</button>
+                    <button type="button" class="btn btn-primary" data-action="connect-naver">
+                      <i data-lucide="check" style="width:16px;height:16px;"></i> 검증 시작
+                    </button>
+                  </div>
+                </div>
+
+                <div class="micro-pane" data-mp-pane="4" style="display:none;">
+                  <div class="micro-validate">
+                    <div class="micro-validate-row" data-mp-phase="1">
+                      <span class="micro-validate-icon" data-mp-phase-icon="1"><i data-lucide="loader-2" style="width:18px;height:18px;"></i></span>
+                      <span class="micro-validate-label">형식 확인</span>
+                    </div>
+                    <div class="micro-validate-row" data-mp-phase="2">
+                      <span class="micro-validate-icon" data-mp-phase-icon="2"><i data-lucide="circle" style="width:18px;height:18px;"></i></span>
+                      <span class="micro-validate-label">네이버 인증</span>
+                    </div>
+                    <div class="micro-validate-row" data-mp-phase="3">
+                      <span class="micro-validate-icon" data-mp-phase-icon="3"><i data-lucide="circle" style="width:18px;height:18px;"></i></span>
+                      <span class="micro-validate-label">판매 권한 확인 (백그라운드)</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="micro-pane" data-mp-pane="5" style="display:none;">
+                  <div class="micro-success">
+                    <i data-lucide="check-circle-2" style="width:36px;height:36px;color:var(--success);" class="micro-success-icon"></i>
+                    <p class="micro-success-title" data-mp-success-title>네이버 연결 완료!</p>
+                    <p class="micro-success-sub">두 마켓 모두 연결됐어요. 다음 단계로 가요.</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -226,6 +372,23 @@
             </button>
           </div>
         </section>
+
+        <!-- Smart Clipboard 팝업 (전역, 항상 [예/아니오] 컨펌) -->
+        <div class="clipboard-popup" data-clipboard-popup style="display:none;" role="dialog" aria-labelledby="cb-popup-title">
+          <div class="clipboard-popup-card">
+            <img class="clipboard-popup-mascot" src="/assets/onboarding/lumi-surprised-2.png" alt="루미" />
+            <p class="clipboard-popup-title" id="cb-popup-title">복사하신 키를 발견했어요</p>
+            <p class="clipboard-popup-meta">
+              <span class="clipboard-popup-label" data-cb-label></span>
+              <code class="clipboard-popup-value" data-cb-value></code>
+            </p>
+            <p class="clipboard-popup-sub">자동으로 입력해 드릴까요?</p>
+            <div class="clipboard-popup-actions">
+              <button type="button" class="btn btn-secondary" data-cb-deny>아니오</button>
+              <button type="button" class="btn btn-primary" data-cb-accept>예, 입력해 주세요</button>
+            </div>
+          </div>
+        </div>
 
         <!-- ============ STEP 3: 말투 학습 ============ -->
         <section class="wizard-card" data-step="3" style="display:none;">
@@ -358,6 +521,7 @@
     <i data-theme-icon data-lucide="moon" style="width:20px;height:20px;"></i>
   </button>
 
+  <script src="/js/components/ClipboardDetector.js"></script>
   <script src="/js/onboarding.js"></script>
 </body>
 </html>

@@ -717,3 +717,295 @@ body.dark-mode .choice.selected { background: rgba(255,107,139,.12); }
     transition-duration: 0.01ms !important;
   }
 }
+
+/* =====================================================
+   Sprint 1.5 — 미세 5단계 위자드 (위자드 안의 위자드)
+   메모리: project_market_oauth_wizard_ux.md
+   ===================================================== */
+.micro-wizard {
+  background: var(--bg-section);
+  border-radius: var(--radius-card);
+  padding: var(--space-4);
+  margin-top: var(--space-3);
+  border: 1px solid var(--border-subtle);
+}
+.micro-progress {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  margin-bottom: var(--space-2);
+}
+.micro-progress-step {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--bg-card);
+  border: 2px solid var(--border-subtle);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+  transition: background var(--motion-base) var(--ease-standard),
+              border-color var(--motion-base) var(--ease-standard),
+              color var(--motion-base) var(--ease-standard),
+              transform var(--motion-fast) var(--ease-standard);
+}
+.micro-progress-step.active {
+  background: var(--brand-gradient-cta);
+  color: #fff;
+  border-color: transparent;
+  transform: scale(1.08);
+  box-shadow: 0 4px 12px rgba(255,107,139,.32);
+}
+.micro-progress-step.done {
+  background: var(--success);
+  color: #fff;
+  border-color: transparent;
+}
+.micro-progress-step.done::before {
+  content: '\2713';
+  font-size: 13px;
+}
+.micro-progress-step.done > * { display: none; }
+.micro-progress-line {
+  flex: 1;
+  height: 2px;
+  background: var(--border-subtle);
+  border-radius: 1px;
+  transition: background var(--motion-base) var(--ease-standard);
+}
+.micro-progress-line.done { background: var(--success); }
+
+.micro-progress-time {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-caption);
+  color: var(--text-muted);
+  text-align: center;
+  font-weight: 500;
+}
+
+.micro-mascot-row {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  background: var(--bg-card);
+  border-radius: var(--radius-mini);
+  padding: var(--space-3);
+  margin-bottom: var(--space-3);
+  border: 1px solid var(--border-subtle);
+}
+.micro-mascot {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+.micro-copy { flex: 1; min-width: 0; }
+.micro-copy-title {
+  margin: 0 0 4px;
+  font-size: var(--text-body-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.2px;
+}
+.micro-copy-sub {
+  margin: 0;
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.micro-pane { animation: micro-fade-in var(--motion-base) var(--ease-standard); }
+.micro-pane-actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+.micro-pane-actions .btn { flex: 1; padding: 10px 16px; font-size: var(--text-body-sm); }
+
+@keyframes micro-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 단계 4 — Progressive Validation 시각화 */
+.micro-validate {
+  background: var(--bg-card);
+  border-radius: var(--radius-mini);
+  border: 1px solid var(--border-subtle);
+  padding: var(--space-4);
+}
+.micro-validate-row {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  padding: 6px 0;
+  font-size: var(--text-body-sm);
+  color: var(--text-secondary);
+}
+.micro-validate-row.done {
+  color: var(--success);
+  font-weight: 600;
+}
+.micro-validate-row.fail {
+  color: var(--error);
+  font-weight: 600;
+}
+.micro-validate-icon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+.micro-validate-row.active .micro-validate-icon {
+  color: var(--pink-500);
+  animation: micro-spin 1s linear infinite;
+}
+.micro-validate-row.done .micro-validate-icon { color: var(--success); animation: none; }
+.micro-validate-row.fail .micro-validate-icon { color: var(--error); animation: none; }
+
+@keyframes micro-spin { to { transform: rotate(360deg); } }
+
+/* 단계 5 — 완료 */
+.micro-success {
+  text-align: center;
+  padding: var(--space-3) 0;
+}
+.micro-success-icon {
+  margin: 0 auto var(--space-2);
+  display: block;
+}
+.micro-success-title {
+  margin: 0 0 4px;
+  font-size: var(--text-body);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.micro-success-sub {
+  margin: 0;
+  font-size: var(--text-body-sm);
+  color: var(--text-secondary);
+}
+
+/* =====================================================
+   Sprint 1.5 — Smart Clipboard 팝업
+   ===================================================== */
+.clipboard-popup {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.36);
+  z-index: 998;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: var(--space-4);
+  animation: cb-fade-in var(--motion-base) var(--ease-standard);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+.clipboard-popup-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-modal) var(--radius-modal) 0 0;
+  padding: var(--space-6) var(--space-4) var(--space-4);
+  width: 100%;
+  max-width: 440px;
+  box-shadow: var(--shadow-modal);
+  animation: cb-slide-up var(--motion-base) var(--ease-standard);
+  text-align: center;
+}
+.clipboard-popup-mascot {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto var(--space-2);
+  display: block;
+  object-fit: contain;
+}
+.clipboard-popup-title {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-body-lg);
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.4px;
+}
+.clipboard-popup-meta {
+  margin: 0 0 var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+}
+.clipboard-popup-label {
+  font-size: var(--text-caption);
+  color: var(--pink-500);
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+.clipboard-popup-value {
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  font-size: var(--text-body-sm);
+  background: var(--bg-section);
+  padding: 6px 12px;
+  border-radius: var(--radius-mini);
+  color: var(--text-primary);
+  display: inline-block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--border-subtle);
+}
+.clipboard-popup-sub {
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-body-sm);
+  color: var(--text-secondary);
+}
+.clipboard-popup-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+.clipboard-popup-actions .btn { flex: 1; }
+
+@keyframes cb-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes cb-slide-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* PC: 화면 가운데 정렬 (모달 형태) */
+@media (min-width: 769px) {
+  .clipboard-popup { align-items: center; }
+  .clipboard-popup-card {
+    border-radius: var(--radius-modal);
+    max-width: 420px;
+  }
+}
+
+/* Smart Clipboard 자동 입력 시각 피드백 */
+.form-input.clipboard-filled {
+  border-color: var(--success);
+  background: rgba(16, 185, 129, 0.06);
+  animation: cb-fill-flash 1.2s var(--ease-standard);
+}
+@keyframes cb-fill-flash {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+/* 모바일: 미세 위자드 좁은 폭 대응 */
+@media (max-width: 768px) {
+  .micro-progress-step {
+    width: 24px;
+    height: 24px;
+    font-size: 11px;
+  }
+  .micro-mascot { width: 48px; height: 48px; }
+  .micro-pane-actions { flex-direction: column-reverse; }
+  .micro-pane-actions .btn { width: 100%; }
+}

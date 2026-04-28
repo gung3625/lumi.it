@@ -626,26 +626,243 @@
   }
 
   // =====================================================
-  // STEP 2: 마켓 OAuth (쿠팡 + 네이버)
+  // STEP 2: 마켓 OAuth — Sprint 1.5 미세 5단계 위자드
+  // 메모리: project_market_oauth_wizard_ux.md
+  //   1️⃣ 발급 안내 → 2️⃣ 키 복사 → 3️⃣ 입력 → 4️⃣ 검증 → 5️⃣ 완료
   // =====================================================
+  const MICRO_MASCOT = {
+    1: '/assets/onboarding/lumi-curious.png',     // 호기심·시작
+    2: '/assets/onboarding/lumi-character.png',   // 안내
+    3: '/assets/onboarding/lumi-surprised-2.png', // 감지
+    4: '/assets/onboarding/lumi-character.png',   // 확인
+    5: '/assets/onboarding/lumi-wink.png',        // 완료
+  };
+
+  const MICRO_COPY = {
+    coupang: {
+      1: { title: '쿠팡 키 발급하러 가요', sub: '쿠팡 Wing에서 OPEN API 키를 발급받고, 두 키를 복사해 주세요.', time: '예상 소요 30초' },
+      2: { title: '두 키를 복사하셨나요?', sub: '루미로 돌아오시면 자동으로 감지해 드릴게요.', time: '앞으로 약 20초' },
+      3: { title: '키를 입력해 주세요', sub: '복사하신 값이 자동으로 들어와요. 비어 있으면 직접 붙여넣어 주세요.', time: '앞으로 약 15초' },
+      4: { title: '확인 중이에요, 잠시만요', sub: '쿠팡과 연결을 검증하고 있어요.', time: '앞으로 약 5초' },
+      5: { title: '쿠팡 연결 완료!', sub: '다음은 네이버를 연결해 보세요.', time: '완료' },
+    },
+    naver: {
+      1: { title: '네이버 키 발급하러 가요', sub: '네이버 커머스 API 센터에서 애플리케이션을 등록하고, ID와 Secret을 복사해 주세요.', time: '예상 소요 60초' },
+      2: { title: '두 키를 복사하셨나요?', sub: '루미로 돌아오시면 자동으로 감지해 드릴게요.', time: '앞으로 약 30초' },
+      3: { title: '키를 입력해 주세요', sub: '복사하신 값이 자동으로 들어와요. 비어 있으면 직접 붙여넣어 주세요.', time: '앞으로 약 20초' },
+      4: { title: '확인 중이에요, 잠시만요', sub: '네이버와 연결을 검증하고 있어요.', time: '앞으로 약 5초' },
+      5: { title: '네이버 연결 완료!', sub: '두 마켓 모두 연결됐어요. 다음 단계로 가요.', time: '완료' },
+    },
+  };
+
+  // 마켓별 미세 위자드 상태
+  const microState = {
+    coupang: { step: 1, detector: null },
+    naver: { step: 1, detector: null },
+  };
+
+  function setMicroStep(market, step) {
+    if (!['coupang', 'naver'].includes(market)) return;
+    if (step < 1 || step > 5) return;
+    microState[market].step = step;
+    const wizard = document.querySelector(`[data-micro-wizard="${market}"]`);
+    if (!wizard) return;
+    wizard.setAttribute('data-micro-step', String(step));
+
+    // 진행 바 시각화
+    wizard.querySelectorAll('[data-mp-step]').forEach(function (el) {
+      const n = Number(el.getAttribute('data-mp-step'));
+      el.classList.remove('active', 'done');
+      if (n < step) el.classList.add('done');
+      if (n === step) el.classList.add('active');
+    });
+    // 라인
+    const lines = wizard.querySelectorAll('.micro-progress-line');
+    lines.forEach(function (line, idx) {
+      // line[0] = step1↔step2 사이 등
+      if (idx + 1 < step) line.classList.add('done');
+      else line.classList.remove('done');
+    });
+
+    // 마스코트 + 카피 + 시간
+    const mascot = wizard.querySelector('[data-mp-mascot]');
+    const titleEl = wizard.querySelector('[data-mp-title]');
+    const subEl = wizard.querySelector('[data-mp-sub]');
+    const timeEl = wizard.querySelector('[data-mp-time]');
+    if (mascot) mascot.src = MICRO_MASCOT[step];
+    const copy = (MICRO_COPY[market] || {})[step] || {};
+    if (titleEl && copy.title) titleEl.textContent = copy.title;
+    if (subEl && copy.sub) subEl.textContent = copy.sub;
+    if (timeEl && copy.time) timeEl.textContent = copy.time;
+
+    // 패널 표시
+    wizard.querySelectorAll('[data-mp-pane]').forEach(function (pane) {
+      const n = Number(pane.getAttribute('data-mp-pane'));
+      pane.style.display = (n === step) ? 'block' : 'none';
+    });
+
+    initIcons();
+  }
+
+  // Smart Clipboard 팝업 (전역, 항상 [예/아니오])
+  function showClipboardPopup(params) {
+    return new Promise(function (resolve) {
+      const popup = document.querySelector('[data-clipboard-popup]');
+      if (!popup) { resolve(false); return; }
+      const labelEl = popup.querySelector('[data-cb-label]');
+      const valueEl = popup.querySelector('[data-cb-value]');
+      const accept = popup.querySelector('[data-cb-accept]');
+      const deny = popup.querySelector('[data-cb-deny]');
+
+      if (labelEl) labelEl.textContent = params.label || '키';
+      if (valueEl) valueEl.textContent = params.masked || '';
+
+      popup.style.display = 'flex';
+
+      function cleanup(approved) {
+        popup.style.display = 'none';
+        if (accept) accept.removeEventListener('click', onAccept);
+        if (deny) deny.removeEventListener('click', onDeny);
+        popup.removeEventListener('click', onBackdrop);
+        resolve(approved);
+      }
+      function onAccept() { cleanup(true); }
+      function onDeny() { cleanup(false); }
+      function onBackdrop(e) {
+        if (e.target === popup) cleanup(false);
+      }
+      if (accept) accept.addEventListener('click', onAccept);
+      if (deny) deny.addEventListener('click', onDeny);
+      popup.addEventListener('click', onBackdrop);
+    });
+  }
+
+  // 키 종류 → input data-clipboard-target 매핑
+  function fillInputByKind(market, kind, value) {
+    if (!value) return false;
+    const wizard = document.querySelector(`[data-micro-wizard="${market}"]`);
+    if (!wizard) return false;
+    const input = wizard.querySelector(`[data-clipboard-target="${kind}"]`);
+    if (!input) return false;
+    input.value = value;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    // 시각 피드백
+    input.classList.add('clipboard-filled');
+    setTimeout(function () { input.classList.remove('clipboard-filled'); }, 1200);
+    return true;
+  }
+
+  // ClipboardDetector 인스턴스 생성·시작
+  function startClipboardDetector(market) {
+    if (typeof window.ClipboardDetector === 'undefined') return null;
+    if (microState[market].detector) return microState[market].detector;
+
+    const detector = window.ClipboardDetector.create({
+      market: market,
+      pollOnVisibility: true,
+      onPopup: function (params) {
+        return showClipboardPopup(params);
+      },
+      onDetect: function (kind, value) {
+        const filled = fillInputByKind(market, kind, value);
+        if (filled) {
+          showToast(`${window.ClipboardDetector.KIND_LABELS[kind] || kind}을(를) 자동 입력했어요`, 'success');
+          // 입력 단계가 아니면 입력 단계로 이동
+          if (microState[market].step < 3) setMicroStep(market, 3);
+        }
+      },
+    });
+    detector.start();
+    microState[market].detector = detector;
+    return detector;
+  }
+
+  function stopClipboardDetector(market) {
+    const d = microState[market].detector;
+    if (d) {
+      d.stop();
+      microState[market].detector = null;
+    }
+  }
+
+  // 단계 4 — Progressive Validation 시각화
+  function setValidatePhase(market, phase, status) {
+    const wizard = document.querySelector(`[data-micro-wizard="${market}"]`);
+    if (!wizard) return;
+    const row = wizard.querySelector(`[data-mp-phase="${phase}"]`);
+    const icon = wizard.querySelector(`[data-mp-phase-icon="${phase}"]`);
+    if (!row) return;
+    row.classList.remove('active', 'done', 'fail');
+    if (status === 'active') {
+      row.classList.add('active');
+      if (icon) icon.innerHTML = '<i data-lucide="loader-2" style="width:18px;height:18px;"></i>';
+    } else if (status === 'done') {
+      row.classList.add('done');
+      if (icon) icon.innerHTML = '<i data-lucide="check" style="width:18px;height:18px;"></i>';
+    } else if (status === 'fail') {
+      row.classList.add('fail');
+      if (icon) icon.innerHTML = '<i data-lucide="x" style="width:18px;height:18px;"></i>';
+    } else {
+      if (icon) icon.innerHTML = '<i data-lucide="circle" style="width:18px;height:18px;"></i>';
+    }
+    initIcons();
+  }
+
   function initStep2() {
-    // 쿠팡
+    // ============ 쿠팡 ============
     const coupangCard = document.querySelector('[data-market="coupang"]');
     const coupangForm = document.querySelector('[data-form="coupang"]');
     const coupangVendor = document.querySelector('[data-input="coupangVendor"]');
     const coupangAccess = document.querySelector('[data-input="coupangAccess"]');
     const coupangSecret = document.querySelector('[data-input="coupangSecret"]');
-    const coupangSubmit = document.querySelector('[data-action="connect-coupang"]');
     const coupangError = document.querySelector('[data-error="coupang"]');
 
     if (coupangCard) {
       coupangCard.addEventListener('click', function (e) {
-        if (e.target.closest('.connect-form') || e.target.closest('[data-action="connect-coupang"]')) return;
+        if (e.target.closest('.connect-form')) return;
         const isOpen = coupangForm.style.display !== 'none';
         coupangForm.style.display = isOpen ? 'none' : 'block';
+        if (!isOpen) {
+          setMicroStep('coupang', microState.coupang.step || 1);
+          startClipboardDetector('coupang');
+        } else {
+          stopClipboardDetector('coupang');
+        }
       });
     }
 
+    // 단계 1 → 2: Deep Link 새 탭
+    const coupangGo = document.querySelector('[data-action="mp-coupang-go"]');
+    if (coupangGo) {
+      coupangGo.addEventListener('click', async function (e) {
+        e.stopPropagation();
+        await openDeepLink('coupang.api_key_issue');
+        setMicroStep('coupang', 2);
+        startClipboardDetector('coupang');
+      });
+    }
+    // 단계 2 → 3: 키 입력하기
+    const coupangInput = document.querySelector('[data-action="mp-coupang-input"]');
+    if (coupangInput) {
+      coupangInput.addEventListener('click', function (e) {
+        e.stopPropagation();
+        setMicroStep('coupang', 3);
+        // 입력 단계 진입 시 클립보드 한번 체크
+        const d = microState.coupang.detector;
+        if (d) d.trigger();
+      });
+    }
+    // 이전 (모든 단계 공통)
+    document.querySelectorAll('[data-action="mp-coupang-back"]').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        const cur = microState.coupang.step;
+        if (cur > 1) setMicroStep('coupang', cur - 1);
+      });
+    });
+
+    // 단계 3 → 4 → 5: 검증
+    const coupangSubmit = document.querySelector('[data-action="connect-coupang"]');
     if (coupangSubmit) {
       coupangSubmit.addEventListener('click', async function (e) {
         e.stopPropagation();
@@ -655,7 +872,7 @@
         const accessKey = (coupangAccess?.value || '').trim();
         const secretKey = (coupangSecret?.value || '').trim();
 
-        // 베타 모킹 검증용 TEST_xxx 패턴은 클라이언트 형식 검증 bypass
+        // Phase 1: 형식 체크 (즉시)
         const isTestPattern = /^TEST_/.test(vendorId);
         if (!isTestPattern) {
           if (!vendorId || !/^A\d{8,12}$/.test(vendorId)) {
@@ -668,16 +885,26 @@
           }
         }
 
-        coupangSubmit.disabled = true;
-        const orig = coupangSubmit.innerHTML;
-        coupangSubmit.innerHTML = '<span class="spinner"></span> 검증 중...';
+        setMicroStep('coupang', 4);
+        setValidatePhase('coupang', 1, 'active');
 
+        coupangSubmit.disabled = true;
         try {
+          // Phase 1 통과
+          await new Promise(function (r) { setTimeout(r, 250); });
+          setValidatePhase('coupang', 1, 'done');
+          // Phase 2: API 인증
+          setValidatePhase('coupang', 2, 'active');
+
           const res = await api('/api/connect-coupang', {
             method: 'POST',
             body: JSON.stringify({ vendorId, accessKey, secretKey }),
           });
           if (res.status === 200 && res.data?.success && res.data?.verified) {
+            setValidatePhase('coupang', 2, 'done');
+            // Phase 3: 권한 체크 (백그라운드)
+            setValidatePhase('coupang', 3, 'active');
+
             state.markets.coupang = {
               connected: true,
               vendorId: res.data.vendorId,
@@ -694,11 +921,17 @@
               scopeEl.textContent = '판매 권한 확인 중...';
               scopeEl.style.display = 'block';
             }
-            coupangForm.style.display = 'none';
             showToast('쿠팡 연결이 완료됐어요', 'success');
-            // Principle 1·2: 백그라운드 권한 검증
-            triggerPermissionCheck('coupang', coupangCard);
+
+            // 단계 5로 이동 (권한 체크는 백그라운드 — 셀러 막지 않음)
+            setTimeout(function () {
+              setValidatePhase('coupang', 3, 'done');
+              setMicroStep('coupang', 5);
+              stopClipboardDetector('coupang');
+              triggerPermissionCheck('coupang', coupangCard);
+            }, 600);
           } else {
+            setValidatePhase('coupang', 2, 'fail');
             const errObj = res.data?.error;
             if (errObj && typeof errObj === 'object') {
               if (coupangError) coupangError.textContent = errObj.cause || errObj.title || '연결에 실패했어요';
@@ -708,32 +941,67 @@
               if (coupangError) coupangError.textContent = msg;
               showToast(msg, 'error');
             }
+            // 입력 단계로 복귀
+            setTimeout(function () { setMicroStep('coupang', 3); }, 1500);
           }
         } catch (err) {
+          setValidatePhase('coupang', 2, 'fail');
           if (coupangError) coupangError.textContent = '네트워크 오류가 발생했습니다.';
+          setTimeout(function () { setMicroStep('coupang', 3); }, 1500);
         } finally {
           coupangSubmit.disabled = false;
-          coupangSubmit.innerHTML = orig;
         }
       });
     }
 
-    // 네이버
+    // ============ 네이버 ============
     const naverCard = document.querySelector('[data-market="naver"]');
     const naverForm = document.querySelector('[data-form="naver"]');
     const naverApp = document.querySelector('[data-input="naverApp"]');
     const naverSecret = document.querySelector('[data-input="naverSecret"]');
-    const naverSubmit = document.querySelector('[data-action="connect-naver"]');
     const naverError = document.querySelector('[data-error="naver"]');
 
     if (naverCard) {
       naverCard.addEventListener('click', function (e) {
-        if (e.target.closest('.connect-form') || e.target.closest('[data-action="connect-naver"]')) return;
+        if (e.target.closest('.connect-form')) return;
         const isOpen = naverForm.style.display !== 'none';
         naverForm.style.display = isOpen ? 'none' : 'block';
+        if (!isOpen) {
+          setMicroStep('naver', microState.naver.step || 1);
+          startClipboardDetector('naver');
+        } else {
+          stopClipboardDetector('naver');
+        }
       });
     }
 
+    const naverGo = document.querySelector('[data-action="mp-naver-go"]');
+    if (naverGo) {
+      naverGo.addEventListener('click', async function (e) {
+        e.stopPropagation();
+        await openDeepLink('naver.app_register');
+        setMicroStep('naver', 2);
+        startClipboardDetector('naver');
+      });
+    }
+    const naverInput = document.querySelector('[data-action="mp-naver-input"]');
+    if (naverInput) {
+      naverInput.addEventListener('click', function (e) {
+        e.stopPropagation();
+        setMicroStep('naver', 3);
+        const d = microState.naver.detector;
+        if (d) d.trigger();
+      });
+    }
+    document.querySelectorAll('[data-action="mp-naver-back"]').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        const cur = microState.naver.step;
+        if (cur > 1) setMicroStep('naver', cur - 1);
+      });
+    });
+
+    const naverSubmit = document.querySelector('[data-action="connect-naver"]');
     if (naverSubmit) {
       naverSubmit.addEventListener('click', async function (e) {
         e.stopPropagation();
@@ -750,16 +1018,23 @@
           }
         }
 
-        naverSubmit.disabled = true;
-        const orig = naverSubmit.innerHTML;
-        naverSubmit.innerHTML = '<span class="spinner"></span> 검증 중...';
+        setMicroStep('naver', 4);
+        setValidatePhase('naver', 1, 'active');
 
+        naverSubmit.disabled = true;
         try {
+          await new Promise(function (r) { setTimeout(r, 250); });
+          setValidatePhase('naver', 1, 'done');
+          setValidatePhase('naver', 2, 'active');
+
           const res = await api('/api/connect-naver', {
             method: 'POST',
             body: JSON.stringify({ applicationId, applicationSecret }),
           });
           if (res.status === 200 && res.data?.success && res.data?.verified) {
+            setValidatePhase('naver', 2, 'done');
+            setValidatePhase('naver', 3, 'active');
+
             state.markets.naver = {
               connected: true,
               applicationIdMasked: res.data.applicationIdMasked,
@@ -776,10 +1051,16 @@
               scopeEl.textContent = '판매 권한 확인 중...';
               scopeEl.style.display = 'block';
             }
-            naverForm.style.display = 'none';
             showToast('네이버 연결이 완료됐어요', 'success');
-            triggerPermissionCheck('naver', naverCard);
+
+            setTimeout(function () {
+              setValidatePhase('naver', 3, 'done');
+              setMicroStep('naver', 5);
+              stopClipboardDetector('naver');
+              triggerPermissionCheck('naver', naverCard);
+            }, 600);
           } else {
+            setValidatePhase('naver', 2, 'fail');
             const errObj = res.data?.error;
             if (errObj && typeof errObj === 'object') {
               if (naverError) naverError.textContent = errObj.cause || errObj.title || '연결에 실패했어요';
@@ -789,12 +1070,14 @@
               if (naverError) naverError.textContent = msg;
               showToast(msg, 'error');
             }
+            setTimeout(function () { setMicroStep('naver', 3); }, 1500);
           }
         } catch (err) {
+          setValidatePhase('naver', 2, 'fail');
           if (naverError) naverError.textContent = '네트워크 오류가 발생했습니다.';
+          setTimeout(function () { setMicroStep('naver', 3); }, 1500);
         } finally {
           naverSubmit.disabled = false;
-          naverSubmit.innerHTML = orig;
         }
       });
     }
@@ -823,23 +1106,17 @@
             signupStep: 2,
           }),
         }).catch(function () { /* best-effort */ });
+        // 마켓 위자드 detector 정리
+        stopClipboardDetector('coupang');
+        stopClipboardDetector('naver');
         showStep(3);
       });
     }
     const back = document.querySelector('[data-action="step2-back"]');
-    if (back) back.addEventListener('click', function () { showStep(1); });
-
-    // 가이드 토글
-    document.querySelectorAll('[data-guide-toggle]').forEach(function (btn) {
-      btn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        const target = btn.getAttribute('data-guide-toggle');
-        const guide = document.querySelector(`[data-guide="${target}"]`);
-        if (!guide) return;
-        const open = guide.style.display !== 'none';
-        guide.style.display = open ? 'none' : 'block';
-        btn.textContent = open ? '키 발급 방법 보기' : '가이드 닫기';
-      });
+    if (back) back.addEventListener('click', function () {
+      stopClipboardDetector('coupang');
+      stopClipboardDetector('naver');
+      showStep(1);
     });
   }
 
