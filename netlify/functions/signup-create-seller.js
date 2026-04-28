@@ -25,6 +25,7 @@ const {
   recordAudit,
   generateReferralCode,
 } = require('./_shared/onboarding-utils');
+const audit = require('./_shared/audit-log');
 
 const VALID_STEPS = [1, 2, 3, 4, 5];
 
@@ -51,6 +52,8 @@ exports.handler = async (event) => {
   const marketingConsent = body.marketingConsent === true;
   const privacyConsent = body.privacyConsent === true;
   const termsConsent = body.termsConsent === true;
+  const refundConsent = body.refundConsent === true;
+  const openaiConsent = body.openaiConsent === true;
   const signupStep = VALID_STEPS.includes(Number(body.signupStep)) ? Number(body.signupStep) : 5;
   const licenseFileUrl = (body.licenseFileUrl && typeof body.licenseFileUrl === 'string')
     ? body.licenseFileUrl.trim() : null;
@@ -69,11 +72,11 @@ exports.handler = async (event) => {
   if (!isValidPhone(phone)) {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '휴대폰 번호를 정확히 입력해주세요.' }) };
   }
-  if (!termsConsent || !privacyConsent) {
+  if (!termsConsent || !privacyConsent || !refundConsent) {
     return {
       statusCode: 400,
       headers: CORS,
-      body: JSON.stringify({ error: '이용약관 및 개인정보 처리방침에 동의해주세요.' }),
+      body: JSON.stringify({ error: '이용약관·개인정보처리방침·환불약관에 모두 동의해주세요.' }),
     };
   }
 
@@ -161,6 +164,9 @@ exports.handler = async (event) => {
       marketing_consent: marketingConsent,
       privacy_consent_at: privacyConsent ? now : null,
       terms_consent_at: termsConsent ? now : null,
+      refund_consent_at: refundConsent ? now : null,
+      openai_consent_at: openaiConsent ? now : null,
+      openai_consent_revoked_at: openaiConsent ? null : now,
       business_verified: true,
       business_verified_at: now,
       business_verify_method: (process.env.BUSINESS_VERIFY_MOCK || 'true').toLowerCase() !== 'false' ? 'pg_toss' : 'mock',
@@ -195,6 +201,9 @@ exports.handler = async (event) => {
       marketing_consent: marketingConsent,
       privacy_consent_at: privacyConsent ? now : null,
       terms_consent_at: termsConsent ? now : null,
+      refund_consent_at: refundConsent ? now : null,
+      openai_consent_at: openaiConsent ? now : null,
+      openai_consent_revoked_at: openaiConsent ? null : now,
       business_verified: true,
       business_verified_at: now,
       business_verify_method: (process.env.BUSINESS_VERIFY_MOCK || 'true').toLowerCase() !== 'false' ? 'mock' : 'pg_toss',
@@ -255,9 +264,22 @@ exports.handler = async (event) => {
       has_birth_date: Boolean(birthDate),
       has_store_name: Boolean(storeName),
       marketing_consent: marketingConsent,
+      refund_consent: refundConsent,
+      openai_consent: openaiConsent,
     },
     event,
   });
+
+  // 약관 동의 이력 (append-only seller_consents 테이블)
+  if (isCompleted) {
+    await Promise.all([
+      audit.logConsent(admin, { sellerId, consentType: 'terms', granted: termsConsent, event }),
+      audit.logConsent(admin, { sellerId, consentType: 'privacy', granted: privacyConsent, event }),
+      audit.logConsent(admin, { sellerId, consentType: 'refund', granted: refundConsent, event }),
+      audit.logConsent(admin, { sellerId, consentType: 'openai_intl_transfer', granted: openaiConsent, event }),
+      audit.logConsent(admin, { sellerId, consentType: 'marketing', granted: marketingConsent, event }),
+    ]).catch((e) => console.error('[signup-create-seller] consent log 실패:', e.message));
+  }
 
   console.log(`[signup-create-seller] ${existing ? 'update' : 'create'} seller=${sellerId.slice(0, 8)} biz=${maskBusinessNumber(businessNumber)} phone=${maskPhone(phone)} email=${email ? maskEmail(email) : 'none'} step=${signupStep}`);
 
