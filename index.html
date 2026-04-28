@@ -2243,12 +2243,14 @@ window.authGoogle = authGoogle;
     setTimeout(function () { alert(msgs[msg]); }, 200);
     window.history.replaceState({}, '', window.location.pathname + window.location.hash);
   }
-  // 카카오 콜백 에러 처리 (?error=...)
+  // 카카오 콜백 에러 처리 (?error=...) — 화면 상단 영구 배너 (alert 대신)
   var errorParam = params.get('error');
   if (errorParam) {
-    setTimeout(function () {
-      alert('로그인 오류: ' + decodeURIComponent(errorParam));
-    }, 200);
+    var banner = document.createElement('div');
+    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#dc2626;color:#fff;padding:14px 20px;font-size:14px;line-height:1.5;font-weight:500;text-align:left;box-shadow:0 2px 8px rgba(0,0,0,.2);word-break:break-all;';
+    banner.innerHTML = '<strong>로그인 오류:</strong> ' + decodeURIComponent(errorParam) + ' <button onclick="this.parentElement.remove()" style="float:right;background:transparent;border:1px solid #fff;color:#fff;border-radius:4px;padding:2px 10px;cursor:pointer;font-size:12px;">닫기</button>';
+    document.body.appendChild(banner);
+    console.error('[auth] login error:', decodeURIComponent(errorParam));
     window.history.replaceState({}, '', window.location.pathname + window.location.hash);
   }
 })();
