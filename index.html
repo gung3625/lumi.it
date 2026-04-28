@@ -2167,6 +2167,9 @@ window.lumiSupa.auth.onAuthStateChange(function (event, session) {
       var merged = Object.assign({}, prev, { email: u.email || prev.email, id: u.id || prev.id }, meta);
       localStorage.setItem('lumi_user', JSON.stringify(merged));
       if (event === 'SIGNED_IN') {
+        if (window.location.hash && window.location.hash.indexOf('access_token') !== -1) {
+          window.history.replaceState({}, '', window.location.pathname + window.location.search);
+        }
         setTimeout(routeAfterAuth, 300);
       }
     }

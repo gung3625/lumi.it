@@ -117,21 +117,34 @@ exports.handler = async (event) => {
     // 3. Supabase 유저 upsert
     const admin = getAdminClient();
 
-    // 기존 유저 확인 — listUsers 페이지네이션 후 클라이언트 filter (SDK getUserByEmail 미지원)
+    // 기존 유저 확인 — Admin REST API 직접 호출로 email 필터링 (페이지네이션 지연 제거)
     let existingUser = null;
-    let allUsers = [];
-    let page = 1;
-    while (true) {
-      const { data: pageData, error: listErr } = await admin.auth.admin.listUsers({ page, perPage: 200 });
-      if (listErr || !pageData?.users?.length) break;
-      allUsers = allUsers.concat(pageData.users);
-      if (pageData.users.length < 200) break;
-      page++;
-      if (page > 50) break; // 안전 limit (10,000명)
+    try {
+      const adminUrl = process.env.SUPABASE_URL + '/auth/v1/admin/users?email=' + encodeURIComponent(email);
+      const res = await fetch(adminUrl, {
+        headers: {
+          'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
+          'Authorization': 'Bearer ' + process.env.SUPABASE_SERVICE_ROLE_KEY,
+        },
+      });
+      if (res.ok) {
+        const json = await res.json();
+        const users = Array.isArray(json) ? json : (json.users || []);
+        existingUser = users.find(
+          (u) => u.email === email || (u.user_metadata && u.user_metadata.kakao_id === kakaoId)
+        ) || null;
+      } else {
+        console.error('[auth-kakao-callback] admin users API:', res.status);
+        // fallback: 1페이지만 조회
+        const { data: pageData } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
+        const users = pageData?.users || [];
+        existingUser = users.find(
+          (u) => u.email === email || (u.user_metadata && u.user_metadata.kakao_id === kakaoId)
+        ) || null;
+      }
+    } catch (e) {
+      console.error('[auth-kakao-callback] 유저 조회 실패:', e.message);
     }
-    existingUser = allUsers.find(
-      (u) => u.email === email || (u.user_metadata && u.user_metadata.kakao_id === kakaoId)
-    ) || null;
 
     let userId;
     let isNewUser = false;
