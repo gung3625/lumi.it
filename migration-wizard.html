@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#FF6B8B" />
+  <title>이전하기 — 루미</title>
+  <meta name="description" content="쓰시던 엑셀 한 장이면 충분합니다. 이전 비용 0원, 5분이면 옮겨드려요." />
+
+  <link rel="icon" href="/assets/favicon.png" />
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
+  <link rel="stylesheet" href="/css/onboarding.css" />
+  <style>
+    .mig-dropzone {
+      border: 2px dashed var(--border-strong, #d0d0d2);
+      border-radius: 16px;
+      padding: 48px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all .15s ease;
+      background: var(--bg-card, #fff);
+    }
+    .mig-dropzone:hover, .mig-dropzone.is-drag {
+      border-color: var(--pink-500, #FF6B8B);
+      background: var(--pink-soft, rgba(255,107,139,.08));
+    }
+    .mig-dropzone input[type="file"] { display: none; }
+    .mig-dropzone-icon { color: var(--pink-500); margin-bottom: 12px; }
+    .mig-dropzone-title { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
+    .mig-dropzone-hint { color: var(--text-muted, #86868b); font-size: 14px; }
+
+    .mig-mapping-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    .mig-mapping-table th, .mig-mapping-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border-subtle, #e5e5e7); font-size: 14px; }
+    .mig-mapping-table th { background: var(--bg-section, #f5f5f7); font-weight: 600; }
+    .mig-row-redflag td { background: rgba(255,107,139,.06); }
+    .mig-row-redflag .mig-confidence { color: var(--pink-700, #E04D77); font-weight: 600; }
+    .mig-confidence { font-variant-numeric: tabular-nums; font-size: 13px; color: var(--text-muted); }
+    .mig-mapping-select { padding: 6px 8px; border: 1px solid var(--border-subtle); border-radius: 8px; background: var(--bg-card); font-family: inherit; font-size: 13px; }
+
+    .mig-preview-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 16px; }
+    .mig-preview-card { background: var(--bg-card, #fff); border-radius: 12px; padding: 16px; border: 1px solid var(--border-subtle, #e5e5e7); }
+    .mig-preview-card.is-warning { border-color: var(--pink-700, #E04D77); }
+    .mig-preview-img { width: 100%; aspect-ratio: 1/1; background: var(--bg-section); border-radius: 8px; margin-bottom: 10px; object-fit: cover; }
+    .mig-preview-title { font-weight: 600; margin-bottom: 4px; font-size: 15px; line-height: 1.35; }
+    .mig-preview-meta { color: var(--text-muted); font-size: 13px; }
+    .mig-preview-aha { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border-subtle); font-size: 12px; color: var(--pink-700); font-weight: 600; }
+
+    .mig-stat-row { display: flex; gap: 16px; margin: 16px 0; flex-wrap: wrap; }
+    .mig-stat { background: var(--bg-section); padding: 12px 16px; border-radius: 10px; flex: 1; min-width: 120px; }
+    .mig-stat-num { font-size: 22px; font-weight: 700; line-height: 1; }
+    .mig-stat-label { color: var(--text-muted); font-size: 13px; margin-top: 4px; }
+
+    .mig-progress { height: 6px; background: var(--border-subtle); border-radius: 3px; overflow: hidden; margin: 12px 0; }
+    .mig-progress-bar { height: 100%; background: var(--pink-500); transition: width .3s ease; }
+    .mig-progress-label { font-size: 13px; color: var(--text-muted); }
+
+    @media (max-width: 768px) {
+      .mig-dropzone { padding: 28px 14px; }
+      .mig-mapping-table { font-size: 12px; }
+      .mig-mapping-table th, .mig-mapping-table td { padding: 6px 8px; }
+      .mig-mobile-notice { display: block; }
+    }
+    .mig-mobile-notice { display: none; padding: 14px; background: var(--pink-soft); border-radius: 10px; margin-bottom: 14px; font-size: 14px; color: var(--pink-700); }
+  </style>
+</head>
+<body>
+
+  <main class="wizard">
+    <header class="wizard-header">
+      <a href="/" class="nav-logo" aria-label="루미 홈">
+        <img class="logo-mark" src="/assets/onboarding/lumi-character.png" alt="루미" style="height:32px;width:auto;" />
+        <span style="font-weight:700;font-size:17px;letter-spacing:-0.4px;">루미</span>
+      </a>
+      <div class="wizard-progress-wrapper">
+        <div class="wizard-progress-label" data-progress-label>이전 4단계 — 1 / 4</div>
+        <div class="wizard-progress" role="progressbar" aria-valuemin="1" aria-valuemax="4">
+          <span class="wizard-progress-step active" data-progress-step></span>
+          <span class="wizard-progress-step" data-progress-step></span>
+          <span class="wizard-progress-step" data-progress-step></span>
+          <span class="wizard-progress-step" data-progress-step></span>
+        </div>
+      </div>
+      <a href="/signup.html" class="cancel-link">취소</a>
+    </header>
+
+    <div class="wizard-body">
+      <div style="width:100%;max-width:720px;">
+
+        <!-- =============== STEP 1: 엑셀 업로드 =============== -->
+        <section class="wizard-card" data-step="1">
+          <span class="wizard-step-num">STEP 1 / 4 · 1분</span>
+          <h2 class="wizard-title">쓰시던 엑셀 한 장이면 충분합니다</h2>
+          <p class="wizard-sub">이전 비용 0원. 5분이면 옮겨드려요. 양식이 달라도 자동으로 정리해 드릴게요.</p>
+
+          <div class="mig-mobile-notice">
+            <i data-lucide="info" style="width:16px;height:16px;vertical-align:-3px;"></i>
+            모바일에서는 업로드만 가능해요. 검수 화면은 PC에서 더 편하게 확인하실 수 있어요.
+          </div>
+
+          <label class="mig-dropzone" data-dropzone>
+            <input type="file" accept=".xlsx,.xls,.csv" data-file-input />
+            <div class="mig-dropzone-icon">
+              <i data-lucide="upload-cloud" style="width:48px;height:48px;"></i>
+            </div>
+            <div class="mig-dropzone-title">엑셀 파일을 끌어다 놓거나 클릭해서 선택해 주세요</div>
+            <div class="mig-dropzone-hint">.xlsx · .xls · .csv 지원 / 최대 50MB</div>
+          </label>
+
+          <p class="form-help" style="margin-top:14px;">쓰시던 솔루션의 데이터 백업 메뉴에서 엑셀로 내려받으실 수 있어요.</p>
+          <p class="form-error" data-error="step1" style="display:none;"></p>
+
+          <div class="mig-progress" data-upload-progress style="display:none;">
+            <div class="mig-progress-bar" data-upload-bar style="width:0%;"></div>
+          </div>
+          <p class="mig-progress-label" data-upload-label style="display:none;">업로드 중...</p>
+
+          <div class="wizard-actions" style="margin-top:18px;">
+            <button type="button" class="btn btn-primary btn-lg btn-block" data-action="step1-submit" disabled>
+              파일을 분석할게요 <i data-lucide="arrow-right" style="width:18px;height:18px;"></i>
+            </button>
+          </div>
+        </section>
+
+        <!-- =============== STEP 2: 매핑 검수 =============== -->
+        <section class="wizard-card" data-step="2" style="display:none;">
+          <span class="wizard-step-num">STEP 2 / 4 · 2분</span>
+          <h2 class="wizard-title" data-step2-title>양식이 확인되었습니다</h2>
+          <p class="wizard-sub">아래 항목들이 자동으로 정리됐어요. <strong style="color:var(--pink-700);">분홍색 표시</strong> 부분만 한 번 확인해 주세요.</p>
+
+          <div class="mig-stat-row">
+            <div class="mig-stat"><div class="mig-stat-num" data-stat-total>0</div><div class="mig-stat-label">전체 상품</div></div>
+            <div class="mig-stat"><div class="mig-stat-num" data-stat-valid>0</div><div class="mig-stat-label">정상</div></div>
+            <div class="mig-stat"><div class="mig-stat-num" data-stat-redflag>0</div><div class="mig-stat-label">확인 필요</div></div>
+            <div class="mig-stat"><div class="mig-stat-num" data-stat-policy>0</div><div class="mig-stat-label">정책 단어</div></div>
+          </div>
+
+          <table class="mig-mapping-table">
+            <thead>
+              <tr>
+                <th>원본 컬럼</th>
+                <th>Lumi 항목</th>
+                <th>정확도</th>
+              </tr>
+            </thead>
+            <tbody data-mapping-body></tbody>
+          </table>
+
+          <p class="form-error" data-error="step2" style="display:none;"></p>
+
+          <div class="wizard-actions" style="margin-top:18px;">
+            <button type="button" class="btn btn-secondary" data-action="step2-back">이전</button>
+            <button type="button" class="btn btn-primary" data-action="step2-next">
+              미리 보기 <i data-lucide="arrow-right" style="width:18px;height:18px;"></i>
+            </button>
+          </div>
+        </section>
+
+        <!-- =============== STEP 3: 5개 미리보기 (Aha Moment) =============== -->
+        <section class="wizard-card" data-step="3" style="display:none;">
+          <span class="wizard-step-num">STEP 3 / 4 · 30초</span>
+          <h2 class="wizard-title">루미 안에서 이렇게 보일 거예요</h2>
+          <p class="wizard-sub">대표 5개 상품으로 미리 확인해 보세요. 그대로 등록하시면 됩니다.</p>
+
+          <div class="mig-preview-grid" data-preview-grid></div>
+
+          <p class="form-error" data-error="step3" style="display:none;"></p>
+
+          <div class="wizard-actions" style="margin-top:18px;">
+            <button type="button" class="btn btn-secondary" data-action="step3-back">이전</button>
+            <button type="button" class="btn btn-primary" data-action="step3-next">
+              이대로 가져올게요 <i data-lucide="arrow-right" style="width:18px;height:18px;"></i>
+            </button>
+          </div>
+        </section>
+
+        <!-- =============== STEP 4: 등록 진행률 =============== -->
+        <section class="wizard-card" data-step="4" style="display:none;">
+          <span class="wizard-step-num">STEP 4 / 4 · 자동</span>
+          <h2 class="wizard-title" data-step4-title>가져오는 중이에요</h2>
+          <p class="wizard-sub" data-step4-sub>잠시만 기다려 주세요. 마무리되면 첫 마켓 등록을 도와드릴게요.</p>
+
+          <div class="mig-progress"><div class="mig-progress-bar" data-execute-bar style="width:0%;"></div></div>
+          <p class="mig-progress-label" data-execute-label>준비 중...</p>
+
+          <div class="mig-stat-row" data-execute-stats style="display:none;">
+            <div class="mig-stat"><div class="mig-stat-num" data-exec-inserted>0</div><div class="mig-stat-label">가져온 상품</div></div>
+            <div class="mig-stat"><div class="mig-stat-num" data-exec-failed>0</div><div class="mig-stat-label">검토 필요</div></div>
+          </div>
+
+          <div class="wizard-actions" style="margin-top:18px;display:none;" data-execute-actions>
+            <a href="/register-product.html" class="btn btn-primary btn-lg btn-block">
+              첫 마켓에 등록하러 가기 <i data-lucide="arrow-right" style="width:18px;height:18px;"></i>
+            </a>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </main>
+
+  <script>
+    (function () {
+      const $ = (s) => document.querySelector(s);
+      const $$ = (s) => document.querySelectorAll(s);
+
+      const state = {
+        file: null,
+        migrationId: null,
+        solution: null,
+        headerMapping: [],
+        rawRows: [],
+        previews: [],
+        products: [],
+        stats: null,
+      };
+
+      const dropzone = $('[data-dropzone]');
+      const fileInput = $('[data-file-input]');
+      const submitBtn = $('[data-action="step1-submit"]');
+      const errStep1 = $('[data-error="step1"]');
+
+      // 1. 드래그 + 클릭 업로드
+      ['dragenter', 'dragover'].forEach((evt) => {
+        dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.add('is-drag'); });
+      });
+      ['dragleave', 'drop'].forEach((evt) => {
+        dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.remove('is-drag'); });
+      });
+      dropzone.addEventListener('drop', (e) => {
+        const f = e.dataTransfer?.files?.[0];
+        if (f) handleFile(f);
+      });
+      fileInput.addEventListener('change', (e) => {
+        const f = e.target.files?.[0];
+        if (f) handleFile(f);
+      });
+
+      function handleFile(f) {
+        errStep1.style.display = 'none';
+        if (f.size > 50 * 1024 * 1024) {
+          errStep1.textContent = '파일이 너무 커요 (50MB 이하).';
+          errStep1.style.display = 'block';
+          return;
+        }
+        state.file = f;
+        dropzone.querySelector('.mig-dropzone-title').textContent = f.name;
+        dropzone.querySelector('.mig-dropzone-hint').textContent =
+          (f.size / 1024 / 1024).toFixed(2) + 'MB · 분석 준비 완료';
+        submitBtn.disabled = false;
+      }
+
+      // 2. STEP 1 → 2: 업로드 + 분석
+      submitBtn.addEventListener('click', async () => {
+        if (!state.file) return;
+        submitBtn.disabled = true;
+        submitBtn.textContent = '분석 중...';
+
+        const progress = $('[data-upload-progress]');
+        const bar = $('[data-upload-bar]');
+        const label = $('[data-upload-label]');
+        progress.style.display = 'block';
+        label.style.display = 'block';
+        bar.style.width = '20%';
+
+        try {
+          const fileBase64 = await fileToBase64(state.file);
+          bar.style.width = '50%';
+
+          const token = localStorage.getItem('lumi_seller_token') || '';
+          const res = await fetch('/api/migration-upload', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: 'Bearer ' + token,
+            },
+            body: JSON.stringify({ fileBase64, filename: state.file.name }),
+          });
+          bar.style.width = '90%';
+          const j = await res.json();
+          if (!res.ok || !j.success) throw new Error(j.error || '분석 실패');
+
+          state.migrationId = j.migrationId;
+          state.solution = j.solution;
+          state.headerMapping = j.headerMapping;
+          state.previews = j.previews;
+          state.stats = j.stats;
+          state.policyWarnings = j.policyWarnings;
+
+          bar.style.width = '100%';
+          renderStep2();
+          gotoStep(2);
+        } catch (e) {
+          errStep1.textContent = e.message || '분석 실패';
+          errStep1.style.display = 'block';
+          submitBtn.disabled = false;
+          submitBtn.textContent = '파일을 분석할게요';
+        } finally {
+          setTimeout(() => { progress.style.display = 'none'; label.style.display = 'none'; }, 600);
+        }
+      });
+
+      // 3. STEP 2 렌더링
+      function renderStep2() {
+        $('[data-stat-total]').textContent = state.stats.total;
+        $('[data-stat-valid]').textContent = state.stats.valid;
+        $('[data-stat-redflag]').textContent = state.stats.redFlagCount || (state.stats.total - state.stats.valid);
+        $('[data-stat-policy]').textContent = state.stats.policyViolations || 0;
+
+        const tbody = $('[data-mapping-body]');
+        tbody.innerHTML = '';
+        const lumiOptions = ['sku_code','product_name','price','msrp','stock','option_name','option_value','category_id','image_url','tax_type'];
+
+        state.headerMapping.forEach((m, idx) => {
+          const tr = document.createElement('tr');
+          if (m.confidence < 0.95 || !m.mapped) tr.className = 'mig-row-redflag';
+          tr.innerHTML = `
+            <td>${escapeHtml(m.original)}</td>
+            <td>
+              <select class="mig-mapping-select" data-mapping-idx="${idx}">
+                <option value="">매핑 안 함</option>
+                ${lumiOptions.map((o) => `<option value="${o}" ${m.mapped === o ? 'selected' : ''}>${o}</option>`).join('')}
+              </select>
+            </td>
+            <td><span class="mig-confidence">${Math.round((m.confidence || 0) * 100)}%</span></td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        // 셀러 수정 핸들러
+        tbody.addEventListener('change', (e) => {
+          if (!e.target.matches('[data-mapping-idx]')) return;
+          const idx = +e.target.getAttribute('data-mapping-idx');
+          const newVal = e.target.value || null;
+          state.headerMapping[idx].mapped = newVal;
+          state.headerMapping[idx].confidence = 1;
+          state.headerMapping[idx].source = 'user';
+          e.target.closest('tr').classList.remove('mig-row-redflag');
+          e.target.closest('tr').querySelector('.mig-confidence').textContent = '100%';
+        });
+
+        $('[data-step2-title]').textContent =
+          state.solution === 'unknown'
+            ? '사용자 정의 양식으로 정리했어요'
+            : '표준 양식이 확인되었습니다';
+      }
+
+      // 4. STEP 3 렌더링
+      function renderStep3() {
+        const grid = $('[data-preview-grid]');
+        grid.innerHTML = '';
+        state.previews.forEach((p) => {
+          const card = document.createElement('div');
+          card.className = 'mig-preview-card' + (p.valid ? '' : ' is-warning');
+          const img = (p.image_urls && p.image_urls[0]) || '';
+          card.innerHTML = `
+            ${img ? `<img class="mig-preview-img" src="${escapeAttr(img)}" alt="" onerror="this.style.opacity=.3" />` : `<div class="mig-preview-img"></div>`}
+            <div class="mig-preview-title">${escapeHtml(p.title || '(상품명 없음)')}</div>
+            <div class="mig-preview-meta">${(p.price || 0).toLocaleString()}원 · 재고 ${p.stock || 0}</div>
+            <div class="mig-preview-aha">${escapeHtml(p.aha?.tagline || '')} · ${escapeHtml(p.aha?.hint || '')}</div>
+          `;
+          grid.appendChild(card);
+        });
+      }
+
+      // 5. STEP 4 등록 진행
+      async function executeMigration() {
+        const bar = $('[data-execute-bar]');
+        const label = $('[data-execute-label]');
+        bar.style.width = '20%';
+        label.textContent = '검증 중...';
+
+        try {
+          const token = localStorage.getItem('lumi_seller_token') || '';
+
+          // 검수 후 재분석으로 최종 products 확보 (rawRows + 셀러가 수정한 mapping)
+          const analyzeRes = await fetch('/api/migration-analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+            body: JSON.stringify({
+              migrationId: state.migrationId,
+              rawRows: state.rawRows.length ? state.rawRows : state.previews,
+              headerMapping: state.headerMapping,
+              headerOverrides: {},
+            }),
+          });
+          bar.style.width = '50%';
+          label.textContent = '가져오는 중...';
+
+          // V1: products는 previews + 검증된 데이터로 진행 (서버에서 다시 검증)
+          const execRes = await fetch('/api/migration-execute', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+            body: JSON.stringify({
+              migrationId: state.migrationId,
+              products: state.previews,
+              dryRun: false,
+            }),
+          });
+          bar.style.width = '95%';
+          const j = await execRes.json();
+          if (!execRes.ok || !j.success) throw new Error(j.error || '등록 실패');
+
+          bar.style.width = '100%';
+          label.textContent = '완료!';
+          $('[data-execute-stats]').style.display = 'flex';
+          $('[data-exec-inserted]').textContent = j.inserted;
+          $('[data-exec-failed]').textContent = j.failed;
+          $('[data-execute-actions]').style.display = 'flex';
+          $('[data-step4-title]').textContent = `${j.inserted}개 상품을 가져왔어요`;
+          $('[data-step4-sub]').textContent = j.failed > 0
+            ? `${j.failed}개는 잠시 검토가 필요해요. 첫 마켓 등록부터 시작해 보세요.`
+            : '바로 첫 마켓에 등록하러 가실 수 있어요.';
+        } catch (e) {
+          label.textContent = '문제가 생겼어요: ' + (e.message || '알 수 없는 오류');
+        }
+      }
+
+      // 6. 단계 이동
+      function gotoStep(n) {
+        $$('.wizard-card').forEach((el) => el.style.display = 'none');
+        $(`[data-step="${n}"]`).style.display = 'block';
+        $$('.wizard-progress-step').forEach((s, i) => s.classList.toggle('active', i < n));
+        $('[data-progress-label]').textContent = `이전 4단계 — ${n} / 4`;
+        if (n === 3) renderStep3();
+        if (n === 4) executeMigration();
+        if (window.lucide) window.lucide.createIcons();
+      }
+
+      $('[data-action="step2-back"]').addEventListener('click', () => gotoStep(1));
+      $('[data-action="step2-next"]').addEventListener('click', () => gotoStep(3));
+      $('[data-action="step3-back"]').addEventListener('click', () => gotoStep(2));
+      $('[data-action="step3-next"]').addEventListener('click', () => gotoStep(4));
+
+      function fileToBase64(f) {
+        return new Promise((resolve, reject) => {
+          const r = new FileReader();
+          r.onload = () => resolve(String(r.result).split(',')[1]);
+          r.onerror = reject;
+          r.readAsDataURL(f);
+        });
+      }
+
+      function escapeHtml(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+      }
+      function escapeAttr(s) { return escapeHtml(s); }
+
+      if (window.lucide) window.lucide.createIcons();
+    })();
+  </script>
+</body>
+</html>
