@@ -88,6 +88,11 @@
 [functions."scheduled-community-trends-background"]
   schedule = "0 17 * * 2"
 
+# 네이버 데이터랩 쇼핑인사이트 수집 (B 그룹 4종 × 10업종 = 40 호출/일)
+# 매일 KST 04:30 (= UTC 19:30) — trends-v2(15UTC)·longtail(19UTC 일요일)과 다른 시간대
+[functions."scheduled-shopping-insight-background"]
+  schedule = "30 19 * * *"
+
 # 포스트 프로세싱 비활성화 (이메일 난독화 등 JS 삽입 방지)
 [build.processing]
   skip_processing = true
@@ -326,6 +331,18 @@
 [[redirects]]
   from = "/api/scheduled-community-trends"
   to = "/.netlify/functions/scheduled-community-trends-background"
+  status = 200
+
+# 네이버 데이터랩 쇼핑인사이트 cron 수동 트리거 (x-lumi-secret 헤더 필요)
+[[redirects]]
+  from = "/api/scheduled-shopping-insight"
+  to = "/.netlify/functions/scheduled-shopping-insight-background"
+  status = 200
+
+# 쇼핑인사이트 통합 조회 (셀러용)
+[[redirects]]
+  from = "/api/get-shopping-insights"
+  to = "/.netlify/functions/get-shopping-insights"
   status = 200
 
 [[redirects]]
