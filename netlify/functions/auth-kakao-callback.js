@@ -20,7 +20,7 @@ function errorRedirect(message) {
 }
 
 exports.handler = async (event) => {
-  const { code } = event.queryStringParameters || {};
+  const { code, state } = event.queryStringParameters || {};
 
   if (!code) {
     return errorRedirect('카카오 인증 코드가 없습니다.');
@@ -78,9 +78,18 @@ exports.handler = async (event) => {
     // 3. Supabase 유저 upsert
     const admin = getAdminClient();
 
-    // 기존 유저 확인
-    const { data: existingUsers } = await admin.auth.admin.listUsers();
-    const existingUser = (existingUsers?.users || []).find(
+    // 기존 유저 확인 (페이지네이션 루프 — 51번째 이후 가입자 누락 방지)
+    let allUsers = [];
+    let page = 1;
+    while (true) {
+      const { data: pageData, error: listErr } = await admin.auth.admin.listUsers({ page, perPage: 200 });
+      if (listErr || !pageData?.users?.length) break;
+      allUsers = allUsers.concat(pageData.users);
+      if (pageData.users.length < 200) break;
+      page++;
+      if (page > 50) break; // 안전 limit (10,000명)
+    }
+    const existingUser = allUsers.find(
       (u) => u.email === email || (u.user_metadata && u.user_metadata.kakao_id === kakaoId)
     );
 
@@ -136,7 +145,9 @@ exports.handler = async (event) => {
     }
 
     // 4. Magic link 생성 → 세션 발급 (신규=가입 흐름, 기존=대시보드)
-    const afterAuth = isNewUser ? 'https://lumi.it.kr/signup' : 'https://lumi.it.kr/';
+    // state='signup'이면 기존 유저도 signup으로 → 온보딩 상태 재확인
+    const fromSignup = state === 'signup';
+    const afterAuth = (isNewUser || fromSignup) ? 'https://lumi.it.kr/signup' : 'https://lumi.it.kr/';
     const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
       type: 'magiclink',
       email,

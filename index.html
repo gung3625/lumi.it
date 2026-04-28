@@ -2241,6 +2241,14 @@ window.authGoogle = authGoogle;
     setTimeout(function () { alert(msgs[msg]); }, 200);
     window.history.replaceState({}, '', window.location.pathname + window.location.hash);
   }
+  // 카카오 콜백 에러 처리 (?error=...)
+  var errorParam = params.get('error');
+  if (errorParam) {
+    setTimeout(function () {
+      alert('로그인 오류: ' + decodeURIComponent(errorParam));
+    }, 200);
+    window.history.replaceState({}, '', window.location.pathname + window.location.hash);
+  }
 })();
 </script>
 
