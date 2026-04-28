@@ -25,7 +25,7 @@
 
   // -------- 상태 --------
   const state = {
-    step: 1,                // 1..5
+    step: 0,                // 0..5 (0 = OAuth 선택)
     token: null,
     sellerId: null,
     licenseFile: null,           // File 객체 (가입 submit 시 업로드)
@@ -33,6 +33,7 @@
     business: {
       businessNumber: '',
       ownerName: '',
+      email: '',
       birthDate: '',
       phone: '',
       storeName: '',
@@ -194,8 +195,9 @@
   // -------- 입력 정규화 --------
   function normalizeBusinessNumber(s) { return String(s || '').replace(/\D/g, ''); }
   function formatBusinessNumber(s) {
-    const d = normalizeBusinessNumber(s);
-    if (d.length !== 10) return s;
+    const d = normalizeBusinessNumber(s).slice(0, 10);
+    if (d.length <= 3) return d;
+    if (d.length <= 5) return `${d.slice(0,3)}-${d.slice(3)}`;
     return `${d.slice(0,3)}-${d.slice(3,5)}-${d.slice(5)}`;
   }
   function isValidBusinessNumber(s) {
@@ -208,12 +210,19 @@
     const check = (10 - (sum % 10)) % 10;
     return check === parseInt(d[9],10);
   }
+  function formatBirthDate(s) {
+    const d = String(s || '').replace(/\D/g, '').slice(0, 8);
+    if (d.length <= 4) return d;
+    if (d.length <= 6) return `${d.slice(0,4)}-${d.slice(4)}`;
+    return `${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6)}`;
+  }
   function normalizePhone(s) { return String(s || '').replace(/\D/g, ''); }
   function formatPhone(s) {
-    const d = normalizePhone(s);
-    if (d.length === 11) return `${d.slice(0,3)}-${d.slice(3,7)}-${d.slice(7)}`;
+    const d = normalizePhone(s).slice(0, 11);
+    if (d.length <= 3) return d;
+    if (d.length <= 7) return `${d.slice(0,3)}-${d.slice(3)}`;
     if (d.length === 10) return `${d.slice(0,3)}-${d.slice(3,6)}-${d.slice(6)}`;
-    return s;
+    return `${d.slice(0,3)}-${d.slice(3,7)}-${d.slice(7)}`;
   }
   function isValidPhone(s) {
     const d = normalizePhone(s);
@@ -282,11 +291,15 @@
     const steps = document.querySelectorAll('[data-progress-step]');
     steps.forEach(function (el, i) {
       el.classList.remove('active', 'done');
+      if (state.step === 0) return; // step 0: 진행 표시 없음
       if (i + 1 < state.step) el.classList.add('done');
       if (i + 1 === state.step) el.classList.add('active');
     });
     const label = document.querySelector('[data-progress-label]');
-    if (label) label.textContent = `사장님 첫 쇼핑몰까지 5분 — ${state.step} / 5`;
+    if (label) {
+      if (state.step === 0) label.textContent = '루미 가입';
+      else label.textContent = `사장님 첫 쇼핑몰까지 5분 — ${state.step} / 5`;
+    }
   }
 
   // -------- 단계 전환 --------
@@ -318,6 +331,7 @@
   function initStep1() {
     const bizInput = document.querySelector('[data-input="businessNumber"]');
     const ownerInput = document.querySelector('[data-input="ownerName"]');
+    const emailInput = document.querySelector('[data-input="email"]');
     const birthInput = document.querySelector('[data-input="birthDate"]');
     const phoneInput = document.querySelector('[data-input="phone"]');
     const storeInput = document.querySelector('[data-input="storeName"]');
@@ -327,14 +341,50 @@
 
     if (bizInput) {
       bizInput.value = state.business.businessNumber || bizInput.value || '';
+      bizInput.addEventListener('input', function () {
+        const pos = bizInput.selectionStart;
+        const prev = bizInput.value;
+        const formatted = formatBusinessNumber(prev);
+        bizInput.value = formatted;
+        // 커서 위치 보정: 하이픈 삽입 직후 1칸 앞으로 밀림 방지
+        const diff = formatted.length - prev.length;
+        bizInput.setSelectionRange(pos + diff, pos + diff);
+      });
       bizInput.addEventListener('blur', function () {
         bizInput.value = formatBusinessNumber(bizInput.value);
       });
     }
     if (ownerInput) ownerInput.value = state.business.ownerName || ownerInput.value || '';
-    if (birthInput) birthInput.value = state.business.birthDate || birthInput.value || '';
+    if (emailInput) {
+      emailInput.value = state.business.email || emailInput.value || '';
+      // OAuth로 가져온 이메일은 readonly
+      if (state.business.email) {
+        emailInput.readOnly = true;
+        emailInput.style.opacity = '0.7';
+        emailInput.style.cursor = 'not-allowed';
+      }
+    }
+    if (birthInput) {
+      birthInput.value = state.business.birthDate || birthInput.value || '';
+      birthInput.addEventListener('input', function () {
+        const pos = birthInput.selectionStart;
+        const prev = birthInput.value;
+        const formatted = formatBirthDate(prev);
+        birthInput.value = formatted;
+        const diff = formatted.length - prev.length;
+        birthInput.setSelectionRange(pos + diff, pos + diff);
+      });
+    }
     if (phoneInput) {
       phoneInput.value = state.business.phone || phoneInput.value || '';
+      phoneInput.addEventListener('input', function () {
+        const pos = phoneInput.selectionStart;
+        const prev = phoneInput.value;
+        const formatted = formatPhone(prev);
+        phoneInput.value = formatted;
+        const diff = formatted.length - prev.length;
+        phoneInput.setSelectionRange(pos + diff, pos + diff);
+      });
       phoneInput.addEventListener('blur', function () {
         phoneInput.value = formatPhone(phoneInput.value);
       });
@@ -355,6 +405,7 @@
         setError('');
         const businessNumber = normalizeBusinessNumber(bizInput?.value);
         const ownerName = (ownerInput?.value || '').trim();
+        const email = (emailInput?.value || '').trim();
         const birthDate = (birthInput?.value || '').trim();
         const phone = normalizePhone(phoneInput?.value);
         const storeName = (storeInput?.value || '').trim();
@@ -408,7 +459,7 @@
             return;
           }
 
-          state.business = { businessNumber, ownerName, birthDate, phone, storeName, verified: true };
+          state.business = { businessNumber, ownerName, email, birthDate, phone, storeName, verified: true };
           saveDraft();
 
           // 2) 셀러 row 생성 (signup_step=1, 토큰 발급)
@@ -420,7 +471,7 @@
               phone,
               birthDate,
               storeName,
-              email: null,
+              email: email || null,
               marketingConsent: state.consent.marketing,
               privacyConsent: true,
               termsConsent: true,
@@ -1473,7 +1524,50 @@
     initStep3();
     initStep4();
     initStep5();
-    showStep(1);
+    showStep(0); // 기본은 OAuth 선택 화면
+
+    // Supabase OAuth 콜백: URL hash에 access_token이 있으면 세션 처리 후 STEP 1로
+    if (window.lumiSupa && window.location.hash && window.location.hash.includes('access_token')) {
+      window.lumiSupa.auth.getSession().then(function (result) {
+        const session = result?.data?.session;
+        if (session && session.access_token) {
+          state.token = session.access_token;
+          try { localStorage.setItem(STORAGE_TOKEN, session.access_token); } catch (_) {}
+          // 이름·이메일 메타데이터 pre-fill
+          const meta = session.user?.user_metadata || {};
+          const fullName = meta.full_name || meta.name || '';
+          if (fullName && !state.business.ownerName) state.business.ownerName = fullName;
+          if (session.user?.email && !state.business.email) state.business.email = session.user.email;
+          // URL hash 정리
+          try { window.history.replaceState({}, '', window.location.pathname); } catch (_) {}
+          showStep(1);
+        }
+      }).catch(function () {});
+      return;
+    }
+
+    // 카카오 콜백: ?token=... 파라미터로 돌아옴 (auth-kakao-callback이 /signup?token=... 로 전달 시)
+    const params = new URLSearchParams(window.location.search);
+    const oauthToken = params.get('token');
+    if (oauthToken) {
+      state.token = oauthToken;
+      try { localStorage.setItem(STORAGE_TOKEN, oauthToken); } catch (_) {}
+      // Supabase 세션에서 이메일·이름 pre-fill 시도
+      if (window.lumiSupa) {
+        window.lumiSupa.auth.getUser().then(function (res) {
+          const u = res?.data?.user;
+          if (u) {
+            const meta = u.user_metadata || {};
+            const fullName = meta.full_name || meta.name || '';
+            if (fullName && !state.business.ownerName) state.business.ownerName = fullName;
+            if (u.email && !state.business.email) state.business.email = u.email;
+          }
+        }).catch(function () {});
+      }
+      try { window.history.replaceState({}, '', window.location.pathname); } catch (_) {}
+      showStep(1);
+      return;
+    }
 
     // 기존 토큰이 있으면 /api/me로 진행도 복원 시도
     let storedToken = null;
@@ -1488,16 +1582,18 @@
             const nameEl = document.querySelector('[data-done-name]');
             if (nameEl) nameEl.textContent = r.data.seller.ownerName + '님';
           } else if (r.data.seller.signupStep && r.data.seller.signupStep >= 1 && r.data.seller.signupStep <= 5) {
-            // 진행 중이었던 단계 복원
             const next = Math.min(5, r.data.seller.signupStep);
             showStep(next);
+          } else {
+            showStep(1);
           }
         } else {
-          // 토큰 무효 → 정리
+          // 토큰 무효 → 정리 후 step 0
           state.token = null;
           try { localStorage.removeItem(STORAGE_TOKEN); } catch (_) {}
+          showStep(0);
         }
-      }).catch(function () { /* offline / etc */ });
+      }).catch(function () { showStep(0); });
     }
   }
 
