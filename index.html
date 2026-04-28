@@ -69,7 +69,7 @@ gtag('config', 'G-RTY8F34TR7');
 {"@type":"Question","name":"다른 솔루션에서 옮길 수 있어요?","acceptedAnswer":{"@type":"Answer","text":"엑셀 양식 그대로 → 루미가 자동 매핑해 드려요. 마법사 1단계만 따라오세요. 쿠팡·네이버·토스(통합솔루션 트랙) 마켓을 모두 지원합니다."}},
 {"@type":"Question","name":"패션 남성/여성을 AI가 정확히 구별하나요?","acceptedAnswer":{"@type":"Answer","text":"모델 사진은 90%+ 정확, 상품컷은 60~70%입니다. 매장 컨텍스트와 학습 패턴으로 보강하고, 애매하면 사장님이 1탭 선택할 수 있어요."}},
 {"@type":"Question","name":"가입비 정말 0원이에요?","acceptedAnswer":{"@type":"Answer","text":"네. 카드 등록도 필요 없습니다. 7일 + 친구 추천으로 누적 28일 무료입니다."}},
-{"@type":"Question","name":"기본 기능은 다른 솔루션만큼 되나요?","acceptedAnswer":{"@type":"Answer","text":"쿠팡·네이버 공식 API HMAC + OAuth로 등록·송장·재고 동기화 모두 안정 작동. 루미는 그 위에 AI 편의 1단계를 더 얹어서 사진 1장 등록·시장 추천까지."}}
+{"@type":"Question","name":"기본 기능은 다른 솔루션만큼 되나요?","acceptedAnswer":{"@type":"Answer","text":"쿠팡·네이버 공식 연동으로 등록·송장·재고 동기화 모두 안정 작동. 루미는 그 위에 AI 편의 1단계를 더 얹어서 사진 1장 등록·시장 추천까지."}}
 ]}
 </script>
 
@@ -84,7 +84,11 @@ gtag('config', 'G-RTY8F34TR7');
   --pink: #C8507A;
   --pink-soft: #FF6B8B;
   --pink-deep: #DDA0DD;
-  --gradient-brand: linear-gradient(135deg, #FF6B8B 0%, #C8507A 50%, #DDA0DD 100%);
+  /* 4색 시그니처: 핑크 → 라벤더 → 노랑 → 베이지 (브랜드 표준) */
+  --gradient-brand: linear-gradient(135deg, #FF6B8B 0%, #DDA0DD 33%, #EDD080 66%, #DABA65 100%);
+  --gradient-brand-h: linear-gradient(90deg, #FF6B8B 0%, #DDA0DD 33%, #EDD080 66%, #DABA65 100%);
+  --gradient-brand-radial: radial-gradient(circle at 30% 30%, #FF6B8B, #DDA0DD 40%, #EDD080 70%, #DABA65 100%);
+  --gradient-brand-soft: linear-gradient(135deg, rgba(255,107,139,.08) 0%, rgba(221,160,221,.07) 33%, rgba(237,208,128,.06) 66%, rgba(218,186,101,.05) 100%);
   --bg: #ffffff;
   --bg-alt: #f5f5f7;
   --ink: #0d1117;
@@ -340,9 +344,17 @@ body.dark-mode .nav { background: rgba(0,0,0,0.88); }
   background: var(--card);
   border-radius: 20px;
   box-shadow: var(--shadow);
-  transition: transform .2s, box-shadow .2s;
+  transition: transform .2s, box-shadow .2s, background .2s;
+  position: relative;
+  border: 1.5px solid transparent;
+  background-clip: padding-box;
 }
-.value-card:hover { transform: translateY(-4px); }
+.value-card:hover {
+  transform: translateY(-4px);
+  background-image: linear-gradient(var(--card), var(--card)), var(--gradient-brand-soft);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}
 .value-card__icon {
   width: 56px; height: 56px;
   border-radius: 14px;
@@ -506,9 +518,19 @@ body.dark-mode .nav { background: rgba(0,0,0,0.88); }
   color: var(--pink);
 }
 .trust-item__mark svg { width: 20px; height: 20px; }
-.trust-item--beta { background: rgba(255, 215, 0, 0.08); }
-.trust-item--beta .trust-item__mark { color: #d4a017; }
-body.dark-mode .trust-item--beta { background: rgba(255, 215, 0, 0.06); }
+/* 베타 배너: 4색 그라데이션 보더로 강조 */
+.trust-item--beta {
+  background: var(--card);
+  position: relative;
+  border: 1.5px solid transparent;
+  background-image: linear-gradient(var(--card), var(--card)), var(--gradient-brand-h);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}
+.trust-item--beta .trust-item__mark { color: var(--pink); }
+body.dark-mode .trust-item--beta {
+  background-image: linear-gradient(var(--card), var(--card)), var(--gradient-brand-h);
+}
 .trust-item--beta div small {
   display: block; font-size: 13px; color: var(--ink-3); margin-top: 4px;
 }
@@ -918,19 +940,19 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div class="trust-list">
       <div class="trust-item reveal">
         <span class="trust-item__mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
-        <span>글로벌 인프라 (Supabase · Netlify)</span>
+        <span>안정적인 글로벌 인프라</span>
       </div>
       <div class="trust-item reveal">
         <span class="trust-item__mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
-        <span>Privacy-by-Design (암호화 · Audit Log)</span>
+        <span>데이터 보안 — 정부 표준 암호화</span>
       </div>
       <div class="trust-item reveal">
         <span class="trust-item__mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
-        <span>쿠팡 · 네이버 공식 API (HMAC + OAuth)</span>
+        <span>쿠팡 · 네이버 공식 연동</span>
       </div>
       <div class="trust-item reveal">
         <span class="trust-item__mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
-        <span>사업자등록증 진위 · 휴폐업 자동 검증</span>
+        <span>24시간 자동 작동 — 잠든 사이에도</span>
       </div>
       <div class="trust-item trust-item--beta reveal">
         <span class="trust-item__mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3" fill="currentColor"></circle></svg></span>
@@ -985,7 +1007,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       </details>
       <details class="faq-item reveal">
         <summary class="faq-summary">기본 기능은 다른 솔루션만큼 되나요?</summary>
-        <div class="faq-body">쿠팡·네이버 공식 API HMAC + OAuth로 등록·송장·재고 동기화 모두 안정 작동. 루미는 그 위에 AI 편의 1단계를 더 얹어서 사진 1장 등록·시장 추천까지.</div>
+        <div class="faq-body">쿠팡·네이버 공식 연동으로 등록·송장·재고 동기화 모두 안정 작동. 루미는 그 위에 AI 편의 1단계를 더 얹어서 사진 1장 등록·시장 추천까지.</div>
       </details>
     </div>
   </div>

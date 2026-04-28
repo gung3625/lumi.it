@@ -7,6 +7,7 @@
   <meta name="description" content="명령창 + Action Agent + 카테고리 카운트 — 루미 작업대" />
   <meta name="theme-color" content="#FFE7F1" />
   <link rel="icon" href="/assets/logo-cloud.png" />
+  <link rel="stylesheet" href="/css/brand-tokens.css" />
   <link rel="stylesheet" href="/css/dashboard-canvas.css" />
 </head>
 <body class="page-dashboard">
@@ -121,7 +122,7 @@
           <div class="widget__header">
             <div>
               <h2 class="widget__title">오늘 뜨는 상품</h2>
-              <p class="widget__subtitle">시장에서 지금 급상승 중</p>
+              <p class="widget__subtitle">시장에서 지금 급상승 중 — 클릭하면 등록</p>
             </div>
             <a href="/trends" class="widget__action">전체 트렌드 →</a>
           </div>
@@ -130,47 +131,130 @@
           </div>
         </section>
 
-        <!-- Profit 이번 주 -->
-        <section class="widget widget--4" aria-label="이번 주 수익">
+        <!-- Profit (오늘·이번 주·이번 달 토글) -->
+        <section class="widget widget--6" aria-label="실수익">
           <div class="widget__header">
             <div>
-              <h2 class="widget__title">이번 주 통장에 남는 돈</h2>
-              <p class="widget__subtitle">수수료·광고·포장 차감</p>
+              <h2 class="widget__title">통장에 남는 돈</h2>
+              <p class="widget__subtitle" id="profitSubtitle">이번 주 · 수수료·광고·포장 차감</p>
+            </div>
+            <div class="view-toggle" id="profitPeriodToggle" role="tablist" aria-label="기간 전환">
+              <button class="view-toggle__btn" type="button" data-period="day" role="tab">오늘</button>
+              <button class="view-toggle__btn view-toggle__btn--active" type="button" data-period="week" role="tab">이번 주</button>
+              <button class="view-toggle__btn" type="button" data-period="month" role="tab">이번 달</button>
             </div>
           </div>
           <div class="profit-canvas">
             <p class="profit-canvas__amount" id="profitCanvasAmount">₩—</p>
             <p class="profit-canvas__delta" id="profitCanvasDelta">계산 중…</p>
+            <div class="profit-breakdown" id="profitBreakdownList" hidden></div>
           </div>
         </section>
 
-        <!-- 처리할 일 -->
-        <section class="widget widget--4" aria-label="처리할 일">
+        <!-- 우선순위 큐 (긴급·VIP·일반) -->
+        <section class="widget widget--8" aria-label="처리할 일 우선순위">
           <div class="widget__header">
             <div>
               <h2 class="widget__title">처리할 일</h2>
-              <p class="widget__subtitle">송장·반품·CS</p>
+              <p class="widget__subtitle" id="priorityHint">긴급·VIP·일반 자동 정렬</p>
             </div>
             <a href="/tasks" class="widget__action">전체 →</a>
           </div>
-          <div class="todo-list" id="todoList">
-            <div class="widget__empty">불러오는 중…</div>
+          <div class="priority-cols" id="priorityCols">
+            <div class="priority-col" data-bucket="urgent">
+              <div class="priority-col__head">
+                <span class="priority-col__dot priority-col__dot--urgent"></span>
+                <span class="priority-col__label">긴급</span>
+                <span class="priority-col__count" id="priorityUrgentCount">0</span>
+              </div>
+              <div class="priority-col__list" id="priorityUrgent">
+                <div class="widget__empty">없음</div>
+              </div>
+            </div>
+            <div class="priority-col" data-bucket="vip">
+              <div class="priority-col__head">
+                <span class="priority-col__dot priority-col__dot--vip"></span>
+                <span class="priority-col__label">VIP</span>
+                <span class="priority-col__count" id="priorityVipCount">0</span>
+              </div>
+              <div class="priority-col__list" id="priorityVip">
+                <div class="widget__empty">없음</div>
+              </div>
+            </div>
+            <div class="priority-col" data-bucket="normal">
+              <div class="priority-col__head">
+                <span class="priority-col__dot priority-col__dot--normal"></span>
+                <span class="priority-col__label">일반</span>
+                <span class="priority-col__count" id="priorityNormalCount">0</span>
+              </div>
+              <div class="priority-col__list" id="priorityNormal">
+                <div class="widget__empty">없음</div>
+              </div>
+            </div>
           </div>
         </section>
 
-        <!-- Live Stream Feed -->
-        <section class="widget widget--4" aria-label="실시간 알림">
+        <!-- Kill Switch (위험 상품 즉시 정지) -->
+        <section class="widget widget--4" aria-label="긴급 차단">
+          <div class="widget__header">
+            <div>
+              <h2 class="widget__title">긴급 차단</h2>
+              <p class="widget__subtitle">위험 발견 시 1탭 정지</p>
+            </div>
+          </div>
+          <div class="kill-switch">
+            <p class="kill-switch__desc">광고비 폭주·CS 폭주 등 위험 발견 시 마켓 판매를 즉시 멈춰요</p>
+            <button type="button" class="kill-switch__btn" id="killSwitchOpen">긴급 차단 열기</button>
+          </div>
+        </section>
+
+        <!-- Live Stream Feed (Supabase Realtime) -->
+        <section class="widget widget--full" aria-label="실시간 알림">
           <div class="widget__header">
             <div>
               <h2 class="widget__title">실시간 알림</h2>
-              <p class="widget__subtitle">최근 활동</p>
+              <p class="widget__subtitle" id="liveSubtitle">주문·반품·CS — 새 이벤트가 위에서 슬라이드 인</p>
             </div>
+            <span class="live-stream__indicator" id="liveIndicator" aria-live="polite">
+              <span class="live-stream__pulse"></span>
+              <span id="liveStatus">대기 중</span>
+            </span>
           </div>
           <div class="live-stream" id="liveStream">
             <div class="widget__empty">최근 알림이 없어요</div>
           </div>
         </section>
 
+      </div>
+
+      <!-- Kill Switch 모달 -->
+      <div class="kill-modal" id="killModal" role="dialog" aria-modal="true" aria-labelledby="killModalTitle" hidden>
+        <div class="kill-modal__backdrop" data-kill-close></div>
+        <div class="kill-modal__panel">
+          <div class="kill-modal__header">
+            <h3 class="kill-modal__title" id="killModalTitle">긴급 차단</h3>
+            <button class="kill-modal__close" type="button" data-kill-close aria-label="닫기">×</button>
+          </div>
+          <div class="kill-modal__body">
+            <p class="kill-modal__warn">선택한 대상의 판매를 마켓에서 즉시 중지해요. 재개는 같은 화면에서 가능해요.</p>
+            <fieldset class="kill-modal__fields">
+              <legend>차단 범위</legend>
+              <label class="kill-modal__radio"><input type="radio" name="killScope" value="market:all" checked /> 전 마켓 일시 정지</label>
+              <label class="kill-modal__radio"><input type="radio" name="killScope" value="market:coupang" /> 쿠팡만 정지</label>
+              <label class="kill-modal__radio"><input type="radio" name="killScope" value="market:naver" /> 네이버만 정지</label>
+              <label class="kill-modal__radio"><input type="radio" name="killScope" value="market:toss" /> 토스만 정지</label>
+            </fieldset>
+            <label class="kill-modal__reason">
+              <span>차단 사유 (선택)</span>
+              <input type="text" id="killReason" placeholder="예: 광고비 폭주, CS 폭주" maxlength="80" />
+            </label>
+            <div class="kill-modal__result" id="killResult" hidden></div>
+          </div>
+          <div class="kill-modal__footer">
+            <button type="button" class="kill-modal__cancel" data-kill-close>취소</button>
+            <button type="button" class="kill-modal__confirm" id="killConfirmBtn">즉시 정지</button>
+          </div>
+        </div>
       </div>
 
     </main>
