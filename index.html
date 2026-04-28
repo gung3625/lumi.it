@@ -2136,12 +2136,12 @@ async function routeAfterAuth() {
     if (new URLSearchParams(location.search || '').get('stay') === '1') return;
   } catch (e) {}
 
-  // onboarding 상태 확인 후 분기
-  // 비로그인(401) 또는 에러 시 = 라우팅하지 않고 현재 페이지 유지 (메인 머무름)
+  // 세션 기반 분기 (getUser 호출 X — 401 회피, 토큰 sync timing 문제 방지)
   try {
-    var res = await window.lumiSupa.auth.getUser();
-    if (!res || !res.data || !res.data.user) return; // 비로그인 = 메인 유지
-    var meta = res.data.user.user_metadata || {};
+    var r = await window.lumiSupa.auth.getSession();
+    var session = r && r.data && r.data.session;
+    if (!session || !session.user) return; // 비로그인 = 메인 유지
+    var meta = session.user.user_metadata || {};
     var isOnboarded = meta.onboarded === true || (meta.business_no && meta.consent_terms);
     if (isOnboarded) {
       window.location.href = '/dashboard.html';
@@ -2150,7 +2150,7 @@ async function routeAfterAuth() {
     }
   } catch (e) {
     console.warn('[auth] route check', e);
-    // 401·네트워크 에러 = 비로그인으로 간주, 메인 유지 (강제 redirect X)
+    // 비로그인 또는 에러 = 메인 유지 (강제 redirect X)
   }
 }
 // 하위 호환 alias
