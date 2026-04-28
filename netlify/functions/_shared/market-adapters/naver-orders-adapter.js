@@ -176,6 +176,108 @@ async function killSwitch({ scope, market_product_id, option_value, credentials,
   return { ok: false, error: '실연동 미지원', retryable: false };
 }
 
+/**
+ * 네이버 재고 동기화 — PATCH /external/v2/products/origin-products/{originProductNo}/change-stock-quantity
+ */
+async function syncInventory({ market_product_id, quantity, credentials, access_token_encrypted, token_expires_at, mock }) {
+  if (!market_product_id) {
+    return { ok: false, error: '상품 ID가 필요해요.', retryable: false };
+  }
+  if (!Number.isFinite(quantity) || quantity < 0) {
+    return { ok: false, error: '재고 수량은 0 이상이어야 해요.', retryable: false };
+  }
+  if (isMockMode(mock)) {
+    return { ok: true, mocked: true, market_product_id, quantity, raw: { mocked: true } };
+  }
+  const tk = await ensureToken({ credentials, access_token_encrypted, token_expires_at });
+  if (!tk.ok) return { ok: false, error: tk.error, retryable: false };
+  const path = `/external/v2/products/origin-products/${encodeURIComponent(market_product_id)}/change-stock-quantity`;
+  const body = { stockQuantity: Math.trunc(quantity) };
+  try {
+    const res = await fetch(`${NAVER_API_HOST}${path}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${tk.accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const txt = await res.text();
+    let json = null; try { json = JSON.parse(txt); } catch { /* */ }
+    if (!res.ok) {
+      const retryable = [408, 429, 500, 502, 503, 504].includes(res.status);
+      return { ok: false, error: json?.message || `네이버 재고 동기화 실패 (${res.status})`, status: res.status, retryable };
+    }
+    return { ok: true, market_product_id, quantity, raw: json };
+  } catch (e) {
+    return { ok: false, error: '네이버 재고 동기화 네트워크 오류', retryable: true };
+  }
+}
+
+/**
+ * 네이버 가격 갱신 — PATCH /external/v2/products/origin-products/{originProductNo}/change-sale-price
+ */
+async function updatePrice({ market_product_id, price, credentials, access_token_encrypted, token_expires_at, mock }) {
+  if (!market_product_id) {
+    return { ok: false, error: '상품 ID가 필요해요.', retryable: false };
+  }
+  if (!Number.isFinite(price) || price < 0) {
+    return { ok: false, error: '가격은 0 이상이어야 해요.', retryable: false };
+  }
+  if (isMockMode(mock)) {
+    return { ok: true, mocked: true, market_product_id, price, raw: { mocked: true } };
+  }
+  const tk = await ensureToken({ credentials, access_token_encrypted, token_expires_at });
+  if (!tk.ok) return { ok: false, error: tk.error, retryable: false };
+  const path = `/external/v2/products/origin-products/${encodeURIComponent(market_product_id)}/change-sale-price`;
+  const body = { salePrice: Math.trunc(price) };
+  try {
+    const res = await fetch(`${NAVER_API_HOST}${path}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${tk.accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const txt = await res.text();
+    let json = null; try { json = JSON.parse(txt); } catch { /* */ }
+    if (!res.ok) {
+      const retryable = [408, 429, 500, 502, 503, 504].includes(res.status);
+      return { ok: false, error: json?.message || `네이버 가격 갱신 실패 (${res.status})`, status: res.status, retryable };
+    }
+    return { ok: true, market_product_id, price, raw: json };
+  } catch (e) {
+    return { ok: false, error: '네이버 가격 갱신 네트워크 오류', retryable: true };
+  }
+}
+
+/**
+ * 네이버 상품 부분 수정 (필드별 라우팅)
+ */
+async function updateProduct({ market_product_id, fields, credentials, access_token_encrypted, token_expires_at, mock }) {
+  if (!market_product_id) {
+    return { ok: false, error: '상품 ID가 필요해요.', retryable: false };
+  }
+  if (!fields || typeof fields !== 'object' || Object.keys(fields).length === 0) {
+    return { ok: false, error: '수정할 필드가 없어요.', retryable: false };
+  }
+  if (isMockMode(mock)) {
+    return { ok: true, mocked: true, market_product_id, fields_updated: Object.keys(fields), raw: { mocked: true } };
+  }
+  if ('price' in fields && Object.keys(fields).length === 1) {
+    return updatePrice({ market_product_id, price: Number(fields.price), credentials, access_token_encrypted, token_expires_at, mock });
+  }
+  return { ok: false, error: '네이버는 현재 가격·재고 외 부분 수정은 모킹만 지원해요.', retryable: false };
+}
+
+/**
+ * 네이버 환불 처리 — POST /external/v1/pay-order/seller/product-orders/{productOrderId}/return/approve
+ */
+async function processRefund({ market_order_id, reason, type, credentials, access_token_encrypted, token_expires_at, mock }) {
+  if (!market_order_id) {
+    return { ok: false, error: '주문번호가 필요해요.', retryable: false };
+  }
+  if (isMockMode(mock)) {
+    return { ok: true, mocked: true, market_order_id, type: type || 'refund', refund_id: `NV_REF_${Date.now()}` };
+  }
+  return { ok: false, error: '네이버 환불 실연동은 곧 지원돼요. 모킹 모드를 활성화해주세요.', retryable: false };
+}
+
 module.exports = {
   fetchNewOrders,
   normalizeNaverOrder,
@@ -183,4 +285,8 @@ module.exports = {
   fetchCsThreads,
   sendCsReply,
   killSwitch,
+  syncInventory,
+  updatePrice,
+  updateProduct,
+  processRefund,
 };
