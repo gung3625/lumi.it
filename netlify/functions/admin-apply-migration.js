@@ -412,9 +412,9 @@ end $$;
 
 notify pgrst, 'reload schema';
 `,
-  'ig_token_expiry.sql': `
+  'ig_token_expiry_extra.sql': `
 alter table public.ig_accounts add column if not exists last_refreshed_at timestamptz;
-create index if not exists idx_ig_accounts_expiry on public.ig_accounts(token_expires_at)
+create index if not exists idx_ig_accounts_expiry_v2 on public.ig_accounts(token_expires_at)
   where token_expires_at is not null;
 `,
 };
