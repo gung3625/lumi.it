@@ -170,7 +170,7 @@ async function step(name, fn) {
       // 마스코트가 wink 이미지인지 확인
       const mascotSrc = await page.$eval('[data-micro-wizard="coupang"] [data-mp-mascot]',
         (el) => el.getAttribute('src'));
-      if (!/lumi-wink/.test(mascotSrc)) throw new Error('완료 단계 마스코트가 wink 아님: ' + mascotSrc);
+      if (!/logo-cloud/.test(mascotSrc)) throw new Error('완료 단계 마스코트가 logo-cloud 아님: ' + mascotSrc);
       await page.screenshot({ path: path.join(SCREENSHOT_DIR, `sprint1.5-${viewport.name}-06-coupang-step5.png`) });
     });
 

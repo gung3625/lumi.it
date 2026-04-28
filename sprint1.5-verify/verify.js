@@ -144,10 +144,7 @@ function gate(no, name, pass, detail) {
     const js = r.body || '';
     const hasMicroState = /microState/.test(js) && /setMicroStep/.test(js);
     const hasMascotMap = /MICRO_MASCOT/.test(js)
-      && /lumi-curious/.test(js)
-      && /lumi-character/.test(js)
-      && /lumi-surprised-2/.test(js)
-      && /lumi-wink/.test(js);
+      && /logo-cloud\.png/.test(js);
     const hasClipboardIntegration = /ClipboardDetector/.test(js)
       && /startClipboardDetector/.test(js)
       && /showClipboardPopup/.test(js);

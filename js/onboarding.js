@@ -793,11 +793,11 @@
   //   1️⃣ 발급 안내 → 2️⃣ 키 복사 → 3️⃣ 입력 → 4️⃣ 검증 → 5️⃣ 완료
   // =====================================================
   const MICRO_MASCOT = {
-    1: '/assets/onboarding/lumi-curious.png',     // 호기심·시작
-    2: '/assets/onboarding/lumi-character.png',   // 안내
-    3: '/assets/onboarding/lumi-surprised-2.png', // 감지
-    4: '/assets/onboarding/lumi-character.png',   // 확인
-    5: '/assets/onboarding/lumi-wink.png',        // 완료
+    1: '/assets/logo-cloud.png', // 호기심·시작
+    2: '/assets/logo-cloud.png', // 안내
+    3: '/assets/logo-cloud.png', // 감지
+    4: '/assets/logo-cloud.png', // 확인
+    5: '/assets/logo-cloud.png', // 완료
   };
 
   const MICRO_COPY = {
