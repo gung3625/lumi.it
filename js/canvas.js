@@ -257,4 +257,23 @@
   }
 
   window.LumiCanvas = Canvas;
+
+  /** 다크모드 FAB 토글 (qa-hotfix BUG-02 — 5개 서브페이지 공용) */
+  function initDarkMode() {
+    const KEY = 'lumi_dark_mode';
+    const fab = document.getElementById('themeFab');
+    const apply = (dark) => document.body.classList.toggle('dark-mode', dark);
+    apply(localStorage.getItem(KEY) === '1');
+    if (!fab) return;
+    fab.addEventListener('click', () => {
+      const dark = !document.body.classList.contains('dark-mode');
+      apply(dark);
+      localStorage.setItem(KEY, dark ? '1' : '0');
+    });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initDarkMode);
+  } else {
+    initDarkMode();
+  }
 })();

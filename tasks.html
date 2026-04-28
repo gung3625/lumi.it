@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>오늘 처리할 일 — 루미</title>
   <meta name="description" content="우선순위 카드로 오늘 해야 할 일만 빠르게" />
   <meta name="theme-color" content="#FFE7F1" />
@@ -116,6 +116,13 @@
     </div>
   </div>
 
+  <!-- 다크모드 토글 FAB (qa-hotfix BUG-02) -->
+  <button class="theme-fab" id="themeFab" type="button" aria-label="다크 모드 전환" title="다크 모드">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+    </svg>
+  </button>
+
   <script src="/js/canvas.js"></script>
   <script src="/js/sprint3-tasks.js"></script>
   <script src="/js/sprint4-tasks-trend.js"></script>
@@ -146,6 +153,49 @@
       });
       document.querySelector('[data-action-cta]')?.addEventListener('click', () => {
         location.href = '/orders?filter=pending_shipping';
+      });
+
+      // Progressive Detail (B축, qa-hotfix BUG-03) — 처리할 일 카드 클릭 → 슬라이드오버
+      function escapeHtml(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+      }
+      function openTaskSlideOver(card) {
+        const title = card.querySelector('.priority-card__title, .task-card__title, h3, h4')?.textContent?.trim() || '처리할 일';
+        const market = card.dataset.market || card.querySelector('[data-market]')?.dataset.market || '—';
+        const orderNo = card.dataset.orderNo || card.querySelector('[data-order-no]')?.textContent || '—';
+        const buyer = card.dataset.buyer || card.querySelector('[data-buyer]')?.textContent || '—';
+        const history = card.dataset.history || card.querySelector('[data-history]')?.textContent || '아직 처리 이력이 없어요';
+        const meta = card.querySelector('.priority-card__meta, .task-card__meta, p')?.textContent?.trim() || '';
+        const body = document.createElement('div');
+        body.innerHTML = `
+          <dl style="display:grid;grid-template-columns:88px 1fr;gap:8px 12px;font-size:14px;margin:0 0 14px;">
+            <dt style="color:#888;">마켓</dt><dd style="margin:0;">${escapeHtml(market)}</dd>
+            <dt style="color:#888;">주문번호</dt><dd style="margin:0;">${escapeHtml(orderNo)}</dd>
+            <dt style="color:#888;">고객</dt><dd style="margin:0;">${escapeHtml(buyer)}</dd>
+          </dl>
+          <h4 style="margin:14px 0 6px;font-size:13px;color:#888;">처리 이력</h4>
+          <p style="margin:0 0 14px;font-size:14px;line-height:1.5;color:#555;">${escapeHtml(history)}</p>
+          ${meta ? `<p style="margin:0 0 14px;font-size:13px;color:#888;">${escapeHtml(meta)}</p>` : ''}
+        `;
+        const foot = document.createElement('div');
+        foot.style.display = 'flex';
+        foot.style.gap = '8px';
+        foot.style.flex = '1';
+        foot.innerHTML = `
+          <button class="btn btn--ghost" data-slide-close style="flex:1;">닫기</button>
+          <button class="btn btn--primary" id="slideOverGoOrders" style="flex:1;">주문에서 보기</button>
+        `;
+        window.LumiCanvas.openSlideOver({ title, body, footer: foot });
+        foot.querySelector('#slideOverGoOrders')?.addEventListener('click', () => {
+          location.href = '/orders' + (orderNo && orderNo !== '—' ? '?q=' + encodeURIComponent(orderNo) : '');
+        });
+      }
+      // 우선순위 카드 컨테이너에 위임 (sprint3-tasks.js가 비동기로 카드 렌더링)
+      document.getElementById('priorityCards')?.addEventListener('click', (ev) => {
+        const card = ev.target.closest('.priority-card, .task-card, [data-task-card]');
+        if (!card) return;
+        if (ev.target.closest('button, a, input, select')) return;
+        openTaskSlideOver(card);
       });
     });
   </script>

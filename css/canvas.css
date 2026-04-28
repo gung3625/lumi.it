@@ -578,7 +578,57 @@ body.dark-mode {
   --canvas-text-soft: #a8a8ad;
   --canvas-text-muted: #6e6e73;
   --canvas-border: rgba(255, 255, 255, 0.1);
+  background: #000;
+  color: var(--canvas-text);
 }
 body.dark-mode .cmdk-search__input { color: #f5f5f7; }
 body.dark-mode .kanban-card { background: #272729; }
 body.dark-mode .cs-truth-banner { background: #1a1a1c; }
+
+/* 서브페이지 다크모드 컨테이너 톤 (qa-hotfix BUG-02) */
+body.dark-mode .topbar,
+body.dark-mode .wizard-header,
+body.dark-mode .rp-header,
+body.dark-mode .panel,
+body.dark-mode .canvas-card,
+body.dark-mode .wizard-card,
+body.dark-mode .rp-card,
+body.dark-mode .kanban-col,
+body.dark-mode .mig-dropzone,
+body.dark-mode .mig-preview-card,
+body.dark-mode .mig-stat,
+body.dark-mode .modal__content,
+body.dark-mode .sheet__content,
+body.dark-mode .slide-over__panel {
+  background: var(--canvas-bg-alt);
+  color: var(--canvas-text);
+  border-color: var(--canvas-border);
+}
+body.dark-mode .mig-mapping-table th { background: #1a1a1c; color: var(--canvas-text); }
+body.dark-mode .mig-mapping-table td { color: var(--canvas-text); border-color: var(--canvas-border); }
+body.dark-mode .mig-mapping-select { background: var(--canvas-bg-alt); color: var(--canvas-text); border-color: var(--canvas-border); }
+body.dark-mode .topbar__nav a { color: var(--canvas-text-soft); }
+body.dark-mode .topbar__nav a.active { color: var(--canvas-text); }
+
+/* 다크모드 토글 FAB (qa-hotfix BUG-02 — 5개 서브페이지 공용) */
+.theme-fab {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid var(--canvas-border);
+  background: var(--canvas-bg-alt);
+  color: var(--canvas-text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  box-shadow: 0 4px 16px rgba(0,0,0,.18);
+  transition: transform .12s ease;
+  font-family: inherit;
+}
+.theme-fab:hover { transform: scale(1.05); }
+.theme-fab svg { width: 22px; height: 22px; }
