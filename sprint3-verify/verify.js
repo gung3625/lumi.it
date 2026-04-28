@@ -232,7 +232,7 @@ const SUMMARY = [];
   // ========================================================================
   {
     const sql = fs.readFileSync(path.resolve(__dirname, '..', 'migrations', '2026-04-28-sprint-3-orders-cs.sql'), 'utf8');
-    const tables = ['orders', 'inventory_movements', 'cs_threads', 'cs_messages', 'tracking_events', 'kill_switch_log', 'courier_codes'];
+    const tables = ['marketplace_orders', 'inventory_movements', 'cs_threads', 'cs_messages', 'tracking_events', 'kill_switch_log', 'courier_codes'];
     const allTables = tables.every((t) => new RegExp(`CREATE TABLE IF NOT EXISTS ${t}\\b`, 'i').test(sql));
     const idempotent = /CREATE TABLE IF NOT EXISTS/gi.test(sql) && /ON CONFLICT/i.test(sql);
     const rls = /ENABLE ROW LEVEL SECURITY/gi.test(sql);

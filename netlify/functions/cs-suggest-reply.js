@@ -61,7 +61,7 @@ exports.handler = async (event) => {
 
     if (thread.order_id) {
       const { data: order } = await admin
-        .from('orders')
+        .from('marketplace_orders')
         .select('product_title, courier_code, tracking_number')
         .eq('id', thread.order_id)
         .single();

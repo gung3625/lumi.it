@@ -83,7 +83,7 @@ exports.handler = async (event) => {
 
   if (orderId) {
     const { data, error: ferr } = await admin
-      .from('orders')
+      .from('marketplace_orders')
       .select('*')
       .eq('seller_id', payload.seller_id)
       .eq('id', orderId)
@@ -101,7 +101,7 @@ exports.handler = async (event) => {
   }
 
   let query = admin
-    .from('orders')
+    .from('marketplace_orders')
     .select('id, market, market_order_id, product_title, quantity, total_price, option_text, status, tracking_number, courier_code, buyer_name_masked, buyer_phone_masked, buyer_address_masked, return_requested_at, stock_restored, shipped_at, delivered_at, created_at', { count: 'exact' })
     .eq('seller_id', payload.seller_id)
     .order('created_at', { ascending: false })

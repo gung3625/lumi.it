@@ -37,7 +37,7 @@ async function processItem(admin, sellerId, item, mock) {
   let order = null;
   if (admin) {
     const { data, error } = await admin
-      .from('orders')
+      .from('marketplace_orders')
       .select('id, seller_id, market, market_order_id, status, tracking_number')
       .eq('id', item.order_id)
       .eq('seller_id', sellerId)
@@ -91,7 +91,7 @@ async function processItem(admin, sellerId, item, mock) {
 
   if (admin && result.ok) {
     await admin
-      .from('orders')
+      .from('marketplace_orders')
       .update({
         tracking_number: String(item.tracking_number).trim(),
         courier_code: item.courier_code,
@@ -171,7 +171,7 @@ exports.handler = async (event) => {
       actor_id: payload.seller_id,
       actor_type: 'seller',
       action: 'submit_tracking',
-      resource_type: 'orders',
+      resource_type: 'marketplace_orders',
       resource_id: items.map((i) => i.order_id).join(','),
       metadata: { count: items.length, success: results.filter((r) => r.success).length },
       event,

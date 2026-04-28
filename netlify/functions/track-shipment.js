@@ -45,7 +45,7 @@ exports.handler = async (event) => {
       return { statusCode: 200, headers: CORS, body: JSON.stringify({ success: result.ok, ...result, order_id: body.order_id, mocked: true }) };
     }
     const { data: order } = await admin
-      .from('orders')
+      .from('marketplace_orders')
       .select('id, seller_id, courier_code, tracking_number, status')
       .eq('id', body.order_id)
       .eq('seller_id', sellerId)
@@ -83,7 +83,7 @@ exports.handler = async (event) => {
       } else if (order.status === 'paid') {
         update.status = 'shipping';
       }
-      await admin.from('orders').update(update).eq('id', order.id);
+      await admin.from('marketplace_orders').update(update).eq('id', order.id);
     }
     return { statusCode: 200, headers: CORS, body: JSON.stringify({ success: result.ok, ...result, order_id: order.id }) };
   }
@@ -97,7 +97,7 @@ exports.handler = async (event) => {
   // 시나리오 3 — cron 일괄 (모든 진행중 주문)
   if (!sellerId && admin) {
     const { data: orders } = await admin
-      .from('orders')
+      .from('marketplace_orders')
       .select('id, seller_id, courier_code, tracking_number, status')
       .eq('status', 'shipping')
       .not('tracking_number', 'is', null)
@@ -110,14 +110,14 @@ exports.handler = async (event) => {
         synced += 1;
         if (result.current_status === 'delivered' && order.status !== 'delivered') {
           delivered += 1;
-          await admin.from('orders').update({
+          await admin.from('marketplace_orders').update({
             status: 'delivered',
             delivered_at: new Date().toISOString(),
             tracking_status: 'delivered',
             tracking_last_synced_at: new Date().toISOString(),
           }).eq('id', order.id);
         } else {
-          await admin.from('orders').update({
+          await admin.from('marketplace_orders').update({
             tracking_status: result.current_status,
             tracking_last_synced_at: new Date().toISOString(),
           }).eq('id', order.id);

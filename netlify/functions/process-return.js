@@ -22,7 +22,7 @@ async function processOne(admin, sellerId, orderId, reason, mock) {
   let order = null;
   if (admin) {
     const { data, error } = await admin
-      .from('orders')
+      .from('marketplace_orders')
       .select('id, seller_id, market, product_id, quantity, status, stock_restored, return_requested_at')
       .eq('id', orderId)
       .eq('seller_id', sellerId)
@@ -38,7 +38,7 @@ async function processOne(admin, sellerId, orderId, reason, mock) {
 
   // 상태 정정 (마켓에서 반품 접수가 안 된 주문은 셀러가 강제 처리도 가능)
   if (admin && order.status !== 'returned') {
-    await admin.from('orders').update({
+    await admin.from('marketplace_orders').update({
       status: 'returned',
       return_requested_at: order.return_requested_at || new Date().toISOString(),
       return_reason: reason || order.return_reason || '셀러 처리',
@@ -114,7 +114,7 @@ exports.handler = async (event) => {
       actor_id: payload.seller_id,
       actor_type: 'seller',
       action: 'process_return',
-      resource_type: 'orders',
+      resource_type: 'marketplace_orders',
       resource_id: items.map((i) => i.order_id).join(','),
       metadata: { count: items.length, success: results.filter((r) => r.success).length },
       event,

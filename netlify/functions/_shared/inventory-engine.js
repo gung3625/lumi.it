@@ -74,7 +74,7 @@ async function restoreStockForReturn(admin, order) {
   // 2. orders.stock_restored 갱신
   if (admin && admin.from) {
     const { error } = await admin
-      .from('orders')
+      .from('marketplace_orders')
       .update({
         stock_restored: true,
         stock_restored_at: new Date().toISOString(),

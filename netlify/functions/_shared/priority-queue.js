@@ -27,7 +27,7 @@ async function buildPriorityCards(admin, sellerId) {
   try {
     // 1. 송장 입력 필요
     const shipping = await admin
-      .from('orders')
+      .from('marketplace_orders')
       .select('id', { count: 'exact', head: true })
       .eq('seller_id', sellerId)
       .eq('status', 'paid')
@@ -72,7 +72,7 @@ async function buildPriorityCards(admin, sellerId) {
 
     // 3. 반품 처리 대기
     const ret = await admin
-      .from('orders')
+      .from('marketplace_orders')
       .select('id', { count: 'exact', head: true })
       .eq('seller_id', sellerId)
       .eq('status', 'returned')
@@ -96,7 +96,7 @@ async function buildPriorityCards(admin, sellerId) {
 
     // 4. 배송 진행 (정보 카드)
     const inTransit = await admin
-      .from('orders')
+      .from('marketplace_orders')
       .select('id', { count: 'exact', head: true })
       .eq('seller_id', sellerId)
       .eq('status', 'shipping');

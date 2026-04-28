@@ -60,7 +60,7 @@ async function syncForSeller(admin, seller, sinceMinutes, mock) {
         let orderId = null;
         if (t.market_order_id) {
           const { data: order } = await admin
-            .from('orders')
+            .from('marketplace_orders')
             .select('id')
             .eq('seller_id', seller.id)
             .eq('market', market)

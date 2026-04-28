@@ -84,7 +84,7 @@ async function syncForSeller(admin, seller, sinceMinutes, mock) {
         continue;
       }
 
-      const { error } = await admin.from('orders').upsert(row, {
+      const { error } = await admin.from('marketplace_orders').upsert(row, {
         onConflict: 'market,market_order_id',
         ignoreDuplicates: true,
       });
@@ -98,7 +98,7 @@ async function syncForSeller(admin, seller, sinceMinutes, mock) {
       // 재고 차감 기록 (sale)
       if (row.status === 'paid') {
         const { data: orderRow } = await admin
-          .from('orders')
+          .from('marketplace_orders')
           .select('id, product_id, quantity')
           .eq('market', raw.market)
           .eq('market_order_id', raw.market_order_id)

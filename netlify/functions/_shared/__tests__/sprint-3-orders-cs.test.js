@@ -150,7 +150,7 @@ t('inventory.restoreStockForReturn 가산', async () => {
           insert: (row) => ({ select: () => ({ single: async () => { captured.mv.push(row); return { data: { id: 'mv-1' }, error: null }; } }) }),
         };
       }
-      if (table === 'orders') {
+      if (table === 'marketplace_orders') {
         return {
           update: (changes) => ({
             eq: async () => { captured.upd.push(changes); return { error: null }; },
