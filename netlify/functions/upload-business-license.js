@@ -21,7 +21,8 @@ const path = require('path');
 const { corsHeaders, getOrigin } = require('./_shared/auth');
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifySellerToken, extractBearerToken } = require('./_shared/seller-jwt');
-const { recordAudit } = require('./_shared/onboarding-utils');
+const { recordAudit, maskBusinessNumber } = require('./_shared/onboarding-utils');
+const { validateLicenseOcr } = require('./_shared/license-ocr-validator');
 
 const MAX_BYTES = 10 * 1024 * 1024; // 10MB
 const ALLOWED_EXT = ['jpg', 'jpeg', 'png', 'heic', 'heif', 'webp', 'pdf'];
@@ -167,7 +168,13 @@ exports.handler = async (event) => {
     return jsonResponse(400, CORS, { error: '파일 형식을 확인할 수 없어요. 다시 올려주세요.' });
   }
 
-  const { file: fileBuffer, filename, mimeType } = parsed;
+  const { file: fileBuffer, filename, mimeType, fields: parsedFields } = parsed;
+  // 셀러 입력값 (multipart fields) — OCR 자동 대조용. 미제공 시 사람 검토 fallback.
+  const sellerInput = {
+    businessNumber: ((parsedFields && parsedFields.businessNumber) || '').replace(/\D/g, ''),
+    ownerName: ((parsedFields && parsedFields.ownerName) || '').trim(),
+    businessName: ((parsedFields && parsedFields.businessName) || '').trim(),
+  };
   if (!fileBuffer || fileBuffer.length === 0) {
     return jsonResponse(400, CORS, { error: '업로드할 파일이 없어요.' });
   }
@@ -199,6 +206,20 @@ exports.handler = async (event) => {
   const hash = crypto.randomBytes(8).toString('hex');
   const storagePath = `${sellerId}/${ts}-${hash}.${ext}`;
 
+  // OCR 자동 대조 (Sprint 1.1) — 사진 분석 + 셀러 입력값 비교.
+  // 결과는 모드 무관 best-effort: 실패해도 업로드는 막지 않고 'pending'으로 fallback.
+  let ocrResult = null;
+  try {
+    ocrResult = await validateLicenseOcr({
+      imageBuffer: fileBuffer,
+      mimeType: mimeType || `image/${ext}`,
+      input: sellerInput,
+    });
+  } catch (e) {
+    console.error('[upload-business-license] OCR throw:', e.message);
+    ocrResult = { mode: 'real', extracted: null, comparison: null, autoApprove: false, error: 'ocr_throw' };
+  }
+
   // 모킹 모드 — Supabase 미설정 시 graceful 통과 (베타 검증용)
   const isSignupMock = (process.env.SIGNUP_MOCK || 'false').toLowerCase() === 'true';
 
@@ -210,16 +231,18 @@ exports.handler = async (event) => {
       console.error('[upload-business-license] Supabase 초기화 실패:', e.message);
       return jsonResponse(500, CORS, { error: '서버 설정 오류입니다. 고객센터로 문의해주세요.' });
     }
-    // 모킹 — 가짜 URL 반환 후 종료
+    // 모킹 — 가짜 URL 반환 후 종료. OCR 결과는 그대로 응답에 포함.
     const mockUrl = `mock://business-licenses/${storagePath}`;
-    console.log(`[upload-business-license] mock seller=${sellerId.slice(0, 8)} ext=${ext} size=${fileBuffer.length}`);
+    const mockStatus = ocrResult && ocrResult.autoApprove ? 'approved' : 'pending';
+    console.log(`[upload-business-license] mock seller=${sellerId.slice(0, 8)} ext=${ext} size=${fileBuffer.length} ocr=${ocrResult?.mode || 'none'} match=${ocrResult?.comparison?.match} cf=${ocrResult?.comparison?.confidence}`);
     return jsonResponse(200, CORS, {
       success: true,
       mock: true,
       fileUrl: mockUrl,
       storagePath,
-      verifyStatus: 'pending',
+      verifyStatus: mockStatus,
       sizeBytes: fileBuffer.length,
+      ocr: buildOcrPayload(ocrResult),
     });
   }
 
@@ -245,8 +268,14 @@ exports.handler = async (event) => {
   }
 
   // sellers 테이블 갱신 (best-effort)
+  // 자동 승인 우선순위:
+  //   1) OCR auto-approve (사업자번호+대표자명 일치 + confidence >= 90) → 'approved'
+  //   2) BUSINESS_LICENSE_AUTO_APPROVE=true (베타 운영용 fallback)        → 'approved'
+  //   3) 그 외                                                            → 'pending'
   const now = new Date().toISOString();
-  const autoApprove = (process.env.BUSINESS_LICENSE_AUTO_APPROVE || 'false').toLowerCase() === 'true';
+  const ocrAutoApprove = Boolean(ocrResult && ocrResult.autoApprove);
+  const envAutoApprove = (process.env.BUSINESS_LICENSE_AUTO_APPROVE || 'false').toLowerCase() === 'true';
+  const autoApprove = ocrAutoApprove || envAutoApprove;
   const reviewStatus = autoApprove ? 'approved' : 'pending';
 
   try {
@@ -255,9 +284,18 @@ exports.handler = async (event) => {
       business_license_review_status: reviewStatus,
       business_license_uploaded_at: now,
     };
+    if (ocrResult && ocrResult.extracted) {
+      update.business_license_ocr_extracted = ocrResult.extracted;
+      update.business_license_ocr_confidence = ocrResult.comparison
+        ? ocrResult.comparison.confidence : null;
+      update.business_license_ocr_match = ocrResult.comparison
+        ? ocrResult.comparison.match : null;
+    }
     if (autoApprove) {
       update.business_license_reviewed_at = now;
-      update.business_license_review_note = '자동 승인 (베타 운영)';
+      update.business_license_review_note = ocrAutoApprove
+        ? `OCR 자동 승인 (cf=${ocrResult?.comparison?.confidence || 'n/a'})`
+        : '자동 승인 (베타 운영)';
     }
     const { error: upErr } = await admin
       .from('sellers')
@@ -271,7 +309,7 @@ exports.handler = async (event) => {
     console.error('[upload-business-license] sellers update throw:', e.message);
   }
 
-  // 감사 로그 (best-effort)
+  // 감사 로그 (best-effort) — 추출값 평문 저장 금지, 일치 여부·confidence만 기록
   await recordAudit(admin, {
     actor_id: sellerId,
     actor_type: 'seller',
@@ -283,11 +321,16 @@ exports.handler = async (event) => {
       size_bytes: fileBuffer.length,
       review_status: reviewStatus,
       auto_approve: autoApprove,
+      auto_approve_source: ocrAutoApprove ? 'ocr' : (envAutoApprove ? 'env' : 'none'),
+      ocr_mode: ocrResult ? ocrResult.mode : 'skipped',
+      ocr_match: ocrResult && ocrResult.comparison ? ocrResult.comparison.match : null,
+      ocr_confidence: ocrResult && ocrResult.comparison ? ocrResult.comparison.confidence : null,
+      ocr_error: ocrResult ? ocrResult.error : null,
     },
     event,
   });
 
-  console.log(`[upload-business-license] seller=${sellerId.slice(0, 8)} ext=${ext} size=${fileBuffer.length} review=${reviewStatus}`);
+  console.log(`[upload-business-license] seller=${sellerId.slice(0, 8)} ext=${ext} size=${fileBuffer.length} review=${reviewStatus} ocr=${ocrResult?.mode} match=${ocrResult?.comparison?.match} cf=${ocrResult?.comparison?.confidence}`);
 
   return jsonResponse(200, CORS, {
     success: true,
@@ -295,14 +338,45 @@ exports.handler = async (event) => {
     storagePath,
     verifyStatus: reviewStatus,
     sizeBytes: fileBuffer.length,
+    ocr: buildOcrPayload(ocrResult),
   });
 };
+
+/**
+ * OCR 결과 → 클라이언트 응답 페이로드 (평문 사업자번호/주소 노출 금지).
+ * UI는 이 페이로드만 보고 일치/불일치 카드를 렌더한다.
+ */
+function buildOcrPayload(ocrResult) {
+  if (!ocrResult || !ocrResult.comparison) {
+    return {
+      ran: Boolean(ocrResult),
+      mode: ocrResult ? ocrResult.mode : 'skipped',
+      match: null,
+      autoApprove: false,
+      error: ocrResult ? ocrResult.error : 'not_run',
+    };
+  }
+  const { comparison, mode, autoApprove, error } = ocrResult;
+  return {
+    ran: true,
+    mode,
+    match: comparison.match,
+    businessNumberMatch: comparison.businessNumberMatch,
+    ownerNameMatch: comparison.ownerNameMatch,
+    confidence: comparison.confidence,
+    isBusinessLicense: comparison.isBusinessLicense,
+    reasons: comparison.reasons,
+    autoApprove,
+    error: error || null,
+  };
+}
 
 // 테스트용 export
 exports._internals = {
   parseMultipart,
   detectExtension,
   validateMagicBytes,
+  buildOcrPayload,
   ALLOWED_EXT,
   ALLOWED_MIME,
   MAX_BYTES,

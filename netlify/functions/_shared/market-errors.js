@@ -136,6 +136,30 @@ const BUSINESS_VERIFY_ERROR_MAP = {
     cause: '인증 서비스 설정에 문제가 있어요.',
     action: '잠시 후 다시 시도하시거나 고객센터(gung3625@gmail.com)로 문의해 주세요.',
   },
+  ocr_business_number_mismatch: {
+    title: '입력값과 사진의 사업자번호가 달라요',
+    cause: '사업자등록증 사진에서 읽은 사업자번호가 입력하신 번호와 일치하지 않아요.',
+    action: '사업자등록증을 다시 촬영하시거나 입력하신 사업자번호를 확인해 주세요.',
+    deepLink: 'business.license_recapture',
+  },
+  ocr_owner_name_mismatch: {
+    title: '입력값과 사진의 대표자명이 달라요',
+    cause: '사업자등록증 사진에서 읽은 대표자명이 입력하신 이름과 일치하지 않아요.',
+    action: '사업자등록증의 대표자명과 동일하게 입력하시거나 사진을 다시 촬영해 주세요.',
+    deepLink: 'business.license_recapture',
+  },
+  ocr_low_confidence: {
+    title: '사진이 흐려서 자동 확인이 어려워요',
+    cause: '광 반사·잘림·해상도 부족으로 사업자등록증 정보를 정확히 읽지 못했어요.',
+    action: '밝은 곳에서 평평하게 펼쳐 다시 찍어 주세요. 가입은 막히지 않아요.',
+    deepLink: 'business.license_recapture',
+  },
+  not_business_license: {
+    title: '사업자등록증 사진이 맞나요?',
+    cause: '업로드하신 사진이 사업자등록증으로 보이지 않아요.',
+    action: '사업자등록증 원본 사진 또는 PDF를 다시 올려 주세요.',
+    deepLink: 'business.license_recapture',
+  },
 };
 
 /**
@@ -151,6 +175,9 @@ function translateBusinessVerifyError(key) {
 
 function keyToStatusCode(key) {
   if (key === 'mismatch' || key === 'closed_temporary' || key === 'closed_permanent' || key === 'unknown_state') return 409;
+  // OCR 불일치는 가입을 막지 않음 — 셀러에게 안내만 (200으로 응답하되 카드는 보여줌).
+  if (key === 'ocr_business_number_mismatch' || key === 'ocr_owner_name_mismatch'
+      || key === 'ocr_low_confidence' || key === 'not_business_license') return 200;
   if (key === 'network_error') return 502;
   if (key === 'config_missing') return 503;
   return 500;

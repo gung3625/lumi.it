@@ -434,10 +434,15 @@
           try { localStorage.setItem(STORAGE_TOKEN, state.token); } catch (_) {}
           try { localStorage.setItem(STORAGE_USER, JSON.stringify(createRes.data.seller)); } catch (_) {}
 
-          // 3) 사업자등록증 업로드 (가입은 막지 않음 — 실패해도 다음 단계 진행)
-          submit.innerHTML = '<span class="spinner"></span> 등록증 업로드 중...';
+          // 3) 사업자등록증 업로드 + OCR 자동 대조 (Sprint 1.1)
+          submit.innerHTML = '<span class="spinner"></span> 등록증 확인 중...';
+          showOcrCard('checking');
           try {
-            const licenseUrl = await uploadLicenseFile(state.licenseFile, state.token);
+            const uploadRes = await uploadLicenseFile(state.licenseFile, state.token, {
+              businessNumber, ownerName, businessName: storeName,
+            });
+            const licenseUrl = uploadRes && uploadRes.fileUrl;
+            const ocr = uploadRes && uploadRes.ocr;
             if (licenseUrl) {
               state.licenseFileUrl = licenseUrl;
               // 셀러 row에 fileUrl 연결
@@ -452,9 +457,22 @@
                 }),
               }).catch(function () { /* best-effort */ });
             }
+            // OCR 결과 카드 렌더 — 일치/불일치/스킵
+            renderOcrResult(ocr);
+            // 불일치면 셀러가 다시 촬영하거나 그대로 진행을 선택할 때까지 대기
+            if (ocr && ocr.ran && ocr.match === false) {
+              const choice = await waitForOcrAction();
+              if (choice === 'recapture') {
+                // 셀러가 다시 촬영 선택 — Step 2로 넘어가지 않고 같은 화면 유지
+                submit.disabled = false;
+                submit.innerHTML = orig;
+                return;
+              }
+              // 'continue' 선택 시 다음 단계 진행
+            }
           } catch (uploadErr) {
-            // 업로드 실패해도 가입 흐름은 계속 (셀러 막지 않음)
             console.error('[step1] 업로드 실패:', uploadErr.message || uploadErr);
+            showOcrCard('error', '사진 확인을 일시적으로 못했어요', '가입은 막히지 않아요. 사진은 나중에 다시 올릴 수 있어요.');
             showToast('사진 업로드는 나중에 다시 할 수 있어요. 가입은 정상 진행돼요.', 'info');
           }
 
@@ -575,8 +593,9 @@
     return v.toFixed(v >= 10 || i === 0 ? 0 : 1) + ' ' + units[i];
   }
 
-  // 사업자등록증 업로드 — XHR로 진행률 갱신
-  async function uploadLicenseFile(file, token) {
+  // 사업자등록증 업로드 — XHR로 진행률 갱신 + OCR 자동 대조 결과 동봉.
+  // sellerInput { businessNumber, ownerName, businessName } — OCR 자동 대조용 (multipart 필드 동봉).
+  async function uploadLicenseFile(file, token, sellerInput) {
     return new Promise(function (resolve, reject) {
       const progressEl = document.querySelector('[data-license-progress]');
       const fillEl = document.querySelector('[data-license-progress-fill]');
@@ -586,6 +605,12 @@
       const fd = new FormData();
       fd.append('file', file);
       fd.append('originalName', file.name);
+      // OCR 자동 대조용 셀러 입력값 — multipart field로 함께 전송
+      if (sellerInput) {
+        if (sellerInput.businessNumber) fd.append('businessNumber', String(sellerInput.businessNumber));
+        if (sellerInput.ownerName)      fd.append('ownerName', String(sellerInput.ownerName));
+        if (sellerInput.businessName)   fd.append('businessName', String(sellerInput.businessName));
+      }
 
       const xhr = new XMLHttpRequest();
       xhr.open('POST', window.location.origin + '/api/upload-business-license', true);
@@ -605,7 +630,8 @@
         let data;
         try { data = JSON.parse(xhr.responseText); } catch { data = null; }
         if (xhr.status === 200 && data && data.success && data.fileUrl) {
-          resolve(data.fileUrl);
+          // 전체 응답 반환 — caller가 fileUrl + ocr 모두 사용
+          resolve({ fileUrl: data.fileUrl, ocr: data.ocr || null, mock: Boolean(data.mock) });
         } else {
           const err = data && data.error;
           const msg = (typeof err === 'string') ? err : (err && err.cause) || '업로드에 실패했어요';
@@ -622,6 +648,140 @@
       });
 
       xhr.send(fd);
+    });
+  }
+
+  // =====================================================
+  // OCR 자동 대조 결과 카드 — Sprint 1.1
+  // =====================================================
+  function showOcrCard(state, title, desc) {
+    const card = document.querySelector('[data-ocr-card]');
+    if (!card) return;
+    card.style.display = 'flex';
+    card.setAttribute('data-state', state || 'checking');
+    const titleEl = card.querySelector('[data-ocr-title]');
+    const descEl = card.querySelector('[data-ocr-desc]');
+    const iconEl = card.querySelector('[data-ocr-icon]');
+    if (state === 'checking') {
+      if (titleEl) titleEl.textContent = '잠시만요, 사장님 사진을 확인해 보고 있어요';
+      if (descEl)  descEl.textContent = '사진에 적힌 정보를 입력값과 비교하고 있어요. 5초 정도 걸려요.';
+      if (iconEl)  iconEl.innerHTML = '<i data-lucide="loader" style="width:20px;height:20px;"></i>';
+    } else if (state === 'match') {
+      if (titleEl) titleEl.textContent = title || '사진과 입력값이 일치해요';
+      if (descEl)  descEl.textContent = desc || '자동으로 사업자등록증을 확인했어요. 다음 단계로 넘어가요.';
+      if (iconEl)  iconEl.innerHTML = '<i data-lucide="check" style="width:18px;height:18px;"></i>';
+    } else if (state === 'mismatch') {
+      if (titleEl) titleEl.textContent = title || '입력값과 사진이 달라요';
+      if (descEl)  descEl.textContent = desc || '사진에서 읽은 정보가 입력값과 달라요. 다시 촬영하거나 그대로 진행할 수 있어요.';
+      if (iconEl)  iconEl.innerHTML = '<i data-lucide="alert-triangle" style="width:18px;height:18px;"></i>';
+    } else if (state === 'error') {
+      if (titleEl) titleEl.textContent = title || '사진 자동 확인을 못했어요';
+      if (descEl)  descEl.textContent = desc || '사진은 잘 받았어요. 자동 확인은 백그라운드에서 다시 시도할게요.';
+      if (iconEl)  iconEl.innerHTML = '<i data-lucide="info" style="width:18px;height:18px;"></i>';
+    }
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+      try { window.lucide.createIcons(); } catch (_) {}
+    }
+  }
+
+  function renderOcrFields(ocr) {
+    const ul = document.querySelector('[data-ocr-fields]');
+    if (!ul) return;
+    ul.innerHTML = '';
+    if (!ocr || !ocr.ran) { ul.style.display = 'none'; return; }
+    const items = [];
+    if (typeof ocr.businessNumberMatch === 'boolean') {
+      items.push({
+        label: '사업자번호',
+        ok: ocr.businessNumberMatch,
+        ng: '입력값과 사진의 사업자번호가 달라요',
+      });
+    }
+    if (typeof ocr.ownerNameMatch === 'boolean') {
+      items.push({
+        label: '대표자명',
+        ok: ocr.ownerNameMatch,
+        ng: '입력값과 사진의 대표자명이 달라요',
+      });
+    }
+    if (ocr.isBusinessLicense === false) {
+      items.push({ label: '문서 종류', ok: false, ng: '사업자등록증으로 보이지 않아요' });
+    }
+    if (typeof ocr.confidence === 'number') {
+      items.push({
+        label: 'AI 신뢰도',
+        ok: ocr.confidence >= 90,
+        ng: '사진이 흐려서 자동 확인이 어려워요 (' + ocr.confidence + '%)',
+        okText: ocr.confidence + '%',
+      });
+    }
+    if (!items.length) { ul.style.display = 'none'; return; }
+    items.forEach(function (it) {
+      const li = document.createElement('li');
+      li.setAttribute('data-status', it.ok ? 'ok' : 'bad');
+      const icon = it.ok ? 'check-circle' : 'x-circle';
+      const text = it.ok
+        ? (it.label + (it.okText ? ' · ' + it.okText : ' 일치'))
+        : (it.label + ' · ' + it.ng);
+      li.innerHTML = '<i data-lucide="' + icon + '" style="width:14px;height:14px;flex:0 0 auto;"></i><span>' + text + '</span>';
+      ul.appendChild(li);
+    });
+    ul.style.display = 'flex';
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+      try { window.lucide.createIcons(); } catch (_) {}
+    }
+  }
+
+  function renderOcrResult(ocr) {
+    const card = document.querySelector('[data-ocr-card]');
+    const actionsEl = document.querySelector('[data-ocr-actions]');
+    if (!card) return;
+    if (!ocr || !ocr.ran) {
+      // OCR 미수행 — 카드 숨김
+      card.style.display = 'none';
+      return;
+    }
+    if (ocr.match === true) {
+      showOcrCard('match');
+      renderOcrFields(ocr);
+      if (actionsEl) actionsEl.style.display = 'none';
+    } else if (ocr.match === false) {
+      showOcrCard('mismatch');
+      renderOcrFields(ocr);
+      if (actionsEl) actionsEl.style.display = 'flex';
+    } else {
+      showOcrCard('error', '사진 자동 확인을 못했어요',
+        ocr.error === 'unsupported_format'
+          ? 'PDF는 자동 확인을 못해요. 사진은 백그라운드에서 김현 admin이 검토할게요.'
+          : '사진은 잘 받았어요. 자동 확인은 백그라운드에서 다시 시도할게요.');
+      if (actionsEl) actionsEl.style.display = 'none';
+    }
+  }
+
+  // OCR 카드의 사용자 액션 대기 — '다시 촬영' or '그대로 진행' 클릭 시 resolve
+  function waitForOcrAction() {
+    return new Promise(function (resolve) {
+      const recapture = document.querySelector('[data-action="ocr-recapture"]');
+      const cont = document.querySelector('[data-action="ocr-continue"]');
+      const card = document.querySelector('[data-ocr-card]');
+      function cleanup() {
+        if (recapture) recapture.removeEventListener('click', onR);
+        if (cont) cont.removeEventListener('click', onC);
+      }
+      function onR() {
+        cleanup();
+        // 카드 숨기고 파일 입력 다시 트리거
+        if (card) card.style.display = 'none';
+        const licenseInput = document.querySelector('[data-input="licenseFile"]');
+        if (licenseInput) licenseInput.click();
+        resolve('recapture');
+      }
+      function onC() {
+        cleanup();
+        resolve('continue');
+      }
+      if (recapture) recapture.addEventListener('click', onR);
+      if (cont) cont.addEventListener('click', onC);
     });
   }
 

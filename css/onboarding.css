@@ -711,6 +711,48 @@ body.dark-mode .choice.selected { background: rgba(255,107,139,.12); }
   }
 }
 
+/* ===== Sprint 1.1: OCR 자동 대조 결과 카드 ===== */
+.ocr-result-card {
+  display: flex;
+  gap: 12px;
+  padding: 14px 16px;
+  margin: 12px 0 0;
+  border-radius: 12px;
+  background: #f5f5f7;
+  border-left: 3px solid var(--pink-500, #C8507A);
+  align-items: flex-start;
+}
+.ocr-result-card[data-state="checking"] { background: #f5f5f7; border-left-color: #888; }
+.ocr-result-card[data-state="match"]    { background: #e9fbf0; border-left-color: #22a55a; }
+.ocr-result-card[data-state="mismatch"] { background: #fff4f0; border-left-color: #d2691e; }
+.ocr-result-card[data-state="error"]    { background: #fff4f0; border-left-color: #b03a3a; }
+.ocr-result-icon {
+  flex: 0 0 auto;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, 0.06);
+  color: #555;
+}
+.ocr-result-card[data-state="checking"] .ocr-result-icon i { animation: ocr-spin 1.4s linear infinite; }
+.ocr-result-card[data-state="match"]    .ocr-result-icon { background: #22a55a; color: #fff; }
+.ocr-result-card[data-state="mismatch"] .ocr-result-icon { background: #d2691e; color: #fff; }
+.ocr-result-card[data-state="error"]    .ocr-result-icon { background: #b03a3a; color: #fff; }
+.ocr-result-body { flex: 1 1 auto; min-width: 0; }
+.ocr-result-title { font-size: 15px; font-weight: 600; margin: 0 0 4px; color: #111; letter-spacing: -0.3px; }
+.ocr-result-desc  { font-size: 13px; color: #555; margin: 0; line-height: 1.5; }
+.ocr-result-fields { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.ocr-result-fields li { font-size: 12.5px; color: #444; display: flex; align-items: center; gap: 6px; }
+.ocr-result-fields li[data-status="ok"]  { color: #22a55a; }
+.ocr-result-fields li[data-status="bad"] { color: #c2410c; }
+.ocr-result-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.ocr-result-actions .btn { font-size: 13px; padding: 6px 12px; border-radius: 980px; }
+@keyframes ocr-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@media (max-width: 768px) {
+  .ocr-result-card { padding: 12px 14px; }
+  .ocr-result-actions .btn { flex: 1 1 auto; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
