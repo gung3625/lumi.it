@@ -215,7 +215,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div class="field">
       <span class="field-label">매장명</span>
       <input class="field-input" id="s-store" placeholder="매장 이름을 입력하세요">
-      <span class="field-note">캡션에 매장 이름을 자연스럽게 넣어드려요</span>
+      <span class="field-note">상품 등록·CS 답변에 매장 이름을 자연스럽게 넣어드려요</span>
     </div>
     <div class="field">
       <span class="field-label">업종</span>
@@ -231,12 +231,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <option value="interior">인테리어</option>
         <option value="studio">스튜디오</option>
       </select>
-      <span class="field-note">업종에 맞는 해시태그와 트렌드를 추천해드려요</span>
+      <span class="field-note">업종에 맞는 트렌드와 카테고리를 추천해드려요</span>
     </div>
     <div class="field">
       <span class="field-label">지역</span>
       <input class="field-input" id="s-region" placeholder="예: 서울 강남">
-      <span class="field-note">지역 날씨를 캡션에 반영하고, 지역 해시태그도 추천해드려요</span>
+      <span class="field-note">배송지 기준 지역 트렌드를 추천해드려요</span>
     </div>
     <div class="btn-row">
       <button class="btn btn-pink" onclick="saveProfile()">저장</button>
@@ -270,8 +270,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </form>
   </div>
 
-  <!-- 인스타 연동 -->
-  <div class="card">
+  <!-- 인스타 연동 (Phase 1: 셀러 노출 X, Meta 심사 후 활성) -->
+  <div class="card" id="ig-link-card" style="display:none;" data-feature="instagram-disabled-phase1">
     <span class="card-num">03</span>
     <div class="card-header">
       <span class="card-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg></span>
@@ -450,7 +450,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C8507A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         <div style="flex:1;">
           <p style="font-size:14px;font-weight:600;color:#1d1d1f;">내 데이터 내보내기</p>
-          <p style="font-size:13px;color:#6e6e73;line-height:1.6;margin-top:2px;">매장 정보·캡션 기록·구독 이력을 JSON으로 내려받아요 (포터빌리티)</p>
+          <p style="font-size:13px;color:#6e6e73;line-height:1.6;margin-top:2px;">매장 정보·등록 상품·주문·구독 이력을 JSON으로 내려받아요 (포터빌리티)</p>
         </div>
         <button class="btn btn-pink" id="export-btn" onclick="exportMyData()" style="flex-shrink:0;font-size:13px;padding:8px 16px;min-height:36px;">내보내기</button>
       </div>
@@ -458,7 +458,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d70015" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>
         <div style="flex:1;">
           <p style="font-size:14px;font-weight:600;color:#1d1d1f;">회원 탈퇴</p>
-          <p style="font-size:13px;color:#6e6e73;line-height:1.6;margin-top:2px;">탈퇴 시 모든 계정·매장·캡션·DM 데이터가 즉시 또는 90일 이내에 파기돼요. 복구 불가.</p>
+          <p style="font-size:13px;color:#6e6e73;line-height:1.6;margin-top:2px;">탈퇴 시 모든 계정·매장·상품·주문 데이터가 즉시 또는 90일 이내에 파기돼요. 복구 불가.</p>
         </div>
         <button class="btn btn-danger" onclick="openDeleteModal()" style="flex-shrink:0;font-size:13px;padding:8px 16px;min-height:36px;">탈퇴하기</button>
       </div>
@@ -482,11 +482,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </div>
     <p style="font-size:14px;color:#494949;line-height:1.7;">탈퇴하면 다음 데이터가 모두 삭제되고, 복구할 수 없어요.</p>
     <ul style="padding-left:18px;display:flex;flex-direction:column;gap:4px;font-size:13px;color:#494949;line-height:1.7;">
-      <li>매장 정보·말투 학습 데이터</li>
-      <li>생성한 캡션·해시태그 기록</li>
-      <li>Instagram 연동 토큰 (즉시 해제)</li>
-      <li>DM 자동응답 학습 데이터</li>
-      <li>링크인바이오 페이지</li>
+      <li>매장 정보·어투 분석 데이터</li>
+      <li>등록한 상품·주문·송장 기록</li>
+      <li>마켓(쿠팡·네이버·토스) 연동 토큰 (즉시 해제)</li>
+      <li>CS 응대 학습 데이터</li>
     </ul>
     <p style="font-size:13px;color:#6e6e73;line-height:1.7;">※ 결제 기록(5년)·접속 로그(3개월) 등 법정 보존 의무 데이터는 기간 만료 후 파기됩니다.</p>
     <div style="margin-top:6px;">
