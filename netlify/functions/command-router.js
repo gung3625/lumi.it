@@ -18,10 +18,13 @@ exports.handler = async (event) => {
     return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
-  // 인증 (선택적 — 미인증도 weather/calc 등은 동작)
+  // 인증 필수 — 익명 호출 차단 (Tier 1/2 LLM 호출 비용 보호)
   const token = extractBearerToken(event);
-  const { payload: jwt } = verifySellerToken(token);
-  const sellerId = jwt?.seller_id || null;
+  const { payload: jwt, error: jwtErr } = verifySellerToken(token);
+  if (jwtErr || !jwt?.seller_id) {
+    return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증이 필요해요' }) };
+  }
+  const sellerId = jwt.seller_id;
 
   let body;
   try { body = JSON.parse(event.body || '{}'); } catch {
@@ -50,29 +53,27 @@ exports.handler = async (event) => {
       fastReason: cls.reason,
     });
 
-    // 히스토리 저장 (sellerId 있을 때만)
+    // 히스토리 저장 (인증 필수 보장됨)
     let historyId = null;
-    if (sellerId) {
-      try {
-        const admin = getAdminClient();
-        const { data } = await admin
-          .from('command_history')
-          .insert({
-            seller_id: sellerId,
-            input: input.slice(0, 500),
-            intent,
-            ability_level: result.ability_level || 2,
-            cost_tier: result.cost_tier || 0,
-            summary: (result.summary || '').slice(0, 300),
-            result_payload: result.payload || {},
-            status: result.ok ? 'done' : (intent === 'abuse' || intent === 'invalid' ? 'blocked' : 'failed'),
-            blocked_reason: (intent === 'abuse' || intent === 'invalid') ? (cls.reason || '차단') : null,
-          })
-          .select('id')
-          .single();
-        historyId = data?.id || null;
-      } catch (_) {}
-    }
+    try {
+      const admin = getAdminClient();
+      const { data } = await admin
+        .from('command_history')
+        .insert({
+          seller_id: sellerId,
+          input: input.slice(0, 500),
+          intent,
+          ability_level: result.ability_level || 2,
+          cost_tier: result.cost_tier || 0,
+          summary: (result.summary || '').slice(0, 300),
+          result_payload: result.payload || {},
+          status: result.ok ? 'done' : (intent === 'abuse' || intent === 'invalid' ? 'blocked' : 'failed'),
+          blocked_reason: (intent === 'abuse' || intent === 'invalid') ? (cls.reason || '차단') : null,
+        })
+        .select('id')
+        .single();
+      historyId = data?.id || null;
+    } catch (_) {}
 
     return {
       statusCode: 200,
