@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>주문 — 루미</title>
+  <link rel="stylesheet" href="/css/sprint3.css" />
+</head>
+<body class="page-orders">
+  <header class="topbar" role="banner">
+    <a href="/" class="topbar__brand"><span class="topbar__logo">루미</span></a>
+    <nav class="topbar__nav" aria-label="메인">
+      <a href="/tasks">오늘</a>
+      <a href="/orders" class="active">주문</a>
+      <a href="/cs-inbox">CS</a>
+    </nav>
+    <button class="kill-switch" type="button" id="killSwitchBtn" aria-label="긴급 차단">
+      <span class="kill-switch__dot"></span>
+      <span class="kill-switch__label">긴급 차단</span>
+    </button>
+  </header>
+
+  <main class="page-main">
+    <section class="hero hero--compact">
+      <h1 class="hero__title">주문</h1>
+      <p class="hero__sub" data-bind="orders_summary">전체 0건</p>
+    </section>
+
+    <section class="filter-chips" aria-label="주문 필터">
+      <button class="chip chip--active" data-filter="all">전체</button>
+      <button class="chip" data-filter="pending_shipping">송장 입력</button>
+      <button class="chip" data-filter="in_transit">배송 중</button>
+      <button class="chip" data-filter="delivered">완료</button>
+      <button class="chip" data-filter="returned">반품</button>
+      <button class="chip" data-filter="cancelled">취소</button>
+    </section>
+
+    <!-- 모바일 = 카드 (selective) -->
+    <section class="orders-mobile" id="ordersMobile" aria-label="주문 카드 리스트">
+      <div class="empty-state" data-state="loading">
+        <div class="empty-state__spinner"></div>
+        <p>주문을 가져오는 중…</p>
+      </div>
+    </section>
+
+    <!-- PC = 풀 테이블 -->
+    <section class="orders-desktop" aria-label="주문 테이블">
+      <div class="batch-bar" id="batchBar">
+        <label class="batch-bar__select-all">
+          <input type="checkbox" id="selectAllOrders" />
+          <span>전체 선택</span>
+        </label>
+        <span class="batch-bar__count" data-bind="selected_count">0개 선택됨</span>
+        <button class="btn btn--primary btn--sm" type="button" id="batchTrackBtn" disabled>일괄 송장 입력</button>
+        <button class="btn btn--ghost btn--sm" type="button" id="batchReturnBtn" disabled>일괄 반품 처리</button>
+      </div>
+      <table class="orders-table" id="ordersTable">
+        <thead>
+          <tr>
+            <th><input type="checkbox" aria-label="header" disabled /></th>
+            <th>마켓</th>
+            <th>주문번호</th>
+            <th>상품</th>
+            <th>옵션</th>
+            <th>수량</th>
+            <th>금액</th>
+            <th>상태</th>
+            <th>송장</th>
+            <th>구매자</th>
+            <th>처리</th>
+          </tr>
+        </thead>
+        <tbody id="ordersTableBody">
+          <tr><td colspan="11" class="loading">로딩 중…</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <!-- 송장 입력 시트 (모바일) -->
+  <div class="sheet" id="trackingSheet" hidden role="dialog" aria-modal="true" aria-labelledby="trackingSheetTitle">
+    <div class="sheet__backdrop" data-sheet-close></div>
+    <div class="sheet__content">
+      <h2 class="sheet__title" id="trackingSheetTitle">송장 입력</h2>
+      <p class="sheet__sub" data-bind="tracking_target">선택한 주문</p>
+      <label class="form-row">
+        <span class="form-row__label">택배사</span>
+        <select id="courierSelect" class="form-row__input">
+          <option value="">선택해주세요</option>
+        </select>
+      </label>
+      <label class="form-row">
+        <span class="form-row__label">송장번호</span>
+        <input id="trackingNumberInput" class="form-row__input" type="text" inputmode="numeric" placeholder="예: 1234567890" />
+      </label>
+      <div class="sheet__actions">
+        <button class="btn btn--ghost" type="button" data-sheet-close>취소</button>
+        <button class="btn btn--primary" type="button" id="submitTrackingBtn">전송하기</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/sprint3-orders.js"></script>
+</body>
+</html>

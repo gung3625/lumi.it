@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>CS 통합 — 루미</title>
+  <link rel="stylesheet" href="/css/sprint3.css" />
+</head>
+<body class="page-cs">
+  <header class="topbar" role="banner">
+    <a href="/" class="topbar__brand"><span class="topbar__logo">루미</span></a>
+    <nav class="topbar__nav" aria-label="메인">
+      <a href="/tasks">오늘</a>
+      <a href="/orders">주문</a>
+      <a href="/cs-inbox" class="active">CS</a>
+    </nav>
+    <span></span>
+  </header>
+
+  <main class="page-main">
+    <section class="hero hero--compact">
+      <h1 class="hero__title">CS 답변</h1>
+      <p class="hero__sub" data-bind="cs_summary">대기 중인 문의를 가져오는 중…</p>
+    </section>
+
+    <section class="filter-chips">
+      <button class="chip chip--active" data-filter="pending">대기</button>
+      <button class="chip" data-filter="resolved">처리 완료</button>
+      <button class="chip" data-filter="all">전체</button>
+    </section>
+
+    <!-- 모바일 = 한 카드씩 (selective) -->
+    <section class="cs-mobile" id="csMobile" aria-label="CS 카드 스택">
+      <div class="empty-state" data-state="loading">
+        <div class="empty-state__spinner"></div>
+        <p>문의를 가져오는 중…</p>
+      </div>
+    </section>
+
+    <!-- PC = 분할 뷰 (리스트 + 본문) -->
+    <section class="cs-desktop">
+      <aside class="cs-desktop__list" id="csDesktopList" aria-label="CS 리스트">
+        <ul id="csList"></ul>
+      </aside>
+      <article class="cs-desktop__detail" id="csDesktopDetail" aria-live="polite">
+        <p class="muted">왼쪽에서 문의를 골라주세요.</p>
+      </article>
+    </section>
+  </main>
+
+  <script src="/js/sprint3-cs.js"></script>
+</body>
+</html>
