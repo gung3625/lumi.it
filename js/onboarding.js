@@ -377,7 +377,14 @@
     }
     if (phoneInput) {
       phoneInput.value = state.business.phone || phoneInput.value || '';
+      // 카카오에서 받은 휴대폰은 readonly
+      if (state.business.phoneFromOAuth) {
+        phoneInput.readOnly = true;
+        phoneInput.style.opacity = '0.7';
+        phoneInput.style.cursor = 'not-allowed';
+      }
       phoneInput.addEventListener('input', function () {
+        if (phoneInput.readOnly) return;
         const pos = phoneInput.selectionStart;
         const prev = phoneInput.value;
         const formatted = formatPhone(prev);
@@ -1533,11 +1540,18 @@
         if (session && session.access_token) {
           state.token = session.access_token;
           try { localStorage.setItem(STORAGE_TOKEN, session.access_token); } catch (_) {}
-          // 이름·이메일 메타데이터 pre-fill
+          // 이름·이메일·휴대폰 메타데이터 pre-fill
           const meta = session.user?.user_metadata || {};
           const fullName = meta.full_name || meta.name || '';
           if (fullName && !state.business.ownerName) state.business.ownerName = fullName;
           if (session.user?.email && !state.business.email) state.business.email = session.user.email;
+          // 카카오 휴대폰: +821012345678 → 010-1234-5678 변환
+          const rawPhone = meta.phone_number || meta.phone || '';
+          if (rawPhone && !state.business.phone) {
+            const normalized = rawPhone.replace(/^\+82/, '0').replace(/\D/g, '');
+            state.business.phone = formatPhone(normalized);
+            state.business.phoneFromOAuth = true;
+          }
           // URL hash 정리
           try { window.history.replaceState({}, '', window.location.pathname); } catch (_) {}
           showStep(1);
@@ -1561,6 +1575,13 @@
             const fullName = meta.full_name || meta.name || '';
             if (fullName && !state.business.ownerName) state.business.ownerName = fullName;
             if (u.email && !state.business.email) state.business.email = u.email;
+            // 카카오 휴대폰 prefill
+            const rawPhone = meta.phone_number || meta.phone || '';
+            if (rawPhone && !state.business.phone) {
+              const normalized = rawPhone.replace(/^\+82/, '0').replace(/\D/g, '');
+              state.business.phone = formatPhone(normalized);
+              state.business.phoneFromOAuth = true;
+            }
           }
         }).catch(function () {});
       }
