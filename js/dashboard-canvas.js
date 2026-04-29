@@ -69,9 +69,9 @@
     { id: 'settings', group: '명령', title: '설정', desc: '계정·마켓·결제', tag: 'settings', href: '/settings', icon: 'S' },
     { id: 'migration', group: '명령', title: '마이그레이션', desc: '타 솔루션에서 가져오기', tag: 'migration', href: '/migration-wizard', icon: 'M' },
     // Phase 2 = LLM 호출 (베타 단계 미작동, 검색만)
-    { id: 'price-down', group: '루미에게 명령 (곧 작동)', title: '쿠팡 가격 500원 내려', desc: '베타 — 정식 출시 시 작동', tag: 'soon', soon: true, icon: '↓' },
-    { id: 'register-from-photo', group: '루미에게 명령 (곧 작동)', title: '사진 한 장으로 등록', desc: '베타 — 정식 출시 시 작동', tag: 'soon', soon: true, icon: 'P' },
-    { id: 'find-trend', group: '루미에게 명령 (곧 작동)', title: '오늘 뜨는 상품 추천', desc: '베타 — 정식 출시 시 작동', tag: 'soon', soon: true, icon: '?' },
+    { id: 'price-down', group: '루미에게 명령 (곧 작동)', title: '쿠팡 가격 500원 내려', desc: '곧 출시 예정', tag: 'soon', soon: true, icon: '↓' },
+    { id: 'register-from-photo', group: '루미에게 명령 (곧 작동)', title: '사진 한 장으로 등록', desc: '곧 출시 예정', tag: 'soon', soon: true, icon: 'P' },
+    { id: 'find-trend', group: '루미에게 명령 (곧 작동)', title: '오늘 뜨는 상품 추천', desc: '곧 출시 예정', tag: 'soon', soon: true, icon: '?' },
   ];
 
   function openCmdK() {
@@ -170,7 +170,7 @@
     if (!cmd) return;
     if (cmd.soon) {
       // 베타 단계 = 토스트만, LLM 호출 X
-      flash('정식 출시 시 작동해요. 베타에서는 메뉴를 사용해 주세요.');
+      flash('곧 출시 예정이에요. 지금은 메뉴를 사용해 주세요.');
       return;
     }
     if (cmd.href) {
@@ -286,7 +286,7 @@
       title: '루미가 발견: 가격 차이',
       msg: '쿠팡 판매가가 네이버보다 ₩500 비쌉니다.',
       cta: '일괄 수정 검토',
-      onCta: () => flash('베타 단계 — 정식 출시 시 1탭으로 일괄 수정해요'),
+      onCta: () => flash('곧 출시 — 1탭으로 일괄 수정할 수 있어요'),
     },
     {
       id: 'low-stock',
@@ -791,75 +791,6 @@
     } catch (_) {
       setLiveStatus('대기 중', false);
     }
-  }
-
-  // ─── Kill Switch ───
-  function bindKillSwitch() {
-    const open = document.getElementById('killSwitchOpen');
-    const modal = document.getElementById('killModal');
-    if (!open || !modal) return;
-    const result = document.getElementById('killResult');
-
-    function setHidden(hidden) {
-      modal.hidden = hidden;
-      document.body.style.overflow = hidden ? '' : 'hidden';
-      if (hidden && result) { result.hidden = true; result.innerHTML = ''; }
-    }
-
-    open.addEventListener('click', () => setHidden(false));
-    modal.querySelectorAll('[data-kill-close]').forEach((el) => el.addEventListener('click', () => setHidden(true)));
-
-    const confirm = document.getElementById('killConfirmBtn');
-    if (!confirm) return;
-    confirm.addEventListener('click', async () => {
-      const scopeRaw = (modal.querySelector('input[name="killScope"]:checked') || {}).value || 'market:all';
-      const [scopeType, scopeValue] = scopeRaw.split(':');
-      const reason = (document.getElementById('killReason') || {}).value || '';
-      confirm.disabled = true;
-      confirm.textContent = '처리 중…';
-      try {
-        const body = {
-          scope: scopeType,
-          action: 'stop',
-          reason: reason || '대시보드 긴급 차단',
-        };
-        if (scopeValue && scopeValue !== 'all') body.market = scopeValue;
-        const r = await fetch('/api/kill-switch', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...authHeaders() },
-          body: JSON.stringify(body),
-        });
-        const data = await r.json().catch(() => ({}));
-        if (result) {
-          result.hidden = false;
-          if (r.ok) {
-            const lines = [`<p class="kill-modal__result-msg">${escapeHtml(data.message || '판매를 즉시 중지했어요')}</p>`];
-            const rs = Array.isArray(data.results) ? data.results : [];
-            if (rs.length > 0) {
-              lines.push('<ul class="kill-modal__result-list">');
-              rs.forEach((row) => {
-                const ok = row.ok;
-                lines.push(`<li class="${ok ? 'is-ok' : 'is-fail'}">${escapeHtml(row.market || '')} · ${ok ? '성공' : '실패'}${row.error ? ` (${escapeHtml(row.error)})` : ''}${row.mocked ? ' (모킹)' : ''}</li>`);
-              });
-              lines.push('</ul>');
-            }
-            result.innerHTML = lines.join('');
-            confirm.textContent = '완료';
-          } else {
-            result.innerHTML = `<p class="kill-modal__result-msg kill-modal__result-msg--err">${escapeHtml(data.error || '차단에 실패했어요. 잠시 후 다시 시도해 주세요')}</p>`;
-            confirm.textContent = '다시 시도';
-            confirm.disabled = false;
-          }
-        }
-      } catch (_) {
-        if (result) {
-          result.hidden = false;
-          result.innerHTML = '<p class="kill-modal__result-msg kill-modal__result-msg--err">네트워크 오류. 잠시 후 다시 시도해 주세요</p>';
-        }
-        confirm.textContent = '다시 시도';
-        confirm.disabled = false;
-      }
-    });
   }
 
   // ─── 카테고리별 상품 카운트 위젯 (필수) ───
@@ -1388,7 +1319,6 @@
     bindCategoryViewToggle();
     bindProfitPeriod();
     bindSettlementCsv();
-    bindKillSwitch();
     bindInsightWidget();
     bindRoiPeriod();
     renderActionAgents();
