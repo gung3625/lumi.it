@@ -164,18 +164,8 @@ exports.handler = async (event) => {
 
     if (existingUser) {
       userId = existingUser.id;
-      // 메타데이터 업데이트
-      await admin.auth.admin.updateUserById(userId, {
-        user_metadata: {
-          ...existingUser.user_metadata,
-          kakao_id: kakaoId,
-          name,
-          phone: phoneNumber,
-          age_range: ageRange,
-          gender,
-          provider: 'kakao',
-        },
-      });
+      // 매 로그인마다 동일한 값으로 user_metadata를 덮어쓰던 호출 제거 (성능 최적화)
+      // 카카오 정보 변경이 필요하면 별도 settings 흐름에서 처리
     } else {
       // 신규 유저 생성 — 동시 콜백 race condition 대비 중복 충돌 방어
       let newUser = null;
