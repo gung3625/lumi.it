@@ -1385,3 +1385,30 @@
     setInterval(loadDashboard, 30000);
   });
 })();
+
+// ── 로그아웃 ──
+(function () {
+  var logoutLink = document.getElementById('logoutLink');
+  if (!logoutLink) return;
+  logoutLink.addEventListener('click', async function (e) {
+    e.preventDefault();
+    try {
+      if (window.lumiSupa && window.lumiSupa.auth) {
+        await window.lumiSupa.auth.signOut();
+      }
+    } catch (_) { /* signOut 실패해도 진행 */ }
+    try {
+      var keep = ['lumi_dark_mode', 'lumi_storage_pubkey_v1_cleaned'];
+      Object.keys(localStorage).forEach(function (k) {
+        if (keep.indexOf(k) !== -1) return;
+        if (k.indexOf('sb-cldsozdocxpvkbuxwqep-') === 0
+          || k.indexOf('lumi_') === 0
+          || k === 'lumi-auth') {
+          localStorage.removeItem(k);
+        }
+      });
+      sessionStorage.clear();
+    } catch (_) {}
+    window.location.replace('/?stay=1');
+  });
+})();
