@@ -2231,18 +2231,7 @@ document.addEventListener('keydown', function (e) {
 
 /* ---------- 카카오 ---------- */
 function authKakao() {
-  if (!window.lumiSupa) {
-    alert('로그인 준비 중이에요. 잠시 후 다시 시도해주세요.');
-    return;
-  }
-  console.log('[kakao] click');
-  window.lumiSupa.auth.signInWithOAuth({
-    provider: 'kakao',
-    options: { redirectTo: location.origin + '/' }
-  }).catch(function (err) {
-    console.error('[auth] kakao oauth failed', err);
-    alert('카카오 로그인에 실패했어요. 잠시 후 다시 시도해주세요.');
-  });
+  location.href = '/api/auth/kakao/start?intent=login';
 }
 window.authKakao = authKakao;
 

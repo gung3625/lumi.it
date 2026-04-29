@@ -568,17 +568,7 @@
     })();
 
     function signupWithKakao() {
-      if (!window.lumiSupa) {
-        alert('로그인 준비 중이에요.');
-        return;
-      }
-      window.lumiSupa.auth.signInWithOAuth({
-        provider: 'kakao',
-        options: { redirectTo: location.origin + '/signup' }
-      }).catch(function (err) {
-        console.error('[signup] kakao oauth failed', err);
-        alert('카카오 로그인에 실패했어요.');
-      });
+      location.href = '/api/auth/kakao/start?intent=signup';
     }
 
     function signupWithGoogle() {
