@@ -23,8 +23,7 @@ exports.handler = async (event) => {
   }
 
   const token = extractBearerToken(event);
-  const { payload, error: authErr } = verifySellerToken(token);
-  if (authErr || !payload) {
+  if (!token) {
     return {
       statusCode: 401,
       headers: CORS,
@@ -36,7 +35,7 @@ exports.handler = async (event) => {
   try {
     admin = getAdminClient();
   } catch (e) {
-    // SIGNUP_MOCK=true 면 JWT payload 그대로 반환
+    // SIGNUP_MOCK=true 면 seller-jwt payload 그대로 반환
     const isSignupMock = (process.env.SIGNUP_MOCK || 'false').toLowerCase() === 'true';
     if (!isSignupMock) {
       console.error('[me] Supabase 클라이언트 초기화 실패:', e.message);
@@ -46,6 +45,7 @@ exports.handler = async (event) => {
         body: JSON.stringify({ error: '서버 설정 오류입니다.' }),
       };
     }
+    const { payload: mockPayload } = verifySellerToken(token);
     return {
       statusCode: 200,
       headers: CORS,
@@ -53,9 +53,9 @@ exports.handler = async (event) => {
         success: true,
         mock: true,
         seller: {
-          id: payload.seller_id,
+          id: mockPayload ? mockPayload.seller_id : 'mock',
           ownerName: '사장님',
-          businessNumberMasked: payload.business_number_masked || '***',
+          businessNumberMasked: (mockPayload && mockPayload.business_number_masked) || '***',
           phoneMasked: '***',
           emailMasked: null,
           signupStep: 5,
@@ -65,17 +65,44 @@ exports.handler = async (event) => {
           trialStart: new Date().toISOString(),
           marketingConsent: false,
           referralCode: null,
-          createdAt: new Date(payload.iat * 1000).toISOString(),
+          createdAt: mockPayload ? new Date(mockPayload.iat * 1000).toISOString() : new Date().toISOString(),
         },
       }),
     };
   }
 
-  const { data: seller, error: selErr } = await admin
+  // 1) Supabase JWT 우선 검증 (OAuth 사용자 — ES256)
+  let sellerId = null;
+  let sellerQueryField = null;
+  let sellerQueryValue = null;
+
+  const { data: supaAuthData } = await admin.auth.getUser(token);
+  if (supaAuthData && supaAuthData.user && supaAuthData.user.email) {
+    sellerQueryField = 'email';
+    sellerQueryValue = supaAuthData.user.email;
+    console.log('[me] Supabase JWT 검증 성공');
+  } else {
+    // 2) seller-jwt fallback (HS256 자체 발급)
+    const { payload, error: authErr } = verifySellerToken(token);
+    if (authErr || !payload) {
+      return {
+        statusCode: 401,
+        headers: CORS,
+        body: JSON.stringify({ error: '인증이 필요합니다. 다시 로그인해주세요.' }),
+      };
+    }
+    sellerId = payload.seller_id;
+    console.log('[me] seller-jwt 검증 성공');
+  }
+
+  // sellers 조회: Supabase JWT → email 매칭, seller-jwt → id 매칭
+  const sellerQuery = admin
     .from('sellers')
-    .select('id, business_number, owner_name, phone, email, store_name, signup_step, signup_completed_at, business_verified, business_verified_at, plan, trial_start, marketing_consent, referral_code, created_at')
-    .eq('id', payload.seller_id)
-    .maybeSingle();
+    .select('id, business_number, owner_name, phone, email, store_name, signup_step, signup_completed_at, business_verified, business_verified_at, plan, trial_start, marketing_consent, referral_code, created_at');
+
+  const { data: seller, error: selErr } = sellerQueryField
+    ? await sellerQuery.eq(sellerQueryField, sellerQueryValue).maybeSingle()
+    : await sellerQuery.eq('id', sellerId).maybeSingle();
 
   if (selErr) {
     console.error('[me] select 오류:', selErr.message);
