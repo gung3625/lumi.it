@@ -25,7 +25,7 @@
 
   // -------- 상태 --------
   const state = {
-    step: 0,                // 0..5 (0 = OAuth 선택)
+    step: 1,                // 1..5
     token: null,
     sellerId: null,
     licenseFile: null,           // File 객체 (가입 submit 시 업로드)
@@ -291,14 +291,12 @@
     const steps = document.querySelectorAll('[data-progress-step]');
     steps.forEach(function (el, i) {
       el.classList.remove('active', 'done');
-      if (state.step === 0) return; // step 0: 진행 표시 없음
       if (i + 1 < state.step) el.classList.add('done');
       if (i + 1 === state.step) el.classList.add('active');
     });
     const label = document.querySelector('[data-progress-label]');
     if (label) {
-      if (state.step === 0) label.textContent = '루미 가입';
-      else label.textContent = `사장님 첫 쇼핑몰까지 5분 — ${state.step} / 5`;
+      label.textContent = `사장님 첫 쇼핑몰까지 5분 — ${state.step} / 5`;
     }
   }
 
@@ -1561,7 +1559,7 @@
     initStep3();
     initStep4();
     initStep5();
-    showStep(0); // 기본은 OAuth 선택 화면
+    showStep(1); // STEP 1부터 시작 (OAuth 선택은 메인 인증 모달에서 처리)
 
     // Supabase OAuth 콜백: URL hash에 access_token이 있으면 세션 처리 후 STEP 1로
     if (window.lumiSupa && window.location.hash && window.location.hash.includes('access_token')) {
@@ -1678,11 +1676,11 @@
             } else {
               state.token = null;
               try { localStorage.removeItem(STORAGE_TOKEN); } catch (_) {}
-              showStep(0);
+              window.location.replace('/');
             }
-          }).catch(function () { showStep(0); });
+          }).catch(function () { window.location.replace('/'); });
         }
-      }).catch(function () { /* 세션 조회 실패 = STEP 0 유지 */ });
+      }).catch(function () { /* 세션 조회 실패 — signup.html 진입 차단이 처리 */ });
     }
   }
 
