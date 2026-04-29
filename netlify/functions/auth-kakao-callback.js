@@ -20,6 +20,7 @@ function errorRedirect(message) {
 }
 
 exports.handler = async (event) => {
+  const _t0 = Date.now();
   const { code, state } = event.queryStringParameters || {};
 
   if (!code) {
@@ -92,6 +93,8 @@ exports.handler = async (event) => {
       return errorRedirect('카카오 로그인 처리 중 오류가 발생했습니다.');
     }
 
+    console.log('[timing] step1 token:', Date.now() - _t0, 'ms');
+
     // 2. 사용자 정보 조회
     const userRes = await fetch(KAKAO_USER_URL, {
       headers: { Authorization: `Bearer ${accessToken}` },
@@ -114,37 +117,65 @@ exports.handler = async (event) => {
     const gender = kakaoAccount.gender || '';
     const phoneNumber = kakaoAccount.phone_number || '';
 
+    console.log('[timing] step2 userinfo:', Date.now() - _t0, 'ms');
+
     // 3. Supabase 유저 upsert
     const admin = getAdminClient();
 
-    // 기존 유저 확인 — Admin REST API 직접 호출로 email 필터링 (페이지네이션 지연 제거)
+    // 기존 유저 확인 — auth schema 직접 select (Admin REST API ?email= 필터 무효 회피)
     let existingUser = null;
     try {
-      const adminUrl = process.env.SUPABASE_URL + '/auth/v1/admin/users?email=' + encodeURIComponent(email);
-      const res = await fetch(adminUrl, {
-        headers: {
-          'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
-          'Authorization': 'Bearer ' + process.env.SUPABASE_SERVICE_ROLE_KEY,
-        },
-      });
-      if (res.ok) {
-        const json = await res.json();
-        const users = Array.isArray(json) ? json : (json.users || []);
-        existingUser = users.find(
-          (u) => u.email === email || (u.user_metadata && u.user_metadata.kakao_id === kakaoId)
-        ) || null;
+      const { data: row } = await admin
+        .schema('auth')
+        .from('users')
+        .select('id, email, raw_user_meta_data')
+        .eq('email', email)
+        .maybeSingle();
+      if (row) {
+        existingUser = {
+          id: row.id,
+          email: row.email,
+          user_metadata: row.raw_user_meta_data || {},
+        };
       } else {
-        console.error('[auth-kakao-callback] admin users API:', res.status);
-        // fallback: 1페이지만 조회
-        const { data: pageData } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
-        const users = pageData?.users || [];
-        existingUser = users.find(
-          (u) => u.email === email || (u.user_metadata && u.user_metadata.kakao_id === kakaoId)
-        ) || null;
+        // kakao_id 매칭 시도 (이메일 변경 대비)
+        const { data: kakaoRow } = await admin
+          .schema('auth')
+          .from('users')
+          .select('id, email, raw_user_meta_data')
+          .filter('raw_user_meta_data->>kakao_id', 'eq', kakaoId)
+          .maybeSingle();
+        if (kakaoRow) {
+          existingUser = {
+            id: kakaoRow.id,
+            email: kakaoRow.email,
+            user_metadata: kakaoRow.raw_user_meta_data || {},
+          };
+        }
       }
     } catch (e) {
-      console.error('[auth-kakao-callback] 유저 조회 실패:', e.message);
+      console.error('[auth-kakao-callback] auth schema select 실패:', e.message);
+      // fallback — Admin REST API
+      try {
+        const adminUrl = process.env.SUPABASE_URL + '/auth/v1/admin/users?per_page=200';
+        const res = await fetch(adminUrl, {
+          headers: {
+            'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
+            'Authorization': 'Bearer ' + process.env.SUPABASE_SERVICE_ROLE_KEY,
+          },
+        });
+        if (res.ok) {
+          const json = await res.json();
+          const users = Array.isArray(json) ? json : (json.users || []);
+          existingUser = users.find(
+            (u) => u.email === email || (u.user_metadata && u.user_metadata.kakao_id === kakaoId)
+          ) || null;
+        }
+      } catch (e2) {
+        console.error('[auth-kakao-callback] fallback 실패:', e2.message);
+      }
     }
+    console.log('[timing] step3 usercheck:', Date.now() - _t0, 'ms');
 
     let userId;
     let isNewUser = false;
@@ -216,6 +247,7 @@ exports.handler = async (event) => {
     const actionLink = linkData.properties.action_link || '';
     // action_link 자체로 리다이렉트 (Supabase가 세션 처리 후 / 로 돌아옴)
     if (actionLink) {
+      console.log('[timing] step4 magiclink total:', Date.now() - _t0, 'ms');
       console.log('[auth-kakao-callback] 로그인 완료, 리다이렉트');
       return {
         statusCode: 302,

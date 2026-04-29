@@ -2124,6 +2124,19 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 })();
 
 /* ---------- Supabase 클라이언트 ---------- */
+// 옛 anon key (JWT) 시절 토큰 잔재 자동 정리 (한 번만, 키 회전 후 회귀 방지)
+try {
+  var STALE_FLAG = 'lumi_storage_pubkey_v1_cleaned';
+  if (!localStorage.getItem(STALE_FLAG)) {
+    Object.keys(localStorage).forEach(function (k) {
+      if (k.indexOf('sb-cldsozdocxpvkbuxwqep-') === 0 || k === 'lumi_token' || k === 'lumi_user' || k === 'lumi-auth') {
+        try { localStorage.removeItem(k); } catch (_) {}
+      }
+    });
+    try { sessionStorage.clear(); } catch (_) {}
+    localStorage.setItem(STALE_FLAG, '1');
+  }
+} catch (e) {}
 window.lumiSupa = window.supabase.createClient(
   'https://cldsozdocxpvkbuxwqep.supabase.co',
   'sb_publishable_WjWg5o05Y7lhib674Cr_fw_0mpY-ccG',
