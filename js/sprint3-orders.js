@@ -6,6 +6,7 @@
   let allOrders = [];
   let couriers = [];
   let selectedOrderId = null;
+  let memoOrderId = null;
 
   function getToken() { return localStorage.getItem('lumi_seller_token') || ''; }
   function authFetch(url, options) {
@@ -52,6 +53,7 @@
           ${o.status === 'shipping' || o.status === 'delivered'
             ? `<button class="btn btn--ghost btn--sm" data-action="track-view" data-order-id="${escapeHtml(o.id)}">추적 보기</button>`
             : ''}
+          <button class="btn btn--ghost btn--sm" data-action="memo" data-order-id="${escapeHtml(o.id)}" data-memo="${escapeHtml(o.seller_memo || '')}">${o.seller_memo ? '<i data-lucide="notebook-pen" style="width:13px;height:13px;vertical-align:-2px;margin-right:3px"></i>메모 있음' : '<i data-lucide="notebook-pen" style="width:13px;height:13px;vertical-align:-2px;margin-right:3px"></i>메모'}</button>
           <a class="btn btn--ghost btn--sm" href="/order-detail?id=${encodeURIComponent(o.id)}">상세</a>
         </div>
       </article>
@@ -62,6 +64,9 @@
     });
     root.querySelectorAll('[data-action="return"]').forEach((btn) => {
       btn.addEventListener('click', () => processReturn(btn.dataset.orderId));
+    });
+    root.querySelectorAll('[data-action="memo"]').forEach((btn) => {
+      btn.addEventListener('click', () => openMemoModal(btn.dataset.orderId, btn.dataset.memo));
     });
   }
 
@@ -280,7 +285,101 @@
     });
   }
 
+  function openMemoModal(orderId, currentMemo) {
+    memoOrderId = orderId;
+    const order = allOrders.find((o) => o.id === orderId);
+    const title = order ? `${marketLabel(order.market)} · ${order.product_title || ''}` : '주문';
+    document.getElementById('memoModalTitle').textContent = title.length > 28 ? title.slice(0, 28) + '…' : title;
+    document.getElementById('memoModalTextarea').value = currentMemo || '';
+    document.getElementById('memoModal').hidden = false;
+    document.getElementById('memoModalTextarea').focus();
+  }
+
+  function closeMemoModal() {
+    document.getElementById('memoModal').hidden = true;
+    memoOrderId = null;
+  }
+
+  async function saveMemo() {
+    const memo = document.getElementById('memoModalTextarea').value;
+    if (!memoOrderId) return;
+    const saveBtn = document.getElementById('memoModalSaveBtn');
+    saveBtn.disabled = true;
+    saveBtn.textContent = '저장 중…';
+
+    // Optimistic UI: update in-memory order
+    const order = allOrders.find((o) => o.id === memoOrderId);
+    const prevMemo = order ? order.seller_memo : '';
+    if (order) order.seller_memo = memo;
+
+    // Update the memo button label immediately
+    const memoBtn = document.querySelector(`[data-action="memo"][data-order-id="${memoOrderId}"]`);
+    if (memoBtn) {
+      memoBtn.dataset.memo = memo;
+      memoBtn.innerHTML = memo
+        ? '<i data-lucide="notebook-pen" style="width:13px;height:13px;vertical-align:-2px;margin-right:3px"></i>메모 있음'
+        : '<i data-lucide="notebook-pen" style="width:13px;height:13px;vertical-align:-2px;margin-right:3px"></i>메모';
+      if (typeof lucide !== 'undefined') lucide.createIcons({ nodes: [memoBtn] });
+    }
+
+    closeMemoModal();
+
+    try {
+      const res = await authFetch('/api/update-order-memo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: memoOrderId, memo: memo || null }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        // Rollback optimistic update
+        if (order) order.seller_memo = prevMemo;
+        showTrackingToast('error', data.error || '메모 저장에 실패했어요.');
+      }
+    } catch {
+      if (order) order.seller_memo = prevMemo;
+      showTrackingToast('error', '네트워크 오류로 메모를 저장하지 못했어요.');
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = '저장';
+    }
+  }
+
+  function injectMemoModal() {
+    if (document.getElementById('memoModal')) return;
+    const modal = document.createElement('div');
+    modal.id = 'memoModal';
+    modal.hidden = true;
+    modal.style.cssText = 'position:fixed;inset:0;z-index:9000;display:flex;align-items:flex-end;';
+    modal.innerHTML = `
+      <div style="position:absolute;inset:0;background:rgba(0,0,0,.45)" id="memoModalBackdrop"></div>
+      <div style="position:relative;width:100%;background:var(--card-bg,#fff);border-radius:16px 16px 0 0;padding:20px 16px 32px;max-height:70vh;overflow-y:auto">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <span style="font-size:13px;font-weight:600;color:var(--text-muted,#555);max-width:75%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="memoModalTitle"></span>
+          <button data-memo-close style="background:none;border:none;cursor:pointer;padding:4px;color:var(--text-muted,#999)">
+            <i data-lucide="x" style="width:18px;height:18px"></i>
+          </button>
+        </div>
+        <p style="font-size:12px;color:var(--text-muted,#999);margin:0 0 8px">
+          <i data-lucide="lock" style="width:11px;height:11px;vertical-align:-1px;margin-right:2px"></i>내부 메모 — 구매자에게 노출 안 돼요
+        </p>
+        <textarea id="memoModalTextarea" maxlength="2000" rows="4"
+          placeholder="포장 요청, CS 인계 맥락 등 내부 메모를 입력하세요."
+          style="width:100%;box-sizing:border-box;border:1px solid var(--border,#e0e0e0);border-radius:8px;padding:10px 12px;font-size:14px;font-family:inherit;resize:vertical;outline:none;background:var(--input-bg,#fafafa);color:var(--text,#111)"></textarea>
+        <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+          <button class="btn btn--ghost btn--sm" data-memo-close>취소</button>
+          <button class="btn btn--primary btn--sm" id="memoModalSaveBtn" style="background:#C8507A;border-color:#C8507A">저장</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    modal.querySelectorAll('[data-memo-close]').forEach((el) => el.addEventListener('click', closeMemoModal));
+    document.getElementById('memoModalSaveBtn').addEventListener('click', saveMemo);
+    if (typeof lucide !== 'undefined') lucide.createIcons({ nodes: [modal] });
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
+    injectMemoModal();
     setupChips();
     setupSheet();
     setupBatchActions();

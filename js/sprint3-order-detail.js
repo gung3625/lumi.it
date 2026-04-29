@@ -30,6 +30,7 @@
       }
       renderOrder(data.order);
       renderTracking(data.tracking_events || []);
+      renderMemo(data.order);
       bindActions(data.order);
     } catch {
       document.getElementById('orderSummary').innerHTML = '<p>네트워크 오류예요.</p>';
@@ -73,6 +74,90 @@
     if (!iso) return '';
     const d = new Date(iso);
     return d.toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+  }
+
+  function renderMemo(o) {
+    const wrap = document.getElementById('memoSection');
+    if (!wrap) return;
+    const memo = o.seller_memo || '';
+    wrap.innerHTML = `
+      <div class="memo-block" id="memoBlock">
+        <div class="memo-block__header">
+          <span class="memo-block__label">
+            <i data-lucide="notebook-pen" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px"></i>내부 메모
+          </span>
+          <button class="btn btn--ghost btn--sm" id="memoEditBtn">
+            <i data-lucide="pencil" style="width:13px;height:13px"></i>
+          </button>
+        </div>
+        <p class="memo-block__text" id="memoText">${memo ? escapeHtml(memo) : '<span class="muted">메모 없음</span>'}</p>
+        <div class="memo-block__edit" id="memoEditArea" hidden>
+          <textarea id="memoTextarea" maxlength="2000" rows="3" placeholder="포장 요청, CS 인계 맥락 등 내부 메모를 입력하세요.">${escapeHtml(memo)}</textarea>
+          <div class="memo-block__edit-actions">
+            <button class="btn btn--ghost btn--sm" id="memoCancelBtn">취소</button>
+            <button class="btn btn--primary btn--sm" id="memoSaveBtn">저장</button>
+          </div>
+        </div>
+      </div>
+    `;
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+
+    const editBtn = document.getElementById('memoEditBtn');
+    const editArea = document.getElementById('memoEditArea');
+    const memoText = document.getElementById('memoText');
+    const textarea = document.getElementById('memoTextarea');
+    const cancelBtn = document.getElementById('memoCancelBtn');
+    const saveBtn = document.getElementById('memoSaveBtn');
+
+    editBtn.addEventListener('click', () => {
+      editArea.hidden = false;
+      editBtn.hidden = true;
+      textarea.value = o.seller_memo || '';
+      textarea.focus();
+    });
+
+    cancelBtn.addEventListener('click', () => {
+      editArea.hidden = true;
+      editBtn.hidden = false;
+    });
+
+    saveBtn.addEventListener('click', async () => {
+      const newMemo = textarea.value.trim() || null;
+      // Optimistic UI
+      memoText.innerHTML = newMemo ? escapeHtml(newMemo) : '<span class="muted">메모 없음</span>';
+      editArea.hidden = true;
+      editBtn.hidden = false;
+      try {
+        const res = await authFetch('/api/update-order-memo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId: o.id, memo: newMemo }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          o.seller_memo = data.seller_memo;
+        } else {
+          showMemoToast(data.error || '메모 저장에 실패했어요.');
+          memoText.innerHTML = o.seller_memo ? escapeHtml(o.seller_memo) : '<span class="muted">메모 없음</span>';
+        }
+      } catch {
+        showMemoToast('네트워크 오류로 메모를 저장하지 못했어요.');
+        memoText.innerHTML = o.seller_memo ? escapeHtml(o.seller_memo) : '<span class="muted">메모 없음</span>';
+      }
+    });
+  }
+
+  function showMemoToast(msg) {
+    let toast = document.getElementById('memoToast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'memoToast';
+      toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 18px;border-radius:980px;font-size:13px;z-index:9999;opacity:0;transition:opacity .2s';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = msg;
+    toast.style.opacity = '1';
+    setTimeout(() => { toast.style.opacity = '0'; }, 3000);
   }
 
   function bindActions(o) {

@@ -417,6 +417,12 @@ alter table public.ig_accounts add column if not exists last_refreshed_at timest
 create index if not exists idx_ig_accounts_expiry_v2 on public.ig_accounts(token_expires_at)
   where token_expires_at is not null;
 `,
+  'order_seller_memo.sql': `
+alter table public.marketplace_orders
+  add column if not exists seller_memo text default null,
+  add column if not exists seller_memo_updated_at timestamptz default null;
+notify pgrst, 'reload schema';
+`,
   'info_disclosure.sql': `
 alter table public.products add column if not exists info_disclosure jsonb default null;
 comment on column public.products.info_disclosure is 'AI 생성 정보고시 초안. { key: { value, confidence, source } } 구조.';
