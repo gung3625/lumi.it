@@ -1610,31 +1610,69 @@
       return;
     }
 
-    // 기존 토큰이 있으면 /api/me로 진행도 복원 시도
-    let storedToken = null;
-    try { storedToken = localStorage.getItem(STORAGE_TOKEN); } catch (_) {}
-    if (storedToken) {
-      state.token = storedToken;
-      api('/api/me', { method: 'GET' }).then(function (r) {
-        if (r.status === 200 && r.data?.success) {
-          state.sellerId = r.data.seller.id;
-          if (r.data.seller.signupCompleted) {
-            showDone();
-            const nameEl = document.querySelector('[data-done-name]');
-            if (nameEl) nameEl.textContent = r.data.seller.ownerName + '님';
-          } else if (r.data.seller.signupStep && r.data.seller.signupStep >= 1 && r.data.seller.signupStep <= 5) {
-            const next = Math.min(5, r.data.seller.signupStep);
-            showStep(next);
-          } else {
-            showStep(1);
+    // Supabase OAuth 세션이 이미 있는 경우(메인에서 routeAfterAuth로 /signup으로 온 신규 가입자):
+    // hash가 사라졌어도 supabase 세션은 localStorage에 살아있으므로 우선 체크 후 STEP 1로 자동 진행.
+    if (window.lumiSupa) {
+      window.lumiSupa.auth.getSession().then(function (r) {
+        const session = r?.data?.session;
+        if (session && session.access_token) {
+          state.token = session.access_token;
+          try { localStorage.setItem(STORAGE_TOKEN, session.access_token); } catch (_) {}
+          const meta = session.user?.user_metadata || {};
+          const fullName = meta.full_name || meta.name || '';
+          if (fullName && !state.business.ownerName) state.business.ownerName = fullName;
+          if (session.user?.email && !state.business.email) state.business.email = session.user.email;
+          const rawPhone = meta.phone_number || meta.phone || '';
+          if (rawPhone && !state.business.phone) {
+            const normalized = rawPhone.replace(/^\+82/, '0').replace(/\D/g, '');
+            state.business.phone = formatPhone(normalized);
+            state.business.phoneFromOAuth = true;
           }
-        } else {
-          // 토큰 무효 → 정리 후 step 0
-          state.token = null;
-          try { localStorage.removeItem(STORAGE_TOKEN); } catch (_) {}
-          showStep(0);
+          // sellers 테이블에 seller-jwt 기반 진행도 있는지 확인 (재방문 가입자 복원용)
+          api('/api/me', { method: 'GET' }).then(function (mr) {
+            if (mr.status === 200 && mr.data?.success) {
+              state.sellerId = mr.data.seller.id;
+              if (mr.data.seller.signupCompleted) {
+                showDone();
+                const nameEl = document.querySelector('[data-done-name]');
+                if (nameEl) nameEl.textContent = mr.data.seller.ownerName + '님';
+              } else if (mr.data.seller.signupStep && mr.data.seller.signupStep >= 1 && mr.data.seller.signupStep <= 5) {
+                showStep(Math.min(5, mr.data.seller.signupStep));
+              } else {
+                showStep(1);
+              }
+            } else {
+              // Supabase 세션은 있지만 sellers 미생성 = 신규 가입자 정상 흐름
+              showStep(1);
+            }
+          }).catch(function () { showStep(1); });
+          return;
         }
-      }).catch(function () { showStep(0); });
+        // Supabase 세션 없음 → 기존 seller-jwt 토큰 복원 시도
+        let storedToken = null;
+        try { storedToken = localStorage.getItem(STORAGE_TOKEN); } catch (_) {}
+        if (storedToken) {
+          state.token = storedToken;
+          api('/api/me', { method: 'GET' }).then(function (r2) {
+            if (r2.status === 200 && r2.data?.success) {
+              state.sellerId = r2.data.seller.id;
+              if (r2.data.seller.signupCompleted) {
+                showDone();
+                const nameEl = document.querySelector('[data-done-name]');
+                if (nameEl) nameEl.textContent = r2.data.seller.ownerName + '님';
+              } else if (r2.data.seller.signupStep && r2.data.seller.signupStep >= 1 && r2.data.seller.signupStep <= 5) {
+                showStep(Math.min(5, r2.data.seller.signupStep));
+              } else {
+                showStep(1);
+              }
+            } else {
+              state.token = null;
+              try { localStorage.removeItem(STORAGE_TOKEN); } catch (_) {}
+              showStep(0);
+            }
+          }).catch(function () { showStep(0); });
+        }
+      }).catch(function () { /* 세션 조회 실패 = STEP 0 유지 */ });
     }
   }
 
