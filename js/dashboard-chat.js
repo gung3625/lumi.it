@@ -307,11 +307,7 @@
         ${nextHtml}
       </article>
     `;
-    // 결과 위로 스크롤
-    setTimeout(() => {
-      const area = $('#canvasArea');
-      if (area) area.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 50);
+    // 결과 카드 스크롤: canvasArea 강제 top 제거 — 사용자 스크롤 위치 유지
   }
 
   function abilityLabel(level) {
@@ -433,17 +429,21 @@
   // ─── 입력창 핸들링 ───
   function autoResize(el) {
     if (!el) return;
-    // 부모 scroll 컨테이너 scrollTop 보존 (canvasArea 등)
-    const parent = el.closest('.chat-area, .conversation-list, .composer-area, [data-scroll-container]');
+    // 부모 scroll 컨테이너 scrollTop 보존 (canvasArea 포함)
+    const parent = el.closest('.canvas-area, .chat-input-form, .chat-area, .conversation-list, .composer-area, [data-scroll-container]');
     const parentScroll = parent ? parent.scrollTop : 0;
     const winScrollY = window.scrollY;
+    const docScrollTop = document.documentElement.scrollTop;
+    const bodyScrollTop = document.body.scrollTop;
 
     el.style.height = 'auto';
     el.style.height = Math.min(el.scrollHeight, 140) + 'px';
 
-    // window + 부모 scroll 복원
+    // window + document + body + 부모 scroll 복원
     window.scrollTo({ top: winScrollY, behavior: 'instant' });
     if (parent) parent.scrollTop = parentScroll;
+    document.documentElement.scrollTop = docScrollTop;
+    document.body.scrollTop = bodyScrollTop;
   }
   function syncSendBtn() {
     const btn = $('#chatSend');
