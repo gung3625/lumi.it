@@ -14,6 +14,7 @@ const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifySellerToken, extractBearerToken } = require('./_shared/seller-jwt');
 const { corsHeaders, getOrigin } = require('./_shared/auth');
 const { recordAudit } = require('./_shared/onboarding-utils');
+const auditLog = require('./_shared/audit-log');
 const { validateLumiProduct } = require('./_shared/market-adapters/lumi-product-schema');
 const { checkPolicyWords } = require('./_shared/policy-words');
 const { tryAcquire, adaptFromHeaders, applyBackoff } = require('./_shared/throttle');
@@ -116,6 +117,17 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '대상 마켓을 1개 이상 선택해주세요.' }) };
   }
 
+  // 정보고시 검수 확인 — false면 등록 차단
+  const infoDisclosure = body.infoDisclosure || null;
+  const infoDisclosureConfirmed = infoDisclosure && infoDisclosure.confirmed === true;
+  if (infoDisclosure && !infoDisclosureConfirmed) {
+    return {
+      statusCode: 400,
+      headers: CORS,
+      body: JSON.stringify({ error: '정보고시 검수가 완료되지 않았습니다. 사장님이 확인 후 등록해 주세요.' }),
+    };
+  }
+
   // 정책 단어 재검사 (셀러가 수정한 후 다시 들어왔을 수 있음)
   lumiProduct.policy_warnings = checkPolicyWords(lumiProduct.title, markets);
 
@@ -161,6 +173,13 @@ exports.handler = async (event) => {
       policy_warnings: lumiProduct.policy_warnings,
       raw_ai: lumiProduct.raw_ai || null,
       status: 'registering',
+      // 정보고시 (Task 4)
+      ...(infoDisclosure ? {
+        info_disclosure: infoDisclosure,
+        info_disclosure_confirmed: true,
+        info_disclosure_confirmed_at: new Date().toISOString(),
+        info_disclosure_category: infoDisclosure.category || null,
+      } : {}),
     };
 
     const { data: inserted, error: insertErr } = await admin
@@ -258,6 +277,41 @@ exports.handler = async (event) => {
       metadata: { markets, results: results.map((r) => ({ market: r.market, success: r.success, status: r.status })) },
       event,
     });
+
+    // 정보고시 audit (best-effort — 실패해도 등록 성공 유지)
+    if (infoDisclosure) {
+      const confirmedAt = new Date().toISOString();
+      await auditLog.log(admin, {
+        actorId: payload.seller_id,
+        actorType: 'seller',
+        action: 'info_disclosure.confirmed',
+        resourceType: 'product',
+        resourceId: String(productId),
+        metadata: {
+          category: infoDisclosure.category || null,
+          items_count: Array.isArray(infoDisclosure.items) ? infoDisclosure.items.length : null,
+          ai_generated_at: infoDisclosure.ai_generated_at || null,
+          seller_confirmed_at: confirmedAt,
+        },
+        event,
+      });
+      const anyLiveForAudit = results.some((r) => r.success);
+      if (anyLiveForAudit) {
+        await auditLog.log(admin, {
+          actorId: payload.seller_id,
+          actorType: 'seller',
+          action: 'info_disclosure.published',
+          resourceType: 'product',
+          resourceId: String(productId),
+          metadata: {
+            category: infoDisclosure.category || null,
+            items_count: Array.isArray(infoDisclosure.items) ? infoDisclosure.items.length : null,
+            markets: markets.filter((m) => results.find((r) => r.market === m && r.success)),
+          },
+          event,
+        });
+      }
+    }
   }
 
   console.log(`[register-product] seller=${payload.seller_id.slice(0, 8)} product=${productId} markets=${markets.join(',')} success=${results.filter((r)=>r.success).length}/${results.length}`);
@@ -270,6 +324,7 @@ exports.handler = async (event) => {
       productId,
       registrations,
       mock: adaptersForceMock || isSignupMock,
+      ...(infoDisclosure ? { infoDisclosure: { saved: true } } : {}),
     }),
   };
 };
