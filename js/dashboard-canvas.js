@@ -279,89 +279,6 @@
     if (backdrop) backdrop.addEventListener('click', closeSlideOver);
   }
 
-  // ─── D. Action Agent (mock 3개, 베타) ───
-  const ACTION_AGENT_MOCKS = [
-    {
-      id: 'price-diff',
-      title: '루미가 발견: 가격 차이',
-      msg: '쿠팡 판매가가 네이버보다 ₩500 비쌉니다.',
-      cta: '일괄 수정 검토',
-      onCta: () => flash('곧 출시 — 1탭으로 일괄 수정할 수 있어요'),
-    },
-    {
-      id: 'low-stock',
-      title: '루미가 발견: 재고 5개 이하',
-      msg: '재고 부족 상품 3개. 재발주 시점이에요.',
-      cta: '재발주 검토',
-      onCta: () => { window.location.href = '/orders'; },
-    },
-    {
-      id: 'trend-gap',
-      title: '루미가 발견: 트렌드 +400%',
-      msg: '뜨는 카테고리에 등록된 상품이 0개에요.',
-      cta: '관련 상품 등록',
-      onCta: () => { window.location.href = '/register-product'; },
-    },
-  ];
-  // #4: 통합 키 상수 (구 키 lumi_aa_dismissed·lumi_top_agent_dismissed → 단일 키로 마이그레이션)
-  const AA_DISMISSED_KEY = 'lumi_action_agent_dismissed';
-  (function migrateAaDismissed() {
-    const legacyKeys = ['lumi_aa_dismissed', 'lumi_top_agent_dismissed'];
-    let merged = JSON.parse(localStorage.getItem(AA_DISMISSED_KEY) || '[]');
-    legacyKeys.forEach((k) => {
-      const old = JSON.parse(localStorage.getItem(k) || '[]');
-      old.forEach((id) => { if (!merged.includes(id)) merged.push(id); });
-      localStorage.removeItem(k);
-    });
-    localStorage.setItem(AA_DISMISSED_KEY, JSON.stringify(merged));
-  })();
-
-  function renderActionAgents() {
-    const stack = document.getElementById('actionAgentStack');
-    if (!stack) return;
-    const dismissed = JSON.parse(localStorage.getItem(AA_DISMISSED_KEY) || '[]');
-    const visible = ACTION_AGENT_MOCKS.filter((m) => !dismissed.includes(m.id));
-    if (visible.length === 0) {
-      // M11: 모든 제안이 닫혔거나 없을 때 — 빈 상태 정직 표기
-      stack.innerHTML = '<div class="action-agent action-agent--empty"><p class="action-agent__msg" style="color:var(--text-secondary,#888);font-size:13px;padding:12px 16px;">아직 제안할 게 없어요. 명령창에 입력해 주세요</p></div>';
-      stack.style.display = '';
-      return;
-    }
-    stack.style.display = '';
-    stack.innerHTML = visible.map((m) => `
-      <div class="action-agent" data-aa-id="${escapeHtml(m.id)}">
-        <div class="action-agent__avatar">
-          <img src="/assets/logo-cloud.png" alt="루미" onerror="this.style.display='none';this.parentNode.style.background='var(--canvas-gradient-cta)'" />
-        </div>
-        <div class="action-agent__body">
-          <p class="action-agent__title">${escapeHtml(m.title)}</p>
-          <p class="action-agent__msg">${escapeHtml(m.msg)}</p>
-        </div>
-        <div class="action-agent__actions">
-          <button class="action-agent__cta" type="button" data-aa-cta="${escapeHtml(m.id)}">${escapeHtml(m.cta)}</button>
-          <button class="action-agent__dismiss" type="button" aria-label="닫기" data-aa-dismiss="${escapeHtml(m.id)}">×</button>
-        </div>
-      </div>
-    `).join('');
-
-    stack.querySelectorAll('[data-aa-cta]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const id = btn.dataset.aaCta;
-        const item = ACTION_AGENT_MOCKS.find((m) => m.id === id);
-        if (item && item.onCta) item.onCta();
-      });
-    });
-    stack.querySelectorAll('[data-aa-dismiss]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const id = btn.dataset.aaDismiss;
-        const cur = JSON.parse(localStorage.getItem(AA_DISMISSED_KEY) || '[]');
-        if (!cur.includes(id)) cur.push(id);
-        localStorage.setItem(AA_DISMISSED_KEY, JSON.stringify(cur));
-        renderActionAgents();
-      });
-    });
-  }
-
   // ─── 트렌드 카드 (Canvas 풍, 시장 중심 카드 양식) ───
   // 메모리 project_market_centric_pivot_0428.md: 키워드 + 증가율 + 카테고리 + 타겟 + 평균가 + CTA
   function renderTrends(trend) {
@@ -1321,7 +1238,6 @@
     bindSettlementCsv();
     bindInsightWidget();
     bindRoiPeriod();
-    renderActionAgents();
     loadDashboard();
     loadCategoryCounts();
     // Profit 초기값은 loadDashboard → cards.profit 에서 렌더 (중복 fetch 제거)

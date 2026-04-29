@@ -494,69 +494,6 @@
     });
   }
 
-  // ─── Top Action Agent ───
-  let _agentSuggestions = [];
-  let _agentIdx = 0;
-
-  // #4: canvas.js와 동일한 통합 키 사용
-  const AA_DISMISSED_KEY = 'lumi_action_agent_dismissed';
-
-  function loadAgentSuggestions() {
-    // canvas.js ACTION_AGENT_MOCKS와 id·msg 일치 (단일 source of truth)
-    const all = [
-      { id: 'price-diff', msg: '쿠팡 판매가가 네이버보다 ₩500 비쌉니다', cmd: '쿠팡 가격 점검' },
-      { id: 'low-stock', msg: '재고 부족 상품 3개. 재발주 시점이에요', cmd: '재고 5개 이하 상품' },
-      { id: 'trend-gap', msg: '뜨는 카테고리에 등록된 상품이 0개에요', cmd: '오늘 뜨는 상품 추천' },
-    ];
-    const dismissed = JSON.parse(localStorage.getItem(AA_DISMISSED_KEY) || '[]');
-    _agentSuggestions = all.filter((a) => !dismissed.includes(a.id));
-    _agentIdx = 0;
-    renderAgent();
-  }
-  function renderAgent() {
-    const stack = $('#topActionAgent');
-    const msgEl = $('#topAgentMsg');
-    if (!stack || !msgEl) return;
-    if (_agentSuggestions.length === 0) {
-      stack.hidden = true;
-      return;
-    }
-    stack.hidden = false;
-    const cur = _agentSuggestions[_agentIdx % _agentSuggestions.length];
-    msgEl.textContent = cur.msg;
-    msgEl.dataset.cmd = cur.cmd;
-    msgEl.dataset.id = cur.id;
-  }
-  function bindAgent() {
-    const yes = $('#topAgentYes');
-    const no = $('#topAgentNo');
-    if (yes) {
-      yes.addEventListener('click', () => {
-        const msgEl = $('#topAgentMsg');
-        if (!msgEl) return;
-        const cmd = msgEl.dataset.cmd;
-        const id = msgEl.dataset.id;
-        if (cmd) submitCommand(cmd);
-        if (id) dismissAgent(id);
-      });
-    }
-    if (no) {
-      no.addEventListener('click', () => {
-        // "다음 제안" 순환 — dismiss 하지 않고 다음 인덱스로 이동
-        if (_agentSuggestions.length === 0) return;
-        _agentIdx = (_agentIdx + 1) % _agentSuggestions.length;
-        renderAgent();
-      });
-    }
-  }
-  function dismissAgent(id) {
-    const cur = JSON.parse(localStorage.getItem(AA_DISMISSED_KEY) || '[]');
-    if (!cur.includes(id)) cur.push(id);
-    localStorage.setItem(AA_DISMISSED_KEY, JSON.stringify(cur));
-    _agentIdx = 0;
-    loadAgentSuggestions();
-  }
-
   // ─── 모바일 사이드바 ───
   function bindMobileSidebar() {
     const btn = $('#mobileMenuBtn');
@@ -623,14 +560,12 @@
     bindChatForm();
     bindSuggests();
     bindNewCommand();
-    bindAgent();
     bindMobileSidebar();
     bindMobileTheme();
     bindAttach();
     syncSendBtn();
     loadFavorites();
     loadHistory();
-    loadAgentSuggestions();
 
     // 30초마다 히스토리 새로고침 (사이드바 동기화)
     setInterval(loadHistory, 30000);
