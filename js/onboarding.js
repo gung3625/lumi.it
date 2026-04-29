@@ -1307,10 +1307,12 @@
     const next = document.querySelector('[data-action="step2-next"]');
     if (next) {
       next.addEventListener('click', function () {
-        if (!state.markets.coupang.connected && !state.markets.naver.connected) {
-          showToast('마켓을 1개 이상 연결해주세요', 'error');
-          return;
-        }
+        // TEMP (베타 시연용) — 마켓 연결 0건이어도 STEP 3 진행 허용
+        // 정식 출시 전 복원: 최소 1개 마켓 연결 필수로 되돌릴 것
+        // if (!state.markets.coupang.connected && !state.markets.naver.connected) {
+        //   showToast('마켓을 1개 이상 연결해주세요', 'error');
+        //   return;
+        // }
         // 진행도 동기화 (백엔드)
         api('/api/signup-create-seller', {
           method: 'POST',
