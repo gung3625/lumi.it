@@ -2158,12 +2158,15 @@ window.lumiSupa = window.supabase.createClient(
       detectSessionInUrl: true,
       persistSession: true,
       autoRefreshToken: true,
+      storageKey: 'lumi-auth',
     }
   }
 );
 
 /* ---------- 로그인 후 라우팅 ---------- */
+var _routed = false;
 async function routeAfterAuth() {
+  if (_routed) return; _routed = true;
   // ?stay=1 이면 랜딩 유지 (홈 돌아오기 모드)
   try {
     if (new URLSearchParams(location.search || '').get('stay') === '1') return;

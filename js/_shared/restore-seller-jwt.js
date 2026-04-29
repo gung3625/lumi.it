@@ -48,7 +48,6 @@
         try {
           localStorage.setItem('lumi_seller_jwt', data.sellerToken);
           localStorage.setItem('lumi_seller_token', data.sellerToken);
-          localStorage.setItem('lumi_token', data.sellerToken);
         } catch (_) {}
       }
     } catch (_) {}
