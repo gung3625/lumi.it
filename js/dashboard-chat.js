@@ -624,7 +624,11 @@
   }
 
   // ─── 시작 ───
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', async () => {
+    // lumi_seller_jwt 없으면 /api/me 재동기화 후 히스토리 로드 (카카오 로그인 race condition 방어)
+    if (!localStorage.getItem('lumi_seller_jwt') && typeof window.ensureSellerJwt === 'function') {
+      await window.ensureSellerJwt();
+    }
     bindChatForm();
     bindSuggests();
     bindNewCommand();
