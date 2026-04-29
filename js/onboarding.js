@@ -1676,9 +1676,9 @@
             } else {
               state.token = null;
               try { localStorage.removeItem(STORAGE_TOKEN); } catch (_) {}
-              window.location.replace('/');
+              window.location.replace('/?stay=1');
             }
-          }).catch(function () { window.location.replace('/'); });
+          }).catch(function () { window.location.replace('/?stay=1'); });
         }
       }).catch(function () { /* 세션 조회 실패 — signup.html 진입 차단이 처리 */ });
     }
