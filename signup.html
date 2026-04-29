@@ -581,7 +581,25 @@ body.dark-mode .lumi-footer__copy{color:rgba(255,255,255,.2);}
     })();
 
     function signupWithKakao() {
-      location.href = '/api/auth/kakao/start?intent=signup';
+      console.log('[kakao] click');
+      // 클라이언트 측 CSRF nonce — sessionStorage (same-origin만 접근)
+      var nonce = '';
+      try {
+        var arr = new Uint8Array(16);
+        (window.crypto || window.msCrypto).getRandomValues(arr);
+        nonce = Array.from(arr).map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+        sessionStorage.setItem('lumi_oauth_nonce', nonce);
+        sessionStorage.setItem('lumi_oauth_intent', 'signup');
+      } catch (_) {}
+      var clientId = '161f7b8767d792c3fabde651653ac6b3';
+      var redirectUri = encodeURIComponent('https://lumi.it.kr/api/auth/kakao/callback');
+      var scope = encodeURIComponent('account_email,phone_number');
+      var state = encodeURIComponent(nonce || 'signup');
+      location.href = 'https://kauth.kakao.com/oauth/authorize?client_id=' + clientId
+        + '&redirect_uri=' + redirectUri
+        + '&response_type=code'
+        + '&scope=' + scope
+        + '&state=' + state;
     }
 
     function signupWithGoogle() {
