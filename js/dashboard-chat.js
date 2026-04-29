@@ -449,7 +449,7 @@
     const btn = $('#chatSend');
     const inputEl = $('#chatInput');
     if (!btn || !inputEl) return;
-    btn.disabled = inputEl.value.trim().length < 2;
+    btn.disabled = inputEl.value.trim().length < 1;
   }
 
   function bindChatForm() {
@@ -459,7 +459,7 @@
     form.addEventListener('submit', (ev) => {
       ev.preventDefault();
       const v = inputEl.value.trim();
-      if (v.length >= 2) submitCommand(v);
+      if (v.length >= 1) submitCommand(v);
     });
     inputEl.addEventListener('input', () => {
       autoResize(inputEl);
@@ -469,7 +469,7 @@
       if (ev.key === 'Enter' && !ev.shiftKey) {
         ev.preventDefault();
         const v = inputEl.value.trim();
-        if (v.length >= 2) submitCommand(v);
+        if (v.length >= 1) submitCommand(v);
       }
     });
     // ⌘K는 canvas.js Command Palette가 우선 처리 — chat.js 중복 바인딩 제거
