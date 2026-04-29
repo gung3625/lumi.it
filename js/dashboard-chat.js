@@ -426,17 +426,24 @@
       });
     } finally {
       if (form) form.classList.remove('is-loading');
-      if (inputEl) inputEl.focus();
+      if (inputEl) inputEl.focus({ preventScroll: true });
     }
   }
 
   // ─── 입력창 핸들링 ───
   function autoResize(el) {
     if (!el) return;
-    const scrollY = window.scrollY;
+    // 부모 scroll 컨테이너 scrollTop 보존 (canvasArea 등)
+    const parent = el.closest('.chat-area, .conversation-list, .composer-area, [data-scroll-container]');
+    const parentScroll = parent ? parent.scrollTop : 0;
+    const winScrollY = window.scrollY;
+
     el.style.height = 'auto';
     el.style.height = Math.min(el.scrollHeight, 140) + 'px';
-    window.scrollTo({ top: scrollY, behavior: 'instant' });
+
+    // window + 부모 scroll 복원
+    window.scrollTo({ top: winScrollY, behavior: 'instant' });
+    if (parent) parent.scrollTop = parentScroll;
   }
   function syncSendBtn() {
     const btn = $('#chatSend');
@@ -471,7 +478,7 @@
       const cmdKey = (isMac && ev.metaKey) || (!isMac && ev.ctrlKey);
       if (cmdKey && ev.key.toLowerCase() === 'k') {
         ev.preventDefault();
-        inputEl.focus();
+        inputEl.focus({ preventScroll: true });
         // 모바일 사이드바 닫기
         closeMobileSidebar();
       }
@@ -497,7 +504,7 @@
         inputEl.value = '';
         autoResize(inputEl);
         syncSendBtn();
-        inputEl.focus();
+        inputEl.focus({ preventScroll: true });
       }
       closeMobileSidebar();
     });
