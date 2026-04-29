@@ -104,7 +104,77 @@ async function processRefund(params) {
   return processReturn(params);
 }
 
+/**
+ * 토스쇼핑 송장 입력
+ * @param {Object} params
+ * @param {string} params.market_order_id
+ * @param {string} params.tracking_number
+ * @param {string} params.courier_code
+ * @param {Object} [params.credentials]
+ * @param {string} [params.market_seller_id] - partnerId
+ * @param {boolean} [params.mock]
+ *
+ * TODO: 토스쇼핑 송장 입력 API 정식 스펙 미확정 (2026-04-29).
+ * 사장님 토스쇼핑 파트너 가맹 완료 후 아래 실연동 블록 활성화 필요.
+ * 현재 isMockMode() 기본값 true 이므로 mock 경로로만 동작.
+ */
+async function submitTracking({ market_order_id, tracking_number, courier_code, credentials, market_seller_id, mock }) {
+  if (!market_order_id || !tracking_number || !courier_code) {
+    return { ok: false, error: '주문번호·송장번호·택배사 모두 필요해요.', retryable: false };
+  }
+  if (isMockMode(mock)) {
+    return { ok: true, mocked: true, raw: { orderId: market_order_id, courierCode: courier_code, trackingNumber: tracking_number } };
+  }
+  // TODO: 토스쇼핑 파트너 API 송장 입력 엔드포인트 확정 후 실연동 구현
+  // 예상 경로: POST /v1/partner/orders/{orderId}/shipping
+  let creds;
+  try {
+    creds = (credentials && credentials.ciphertext) ? decrypt(credentials) : credentials;
+  } catch {
+    return { ok: false, error: '토스 자격증명 복호화 실패', retryable: false };
+  }
+  const partnerId = market_seller_id || creds?.partnerId;
+  const accessKey = creds?.accessKey;
+  const secretKey = creds?.secretKey;
+  if (!partnerId || !accessKey || !secretKey) {
+    return { ok: false, error: '토스 자격증명 누락', retryable: false };
+  }
+
+  const path = `/v1/partner/orders/${encodeURIComponent(market_order_id)}/shipping`;
+  const body = { courierCode: courier_code, trackingNumber: tracking_number };
+  const bodyStr = JSON.stringify(body);
+  const { authorization } = signToss({ method: 'POST', path, body: bodyStr, partnerId, secretKey });
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 12000);
+  try {
+    const res = await fetch(`${TOSS_API_HOST}${path}`, {
+      method: 'POST',
+      headers: {
+        Authorization: authorization,
+        'X-TOSS-ACCESS-KEY': accessKey,
+        'Content-Type': 'application/json;charset=UTF-8',
+      },
+      body: bodyStr,
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    const txt = await res.text();
+    let json = null; try { json = JSON.parse(txt); } catch { /* */ }
+    if (!res.ok) {
+      const retryable = [408, 429, 500, 502, 503, 504].includes(res.status);
+      return { ok: false, error: json?.message || `토스 송장 입력 실패 (${res.status})`, status: res.status, retryable };
+    }
+    return { ok: true, raw: json };
+  } catch (e) {
+    clearTimeout(timeout);
+    const retryable = e.name === 'AbortError' || /ECONN|timeout/i.test(e.message);
+    return { ok: false, error: '토스 송장 입력 네트워크 오류', retryable };
+  }
+}
+
 module.exports = {
   processReturn,
   processRefund,
+  submitTracking,
 };

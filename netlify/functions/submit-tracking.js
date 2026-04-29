@@ -19,8 +19,9 @@ const { tryAcquire } = require('./_shared/throttle');
 const retryEngine = require('./_shared/retry-engine');
 const coupangOrders = require('./_shared/market-adapters/coupang-orders-adapter');
 const naverOrders = require('./_shared/market-adapters/naver-orders-adapter');
+const tossOrders = require('./_shared/market-adapters/toss-orders-adapter');
 
-const ADAPTERS = { coupang: coupangOrders, naver: naverOrders };
+const ADAPTERS = { coupang: coupangOrders, naver: naverOrders, toss: tossOrders };
 
 async function processItem(admin, sellerId, item, mock) {
   if (!item.order_id || !item.tracking_number || !item.courier_code) {

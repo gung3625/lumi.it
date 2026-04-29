@@ -139,6 +139,28 @@
     selectedOrderId = null;
   }
 
+  /**
+   * 송장 전송 결과 토스트 (success/warn/error)
+   * success=초록, warn=노랑, error=빨강
+   */
+  function showTrackingToast(type, message) {
+    const colors = { success: '#2e7d32', warn: '#e65100', error: '#c62828' };
+    const existing = document.getElementById('trackingToast');
+    if (existing) existing.remove();
+    const el = document.createElement('div');
+    el.id = 'trackingToast';
+    el.textContent = message;
+    Object.assign(el.style, {
+      position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)',
+      background: colors[type] || colors.error, color: '#fff',
+      padding: '12px 20px', borderRadius: '8px', fontSize: '14px',
+      maxWidth: '90vw', textAlign: 'center', zIndex: '9999',
+      boxShadow: '0 4px 12px rgba(0,0,0,.3)',
+    });
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), type === 'warn' ? 6000 : 3000);
+  }
+
   async function submitTracking() {
     const courier = document.getElementById('courierSelect').value;
     const number = document.getElementById('trackingNumberInput').value.trim();
@@ -151,13 +173,25 @@
         body: JSON.stringify({ order_id: selectedOrderId, courier_code: courier, tracking_number: number }),
       });
       const data = await res.json();
-      if (data.success) {
-        alert('송장을 보냈어요!');
+      const results = data.results || [];
+      const failed = results.filter((r) => !r.success);
+      const succeeded = results.filter((r) => r.success);
+      if (failed.length === 0) {
+        // 전체 성공
+        showTrackingToast('success', '송장을 보냈어요!');
         closeTrackingSheet();
         load();
+      } else if (succeeded.length === 0) {
+        // 전체 실패
+        const r = failed[0];
+        const msg = r?.error?.title ? `${r.error.title}\n${r.error.action}` : (r?.error || '송장 전송에 실패했어요.');
+        showTrackingToast('error', msg);
       } else {
-        const r = (data.results || [])[0];
-        alert(r?.error?.title ? `${r.error.title}\n${r.error.action}` : '송장 전송에 실패했어요.');
+        // 일부 실패
+        const detail = failed.map((r) => r.error?.title || r.error || '알 수 없는 오류').join(', ');
+        showTrackingToast('warn', `${results.length}건 중 ${failed.length}건 실패: ${detail}`);
+        closeTrackingSheet();
+        load();
       }
     } catch {
       alert('네트워크 오류예요. 잠시 후 다시 시도해주세요.');
