@@ -417,6 +417,20 @@ alter table public.ig_accounts add column if not exists last_refreshed_at timest
 create index if not exists idx_ig_accounts_expiry_v2 on public.ig_accounts(token_expires_at)
   where token_expires_at is not null;
 `,
+  'info_disclosure.sql': `
+alter table public.products add column if not exists info_disclosure jsonb default null;
+comment on column public.products.info_disclosure is 'AI 생성 정보고시 초안. { key: { value, confidence, source } } 구조.';
+alter table public.products add column if not exists info_disclosure_confirmed boolean default false;
+comment on column public.products.info_disclosure_confirmed is '사장님이 정보고시 항목을 검수·승인했는지 여부.';
+alter table public.products add column if not exists info_disclosure_confirmed_at timestamptz default null;
+comment on column public.products.info_disclosure_confirmed_at is '사장님이 정보고시 검수 완료 버튼을 누른 시각.';
+alter table public.products add column if not exists info_disclosure_category text default null;
+comment on column public.products.info_disclosure_category is '정보고시 카테고리 키. food/cosmetic/electric/clothing/living/kids.';
+alter table public.audit_logs enable row level security;
+drop policy if exists "audit_logs_select_own_seller" on public.audit_logs;
+create policy "audit_logs_select_own_seller" on public.audit_logs for select using (actor_id = auth.uid());
+notify pgrst, 'reload schema';
+`,
 };
 
 exports.handler = async (event) => {
