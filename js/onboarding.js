@@ -53,7 +53,6 @@
       privacy: false,
       terms: false,
       refund: false,
-      openai: false,
       marketing: false,
     },
   };
@@ -1307,12 +1306,13 @@
     const next = document.querySelector('[data-action="step2-next"]');
     if (next) {
       next.addEventListener('click', function () {
-        // TEMP (베타 시연용) — 마켓 연결 0건이어도 STEP 3 진행 허용
-        // 정식 출시 전 복원: 최소 1개 마켓 연결 필수로 되돌릴 것
-        // if (!state.markets.coupang.connected && !state.markets.naver.connected) {
-        //   showToast('마켓을 1개 이상 연결해주세요', 'error');
-        //   return;
-        // }
+        const SKIP_MARKET_CHECK = true; // BETA: 마켓 0건 진행 허용. 정식 출시 전 false
+        if (!SKIP_MARKET_CHECK) {
+          if (!state.markets.coupang.connected && !state.markets.naver.connected) {
+            showToast('마켓을 1개 이상 연결해주세요', 'error');
+            return;
+          }
+        }
         // 진행도 동기화 (백엔드)
         api('/api/signup-create-seller', {
           method: 'POST',
@@ -1413,7 +1413,6 @@
       state.consent.terms = true;
       state.consent.privacy = true;
       state.consent.refund = true;
-      state.consent.openai = true;
       state.consent.marketing = Boolean(marketingChk?.checked);
 
       submit.disabled = true;
@@ -1434,7 +1433,6 @@
             privacyConsent: true,
             termsConsent: true,
             refundConsent: true,
-            openaiConsent: true,
             signupStep: 4,
           }),
         });
@@ -1470,7 +1468,6 @@
                   consent_terms: true,
                   consent_privacy: true,
                   consent_refund: true,
-                  consent_openai: true,
                   consent_marketing: Boolean(state.consent.marketing),
                   onboarded_at: new Date().toISOString(),
                   store_name: state.business.storeName,

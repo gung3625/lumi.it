@@ -122,29 +122,44 @@ exports.handler = async (event) => {
     // 3. Supabase 유저 upsert
     const admin = getAdminClient();
 
-    // 기존 유저 확인 — admin.auth.admin.listUsers 1페이지(200) 호출 후 클라이언트 매칭
-    // (auth schema PostgREST는 406, ?email= 필터는 무효 — 검증 끝남)
+    // 기존 유저 확인 — public.users 직접 조회 (페이지네이션 없이 O(1))
+    // 1) public.users에서 email로 빠르게 조회 (kakao_id 컬럼 미존재 가정 — email 단일 조회)
+    // 2) 미발견 시 getUserByEmail 시도 (Critical #5 방어)
+    // 3) 마지막 fallback — listUsers 1페이지 (회귀 방지)
     let existingUser = null;
     try {
-      const { data: pageData } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
-      const users = pageData?.users || [];
-      existingUser = users.find(
-        (u) => u.email === email || (u.user_metadata && u.user_metadata.kakao_id === kakaoId)
-      ) || null;
-      // 200명 초과 시 추가 페이지 (현재 사용자 수 적어 거의 발생 X)
-      if (!existingUser && users.length >= 200) {
-        for (let p = 2; p <= 10; p++) {
-          const { data: more } = await admin.auth.admin.listUsers({ page: p, perPage: 200 });
-          const moreUsers = more?.users || [];
-          const found = moreUsers.find(
-            (u) => u.email === email || (u.user_metadata && u.user_metadata.kakao_id === kakaoId)
-          );
-          if (found) { existingUser = found; break; }
-          if (moreUsers.length < 200) break;
-        }
+      const { data: row } = await admin
+        .from('users')
+        .select('id, email')
+        .eq('email', email)
+        .maybeSingle();
+      if (row) {
+        const { data: authData } = await admin.auth.admin.getUserById(row.id);
+        if (authData?.user) existingUser = authData.user;
       }
     } catch (e) {
-      console.error('[auth-kakao-callback] listUsers 실패:', e.message);
+      console.error('[auth-kakao-callback] public.users 조회 실패:', e.message);
+    }
+
+    if (!existingUser) {
+      try {
+        if (typeof admin.auth.admin.getUserByEmail === 'function') {
+          const { data } = await admin.auth.admin.getUserByEmail(email);
+          if (data?.user) existingUser = data.user;
+        }
+      } catch (_) {}
+    }
+
+    if (!existingUser) {
+      try {
+        const { data: pageData } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
+        const users = pageData?.users || [];
+        existingUser = users.find(
+          (u) => u.email === email || (u.user_metadata && u.user_metadata.kakao_id === kakaoId)
+        ) || null;
+      } catch (e) {
+        console.error('[auth-kakao-callback] listUsers fallback 실패:', e.message);
+      }
     }
     console.log('[timing] step3 usercheck:', Date.now() - _t0, 'ms');
 
@@ -166,27 +181,51 @@ exports.handler = async (event) => {
         },
       });
     } else {
-      // 신규 유저 생성
-      const { data: newUser, error: createErr } = await admin.auth.admin.createUser({
-        email,
-        email_confirm: true,
-        user_metadata: {
-          kakao_id: kakaoId,
-          name,
-          phone: phoneNumber,
-          age_range: ageRange,
-          gender,
-          provider: 'kakao',
-        },
-      });
-
-      if (createErr || !newUser?.user) {
-        console.error('[auth-kakao-callback] 유저 생성 실패:', createErr?.message);
-        return errorRedirect('계정 생성 중 오류가 발생했습니다.');
+      // 신규 유저 생성 — 동시 콜백 race condition 대비 중복 충돌 방어
+      let newUser = null;
+      let createErr = null;
+      try {
+        const { data, error } = await admin.auth.admin.createUser({
+          email,
+          email_confirm: true,
+          user_metadata: {
+            kakao_id: kakaoId,
+            name,
+            phone: phoneNumber,
+            age_range: ageRange,
+            gender,
+            provider: 'kakao',
+          },
+        });
+        newUser = data;
+        createErr = error;
+      } catch (e) {
+        createErr = e;
       }
 
-      userId = newUser.user.id;
-      isNewUser = true;
+      // 중복 충돌 (already exists / duplicate) 시 한 번 더 조회로 복구
+      if (createErr && /already|duplicate|exists/i.test(createErr.message || '')) {
+        try {
+          const { data: pageData } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
+          const users = pageData?.users || [];
+          const found = users.find((u) => u.email === email);
+          if (found) {
+            existingUser = found;
+            userId = found.id;
+            createErr = null;
+            newUser = null;
+          }
+        } catch (_) {}
+      }
+
+      if (!existingUser) {
+        if (createErr || !newUser?.user) {
+          console.error('[auth-kakao-callback] 유저 생성 실패:', createErr?.message);
+          return errorRedirect('계정 생성 중 오류가 발생했습니다.');
+        }
+        userId = newUser.user.id;
+        isNewUser = true;
+      }
     }
 
     // public.users 동기화 (reservations FK 보장 — 신규/기존 유저 모두)
