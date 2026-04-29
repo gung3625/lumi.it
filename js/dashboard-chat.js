@@ -472,17 +472,9 @@
         if (v.length >= 2) submitCommand(v);
       }
     });
-    // ⌘K 포커스
-    document.addEventListener('keydown', (ev) => {
-      const isMac = navigator.platform.toUpperCase().includes('MAC');
-      const cmdKey = (isMac && ev.metaKey) || (!isMac && ev.ctrlKey);
-      if (cmdKey && ev.key.toLowerCase() === 'k') {
-        ev.preventDefault();
-        inputEl.focus({ preventScroll: true });
-        // 모바일 사이드바 닫기
-        closeMobileSidebar();
-      }
-    });
+    // ⌘K는 canvas.js Command Palette가 우선 처리 — chat.js 중복 바인딩 제거
+    // chatInput 포커스는 /를 눌러도 가능 (아래 keydown 내)
+
   }
 
   function bindSuggests() {
@@ -558,10 +550,10 @@
     }
     if (no) {
       no.addEventListener('click', () => {
-        const msgEl = $('#topAgentMsg');
-        if (!msgEl) return;
-        const id = msgEl.dataset.id;
-        if (id) dismissAgent(id);
+        // "다음 제안" 순환 — dismiss 하지 않고 다음 인덱스로 이동
+        if (_agentSuggestions.length === 0) return;
+        _agentIdx = (_agentIdx + 1) % _agentSuggestions.length;
+        renderAgent();
       });
     }
   }

@@ -608,7 +608,7 @@
       const period = currentPeriod();
       const token = getToken();
       if (!token) {
-        alert('로그인이 필요해요.');
+        flash('로그인이 필요해요. 설정에서 다시 로그인해 주세요.');
         return;
       }
       btn.disabled = true;
@@ -820,7 +820,7 @@
           r = await fetch('/api/category-counts', { headers: authHeaders() });
         } catch (_) {}
         if (r.status === 401) {
-          renderCategoryEmpty('다시 로그인이 필요해요');
+          renderCategoryEmpty('잠깐, 데이터를 다시 불러오는 중이에요. 잠시 후에도 안 보이면 새로고침해 주세요.');
           return;
         }
       }
@@ -1324,8 +1324,8 @@
     renderActionAgents();
     loadDashboard();
     loadCategoryCounts();
-    // Profit 위젯은 period 토글에 따라 별도 호출 (초기엔 dashboard-summary의 week값으로 충분, but 통일을 위해 period API 한번 호출)
-    setTimeout(() => loadProfitForPeriod('week'), 50);
+    // Profit 초기값은 loadDashboard → cards.profit 에서 렌더 (중복 fetch 제거)
+    // 토글 클릭 시 loadProfitForPeriod 별도 호출됨
     // AI 인사이트 위젯 (주간 기본)
     setTimeout(() => loadInsight('weekly'), 120);
     // 정산 위젯 (이달)
