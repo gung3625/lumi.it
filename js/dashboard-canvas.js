@@ -1223,6 +1223,114 @@
     }
   }
 
+  // ─── 채널별 ROI 위젯 ───
+  const PERIOD_LABEL_ROI = { day: '오늘', week: '이번 주', month: '이번 달' };
+  let _roiPeriod = 'week';
+
+  function renderRoi(data) {
+    const canvas = document.getElementById('roiCanvas');
+    const sub = document.getElementById('roiSubtitle');
+    if (!canvas) return;
+
+    if (sub) sub.textContent = `${PERIOD_LABEL_ROI[_roiPeriod] || '이번 주'} · 채널별 순이익·ROI`;
+
+    // 마켓 미연결 + 주문 없음
+    if (!data || (!data.channels || data.channels.length === 0)) {
+      canvas.innerHTML = `
+        <div class="roi-empty">
+          <p class="roi-empty__msg">마켓 연결 후 ROI가 자동 분석됩니다</p>
+          <a href="/settings" class="roi-empty__btn">마켓 연결하기</a>
+        </div>`;
+      return;
+    }
+
+    const { channels, total, connectedMarkets } = data;
+    const connected = new Set(connectedMarkets || []);
+    const hasData = channels.some((c) => c.orderCount > 0);
+
+    let html = `<div class="roi-table">`;
+
+    // 헤더
+    html += `<div class="roi-table__head">
+      <span class="roi-table__col roi-table__col--name">채널</span>
+      <span class="roi-table__col roi-table__col--num">주문</span>
+      <span class="roi-table__col roi-table__col--num">매출</span>
+      <span class="roi-table__col roi-table__col--num">수수료+배송</span>
+      <span class="roi-table__col roi-table__col--num">순이익</span>
+      <span class="roi-table__col roi-table__col--num roi-table__col--roi">ROI</span>
+    </div>`;
+
+    for (const c of channels) {
+      const roiTxt = c.roi !== null ? `${c.roi > 0 ? '+' : ''}${c.roi}%` : '—';
+      const roiCls = c.roi === null ? '' : c.roi >= 0 ? 'roi-table__roi--pos' : 'roi-table__roi--neg';
+      const profitCls = c.profit < 0 ? 'roi-table__val--minus' : '';
+      const badge = !c.connected
+        ? `<span class="roi-badge roi-badge--off">미연결</span>`
+        : c.orderCount === 0
+          ? `<span class="roi-badge roi-badge--idle">데이터 없음</span>`
+          : '';
+
+      html += `<div class="roi-table__row">
+        <span class="roi-table__col roi-table__col--name">${escapeHtml(c.name)}${badge}</span>
+        <span class="roi-table__col roi-table__col--num">${c.orderCount}건</span>
+        <span class="roi-table__col roi-table__col--num">${fmtKR(c.revenue)}</span>
+        <span class="roi-table__col roi-table__col--num roi-table__val--minus">${fmtKR(c.fees + c.shippingCost)}</span>
+        <span class="roi-table__col roi-table__col--num ${profitCls}">${fmtKR(c.profit)}</span>
+        <span class="roi-table__col roi-table__col--num ${roiCls}">${roiTxt}</span>
+      </div>`;
+    }
+
+    // 합계 행
+    if (channels.length > 1) {
+      const totalRoiTxt = total.roi !== null ? `${total.roi > 0 ? '+' : ''}${total.roi}%` : '—';
+      const totalRoiCls = total.roi === null ? '' : total.roi >= 0 ? 'roi-table__roi--pos' : 'roi-table__roi--neg';
+      html += `<div class="roi-table__row roi-table__row--total">
+        <span class="roi-table__col roi-table__col--name">합계</span>
+        <span class="roi-table__col roi-table__col--num">${total.orderCount}건</span>
+        <span class="roi-table__col roi-table__col--num">${fmtKR(total.revenue)}</span>
+        <span class="roi-table__col roi-table__col--num roi-table__val--minus">${fmtKR(total.fees + total.shippingCost)}</span>
+        <span class="roi-table__col roi-table__col--num">${fmtKR(total.profit)}</span>
+        <span class="roi-table__col roi-table__col--num ${totalRoiCls}">${totalRoiTxt}</span>
+      </div>`;
+    }
+
+    html += `</div>`;
+
+    if (!hasData) {
+      html += `<p class="roi-mock-note">※ 예시 데이터 — 마켓 주문 발생 시 실제 수치로 자동 교체</p>`;
+    }
+
+    canvas.innerHTML = html;
+  }
+
+  async function loadRoiForPeriod(period) {
+    _roiPeriod = period;
+    const canvas = document.getElementById('roiCanvas');
+    if (canvas) canvas.innerHTML = `<div class="widget__empty">불러오는 중…</div>`;
+    try {
+      const r = await fetch(`/api/channel-roi?period=${encodeURIComponent(period)}`, {
+        headers: authHeaders(),
+      });
+      if (!r.ok) throw new Error('api error');
+      const data = await r.json();
+      renderRoi(data.ok ? data : null);
+    } catch (_) {
+      renderRoi(null);
+    }
+  }
+
+  function bindRoiPeriod() {
+    const toggle = document.getElementById('roiPeriodToggle');
+    if (!toggle) return;
+    toggle.querySelectorAll('[data-period]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        toggle.querySelectorAll('[data-period]').forEach((n) => n.classList.remove('view-toggle__btn--active'));
+        btn.classList.add('view-toggle__btn--active');
+        loadRoiForPeriod(btn.dataset.period);
+      });
+    });
+  }
+
   // ─── 시작 ───
   document.addEventListener('DOMContentLoaded', () => {
     applyTheme();
@@ -1234,6 +1342,7 @@
     bindSettlementCsv();
     bindKillSwitch();
     bindInsightWidget();
+    bindRoiPeriod();
     renderActionAgents();
     loadDashboard();
     loadCategoryCounts();
@@ -1243,6 +1352,8 @@
     setTimeout(() => loadInsight('weekly'), 120);
     // 정산 위젯 (이달)
     setTimeout(loadSettlement, 80);
+    // 채널 ROI 위젯 (이번 주 기본)
+    setTimeout(() => loadRoiForPeriod('week'), 100);
     // Realtime 구독 (Live Stream)
     subscribeRealtime();
     setInterval(loadDashboard, 30000);

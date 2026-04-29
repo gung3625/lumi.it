@@ -1623,3 +1623,95 @@ body.page-dashboard {
   .insight-canvas__summary { font-size: 14px; }
   .insight-action-chip { max-width: 180px; }
 }
+
+/* ─── 채널별 ROI 위젯 ─── */
+.roi-canvas { overflow-x: auto; }
+
+.roi-table { width: 100%; min-width: 420px; }
+
+.roi-table__head,
+.roi-table__row {
+  display: grid;
+  grid-template-columns: 1fr 56px 90px 110px 90px 68px;
+  align-items: center;
+  gap: 0 8px;
+  padding: 8px 4px;
+  font-size: 13px;
+}
+.roi-table__head {
+  color: var(--text-2, #888);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  border-bottom: 1px solid var(--border, rgba(128,128,128,.15));
+  margin-bottom: 2px;
+}
+.roi-table__row { border-bottom: 1px solid var(--border, rgba(128,128,128,.08)); }
+.roi-table__row:last-child { border-bottom: none; }
+.roi-table__row--total {
+  font-weight: 700;
+  border-top: 1px solid var(--border, rgba(128,128,128,.25));
+  margin-top: 4px;
+  padding-top: 10px;
+}
+.roi-table__col--num { text-align: right; font-variant-numeric: tabular-nums; }
+.roi-table__col--name { font-weight: 500; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.roi-table__col--roi { font-weight: 700; }
+.roi-table__val--minus { color: #e05; }
+.roi-table__roi--pos { color: #1a9a5a; }
+.roi-table__roi--neg { color: #e05; }
+.dark-mode .roi-table__roi--pos { color: #34d17a; }
+
+/* 배지 */
+.roi-badge {
+  display: inline-block;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 980px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.roi-badge--off { background: rgba(128,128,128,.18); color: #888; }
+.roi-badge--idle { background: rgba(200,80,122,.1); color: var(--pink, #C8507A); }
+
+/* 빈 상태 */
+.roi-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 0 8px;
+  text-align: center;
+}
+.roi-empty__msg { color: var(--text-2, #888); font-size: 14px; }
+.roi-empty__btn {
+  display: inline-block;
+  padding: 8px 20px;
+  border-radius: 980px;
+  background: var(--pink, #C8507A);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.roi-empty__btn:hover { opacity: .88; }
+
+/* 예시 데이터 안내 */
+.roi-mock-note {
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--text-2, #888);
+  text-align: right;
+}
+
+@media (max-width: 768px) {
+  .roi-table__head,
+  .roi-table__row {
+    grid-template-columns: 1fr 44px 76px 90px 76px 58px;
+    font-size: 12px;
+    gap: 0 4px;
+    padding: 7px 2px;
+  }
+  .roi-table__head { font-size: 10px; }
+}
