@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>베타 신청 — lumi</title>
-<meta name="description" content="베타 30명 한정 ₩29,000/월. 가입비 0원, 카드 등록 X. 7일 무료 + 추천 28일 무료.">
+<title>30명 한정 신청 — lumi</title>
+<meta name="description" content="30명 한정 ₩29,000/월. 가입비 0원, 카드 등록 X. 7일 무료 + 추천 28일 무료.">
 <link rel="stylesheet" href="/css/brand-tokens.css" />
 <!-- Google Tag Manager -->
 <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
@@ -182,10 +182,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
 <div class="hero">
   <img src="/assets/logo-cloud.png" class="hero-lumi" alt="lumi">
-  <h1>베타 신청하기</h1>
+  <h1>30명 한정 신청하기</h1>
   <p>30명 한정 · 가입비 0원 · 카드 등록 X</p>
   <div style="display:inline-flex;gap:8px;margin-top:14px;flex-wrap:wrap;justify-content:center;">
-    <span style="background:rgba(200,80,122,.08);color:#C8507A;font-size:12px;font-weight:600;padding:5px 12px;border-radius:980px;letter-spacing:.3px;">BETA</span>
     <span style="background:rgba(0,122,255,.08);color:#0066cc;font-size:12px;font-weight:600;padding:5px 12px;border-radius:980px;letter-spacing:.2px;">7일 무료 + 추천 28일 무료</span>
   </div>
 </div>
@@ -194,7 +193,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
   <!-- 베타 플랜 카드 -->
   <div class="beta-plan">
-    <span class="beta-plan-badge">BETA · 30명 한정</span>
+    <span class="beta-plan-badge">30명 한정</span>
     <h2>사장님의 첫 AI 직원</h2>
     <p class="beta-plan-sub">정식 출시 후에도 같은 금액 평생 우대</p>
     <div class="beta-plan-price-row">
@@ -241,7 +240,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- 법적 고지 (전자상거래법 §13) -->
 <div class="legal">
   <b>결제 안내</b><br>
-  베타 30명 한정 · 가입비 0원 · 카드 등록 없이 바로 시작<br>
+  30명 한정 · 가입비 0원 · 카드 등록 없이 바로 시작<br>
   7일 무료 체험 후 자동 결제 (가맹 심사 완료 후 활성) · 구독 기간 중 언제든 취소 가능 (위약금 없음)<br>
   본 서비스는 디지털콘텐츠로서, 이용 개시 시 전자상거래법 §17에 따라 청약철회가 제한될 수 있습니다.<br>
   자세한 환불 조건은 <a href="/terms.html#refund" target="_blank" style="color:#C8507A;">이용약관 §9</a>를 확인하세요.<br>
@@ -305,7 +304,7 @@ function updateBtn() {
   var ok = Array.from(all).every(function(c){return c.checked;});
   var btn = document.getElementById('btn-pay');
   btn.disabled = !ok;
-  btn.textContent = ok ? '베타 무료 체험 시작하기' : '약관에 동의해 주세요';
+  btn.textContent = ok ? '무료 체험 시작하기' : '약관에 동의해 주세요';
 }
 
 async function startBeta() {
@@ -318,7 +317,7 @@ async function startBeta() {
 
   var btn = document.getElementById('btn-pay');
   btn.disabled = true;
-  btn.textContent = '베타 신청 중...';
+  btn.textContent = '신청 중...';
 
   // 베타는 가맹 심사 완료 전까지 결제 X — 무료 체험만 활성화
   // (결제 인프라는 보존, 가맹 후 활성)
@@ -340,12 +339,12 @@ async function startBeta() {
     user.beta = true;
     localStorage.setItem('lumi_user', JSON.stringify(user));
 
-    showToast('베타 신청이 완료됐어요!');
+    showToast('신청이 완료됐어요!');
     setTimeout(function(){ location.href = '/'; }, 2000);
   } catch(e) {
-    showToast('베타 신청 중 오류가 발생했어요');
+    showToast('신청 중 오류가 발생했어요');
     btn.disabled = false;
-    btn.textContent = '베타 무료 체험 시작하기';
+    btn.textContent = '무료 체험 시작하기';
   }
 }
 
@@ -367,9 +366,9 @@ function showToast(msg) {
     if (plan && plan !== 'trial' && plan !== 'free') {
       var banner = document.querySelector('.trial-banner');
       if (banner) {
-        var label = (plan === 'beta') ? '베타' : plan;
+        var label = (plan === 'beta') ? '루미' : plan;
         banner.querySelector('h3').textContent = '현재 ' + label + ' 플랜 이용 중';
-        banner.querySelector('p').textContent = '베타 가입자는 ₩29,000 평생 우대로 이어집니다.';
+        banner.querySelector('p').textContent = '초기 가입자는 ₩29,000 평생 우대로 이어집니다.';
       }
     }
   } catch(e) { /* 조회 실패 무시 */ }
