@@ -72,7 +72,7 @@ exports.handler = async (event) => {
   if (!isValidPhone(phone)) {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '휴대폰 번호를 정확히 입력해주세요.' }) };
   }
-  if (!termsConsent || !privacyConsent || !refundConsent) {
+  if (signupStep >= 4 && (!termsConsent || !privacyConsent || !refundConsent)) {
     return {
       statusCode: 400,
       headers: CORS,

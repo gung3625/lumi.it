@@ -319,6 +319,17 @@
     });
     const label = document.querySelector('[data-progress-label]');
     if (label) label.textContent = '완료';
+
+    // 마켓 연결 조건부 표시
+    const coupangCard = document.querySelector('[data-done-market="coupang"]');
+    const naverCard = document.querySelector('[data-done-market="naver"]');
+    const marketSection = document.querySelector('[data-done-markets]');
+    const coupangConnected = Boolean(state.markets && state.markets.coupang && state.markets.coupang.connected);
+    const naverConnected = Boolean(state.markets && state.markets.naver && state.markets.naver.connected);
+    if (coupangCard) coupangCard.style.display = coupangConnected ? '' : 'none';
+    if (naverCard) naverCard.style.display = naverConnected ? '' : 'none';
+    if (marketSection) marketSection.style.display = (coupangConnected || naverConnected) ? '' : 'none';
+
     initIcons();
   }
 
@@ -477,9 +488,9 @@
               storeName,
               email: email || null,
               marketingConsent: state.consent.marketing,
-              privacyConsent: true,
-              termsConsent: true,
-              refundConsent: true,
+              privacyConsent: false,
+              termsConsent: false,
+              refundConsent: false,
               signupStep: 1,
             }),
           });
@@ -511,7 +522,7 @@
                 body: JSON.stringify({
                   businessNumber, ownerName, phone, birthDate, storeName, email: null,
                   marketingConsent: state.consent.marketing,
-                  privacyConsent: true, termsConsent: true, refundConsent: true,
+                  privacyConsent: false, termsConsent: false, refundConsent: false,
                   signupStep: 1,
                   licenseFileUrl: licenseUrl,
                 }),
@@ -1324,9 +1335,9 @@
             storeName: state.business.storeName,
             email: null,
             marketingConsent: state.consent.marketing,
-            privacyConsent: true,
-            termsConsent: true,
-            refundConsent: true,
+            privacyConsent: false,
+            termsConsent: false,
+            refundConsent: false,
             signupStep: 2,
           }),
         }).catch(function () { /* best-effort */ });
@@ -1363,16 +1374,34 @@
           storeName: state.business.storeName,
           email: null,
           marketingConsent: state.consent.marketing,
-          privacyConsent: true,
-          termsConsent: true,
-          refundConsent: true,
+          privacyConsent: false,
+          termsConsent: false,
+          refundConsent: false,
           signupStep: 3,
         }),
       }).catch(function () { /* */ });
       showStep(4);
     });
     if (back) back.addEventListener('click', function () { showStep(2); });
-    if (skip) skip.addEventListener('click', function () { showStep(4); });
+    if (skip) skip.addEventListener('click', function () {
+      api('/api/signup-create-seller', {
+        method: 'POST',
+        body: JSON.stringify({
+          businessNumber: state.business.businessNumber,
+          ownerName: state.business.ownerName,
+          phone: state.business.phone,
+          birthDate: state.business.birthDate,
+          storeName: state.business.storeName,
+          email: null,
+          marketingConsent: state.consent.marketing,
+          privacyConsent: false,
+          termsConsent: false,
+          refundConsent: false,
+          signupStep: 3,
+        }),
+      }).catch(function () { /* best-effort */ });
+      showStep(4);
+    });
   }
 
   // =====================================================
@@ -1430,9 +1459,9 @@
             storeName: state.business.storeName,
             email: null,
             marketingConsent: state.consent.marketing,
-            privacyConsent: true,
-            termsConsent: true,
-            refundConsent: true,
+            privacyConsent: state.consent.privacy,
+            termsConsent: state.consent.terms,
+            refundConsent: state.consent.refund,
             signupStep: 4,
           }),
         });
@@ -1539,6 +1568,7 @@
       state.token = oauthToken;
       try { localStorage.setItem(STORAGE_TOKEN, oauthToken); } catch (_) {}
       // Supabase 세션에서 이메일·이름 pre-fill 시도
+      try { window.history.replaceState({}, '', window.location.pathname); } catch (_) {}
       if (window.lumiSupa) {
         window.lumiSupa.auth.getUser().then(function (res) {
           const u = res?.data?.user;
@@ -1555,10 +1585,12 @@
               state.business.phoneFromOAuth = true;
             }
           }
-        }).catch(function () {});
+          showStep(1);
+          initStep1();
+        }).catch(function () { showStep(1); });
+      } else {
+        showStep(1);
       }
-      try { window.history.replaceState({}, '', window.location.pathname); } catch (_) {}
-      showStep(1);
       return;
     }
 

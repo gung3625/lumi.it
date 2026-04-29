@@ -133,7 +133,7 @@ exports.handler = async (event) => {
   const applicationId = String(body.applicationId || '').trim();
   const applicationSecret = String(body.applicationSecret || '').trim();
 
-  const isMock = (process.env.NAVER_VERIFY_MOCK || 'true').toLowerCase() !== 'false';
+  const isMock = (process.env.NAVER_VERIFY_MOCK || 'false').toLowerCase() !== 'false';
 
   // 모킹 모드 — 테스트 applicationId 패턴 (E2E 검증용)
   //   TEST_401 / TEST_403 / TEST_429 / TEST_500 → 해당 status로 실패 시뮬레이션

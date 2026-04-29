@@ -102,7 +102,7 @@ exports.handler = async (event) => {
   const accessKey = String(body.accessKey || '').trim();
   const secretKey = String(body.secretKey || '').trim();
 
-  const isMock = (process.env.COUPANG_VERIFY_MOCK || 'true').toLowerCase() !== 'false';
+  const isMock = (process.env.COUPANG_VERIFY_MOCK || 'false').toLowerCase() !== 'false';
 
   // 3-bis. 모킹 모드 — 테스트 vendorId 패턴 (E2E 검증용)
   //   TEST_401 → 401 인증 실패
