@@ -492,6 +492,8 @@
           state.token = createRes.data.token;
           state.sellerId = createRes.data.seller.id;
           try { localStorage.setItem(STORAGE_TOKEN, state.token); } catch (_) {}
+          try { localStorage.setItem('lumi_seller_jwt', state.token); } catch (_) {}
+          try { localStorage.setItem('lumi_seller_token', state.token); } catch (_) {}
           try { localStorage.setItem(STORAGE_USER, JSON.stringify(createRes.data.seller)); } catch (_) {}
 
           // 3) 사업자등록증 업로드 + OCR 자동 대조 (Sprint 1.1)
@@ -1496,6 +1498,8 @@
         }
         state.token = res.data.token;
         try { localStorage.setItem(STORAGE_TOKEN, state.token); } catch (_) {}
+        try { localStorage.setItem('lumi_seller_jwt', state.token); } catch (_) {}
+        try { localStorage.setItem('lumi_seller_token', state.token); } catch (_) {}
         try { localStorage.setItem(STORAGE_USER, JSON.stringify(res.data.seller)); } catch (_) {}
         clearDraft();
 
@@ -1650,7 +1654,7 @@
         }
         // Supabase 세션 없음 → 기존 seller-jwt 토큰 복원 시도
         let storedToken = null;
-        try { storedToken = localStorage.getItem(STORAGE_TOKEN); } catch (_) {}
+        try { storedToken = localStorage.getItem('lumi_seller_jwt') || localStorage.getItem('lumi_seller_token') || localStorage.getItem(STORAGE_TOKEN); } catch (_) {}
         if (storedToken) {
           state.token = storedToken;
           api('/api/me', { method: 'GET' }).then(function (r2) {
