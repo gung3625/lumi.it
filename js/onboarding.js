@@ -296,7 +296,7 @@
     });
     const label = document.querySelector('[data-progress-label]');
     if (label) {
-      label.textContent = `사장님 첫 쇼핑몰까지 5분 — ${state.step} / 5`;
+      label.textContent = `사장님 첫 쇼핑몰까지 5분 — ${state.step} / 4`;
     }
   }
 
@@ -1345,32 +1345,14 @@
   }
 
   // =====================================================
-  // STEP 3: 말투 학습 (스킵 가능)
+  // STEP 3: 첫 상품 등록 (UI만, 다음 스프린트에서 작동)
   // =====================================================
   function initStep3() {
-    const greeting = document.querySelector('[data-input="toneGreeting"]');
-    const closing = document.querySelector('[data-input="toneClosing"]');
-    const recommendation = document.querySelector('[data-input="toneRecommendation"]');
     const next = document.querySelector('[data-action="step3-next"]');
     const back = document.querySelector('[data-action="step3-back"]');
     const skip = document.querySelector('[data-action="step3-skip"]');
 
     if (next) next.addEventListener('click', function () {
-      state.tone.greeting = greeting?.value || '';
-      state.tone.closing = closing?.value || '';
-      state.tone.recommendation = recommendation?.value || '';
-      state.tone.skipped = false;
-      saveDraft();
-      // 말투 샘플 저장 (best-effort)
-      api('/api/signup-tone-samples', {
-        method: 'POST',
-        body: JSON.stringify({
-          greeting: state.tone.greeting,
-          closing: state.tone.closing,
-          recommendation: state.tone.recommendation,
-          skipped: false,
-        }),
-      }).catch(function () { /* */ });
       api('/api/signup-create-seller', {
         method: 'POST',
         body: JSON.stringify({
@@ -1389,62 +1371,23 @@
       }).catch(function () { /* */ });
       showStep(4);
     });
-    if (skip) skip.addEventListener('click', function () {
-      state.tone.skipped = true;
-      saveDraft();
-      api('/api/signup-tone-samples', {
-        method: 'POST',
-        body: JSON.stringify({ skipped: true }),
-      }).catch(function () { /* */ });
-      showStep(4);
-    });
     if (back) back.addEventListener('click', function () { showStep(2); });
+    if (skip) skip.addEventListener('click', function () { showStep(4); });
   }
 
   // =====================================================
-  // STEP 4: 첫 상품 등록 (UI만, 다음 스프린트에서 작동)
+  // STEP 4: 동의 + 완료
   // =====================================================
   function initStep4() {
-    const next = document.querySelector('[data-action="step4-next"]');
-    const back = document.querySelector('[data-action="step4-back"]');
-    const skip = document.querySelector('[data-action="step4-skip"]');
-
-    if (next) next.addEventListener('click', function () {
-      api('/api/signup-create-seller', {
-        method: 'POST',
-        body: JSON.stringify({
-          businessNumber: state.business.businessNumber,
-          ownerName: state.business.ownerName,
-          phone: state.business.phone,
-          birthDate: state.business.birthDate,
-          storeName: state.business.storeName,
-          email: null,
-          marketingConsent: state.consent.marketing,
-          privacyConsent: true,
-          termsConsent: true,
-          refundConsent: true,
-          signupStep: 4,
-        }),
-      }).catch(function () { /* */ });
-      showStep(5);
-    });
-    if (back) back.addEventListener('click', function () { showStep(3); });
-    if (skip) skip.addEventListener('click', function () { showStep(5); });
-  }
-
-  // =====================================================
-  // STEP 5: 동의 + 완료
-  // =====================================================
-  function initStep5() {
     const allChk = document.querySelector('[data-consent="all"]');
     const termsChk = document.querySelector('[data-consent="terms"]');
     const privacyChk = document.querySelector('[data-consent="privacy"]');
     const refundChk = document.querySelector('[data-consent="refund"]');
     const openaiChk = document.querySelector('[data-consent="openai"]');
     const marketingChk = document.querySelector('[data-consent="marketing"]');
-    const submit = document.querySelector('[data-action="step5-submit"]');
-    const back = document.querySelector('[data-action="step5-back"]');
-    const errEl = document.querySelector('[data-error="step5"]');
+    const submit = document.querySelector('[data-action="step4-submit"]');
+    const back = document.querySelector('[data-action="step4-back"]');
+    const errEl = document.querySelector('[data-error="step4"]');
 
     const allBoxes = [termsChk, privacyChk, refundChk, openaiChk, marketingChk];
 
@@ -1493,7 +1436,7 @@
             termsConsent: true,
             refundConsent: true,
             openaiConsent: state.consent.openai,
-            signupStep: 5,
+            signupStep: 4,
           }),
         });
         if (res.status !== 200 || !res.data || !res.data.success) {
@@ -1550,7 +1493,7 @@
         submit.innerHTML = orig;
       }
     });
-    if (back) back.addEventListener('click', function () { showStep(4); });
+    if (back) back.addEventListener('click', function () { showStep(3); });
   }
 
   // =====================================================
@@ -1564,7 +1507,6 @@
     initStep2();
     initStep3();
     initStep4();
-    initStep5();
     showStep(1); // STEP 1부터 시작 (OAuth 선택은 메인 인증 모달에서 처리)
 
     // Supabase OAuth 콜백: URL hash에 access_token이 있으면 세션 처리 후 STEP 1로
@@ -1650,8 +1592,8 @@
                 showDone();
                 const nameEl = document.querySelector('[data-done-name]');
                 if (nameEl) nameEl.textContent = mr.data.seller.ownerName + '님';
-              } else if (mr.data.seller.signupStep && mr.data.seller.signupStep >= 1 && mr.data.seller.signupStep <= 5) {
-                showStep(Math.min(5, mr.data.seller.signupStep));
+              } else if (mr.data.seller.signupStep && mr.data.seller.signupStep >= 1 && mr.data.seller.signupStep <= 4) {
+                showStep(Math.min(4, mr.data.seller.signupStep));
               } else {
                 showStep(1);
               }
@@ -1674,8 +1616,8 @@
                 showDone();
                 const nameEl = document.querySelector('[data-done-name]');
                 if (nameEl) nameEl.textContent = r2.data.seller.ownerName + '님';
-              } else if (r2.data.seller.signupStep && r2.data.seller.signupStep >= 1 && r2.data.seller.signupStep <= 5) {
-                showStep(Math.min(5, r2.data.seller.signupStep));
+              } else if (r2.data.seller.signupStep && r2.data.seller.signupStep >= 1 && r2.data.seller.signupStep <= 4) {
+                showStep(Math.min(4, r2.data.seller.signupStep));
               } else {
                 showStep(1);
               }
