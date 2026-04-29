@@ -1506,6 +1506,12 @@
         // /api/me 호출로 검증 (성공 시 done 화면)
         const meRes = await api('/api/me', { method: 'GET' });
         if (meRes.status === 200 && meRes.data?.success) {
+          // OAuth 재방문 대비 sellerToken 3개 키 저장
+          if (meRes.data.sellerToken) {
+            try { localStorage.setItem('lumi_seller_jwt', meRes.data.sellerToken); } catch (_) {}
+            try { localStorage.setItem('lumi_seller_token', meRes.data.sellerToken); } catch (_) {}
+            try { localStorage.setItem('lumi_token', meRes.data.sellerToken); } catch (_) {}
+          }
           // onboarding 완료 플래그를 Supabase user_metadata에 기록
           try {
             if (window.lumiSupa) {

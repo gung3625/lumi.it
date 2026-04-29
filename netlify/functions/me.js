@@ -7,7 +7,7 @@
 // - 응답에서 사업자번호/휴대폰/이메일은 마스킹된 형태만 노출
 // - 평문 PII는 응답에 포함 금지
 const { getAdminClient } = require('./_shared/supabase-admin');
-const { verifySellerToken, extractBearerToken } = require('./_shared/seller-jwt');
+const { signSellerToken, verifySellerToken, extractBearerToken } = require('./_shared/seller-jwt');
 const { corsHeaders, getOrigin } = require('./_shared/auth');
 const {
   maskBusinessNumber,
@@ -123,11 +123,23 @@ exports.handler = async (event) => {
 
   console.log(`[me] seller=${seller.id.slice(0, 8)} step=${seller.signup_step} plan=${seller.plan}`);
 
+  // OAuth 재방문 사용자용 seller-jwt 발급 (클라이언트 localStorage 복원용)
+  let sellerToken = null;
+  try {
+    sellerToken = signSellerToken({
+      seller_id: seller.id,
+      business_number_masked: maskBusinessNumber(seller.business_number),
+    });
+  } catch (e) {
+    console.error('[me] sellerToken 발급 실패:', e.message);
+  }
+
   return {
     statusCode: 200,
     headers: CORS,
     body: JSON.stringify({
       success: true,
+      sellerToken,
       seller: {
         id: seller.id,
         ownerName: seller.owner_name,
