@@ -103,6 +103,28 @@ exports.handler = async (event) => {
       }
     }
 
+    // 트렌드 카테고리별 staleness 체크 (24시간 이상 미갱신 감지)
+    const TREND_CATS = ['cafe', 'food', 'beauty', 'hair', 'nail', 'flower', 'fashion', 'fitness', 'pet'];
+    try {
+      const { data: trendRows } = await supa
+        .from('trends')
+        .select('category, collected_at')
+        .in('category', TREND_CATS);
+      const trendMap = {};
+      for (const row of (trendRows || [])) trendMap[row.category] = row.collected_at;
+      const trendHealth = {};
+      for (const cat of TREND_CATS) {
+        const collectedAt = trendMap[cat] || null;
+        const hoursStale = collectedAt
+          ? Math.floor((now - new Date(collectedAt).getTime()) / 3600000)
+          : null;
+        trendHealth[cat] = { collectedAt, hoursStale, stale: hoursStale === null || hoursStale > 24 };
+      }
+      health['trend-categories'] = trendHealth;
+    } catch (trendErr) {
+      health['trend-categories'] = { error: trendErr.message };
+    }
+
     return {
       statusCode: 200,
       headers: CORS_HEADERS,

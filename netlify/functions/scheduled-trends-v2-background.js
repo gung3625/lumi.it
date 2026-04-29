@@ -1800,7 +1800,9 @@ exports.handler = runGuarded({
   name: 'scheduled-trends',
   handler: async (event, ctx) => {
     // 인증 체크 (HTTP 트리거 시)
-    const isScheduled = !event || !event.httpMethod;
+    // Netlify 스케줄 이벤트는 httpMethod='POST' + body에 next_run 포함
+    const bodyObj = (() => { try { return JSON.parse(event?.body || '{}'); } catch(_) { return {}; } })();
+    const isScheduled = !event || !event.httpMethod || !!bodyObj.next_run;
     if (!isScheduled) {
       const secret = (event.headers && (event.headers['x-lumi-secret'] || event.headers['X-Lumi-Secret'])) || '';
       if (!process.env.LUMI_SECRET || secret !== process.env.LUMI_SECRET) {

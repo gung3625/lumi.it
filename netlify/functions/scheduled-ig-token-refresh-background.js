@@ -27,7 +27,8 @@ function httpsGet(urlStr, timeoutMs = 60000) {
 }
 
 exports.handler = async (event) => {
-  const isScheduled = !event || !event.httpMethod;
+  const bodyObj = (() => { try { return JSON.parse(event?.body || '{}'); } catch(_) { return {}; } })();
+  const isScheduled = !event || !event.httpMethod || !!bodyObj.next_run;
 
   // 수동 트리거: Authorization: Bearer ${LUMI_SECRET} 또는 x-lumi-secret 헤더
   if (!isScheduled) {

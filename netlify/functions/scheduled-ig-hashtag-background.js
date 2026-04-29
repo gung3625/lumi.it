@@ -104,7 +104,8 @@ async function fetchIgHashtag({ businessId, accessToken, tag }) {
 }
 
 exports.handler = async (event) => {
-  const isScheduled = !event || !event.httpMethod;
+  const bodyObj = (() => { try { return JSON.parse(event?.body || '{}'); } catch(_) { return {}; } })();
+  const isScheduled = !event || !event.httpMethod || !!bodyObj.next_run;
   // 수동 트리거도 허용: x-lumi-secret 헤더 체크
   if (!isScheduled) {
     const secret = (event.headers && (event.headers['x-lumi-secret'] || event.headers['X-Lumi-Secret'])) || '';
