@@ -249,7 +249,7 @@
     if (!wrap) return;
     const intent = res.intent || 'shop';
     const intentClass = `result-card__intent--${intent}`;
-    const abilityText = abilityLabel(res.ability_level);
+    const abilityText = '';
     const cached = res.cached ? '<span class="result-card__cached">캐시 적중</span>' : '';
     const replay = res.replay ? '<span class="result-card__cached">기록 재생</span>' : '';
 
@@ -299,7 +299,7 @@
       <article class="result-card">
         <div class="result-card__header">
           <span class="result-card__intent ${intentClass}">${escapeHtml(intentLabel(intent))}</span>
-          <span class="result-card__ability">${escapeHtml(abilityText)}${cached}${replay}</span>
+          <span class="result-card__ability">${cached}${replay}</span>
         </div>
         ${res.input ? `<p class="result-card__user-input">"${escapeHtml(res.input)}"</p>` : ''}
         <p class="result-card__summary">${escapeHtml(res.summary || '')}</p>
@@ -310,14 +310,6 @@
     // 결과 카드 스크롤: canvasArea 강제 top 제거 — 사용자 스크롤 위치 유지
   }
 
-  function abilityLabel(level) {
-    return ({
-      1: 'Lv.1 자동',
-      2: 'Lv.2 제안',
-      3: 'Lv.3 보조',
-      4: 'Lv.4 사장님',
-    })[level] || '';
-  }
 
   function showCanvasMode(mode) {
     const greet = $('#canvasGreet');
