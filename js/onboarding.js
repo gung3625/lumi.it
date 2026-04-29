@@ -480,6 +480,7 @@
               marketingConsent: state.consent.marketing,
               privacyConsent: true,
               termsConsent: true,
+              refundConsent: true,
               signupStep: 1,
             }),
           });
@@ -511,7 +512,7 @@
                 body: JSON.stringify({
                   businessNumber, ownerName, phone, birthDate, storeName, email: null,
                   marketingConsent: state.consent.marketing,
-                  privacyConsent: true, termsConsent: true,
+                  privacyConsent: true, termsConsent: true, refundConsent: true,
                   signupStep: 1,
                   licenseFileUrl: licenseUrl,
                 }),
@@ -1323,6 +1324,7 @@
             marketingConsent: state.consent.marketing,
             privacyConsent: true,
             termsConsent: true,
+            refundConsent: true,
             signupStep: 2,
           }),
         }).catch(function () { /* best-effort */ });
@@ -1379,6 +1381,7 @@
           marketingConsent: state.consent.marketing,
           privacyConsent: true,
           termsConsent: true,
+          refundConsent: true,
           signupStep: 3,
         }),
       }).catch(function () { /* */ });
@@ -1417,6 +1420,7 @@
           marketingConsent: state.consent.marketing,
           privacyConsent: true,
           termsConsent: true,
+          refundConsent: true,
           signupStep: 4,
         }),
       }).catch(function () { /* */ });
