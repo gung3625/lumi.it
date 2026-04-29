@@ -227,7 +227,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </div>
     <div class="field">
       <span class="field-label">매장명</span>
-      <input class="field-input" id="s-store" placeholder="매장 이름을 입력하세요">
+      <input class="field-input" id="s-store" placeholder="매장 이름을 입력하세요" autocorrect="off" autocapitalize="off" spellcheck="false">
       <span class="field-note">상품 등록·CS 답변에 매장 이름을 자연스럽게 넣어드려요</span>
     </div>
     <div class="field">
@@ -248,7 +248,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </div>
     <div class="field">
       <span class="field-label">지역</span>
-      <input class="field-input" id="s-region" placeholder="예: 서울 강남">
+      <input class="field-input" id="s-region" placeholder="예: 서울 강남" autocorrect="off" autocapitalize="off" spellcheck="false">
       <span class="field-note">배송지 기준 지역 트렌드를 추천해드려요</span>
     </div>
     <div class="btn-row">
@@ -396,14 +396,14 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- 기본 DM 답변 -->
     <div class="field">
       <span class="field-label">기본 DM 답변</span>
-      <textarea class="field-input" id="ar-dm-reply" placeholder="안녕하세요! 메시지 감사해요 😊" maxlength="200" style="min-height:80px;"></textarea>
+      <textarea class="field-input" id="ar-dm-reply" placeholder="안녕하세요! 메시지 감사해요 😊" maxlength="200" style="min-height:80px;" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
       <span class="field-note">키워드 규칙에 매칭되지 않는 DM에 보내는 기본 답변입니다. 200자 이내.</span>
     </div>
 
     <!-- 기본 댓글 답변 -->
     <div class="field">
       <span class="field-label">기본 댓글 답변</span>
-      <textarea class="field-input" id="ar-comment-reply" placeholder="감사합니다 😊 궁금한 점은 DM으로 문의해 주세요!" maxlength="200" style="min-height:80px;"></textarea>
+      <textarea class="field-input" id="ar-comment-reply" placeholder="감사합니다 😊 궁금한 점은 DM으로 문의해 주세요!" maxlength="200" style="min-height:80px;" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
       <span class="field-note">댓글에 달리는 기본 답변입니다. 200자 이내.</span>
     </div>
 
@@ -424,7 +424,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <span class="field-note" style="margin-bottom:8px;">이 단어가 포함된 메시지는 자동 응답하지 않고 알림만 사장님께 보내요. 부정/민감 키워드 추천.</span>
       <div id="ar-blocklist-tags" style="display:flex;flex-wrap:wrap;gap:6px;min-height:36px;padding:10px 14px;border-radius:8px;background:rgba(0,0,0,.04);cursor:text;" onclick="document.getElementById('ar-blocklist-input').focus()"></div>
       <div style="display:flex;gap:8px;margin-top:8px;">
-        <input class="field-input" id="ar-blocklist-input" placeholder="키워드 입력 후 Enter 또는 쉼표" style="flex:1;min-height:44px;" onkeydown="arBlocklistKeydown(event)">
+        <input class="field-input" id="ar-blocklist-input" placeholder="키워드 입력 후 Enter 또는 쉼표" style="flex:1;min-height:44px;" onkeydown="arBlocklistKeydown(event)" autocorrect="off" autocapitalize="off" spellcheck="false">
       </div>
     </div>
 
@@ -503,7 +503,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <p style="font-size:13px;color:#6e6e73;line-height:1.7;">※ 결제 기록(5년)·접속 로그(3개월) 등 법정 보존 의무 데이터는 기간 만료 후 파기됩니다.</p>
     <div style="margin-top:6px;">
       <label style="font-size:13px;font-weight:600;color:#1d1d1f;display:block;margin-bottom:6px;">확인을 위해 "탈퇴"를 입력해주세요</label>
-      <input type="text" id="delete-confirm-input" placeholder="탈퇴" class="field-input" oninput="toggleDeleteBtn()">
+      <input type="text" id="delete-confirm-input" placeholder="탈퇴" class="field-input" oninput="toggleDeleteBtn()" autocorrect="off" autocapitalize="off" spellcheck="false">
     </div>
     <div class="btn-row" style="margin-top:4px;">
       <button class="btn" style="background:rgba(0,0,0,.06);color:#1d1d1f;" onclick="closeDeleteModal()">취소</button>
@@ -763,7 +763,7 @@ function arRenderRules() {
     row.style.cssText = 'display:flex;flex-direction:column;gap:6px;padding:12px 14px;border-radius:8px;background:rgba(0,0,0,.03);position:relative;';
     row.innerHTML =
       '<div style="display:flex;gap:8px;align-items:center;">' +
-        '<input class="field-input" style="flex:1;min-height:40px;font-size:14px;" placeholder="키워드 (쉼표 구분)" value="' + arEsc(rule.keywords) + '" oninput="arRules[' + idx + '].keywords=this.value" />' +
+        '<input class="field-input" style="flex:1;min-height:40px;font-size:14px;" placeholder="키워드 (쉼표 구분)" value="' + arEsc(rule.keywords) + '" oninput="arRules[' + idx + '].keywords=this.value" autocorrect="off" autocapitalize="off" spellcheck="false" />' +
         '<select class="field-input" style="width:110px;min-height:40px;font-size:13px;" onchange="arRules[' + idx + '].channel=this.value">' +
           '<option value="both"' + (rule.channel==='both'?' selected':'') + '>DM+댓글</option>' +
           '<option value="dm"' + (rule.channel==='dm'?' selected':'') + '>DM만</option>' +
@@ -771,7 +771,7 @@ function arRenderRules() {
         '</select>' +
         '<button type="button" onclick="arRules.splice(' + idx + ',1);arRenderRules();" style="width:32px;height:32px;border-radius:50%;border:none;background:rgba(255,59,48,.1);color:#d70015;cursor:pointer;font-size:16px;flex-shrink:0;">×</button>' +
       '</div>' +
-      '<textarea class="field-input" style="min-height:60px;font-size:14px;" placeholder="이 키워드에 보낼 답변" oninput="arRules[' + idx + '].reply=this.value">' + arEsc(rule.reply) + '</textarea>';
+      '<textarea class="field-input" style="min-height:60px;font-size:14px;" placeholder="이 키워드에 보낼 답변" oninput="arRules[' + idx + '].reply=this.value" autocorrect="off" autocapitalize="off" spellcheck="false">' + arEsc(rule.reply) + '</textarea>';
     list.appendChild(row);
   });
   if (count) count.textContent = arRules.length + ' / 20';
