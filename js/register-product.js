@@ -12,8 +12,8 @@
     photoFile: null,
     imageUrl: null,
     lumiProduct: null,        // AI 분석 결과 (Lumi 표준 스키마)
-    cardIndex: 0,             // 0~5 (6 cards)
-    cardOrder: ['category', 'title', 'detail', 'price', 'options', 'policy'],
+    cardIndex: 0,             // 0~6 (7 cards)
+    cardOrder: ['category', 'title', 'detail', 'price', 'options', 'policy', 'info_disclosure'],
     connectedMarkets: new Set(), // me API 결과
     selectedMarkets: new Set(),
     distributeResult: null,
@@ -26,7 +26,11 @@
   function $$(s, root) { return Array.from((root || document).querySelectorAll(s)); }
 
   function getToken() {
-    return localStorage.getItem('lumi_seller_token') || sessionStorage.getItem('lumi_seller_token') || '';
+    return localStorage.getItem('lumi_seller_jwt')
+      || localStorage.getItem('lumi_seller_token')
+      || sessionStorage.getItem('lumi_seller_token')
+      || localStorage.getItem('lumi_token')
+      || '';
   }
 
   async function apiFetch(path, opts) {
@@ -208,7 +212,7 @@
     state.lumiProduct = aiRes.body.product;
 
     fill.style.width = '100%';
-    text.textContent = '카드 5장 준비 완료!';
+    text.textContent = '카드 7장 준비 완료!';
 
     setTimeout(() => {
       bindReviewCards();
@@ -327,6 +331,9 @@
       }
     }
 
+    // 카드 7: 정보고시
+    renderInfoDisclosureCard(product.infoDisclosure || null);
+
     // 카드 액션
     state.cardIndex = 0;
     state.cardOrder.forEach((id, i) => {
@@ -338,6 +345,87 @@
           e.preventDefault();
           handleCardAction(id, btn.dataset.cardAction, card);
         };
+      });
+    });
+
+    if (window.lucide) window.lucide.createIcons();
+  }
+
+  // ================================================================
+  // 정보고시 카드 렌더링
+  // ================================================================
+  function renderInfoDisclosureCard(disclosure) {
+    const categoryLabel = $('[data-bind="info-disclosure-category-label"]');
+    if (categoryLabel) {
+      categoryLabel.textContent = disclosure?.categoryLabel || '미분류';
+    }
+
+    const missingBadge = $('[data-bind="info-disclosure-missing"]');
+    const missingText = $('[data-bind="info-disclosure-missing-text"]');
+    const missing = Array.isArray(disclosure?.missingRequired) ? disclosure.missingRequired : [];
+    if (missingBadge) {
+      if (missing.length > 0) {
+        missingBadge.style.display = '';
+        if (missingText) missingText.textContent = `필수 ${missing.length}개 미입력`;
+      } else {
+        missingBadge.style.display = 'none';
+      }
+    }
+
+    const itemsBox = $('[data-bind="info-disclosure-items"]');
+    if (!itemsBox) return;
+    itemsBox.innerHTML = '';
+
+    const items = disclosure?.items;
+    if (!items || typeof items !== 'object' || Object.keys(items).length === 0) {
+      itemsBox.innerHTML = '<p class="rp-rcard-meta">정보고시 항목을 AI가 분석하지 못했어요. 사장님이 직접 입력해주세요.</p>';
+      return;
+    }
+
+    Object.entries(items).forEach(([key, item]) => {
+      const conf = typeof item.confidence === 'number' ? item.confidence : -1;
+      const isMissingRequired = missing.includes(key);
+      const row = document.createElement('div');
+      row.className = 'rp-id-item' + (isMissingRequired ? ' rp-id-item--required-missing' : '');
+
+      let confidenceBadgeHtml = '';
+      let inputClass = 'rp-id-input';
+      if (isMissingRequired) {
+        confidenceBadgeHtml = '<span class="rp-id-conf rp-id-conf--red"><i data-lucide="alert-circle" style="width:11px;height:11px;"></i> 직접 입력 필요</span>';
+        inputClass += ' rp-id-input--required';
+      } else if (conf >= 0.7) {
+        confidenceBadgeHtml = '<span class="rp-id-conf rp-id-conf--green"><i data-lucide="check-circle" style="width:11px;height:11px;"></i> 확인만</span>';
+      } else if (conf >= 0.4) {
+        confidenceBadgeHtml = '<span class="rp-id-conf rp-id-conf--yellow"><i data-lucide="alert-triangle" style="width:11px;height:11px;"></i> 검수 권장</span>';
+      } else if (conf >= 0) {
+        confidenceBadgeHtml = '<span class="rp-id-conf rp-id-conf--red"><i data-lucide="alert-circle" style="width:11px;height:11px;"></i> 직접 입력 필요</span>';
+        inputClass += ' rp-id-input--required';
+      }
+
+      const val = escapeHtml(item.value || '');
+      const label = escapeHtml(item.label || key);
+      const hint = item.hint ? `placeholder="${escapeHtml(item.hint)}"` : `placeholder="직접 입력"`;
+
+      row.innerHTML = `
+        <div class="rp-id-item-header">
+          <span class="rp-id-item-label">${label}</span>
+          ${confidenceBadgeHtml}
+        </div>
+        <input type="text" class="${inputClass}" data-id-key="${escapeHtml(key)}" value="${val}" ${hint} />
+        ${isMissingRequired ? '<p class="rp-id-item-warn"><i data-lucide="alert-circle" style="width:11px;height:11px;"></i> 이 항목은 법적 의무입니다 (위반 시 과태료)</p>' : ''}
+      `;
+      itemsBox.appendChild(row);
+    });
+
+    // 사장님 수정 시 state 반영
+    itemsBox.querySelectorAll('[data-id-key]').forEach((input) => {
+      input.addEventListener('input', () => {
+        const key = input.dataset.idKey;
+        if (!state.lumiProduct.infoDisclosure) return;
+        if (!state.lumiProduct.infoDisclosure.items) return;
+        if (state.lumiProduct.infoDisclosure.items[key]) {
+          state.lumiProduct.infoDisclosure.items[key].value = input.value;
+        }
       });
     });
 
@@ -478,6 +566,11 @@
       };
     });
 
+    const confirmChk = $('[data-info-disclosure-confirm]');
+    if (confirmChk) {
+      confirmChk.onchange = updateDistributeButton;
+    }
+
     const submit = $('[data-action="distribute"]');
     if (submit) {
       submit.onclick = doDistribute;
@@ -491,7 +584,9 @@
   function updateDistributeButton() {
     const submit = $('[data-action="distribute"]');
     if (!submit) return;
-    submit.disabled = state.selectedMarkets.size === 0;
+    const confirmChk = $('[data-info-disclosure-confirm]');
+    const confirmed = confirmChk ? confirmChk.checked : true;
+    submit.disabled = state.selectedMarkets.size === 0 || !confirmed;
   }
 
   async function doDistribute() {
@@ -512,11 +607,18 @@
       }
     });
 
+    // 정보고시: 사장님 수정 반영 + confirm 플래그
+    const confirmChk = $('[data-info-disclosure-confirm]');
+    const infoDisclosure = state.lumiProduct?.infoDisclosure
+      ? { ...state.lumiProduct.infoDisclosure, confirmed: !!(confirmChk && confirmChk.checked) }
+      : null;
+
     const res = await apiFetch('/api/register-product', {
       method: 'POST',
       body: {
         product: state.lumiProduct,
         markets: Array.from(state.selectedMarkets),
+        infoDisclosure,
       },
     });
 

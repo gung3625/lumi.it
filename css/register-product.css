@@ -926,6 +926,214 @@ body {
   font-size: 12px;
 }
 
+/* =================================================================
+ * 정보고시 카드 (카드 7)
+ * ================================================================= */
+
+/* disclaimer 배너 */
+.rp-id-disclaimer {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 10px 12px;
+  background: rgba(200, 80, 122, 0.06);
+  border: 1px solid rgba(200, 80, 122, 0.2);
+  border-radius: 8px;
+  font-size: 12px;
+  color: #8a4060;
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+body.dark-mode .rp-id-disclaimer {
+  background: rgba(200, 80, 122, 0.12);
+  border-color: rgba(200, 80, 122, 0.3);
+  color: #e8a0bc;
+}
+
+/* 누락 필수 항목 뱃지 */
+.rp-id-missing-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  background: #fff1f4;
+  border: 1px solid #f7b8c8;
+  border-radius: 980px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #d23f5e;
+  margin-bottom: 12px;
+}
+body.dark-mode .rp-id-missing-badge {
+  background: rgba(210, 63, 94, 0.15);
+  border-color: rgba(210, 63, 94, 0.35);
+  color: #f58fa8;
+}
+
+/* 항목 리스트 컨테이너 */
+.rp-id-items {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* 개별 항목 행 */
+.rp-id-item {
+  background: var(--bg-soft);
+  border-radius: 10px;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+}
+.rp-id-item--required-missing {
+  background: #fff8f9;
+  border-color: #f7b8c8;
+}
+body.dark-mode .rp-id-item {
+  background: rgba(255,255,255,0.05);
+}
+body.dark-mode .rp-id-item--required-missing {
+  background: rgba(210, 63, 94, 0.1);
+  border-color: rgba(210, 63, 94, 0.3);
+}
+
+.rp-id-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.rp-id-item-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-mute);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+/* confidence 뱃지 */
+.rp-id-conf {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 980px;
+  flex-shrink: 0;
+}
+.rp-id-conf--green {
+  background: #ecfdf3;
+  color: #0f6b3e;
+}
+.rp-id-conf--yellow {
+  background: #fffbea;
+  color: #8a5b00;
+}
+.rp-id-conf--red {
+  background: #fff1f4;
+  color: #d23f5e;
+}
+body.dark-mode .rp-id-conf--green { background: rgba(15,107,62,0.15); color: #4ade80; }
+body.dark-mode .rp-id-conf--yellow { background: rgba(138,91,0,0.18); color: #fbbf24; }
+body.dark-mode .rp-id-conf--red { background: rgba(210,63,94,0.15); color: #f87171; }
+
+/* 항목 입력 필드 */
+.rp-id-input {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-input);
+  font-family: inherit;
+  font-size: 14px;
+  background: #fff;
+  color: var(--ink);
+  outline: none;
+  transition: border-color .15s;
+  box-sizing: border-box;
+}
+.rp-id-input:focus {
+  border-color: var(--pink-500);
+}
+.rp-id-input--required {
+  border-color: #f7b8c8;
+  background: #fff8f9;
+}
+.rp-id-input--required:focus {
+  border-color: #d23f5e;
+}
+body.dark-mode .rp-id-input {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.12);
+  color: #f0f0f0;
+}
+body.dark-mode .rp-id-input--required {
+  border-color: rgba(210,63,94,0.4);
+  background: rgba(210,63,94,0.08);
+}
+
+/* 법적 의무 경고 문구 */
+.rp-id-item-warn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #d23f5e;
+  margin: 5px 0 0;
+}
+body.dark-mode .rp-id-item-warn { color: #f87171; }
+
+/* distribute 화면 — 정보고시 confirm 체크박스 */
+.rp-id-confirm-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  background: rgba(200, 80, 122, 0.05);
+  border: 1.5px solid rgba(200, 80, 122, 0.2);
+  border-radius: 12px;
+  cursor: pointer;
+  margin-bottom: 14px;
+  transition: border-color .15s, background .15s;
+}
+.rp-id-confirm-label:has(input:checked) {
+  background: rgba(200, 80, 122, 0.1);
+  border-color: #C8507A;
+}
+.rp-id-confirm-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  flex-shrink: 0;
+  accent-color: #C8507A;
+  cursor: pointer;
+  margin-top: 1px;
+}
+.rp-id-confirm-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-soft);
+  line-height: 1.5;
+  word-break: keep-all;
+}
+.rp-id-confirm-label:has(input:checked) .rp-id-confirm-text {
+  color: var(--ink);
+}
+body.dark-mode .rp-id-confirm-label {
+  background: rgba(200, 80, 122, 0.08);
+  border-color: rgba(200, 80, 122, 0.25);
+}
+body.dark-mode .rp-id-confirm-label:has(input:checked) {
+  background: rgba(200, 80, 122, 0.18);
+  border-color: #C8507A;
+}
+body.dark-mode .rp-id-confirm-text { color: #bbb; }
+body.dark-mode .rp-id-confirm-label:has(input:checked) .rp-id-confirm-text { color: #f0f0f0; }
+
+/* =================================================================
+ * PC 전용 추가 기능 힌트
+ * ================================================================= */
+
 /* PC 전용 추가 기능 힌트 */
 .rp-pc-extra {
   margin-top: 12px;

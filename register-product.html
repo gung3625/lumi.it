@@ -127,7 +127,7 @@
           <img src="/assets/logo-cloud.png" alt="" />
         </div>
         <h1 class="rp-title">루미가 미리 만들어봤어요</h1>
-        <p class="rp-sub">5장 카드 차례로 검토해주세요. 우 = 좋아요, 좌 = 다시, 아래 = 직접 수정.</p>
+        <p class="rp-sub">7장 카드 차례로 검토해주세요. 우 = 좋아요, 좌 = 다시, 아래 = 직접 수정.</p>
 
         <div class="rp-deck-wrap">
           <div class="rp-deck" data-deck>
@@ -233,8 +233,8 @@
             </article>
 
             <!-- 카드 6: 정책 + 키워드 -->
-            <article class="rp-rcard" data-rcard data-card-id="policy" style="z-index:1;">
-              <div class="rp-rcard-step">6 / 6</div>
+            <article class="rp-rcard" data-rcard data-card-id="policy" style="z-index:2;">
+              <div class="rp-rcard-step">6 / 7</div>
               <h2 class="rp-rcard-question">마지막 점검할게요</h2>
               <div class="rp-rcard-content">
                 <p class="rp-rcard-label">검색 키워드</p>
@@ -244,13 +244,39 @@
               </div>
               <div class="rp-rcard-actions">
                 <button class="rp-rcard-no" data-card-action="reject"><i data-lucide="x"></i> 다시</button>
+                <button class="rp-rcard-yes" data-card-action="approve"><i data-lucide="check"></i> 좋아요</button>
+              </div>
+            </article>
+
+            <!-- 카드 7: 정보고시 -->
+            <article class="rp-rcard" data-rcard data-card-id="info_disclosure" style="z-index:1;">
+              <div class="rp-rcard-step">7 / 7</div>
+              <h2 class="rp-rcard-question">정보고시 — <span data-bind="info-disclosure-category-label">검수 중…</span></h2>
+              <div class="rp-rcard-content">
+                <!-- disclaimer 항상 노출 -->
+                <div class="rp-id-disclaimer">
+                  <i data-lucide="alert-triangle" style="width:14px;height:14px;flex-shrink:0;"></i>
+                  <span>AI 생성 초안입니다. 사장님이 검수 후 발행하시면 정확성·법적 적합성 책임은 사장님께 있습니다.</span>
+                </div>
+                <!-- 누락 필수 항목 뱃지 -->
+                <div class="rp-id-missing-badge" data-bind="info-disclosure-missing" style="display:none;">
+                  <i data-lucide="circle-alert" style="width:13px;height:13px;"></i>
+                  <span data-bind="info-disclosure-missing-text">필수 항목 미입력</span>
+                </div>
+                <!-- 항목 리스트 -->
+                <div class="rp-id-items" data-bind="info-disclosure-items">
+                  <p class="rp-rcard-meta">AI 분석 결과를 불러오는 중…</p>
+                </div>
+              </div>
+              <div class="rp-rcard-actions">
+                <button class="rp-rcard-no" data-card-action="reject"><i data-lucide="x"></i> 다시</button>
                 <button class="rp-rcard-yes" data-card-action="approve"><i data-lucide="check"></i> 마켓 보내기</button>
               </div>
             </article>
           </div>
         </div>
 
-        <p class="rp-deck-hint" data-deck-hint>5장 카드 모두 좋다면 마켓 토글로 넘어갈게요</p>
+        <p class="rp-deck-hint" data-deck-hint>7장 카드 모두 좋다면 마켓 토글로 넘어갈게요</p>
       </section>
 
       <!-- =============== 화면 3: 마켓 전송 + 직링크 =============== -->
@@ -298,6 +324,12 @@
             <span class="rp-market-switch" aria-hidden="true"></span>
           </label>
         </div>
+
+        <!-- 정보고시 confirm 체크박스 -->
+        <label class="rp-id-confirm-label" id="infoDisclosureConfirmLabel">
+          <input type="checkbox" id="infoDisclosureConfirm" data-info-disclosure-confirm />
+          <span class="rp-id-confirm-text">정보고시 AI 초안을 검수했습니다. 정확성 책임은 제가 집니다.</span>
+        </label>
 
         <p class="rp-error" data-error="distribute" style="display:none;"></p>
 
