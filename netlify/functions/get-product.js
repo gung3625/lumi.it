@@ -24,6 +24,8 @@ exports.handler = async (event) => {
   const params = event.queryStringParameters || {};
   const productId = params.id;
   const recent = params.recent === '1';
+  // #5: ids=id1,id2,... 배열 조회 지원
+  const idsParam = params.ids ? params.ids.split(',').map((s) => s.trim()).filter(Boolean) : null;
 
   const isSignupMock = (process.env.SIGNUP_MOCK || 'false').toLowerCase() === 'true';
 
@@ -41,6 +43,7 @@ exports.handler = async (event) => {
 
   let query = admin.from('products').select('*').eq('seller_id', payload.seller_id);
   if (productId) query = query.eq('id', productId);
+  else if (idsParam) query = query.in('id', idsParam);
   else if (recent) query = query.order('created_at', { ascending: false }).limit(1);
   else query = query.order('created_at', { ascending: false }).limit(20);
 
@@ -53,17 +56,19 @@ exports.handler = async (event) => {
     return { statusCode: 200, headers: CORS, body: JSON.stringify({ success: true, product: null, registrations: [] }) };
   }
 
-  const target = (productId || recent) ? products[0] : null;
-  const productList = (productId || recent) ? null : products;
+  // ids= 배열 조회는 리스트 모드로 처리
+  const isListMode = idsParam || (!productId && !recent);
+  const target = (!isListMode) ? products[0] : null;
+  const productList = isListMode ? products : null;
 
   // product_market_registrations 일괄 조회
-  const ids = (productId || recent) ? [target.id] : products.map((p) => p.id);
+  const regIds = isListMode ? products.map((p) => p.id) : [target.id];
   const { data: regs } = await admin
     .from('product_market_registrations')
     .select('*')
-    .in('product_id', ids);
+    .in('product_id', regIds);
 
-  if (productId || recent) {
+  if (!isListMode) {
     const filteredRegs = (regs || []).filter((r) => r.product_id === target.id);
     return {
       statusCode: 200,

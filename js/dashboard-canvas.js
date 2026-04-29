@@ -43,7 +43,12 @@
     document.body.classList.toggle('dark-mode', dark);
     const fab = document.getElementById('themeFab');
     if (fab) fab.textContent = dark ? '☀' : '☾';
+    // 모바일 테마 버튼 동기화 (#7)
+    const mobileBtn = document.getElementById('mobileThemeBtn');
+    if (mobileBtn) mobileBtn.textContent = dark ? '☀' : '☾';
   }
+  // 전역 등록 — chat.js 모바일 버튼에서 호출 (#7)
+  window.applyTheme = applyTheme;
   function bindThemeFab() {
     const fab = document.getElementById('themeFab');
     if (!fab) return;
@@ -298,10 +303,23 @@
       onCta: () => { window.location.href = '/register-product'; },
     },
   ];
+  // #4: 통합 키 상수 (구 키 lumi_aa_dismissed·lumi_top_agent_dismissed → 단일 키로 마이그레이션)
+  const AA_DISMISSED_KEY = 'lumi_action_agent_dismissed';
+  (function migrateAaDismissed() {
+    const legacyKeys = ['lumi_aa_dismissed', 'lumi_top_agent_dismissed'];
+    let merged = JSON.parse(localStorage.getItem(AA_DISMISSED_KEY) || '[]');
+    legacyKeys.forEach((k) => {
+      const old = JSON.parse(localStorage.getItem(k) || '[]');
+      old.forEach((id) => { if (!merged.includes(id)) merged.push(id); });
+      localStorage.removeItem(k);
+    });
+    localStorage.setItem(AA_DISMISSED_KEY, JSON.stringify(merged));
+  })();
+
   function renderActionAgents() {
     const stack = document.getElementById('actionAgentStack');
     if (!stack) return;
-    const dismissed = JSON.parse(localStorage.getItem('lumi_aa_dismissed') || '[]');
+    const dismissed = JSON.parse(localStorage.getItem(AA_DISMISSED_KEY) || '[]');
     const visible = ACTION_AGENT_MOCKS.filter((m) => !dismissed.includes(m.id));
     if (visible.length === 0) {
       // M11: 모든 제안이 닫혔거나 없을 때 — 빈 상태 정직 표기
@@ -336,9 +354,9 @@
     stack.querySelectorAll('[data-aa-dismiss]').forEach((btn) => {
       btn.addEventListener('click', () => {
         const id = btn.dataset.aaDismiss;
-        const cur = JSON.parse(localStorage.getItem('lumi_aa_dismissed') || '[]');
+        const cur = JSON.parse(localStorage.getItem(AA_DISMISSED_KEY) || '[]');
         if (!cur.includes(id)) cur.push(id);
-        localStorage.setItem('lumi_aa_dismissed', JSON.stringify(cur));
+        localStorage.setItem(AA_DISMISSED_KEY, JSON.stringify(cur));
         renderActionAgents();
       });
     });
@@ -1015,11 +1033,19 @@
         if (b) b.innerHTML = '<div class="widget__empty">상품을 불러오지 못했어요</div>';
         return;
       }
-      // get-product 일괄 응답 활용 (recent=1 X, list)
-      const r = await fetch('/api/get-product', { headers: authHeaders() });
-      if (!r.ok) throw new Error('fetch fail');
-      const data = await r.json();
-      const products = (data.products || []).filter((p) => ids.includes(p.id));
+      // #5: 서버사이드 ids= 필터 + 세션 캐시로 재호출 방지
+      if (!window._productCache) window._productCache = {};
+      const cacheKey = ids.slice().sort().join(',');
+      let products;
+      if (window._productCache[cacheKey]) {
+        products = window._productCache[cacheKey];
+      } else {
+        const r = await fetch(`/api/get-product?ids=${encodeURIComponent(ids.join(','))}`, { headers: authHeaders() });
+        if (!r.ok) throw new Error('fetch fail');
+        const data = await r.json();
+        products = data.products || [];
+        window._productCache[cacheKey] = products;
+      }
       const b = document.getElementById('slideoverBody');
       if (!b) return;
       if (products.length === 0) {

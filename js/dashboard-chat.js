@@ -197,21 +197,26 @@
     })[intent] || '명령';
   }
 
+  // #6: 히스토리 메모리 캐시 (페이지 reload 시 재fetch)
+  let _historyCache = null;
+
   async function replayHistory(id) {
     // 히스토리 재생: result_payload·summary 다시 카드로 표시
     try {
-      const r = await fetch('/api/command-history', { headers: authHeaders() });
-      if (!r.ok) return;
-      const data = await r.json();
-      const all = [
-        ...(data.buckets?.pinned || []),
-        ...(data.buckets?.today || []),
-        ...(data.buckets?.yesterday || []),
-        ...(data.buckets?.last7 || []),
-        ...(data.buckets?.last30 || []),
-        ...(data.buckets?.older || []),
-      ];
-      const item = all.find((x) => x.id === id);
+      if (!_historyCache) {
+        const r = await fetch('/api/command-history', { headers: authHeaders() });
+        if (!r.ok) return;
+        const data = await r.json();
+        _historyCache = [
+          ...(data.buckets?.pinned || []),
+          ...(data.buckets?.today || []),
+          ...(data.buckets?.yesterday || []),
+          ...(data.buckets?.last7 || []),
+          ...(data.buckets?.last30 || []),
+          ...(data.buckets?.older || []),
+        ];
+      }
+      const item = _historyCache.find((x) => x.id === id);
       if (!item) return;
       showResultCard({
         input: item.input,
@@ -500,14 +505,17 @@
   let _agentSuggestions = [];
   let _agentIdx = 0;
 
+  // #4: canvas.js와 동일한 통합 키 사용
+  const AA_DISMISSED_KEY = 'lumi_action_agent_dismissed';
+
   function loadAgentSuggestions() {
-    // mock 3개 + dismissed 필터 (canvas.js의 ACTION_AGENT_MOCKS와 호환되지 않게 별도)
+    // canvas.js ACTION_AGENT_MOCKS와 id·msg 일치 (단일 source of truth)
     const all = [
       { id: 'price-diff', msg: '쿠팡 판매가가 네이버보다 ₩500 비쌉니다', cmd: '쿠팡 가격 점검' },
       { id: 'low-stock', msg: '재고 부족 상품 3개. 재발주 시점이에요', cmd: '재고 5개 이하 상품' },
       { id: 'trend-gap', msg: '뜨는 카테고리에 등록된 상품이 0개에요', cmd: '오늘 뜨는 상품 추천' },
     ];
-    const dismissed = JSON.parse(localStorage.getItem('lumi_top_agent_dismissed') || '[]');
+    const dismissed = JSON.parse(localStorage.getItem(AA_DISMISSED_KEY) || '[]');
     _agentSuggestions = all.filter((a) => !dismissed.includes(a.id));
     _agentIdx = 0;
     renderAgent();
@@ -549,9 +557,9 @@
     }
   }
   function dismissAgent(id) {
-    const cur = JSON.parse(localStorage.getItem('lumi_top_agent_dismissed') || '[]');
+    const cur = JSON.parse(localStorage.getItem(AA_DISMISSED_KEY) || '[]');
     if (!cur.includes(id)) cur.push(id);
-    localStorage.setItem('lumi_top_agent_dismissed', JSON.stringify(cur));
+    localStorage.setItem(AA_DISMISSED_KEY, JSON.stringify(cur));
     _agentIdx = 0;
     loadAgentSuggestions();
   }
@@ -581,11 +589,16 @@
     btn.addEventListener('click', () => {
       const cur = localStorage.getItem('lumi_dark_mode') === '1';
       localStorage.setItem('lumi_dark_mode', cur ? '0' : '1');
-      // canvas.js의 applyTheme 트리거 (페이지 reload 없이)
-      document.body.classList.toggle('dark-mode', !cur);
-      btn.textContent = !cur ? '☀' : '☾';
-      const fab = $('#themeFab');
-      if (fab) fab.textContent = !cur ? '☀' : '☾';
+      // #7: canvas.js의 window.applyTheme() 호출 — FAB·모바일 버튼 동시 갱신
+      if (typeof window.applyTheme === 'function') {
+        window.applyTheme();
+      } else {
+        // fallback: canvas.js 미로드 시
+        document.body.classList.toggle('dark-mode', !cur);
+        btn.textContent = !cur ? '☀' : '☾';
+        const fab = $('#themeFab');
+        if (fab) fab.textContent = !cur ? '☀' : '☾';
+      }
     });
     // 초기 동기화
     btn.textContent = (localStorage.getItem('lumi_dark_mode') === '1') ? '☀' : '☾';
