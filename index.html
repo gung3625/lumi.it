@@ -2233,8 +2233,12 @@ window.lumiSupa.auth.onAuthStateChange(function (event, session) {
 });
 
 // 페이지 진입 시 이미 로그인되어 있으면 라우팅 분기
+// 비로그인 사용자는 getSession 스킵 (Supabase 토큰 refresh 왕복 제거 → 메인 스레드 점유 단축)
 (async function () {
   try {
+    var hasStoredAuth = false;
+    try { hasStoredAuth = !!localStorage.getItem('lumi-auth'); } catch (_) {}
+    if (!hasStoredAuth) return;
     var r = await window.lumiSupa.auth.getSession();
     if (r && r.data && r.data.session && r.data.session.access_token) {
       routeAfterAuth();

@@ -567,8 +567,15 @@ body.dark-mode .lumi-footer__copy{color:rgba(255,255,255,.2);}
     );
 
     // 비로그인 진입 차단 — 메인으로 돌려보냄 (인증 모달에서 가입 시작)
+    // localStorage 게이트: 저장된 인증 없으면 getSession 왕복 스킵
     (async function () {
       try {
+        var hasStoredAuth = false;
+        try { hasStoredAuth = !!localStorage.getItem('lumi-auth'); } catch (_) {}
+        if (!hasStoredAuth) {
+          window.location.replace('/?stay=1');
+          return;
+        }
         const r = await window.lumiSupa.auth.getSession();
         if (!r?.data?.session?.access_token) {
           // 약간의 grace period — fragment 토큰 처리 시간 확보 (1초)
