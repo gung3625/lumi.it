@@ -7,12 +7,7 @@
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifySellerToken, extractBearerToken } = require('./_shared/seller-jwt');
 
-const CORS = {
-  'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Authorization, Content-Type',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-};
+const { corsHeaders, getOrigin } = require('./_shared/auth');
 
 const MARKETS = ['coupang', 'naver', 'toss'];
 
@@ -33,6 +28,7 @@ function pickCategoryPath(product) {
 }
 
 exports.handler = async (event) => {
+  const CORS = corsHeaders(getOrigin(event));
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
   if (event.httpMethod !== 'GET') {
     return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method not allowed' }) };

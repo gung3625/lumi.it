@@ -104,7 +104,9 @@ async function classifyAndSanitize(pair) {
     '전화번호·이름·주소·이메일·실명·주민번호·카드번호를 [전화]/[이름]/[주소]/[이메일]/[주민번호]/[카드]로 치환.',
     'JSON 반환: {category, customer_message_sanitized, correct_reply_sanitized}',
   ].join('\n');
-  const user = `고객 메시지: ${pair.customer_message}\n사장님 답변: ${pair.correct_reply}`;
+  const safeMessage = maskPII(pair.customer_message);
+  const safeReply = maskPII(pair.correct_reply);
+  const user = `고객 메시지: ${safeMessage}\n사장님 답변: ${safeReply}`;
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {

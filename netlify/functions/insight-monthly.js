@@ -8,14 +8,10 @@ const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifySellerToken, extractBearerToken } = require('./_shared/seller-jwt');
 const { buildReport } = require('./_shared/insight-builder');
 
-const CORS = {
-  'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Authorization, Content-Type',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-};
+const { corsHeaders, getOrigin } = require('./_shared/auth');
 
 exports.handler = async (event) => {
+  const CORS = corsHeaders(getOrigin(event));
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers: CORS, body: '' };
   }

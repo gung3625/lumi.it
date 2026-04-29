@@ -8,12 +8,7 @@ const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifySellerToken, extractBearerToken } = require('./_shared/seller-jwt');
 const { calculateOrderProfit, buildMarketFeeMap } = require('./_shared/profit-calculator');
 
-const CORS = {
-  'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Authorization, Content-Type',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-};
+const { corsHeaders, getOrigin } = require('./_shared/auth');
 
 const MARKET_LABELS = { coupang: '쿠팡', naver: '네이버', toss: '토스쇼핑' };
 const VALID_PERIODS = ['day', 'week', 'month'];
@@ -85,6 +80,7 @@ async function fetchConnectedMarkets(admin, sellerId) {
 }
 
 exports.handler = async (event) => {
+  const CORS = corsHeaders(getOrigin(event));
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers: CORS, body: '' };
   }

@@ -16,11 +16,7 @@ const {
   buildTaxAccountantCsv,
 } = require('./_shared/settlement-aggregator');
 
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Authorization, Content-Type',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-};
+const { corsHeaders, getOrigin } = require('./_shared/auth');
 
 function currentPeriod() {
   const d = new Date();
@@ -75,6 +71,7 @@ async function fetchMarketFeeMap(admin) {
 }
 
 exports.handler = async (event) => {
+  const CORS = corsHeaders(getOrigin(event));
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers: { ...CORS, 'Content-Type': 'application/json' }, body: '' };
   }

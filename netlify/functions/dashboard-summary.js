@@ -21,12 +21,7 @@ const {
   buildTrendCardCta,
 } = require('./_shared/trend-matcher');
 
-const CORS = {
-  'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Authorization, Content-Type',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-};
+const { corsHeaders, getOrigin } = require('./_shared/auth');
 
 const MARKET_LABELS = { coupang: '쿠팡', naver: '네이버', toss: '토스쇼핑' };
 
@@ -211,6 +206,7 @@ async function getLiveFeedCard(admin, sellerId) {
 }
 
 exports.handler = async (event) => {
+  const CORS = corsHeaders(getOrigin(event));
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers: CORS, body: '' };
   }

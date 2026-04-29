@@ -6,12 +6,7 @@
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifySellerToken, extractBearerToken } = require('./_shared/seller-jwt');
 
-const CORS = {
-  'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Authorization, Content-Type',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-};
+const { corsHeaders, getOrigin } = require('./_shared/auth');
 
 const DEFAULTS = {
   packaging_cost_per_unit: 500,
@@ -34,6 +29,7 @@ function clampNum(v, min, max, fallback) {
 }
 
 exports.handler = async (event) => {
+  const CORS = corsHeaders(getOrigin(event));
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers: CORS, body: '' };
   }

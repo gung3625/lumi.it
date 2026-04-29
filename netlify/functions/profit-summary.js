@@ -13,12 +13,7 @@ const {
   buildProfitMessage,
 } = require('./_shared/profit-calculator');
 
-const CORS = {
-  'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Authorization, Content-Type',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-};
+const { corsHeaders, getOrigin } = require('./_shared/auth');
 
 function periodRange(period) {
   const now = new Date();
@@ -134,6 +129,7 @@ function bucketByDay(orders, costSettings, marketFeeMap, range) {
 }
 
 exports.handler = async (event) => {
+  const CORS = corsHeaders(getOrigin(event));
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers: CORS, body: '' };
   }
