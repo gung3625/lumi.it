@@ -122,58 +122,29 @@ exports.handler = async (event) => {
     // 3. Supabase 유저 upsert
     const admin = getAdminClient();
 
-    // 기존 유저 확인 — auth schema 직접 select (Admin REST API ?email= 필터 무효 회피)
+    // 기존 유저 확인 — admin.auth.admin.listUsers 1페이지(200) 호출 후 클라이언트 매칭
+    // (auth schema PostgREST는 406, ?email= 필터는 무효 — 검증 끝남)
     let existingUser = null;
     try {
-      const { data: row } = await admin
-        .schema('auth')
-        .from('users')
-        .select('id, email, raw_user_meta_data')
-        .eq('email', email)
-        .maybeSingle();
-      if (row) {
-        existingUser = {
-          id: row.id,
-          email: row.email,
-          user_metadata: row.raw_user_meta_data || {},
-        };
-      } else {
-        // kakao_id 매칭 시도 (이메일 변경 대비)
-        const { data: kakaoRow } = await admin
-          .schema('auth')
-          .from('users')
-          .select('id, email, raw_user_meta_data')
-          .filter('raw_user_meta_data->>kakao_id', 'eq', kakaoId)
-          .maybeSingle();
-        if (kakaoRow) {
-          existingUser = {
-            id: kakaoRow.id,
-            email: kakaoRow.email,
-            user_metadata: kakaoRow.raw_user_meta_data || {},
-          };
+      const { data: pageData } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
+      const users = pageData?.users || [];
+      existingUser = users.find(
+        (u) => u.email === email || (u.user_metadata && u.user_metadata.kakao_id === kakaoId)
+      ) || null;
+      // 200명 초과 시 추가 페이지 (현재 사용자 수 적어 거의 발생 X)
+      if (!existingUser && users.length >= 200) {
+        for (let p = 2; p <= 10; p++) {
+          const { data: more } = await admin.auth.admin.listUsers({ page: p, perPage: 200 });
+          const moreUsers = more?.users || [];
+          const found = moreUsers.find(
+            (u) => u.email === email || (u.user_metadata && u.user_metadata.kakao_id === kakaoId)
+          );
+          if (found) { existingUser = found; break; }
+          if (moreUsers.length < 200) break;
         }
       }
     } catch (e) {
-      console.error('[auth-kakao-callback] auth schema select 실패:', e.message);
-      // fallback — Admin REST API
-      try {
-        const adminUrl = process.env.SUPABASE_URL + '/auth/v1/admin/users?per_page=200';
-        const res = await fetch(adminUrl, {
-          headers: {
-            'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
-            'Authorization': 'Bearer ' + process.env.SUPABASE_SERVICE_ROLE_KEY,
-          },
-        });
-        if (res.ok) {
-          const json = await res.json();
-          const users = Array.isArray(json) ? json : (json.users || []);
-          existingUser = users.find(
-            (u) => u.email === email || (u.user_metadata && u.user_metadata.kakao_id === kakaoId)
-          ) || null;
-        }
-      } catch (e2) {
-        console.error('[auth-kakao-callback] fallback 실패:', e2.message);
-      }
+      console.error('[auth-kakao-callback] listUsers 실패:', e.message);
     }
     console.log('[timing] step3 usercheck:', Date.now() - _t0, 'ms');
 
