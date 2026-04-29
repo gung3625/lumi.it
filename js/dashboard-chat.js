@@ -433,8 +433,10 @@
   // ─── 입력창 핸들링 ───
   function autoResize(el) {
     if (!el) return;
+    const scrollY = window.scrollY;
     el.style.height = 'auto';
     el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+    window.scrollTo({ top: scrollY, behavior: 'instant' });
   }
   function syncSendBtn() {
     const btn = $('#chatSend');
