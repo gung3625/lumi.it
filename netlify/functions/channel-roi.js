@@ -43,7 +43,9 @@ async function fetchCostSettings(admin, sellerId) {
       .eq('seller_id', sellerId)
       .maybeSingle();
     if (data) return data;
-  } catch (_) {}
+  } catch (e) {
+    console.warn('[channel-roi] fetchCostSettings fallback:', e.message);
+  }
   return {
     seller_id: sellerId,
     packaging_cost_per_unit: 500,
@@ -62,7 +64,8 @@ async function fetchMarketFeeMap(admin) {
       .select('market, category_key, fee_ratio')
       .eq('active', true);
     return buildMarketFeeMap(data || []);
-  } catch (_) {
+  } catch (e) {
+    console.warn('[channel-roi] fetchMarketFeeMap fallback:', e.message);
     return new Map();
   }
 }
@@ -75,7 +78,8 @@ async function fetchConnectedMarkets(admin, sellerId) {
       .eq('seller_id', sellerId)
       .eq('status', 'connected');
     return (data || []).map((r) => r.market);
-  } catch (_) {
+  } catch (e) {
+    console.warn('[channel-roi] fetchConnectedMarkets fallback:', e.message);
     return [];
   }
 }

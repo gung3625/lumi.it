@@ -7,6 +7,12 @@ const PII_FIELDS = [
   'phone', 'phone_number',
   'businessNumber', 'business_no',
   'address',
+  // 주문자·수취인 정보 (마켓플레이스 주문 PII)
+  'recipient_name', 'buyer_name', 'receiver_name',
+  'buyer_phone', 'receiver_phone',
+  'buyer_email',
+  'zip_code', 'postal_code',
+  'shipping_address', 'detailed_address',
 ];
 
 /**
