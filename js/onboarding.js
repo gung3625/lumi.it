@@ -1383,13 +1383,12 @@
     const termsChk = document.querySelector('[data-consent="terms"]');
     const privacyChk = document.querySelector('[data-consent="privacy"]');
     const refundChk = document.querySelector('[data-consent="refund"]');
-    const openaiChk = document.querySelector('[data-consent="openai"]');
     const marketingChk = document.querySelector('[data-consent="marketing"]');
     const submit = document.querySelector('[data-action="step4-submit"]');
     const back = document.querySelector('[data-action="step4-back"]');
     const errEl = document.querySelector('[data-error="step4"]');
 
-    const allBoxes = [termsChk, privacyChk, refundChk, openaiChk, marketingChk];
+    const allBoxes = [termsChk, privacyChk, refundChk, marketingChk];
 
     function syncAll() {
       const all = allBoxes.every(function (b) { return b && b.checked; });
@@ -1414,7 +1413,7 @@
       state.consent.terms = true;
       state.consent.privacy = true;
       state.consent.refund = true;
-      state.consent.openai = Boolean(openaiChk?.checked);
+      state.consent.openai = true;
       state.consent.marketing = Boolean(marketingChk?.checked);
 
       submit.disabled = true;
@@ -1435,7 +1434,7 @@
             privacyConsent: true,
             termsConsent: true,
             refundConsent: true,
-            openaiConsent: state.consent.openai,
+            openaiConsent: true,
             signupStep: 4,
           }),
         });
@@ -1471,7 +1470,7 @@
                   consent_terms: true,
                   consent_privacy: true,
                   consent_refund: true,
-                  consent_openai: Boolean(state.consent.openai),
+                  consent_openai: true,
                   consent_marketing: Boolean(state.consent.marketing),
                   onboarded_at: new Date().toISOString(),
                   store_name: state.business.storeName,
