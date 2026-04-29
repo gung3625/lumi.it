@@ -335,10 +335,41 @@
     }
   }
 
+  // ─── 정적 명령 라우팅 (fuzzy match) ───
+  const STATIC_ROUTES = [
+    { keywords: ['상품 등록', '상품등록', '물건 등록', '물건등록', '올리기', '물건올리기', '상품올리기', '등록'], href: '/register-product' },
+    { keywords: ['주문', '주문 확인', '주문확인', '오늘 주문', '오늘주문'], href: '/orders' },
+    { keywords: ['cs', '씨에스', '문의', '상담', '고객', '반품', '환불', '인박스', 'cs 인박스', 'cs인박스'], href: '/cs-inbox' },
+    { keywords: ['마이그레이션', '옮기기', '데이터 가져오기', '데이터가져오기', '이전', '가져오기', '솔루션 이전'], href: '/migration-wizard' },
+    { keywords: ['트렌드', '트렌드 분석', '키워드', '뜨는', '뜨는 상품'], href: '/trends' },
+    { keywords: ['정산', '세무', '수익', '매출', '매출 확인'], href: '/dashboard.html#settlement' },
+    { keywords: ['처리할 일', '처리할일', '할 일', '할일', '송장', '우선순위', '태스크', 'tasks'], href: '/tasks' },
+    { keywords: ['설정', '계정', '마켓 설정', '마켓설정', '결제'], href: '/settings' },
+  ];
+
+  function staticRoute(text) {
+    const q = text.toLowerCase().replace(/\s+/g, ' ').trim();
+    for (const route of STATIC_ROUTES) {
+      for (const kw of route.keywords) {
+        if (q === kw || q.includes(kw) || kw.includes(q)) {
+          return route.href;
+        }
+      }
+    }
+    return null;
+  }
+
   // ─── 명령 전송 ───
   async function submitCommand(input) {
     const text = String(input || '').trim();
     if (!text) return;
+
+    // 1순위: 정적 키워드 매칭 → 즉시 페이지 이동 (LLM 호출 X)
+    const staticHref = staticRoute(text);
+    if (staticHref) {
+      window.location.href = staticHref;
+      return;
+    }
 
     const inputEl = $('#chatInput');
     if (inputEl) inputEl.value = '';
