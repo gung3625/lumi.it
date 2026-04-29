@@ -2202,7 +2202,25 @@ window.lumiSupa.auth.onAuthStateChange(function (event, session) {
         } else if (window.location.search && window.location.search.indexOf('code=') !== -1) {
           window.history.replaceState({}, '', window.location.pathname);
         }
-        setTimeout(routeAfterAuth, 300);
+        // /api/me로 sellerToken 동기화 후 라우팅
+        (async function () {
+          try {
+            var meRes = await fetch('/api/me', {
+              headers: { 'Authorization': 'Bearer ' + session.access_token }
+            });
+            if (meRes.ok) {
+              var me = await meRes.json();
+              if (me && me.sellerToken) {
+                localStorage.setItem('lumi_seller_jwt', me.sellerToken);
+                localStorage.setItem('lumi_seller_token', me.sellerToken);
+              }
+              if (me && me.seller) {
+                localStorage.setItem('lumi_user', JSON.stringify(me.seller));
+              }
+            }
+          } catch (_) { /* best-effort */ }
+          routeAfterAuth();
+        })();
       }
     }
   } catch (e) { console.warn('[auth] state sync', e); }

@@ -870,10 +870,28 @@
     const widget = document.getElementById('categoryWidget');
     if (!widget) return;
     try {
-      const r = await fetch('/api/category-counts', { headers: authHeaders() });
+      let r = await fetch('/api/category-counts', { headers: authHeaders() });
       if (r.status === 401) {
-        renderCategoryEmpty('로그인 후 다시 확인해 주세요');
-        return;
+        // sellerToken 재동기화 후 1회 재시도
+        renderCategoryEmpty('잠깐 데이터를 다시 불러오는 중이에요');
+        try {
+          const tok = localStorage.getItem('lumi_token');
+          if (tok) {
+            const meRes = await fetch('/api/me', { headers: { 'Authorization': 'Bearer ' + tok } });
+            if (meRes.ok) {
+              const me = await meRes.json();
+              if (me && me.sellerToken) {
+                localStorage.setItem('lumi_seller_jwt', me.sellerToken);
+                localStorage.setItem('lumi_seller_token', me.sellerToken);
+              }
+            }
+          }
+          r = await fetch('/api/category-counts', { headers: authHeaders() });
+        } catch (_) {}
+        if (r.status === 401) {
+          renderCategoryEmpty('다시 로그인이 필요해요');
+          return;
+        }
       }
       if (!r.ok) {
         renderCategoryEmpty('카테고리를 불러오지 못했어요');
