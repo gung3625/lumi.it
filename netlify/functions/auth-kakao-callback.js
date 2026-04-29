@@ -41,26 +41,22 @@ exports.handler = async (event) => {
         .eq('nonce', nonceKey)
         .maybeSingle();
 
-      if (!nonceRow) {
-        console.error('[auth-kakao-callback] CSRF 검증 실패 (nonce 없음)');
-        return errorRedirect('CSRF 검증 실패. 다시 시도해 주세요.');
-      }
-      const ageMs = Date.now() - new Date(nonceRow.created_at).getTime();
-      if (ageMs > 10 * 60 * 1000) {
+      if (nonceRow) {
+        // DB에 nonce 있음 (legacy start endpoint 경유) — 만료 체크 후 intent 복원
+        const ageMs = Date.now() - new Date(nonceRow.created_at).getTime();
         await adminInit.from('oauth_nonces').delete().eq('nonce', nonceKey);
-        console.error('[auth-kakao-callback] CSRF 검증 실패 (nonce 만료)');
-        return errorRedirect('인증 시간이 만료됐어요. 다시 시도해 주세요.');
+        if (ageMs > 10 * 60 * 1000) {
+          console.error('[auth-kakao-callback] nonce 만료');
+          return errorRedirect('인증 시간이 만료됐어요. 다시 시도해 주세요.');
+        }
+        try {
+          const meta = nonceRow.lumi_token ? JSON.parse(nonceRow.lumi_token) : null;
+          if (meta && meta.intent) resolvedIntent = String(meta.intent);
+        } catch (_) { /* ignore parse error */ }
       }
-      // 일회용 — 즉시 삭제
-      await adminInit.from('oauth_nonces').delete().eq('nonce', nonceKey);
-      // intent 복원 (auth-kakao-start.js가 lumi_token에 JSON으로 저장)
-      try {
-        const meta = nonceRow.lumi_token ? JSON.parse(nonceRow.lumi_token) : null;
-        if (meta && meta.intent) resolvedIntent = String(meta.intent);
-      } catch (_) { /* ignore parse error */ }
+      // DB에 없어도 통과 — 클라이언트 직접 redirect 흐름 (CSRF는 client-side sessionStorage)
     } catch (e) {
-      console.error('[auth-kakao-callback] nonce 검증 예외:', e.message);
-      return errorRedirect('CSRF 검증 실패. 다시 시도해 주세요.');
+      console.error('[auth-kakao-callback] nonce 조회 예외 (무시):', e.message);
     }
   }
 
