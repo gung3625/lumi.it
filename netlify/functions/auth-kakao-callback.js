@@ -224,10 +224,19 @@ exports.handler = async (event) => {
       console.error('[auth-kakao-callback] public.users upsert 실패:', e.message);
     }
 
-    // 4. Magic link 생성 → 세션 발급 (신규=가입 흐름, 기존=대시보드)
+    // 4. Magic link 생성 → 세션 발급 (신규=가입 흐름, 기존+onboarded=대시보드 직행)
     // state='signup' (레거시) 또는 nonce row의 intent='signup'이면 기존 유저도 signup 흐름
+    // 홈 깜빡임 방지: onboarded 기존 유저는 / 거치지 않고 /dashboard.html로 직접 redirect
     const fromSignup = state === 'signup' || resolvedIntent === 'signup';
-    const afterAuth = (isNewUser || fromSignup) ? 'https://lumi.it.kr/signup' : 'https://lumi.it.kr/';
+    const existingMeta = (existingUser && existingUser.user_metadata) || {};
+    const isOnboarded = existingMeta.onboarded === true ||
+      (existingMeta.business_no && existingMeta.consent_terms);
+    let afterAuth;
+    if (isNewUser || fromSignup || !isOnboarded) {
+      afterAuth = 'https://lumi.it.kr/signup';
+    } else {
+      afterAuth = 'https://lumi.it.kr/dashboard.html';
+    }
     const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
       type: 'magiclink',
       email,
