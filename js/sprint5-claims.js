@@ -30,7 +30,7 @@
   let activeSlideover = null; // 현재 열린 클레임 객체
 
   // ── 인증 ─────────────────────────────────────────────────────────────
-  function getToken() { return localStorage.getItem('lumi_seller_token') || ''; }
+  function getToken() { return (localStorage.getItem('lumi_seller_jwt') || localStorage.getItem('lumi_seller_token') || '').trim(); }
   function authFetch(url, options) {
     return fetch(url, {
       ...options,

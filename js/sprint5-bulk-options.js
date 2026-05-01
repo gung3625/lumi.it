@@ -25,7 +25,7 @@ const State = {
 
 /* ── 토큰 헬퍼 ───────────────────────────────────────────────────────── */
 function getToken() {
-  return localStorage.getItem('lumi_token') || sessionStorage.getItem('lumi_token') || '';
+  return (localStorage.getItem('lumi_seller_jwt') || localStorage.getItem('lumi_seller_token') || '').trim();
 }
 
 function authHeaders() {

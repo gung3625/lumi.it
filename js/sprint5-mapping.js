@@ -21,7 +21,7 @@
 
   // ── 인증 토큰 ─────────────────────────────────────────────────
   function getToken() {
-    return localStorage.getItem('lumi_seller_token') || '';
+    return (localStorage.getItem('lumi_seller_jwt') || localStorage.getItem('lumi_seller_token') || '').trim();
   }
 
   // ── API 공통 fetch ─────────────────────────────────────────────

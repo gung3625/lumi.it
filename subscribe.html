@@ -178,8 +178,13 @@ body.dark-mode .lumi-footer__logo{filter:invert(1) brightness(2);}
         var merged = Object.assign({}, prev, { email: u.email || prev.email, id: u.id || prev.id }, meta);
         localStorage.setItem('lumi_user', JSON.stringify(merged));
       } else if (event === 'SIGNED_OUT') {
-        localStorage.removeItem('lumi_token');
-        localStorage.removeItem('lumi_user');
+        try {
+          var keep = ['lumi_dark_mode', 'lumi_storage_pubkey_v1_cleaned'];
+          Object.keys(localStorage).forEach(function(k) {
+            if (keep.indexOf(k) !== -1) return;
+            if (k.indexOf('sb-cldsozdocxpvkbuxwqep-') === 0 || k.indexOf('lumi_') === 0 || k === 'lumi-auth') localStorage.removeItem(k);
+          });
+        } catch(_) {}
       }
     } catch(e) { /* 무시 */ }
   });

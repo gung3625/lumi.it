@@ -628,8 +628,19 @@ body.dark-mode .lumi-footer__links a{color:rgba(255,255,255,.35);}
   if (link) {
     link.addEventListener('click', function (e) {
       e.preventDefault();
-      localStorage.removeItem('lumi_seller_jwt');
-      window.location.href = '/';
+      try {
+        var keep = ['lumi_dark_mode', 'lumi_storage_pubkey_v1_cleaned'];
+        Object.keys(localStorage).forEach(function (k) {
+          if (keep.indexOf(k) !== -1) return;
+          if (k.indexOf('sb-cldsozdocxpvkbuxwqep-') === 0
+            || k.indexOf('lumi_') === 0
+            || k === 'lumi-auth') {
+            localStorage.removeItem(k);
+          }
+        });
+        sessionStorage.clear();
+      } catch (_) {}
+      window.location.replace('/?stay=1');
     });
   }
 })();
