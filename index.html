@@ -2138,11 +2138,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
 /* ---------- Supabase 클라이언트 ---------- */
 // 옛 anon key (JWT) 시절 토큰 잔재 자동 정리 (한 번만, 키 회전 후 회귀 방지)
+// lumi-auth는 현재 세션 키이므로 정리 대상에서 제외
 try {
   var STALE_FLAG = 'lumi_storage_pubkey_v1_cleaned';
   if (!localStorage.getItem(STALE_FLAG)) {
     Object.keys(localStorage).forEach(function (k) {
-      if (k.indexOf('sb-cldsozdocxpvkbuxwqep-') === 0 || k === 'lumi_token' || k === 'lumi_user' || k === 'lumi-auth') {
+      if (k.indexOf('sb-cldsozdocxpvkbuxwqep-') === 0 || k === 'lumi_token' || k === 'lumi_user') {
         try { localStorage.removeItem(k); } catch (_) {}
       }
     });
@@ -2190,6 +2191,22 @@ var routeToDashboard = routeAfterAuth;
 
 window.lumiSupa.auth.onAuthStateChange(function (event, session) {
   try {
+    if (event === 'SIGNED_OUT') {
+      // 로그아웃 시 모든 인증 관련 스토리지 정리
+      try {
+        var keep = ['lumi_dark_mode', 'lumi_storage_pubkey_v1_cleaned'];
+        Object.keys(localStorage).forEach(function (k) {
+          if (keep.indexOf(k) !== -1) return;
+          if (k.indexOf('sb-cldsozdocxpvkbuxwqep-') === 0
+            || k.indexOf('lumi_') === 0
+            || k === 'lumi-auth') {
+            localStorage.removeItem(k);
+          }
+        });
+        sessionStorage.clear();
+      } catch (_) {}
+      return;
+    }
     if (session && session.access_token) {
       localStorage.setItem('lumi_token', session.access_token);
       var u = session.user || {};

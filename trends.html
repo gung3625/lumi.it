@@ -1780,9 +1780,25 @@ async function checkAuth() {
 }
 
 // ── 로그아웃 ──
-document.getElementById('btn-logout').addEventListener('click', async () => {
-  await window.lumiSupa.auth.signOut();
-  window.location.href = '/?stay=1';
+document.getElementById('btn-logout').addEventListener('click', async function () {
+  try {
+    if (window.lumiSupa && window.lumiSupa.auth) {
+      await window.lumiSupa.auth.signOut();
+    }
+  } catch (_) {}
+  try {
+    var keep = ['lumi_dark_mode', 'lumi_storage_pubkey_v1_cleaned'];
+    Object.keys(localStorage).forEach(function (k) {
+      if (keep.indexOf(k) !== -1) return;
+      if (k.indexOf('sb-cldsozdocxpvkbuxwqep-') === 0
+        || k.indexOf('lumi_') === 0
+        || k === 'lumi-auth') {
+        localStorage.removeItem(k);
+      }
+    });
+    sessionStorage.clear();
+  } catch (_) {}
+  window.location.replace('/?stay=1');
 });
 
 // ── 매장 업종 기반 카테고리 자동 선택 ──

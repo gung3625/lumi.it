@@ -541,11 +541,12 @@ body.dark-mode .lumi-footer__copy{color:rgba(255,255,255,.2);}
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.103.3/dist/umd/supabase.min.js"></script>
   <script>
     // 옛 anon key (JWT) 시절 토큰 잔재 자동 정리 (한 번만, 키 회전 후 회귀 방지)
+    // lumi-auth는 현재 세션 키이므로 정리 대상에서 제외
     try {
       var STALE_FLAG = 'lumi_storage_pubkey_v1_cleaned';
       if (!localStorage.getItem(STALE_FLAG)) {
         Object.keys(localStorage).forEach(function (k) {
-          if (k.indexOf('sb-cldsozdocxpvkbuxwqep-') === 0 || k === 'lumi_token' || k === 'lumi_user' || k === 'lumi-auth') {
+          if (k.indexOf('sb-cldsozdocxpvkbuxwqep-') === 0 || k === 'lumi_token' || k === 'lumi_user') {
             try { localStorage.removeItem(k); } catch (_) {}
           }
         });
