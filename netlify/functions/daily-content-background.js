@@ -14,6 +14,7 @@
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { getBrandCaption } = require('./_shared/brand-prompts');
 const { generateBrandFooter } = require('./_shared/brand-footer');
+const { checkAndIncrementQuota, QuotaExceededError } = require('./_shared/openai-quota');
 
 const headers = {
   'Content-Type': 'application/json',
@@ -111,6 +112,17 @@ async function buildReservationRow({
     console.warn(`[daily-content] getBrandCaption 실패(${industry}/${contentType}):`, e.message);
     // 실패 시 industry-free 폴백
     captionText = '오늘도 좋은 하루 보내세요.';
+  }
+
+  // 서비스 전체 예산 체크 (cron 브랜드 자동 게시 — gpt-4o-mini ₩5 추정)
+  try {
+    await checkAndIncrementQuota(null, 'gpt-4o-mini', 5);
+  } catch (e) {
+    if (e instanceof QuotaExceededError) {
+      console.warn(`[daily-content] 서비스 전체 OpenAI 예산 초과 — footer 생략: ${e.message}`);
+    } else {
+      throw e;
+    }
   }
 
   let footer = '';

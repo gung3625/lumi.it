@@ -160,11 +160,105 @@
     setTimeout(() => { toast.style.opacity = '0'; }, 3000);
   }
 
+  let couriers = [];
+
+  async function loadCouriers() {
+    try {
+      const res = await fetch('/api/list-couriers');
+      const data = await res.json();
+      couriers = data.couriers || [];
+    } catch { /* ignore */ }
+  }
+
+  function injectTrackingModal(o) {
+    if (document.getElementById('detailTrackingModal')) return;
+    const modal = document.createElement('div');
+    modal.id = 'detailTrackingModal';
+    modal.hidden = true;
+    modal.style.cssText = 'position:fixed;inset:0;z-index:9000;display:flex;align-items:flex-end;';
+    modal.innerHTML = `
+      <div style="position:absolute;inset:0;background:rgba(0,0,0,.45)" id="detailTrackingBackdrop"></div>
+      <div style="position:relative;width:100%;background:var(--card-bg,#fff);border-radius:16px 16px 0 0;padding:20px 16px 32px;max-height:80vh;overflow-y:auto">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <span style="font-size:14px;font-weight:600">송장 입력</span>
+          <button id="detailTrackingClose" style="background:none;border:none;cursor:pointer;font-size:20px;color:#999;padding:4px">×</button>
+        </div>
+        <label style="display:block;font-size:13px;margin-bottom:4px">택배사</label>
+        <select id="detailCourierSelect" style="width:100%;padding:10px 12px;border:1px solid var(--border,#e0e0e0);border-radius:8px;font-size:14px;margin-bottom:12px;background:var(--input-bg,#fafafa);color:var(--text,#111)">
+          <option value="">선택해주세요</option>
+        </select>
+        <label style="display:block;font-size:13px;margin-bottom:4px">송장번호</label>
+        <input id="detailTrackingNumber" type="text" inputmode="numeric" placeholder="숫자만 입력" maxlength="30"
+          style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--border,#e0e0e0);border-radius:8px;font-size:14px;margin-bottom:16px;background:var(--input-bg,#fafafa);color:var(--text,#111)" />
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn btn--ghost btn--sm" id="detailTrackingCancelBtn">취소</button>
+          <button class="btn btn--primary btn--sm" id="detailTrackingSubmitBtn" style="background:#C8507A;border-color:#C8507A">등록</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    function closeModal() { modal.hidden = true; }
+    document.getElementById('detailTrackingClose').addEventListener('click', closeModal);
+    document.getElementById('detailTrackingCancelBtn').addEventListener('click', closeModal);
+    document.getElementById('detailTrackingBackdrop').addEventListener('click', closeModal);
+
+    document.getElementById('detailTrackingSubmitBtn').addEventListener('click', async () => {
+      const courier = document.getElementById('detailCourierSelect').value;
+      const number = document.getElementById('detailTrackingNumber').value.trim();
+      if (!courier) { alert('택배사를 선택해주세요.'); return; }
+      if (!number) { alert('송장번호를 입력해주세요.'); return; }
+      const submitBtn = document.getElementById('detailTrackingSubmitBtn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = '등록 중…';
+      try {
+        const res = await authFetch('/api/submit-tracking', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ order_id: o.id, courier_code: courier, tracking_number: number }),
+        });
+        const data = await res.json();
+        const results = data.results || [];
+        const failed = results.filter((r) => !r.success);
+        if (failed.length === 0) {
+          closeModal();
+          alert('송장을 등록했어요.');
+          load();
+        } else {
+          const r = failed[0];
+          const msg = r?.error?.title ? `${r.error.title}\n${r.error.action}` : (r?.error || '송장 전송에 실패했어요.');
+          alert(msg);
+          submitBtn.disabled = false;
+          submitBtn.textContent = '등록';
+        }
+      } catch {
+        alert('네트워크 오류예요. 잠시 후 다시 시도해주세요.');
+        submitBtn.disabled = false;
+        submitBtn.textContent = '등록';
+      }
+    });
+  }
+
+  function populateCourierSelect(selectId) {
+    const sel = document.getElementById(selectId);
+    if (!sel) return;
+    sel.innerHTML = '<option value="">선택해주세요</option>' +
+      couriers.map((c) => `<option value="${c.code}">${c.display_name}</option>`).join('');
+  }
+
   function bindActions(o) {
     const trackingBtn = document.getElementById('actionTrackingBtn');
     const returnBtn = document.getElementById('actionReturnBtn');
     trackingBtn.disabled = !(o.status === 'paid' && !o.tracking_number);
     returnBtn.disabled = !(o.status === 'returned' && !o.stock_restored);
+
+    trackingBtn.addEventListener('click', () => {
+      injectTrackingModal(o);
+      populateCourierSelect('detailCourierSelect');
+      document.getElementById('detailTrackingNumber').value = '';
+      document.getElementById('detailTrackingModal').hidden = false;
+      document.getElementById('detailTrackingNumber').focus();
+    });
 
     document.getElementById('refreshTrackingBtn').addEventListener('click', async () => {
       try {
@@ -192,5 +286,5 @@
     });
   }
 
-  document.addEventListener('DOMContentLoaded', load);
+  document.addEventListener('DOMContentLoaded', () => { loadCouriers(); load(); });
 })();

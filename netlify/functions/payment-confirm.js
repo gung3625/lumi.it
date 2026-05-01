@@ -64,33 +64,37 @@ exports.handler = async (event) => {
       return { statusCode: 200, headers: CORS, body: JSON.stringify({ success: true, message: '이미 처리된 결제입니다.' }) };
     }
 
-    // PortOne v2 결제 조회 API 검증
-    const portoneRes = await fetch(`https://api.portone.io/payments/${paymentId}`, {
-      headers: {
-        'Authorization': 'PortOne ' + PORTONE_API_SECRET,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!portoneRes.ok) {
-      console.error('[payment-confirm] PortOne 조회 실패 status:', portoneRes.status);
-      return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '결제 검증에 실패했습니다.' }) };
-    }
-
-    const payment = await portoneRes.json();
-
-    // 금액 검증
-    if (payment.amount?.total !== order.amount) {
-      console.error('[payment-confirm] 금액 불일치');
-      return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '결제 금액이 일치하지 않습니다.' }) };
-    }
-
-    // 결제 상태 확인
-    if (payment.status !== 'PAID') {
-      return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '결제가 완료되지 않았습니다.' }) };
-    }
-
     const paidAt = new Date().toISOString();
+
+    // 0원 베타 플랜 — PortOne 결제 없이 바로 활성화
+    // (향후 유료 정식 출시 시: amount > 0 분기에서 PortOne 검증 재개)
+    if (order.amount !== 0) {
+      // PortOne v2 결제 조회 API 검증
+      const portoneRes = await fetch(`https://api.portone.io/payments/${paymentId}`, {
+        headers: {
+          'Authorization': 'PortOne ' + PORTONE_API_SECRET,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!portoneRes.ok) {
+        console.error('[payment-confirm] PortOne 조회 실패 status:', portoneRes.status);
+        return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '결제 검증에 실패했습니다.' }) };
+      }
+
+      const payment = await portoneRes.json();
+
+      // 금액 검증
+      if (payment.amount?.total !== order.amount) {
+        console.error('[payment-confirm] 금액 불일치');
+        return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '결제 금액이 일치하지 않습니다.' }) };
+      }
+
+      // 결제 상태 확인
+      if (payment.status !== 'PAID') {
+        return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '결제가 완료되지 않았습니다.' }) };
+      }
+    }
 
     // 주문 상태 업데이트
     const existingRaw = (order.raw && typeof order.raw === 'object') ? order.raw : {};

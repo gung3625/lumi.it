@@ -602,9 +602,53 @@
       if (thumb) thumb.src = '';
     }
 
-    function handleFile(file) {
+    /**
+     * File 앞 12바이트를 읽어 magic bytes를 검증합니다.
+     * 허용: JPEG (FF D8 FF), PNG (89 50 4E 47), PDF (%PDF-),
+     *       WEBP (RIFF....WEBP), HEIC/HEIF (ftyp 박스 offset 4)
+     * @param {File} file
+     * @returns {Promise<boolean>}
+     */
+    function readMagicBytes(file) {
+      return new Promise(function (resolve) {
+        var blob = file.slice(0, 12);
+        var reader = new FileReader();
+        reader.onload = function (ev) {
+          var buf = new Uint8Array(ev.target.result);
+          if (buf.length < 4) { resolve(false); return; }
+          // JPEG: FF D8 FF
+          if (buf[0] === 0xFF && buf[1] === 0xD8 && buf[2] === 0xFF) {
+            resolve(true); return;
+          }
+          // PNG: 89 50 4E 47 0D 0A 1A 0A
+          if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4E && buf[3] === 0x47) {
+            resolve(true); return;
+          }
+          // PDF: %PDF-  (25 50 44 46 2D)
+          if (buf[0] === 0x25 && buf[1] === 0x50 && buf[2] === 0x44 && buf[3] === 0x46) {
+            resolve(true); return;
+          }
+          // WEBP: RIFF....WEBP (buf[8..11] = 57 45 42 50)
+          if (buf.length >= 12 &&
+              buf[0] === 0x52 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x46 &&
+              buf[8] === 0x57 && buf[9] === 0x45 && buf[10] === 0x42 && buf[11] === 0x50) {
+            resolve(true); return;
+          }
+          // HEIC/HEIF: ftyp 박스 (offset 4: 66 74 79 70)
+          if (buf.length >= 8 &&
+              buf[4] === 0x66 && buf[5] === 0x74 && buf[6] === 0x79 && buf[7] === 0x70) {
+            resolve(true); return;
+          }
+          resolve(false);
+        };
+        reader.onerror = function () { resolve(false); };
+        reader.readAsArrayBuffer(blob);
+      });
+    }
+
+    async function handleFile(file) {
       if (!file) { clearFile(); return; }
-      // MIME 검증
+      // MIME / 확장자 검증
       if (!LICENSE_ALLOWED_MIME.includes(file.type) && !/\.(jpe?g|png|heic|heif|webp|pdf)$/i.test(file.name)) {
         showToast('사진 또는 PDF만 올릴 수 있어요. (JPG·PNG·HEIC·PDF)', 'error');
         clearFile();
@@ -616,11 +660,27 @@
         clearFile();
         return;
       }
+      // Magic bytes 검증 — 확장자만 바꾼 위조 파일 차단
+      // HEIC/HEIF는 브라우저가 type='' 반환하는 경우가 많아 폴백 허용
+      var isHeic = /\.(heic|heif)$/i.test(file.name) || file.type === 'image/heic' || file.type === 'image/heif';
+      if (!isHeic) {
+        var magicOk;
+        try {
+          magicOk = await readMagicBytes(file);
+        } catch (_) {
+          magicOk = false;
+        }
+        if (!magicOk) {
+          showToast('올바른 파일 형식이 아니에요. 실제 JPG·PNG·PDF 파일을 올려주세요.', 'error');
+          clearFile();
+          return;
+        }
+      }
       showFile(file);
     }
 
     licenseInput.addEventListener('change', function (e) {
-      const file = e.target.files && e.target.files[0];
+      var file = e.target.files && e.target.files[0];
       handleFile(file);
     });
 
@@ -1505,6 +1565,8 @@
             }
           } catch (_) {}
           showDone();
+          // onboarded 캐시 무효화 — 이후 보호 페이지 진입 시 재확인
+          try { if (window.lumiAuthGuard) window.lumiAuthGuard.invalidateOnboardedCache(); } catch (_) {}
           // 셀러 이름 동적 표시
           const nameEl = document.querySelector('[data-done-name]');
           if (nameEl) nameEl.textContent = meRes.data.seller.ownerName + '님';

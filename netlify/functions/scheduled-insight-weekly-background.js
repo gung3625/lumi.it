@@ -14,6 +14,7 @@ const crypto = require('crypto');
 const { runGuarded } = require('./_shared/cron-guard');
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { buildReport } = require('./_shared/insight-builder');
+const { checkAndIncrementQuota, QuotaExceededError } = require('./_shared/openai-quota');
 
 const HEADERS = {
   'Content-Type': 'application/json',
@@ -118,13 +119,18 @@ async function fetchActiveSellers(supa) {
 }
 
 async function mainHandler(event, ctx) {
-  const secret = (event.headers && (event.headers['x-lumi-secret'] || event.headers['X-Lumi-Secret'])) || '';
-  if (!process.env.LUMI_SECRET || secret !== process.env.LUMI_SECRET) {
-    return {
-      statusCode: 401,
-      headers: HEADERS,
-      body: JSON.stringify({ error: '인증 실패' }),
-    };
+  // Netlify cron 호출은 event.httpMethod가 없음 → 인증 스킵
+  // 외부 HTTP 호출만 LUMI_SECRET 검증
+  const isScheduled = !event || !event.httpMethod;
+  if (!isScheduled) {
+    const secret = (event.headers && (event.headers['x-lumi-secret'] || event.headers['X-Lumi-Secret'])) || '';
+    if (!process.env.LUMI_SECRET || secret !== process.env.LUMI_SECRET) {
+      return {
+        statusCode: 401,
+        headers: HEADERS,
+        body: JSON.stringify({ error: '인증 실패' }),
+      };
+    }
   }
 
   const supa = getAdminClient();
@@ -137,6 +143,18 @@ async function mainHandler(event, ctx) {
     try {
       // notification_opt_in이 명시 false인 셀러는 발송 스킵 (보고서는 생성)
       const optIn = seller.notification_opt_in !== false;
+
+      // 셀러별 OpenAI 비용 한도 체크 (gpt-4o ₩50/호출)
+      try {
+        await checkAndIncrementQuota(seller.id, 'gpt-4o');
+      } catch (e) {
+        if (e instanceof QuotaExceededError) {
+          console.log(`[insight-weekly] quota exceeded seller=${seller.id}: ${e.message}`);
+          result.skipped_cost++;
+          continue;
+        }
+        throw e;
+      }
 
       const r = await buildReport({
         admin: supa,

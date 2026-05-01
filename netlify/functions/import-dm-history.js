@@ -5,6 +5,7 @@ const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
 const { isAdminEmail, isAdminUserId } = require('./_shared/admin');
 const { corsHeaders, getOrigin } = require('./_shared/auth');
+const { checkAndIncrementQuota, QuotaExceededError } = require('./_shared/openai-quota');
 
 const GRAPH_VERSION = 'v25.0';
 const MAX_CONVERSATIONS = 25;
@@ -282,7 +283,18 @@ exports.handler = async (event) => {
       };
     }
 
-    // 7. gpt-4o-mini 병렬 분류/마스킹 (실패 스킵)
+    // 7. Quota 검증 (gpt-4o-mini ₩5 × 페어 수 추정)
+    try {
+      const estCost = Math.min(allPairs.length, MAX_SAMPLES) * 5;
+      await checkAndIncrementQuota(user.id, 'gpt-4o-mini', estCost);
+    } catch (e) {
+      if (e instanceof QuotaExceededError) {
+        return { statusCode: 429, headers: CORS, body: JSON.stringify({ error: e.message }) };
+      }
+      throw e;
+    }
+
+    // gpt-4o-mini 병렬 분류/마스킹 (실패 스킵)
     const classified = await classifyInBatches(allPairs, OPENAI_CONCURRENCY);
 
     if (classified.length === 0) {

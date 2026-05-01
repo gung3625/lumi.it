@@ -4,7 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>30명 한정 신청 — lumi</title>
-<meta name="description" content="30명 한정 우대 가격. 가입비 0원, 카드 등록 X. 7일 무료 + 추천 28일 무료. 베타 신청 시 안내.">
+<meta name="description" content="30명 한정 베타. 7일 무료 체험. 쿠팡·네이버·토스쇼핑 통합 관리.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="루미">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:title" content="베타 신청 — 루미">
+<meta property="og:description" content="30명 한정 베타. 7일 무료 체험. 쿠팡·네이버·토스쇼핑 통합 관리.">
+<meta property="og:image" content="https://lumi.it.kr/assets/logo-lockup.png">
+<meta property="og:url" content="https://lumi.it.kr/subscribe">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="베타 신청 — 루미">
+<meta name="twitter:description" content="30명 한정 베타. 7일 무료 체험.">
+<meta name="twitter:image" content="https://lumi.it.kr/assets/logo-lockup.png">
 <link rel="stylesheet" href="/css/brand-tokens.css" />
 <!-- Google Tag Manager -->
 <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
@@ -103,9 +114,11 @@ body.dark-mode .cta-note{color:rgba(255,255,255,.35);}
 
 /* 법적 고지 */
 .legal{max-width:720px;margin:40px auto 0;padding:24px;font-size:12px;color:#86868b;line-height:2;border-top:1px solid rgba(0,0,0,.08);}
-body.dark-mode .legal{color:rgba(255,255,255,.3);border-top-color:rgba(255,255,255,.08);}
+body.dark-mode .legal{color:rgba(255,255,255,.45);border-top-color:rgba(255,255,255,.08);}
 .legal b{color:#1d1d1f;font-size:13px;}
-body.dark-mode .legal b{color:#f0f2f8 !important;}
+body.dark-mode .legal b{color:#f0f2f8;}
+.legal a{color:#C8507A;}
+body.dark-mode .legal a{color:#FF8FAB;}
 
 /* 모바일 최적화 */
 @media(max-width:480px){
@@ -135,6 +148,8 @@ body.dark-mode #fab-dark{background:rgba(255,255,255,.1);}
 body.has-tabbar #fab-dark{bottom:calc(72px + env(safe-area-inset-bottom,0px)) !important;}
 
 /* ── Lumi 법적 고지 Footer ─────────────────── */
+.lumi-footer{border-top:1px solid rgba(0,0,0,.08);padding:28px 24px 36px;text-align:center;font-size:12px;color:#86868b;line-height:1.8;}
+body.dark-mode .lumi-footer{border-top-color:rgba(255,255,255,.08);color:rgba(255,255,255,.3);}
 .lumi-footer__info p{margin:0 0 2px;font-size:12px;}
 .lumi-footer__links{display:flex;flex-wrap:wrap;gap:8px 14px;justify-content:center;margin:10px 0 6px;}
 .lumi-footer__links a{font-size:12px;color:#6e6e73;text-decoration:none;}
@@ -143,6 +158,7 @@ body.dark-mode .lumi-footer__links a{color:rgba(255,255,255,.35);}
 .lumi-footer__copy{font-size:11px;margin-top:6px!important;}
 .lumi-footer__logo{height:28px;width:auto;display:block;margin:0 auto 8px;}
 body.dark-mode .lumi-footer__logo{filter:invert(1) brightness(2);}
+@media(max-width:768px){.lumi-footer{padding:22px 16px 30px;}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.103.3/dist/umd/supabase.min.js"></script>
 <script>
@@ -322,30 +338,84 @@ async function startBeta() {
   btn.disabled = true;
   btn.textContent = '신청 중...';
 
-  // 베타는 가맹 심사 완료 전까지 결제 X — 무료 체험만 활성화
-  // (결제 인프라는 보존, 가맹 후 활성)
   try {
-    // 사용자 정보 조회 후 베타 활성 처리
-    var userRaw = localStorage.getItem('lumi_user');
-    var user = {};
-    try { if(userRaw) user = JSON.parse(userRaw); } catch(e) {}
-
-    // 베타 신청 = trial 플래그 활성 (서버 측 처리)
-    var resp = await fetch('/.netlify/functions/payment-prepare', {
+    // 1단계: payment-prepare — orderId 발급 + orders 사전 등록
+    var prepareRes = await fetch('/.netlify/functions/payment-prepare', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
       body: JSON.stringify({ planType: 'beta' })
-    }).catch(function(){ return null; });
+    });
+    var prepareData = await prepareRes.json();
 
-    // 결제 인프라가 비활성이어도 베타 무료 체험은 즉시 시작
-    user.plan = 'beta';
-    user.beta = true;
-    localStorage.setItem('lumi_user', JSON.stringify(user));
+    if (!prepareRes.ok || !prepareData.success) {
+      throw new Error(prepareData.error || '신청 준비 실패');
+    }
 
-    showToast('신청이 완료됐어요!');
-    setTimeout(function(){ location.href = '/'; }, 2000);
+    if (prepareData.skipPayment) {
+      // 2a단계 (0원 베타): PortOne 스킵 — payment-confirm 직접 호출
+      // paymentId = orderId (PortOne 거치지 않았으므로 동일값 전달)
+      var confirmRes = await fetch('/.netlify/functions/payment-confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ paymentId: prepareData.orderId, orderId: prepareData.orderId })
+      });
+      var confirmData = await confirmRes.json();
+
+      if (!confirmRes.ok || !confirmData.success) {
+        throw new Error(confirmData.error || '신청 확인 실패');
+      }
+
+      // localStorage 동기화
+      var userRaw = localStorage.getItem('lumi_user');
+      var user = {};
+      try { if (userRaw) user = JSON.parse(userRaw); } catch(e) {}
+      user.plan = 'beta';
+      user.beta = true;
+      localStorage.setItem('lumi_user', JSON.stringify(user));
+
+      showToast('신청이 완료됐어요!');
+      setTimeout(function(){ location.href = '/dashboard.html'; }, 2000);
+
+    } else {
+      // 2b단계 (향후 유료 정식): PortOne 결제 흐름
+      // amount > 0 일 때 이 분기가 실행됨
+      var portoneResult = await PortOne.requestPayment({
+        storeId: 'store-0ea18f32-f851-434a-b18a-e8d38c8aaa91',
+        paymentId: prepareData.orderId,
+        orderName: prepareData.orderName,
+        totalAmount: prepareData.amount,
+        currency: 'KRW',
+        channelKey: 'channel-key-e1af2b44-d4b2-4a30-9a08-ec574374b693',
+        customer: { email: prepareData.email, fullName: prepareData.name },
+      });
+
+      if (portoneResult.code || !portoneResult.paymentId) {
+        throw new Error(portoneResult.message || '결제가 취소됐어요');
+      }
+
+      var confirmRes2 = await fetch('/.netlify/functions/payment-confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ paymentId: portoneResult.paymentId, orderId: prepareData.orderId })
+      });
+      var confirmData2 = await confirmRes2.json();
+
+      if (!confirmRes2.ok || !confirmData2.success) {
+        throw new Error(confirmData2.error || '결제 확인 실패');
+      }
+
+      var userRaw2 = localStorage.getItem('lumi_user');
+      var user2 = {};
+      try { if (userRaw2) user2 = JSON.parse(userRaw2); } catch(e) {}
+      user2.plan = confirmData2.plan || 'beta';
+      localStorage.setItem('lumi_user', JSON.stringify(user2));
+
+      showToast('결제가 완료됐어요!');
+      setTimeout(function(){ location.href = '/dashboard.html'; }, 2000);
+    }
+
   } catch(e) {
-    showToast('신청 중 오류가 발생했어요');
+    showToast(e.message || '신청 중 오류가 발생했어요');
     btn.disabled = false;
     btn.textContent = '무료 체험 시작하기';
   }

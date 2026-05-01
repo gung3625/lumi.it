@@ -6,11 +6,9 @@ const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
 
 
-// 플랜별 금액 (현 요금제: 스탠다드/프로/비즈니스)
+// 플랜별 금액 (베타 단일 플랜 · amount 0 = PortOne 결제 스킵)
 const PLANS = {
-  standard: { amount: 19900, name: 'lumi 스탠다드', durationDays: 31 },
-  pro:      { amount: 29900, name: 'lumi 프로',     durationDays: 31 },
-  business: { amount: 39900, name: 'lumi 비즈니스', durationDays: 31 },
+  beta: { amount: 0, name: 'lumi 베타', durationDays: 7 },
 };
 
 exports.handler = async (event) => {
@@ -100,6 +98,8 @@ exports.handler = async (event) => {
         orderName: plan.name,
         email: userEmail,
         name: userName,
+        // amount가 0이면 PortOne 결제 호출 없이 바로 confirm 단계로 진행
+        skipPayment: plan.amount === 0,
       }),
     };
   } catch (err) {

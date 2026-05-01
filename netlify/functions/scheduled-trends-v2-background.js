@@ -13,6 +13,7 @@
 
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { runGuarded } = require('./_shared/cron-guard');
+const { checkAndIncrementQuota, QuotaExceededError } = require('./_shared/openai-quota');
 const https = require('https');
 
 // ─────────────────────────────────────────────
@@ -1837,6 +1838,17 @@ exports.handler = runGuarded({
     const COLLECT_CATEGORIES = ['cafe', 'food', 'beauty', 'hair', 'nail', 'flower', 'fashion', 'fitness', 'pet'];
     const updatedAt = new Date().toISOString();
     const collectedDate = updatedAt.slice(0, 10);
+
+    // 서비스 전체 예산 체크 (cron — 9개 카테고리 × ₩5 = ₩45 추정)
+    try {
+      await checkAndIncrementQuota(null, 'gpt-4o-mini', categories.length * 5);
+    } catch (e) {
+      if (e instanceof QuotaExceededError) {
+        console.warn('[trends-v2] 서비스 전체 OpenAI 예산 초과 — cron 중단:', e.message);
+        return { statusCode: 429, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify({ error: e.message, skipped: true }) };
+      }
+      throw e;
+    }
 
     // ─── 1단계: 수집 ───────────────────────────
     await ctx.stage('collecting', { cats: categories.length });

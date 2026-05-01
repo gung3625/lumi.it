@@ -84,14 +84,18 @@ async function collectCategoryMetrics(supa, lumiKey, mapping, ctx) {
 }
 
 async function mainHandler(event, ctx) {
-  // 인증
-  const secret = (event.headers && (event.headers['x-lumi-secret'] || event.headers['X-Lumi-Secret'])) || '';
-  if (!process.env.LUMI_SECRET || secret !== process.env.LUMI_SECRET) {
-    return {
-      statusCode: 401,
-      headers: HEADERS,
-      body: JSON.stringify({ error: '인증 실패' }),
-    };
+  // Netlify cron 호출은 event.httpMethod가 없음 → 인증 스킵
+  // 외부 HTTP 호출만 LUMI_SECRET 검증
+  const isScheduled = !event || !event.httpMethod;
+  if (!isScheduled) {
+    const secret = (event.headers && (event.headers['x-lumi-secret'] || event.headers['X-Lumi-Secret'])) || '';
+    if (!process.env.LUMI_SECRET || secret !== process.env.LUMI_SECRET) {
+      return {
+        statusCode: 401,
+        headers: HEADERS,
+        body: JSON.stringify({ error: '인증 실패' }),
+      };
+    }
   }
 
   await ctx.stage('init', { totalCategories: Object.keys(LUMI_TO_NAVER_CATEGORY).length });

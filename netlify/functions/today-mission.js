@@ -3,12 +3,9 @@
 // 6시간 캐시 (per user) — 과도한 호출 방지
 const https = require('https');
 const { getAdminClient } = require('./_shared/supabase-admin');
-
-const CORS = {
-  'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-};
+const { verifySellerToken, extractBearerToken } = require('./_shared/seller-jwt');
+const { corsHeaders, getOrigin } = require('./_shared/auth');
+const { checkAndIncrementQuota, QuotaExceededError } = require('./_shared/openai-quota');
 
 const CATEGORY_KR = {
   cafe: '카페·음료', food: '음식·외식', beauty: '뷰티·스킨케어',
@@ -126,31 +123,30 @@ function fallbackMission({ categoryKR, dayName, season }) {
 }
 
 exports.handler = async (event) => {
+  const CORS = corsHeaders(getOrigin(event));
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
+
+  // 인증 강제 — 미인증 요청 차단 (OpenAI 비용 어뷰징 방지)
+  const token = extractBearerToken(event);
+  const { payload, error: jwtErr } = verifySellerToken(token);
+  if (jwtErr || !payload?.seller_id) {
+    return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증이 필요합니다.' }) };
+  }
+  const userId = payload.seller_id;
 
   try {
     const supa = getAdminClient();
-    const auth = (event.headers.authorization || event.headers.Authorization || '').replace(/^Bearer\s+/i, '');
-    let userId = null;
-    if (auth) {
-      try {
-        const { data } = await supa.auth.getUser(auth);
-        userId = data?.user?.id || null;
-      } catch (_) {}
-    }
 
     // 사용자 업종 조회
     let category = 'cafe';
-    if (userId) {
-      try {
-        const { data } = await supa.from('users').select('business_category, store_category').eq('id', userId).maybeSingle();
-        const c = data?.business_category || data?.store_category;
-        if (c && CATEGORY_KR[c]) category = c;
-      } catch (_) {}
-    }
+    try {
+      const { data } = await supa.from('users').select('business_category, store_category').eq('id', userId).maybeSingle();
+      const c = data?.business_category || data?.store_category;
+      if (c && CATEGORY_KR[c]) category = c;
+    } catch (_) {}
 
     // 캐시 조회 (6시간)
-    const cacheKey = `today-mission:${userId || 'anon'}:${category}`;
+    const cacheKey = `today-mission:${userId}:${category}`;
     try {
       const { data } = await supa.from('trends').select('keywords, collected_at').eq('category', cacheKey).maybeSingle();
       if (data?.keywords?.mission && data.collected_at) {
@@ -164,6 +160,17 @@ exports.handler = async (event) => {
     const { season, dayName } = getSeasonAndDay();
     const categoryKR = CATEGORY_KR[category] || '일반';
     const trends = await fetchTopTrends(supa, category);
+
+    // Quota 검증 (gpt-4o-mini ₩5/호출)
+    try {
+      await checkAndIncrementQuota(userId, 'gpt-4o-mini');
+    } catch (e) {
+      if (e instanceof QuotaExceededError) {
+        const CORS2 = corsHeaders(getOrigin(event));
+        return { statusCode: 429, headers: CORS2, body: JSON.stringify({ error: e.message }) };
+      }
+      throw e;
+    }
 
     const prompt = buildPrompt({ categoryKR, season, dayName, trends });
     const text = await callGPT(prompt);

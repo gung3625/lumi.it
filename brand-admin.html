@@ -5,6 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>브랜드 자동화 관리 — lumi</title>
 <link rel="stylesheet" href="/css/brand-tokens.css" />
+<!-- Phase 1: 인증 게이트 — 토큰 없으면 페이지 콘텐츠 노출 전 즉시 리다이렉트 -->
+<!-- TODO Phase 2: 이 블록은 유지, admin 권한 확장 시 redirect 목적지만 변경 -->
+<script>
+(function(){
+  var token = localStorage.getItem('lumi_token') || sessionStorage.getItem('lumi_token');
+  if (!token) { document.documentElement.style.visibility = 'hidden'; window.location.replace('/'); }
+  else { document.documentElement.style.visibility = 'hidden'; } /* 인증 확인 전까지 숨김, 성공 시 JS에서 visible */
+})();
+</script>
 <!-- Google Tag Manager -->
 <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -348,13 +357,14 @@ document.getElementById('modal').onclick = function(e) { if (e.target === this) 
   fetch('/api/admin-auth-check', { method: 'POST', headers: authHeaders() })
     .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
     .then(function(res) {
-      if (!res.ok || !res.data || !res.data.is_admin) { window.location = '/'; return; }
+      if (!res.ok || !res.data || !res.data.is_admin) { window.location.replace('/'); return; }
+      document.documentElement.style.visibility = 'visible'; /* 인증 통과 후 콘텐츠 노출 */
       var loading = document.getElementById('admin-loading');
       if (loading) loading.style.display = 'none';
       loadLibrary();
       loadTesters();
     })
-    .catch(function() { window.location = '/'; });
+    .catch(function() { window.location.replace('/'); });
 })();
 
 // ── 라이브러리 로드

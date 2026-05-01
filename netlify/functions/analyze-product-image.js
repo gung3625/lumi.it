@@ -12,6 +12,7 @@
 const fetch = require('node-fetch');
 const { verifySellerToken, extractBearerToken } = require('./_shared/seller-jwt');
 const { corsHeaders, getOrigin } = require('./_shared/auth');
+const { checkAndIncrementQuota, QuotaExceededError } = require('./_shared/openai-quota');
 const { fromAiResponse, validateLumiProduct } = require('./_shared/market-adapters/lumi-product-schema');
 const { checkPolicyWords } = require('./_shared/policy-words');
 const { getCategorySchema, getRequiredItems } = require('./_shared/info-disclosure-schema');
@@ -296,6 +297,16 @@ exports.handler = async (event) => {
     aiResult = { ok: true, data: { ...MOCK_RESPONSE }, model: 'mock' };
     usedModel = 'mock';
   } else {
+    // Quota 검증 (gpt-4o-mini ₩5/호출)
+    try {
+      await checkAndIncrementQuota(payload.seller_id, 'gpt-4o-mini');
+    } catch (e) {
+      if (e instanceof QuotaExceededError) {
+        const CORS = corsHeaders(getOrigin(event));
+        return { statusCode: 429, headers: CORS, body: JSON.stringify({ error: e.message }) };
+      }
+      throw e;
+    }
     // 정보고시 카테고리는 1차 호출 전에 미리 알 수 없으므로, 첫 응답에서 category를 확인 후 프롬프트에 항목 주입
     // 1차: gpt-4o-mini — 모든 카테고리 공통 항목 없이 카테고리 분류만 먼저 받기 어려우므로,
     // 대신 SYSTEM_PROMPT의 placeholder를 빈 상태로 보내 카테고리 분류 결과를 받은 뒤 처리

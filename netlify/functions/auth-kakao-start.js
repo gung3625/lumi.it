@@ -6,7 +6,7 @@
 const crypto = require('crypto');
 const { getAdminClient } = require('./_shared/supabase-admin');
 
-const KAKAO_CLIENT_ID = process.env.KAKAO_CLIENT_ID || '161f7b8767d792c3fabde651653ac6b3';
+const KAKAO_CLIENT_ID = process.env.KAKAO_CLIENT_ID;
 const REDIRECT_URI = 'https://lumi.it.kr/api/auth/kakao/callback';
 const SCOPE = 'account_email,phone_number';
 
@@ -20,6 +20,11 @@ function errorRedirect(message) {
 }
 
 exports.handler = async (event) => {
+  if (!KAKAO_CLIENT_ID) {
+    console.error('[auth-kakao-start] KAKAO_CLIENT_ID env var missing');
+    return errorRedirect('카카오 로그인 설정 오류');
+  }
+
   try {
     const params = event.queryStringParameters || {};
     const intent = params.intent === 'signup' ? 'signup' : 'login';

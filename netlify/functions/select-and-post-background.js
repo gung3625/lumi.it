@@ -323,30 +323,6 @@ exports.handler = async (event) => {
     let selectedCaption = Array.isArray(captions) ? captions[captionIndex] : null;
     if (!selectedCaption) { console.error('[select-and-post] 캡션 없음'); return; }
 
-    // 링크인바이오 자동 삽입 — feat_toggles.linkinbio=true + link_pages.slug 존재 시
-    try {
-      const { data: userRow } = await supabase
-        .from('users')
-        .select('feat_toggles')
-        .eq('id', reservation.user_id)
-        .maybeSingle();
-      const ft = (userRow && userRow.feat_toggles) || {};
-      if (ft.linkinbio === true) {
-        const { data: linkPageRow } = await supabase
-          .from('link_pages')
-          .select('slug')
-          .eq('user_id', reservation.user_id)
-          .maybeSingle();
-        const slug = linkPageRow && linkPageRow.slug;
-        if (slug && !selectedCaption.includes('lumi.it.kr/p/')) {
-          selectedCaption = selectedCaption + '\n\nhttps://lumi.it.kr/p/' + slug;
-          console.log('[select-and-post] 링크인바이오 URL 삽입 완료');
-        }
-      }
-    } catch (libErr) {
-      console.warn('[select-and-post] 링크인바이오 삽입 스킵:', libErr.message);
-    }
-
     const imageUrls = Array.isArray(reservation.image_urls) ? reservation.image_urls : [];
     const mediaType = reservation.media_type || 'IMAGE';
     if (mediaType === 'REELS') {

@@ -1559,6 +1559,12 @@ body.dark-mode .lumi-footer__copy{color:rgba(255,255,255,.2);}
      JAVASCRIPT
 ═══════════════════════════════════════════════ -->
 <script>
+// ── XSS 방어 ──
+function escapeHtml(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
 // ── Supabase 초기화 ──
 const SUPA_URL = 'https://cldsozdocxpvkbuxwqep.supabase.co';
 const SUPA_KEY = 'sb_publishable_WjWg5o05Y7lhib674Cr_fw_0mpY-ccG';
@@ -1655,12 +1661,19 @@ function updateFabIcon() {
 }
 document.getElementById('fab-dark').addEventListener('click', toggleDark);
 
-// ── 인증 체크 ──
+// ── 인증 체크 (세션 + 사업자 인증 완료 확인) ──
 async function checkAuth() {
   try {
     const { data: { session } } = await window.lumiSupa.auth.getSession();
     if (!session) {
       window.location.href = '/?stay=1';
+      return false;
+    }
+    // 사업자 인증 미완료 차단
+    const meta = (session.user && session.user.user_metadata) || {};
+    const isOnboarded = meta.onboarded === true || (meta.business_no && meta.consent_terms);
+    if (!isOnboarded) {
+      window.location.replace('/signup');
       return false;
     }
     state.userId = session.user.id;
@@ -1830,14 +1843,14 @@ function renderHero() {
       : i === 1 ? 'hero-card hero-card-sub' : 'hero-card hero-card-sub3';
 
     return `
-      <div class="${classes}" data-kw='${JSON.stringify(kw).replace(/'/g, "&#39;")}' tabindex="0" role="button" aria-label="${kw.keyword} 상세 보기">
+      <div class="${classes}" data-kw='${JSON.stringify(kw).replace(/'/g, "&#39;")}' tabindex="0" role="button" aria-label="${escapeHtml(kw.keyword)} 상세 보기">
         <div class="hero-card-rank">#${i + 1}</div>
-        <div class="hero-card-keyword">${kw.keyword}</div>
+        <div class="hero-card-keyword">${escapeHtml(kw.keyword)}</div>
         ${velLabel ? `<div class="hero-card-velocity${isHot ? ' hot' : ''}">
           <i data-lucide="${isHot ? 'flame' : 'trending-up'}" style="width:11px;height:11px;"></i>
           ${velLabel}
         </div>` : ''}
-        <div class="hero-card-narrative">${kw.narrative || '트렌드 분석 데이터를 불러오는 중입니다.'}</div>
+        <div class="hero-card-narrative">${escapeHtml(kw.narrative || '트렌드 분석 데이터를 불러오는 중입니다.')}</div>
         <div class="hero-card-footer">
           ${kw.isNew && kw.isNewConfidence === 'high' ? '<span class="new-badge-high">신조어</span>' : (kw.isNew ? '<span class="new-badge">NEW</span>' : '')}
         </div>
@@ -1912,13 +1925,13 @@ function renderGrid(kws) {
     const pulseClass = isRecent ? ' pulse-green' : '';
 
     return `
-      <div class="kw-card${pulseClass}" data-kw='${JSON.stringify(kw).replace(/'/g, "&#39;")}' tabindex="0" role="button" aria-label="${kw.keyword} 상세 보기">
+      <div class="kw-card${pulseClass}" data-kw='${JSON.stringify(kw).replace(/'/g, "&#39;")}' tabindex="0" role="button" aria-label="${escapeHtml(kw.keyword)} 상세 보기">
         <div class="kw-card-top">
           <span class="kw-rank">#${(kw.rank || i + 1)}</span>
           ${rankChangeHtml}
           <span class="tier-badge ${kw.signalTier === 'real' ? 'tier-real' : 'tier-weak'}" style="margin-left:auto;">${kw.signalTier === 'real' ? 'REAL' : 'WEAK'}</span>
         </div>
-        <div class="kw-keyword">${kw.keyword}</div>
+        <div class="kw-keyword">${escapeHtml(kw.keyword)}</div>
         <div class="kw-meta">
           ${velDisplay ? `<span class="kw-velocity${isHot ? ' hot' : ''}">
             <i data-lucide="${isHot ? 'flame' : 'trending-up'}" style="width:10px;height:10px;"></i>
@@ -1926,7 +1939,7 @@ function renderGrid(kws) {
           </span>` : ''}
           ${kw.isNew && kw.isNewConfidence === 'high' ? '<span class="new-badge-high">신조어</span>' : ''}
         </div>
-        ${kw.narrative ? `<div class="kw-narrative">${kw.narrative}</div>` : ''}
+        ${kw.narrative ? `<div class="kw-narrative">${escapeHtml(kw.narrative)}</div>` : ''}
         <div class="kw-feedback" data-kw="${encodeURIComponent(kw.keyword)}" data-cat="${state.category}">
           <button class="kw-fb-btn btn-like${kw._fbRating === 1 ? ' active-like' : ''}" data-rating="1" title="유용해요" ${!state.userId ? 'disabled' : ''}>
             <i data-lucide="thumbs-up" style="width:10px;height:10px;"></i>
@@ -2088,13 +2101,13 @@ function renderRightPanel() {
       const isHot = kw.velocityPct > 100;
       return `
         <div class="panel-mini-card" data-kw='${JSON.stringify(kw).replace(/'/g, "&#39;")}'>
-          <div class="panel-mini-kw">${kw.keyword}</div>
+          <div class="panel-mini-kw">${escapeHtml(kw.keyword)}</div>
           <div class="panel-mini-meta">
             <span class="panel-mini-velocity${isHot ? ' hot' : ''}">
               <i data-lucide="${isHot ? 'flame' : 'trending-up'}" style="width:10px;height:10px;"></i>
               +${Math.round(kw.velocityPct)}%
             </span>
-            <span>${axisLabel(kw.axis || '')}</span>
+            <span>${escapeHtml(axisLabel(kw.axis || ''))}</span>
           </div>
         </div>`;
     }).join('');
@@ -2113,10 +2126,10 @@ function renderRightPanel() {
     risingEl.innerHTML = state.risingList.slice(0, 5).map(r => `
       <div class="panel-rising-card">
         <div class="panel-rising-header">
-          <span class="panel-rising-kw">${r.keyword}</span>
-          <span class="panel-rising-conf">${r.confidence}%</span>
+          <span class="panel-rising-kw">${escapeHtml(r.keyword)}</span>
+          <span class="panel-rising-conf">${escapeHtml(r.confidence)}%</span>
         </div>
-        <div class="panel-rising-reason">${r.reason || ''}</div>
+        <div class="panel-rising-reason">${escapeHtml(r.reason || '')}</div>
       </div>`).join('');
   } else {
     risingEl.innerHTML = `<div style="font-size:12px;color:var(--text-tertiary);">예측 데이터 없음</div>`;
@@ -2130,9 +2143,9 @@ function renderRightPanel() {
     newSection.style.display = '';
     newEl.innerHTML = newKws.map(kw => `
       <div class="panel-mini-card" data-kw='${JSON.stringify(kw).replace(/'/g, "&#39;")}'>
-        <div class="panel-mini-kw">${kw.keyword} <span class="new-badge" style="font-size:9px;">NEW</span></div>
+        <div class="panel-mini-kw">${escapeHtml(kw.keyword)} <span class="new-badge" style="font-size:9px;">NEW</span></div>
         <div class="panel-mini-meta">
-          <span style="color:var(--text-tertiary);">${axisLabel(kw.axis || '')} · 신규 등장</span>
+          <span style="color:var(--text-tertiary);">${escapeHtml(axisLabel(kw.axis || ''))} · 신규 등장</span>
         </div>
       </div>`).join('');
     newEl.querySelectorAll('.panel-mini-card').forEach(card => {
@@ -2203,13 +2216,13 @@ function openModal(kw) {
   bodyEl.innerHTML = `
     <div>
       <div class="modal-col-label">왜 뜨는가</div>
-      <div class="modal-narrative-text">${kw.narrative || '이 키워드에 대한 트렌드 분석 내러티브가 아직 생성되지 않았습니다. 다음 업데이트에서 확인하세요.'}</div>
+      <div class="modal-narrative-text">${escapeHtml(kw.narrative || '이 키워드에 대한 트렌드 분석 내러티브가 아직 생성되지 않았습니다. 다음 업데이트에서 확인하세요.')}</div>
       ${kw.origin ? `
         <div class="modal-origin-box">
           <div class="modal-origin-label">트렌드 발원</div>
-          ${kw.origin.firstSeenAt ? `<div><strong>최초 감지</strong>: ${new Date(kw.origin.firstSeenAt).toLocaleDateString('ko-KR')}</div>` : ''}
-          ${kw.origin.sourceType ? `<div><strong>소스</strong>: ${kw.origin.sourceType}</div>` : ''}
-          ${kw.origin.mediaTitle ? `<div><strong>미디어</strong>: ${kw.origin.mediaTitle}</div>` : ''}
+          ${kw.origin.firstSeenAt ? `<div><strong>최초 감지</strong>: ${escapeHtml(new Date(kw.origin.firstSeenAt).toLocaleDateString('ko-KR'))}</div>` : ''}
+          ${kw.origin.sourceType ? `<div><strong>소스</strong>: ${escapeHtml(kw.origin.sourceType)}</div>` : ''}
+          ${kw.origin.mediaTitle ? `<div><strong>미디어</strong>: ${escapeHtml(kw.origin.mediaTitle)}</div>` : ''}
         </div>` : ''}
     </div>
     <div>
@@ -2218,7 +2231,7 @@ function openModal(kw) {
         <div class="modal-related-list">
           ${related.map(r => `
             <div class="modal-related-kw" data-kw='${JSON.stringify(r).replace(/'/g, "&#39;")}'>
-              ${r.keyword}
+              ${escapeHtml(r.keyword)}
               ${r.velocityPct ? `<span style="font-size:11px;font-weight:500;color:var(--green);margin-left:8px;">+${Math.round(r.velocityPct)}%</span>` : ''}
             </div>`).join('')}
         </div>` : `<div style="font-size:13px;color:var(--text-tertiary);">같은 축의 연관 키워드가 없어요</div>`}
@@ -2276,14 +2289,14 @@ function renderSearchResults(query) {
     : all.slice(0, 15);
 
   if (!filtered.length) {
-    searchResults.innerHTML = `<div class="search-empty">"${query}"에 대한 키워드가 없어요</div>`;
+    searchResults.innerHTML = `<div class="search-empty">"${escapeHtml(query)}"에 대한 키워드가 없어요</div>`;
     return;
   }
   searchResults.innerHTML = filtered.slice(0, 20).map(kw => `
     <div class="search-result-item" data-kw='${JSON.stringify(kw).replace(/'/g, "&#39;")}'>
       <div>
-        <div class="search-result-kw">${kw.keyword}</div>
-        <div class="search-result-cat">${axisLabel(kw.axis || '')} · ${kw.velocityPct ? '+' + Math.round(kw.velocityPct) + '%' : '─'}</div>
+        <div class="search-result-kw">${escapeHtml(kw.keyword)}</div>
+        <div class="search-result-cat">${escapeHtml(axisLabel(kw.axis || ''))} · ${kw.velocityPct ? '+' + Math.round(kw.velocityPct) + '%' : '─'}</div>
       </div>
       <span class="tier-badge ${kw.signalTier === 'real' ? 'tier-real' : 'tier-weak'}">${kw.signalTier === 'real' ? 'REAL' : 'WEAK'}</span>
     </div>

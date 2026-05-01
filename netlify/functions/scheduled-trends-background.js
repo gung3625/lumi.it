@@ -727,6 +727,7 @@ async function saveScope({ supa, scope, category, tags, updatedAt, source }) {
 
 // ---------------- 메인 핸들러 ----------------
 const { runGuarded } = require('./_shared/cron-guard');
+const { checkAndIncrementQuota, QuotaExceededError } = require('./_shared/openai-quota');
 
 exports.handler = runGuarded({
   name: 'scheduled-trends',
@@ -754,6 +755,17 @@ exports.handler = runGuarded({
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
         body: JSON.stringify({ error: 'Supabase 초기화 실패' }),
       };
+    }
+
+    // 서비스 전체 예산 체크 (cron — 12개 업종 × ₩5 = ₩60 추정)
+    try {
+      await checkAndIncrementQuota(null, 'gpt-4o-mini', 60);
+    } catch (e) {
+      if (e instanceof QuotaExceededError) {
+        console.warn('[scheduled-trends] 서비스 전체 OpenAI 예산 초과 — cron 중단:', e.message);
+        return { statusCode: 429, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify({ error: e.message, skipped: true }) };
+      }
+      throw e;
     }
 
     // nail/hair는 beauty 수집 데이터를 공유 — GPT 프롬프트에서 3분할 분류

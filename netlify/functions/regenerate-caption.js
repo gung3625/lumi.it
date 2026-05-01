@@ -1,6 +1,7 @@
 const { corsHeaders, getOrigin } = require('./_shared/auth');
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
+const { checkAndIncrementQuota, QuotaExceededError } = require('./_shared/openai-quota');
 
 
 function buildToneGuide(toneLikes, toneDislikes) {
@@ -390,7 +391,17 @@ exports.handler = async (event) => {
       }
     } catch (e) { console.warn('[regen] linkinbio 조회 실패:', e.message); }
 
-    // 6. GPT-4o로 캡션 재생성 (재생성은 속도 우선 — 4o 사용)
+    // 6. Quota 검증 (gpt-4o ₩50/호출)
+    try {
+      await checkAndIncrementQuota(user.id, 'gpt-4o');
+    } catch (e) {
+      if (e instanceof QuotaExceededError) {
+        return { statusCode: 429, headers: headers, body: JSON.stringify({ error: e.message }) };
+      }
+      throw e;
+    }
+
+    // GPT-4o로 캡션 재생성 (재생성은 속도 우선 — 4o 사용)
     const toneGuide = buildToneGuide(toneLikes, toneDislikes);
     const captionPrompt = buildCaptionPrompt(item, imageAnalysis, toneGuide);
 

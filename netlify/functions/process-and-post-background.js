@@ -5,6 +5,7 @@ const { corsHeaders, getOrigin, verifyLumiSecret } = require('./_shared/auth');
 // IG 토큰: ig_accounts_decrypted 뷰 (service_role 전용). 평문 저장/로그 금지.
 const { createHmac } = require('crypto');
 const { getAdminClient } = require('./_shared/supabase-admin');
+const { checkAndIncrementQuota, QuotaExceededError } = require('./_shared/openai-quota');
 const { deleteReservationStorage } = require('./_shared/storage-cleanup');
 const { generateBrandFooter } = require('./_shared/brand-footer');
 
@@ -821,7 +822,21 @@ exports.handler = async (event) => {
     // 관찰용: 진행단계 표시
     try { await supabase.from('reservations').update({ caption_error: 'STAGE:loading_images' }).eq('reserve_key', reservationKey); } catch(_) {}
 
-    // 3) 이미지 분석 + 트렌드 + 캡션뱅크 병렬
+    // 3) Quota 검증 (gpt-4o ₩50/호출 — 이미지 분석 + 캡션 생성)
+    try {
+      await checkAndIncrementQuota(reservation.user_id, 'gpt-4o');
+    } catch (e) {
+      if (e instanceof QuotaExceededError) {
+        await supabase.from('reservations').update({
+          caption_status: 'error',
+          caption_error: e.message,
+        }).eq('reserve_key', reservationKey).catch(() => {});
+        return;
+      }
+      throw e;
+    }
+
+    // 이미지 분석 + 트렌드 + 캡션뱅크 병렬
     const imageBuffers = await loadImagesAsBase64(imageUrls);
 
     const mediaType = reservation.media_type || 'IMAGE';

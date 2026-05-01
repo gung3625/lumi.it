@@ -43,7 +43,7 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=(self)"
     Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.portone.io https://code.iconify.design https://cdn.jsdelivr.net https://t1.kakaocdn.net https://developers.kakao.com https://www.googletagmanager.com https://www.google-analytics.com https://googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data: https: blob:; media-src 'self' data: blob: https:; connect-src 'self' https://*.netlify.com https://*.supabase.co https://api.portone.io https://lumi.it.kr https://*.solapi.com https://api.resend.com https://unpkg.com https://cdn.jsdelivr.net https://www.google-analytics.com https://www.googletagmanager.com; frame-src https://checkout.portone.io https://service.iamport.kr;"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.portone.io https://code.iconify.design https://cdn.jsdelivr.net https://t1.kakaocdn.net https://developers.kakao.com https://www.googletagmanager.com https://www.google-analytics.com https://googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data: https: blob:; media-src 'self' data: blob: https:; connect-src 'self' https://*.netlify.com https://*.supabase.co https://api.portone.io https://lumi.it.kr https://*.solapi.com https://api.resend.com https://unpkg.com https://cdn.jsdelivr.net https://www.google-analytics.com https://www.googletagmanager.com; frame-src https://checkout.portone.io https://service.iamport.kr;"
     Cache-Control = "no-store, no-cache, must-revalidate, max-age=0"
     Pragma = "no-cache"
     Expires = "0"
@@ -384,30 +384,9 @@
   status = 200
   force = true
 
-# Sprint 6 — 카카오 알림톡 셀러 자동 발송 시스템
-[[redirects]]
-  from = "/api/alimtalk-send"
-  to = "/.netlify/functions/alimtalk-send"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/alimtalk-templates"
-  to = "/.netlify/functions/alimtalk-templates"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/alimtalk-history"
-  to = "/.netlify/functions/alimtalk-history"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/alimtalk-config"
-  to = "/.netlify/functions/alimtalk-config"
-  status = 200
-  force = true
+# Sprint 6 — 알림톡 HTTP API 4개 (send/templates/history/config) 베타 미사용으로 제거됨.
+# 자동 발송(scheduled-insight-*, alimtalk-tracking-overdue-cron)은 _shared/alimtalk-trigger.js 직접 호출로 계속 동작함.
+# 추후 셀러 대시보드 UI에서 알림톡 직접 사용 시 4개 함수 작성 + 라우트 복구 필요.
 
 # Sprint 4 — 대시보드 + 시장 중심 피벗 (트렌드 메인 카드)
 [[redirects]]
@@ -695,12 +674,6 @@
   status = 200
   force = true
 
-
-# lumi 링크 페이지 /p/:id → link.html
-[[redirects]]
-  from = "/p/:id"
-  to = "/link.html"
-  status = 200
 
 # 에이전트 오피스 라우팅
 [[redirects]]

@@ -5,6 +5,7 @@
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { runGuarded } = require('./_shared/cron-guard');
 const https = require('https');
+const { checkAndIncrementQuota, QuotaExceededError } = require('./_shared/openai-quota');
 
 // ─────────────────────────────────────────────
 // httpsPost 헬퍼
@@ -101,10 +102,36 @@ async function callGPTSubcatClassify({ category, subcatKey, label, seeds, rawKey
 // ─────────────────────────────────────────────
 // 핸들러
 // ─────────────────────────────────────────────
+const HEADERS = {
+  'Content-Type': 'application/json',
+  'Access-Control-Allow-Origin': '*',
+};
+
 exports.handler = runGuarded({
   name: 'scheduled-trends-longtail',
   handler: async (event, ctx) => {
+    // Netlify cron 호출은 event.httpMethod가 없음 → 인증 스킵
+    // 외부 HTTP 호출만 LUMI_SECRET 검증
+    const isScheduled = !event || !event.httpMethod;
+    if (!isScheduled) {
+      const secret = (event.headers && (event.headers['x-lumi-secret'] || event.headers['X-Lumi-Secret'])) || '';
+      if (!process.env.LUMI_SECRET || secret !== process.env.LUMI_SECRET) {
+        return { statusCode: 401, headers: HEADERS, body: JSON.stringify({ error: '인증 실패' }) };
+      }
+    }
+
     const supa = getAdminClient();
+
+    // 서비스 전체 예산 체크 (cron — sellerId 없음, 추정 ₩50)
+    try {
+      await checkAndIncrementQuota(null, 'gpt-4o-mini', 50);
+    } catch (e) {
+      if (e instanceof QuotaExceededError) {
+        console.warn('[longtail] 서비스 전체 OpenAI 예산 초과 — cron 중단:', e.message);
+        return { statusCode: 429, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ error: e.message, skipped: true }) };
+      }
+      throw e;
+    }
 
     // 1. 활성 서브카테고리 로드
     const { data: subcats, error: subcatErr } = await supa

@@ -4,6 +4,7 @@
 // Shadow mode 기본값=true (발송 없이 로그만 기록)
 const crypto = require('crypto');
 const { getAdminClient } = require('./_shared/supabase-admin');
+const { checkAndIncrementQuota, QuotaExceededError } = require('./_shared/openai-quota');
 
 const TEST_IG_USER_ID = process.env.TEST_IG_USER_ID || '';
 const TEST_ACCESS_TOKEN = process.env.TEST_ACCESS_TOKEN || '';
@@ -342,6 +343,17 @@ async function handleAIReply(supabase, receivedText, eventType, senderId, igUser
   let subCategory = null;
   let sentiment = null;
   let confidence = null;
+
+  // Quota 검증 (gpt-4o-mini ₩5/호출) — 초과 시 에스컬레이션으로 처리 (webhook은 throw 대신 log)
+  try {
+    await checkAndIncrementQuota(userId, 'gpt-4o-mini');
+  } catch (e) {
+    if (e instanceof QuotaExceededError) {
+      console.warn(`[meta-webhook] quota exceeded for user=${userId}: ${e.message}`);
+      return; // 조용히 종료 — 사용자에게 webhook 응답 없음 (자동응답 스킵)
+    }
+    throw e;
+  }
 
   try {
     aiResult = await callAIReply(receivedText, eventType, storeName, storeDesc, storeCtx, userId, supabase);

@@ -6,6 +6,7 @@ const https = require('https');
 const { corsHeaders, getOrigin } = require('./_shared/auth');
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
+const { checkAndIncrementQuota, QuotaExceededError } = require('./_shared/openai-quota');
 
 
 function httpsGet(url, timeoutMs = 10000) {
@@ -444,6 +445,16 @@ exports.handler = async (event) => {
       fetchFestivals(sidoCode),
       fetch7DayWeather(sido)
     ]);
+
+    // Quota 검증 (gpt-4o-mini ₩5/호출)
+    try {
+      await checkAndIncrementQuota(userId || null, 'gpt-4o-mini');
+    } catch (e) {
+      if (e instanceof QuotaExceededError) {
+        return { statusCode: 429, headers: headers, body: JSON.stringify({ error: e.message }) };
+      }
+      throw e;
+    }
 
     // GPT로 캘린더 생성
     const calendar = await generateWithGPT(bizCategory, region, weatherByDate, trends, festivals);

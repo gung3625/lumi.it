@@ -6,6 +6,7 @@
 const { runGuarded } = require('./_shared/cron-guard');
 const { getAdminClient } = require('./_shared/supabase-admin');
 const https = require('https');
+const { checkAndIncrementQuota, QuotaExceededError } = require('./_shared/openai-quota');
 
 // OpenAI text-embedding-3-small 호출 (silent fallback)
 async function getEmbedding(text) {
@@ -42,9 +43,24 @@ async function getEmbedding(text) {
   });
 }
 
+const HEADERS = {
+  'Content-Type': 'application/json',
+  'Access-Control-Allow-Origin': '*',
+};
+
 exports.handler = runGuarded({
   name: 'scheduled-trends-embeddings',
   handler: async (event, ctx) => {
+    // Netlify cron 호출은 event.httpMethod가 없음 → 인증 스킵
+    // 외부 HTTP 호출만 LUMI_SECRET 검증
+    const isScheduled = !event || !event.httpMethod;
+    if (!isScheduled) {
+      const secret = (event.headers && (event.headers['x-lumi-secret'] || event.headers['X-Lumi-Secret'])) || '';
+      if (!process.env.LUMI_SECRET || secret !== process.env.LUMI_SECRET) {
+        return { statusCode: 401, headers: HEADERS, body: JSON.stringify({ error: '인증 실패' }) };
+      }
+    }
+
     const supa = getAdminClient();
 
     // 1. 최근 7일 embedding 없는 trend_keywords 조회 (최대 500개)
@@ -64,6 +80,17 @@ exports.handler = runGuarded({
 
     if (!rows || rows.length === 0) {
       return { statusCode: 200, body: JSON.stringify({ success: true, embedded: 0, clusters: 0 }) };
+    }
+
+    // 서비스 전체 예산 체크 (cron — text-embedding-3-small ₩1 × 키워드 수 추정)
+    try {
+      await checkAndIncrementQuota(null, 'text-embedding-3-small', rows.length);
+    } catch (e) {
+      if (e instanceof QuotaExceededError) {
+        console.warn('[scheduled-trends-embeddings] 서비스 전체 OpenAI 예산 초과 — cron 중단:', e.message);
+        return { statusCode: 429, body: JSON.stringify({ error: e.message, skipped: true }) };
+      }
+      throw e;
     }
 
     // 2. 각 키워드 임베딩 생성 (배치 20개씩 병렬)

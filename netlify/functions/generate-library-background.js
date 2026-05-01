@@ -12,6 +12,7 @@ const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-au
 const { generateImage } = require('./_shared/openai-image-client');
 const { generateVideo } = require('./_shared/sora-video-client');
 const { getImagePrompt, getVideoPrompt } = require('./_shared/brand-prompts');
+const { checkAndIncrementQuota, QuotaExceededError } = require('./_shared/openai-quota');
 
 
 const INDUSTRIES = ['cafe', 'restaurant', 'beauty', 'nail', 'flower', 'clothing', 'gym'];
@@ -94,6 +95,17 @@ async function generateSlot(supabase, { industry, contentType, slotIndex }) {
       .single();
     if (insErr) throw new Error(`DB insert 실패: ${insErr.message}`);
     rowId = inserted.id;
+  }
+
+  // 서비스 전체 예산 체크 (admin 전용 — gpt-4o ₩50 추정)
+  try {
+    await checkAndIncrementQuota(null, 'gpt-4o', 50);
+  } catch (e) {
+    if (e instanceof QuotaExceededError) {
+      console.warn(`[generate-library] 서비스 전체 OpenAI 예산 초과: ${e.message}`);
+      return { success: false, industry, contentType, slotIndex, error: e.message };
+    }
+    throw e;
   }
 
   try {

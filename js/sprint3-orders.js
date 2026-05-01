@@ -264,10 +264,118 @@
     document.getElementById('submitTrackingBtn').addEventListener('click', submitTracking);
   }
 
-  function setupBatchActions() {
-    document.getElementById('batchTrackBtn').addEventListener('click', () => {
-      alert('PC 일괄 입력 화면은 다음 단계에서 열려요. 모바일에서는 카드별로 1탭씩 입력해주세요.');
+  function injectBatchTrackModal() {
+    if (document.getElementById('batchTrackModal')) return;
+    const modal = document.createElement('div');
+    modal.id = 'batchTrackModal';
+    modal.hidden = true;
+    modal.style.cssText = 'position:fixed;inset:0;z-index:9100;display:flex;align-items:flex-end;';
+    modal.innerHTML = `
+      <div style="position:absolute;inset:0;background:rgba(0,0,0,.45)" id="batchTrackBackdrop"></div>
+      <div style="position:relative;width:100%;background:var(--card-bg,#fff);border-radius:16px 16px 0 0;padding:20px 16px 32px;max-height:85vh;overflow-y:auto">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span style="font-size:15px;font-weight:600">일괄 송장 입력</span>
+          <button id="batchTrackClose" style="background:none;border:none;cursor:pointer;font-size:20px;color:#999;padding:4px">×</button>
+        </div>
+        <p id="batchTrackSubtitle" style="font-size:13px;color:#888;margin:0 0 14px"></p>
+        <label style="display:block;font-size:13px;margin-bottom:4px">택배사 (전체 적용)</label>
+        <select id="batchCourierSelect" style="width:100%;padding:10px 12px;border:1px solid var(--border,#e0e0e0);border-radius:8px;font-size:14px;margin-bottom:16px;background:var(--input-bg,#fafafa);color:var(--text,#111)">
+          <option value="">선택해주세요</option>
+        </select>
+        <div id="batchTrackRows" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px"></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn btn--ghost btn--sm" id="batchTrackCancelBtn">취소</button>
+          <button class="btn btn--primary btn--sm" id="batchTrackSubmitBtn" style="background:#C8507A;border-color:#C8507A">일괄 등록</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    function closeModal() { modal.hidden = true; }
+    document.getElementById('batchTrackClose').addEventListener('click', closeModal);
+    document.getElementById('batchTrackCancelBtn').addEventListener('click', closeModal);
+    document.getElementById('batchTrackBackdrop').addEventListener('click', closeModal);
+
+    document.getElementById('batchTrackSubmitBtn').addEventListener('click', async () => {
+      const courierCode = document.getElementById('batchCourierSelect').value;
+      if (!courierCode) { alert('택배사를 선택해주세요.'); return; }
+      const rows = Array.from(document.querySelectorAll('.batch-track-row'));
+      const items = rows.map((row) => ({
+        order_id: row.dataset.orderId,
+        courier_code: courierCode,
+        tracking_number: row.querySelector('.batch-track-input').value.trim(),
+      })).filter((item) => item.tracking_number);
+      if (items.length === 0) { alert('송장번호를 1개 이상 입력해주세요.'); return; }
+      const submitBtn = document.getElementById('batchTrackSubmitBtn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = '등록 중…';
+      try {
+        const res = await authFetch('/api/submit-tracking', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items }),
+        });
+        const data = await res.json();
+        const results = data.results || [];
+        const failed = results.filter((r) => !r.success);
+        const succeeded = results.filter((r) => r.success);
+        if (failed.length === 0) {
+          closeModal();
+          showTrackingToast('success', `${succeeded.length}건 송장을 등록했어요.`);
+          load();
+        } else if (succeeded.length === 0) {
+          const r = failed[0];
+          const msg = r?.error?.title ? `${r.error.title}\n${r.error.action}` : (r?.error || '송장 전송에 실패했어요.');
+          showTrackingToast('error', msg);
+          submitBtn.disabled = false;
+          submitBtn.textContent = '일괄 등록';
+        } else {
+          const detail = failed.map((r) => r.error?.title || r.error || '알 수 없는 오류').join(', ');
+          showTrackingToast('warn', `${results.length}건 중 ${failed.length}건 실패: ${detail}`);
+          closeModal();
+          load();
+        }
+      } catch {
+        alert('네트워크 오류예요. 잠시 후 다시 시도해주세요.');
+        submitBtn.disabled = false;
+        submitBtn.textContent = '일괄 등록';
+      }
     });
+  }
+
+  function openBatchTrackModal() {
+    injectBatchTrackModal();
+    const checkedBoxes = Array.from(document.querySelectorAll('.order-checkbox:checked'));
+    const ids = checkedBoxes.map((c) => c.dataset.orderId);
+    if (ids.length === 0) return;
+
+    // populate courier select
+    const sel = document.getElementById('batchCourierSelect');
+    sel.innerHTML = '<option value="">선택해주세요</option>' +
+      couriers.map((c) => `<option value="${c.code}">${c.display_name}</option>`).join('');
+
+    // build per-order input rows
+    document.getElementById('batchTrackSubtitle').textContent = `${ids.length}건에 송장번호를 입력하세요.`;
+    const rowsContainer = document.getElementById('batchTrackRows');
+    rowsContainer.innerHTML = ids.map((id) => {
+      const order = allOrders.find((o) => o.id === id);
+      const label = order ? escapeHtml(`${marketLabel(order.market)} · ${(order.product_title || '').slice(0, 24)}`) : escapeHtml(id);
+      return `
+        <div class="batch-track-row" data-order-id="${escapeHtml(id)}">
+          <div style="font-size:12px;color:#888;margin-bottom:3px">${label}</div>
+          <input type="text" inputmode="numeric" placeholder="송장번호" maxlength="30" class="batch-track-input"
+            style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid var(--border,#e0e0e0);border-radius:8px;font-size:14px;background:var(--input-bg,#fafafa);color:var(--text,#111)" />
+        </div>
+      `;
+    }).join('');
+
+    document.getElementById('batchTrackSubmitBtn').disabled = false;
+    document.getElementById('batchTrackSubmitBtn').textContent = '일괄 등록';
+    document.getElementById('batchTrackModal').hidden = false;
+  }
+
+  function setupBatchActions() {
+    document.getElementById('batchTrackBtn').addEventListener('click', openBatchTrackModal);
     document.getElementById('batchReturnBtn').addEventListener('click', async () => {
       const ids = Array.from(document.querySelectorAll('.order-checkbox:checked')).map((c) => c.dataset.orderId);
       if (ids.length === 0) return;

@@ -1,5 +1,6 @@
 const { corsHeaders, getOrigin } = require('./_shared/auth');
 const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
+const { checkAndIncrementQuota, QuotaExceededError } = require('./_shared/openai-quota');
 
 
 exports.handler = async (event) => {
@@ -105,6 +106,16 @@ ${toneInstruction}
     "caption": "가게의 일상을 담은 표준 캡션. 요즘 인스타 트렌드에 맞는 해시태그 포함."
   }
 ]`;
+
+    // Quota 검증 (gpt-4o ₩50/호출)
+    try {
+      await checkAndIncrementQuota(user.id, 'gpt-4o');
+    } catch (e) {
+      if (e instanceof QuotaExceededError) {
+        return { statusCode: 429, headers, body: JSON.stringify({ error: e.message }) };
+      }
+      throw e;
+    }
 
     const gptRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',

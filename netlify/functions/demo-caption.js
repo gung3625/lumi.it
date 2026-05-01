@@ -1,4 +1,5 @@
 const { getAdminClient } = require('./_shared/supabase-admin');
+const { checkAndIncrementQuota, QuotaExceededError } = require('./_shared/openai-quota');
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
@@ -110,6 +111,17 @@ exports.handler = async (event) => {
         }
       }
     } catch (e) { console.log('[demo-caption] 트렌드 fetch 실패:', e.message); }
+
+    // ── 서비스 전체 일일 OpenAI 예산 체크 (demo는 sellerId 없음 → null)
+    // gpt-4o(₩50) + gpt-5.4(₩100) = ₩150 추정
+    try {
+      await checkAndIncrementQuota(null, 'gpt-4o', 150);
+    } catch (e) {
+      if (e instanceof QuotaExceededError) {
+        return { statusCode: 429, headers, body: JSON.stringify({ error: '서비스 체험 한도에 도달했습니다. 잠시 후 다시 시도해 주세요.' }) };
+      }
+      throw e;
+    }
 
     // ══════════════════════════════════════
     // STEP 1: GPT-4o 이미지 분석 (Emotion-first, JSON 출력)
