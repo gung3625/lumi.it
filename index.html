@@ -2168,19 +2168,13 @@ var _routed = false;
 async function routeAfterAuth() {
   if (_routed) return; _routed = true;
 
-  // 세션 기반 분기 (getUser 호출 X — 401 회피, 토큰 sync timing 문제 방지)
+  // 단순 룰: 가입 완료 = /dashboard, 미가입 = /signup. 비로그인 = 메인 유지.
   try {
     var r = await window.lumiSupa.auth.getSession();
     var session = r && r.data && r.data.session;
-    if (!session || !session.user) return; // 비로그인 = 메인 유지
+    if (!session || !session.user) return;
     var meta = session.user.user_metadata || {};
     var isOnboarded = meta.onboarded === true || (meta.business_no && meta.consent_terms);
-
-    // ?stay=1 + 이미 가입 완료된 사용자만 랜딩 유지 (홈 돌아오기). 신규 가입자는 항상 /signup
-    var stay = false;
-    try { stay = new URLSearchParams(location.search || '').get('stay') === '1'; } catch (e) {}
-    if (stay && isOnboarded) return;
-
     if (isOnboarded) {
       window.location.href = '/dashboard.html';
     } else {
