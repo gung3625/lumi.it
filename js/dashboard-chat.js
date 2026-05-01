@@ -431,9 +431,13 @@
   }
 
   // ─── 명령 전송 ───
+  let _submitInFlight = false;
   async function submitCommand(input) {
     const text = String(input || '').trim();
     if (!text) return;
+    // 중복 제출 방지 (Enter 연타, 핸들러 중복 등 방어)
+    if (_submitInFlight) return;
+    _submitInFlight = true;
 
     // 1순위: 정적 키워드 매칭 → 즉시 페이지 이동 (LLM 호출 X)
     const staticHref = staticRoute(text);
@@ -488,6 +492,7 @@
         payload: { kind: 'invalid' },
       });
     } finally {
+      _submitInFlight = false;
       if (form) form.classList.remove('is-loading');
       if (inputEl) inputEl.focus({ preventScroll: true });
       scrollToBottom(false);
