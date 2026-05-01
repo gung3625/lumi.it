@@ -567,18 +567,46 @@ body.dark-mode .lumi-footer__copy{color:rgba(255,255,255,.2);}
     );
 
     // 비로그인 진입 차단 — 메인으로 돌려보냄 (인증 모달에서 가입 시작)
-    // localStorage 게이트: 저장된 인증 없으면 getSession 왕복 스킵
+    // OAuth callback (Google/카카오 magic link) 시 URL hash에 access_token 있음 → Supabase 처리 대기
     (async function () {
       try {
-        var hasStoredAuth = false;
-        try { hasStoredAuth = !!localStorage.getItem('lumi-auth'); } catch (_) {}
-        if (!hasStoredAuth) {
+        // 1. URL hash가 OAuth callback이면 Supabase 처리 시간 대기 (최대 3초)
+        var hash = window.location.hash || '';
+        var search = window.location.search || '';
+        var isOAuthCallback = hash.indexOf('access_token=') !== -1 ||
+                               hash.indexOf('refresh_token=') !== -1 ||
+                               hash.indexOf('type=magiclink') !== -1 ||
+                               hash.indexOf('type=signup') !== -1 ||
+                               (search.indexOf('code=') !== -1 && search.indexOf('state=') !== -1);
+
+        function hasAnyStoredAuth() {
+          try {
+            if (localStorage.getItem('lumi-auth')) return true;
+            if (localStorage.getItem('lumi_token')) return true;
+            for (var i = 0; i < localStorage.length; i++) {
+              var k = localStorage.key(i);
+              if (k && k.indexOf('sb-') === 0 && k.indexOf('-auth-token') > 0) return true;
+            }
+          } catch (_) {}
+          return false;
+        }
+
+        if (isOAuthCallback) {
+          for (var i = 0; i < 30; i++) {
+            if (hasAnyStoredAuth()) break;
+            await new Promise(function (r) { setTimeout(r, 100); });
+          }
+        }
+
+        // 2. localStorage 게이트
+        if (!hasAnyStoredAuth()) {
           window.location.replace('/?stay=1');
           return;
         }
+
+        // 3. 세션 검증
         const r = await window.lumiSupa.auth.getSession();
         if (!r?.data?.session?.access_token) {
-          // 약간의 grace period — fragment 토큰 처리 시간 확보 (1초)
           await new Promise(res => setTimeout(res, 1000));
           const r2 = await window.lumiSupa.auth.getSession();
           if (!r2?.data?.session?.access_token) {
