@@ -239,20 +239,21 @@
   function bindScrollSensor() {
     if (_scrollListenerBound) return;
     _scrollListenerBound = true;
-    const main = $('#chatMain');
-    if (!main) return;
-    main.addEventListener('scroll', () => {
-      // 하단에서 120px 이내 = 자동 스크롤 활성
-      const distFromBottom = main.scrollHeight - main.scrollTop - main.clientHeight;
+    const thread = $('#chatThread');
+    if (!thread) return;
+    thread.addEventListener('scroll', () => {
+      // 하단에서 120px 이내 = 자동 스크롤 활성 (chat-thread 자체 스크롤)
+      const distFromBottom = thread.scrollHeight - thread.scrollTop - thread.clientHeight;
       _userScrolledUp = distFromBottom > 120;
     }, { passive: true });
   }
 
   function scrollToBottom(force) {
-    const main = $('#chatMain');
-    if (!main) return;
+    // chat-thread 자체가 스크롤 컨테이너 — 위젯을 위로 밀지 않음
+    const thread = $('#chatThread');
+    if (!thread) return;
     if (force || !_userScrolledUp) {
-      main.scrollTop = main.scrollHeight;
+      thread.scrollTop = thread.scrollHeight;
     }
   }
 
@@ -386,21 +387,19 @@
   }
 
   function showCanvasMode(mode) {
+    // 위젯(canvasDefault)은 항상 노출 — 채팅이 위젯을 가리거나 밀어올리지 않도록
+    // chat-thread는 자체 스크롤 컨테이너 (CSS max-height + overflow)
     const greet = $('#canvasGreet');
-    const def = $('#canvasDefault');
     const result = $('#canvasResult');
-    if (!def) return;
     if (mode === 'chat' || mode === 'result') {
+      // greet은 첫 메시지 시 숨김 (공간 절약), 위젯은 유지
       if (greet) greet.hidden = true;
-      def.hidden = true;
       if (result) result.hidden = true;
     } else {
-      // default 모드 — 스레드가 비어있을 때만 위젯 복원
       const thread = $('#chatThread');
       const isEmpty = !thread || thread.children.length === 0;
       if (isEmpty) {
         if (greet) greet.hidden = false;
-        def.hidden = false;
         if (result) { result.hidden = true; result.innerHTML = ''; }
       }
     }

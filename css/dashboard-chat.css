@@ -45,13 +45,23 @@
 }
 
 /* ─── 채팅 스레드 (메시지 누적 영역) ─── */
+/* 자체 스크롤 컨테이너 — 메시지가 누적되어도 위젯을 위로 밀지 않음 */
 .chat-thread {
   max-width: 900px;
-  margin: 0 auto;
+  margin: 16px auto;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 0 0 8px 0;
+  padding: 12px;
+  max-height: 55vh;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+.chat-thread:empty { display: none; }
+.chat-thread:not(:empty) {
+  background: var(--canvas-key-bg);
+  border: 1px solid var(--canvas-border);
+  border-radius: 14px;
 }
 
 /* 사용자 메시지 — AI와 같은 단일 흐름, 풀폭 카드 */
