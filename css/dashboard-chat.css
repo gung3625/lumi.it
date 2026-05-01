@@ -44,6 +44,67 @@
   }
 }
 
+/* ─── 채팅 스레드 (메시지 누적 영역) ─── */
+.chat-thread {
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 0 8px 0;
+}
+
+/* 사용자 메시지 버블 */
+.chat-msg--user {
+  align-self: flex-end;
+  max-width: 72%;
+  background: var(--canvas-gradient-cta);
+  color: #fff;
+  border-radius: 18px 18px 4px 18px;
+  padding: 10px 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 500;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+/* AI 응답 — result-card 스타일 유지, 왼쪽 정렬 */
+.chat-msg--assistant {
+  align-self: flex-start;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* 로딩 메시지 */
+.chat-msg--loading {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--canvas-text-soft);
+  padding: 12px 16px;
+  background: var(--canvas-card);
+  border: 1px solid var(--canvas-border);
+  border-radius: 14px;
+  box-shadow: var(--canvas-shadow-soft);
+}
+.chat-msg--loading::before {
+  content: '';
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--canvas-key-bg);
+  border-top-color: var(--brand-pink);
+  border-radius: 50%;
+  animation: chatSpin 0.6s linear infinite;
+  flex-shrink: 0;
+}
+
+@media (max-width: 767px) {
+  .chat-msg--user { max-width: 88%; font-size: 13px; }
+}
+
 /* ─── 좌측 사이드바 ─── */
 .chat-sidebar {
   background: var(--canvas-card);
@@ -273,11 +334,13 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  overflow: hidden;
+  overflow-y: auto;      /* ← 전체 스크롤: 입력창 포함 자연 흐름 */
+  overflow-x: hidden;
   position: relative;
+  scroll-behavior: smooth;
 }
 
-/* 모바일 헤더 */
+/* 모바일 헤더 — 스크롤 시 상단 고정 */
 .chat-mobile-header {
   display: none;
   flex-shrink: 0;
@@ -286,6 +349,9 @@
   padding: 12px 14px;
   border-bottom: 1px solid var(--canvas-divider);
   background: var(--canvas-card);
+  position: sticky;
+  top: 0;
+  z-index: 40;
 }
 .chat-mobile-header__menu {
   background: transparent;
@@ -328,12 +394,11 @@
   .chat-mobile-header { display: flex; }
 }
 
-/* 캔버스 영역 (스크롤 영역) */
+/* 캔버스 영역 — 자연 흐름 (스크롤 없음, chat-main이 담당) */
 .canvas-area {
   flex: 1;
-  overflow-y: auto;
+  overflow: visible;
   padding: 24px;
-  scroll-behavior: smooth;
 }
 
 @media (max-width: 767px) {
@@ -510,13 +575,14 @@
   margin-left: 6px;
 }
 
-/* ─── 하단 명령창 (메인 자리) ─── */
+/* ─── 하단 명령창 — 자연 흐름 (스레드 마지막 요소) ─── */
 .chat-command {
-  flex-shrink: 0;
   background: var(--canvas-card);
   border-top: 1px solid var(--canvas-divider);
   padding: 12px 16px 14px 16px;
   position: relative;
+  /* sticky 아님 — chat-main 스크롤 흐름에 포함 */
+  /* 모바일 safe-area는 인라인 style로 적용됨 */
 }
 
 .chat-suggests {
@@ -663,7 +729,7 @@ body.dark-mode .chat-input-form:focus-within {
     gap: 10px;
   }
   .chat-command {
-    padding: 10px 10px 12px 10px;
+    padding: 10px 10px calc(12px + env(safe-area-inset-bottom, 0px)) 10px;
   }
   .chat-input-form {
     padding: 6px 6px 6px 10px;
@@ -672,7 +738,7 @@ body.dark-mode .chat-input-form:focus-within {
   .chat-input { font-size: 14px; min-height: 32px; padding: 6px 2px; }
   .chat-input-send { width: 32px; height: 32px; }
   .chat-input-attach { width: 32px; height: 32px; }
-  .canvas-area { padding: 12px 12px 16px 12px; }
+  .canvas-area { padding: 12px 12px 0 12px; }
   .canvas-greet { margin-bottom: 16px; }
   .canvas-greet__title { font-size: 22px; }
   .result-card { padding: 14px 16px; border-radius: 12px; }

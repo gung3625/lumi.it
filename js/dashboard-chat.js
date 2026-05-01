@@ -231,25 +231,35 @@
     } catch (_) {}
   }
 
-  // ─── 결과 카드 표시 ───
-  function showLoadingCard(input) {
-    showCanvasMode('result');
-    const wrap = $('#canvasResult');
-    if (!wrap) return;
-    wrap.innerHTML = `
-      <div class="result-card result-card--loading" id="loadingCard">
-        루미가 "${escapeHtml(input)}" 처리 중이에요…
-      </div>
-    `;
+  // ─── 채팅 스레드 헬퍼 ───
+  // 사용자가 위로 스크롤 중인지 감지 (자동 스크롤 억제용)
+  let _userScrolledUp = false;
+  let _scrollListenerBound = false;
+
+  function bindScrollSensor() {
+    if (_scrollListenerBound) return;
+    _scrollListenerBound = true;
+    const main = $('#chatMain');
+    if (!main) return;
+    main.addEventListener('scroll', () => {
+      // 하단에서 120px 이내 = 자동 스크롤 활성
+      const distFromBottom = main.scrollHeight - main.scrollTop - main.clientHeight;
+      _userScrolledUp = distFromBottom > 120;
+    }, { passive: true });
   }
 
-  function showResultCard(res) {
-    showCanvasMode('result');
-    const wrap = $('#canvasResult');
-    if (!wrap) return;
+  function scrollToBottom(force) {
+    const main = $('#chatMain');
+    if (!main) return;
+    if (force || !_userScrolledUp) {
+      main.scrollTop = main.scrollHeight;
+    }
+  }
+
+  // 결과 카드 HTML 생성 (intent별 detail/next 포함)
+  function buildResultCardHtml(res) {
     const intent = res.intent || 'shop';
     const intentClass = `result-card__intent--${intent}`;
-    const abilityText = '';
     const cached = res.cached ? '<span class="result-card__cached">캐시 적중</span>' : '';
     const replay = res.replay ? '<span class="result-card__cached">기록 재생</span>' : '';
 
@@ -291,40 +301,108 @@
       if (payload.beta_note) {
         nextHtml += `<p class="result-card__beta-note">${escapeHtml(payload.beta_note)}</p>`;
       }
-    } else if (payload.kind === 'invalid' || payload.blocked) {
-      detailHtml = '';
     }
 
-    wrap.innerHTML = `
+    return `
       <article class="result-card">
         <div class="result-card__header">
           <span class="result-card__intent ${intentClass}">${escapeHtml(intentLabel(intent))}</span>
           <span class="result-card__ability">${cached}${replay}</span>
         </div>
-        ${res.input ? `<p class="result-card__user-input">"${escapeHtml(res.input)}"</p>` : ''}
         <p class="result-card__summary">${escapeHtml(res.summary || '')}</p>
         ${detailHtml}
         ${nextHtml}
       </article>
     `;
-    // 결과 카드 스크롤: canvasArea 강제 top 제거 — 사용자 스크롤 위치 유지
   }
 
+  // 스레드에 메시지 추가 (role: 'user' | 'assistant' | 'loading')
+  function appendThreadMessage(role, content, id) {
+    const thread = $('#chatThread');
+    if (!thread) return null;
+
+    // 첫 메시지가 추가될 때 위젯 숨기고 greet 숨기기
+    if (thread.children.length === 0) {
+      showCanvasMode('chat');
+    }
+
+    const el = document.createElement('div');
+    if (id) el.id = id;
+
+    if (role === 'user') {
+      el.className = 'chat-msg--user';
+      el.textContent = content;
+    } else if (role === 'loading') {
+      el.className = 'chat-msg--loading';
+      el.textContent = content;
+    } else {
+      // assistant: content는 HTML string (buildResultCardHtml 출력)
+      el.className = 'chat-msg--assistant';
+      el.innerHTML = content;
+    }
+
+    thread.appendChild(el);
+    scrollToBottom(false);
+    return el;
+  }
+
+  // 로딩 메시지 교체 (loadingId → assistant 카드)
+  function replaceLoadingWithResult(loadingId, res) {
+    const loading = document.getElementById(loadingId);
+    const thread = $('#chatThread');
+    if (!thread) return;
+
+    const cardHtml = buildResultCardHtml(res);
+    if (loading) {
+      const el = document.createElement('div');
+      el.className = 'chat-msg--assistant';
+      el.innerHTML = cardHtml;
+      loading.replaceWith(el);
+    } else {
+      appendThreadMessage('assistant', cardHtml);
+    }
+    scrollToBottom(false);
+  }
+
+  // ─── 결과 카드 표시 (레거시 호환 — replayHistory 등에서 사용) ───
+  function showLoadingCard(input) {
+    // 스레드 모드: 스레드에 로딩 메시지 추가
+    const loadingId = 'loadingMsg_' + Date.now();
+    appendThreadMessage('loading', `루미가 "${input}" 처리 중이에요…`, loadingId);
+    return loadingId;
+  }
+
+  function showResultCard(res) {
+    // replayHistory용: 스레드에 카드 추가
+    const thread = $('#chatThread');
+    if (thread) {
+      if (thread.children.length === 0) showCanvasMode('chat');
+      const cardHtml = buildResultCardHtml(res);
+      if (res.input) {
+        appendThreadMessage('user', res.input);
+      }
+      appendThreadMessage('assistant', cardHtml);
+    }
+  }
 
   function showCanvasMode(mode) {
     const greet = $('#canvasGreet');
     const def = $('#canvasDefault');
     const result = $('#canvasResult');
-    if (!def || !result) return;
-    if (mode === 'result') {
+    if (!def) return;
+    if (mode === 'chat' || mode === 'result') {
       if (greet) greet.hidden = true;
       def.hidden = true;
-      result.hidden = false;
+      if (result) result.hidden = true;
     } else {
-      if (greet) greet.hidden = false;
-      def.hidden = false;
-      result.hidden = true;
-      result.innerHTML = '';
+      // default 모드 — 스레드가 비어있을 때만 위젯 복원
+      const thread = $('#chatThread');
+      const isEmpty = !thread || thread.children.length === 0;
+      if (isEmpty) {
+        if (greet) greet.hidden = false;
+        def.hidden = false;
+        if (result) { result.hidden = true; result.innerHTML = ''; }
+      }
     }
   }
 
@@ -372,7 +450,13 @@
     const form = $('#chatForm');
     if (form) form.classList.add('is-loading');
 
-    showLoadingCard(text);
+    // 1. 사용자 메시지 버블 추가
+    appendThreadMessage('user', text);
+
+    // 2. 로딩 메시지 추가 — ID 기억
+    const loadingId = 'loadingMsg_' + Date.now();
+    appendThreadMessage('loading', '루미가 처리 중이에요…', loadingId);
+    scrollToBottom(true);
 
     try {
       const r = await fetch('/api/command-router', {
@@ -382,20 +466,14 @@
       });
       const data = await r.json().catch(() => ({}));
       if (!r.ok) {
-        showResultCard({
-          input: text,
+        replaceLoadingWithResult(loadingId, {
           intent: 'invalid',
-          ability_level: 4,
-          cost_tier: 0,
           summary: data.error || '명령을 처리하지 못했어요',
           payload: { kind: 'invalid' },
         });
       } else {
-        showResultCard({
-          input: text,
+        replaceLoadingWithResult(loadingId, {
           intent: data.intent,
-          ability_level: data.ability_level,
-          cost_tier: data.cost_tier,
           summary: data.summary,
           payload: data.payload,
           cached: data.cached,
@@ -404,38 +482,30 @@
         if (data.history_id) loadHistory();
       }
     } catch (_) {
-      showResultCard({
-        input: text,
+      replaceLoadingWithResult(loadingId, {
         intent: 'invalid',
-        ability_level: 4,
-        cost_tier: 0,
         summary: '네트워크 오류. 잠시 후 다시 시도해 주세요',
         payload: { kind: 'invalid' },
       });
     } finally {
       if (form) form.classList.remove('is-loading');
       if (inputEl) inputEl.focus({ preventScroll: true });
+      scrollToBottom(false);
     }
   }
 
   // ─── 입력창 핸들링 ───
   function autoResize(el) {
     if (!el) return;
-    // 부모 scroll 컨테이너 scrollTop 보존 (canvasArea 포함)
-    const parent = el.closest('.canvas-area, .chat-input-form, .chat-area, .conversation-list, .composer-area, [data-scroll-container]');
-    const parentScroll = parent ? parent.scrollTop : 0;
-    const winScrollY = window.scrollY;
-    const docScrollTop = document.documentElement.scrollTop;
-    const bodyScrollTop = document.body.scrollTop;
+    // chat-main이 스크롤 컨테이너 — scrollTop 보존
+    const main = $('#chatMain');
+    const mainScroll = main ? main.scrollTop : 0;
 
     el.style.height = 'auto';
     el.style.height = Math.min(el.scrollHeight, 140) + 'px';
 
-    // window + document + body + 부모 scroll 복원
-    window.scrollTo({ top: winScrollY, behavior: 'instant' });
-    if (parent) parent.scrollTop = parentScroll;
-    document.documentElement.scrollTop = docScrollTop;
-    document.body.scrollTop = bodyScrollTop;
+    // 복원
+    if (main) main.scrollTop = mainScroll;
   }
   function syncSendBtn() {
     const btn = $('#chatSend');
@@ -482,6 +552,9 @@
     const btn = $('#newCommandBtn');
     if (!btn) return;
     btn.addEventListener('click', () => {
+      // 스레드 초기화 → default 위젯 모드 복원
+      const thread = $('#chatThread');
+      if (thread) thread.innerHTML = '';
       showCanvasMode('default');
       const inputEl = $('#chatInput');
       if (inputEl) {
@@ -490,6 +563,10 @@
         syncSendBtn();
         inputEl.focus({ preventScroll: true });
       }
+      // 스크롤 상단으로
+      const main = $('#chatMain');
+      if (main) main.scrollTop = 0;
+      _userScrolledUp = false;
       closeMobileSidebar();
     });
   }
@@ -563,6 +640,7 @@
     bindMobileSidebar();
     bindMobileTheme();
     bindAttach();
+    bindScrollSensor();
     syncSendBtn();
     loadFavorites();
     loadHistory();
