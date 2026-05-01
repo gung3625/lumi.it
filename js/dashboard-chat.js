@@ -453,12 +453,13 @@
     const form = $('#chatForm');
     if (form) form.classList.add('is-loading');
 
-    // 1. 사용자 메시지 버블 추가
-    appendThreadMessage('user', text);
+    // Spotlight 스타일: 이전 결과 비우고 새 결과만 표시 (대화 누적 X)
+    const thread = $('#chatThread');
+    if (thread) thread.innerHTML = '';
 
-    // 2. 로딩 메시지 추가 — ID 기억
+    // 로딩 메시지 추가 — 결과 카드로 교체될 자리
     const loadingId = 'loadingMsg_' + Date.now();
-    appendThreadMessage('loading', '루미가 처리 중이에요…', loadingId);
+    appendThreadMessage('loading', `루미가 "${text}" 처리 중이에요…`, loadingId);
     scrollToBottom(true);
 
     try {

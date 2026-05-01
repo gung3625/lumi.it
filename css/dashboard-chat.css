@@ -55,27 +55,20 @@
   padding: 0 16px;
 }
 
-/* ─── 채팅 스레드 (메시지 누적 영역) ─── */
-/* 자체 스크롤 컨테이너 — 메시지가 누적되어도 위젯을 위로 밀지 않음 */
+/* ─── 채팅 결과 영역 (Spotlight 스타일 — 마지막 결과 카드 1개) ─── */
 .chat-thread {
   width: 100%;
-  margin: 12px 0 8px 0;
+  margin: 0;
+  padding: 8px 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 10px 12px;
+  gap: 0;
   box-sizing: border-box;
-  /* 최근 질문+답변 1쌍만 보이고, 그 위 기록은 스크롤로 접근 */
-  max-height: clamp(220px, 30vh, 340px);
+  /* 결과 카드 자체 높이로 노출, 너무 크면 스크롤 */
+  max-height: clamp(180px, 28vh, 320px);
   overflow-y: auto;
-  scroll-behavior: smooth;
 }
 .chat-thread:empty { display: none; }
-.chat-thread:not(:empty) {
-  background: var(--canvas-key-bg);
-  border: 1px solid var(--canvas-border);
-  border-radius: 14px;
-}
 
 /* 사용자 메시지 — AI와 같은 단일 흐름, 풀폭 카드 */
 .chat-msg--user {
