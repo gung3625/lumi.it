@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>옵션 매핑 — 루미</title>
+  <meta name="description" content="마켓별 옵션명을 마스터 옵션에 매핑해 주문을 자동 인식해요" />
+  <link rel="icon" href="/assets/logo-cloud.png" />
+  <link rel="stylesheet" href="/css/brand-tokens.css" />
+  <!-- SheetJS CDN (엑셀 가져오기용) -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+<style>
+/* ── 기본 리셋 및 공통 ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #fff;
+  --bg-alt: #f5f5f7;
+  --bg-card: #fff;
+  --border: rgba(0,0,0,.1);
+  --text: #1d1d1f;
+  --text-sub: #6e6e73;
+  --text-muted: #aeaeb2;
+  --accent: #C8507A;
+  --radius-card: 8px;
+  --radius-btn: 980px;
+  --shadow-card: 0 1px 4px rgba(0,0,0,.08), 0 0 0 1px rgba(0,0,0,.05);
+  --font: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', sans-serif;
+}
+
+body.dark-mode {
+  --bg: #000;
+  --bg-alt: #111;
+  --bg-card: #272729;
+  --border: rgba(255,255,255,.1);
+  --text: #f5f5f7;
+  --text-sub: rgba(255,255,255,.55);
+  --text-muted: rgba(255,255,255,.3);
+  --shadow-card: 0 1px 4px rgba(0,0,0,.4), 0 0 0 1px rgba(255,255,255,.06);
+}
+
+body {
+  font-family: var(--font);
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.47;
+  letter-spacing: -0.374px;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100dvh;
+  transition: background .2s, color .2s;
+}
+
+/* ── 상단 topbar ── */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 20px;
+  background: rgba(255,255,255,.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+
+body.dark-mode .topbar {
+  background: rgba(0,0,0,.88);
+}
+
+.topbar__brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: inherit;
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.topbar__brand svg { flex-shrink: 0; }
+
+.topbar__title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  flex: 1;
+}
+
+.topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* ── 버튼 ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: var(--radius-btn);
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: opacity .15s, background .15s;
+  white-space: nowrap;
+}
+.btn:active { opacity: .75; }
+.btn--primary {
+  background: var(--accent);
+  color: #fff;
+}
+.btn--primary:hover { background: #a83d63; }
+.btn--secondary {
+  background: var(--bg-alt);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.btn--secondary:hover { opacity: .8; }
+.btn--sm { padding: 6px 12px; font-size: 13px; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ── 페이지 레이아웃 ── */
+.page-content {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 28px 20px 80px;
+}
+
+/* ── 페이지 헤더 ── */
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.page-header__left {}
+.page-header__title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.5px;
+}
+.page-header__sub {
+  font-size: 14px;
+  color: var(--text-sub);
+  margin-top: 4px;
+}
+
+.page-header__actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* ── 필터 탭 ── */
+.filter-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.filter-tabs::-webkit-scrollbar { display: none; }
+
+.filter-tab {
+  padding: 6px 14px;
+  border-radius: var(--radius-btn);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-sub);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all .15s;
+}
+.filter-tab:hover { color: var(--text); }
+.filter-tab--active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+/* ── 통계 바 ── */
+.stats-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: var(--text-sub);
+}
+
+.stats-bar__count { font-weight: 600; color: var(--text); }
+
+/* ── 카드 테이블 래퍼 ── */
+.table-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+thead th {
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background .1s;
+}
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: var(--bg-alt); }
+
+tbody td {
+  padding: 12px 14px;
+  vertical-align: middle;
+  color: var(--text);
+}
+
+.option-cell { max-width: 220px; word-break: break-all; }
+.num-cell { text-align: right; color: var(--text-sub); }
+.date-cell { white-space: nowrap; color: var(--text-muted); font-size: 12px; }
+.action-cell { white-space: nowrap; }
+.text-muted { color: var(--text-muted); }
+
+/* ── 마켓 배지 ── */
+.market-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.market-badge--coupang { background: rgba(255,80,0,.12); color: #e03c00; }
+.market-badge--naver   { background: rgba(3,199,90,.12);  color: #03a84e; }
+.market-badge--toss    { background: rgba(0,103,255,.12); color: #0067ff; }
+
+body.dark-mode .market-badge--coupang { background: rgba(255,80,0,.2); }
+body.dark-mode .market-badge--naver   { background: rgba(3,199,90,.2); }
+body.dark-mode .market-badge--toss    { background: rgba(0,103,255,.2); }
+
+/* ── 빈 상태 / 스켈레톤 ── */
+.table-empty {
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.skeleton-row td { padding: 14px; }
+.skeleton-line {
+  height: 14px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--bg-alt) 25%, var(--border) 50%, var(--bg-alt) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+/* ── 아이콘 버튼 ── */
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-sub);
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.btn-icon:hover { background: var(--bg-alt); color: var(--text); }
+.btn-delete:hover { color: #e03c00; }
+.btn-edit + .btn-delete { margin-left: 2px; }
+
+/* ── 페이지네이션 ── */
+#pagination {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  padding: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.page-btn {
+  padding: 6px 12px;
+  border-radius: var(--radius-btn);
+  font-family: var(--font);
+  font-size: 13px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-sub);
+  cursor: pointer;
+  transition: all .15s;
+}
+.page-btn:hover { color: var(--text); }
+.page-btn--active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+/* ── 슬라이드오버 ── */
+.slide-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.4);
+  z-index: 200;
+}
+
+.slide-over {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100dvh;
+  width: 100%;
+  max-width: 420px;
+  background: var(--bg-card);
+  box-shadow: -4px 0 32px rgba(0,0,0,.18);
+  z-index: 201;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform .25s cubic-bezier(.32,.72,0,1);
+}
+
+.slide-over--open { transform: translateX(0); }
+
+.slide-over__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.slide-over__title {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.slide-over__close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: var(--bg-alt);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s;
+}
+.slide-over__close:hover { background: var(--border); }
+
+.slide-over__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.slide-over__footer {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+/* ── 폼 ── */
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-label { font-size: 13px; font-weight: 600; color: var(--text-sub); }
+.form-label span { color: #e03c00; margin-left: 2px; }
+
+.form-input, .form-select {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  transition: border-color .15s;
+  -webkit-appearance: none;
+}
+.form-input:focus, .form-select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(200,80,122,.15);
+}
+body.dark-mode .form-input, body.dark-mode .form-select {
+  background: var(--bg-alt);
+}
+
+.form-hint { font-size: 12px; color: var(--text-muted); }
+
+.form-error {
+  font-size: 13px;
+  color: #e03c00;
+  padding: 8px 12px;
+  background: rgba(224,60,0,.08);
+  border-radius: 6px;
+}
+
+/* ── 임포트 진행 ── */
+#importProgress {
+  font-size: 13px;
+  color: var(--text-sub);
+  padding: 8px 0;
+}
+
+/* ── 숨김 파일 input ── */
+#xlsxInput { display: none; }
+
+/* ── 토스트 ── */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: #1d1d1f;
+  color: #f5f5f7;
+  padding: 10px 20px;
+  border-radius: var(--radius-btn);
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 999;
+  opacity: 0;
+  transition: transform .25s, opacity .25s;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.toast--show { transform: translateX(-50%) translateY(0); opacity: 1; }
+.toast--success { background: #1a7a3c; }
+.toast--error   { background: #b83232; }
+
+body.dark-mode .toast { background: #f5f5f7; color: #1d1d1f; }
+body.dark-mode .toast--success { background: #34c759; color: #fff; }
+body.dark-mode .toast--error   { background: #ff453a; color: #fff; }
+
+/* ── 다크모드 토글 FAB ── */
+.theme-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 20px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: var(--bg-card);
+  box-shadow: var(--shadow-card);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 150;
+  transition: background .15s;
+}
+.theme-fab:hover { opacity: .85; }
+
+/* ── Footer ── */
+.lumi-footer {
+  border-top: 1px solid var(--border);
+  padding: 28px 24px 36px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.8;
+  margin-top: 48px;
+}
+.lumi-footer p { margin: 0 0 2px; }
+
+/* ── 모바일 반응형 ── */
+@media (max-width: 767px) {
+  .page-header { flex-direction: column; }
+  .page-header__actions { width: 100%; }
+
+  /* 테이블 → 카드 뷰 */
+  .table-wrap table thead { display: none; }
+  .table-wrap table tbody tr {
+    display: block;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .table-wrap table tbody tr:last-child { border-bottom: none; }
+  .table-wrap table tbody td {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 3px 0;
+    font-size: 13px;
+  }
+  .table-wrap table tbody td::before {
+    content: attr(data-label);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    min-width: 72px;
+    flex-shrink: 0;
+  }
+  .action-cell { justify-content: flex-end; }
+  .action-cell::before { display: none; }
+  .num-cell { text-align: left; }
+
+  .slide-over { max-width: 100%; }
+}
+
+@media (max-width: 480px) {
+  .page-content { padding: 16px 14px 80px; }
+  .page-header__title { font-size: 19px; }
+  .topbar { padding: 0 14px; }
+  .filter-tabs { gap: 6px; }
+  .btn { font-size: 13px; padding: 7px 13px; }
+}
+</style>
+</head>
+<body class="page-order-mapping">
+
+  <!-- ── 상단 네비바 ── -->
+  <header class="topbar" role="banner">
+    <a href="/dashboard.html" class="topbar__brand" aria-label="대시보드로 돌아가기">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+      <span>대시보드</span>
+    </a>
+    <div class="topbar__title">옵션 매핑</div>
+    <div class="topbar__actions">
+      <!-- 필요 시 추가 액션 -->
+    </div>
+  </header>
+
+  <!-- ── 메인 컨텐츠 ── -->
+  <main class="page-content">
+
+    <!-- 페이지 헤더 -->
+    <div class="page-header">
+      <div class="page-header__left">
+        <h1 class="page-header__title">옵션 매핑</h1>
+        <p class="page-header__sub">마켓 옵션명과 마스터 옵션명을 연결해 주문을 자동 인식해요</p>
+      </div>
+      <div class="page-header__actions">
+        <button type="button" class="btn btn--secondary btn--sm" id="xlsxBtn" aria-label="엑셀 일괄 가져오기">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          엑셀 가져오기
+        </button>
+        <input type="file" id="xlsxInput" accept=".xlsx,.xls,.csv" aria-label="엑셀 파일 선택" />
+        <button type="button" class="btn btn--primary btn--sm" id="addMappingBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          매핑 추가
+        </button>
+      </div>
+    </div>
+
+    <!-- 엑셀 진행 상태 -->
+    <div id="importProgress" hidden></div>
+
+    <!-- 마켓 필터 탭 -->
+    <div class="filter-tabs" role="tablist" aria-label="마켓 필터">
+      <button class="filter-tab filter-tab--active" type="button" data-market="all" role="tab" aria-selected="true">전체</button>
+      <button class="filter-tab" type="button" data-market="coupang" role="tab" aria-selected="false">쿠팡</button>
+      <button class="filter-tab" type="button" data-market="naver" role="tab" aria-selected="false">네이버</button>
+      <button class="filter-tab" type="button" data-market="toss" role="tab" aria-selected="false">토스쇼핑</button>
+    </div>
+
+    <!-- 통계 바 -->
+    <div class="stats-bar">
+      <span>총 <span class="stats-bar__count" id="totalCount">—</span> 매핑</span>
+    </div>
+
+    <!-- 매핑 테이블 -->
+    <div class="table-card">
+      <div class="table-wrap">
+        <table aria-label="옵션 매핑 목록">
+          <thead>
+            <tr>
+              <th scope="col">마켓</th>
+              <th scope="col">마켓 옵션명</th>
+              <th scope="col">마스터 상품</th>
+              <th scope="col">마스터 옵션</th>
+              <th scope="col" style="text-align:right">적용 횟수</th>
+              <th scope="col">마지막 적용</th>
+              <th scope="col"><span class="sr-only">액션</span></th>
+            </tr>
+          </thead>
+          <tbody id="mappingTbody">
+            <tr><td colspan="7" class="table-empty">불러오는 중…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <!-- 페이지네이션 -->
+      <div id="pagination"></div>
+    </div>
+
+  </main>
+
+  <!-- ── 슬라이드오버 (매핑 추가/수정) ── -->
+  <div id="slideOverlay" class="slide-overlay" hidden aria-hidden="true"></div>
+
+  <aside id="slideOver" class="slide-over" role="dialog" aria-modal="true" aria-labelledby="slideOverTitle" aria-hidden="true">
+    <div class="slide-over__header">
+      <h2 class="slide-over__title" id="slideOverTitle">매핑 추가</h2>
+      <button type="button" class="slide-over__close" id="slideOverClose" aria-label="닫기">✕</button>
+    </div>
+
+    <div class="slide-over__body">
+      <form id="mappingForm" novalidate>
+
+        <!-- 마켓 선택 -->
+        <div class="form-group">
+          <label class="form-label" for="marketSelect">마켓 <span aria-hidden="true">*</span></label>
+          <select class="form-select" id="marketSelect" name="market" required>
+            <option value="">— 마켓 선택 —</option>
+            <option value="coupang">쿠팡</option>
+            <option value="naver">네이버 스마트스토어</option>
+            <option value="toss">토스쇼핑</option>
+          </select>
+        </div>
+
+        <!-- 마켓 옵션명 -->
+        <div class="form-group">
+          <label class="form-label" for="marketOptionInput">마켓 옵션명 <span aria-hidden="true">*</span></label>
+          <input class="form-input" id="marketOptionInput" type="text" name="market_option_name"
+            placeholder="예: L사이즈, 사이즈:L / 색상:블랙" maxlength="500" required autocomplete="off" />
+          <span class="form-hint">마켓에서 수신되는 정확한 옵션 문자열을 입력하세요</span>
+        </div>
+
+        <!-- 마스터 상품 선택 (선택사항) -->
+        <div class="form-group">
+          <label class="form-label" for="masterProductSelect">마스터 상품 <span style="color:var(--text-muted);font-weight:400">(선택)</span></label>
+          <select class="form-select" id="masterProductSelect" name="master_product_id">
+            <option value="">— 마스터 상품 선택 —</option>
+          </select>
+        </div>
+
+        <!-- 마스터 옵션명 -->
+        <div class="form-group">
+          <label class="form-label" for="masterOptionInput">마스터 옵션명 <span style="color:var(--text-muted);font-weight:400">(선택)</span></label>
+          <input class="form-input" id="masterOptionInput" type="text" name="master_option_name"
+            placeholder="예: L" maxlength="500" autocomplete="off" />
+          <span class="form-hint">루미 내부에서 사용하는 통합 옵션명</span>
+        </div>
+
+      </form>
+
+      <!-- 폼 에러 -->
+      <div id="formError" class="form-error" hidden role="alert"></div>
+
+      <!-- 엑셀 가져오기 가이드 -->
+      <details style="margin-top:8px;">
+        <summary style="font-size:13px;color:var(--text-sub);cursor:pointer;user-select:none;">엑셀 가져오기 형식 보기</summary>
+        <div style="margin-top:10px;font-size:12px;color:var(--text-muted);line-height:1.7;background:var(--bg-alt);padding:12px;border-radius:6px;">
+          <strong style="color:var(--text-sub);">열 순서 (첫 행 = 헤더, 건너뜀)</strong><br/>
+          A열: 마켓 (coupang / naver / toss)<br/>
+          B열: 마켓 옵션명 (필수)<br/>
+          C열: 마스터 옵션명 (선택)<br/>
+          D열: 마스터 상품 UUID (선택)
+        </div>
+      </details>
+
+    </div>
+
+    <div class="slide-over__footer">
+      <button type="button" class="btn btn--secondary" id="cancelBtn" onclick="document.getElementById('slideOverClose').click()">취소</button>
+      <button type="button" class="btn btn--primary" id="saveBtn">저장</button>
+    </div>
+  </aside>
+
+  <!-- ── 토스트 ── -->
+  <div id="toastMsg" class="toast" role="status" aria-live="polite"></div>
+
+  <!-- ── 다크모드 FAB ── -->
+  <button type="button" class="theme-fab" id="themeToggleBtn" aria-label="테마 전환">☾</button>
+
+  <!-- ── Footer ── -->
+  <footer class="lumi-footer" role="contentinfo">
+    <p>루미(Lumi) — 멀티마켓 셀러 자동화 솔루션</p>
+    <p>문의: <a href="mailto:support@lumi.it.kr" style="color:inherit;">support@lumi.it.kr</a></p>
+  </footer>
+
+  <!-- ── 스크립트 ── -->
+  <script src="/js/_shared/auth-guard.js"></script>
+  <script>
+    (async function () {
+      var ok = await window.lumiAuthGuard.ensureOnboarded();
+      if (!ok) return;
+    })();
+  </script>
+  <script src="/js/sprint5-mapping.js"></script>
+
+  <!-- 모바일 테이블 data-label 주입 (JS에서 처리) -->
+  <script>
+    // 모바일 카드뷰용 data-label 자동 주입
+    (function () {
+      var LABELS = ['마켓', '마켓 옵션명', '마스터 상품', '마스터 옵션', '적용 횟수', '마지막 적용', ''];
+      var obs = new MutationObserver(function () {
+        document.querySelectorAll('#mappingTbody tr').forEach(function (tr) {
+          tr.querySelectorAll('td').forEach(function (td, i) {
+            if (!td.hasAttribute('data-label')) td.setAttribute('data-label', LABELS[i] || '');
+          });
+        });
+      });
+      obs.observe(document.getElementById('mappingTbody') || document.body, { childList: true, subtree: true });
+    })();
+  </script>
+
+</body>
+</html>

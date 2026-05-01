@@ -613,6 +613,77 @@
   to = "/.netlify/functions/account-delete"
   status = 200
 
+# Sprint 5 실패 추적
+[[redirects]]
+  from = "/api/list-failures"
+  to = "/.netlify/functions/list-failures"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/retry-failure"
+  to = "/.netlify/functions/retry-failure"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/failure-log"
+  to = "/failure-log.html"
+  status = 200
+
+# Sprint 5 — 옵션 대량 편집 (4 endpoints)
+[[redirects]]
+  from = "/api/bulk-options-list"
+  to = "/.netlify/functions/bulk-options-list"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/bulk-options-export"
+  to = "/.netlify/functions/bulk-options-export"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/bulk-options-preview"
+  to = "/.netlify/functions/bulk-options-preview"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/bulk-options-import"
+  to = "/.netlify/functions/bulk-options-import"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/bulk-options"
+  to = "/bulk-options.html"
+  status = 200
+
+[[redirects]]
+  from = "/api/bulk-products-export"
+  to = "/.netlify/functions/bulk-products-export"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/bulk-products-preview"
+  to = "/.netlify/functions/bulk-products-preview"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/bulk-products-import"
+  to = "/.netlify/functions/bulk-products-import"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/bulk-products"
+  to = "/bulk-products.html"
+  status = 200
+
 # API 라우팅
 [[redirects]]
   from = "/api/*"
@@ -705,3 +776,53 @@
   from = "/prototype.html"
   to = "/"
   status = 301
+
+# 주문서 옵션 매핑 API (Sprint 5)
+[[redirects]]
+  from = "/api/list-mappings"
+  to = "/.netlify/functions/list-mappings"
+  status = 200
+
+[[redirects]]
+  from = "/api/save-mapping"
+  to = "/.netlify/functions/save-mapping"
+  status = 200
+
+[[redirects]]
+  from = "/api/delete-mapping"
+  to = "/.netlify/functions/delete-mapping"
+  status = 200
+
+[[redirects]]
+  from = "/api/apply-mappings-to-order"
+  to = "/.netlify/functions/apply-mappings-to-order"
+  status = 200
+
+# Sprint 5 — 클레임 처리 분리
+[[redirects]]
+  from = "/api/list-claims"
+  to = "/.netlify/functions/list-claims"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/process-cancel-claim"
+  to = "/.netlify/functions/process-cancel-claim"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/process-return-claim"
+  to = "/.netlify/functions/process-return-claim"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/process-exchange-claim"
+  to = "/.netlify/functions/process-exchange-claim"
+  status = 200
+  force = true
+
+# collect-marketplace-claims cron (30분마다)
+[functions."collect-marketplace-claims"]
+  schedule = "*/30 * * * *"

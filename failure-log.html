@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>실패 추적 — 루미</title>
+  <link rel="icon" href="/assets/logo-cloud.png" />
+  <link rel="stylesheet" href="/css/brand-tokens.css" />
+  <link rel="stylesheet" href="/css/sprint3.css" />
+  <link rel="stylesheet" href="/css/canvas.css" />
+<style>
+/* ── 실패 추적 페이지 전용 스타일 ── */
+
+/* 탭 */
+.failure-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 0 20px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  border-bottom: 1px solid rgba(0,0,0,.08);
+  margin-bottom: 20px;
+}
+body.dark-mode .failure-tabs {
+  border-bottom-color: rgba(255,255,255,.08);
+}
+.failure-tabs::-webkit-scrollbar { display: none; }
+
+.failure-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #86868b;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color .15s, border-color .15s;
+  margin-bottom: -1px;
+}
+.failure-tab:hover { color: #1d1d1f; }
+body.dark-mode .failure-tab:hover { color: #f5f5f7; }
+.failure-tab.tab--active {
+  color: #C8507A;
+  border-bottom-color: #C8507A;
+}
+
+.tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #C8507A;
+  color: #fff;
+}
+.tab-badge:empty { display: none; }
+
+/* 통계 바 */
+.failure-stats {
+  display: flex;
+  gap: 16px;
+  padding: 0 20px 20px;
+  flex-wrap: wrap;
+}
+.failure-stat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #f5f5f7;
+  border-radius: 10px;
+  flex: 1;
+  min-width: 120px;
+}
+body.dark-mode .failure-stat { background: #272729; }
+
+.failure-stat__label {
+  font-size: 13px;
+  color: #86868b;
+}
+.failure-stat__value {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1d1d1f;
+  margin-left: auto;
+}
+body.dark-mode .failure-stat__value { color: #f5f5f7; }
+.failure-stat__value--red { color: #C8507A !important; }
+
+/* 리스트 */
+.failure-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 20px;
+}
+
+/* 실패 카드 */
+.failure-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  transition: box-shadow .15s;
+}
+body.dark-mode .failure-card {
+  background: #272729;
+  box-shadow: 0 1px 4px rgba(0,0,0,.3);
+}
+.failure-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.1); }
+
+.failure-card__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.failure-card__market {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 980px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  text-transform: capitalize;
+}
+
+.failure-card__cat {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+body.dark-mode .failure-card__cat { color: #f5f5f7; }
+
+.failure-card__retry-count {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 980px;
+  background: rgba(200,80,122,.12);
+  color: #C8507A;
+  font-weight: 500;
+}
+
+.failure-card__time {
+  font-size: 12px;
+  color: #86868b;
+  margin-left: auto;
+}
+
+.failure-card__summary {
+  font-size: 15px;
+  font-weight: 500;
+  color: #1d1d1f;
+  margin: 0 0 6px;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+body.dark-mode .failure-card__summary { color: #f5f5f7; }
+
+.failure-card__error {
+  font-size: 13px;
+  color: #86868b;
+  margin: 0 0 6px;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+body.dark-mode .failure-card__error { color: rgba(255,255,255,.5); }
+
+.failure-card__code {
+  display: inline-block;
+  font-size: 11px;
+  font-family: monospace;
+  background: rgba(0,0,0,.05);
+  border-radius: 4px;
+  padding: 2px 6px;
+  color: #6e6e73;
+  margin-bottom: 10px;
+}
+body.dark-mode .failure-card__code {
+  background: rgba(255,255,255,.07);
+  color: rgba(255,255,255,.4);
+}
+
+.failure-card__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+/* 빈 상태 */
+.empty-failure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 12px;
+  color: #86868b;
+  text-align: center;
+}
+.empty-failure__icon {
+  font-size: 40px;
+  opacity: .6;
+}
+.empty-failure__title {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0;
+}
+body.dark-mode .empty-failure__title { color: #f5f5f7; }
+.empty-failure__sub {
+  font-size: 14px;
+  margin: 0;
+  color: #86868b;
+}
+
+/* 로딩 스피너 */
+.failure-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  gap: 12px;
+  color: #86868b;
+  font-size: 14px;
+}
+.failure-loading__spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(200,80,122,.2);
+  border-top-color: #C8507A;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* 원본 보기 모달 */
+.raw-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0,0,0,.6);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+}
+@media (min-width: 768px) {
+  .raw-modal { align-items: center; padding: 24px; }
+}
+.raw-modal__box {
+  background: #fff;
+  border-radius: 16px 16px 0 0;
+  width: 100%;
+  max-width: 720px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+@media (min-width: 768px) {
+  .raw-modal__box { border-radius: 16px; }
+}
+body.dark-mode .raw-modal__box { background: #1c1c1e; }
+
+.raw-modal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(0,0,0,.08);
+  flex-shrink: 0;
+}
+body.dark-mode .raw-modal__head { border-bottom-color: rgba(255,255,255,.08); }
+.raw-modal__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0;
+}
+body.dark-mode .raw-modal__title { color: #f5f5f7; }
+.raw-modal__close {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0,0,0,.06);
+  color: #86868b;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+body.dark-mode .raw-modal__close { background: rgba(255,255,255,.1); color: rgba(255,255,255,.6); }
+
+.raw-modal__body {
+  overflow-y: auto;
+  flex: 1;
+  padding: 20px;
+}
+.raw-modal__pre {
+  font-family: 'SF Mono', 'Monaco', monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #1d1d1f;
+  white-space: pre-wrap;
+  word-break: break-all;
+  margin: 0;
+}
+body.dark-mode .raw-modal__pre { color: rgba(255,255,255,.8); }
+
+/* 토스트 */
+.lumi-toast {
+  position: fixed;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%) translateY(12px);
+  background: #1d1d1f;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 980px;
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s, transform .2s;
+  white-space: nowrap;
+  z-index: 2000;
+  max-width: calc(100vw - 40px);
+}
+.lumi-toast--show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.lumi-toast--success { background: #1d7a4e; }
+.lumi-toast--error { background: #C8507A; }
+
+/* 새로고침 버튼 */
+.refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 980px;
+  border: 1px solid rgba(0,0,0,.12);
+  background: none;
+  font-size: 13px;
+  color: #6e6e73;
+  cursor: pointer;
+  transition: background .15s;
+}
+.refresh-btn:hover { background: rgba(0,0,0,.04); }
+body.dark-mode .refresh-btn { border-color: rgba(255,255,255,.12); color: rgba(255,255,255,.5); }
+body.dark-mode .refresh-btn:hover { background: rgba(255,255,255,.05); }
+
+/* 모바일 탭 가로 스크롤 */
+@media (max-width: 480px) {
+  .failure-tabs { padding: 0 12px; }
+  .failure-list { padding: 0 12px; }
+  .failure-stats { padding: 0 12px 16px; gap: 10px; }
+  .failure-stat { padding: 10px 12px; }
+}
+
+/* word-break */
+.failure-card__summary,
+.failure-card__error {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+/* Lumi 법적 고지 Footer */
+.lumi-footer{border-top:1px solid rgba(0,0,0,.08);padding:28px 24px 36px;text-align:center;font-size:12px;color:#86868b;line-height:1.8;margin-top:48px;}
+body.dark-mode .lumi-footer{border-top-color:rgba(255,255,255,.08);color:rgba(255,255,255,.3);}
+.lumi-footer p{margin:0 0 2px;}
+.lumi-footer__links{display:flex;flex-wrap:wrap;gap:8px 14px;justify-content:center;margin:10px 0 6px;}
+.lumi-footer__links a{font-size:12px;color:#6e6e73;text-decoration:none;}
+.lumi-footer__links a:hover{text-decoration:underline;}
+body.dark-mode .lumi-footer__links a{color:rgba(255,255,255,.35);}
+.lumi-footer__copy{font-size:11px;color:#aeaeb2;margin-top:6px!important;}
+.lumi-footer__logo{height:28px;width:auto;display:block;margin:0 auto 8px;}
+body.dark-mode .lumi-footer__logo{filter:invert(1) brightness(2);}
+body.dark-mode .lumi-footer__copy{color:rgba(255,255,255,.2);}
+@media(max-width:768px){.lumi-footer{padding:22px 16px 30px;}}
+</style>
+<script>window.SUPABASE_ANON_KEY = 'sb_publishable_WjWg5o05Y7lhib674Cr_fw_0mpY-ccG';</script>
+</head>
+<body class="page-failure-log">
+  <header class="topbar" role="banner">
+    <a href="/dashboard.html" class="topbar__brand" aria-label="대시보드로 돌아가기" style="display:flex;align-items:center;gap:6px;color:inherit;text-decoration:none;">
+      <i data-lucide="arrow-left" style="width:20px;height:20px;flex-shrink:0;"></i>
+      <span style="font-size:15px;font-weight:600;">실패 추적</span>
+    </a>
+    <nav class="topbar__nav" aria-label="메인">
+      <a href="/tasks">오늘</a>
+      <a href="/orders">주문</a>
+      <a href="/cs-inbox">CS</a>
+    </nav>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button class="refresh-btn" type="button" id="refreshBtn" aria-label="새로고침">
+        <i data-lucide="refresh-cw" style="width:14px;height:14px;"></i>
+        <span>새로고침</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="page-main">
+    <!-- 히어로 -->
+    <section class="hero hero--compact">
+      <div>
+        <h1 class="hero__title">실패 추적</h1>
+        <p class="hero__sub">등록·수정·수집·송장·클레임 실패를 한 곳에서 확인하고 재처리하세요</p>
+      </div>
+    </section>
+
+    <!-- 통계 바 -->
+    <div class="failure-stats" aria-label="실패 통계">
+      <div class="failure-stat">
+        <span class="failure-stat__label">오늘 실패</span>
+        <span class="failure-stat__value failure-stat__value--red" id="statToday">—</span>
+      </div>
+      <div class="failure-stat">
+        <span class="failure-stat__label">이번 주</span>
+        <span class="failure-stat__value" id="statWeek">—</span>
+      </div>
+    </div>
+
+    <!-- 탭 -->
+    <div class="failure-tabs" id="failureTabs" role="tablist" aria-label="실패 카테고리">
+      <button class="failure-tab tab--active" type="button" data-cat="all" role="tab" aria-selected="true">
+        전체 <span class="tab-badge" aria-label="미해결 전체"></span>
+      </button>
+      <button class="failure-tab" type="button" data-cat="product_register" role="tab" aria-selected="false">
+        상품 등록 <span class="tab-badge" aria-label="미해결 상품 등록"></span>
+      </button>
+      <button class="failure-tab" type="button" data-cat="product_update" role="tab" aria-selected="false">
+        상품 수정 <span class="tab-badge" aria-label="미해결 상품 수정"></span>
+      </button>
+      <button class="failure-tab" type="button" data-cat="order_collect" role="tab" aria-selected="false">
+        주문 수집 <span class="tab-badge" aria-label="미해결 주문 수집"></span>
+      </button>
+      <button class="failure-tab" type="button" data-cat="tracking_send" role="tab" aria-selected="false">
+        송장 송신 <span class="tab-badge" aria-label="미해결 송장 송신"></span>
+      </button>
+      <button class="failure-tab" type="button" data-cat="mapping" role="tab" aria-selected="false">
+        매핑 <span class="tab-badge" aria-label="미해결 매핑"></span>
+      </button>
+    </div>
+
+    <!-- 로딩 -->
+    <div class="failure-loading" id="loadingState" aria-live="polite">
+      <div class="failure-loading__spinner"></div>
+      <span>실패 내역을 가져오는 중…</span>
+    </div>
+
+    <!-- 빈 상태 -->
+    <div class="empty-failure" id="emptyState" hidden>
+      <div class="empty-failure__icon" aria-hidden="true">
+        <i data-lucide="check-circle-2" style="width:48px;height:48px;color:#1d7a4e;"></i>
+      </div>
+      <h2 class="empty-failure__title">실패 없음</h2>
+      <p class="empty-failure__sub">이 카테고리에 미해결 실패가 없어요.</p>
+    </div>
+
+    <!-- 실패 카드 리스트 -->
+    <div class="failure-list" id="failureList" role="list" aria-label="실패 목록"></div>
+
+  </main>
+
+  <footer class="lumi-footer">
+    <img src="/assets/logo-wordmark.png" alt="루미" class="lumi-footer__logo" />
+    <div class="lumi-footer__links">
+      <a href="/privacy">개인정보처리방침</a>
+      <a href="/terms">이용약관</a>
+      <a href="/support">고객센터</a>
+    </div>
+    <p>루미 | 사업자번호 000-00-00000</p>
+    <p class="lumi-footer__copy">© 2026 Lumi. All rights reserved.</p>
+  </footer>
+
+  <!-- 원본 보기 모달 -->
+  <div class="raw-modal" id="rawModal" hidden role="dialog" aria-modal="true" aria-labelledby="rawModalTitle">
+    <div class="raw-modal__box">
+      <div class="raw-modal__head">
+        <h2 class="raw-modal__title" id="rawModalTitle">원본 응답</h2>
+        <button class="raw-modal__close" type="button" id="rawModalClose" aria-label="닫기">×</button>
+      </div>
+      <div class="raw-modal__body">
+        <pre class="raw-modal__pre" id="rawContent"></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- 다크모드 토글 FAB -->
+  <button class="theme-fab" id="themeFab" type="button" aria-label="다크 모드 전환" title="다크 모드"></button>
+  <script>
+  (function(){
+    var btn = document.getElementById('themeFab');
+    function setIcon(dark) {
+      btn.innerHTML = dark
+        ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>'
+        : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+    }
+    var stored = localStorage.getItem('lumi_dark_mode');
+    var isDark = stored === null ? true : stored === '1';
+    document.body.classList.toggle('dark-mode', isDark);
+    setIcon(isDark);
+    btn.addEventListener('click', function() {
+      isDark = !isDark;
+      document.body.classList.toggle('dark-mode', isDark);
+      document.documentElement.style.background = isDark ? '#111' : '#f5f5f7';
+      localStorage.setItem('lumi_dark_mode', isDark ? '1' : '0');
+      setIcon(isDark);
+    });
+  })();
+  </script>
+
+  <!-- 인증 가드 -->
+  <script src="/js/_shared/auth-guard.js"></script>
+  <script>
+    (async function () {
+      var ok = await window.lumiAuthGuard.ensureOnboarded();
+      if (!ok) return;
+    })();
+  </script>
+
+  <!-- Lucide 아이콘 -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      if (window.lucide) lucide.createIcons();
+    });
+  </script>
+
+  <!-- 실패 추적 클라이언트 -->
+  <script src="/js/sprint5-failures.js"></script>
+</body>
+</html>
