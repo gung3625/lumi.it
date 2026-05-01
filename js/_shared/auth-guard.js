@@ -49,16 +49,30 @@
    * window.lumiSupa 없이도 동작 (orders/cs-inbox/tasks 등).
    */
   function parseStoredSession() {
+    // 다양한 storage 키 시도 — 'lumi-auth' 우선, 없으면 Supabase 기본 키 패턴
+    var candidates = [];
     try {
-      var raw = localStorage.getItem('lumi-auth');
-      if (!raw) return null;
-      var obj = JSON.parse(raw);
-      // Supabase v2 storage 포맷: { currentSession: { access_token, user, ... } }
-      // 또는 직접 { access_token, user, ... }
-      var session = obj && (obj.currentSession || obj);
-      if (session && session.access_token && session.user) return session;
-      return null;
-    } catch (_) { return null; }
+      var v = localStorage.getItem('lumi-auth');
+      if (v) candidates.push(v);
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf('sb-') === 0 && k.indexOf('-auth-token') > 0) {
+          var sv = localStorage.getItem(k);
+          if (sv) candidates.push(sv);
+        }
+      }
+    } catch (_) {}
+
+    for (var j = 0; j < candidates.length; j++) {
+      try {
+        var obj = JSON.parse(candidates[j]);
+        // Supabase v2 storage 포맷: { currentSession: { access_token, user, ... } }
+        // 또는 직접 { access_token, user, ... }
+        var session = obj && (obj.currentSession || obj);
+        if (session && session.access_token && session.user) return session;
+      } catch (_) { /* 다음 후보 */ }
+    }
+    return null;
   }
 
   /**
@@ -82,11 +96,24 @@
    * 보호 페이지 진입 시 호출.
    * @returns {Promise<boolean>} true = 정상 진입, false = 리다이렉트 발생 (페이지 초기화 중단 필요)
    */
+  // 다양한 storage 키를 체크 — Supabase 기본 키, 커스텀 'lumi-auth', 'lumi_token' 등
+  function hasAnyStoredAuth() {
+    try {
+      if (localStorage.getItem('lumi-auth')) return true;
+      if (localStorage.getItem('lumi_token')) return true;
+      // Supabase v2 기본 키 패턴
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && (k.indexOf('sb-') === 0 && k.indexOf('-auth-token') > 0)) return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
   async function ensureOnboarded() {
     // 1. localStorage 게이트 (빠른 비로그인 차단, 왕복 없음)
-    var hasStoredAuth = false;
-    try { hasStoredAuth = !!localStorage.getItem('lumi-auth'); } catch (_) {}
-    if (!hasStoredAuth) {
+    //    여러 storage 키를 모두 체크 (페이지마다 다른 키 사용 가능성)
+    if (!hasAnyStoredAuth()) {
       window.location.replace('/?m=1');
       return false;
     }
