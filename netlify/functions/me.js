@@ -100,7 +100,7 @@ exports.handler = async (event) => {
     .from('sellers')
     .select('id, business_number, owner_name, phone, email, store_name, signup_step, signup_completed_at, business_verified, business_verified_at, plan, trial_start, marketing_consent, referral_code, created_at');
 
-  const { data: seller, error: selErr } = sellerQueryField
+  let { data: seller, error: selErr } = sellerQueryField
     ? await sellerQuery.eq(sellerQueryField, sellerQueryValue).maybeSingle()
     : await sellerQuery.eq('id', sellerId).maybeSingle();
 
@@ -111,6 +111,43 @@ exports.handler = async (event) => {
       headers: CORS,
       body: JSON.stringify({ error: '셀러 정보 조회에 실패했습니다.' }),
     };
+  }
+
+  // 관리자 자동 sellers 행 생성 (signup 미완료라도 모든 기능 프리패스)
+  if (!seller && supaAuthData && supaAuthData.user) {
+    const userEmail = String(supaAuthData.user.email || '').toLowerCase();
+    const adminEmails = String(process.env.ADMIN_EMAIL || 'gung3625@gmail.com')
+      .split(',')
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean);
+    if (adminEmails.includes(userEmail)) {
+      console.log('[me] 관리자 계정 — sellers 자동 생성:', userEmail);
+      const now = new Date().toISOString();
+      const adminBusinessNumber = '404-09-66416';
+      const { data: created, error: insErr } = await admin
+        .from('sellers')
+        .insert({
+          email: userEmail,
+          business_number: adminBusinessNumber,
+          owner_name: 'Admin',
+          phone: '01000000000',
+          store_name: 'Lumi Admin',
+          signup_step: 5,
+          signup_completed_at: now,
+          business_verified: true,
+          business_verified_at: now,
+          plan: 'beta',
+          trial_start: now,
+          marketing_consent: false,
+        })
+        .select('id, business_number, owner_name, phone, email, store_name, signup_step, signup_completed_at, business_verified, business_verified_at, plan, trial_start, marketing_consent, referral_code, created_at')
+        .single();
+      if (!insErr && created) {
+        seller = created;
+      } else {
+        console.error('[me] 관리자 sellers 자동 생성 실패:', insErr && insErr.message);
+      }
+    }
   }
 
   if (!seller) {
