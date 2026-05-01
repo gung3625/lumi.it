@@ -110,7 +110,32 @@
     return false;
   }
 
+  // URL에 OAuth 콜백 토큰이 있는지 (magic link, recovery, signup 등 hash/query)
+  function hasUrlAuthCallback() {
+    try {
+      var hash = window.location.hash || '';
+      var search = window.location.search || '';
+      if (hash.indexOf('access_token=') !== -1) return true;
+      if (hash.indexOf('refresh_token=') !== -1) return true;
+      if (hash.indexOf('type=magiclink') !== -1) return true;
+      if (hash.indexOf('type=recovery') !== -1) return true;
+      if (hash.indexOf('type=signup') !== -1) return true;
+      if (search.indexOf('code=') !== -1 && search.indexOf('state=') !== -1) return true;
+    } catch (_) {}
+    return false;
+  }
+
   async function ensureOnboarded() {
+    // 0. URL에 OAuth 콜백 토큰이 있으면 Supabase 처리 대기 (race condition 방지)
+    //    magic link 처리 → localStorage 저장까지 시간 필요
+    if (hasUrlAuthCallback()) {
+      // Supabase가 처리할 시간 — 최대 3초 폴링
+      for (var i = 0; i < 30; i++) {
+        if (hasAnyStoredAuth()) break;
+        await new Promise(function (r) { setTimeout(r, 100); });
+      }
+    }
+
     // 1. localStorage 게이트 (빠른 비로그인 차단, 왕복 없음)
     //    여러 storage 키를 모두 체크 (페이지마다 다른 키 사용 가능성)
     if (!hasAnyStoredAuth()) {
