@@ -9,6 +9,115 @@
   <link rel="stylesheet" href="/css/sprint3.css" />
   <link rel="stylesheet" href="/css/canvas.css" />
 <style>
+/* ── 모바일 특화 수정 (인라인 전용) ── */
+
+/* 1. 320px topbar 오버플로우 방지 */
+@media (max-width: 480px) {
+  .cmdk-trigger kbd,
+  .cmdk-trigger span:first-child { display: none; }
+  .topbar__nav a { font-size: 13px; padding: 0 4px; }
+}
+
+/* 2. word-break: keep-all */
+.cs-card__message,
+.cs-card__ai-suggestion,
+.cs-card__buyer,
+.kanban-card__title,
+.kanban-card__meta,
+.hero__title,
+.hero__sub,
+.action-agent__text,
+.cs-truth-banner {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+/* 3. CS 필터 칩 가로 스크롤 */
+@media (max-width: 767px) {
+  .filter-chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .filter-chips::-webkit-scrollbar { display: none; }
+  .chip { flex-shrink: 0; }
+}
+
+/* 4. view-toggle 모바일 글자 크기 */
+@media (max-width: 480px) {
+  .view-toggle__btn { font-size: 12px; padding: 4px 8px; }
+}
+
+/* 5. 답장 슬라이드오버 textarea — iOS 키보드 대응
+   canvas.css의 slideover__panel이 모바일에서 translateY(100%)로 올라옴
+   textarea가 키보드 위로 올라오도록 슬라이드오버 footer sticky 처리 */
+@media (max-width: 767px) {
+  .slideover__panel {
+    /* 이미 dashboard-canvas.css에서 처리, 여기선 보강 */
+    max-height: 90vh;
+  }
+  .slideover__body {
+    /* textarea가 키보드 위로 올라오도록 overflow 스크롤 허용 */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .slideover__footer {
+    /* iOS 키보드 시 하단 safe area */
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    position: sticky;
+    bottom: 0;
+    background: var(--canvas-card, #fff);
+  }
+  body.dark-mode .slideover__footer {
+    background: var(--canvas-card, #1A1A1C);
+  }
+}
+
+/* 6. 답장 textarea 최소 높이 및 폰트 16px (iOS 자동 zoom 방지) */
+.cs-card__editor,
+textarea[data-reply-editor] {
+  font-size: 16px !important;
+  min-height: 100px;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 7. quick-reply-chips wrap */
+.quick-reply-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.quick-reply-chip {
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 980px;
+  border: 1px solid rgba(200,80,122,.3);
+  background: rgba(200,80,122,.07);
+  color: #C8507A;
+  cursor: pointer;
+  font-family: inherit;
+  min-height: 36px;
+}
+
+/* 8. 빠른 답장 힌트 */
+.quick-reply-hint {
+  font-size: 13px;
+  color: #86868b;
+  line-height: 1.5;
+  margin-bottom: 10px;
+  word-break: keep-all;
+}
+
+/* 9. page-main 하단 여백 */
+@media (max-width: 767px) {
+  .page-main {
+    padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
 /* ── Lumi 법적 고지 Footer ──────────────────────────── */
 .lumi-footer{border-top:1px solid rgba(0,0,0,.08);padding:28px 24px 36px;text-align:center;font-size:12px;color:#86868b;line-height:1.8;margin-top:48px;}
 body.dark-mode .lumi-footer{border-top-color:rgba(255,255,255,.08);color:rgba(255,255,255,.3);}

@@ -32,6 +32,60 @@ body.dark-mode html{background:#111;}
 
 /* ── Phase 1: 인스타·자동응답 완전 숨김 (Phase 2 부활: 아래 규칙 삭제) ── */
 #ig-link-card,[data-feature="instagram-disabled-phase1"],#auto-reply{display:none !important;}
+
+/* ── 모바일 특화 수정 (인라인 전용) ── */
+
+/* 1. word-break: keep-all */
+.card-title,
+.field-label,
+.field-note,
+.toggle-label,
+.toggle-desc,
+.hero h1,
+.hero p {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+/* 2. nav safe-area (좌우 노치 대응) */
+nav:not(.m-tabbar) {
+  padding-left: max(24px, env(safe-area-inset-left, 24px));
+  padding-right: max(24px, env(safe-area-inset-right, 24px));
+}
+
+/* 3. 그리드 좌우 패딩 safe-area */
+@media (max-width: 700px) {
+  .grid {
+    padding-left: max(16px, env(safe-area-inset-left, 16px));
+    padding-right: max(16px, env(safe-area-inset-right, 16px));
+  }
+  .hero {
+    padding-left: max(20px, env(safe-area-inset-left, 20px));
+    padding-right: max(20px, env(safe-area-inset-right, 20px));
+  }
+}
+
+/* 4. btn-row — 버튼 모바일 전체 너비 */
+@media (max-width: 480px) {
+  .btn-row {
+    flex-direction: column;
+  }
+  .btn-row .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* 5. 토스트 — 하단 safe-area */
+.toast {
+  bottom: calc(32px + env(safe-area-inset-bottom, 0px)) !important;
+}
+
+/* 6. FAB — has-tabbar 시 탭바 위로 (design-v2.css 이미 처리됨, 320px 보강) */
+@media (max-width: 360px) {
+  .grid { padding-left: 12px; padding-right: 12px; }
+  .card { padding: 18px 14px; }
+}
 /* TODO Phase 2: 위 줄 삭제하면 인스타그램 연동 + DM 자동응답 섹션 복원 */
 
 nav:not(.m-tabbar){position:sticky;top:0;z-index:100;max-width:100%;padding:0 24px;height:48px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;background:rgba(245,245,247,.88);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);}

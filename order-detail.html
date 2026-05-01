@@ -20,6 +20,57 @@ body.dark-mode .lumi-footer__links a{color:rgba(255,255,255,.35);}
 body.dark-mode .lumi-footer__logo{filter:invert(1) brightness(2);}
 body.dark-mode .lumi-footer__copy{color:rgba(255,255,255,.2);}
 @media(max-width:768px){.lumi-footer{padding:22px 16px 30px;}}
+/* ── 모바일 특화 수정 (인라인 전용) ── */
+
+/* 1. topbar 뒤로 버튼 터치 타겟 */
+.topbar__back {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+
+/* 2. 액션 버튼 full-width + 44px 터치 타겟 */
+@media (max-width: 767px) {
+  .actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .actions .btn {
+    width: 100%;
+    min-height: 48px;
+    font-size: 16px;
+  }
+}
+
+/* 3. word-break: keep-all */
+.order-summary,
+.tracking-stepper h2,
+.stepper__title,
+.order-cs h2 {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+/* 4. 페이지 최하단 safe-area (FAB 위) */
+@media (max-width: 767px) {
+  .page-main {
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* 5. order-summary 가로 스크롤 방지 */
+.order-summary {
+  overflow-x: hidden;
+}
+.order-summary table,
+.order-summary dl {
+  width: 100%;
+  word-break: keep-all;
+}
+
 /* 다크모드 FAB */
 #fab-dark{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom,0px));right:20px;z-index:200;width:44px;height:44px;border-radius:50%;border:none;background:rgba(0,0,0,.07);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .3s,transform .2s;}
 #fab-dark:hover{transform:scale(1.08);}

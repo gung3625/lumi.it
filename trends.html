@@ -1356,6 +1356,100 @@ body {
 .stagger-in > *:nth-child(n+11) { animation-delay: 0.32s; }
 </style>
 <style>
+/* ── 모바일 특화 수정 (인라인 전용, 데스크톱 보존) ── */
+
+/* 1. 헤더 모바일 — sidebar-width 공간 제거 */
+@media (max-width: 700px) {
+  #header {
+    padding: 0 12px;
+  }
+  .header-brand {
+    width: auto;
+    padding: 0 4px 0 0;
+  }
+  .header-brand-text { display: none; }
+  .header-center { display: none; }
+  .header-shortcut-hint { display: none; }
+  .header-divider { display: none; }
+}
+
+/* 2. 레이아웃 — 모바일에서 사이드바 없을 때 패딩 보정 */
+@media (max-width: 700px) {
+  #layout {
+    padding-top: var(--header-h);
+  }
+  #main {
+    padding: 16px 14px calc(32px + env(safe-area-inset-bottom, 0px));
+    min-width: 0;
+    overflow-x: hidden;
+  }
+}
+
+/* 3. hero-cards — 480px 이하 완전 단일 컬럼 (700px는 이미 처리됨) */
+@media (max-width: 480px) {
+  .hero-cards {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+    height: auto;
+    max-height: none;
+  }
+  .hero-card-main, .hero-card-sub, .hero-card-sub3 {
+    grid-column: 1;
+    grid-row: auto;
+  }
+  .hero-section { margin-bottom: 20px; }
+}
+
+/* 4. keyword-grid — 320px에서 1열로 */
+@media (max-width: 360px) {
+  #keyword-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 5. word-break: keep-all */
+.hero-headline,
+.hero-card-keyword,
+.hero-card-narrative,
+.kw-keyword,
+.kw-narrative,
+.section-title {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+/* 6. 터치 타겟 — 헤더 버튼 */
+@media (max-width: 700px) {
+  .header-btn {
+    width: 44px;
+    height: 44px;
+  }
+  .header-btn-label {
+    min-height: 44px;
+    padding: 0 12px;
+    display: flex;
+    align-items: center;
+  }
+}
+
+/* 7. kw-card 모바일 폰트 보정 */
+@media (max-width: 480px) {
+  .kw-keyword { font-size: 15px; }
+  .kw-card { min-height: 100px; padding: 12px; }
+}
+
+/* 8. FAB safe-area */
+@media (max-width: 700px) {
+  #fab-dark {
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* 9. 가로 스크롤 방지 */
+@media (max-width: 700px) {
+  body { overflow-x: hidden; }
+}
+
 /* ── Lumi 법적 고지 Footer ──────────────────────────── */
 .lumi-footer{border-top:1px solid rgba(0,0,0,.08);padding:28px 24px 36px;text-align:center;font-size:12px;color:#86868b;line-height:1.8;margin-top:48px;}
 body.dark-mode .lumi-footer{border-top-color:rgba(255,255,255,.08);color:rgba(255,255,255,.3);}

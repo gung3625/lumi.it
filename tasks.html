@@ -10,6 +10,82 @@
   <link rel="stylesheet" href="/css/sprint4.css" />
   <link rel="stylesheet" href="/css/canvas.css" />
 <style>
+/* ── 모바일 특화 수정 (인라인 전용) ── */
+
+/* 1. topbar 320px 오버플로우 방지 */
+@media (max-width: 480px) {
+  .cmdk-trigger kbd,
+  .cmdk-trigger span:first-child { display: none; }
+  .kill-switch__label { display: none; }
+  .kill-switch { padding: 0 10px; min-width: 36px; }
+  .topbar__nav a { font-size: 13px; padding: 0 4px; }
+}
+
+/* 2. 트렌드 히어로 섹션 모바일 */
+@media (max-width: 767px) {
+  .trend-hero { padding: 12px 0; }
+  .trend-hero__title { font-size: 16px; word-break: keep-all; }
+  .trend-hero__sub { font-size: 13px; word-break: keep-all; }
+  .trend-cards { gap: 8px; }
+}
+
+/* 3. 필터 칩 가로 스크롤 */
+@media (max-width: 767px) {
+  .filter-chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .filter-chips::-webkit-scrollbar { display: none; }
+  .chip { flex-shrink: 0; }
+}
+
+/* 4. 우선순위 카드 word-break */
+.priority-card,
+.task-card,
+.hero__title,
+.hero__sub,
+.hero__greeting,
+.batch-actions__hint p,
+.action-agent__text {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+/* 5. batch-actions 모바일 */
+@media (max-width: 767px) {
+  .batch-actions__buttons {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .batch-actions__buttons .btn {
+    width: 100%;
+    min-height: 48px;
+  }
+}
+
+/* 6. Kill Switch 모달 safe-area */
+@media (max-width: 767px) {
+  .modal__content {
+    padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+    border-radius: 16px 16px 0 0;
+  }
+}
+
+/* 7. page-main 하단 여백 (FAB + safe-area) */
+@media (max-width: 767px) {
+  .page-main {
+    padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* 8. pc-hint 모바일 숨김 (sprint3.css 이미 처리 — 보강) */
+@media (max-width: 767px) {
+  .pc-hint { display: none; }
+}
+
 /* ── Lumi 법적 고지 Footer ──────────────────────────── */
 .lumi-footer{border-top:1px solid rgba(0,0,0,.08);padding:28px 24px 36px;text-align:center;font-size:12px;color:#86868b;line-height:1.8;margin-top:48px;}
 body.dark-mode .lumi-footer{border-top-color:rgba(255,255,255,.08);color:rgba(255,255,255,.3);}

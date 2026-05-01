@@ -8,6 +8,78 @@
   <link rel="stylesheet" href="/css/sprint3.css" />
   <link rel="stylesheet" href="/css/canvas.css" />
 <style>
+/* ── 모바일 특화 수정 (인라인 전용) ── */
+
+/* 1. Kanban 3열 → 모바일 단일 컬럼 */
+@media (max-width: 767px) {
+  .kanban-board {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow-x: visible;
+  }
+  .kanban-col {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+/* 2. topbar 버튼 그룹 오버플로우 — 320px 대응 */
+@media (max-width: 480px) {
+  .topbar {
+    gap: 6px;
+  }
+  .cmdk-trigger kbd,
+  .cmdk-trigger span:first-child {
+    display: none;
+  }
+  .kill-switch__label {
+    display: none;
+  }
+  .kill-switch {
+    padding: 0 10px;
+    min-width: 36px;
+  }
+  .topbar__nav a {
+    font-size: 13px;
+    padding: 0 4px;
+  }
+}
+
+/* 3. word-break: keep-all */
+.order-card__title,
+.kanban-card__title,
+.kanban-card__meta,
+.hero__title,
+.hero__sub {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+/* 4. 필터 칩 가로 스크롤 */
+@media (max-width: 767px) {
+  .filter-chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .filter-chips::-webkit-scrollbar { display: none; }
+  .chip { flex-shrink: 0; }
+}
+
+/* 5. batch-bar 모바일 — PC only이므로 숨김 확인용 (sprint3.css가 처리) */
+/* 6. 송장 시트 safe-area */
+.sheet__content {
+  padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+}
+
+/* 7. 터치 타겟 최소 44px */
+.order-card__actions .btn {
+  min-height: 44px;
+}
+
 /* ── Lumi 법적 고지 Footer ──────────────────────────── */
 .lumi-footer{border-top:1px solid rgba(0,0,0,.08);padding:28px 24px 36px;text-align:center;font-size:12px;color:#86868b;line-height:1.8;margin-top:48px;}
 body.dark-mode .lumi-footer{border-top-color:rgba(255,255,255,.08);color:rgba(255,255,255,.3);}

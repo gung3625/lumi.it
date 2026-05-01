@@ -11,6 +11,75 @@
   <link rel="stylesheet" href="/css/dashboard-canvas.css" />
   <link rel="stylesheet" href="/css/dashboard-chat.css" />
 <style>
+/* ── 모바일 특화 수정 (인라인 전용, 데스크톱 보존) ── */
+
+/* 1. 명령창 하단 safe-area 패딩 */
+@media (max-width: 1023px) {
+  .chat-command {
+    padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* 2. 모바일 헤더 safe-area */
+@media (max-width: 1023px) {
+  .chat-mobile-header {
+    padding-left: max(12px, env(safe-area-inset-left, 0px));
+    padding-right: max(12px, env(safe-area-inset-right, 0px));
+  }
+}
+
+/* 3. word-break: keep-all 한글 */
+.canvas-greet__title,
+.canvas-greet__sub,
+.widget__title,
+.widget__subtitle,
+.priority-card,
+.live-stream,
+.insight-canvas__summary {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+/* 4. suggest chips — 320px에서 넘침 방지 */
+@media (max-width: 480px) {
+  .chat-suggests {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+  .chat-suggest {
+    flex-shrink: 0;
+  }
+}
+
+/* 5. 위젯 헤더 줄바꿈 방지 — 좁은 화면에서 토글이 밀릴 때 */
+@media (max-width: 480px) {
+  .widget__header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .view-toggle {
+    font-size: 11px;
+  }
+  .view-toggle__btn {
+    padding: 4px 8px;
+  }
+}
+
+/* 6. 결산 캔버스 2열 (이미 dashboard-canvas.css에 768px 처리 있음, 480px 보강) */
+@media (max-width: 480px) {
+  .settlement-canvas__row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* 7. 사이드바 backdrop safe-area */
+@media (max-width: 1023px) {
+  .chat-sidebar {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
 /* ── Lumi 법적 고지 Footer ──────────────────────────── */
 .lumi-footer{border-top:1px solid rgba(0,0,0,.08);padding:28px 24px 36px;text-align:center;font-size:12px;color:#86868b;line-height:1.8;margin-top:48px;}
 body.dark-mode .lumi-footer{border-top-color:rgba(255,255,255,.08);color:rgba(255,255,255,.3);}
