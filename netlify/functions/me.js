@@ -114,13 +114,22 @@ exports.handler = async (event) => {
   }
 
   // 관리자 자동 sellers 행 생성 (signup 미완료라도 모든 기능 프리패스)
+  // 카카오 로그인은 카카오 이메일이라 Gmail 매칭 안 됨 → user.id (UUID)로 매칭
   if (!seller && supaAuthData && supaAuthData.user) {
     const userEmail = String(supaAuthData.user.email || '').toLowerCase();
+    const userId = String(supaAuthData.user.id || '').toLowerCase();
     const adminEmails = String(process.env.ADMIN_EMAIL || 'gung3625@gmail.com')
       .split(',')
       .map((s) => s.trim().toLowerCase())
       .filter(Boolean);
-    if (adminEmails.includes(userEmail)) {
+    const adminUserIds = String(
+      (process.env.LUMI_ADMIN_USER_IDS || '') + ',' + (process.env.LUMI_BRAND_USER_ID || '')
+    )
+      .split(',')
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean);
+    const isAdmin = adminEmails.includes(userEmail) || (userId && adminUserIds.includes(userId));
+    if (isAdmin) {
       console.log('[me] 관리자 계정 — sellers 자동 생성:', userEmail);
       const now = new Date().toISOString();
       const adminBusinessNumber = '404-09-66416';
