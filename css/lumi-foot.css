@@ -1,0 +1,320 @@
+/* ============================================================
+   Lumi Footer — Twilight (다크 + 4색 그라디언트 hairline)
+   ============================================================
+   토스 패턴: 화이트 본문 → 다크 푸터 대조 효과
+   시그니처 모먼트: 4색 그라디언트가 푸터 상단에 한 줄 흐름
+   ============================================================ */
+
+.lumi-foot {
+  position: relative;
+  isolation: isolate;
+  background: var(--lumi-foot-surface);
+  color: var(--lumi-foot-ink);
+  padding:
+    var(--lumi-space-12) var(--lumi-page-x)
+    calc(var(--lumi-space-10) + env(safe-area-inset-bottom));
+  font-size: var(--lumi-text-body-sm);
+  line-height: var(--lumi-leading-relaxed);
+  letter-spacing: var(--lumi-tracking-normal);
+  word-break: keep-all;
+  font-weight: var(--lumi-weight-regular);
+  overflow: hidden;
+}
+
+/* ─── 시그니처: 그라디언트 hairline + 광휘 ─── */
+.lumi-foot__bg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.lumi-foot__bg::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: var(--lumi-gradient-brand);
+  background-size: 200% 100%;
+  animation: lumi-foot-shimmer 14s linear infinite;
+}
+
+.lumi-foot__bg::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 240px;
+  background: radial-gradient(
+    ellipse 100% 100% at 50% 0%,
+    rgba(255, 107, 139, 0.10),
+    rgba(221, 160, 221, 0.06) 35%,
+    transparent 70%
+  );
+}
+
+@keyframes lumi-foot-shimmer {
+  from { background-position: 0% 0%; }
+  to   { background-position: 200% 0%; }
+}
+
+/* ─── Layout ─── */
+.lumi-foot__inner {
+  max-width: var(--lumi-max-content);
+  margin-inline: auto;
+  display: grid;
+  gap: var(--lumi-space-10);
+}
+
+/* ─── Brand ─── */
+.lumi-foot__brand {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lumi-space-3);
+}
+
+.lumi-foot__logo {
+  display: inline-flex;
+  align-items: baseline;
+  font-family: var(--lumi-font-system);
+  font-weight: var(--lumi-weight-heavy);
+  font-size: 28px;
+  letter-spacing: -0.05em;
+  color: var(--lumi-neutral-0);
+  width: max-content;
+  transition: transform var(--lumi-duration-snap) var(--lumi-ease-toss);
+}
+
+.lumi-foot__logo:hover { transform: translateY(-1px); }
+.lumi-foot__logo:active { transform: var(--lumi-press); }
+
+.lumi-foot__logo-text {
+  background: var(--lumi-gradient-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  background-size: 200% 100%;
+  animation: lumi-foot-shimmer 9s linear infinite;
+  display: inline-block;
+}
+
+.lumi-foot__tagline {
+  margin: 0;
+  font-size: var(--lumi-text-caption);
+  font-weight: var(--lumi-weight-medium);
+  color: var(--lumi-neutral-400);
+  letter-spacing: 0.02em;
+}
+
+.lumi-foot__contact {
+  list-style: none;
+  margin: var(--lumi-space-2) 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--lumi-space-4);
+  font-size: var(--lumi-text-caption);
+}
+
+.lumi-foot__contact a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--lumi-tap-min);
+  color: var(--lumi-neutral-300);
+  font-weight: var(--lumi-weight-medium);
+  font-variant-numeric: tabular-nums;
+  transition: color var(--lumi-duration-fast) var(--lumi-ease-soft);
+  position: relative;
+}
+
+.lumi-foot__contact a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 11px;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--lumi-duration-base) var(--lumi-ease-toss);
+  opacity: 0.5;
+}
+
+@media (hover: hover) {
+  .lumi-foot__contact a:hover {
+    color: var(--lumi-neutral-0);
+  }
+  .lumi-foot__contact a:hover::after {
+    transform: scaleX(1);
+  }
+}
+
+/* ─── Nav links ─── */
+.lumi-foot__links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--lumi-space-4);
+}
+
+.lumi-foot__links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--lumi-tap-min);
+  font-size: var(--lumi-text-body-sm);
+  font-weight: var(--lumi-weight-medium);
+  color: var(--lumi-neutral-300);
+  position: relative;
+  transition: color var(--lumi-duration-fast) var(--lumi-ease-soft);
+}
+
+.lumi-foot__links a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 11px;
+  height: 1.5px;
+  background: var(--lumi-gradient-brand);
+  border-radius: 1px;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--lumi-duration-base) var(--lumi-ease-toss);
+}
+
+@media (hover: hover) {
+  .lumi-foot__links a:hover {
+    color: var(--lumi-neutral-0);
+  }
+  .lumi-foot__links a:hover::after {
+    transform: scaleX(1);
+  }
+}
+
+.lumi-foot__links a:focus-visible {
+  outline: 2px solid var(--lumi-brand-pink);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+
+/* ─── Business info ─── */
+.lumi-foot__biz {
+  font-size: var(--lumi-text-caption);
+}
+
+.lumi-foot__biz-list {
+  margin: 0;
+  display: grid;
+  gap: var(--lumi-space-2);
+}
+
+.lumi-foot__biz-list > div {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: var(--lumi-space-3);
+  align-items: baseline;
+}
+
+.lumi-foot__biz-list dt {
+  color: var(--lumi-neutral-500);
+  font-weight: var(--lumi-weight-medium);
+  letter-spacing: 0.01em;
+}
+
+.lumi-foot__biz-list dd {
+  margin: 0;
+  color: var(--lumi-neutral-400);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--lumi-leading-snug);
+}
+
+/* ─── Bottom row ─── */
+.lumi-foot__bottom {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lumi-space-2);
+  padding-top: var(--lumi-space-6);
+  border-top: 1px solid var(--lumi-line-on-dark);
+  font-size: var(--lumi-text-label);
+  color: var(--lumi-neutral-600);
+  letter-spacing: 0.01em;
+}
+
+.lumi-foot__copy {
+  margin: 0;
+  font-weight: var(--lumi-weight-medium);
+  font-variant-numeric: tabular-nums;
+}
+
+.lumi-foot__notice {
+  margin: 0;
+  font-size: var(--lumi-text-label);
+  color: var(--lumi-neutral-500);
+}
+
+.lumi-foot__notice strong {
+  color: var(--lumi-neutral-300);
+  font-weight: var(--lumi-weight-medium);
+}
+
+/* ─── Tablet ─── */
+@media (min-width: 768px) {
+  .lumi-foot {
+    padding:
+      var(--lumi-space-16) var(--lumi-page-x)
+      calc(var(--lumi-space-10) + env(safe-area-inset-bottom));
+  }
+
+  .lumi-foot__inner {
+    grid-template-columns: 1.4fr 1fr;
+    gap: var(--lumi-space-12) var(--lumi-space-16);
+  }
+
+  .lumi-foot__brand { grid-row: span 2; }
+  .lumi-foot__nav   { align-self: start; }
+
+  .lumi-foot__bottom {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--lumi-space-3) var(--lumi-space-8);
+  }
+
+  .lumi-foot__biz-list > div {
+    grid-template-columns: 120px 1fr;
+  }
+}
+
+/* ─── Desktop ─── */
+@media (min-width: 1120px) {
+  .lumi-foot {
+    padding: var(--lumi-space-20) var(--lumi-page-x);
+  }
+
+  .lumi-foot__inner {
+    grid-template-columns: 1.6fr 1fr 1.4fr;
+  }
+
+  .lumi-foot__brand { grid-row: auto; }
+
+  .lumi-foot__links {
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .lumi-foot__links a::after { bottom: 9px; }
+}
+
+/* ─── prefers-reduced-motion ─── */
+@media (prefers-reduced-motion: reduce) {
+  .lumi-foot__bg::before,
+  .lumi-foot__logo-text {
+    animation: none;
+  }
+}
