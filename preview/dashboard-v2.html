@@ -1,0 +1,652 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>대시보드 — lumi</title>
+
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="/css/lumi-tokens.css">
+<link rel="stylesheet" href="/css/lumi-comp.css">
+
+<style>
+  body { padding-bottom: 84px; background: var(--lumi-surface-alt); }
+  @media (min-width: 768px) { body { padding-bottom: 0; } }
+
+  /* ─── Greeting ─── */
+  .dash-greet {
+    padding: var(--lumi-space-10) var(--lumi-page-x) var(--lumi-space-6);
+    background: var(--lumi-surface);
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .dash-greet::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(255,107,139,.08), transparent 70%);
+  }
+  .dash-greet__inner {
+    max-width: var(--lumi-max-content);
+    margin-inline: auto;
+  }
+  .dash-greet__hello {
+    font-size: var(--lumi-text-caption);
+    font-weight: var(--lumi-weight-semibold);
+    color: var(--lumi-brand-text);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: var(--lumi-space-2);
+  }
+  .dash-greet__title {
+    font-size: var(--lumi-text-display-3);
+    font-weight: var(--lumi-weight-heavy);
+    letter-spacing: var(--lumi-tracking-tight);
+    line-height: var(--lumi-leading-tight);
+    color: var(--lumi-ink-strong);
+    margin: 0 0 var(--lumi-space-3);
+  }
+  .dash-greet__sub {
+    font-size: var(--lumi-text-body);
+    color: var(--lumi-ink-muted);
+    margin: 0;
+    line-height: var(--lumi-leading-relaxed);
+  }
+
+  /* ─── Sections ─── */
+  .dash-section {
+    padding: var(--lumi-space-8) var(--lumi-page-x);
+  }
+  .dash-section__inner {
+    max-width: var(--lumi-max-content);
+    margin-inline: auto;
+  }
+  .dash-section__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: var(--lumi-space-4);
+    gap: var(--lumi-space-3);
+  }
+  .dash-section__title {
+    font-size: var(--lumi-text-headline);
+    font-weight: var(--lumi-weight-heavy);
+    letter-spacing: var(--lumi-tracking-snug);
+    color: var(--lumi-ink-strong);
+    margin: 0;
+  }
+  .dash-section__more {
+    font-size: var(--lumi-text-body-sm);
+    font-weight: var(--lumi-weight-semibold);
+    color: var(--lumi-brand-text);
+    transition: opacity var(--lumi-duration-fast) var(--lumi-ease-soft);
+  }
+  .dash-section__more:hover { opacity: 0.7; }
+
+  /* ─── Quick actions ─── */
+  .quick-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--lumi-space-2);
+  }
+  @media (min-width: 768px) {
+    .quick-grid { grid-template-columns: repeat(4, 1fr); gap: var(--lumi-space-3); }
+  }
+  .quick-card {
+    position: relative;
+    background: var(--lumi-surface);
+    border: 1px solid var(--lumi-line);
+    border-radius: var(--lumi-radius-lg);
+    padding: var(--lumi-space-5);
+    text-align: left;
+    cursor: pointer;
+    overflow: hidden;
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    gap: var(--lumi-space-2);
+    min-height: 120px;
+    transition:
+      transform var(--lumi-duration-base) var(--lumi-ease-toss),
+      box-shadow var(--lumi-duration-base) var(--lumi-ease-soft),
+      border-color var(--lumi-duration-fast) var(--lumi-ease-soft);
+    will-change: transform;
+  }
+  .quick-card::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1.5px;
+    background: var(--lumi-gradient-brand);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity var(--lumi-duration-base) var(--lumi-ease-soft);
+    pointer-events: none;
+  }
+  @media (hover: hover) {
+    .quick-card:hover {
+      transform: var(--lumi-lift-lg);
+      box-shadow: var(--lumi-shadow-lg);
+      border-color: transparent;
+    }
+    .quick-card:hover::before { opacity: 1; }
+  }
+  .quick-card:active { transform: var(--lumi-press-sm); transition-duration: var(--lumi-duration-instant); }
+
+  .quick-card__icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: var(--lumi-brand-soft);
+    color: var(--lumi-brand-text);
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+  }
+  .quick-card__icon svg {
+    width: 18px; height: 18px;
+    stroke: currentColor;
+    stroke-width: 2;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .quick-card__title {
+    font-size: var(--lumi-text-body);
+    font-weight: var(--lumi-weight-bold);
+    color: var(--lumi-ink-strong);
+    margin: 0;
+    letter-spacing: var(--lumi-tracking-snug);
+  }
+  .quick-card__desc {
+    font-size: var(--lumi-text-caption);
+    color: var(--lumi-ink-muted);
+    margin: 0;
+    line-height: var(--lumi-leading-snug);
+  }
+
+  /* ─── Stat row (오늘 게시·DM·도달) ─── */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--lumi-space-2);
+  }
+  @media (min-width: 768px) {
+    .stat-grid { grid-template-columns: repeat(4, 1fr); gap: var(--lumi-space-3); }
+  }
+  .stat-card {
+    background: var(--lumi-surface);
+    border: 1px solid var(--lumi-line);
+    border-radius: var(--lumi-radius-lg);
+    padding: var(--lumi-space-5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--lumi-space-1);
+    transition:
+      transform var(--lumi-duration-base) var(--lumi-ease-toss),
+      box-shadow var(--lumi-duration-base) var(--lumi-ease-soft);
+  }
+  @media (hover: hover) {
+    .stat-card:hover {
+      transform: var(--lumi-lift-sm);
+      box-shadow: var(--lumi-shadow-md);
+    }
+  }
+  .stat-card__label {
+    font-size: var(--lumi-text-caption);
+    color: var(--lumi-ink-muted);
+    font-weight: var(--lumi-weight-medium);
+    letter-spacing: 0.01em;
+  }
+  .stat-card__num {
+    font-size: 28px;
+    font-weight: var(--lumi-weight-heavy);
+    letter-spacing: -0.04em;
+    color: var(--lumi-ink-strong);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+  }
+  .stat-card__num.is-brand {
+    background: var(--lumi-gradient-brand);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .stat-card__delta {
+    font-size: var(--lumi-text-caption);
+    font-weight: var(--lumi-weight-bold);
+    margin-top: var(--lumi-space-1);
+  }
+  .stat-card__delta.is-up { color: var(--lumi-success); }
+  .stat-card__delta.is-down { color: var(--lumi-error); }
+  .stat-card__delta.is-flat { color: var(--lumi-ink-faint); }
+
+  /* ─── Schedule list (오늘 게시 예정) ─── */
+  .schedule-list {
+    background: var(--lumi-surface);
+    border: 1px solid var(--lumi-line);
+    border-radius: var(--lumi-radius-lg);
+    overflow: hidden;
+  }
+  .schedule-item {
+    display: grid;
+    grid-template-columns: 80px 1fr auto;
+    align-items: center;
+    gap: var(--lumi-space-4);
+    padding: var(--lumi-space-4) var(--lumi-space-5);
+    border-bottom: 1px solid var(--lumi-line);
+    transition: background-color var(--lumi-duration-fast) var(--lumi-ease-soft);
+  }
+  .schedule-item:last-child { border-bottom: 0; }
+  @media (hover: hover) {
+    .schedule-item:hover { background: var(--lumi-surface-alt); }
+  }
+  .schedule-item__time {
+    font-size: var(--lumi-text-body);
+    font-weight: var(--lumi-weight-heavy);
+    letter-spacing: -0.02em;
+    background: var(--lumi-gradient-brand);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-variant-numeric: tabular-nums;
+  }
+  .schedule-item__body {
+    min-width: 0;
+  }
+  .schedule-item__title {
+    font-size: var(--lumi-text-body-sm);
+    font-weight: var(--lumi-weight-bold);
+    color: var(--lumi-ink-strong);
+    margin: 0 0 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .schedule-item__meta {
+    font-size: var(--lumi-text-caption);
+    color: var(--lumi-ink-muted);
+    margin: 0;
+  }
+  .schedule-item__status {
+    flex-shrink: 0;
+    font-size: 10px;
+    font-weight: var(--lumi-weight-bold);
+    padding: 4px 10px;
+    border-radius: 980px;
+    letter-spacing: 0.02em;
+  }
+  .schedule-item__status.is-pending {
+    background: var(--lumi-brand-soft);
+    color: var(--lumi-brand-text);
+  }
+  .schedule-item__status.is-done {
+    background: rgba(52, 199, 89, 0.12);
+    color: var(--lumi-success);
+  }
+
+  .schedule-empty {
+    padding: var(--lumi-space-12) var(--lumi-space-5);
+    text-align: center;
+    color: var(--lumi-ink-faint);
+    font-size: var(--lumi-text-body-sm);
+  }
+
+  /* ─── Trends row ─── */
+  .trends-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--lumi-space-2);
+  }
+  .trends-row .trends-chip {
+    padding: 8px 14px;
+    border-radius: 980px;
+    background: var(--lumi-surface);
+    border: 1.5px solid var(--lumi-line);
+    font-size: var(--lumi-text-body-sm);
+    font-weight: var(--lumi-weight-semibold);
+    color: var(--lumi-ink-strong);
+    transition:
+      transform var(--lumi-duration-snap) var(--lumi-ease-toss),
+      border-color var(--lumi-duration-fast) var(--lumi-ease-soft);
+    cursor: pointer;
+  }
+  .trends-row .trends-chip strong {
+    color: var(--lumi-brand-text);
+    font-weight: var(--lumi-weight-heavy);
+    margin-left: 4px;
+  }
+  @media (hover: hover) {
+    .trends-row .trends-chip:hover {
+      transform: var(--lumi-lift-sm);
+      border-color: var(--lumi-brand-fill);
+    }
+  }
+  .trends-row .trends-chip--hot {
+    background: var(--lumi-gradient-brand);
+    background-size: 200% 100%;
+    border-color: transparent;
+    color: white;
+    animation: lumi-foot-shimmer 8s linear infinite;
+  }
+  .trends-row .trends-chip--hot strong { color: rgba(255,255,255,.85); }
+
+  /* ─── DM activity ─── */
+  .dm-activity {
+    background: var(--lumi-surface);
+    border: 1px solid var(--lumi-line);
+    border-radius: var(--lumi-radius-lg);
+    padding: var(--lumi-space-6);
+    display: grid;
+    gap: var(--lumi-space-5);
+  }
+  .dm-activity__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--lumi-space-3);
+  }
+  .dm-activity__num {
+    font-size: 40px;
+    font-weight: var(--lumi-weight-heavy);
+    letter-spacing: -0.04em;
+    background: var(--lumi-gradient-brand);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .dm-activity__num small {
+    font-size: 16px;
+    color: var(--lumi-ink-muted);
+    -webkit-text-fill-color: var(--lumi-ink-muted);
+    margin-left: 4px;
+    font-weight: var(--lumi-weight-semibold);
+  }
+  .dm-activity__toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 980px;
+    background: rgba(52, 199, 89, 0.12);
+    color: var(--lumi-success);
+    font-size: var(--lumi-text-caption);
+    font-weight: var(--lumi-weight-bold);
+  }
+  .dm-activity__toggle::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--lumi-success);
+    box-shadow: 0 0 0 4px rgba(52, 199, 89, 0.18);
+    animation: lumi-pulse 1.6s var(--lumi-ease-soft) infinite;
+  }
+  .dm-activity__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--lumi-space-3);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .dm-activity__row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: baseline;
+    gap: var(--lumi-space-3);
+    padding-bottom: var(--lumi-space-3);
+    border-bottom: 1px solid var(--lumi-line);
+  }
+  .dm-activity__row:last-child { border-bottom: 0; padding-bottom: 0; }
+  .dm-activity__msg {
+    font-size: var(--lumi-text-body-sm);
+    color: var(--lumi-ink);
+    margin: 0;
+    line-height: var(--lumi-leading-snug);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .dm-activity__time {
+    font-size: var(--lumi-text-label);
+    color: var(--lumi-ink-faint);
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ─── Layout grid (insights row) ─── */
+  .insights-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--lumi-space-4);
+  }
+  @media (min-width: 1024px) {
+    .insights-grid { grid-template-columns: 2fr 1fr; }
+  }
+
+  /* ─── Hint ─── */
+  .dash-hint {
+    margin-top: var(--lumi-space-2);
+    padding: var(--lumi-space-4);
+    border-radius: var(--lumi-radius-md);
+    background: var(--lumi-brand-soft);
+    border: 1px solid rgba(200, 80, 122, 0.08);
+    font-size: var(--lumi-text-caption);
+    color: var(--lumi-brand-text);
+    line-height: var(--lumi-leading-relaxed);
+  }
+  .dash-hint strong { font-weight: var(--lumi-weight-bold); }
+</style>
+</head>
+<body data-theme="light">
+
+<!-- header.js 자동 삽입 -->
+
+<main>
+
+  <!-- ════════ Greeting ════════ -->
+  <section class="dash-greet">
+    <div class="dash-greet__inner">
+      <p class="dash-greet__hello">5월 4일 월요일</p>
+      <h1 class="dash-greet__title">
+        안녕하세요 김사장님,<br>
+        <span class="lumi-text-gradient">오늘 게시 3건 예약</span>
+      </h1>
+      <p class="dash-greet__sub">DM 자동응답 켜져 있어요. 사장님은 결정만 하세요.</p>
+    </div>
+  </section>
+
+  <!-- ════════ Quick actions ════════ -->
+  <section class="dash-section">
+    <div class="dash-section__inner">
+      <div class="dash-section__head">
+        <h2 class="dash-section__title">빠른 시작</h2>
+      </div>
+
+      <div class="quick-grid">
+        <a href="/register-product" class="quick-card">
+          <div class="quick-card__icon">
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          </div>
+          <h3 class="quick-card__title">사진 1장 등록</h3>
+          <p class="quick-card__desc">사진 → 캡션 → 게시</p>
+        </a>
+
+        <a href="/register-product?mode=caption" class="quick-card">
+          <div class="quick-card__icon">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          </div>
+          <h3 class="quick-card__title">캡션 재생성</h3>
+          <p class="quick-card__desc">마음에 안 들면 다시</p>
+        </a>
+
+        <a href="/trends" class="quick-card">
+          <div class="quick-card__icon">
+            <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <h3 class="quick-card__title">트렌드 추천</h3>
+          <p class="quick-card__desc">오늘 뭐 팔지</p>
+        </a>
+
+        <a href="/settings#auto-reply" class="quick-card">
+          <div class="quick-card__icon">
+            <svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+          </div>
+          <h3 class="quick-card__title">DM 자동응답</h3>
+          <p class="quick-card__desc">설정·로그</p>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ Stats ════════ -->
+  <section class="dash-section">
+    <div class="dash-section__inner">
+      <div class="dash-section__head">
+        <h2 class="dash-section__title">오늘 한눈에</h2>
+        <a href="#" class="dash-section__more">전체 분석 →</a>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card">
+          <span class="stat-card__label">예약 게시</span>
+          <span class="stat-card__num is-brand">3</span>
+          <span class="stat-card__delta is-up">+1 어제 대비</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-card__label">DM 자동응답</span>
+          <span class="stat-card__num is-brand">12</span>
+          <span class="stat-card__delta is-up">+4 어제 대비</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-card__label">새 팔로워</span>
+          <span class="stat-card__num">+24</span>
+          <span class="stat-card__delta is-up">+8 어제 대비</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-card__label">도달</span>
+          <span class="stat-card__num">1.4K</span>
+          <span class="stat-card__delta is-flat">— 어제 비슷</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ Schedule + DM ════════ -->
+  <section class="dash-section">
+    <div class="dash-section__inner">
+      <div class="dash-section__head">
+        <h2 class="dash-section__title">오늘 게시 일정</h2>
+        <a href="/register-product" class="dash-section__more">새 게시 →</a>
+      </div>
+
+      <div class="insights-grid">
+        <div class="schedule-list">
+          <div class="schedule-item">
+            <span class="schedule-item__time">11:30</span>
+            <div class="schedule-item__body">
+              <p class="schedule-item__title">여름 한정 핑크 코튼셔츠</p>
+              <p class="schedule-item__meta">캡션 3안 · #여름룩 · #코튼셔츠</p>
+            </div>
+            <span class="schedule-item__status is-done">게시 완료</span>
+          </div>
+          <div class="schedule-item">
+            <span class="schedule-item__time">14:30</span>
+            <div class="schedule-item__body">
+              <p class="schedule-item__title">신상 데일리 슬랙스 3종</p>
+              <p class="schedule-item__meta">캡션 3안 · #슬랙스 · #남자코디</p>
+            </div>
+            <span class="schedule-item__status is-pending">예약 대기</span>
+          </div>
+          <div class="schedule-item">
+            <span class="schedule-item__time">19:30</span>
+            <div class="schedule-item__body">
+              <p class="schedule-item__title">테니스 룩 — 화이트 미니스커트</p>
+              <p class="schedule-item__meta">캡션 3안 · 반응 ↑ 추천 시간대</p>
+            </div>
+            <span class="schedule-item__status is-pending">예약 대기</span>
+          </div>
+        </div>
+
+        <div class="dm-activity">
+          <div class="dm-activity__head">
+            <div>
+              <div class="stat-card__label">오늘 DM 자동응답</div>
+              <div class="dm-activity__num">12<small>건</small></div>
+            </div>
+            <span class="dm-activity__toggle">자동 ON</span>
+          </div>
+
+          <ul class="dm-activity__list">
+            <li class="dm-activity__row">
+              <p class="dm-activity__msg">"가격 얼마예요?"</p>
+              <span class="dm-activity__time">방금</span>
+            </li>
+            <li class="dm-activity__row">
+              <p class="dm-activity__msg">"재고 있나요?"</p>
+              <span class="dm-activity__time">12분</span>
+            </li>
+            <li class="dm-activity__row">
+              <p class="dm-activity__msg">"언제 도착해요?"</p>
+              <span class="dm-activity__time">28분</span>
+            </li>
+            <li class="dm-activity__row">
+              <p class="dm-activity__msg">"S 사이즈 있나요?"</p>
+              <span class="dm-activity__time">1시간</span>
+            </li>
+          </ul>
+
+          <div class="dash-hint">
+            루미가 사장님 말투로 자동 답장 중. <strong>위험 답변(가격 변경·환불)은 사장님 확인 후 발송</strong>.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ Trends ════════ -->
+  <section class="dash-section">
+    <div class="dash-section__inner">
+      <div class="dash-section__head">
+        <h2 class="dash-section__title">오늘 트렌드</h2>
+        <a href="/trends" class="dash-section__more">전체 →</a>
+      </div>
+
+      <div class="trends-row">
+        <div class="trends-chip trends-chip--hot">🔥 비건 잼 <strong>+340%</strong></div>
+        <div class="trends-chip">1인 식단 <strong>+82%</strong></div>
+        <div class="trends-chip">캠핑 도시락 <strong>+64%</strong></div>
+        <div class="trends-chip">홈베이킹 <strong>+58%</strong></div>
+        <div class="trends-chip">코튼셔츠 <strong>+47%</strong></div>
+        <div class="trends-chip">테니스 룩 <strong>+39%</strong></div>
+        <div class="trends-chip">여름 향수 <strong>+33%</strong></div>
+      </div>
+
+      <div class="dash-hint" style="margin-top: var(--lumi-space-4);">
+        패션 업종 기반 추천. <strong>매장 컨텍스트 업데이트</strong>는 설정 → 매장 정보에서 변경 가능합니다.
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- 모바일 하단 sticky CTA -->
+<div class="lumi-bottom-cta">
+  <a href="/register-product" class="lumi-btn lumi-btn--primary lumi-btn--full">
+    사진 1장 등록 시작
+  </a>
+</div>
+
+<script src="/js/lumi-head.js" defer></script>
+<script src="/js/lumi-foot.js" defer></script>
+</body>
+</html>
