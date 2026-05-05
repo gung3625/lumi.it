@@ -1,13 +1,12 @@
 // 종합 알림 cron — Supabase 기반 (Blobs 완전 제거)
-// - 월간 리포트, 시즌 이벤트 D-7, 첫 게시 코칭, 구독 만료 D-7
-// - 리텐션 이메일 (활성화/휴면/주간팁/upsell/NPS) via Resend
+// - 월간 리포트, 시즌 이벤트 D-7, 첫 게시 코칭
+// - 리텐션 이메일 (활성화/휴면/주간팁/NPS) via Resend
 // - 운영자 일일 리포트 SMS
 //
 // 스키마 제약:
 //   public.users 에는 post_count/lastPostedAt/retentionEmailsSent 등 컬럼이 없음.
 //   - 게시 통계는 public.caption_history 집계로 계산.
 //   - 발송 이력은 public.rate_limits 테이블에 kind='notif:<key>:<user_id>' 로 저장.
-//   - 구독 만료일은 public.orders 최신 결제 + 30일 기준 계산.
 //   - retention_unsubscribed / agree_marketing 은 users 컬럼 그대로 사용.
 const crypto = require('crypto');
 const { corsHeaders, getOrigin } = require('./_shared/auth');
@@ -30,8 +29,7 @@ const CHANNEL_ID = 'KA01PF26032219112677567W26lSNGQj';
 const TEMPLATES = {
   monthly_report:   { id: 'KA01TP_MONTHLY_REPORT' },
   season_event:     { id: 'KA01TP_SEASON_EVENT' },
-  first_post_coach: { id: 'KA01TP_FIRST_POST' },
-  expiry_d7:        { id: 'KA01TP_EXPIRY_D7' }
+  first_post_coach: { id: 'KA01TP_FIRST_POST' }
 };
 
 function getAuthHeader() {
@@ -114,25 +112,6 @@ async function getUserPostStats(supabase, userId) {
   };
 }
 
-async function getUserSubscription(supabase, userId) {
-  const { data: last } = await supabase
-    .from('orders')
-    .select('plan, status, created_at')
-    .eq('user_id', userId)
-    .eq('status', 'paid')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (!last) return { subscriptionStart: null, subscriptionEnd: null };
-  const start = new Date(last.created_at);
-  const end = new Date(start);
-  end.setDate(end.getDate() + 30);
-  return {
-    subscriptionStart: start.toISOString(),
-    subscriptionEnd: end.toISOString(),
-  };
-}
-
 async function countLastMonthPosts(supabase, userId, startIso, endIso) {
   const { count } = await supabase
     .from('caption_history')
@@ -199,21 +178,11 @@ async function sendMonthlyReport(supabase, users) {
       const limit = planLimitMap[user.plan] || 16;
       const remaining = Math.max(0, limit - used);
 
-      // 다음 결제일 계산: 최근 결제 + 30일
-      const sub = await getUserSubscription(supabase, user.id);
-      let nextBillingStr = '갱신일 미정';
-      if (sub.subscriptionStart) {
-        const nextBilling = new Date(sub.subscriptionStart);
-        nextBilling.setMonth(nextBilling.getMonth() + 1);
-        nextBillingStr = `${nextBilling.getMonth() + 1}월 ${nextBilling.getDate()}일`;
-      }
-
       await sendAlimtalk(user.phone, TEMPLATES.monthly_report.id, {
         '#{이름}': user.name || user.store_name || '대표님',
         '#{지난달}': `${lastMonth.getMonth() + 1}월`,
         '#{게시횟수}': String(used),
-        '#{남은횟수}': String(remaining),
-        '#{다음결제일}': nextBillingStr
+        '#{남은횟수}': String(remaining)
       });
       sent++;
       await new Promise(r => setTimeout(r, 200));
@@ -271,37 +240,6 @@ async function sendFirstPostCoaching(supabase, users) {
       await new Promise(r => setTimeout(r, 200));
     } catch (e) {
       console.error('[first_post_coach] 발송 실패:', user.id, e.message);
-    }
-  }
-  return { sent };
-}
-
-async function sendExpiryAlert(supabase, users) {
-  const now = new Date();
-  let sent = 0;
-
-  for (const user of users) {
-    try {
-      if (!user.phone || user.plan === 'trial' || user.plan === 'free') continue;
-      if (user.auto_renew === true) continue;
-
-      const sub = await getUserSubscription(supabase, user.id);
-      if (!sub.subscriptionEnd) continue;
-      const expiryDate = new Date(sub.subscriptionEnd);
-      const diffDays = Math.floor((expiryDate - now) / (1000 * 60 * 60 * 24));
-      if (diffDays !== 7) continue;
-
-      const expiryStr = `${expiryDate.getMonth() + 1}월 ${expiryDate.getDate()}일`;
-
-      await sendAlimtalk(user.phone, TEMPLATES.expiry_d7.id, {
-        '#{이름}': user.name || user.store_name || '대표님',
-        '#{만료일}': expiryStr,
-        '#{플랜}': user.plan === 'pro' ? '프로' : '스탠다드'
-      });
-      sent++;
-      await new Promise(r => setTimeout(r, 200));
-    } catch (e) {
-      console.error('[expiry_d7] 발송 실패:', user.id, e.message);
     }
   }
   return { sent };
@@ -410,32 +348,6 @@ async function sendActivationSequence(supabase, user, stats, resend) {
   return { sent: match.key };
 }
 
-async function sendTrialUpsellEmail(supabase, user, stats, resend) {
-  if (user.plan !== 'trial') return null;
-  if (stats.postCount < 1) return null;
-
-  const now = new Date();
-  const createdAt = new Date(user.created_at);
-  const diffDays = Math.floor((now - createdAt) / (1000 * 60 * 60 * 24));
-  if (diffDays !== 5) return null;
-  if (await hasNotifSent(supabase, 'upsell_d5', user.id)) return null;
-
-  const storeName = user.store_name || '';
-  const storeGreeting = storeName ? `${storeName} 사장님` : (user.name || '사장님');
-
-  const html = buildRetentionHtml({
-    heading: `${storeGreeting}, 체험 기간이 거의 끝나요`,
-    body: `지금까지 lumi로 ${stats.postCount}개의 게시물을 올리셨어요.\n\n체험이 끝나면 이 기능들을 쓸 수 없게 돼요:\n• 무제한 캡션 생성\n• 날씨·트렌드 반영\n• 예약 게시\n• 말투 학습\n\n월 1.9만원부터, 대행사 비용의 1/10이에요.`,
-    ctaText: '구독 시작하기',
-    ctaUrl: 'https://lumi.it.kr/subscribe',
-    userName: storeGreeting, email: user.email
-  });
-
-  await sendRetentionEmail(resend, user.email, `${storeGreeting}, 체험 기간이 거의 끝나요`, html);
-  await markNotifSent(supabase, 'upsell_d5', user.id);
-  return { sent: 'upsell_d5' };
-}
-
 async function sendDormantSequence(supabase, user, stats, resend) {
   if (!user.plan || user.plan === 'trial' || user.plan === 'free') return null;
   if (stats.postCount < 1) return null;
@@ -535,7 +447,7 @@ async function runRetentionEmails(supabase, users) {
   if (!process.env.RESEND_API_KEY) return { skipped: true, reason: 'RESEND_API_KEY 미설정' };
 
   const resend = new Resend(process.env.RESEND_API_KEY);
-  const results = { activation: 0, dormant: 0, weeklyTip: 0, upsell: 0, nps: 0, skipped: 0 };
+  const results = { activation: 0, dormant: 0, weeklyTip: 0, nps: 0, skipped: 0 };
 
   for (const user of users) {
     try {
@@ -553,9 +465,6 @@ async function runRetentionEmails(supabase, users) {
 
       const w = await sendWeeklyTip(supabase, user, stats, resend);
       if (w) results.weeklyTip++;
-
-      const u = await sendTrialUpsellEmail(supabase, user, stats, resend);
-      if (u) results.upsell++;
 
       const n = await sendNpsSurveyEmail(supabase, user, stats, resend);
       if (n) results.nps++;
@@ -639,7 +548,7 @@ exports.handler = async (event) => {
     // 전체 유저 한 번에 로드 (기존 Blobs list 대체)
     const { data: users, error: userErr } = await supabase
       .from('users')
-      .select('id, email, name, store_name, phone, plan, biz_category, auto_renew, agree_marketing, retention_unsubscribed, created_at');
+      .select('id, email, name, store_name, phone, plan, biz_category, agree_marketing, retention_unsubscribed, created_at');
     if (userErr) {
       console.error('[send-notifications] users 조회 실패:', userErr.message);
       return { statusCode: 500, headers: headers, body: JSON.stringify({ error: '조회 실패' }) };
@@ -647,12 +556,11 @@ exports.handler = async (event) => {
 
     const userList = users || [];
 
-    // 알림톡 4종 (독립적으로 병렬 실행)
-    const [monthly, season, firstPost, expiry] = await Promise.all([
+    // 알림톡 3종 (독립적으로 병렬 실행)
+    const [monthly, season, firstPost] = await Promise.all([
       sendMonthlyReport(supabase, userList),
       sendSeasonEventAlert(supabase, userList),
       sendFirstPostCoaching(supabase, userList),
-      sendExpiryAlert(supabase, userList),
     ]);
 
     // 리텐션 이메일 (순차)
@@ -661,11 +569,11 @@ exports.handler = async (event) => {
     // 운영자 리포트
     await sendAdminDailyReport(supabase, userList);
 
-    console.log('[lumi] 알림 발송 완료:', { monthly, season, firstPost, expiry, retention });
+    console.log('[lumi] 알림 발송 완료:', { monthly, season, firstPost, retention });
     return {
       statusCode: 200,
       headers: headers,
-      body: JSON.stringify({ success: true, monthly, season, firstPost, expiry, retention })
+      body: JSON.stringify({ success: true, monthly, season, firstPost, retention })
     };
   } catch (err) {
     console.error('send-notifications error:', err.message);
