@@ -3,545 +3,1160 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#FF6B8B" />
+  <meta name="theme-color" content="#C8507A" />
   <title>가입 — 루미</title>
-<link rel="stylesheet" href="/css/brand-tokens.css" />
-  <meta name="description" content="쇼핑몰 첫 시작, 가입비 0원. 사장님 첫 쇼핑몰까지 5분." />
+  <meta name="description" content="인스타그램 자동 포스팅, 5분이면 시작할 수 있어요." />
   <meta property="og:title" content="가입 — 루미" />
-  <meta property="og:description" content="쇼핑몰 첫 시작, 가입비 0원" />
+  <meta property="og:description" content="사장님 말투로 자동 포스팅, 지금 시작해요." />
   <meta property="og:image" content="/assets/logo-cloud.png" />
 
   <link rel="icon" href="/assets/favicon.png" />
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
-
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
-  <link rel="stylesheet" href="/css/onboarding.css" />
-<style>
-/* ── Lumi 법적 고지 Footer ──────────────────────────── */
-.lumi-footer{border-top:1px solid rgba(0,0,0,.08);padding:28px 24px 36px;text-align:center;font-size:12px;color:#86868b;line-height:1.8;margin-top:48px;}
-body.dark-mode .lumi-footer{border-top-color:rgba(255,255,255,.08);color:rgba(255,255,255,.3);}
-.lumi-footer p{margin:0 0 2px;}
-.lumi-footer__links{display:flex;flex-wrap:wrap;gap:8px 14px;justify-content:center;margin:10px 0 6px;}
-.lumi-footer__links a{font-size:12px;color:#6e6e73;text-decoration:none;}
-.lumi-footer__links a:hover{text-decoration:underline;}
-body.dark-mode .lumi-footer__links a{color:rgba(255,255,255,.35);}
-.lumi-footer__copy{font-size:11px;color:#aeaeb2;margin-top:6px!important;}
-.lumi-footer__logo{height:28px;width:auto;display:block;margin:0 auto 8px;}
-body.dark-mode .lumi-footer__logo{filter:invert(1) brightness(2);}
-body.dark-mode .lumi-footer__copy{color:rgba(255,255,255,.2);}
-@media(max-width:768px){.lumi-footer{padding:22px 16px 30px;}}
-</style>
+  <link rel="stylesheet" href="/css/lumi-tokens.css" />
+  <link rel="stylesheet" href="/css/lumi-comp.css" />
+
+  <style>
+    /* ── 카카오 브랜드 컬러 ── */
+    :root {
+      --kakao-yellow: #FEE500;
+      --kakao-label:  #3C1E1E;
+      --ig-gradient: linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+    }
+
+    /* ── 레이아웃 ── */
+    body {
+      min-height: 100dvh;
+      background: var(--lumi-surface);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .signup-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 var(--lumi-space-5) var(--lumi-space-12);
+    }
+
+    /* ── 헤더 ── */
+    .signup-header {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--lumi-space-5) 0 var(--lumi-space-6);
+    }
+
+    .signup-header__logo {
+      height: 32px;
+      width: auto;
+      display: block;
+    }
+
+    .signup-header__cancel {
+      font-size: var(--lumi-text-body-sm);
+      color: var(--lumi-ink-muted);
+      text-decoration: none;
+      padding: var(--lumi-space-2) var(--lumi-space-3);
+      border-radius: var(--lumi-radius-pill);
+    }
+
+    .signup-header__cancel:hover {
+      color: var(--lumi-ink);
+      background: var(--lumi-surface-overlay);
+    }
+
+    /* ── 진행 점 ── */
+    .progress-dots {
+      display: flex;
+      align-items: center;
+      gap: var(--lumi-space-2);
+      margin-bottom: var(--lumi-space-8);
+    }
+
+    .progress-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: var(--lumi-radius-full);
+      background: var(--lumi-line-strong);
+      transition: all var(--lumi-duration-base) var(--lumi-ease-toss);
+    }
+
+    .progress-dot.active {
+      width: 24px;
+      background: var(--lumi-gradient-brand);
+    }
+
+    .progress-dot.done {
+      background: var(--lumi-accent-500);
+    }
+
+    /* ── 스텝 슬라이더 ── */
+    .steps-slider {
+      width: 100%;
+      max-width: 520px;
+      overflow: hidden;
+    }
+
+    .steps-track {
+      display: flex;
+      transition: transform 400ms cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: transform;
+    }
+
+    .step-pane {
+      min-width: 100%;
+      flex-shrink: 0;
+    }
+
+    /* ── 카드 ── */
+    .signup-card {
+      background: var(--lumi-surface);
+      border: 1px solid var(--lumi-line);
+      border-radius: var(--lumi-radius-xl);
+      padding: var(--lumi-space-8);
+      box-shadow: var(--lumi-shadow-md);
+    }
+
+    .step-label {
+      font-size: var(--lumi-text-caption);
+      font-weight: var(--lumi-weight-semibold);
+      color: var(--lumi-accent-500);
+      letter-spacing: var(--lumi-tracking-wide);
+      text-transform: uppercase;
+      margin: 0 0 var(--lumi-space-3);
+    }
+
+    .step-title {
+      font-size: clamp(22px, 5vw, 28px);
+      font-weight: var(--lumi-weight-bold);
+      line-height: var(--lumi-leading-snug);
+      letter-spacing: var(--lumi-tracking-tight);
+      color: var(--lumi-ink-strong);
+      margin: 0 0 var(--lumi-space-2);
+    }
+
+    .step-sub {
+      font-size: var(--lumi-text-body-sm);
+      color: var(--lumi-ink-muted);
+      line-height: var(--lumi-leading-relaxed);
+      margin: 0 0 var(--lumi-space-8);
+    }
+
+    /* ── 인증 버튼 영역 ── */
+    .auth-section {
+      display: flex;
+      flex-direction: column;
+      gap: var(--lumi-space-3);
+    }
+
+    .btn-kakao {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--lumi-space-3);
+      width: 100%;
+      height: var(--lumi-btn-h-lg);
+      padding-inline: var(--lumi-space-6);
+      border-radius: var(--lumi-radius-pill);
+      font-size: var(--lumi-text-body-lg);
+      font-weight: var(--lumi-weight-bold);
+      cursor: pointer;
+      border: none;
+      background: var(--kakao-yellow);
+      color: var(--kakao-label);
+      box-shadow: 0 2px 12px rgba(254, 229, 0, 0.35);
+      transition:
+        transform var(--lumi-duration-snap) var(--lumi-ease-toss),
+        box-shadow var(--lumi-duration-fast) var(--lumi-ease-soft);
+      will-change: transform;
+      letter-spacing: var(--lumi-tracking-snug);
+    }
+
+    .btn-kakao:hover {
+      transform: var(--lumi-lift);
+      box-shadow: 0 6px 20px rgba(254, 229, 0, 0.45);
+    }
+
+    .btn-kakao:active {
+      transform: scale(0.97);
+      transition-duration: var(--lumi-duration-instant);
+    }
+
+    .btn-kakao__icon {
+      width: 22px;
+      height: 22px;
+      flex-shrink: 0;
+    }
+
+    .auth-divider {
+      display: flex;
+      align-items: center;
+      gap: var(--lumi-space-3);
+      margin: var(--lumi-space-2) 0;
+    }
+
+    .auth-divider::before,
+    .auth-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--lumi-line);
+    }
+
+    .auth-divider span {
+      font-size: var(--lumi-text-caption);
+      color: var(--lumi-ink-faint);
+      white-space: nowrap;
+    }
+
+    .btn-google {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--lumi-space-3);
+      width: 100%;
+      height: var(--lumi-btn-h);
+      padding-inline: var(--lumi-space-6);
+      border-radius: var(--lumi-radius-pill);
+      font-size: var(--lumi-text-body);
+      font-weight: var(--lumi-weight-semibold);
+      cursor: pointer;
+      border: 1px solid var(--lumi-line-strong);
+      background: var(--lumi-surface);
+      color: var(--lumi-ink-strong);
+      box-shadow: var(--lumi-shadow-sm);
+      transition:
+        transform var(--lumi-duration-snap) var(--lumi-ease-toss),
+        box-shadow var(--lumi-duration-fast) var(--lumi-ease-soft),
+        border-color var(--lumi-duration-fast) var(--lumi-ease-soft);
+      will-change: transform;
+      letter-spacing: var(--lumi-tracking-snug);
+    }
+
+    .btn-google:hover {
+      transform: var(--lumi-lift);
+      box-shadow: var(--lumi-shadow-md);
+      border-color: var(--lumi-ink-strong);
+    }
+
+    .btn-google:active {
+      transform: scale(0.97);
+      transition-duration: var(--lumi-duration-instant);
+    }
+
+    .btn-google__icon {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+
+    /* 이메일 펼침 */
+    .email-toggle {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: var(--lumi-text-body-sm);
+      color: var(--lumi-ink-muted);
+      padding: var(--lumi-space-1) 0;
+      text-align: center;
+      width: 100%;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      transition: color var(--lumi-duration-fast);
+    }
+
+    .email-toggle:hover { color: var(--lumi-ink); }
+
+    .email-expand {
+      display: none;
+      flex-direction: column;
+      gap: var(--lumi-space-3);
+      margin-top: var(--lumi-space-3);
+      padding-top: var(--lumi-space-4);
+      border-top: 1px solid var(--lumi-line);
+      animation: lumi-scale-in 220ms var(--lumi-ease-toss) both;
+    }
+
+    .email-expand.open { display: flex; }
+
+    /* ── 폼 요소 ── */
+    .form-row {
+      display: flex;
+      flex-direction: column;
+      gap: var(--lumi-space-2);
+    }
+
+    .form-label {
+      font-size: var(--lumi-text-body-sm);
+      font-weight: var(--lumi-weight-semibold);
+      color: var(--lumi-ink-soft);
+    }
+
+    .form-label .req {
+      color: var(--lumi-accent-500);
+      margin-left: 2px;
+    }
+
+    .form-input {
+      width: 100%;
+      height: var(--lumi-input-h);
+      padding: 0 var(--lumi-space-4);
+      border: 1px solid var(--lumi-line-strong);
+      border-radius: var(--lumi-radius-md);
+      background: var(--lumi-surface);
+      color: var(--lumi-ink-strong);
+      font-size: 16px;
+      font-family: inherit;
+      outline: none;
+      transition:
+        border-color var(--lumi-duration-fast) var(--lumi-ease-soft),
+        box-shadow var(--lumi-duration-fast) var(--lumi-ease-soft);
+    }
+
+    .form-input:focus {
+      border-color: var(--lumi-accent-500);
+      box-shadow: 0 0 0 3px rgba(200, 80, 122, 0.12);
+    }
+
+    .form-input::placeholder {
+      color: var(--lumi-ink-disabled);
+    }
+
+    .form-textarea {
+      width: 100%;
+      min-height: 96px;
+      padding: var(--lumi-space-3) var(--lumi-space-4);
+      border: 1px solid var(--lumi-line-strong);
+      border-radius: var(--lumi-radius-md);
+      background: var(--lumi-surface);
+      color: var(--lumi-ink-strong);
+      font-size: 16px;
+      font-family: inherit;
+      line-height: var(--lumi-leading-relaxed);
+      resize: vertical;
+      outline: none;
+      transition:
+        border-color var(--lumi-duration-fast) var(--lumi-ease-soft),
+        box-shadow var(--lumi-duration-fast) var(--lumi-ease-soft);
+    }
+
+    .form-textarea:focus {
+      border-color: var(--lumi-accent-500);
+      box-shadow: 0 0 0 3px rgba(200, 80, 122, 0.12);
+    }
+
+    .form-textarea::placeholder { color: var(--lumi-ink-disabled); }
+
+    .form-help {
+      font-size: var(--lumi-text-caption);
+      color: var(--lumi-ink-faint);
+      line-height: var(--lumi-leading-normal);
+      margin: 0;
+    }
+
+    .form-select {
+      width: 100%;
+      height: var(--lumi-input-h);
+      padding: 0 var(--lumi-space-4);
+      border: 1px solid var(--lumi-line-strong);
+      border-radius: var(--lumi-radius-md);
+      background: var(--lumi-surface);
+      color: var(--lumi-ink-strong);
+      font-size: 16px;
+      font-family: inherit;
+      outline: none;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238e8e93' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      cursor: pointer;
+      transition:
+        border-color var(--lumi-duration-fast) var(--lumi-ease-soft),
+        box-shadow var(--lumi-duration-fast) var(--lumi-ease-soft);
+    }
+
+    .form-select:focus {
+      border-color: var(--lumi-accent-500);
+      box-shadow: 0 0 0 3px rgba(200, 80, 122, 0.12);
+    }
+
+    .form-error {
+      font-size: var(--lumi-text-caption);
+      color: var(--lumi-error);
+      font-weight: var(--lumi-weight-medium);
+      display: none;
+    }
+
+    .form-error.visible { display: block; }
+
+    /* ── 스텝 간 스택 ── */
+    .step-fields {
+      display: flex;
+      flex-direction: column;
+      gap: var(--lumi-space-5);
+    }
+
+    /* ── 다음 버튼 ── */
+    .btn-next {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--lumi-space-2);
+      width: 100%;
+      height: var(--lumi-btn-h-lg);
+      padding-inline: var(--lumi-space-8);
+      border-radius: var(--lumi-radius-pill);
+      font-size: var(--lumi-text-body-lg);
+      font-weight: var(--lumi-weight-bold);
+      cursor: pointer;
+      border: none;
+      color: white;
+      background: var(--lumi-gradient-brand);
+      background-size: 200% 100%;
+      background-position: 100% 50%;
+      box-shadow: var(--lumi-shadow-glow-sm);
+      transition:
+        transform var(--lumi-duration-snap) var(--lumi-ease-toss),
+        box-shadow var(--lumi-duration-fast) var(--lumi-ease-soft),
+        background-position var(--lumi-duration-slow) var(--lumi-ease-soft);
+      will-change: transform;
+      letter-spacing: var(--lumi-tracking-snug);
+    }
+
+    .btn-next:hover {
+      background-position: 0% 50%;
+      box-shadow: var(--lumi-shadow-glow);
+      transform: translateY(-2px) scale(1.015);
+    }
+
+    .btn-next:active {
+      transform: scale(0.97);
+      box-shadow: var(--lumi-shadow-glow-sm);
+      transition-duration: var(--lumi-duration-instant);
+    }
+
+    .btn-next:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-back {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--lumi-space-2);
+      height: var(--lumi-btn-h);
+      padding-inline: var(--lumi-space-5);
+      border-radius: var(--lumi-radius-pill);
+      font-size: var(--lumi-text-body);
+      font-weight: var(--lumi-weight-semibold);
+      cursor: pointer;
+      border: 1px solid var(--lumi-line-strong);
+      background: var(--lumi-surface);
+      color: var(--lumi-ink-soft);
+      transition:
+        transform var(--lumi-duration-snap) var(--lumi-ease-toss),
+        border-color var(--lumi-duration-fast);
+    }
+
+    .btn-back:hover {
+      transform: var(--lumi-lift-sm);
+      border-color: var(--lumi-ink-strong);
+      color: var(--lumi-ink-strong);
+    }
+
+    .btn-back:active { transform: scale(0.97); }
+
+    .step-actions {
+      display: flex;
+      gap: var(--lumi-space-3);
+      margin-top: var(--lumi-space-8);
+    }
+
+    .step-actions--solo .btn-next { flex: 1; }
+    .step-actions--split .btn-back { flex-shrink: 0; }
+    .step-actions--split .btn-next { flex: 1; }
+
+    .step-skip {
+      text-align: center;
+      margin-top: var(--lumi-space-4);
+    }
+
+    .step-skip button {
+      font-size: var(--lumi-text-body-sm);
+      color: var(--lumi-ink-muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    .step-skip button:hover { color: var(--lumi-ink); }
+
+    /* ── 인스타 연동 카드 ── */
+    .ig-connect-card {
+      position: relative;
+      border-radius: var(--lumi-radius-lg);
+      padding: 2px;
+      background: var(--ig-gradient);
+      margin: var(--lumi-space-2) 0 var(--lumi-space-6);
+      box-shadow: 0 4px 20px rgba(220, 39, 67, 0.18);
+      transition:
+        transform var(--lumi-duration-base) var(--lumi-ease-toss),
+        box-shadow var(--lumi-duration-base) var(--lumi-ease-soft);
+    }
+
+    @media (hover: hover) {
+      .ig-connect-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 32px rgba(220, 39, 67, 0.28);
+      }
+    }
+
+    .ig-connect-card__inner {
+      background: var(--lumi-surface);
+      border-radius: calc(var(--lumi-radius-lg) - 2px);
+      padding: var(--lumi-space-6);
+      display: flex;
+      flex-direction: column;
+      gap: var(--lumi-space-4);
+    }
+
+    .ig-connect-card__header {
+      display: flex;
+      align-items: center;
+      gap: var(--lumi-space-3);
+    }
+
+    .ig-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--lumi-radius-md);
+      background: var(--ig-gradient);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: white;
+    }
+
+    .ig-connect-card__title {
+      font-size: var(--lumi-text-body);
+      font-weight: var(--lumi-weight-bold);
+      color: var(--lumi-ink-strong);
+      margin: 0 0 2px;
+    }
+
+    .ig-connect-card__sub {
+      font-size: var(--lumi-text-caption);
+      color: var(--lumi-ink-muted);
+      margin: 0;
+    }
+
+    .ig-security-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--lumi-space-2);
+    }
+
+    .ig-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: var(--lumi-text-label);
+      font-weight: var(--lumi-weight-semibold);
+      color: var(--lumi-ink-soft);
+      background: var(--lumi-surface-deep);
+      padding: 4px 10px;
+      border-radius: var(--lumi-radius-full);
+    }
+
+    .ig-badge svg {
+      width: 12px;
+      height: 12px;
+      color: var(--lumi-success);
+    }
+
+    .btn-ig-connect {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--lumi-space-3);
+      width: 100%;
+      height: var(--lumi-btn-h-lg);
+      padding-inline: var(--lumi-space-6);
+      border-radius: var(--lumi-radius-pill);
+      font-size: var(--lumi-text-body-lg);
+      font-weight: var(--lumi-weight-bold);
+      cursor: pointer;
+      border: none;
+      color: white;
+      background: var(--ig-gradient);
+      background-size: 200% 100%;
+      background-position: 100% 50%;
+      box-shadow: 0 4px 16px rgba(220, 39, 67, 0.28);
+      transition:
+        transform var(--lumi-duration-snap) var(--lumi-ease-toss),
+        box-shadow var(--lumi-duration-fast) var(--lumi-ease-soft),
+        background-position var(--lumi-duration-slow) var(--lumi-ease-soft);
+      will-change: transform;
+      letter-spacing: var(--lumi-tracking-snug);
+    }
+
+    .btn-ig-connect:hover {
+      background-position: 0% 50%;
+      box-shadow: 0 8px 24px rgba(220, 39, 67, 0.40);
+      transform: translateY(-2px) scale(1.015);
+    }
+
+    .btn-ig-connect:active {
+      transform: scale(0.97);
+      transition-duration: var(--lumi-duration-instant);
+    }
+
+    .ig-no-password {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--lumi-space-2);
+      font-size: var(--lumi-text-caption);
+      color: var(--lumi-ink-faint);
+      line-height: var(--lumi-leading-normal);
+    }
+
+    .ig-no-password svg {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+      margin-top: 1px;
+      color: var(--lumi-success);
+    }
+
+    /* ── 말투 샘플 ── */
+    .tone-samples {
+      display: flex;
+      flex-direction: column;
+      gap: var(--lumi-space-3);
+    }
+
+    .tone-sample-row {
+      position: relative;
+    }
+
+    .tone-sample-num {
+      position: absolute;
+      top: 12px;
+      left: 14px;
+      font-size: var(--lumi-text-caption);
+      font-weight: var(--lumi-weight-bold);
+      color: var(--lumi-accent-500);
+      pointer-events: none;
+      line-height: 1;
+    }
+
+    .tone-sample-input {
+      width: 100%;
+      padding: var(--lumi-space-3) var(--lumi-space-4) var(--lumi-space-3) 36px;
+      border: 1px solid var(--lumi-line-strong);
+      border-radius: var(--lumi-radius-md);
+      background: var(--lumi-surface);
+      color: var(--lumi-ink-strong);
+      font-size: 15px;
+      font-family: inherit;
+      line-height: var(--lumi-leading-relaxed);
+      resize: none;
+      min-height: 72px;
+      outline: none;
+      transition:
+        border-color var(--lumi-duration-fast) var(--lumi-ease-soft),
+        box-shadow var(--lumi-duration-fast) var(--lumi-ease-soft);
+    }
+
+    .tone-sample-input:focus {
+      border-color: var(--lumi-accent-500);
+      box-shadow: 0 0 0 3px rgba(200, 80, 122, 0.12);
+    }
+
+    .tone-sample-input::placeholder { color: var(--lumi-ink-disabled); }
+
+    .tone-learn-banner {
+      display: flex;
+      align-items: center;
+      gap: var(--lumi-space-3);
+      padding: var(--lumi-space-4);
+      background: var(--lumi-gradient-brand-soft);
+      border: 1px solid rgba(255, 107, 139, 0.15);
+      border-radius: var(--lumi-radius-md);
+      font-size: var(--lumi-text-body-sm);
+      color: var(--lumi-ink-soft);
+      line-height: var(--lumi-leading-normal);
+    }
+
+    .tone-learn-banner svg {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      color: var(--lumi-accent-500);
+    }
+
+    /* ── 완료 화면 ── */
+    .done-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: var(--lumi-space-8) var(--lumi-space-6) var(--lumi-space-6);
+    }
+
+    .done-mascot {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto var(--lumi-space-6);
+      border-radius: var(--lumi-radius-xl);
+    }
+
+    .done-emoji {
+      font-size: 56px;
+      line-height: 1;
+      margin-bottom: var(--lumi-space-5);
+      display: block;
+    }
+
+    .done-title {
+      font-size: clamp(24px, 6vw, 32px);
+      font-weight: var(--lumi-weight-black);
+      line-height: var(--lumi-leading-snug);
+      letter-spacing: var(--lumi-tracking-tight);
+      color: var(--lumi-ink-strong);
+      margin: 0 0 var(--lumi-space-3);
+    }
+
+    .done-title span {
+      background: var(--lumi-gradient-brand);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      color: transparent;
+    }
+
+    .done-sub {
+      font-size: var(--lumi-text-body-sm);
+      color: var(--lumi-ink-muted);
+      line-height: var(--lumi-leading-relaxed);
+      margin: 0 0 var(--lumi-space-8);
+      max-width: 320px;
+    }
+
+    .done-checklist {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 var(--lumi-space-8);
+      display: flex;
+      flex-direction: column;
+      gap: var(--lumi-space-3);
+      width: 100%;
+      max-width: 320px;
+      text-align: left;
+    }
+
+    .done-checklist li {
+      display: flex;
+      align-items: center;
+      gap: var(--lumi-space-3);
+      font-size: var(--lumi-text-body-sm);
+      color: var(--lumi-ink-soft);
+    }
+
+    .done-checklist .check-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: var(--lumi-radius-full);
+      background: rgba(52, 199, 89, 0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .done-checklist .check-icon svg {
+      width: 12px;
+      height: 12px;
+      color: var(--lumi-success);
+    }
+
+    /* ── 푸터 ── */
+    .signup-footer {
+      border-top: 1px solid var(--lumi-line);
+      padding: 24px 20px 32px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--lumi-ink-faint);
+      line-height: 1.8;
+      margin-top: auto;
+    }
+
+    .signup-footer p { margin: 0 0 2px; }
+
+    .signup-footer__links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 12px;
+      justify-content: center;
+      margin: 8px 0 6px;
+    }
+
+    .signup-footer__links a {
+      font-size: 12px;
+      color: var(--lumi-ink-muted);
+      text-decoration: none;
+    }
+
+    .signup-footer__links a:hover { text-decoration: underline; }
+
+    .signup-footer__copy {
+      font-size: 11px;
+      color: var(--lumi-ink-disabled);
+      margin-top: 4px;
+    }
+
+    .signup-footer__logo {
+      height: 24px;
+      width: auto;
+      display: block;
+      margin: 0 auto 8px;
+      opacity: 0.5;
+    }
+
+    /* ── 다크모드 ── */
+    @media (prefers-color-scheme: dark) {
+      .signup-card {
+        background: #1c1c1e;
+        border-color: rgba(255,255,255,0.08);
+      }
+      .ig-connect-card__inner { background: #1c1c1e; }
+    }
+
+    [data-theme="dark"] .signup-card {
+      background: #1c1c1e;
+      border-color: rgba(255,255,255,0.08);
+    }
+    [data-theme="dark"] .ig-connect-card__inner { background: #1c1c1e; }
+
+    /* ── 반응형 ── */
+    @media (min-width: 768px) {
+      .signup-header { padding: var(--lumi-space-6) 0 var(--lumi-space-8); }
+      .signup-card { padding: var(--lumi-space-10); }
+    }
+  </style>
 </head>
 <body>
 
-  <main class="wizard">
-    <header class="wizard-header">
-      <a href="/?stay=1" class="nav-logo" aria-label="루미 홈">
-        <img class="logo-mark" src="/assets/logo-wordmark.png" alt="루미" style="height:36px;width:auto;display:block;" />
+  <main class="signup-wrap">
+    <header class="signup-header">
+      <a href="/?stay=1" aria-label="루미 홈">
+        <img class="signup-header__logo" src="/assets/logo-wordmark.png" alt="루미" />
       </a>
-      <div class="wizard-progress-wrapper">
-        <div class="wizard-progress-label" data-progress-label>사장님 첫 쇼핑몰까지 5분 — 1 / 4</div>
-        <div class="wizard-progress" role="progressbar" aria-valuemin="1" aria-valuemax="4">
-          <span class="wizard-progress-step active" data-progress-step></span>
-          <span class="wizard-progress-step" data-progress-step></span>
-          <span class="wizard-progress-step" data-progress-step></span>
-          <span class="wizard-progress-step" data-progress-step></span>
-        </div>
-      </div>
-      <a href="/?stay=1" class="cancel-link">취소</a>
+      <a href="/?stay=1" class="signup-header__cancel">취소</a>
     </header>
 
-    <div class="wizard-body">
-      <div style="width:100%;max-width:540px;">
+    <!-- 진행 점 -->
+    <div class="progress-dots" id="progressDots" role="progressbar" aria-valuemin="0" aria-valuemax="4" aria-valuenow="0">
+      <span class="progress-dot active" data-dot="0"></span>
+      <span class="progress-dot" data-dot="1"></span>
+      <span class="progress-dot" data-dot="2"></span>
+      <span class="progress-dot" data-dot="3"></span>
+    </div>
 
-        <!-- ============ STEP 1: 사업자 인증 ============ -->
-        <section class="wizard-card" data-step="1">
-          <span class="wizard-step-num">STEP 1 / 4 · 1분</span>
-          <h2 class="wizard-title">사장님 정보를 알려주세요</h2>
-          <p class="wizard-sub">사업자등록번호 자동 검증 + 사업자등록증 사진 한 장. 가입은 즉시 완료돼요.</p>
+    <!-- 스텝 슬라이더 -->
+    <div class="steps-slider" id="stepsSlider">
+      <div class="steps-track" id="stepsTrack">
 
-          <div class="form-row">
-            <label class="form-label" for="biz-input">사업자등록번호 <span class="required">*</span></label>
-            <input id="biz-input" type="text" inputmode="numeric" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-                   class="form-input" placeholder="123-45-67890" data-input="businessNumber" />
-            <p class="form-help">하이픈 포함 또는 숫자 10자리. 국세청에서 휴폐업 여부 자동 확인.</p>
-          </div>
+        <!-- ══ STEP 0: 인증 ══ -->
+        <div class="step-pane" id="pane0">
+          <div class="signup-card">
+            <p class="step-label">시작</p>
+            <h1 class="step-title">반갑습니다, 사장님</h1>
+            <p class="step-sub">인스타그램 자동 포스팅, 5분이면 준비 끝이에요.</p>
 
-          <div class="form-row">
-            <label class="form-label" for="owner-input">대표자명 <span class="required">*</span></label>
-            <input id="owner-input" type="text" autocomplete="name" autocorrect="off" autocapitalize="off" spellcheck="false" class="form-input"
-                   placeholder="홍길동" data-input="ownerName" />
-            <p class="form-help">사업자등록증의 대표자명과 동일하게 입력해 주세요.</p>
-          </div>
+            <div class="auth-section">
+              <!-- 카카오 -->
+              <button type="button" class="btn-kakao" onclick="signupWithKakao()" aria-label="카카오 로그인">
+                <svg class="btn-kakao__icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M12 3C6.477 3 2 6.715 2 11.31c0 2.93 1.9 5.49 4.77 6.95l-1.22 4.44a.2.2 0 0 0 .296.228l5.07-3.39c.357.034.72.052 1.084.052 5.523 0 10-3.715 10-8.29S17.523 3 12 3z"/>
+                </svg>
+                카카오로 시작하기
+              </button>
 
-          <div class="form-row">
-            <label class="form-label" for="email-input">이메일 <span class="required">*</span></label>
-            <input id="email-input" type="email" inputmode="email" autocomplete="email" autocorrect="off" autocapitalize="off" spellcheck="false"
-                   class="form-input" placeholder="example@email.com" data-input="email" />
-            <p class="form-help" id="phone-help">알림톡·CS 연락용으로 한 번만 입력해주세요.</p>
-          </div>
+              <div class="auth-divider"><span>또는</span></div>
 
-          <div class="form-row inline">
-            <div>
-              <label class="form-label" for="birth-input">생년월일</label>
-              <input id="birth-input" type="text" inputmode="numeric" autocomplete="bday" autocorrect="off" autocapitalize="off" spellcheck="false"
-                     class="form-input" placeholder="1990-01-15" data-input="birthDate" />
-            </div>
-            <div>
-              <label class="form-label" for="phone-input">휴대폰 번호 <span class="required">*</span></label>
-              <input id="phone-input" type="tel" inputmode="tel" autocomplete="tel" autocorrect="off" autocapitalize="off" spellcheck="false"
-                     class="form-input" placeholder="010-1234-5678" data-input="phone" />
-            </div>
-          </div>
+              <!-- 구글 -->
+              <button type="button" class="btn-google" onclick="signupWithGoogle()" aria-label="구글 로그인">
+                <svg class="btn-google__icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                구글로 계속하기
+              </button>
 
-          <!-- 사업자등록증 파일 업로드 -->
-          <div class="form-row">
-            <label class="form-label" for="license-input">사업자등록증 사진 또는 PDF <span class="required">*</span></label>
-            <div class="license-upload" data-license-dropzone>
-              <input id="license-input" type="file"
-                     accept="image/jpeg,image/jpg,image/png,image/heic,image/heif,image/webp,application/pdf"
-                     capture="environment"
-                     data-input="licenseFile"
-                     class="license-file-input" />
-              <label for="license-input" class="license-upload-label" data-license-empty>
-                <i data-lucide="upload-cloud" style="width:32px;height:32px;color:var(--pink-500);"></i>
-                <span class="license-upload-title">사업자등록증을 올려주세요</span>
-                <span class="license-upload-hint">사진 촬영 · 갤러리 · PDF (최대 10MB)</span>
-              </label>
-              <div class="license-preview" data-license-preview style="display:none;">
-                <img class="license-preview-img" data-license-thumb alt="사업자등록증 미리보기" />
-                <div class="license-preview-meta" data-license-meta>
-                  <p class="license-preview-name" data-license-name></p>
-                  <p class="license-preview-size" data-license-size></p>
+              <!-- 이메일 펼침 -->
+              <button type="button" class="email-toggle" id="emailToggle" onclick="toggleEmail()">
+                이메일로 가입
+              </button>
+              <div class="email-expand" id="emailExpand">
+                <div class="form-row">
+                  <label class="form-label" for="emailInput">이메일 <span class="req">*</span></label>
+                  <input id="emailInput" type="email" inputmode="email" autocomplete="email"
+                         autocorrect="off" autocapitalize="off" spellcheck="false"
+                         class="form-input" placeholder="example@email.com" />
                 </div>
-                <button type="button" class="license-preview-remove" data-license-remove aria-label="파일 삭제">
-                  <i data-lucide="x" style="width:16px;height:16px;"></i>
+                <div class="form-row">
+                  <label class="form-label" for="passwordInput">비밀번호 <span class="req">*</span></label>
+                  <input id="passwordInput" type="password" autocomplete="new-password"
+                         class="form-input" placeholder="8자 이상" />
+                </div>
+                <p class="form-error" id="emailError"></p>
+                <button type="button" class="btn-next" onclick="signupWithEmail()">
+                  가입하기
+                  <i data-lucide="arrow-right" style="width:18px;height:18px;"></i>
                 </button>
               </div>
-              <div class="license-upload-progress" data-license-progress style="display:none;">
-                <div class="license-progress-bar"><span data-license-progress-fill></span></div>
-                <p class="license-progress-label" data-license-progress-label>0%</p>
-              </div>
-            </div>
-            <p class="form-help">사장님 정보가 사진과 일치하는지 백그라운드에서 확인할게요. 가입은 즉시 가능해요.</p>
-          </div>
-
-          <!-- OCR 자동 대조 결과 카드 (Sprint 1.1) -->
-          <div class="ocr-result-card" data-ocr-card style="display:none;" role="status" aria-live="polite">
-            <div class="ocr-result-icon" data-ocr-icon>
-              <i data-lucide="loader" style="width:20px;height:20px;"></i>
-            </div>
-            <div class="ocr-result-body">
-              <p class="ocr-result-title" data-ocr-title>잠시만요, 사장님 사진을 확인해 보고 있어요</p>
-              <p class="ocr-result-desc" data-ocr-desc>사진에 적힌 정보를 입력값과 비교하고 있어요. 5초 정도 걸려요.</p>
-              <ul class="ocr-result-fields" data-ocr-fields style="display:none;"></ul>
-              <div class="ocr-result-actions" data-ocr-actions style="display:none;">
-                <button type="button" class="btn btn-ghost btn-sm" data-action="ocr-recapture">다시 촬영</button>
-                <button type="button" class="btn btn-secondary btn-sm" data-action="ocr-continue">그대로 진행</button>
-              </div>
-            </div>
-          </div>
-
-          <p class="form-error" data-error="step1" style="display:none;"></p>
-
-          <div class="wizard-actions">
-            <button type="button" class="btn btn-primary btn-lg btn-block" data-action="step1-submit">
-              인증하고 다음 <i data-lucide="arrow-right" style="width:18px;height:18px;"></i>
-            </button>
-          </div>
-
-        </section>
-
-        <!-- ============ STEP 2: 마켓 OAuth — 위자드 안의 위자드 (Sprint 1.5) ============ -->
-        <section class="wizard-card" data-step="2" style="display:none;">
-          <span class="wizard-step-num">STEP 2 / 4 · 핵심 단계</span>
-          <h2 class="wizard-title">어느 마켓에 올리시겠어요?</h2>
-          <p class="wizard-sub">사장님이 이미 쓰는 마켓을 연결합니다. 처음이면 1개만 연결해도 시작할 수 있어요.</p>
-
-          <div class="choice-grid">
-            <!-- 쿠팡 카드 -->
-            <div class="choice" data-market="coupang">
-              <div class="choice-icon"><i data-lucide="shopping-bag" style="width:20px;height:20px;"></i></div>
-              <div class="choice-text">
-                <p class="choice-title">쿠팡 윙</p>
-                <p class="choice-desc">Vendor ID + Access Key + Secret Key</p>
-                <p class="choice-scope-status" data-scope-status></p>
-              </div>
-              <span class="choice-status"></span>
             </div>
 
-            <!-- 쿠팡 미세 위자드 (Sprint 1.5) -->
-            <div class="connect-form" data-form="coupang" style="display:none;">
-              <div class="micro-wizard" data-micro-wizard="coupang" data-micro-step="1">
-                <!-- 미세 5단계 진행 바 -->
-                <div class="micro-progress" role="progressbar" aria-valuemin="1" aria-valuemax="5">
-                  <span class="micro-progress-step active" data-mp-step="1" data-mp-label="발급 안내">1</span>
-                  <span class="micro-progress-line"></span>
-                  <span class="micro-progress-step" data-mp-step="2" data-mp-label="키 복사">2</span>
-                  <span class="micro-progress-line"></span>
-                  <span class="micro-progress-step" data-mp-step="3" data-mp-label="입력">3</span>
-                  <span class="micro-progress-line"></span>
-                  <span class="micro-progress-step" data-mp-step="4" data-mp-label="검증">4</span>
-                  <span class="micro-progress-line"></span>
-                  <span class="micro-progress-step" data-mp-step="5" data-mp-label="완료">5</span>
-                </div>
-                <p class="micro-progress-time" data-mp-time>예상 소요 30초</p>
-
-                <!-- 마스코트 + 카피 영역 -->
-                <div class="micro-mascot-row">
-                  <img class="micro-mascot" src="/assets/logo-cloud.png" alt="루미" data-mp-mascot />
-                  <div class="micro-copy">
-                    <p class="micro-copy-title" data-mp-title>쿠팡 키 발급하러 가요</p>
-                    <p class="micro-copy-sub" data-mp-sub>쿠팡 Wing에서 OPEN API 키를 발급받고, 두 키를 복사해 주세요.</p>
-                  </div>
-                </div>
-
-                <!-- 미세 단계 1: 발급 안내 -->
-                <div class="micro-pane" data-mp-pane="1">
-                  <div class="connect-guide">
-                    <ol>
-                      <li>쿠팡 Wing 로그인 → 우상단 [판매자명]</li>
-                      <li>[추가판매정보] → [OPEN API 키 발급]</li>
-                      <li>약관 동의 → 사용 목적: <strong>OPEN API</strong> 선택</li>
-                      <li>발급된 Vendor ID / Access Key / Secret Key를 복사</li>
-                    </ol>
-                  </div>
-                  <button type="button" class="btn btn-primary btn-block" data-action="mp-coupang-go">
-                    <i data-lucide="external-link" style="width:16px;height:16px;"></i> 쿠팡 Wing 새 탭으로 열기
-                  </button>
-                </div>
-
-                <!-- 미세 단계 2: 키 복사 안내 -->
-                <div class="micro-pane" data-mp-pane="2" style="display:none;">
-                  <div class="connect-guide">
-                    <strong>쿠팡 페이지에서 두 키를 복사해 주세요</strong>
-                    <ol>
-                      <li>발급된 Vendor ID 복사</li>
-                      <li>Access Key 복사</li>
-                      <li>Secret Key 복사 (가장 긴 키)</li>
-                    </ol>
-                    <p style="margin:8px 0 0;font-size:var(--text-caption);">루미로 돌아오시면 자동으로 감지해 입력해 드릴게요.</p>
-                  </div>
-                  <div class="micro-pane-actions">
-                    <button type="button" class="btn btn-secondary" data-action="mp-coupang-back">이전</button>
-                    <button type="button" class="btn btn-primary" data-action="mp-coupang-input">키 입력하기 →</button>
-                  </div>
-                </div>
-
-                <!-- 미세 단계 3: 입력 (Smart Clipboard 자동 감지) -->
-                <div class="micro-pane" data-mp-pane="3" style="display:none;">
-                  <div class="form-row">
-                    <label class="form-label">Vendor ID</label>
-                    <input type="text" class="form-input" placeholder="A00012345" data-input="coupangVendor" data-clipboard-target="vendorId" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
-                  </div>
-                  <div class="form-row">
-                    <label class="form-label">Access Key</label>
-                    <input type="text" class="form-input" placeholder="32~64자" data-input="coupangAccess" data-clipboard-target="accessKey" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
-                  </div>
-                  <div class="form-row">
-                    <label class="form-label">Secret Key</label>
-                    <input type="password" class="form-input" placeholder="저장 후 마스킹 처리" data-input="coupangSecret" data-clipboard-target="secretKey" autocomplete="off" />
-                    <p class="form-help">서버에서 암호화 저장합니다. 사장님 화면에는 마지막 4자리만 표시돼요.</p>
-                  </div>
-                  <p class="form-error" data-error="coupang"></p>
-                  <div class="micro-pane-actions">
-                    <button type="button" class="btn btn-secondary" data-action="mp-coupang-back">이전</button>
-                    <button type="button" class="btn btn-primary" data-action="connect-coupang">
-                      <i data-lucide="check" style="width:16px;height:16px;"></i> 검증 시작
-                    </button>
-                  </div>
-                </div>
-
-                <!-- 미세 단계 4: 검증 중 -->
-                <div class="micro-pane" data-mp-pane="4" style="display:none;">
-                  <div class="micro-validate">
-                    <div class="micro-validate-row" data-mp-phase="1">
-                      <span class="micro-validate-icon" data-mp-phase-icon="1"><i data-lucide="loader-2" style="width:18px;height:18px;"></i></span>
-                      <span class="micro-validate-label">형식 확인</span>
-                    </div>
-                    <div class="micro-validate-row" data-mp-phase="2">
-                      <span class="micro-validate-icon" data-mp-phase-icon="2"><i data-lucide="circle" style="width:18px;height:18px;"></i></span>
-                      <span class="micro-validate-label">쿠팡 인증</span>
-                    </div>
-                    <div class="micro-validate-row" data-mp-phase="3">
-                      <span class="micro-validate-icon" data-mp-phase-icon="3"><i data-lucide="circle" style="width:18px;height:18px;"></i></span>
-                      <span class="micro-validate-label">판매 권한 확인 (백그라운드)</span>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 미세 단계 5: 완료 -->
-                <div class="micro-pane" data-mp-pane="5" style="display:none;">
-                  <div class="micro-success">
-                    <i data-lucide="check-circle-2" style="width:36px;height:36px;color:var(--success);" class="micro-success-icon"></i>
-                    <p class="micro-success-title" data-mp-success-title>쿠팡 연결 완료!</p>
-                    <p class="micro-success-sub">다음은 네이버를 연결해 보세요.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- 네이버 카드 -->
-            <div class="choice" data-market="naver">
-              <div class="choice-icon"><i data-lucide="shopping-cart" style="width:20px;height:20px;"></i></div>
-              <div class="choice-text">
-                <p class="choice-title">네이버 스마트스토어</p>
-                <p class="choice-desc">Application ID + Secret</p>
-                <p class="choice-scope-status" data-scope-status></p>
-              </div>
-              <span class="choice-status"></span>
-            </div>
-
-            <!-- 네이버 미세 위자드 (Sprint 1.5) -->
-            <div class="connect-form" data-form="naver" style="display:none;">
-              <div class="micro-wizard" data-micro-wizard="naver" data-micro-step="1">
-                <div class="micro-progress" role="progressbar" aria-valuemin="1" aria-valuemax="5">
-                  <span class="micro-progress-step active" data-mp-step="1" data-mp-label="발급 안내">1</span>
-                  <span class="micro-progress-line"></span>
-                  <span class="micro-progress-step" data-mp-step="2" data-mp-label="키 복사">2</span>
-                  <span class="micro-progress-line"></span>
-                  <span class="micro-progress-step" data-mp-step="3" data-mp-label="입력">3</span>
-                  <span class="micro-progress-line"></span>
-                  <span class="micro-progress-step" data-mp-step="4" data-mp-label="검증">4</span>
-                  <span class="micro-progress-line"></span>
-                  <span class="micro-progress-step" data-mp-step="5" data-mp-label="완료">5</span>
-                </div>
-                <p class="micro-progress-time" data-mp-time>예상 소요 60초</p>
-
-                <div class="micro-mascot-row">
-                  <img class="micro-mascot" src="/assets/logo-cloud.png" alt="루미" data-mp-mascot />
-                  <div class="micro-copy">
-                    <p class="micro-copy-title" data-mp-title>네이버 키 발급하러 가요</p>
-                    <p class="micro-copy-sub" data-mp-sub>네이버 커머스 API 센터에서 애플리케이션을 등록하고, ID와 Secret을 복사해 주세요.</p>
-                  </div>
-                </div>
-
-                <div class="micro-pane" data-mp-pane="1">
-                  <div class="connect-guide">
-                    <ol>
-                      <li>네이버 커머스 API 센터 로그인</li>
-                      <li>[애플리케이션 등록] → 사용자 직접 사용 (SELF) 선택</li>
-                      <li>발급된 Application ID / Secret을 복사</li>
-                      <li>스코프(상품/주문 등)를 활성화해야 판매 권한이 생겨요</li>
-                    </ol>
-                  </div>
-                  <button type="button" class="btn btn-primary btn-block" data-action="mp-naver-go">
-                    <i data-lucide="external-link" style="width:16px;height:16px;"></i> 네이버 커머스 API 센터 새 탭으로 열기
-                  </button>
-                </div>
-
-                <div class="micro-pane" data-mp-pane="2" style="display:none;">
-                  <div class="connect-guide">
-                    <strong>네이버 페이지에서 두 키를 복사해 주세요</strong>
-                    <ol>
-                      <li>Application ID 복사</li>
-                      <li>Application Secret 복사 (긴 키)</li>
-                    </ol>
-                    <p style="margin:8px 0 0;font-size:var(--text-caption);">루미로 돌아오시면 자동으로 감지해 입력해 드릴게요.</p>
-                  </div>
-                  <div class="micro-pane-actions">
-                    <button type="button" class="btn btn-secondary" data-action="mp-naver-back">이전</button>
-                    <button type="button" class="btn btn-primary" data-action="mp-naver-input">키 입력하기 →</button>
-                  </div>
-                </div>
-
-                <div class="micro-pane" data-mp-pane="3" style="display:none;">
-                  <div class="form-row">
-                    <label class="form-label">Application ID</label>
-                    <input type="text" class="form-input" placeholder="네이버 커머스 API 센터에서 발급" data-input="naverApp" data-clipboard-target="applicationId" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
-                  </div>
-                  <div class="form-row">
-                    <label class="form-label">Application Secret</label>
-                    <input type="password" class="form-input" placeholder="저장 후 마스킹 처리" data-input="naverSecret" data-clipboard-target="applicationSecret" autocomplete="off" />
-                  </div>
-                  <p class="form-error" data-error="naver"></p>
-                  <div class="micro-pane-actions">
-                    <button type="button" class="btn btn-secondary" data-action="mp-naver-back">이전</button>
-                    <button type="button" class="btn btn-primary" data-action="connect-naver">
-                      <i data-lucide="check" style="width:16px;height:16px;"></i> 검증 시작
-                    </button>
-                  </div>
-                </div>
-
-                <div class="micro-pane" data-mp-pane="4" style="display:none;">
-                  <div class="micro-validate">
-                    <div class="micro-validate-row" data-mp-phase="1">
-                      <span class="micro-validate-icon" data-mp-phase-icon="1"><i data-lucide="loader-2" style="width:18px;height:18px;"></i></span>
-                      <span class="micro-validate-label">형식 확인</span>
-                    </div>
-                    <div class="micro-validate-row" data-mp-phase="2">
-                      <span class="micro-validate-icon" data-mp-phase-icon="2"><i data-lucide="circle" style="width:18px;height:18px;"></i></span>
-                      <span class="micro-validate-label">네이버 인증</span>
-                    </div>
-                    <div class="micro-validate-row" data-mp-phase="3">
-                      <span class="micro-validate-icon" data-mp-phase-icon="3"><i data-lucide="circle" style="width:18px;height:18px;"></i></span>
-                      <span class="micro-validate-label">판매 권한 확인 (백그라운드)</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="micro-pane" data-mp-pane="5" style="display:none;">
-                  <div class="micro-success">
-                    <i data-lucide="check-circle-2" style="width:36px;height:36px;color:var(--success);" class="micro-success-icon"></i>
-                    <p class="micro-success-title" data-mp-success-title>네이버 연결 완료!</p>
-                    <p class="micro-success-sub">두 마켓 모두 연결됐어요. 다음 단계로 가요.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <p style="margin-top:var(--space-6);font-size:var(--text-caption);color:var(--text-muted);line-height:1.5;">
-            연결 후 판매 권한 확인은 백그라운드로 진행됩니다. 권한이 부족해도 다음 단계로 넘어갈 수 있고, 결과가 도착하면 알림으로 알려드릴게요.
-          </p>
-
-          <p style="font-size:13px;color:var(--text-secondary,#888);text-align:center;margin:12px 0 0;">지금은 모든 마켓 연결을 건너뛸 수 있어요. 가입 후 대시보드에서 추가할 수 있습니다.</p>
-
-          <div class="wizard-actions">
-            <button type="button" class="btn btn-secondary" data-action="step2-back">이전</button>
-            <button type="button" class="btn btn-primary" data-action="step2-next">
-              다음 <i data-lucide="arrow-right" style="width:18px;height:18px;"></i>
-            </button>
-          </div>
-        </section>
-
-        <!-- Smart Clipboard 팝업 (전역, 항상 [예/아니오] 컨펌) -->
-        <div class="clipboard-popup" data-clipboard-popup style="display:none;" role="dialog" aria-labelledby="cb-popup-title">
-          <div class="clipboard-popup-card">
-            <img class="clipboard-popup-mascot" src="/assets/logo-cloud.png" alt="루미" />
-            <p class="clipboard-popup-title" id="cb-popup-title">복사하신 키를 발견했어요</p>
-            <p class="clipboard-popup-meta">
-              <span class="clipboard-popup-label" data-cb-label></span>
-              <code class="clipboard-popup-value" data-cb-value></code>
+            <p style="margin-top:var(--lumi-space-6);font-size:var(--lumi-text-caption);color:var(--lumi-ink-faint);text-align:center;line-height:1.6;">
+              가입하면 <a href="/terms.html" style="color:var(--lumi-accent-500);text-decoration:underline;text-underline-offset:2px;">이용약관</a>과
+              <a href="/privacy.html" style="color:var(--lumi-accent-500);text-decoration:underline;text-underline-offset:2px;">개인정보처리방침</a>에 동의하는 것으로 간주합니다.
             </p>
-            <p class="clipboard-popup-sub">자동으로 입력해 드릴까요?</p>
-            <div class="clipboard-popup-actions">
-              <button type="button" class="btn btn-secondary" data-cb-deny>아니오</button>
-              <button type="button" class="btn btn-primary" data-cb-accept>예, 입력해 주세요</button>
+          </div>
+        </div>
+
+        <!-- ══ STEP 1: 매장 정보 ══ -->
+        <div class="step-pane" id="pane1">
+          <div class="signup-card">
+            <p class="step-label">1 / 4</p>
+            <h2 class="step-title">매장을 소개해 주세요</h2>
+            <p class="step-sub">루미가 사장님 매장에 맞는 포스팅을 만들어 드릴게요.</p>
+
+            <div class="step-fields">
+              <div class="form-row">
+                <label class="form-label" for="shopName">매장명 <span class="req">*</span></label>
+                <input id="shopName" type="text" autocomplete="organization"
+                       autocorrect="off" autocapitalize="off" spellcheck="false"
+                       class="form-input" placeholder="예: 꽃다방" data-field="shopName" />
+              </div>
+
+              <div class="form-row">
+                <label class="form-label" for="shopCategory">업종 <span class="req">*</span></label>
+                <select id="shopCategory" class="form-select" data-field="shopCategory">
+                  <option value="">업종을 선택해 주세요</option>
+                  <option value="cafe">카페</option>
+                  <option value="clothing">옷가게</option>
+                  <option value="flower">꽃집</option>
+                  <option value="bakery">베이커리</option>
+                  <option value="restaurant">음식점</option>
+                  <option value="beauty">뷰티</option>
+                  <option value="other">기타</option>
+                </select>
+              </div>
+
+              <div class="form-row">
+                <label class="form-label" for="shopDesc">매장 소개 <span style="color:var(--lumi-ink-faint);font-weight:400;">(선택)</span></label>
+                <textarea id="shopDesc" class="form-textarea"
+                          placeholder="예: 서울 성수동의 작은 꽃집이에요. 매일 새벽 경매에서 신선한 꽃을 가져와요."
+                          rows="3" data-field="shopDesc"></textarea>
+                <p class="form-help">루미가 사장님 말투와 매장 분위기를 더 잘 파악할 수 있어요.</p>
+              </div>
+
+              <p class="form-error" id="step1Error"></p>
+            </div>
+
+            <div class="step-actions step-actions--solo">
+              <button type="button" class="btn-next" onclick="goStep(2)">
+                다음
+                <i data-lucide="arrow-right" style="width:18px;height:18px;"></i>
+              </button>
             </div>
           </div>
         </div>
 
-        <!-- ============ STEP 3: 첫 상품 (UI 미리보기) ============ -->
-        <section class="wizard-card" data-step="3" style="display:none;">
-          <span class="wizard-step-num">STEP 3 / 4 · 1분</span>
-          <h2 class="wizard-title">첫 상품을 올려볼까요?</h2>
-          <p class="wizard-sub">사진 한 장만 준비하시면 제목·설명·키워드 초안을 AI가 만들어 드립니다.</p>
+        <!-- ══ STEP 2: 인스타그램 연동 ══ -->
+        <div class="step-pane" id="pane2">
+          <div class="signup-card">
+            <p class="step-label">2 / 4</p>
+            <h2 class="step-title">인스타그램을 연결해요</h2>
+            <p class="step-sub">사장님 계정에 루미가 직접 포스팅할 수 있도록 Meta 공식 방식으로 연동해요.</p>
 
-          <div style="background:var(--bg-section);border:2px dashed var(--border-subtle);border-radius:12px;padding:32px;text-align:center;margin-bottom:24px;">
-            <i data-lucide="camera" style="width:32px;height:32px;color:var(--pink-500);margin:0 auto 8px;display:block;"></i>
-            <p style="margin:0 0 12px;color:var(--text-secondary);font-size:var(--text-body-sm);">
-              상품 등록은 다음 단계에서 시작합니다.<br/>지금은 가입을 마무리하고 대시보드에서 등록하세요.
-            </p>
-          </div>
+            <div class="ig-connect-card" id="igConnectCard">
+              <div class="ig-connect-card__inner">
+                <div class="ig-connect-card__header">
+                  <div class="ig-icon">
+                    <i data-lucide="instagram" style="width:20px;height:20px;"></i>
+                  </div>
+                  <div>
+                    <p class="ig-connect-card__title">Instagram 비즈니스 계정 연동</p>
+                    <p class="ig-connect-card__sub">Meta 공식 OAuth로 안전하게 인증해요</p>
+                  </div>
+                </div>
 
-          <div class="wizard-actions">
-            <button type="button" class="btn btn-secondary" data-action="step3-back">이전</button>
-            <button type="button" class="btn btn-primary" data-action="step3-next">
-              다음 <i data-lucide="arrow-right" style="width:18px;height:18px;"></i>
-            </button>
-          </div>
-          <div class="wizard-skip">
-            <button type="button" data-action="step3-skip">나중에 할게요 →</button>
-          </div>
-        </section>
+                <div class="ig-security-badges">
+                  <span class="ig-badge">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    비밀번호 불필요
+                  </span>
+                  <span class="ig-badge">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    토큰 암호화 저장
+                  </span>
+                  <span class="ig-badge">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    언제든 해제 가능
+                  </span>
+                </div>
 
-        <!-- ============ STEP 4: 동의 + 완료 ============ -->
-        <section class="wizard-card" data-step="4" style="display:none;">
-          <span class="wizard-step-num">STEP 4 / 4 · 30초</span>
-          <h2 class="wizard-title">마지막 한 단계 남았어요</h2>
-          <p class="wizard-sub">아래 약관에 동의하시면 사장님 첫 쇼핑몰이 시작됩니다.</p>
+                <button type="button" class="btn-ig-connect" onclick="connectInstagram()" id="igConnectBtn">
+                  <i data-lucide="instagram" style="width:20px;height:20px;"></i>
+                  인스타 연동하기
+                </button>
 
-          <p style="margin:0 0 var(--space-3);font-size:var(--text-caption);color:var(--text-secondary);line-height:1.5;">
-            사장님 정보를 안전하게 보관해도 될까요?
-          </p>
-
-          <div class="consent-box">
-            <div class="consent-row">
-              <input type="checkbox" id="consent-all" data-consent="all" />
-              <label for="consent-all" style="font-weight:600;">전체 동의</label>
+                <p class="ig-no-password">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                  사장님 비밀번호를 루미에 입력하거나 저장하지 않아요. Meta 공식 인증 창에서만 로그인해요.
+                </p>
+              </div>
             </div>
-            <hr class="consent-divider" />
-            <div class="consent-row">
-              <input type="checkbox" id="consent-terms" data-consent="terms" />
-              <label for="consent-terms" style="cursor:pointer;flex:1;">
-                <strong>(필수)</strong> 이용약관 동의
-              </label>
-              <button type="button" class="consent-view-btn" data-consent-view="terms" aria-label="이용약관 전문 보기">전문 보기</button>
+
+            <div class="step-actions step-actions--split">
+              <button type="button" class="btn-back" onclick="goStep(1)">
+                <i data-lucide="arrow-left" style="width:16px;height:16px;"></i>
+                이전
+              </button>
+              <button type="button" class="btn-next" id="step2NextBtn" onclick="goStep(3)">
+                다음
+                <i data-lucide="arrow-right" style="width:18px;height:18px;"></i>
+              </button>
             </div>
-            <div class="consent-row">
-              <input type="checkbox" id="consent-privacy" data-consent="privacy" />
-              <label for="consent-privacy" style="cursor:pointer;flex:1;">
-                <strong>(필수)</strong> 개인정보처리방침 동의
-              </label>
-              <button type="button" class="consent-view-btn" data-consent-view="privacy" aria-label="개인정보처리방침 전문 보기">전문 보기</button>
-            </div>
-            <div class="consent-row">
-              <input type="checkbox" id="consent-refund" data-consent="refund" />
-              <label for="consent-refund" style="cursor:pointer;flex:1;">
-                <strong>(필수)</strong> 환불약관 동의
-              </label>
-              <button type="button" class="consent-view-btn" data-consent-view="refund" aria-label="환불약관 전문 보기">전문 보기</button>
-            </div>
-            <div class="consent-row">
-              <input type="checkbox" id="consent-marketing" data-consent="marketing" />
-              <label for="consent-marketing" style="cursor:pointer;flex:1;">
-                (선택) 마케팅·신규 기능 안내를 받아보겠습니다.
-              </label>
+            <div class="step-skip">
+              <button type="button" onclick="goStep(3)">나중에 연동할게요 →</button>
             </div>
           </div>
+        </div>
 
-          <p class="form-error" data-error="step4" style="margin-top:var(--space-3);"></p>
+        <!-- ══ STEP 3: 말투 샘플 ══ -->
+        <div class="step-pane" id="pane3">
+          <div class="signup-card">
+            <p class="step-label">3 / 4</p>
+            <h2 class="step-title">사장님 말투를 알려주세요</h2>
+            <p class="step-sub">예전에 쓰셨던 캡션 3~5개를 입력해 주시면 루미가 사장님 스타일로 포스팅을 써드려요.</p>
 
-          <div class="wizard-actions">
-            <button type="button" class="btn btn-secondary" data-action="step4-back">이전</button>
-            <button type="button" class="btn btn-primary btn-lg" data-action="step4-submit">
-              가입 완료 <i data-lucide="check" style="width:18px;height:18px;"></i>
-            </button>
-          </div>
-        </section>
-
-        <!-- ============ 완료 ============ -->
-        <section class="wizard-card" data-done style="display:none;">
-          <img class="done-mascot" src="/assets/logo-cloud.png" alt="루미" />
-          <h2 class="done-title">사장님 첫 쇼핑몰이<br/>시작됐어요</h2>
-          <p class="done-sub"><span data-done-name>사장님</span> 환영합니다. 이제 사장님 대시보드에서 첫 상품을 등록해 보세요.</p>
-
-          <div data-done-markets style="display:flex;flex-direction:column;gap:8px;margin:var(--space-6) 0;">
-            <div class="market-link-card" data-done-market="coupang">
-              <div class="store-avatar" style="background:#ff5f00;">쿠</div>
-              <div class="market-name">쿠팡 윙 연결됨</div>
+            <div class="tone-learn-banner">
+              <i data-lucide="sparkles" style="width:18px;height:18px;"></i>
+              <span>루미가 사장님 말투를 학습해서, 앞으로 자동 생성되는 캡션에 그 느낌을 담아드릴게요.</span>
             </div>
-            <div class="market-link-card" data-done-market="naver">
-              <div class="store-avatar" style="background:#03c75a;">네</div>
-              <div class="market-name">네이버 스마트스토어 연결됨</div>
+
+            <div class="tone-samples" style="margin-top:var(--lumi-space-5);">
+              <div class="tone-sample-row">
+                <span class="tone-sample-num">1</span>
+                <textarea class="tone-sample-input"
+                  placeholder="예: 오늘 들어온 튤립, 색이 너무 예뻐서 저도 한 다발 샀어요 🌷"
+                  rows="3" data-tone-sample></textarea>
+              </div>
+              <div class="tone-sample-row">
+                <span class="tone-sample-num">2</span>
+                <textarea class="tone-sample-input"
+                  placeholder="예: 주말 영업시간 안내드려요! 토요일 9시~6시, 일요일은 쉬어요 🙏"
+                  rows="3" data-tone-sample></textarea>
+              </div>
+              <div class="tone-sample-row">
+                <span class="tone-sample-num">3</span>
+                <textarea class="tone-sample-input"
+                  placeholder="예: (선택) 하나 더 써주시면 루미가 더 잘 배울 수 있어요"
+                  rows="3" data-tone-sample></textarea>
+              </div>
+            </div>
+
+            <div class="step-actions step-actions--split" style="margin-top:var(--lumi-space-8);">
+              <button type="button" class="btn-back" onclick="goStep(2)">
+                <i data-lucide="arrow-left" style="width:16px;height:16px;"></i>
+                이전
+              </button>
+              <button type="button" class="btn-next" onclick="submitOnboarding()">
+                다음
+                <i data-lucide="arrow-right" style="width:18px;height:18px;"></i>
+              </button>
+            </div>
+            <div class="step-skip">
+              <button type="button" onclick="submitOnboarding()">나중에 입력할게요 →</button>
             </div>
           </div>
+        </div>
 
-          <div class="wizard-actions" style="justify-content:center;">
-            <a href="/dashboard.html" class="btn btn-primary btn-lg btn-block" style="text-decoration:none;">
-              <i data-lucide="layout-dashboard" style="width:18px;height:18px;"></i> 대시보드로 이동
-            </a>
+        <!-- ══ STEP 4 (완료) ══ -->
+        <div class="step-pane" id="pane4">
+          <div class="signup-card">
+            <div class="done-wrap">
+              <img class="done-mascot" src="/assets/logo-cloud.png" alt="루미" />
+              <h2 class="done-title">준비 끝!<br/><span>첫 사진 등록해보세요</span></h2>
+              <p class="done-sub">매장 정보와 말투까지 설정됐어요. 이제 사진만 올리면 루미가 캡션을 써드릴게요.</p>
+
+              <ul class="done-checklist">
+                <li>
+                  <span class="check-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  </span>
+                  계정 생성 완료
+                </li>
+                <li id="doneIgCheck">
+                  <span class="check-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  </span>
+                  <span id="doneIgLabel">인스타그램 연동</span>
+                </li>
+                <li>
+                  <span class="check-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  </span>
+                  매장 정보 등록
+                </li>
+              </ul>
+
+              <a href="/dashboard.html" class="btn-next" style="max-width:340px;text-decoration:none;display:flex;">
+                <i data-lucide="layout-dashboard" style="width:18px;height:18px;"></i>
+                대시보드로 가기
+              </a>
+            </div>
           </div>
-          <p style="margin-top:14px;text-align:center;font-size:14px;color:var(--text-muted);">
-            기존에 쓰던 솔루션 데이터가 있으신가요?
-            <a href="/migration.html" style="color:var(--pink-500,#FF6B8B);font-weight:600;text-decoration:none;">기존 데이터 가져오기 →</a>
-          </p>
-        </section>
+        </div>
 
-      </div>
-    </div>
+      </div><!-- /steps-track -->
+    </div><!-- /steps-slider -->
   </main>
 
-  <button class="theme-toggle" data-theme-toggle aria-label="다크모드 토글">
-    <i data-theme-icon data-lucide="moon" style="width:20px;height:20px;"></i>
-  </button>
+  <!-- 푸터 -->
+  <footer class="signup-footer">
+    <img src="/assets/logo-wordmark.png" alt="루미" class="signup-footer__logo" />
+    <p>대표: 김현 · 사업자등록번호: 404-09-66416</p>
+    <p>통신판매업: 제2024-서울용산-1166호</p>
+    <p>서울특별시 용산구 회나무로 32-7 (이태원동), 04345</p>
+    <p>고객센터: <a href="tel:01064246284" style="color:inherit;text-decoration:none;">010-6424-6284</a> · gung3625@gmail.com</p>
+    <div class="signup-footer__links">
+      <a href="/terms.html">이용약관</a>
+      <a href="/privacy.html">개인정보처리방침</a>
+      <a href="/refund.html">환불정책</a>
+    </div>
+    <p class="signup-footer__copy">© 2026 루미. All rights reserved.</p>
+  </footer>
 
+  <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.103.3/dist/umd/supabase.min.js"></script>
   <script>
-    // 옛 anon key (JWT) 시절 토큰 잔재 자동 정리 (한 번만, 키 회전 후 회귀 방지)
-    // lumi-auth는 현재 세션 키이므로 정리 대상에서 제외
+    /* ── Supabase 초기화 ── */
     try {
       var STALE_FLAG = 'lumi_storage_pubkey_v1_cleaned';
       if (!localStorage.getItem(STALE_FLAG)) {
@@ -554,7 +1169,7 @@ body.dark-mode .lumi-footer__copy{color:rgba(255,255,255,.2);}
         localStorage.setItem(STALE_FLAG, '1');
       }
     } catch (e) {}
-    // Supabase 클라이언트 (signup 전용)
+
     window.lumiSupa = window.supabase.createClient(
       'https://cldsozdocxpvkbuxwqep.supabase.co',
       'sb_publishable_WjWg5o05Y7lhib674Cr_fw_0mpY-ccG',
@@ -568,11 +1183,9 @@ body.dark-mode .lumi-footer__copy{color:rgba(255,255,255,.2);}
       }
     );
 
-    // 비로그인 진입 차단 — 메인으로 돌려보냄 (인증 모달에서 가입 시작)
-    // OAuth callback (Google/카카오 magic link) 시 URL hash에 access_token 있음 → Supabase 처리 대기
+    /* ── 세션 체크: 비로그인 → /로, 이미 온보딩 완료 → /dashboard로 ── */
     (async function () {
       try {
-        // 1. URL hash가 OAuth callback이면 Supabase 처리 시간 대기 (최대 3초)
         var hash = window.location.hash || '';
         var search = window.location.search || '';
         var isOAuthCallback = hash.indexOf('access_token=') !== -1 ||
@@ -600,13 +1213,11 @@ body.dark-mode .lumi-footer__copy{color:rgba(255,255,255,.2);}
           }
         }
 
-        // 2. localStorage 게이트
         if (!hasAnyStoredAuth()) {
           window.location.replace('/?stay=1');
           return;
         }
 
-        // 3. 세션 검증
         let session = null;
         const r = await window.lumiSupa.auth.getSession();
         session = r?.data?.session;
@@ -620,19 +1231,69 @@ body.dark-mode .lumi-footer__copy{color:rgba(255,255,255,.2);}
           }
         }
 
-        // 4. 이미 onboarded 완료된 유저가 /signup 직접 진입 시 → /dashboard로 리다이렉트
+        /* 이미 온보딩된 유저 */
         const meta = session.user?.user_metadata || {};
-        const isOnboarded = meta.onboarded === true || (meta.business_no && meta.consent_terms);
-        if (isOnboarded) {
+        if (meta.onboarded === true) {
           window.location.replace('/dashboard.html');
           return;
         }
+
+        /* 로그인 상태이면 Step 1(매장 정보)로 바로 이동 */
+        goStep(1, false);
       } catch (e) { console.warn('[signup] session check', e); }
     })();
 
+    /* ── 상태 ── */
+    var currentStep = 0;
+    var igConnected = false;
+    var onboardingData = {
+      shopName: '',
+      shopCategory: '',
+      shopDesc: '',
+      toneSamples: [],
+    };
+
+    /* ── 슬라이더 이동 ── */
+    function goStep(step, animate) {
+      if (animate === undefined) animate = true;
+      var track = document.getElementById('stepsTrack');
+      if (!track) return;
+      track.style.transform = 'translateX(-' + (step * 100) + '%)';
+      if (!animate) track.style.transition = 'none';
+      else track.style.transition = 'transform 400ms cubic-bezier(0.16, 1, 0.3, 1)';
+
+      currentStep = step;
+      updateDots(step);
+
+      /* 완료 화면 시 done 체크리스트 업데이트 */
+      if (step === 4) updateDoneScreen();
+    }
+
+    /* ── 진행 점 업데이트 ── */
+    function updateDots(step) {
+      var dots = document.querySelectorAll('[data-dot]');
+      /* step 0 = auth (점 없음), step 1~4 = 온보딩 dot 0~3 */
+      var dotIndex = step - 1; /* dot 0 = step 1 */
+      dots.forEach(function (dot, i) {
+        dot.classList.remove('active', 'done');
+        if (i < dotIndex) dot.classList.add('done');
+        else if (i === dotIndex) dot.classList.add('active');
+      });
+
+      /* step 0(auth)에선 점 숨김 */
+      var wrapper = document.getElementById('progressDots');
+      if (wrapper) wrapper.style.visibility = step === 0 ? 'hidden' : 'visible';
+    }
+
+    /* ── 이메일 펼침 ── */
+    function toggleEmail() {
+      var el = document.getElementById('emailExpand');
+      if (!el) return;
+      el.classList.toggle('open');
+    }
+
+    /* ── 카카오 로그인 ── */
     function signupWithKakao() {
-      console.log('[kakao] click');
-      // 클라이언트 측 CSRF nonce — sessionStorage (same-origin만 접근)
       var nonce = '';
       try {
         var arr = new Uint8Array(16);
@@ -652,6 +1313,7 @@ body.dark-mode .lumi-footer__copy{color:rgba(255,255,255,.2);}
         + '&state=' + state;
     }
 
+    /* ── 구글 로그인 ── */
     function signupWithGoogle() {
       if (!window.lumiSupa) {
         alert('준비 중이에요. 잠시 후 다시 시도해주세요.');
@@ -661,155 +1323,148 @@ body.dark-mode .lumi-footer__copy{color:rgba(255,255,255,.2);}
         provider: 'google',
         options: { redirectTo: location.origin + '/signup' }
       }).catch(function (err) {
-        console.error('[signup] google oauth failed', err);
+        console.warn('[signup] google oauth', err);
         alert('구글 로그인에 실패했어요. 잠시 후 다시 시도해주세요.');
       });
     }
-  </script>
-  <script src="/js/components/ClipboardDetector.js"></script>
 
-  <!-- Sprint 3.6: 약관 전문 보기 모달 -->
-  <div id="consent-modal" class="consent-modal" role="dialog" aria-modal="true" aria-labelledby="consent-modal-title" style="display:none;">
-    <div class="consent-modal-backdrop" data-consent-close></div>
-    <div class="consent-modal-panel">
-      <header class="consent-modal-header">
-        <h3 id="consent-modal-title" class="consent-modal-title">약관 전문</h3>
-        <button type="button" class="consent-modal-close" data-consent-close aria-label="닫기">
-          <i data-lucide="x" style="width:18px;height:18px;"></i>
-        </button>
-      </header>
-      <div class="consent-modal-body" data-consent-content>
-        <!-- 전문 iframe 로딩 -->
-      </div>
-      <footer class="consent-modal-footer">
-        <button type="button" class="btn btn-secondary" data-consent-close>닫기</button>
-        <button type="button" class="btn btn-primary" data-consent-agree>이 약관에 동의해요</button>
-      </footer>
-    </div>
-  </div>
+    /* ── 이메일 가입 ── */
+    function signupWithEmail() {
+      var email = document.getElementById('emailInput').value.trim();
+      var password = document.getElementById('passwordInput').value;
+      var errEl = document.getElementById('emailError');
 
-  <style>
-    .btn-oauth {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      width: 100%;
-      padding: 14px 20px;
-      border-radius: 980px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      border: none;
-      transition: opacity .15s;
-    }
-    .btn-oauth:hover { opacity: .88; }
-    .btn-oauth--google {
-      background: #fff;
-      color: #1d1d1f;
-      box-shadow: 0 1px 4px rgba(0,0,0,.18);
-    }
-    body.dark-mode .btn-oauth--google {
-      background: #2c2c2e;
-      color: #f5f5f7;
-    }
-    .btn-oauth--kakao {
-      background: #FEE500;
-      color: #3C1E1E;
-    }
-    .consent-modal{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px;}
-    .consent-modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);}
-    .consent-modal-panel{position:relative;width:min(640px,100%);max-height:90vh;display:flex;flex-direction:column;background:var(--bg-card,#fff);border-radius:16px;box-shadow:0 24px 48px rgba(0,0,0,.18);overflow:hidden;}
-    body.dark-mode .consent-modal-panel{background:#272729;}
-    .consent-modal-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border-subtle,rgba(0,0,0,.08));}
-    .consent-modal-title{margin:0;font-size:17px;font-weight:700;}
-    .consent-modal-close{width:32px;height:32px;border-radius:50%;border:none;background:rgba(0,0,0,.06);cursor:pointer;display:flex;align-items:center;justify-content:center;}
-    body.dark-mode .consent-modal-close{background:rgba(255,255,255,.1);color:#f0f2f8;}
-    .consent-modal-body{flex:1;overflow-y:auto;padding:0;}
-    .consent-modal-body iframe{width:100%;height:100%;min-height:50vh;border:none;display:block;background:#fff;}
-    .consent-modal-footer{display:flex;justify-content:flex-end;gap:8px;padding:14px 20px;border-top:1px solid var(--border-subtle,rgba(0,0,0,.08));}
-  </style>
-
-  <script>
-    // Sprint 3.6 — 동의 모달 핸들러 (전문 보기 + 이 약관 동의 버튼)
-    (function () {
-      const modal = document.getElementById('consent-modal');
-      if (!modal) return;
-      const titleEl = modal.querySelector('[id="consent-modal-title"]');
-      const bodyEl = modal.querySelector('[data-consent-content]');
-      const agreeBtn = modal.querySelector('[data-consent-agree]');
-      let activeKey = null;
-
-      const TARGET = {
-        terms:   { title: '이용약관',         url: '/terms.html',   checkbox: 'consent-terms' },
-        privacy: { title: '개인정보처리방침', url: '/privacy.html', checkbox: 'consent-privacy' },
-        refund:  { title: '환불약관',         url: '/refund.html',  checkbox: 'consent-refund' },
-      };
-
-      function open(key) {
-        const t = TARGET[key];
-        if (!t) return;
-        activeKey = key;
-        titleEl.textContent = t.title;
-        bodyEl.innerHTML = '';
-        if (t.html) {
-          bodyEl.innerHTML = t.html;
-        } else if (t.url) {
-          const iframe = document.createElement('iframe');
-          iframe.src = t.url;
-          iframe.title = t.title + ' 전문';
-          iframe.setAttribute('loading', 'lazy');
-          bodyEl.appendChild(iframe);
-        }
-        modal.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
+      function showErr(msg) {
+        errEl.textContent = msg;
+        errEl.classList.add('visible');
       }
-      function close() {
-        modal.style.display = 'none';
-        document.body.style.overflow = '';
-        activeKey = null;
-      }
+      errEl.classList.remove('visible');
 
-      document.querySelectorAll('[data-consent-view]').forEach((btn) => {
-        btn.addEventListener('click', (e) => {
-          e.preventDefault();
-          open(btn.getAttribute('data-consent-view'));
+      if (!email || !email.includes('@')) { showErr('올바른 이메일 주소를 입력해 주세요.'); return; }
+      if (password.length < 8) { showErr('비밀번호는 8자 이상이어야 해요.'); return; }
+
+      if (!window.lumiSupa) { showErr('연결 중이에요. 잠시 후 다시 시도해주세요.'); return; }
+
+      window.lumiSupa.auth.signUp({ email, password })
+        .then(function (res) {
+          if (res.error) { showErr(res.error.message || '가입에 실패했어요.'); return; }
+          goStep(1);
+        })
+        .catch(function (err) {
+          showErr(err.message || '오류가 발생했어요. 잠시 후 다시 시도해주세요.');
         });
-      });
-      modal.querySelectorAll('[data-consent-close]').forEach((b) => {
-        b.addEventListener('click', close);
-      });
-      agreeBtn.addEventListener('click', () => {
-        if (!activeKey) return close();
-        const t = TARGET[activeKey];
-        const cb = t && document.getElementById(t.checkbox);
-        if (cb) {
-          cb.checked = true;
-          cb.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    /* ── Step 1 → Step 2 (매장 정보 유효성) ── */
+    var _originalGoStep = goStep;
+    goStep = function (step, animate) {
+      if (step === 2 && currentStep === 1) {
+        /* 매장 정보 검증 */
+        var nameVal = document.getElementById('shopName').value.trim();
+        var catVal = document.getElementById('shopCategory').value;
+        var errEl = document.getElementById('step1Error');
+
+        function showErr(msg) { errEl.textContent = msg; errEl.classList.add('visible'); }
+        errEl.classList.remove('visible');
+
+        if (!nameVal) { showErr('매장명을 입력해 주세요.'); document.getElementById('shopName').focus(); return; }
+        if (!catVal) { showErr('업종을 선택해 주세요.'); document.getElementById('shopCategory').focus(); return; }
+
+        onboardingData.shopName = nameVal;
+        onboardingData.shopCategory = catVal;
+        onboardingData.shopDesc = document.getElementById('shopDesc').value.trim();
+      }
+      _originalGoStep(step, animate);
+    };
+
+    /* ── 인스타그램 연동 ── */
+    function connectInstagram() {
+      var btn = document.getElementById('igConnectBtn');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i data-lucide="loader" style="width:18px;height:18px;animation:spin 1s linear infinite;"></i> 연결 중...';
+        if (window.lucide) lucide.createIcons({ nodes: [btn] });
+      }
+      location.href = '/api/ig-oauth?step=start';
+    }
+
+    /* OAuth 콜백 시 ig_connected 쿼리 파라미터 확인 */
+    (function () {
+      var params = new URLSearchParams(window.location.search);
+      if (params.get('ig_connected') === '1') {
+        igConnected = true;
+        /* 연동 완료 표시 */
+        var card = document.getElementById('igConnectCard');
+        if (card) {
+          var inner = card.querySelector('.ig-connect-card__inner');
+          if (inner) {
+            var banner = document.createElement('div');
+            banner.style.cssText = 'display:flex;align-items:center;gap:8px;padding:12px 14px;background:rgba(52,199,89,0.1);border-radius:10px;font-size:14px;font-weight:600;color:#34C759;';
+            banner.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> 인스타그램 연동 완료';
+            inner.insertBefore(banner, inner.querySelector('.btn-ig-connect'));
+            var connectBtn = inner.querySelector('.btn-ig-connect');
+            if (connectBtn) connectBtn.style.display = 'none';
+          }
         }
-        close();
-      });
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && modal.style.display !== 'none') close();
-      });
+      }
     })();
+
+    /* ── 온보딩 제출 ── */
+    function submitOnboarding() {
+      /* 말투 샘플 수집 */
+      var samples = [];
+      document.querySelectorAll('[data-tone-sample]').forEach(function (el) {
+        var v = el.value.trim();
+        if (v) samples.push(v);
+      });
+      onboardingData.toneSamples = samples;
+
+      /* Supabase user_metadata 업데이트 */
+      if (window.lumiSupa) {
+        window.lumiSupa.auth.updateUser({
+          data: {
+            onboarded: true,
+            shop_name: onboardingData.shopName,
+            shop_category: onboardingData.shopCategory,
+            shop_desc: onboardingData.shopDesc,
+            tone_samples: onboardingData.toneSamples,
+            ig_connected: igConnected,
+          }
+        }).catch(function (err) {
+          console.warn('[signup] updateUser', err);
+        });
+      }
+
+      goStep(4);
+    }
+
+    /* ── 완료 화면 업데이트 ── */
+    function updateDoneScreen() {
+      var labelEl = document.getElementById('doneIgLabel');
+      if (labelEl) {
+        if (igConnected) {
+          labelEl.textContent = '인스타그램 연동 완료';
+        } else {
+          labelEl.textContent = '인스타그램 연동 (나중에 설정)';
+          var checkEl = document.querySelector('#doneIgCheck .check-icon');
+          if (checkEl) {
+            checkEl.style.background = 'rgba(142,142,147,0.12)';
+            checkEl.querySelector('svg') && (checkEl.querySelector('svg').style.color = 'var(--lumi-ink-faint)');
+          }
+        }
+      }
+    }
+
+    /* ── 스핀 키프레임 (로더용) ── */
+    var styleEl = document.createElement('style');
+    styleEl.textContent = '@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }';
+    document.head.appendChild(styleEl);
+
+    /* ── Lucide 아이콘 초기화 ── */
+    document.addEventListener('DOMContentLoaded', function () {
+      if (window.lucide) lucide.createIcons();
+      updateDots(0);
+    });
   </script>
-
-  <script src="/js/onboarding.js"></script>
-
-<!-- ── 사업자 정보 (전자상거래법 §13 + Meta 인증) ── -->
-<footer class="lumi-footer">
-  <div class="lumi-footer__info">
-    <img src="/assets/logo-wordmark.png" alt="루미" class="lumi-footer__logo" />
-    <p>대표: 김현 · 사업자등록번호: 404-09-66416</p>
-    <p>통신판매업: 제2024-서울용산-1166호</p>
-    <p>주소: 서울특별시 용산구 회나무로 32-7 (이태원동), 04345</p>
-    <p>고객센터: <a href="tel:01064246284" style="color:inherit;text-decoration:none;">010-6424-6284</a> · 이메일: gung3625@gmail.com</p>
-  </div>
-  <div class="lumi-footer__links">
-    <a href="/terms.html">이용약관</a> · <a href="/privacy.html">개인정보처리방침</a> · <a href="/refund.html">환불정책</a>
-  </div>
-  <p class="lumi-footer__copy">© 2026 루미. All rights reserved.</p>
-</footer>
 </body>
 </html>
