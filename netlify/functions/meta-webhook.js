@@ -1,6 +1,6 @@
-// Meta (Facebook/Instagram) Webhook — DM/댓글 수신 & 자동 응답
+// Meta (Facebook/Instagram) Webhook — 댓글 수신 & 자동 응답
 // 토큰은 ig_accounts_decrypted 뷰(service_role)에서만 조회. 평문 저장/로그 금지.
-// 플랜별 분기: standard=응답 없음 / pro=키워드 매칭 / business=AI 자동응답
+// 플랜별 분기: standard=응답 없음 / pro=키워드 매칭 / business=AI 자동응답 (댓글만)
 // Shadow mode 기본값=true (발송 없이 로그만 기록)
 const crypto = require('crypto');
 const { getAdminClient } = require('./_shared/supabase-admin');
@@ -127,8 +127,7 @@ async function getOrCreateAutoReplySettings(supabase, userId) {
       enabled: false,
       shadow_mode: true,
       keyword_rules: [],
-      default_comment_reply: '감사합니다 😊 궁금한 점은 DM으로 문의해 주세요!',
-      default_dm_reply: '안녕하세요! 메시지 감사해요 😊',
+      default_comment_reply: '감사합니다 😊',
       negative_keyword_blocklist: ['비싸','별로','불만','환불','최악','맛없','이상해','짜증','실망'],
       ai_mode: false,
       ai_confidence_threshold: 0.85,
@@ -213,10 +212,10 @@ async function callAIReply(receivedText, eventType, storeName, storeDesc, storeC
     }
   }
 
-  const systemPrompt = `당신은 인스타그램 매장 자동응답 AI입니다.
+  const systemPrompt = `당신은 인스타그램 매장 댓글 자동응답 AI입니다.
 ${storeBlock}${learningBlock}
 
-수신된 ${eventType === 'comment' ? '댓글' : 'DM'}에 대해 아래 JSON 형식으로만 응답하세요.
+수신된 댓글에 대해 아래 JSON 형식으로만 응답하세요.
 답변은 친절하고 자연스러운 한국어로 작성하고, 30~80자 이내로 간결하게 작성하세요.
 부정적이거나 민감한 내용은 escalate=true로 표시하고 reply는 빈 문자열로 두세요.
 
@@ -256,8 +255,8 @@ ${storeBlock}${learningBlock}
   return JSON.parse(content);
 }
 
-// 프롬프트 인젝션 출력 필터 — AI 응답에서 store 민감정보 및 인젝션 패턴 제거
-function sanitizeDmReply(reply, storeCtx) {
+// 프롬프트 인젝션 출력 필터 — AI 응답에서 민감정보 및 인젝션 패턴 제거
+function sanitizeCommentReply(reply, storeCtx) {
   let clean = String(reply || '');
   const ctx = storeCtx || {};
   // 전화번호 패턴 마스킹
@@ -289,16 +288,16 @@ function applyStoreContextPlaceholders(text, ctx) {
     .replace(/\{directions\}/g, ctx.directions || '');
 }
 
-// pro 플랜: 키워드 매칭 처리
-async function handleKeywordReply(supabase, receivedText, eventType, senderId, igUserId, userId, settings, accessToken, storeCtx) {
+// pro 플랜: 키워드 매칭 처리 (댓글 전용)
+async function handleKeywordReply(supabase, receivedText, senderId, igUserId, userId, settings, accessToken, storeCtx) {
   const matched = matchKeyword(receivedText, settings.keyword_rules);
-  const rawReply = matched || (eventType === 'comment' ? settings.default_comment_reply : settings.default_dm_reply);
+  const rawReply = matched || settings.default_comment_reply;
   const replyText = applyStoreContextPlaceholders(rawReply, storeCtx);
 
   const logEntry = {
     user_id: userId,
     ig_user_id: igUserId,
-    event_type: eventType,
+    event_type: 'comment',
     received_text: receivedText,
     sender_id: senderId,
     category: matched ? 'faq' : 'other',
@@ -313,7 +312,7 @@ async function handleKeywordReply(supabase, receivedText, eventType, senderId, i
   };
 
   if (!settings.shadow_mode) {
-    await sendReply(eventType, igUserId, senderId, replyText, accessToken);
+    await callGraphAPI(`/${senderId}/replies`, 'POST', { message: replyText }, accessToken);
     logEntry.replied = true;
   }
 
@@ -321,17 +320,17 @@ async function handleKeywordReply(supabase, receivedText, eventType, senderId, i
   console.log(`[meta-webhook] pro keyword reply — shadow=${settings.shadow_mode} matched=${!!matched}`);
 }
 
-// business 플랜: AI 자동응답 처리
+// business 플랜: AI 자동응답 처리 (댓글 전용)
 // ai_mode=false면 키워드 매칭으로 폴백 (사장님이 AI 토글 끈 상태)
 // Phase 1 게이트: PHASE1_DISABLE_AI_REPLY=true면 분기 진입 자체 차단 (Meta 심사·별도 동의 전 비활성)
-async function handleAIReply(supabase, receivedText, eventType, senderId, igUserId, userId, settings, accessToken, storeName, storeDesc, storeCtx) {
+async function handleAIReply(supabase, receivedText, senderId, igUserId, userId, settings, accessToken, storeName, storeDesc, storeCtx) {
   if (process.env.PHASE1_DISABLE_AI_REPLY === 'true') {
     console.log('[meta-webhook] PHASE1_DISABLE_AI_REPLY=true — business AI 자동응답 비활성');
     return;
   }
   if (!settings.ai_mode) {
     console.log('[meta-webhook] business plan but ai_mode=false — 키워드 폴백');
-    await handleKeywordReply(supabase, receivedText, eventType, senderId, igUserId, userId, settings, accessToken, storeCtx);
+    await handleKeywordReply(supabase, receivedText, senderId, igUserId, userId, settings, accessToken, storeCtx);
     return;
   }
 
@@ -356,7 +355,7 @@ async function handleAIReply(supabase, receivedText, eventType, senderId, igUser
   }
 
   try {
-    aiResult = await callAIReply(receivedText, eventType, storeName, storeDesc, storeCtx, userId, supabase);
+    aiResult = await callAIReply(receivedText, 'comment', storeName, storeDesc, storeCtx, userId, supabase);
     category = aiResult.category || 'other';
     subCategory = aiResult.sub_category || null;
     sentiment = aiResult.sentiment || null;
@@ -389,7 +388,7 @@ async function handleAIReply(supabase, receivedText, eventType, senderId, igUser
   const logEntry = {
     user_id: userId,
     ig_user_id: igUserId,
-    event_type: eventType,
+    event_type: 'comment',
     received_text: receivedText,
     sender_id: senderId,
     category,
@@ -404,8 +403,8 @@ async function handleAIReply(supabase, receivedText, eventType, senderId, igUser
   };
 
   if (!escalated && replyText && !settings.shadow_mode) {
-    const safeReply = sanitizeDmReply(replyText, storeCtx);
-    await sendReply(eventType, igUserId, senderId, safeReply, accessToken);
+    const safeReply = sanitizeCommentReply(replyText, storeCtx);
+    await callGraphAPI(`/${senderId}/replies`, 'POST', { message: safeReply }, accessToken);
     logEntry.replied = true;
     logEntry.reply_text = safeReply || null;
   }
@@ -414,19 +413,7 @@ async function handleAIReply(supabase, receivedText, eventType, senderId, igUser
   console.log(`[meta-webhook] business AI reply — shadow=${settings.shadow_mode} escalated=${escalated} category=${category}`);
 }
 
-// Graph API 실발송 공통
-async function sendReply(eventType, igUserId, senderId, replyText, accessToken) {
-  if (eventType === 'comment') {
-    await callGraphAPI(`/${senderId}/replies`, 'POST', { message: replyText }, accessToken);
-  } else {
-    await callGraphAPI(`/${igUserId}/messages`, 'POST', {
-      recipient: { id: senderId },
-      message: { text: replyText },
-    }, accessToken);
-  }
-}
-
-// 단일 이벤트(댓글 또는 DM) 처리 진입점
+// 단일 이벤트(댓글) 처리 진입점
 async function processEvent(supabase, entry, igUserId, userId, accessToken, planInfo) {
   const { plan, storeName, storeDesc } = planInfo;
 
@@ -459,24 +446,9 @@ async function processEvent(supabase, entry, igUserId, userId, accessToken, plan
       if (!commentId) continue;
 
       if (plan === 'pro') {
-        await handleKeywordReply(supabase, commentText, 'comment', commentId, igUserId, userId, settings, accessToken, storeCtx);
+        await handleKeywordReply(supabase, commentText, commentId, igUserId, userId, settings, accessToken, storeCtx);
       } else if (plan === 'business') {
-        await handleAIReply(supabase, commentText, 'comment', commentId, igUserId, userId, settings, accessToken, storeName, storeDesc, storeCtx);
-      }
-    }
-  }
-
-  // DM 처리
-  if (entry.messaging) {
-    for (const messaging of (entry.messaging || [])) {
-      const senderId = messaging.sender?.id;
-      const messageText = messaging.message?.text || '';
-      if (!senderId) continue;
-
-      if (plan === 'pro') {
-        await handleKeywordReply(supabase, messageText, 'dm', senderId, igUserId, userId, settings, accessToken, storeCtx);
-      } else if (plan === 'business') {
-        await handleAIReply(supabase, messageText, 'dm', senderId, igUserId, userId, settings, accessToken, storeName, storeDesc, storeCtx);
+        await handleAIReply(supabase, commentText, commentId, igUserId, userId, settings, accessToken, storeName, storeDesc, storeCtx);
       }
     }
   }
