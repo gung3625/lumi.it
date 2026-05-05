@@ -7,18 +7,6 @@
   node_bundler = "esbuild"
   external_node_modules = ["ffmpeg-static"]
 
-# 마이그레이션 함수에 SQL 파일 번들 포함
-[functions."admin-apply-trend-migration"]
-  included_files = ["migrations/**"]
-
-[functions."admin-apply-feedback-migration"]
-  included_files = ["migrations/**"]
-
-[functions."admin-apply-regions-migration"]
-  included_files = ["migrations/**"]
-
-[functions."admin-apply-subcats-migration"]
-  included_files = ["migrations/**"]
 
 # Phase 3 Long-tail 서브카테고리 주간 분류 cron (월요일 KST 04:00 = UTC 일요일 19:00)
 [functions."scheduled-trends-longtail-background"]
@@ -27,9 +15,6 @@
 # Phase 4 임베딩 + 클러스터 cron (매주 화요일 KST 03:00 = UTC 월요일 18:00)
 [functions."scheduled-trends-embeddings-background"]
   schedule = "0 18 * * 1"
-
-[functions."admin-apply-embeddings-migration"]
-  included_files = ["migrations/**"]
 
 [functions."admin-apply-launch-migrations"]
   included_files = ["migrations/**"]
@@ -72,9 +57,6 @@
 [functions."send-notifications"]
   schedule = "0 0 * * *"
 
-# 매일 오전 9시 KST - 송장 미입력 24h 알림톡 발송 (Sprint 6)
-[functions."alimtalk-tracking-overdue-cron"]
-  schedule = "0 0 * * *"
 
 # 매일 오전 9시 KST (= UTC 00:00) 플랜 만료 알림 이메일 발송
 # 베타 테스터 기간 중단 — 정식 오픈 시 주석 해제
@@ -85,10 +67,6 @@
 [functions."cleanup-stale-background"]
   schedule = "0 * * * *"
 
-# 매일 KST 09:00 (= UTC 00:00) 해지 30일 유예 만료 셀러 자동 파기 + 1주일 전 알림
-# Sprint 3.6
-[functions."cron-cancellation-sweep"]
-  schedule = "0 0 * * *"
 
 # 매분 예약 게시 픽업 (scheduled_at 도달한 예약 자동 처리)
 [functions."scheduler"]
@@ -108,19 +86,6 @@
 [functions."scheduled-community-trends-background"]
   schedule = "0 17 * * 2"
 
-# 네이버 데이터랩 쇼핑인사이트 수집 (B 그룹 4종 × 10업종 = 40 호출/일)
-# 매일 KST 04:30 (= UTC 19:30) — trends-v2(15UTC)·longtail(19UTC 일요일)과 다른 시간대
-[functions."scheduled-shopping-insight-background"]
-  schedule = "30 19 * * *"
-
-# AI 인사이트 주간 보고서 — 매주 월요일 KST 09:00 (= UTC 일요일 00:00)
-# Tier 2 (gpt-4o) 셀러당 ₩50, 월 ₩200 한도 (insight_cost_ledger)
-[functions."scheduled-insight-weekly-background"]
-  schedule = "0 0 * * 1"
-
-# AI 인사이트 월간 보고서 — 매월 1일 KST 09:00 (= UTC 0일 00:00)
-[functions."scheduled-insight-monthly-background"]
-  schedule = "0 0 1 * *"
 
 # 포스트 프로세싱 비활성화 (이메일 난독화 등 JS 삽입 방지)
 [build.processing]
@@ -153,12 +118,6 @@
 
 # Sprint 1 가입 API — 명시적 리다이렉트 (/api/* splat보다 먼저 매칭)
 [[redirects]]
-  from = "/api/business-verify"
-  to = "/.netlify/functions/business-verify"
-  status = 200
-  force = true
-
-[[redirects]]
   from = "/api/signup-create-seller"
   to = "/.netlify/functions/signup-create-seller"
   status = 200
@@ -171,65 +130,10 @@
   force = true
 
 [[redirects]]
-  from = "/api/upload-business-license"
-  to = "/.netlify/functions/upload-business-license"
-  status = 200
-  force = true
-
-[[redirects]]
   from = "/api/me"
   to = "/.netlify/functions/me"
   status = 200
   force = true
-
-[[redirects]]
-  from = "/api/connect-coupang"
-  to = "/.netlify/functions/connect-coupang"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/connect-naver"
-  to = "/.netlify/functions/connect-naver"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/market-permission-check"
-  to = "/.netlify/functions/market-permission-check"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/market-guides"
-  to = "/.netlify/functions/market-guides"
-  status = 200
-  force = true
-
-# Sprint 3.5 마이그레이션 마법사 — 엑셀 업로드 → AI 매핑 → 검수 → 등록
-[[redirects]]
-  from = "/api/migration-upload"
-  to = "/.netlify/functions/migration-upload"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/migration-analyze"
-  to = "/.netlify/functions/migration-analyze"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/migration-execute"
-  to = "/.netlify/functions/migration-execute"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/migration"
-  to = "/migration-wizard.html"
-  status = 200
-
 
 # Sprint 2 — 첫 상품 등록 풀 흐름
 [[redirects]]
@@ -239,156 +143,12 @@
   force = true
 
 [[redirects]]
-  from = "/api/analyze-product-image"
-  to = "/.netlify/functions/analyze-product-image"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/register-product"
-  to = "/.netlify/functions/register-product"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/get-product"
-  to = "/.netlify/functions/get-product"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/register-product"
-  to = "/register-product.html"
-  status = 200
-
-# Sprint 3 — 주문 수집·송장·CS·반품·Kill Switch
-[[redirects]]
-  from = "/api/sync-orders"
-  to = "/.netlify/functions/sync-orders"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/orders"
-  to = "/.netlify/functions/orders"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/submit-tracking"
-  to = "/.netlify/functions/submit-tracking"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/cs-suggest-reply"
-  to = "/.netlify/functions/cs-suggest-reply"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/cs-send-reply"
-  to = "/.netlify/functions/cs-send-reply"
-  status = 200
-  force = true
-
-[[redirects]]
   from = "/api/cs-threads"
   to = "/.netlify/functions/cs-threads"
   status = 200
   force = true
 
-[[redirects]]
-  from = "/api/sync-cs-threads"
-  to = "/.netlify/functions/sync-cs-threads"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/process-return"
-  to = "/.netlify/functions/process-return"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/update-order-memo"
-  to = "/.netlify/functions/update-order-memo"
-  status = 200
-  force = true
-
-# 반품·교환 풀 워크플로우 (사장님 승인 게이트 + Audit)
-[[redirects]]
-  from = "/api/return-request-list"
-  to = "/.netlify/functions/return-request-list"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/return-process"
-  to = "/.netlify/functions/return-process"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/return-history"
-  to = "/.netlify/functions/return-history"
-  status = 200
-  force = true
-
-# Sprint 5 — 마켓 통합 기본기 4종 (재고·가격·상품수정·환불)
-[[redirects]]
-  from = "/api/sync-inventory"
-  to = "/.netlify/functions/sync-inventory"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/bulk-update-price"
-  to = "/.netlify/functions/bulk-update-price"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/update-product"
-  to = "/.netlify/functions/update-product"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/refund-process"
-  to = "/.netlify/functions/refund-process"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/kill-switch"
-  to = "/.netlify/functions/kill-switch"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/track-shipment"
-  to = "/.netlify/functions/track-shipment"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/priority-queue"
-  to = "/.netlify/functions/priority-queue"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/list-couriers"
-  to = "/.netlify/functions/list-couriers"
-  status = 200
-  force = true
-
-# Sprint 6 — 알림톡 HTTP API 4개 (send/templates/history/config) 베타 미사용으로 제거됨.
-# 자동 발송(scheduled-insight-*, alimtalk-tracking-overdue-cron)은 _shared/alimtalk-trigger.js 직접 호출로 계속 동작함.
-# 추후 셀러 대시보드 UI에서 알림톡 직접 사용 시 4개 함수 작성 + 라우트 복구 필요.
-
-# Sprint 4 — 대시보드 + 시장 중심 피벗 (트렌드 메인 카드)
+# Sprint 4 — 대시보드 트렌드
 [[redirects]]
   from = "/api/trend-recommendations"
   to = "/.netlify/functions/trend-recommendations"
@@ -396,20 +156,8 @@
   force = true
 
 [[redirects]]
-  from = "/api/profit-summary"
-  to = "/.netlify/functions/profit-summary"
-  status = 200
-  force = true
-
-[[redirects]]
   from = "/api/live-events"
   to = "/.netlify/functions/live-events"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/sync-status"
-  to = "/.netlify/functions/sync-status"
   status = 200
   force = true
 
@@ -426,57 +174,10 @@
   force = true
 
 [[redirects]]
-  from = "/api/dashboard-summary"
-  to = "/.netlify/functions/dashboard-summary"
+  from = "/api/priority-queue"
+  to = "/.netlify/functions/priority-queue"
   status = 200
   force = true
-
-# 채널별 ROI 분석 API (Phase 1 차별화 — 수익 분석)
-[[redirects]]
-  from = "/api/channel-roi"
-  to = "/.netlify/functions/channel-roi"
-  status = 200
-  force = true
-
-# 정산·세무 — 월별 정산 + 세무사 CSV + 분기별 부가세 양식
-[[redirects]]
-  from = "/api/settlement-monthly"
-  to = "/.netlify/functions/settlement-monthly"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/settlement-csv"
-  to = "/.netlify/functions/settlement-csv"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/settlement-vat-form"
-  to = "/.netlify/functions/settlement-vat-form"
-  status = 200
-  force = true
-
-# Sprint 3 페이지 (pretty URL)
-[[redirects]]
-  from = "/tasks"
-  to = "/tasks.html"
-  status = 200
-
-[[redirects]]
-  from = "/orders"
-  to = "/orders.html"
-  status = 200
-
-[[redirects]]
-  from = "/order-detail"
-  to = "/order-detail.html"
-  status = 200
-
-[[redirects]]
-  from = "/cs-inbox"
-  to = "/cs-inbox.html"
-  status = 200
 
 # 카카오 OAuth 시작 (서버에서 nonce 발급 + state 주입 — CSRF 방어)
 [[redirects]]
@@ -522,52 +223,9 @@
   to = "/.netlify/functions/scheduled-community-trends-background"
   status = 200
 
-# 네이버 데이터랩 쇼핑인사이트 cron 수동 트리거 (x-lumi-secret 헤더 필요)
-[[redirects]]
-  from = "/api/scheduled-shopping-insight"
-  to = "/.netlify/functions/scheduled-shopping-insight-background"
-  status = 200
-
-# AI 인사이트 주간/월간 cron 수동 트리거 (x-lumi-secret 헤더 필요)
-[[redirects]]
-  from = "/api/scheduled-insight-weekly"
-  to = "/.netlify/functions/scheduled-insight-weekly-background"
-  status = 200
-
-[[redirects]]
-  from = "/api/scheduled-insight-monthly"
-  to = "/.netlify/functions/scheduled-insight-monthly-background"
-  status = 200
-
-# 쇼핑인사이트 통합 조회 (셀러용)
-[[redirects]]
-  from = "/api/get-shopping-insights"
-  to = "/.netlify/functions/get-shopping-insights"
-  status = 200
-
 [[redirects]]
   from = "/api/rate-trend-keyword"
   to = "/.netlify/functions/rate-trend-keyword"
-  status = 200
-
-[[redirects]]
-  from = "/api/admin-apply-feedback-migration"
-  to = "/.netlify/functions/admin-apply-feedback-migration"
-  status = 200
-
-[[redirects]]
-  from = "/api/admin-apply-regions-migration"
-  to = "/.netlify/functions/admin-apply-regions-migration"
-  status = 200
-
-[[redirects]]
-  from = "/api/admin-apply-subcats-migration"
-  to = "/.netlify/functions/admin-apply-subcats-migration"
-  status = 200
-
-[[redirects]]
-  from = "/api/admin-apply-embeddings-migration"
-  to = "/.netlify/functions/admin-apply-embeddings-migration"
   status = 200
 
 [[redirects]]
@@ -595,11 +253,6 @@
   to = "/.netlify/functions/today-mission"
   status = 200
 
-# 자동응답 설정 API (명시적 리다이렉트 — /api/* splat보다 먼저 매칭)
-[[redirects]]
-  from = "/api/auto-reply-settings"
-  to = "/.netlify/functions/auto-reply-settings"
-  status = 200
 
 # 매장 컨텍스트 API (명시적 리다이렉트 — /api/* splat보다 먼저 매칭)
 [[redirects]]
@@ -619,76 +272,6 @@
   to = "/.netlify/functions/account-delete"
   status = 200
 
-# Sprint 5 실패 추적
-[[redirects]]
-  from = "/api/list-failures"
-  to = "/.netlify/functions/list-failures"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/retry-failure"
-  to = "/.netlify/functions/retry-failure"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/failure-log"
-  to = "/failure-log.html"
-  status = 200
-
-# Sprint 5 — 옵션 대량 편집 (4 endpoints)
-[[redirects]]
-  from = "/api/bulk-options-list"
-  to = "/.netlify/functions/bulk-options-list"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/bulk-options-export"
-  to = "/.netlify/functions/bulk-options-export"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/bulk-options-preview"
-  to = "/.netlify/functions/bulk-options-preview"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/bulk-options-import"
-  to = "/.netlify/functions/bulk-options-import"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/bulk-options"
-  to = "/bulk-options.html"
-  status = 200
-
-[[redirects]]
-  from = "/api/bulk-products-export"
-  to = "/.netlify/functions/bulk-products-export"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/bulk-products-preview"
-  to = "/.netlify/functions/bulk-products-preview"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/bulk-products-import"
-  to = "/.netlify/functions/bulk-products-import"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/bulk-products"
-  to = "/bulk-products.html"
-  status = 200
 
 # API 라우팅
 [[redirects]]
@@ -708,48 +291,6 @@
   to = "/dashboard.html"
   status = 200
 
-# Dashboard Chat Redesign 2026-04-28 — 채팅 명령창 + 외부 API 4종
-[[redirects]]
-  from = "/api/command-router"
-  to = "/.netlify/functions/command-router"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/command-history"
-  to = "/.netlify/functions/command-history"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/command-favorites"
-  to = "/.netlify/functions/command-favorites"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/external-weather"
-  to = "/.netlify/functions/external-weather"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/external-currency"
-  to = "/.netlify/functions/external-currency"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/external-holiday"
-  to = "/.netlify/functions/external-holiday"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/external-calculator"
-  to = "/.netlify/functions/external-calculator"
-  status = 200
-  force = true
 
 
 # 에이전트 오피스 라우팅
@@ -783,52 +324,3 @@
   to = "/"
   status = 301
 
-# 주문서 옵션 매핑 API (Sprint 5)
-[[redirects]]
-  from = "/api/list-mappings"
-  to = "/.netlify/functions/list-mappings"
-  status = 200
-
-[[redirects]]
-  from = "/api/save-mapping"
-  to = "/.netlify/functions/save-mapping"
-  status = 200
-
-[[redirects]]
-  from = "/api/delete-mapping"
-  to = "/.netlify/functions/delete-mapping"
-  status = 200
-
-[[redirects]]
-  from = "/api/apply-mappings-to-order"
-  to = "/.netlify/functions/apply-mappings-to-order"
-  status = 200
-
-# Sprint 5 — 클레임 처리 분리
-[[redirects]]
-  from = "/api/list-claims"
-  to = "/.netlify/functions/list-claims"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/process-cancel-claim"
-  to = "/.netlify/functions/process-cancel-claim"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/process-return-claim"
-  to = "/.netlify/functions/process-return-claim"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/process-exchange-claim"
-  to = "/.netlify/functions/process-exchange-claim"
-  status = 200
-  force = true
-
-# collect-marketplace-claims cron (30분마다)
-[functions."collect-marketplace-claims"]
-  schedule = "*/30 * * * *"
