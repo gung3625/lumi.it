@@ -4,499 +4,1312 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#FF6B8B" />
-  <title>폰으로 1상품 빠르게 — 루미</title>
-  <meta name="description" content="매장에서 폰으로 찍고 5분 안에 마켓 등록. 사무실 PC에선 다수 사진·정밀 입력까지." />
-  <meta property="og:title" content="폰 한 장으로 1상품 5분 등록 — 루미" />
-  <meta property="og:description" content="매장에선 폰으로 빠르게, 사무실에선 PC로 정밀하게" />
-  <meta property="og:image" content="/assets/logo-cloud.png" />
+  <title>새 게시 만들기 — 루미</title>
+  <meta name="description" content="사진 1장으로 SNS 캡션·해시태그·게시 시간까지 — 루미가 만들어드려요." />
 
   <link rel="icon" href="/assets/favicon.png" />
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+  <link rel="stylesheet" href="/css/lumi-tokens.css" />
+  <link rel="stylesheet" href="/css/lumi-comp.css" />
 
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
-  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
-  <link rel="stylesheet" href="/css/brand-tokens.css" />
-  <link rel="stylesheet" href="/css/onboarding-tokens.css" />
-  <link rel="stylesheet" href="/css/register-product.css" />
-  <link rel="stylesheet" href="/css/canvas.css" />
 <style>
-/* ── 모바일 기본 가드 ────────────────────────────────── */
-html,body{overflow-x:hidden;}
-body{word-break:keep-all;}
-/* confidence-row 변경 버튼 — 터치 타겟 44px 확보 */
-.confidence-row__change{min-height:44px;padding:0 14px;display:inline-flex;align-items:center;}
-/* 카드 액션 버튼 — 터치 타겟 44px 확보 */
-.rp-rcard-actions button{min-height:44px;}
+/* ── Page scaffold ──────────────────────────────────────── */
+body {
+  background: var(--lumi-surface-alt);
+  /* tab bar 80px + safe area 아래 여백 */
+  padding-bottom: calc(80px + env(safe-area-inset-bottom));
+}
+@media (min-width: 768px) {
+  body { padding-bottom: 0; }
+}
 
-/* ── Lumi 법적 고지 Footer ──────────────────────────── */
-.lumi-footer{border-top:1px solid rgba(0,0,0,.08);padding:28px 24px 36px;text-align:center;font-size:12px;color:#86868b;line-height:1.8;margin-top:48px;}
-body.dark-mode .lumi-footer{border-top-color:rgba(255,255,255,.08);color:rgba(255,255,255,.3);}
-.lumi-footer p{margin:0 0 2px;}
-.lumi-footer__links{display:flex;flex-wrap:wrap;gap:8px 14px;justify-content:center;margin:10px 0 6px;}
-.lumi-footer__links a{font-size:12px;color:#6e6e73;text-decoration:none;}
-.lumi-footer__links a:hover{text-decoration:underline;}
-body.dark-mode .lumi-footer__links a{color:rgba(255,255,255,.35);}
-.lumi-footer__copy{font-size:11px;color:#aeaeb2;margin-top:6px!important;}
-.lumi-footer__logo{height:28px;width:auto;display:block;margin:0 auto 8px;}
-body.dark-mode .lumi-footer__logo{filter:invert(1) brightness(2);}
-body.dark-mode .lumi-footer__copy{color:rgba(255,255,255,.2);}
-@media(max-width:768px){.lumi-footer{padding:22px 16px 30px;}}
+.rp-wrap {
+  max-width: var(--lumi-max-content, 640px);
+  margin-inline: auto;
+  padding-inline: var(--lumi-page-x, 20px);
+}
+
+/* ── Greeting ───────────────────────────────────────────── */
+.rp-greet {
+  padding: var(--lumi-space-7, 28px) var(--lumi-page-x, 20px) var(--lumi-space-4, 16px);
+  background: var(--lumi-surface);
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.rp-greet::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(
+    ellipse 90% 80% at 60% -20%,
+    color-mix(in srgb, var(--lumi-brand-pink) 9%, transparent),
+    transparent 65%
+  );
+  pointer-events: none;
+}
+.rp-greet__title {
+  font-size: var(--lumi-text-headline, 22px);
+  font-weight: var(--lumi-weight-heavy, 800);
+  letter-spacing: var(--lumi-tracking-tight, -0.03em);
+  line-height: var(--lumi-leading-tight, 1.2);
+  color: var(--lumi-ink-strong);
+  margin: 0;
+}
+
+/* ── Body: mobile stack, 768+: 2-col ───────────────────── */
+.rp-body {
+  padding: var(--lumi-space-5, 20px) var(--lumi-page-x, 20px);
+}
+@media (min-width: 768px) {
+  .rp-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--lumi-space-6, 24px);
+    align-items: start;
+    padding: var(--lumi-space-6, 24px) var(--lumi-page-x, 20px);
+  }
+}
+@media (min-width: 1024px) {
+  .rp-body {
+    grid-template-columns: 1.1fr 1fr;
+    gap: var(--lumi-space-8, 32px);
+    padding: var(--lumi-space-8, 32px) var(--lumi-page-x, 20px);
+    max-width: 960px;
+    margin-inline: auto;
+  }
+}
+
+/* ── Composer card ──────────────────────────────────────── */
+.composer {
+  background: var(--lumi-surface);
+  border-radius: var(--lumi-radius-xl, 16px);
+  overflow: hidden;
+  position: relative;
+  transition: box-shadow var(--lumi-duration-base, 200ms) var(--lumi-ease-soft, ease);
+}
+
+/* ── State 1: Drop zone ─────────────────────────────────── */
+.composer__drop {
+  position: relative;
+  min-height: 50vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lumi-space-3, 12px);
+  cursor: pointer;
+  border-radius: var(--lumi-radius-xl, 16px);
+  overflow: hidden;
+  isolation: isolate;
+  /* animated dashed border via outline */
+  outline: 2px dashed color-mix(in srgb, var(--lumi-brand-pink) 35%, transparent);
+  outline-offset: -2px;
+  transition:
+    outline-color var(--lumi-duration-fast, 120ms) var(--lumi-ease-soft, ease),
+    transform var(--lumi-duration-base, 200ms) var(--lumi-ease-toss, cubic-bezier(0.34,1.56,0.64,1)),
+    box-shadow var(--lumi-duration-base, 200ms) var(--lumi-ease-soft, ease);
+  will-change: transform;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+/* 4색 그라디언트 흐르는 보더 */
+.composer__drop::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  background: var(--lumi-gradient-brand);
+  background-size: 300% 300%;
+  background-position: 100% 100%;
+  z-index: -1;
+  opacity: 0;
+  transition:
+    opacity var(--lumi-duration-fast, 120ms) var(--lumi-ease-soft, ease),
+    background-position 2s var(--lumi-ease-soft, ease);
+  pointer-events: none;
+}
+/* inner bg mask */
+.composer__drop::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border-radius: calc(var(--lumi-radius-xl, 16px) - 3px);
+  background: var(--lumi-surface);
+  z-index: -1;
+  pointer-events: none;
+}
+@media (hover: hover) {
+  .composer__drop:hover {
+    transform: scale(1.01);
+    box-shadow: var(--lumi-shadow-glow, 0 0 0 4px color-mix(in srgb, var(--lumi-brand-pink) 18%, transparent));
+    outline-color: transparent;
+  }
+  .composer__drop:hover::before {
+    opacity: 1;
+    background-position: 0% 0%;
+    animation: rp-gradient-flow 3s var(--lumi-ease-soft) infinite alternate;
+  }
+}
+.composer__drop:active {
+  transform: scale(0.97);
+  transition-duration: var(--lumi-duration-instant, 60ms);
+}
+@keyframes rp-gradient-flow {
+  0%   { background-position: 0% 0%; }
+  100% { background-position: 100% 100%; }
+}
+
+.composer.is-active .composer__drop {
+  display: none;
+}
+
+/* Drop zone inner */
+.composer__drop-icon {
+  width: 60px; height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--lumi-radius-full, 9999px);
+  background: var(--lumi-brand-soft, #FFE6EE);
+  flex-shrink: 0;
+}
+.composer__drop-icon svg {
+  width: 28px; height: 28px;
+  stroke: var(--lumi-brand-fill, #C8507A);
+  stroke-width: 1.8;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.composer__drop-label {
+  font-size: var(--lumi-text-body-lg, 17px);
+  font-weight: var(--lumi-weight-heavy, 800);
+  letter-spacing: var(--lumi-tracking-snug, -0.02em);
+  color: var(--lumi-ink-strong);
+  margin: 0;
+}
+.composer__drop-hint {
+  font-size: var(--lumi-text-body-sm, 14px);
+  color: var(--lumi-ink-muted);
+  margin: 0;
+}
+
+/* hidden file input */
+#photoInput {
+  position: absolute;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+}
+
+/* ── State 2+: Active composer ──────────────────────────── */
+.composer__active {
+  display: none;
+  flex-direction: column;
+}
+.composer.is-active .composer__active {
+  display: flex;
+}
+
+/* Top bar: status text + close */
+.composer__top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--lumi-space-4, 16px) var(--lumi-space-5, 20px);
+  border-bottom: 1px solid var(--lumi-line);
+}
+.composer__status-text {
+  font-size: var(--lumi-text-body-sm, 14px);
+  font-weight: var(--lumi-weight-semibold, 600);
+  color: var(--lumi-ink-muted);
+}
+.composer__close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px; height: 32px;
+  min-width: 44px; min-height: 44px;
+  margin: -6px;
+  border-radius: var(--lumi-radius-full, 9999px);
+  background: var(--lumi-surface-deep);
+  color: var(--lumi-ink-soft);
+  border: none;
+  cursor: pointer;
+  transition:
+    background-color var(--lumi-duration-fast, 120ms) var(--lumi-ease-soft, ease),
+    transform var(--lumi-duration-snap, 100ms) var(--lumi-ease-toss, cubic-bezier(0.34,1.56,0.64,1));
+}
+.composer__close-btn svg {
+  width: 16px; height: 16px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+}
+@media (hover: hover) {
+  .composer__close-btn:hover {
+    color: var(--lumi-ink-strong);
+    transform: scale(1.08);
+  }
+}
+.composer__close-btn:active {
+  transform: scale(0.93);
+  transition-duration: var(--lumi-duration-instant, 60ms);
+}
+
+/* Photo preview */
+.composer__preview {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: var(--lumi-surface-deep);
+  position: relative;
+  overflow: hidden;
+  max-height: 60vw;
+  opacity: 0;
+  transition: opacity var(--lumi-duration-base, 200ms) var(--lumi-ease-soft, ease);
+}
+.composer.is-active .composer__preview {
+  opacity: 1;
+}
+.composer__preview img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 0;
+}
+@media (min-width: 768px) {
+  .composer__preview {
+    aspect-ratio: auto;
+    max-height: none;
+    height: 280px;
+  }
+}
+
+/* Generating indicator */
+.composer__generating {
+  display: flex;
+  align-items: center;
+  gap: var(--lumi-space-2, 8px);
+  padding: var(--lumi-space-4, 16px) var(--lumi-space-5, 20px) var(--lumi-space-2, 8px);
+  font-size: var(--lumi-text-body-sm, 14px);
+  font-weight: var(--lumi-weight-semibold, 600);
+  color: var(--lumi-ink-muted);
+  opacity: 0;
+  transition: opacity var(--lumi-duration-fast, 120ms) var(--lumi-ease-soft, ease);
+  min-height: 36px;
+}
+.composer__generating.is-visible { opacity: 1; }
+.composer__generating.is-done   { opacity: 0; }
+
+.pulse-dot {
+  width: 8px; height: 8px;
+  border-radius: var(--lumi-radius-full, 9999px);
+  background: var(--lumi-brand-fill, #C8507A);
+  flex-shrink: 0;
+  animation: rp-pulse-dot 1.2s var(--lumi-ease-soft, ease) infinite;
+}
+@keyframes rp-pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.7); }
+}
+
+/* Caption (contenteditable) */
+.composer__caption-wrap {
+  padding: 0 var(--lumi-space-5, 20px) var(--lumi-space-2, 8px);
+  min-height: 72px;
+}
+.composer__caption {
+  font-size: var(--lumi-text-body, 16px);
+  font-weight: var(--lumi-weight-regular, 400);
+  color: var(--lumi-ink-strong);
+  line-height: var(--lumi-leading-relaxed, 1.65);
+  margin: 0;
+  word-break: keep-all;
+  white-space: pre-wrap;
+  outline: none;
+  border-radius: var(--lumi-radius-sm, 6px);
+  padding: 4px 6px;
+  transition: background-color var(--lumi-duration-fast, 120ms) var(--lumi-ease-soft, ease);
+}
+.composer__caption[contenteditable]:focus {
+  background: var(--lumi-surface-deep);
+}
+.composer__caption:empty:before {
+  content: '캡션을 입력하세요…';
+  color: var(--lumi-ink-disabled);
+}
+
+/* Hashtag chips row */
+.composer__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lumi-space-2, 8px);
+  padding: var(--lumi-space-2, 8px) var(--lumi-space-5, 20px) var(--lumi-space-3, 12px);
+  min-height: 44px;
+  align-items: center;
+}
+.composer__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px var(--lumi-space-3, 12px) 6px var(--lumi-space-3, 12px);
+  border-radius: var(--lumi-radius-pill, 9999px);
+  font-size: var(--lumi-text-caption, 13px);
+  font-weight: var(--lumi-weight-semibold, 600);
+  background: var(--lumi-brand-soft, #FFE6EE);
+  color: var(--lumi-brand-text, #C8507A);
+  cursor: default;
+  opacity: 0;
+  transform: translateY(6px) scale(0.94);
+  transition:
+    opacity var(--lumi-duration-fast, 120ms) var(--lumi-ease-soft, ease),
+    transform var(--lumi-duration-base, 200ms) var(--lumi-ease-toss, cubic-bezier(0.34,1.56,0.64,1));
+}
+.composer__chip.is-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+.composer__chip-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px; height: 16px;
+  margin-left: 2px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--lumi-brand-text, #C8507A) 15%, transparent);
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  color: var(--lumi-brand-text, #C8507A);
+  font-size: 11px;
+  line-height: 1;
+  transition: background-color var(--lumi-duration-fast, 120ms) var(--lumi-ease-soft, ease);
+}
+.composer__chip-remove:hover {
+  background: color-mix(in srgb, var(--lumi-brand-text, #C8507A) 28%, transparent);
+}
+/* Add chip button */
+.composer__chip-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: var(--lumi-surface-deep);
+  border: 1px dashed var(--lumi-line-strong);
+  cursor: pointer;
+  color: var(--lumi-ink-muted);
+  font-size: 18px;
+  line-height: 1;
+  transition:
+    background-color var(--lumi-duration-fast, 120ms) var(--lumi-ease-soft, ease),
+    transform var(--lumi-duration-snap, 100ms) var(--lumi-ease-toss, cubic-bezier(0.34,1.56,0.64,1));
+}
+.composer__chip-add:hover {
+  background: var(--lumi-brand-soft);
+  color: var(--lumi-brand-fill);
+  transform: scale(1.1);
+}
+
+/* ── Time slot toggle ────────────────────────────────────── */
+.composer__schedule {
+  margin: 0 var(--lumi-space-5, 20px) var(--lumi-space-3, 12px);
+  border-radius: var(--lumi-radius-md, 10px);
+  background: var(--lumi-surface-deep);
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity var(--lumi-duration-base, 200ms) var(--lumi-ease-soft, ease),
+    transform var(--lumi-duration-base, 200ms) var(--lumi-ease-toss, cubic-bezier(0.34,1.56,0.64,1));
+}
+.composer__schedule.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+/* Toggle tabs */
+.schedule__tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.schedule__tab {
+  padding: var(--lumi-space-3, 12px) var(--lumi-space-4, 16px);
+  font-size: var(--lumi-text-body-sm, 14px);
+  font-weight: var(--lumi-weight-semibold, 600);
+  color: var(--lumi-ink-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition:
+    color var(--lumi-duration-fast, 120ms) var(--lumi-ease-soft, ease),
+    border-color var(--lumi-duration-fast, 120ms) var(--lumi-ease-soft, ease);
+  text-align: center;
+}
+.schedule__tab.is-active {
+  color: var(--lumi-brand-fill, #C8507A);
+  border-bottom-color: var(--lumi-brand-fill, #C8507A);
+}
+
+/* Immediate: just shows recommendation time */
+.schedule__now-row {
+  display: none;
+  align-items: center;
+  gap: var(--lumi-space-2, 8px);
+  padding: var(--lumi-space-3, 12px) var(--lumi-space-4, 16px);
+  font-size: var(--lumi-text-body-sm, 14px);
+  color: var(--lumi-ink-soft);
+}
+.schedule__now-row.is-visible { display: flex; }
+.schedule__now-row svg {
+  width: 15px; height: 15px;
+  stroke: var(--lumi-brand-gold, #EDD080);
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+.schedule__time-val {
+  font-weight: var(--lumi-weight-heavy, 800);
+  color: var(--lumi-ink-strong);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+.schedule__now-hint {
+  font-size: var(--lumi-text-caption, 13px);
+  color: var(--lumi-ink-faint);
+}
+
+/* Scheduled: datetime picker */
+.schedule__picker-row {
+  display: none;
+  flex-direction: column;
+  gap: var(--lumi-space-2, 8px);
+  padding: var(--lumi-space-3, 12px) var(--lumi-space-4, 16px);
+}
+.schedule__picker-row.is-visible { display: flex; }
+.schedule__datetime-input {
+  width: 100%;
+  padding: var(--lumi-space-3, 12px) var(--lumi-space-4, 16px);
+  border-radius: var(--lumi-radius-md, 10px);
+  border: 1px solid var(--lumi-line-strong);
+  font-size: var(--lumi-text-body-sm, 14px);
+  font-family: inherit;
+  color: var(--lumi-ink-strong);
+  background: var(--lumi-surface);
+  font-variant-numeric: tabular-nums;
+  box-sizing: border-box;
+}
+.schedule__datetime-input:focus {
+  outline: none;
+  border-color: var(--lumi-brand-fill, #C8507A);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--lumi-brand-fill, #C8507A) 15%, transparent);
+}
+.schedule__recommend-hint {
+  font-size: var(--lumi-text-caption, 13px);
+  color: var(--lumi-ink-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.schedule__recommend-hint svg {
+  width: 13px; height: 13px;
+  stroke: var(--lumi-brand-gold, #EDD080);
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+
+/* ── Channel selector ────────────────────────────────────── */
+.composer__channels {
+  display: flex;
+  gap: var(--lumi-space-2, 8px);
+  padding: 0 var(--lumi-space-5, 20px) var(--lumi-space-4, 16px);
+  align-items: center;
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity var(--lumi-duration-base, 200ms) var(--lumi-ease-soft, ease),
+    transform var(--lumi-duration-base, 200ms) var(--lumi-ease-toss, cubic-bezier(0.34,1.56,0.64,1));
+}
+.composer__channels.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.channel-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: var(--lumi-radius-pill, 9999px);
+  font-size: var(--lumi-text-caption, 13px);
+  font-weight: var(--lumi-weight-semibold, 600);
+  cursor: pointer;
+  border: 1.5px solid var(--lumi-line-strong);
+  background: var(--lumi-surface);
+  color: var(--lumi-ink-soft);
+  transition:
+    border-color var(--lumi-duration-fast, 120ms) var(--lumi-ease-soft, ease),
+    background-color var(--lumi-duration-fast, 120ms) var(--lumi-ease-soft, ease),
+    color var(--lumi-duration-fast, 120ms) var(--lumi-ease-soft, ease);
+  user-select: none;
+}
+.channel-chip.is-selected {
+  border-color: var(--lumi-brand-fill, #C8507A);
+  background: var(--lumi-brand-soft, #FFE6EE);
+  color: var(--lumi-brand-text, #C8507A);
+}
+.channel-chip svg {
+  width: 14px; height: 14px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+.channel-chip--placeholder {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+/* ── Sticky action bar (CTA) ─────────────────────────────── */
+.rp-cta-bar {
+  position: fixed;
+  bottom: calc(64px + env(safe-area-inset-bottom));
+  left: 0; right: 0;
+  z-index: 50;
+  padding: var(--lumi-space-3, 12px) var(--lumi-page-x, 20px);
+  background: color-mix(in srgb, var(--lumi-surface) 92%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid var(--lumi-line);
+  display: flex;
+  gap: var(--lumi-space-3, 12px);
+  /* hidden until composer is active */
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(8px);
+  transition:
+    opacity var(--lumi-duration-fast, 120ms) var(--lumi-ease-soft, ease),
+    transform var(--lumi-duration-base, 200ms) var(--lumi-ease-toss, cubic-bezier(0.34,1.56,0.64,1));
+}
+.rp-cta-bar.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+@media (min-width: 768px) {
+  .rp-cta-bar {
+    position: static;
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-top: none;
+    padding: 0 var(--lumi-space-5, 20px) var(--lumi-space-5, 20px);
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+    display: none; /* rendered inside composer on desktop */
+  }
+  .composer__actions-desktop {
+    display: flex !important;
+  }
+}
+
+/* Regen button (ghost) */
+.rp-regen-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lumi-space-2, 8px);
+  height: 52px;
+  border-radius: var(--lumi-radius-pill, 9999px);
+  font-size: var(--lumi-text-body-sm, 14px);
+  font-weight: var(--lumi-weight-bold, 700);
+  color: var(--lumi-ink-soft);
+  background: var(--lumi-surface);
+  border: 1px solid var(--lumi-line-strong);
+  cursor: pointer;
+  transition:
+    transform var(--lumi-duration-snap, 100ms) var(--lumi-ease-toss, cubic-bezier(0.34,1.56,0.64,1)),
+    color var(--lumi-duration-fast, 120ms) var(--lumi-ease-soft, ease),
+    border-color var(--lumi-duration-fast, 120ms) var(--lumi-ease-soft, ease);
+  will-change: transform;
+  font-family: inherit;
+}
+.rp-regen-btn svg {
+  width: 15px; height: 15px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+@media (hover: hover) {
+  .rp-regen-btn:hover {
+    color: var(--lumi-ink-strong);
+    border-color: var(--lumi-ink-strong);
+    transform: translateY(-1px);
+  }
+}
+.rp-regen-btn:active {
+  transform: scale(0.97);
+  transition-duration: var(--lumi-duration-instant, 60ms);
+}
+
+/* Post button (primary gradient) */
+.rp-post-btn {
+  flex: 1.6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lumi-space-2, 8px);
+  height: 52px;
+  border-radius: var(--lumi-radius-pill, 9999px);
+  font-size: var(--lumi-text-body-sm, 14px);
+  font-weight: var(--lumi-weight-bold, 700);
+  color: white;
+  background: var(--lumi-gradient-brand);
+  background-size: 200% 100%;
+  background-position: 100% 50%;
+  box-shadow: 0 2px 12px color-mix(in srgb, var(--lumi-brand-pink) 35%, transparent);
+  border: none;
+  cursor: pointer;
+  opacity: 0.5;
+  pointer-events: none;
+  transition:
+    opacity var(--lumi-duration-base, 200ms) var(--lumi-ease-soft, ease),
+    transform var(--lumi-duration-snap, 100ms) var(--lumi-ease-toss, cubic-bezier(0.34,1.56,0.64,1)),
+    background-position var(--lumi-duration-slow, 400ms) var(--lumi-ease-soft, ease),
+    box-shadow var(--lumi-duration-fast, 120ms) var(--lumi-ease-soft, ease);
+  will-change: transform;
+  font-family: inherit;
+}
+.rp-post-btn svg {
+  width: 15px; height: 15px;
+  stroke: white;
+  stroke-width: 2.2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+.rp-post-btn.is-active {
+  opacity: 1;
+  pointer-events: auto;
+}
+@media (hover: hover) {
+  .rp-post-btn.is-active:hover {
+    background-position: 0% 50%;
+    box-shadow: 0 4px 20px color-mix(in srgb, var(--lumi-brand-pink) 45%, transparent);
+    transform: translateY(-2px) scale(1.02);
+  }
+}
+.rp-post-btn.is-active:active {
+  transform: scale(0.97);
+  transition-duration: var(--lumi-duration-instant, 60ms);
+}
+
+/* Desktop: actions inside composer */
+.composer__actions-desktop {
+  display: none;
+  gap: var(--lumi-space-3, 12px);
+  padding: 0 var(--lumi-space-5, 20px) var(--lumi-space-5, 20px);
+}
+@media (min-width: 768px) {
+  .rp-cta-bar { display: none; }
+  .composer__actions-desktop { display: flex; }
+}
+
+/* ── Right column (visible 768+) ─────────────────────────── */
+.rp-right {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lumi-space-4, 16px);
+  margin-top: var(--lumi-space-4, 16px);
+}
+@media (min-width: 768px) {
+  .rp-right { margin-top: 0; }
+}
+/* Preview placeholder card */
+.rp-preview-hint {
+  background: var(--lumi-surface);
+  border-radius: var(--lumi-radius-lg, 14px);
+  padding: var(--lumi-space-6, 24px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--lumi-space-3, 12px);
+  text-align: center;
+  color: var(--lumi-ink-faint);
+  font-size: var(--lumi-text-body-sm, 14px);
+}
+.rp-preview-hint svg {
+  width: 36px; height: 36px;
+  stroke: var(--lumi-ink-disabled);
+  stroke-width: 1.4;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ── Toast ───────────────────────────────────────────────── */
+.lumi-toast {
+  position: fixed;
+  bottom: calc(96px + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%) translateY(24px);
+  z-index: 9999;
+  background: var(--lumi-neutral-800, #1d1d1f);
+  color: var(--lumi-neutral-0, #fff);
+  font-size: var(--lumi-text-body-sm, 14px);
+  font-weight: var(--lumi-weight-semibold, 600);
+  padding: var(--lumi-space-3, 12px) var(--lumi-space-5, 20px);
+  border-radius: var(--lumi-radius-pill, 9999px);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    opacity var(--lumi-duration-fast, 120ms) var(--lumi-ease-soft, ease),
+    transform var(--lumi-duration-base, 200ms) var(--lumi-ease-toss, cubic-bezier(0.34,1.56,0.64,1));
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+}
+.lumi-toast.is-visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+@media (min-width: 768px) {
+  .lumi-toast { bottom: 32px; }
+}
+
+/* ── Footer ──────────────────────────────────────────────── */
+.lumi-footer {
+  border-top: 1px solid var(--lumi-line);
+  padding: 28px var(--lumi-page-x, 20px) 36px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--lumi-ink-muted);
+  line-height: 1.8;
+  margin-top: 48px;
+}
+.lumi-footer p { margin: 0 0 2px; }
+.lumi-footer__links {
+  display: flex; flex-wrap: wrap;
+  gap: 8px 14px; justify-content: center; margin: 10px 0 6px;
+}
+.lumi-footer__links a {
+  font-size: 12px; color: var(--lumi-ink-muted);
+  text-decoration: none;
+}
+.lumi-footer__links a:hover { text-decoration: underline; }
+.lumi-footer__logo { height: 28px; width: auto; display: block; margin: 0 auto 8px; }
+.lumi-footer__copy { font-size: 11px; color: var(--lumi-ink-faint); margin-top: 6px !important; }
+@media (max-width: 768px) { .lumi-footer { padding: 22px 16px 30px; } }
 </style>
 </head>
 <body>
 
-  <main class="rp-app">
+<!-- lumi-head.js 자동 삽입 -->
+<script src="/js/lumi-head.js" defer></script>
 
-    <header class="rp-header">
-      <a href="/" class="rp-logo" aria-label="루미 홈">
-        <img class="rp-logo-mark" src="/assets/logo-wordmark.png" alt="루미" />
-      </a>
-      <div class="rp-progress-wrapper">
-        <div class="rp-progress-label" data-progress-label>사진 1장 → 확인 → 마켓 — 1 / 3</div>
-        <div class="rp-progress" role="progressbar" aria-valuemin="1" aria-valuemax="3">
-          <span class="rp-progress-step active" data-progress-step></span>
-          <span class="rp-progress-step" data-progress-step></span>
-          <span class="rp-progress-step" data-progress-step></span>
-        </div>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <button class="cmdk-trigger" type="button" data-cmdk-open aria-label="명령창 열기">
-          <span aria-hidden="true">⌘</span>
-          <span>명령</span>
-          <kbd>⌘K</kbd>
-        </button>
-        <a href="/dashboard.html" class="rp-cancel">취소</a>
-      </div>
-    </header>
+<main>
 
-    <!-- D. Action Agent — 트렌드 카테고리 추천 (Phase 1: 인스타 자동화 어필 숨김, TODO Phase 2: style 제거) -->
-    <section class="action-agent" id="actionAgent" aria-live="polite" style="display:none !important;">
-      <span class="action-agent__icon" aria-hidden="true">
-        <img src="/assets/logo-cloud.png" alt="" />
-      </span>
-      <div class="action-agent__text">
-        <strong>트렌드 +400% 카테고리 발견</strong> · 어버이날 D-14, 카네이션 키워드 급상승
-      </div>
-      <button class="action-agent__cta" type="button" data-action-cta>관련 상품 등록</button>
-      <button class="action-agent__dismiss" type="button" data-action-dismiss aria-label="제안 닫기">×</button>
-    </section>
-
-    <div class="rp-body">
-
-      <!-- =============== 화면 1: 사진 업로드 =============== -->
-      <section class="rp-screen rp-card" data-screen="upload">
-        <div class="rp-mascot rp-mascot-curious">
-          <img src="/assets/logo-cloud.png" alt="" />
-        </div>
-        <h1 class="rp-title">폰 한 장으로 1상품 5분 등록</h1>
-        <p class="rp-sub rp-sub-mobile">매장에서 찍으면 루미가 카드 5장 만들어줄게요. 다수 사진·정밀 입력은 PC에서 더 편해요.</p>
-        <p class="rp-sub rp-sub-pc">PC에서는 다수 사진 추가와 상세 설명 직접 입력도 가능해요. 루미가 카드 5장으로 작성해드릴게요.</p>
-
-        <div class="rp-upload" data-upload-zone>
-          <input id="photo-input" type="file"
-                 accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif"
-                 capture="environment"
-                 data-input="photo"
-                 class="rp-upload-input" />
-          <label for="photo-input" class="rp-upload-label" data-upload-empty>
-            <i data-lucide="camera" style="width:36px;height:36px;color:var(--pink-500);"></i>
-            <span class="rp-upload-title">사진 촬영 또는 갤러리</span>
-            <span class="rp-upload-hint">JPG · PNG · WebP · HEIC · 최대 10MB</span>
-          </label>
-          <div class="rp-upload-preview" data-upload-preview style="display:none;">
-            <img class="rp-upload-thumb" data-upload-thumb alt="상품 미리보기" />
-            <button type="button" class="rp-upload-replace" data-upload-replace>
-              <i data-lucide="refresh-cw" style="width:14px;height:14px;"></i>
-              다른 사진
-            </button>
-          </div>
-        </div>
-
-        <!-- PC 전용: 추가 사진 업로드 힌트 -->
-        <div class="rp-pc-extra" data-pc-extra style="display:none;">
-          <p class="rp-pc-extra-label">
-            <i data-lucide="monitor" style="width:14px;height:14px;"></i>
-            PC 추가 기능: 사진 최대 10장 · 상세 설명 직접 입력 · 옵션 매핑 캔버스
-          </p>
-        </div>
-
-        <!-- 모바일 전용: 복잡한 작업 PC 유도 -->
-        <div class="rp-mobile-limit" data-mobile-limit style="display:none;">
-          <p class="rp-mobile-limit-text">사진 10장 이상·상세 설명·대량 등록은 PC에서 더 편해요</p>
-          <a href="#" class="rp-btn rp-btn-ghost rp-btn-sm" data-action="continue-on-pc">
-            <i data-lucide="monitor" style="width:14px;height:14px;"></i>
-            PC에서 이어가기
-          </a>
-        </div>
-
-        <div class="rp-progress-bar" data-upload-progress style="display:none;">
-          <div class="rp-progress-fill" data-upload-progress-fill></div>
-          <p class="rp-progress-text" data-upload-progress-text>업로드 준비 중…</p>
-        </div>
-
-        <p class="rp-error" data-error="upload" style="display:none;"></p>
-
-        <div class="rp-actions">
-          <button type="button" class="rp-btn rp-btn-primary rp-btn-block" data-action="upload-and-analyze" disabled>
-            루미에게 맡기기
-            <i data-lucide="sparkles" style="width:18px;height:18px;"></i>
-          </button>
-        </div>
-      </section>
-
-      <!-- =============== 화면 2: AI 검수 카드 5장 =============== -->
-      <section class="rp-screen rp-card" data-screen="review" style="display:none;">
-        <div class="rp-mascot rp-mascot-surprised">
-          <img src="/assets/logo-cloud.png" alt="" />
-        </div>
-        <h1 class="rp-title">루미가 미리 만들어봤어요</h1>
-        <p class="rp-sub">7장 카드 차례로 검토해주세요. 우 = 좋아요, 좌 = 다시, 아래 = 직접 수정.</p>
-
-        <div class="rp-deck-wrap">
-          <div class="rp-deck" data-deck>
-            <!-- 카드 1: 카테고리 (번개장터 패턴 — [변경] 항상 노출, 신뢰도 별점·%) -->
-            <article class="rp-rcard" data-rcard data-card-id="category" style="z-index:6;">
-              <div class="rp-rcard-step">1 / 6</div>
-              <h2 class="rp-rcard-question">카테고리부터 맞춰볼게요</h2>
-              <div class="rp-rcard-content">
-                <p class="rp-rcard-label">쿠팡</p>
-                <p class="rp-rcard-value" data-bind="category-coupang">—</p>
-                <div class="confidence-row">
-                  <span class="confidence-row__stars" aria-hidden="true">★★★★★</span>
-                  <span class="confidence-row__pct" data-confidence-pct="coupang">95%</span>
-                  <button type="button" class="confidence-row__change" data-change-category="coupang">변경</button>
-                </div>
-                <p class="rp-rcard-label" style="margin-top:14px;">네이버</p>
-                <p class="rp-rcard-value" data-bind="category-naver">—</p>
-                <div class="confidence-row">
-                  <span class="confidence-row__stars" aria-hidden="true">★★★★★</span>
-                  <span class="confidence-row__pct" data-confidence-pct="naver">95%</span>
-                  <button type="button" class="confidence-row__change" data-change-category="naver">변경</button>
-                </div>
-                <p class="rp-rcard-label" style="margin-top:14px;">토스쇼핑</p>
-                <p class="rp-rcard-value" data-bind="category-toss">—</p>
-                <div class="confidence-row">
-                  <span class="confidence-row__stars" aria-hidden="true">★★★★★</span>
-                  <span class="confidence-row__pct" data-confidence-pct="toss">95%</span>
-                  <button type="button" class="confidence-row__change" data-change-category="toss">변경</button>
-                </div>
-                <p class="rp-rcard-meta" data-bind="category-confidence">사장님이 바꿀수록 루미가 똑똑해져요</p>
-              </div>
-              <div class="rp-rcard-actions">
-                <button class="rp-rcard-no" data-card-action="reject"><i data-lucide="x"></i> 다시</button>
-                <button class="rp-rcard-yes" data-card-action="approve"><i data-lucide="check"></i> 좋아요</button>
-              </div>
-            </article>
-
-            <!-- 카드 2: 상품명 3안 (라디오 선택) + 후킹 카피 -->
-            <article class="rp-rcard" data-rcard data-card-id="title" style="z-index:5;">
-              <div class="rp-rcard-step">2 / 6</div>
-              <h2 class="rp-rcard-question">상품명 3안 중 어떤게 좋아요?</h2>
-              <div class="rp-rcard-content">
-                <p class="rp-rcard-label">루미가 만든 3안</p>
-                <div class="rp-title-options" data-bind="title-options" role="radiogroup" aria-label="상품명 3안 선택"></div>
-
-                <p class="rp-rcard-label" style="margin-top:18px;">후킹 카피 (마켓 상단 1줄)</p>
-                <p class="rp-rcard-hook" data-bind="hook-caption">—</p>
-                <input type="text" class="rp-rcard-edit" data-edit="hook" maxlength="60" placeholder="후킹 카피 직접 수정" autocorrect="off" autocapitalize="off" spellcheck="false" />
-
-                <input type="text" class="rp-rcard-edit" data-edit="title" maxlength="100" placeholder="상품명 직접 수정" style="margin-top:10px;" autocorrect="off" autocapitalize="off" spellcheck="false" />
-              </div>
-              <div class="rp-rcard-actions">
-                <button class="rp-rcard-no" data-card-action="reject"><i data-lucide="x"></i> 다시</button>
-                <button class="rp-rcard-edit-btn" data-card-action="edit"><i data-lucide="pencil"></i> 수정</button>
-                <button class="rp-rcard-yes" data-card-action="approve"><i data-lucide="check"></i> 좋아요</button>
-              </div>
-            </article>
-
-            <!-- 카드 3: 상세페이지 레이아웃 미리보기 (블록 단위) -->
-            <article class="rp-rcard" data-rcard data-card-id="detail" style="z-index:4;">
-              <div class="rp-rcard-step">3 / 6</div>
-              <h2 class="rp-rcard-question">상세페이지는 이렇게 짜볼게요</h2>
-              <div class="rp-rcard-content">
-                <div class="rp-detail-preview" data-bind="detail-layout">
-                  <p class="rp-rcard-meta">루미가 블록 단위로 미리 짜드려요</p>
-                </div>
-              </div>
-              <div class="rp-rcard-actions">
-                <button class="rp-rcard-no" data-card-action="reject"><i data-lucide="x"></i> 다시</button>
-                <button class="rp-rcard-yes" data-card-action="approve"><i data-lucide="check"></i> 좋아요</button>
-              </div>
-            </article>
-
-            <!-- 카드 4: 가격 -->
-            <article class="rp-rcard" data-rcard data-card-id="price" style="z-index:3;">
-              <div class="rp-rcard-step">4 / 6</div>
-              <h2 class="rp-rcard-question">권장 판매가는요?</h2>
-              <div class="rp-rcard-content">
-                <p class="rp-rcard-label">루미가 추천하는 가격</p>
-                <p class="rp-rcard-value rp-rcard-price" data-bind="price">—</p>
-                <input type="number" class="rp-rcard-edit" data-edit="price" min="0" step="100" placeholder="원하는 가격 입력" autocorrect="off" autocapitalize="off" spellcheck="false" />
-                <p class="rp-rcard-meta">비슷한 상품 평균가 기준 추정</p>
-              </div>
-              <div class="rp-rcard-actions">
-                <button class="rp-rcard-no" data-card-action="reject"><i data-lucide="x"></i> 다시</button>
-                <button class="rp-rcard-edit-btn" data-card-action="edit"><i data-lucide="pencil"></i> 수정</button>
-                <button class="rp-rcard-yes" data-card-action="approve"><i data-lucide="check"></i> 좋아요</button>
-              </div>
-            </article>
-
-            <!-- 카드 5: 옵션·재고 -->
-            <article class="rp-rcard" data-rcard data-card-id="options" style="z-index:2;">
-              <div class="rp-rcard-step">5 / 6</div>
-              <h2 class="rp-rcard-question">옵션은 이정도면 충분?</h2>
-              <div class="rp-rcard-content">
-                <div class="rp-options-list" data-bind="options"></div>
-                <p class="rp-rcard-meta">옵션 없으면 단품으로 등록돼요</p>
-              </div>
-              <div class="rp-rcard-actions">
-                <button class="rp-rcard-no" data-card-action="reject"><i data-lucide="x"></i> 다시</button>
-                <button class="rp-rcard-yes" data-card-action="approve"><i data-lucide="check"></i> 좋아요</button>
-              </div>
-            </article>
-
-            <!-- 카드 6: 정책 + 키워드 -->
-            <article class="rp-rcard" data-rcard data-card-id="policy" style="z-index:2;">
-              <div class="rp-rcard-step">6 / 7</div>
-              <h2 class="rp-rcard-question">마지막 점검할게요</h2>
-              <div class="rp-rcard-content">
-                <p class="rp-rcard-label">검색 키워드</p>
-                <div class="rp-keywords" data-bind="keywords"></div>
-                <p class="rp-rcard-label" style="margin-top:16px;">정책 검사</p>
-                <div class="rp-policy" data-bind="policy"></div>
-              </div>
-              <div class="rp-rcard-actions">
-                <button class="rp-rcard-no" data-card-action="reject"><i data-lucide="x"></i> 다시</button>
-                <button class="rp-rcard-yes" data-card-action="approve"><i data-lucide="check"></i> 좋아요</button>
-              </div>
-            </article>
-
-            <!-- 카드 7: 정보고시 -->
-            <article class="rp-rcard" data-rcard data-card-id="info_disclosure" style="z-index:1;">
-              <div class="rp-rcard-step">7 / 7</div>
-              <h2 class="rp-rcard-question">정보고시 — <span data-bind="info-disclosure-category-label">검수 중…</span></h2>
-              <div class="rp-rcard-content">
-                <!-- disclaimer 항상 노출 -->
-                <div class="rp-id-disclaimer">
-                  <i data-lucide="alert-triangle" style="width:14px;height:14px;flex-shrink:0;"></i>
-                  <span>AI 생성 초안입니다. 사장님이 검수 후 발행하시면 정확성·법적 적합성 책임은 사장님께 있습니다.</span>
-                </div>
-                <!-- 누락 필수 항목 뱃지 -->
-                <div class="rp-id-missing-badge" data-bind="info-disclosure-missing" style="display:none;">
-                  <i data-lucide="circle-alert" style="width:13px;height:13px;"></i>
-                  <span data-bind="info-disclosure-missing-text">필수 항목 미입력</span>
-                </div>
-                <!-- 항목 리스트 -->
-                <div class="rp-id-items" data-bind="info-disclosure-items">
-                  <p class="rp-rcard-meta">AI 분석 결과를 불러오는 중…</p>
-                </div>
-              </div>
-              <div class="rp-rcard-actions">
-                <button class="rp-rcard-no" data-card-action="reject"><i data-lucide="x"></i> 다시</button>
-                <button class="rp-rcard-yes" data-card-action="approve"><i data-lucide="check"></i> 마켓 보내기</button>
-              </div>
-            </article>
-          </div>
-        </div>
-
-        <p class="rp-deck-hint" data-deck-hint>7장 카드 모두 좋다면 마켓 토글로 넘어갈게요</p>
-      </section>
-
-      <!-- =============== 화면 3: 마켓 전송 + 직링크 =============== -->
-      <section class="rp-screen rp-card" data-screen="distribute" style="display:none;">
-        <div class="rp-mascot rp-mascot-wink">
-          <img src="/assets/logo-cloud.png" alt="" />
-        </div>
-        <h1 class="rp-title">어디에 올릴까요?</h1>
-        <p class="rp-sub">연결된 마켓만 표시돼요. 토글 켜고 1탭으로 끝. 대량 등록은 PC에서.</p>
-
-        <div class="rp-markets" data-markets>
-          <label class="rp-market" data-market="coupang">
-            <span class="rp-market-icon">
-              <i data-lucide="shopping-bag" style="width:22px;height:22px;"></i>
-            </span>
-            <span class="rp-market-text">
-              <span class="rp-market-name">쿠팡</span>
-              <span class="rp-market-status" data-market-status="coupang">연결 확인 중…</span>
-            </span>
-            <input type="checkbox" data-market-toggle="coupang" />
-            <span class="rp-market-switch" aria-hidden="true"></span>
-          </label>
-
-          <label class="rp-market" data-market="naver">
-            <span class="rp-market-icon">
-              <i data-lucide="shopping-cart" style="width:22px;height:22px;"></i>
-            </span>
-            <span class="rp-market-text">
-              <span class="rp-market-name">네이버 스마트스토어</span>
-              <span class="rp-market-status" data-market-status="naver">연결 확인 중…</span>
-            </span>
-            <input type="checkbox" data-market-toggle="naver" />
-            <span class="rp-market-switch" aria-hidden="true"></span>
-          </label>
-
-          <label class="rp-market" data-market="toss">
-            <span class="rp-market-icon">
-              <i data-lucide="store" style="width:22px;height:22px;"></i>
-            </span>
-            <span class="rp-market-text">
-              <span class="rp-market-name">토스쇼핑</span>
-              <span class="rp-market-status" data-market-status="toss">연결 확인 중…</span>
-            </span>
-            <input type="checkbox" data-market-toggle="toss" />
-            <span class="rp-market-switch" aria-hidden="true"></span>
-          </label>
-        </div>
-
-        <!-- 정보고시 confirm 체크박스 -->
-        <label class="rp-id-confirm-label" id="infoDisclosureConfirmLabel">
-          <input type="checkbox" id="infoDisclosureConfirm" data-info-disclosure-confirm />
-          <span class="rp-id-confirm-text">정보고시 AI 초안을 검수했습니다. 정확성 책임은 제가 집니다.</span>
-        </label>
-
-        <p class="rp-error" data-error="distribute" style="display:none;"></p>
-
-        <div class="rp-actions">
-          <button type="button" class="rp-btn rp-btn-primary rp-btn-block" data-action="distribute" disabled>
-            마켓에 보내기
-            <i data-lucide="send" style="width:18px;height:18px;"></i>
-          </button>
-        </div>
-
-        <!-- 진행 + 결과 -->
-        <div class="rp-distribute-progress" data-distribute-progress style="display:none;">
-          <div class="rp-distribute-row" data-distribute-row="coupang" style="display:none;">
-            <span class="rp-distribute-name">쿠팡</span>
-            <span class="rp-distribute-state" data-distribute-state="coupang">대기</span>
-          </div>
-          <div class="rp-distribute-row" data-distribute-row="naver" style="display:none;">
-            <span class="rp-distribute-name">네이버</span>
-            <span class="rp-distribute-state" data-distribute-state="naver">대기</span>
-          </div>
-          <div class="rp-distribute-row" data-distribute-row="toss" style="display:none;">
-            <span class="rp-distribute-name">토스쇼핑</span>
-            <span class="rp-distribute-state" data-distribute-state="toss">대기</span>
-          </div>
-        </div>
-
-        <!-- 직링크 결과 -->
-        <div class="rp-results" data-results style="display:none;">
-          <h3 class="rp-results-title">올라갔어요. 지금 바로 확인하기</h3>
-          <ul class="rp-results-list" data-results-list></ul>
-          <div class="rp-actions">
-            <button type="button" class="rp-btn rp-btn-secondary rp-btn-block" data-action="register-another">
-              <i data-lucide="plus" style="width:18px;height:18px;"></i>
-              다른 상품 더 올리기
-            </button>
-          </div>
-        </div>
-      </section>
-
+  <!-- Greeting -->
+  <section class="rp-greet">
+    <div>
+      <h1 class="rp-greet__title">새 게시 만들기</h1>
     </div>
-  </main>
+  </section>
 
-  <!-- 다크모드 토글 FAB (qa-hotfix BUG-02) -->
-  <button class="theme-fab" id="themeFab" type="button" aria-label="다크 모드 전환" title="다크 모드">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+  <!-- Body -->
+  <div class="rp-body">
+
+    <!-- LEFT: Composer -->
+    <div class="composer" id="composer">
+
+      <!-- State 1: Drop zone -->
+      <div class="composer__drop" id="composerDrop" role="button" tabindex="0" aria-label="사진 추가 — 터치해서 업로드">
+        <input type="file" id="photoInput" accept="image/*" aria-label="사진 선택" />
+        <div class="composer__drop-icon">
+          <!-- plus + image SVG -->
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="3" y="3" width="18" height="18" rx="3"/>
+            <line x1="12" y1="8" x2="12" y2="16"/>
+            <line x1="8" y1="12" x2="16" y2="12"/>
+          </svg>
+        </div>
+        <p class="composer__drop-label">사진 1장 등록</p>
+        <p class="composer__drop-hint">터치해서 추가</p>
+      </div>
+
+      <!-- State 2+: Active composer -->
+      <div class="composer__active" id="composerActive">
+
+        <!-- Top bar -->
+        <div class="composer__top-bar">
+          <span class="composer__status-text" id="statusText">루미가 분석 중…</span>
+          <button class="composer__close-btn" id="composerClose" type="button" aria-label="닫기">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Photo preview -->
+        <div class="composer__preview">
+          <img id="composerImg" src="" alt="선택한 사진" />
+        </div>
+
+        <!-- Generating indicator -->
+        <div class="composer__generating" id="composerGenerating">
+          <span class="pulse-dot"></span>
+          <span id="generatingText">루미가 사진 분석 중…</span>
+        </div>
+
+        <!-- Caption (contenteditable) -->
+        <div class="composer__caption-wrap">
+          <p class="composer__caption"
+             id="composerCaption"
+             contenteditable="false"
+             role="textbox"
+             aria-label="캡션"
+             aria-multiline="true"
+             aria-live="polite"></p>
+        </div>
+
+        <!-- Hashtag chips -->
+        <div class="composer__chips" id="composerChips" aria-label="해시태그"></div>
+
+        <!-- Schedule toggle -->
+        <div class="composer__schedule" id="composerSchedule">
+          <div class="schedule__tabs" role="tablist">
+            <button class="schedule__tab is-active" id="tabNow" role="tab" aria-selected="true" type="button">지금 게시</button>
+            <button class="schedule__tab" id="tabSchedule" role="tab" aria-selected="false" type="button">예약 게시</button>
+          </div>
+          <!-- Now panel -->
+          <div class="schedule__now-row is-visible" id="panelNow" role="tabpanel">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <span>최적 게시 시간</span>
+            <span class="schedule__time-val">19:30</span>
+            <span class="schedule__now-hint">반응 ↑</span>
+          </div>
+          <!-- Scheduled panel -->
+          <div class="schedule__picker-row" id="panelSchedule" role="tabpanel">
+            <input type="datetime-local" class="schedule__datetime-input" id="scheduledAt" aria-label="예약 시간 선택" />
+            <div class="schedule__recommend-hint">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+              <span>19:30 게시 시 반응률 높아요</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Channel selector -->
+        <div class="composer__channels" id="composerChannels" aria-label="채널 선택">
+          <button class="channel-chip is-selected" data-channel="instagram" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+              <circle cx="12" cy="12" r="4"/>
+              <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor"/>
+            </svg>
+            인스타그램
+          </button>
+          <button class="channel-chip channel-chip--placeholder" data-channel="tiktok" type="button" aria-label="틱톡 — 준비 중" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/>
+            </svg>
+            틱톡 <span style="font-size:10px;opacity:.7;">(준비 중)</span>
+          </button>
+        </div>
+
+        <!-- Desktop action buttons (hidden on mobile, shown on 768+) -->
+        <div class="composer__actions-desktop" id="desktopActions">
+          <button class="rp-regen-btn" id="regenBtnDesktop" type="button" aria-label="캡션 다시 만들기">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <polyline points="23 4 23 10 17 10"/>
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+            </svg>
+            다시 만들기
+          </button>
+          <button class="rp-post-btn" id="postBtnDesktop" type="button" aria-label="게시하기">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <line x1="22" y1="2" x2="11" y2="13"/>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+            게시하기 →
+          </button>
+        </div>
+
+      </div><!-- /composer__active -->
+    </div><!-- /composer -->
+
+    <!-- RIGHT: Hint card (768+) -->
+    <div class="rp-right">
+      <div class="rp-preview-hint" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <rect x="3" y="3" width="18" height="18" rx="3"/>
+          <circle cx="8.5" cy="8.5" r="1.5"/>
+          <polyline points="21 15 16 10 5 21"/>
+        </svg>
+        <span>사진을 추가하면 루미가<br>캡션과 해시태그를 만들어드려요.</span>
+      </div>
+    </div>
+
+  </div><!-- /rp-body -->
+
+</main>
+
+<!-- Sticky CTA bar (mobile) -->
+<div class="rp-cta-bar" id="ctaBar" aria-label="게시 액션">
+  <button class="rp-regen-btn" id="regenBtn" type="button" aria-label="캡션 다시 만들기">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <polyline points="23 4 23 10 17 10"/>
+      <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
     </svg>
+    다시 만들기
   </button>
+  <button class="rp-post-btn" id="postBtn" type="button" aria-label="게시하기">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <line x1="22" y1="2" x2="11" y2="13"/>
+      <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+    </svg>
+    게시하기 →
+  </button>
+</div>
 
-  <script src="/js/canvas.js" defer></script>
-  <script src="/js/_shared/restore-seller-jwt.js" defer></script>
-  <script src="/js/register-product.js" defer></script>
-  <script defer>
-    document.addEventListener('DOMContentLoaded', () => {
-      if (!window.LumiCanvas) return;
-      window.LumiCanvas.init({
-        commands: [
-          { section: '등록', icon: '📷', title: '사진 업로드', sub: '카메라 또는 갤러리', action: () => document.getElementById('photo-input')?.click() },
-          { section: '등록', icon: '🔥', title: '트렌드 카테고리', sub: '+400% 카네이션', action: () => location.href = '/dashboard?focus=trend' },
-          { section: '등록', icon: '✨', title: '루미에게 맡기기', action: () => document.querySelector('[data-action="upload-and-analyze"]')?.click() },
-          { section: '이동', icon: '🏠', title: '대시보드', href: '/dashboard' },
-          { section: '이동', icon: '📦', title: '주문 보드', href: '/orders' },
-          { section: '이동', icon: '🔁', title: '마이그레이션', href: '/migration-wizard.html' },
-          { section: '이동', icon: '✓', title: '오늘 처리할 일', href: '/tasks' },
-        ],
-      });
+<!-- Toast -->
+<div class="lumi-toast" id="lumiToast" role="status" aria-live="polite"></div>
 
-      // Action Agent
-      document.querySelector('[data-action-cta]')?.addEventListener('click', () => {
-        location.href = '/dashboard?focus=trend';
-      });
-      document.querySelector('[data-action-dismiss]')?.addEventListener('click', () => {
-        document.getElementById('actionAgent').style.display = 'none';
-      });
-
-      // 카테고리 변경 슬라이드오버 (번개장터 패턴)
-      const categoryTree = [
-        { id: 'fashion-women', name: '패션여성', children: [
-          { id: 'fw-outer', name: '아우터', children: [
-            { id: 'fw-coat', name: '코트' }, { id: 'fw-jacket', name: '자켓' }, { id: 'fw-padding', name: '패딩' },
-          ] },
-          { id: 'fw-top', name: '상의', children: [
-            { id: 'fw-knit', name: '니트' }, { id: 'fw-tee', name: '티셔츠' }, { id: 'fw-blouse', name: '블라우스' },
-          ] },
-          { id: 'fw-bottom', name: '하의' },
-          { id: 'fw-dress', name: '원피스' },
-        ] },
-        { id: 'fashion-men', name: '패션남성' },
-        { id: 'beauty', name: '뷰티' },
-        { id: 'kids', name: '키즈' },
-        { id: 'living', name: '리빙·홈데코' },
-        { id: 'food', name: '식품' },
-      ];
-
-      function buildTreeHtml(nodes, depth) {
-        return nodes.map((n) => {
-          const has = Array.isArray(n.children) && n.children.length > 0;
-          let html = `<li class="tree-list__item tree-list__item--depth-${depth}" data-cat-id="${n.id}" data-cat-name="${n.name}">${n.name}</li>`;
-          if (has) html += buildTreeHtml(n.children, depth + 1);
-          return html;
-        }).join('');
-      }
-
-      document.querySelectorAll('[data-change-category]').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          const market = btn.dataset.changeCategory;
-          const body = document.createElement('div');
-          body.innerHTML = `
-            <p style="margin:0 0 12px;color:#555;font-size:14px;">${market === 'coupang' ? '쿠팡' : '네이버'} 카테고리를 골라주세요. 1탭으로 끝.</p>
-            <ul class="tree-list">${buildTreeHtml(categoryTree, 1)}</ul>
-            <p style="margin:14px 0 0;font-size:12px;color:#888;">사장님이 바꿀수록 루미가 똑똑해져요.</p>
-          `;
-          window.LumiCanvas.openSlideOver({
-            title: (market === 'coupang' ? '쿠팡' : market === 'naver' ? '네이버' : '토스쇼핑') + ' 카테고리 변경',
-            body,
-          });
-          body.querySelectorAll('[data-cat-id]').forEach((li) => {
-            li.addEventListener('click', () => {
-              const name = li.dataset.catName;
-              const target = document.querySelector(`[data-bind="category-${market}"]`);
-              if (target) target.textContent = name;
-              const pct = document.querySelector(`[data-confidence-pct="${market}"]`);
-              if (pct) pct.textContent = '100%'; // 사장님 직접 = 골드 라벨
-              window.LumiCanvas.closeSlideOver();
-            });
-          });
-        });
-      });
-    });
-  </script>
-
-<!-- ── 사업자 정보 (전자상거래법 §13 + Meta 인증) ── -->
+<!-- Footer -->
 <footer class="lumi-footer">
-  <div class="lumi-footer__info">
-    <img src="/assets/logo-wordmark.png" alt="루미" class="lumi-footer__logo" />
-    <p>대표: 김현 · 사업자등록번호: 404-09-66416</p>
-    <p>통신판매업: 제2024-서울용산-1166호</p>
-    <p>주소: 서울특별시 용산구 회나무로 32-7 (이태원동), 04345</p>
-    <p>고객센터: <a href="tel:01064246284" style="color:inherit;text-decoration:none;">010-6424-6284</a> · 이메일: gung3625@gmail.com</p>
-  </div>
+  <img src="/assets/logo-wordmark.png" alt="루미" class="lumi-footer__logo" />
+  <p>대표: 김현 · 사업자등록번호: 404-09-66416</p>
+  <p>통신판매업: 제2024-서울용산-1166호</p>
+  <p>주소: 서울특별시 용산구 회나무로 32-7 (이태원동), 04345</p>
+  <p>고객센터: <a href="tel:01064246284" style="color:inherit;text-decoration:none;">010-6424-6284</a> · 이메일: gung3625@gmail.com</p>
   <div class="lumi-footer__links">
     <a href="/terms.html">이용약관</a> · <a href="/privacy.html">개인정보처리방침</a> · <a href="/refund.html">환불정책</a>
   </div>
   <p class="lumi-footer__copy">© 2026 루미. All rights reserved.</p>
 </footer>
+
+<script src="/js/lumi-foot.js" defer></script>
+<script src="/js/lumi-tabs.js" defer></script>
+<script>
+/* ─── 새 게시 컴포저 — 사진 → 분석 → 캡션 스트리밍 ─── */
+(function () {
+  'use strict';
+
+  /* ── Mock data ── */
+  var MOCK_CAPTION  = '여름 한정 연한 핑크 코튼셔츠.\n땀 많은 여름엔 통기성이 답.';
+  var MOCK_TAGS     = ['#여름룩', '#코튼셔츠', '#데일리'];
+  var MOCK_TIME_VAL = '19:30';
+  var TYPEWRITER_MS = 30;
+  var CHIP_DELAY_MS = 200;
+
+  /* ── Elements ── */
+  var composer         = document.getElementById('composer');
+  var composerDrop     = document.getElementById('composerDrop');
+  var photoInput       = document.getElementById('photoInput');
+  var composerImg      = document.getElementById('composerImg');
+  var composerGen      = document.getElementById('composerGenerating');
+  var generatingText   = document.getElementById('generatingText');
+  var composerCaption  = document.getElementById('composerCaption');
+  var composerChips    = document.getElementById('composerChips');
+  var composerSchedule = document.getElementById('composerSchedule');
+  var composerChannels = document.getElementById('composerChannels');
+  var composerClose    = document.getElementById('composerClose');
+  var statusText       = document.getElementById('statusText');
+  var ctaBar           = document.getElementById('ctaBar');
+  var regenBtn         = document.getElementById('regenBtn');
+  var postBtn          = document.getElementById('postBtn');
+  var regenBtnDesktop  = document.getElementById('regenBtnDesktop');
+  var postBtnDesktop   = document.getElementById('postBtnDesktop');
+  var toast            = document.getElementById('lumiToast');
+  var tabNow           = document.getElementById('tabNow');
+  var tabSchedule      = document.getElementById('tabSchedule');
+  var panelNow         = document.getElementById('panelNow');
+  var panelSchedule    = document.getElementById('panelSchedule');
+
+  /* ── Streaming abort ── */
+  var streamAbort = null;
+
+  /* ── Helpers ── */
+  function wait(ms) {
+    return new Promise(function (resolve) { setTimeout(resolve, ms); });
+  }
+
+  function showToast(msg, ms) {
+    ms = ms || 2400;
+    toast.textContent = msg;
+    toast.classList.add('is-visible');
+    setTimeout(function () { toast.classList.remove('is-visible'); }, ms);
+  }
+
+  /* ── Typewriter ── */
+  async function typewriter(text, signal) {
+    composerCaption.textContent = '';
+    for (var i = 0; i < text.length; i++) {
+      if (signal && signal.aborted) return;
+      composerCaption.textContent = text.slice(0, i + 1);
+      await wait(TYPEWRITER_MS);
+    }
+    /* enable editing after generation */
+    composerCaption.contentEditable = 'true';
+  }
+
+  /* ── Chip fade-in with remove buttons ── */
+  async function fadeInChips(tags, signal) {
+    composerChips.innerHTML = '';
+    for (var i = 0; i < tags.length; i++) {
+      if (signal && signal.aborted) return;
+      var chip = document.createElement('span');
+      chip.className = 'composer__chip';
+      chip.dataset.tag = tags[i];
+      chip.innerHTML =
+        '<span>' + tags[i] + '</span>' +
+        '<button class="composer__chip-remove" type="button" aria-label="' + tags[i] + ' 제거">×</button>';
+      chip.querySelector('.composer__chip-remove').addEventListener('click', function (e) {
+        e.stopPropagation();
+        var parent = e.currentTarget.closest('.composer__chip');
+        if (parent) {
+          parent.style.transition = 'opacity 150ms ease, transform 150ms ease';
+          parent.style.opacity = '0';
+          parent.style.transform = 'scale(0.8)';
+          setTimeout(function () { parent.remove(); }, 160);
+        }
+      });
+      composerChips.appendChild(chip);
+      /* force reflow then animate */
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          var chips = composerChips.querySelectorAll('.composer__chip:not(.is-visible)');
+          chips.forEach(function (c) { c.classList.add('is-visible'); });
+        });
+      });
+      await wait(CHIP_DELAY_MS);
+    }
+    /* add chip "+" button */
+    var addBtn = document.createElement('button');
+    addBtn.className = 'composer__chip-add';
+    addBtn.type = 'button';
+    addBtn.setAttribute('aria-label', '해시태그 추가');
+    addBtn.textContent = '+';
+    addBtn.addEventListener('click', function () {
+      var tag = prompt('해시태그를 입력하세요 (# 포함)');
+      if (!tag || !tag.trim()) return;
+      tag = tag.trim();
+      if (!tag.startsWith('#')) tag = '#' + tag;
+      var newChip = document.createElement('span');
+      newChip.className = 'composer__chip';
+      newChip.dataset.tag = tag;
+      newChip.innerHTML =
+        '<span>' + tag + '</span>' +
+        '<button class="composer__chip-remove" type="button" aria-label="' + tag + ' 제거">×</button>';
+      newChip.querySelector('.composer__chip-remove').addEventListener('click', function (e) {
+        e.stopPropagation();
+        var p = e.currentTarget.closest('.composer__chip');
+        if (p) { p.style.opacity = '0'; p.style.transform = 'scale(0.8)'; setTimeout(function () { p.remove(); }, 160); }
+      });
+      composerChips.insertBefore(newChip, addBtn);
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () { newChip.classList.add('is-visible'); });
+      });
+    });
+    composerChips.appendChild(addBtn);
+  }
+
+  /* ── Show schedule & channel row ── */
+  async function showScheduleRow(signal) {
+    if (signal && signal.aborted) return;
+    composerSchedule.classList.add('is-visible');
+    await wait(150);
+    if (signal && signal.aborted) return;
+    composerChannels.classList.add('is-visible');
+  }
+
+  /* ── Run streaming sequence ── */
+  async function runStreaming() {
+    if (streamAbort) streamAbort.abort();
+    var ctrl = new AbortController();
+    streamAbort = ctrl;
+    var sig = ctrl.signal;
+
+    /* reset */
+    composerCaption.textContent = '';
+    composerCaption.contentEditable = 'false';
+    composerChips.innerHTML = '';
+    composerSchedule.classList.remove('is-visible');
+    composerChannels.classList.remove('is-visible');
+    setPostActive(false);
+    statusText.textContent = '루미가 사진 분석 중…';
+
+    /* phase 1: analyzing */
+    composerGen.classList.remove('is-done');
+    composerGen.classList.add('is-visible');
+    generatingText.textContent = '루미가 사진 분석 중…';
+
+    await wait(1000);
+    if (sig.aborted) return;
+
+    /* phase 2: caption generating */
+    generatingText.textContent = '캡션 만드는 중…';
+    statusText.textContent = '캡션 만드는 중…';
+    await wait(400);
+    if (sig.aborted) return;
+
+    composerGen.classList.add('is-done');
+    statusText.textContent = '루미 캡션';
+
+    await typewriter(MOCK_CAPTION, sig);
+    if (sig.aborted) return;
+
+    await wait(200);
+    await fadeInChips(MOCK_TAGS, sig);
+    if (sig.aborted) return;
+
+    await wait(250);
+    await showScheduleRow(sig);
+    if (sig.aborted) return;
+
+    setPostActive(true);
+  }
+
+  /* ── Toggle post button state (both mobile + desktop) ── */
+  function setPostActive(active) {
+    [postBtn, postBtnDesktop].forEach(function (btn) {
+      if (active) btn.classList.add('is-active');
+      else btn.classList.remove('is-active');
+    });
+  }
+
+  /* ── Open composer ── */
+  function openComposer(file) {
+    var url = URL.createObjectURL(file);
+    composerImg.src = url;
+    composerImg.onload = function () { URL.revokeObjectURL(url); };
+    composer.classList.add('is-active');
+    ctaBar.classList.add('is-visible');
+    runStreaming();
+  }
+
+  /* ── Close composer ── */
+  function closeComposer() {
+    if (streamAbort) { streamAbort.abort(); streamAbort = null; }
+    composer.classList.remove('is-active');
+    ctaBar.classList.remove('is-visible');
+    composerImg.src = '';
+    composerCaption.textContent = '';
+    composerCaption.contentEditable = 'false';
+    composerChips.innerHTML = '';
+    composerSchedule.classList.remove('is-visible');
+    composerChannels.classList.remove('is-visible');
+    composerGen.classList.remove('is-visible', 'is-done');
+    setPostActive(false);
+    photoInput.value = '';
+  }
+
+  /* ── Schedule tab toggle ── */
+  function switchTab(tab) {
+    if (tab === 'now') {
+      tabNow.classList.add('is-active');
+      tabNow.setAttribute('aria-selected', 'true');
+      tabSchedule.classList.remove('is-active');
+      tabSchedule.setAttribute('aria-selected', 'false');
+      panelNow.classList.add('is-visible');
+      panelSchedule.classList.remove('is-visible');
+    } else {
+      tabSchedule.classList.add('is-active');
+      tabSchedule.setAttribute('aria-selected', 'true');
+      tabNow.classList.remove('is-active');
+      tabNow.setAttribute('aria-selected', 'false');
+      panelSchedule.classList.add('is-visible');
+      panelNow.classList.remove('is-visible');
+    }
+  }
+
+  /* ── Channel toggle ── */
+  composerChannels.querySelectorAll('.channel-chip:not(.channel-chip--placeholder)').forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      chip.classList.toggle('is-selected');
+    });
+  });
+
+  /* ── Post handler ── */
+  function handlePost() {
+    if (!postBtn.classList.contains('is-active') && !postBtnDesktop.classList.contains('is-active')) return;
+    showToast('✓ 게시 완료!', 2800);
+    setTimeout(function () {
+      closeComposer();
+      setTimeout(function () { location.href = '/dashboard'; }, 100);
+    }, 800);
+  }
+
+  /* ── Event bindings ── */
+  composerDrop.addEventListener('click', function (e) {
+    if (e.target === photoInput) return;
+    photoInput.click();
+  });
+  composerDrop.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); photoInput.click(); }
+  });
+
+  /* drag-and-drop support */
+  composerDrop.addEventListener('dragover', function (e) {
+    e.preventDefault();
+    composerDrop.style.outline = '2px dashed var(--lumi-brand-fill)';
+  });
+  composerDrop.addEventListener('dragleave', function () {
+    composerDrop.style.outline = '';
+  });
+  composerDrop.addEventListener('drop', function (e) {
+    e.preventDefault();
+    composerDrop.style.outline = '';
+    var file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) openComposer(file);
+  });
+
+  photoInput.addEventListener('change', function () {
+    var file = this.files && this.files[0];
+    if (!file) return;
+    openComposer(file);
+  });
+
+  composerClose.addEventListener('click', closeComposer);
+
+  [regenBtn, regenBtnDesktop].forEach(function (btn) {
+    btn.addEventListener('click', function () { runStreaming(); });
+  });
+
+  [postBtn, postBtnDesktop].forEach(function (btn) {
+    btn.addEventListener('click', handlePost);
+  });
+
+  tabNow.addEventListener('click', function () { switchTab('now'); });
+  tabSchedule.addEventListener('click', function () { switchTab('schedule'); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && composer.classList.contains('is-active')) closeComposer();
+  });
+
+})();
+</script>
 </body>
 </html>
