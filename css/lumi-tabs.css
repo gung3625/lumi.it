@@ -1,0 +1,180 @@
+/* ============================================================
+   lumi-tabs.css — 모바일 하단 5탭 네비게이션
+   ============================================================
+   인스타·당근·토스 패턴 참조.
+   768px+ 데스크톱에서 완전 숨김.
+   토큰(lumi-tokens.css) 기반 — hex 직접 사용 금지.
+   ============================================================ */
+
+/* ─── 탭바 컨테이너 ─── */
+.lumi-tabs {
+  display: flex;
+  align-items: stretch;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: calc(56px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: var(--lumi-surface);
+  border-top: 1px solid var(--lumi-line);
+  backdrop-filter: var(--lumi-blur-sm);
+  -webkit-backdrop-filter: var(--lumi-blur-sm);
+  z-index: var(--lumi-z-bottom);
+  /* 이 바텀 탭바가 보이는 동안 body 하단에 패딩 확보 필요 */
+}
+
+/* 데스크톱: 완전 숨김 */
+@media (min-width: 768px) {
+  .lumi-tabs {
+    display: none;
+  }
+}
+
+/* body 하단 여백 — 탭바 높이만큼 콘텐츠가 가리지 않도록 */
+body:has(.lumi-tabs) {
+  padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 768px) {
+  body:has(.lumi-tabs) {
+    padding-bottom: 0;
+  }
+}
+
+/* ─── 탭 아이템 ─── */
+.lumi-tabs__item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-height: 44px; /* tap 최소 영역 */
+  padding-top: 8px;
+  padding-bottom: 4px;
+  color: var(--lumi-ink-muted);
+  text-decoration: none;
+  cursor: pointer;
+  position: relative;
+  transition:
+    color var(--lumi-duration-fast) var(--lumi-ease-soft),
+    transform var(--lumi-duration-snap) var(--lumi-ease-toss);
+  will-change: transform;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 활성 탭 */
+.lumi-tabs__item[data-active="true"] {
+  color: var(--lumi-brand-text);
+}
+
+/* 호버 lift (포인터 기기에서만) */
+@media (hover: hover) {
+  .lumi-tabs__item:hover {
+    transform: translateY(-1px);
+    color: var(--lumi-ink-soft);
+  }
+
+  .lumi-tabs__item[data-active="true"]:hover {
+    color: var(--lumi-brand-text);
+  }
+}
+
+/* 클릭 피드백 */
+.lumi-tabs__item:active {
+  transform: scale(0.97);
+  transition-duration: var(--lumi-duration-instant);
+}
+
+/* ─── 아이콘 ─── */
+.lumi-tabs__icon {
+  width: 22px;
+  height: 22px;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+  display: block;
+}
+
+/* ─── 라벨 ─── */
+.lumi-tabs__label {
+  font-family: var(--lumi-font-system);
+  font-size: var(--lumi-text-overline);
+  font-weight: var(--lumi-weight-medium);
+  line-height: 1;
+  letter-spacing: var(--lumi-tracking-tight);
+  white-space: nowrap;
+}
+
+/* ─── CTA 탭 (가운데 등록) ─── */
+.lumi-tabs__item--cta {
+  /* 다른 탭보다 살짝 위로 */
+  transform: translateY(-8px);
+  color: var(--lumi-ink-muted);
+}
+
+.lumi-tabs__item--cta:active {
+  transform: translateY(-8px) scale(0.97);
+}
+
+@media (hover: hover) {
+  .lumi-tabs__item--cta:hover {
+    transform: translateY(-9px);
+    color: var(--lumi-ink-soft);
+  }
+}
+
+/* ─── CTA 원형 그라디언트 버튼 ─── */
+.lumi-tabs__cta-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--lumi-radius-full);
+  background: var(--lumi-gradient-brand);
+  background-size: 200% 100%;
+  background-position: 100% 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--lumi-shadow-glow-sm);
+  transition:
+    background-position var(--lumi-duration-slow) var(--lumi-ease-soft),
+    box-shadow var(--lumi-duration-fast) var(--lumi-ease-soft),
+    transform var(--lumi-duration-snap) var(--lumi-ease-toss);
+  will-change: transform, background-position;
+}
+
+.lumi-tabs__cta-circle svg {
+  width: 22px;
+  height: 22px;
+  stroke: white;
+  stroke-width: 2.2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* CTA 호버 — 그라디언트 흐름 + 글로우 강화 + 살짝 커짐 */
+@media (hover: hover) {
+  .lumi-tabs__item--cta:hover .lumi-tabs__cta-circle {
+    background-position: 0% 50%;
+    box-shadow: var(--lumi-shadow-glow);
+    transform: scale(1.05);
+  }
+}
+
+/* CTA 클릭 */
+.lumi-tabs__item--cta:active .lumi-tabs__cta-circle {
+  transform: scale(0.95);
+  box-shadow: var(--lumi-shadow-glow-sm);
+  transition-duration: var(--lumi-duration-instant);
+}
+
+/* CTA 라벨은 원형 아래 작게 */
+.lumi-tabs__item--cta .lumi-tabs__label {
+  color: var(--lumi-ink-muted);
+  margin-top: 2px;
+}

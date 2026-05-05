@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>예약 게시 — lumi</title>
+  <meta name="description" content="이번 주 게시 일정을 한눈에 확인하고 예약을 관리하세요" />
+  <meta name="theme-color" content="#ffffff" />
+  <link rel="icon" href="/assets/favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" as="style" crossorigin
+    href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
+    integrity="sha384-GIdEBaqGN9mNkDkMkzMHW8EKUqtpPIe/sLj1X7DIrnc9uPtLROJgmuDlh+3rBw0j"
+    crossorigin="anonymous" />
+  <link rel="stylesheet" href="/css/lumi-tokens.css" />
+  <link rel="stylesheet" href="/css/lumi-comp.css" />
+  <style>
+/* ============================================================
+   reservations.html — 예약 게시 캘린더
+   ============================================================ */
+
+/* ─── 페이지 기본 ─── */
+.rsv-page {
+  min-height: 100dvh;
+  background: var(--lumi-surface-alt);
+}
+
+/* ─── 상단 CTA 스티키 바 ─── */
+.rsv-cta-bar {
+  position: sticky;
+  top: 56px; /* lumi-head 높이 */
+  z-index: var(--lumi-z-sticky);
+  background: var(--lumi-surface);
+  border-bottom: 1px solid var(--lumi-line);
+  padding: var(--lumi-space-3) var(--lumi-page-x);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--lumi-space-3);
+}
+
+.rsv-cta-bar__title {
+  font-size: var(--lumi-text-body);
+  font-weight: var(--lumi-weight-semibold);
+  color: var(--lumi-ink-strong);
+  white-space: nowrap;
+}
+
+/* ─── Greeting 섹션 ─── */
+.rsv-greeting {
+  padding: var(--lumi-space-8) var(--lumi-page-x) var(--lumi-space-5);
+  background: var(--lumi-surface);
+}
+
+.rsv-greeting__eyebrow {
+  font-size: var(--lumi-text-label);
+  font-weight: var(--lumi-weight-semibold);
+  letter-spacing: var(--lumi-tracking-wide);
+  text-transform: uppercase;
+  color: var(--lumi-brand-text);
+  margin: 0 0 var(--lumi-space-2);
+}
+
+.rsv-greeting__title {
+  font-size: var(--lumi-text-headline);
+  font-weight: var(--lumi-weight-bold);
+  letter-spacing: var(--lumi-tracking-tight);
+  color: var(--lumi-ink-strong);
+  margin: 0 0 var(--lumi-space-2);
+  word-break: keep-all;
+}
+
+.rsv-greeting__sub {
+  font-size: var(--lumi-text-body-sm);
+  color: var(--lumi-ink-muted);
+  margin: 0;
+  word-break: keep-all;
+}
+
+/* ─── 주간 탭 헤더 ─── */
+.rsv-week-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--lumi-space-4) var(--lumi-page-x) var(--lumi-space-2);
+  background: var(--lumi-surface);
+  border-bottom: 1px solid var(--lumi-line);
+  gap: var(--lumi-space-2);
+}
+
+.rsv-week-nav__label {
+  font-size: var(--lumi-text-body-sm);
+  font-weight: var(--lumi-weight-semibold);
+  color: var(--lumi-ink-strong);
+  white-space: nowrap;
+}
+
+.rsv-week-nav__arrows {
+  display: flex;
+  gap: var(--lumi-space-1);
+}
+
+.rsv-week-nav__btn {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--lumi-radius-sm);
+  border: 1px solid var(--lumi-line-strong);
+  background: var(--lumi-surface);
+  color: var(--lumi-ink-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    background-color var(--lumi-duration-fast) var(--lumi-ease-soft),
+    border-color var(--lumi-duration-fast) var(--lumi-ease-soft);
+}
+
+@media (hover: hover) {
+  .rsv-week-nav__btn:hover {
+    background: var(--lumi-surface-deep);
+    border-color: var(--lumi-ink-soft);
+  }
+}
+
+.rsv-week-nav__btn svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ─── 요일 헤더 행 ─── */
+.rsv-day-headers {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  background: var(--lumi-surface);
+  border-bottom: 1px solid var(--lumi-line);
+  padding: 0 var(--lumi-page-x);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.rsv-day-headers::-webkit-scrollbar { display: none; }
+
+.rsv-day-header {
+  min-width: 80px;
+  padding: var(--lumi-space-2) var(--lumi-space-2);
+  text-align: center;
+}
+
+.rsv-day-header__name {
+  font-size: var(--lumi-text-label);
+  font-weight: var(--lumi-weight-medium);
+  color: var(--lumi-ink-muted);
+  display: block;
+}
+
+.rsv-day-header__num {
+  font-size: var(--lumi-text-body-sm);
+  font-weight: var(--lumi-weight-bold);
+  color: var(--lumi-ink-strong);
+  display: block;
+  margin-top: 2px;
+}
+
+.rsv-day-header--today .rsv-day-header__num {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--lumi-radius-full);
+  background: var(--lumi-brand-fill);
+  color: var(--lumi-ink-on-dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+}
+
+/* ─── 캘린더 그리드 ─── */
+.rsv-calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0;
+  padding: var(--lumi-space-3) var(--lumi-page-x) var(--lumi-space-8);
+  background: var(--lumi-surface-alt);
+  overflow-x: auto;
+  scrollbar-width: none;
+  align-items: start;
+}
+
+.rsv-calendar::-webkit-scrollbar { display: none; }
+
+/* 모바일: 가로 스크롤 가능하게 최소 너비 */
+@media (max-width: 767px) {
+  .rsv-day-headers,
+  .rsv-calendar {
+    min-width: 560px;
+    overflow-x: auto;
+    padding-left: var(--lumi-page-x);
+    padding-right: var(--lumi-page-x);
+  }
+  /* 스크롤 컨테이너 */
+  .rsv-calendar-scroll {
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .rsv-calendar-scroll::-webkit-scrollbar { display: none; }
+}
+
+/* ─── 날짜 열 ─── */
+.rsv-col {
+  padding: var(--lumi-space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--lumi-space-2);
+  min-height: 120px;
+}
+
+/* ─── 예약 카드 ─── */
+.rsv-card {
+  position: relative;
+  background: var(--lumi-surface);
+  border: 1px solid var(--lumi-line);
+  border-radius: var(--lumi-radius-md);
+  padding: var(--lumi-space-3);
+  cursor: pointer;
+  transition:
+    transform var(--lumi-duration-base) var(--lumi-ease-toss),
+    box-shadow var(--lumi-duration-base) var(--lumi-ease-soft),
+    border-color var(--lumi-duration-fast) var(--lumi-ease-soft);
+  will-change: transform;
+  overflow: hidden;
+}
+
+/* 그라디언트 보더 레이어 (호버 시 등장) */
+.rsv-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: var(--lumi-gradient-brand-135);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity var(--lumi-duration-fast) var(--lumi-ease-soft);
+  pointer-events: none;
+}
+
+@media (hover: hover) {
+  .rsv-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--lumi-shadow-md);
+  }
+
+  .rsv-card:hover::before {
+    opacity: 1;
+  }
+}
+
+.rsv-card:active {
+  transform: scale(0.97);
+  transition-duration: var(--lumi-duration-instant);
+}
+
+.rsv-card__time {
+  font-size: var(--lumi-text-overline);
+  font-weight: var(--lumi-weight-semibold);
+  color: var(--lumi-ink-faint);
+  letter-spacing: var(--lumi-tracking-wide);
+  margin: 0 0 var(--lumi-space-1);
+}
+
+.rsv-card__name {
+  font-size: var(--lumi-text-body-sm);
+  font-weight: var(--lumi-weight-semibold);
+  color: var(--lumi-ink-strong);
+  margin: 0 0 var(--lumi-space-1);
+  word-break: keep-all;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* 상태 뱃지 */
+.rsv-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--lumi-text-overline);
+  font-weight: var(--lumi-weight-medium);
+  padding: 2px 7px;
+  border-radius: var(--lumi-radius-pill);
+}
+
+.rsv-badge--done {
+  background: color-mix(in srgb, var(--lumi-success) 12%, transparent);
+  color: var(--lumi-success);
+}
+
+.rsv-badge--pending {
+  background: color-mix(in srgb, var(--lumi-warning) 12%, transparent);
+  color: var(--lumi-warning);
+}
+
+.rsv-badge__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: var(--lumi-radius-full);
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+/* 추천 시간대 강조 */
+.rsv-card--recommended {
+  border-color: color-mix(in srgb, var(--lumi-brand-fill) 30%, transparent);
+}
+
+.rsv-card__recommend-hint {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--lumi-text-overline);
+  color: var(--lumi-brand-text);
+  font-weight: var(--lumi-weight-medium);
+  margin-top: var(--lumi-space-2);
+}
+
+.rsv-card__recommend-hint svg {
+  width: 12px;
+  height: 12px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+
+/* ─── 빈 슬롯 + "예약 추가" 버튼 ─── */
+.rsv-empty-slot {
+  border: 1.5px dashed var(--lumi-line-strong);
+  border-radius: var(--lumi-radius-md);
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background: transparent;
+  transition:
+    border-color var(--lumi-duration-fast) var(--lumi-ease-soft),
+    background-color var(--lumi-duration-fast) var(--lumi-ease-soft),
+    transform var(--lumi-duration-snap) var(--lumi-ease-toss);
+  width: 100%;
+  padding: var(--lumi-space-3);
+  color: var(--lumi-ink-faint);
+  font-family: inherit;
+}
+
+@media (hover: hover) {
+  .rsv-empty-slot:hover {
+    border-color: var(--lumi-brand-fill);
+    background: color-mix(in srgb, var(--lumi-brand-fill) 4%, transparent);
+    color: var(--lumi-brand-text);
+    transform: translateY(-1px);
+  }
+}
+
+.rsv-empty-slot:active {
+  transform: scale(0.97);
+  transition-duration: var(--lumi-duration-instant);
+}
+
+.rsv-empty-slot__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--lumi-space-1);
+}
+
+.rsv-empty-slot__icon {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.rsv-empty-slot__text {
+  font-size: var(--lumi-text-overline);
+  font-weight: var(--lumi-weight-medium);
+}
+
+/* ─── 데스크톱 확장 ─── */
+@media (min-width: 768px) {
+  .rsv-greeting {
+    padding: var(--lumi-space-10) var(--lumi-page-x) var(--lumi-space-6);
+  }
+
+  .rsv-greeting__title {
+    font-size: var(--lumi-text-display-3);
+  }
+
+  .rsv-calendar-scroll {
+    overflow-x: visible;
+  }
+
+  .rsv-day-headers,
+  .rsv-calendar {
+    min-width: unset;
+    overflow-x: visible;
+  }
+
+  .rsv-col {
+    min-height: 180px;
+    gap: var(--lumi-space-3);
+  }
+
+  .rsv-card__name {
+    font-size: var(--lumi-text-body-sm);
+  }
+}
+  </style>
+</head>
+<body>
+  <!-- 헤더 자동 삽입 -->
+  <script src="/js/lumi-head.js" defer></script>
+
+  <main class="rsv-page">
+
+    <!-- 상단 CTA 스티키 바 -->
+    <div class="rsv-cta-bar">
+      <span class="rsv-cta-bar__title">이번 주 게시 일정</span>
+      <a href="/register-product" class="lumi-btn lumi-btn--primary lumi-btn--sm">
+        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" aria-hidden="true">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        새 예약 만들기
+      </a>
+    </div>
+
+    <!-- Greeting -->
+    <section class="rsv-greeting">
+      <p class="rsv-greeting__eyebrow">예약 게시</p>
+      <h1 class="rsv-greeting__title">이번 주 게시 일정</h1>
+      <p class="rsv-greeting__sub">게시 예약을 관리하고 최적의 시간대에 올리세요.</p>
+    </section>
+
+    <!-- 주 네비게이션 -->
+    <div class="rsv-week-nav">
+      <span class="rsv-week-nav__label">2025년 4월 28일 — 5월 4일</span>
+      <div class="rsv-week-nav__arrows">
+        <button type="button" class="rsv-week-nav__btn" aria-label="이전 주">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <button type="button" class="rsv-week-nav__btn" aria-label="다음 주">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- 캘린더 (가로 스크롤 래퍼) -->
+    <div class="rsv-calendar-scroll">
+
+      <!-- 요일 헤더 -->
+      <div class="rsv-day-headers">
+        <div class="rsv-day-header">
+          <span class="rsv-day-header__name">월</span>
+          <span class="rsv-day-header__num">28</span>
+        </div>
+        <div class="rsv-day-header">
+          <span class="rsv-day-header__name">화</span>
+          <span class="rsv-day-header__num">29</span>
+        </div>
+        <div class="rsv-day-header">
+          <span class="rsv-day-header__name">수</span>
+          <span class="rsv-day-header__num">30</span>
+        </div>
+        <div class="rsv-day-header">
+          <span class="rsv-day-header__name">목</span>
+          <span class="rsv-day-header__num">1</span>
+        </div>
+        <div class="rsv-day-header rsv-day-header--today">
+          <span class="rsv-day-header__name">금</span>
+          <span class="rsv-day-header__num">2</span>
+        </div>
+        <div class="rsv-day-header">
+          <span class="rsv-day-header__name">토</span>
+          <span class="rsv-day-header__num">3</span>
+        </div>
+        <div class="rsv-day-header">
+          <span class="rsv-day-header__name">일</span>
+          <span class="rsv-day-header__num">4</span>
+        </div>
+      </div>
+
+      <!-- 캘린더 그리드 -->
+      <div class="rsv-calendar">
+
+        <!-- 월 — 게시 완료 -->
+        <div class="rsv-col">
+          <article class="rsv-card" role="button" tabindex="0" aria-label="여름 핑크 코튼셔츠 게시 완료">
+            <p class="rsv-card__time">11:30</p>
+            <p class="rsv-card__name">여름 핑크 코튼셔츠</p>
+            <span class="rsv-badge rsv-badge--done">
+              <span class="rsv-badge__dot" aria-hidden="true"></span>게시 완료
+            </span>
+          </article>
+        </div>
+
+        <!-- 화 — 예약 대기 -->
+        <div class="rsv-col">
+          <article class="rsv-card" role="button" tabindex="0" aria-label="데일리 슬랙스 3종 예약 대기">
+            <p class="rsv-card__time">14:30</p>
+            <p class="rsv-card__name">데일리 슬랙스 3종</p>
+            <span class="rsv-badge rsv-badge--pending">
+              <span class="rsv-badge__dot" aria-hidden="true"></span>예약 대기
+            </span>
+          </article>
+        </div>
+
+        <!-- 수 — 예약 대기 + 추천 시간대 -->
+        <div class="rsv-col">
+          <article class="rsv-card rsv-card--recommended" role="button" tabindex="0" aria-label="테니스 룩 예약 대기 — 반응 높음 추천 시간대">
+            <p class="rsv-card__time">19:30</p>
+            <p class="rsv-card__name">테니스 룩</p>
+            <span class="rsv-badge rsv-badge--pending">
+              <span class="rsv-badge__dot" aria-hidden="true"></span>예약 대기
+            </span>
+            <p class="rsv-card__recommend-hint">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+              </svg>
+              반응 높은 시간대
+            </p>
+          </article>
+        </div>
+
+        <!-- 목 — 빈 슬롯 -->
+        <div class="rsv-col">
+          <button type="button" class="rsv-empty-slot" aria-label="목요일 예약 추가">
+            <span class="rsv-empty-slot__inner">
+              <svg class="rsv-empty-slot__icon" viewBox="0 0 24 24" aria-hidden="true">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              <span class="rsv-empty-slot__text">예약 추가</span>
+            </span>
+          </button>
+        </div>
+
+        <!-- 금 — 빈 슬롯 (오늘) -->
+        <div class="rsv-col">
+          <button type="button" class="rsv-empty-slot" aria-label="금요일 예약 추가">
+            <span class="rsv-empty-slot__inner">
+              <svg class="rsv-empty-slot__icon" viewBox="0 0 24 24" aria-hidden="true">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              <span class="rsv-empty-slot__text">예약 추가</span>
+            </span>
+          </button>
+        </div>
+
+        <!-- 토 — 빈 슬롯 -->
+        <div class="rsv-col">
+          <button type="button" class="rsv-empty-slot" aria-label="토요일 예약 추가">
+            <span class="rsv-empty-slot__inner">
+              <svg class="rsv-empty-slot__icon" viewBox="0 0 24 24" aria-hidden="true">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              <span class="rsv-empty-slot__text">예약 추가</span>
+            </span>
+          </button>
+        </div>
+
+        <!-- 일 — 빈 슬롯 -->
+        <div class="rsv-col">
+          <button type="button" class="rsv-empty-slot" aria-label="일요일 예약 추가">
+            <span class="rsv-empty-slot__inner">
+              <svg class="rsv-empty-slot__icon" viewBox="0 0 24 24" aria-hidden="true">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              <span class="rsv-empty-slot__text">예약 추가</span>
+            </span>
+          </button>
+        </div>
+
+      </div><!-- .rsv-calendar -->
+    </div><!-- .rsv-calendar-scroll -->
+
+  </main>
+
+  <!-- 푸터 자동 삽입 -->
+  <script src="/js/lumi-foot.js" defer></script>
+
+  <!-- 하단 5탭 네비게이션 자동 삽입 -->
+  <script src="/js/lumi-tabs.js" defer></script>
+</body>
+</html>
