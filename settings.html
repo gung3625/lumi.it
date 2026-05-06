@@ -1,310 +1,829 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>설정 — lumi</title>
-<link rel="stylesheet" href="/css/brand-tokens.css" />
-<!-- Google Tag Manager -->
-<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','GTM-P29BG2C5');</script>
-<!-- End Google Tag Manager -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@800&display=swap" rel="stylesheet">
-<link rel="preload" href="/assets/BMJUA.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/css/design-v2.css">
-<style>
-@font-face{font-family:'Pretendard';src:url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/packages/pretendard/dist/web/static/woff2/Pretendard-Regular.woff2') format('woff2');font-weight:400;font-display:swap;}
-@font-face{font-family:'Pretendard';src:url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/packages/pretendard/dist/web/static/woff2/Pretendard-SemiBold.woff2') format('woff2');font-weight:600;font-display:swap;}
-@font-face{font-family:'Jua';src:url('/assets/BMJUA.woff2') format('woff2');font-display:block;}
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
-html{background:#f5f5f7;scrollbar-width:none;scroll-behavior:smooth;}
-html::-webkit-scrollbar{display:none;}
-body{font-family:'Jua','Pretendard',-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;font-size:17px;font-weight:400;line-height:1.47;letter-spacing:-.374px;color:#1d1d1f;-webkit-font-smoothing:antialiased;padding-bottom:80px;}
-@media(max-width:767px){body.has-tabbar{padding-bottom:calc(88px + max(env(safe-area-inset-bottom,0px),8px));}}
-body.dark-mode{background:#111;color:#f0f2f8;}
-body.dark-mode html{background:#111;}
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>설정 — lumi</title>
+  <meta name="description" content="매장 정보·인스타 연동·알림·계정을 관리하세요" />
+  <meta name="theme-color" content="#ffffff" />
+  <link rel="icon" href="/assets/favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" as="style" crossorigin
+    href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+  <link rel="stylesheet" href="/css/lumi-tokens.css" />
+  <link rel="stylesheet" href="/css/lumi-comp.css" />
 
-/* ── Phase 1: 인스타 연동 완전 숨김 (Phase 2 부활: 아래 규칙 삭제) ── */
-#ig-link-card,[data-feature="instagram-disabled-phase1"]{display:none !important;}
+  <!-- Google Tag Manager -->
+  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-P29BG2C5');</script>
+  <!-- End Google Tag Manager -->
 
-/* ── 모바일 특화 수정 (인라인 전용) ── */
+  <style>
+/* ============================================================
+   settings.html — 모바일 퍼스트 설정 페이지 (v2 토큰 기반)
+   ============================================================ */
 
-/* 1. word-break: keep-all */
-.card-title,
-.field-label,
-.field-note,
-.toggle-label,
-.toggle-desc,
-.hero h1,
-.hero p {
+/* ─── 페이지 기본 ─── */
+.stg-page {
+  min-height: 100dvh;
+  background: var(--lumi-surface-alt);
+  padding-bottom: calc(var(--lumi-space-20) + env(safe-area-inset-bottom, 0px));
+}
+
+/* ─── Greeting ─── */
+.stg-greeting {
+  padding: var(--lumi-space-8) var(--lumi-page-x) var(--lumi-space-5);
+  background: var(--lumi-surface);
+  border-bottom: 1px solid var(--lumi-line);
+}
+
+.stg-greeting__title {
+  font-size: var(--lumi-text-headline);
+  font-weight: var(--lumi-weight-heavy);
+  letter-spacing: var(--lumi-tracking-snug);
+  color: var(--lumi-ink-strong);
+  margin: 0;
+}
+
+.stg-greeting__sub {
+  font-size: var(--lumi-text-body-sm);
+  color: var(--lumi-ink-muted);
+  margin: var(--lumi-space-1) 0 0;
+}
+
+/* ─── 섹션 컨테이너 ─── */
+.stg-layout {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: var(--lumi-space-6) var(--lumi-page-x);
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--lumi-space-5);
+}
+
+@media (min-width: 768px) {
+  .stg-layout {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--lumi-space-6);
+    padding: var(--lumi-space-8) var(--lumi-page-x);
+  }
+}
+
+@media (min-width: 1024px) {
+  .stg-layout {
+    padding: var(--lumi-space-10) var(--lumi-page-x);
+    gap: var(--lumi-space-8);
+  }
+}
+
+.stg-col-full {
+  grid-column: 1 / -1;
+}
+
+/* ─── 설정 카드 ─── */
+.stg-card {
+  background: var(--lumi-surface);
+  border-radius: var(--lumi-radius-lg);
+  border: 1px solid var(--lumi-line);
+  padding: var(--lumi-space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--lumi-space-5);
+  opacity: 0;
+  transform: translateY(12px);
+  transition:
+    opacity var(--lumi-duration-base) var(--lumi-ease-toss),
+    transform var(--lumi-duration-base) var(--lumi-ease-toss),
+    box-shadow var(--lumi-duration-fast) var(--lumi-ease-soft),
+    border-color var(--lumi-duration-fast) var(--lumi-ease-soft);
+}
+
+.stg-card.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (hover: hover) {
+  .stg-card:hover {
+    box-shadow: var(--lumi-shadow-md);
+  }
+}
+
+/* ─── 카드 헤더 ─── */
+.stg-card__header {
+  display: flex;
+  align-items: center;
+  gap: var(--lumi-space-3);
+}
+
+.stg-card__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--lumi-radius-sm);
+  background: var(--lumi-brand-soft);
+  color: var(--lumi-brand-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.stg-card__title {
+  font-size: var(--lumi-text-title);
+  font-weight: var(--lumi-weight-bold);
+  letter-spacing: var(--lumi-tracking-snug);
+  color: var(--lumi-ink-strong);
+  margin: 0;
   word-break: keep-all;
-  overflow-wrap: break-word;
 }
 
-/* 2. nav safe-area (좌우 노치 대응) */
-nav:not(.m-tabbar) {
-  padding-left: max(24px, env(safe-area-inset-left, 24px));
-  padding-right: max(24px, env(safe-area-inset-right, 24px));
+/* ─── 폼 필드 ─── */
+.stg-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lumi-space-2);
 }
 
-/* 3. 그리드 좌우 패딩 safe-area */
-@media (max-width: 700px) {
-  .grid {
-    padding-left: max(16px, env(safe-area-inset-left, 16px));
-    padding-right: max(16px, env(safe-area-inset-right, 16px));
-  }
-  .hero {
-    padding-left: max(20px, env(safe-area-inset-left, 20px));
-    padding-right: max(20px, env(safe-area-inset-right, 20px));
-  }
+.stg-field__label {
+  font-size: var(--lumi-text-caption);
+  font-weight: var(--lumi-weight-semibold);
+  color: var(--lumi-ink-muted);
+  letter-spacing: 0.01em;
+  word-break: keep-all;
 }
 
-/* 4. btn-row — 버튼 모바일 전체 너비 */
+.stg-field__input {
+  width: 100%;
+  height: var(--lumi-input-h);
+  padding-inline: var(--lumi-space-4);
+  border-radius: var(--lumi-radius-md);
+  border: 1px solid var(--lumi-line);
+  background: var(--lumi-surface);
+  font-size: 16px;
+  color: var(--lumi-ink-strong);
+  font-family: var(--lumi-font-system);
+  transition:
+    border-color var(--lumi-duration-fast) var(--lumi-ease-soft),
+    box-shadow var(--lumi-duration-fast) var(--lumi-ease-soft);
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.stg-field__input:focus {
+  outline: none;
+  border-color: var(--lumi-brand-fill);
+  box-shadow: 0 0 0 4px rgba(200, 80, 122, 0.12);
+}
+
+.stg-field__input::placeholder {
+  color: var(--lumi-ink-faint);
+}
+
+.stg-field__input--select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6' fill='none' stroke='%23C8507A' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  padding-right: 40px;
+  cursor: pointer;
+}
+
+.stg-field__input--textarea {
+  height: auto;
+  min-height: 100px;
+  padding-block: var(--lumi-space-3);
+  resize: none;
+  line-height: var(--lumi-leading-relaxed);
+}
+
+.stg-field__input--pw {
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: 2px;
+}
+
+.stg-field__note {
+  font-size: var(--lumi-text-caption);
+  color: var(--lumi-ink-muted);
+  line-height: var(--lumi-leading-relaxed);
+  word-break: keep-all;
+}
+
+.stg-field__note--warn {
+  color: var(--lumi-brand-text);
+}
+
+/* 말투 샘플 — 3개 입력창 */
+.stg-tone-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lumi-space-2);
+}
+
+/* ─── 버튼 행 ─── */
+.stg-actions {
+  display: flex;
+  gap: var(--lumi-space-3);
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
 @media (max-width: 480px) {
-  .btn-row {
+  .stg-actions {
     flex-direction: column;
   }
-  .btn-row .btn {
+  .stg-actions .lumi-btn {
     width: 100%;
-    justify-content: center;
   }
 }
 
-/* 5. 토스트 — 하단 safe-area */
-.toast {
-  bottom: calc(32px + env(safe-area-inset-bottom, 0px)) !important;
+/* ─── 인스타 연동 카드 ─── */
+.stg-ig-status {
+  position: relative;
+  border-radius: var(--lumi-radius-md);
+  border: 1px solid var(--lumi-line);
+  padding: var(--lumi-space-4) var(--lumi-space-5);
+  display: flex;
+  align-items: center;
+  gap: var(--lumi-space-3);
+  background: var(--lumi-surface-alt);
+  isolation: isolate;
+  transition:
+    transform var(--lumi-duration-base) var(--lumi-ease-toss),
+    box-shadow var(--lumi-duration-base) var(--lumi-ease-soft),
+    border-color var(--lumi-duration-fast) var(--lumi-ease-soft);
 }
 
-/* 6. FAB — has-tabbar 시 탭바 위로 (design-v2.css 이미 처리됨, 320px 보강) */
-@media (max-width: 360px) {
-  .grid { padding-left: 12px; padding-right: 12px; }
-  .card { padding: 18px 14px; }
+/* 그라디언트 보더 (호버 시 등장) */
+.stg-ig-status::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: var(--lumi-gradient-brand);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity var(--lumi-duration-base) var(--lumi-ease-soft);
+  pointer-events: none;
 }
 
-nav:not(.m-tabbar){position:sticky;top:0;z-index:100;max-width:100%;padding:0 24px;height:48px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;background:rgba(245,245,247,.88);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);}
-body.dark-mode nav{background:rgba(0,0,0,.88);}
-.nav-logo{font-size:22px;font-weight:800;font-family:'Nunito',sans-serif;background:var(--gradient-brand);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-decoration:none;justify-self:center;}.nav-logo img{height:1.5em;width:auto;display:block;}
-.nav-close{width:44px;height:44px;border-radius:50%;border:none;background:rgba(0,0,0,.06);color:#1d1d1f;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .25s cubic-bezier(.4,0,.2,1),background .25s,filter .25s;justify-self:end;}
-.nav-close:hover{filter:brightness(.88);}
-.nav-close:active{transform:scale(.9);}
-body.dark-mode .nav-close{background:rgba(255,255,255,.1);color:#f0f2f8;}
-body.has-tabbar .nav-close{display:none;}
-
-.hero{max-width:960px;margin:0 auto;padding:48px 24px 40px;text-align:center;display:flex;flex-direction:column;align-items:center;}
-.hero-lumi{width:120px;height:120px;object-fit:contain;animation:lumiBounce 3s ease-in-out infinite;margin-bottom:12px;}
-@keyframes lumiBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
-.hero h1{font-size:clamp(28px,5vw,40px);font-weight:600;letter-spacing:-.5px;margin-bottom:8px;}
-.hero p{font-size:15px;color:#6e6e73;}
-body.dark-mode .hero p{color:rgba(255,255,255,.5);}
-
-.grid{max-width:960px;margin:0 auto;padding:0 24px;display:grid;grid-template-columns:repeat(2,1fr);gap:16px;}
-@media(max-width:700px){
-.grid{grid-template-columns:1fr;}
-.hero{padding:32px 20px 28px;}
-.hero-lumi{width:88px;height:88px;}
-.card{padding:22px 18px;gap:12px;}
-.btn-row{flex-direction:column;gap:8px;}
-.toggle{width:52px;height:32px;border-radius:16px;}
-.toggle::after{width:26px;height:26px;}
-.toggle.on::after{left:23px;}
-.toggle-row{min-height:48px;gap:12px;}
+@media (hover: hover) {
+  .stg-ig-status:hover {
+    transform: var(--lumi-lift);
+    box-shadow: var(--lumi-shadow-md);
+    border-color: transparent;
+  }
+  .stg-ig-status:hover::before {
+    opacity: 1;
+  }
 }
 
-.card{background:#fff;border-radius:8px;padding:28px;display:flex;flex-direction:column;gap:14px;box-shadow:0 1px 4px rgba(0,0,0,.06);opacity:0;transform:translateY(16px);transition:opacity .5s cubic-bezier(.4,0,.2,1),transform .5s cubic-bezier(.4,0,.2,1),box-shadow .25s;}
-.card.visible{opacity:1;transform:translateY(0);}
-@media(hover:hover){.card:hover{box-shadow:0 4px 20px rgba(0,0,0,.1);}}
-body.dark-mode .card{background:#272729;box-shadow:none;}
-.card.wide{grid-column:1/-1;}
-.card-num{font-size:11px;color:#fff;background:#C8507A;border-radius:6px;padding:2px 8px;align-self:flex-start;font-family:'Pretendard',sans-serif;letter-spacing:.5px;}
+.stg-ig-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--lumi-radius-full);
+  flex-shrink: 0;
+  transition: background var(--lumi-duration-fast) var(--lumi-ease-soft);
+}
+.stg-ig-dot--on  { background: var(--lumi-success); }
+.stg-ig-dot--off { background: var(--lumi-error); }
 
-.card-header{display:flex;align-items:center;gap:10px;margin-bottom:4px;}
-.card-icon{display:flex;align-items:center;color:#C8507A;}
-.card-title{font-size:17px;font-weight:600;}
-
-.field{display:flex;flex-direction:column;gap:6px;}
-.field-label{font-size:13px;font-weight:600;color:#6e6e73;}
-body.dark-mode .field-label{color:rgba(255,255,255,.55);}
-.field-input{width:100%;padding:14px 18px;border-radius:8px;border:1.5px solid transparent;background:rgba(0,0,0,.04);font-family:inherit;font-size:16px;color:#1d1d1f;outline:none;transition:border-color .2s,box-shadow .2s;min-height:48px;}
-input[type=password].field-input{font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;letter-spacing:2px;}
-.field-input:focus{border-color:rgba(200,80,122,.5);box-shadow:0 0 0 3px rgba(200,80,122,.1);}
-body.dark-mode .field-input{background:rgba(255,255,255,.08);color:#f0f2f8;border-color:transparent;}
-body.dark-mode .field-input:focus{border-color:rgba(255,143,171,.5);box-shadow:0 0 0 3px rgba(255,143,171,.12);}
-.field-input::placeholder{color:#86868b;}
-body.dark-mode .field-input::placeholder{color:rgba(255,255,255,.3);}
-select.field-input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6' fill='none' stroke='%23C8507A' stroke-width='1.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 16px center;cursor:pointer;padding-right:40px;}
-textarea.field-input{resize:none;line-height:1.7;min-height:120px;}
-
-.field-note{font-size:13px;color:#6e6e73;line-height:1.5;}
-body.dark-mode .field-note{color:rgba(255,255,255,.45);}
-.field-note.warn{color:#C8507A;}
-
-.btn{padding:12px 24px;border-radius:980px;border:none;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;min-height:44px;transition:transform .2s cubic-bezier(.4,0,.2,1),filter .2s,box-shadow .2s;}
-.btn:hover{filter:brightness(1.08);}
-.btn:active{transform:scale(.97);}
-.btn-pink{background:#C8507A;color:#fff;}
-.btn-pink:hover{box-shadow:0 4px 16px rgba(200,80,122,.35);}
-.btn-dark{background:#1d1d1f;color:#fff;}
-body.dark-mode .btn-dark{background:#f0f2f8;color:#1d1d1f;}
-.btn-danger{background:rgba(255,59,48,.08);color:#d70015;}
-body.dark-mode .btn-danger{color:#ff6961;}
-.btn-row{display:flex;gap:10px;justify-content:flex-end;}
-
-/* 토글 */
-.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:4px 0;}
-.toggle-label{font-size:15px;font-weight:600;}
-.toggle-desc{font-size:13px;color:#6e6e73;margin-top:2px;}
-body.dark-mode .toggle-desc{color:rgba(255,255,255,.45);}
-.toggle{width:48px;height:28px;border-radius:14px;background:rgba(0,0,0,.12);position:relative;cursor:pointer;transition:background .3s cubic-bezier(.4,0,.2,1);flex-shrink:0;border:none;min-width:48px;}
-.toggle.on{background:#C8507A;}
-.toggle::after{content:'';position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.2);transition:left .3s cubic-bezier(.4,0,.2,1);}
-.toggle.on::after{left:23px;}
-body.dark-mode .toggle{background:rgba(255,255,255,.15);}
-
-/* IG 연동 상태 */
-.ig-status{display:flex;align-items:center;gap:12px;padding:14px 18px;border-radius:8px;background:rgba(0,0,0,.03);}
-body.dark-mode .ig-status{background:rgba(255,255,255,.06);}
-.ig-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
-.ig-dot.connected{background:#30d158;}
-.ig-dot.disconnected{background:#ff453a;}
-.ig-text{font-size:15px;flex:1;color:#1d1d1f;}
-body.dark-mode .ig-text{color:#f0f2f8;}
-
-.toast{position:fixed;bottom:calc(32px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%) translateY(16px);background:#1d1d1f;color:#fff;padding:12px 28px;border-radius:980px;font-size:14px;font-family:inherit;z-index:200;opacity:0;transition:all .35s cubic-bezier(.4,0,.2,1);pointer-events:none;white-space:nowrap;}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
-body.dark-mode .toast{background:#f0f2f8;color:#1d1d1f;}
-
-/* AI 모드 섹션 다크 */
-body.dark-mode #ar-learn-box{background:rgba(200,80,122,.12);border-color:rgba(200,80,122,.28);}
-body.dark-mode #ar-rating-box{background:rgba(255,255,255,.06);}
-body.dark-mode .ar-rating-card{background:#1d1d1f;}
-.ar-rating-card{padding:12px 14px;border-radius:8px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.05);display:flex;flex-direction:column;gap:8px;transition:opacity .3s;}
-.ar-rating-card.fading{opacity:0;}
-.ar-rating-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px;color:#6e6e73;}
-body.dark-mode .ar-rating-meta{color:rgba(255,255,255,.55);}
-.ar-rating-badge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:rgba(200,80,122,.12);color:#C8507A;}
-.ar-rating-badge.shadow{background:rgba(0,122,255,.12);color:#0066cc;}
-body.dark-mode .ar-rating-badge.shadow{background:rgba(100,160,255,.18);color:#8ab4f8;}
-.ar-rating-text{font-size:14px;line-height:1.5;color:#1d1d1f;white-space:pre-wrap;word-break:break-word;}
-body.dark-mode .ar-rating-text{color:#f0f2f8;}
-.ar-rating-text.label{font-size:11px;font-weight:600;color:#6e6e73;margin-bottom:2px;}
-body.dark-mode .ar-rating-text.label{color:rgba(255,255,255,.55);}
-.ar-rating-actions{display:flex;gap:8px;flex-wrap:wrap;}
-.ar-btn-icon{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:980px;border:none;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;min-height:32px;transition:filter .2s,transform .2s;}
-.ar-btn-icon:hover{filter:brightness(1.08);}
-.ar-btn-icon:active{transform:scale(.97);}
-.ar-btn-up{background:rgba(48,209,88,.12);color:#1c7a36;}
-body.dark-mode .ar-btn-up{background:rgba(48,209,88,.18);color:#7ce495;}
-.ar-btn-down{background:rgba(255,59,48,.1);color:#d70015;}
-body.dark-mode .ar-btn-down{background:rgba(255,59,48,.18);color:#ff6961;}
-.ar-correct-box{display:none;flex-direction:column;gap:8px;padding-top:4px;}
-.ar-correct-box.open{display:flex;}
-@media(max-width:768px){
-.ar-rating-actions{flex-direction:column;}
-.ar-btn-icon{width:100%;justify-content:center;}
-.ar-rating-card textarea{min-height:64px!important;}
+.stg-ig-info {
+  flex: 1;
+  min-width: 0;
 }
 
-/* FAB */
-#fab-dark{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom,0px));right:20px;z-index:200;width:44px;height:44px;border-radius:50%;border:none;background:rgba(0,0,0,.07);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .3s,transform .2s;}
-#fab-dark:hover{transform:scale(1.08);}
-body.dark-mode #fab-dark{background:rgba(255,255,255,.1);}
-body.has-tabbar #fab-dark{bottom:calc(72px + env(safe-area-inset-bottom,0px)) !important;}
-</style>
+.stg-ig-info__label {
+  font-size: var(--lumi-text-body-sm);
+  font-weight: var(--lumi-weight-semibold);
+  color: var(--lumi-ink-strong);
+  word-break: keep-all;
+}
+
+.stg-ig-info__meta {
+  font-size: var(--lumi-text-caption);
+  color: var(--lumi-ink-muted);
+  margin-top: 2px;
+  word-break: break-all;
+}
+
+.stg-ig-security {
+  font-size: var(--lumi-text-caption);
+  color: var(--lumi-ink-muted);
+  line-height: var(--lumi-leading-relaxed);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--lumi-space-2);
+  word-break: keep-all;
+}
+
+.stg-ig-security svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--lumi-brand-text);
+}
+
+/* ─── 토글 행 ─── */
+.stg-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--lumi-space-4);
+  min-height: var(--lumi-tap-min);
+  padding-block: var(--lumi-space-1);
+}
+
+.stg-toggle-text {
+  flex: 1;
+}
+
+.stg-toggle-label {
+  font-size: var(--lumi-text-body-sm);
+  font-weight: var(--lumi-weight-semibold);
+  color: var(--lumi-ink-strong);
+  word-break: keep-all;
+}
+
+.stg-toggle-desc {
+  font-size: var(--lumi-text-caption);
+  color: var(--lumi-ink-muted);
+  margin-top: 2px;
+  word-break: keep-all;
+}
+
+/* 토글 스위치 */
+.stg-toggle {
+  position: relative;
+  width: 48px;
+  height: 28px;
+  border-radius: var(--lumi-radius-pill);
+  background: var(--lumi-line-strong);
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    background var(--lumi-duration-snap) var(--lumi-ease-soft),
+    transform var(--lumi-duration-instant) var(--lumi-ease-toss);
+}
+
+.stg-toggle.is-on {
+  background: var(--lumi-accent-500);
+}
+
+.stg-toggle:active {
+  transform: scale(0.97);
+  transition-duration: var(--lumi-duration-instant);
+}
+
+.stg-toggle::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--lumi-radius-full);
+  background: var(--lumi-neutral-0);
+  box-shadow: var(--lumi-shadow-sm);
+  transition: left var(--lumi-duration-snap) var(--lumi-ease-toss);
+}
+
+.stg-toggle.is-on::after {
+  left: 23px;
+}
+
+/* 데일리 시간 select */
+.stg-schedule-row {
+  display: flex;
+  align-items: center;
+  gap: var(--lumi-space-3);
+  min-height: var(--lumi-tap-min);
+  padding-block: var(--lumi-space-1);
+}
+
+.stg-schedule-row__label {
+  flex: 1;
+  font-size: var(--lumi-text-body-sm);
+  font-weight: var(--lumi-weight-semibold);
+  color: var(--lumi-ink-strong);
+  word-break: keep-all;
+}
+
+.stg-schedule-row__select {
+  height: 40px;
+  padding-inline: var(--lumi-space-3);
+  padding-right: var(--lumi-space-8);
+  border-radius: var(--lumi-radius-md);
+  border: 1px solid var(--lumi-line);
+  background: var(--lumi-surface);
+  font-size: 14px;
+  font-family: var(--lumi-font-system);
+  color: var(--lumi-ink-strong);
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6' fill='none' stroke='%23C8507A' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  cursor: pointer;
+  transition: border-color var(--lumi-duration-fast) var(--lumi-ease-soft);
+}
+
+.stg-schedule-row__select:focus {
+  outline: none;
+  border-color: var(--lumi-brand-fill);
+}
+
+/* ─── 계정 행 ─── */
+.stg-account-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--lumi-space-3);
+  padding-block: var(--lumi-space-3);
+  border-bottom: 1px solid var(--lumi-line);
+}
+
+.stg-account-row:last-of-type {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.stg-account-row__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.stg-account-row__label {
+  font-size: var(--lumi-text-caption);
+  color: var(--lumi-ink-muted);
+  font-weight: var(--lumi-weight-medium);
+}
+
+.stg-account-row__value {
+  font-size: var(--lumi-text-body-sm);
+  font-weight: var(--lumi-weight-semibold);
+  color: var(--lumi-ink-strong);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 소셜 연동 뱃지 */
+.stg-social-list {
+  display: flex;
+  gap: var(--lumi-space-2);
+  flex-wrap: wrap;
+  margin-top: var(--lumi-space-1);
+}
+
+.stg-social-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lumi-space-1);
+  padding: 4px 10px;
+  border-radius: var(--lumi-radius-pill);
+  font-size: var(--lumi-text-label);
+  font-weight: var(--lumi-weight-semibold);
+  background: var(--lumi-surface-deep);
+  color: var(--lumi-ink-muted);
+}
+
+.stg-social-badge--connected {
+  background: rgba(52, 199, 89, 0.1);
+  color: color-mix(in srgb, var(--lumi-success) 80%, #000);
+}
+
+/* ─── 위험 구역 카드 ─── */
+.stg-card--danger {
+  border-color: rgba(255, 59, 48, 0.18);
+}
+
+.stg-card__icon--danger {
+  background: rgba(255, 59, 48, 0.08);
+  color: var(--lumi-error);
+}
+
+.stg-danger-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--lumi-space-3);
+  padding: var(--lumi-space-3) var(--lumi-space-4);
+  border-radius: var(--lumi-radius-md);
+  background: var(--lumi-surface-alt);
+}
+
+.stg-danger-row + .stg-danger-row {
+  background: rgba(255, 59, 48, 0.04);
+}
+
+.stg-danger-row__content {
+  flex: 1;
+}
+
+.stg-danger-row__title {
+  font-size: var(--lumi-text-body-sm);
+  font-weight: var(--lumi-weight-semibold);
+  color: var(--lumi-ink-strong);
+  word-break: keep-all;
+}
+
+.stg-danger-row__desc {
+  font-size: var(--lumi-text-caption);
+  color: var(--lumi-ink-muted);
+  line-height: var(--lumi-leading-relaxed);
+  margin-top: 2px;
+  word-break: keep-all;
+}
+
+.stg-danger-legal {
+  font-size: var(--lumi-text-caption);
+  color: var(--lumi-ink-faint);
+  line-height: var(--lumi-leading-relaxed);
+  word-break: keep-all;
+}
+
+.stg-danger-legal a {
+  color: var(--lumi-brand-text);
+  text-decoration: none;
+}
+
+.stg-danger-legal a:hover {
+  text-decoration: underline;
+}
+
+/* 위험 버튼 */
+.lumi-btn--danger {
+  color: var(--lumi-error);
+  background: rgba(255, 59, 48, 0.08);
+  border: 1.5px solid rgba(255, 59, 48, 0.2);
+}
+
+@media (hover: hover) {
+  .lumi-btn--danger:hover {
+    background: rgba(255, 59, 48, 0.14);
+    border-color: rgba(255, 59, 48, 0.4);
+  }
+}
+
+/* ─── 로그아웃 버튼 ─── */
+.stg-logout-wrap {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: center;
+  padding-top: var(--lumi-space-2);
+}
+
+/* ─── 토스트 ─── */
+.stg-toast {
+  position: fixed;
+  bottom: calc(var(--lumi-space-8) + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%) translateY(12px);
+  background: var(--lumi-ink-strong);
+  color: var(--lumi-ink-on-dark);
+  padding: var(--lumi-space-3) var(--lumi-space-6);
+  border-radius: var(--lumi-radius-pill);
+  font-size: var(--lumi-text-body-sm);
+  font-family: var(--lumi-font-system);
+  z-index: var(--lumi-z-toast);
+  opacity: 0;
+  pointer-events: none;
+  white-space: nowrap;
+  transition:
+    opacity var(--lumi-duration-fast) var(--lumi-ease-soft),
+    transform var(--lumi-duration-fast) var(--lumi-ease-toss);
+}
+
+.stg-toast.is-show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ─── 회원 탈퇴 모달 ─── */
+.stg-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: var(--lumi-z-modal);
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  align-items: center;
+  justify-content: center;
+  padding: var(--lumi-space-5);
+}
+
+.stg-modal.is-open {
+  display: flex;
+}
+
+.stg-modal__box {
+  background: var(--lumi-surface);
+  border-radius: var(--lumi-radius-xl);
+  max-width: 440px;
+  width: 100%;
+  padding: var(--lumi-space-8) var(--lumi-space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--lumi-space-4);
+  max-height: 90dvh;
+  overflow-y: auto;
+}
+
+.stg-modal__header {
+  display: flex;
+  align-items: center;
+  gap: var(--lumi-space-3);
+}
+
+.stg-modal__title {
+  font-size: var(--lumi-text-title);
+  font-weight: var(--lumi-weight-bold);
+  color: var(--lumi-ink-strong);
+  margin: 0;
+  word-break: keep-all;
+}
+
+.stg-modal__body {
+  font-size: var(--lumi-text-body-sm);
+  color: var(--lumi-ink-soft);
+  line-height: var(--lumi-leading-relaxed);
+  word-break: keep-all;
+}
+
+.stg-modal__list {
+  padding-left: var(--lumi-space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--lumi-space-1);
+  font-size: var(--lumi-text-body-sm);
+  color: var(--lumi-ink-soft);
+  line-height: var(--lumi-leading-relaxed);
+  word-break: keep-all;
+}
+
+.stg-modal__note {
+  font-size: var(--lumi-text-caption);
+  color: var(--lumi-ink-muted);
+  line-height: var(--lumi-leading-relaxed);
+  word-break: keep-all;
+}
+
+.stg-modal__confirm-label {
+  font-size: var(--lumi-text-body-sm);
+  font-weight: var(--lumi-weight-semibold);
+  color: var(--lumi-ink-strong);
+  display: block;
+  margin-bottom: var(--lumi-space-2);
+  word-break: keep-all;
+}
+
+.stg-modal__actions {
+  display: flex;
+  gap: var(--lumi-space-3);
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+/* ─── 다크모드 FAB ─── */
+#stg-fab-dark {
+  position: fixed;
+  bottom: calc(var(--lumi-space-6) + env(safe-area-inset-bottom, 0px));
+  right: var(--lumi-space-5);
+  z-index: var(--lumi-z-overlay);
+  width: 44px;
+  height: 44px;
+  border-radius: var(--lumi-radius-full);
+  background: var(--lumi-surface-overlay);
+  backdrop-filter: var(--lumi-blur-sm);
+  -webkit-backdrop-filter: var(--lumi-blur-sm);
+  border: 1px solid var(--lumi-line);
+  color: var(--lumi-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    transform var(--lumi-duration-snap) var(--lumi-ease-toss),
+    background var(--lumi-duration-fast) var(--lumi-ease-soft);
+}
+
+#stg-fab-dark:hover {
+  transform: scale(1.08);
+}
+
+/* 탭바 있을 때 FAB 위로 */
+.has-lumi-tabs #stg-fab-dark {
+  bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+}
+
+/* ─── 다크모드 오버라이드 ─── */
+[data-theme="dark"] .stg-ig-status,
+[data-theme="dark"] .stg-danger-row {
+  background: var(--lumi-surface-alt);
+}
+
+[data-theme="dark"] .stg-social-badge--connected {
+  background: rgba(52, 199, 89, 0.15);
+  color: var(--lumi-success);
+}
+
+[data-theme="dark"] .stg-modal__box {
+  background: var(--lumi-neutral-900);
+}
+  </style>
+</head>
+<body class="stg-page">
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-P29BG2C5" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+<!-- 다크모드 즉시 적용 (FOUC 방지) -->
+<script>
+(function(){
+  var d = localStorage.getItem('lumi_dark_mode');
+  if (d === '1') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    document.body.setAttribute('data-theme', 'dark');
+    document.documentElement.style.background = 'var(--lumi-neutral-950)';
+  }
+})();
+</script>
+
+<!-- Supabase -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.103.3/dist/umd/supabase.min.js"></script>
 <script>
-  window.lumiSupa = window.supabase.createClient(
-    'https://cldsozdocxpvkbuxwqep.supabase.co',
-    'sb_publishable_WjWg5o05Y7lhib674Cr_fw_0mpY-ccG',
-    { auth: { detectSessionInUrl: true, persistSession: true, autoRefreshToken: true, storageKey: 'lumi-auth' } }
-  );
-  window.lumiSupa.auth.onAuthStateChange(function(event, session){
-    try {
-      if (session && session.access_token) {
-        localStorage.setItem('lumi_token', session.access_token);
-        var u = session.user || {};
-        var meta = u.user_metadata || {};
-        var prev = {};
-        try { prev = JSON.parse(localStorage.getItem('lumi_user') || '{}'); } catch(e){}
-        var merged = Object.assign({}, prev, { email: u.email || prev.email, id: u.id || prev.id }, meta);
-        localStorage.setItem('lumi_user', JSON.stringify(merged));
-      } else if (event === 'SIGNED_OUT') {
-        try {
-          var keep = ['lumi_dark_mode', 'lumi_storage_pubkey_v1_cleaned'];
-          Object.keys(localStorage).forEach(function(k) {
-            if (keep.indexOf(k) !== -1) return;
-            if (k.indexOf('sb-cldsozdocxpvkbuxwqep-') === 0 || k.indexOf('lumi_') === 0 || k === 'lumi-auth') localStorage.removeItem(k);
-          });
-        } catch(_) {}
-      }
-    } catch(e) { /* 무시 */ }
-  });
+window.lumiSupa = window.supabase.createClient(
+  'https://cldsozdocxpvkbuxwqep.supabase.co',
+  'sb_publishable_WjWg5o05Y7lhib674Cr_fw_0mpY-ccG',
+  { auth: { detectSessionInUrl: true, persistSession: true, autoRefreshToken: true, storageKey: 'lumi-auth' } }
+);
+window.lumiSupa.auth.onAuthStateChange(function(event, session){
+  try {
+    if (session && session.access_token) {
+      localStorage.setItem('lumi_token', session.access_token);
+      var u = session.user || {};
+      var meta = u.user_metadata || {};
+      var prev = {};
+      try { prev = JSON.parse(localStorage.getItem('lumi_user') || '{}'); } catch(e){}
+      var merged = Object.assign({}, prev, { email: u.email || prev.email, id: u.id || prev.id }, meta);
+      localStorage.setItem('lumi_user', JSON.stringify(merged));
+    } else if (event === 'SIGNED_OUT') {
+      try {
+        var keep = ['lumi_dark_mode', 'lumi_storage_pubkey_v1_cleaned'];
+        Object.keys(localStorage).forEach(function(k) {
+          if (keep.indexOf(k) !== -1) return;
+          if (k.indexOf('sb-cldsozdocxpvkbuxwqep-') === 0 || k.indexOf('lumi_') === 0 || k === 'lumi-auth') localStorage.removeItem(k);
+        });
+      } catch(_) {}
+    }
+  } catch(e) {}
+});
 </script>
 <script src="/js/_shared/auth-guard.js"></script>
 <script>
-  // 비로그인 + 사업자 인증 미완료 진입 차단
-  (async function () {
-    var ok = await window.lumiAuthGuard.ensureOnboarded();
-    if (!ok) return;
-  })();
+(async function() {
+  var ok = await window.lumiAuthGuard.ensureOnboarded();
+  if (!ok) return;
+})();
 </script>
-<style>
-/* ── Lumi 법적 고지 Footer ──────────────────────────── */
-.lumi-footer{border-top:1px solid rgba(0,0,0,.08);padding:28px 24px 36px;text-align:center;font-size:12px;color:#86868b;line-height:1.8;margin-top:48px;}
-body.dark-mode .lumi-footer{border-top-color:rgba(255,255,255,.08);color:rgba(255,255,255,.3);}
-.lumi-footer p{margin:0 0 2px;}
-.lumi-footer__links{display:flex;flex-wrap:wrap;gap:8px 14px;justify-content:center;margin:10px 0 6px;}
-.lumi-footer__links a{font-size:12px;color:#6e6e73;text-decoration:none;}
-.lumi-footer__links a:hover{text-decoration:underline;}
-body.dark-mode .lumi-footer__links a{color:rgba(255,255,255,.35);}
-.lumi-footer__copy{font-size:11px;color:#aeaeb2;margin-top:6px!important;}
-.lumi-footer__logo{height:28px;width:auto;display:block;margin:0 auto 8px;}
-body.dark-mode .lumi-footer__logo{filter:invert(1) brightness(2);}
-body.dark-mode .lumi-footer__copy{color:rgba(255,255,255,.2);}
-@media(max-width:768px){.lumi-footer{padding:22px 16px 30px;}}
-</style>
-</head>
-<body>
-<!-- Google Tag Manager (noscript) -->
-<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-P29BG2C5"
-height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
-<!-- End Google Tag Manager (noscript) -->
-<script>if(localStorage.getItem('lumi_dark_mode')==='1'){document.body.classList.add('dark-mode');document.documentElement.style.background='#111';}</script>
 
-<nav>
-  <span></span>
-  <a href="/" class="nav-logo"><img src="/assets/logo-wordmark.png" alt="lumi"></a>
-  <button class="nav-close" onclick="location.href='/dashboard.html'" aria-label="대시보드로 돌아가기"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-</nav>
+<!-- 헤더 자동 삽입 -->
+<script src="/js/lumi-head.js" defer></script>
 
-<div class="hero">
-  <img src="/assets/logo-cloud.png" class="hero-lumi" alt="lumi">
-  <h1>설정<span id="admin-badge" style="display:none;margin-left:8px;padding:2px 10px;border-radius:980px;font-size:11px;font-weight:700;background:#C8507A;color:#fff;letter-spacing:.5px;vertical-align:middle;">ADMIN</span></h1>
-  <p>내 정보와 서비스 환경을 관리해요</p>
-</div>
+<!-- Greeting -->
+<section class="stg-greeting">
+  <h1 class="stg-greeting__title">설정</h1>
+  <p class="stg-greeting__sub">매장 정보와 서비스 환경을 관리하세요</p>
+</section>
 
-<div class="grid">
+<!-- 설정 섹션 그리드 -->
+<div class="stg-layout">
 
-  <!-- 프로필 -->
-  <div class="card wide">
-    <span class="card-num">01</span>
-    <div class="card-header">
-      <span class="card-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
-      <span class="card-title">매장 정보</span>
+  <!-- ① 매장 정보 -->
+  <div class="stg-card stg-col-full" id="stg-card-store">
+    <div class="stg-card__header">
+      <span class="stg-card__icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+      </span>
+      <h2 class="stg-card__title">매장 정보</h2>
     </div>
-    <div class="field">
-      <span class="field-label">매장명</span>
-      <input class="field-input" id="s-store" placeholder="매장 이름을 입력하세요" autocorrect="off" autocapitalize="off" spellcheck="false">
-      <span class="field-note">상품 등록·CS 답변에 매장 이름을 자연스럽게 넣어드려요</span>
+
+    <div class="stg-field">
+      <label class="stg-field__label" for="s-store">매장명</label>
+      <input class="stg-field__input" id="s-store" type="text" placeholder="매장 이름을 입력하세요" autocorrect="off" autocapitalize="off" spellcheck="false" />
+      <span class="stg-field__note">인스타 캡션에 매장 이름을 자연스럽게 넣어드려요</span>
     </div>
-    <div class="field">
-      <span class="field-label">업종</span>
-      <select class="field-input" id="s-biz">
+
+    <div class="stg-field">
+      <label class="stg-field__label" for="s-biz">업종</label>
+      <select class="stg-field__input stg-field__input--select" id="s-biz">
         <option value="">선택하세요</option>
         <option value="cafe">카페</option>
         <option value="food">맛집</option>
@@ -315,228 +834,395 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <option value="pet">반려동물</option>
         <option value="interior">인테리어</option>
         <option value="studio">스튜디오</option>
+        <option value="bakery">베이커리</option>
+        <option value="etc">기타</option>
       </select>
-      <span class="field-note">업종에 맞는 트렌드와 카테고리를 추천해드려요</span>
+      <span class="stg-field__note">업종에 맞는 트렌드와 해시태그를 추천해드려요</span>
     </div>
-    <div class="field">
-      <span class="field-label">지역</span>
-      <input class="field-input" id="s-region" placeholder="예: 서울 강남" autocorrect="off" autocapitalize="off" spellcheck="false">
-      <span class="field-note">배송지 기준 지역 트렌드를 추천해드려요</span>
+
+    <div class="stg-field">
+      <label class="stg-field__label" for="s-store-desc">매장 소개 <span style="font-weight:400;opacity:.7;">(선택 — 캡션 톤 학습용)</span></label>
+      <textarea class="stg-field__input stg-field__input--textarea" id="s-store-desc" placeholder="예: 서울 연남동의 작은 카페예요. 매일 직접 로스팅해요." autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+      <span class="stg-field__note">루미가 사장님 매장의 분위기를 파악해 더 자연스러운 캡션을 써드려요</span>
     </div>
-    <div class="btn-row">
-      <button class="btn btn-pink" onclick="saveProfile()">저장</button>
+
+    <div class="stg-field">
+      <span class="stg-field__label">말투 샘플 <span style="font-weight:400;opacity:.7;">(최대 3개 — 인스타 캡션 그대로)</span></span>
+      <div class="stg-tone-list">
+        <input class="stg-field__input" type="text" id="s-tone-1" placeholder="예: 오늘도 쨍한 햇살 아래 커피 한 잔 ☀️" autocorrect="off" spellcheck="false" />
+        <input class="stg-field__input" type="text" id="s-tone-2" placeholder="두 번째 캡션 샘플 (선택)" autocorrect="off" spellcheck="false" />
+        <input class="stg-field__input" type="text" id="s-tone-3" placeholder="세 번째 캡션 샘플 (선택)" autocorrect="off" spellcheck="false" />
+      </div>
+      <span class="stg-field__note">루미가 사장님만의 말투를 학습해요. 실제 올린 캡션을 그대로 붙여넣으셔도 돼요</span>
+    </div>
+
+    <div class="stg-actions">
+      <button class="lumi-btn lumi-btn--primary" onclick="saveProfile()">저장하기</button>
     </div>
   </div>
 
-  <!-- 비밀번호 변경 -->
-  <div class="card">
-    <span class="card-num">02</span>
-    <div class="card-header">
-      <span class="card-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
-      <span class="card-title">비밀번호 변경</span>
+  <!-- ② 인스타그램 연동 -->
+  <div class="stg-card" id="stg-card-ig">
+    <div class="stg-card__header">
+      <span class="stg-card__icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+          <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+          <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+        </svg>
+      </span>
+      <h2 class="stg-card__title">인스타그램 연동</h2>
     </div>
-    <form onsubmit="event.preventDefault(); changePw();" autocomplete="off">
-      <input type="text" id="s-pw-username" autocomplete="username" style="display:none" aria-hidden="true" tabindex="-1">
-      <div class="field">
-        <span class="field-label">현재 비밀번호</span>
-        <input class="field-input" type="password" id="s-pw-cur" placeholder="현재 비밀번호" autocomplete="current-password">
+
+    <!-- 연동 상태 카드 -->
+    <div class="stg-ig-status" id="ig-status-card">
+      <span class="stg-ig-dot stg-ig-dot--off" id="ig-dot"></span>
+      <div class="stg-ig-info">
+        <p class="stg-ig-info__label" id="ig-status-label">미연동</p>
+        <p class="stg-ig-info__meta" id="ig-status-meta">연동하면 루미가 인스타에 자동으로 게시해요</p>
       </div>
-      <div class="field">
-        <span class="field-label">새 비밀번호</span>
-        <input class="field-input" type="password" id="s-pw-new" placeholder="새 비밀번호 (특수문자 포함 10자 이상)" autocomplete="new-password">
+    </div>
+
+    <!-- 미연동 CTA -->
+    <div id="ig-connect-section">
+      <button class="lumi-btn lumi-btn--primary lumi-btn--full" onclick="location.href='/api/ig-oauth?step=start'">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+          <polyline points="10 17 15 12 10 7"/>
+          <line x1="15" y1="12" x2="3" y2="12"/>
+        </svg>
+        Meta 공식 OAuth로 연동하기
+      </button>
+    </div>
+
+    <!-- 연동됨 해제 버튼 (hidden by default) -->
+    <div id="ig-disconnect-section" style="display:none;">
+      <div class="stg-actions">
+        <button class="lumi-btn lumi-btn--danger lumi-btn--sm" onclick="disconnectIg()">연동 해제</button>
       </div>
-      <div class="field">
-        <span class="field-label">새 비밀번호 확인</span>
-        <input class="field-input" type="password" id="s-pw-confirm" placeholder="새 비밀번호 다시 입력" autocomplete="new-password">
+    </div>
+
+    <div class="stg-ig-security">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+      <span>비밀번호를 요구하지 않아요. Meta 공식 OAuth로만 연동하며, 토큰은 암호화 저장돼요</span>
+    </div>
+  </div>
+
+  <!-- ③ 알림 설정 -->
+  <div class="stg-card" id="stg-card-notif">
+    <div class="stg-card__header">
+      <span class="stg-card__icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+      </span>
+      <h2 class="stg-card__title">알림 설정</h2>
+    </div>
+
+    <div class="stg-toggle-row">
+      <div class="stg-toggle-text">
+        <p class="stg-toggle-label">카카오 알림톡</p>
+        <p class="stg-toggle-desc">게시 완료·실패·트렌드 추천 등 알림</p>
       </div>
-      <div class="btn-row">
-        <button type="submit" class="btn btn-dark">변경</button>
+      <button class="stg-toggle is-on" id="t-kakao" role="switch" aria-checked="true" onclick="toggleNotif(this, 'kakao')"></button>
+    </div>
+
+    <div class="stg-toggle-row">
+      <div class="stg-toggle-text">
+        <p class="stg-toggle-label">이메일 알림</p>
+        <p class="stg-toggle-desc">월간 리포트, 공지사항</p>
+      </div>
+      <button class="stg-toggle is-on" id="t-email" role="switch" aria-checked="true" onclick="toggleNotif(this, 'email')"></button>
+    </div>
+
+    <div class="stg-schedule-row">
+      <span class="stg-schedule-row__label">데일리 스케줄 알림</span>
+      <select class="stg-schedule-row__select" id="s-notif-time" onchange="saveNotifTime()">
+        <option value="07:00">오전 7시</option>
+        <option value="08:00">오전 8시</option>
+        <option value="09:00" selected>오전 9시</option>
+        <option value="10:00">오전 10시</option>
+        <option value="11:00">오전 11시</option>
+        <option value="12:00">정오 12시</option>
+        <option value="18:00">오후 6시</option>
+        <option value="20:00">오후 8시</option>
+        <option value="off">사용 안 함</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- ④ 계정 -->
+  <div class="stg-card" id="stg-card-account">
+    <div class="stg-card__header">
+      <span class="stg-card__icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+      </span>
+      <h2 class="stg-card__title">계정</h2>
+    </div>
+
+    <div class="stg-account-row">
+      <div class="stg-account-row__info">
+        <p class="stg-account-row__label">이메일</p>
+        <p class="stg-account-row__value" id="account-email">—</p>
+      </div>
+    </div>
+
+    <div class="stg-account-row">
+      <div class="stg-account-row__info">
+        <p class="stg-account-row__label">비밀번호</p>
+        <p class="stg-account-row__value">••••••••</p>
+      </div>
+      <button class="lumi-btn lumi-btn--secondary lumi-btn--sm" onclick="togglePwForm()">변경하기</button>
+    </div>
+
+    <!-- 비밀번호 변경 폼 (접고 펼치기) -->
+    <form id="pw-form" style="display:none; display:none;" onsubmit="event.preventDefault(); changePw();" autocomplete="off">
+      <input type="text" id="s-pw-username" autocomplete="username" style="display:none" aria-hidden="true" tabindex="-1" />
+      <div style="display:flex;flex-direction:column;gap:var(--lumi-space-3);">
+        <div class="stg-field">
+          <label class="stg-field__label" for="s-pw-cur">현재 비밀번호</label>
+          <input class="stg-field__input stg-field__input--pw" type="password" id="s-pw-cur" placeholder="현재 비밀번호" autocomplete="current-password" />
+        </div>
+        <div class="stg-field">
+          <label class="stg-field__label" for="s-pw-new">새 비밀번호</label>
+          <input class="stg-field__input stg-field__input--pw" type="password" id="s-pw-new" placeholder="특수문자 포함 10자 이상" autocomplete="new-password" />
+        </div>
+        <div class="stg-field">
+          <label class="stg-field__label" for="s-pw-confirm">새 비밀번호 확인</label>
+          <input class="stg-field__input stg-field__input--pw" type="password" id="s-pw-confirm" placeholder="새 비밀번호 다시 입력" autocomplete="new-password" />
+        </div>
+        <div class="stg-actions">
+          <button type="button" class="lumi-btn lumi-btn--ghost lumi-btn--sm" onclick="togglePwForm()">취소</button>
+          <button type="submit" class="lumi-btn lumi-btn--primary lumi-btn--sm">변경하기</button>
+        </div>
       </div>
     </form>
-  </div>
 
-  <!-- 인스타 연동 (Phase 1: 셀러 노출 X, Meta 심사 후 활성) -->
-  <div class="card" id="ig-link-card" style="display:none;" data-feature="instagram-disabled-phase1">
-    <span class="card-num">03</span>
-    <div class="card-header">
-      <span class="card-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg></span>
-      <span class="card-title">인스타그램 연동</span>
-    </div>
-    <div class="ig-status" id="ig-status">
-      <span class="ig-dot disconnected" id="ig-dot"></span>
-      <span class="ig-text" id="ig-text">연동 안 됨</span>
-    </div>
-    <div class="btn-row" id="ig-btn-row">
-      <button class="btn btn-danger" id="ig-btn" onclick="disconnectIg()" disabled>연동 해제</button>
-    </div>
-  </div>
-
-  <!-- 알림 -->
-  <div class="card">
-    <span class="card-num">04</span>
-    <div class="card-header">
-      <span class="card-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>
-      <span class="card-title">알림</span>
-    </div>
-    <div class="toggle-row">
-      <div>
-        <p class="toggle-label">카카오 알림톡</p>
-        <p class="toggle-desc">예약 게시 완료, 체험 만료 등 알림</p>
-      </div>
-      <button class="toggle on" id="t-kakao" onclick="this.classList.toggle('on');saveNotif()"></button>
-    </div>
-    <div class="toggle-row">
-      <div>
-        <p class="toggle-label">이메일 알림</p>
-        <p class="toggle-desc">월간 리포트, 공지사항</p>
-      </div>
-      <button class="toggle on" id="t-email" onclick="this.classList.toggle('on');saveNotif()"></button>
-    </div>
-  </div>
-
-  <!-- 회원 탈퇴 및 데이터 내보내기 -->
-  <div class="card wide" style="border-top:2px solid rgba(255,59,48,.15);">
-    <span class="card-num" style="background:#d70015;">위험 구역</span>
-    <div class="card-header">
-      <span class="card-icon" style="color:#d70015;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
-      <span class="card-title">데이터 내보내기 · 회원 탈퇴</span>
-    </div>
-    <p style="font-size:14px;color:#494949;line-height:1.7;">개인정보보호법 §35·§36·§37에 따라 언제든 본인의 데이터를 내보내거나 회원 탈퇴를 요청할 수 있어요.</p>
-    <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px;">
-      <div style="display:flex;align-items:flex-start;gap:8px;padding:12px 14px;background:rgba(0,0,0,.03);border-radius:8px;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C8507A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        <div style="flex:1;">
-          <p style="font-size:14px;font-weight:600;color:#1d1d1f;">내 데이터 내보내기</p>
-          <p style="font-size:13px;color:#6e6e73;line-height:1.6;margin-top:2px;">매장 정보·등록 상품·주문·구독 이력을 JSON으로 내려받아요 (포터빌리티)</p>
+    <div class="stg-account-row">
+      <div class="stg-account-row__info">
+        <p class="stg-account-row__label">소셜 연동</p>
+        <div class="stg-social-list" id="social-list">
+          <span class="stg-social-badge" id="badge-kakao">카카오 미연동</span>
+          <span class="stg-social-badge" id="badge-google">구글 미연동</span>
         </div>
-        <button class="btn btn-pink" id="export-btn" onclick="exportMyData()" style="flex-shrink:0;font-size:13px;padding:8px 16px;min-height:36px;">내보내기</button>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:8px;padding:12px 14px;background:rgba(255,59,48,.05);border-radius:8px;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d70015" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>
-        <div style="flex:1;">
-          <p style="font-size:14px;font-weight:600;color:#1d1d1f;">회원 탈퇴</p>
-          <p style="font-size:13px;color:#6e6e73;line-height:1.6;margin-top:2px;">탈퇴 시 모든 계정·매장·상품·주문 데이터가 즉시 또는 90일 이내에 파기돼요. 복구 불가.</p>
-        </div>
-        <button class="btn btn-danger" onclick="openDeleteModal()" style="flex-shrink:0;font-size:13px;padding:8px 16px;min-height:36px;">탈퇴하기</button>
       </div>
     </div>
-    <p style="font-size:12px;color:#86868b;line-height:1.6;margin-top:4px;">* 법정 보존 의무(접속 로그 3개월) 대상 데이터는 기간 만료 후 자동 파기됩니다. 자세한 내용은 <a href="/privacy.html" style="color:#C8507A;text-decoration:none;">개인정보처리방침</a> 참조.</p>
+
+    <div class="stg-actions" style="padding-top:var(--lumi-space-2);">
+      <button class="lumi-btn lumi-btn--danger" onclick="handleLogout()">로그아웃</button>
+    </div>
   </div>
 
-  <!-- 로그아웃 -->
-  <div style="grid-column:1/-1;display:flex;justify-content:center;padding:16px 0 0;">
-    <button class="btn btn-danger" style="width:100%;max-width:400px;" onclick="if(confirm('로그아웃 하시겠어요?')){try{var keep=['lumi_dark_mode','lumi_storage_pubkey_v1_cleaned'];Object.keys(localStorage).forEach(function(k){if(keep.indexOf(k)!==-1)return;if(k.indexOf('sb-cldsozdocxpvkbuxwqep-')===0||k.indexOf('lumi_')===0||k==='lumi-auth')localStorage.removeItem(k);});sessionStorage.clear();}catch(_){}location.replace('/?stay=1');}">로그아웃</button>
+  <!-- ⑤ 데이터·계정 관리 -->
+  <div class="stg-card stg-card--danger stg-col-full" id="stg-card-danger">
+    <div class="stg-card__header">
+      <span class="stg-card__icon stg-card__icon--danger">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </span>
+      <h2 class="stg-card__title">데이터·계정 관리</h2>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:var(--lumi-space-3);">
+      <div class="stg-danger-row">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--lumi-brand-text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <div class="stg-danger-row__content">
+          <p class="stg-danger-row__title">개인정보 다운로드</p>
+          <p class="stg-danger-row__desc">매장 정보·등록 이미지·예약 이력을 JSON으로 내려받아요 (개인정보보호법 §35 포터빌리티)</p>
+        </div>
+        <button class="lumi-btn lumi-btn--primary lumi-btn--sm" id="export-btn" onclick="exportMyData()">요청하기</button>
+      </div>
+
+      <div class="stg-danger-row">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--lumi-error)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;" aria-hidden="true">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+          <path d="M10 11v6M14 11v6"/>
+          <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>
+        </svg>
+        <div class="stg-danger-row__content">
+          <p class="stg-danger-row__title">데이터 삭제 안내</p>
+          <p class="stg-danger-row__desc">수집된 개인정보 삭제 절차와 요건을 확인하세요</p>
+        </div>
+        <a href="/privacy#data-deletion" class="lumi-btn lumi-btn--secondary lumi-btn--sm">안내 보기</a>
+      </div>
+    </div>
+
+    <p class="stg-danger-legal">법정 보존 의무(접속 로그 3개월) 대상 데이터는 기간 만료 후 자동 파기됩니다. 자세한 내용은 <a href="/privacy">개인정보처리방침</a> 참조.</p>
+
+    <div class="stg-actions">
+      <button class="lumi-btn lumi-btn--danger" style="border-color:rgba(255,59,48,.4);" onclick="openDeleteModal()">계정 삭제</button>
+    </div>
   </div>
 
-</div><!-- /grid -->
+</div><!-- /stg-layout -->
 
 <!-- 회원 탈퇴 확인 모달 -->
-<div id="delete-modal" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.5);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px;">
-  <div style="background:#fff;border-radius:16px;max-width:440px;width:100%;padding:28px 24px;display:flex;flex-direction:column;gap:14px;max-height:90vh;overflow-y:auto;" id="delete-modal-box">
-    <div style="display:flex;align-items:center;gap:10px;">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d70015" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-      <h3 style="font-size:18px;font-weight:600;color:#1d1d1f;">정말 탈퇴하시겠어요?</h3>
+<div class="stg-modal" id="delete-modal" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
+  <div class="stg-modal__box" id="delete-modal-box">
+    <div class="stg-modal__header">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--lumi-error)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/>
+        <line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+      <h3 class="stg-modal__title" id="delete-modal-title">정말 계정을 삭제하시겠어요?</h3>
     </div>
-    <p style="font-size:14px;color:#494949;line-height:1.7;">탈퇴하면 다음 데이터가 모두 삭제되고, 복구할 수 없어요.</p>
-    <ul style="padding-left:18px;display:flex;flex-direction:column;gap:4px;font-size:13px;color:#494949;line-height:1.7;">
-      <li>매장 정보·어투 분석 데이터</li>
-      <li>등록한 상품·주문·송장 기록</li>
-      <li>마켓(쿠팡·네이버·토스) 연동 토큰 (즉시 해제)</li>
-      <li>CS 응대 학습 데이터</li>
+    <p class="stg-modal__body">삭제하면 다음 데이터가 모두 지워지고, 복구할 수 없어요.</p>
+    <ul class="stg-modal__list">
+      <li>매장 정보·말투 학습 데이터</li>
+      <li>등록한 이미지·예약 이력</li>
+      <li>인스타그램 연동 토큰 (즉시 해제)</li>
     </ul>
-    <p style="font-size:13px;color:#6e6e73;line-height:1.7;">※ 접속 로그(3개월) 등 법정 보존 의무 데이터는 기간 만료 후 파기됩니다.</p>
-    <div style="margin-top:6px;">
-      <label style="font-size:13px;font-weight:600;color:#1d1d1f;display:block;margin-bottom:6px;">확인을 위해 "탈퇴"를 입력해주세요</label>
-      <input type="text" id="delete-confirm-input" placeholder="탈퇴" class="field-input" oninput="toggleDeleteBtn()" autocorrect="off" autocapitalize="off" spellcheck="false">
+    <p class="stg-modal__note">접속 로그(3개월) 등 법정 보존 의무 데이터는 기간 만료 후 파기됩니다.</p>
+    <div>
+      <label class="stg-modal__confirm-label" for="delete-confirm-input">"삭제"를 입력하면 버튼이 활성화돼요</label>
+      <input type="text" id="delete-confirm-input" placeholder="삭제" class="stg-field__input" oninput="toggleDeleteBtn()" autocorrect="off" autocapitalize="off" spellcheck="false" />
     </div>
-    <div class="btn-row" style="margin-top:4px;">
-      <button class="btn" style="background:rgba(0,0,0,.06);color:#1d1d1f;" onclick="closeDeleteModal()">취소</button>
-      <button class="btn btn-danger" id="delete-confirm-btn" disabled style="opacity:.4;" onclick="confirmDeleteAccount()">탈퇴하기</button>
+    <div class="stg-modal__actions">
+      <button class="lumi-btn lumi-btn--ghost lumi-btn--sm" onclick="closeDeleteModal()">취소</button>
+      <button class="lumi-btn lumi-btn--danger" id="delete-confirm-btn" disabled style="opacity:.4;" onclick="confirmDeleteAccount()">계정 삭제</button>
     </div>
   </div>
 </div>
-<style>
-body.dark-mode #delete-modal-box{background:#1d1d1f;}
-body.dark-mode #delete-modal-box h3{color:#f0f2f8;}
-body.dark-mode #delete-modal-box p,body.dark-mode #delete-modal-box li,body.dark-mode #delete-modal-box label{color:rgba(255,255,255,.7);}
-body.dark-mode #delete-modal-box .btn[style*='rgba(0,0,0,.06)']{background:rgba(255,255,255,.1) !important;color:#f0f2f8 !important;}
-</style>
 
-<div class="toast" id="toast"></div>
+<!-- 토스트 -->
+<div class="stg-toast" id="stg-toast" role="status" aria-live="polite"></div>
 
 <!-- 다크모드 FAB -->
-<button id="fab-dark" onclick="toggleDark()" aria-label="다크/라이트 모드 전환"></button>
+<button id="stg-fab-dark" onclick="stgToggleDark()" aria-label="다크/라이트 모드 전환"></button>
+
+<!-- 탭바 자동 삽입 -->
+<script src="/js/lumi-tabs.js" defer></script>
+<!-- 푸터 자동 삽입 -->
+<script src="/js/lumi-foot.js" defer></script>
+
+<!-- 메인 스크립트 -->
 <script>
+/* ── 다크모드 FAB ── */
 (function(){
-  var btn = document.getElementById('fab-dark');
+  var fab = document.getElementById('stg-fab-dark');
   function setIcon(dark) {
-    btn.innerHTML = dark
-      ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#f0f2f8"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>'
-      : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#1d1d1f"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+    fab.innerHTML = dark
+      ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>'
+      : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
   }
-  var isDark = document.body.classList.contains('dark-mode');
+  var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
   setIcon(isDark);
-  window.toggleDark = function() {
+  window.stgToggleDark = function() {
     isDark = !isDark;
-    document.body.classList.toggle('dark-mode', isDark);
-    document.documentElement.style.background = isDark ? '#111' : '#f5f5f7';
+    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+    document.body.setAttribute('data-theme', isDark ? 'dark' : 'light');
+    document.documentElement.style.background = isDark ? 'var(--lumi-neutral-950)' : '';
     localStorage.setItem('lumi_dark_mode', isDark ? '1' : '0');
     setIcon(isDark);
   };
 })();
-</script>
 
-<script>
+/* ── 전역 상태 ── */
 var user = {};
-try { user = JSON.parse(localStorage.getItem('lumi_user') || '{}'); } catch(e) {}
+try { user = JSON.parse(localStorage.getItem('lumi_user') || '{}'); } catch(e){}
 var settings = {};
-try { settings = JSON.parse(localStorage.getItem('lumi_settings') || '{}'); } catch(e) {}
-var authHeaders = function(){
-  return { 'Authorization': 'Bearer ' + localStorage.getItem('lumi_token'), 'Content-Type': 'application/json' };
-};
+try { settings = JSON.parse(localStorage.getItem('lumi_settings') || '{}'); } catch(e){}
 
-// localStorage 초기값 먼저 로드 (빠른 표시)
-function applyUserToUI(u){
-  if(u.storeName) document.getElementById('s-store').value = u.storeName;
-  if(u.bizCategory) document.getElementById('s-biz').value = u.bizCategory;
-  if(u.region) document.getElementById('s-region').value = u.region;
-  applyIgStatus(u);
+function authHeaders() {
+  return { 'Authorization': 'Bearer ' + (localStorage.getItem('lumi_token') || ''), 'Content-Type': 'application/json' };
 }
-function applyIgStatus(u){
-  if(u.igConnected){
-    document.getElementById('ig-dot').className='ig-dot connected';
-    document.getElementById('ig-text').textContent='연동됨';
-    document.getElementById('ig-btn').textContent='연동 해제';
-    document.getElementById('ig-btn').className='btn btn-danger';
-    document.getElementById('ig-btn').onclick=function(){disconnectIg();};
+
+/* ── UI 초기 적용 ── */
+function applyUserToUI(u) {
+  if (u.storeName)   document.getElementById('s-store').value = u.storeName;
+  if (u.bizCategory) document.getElementById('s-biz').value = u.bizCategory;
+  if (u.storeDesc)   document.getElementById('s-store-desc').value = u.storeDesc;
+  if (u.tone1) document.getElementById('s-tone-1').value = u.tone1;
+  if (u.tone2) document.getElementById('s-tone-2').value = u.tone2;
+  if (u.tone3) document.getElementById('s-tone-3').value = u.tone3;
+  if (u.email) document.getElementById('account-email').textContent = u.email;
+  applyIgStatus(u);
+  applySocialStatus(u);
+}
+
+function applyIgStatus(u) {
+  var dot   = document.getElementById('ig-dot');
+  var label = document.getElementById('ig-status-label');
+  var meta  = document.getElementById('ig-status-meta');
+  var csec  = document.getElementById('ig-connect-section');
+  var dsec  = document.getElementById('ig-disconnect-section');
+
+  if (u.igConnected) {
+    dot.className   = 'stg-ig-dot stg-ig-dot--on';
+    label.textContent = '@' + (u.igHandle || 'connected');
+    var connectedAt = u.igConnectedAt ? '연동일 ' + u.igConnectedAt.slice(0, 10) : '연동됨';
+    var expiry = u.igExpiry ? ' · 만료 ' + u.igExpiry.slice(0, 10) : '';
+    meta.textContent = connectedAt + expiry;
+    if (csec) csec.style.display = 'none';
+    if (dsec) dsec.style.display = '';
   } else {
-    document.getElementById('ig-dot').className='ig-dot disconnected';
-    document.getElementById('ig-text').textContent='연동 안 됨';
-    document.getElementById('ig-btn').textContent='연동하기';
-    document.getElementById('ig-btn').className='btn btn-pink';
-    document.getElementById('ig-btn').onclick=function(){location.href='/';};
+    dot.className   = 'stg-ig-dot stg-ig-dot--off';
+    label.textContent = '미연동';
+    meta.textContent  = '연동하면 루미가 인스타에 자동으로 게시해요';
+    if (csec) csec.style.display = '';
+    if (dsec) dsec.style.display = 'none';
   }
 }
+
+function applySocialStatus(u) {
+  var bk = document.getElementById('badge-kakao');
+  var bg = document.getElementById('badge-google');
+  if (u.kakaoLinked) {
+    bk.textContent = '카카오 연동';
+    bk.className = 'stg-social-badge stg-social-badge--connected';
+  }
+  if (u.googleLinked) {
+    bg.textContent = '구글 연동';
+    bg.className = 'stg-social-badge stg-social-badge--connected';
+  }
+}
+
+// 초기 적용
 applyUserToUI(user);
+if (settings.kakaoNotif === false) {
+  var tk = document.getElementById('t-kakao');
+  tk.classList.remove('is-on');
+  tk.setAttribute('aria-checked', 'false');
+}
+if (settings.emailNotif === false) {
+  var te = document.getElementById('t-email');
+  te.classList.remove('is-on');
+  te.setAttribute('aria-checked', 'false');
+}
+if (settings.notifTime) {
+  var sel = document.getElementById('s-notif-time');
+  if (sel) sel.value = settings.notifTime;
+}
 
-// 알림 설정 로드
-if(settings.kakaoNotif===false) document.getElementById('t-kakao').classList.remove('on');
-if(settings.emailNotif===false) document.getElementById('t-email').classList.remove('on');
-
-// API에서 최신 프로필 로드 — /api/get-profile (Bearer 검증, RLS 우회)
-if(localStorage.getItem('lumi_token')){
-  var _tokL = localStorage.getItem('lumi_token') || '';
-  fetch('/api/get-profile', { method:'GET', headers:{ 'Authorization':'Bearer '+_tokL } })
+/* ── API에서 최신 프로필 로드 ── */
+if (localStorage.getItem('lumi_token')) {
+  fetch('/api/get-profile', { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('lumi_token') } })
     .then(function(r){ return r.json().catch(function(){ return {}; }); })
     .then(function(res){
       var d = res && res.user ? res.user : null;
-      if(!d) return;
+      if (!d) return;
       var mapped = {
-        name: d.name, storeName: d.store_name, phone: d.phone, email: d.email,
-        bizCategory: d.biz_category, region: d.region, storeDesc: d.store_desc,
-        captionTone: d.caption_tone, tagStyle: d.tag_style,
-        sidoCode: d.sido_code, sigunguCode: d.sigungu_code, storeSido: d.store_sido,
-        instagram: d.instagram_handle, autoStory: d.auto_story, autoFestival: d.auto_festival,
+        email: d.email,
+        storeName: d.store_name, bizCategory: d.biz_category, storeDesc: d.store_desc,
+        tone1: d.tone_1, tone2: d.tone_2, tone3: d.tone_3,
+        igConnected: d.ig_connected, igHandle: d.ig_handle,
+        igConnectedAt: d.ig_connected_at, igExpiry: d.ig_expiry,
+        kakaoLinked: d.kakao_linked, googleLinked: d.google_linked
       };
       user = Object.assign(user, mapped);
       localStorage.setItem('lumi_user', JSON.stringify(user));
@@ -545,95 +1231,73 @@ if(localStorage.getItem('lumi_token')){
     .catch(function(){});
 }
 
-function saveProfile(){
-  var storeName = document.getElementById('s-store').value;
-  var bizCategory = document.getElementById('s-biz').value;
-  var region = document.getElementById('s-region').value;
+/* ── 카드 등장 애니메이션 ── */
+var io = new IntersectionObserver(function(entries){
+  entries.forEach(function(e){
+    if (e.isIntersecting) {
+      var delay = parseInt(e.target.dataset.delay || 0);
+      setTimeout(function(){ e.target.classList.add('is-visible'); }, delay);
+      io.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.06 });
+document.querySelectorAll('.stg-card').forEach(function(c, i){
+  c.dataset.delay = i * 55;
+  io.observe(c);
+});
 
-  // localStorage 즉시 반영
+/* ── 저장 — 매장 정보 ── */
+function saveProfile() {
+  var storeName  = document.getElementById('s-store').value;
+  var bizCategory = document.getElementById('s-biz').value;
+  var storeDesc  = document.getElementById('s-store-desc').value;
+  var tone1 = document.getElementById('s-tone-1').value;
+  var tone2 = document.getElementById('s-tone-2').value;
+  var tone3 = document.getElementById('s-tone-3').value;
+
   user.storeName = storeName;
   user.bizCategory = bizCategory;
-  user.region = region;
+  user.storeDesc = storeDesc;
+  user.tone1 = tone1; user.tone2 = tone2; user.tone3 = tone3;
   localStorage.setItem('lumi_user', JSON.stringify(user));
 
-  if(!localStorage.getItem('lumi_token')){
+  if (!localStorage.getItem('lumi_token')) {
     showToast('매장 정보가 저장됐어요');
     return;
   }
 
-  // /api/update-profile — Bearer 검증 후 admin client로 업데이트
-  var _tokSP = localStorage.getItem('lumi_token') || '';
   fetch('/api/update-profile', {
-    method:'POST',
-    headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+_tokSP },
-    body: JSON.stringify({ storeName:storeName, bizCategory:bizCategory, region:region })
-  }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({ storeName: storeName, bizCategory: bizCategory, storeDesc: storeDesc, tone1: tone1, tone2: tone2, tone3: tone3 })
+  })
+    .then(function(r){ return r.json().then(function(d){ return { ok: r.ok, data: d }; }); })
     .then(function(res){
-      if(!res.ok || !res.data || !res.data.success){ showToast((res.data && res.data.error) || '저장에 실패했어요'); return; }
-      var d = res.data.user || {};
-      user = Object.assign(user, { storeName:d.store_name, bizCategory:d.biz_category, region:d.region });
-      localStorage.setItem('lumi_user', JSON.stringify(user));
+      if (!res.ok || !res.data || !res.data.success) {
+        showToast((res.data && res.data.error) || '저장에 실패했어요');
+        return;
+      }
       showToast('매장 정보가 저장됐어요');
-      setTimeout(function(){ location.reload(); }, 500);
     })
     .catch(function(){ showToast('네트워크 오류가 발생했어요'); });
 }
 
-function changePw(){
-  var cur = document.getElementById('s-pw-cur').value;
-  var nw = document.getElementById('s-pw-new').value;
-  var cf = document.getElementById('s-pw-confirm').value;
-  if(!cur||!nw||!cf){showToast('모든 항목을 입력해주세요');return;}
-  if(nw!==cf){showToast('새 비밀번호가 일치하지 않아요');return;}
-  if(nw.length<10){showToast('10자 이상 입력해주세요');return;}
-
-  if(!localStorage.getItem('lumi_token')){
-    showToast('로그인이 필요합니다');
-    return;
-  }
-
-  var email = user.email || '';
-  if(!email){ showToast('사용자 정보를 찾을 수 없어요'); return; }
-
-  fetch('/api/reset-password', {
-    method:'POST', headers:authHeaders(),
-    body: JSON.stringify({ email:email, currentPassword:cur, password:nw })
-  })
-  .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
-  .then(function(res){
-    if(res.ok && res.data.success){
-      showToast('비밀번호가 변경됐어요');
-      document.getElementById('s-pw-cur').value='';
-      document.getElementById('s-pw-new').value='';
-      document.getElementById('s-pw-confirm').value='';
-    } else {
-      showToast(res.data.error || '비밀번호 변경에 실패했어요');
-    }
-  })
-  .catch(function(){ showToast('네트워크 오류가 발생했어요'); });
-}
-
-function disconnectIg(){
-  if(!confirm('인스타그램 연동을 해제할까요?')) return;
-
-  // localStorage 즉시 반영
+/* ── 인스타 연동 해제 ── */
+function disconnectIg() {
+  if (!confirm('인스타그램 연동을 해제할까요?')) return;
   user.igConnected = false;
   localStorage.setItem('lumi_user', JSON.stringify(user));
   applyIgStatus(user);
 
-  if(!localStorage.getItem('lumi_token')){
+  if (!localStorage.getItem('lumi_token')) {
     showToast('연동이 해제됐어요');
     return;
   }
 
-  // /api/disconnect-ig — Bearer 검증 후 admin client로 삭제
-  var _tokDG = localStorage.getItem('lumi_token') || '';
-  fetch('/api/disconnect-ig', {
-    method:'POST',
-    headers:{ 'Authorization':'Bearer '+_tokDG }
-  }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
+  fetch('/api/disconnect-ig', { method: 'POST', headers: authHeaders() })
+    .then(function(r){ return r.json().then(function(d){ return { ok: r.ok, data: d }; }); })
     .then(function(res){
-      if(!res.ok || !res.data || !res.data.success){
+      if (!res.ok || !res.data || !res.data.success) {
         showToast((res.data && res.data.error) || '연동 해제에 실패했어요');
         return;
       }
@@ -642,56 +1306,108 @@ function disconnectIg(){
     .catch(function(){ showToast('네트워크 오류가 발생했어요'); });
 }
 
-function saveNotif(){
-  settings.kakaoNotif = document.getElementById('t-kakao').classList.contains('on');
-  settings.emailNotif = document.getElementById('t-email').classList.contains('on');
+/* ── 알림 토글 ── */
+function toggleNotif(btn, key) {
+  btn.classList.toggle('is-on');
+  var isOn = btn.classList.contains('is-on');
+  btn.setAttribute('aria-checked', isOn ? 'true' : 'false');
+  if (key === 'kakao') settings.kakaoNotif = isOn;
+  if (key === 'email') settings.emailNotif = isOn;
   localStorage.setItem('lumi_settings', JSON.stringify(settings));
   showToast('알림 설정이 저장됐어요');
 }
 
-function showToast(msg){
-  var t=document.getElementById('toast');
-  t.textContent=msg;t.classList.add('show');
-  setTimeout(function(){t.classList.remove('show');},2500);
+function saveNotifTime() {
+  var val = document.getElementById('s-notif-time').value;
+  settings.notifTime = val;
+  localStorage.setItem('lumi_settings', JSON.stringify(settings));
+  showToast('스케줄 알림 시간이 저장됐어요');
 }
 
-var io=new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting){var delay=parseInt(e.target.dataset.delay||0);setTimeout(function(){e.target.classList.add('visible');},delay);io.unobserve(e.target);}});},{threshold:0.08});
-document.querySelectorAll('.card').forEach(function(c,i){c.dataset.delay=i*60;io.observe(c);});
+/* ── 비밀번호 변경 ── */
+function togglePwForm() {
+  var form = document.getElementById('pw-form');
+  if (!form) return;
+  var hidden = form.style.display === 'none' || form.style.display === '';
+  form.style.display = hidden ? 'block' : 'none';
+  if (hidden) form.querySelector('input[type="password"]').focus();
+}
 
+function changePw() {
+  var cur = document.getElementById('s-pw-cur').value;
+  var nw  = document.getElementById('s-pw-new').value;
+  var cf  = document.getElementById('s-pw-confirm').value;
+  if (!cur || !nw || !cf) { showToast('모든 항목을 입력해주세요'); return; }
+  if (nw !== cf) { showToast('새 비밀번호가 일치하지 않아요'); return; }
+  if (nw.length < 10) { showToast('10자 이상 입력해주세요'); return; }
 
+  if (!localStorage.getItem('lumi_token')) { showToast('로그인이 필요해요'); return; }
 
-// ==== 회원 탈퇴 · 데이터 내보내기 (PIPA §35·§36·§37) ====
-function openDeleteModal(){
+  fetch('/api/reset-password', {
+    method: 'POST', headers: authHeaders(),
+    body: JSON.stringify({ email: user.email, currentPassword: cur, password: nw })
+  })
+    .then(function(r){ return r.json().then(function(d){ return { ok: r.ok, data: d }; }); })
+    .then(function(res){
+      if (res.ok && res.data.success) {
+        showToast('비밀번호가 변경됐어요');
+        document.getElementById('s-pw-cur').value = '';
+        document.getElementById('s-pw-new').value = '';
+        document.getElementById('s-pw-confirm').value = '';
+        togglePwForm();
+      } else {
+        showToast(res.data.error || '비밀번호 변경에 실패했어요');
+      }
+    })
+    .catch(function(){ showToast('네트워크 오류가 발생했어요'); });
+}
+
+/* ── 로그아웃 ── */
+function handleLogout() {
+  if (!confirm('로그아웃 하시겠어요?')) return;
+  try {
+    var keep = ['lumi_dark_mode', 'lumi_storage_pubkey_v1_cleaned'];
+    Object.keys(localStorage).forEach(function(k) {
+      if (keep.indexOf(k) !== -1) return;
+      if (k.indexOf('sb-cldsozdocxpvkbuxwqep-') === 0 || k.indexOf('lumi_') === 0 || k === 'lumi-auth') localStorage.removeItem(k);
+    });
+    sessionStorage.clear();
+  } catch(_) {}
+  location.replace('/?stay=1');
+}
+
+/* ── 탈퇴 모달 ── */
+function openDeleteModal() {
   var m = document.getElementById('delete-modal');
-  if (m) m.style.display = 'flex';
+  if (m) m.classList.add('is-open');
   var ci = document.getElementById('delete-confirm-input');
   if (ci) { ci.value = ''; ci.focus(); }
   toggleDeleteBtn();
 }
-function closeDeleteModal(){
+
+function closeDeleteModal() {
   var m = document.getElementById('delete-modal');
-  if (m) m.style.display = 'none';
+  if (m) m.classList.remove('is-open');
 }
-function toggleDeleteBtn(){
+
+function toggleDeleteBtn() {
   var input = document.getElementById('delete-confirm-input');
-  var btn = document.getElementById('delete-confirm-btn');
+  var btn   = document.getElementById('delete-confirm-btn');
   if (!input || !btn) return;
-  var ok = input.value.trim() === '탈퇴';
+  var ok = input.value.trim() === '삭제';
   btn.disabled = !ok;
   btn.style.opacity = ok ? '1' : '.4';
 }
-async function confirmDeleteAccount(){
+
+async function confirmDeleteAccount() {
   var btn = document.getElementById('delete-confirm-btn');
   if (!btn || btn.disabled) return;
   btn.disabled = true;
   btn.textContent = '처리 중...';
   try {
-    var res = await fetch('/api/account-delete', {
-      method: 'POST',
-      headers: authHeaders()
-    });
+    var res = await fetch('/api/account-delete', { method: 'POST', headers: authHeaders() });
     if (res.ok) {
-      showToast('탈퇴가 완료되었습니다. 그동안 이용해주셔서 감사합니다.');
+      showToast('계정이 삭제됐어요. 그동안 이용해주셔서 감사해요.');
       try {
         var keep = ['lumi_dark_mode', 'lumi_storage_pubkey_v1_cleaned'];
         Object.keys(localStorage).forEach(function(k) {
@@ -699,103 +1415,72 @@ async function confirmDeleteAccount(){
           if (k.indexOf('sb-cldsozdocxpvkbuxwqep-') === 0 || k.indexOf('lumi_') === 0 || k === 'lumi-auth') localStorage.removeItem(k);
         });
         sessionStorage.clear();
-      } catch (_) {}
+      } catch(_) {}
       setTimeout(function(){ location.replace('/'); }, 2500);
     } else {
       var j = {};
       try { j = await res.json(); } catch(e){}
-      showToast(j.error || '탈퇴 처리 중 문제가 발생했어요. 고객센터로 문의해주세요.');
+      showToast(j.error || '삭제 처리 중 문제가 발생했어요. 고객센터로 문의해주세요.');
       btn.disabled = false;
-      btn.textContent = '탈퇴하기';
+      btn.textContent = '계정 삭제';
     }
   } catch(e) {
-    showToast('네트워크 오류입니다. 잠시 후 다시 시도해주세요.');
+    showToast('네트워크 오류예요. 잠시 후 다시 시도해주세요.');
     btn.disabled = false;
-    btn.textContent = '탈퇴하기';
+    btn.textContent = '계정 삭제';
   }
 }
-async function exportMyData(){
+
+/* ── 데이터 내보내기 ── */
+async function exportMyData() {
   var btn = document.getElementById('export-btn');
   if (!btn) return;
   btn.disabled = true;
   btn.textContent = '준비 중...';
   try {
-    var res = await fetch('/api/export-my-data', {
-      method: 'GET',
-      headers: authHeaders()
-    });
+    var res = await fetch('/api/export-my-data', { method: 'GET', headers: authHeaders() });
     if (res.ok) {
       var blob = await res.blob();
-      var url = URL.createObjectURL(blob);
+      var url  = URL.createObjectURL(blob);
       var a = document.createElement('a');
       a.href = url;
-      a.download = 'lumi-my-data-' + new Date().toISOString().slice(0,10) + '.json';
+      a.download = 'lumi-my-data-' + new Date().toISOString().slice(0, 10) + '.json';
       document.body.appendChild(a);
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-      showToast('데이터 파일을 내려받았어요.');
+      showToast('데이터 파일을 내려받았어요');
     } else if (res.status === 404 || res.status === 501) {
-      showToast('데이터 내보내기 기능을 준비 중이에요. 빠르게 출시할게요.');
+      showToast('데이터 내보내기 기능을 곧 출시해요');
     } else {
-      showToast('다운로드 중 문제가 발생했어요.');
+      showToast('다운로드 중 문제가 발생했어요');
     }
   } catch(e) {
-    showToast('네트워크 오류입니다. 잠시 후 다시 시도해주세요.');
+    showToast('네트워크 오류예요. 잠시 후 다시 시도해주세요.');
   }
   btn.disabled = false;
-  btn.textContent = '내보내기';
+  btn.textContent = '요청하기';
 }
-// 모달 외부 클릭 시 닫기
-document.addEventListener('click', function(ev){
-  var m = document.getElementById('delete-modal');
-  if (!m || m.style.display !== 'flex') return;
-  var box = document.getElementById('delete-modal-box');
-  if (box && !box.contains(ev.target) && ev.target === m) closeDeleteModal();
-});
-</script>
-<!-- 모바일 바텀 탭바 (로그인 사용자만) -->
-<nav class="m-tabbar" role="navigation" aria-label="모바일 내비게이션" style="display:none">
-  <a href="/" class="m-tab" data-tab="home">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-6h-2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-    <span>홈</span>
-  </a>
-  <a href="/" class="m-tab" data-tab="trends">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-    <span>트렌드</span>
-  </a>
-  <a href="/settings.html" class="m-tab" data-tab="settings">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-    <span>설정</span>
-  </a>
-</nav>
-<script>
-(function(){
-  if(!localStorage.getItem('lumi_token')) return;
-  var tb = document.querySelector('.m-tabbar'); if(!tb) return;
-  tb.style.display = 'flex';
-  document.body.classList.add('has-tabbar');
-  var path = (location.pathname.split('/').pop() || '').toLowerCase();
-  if (path === 'settings.html') {
-    var el = tb.querySelector('[data-tab="settings"]');
-    if (el) el.classList.add('is-active');
-  }
-})();
-</script>
 
-<!-- ── 사업자 정보 (전자상거래법 §13 + Meta 인증) ── -->
-<footer class="lumi-footer">
-  <div class="lumi-footer__info">
-    <img src="/assets/logo-wordmark.png" alt="루미" class="lumi-footer__logo" />
-    <p>대표: 김현 · 사업자등록번호: 404-09-66416</p>
-    <p>통신판매업: 제2024-서울용산-1166호</p>
-    <p>주소: 서울특별시 용산구 회나무로 32-7 (이태원동), 04345</p>
-    <p>고객센터: <a href="tel:01064246284" style="color:inherit;text-decoration:none;">010-6424-6284</a> · 이메일: gung3625@gmail.com</p>
-  </div>
-  <div class="lumi-footer__links">
-    <a href="/terms.html">이용약관</a> · <a href="/privacy.html">개인정보처리방침</a> · <a href="/refund.html">환불정책</a>
-  </div>
-  <p class="lumi-footer__copy">© 2026 루미. All rights reserved.</p>
-</footer>
+/* ── 모달 외부 클릭 닫기 ── */
+document.addEventListener('click', function(ev) {
+  var m = document.getElementById('delete-modal');
+  if (!m || !m.classList.contains('is-open')) return;
+  if (ev.target === m) closeDeleteModal();
+});
+
+/* ── ESC 닫기 ── */
+document.addEventListener('keydown', function(ev) {
+  if (ev.key === 'Escape') closeDeleteModal();
+});
+
+/* ── 토스트 ── */
+function showToast(msg) {
+  var t = document.getElementById('stg-toast');
+  t.textContent = msg;
+  t.classList.add('is-show');
+  setTimeout(function(){ t.classList.remove('is-show'); }, 2600);
+}
+</script>
 </body>
 </html>
