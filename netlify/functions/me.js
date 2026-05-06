@@ -98,7 +98,7 @@ exports.handler = async (event) => {
   // sellers 조회: Supabase JWT → email 매칭, seller-jwt → id 매칭
   const sellerQuery = admin
     .from('sellers')
-    .select('id, business_number, owner_name, phone, email, store_name, signup_step, signup_completed_at, business_verified, business_verified_at, plan, trial_start, marketing_consent, referral_code, created_at');
+    .select('id, business_number, owner_name, phone, email, store_name, signup_step, signup_completed_at, business_verified, business_verified_at, plan, trial_start, marketing_consent, referral_code, created_at, onboarded, signup_method, display_name, avatar_url');
 
   let { data: seller, error: selErr } = sellerQueryField
     ? await sellerQuery.eq(sellerQueryField, sellerQueryValue).maybeSingle()
@@ -149,7 +149,7 @@ exports.handler = async (event) => {
           trial_start: now,
           marketing_consent: false,
         })
-        .select('id, business_number, owner_name, phone, email, store_name, signup_step, signup_completed_at, business_verified, business_verified_at, plan, trial_start, marketing_consent, referral_code, created_at')
+        .select('id, business_number, owner_name, phone, email, store_name, signup_step, signup_completed_at, business_verified, business_verified_at, plan, trial_start, marketing_consent, referral_code, created_at, onboarded, signup_method, display_name, avatar_url')
         .single();
       if (!insErr && created) {
         seller = created;
@@ -189,6 +189,8 @@ exports.handler = async (event) => {
       seller: {
         id: seller.id,
         ownerName: seller.owner_name,
+        displayName: seller.display_name || null,
+        avatarUrl: seller.avatar_url || null,
         storeName: seller.store_name,
         businessNumberMasked: maskBusinessNumber(seller.business_number),
         phoneMasked: maskPhone(seller.phone),
@@ -196,6 +198,8 @@ exports.handler = async (event) => {
         signupStep: seller.signup_step,
         signupCompleted: Boolean(seller.signup_completed_at),
         signupCompletedAt: seller.signup_completed_at,
+        onboarded: Boolean(seller.onboarded),
+        signupMethod: seller.signup_method || null,
         businessVerified: seller.business_verified,
         plan: seller.plan,
         trialStart: seller.trial_start,

@@ -1,0 +1,822 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>회원가입 — lumi</title>
+<meta name="robots" content="noindex">
+
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="/css/lumi-tokens.css">
+<link rel="stylesheet" href="/css/lumi-comp.css">
+
+<style>
+/* ─── Page layout ─── */
+.signup-page {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--lumi-surface);
+}
+
+/* ─── Minimal top bar ─── */
+.signup-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--lumi-nav-h);
+  padding-inline: var(--lumi-page-x);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.signup-topbar__logo {
+  font-size: 22px;
+  font-weight: var(--lumi-weight-black);
+  letter-spacing: var(--lumi-tracking-tight);
+  background: var(--lumi-gradient-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  text-decoration: none;
+}
+
+/* ─── Stage viewport (clips the slide) ─── */
+.signup-stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ─── Track — holds both steps side by side ─── */
+.signup-track {
+  display: flex;
+  flex: 1;
+  width: 200%;
+  transform: translateX(0);
+  transition: transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.signup-track.is-step-2 {
+  transform: translateX(-50%);
+}
+
+/* ─── Each step panel ─── */
+.signup-step {
+  width: 50%;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--lumi-space-6) var(--lumi-page-x) calc(var(--lumi-space-12) + env(safe-area-inset-bottom));
+  overflow-y: auto;
+}
+
+/* ─── Content card ─── */
+.signup-card {
+  width: 100%;
+  max-width: 440px;
+  margin-inline: auto;
+}
+
+/* ─── Progress dots ─── */
+.signup-dots {
+  display: flex;
+  gap: var(--lumi-space-2);
+  justify-content: center;
+  margin-bottom: var(--lumi-space-8);
+}
+
+.signup-dots__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--lumi-radius-full);
+  background: var(--lumi-line-strong);
+  transition: all 280ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.signup-dots__dot.is-active {
+  width: 24px;
+  background: var(--lumi-gradient-brand);
+}
+
+/* ─── Step heading ─── */
+.signup-heading {
+  text-align: center;
+  margin-bottom: var(--lumi-space-8);
+}
+
+.signup-heading__eyebrow {
+  font-size: var(--lumi-text-label);
+  font-weight: var(--lumi-weight-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--lumi-brand-text);
+  margin: 0 0 var(--lumi-space-3);
+}
+
+.signup-heading__title {
+  font-size: clamp(20px, 5vw, 26px);
+  font-weight: var(--lumi-weight-heavy);
+  letter-spacing: var(--lumi-tracking-tight);
+  line-height: var(--lumi-leading-snug);
+  color: var(--lumi-ink-strong);
+  margin: 0 0 var(--lumi-space-3);
+}
+
+.signup-heading__sub {
+  font-size: var(--lumi-text-body-sm);
+  color: var(--lumi-ink-muted);
+  line-height: var(--lumi-leading-relaxed);
+  margin: 0;
+}
+
+/* ─── Auth buttons ─── */
+.signup-auth-btns {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lumi-space-3);
+  margin-bottom: var(--lumi-space-6);
+}
+
+/* Kakao button */
+.signup-btn-kakao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lumi-space-3);
+  height: var(--lumi-btn-h-lg);
+  width: 100%;
+  border-radius: var(--lumi-radius-pill);
+  background: #FEE500;
+  color: rgba(0, 0, 0, 0.85);
+  font-size: var(--lumi-text-body);
+  font-weight: var(--lumi-weight-bold);
+  letter-spacing: -0.005em;
+  border: none;
+  cursor: pointer;
+  transition:
+    transform 140ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 220ms cubic-bezier(0.4, 0, 0.2, 1),
+    filter 220ms cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+  font-family: inherit;
+}
+
+@media (hover: hover) {
+  .signup-btn-kakao:hover {
+    transform: translateY(-2px) scale(1.015);
+    box-shadow: 0 8px 24px -4px rgba(254, 229, 0, 0.55);
+  }
+}
+
+.signup-btn-kakao:active {
+  transform: scale(0.97);
+  transition-duration: 80ms;
+}
+
+/* Kakao logo SVG mark */
+.signup-btn-kakao__icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+/* Google button */
+.signup-btn-google {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lumi-space-3);
+  height: var(--lumi-btn-h-lg);
+  width: 100%;
+  border-radius: var(--lumi-radius-pill);
+  background: var(--lumi-surface);
+  color: var(--lumi-ink-strong);
+  font-size: var(--lumi-text-body);
+  font-weight: var(--lumi-weight-bold);
+  letter-spacing: -0.005em;
+  border: 1px solid var(--lumi-line-strong);
+  cursor: pointer;
+  transition:
+    transform 140ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 220ms cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 220ms cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+  font-family: inherit;
+}
+
+@media (hover: hover) {
+  .signup-btn-google:hover {
+    transform: translateY(-1px);
+    border-color: var(--lumi-ink-strong);
+    box-shadow: var(--lumi-shadow-md);
+  }
+}
+
+.signup-btn-google:active {
+  transform: scale(0.97);
+  transition-duration: 80ms;
+}
+
+.signup-btn-google__icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+/* ─── Terms note ─── */
+.signup-terms {
+  text-align: center;
+  font-size: var(--lumi-text-caption);
+  color: var(--lumi-ink-faint);
+  line-height: var(--lumi-leading-relaxed);
+  margin: 0;
+}
+
+.signup-terms a {
+  color: var(--lumi-ink-muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 200ms;
+}
+
+.signup-terms a:hover {
+  color: var(--lumi-brand-text);
+}
+
+/* ─── Step 2 — Form ─── */
+.signup-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lumi-space-5);
+  margin-bottom: var(--lumi-space-8);
+}
+
+.signup-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lumi-space-2);
+}
+
+.signup-label {
+  font-size: var(--lumi-text-body-sm);
+  font-weight: var(--lumi-weight-semibold);
+  color: var(--lumi-ink-soft);
+  letter-spacing: var(--lumi-tracking-normal);
+}
+
+.signup-label span {
+  color: var(--lumi-brand-fill);
+  margin-left: 2px;
+}
+
+.lumi-select {
+  display: flex;
+  align-items: center;
+  height: var(--lumi-input-h);
+  padding-inline: var(--lumi-space-4);
+  border-radius: var(--lumi-radius-md);
+  border: 1px solid var(--lumi-line);
+  background: var(--lumi-surface);
+  font-size: 16px;
+  color: var(--lumi-ink-strong);
+  font-family: inherit;
+  transition:
+    border-color 220ms cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 220ms cubic-bezier(0.4, 0, 0.2, 1);
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238e8e93' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 18px;
+  padding-right: 40px;
+  cursor: pointer;
+}
+
+.lumi-select:focus {
+  outline: none;
+  border-color: var(--lumi-brand-fill);
+  box-shadow: 0 0 0 4px rgba(200, 80, 122, 0.12);
+}
+
+/* ─── Loading state ─── */
+.signup-btn-loading {
+  position: relative;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.signup-btn-loading::after {
+  content: '';
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: signup-spin 0.7s linear infinite;
+}
+
+@keyframes signup-spin {
+  to { transform: translateY(-50%) rotate(360deg); }
+}
+
+/* ─── Error message ─── */
+.signup-error {
+  display: none;
+  padding: var(--lumi-space-3) var(--lumi-space-4);
+  border-radius: var(--lumi-radius-md);
+  background: rgba(255, 59, 48, 0.08);
+  border: 1px solid rgba(255, 59, 48, 0.2);
+  color: var(--lumi-error);
+  font-size: var(--lumi-text-body-sm);
+  line-height: var(--lumi-leading-relaxed);
+}
+
+.signup-error.is-visible {
+  display: block;
+}
+
+/* ─── Back link ─── */
+.signup-back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lumi-space-2);
+  font-size: var(--lumi-text-body-sm);
+  color: var(--lumi-ink-muted);
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  margin-bottom: var(--lumi-space-6);
+  align-self: flex-start;
+  transition: color 200ms;
+}
+
+.signup-back:hover {
+  color: var(--lumi-ink-strong);
+}
+
+.signup-back svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+}
+
+/* ─── Char count ─── */
+.signup-char-count {
+  font-size: var(--lumi-text-caption);
+  color: var(--lumi-ink-faint);
+  text-align: right;
+  margin-top: 2px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="signup-page">
+
+  <!-- Minimal top bar (no full header for clean signup flow) -->
+  <div class="signup-topbar">
+    <a href="/" class="signup-topbar__logo" aria-label="lumi 홈">lumi</a>
+  </div>
+
+  <div class="signup-stage">
+    <div class="signup-track" id="signupTrack">
+
+      <!-- ═══════════════════════════════════════════
+           STEP 1 — 인증 선택
+           ═══════════════════════════════════════════ -->
+      <div class="signup-step" id="step1" role="region" aria-label="1단계: 인증 선택">
+        <div class="signup-card">
+
+          <!-- Progress dots -->
+          <div class="signup-dots" aria-label="회원가입 진행 단계 1/2">
+            <div class="signup-dots__dot is-active"></div>
+            <div class="signup-dots__dot"></div>
+          </div>
+
+          <!-- Heading -->
+          <div class="signup-heading">
+            <p class="signup-heading__eyebrow">회원가입</p>
+            <h1 class="signup-heading__title">사장님 대신 SNS 하는<br>루미와 함께해요</h1>
+            <p class="signup-heading__sub">소셜 계정으로 30초 안에 시작할 수 있어요</p>
+          </div>
+
+          <!-- Auth buttons -->
+          <div class="signup-auth-btns" role="group" aria-label="소셜 로그인 선택">
+
+            <!-- Kakao -->
+            <button type="button" class="signup-btn-kakao" onclick="signupWithKakao()" id="kakaoBtn">
+              <!-- Kakao logo mark (bubble speech) -->
+              <svg class="signup-btn-kakao__icon" viewBox="0 0 24 24" fill="rgba(0,0,0,0.85)" aria-hidden="true">
+                <path d="M12 3C6.477 3 2 6.477 2 10.818c0 2.767 1.664 5.197 4.189 6.633L5.1 21l4.918-2.574A11.6 11.6 0 0 0 12 18.636c5.523 0 10-3.477 10-7.818C22 6.477 17.523 3 12 3Z"/>
+              </svg>
+              카카오로 시작하기
+            </button>
+
+            <!-- Google -->
+            <button type="button" class="signup-btn-google" onclick="signupWithGoogle()" id="googleBtn">
+              <!-- Google 'G' color logo -->
+              <svg class="signup-btn-google__icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+              </svg>
+              구글로 계속하기
+            </button>
+
+          </div>
+
+          <!-- Error -->
+          <p class="signup-error" id="step1Error" role="alert" aria-live="polite"></p>
+
+          <!-- Terms -->
+          <p class="signup-terms">
+            계속하면 lumi의
+            <a href="/terms">서비스 이용약관</a> 및
+            <a href="/privacy">개인정보 처리방침</a>에
+            동의하는 것으로 간주됩니다.
+          </p>
+
+        </div>
+      </div><!-- /step1 -->
+
+      <!-- ═══════════════════════════════════════════
+           STEP 2 — 매장 정보
+           ═══════════════════════════════════════════ -->
+      <div class="signup-step" id="step2" role="region" aria-label="2단계: 매장 정보" aria-hidden="true">
+        <div class="signup-card">
+
+          <!-- Back button -->
+          <button type="button" class="signup-back" onclick="goToStep1()" aria-label="이전 단계로">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+            이전
+          </button>
+
+          <!-- Progress dots -->
+          <div class="signup-dots" aria-label="회원가입 진행 단계 2/2">
+            <div class="signup-dots__dot"></div>
+            <div class="signup-dots__dot is-active"></div>
+          </div>
+
+          <!-- Heading -->
+          <div class="signup-heading">
+            <p class="signup-heading__eyebrow">거의 다 왔어요</p>
+            <h2 class="signup-heading__title">매장을 소개해 주세요</h2>
+            <p class="signup-heading__sub">루미가 매장에 맞는 콘텐츠를 만들어 드릴게요</p>
+          </div>
+
+          <!-- Form -->
+          <form class="signup-form" id="storeForm" onsubmit="handleStoreSubmit(event)" novalidate>
+
+            <div class="signup-field">
+              <label for="storeName" class="signup-label">
+                매장 이름
+                <span aria-hidden="true">*</span>
+              </label>
+              <input
+                type="text"
+                id="storeName"
+                class="lumi-input"
+                placeholder="예: 달콤 베이커리"
+                maxlength="50"
+                required
+                autocomplete="organization"
+                oninput="updateCharCount(this)"
+              >
+              <div class="signup-char-count" id="storeNameCount" aria-live="polite">0 / 50</div>
+            </div>
+
+            <div class="signup-field">
+              <label for="industry" class="signup-label">
+                업종
+                <span aria-hidden="true">*</span>
+              </label>
+              <select id="industry" class="lumi-select" required>
+                <option value="" disabled selected>업종을 선택해 주세요</option>
+                <option value="cafe">카페</option>
+                <option value="restaurant">음식점</option>
+                <option value="bakery">베이커리</option>
+                <option value="fashion">의류</option>
+                <option value="beauty">뷰티</option>
+                <option value="flower">꽃집</option>
+                <option value="etc">기타</option>
+              </select>
+            </div>
+
+            <!-- Error -->
+            <p class="signup-error" id="step2Error" role="alert" aria-live="polite"></p>
+
+            <button type="submit" class="lumi-btn lumi-btn--primary lumi-btn--lg lumi-btn--full" id="submitBtn">
+              루미 시작하기
+            </button>
+
+          </form>
+
+          <!-- Terms reminder -->
+          <p class="signup-terms">
+            <a href="/terms">서비스 이용약관</a>
+            및 <a href="/privacy">개인정보 처리방침</a> 동의 포함
+          </p>
+
+        </div>
+      </div><!-- /step2 -->
+
+    </div><!-- /signup-track -->
+  </div><!-- /signup-stage -->
+
+</div><!-- /signup-page -->
+
+<!-- Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.103.3/dist/umd/supabase.min.js"></script>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ─── Supabase client ─── */
+  var SUPA_URL = 'https://cldsozdocxpvkbuxwqep.supabase.co';
+  var SUPA_KEY = 'sb_publishable_WjWg5o05Y7lhib674Cr_fw_0mpY-ccG';
+  window.lumiSupa = window.supabase.createClient(SUPA_URL, SUPA_KEY, {
+    auth: { persistSession: true, autoRefreshToken: true, storageKey: 'lumi-auth' }
+  });
+
+  /* ─── Step transition ─── */
+  var track = document.getElementById('signupTrack');
+  var step1El = document.getElementById('step1');
+  var step2El = document.getElementById('step2');
+
+  function goToStep2() {
+    track.classList.add('is-step-2');
+    step1El.setAttribute('aria-hidden', 'true');
+    step2El.removeAttribute('aria-hidden');
+    document.getElementById('storeName').focus();
+  }
+
+  window.goToStep1 = function () {
+    track.classList.remove('is-step-2');
+    step2El.setAttribute('aria-hidden', 'true');
+    step1El.removeAttribute('aria-hidden');
+  };
+
+  /* ─── Step 1: Kakao ─── */
+  window.signupWithKakao = function () {
+    location.href = '/api/auth/kakao/start';
+  };
+
+  /* ─── Step 1: Google ─── */
+  window.signupWithGoogle = function () {
+    if (!window.lumiSupa) {
+      alert('잠시만 기다려주세요.');
+      return;
+    }
+    window.lumiSupa.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: location.origin + '/signup?google=callback' }
+    });
+  };
+
+  /* ─── Google callback handler ─── */
+  async function handleGoogleCallback() {
+    var googleBtn = document.getElementById('googleBtn');
+    if (googleBtn) {
+      googleBtn.textContent = '로그인 처리 중…';
+      googleBtn.disabled = true;
+    }
+
+    try {
+      // Wait for Supabase to exchange the code from the URL
+      var result = await window.lumiSupa.auth.getSession();
+      var session = result && result.data && result.data.session;
+
+      if (!session || !session.access_token) {
+        // Give Supabase a moment to process the OAuth exchange
+        await new Promise(function (r) { setTimeout(r, 800); });
+        result = await window.lumiSupa.auth.getSession();
+        session = result && result.data && result.data.session;
+      }
+
+      if (!session || !session.access_token) {
+        showStep1Error('구글 로그인에 실패했어요. 다시 시도해 주세요.');
+        return;
+      }
+
+      // Sync to our backend
+      var syncRes = await fetch('/api/auth/google/sync', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + session.access_token
+        }
+      });
+
+      if (!syncRes.ok) {
+        showStep1Error('계정 연동 중 오류가 발생했어요. 잠시 후 다시 시도해 주세요.');
+        return;
+      }
+
+      var syncData = await syncRes.json();
+
+      // Store token if provided
+      if (syncData.token || syncData.sellerToken) {
+        var tok = syncData.token || syncData.sellerToken;
+        try {
+          localStorage.setItem('lumi_token', tok);
+          localStorage.setItem('lumi_seller_jwt', tok);
+          localStorage.setItem('lumi_seller_token', tok);
+        } catch (_) {}
+      }
+
+      // Follow redirect from server
+      if (syncData.redirect) {
+        location.href = syncData.redirect;
+        return;
+      }
+
+      // Fallback: check onboarded status
+      var meta = (session.user && session.user.user_metadata) || {};
+      if (meta.onboarded) {
+        location.href = '/dashboard';
+      } else {
+        goToStep2();
+      }
+
+    } catch (err) {
+      showStep1Error('오류가 발생했어요. 다시 시도해 주세요.');
+    }
+  }
+
+  /* ─── Token/session check on load ─── */
+  async function checkExistingSession() {
+    try {
+      var result = await window.lumiSupa.auth.getSession();
+      var session = result && result.data && result.data.session;
+      if (!session || !session.access_token) return;
+
+      var meta = (session.user && session.user.user_metadata) || {};
+      // Already onboarded → go to dashboard
+      if (meta.onboarded === true || (meta.business_no && meta.consent_terms)) {
+        location.replace('/dashboard');
+        return;
+      }
+
+      // Session exists but not onboarded → skip to step 2
+      goToStep2();
+
+    } catch (_) {}
+  }
+
+  /* ─── Error display ─── */
+  function showStep1Error(msg) {
+    var el = document.getElementById('step1Error');
+    if (!el) return;
+    el.textContent = msg;
+    el.classList.add('is-visible');
+    // Re-enable buttons
+    var kakaoBtn = document.getElementById('kakaoBtn');
+    var googleBtn = document.getElementById('googleBtn');
+    if (kakaoBtn) { kakaoBtn.disabled = false; kakaoBtn.classList.remove('signup-btn-loading'); }
+    if (googleBtn) { googleBtn.disabled = false; googleBtn.classList.remove('signup-btn-loading'); }
+  }
+
+  function hideStep1Error() {
+    var el = document.getElementById('step1Error');
+    if (el) el.classList.remove('is-visible');
+  }
+
+  function showStep2Error(msg) {
+    var el = document.getElementById('step2Error');
+    if (!el) return;
+    el.textContent = msg;
+    el.classList.add('is-visible');
+  }
+
+  function hideStep2Error() {
+    var el = document.getElementById('step2Error');
+    if (el) el.classList.remove('is-visible');
+  }
+
+  /* ─── Char count ─── */
+  window.updateCharCount = function (input) {
+    var count = document.getElementById('storeNameCount');
+    if (count) count.textContent = input.value.length + ' / 50';
+  };
+
+  /* ─── Step 2: Store form submit ─── */
+  window.handleStoreSubmit = async function (e) {
+    e.preventDefault();
+    hideStep2Error();
+
+    var storeName = (document.getElementById('storeName').value || '').trim();
+    var industry = (document.getElementById('industry').value || '').trim();
+
+    if (!storeName) {
+      showStep2Error('매장 이름을 입력해 주세요.');
+      document.getElementById('storeName').focus();
+      return;
+    }
+    if (storeName.length < 1 || storeName.length > 50) {
+      showStep2Error('매장 이름은 1~50자 사이로 입력해 주세요.');
+      document.getElementById('storeName').focus();
+      return;
+    }
+    if (!industry) {
+      showStep2Error('업종을 선택해 주세요.');
+      document.getElementById('industry').focus();
+      return;
+    }
+
+    var submitBtn = document.getElementById('submitBtn');
+    submitBtn.disabled = true;
+    submitBtn.classList.add('signup-btn-loading');
+    submitBtn.textContent = '저장 중…';
+
+    // Get token (lumi_token or Supabase session)
+    var token = null;
+    try { token = localStorage.getItem('lumi_token') || sessionStorage.getItem('lumi_token'); } catch (_) {}
+
+    if (!token && window.lumiSupa) {
+      try {
+        var result = await window.lumiSupa.auth.getSession();
+        var session = result && result.data && result.data.session;
+        if (session && session.access_token) token = session.access_token;
+      } catch (_) {}
+    }
+
+    if (!token) {
+      showStep2Error('로그인 세션이 없어요. 처음부터 다시 시도해 주세요.');
+      submitBtn.disabled = false;
+      submitBtn.classList.remove('signup-btn-loading');
+      submitBtn.textContent = '루미 시작하기';
+      return;
+    }
+
+    try {
+      var r = await fetch('/api/signup-complete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify({ store_name: storeName, industry: industry })
+      });
+
+      var d = await r.json();
+
+      if (d.ok) {
+        // Invalidate onboarded cache so auth-guard re-checks
+        try { sessionStorage.removeItem('lumi_onboarded_cache'); } catch (_) {}
+        location.href = '/dashboard';
+      } else {
+        showStep2Error(d.error || '저장에 실패했어요. 잠시 후 다시 시도해 주세요.');
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('signup-btn-loading');
+        submitBtn.textContent = '루미 시작하기';
+      }
+
+    } catch (_) {
+      showStep2Error('네트워크 오류가 발생했어요. 인터넷 연결을 확인해 주세요.');
+      submitBtn.disabled = false;
+      submitBtn.classList.remove('signup-btn-loading');
+      submitBtn.textContent = '루미 시작하기';
+    }
+  };
+
+  /* ─── Init ─── */
+  (async function init() {
+    var params = new URLSearchParams(location.search);
+
+    if (params.has('google')) {
+      // Google OAuth callback
+      await handleGoogleCallback();
+    } else {
+      // Normal page load — check if already authed
+      await checkExistingSession();
+    }
+  })();
+
+})();
+</script>
+
+<!-- Footer auto-inject -->
+<script src="/js/lumi-foot.js" defer></script>
+
+</body>
+</html>

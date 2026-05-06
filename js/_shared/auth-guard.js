@@ -139,7 +139,7 @@
     // 1. localStorage 게이트 (빠른 비로그인 차단, 왕복 없음)
     //    여러 storage 키를 모두 체크 (페이지마다 다른 키 사용 가능성)
     if (!hasAnyStoredAuth()) {
-      window.location.replace('/?m=1');
+      window.location.replace('/signup');
       return false;
     }
 
@@ -147,7 +147,7 @@
     var cached = readCache();
     if (cached !== null) {
       if (cached.onboarded) return true;
-      window.location.replace('/');
+      window.location.replace('/signup');
       return false;
     }
 
@@ -159,7 +159,7 @@
       await new Promise(function (r) { setTimeout(r, 1000); });
       session = await getSessionSafe();
       if (!session || !session.access_token) {
-        window.location.replace('/?m=1');
+        window.location.replace('/signup');
         return false;
       }
     }
@@ -170,7 +170,7 @@
     writeCache(onboarded);
 
     if (!onboarded) {
-      window.location.replace('/');
+      window.location.replace('/signup');
       return false;
     }
     return true;

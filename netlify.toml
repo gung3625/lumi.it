@@ -28,7 +28,7 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=(self)"
     Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://code.iconify.design https://cdn.jsdelivr.net https://t1.kakaocdn.net https://developers.kakao.com https://www.googletagmanager.com https://www.google-analytics.com https://googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data: https: blob:; media-src 'self' data: blob: https:; connect-src 'self' https://*.netlify.com https://*.supabase.co https://lumi.it.kr https://*.solapi.com https://api.resend.com https://unpkg.com https://cdn.jsdelivr.net https://www.google-analytics.com https://www.googletagmanager.com https://open.tiktokapis.com https://www.tiktok.com; frame-src 'none';"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://code.iconify.design https://cdn.jsdelivr.net https://t1.kakaocdn.net https://developers.kakao.com https://www.googletagmanager.com https://www.google-analytics.com https://googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data: https: blob:; media-src 'self' data: blob: https:; connect-src 'self' https://*.netlify.com https://*.supabase.co https://lumi.it.kr https://*.solapi.com https://api.resend.com https://unpkg.com https://cdn.jsdelivr.net https://www.google-analytics.com https://www.googletagmanager.com https://open.tiktokapis.com https://www.tiktok.com https://kauth.kakao.com https://kapi.kakao.com; frame-src 'none';"
     Cache-Control = "no-store, no-cache, must-revalidate, max-age=0"
     Pragma = "no-cache"
     Expires = "0"
@@ -272,6 +272,40 @@
   status = 200
   force = true
 
+
+# 카카오 OAuth 시작
+[[redirects]]
+  from = "/api/auth/kakao/start"
+  to = "/.netlify/functions/auth-kakao-start"
+  status = 200
+  force = true
+
+# 카카오 OAuth 콜백
+[[redirects]]
+  from = "/api/auth/kakao/callback"
+  to = "/.netlify/functions/auth-kakao-callback"
+  status = 200
+  force = true
+
+# Google OAuth 후처리 — sellers 동기화
+[[redirects]]
+  from = "/api/auth/google/sync"
+  to = "/.netlify/functions/auth-google-sync"
+  status = 200
+  force = true
+
+# 온보딩 완료 — 매장 정보 저장
+[[redirects]]
+  from = "/api/signup-complete"
+  to = "/.netlify/functions/signup-complete"
+  status = 200
+  force = true
+
+# 회원가입 페이지
+[[redirects]]
+  from = "/signup"
+  to = "/signup.html"
+  status = 200
 
 # API 라우팅
 [[redirects]]
