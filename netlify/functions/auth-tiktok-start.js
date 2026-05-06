@@ -31,22 +31,18 @@ exports.handler = async (event) => {
     return errorRedirect('tiktok_not_configured');
   }
 
-  // Bearer 토큰 추출 (헤더 또는 쿼리 파라미터 token= 지원)
-  let token = extractBearerToken(event);
-  if (!token) {
-    const q = event.queryStringParameters || {};
-    token = q.token || '';
-  }
+  // Bearer 토큰 추출 (Authorization 헤더만 허용 — URL 노출 방지)
+  const token = extractBearerToken(event);
 
   if (!token) {
     console.error('[auth-tiktok-start] 인증 토큰 없음');
-    return { statusCode: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify({ error: 'unauthorized' }) };
+    return { statusCode: 401, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'unauthorized' }) };
   }
 
   const { user, error: authError } = await verifyBearerToken(token);
   if (authError || !user) {
     console.error('[auth-tiktok-start] 토큰 검증 실패:', authError?.message);
-    return { statusCode: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify({ error: 'invalid_token' }) };
+    return { statusCode: 401, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'invalid_token' }) };
   }
 
   const sellerId = user.id;
@@ -57,7 +53,7 @@ exports.handler = async (event) => {
     admin = getAdminClient();
   } catch (e) {
     console.error('[auth-tiktok-start] admin 초기화 실패:', e.message);
-    return { statusCode: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify({ error: 'server_error' }) };
+    return { statusCode: 500, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'server_error' }) };
   }
 
   const { error: insErr } = await admin.from('oauth_nonces').insert({
@@ -68,7 +64,7 @@ exports.handler = async (event) => {
 
   if (insErr) {
     console.error('[auth-tiktok-start] nonce 저장 실패:', insErr.message);
-    return { statusCode: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify({ error: 'nonce_insert_failed' }) };
+    return { statusCode: 500, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'server_error' }) };
   }
 
   const authUrl =

@@ -1484,34 +1484,9 @@ async function confirmDeleteAccount() {
 }
 
 /* ── 데이터 내보내기 ── */
-async function exportMyData() {
-  var btn = document.getElementById('export-btn');
-  if (!btn) return;
-  btn.disabled = true;
-  btn.textContent = '준비 중...';
-  try {
-    var res = await fetch('/api/export-my-data', { method: 'GET', headers: authHeaders() });
-    if (res.ok) {
-      var blob = await res.blob();
-      var url  = URL.createObjectURL(blob);
-      var a = document.createElement('a');
-      a.href = url;
-      a.download = 'lumi-my-data-' + new Date().toISOString().slice(0, 10) + '.json';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-      showToast('데이터 파일을 내려받았어요');
-    } else if (res.status === 404 || res.status === 501) {
-      showToast('데이터 내보내기 기능을 곧 출시해요');
-    } else {
-      showToast('다운로드 중 문제가 발생했어요');
-    }
-  } catch(e) {
-    showToast('네트워크 오류예요. 잠시 후 다시 시도해주세요.');
-  }
-  btn.disabled = false;
-  btn.textContent = '요청하기';
+/* TODO: /api/export-my-data 미구현 — PIPA §35 자기정보 이동권, 정식 출시 후 활성화 */
+function exportMyData() {
+  showToast('데이터 내보내기 기능을 곧 출시해요');
 }
 
 /* ── TikTok 연동 상태 적용 ── */
@@ -1540,12 +1515,14 @@ function applyTiktokStatus(u) {
 
 /* ── TikTok OAuth 시작 ── */
 function connectTiktok() {
-  // 옵션 A: 즉시 활성화 (TikTok 앱 심사 통과 후 아래 주석 해제 + 버튼 disabled 제거)
+  // 앱 심사 통과 후 활성화: 버튼 disabled 제거 + 아래 주석 해제
+  // Authorization 헤더로 토큰 전달 (URL query param 사용 금지 — JWT 로그 노출 방지)
   // const token = localStorage.getItem('lumi_token');
   // if (!token) { showToast('로그인이 필요합니다'); return; }
-  // location.href = '/api/auth/tiktok/start?token=' + encodeURIComponent(token);
+  // fetch('/api/auth/tiktok/start', { method: 'GET', headers: { 'Authorization': 'Bearer ' + token } })
+  //   .then(function(r) { if (r.redirected) { location.href = r.url; } });
 
-  // 옵션 B: 심사 대기 중 메시지 유지 (현재)
+  // 심사 대기 중 메시지 유지 (현재)
   showToast('TikTok 앱 심사 완료 후 이용 가능합니다');
 }
 

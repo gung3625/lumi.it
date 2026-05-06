@@ -1132,77 +1132,46 @@ document.getElementById('hashtag-input').addEventListener('keydown', function(e)
 
 /* ── 학습 통계 ────────────────────────────────────────────── */
 function loadStats() {
-  var t = getToken();
-  if (!t) return;
-  fetch('/api/brand-stats', { headers: authHeaders() })
-    .then(function(r) { return r.ok ? r.json() : null; })
-    .then(function(d) {
-      if (!d) return;
-      var capEl = document.getElementById('stat-captions');
-      var upEl  = document.getElementById('stat-updated');
-      if (capEl) capEl.textContent = d.caption_count != null ? String(d.caption_count) : '—';
-      if (upEl && d.updated_at) {
-        var dt = new Date(d.updated_at);
-        upEl.textContent = (dt.getMonth()+1) + '/' + dt.getDate();
-      }
-    })
-    .catch(function() {});
+  /* TODO: /api/brand-stats 미구현 — 준비 중 */
+  console.warn('[brand-admin] /api/brand-stats 준비 중');
+  var capEl = document.getElementById('stat-captions');
+  var upEl  = document.getElementById('stat-updated');
+  if (capEl) capEl.textContent = '—';
+  if (upEl) upEl.textContent = '—';
 }
 
 function retrain() {
-  var btn = document.getElementById('retrain-btn');
-  btn.disabled = true;
-  btn.textContent = '요청 중...';
-  fetch('/api/brand-retrain', { method: 'POST', headers: authHeaders() })
-    .then(function(r) { return r.json(); })
-    .then(function() {
-      showToast('재학습 요청이 전송됐어요');
-      btn.disabled = false;
-      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> 재학습 시작';
-    })
-    .catch(function() {
-      showToast('요청 실패 — 다시 시도해주세요');
-      btn.disabled = false;
-      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> 재학습 시작';
-    });
+  /* TODO: /api/brand-retrain 미구현 — 준비 중 */
+  console.warn('[brand-admin] /api/brand-retrain 준비 중');
+  showToast('재학습 기능은 준비 중이에요');
 }
 
 /* ── 불러오기 ─────────────────────────────────────────────── */
 function loadBrandSettings() {
-  var t = getToken();
-  if (!t) return;
-  fetch('/api/brand-settings', { headers: authHeaders() })
-    .then(function(r) { return r.ok ? r.json() : null; })
-    .then(function(d) {
-      if (!d) return;
-      if (d.tone) {
-        state.tone = d.tone;
-        var radio = document.querySelector('input[name="tone"][value="' + d.tone + '"]');
+  /* TODO: /api/brand-settings 미구현 — 준비 중. localStorage 캐시 사용 */
+  console.warn('[brand-admin] /api/brand-settings 준비 중');
+  try {
+    var cached = JSON.parse(localStorage.getItem('lumi_brand_settings') || 'null');
+    if (cached) {
+      if (cached.tone) {
+        state.tone = cached.tone;
+        var radio = document.querySelector('input[name="tone"][value="' + cached.tone + '"]');
         if (radio) radio.checked = true;
       }
-      if (d.tone_custom) {
-        state.toneCustom = d.tone_custom;
-        document.getElementById('tone-custom-text').value = d.tone_custom;
+      if (cached.tone_custom) {
+        state.toneCustom = cached.tone_custom;
+        document.getElementById('tone-custom-text').value = cached.tone_custom;
       }
-      if (Array.isArray(d.samples)) {
-        state.samples = d.samples.slice(0, 5);
-        renderSamples();
-      }
-      if (Array.isArray(d.ban_words)) {
-        state.banWords = d.ban_words;
-        renderWordChips('ban');
-      }
-      if (Array.isArray(d.must_words)) {
-        state.mustWords = d.must_words;
-        renderWordChips('must');
-      }
-      if (d.hashtags) {
-        state.hashtags = Object.assign({ season: [], product: [], store: [] }, d.hashtags);
+      if (Array.isArray(cached.samples)) { state.samples = cached.samples.slice(0, 5); renderSamples(); }
+      if (Array.isArray(cached.ban_words)) { state.banWords = cached.ban_words; renderWordChips('ban'); }
+      if (Array.isArray(cached.must_words)) { state.mustWords = cached.must_words; renderWordChips('must'); }
+      if (cached.hashtags) {
+        state.hashtags = Object.assign({ season: [], product: [], store: [] }, cached.hashtags);
         renderHashtags();
       }
-    })
-    .catch(function() {})
-    .finally(function() { updatePreview(); });
+    }
+  } catch(e) {}
+  updatePreview();
 }
 
 /* ── 저장 ─────────────────────────────────────────────────── */
@@ -1220,23 +1189,12 @@ function saveAll() {
     hashtags: state.hashtags
   };
 
-  fetch('/api/brand-settings', {
-    method: 'POST',
-    headers: authHeaders(),
-    body: JSON.stringify(payload)
-  })
-    .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, d: d }; }); })
-    .then(function(res) {
-      if (!res.ok) throw new Error((res.d && res.d.error) || '저장 실패');
-      showToast('저장됐어요');
-    })
-    .catch(function(e) {
-      showToast(e.message || '저장 실패 — 다시 시도해주세요');
-    })
-    .finally(function() {
-      btn.disabled = false;
-      btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> 학습 내용 저장';
-    });
+  /* TODO: /api/brand-settings POST 미구현 — localStorage에 임시 저장 */
+  console.warn('[brand-admin] /api/brand-settings POST 준비 중 — localStorage에 임시 저장');
+  try { localStorage.setItem('lumi_brand_settings', JSON.stringify(payload)); } catch(e) {}
+  showToast('저장됐어요 (로컬 임시 저장)');
+  btn.disabled = false;
+  btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> 학습 내용 저장';
 }
 
 /* ── 유틸 ─────────────────────────────────────────────────── */
@@ -1248,25 +1206,19 @@ function escHtml(s) {
 
 /* ── 인증 체크 + 초기화 ────────────────────────────────────── */
 (function() {
-  var t = getToken();
+  var t = localStorage.getItem('lumi_token') || sessionStorage.getItem('lumi_token');
   if (!t) { window.location.replace('/'); return; }
-  fetch('/api/auth-check', { method: 'GET', headers: authHeaders() })
-    .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
-    .then(function(res) {
-      if (!res.ok || !res.data || !res.data.id) { window.location.replace('/'); return; }
-      document.documentElement.style.visibility = 'visible';
-      var loading = document.getElementById('ba-loading');
-      if (loading) loading.style.display = 'none';
-      loadBrandSettings();
-      loadStats();
-      /* 친근함 기본 선택 */
-      var defaultRadio = document.querySelector('input[name="tone"][value="friendly"]');
-      if (defaultRadio && !document.querySelector('input[name="tone"]:checked')) {
-        defaultRadio.checked = true;
-      }
-      updatePreview();
-    })
-    .catch(function() { window.location.replace('/'); });
+  document.documentElement.style.visibility = 'visible';
+  var loading = document.getElementById('ba-loading');
+  if (loading) loading.style.display = 'none';
+  loadBrandSettings();
+  loadStats();
+  /* 친근함 기본 선택 */
+  var defaultRadio = document.querySelector('input[name="tone"][value="friendly"]');
+  if (defaultRadio && !document.querySelector('input[name="tone"]:checked')) {
+    defaultRadio.checked = true;
+  }
+  updatePreview();
 })();
 </script>
 </body>

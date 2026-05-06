@@ -27,7 +27,7 @@ exports.handler = async (event) => {
     if (event.httpMethod === 'OPTIONS') {
       return {
         statusCode: 204,
-        headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS' },
+        headers: { 'Allow': 'POST, OPTIONS' },
         body: '',
       };
     }
@@ -37,7 +37,7 @@ exports.handler = async (event) => {
     if (!process.env.LUMI_SECRET || provided !== process.env.LUMI_SECRET) {
       return {
         statusCode: 401,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        headers: { 'Content-Type': 'application/json', 'X-Content-Type-Options': 'nosniff' },
         body: JSON.stringify({ error: '인증 실패' }),
       };
     }
@@ -50,7 +50,7 @@ exports.handler = async (event) => {
     console.error('[tiktok-token-refresh] TIKTOK_LOGIN_CLIENT_KEY / SECRET 미설정');
     return {
       statusCode: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      headers: { 'Content-Type': 'application/json', 'X-Content-Type-Options': 'nosniff' },
       body: JSON.stringify({ error: 'TikTok 환경변수 미설정' }),
     };
   }
@@ -69,7 +69,7 @@ exports.handler = async (event) => {
 
   let accountsQuery = supabase
     .from('tiktok_accounts_decrypted')
-    .select('user_id, open_id, access_token, refresh_token, access_token_expires_at');
+    .select('seller_id, open_id, access_token, refresh_token, access_token_expires_at');
 
   if (force) {
     accountsQuery = accountsQuery.or(
@@ -86,7 +86,7 @@ exports.handler = async (event) => {
     console.error('[tiktok-token-refresh] 계정 조회 실패:', fetchErr.message);
     return {
       statusCode: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      headers: { 'Content-Type': 'application/json', 'X-Content-Type-Options': 'nosniff' },
       body: JSON.stringify({ error: '계정 조회 실패: ' + fetchErr.message }),
     };
   }
@@ -95,7 +95,7 @@ exports.handler = async (event) => {
     console.log('[tiktok-token-refresh] 갱신 대상 없음');
     return {
       statusCode: 200,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      headers: { 'Content-Type': 'application/json', 'X-Content-Type-Options': 'nosniff' },
       body: JSON.stringify({ success: true, refreshed: 0, failed: 0, message: '갱신 대상 없음' }),
     };
   }
@@ -107,7 +107,7 @@ exports.handler = async (event) => {
   const failReasons = [];
 
   for (const account of accounts) {
-    const { user_id, open_id, refresh_token } = account;
+    const { seller_id, open_id, refresh_token } = account;
 
     if (!refresh_token) {
       console.error(`[tiktok-token-refresh] ${open_id}: refresh_token 없음 — 재연동 필요`);
@@ -186,21 +186,15 @@ exports.handler = async (event) => {
         : null;
       const refreshedAt = new Date().toISOString();
 
-      // tiktok_accounts에서 현재 secret_id 조회 (복호화 뷰에는 없으므로 원본 테이블 조회)
-      const { data: accRow } = await supabase
-        .from('tiktok_accounts')
-        .select('access_token_secret_id, refresh_token_secret_id')
-        .eq('open_id', open_id)
-        .maybeSingle();
-
       // Vault RPC로 새 토큰 암호화 저장 (set_tiktok_access_token RPC)
-      // IG 패턴 동일: p_existing_secret으로 기존 secret 업데이트 또는 신규 생성
       const { error: vaultErr } = await supabase.rpc('set_tiktok_access_token', {
+        p_seller_id: seller_id,
         p_open_id: open_id,
-        p_existing_access_secret: accRow?.access_token_secret_id ?? null,
-        p_existing_refresh_secret: accRow?.refresh_token_secret_id ?? null,
         p_access_token: newAccessToken,
         p_refresh_token: newRefreshToken || null,
+        p_access_expires_at: newAccessExpiresAt,
+        p_refresh_expires_at: newRefreshExpiresAt,
+        p_scope: null,
       });
 
       if (vaultErr) {
@@ -244,7 +238,7 @@ exports.handler = async (event) => {
 
   return {
     statusCode: 200,
-    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+    headers: { 'Content-Type': 'application/json', 'X-Content-Type-Options': 'nosniff' },
     body: JSON.stringify({
       success: true,
       total: accounts.length,

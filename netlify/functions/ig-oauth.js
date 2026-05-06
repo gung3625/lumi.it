@@ -5,8 +5,11 @@ const crypto = require('crypto');
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifyBearerToken } = require('./_shared/supabase-auth');
 
-const APP_ID = process.env.META_APP_ID || '1233639725586126';
+const APP_ID = process.env.META_APP_ID;
 const APP_SECRET = process.env.META_APP_SECRET;
+if (!APP_ID || !APP_SECRET) {
+  throw new Error('META_APP_ID / META_APP_SECRET 환경변수 필수');
+}
 const REDIRECT_URI = 'https://lumi.it.kr/.netlify/functions/ig-oauth';
 const SCOPES = [
   'instagram_business_basic',

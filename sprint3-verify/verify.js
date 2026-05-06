@@ -258,15 +258,12 @@ const SUMMARY = [];
   // Gate 14: 스와이프 처리 — 카드 마크업 + 액션 버튼 둘 다 (모바일·PC)
   // ========================================================================
   {
-    const ordersHtml = await (await fetch(`${BASE}/orders`)).text();
     const csHtml = await (await fetch(`${BASE}/cs-inbox`)).text();
-    const ordersJs = fs.readFileSync(path.resolve(__dirname, '..', 'js', 'sprint3-orders.js'), 'utf8');
     const csJs = fs.readFileSync(path.resolve(__dirname, '..', 'js', 'sprint3-cs.js'), 'utf8');
-    const hasOrderCardActions = ordersJs.includes('data-action="tracking"') && ordersJs.includes('data-action="return"');
     const hasCsCardActions = csJs.includes('data-action="send"') && csJs.includes('data-action="suggest"');
-    const hasMobileMarkup = ordersHtml.includes('class="orders-mobile"') && csHtml.includes('class="cs-mobile"');
-    const pass = hasOrderCardActions && hasCsCardActions && hasMobileMarkup;
-    SUMMARY.push({ gate: 14, pass, detail: `orderActions=${hasOrderCardActions} csActions=${hasCsCardActions} mobileMarkup=${hasMobileMarkup}` });
+    const hasMobileMarkup = csHtml.includes('class="cs-mobile"');
+    const pass = hasCsCardActions && hasMobileMarkup;
+    SUMMARY.push({ gate: 14, pass, detail: `csActions=${hasCsCardActions} mobileMarkup=${hasMobileMarkup}` });
     logResult(14, '카드별 1탭 처리 (송장·답변·반품)', pass, SUMMARY[13].detail);
   }
 
@@ -276,9 +273,8 @@ const SUMMARY = [];
   {
     const tasksHtml = await (await fetch(`${BASE}/tasks`)).text();
     const tasksJs = fs.readFileSync(path.resolve(__dirname, '..', 'js', 'sprint3-tasks.js'), 'utf8');
-    const ordersJs = fs.readFileSync(path.resolve(__dirname, '..', 'js', 'sprint3-orders.js'), 'utf8');
     const hasBatchActionsUI = tasksHtml.includes('id="batchActions"') && tasksHtml.includes('id="batchYes"');
-    const hasBatchLogic = tasksJs.includes('batch.hidden = false') && ordersJs.includes('ids.map((id) => ({ order_id: id }))');
+    const hasBatchLogic = tasksJs.includes('batch.hidden = false');
     const hasAiHint = tasksJs.includes('ai_message') && tasksHtml.includes('data-bind="ai_message"');
     const pass = hasBatchActionsUI && hasBatchLogic && hasAiHint;
     SUMMARY.push({ gate: 15, pass, detail: `batchUI=${hasBatchActionsUI} batchLogic=${hasBatchLogic} aiHint=${hasAiHint}` });

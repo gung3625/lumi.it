@@ -25,7 +25,7 @@ async function getTikTokToken(supabase, userId) {
   const { data, error } = await supabase
     .from('tiktok_accounts_decrypted')
     .select('open_id, access_token')
-    .eq('user_id', userId)
+    .eq('seller_id', userId)
     .maybeSingle();
   if (error) throw new Error(`TikTok 토큰 조회 실패: ${error.message}`);
   if (!data || !data.access_token) throw new Error('TikTok 연동 정보 없음');

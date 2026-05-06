@@ -203,12 +203,13 @@ exports.handler = async (event) => {
     // 4) Supabase RPC set_tiktok_access_token
     // ──────────────────────────────────────────────
     const { error: rpcErr } = await admin.rpc('set_tiktok_access_token', {
-      seller_id: sellerId,
-      access_token: accessToken,
-      refresh_token: refreshToken,
-      access_expires_at: accessExpiresAt,
-      refresh_expires_at: refreshExpiresAt,
-      scope,
+      p_seller_id: sellerId,
+      p_open_id: openId,
+      p_access_token: accessToken,
+      p_refresh_token: refreshToken,
+      p_access_expires_at: accessExpiresAt,
+      p_refresh_expires_at: refreshExpiresAt,
+      p_scope: scope,
     });
 
     if (rpcErr) {

@@ -50,6 +50,10 @@
         <div><dt>통신판매업</dt><dd>제2024-서울용산-1166호</dd></div>
         <div><dt>주소</dt><dd>서울특별시 용산구 회나무로 32-7 (이태원동) 04345</dd></div>
       </dl>
+      <div class="lumi-foot__dpo">
+        <span>개인정보보호책임자: 김현 (대표)</span>
+        <a href="mailto:lumi@lumi.it.kr">lumi@lumi.it.kr</a>
+      </div>
     </div>
     <div class="lumi-foot__bottom">
       <p class="lumi-foot__copy">© 2026 lumi. All rights reserved.</p>
