@@ -1,1568 +1,1365 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#ffffff">
-<title>lumi · 모바일 리뉴얼 프리뷰</title>
-<link rel="icon" type="image/png" href="/assets/favicon.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800&display=swap" rel="stylesheet">
-<link rel="preload" href="/assets/BMJUA.woff2" as="font" type="font/woff2" crossorigin>
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-<style>
-/* ═══════════════════════════════════════════════════════════
-   LUMI MOBILE · DAWN CLOUD AESTHETIC
-   Design tokens + component system
-═══════════════════════════════════════════════════════════ */
-@font-face{font-family:'Jua';src:url('/assets/BMJUA.woff2') format('woff2');font-display:block;}
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>매장 미리보기 — lumi</title>
+  <meta name="description" content="인스타그램에 게시되기 전, 내 매장이 어떻게 보이는지 먼저 확인하세요" />
+  <meta name="theme-color" content="#ffffff" />
+  <link rel="icon" href="/assets/favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" as="style" crossorigin
+    href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+  <link rel="stylesheet" href="/css/lumi-tokens.css" />
+  <link rel="stylesheet" href="/css/lumi-comp.css" />
+  <style>
+/* ============================================================
+   mobile-preview.html — 매장 인스타 미리보기
+   ============================================================ */
 
-:root {
-  /* ─ Brand ─ */
-  --pink: #C8507A;
-  --pink-soft: #FFE6EE;
-  --pink-deep: #A13D61;
-
-  /* ─ 4-color dawn gradient ─ */
-  --brand-gradient: linear-gradient(135deg, #FF6B8B 0%, #DDA0DD 33%, #EDD080 66%, #DABA65 100%);
-  --brand-gradient-soft: linear-gradient(180deg, #fff9fb 0%, #fff 48%);
-  --brand-gradient-text: linear-gradient(90deg, #FF6B8B 0%, #DDA0DD 33%, #EDD080 66%, #DABA65 100%);
-
-  /* ─ Surfaces (light) ─ */
-  --bg: #fff;
-  --bg-soft: #fff9fb;
-  --bg-alt: #f5f5f7;
-  --ink-1: #0d1117;
-  --ink-2: #4E5968;
-  --ink-3: #8B95A1;
-  --ink-4: #C7CED6;
-  --line: rgba(13,17,23,0.06);
-
-  /* ─ Cloud details ─ */
-  --cloud-radius: 20px 20px 14px 14px;
-  --cloud-radius-lg: 28px 28px 18px 18px;
-  --cloud-shadow-sm: 0 2px 8px rgba(255,107,139,0.06);
-  --cloud-shadow: 0 6px 24px rgba(255,107,139,0.08), 0 1px 3px rgba(13,17,23,0.04);
-  --cloud-shadow-lg: 0 12px 40px rgba(255,107,139,0.14), 0 2px 6px rgba(13,17,23,0.04);
-  --cloud-glow: 0 0 30px rgba(200,80,122,0.18);
-
-  /* ─ Layout ─ */
-  --tab-h: 72px;
-  --top-h: 56px;
-  --safe-top: env(safe-area-inset-top, 0px);
-  --safe-bot: env(safe-area-inset-bottom, 0px);
-
-  /* ─ Motion ─ */
-  --ease: cubic-bezier(.16,1,.3,1);
-  --ease-soft: cubic-bezier(.4,0,.2,1);
-}
-
-body.dark-mode {
-  --bg: #0a0a0c;
-  --bg-soft: #15111a;
-  --bg-alt: #1a1520;
-  --ink-1: #f5f5f7;
-  --ink-2: #A8B3C0;
-  --ink-3: #6E7783;
-  --ink-4: #3E4651;
-  --line: rgba(255,255,255,0.06);
-  --pink-soft: rgba(200,80,122,0.14);
-  --brand-gradient-soft: linear-gradient(180deg, #1a0f15 0%, #0a0a0c 48%);
-  --cloud-shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
-  --cloud-shadow: 0 6px 24px rgba(0,0,0,0.4), 0 1px 3px rgba(255,107,139,0.08);
-  --cloud-shadow-lg: 0 12px 40px rgba(0,0,0,0.5), 0 2px 6px rgba(255,107,139,0.14);
-}
-
-*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
-html { background: var(--bg); scrollbar-width: none; scroll-behavior: smooth; -webkit-text-size-adjust: 100%; overflow-x: hidden; }
-html::-webkit-scrollbar { display: none; }
-body {
-  font-family: 'Pretendard Variable','Pretendard',-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Segoe UI',Roboto,sans-serif;
-  font-size: 15px;
-  font-weight: 400;
-  line-height: 1.47;
-  letter-spacing: -0.32px;
-  color: var(--ink-1);
-  background: var(--brand-gradient-soft);
-  -webkit-font-smoothing: antialiased;
-  -webkit-tap-highlight-color: transparent;
-  word-break: keep-all;
-  overflow-wrap: break-word;
-  min-height: 100vh;
+.mpv-page {
   min-height: 100dvh;
+  background: var(--lumi-surface-alt);
 }
-button, input, textarea, select { font: inherit; color: inherit; }
-button { border: none; background: none; cursor: pointer; }
-a { color: inherit; text-decoration: none; }
-img, svg { display: block; max-width: 100%; }
 
-.jua { font-family: 'Jua', sans-serif; letter-spacing: 0; }
+/* ─── Greeting ─── */
+.mpv-greeting {
+  padding: var(--lumi-space-10) var(--lumi-page-x) var(--lumi-space-6);
+  background: var(--lumi-surface);
+  border-bottom: 1px solid var(--lumi-line);
+}
 
-/* ═══════════════════════════════════════════════════════════
-   APP SHELL
-═══════════════════════════════════════════════════════════ */
-#app {
-  max-width: 480px;
-  margin: 0 auto;
-  min-height: 100vh;
-  min-height: 100dvh;
+.mpv-greeting__eyebrow {
+  font-size: var(--lumi-text-label);
+  font-weight: var(--lumi-weight-semibold);
+  letter-spacing: var(--lumi-tracking-wide);
+  text-transform: uppercase;
+  color: var(--lumi-brand-text);
+  margin-bottom: var(--lumi-space-2);
+}
+
+.mpv-greeting__title {
+  font-size: var(--lumi-text-headline);
+  font-weight: var(--lumi-weight-heavy);
+  color: var(--lumi-ink-strong);
+  line-height: var(--lumi-leading-tight);
+  letter-spacing: var(--lumi-tracking-tight);
+  margin-bottom: var(--lumi-space-2);
+}
+
+.mpv-greeting__sub {
+  font-size: var(--lumi-text-body);
+  color: var(--lumi-ink-muted);
+  line-height: var(--lumi-leading-normal);
+}
+
+/* ─── Layout: 모바일 단열, 데스크톱 2열 ─── */
+.mpv-layout {
+  max-width: var(--lumi-max-content);
+  margin-inline: auto;
+  padding: var(--lumi-space-8) var(--lumi-page-x);
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--lumi-space-8);
+}
+
+@media (min-width: 768px) {
+  .mpv-layout {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+    padding-block: var(--lumi-space-12);
+  }
+}
+
+/* ─── 핸드폰 mockup 컨테이너 ─── */
+.mpv-phone-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--lumi-space-5);
+}
+
+/* 옵션 패널 (우측 or 하단) */
+.mpv-options-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lumi-space-6);
+}
+
+/* ─── Phone frame ─── */
+.mpv-phone {
   position: relative;
+  width: min(70vw, 280px);
+  aspect-ratio: 9 / 19.5;
+  background: var(--lumi-neutral-950);
+  border-radius: 38px;
+  border: 3px solid var(--lumi-neutral-700);
+  box-shadow:
+    0 0 0 1px var(--lumi-neutral-800),
+    0 32px 80px rgba(13, 17, 23, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transform: perspective(900px) rotateY(-4deg) rotateX(2deg);
+  transition: transform var(--lumi-duration-base) var(--lumi-ease-toss),
+              box-shadow var(--lumi-duration-base) var(--lumi-ease-soft);
+  overflow: hidden;
 }
 
-/* ─ Top bar ─ */
-.topbar {
+.mpv-phone:hover {
+  transform: perspective(900px) rotateY(-1deg) rotateX(0.5deg);
+  box-shadow:
+    0 0 0 1px var(--lumi-neutral-800),
+    0 48px 120px rgba(13, 17, 23, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* 상단 노치 */
+.mpv-phone__notch {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 8px;
+  background: var(--lumi-neutral-900);
+  border-radius: var(--lumi-radius-pill);
+  z-index: 10;
+}
+
+/* 인스타 화면 */
+.mpv-insta {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  scrollbar-width: none;
+  background: #fff;
+  border-radius: 36px;
+  transition: background var(--lumi-duration-base) var(--lumi-ease-soft),
+              color var(--lumi-duration-base) var(--lumi-ease-soft);
+}
+
+.mpv-insta::-webkit-scrollbar { display: none; }
+
+/* 다크 인스타 */
+.mpv-phone.insta-dark .mpv-insta {
+  background: #000;
+  color: #fff;
+}
+
+/* ─── 인스타 내부 UI ─── */
+.ig-topbar {
   position: sticky;
   top: 0;
-  z-index: 50;
-  height: calc(var(--top-h) + var(--safe-top));
-  padding: var(--safe-top) 20px 0;
+  z-index: 5;
   display: flex;
   align-items: center;
-  gap: 10px;
-  background: color-mix(in srgb, var(--bg) 82%, transparent);
-  backdrop-filter: blur(20px) saturate(1.2);
-  -webkit-backdrop-filter: blur(20px) saturate(1.2);
-  border-bottom: 1px solid var(--line);
-}
-.topbar-mascot {
-  width: 32px; height: 32px;
-  flex-shrink: 0;
-}
-.topbar-greeting {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-}
-.topbar-greeting b {
-  display: block;
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--ink-1);
-  line-height: 1.2;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.topbar-greeting span {
-  font-size: 11px;
-  color: var(--ink-3);
-  font-weight: 500;
-  letter-spacing: 0.3px;
-}
-.topbar-actions {
-  display: flex;
-  gap: 6px;
-  flex-shrink: 0;
-}
-.topbar-btn {
-  width: 44px; height: 44px;
-  border-radius: 50%;
-  background: var(--bg-alt);
-  display: flex; align-items: center; justify-content: center;
-  color: var(--ink-2);
-  transition: transform .2s var(--ease-soft), background .2s;
-  position: relative;
-}
-.topbar-btn svg { width: 18px; height: 18px; }
-.topbar-btn:active { transform: scale(0.92); }
-.topbar-btn[data-badge]::after {
-  content: attr(data-badge);
-  position: absolute;
-  top: 2px; right: 2px;
-  min-width: 16px; height: 16px; padding: 0 4px;
-  border-radius: 10px;
-  background: var(--pink);
-  color: #fff;
-  font-size: 10px;
-  font-weight: 800;
-  display: flex; align-items: center; justify-content: center;
-  border: 2px solid var(--bg);
-  box-sizing: content-box;
-}
-
-/* ═══════════════════════════════════════════════════════════
-   MAIN CONTENT
-═══════════════════════════════════════════════════════════ */
-.main {
-  padding: 20px 16px calc(var(--tab-h) + var(--safe-bot) + 32px);
-}
-.screen { display: none; animation: fadeUp .4s var(--ease) both; }
-.screen.active { display: block; }
-@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-
-.section-head {
-  display: flex;
-  align-items: baseline;
   justify-content: space-between;
-  padding: 0 4px;
-  margin: 28px 0 12px;
-}
-.section-head:first-child { margin-top: 4px; }
-.section-head h3 {
-  font-family: 'Jua', sans-serif;
-  font-size: 18px;
-  font-weight: 400;
-  letter-spacing: -0.3px;
-  color: var(--ink-1);
-}
-.section-head a, .section-head button {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ink-3);
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  flex-shrink: 0;
-}
-.section-head a:active, .section-head button:active { color: var(--pink); }
-
-/* ─ Text gradient ─ */
-.grad-text {
-  background: var(--brand-gradient-text);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: transparent;
-}
-
-/* ═══════════════════════════════════════════════════════════
-   오늘 (HOME)
-═══════════════════════════════════════════════════════════ */
-/* ─ Hero mission card ─ */
-.mission {
-  position: relative;
-  border-radius: var(--cloud-radius-lg);
-  padding: 22px 22px 24px;
-  background: var(--bg);
-  box-shadow: var(--cloud-shadow);
-  overflow: hidden;
-  isolation: isolate;
-}
-.mission::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: var(--brand-gradient);
-  opacity: 0.08;
-  z-index: -1;
-}
-.mission::after {
-  content: '';
-  position: absolute;
-  top: -40px; right: -30px;
-  width: 180px; height: 180px;
-  background: radial-gradient(circle, rgba(255,107,139,0.22) 0%, transparent 65%);
-  filter: blur(8px);
-  z-index: -1;
-  animation: breathe 7s var(--ease) infinite;
-}
-@keyframes breathe {
-  0%, 100% { transform: translate(0,0) scale(1); opacity: 0.9; }
-  50% { transform: translate(-6px, 10px) scale(1.08); opacity: 1; }
-}
-.mission-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--pink);
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
-  margin-bottom: 12px;
-}
-.mission-label::before {
-  content: '';
-  width: 5px; height: 5px;
-  border-radius: 50%;
-  background: var(--pink);
-  box-shadow: 0 0 0 0 rgba(200,80,122,0.5);
-  animation: pulse 1.6s ease-out infinite;
-}
-@keyframes pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(200,80,122,0.5); }
-  70% { box-shadow: 0 0 0 8px rgba(200,80,122,0); }
-}
-.mission-title {
-  font-family: 'Jua', sans-serif;
-  font-size: clamp(22px, 6vw, 26px);
-  letter-spacing: -0.4px;
-  color: var(--ink-1);
-  line-height: 1.25;
-  margin-bottom: 8px;
-  word-break: keep-all;
-}
-.mission-desc {
-  font-size: 14px;
-  color: var(--ink-2);
-  line-height: 1.55;
-  margin-bottom: 20px;
-  word-break: keep-all;
-}
-.mission-cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  height: 44px;
-  padding: 0 20px;
-  border-radius: 22px;
-  background: var(--brand-gradient);
-  color: #fff;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: -0.2px;
-  box-shadow: 0 6px 18px rgba(255,107,139,0.35);
-  transition: transform .2s var(--ease-soft), box-shadow .2s;
-}
-.mission-cta:active {
-  transform: translateY(1px) scale(0.98);
-  box-shadow: 0 3px 12px rgba(255,107,139,0.3);
-}
-.mission-cta svg { width: 16px; height: 16px; stroke-width: 2.4; }
-
-/* ─ Stat row ─ */
-.stat-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-top: 14px;
-}
-.stat {
-  background: var(--bg);
-  border-radius: 16px;
-  padding: 14px 14px 13px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  box-shadow: var(--cloud-shadow-sm);
-  min-width: 0;
-}
-.stat-icon {
-  width: 36px; height: 36px;
-  border-radius: 12px;
-  background: var(--pink-soft);
-  color: var(--pink);
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-.stat-icon svg { width: 18px; height: 18px; stroke-width: 2.2; }
-.stat-body { min-width: 0; flex: 1; }
-.stat-body em {
-  font-style: normal;
-  font-family: 'Jua', sans-serif;
-  font-size: 18px;
-  color: var(--ink-1);
-  display: block;
-  line-height: 1.1;
-}
-.stat-body em .grad-text { font-family: inherit; }
-.stat-body span {
-  font-size: 11px;
-  color: var(--ink-3);
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: block;
-}
-
-/* ─ Trend mini row (horizontal scroll chips) ─ */
-.chip-scroll {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  padding: 2px 0 2px 16px;
-  margin: 0 -16px;
-}
-.chip-scroll::-webkit-scrollbar { display: none; }
-.chip-scroll::after {
-  content: '';
-  flex-shrink: 0;
-  width: 16px;
-  display: block;
-}
-.trend-chip {
-  flex-shrink: 0;
-  background: var(--bg);
-  border-radius: 14px;
-  padding: 12px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  box-shadow: var(--cloud-shadow-sm);
-  min-width: 134px;
-  transition: transform .2s var(--ease-soft);
-}
-.trend-chip:active { transform: scale(0.97); }
-.trend-chip-rank {
-  font-family: 'Jua', sans-serif;
-  font-size: 11px;
-  color: var(--ink-3);
-  letter-spacing: 0.4px;
-}
-.trend-chip-kw {
-  font-size: 15px;
-  font-weight: 800;
-  color: var(--ink-1);
-  letter-spacing: -0.3px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.trend-chip-vel {
-  font-size: 11px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 2px;
-}
-.trend-chip-vel.up { color: #E8446B; }
-.trend-chip-vel.down { color: #4683E8; }
-
-/* ─ Recent post strip ─ */
-.recent-post {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  background: var(--bg);
-  border-radius: 18px;
-  padding: 12px 14px 12px 12px;
-  box-shadow: var(--cloud-shadow-sm);
-}
-.recent-post-thumb {
-  width: 56px; height: 56px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #FFE6EE, #FFF5DC);
-  flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  color: var(--pink);
-}
-.recent-post-thumb svg { width: 24px; stroke-width: 2; }
-.recent-post-body { flex: 1; min-width: 0; }
-.recent-post-body p {
-  font-size: 13px;
-  color: var(--ink-1);
-  line-height: 1.4;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.recent-post-body span {
-  font-size: 11px;
-  color: var(--ink-3);
-  margin-top: 3px;
-  display: block;
-}
-.recent-post-arrow {
-  color: var(--ink-3);
-  flex-shrink: 0;
-}
-
-/* ═══════════════════════════════════════════════════════════
-   TAB BAR
-═══════════════════════════════════════════════════════════ */
-.tabbar {
-  position: fixed;
-  bottom: 0; left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 480px;
-  height: calc(var(--tab-h) + var(--safe-bot));
-  padding: 0 12px var(--safe-bot);
-  background: color-mix(in srgb, var(--bg) 82%, transparent);
-  backdrop-filter: blur(24px) saturate(1.3);
-  -webkit-backdrop-filter: blur(24px) saturate(1.3);
-  border-top: 1px solid var(--line);
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-  z-index: 100;
-}
-.tab {
-  flex: 1;
-  height: 52px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  color: var(--ink-3);
-  position: relative;
-  transition: color .2s;
-  min-width: 0;
-}
-.tab svg { width: 22px; height: 22px; stroke-width: 2; transition: stroke-width .2s, transform .25s var(--ease); }
-.tab span {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: -0.1px;
-  white-space: nowrap;
-}
-.tab.active { color: var(--pink); }
-.tab.active svg { stroke-width: 2.5; transform: translateY(-1px); }
-.tab.active::after {
-  content: '';
-  position: absolute;
-  top: 4px; left: 50%;
-  transform: translateX(-50%);
-  width: 26px; height: 3px;
-  border-radius: 2px;
-  background: var(--brand-gradient);
-}
-
-/* ─ Primary + tab (upload) ─ */
-.tab-plus {
-  flex: 0 0 auto;
-  width: 56px; height: 56px;
-  margin: -24px 0 0;
-  border-radius: 50%;
-  background: var(--brand-gradient);
-  display: flex; align-items: center; justify-content: center;
-  color: #fff;
-  box-shadow: 0 8px 24px rgba(255,107,139,0.4), 0 2px 6px rgba(255,107,139,0.3);
-  transition: transform .25s var(--ease), box-shadow .25s;
-  position: relative;
-}
-.tab-plus::before {
-  content: '';
-  position: absolute;
-  inset: -6px;
-  border-radius: 50%;
+  padding: 14px 10px 6px;
   background: inherit;
-  opacity: 0.25;
-  filter: blur(12px);
-  z-index: -1;
 }
-.tab-plus:active { transform: scale(0.93); box-shadow: 0 4px 14px rgba(255,107,139,0.35); }
-.tab-plus svg { width: 26px; height: 26px; stroke-width: 2.6; }
 
-/* ═══════════════════════════════════════════════════════════
-   UPLOAD (올리기)
-═══════════════════════════════════════════════════════════ */
-.upload-hero {
-  background: var(--bg);
-  border-radius: var(--cloud-radius-lg);
-  padding: 24px 22px;
-  box-shadow: var(--cloud-shadow);
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
-}
-.upload-hero::before {
-  content: '';
-  position: absolute;
-  top: -50px; right: -40px;
-  width: 160px; height: 160px;
-  background: radial-gradient(circle, rgba(221,160,221,0.25) 0%, transparent 65%);
-  filter: blur(10px);
-  z-index: -1;
-}
-.upload-hero h3 {
-  font-family: 'Jua', sans-serif;
-  font-size: 22px;
-  color: var(--ink-1);
-  margin-bottom: 6px;
-  letter-spacing: -0.3px;
-}
-.upload-hero p {
+.ig-logo {
   font-size: 13px;
-  color: var(--ink-2);
-  margin-bottom: 16px;
-  line-height: 1.5;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  font-style: italic;
 }
-.upload-options {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-.upload-opt {
+
+.ig-topbar-icons {
   display: flex;
-  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+}
+
+.ig-topbar-icons svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  fill: none;
+}
+
+/* 프로필 헤더 */
+.ig-profile-header {
+  padding: 8px 10px 10px;
+}
+
+.ig-profile-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.ig-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--lumi-gradient-brand);
+  flex-shrink: 0;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px var(--lumi-brand-pink);
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 20px 12px;
-  border-radius: 16px;
-  background: var(--bg-alt);
-  color: var(--ink-1);
-  font-size: 13px;
-  font-weight: 700;
-  transition: transform .2s var(--ease-soft), box-shadow .2s;
-  position: relative;
-  overflow: hidden;
-}
-.upload-opt:active { transform: scale(0.97); }
-.upload-opt.primary {
-  background: var(--brand-gradient);
-  color: #fff;
-  box-shadow: 0 8px 20px rgba(255,107,139,0.3);
-}
-.upload-opt-icon {
-  width: 42px; height: 42px;
-  border-radius: 14px;
-  background: color-mix(in srgb, currentColor 12%, transparent);
-  display: flex; align-items: center; justify-content: center;
-}
-.upload-opt-icon svg { width: 22px; height: 22px; stroke-width: 2.2; }
-.upload-opt.primary .upload-opt-icon {
-  background: rgba(255,255,255,0.2);
-}
-
-/* Quick toggles */
-.quick-toggles {
-  background: var(--bg);
-  border-radius: 16px;
-  padding: 6px;
-  box-shadow: var(--cloud-shadow-sm);
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.qt-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 12px;
-  border-radius: 12px;
-  transition: background .15s;
-}
-.qt-row:active { background: var(--bg-alt); }
-.qt-icon {
-  width: 32px; height: 32px;
-  border-radius: 10px;
-  background: var(--pink-soft);
-  color: var(--pink);
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-.qt-icon svg { width: 16px; height: 16px; stroke-width: 2.2; }
-.qt-body { flex: 1; min-width: 0; }
-.qt-body b {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--ink-1);
-  display: block;
-}
-.qt-body span {
-  font-size: 11px;
-  color: var(--ink-3);
-  display: block;
-  margin-top: 1px;
-}
-.toggle-sw {
-  flex-shrink: 0;
-  width: 40px; height: 24px;
-  border-radius: 12px;
-  background: var(--ink-4);
-  position: relative;
-  transition: background .2s var(--ease-soft);
-}
-.toggle-sw::after {
-  content: '';
-  position: absolute;
-  left: 2px; top: 2px;
-  width: 20px; height: 20px;
-  border-radius: 50%;
-  background: #fff;
-  transition: transform .25s var(--ease);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
-}
-.toggle-sw.on { background: var(--pink); }
-.toggle-sw.on::after { transform: translateX(16px); }
-
-/* Schedule preview */
-.schedule-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: var(--bg);
-  border-radius: 14px;
-  padding: 12px 14px;
-  box-shadow: var(--cloud-shadow-sm);
-}
-.schedule-thumb {
-  width: 44px; height: 44px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #FFE6EE, #E8D6FF);
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-  color: var(--pink);
-}
-.schedule-thumb svg { width: 20px; stroke-width: 2; }
-.schedule-body { flex: 1; min-width: 0; }
-.schedule-body b {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--ink-1);
-  display: block;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.schedule-body span {
-  font-size: 11px;
-  color: var(--pink);
-  display: block;
-  margin-top: 2px;
-  font-weight: 600;
-}
-.schedule-body span.past { color: var(--ink-3); }
-
-/* Placeholder (빈 상태용 & DM 탭) */
-.placeholder {
-  margin-top: 40px;
-  text-align: center;
-  padding: 48px 32px;
-  background: var(--bg);
-  border-radius: var(--cloud-radius-lg);
-  box-shadow: var(--cloud-shadow-sm);
-}
-.placeholder img { width: 80px; margin: 0 auto 16px; opacity: 0.85; }
-.placeholder h4 {
-  font-family: 'Jua', sans-serif;
   font-size: 18px;
-  color: var(--ink-1);
-  margin-bottom: 6px;
-}
-.placeholder p {
-  font-size: 13px;
-  color: var(--ink-3);
-  line-height: 1.5;
+  color: #fff;
+  font-weight: 700;
+  overflow: hidden;
 }
 
-.dm-status {
+.mpv-phone.insta-dark .ig-avatar {
+  border-color: #000;
+}
+
+.ig-stats {
+  flex: 1;
   display: flex;
-  align-items: center;
-  gap: 14px;
-  background: var(--bg);
-  border-radius: var(--cloud-radius);
-  padding: 16px 18px;
-  box-shadow: var(--cloud-shadow);
-  margin-bottom: 16px;
+  gap: 4px;
 }
-.dm-status-dot {
-  width: 10px; height: 10px;
-  border-radius: 50%;
-  background: #22C55E;
-  box-shadow: 0 0 0 0 rgba(34,197,94,0.5);
-  animation: pulse 1.8s ease-out infinite;
-  flex-shrink: 0;
+
+.ig-stat {
+  flex: 1;
+  text-align: center;
 }
-.dm-status-body { flex: 1; min-width: 0; }
-.dm-status-body b {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--ink-1);
-  display: block;
-}
-.dm-status-body span {
+
+.ig-stat__num {
   font-size: 11px;
-  color: var(--ink-3);
+  font-weight: 700;
+  line-height: 1.2;
   display: block;
 }
-.dm-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.dm-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  background: var(--bg);
-  border-radius: 14px;
-  padding: 14px;
-  box-shadow: var(--cloud-shadow-sm);
-  transition: transform .15s var(--ease-soft);
-}
-.dm-row:active { transform: scale(0.98); }
-.dm-avatar {
-  width: 40px; height: 40px;
-  border-radius: 50%;
-  background: var(--pink-soft);
-  color: var(--pink);
-  display: flex; align-items: center; justify-content: center;
-  font-family: 'Jua', sans-serif;
-  font-size: 14px;
-  flex-shrink: 0;
-}
-.dm-content { flex: 1; min-width: 0; }
-.dm-content-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 4px;
-}
-.dm-content-head b {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--ink-1);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.dm-content-head em {
-  font-style: normal;
-  font-size: 10px;
-  color: var(--ink-3);
-  flex-shrink: 0;
-}
-.dm-msg {
-  font-size: 12px;
-  color: var(--ink-2);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  line-height: 1.4;
-}
-.dm-lumi-reply {
-  margin-top: 8px;
-  padding: 8px 10px;
-  background: var(--pink-soft);
-  border-radius: 10px 10px 10px 4px;
-  font-size: 12px;
-  color: var(--pink-deep);
-  line-height: 1.4;
-}
-.dm-lumi-reply em {
-  font-style: normal;
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--pink);
+
+.ig-stat__label {
+  font-size: 9px;
+  color: #737373;
   display: block;
+}
+
+.mpv-phone.insta-dark .ig-stat__label { color: #a8a8a8; }
+
+.ig-handle {
+  font-size: 10px;
+  font-weight: 700;
   margin-bottom: 2px;
 }
 
-/* ═══════════════════════════════════════════════════════════
-   TREND FULL (4번 탭)
-═══════════════════════════════════════════════════════════ */
-.cat-chips {
+.ig-bio {
+  font-size: 9px;
+  line-height: 1.4;
+  color: #262626;
+}
+
+.mpv-phone.insta-dark .ig-bio { color: #f5f5f5; }
+
+/* 팔로우 버튼 */
+.ig-follow-row {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.ig-btn {
+  flex: 1;
+  height: 24px;
+  border-radius: 6px;
+  font-size: 9px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.15s;
+}
+
+.ig-btn--primary {
+  background: #0095f6;
+  color: #fff;
+}
+
+.ig-btn--secondary {
+  background: #efefef;
+  color: #262626;
+}
+
+.mpv-phone.insta-dark .ig-btn--secondary {
+  background: #363636;
+  color: #fff;
+}
+
+/* 스토리 하이라이트 */
+.ig-stories {
   display: flex;
   gap: 8px;
+  padding: 6px 10px 8px;
   overflow-x: auto;
   scrollbar-width: none;
-  padding: 6px 0 10px 16px;
-  margin: 0 -16px 16px;
-  border-bottom: 1px solid var(--line);
 }
-.cat-chips::-webkit-scrollbar { display: none; }
-.cat-chips::after {
-  content: '';
-  flex-shrink: 0;
-  width: 16px;
-  display: block;
-}
-.cat-chip {
-  flex-shrink: 0;
-  padding: 8px 14px;
-  border-radius: 18px;
-  background: var(--bg-alt);
-  color: var(--ink-2);
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: -0.2px;
-  transition: background .2s, color .2s, transform .15s var(--ease-soft);
-}
-.cat-chip:active { transform: scale(0.95); }
-.cat-chip.active {
-  background: var(--brand-gradient);
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(255,107,139,0.3);
-}
-.kw-list { display: flex; flex-direction: column; gap: 8px; }
-.kw-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: var(--bg);
-  border-radius: 16px;
-  padding: 12px 14px;
-  box-shadow: var(--cloud-shadow-sm);
-  transition: transform .15s var(--ease-soft);
-}
-.kw-row:active { transform: scale(0.98); }
-.kw-rank {
-  font-family: 'Jua', sans-serif;
-  font-size: 20px;
-  width: 32px;
-  text-align: center;
-  flex-shrink: 0;
-}
-.kw-rank.gold { color: #E8B93D; }
-.kw-rank.silver { color: #A8AFBA; }
-.kw-rank.bronze { color: #C88A5F; }
-.kw-info { flex: 1; min-width: 0; }
-.kw-info b {
-  font-size: 15px;
-  font-weight: 800;
-  color: var(--ink-1);
-  letter-spacing: -0.3px;
-  display: block;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.kw-info span {
-  font-size: 11px;
-  color: var(--ink-3);
-  margin-top: 2px;
-  display: block;
-}
-.kw-vel {
-  font-size: 12px;
-  font-weight: 800;
-  flex-shrink: 0;
-  padding: 4px 9px;
-  border-radius: 10px;
-}
-.kw-vel.up { color: #E8446B; background: rgba(232,68,107,0.1); }
-.kw-vel.down { color: #4683E8; background: rgba(70,131,232,0.1); }
-.kw-vel.flat { color: var(--ink-3); background: var(--bg-alt); }
 
-/* ═══════════════════════════════════════════════════════════
-   내 가게 TAB
-═══════════════════════════════════════════════════════════ */
-.profile-card {
-  background: var(--bg);
-  border-radius: var(--cloud-radius-lg);
-  padding: 20px;
-  box-shadow: var(--cloud-shadow);
+.ig-stories::-webkit-scrollbar { display: none; }
+
+.ig-story {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 14px;
-  margin-bottom: 20px;
+  gap: 3px;
+  flex-shrink: 0;
 }
-.profile-avatar {
-  width: 56px; height: 56px;
+
+.ig-story__ring {
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
-  background: var(--brand-gradient);
-  flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  color: #fff;
-  font-family: 'Jua', sans-serif;
-  font-size: 20px;
-}
-.profile-body { flex: 1; min-width: 0; }
-.profile-body b {
-  font-size: 16px;
-  color: var(--ink-1);
-  display: block;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.profile-body span {
-  font-size: 12px;
-  color: var(--ink-3);
-  display: block;
-  margin-top: 2px;
-}
-.profile-edit {
-  color: var(--ink-3);
-  flex-shrink: 0;
-  padding: 8px;
+  background: var(--lumi-gradient-brand);
+  padding: 2px;
+  cursor: pointer;
 }
 
-/* ─ Tone learning gauge ─ */
-.tone-gauge {
-  background: var(--bg);
-  border-radius: 18px;
-  padding: 16px;
-  box-shadow: var(--cloud-shadow-sm);
-  margin-bottom: 12px;
+.ig-story__inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: #fafafa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  border: 2px solid #fff;
 }
-.tone-gauge-head {
+
+.mpv-phone.insta-dark .ig-story__inner { background: #000; border-color: #000; }
+
+.ig-story__label {
+  font-size: 8px;
+  text-align: center;
+  color: #262626;
+  max-width: 40px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mpv-phone.insta-dark .ig-story__label { color: #f5f5f5; }
+
+/* 탭 구분선 */
+.ig-divider {
+  height: 1px;
+  background: #dbdbdb;
+  margin: 0 0 2px;
+}
+
+.mpv-phone.insta-dark .ig-divider { background: #363636; }
+
+/* 탭 바 */
+.ig-tabs {
+  display: flex;
+  border-bottom: 1px solid #dbdbdb;
+  margin-bottom: 1px;
+}
+
+.mpv-phone.insta-dark .ig-tabs { border-color: #363636; }
+
+.ig-tab {
+  flex: 1;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid transparent;
+  cursor: pointer;
+}
+
+.ig-tab.active {
+  border-bottom-color: #262626;
+}
+
+.mpv-phone.insta-dark .ig-tab.active { border-bottom-color: #fff; }
+
+.ig-tab svg {
+  width: 14px;
+  height: 14px;
+  stroke: #8e8e8e;
+  stroke-width: 1.8;
+  fill: none;
+}
+
+.ig-tab.active svg { stroke: #262626; }
+.mpv-phone.insta-dark .ig-tab.active svg { stroke: #fff; }
+
+/* 그리드 */
+.ig-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5px;
+}
+
+.ig-cell {
+  aspect-ratio: 1;
+  position: relative;
+  cursor: pointer;
+  overflow: hidden;
+  background: #efefef;
+  transition: transform var(--lumi-duration-snap) var(--lumi-ease-toss);
+}
+
+.mpv-phone.insta-dark .ig-cell { background: #1a1a1a; }
+
+.ig-cell:hover {
+  transform: scale(1.02);
+  z-index: 2;
+}
+
+.ig-cell__thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.ig-cell__thumb-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  position: relative;
+}
+
+.ig-cell__thumb-placeholder::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0);
+  transition: background var(--lumi-duration-fast) var(--lumi-ease-soft);
+}
+
+.ig-cell:hover .ig-cell__thumb-placeholder::after {
+  background: rgba(0,0,0,0.15);
+}
+
+/* 예약 배지 */
+.ig-cell__badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--lumi-brand-pink);
+  border: 1.5px solid #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ig-cell__badge svg {
+  width: 8px;
+  height: 8px;
+  stroke: #fff;
+  stroke-width: 2.5;
+  fill: none;
+}
+
+/* 그라디언트 보더 호버 */
+.ig-cell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 0;
+  padding: 2px;
+  background: var(--lumi-gradient-brand);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: destination-out;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity var(--lumi-duration-fast) var(--lumi-ease-soft);
+  z-index: 3;
+  pointer-events: none;
+}
+
+.ig-cell:hover::before { opacity: 1; }
+
+/* ─── 미리보기 옵션 카드 ─── */
+.mpv-card {
+  background: var(--lumi-surface);
+  border-radius: var(--lumi-radius-xl);
+  padding: var(--lumi-space-5) var(--lumi-space-5);
+  box-shadow: var(--lumi-shadow-sm);
+  border: 1px solid var(--lumi-line);
+}
+
+.mpv-card__title {
+  font-size: var(--lumi-text-body-sm);
+  font-weight: var(--lumi-weight-bold);
+  color: var(--lumi-ink-strong);
+  margin-bottom: var(--lumi-space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--lumi-space-2);
+}
+
+.mpv-card__title svg {
+  width: 16px;
+  height: 16px;
+  stroke: var(--lumi-brand-fill);
+  stroke-width: 2;
+  fill: none;
+  flex-shrink: 0;
+}
+
+/* 모드 토글 */
+.mpv-mode-toggle {
+  display: flex;
+  background: var(--lumi-surface-deep);
+  border-radius: var(--lumi-radius-md);
+  padding: 3px;
+  gap: 2px;
+}
+
+.mpv-mode-btn {
+  flex: 1;
+  height: 34px;
+  border-radius: 9px;
+  font-size: var(--lumi-text-caption);
+  font-weight: var(--lumi-weight-semibold);
+  color: var(--lumi-ink-muted);
+  cursor: pointer;
+  transition: background var(--lumi-duration-snap) var(--lumi-ease-toss),
+              color var(--lumi-duration-snap) var(--lumi-ease-soft),
+              box-shadow var(--lumi-duration-snap) var(--lumi-ease-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.mpv-mode-btn svg {
+  width: 13px;
+  height: 13px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+}
+
+.mpv-mode-btn.active {
+  background: var(--lumi-surface);
+  color: var(--lumi-ink-strong);
+  box-shadow: var(--lumi-shadow-sm);
+}
+
+/* ─── 미니 캘린더 ─── */
+.mpv-cal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
-}
-.tone-gauge-head b {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--ink-1);
-}
-.tone-gauge-head em {
-  font-family: 'Jua', sans-serif;
-  font-size: 16px;
-  font-style: normal;
-}
-.tone-gauge-bar {
-  height: 8px;
-  border-radius: 4px;
-  background: var(--bg-alt);
-  overflow: hidden;
-}
-.tone-gauge-fill {
-  height: 100%;
-  background: var(--brand-gradient);
-  border-radius: 4px;
-  transition: width 1s var(--ease);
-}
-.tone-gauge-note {
-  font-size: 11px;
-  color: var(--ink-3);
-  margin-top: 8px;
-  line-height: 1.5;
+  margin-bottom: var(--lumi-space-3);
 }
 
-/* ─ Menu list ─ */
-.menu-list {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  background: var(--bg);
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: var(--cloud-shadow-sm);
+.mpv-cal-month {
+  font-size: var(--lumi-text-caption);
+  font-weight: var(--lumi-weight-bold);
+  color: var(--lumi-ink-soft);
 }
-.menu-row {
+
+.mpv-cal-nav {
+  display: flex;
+  gap: 2px;
+}
+
+.mpv-cal-nav button {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--lumi-radius-sm);
+  background: var(--lumi-surface-deep);
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  color: var(--ink-1);
-  background: var(--bg);
-  transition: background .15s;
+  justify-content: center;
+  transition: background var(--lumi-duration-snap) var(--lumi-ease-soft);
 }
-.menu-row:active { background: var(--bg-alt); }
-.menu-row + .menu-row { border-top: 1px solid var(--line); }
-.menu-row-icon {
-  width: 32px; height: 32px;
-  border-radius: 10px;
-  background: var(--pink-soft);
-  color: var(--pink);
-  display: flex; align-items: center; justify-content: center;
+
+.mpv-cal-nav button:hover { background: var(--lumi-line-strong); }
+
+.mpv-cal-nav button svg {
+  width: 12px;
+  height: 12px;
+  stroke: var(--lumi-ink-muted);
+  stroke-width: 2;
+  fill: none;
+}
+
+/* 7일 슬롯 */
+.mpv-cal-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.mpv-cal-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.mpv-cal-day__label {
+  font-size: 9px;
+  font-weight: var(--lumi-weight-medium);
+  color: var(--lumi-ink-faint);
+  text-transform: uppercase;
+}
+
+.mpv-cal-day__num {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--lumi-radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--lumi-text-caption);
+  font-weight: var(--lumi-weight-semibold);
+  color: var(--lumi-ink-soft);
+  background: var(--lumi-surface-deep);
+  cursor: pointer;
+  transition: background var(--lumi-duration-snap) var(--lumi-ease-toss),
+              color var(--lumi-duration-snap) var(--lumi-ease-soft),
+              transform var(--lumi-duration-snap) var(--lumi-ease-spring);
+  position: relative;
+}
+
+.mpv-cal-day__num:hover {
+  background: var(--lumi-surface-overlay);
+  transform: scale(1.08);
+}
+
+.mpv-cal-day__num.today {
+  background: var(--lumi-brand-soft);
+  color: var(--lumi-brand-text);
+  font-weight: var(--lumi-weight-bold);
+}
+
+.mpv-cal-day__num.has-post::after {
+  content: '';
+  position: absolute;
+  bottom: 3px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--lumi-brand-fill);
+}
+
+.mpv-cal-day__num.empty-slot {
+  border: 1px dashed var(--lumi-line-strong);
+  background: transparent;
+  color: var(--lumi-ink-faint);
+  font-size: 10px;
+}
+
+/* 예약 슬롯 목록 */
+.mpv-slot-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lumi-space-2);
+  margin-top: var(--lumi-space-4);
+}
+
+.mpv-slot {
+  display: flex;
+  align-items: center;
+  gap: var(--lumi-space-3);
+  padding: var(--lumi-space-2) var(--lumi-space-3);
+  border-radius: var(--lumi-radius-md);
+  background: var(--lumi-surface-alt);
+  cursor: pointer;
+  transition: background var(--lumi-duration-snap) var(--lumi-ease-soft),
+              transform var(--lumi-duration-snap) var(--lumi-ease-toss);
+}
+
+.mpv-slot:hover {
+  background: var(--lumi-brand-soft);
+  transform: translateX(3px);
+}
+
+.mpv-slot__thumb {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--lumi-radius-sm);
+  background: var(--lumi-surface-deep);
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  overflow: hidden;
 }
-.menu-row-icon svg { width: 16px; height: 16px; stroke-width: 2.2; }
-.menu-row-label {
+
+.mpv-slot__info {
   flex: 1;
   min-width: 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--ink-1);
+}
+
+.mpv-slot__product {
+  font-size: var(--lumi-text-caption);
+  font-weight: var(--lumi-weight-semibold);
+  color: var(--lumi-ink-strong);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.menu-row-meta {
-  font-size: 12px;
-  color: var(--ink-3);
-  flex-shrink: 0;
+
+.mpv-slot__time {
+  font-size: var(--lumi-text-label);
+  color: var(--lumi-ink-muted);
+  margin-top: 2px;
 }
-.menu-row-arrow {
-  color: var(--ink-4);
+
+.mpv-slot__status {
   flex-shrink: 0;
 }
 
-/* ═══════════════════════════════════════════════════════════
-   DARK MODE FAB
-═══════════════════════════════════════════════════════════ */
-.dark-fab {
-  position: fixed;
-  right: 16px;
-  bottom: calc(var(--tab-h) + var(--safe-bot) + 16px);
-  width: 44px; height: 44px;
-  border-radius: 50%;
-  background: var(--bg);
-  color: var(--ink-1);
-  box-shadow: var(--cloud-shadow);
-  display: flex; align-items: center; justify-content: center;
-  z-index: 90;
-  transition: transform .25s var(--ease);
-}
-.dark-fab:active { transform: scale(0.9) rotate(20deg); }
-.dark-fab svg { width: 18px; height: 18px; stroke-width: 2.2; }
-body.dark-mode .dark-fab .sun { display: block; }
-body.dark-mode .dark-fab .moon { display: none; }
-.dark-fab .sun { display: none; }
-.dark-fab .moon { display: block; }
-
-/* ═══════════════════════════════════════════════════════════
-   PREVIEW-ONLY BANNER (프리뷰 파일임 표시)
-═══════════════════════════════════════════════════════════ */
-.preview-banner {
-  position: fixed;
-  top: calc(var(--top-h) + var(--safe-top) + 8px);
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 4px 10px;
-  background: var(--brand-gradient);
-  color: #fff;
+.mpv-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 20px;
+  padding-inline: 7px;
+  border-radius: var(--lumi-radius-pill);
   font-size: 10px;
-  font-weight: 800;
-  border-radius: 999px;
-  letter-spacing: 0.5px;
-  z-index: 200;
-  box-shadow: 0 4px 12px rgba(255,107,139,0.4);
-  pointer-events: none;
+  font-weight: var(--lumi-weight-semibold);
 }
-</style>
-<style>
-/* ── Lumi 법적 고지 Footer ──────────────────────────── */
-.lumi-footer{border-top:1px solid rgba(0,0,0,.08);padding:28px 24px 36px;text-align:center;font-size:12px;color:#86868b;line-height:1.8;margin-top:48px;}
-body.dark-mode .lumi-footer{border-top-color:rgba(255,255,255,.08);color:rgba(255,255,255,.3);}
-.lumi-footer p{margin:0 0 2px;}
-.lumi-footer__links{display:flex;flex-wrap:wrap;gap:8px 14px;justify-content:center;margin:10px 0 6px;}
-.lumi-footer__links a{font-size:12px;color:#6e6e73;text-decoration:none;}
-.lumi-footer__links a:hover{text-decoration:underline;}
-body.dark-mode .lumi-footer__links a{color:rgba(255,255,255,.35);}
-.lumi-footer__copy{font-size:11px;color:#aeaeb2;margin-top:6px!important;}
-.lumi-footer__logo{height:28px;width:auto;display:block;margin:0 auto 8px;}
-body.dark-mode .lumi-footer__logo{filter:invert(1) brightness(2);}
-body.dark-mode .lumi-footer__copy{color:rgba(255,255,255,.2);}
-@media(max-width:768px){.lumi-footer{padding:22px 16px 30px;}}
-</style>
+
+.mpv-badge--scheduled {
+  background: rgba(0, 122, 255, 0.1);
+  color: #007AFF;
+}
+
+.mpv-badge--empty {
+  background: var(--lumi-surface-deep);
+  color: var(--lumi-ink-faint);
+  border: 1px dashed var(--lumi-line-strong);
+}
+
+.mpv-badge--empty-tip {
+  display: flex;
+  align-items: center;
+  gap: var(--lumi-space-2);
+  padding: var(--lumi-space-3) var(--lumi-space-3);
+  border-radius: var(--lumi-radius-md);
+  background: rgba(200, 80, 122, 0.06);
+  border: 1px dashed rgba(200, 80, 122, 0.25);
+  font-size: var(--lumi-text-label);
+  color: var(--lumi-brand-text);
+  cursor: pointer;
+  transition: background var(--lumi-duration-fast) var(--lumi-ease-soft);
+}
+
+.mpv-badge--empty-tip:hover {
+  background: rgba(200, 80, 122, 0.1);
+}
+
+.mpv-badge--empty-tip svg {
+  width: 13px;
+  height: 13px;
+  stroke: var(--lumi-brand-text);
+  stroke-width: 2;
+  fill: none;
+  flex-shrink: 0;
+}
+
+/* ─── 모달 ─── */
+.mpv-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: var(--lumi-z-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--lumi-page-x);
+  opacity: 0;
+  visibility: hidden;
+  backdrop-filter: blur(4px);
+  transition: opacity var(--lumi-duration-fast) var(--lumi-ease-soft),
+              visibility var(--lumi-duration-fast);
+}
+
+.mpv-overlay.open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.mpv-modal {
+  background: var(--lumi-surface);
+  border-radius: var(--lumi-radius-2xl);
+  width: 100%;
+  max-width: 360px;
+  box-shadow: var(--lumi-shadow-xl);
+  transform: scale(0.94);
+  transition: transform var(--lumi-duration-base) var(--lumi-ease-spring);
+  overflow: hidden;
+}
+
+.mpv-overlay.open .mpv-modal {
+  transform: scale(1);
+}
+
+.mpv-modal__img {
+  width: 100%;
+  aspect-ratio: 1;
+  background: var(--lumi-surface-deep);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  position: relative;
+}
+
+.mpv-modal__img-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);
+  display: flex;
+  align-items: flex-end;
+  padding: var(--lumi-space-3);
+  gap: var(--lumi-space-2);
+}
+
+.mpv-modal__body {
+  padding: var(--lumi-space-5);
+}
+
+.mpv-modal__caption {
+  font-size: var(--lumi-text-body-sm);
+  color: var(--lumi-ink);
+  line-height: var(--lumi-leading-relaxed);
+  margin-bottom: var(--lumi-space-3);
+}
+
+.mpv-modal__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lumi-space-1);
+  margin-bottom: var(--lumi-space-4);
+}
+
+.mpv-modal__tag {
+  font-size: var(--lumi-text-label);
+  color: var(--lumi-brand-text);
+  font-weight: var(--lumi-weight-medium);
+}
+
+.mpv-modal__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--lumi-space-3);
+  padding-top: var(--lumi-space-3);
+  border-top: 1px solid var(--lumi-line);
+}
+
+.mpv-modal__time {
+  flex: 1;
+  font-size: var(--lumi-text-caption);
+  color: var(--lumi-ink-muted);
+  display: flex;
+  align-items: center;
+  gap: var(--lumi-space-2);
+}
+
+.mpv-modal__time svg {
+  width: 13px;
+  height: 13px;
+  stroke: var(--lumi-ink-muted);
+  stroke-width: 2;
+  fill: none;
+  flex-shrink: 0;
+}
+
+.mpv-modal__actions {
+  display: flex;
+  gap: var(--lumi-space-2);
+}
+
+.mpv-modal__close {
+  position: absolute;
+  top: var(--lumi-space-3);
+  right: var(--lumi-space-3);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.4);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+  transition: background var(--lumi-duration-snap) var(--lumi-ease-soft);
+}
+
+.mpv-modal__close:hover { background: rgba(0,0,0,0.6); }
+
+.mpv-modal__close svg {
+  width: 14px;
+  height: 14px;
+  stroke: #fff;
+  stroke-width: 2.5;
+  fill: none;
+}
+
+/* ─── 반응형 phone 크기 ─── */
+@media (min-width: 768px) {
+  .mpv-phone {
+    width: min(45vw, 260px);
+  }
+}
+  </style>
 </head>
 <body>
-<!-- App shell -->
-<div id="app">
+  <script src="/js/lumi-head.js" defer></script>
 
-  <!-- TOP BAR -->
-  <header class="topbar">
-    <img class="topbar-mascot" src="/assets/logo-cloud.png" alt="루미" onerror="this.style.display='none'">
-    <div class="topbar-greeting">
-      <b>안녕하세요 사장님 <span style="font-family:'Jua',sans-serif;">☁</span></b>
-      <span>오늘도 루미가 함께해요</span>
-    </div>
-    <div class="topbar-actions">
-      <button class="topbar-btn" aria-label="알림">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
-      </button>
-    </div>
-  </header>
+  <main class="mpv-page">
 
-  <span class="preview-banner">PREVIEW · v3</span>
-
-  <!-- MAIN -->
-  <main class="main">
-
-    <!-- ═════════ 오늘 (HOME) ═════════ -->
-    <section class="screen active" data-screen="today">
-
-      <!-- 미션 카드 -->
-      <article class="mission">
-        <div class="mission-label">오늘의 미션</div>
-        <h2 class="mission-title">비 오는 화요일,<br>따뜻한 메뉴 한 컷 올려볼까요?</h2>
-        <p class="mission-desc">오늘 비 내리는 날씨에 <b class="grad-text" style="font-weight:700;">따뜻한 라떼</b>나 수프 같은 위로 음식 사진이 특히 잘 반응해요.</p>
-        <button class="mission-cta">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M20 16V8a2 2 0 0 0-2-2h-3l-2-3h-4l-2 3H4a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2Z"/></svg>
-          사진 올리러 가기
-        </button>
-      </article>
-
-      <!-- 성과 -->
-      <div class="stat-row">
-        <div class="stat">
-          <div class="stat-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.6a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78Z"/></svg>
-          </div>
-          <div class="stat-body">
-            <em><span class="grad-text">+12</span></em>
-            <span>어제 좋아요</span>
-          </div>
-        </div>
-        <div class="stat">
-          <div class="stat-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="m22 11-3 3-2-2"/></svg>
-          </div>
-          <div class="stat-body">
-            <em><span class="grad-text">+3</span></em>
-            <span>새 팔로워</span>
-          </div>
-        </div>
+    <!-- Greeting -->
+    <section class="mpv-greeting lumi-reveal">
+      <div class="lumi-container">
+        <p class="mpv-greeting__eyebrow">매장 미리보기</p>
+        <h1 class="mpv-greeting__title">이렇게 보입니다</h1>
+        <p class="mpv-greeting__sub">게시 전에 내 매장이 인스타그램에서 어떻게 보이는지 직접 확인하세요.</p>
       </div>
-
-      <!-- 이번주 트렌드 -->
-      <div class="section-head">
-        <h3>이번 주 카페 트렌드</h3>
-        <button onclick="goTab('trends')">전체 보기 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></button>
-      </div>
-      <div class="chip-scroll">
-        <div class="trend-chip">
-          <div class="trend-chip-rank">#1 급상승</div>
-          <div class="trend-chip-kw">말차라떼</div>
-          <div class="trend-chip-vel up">▲ 340%</div>
-        </div>
-        <div class="trend-chip">
-          <div class="trend-chip-rank">#2</div>
-          <div class="trend-chip-kw">오트밀크</div>
-          <div class="trend-chip-vel up">▲ 215%</div>
-        </div>
-        <div class="trend-chip">
-          <div class="trend-chip-rank">#3 NEW</div>
-          <div class="trend-chip-kw">쑥크림라떼</div>
-          <div class="trend-chip-vel up">▲ 189%</div>
-        </div>
-        <div class="trend-chip">
-          <div class="trend-chip-rank">#4</div>
-          <div class="trend-chip-kw">구름케이크</div>
-          <div class="trend-chip-vel up">▲ 156%</div>
-        </div>
-      </div>
-
-      <!-- 최근 게시 -->
-      <div class="section-head">
-        <h3>최근 게시</h3>
-        <button>전체 보기 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></button>
-      </div>
-      <div class="recent-post">
-        <div class="recent-post-thumb">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-        </div>
-        <div class="recent-post-body">
-          <p>오늘의 시그니처 ☕️ 깊이있는 에스프레소와 부드러운 스팀밀크…</p>
-          <span>2일 전 · 좋아요 24</span>
-        </div>
-        <svg class="recent-post-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
-      </div>
-
     </section>
 
-    <!-- ═════════ 올리기 (UPLOAD) ═════════ -->
-    <section class="screen" data-screen="upload">
+    <!-- Main layout -->
+    <div class="mpv-layout">
 
-      <!-- 업로드 진입 히어로 -->
-      <article class="upload-hero">
-        <h3>새 상품 등록하기</h3>
-        <p>사진 한 장이면 루미가 상품명·설명·카테고리까지 마켓별로 자동 변환해드려요</p>
-        <div class="upload-options">
-          <button class="upload-opt primary" onclick="openPicker('photo')">
-            <div class="upload-opt-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 16V8a2 2 0 0 0-2-2h-3l-2-3h-4l-2 3H4a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2Z"/><circle cx="12" cy="12" r="3.2"/></svg>
+      <!-- 핸드폰 mockup 열 -->
+      <div class="mpv-phone-wrap lumi-reveal">
+
+        <!-- 핸드폰 frame -->
+        <div class="mpv-phone" id="phoneFrame">
+          <div class="mpv-phone__notch"></div>
+
+          <!-- 인스타 화면 -->
+          <div class="mpv-insta" id="instaScreen">
+
+            <!-- 상단 바 -->
+            <div class="ig-topbar">
+              <span class="ig-logo" id="igHandle">my_store</span>
+              <div class="ig-topbar-icons">
+                <!-- 좋아요 -->
+                <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                <!-- 메신저 -->
+                <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              </div>
             </div>
-            사진
-          </button>
-          <button class="upload-opt" onclick="openPicker('video')">
-            <div class="upload-opt-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+
+            <!-- 프로필 헤더 -->
+            <div class="ig-profile-header">
+              <div class="ig-profile-top">
+                <div class="ig-avatar" id="igAvatar">店</div>
+                <div class="ig-stats">
+                  <div class="ig-stat">
+                    <span class="ig-stat__num" id="igPostCount">9</span>
+                    <span class="ig-stat__label">게시물</span>
+                  </div>
+                  <div class="ig-stat">
+                    <span class="ig-stat__num">1,284</span>
+                    <span class="ig-stat__label">팔로워</span>
+                  </div>
+                  <div class="ig-stat">
+                    <span class="ig-stat__num">312</span>
+                    <span class="ig-stat__label">팔로잉</span>
+                  </div>
+                </div>
+              </div>
+              <div class="ig-handle" id="igName">내 매장</div>
+              <div class="ig-bio" id="igBio">루미로 관리하는 인스타 쇼핑몰 ✨<br>DM 주문 가능</div>
+              <div class="ig-follow-row">
+                <button class="ig-btn ig-btn--primary">팔로우</button>
+                <button class="ig-btn ig-btn--secondary">메시지</button>
+                <button class="ig-btn ig-btn--secondary">더보기</button>
+              </div>
             </div>
-            영상
-          </button>
-        </div>
-      </article>
 
-      <!-- 이번 게시 빠른 설정 -->
-      <div class="section-head"><h3>이번 게시 설정</h3></div>
-      <div class="quick-toggles">
-        <div class="qt-row">
-          <div class="qt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="3"/><path d="M12 18h.01"/></svg></div>
-          <div class="qt-body">
-            <b>스토리에도 올리기</b>
-            <span>24시간 노출 추가</span>
+            <!-- 스토리/하이라이트 -->
+            <div class="ig-stories">
+              <div class="ig-story">
+                <div class="ig-story__ring">
+                  <div class="ig-story__inner">✨</div>
+                </div>
+                <span class="ig-story__label">신상품</span>
+              </div>
+              <div class="ig-story">
+                <div class="ig-story__ring">
+                  <div class="ig-story__inner">👗</div>
+                </div>
+                <span class="ig-story__label">여름</span>
+              </div>
+              <div class="ig-story">
+                <div class="ig-story__ring">
+                  <div class="ig-story__inner">🛍</div>
+                </div>
+                <span class="ig-story__label">베스트</span>
+              </div>
+              <div class="ig-story">
+                <div class="ig-story__ring">
+                  <div class="ig-story__inner">💝</div>
+                </div>
+                <span class="ig-story__label">후기</span>
+              </div>
+            </div>
+
+            <!-- 탭 -->
+            <div class="ig-tabs">
+              <div class="ig-tab active">
+                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+              </div>
+              <div class="ig-tab">
+                <svg viewBox="0 0 24 24"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>
+              </div>
+              <div class="ig-tab">
+                <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21l4-4 4 4"/></svg>
+              </div>
+            </div>
+
+            <!-- 그리드 -->
+            <div class="ig-grid" id="igGrid">
+              <!-- JS로 9개 렌더링 -->
+            </div>
+
+          </div><!-- /mpv-insta -->
+        </div><!-- /mpv-phone -->
+
+        <!-- phone 하단 레이블 -->
+        <p style="font-size:var(--lumi-text-caption);color:var(--lumi-ink-faint);text-align:center;">
+          실제 인스타그램과 동일한 비율로 표시됩니다
+        </p>
+
+      </div><!-- /mpv-phone-wrap -->
+
+      <!-- 옵션 + 캘린더 열 -->
+      <div class="mpv-options-col">
+
+        <!-- 미리보기 모드 토글 -->
+        <div class="mpv-card lumi-reveal">
+          <div class="mpv-card__title">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            미리보기 모드
           </div>
-          <div class="toggle-sw on" onclick="this.classList.toggle('on')"></div>
-        </div>
-        <div class="qt-row">
-          <div class="qt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
-          <div class="qt-body">
-            <b>스레드에도 올리기</b>
-            <span>텍스트 자동 변환</span>
+          <div class="mpv-mode-toggle">
+            <button class="mpv-mode-btn active" id="btnLight" onclick="setInstaMode('light')">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+              라이트
+            </button>
+            <button class="mpv-mode-btn" id="btnDark" onclick="setInstaMode('dark')">
+              <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+              다크
+            </button>
           </div>
-          <div class="toggle-sw" onclick="this.classList.toggle('on')"></div>
         </div>
-        <div class="qt-row">
-          <div class="qt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
-          <div class="qt-body">
-            <b>날씨 반영하기</b>
-            <span>오늘 날씨·계절 맥락 추가</span>
+
+        <!-- 게시 일정 캘린더 -->
+        <div class="mpv-card lumi-reveal">
+          <div class="mpv-card__title">
+            <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            이번 주 게시 일정
           </div>
-          <div class="toggle-sw on" onclick="this.classList.toggle('on')"></div>
-        </div>
-        <div class="qt-row">
-          <div class="qt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
-          <div class="qt-body">
-            <b>게시 전 캡션 확인</b>
-            <span>끄면 바로 올림</span>
+
+          <div class="mpv-cal-header">
+            <span class="mpv-cal-month" id="calMonthLabel"></span>
+            <div class="mpv-cal-nav">
+              <button onclick="shiftWeek(-1)" aria-label="이전 주">
+                <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <button onclick="shiftWeek(1)" aria-label="다음 주">
+                <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            </div>
           </div>
-          <div class="toggle-sw on" onclick="this.classList.toggle('on')"></div>
+
+          <div class="mpv-cal-days" id="calDays"></div>
+
+          <!-- 슬롯 목록 -->
+          <div class="mpv-slot-list" id="slotList"></div>
+
         </div>
-      </div>
 
-      <!-- 예약된 게시물 -->
-      <div class="section-head">
-        <h3>예약 게시물</h3>
-        <span style="font-size:12px;color:var(--ink-3);">2건 대기 중</span>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:8px;">
-        <div class="schedule-item">
-          <div class="schedule-thumb">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-          </div>
-          <div class="schedule-body">
-            <b>오늘의 시그니처 커피 ☕</b>
-            <span>오늘 오후 6:00 게시 예정</span>
-          </div>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="color:var(--ink-4);"><path d="M9 6l6 6-6 6"/></svg>
+        <!-- 빈 시간대 추천 -->
+        <div class="mpv-badge--empty-tip lumi-reveal" role="button" tabindex="0" onclick="document.querySelector('#slotList').scrollIntoView({behavior:'smooth'})">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+          <span>목요일 오후 7시 비어있어요 — 게시 추천</span>
         </div>
-        <div class="schedule-item">
-          <div class="schedule-thumb">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-          </div>
-          <div class="schedule-body">
-            <b>신메뉴 소개 릴스</b>
-            <span>내일 오전 11:00 게시 예정</span>
-          </div>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="color:var(--ink-4);"><path d="M9 6l6 6-6 6"/></svg>
-        </div>
-      </div>
 
-    </section>
+      </div><!-- /mpv-options-col -->
 
-    <!-- ═════════ 트렌드 (TRENDS) ═════════ -->
-    <section class="screen" data-screen="trends">
-      <div class="cat-chips">
-        <button class="cat-chip active" data-cat="cafe">카페·음료</button>
-        <button class="cat-chip" data-cat="food">음식·외식</button>
-        <button class="cat-chip" data-cat="beauty">뷰티</button>
-        <button class="cat-chip" data-cat="hair">헤어</button>
-        <button class="cat-chip" data-cat="nail">네일</button>
-        <button class="cat-chip" data-cat="flower">꽃집</button>
-        <button class="cat-chip" data-cat="fashion">패션</button>
-        <button class="cat-chip" data-cat="fitness">피트니스</button>
-        <button class="cat-chip" data-cat="pet">반려동물</button>
-      </div>
-      <div class="kw-list" id="kw-list">
-        <!-- 동적 -->
-      </div>
-    </section>
-
-    <!-- ═════════ 내 가게 (MYSTORE) ═════════ -->
-    <section class="screen" data-screen="mystore">
-
-      <!-- 매장 프로필 -->
-      <div class="profile-card">
-        <div class="profile-avatar">카</div>
-        <div class="profile-body">
-          <b>카페 구름</b>
-          <span>카페·음료 · 서울 성수동</span>
-        </div>
-        <button class="profile-edit" aria-label="프로필 편집">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-        </button>
-      </div>
-
-      <!-- 말투 학습 게이지 -->
-      <div class="tone-gauge">
-        <div class="tone-gauge-head">
-          <b>우리 가게 말투 학습</b>
-          <em class="grad-text">72%</em>
-        </div>
-        <div class="tone-gauge-bar"><div class="tone-gauge-fill" style="width:72%"></div></div>
-        <p class="tone-gauge-note">루미가 사장님 말투를 72% 배웠어요. 10번만 더 평가하면 완성이에요 ☁</p>
-      </div>
-
-      <!-- 메뉴 리스트 -->
-      <div class="section-head"><h3>관리</h3></div>
-      <div class="menu-list">
-        <a class="menu-row">
-          <div class="menu-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg></div>
-          <span class="menu-row-label">빠른 설정 (5)</span>
-          <span class="menu-row-meta">스토리 · 스레드 · 날씨</span>
-          <svg class="menu-row-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
-        </a>
-        <a class="menu-row">
-          <div class="menu-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></div>
-          <span class="menu-row-label">분석 리포트</span>
-          <span class="menu-row-meta">이번 달</span>
-          <svg class="menu-row-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
-        </a>
-        <a class="menu-row">
-          <div class="menu-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg></div>
-          <span class="menu-row-label">인스타그램 연동</span>
-          <span class="menu-row-meta">연결됨</span>
-          <svg class="menu-row-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
-        </a>
-      </div>
-
-      <div style="height:20px;"></div>
-
-      <div class="menu-list">
-        <a class="menu-row">
-          <div class="menu-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg></div>
-          <span class="menu-row-label">도움말 & 문의</span>
-          <svg class="menu-row-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
-        </a>
-        <a class="menu-row">
-          <div class="menu-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></div>
-          <span class="menu-row-label" style="color:#E8446B;">로그아웃</span>
-          <svg class="menu-row-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
-        </a>
-      </div>
-
-    </section>
+    </div><!-- /mpv-layout -->
 
   </main>
 
-  <!-- TAB BAR -->
-  <nav class="tabbar">
-    <button class="tab active" data-tab="today">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-      <span>오늘</span>
-    </button>
-    <button class="tab" data-tab="trends">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-      <span>트렌드</span>
-    </button>
-    <button class="tab-plus" data-tab="upload" aria-label="올리기">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-    </button>
-    <button class="tab" data-tab="mystore">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M3 9 5 3h14l2 6"/><path d="M12 3v6"/></svg>
-      <span>내 가게</span>
-    </button>
-    <!-- DM 탭: 숨김, Meta 승인 후 flag로 노출
-    <button class="tab" data-tab="dm">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z"/></svg>
-      <span>대화</span>
-    </button>
-    -->
-  </nav>
-
-  <!-- DARK MODE FAB -->
-  <button class="dark-fab" onclick="toggleDark()" aria-label="다크모드 토글">
-    <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
-    <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
-  </button>
-
-</div>
-
-<script>
-/* ═══════════════════════════════════════════════════════════
-   PREVIEW JS — 탭 라우팅 + 다크모드 + 트렌드 데이터
-═══════════════════════════════════════════════════════════ */
-
-// 다크모드 복원
-(function(){
-  if (localStorage.getItem('lumi_dark_mode') === '1') {
-    document.body.classList.add('dark-mode');
-    document.documentElement.style.background = '#0a0a0c';
-  }
-})();
-function toggleDark() {
-  const on = document.body.classList.toggle('dark-mode');
-  localStorage.setItem('lumi_dark_mode', on ? '1' : '0');
-  document.documentElement.style.background = on ? '#0a0a0c' : '#fff';
-  if (on) {
-    document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0a0a0c');
-  } else {
-    document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff');
-  }
-}
-
-// 탭 라우팅
-function goTab(id) {
-  document.querySelectorAll('.screen').forEach(s => {
-    const active = s.dataset.screen === id;
-    s.classList.toggle('active', active);
-    if (active) {
-      // animation 재시작 (동일 탭 재클릭 대비)
-      s.style.animation = 'none';
-      void s.offsetWidth;
-      s.style.animation = '';
-    }
-  });
-  document.querySelectorAll('.tab, .tab-plus').forEach(b => b.classList.toggle('active', b.dataset.tab === id));
-  window.scrollTo({ top: 0, behavior: 'instant' });
-}
-document.querySelectorAll('.tab, .tab-plus').forEach(btn => {
-  btn.addEventListener('click', () => goTab(btn.dataset.tab));
-});
-
-// 업로드 picker (프리뷰 — 실 구현은 index.html __mHandleFile 재사용 예정)
-function openPicker(kind) {
-  alert(kind === 'video' ? '영상 선택 (프리뷰)' : '사진 선택 (프리뷰)');
-}
-
-// 카테고리 칩 (트렌드 탭)
-let currentCat = 'cafe';
-document.querySelectorAll('.cat-chip').forEach(chip => {
-  chip.addEventListener('click', () => {
-    document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'));
-    chip.classList.add('active');
-    currentCat = chip.dataset.cat || 'cafe';
-    fetchTrends(currentCat);
-  });
-});
-
-// 실 API 호출
-async function fetchTrends(category) {
-  const list = document.getElementById('kw-list');
-  if (!list) return;
-  list.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--ink-3);font-size:13px;">루미가 수집 중이에요 ☁</div>';
-  try {
-    const res = await fetch(`/api/get-trends?category=${category}&scope=domestic`);
-    const data = await res.json();
-    const kws = (data.keywords || []).slice(0, 10);
-    if (kws.length === 0) {
-      list.innerHTML = '<div style="text-align:center;padding:40px 16px;color:var(--ink-3);font-size:13px;line-height:1.6;">아직 수집 중이에요<br><span style="font-size:11px;">내일 자정 업데이트 후 다시 확인해주세요 ☁</span></div>';
-      return;
-    }
-    list.innerHTML = kws.map((k, i) => {
-      const rank = k.rank || (i + 1);
-      const rankClass = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : '';
-      const vel = k.velocityPct;
-      const velTrend = vel == null ? 'flat' : (vel > 0 ? 'up' : vel < 0 ? 'down' : 'flat');
-      const velStr = vel == null ? '-' : (vel > 0 ? `+${Math.round(vel)}%` : `${Math.round(vel)}%`);
-      const isNew = k.isNew && k.isNewConfidence === 'high';
-      const sub = k.signalTier === 'real' ? `신호 강함${isNew ? ' · NEW' : ''}` : (isNew ? 'NEW' : '관찰 중');
-      return `
-        <div class="kw-row" onclick="pickKeyword('${(k.keyword||'').replace(/'/g,'')}')">
-          <div class="kw-rank ${rankClass}">${rank}</div>
-          <div class="kw-info">
-            <b>${escapeHtml(k.keyword || '')}</b>
-            <span>${sub}</span>
+  <!-- 게시 상세 모달 -->
+  <div class="mpv-overlay" id="postOverlay" onclick="closeModal(event)">
+    <div class="mpv-modal" id="postModal">
+      <div class="mpv-modal__img" id="modalImg">
+        <button class="mpv-modal__close" onclick="closeModal()">
+          <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+        <span id="modalEmoji" style="font-size:64px"></span>
+        <div class="mpv-modal__img-overlay">
+          <span id="modalBadge"></span>
+        </div>
+      </div>
+      <div class="mpv-modal__body">
+        <p class="mpv-modal__caption" id="modalCaption"></p>
+        <div class="mpv-modal__tags" id="modalTags"></div>
+        <div class="mpv-modal__meta">
+          <div class="mpv-modal__time" id="modalTime">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            <span></span>
           </div>
-          <div class="kw-vel ${velTrend}">${velStr}</div>
-        </div>`;
-    }).join('');
-  } catch (e) {
-    list.innerHTML = `<div style="text-align:center;padding:40px 16px;color:var(--ink-3);font-size:13px;">불러올 수 없어요<br><button onclick="fetchTrends('${category}')" style="margin-top:12px;color:var(--pink);font-weight:700;">다시 시도</button></div>`;
-  }
-}
-
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-
-function pickKeyword(kw) {
-  // 트렌드 → 올리기 탭 연결 (프리뷰 — 실 구현은 캡션 생성 플로우에 키워드 주입)
-  if (!kw) return;
-  goTab('upload');
-  setTimeout(() => alert(`"${kw}" 키워드로 캡션 만들기 (프리뷰)`), 300);
-}
-
-// 초기 렌더
-function init() {
-  fetchTrends('cafe');
-  if (window.lucide) lucide.createIcons();
-}
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', init);
-} else {
-  init();
-}
-</script>
-
-<!-- ── 사업자 정보 (전자상거래법 §13 + Meta 인증) ── -->
-<footer class="lumi-footer">
-  <div class="lumi-footer__info">
-    <img src="/assets/logo-wordmark.png" alt="루미" class="lumi-footer__logo" />
-    <p>대표: 김현 · 사업자등록번호: 404-09-66416</p>
-    <p>통신판매업: 제2024-서울용산-1166호</p>
-    <p>주소: 서울특별시 용산구 회나무로 32-7 (이태원동), 04345</p>
-    <p>고객센터: <a href="tel:01064246284" style="color:inherit;text-decoration:none;">010-6424-6284</a> · 이메일: gung3625@gmail.com</p>
+          <div class="mpv-modal__actions">
+            <button class="lumi-btn lumi-btn--sm lumi-btn--secondary">수정</button>
+            <button class="lumi-btn lumi-btn--sm lumi-btn--primary">게시 확정</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
-  <div class="lumi-footer__links">
-    <a href="/terms.html">이용약관</a> · <a href="/privacy.html">개인정보처리방침</a> · <a href="/refund.html">환불정책</a>
-  </div>
-  <p class="lumi-footer__copy">© 2026 루미. All rights reserved.</p>
-</footer>
+
+  <script src="/js/lumi-foot.js" defer></script>
+  <script src="/js/lumi-tabs.js" defer></script>
+
+  <script>
+  (() => {
+    'use strict';
+
+    /* ── Mock 데이터 ── */
+    const MOCK_POSTS = [
+      { emoji:'👗', caption:'여름 신상 원피스 입고! 시원하고 가벼운 소재로 매일 입기 딱 좋아요.', tags:['#여름원피스','#신상입고','#루미쇼핑'], time:'오늘 오후 2:00', scheduled:true },
+      { emoji:'👟', caption:'발이 편한 여름 샌들 입고됐어요. 사이즈 다양하게 준비했습니다!', tags:['#여름샌들','#신상','#편한신발'], time:'오늘 오후 6:00', scheduled:true },
+      { emoji:'👜', caption:'데일리 크로스백 — 수납 좋고 가벼워요. 색상은 3가지.', tags:['#크로스백','#데일리백','#가방'], time:'내일 오전 11:00', scheduled:true },
+      { emoji:'🩱', caption:'비치웨어 신상 라인업 공개! 지금 예약 주문 받습니다.', tags:['#비치웨어','#여름','#수영복'], time:'내일 오후 3:00', scheduled:true },
+      { emoji:'🧴', caption:'여름 필수템 선케어 세트 할인 중. 오늘만 20% 할인!', tags:['#선케어','#여름필수','#할인'], time:'모레 오전 10:00', scheduled:true },
+      { emoji:'💍', caption:'여름 주얼리 컬렉션. 가볍고 산뜻한 디자인으로 준비했어요.', tags:['#주얼리','#여름악세사리','#귀걸이'], time:'모레 오후 7:00', scheduled:true },
+      { emoji:'🌸', caption:'봄/여름 레이어드 아이템 추천. 스타일링 팁도 함께요.', tags:['#레이어드','#스타일링','#패션'], time:'목요일 오전 9:00', scheduled:false },
+      { emoji:'👒', caption:'여름 모자 컬렉션 재입고 완료! 인기 색상 먼저 챙기세요.', tags:['#여름모자','#재입고','#베스트'], time:'목요일 오후 1:00', scheduled:false },
+      { emoji:'🛍', caption:'이번 주 베스트 상품 모아봤어요. DM으로 구매문의 가능합니다.', tags:['#베스트상품','#주간베스트','#쇼핑'], time:'금요일 오후 5:00', scheduled:false },
+    ];
+
+    /* ── 그리드 렌더링 ── */
+    function renderGrid() {
+      const grid = document.getElementById('igGrid');
+      grid.innerHTML = '';
+      MOCK_POSTS.forEach((post, i) => {
+        const cell = document.createElement('div');
+        cell.className = 'ig-cell';
+        cell.setAttribute('role', 'button');
+        cell.setAttribute('tabindex', '0');
+        cell.setAttribute('aria-label', `게시물 ${i+1} 미리보기`);
+
+        const thumb = document.createElement('div');
+        thumb.className = 'ig-cell__thumb-placeholder';
+        thumb.style.background = getCellBg(i);
+        thumb.textContent = post.emoji;
+        cell.appendChild(thumb);
+
+        if (post.scheduled) {
+          const badge = document.createElement('div');
+          badge.className = 'ig-cell__badge';
+          badge.innerHTML = `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+          cell.appendChild(badge);
+        }
+
+        cell.addEventListener('click', () => openModal(i));
+        cell.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') openModal(i); });
+        grid.appendChild(cell);
+      });
+    }
+
+    function getCellBg(i) {
+      const bgs = [
+        'linear-gradient(135deg, #FFE6EE 0%, #FFD0DD 100%)',
+        'linear-gradient(135deg, #E6F0FF 0%, #CCE0FF 100%)',
+        'linear-gradient(135deg, #FFF3E6 0%, #FFE0CC 100%)',
+        'linear-gradient(135deg, #E6FFE6 0%, #CCF5CC 100%)',
+        'linear-gradient(135deg, #F3E6FF 0%, #E0CCFF 100%)',
+        'linear-gradient(135deg, #FFFBE6 0%, #FFF5CC 100%)',
+        'linear-gradient(135deg, #FFE6F5 0%, #FFD0EB 100%)',
+        'linear-gradient(135deg, #E6FAFF 0%, #CCF3FF 100%)',
+        'linear-gradient(135deg, #FFF0E6 0%, #FFE6CC 100%)',
+      ];
+      return bgs[i % bgs.length];
+    }
+
+    /* ── 모달 ── */
+    function openModal(idx) {
+      const post = MOCK_POSTS[idx];
+      document.getElementById('modalEmoji').textContent = post.emoji;
+      document.getElementById('modalCaption').textContent = post.caption;
+
+      const tagsEl = document.getElementById('modalTags');
+      tagsEl.innerHTML = post.tags.map(t => `<span class="mpv-modal__tag">${t}</span>`).join('');
+
+      const timeEl = document.getElementById('modalTime');
+      timeEl.querySelector('span').textContent = post.time;
+
+      const badge = document.getElementById('modalBadge');
+      if (post.scheduled) {
+        badge.innerHTML = `<span class="mpv-badge mpv-badge--scheduled">예약됨</span>`;
+      } else {
+        badge.innerHTML = `<span class="mpv-badge mpv-badge--empty">미예약</span>`;
+      }
+
+      document.getElementById('postOverlay').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    window.closeModal = function(e) {
+      if (e && e.target !== document.getElementById('postOverlay')) return;
+      document.getElementById('postOverlay').classList.remove('open');
+      document.body.style.overflow = '';
+    };
+
+    /* ── 인스타 다크/라이트 모드 ── */
+    window.setInstaMode = function(mode) {
+      const frame = document.getElementById('phoneFrame');
+      const btnLight = document.getElementById('btnLight');
+      const btnDark = document.getElementById('btnDark');
+      if (mode === 'dark') {
+        frame.classList.add('insta-dark');
+        btnDark.classList.add('active');
+        btnLight.classList.remove('active');
+      } else {
+        frame.classList.remove('insta-dark');
+        btnLight.classList.add('active');
+        btnDark.classList.remove('active');
+      }
+    };
+
+    /* ── 미니 캘린더 ── */
+    const DAY_KO = ['일','월','화','수','목','금','토'];
+    let weekOffset = 0;
+
+    function getWeekDays(offset) {
+      const today = new Date();
+      const start = new Date(today);
+      start.setDate(today.getDate() + offset * 7);
+      return Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(start);
+        d.setDate(start.getDate() + i);
+        return d;
+      });
+    }
+
+    function hasPostOnDay(date) {
+      // mock: 오늘, 오늘+1, 오늘+2, 오늘+4 에 게시
+      const today = new Date();
+      const diff = Math.round((date - today) / (1000 * 60 * 60 * 24));
+      return [0, 1, 2, 4].includes(diff);
+    }
+
+    function isToday(date) {
+      const t = new Date();
+      return date.toDateString() === t.toDateString();
+    }
+
+    function renderCalendar() {
+      const days = getWeekDays(weekOffset);
+      const container = document.getElementById('calDays');
+      container.innerHTML = '';
+
+      const monthSet = new Set(days.map(d => d.getMonth()));
+      const months = [...monthSet].map(m => `${m + 1}월`).join(' — ');
+      document.getElementById('calMonthLabel').textContent = months;
+
+      days.forEach(day => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'mpv-cal-day';
+
+        const label = document.createElement('div');
+        label.className = 'mpv-cal-day__label';
+        label.textContent = DAY_KO[day.getDay()];
+
+        const num = document.createElement('div');
+        num.className = 'mpv-cal-day__num';
+        num.textContent = day.getDate();
+
+        if (isToday(day)) num.classList.add('today');
+        else if (hasPostOnDay(day)) num.classList.add('has-post');
+        else if (!isToday(day) && !hasPostOnDay(day) && day >= new Date()) num.classList.add('empty-slot');
+
+        wrapper.appendChild(label);
+        wrapper.appendChild(num);
+        container.appendChild(wrapper);
+      });
+
+      renderSlots();
+    }
+
+    function renderSlots() {
+      const list = document.getElementById('slotList');
+      list.innerHTML = '';
+      const displayed = MOCK_POSTS.slice(0, 4);
+
+      displayed.forEach(post => {
+        const slot = document.createElement('div');
+        slot.className = 'mpv-slot';
+
+        const thumb = document.createElement('div');
+        thumb.className = 'mpv-slot__thumb';
+        thumb.textContent = post.emoji;
+
+        const info = document.createElement('div');
+        info.className = 'mpv-slot__info';
+        info.innerHTML = `
+          <div class="mpv-slot__product">${post.caption.substring(0, 22)}…</div>
+          <div class="mpv-slot__time">${post.time}</div>
+        `;
+
+        const status = document.createElement('div');
+        status.className = 'mpv-slot__status';
+        if (post.scheduled) {
+          status.innerHTML = `<span class="mpv-badge mpv-badge--scheduled">예약</span>`;
+        } else {
+          status.innerHTML = `<span class="mpv-badge mpv-badge--empty">미예약</span>`;
+        }
+
+        slot.appendChild(thumb);
+        slot.appendChild(info);
+        slot.appendChild(status);
+        list.appendChild(slot);
+      });
+
+      // 빈 시간대 힌트
+      const tip = document.createElement('div');
+      tip.className = 'mpv-badge--empty-tip';
+      tip.setAttribute('role', 'button');
+      tip.setAttribute('tabindex', '0');
+      tip.innerHTML = `
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        <span>목요일 오후 7시 비어있어요 — 게시 추천</span>
+      `;
+      list.appendChild(tip);
+    }
+
+    window.shiftWeek = function(dir) {
+      weekOffset += dir;
+      renderCalendar();
+    };
+
+    /* ── ESC 모달 닫기 ── */
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        document.getElementById('postOverlay').classList.remove('open');
+        document.body.style.overflow = '';
+      }
+    });
+
+    /* ── 초기 렌더링 ── */
+    renderGrid();
+    renderCalendar();
+
+  })();
+  </script>
+
 </body>
 </html>
