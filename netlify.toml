@@ -109,30 +109,6 @@
 [build.processing.images]
   compress = false
 
-# Sprint 1 가입 플로우 — pretty URL
-[[redirects]]
-  from = "/signup"
-  to = "/signup.html"
-  status = 200
-
-[[redirects]]
-  from = "/onboarding"
-  to = "/signup.html"
-  status = 200
-
-# Sprint 1 가입 API — 명시적 리다이렉트 (/api/* splat보다 먼저 매칭)
-[[redirects]]
-  from = "/api/signup-create-seller"
-  to = "/.netlify/functions/signup-create-seller"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/signup-tone-samples"
-  to = "/.netlify/functions/signup-tone-samples"
-  status = 200
-  force = true
-
 [[redirects]]
   from = "/api/me"
   to = "/.netlify/functions/me"
@@ -178,17 +154,6 @@
   status = 200
   force = true
 
-# 카카오 OAuth 시작 (서버에서 nonce 발급 + state 주입 — CSRF 방어)
-[[redirects]]
-  from = "/api/auth/kakao/start"
-  to = "/.netlify/functions/auth-kakao-start"
-  status = 200
-
-# 카카오 OAuth 콜백
-[[redirects]]
-  from = "/api/auth/kakao/callback"
-  to = "/.netlify/functions/auth-kakao-callback"
-  status = 200
 
 # 예약 홍보 게시 수동 트리거용 리다이렉트
 [[redirects]]
@@ -299,11 +264,6 @@
   status = 200
   force = true
 
-# 회원 탈퇴 API (PIPA §36 개인정보 파기 요구권)
-[[redirects]]
-  from = "/api/account-delete"
-  to = "/.netlify/functions/account-delete"
-  status = 200
 
 # TikTok 연결 해제 API
 [[redirects]]

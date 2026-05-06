@@ -147,7 +147,7 @@
     var cached = readCache();
     if (cached !== null) {
       if (cached.onboarded) return true;
-      window.location.replace('/signup');
+      window.location.replace('/');
       return false;
     }
 
@@ -170,7 +170,7 @@
     writeCache(onboarded);
 
     if (!onboarded) {
-      window.location.replace('/signup');
+      window.location.replace('/');
       return false;
     }
     return true;
