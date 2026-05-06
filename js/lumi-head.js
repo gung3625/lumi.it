@@ -24,7 +24,7 @@
 
     <div class="lumi-head__actions">
       <a href="/signup" class="lumi-head__login">로그인</a>
-      <a href="/subscribe" class="lumi-head__cta">무료로 시작</a>
+      <a href="/signup" class="lumi-head__cta">회원가입</a>
       <button type="button" class="lumi-head__burger" aria-label="메뉴 열기" aria-expanded="false" aria-controls="lumi-drawer">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
       </button>
@@ -45,7 +45,7 @@
     <li><a href="/support">고객지원</a></li>
     <li><a href="/signup">로그인</a></li>
   </ul>
-  <a href="/subscribe" class="lumi-head__drawer-cta">무료로 시작 — 30명 한정</a>
+  <a href="/signup" class="lumi-head__drawer-cta">회원가입</a>
 </div>`.trim();
 
   function ensureCss(href, id) {
