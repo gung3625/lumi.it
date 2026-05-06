@@ -13,6 +13,7 @@
     href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
   <link rel="stylesheet" href="/css/lumi-tokens.css" />
   <link rel="stylesheet" href="/css/lumi-comp.css" />
+  <link rel="stylesheet" href="/css/lumi-tabs.css" />
 
   <!-- Google Tag Manager -->
   <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-P29BG2C5');</script>
@@ -910,7 +911,55 @@ window.lumiSupa.auth.onAuthStateChange(function(event, session){
     </div>
   </div>
 
-  <!-- ③ 알림 설정 -->
+  <!-- ③ TikTok 연동 -->
+  <div class="stg-card" id="tiktok-link-card">
+    <div class="stg-card__header">
+      <span class="stg-card__icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/>
+        </svg>
+      </span>
+      <h2 class="stg-card__title">TikTok 연결</h2>
+    </div>
+
+    <!-- 연동 상태 카드 -->
+    <div class="stg-ig-status" id="tiktok-status-card">
+      <span class="stg-ig-dot stg-ig-dot--off" id="tiktok-dot"></span>
+      <div class="stg-ig-info">
+        <p class="stg-ig-info__label" id="tiktok-status-label">미연결</p>
+        <p class="stg-ig-info__meta" id="tiktok-status-meta">TikTok 비즈니스 계정을 연결해 사진·영상을 자동 게시합니다</p>
+      </div>
+    </div>
+
+    <!-- 미연결 CTA — 심사 대기 중 -->
+    <div id="tiktok-connect-section">
+      <button class="lumi-btn lumi-btn--secondary lumi-btn--full" disabled style="opacity:.55;cursor:not-allowed;" id="tiktok-connect-btn" onclick="connectTiktok()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        TikTok 계정 연결 — 앱 심사 대기 중
+      </button>
+      <p class="stg-field__note" style="margin-top:var(--lumi-space-2);text-align:center;">TikTok 개발자 앱 심사 통과 후 활성화됩니다</p>
+    </div>
+
+    <!-- 연결됨 해제 버튼 (hidden by default) -->
+    <div id="tiktok-disconnect-section" style="display:none;">
+      <div class="stg-actions">
+        <button class="lumi-btn lumi-btn--danger lumi-btn--sm" onclick="disconnectTiktok()">연결 해제</button>
+      </div>
+    </div>
+
+    <div class="stg-ig-security">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+      <span>요청 권한: <strong>video.publish · video.upload · user.info.basic</strong>. 비밀번호를 요구하지 않으며, 토큰은 암호화 저장돼요</span>
+    </div>
+  </div>
+
+  <!-- ④ 알림 설정 -->
   <div class="stg-card" id="stg-card-notif">
     <div class="stg-card__header">
       <span class="stg-card__icon">
@@ -1152,6 +1201,7 @@ function applyUserToUI(u) {
   if (u.tone3) document.getElementById('s-tone-3').value = u.tone3;
   if (u.email) document.getElementById('account-email').textContent = u.email;
   applyIgStatus(u);
+  applyTiktokStatus(u);
   applySocialStatus(u);
 }
 
@@ -1222,6 +1272,8 @@ if (localStorage.getItem('lumi_token')) {
         tone1: d.tone_1, tone2: d.tone_2, tone3: d.tone_3,
         igConnected: d.ig_connected, igHandle: d.ig_handle,
         igConnectedAt: d.ig_connected_at, igExpiry: d.ig_expiry,
+        tiktokConnected: d.tiktok_connected, tiktokHandle: d.tiktok_handle,
+        tiktokConnectedAt: d.tiktok_connected_at,
         kakaoLinked: d.kakao_linked, googleLinked: d.google_linked
       };
       user = Object.assign(user, mapped);
@@ -1460,6 +1512,59 @@ async function exportMyData() {
   }
   btn.disabled = false;
   btn.textContent = '요청하기';
+}
+
+/* ── TikTok 연동 상태 적용 ── */
+function applyTiktokStatus(u) {
+  var dot   = document.getElementById('tiktok-dot');
+  var label = document.getElementById('tiktok-status-label');
+  var meta  = document.getElementById('tiktok-status-meta');
+  var csec  = document.getElementById('tiktok-connect-section');
+  var dsec  = document.getElementById('tiktok-disconnect-section');
+
+  if (u.tiktokConnected) {
+    dot.className   = 'stg-ig-dot stg-ig-dot--on';
+    label.textContent = '@' + (u.tiktokHandle || 'connected');
+    var connectedAt = u.tiktokConnectedAt ? '연결일 ' + u.tiktokConnectedAt.slice(0, 10) : '연결됨';
+    meta.textContent = connectedAt;
+    if (csec) csec.style.display = 'none';
+    if (dsec) dsec.style.display = '';
+  } else {
+    dot.className   = 'stg-ig-dot stg-ig-dot--off';
+    label.textContent = '미연결';
+    meta.textContent  = 'TikTok 비즈니스 계정을 연결해 사진·영상을 자동 게시합니다';
+    if (csec) csec.style.display = '';
+    if (dsec) dsec.style.display = 'none';
+  }
+}
+
+/* ── TikTok OAuth 시작 ── */
+function connectTiktok() {
+  showToast('TikTok 앱 심사 완료 후 이용 가능합니다');
+}
+
+/* ── TikTok 연결 해제 ── */
+function disconnectTiktok() {
+  if (!confirm('TikTok 연결을 해제할까요?')) return;
+  user.tiktokConnected = false;
+  localStorage.setItem('lumi_user', JSON.stringify(user));
+  applyTiktokStatus(user);
+
+  if (!localStorage.getItem('lumi_token')) {
+    showToast('연결이 해제됐어요');
+    return;
+  }
+
+  fetch('/api/tiktok-disconnect', { method: 'DELETE', headers: authHeaders() })
+    .then(function(r){ return r.json().then(function(d){ return { ok: r.ok, data: d }; }); })
+    .then(function(res){
+      if (!res.ok || !res.data || !res.data.success) {
+        showToast((res.data && res.data.error) || '연결 해제에 실패했어요');
+        return;
+      }
+      showToast('TikTok 연결이 해제됐어요');
+    })
+    .catch(function(){ showToast('네트워크 오류가 발생했어요'); });
 }
 
 /* ── 모달 외부 클릭 닫기 ── */

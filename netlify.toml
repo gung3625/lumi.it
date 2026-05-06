@@ -72,6 +72,10 @@
 [functions."scheduler"]
   schedule = "* * * * *"
 
+# TikTok access_token 만료 임박 계정 일괄 갱신 (매 6시간)
+[functions."tiktok-token-refresh-background"]
+  schedule = "0 */6 * * *"
+
 # 매일 KST 08:00 (= UTC 23:00 전날) 브랜드 자동 게시 파이프라인
 # 라이브러리 pickup → reservations insert (image 1 + video 1)
 [functions."daily-content-background"]
@@ -267,6 +271,20 @@
   from = "/api/tiktok-oauth-callback"
   to = "/.netlify/functions/tiktok-oauth-callback"
   status = 200
+
+# TikTok Content Posting API — 사진 게시
+[[redirects]]
+  from = "/api/tiktok-post-photo"
+  to = "/.netlify/functions/tiktok-post-photo"
+  status = 200
+  force = true
+
+# TikTok Content Posting API — 영상 게시
+[[redirects]]
+  from = "/api/tiktok-post-video"
+  to = "/.netlify/functions/tiktok-post-video"
+  status = 200
+  force = true
 
 # 회원 탈퇴 API (PIPA §36 개인정보 파기 요구권)
 [[redirects]]

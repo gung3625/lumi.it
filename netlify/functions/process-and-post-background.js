@@ -1,13 +1,116 @@
 const { corsHeaders, getOrigin, verifyLumiSecret } = require('./_shared/auth');
-// Background Function — 캡션 생성 + (예약에 따라) Instagram 게시 트리거 대기.
+// Background Function — 캡션 생성 + (예약에 따라) Instagram / TikTok 게시 트리거 대기.
 // 데이터 저장: public.reservations (Supabase).
 // 이미지: reservations.image_urls (Supabase Storage public URL).
 // IG 토큰: ig_accounts_decrypted 뷰 (service_role 전용). 평문 저장/로그 금지.
+// TikTok 토큰: tiktok_accounts_decrypted 뷰 (service_role 전용). 평문 저장/로그 금지.
+//
+// 채널 분기: reservation.post_channel = 'instagram' | 'tiktok' | 'both'
+//   - instagram (기본): 기존 IG 게시 흐름 (변경 없음)
+//   - tiktok: TikTok 사진/영상 게시
+//   - both: IG + TikTok 둘 다 게시, 각 결과 별도 기록
 const { createHmac } = require('crypto');
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { checkAndIncrementQuota, QuotaExceededError } = require('./_shared/openai-quota');
 const { deleteReservationStorage } = require('./_shared/storage-cleanup');
 const { generateBrandFooter } = require('./_shared/brand-footer');
+
+// ─────────── TikTok 게시 헬퍼 ───────────
+// TikTok Content Posting API 엔드포인트
+const TIKTOK_PHOTO_ENDPOINT = 'https://open.tiktokapis.com/v2/post/publish/content/init/';
+const TIKTOK_VIDEO_ENDPOINT = 'https://open.tiktokapis.com/v2/post/publish/video/init/';
+
+// TikTok access_token 조회 (tiktok_accounts_decrypted 뷰, service_role 전용)
+async function getTikTokToken(supabase, userId) {
+  const { data, error } = await supabase
+    .from('tiktok_accounts_decrypted')
+    .select('open_id, access_token')
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error) throw new Error(`TikTok 토큰 조회 실패: ${error.message}`);
+  if (!data || !data.access_token) throw new Error('TikTok 연동 정보 없음');
+  return data;
+}
+
+// TikTok 사진 게시 (PULL_FROM_URL, 최대 35장)
+// 참조: https://developers.tiktok.com/doc/content-posting-api-reference-photo-post
+async function postToTikTokPhoto({ accessToken, imageUrls, caption, privacyLevel, disableComment, coverIndex }) {
+  const requestBody = {
+    media_type: 'PHOTO',
+    post_mode: 'DIRECT_POST',
+    post_info: {
+      title: String(caption || '').slice(0, 90),
+      privacy_level: privacyLevel || 'SELF_ONLY',
+      disable_comment: Boolean(disableComment),
+      auto_add_music: false,
+    },
+    source_info: {
+      source: 'PULL_FROM_URL',
+      photo_images: imageUrls,
+      photo_cover_index: Number(coverIndex) || 0,
+    },
+  };
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), 60_000);
+  let res;
+  try {
+    res = await fetch(TIKTOK_PHOTO_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: JSON.stringify(requestBody),
+      signal: ctrl.signal,
+    });
+  } finally {
+    clearTimeout(tid);
+  }
+  const data = await res.json();
+  if (!res.ok || (data.error && data.error.code && data.error.code !== 'ok')) {
+    throw new Error(`TikTok 사진 게시 실패: ${data.error?.message || 'HTTP ' + res.status}`);
+  }
+  return data.data?.publish_id;
+}
+
+// TikTok 영상 게시 (PULL_FROM_URL 방식)
+// 참조: https://developers.tiktok.com/doc/content-posting-api-reference-direct-post
+async function postToTikTokVideo({ accessToken, videoUrl, caption, privacyLevel, disableComment, disableDuet, disableStitch }) {
+  const requestBody = {
+    post_info: {
+      title: String(caption || '').slice(0, 2200),
+      privacy_level: privacyLevel || 'SELF_ONLY',
+      disable_comment: Boolean(disableComment),
+      disable_duet: Boolean(disableDuet),
+      disable_stitch: Boolean(disableStitch),
+    },
+    source_info: {
+      source: 'PULL_FROM_URL',
+      video_url: videoUrl,
+    },
+  };
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), 60_000);
+  let res;
+  try {
+    res = await fetch(TIKTOK_VIDEO_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: JSON.stringify(requestBody),
+      signal: ctrl.signal,
+    });
+  } finally {
+    clearTimeout(tid);
+  }
+  const data = await res.json();
+  if (!res.ok || (data.error && data.error.code && data.error.code !== 'ok')) {
+    throw new Error(`TikTok 영상 게시 실패: ${data.error?.message || 'HTTP ' + res.status}`);
+  }
+  return data.data?.publish_id;
+}
 
 
 // ─────────── 캡션 파싱 ───────────
@@ -954,6 +1057,75 @@ exports.handler = async (event) => {
         }).catch((e) => console.warn('[process-and-post] process-video 트리거 실패:', e.message));
       } catch (e) {
         console.warn('[process-and-post] 영상 후처리 트리거 예외:', e.message);
+      }
+    }
+
+    // 5.5) TikTok 게시 분기
+    // post_channel: 'instagram'(기본) | 'tiktok' | 'both'
+    // brand-auto는 항상 instagram 전용이므로 TikTok 분기 제외
+    const postChannel = (!isBrandAuto && reservation.post_channel) ? reservation.post_channel : 'instagram';
+    const shouldPostTikTok = postChannel === 'tiktok' || postChannel === 'both';
+
+    if (shouldPostTikTok) {
+      let tiktokStatus = 'failed';
+      let tiktokError = null;
+      let tiktokPublishId = null;
+
+      try {
+        console.log('[process-and-post] TikTok 게시 시작');
+        const { access_token: ttToken } = await getTikTokToken(supabase, reservation.user_id);
+        const selectedCaption = finalCaptions[0] || '';
+        const privacyLevel = reservation.tiktok_privacy_level || 'SELF_ONLY';
+
+        if (isReels && reservation.video_url) {
+          // 영상 게시
+          tiktokPublishId = await postToTikTokVideo({
+            accessToken: ttToken,
+            videoUrl: reservation.video_url,
+            caption: selectedCaption,
+            privacyLevel,
+            disableComment: reservation.tiktok_disable_comment || false,
+            disableDuet: reservation.tiktok_disable_duet || false,
+            disableStitch: reservation.tiktok_disable_stitch || false,
+          });
+        } else if (imageUrls.length > 0) {
+          // 사진 게시
+          tiktokPublishId = await postToTikTokPhoto({
+            accessToken: ttToken,
+            imageUrls,
+            caption: selectedCaption,
+            privacyLevel,
+            disableComment: reservation.tiktok_disable_comment || false,
+            coverIndex: 0,
+          });
+        } else {
+          throw new Error('TikTok 게시 가능한 미디어 없음');
+        }
+
+        tiktokStatus = 'ok';
+        console.log('[process-and-post] TikTok 게시 완료 publish_id:', tiktokPublishId);
+      } catch (te) {
+        tiktokError = te.message || String(te);
+        // 토큰 만료 감지
+        if (/token.*invalid|invalid.*token|access_token_invalid|scope_not_authorized/i.test(tiktokError)) {
+          tiktokStatus = 'token_expired';
+        }
+        console.error('[process-and-post] TikTok 게시 실패:', tiktokError);
+      }
+
+      // TikTok 게시 결과를 reservations에 기록
+      // (tiktok_publish_id, tiktok_status 컬럼은 마이그레이션 후 활성화)
+      try {
+        await supabase
+          .from('reservations')
+          .update({
+            tiktok_publish_id: tiktokPublishId || null,
+            tiktok_status: tiktokStatus,
+            tiktok_error: tiktokError || null,
+          })
+          .eq('reserve_key', reservationKey);
+      } catch (dbErr) {
+        console.warn('[process-and-post] TikTok 결과 저장 실패 (컬럼 미존재 시 무시):', dbErr.message);
       }
     }
 

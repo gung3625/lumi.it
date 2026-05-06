@@ -1,490 +1,860 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>대시보드 — 루미</title>
-  <meta name="description" content="채팅형 명령창으로 오늘 가게의 모든 일을 처리해요" />
-  <meta name="theme-color" content="#FFE7F1" />
-  <link rel="icon" href="/assets/logo-cloud.png" />
-  <link rel="stylesheet" href="/css/brand-tokens.css" />
-  <link rel="stylesheet" href="/css/dashboard-canvas.css" />
-  <link rel="stylesheet" href="/css/dashboard-chat.css" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>대시보드 — lumi</title>
+
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="/css/lumi-tokens.css">
+<link rel="stylesheet" href="/css/lumi-comp.css">
+
 <style>
-/* ── 모바일 특화 수정 (인라인 전용, 데스크톱 보존) ── */
-
-/* 0. 빈 actionAgentStack이 그리드 슬롯 차지하는 문제 해결 */
-#actionAgentStack:empty { display: none !important; }
-
-/* 1. 명령창 하단 safe-area 패딩 (자연 흐름 — 하단 공간 확보) */
-@media (max-width: 1023px) {
-  .chat-command {
-    padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
-    /* 자연 흐름이므로 sticky 없음 — iOS 키보드 위에 자연 표시 */
-  }
+/* ─── Layout ─── */
+body {
+  background: var(--lumi-surface-alt);
+  padding-bottom: calc(80px + env(safe-area-inset-bottom));
+}
+@media (min-width: 768px) {
+  body { padding-bottom: 0; }
 }
 
-/* 2. 모바일 헤더 safe-area */
-@media (max-width: 1023px) {
-  .chat-mobile-header {
-    padding-left: max(12px, env(safe-area-inset-left, 0px));
-    padding-right: max(12px, env(safe-area-inset-right, 0px));
-  }
+.dash-wrap {
+  max-width: var(--lumi-max-content);
+  margin-inline: auto;
+  padding-inline: var(--lumi-page-x);
 }
 
-/* 3. word-break: keep-all 한글 */
-.canvas-greet__title,
-.canvas-greet__sub,
-.widget__title,
-.widget__subtitle,
-.priority-card,
-.live-stream,
-.insight-canvas__summary {
-  word-break: keep-all;
-  overflow-wrap: break-word;
+/* ─── Greeting ─── */
+.dash-greet {
+  padding: var(--lumi-space-8) var(--lumi-page-x) var(--lumi-space-5);
+  background: var(--lumi-surface);
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.dash-greet::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(
+    ellipse 90% 80% at 60% -20%,
+    color-mix(in srgb, var(--lumi-brand-pink) 9%, transparent),
+    transparent 65%
+  );
+  pointer-events: none;
+}
+.dash-greet__inner {
+  max-width: var(--lumi-max-content);
+  margin-inline: auto;
+}
+.dash-greet__title {
+  font-size: var(--lumi-text-headline);
+  font-weight: var(--lumi-weight-heavy);
+  letter-spacing: var(--lumi-tracking-tight);
+  line-height: var(--lumi-leading-tight);
+  color: var(--lumi-ink-strong);
+  margin: 0;
 }
 
-/* 4. suggest chips — 320px에서 넘침 방지 */
-@media (max-width: 480px) {
-  .chat-suggests {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding-bottom: 4px;
-  }
-  .chat-suggest {
-    flex-shrink: 0;
-  }
+/* ─── Main layout (mobile: stack, 768+: side-by-side) ─── */
+.dash-body {
+  padding: var(--lumi-space-5) var(--lumi-page-x);
 }
-
-/* 5. 위젯 헤더 줄바꿈 방지 — 좁은 화면에서 토글이 밀릴 때 */
-@media (max-width: 480px) {
-  .widget__header {
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  .view-toggle {
-    font-size: 11px;
-  }
-  .view-toggle__btn {
-    padding: 4px 8px;
-  }
-}
-
-/* 6. 결산 캔버스 2열 (이미 dashboard-canvas.css에 768px 처리 있음, 480px 보강) */
-@media (max-width: 480px) {
-  .settlement-canvas__row {
+@media (min-width: 768px) {
+  .dash-body {
+    display: grid;
     grid-template-columns: 1fr 1fr;
+    gap: var(--lumi-space-6);
+    align-items: start;
+    padding: var(--lumi-space-6) var(--lumi-page-x);
+  }
+}
+@media (min-width: 1024px) {
+  .dash-body {
+    grid-template-columns: 1.1fr 1fr;
+    gap: var(--lumi-space-8);
+    padding: var(--lumi-space-8) var(--lumi-page-x);
   }
 }
 
-/* 7. 사이드바 backdrop safe-area */
-@media (max-width: 1023px) {
-  .chat-sidebar {
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+/* ─── Photo drop zone / Composer ─── */
+.composer {
+  background: var(--lumi-surface);
+  border-radius: var(--lumi-radius-xl);
+  overflow: hidden;
+  position: relative;
+  transition:
+    box-shadow var(--lumi-duration-base) var(--lumi-ease-soft);
+}
+
+/* Default state: photo drop zone */
+.composer__drop {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  max-height: 60vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lumi-space-3);
+  cursor: pointer;
+  border-radius: var(--lumi-radius-xl);
+  overflow: hidden;
+  isolation: isolate;
+  /* Gradient border via outline trick + pseudo */
+  outline: 2px dashed color-mix(in srgb, var(--lumi-brand-pink) 30%, transparent);
+  outline-offset: -2px;
+  transition:
+    outline-color var(--lumi-duration-fast) var(--lumi-ease-soft),
+    transform var(--lumi-duration-base) var(--lumi-ease-toss),
+    box-shadow var(--lumi-duration-base) var(--lumi-ease-soft);
+  will-change: transform;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+/* 4색 그라디언트 보더 (애니) */
+.composer__drop::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  background: var(--lumi-gradient-brand);
+  background-size: 200% 200%;
+  background-position: 100% 100%;
+  z-index: -1;
+  opacity: 0;
+  transition:
+    opacity var(--lumi-duration-fast) var(--lumi-ease-soft),
+    background-position var(--lumi-duration-slow) var(--lumi-ease-soft);
+  pointer-events: none;
+}
+/* inner bg mask */
+.composer__drop::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border-radius: calc(var(--lumi-radius-xl) - 3px);
+  background: var(--lumi-surface);
+  z-index: -1;
+  pointer-events: none;
+}
+@media (hover: hover) {
+  .composer__drop:hover {
+    transform: scale(1.01);
+    box-shadow: var(--lumi-shadow-glow);
+    outline-color: transparent;
   }
+  .composer__drop:hover::before {
+    opacity: 1;
+    background-position: 0% 0%;
+  }
+}
+.composer__drop:active {
+  transform: scale(0.97);
+  transition-duration: var(--lumi-duration-instant);
+}
+@media (min-width: 768px) {
+  .composer__drop {
+    aspect-ratio: auto;
+    min-height: 280px;
+    max-height: none;
+  }
+}
+
+.composer__drop-icon {
+  width: 52px; height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--lumi-radius-full);
+  background: var(--lumi-brand-soft);
+}
+.composer__drop-icon svg {
+  width: 26px; height: 26px;
+  stroke: var(--lumi-brand-fill);
+  stroke-width: 1.8;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.composer__drop-label {
+  font-size: var(--lumi-text-body-lg);
+  font-weight: var(--lumi-weight-heavy);
+  letter-spacing: var(--lumi-tracking-snug);
+  color: var(--lumi-ink-strong);
+  margin: 0;
+}
+.composer__drop-hint {
+  font-size: var(--lumi-text-body-sm);
+  color: var(--lumi-ink-muted);
+  margin: 0;
+}
+
+/* Active/composer state */
+.composer.is-active .composer__drop {
+  display: none;
+}
+
+.composer__active {
+  display: none;
+  flex-direction: column;
+  gap: 0;
+}
+.composer.is-active .composer__active {
+  display: flex;
+}
+
+/* Close + header */
+.composer__top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--lumi-space-4) var(--lumi-space-5);
+  border-bottom: 1px solid var(--lumi-line);
+}
+.composer__close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px; height: 32px;
+  border-radius: var(--lumi-radius-full);
+  background: var(--lumi-surface-deep);
+  color: var(--lumi-ink-soft);
+  border: none;
+  cursor: pointer;
+  transition:
+    background-color var(--lumi-duration-fast) var(--lumi-ease-soft),
+    color var(--lumi-duration-fast) var(--lumi-ease-soft),
+    transform var(--lumi-duration-snap) var(--lumi-ease-toss);
+  min-width: 44px; min-height: 44px;
+  flex-shrink: 0;
+  /* compensate for min-width visual */
+  margin: -6px;
+}
+.composer__close-btn svg {
+  width: 16px; height: 16px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+}
+@media (hover: hover) {
+  .composer__close-btn:hover {
+    background: var(--lumi-surface-deep);
+    color: var(--lumi-ink-strong);
+    transform: scale(1.08);
+  }
+}
+.composer__close-btn:active {
+  transform: scale(0.93);
+  transition-duration: var(--lumi-duration-instant);
+}
+
+/* Photo preview */
+.composer__preview {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: var(--lumi-surface-deep);
+  position: relative;
+  overflow: hidden;
+  max-height: 60vw;
+  opacity: 0;
+  transition: opacity var(--lumi-duration-base) var(--lumi-ease-soft);
+}
+.composer.is-active .composer__preview {
+  opacity: 1;
+}
+.composer__preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+@media (min-width: 768px) {
+  .composer__preview {
+    max-height: 320px;
+    aspect-ratio: auto;
+    height: 260px;
+  }
+}
+
+/* Generating label */
+.composer__generating {
+  display: flex;
+  align-items: center;
+  gap: var(--lumi-space-2);
+  padding: var(--lumi-space-4) var(--lumi-space-5) var(--lumi-space-2);
+  font-size: var(--lumi-text-body-sm);
+  font-weight: var(--lumi-weight-semibold);
+  color: var(--lumi-ink-muted);
+  opacity: 0;
+  transition: opacity var(--lumi-duration-fast) var(--lumi-ease-soft);
+}
+.composer__generating.is-visible { opacity: 1; }
+.composer__generating.is-done { opacity: 0; }
+
+.pulse-dot {
+  width: 8px; height: 8px;
+  border-radius: var(--lumi-radius-full);
+  background: var(--lumi-brand-fill);
+  flex-shrink: 0;
+  animation: lumi-pulse-dot 1.2s var(--lumi-ease-soft) infinite;
+}
+@keyframes lumi-pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.7); }
+}
+
+/* Caption area */
+.composer__caption-wrap {
+  padding: 0 var(--lumi-space-5) var(--lumi-space-3);
+  min-height: 72px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+.composer__caption {
+  font-size: var(--lumi-text-body);
+  font-weight: var(--lumi-weight-regular);
+  color: var(--lumi-ink-strong);
+  line-height: var(--lumi-leading-relaxed);
+  margin: 0;
+  word-break: keep-all;
+}
+
+/* Hashtag chips */
+.composer__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lumi-space-2);
+  padding: var(--lumi-space-2) var(--lumi-space-5) var(--lumi-space-3);
+  min-height: 40px;
+}
+.composer__chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px var(--lumi-space-3);
+  border-radius: var(--lumi-radius-pill);
+  font-size: var(--lumi-text-caption);
+  font-weight: var(--lumi-weight-semibold);
+  background: var(--lumi-brand-soft);
+  color: var(--lumi-brand-text);
+  opacity: 0;
+  transform: translateY(6px) scale(0.94);
+  transition:
+    opacity var(--lumi-duration-fast) var(--lumi-ease-soft),
+    transform var(--lumi-duration-base) var(--lumi-ease-toss);
+}
+.composer__chip.is-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* Time recommendation */
+.composer__time-rec {
+  display: flex;
+  align-items: center;
+  gap: var(--lumi-space-2);
+  margin: 0 var(--lumi-space-5) var(--lumi-space-4);
+  padding: var(--lumi-space-3) var(--lumi-space-4);
+  border-radius: var(--lumi-radius-md);
+  background: color-mix(in srgb, var(--lumi-brand-gold) 10%, transparent);
+  font-size: var(--lumi-text-body-sm);
+  font-weight: var(--lumi-weight-semibold);
+  color: var(--lumi-ink-soft);
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity var(--lumi-duration-base) var(--lumi-ease-soft),
+    transform var(--lumi-duration-base) var(--lumi-ease-toss);
+}
+.composer__time-rec.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.composer__time-rec svg {
+  width: 16px; height: 16px;
+  stroke: var(--lumi-brand-gold);
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+.composer__time-val {
+  font-weight: var(--lumi-weight-heavy);
+  color: var(--lumi-ink-strong);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* Action buttons */
+.composer__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--lumi-space-3);
+  padding: 0 var(--lumi-space-5) var(--lumi-space-5);
+}
+.composer__regen-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lumi-space-2);
+  height: 52px;
+  border-radius: var(--lumi-radius-pill);
+  font-size: var(--lumi-text-body-sm);
+  font-weight: var(--lumi-weight-bold);
+  color: var(--lumi-ink-soft);
+  background: var(--lumi-surface-deep);
+  border: 1px solid var(--lumi-line-strong);
+  cursor: pointer;
+  transition:
+    transform var(--lumi-duration-snap) var(--lumi-ease-toss),
+    background-color var(--lumi-duration-fast) var(--lumi-ease-soft),
+    border-color var(--lumi-duration-fast) var(--lumi-ease-soft),
+    color var(--lumi-duration-fast) var(--lumi-ease-soft);
+  will-change: transform;
+}
+.composer__regen-btn svg {
+  width: 15px; height: 15px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+@media (hover: hover) {
+  .composer__regen-btn:hover {
+    color: var(--lumi-ink-strong);
+    border-color: var(--lumi-ink-strong);
+    transform: translateY(-1px);
+  }
+}
+.composer__regen-btn:active {
+  transform: scale(0.97);
+  transition-duration: var(--lumi-duration-instant);
+}
+
+.composer__post-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lumi-space-2);
+  height: 52px;
+  border-radius: var(--lumi-radius-pill);
+  font-size: var(--lumi-text-body-sm);
+  font-weight: var(--lumi-weight-bold);
+  color: white;
+  background: var(--lumi-gradient-brand);
+  background-size: 200% 100%;
+  background-position: 100% 50%;
+  box-shadow: var(--lumi-shadow-glow-sm);
+  border: none;
+  cursor: pointer;
+  opacity: 0.55;
+  pointer-events: none;
+  transition:
+    opacity var(--lumi-duration-base) var(--lumi-ease-soft),
+    transform var(--lumi-duration-snap) var(--lumi-ease-toss),
+    background-position var(--lumi-duration-slow) var(--lumi-ease-soft),
+    box-shadow var(--lumi-duration-fast) var(--lumi-ease-soft);
+  will-change: transform;
+}
+.composer__post-btn svg {
+  width: 15px; height: 15px;
+  stroke: white;
+  stroke-width: 2.2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+.composer__post-btn.is-active {
+  opacity: 1;
+  pointer-events: auto;
+}
+@media (hover: hover) {
+  .composer__post-btn.is-active:hover {
+    background-position: 0% 50%;
+    box-shadow: var(--lumi-shadow-glow);
+    transform: translateY(-2px) scale(1.02);
+  }
+}
+.composer__post-btn.is-active:active {
+  transform: scale(0.97);
+  transition-duration: var(--lumi-duration-instant);
+  box-shadow: var(--lumi-shadow-glow-sm);
+}
+
+/* ─── Right column (stats) ─── */
+.dash-right {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lumi-space-4);
+  margin-top: var(--lumi-space-4);
+}
+@media (min-width: 768px) {
+  .dash-right {
+    margin-top: 0;
+  }
+}
+
+/* ─── 2x2 stat cards ─── */
+.dash-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--lumi-space-3);
+}
+
+.dash-card {
+  position: relative;
+  background: var(--lumi-surface);
+  border-radius: var(--lumi-radius-lg);
+  padding: var(--lumi-space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--lumi-space-1);
+  cursor: pointer;
+  isolation: isolate;
+  transition:
+    transform var(--lumi-duration-base) var(--lumi-ease-toss),
+    box-shadow var(--lumi-duration-base) var(--lumi-ease-soft),
+    border-color var(--lumi-duration-fast) var(--lumi-ease-soft);
+  will-change: transform;
+  min-height: var(--lumi-tap-min);
+  /* invisible border for gradient border trick */
+  border: 1.5px solid transparent;
+  background-clip: padding-box;
+}
+/* 4색 그라디언트 보더 on hover (pseudo) */
+.dash-card::before {
+  content: '';
+  position: absolute;
+  inset: -1.5px;
+  border-radius: calc(var(--lumi-radius-lg) + 1.5px);
+  background: var(--lumi-gradient-brand);
+  z-index: -1;
+  opacity: 0;
+  transition: opacity var(--lumi-duration-base) var(--lumi-ease-soft);
+  pointer-events: none;
+}
+/* mask inner bg so only border shows */
+.dash-card::after {
+  content: '';
+  position: absolute;
+  inset: 1.5px;
+  border-radius: calc(var(--lumi-radius-lg) - 0px);
+  background: var(--lumi-surface);
+  z-index: -1;
+  pointer-events: none;
+}
+@media (hover: hover) {
+  .dash-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--lumi-shadow-md);
+  }
+  .dash-card:hover::before { opacity: 1; }
+}
+.dash-card:active {
+  transform: scale(0.97);
+  transition-duration: var(--lumi-duration-instant);
+}
+
+.dash-card__icon {
+  font-size: 20px;
+  line-height: 1;
+  margin-bottom: var(--lumi-space-1);
+  /* emoji — ok here as data display, not content decoration */
+}
+.dash-card__label {
+  font-size: var(--lumi-text-caption);
+  color: var(--lumi-ink-muted);
+  font-weight: var(--lumi-weight-medium);
+}
+.dash-card__num {
+  font-size: clamp(24px, 6vw, 32px);
+  font-weight: var(--lumi-weight-heavy);
+  letter-spacing: -0.04em;
+  color: var(--lumi-ink-strong);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+.dash-card__num.is-brand {
+  background: var(--lumi-gradient-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.dash-card__sub {
+  font-size: var(--lumi-text-caption);
+  color: var(--lumi-ink-muted);
+  font-weight: var(--lumi-weight-medium);
+}
+.dash-card__sub.is-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--lumi-success);
+  font-weight: var(--lumi-weight-bold);
+}
+.dash-card__sub.is-live::before {
+  content: '';
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--lumi-success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--lumi-success) 18%, transparent);
+  animation: lumi-pulse 1.6s var(--lumi-ease-soft) infinite;
+  flex-shrink: 0;
+}
+.dash-card__sub.is-up { color: var(--lumi-success); font-weight: var(--lumi-weight-bold); }
+
+/* ─── Today summary bar ─── */
+.dash-summary {
+  font-size: var(--lumi-text-caption);
+  color: var(--lumi-ink-muted);
+  padding: var(--lumi-space-3) var(--lumi-space-4);
+  background: var(--lumi-surface);
+  border-radius: var(--lumi-radius-md);
+  line-height: var(--lumi-leading-normal);
+}
+.dash-summary__dot {
+  display: inline-block;
+  width: 3px; height: 3px;
+  border-radius: 50%;
+  background: var(--lumi-ink-faint);
+  vertical-align: middle;
+  margin-inline: var(--lumi-space-2);
+  margin-bottom: 1px;
+}
+
+/* ─── Toast ─── */
+.lumi-toast {
+  position: fixed;
+  bottom: calc(96px + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%) translateY(24px);
+  z-index: var(--lumi-z-toast);
+  background: var(--lumi-neutral-800);
+  color: var(--lumi-neutral-0);
+  font-size: var(--lumi-text-body-sm);
+  font-weight: var(--lumi-weight-semibold);
+  padding: var(--lumi-space-3) var(--lumi-space-5);
+  border-radius: var(--lumi-radius-pill);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    opacity var(--lumi-duration-fast) var(--lumi-ease-soft),
+    transform var(--lumi-duration-base) var(--lumi-ease-toss);
+  box-shadow: var(--lumi-shadow-lg);
+}
+.lumi-toast.is-visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+@media (min-width: 768px) {
+  .lumi-toast {
+    bottom: 32px;
+  }
+}
+
+/* ─── Sticky bottom CTA (mobile only) ─── */
+.dash-bottom-cta {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: var(--lumi-z-bottom);
+  padding:
+    var(--lumi-space-3) var(--lumi-page-x)
+    calc(var(--lumi-space-3) + env(safe-area-inset-bottom));
+  background: color-mix(in srgb, var(--lumi-surface) 92%, transparent);
+  backdrop-filter: var(--lumi-blur-md);
+  -webkit-backdrop-filter: var(--lumi-blur-md);
+  border-top: 1px solid var(--lumi-line);
+  transition: opacity var(--lumi-duration-fast) var(--lumi-ease-soft);
+}
+.dash-bottom-cta.is-hidden { opacity: 0; pointer-events: none; }
+@media (min-width: 768px) { .dash-bottom-cta { display: none; } }
+
+/* ─── keyframes ─── */
+@keyframes lumi-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%       { transform: scale(0.85); opacity: 0.7; }
 }
 
 /* ── Lumi 법적 고지 Footer ──────────────────────────── */
 .lumi-footer{border-top:1px solid rgba(0,0,0,.08);padding:28px 24px 36px;text-align:center;font-size:12px;color:#86868b;line-height:1.8;margin-top:48px;}
-body.dark-mode .lumi-footer{border-top-color:rgba(255,255,255,.08);color:rgba(255,255,255,.3);}
 .lumi-footer p{margin:0 0 2px;}
 .lumi-footer__links{display:flex;flex-wrap:wrap;gap:8px 14px;justify-content:center;margin:10px 0 6px;}
 .lumi-footer__links a{font-size:12px;color:#6e6e73;text-decoration:none;}
 .lumi-footer__links a:hover{text-decoration:underline;}
-body.dark-mode .lumi-footer__links a{color:rgba(255,255,255,.35);}
 .lumi-footer__copy{font-size:11px;color:#aeaeb2;margin-top:6px!important;}
 .lumi-footer__logo{height:28px;width:auto;display:block;margin:0 auto 8px;}
-body.dark-mode .lumi-footer__logo{filter:invert(1) brightness(2);}
-body.dark-mode .lumi-footer__copy{color:rgba(255,255,255,.2);}
 @media(max-width:768px){.lumi-footer{padding:22px 16px 30px;}}
 </style>
+
 <script>window.SUPABASE_ANON_KEY = 'sb_publishable_WjWg5o05Y7lhib674Cr_fw_0mpY-ccG';</script>
 </head>
-<body class="page-dashboard page-dashboard-chat">
+<body data-theme="light">
 
-  <div class="chat-shell">
+<!-- lumi-head.js 자동 삽입 -->
 
-    <!-- ==================== 좌측: 업무 히스토리 사이드바 ==================== -->
-    <aside class="chat-sidebar" id="chatSidebar" aria-label="업무 히스토리">
-      <div class="chat-sidebar__top">
-        <a href="/dashboard.html" class="chat-sidebar__brand" aria-label="루미 홈">
-          <img src="/assets/logo-wordmark.png" alt="루미" style="height:24px;width:auto;" />
-        </a>
-        <button type="button" class="chat-sidebar__new" id="newCommandBtn" aria-label="새 명령">
-          <span class="chat-sidebar__new-icon">+</span>
-          <span>새 명령</span>
-        </button>
+<main>
+
+  <!-- Greeting -->
+  <section class="dash-greet">
+    <div class="dash-greet__inner">
+      <h1 class="dash-greet__title">김사장님 좋은 아침 ☀️</h1>
+    </div>
+  </section>
+
+  <!-- Body: left (composer) + right (cards) -->
+  <div class="dash-body">
+
+    <!-- LEFT: Composer -->
+    <div class="composer" id="composer">
+
+      <!-- State 1: Drop zone -->
+      <div class="composer__drop" id="composerDrop" role="button" tabindex="0" aria-label="사진 추가">
+        <div class="composer__drop-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="3" y="3" width="18" height="18" rx="3"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21 15 16 10 5 21"/>
+          </svg>
+        </div>
+        <p class="composer__drop-label">📷 사진 1장 등록</p>
+        <p class="composer__drop-hint">터치해서 추가</p>
       </div>
 
-      <div class="chat-sidebar__scroll" id="sidebarScroll">
-        <!-- 즐겨찾기 영역 -->
-        <section class="chat-sidebar__section" aria-label="즐겨찾기">
-          <h3 class="chat-sidebar__section-title">즐겨찾기</h3>
-          <div class="chat-sidebar__list" id="sidebarFavorites">
-            <div class="chat-sidebar__empty">불러오는 중…</div>
-          </div>
-        </section>
+      <!-- State 2: Active composer -->
+      <div class="composer__active" id="composerActive">
 
-        <!-- 히스토리 영역 (오늘 / 어제 / 7일 / 30일) -->
-        <section class="chat-sidebar__section" aria-label="업무 히스토리">
-          <h3 class="chat-sidebar__section-title">업무 히스토리</h3>
-          <div id="sidebarHistory">
-            <div class="chat-sidebar__empty">아직 내역이 없어요. 명령창에 입력해 보세요</div>
-          </div>
-        </section>
-      </div>
-
-      <div class="chat-sidebar__bottom">
-        <a href="/failure-log.html" class="chat-sidebar__bottom-link">
-          <span>!</span><span>실패 추적</span>
-        </a>
-        <a href="/migration.html" class="chat-sidebar__bottom-link">
-          <span>↓</span><span>데이터 가져오기</span>
-        </a>
-        <a href="/order-mapping.html" class="chat-sidebar__bottom-link">
-          <span>⇄</span><span>옵션 매핑</span>
-        </a>
-        <a href="/claims.html" class="chat-sidebar__bottom-link">
-          <span>⚠</span><span>클레임</span>
-        </a>
-        <a href="/bulk-options.html" class="chat-sidebar__bottom-link">
-          <span>≡</span><span>단품 대량 수정</span>
-        </a>
-        <a href="/bulk-products.html" class="chat-sidebar__bottom-link">
-          <span>⊞</span><span>상품 대량 수정</span>
-        </a>
-        <a href="/settings.html" class="chat-sidebar__bottom-link">
-          <span>⚙</span><span>설정</span>
-        </a>
-        <a href="/?stay=1" class="chat-sidebar__bottom-link" id="logoutLink">
-          <span>↗</span><span>로그아웃</span>
-        </a>
-      </div>
-    </aside>
-
-    <!-- 모바일 사이드바 backdrop -->
-    <div class="chat-sidebar__backdrop" id="chatSidebarBackdrop"></div>
-
-    <!-- ==================== 우측: 메인 영역 ==================== -->
-    <main class="chat-main" id="chatMain">
-
-      <!-- ────── 모바일 헤더 (햄버거 + 타이틀) ────── -->
-      <header class="chat-mobile-header">
-        <button type="button" class="chat-mobile-header__menu" id="mobileMenuBtn" aria-label="메뉴">
-          <span></span><span></span><span></span>
-        </button>
-        <div class="chat-mobile-header__title">루미 명령창</div>
-        <button type="button" class="chat-mobile-header__theme" id="mobileThemeBtn" aria-label="다크 모드">☾</button>
-      </header>
-
-      <!-- ────── 캔버스: 결과 영역 ────── -->
-      <section class="canvas-area" id="canvasArea" aria-label="결과 캔버스">
-        <!-- 기본 = 오늘 요약. 명령 입력 시 = 결과 카드로 갱신 -->
-
-        <!-- 인사 + 미니 헤드 -->
-        <div class="canvas-greet" id="canvasGreet">
-          <p class="canvas-greet__hello" id="greetHello">오늘 사장님의 시장</p>
-          <h1 class="canvas-greet__title" id="greetTitle">무엇을 도와드릴까요?</h1>
-          <p class="canvas-greet__sub">아래 명령창에 자연어로 입력하시거나, 즐겨찾기를 눌러 보세요</p>
-        </div>
-
-        <!-- 오늘 요약 위젯들 (기본 진입 화면) -->
-        <div class="canvas-default" id="canvasDefault">
-
-          <!-- Action Agent 스택 (canvas.js renderActionAgents 타겟) -->
-          <div id="actionAgentStack"></div>
-
-          <!-- 카테고리별 상품 카운트 -->
-          <section class="widget" id="categoryWidget" aria-label="내 상품 카테고리">
-            <div class="widget__header">
-              <div>
-                <h2 class="widget__title">내 상품</h2>
-                <p class="widget__subtitle">카테고리·마켓 분포</p>
-              </div>
-              <div class="view-toggle" id="catViewToggle" role="tablist" aria-label="뷰 전환">
-                <button class="view-toggle__btn view-toggle__btn--active" type="button" data-view="list" role="tab">List</button>
-                <button class="view-toggle__btn" type="button" data-view="tree" role="tab">Tree</button>
-                <button class="view-toggle__btn" type="button" data-view="chart" role="tab">Chart</button>
-              </div>
-            </div>
-            <div class="cat-widget__total">
-              <span class="cat-widget__total-num" id="catTotalNum">0</span>
-              <span class="cat-widget__total-label">개 등록</span>
-            </div>
-            <div class="cat-widget__market-row" id="catMarketRow"></div>
-            <div id="catBody"></div>
-          </section>
-
-          <!-- 트렌드 카드 -->
-          <section class="widget" aria-label="오늘 뜨는 상품">
-            <div class="widget__header">
-              <div>
-                <h2 class="widget__title">오늘 뜨는 상품</h2>
-                <p class="widget__subtitle">시장에서 지금 급상승</p>
-              </div>
-              <a href="/trends" class="widget__action">전체 →</a>
-            </div>
-            <div class="trend-cards-canvas" id="trendCanvasCards">
-              <div class="widget__empty">트렌드를 불러오는 중…</div>
-            </div>
-          </section>
-
-          <!-- Profit -->
-          <section class="widget" aria-label="실수익">
-            <div class="widget__header">
-              <div>
-                <h2 class="widget__title">통장에 남는 돈</h2>
-                <p class="widget__subtitle" id="profitSubtitle">이번 주 · 수수료·광고·포장 차감</p>
-              </div>
-              <div class="view-toggle" id="profitPeriodToggle" role="tablist" aria-label="기간 전환">
-                <button class="view-toggle__btn" type="button" data-period="day" role="tab">오늘</button>
-                <button class="view-toggle__btn view-toggle__btn--active" type="button" data-period="week" role="tab">이번 주</button>
-                <button class="view-toggle__btn" type="button" data-period="month" role="tab">이번 달</button>
-              </div>
-            </div>
-            <div class="profit-canvas">
-              <p class="profit-canvas__amount" id="profitCanvasAmount">₩—</p>
-              <p class="profit-canvas__delta" id="profitCanvasDelta">계산 중…</p>
-              <div class="profit-breakdown" id="profitBreakdownList" hidden></div>
-            </div>
-          </section>
-
-          <!-- 우선순위 큐 -->
-          <section class="widget" aria-label="처리할 일 우선순위">
-            <div class="widget__header">
-              <div>
-                <h2 class="widget__title">처리할 일</h2>
-                <p class="widget__subtitle" id="priorityHint">긴급·VIP·일반 자동 정렬</p>
-              </div>
-              <a href="/tasks" class="widget__action">전체 →</a>
-            </div>
-            <div class="priority-cols" id="priorityCols">
-              <div class="priority-col" data-bucket="urgent">
-                <div class="priority-col__head">
-                  <span class="priority-col__dot priority-col__dot--urgent"></span>
-                  <span class="priority-col__label">긴급</span>
-                  <span class="priority-col__count" id="priorityUrgentCount">0</span>
-                </div>
-                <div class="priority-col__list" id="priorityUrgent">
-                  <div class="widget__empty">없음</div>
-                </div>
-              </div>
-              <div class="priority-col" data-bucket="vip">
-                <div class="priority-col__head">
-                  <span class="priority-col__dot priority-col__dot--vip"></span>
-                  <span class="priority-col__label">VIP</span>
-                  <span class="priority-col__count" id="priorityVipCount">0</span>
-                </div>
-                <div class="priority-col__list" id="priorityVip">
-                  <div class="widget__empty">없음</div>
-                </div>
-              </div>
-              <div class="priority-col" data-bucket="normal">
-                <div class="priority-col__head">
-                  <span class="priority-col__dot priority-col__dot--normal"></span>
-                  <span class="priority-col__label">일반</span>
-                  <span class="priority-col__count" id="priorityNormalCount">0</span>
-                </div>
-                <div class="priority-col__list" id="priorityNormal">
-                  <div class="widget__empty">없음</div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <!-- Live Stream -->
-          <section class="widget" aria-label="실시간 알림">
-            <div class="widget__header">
-              <div>
-                <h2 class="widget__title">실시간 알림</h2>
-                <p class="widget__subtitle" id="liveSubtitle">새 이벤트가 위에서 슬라이드 인</p>
-              </div>
-              <span class="live-stream__indicator" id="liveIndicator" aria-live="polite">
-                <span class="live-stream__pulse"></span>
-                <span id="liveStatus">대기 중</span>
-              </span>
-            </div>
-            <div class="live-stream" id="liveStream">
-              <div class="widget__empty">최근 알림이 없어요</div>
-            </div>
-          </section>
-
-          <!-- 이달 정산 -->
-          <section class="widget" id="settlement" aria-label="이달 정산">
-            <div class="widget__header">
-              <div>
-                <h2 class="widget__title">이달 정산</h2>
-                <p class="widget__subtitle" id="settlementSubtitle">매출·수수료·VAT·순이익 한눈에</p>
-              </div>
-              <button type="button" class="widget__action" id="settlementCsvBtn" aria-label="세무사 CSV 받기">세무사 CSV 받기</button>
-            </div>
-            <div class="settlement-canvas">
-              <div class="settlement-canvas__row">
-                <div class="settlement-canvas__cell">
-                  <p class="settlement-canvas__label">매출</p>
-                  <p class="settlement-canvas__value" id="settlementGross">₩—</p>
-                </div>
-                <div class="settlement-canvas__cell">
-                  <p class="settlement-canvas__label">수수료</p>
-                  <p class="settlement-canvas__value settlement-canvas__value--minus" id="settlementFees">₩—</p>
-                </div>
-                <div class="settlement-canvas__cell">
-                  <p class="settlement-canvas__label">부가세</p>
-                  <p class="settlement-canvas__value settlement-canvas__value--minus" id="settlementVat">₩—</p>
-                </div>
-                <div class="settlement-canvas__cell settlement-canvas__cell--net">
-                  <p class="settlement-canvas__label">순이익</p>
-                  <p class="settlement-canvas__value settlement-canvas__value--net" id="settlementNet">₩—</p>
-                </div>
-              </div>
-              <p class="settlement-canvas__delta" id="settlementDelta">전월 대비 계산 중…</p>
-              <p class="settlement-canvas__hint" id="settlementHint" hidden></p>
-            </div>
-          </section>
-
-          <!-- 채널별 ROI 분석 -->
-          <section class="widget" id="roiWidget" aria-label="채널별 ROI">
-            <div class="widget__header">
-              <div>
-                <h2 class="widget__title">채널별 수익 분석</h2>
-                <p class="widget__subtitle" id="roiSubtitle">쿠팡·네이버·토스 ROI 한눈에</p>
-              </div>
-              <div class="view-toggle" id="roiPeriodToggle" role="tablist" aria-label="기간 전환">
-                <button class="view-toggle__btn" type="button" data-period="day" role="tab">오늘</button>
-                <button class="view-toggle__btn view-toggle__btn--active" type="button" data-period="week" role="tab">이번 주</button>
-                <button class="view-toggle__btn" type="button" data-period="month" role="tab">이번 달</button>
-              </div>
-            </div>
-            <div class="roi-canvas" id="roiCanvas">
-              <div class="widget__empty">불러오는 중…</div>
-            </div>
-          </section>
-
-          <!-- AI 인사이트 (주간/월간 자동 보고서) -->
-          <section class="widget widget--insight" id="insightWidget" aria-label="AI 인사이트">
-            <div class="widget__header">
-              <div>
-                <h2 class="widget__title">AI 인사이트</h2>
-                <p class="widget__subtitle" id="insightSubtitle">주간 자동 보고서</p>
-              </div>
-              <div class="view-toggle" id="insightPeriodToggle" role="tablist" aria-label="보고서 종류">
-                <button class="view-toggle__btn view-toggle__btn--active" type="button" data-insight="weekly" role="tab">주간</button>
-                <button class="view-toggle__btn" type="button" data-insight="monthly" role="tab">월간</button>
-              </div>
-            </div>
-            <div class="insight-canvas" id="insightCanvas">
-              <p class="insight-canvas__period" id="insightPeriod">불러오는 중…</p>
-              <p class="insight-canvas__summary" id="insightSummary">매출·주문·트렌드 통합 보고서를 준비하고 있어요.</p>
-              <div class="insight-canvas__actions" id="insightActions"></div>
-              <button type="button" class="insight-canvas__expand" id="insightExpandBtn">전체 보기 →</button>
-            </div>
-          </section>
-
-        </div>
-
-        <!-- 명령 결과 카드 (레거시 — 히스토리 재생 시만 사용) -->
-        <div class="canvas-result" id="canvasResult" hidden>
-          <!-- JS로 동적 채움 -->
-        </div>
-
-      </section>
-
-      <!-- ────── 채팅 영역 — 스레드 + 입력창을 함께 sticky로 묶어 viewport 하단 고정 ────── -->
-      <div class="chat-bottom-panel">
-
-        <!-- 채팅 스레드 (명령·응답 누적, 입력창과 같이 움직임) -->
-        <div class="chat-thread" id="chatThread" aria-live="polite" aria-label="대화 스레드"></div>
-
-      <div class="chat-command" id="chatCommand">
-
-        <!-- Suggest Cards (입력 비어있을 때) -->
-        <div class="chat-suggests" id="chatSuggests">
-          <button class="chat-suggest" type="button" data-suggest="오늘 뜨는 상품 추천해 줘">오늘 뜨는 상품</button>
-          <button class="chat-suggest" type="button" data-suggest="쿠팡 가격 점검해 줘">쿠팡 가격 점검</button>
-          <button class="chat-suggest" type="button" data-suggest="재고 5개 이하 상품">재고 부족</button>
-          <button class="chat-suggest" type="button" data-suggest="이번 주 매출">이번 주 매출</button>
-          <button class="chat-suggest" type="button" data-suggest="오늘 날씨">날씨</button>
-          <button class="chat-suggest" type="button" data-suggest="환율">환율</button>
-        </div>
-
-        <form class="chat-input-form" id="chatForm" autocomplete="off">
-          <button type="button" class="chat-input-attach" id="chatAttach" aria-label="첨부 (사진·파일)" title="첨부 (사진·파일)">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 17.93 8.83l-8.59 8.57a2 2 0 1 1-2.83-2.83l8.49-8.48"/></svg>
+        <div class="composer__top-bar">
+          <span style="font-size:var(--lumi-text-body-sm);font-weight:var(--lumi-weight-semibold);color:var(--lumi-ink-muted);">루미가 캡션 만드는 중</span>
+          <button class="composer__close-btn" id="composerClose" aria-label="닫기">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
           </button>
-          <input type="file" id="chatFile" accept="image/*" hidden />
-          <textarea
-            class="chat-input"
-            id="chatInput"
-            placeholder="무엇을 하실래요? (예: 상품 등록, 주문 확인, CS 답변, 트렌드)"
-            rows="1"
-            maxlength="500"
-            aria-label="명령 입력"
-            spellcheck="false"
-            autocapitalize="off"
-            autocorrect="off"
-            autocomplete="off"
-          ></textarea>
-          <span class="chat-kbd" aria-hidden="true">⌘ K</span>
-          <button type="submit" class="chat-input-send" id="chatSend" aria-label="명령 보내기" disabled>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l14 0"/><path d="M13 6l6 6-6 6"/></svg>
+        </div>
+
+        <!-- Photo preview -->
+        <div class="composer__preview" id="composerPreview">
+          <img id="composerImg" src="" alt="선택한 상품 사진">
+        </div>
+
+        <!-- Generating indicator -->
+        <div class="composer__generating" id="composerGenerating">
+          <span class="pulse-dot"></span>
+          <span>루미가 캡션 만드는 중…</span>
+        </div>
+
+        <!-- Caption typewriter -->
+        <div class="composer__caption-wrap">
+          <p class="composer__caption" id="composerCaption" aria-live="polite"></p>
+        </div>
+
+        <!-- Hashtag chips -->
+        <div class="composer__chips" id="composerChips" aria-label="추천 해시태그"></div>
+
+        <!-- Time recommendation -->
+        <div class="composer__time-rec" id="composerTimeRec">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+          <span>최적 게시 시간</span>
+          <span class="composer__time-val" id="composerTimeVal">19:30</span>
+          <span style="color:var(--lumi-ink-faint);font-size:var(--lumi-text-caption);">반응 ↑</span>
+        </div>
+
+        <!-- Actions -->
+        <div class="composer__actions">
+          <button class="composer__regen-btn" id="regenBtn" aria-label="캡션 다시 만들기">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <polyline points="23 4 23 10 17 10"/>
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+            </svg>
+            다시 만들기
           </button>
-        </form>
-        <p class="chat-hint" id="chatHint">마켓 자동 실행은 곧 출시 예정이에요</p>
-      </div>
-
-      </div><!-- /.chat-bottom-panel -->
-
-      <!-- Command Palette (⌘K) -->
-      <div class="cmdk" id="cmdk">
-        <div class="cmdk__panel">
-          <input id="cmdkInput" class="cmdk__input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="무엇을 하실래요? (예: 상품 등록, 주문 확인, CS 답변)" />
-          <div id="cmdkList" class="cmdk__list"></div>
-          <button id="cmdkClose" class="cmdk__close" type="button" aria-label="닫기">닫기</button>
+          <button class="composer__post-btn" id="postBtn" aria-label="게시하기">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <line x1="22" y1="2" x2="11" y2="13"/>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+            게시하기 →
+          </button>
         </div>
-      </div>
 
-      <!-- Progressive Detail SlideOver -->
-      <div class="slideover" id="slideover" role="dialog" aria-modal="true" aria-labelledby="slideoverTitle">
-        <div class="slideover__backdrop"></div>
-        <div class="slideover__panel">
-          <div class="slideover__header">
-            <h2 class="slideover__title" id="slideoverTitle">상세</h2>
-            <button class="slideover__close" type="button" id="slideoverClose" aria-label="닫기">×</button>
-          </div>
-          <div class="slideover__body" id="slideoverBody"></div>
-          <div class="slideover__footer" id="slideoverFooter"></div>
+      </div><!-- /composer__active -->
+    </div><!-- /composer -->
+
+    <!-- RIGHT: Stats + summary -->
+    <div class="dash-right">
+
+      <!-- 2x2 cards -->
+      <div class="dash-cards">
+
+        <div class="dash-card" role="button" tabindex="0" aria-label="예약 현황">
+          <div class="dash-card__icon">⏰</div>
+          <div class="dash-card__label">예약</div>
+          <div class="dash-card__num" id="dashCardScheduled">2건</div>
+          <div class="dash-card__sub">대기 중</div>
         </div>
+
+        <div class="dash-card" role="button" tabindex="0" aria-label="오늘 트렌드">
+          <div class="dash-card__icon">🔥</div>
+          <div class="dash-card__label">트렌드</div>
+          <div class="dash-card__num" id="dashCardTrend">3건</div>
+          <div class="dash-card__sub">지금 올리면 딱</div>
+        </div>
+
+        <div class="dash-card" role="button" tabindex="0" aria-label="인사이트">
+          <div class="dash-card__icon">📊</div>
+          <div class="dash-card__label">인사이트</div>
+          <div class="dash-card__num is-brand" id="dashCardInsight">+24</div>
+          <div class="dash-card__sub is-up">↑ 팔로워</div>
+        </div>
+
+        <div class="dash-card" role="button" tabindex="0" aria-label="알림">
+          <div class="dash-card__icon">🔔</div>
+          <div class="dash-card__label">알림</div>
+          <div class="dash-card__num" id="dashCardNotif">0</div>
+          <div class="dash-card__sub" id="dashCardNotifSub">새 알림</div>
+        </div>
+
+      </div><!-- /dash-cards -->
+
+      <!-- Summary bar -->
+      <div class="dash-summary" aria-label="오늘 현황 요약">
+        오늘 한눈에: 좋아요 <strong id="dashSummaryLike">24</strong><span class="dash-summary__dot"></span>도달 <strong id="dashSummaryReach">1.4K</strong><span class="dash-summary__dot"></span>팔로워 <strong id="dashSummaryFollow">+24</strong>
       </div>
 
-    </main>
-  </div>
+    </div><!-- /dash-right -->
 
-  <!-- 다크 모드 토글 FAB (PC 우하단) -->
-  <button class="theme-fab" id="themeFab" type="button" aria-label="다크 모드 전환">☾</button>
+  </div><!-- /dash-body -->
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.103.3/dist/umd/supabase.min.js"></script>
-  <script>
-    (function () {
-      var SUPA_URL = 'https://cldsozdocxpvkbuxwqep.supabase.co';
-      var SUPA_KEY = 'sb_publishable_WjWg5o05Y7lhib674Cr_fw_0mpY-ccG';
-      window.lumiSupa = window.supabase.createClient(SUPA_URL, SUPA_KEY, {
-        auth: { persistSession: true, autoRefreshToken: true, storageKey: 'lumi-auth' }
-      });
-    })();
-  </script>
-  <script src="/js/_shared/auth-guard.js"></script>
-  <script>
-    // 비로그인 + 사업자 인증 미완료 진입 차단
-    (async function () {
-      var ok = await window.lumiAuthGuard.ensureOnboarded();
-      if (!ok) return; // 리다이렉트 발생 — 이후 초기화 중단
-    })();
-  </script>
-  <script src="/js/_shared/restore-seller-jwt.js"></script>
-  <script src="/js/dashboard-canvas.js"></script>
-  <script src="/js/dashboard-chat.js"></script>
+</main>
 
-<!-- ── 사업자 정보 (전자상거래법 §13 + Meta 인증) ── -->
+<!-- Toast -->
+<div class="lumi-toast" id="lumiToast" role="status" aria-live="polite"></div>
+
+<!-- Mobile sticky CTA -->
+<div class="dash-bottom-cta" id="dashBottomCta">
+  <button class="lumi-btn lumi-btn--primary lumi-btn--full" id="bottomCtaBtn">
+    📷 사진 1장 등록
+  </button>
+</div>
+
+<!-- hidden file input -->
+<input type="file" accept="image/*" id="photoInput" class="lumi-sr-only" aria-label="사진 선택">
+
+<!-- 법적 고지 Footer (전자상거래법 §13 + Meta 인증) -->
 <footer class="lumi-footer">
   <div class="lumi-footer__info">
     <img src="/assets/logo-wordmark.png" alt="루미" class="lumi-footer__logo" />
@@ -498,5 +868,211 @@ body.dark-mode .lumi-footer__copy{color:rgba(255,255,255,.2);}
   </div>
   <p class="lumi-footer__copy">© 2026 루미. All rights reserved.</p>
 </footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.103.3/dist/umd/supabase.min.js"></script>
+<script>
+  (function () {
+    var SUPA_URL = 'https://cldsozdocxpvkbuxwqep.supabase.co';
+    var SUPA_KEY = 'sb_publishable_WjWg5o05Y7lhib674Cr_fw_0mpY-ccG';
+    window.lumiSupa = window.supabase.createClient(SUPA_URL, SUPA_KEY, {
+      auth: { persistSession: true, autoRefreshToken: true, storageKey: 'lumi-auth' }
+    });
+  })();
+</script>
+<script src="/js/_shared/auth-guard.js"></script>
+<script>
+  // 비로그인 + 사업자 인증 미완료 진입 차단
+  (async function () {
+    var ok = await window.lumiAuthGuard.ensureOnboarded();
+    if (!ok) return; // 리다이렉트 발생 — 이후 초기화 중단
+  })();
+</script>
+<script src="/js/_shared/restore-seller-jwt.js"></script>
+<script src="/js/lumi-head.js" defer></script>
+<script src="/js/lumi-foot.js" defer></script>
+<script src="/js/lumi-tabs.js" defer></script>
+<script>
+/* ─── Dashboard v2 — 사진 진입 → 캡션 streaming ─── */
+(function () {
+  'use strict';
+
+  /* Mock data */
+  const MOCK_CAPTION   = '여름 한정 연한 핑크 코튼셔츠.\n땀 많은 여름엔 통기성이 답.';
+  const MOCK_TAGS      = ['#여름룩', '#코튼셔츠', '#데일리', '#패션스타그램', '#ootd'];
+  const MOCK_TIME      = '19:30';
+  const TYPEWRITER_MS  = 30;
+  const CHIP_DELAY_MS  = 200;
+
+  /* Elements */
+  const composer        = document.getElementById('composer');
+  const composerDrop    = document.getElementById('composerDrop');
+  const photoInput      = document.getElementById('photoInput');
+  const composerActive  = document.getElementById('composerActive');
+  const composerPreview = document.getElementById('composerPreview');
+  const composerImg     = document.getElementById('composerImg');
+  const composerGen     = document.getElementById('composerGenerating');
+  const composerCaption = document.getElementById('composerCaption');
+  const composerChips   = document.getElementById('composerChips');
+  const composerTimeRec = document.getElementById('composerTimeRec');
+  const composerTimeVal = document.getElementById('composerTimeVal');
+  const composerClose   = document.getElementById('composerClose');
+  const regenBtn        = document.getElementById('regenBtn');
+  const postBtn         = document.getElementById('postBtn');
+  const bottomCta       = document.getElementById('dashBottomCta');
+  const bottomCtaBtn    = document.getElementById('bottomCtaBtn');
+  const toast           = document.getElementById('lumiToast');
+
+  /* Streaming state */
+  let streamAbort = null;
+
+  /* ── Helpers ── */
+  function wait(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  function showToast(msg, durationMs) {
+    durationMs = durationMs || 2400;
+    toast.textContent = msg;
+    toast.classList.add('is-visible');
+    setTimeout(() => toast.classList.remove('is-visible'), durationMs);
+  }
+
+  /* ── Typewriter ── */
+  async function typewriter(text, signal) {
+    composerCaption.textContent = '';
+    for (let i = 0; i < text.length; i++) {
+      if (signal && signal.aborted) return;
+      composerCaption.textContent = text.slice(0, i + 1);
+      await wait(TYPEWRITER_MS);
+    }
+  }
+
+  /* ── Chip fade-in ── */
+  async function fadeInChips(tags, signal) {
+    composerChips.innerHTML = '';
+    for (let i = 0; i < tags.length; i++) {
+      if (signal && signal.aborted) return;
+      const chip = document.createElement('span');
+      chip.className = 'composer__chip';
+      chip.textContent = tags[i];
+      composerChips.appendChild(chip);
+      // force reflow then animate
+      requestAnimationFrame(() => requestAnimationFrame(() => chip.classList.add('is-visible')));
+      await wait(CHIP_DELAY_MS);
+    }
+  }
+
+  /* ── Time slide-up ── */
+  async function slideUpTime(time, signal) {
+    if (signal && signal.aborted) return;
+    composerTimeVal.textContent = time;
+    composerTimeRec.classList.add('is-visible');
+  }
+
+  /* ── Run streaming sequence ── */
+  async function runStreaming() {
+    /* abort any running stream */
+    if (streamAbort) streamAbort.abort();
+    const ctrl = new AbortController();
+    streamAbort = ctrl;
+    const sig = ctrl.signal;
+
+    /* reset */
+    composerCaption.textContent = '';
+    composerChips.innerHTML = '';
+    composerTimeRec.classList.remove('is-visible');
+    postBtn.classList.remove('is-active');
+
+    /* show generating label */
+    composerGen.classList.remove('is-done');
+    composerGen.classList.add('is-visible');
+
+    await wait(400); /* brief pause before typing */
+    if (sig.aborted) return;
+
+    composerGen.classList.add('is-done'); /* hide while typing */
+
+    await typewriter(MOCK_CAPTION, sig);
+    if (sig.aborted) return;
+
+    await wait(200);
+    await fadeInChips(MOCK_TAGS, sig);
+    if (sig.aborted) return;
+
+    await wait(300);
+    await slideUpTime(MOCK_TIME, sig);
+    if (sig.aborted) return;
+
+    /* enable post button */
+    postBtn.classList.add('is-active');
+  }
+
+  /* ── Open composer ── */
+  function openComposer(file) {
+    const url = URL.createObjectURL(file);
+    composerImg.src = url;
+    composerImg.onload = () => URL.revokeObjectURL(url);
+
+    composer.classList.add('is-active');
+    bottomCta.classList.add('is-hidden');
+
+    runStreaming();
+  }
+
+  /* ── Close composer ── */
+  function closeComposer() {
+    if (streamAbort) { streamAbort.abort(); streamAbort = null; }
+    composer.classList.remove('is-active');
+    bottomCta.classList.remove('is-hidden');
+    composerImg.src = '';
+    composerCaption.textContent = '';
+    composerChips.innerHTML = '';
+    composerTimeRec.classList.remove('is-visible');
+    composerGen.classList.remove('is-visible', 'is-done');
+    postBtn.classList.remove('is-active');
+    photoInput.value = '';
+  }
+
+  /* ── Event: open file picker ── */
+  function triggerPicker() {
+    photoInput.click();
+  }
+
+  composerDrop.addEventListener('click', triggerPicker);
+  composerDrop.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); triggerPicker(); }
+  });
+  bottomCtaBtn.addEventListener('click', triggerPicker);
+
+  photoInput.addEventListener('change', function () {
+    const file = this.files && this.files[0];
+    if (!file) return;
+    openComposer(file);
+  });
+
+  /* ── Close ── */
+  composerClose.addEventListener('click', closeComposer);
+
+  /* ── Regen ── */
+  regenBtn.addEventListener('click', function () {
+    runStreaming();
+  });
+
+  /* ── Post ── */
+  postBtn.addEventListener('click', function () {
+    if (!postBtn.classList.contains('is-active')) return;
+    showToast('✓ 게시 완료!', 2800);
+    setTimeout(closeComposer, 800);
+  });
+
+  /* ── Keyboard: ESC closes ── */
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && composer.classList.contains('is-active')) {
+      closeComposer();
+    }
+  });
+
+})();
+</script>
 </body>
 </html>

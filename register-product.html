@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
   <link rel="stylesheet" href="/css/lumi-tokens.css" />
   <link rel="stylesheet" href="/css/lumi-comp.css" />
+  <link rel="stylesheet" href="/css/lumi-tabs.css" />
 
 <style>
 /* ── Page scaffold ──────────────────────────────────────── */
@@ -531,10 +532,7 @@ body {
 
 /* ── Channel selector ────────────────────────────────────── */
 .composer__channels {
-  display: flex;
-  gap: var(--lumi-space-2, 8px);
   padding: 0 var(--lumi-space-5, 20px) var(--lumi-space-4, 16px);
-  align-items: center;
   opacity: 0;
   transform: translateY(6px);
   transition:
@@ -545,12 +543,26 @@ body {
   opacity: 1;
   transform: translateY(0);
 }
-.channel-chip {
-  display: inline-flex;
+.channel-label {
+  font-size: var(--lumi-text-caption, 13px);
+  font-weight: var(--lumi-weight-semibold, 600);
+  color: var(--lumi-ink-muted);
+  margin: 0 0 var(--lumi-space-2, 8px);
+  display: block;
+}
+.channel-seg {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--lumi-space-2, 8px);
+}
+.channel-seg__btn {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 7px 14px;
-  border-radius: var(--lumi-radius-pill, 9999px);
+  justify-content: center;
+  gap: 4px;
+  padding: var(--lumi-space-3, 12px) var(--lumi-space-2, 8px);
+  border-radius: var(--lumi-radius-md, 10px);
   font-size: var(--lumi-text-caption, 13px);
   font-weight: var(--lumi-weight-semibold, 600);
   cursor: pointer;
@@ -560,26 +572,29 @@ body {
   transition:
     border-color var(--lumi-duration-fast, 120ms) var(--lumi-ease-soft, ease),
     background-color var(--lumi-duration-fast, 120ms) var(--lumi-ease-soft, ease),
-    color var(--lumi-duration-fast, 120ms) var(--lumi-ease-soft, ease);
+    color var(--lumi-duration-fast, 120ms) var(--lumi-ease-soft, ease),
+    transform var(--lumi-duration-snap, 100ms) var(--lumi-ease-toss, cubic-bezier(0.34,1.56,0.64,1));
   user-select: none;
+  font-family: inherit;
+  width: 100%;
 }
-.channel-chip.is-selected {
+.channel-seg__btn.is-selected {
   border-color: var(--lumi-brand-fill, #C8507A);
   background: var(--lumi-brand-soft, #FFE6EE);
   color: var(--lumi-brand-text, #C8507A);
 }
-.channel-chip svg {
-  width: 14px; height: 14px;
+.channel-seg__btn:active {
+  transform: scale(0.96);
+  transition-duration: var(--lumi-duration-instant, 60ms);
+}
+.channel-seg__btn svg {
+  width: 18px; height: 18px;
   stroke: currentColor;
-  stroke-width: 2;
+  stroke-width: 1.8;
   fill: none;
   stroke-linecap: round;
   stroke-linejoin: round;
   flex-shrink: 0;
-}
-.channel-chip--placeholder {
-  opacity: 0.45;
-  pointer-events: none;
 }
 
 /* ── Sticky action bar (CTA) ─────────────────────────────── */
@@ -923,20 +938,33 @@ body {
 
         <!-- Channel selector -->
         <div class="composer__channels" id="composerChannels" aria-label="채널 선택">
-          <button class="channel-chip is-selected" data-channel="instagram" type="button">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
-              <circle cx="12" cy="12" r="4"/>
-              <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor"/>
-            </svg>
-            인스타그램
-          </button>
-          <button class="channel-chip channel-chip--placeholder" data-channel="tiktok" type="button" aria-label="틱톡 — 준비 중" disabled>
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/>
-            </svg>
-            틱톡 <span style="font-size:10px;opacity:.7;">(준비 중)</span>
-          </button>
+          <span class="channel-label">어디에 올릴까요?</span>
+          <input type="hidden" name="post_channel" id="postChannel" value="instagram" />
+          <div class="channel-seg" role="group" aria-label="게시 채널 선택">
+            <button class="channel-seg__btn is-selected" data-channel="instagram" type="button" aria-pressed="true">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+                <circle cx="12" cy="12" r="4"/>
+                <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor"/>
+              </svg>
+              Instagram
+            </button>
+            <button class="channel-seg__btn" data-channel="tiktok" type="button" aria-pressed="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/>
+              </svg>
+              TikTok
+            </button>
+            <button class="channel-seg__btn" data-channel="both" type="button" aria-pressed="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M17 1l4 4-4 4"/>
+                <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+                <path d="M7 23l-4-4 4-4"/>
+                <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+              </svg>
+              둘 다
+            </button>
+          </div>
         </div>
 
         <!-- Desktop action buttons (hidden on mobile, shown on 768+) -->
@@ -1047,6 +1075,7 @@ body {
   var tabSchedule      = document.getElementById('tabSchedule');
   var panelNow         = document.getElementById('panelNow');
   var panelSchedule    = document.getElementById('panelSchedule');
+  var postChannelInput = document.getElementById('postChannel');
 
   /* ── Streaming abort ── */
   var streamAbort = null;
@@ -1245,10 +1274,16 @@ body {
     }
   }
 
-  /* ── Channel toggle ── */
-  composerChannels.querySelectorAll('.channel-chip:not(.channel-chip--placeholder)').forEach(function (chip) {
-    chip.addEventListener('click', function () {
-      chip.classList.toggle('is-selected');
+  /* ── Channel segmented control ── */
+  composerChannels.querySelectorAll('.channel-seg__btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      composerChannels.querySelectorAll('.channel-seg__btn').forEach(function (b) {
+        b.classList.remove('is-selected');
+        b.setAttribute('aria-pressed', 'false');
+      });
+      btn.classList.add('is-selected');
+      btn.setAttribute('aria-pressed', 'true');
+      postChannelInput.value = btn.dataset.channel;
     });
   });
 
