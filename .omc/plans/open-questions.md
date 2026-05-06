@@ -18,7 +18,7 @@
 ## Phase 2 Video Reels - 2026-04-19
 
 - [ ] **Supabase Storage CORS / CSP** — IG Graph API가 lumi-videos 버킷의 video_url을 fetch할 때 CORS 필요 여부. 또한 index.html CSP connect-src에 Supabase Storage 도메인이 포함되어야 클라이언트 직접 업로드 가능
-- [ ] **IG Graph API REELS 권한 범위** — 현재 앱에 `instagram_content_publish` 스코프만으로 REELS 게시가 되는지, 추가 권한이 필요한지 Meta 문서 확인 필요
+- [ ] **IG Graph API REELS 권한 범위** — 현재 앱에 `instagram_business_content_publish` 스코프만으로 REELS 게시가 되는지, 추가 권한이 필요한지 Meta 문서 확인 필요
 - [ ] **영상 용량 최적화** — 100MB 영상 그대로 Supabase 업로드 시 스토리지 비용 증가. 클라이언트 압축(ffmpeg.wasm 등) 도입 여부
 - [ ] **Modal 한글 폰트 배포 방식** — Pretendard-Bold를 Modal 컨테이너에 bake-in할지, S3 런타임 다운로드할지
 - [ ] **자막 burn-in 실패 시 UX** — 현재 설계는 "원본으로 진행"이지만 사용자에게 "자막 없이 게시됐어요" 알림 필요 여부

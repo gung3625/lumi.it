@@ -273,9 +273,9 @@ or modified by Lumi.
 | IG 연결 해제 | `disconnect-ig.js` | `/.netlify/functions/disconnect-ig` |
 | 회원 탈퇴 | `account-delete.js` | `/.netlify/functions/account-delete` |
 
-> 현재 `ig-oauth.js` 코드의 SCOPES 값은 구버전 명칭(`instagram_basic`, `instagram_content_publish` 등) 사용 중.
+> `ig-oauth.js` 코드의 SCOPES 값은 신규 명칭으로 업데이트 완료.
 > Meta App Review 신청 권한과 실제 요청 스코프가 일치해야 통과 가능.
-> 신청 전 SCOPES를 아래와 같이 맞출 것:
+> 현재 SCOPES:
 >
 > ```js
 > const SCOPES = [

@@ -9,10 +9,10 @@ const APP_ID = process.env.META_APP_ID || '1233639725586126';
 const APP_SECRET = process.env.META_APP_SECRET;
 const REDIRECT_URI = 'https://lumi.it.kr/.netlify/functions/ig-oauth';
 const SCOPES = [
-  'instagram_basic',
-  'instagram_content_publish',
-  'instagram_manage_comments',
-  'instagram_manage_insights',
+  'instagram_business_basic',
+  'instagram_business_content_publish',
+  'instagram_business_manage_comments',
+  'instagram_business_manage_insights',
   'pages_show_list',
   'pages_read_engagement',
   'pages_manage_metadata',
