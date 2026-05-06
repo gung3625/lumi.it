@@ -12,8 +12,8 @@ const { getAdminClient } = require('./_shared/supabase-admin');
 
 const KAKAO_REST_API_KEY = process.env.KAKAO_REST_API_KEY;
 const REDIRECT_URI = 'https://lumi.it.kr/api/auth/kakao/callback';
-// 비즈 앱 인증 전: 전화번호 제외. 동의항목에 활성화된 항목만 포함.
-const SCOPE = 'account_email,profile_nickname,profile_image';
+// 비즈 앱 검수 통과 — 전화번호 포함
+const SCOPE = 'account_email,profile_nickname,profile_image,phone_number';
 
 function redirect(location) {
   return {

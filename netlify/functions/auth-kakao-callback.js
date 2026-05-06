@@ -157,13 +157,21 @@ exports.handler = async (event) => {
     const userData = await userRes.json();
 
     // 카카오 응답 구조:
-    // { id, kakao_account: { email, profile: { nickname, profile_image_url } } }
+    // { id, kakao_account: { email, phone_number, profile: { nickname, profile_image_url } } }
     const kakaoId = String(userData.id || '');
     const kakaoAccount = userData.kakao_account || {};
     const kakaoProfile = kakaoAccount.profile || {};
     const email = kakaoAccount.email || null;
     const displayName = kakaoProfile.nickname || null;
     const avatarUrl = kakaoProfile.profile_image_url || null;
+
+    // 카카오 phone_number 형식: "+82 10-1234-5678" → Solapi 형식 "01012345678"
+    let phone = null;
+    const rawPhone = kakaoAccount.phone_number || '';
+    if (rawPhone) {
+      const digits = rawPhone.replace(/[\s\-]/g, '').replace(/^\+82/, '0');
+      if (/^010\d{7,8}$/.test(digits)) phone = digits;
+    }
 
     if (!kakaoId) {
       console.error('[auth-kakao-callback] kakao_id 누락');
@@ -200,15 +208,18 @@ exports.handler = async (event) => {
       sellerId = existingSeller.id;
       onboarded = Boolean(existingSeller.onboarded);
 
+      const updatePayload = {
+        kakao_id: kakaoId,
+        display_name: displayName,
+        avatar_url: avatarUrl,
+        signup_method: 'kakao',
+        updated_at: nowIso,
+      };
+      if (phone) updatePayload.phone = phone;
+
       const { error: updErr } = await admin
         .from('sellers')
-        .update({
-          kakao_id: kakaoId,
-          display_name: displayName,
-          avatar_url: avatarUrl,
-          signup_method: 'kakao',
-          updated_at: nowIso,
-        })
+        .update(updatePayload)
         .eq('id', sellerId);
 
       if (updErr) {
@@ -216,18 +227,21 @@ exports.handler = async (event) => {
       }
     } else {
       // INSERT: 신규 카카오 가입
+      const insertPayload = {
+        kakao_id: kakaoId,
+        email,
+        display_name: displayName,
+        avatar_url: avatarUrl,
+        signup_method: 'kakao',
+        onboarded: false,
+        created_at: nowIso,
+        updated_at: nowIso,
+      };
+      if (phone) insertPayload.phone = phone;
+
       const { data: inserted, error: insErr } = await admin
         .from('sellers')
-        .insert({
-          kakao_id: kakaoId,
-          email,
-          display_name: displayName,
-          avatar_url: avatarUrl,
-          signup_method: 'kakao',
-          onboarded: false,
-          created_at: nowIso,
-          updated_at: nowIso,
-        })
+        .insert(insertPayload)
         .select('id, onboarded')
         .single();
 
