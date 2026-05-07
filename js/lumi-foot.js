@@ -28,7 +28,7 @@
   <div class="lumi-foot__inner">
     <div class="lumi-foot__brand">
       <a href="/" class="lumi-foot__logo" aria-label="lumi 홈">
-        <img src="/assets/logo-wordmark.png" alt="lumi" class="lumi-foot__logo-img" />
+        <img src="/assets/logo-wordmark.png" alt="lumi" class="lumi-foot__logo-img" width="58" height="28" loading="eager" decoding="sync" />
       </a>
       <p class="lumi-foot__tagline">사장님의 첫 AI 직원</p>
       <ul class="lumi-foot__contact" aria-label="연락처">

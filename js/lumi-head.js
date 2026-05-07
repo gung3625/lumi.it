@@ -13,7 +13,7 @@
 <header class="lumi-head" data-lumi-head>
   <div class="lumi-head__inner">
     <a href="/" class="lumi-head__logo" aria-label="lumi 홈">
-      <img src="/assets/logo-wordmark.png" alt="lumi" />
+      <img src="/assets/logo-wordmark.png" alt="lumi" width="50" height="24" loading="eager" decoding="sync" />
     </a>
 
     <nav class="lumi-head__nav" aria-label="메인 네비">
@@ -37,7 +37,7 @@
 <div class="lumi-head__drawer" id="lumi-drawer" data-lumi-drawer aria-hidden="true">
   <div class="lumi-head__drawer-top">
     <span class="lumi-head__logo">
-      <img src="/assets/logo-wordmark.png" alt="lumi" />
+      <img src="/assets/logo-wordmark.png" alt="lumi" width="50" height="24" loading="eager" decoding="sync" />
     </span>
     <button type="button" class="lumi-head__burger" data-lumi-drawer-close aria-label="메뉴 닫기">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6l-12 12"/></svg>
