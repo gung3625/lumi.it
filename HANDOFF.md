@@ -198,40 +198,32 @@ cat HANDOFF.md         # 이 파일
 
 ## CI/CD
 
-GitHub Actions 기반 자동 배포 파이프라인. main 브랜치 push 시 Supabase 마이그 자동 적용 후 Netlify 프로덕션 배포까지 한 번에.
+Netlify 통합 배포 파이프라인. main 브랜치 push 시 Netlify가 GitHub 연동을 통해 자동으로 빌드·배포하며, 빌드 step에서 Supabase 마이그까지 함께 적용한다. 별도 GitHub Actions 워크플로우 없음.
 
-### 워크플로우 파일
+### 동작 방식
 
-- `.github/workflows/deploy.yml` — 단일 워크플로우, 두 job (`migrate` → `deploy`)
-  - **트리거**: `push` to `main`, `workflow_dispatch` (수동)
-  - **migrate**: `supabase/setup-cli@v1` (`version: 1.215.0`) + `supabase db push --db-url $SUPABASE_DB_URL --include-all`
-  - **deploy** (`needs: migrate`): `actions/setup-node@v4` (node 20) + `npm install` + `npx netlify-cli@latest deploy --prod --site <ID> --dir .`
-  - migrate 실패 시 deploy 차단됨
+- Netlify가 이미 GitHub 레포의 `main` 브랜치에 자동 배포로 연결됨 (사이트 ID `28d60e0e-6aa4-4b45-b117-0bcc3c4268fc`)
+- main 브랜치 push → Netlify build 시작 → `netlify.toml` 의 `[build].command` 실행:
+  ```
+  npx -y supabase@1.215.0 db push --db-url "$SUPABASE_DB_URL" --include-all && npm install
+  ```
+- 마이그 적용 성공 시 `npm install` 후 publish (`.` 디렉토리) → 라이브 반영
+- 마이그 실패 시 빌드 자체가 fail → Netlify가 새 deploy를 publish 하지 않음 → race 없음
 
-### 필수 GitHub Secrets (사용자 등록 필요)
+### 필수 Netlify Env (등록 완료)
 
-GitHub 레포 → **Settings → Secrets and variables → Actions → New repository secret**:
+- **`SUPABASE_DB_URL`** — Session Pooler URL (`postgresql://...pooler.supabase.com:5432/postgres`). **이미 등록·검증 완료.**
+  - 발급 경로: Supabase Studio → Project Settings → Database → Connection string → **Session pooler** 탭
+  - direct URL이 아닌 **Session Pooler URL** 사용 (Netlify 빌더 IPv4 환경 호환)
 
-1. **`SUPABASE_DB_URL`** — Postgres 직결 connection string (URI 형식, password 포함)
-   - 발급: Supabase Studio → Project Settings → Database → **Connection string** → URI 탭 복사
-   - 형식: `postgresql://postgres.<ref>:<password>@<host>:5432/postgres`
-   - 주의: pooler URL 말고 **direct** URL 사용 (마이그용)
-
-2. **`NETLIFY_AUTH_TOKEN`** — Netlify 개인 액세스 토큰
-   - 발급: Netlify → User Settings → **Applications → Personal access tokens → New access token**
-   - 만료 없는 토큰 권장
-   - `NETLIFY_SITE_ID`는 워크플로우에 직접 명시(`28d60e0e-6aa4-4b45-b117-0bcc3c4268fc`)이라 secret 불필요
-
-### 자동 흐름
-
-main에 머지 → GitHub Actions 자동 시작 → migrate(이미 적용된 마이그는 skip) → deploy(`netlify deploy --prod`) → 라이브 반영.
+이 외 사용자가 추가로 해야 할 액션 없음. GitHub Secrets 등록·관리 불필요.
 
 ### 수동 트리거
 
-GitHub 레포 → Actions 탭 → 좌측 **Deploy** → 우측 **Run workflow** → 브랜치 선택 → 실행.
+Netlify Dashboard → Deploys 탭 → **Trigger deploy → Deploy site** (또는 캐시 클리어 후 deploy).
 
 ### 주의사항
 
-- 마이그 파일 추가/수정 없이 push해도 supabase CLI가 `schema_migrations` 테이블 비교 후 no-op 처리 (idempotent)
-- 첫 자동 배포는 두 secret 등록 후 main에 머지되는 첫 커밋부터 발생
-- 첫 실행 전 `SUPABASE_DB_URL`을 로컬에서 한 번 직접 `supabase db push --db-url "$URL" --include-all`로 검증 권장 — 이미 적용된 마이그까지 다시 시도되며 충돌이 나는지 확인
+- `--include-all`은 schema_migrations에 등록되지 않은 마이그까지 시도하므로, 수동 SQL로 이미 적용된 마이그가 있으면 첫 자동 배포에서 **충돌 가능**. 첫 머지 전에 로컬에서 한 번 `supabase db push --db-url "$SUPABASE_DB_URL" --include-all` 직접 실행 → 충돌 row 정리(중복 object skip 또는 schema_migrations에 수동 insert) 권장
+- 마이그 변경이 없는 push는 supabase CLI가 `schema_migrations` 비교 후 no-op (idempotent)
+- 기존 `[functions]`, `[[headers]]`, `[[redirects]]`, cron schedule 설정 모두 유지됨 — `[build]` 섹션의 `command`만 변경
