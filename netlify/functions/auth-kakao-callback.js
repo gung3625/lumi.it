@@ -268,6 +268,7 @@ exports.handler = async (event) => {
     // ──────────────────────────────────────────────
     // 6) HttpOnly Secure 쿠키로 JWT 전달
     // ──────────────────────────────────────────────
+    // HttpOnly 쿠키도 유지 (server-side 검증용) + URL hash로 토큰 전달 (클라이언트가 localStorage에 저장)
     const cookieVal =
       `lumi_session=${sellerJwt}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${60 * 60 * 24 * 14}`;
 
@@ -276,7 +277,10 @@ exports.handler = async (event) => {
     // ──────────────────────────────────────────────
     // 7) onboarded 상태에 따라 redirect
     // ──────────────────────────────────────────────
-    const destination = onboarded ? '/dashboard' : '/signup';
+    // 카카오 콜백 식별자 + 토큰을 URL hash로 (서버 로그·Referer에 노출 안 됨)
+    // 브라우저는 fragment(#...)를 서버에 전송하지 않으므로 로그 노출 없음
+    const hash = `#kakao=callback&lumi_token=${encodeURIComponent(sellerJwt)}`;
+    const destination = onboarded ? `/dashboard${hash}` : `/signup${hash}`;
 
     return {
       statusCode: 302,

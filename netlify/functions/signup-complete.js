@@ -16,7 +16,7 @@
 
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifySellerToken, extractBearerToken } = require('./_shared/seller-jwt');
-const { verifyBearerToken, extractBearerToken: extractSupabaseToken } = require('./_shared/supabase-auth');
+const { verifyBearerToken } = require('./_shared/supabase-auth');
 const { corsHeaders, getOrigin } = require('./_shared/auth');
 
 exports.handler = async (event) => {
@@ -48,6 +48,7 @@ exports.handler = async (event) => {
   }
 
   let sellerId = null;
+  let supaUserId = null; // Supabase Auth user.id (user_metadata 동기화용, 카카오 사용자는 null)
 
   // seller-jwt 우선 시도 (카카오 로그인 사용자)
   const { payload: sellerPayload, error: sellerErr } = verifySellerToken(rawToken);
@@ -60,6 +61,8 @@ exports.handler = async (event) => {
     if (supaErr || !supaUser) {
       return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증이 필요합니다.' }) };
     }
+
+    supaUserId = supaUser.id || null;
 
     // Supabase user → sellers에서 id 조회
     const { data: found } = await admin
@@ -121,6 +124,18 @@ exports.handler = async (event) => {
     if (updErr) {
       console.error('[signup-complete] sellers UPDATE 실패:', updErr.message);
       return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '정보 저장에 실패했습니다.' }) };
+    }
+
+    // Supabase Auth user_metadata도 동기화 (auth-guard 호환)
+    // 카카오 가입자는 supaUserId가 null이므로 스킵
+    if (supaUserId) {
+      try {
+        await admin.auth.admin.updateUserById(supaUserId, {
+          user_metadata: { onboarded: true, store_name: store_name.trim(), industry: industry.trim() },
+        });
+      } catch (e) {
+        console.warn('[signup-complete] user_metadata 갱신 실패 (무시):', e.message);
+      }
     }
 
     console.log('[signup-complete] 온보딩 완료. seller_id:', sellerId);

@@ -14,6 +14,7 @@
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
 const { corsHeaders, getOrigin } = require('./_shared/auth');
+const { signSellerToken } = require('./_shared/seller-jwt');
 
 exports.handler = async (event) => {
   const CORS = corsHeaders(getOrigin(event), { 'Access-Control-Allow-Methods': 'POST, OPTIONS' });
@@ -134,6 +135,13 @@ exports.handler = async (event) => {
 
     console.log('[auth-google-sync] Google 동기화 완료. seller_id:', sellerId, 'onboarded:', onboarded);
 
+    let sellerToken = null;
+    try {
+      sellerToken = signSellerToken({ seller_id: sellerId });
+    } catch (e) {
+      console.error('[auth-google-sync] sellerToken 발급 실패:', e.message);
+    }
+
     return {
       statusCode: 200,
       headers: CORS,
@@ -141,6 +149,7 @@ exports.handler = async (event) => {
         ok: true,
         onboarded,
         redirect: onboarded ? '/dashboard' : '/signup',
+        sellerToken,
       }),
     };
   } catch (e) {
