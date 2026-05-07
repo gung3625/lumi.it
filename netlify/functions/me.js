@@ -98,7 +98,7 @@ exports.handler = async (event) => {
   // sellers 조회: Supabase JWT → email 매칭, seller-jwt → id 매칭
   const sellerQuery = admin
     .from('sellers')
-    .select('id, business_number, owner_name, phone, email, store_name, signup_step, signup_completed_at, business_verified, business_verified_at, plan, trial_start, marketing_consent, referral_code, created_at, onboarded, signup_method, display_name, avatar_url');
+    .select('id, business_number, owner_name, phone, email, store_name, signup_step, signup_completed_at, business_verified, business_verified_at, plan, trial_start, marketing_consent, referral_code, created_at, onboarded, signup_method, display_name, avatar_url, age_range');
 
   let { data: seller, error: selErr } = sellerQueryField
     ? await sellerQuery.eq(sellerQueryField, sellerQueryValue).maybeSingle()
@@ -149,7 +149,7 @@ exports.handler = async (event) => {
           trial_start: now,
           marketing_consent: false,
         })
-        .select('id, business_number, owner_name, phone, email, store_name, signup_step, signup_completed_at, business_verified, business_verified_at, plan, trial_start, marketing_consent, referral_code, created_at, onboarded, signup_method, display_name, avatar_url')
+        .select('id, business_number, owner_name, phone, email, store_name, signup_step, signup_completed_at, business_verified, business_verified_at, plan, trial_start, marketing_consent, referral_code, created_at, onboarded, signup_method, display_name, avatar_url, age_range')
         .single();
       if (!insErr && created) {
         seller = created;
@@ -191,6 +191,7 @@ exports.handler = async (event) => {
         ownerName: seller.owner_name,
         displayName: seller.display_name || null,
         avatarUrl: seller.avatar_url || null,
+        ageRange: seller.age_range || null,
         storeName: seller.store_name,
         businessNumberMasked: maskBusinessNumber(seller.business_number),
         phoneMasked: maskPhone(seller.phone),

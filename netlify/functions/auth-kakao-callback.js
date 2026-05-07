@@ -158,13 +158,14 @@ exports.handler = async (event) => {
     const userData = await userRes.json();
 
     // 카카오 응답 구조:
-    // { id, kakao_account: { email, phone_number, profile: { nickname, profile_image_url } } }
+    // { id, kakao_account: { email, phone_number, name, age_range } }
+    // 닉네임·프로필 사진은 scope에서 제외됨
     const kakaoId = String(userData.id || '');
     const kakaoAccount = userData.kakao_account || {};
-    const kakaoProfile = kakaoAccount.profile || {};
     const email = kakaoAccount.email || null;
-    const displayName = kakaoProfile.nickname || null;
-    const avatarUrl = kakaoProfile.profile_image_url || null;
+    // 실명·연령대 (카카오 비즈 검수 통과 항목)
+    const realName = kakaoAccount.name || null;
+    const ageRange = kakaoAccount.age_range || null;  // "20~29", "30~39" 형식
 
     // 카카오 phone_number 형식: "+82 10-1234-5678" → Solapi 형식 "01012345678"
     let phone = null;
@@ -211,12 +212,12 @@ exports.handler = async (event) => {
 
       const updatePayload = {
         kakao_id: kakaoId,
-        display_name: displayName,
-        avatar_url: avatarUrl,
+        display_name: realName,
         signup_method: 'kakao',
         updated_at: nowIso,
       };
       if (phone) updatePayload.phone = phone;
+      if (ageRange) updatePayload.age_range = ageRange;
 
       const { error: updErr } = await admin
         .from('sellers')
@@ -231,14 +232,14 @@ exports.handler = async (event) => {
       const insertPayload = {
         kakao_id: kakaoId,
         email,
-        display_name: displayName,
-        avatar_url: avatarUrl,
+        display_name: realName,
         signup_method: 'kakao',
         onboarded: false,
         created_at: nowIso,
         updated_at: nowIso,
       };
       if (phone) insertPayload.phone = phone;
+      if (ageRange) insertPayload.age_range = ageRange;
 
       const { data: inserted, error: insErr } = await admin
         .from('sellers')

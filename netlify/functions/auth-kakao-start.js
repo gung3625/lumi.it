@@ -13,8 +13,8 @@ const { getAdminClient } = require('./_shared/supabase-admin');
 // Netlify env에는 KAKAO_CLIENT_ID로 등록됨 (REST API key 별칭). 둘 다 지원.
 const KAKAO_REST_API_KEY = process.env.KAKAO_CLIENT_ID || process.env.KAKAO_REST_API_KEY;
 const REDIRECT_URI = 'https://lumi.it.kr/api/auth/kakao/callback';
-// 비즈 앱 검수 통과 — 전화번호 포함
-const SCOPE = 'account_email,profile_nickname,profile_image,phone_number';
+// 비즈 앱 검수 통과 — 닉네임·프로필 사진 제외, 실명·연령대 추가
+const SCOPE = 'account_email,name,age_range,phone_number';
 
 function redirect(location) {
   return {
