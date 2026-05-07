@@ -89,200 +89,379 @@
     letter-spacing: 0.01em;
   }
   /* ══════════════════════════════════════════
-     Hero Preview — 단일 카드 (재설계, 클릭 X · 자동 순환)
+     Hero Tutorial — 3단계 사용법 안내
+     "사진 업로드 → AI 캡션 → 자동 게시" 명확한 시연
      ══════════════════════════════════════════ */
-  .hero__preview {
+  .hero__tutorial {
     margin-top: var(--lumi-space-10);
     width: 100%;
-    display: flex;
-    justify-content: center;
+    max-width: 480px;
+    margin-inline: auto;
   }
   @media (min-width: 768px) {
     .hero { padding-top: var(--lumi-space-20); }
-    .hero__preview { margin-top: var(--lumi-space-14); }
+    .hero__tutorial { margin-top: var(--lumi-space-14); }
   }
 
-  .preview-card {
-    width: min(380px, 92%);
-    border-radius: 24px;
+  /* ── Step header (단계 라벨 + 설명) ── */
+  .tut-header {
+    display: flex; align-items: flex-start; gap: 14px;
+    text-align: left;
+    padding: 0 4px;
+    margin-bottom: 14px;
+    min-height: 60px;
+  }
+  .tut-header__num {
+    width: 38px; height: 38px;
+    border-radius: 12px;
+    background: var(--lumi-gradient-brand);
+    color: white;
+    font-weight: var(--lumi-weight-heavy);
+    font-size: 17px;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+    box-shadow: 0 6px 18px -4px rgba(255,107,139,.45);
+    transition: transform .35s var(--lumi-ease-toss);
+  }
+  .tut-header__num.flip { transform: rotateY(360deg); }
+  .tut-header__copy {
+    flex: 1;
+    display: flex; flex-direction: column;
+    gap: 3px;
+    overflow: hidden;
+  }
+  .tut-header__title {
+    font-size: 17px;
+    font-weight: var(--lumi-weight-heavy);
+    color: var(--lumi-ink-strong);
+    margin: 0;
+    letter-spacing: -.02em;
+    line-height: 1.3;
+    transition: opacity .25s ease, transform .25s var(--lumi-ease-toss);
+  }
+  .tut-header__desc {
+    font-size: 13px;
+    color: var(--lumi-ink-muted);
+    margin: 0;
+    line-height: 1.45;
+    transition: opacity .25s .05s ease, transform .25s .05s var(--lumi-ease-toss);
+  }
+  .tut-header__title.fading,
+  .tut-header__desc.fading { opacity: 0; transform: translateY(-4px); }
+
+  /* ── Stage (씬 패널) ── */
+  .tut-stage {
+    position: relative;
+    border-radius: 20px;
     background: var(--lumi-surface);
     box-shadow:
       0 1px 0 rgba(255,255,255,.06) inset,
       0 24px 80px -16px rgba(0,0,0,.18),
       0 0 0 1px rgba(0,0,0,.05);
     overflow: hidden;
-    text-align: left;
-    position: relative;
+    height: 280px;
   }
-  [data-theme="dark"] .preview-card {
+  [data-theme="dark"] .tut-stage {
     box-shadow:
       0 1px 0 rgba(255,255,255,.04) inset,
       0 24px 80px -16px rgba(0,0,0,.55),
       0 0 0 1px rgba(255,255,255,.07);
   }
 
-  .preview-card__bar {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 14px 18px;
-    border-bottom: 1px solid var(--lumi-line);
-  }
-  .preview-card__brand {
-    font-weight: var(--lumi-weight-heavy);
-    font-size: 15px;
-    background: var(--lumi-gradient-brand);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    letter-spacing: -.02em;
-  }
-  .preview-card__status {
-    display: inline-flex; align-items: center; gap: 6px;
-    color: var(--lumi-ink-muted);
-    font-weight: var(--lumi-weight-semibold);
-    font-size: 11px;
-  }
-  .preview-card__status-dot {
-    width: 6px; height: 6px; border-radius: 50%;
-    background: var(--lumi-brand-fill);
-    animation: prv-pulse 1.4s ease-in-out infinite;
-  }
-  @keyframes prv-pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50%      { opacity: .35; transform: scale(.7); }
-  }
-
-  .preview-card__body {
+  .tut-scene {
+    position: absolute; inset: 0;
     padding: 18px;
     display: flex; flex-direction: column;
-    gap: 14px;
-  }
-
-  .preview-card__photo {
-    aspect-ratio: 4 / 3;
-    border-radius: 14px;
-    display: grid; place-items: center;
-    position: relative;
-    overflow: hidden;
-    transition: background .45s ease;
-  }
-  .preview-card__photo::after {
-    content: '';
-    position: absolute; inset: 0;
-    background: linear-gradient(140deg, rgba(255,255,255,.18) 0%, transparent 35%, transparent 65%, rgba(0,0,0,.08) 100%);
+    gap: 12px;
+    opacity: 0;
+    transform: translateX(20px);
+    transition: opacity .4s var(--lumi-ease-soft), transform .4s var(--lumi-ease-toss);
     pointer-events: none;
   }
-  .preview-card__emoji {
-    font-size: 64px;
+  .tut-scene.is-active { opacity: 1; transform: translateX(0); pointer-events: auto; }
+  .tut-scene.is-leaving { opacity: 0; transform: translateX(-20px); }
+
+  /* ── 씬 1: 사진 업로드 ── */
+  .tut-upload { align-items: center; justify-content: center; }
+  .tut-upload__zone {
+    width: 100%;
+    flex: 1;
+    border-radius: 14px;
+    border: 2px dashed var(--lumi-brand-fill);
+    background: linear-gradient(180deg, var(--lumi-brand-soft) 0%, transparent 70%);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 10px;
+    padding: 16px;
+  }
+  .tut-upload__icon {
+    width: 48px; height: 48px;
+    border-radius: 14px;
+    background: var(--lumi-gradient-brand);
+    color: white;
+    display: grid; place-items: center;
+    box-shadow: 0 8px 24px -6px rgba(255,107,139,.5);
+    animation: tut-bounce 2.4s ease-in-out infinite;
+  }
+  .tut-upload__icon svg {
+    width: 22px; height: 22px;
+    stroke: currentColor; stroke-width: 2.4;
+    fill: none; stroke-linecap: round; stroke-linejoin: round;
+  }
+  @keyframes tut-bounce {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-6px); }
+  }
+  .tut-upload__text {
+    font-size: 13px;
+    font-weight: var(--lumi-weight-bold);
+    color: var(--lumi-brand-text);
+    text-align: center;
+    line-height: 1.4;
+  }
+  .tut-upload__photos {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    width: 100%;
+    margin-top: 4px;
+  }
+  .tut-upload__photo {
+    aspect-ratio: 1;
+    border-radius: 8px;
+    display: grid; place-items: center;
+    font-size: 22px;
+    line-height: 1;
+    opacity: 0;
+    transform: scale(.6);
+    transition: opacity .3s ease, transform .35s var(--lumi-ease-toss);
+    position: relative;
+    overflow: hidden;
+  }
+  .tut-upload__photo::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(140deg, rgba(255,255,255,.2), transparent 50%, rgba(0,0,0,.05));
+    pointer-events: none;
+  }
+  .tut-upload__photo.in { opacity: 1; transform: scale(1); }
+  .tut-upload__counter {
+    font-size: 12px;
+    font-weight: var(--lumi-weight-bold);
+    color: var(--lumi-brand-text);
+    margin-top: 4px;
+    opacity: 0;
+    transition: opacity .3s ease;
+  }
+  .tut-upload__counter.in { opacity: 1; }
+  .tut-upload__counter::before { content: '✓ '; font-weight: 900; }
+
+  /* ── 씬 2: AI 캡션 ── */
+  .tut-caption { flex-direction: row; gap: 14px; }
+  .tut-caption__photo {
+    width: 100px;
+    aspect-ratio: 1;
+    border-radius: 12px;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #f5e6d3, #c8a07a);
+  }
+  .tut-caption__photo::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(140deg, rgba(255,255,255,.18), transparent 40%, rgba(0,0,0,.08));
+  }
+  .tut-caption__emoji {
+    font-size: 48px;
     line-height: 1;
     position: relative;
-    filter: drop-shadow(0 6px 16px rgba(0,0,0,.18));
-    transition: opacity .3s ease, transform .35s var(--lumi-ease-toss);
+    filter: drop-shadow(0 4px 12px rgba(0,0,0,.18));
   }
-  .preview-card__emoji.fading {
-    opacity: 0;
-    transform: scale(.85);
+  .tut-caption__body {
+    flex: 1;
+    display: flex; flex-direction: column;
+    gap: 8px;
+    overflow: hidden;
   }
-
-  .preview-card__caption {
-    background: var(--lumi-surface-alt);
-    border-radius: 12px;
-    padding: 12px 14px;
-    border-left: 2.5px solid var(--lumi-brand-fill);
-  }
-  .preview-card__caption-label {
+  .tut-caption__pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    align-self: flex-start;
+    background: var(--lumi-brand-soft);
+    color: var(--lumi-brand-text);
     font-size: 10px;
     font-weight: var(--lumi-weight-bold);
-    color: var(--lumi-ink-muted);
-    text-transform: uppercase;
-    letter-spacing: .08em;
-    display: block;
-    margin-bottom: 6px;
+    padding: 4px 9px;
+    border-radius: 980px;
+    letter-spacing: .02em;
   }
-  .preview-card__caption-text {
-    font-size: 13.5px;
+  .tut-caption__pill-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--lumi-brand-fill);
+    animation: tut-pulse 1.2s ease-in-out infinite;
+  }
+  @keyframes tut-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: .35; transform: scale(.6); }
+  }
+  .tut-caption__text {
+    font-size: 13px;
     line-height: 1.55;
     color: var(--lumi-ink-strong);
     white-space: pre-wrap;
-    min-height: 64px;
-    margin: 0 0 8px;
+    margin: 0;
+    flex: 1;
     letter-spacing: -.005em;
   }
-  .preview-card__cursor {
+  .tut-caption__cursor {
     display: inline-block;
-    width: 1.5px;
-    height: 14px;
+    width: 1.5px; height: 13px;
     background: var(--lumi-brand-fill);
     vertical-align: text-bottom;
     margin-left: 1px;
-    animation: prv-blink .8s step-end infinite;
+    animation: tut-blink .8s step-end infinite;
   }
-  @keyframes prv-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-
-  .preview-card__tags {
-    display: flex; flex-wrap: wrap; gap: 5px;
-  }
-  .preview-card__tag {
-    font-size: 11px;
+  @keyframes tut-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+  .tut-caption__tags { display: flex; flex-wrap: wrap; gap: 4px; }
+  .tut-caption__tag {
+    font-size: 10.5px;
     font-weight: var(--lumi-weight-semibold);
-    padding: 4px 9px;
+    padding: 3px 8px;
     border-radius: 980px;
-    background: var(--lumi-brand-soft);
-    color: var(--lumi-brand-text);
+    background: var(--lumi-surface-alt);
+    color: var(--lumi-ink-soft);
     opacity: 0;
     transform: translateY(4px);
     transition: opacity .3s ease, transform .3s var(--lumi-ease-toss);
   }
-  .preview-card__tag.in {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  .tut-caption__tag.in { opacity: 1; transform: translateY(0); }
 
-  .preview-card__channels {
-    display: flex; flex-direction: column; gap: 10px;
-    border-top: 1px solid var(--lumi-line);
-    padding-top: 14px;
+  /* ── 씬 3: 게시 ── */
+  .tut-publish { align-items: stretch; justify-content: center; gap: 14px; }
+  .tut-publish__channels { display: flex; flex-direction: column; gap: 10px; }
+  .tut-publish__channel {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: var(--lumi-surface-alt);
+    border: 1.5px solid var(--lumi-line);
+    transition: border-color .35s ease, background .35s ease;
   }
-  .preview-card__channel {
-    display: flex; align-items: center; gap: 10px;
-    font-size: 13px;
+  .tut-publish__channel.done {
+    border-color: var(--lumi-brand-fill);
+    background: var(--lumi-brand-soft);
   }
-  .preview-card__channel-icon {
-    width: 28px; height: 28px;
-    border-radius: 8px;
+  .tut-publish__channel-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
     display: grid; place-items: center;
     flex-shrink: 0;
   }
-  .preview-card__channel-icon--ig {
+  .tut-publish__channel-icon--ig {
     background: linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
   }
-  .preview-card__channel-icon--tt {
-    background: #000;
-  }
-  .preview-card__channel-icon svg {
-    width: 16px; height: 16px;
-  }
-  .preview-card__channel-name {
+  .tut-publish__channel-icon--tt { background: #000; }
+  .tut-publish__channel-icon svg { width: 18px; height: 18px; }
+  .tut-publish__channel-info {
     flex: 1;
+    display: flex; flex-direction: column;
+    gap: 2px;
+    overflow: hidden;
+  }
+  .tut-publish__channel-name {
+    font-size: 13.5px;
     font-weight: var(--lumi-weight-bold);
     color: var(--lumi-ink-strong);
     letter-spacing: -.01em;
   }
-  .preview-card__channel-status {
-    display: inline-flex; align-items: center; gap: 4px;
+  .tut-publish__channel-time {
+    font-size: 11px;
+    color: var(--lumi-ink-muted);
+    font-weight: var(--lumi-weight-semibold);
+    transition: color .35s ease;
+  }
+  .tut-publish__channel.done .tut-publish__channel-time { color: var(--lumi-brand-text); }
+  .tut-publish__channel-check {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: var(--lumi-gradient-brand);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+    transform: scale(0);
+    transition: transform .35s var(--lumi-ease-toss);
+  }
+  .tut-publish__channel.done .tut-publish__channel-check { transform: scale(1); }
+  .tut-publish__channel-check svg {
+    width: 12px; height: 12px;
+    stroke: white; stroke-width: 3.2;
+    fill: none; stroke-linecap: round; stroke-linejoin: round;
+  }
+  .tut-publish__summary {
+    text-align: center;
+    font-size: 12px;
+    font-weight: var(--lumi-weight-bold);
     color: var(--lumi-brand-text);
+    opacity: 0;
+    transition: opacity .4s ease;
+  }
+  .tut-publish__summary.in { opacity: 1; }
+
+  /* ── 하단 단계 인디케이터 (탭 + progress bar) ── */
+  .tut-progress {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin-top: 14px;
+  }
+  .tut-step {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    padding: 10px 4px 8px;
+    display: flex; flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    border-radius: 10px;
+    transition: background .2s ease;
+    font: inherit;
+    color: inherit;
+  }
+  .tut-step:hover { background: var(--lumi-surface-alt); }
+  .tut-step__num {
     font-size: 11px;
     font-weight: var(--lumi-weight-bold);
-    opacity: 0;
-    transition: opacity .35s ease;
+    color: var(--lumi-ink-muted);
+    letter-spacing: .04em;
+    transition: color .25s ease;
   }
-  .preview-card__channel-status.in { opacity: 1; }
-  .preview-card__channel-status svg {
-    width: 12px; height: 12px;
-    stroke: currentColor;
-    stroke-width: 3;
-    fill: none;
-    stroke-linecap: round;
-    stroke-linejoin: round;
+  .tut-step.is-active .tut-step__num,
+  .tut-step.is-done .tut-step__num { color: var(--lumi-brand-text); }
+  .tut-step__label {
+    font-size: 12px;
+    font-weight: var(--lumi-weight-bold);
+    color: var(--lumi-ink-strong);
+    letter-spacing: -.01em;
+  }
+  .tut-step__bar {
+    width: 100%; height: 3px;
+    border-radius: 2px;
+    background: var(--lumi-line);
+    overflow: hidden;
+    margin-top: 2px;
+    position: relative;
+  }
+  .tut-step__bar-fill {
+    position: absolute; inset: 0;
+    background: var(--lumi-gradient-brand);
+    transform-origin: left center;
+    transform: scaleX(0);
+  }
+  .tut-step.is-done .tut-step__bar-fill {
+    transform: scaleX(1);
+    transition: transform .3s ease;
   }
 
   /* ══════════════════════════════════════════
@@ -360,21 +539,24 @@
   .phone-scene.is-active  { opacity: 1; transform: translateX(0); pointer-events: auto; }
   .phone-scene.is-leaving { opacity: 0; transform: translateX(-16px); }
 
-  /* prefers-reduced-motion 대응 */
+  /* prefers-reduced-motion */
   @media (prefers-reduced-motion: reduce) {
-    .preview-card__cursor,
-    .preview-card__status-dot { animation: none; }
-    .preview-card__emoji,
-    .preview-card__tag,
-    .preview-card__channel-status {
-      transition: none;
-      opacity: 1;
-      transform: none;
+    .tut-upload__icon,
+    .tut-caption__pill-dot,
+    .tut-caption__cursor { animation: none; }
+    .tut-scene,
+    .tut-upload__photo,
+    .tut-upload__counter,
+    .tut-caption__tag,
+    .tut-publish__channel,
+    .tut-publish__channel-check,
+    .tut-publish__summary,
+    .tut-step__bar-fill {
+      transition: none !important;
     }
     .phone-scene { transition: none; }
   }
 
-  /* ── Scrolly 섹션 폰 씬 CSS (기존 유지) ── */
   .scene-upload { display: flex; flex-direction: column; gap: 12px; }
   .scene-upload__head { font-size: 13px; font-weight: var(--lumi-weight-bold); }
   .scene-upload__drop {
@@ -756,47 +938,96 @@
 
       <p class="hero__meta">회원가입 후 무료 사용</p>
 
-      <div class="hero__preview" aria-label="루미 캡션 자동 생성 미리보기">
-        <div class="preview-card">
-          <div class="preview-card__bar">
-            <span class="preview-card__brand">lumi</span>
-            <span class="preview-card__status">
-              <span class="preview-card__status-dot" aria-hidden="true"></span>
-              AI 캡션 생성 중
-            </span>
+      <div class="hero__tutorial" id="heroTutorial" aria-label="루미 사용법 3단계 안내">
+        <div class="tut-header">
+          <div class="tut-header__num" id="tutHeaderNum">1</div>
+          <div class="tut-header__copy">
+            <h3 class="tut-header__title" id="tutHeaderTitle">사진 한 장 올리세요</h3>
+            <p class="tut-header__desc" id="tutHeaderDesc">매장에서 찍은 사진 그대로면 충분해요</p>
           </div>
-          <div class="preview-card__body">
-            <div class="preview-card__photo" id="previewPhoto" style="background: linear-gradient(135deg, #f5e6d3, #c8a07a);">
-              <span class="preview-card__emoji" id="previewEmoji" aria-hidden="true">☕</span>
+        </div>
+
+        <div class="tut-stage" id="tutStage">
+          <!-- 씬 1: 업로드 -->
+          <div class="tut-scene tut-upload is-active" data-step="1">
+            <div class="tut-upload__zone">
+              <div class="tut-upload__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              </div>
+              <div class="tut-upload__text">사진을 끌어다 놓으세요<br>(최대 9장)</div>
+              <div class="tut-upload__photos" id="tutUploadPhotos">
+                <div class="tut-upload__photo" style="background: linear-gradient(135deg, #f5e6d3, #c8a07a);">☕</div>
+                <div class="tut-upload__photo" style="background: linear-gradient(135deg, #fff0f3, #f8c8c8);">🍰</div>
+                <div class="tut-upload__photo" style="background: linear-gradient(135deg, #f0f7ee, #ffb3c6);">🌸</div>
+                <div class="tut-upload__photo" style="background: linear-gradient(135deg, #fff8f0, #f5d090);">🍝</div>
+              </div>
+              <div class="tut-upload__counter" id="tutUploadCounter">9장 업로드 완료</div>
             </div>
-            <div class="preview-card__caption">
-              <span class="preview-card__caption-label">루미 캡션</span>
-              <p class="preview-card__caption-text" id="previewCaption" aria-live="polite"></p>
-              <div class="preview-card__tags" id="previewTags"></div>
+          </div>
+
+          <!-- 씬 2: AI 캡션 -->
+          <div class="tut-scene tut-caption" data-step="2">
+            <div class="tut-caption__photo">
+              <span class="tut-caption__emoji" aria-hidden="true">☕</span>
             </div>
-            <div class="preview-card__channels">
-              <div class="preview-card__channel">
-                <div class="preview-card__channel-icon preview-card__channel-icon--ig">
+            <div class="tut-caption__body">
+              <span class="tut-caption__pill">
+                <span class="tut-caption__pill-dot" aria-hidden="true"></span>
+                루미가 작성 중
+              </span>
+              <p class="tut-caption__text" id="tutCaptionText" aria-live="polite"></p>
+              <div class="tut-caption__tags" id="tutCaptionTags"></div>
+            </div>
+          </div>
+
+          <!-- 씬 3: 게시 -->
+          <div class="tut-scene tut-publish" data-step="3">
+            <div class="tut-publish__channels">
+              <div class="tut-publish__channel" id="tutPubIg">
+                <div class="tut-publish__channel-icon tut-publish__channel-icon--ig">
                   <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1" fill="white" stroke="none"/></svg>
                 </div>
-                <span class="preview-card__channel-name">인스타그램</span>
-                <span class="preview-card__channel-status" id="previewIgStatus">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
-                  게시 완료
-                </span>
+                <div class="tut-publish__channel-info">
+                  <span class="tut-publish__channel-name">인스타그램</span>
+                  <span class="tut-publish__channel-time" id="tutPubIgTime">예약된 시간에 자동 게시</span>
+                </div>
+                <div class="tut-publish__channel-check" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
               </div>
-              <div class="preview-card__channel">
-                <div class="preview-card__channel-icon preview-card__channel-icon--tt">
+              <div class="tut-publish__channel" id="tutPubTt">
+                <div class="tut-publish__channel-icon tut-publish__channel-icon--tt">
                   <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/></svg>
                 </div>
-                <span class="preview-card__channel-name">틱톡</span>
-                <span class="preview-card__channel-status" id="previewTtStatus">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
-                  게시 완료
-                </span>
+                <div class="tut-publish__channel-info">
+                  <span class="tut-publish__channel-name">틱톡</span>
+                  <span class="tut-publish__channel-time" id="tutPubTtTime">예약된 시간에 자동 게시</span>
+                </div>
+                <div class="tut-publish__channel-check" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
               </div>
             </div>
+            <div class="tut-publish__summary" id="tutPubSummary">2개 채널 자동 게시 완료</div>
           </div>
+        </div>
+
+        <div class="tut-progress" role="tablist" aria-label="단계 선택">
+          <button type="button" class="tut-step is-active" data-step="1" role="tab" aria-selected="true">
+            <span class="tut-step__num">1단계</span>
+            <span class="tut-step__label">사진 업로드</span>
+            <span class="tut-step__bar"><span class="tut-step__bar-fill"></span></span>
+          </button>
+          <button type="button" class="tut-step" data-step="2" role="tab" aria-selected="false">
+            <span class="tut-step__num">2단계</span>
+            <span class="tut-step__label">AI 캡션</span>
+            <span class="tut-step__bar"><span class="tut-step__bar-fill"></span></span>
+          </button>
+          <button type="button" class="tut-step" data-step="3" role="tab" aria-selected="false">
+            <span class="tut-step__num">3단계</span>
+            <span class="tut-step__label">자동 게시</span>
+            <span class="tut-step__bar"><span class="tut-step__bar-fill"></span></span>
+          </button>
         </div>
       </div>
     </div>
@@ -993,120 +1224,200 @@
 
 <script>
   /* ══════════════════════════════════════════════════
-     Hero Preview — 자동 순환 캡션 생성 데모
+     Hero Tutorial — 3단계 자동 진행 + 클릭 점프
      ══════════════════════════════════════════════════ */
   (() => {
-    const SCENES = [
-      {
-        emoji: '☕',
-        bg: 'linear-gradient(135deg, #f5e6d3 0%, #c8a07a 100%)',
-        text: '오후 3시, 창가 자리\n비어있으면 좋은 날\n오늘도 여기서 충전 중',
-        tags: ['#카페일상', '#창가자리', '#감성충전'],
-      },
-      {
-        emoji: '🍰',
-        bg: 'linear-gradient(135deg, #fff0f3 0%, #f8c8c8 100%)',
-        text: '맛있는 건 눈으로 먼저\n그다음은 직접 와서\n확인해보세요',
-        tags: ['#디저트카페', '#오늘뭐먹지', '#주말나들이'],
-      },
-      {
-        emoji: '🌸',
-        bg: 'linear-gradient(135deg, #f0f7ee 0%, #ffb3c6 100%)',
-        text: '오늘 들어온 새 꽃\n이 자리, 이 빛 아래에서만\n보여드릴 수 있어요',
-        tags: ['#플라워샵', '#오늘의꽃', '#계절감'],
-      },
+    const STEPS = [
+      { n: 1, title: '사진 한 장 올리세요', desc: '매장에서 찍은 사진 그대로면 충분해요', duration: 3800 },
+      { n: 2, title: '루미가 캡션을 만들어요', desc: '매장 분위기에 맞춰 캡션·해시태그까지 자동', duration: 6200 },
+      { n: 3, title: '인스타·틱톡에 자동 게시', desc: '예약 시간에 두 채널로 한 번에', duration: 4200 },
     ];
 
-    const photo     = document.getElementById('previewPhoto');
-    const emojiEl   = document.getElementById('previewEmoji');
-    const captionEl = document.getElementById('previewCaption');
-    const tagsEl    = document.getElementById('previewTags');
-    const igStatus  = document.getElementById('previewIgStatus');
-    const ttStatus  = document.getElementById('previewTtStatus');
-    if (!captionEl || !photo) return;
+    const CAPTION = {
+      text: '오후 3시, 창가 자리\n비어있으면 좋은 날\n오늘도 여기서 충전 중',
+      tags: ['#카페일상', '#창가자리', '#감성충전'],
+    };
 
-    const TYPE_SPEED   = 38;   // ms per char
-    const HOLD_AFTER   = 4200; // ms after caption complete before next scene
-    const reduced      = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const root = document.getElementById('heroTutorial');
+    if (!root) return;
+    const headerNum   = document.getElementById('tutHeaderNum');
+    const headerTitle = document.getElementById('tutHeaderTitle');
+    const headerDesc  = document.getElementById('tutHeaderDesc');
+    const scenes      = root.querySelectorAll('.tut-scene');
+    const stepBtns    = root.querySelectorAll('.tut-step');
+    const reduced     = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+    let cur = 1;
+    let advanceTimer = null;
     let typeTimer = null;
-    let cycleTimer = null;
-    let idx = 0;
 
-    function clearAll() {
-      tagsEl.innerHTML = '';
-      igStatus.classList.remove('in');
-      ttStatus.classList.remove('in');
+    function fadeHeader(s) {
+      headerTitle.classList.add('fading');
+      headerDesc.classList.add('fading');
+      setTimeout(() => {
+        headerNum.textContent = s.n;
+        headerTitle.textContent = s.title;
+        headerDesc.textContent = s.desc;
+        headerTitle.classList.remove('fading');
+        headerDesc.classList.remove('fading');
+        headerNum.classList.add('flip');
+        setTimeout(() => headerNum.classList.remove('flip'), 360);
+      }, 200);
     }
 
-    function typewrite(el, text, speed, done) {
+    function setActiveScene(n) {
+      scenes.forEach((sc) => {
+        const sn = parseInt(sc.dataset.step, 10);
+        sc.classList.remove('is-leaving');
+        if (sn === n) {
+          sc.classList.add('is-active');
+        } else if (sc.classList.contains('is-active')) {
+          sc.classList.remove('is-active');
+          sc.classList.add('is-leaving');
+          setTimeout(() => sc.classList.remove('is-leaving'), 400);
+        }
+      });
+    }
+
+    function setProgress(n) {
+      stepBtns.forEach((btn) => {
+        const sn = parseInt(btn.dataset.step, 10);
+        btn.classList.remove('is-active', 'is-done');
+        btn.setAttribute('aria-selected', 'false');
+        const fill = btn.querySelector('.tut-step__bar-fill');
+        if (!fill) return;
+        if (sn < n) {
+          btn.classList.add('is-done');
+          fill.style.transition = 'transform .3s ease';
+          fill.style.transform = 'scaleX(1)';
+        } else if (sn === n) {
+          btn.classList.add('is-active');
+          btn.setAttribute('aria-selected', 'true');
+          const dur = STEPS[n - 1].duration;
+          fill.style.transition = 'none';
+          fill.style.transform = 'scaleX(0)';
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              fill.style.transition = 'transform ' + dur + 'ms linear';
+              fill.style.transform = 'scaleX(1)';
+            });
+          });
+        } else {
+          fill.style.transition = 'none';
+          fill.style.transform = 'scaleX(0)';
+        }
+      });
+    }
+
+    function playStep1() {
+      const photos = root.querySelectorAll('.tut-upload__photo');
+      const counter = document.getElementById('tutUploadCounter');
+      photos.forEach((p) => p.classList.remove('in'));
+      counter.classList.remove('in');
+      if (reduced) {
+        photos.forEach((p) => p.classList.add('in'));
+        counter.classList.add('in');
+        return;
+      }
+      photos.forEach((p, i) => setTimeout(() => p.classList.add('in'), 400 + i * 240));
+      setTimeout(() => counter.classList.add('in'), 400 + photos.length * 240 + 200);
+    }
+
+    function playStep2() {
+      const textEl = document.getElementById('tutCaptionText');
+      const tagsEl = document.getElementById('tutCaptionTags');
       if (typeTimer) clearInterval(typeTimer);
+      textEl.innerHTML = '';
+      tagsEl.innerHTML = '';
+
+      if (reduced) {
+        textEl.textContent = CAPTION.text;
+        CAPTION.tags.forEach((t) => {
+          const sp = document.createElement('span');
+          sp.className = 'tut-caption__tag in';
+          sp.textContent = t;
+          tagsEl.appendChild(sp);
+        });
+        return;
+      }
+
       let i = 0;
-      el.innerHTML = '<span class="preview-card__cursor"></span>';
+      const speed = 36;
+      textEl.innerHTML = '<span class="tut-caption__cursor"></span>';
       typeTimer = setInterval(() => {
         i++;
-        const safe = text.substring(0, i)
+        const safe = CAPTION.text.substring(0, i)
           .replace(/&/g, '&amp;')
           .replace(/</g, '&lt;')
           .replace(/>/g, '&gt;');
-        el.innerHTML = safe + '<span class="preview-card__cursor"></span>';
-        if (i >= text.length) {
+        textEl.innerHTML = safe + '<span class="tut-caption__cursor"></span>';
+        if (i >= CAPTION.text.length) {
           clearInterval(typeTimer);
           typeTimer = null;
-          // 커서 잠깐 더 깜빡 후 제거
-          setTimeout(() => { el.textContent = text; if (done) done(); }, 600);
+          setTimeout(() => { textEl.textContent = CAPTION.text; }, 500);
+          CAPTION.tags.forEach((tag, j) => {
+            const sp = document.createElement('span');
+            sp.className = 'tut-caption__tag';
+            sp.textContent = tag;
+            tagsEl.appendChild(sp);
+            setTimeout(() => sp.classList.add('in'), 120 + j * 110);
+          });
         }
       }, speed);
     }
 
-    function renderScene(i) {
-      const s = SCENES[i];
-      // 사진 fade
-      emojiEl.classList.add('fading');
-      setTimeout(() => {
-        photo.style.background = s.bg;
-        emojiEl.textContent = s.emoji;
-        emojiEl.classList.remove('fading');
-      }, 200);
-
-      clearAll();
+    function playStep3() {
+      const ig = document.getElementById('tutPubIg');
+      const tt = document.getElementById('tutPubTt');
+      const igTime = document.getElementById('tutPubIgTime');
+      const ttTime = document.getElementById('tutPubTtTime');
+      const summary = document.getElementById('tutPubSummary');
+      ig.classList.remove('done');
+      tt.classList.remove('done');
+      igTime.textContent = '예약된 시간에 자동 게시';
+      ttTime.textContent = '예약된 시간에 자동 게시';
+      summary.classList.remove('in');
 
       if (reduced) {
-        captionEl.textContent = s.text;
-        s.tags.forEach((t) => {
-          const sp = document.createElement('span');
-          sp.className = 'preview-card__tag in';
-          sp.textContent = t;
-          tagsEl.appendChild(sp);
-        });
-        igStatus.classList.add('in');
-        ttStatus.classList.add('in');
+        ig.classList.add('done'); tt.classList.add('done');
+        igTime.textContent = '게시 완료'; ttTime.textContent = '게시 완료';
+        summary.classList.add('in');
         return;
       }
+      setTimeout(() => { ig.classList.add('done'); igTime.textContent = '게시 완료'; }, 700);
+      setTimeout(() => { tt.classList.add('done'); ttTime.textContent = '게시 완료'; }, 1700);
+      setTimeout(() => summary.classList.add('in'), 2400);
+    }
 
-      typewrite(captionEl, s.text, TYPE_SPEED, () => {
-        s.tags.forEach((t, j) => {
-          const sp = document.createElement('span');
-          sp.className = 'preview-card__tag';
-          sp.textContent = t;
-          tagsEl.appendChild(sp);
-          setTimeout(() => sp.classList.add('in'), j * 110);
-        });
-        setTimeout(() => igStatus.classList.add('in'), 700);
-        setTimeout(() => ttStatus.classList.add('in'), 1000);
+    function goTo(n) {
+      if (n < 1 || n > STEPS.length) return;
+      cur = n;
+      const s = STEPS[n - 1];
+      fadeHeader(s);
+      setActiveScene(n);
+      setProgress(n);
+      if (n === 1) playStep1();
+      if (n === 2) playStep2();
+      if (n === 3) playStep3();
+
+      if (advanceTimer) clearTimeout(advanceTimer);
+      if (!reduced) {
+        advanceTimer = setTimeout(() => {
+          const next = (cur % STEPS.length) + 1;
+          goTo(next);
+        }, s.duration);
+      }
+    }
+
+    stepBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const n = parseInt(btn.dataset.step, 10);
+        if (n === cur) return;
+        goTo(n);
       });
-    }
+    });
 
-    function next() {
-      idx = (idx + 1) % SCENES.length;
-      renderScene(idx);
-    }
-
-    renderScene(0);
-    if (!reduced) {
-      const total = (SCENES[0].text.length * TYPE_SPEED) + HOLD_AFTER;
-      cycleTimer = setInterval(next, Math.max(total, 7500));
-    }
+    goTo(1);
   })();
 
   (() => {
