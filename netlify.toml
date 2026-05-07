@@ -361,3 +361,23 @@
   status = 200
   force = true
 
+# 30일 유예 회원 탈퇴 — 만료 처리 (UTC 18:00 = KST 03:00)
+[functions."process-account-deletion-background"]
+  schedule = "0 18 * * *"
+
+# 30일 유예 reminder (7일 전 / 1일 전) — UTC 00:00 = KST 09:00
+[functions."send-deletion-reminders-background"]
+  schedule = "0 0 * * *"
+
+[[redirects]]
+  from = "/api/account-delete"
+  to = "/.netlify/functions/account-delete"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/account-restore"
+  to = "/.netlify/functions/account-restore"
+  status = 200
+  force = true
+

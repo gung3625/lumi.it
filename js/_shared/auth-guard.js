@@ -197,6 +197,10 @@
         return false;
       }
       var d = await r.json();
+      // 탈퇴 유예 중인 회원도 페이지 진입 허용 + 상단 배너로 복구 옵션 노출
+      if (d && d.seller && d.seller.deletionPending) {
+        try { showDeletionBanner(d.seller, token); } catch (_) {}
+      }
       if (d && d.seller && d.seller.onboarded) {
         writeCache(true);
         return true;
@@ -212,8 +216,105 @@
     }
   }
 
+  // ─── 30일 유예 회원 탈퇴 — sticky 복구 배너 ───
+  // /api/me 응답 deletionPending=true 면 상단에 배너 자동 삽입.
+  // 배너 ID `lumi-deletion-banner` 로 중복 삽입 방지.
+  function showDeletionBanner(seller, token) {
+    if (document.getElementById('lumi-deletion-banner')) return;
+    var scheduledAt = seller && seller.deletionScheduledAt;
+    if (!scheduledAt) return;
+
+    var msUntil = new Date(scheduledAt).getTime() - Date.now();
+    var daysLeft = Math.max(0, Math.ceil(msUntil / (1000 * 60 * 60 * 24)));
+
+    var banner = document.createElement('div');
+    banner.id = 'lumi-deletion-banner';
+    banner.setAttribute('role', 'alert');
+    banner.style.cssText = [
+      'position:sticky',
+      'top:0',
+      'left:0',
+      'right:0',
+      'z-index:9999',
+      'background:#C8507A',
+      'color:#fff',
+      'padding:10px 16px',
+      'display:flex',
+      'align-items:center',
+      'justify-content:center',
+      'gap:12px',
+      'flex-wrap:wrap',
+      "font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif",
+      'font-size:14px',
+      'font-weight:500',
+      'line-height:1.4',
+      'box-shadow:0 1px 4px rgba(0,0,0,.12)',
+    ].join(';');
+
+    var msg = document.createElement('span');
+    msg.textContent = '회원 탈퇴 진행 중 — ' + daysLeft + '일 후 자동 삭제됩니다.';
+    msg.style.cssText = 'flex:1 1 auto;min-width:0;text-align:center;';
+
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = '복구하기';
+    btn.style.cssText = [
+      'flex:0 0 auto',
+      'padding:6px 16px',
+      'background:#fff',
+      'color:#C8507A',
+      'border:none',
+      'border-radius:980px',
+      'font-size:13px',
+      'font-weight:700',
+      'cursor:pointer',
+      "font-family:inherit",
+    ].join(';');
+    btn.addEventListener('click', async function () {
+      btn.disabled = true;
+      btn.textContent = '복구 중...';
+      try {
+        var resp = await fetch('/api/account-restore', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token,
+          },
+        });
+        if (!resp.ok) {
+          var data = {};
+          try { data = await resp.json(); } catch (_) {}
+          alert((data && data.error) || '복구에 실패했어요. 잠시 후 다시 시도해주세요.');
+          btn.disabled = false;
+          btn.textContent = '복구하기';
+          return;
+        }
+        alert('계정이 복구되었어요. 모든 데이터가 그대로 유지됩니다.');
+        location.reload();
+      } catch (e) {
+        alert('네트워크 오류가 발생했어요. 잠시 후 다시 시도해주세요.');
+        btn.disabled = false;
+        btn.textContent = '복구하기';
+      }
+    });
+
+    banner.appendChild(msg);
+    banner.appendChild(btn);
+
+    if (document.body) {
+      document.body.insertBefore(banner, document.body.firstChild);
+    } else {
+      document.addEventListener('DOMContentLoaded', function () {
+        if (!document.getElementById('lumi-deletion-banner')) {
+          document.body.insertBefore(banner, document.body.firstChild);
+        }
+      });
+    }
+  }
+
   window.lumiAuthGuard = {
     ensureOnboarded: ensureOnboarded,
     invalidateOnboardedCache: invalidateOnboardedCache,
+    showDeletionBanner: showDeletionBanner,
   };
 })();

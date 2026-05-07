@@ -1113,7 +1113,7 @@ window.lumiSupa.auth.onAuthStateChange(function(event, session){
     <p class="stg-danger-legal">법정 보존 의무(접속 로그 3개월) 대상 데이터는 기간 만료 후 자동 파기됩니다. 자세한 내용은 <a href="/privacy">개인정보처리방침</a> 참조.</p>
 
     <div class="stg-actions">
-      <button class="lumi-btn lumi-btn--danger" style="border-color:rgba(255,59,48,.4); opacity:.4;" disabled title="준비 중">계정 삭제 (준비 중)</button>
+      <button class="lumi-btn lumi-btn--danger" onclick="openDeleteModal()">계정 삭제 (30일 유예)</button>
     </div>
   </div>
 
@@ -1128,15 +1128,16 @@ window.lumiSupa.auth.onAuthStateChange(function(event, session){
         <line x1="12" y1="9" x2="12" y2="13"/>
         <line x1="12" y1="17" x2="12.01" y2="17"/>
       </svg>
-      <h3 class="stg-modal__title" id="delete-modal-title">정말 계정을 삭제하시겠어요?</h3>
+      <h3 class="stg-modal__title" id="delete-modal-title">정말 계정을 삭제하시겠어요? (30일 유예)</h3>
     </div>
-    <p class="stg-modal__body">삭제하면 다음 데이터가 모두 지워지고, 복구할 수 없어요.</p>
+    <p class="stg-modal__body"><b>30일 유예기간</b>이 시작돼요. 30일 안에 다시 로그인해서 "복구하기"를 누르면 모든 데이터가 그대로 살아나요. 30일이 지나면 다음 데이터가 모두 영구 삭제되고, 더는 복구할 수 없어요.</p>
     <ul class="stg-modal__list">
       <li>매장 정보·말투 학습 데이터</li>
       <li>등록한 이미지·예약 이력</li>
-      <li>인스타그램 연동 토큰 (즉시 해제)</li>
+      <li>인스타그램·TikTok 연동 토큰</li>
+      <li>로그인 계정 (이메일·소셜 연동)</li>
     </ul>
-    <p class="stg-modal__note">접속 로그(3개월) 등 법정 보존 의무 데이터는 기간 만료 후 파기됩니다.</p>
+    <p class="stg-modal__note">접속 로그(3개월) 등 법정 보존 의무 데이터는 기간 만료 후 파기됩니다. 탈퇴 신청 직후 자동으로 로그아웃되며, 30일 안에 다시 로그인하면 화면 상단에 복구 배너가 나타나요.</p>
     <div>
       <label class="stg-modal__confirm-label" for="delete-confirm-input">"삭제"를 입력하면 버튼이 활성화돼요</label>
       <input type="text" id="delete-confirm-input" placeholder="삭제" class="stg-field__input" oninput="toggleDeleteBtn()" autocorrect="off" autocapitalize="off" spellcheck="false" />
@@ -1411,14 +1412,45 @@ function toggleDeleteBtn() {
 }
 
 async function confirmDeleteAccount() {
-  /* TODO: /api/account-delete 미구현 — 자동 삭제 흐름은 다음 단계.
-     PIPA §36 자기정보 파기권은 이메일 요청 채널로 우선 보장. */
   var btn = document.getElementById('delete-confirm-btn');
   if (btn) {
-    btn.disabled = false;
-    btn.textContent = '계정 삭제';
+    btn.disabled = true;
+    btn.textContent = '처리 중...';
   }
-  showToast('회원 탈퇴 요청은 lumi@lumi.it.kr로 보내주시면 7일 이내 처리됩니다.', 4000);
+  var token = localStorage.getItem('lumi_token') || '';
+  if (!token) {
+    showToast('로그인 세션이 만료되었어요. 다시 로그인 후 진행해 주세요.');
+    if (btn) { btn.disabled = false; btn.textContent = '계정 삭제'; }
+    return;
+  }
+  try {
+    var resp = await fetch('/api/account-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    });
+    var data = {};
+    try { data = await resp.json(); } catch(_) {}
+    if (!resp.ok || !(data && (data.ok || data.success))) {
+      showToast((data && data.error) || '탈퇴 요청 처리에 실패했어요. 잠시 후 다시 시도해 주세요.');
+      if (btn) { btn.disabled = false; btn.textContent = '계정 삭제'; }
+      return;
+    }
+    closeDeleteModal();
+    alert('30일 유예기간이 시작됐어요. 30일 안에 다시 로그인해 "복구하기"를 누르면 모든 데이터가 그대로 살아납니다.');
+    // 자동 로그아웃 — handleLogout 과 동일 로직 (lumi_*, sb-*, lumi-auth 키 제거)
+    try {
+      var keep = ['lumi_dark_mode', 'lumi_storage_pubkey_v1_cleaned'];
+      Object.keys(localStorage).forEach(function(k) {
+        if (keep.indexOf(k) !== -1) return;
+        if (k.indexOf('sb-cldsozdocxpvkbuxwqep-') === 0 || k.indexOf('lumi_') === 0 || k === 'lumi-auth') localStorage.removeItem(k);
+      });
+      sessionStorage.clear();
+    } catch(_) {}
+    location.replace('/index.html');
+  } catch (e) {
+    showToast('네트워크 오류가 발생했어요. 잠시 후 다시 시도해 주세요.');
+    if (btn) { btn.disabled = false; btn.textContent = '계정 삭제'; }
+  }
 }
 
 /* ── 데이터 내보내기 ── */
