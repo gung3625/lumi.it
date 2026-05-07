@@ -1313,25 +1313,8 @@ function saveProfile() {
   user.tone1 = tone1; user.tone2 = tone2; user.tone3 = tone3;
   localStorage.setItem('lumi_user', JSON.stringify(user));
 
-  if (!localStorage.getItem('lumi_token')) {
-    showToast('매장 정보가 저장됐어요');
-    return;
-  }
-
-  fetch('/api/update-profile', {
-    method: 'POST',
-    headers: authHeaders(),
-    body: JSON.stringify({ storeName: storeName, bizCategory: bizCategory, storeDesc: storeDesc, tone1: tone1, tone2: tone2, tone3: tone3 })
-  })
-    .then(function(r){ return r.json().then(function(d){ return { ok: r.ok, data: d }; }); })
-    .then(function(res){
-      if (!res.ok || !res.data || !res.data.success) {
-        showToast((res.data && res.data.error) || '저장에 실패했어요');
-        return;
-      }
-      showToast('매장 정보가 저장됐어요');
-    })
-    .catch(function(){ showToast('네트워크 오류가 발생했어요'); });
+  /* TODO: /api/update-profile 미구현 — 임시로 localStorage 저장만. 정식 동기화는 다음 단계 */
+  showToast('매장 정보가 저장됐어요 (임시). 서버 동기화는 곧 활성화됩니다.');
 }
 
 /* ── 인스타 연동 해제 ── */
@@ -1386,32 +1369,8 @@ function togglePwForm() {
 }
 
 function changePw() {
-  var cur = document.getElementById('s-pw-cur').value;
-  var nw  = document.getElementById('s-pw-new').value;
-  var cf  = document.getElementById('s-pw-confirm').value;
-  if (!cur || !nw || !cf) { showToast('모든 항목을 입력해주세요'); return; }
-  if (nw !== cf) { showToast('새 비밀번호가 일치하지 않아요'); return; }
-  if (nw.length < 10) { showToast('10자 이상 입력해주세요'); return; }
-
-  if (!localStorage.getItem('lumi_token')) { showToast('로그인이 필요해요'); return; }
-
-  fetch('/api/reset-password', {
-    method: 'POST', headers: authHeaders(),
-    body: JSON.stringify({ email: user.email, currentPassword: cur, password: nw })
-  })
-    .then(function(r){ return r.json().then(function(d){ return { ok: r.ok, data: d }; }); })
-    .then(function(res){
-      if (res.ok && res.data.success) {
-        showToast('비밀번호가 변경됐어요');
-        document.getElementById('s-pw-cur').value = '';
-        document.getElementById('s-pw-new').value = '';
-        document.getElementById('s-pw-confirm').value = '';
-        togglePwForm();
-      } else {
-        showToast(res.data.error || '비밀번호 변경에 실패했어요');
-      }
-    })
-    .catch(function(){ showToast('네트워크 오류가 발생했어요'); });
+  /* OAuth(카카오·구글) 전용 가입 — 자체 비밀번호 없음. 비번 변경 흐름 비활성. */
+  showToast('카카오/구글 로그인은 비밀번호가 없어요. 해당 서비스에서 변경해 주세요.');
 }
 
 /* ── 로그아웃 ── */
@@ -1452,35 +1411,14 @@ function toggleDeleteBtn() {
 }
 
 async function confirmDeleteAccount() {
+  /* TODO: /api/account-delete 미구현 — 자동 삭제 흐름은 다음 단계.
+     PIPA §36 자기정보 파기권은 이메일 요청 채널로 우선 보장. */
   var btn = document.getElementById('delete-confirm-btn');
-  if (!btn || btn.disabled) return;
-  btn.disabled = true;
-  btn.textContent = '처리 중...';
-  try {
-    var res = await fetch('/api/account-delete', { method: 'POST', headers: authHeaders() });
-    if (res.ok) {
-      showToast('계정이 삭제됐어요. 그동안 이용해주셔서 감사해요.');
-      try {
-        var keep = ['lumi_dark_mode', 'lumi_storage_pubkey_v1_cleaned'];
-        Object.keys(localStorage).forEach(function(k) {
-          if (keep.indexOf(k) !== -1) return;
-          if (k.indexOf('sb-cldsozdocxpvkbuxwqep-') === 0 || k.indexOf('lumi_') === 0 || k === 'lumi-auth') localStorage.removeItem(k);
-        });
-        sessionStorage.clear();
-      } catch(_) {}
-      setTimeout(function(){ location.replace('/'); }, 2500);
-    } else {
-      var j = {};
-      try { j = await res.json(); } catch(e){}
-      showToast(j.error || '삭제 처리 중 문제가 발생했어요. 고객센터로 문의해주세요.');
-      btn.disabled = false;
-      btn.textContent = '계정 삭제';
-    }
-  } catch(e) {
-    showToast('네트워크 오류예요. 잠시 후 다시 시도해주세요.');
+  if (btn) {
     btn.disabled = false;
     btn.textContent = '계정 삭제';
   }
+  showToast('회원 탈퇴 요청은 lumi@lumi.it.kr로 보내주시면 7일 이내 처리됩니다.', 4000);
 }
 
 /* ── 데이터 내보내기 ── */
