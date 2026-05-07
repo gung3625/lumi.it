@@ -1174,9 +1174,41 @@ function loadStats() {
 }
 
 function retrain() {
-  /* TODO: /api/brand-retrain 미구현 — 준비 중 */
-  console.warn('[brand-admin] /api/brand-retrain 준비 중');
-  showToast('재학습 기능은 준비 중이에요');
+  if (!confirm('재학습을 시작합니다. 약 5~10초 소요됩니다.')) return;
+
+  var btn = document.getElementById('retrain-btn');
+  if (!btn) return;
+  var originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg> 재학습 중...';
+
+  fetch('/api/brand-retrain', {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({})
+  })
+    .then(function(r) {
+      return r.json().then(function(j) { return { ok: r.ok, status: r.status, body: j }; });
+    })
+    .then(function(res) {
+      if (!res.ok || !res.body || res.body.ok !== true) {
+        var msg = (res.body && res.body.error) || ('HTTP ' + res.status);
+        throw new Error(msg);
+      }
+      var data = res.body.data || {};
+      var src = data.source === 'openai' ? 'AI' : '통계';
+      var sc = data.sourceCount || {};
+      showToast('재학습 완료 (' + src + ' · 캡션 ' + (sc.captions || 0) + '개 · 피드백 ' + (sc.feedback || 0) + '개)');
+      try { loadStats(); } catch(e) {}
+    })
+    .catch(function(err) {
+      console.warn('[brand-admin] /api/brand-retrain 실패:', err && err.message);
+      alert('재학습 실패: ' + (err && err.message ? err.message : '알 수 없는 오류'));
+    })
+    .then(function() {
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
+    });
 }
 
 /* ── 불러오기 ─────────────────────────────────────────────── */
