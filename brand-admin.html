@@ -1131,13 +1131,46 @@ document.getElementById('hashtag-input').addEventListener('keydown', function(e)
 });
 
 /* ── 학습 통계 ────────────────────────────────────────────── */
+function formatRelativeKo(iso) {
+  if (!iso) return '—';
+  var t = new Date(iso).getTime();
+  if (!isFinite(t)) return '—';
+  var diffSec = Math.max(0, Math.floor((Date.now() - t) / 1000));
+  if (diffSec < 60) return '방금 전';
+  if (diffSec < 3600) return Math.floor(diffSec / 60) + '분 전';
+  if (diffSec < 86400) return Math.floor(diffSec / 3600) + '시간 전';
+  if (diffSec < 7 * 86400) return Math.floor(diffSec / 86400) + '일 전';
+  // 오래된 시각은 KST 날짜로
+  var d = new Date(iso);
+  var kst = new Date(d.getTime() + 9 * 3600 * 1000);
+  var mm = String(kst.getUTCMonth() + 1).padStart(2, '0');
+  var dd = String(kst.getUTCDate()).padStart(2, '0');
+  return kst.getUTCFullYear() + '-' + mm + '-' + dd;
+}
+
 function loadStats() {
-  /* TODO: /api/brand-stats 미구현 — 준비 중 */
-  console.warn('[brand-admin] /api/brand-stats 준비 중');
   var capEl = document.getElementById('stat-captions');
   var upEl  = document.getElementById('stat-updated');
-  if (capEl) capEl.textContent = '—';
-  if (upEl) upEl.textContent = '—';
+  if (capEl) capEl.textContent = '…';
+  if (upEl) upEl.textContent = '…';
+
+  fetch('/api/brand-stats', { headers: authHeaders() })
+    .then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function(j) {
+      if (!j || !j.ok || !j.data) throw new Error('invalid payload');
+      var captions = (j.data.captions && j.data.captions.total) || 0;
+      var lastAt = (j.data.captions && j.data.captions.lastCreatedAt) || j.data.generatedAt || null;
+      if (capEl) capEl.textContent = String(captions);
+      if (upEl) upEl.textContent = formatRelativeKo(lastAt);
+    })
+    .catch(function(err) {
+      console.warn('[brand-admin] /api/brand-stats 실패:', err && err.message);
+      if (capEl) capEl.textContent = '—';
+      if (upEl) upEl.textContent = '—';
+    });
 }
 
 function retrain() {
