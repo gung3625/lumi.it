@@ -1132,24 +1132,81 @@
   (() => {
     'use strict';
 
-    /* ── Mock 데이터 ── */
-    const MOCK_POSTS = [
-      { emoji:'👗', caption:'여름 신상 원피스 입고! 시원하고 가벼운 소재로 매일 입기 딱 좋아요.', tags:['#여름원피스','#신상입고','#루미쇼핑'], time:'오늘 오후 2:00', scheduled:true },
-      { emoji:'👟', caption:'발이 편한 여름 샌들 입고됐어요. 사이즈 다양하게 준비했습니다!', tags:['#여름샌들','#신상','#편한신발'], time:'오늘 오후 6:00', scheduled:true },
-      { emoji:'👜', caption:'데일리 크로스백 — 수납 좋고 가벼워요. 색상은 3가지.', tags:['#크로스백','#데일리백','#가방'], time:'내일 오전 11:00', scheduled:true },
-      { emoji:'🩱', caption:'비치웨어 신상 라인업 공개! 지금 예약 주문 받습니다.', tags:['#비치웨어','#여름','#수영복'], time:'내일 오후 3:00', scheduled:true },
-      { emoji:'🧴', caption:'여름 필수템 선케어 세트 할인 중. 오늘만 20% 할인!', tags:['#선케어','#여름필수','#할인'], time:'모레 오전 10:00', scheduled:true },
-      { emoji:'💍', caption:'여름 주얼리 컬렉션. 가볍고 산뜻한 디자인으로 준비했어요.', tags:['#주얼리','#여름악세사리','#귀걸이'], time:'모레 오후 7:00', scheduled:true },
-      { emoji:'🌸', caption:'봄/여름 레이어드 아이템 추천. 스타일링 팁도 함께요.', tags:['#레이어드','#스타일링','#패션'], time:'목요일 오전 9:00', scheduled:false },
-      { emoji:'👒', caption:'여름 모자 컬렉션 재입고 완료! 인기 색상 먼저 챙기세요.', tags:['#여름모자','#재입고','#베스트'], time:'목요일 오후 1:00', scheduled:false },
-      { emoji:'🛍', caption:'이번 주 베스트 상품 모아봤어요. DM으로 구매문의 가능합니다.', tags:['#베스트상품','#주간베스트','#쇼핑'], time:'금요일 오후 5:00', scheduled:false },
-    ];
+    /* ── 실제 예약 데이터 (서버에서 fetch) ── */
+    let posts = [];
+
+    /* reservation row → 미리보기용 post 객체 */
+    function mapReservationToPost(r) {
+      const captionRaw = (r.captions && r.captions[0]) || r.caption || '';
+      const tags = (captionRaw.match(/#[^\s#]+/g) || []).slice(0, 5);
+      const captionBody = captionRaw.replace(/#[^\s#]+/g, '').replace(/\n{3,}/g, '\n\n').trim();
+      const imageUrl = (r.image_urls && r.image_urls[0]) || r.image_url || '';
+      const scheduledAt = r.scheduled_at ? new Date(r.scheduled_at) : null;
+      const status = (r.post_status || r.status || '').toLowerCase();
+      const isScheduled = !!(scheduledAt && scheduledAt.getTime() > Date.now() && status !== 'published');
+      return {
+        id: r.id || r.reserve_key,
+        imageUrl: imageUrl,
+        caption: captionBody || captionRaw || '캡션 준비 중',
+        tags: tags,
+        time: formatScheduledTime(scheduledAt),
+        scheduled: isScheduled,
+        scheduledAt: scheduledAt,
+      };
+    }
+
+    function formatScheduledTime(d) {
+      if (!d || isNaN(d.getTime())) return '';
+      const today = new Date(); today.setHours(0,0,0,0);
+      const target = new Date(d); target.setHours(0,0,0,0);
+      const diff = Math.round((target - today) / (1000 * 60 * 60 * 24));
+      const dayLabel = ['일','월','화','수','목','금','토'][d.getDay()];
+      const hh = d.getHours();
+      const mm = String(d.getMinutes()).padStart(2, '0');
+      const meridiem = hh < 12 ? '오전' : '오후';
+      const h12 = hh === 0 ? 12 : (hh > 12 ? hh - 12 : hh);
+      const timeStr = `${meridiem} ${h12}:${mm}`;
+      if (diff === 0) return `오늘 ${timeStr}`;
+      if (diff === 1) return `내일 ${timeStr}`;
+      if (diff === 2) return `모레 ${timeStr}`;
+      if (diff > 0 && diff <= 6) return `${dayLabel}요일 ${timeStr}`;
+      return `${d.getMonth()+1}월 ${d.getDate()}일 ${timeStr}`;
+    }
+
+    async function fetchPosts() {
+      const token = localStorage.getItem('lumi_seller_jwt')
+        || localStorage.getItem('lumi_token')
+        || localStorage.getItem('lumi_seller_token');
+      if (!token) {
+        posts = [];
+        return;
+      }
+      try {
+        const r = await fetch('/api/list-reservations', {
+          headers: { Authorization: 'Bearer ' + token },
+        });
+        if (!r.ok) { posts = []; return; }
+        const d = await r.json();
+        const items = Array.isArray(d.items) ? d.items : [];
+        posts = items.map(mapReservationToPost);
+      } catch (e) {
+        posts = [];
+      }
+    }
 
     /* ── 그리드 렌더링 ── */
     function renderGrid() {
       const grid = document.getElementById('igGrid');
       grid.innerHTML = '';
-      MOCK_POSTS.forEach((post, i) => {
+      if (!posts.length) {
+        const empty = document.createElement('div');
+        empty.className = 'ig-empty';
+        empty.style.cssText = 'grid-column:1/-1;padding:48px 16px;text-align:center;color:rgba(0,0,0,.55);font-size:13px;line-height:1.6';
+        empty.innerHTML = '아직 예약된 게시물이 없어요.<br><a href="/register-product" style="color:var(--lumi-accent-500,#C8507A);text-decoration:underline;font-weight:600">사진 올리고 시작하기</a>';
+        grid.appendChild(empty);
+        return;
+      }
+      posts.forEach((post, i) => {
         const cell = document.createElement('div');
         cell.className = 'ig-cell';
         cell.setAttribute('role', 'button');
@@ -1158,8 +1215,15 @@
 
         const thumb = document.createElement('div');
         thumb.className = 'ig-cell__thumb-placeholder';
-        thumb.style.background = getCellBg(i);
-        thumb.textContent = post.emoji;
+        if (post.imageUrl) {
+          thumb.style.backgroundImage = `url("${post.imageUrl}")`;
+          thumb.style.backgroundSize = 'cover';
+          thumb.style.backgroundPosition = 'center';
+          thumb.textContent = '';
+        } else {
+          thumb.style.background = getCellBg(i);
+          thumb.textContent = '📷';
+        }
         cell.appendChild(thumb);
 
         if (post.scheduled) {
@@ -1192,8 +1256,18 @@
 
     /* ── 모달 ── */
     function openModal(idx) {
-      const post = MOCK_POSTS[idx];
-      document.getElementById('modalEmoji').textContent = post.emoji;
+      const post = posts[idx];
+      if (!post) return;
+      const emojiEl = document.getElementById('modalEmoji');
+      if (post.imageUrl) {
+        emojiEl.textContent = '';
+        emojiEl.style.backgroundImage = `url("${post.imageUrl}")`;
+        emojiEl.style.backgroundSize = 'cover';
+        emojiEl.style.backgroundPosition = 'center';
+      } else {
+        emojiEl.textContent = '📷';
+        emojiEl.style.backgroundImage = '';
+      }
       document.getElementById('modalCaption').textContent = post.caption;
 
       const tagsEl = document.getElementById('modalTags');
@@ -1251,10 +1325,9 @@
     }
 
     function hasPostOnDay(date) {
-      // mock: 오늘, 오늘+1, 오늘+2, 오늘+4 에 게시
-      const today = new Date();
-      const diff = Math.round((date - today) / (1000 * 60 * 60 * 24));
-      return [0, 1, 2, 4].includes(diff);
+      const dayStart = new Date(date); dayStart.setHours(0,0,0,0);
+      const dayEnd = new Date(dayStart); dayEnd.setDate(dayEnd.getDate() + 1);
+      return posts.some(p => p.scheduledAt && p.scheduledAt >= dayStart && p.scheduledAt < dayEnd);
     }
 
     function isToday(date) {
@@ -1298,7 +1371,16 @@
     function renderSlots() {
       const list = document.getElementById('slotList');
       list.innerHTML = '';
-      const displayed = MOCK_POSTS.slice(0, 4);
+
+      if (!posts.length) {
+        const empty = document.createElement('div');
+        empty.style.cssText = 'padding:20px 12px;text-align:center;color:rgba(0,0,0,.55);font-size:13px';
+        empty.textContent = '아직 예약된 게시물이 없어요.';
+        list.appendChild(empty);
+        return;
+      }
+
+      const displayed = posts.slice(0, 4);
 
       displayed.forEach(post => {
         const slot = document.createElement('div');
@@ -1306,13 +1388,20 @@
 
         const thumb = document.createElement('div');
         thumb.className = 'mpv-slot__thumb';
-        thumb.textContent = post.emoji;
+        if (post.imageUrl) {
+          thumb.style.backgroundImage = `url("${post.imageUrl}")`;
+          thumb.style.backgroundSize = 'cover';
+          thumb.style.backgroundPosition = 'center';
+          thumb.textContent = '';
+        } else {
+          thumb.textContent = '📷';
+        }
 
         const info = document.createElement('div');
         info.className = 'mpv-slot__info';
         info.innerHTML = `
           <div class="mpv-slot__product">${post.caption.substring(0, 22)}…</div>
-          <div class="mpv-slot__time">${post.time}</div>
+          <div class="mpv-slot__time">${post.time || ''}</div>
         `;
 
         const status = document.createElement('div');
@@ -1328,17 +1417,6 @@
         slot.appendChild(status);
         list.appendChild(slot);
       });
-
-      // 빈 시간대 힌트
-      const tip = document.createElement('div');
-      tip.className = 'mpv-badge--empty-tip';
-      tip.setAttribute('role', 'button');
-      tip.setAttribute('tabindex', '0');
-      tip.innerHTML = `
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
-        <span>목요일 오후 7시 비어있어요 — 게시 추천</span>
-      `;
-      list.appendChild(tip);
     }
 
     window.shiftWeek = function(dir) {
@@ -1354,9 +1432,12 @@
       }
     });
 
-    /* ── 초기 렌더링 ── */
-    renderGrid();
-    renderCalendar();
+    /* ── 초기 렌더링 (실제 예약 데이터 fetch 후) ── */
+    (async function () {
+      await fetchPosts();
+      renderGrid();
+      renderCalendar();
+    })();
 
   })();
   </script>

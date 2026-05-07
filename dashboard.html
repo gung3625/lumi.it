@@ -1862,12 +1862,70 @@ body {
 (function () {
   'use strict';
 
-  /* Mock data */
-  const MOCK_CAPTION   = '여름 한정 연한 핑크 코튼셔츠.\n땀 많은 여름엔 통기성이 답.';
-  const MOCK_TAGS      = ['#여름룩', '#코튼셔츠', '#데일리', '#패션스타그램', '#ootd'];
-  const MOCK_TIME      = '19:30';
   const TYPEWRITER_MS  = 30;
   const CHIP_DELAY_MS  = 200;
+
+  /* 한국어 업종 → demo-caption 카테고리 매핑 */
+  const INDUSTRY_TO_CATEGORY = {
+    '카페': 'cafe',
+    '음식점': 'food',
+    '베이커리': 'food',
+    '의류': 'fashion',
+    '패션': 'fashion',
+    '뷰티': 'beauty',
+    '네일': 'nail',
+    '미용실': 'hair',
+    '꽃집': 'flower',
+    '플라워': 'flower',
+    '헬스': 'fitness',
+    '피트니스': 'fitness',
+    '펫': 'pet',
+    '펫샵': 'pet',
+  };
+  function mapIndustry(industry) {
+    if (!industry) return 'cafe';
+    return INDUSTRY_TO_CATEGORY[industry] || 'cafe';
+  }
+
+  /* 캡션 응답에서 본문/해시태그 분리 */
+  function splitCaption(text) {
+    const tags = (text.match(/#[^\s#]+/g) || []).map(t => t.trim());
+    const body = text.replace(/#[^\s#]+/g, '').replace(/\n{3,}/g, '\n\n').trim();
+    return { body: body, tags: tags };
+  }
+
+  /* File → base64 (data: prefix 제거) */
+  function fileToBase64(file) {
+    return new Promise(function (resolve, reject) {
+      const reader = new FileReader();
+      reader.onload = function () {
+        const result = reader.result || '';
+        const idx = result.indexOf(',');
+        resolve(idx >= 0 ? result.slice(idx + 1) : result);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  /* /api/me 응답 캐시 (industry 포함) */
+  let cachedSeller = null;
+  async function fetchSeller() {
+    if (cachedSeller) return cachedSeller;
+    const token = localStorage.getItem('lumi_seller_jwt')
+      || localStorage.getItem('lumi_token')
+      || localStorage.getItem('lumi_seller_token');
+    if (!token) return null;
+    try {
+      const r = await fetch('/api/me', { headers: { Authorization: 'Bearer ' + token } });
+      if (!r.ok) return null;
+      const d = await r.json();
+      cachedSeller = d.seller || null;
+      return cachedSeller;
+    } catch (e) {
+      return null;
+    }
+  }
 
   /* Elements */
   const composer           = document.getElementById('composer');
@@ -1963,9 +2021,11 @@ body {
     composerTimeRec.classList.add('is-visible');
   }
 
-  /* ── Run streaming sequence ── */
-  async function runStreaming() {
-    /* abort any running stream */
+  /* 마지막 업로드 사진 캐시 — 다시 만들기 시 재사용 */
+  let currentBase64 = null;
+
+  /* ── Run streaming sequence (실제 AI 호출) ── */
+  async function runStreaming(file) {
     if (streamAbort) streamAbort.abort();
     const ctrl = new AbortController();
     streamAbort = ctrl;
@@ -1980,28 +2040,70 @@ body {
     composerTimeRec.classList.remove('is-visible');
     postBtn.classList.remove('is-active');
 
-    /* show generating label */
     composerGen.classList.remove('is-done');
     composerGen.classList.add('is-visible');
 
-    await wait(400); /* brief pause before typing */
+    /* 1. 파일 → base64 (새 사진이면 새로 인코딩, 재생성이면 캐시 사용) */
+    try {
+      if (file) currentBase64 = await fileToBase64(file);
+      if (!currentBase64) throw new Error('사진이 없어요');
+    } catch (e) {
+      composerGen.classList.remove('is-visible');
+      showToast('사진을 읽지 못했어요. 다시 시도해 주세요.', 2800);
+      return;
+    }
     if (sig.aborted) return;
 
-    composerGen.classList.add('is-done'); /* hide while typing */
-
-    await typewriter(MOCK_CAPTION, sig);
+    /* 2. seller industry 매핑 */
+    const seller = await fetchSeller();
+    const bizCategory = mapIndustry(seller && seller.industry);
     if (sig.aborted) return;
 
-    /* show AI badge after caption completes */
+    /* 3. /api/demo-caption — GPT-4o 분석 + gpt-5.4 캡션 생성 */
+    let captionText = '';
+    try {
+      const token = localStorage.getItem('lumi_seller_jwt')
+        || localStorage.getItem('lumi_token')
+        || localStorage.getItem('lumi_seller_token');
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers.Authorization = 'Bearer ' + token;
+
+      const res = await fetch('/api/demo-caption', {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify({ image: currentBase64, bizCategory: bizCategory }),
+      });
+
+      const data = await res.json().catch(function () { return {}; });
+
+      if (!res.ok) {
+        throw new Error(data.error || '캡션 생성 실패');
+      }
+      captionText = (data.caption || '').trim();
+      if (!captionText) throw new Error('빈 캡션');
+    } catch (e) {
+      composerGen.classList.remove('is-visible');
+      const msg = (e && e.message) ? e.message : '캡션 생성 실패. 다시 시도해 주세요.';
+      showToast(msg, 3200);
+      return;
+    }
+    if (sig.aborted) return;
+
+    composerGen.classList.add('is-done');
+
+    /* 4. 본문/해시태그 분리 → 타이프라이터 + 칩 페이드인 */
+    const split = splitCaption(captionText);
+
+    await typewriter(split.body, sig);
+    if (sig.aborted) return;
+
     composerAiBadge.classList.add('is-visible');
 
-    await wait(200);
-    await fadeInChips(MOCK_TAGS, sig);
-    if (sig.aborted) return;
-
-    await wait(300);
-    await slideUpTime(MOCK_TIME, sig);
-    if (sig.aborted) return;
+    if (split.tags.length) {
+      await wait(200);
+      await fadeInChips(split.tags, sig);
+      if (sig.aborted) return;
+    }
 
     /* enable post button */
     postBtn.classList.add('is-active');
@@ -2016,7 +2118,7 @@ body {
     composer.classList.add('is-active');
     bottomCta.classList.add('is-hidden');
 
-    runStreaming();
+    runStreaming(file);
   }
 
   /* ── Close composer ── */
@@ -2034,6 +2136,7 @@ body {
     composerGen.classList.remove('is-visible', 'is-done');
     postBtn.classList.remove('is-active');
     photoInput.value = '';
+    currentBase64 = null;
   }
 
   /* ── Event: open file picker ── */
@@ -2061,11 +2164,10 @@ body {
     runStreaming();
   });
 
-  /* ── Post ── */
+  /* ── Post (실제 게시 흐름은 다음 단계에서 wire — 현재 안내) ── */
   postBtn.addEventListener('click', function () {
     if (!postBtn.classList.contains('is-active')) return;
-    showToast('✓ 게시 완료!', 2800);
-    setTimeout(closeComposer, 800);
+    showToast('게시 흐름은 곧 활성화돼요. 캡션은 복사해서 사용해 보세요.', 3200);
   });
 
   /* ── Keyboard: ESC closes ── */

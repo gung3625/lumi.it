@@ -1084,12 +1084,69 @@ body {
 (function () {
   'use strict';
 
-  /* ── Mock data ── */
-  var MOCK_CAPTION  = '여름 한정 연한 핑크 코튼셔츠.\n땀 많은 여름엔 통기성이 답.';
-  var MOCK_TAGS     = ['#여름룩', '#코튼셔츠', '#데일리'];
-  var MOCK_TIME_VAL = '19:30';
   var TYPEWRITER_MS = 30;
   var CHIP_DELAY_MS = 200;
+
+  /* 한국어 업종 → demo-caption 카테고리 매핑 */
+  var INDUSTRY_TO_CATEGORY = {
+    '카페': 'cafe',
+    '음식점': 'food',
+    '베이커리': 'food',
+    '의류': 'fashion',
+    '패션': 'fashion',
+    '뷰티': 'beauty',
+    '네일': 'nail',
+    '미용실': 'hair',
+    '꽃집': 'flower',
+    '플라워': 'flower',
+    '헬스': 'fitness',
+    '피트니스': 'fitness',
+    '펫': 'pet',
+    '펫샵': 'pet'
+  };
+  function mapIndustry(industry) {
+    if (!industry) return 'cafe';
+    return INDUSTRY_TO_CATEGORY[industry] || 'cafe';
+  }
+
+  function splitCaption(text) {
+    var tags = (text.match(/#[^\s#]+/g) || []).map(function (t) { return t.trim(); });
+    var body = text.replace(/#[^\s#]+/g, '').replace(/\n{3,}/g, '\n\n').trim();
+    return { body: body, tags: tags };
+  }
+
+  function fileToBase64(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () {
+        var result = reader.result || '';
+        var idx = result.indexOf(',');
+        resolve(idx >= 0 ? result.slice(idx + 1) : result);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  var cachedSeller = null;
+  async function fetchSeller() {
+    if (cachedSeller) return cachedSeller;
+    var token = localStorage.getItem('lumi_seller_jwt')
+      || localStorage.getItem('lumi_token')
+      || localStorage.getItem('lumi_seller_token');
+    if (!token) return null;
+    try {
+      var r = await fetch('/api/me', { headers: { Authorization: 'Bearer ' + token } });
+      if (!r.ok) return null;
+      var d = await r.json();
+      cachedSeller = d.seller || null;
+      return cachedSeller;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  var currentBase64 = null;
 
   /* ── Elements ── */
   var composer         = document.getElementById('composer');
@@ -1213,8 +1270,8 @@ body {
     composerChannels.classList.add('is-visible');
   }
 
-  /* ── Run streaming sequence ── */
-  async function runStreaming() {
+  /* ── Run streaming sequence (실제 AI 호출) ── */
+  async function runStreaming(file) {
     if (streamAbort) streamAbort.abort();
     var ctrl = new AbortController();
     streamAbort = ctrl;
@@ -1229,29 +1286,71 @@ body {
     setPostActive(false);
     statusText.textContent = '루미가 사진 분석 중…';
 
-    /* phase 1: analyzing */
     composerGen.classList.remove('is-done');
     composerGen.classList.add('is-visible');
     generatingText.textContent = '루미가 사진 분석 중…';
 
-    await wait(1000);
+    /* 1. base64 (새 사진이면 인코딩, 재생성이면 캐시 사용) */
+    try {
+      if (file) currentBase64 = await fileToBase64(file);
+      if (!currentBase64) throw new Error('사진이 없어요');
+    } catch (e) {
+      composerGen.classList.remove('is-visible');
+      showToast('사진을 읽지 못했어요. 다시 시도해 주세요.', 2800);
+      return;
+    }
     if (sig.aborted) return;
 
-    /* phase 2: caption generating */
+    /* 2. seller industry → bizCategory */
+    var seller = await fetchSeller();
+    var bizCategory = mapIndustry(seller && seller.industry);
+    if (sig.aborted) return;
+
+    /* 3. /api/demo-caption — GPT-4o 분석 + gpt-5.4 캡션 */
     generatingText.textContent = '캡션 만드는 중…';
     statusText.textContent = '캡션 만드는 중…';
-    await wait(400);
+
+    var captionText = '';
+    try {
+      var token = localStorage.getItem('lumi_seller_jwt')
+        || localStorage.getItem('lumi_token')
+        || localStorage.getItem('lumi_seller_token');
+      var headers = { 'Content-Type': 'application/json' };
+      if (token) headers.Authorization = 'Bearer ' + token;
+
+      var res = await fetch('/api/demo-caption', {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify({ image: currentBase64, bizCategory: bizCategory })
+      });
+
+      var data = await res.json().catch(function () { return {}; });
+      if (!res.ok) throw new Error(data.error || '캡션 생성 실패');
+      captionText = (data.caption || '').trim();
+      if (!captionText) throw new Error('빈 캡션');
+    } catch (e) {
+      composerGen.classList.remove('is-visible');
+      statusText.textContent = '캡션 생성 실패';
+      var msg = (e && e.message) ? e.message : '캡션 생성 실패. 다시 시도해 주세요.';
+      showToast(msg, 3200);
+      return;
+    }
     if (sig.aborted) return;
 
     composerGen.classList.add('is-done');
     statusText.textContent = '루미 캡션';
 
-    await typewriter(MOCK_CAPTION, sig);
+    /* 4. 본문/해시태그 분리 + 스트리밍 */
+    var split = splitCaption(captionText);
+
+    await typewriter(split.body, sig);
     if (sig.aborted) return;
 
-    await wait(200);
-    await fadeInChips(MOCK_TAGS, sig);
-    if (sig.aborted) return;
+    if (split.tags.length) {
+      await wait(200);
+      await fadeInChips(split.tags, sig);
+      if (sig.aborted) return;
+    }
 
     await wait(250);
     await showScheduleRow(sig);
@@ -1275,7 +1374,7 @@ body {
     composerImg.onload = function () { URL.revokeObjectURL(url); };
     composer.classList.add('is-active');
     ctaBar.classList.add('is-visible');
-    runStreaming();
+    runStreaming(file);
   }
 
   /* ── Close composer ── */
@@ -1292,6 +1391,7 @@ body {
     composerGen.classList.remove('is-visible', 'is-done');
     setPostActive(false);
     photoInput.value = '';
+    currentBase64 = null;
   }
 
   /* ── Schedule tab toggle ── */
@@ -1326,14 +1426,10 @@ body {
     });
   });
 
-  /* ── Post handler ── */
+  /* ── Post handler (실제 게시 흐름은 다음 단계에서 wire) ── */
   function handlePost() {
     if (!postBtn.classList.contains('is-active') && !postBtnDesktop.classList.contains('is-active')) return;
-    showToast('✓ 게시 완료!', 2800);
-    setTimeout(function () {
-      closeComposer();
-      setTimeout(function () { location.href = '/dashboard'; }, 100);
-    }, 800);
+    showToast('게시 흐름은 곧 활성화돼요. 캡션은 복사해서 사용해 보세요.', 3200);
   }
 
   /* ── Event bindings ── */
