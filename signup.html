@@ -536,6 +536,16 @@
             및 <a href="/privacy">개인정보 처리방침</a> 동의 포함
           </p>
 
+          <!-- Account reset -->
+          <p style="text-align:center; margin-top: var(--lumi-space-4);">
+            <button type="button" class="signup-back" onclick="resetAndGoStep1()">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="15 18 9 12 15 6"/>
+              </svg>
+              다른 계정으로 로그인
+            </button>
+          </p>
+
         </div>
       </div><!-- /step2 -->
 
@@ -574,6 +584,18 @@
     track.classList.remove('is-step-2');
     step2El.setAttribute('aria-hidden', 'true');
     step1El.removeAttribute('aria-hidden');
+  };
+
+  window.resetAndGoStep1 = async function () {
+    try {
+      if (window.lumiSupa) await window.lumiSupa.auth.signOut();
+      localStorage.removeItem('lumi_token');
+      localStorage.removeItem('lumi_seller_jwt');
+      localStorage.removeItem('lumi_seller_token');
+      sessionStorage.removeItem('lumi_token');
+      sessionStorage.removeItem('lumi_onboarded_cache');
+    } catch (_) {}
+    window.goToStep1();
   };
 
   /* ─── Step 1: Kakao ─── */
@@ -666,21 +688,44 @@
   /* ─── Token/session check on load ─── */
   async function checkExistingSession() {
     try {
-      var result = await window.lumiSupa.auth.getSession();
-      var session = result && result.data && result.data.session;
-      if (!session || !session.access_token) return;
+      // 1) 우리 lumi_token 우선 확인
+      var lumiToken = null;
+      try { lumiToken = localStorage.getItem('lumi_token') || sessionStorage.getItem('lumi_token'); } catch (_) {}
 
-      var meta = (session.user && session.user.user_metadata) || {};
-      // Already onboarded → go to dashboard
-      if (meta.onboarded === true || (meta.business_no && meta.consent_terms)) {
+      // 2) lumi_token 없으면 Supabase 세션에서 access_token 가져오기 시도
+      if (!lumiToken) {
+        var result = await window.lumiSupa.auth.getSession();
+        var session = result && result.data && result.data.session;
+        if (session && session.access_token) lumiToken = session.access_token;
+      }
+
+      // 3) 토큰이 전혀 없으면 step 1 그대로 (카카오/구글 버튼 보임)
+      if (!lumiToken) return;
+
+      // 4) /api/me 호출하여 실제 sellers 행 + onboarded 상태 확인
+      var r = await fetch('/api/me', {
+        headers: { 'Authorization': 'Bearer ' + lumiToken }
+      });
+
+      // 401/404 → orphan session (sellers 행 없음) → 무시 + step 1 그대로
+      if (!r.ok) return;
+
+      var d = await r.json();
+      var seller = d && d.seller;
+      if (!seller) return;
+
+      if (seller.onboarded) {
+        // 온보딩 완료 → 대시보드
         location.replace('/dashboard');
         return;
       }
 
-      // Session exists but not onboarded → skip to step 2
+      // sellers 행 있고 onboarded=false → step 2로 (가입 진행 중)
       goToStep2();
 
-    } catch (_) {}
+    } catch (_) {
+      // 어떤 에러든 무시하고 step 1 그대로 보여줌
+    }
   }
 
   /* ─── Error display ─── */
