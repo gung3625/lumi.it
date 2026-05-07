@@ -626,12 +626,21 @@
     }
 
     try {
-      // Wait for Supabase to exchange the code from the URL
+      // 1) PKCE code → session 교환 (URL에 code 있으면)
+      if (window.location.search.indexOf('code=') >= 0) {
+        try {
+          await window.lumiSupa.auth.exchangeCodeForSession(window.location.search);
+        } catch (_) {
+          // 이미 교환됐거나 자동 교환됐으면 무시
+        }
+      }
+
+      // 2) 세션 가져오기
       var result = await window.lumiSupa.auth.getSession();
       var session = result && result.data && result.data.session;
 
+      // 자동 교환 대기
       if (!session || !session.access_token) {
-        // Give Supabase a moment to process the OAuth exchange
         await new Promise(function (r) { setTimeout(r, 800); });
         result = await window.lumiSupa.auth.getSession();
         session = result && result.data && result.data.session;
@@ -639,10 +648,11 @@
 
       if (!session || !session.access_token) {
         showStep1Error('구글 로그인에 실패했어요. 다시 시도해 주세요.');
+        try { history.replaceState({}, '', '/signup'); } catch (_) {}
         return;
       }
 
-      // Sync to our backend
+      // 3) sellers 동기화
       var syncRes = await fetch('/api/auth/google/sync', {
         method: 'POST',
         headers: {
@@ -652,38 +662,37 @@
       });
 
       if (!syncRes.ok) {
-        showStep1Error('계정 연동 중 오류가 발생했어요. 잠시 후 다시 시도해 주세요.');
+        var errBody = await syncRes.text().catch(function () { return ''; });
+        console.error('[google-sync] 실패:', syncRes.status, errBody);
+        showStep1Error('가입 처리 중 오류가 발생했어요. 잠시 후 다시 시도해 주세요.');
+        try { history.replaceState({}, '', '/signup'); } catch (_) {}
         return;
       }
 
-      var syncData = await syncRes.json();
+      var sync = await syncRes.json();
 
-      // Store token if provided
-      if (syncData.token || syncData.sellerToken) {
-        var tok = syncData.token || syncData.sellerToken;
-        try {
-          localStorage.setItem('lumi_token', tok);
-          localStorage.setItem('lumi_seller_jwt', tok);
-          localStorage.setItem('lumi_seller_token', tok);
-        } catch (_) {}
-      }
+      // 4) 토큰 저장 (다른 페이지 인증용)
+      try {
+        localStorage.setItem('lumi_token', session.access_token);
+        localStorage.setItem('lumi_seller_jwt', session.access_token);
+        localStorage.setItem('lumi_seller_token', session.access_token);
+      } catch (_) {}
 
-      // Follow redirect from server
-      if (syncData.redirect) {
-        location.href = syncData.redirect;
-        return;
-      }
+      // 5) URL 정리
+      try { history.replaceState({}, '', '/signup'); } catch (_) {}
 
-      // Fallback: check onboarded status
-      var meta = (session.user && session.user.user_metadata) || {};
-      if (meta.onboarded) {
+      // 6) onboarded 상태로 분기
+      if (sync.redirect === '/dashboard' || sync.onboarded === true) {
+        try { sessionStorage.removeItem('lumi_onboarded_cache'); } catch (_) {}
         location.href = '/dashboard';
       } else {
         goToStep2();
       }
 
     } catch (err) {
+      console.error('[handleGoogleCallback] 예외:', err);
       showStep1Error('오류가 발생했어요. 다시 시도해 주세요.');
+      try { history.replaceState({}, '', '/signup'); } catch (_) {}
     }
   }
 
@@ -849,12 +858,17 @@
   /* ─── Init ─── */
   (async function init() {
     var params = new URLSearchParams(location.search);
+    var hash = location.hash || '';
 
-    if (params.has('google')) {
-      // Google OAuth callback
+    // OAuth callback 감지: ?google=callback OR ?code= OR #access_token=
+    var isOAuthCallback =
+      params.has('google') ||
+      params.has('code') ||
+      hash.indexOf('access_token=') >= 0;
+
+    if (isOAuthCallback) {
       await handleGoogleCallback();
     } else {
-      // Normal page load — check if already authed
       await checkExistingSession();
     }
   })();
