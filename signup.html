@@ -654,6 +654,13 @@
 
   /* ─── Step 1: Kakao ─── */
   window.signupWithKakao = function () {
+    try {
+      // 이전 가입 시도 잔재 정리
+      localStorage.removeItem('lumi_token');
+      localStorage.removeItem('lumi_seller_jwt');
+      localStorage.removeItem('lumi_seller_token');
+      sessionStorage.removeItem('lumi_onboarded_cache');
+    } catch (_) {}
     location.href = '/api/auth/kakao/start';
   };
 
@@ -723,11 +730,16 @@
 
       var sync = await syncRes.json();
 
-      // 4) 토큰 저장 (다른 페이지 인증용)
+      // 4) 토큰 저장 (Supabase access_token + 자체 발급 sellerToken)
       try {
-        localStorage.setItem('lumi_token', session.access_token);
-        localStorage.setItem('lumi_seller_jwt', session.access_token);
-        localStorage.setItem('lumi_seller_token', session.access_token);
+        localStorage.setItem('lumi_token', session.access_token);  // /api/me 호출용 (Supabase JWT)
+        if (sync.sellerToken) {
+          localStorage.setItem('lumi_seller_jwt', sync.sellerToken);  // 다른 페이지 인증용 (HS256 14일)
+          localStorage.setItem('lumi_seller_token', sync.sellerToken);
+        } else {
+          localStorage.setItem('lumi_seller_jwt', session.access_token);
+          localStorage.setItem('lumi_seller_token', session.access_token);
+        }
       } catch (_) {}
 
       // 5) URL 정리
@@ -914,6 +926,32 @@
   (async function init() {
     var params = new URLSearchParams(location.search);
     var hash = location.hash || '';
+
+    // 카카오 콜백 처리 (URL hash로 옴)
+    if (hash.indexOf('kakao=callback') >= 0) {
+      var hashParams = new URLSearchParams(hash.replace(/^#/, ''));
+      var lumiToken = hashParams.get('lumi_token');
+      if (lumiToken) {
+        try {
+          localStorage.setItem('lumi_token', lumiToken);
+          localStorage.setItem('lumi_seller_jwt', lumiToken);
+          localStorage.setItem('lumi_seller_token', lumiToken);
+        } catch (_) {}
+      }
+      // hash 정리 (보안)
+      try { history.replaceState({}, '', location.pathname); } catch (_) {}
+      // /api/me로 onboarded 상태 확인
+      await checkExistingSession();
+      return;
+    }
+
+    // 카카오 에러 처리
+    var kakaoErr = params.get('kakao_error');
+    if (kakaoErr) {
+      showStep1Error('카카오 로그인에 실패했어요. 다시 시도해 주세요. (' + kakaoErr + ')');
+      try { history.replaceState({}, '', '/signup'); } catch (_) {}
+      return;
+    }
 
     // OAuth callback 감지: ?google=callback OR ?code= OR #access_token=
     var isOAuthCallback =

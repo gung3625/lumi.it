@@ -166,14 +166,50 @@
 
     // 4. user_metadata에서 onboarded 체크
     var meta = (session.user && session.user.user_metadata) || {};
-    var onboarded = isOnboardedMeta(meta);
-    writeCache(onboarded);
+    if (isOnboardedMeta(meta)) {
+      writeCache(true);
+      return true;
+    }
 
-    if (!onboarded) {
+    // 5. user_metadata 체크 실패 시 lumi_token + /api/me 폴백
+    //    (카카오 가입자는 Supabase user_metadata 비어있음)
+    var token = null;
+    try {
+      token = localStorage.getItem('lumi_token') ||
+              localStorage.getItem('lumi_seller_jwt') ||
+              sessionStorage.getItem('lumi_token');
+    } catch (_) {}
+
+    // lumi_token도 없으면 Supabase access_token 사용
+    if (!token && session.access_token) token = session.access_token;
+
+    if (!token) {
+      writeCache(false);
       window.location.replace('/signup');
       return false;
     }
-    return true;
+
+    try {
+      var r = await fetch('/api/me', { headers: { Authorization: 'Bearer ' + token } });
+      if (!r.ok) {
+        writeCache(false);
+        window.location.replace('/signup');
+        return false;
+      }
+      var d = await r.json();
+      if (d && d.seller && d.seller.onboarded) {
+        writeCache(true);
+        return true;
+      }
+      // 미온보딩
+      writeCache(false);
+      window.location.replace('/signup');
+      return false;
+    } catch (_) {
+      writeCache(false);
+      window.location.replace('/signup');
+      return false;
+    }
   }
 
   window.lumiAuthGuard = {
