@@ -1308,14 +1308,37 @@ function saveProfile() {
   var tone2 = document.getElementById('s-tone-2').value;
   var tone3 = document.getElementById('s-tone-3').value;
 
+  // localStorage 캐시 (네트워크 실패 시 폼 복원용 + 매장 소개·말투 샘플은 sellers에 컬럼이 없어 임시 보관)
   user.storeName = storeName;
   user.bizCategory = bizCategory;
   user.storeDesc = storeDesc;
   user.tone1 = tone1; user.tone2 = tone2; user.tone3 = tone3;
   localStorage.setItem('lumi_user', JSON.stringify(user));
 
-  /* TODO: /api/update-profile 미구현 — 임시로 localStorage 저장만. 정식 동기화는 다음 단계 */
-  showToast('매장 정보가 저장됐어요 (임시). 서버 동기화는 곧 활성화됩니다.');
+  var token = localStorage.getItem('lumi_token') || '';
+  if (!token) {
+    showToast('로그인 후 다시 시도해 주세요.');
+    return;
+  }
+
+  // sellers 테이블에 있는 컬럼만 백엔드로 전송
+  // (storeDesc, tone1~3은 현재 sellers 컬럼 미존재 — localStorage에만 보관)
+  var payload = { storeName: storeName, industry: bizCategory };
+
+  fetch('/api/update-profile', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+    .then(function(r){ return r.json().then(function(d){ return { ok: r.ok, data: d }; }); })
+    .then(function(res){
+      if (!res.ok || !res.data || !(res.data.ok || res.data.success)) {
+        showToast((res.data && res.data.error) || '저장에 실패했어요. 잠시 후 다시 시도해 주세요.');
+        return;
+      }
+      showToast('매장 정보가 저장됐어요');
+    })
+    .catch(function(){ showToast('네트워크 오류가 발생했어요. 잠시 후 다시 시도해 주세요.'); });
 }
 
 /* ── 인스타 연동 해제 ── */
