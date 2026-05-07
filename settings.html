@@ -1480,10 +1480,51 @@ async function confirmDeleteAccount() {
   }
 }
 
-/* ── 데이터 내보내기 ── */
-/* TODO: /api/export-my-data 미구현 — PIPA §35 자기정보 이동권, 정식 출시 후 활성화 */
-function exportMyData() {
-  showToast('데이터 내보내기 기능을 곧 출시해요');
+/* ── 데이터 내보내기 (PIPA §35 자기정보 이동권) ── */
+async function exportMyData() {
+  var token = localStorage.getItem('lumi_token') || '';
+  if (!token) {
+    showToast('로그인 후 다시 시도해 주세요.');
+    return;
+  }
+  var btn = document.getElementById('export-btn');
+  var origLabel = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = '준비 중…'; }
+  try {
+    var resp = await fetch('/api/export-my-data', {
+      method: 'GET',
+      headers: { 'Authorization': 'Bearer ' + token },
+    });
+    if (!resp.ok) {
+      var msg = '데이터 내보내기에 실패했어요';
+      try {
+        var err = await resp.json();
+        if (err && err.error) msg = err.error;
+      } catch (_) {}
+      showToast(msg);
+      return;
+    }
+    var blob = await resp.blob();
+    // Content-Disposition 헤더에서 filename 추출, 없으면 기본값
+    var filename = 'lumi-data-export.json';
+    var disp = resp.headers.get('Content-Disposition') || '';
+    var m = disp.match(/filename="?([^"]+)"?/i);
+    if (m && m[1]) filename = m[1];
+
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+    showToast('내 데이터를 다운로드했어요');
+  } catch (e) {
+    showToast('네트워크 오류가 발생했어요. 잠시 후 다시 시도해 주세요.');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = origLabel || '요청하기'; }
+  }
 }
 
 /* ── TikTok 연동 상태 적용 ── */
