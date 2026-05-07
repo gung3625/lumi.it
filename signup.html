@@ -382,6 +382,38 @@
   text-align: right;
   margin-top: 2px;
 }
+
+/* ─── Resume card (미온보딩 세션 안내) ─── */
+.signup-resume {
+  background: var(--lumi-surface-alt);
+  border: 1px solid var(--lumi-line);
+  border-radius: var(--lumi-radius-lg);
+  padding: var(--lumi-space-4) var(--lumi-space-5);
+  margin-bottom: var(--lumi-space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--lumi-space-2);
+  align-items: flex-start;
+}
+.signup-resume__title {
+  font-size: var(--lumi-text-body);
+  font-weight: var(--lumi-weight-semibold);
+  color: var(--lumi-ink);
+}
+.signup-resume__sub {
+  font-size: var(--lumi-text-body-sm);
+  color: var(--lumi-ink-muted);
+  margin-bottom: var(--lumi-space-2);
+}
+.signup-resume__switch {
+  background: none;
+  border: none;
+  font-size: var(--lumi-text-body-sm);
+  color: var(--lumi-ink-faint);
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
 </style>
 </head>
 
@@ -416,6 +448,18 @@
             <p class="signup-heading__eyebrow">회원가입</p>
             <h1 class="signup-heading__title">사장님 대신 SNS 하는<br>루미와 함께해요</h1>
             <p class="signup-heading__sub">소셜 계정으로 30초 안에 시작할 수 있어요</p>
+          </div>
+
+          <!-- Resume card (미온보딩 세션 안내 — JS가 display:flex로 열어줌) -->
+          <div class="signup-resume" id="resumeCard" style="display:none">
+            <div class="signup-resume__title">이미 로그인되어 있어요</div>
+            <div class="signup-resume__sub">매장 정보만 입력하면 시작할 수 있어요.</div>
+            <button type="button" class="lumi-btn lumi-btn--primary lumi-btn--sm" onclick="goToStep2()">
+              매장 정보 이어서 입력하기
+            </button>
+            <button type="button" class="signup-resume__switch" onclick="resetAndGoStep1()">
+              다른 계정으로 로그인
+            </button>
           </div>
 
           <!-- Auth buttons -->
@@ -597,6 +641,8 @@
       sessionStorage.removeItem('lumi_token');
       sessionStorage.removeItem('lumi_onboarded_cache');
     } catch (_) {}
+    var card = document.getElementById('resumeCard');
+    if (card) card.style.display = 'none';
     window.goToStep1();
   };
 
@@ -696,10 +742,16 @@
     }
   }
 
+  /* ─── Resume card helper ─── */
+  function showResumeCard() {
+    var card = document.getElementById('resumeCard');
+    if (card) card.style.display = 'flex';
+  }
+
   /* ─── Token/session check on load ─── */
   async function checkExistingSession() {
     try {
-      // 1) 우리 lumi_token 우선 확인
+      // 1) lumi_token 우선 확인
       var lumiToken = null;
       try { lumiToken = localStorage.getItem('lumi_token') || sessionStorage.getItem('lumi_token'); } catch (_) {}
 
@@ -710,32 +762,29 @@
         if (session && session.access_token) lumiToken = session.access_token;
       }
 
-      // 3) 토큰이 전혀 없으면 step 1 그대로 (카카오/구글 버튼 보임)
+      // 세션 없음 — step 1 그대로
       if (!lumiToken) return;
 
-      // 4) /api/me 호출하여 실제 sellers 행 + onboarded 상태 확인
       var r = await fetch('/api/me', {
         headers: { 'Authorization': 'Bearer ' + lumiToken }
       });
-
-      // 401/404 → orphan session (sellers 행 없음) → 무시 + step 1 그대로
-      if (!r.ok) return;
+      if (!r.ok) return; // /api/me 실패 — step 1 그대로
 
       var d = await r.json();
       var seller = d && d.seller;
-      if (!seller) return;
+      if (!seller) return; // seller row 없음 — step 1 그대로
 
       if (seller.onboarded) {
-        // 온보딩 완료 → 대시보드
+        // 온보딩 완료 — 대시보드로 직행
         location.replace('/dashboard');
         return;
       }
 
-      // sellers 행 있고 onboarded=false → step 2로 (가입 진행 중)
-      goToStep2();
+      // 미온보딩 + 세션 있음 — step 1 그대로 보여주되 안내 카드 노출
+      showResumeCard();
 
     } catch (_) {
-      // 어떤 에러든 무시하고 step 1 그대로 보여줌
+      // 어떤 에러도 무시 — step 1 그대로
     }
   }
 
