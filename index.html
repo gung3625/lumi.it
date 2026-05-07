@@ -1157,7 +1157,8 @@
       <h2 class="lumi-section-title">"지금 뭐 팔지"<br>루미가 알려드려요</h2>
       <p class="lumi-section-sub" style="margin-inline:auto;">네이버·구글·유튜브 데이터를 매일 자동 수집. 업종별로 분류해서 추천.</p>
 
-      <div class="trends-chips">
+      <div class="trends-chips" id="landingTrendsChips">
+        <!-- JS로 동적 렌더 — fallback 정적 칩 -->
         <div class="trends-chip trends-chip--hot">🔥 비건 잼 <strong>+340%</strong></div>
         <div class="trends-chip">1인 식단 <strong>+82%</strong></div>
         <div class="trends-chip">캠핑 도시락 <strong>+64%</strong></div>
@@ -1709,6 +1710,28 @@
 
 <script src="/js/lumi-head.js" defer></script>
 <script src="/js/lumi-foot.js" defer></script>
+
+<script>
+(function () {
+  'use strict';
+  /* 랜딩 trends-chips — /api/get-trends?category=cafe (옵션 B) */
+  fetch('/api/get-trends?category=cafe')
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (data) {
+      var keywords = data && data.keywords;
+      if (!keywords || !keywords.length) return; /* fallback 정적 칩 유지 */
+      var el = document.getElementById('landingTrendsChips');
+      if (!el) return;
+      el.innerHTML = keywords.slice(0, 8).map(function (kw, i) {
+        var word = kw.keyword || kw.tag || '';
+        var isHot = i === 0;
+        return '<div class="trends-chip' + (isHot ? ' trends-chip--hot' : '') + '">' +
+          (isHot ? '🔥 ' : '') + word + '</div>';
+      }).join('');
+    })
+    .catch(function () { /* fallback 정적 칩 유지 */ });
+})();
+</script>
 
 </body>
 </html>

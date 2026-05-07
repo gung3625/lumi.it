@@ -1632,22 +1632,22 @@ body {
         <div class="dash-card" role="button" tabindex="0" aria-label="예약 현황">
           <div class="dash-card__icon">⏰</div>
           <div class="dash-card__label">예약</div>
-          <div class="dash-card__num" id="dashCardScheduled">2건</div>
+          <div class="dash-card__num" id="dashCardScheduled">—</div>
           <div class="dash-card__sub">대기 중</div>
         </div>
 
         <div class="dash-card" role="button" tabindex="0" aria-label="오늘 트렌드">
           <div class="dash-card__icon">🔥</div>
           <div class="dash-card__label">트렌드</div>
-          <div class="dash-card__num" id="dashCardTrend">3건</div>
+          <div class="dash-card__num" id="dashCardTrend">—</div>
           <div class="dash-card__sub">지금 올리면 딱</div>
         </div>
 
         <div class="dash-card" role="button" tabindex="0" aria-label="인사이트">
           <div class="dash-card__icon">📊</div>
           <div class="dash-card__label">인사이트</div>
-          <div class="dash-card__num is-brand" id="dashCardInsight">+24</div>
-          <div class="dash-card__sub is-up">↑ 팔로워</div>
+          <div class="dash-card__num" id="dashCardInsight">—</div>
+          <div class="dash-card__sub">곧 업데이트</div>
         </div>
 
         <div class="dash-card" role="button" tabindex="0" aria-label="알림">
@@ -1661,7 +1661,8 @@ body {
 
       <!-- Summary bar -->
       <div class="dash-summary" aria-label="오늘 현황 요약">
-        오늘 한눈에: 좋아요 <strong id="dashSummaryLike">24</strong><span class="dash-summary__dot"></span>도달 <strong id="dashSummaryReach">1.4K</strong><span class="dash-summary__dot"></span>팔로워 <strong id="dashSummaryFollow">+24</strong>
+        오늘 한눈에: 좋아요 <strong id="dashSummaryLike">—</strong><span class="dash-summary__dot"></span>도달 <strong id="dashSummaryReach">—</strong><span class="dash-summary__dot"></span>팔로워 <strong id="dashSummaryFollow">—</strong>
+        <span style="display:block;font-size:var(--lumi-text-caption);color:var(--lumi-ink-muted);margin-top:4px;">곧 인사이트가 업데이트돼요</span>
       </div>
 
       </div><!-- /dash-right -->
@@ -1679,37 +1680,8 @@ body {
           </span>
           오늘의 트렌드
         </h2>
-        <div role="list" aria-label="트렌드 키워드">
-          <div class="rail-trend-item" role="listitem">
-            <div class="rail-trend-item__kw">
-              <span class="rail-trend-item__rank">1</span>
-              #여름코디
-            </div>
-            <p class="rail-trend-item__desc">린넨·면 소재 코디 검색 급증 — 지난주 대비 +142%</p>
-            <button class="rail-trend-item__cta" aria-label="여름코디 키워드를 캡션에 활용">
-              캡션에 활용 →
-            </button>
-          </div>
-          <div class="rail-trend-item" role="listitem">
-            <div class="rail-trend-item__kw">
-              <span class="rail-trend-item__rank">2</span>
-              #오늘뭐입지
-            </div>
-            <p class="rail-trend-item__desc">데일리 룩 인증 해시태그 — 저녁 7시 피크</p>
-            <button class="rail-trend-item__cta" aria-label="오늘뭐입지 키워드를 캡션에 활용">
-              캡션에 활용 →
-            </button>
-          </div>
-          <div class="rail-trend-item" role="listitem">
-            <div class="rail-trend-item__kw">
-              <span class="rail-trend-item__rank">3</span>
-              #무신사추천
-            </div>
-            <p class="rail-trend-item__desc">버티컬 커머스 연동 콘텐츠 주목도 상승</p>
-            <button class="rail-trend-item__cta" aria-label="무신사추천 키워드를 캡션에 활용">
-              캡션에 활용 →
-            </button>
-          </div>
+        <div role="list" aria-label="트렌드 키워드" id="railTrendList">
+          <p style="color:var(--lumi-ink-muted);font-size:var(--lumi-text-caption);padding:var(--lumi-space-2) 0;">불러오는 중…</p>
         </div>
       </div>
 
@@ -1721,21 +1693,8 @@ body {
           </span>
           다가오는 예약
         </h2>
-        <div class="rail-schedule-list" aria-label="예약 목록">
-          <div class="rail-schedule-item">
-            <div class="rail-schedule-item__dday rail-schedule-item__dday--today" aria-label="오늘">D-0</div>
-            <div class="rail-schedule-item__info">
-              <div class="rail-schedule-item__title">여름 린넨셔츠 홍보</div>
-              <div class="rail-schedule-item__time">오늘 19:30</div>
-            </div>
-          </div>
-          <div class="rail-schedule-item">
-            <div class="rail-schedule-item__dday" aria-label="2일 후">D-2</div>
-            <div class="rail-schedule-item__info">
-              <div class="rail-schedule-item__title">신상 청바지 컷</div>
-              <div class="rail-schedule-item__time">5월 9일 12:00</div>
-            </div>
-          </div>
+        <div class="rail-schedule-list" aria-label="예약 목록" id="railScheduleList">
+          <p style="color:var(--lumi-ink-muted);font-size:var(--lumi-text-caption);padding:var(--lumi-space-2) 0;">불러오는 중…</p>
           <a href="/reservations" style="display:flex;align-items:center;justify-content:center;gap:4px;margin-top:var(--lumi-space-2);font-size:var(--lumi-text-caption);font-weight:var(--lumi-weight-semibold);color:var(--lumi-ink-muted);text-decoration:none;padding:var(--lumi-space-2);border-radius:var(--lumi-radius-sm);transition:color var(--lumi-duration-fast) var(--lumi-ease-soft);" aria-label="전체 예약 보기">
             전체 보기 →
           </a>
@@ -1753,25 +1712,22 @@ body {
         <div class="rail-insight-grid" aria-label="이번 주 인사이트 수치">
           <div class="rail-insight-item">
             <div class="rail-insight-item__label">노출</div>
-            <div class="rail-insight-item__num">12.4K</div>
-            <div class="rail-insight-item__trend">↑ 18%</div>
+            <div class="rail-insight-item__num">—</div>
           </div>
           <div class="rail-insight-item">
             <div class="rail-insight-item__label">도달</div>
-            <div class="rail-insight-item__num">8.1K</div>
-            <div class="rail-insight-item__trend">↑ 22%</div>
+            <div class="rail-insight-item__num">—</div>
           </div>
           <div class="rail-insight-item">
             <div class="rail-insight-item__label">좋아요</div>
-            <div class="rail-insight-item__num is-brand">347</div>
-            <div class="rail-insight-item__trend">↑ 9%</div>
+            <div class="rail-insight-item__num">—</div>
           </div>
           <div class="rail-insight-item">
             <div class="rail-insight-item__label">팔로워</div>
-            <div class="rail-insight-item__num">+24</div>
-            <div class="rail-insight-item__trend">↑ 신규</div>
+            <div class="rail-insight-item__num">—</div>
           </div>
         </div>
+        <p style="font-size:var(--lumi-text-caption);color:var(--lumi-ink-muted);margin-top:var(--lumi-space-2);">곧 인사이트가 업데이트돼요</p>
       </div>
 
     </aside><!-- /dash-rail--right -->
@@ -2310,6 +2266,139 @@ body {
     if (e.key === 'Escape' && composer.classList.contains('is-active')) closeComposer();
   });
 
+})();
+</script>
+
+<script>
+/* ── Dashboard stats: wire dashCardScheduled, dashCardTrend, rail ── */
+(function () {
+  'use strict';
+
+  var INDUSTRY_TO_CATEGORY = {
+    '카페':'cafe','음식점':'food','베이커리':'food',
+    '의류':'fashion','패션':'fashion','뷰티':'beauty',
+    '네일':'nail','미용실':'hair',
+    '꽃집':'flower','플라워':'flower',
+    '헬스':'fitness','피트니스':'fitness',
+    '펫':'pet','펫샵':'pet'
+  };
+  function mapIndustry(industry) {
+    if (!industry) return 'cafe';
+    return INDUSTRY_TO_CATEGORY[industry] || 'cafe';
+  }
+
+  function setText(id, val) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = val;
+  }
+
+  function fmtTime(iso) {
+    if (!iso) return '';
+    try {
+      var d = new Date(iso);
+      var now = new Date();
+      var diffDays = Math.round((d - now) / 86400000);
+      var timeStr = d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
+      if (diffDays === 0) return '오늘 ' + timeStr;
+      var month = d.getMonth() + 1;
+      var day = d.getDate();
+      return month + '월 ' + day + '일 ' + timeStr;
+    } catch (e) { return ''; }
+  }
+
+  function dDay(iso) {
+    if (!iso) return '';
+    var diff = Math.round((new Date(iso) - new Date()) / 86400000);
+    if (diff <= 0) return 'D-0';
+    return 'D-' + diff;
+  }
+
+  async function loadDashStats() {
+    /* 1. reservations → dashCardScheduled + railScheduleList */
+    try {
+      var token = null;
+      if (window.lumiSupa) {
+        var sess = await window.lumiSupa.auth.getSession();
+        token = sess.data && sess.data.session && sess.data.session.access_token;
+      }
+      if (token) {
+        var rr = await fetch('/api/list-reservations', { headers: { Authorization: 'Bearer ' + token } });
+        if (rr.ok) {
+          var rd = await rr.json();
+          var items = rd.items || [];
+          var pending = items.filter(function (i) { return i.post_status === 'pending' || i.post_status === 'scheduled'; });
+          setText('dashCardScheduled', pending.length + '건');
+
+          /* rail schedule */
+          var railSched = document.getElementById('railScheduleList');
+          if (railSched) {
+            var upcoming = items.filter(function (i) { return i.post_status !== 'published'; }).slice(0, 2);
+            if (!upcoming.length) {
+              railSched.innerHTML = '<p style="color:var(--lumi-ink-muted);font-size:var(--lumi-text-caption);">예약된 게시 없어요</p>';
+            } else {
+              var schedHtml = upcoming.map(function (r) {
+                var title = ((r.captions && r.captions[0]) || r.user_message || '게시물').substring(0, 18);
+                var dd = dDay(r.scheduled_at);
+                var isToday = dd === 'D-0';
+                return '<div class="rail-schedule-item">' +
+                  '<div class="rail-schedule-item__dday' + (isToday ? ' rail-schedule-item__dday--today' : '') + '">' + dd + '</div>' +
+                  '<div class="rail-schedule-item__info">' +
+                    '<div class="rail-schedule-item__title">' + title + '</div>' +
+                    '<div class="rail-schedule-item__time">' + fmtTime(r.scheduled_at) + '</div>' +
+                  '</div>' +
+                '</div>';
+              }).join('');
+              schedHtml += '<a href="/reservations" style="display:flex;align-items:center;justify-content:center;gap:4px;margin-top:var(--lumi-space-2);font-size:var(--lumi-text-caption);font-weight:var(--lumi-weight-semibold);color:var(--lumi-ink-muted);text-decoration:none;padding:var(--lumi-space-2);border-radius:var(--lumi-radius-sm);">전체 보기 →</a>';
+              railSched.innerHTML = schedHtml;
+            }
+          }
+        }
+      } else {
+        setText('dashCardScheduled', '0건');
+      }
+    } catch (e) { setText('dashCardScheduled', '0건'); }
+
+    /* 2. seller industry → trends count + railTrendList */
+    try {
+      var token2 = null;
+      if (window.lumiSupa) {
+        var sess2 = await window.lumiSupa.auth.getSession();
+        token2 = sess2.data && sess2.data.session && sess2.data.session.access_token;
+      }
+      var cat = 'cafe';
+      if (token2) {
+        try {
+          var mr = await fetch('/api/me', { headers: { Authorization: 'Bearer ' + token2 } });
+          if (mr.ok) { var md = await mr.json(); cat = mapIndustry(md.seller && md.seller.industry); }
+        } catch (e) {}
+      }
+      var tr = await fetch('/api/get-trends?category=' + cat);
+      if (tr.ok) {
+        var td = await tr.json();
+        var keywords = td.keywords || [];
+        setText('dashCardTrend', keywords.length + '건');
+
+        /* rail trend list */
+        var railTrend = document.getElementById('railTrendList');
+        if (railTrend) {
+          if (!keywords.length) {
+            railTrend.innerHTML = '<p style="color:var(--lumi-ink-muted);font-size:var(--lumi-text-caption);">트렌드 업데이트 중</p>';
+          } else {
+            railTrend.innerHTML = keywords.slice(0, 3).map(function (kw, i) {
+              var word = kw.keyword || kw.tag || '';
+              var tag = word.startsWith('#') ? word : '#' + word;
+              return '<div class="rail-trend-item" role="listitem">' +
+                '<div class="rail-trend-item__kw"><span class="rail-trend-item__rank">' + (i + 1) + '</span>' + tag + '</div>' +
+                '<button class="rail-trend-item__cta" aria-label="' + word + ' 키워드를 캡션에 활용">캡션에 활용 →</button>' +
+              '</div>';
+            }).join('');
+          }
+        }
+      }
+    } catch (e) { setText('dashCardTrend', '0건'); }
+  }
+
+  loadDashStats();
 })();
 </script>
 </body>

@@ -510,100 +510,10 @@
         </div>
       </div>
 
-      <!-- 캘린더 그리드 -->
-      <div class="rsv-calendar">
-
-        <!-- 월 — 게시 완료 -->
-        <div class="rsv-col">
-          <article class="rsv-card" role="button" tabindex="0" aria-label="여름 핑크 코튼셔츠 게시 완료">
-            <p class="rsv-card__time">11:30</p>
-            <p class="rsv-card__name">여름 핑크 코튼셔츠</p>
-            <span class="rsv-badge rsv-badge--done">
-              <span class="rsv-badge__dot" aria-hidden="true"></span>게시 완료
-            </span>
-          </article>
-        </div>
-
-        <!-- 화 — 예약 대기 -->
-        <div class="rsv-col">
-          <article class="rsv-card" role="button" tabindex="0" aria-label="데일리 슬랙스 3종 예약 대기">
-            <p class="rsv-card__time">14:30</p>
-            <p class="rsv-card__name">데일리 슬랙스 3종</p>
-            <span class="rsv-badge rsv-badge--pending">
-              <span class="rsv-badge__dot" aria-hidden="true"></span>예약 대기
-            </span>
-          </article>
-        </div>
-
-        <!-- 수 — 예약 대기 + 추천 시간대 -->
-        <div class="rsv-col">
-          <article class="rsv-card rsv-card--recommended" role="button" tabindex="0" aria-label="테니스 룩 예약 대기 — 반응 높음 추천 시간대">
-            <p class="rsv-card__time">19:30</p>
-            <p class="rsv-card__name">테니스 룩</p>
-            <span class="rsv-badge rsv-badge--pending">
-              <span class="rsv-badge__dot" aria-hidden="true"></span>예약 대기
-            </span>
-            <p class="rsv-card__recommend-hint">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
-              </svg>
-              반응 높은 시간대
-            </p>
-          </article>
-        </div>
-
-        <!-- 목 — 빈 슬롯 -->
-        <div class="rsv-col">
-          <button type="button" class="rsv-empty-slot" aria-label="목요일 예약 추가">
-            <span class="rsv-empty-slot__inner">
-              <svg class="rsv-empty-slot__icon" viewBox="0 0 24 24" aria-hidden="true">
-                <line x1="12" y1="5" x2="12" y2="19"/>
-                <line x1="5" y1="12" x2="19" y2="12"/>
-              </svg>
-              <span class="rsv-empty-slot__text">예약 추가</span>
-            </span>
-          </button>
-        </div>
-
-        <!-- 금 — 빈 슬롯 (오늘) -->
-        <div class="rsv-col">
-          <button type="button" class="rsv-empty-slot" aria-label="금요일 예약 추가">
-            <span class="rsv-empty-slot__inner">
-              <svg class="rsv-empty-slot__icon" viewBox="0 0 24 24" aria-hidden="true">
-                <line x1="12" y1="5" x2="12" y2="19"/>
-                <line x1="5" y1="12" x2="19" y2="12"/>
-              </svg>
-              <span class="rsv-empty-slot__text">예약 추가</span>
-            </span>
-          </button>
-        </div>
-
-        <!-- 토 — 빈 슬롯 -->
-        <div class="rsv-col">
-          <button type="button" class="rsv-empty-slot" aria-label="토요일 예약 추가">
-            <span class="rsv-empty-slot__inner">
-              <svg class="rsv-empty-slot__icon" viewBox="0 0 24 24" aria-hidden="true">
-                <line x1="12" y1="5" x2="12" y2="19"/>
-                <line x1="5" y1="12" x2="19" y2="12"/>
-              </svg>
-              <span class="rsv-empty-slot__text">예약 추가</span>
-            </span>
-          </button>
-        </div>
-
-        <!-- 일 — 빈 슬롯 -->
-        <div class="rsv-col">
-          <button type="button" class="rsv-empty-slot" aria-label="일요일 예약 추가">
-            <span class="rsv-empty-slot__inner">
-              <svg class="rsv-empty-slot__icon" viewBox="0 0 24 24" aria-hidden="true">
-                <line x1="12" y1="5" x2="12" y2="19"/>
-                <line x1="5" y1="12" x2="19" y2="12"/>
-              </svg>
-              <span class="rsv-empty-slot__text">예약 추가</span>
-            </span>
-          </button>
-        </div>
-
+      <!-- 캘린더 그리드 — JS로 렌더 -->
+      <div class="rsv-calendar" id="rsvCalendar">
+        <!-- 로딩 중 -->
+        <p id="rsvLoading" style="grid-column:1/-1;padding:var(--lumi-space-6);text-align:center;color:var(--lumi-ink-muted);">불러오는 중…</p>
       </div><!-- .rsv-calendar -->
     </div><!-- .rsv-calendar-scroll -->
 
@@ -614,5 +524,116 @@
 
   <!-- 하단 5탭 네비게이션 자동 삽입 -->
   <script src="/js/lumi-tabs.js" defer></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.103.3/dist/umd/supabase.min.js"></script>
+  <script>
+  (function () {
+    var SUPA_URL = 'https://cldsozdocxpvkbuxwqep.supabase.co';
+    var SUPA_KEY = 'sb_publishable_WjWg5o05Y7lhib674Cr_fw_0mpY-ccG';
+    window.lumiSupa = window.supabase.createClient(SUPA_URL, SUPA_KEY, {
+      auth: { persistSession: true, autoRefreshToken: true, storageKey: 'lumi-auth' }
+    });
+  })();
+  </script>
+  <script src="/js/_shared/restore-seller-jwt.js"></script>
+  <script>
+  (function () {
+    'use strict';
+
+    async function getToken() {
+      if (!window.lumiSupa) return null;
+      try {
+        var result = await window.lumiSupa.auth.getSession();
+        var session = result.data && result.data.session;
+        return session && session.access_token ? session.access_token : null;
+      } catch (e) { return null; }
+    }
+
+    function fmtTime(iso) {
+      if (!iso) return '';
+      try {
+        var d = new Date(iso);
+        return d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
+      } catch (e) { return ''; }
+    }
+
+    function emptySlotHtml() {
+      return '<div class="rsv-col">' +
+        '<button type="button" class="rsv-empty-slot" aria-label="예약 추가">' +
+          '<span class="rsv-empty-slot__inner">' +
+            '<svg class="rsv-empty-slot__icon" viewBox="0 0 24 24" aria-hidden="true">' +
+              '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>' +
+            '</svg>' +
+            '<span class="rsv-empty-slot__text">예약 추가</span>' +
+          '</span>' +
+        '</button>' +
+      '</div>';
+    }
+
+    function renderReservations(items) {
+      var cal = document.getElementById('rsvCalendar');
+      if (!cal) return;
+
+      if (!items || !items.length) {
+        cal.innerHTML =
+          '<div style="grid-column:1/-1;padding:var(--lumi-space-8);text-align:center;">' +
+            '<p style="color:var(--lumi-ink-muted);font-size:var(--lumi-text-body);margin-bottom:var(--lumi-space-4);">예약된 게시 없어요</p>' +
+            '<a href="/register-product" class="lumi-btn lumi-btn--primary" style="display:inline-flex;align-items:center;gap:6px;">사진 올리기</a>' +
+          '</div>';
+        return;
+      }
+
+      var html = items.map(function (r) {
+        var name = ((r.captions && r.captions[0]) || r.user_message || '게시물').substring(0, 22);
+        var time = fmtTime(r.scheduled_at);
+        var isDone = r.post_status === 'published';
+        var badgeClass = isDone ? 'rsv-badge--done' : 'rsv-badge--pending';
+        var badgeLabel = isDone ? '게시 완료' : '예약 대기';
+        var thumb = (r.image_urls && r.image_urls[0])
+          ? '<img src="' + r.image_urls[0] + '" alt="" style="width:100%;height:56px;object-fit:cover;border-radius:6px;margin-bottom:6px;" loading="lazy">'
+          : '';
+        return '<div class="rsv-col">' +
+          '<article class="rsv-card" role="button" tabindex="0" aria-label="' + name + ' ' + badgeLabel + '">' +
+            thumb +
+            '<p class="rsv-card__time">' + time + '</p>' +
+            '<p class="rsv-card__name">' + name + '</p>' +
+            '<span class="rsv-badge ' + badgeClass + '">' +
+              '<span class="rsv-badge__dot" aria-hidden="true"></span>' + badgeLabel +
+            '</span>' +
+          '</article>' +
+        '</div>';
+      }).join('');
+
+      /* 빈 슬롯으로 7열 채우기 */
+      var remaining = Math.max(0, 7 - items.length);
+      for (var i = 0; i < remaining; i++) html += emptySlotHtml();
+
+      cal.innerHTML = html;
+    }
+
+    async function loadReservations() {
+      var token = await getToken();
+      var cal = document.getElementById('rsvCalendar');
+      if (!token) {
+        if (cal) cal.innerHTML =
+          '<div style="grid-column:1/-1;padding:var(--lumi-space-8);text-align:center;">' +
+            '<p style="color:var(--lumi-ink-muted);margin-bottom:var(--lumi-space-4);">예약된 게시 없어요</p>' +
+            '<a href="/register-product" class="lumi-btn lumi-btn--primary">사진 올리기</a>' +
+          '</div>';
+        return;
+      }
+      try {
+        var r = await fetch('/api/list-reservations', {
+          headers: { Authorization: 'Bearer ' + token }
+        });
+        if (!r.ok) { renderReservations([]); return; }
+        var data = await r.json();
+        renderReservations(data.items || []);
+      } catch (e) { renderReservations([]); }
+    }
+
+    loadReservations();
+  })();
+  </script>
 </body>
 </html>
