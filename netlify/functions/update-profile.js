@@ -2,7 +2,9 @@
 // POST /api/update-profile
 //
 // 입력: Authorization: Bearer <jwt> (Supabase JWT 우선 / seller-jwt fallback)
-//       body: { storeName?, industry?, phone? } (camelCase, 미전달 키는 무시)
+//       body: { storeName?, industry?, phone?, displayName?, ownerName?,
+//               storeDesc?, toneSample1?, toneSample2?, toneSample3? }
+//             (camelCase, 미전달 키는 무시)
 //
 // 동작:
 //   1) JWT 검증 → seller 행 식별 (me.js / account-delete.js와 동일 패턴)
@@ -13,7 +15,6 @@
 // 주의:
 //   - 빈 문자열은 NULL로 변환 (사용자가 명시적으로 비움)
 //   - 미전달 키 (undefined)는 무시 (부분 업데이트)
-//   - sellers 테이블에 없는 필드(store_desc, tone_1~3 등)는 무시
 //   - business_number는 보안상 변경 금지 (사업자 인증 별도 흐름)
 
 const { getAdminClient } = require('./_shared/supabase-admin');
@@ -27,6 +28,10 @@ const FIELD_MAP = {
   phone: 'phone',
   displayName: 'display_name',
   ownerName: 'owner_name',
+  storeDesc: 'store_desc',
+  toneSample1: 'tone_sample_1',
+  toneSample2: 'tone_sample_2',
+  toneSample3: 'tone_sample_3',
 };
 
 // 길이 제한 (sellers 컬럼 특성에 맞게)
@@ -36,6 +41,10 @@ const MAX_LEN = {
   phone: 20,
   display_name: 50,
   owner_name: 50,
+  store_desc: 1000,
+  tone_sample_1: 500,
+  tone_sample_2: 500,
+  tone_sample_3: 500,
 };
 
 function sanitizeValue(snakeKey, raw) {
@@ -138,7 +147,7 @@ exports.handler = async (event) => {
       .from('sellers')
       .update(update)
       .eq(sellerQuery.field, sellerQuery.value)
-      .select('id, store_name, industry, phone, display_name, owner_name, updated_at')
+      .select('id, store_name, industry, phone, display_name, owner_name, store_desc, tone_sample_1, tone_sample_2, tone_sample_3, updated_at')
       .maybeSingle();
 
     if (error) {
@@ -164,6 +173,10 @@ exports.handler = async (event) => {
           industry: data.industry || null,
           displayName: data.display_name || null,
           ownerName: data.owner_name || null,
+          storeDesc: data.store_desc || null,
+          toneSample1: data.tone_sample_1 || null,
+          toneSample2: data.tone_sample_2 || null,
+          toneSample3: data.tone_sample_3 || null,
           updatedAt: data.updated_at,
         },
       }),

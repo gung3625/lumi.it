@@ -1260,22 +1260,20 @@ if (settings.notifTime) {
   if (sel) sel.value = settings.notifTime;
 }
 
-/* ── API에서 최신 프로필 로드 ── */
+/* ── API에서 최신 프로필 로드 (sellers 테이블 — 단일 소스) ── */
 if (localStorage.getItem('lumi_token')) {
-  fetch('/api/get-profile', { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('lumi_token') } })
+  fetch('/api/me', { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('lumi_token') } })
     .then(function(r){ return r.json().catch(function(){ return {}; }); })
     .then(function(res){
-      var d = res && res.user ? res.user : null;
-      if (!d) return;
+      var s = res && res.seller ? res.seller : null;
+      if (!s) return;
       var mapped = {
-        email: d.email,
-        storeName: d.store_name, bizCategory: d.biz_category, storeDesc: d.store_desc,
-        tone1: d.tone_1, tone2: d.tone_2, tone3: d.tone_3,
-        igConnected: d.ig_connected, igHandle: d.ig_handle,
-        igConnectedAt: d.ig_connected_at, igExpiry: d.ig_expiry,
-        tiktokConnected: d.tiktok_connected, tiktokHandle: d.tiktok_handle,
-        tiktokConnectedAt: d.tiktok_connected_at,
-        kakaoLinked: d.kakao_linked, googleLinked: d.google_linked
+        storeName: s.storeName,
+        bizCategory: s.industry,
+        storeDesc: s.storeDesc,
+        tone1: s.toneSample1,
+        tone2: s.toneSample2,
+        tone3: s.toneSample3
       };
       user = Object.assign(user, mapped);
       localStorage.setItem('lumi_user', JSON.stringify(user));
@@ -1308,7 +1306,7 @@ function saveProfile() {
   var tone2 = document.getElementById('s-tone-2').value;
   var tone3 = document.getElementById('s-tone-3').value;
 
-  // localStorage 캐시 (네트워크 실패 시 폼 복원용 + 매장 소개·말투 샘플은 sellers에 컬럼이 없어 임시 보관)
+  // localStorage 캐시 (네트워크 실패 시 폼 복원용)
   user.storeName = storeName;
   user.bizCategory = bizCategory;
   user.storeDesc = storeDesc;
@@ -1321,9 +1319,15 @@ function saveProfile() {
     return;
   }
 
-  // sellers 테이블에 있는 컬럼만 백엔드로 전송
-  // (storeDesc, tone1~3은 현재 sellers 컬럼 미존재 — localStorage에만 보관)
-  var payload = { storeName: storeName, industry: bizCategory };
+  // sellers 테이블 컬럼 모두 백엔드로 전송 (단일 소스)
+  var payload = {
+    storeName: storeName,
+    industry: bizCategory,
+    storeDesc: storeDesc,
+    toneSample1: tone1,
+    toneSample2: tone2,
+    toneSample3: tone3
+  };
 
   fetch('/api/update-profile', {
     method: 'POST',
