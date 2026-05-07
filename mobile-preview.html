@@ -13,6 +13,8 @@
     href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
   <link rel="stylesheet" href="/css/lumi-tokens.css" />
   <link rel="stylesheet" href="/css/lumi-comp.css" />
+  <link rel="stylesheet" href="/css/lumi-head.css" />
+  <link rel="stylesheet" href="/css/lumi-foot.css" />
   <style>
 /* ============================================================
    mobile-preview.html — 매장 인스타 미리보기
@@ -916,6 +918,50 @@
   </style>
 </head>
 <body>
+  <!-- 헤더 인라인 (FOUC 제거) -->
+  <header class="lumi-head" data-lumi-head>
+    <div class="lumi-head__inner">
+      <a href="/" class="lumi-head__logo" aria-label="lumi 홈">
+        <img src="/assets/logo-wordmark.png" alt="lumi" width="50" height="24" loading="eager" decoding="sync" />
+      </a>
+
+      <nav class="lumi-head__nav" aria-label="메인 네비">
+        <ul class="lumi-head__links">
+          <li><a href="/guide">기능 안내</a></li>
+          <li><a href="/pricing">요금제</a></li>
+          <li><a href="/support">고객지원</a></li>
+        </ul>
+      </nav>
+
+      <div class="lumi-head__actions">
+        <a href="/signup" class="lumi-head__login">로그인</a>
+        <a href="/signup" class="lumi-head__cta">회원가입</a>
+        <button type="button" class="lumi-head__burger" aria-label="메뉴 열기" aria-expanded="false" aria-controls="lumi-drawer">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="lumi-head__drawer" id="lumi-drawer" data-lumi-drawer aria-hidden="true">
+    <div class="lumi-head__drawer-top">
+      <span class="lumi-head__logo">
+        <img src="/assets/logo-wordmark.png" alt="lumi" width="50" height="24" loading="eager" decoding="sync" />
+      </span>
+      <button type="button" class="lumi-head__burger" data-lumi-drawer-close aria-label="메뉴 닫기">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6l-12 12"/></svg>
+      </button>
+    </div>
+    <ul class="lumi-head__drawer-list">
+      <li><a href="/guide">기능 안내</a></li>
+      <li><a href="/pricing">요금제</a></li>
+      <li><a href="/support">고객지원</a></li>
+      <li><a href="/signup">로그인</a></li>
+    </ul>
+    <a href="/signup" class="lumi-head__drawer-cta">회원가입</a>
+  </div>
+
+  <!-- 헤더 인터랙션 바인딩 -->
   <script src="/js/lumi-head.js" defer></script>
 
   <main class="mpv-page">
@@ -1125,6 +1171,49 @@
     </div>
   </div>
 
+  <!-- 푸터 인라인 (FOUC 제거) -->
+  <footer class="lumi-foot" role="contentinfo" data-lumi-foot>
+    <div class="lumi-foot__bg" aria-hidden="true"></div>
+    <div class="lumi-foot__inner">
+      <div class="lumi-foot__brand">
+        <a href="/" class="lumi-foot__logo" aria-label="lumi 홈">
+          <img src="/assets/logo-wordmark.png" alt="lumi" class="lumi-foot__logo-img" width="58" height="28" loading="eager" decoding="sync" />
+        </a>
+        <p class="lumi-foot__tagline">사장님의 첫 AI 직원</p>
+        <ul class="lumi-foot__contact" aria-label="연락처">
+          <li><a href="tel:01064246284">010-6424-6284</a></li>
+          <li><a href="mailto:gung3625@gmail.com">gung3625@gmail.com</a></li>
+        </ul>
+      </div>
+      <nav class="lumi-foot__nav" aria-label="법적 정보">
+        <ul class="lumi-foot__links">
+          <li><a href="/terms">이용약관</a></li>
+          <li><a href="/privacy">개인정보처리방침</a></li>
+          <li><a href="/privacy#data-deletion">데이터 삭제 안내</a></li>
+          <li><a href="/refund.html">환불정책</a></li>
+          <li><a href="/support">고객지원</a></li>
+        </ul>
+      </nav>
+      <div class="lumi-foot__biz" aria-label="사업자 정보">
+        <dl class="lumi-foot__biz-list">
+          <div><dt>대표</dt><dd>김현</dd></div>
+          <div><dt>사업자등록번호</dt><dd>404-09-66416</dd></div>
+          <div><dt>통신판매업</dt><dd>제2024-서울용산-1166호</dd></div>
+          <div><dt>주소</dt><dd>서울특별시 용산구 회나무로 32-7 (이태원동) 04345</dd></div>
+        </dl>
+        <div class="lumi-foot__dpo">
+          <span>개인정보보호책임자: 김현 (대표)</span>
+          <a href="mailto:lumi@lumi.it.kr">lumi@lumi.it.kr</a>
+        </div>
+      </div>
+      <div class="lumi-foot__bottom">
+        <p class="lumi-foot__copy">© 2026 lumi. All rights reserved.</p>
+        <p class="lumi-foot__notice">본 서비스는 <strong>Meta Platform Terms</strong> 및 <strong>Developer Policies</strong>를 준수합니다.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Speculation Rules + idempotent CSS 보장 -->
   <script src="/js/lumi-foot.js" defer></script>
   <script src="/js/lumi-tabs.js" defer></script>
 
