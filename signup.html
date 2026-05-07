@@ -388,12 +388,13 @@
   background: var(--lumi-surface-alt);
   border: 1px solid var(--lumi-line);
   border-radius: var(--lumi-radius-lg);
-  padding: var(--lumi-space-4) var(--lumi-space-5);
+  padding: var(--lumi-space-5) var(--lumi-space-5);
   margin-bottom: var(--lumi-space-5);
   display: flex;
   flex-direction: column;
   gap: var(--lumi-space-2);
-  align-items: flex-start;
+  align-items: center;
+  text-align: center;
 }
 .signup-resume__title {
   font-size: var(--lumi-text-body);
@@ -404,6 +405,9 @@
   font-size: var(--lumi-text-body-sm);
   color: var(--lumi-ink-muted);
   margin-bottom: var(--lumi-space-2);
+}
+.signup-resume .lumi-btn {
+  width: 100%;
 }
 .signup-resume__switch {
   background: none;
@@ -623,8 +627,10 @@
     track.classList.add('is-step-2');
     step1El.setAttribute('aria-hidden', 'true');
     step2El.removeAttribute('aria-hidden');
-    document.getElementById('storeName').focus();
+    var sn = document.getElementById('storeName');
+    if (sn) sn.focus();
   }
+  window.goToStep2 = goToStep2;
 
   window.goToStep1 = function () {
     track.classList.remove('is-step-2');
