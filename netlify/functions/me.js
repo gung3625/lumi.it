@@ -98,7 +98,7 @@ exports.handler = async (event) => {
   // sellers 조회: Supabase JWT → email 매칭, seller-jwt → id 매칭
   const sellerQuery = admin
     .from('sellers')
-    .select('id, business_number, owner_name, phone, email, store_name, signup_step, signup_completed_at, business_verified, business_verified_at, plan, trial_start, marketing_consent, referral_code, created_at, onboarded, signup_method, display_name, avatar_url, age_range, industry');
+    .select('id, business_number, owner_name, phone, email, store_name, signup_step, signup_completed_at, business_verified, business_verified_at, plan, trial_start, marketing_consent, referral_code, created_at, onboarded, signup_method, display_name, avatar_url, age_range, industry, store_desc, tone_sample_1, tone_sample_2, tone_sample_3, deletion_requested_at, deletion_scheduled_at, deletion_cancelled_at');
 
   let { data: seller, error: selErr } = sellerQueryField
     ? await sellerQuery.eq(sellerQueryField, sellerQueryValue).maybeSingle()
@@ -149,7 +149,7 @@ exports.handler = async (event) => {
           trial_start: now,
           marketing_consent: false,
         })
-        .select('id, business_number, owner_name, phone, email, store_name, signup_step, signup_completed_at, business_verified, business_verified_at, plan, trial_start, marketing_consent, referral_code, created_at, onboarded, signup_method, display_name, avatar_url, age_range, industry')
+        .select('id, business_number, owner_name, phone, email, store_name, signup_step, signup_completed_at, business_verified, business_verified_at, plan, trial_start, marketing_consent, referral_code, created_at, onboarded, signup_method, display_name, avatar_url, age_range, industry, store_desc, tone_sample_1, tone_sample_2, tone_sample_3, deletion_requested_at, deletion_scheduled_at, deletion_cancelled_at')
         .single();
       if (!insErr && created) {
         seller = created;
@@ -202,12 +202,20 @@ exports.handler = async (event) => {
         onboarded: Boolean(seller.onboarded),
         signupMethod: seller.signup_method || null,
         industry: seller.industry || null,
+        storeDesc: seller.store_desc || null,
+        toneSample1: seller.tone_sample_1 || null,
+        toneSample2: seller.tone_sample_2 || null,
+        toneSample3: seller.tone_sample_3 || null,
         businessVerified: seller.business_verified,
         plan: seller.plan,
         trialStart: seller.trial_start,
         marketingConsent: seller.marketing_consent,
         referralCode: seller.referral_code,
         createdAt: seller.created_at,
+        deletionRequestedAt: seller.deletion_requested_at || null,
+        deletionScheduledAt: seller.deletion_scheduled_at || null,
+        deletionCancelledAt: seller.deletion_cancelled_at || null,
+        deletionPending: Boolean(seller.deletion_requested_at && !seller.deletion_cancelled_at),
       },
     }),
   };

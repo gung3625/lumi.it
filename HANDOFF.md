@@ -193,3 +193,37 @@ cat HANDOFF.md         # 이 파일
 ### 이번 세션 30일 유예 작업 미완성
 - agent `a569becf422a88e98` (account-deletion-grace) 시작 후 stop. commit 0건.
 - 다음 세션이 위 A brief 그대로 진행하면 됨.
+
+---
+
+## CI/CD
+
+Netlify 통합 배포 파이프라인. main 브랜치 push 시 Netlify가 GitHub 연동을 통해 자동으로 빌드·배포하며, 빌드 step에서 Supabase 마이그까지 함께 적용한다. 별도 GitHub Actions 워크플로우 없음.
+
+### 동작 방식
+
+- Netlify가 이미 GitHub 레포의 `main` 브랜치에 자동 배포로 연결됨 (사이트 ID `28d60e0e-6aa4-4b45-b117-0bcc3c4268fc`)
+- main 브랜치 push → Netlify build 시작 → `netlify.toml` 의 `[build].command` 실행:
+  ```
+  npx -y supabase@1.215.0 db push --db-url "$SUPABASE_DB_URL" --include-all && npm install
+  ```
+- 마이그 적용 성공 시 `npm install` 후 publish (`.` 디렉토리) → 라이브 반영
+- 마이그 실패 시 빌드 자체가 fail → Netlify가 새 deploy를 publish 하지 않음 → race 없음
+
+### 필수 Netlify Env (등록 완료)
+
+- **`SUPABASE_DB_URL`** — Session Pooler URL (`postgresql://...pooler.supabase.com:5432/postgres`). **이미 등록·검증 완료.**
+  - 발급 경로: Supabase Studio → Project Settings → Database → Connection string → **Session pooler** 탭
+  - direct URL이 아닌 **Session Pooler URL** 사용 (Netlify 빌더 IPv4 환경 호환)
+
+이 외 사용자가 추가로 해야 할 액션 없음. GitHub Secrets 등록·관리 불필요.
+
+### 수동 트리거
+
+Netlify Dashboard → Deploys 탭 → **Trigger deploy → Deploy site** (또는 캐시 클리어 후 deploy).
+
+### 주의사항
+
+- `--include-all`은 schema_migrations에 등록되지 않은 마이그까지 시도하므로, 수동 SQL로 이미 적용된 마이그가 있으면 첫 자동 배포에서 **충돌 가능**. 첫 머지 전에 로컬에서 한 번 `supabase db push --db-url "$SUPABASE_DB_URL" --include-all` 직접 실행 → 충돌 row 정리(중복 object skip 또는 schema_migrations에 수동 insert) 권장
+- 마이그 변경이 없는 push는 supabase CLI가 `schema_migrations` 비교 후 no-op (idempotent)
+- 기존 `[functions]`, `[[headers]]`, `[[redirects]]`, cron schedule 설정 모두 유지됨 — `[build]` 섹션의 `command`만 변경

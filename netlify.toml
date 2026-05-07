@@ -1,6 +1,6 @@
 [build]
   publish = "."
-  command = "npm install"
+  command = "npx -y supabase@1.215.0 db push --db-url \"$SUPABASE_DB_URL\" --include-all && npm install"
 
 [functions]
   directory = "netlify/functions"
@@ -298,6 +298,13 @@
   status = 200
   force = true
 
+# 매장 정보 업데이트 (settings.html)
+[[redirects]]
+  from = "/api/update-profile"
+  to = "/.netlify/functions/update-profile"
+  status = 200
+  force = true
+
 # 회원가입 페이지
 [[redirects]]
   from = "/signup"
@@ -358,6 +365,71 @@
 [[redirects]]
   from = "/api/admin/apply-launch-migrations"
   to = "/.netlify/functions/admin-apply-launch-migrations"
+  status = 200
+  force = true
+
+# 30일 유예 회원 탈퇴 — 만료 처리 (UTC 18:00 = KST 03:00)
+[functions."process-account-deletion-background"]
+  schedule = "0 18 * * *"
+
+[[redirects]]
+  from = "/api/account-delete"
+  to = "/.netlify/functions/account-delete"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/account-restore"
+  to = "/.netlify/functions/account-restore"
+  status = 200
+  force = true
+
+# PIPA §35 자기정보 이동권 — 회원 데이터 JSON 다운로드
+[[redirects]]
+  from = "/api/export-my-data"
+  to = "/.netlify/functions/export-my-data"
+  status = 200
+  force = true
+
+# Dashboard 인사이트 — IG Graph API 월간 (좋아요/도달/팔로워 stat 카드)
+[[redirects]]
+  from = "/api/insight-monthly"
+  to = "/.netlify/functions/insight-monthly"
+  status = 200
+  force = true
+
+# Dashboard 인사이트 — IG Graph API 주간 (7일 윈도우)
+[[redirects]]
+  from = "/api/insight-weekly"
+  to = "/.netlify/functions/insight-weekly"
+  status = 200
+  force = true
+
+# Dashboard 인사이트 — 단건 게시물 (mediaId query param)
+[[redirects]]
+  from = "/api/insight-on-demand"
+  to = "/.netlify/functions/insight-on-demand"
+  status = 200
+  force = true
+
+# brand-admin 통계 dashboard — 관리자 전용 (users.is_admin 가드)
+[[redirects]]
+  from = "/api/brand-stats"
+  to = "/.netlify/functions/brand-stats"
+  status = 200
+  force = true
+
+# brand-admin 말투 재학습 — 관리자 전용 (users.is_admin 가드)
+[[redirects]]
+  from = "/api/brand-retrain"
+  to = "/.netlify/functions/brand-retrain"
+  status = 200
+  force = true
+
+# brand-admin 설정 저장/조회 — 관리자 전용 (users.is_admin 가드)
+[[redirects]]
+  from = "/api/brand-settings"
+  to = "/.netlify/functions/brand-settings"
   status = 200
   force = true
 

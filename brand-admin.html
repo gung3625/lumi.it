@@ -1131,46 +1131,132 @@ document.getElementById('hashtag-input').addEventListener('keydown', function(e)
 });
 
 /* ── 학습 통계 ────────────────────────────────────────────── */
+function formatRelativeKo(iso) {
+  if (!iso) return '—';
+  var t = new Date(iso).getTime();
+  if (!isFinite(t)) return '—';
+  var diffSec = Math.max(0, Math.floor((Date.now() - t) / 1000));
+  if (diffSec < 60) return '방금 전';
+  if (diffSec < 3600) return Math.floor(diffSec / 60) + '분 전';
+  if (diffSec < 86400) return Math.floor(diffSec / 3600) + '시간 전';
+  if (diffSec < 7 * 86400) return Math.floor(diffSec / 86400) + '일 전';
+  // 오래된 시각은 KST 날짜로
+  var d = new Date(iso);
+  var kst = new Date(d.getTime() + 9 * 3600 * 1000);
+  var mm = String(kst.getUTCMonth() + 1).padStart(2, '0');
+  var dd = String(kst.getUTCDate()).padStart(2, '0');
+  return kst.getUTCFullYear() + '-' + mm + '-' + dd;
+}
+
 function loadStats() {
-  /* TODO: /api/brand-stats 미구현 — 준비 중 */
-  console.warn('[brand-admin] /api/brand-stats 준비 중');
   var capEl = document.getElementById('stat-captions');
   var upEl  = document.getElementById('stat-updated');
-  if (capEl) capEl.textContent = '—';
-  if (upEl) upEl.textContent = '—';
+  if (capEl) capEl.textContent = '…';
+  if (upEl) upEl.textContent = '…';
+
+  fetch('/api/brand-stats', { headers: authHeaders() })
+    .then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function(j) {
+      if (!j || !j.ok || !j.data) throw new Error('invalid payload');
+      var captions = (j.data.captions && j.data.captions.total) || 0;
+      var lastAt = (j.data.captions && j.data.captions.lastCreatedAt) || j.data.generatedAt || null;
+      if (capEl) capEl.textContent = String(captions);
+      if (upEl) upEl.textContent = formatRelativeKo(lastAt);
+    })
+    .catch(function(err) {
+      console.warn('[brand-admin] /api/brand-stats 실패:', err && err.message);
+      if (capEl) capEl.textContent = '—';
+      if (upEl) upEl.textContent = '—';
+    });
 }
 
 function retrain() {
-  /* TODO: /api/brand-retrain 미구현 — 준비 중 */
-  console.warn('[brand-admin] /api/brand-retrain 준비 중');
-  showToast('재학습 기능은 준비 중이에요');
+  if (!confirm('재학습을 시작합니다. 약 5~10초 소요됩니다.')) return;
+
+  var btn = document.getElementById('retrain-btn');
+  if (!btn) return;
+  var originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg> 재학습 중...';
+
+  fetch('/api/brand-retrain', {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({})
+  })
+    .then(function(r) {
+      return r.json().then(function(j) { return { ok: r.ok, status: r.status, body: j }; });
+    })
+    .then(function(res) {
+      if (!res.ok || !res.body || res.body.ok !== true) {
+        var msg = (res.body && res.body.error) || ('HTTP ' + res.status);
+        throw new Error(msg);
+      }
+      var data = res.body.data || {};
+      var src = data.source === 'openai' ? 'AI' : '통계';
+      var sc = data.sourceCount || {};
+      showToast('재학습 완료 (' + src + ' · 캡션 ' + (sc.captions || 0) + '개 · 피드백 ' + (sc.feedback || 0) + '개)');
+      try { loadStats(); } catch(e) {}
+    })
+    .catch(function(err) {
+      console.warn('[brand-admin] /api/brand-retrain 실패:', err && err.message);
+      alert('재학습 실패: ' + (err && err.message ? err.message : '알 수 없는 오류'));
+    })
+    .then(function() {
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
+    });
 }
 
 /* ── 불러오기 ─────────────────────────────────────────────── */
+function applyBrandSettings(s) {
+  if (!s || typeof s !== 'object') return;
+  if (s.tone) {
+    state.tone = s.tone;
+    var radio = document.querySelector('input[name="tone"][value="' + s.tone + '"]');
+    if (radio) radio.checked = true;
+  }
+  if (typeof s.tone_custom === 'string') {
+    state.toneCustom = s.tone_custom;
+    var tc = document.getElementById('tone-custom-text');
+    if (tc) tc.value = s.tone_custom;
+  }
+  if (Array.isArray(s.samples)) { state.samples = s.samples.slice(0, 5); renderSamples(); }
+  if (Array.isArray(s.ban_words)) { state.banWords = s.ban_words; renderWordChips('ban'); }
+  if (Array.isArray(s.must_words)) { state.mustWords = s.must_words; renderWordChips('must'); }
+  if (s.hashtags) {
+    state.hashtags = Object.assign({ season: [], product: [], store: [] }, s.hashtags);
+    renderHashtags();
+  }
+}
+
 function loadBrandSettings() {
-  /* TODO: /api/brand-settings 미구현 — 준비 중. localStorage 캐시 사용 */
-  console.warn('[brand-admin] /api/brand-settings 준비 중');
+  /* localStorage 캐시 먼저 적용 (즉시 표시) → 서버 응답으로 덮어쓰기 */
   try {
     var cached = JSON.parse(localStorage.getItem('lumi_brand_settings') || 'null');
-    if (cached) {
-      if (cached.tone) {
-        state.tone = cached.tone;
-        var radio = document.querySelector('input[name="tone"][value="' + cached.tone + '"]');
-        if (radio) radio.checked = true;
-      }
-      if (cached.tone_custom) {
-        state.toneCustom = cached.tone_custom;
-        document.getElementById('tone-custom-text').value = cached.tone_custom;
-      }
-      if (Array.isArray(cached.samples)) { state.samples = cached.samples.slice(0, 5); renderSamples(); }
-      if (Array.isArray(cached.ban_words)) { state.banWords = cached.ban_words; renderWordChips('ban'); }
-      if (Array.isArray(cached.must_words)) { state.mustWords = cached.must_words; renderWordChips('must'); }
-      if (cached.hashtags) {
-        state.hashtags = Object.assign({ season: [], product: [], store: [] }, cached.hashtags);
-        renderHashtags();
-      }
-    }
+    if (cached) applyBrandSettings(cached);
   } catch(e) {}
+
+  fetch('/api/brand-settings', { headers: authHeaders() })
+    .then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function(j) {
+      if (!j || !j.ok || !j.data) throw new Error('invalid payload');
+      var s = j.data.settings || {};
+      applyBrandSettings(s);
+      try { localStorage.setItem('lumi_brand_settings', JSON.stringify(s)); } catch(e) {}
+      updatePreview();
+    })
+    .catch(function(err) {
+      console.warn('[brand-admin] /api/brand-settings GET 실패:', err && err.message);
+      updatePreview();
+    });
+
   updatePreview();
 }
 
@@ -1178,9 +1264,10 @@ function loadBrandSettings() {
 function saveAll() {
   var btn = document.getElementById('save-btn');
   btn.disabled = true;
+  var savedBtnHtml = '<svg viewBox="0 0 24 24" aria-hidden="true" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> 학습 내용 저장';
   btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="16" height="16"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg> 저장 중...';
 
-  var payload = {
+  var settings = {
     tone: state.tone,
     tone_custom: (document.getElementById('tone-custom-text').value || '').trim(),
     samples: state.samples.filter(function(s) { return s.text.trim(); }),
@@ -1189,12 +1276,34 @@ function saveAll() {
     hashtags: state.hashtags
   };
 
-  /* TODO: /api/brand-settings POST 미구현 — localStorage에 임시 저장 */
-  console.warn('[brand-admin] /api/brand-settings POST 준비 중 — localStorage에 임시 저장');
-  try { localStorage.setItem('lumi_brand_settings', JSON.stringify(payload)); } catch(e) {}
-  showToast('저장됐어요 (로컬 임시 저장)');
-  btn.disabled = false;
-  btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> 학습 내용 저장';
+  /* 즉시 로컬 캐시 — 네트워크 실패해도 폼 복구 가능 */
+  try { localStorage.setItem('lumi_brand_settings', JSON.stringify(settings)); } catch(e) {}
+
+  fetch('/api/brand-settings', {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({ settings: settings })
+  })
+    .then(function(r) {
+      return r.json().then(function(j) { return { ok: r.ok, status: r.status, body: j }; });
+    })
+    .then(function(res) {
+      if (!res.ok || !res.body || res.body.ok !== true) {
+        var msg = (res.body && res.body.error) || ('HTTP ' + res.status);
+        throw new Error(msg);
+      }
+      var saved = (res.body.data && res.body.data.settings) || settings;
+      try { localStorage.setItem('lumi_brand_settings', JSON.stringify(saved)); } catch(e) {}
+      showToast('저장됐어요');
+    })
+    .catch(function(err) {
+      console.warn('[brand-admin] /api/brand-settings POST 실패:', err && err.message);
+      showToast('저장 실패: ' + (err && err.message ? err.message : '알 수 없는 오류'));
+    })
+    .then(function() {
+      btn.disabled = false;
+      btn.innerHTML = savedBtnHtml;
+    });
 }
 
 /* ── 유틸 ─────────────────────────────────────────────────── */

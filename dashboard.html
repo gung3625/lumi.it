@@ -2401,5 +2401,62 @@ body {
   loadDashStats();
 })();
 </script>
+
+<script>
+/* ── Dashboard 월간 인사이트 (좋아요/도달/팔로워) — /api/insight-monthly ── */
+(function () {
+  'use strict';
+
+  function fmtNum(n) {
+    var v = Number(n);
+    if (!isFinite(v) || v <= 0) return '—';
+    if (v >= 10000) return (Math.round(v / 100) / 100).toFixed(2).replace(/\.?0+$/, '') + '만';
+    if (v >= 1000) return (Math.round(v / 100) / 10).toFixed(1).replace(/\.0$/, '') + 'k';
+    return String(v);
+  }
+  function setText(id, val) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = val;
+  }
+  function setRailInsight(idx, val) {
+    var items = document.querySelectorAll('.rail-insight-grid .rail-insight-item__num');
+    if (items && items[idx]) items[idx].textContent = val;
+  }
+
+  async function loadInsightsMonthly() {
+    try {
+      var token = null;
+      if (window.lumiSupa) {
+        var sess = await window.lumiSupa.auth.getSession();
+        token = sess.data && sess.data.session && sess.data.session.access_token;
+      }
+      if (!token) return;
+      var r = await fetch('/api/insight-monthly', { headers: { Authorization: 'Bearer ' + token } });
+      if (!r.ok) return;
+      var resp = await r.json();
+      if (!resp || !resp.ok || !resp.data) return; /* IG 미연동 / 토큰 만료 → 기존 placeholder 유지 */
+      var d = resp.data;
+
+      /* 2x2 stat 카드 — '인사이트' 카드 1개 */
+      setText('dashCardInsight', fmtNum(d.likesTotal));
+
+      /* Summary bar — 좋아요 / 도달 / 팔로워 */
+      setText('dashSummaryLike', fmtNum(d.likesTotal));
+      setText('dashSummaryReach', fmtNum(d.reach));
+      setText('dashSummaryFollow', fmtNum(d.followers));
+
+      /* Right rail '이번 주 인사이트' (실제로는 30일 누적) — 노출/도달/좋아요/팔로워 순 */
+      setRailInsight(0, fmtNum(d.profileViews || d.reach));
+      setRailInsight(1, fmtNum(d.reach));
+      setRailInsight(2, fmtNum(d.likesTotal));
+      setRailInsight(3, fmtNum(d.followers));
+    } catch (e) {
+      /* silent — placeholder '—' 유지 */
+    }
+  }
+
+  loadInsightsMonthly();
+})();
+</script>
 </body>
 </html>
