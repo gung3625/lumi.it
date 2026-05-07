@@ -44,36 +44,36 @@
   display: block;
 }
 
-/* ─── Stage viewport (clips the slide) ─── */
+/* ─── Stage viewport ─── */
 .signup-stage {
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
 }
 
-/* ─── Track — holds both steps side by side ─── */
+/* ─── Track — show/hide pattern (was slide, simplified for reliability) ─── */
 .signup-track {
-  display: flex;
   flex: 1;
-  width: 200%;
-  transform: translateX(0);
-  transition: transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: transform;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
 }
 
-.signup-track.is-step-2 {
-  transform: translateX(-50%);
-}
-
-/* ─── Each step panel ─── */
+/* ─── Each step panel — show/hide via aria-hidden ─── */
 .signup-step {
-  width: 50%;
-  flex-shrink: 0;
+  width: 100%;
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: var(--lumi-space-6) var(--lumi-page-x) calc(var(--lumi-space-12) + env(safe-area-inset-bottom));
+}
+
+.signup-step[aria-hidden="true"] { display: none !important; }
+.signup-step[aria-hidden="false"], .signup-step:not([aria-hidden]) { display: flex; }
+
+/* placeholder to preserve next-line structure for original block */
+.signup-step--legacy {
   overflow-y: auto;
 }
 
