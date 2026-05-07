@@ -27,7 +27,9 @@
   <div class="lumi-foot__bg" aria-hidden="true"></div>
   <div class="lumi-foot__inner">
     <div class="lumi-foot__brand">
-      <a href="/" class="lumi-foot__logo" aria-label="lumi 홈"><span class="lumi-foot__logo-text">lumi</span></a>
+      <a href="/" class="lumi-foot__logo" aria-label="lumi 홈">
+        <img src="/assets/logo-wordmark.png" alt="lumi" class="lumi-foot__logo-img" />
+      </a>
       <p class="lumi-foot__tagline">사장님의 첫 AI 직원</p>
       <ul class="lumi-foot__contact" aria-label="연락처">
         <li><a href="tel:01064246284">010-6424-6284</a></li>
