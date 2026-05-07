@@ -2,70 +2,18 @@
 // schedule: 0 18 * * *  (UTC 18:00 = KST 03:00)
 // 동작:
 //   1) deletion_scheduled_at <= now() AND deletion_cancelled_at IS NULL 인 row 조회
-//   2) 각 row 별로:
-//      a) 최종 삭제 알림 이메일 (Resend)
-//      b) cascade DELETE — ig_accounts / tiktok_accounts / reservations (seller_id 기준)
-//      c) sellers row 의 user_id 또는 email 매핑된 auth.users 삭제 (admin.auth.admin.deleteUser)
-//      d) sellers row DELETE
+//   2) 각 row 별로 cascade DELETE:
+//      a) ig_accounts / tiktok_accounts / reservations (seller_id 기준)
+//      b) sellers row 의 email 매핑된 auth.users 삭제 (admin.auth.admin.deleteUser)
+//      c) sellers row DELETE
 //   3) 한 row 실패해도 다음 row 계속, 마지막에 성공/실패 카운트 로그
 //
+// 알림 이메일은 발송하지 않음 (UI 배너로 대체).
 // 주의: 외부 트리거 (Netlify scheduled background) — LUMI_SECRET 검증 불필요.
 
 const { getAdminClient } = require('./_shared/supabase-admin');
 
 const PROCESS_LIMIT = 100;
-
-function buildFinalEmailHtml({ ownerName }) {
-  const safeName = (ownerName || '사장님').toString().slice(0, 40);
-  return `<!DOCTYPE html>
-<html lang="ko"><head><meta charset="UTF-8"></head>
-<body style="margin:0;padding:0;background:#f5f5f7;font-family:-apple-system,BlinkMacSystemFont,'Pretendard','Segoe UI',Roboto,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;">
-  <tr><td style="background:#C8507A;padding:28px;text-align:center;">
-    <span style="font-size:24px;font-weight:800;color:#fff;letter-spacing:-0.5px;">lumi</span>
-  </td></tr>
-  <tr><td style="padding:36px 32px;">
-    <h1 style="margin:0 0 16px;font-size:20px;color:#191F28;line-height:1.4;">계정이 영구 삭제되었어요</h1>
-    <p style="margin:0 0 16px;font-size:15px;color:#4E5968;line-height:1.7;">${safeName}, 30일 유예기간이 만료되어 회원 정보·매장 데이터·SNS 연동 토큰 등 모든 데이터가 영구 삭제되었습니다.</p>
-    <p style="margin:0 0 20px;font-size:14px;color:#4E5968;line-height:1.7;">개인정보보호법 §36에 따라 백업 본도 30일 이내에 파기됩니다. 다시 이용을 원하시면 새 계정으로 가입해 주세요.</p>
-    <p style="margin:24px 0 0;font-size:12px;color:#999;line-height:1.6;">이 메일은 자동 발송되었으며, 회신이 필요한 경우 lumi@lumi.it.kr 로 연락해 주세요.</p>
-  </td></tr>
-  <tr><td style="padding:20px 32px;border-top:1px solid #eee;font-size:11px;color:#999;line-height:1.6;">
-    <p style="margin:0;">발신: 루미(lumi) | 사업자등록번호: 404-09-66416 | 문의: lumi@lumi.it.kr</p>
-  </td></tr>
-</table>
-</body></html>`;
-}
-
-async function sendFinalEmail({ to, ownerName }) {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey || !to) return { skipped: true };
-  try {
-    const html = buildFinalEmailHtml({ ownerName });
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        from: 'lumi <noreply@lumi.it.kr>',
-        to: [to],
-        subject: '[lumi] 회원 탈퇴 처리가 완료되었습니다',
-        html,
-      }),
-    });
-    if (!res.ok) {
-      const text = await res.text().catch(() => '');
-      console.error('[process-account-deletion] Resend 실패:', res.status, text.slice(0, 200));
-      return { ok: false };
-    }
-    return { ok: true };
-  } catch (e) {
-    console.error('[process-account-deletion] Resend 예외:', e.message);
-    return { ok: false };
-  }
-}
 
 async function deleteSellerCascade(admin, seller) {
   // ig_accounts, tiktok_accounts, reservations 는 seller_id 컬럼을 가진다 (다른 함수 패턴 일치)
@@ -142,11 +90,6 @@ exports.handler = async (event) => {
 
   for (const seller of list) {
     try {
-      // 1) 최종 삭제 알림 (실패해도 cascade 진행)
-      if (seller.email) {
-        await sendFinalEmail({ to: seller.email, ownerName: seller.owner_name });
-      }
-      // 2) cascade
       await deleteSellerCascade(admin, seller);
       success += 1;
       console.log(`[process-account-deletion] seller=${seller.id.slice(0, 8)} 영구 삭제 완료`);
