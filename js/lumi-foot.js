@@ -109,10 +109,12 @@
   }
 
   function injectFooter() {
+    // 정적 마크업이 이미 있으면 주입 스킵
+    if (document.querySelector('[data-lumi-foot]')) return;
+    // fallback: 동적 주입 (옛 페이지 호환)
     document
       .querySelectorAll('footer.lumi-footer, footer.lumi-foot, footer[data-lumi-foot]')
       .forEach(el => el.remove());
-
     const tpl = document.createElement('template');
     tpl.innerHTML = FOOTER_HTML;
     document.body.appendChild(tpl.content.firstChild);

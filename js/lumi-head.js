@@ -63,9 +63,11 @@
   }
 
   function injectHeader() {
+    // 정적 마크업이 이미 있으면 주입 스킵
+    if (document.querySelector('[data-lumi-head]')) return;
+    // fallback: 동적 주입 (옛 페이지 호환)
     document.querySelectorAll('header[data-lumi-head], .lumi-head, [data-lumi-drawer]')
       .forEach(el => el.remove());
-
     const tpl = document.createElement('template');
     tpl.innerHTML = HEADER_HTML;
     document.body.insertBefore(tpl.content, document.body.firstChild);
