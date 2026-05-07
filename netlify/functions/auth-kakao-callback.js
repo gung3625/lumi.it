@@ -81,7 +81,7 @@ exports.handler = async (event) => {
   try {
     const { data: nonceRow } = await admin
       .from('oauth_nonces')
-      .select('nonce, created_at, expires_at')
+      .select('nonce, created_at')
       .eq('nonce', nonceKey)
       .maybeSingle();
 
@@ -93,10 +93,8 @@ exports.handler = async (event) => {
     // 일회용: 즉시 삭제
     await admin.from('oauth_nonces').delete().eq('nonce', nonceKey);
 
-    // TTL 검사 (expires_at 컬럼 또는 created_at + 10분 fallback)
-    const expiry = nonceRow.expires_at
-      ? new Date(nonceRow.expires_at).getTime()
-      : new Date(nonceRow.created_at).getTime() + 10 * 60 * 1000;
+    // TTL 검사 (created_at + 10분)
+    const expiry = new Date(nonceRow.created_at).getTime() + 10 * 60 * 1000;
 
     if (Date.now() > expiry) {
       console.error('[auth-kakao-callback] nonce 만료');
