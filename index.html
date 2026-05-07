@@ -89,13 +89,13 @@
     letter-spacing: 0.01em;
   }
   /* ══════════════════════════════════════════
-     Hero Tutorial — 3단계 사용법 안내
-     "사진 업로드 → AI 캡션 → 자동 게시" 명확한 시연
+     Hero Tutorial v3 — 인터랙티브 4단계
+     사용자가 직접 클릭하며 진행 (실제 앱 UX 그대로)
      ══════════════════════════════════════════ */
   .hero__tutorial {
     margin-top: var(--lumi-space-10);
     width: 100%;
-    max-width: 480px;
+    max-width: 460px;
     margin-inline: auto;
   }
   @media (min-width: 768px) {
@@ -103,210 +103,290 @@
     .hero__tutorial { margin-top: var(--lumi-space-14); }
   }
 
-  /* ── Step header (단계 라벨 + 설명) ── */
-  .tut-header {
-    display: flex; align-items: flex-start; gap: 14px;
-    text-align: left;
-    padding: 0 4px;
-    margin-bottom: 14px;
-    min-height: 60px;
-  }
-  .tut-header__num {
-    width: 38px; height: 38px;
-    border-radius: 12px;
-    background: var(--lumi-gradient-brand);
-    color: white;
-    font-weight: var(--lumi-weight-heavy);
-    font-size: 17px;
-    display: grid; place-items: center;
-    flex-shrink: 0;
-    box-shadow: 0 6px 18px -4px rgba(255,107,139,.45);
-    transition: transform .35s var(--lumi-ease-toss);
-  }
-  .tut-header__num.flip { transform: rotateY(360deg); }
-  .tut-header__copy {
-    flex: 1;
-    display: flex; flex-direction: column;
-    gap: 3px;
-    overflow: hidden;
-  }
-  .tut-header__title {
-    font-size: 17px;
-    font-weight: var(--lumi-weight-heavy);
-    color: var(--lumi-ink-strong);
-    margin: 0;
-    letter-spacing: -.02em;
-    line-height: 1.3;
-    transition: opacity .25s ease, transform .25s var(--lumi-ease-toss);
-  }
-  .tut-header__desc {
-    font-size: 13px;
-    color: var(--lumi-ink-muted);
-    margin: 0;
-    line-height: 1.45;
-    transition: opacity .25s .05s ease, transform .25s .05s var(--lumi-ease-toss);
-  }
-  .tut-header__title.fading,
-  .tut-header__desc.fading { opacity: 0; transform: translateY(-4px); }
-
-  /* ── Stage (씬 패널) ── */
-  .tut-stage {
+  /* ── App card (실제 앱처럼 보이는 컨테이너) ── */
+  .tut-app {
     position: relative;
-    border-radius: 20px;
+    border-radius: 22px;
     background: var(--lumi-surface);
     box-shadow:
       0 1px 0 rgba(255,255,255,.06) inset,
       0 24px 80px -16px rgba(0,0,0,.18),
       0 0 0 1px rgba(0,0,0,.05);
     overflow: hidden;
-    height: 280px;
+    isolation: isolate;
   }
-  [data-theme="dark"] .tut-stage {
+  [data-theme="dark"] .tut-app {
     box-shadow:
       0 1px 0 rgba(255,255,255,.04) inset,
       0 24px 80px -16px rgba(0,0,0,.55),
       0 0 0 1px rgba(255,255,255,.07);
   }
 
+  .tut-app__bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--lumi-line);
+  }
+  .tut-app__title {
+    font-size: 14px;
+    font-weight: var(--lumi-weight-heavy);
+    color: var(--lumi-ink-strong);
+    letter-spacing: -.02em;
+    transition: opacity .25s ease, transform .25s var(--lumi-ease-toss);
+  }
+  .tut-app__title.fading { opacity: 0; transform: translateY(-4px); }
+  .tut-app__step-indicator { display: flex; align-items: center; gap: 4px; }
+  .tut-app__step-indicator-dot {
+    width: 18px; height: 4px;
+    border-radius: 2px;
+    background: var(--lumi-line);
+    transition: background .3s ease, width .3s var(--lumi-ease-toss);
+  }
+  .tut-app__step-indicator-dot.is-active {
+    background: var(--lumi-gradient-brand);
+    width: 28px;
+  }
+  .tut-app__step-indicator-dot.is-done {
+    background: var(--lumi-brand-fill);
+  }
+
+  /* Stage (씬 컨테이너) */
+  .tut-app__stage {
+    position: relative;
+    height: 340px;
+  }
   .tut-scene {
     position: absolute; inset: 0;
-    padding: 18px;
+    padding: 18px 18px 16px;
     display: flex; flex-direction: column;
     gap: 12px;
     opacity: 0;
     transform: translateX(20px);
-    transition: opacity .4s var(--lumi-ease-soft), transform .4s var(--lumi-ease-toss);
+    transition: opacity .35s var(--lumi-ease-soft), transform .4s var(--lumi-ease-toss);
     pointer-events: none;
   }
   .tut-scene.is-active { opacity: 1; transform: translateX(0); pointer-events: auto; }
   .tut-scene.is-leaving { opacity: 0; transform: translateX(-20px); }
 
-  /* ── 씬 1: 사진 업로드 ── */
-  .tut-upload { align-items: center; justify-content: center; }
-  .tut-upload__zone {
-    width: 100%;
+  /* ── Cursor hint (애니메이션 손가락 포인터) ── */
+  .tut-cursor {
+    position: absolute;
+    width: 30px; height: 30px;
+    pointer-events: none;
+    z-index: 20;
+    opacity: 0;
+    transition: opacity .25s ease, top .4s var(--lumi-ease-toss), left .4s var(--lumi-ease-toss);
+    will-change: transform;
+  }
+  .tut-cursor.visible { opacity: 1; }
+  .tut-cursor::before {
+    content: '';
+    position: absolute; inset: -8px;
+    border-radius: 50%;
+    background: rgba(255,107,139,.22);
+    animation: tut-cursor-pulse 1.5s ease-out infinite;
+  }
+  @keyframes tut-cursor-pulse {
+    0%   { transform: scale(.6); opacity: .9; }
+    100% { transform: scale(2.4); opacity: 0; }
+  }
+  .tut-cursor__svg {
+    position: relative; width: 100%; height: 100%;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,.22));
+  }
+
+  /* ── 공통 버튼 ── */
+  .tut-btn {
+    appearance: none;
+    border: 0;
+    cursor: pointer;
+    font: inherit;
+    font-weight: var(--lumi-weight-bold);
+    letter-spacing: -.005em;
+    border-radius: 980px;
+    padding: 10px 18px;
+    font-size: 13px;
+    line-height: 1.2;
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 6px;
+    position: relative; overflow: hidden;
+    transition: transform .15s ease, filter .15s ease, opacity .25s ease, background .2s ease;
+    white-space: nowrap;
+  }
+  .tut-btn:active { transform: scale(.96); }
+  .tut-btn--primary {
+    background: var(--lumi-gradient-brand);
+    color: white;
+    box-shadow: 0 6px 18px -4px rgba(255,107,139,.45);
+  }
+  .tut-btn--primary:hover { filter: brightness(1.06); }
+  .tut-btn--secondary {
+    background: var(--lumi-surface-alt);
+    color: var(--lumi-ink-strong);
+    border: 1.5px solid var(--lumi-line);
+  }
+  .tut-btn--secondary:hover {
+    background: var(--lumi-brand-soft);
+    border-color: var(--lumi-brand-fill);
+    color: var(--lumi-brand-text);
+  }
+  .tut-btn--full { width: 100%; }
+  .tut-btn--lg { padding: 13px 22px; font-size: 14px; }
+  .tut-btn[disabled] { opacity: .42; cursor: not-allowed; transform: none; }
+  .tut-btn[disabled]:active { transform: none; }
+  .tut-btn svg {
+    width: 14px; height: 14px;
+    stroke: currentColor; stroke-width: 2.2;
+    fill: none; stroke-linecap: round; stroke-linejoin: round;
+    flex-shrink: 0;
+  }
+  .tut-ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255,255,255,.4);
+    pointer-events: none;
+    transform: scale(0);
+    animation: tut-ripple-anim .55s ease-out forwards;
+  }
+  @keyframes tut-ripple-anim { to { transform: scale(4); opacity: 0; } }
+
+  /* ══ Scene 1: Upload ══ */
+  .tut-scene-upload { gap: 12px; }
+  .tut-dropzone {
     flex: 1;
     border-radius: 14px;
     border: 2px dashed var(--lumi-brand-fill);
-    background: linear-gradient(180deg, var(--lumi-brand-soft) 0%, transparent 70%);
+    background: linear-gradient(180deg, var(--lumi-brand-soft) 0%, transparent 80%);
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
-    gap: 10px;
-    padding: 16px;
+    gap: 12px;
+    padding: 18px;
+    cursor: pointer;
+    transition: background .2s ease, transform .2s var(--lumi-ease-toss);
+    user-select: none;
   }
-  .tut-upload__icon {
-    width: 48px; height: 48px;
-    border-radius: 14px;
+  .tut-dropzone:hover {
+    background: linear-gradient(180deg, var(--lumi-brand-soft) 0%, var(--lumi-brand-soft) 100%);
+    transform: translateY(-2px);
+  }
+  .tut-dropzone:active { transform: translateY(0) scale(.99); }
+  .tut-dropzone.activated { display: none; }
+  .tut-dropzone__icon {
+    width: 52px; height: 52px;
+    border-radius: 16px;
     background: var(--lumi-gradient-brand);
     color: white;
     display: grid; place-items: center;
-    box-shadow: 0 8px 24px -6px rgba(255,107,139,.5);
-    animation: tut-bounce 2.4s ease-in-out infinite;
+    box-shadow: 0 10px 28px -6px rgba(255,107,139,.5);
   }
-  .tut-upload__icon svg {
-    width: 22px; height: 22px;
+  .tut-dropzone__icon svg {
+    width: 24px; height: 24px;
     stroke: currentColor; stroke-width: 2.4;
     fill: none; stroke-linecap: round; stroke-linejoin: round;
   }
-  @keyframes tut-bounce {
-    0%, 100% { transform: translateY(0); }
-    50%      { transform: translateY(-6px); }
-  }
-  .tut-upload__text {
-    font-size: 13px;
+  .tut-dropzone__text {
+    font-size: 13.5px;
     font-weight: var(--lumi-weight-bold);
     color: var(--lumi-brand-text);
     text-align: center;
     line-height: 1.4;
   }
-  .tut-upload__photos {
-    display: grid;
+  .tut-dropzone__hint { font-size: 11px; color: var(--lumi-ink-muted); }
+
+  .tut-photos {
+    display: none;
     grid-template-columns: repeat(4, 1fr);
     gap: 6px;
-    width: 100%;
-    margin-top: 4px;
   }
-  .tut-upload__photo {
+  .tut-photos.shown { display: grid; }
+  .tut-photo {
     aspect-ratio: 1;
-    border-radius: 8px;
+    border-radius: 10px;
     display: grid; place-items: center;
-    font-size: 22px;
+    font-size: 26px;
     line-height: 1;
+    position: relative; overflow: hidden;
     opacity: 0;
     transform: scale(.6);
     transition: opacity .3s ease, transform .35s var(--lumi-ease-toss);
-    position: relative;
-    overflow: hidden;
   }
-  .tut-upload__photo::after {
+  .tut-photo::after {
     content: '';
     position: absolute; inset: 0;
-    background: linear-gradient(140deg, rgba(255,255,255,.2), transparent 50%, rgba(0,0,0,.05));
+    background: linear-gradient(140deg, rgba(255,255,255,.2), transparent 50%, rgba(0,0,0,.06));
     pointer-events: none;
   }
-  .tut-upload__photo.in { opacity: 1; transform: scale(1); }
-  .tut-upload__counter {
-    font-size: 12px;
+  .tut-photo.in { opacity: 1; transform: scale(1); }
+
+  .tut-counter {
+    font-size: 12.5px;
     font-weight: var(--lumi-weight-bold);
     color: var(--lumi-brand-text);
-    margin-top: 4px;
-    opacity: 0;
-    transition: opacity .3s ease;
+    display: none;
   }
-  .tut-upload__counter.in { opacity: 1; }
-  .tut-upload__counter::before { content: '✓ '; font-weight: 900; }
+  .tut-counter.shown { display: block; }
+  .tut-counter::before { content: '✓ '; }
 
-  /* ── 씬 2: AI 캡션 ── */
-  .tut-caption { flex-direction: row; gap: 14px; }
-  .tut-caption__photo {
-    width: 100px;
-    aspect-ratio: 1;
-    border-radius: 12px;
-    display: grid; place-items: center;
-    flex-shrink: 0;
-    position: relative;
-    overflow: hidden;
-    background: linear-gradient(135deg, #f5e6d3, #c8a07a);
+  .tut-actions {
+    display: flex; gap: 8px;
+    justify-content: flex-end;
+    margin-top: auto;
   }
-  .tut-caption__photo::after {
+
+  /* ══ Scene 2: Caption ══ */
+  .tut-scene-caption { gap: 12px; }
+  .tut-mini-photos {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 5px;
+  }
+  .tut-mini-photo {
+    aspect-ratio: 1;
+    border-radius: 8px;
+    display: grid; place-items: center;
+    font-size: 20px;
+    line-height: 1;
+    position: relative; overflow: hidden;
+  }
+  .tut-mini-photo::after {
     content: '';
     position: absolute; inset: 0;
-    background: linear-gradient(140deg, rgba(255,255,255,.18), transparent 40%, rgba(0,0,0,.08));
+    background: linear-gradient(140deg, rgba(255,255,255,.18), transparent 50%, rgba(0,0,0,.06));
   }
-  .tut-caption__emoji {
-    font-size: 48px;
-    line-height: 1;
-    position: relative;
-    filter: drop-shadow(0 4px 12px rgba(0,0,0,.18));
-  }
-  .tut-caption__body {
+
+  .tut-caption-box {
     flex: 1;
+    background: var(--lumi-surface-alt);
+    border-radius: 12px;
+    padding: 12px 14px;
+    border-left: 2.5px solid var(--lumi-brand-fill);
     display: flex; flex-direction: column;
     gap: 8px;
-    overflow: hidden;
+    min-height: 110px;
   }
-  .tut-caption__pill {
-    display: inline-flex; align-items: center; gap: 5px;
-    align-self: flex-start;
-    background: var(--lumi-brand-soft);
-    color: var(--lumi-brand-text);
+  .tut-caption-box__head {
+    display: flex; align-items: center; gap: 6px;
     font-size: 10px;
     font-weight: var(--lumi-weight-bold);
-    padding: 4px 9px;
-    border-radius: 980px;
-    letter-spacing: .02em;
+    color: var(--lumi-ink-muted);
+    text-transform: uppercase;
+    letter-spacing: .08em;
   }
-  .tut-caption__pill-dot {
+  .tut-caption-box__head-dot {
     width: 5px; height: 5px;
     border-radius: 50%;
     background: var(--lumi-brand-fill);
     animation: tut-pulse 1.2s ease-in-out infinite;
   }
+  .tut-caption-box__head--idle .tut-caption-box__head-dot {
+    animation: none;
+    opacity: .3;
+  }
   @keyframes tut-pulse {
     0%, 100% { opacity: 1; transform: scale(1); }
-    50%      { opacity: .35; transform: scale(.6); }
+    50%      { opacity: .35; transform: scale(.5); }
   }
-  .tut-caption__text {
+  .tut-caption-box__text {
     font-size: 13px;
     line-height: 1.55;
     color: var(--lumi-ink-strong);
@@ -315,7 +395,11 @@
     flex: 1;
     letter-spacing: -.005em;
   }
-  .tut-caption__cursor {
+  .tut-caption-box__placeholder {
+    color: var(--lumi-ink-muted);
+    font-size: 12.5px;
+  }
+  .tut-caption-box__cursor {
     display: inline-block;
     width: 1.5px; height: 13px;
     background: var(--lumi-brand-fill);
@@ -324,144 +408,165 @@
     animation: tut-blink .8s step-end infinite;
   }
   @keyframes tut-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-  .tut-caption__tags { display: flex; flex-wrap: wrap; gap: 4px; }
-  .tut-caption__tag {
+  .tut-caption-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+  .tut-caption-tag {
     font-size: 10.5px;
     font-weight: var(--lumi-weight-semibold);
     padding: 3px 8px;
     border-radius: 980px;
-    background: var(--lumi-surface-alt);
-    color: var(--lumi-ink-soft);
+    background: var(--lumi-brand-soft);
+    color: var(--lumi-brand-text);
     opacity: 0;
     transform: translateY(4px);
     transition: opacity .3s ease, transform .3s var(--lumi-ease-toss);
   }
-  .tut-caption__tag.in { opacity: 1; transform: translateY(0); }
+  .tut-caption-tag.in { opacity: 1; transform: translateY(0); }
 
-  /* ── 씬 3: 게시 ── */
-  .tut-publish { align-items: stretch; justify-content: center; gap: 14px; }
-  .tut-publish__channels { display: flex; flex-direction: column; gap: 10px; }
-  .tut-publish__channel {
-    display: flex; align-items: center; gap: 12px;
-    padding: 12px 14px;
-    border-radius: 14px;
-    background: var(--lumi-surface-alt);
+  /* ══ Scene 3: Channels ══ */
+  .tut-scene-channels { gap: 10px; }
+  .tut-channel {
+    appearance: none;
     border: 1.5px solid var(--lumi-line);
-    transition: border-color .35s ease, background .35s ease;
+    background: var(--lumi-surface-alt);
+    border-radius: 14px;
+    padding: 12px 14px;
+    display: flex; align-items: center; gap: 12px;
+    cursor: pointer;
+    transition: border-color .2s ease, background .2s ease, transform .15s ease;
+    text-align: left;
+    font: inherit;
+    color: inherit;
+    width: 100%;
   }
-  .tut-publish__channel.done {
+  .tut-channel:hover { border-color: var(--lumi-brand-fill); }
+  .tut-channel:active { transform: scale(.99); }
+  .tut-channel.active {
     border-color: var(--lumi-brand-fill);
     background: var(--lumi-brand-soft);
   }
-  .tut-publish__channel-icon {
+  .tut-channel-icon {
     width: 36px; height: 36px;
     border-radius: 10px;
     display: grid; place-items: center;
     flex-shrink: 0;
   }
-  .tut-publish__channel-icon--ig {
-    background: linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
-  }
-  .tut-publish__channel-icon--tt { background: #000; }
-  .tut-publish__channel-icon svg { width: 18px; height: 18px; }
-  .tut-publish__channel-info {
+  .tut-channel-icon--ig { background: linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); }
+  .tut-channel-icon--tt { background: #000; }
+  .tut-channel-icon svg { width: 18px; height: 18px; }
+  .tut-channel-info {
     flex: 1;
     display: flex; flex-direction: column;
     gap: 2px;
-    overflow: hidden;
+    min-width: 0;
   }
-  .tut-publish__channel-name {
+  .tut-channel-name {
     font-size: 13.5px;
     font-weight: var(--lumi-weight-bold);
     color: var(--lumi-ink-strong);
     letter-spacing: -.01em;
   }
-  .tut-publish__channel-time {
+  .tut-channel-desc {
     font-size: 11px;
     color: var(--lumi-ink-muted);
-    font-weight: var(--lumi-weight-semibold);
-    transition: color .35s ease;
+    line-height: 1.3;
   }
-  .tut-publish__channel.done .tut-publish__channel-time { color: var(--lumi-brand-text); }
-  .tut-publish__channel-check {
-    width: 24px; height: 24px;
+  .tut-toggle {
+    width: 38px; height: 22px;
+    border-radius: 980px;
+    background: var(--lumi-line);
+    position: relative;
+    flex-shrink: 0;
+    transition: background .25s ease;
+  }
+  .tut-toggle::after {
+    content: '';
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,.22);
+    transition: transform .25s var(--lumi-ease-toss);
+  }
+  .tut-channel.active .tut-toggle { background: var(--lumi-gradient-brand); }
+  .tut-channel.active .tut-toggle::after { transform: translateX(16px); }
+
+  /* ══ Scene 4: Done ══ */
+  .tut-scene-done {
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    text-align: center;
+  }
+  .tut-check {
+    width: 64px; height: 64px;
     border-radius: 50%;
     background: var(--lumi-gradient-brand);
     display: grid; place-items: center;
-    flex-shrink: 0;
+    box-shadow: 0 14px 36px -8px rgba(255,107,139,.55);
     transform: scale(0);
-    transition: transform .35s var(--lumi-ease-toss);
+    animation: tut-check-pop .5s var(--lumi-ease-toss) forwards;
   }
-  .tut-publish__channel.done .tut-publish__channel-check { transform: scale(1); }
-  .tut-publish__channel-check svg {
-    width: 12px; height: 12px;
-    stroke: white; stroke-width: 3.2;
+  @keyframes tut-check-pop {
+    0%   { transform: scale(0); }
+    65%  { transform: scale(1.15); }
+    100% { transform: scale(1); }
+  }
+  .tut-check svg {
+    width: 30px; height: 30px;
+    stroke: white; stroke-width: 3;
     fill: none; stroke-linecap: round; stroke-linejoin: round;
   }
-  .tut-publish__summary {
-    text-align: center;
+  .tut-done-title {
+    font-size: 18px;
+    font-weight: var(--lumi-weight-heavy);
+    color: var(--lumi-ink-strong);
+    letter-spacing: -.02em;
+    margin: 0;
+    opacity: 0;
+    animation: tut-fade-up .35s .25s ease forwards;
+  }
+  @keyframes tut-fade-up {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .tut-done-meta {
+    display: flex; gap: 14px;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
     font-size: 12px;
+    color: var(--lumi-ink-soft);
+    opacity: 0;
+    animation: tut-fade-up .35s .4s ease forwards;
+  }
+  .tut-done-meta__item {
+    display: inline-flex; align-items: center; gap: 5px;
     font-weight: var(--lumi-weight-bold);
     color: var(--lumi-brand-text);
-    opacity: 0;
-    transition: opacity .4s ease;
   }
-  .tut-publish__summary.in { opacity: 1; }
+  .tut-done-meta__item svg {
+    width: 14px; height: 14px;
+    stroke: currentColor;
+    stroke-width: 2;
+    fill: none; stroke-linecap: round; stroke-linejoin: round;
+  }
 
-  /* ── 하단 단계 인디케이터 (탭 + progress bar) ── */
-  .tut-progress {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
-    margin-top: 14px;
-  }
-  .tut-step {
-    appearance: none;
-    border: 0;
-    background: transparent;
-    cursor: pointer;
-    padding: 10px 4px 8px;
-    display: flex; flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    border-radius: 10px;
-    transition: background .2s ease;
-    font: inherit;
-    color: inherit;
-  }
-  .tut-step:hover { background: var(--lumi-surface-alt); }
-  .tut-step__num {
-    font-size: 11px;
-    font-weight: var(--lumi-weight-bold);
-    color: var(--lumi-ink-muted);
-    letter-spacing: .04em;
-    transition: color .25s ease;
-  }
-  .tut-step.is-active .tut-step__num,
-  .tut-step.is-done .tut-step__num { color: var(--lumi-brand-text); }
-  .tut-step__label {
-    font-size: 12px;
-    font-weight: var(--lumi-weight-bold);
-    color: var(--lumi-ink-strong);
-    letter-spacing: -.01em;
-  }
-  .tut-step__bar {
-    width: 100%; height: 3px;
-    border-radius: 2px;
-    background: var(--lumi-line);
-    overflow: hidden;
-    margin-top: 2px;
-    position: relative;
-  }
-  .tut-step__bar-fill {
-    position: absolute; inset: 0;
-    background: var(--lumi-gradient-brand);
-    transform-origin: left center;
-    transform: scaleX(0);
-  }
-  .tut-step.is-done .tut-step__bar-fill {
-    transform: scaleX(1);
-    transition: transform .3s ease;
+  /* ══ Reduced motion ══ */
+  @media (prefers-reduced-motion: reduce) {
+    .tut-cursor::before,
+    .tut-caption-box__cursor,
+    .tut-caption-box__head-dot { animation: none; }
+    .tut-scene,
+    .tut-photo,
+    .tut-caption-tag,
+    .tut-channel,
+    .tut-toggle::after { transition: none !important; }
+    .tut-check, .tut-done-title, .tut-done-meta {
+      animation: none !important;
+      opacity: 1;
+      transform: none;
+    }
   }
 
   /* ══════════════════════════════════════════
@@ -538,24 +643,6 @@
   }
   .phone-scene.is-active  { opacity: 1; transform: translateX(0); pointer-events: auto; }
   .phone-scene.is-leaving { opacity: 0; transform: translateX(-16px); }
-
-  /* prefers-reduced-motion */
-  @media (prefers-reduced-motion: reduce) {
-    .tut-upload__icon,
-    .tut-caption__pill-dot,
-    .tut-caption__cursor { animation: none; }
-    .tut-scene,
-    .tut-upload__photo,
-    .tut-upload__counter,
-    .tut-caption__tag,
-    .tut-publish__channel,
-    .tut-publish__channel-check,
-    .tut-publish__summary,
-    .tut-step__bar-fill {
-      transition: none !important;
-    }
-    .phone-scene { transition: none; }
-  }
 
   .scene-upload { display: flex; flex-direction: column; gap: 12px; }
   .scene-upload__head { font-size: 13px; font-weight: var(--lumi-weight-bold); }
@@ -938,96 +1025,124 @@
 
       <p class="hero__meta">회원가입 후 무료 사용</p>
 
-      <div class="hero__tutorial" id="heroTutorial" aria-label="루미 사용법 3단계 안내">
-        <div class="tut-header">
-          <div class="tut-header__num" id="tutHeaderNum">1</div>
-          <div class="tut-header__copy">
-            <h3 class="tut-header__title" id="tutHeaderTitle">사진 한 장 올리세요</h3>
-            <p class="tut-header__desc" id="tutHeaderDesc">매장에서 찍은 사진 그대로면 충분해요</p>
-          </div>
-        </div>
-
-        <div class="tut-stage" id="tutStage">
-          <!-- 씬 1: 업로드 -->
-          <div class="tut-scene tut-upload is-active" data-step="1">
-            <div class="tut-upload__zone">
-              <div class="tut-upload__icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-              </div>
-              <div class="tut-upload__text">사진을 끌어다 놓으세요<br>(최대 9장)</div>
-              <div class="tut-upload__photos" id="tutUploadPhotos">
-                <div class="tut-upload__photo" style="background: linear-gradient(135deg, #f5e6d3, #c8a07a);">☕</div>
-                <div class="tut-upload__photo" style="background: linear-gradient(135deg, #fff0f3, #f8c8c8);">🍰</div>
-                <div class="tut-upload__photo" style="background: linear-gradient(135deg, #f0f7ee, #ffb3c6);">🌸</div>
-                <div class="tut-upload__photo" style="background: linear-gradient(135deg, #fff8f0, #f5d090);">🍝</div>
-              </div>
-              <div class="tut-upload__counter" id="tutUploadCounter">9장 업로드 완료</div>
+      <div class="hero__tutorial" id="heroTutorial" aria-label="루미 사용법 인터랙티브 튜토리얼">
+        <div class="tut-app">
+          <div class="tut-app__bar">
+            <span class="tut-app__title" id="tutTitle">사진 업로드</span>
+            <div class="tut-app__step-indicator" aria-hidden="true">
+              <span class="tut-app__step-indicator-dot is-active" data-step="1"></span>
+              <span class="tut-app__step-indicator-dot" data-step="2"></span>
+              <span class="tut-app__step-indicator-dot" data-step="3"></span>
+              <span class="tut-app__step-indicator-dot" data-step="4"></span>
             </div>
           </div>
 
-          <!-- 씬 2: AI 캡션 -->
-          <div class="tut-scene tut-caption" data-step="2">
-            <div class="tut-caption__photo">
-              <span class="tut-caption__emoji" aria-hidden="true">☕</span>
+          <div class="tut-app__stage" id="tutStage">
+            <!-- 손가락 cursor hint (다음 클릭 위치 안내) -->
+            <div class="tut-cursor" id="tutCursor" aria-hidden="true">
+              <svg class="tut-cursor__svg" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                <path d="M9 4v14l-3-3-2 2 7 9 11-2 4-9-3-2-3 2V8a2 2 0 0 0-4 0v6h-2V4a2 2 0 0 0-4 0z"
+                      fill="white" stroke="#1a1a1a" stroke-width="1.4" stroke-linejoin="round"/>
+              </svg>
             </div>
-            <div class="tut-caption__body">
-              <span class="tut-caption__pill">
-                <span class="tut-caption__pill-dot" aria-hidden="true"></span>
-                루미가 작성 중
-              </span>
-              <p class="tut-caption__text" id="tutCaptionText" aria-live="polite"></p>
-              <div class="tut-caption__tags" id="tutCaptionTags"></div>
-            </div>
-          </div>
 
-          <!-- 씬 3: 게시 -->
-          <div class="tut-scene tut-publish" data-step="3">
-            <div class="tut-publish__channels">
-              <div class="tut-publish__channel" id="tutPubIg">
-                <div class="tut-publish__channel-icon tut-publish__channel-icon--ig">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1" fill="white" stroke="none"/></svg>
+            <!-- ══ Scene 1: Upload ══ -->
+            <div class="tut-scene tut-scene-upload is-active" data-step="1">
+              <div class="tut-dropzone" id="tutDropzone" role="button" tabindex="0" aria-label="사진 업로드 영역 클릭">
+                <div class="tut-dropzone__icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                 </div>
-                <div class="tut-publish__channel-info">
-                  <span class="tut-publish__channel-name">인스타그램</span>
-                  <span class="tut-publish__channel-time" id="tutPubIgTime">예약된 시간에 자동 게시</span>
-                </div>
-                <div class="tut-publish__channel-check" aria-hidden="true">
-                  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-                </div>
+                <div class="tut-dropzone__text">사진을 끌어다 놓거나<br>여기를 클릭하세요</div>
+                <div class="tut-dropzone__hint">최대 9장</div>
               </div>
-              <div class="tut-publish__channel" id="tutPubTt">
-                <div class="tut-publish__channel-icon tut-publish__channel-icon--tt">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/></svg>
-                </div>
-                <div class="tut-publish__channel-info">
-                  <span class="tut-publish__channel-name">틱톡</span>
-                  <span class="tut-publish__channel-time" id="tutPubTtTime">예약된 시간에 자동 게시</span>
-                </div>
-                <div class="tut-publish__channel-check" aria-hidden="true">
-                  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-                </div>
+              <div class="tut-photos" id="tutPhotos" aria-live="polite">
+                <div class="tut-photo" style="background: linear-gradient(135deg, #f5e6d3, #c8a07a);">☕</div>
+                <div class="tut-photo" style="background: linear-gradient(135deg, #fff0f3, #f8c8c8);">🍰</div>
+                <div class="tut-photo" style="background: linear-gradient(135deg, #f0f7ee, #ffb3c6);">🌸</div>
+                <div class="tut-photo" style="background: linear-gradient(135deg, #fff8f0, #f5d090);">🍝</div>
+              </div>
+              <div class="tut-counter" id="tutCounter">4장 선택됨</div>
+              <div class="tut-actions">
+                <button type="button" class="tut-btn tut-btn--primary" id="tutS1Next" disabled>
+                  다음
+                </button>
               </div>
             </div>
-            <div class="tut-publish__summary" id="tutPubSummary">2개 채널 자동 게시 완료</div>
-          </div>
-        </div>
 
-        <div class="tut-progress" role="tablist" aria-label="단계 선택">
-          <button type="button" class="tut-step is-active" data-step="1" role="tab" aria-selected="true">
-            <span class="tut-step__num">1단계</span>
-            <span class="tut-step__label">사진 업로드</span>
-            <span class="tut-step__bar"><span class="tut-step__bar-fill"></span></span>
-          </button>
-          <button type="button" class="tut-step" data-step="2" role="tab" aria-selected="false">
-            <span class="tut-step__num">2단계</span>
-            <span class="tut-step__label">AI 캡션</span>
-            <span class="tut-step__bar"><span class="tut-step__bar-fill"></span></span>
-          </button>
-          <button type="button" class="tut-step" data-step="3" role="tab" aria-selected="false">
-            <span class="tut-step__num">3단계</span>
-            <span class="tut-step__label">자동 게시</span>
-            <span class="tut-step__bar"><span class="tut-step__bar-fill"></span></span>
-          </button>
+            <!-- ══ Scene 2: Caption ══ -->
+            <div class="tut-scene tut-scene-caption" data-step="2">
+              <div class="tut-mini-photos">
+                <div class="tut-mini-photo" style="background: linear-gradient(135deg, #f5e6d3, #c8a07a);">☕</div>
+                <div class="tut-mini-photo" style="background: linear-gradient(135deg, #fff0f3, #f8c8c8);">🍰</div>
+                <div class="tut-mini-photo" style="background: linear-gradient(135deg, #f0f7ee, #ffb3c6);">🌸</div>
+                <div class="tut-mini-photo" style="background: linear-gradient(135deg, #fff8f0, #f5d090);">🍝</div>
+              </div>
+              <div class="tut-caption-box">
+                <div class="tut-caption-box__head tut-caption-box__head--idle" id="tutCaptionHead">
+                  <span class="tut-caption-box__head-dot" aria-hidden="true"></span>
+                  루미 캡션
+                </div>
+                <p class="tut-caption-box__text" id="tutCaptionText" aria-live="polite">
+                  <span class="tut-caption-box__placeholder">캡션 만들기 버튼을 눌러보세요</span>
+                </p>
+                <div class="tut-caption-tags" id="tutCaptionTags"></div>
+              </div>
+              <div class="tut-actions">
+                <button type="button" class="tut-btn tut-btn--secondary" id="tutS2Regen" disabled>
+                  <svg viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                  다시
+                </button>
+                <button type="button" class="tut-btn tut-btn--primary" id="tutS2Generate">
+                  ✨ 캡션 만들기
+                </button>
+                <button type="button" class="tut-btn tut-btn--primary" id="tutS2Next" hidden>
+                  다음
+                </button>
+              </div>
+            </div>
+
+            <!-- ══ Scene 3: Channels ══ -->
+            <div class="tut-scene tut-scene-channels" data-step="3">
+              <button type="button" class="tut-channel active" id="tutChIg" aria-pressed="true">
+                <div class="tut-channel-icon tut-channel-icon--ig" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1" fill="white" stroke="none"/></svg>
+                </div>
+                <div class="tut-channel-info">
+                  <span class="tut-channel-name">인스타그램</span>
+                  <span class="tut-channel-desc">캡션 + 해시태그 자동 게시</span>
+                </div>
+                <div class="tut-toggle" aria-hidden="true"></div>
+              </button>
+              <button type="button" class="tut-channel" id="tutChTt" aria-pressed="false">
+                <div class="tut-channel-icon tut-channel-icon--tt" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/></svg>
+                </div>
+                <div class="tut-channel-info">
+                  <span class="tut-channel-name">틱톡</span>
+                  <span class="tut-channel-desc">동시 게시로 도달 2배</span>
+                </div>
+                <div class="tut-toggle" aria-hidden="true"></div>
+              </button>
+              <div class="tut-actions">
+                <button type="button" class="tut-btn tut-btn--primary tut-btn--full tut-btn--lg" id="tutS3Publish">
+                  지금 게시
+                </button>
+              </div>
+            </div>
+
+            <!-- ══ Scene 4: Done ══ -->
+            <div class="tut-scene tut-scene-done" data-step="4">
+              <div class="tut-check" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <h3 class="tut-done-title">게시 완료!</h3>
+              <div class="tut-done-meta" id="tutDoneMeta"></div>
+              <button type="button" class="tut-btn tut-btn--secondary" id="tutS4Restart">
+                <svg viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/></svg>
+                다시 해보기
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1224,47 +1339,45 @@
 
 <script>
   /* ══════════════════════════════════════════════════
-     Hero Tutorial — 3단계 자동 진행 + 클릭 점프
+     Hero Tutorial v3 — 인터랙티브 4단계 (사용자 클릭 진행)
      ══════════════════════════════════════════════════ */
   (() => {
-    const STEPS = [
-      { n: 1, title: '사진 한 장 올리세요', desc: '매장에서 찍은 사진 그대로면 충분해요', duration: 3800 },
-      { n: 2, title: '루미가 캡션을 만들어요', desc: '매장 분위기에 맞춰 캡션·해시태그까지 자동', duration: 6200 },
-      { n: 3, title: '인스타·틱톡에 자동 게시', desc: '예약 시간에 두 채널로 한 번에', duration: 4200 },
-    ];
-
-    const CAPTION = {
-      text: '오후 3시, 창가 자리\n비어있으면 좋은 날\n오늘도 여기서 충전 중',
-      tags: ['#카페일상', '#창가자리', '#감성충전'],
-    };
-
     const root = document.getElementById('heroTutorial');
     if (!root) return;
-    const headerNum   = document.getElementById('tutHeaderNum');
-    const headerTitle = document.getElementById('tutHeaderTitle');
-    const headerDesc  = document.getElementById('tutHeaderDesc');
-    const scenes      = root.querySelectorAll('.tut-scene');
-    const stepBtns    = root.querySelectorAll('.tut-step');
-    const reduced     = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const titleEl = document.getElementById('tutTitle');
+    const dots    = root.querySelectorAll('.tut-app__step-indicator-dot');
+    const scenes  = root.querySelectorAll('.tut-scene');
+    const cursor  = document.getElementById('tutCursor');
+    const stage   = root.querySelector('.tut-app__stage');
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const TITLES = ['사진 업로드', 'AI 캡션', '게시 채널', '게시 완료'];
+    const SAMPLE_CAPTIONS = [
+      { text: '오후 3시, 창가 자리\n비어있으면 좋은 날\n오늘도 여기서 충전 중',
+        tags: ['#카페일상', '#창가자리', '#감성충전'] },
+      { text: '맛있는 건 눈으로 먼저\n그다음은 직접 와서\n확인해보세요',
+        tags: ['#디저트카페', '#오늘뭐먹지', '#주말나들이'] },
+      { text: '오늘 들어온 새 꽃\n이 자리, 이 빛 아래에서만\n보여드릴 수 있어요',
+        tags: ['#플라워샵', '#오늘의꽃', '#계절감'] },
+    ];
 
     let cur = 1;
-    let advanceTimer = null;
+    let captionIdx = 0;
+    let channels = { ig: true, tt: false };
+    let cursorTimer = null;
     let typeTimer = null;
 
-    function fadeHeader(s) {
-      headerTitle.classList.add('fading');
-      headerDesc.classList.add('fading');
+    /* ── 헤더 타이틀 페이드 교체 ── */
+    function changeTitle(n) {
+      titleEl.classList.add('fading');
       setTimeout(() => {
-        headerNum.textContent = s.n;
-        headerTitle.textContent = s.title;
-        headerDesc.textContent = s.desc;
-        headerTitle.classList.remove('fading');
-        headerDesc.classList.remove('fading');
-        headerNum.classList.add('flip');
-        setTimeout(() => headerNum.classList.remove('flip'), 360);
+        titleEl.textContent = TITLES[n - 1];
+        titleEl.classList.remove('fading');
       }, 200);
     }
 
+    /* ── 씬 전환 ── */
     function setActiveScene(n) {
       scenes.forEach((sc) => {
         const sn = parseInt(sc.dataset.step, 10);
@@ -1279,143 +1392,253 @@
       });
     }
 
-    function setProgress(n) {
-      stepBtns.forEach((btn) => {
-        const sn = parseInt(btn.dataset.step, 10);
-        btn.classList.remove('is-active', 'is-done');
-        btn.setAttribute('aria-selected', 'false');
-        const fill = btn.querySelector('.tut-step__bar-fill');
-        if (!fill) return;
-        if (sn < n) {
-          btn.classList.add('is-done');
-          fill.style.transition = 'transform .3s ease';
-          fill.style.transform = 'scaleX(1)';
-        } else if (sn === n) {
-          btn.classList.add('is-active');
-          btn.setAttribute('aria-selected', 'true');
-          const dur = STEPS[n - 1].duration;
-          fill.style.transition = 'none';
-          fill.style.transform = 'scaleX(0)';
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              fill.style.transition = 'transform ' + dur + 'ms linear';
-              fill.style.transform = 'scaleX(1)';
-            });
-          });
-        } else {
-          fill.style.transition = 'none';
-          fill.style.transform = 'scaleX(0)';
-        }
+    /* ── 단계 dot 갱신 ── */
+    function setDots(n) {
+      dots.forEach((d, i) => {
+        d.classList.remove('is-active', 'is-done');
+        if (i + 1 === n) d.classList.add('is-active');
+        else if (i + 1 < n) d.classList.add('is-done');
       });
     }
 
-    function playStep1() {
-      const photos = root.querySelectorAll('.tut-upload__photo');
-      const counter = document.getElementById('tutUploadCounter');
-      photos.forEach((p) => p.classList.remove('in'));
-      counter.classList.remove('in');
-      if (reduced) {
-        photos.forEach((p) => p.classList.add('in'));
-        counter.classList.add('in');
-        return;
-      }
-      photos.forEach((p, i) => setTimeout(() => p.classList.add('in'), 400 + i * 240));
-      setTimeout(() => counter.classList.add('in'), 400 + photos.length * 240 + 200);
+    /* ── Cursor hint: 다음 클릭 위치 안내 ── */
+    function pointAt(targetEl) {
+      if (!targetEl || !cursor || !stage) return;
+      const sRect = stage.getBoundingClientRect();
+      const tRect = targetEl.getBoundingClientRect();
+      const left = tRect.left - sRect.left + tRect.width / 2 - 15;
+      const top  = tRect.top  - sRect.top  + tRect.height / 2 - 15;
+      cursor.style.left = left + 'px';
+      cursor.style.top  = top + 'px';
+      cursor.classList.add('visible');
+    }
+    function hideCursor() {
+      cursor.classList.remove('visible');
+      if (cursorTimer) { clearTimeout(cursorTimer); cursorTimer = null; }
+    }
+    function scheduleCursor(targetEl, delay) {
+      if (reduced) return;
+      hideCursor();
+      cursorTimer = setTimeout(() => pointAt(targetEl), delay || 2000);
     }
 
-    function playStep2() {
-      const textEl = document.getElementById('tutCaptionText');
-      const tagsEl = document.getElementById('tutCaptionTags');
-      if (typeTimer) clearInterval(typeTimer);
-      textEl.innerHTML = '';
-      tagsEl.innerHTML = '';
+    /* ── 버튼 ripple ── */
+    function fireRipple(btn, e) {
+      const r = document.createElement('span');
+      r.className = 'tut-ripple';
+      const rect = btn.getBoundingClientRect();
+      const x = (e && e.clientX || rect.left + rect.width/2) - rect.left;
+      const y = (e && e.clientY || rect.top  + rect.height/2) - rect.top;
+      const size = Math.max(rect.width, rect.height) * 1.2;
+      r.style.width = size + 'px';
+      r.style.height = size + 'px';
+      r.style.left = (x - size/2) + 'px';
+      r.style.top  = (y - size/2) + 'px';
+      btn.appendChild(r);
+      setTimeout(() => r.remove(), 600);
+    }
+
+    /* ════════ Scene 1: Upload ════════ */
+    const dropzone  = document.getElementById('tutDropzone');
+    const photoGrid = document.getElementById('tutPhotos');
+    const counter   = document.getElementById('tutCounter');
+    const s1Next    = document.getElementById('tutS1Next');
+
+    function initStep1() {
+      dropzone.style.display = '';
+      dropzone.classList.remove('activated');
+      photoGrid.classList.remove('shown');
+      photoGrid.querySelectorAll('.tut-photo').forEach((p) => p.classList.remove('in'));
+      counter.classList.remove('shown');
+      s1Next.disabled = true;
+      scheduleCursor(dropzone);
+    }
+
+    function dropzoneActivate() {
+      hideCursor();
+      dropzone.classList.add('activated');
+      photoGrid.classList.add('shown');
+      const photos = photoGrid.querySelectorAll('.tut-photo');
+      photos.forEach((p, i) => setTimeout(() => p.classList.add('in'), i * 160));
+      setTimeout(() => {
+        counter.classList.add('shown');
+        s1Next.disabled = false;
+        scheduleCursor(s1Next, 1200);
+      }, photos.length * 160 + 200);
+    }
+    dropzone.addEventListener('click', dropzoneActivate);
+    dropzone.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); dropzoneActivate(); }
+    });
+    s1Next.addEventListener('click', (e) => {
+      if (s1Next.disabled) return;
+      fireRipple(s1Next, e);
+      hideCursor();
+      setTimeout(() => goTo(2), 100);
+    });
+
+    /* ════════ Scene 2: Caption ════════ */
+    const capHead     = document.getElementById('tutCaptionHead');
+    const capText     = document.getElementById('tutCaptionText');
+    const capTags     = document.getElementById('tutCaptionTags');
+    const s2Generate  = document.getElementById('tutS2Generate');
+    const s2Regen     = document.getElementById('tutS2Regen');
+    const s2Next      = document.getElementById('tutS2Next');
+
+    function initStep2() {
+      capHead.classList.add('tut-caption-box__head--idle');
+      capText.innerHTML = '<span class="tut-caption-box__placeholder">캡션 만들기 버튼을 눌러보세요</span>';
+      capTags.innerHTML = '';
+      s2Generate.hidden = false;
+      s2Next.hidden = true;
+      s2Regen.disabled = true;
+      captionIdx = 0;
+      scheduleCursor(s2Generate, 1500);
+    }
+
+    function generateCaption(rotate) {
+      if (typeTimer) { clearInterval(typeTimer); typeTimer = null; }
+      capHead.classList.remove('tut-caption-box__head--idle');
+      capTags.innerHTML = '';
+      s2Regen.disabled = true;
+      s2Next.hidden = true;
+      hideCursor();
+
+      if (rotate) captionIdx = (captionIdx + 1) % SAMPLE_CAPTIONS.length;
+      const cap = SAMPLE_CAPTIONS[captionIdx];
 
       if (reduced) {
-        textEl.textContent = CAPTION.text;
-        CAPTION.tags.forEach((t) => {
+        capText.textContent = cap.text;
+        cap.tags.forEach((t) => {
           const sp = document.createElement('span');
-          sp.className = 'tut-caption__tag in';
+          sp.className = 'tut-caption-tag in';
           sp.textContent = t;
-          tagsEl.appendChild(sp);
+          capTags.appendChild(sp);
         });
+        s2Regen.disabled = false;
+        s2Generate.hidden = true;
+        s2Next.hidden = false;
         return;
       }
 
       let i = 0;
       const speed = 36;
-      textEl.innerHTML = '<span class="tut-caption__cursor"></span>';
+      capText.innerHTML = '<span class="tut-caption-box__cursor"></span>';
       typeTimer = setInterval(() => {
         i++;
-        const safe = CAPTION.text.substring(0, i)
+        const safe = cap.text.substring(0, i)
           .replace(/&/g, '&amp;')
           .replace(/</g, '&lt;')
           .replace(/>/g, '&gt;');
-        textEl.innerHTML = safe + '<span class="tut-caption__cursor"></span>';
-        if (i >= CAPTION.text.length) {
+        capText.innerHTML = safe + '<span class="tut-caption-box__cursor"></span>';
+        if (i >= cap.text.length) {
           clearInterval(typeTimer);
           typeTimer = null;
-          setTimeout(() => { textEl.textContent = CAPTION.text; }, 500);
-          CAPTION.tags.forEach((tag, j) => {
+          setTimeout(() => { capText.textContent = cap.text; }, 500);
+          cap.tags.forEach((tag, j) => {
             const sp = document.createElement('span');
-            sp.className = 'tut-caption__tag';
+            sp.className = 'tut-caption-tag';
             sp.textContent = tag;
-            tagsEl.appendChild(sp);
-            setTimeout(() => sp.classList.add('in'), 120 + j * 110);
+            capTags.appendChild(sp);
+            setTimeout(() => sp.classList.add('in'), 80 + j * 100);
           });
+          setTimeout(() => {
+            s2Regen.disabled = false;
+            s2Generate.hidden = true;
+            s2Next.hidden = false;
+            capHead.classList.add('tut-caption-box__head--idle');
+            scheduleCursor(s2Next, 1200);
+          }, 80 + cap.tags.length * 100 + 200);
         }
       }, speed);
     }
 
-    function playStep3() {
-      const ig = document.getElementById('tutPubIg');
-      const tt = document.getElementById('tutPubTt');
-      const igTime = document.getElementById('tutPubIgTime');
-      const ttTime = document.getElementById('tutPubTtTime');
-      const summary = document.getElementById('tutPubSummary');
-      ig.classList.remove('done');
-      tt.classList.remove('done');
-      igTime.textContent = '예약된 시간에 자동 게시';
-      ttTime.textContent = '예약된 시간에 자동 게시';
-      summary.classList.remove('in');
-
-      if (reduced) {
-        ig.classList.add('done'); tt.classList.add('done');
-        igTime.textContent = '게시 완료'; ttTime.textContent = '게시 완료';
-        summary.classList.add('in');
-        return;
-      }
-      setTimeout(() => { ig.classList.add('done'); igTime.textContent = '게시 완료'; }, 700);
-      setTimeout(() => { tt.classList.add('done'); ttTime.textContent = '게시 완료'; }, 1700);
-      setTimeout(() => summary.classList.add('in'), 2400);
-    }
-
-    function goTo(n) {
-      if (n < 1 || n > STEPS.length) return;
-      cur = n;
-      const s = STEPS[n - 1];
-      fadeHeader(s);
-      setActiveScene(n);
-      setProgress(n);
-      if (n === 1) playStep1();
-      if (n === 2) playStep2();
-      if (n === 3) playStep3();
-
-      if (advanceTimer) clearTimeout(advanceTimer);
-      if (!reduced) {
-        advanceTimer = setTimeout(() => {
-          const next = (cur % STEPS.length) + 1;
-          goTo(next);
-        }, s.duration);
-      }
-    }
-
-    stepBtns.forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const n = parseInt(btn.dataset.step, 10);
-        if (n === cur) return;
-        goTo(n);
-      });
+    s2Generate.addEventListener('click', (e) => {
+      fireRipple(s2Generate, e);
+      generateCaption(false);
     });
+    s2Regen.addEventListener('click', (e) => {
+      if (s2Regen.disabled) return;
+      fireRipple(s2Regen, e);
+      generateCaption(true);
+    });
+    s2Next.addEventListener('click', (e) => {
+      fireRipple(s2Next, e);
+      hideCursor();
+      setTimeout(() => goTo(3), 100);
+    });
+
+    /* ════════ Scene 3: Channels ════════ */
+    const chIg      = document.getElementById('tutChIg');
+    const chTt      = document.getElementById('tutChTt');
+    const s3Publish = document.getElementById('tutS3Publish');
+
+    function initStep3() {
+      chIg.classList.add('active');
+      chIg.setAttribute('aria-pressed', 'true');
+      chTt.classList.remove('active');
+      chTt.setAttribute('aria-pressed', 'false');
+      channels = { ig: true, tt: false };
+      scheduleCursor(chTt, 1500);
+    }
+
+    function toggleChannel(btn, key) {
+      btn.classList.toggle('active');
+      const on = btn.classList.contains('active');
+      btn.setAttribute('aria-pressed', String(on));
+      channels[key] = on;
+    }
+    chIg.addEventListener('click', () => toggleChannel(chIg, 'ig'));
+    chTt.addEventListener('click', () => {
+      toggleChannel(chTt, 'tt');
+      if (channels.tt) scheduleCursor(s3Publish, 800);
+    });
+    s3Publish.addEventListener('click', (e) => {
+      if (!channels.ig && !channels.tt) return;
+      fireRipple(s3Publish, e);
+      hideCursor();
+      setTimeout(() => goTo(4), 200);
+    });
+
+    /* ════════ Scene 4: Done ════════ */
+    const doneMeta  = document.getElementById('tutDoneMeta');
+    const s4Restart = document.getElementById('tutS4Restart');
+
+    function makeChannelChip(key) {
+      const sp = document.createElement('span');
+      sp.className = 'tut-done-meta__item';
+      if (key === 'ig') {
+        sp.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg> 인스타그램';
+      } else {
+        sp.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/></svg> 틱톡';
+      }
+      return sp;
+    }
+    function initStep4() {
+      doneMeta.innerHTML = '';
+      if (channels.ig) doneMeta.appendChild(makeChannelChip('ig'));
+      if (channels.tt) doneMeta.appendChild(makeChannelChip('tt'));
+      // restart 버튼 hint (선택)
+      scheduleCursor(s4Restart, 2500);
+    }
+    s4Restart.addEventListener('click', (e) => {
+      fireRipple(s4Restart, e);
+      hideCursor();
+      setTimeout(() => goTo(1), 100);
+    });
+
+    /* ── 단계 진입 ── */
+    function goTo(n) {
+      cur = n;
+      changeTitle(n);
+      setActiveScene(n);
+      setDots(n);
+      hideCursor();
+      if (n === 1) initStep1();
+      if (n === 2) initStep2();
+      if (n === 3) initStep3();
+      if (n === 4) initStep4();
+    }
 
     goTo(1);
   })();
