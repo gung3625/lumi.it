@@ -18,7 +18,8 @@
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { signSellerToken } = require('./_shared/seller-jwt');
 
-const KAKAO_REST_API_KEY = process.env.KAKAO_REST_API_KEY;
+// Netlify env에는 KAKAO_CLIENT_ID로 등록됨 (REST API key 별칭). 둘 다 지원.
+const KAKAO_REST_API_KEY = process.env.KAKAO_CLIENT_ID || process.env.KAKAO_REST_API_KEY;
 const KAKAO_CLIENT_SECRET = process.env.KAKAO_CLIENT_SECRET;
 const REDIRECT_URI = 'https://lumi.it.kr/api/auth/kakao/callback';
 const KAKAO_TOKEN_URL = 'https://kauth.kakao.com/oauth/token';
