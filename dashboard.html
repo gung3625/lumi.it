@@ -1385,6 +1385,276 @@ body {
   50%       { transform: scale(0.85); opacity: 0.7; }
 }
 
+/* ─── 최근 게시한 글 (recent posts grid) ─── */
+.dash-posts {
+  padding: 0 var(--lumi-page-x) var(--lumi-space-6);
+  max-width: var(--lumi-max-content);
+  margin-inline: auto;
+}
+@media (min-width: 1024px) {
+  .dash-posts { padding-inline: 0; padding-bottom: var(--lumi-space-8); }
+}
+.dash-posts__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--lumi-space-2);
+  margin-bottom: var(--lumi-space-3);
+}
+.dash-posts__title {
+  font-size: var(--lumi-text-body-lg);
+  font-weight: var(--lumi-weight-heavy);
+  letter-spacing: var(--lumi-tracking-snug);
+  color: var(--lumi-ink-strong);
+  margin: 0;
+}
+.dash-posts__hint {
+  font-size: var(--lumi-text-caption);
+  color: var(--lumi-ink-muted);
+  margin: 0;
+}
+.dash-posts__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--lumi-space-2);
+}
+@media (min-width: 768px) {
+  .dash-posts__grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: var(--lumi-space-3); }
+}
+.dash-post-card {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: var(--lumi-radius-lg, 12px);
+  overflow: hidden;
+  background: var(--lumi-surface-alt);
+  border: 1px solid var(--lumi-line);
+  cursor: pointer;
+  transition:
+    transform var(--lumi-duration-base) var(--lumi-ease-toss),
+    box-shadow var(--lumi-duration-base) var(--lumi-ease-soft),
+    border-color var(--lumi-duration-fast) var(--lumi-ease-soft);
+  -webkit-tap-highlight-color: transparent;
+}
+@media (hover: hover) {
+  .dash-post-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--lumi-shadow-lg);
+    border-color: color-mix(in srgb, var(--lumi-brand-pink) 32%, transparent);
+  }
+}
+.dash-post-card:active { transform: scale(0.98); }
+.dash-post-card:focus-visible {
+  outline: 2px solid var(--lumi-brand-pink);
+  outline-offset: 2px;
+}
+.dash-post-card__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.dash-post-card__placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--lumi-ink-muted);
+  font-size: var(--lumi-text-caption);
+  background: linear-gradient(135deg, var(--lumi-surface-alt), var(--lumi-surface-deep));
+}
+.dash-post-card__badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(0,0,0,.55);
+  color: #fff;
+  font-size: 10px;
+  font-weight: var(--lumi-weight-semibold);
+  letter-spacing: 0.02em;
+  pointer-events: none;
+}
+.dash-posts__empty {
+  padding: var(--lumi-space-5) var(--lumi-space-4);
+  text-align: center;
+  color: var(--lumi-ink-muted);
+  font-size: var(--lumi-text-caption);
+  background: var(--lumi-surface-alt);
+  border: 1px dashed var(--lumi-line);
+  border-radius: var(--lumi-radius-lg, 12px);
+}
+
+/* ─── 인사이트 모달 ─── */
+.insight-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: var(--lumi-space-4);
+  background: rgba(0,0,0,.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  opacity: 0;
+  transition: opacity var(--lumi-duration-base) var(--lumi-ease-soft);
+}
+.insight-modal.is-open {
+  display: flex;
+  opacity: 1;
+}
+.insight-modal__box {
+  position: relative;
+  background: var(--lumi-surface);
+  color: var(--lumi-ink-strong);
+  border-radius: var(--lumi-radius-2xl, 24px);
+  width: min(560px, 100%);
+  max-height: calc(100vh - var(--lumi-space-8));
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 80px -20px rgba(0,0,0,.45);
+  transform: translateY(8px);
+  transition: transform var(--lumi-duration-base) var(--lumi-ease-soft);
+}
+.insight-modal.is-open .insight-modal__box { transform: translateY(0); }
+.insight-modal__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--lumi-surface-overlay);
+  color: var(--lumi-ink-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2;
+  transition: background var(--lumi-duration-fast) var(--lumi-ease-soft);
+}
+.insight-modal__close:hover { background: color-mix(in srgb, var(--lumi-brand-pink) 16%, transparent); }
+.insight-modal__close svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.insight-modal__media {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: var(--lumi-surface-alt);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.insight-modal__media img { width: 100%; height: 100%; object-fit: cover; }
+.insight-modal__body {
+  padding: var(--lumi-space-5);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--lumi-space-4);
+}
+.insight-modal__caption {
+  font-size: var(--lumi-text-body-sm);
+  color: var(--lumi-ink);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.insight-modal__caption.is-empty { color: var(--lumi-ink-muted); font-style: italic; }
+.insight-modal__metrics {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--lumi-space-2);
+}
+@media (min-width: 480px) {
+  .insight-modal__metrics { grid-template-columns: repeat(3, 1fr); }
+}
+.insight-metric {
+  background: var(--lumi-surface-alt);
+  border: 1px solid var(--lumi-line);
+  border-radius: var(--lumi-radius-lg, 12px);
+  padding: var(--lumi-space-3);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.insight-metric__label {
+  font-size: var(--lumi-text-caption);
+  color: var(--lumi-ink-muted);
+  font-weight: var(--lumi-weight-semibold);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.insight-metric__label svg {
+  width: 12px; height: 12px; stroke: currentColor; stroke-width: 2;
+  fill: none; stroke-linecap: round; stroke-linejoin: round;
+}
+.insight-metric__num {
+  font-size: var(--lumi-text-body-lg);
+  font-weight: var(--lumi-weight-heavy);
+  color: var(--lumi-ink-strong);
+  letter-spacing: var(--lumi-tracking-tight);
+}
+.insight-modal__actions {
+  display: flex;
+  gap: var(--lumi-space-2);
+  padding: 0 var(--lumi-space-5) var(--lumi-space-5);
+  flex-wrap: wrap;
+}
+.insight-modal__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 980px;
+  background: var(--lumi-brand-pink);
+  color: #fff;
+  font-weight: var(--lumi-weight-heavy);
+  font-size: var(--lumi-text-body-sm);
+  text-decoration: none;
+  border: 0;
+  cursor: pointer;
+  transition: filter var(--lumi-duration-fast) var(--lumi-ease-soft);
+}
+.insight-modal__cta:hover { filter: brightness(0.96); }
+.insight-modal__cta svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.insight-modal__state {
+  padding: var(--lumi-space-6) var(--lumi-space-5);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--lumi-space-3);
+}
+.insight-modal__state p { margin: 0; color: var(--lumi-ink-muted); font-size: var(--lumi-text-body-sm); }
+.insight-modal__spinner {
+  width: 28px; height: 28px;
+  border-radius: 999px;
+  border: 3px solid var(--lumi-line);
+  border-top-color: var(--lumi-brand-pink);
+  animation: insight-spin 0.8s linear infinite;
+}
+@keyframes insight-spin { to { transform: rotate(360deg); } }
+.insight-modal__state-link {
+  color: var(--lumi-brand-pink);
+  font-weight: var(--lumi-weight-semibold);
+  text-decoration: none;
+  font-size: var(--lumi-text-body-sm);
+}
+.insight-modal__state-link:hover { text-decoration: underline; }
+.insight-modal__timestamp {
+  font-size: var(--lumi-text-caption);
+  color: var(--lumi-ink-muted);
+}
+
 /* ── Lumi 법적 고지 Footer ──────────────────────────── */
 .lumi-footer{border-top:1px solid rgba(0,0,0,.08);padding:28px 24px 36px;text-align:center;font-size:12px;color:#86868b;line-height:1.8;margin-top:48px;}
 .lumi-footer p{margin:0 0 2px;}
@@ -1733,7 +2003,45 @@ body {
     </aside><!-- /dash-rail--right -->
 
   </div><!-- /dash-grid -->
+
+  <!-- ══ 최근 게시한 글 (인사이트 모달 트리거) ══ -->
+  <section class="dash-posts" id="dashRecentPostsSection" aria-label="최근 게시한 글" hidden>
+    <div class="dash-posts__head">
+      <h2 class="dash-posts__title">최근 게시한 글</h2>
+      <p class="dash-posts__hint">탭하면 인사이트가 열려요</p>
+    </div>
+    <div class="dash-posts__grid" id="dashRecentPostsGrid" role="list" aria-label="게시물 목록"></div>
+    <div class="dash-posts__empty" id="dashRecentPostsEmpty" hidden>아직 게시한 글이 없어요</div>
+  </section>
+
   </div><!-- /dash-wrap -->
+
+  <!-- ══ 인사이트 모달 ══ -->
+  <div class="insight-modal" id="insightModal" role="dialog" aria-modal="true" aria-labelledby="insightModalTitle" aria-hidden="true">
+    <div class="insight-modal__box" role="document">
+      <button type="button" class="insight-modal__close" id="insightModalClose" aria-label="닫기">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
+      </button>
+      <div class="insight-modal__media" id="insightModalMedia" aria-hidden="true"></div>
+      <div class="insight-modal__body">
+        <h3 id="insightModalTitle" style="margin:0;font-size:var(--lumi-text-body-lg);font-weight:var(--lumi-weight-heavy);color:var(--lumi-ink-strong);">게시물 인사이트</h3>
+        <p class="insight-modal__timestamp" id="insightModalTimestamp"></p>
+        <p class="insight-modal__caption" id="insightModalCaption"></p>
+        <div class="insight-modal__metrics" id="insightModalMetrics" aria-label="게시물 메트릭"></div>
+        <div id="insightModalState" class="insight-modal__state" hidden>
+          <div class="insight-modal__spinner" id="insightModalSpinner" aria-hidden="true"></div>
+          <p id="insightModalStateMsg">불러오는 중…</p>
+          <a id="insightModalStateLink" class="insight-modal__state-link" href="#" hidden></a>
+        </div>
+      </div>
+      <div class="insight-modal__actions" id="insightModalActions" hidden>
+        <a id="insightModalPermalink" class="insight-modal__cta" href="#" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          Instagram에서 보기
+        </a>
+      </div>
+    </div>
+  </div>
 
 </main>
 
@@ -2456,6 +2764,350 @@ body {
   }
 
   loadInsightsMonthly();
+})();
+</script>
+
+<script>
+/* ── Dashboard: 최근 게시 + 게시물 클릭 → /api/insight-on-demand 모달 ── */
+(function () {
+  'use strict';
+
+  var IG_ID_RE = /^[A-Za-z0-9_-]{3,64}$/;
+
+  function $(id) { return document.getElementById(id); }
+  function fmtNum(n) {
+    var v = Number(n);
+    if (!isFinite(v) || v < 0) return '—';
+    if (v === 0) return '0';
+    if (v >= 10000) return (Math.round(v / 100) / 100).toFixed(2).replace(/\.?0+$/, '') + '만';
+    if (v >= 1000) return (Math.round(v / 100) / 10).toFixed(1).replace(/\.0$/, '') + 'k';
+    return String(v);
+  }
+  function fmtDate(iso) {
+    if (!iso) return '';
+    try {
+      var d = new Date(iso);
+      if (isNaN(d.getTime())) return '';
+      return d.getFullYear() + '. ' + (d.getMonth() + 1) + '. ' + d.getDate();
+    } catch (e) { return ''; }
+  }
+  function escapeHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  function getMediaTypeLabel(t) {
+    switch ((t || '').toUpperCase()) {
+      case 'VIDEO': return '동영상';
+      case 'REEL': case 'REELS': return '릴스';
+      case 'CAROUSEL_ALBUM': return '여러 장';
+      default: return '';
+    }
+  }
+  async function getAuthToken() {
+    try {
+      if (window.lumiSupa) {
+        var s = await window.lumiSupa.auth.getSession();
+        var sess = s && s.data && s.data.session;
+        if (sess && sess.access_token) return sess.access_token;
+      }
+    } catch (e) { /* fallthrough */ }
+    try {
+      var ls = localStorage.getItem('lumi_token') || localStorage.getItem('lumi_seller_jwt');
+      if (ls) return ls;
+    } catch (e) {}
+    return null;
+  }
+
+  /* ─────────── 최근 게시 카드 렌더 ─────────── */
+  async function loadRecentPosts() {
+    var section = $('dashRecentPostsSection');
+    var grid = $('dashRecentPostsGrid');
+    var empty = $('dashRecentPostsEmpty');
+    if (!section || !grid) return;
+
+    var token = await getAuthToken();
+    if (!token) return; /* 비로그인 — auth-guard가 리다이렉트 처리 */
+
+    var items = [];
+    try {
+      var r = await fetch('/api/list-reservations', { headers: { Authorization: 'Bearer ' + token } });
+      if (!r.ok) return;
+      var d = await r.json();
+      items = (d && d.items) || [];
+    } catch (e) { return; }
+
+    /* ig_post_id 가 박힌 published 항목만 필터 — 최신순 6개 */
+    var published = items
+      .filter(function (it) { return it && it.ig_post_id && IG_ID_RE.test(String(it.ig_post_id)); })
+      .slice(0, 6);
+
+    if (!published.length) {
+      /* 게시한 게 없으면 섹션 자체 숨김 — 빈 상태 메시지는 IG 연동 후에만 노출 */
+      section.hidden = true;
+      return;
+    }
+
+    section.hidden = false;
+    if (empty) empty.hidden = true;
+
+    grid.innerHTML = published.map(function (it) {
+      var mediaId = String(it.ig_post_id);
+      var thumb = '';
+      if (Array.isArray(it.image_urls) && it.image_urls.length) thumb = it.image_urls[0];
+      else if (it.video_url) thumb = '';
+      var caption = (it.captions && it.captions[0]) || it.user_message || '';
+      var alt = caption ? caption.substring(0, 60) : '게시물';
+      var typeBadge = '';
+      if (it.video_url) typeBadge = '<span class="dash-post-card__badge">영상</span>';
+      else if (Array.isArray(it.image_urls) && it.image_urls.length > 1) typeBadge = '<span class="dash-post-card__badge">' + it.image_urls.length + '</span>';
+      var inner = thumb
+        ? '<img class="dash-post-card__img" src="' + escapeHtml(thumb) + '" alt="' + escapeHtml(alt) + '" loading="lazy" decoding="async">'
+        : '<div class="dash-post-card__placeholder">게시물</div>';
+      return '<button type="button" class="dash-post-card" role="listitem" data-media-id="' + escapeHtml(mediaId) + '" aria-label="' + escapeHtml(alt) + ' 인사이트 보기">'
+        + inner + typeBadge
+        + '</button>';
+    }).join('');
+  }
+
+  /* ─────────── 모달 제어 ─────────── */
+  var modal = $('insightModal');
+  var modalClose = $('insightModalClose');
+  var modalMedia = $('insightModalMedia');
+  var modalCaption = $('insightModalCaption');
+  var modalMetrics = $('insightModalMetrics');
+  var modalActions = $('insightModalActions');
+  var modalPermalink = $('insightModalPermalink');
+  var modalTimestamp = $('insightModalTimestamp');
+  var modalState = $('insightModalState');
+  var modalSpinner = $('insightModalSpinner');
+  var modalStateMsg = $('insightModalStateMsg');
+  var modalStateLink = $('insightModalStateLink');
+  var modalTitle = $('insightModalTitle');
+  var lastFocused = null;
+  var currentReqId = 0;
+
+  function showState(msg, opts) {
+    opts = opts || {};
+    if (!modalState) return;
+    if (modalSpinner) modalSpinner.hidden = !opts.spinner;
+    if (modalStateMsg) modalStateMsg.textContent = msg;
+    if (modalStateLink) {
+      if (opts.linkHref && opts.linkText) {
+        modalStateLink.href = opts.linkHref;
+        modalStateLink.textContent = opts.linkText;
+        modalStateLink.hidden = false;
+      } else {
+        modalStateLink.hidden = true;
+      }
+    }
+    modalState.hidden = false;
+    if (modalCaption) modalCaption.style.display = 'none';
+    if (modalMetrics) modalMetrics.style.display = 'none';
+    if (modalTimestamp) modalTimestamp.style.display = 'none';
+    if (modalActions) modalActions.hidden = true;
+    if (modalMedia) modalMedia.innerHTML = '';
+  }
+
+  function clearState() {
+    if (modalState) modalState.hidden = true;
+    if (modalCaption) modalCaption.style.display = '';
+    if (modalMetrics) modalMetrics.style.display = '';
+    if (modalTimestamp) modalTimestamp.style.display = '';
+  }
+
+  function openModal() {
+    if (!modal) return;
+    lastFocused = document.activeElement;
+    modal.classList.add('is-open');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    setTimeout(function () { try { modalClose && modalClose.focus(); } catch (e) {} }, 50);
+  }
+
+  function closeModal() {
+    if (!modal) return;
+    modal.classList.remove('is-open');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    currentReqId += 1; /* in-flight 응답 무시 */
+    try { lastFocused && lastFocused.focus(); } catch (e) {}
+  }
+
+  function metricRow(label, value, iconSvg) {
+    return '<div class="insight-metric">'
+      + '<div class="insight-metric__label">' + (iconSvg || '') + '<span>' + escapeHtml(label) + '</span></div>'
+      + '<div class="insight-metric__num">' + escapeHtml(fmtNum(value)) + '</div>'
+      + '</div>';
+  }
+
+  var ICON = {
+    heart: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
+    chat: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+    target: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>',
+    eye: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
+    bolt: '<svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
+    bookmark: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>',
+    play: '<svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>'
+  };
+
+  function renderModalData(data) {
+    clearState();
+    /* media */
+    if (modalMedia) {
+      modalMedia.innerHTML = '';
+      var src = data.thumbnail || '';
+      if (src) {
+        var img = document.createElement('img');
+        img.src = src;
+        img.alt = '게시물 썸네일';
+        img.loading = 'eager';
+        img.decoding = 'async';
+        modalMedia.appendChild(img);
+      }
+    }
+    /* caption */
+    if (modalCaption) {
+      var cap = (data.caption || '').trim();
+      if (cap) {
+        modalCaption.textContent = cap;
+        modalCaption.classList.remove('is-empty');
+      } else {
+        modalCaption.textContent = '캡션이 없는 게시물이에요';
+        modalCaption.classList.add('is-empty');
+      }
+    }
+    /* timestamp + media type */
+    if (modalTimestamp) {
+      var dateStr = fmtDate(data.timestamp);
+      var typeLabel = getMediaTypeLabel(data.mediaType);
+      modalTimestamp.textContent = [dateStr, typeLabel].filter(Boolean).join(' · ');
+    }
+    /* metrics */
+    if (modalMetrics) {
+      var m = data.metrics || {};
+      var parts = [
+        metricRow('좋아요', m.likes, ICON.heart),
+        metricRow('댓글', m.comments, ICON.chat),
+        metricRow('도달', m.reach, ICON.target),
+        metricRow('노출', m.impressions, ICON.eye),
+        metricRow('참여', m.engagement, ICON.bolt),
+        metricRow('저장', m.saved, ICON.bookmark)
+      ];
+      var t = (data.mediaType || '').toUpperCase();
+      if (t === 'VIDEO' || t === 'REEL' || t === 'REELS') {
+        parts.push(metricRow('조회수', m.videoViews, ICON.play));
+      }
+      modalMetrics.innerHTML = parts.join('');
+    }
+    /* actions */
+    if (modalActions && modalPermalink) {
+      if (data.permalink) {
+        modalPermalink.href = data.permalink;
+        modalActions.hidden = false;
+      } else {
+        modalActions.hidden = true;
+      }
+    }
+  }
+
+  async function fetchInsight(mediaId) {
+    var reqId = ++currentReqId;
+    showState('인사이트를 불러오는 중…', { spinner: true });
+
+    var token = await getAuthToken();
+    if (!token) {
+      if (reqId !== currentReqId) return;
+      showState('로그인이 필요해요', { spinner: false, linkHref: '/signup', linkText: '로그인하기' });
+      return;
+    }
+
+    var resp;
+    try {
+      resp = await fetch('/api/insight-on-demand?mediaId=' + encodeURIComponent(mediaId), {
+        headers: { Authorization: 'Bearer ' + token }
+      });
+    } catch (e) {
+      if (reqId !== currentReqId) return;
+      showState('잠시 후 다시 시도해주세요', { spinner: false });
+      return;
+    }
+    if (reqId !== currentReqId) return; /* 모달 닫힘/다른 카드 클릭 */
+
+    var json = null;
+    try { json = await resp.json(); } catch (e) { json = null; }
+
+    if (!json) {
+      showState('잠시 후 다시 시도해주세요', { spinner: false });
+      return;
+    }
+
+    /* 200 + data:null — IG 미연동 / 토큰 만료 */
+    if (resp.ok && json.ok && json.data == null) {
+      if (json.error === 'token_expired') {
+        showState('Instagram 재연결이 필요해요', { spinner: false, linkHref: '/settings.html', linkText: '설정으로 이동' });
+      } else {
+        showState('Instagram을 먼저 연동하세요', { spinner: false, linkHref: '/settings.html', linkText: '설정으로 이동' });
+      }
+      return;
+    }
+
+    /* 4xx — media_not_found 등 */
+    if (resp.status >= 400 && resp.status < 500) {
+      if (json.error === 'media_not_found') {
+        showState('게시물을 찾을 수 없어요', { spinner: false });
+      } else if (resp.status === 401) {
+        showState('로그인이 만료됐어요', { spinner: false, linkHref: '/signup', linkText: '다시 로그인' });
+      } else {
+        showState('게시물 정보를 불러올 수 없어요', { spinner: false });
+      }
+      return;
+    }
+
+    /* 5xx 또는 ok:false */
+    if (!resp.ok || !json.ok || !json.data) {
+      showState('잠시 후 다시 시도해주세요', { spinner: false });
+      return;
+    }
+
+    renderModalData(json.data);
+  }
+
+  /* ─────────── 이벤트 위임: 카드 클릭 ─────────── */
+  document.addEventListener('click', function (e) {
+    var card = e.target && e.target.closest && e.target.closest('[data-media-id]');
+    if (!card) return;
+    /* 모달 안의 요소 클릭은 무시 */
+    if (modal && modal.contains(card)) return;
+    var mediaId = card.getAttribute('data-media-id');
+    if (!mediaId || !IG_ID_RE.test(mediaId)) {
+      console.warn('[insight-on-demand] 유효하지 않은 mediaId:', mediaId);
+      return;
+    }
+    e.preventDefault();
+    openModal();
+    fetchInsight(mediaId);
+  });
+
+  /* ─────────── 모달 닫기 핸들러 ─────────── */
+  if (modalClose) modalClose.addEventListener('click', closeModal);
+  if (modal) {
+    modal.addEventListener('click', function (e) {
+      if (e.target === modal) closeModal();
+    });
+  }
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && modal && modal.classList.contains('is-open')) {
+      closeModal();
+    }
+  });
+
+  /* ─────────── 부트스트랩 ─────────── */
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', loadRecentPosts);
+  } else {
+    loadRecentPosts();
+  }
 })();
 </script>
 </body>
