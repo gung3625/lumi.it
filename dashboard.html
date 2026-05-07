@@ -6,9 +6,13 @@
 <meta name="theme-color" content="#ffffff">
 <title>대시보드 — lumi</title>
 
+<link rel="icon" href="/assets/favicon.png">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="/css/lumi-tokens.css">
+<link rel="stylesheet" href="/css/lumi-head.css">
+<link rel="stylesheet" href="/css/lumi-foot.css">
 <link rel="stylesheet" href="/css/lumi-comp.css">
 
 <style>
@@ -316,7 +320,52 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
+  position: relative;
 }
+.composer__caption-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--lumi-space-2);
+}
+.composer__ai-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--lumi-radius-pill);
+  font-size: var(--lumi-text-label);
+  font-weight: var(--lumi-weight-semibold);
+  letter-spacing: 0.01em;
+  background: var(--lumi-accent-50);
+  color: var(--lumi-accent-700);
+  border: 1px solid var(--lumi-accent-300);
+  opacity: 0;
+  transform: scale(0.9);
+  transition:
+    opacity var(--lumi-duration-base) var(--lumi-ease-toss),
+    transform var(--lumi-duration-base) var(--lumi-ease-toss);
+}
+.composer__ai-badge.is-visible {
+  opacity: 1;
+  transform: scale(1);
+}
+.composer__ai-badge svg {
+  width: 10px; height: 10px;
+  stroke: var(--lumi-accent-500);
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.composer__caption-edit-hint {
+  font-size: var(--lumi-text-label);
+  color: var(--lumi-ink-faint);
+  font-weight: var(--lumi-weight-medium);
+  opacity: 0;
+  transition: opacity var(--lumi-duration-fast) var(--lumi-ease-soft);
+}
+.composer__caption-wrap:hover .composer__caption-edit-hint { opacity: 1; }
 .composer__caption {
   font-size: var(--lumi-text-body);
   font-weight: var(--lumi-weight-regular);
@@ -324,7 +373,39 @@ body {
   line-height: var(--lumi-leading-relaxed);
   margin: 0;
   word-break: keep-all;
+  cursor: text;
+  border-radius: var(--lumi-radius-sm);
+  padding: var(--lumi-space-2);
+  margin: 0 calc(-1 * var(--lumi-space-2));
+  transition: background-color var(--lumi-duration-fast) var(--lumi-ease-soft);
 }
+@media (hover: hover) {
+  .composer__caption:hover {
+    background: var(--lumi-surface-deep);
+  }
+}
+.composer__caption-textarea {
+  width: 100%;
+  min-height: 80px;
+  font-family: var(--lumi-font-system);
+  font-size: var(--lumi-text-body);
+  font-weight: var(--lumi-weight-regular);
+  color: var(--lumi-ink-strong);
+  line-height: var(--lumi-leading-relaxed);
+  background: var(--lumi-surface-deep);
+  border: 1.5px solid var(--lumi-accent-300);
+  border-radius: var(--lumi-radius-sm);
+  padding: var(--lumi-space-2);
+  resize: vertical;
+  outline: none;
+  word-break: keep-all;
+  transition: border-color var(--lumi-duration-fast) var(--lumi-ease-soft);
+}
+.composer__caption-textarea:focus {
+  border-color: var(--lumi-accent-500);
+}
+.composer__caption-textarea.is-hidden { display: none; }
+.composer__caption.is-hidden { display: none; }
 
 /* Hashtag chips */
 .composer__chips {
@@ -337,21 +418,39 @@ body {
 .composer__chip {
   display: inline-flex;
   align-items: center;
-  padding: 6px var(--lumi-space-3);
+  padding: 5px var(--lumi-space-3);
   border-radius: var(--lumi-radius-pill);
   font-size: var(--lumi-text-caption);
   font-weight: var(--lumi-weight-semibold);
-  background: var(--lumi-brand-soft);
-  color: var(--lumi-brand-text);
+  background: var(--lumi-accent-50);
+  color: var(--lumi-accent-700);
+  border: 1px solid var(--lumi-accent-300);
+  box-shadow: var(--lumi-shadow-xs);
+  cursor: pointer;
   opacity: 0;
   transform: translateY(6px) scale(0.94);
   transition:
     opacity var(--lumi-duration-fast) var(--lumi-ease-soft),
-    transform var(--lumi-duration-base) var(--lumi-ease-toss);
+    transform var(--lumi-duration-base) var(--lumi-ease-toss),
+    background-color var(--lumi-duration-fast) var(--lumi-ease-soft),
+    color var(--lumi-duration-fast) var(--lumi-ease-soft),
+    border-color var(--lumi-duration-fast) var(--lumi-ease-soft);
+  -webkit-tap-highlight-color: transparent;
 }
 .composer__chip.is-visible {
   opacity: 1;
   transform: translateY(0) scale(1);
+}
+@media (hover: hover) {
+  .composer__chip:hover {
+    background: var(--lumi-accent-100);
+    color: var(--lumi-accent-900);
+    border-color: var(--lumi-accent-500);
+  }
+}
+.composer__chip:active {
+  transform: scale(0.96);
+  transition-duration: var(--lumi-duration-instant);
 }
 
 /* Time recommendation */
@@ -362,10 +461,11 @@ body {
   margin: 0 var(--lumi-space-5) var(--lumi-space-4);
   padding: var(--lumi-space-3) var(--lumi-space-4);
   border-radius: var(--lumi-radius-md);
-  background: color-mix(in srgb, var(--lumi-brand-gold) 10%, transparent);
+  background: var(--lumi-accent-50);
+  border: 1px solid var(--lumi-line);
   font-size: var(--lumi-text-body-sm);
   font-weight: var(--lumi-weight-semibold);
-  color: var(--lumi-ink-soft);
+  color: var(--lumi-ink-muted);
   opacity: 0;
   transform: translateY(8px);
   transition:
@@ -377,8 +477,8 @@ body {
   transform: translateY(0);
 }
 .composer__time-rec svg {
-  width: 16px; height: 16px;
-  stroke: var(--lumi-brand-gold);
+  width: 15px; height: 15px;
+  stroke: var(--lumi-accent-500);
   stroke-width: 2;
   fill: none;
   stroke-linecap: round;
@@ -389,7 +489,15 @@ body {
   font-weight: var(--lumi-weight-heavy);
   color: var(--lumi-ink-strong);
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
+  font-size: var(--lumi-text-body);
+}
+.composer__time-boost {
+  margin-left: auto;
+  font-size: var(--lumi-text-label);
+  font-weight: var(--lumi-weight-bold);
+  color: var(--lumi-success);
+  letter-spacing: 0;
 }
 
 /* Action buttons */
@@ -399,28 +507,38 @@ body {
   gap: var(--lumi-space-3);
   padding: 0 var(--lumi-space-5) var(--lumi-space-5);
 }
+@media (max-width: 479px) {
+  .composer__actions {
+    grid-template-columns: 1fr;
+  }
+}
+
 .composer__regen-btn {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: var(--lumi-space-2);
-  height: 52px;
+  height: 48px;
+  padding: 0 var(--lumi-space-6);
   border-radius: var(--lumi-radius-pill);
   font-size: var(--lumi-text-body-sm);
-  font-weight: var(--lumi-weight-bold);
+  font-weight: 600;
+  letter-spacing: -0.02em;
   color: var(--lumi-ink-soft);
-  background: var(--lumi-surface-deep);
-  border: 1px solid var(--lumi-line-strong);
+  background: transparent;
+  border: 1.5px solid var(--lumi-line-strong);
   cursor: pointer;
   transition:
     transform var(--lumi-duration-snap) var(--lumi-ease-toss),
     background-color var(--lumi-duration-fast) var(--lumi-ease-soft),
     border-color var(--lumi-duration-fast) var(--lumi-ease-soft),
-    color var(--lumi-duration-fast) var(--lumi-ease-soft);
+    color var(--lumi-duration-fast) var(--lumi-ease-soft),
+    box-shadow var(--lumi-duration-fast) var(--lumi-ease-soft);
   will-change: transform;
+  -webkit-tap-highlight-color: transparent;
 }
 .composer__regen-btn svg {
-  width: 15px; height: 15px;
+  width: 14px; height: 14px;
   stroke: currentColor;
   stroke-width: 2;
   fill: none;
@@ -431,8 +549,10 @@ body {
 @media (hover: hover) {
   .composer__regen-btn:hover {
     color: var(--lumi-ink-strong);
-    border-color: var(--lumi-ink-strong);
-    transform: translateY(-1px);
+    border-color: var(--lumi-neutral-600);
+    background: var(--lumi-surface-deep);
+    box-shadow: var(--lumi-shadow-sm);
+    transform: translateY(-1.5px);
   }
 }
 .composer__regen-btn:active {
@@ -445,18 +565,21 @@ body {
   align-items: center;
   justify-content: center;
   gap: var(--lumi-space-2);
-  height: 52px;
+  height: 48px;
+  padding: 0 var(--lumi-space-6);
   border-radius: var(--lumi-radius-pill);
   font-size: var(--lumi-text-body-sm);
-  font-weight: var(--lumi-weight-bold);
-  color: white;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  /* Dark text on brand gradient for contrast */
+  color: var(--lumi-neutral-900);
   background: var(--lumi-gradient-brand);
   background-size: 200% 100%;
   background-position: 100% 50%;
   box-shadow: var(--lumi-shadow-glow-sm);
   border: none;
   cursor: pointer;
-  opacity: 0.55;
+  opacity: 0.5;
   pointer-events: none;
   transition:
     opacity var(--lumi-duration-base) var(--lumi-ease-soft),
@@ -464,10 +587,11 @@ body {
     background-position var(--lumi-duration-slow) var(--lumi-ease-soft),
     box-shadow var(--lumi-duration-fast) var(--lumi-ease-soft);
   will-change: transform;
+  -webkit-tap-highlight-color: transparent;
 }
 .composer__post-btn svg {
-  width: 15px; height: 15px;
-  stroke: white;
+  width: 14px; height: 14px;
+  stroke: var(--lumi-neutral-900);
   stroke-width: 2.2;
   fill: none;
   stroke-linecap: round;
@@ -482,7 +606,7 @@ body {
   .composer__post-btn.is-active:hover {
     background-position: 0% 50%;
     box-shadow: var(--lumi-shadow-glow);
-    transform: translateY(-2px) scale(1.02);
+    transform: translateY(-1.5px);
   }
 }
 .composer__post-btn.is-active:active {
@@ -1276,7 +1400,47 @@ body {
 </head>
 <body data-theme="light">
 
-<!-- lumi-head.js 자동 삽입 -->
+<header class="lumi-head" data-lumi-head>
+  <div class="lumi-head__inner">
+    <a href="/" class="lumi-head__logo" aria-label="lumi 홈">
+      <img src="/assets/logo-wordmark.png" alt="lumi" width="50" height="24" loading="eager" decoding="sync" />
+    </a>
+
+    <nav class="lumi-head__nav" aria-label="메인 네비">
+      <ul class="lumi-head__links">
+        <li><a href="/guide">기능 안내</a></li>
+        <li><a href="/pricing">요금제</a></li>
+        <li><a href="/support">고객지원</a></li>
+      </ul>
+    </nav>
+
+    <div class="lumi-head__actions">
+      <a href="/signup" class="lumi-head__login">로그인</a>
+      <a href="/signup" class="lumi-head__cta">회원가입</a>
+      <button type="button" class="lumi-head__burger" aria-label="메뉴 열기" aria-expanded="false" aria-controls="lumi-drawer">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="lumi-head__drawer" id="lumi-drawer" data-lumi-drawer aria-hidden="true">
+  <div class="lumi-head__drawer-top">
+    <span class="lumi-head__logo">
+      <img src="/assets/logo-wordmark.png" alt="lumi" width="50" height="24" loading="eager" decoding="sync" />
+    </span>
+    <button type="button" class="lumi-head__burger" data-lumi-drawer-close aria-label="메뉴 닫기">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6l-12 12"/></svg>
+    </button>
+  </div>
+  <ul class="lumi-head__drawer-list">
+    <li><a href="/guide">기능 안내</a></li>
+    <li><a href="/pricing">요금제</a></li>
+    <li><a href="/support">고객지원</a></li>
+    <li><a href="/signup">로그인</a></li>
+  </ul>
+  <a href="/signup" class="lumi-head__drawer-cta">회원가입</a>
+</div>
 
 <main>
 
@@ -1413,7 +1577,15 @@ body {
 
         <!-- Caption typewriter -->
         <div class="composer__caption-wrap">
-          <p class="composer__caption" id="composerCaption" aria-live="polite"></p>
+          <div class="composer__caption-header">
+            <span class="composer__ai-badge" id="composerAiBadge" aria-label="AI 생성 캡션">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              AI 생성됨
+            </span>
+            <span class="composer__caption-edit-hint">클릭해서 편집</span>
+          </div>
+          <p class="composer__caption" id="composerCaption" aria-live="polite" role="button" tabindex="0" title="클릭해서 편집"></p>
+          <textarea class="composer__caption-textarea is-hidden" id="composerCaptionEdit" rows="4" aria-label="캡션 편집"></textarea>
         </div>
 
         <!-- Hashtag chips -->
@@ -1427,7 +1599,7 @@ body {
           </svg>
           <span>최적 게시 시간</span>
           <span class="composer__time-val" id="composerTimeVal">19:30</span>
-          <span style="color:var(--lumi-ink-faint);font-size:var(--lumi-text-caption);">반응 ↑</span>
+          <span class="composer__time-boost">반응 ↑</span>
         </div>
 
         <!-- Actions -->
@@ -1622,19 +1794,45 @@ body {
 <!-- hidden file input -->
 <input type="file" accept="image/*" id="photoInput" class="lumi-sr-only" aria-label="사진 선택">
 
-<!-- 법적 고지 Footer (전자상거래법 §13 + Meta 인증) -->
-<footer class="lumi-footer">
-  <div class="lumi-footer__info">
-    <img src="/assets/logo-wordmark.png" alt="루미" class="lumi-footer__logo" />
-    <p>대표: 김현 · 사업자등록번호: 404-09-66416</p>
-    <p>통신판매업: 제2024-서울용산-1166호</p>
-    <p>주소: 서울특별시 용산구 회나무로 32-7 (이태원동), 04345</p>
-    <p>고객센터: <a href="tel:01064246284" style="color:inherit;text-decoration:none;">010-6424-6284</a> · 이메일: gung3625@gmail.com</p>
+<footer class="lumi-foot" role="contentinfo" data-lumi-foot>
+  <div class="lumi-foot__bg" aria-hidden="true"></div>
+  <div class="lumi-foot__inner">
+    <div class="lumi-foot__brand">
+      <a href="/" class="lumi-foot__logo" aria-label="lumi 홈">
+        <img src="/assets/logo-wordmark.png" alt="lumi" class="lumi-foot__logo-img" width="58" height="28" loading="eager" decoding="sync" />
+      </a>
+      <p class="lumi-foot__tagline">사장님의 첫 AI 직원</p>
+      <ul class="lumi-foot__contact" aria-label="연락처">
+        <li><a href="tel:01064246284">010-6424-6284</a></li>
+        <li><a href="mailto:gung3625@gmail.com">gung3625@gmail.com</a></li>
+      </ul>
+    </div>
+    <nav class="lumi-foot__nav" aria-label="법적 정보">
+      <ul class="lumi-foot__links">
+        <li><a href="/terms">이용약관</a></li>
+        <li><a href="/privacy">개인정보처리방침</a></li>
+        <li><a href="/privacy#data-deletion">데이터 삭제 안내</a></li>
+        <li><a href="/refund.html">환불정책</a></li>
+        <li><a href="/support">고객지원</a></li>
+      </ul>
+    </nav>
+    <div class="lumi-foot__biz" aria-label="사업자 정보">
+      <dl class="lumi-foot__biz-list">
+        <div><dt>대표</dt><dd>김현</dd></div>
+        <div><dt>사업자등록번호</dt><dd>404-09-66416</dd></div>
+        <div><dt>통신판매업</dt><dd>제2024-서울용산-1166호</dd></div>
+        <div><dt>주소</dt><dd>서울특별시 용산구 회나무로 32-7 (이태원동) 04345</dd></div>
+      </dl>
+      <div class="lumi-foot__dpo">
+        <span>개인정보보호책임자: 김현 (대표)</span>
+        <a href="mailto:lumi@lumi.it.kr">lumi@lumi.it.kr</a>
+      </div>
+    </div>
+    <div class="lumi-foot__bottom">
+      <p class="lumi-foot__copy">© 2026 lumi. All rights reserved.</p>
+      <p class="lumi-foot__notice">본 서비스는 <strong>Meta Platform Terms</strong> 및 <strong>Developer Policies</strong>를 준수합니다.</p>
+    </div>
   </div>
-  <div class="lumi-footer__links">
-    <a href="/terms.html">이용약관</a> · <a href="/privacy.html">개인정보처리방침</a> · <a href="/refund.html">환불정책</a>
-  </div>
-  <p class="lumi-footer__copy">© 2026 루미. All rights reserved.</p>
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.103.3/dist/umd/supabase.min.js"></script>
@@ -1672,23 +1870,25 @@ body {
   const CHIP_DELAY_MS  = 200;
 
   /* Elements */
-  const composer        = document.getElementById('composer');
-  const composerDrop    = document.getElementById('composerDrop');
-  const photoInput      = document.getElementById('photoInput');
-  const composerActive  = document.getElementById('composerActive');
-  const composerPreview = document.getElementById('composerPreview');
-  const composerImg     = document.getElementById('composerImg');
-  const composerGen     = document.getElementById('composerGenerating');
-  const composerCaption = document.getElementById('composerCaption');
-  const composerChips   = document.getElementById('composerChips');
-  const composerTimeRec = document.getElementById('composerTimeRec');
-  const composerTimeVal = document.getElementById('composerTimeVal');
-  const composerClose   = document.getElementById('composerClose');
-  const regenBtn        = document.getElementById('regenBtn');
-  const postBtn         = document.getElementById('postBtn');
-  const bottomCta       = document.getElementById('dashBottomCta');
-  const bottomCtaBtn    = document.getElementById('bottomCtaBtn');
-  const toast           = document.getElementById('lumiToast');
+  const composer           = document.getElementById('composer');
+  const composerDrop       = document.getElementById('composerDrop');
+  const photoInput         = document.getElementById('photoInput');
+  const composerActive     = document.getElementById('composerActive');
+  const composerPreview    = document.getElementById('composerPreview');
+  const composerImg        = document.getElementById('composerImg');
+  const composerGen        = document.getElementById('composerGenerating');
+  const composerCaption    = document.getElementById('composerCaption');
+  const composerCaptionEdit = document.getElementById('composerCaptionEdit');
+  const composerAiBadge    = document.getElementById('composerAiBadge');
+  const composerChips      = document.getElementById('composerChips');
+  const composerTimeRec    = document.getElementById('composerTimeRec');
+  const composerTimeVal    = document.getElementById('composerTimeVal');
+  const composerClose      = document.getElementById('composerClose');
+  const regenBtn           = document.getElementById('regenBtn');
+  const postBtn            = document.getElementById('postBtn');
+  const bottomCta          = document.getElementById('dashBottomCta');
+  const bottomCtaBtn       = document.getElementById('bottomCtaBtn');
+  const toast              = document.getElementById('lumiToast');
 
   /* Streaming state */
   let streamAbort = null;
@@ -1714,6 +1914,32 @@ body {
       await wait(TYPEWRITER_MS);
     }
   }
+
+  /* ── Caption inline-edit ── */
+  function enterEditMode() {
+    const currentText = composerCaption.textContent;
+    composerCaptionEdit.value = currentText;
+    composerCaption.classList.add('is-hidden');
+    composerCaptionEdit.classList.remove('is-hidden');
+    composerCaptionEdit.focus();
+    composerCaptionEdit.setSelectionRange(currentText.length, currentText.length);
+  }
+
+  function exitEditMode() {
+    const updated = composerCaptionEdit.value;
+    composerCaption.textContent = updated;
+    composerCaption.classList.remove('is-hidden');
+    composerCaptionEdit.classList.add('is-hidden');
+  }
+
+  composerCaption.addEventListener('click', enterEditMode);
+  composerCaption.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); enterEditMode(); }
+  });
+  composerCaptionEdit.addEventListener('blur', exitEditMode);
+  composerCaptionEdit.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { e.preventDefault(); exitEditMode(); }
+  });
 
   /* ── Chip fade-in ── */
   async function fadeInChips(tags, signal) {
@@ -1747,6 +1973,9 @@ body {
 
     /* reset */
     composerCaption.textContent = '';
+    composerCaption.classList.remove('is-hidden');
+    composerCaptionEdit.classList.add('is-hidden');
+    composerAiBadge.classList.remove('is-visible');
     composerChips.innerHTML = '';
     composerTimeRec.classList.remove('is-visible');
     postBtn.classList.remove('is-active');
@@ -1762,6 +1991,9 @@ body {
 
     await typewriter(MOCK_CAPTION, sig);
     if (sig.aborted) return;
+
+    /* show AI badge after caption completes */
+    composerAiBadge.classList.add('is-visible');
 
     await wait(200);
     await fadeInChips(MOCK_TAGS, sig);
@@ -1794,6 +2026,9 @@ body {
     bottomCta.classList.remove('is-hidden');
     composerImg.src = '';
     composerCaption.textContent = '';
+    composerCaption.classList.remove('is-hidden');
+    composerCaptionEdit.classList.add('is-hidden');
+    composerAiBadge.classList.remove('is-visible');
     composerChips.innerHTML = '';
     composerTimeRec.classList.remove('is-visible');
     composerGen.classList.remove('is-visible', 'is-done');
