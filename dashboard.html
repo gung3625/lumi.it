@@ -1858,15 +1858,19 @@ body {
 <script src="/js/lumi-foot.js" defer></script>
 <script src="/js/lumi-tabs.js" defer></script>
 <script>
-/* ─── Dashboard v2 — 사진 진입 → 캡션 streaming ─── */
+/* ─── Dashboard v3 — multi-photo → /api/reserve → polling → regen ─── */
 (function () {
   'use strict';
 
-  const TYPEWRITER_MS  = 30;
-  const CHIP_DELAY_MS  = 200;
+  var TYPEWRITER_MS = 30;
+  var CHIP_DELAY_MS = 200;
+  var MAX_PHOTOS    = 10;
+  var MAX_FILE_SIZE = 10 * 1024 * 1024;
+  var ALLOWED_MIME  = ['image/jpeg', 'image/png', 'image/webp'];
+  var MAX_REGEN     = 3;
 
-  /* 한국어 업종 → demo-caption 카테고리 매핑 */
-  const INDUSTRY_TO_CATEGORY = {
+  /* 한국어 업종 → bizCategory 매핑 */
+  var INDUSTRY_TO_CATEGORY = {
     '카페': 'cafe',
     '음식점': 'food',
     '베이커리': 'food',
@@ -1887,39 +1891,35 @@ body {
     return INDUSTRY_TO_CATEGORY[industry] || 'cafe';
   }
 
-  /* 캡션 응답에서 본문/해시태그 분리 */
+  /* 캡션 본문/해시태그 분리 */
   function splitCaption(text) {
-    const tags = (text.match(/#[^\s#]+/g) || []).map(t => t.trim());
-    const body = text.replace(/#[^\s#]+/g, '').replace(/\n{3,}/g, '\n\n').trim();
+    var tags = (text.match(/#[^\s#]+/g) || []).map(function (t) { return t.trim(); });
+    var body = text.replace(/#[^\s#]+/g, '').replace(/\n{3,}/g, '\n\n').trim();
     return { body: body, tags: tags };
   }
 
-  /* File → base64 (data: prefix 제거) */
-  function fileToBase64(file) {
-    return new Promise(function (resolve, reject) {
-      const reader = new FileReader();
-      reader.onload = function () {
-        const result = reader.result || '';
-        const idx = result.indexOf(',');
-        resolve(idx >= 0 ? result.slice(idx + 1) : result);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
+  /* Supabase Bearer 토큰 */
+  async function getToken() {
+    if (!window.lumiSupa) return null;
+    try {
+      var result = await window.lumiSupa.auth.getSession();
+      var session = result.data && result.data.session;
+      return session && session.access_token ? session.access_token : null;
+    } catch (e) {
+      return null;
+    }
   }
 
-  /* /api/me 응답 캐시 (industry 포함) */
-  let cachedSeller = null;
+  /* /api/me 캐시 */
+  var cachedSeller = null;
   async function fetchSeller() {
     if (cachedSeller) return cachedSeller;
-    const token = localStorage.getItem('lumi_seller_jwt')
-      || localStorage.getItem('lumi_token')
-      || localStorage.getItem('lumi_seller_token');
+    var token = await getToken();
     if (!token) return null;
     try {
-      const r = await fetch('/api/me', { headers: { Authorization: 'Bearer ' + token } });
+      var r = await fetch('/api/me', { headers: { Authorization: 'Bearer ' + token } });
       if (!r.ok) return null;
-      const d = await r.json();
+      var d = await r.json();
       cachedSeller = d.seller || null;
       return cachedSeller;
     } catch (e) {
@@ -1927,46 +1927,124 @@ body {
     }
   }
 
-  /* Elements */
-  const composer           = document.getElementById('composer');
-  const composerDrop       = document.getElementById('composerDrop');
-  const photoInput         = document.getElementById('photoInput');
-  const composerActive     = document.getElementById('composerActive');
-  const composerPreview    = document.getElementById('composerPreview');
-  const composerImg        = document.getElementById('composerImg');
-  const composerGen        = document.getElementById('composerGenerating');
-  const composerCaption    = document.getElementById('composerCaption');
-  const composerCaptionEdit = document.getElementById('composerCaptionEdit');
-  const composerAiBadge    = document.getElementById('composerAiBadge');
-  const composerChips      = document.getElementById('composerChips');
-  const composerTimeRec    = document.getElementById('composerTimeRec');
-  const composerTimeVal    = document.getElementById('composerTimeVal');
-  const composerClose      = document.getElementById('composerClose');
-  const regenBtn           = document.getElementById('regenBtn');
-  const postBtn            = document.getElementById('postBtn');
-  const bottomCta          = document.getElementById('dashBottomCta');
-  const bottomCtaBtn       = document.getElementById('bottomCtaBtn');
-  const toast              = document.getElementById('lumiToast');
+  /* /api/reserve — multipart */
+  async function createReservation(files) {
+    var token = await getToken();
+    if (!token) { window.location.href = '/signup'; throw new Error('로그인이 필요합니다.'); }
+    var seller = await fetchSeller();
+    var fd = new FormData();
+    files.forEach(function (f) { fd.append('photos', f); });
+    fd.append('bizCategory', mapIndustry(seller && seller.industry));
+    fd.append('captionTone', (seller && seller.captionTone) || '');
+    fd.append('userMessage', '');
+    fd.append('postMode', 'immediate');
+    fd.append('scheduledAt', new Date().toISOString());
+    fd.append('storeProfile', JSON.stringify({ name: (seller && seller.storeName) || '', category: (seller && seller.industry) || '' }));
+    fd.append('weather', '{}');
+    fd.append('trends', '[]');
+    fd.append('airQuality', '{}');
+    fd.append('festivals', '[]');
+    var r = await fetch('/api/reserve', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + token },
+      body: fd,
+    });
+    var d = await r.json().catch(function () { return {}; });
+    if (r.status === 401) { window.location.href = '/signup'; throw new Error('인증이 만료됐어요. 다시 로그인해 주세요.'); }
+    if (!r.ok || !d.success) throw new Error(d.error || '예약 실패');
+    return d.reservationKey;
+  }
 
-  /* Streaming state */
-  let streamAbort = null;
+  /* /api/get-reservation polling */
+  async function pollCaption(reservationKey, signal) {
+    var token = await getToken();
+    for (var attempt = 0; attempt < 60; attempt++) {
+      if (signal && signal.aborted) return null;
+      try {
+        var r = await fetch('/api/get-reservation?reserveKey=' + encodeURIComponent(reservationKey), {
+          headers: { Authorization: 'Bearer ' + token },
+        });
+        if (r.ok) {
+          var d = await r.json();
+          var rsv = d.reservation || d.item || d;
+          if (rsv.caption_status === 'ready' && rsv.captions && rsv.captions.length) return rsv;
+          if (rsv.caption_status === 'failed') throw new Error(rsv.caption_error || '캡션 생성 실패');
+        }
+      } catch (e) {
+        if (signal && signal.aborted) return null;
+        throw e;
+      }
+      await new Promise(function (res) { setTimeout(res, 1000); });
+    }
+    throw new Error('캡션 생성 시간 초과');
+  }
+
+  /* /api/regenerate-caption */
+  async function doRegenerate(reservationKey) {
+    var token = await getToken();
+    if (!token) { window.location.href = '/signup'; throw new Error('로그인 필요'); }
+    var r = await fetch('/api/regenerate-caption', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+      body: JSON.stringify({ reservationKey: reservationKey }),
+    });
+    var d = await r.json().catch(function () { return {}; });
+    if (r.status === 401) { window.location.href = '/signup'; throw new Error('인증 만료'); }
+    if (r.status === 429) return null;
+    if (!r.ok || !d.success) throw new Error(d.error || '재생성 실패');
+    return { caption: d.captions[0], remaining: d.remaining };
+  }
+
+  /* Elements */
+  var composer            = document.getElementById('composer');
+  var composerDrop        = document.getElementById('composerDrop');
+  var photoInput          = document.getElementById('photoInput');
+  var composerImg         = document.getElementById('composerImg');
+  var composerGen         = document.getElementById('composerGenerating');
+  var composerCaption     = document.getElementById('composerCaption');
+  var composerCaptionEdit = document.getElementById('composerCaptionEdit');
+  var composerAiBadge     = document.getElementById('composerAiBadge');
+  var composerChips       = document.getElementById('composerChips');
+  var composerTimeRec     = document.getElementById('composerTimeRec');
+  var composerTimeVal     = document.getElementById('composerTimeVal');
+  var composerClose       = document.getElementById('composerClose');
+  var regenBtn            = document.getElementById('regenBtn');
+  var postBtn             = document.getElementById('postBtn');
+  var bottomCta           = document.getElementById('dashBottomCta');
+  var bottomCtaBtn        = document.getElementById('bottomCtaBtn');
+  var toast               = document.getElementById('lumiToast');
+
+  /* State */
+  var pollAbort      = null;
+  var currentResvKey = null;
+  var regenRemaining = MAX_REGEN;
 
   /* ── Helpers ── */
-  function wait(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
+  function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
 
   function showToast(msg, durationMs) {
     durationMs = durationMs || 2400;
     toast.textContent = msg;
     toast.classList.add('is-visible');
-    setTimeout(() => toast.classList.remove('is-visible'), durationMs);
+    setTimeout(function () { toast.classList.remove('is-visible'); }, durationMs);
+  }
+
+  function updateRegenBtn() {
+    var nodes = Array.from(regenBtn.childNodes);
+    var textNode = nodes.find(function (n) { return n.nodeType === 3 && n.textContent.trim(); });
+    var label = regenRemaining > 0 ? ('다시 만들기 (' + regenRemaining + '회)') : '다시 만들기 (0회)';
+    if (textNode) {
+      textNode.textContent = '\n            ' + label + '\n          ';
+    }
+    regenBtn.disabled    = regenRemaining <= 0;
+    regenBtn.style.opacity = regenRemaining <= 0 ? '0.4' : '';
+    regenBtn.style.cursor  = regenRemaining <= 0 ? 'not-allowed' : '';
   }
 
   /* ── Typewriter ── */
   async function typewriter(text, signal) {
     composerCaption.textContent = '';
-    for (let i = 0; i < text.length; i++) {
+    for (var i = 0; i < text.length; i++) {
       if (signal && signal.aborted) return;
       composerCaption.textContent = text.slice(0, i + 1);
       await wait(TYPEWRITER_MS);
@@ -1975,21 +2053,18 @@ body {
 
   /* ── Caption inline-edit ── */
   function enterEditMode() {
-    const currentText = composerCaption.textContent;
+    var currentText = composerCaption.textContent;
     composerCaptionEdit.value = currentText;
     composerCaption.classList.add('is-hidden');
     composerCaptionEdit.classList.remove('is-hidden');
     composerCaptionEdit.focus();
     composerCaptionEdit.setSelectionRange(currentText.length, currentText.length);
   }
-
   function exitEditMode() {
-    const updated = composerCaptionEdit.value;
-    composerCaption.textContent = updated;
+    composerCaption.textContent = composerCaptionEdit.value;
     composerCaption.classList.remove('is-hidden');
     composerCaptionEdit.classList.add('is-hidden');
   }
-
   composerCaption.addEventListener('click', enterEditMode);
   composerCaption.addEventListener('keydown', function (e) {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); enterEditMode(); }
@@ -2002,128 +2077,132 @@ body {
   /* ── Chip fade-in ── */
   async function fadeInChips(tags, signal) {
     composerChips.innerHTML = '';
-    for (let i = 0; i < tags.length; i++) {
+    for (var i = 0; i < tags.length; i++) {
       if (signal && signal.aborted) return;
-      const chip = document.createElement('span');
+      var chip = document.createElement('span');
       chip.className = 'composer__chip';
       chip.textContent = tags[i];
       composerChips.appendChild(chip);
-      // force reflow then animate
-      requestAnimationFrame(() => requestAnimationFrame(() => chip.classList.add('is-visible')));
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          var chips = composerChips.querySelectorAll('.composer__chip:not(.is-visible)');
+          chips.forEach(function (c) { c.classList.add('is-visible'); });
+        });
+      });
       await wait(CHIP_DELAY_MS);
     }
   }
 
-  /* ── Time slide-up ── */
-  async function slideUpTime(time, signal) {
-    if (signal && signal.aborted) return;
-    composerTimeVal.textContent = time;
-    composerTimeRec.classList.add('is-visible');
-  }
-
-  /* 마지막 업로드 사진 캐시 — 다시 만들기 시 재사용 */
-  let currentBase64 = null;
-
-  /* ── Run streaming sequence (실제 AI 호출) ── */
-  async function runStreaming(file) {
-    if (streamAbort) streamAbort.abort();
-    const ctrl = new AbortController();
-    streamAbort = ctrl;
-    const sig = ctrl.signal;
-
-    /* reset */
+  /* ── Display caption from text ── */
+  async function showCaption(captionText, signal) {
     composerCaption.textContent = '';
     composerCaption.classList.remove('is-hidden');
     composerCaptionEdit.classList.add('is-hidden');
     composerAiBadge.classList.remove('is-visible');
     composerChips.innerHTML = '';
-    composerTimeRec.classList.remove('is-visible');
-    postBtn.classList.remove('is-active');
-
-    composerGen.classList.remove('is-done');
-    composerGen.classList.add('is-visible');
-
-    /* 1. 파일 → base64 (새 사진이면 새로 인코딩, 재생성이면 캐시 사용) */
-    try {
-      if (file) currentBase64 = await fileToBase64(file);
-      if (!currentBase64) throw new Error('사진이 없어요');
-    } catch (e) {
-      composerGen.classList.remove('is-visible');
-      showToast('사진을 읽지 못했어요. 다시 시도해 주세요.', 2800);
-      return;
-    }
-    if (sig.aborted) return;
-
-    /* 2. seller industry 매핑 */
-    const seller = await fetchSeller();
-    const bizCategory = mapIndustry(seller && seller.industry);
-    if (sig.aborted) return;
-
-    /* 3. /api/demo-caption — GPT-4o 분석 + gpt-5.4 캡션 생성 */
-    let captionText = '';
-    try {
-      const token = localStorage.getItem('lumi_seller_jwt')
-        || localStorage.getItem('lumi_token')
-        || localStorage.getItem('lumi_seller_token');
-      const headers = { 'Content-Type': 'application/json' };
-      if (token) headers.Authorization = 'Bearer ' + token;
-
-      const res = await fetch('/api/demo-caption', {
-        method: 'POST',
-        headers: headers,
-        body: JSON.stringify({ image: currentBase64, bizCategory: bizCategory }),
-      });
-
-      const data = await res.json().catch(function () { return {}; });
-
-      if (!res.ok) {
-        throw new Error(data.error || '캡션 생성 실패');
-      }
-      captionText = (data.caption || '').trim();
-      if (!captionText) throw new Error('빈 캡션');
-    } catch (e) {
-      composerGen.classList.remove('is-visible');
-      const msg = (e && e.message) ? e.message : '캡션 생성 실패. 다시 시도해 주세요.';
-      showToast(msg, 3200);
-      return;
-    }
-    if (sig.aborted) return;
-
+    if (composerTimeRec) composerTimeRec.classList.remove('is-visible');
     composerGen.classList.add('is-done');
 
-    /* 4. 본문/해시태그 분리 → 타이프라이터 + 칩 페이드인 */
-    const split = splitCaption(captionText);
-
-    await typewriter(split.body, sig);
-    if (sig.aborted) return;
+    var split = splitCaption(captionText);
+    await typewriter(split.body, signal);
+    if (signal && signal.aborted) return;
 
     composerAiBadge.classList.add('is-visible');
 
     if (split.tags.length) {
       await wait(200);
-      await fadeInChips(split.tags, sig);
-      if (sig.aborted) return;
+      await fadeInChips(split.tags, signal);
+      if (signal && signal.aborted) return;
     }
 
-    /* enable post button */
+    await wait(200);
+    if (composerTimeRec) composerTimeRec.classList.add('is-visible');
+
     postBtn.classList.add('is-active');
   }
 
-  /* ── Open composer ── */
-  function openComposer(file) {
-    const url = URL.createObjectURL(file);
-    composerImg.src = url;
-    composerImg.onload = () => URL.revokeObjectURL(url);
+  /* ── File validation ── */
+  function validateFiles(fileList) {
+    var files = Array.from(fileList);
+    if (!files.length) return null;
+    if (files.length > MAX_PHOTOS) {
+      showToast('사진은 최대 ' + MAX_PHOTOS + '장까지 등록할 수 있어요.', 2800);
+      return null;
+    }
+    for (var i = 0; i < files.length; i++) {
+      var f = files[i];
+      if (ALLOWED_MIME.indexOf(f.type) === -1) {
+        showToast('JPEG, PNG, WebP 형식의 이미지만 등록할 수 있어요.', 2800);
+        return null;
+      }
+      if (f.size > MAX_FILE_SIZE) {
+        showToast(f.name + ' — 이미지 한 장당 10MB를 초과할 수 없어요.', 2800);
+        return null;
+      }
+    }
+    return files;
+  }
 
+  /* ── Open composer: files → reserve → poll → display ── */
+  async function openComposer(files) {
+    if (pollAbort) { pollAbort.abort(); pollAbort = null; }
+    var ctrl = new AbortController();
+    pollAbort = ctrl;
+    var sig = ctrl.signal;
+
+    /* show first photo thumbnail */
+    var firstUrl = URL.createObjectURL(files[0]);
+    composerImg.src = firstUrl;
+    composerImg.onload = function () { URL.revokeObjectURL(firstUrl); };
     composer.classList.add('is-active');
     bottomCta.classList.add('is-hidden');
 
-    runStreaming(file);
+    /* reset UI */
+    composerCaption.textContent = '';
+    composerCaption.classList.remove('is-hidden');
+    composerCaptionEdit.classList.add('is-hidden');
+    composerAiBadge.classList.remove('is-visible');
+    composerChips.innerHTML = '';
+    if (composerTimeRec) composerTimeRec.classList.remove('is-visible');
+    postBtn.classList.remove('is-active');
+    composerGen.classList.remove('is-done');
+    composerGen.classList.add('is-visible');
+    currentResvKey = null;
+    regenRemaining = MAX_REGEN;
+    updateRegenBtn();
+
+    /* Step C: create reservation */
+    var reservationKey;
+    try {
+      reservationKey = await createReservation(files);
+    } catch (e) {
+      if (sig.aborted) return;
+      composerGen.classList.remove('is-visible');
+      showToast((e && e.message) || '예약 실패. 다시 시도해 주세요.', 3200);
+      closeComposer();
+      return;
+    }
+    if (sig.aborted) return;
+    currentResvKey = reservationKey;
+
+    /* Step D: poll for caption */
+    var reservation;
+    try {
+      reservation = await pollCaption(reservationKey, sig);
+    } catch (e) {
+      if (sig.aborted) return;
+      composerGen.classList.remove('is-visible');
+      showToast((e && e.message) || '캡션 생성 실패. 다시 시도해 주세요.', 3200);
+      return;
+    }
+    if (sig.aborted || !reservation) return;
+
+    await showCaption(reservation.captions[0], sig);
   }
 
   /* ── Close composer ── */
   function closeComposer() {
-    if (streamAbort) { streamAbort.abort(); streamAbort = null; }
+    if (pollAbort) { pollAbort.abort(); pollAbort = null; }
     composer.classList.remove('is-active');
     bottomCta.classList.remove('is-hidden');
     composerImg.src = '';
@@ -2132,17 +2211,17 @@ body {
     composerCaptionEdit.classList.add('is-hidden');
     composerAiBadge.classList.remove('is-visible');
     composerChips.innerHTML = '';
-    composerTimeRec.classList.remove('is-visible');
+    if (composerTimeRec) composerTimeRec.classList.remove('is-visible');
     composerGen.classList.remove('is-visible', 'is-done');
     postBtn.classList.remove('is-active');
     photoInput.value = '';
-    currentBase64 = null;
+    currentResvKey = null;
+    regenRemaining = MAX_REGEN;
+    updateRegenBtn();
   }
 
   /* ── Event: open file picker ── */
-  function triggerPicker() {
-    photoInput.click();
-  }
+  function triggerPicker() { photoInput.click(); }
 
   composerDrop.addEventListener('click', triggerPicker);
   composerDrop.addEventListener('keydown', function (e) {
@@ -2150,31 +2229,85 @@ body {
   });
   bottomCtaBtn.addEventListener('click', triggerPicker);
 
+  /* drag-and-drop */
+  composerDrop.addEventListener('dragover', function (e) {
+    e.preventDefault();
+    composerDrop.style.outline = '2px dashed var(--lumi-brand-fill)';
+  });
+  composerDrop.addEventListener('dragleave', function () {
+    composerDrop.style.outline = '';
+  });
+  composerDrop.addEventListener('drop', function (e) {
+    e.preventDefault();
+    composerDrop.style.outline = '';
+    var fl = (e.dataTransfer && e.dataTransfer.files) || [];
+    var files = validateFiles(fl);
+    if (files && files.length) openComposer(files);
+  });
+
   photoInput.addEventListener('change', function () {
-    const file = this.files && this.files[0];
-    if (!file) return;
-    openComposer(file);
+    if (!this.files || !this.files.length) return;
+    var files = validateFiles(this.files);
+    if (files && files.length) openComposer(files);
   });
 
   /* ── Close ── */
   composerClose.addEventListener('click', closeComposer);
 
   /* ── Regen ── */
-  regenBtn.addEventListener('click', function () {
-    runStreaming();
+  regenBtn.addEventListener('click', async function () {
+    if (regenRemaining <= 0) return;
+    if (!currentResvKey) { showToast('먼저 사진을 등록해 주세요.', 2400); return; }
+
+    regenBtn.disabled = true;
+    composerGen.classList.remove('is-done');
+    composerGen.classList.add('is-visible');
+    postBtn.classList.remove('is-active');
+
+    try {
+      var result = await doRegenerate(currentResvKey);
+      if (result === null) {
+        regenRemaining = 0;
+        updateRegenBtn();
+        composerGen.classList.remove('is-visible');
+        showToast('재생성은 최대 3회까지 가능해요', 2800);
+        postBtn.classList.add('is-active');
+        return;
+      }
+      regenRemaining = (typeof result.remaining === 'number') ? result.remaining : Math.max(0, regenRemaining - 1);
+      updateRegenBtn();
+
+      if (pollAbort) pollAbort.abort();
+      var ctrl2 = new AbortController();
+      pollAbort = ctrl2;
+      await showCaption(result.caption, ctrl2.signal);
+    } catch (e) {
+      composerGen.classList.remove('is-visible');
+      showToast((e && e.message) || '재생성 실패. 다시 시도해 주세요.', 3200);
+      postBtn.classList.add('is-active');
+    } finally {
+      regenBtn.disabled = regenRemaining <= 0;
+    }
   });
 
-  /* ── Post (실제 게시 흐름은 다음 단계에서 wire — 현재 안내) ── */
+  /* ── Post ── */
   postBtn.addEventListener('click', function () {
     if (!postBtn.classList.contains('is-active')) return;
-    showToast('게시 흐름은 곧 활성화돼요. 캡션은 복사해서 사용해 보세요.', 3200);
+    showToast('게시가 진행되고 있어요. 곧 인스타·틱톡에 올라갑니다.', 3000);
+    setTimeout(closeComposer, 1500);
   });
+
+  /* ── photoInput: update accept + multiple ── */
+  photoInput.setAttribute('accept', 'image/jpeg,image/png,image/webp');
+  photoInput.setAttribute('multiple', '');
+
+  /* ── drop label update ── */
+  var dropLabel = composerDrop.querySelector('.composer__drop-label');
+  if (dropLabel) dropLabel.textContent = '사진 1~10장 등록';
 
   /* ── Keyboard: ESC closes ── */
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && composer.classList.contains('is-active')) {
-      closeComposer();
-    }
+    if (e.key === 'Escape' && composer.classList.contains('is-active')) closeComposer();
   });
 
 })();

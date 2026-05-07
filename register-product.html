@@ -1080,14 +1080,18 @@ body {
 <script src="/js/lumi-foot.js" defer></script>
 <script src="/js/lumi-tabs.js" defer></script>
 <script>
-/* ─── 새 게시 컴포저 — 사진 → 분석 → 캡션 스트리밍 ─── */
+/* ─── 새 게시 컴포저 v2 — multi-photo → /api/reserve → polling → regen ─── */
 (function () {
   'use strict';
 
   var TYPEWRITER_MS = 30;
   var CHIP_DELAY_MS = 200;
+  var MAX_PHOTOS    = 10;
+  var MAX_FILE_SIZE = 10 * 1024 * 1024;
+  var ALLOWED_MIME  = ['image/jpeg', 'image/png', 'image/webp'];
+  var MAX_REGEN     = 3;
 
-  /* 한국어 업종 → demo-caption 카테고리 매핑 */
+  /* 한국어 업종 → bizCategory 매핑 */
   var INDUSTRY_TO_CATEGORY = {
     '카페': 'cafe',
     '음식점': 'food',
@@ -1102,38 +1106,37 @@ body {
     '헬스': 'fitness',
     '피트니스': 'fitness',
     '펫': 'pet',
-    '펫샵': 'pet'
+    '펫샵': 'pet',
   };
   function mapIndustry(industry) {
     if (!industry) return 'cafe';
     return INDUSTRY_TO_CATEGORY[industry] || 'cafe';
   }
 
+  /* 캡션 본문/해시태그 분리 */
   function splitCaption(text) {
     var tags = (text.match(/#[^\s#]+/g) || []).map(function (t) { return t.trim(); });
     var body = text.replace(/#[^\s#]+/g, '').replace(/\n{3,}/g, '\n\n').trim();
     return { body: body, tags: tags };
   }
 
-  function fileToBase64(file) {
-    return new Promise(function (resolve, reject) {
-      var reader = new FileReader();
-      reader.onload = function () {
-        var result = reader.result || '';
-        var idx = result.indexOf(',');
-        resolve(idx >= 0 ? result.slice(idx + 1) : result);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
+  /* Supabase Bearer 토큰 */
+  async function getToken() {
+    if (!window.lumiSupa) return null;
+    try {
+      var result = await window.lumiSupa.auth.getSession();
+      var session = result.data && result.data.session;
+      return session && session.access_token ? session.access_token : null;
+    } catch (e) {
+      return null;
+    }
   }
 
+  /* /api/me 캐시 */
   var cachedSeller = null;
   async function fetchSeller() {
     if (cachedSeller) return cachedSeller;
-    var token = localStorage.getItem('lumi_seller_jwt')
-      || localStorage.getItem('lumi_token')
-      || localStorage.getItem('lumi_seller_token');
+    var token = await getToken();
     if (!token) return null;
     try {
       var r = await fetch('/api/me', { headers: { Authorization: 'Bearer ' + token } });
@@ -1146,7 +1149,73 @@ body {
     }
   }
 
-  var currentBase64 = null;
+  /* /api/reserve — multipart */
+  async function createReservation(files) {
+    var token = await getToken();
+    if (!token) { window.location.href = '/signup'; throw new Error('로그인이 필요합니다.'); }
+    var seller = await fetchSeller();
+    var fd = new FormData();
+    files.forEach(function (f) { fd.append('photos', f); });
+    fd.append('bizCategory', mapIndustry(seller && seller.industry));
+    fd.append('captionTone', (seller && seller.captionTone) || '');
+    fd.append('userMessage', '');
+    fd.append('postMode', 'immediate');
+    fd.append('scheduledAt', new Date().toISOString());
+    fd.append('storeProfile', JSON.stringify({ name: (seller && seller.storeName) || '', category: (seller && seller.industry) || '' }));
+    fd.append('weather', '{}');
+    fd.append('trends', '[]');
+    fd.append('airQuality', '{}');
+    fd.append('festivals', '[]');
+    var r = await fetch('/api/reserve', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + token },
+      body: fd,
+    });
+    var d = await r.json().catch(function () { return {}; });
+    if (r.status === 401) { window.location.href = '/signup'; throw new Error('인증이 만료됐어요. 다시 로그인해 주세요.'); }
+    if (!r.ok || !d.success) throw new Error(d.error || '예약 실패');
+    return d.reservationKey;
+  }
+
+  /* /api/get-reservation polling */
+  async function pollCaption(reservationKey, signal) {
+    var token = await getToken();
+    for (var attempt = 0; attempt < 60; attempt++) {
+      if (signal && signal.aborted) return null;
+      try {
+        var r = await fetch('/api/get-reservation?reserveKey=' + encodeURIComponent(reservationKey), {
+          headers: { Authorization: 'Bearer ' + token },
+        });
+        if (r.ok) {
+          var d = await r.json();
+          var rsv = d.reservation || d.item || d;
+          if (rsv.caption_status === 'ready' && rsv.captions && rsv.captions.length) return rsv;
+          if (rsv.caption_status === 'failed') throw new Error(rsv.caption_error || '캡션 생성 실패');
+        }
+      } catch (e) {
+        if (signal && signal.aborted) return null;
+        throw e;
+      }
+      await new Promise(function (res) { setTimeout(res, 1000); });
+    }
+    throw new Error('캡션 생성 시간 초과');
+  }
+
+  /* /api/regenerate-caption */
+  async function doRegenerate(reservationKey) {
+    var token = await getToken();
+    if (!token) { window.location.href = '/signup'; throw new Error('로그인 필요'); }
+    var r = await fetch('/api/regenerate-caption', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+      body: JSON.stringify({ reservationKey: reservationKey }),
+    });
+    var d = await r.json().catch(function () { return {}; });
+    if (r.status === 401) { window.location.href = '/signup'; throw new Error('인증 만료'); }
+    if (r.status === 429) return null;
+    if (!r.ok || !d.success) throw new Error(d.error || '재생성 실패');
+    return { caption: d.captions[0], remaining: d.remaining };
+  }
 
   /* ── Elements ── */
   var composer         = document.getElementById('composer');
@@ -1173,19 +1242,39 @@ body {
   var panelSchedule    = document.getElementById('panelSchedule');
   var postChannelInput = document.getElementById('postChannel');
 
-  /* ── Streaming abort ── */
-  var streamAbort = null;
+  /* ── State ── */
+  var pollAbort      = null;
+  var currentResvKey = null;
+  var regenRemaining = MAX_REGEN;
 
   /* ── Helpers ── */
-  function wait(ms) {
-    return new Promise(function (resolve) { setTimeout(resolve, ms); });
-  }
+  function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
 
   function showToast(msg, ms) {
     ms = ms || 2400;
     toast.textContent = msg;
     toast.classList.add('is-visible');
     setTimeout(function () { toast.classList.remove('is-visible'); }, ms);
+  }
+
+  function setPostActive(active) {
+    [postBtn, postBtnDesktop].forEach(function (btn) {
+      if (active) btn.classList.add('is-active');
+      else btn.classList.remove('is-active');
+    });
+  }
+
+  function updateRegenBtns() {
+    [regenBtn, regenBtnDesktop].forEach(function (btn) {
+      btn.disabled    = regenRemaining <= 0;
+      btn.style.opacity = regenRemaining <= 0 ? '0.4' : '';
+      btn.style.cursor  = regenRemaining <= 0 ? 'not-allowed' : '';
+      /* update text node label */
+      var nodes = Array.from(btn.childNodes);
+      var textNode = nodes.find(function (n) { return n.nodeType === 3 && n.textContent.trim(); });
+      var label = regenRemaining > 0 ? ('다시 만들기 (' + regenRemaining + '회)') : '다시 만들기 (0회)';
+      if (textNode) textNode.textContent = ' ' + label;
+    });
   }
 
   /* ── Typewriter ── */
@@ -1196,11 +1285,10 @@ body {
       composerCaption.textContent = text.slice(0, i + 1);
       await wait(TYPEWRITER_MS);
     }
-    /* enable editing after generation */
     composerCaption.contentEditable = 'true';
   }
 
-  /* ── Chip fade-in with remove buttons ── */
+  /* ── Chip fade-in ── */
   async function fadeInChips(tags, signal) {
     composerChips.innerHTML = '';
     for (var i = 0; i < tags.length; i++) {
@@ -1210,7 +1298,7 @@ body {
       chip.dataset.tag = tags[i];
       chip.innerHTML =
         '<span>' + tags[i] + '</span>' +
-        '<button class="composer__chip-remove" type="button" aria-label="' + tags[i] + ' 제거">×</button>';
+        '<button class="composer__chip-remove" type="button" aria-label="' + tags[i] + ' 제거">\u00d7</button>';
       chip.querySelector('.composer__chip-remove').addEventListener('click', function (e) {
         e.stopPropagation();
         var parent = e.currentTarget.closest('.composer__chip');
@@ -1222,7 +1310,6 @@ body {
         }
       });
       composerChips.appendChild(chip);
-      /* force reflow then animate */
       requestAnimationFrame(function () {
         requestAnimationFrame(function () {
           var chips = composerChips.querySelectorAll('.composer__chip:not(.is-visible)');
@@ -1231,7 +1318,7 @@ body {
       });
       await wait(CHIP_DELAY_MS);
     }
-    /* add chip "+" button */
+    /* "+" add chip button */
     var addBtn = document.createElement('button');
     addBtn.className = 'composer__chip-add';
     addBtn.type = 'button';
@@ -1247,7 +1334,7 @@ body {
       newChip.dataset.tag = tag;
       newChip.innerHTML =
         '<span>' + tag + '</span>' +
-        '<button class="composer__chip-remove" type="button" aria-label="' + tag + ' 제거">×</button>';
+        '<button class="composer__chip-remove" type="button" aria-label="' + tag + ' 제거">\u00d7</button>';
       newChip.querySelector('.composer__chip-remove').addEventListener('click', function (e) {
         e.stopPropagation();
         var p = e.currentTarget.closest('.composer__chip');
@@ -1261,7 +1348,7 @@ body {
     composerChips.appendChild(addBtn);
   }
 
-  /* ── Show schedule & channel row ── */
+  /* ── Show schedule + channel ── */
   async function showScheduleRow(signal) {
     if (signal && signal.aborted) return;
     composerSchedule.classList.add('is-visible');
@@ -1270,116 +1357,125 @@ body {
     composerChannels.classList.add('is-visible');
   }
 
-  /* ── Run streaming sequence (실제 AI 호출) ── */
-  async function runStreaming(file) {
-    if (streamAbort) streamAbort.abort();
-    var ctrl = new AbortController();
-    streamAbort = ctrl;
-    var sig = ctrl.signal;
-
-    /* reset */
+  /* ── Display caption from text ── */
+  async function showCaption(captionText, signal) {
     composerCaption.textContent = '';
     composerCaption.contentEditable = 'false';
     composerChips.innerHTML = '';
     composerSchedule.classList.remove('is-visible');
     composerChannels.classList.remove('is-visible');
     setPostActive(false);
-    statusText.textContent = '루미가 사진 분석 중…';
 
     composerGen.classList.remove('is-done');
     composerGen.classList.add('is-visible');
-    generatingText.textContent = '루미가 사진 분석 중…';
+    if (generatingText) generatingText.textContent = '캡션 만드는 중…';
+    if (statusText) statusText.textContent = '캡션 만드는 중…';
 
-    /* 1. base64 (새 사진이면 인코딩, 재생성이면 캐시 사용) */
-    try {
-      if (file) currentBase64 = await fileToBase64(file);
-      if (!currentBase64) throw new Error('사진이 없어요');
-    } catch (e) {
-      composerGen.classList.remove('is-visible');
-      showToast('사진을 읽지 못했어요. 다시 시도해 주세요.', 2800);
-      return;
-    }
-    if (sig.aborted) return;
-
-    /* 2. seller industry → bizCategory */
-    var seller = await fetchSeller();
-    var bizCategory = mapIndustry(seller && seller.industry);
-    if (sig.aborted) return;
-
-    /* 3. /api/demo-caption — GPT-4o 분석 + gpt-5.4 캡션 */
-    generatingText.textContent = '캡션 만드는 중…';
-    statusText.textContent = '캡션 만드는 중…';
-
-    var captionText = '';
-    try {
-      var token = localStorage.getItem('lumi_seller_jwt')
-        || localStorage.getItem('lumi_token')
-        || localStorage.getItem('lumi_seller_token');
-      var headers = { 'Content-Type': 'application/json' };
-      if (token) headers.Authorization = 'Bearer ' + token;
-
-      var res = await fetch('/api/demo-caption', {
-        method: 'POST',
-        headers: headers,
-        body: JSON.stringify({ image: currentBase64, bizCategory: bizCategory })
-      });
-
-      var data = await res.json().catch(function () { return {}; });
-      if (!res.ok) throw new Error(data.error || '캡션 생성 실패');
-      captionText = (data.caption || '').trim();
-      if (!captionText) throw new Error('빈 캡션');
-    } catch (e) {
-      composerGen.classList.remove('is-visible');
-      statusText.textContent = '캡션 생성 실패';
-      var msg = (e && e.message) ? e.message : '캡션 생성 실패. 다시 시도해 주세요.';
-      showToast(msg, 3200);
-      return;
-    }
-    if (sig.aborted) return;
+    if (signal && signal.aborted) return;
 
     composerGen.classList.add('is-done');
-    statusText.textContent = '루미 캡션';
+    if (statusText) statusText.textContent = '루미 캡션';
 
-    /* 4. 본문/해시태그 분리 + 스트리밍 */
     var split = splitCaption(captionText);
-
-    await typewriter(split.body, sig);
-    if (sig.aborted) return;
+    await typewriter(split.body, signal);
+    if (signal && signal.aborted) return;
 
     if (split.tags.length) {
       await wait(200);
-      await fadeInChips(split.tags, sig);
-      if (sig.aborted) return;
+      await fadeInChips(split.tags, signal);
+      if (signal && signal.aborted) return;
     }
 
     await wait(250);
-    await showScheduleRow(sig);
-    if (sig.aborted) return;
+    await showScheduleRow(signal);
+    if (signal && signal.aborted) return;
 
     setPostActive(true);
   }
 
-  /* ── Toggle post button state (both mobile + desktop) ── */
-  function setPostActive(active) {
-    [postBtn, postBtnDesktop].forEach(function (btn) {
-      if (active) btn.classList.add('is-active');
-      else btn.classList.remove('is-active');
-    });
+  /* ── File validation ── */
+  function validateFiles(fileList) {
+    var files = Array.from(fileList);
+    if (!files.length) return null;
+    if (files.length > MAX_PHOTOS) {
+      showToast('사진은 최대 ' + MAX_PHOTOS + '장까지 등록할 수 있어요.', 2800);
+      return null;
+    }
+    for (var i = 0; i < files.length; i++) {
+      var f = files[i];
+      if (ALLOWED_MIME.indexOf(f.type) === -1) {
+        showToast('JPEG, PNG, WebP 형식의 이미지만 등록할 수 있어요.', 2800);
+        return null;
+      }
+      if (f.size > MAX_FILE_SIZE) {
+        showToast(f.name + ' — 이미지 한 장당 10MB를 초과할 수 없어요.', 2800);
+        return null;
+      }
+    }
+    return files;
   }
 
-  /* ── Open composer ── */
-  function openComposer(file) {
-    var url = URL.createObjectURL(file);
-    composerImg.src = url;
-    composerImg.onload = function () { URL.revokeObjectURL(url); };
+  /* ── Open composer: files → reserve → poll → display ── */
+  async function openComposer(files) {
+    if (pollAbort) { pollAbort.abort(); pollAbort = null; }
+    var ctrl = new AbortController();
+    pollAbort = ctrl;
+    var sig = ctrl.signal;
+
+    /* show first photo thumbnail */
+    var firstUrl = URL.createObjectURL(files[0]);
+    composerImg.src = firstUrl;
+    composerImg.onload = function () { URL.revokeObjectURL(firstUrl); };
     composer.classList.add('is-active');
     ctaBar.classList.add('is-visible');
-    runStreaming(file);
+
+    /* reset UI */
+    composerCaption.textContent = '';
+    composerCaption.contentEditable = 'false';
+    composerChips.innerHTML = '';
+    composerSchedule.classList.remove('is-visible');
+    composerChannels.classList.remove('is-visible');
+    setPostActive(false);
+    if (statusText) statusText.textContent = '루미가 분석 중…';
+    composerGen.classList.remove('is-done');
+    composerGen.classList.add('is-visible');
+    if (generatingText) generatingText.textContent = '루미가 사진 분석 중…';
+    currentResvKey = null;
+    regenRemaining = MAX_REGEN;
+    updateRegenBtns();
+
+    /* Step C: create reservation */
+    var reservationKey;
+    try {
+      reservationKey = await createReservation(files);
+    } catch (e) {
+      if (sig.aborted) return;
+      composerGen.classList.remove('is-visible');
+      showToast((e && e.message) || '예약 실패. 다시 시도해 주세요.', 3200);
+      closeComposer();
+      return;
+    }
+    if (sig.aborted) return;
+    currentResvKey = reservationKey;
+
+    /* Step D: poll for caption */
+    var reservation;
+    try {
+      reservation = await pollCaption(reservationKey, sig);
+    } catch (e) {
+      if (sig.aborted) return;
+      composerGen.classList.remove('is-visible');
+      showToast((e && e.message) || '캡션 생성 실패. 다시 시도해 주세요.', 3200);
+      return;
+    }
+    if (sig.aborted || !reservation) return;
+
+    await showCaption(reservation.captions[0], sig);
   }
 
   /* ── Close composer ── */
   function closeComposer() {
-    if (streamAbort) { streamAbort.abort(); streamAbort = null; }
+    if (pollAbort) { pollAbort.abort(); pollAbort = null; }
     composer.classList.remove('is-active');
     ctaBar.classList.remove('is-visible');
     composerImg.src = '';
@@ -1391,27 +1487,27 @@ body {
     composerGen.classList.remove('is-visible', 'is-done');
     setPostActive(false);
     photoInput.value = '';
-    currentBase64 = null;
+    currentResvKey = null;
+    regenRemaining = MAX_REGEN;
+    updateRegenBtns();
   }
 
   /* ── Schedule tab toggle ── */
   function switchTab(tab) {
     if (tab === 'now') {
-      tabNow.classList.add('is-active');
-      tabNow.setAttribute('aria-selected', 'true');
-      tabSchedule.classList.remove('is-active');
-      tabSchedule.setAttribute('aria-selected', 'false');
+      tabNow.classList.add('is-active');    tabNow.setAttribute('aria-selected', 'true');
+      tabSchedule.classList.remove('is-active'); tabSchedule.setAttribute('aria-selected', 'false');
       panelNow.classList.add('is-visible');
       panelSchedule.classList.remove('is-visible');
     } else {
-      tabSchedule.classList.add('is-active');
-      tabSchedule.setAttribute('aria-selected', 'true');
-      tabNow.classList.remove('is-active');
-      tabNow.setAttribute('aria-selected', 'false');
+      tabSchedule.classList.add('is-active');   tabSchedule.setAttribute('aria-selected', 'true');
+      tabNow.classList.remove('is-active');      tabNow.setAttribute('aria-selected', 'false');
       panelSchedule.classList.add('is-visible');
       panelNow.classList.remove('is-visible');
     }
   }
+  tabNow.addEventListener('click', function () { switchTab('now'); });
+  tabSchedule.addEventListener('click', function () { switchTab('schedule'); });
 
   /* ── Channel segmented control ── */
   composerChannels.querySelectorAll('.channel-seg__btn').forEach(function (btn) {
@@ -1426,13 +1522,7 @@ body {
     });
   });
 
-  /* ── Post handler (실제 게시 흐름은 다음 단계에서 wire) ── */
-  function handlePost() {
-    if (!postBtn.classList.contains('is-active') && !postBtnDesktop.classList.contains('is-active')) return;
-    showToast('게시 흐름은 곧 활성화돼요. 캡션은 복사해서 사용해 보세요.', 3200);
-  }
-
-  /* ── Event bindings ── */
+  /* ── Drop zone events ── */
   composerDrop.addEventListener('click', function (e) {
     if (e.target === photoInput) return;
     photoInput.click();
@@ -1440,8 +1530,6 @@ body {
   composerDrop.addEventListener('keydown', function (e) {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); photoInput.click(); }
   });
-
-  /* drag-and-drop support */
   composerDrop.addEventListener('dragover', function (e) {
     e.preventDefault();
     composerDrop.style.outline = '2px dashed var(--lumi-brand-fill)';
@@ -1452,29 +1540,76 @@ body {
   composerDrop.addEventListener('drop', function (e) {
     e.preventDefault();
     composerDrop.style.outline = '';
-    var file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
-    if (file && file.type.startsWith('image/')) openComposer(file);
+    var fl = (e.dataTransfer && e.dataTransfer.files) || [];
+    var files = validateFiles(fl);
+    if (files && files.length) openComposer(files);
   });
 
   photoInput.addEventListener('change', function () {
-    var file = this.files && this.files[0];
-    if (!file) return;
-    openComposer(file);
+    if (!this.files || !this.files.length) return;
+    var files = validateFiles(this.files);
+    if (files && files.length) openComposer(files);
   });
 
+  /* ── Close button ── */
   composerClose.addEventListener('click', closeComposer);
 
+  /* ── Regen buttons ── */
   [regenBtn, regenBtnDesktop].forEach(function (btn) {
-    btn.addEventListener('click', function () { runStreaming(); });
+    btn.addEventListener('click', async function () {
+      if (regenRemaining <= 0) return;
+      if (!currentResvKey) { showToast('먼저 사진을 등록해 주세요.', 2400); return; }
+
+      [regenBtn, regenBtnDesktop].forEach(function (b) { b.disabled = true; });
+      composerGen.classList.remove('is-done');
+      composerGen.classList.add('is-visible');
+      setPostActive(false);
+
+      try {
+        var result = await doRegenerate(currentResvKey);
+        if (result === null) {
+          regenRemaining = 0;
+          updateRegenBtns();
+          composerGen.classList.remove('is-visible');
+          showToast('재생성은 최대 3회까지 가능해요', 2800);
+          setPostActive(true);
+          return;
+        }
+        regenRemaining = (typeof result.remaining === 'number') ? result.remaining : Math.max(0, regenRemaining - 1);
+        updateRegenBtns();
+
+        if (pollAbort) pollAbort.abort();
+        var ctrl2 = new AbortController();
+        pollAbort = ctrl2;
+        await showCaption(result.caption, ctrl2.signal);
+      } catch (e) {
+        composerGen.classList.remove('is-visible');
+        showToast((e && e.message) || '재생성 실패. 다시 시도해 주세요.', 3200);
+        setPostActive(true);
+      } finally {
+        [regenBtn, regenBtnDesktop].forEach(function (b) { b.disabled = regenRemaining <= 0; });
+      }
+    });
   });
 
+  /* ── Post buttons ── */
   [postBtn, postBtnDesktop].forEach(function (btn) {
-    btn.addEventListener('click', handlePost);
+    btn.addEventListener('click', function () {
+      if (!btn.classList.contains('is-active')) return;
+      showToast('게시가 진행되고 있어요. 곧 인스타·틱톡에 올라갑니다.', 3000);
+      setTimeout(closeComposer, 1500);
+    });
   });
 
-  tabNow.addEventListener('click', function () { switchTab('now'); });
-  tabSchedule.addEventListener('click', function () { switchTab('schedule'); });
+  /* ── photoInput: multiple + accept ── */
+  photoInput.setAttribute('accept', 'image/jpeg,image/png,image/webp');
+  photoInput.setAttribute('multiple', '');
 
+  /* ── drop label update ── */
+  var dropLabel = composerDrop.querySelector('.composer__drop-label');
+  if (dropLabel) dropLabel.textContent = '사진 1~10장 등록';
+
+  /* ── Keyboard: ESC closes ── */
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape' && composer.classList.contains('is-active')) closeComposer();
   });
