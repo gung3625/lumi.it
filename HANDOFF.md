@@ -193,3 +193,45 @@ cat HANDOFF.md         # 이 파일
 ### 이번 세션 30일 유예 작업 미완성
 - agent `a569becf422a88e98` (account-deletion-grace) 시작 후 stop. commit 0건.
 - 다음 세션이 위 A brief 그대로 진행하면 됨.
+
+---
+
+## CI/CD
+
+GitHub Actions 기반 자동 배포 파이프라인. main 브랜치 push 시 Supabase 마이그 자동 적용 후 Netlify 프로덕션 배포까지 한 번에.
+
+### 워크플로우 파일
+
+- `.github/workflows/deploy.yml` — 단일 워크플로우, 두 job (`migrate` → `deploy`)
+  - **트리거**: `push` to `main`, `workflow_dispatch` (수동)
+  - **migrate**: `supabase/setup-cli@v1` (`version: 1.215.0`) + `supabase db push --db-url $SUPABASE_DB_URL --include-all`
+  - **deploy** (`needs: migrate`): `actions/setup-node@v4` (node 20) + `npm install` + `npx netlify-cli@latest deploy --prod --site <ID> --dir .`
+  - migrate 실패 시 deploy 차단됨
+
+### 필수 GitHub Secrets (사용자 등록 필요)
+
+GitHub 레포 → **Settings → Secrets and variables → Actions → New repository secret**:
+
+1. **`SUPABASE_DB_URL`** — Postgres 직결 connection string (URI 형식, password 포함)
+   - 발급: Supabase Studio → Project Settings → Database → **Connection string** → URI 탭 복사
+   - 형식: `postgresql://postgres.<ref>:<password>@<host>:5432/postgres`
+   - 주의: pooler URL 말고 **direct** URL 사용 (마이그용)
+
+2. **`NETLIFY_AUTH_TOKEN`** — Netlify 개인 액세스 토큰
+   - 발급: Netlify → User Settings → **Applications → Personal access tokens → New access token**
+   - 만료 없는 토큰 권장
+   - `NETLIFY_SITE_ID`는 워크플로우에 직접 명시(`28d60e0e-6aa4-4b45-b117-0bcc3c4268fc`)이라 secret 불필요
+
+### 자동 흐름
+
+main에 머지 → GitHub Actions 자동 시작 → migrate(이미 적용된 마이그는 skip) → deploy(`netlify deploy --prod`) → 라이브 반영.
+
+### 수동 트리거
+
+GitHub 레포 → Actions 탭 → 좌측 **Deploy** → 우측 **Run workflow** → 브랜치 선택 → 실행.
+
+### 주의사항
+
+- 마이그 파일 추가/수정 없이 push해도 supabase CLI가 `schema_migrations` 테이블 비교 후 no-op 처리 (idempotent)
+- 첫 자동 배포는 두 secret 등록 후 main에 머지되는 첫 커밋부터 발생
+- 첫 실행 전 `SUPABASE_DB_URL`을 로컬에서 한 번 직접 `supabase db push --db-url "$URL" --include-all`로 검증 권장 — 이미 적용된 마이그까지 다시 시도되며 충돌이 나는지 확인

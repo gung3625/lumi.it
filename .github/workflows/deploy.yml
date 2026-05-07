@@ -1,0 +1,55 @@
+name: Deploy
+
+# main 브랜치 push 시 (1) Supabase 마이그 자동 적용 → (2) Netlify 자동 배포
+# 수동 트리거: GitHub Actions 탭 → Deploy → Run workflow
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    name: Apply Supabase migrations
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 1.215.0
+
+      - name: Apply migrations (db push)
+        # supabase CLI는 schema_migrations 테이블로 적용된 마이그를 추적하므로
+        # 마이그 변경이 없는 push에서도 idempotent하게 no-op 처리됨.
+        run: supabase db push --db-url "$SUPABASE_DB_URL" --include-all
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+
+  deploy:
+    name: Deploy to Netlify
+    needs: migrate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Deploy to Netlify (production)
+        run: npx -y netlify-cli@latest deploy --prod --site "$NETLIFY_SITE_ID" --dir .
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: 28d60e0e-6aa4-4b45-b117-0bcc3c4268fc
