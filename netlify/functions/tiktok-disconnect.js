@@ -6,6 +6,7 @@
 // - return { ok: true }
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
+const { verifySellerToken } = require('./_shared/seller-jwt');
 const { corsHeaders, getOrigin } = require('./_shared/auth');
 
 exports.handler = async (event) => {
@@ -16,15 +17,22 @@ exports.handler = async (event) => {
     return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
-  // 1. Bearer 토큰 검증
+  // 1. Bearer 토큰 검증 — Supabase JWT 우선, seller-jwt fallback (카카오 가입자)
+  // invariant: sellers.id = auth.users.id = tiktok_accounts.user_id (UUID 동일)
   const token = extractBearerToken(event);
-  const { user, error: authErr } = await verifyBearerToken(token);
-  if (authErr || !user) {
+  let userId = null;
+  const { user } = await verifyBearerToken(token);
+  if (user && user.id) {
+    userId = user.id;
+  } else {
+    const { payload } = verifySellerToken(token);
+    if (payload && payload.seller_id) userId = payload.seller_id;
+  }
+  if (!userId) {
     return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증이 필요합니다.' }) };
   }
 
   const admin = getAdminClient();
-  const userId = user.id;
 
   try {
     // 2. tiktok_accounts row 삭제 (vault 트리거가 시크릿도 자동 삭제)

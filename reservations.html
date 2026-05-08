@@ -987,13 +987,20 @@
     }
 
     /* ─── 인증 ─── */
+    /* Supabase session → lumi_token → lumi_seller_jwt 순 (카카오 가입자 호환) */
     async function getToken() {
-      if (!window.lumiSupa) return null;
       try {
-        var result = await window.lumiSupa.auth.getSession();
-        var session = result.data && result.data.session;
-        return session && session.access_token ? session.access_token : null;
-      } catch (e) { return null; }
+        if (window.lumiSupa) {
+          var result = await window.lumiSupa.auth.getSession();
+          var session = result.data && result.data.session;
+          if (session && session.access_token) return session.access_token;
+        }
+      } catch (e) {}
+      try {
+        var ls = localStorage.getItem('lumi_token') || localStorage.getItem('lumi_seller_jwt');
+        if (ls) return ls;
+      } catch (e) {}
+      return null;
     }
 
     /* ─── 데이터 필터 ─── */
