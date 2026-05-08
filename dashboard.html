@@ -33,7 +33,9 @@ body {
 
 /* ─── Greeting ─── */
 .dash-greet {
-  padding: var(--lumi-space-8) var(--lumi-page-x) var(--lumi-space-5);
+  /* 모바일 sticky 헤더(56px)와 hero 텍스트가 시각적으로 겹쳐 보이지 않도록
+     상단 padding 증가. 1024+ 데스크톱은 아래 미디어쿼리에서 별도 지정. */
+  padding: var(--lumi-space-10) var(--lumi-page-x) var(--lumi-space-5);
   background: var(--lumi-surface);
   position: relative;
   overflow: hidden;
@@ -44,12 +46,20 @@ body {
   position: absolute;
   inset: 0;
   z-index: -1;
+  /* 그라디언트 중심을 위로 더 끌어올려 인사말 텍스트와 겹치지 않게 */
   background: radial-gradient(
-    ellipse 90% 80% at 60% -20%,
+    ellipse 90% 70% at 60% -40%,
     color-mix(in srgb, var(--lumi-brand-pink) 9%, transparent),
     transparent 65%
   );
   pointer-events: none;
+}
+
+/* 모바일에서는 하단 탭바(홈/트렌드/등록/캘린더/더보기)가 메인 nav 역할을 하므로
+   마케팅 푸터(사업자 정보) 중복 노출 방지 — 탭바가 노출되는 767px 이하에서만 lumi-foot 숨김.
+   탭바가 사라지는 768px+ 에서는 푸터를 다시 표시. */
+@media (max-width: 767px) {
+  .lumi-foot[data-lumi-foot] { display: none; }
 }
 .dash-greet__inner {
   max-width: var(--lumi-max-content);
