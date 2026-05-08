@@ -105,8 +105,8 @@
 }
 
 .rsv-week-nav__btn {
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   border-radius: var(--lumi-radius-sm);
   border: 1px solid var(--lumi-line-strong);
   background: var(--lumi-surface);
@@ -115,9 +115,75 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
   transition:
     background-color var(--lumi-duration-fast) var(--lumi-ease-soft),
     border-color var(--lumi-duration-fast) var(--lumi-ease-soft);
+}
+
+/* 뷰 토글 (주간/월간) */
+.rsv-view-toggle {
+  display: inline-flex;
+  background: var(--lumi-surface-deep);
+  border: 1px solid var(--lumi-line);
+  border-radius: var(--lumi-radius-pill);
+  padding: 2px;
+  gap: 2px;
+}
+
+.rsv-view-toggle__btn {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  font-size: var(--lumi-text-label);
+  font-weight: var(--lumi-weight-semibold);
+  color: var(--lumi-ink-muted);
+  padding: 6px 12px;
+  border-radius: var(--lumi-radius-pill);
+  cursor: pointer;
+  min-height: 32px;
+  transition:
+    background var(--lumi-duration-fast) var(--lumi-ease-soft),
+    color var(--lumi-duration-fast) var(--lumi-ease-soft);
+}
+
+.rsv-view-toggle__btn[aria-pressed="true"] {
+  background: var(--lumi-surface);
+  color: var(--lumi-ink-strong);
+  box-shadow: var(--lumi-shadow-sm, 0 1px 2px rgba(0,0,0,.06));
+}
+
+/* 채널 필터 */
+.rsv-filter {
+  display: inline-flex;
+  gap: var(--lumi-space-1);
+  flex-wrap: wrap;
+}
+
+.rsv-filter__btn {
+  appearance: none;
+  font-family: inherit;
+  font-size: var(--lumi-text-label);
+  font-weight: var(--lumi-weight-medium);
+  color: var(--lumi-ink-muted);
+  padding: 7px 14px;
+  background: var(--lumi-surface);
+  border: 1px solid var(--lumi-line);
+  border-radius: var(--lumi-radius-pill);
+  cursor: pointer;
+  min-height: 36px;
+  transition:
+    background var(--lumi-duration-fast) var(--lumi-ease-soft),
+    color var(--lumi-duration-fast) var(--lumi-ease-soft),
+    border-color var(--lumi-duration-fast) var(--lumi-ease-soft);
+}
+
+.rsv-filter__btn[aria-pressed="true"] {
+  background: var(--lumi-gradient-brand-135);
+  color: var(--lumi-ink-on-dark);
+  border-color: transparent;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--lumi-brand-fill) 25%, transparent);
 }
 
 @media (hover: hover) {
@@ -152,8 +218,25 @@
 
 .rsv-day-header {
   min-width: 80px;
+  min-height: 56px;
   padding: var(--lumi-space-2) var(--lumi-space-2);
   text-align: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  border-radius: var(--lumi-radius-md);
+  transition:
+    background var(--lumi-duration-fast) var(--lumi-ease-soft),
+    transform var(--lumi-duration-snap) var(--lumi-ease-toss);
+}
+
+@media (hover: hover) {
+  .rsv-day-header:hover {
+    background: var(--lumi-surface-deep);
+  }
+}
+
+.rsv-day-header:active {
+  transform: scale(0.96);
 }
 
 .rsv-day-header__name {
@@ -181,6 +264,57 @@
   align-items: center;
   justify-content: center;
   margin-top: 2px;
+}
+
+/* 선택 강화 — 핑크 그라디언트 + scale */
+.rsv-day-header--selected {
+  background: var(--lumi-gradient-brand-135);
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--lumi-brand-fill) 28%, transparent);
+  transform: scale(1.04);
+}
+
+.rsv-day-header--selected .rsv-day-header__name,
+.rsv-day-header--selected .rsv-day-header__num {
+  color: var(--lumi-ink-on-dark);
+}
+
+.rsv-day-header--selected .rsv-day-header__num {
+  background: transparent;
+}
+
+/* 예약 표시 — 점 / 채널 mini */
+.rsv-day-header__marks {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  margin-top: 4px;
+  min-height: 8px;
+}
+
+.rsv-day-header__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--lumi-brand-fill);
+}
+
+.rsv-day-header--selected .rsv-day-header__dot {
+  background: var(--lumi-ink-on-dark);
+}
+
+.rsv-day-header__check {
+  width: 10px;
+  height: 10px;
+  stroke: var(--lumi-success);
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.rsv-day-header--selected .rsv-day-header__check {
+  stroke: var(--lumi-ink-on-dark);
 }
 
 /* ─── 캘린더 그리드 ─── */
@@ -408,6 +542,186 @@
   font-weight: var(--lumi-weight-medium);
 }
 
+/* ─── 월간 뷰 ─── */
+.rsv-month {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  padding: var(--lumi-space-3) var(--lumi-page-x) var(--lumi-space-8);
+  background: var(--lumi-surface-alt);
+}
+
+.rsv-month-head {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  padding: var(--lumi-space-2) var(--lumi-page-x) 0;
+  background: var(--lumi-surface);
+  border-bottom: 1px solid var(--lumi-line);
+}
+
+.rsv-month-head__cell {
+  text-align: center;
+  font-size: var(--lumi-text-label);
+  font-weight: var(--lumi-weight-semibold);
+  color: var(--lumi-ink-muted);
+  padding: var(--lumi-space-2) 0;
+}
+
+.rsv-month__cell {
+  position: relative;
+  min-height: 64px;
+  padding: 6px 6px 18px;
+  background: var(--lumi-surface);
+  border: 1px solid var(--lumi-line);
+  border-radius: var(--lumi-radius-md);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background var(--lumi-duration-fast) var(--lumi-ease-soft),
+    transform var(--lumi-duration-snap) var(--lumi-ease-toss),
+    border-color var(--lumi-duration-fast) var(--lumi-ease-soft);
+}
+
+@media (hover: hover) {
+  .rsv-month__cell:hover {
+    background: var(--lumi-surface-deep);
+    border-color: var(--lumi-line-strong);
+  }
+}
+
+.rsv-month__cell:active {
+  transform: scale(0.97);
+}
+
+.rsv-month__cell--out {
+  opacity: 0.35;
+}
+
+.rsv-month__cell--today .rsv-month__num {
+  background: var(--lumi-brand-fill);
+  color: var(--lumi-ink-on-dark);
+}
+
+.rsv-month__cell--selected {
+  background: var(--lumi-gradient-brand-135);
+  border-color: transparent;
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--lumi-brand-fill) 28%, transparent);
+}
+
+.rsv-month__cell--selected .rsv-month__num {
+  background: transparent;
+  color: var(--lumi-ink-on-dark);
+}
+
+.rsv-month__num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: var(--lumi-radius-full);
+  font-size: var(--lumi-text-label);
+  font-weight: var(--lumi-weight-semibold);
+  color: var(--lumi-ink-strong);
+}
+
+.rsv-month__marks {
+  position: absolute;
+  bottom: 6px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 3px;
+  min-height: 8px;
+}
+
+.rsv-month__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--lumi-brand-fill);
+}
+
+.rsv-month__cell--selected .rsv-month__dot {
+  background: var(--lumi-ink-on-dark);
+}
+
+.rsv-month__check {
+  width: 10px;
+  height: 10px;
+  stroke: var(--lumi-success);
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.rsv-month__cell--selected .rsv-month__check {
+  stroke: var(--lumi-ink-on-dark);
+}
+
+/* ─── 빈 상태 가이드 ─── */
+.rsv-empty-guide {
+  grid-column: 1 / -1;
+  margin: var(--lumi-space-4) 0;
+  padding: var(--lumi-space-8) var(--lumi-space-5);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--lumi-brand-fill) 8%, var(--lumi-surface));
+  border: 1px solid color-mix(in srgb, var(--lumi-brand-fill) 20%, transparent);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--lumi-space-3);
+}
+
+.rsv-empty-guide__icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: var(--lumi-gradient-brand-135);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--lumi-ink-on-dark);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--lumi-brand-fill) 30%, transparent);
+}
+
+.rsv-empty-guide__icon svg {
+  width: 28px;
+  height: 28px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.rsv-empty-guide__title {
+  font-size: var(--lumi-text-title-3, 18px);
+  font-weight: var(--lumi-weight-bold);
+  color: var(--lumi-ink-strong);
+  margin: 0;
+}
+
+.rsv-empty-guide__sub {
+  font-size: var(--lumi-text-body-sm);
+  color: var(--lumi-ink-muted);
+  margin: 0;
+  word-break: keep-all;
+  max-width: 320px;
+}
+
+.rsv-empty-guide__actions {
+  display: flex;
+  gap: var(--lumi-space-2);
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: var(--lumi-space-2);
+}
+
 /* ─── 데스크톱 확장 ─── */
 @media (min-width: 768px) {
   .rsv-greeting {
@@ -488,79 +802,67 @@
 
   <main class="rsv-page">
 
-    <!-- 상단 CTA 스티키 바 -->
+    <!-- 상단 CTA 스티키 바 (타이틀 + 채널 필터) -->
     <div class="rsv-cta-bar">
       <span class="rsv-cta-bar__title">이번 주 게시 일정</span>
-      <a href="/register-product" class="lumi-btn lumi-btn--primary lumi-btn--sm">
-        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" aria-hidden="true">
-          <line x1="12" y1="5" x2="12" y2="19"/>
-          <line x1="5" y1="12" x2="19" y2="12"/>
-        </svg>
-        새 예약 만들기
-      </a>
+      <div class="rsv-filter" role="group" aria-label="채널 필터" id="rsvFilter">
+        <button type="button" class="rsv-filter__btn" data-filter="all" aria-pressed="true">전체</button>
+        <button type="button" class="rsv-filter__btn" data-filter="instagram" aria-pressed="false">인스타그램</button>
+        <button type="button" class="rsv-filter__btn" data-filter="tiktok" aria-pressed="false">틱톡</button>
+      </div>
     </div>
 
-    <!-- Greeting -->
+    <!-- Greeting (sub 안내만) -->
     <section class="rsv-greeting">
       <p class="rsv-greeting__eyebrow">예약 게시</p>
-      <h1 class="rsv-greeting__title">이번 주 게시 일정</h1>
       <p class="rsv-greeting__sub">게시 예약을 관리하고 최적의 시간대에 올리세요.</p>
     </section>
 
-    <!-- 주 네비게이션 -->
+    <!-- 주/월 네비게이션 -->
     <div class="rsv-week-nav">
-      <span class="rsv-week-nav__label">2025년 4월 28일 — 5월 4일</span>
-      <div class="rsv-week-nav__arrows">
-        <button type="button" class="rsv-week-nav__btn" aria-label="이전 주">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
-        </button>
-        <button type="button" class="rsv-week-nav__btn" aria-label="다음 주">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
-        </button>
+      <span class="rsv-week-nav__label" id="rsvRangeLabel">2025년 4월 28일 — 5월 4일</span>
+      <div style="display:flex;align-items:center;gap:var(--lumi-space-2);">
+        <div class="rsv-view-toggle" role="group" aria-label="뷰 전환" id="rsvViewToggle">
+          <button type="button" class="rsv-view-toggle__btn" data-view="week" aria-pressed="true">주간</button>
+          <button type="button" class="rsv-view-toggle__btn" data-view="month" aria-pressed="false">월간</button>
+        </div>
+        <div class="rsv-week-nav__arrows">
+          <button type="button" class="rsv-week-nav__btn" id="rsvPrev" aria-label="이전">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <button type="button" class="rsv-week-nav__btn" id="rsvNext" aria-label="다음">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- 캘린더 (가로 스크롤 래퍼) -->
-    <div class="rsv-calendar-scroll">
+    <!-- 주간 뷰 -->
+    <div class="rsv-calendar-scroll" id="rsvWeekView">
 
-      <!-- 요일 헤더 -->
-      <div class="rsv-day-headers">
-        <div class="rsv-day-header">
-          <span class="rsv-day-header__name">월</span>
-          <span class="rsv-day-header__num">28</span>
-        </div>
-        <div class="rsv-day-header">
-          <span class="rsv-day-header__name">화</span>
-          <span class="rsv-day-header__num">29</span>
-        </div>
-        <div class="rsv-day-header">
-          <span class="rsv-day-header__name">수</span>
-          <span class="rsv-day-header__num">30</span>
-        </div>
-        <div class="rsv-day-header">
-          <span class="rsv-day-header__name">목</span>
-          <span class="rsv-day-header__num">1</span>
-        </div>
-        <div class="rsv-day-header rsv-day-header--today">
-          <span class="rsv-day-header__name">금</span>
-          <span class="rsv-day-header__num">2</span>
-        </div>
-        <div class="rsv-day-header">
-          <span class="rsv-day-header__name">토</span>
-          <span class="rsv-day-header__num">3</span>
-        </div>
-        <div class="rsv-day-header">
-          <span class="rsv-day-header__name">일</span>
-          <span class="rsv-day-header__num">4</span>
-        </div>
-      </div>
+      <!-- 요일 헤더 — JS로 렌더 -->
+      <div class="rsv-day-headers" id="rsvDayHeaders"></div>
 
       <!-- 캘린더 그리드 — JS로 렌더 -->
       <div class="rsv-calendar" id="rsvCalendar">
         <!-- 로딩 중 -->
         <p id="rsvLoading" style="grid-column:1/-1;padding:var(--lumi-space-6);text-align:center;color:var(--lumi-ink-muted);">불러오는 중…</p>
-      </div><!-- .rsv-calendar -->
-    </div><!-- .rsv-calendar-scroll -->
+      </div>
+    </div>
+
+    <!-- 월간 뷰 -->
+    <div id="rsvMonthView" hidden>
+      <div class="rsv-month-head" aria-hidden="true">
+        <div class="rsv-month-head__cell">월</div>
+        <div class="rsv-month-head__cell">화</div>
+        <div class="rsv-month-head__cell">수</div>
+        <div class="rsv-month-head__cell">목</div>
+        <div class="rsv-month-head__cell">금</div>
+        <div class="rsv-month-head__cell">토</div>
+        <div class="rsv-month-head__cell">일</div>
+      </div>
+      <div class="rsv-month" id="rsvMonth"></div>
+    </div>
 
   </main>
 
@@ -627,6 +929,50 @@
   (function () {
     'use strict';
 
+    var DAY_NAMES = ['월','화','수','목','금','토','일'];
+    var MS_DAY = 86400000;
+
+    var state = {
+      view: 'week',        // 'week' | 'month'
+      filter: 'all',       // 'all' | 'instagram' | 'tiktok'
+      cursor: startOfWeek(new Date()),  // 주간: 월요일 / 월간: 1일
+      selectedDate: ymd(new Date()),
+      items: []
+    };
+
+    /* ─── 날짜 유틸 ─── */
+    function ymd(d) {
+      var y = d.getFullYear();
+      var m = String(d.getMonth() + 1).padStart(2, '0');
+      var dd = String(d.getDate()).padStart(2, '0');
+      return y + '-' + m + '-' + dd;
+    }
+    function startOfWeek(d) {
+      var x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      var dow = (x.getDay() + 6) % 7; // 월=0
+      x.setDate(x.getDate() - dow);
+      return x;
+    }
+    function startOfMonth(d) {
+      return new Date(d.getFullYear(), d.getMonth(), 1);
+    }
+    function addDays(d, n) {
+      var x = new Date(d.getTime());
+      x.setDate(x.getDate() + n);
+      return x;
+    }
+    function fmtKDate(d) {
+      return d.getFullYear() + '년 ' + (d.getMonth() + 1) + '월 ' + d.getDate() + '일';
+    }
+    function fmtTime(iso) {
+      if (!iso) return '';
+      try {
+        var d = new Date(iso);
+        return d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
+      } catch (e) { return ''; }
+    }
+
+    /* ─── 인증 ─── */
     async function getToken() {
       if (!window.lumiSupa) return null;
       try {
@@ -636,89 +982,295 @@
       } catch (e) { return null; }
     }
 
-    function fmtTime(iso) {
-      if (!iso) return '';
-      try {
-        var d = new Date(iso);
-        return d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
-      } catch (e) { return ''; }
+    /* ─── 데이터 필터 ─── */
+    function filterItems(items) {
+      if (state.filter === 'all') return items;
+      return items.filter(function (r) {
+        var ch = (r.channel || r.platform || 'instagram').toLowerCase();
+        return ch === state.filter;
+      });
+    }
+    function itemsOnDay(items, isoDate) {
+      return items.filter(function (r) {
+        if (!r.scheduled_at) return false;
+        return ymd(new Date(r.scheduled_at)) === isoDate;
+      });
+    }
+
+    /* ─── 빈 상태 가이드 ─── */
+    function emptyGuideHtml() {
+      return '<div class="rsv-empty-guide" role="status">' +
+        '<span class="rsv-empty-guide__icon" aria-hidden="true">' +
+          '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="3"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>' +
+        '</span>' +
+        '<h2 class="rsv-empty-guide__title">예약된 게시가 없어요</h2>' +
+        '<p class="rsv-empty-guide__sub">트렌드 키워드로 첫 예약을 만들어 볼까요? 지금 인기 있는 주제로 시작해보세요.</p>' +
+        '<div class="rsv-empty-guide__actions">' +
+          '<a href="/trends" class="lumi-btn lumi-btn--primary lumi-btn--sm">트렌드 보러 가기</a>' +
+          '<a href="/register-product" class="lumi-btn lumi-btn--ghost lumi-btn--sm">새 예약 만들기</a>' +
+        '</div>' +
+      '</div>';
     }
 
     function emptySlotHtml() {
       return '<div class="rsv-col">' +
-        '<button type="button" class="rsv-empty-slot" aria-label="예약 추가">' +
+        '<a href="/register-product" class="rsv-empty-slot" aria-label="예약 추가">' +
           '<span class="rsv-empty-slot__inner">' +
             '<svg class="rsv-empty-slot__icon" viewBox="0 0 24 24" aria-hidden="true">' +
               '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>' +
             '</svg>' +
             '<span class="rsv-empty-slot__text">예약 추가</span>' +
           '</span>' +
-        '</button>' +
+        '</a>' +
       '</div>';
     }
 
-    function renderReservations(items) {
+    /* ─── 마크 (예약 점/체크) ─── */
+    function dayMarksHtml(items, ctx) {
+      // ctx: 'day' | 'month'
+      if (!items.length) return '';
+      var hasDone = items.some(function (r) { return r.post_status === 'published'; });
+      var pendingCount = Math.min(3, items.filter(function (r) { return r.post_status !== 'published'; }).length);
+      var dotCls = ctx === 'month' ? 'rsv-month__dot' : 'rsv-day-header__dot';
+      var checkCls = ctx === 'month' ? 'rsv-month__check' : 'rsv-day-header__check';
+      var html = '';
+      if (hasDone) {
+        html += '<svg class="' + checkCls + '" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
+      }
+      for (var i = 0; i < pendingCount; i++) html += '<span class="' + dotCls + '" aria-hidden="true"></span>';
+      return html;
+    }
+
+    /* ─── 주간 헤더 렌더 ─── */
+    function renderWeekHeaders(items) {
+      var headers = document.getElementById('rsvDayHeaders');
+      if (!headers) return;
+      var todayIso = ymd(new Date());
+      var html = '';
+      for (var i = 0; i < 7; i++) {
+        var d = addDays(state.cursor, i);
+        var iso = ymd(d);
+        var dayItems = itemsOnDay(items, iso);
+        var cls = 'rsv-day-header';
+        if (iso === todayIso) cls += ' rsv-day-header--today';
+        if (iso === state.selectedDate) cls += ' rsv-day-header--selected';
+        html += '<div class="' + cls + '" data-date="' + iso + '" role="button" tabindex="0" aria-label="' + fmtKDate(d) + '">' +
+          '<span class="rsv-day-header__name">' + DAY_NAMES[i] + '</span>' +
+          '<span class="rsv-day-header__num">' + d.getDate() + '</span>' +
+          '<span class="rsv-day-header__marks">' + dayMarksHtml(dayItems, 'day') + '</span>' +
+        '</div>';
+      }
+      headers.innerHTML = html;
+    }
+
+    /* ─── 주간 카드 그리드 ─── */
+    function renderWeek(items) {
+      renderWeekHeaders(items);
+
       var cal = document.getElementById('rsvCalendar');
       if (!cal) return;
 
-      if (!items || !items.length) {
-        cal.innerHTML =
-          '<div style="grid-column:1/-1;padding:var(--lumi-space-8);text-align:center;">' +
-            '<p style="color:var(--lumi-ink-muted);font-size:var(--lumi-text-body);margin-bottom:var(--lumi-space-4);">예약된 게시 없어요</p>' +
-            '<a href="/register-product" class="lumi-btn lumi-btn--primary" style="display:inline-flex;align-items:center;gap:6px;">사진 올리기</a>' +
-          '</div>';
+      if (!items.length) {
+        cal.innerHTML = emptyGuideHtml();
         return;
       }
 
-      var html = items.map(function (r) {
-        var name = ((r.captions && r.captions[0]) || r.user_message || '게시물').substring(0, 22);
-        var time = fmtTime(r.scheduled_at);
-        var isDone = r.post_status === 'published';
-        var badgeClass = isDone ? 'rsv-badge--done' : 'rsv-badge--pending';
-        var badgeLabel = isDone ? '게시 완료' : '예약 대기';
-        var thumb = (r.image_urls && r.image_urls[0])
-          ? '<img src="' + r.image_urls[0] + '" alt="" style="width:100%;height:56px;object-fit:cover;border-radius:6px;margin-bottom:6px;" loading="lazy">'
-          : '';
-        return '<div class="rsv-col">' +
-          '<article class="rsv-card" role="button" tabindex="0" aria-label="' + name + ' ' + badgeLabel + '">' +
+      // 7일 컬럼 분리
+      var html = '';
+      for (var i = 0; i < 7; i++) {
+        var d = addDays(state.cursor, i);
+        var iso = ymd(d);
+        var dayItems = itemsOnDay(items, iso);
+        if (!dayItems.length) {
+          html += emptySlotHtml();
+          continue;
+        }
+        var cards = dayItems.map(function (r) {
+          var name = ((r.captions && r.captions[0]) || r.user_message || '게시물').toString().substring(0, 22);
+          var time = fmtTime(r.scheduled_at);
+          var isDone = r.post_status === 'published';
+          var badgeClass = isDone ? 'rsv-badge--done' : 'rsv-badge--pending';
+          var badgeLabel = isDone ? '게시 완료' : '예약 대기';
+          var thumb = (r.image_urls && r.image_urls[0])
+            ? '<img src="' + r.image_urls[0] + '" alt="" style="width:100%;height:56px;object-fit:cover;border-radius:6px;margin-bottom:6px;" loading="lazy">'
+            : '';
+          return '<article class="rsv-card" role="button" tabindex="0" aria-label="' + name + ' ' + badgeLabel + '">' +
             thumb +
             '<p class="rsv-card__time">' + time + '</p>' +
             '<p class="rsv-card__name">' + name + '</p>' +
             '<span class="rsv-badge ' + badgeClass + '">' +
               '<span class="rsv-badge__dot" aria-hidden="true"></span>' + badgeLabel +
             '</span>' +
-          '</article>' +
-        '</div>';
-      }).join('');
-
-      /* 빈 슬롯으로 7열 채우기 */
-      var remaining = Math.max(0, 7 - items.length);
-      for (var i = 0; i < remaining; i++) html += emptySlotHtml();
-
+          '</article>';
+        }).join('');
+        html += '<div class="rsv-col">' + cards + '</div>';
+      }
       cal.innerHTML = html;
     }
 
+    /* ─── 월간 뷰 ─── */
+    function renderMonth(items) {
+      var monthEl = document.getElementById('rsvMonth');
+      if (!monthEl) return;
+      var first = startOfMonth(state.cursor);
+      var leadDow = (first.getDay() + 6) % 7;
+      var gridStart = addDays(first, -leadDow);
+      var todayIso = ymd(new Date());
+
+      var html = '';
+      for (var i = 0; i < 42; i++) {
+        var d = addDays(gridStart, i);
+        var iso = ymd(d);
+        var inMonth = d.getMonth() === first.getMonth();
+        var dayItems = itemsOnDay(items, iso);
+        var cls = 'rsv-month__cell';
+        if (!inMonth) cls += ' rsv-month__cell--out';
+        if (iso === todayIso) cls += ' rsv-month__cell--today';
+        if (iso === state.selectedDate) cls += ' rsv-month__cell--selected';
+        html += '<div class="' + cls + '" data-date="' + iso + '" role="button" tabindex="0" aria-label="' + fmtKDate(d) + '">' +
+          '<span class="rsv-month__num">' + d.getDate() + '</span>' +
+          '<span class="rsv-month__marks">' + dayMarksHtml(dayItems, 'month') + '</span>' +
+        '</div>';
+        if (i === 27 && d.getMonth() !== first.getMonth() && i >= 27) break; // optional shorten
+      }
+      monthEl.innerHTML = html;
+
+      // 월간에서 카드가 0건이면 가이드 추가
+      var hasMonthItems = items.some(function (r) {
+        if (!r.scheduled_at) return false;
+        var dt = new Date(r.scheduled_at);
+        return dt.getFullYear() === first.getFullYear() && dt.getMonth() === first.getMonth();
+      });
+      if (!hasMonthItems) {
+        monthEl.insertAdjacentHTML('afterend', '<div id="rsvMonthEmpty">' + emptyGuideHtml() + '</div>');
+      }
+    }
+
+    /* ─── 라벨 + 뷰 갱신 ─── */
+    function updateRangeLabel() {
+      var label = document.getElementById('rsvRangeLabel');
+      if (!label) return;
+      if (state.view === 'week') {
+        var end = addDays(state.cursor, 6);
+        label.textContent =
+          state.cursor.getFullYear() + '년 ' +
+          (state.cursor.getMonth() + 1) + '월 ' + state.cursor.getDate() + '일 — ' +
+          (end.getMonth() + 1) + '월 ' + end.getDate() + '일';
+      } else {
+        label.textContent = state.cursor.getFullYear() + '년 ' + (state.cursor.getMonth() + 1) + '월';
+      }
+    }
+
+    function rerender() {
+      var prevEmpty = document.getElementById('rsvMonthEmpty');
+      if (prevEmpty) prevEmpty.remove();
+      var weekView = document.getElementById('rsvWeekView');
+      var monthView = document.getElementById('rsvMonthView');
+      if (state.view === 'week') {
+        if (weekView) weekView.hidden = false;
+        if (monthView) monthView.hidden = true;
+      } else {
+        if (weekView) weekView.hidden = true;
+        if (monthView) monthView.hidden = false;
+      }
+      updateRangeLabel();
+      var filtered = filterItems(state.items);
+      if (state.view === 'week') renderWeek(filtered);
+      else renderMonth(filtered);
+    }
+
+    /* ─── 이벤트 바인딩 ─── */
+    function bindEvents() {
+      // 뷰 토글
+      var toggle = document.getElementById('rsvViewToggle');
+      if (toggle) {
+        toggle.addEventListener('click', function (e) {
+          var btn = e.target.closest('.rsv-view-toggle__btn');
+          if (!btn) return;
+          var view = btn.dataset.view;
+          if (!view || view === state.view) return;
+          state.view = view;
+          // 커서 정규화
+          if (view === 'week') state.cursor = startOfWeek(state.cursor);
+          else state.cursor = startOfMonth(state.cursor);
+          var btns = toggle.querySelectorAll('.rsv-view-toggle__btn');
+          btns.forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.view === view ? 'true' : 'false'); });
+          rerender();
+        });
+      }
+
+      // 채널 필터
+      var filter = document.getElementById('rsvFilter');
+      if (filter) {
+        filter.addEventListener('click', function (e) {
+          var btn = e.target.closest('.rsv-filter__btn');
+          if (!btn) return;
+          var f = btn.dataset.filter;
+          if (!f || f === state.filter) return;
+          state.filter = f;
+          var btns = filter.querySelectorAll('.rsv-filter__btn');
+          btns.forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.filter === f ? 'true' : 'false'); });
+          rerender();
+        });
+      }
+
+      // 화살표
+      var prev = document.getElementById('rsvPrev');
+      var next = document.getElementById('rsvNext');
+      if (prev) prev.addEventListener('click', function () {
+        if (state.view === 'week') state.cursor = addDays(state.cursor, -7);
+        else state.cursor = new Date(state.cursor.getFullYear(), state.cursor.getMonth() - 1, 1);
+        rerender();
+      });
+      if (next) next.addEventListener('click', function () {
+        if (state.view === 'week') state.cursor = addDays(state.cursor, 7);
+        else state.cursor = new Date(state.cursor.getFullYear(), state.cursor.getMonth() + 1, 1);
+        rerender();
+      });
+
+      // 날짜 chip / 월간 셀 선택 (이벤트 위임)
+      document.addEventListener('click', function (e) {
+        var target = e.target.closest('[data-date]');
+        if (!target) return;
+        if (!target.classList.contains('rsv-day-header') && !target.classList.contains('rsv-month__cell')) return;
+        state.selectedDate = target.dataset.date;
+        rerender();
+      });
+      document.addEventListener('keydown', function (e) {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        var target = e.target.closest('[data-date]');
+        if (!target) return;
+        if (!target.classList.contains('rsv-day-header') && !target.classList.contains('rsv-month__cell')) return;
+        e.preventDefault();
+        state.selectedDate = target.dataset.date;
+        rerender();
+      });
+    }
+
+    /* ─── 데이터 로드 ─── */
     async function loadReservations() {
       var token = await getToken();
-      var cal = document.getElementById('rsvCalendar');
       if (!token) {
-        if (cal) cal.innerHTML =
-          '<div style="grid-column:1/-1;padding:var(--lumi-space-8);text-align:center;">' +
-            '<p style="color:var(--lumi-ink-muted);margin-bottom:var(--lumi-space-4);">예약된 게시 없어요</p>' +
-            '<a href="/register-product" class="lumi-btn lumi-btn--primary">사진 올리기</a>' +
-          '</div>';
+        state.items = [];
+        rerender();
         return;
       }
       try {
         var r = await fetch('/api/list-reservations', {
           headers: { Authorization: 'Bearer ' + token }
         });
-        if (!r.ok) { renderReservations([]); return; }
+        if (!r.ok) { state.items = []; rerender(); return; }
         var data = await r.json();
-        renderReservations(data.items || []);
-      } catch (e) { renderReservations([]); }
+        state.items = data.items || [];
+        rerender();
+      } catch (e) {
+        state.items = [];
+        rerender();
+      }
     }
 
+    bindEvents();
+    rerender();          // 데이터 도착 전 헤더/스켈레톤 표시
     loadReservations();
   })();
   </script>
