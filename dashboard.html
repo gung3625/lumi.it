@@ -2109,6 +2109,30 @@ body {
     });
   })();
 </script>
+<script>
+  // 카카오 OAuth 콜백 hash 처리 — auth-guard 실행 전에 동기적으로 lumi_token 저장
+  // Edge Function (auth-kakao-callback) 이 onboarded=true 사용자를
+  // /dashboard#kakao=callback&lumi_token=...&onboarded=1 으로 직접 redirect 하기 때문에
+  // dashboard.html 진입 시점에 hash 를 파싱해서 localStorage 에 토큰을 박아둬야
+  // auth-guard 의 hasAnyStoredAuth() 가 true 가 되어 /signup 왕복 튕김을 방지한다.
+  (function () {
+    try {
+      var hash = window.location.hash || '';
+      if (hash.indexOf('kakao=callback') === -1) return;
+      var hashParams = new URLSearchParams(hash.replace(/^#/, ''));
+      var lumiToken = hashParams.get('lumi_token');
+      if (lumiToken) {
+        try {
+          localStorage.setItem('lumi_token', lumiToken);
+          localStorage.setItem('lumi_seller_jwt', lumiToken);
+          localStorage.setItem('lumi_seller_token', lumiToken);
+        } catch (_) {}
+      }
+      // 보안: hash 즉시 정리 (URL 에 토큰 노출 시간 최소화)
+      try { history.replaceState({}, '', location.pathname + location.search); } catch (_) {}
+    } catch (_) {}
+  })();
+</script>
 <script src="/js/_shared/auth-guard.js"></script>
 <script>
   // 비로그인 + 사업자 인증 미완료 진입 차단

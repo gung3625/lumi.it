@@ -72,11 +72,19 @@ exports.handler = async (event) => {
   }
 
   // 1) Supabase JWT 우선 검증 (OAuth 사용자 — ES256)
+  //    카카오 가입자의 lumi_token (HS256) 을 넘기면 getUser 가 throw 할 수도 있어
+  //    try/catch 로 감싸서 throw 시 곧바로 seller-jwt fallback 으로 이어지게 한다.
   let sellerId = null;
   let sellerQueryField = null;
   let sellerQueryValue = null;
 
-  const { data: supaAuthData } = await admin.auth.getUser(token);
+  let supaAuthData = null;
+  try {
+    const { data } = await admin.auth.getUser(token);
+    supaAuthData = data || null;
+  } catch (e) {
+    console.log('[me] Supabase JWT 검증 예외 — seller-jwt fallback:', e && e.message);
+  }
   if (supaAuthData && supaAuthData.user && supaAuthData.user.email) {
     sellerQueryField = 'email';
     sellerQueryValue = supaAuthData.user.email;
