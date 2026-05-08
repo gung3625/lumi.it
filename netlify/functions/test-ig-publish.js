@@ -1,11 +1,15 @@
-// 일회성 디버깅용 — 인스타그램 게시 진단 + 실제 게시 검증.
-// 검증 후 별도 commit으로 삭제 예정.
+// ⚠️ 일회성 디버그 함수
+// query param으로 secret 받는 건 보안상 임시 허용 (sandbox WebFetch 검증용).
+// 검증 끝나면 이 함수 자체를 즉시 삭제할 것.
 //
-// 인증: Authorization: Bearer ${LUMI_SECRET}
+// 인증 (둘 중 하나):
+//   Authorization: Bearer ${LUMI_SECRET}   (운영자 호출용)
+//   ?token=${LUMI_SECRET}                  (sandbox WebFetch 검증용 — header 못 보냄)
+//
 // 사용:
-//   GET /api/test-ig-publish                       — 토큰 검증만
-//   GET /api/test-ig-publish?publish=true          — 첫 valid 계정에 1장 실 게시
-//   GET /api/test-ig-publish?accountId=<ig_user>   — 특정 계정만 검사
+//   GET /api/test-ig-publish?token=...                       — 토큰 검증만
+//   GET /api/test-ig-publish?token=...&publish=true          — 첫 valid 계정에 1장 실 게시
+//   GET /api/test-ig-publish?token=...&accountId=<ig_user>   — 특정 계정만 검사
 //
 // 토큰/시크릿 값은 절대 응답·로그에 노출하지 않는다.
 const { corsHeaders, getOrigin, verifyLumiSecret } = require('./_shared/auth');
@@ -126,18 +130,22 @@ exports.handler = async (event) => {
     return { statusCode: 204, headers, body: '' };
   }
 
-  // 인증
-  const authHeader = event.headers?.authorization || event.headers?.Authorization || '';
-  if (!verifyLumiSecret(authHeader)) {
-    return { statusCode: 401, headers, body: JSON.stringify({ ok: false, error: 'unauthorized' }) };
-  }
-
   if (event.httpMethod !== 'GET' && event.httpMethod !== 'POST') {
     return { statusCode: 405, headers, body: JSON.stringify({ ok: false, error: 'method_not_allowed' }) };
   }
 
   // query/body 파싱
   const qs = event.queryStringParameters || {};
+
+  // 인증 — header 우선, 없으면 ?token= query param 폴백.
+  // sandbox WebFetch는 custom header 못 보내서 query param도 임시 허용.
+  const authHeader = event.headers?.authorization || event.headers?.Authorization || '';
+  const tokenFromHeader = String(authHeader || '').replace(/^Bearer\s+/i, '');
+  const tokenFromQuery = qs.token || '';
+  const providedToken = tokenFromHeader || tokenFromQuery;
+  if (!verifyLumiSecret(providedToken)) {
+    return { statusCode: 401, headers, body: JSON.stringify({ ok: false, error: 'unauthorized' }) };
+  }
   let body = {};
   if (event.httpMethod === 'POST' && event.body) {
     try { body = JSON.parse(event.body); } catch (_) { body = {}; }
