@@ -599,17 +599,19 @@ body {
     <p class="tr-greet__sub">매일 자동 수집 · 업종 맞춤 추천</p>
   </section>
 
-  <!-- Category filter chips -->
+  <!-- Category filter tabs (업종별 트렌드 탭바) -->
   <div class="tr-filter" role="navigation" aria-label="카테고리 필터">
-    <div class="tr-filter__scroll">
-      <button class="tr-chip" data-filter="전체" data-active="true" type="button">전체</button>
-      <button class="tr-chip" data-filter="패션" type="button">패션</button>
-      <button class="tr-chip" data-filter="뷰티" type="button">뷰티</button>
-      <button class="tr-chip" data-filter="식품" type="button">식품</button>
-      <button class="tr-chip" data-filter="생활" type="button">생활</button>
-      <button class="tr-chip" data-filter="데일리" type="button">데일리</button>
-      <button class="tr-chip" data-filter="시즌" type="button">시즌</button>
-      <button class="tr-chip" data-filter="기타" type="button">기타</button>
+    <div class="tr-filter__scroll" id="trCatTabs">
+      <button class="tr-chip" data-cat="all" type="button">전체</button>
+      <button class="tr-chip" data-cat="cafe" type="button">카페</button>
+      <button class="tr-chip" data-cat="food" type="button">음식점</button>
+      <button class="tr-chip" data-cat="beauty" type="button">뷰티</button>
+      <button class="tr-chip" data-cat="hair" type="button">헤어</button>
+      <button class="tr-chip" data-cat="nail" type="button">네일</button>
+      <button class="tr-chip" data-cat="fashion" type="button">패션</button>
+      <button class="tr-chip" data-cat="flower" type="button">꽃집</button>
+      <button class="tr-chip" data-cat="fitness" type="button">헬스·필라테스</button>
+      <button class="tr-chip" data-cat="pet" type="button">반려동물</button>
     </div>
   </div>
 
@@ -735,7 +737,7 @@ body {
     var grid = document.getElementById('trendGrid');
     var countEl = document.getElementById('cardCount');
     if (wrap) wrap.innerHTML = '';
-    if (grid) grid.innerHTML = '<p style="grid-column:1/-1;padding:var(--lumi-space-6);text-align:center;color:var(--lumi-ink-muted);font-size:var(--lumi-text-body);">곧 트렌드가 업데이트돼요 — 매일 자정에 갱신</p>';
+    if (grid) grid.innerHTML = '<p style="grid-column:1/-1;padding:var(--lumi-space-6);text-align:center;color:var(--lumi-ink-muted);font-size:var(--lumi-text-body-sm);">이 카테고리는 아직 데이터 수집 중이에요 — 매일 자정에 갱신</p>';
     if (countEl) countEl.textContent = '0개';
     var bar = document.getElementById('insightBar');
     if (bar) bar.style.display = 'none';
@@ -795,22 +797,66 @@ body {
     document.querySelectorAll('.tr-reveal').forEach(function (el) { el.classList.add('is-visible'); });
   }
 
-  /* ── 카테고리 필터 바 숨김 (industry별 단일 표시) ── */
-  var filterBar = document.querySelector('.tr-filter');
-  if (filterBar) filterBar.style.display = 'none';
+  /* ── 카테고리 탭 바인딩 + 캐싱 ── */
+  var TREND_CACHE = new Map();
+  var currentCat = null;
 
-  /* ── 초기 로드 ── */
-  async function loadTrends() {
-    var cat = await getCategory();
+  function setActiveChip(cat) {
+    document.querySelectorAll('#trCatTabs .tr-chip').forEach(function (chip) {
+      var isActive = chip.getAttribute('data-cat') === cat;
+      if (isActive) chip.setAttribute('data-active', 'true');
+      else chip.removeAttribute('data-active');
+    });
+  }
+
+  function showLoading() {
+    var grid = document.getElementById('trendGrid');
+    var hotWrap = document.getElementById('hotCardWrap');
+    var bar = document.getElementById('insightBar');
+    var countEl = document.getElementById('cardCount');
+    if (hotWrap) hotWrap.innerHTML = '';
+    if (bar) bar.style.display = 'none';
+    if (countEl) countEl.textContent = '';
+    if (grid) grid.innerHTML = '<p style="grid-column:1/-1;padding:var(--lumi-space-6);text-align:center;color:var(--lumi-ink-muted);font-size:var(--lumi-text-body-sm);">불러오는 중…</p>';
+  }
+
+  async function loadTrends(cat) {
+    if (!cat) cat = 'cafe';
+    currentCat = cat;
+    setActiveChip(cat);
+
+    if (TREND_CACHE.has(cat)) {
+      renderTrends(TREND_CACHE.get(cat));
+      return;
+    }
+
+    showLoading();
     try {
-      var r = await fetch('/api/get-trends?category=' + cat);
+      var r = await fetch('/api/get-trends?category=' + encodeURIComponent(cat));
       if (!r.ok) { renderEmpty(); return; }
       var data = await r.json();
+      TREND_CACHE.set(cat, data);
+      // 사용자가 그 사이 다른 탭으로 이동했으면 무시
+      if (currentCat !== cat) return;
       renderTrends(data);
     } catch (e) { renderEmpty(); }
   }
 
-  loadTrends();
+  document.querySelectorAll('#trCatTabs .tr-chip').forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      var cat = chip.getAttribute('data-cat');
+      if (!cat || cat === currentCat) return;
+      loadTrends(cat);
+      // 활성 탭이 화면 안으로 들어오도록 스크롤
+      try { chip.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); } catch (e) {}
+    });
+  });
+
+  /* ── 초기 로드: 사용자 업종 → 없으면 cafe ── */
+  (async function init() {
+    var cat = await getCategory();
+    loadTrends(cat || 'cafe');
+  })();
 
   /* ── Active tab ── */
   document.querySelectorAll('.lumi-tabs__item').forEach(function (item) {
