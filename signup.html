@@ -936,6 +936,7 @@
     if (hash.indexOf('kakao=callback') >= 0) {
       var hashParams = new URLSearchParams(hash.replace(/^#/, ''));
       var lumiToken = hashParams.get('lumi_token');
+      var onboardedFlag = hashParams.get('onboarded') === '1';
       if (lumiToken) {
         try {
           localStorage.setItem('lumi_token', lumiToken);
@@ -945,6 +946,11 @@
       }
       // hash 정리 (보안)
       try { history.replaceState({}, '', location.pathname); } catch (_) {}
+      // Edge Function 이 onboarded=1 을 hash 에 박아주면 /api/me 추가 호출 생략
+      if (onboardedFlag) {
+        location.replace('/dashboard');
+        return;
+      }
       // /api/me로 onboarded 상태 확인
       await checkExistingSession();
       return;

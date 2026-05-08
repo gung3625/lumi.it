@@ -270,19 +270,16 @@
   force = true
 
 
-# 카카오 OAuth 시작
-[[redirects]]
-  from = "/api/auth/kakao/start"
-  to = "/.netlify/functions/auth-kakao-start"
-  status = 200
-  force = true
+# 카카오 OAuth (Edge Functions — 한국 PoP 실행, cold start 거의 0)
+# Node Function 이전 완료. /.netlify/functions/auth-kakao-* 리다이렉트 제거됨.
+# config.path 가 자동 라우팅을 담당하지만 명시적 매핑을 위해 유지.
+[[edge_functions]]
+  function = "auth-kakao-start"
+  path = "/api/auth/kakao/start"
 
-# 카카오 OAuth 콜백
-[[redirects]]
-  from = "/api/auth/kakao/callback"
-  to = "/.netlify/functions/auth-kakao-callback"
-  status = 200
-  force = true
+[[edge_functions]]
+  function = "auth-kakao-callback"
+  path = "/api/auth/kakao/callback"
 
 # Google OAuth 후처리 — sellers 동기화
 [[redirects]]
