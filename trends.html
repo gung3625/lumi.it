@@ -767,6 +767,98 @@ body {
   color: var(--lumi-ink-muted);
   font-style: italic;
 }
+
+/* 매장 활용 아이디어 list */
+.tr-modal__ideas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--lumi-space-2);
+}
+.tr-modal__ideas li {
+  display: flex;
+  gap: var(--lumi-space-2);
+  font-size: var(--lumi-text-body-sm);
+  color: var(--lumi-ink-strong);
+  line-height: var(--lumi-leading-relaxed);
+}
+.tr-modal__ideas li::before {
+  content: '';
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  margin-top: 9px;
+  border-radius: 50%;
+  background: var(--lumi-gradient-brand);
+}
+
+/* 추천 해시태그 chip */
+.tr-modal__hashtags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lumi-space-2);
+}
+.tr-modal__hashtag {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 11px;
+  border-radius: var(--lumi-radius-pill);
+  background: var(--lumi-brand-soft);
+  color: var(--lumi-brand-text);
+  font-size: var(--lumi-text-caption);
+  font-weight: var(--lumi-weight-semibold);
+  border: 1px solid transparent;
+}
+
+/* AI 분석 중 skeleton */
+.tr-modal__skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lumi-space-2);
+}
+.tr-modal__skel-line {
+  height: 14px;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    var(--lumi-surface-deep) 0%,
+    var(--lumi-line) 50%,
+    var(--lumi-surface-deep) 100%
+  );
+  background-size: 200% 100%;
+  animation: tr-skel-shimmer 1.4s var(--lumi-ease-soft) infinite;
+}
+.tr-modal__skel-line:nth-child(2) { width: 92%; }
+.tr-modal__skel-line:nth-child(3) { width: 78%; }
+@keyframes tr-skel-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.tr-modal__skel-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lumi-space-2);
+  font-size: var(--lumi-text-caption);
+  color: var(--lumi-brand-text);
+  font-weight: var(--lumi-weight-semibold);
+}
+.tr-modal__skel-hint svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  animation: tr-skel-spin 1.4s linear infinite;
+}
+@keyframes tr-skel-spin {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 body[data-modal-open="true"] {
   overflow: hidden;
 }
@@ -1030,27 +1122,99 @@ body[data-modal-open="true"] {
     return map[t] || null;
   }
 
-  function buildModalBody(kw) {
+  /* 키워드별 AI 상세 캐시 (모달 재오픈 시 중복 fetch 방지) */
+  var KEYWORD_DETAIL_CACHE = new Map();
+  function detailCacheKey(cat, kw) { return (cat || 'all') + '|' + kw; }
+
+  /* 아이콘 SVG 헬퍼 */
+  var ICON = {
+    clock: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>',
+    info:  '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v5h1"/></svg>',
+    users: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+    bulb:  '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.7.6 1 1.4 1 2.3v1h6v-1c0-.9.3-1.7 1-2.3A7 7 0 0 0 12 2z"/></svg>',
+    hash:  '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h16M4 15h16M10 3L8 21M16 3l-2 18"/></svg>',
+    spin:  '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.2-8.55"/></svg>',
+    signal:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>',
+    link:  '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 1 7 0l3 3a5 5 0 0 1-7 7l-1-1"/><path d="M14 11a5 5 0 0 1-7 0l-3-3a5 5 0 0 1 7-7l1 1"/></svg>',
+  };
+
+  function buildModalBody(kw, detail) {
     var parts = [];
     var narrative = kw && kw.narrative ? String(kw.narrative).trim() : '';
+
+    /* 1) AI definition (narrative가 없을 때만 등장 — 키워드 정의) */
+    if (!narrative && detail && detail.definition) {
+      parts.push(
+        '<div class="tr-modal__section">' +
+          '<p class="tr-modal__section-title">' + ICON.info + '키워드 설명</p>' +
+          '<p class="tr-modal__section-body">' + escHtml(detail.definition) + '</p>' +
+        '</div>'
+      );
+    }
+
+    /* 2) "왜 떴어요?" — narrative 우선, 없으면 AI why, 둘 다 없으면 상태별(로딩/실패) */
     if (narrative) {
       parts.push(
         '<div class="tr-modal__section">' +
-          '<p class="tr-modal__section-title">' +
-            '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>' +
-            '왜 떴어요?' +
-          '</p>' +
+          '<p class="tr-modal__section-title">' + ICON.clock + '왜 떴어요?</p>' +
           '<p class="tr-modal__section-body">' + escHtml(narrative) + '</p>' +
         '</div>'
       );
-    } else {
+    } else if (detail && detail.why) {
       parts.push(
         '<div class="tr-modal__section">' +
-          '<p class="tr-modal__section-title">' +
-            '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>' +
-            '왜 떴어요?' +
-          '</p>' +
+          '<p class="tr-modal__section-title">' + ICON.clock + '왜 지금 뜨나요?</p>' +
+          '<p class="tr-modal__section-body">' + escHtml(detail.why) + '</p>' +
+        '</div>'
+      );
+    } else if (detail && detail.__status === 'loading') {
+      parts.push(
+        '<div class="tr-modal__section">' +
+          '<p class="tr-modal__section-title">' + ICON.clock + '왜 지금 뜨나요?</p>' +
+          '<div class="tr-modal__skeleton" aria-live="polite">' +
+            '<span class="tr-modal__skel-hint">' + ICON.spin + 'AI가 분석 중…</span>' +
+            '<span class="tr-modal__skel-line"></span>' +
+            '<span class="tr-modal__skel-line"></span>' +
+            '<span class="tr-modal__skel-line"></span>' +
+          '</div>' +
+        '</div>'
+      );
+    } else {
+      /* 실패 또는 narrative 없음 → 기존 fallback 메시지 그대로 */
+      parts.push(
+        '<div class="tr-modal__section">' +
+          '<p class="tr-modal__section-title">' + ICON.clock + '왜 떴어요?</p>' +
           '<p class="tr-modal__empty">아직 분석 데이터가 모이지 않았어요. 매일 자정에 새로 분석돼요.</p>' +
+        '</div>'
+      );
+    }
+
+    /* 3) AI 부가 섹션 — narrative 없을 때만 (있는 경우 기존 동작 유지) */
+    if (!narrative && detail && detail.audience) {
+      parts.push(
+        '<div class="tr-modal__section">' +
+          '<p class="tr-modal__section-title">' + ICON.users + '타겟 소비자</p>' +
+          '<p class="tr-modal__section-body">' + escHtml(detail.audience) + '</p>' +
+        '</div>'
+      );
+    }
+    if (!narrative && detail && Array.isArray(detail.ideas) && detail.ideas.length) {
+      parts.push(
+        '<div class="tr-modal__section">' +
+          '<p class="tr-modal__section-title">' + ICON.bulb + '매장 활용 아이디어</p>' +
+          '<ul class="tr-modal__ideas">' +
+            detail.ideas.map(function (it) { return '<li>' + escHtml(it) + '</li>'; }).join('') +
+          '</ul>' +
+        '</div>'
+      );
+    }
+    if (!narrative && detail && Array.isArray(detail.hashtags) && detail.hashtags.length) {
+      parts.push(
+        '<div class="tr-modal__section">' +
+          '<p class="tr-modal__section-title">' + ICON.hash + '추천 해시태그</p>' +
+          '<div class="tr-modal__hashtags">' +
+            detail.hashtags.map(function (h) { return '<span class="tr-modal__hashtag">' + escHtml(h) + '</span>'; }).join('') +
+          '</div>' +
         '</div>'
       );
     }
@@ -1102,6 +1266,33 @@ body[data-modal-open="true"] {
     return parts.join('');
   }
 
+  /* 현재 모달이 fetch 대기 중인 키워드 — 다른 키워드 열렸을 때 응답 적용 차단 */
+  var _detailFetchToken = 0;
+
+  async function fetchKeywordDetail(keyword, category) {
+    var key = detailCacheKey(category, keyword);
+    if (KEYWORD_DETAIL_CACHE.has(key)) return KEYWORD_DETAIL_CACHE.get(key);
+
+    try {
+      var url = '/api/keyword-detail?keyword=' + encKw(keyword) + '&category=' + encodeURIComponent(category || 'all');
+      var r = await fetch(url, { credentials: 'omit' });
+      if (!r.ok) {
+        KEYWORD_DETAIL_CACHE.set(key, null);
+        return null;
+      }
+      var json = await r.json();
+      if (json && json.ok && json.data) {
+        KEYWORD_DETAIL_CACHE.set(key, json.data);
+        return json.data;
+      }
+      KEYWORD_DETAIL_CACHE.set(key, null);
+      return null;
+    } catch (e) {
+      KEYWORD_DETAIL_CACHE.set(key, null);
+      return null;
+    }
+  }
+
   function openModal(kw) {
     ensureModalRefs();
     if (!modalEl || !kw) return;
@@ -1118,7 +1309,23 @@ body[data-modal-open="true"] {
     }
     if (modalChipsEl) modalChipsEl.innerHTML = chips.join('');
 
-    if (modalBodyEl) modalBodyEl.innerHTML = buildModalBody(kw);
+    /* narrative 유무에 따라 즉시/스켈레톤 분기 */
+    var narrative = kw && kw.narrative ? String(kw.narrative).trim() : '';
+    var cat = currentCat || 'all';
+    var cacheKey = detailCacheKey(cat, word);
+    var detail = null;
+    var needsFetch = false;
+
+    if (!narrative) {
+      if (KEYWORD_DETAIL_CACHE.has(cacheKey)) {
+        detail = KEYWORD_DETAIL_CACHE.get(cacheKey); // null 일 수도 (실패 캐시)
+      } else {
+        detail = { __status: 'loading' };
+        needsFetch = true;
+      }
+    }
+
+    if (modalBodyEl) modalBodyEl.innerHTML = buildModalBody(kw, detail);
 
     if (modalCtaEl) {
       modalCtaEl.setAttribute('href', '/register-product?keyword=' + encKw(word));
@@ -1130,6 +1337,17 @@ body[data-modal-open="true"] {
     document.body.setAttribute('data-modal-open', 'true');
     /* 포커스 이동 */
     setTimeout(function () { if (modalCloseBtn) modalCloseBtn.focus(); }, 30);
+
+    /* narrative 없으면 비동기 fetch → 도착하면 모달 본문 swap */
+    if (needsFetch) {
+      var token = ++_detailFetchToken;
+      fetchKeywordDetail(word, cat).then(function (data) {
+        if (token !== _detailFetchToken) return; // 이미 다른 모달이 열림/닫힘
+        if (modalEl.getAttribute('data-open') !== 'true') return;
+        if (modalKwEl && modalKwEl.textContent !== word) return; // 다른 키워드로 갈아탐
+        if (modalBodyEl) modalBodyEl.innerHTML = buildModalBody(kw, data);
+      });
+    }
   }
 
   function closeModal() {
