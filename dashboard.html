@@ -2128,6 +2128,8 @@ body {
           localStorage.setItem('lumi_seller_token', lumiToken);
         } catch (_) {}
       }
+      // 이전 세션의 stale onboarded=false 캐시 제거 — 새 로그인이므로 재검증 강제
+      try { sessionStorage.removeItem('lumi_onboarded_cache'); } catch (_) {}
       // 보안: hash 즉시 정리 (URL 에 토큰 노출 시간 최소화)
       try { history.replaceState({}, '', location.pathname + location.search); } catch (_) {}
     } catch (_) {}

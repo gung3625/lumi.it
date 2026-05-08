@@ -151,28 +151,10 @@
       return false;
     }
 
-    // 3. 세션 취득 (lumiSupa or localStorage 파싱)
-    var session = await getSessionSafe();
-
-    if (!session || !session.access_token) {
-      // grace period — 토큰 처리 지연 가능성 1초 대기 후 재시도
-      await new Promise(function (r) { setTimeout(r, 1000); });
-      session = await getSessionSafe();
-      if (!session || !session.access_token) {
-        window.location.replace('/signup');
-        return false;
-      }
-    }
-
-    // 4. user_metadata에서 onboarded 체크
-    var meta = (session.user && session.user.user_metadata) || {};
-    if (isOnboardedMeta(meta)) {
-      writeCache(true);
-      return true;
-    }
-
-    // 5. user_metadata 체크 실패 시 lumi_token + /api/me 폴백
-    //    (카카오 가입자는 Supabase user_metadata 비어있음)
+    // 3. 토큰 우선 확인 — 카카오 가입자는 lumi_token (HS256) 만 있고 Supabase 세션 없음.
+    //    Supabase 세션 강제 요구 시 카카오 사용자가 무조건 /signup 으로 튕김 → 버그.
+    //    따라서 lumi_token / lumi_seller_jwt 가 있으면 Supabase 세션 체크를 생략하고
+    //    바로 /api/me 검증으로 넘어간다.
     var token = null;
     try {
       token = localStorage.getItem('lumi_token') ||
@@ -180,8 +162,28 @@
               sessionStorage.getItem('lumi_token');
     } catch (_) {}
 
-    // lumi_token도 없으면 Supabase access_token 사용
-    if (!token && session.access_token) token = session.access_token;
+    // 4. lumi_token 이 없을 때만 Supabase 세션 fallback (Google OAuth 등)
+    if (!token) {
+      var session = await getSessionSafe();
+      if (!session || !session.access_token) {
+        // grace period — 토큰 처리 지연 가능성 1초 대기 후 재시도
+        await new Promise(function (r) { setTimeout(r, 1000); });
+        session = await getSessionSafe();
+        if (!session || !session.access_token) {
+          window.location.replace('/signup');
+          return false;
+        }
+      }
+
+      // user_metadata 에서 onboarded 체크 (Google 가입자 일부 케이스)
+      var meta = (session.user && session.user.user_metadata) || {};
+      if (isOnboardedMeta(meta)) {
+        writeCache(true);
+        return true;
+      }
+
+      token = session.access_token;
+    }
 
     if (!token) {
       writeCache(false);
