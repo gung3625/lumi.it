@@ -638,17 +638,7 @@ body {
       </div>
     </div>
 
-    <!-- 새로고침 -->
-    <div class="tr-refresh tr-reveal">
-      <p class="tr-refresh__hint">매일 자동 수집되지만 지금 새로고침</p>
-      <button class="lumi-btn lumi-btn--secondary" type="button" id="refreshBtn" aria-label="트렌드 새로고침">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <polyline points="1 4 1 10 7 10"/>
-          <path d="M3.51 15a9 9 0 1 0 .49-4.5"/>
-        </svg>
-        새로고침
-      </button>
-    </div>
+    <!-- 새로고침 영역 제거 (사용자 요청) -->
 
   </div><!-- /.tr-wrap -->
 
@@ -778,7 +768,6 @@ body {
           '<h2 class="tr-hot__keyword">' + hotKw + '</h2>' +
           '<div class="tr-hot__meta"><span class="tr-hot__rate">' + (hot.trend === 'up' ? '↑ 상승중' : '→ 보합') + '</span></div>' +
           (hotTagsHtml ? '<div class="tr-hot__tags" aria-label="관련 키워드">' + hotTagsHtml + '</div>' : '') +
-          '<span class="tr-hot__cta">이 키워드로 게시 만들기' + chevronSvg() + '</span>' +
         '</a>';
     }
 
@@ -798,8 +787,6 @@ body {
         return '<a class="tr-card tr-reveal lumi-hoverable is-visible" href="/register-product?keyword=' + encKw(word) + '" role="listitem" aria-label="' + word + '">' +
           '<span class="tr-card__rank" aria-hidden="true">' + (i + 2) + '</span>' +
           '<h3 class="tr-card__keyword">' + word + '</h3>' +
-          '<span class="tr-card__rate">' + (kw.trend === 'up' ? '↑ 상승' : '→') + '</span>' +
-          '<span class="tr-card__cta">사진 등록' + chevronSvg() + '</span>' +
         '</a>';
       }).join('');
     }
@@ -824,20 +811,6 @@ body {
   }
 
   loadTrends();
-
-  /* ── Refresh button ── */
-  var refreshBtn = document.getElementById('refreshBtn');
-  if (refreshBtn) {
-    refreshBtn.addEventListener('click', function () {
-      var svg = refreshBtn.querySelector('svg');
-      if (svg) {
-        svg.style.transition = 'transform 0.6s ease';
-        svg.style.transform = 'rotate(360deg)';
-        setTimeout(function () { svg.style.transition = ''; svg.style.transform = ''; }, 660);
-      }
-      loadTrends();
-    });
-  }
 
   /* ── Active tab ── */
   document.querySelectorAll('.lumi-tabs__item').forEach(function (item) {
