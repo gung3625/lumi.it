@@ -175,8 +175,13 @@ function getSeasonInfo() {
 
 // ─── v2: trend_keywords 조회 후 keywords 배열에 merge ───
 // 조회 실패 시 기존 응답 그대로 (silent fallback)
-// axisFilter: 'menu'|'interior'|'goods'|'experience'|'general'|null (null이면 모든 axis)
+// axisFilter: 'menu'|'interior'|'goods'|'experience'|'general'|'all'|null
+//   - null   = 카테고리 탭 기본 (interior 제외 — 인테리어 키워드는 카페/식당 등 일반 탭에 노출 금지)
+//   - 'all'  = 모든 axis 포함 (interior 포함)
+//   - 그 외  = 해당 axis만
 // subcatFilter: 서브카테고리 키 (예: 'cafe-specialty') 또는 null
+// 기본 응답 axis 화이트리스트 (axisFilter 없을 때) — 'interior'·'experience'는 카테고리 탭에 노출 금지
+const DEFAULT_AXIS_WHITELIST = ['general', 'menu', 'goods', 'domestic'];
 async function mergeV2Fields(supa, keywords, category, collectedDate, axisFilter, region = 'all', subcatFilter = null) {
   try {
     const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -196,15 +201,19 @@ async function mergeV2Fields(supa, keywords, category, collectedDate, axisFilter
 
     // Phase 2: axis 필터 적용
     // 'domestic'은 레거시값이므로 general과 동일 취급하여 모두 포함
-    if (axisFilter) {
+    // 기본(axisFilter=null)은 인테리어/체험 axis 제외 — cafe 탭에 인테리어 키워드 노출 차단 (근본 fix)
+    if (axisFilter === 'all') {
+      // 명시적 전체 요청: 모든 axis 포함
+      query = query.in('axis', ['general', 'menu', 'interior', 'goods', 'experience', 'domestic']);
+    } else if (axisFilter) {
       // 특정 axis만 필터링 (domestic 레거시 포함)
       const axisValues = axisFilter === 'general'
         ? ['general', 'domestic']
         : [axisFilter];
       query = query.in('axis', axisValues);
     } else {
-      // 모든 유효한 axis 포함 (backward compat)
-      query = query.in('axis', ['general', 'menu', 'interior', 'goods', 'experience', 'domestic']);
+      // 기본: interior/experience 제외 (카테고리 탭에 인테리어 키워드 노출 금지)
+      query = query.in('axis', DEFAULT_AXIS_WHITELIST);
     }
 
     const { data, error } = await query;
@@ -234,31 +243,42 @@ async function mergeV2Fields(supa, keywords, category, collectedDate, axisFilter
       });
     } catch(_) {}
 
-    return keywords.map(kw => {
-      const key = (kw.keyword || '').toLowerCase().trim();
-      const v2 = v2Map.get(key);
-      const fb = fbMap.get(kw.keyword);
-      const base = v2 ? {
-        ...kw,
-        crossSourceCount: v2.cross_source_count ?? undefined,
-        weightedScore: v2.weighted_score ?? undefined,
-        velocityPct: v2.velocity_pct ?? undefined,
-        signalTier: v2.signal_tier ?? undefined,
-        isNew: v2.is_new ?? undefined,
-        axis: v2.axis ?? undefined,
-        narrative: v2.narrative ?? null,
-        origin: v2.origin ?? null,
-        saturationTotal: v2.raw_mentions?.saturation_total ?? undefined,
-        saturationLevel: v2.raw_mentions?.saturation_level ?? undefined,
-        isNewConfidence: v2.raw_mentions?.is_new_confidence ?? undefined,
-        subCategory: v2.sub_category ?? null,
-        relatedKeywords: v2.related_keywords || [],
-        sources: v2.sources || {},
-      } : kw;
-      base.likes = fb ? fb.likes : 0;
-      base.dislikes = fb ? fb.dislikes : 0;
-      return base;
-    });
+    // 기본(axisFilter 없음) 응답에서 interior/experience axis row는 제거 — 카테고리 탭에 인테리어 키워드 노출 금지
+    const axisAllowed = (axis) => {
+      if (axisFilter === 'all') return true;
+      if (axisFilter) return true; // 위 query에서 이미 in() 필터됨
+      if (!axis) return true;       // axis 미지정(legacy) row는 통과
+      return DEFAULT_AXIS_WHITELIST.includes(axis);
+    };
+
+    return keywords
+      .map(kw => {
+        const key = (kw.keyword || '').toLowerCase().trim();
+        const v2 = v2Map.get(key);
+        const fb = fbMap.get(kw.keyword);
+        const base = v2 ? {
+          ...kw,
+          crossSourceCount: v2.cross_source_count ?? undefined,
+          weightedScore: v2.weighted_score ?? undefined,
+          velocityPct: v2.velocity_pct ?? undefined,
+          signalTier: v2.signal_tier ?? undefined,
+          isNew: v2.is_new ?? undefined,
+          axis: v2.axis ?? undefined,
+          narrative: v2.narrative ?? null,
+          origin: v2.origin ?? null,
+          saturationTotal: v2.raw_mentions?.saturation_total ?? undefined,
+          saturationLevel: v2.raw_mentions?.saturation_level ?? undefined,
+          isNewConfidence: v2.raw_mentions?.is_new_confidence ?? undefined,
+          subCategory: v2.sub_category ?? null,
+          relatedKeywords: v2.related_keywords || [],
+          sources: v2.sources || {},
+        } : kw;
+        base.likes = fb ? fb.likes : 0;
+        base.dislikes = fb ? fb.dislikes : 0;
+        return base;
+      })
+      // axis 화이트리스트 필터 — v2 row의 axis가 interior/experience면 응답에서 제거 (axisFilter='all' 시 통과)
+      .filter(k => axisAllowed(k.axis));
   } catch(e) {
     // silent fallback — v2 조회 실패해도 기존 응답 유지
     return keywords;
@@ -290,8 +310,10 @@ exports.handler = async (event) => {
   const scope = params.get('scope') || '';  // 'domestic' or ''
   const fromDate = params.get('from') || '';
   const toDate = params.get('to') || '';
-  // Phase 2: axis 파라미터 (menu|interior|goods|experience|general, 없으면 null=전체)
-  const VALID_AXES = ['menu', 'interior', 'goods', 'experience', 'general'];
+  // Phase 2: axis 파라미터 (menu|interior|goods|experience|general|all, 없으면 null=기본 화이트리스트)
+  // 기본(null)은 interior/experience 제외 — cafe/food/beauty 탭에 인테리어 키워드 노출 차단
+  // 'all' 명시 시에만 interior 포함
+  const VALID_AXES = ['menu', 'interior', 'goods', 'experience', 'general', 'all'];
   const axisParam = params.get('axis') || '';
   const axisFilter = VALID_AXES.includes(axisParam) ? axisParam : null;
   // 지역 파라미터 (all|seoul|busan|daegu|incheon|daejeon|gwangju, 기본값 'all')
@@ -512,7 +534,8 @@ exports.handler = async (event) => {
         let mergedKeywords = await mergeV2Fields(supa, filteredKeywords, storeKey, collectedDate, axisFilter, region, subcatParam);
 
         // axis 필터가 있을 경우 응답 키워드를 해당 axis만으로 좁힘
-        if (axisFilter) {
+        // 'all'은 모든 axis 통과, 그 외는 해당 axis만 (general은 domestic 레거시 포함)
+        if (axisFilter && axisFilter !== 'all') {
           const axisEquiv = axisFilter === 'general' ? ['general', 'domestic', undefined] : [axisFilter];
           mergedKeywords = mergedKeywords.filter(k => axisEquiv.includes(k.axis) || !k.axis);
         }
