@@ -1,5 +1,5 @@
 /* ============================================================
-   lumi-tabs.css — 모바일 하단 4탭 네비게이션
+   lumi-tabs.css — 모바일 하단 5탭 네비게이션
    ============================================================
    인스타·당근·토스 패턴 참조.
    768px+ 데스크톱에서 완전 숨김.
@@ -110,3 +110,71 @@ body:has(.lumi-tabs) {
   white-space: nowrap;
 }
 
+/* ─── CTA 탭 (가운데 등록) ─── */
+.lumi-tabs__item--cta {
+  /* 다른 탭보다 살짝 위로 */
+  transform: translateY(-8px);
+  color: var(--lumi-ink-muted);
+}
+
+.lumi-tabs__item--cta:active {
+  transform: translateY(-8px) scale(0.97);
+}
+
+@media (hover: hover) {
+  .lumi-tabs__item--cta:hover {
+    transform: translateY(-9px);
+    color: var(--lumi-ink-soft);
+  }
+}
+
+/* ─── CTA 원형 그라디언트 버튼 ─── */
+.lumi-tabs__cta-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--lumi-radius-full);
+  background: var(--lumi-gradient-brand);
+  background-size: 200% 100%;
+  background-position: 100% 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--lumi-shadow-glow-sm);
+  transition:
+    background-position var(--lumi-duration-slow) var(--lumi-ease-soft),
+    box-shadow var(--lumi-duration-fast) var(--lumi-ease-soft),
+    transform var(--lumi-duration-snap) var(--lumi-ease-toss);
+  will-change: transform, background-position;
+}
+
+.lumi-tabs__cta-circle svg {
+  width: 22px;
+  height: 22px;
+  stroke: white;
+  stroke-width: 2.2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* CTA 호버 — 그라디언트 흐름 + 글로우 강화 + 살짝 커짐 */
+@media (hover: hover) {
+  .lumi-tabs__item--cta:hover .lumi-tabs__cta-circle {
+    background-position: 0% 50%;
+    box-shadow: var(--lumi-shadow-glow);
+    transform: scale(1.05);
+  }
+}
+
+/* CTA 클릭 */
+.lumi-tabs__item--cta:active .lumi-tabs__cta-circle {
+  transform: scale(0.95);
+  box-shadow: var(--lumi-shadow-glow-sm);
+  transition-duration: var(--lumi-duration-instant);
+}
+
+/* CTA 라벨은 원형 아래 작게 */
+.lumi-tabs__item--cta .lumi-tabs__label {
+  color: var(--lumi-ink-muted);
+  margin-top: 2px;
+}
