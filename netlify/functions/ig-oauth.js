@@ -51,13 +51,22 @@ exports.handler = async (event) => {
       return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/?oauth_error=1' } };
     }
 
+    // Supabase JWT 우선, 실패 시 seller-jwt(HS256) fallback (카카오 가입자)
+    let userId = null;
     const { user, error: authError } = await verifyBearerToken(lumiToken);
-    if (authError || !user) {
-      console.error('[ig-oauth] OAuth 시작 실패: 토큰 검증 실패');
+    if (!authError && user) {
+      userId = user.id;
+    } else {
+      try {
+        const { verifySellerToken } = require('./_shared/seller-jwt');
+        const decoded = verifySellerToken(lumiToken);
+        if (decoded?.seller_id) userId = decoded.seller_id;
+      } catch (_) { /* invalid */ }
+    }
+    if (!userId) {
+      console.error('[ig-oauth] OAuth 시작 실패: 토큰 검증 실패 (Supabase + seller-jwt 둘 다)');
       return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/?oauth_error=1' } };
     }
-
-    const userId = user.id;
     const nonce = crypto.randomBytes(16).toString('hex');
 
     try {
