@@ -159,7 +159,7 @@ exports.handler = async (event) => {
     // 1) ig_accounts_decrypted 뷰에서 토큰 가져오기
     let query = supabase
       .from('ig_accounts_decrypted')
-      .select('user_id, ig_user_id, username, access_token, page_access_token, token_expires_at, updated_at');
+      .select('user_id, ig_user_id, ig_username, access_token, page_access_token, token_expires_at, updated_at');
     if (filterAccountId) query = query.eq('ig_user_id', filterAccountId);
 
     const { data: rows, error: dbErr } = await query;
@@ -205,7 +205,7 @@ exports.handler = async (event) => {
       const tokenForRead = row.page_access_token || row.access_token;
       const accountInfo = {
         ig_user_id: row.ig_user_id,
-        username_db: row.username || null,
+        username_db: row.ig_username || null,
         user_id: row.user_id,
         has_access_token: !!row.access_token,
         has_page_access_token: !!row.page_access_token,
