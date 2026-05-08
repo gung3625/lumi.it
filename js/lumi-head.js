@@ -73,6 +73,86 @@
     document.body.insertBefore(tpl.content, document.body.firstChild);
   }
 
+  /**
+   * 로그인 여부 감지 — auth-guard.js 의 hasAnyStoredAuth() 와 동일한 패턴.
+   * 카카오 가입자는 lumi_token (HS256) 만 있고 Supabase 세션 없으므로 이 키들을 우선 본다.
+   */
+  function isAuthed() {
+    try {
+      if (localStorage.getItem('lumi_token')) return true;
+      if (localStorage.getItem('lumi_seller_jwt')) return true;
+      if (localStorage.getItem('lumi-auth')) return true;
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.indexOf('sb-') === 0 && k.indexOf('-auth-token') > 0) return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  function logout() {
+    try {
+      localStorage.removeItem('lumi_token');
+      localStorage.removeItem('lumi_seller_jwt');
+      localStorage.removeItem('lumi_seller_token');
+      localStorage.removeItem('lumi-auth');
+      sessionStorage.removeItem('lumi_token');
+      sessionStorage.removeItem('lumi_onboarded_cache');
+      // Supabase v2 sb-*-auth-token 키 정리
+      const toRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.indexOf('sb-') === 0 && k.indexOf('-auth-token') > 0) toRemove.push(k);
+      }
+      toRemove.forEach((k) => localStorage.removeItem(k));
+    } catch (_) {}
+    window.location.href = '/';
+  }
+
+  /** 로그인 상태면 헤더의 로그인/회원가입 버튼을 대시보드/로그아웃 으로 교체 */
+  function applyAuthState() {
+    if (!isAuthed()) return;
+
+    // 데스크톱 actions 영역
+    const head = document.querySelector('[data-lumi-head]');
+    if (head) {
+      const login = head.querySelector('.lumi-head__login');
+      const cta   = head.querySelector('.lumi-head__cta');
+      if (login) {
+        login.textContent = '대시보드';
+        login.setAttribute('href', '/dashboard');
+      }
+      if (cta) {
+        cta.textContent = '로그아웃';
+        cta.setAttribute('href', '#');
+        cta.setAttribute('role', 'button');
+        cta.addEventListener('click', (e) => { e.preventDefault(); logout(); });
+      }
+    }
+
+    // 모바일 drawer
+    const drawer = document.querySelector('[data-lumi-drawer]');
+    if (drawer) {
+      const list = drawer.querySelector('.lumi-head__drawer-list');
+      if (list) {
+        // "로그인" 항목 → "대시보드"
+        list.querySelectorAll('a').forEach((a) => {
+          if (a.getAttribute('href') === '/signup' && /로그인/.test(a.textContent)) {
+            a.textContent = '대시보드';
+            a.setAttribute('href', '/dashboard');
+          }
+        });
+      }
+      const drawerCta = drawer.querySelector('.lumi-head__drawer-cta');
+      if (drawerCta) {
+        drawerCta.textContent = '로그아웃';
+        drawerCta.setAttribute('href', '#');
+        drawerCta.setAttribute('role', 'button');
+        drawerCta.addEventListener('click', (e) => { e.preventDefault(); logout(); });
+      }
+    }
+  }
+
   function bindInteractions() {
     const head = document.querySelector('[data-lumi-head]');
     const drawer = document.querySelector('[data-lumi-drawer]');
@@ -121,6 +201,7 @@
     ensureCss(HEAD_CSS_HREF, 'lumi-head-css');
     injectHeader();
     bindInteractions();
+    applyAuthState();
   }
 
   if (document.readyState === 'loading') {
