@@ -1,13 +1,14 @@
 /**
- * lumi-tabs.js — 모바일 하단 5탭 자동 삽입 + 활성 탭 감지
+ * lumi-tabs.js — 모바일 하단 4탭 자동 삽입 + 활성 탭 감지
  * <script src="/js/lumi-tabs.js" defer></script> 한 줄로 끝.
  *
  * 자동 처리:
  *   1. /css/lumi-tabs.css 로드 (idempotent)
- *   2. 5탭 마크업 body 끝에 삽입 (idempotent)
+ *   2. 4탭 마크업 body 끝에 삽입 (idempotent)
  *   3. location.pathname 기반 활성 탭 자동 감지
- *   4. 등록 탭은 항상 시그니처 강조 (활성 여부 무관)
- *   5. 768px+ 숨김은 CSS가 처리
+ *   4. 768px+ 숨김은 CSS가 처리
+ *
+ * 사진 등록은 dashboard 메인 카드("사진 1~10장 등록")로 진입.
  */
 (() => {
   'use strict';
@@ -31,16 +32,6 @@
       <polyline points="17 6 23 6 23 12"/>
     </svg>
     <span class="lumi-tabs__label">트렌드</span>
-  </a>
-
-  <a href="/register-product" class="lumi-tabs__item lumi-tabs__item--cta" data-tab="register">
-    <span class="lumi-tabs__cta-circle">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <line x1="12" y1="5" x2="12" y2="19"/>
-        <line x1="5" y1="12" x2="19" y2="12"/>
-      </svg>
-    </span>
-    <span class="lumi-tabs__label">등록</span>
   </a>
 
   <a href="/reservations" class="lumi-tabs__item" data-tab="reservations">
@@ -68,7 +59,6 @@
   const PATH_MAP = [
     { tab: 'home',         pattern: /^\/dashboard(\/|$)/ },
     { tab: 'trends',       pattern: /^\/trends(\/|$)/ },
-    { tab: 'register',     pattern: /^\/register-product(\/|$)/ },
     { tab: 'reservations', pattern: /^\/reservations(\/|$)/ },
     { tab: 'settings',     pattern: /^\/settings(\/|$)/ },
   ];
