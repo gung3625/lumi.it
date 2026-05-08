@@ -541,6 +541,235 @@ body {
   opacity: 1;
   transform: translateY(0);
 }
+
+/* ── Detail Modal ───────────────────────────────────────── */
+.tr-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  opacity: 0;
+  transition: opacity var(--lumi-duration-base) var(--lumi-ease-soft);
+}
+@media (min-width: 768px) {
+  .tr-modal {
+    align-items: center;
+    padding: var(--lumi-space-6);
+  }
+}
+.tr-modal[data-open="true"] {
+  display: flex;
+  opacity: 1;
+}
+.tr-modal__card {
+  position: relative;
+  width: 100%;
+  max-width: 560px;
+  max-height: 92vh;
+  background: var(--lumi-surface);
+  border-radius: var(--lumi-radius-2xl) var(--lumi-radius-2xl) 0 0;
+  padding: var(--lumi-space-6) var(--lumi-space-5) calc(var(--lumi-space-6) + env(safe-area-inset-bottom));
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  transform: translateY(40px);
+  transition: transform var(--lumi-duration-base) var(--lumi-ease-toss);
+  display: flex;
+  flex-direction: column;
+  gap: var(--lumi-space-4);
+}
+@media (min-width: 768px) {
+  .tr-modal__card {
+    border-radius: var(--lumi-radius-2xl);
+    padding: var(--lumi-space-8) var(--lumi-space-7);
+  }
+}
+.tr-modal[data-open="true"] .tr-modal__card {
+  transform: translateY(0);
+}
+.tr-modal__close {
+  position: absolute;
+  top: var(--lumi-space-3);
+  right: var(--lumi-space-3);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: var(--lumi-surface-deep);
+  color: var(--lumi-ink-soft);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background var(--lumi-duration-fast) var(--lumi-ease-soft);
+  z-index: 1;
+}
+.tr-modal__close:hover {
+  background: var(--lumi-line);
+  color: var(--lumi-ink-strong);
+}
+.tr-modal__close svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.tr-modal__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lumi-space-2);
+  padding-right: 44px;
+}
+.tr-modal__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lumi-space-2);
+}
+.tr-modal__chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: var(--lumi-radius-pill);
+  background: var(--lumi-brand-soft);
+  color: var(--lumi-brand-text);
+  font-size: var(--lumi-text-overline);
+  font-weight: var(--lumi-weight-bold);
+  letter-spacing: 0.03em;
+}
+.tr-modal__chip[data-variant="neutral"] {
+  background: var(--lumi-surface-deep);
+  color: var(--lumi-ink-soft);
+}
+.tr-modal__keyword {
+  font-size: var(--lumi-text-display-3);
+  font-weight: var(--lumi-weight-black);
+  letter-spacing: var(--lumi-tracking-tight);
+  line-height: var(--lumi-leading-tight);
+  margin: 0;
+  background: var(--lumi-gradient-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  word-break: keep-all;
+}
+.tr-modal__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lumi-space-2);
+  padding: var(--lumi-space-4);
+  border-radius: var(--lumi-radius-lg);
+  background: var(--lumi-surface-alt);
+  border: 1px solid var(--lumi-line);
+}
+.tr-modal__section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--lumi-space-2);
+  font-size: var(--lumi-text-caption);
+  font-weight: var(--lumi-weight-bold);
+  color: var(--lumi-brand-text);
+  letter-spacing: 0.02em;
+  margin: 0;
+}
+.tr-modal__section-title svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.tr-modal__section-body {
+  font-size: var(--lumi-text-body-sm);
+  font-weight: var(--lumi-weight-medium);
+  color: var(--lumi-ink-strong);
+  line-height: var(--lumi-leading-relaxed);
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: keep-all;
+}
+.tr-modal__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lumi-space-2) var(--lumi-space-4);
+  font-size: var(--lumi-text-caption);
+  color: var(--lumi-ink-muted);
+}
+.tr-modal__meta strong {
+  color: var(--lumi-ink-strong);
+  font-weight: var(--lumi-weight-bold);
+}
+.tr-modal__related {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lumi-space-2);
+}
+.tr-modal__related-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: var(--lumi-radius-pill);
+  background: var(--lumi-surface);
+  border: 1px solid var(--lumi-line);
+  font-size: var(--lumi-text-caption);
+  color: var(--lumi-ink-soft);
+}
+.tr-modal__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lumi-space-2);
+  height: 52px;
+  padding-inline: var(--lumi-space-6);
+  border-radius: var(--lumi-radius-pill);
+  background: var(--lumi-gradient-brand);
+  color: white;
+  font-size: var(--lumi-text-body);
+  font-weight: var(--lumi-weight-bold);
+  letter-spacing: -0.005em;
+  text-decoration: none;
+  margin-top: var(--lumi-space-2);
+  transition:
+    transform var(--lumi-duration-snap) var(--lumi-ease-toss),
+    box-shadow var(--lumi-duration-fast) var(--lumi-ease-soft);
+  box-shadow: var(--lumi-shadow-glow-sm);
+}
+@media (hover: hover) {
+  .tr-modal__cta:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: var(--lumi-shadow-glow);
+  }
+}
+.tr-modal__cta:active {
+  transform: var(--lumi-press);
+  transition-duration: var(--lumi-duration-instant);
+}
+.tr-modal__cta svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.tr-modal__empty {
+  font-size: var(--lumi-text-body-sm);
+  color: var(--lumi-ink-muted);
+  font-style: italic;
+}
+body[data-modal-open="true"] {
+  overflow: hidden;
+}
 </style>
 </head>
 <body>
@@ -644,6 +873,24 @@ body {
 
   </div><!-- /.tr-wrap -->
 
+  <!-- 키워드 상세 모달 -->
+  <div class="tr-modal" id="trModal" role="dialog" aria-modal="true" aria-labelledby="trModalKeyword" aria-hidden="true">
+    <div class="tr-modal__card" id="trModalCard">
+      <button type="button" class="tr-modal__close" id="trModalClose" aria-label="닫기">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6l-12 12"/></svg>
+      </button>
+      <div class="tr-modal__head">
+        <div class="tr-modal__chips" id="trModalChips"></div>
+        <h2 class="tr-modal__keyword" id="trModalKeyword">키워드</h2>
+      </div>
+      <div id="trModalBody"></div>
+      <a href="#" class="tr-modal__cta" id="trModalCta">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        <span>이 키워드로 게시 만들기</span>
+      </a>
+    </div>
+  </div>
+
 </main>
 
 <!-- 푸터 인라인 (FOUC 제거) -->
@@ -744,10 +991,163 @@ body {
   }
 
   function encKw(kw) { return encodeURIComponent(kw); }
+  function escHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  /* 키워드 상세 데이터 보관 — index → keyword object */
+  var KEYWORD_INDEX = [];
+  var CURRENT_LABEL = '';
+
+  /* ── 모달 ── */
+  var modalEl, modalCard, modalCloseBtn, modalKwEl, modalChipsEl, modalBodyEl, modalCtaEl;
+  var lastFocused = null;
+
+  function ensureModalRefs() {
+    if (modalEl) return;
+    modalEl = document.getElementById('trModal');
+    modalCard = document.getElementById('trModalCard');
+    modalCloseBtn = document.getElementById('trModalClose');
+    modalKwEl = document.getElementById('trModalKeyword');
+    modalChipsEl = document.getElementById('trModalChips');
+    modalBodyEl = document.getElementById('trModalBody');
+    modalCtaEl = document.getElementById('trModalCta');
+
+    if (!modalEl) return;
+    modalEl.addEventListener('click', function (e) {
+      if (e.target === modalEl) closeModal();
+    });
+    if (modalCloseBtn) modalCloseBtn.addEventListener('click', closeModal);
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && modalEl.getAttribute('data-open') === 'true') closeModal();
+    });
+  }
+
+  function originLabel(t) {
+    var map = { drama: '드라마', celebrity: '셀럽', news: '뉴스', product: '신제품', social: 'SNS' };
+    return map[t] || null;
+  }
+
+  function buildModalBody(kw) {
+    var parts = [];
+    var narrative = kw && kw.narrative ? String(kw.narrative).trim() : '';
+    if (narrative) {
+      parts.push(
+        '<div class="tr-modal__section">' +
+          '<p class="tr-modal__section-title">' +
+            '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>' +
+            '왜 떴어요?' +
+          '</p>' +
+          '<p class="tr-modal__section-body">' + escHtml(narrative) + '</p>' +
+        '</div>'
+      );
+    } else {
+      parts.push(
+        '<div class="tr-modal__section">' +
+          '<p class="tr-modal__section-title">' +
+            '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>' +
+            '왜 떴어요?' +
+          '</p>' +
+          '<p class="tr-modal__empty">아직 분석 데이터가 모이지 않았어요. 매일 자정에 새로 분석돼요.</p>' +
+        '</div>'
+      );
+    }
+
+    /* 출처 / 신호 메타 */
+    var origin = kw && kw.origin;
+    var metaItems = [];
+    if (origin) {
+      var typeLabel = originLabel(origin.sourceType);
+      if (typeLabel) metaItems.push('<span><strong>출처</strong> ' + escHtml(typeLabel) + '</span>');
+      if (origin.mediaTitle) metaItems.push('<span><strong>매체</strong> ' + escHtml(origin.mediaTitle) + '</span>');
+      if (origin.firstSeenAt) metaItems.push('<span><strong>최초 감지</strong> ' + escHtml(origin.firstSeenAt) + '</span>');
+    }
+    if (kw && typeof kw.crossSourceCount === 'number') {
+      metaItems.push('<span><strong>채널</strong> ' + escHtml(kw.crossSourceCount) + '곳 언급</span>');
+    }
+    if (kw && typeof kw.velocityPct === 'number') {
+      var sign = kw.velocityPct > 0 ? '+' : '';
+      metaItems.push('<span><strong>증가율</strong> ' + sign + escHtml(Math.round(kw.velocityPct)) + '%</span>');
+    }
+    if (metaItems.length) {
+      parts.push(
+        '<div class="tr-modal__section">' +
+          '<p class="tr-modal__section-title">' +
+            '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>' +
+            '시그널' +
+          '</p>' +
+          '<div class="tr-modal__meta">' + metaItems.join('') + '</div>' +
+        '</div>'
+      );
+    }
+
+    /* 관련 키워드 */
+    var related = (kw && Array.isArray(kw.relatedKeywords)) ? kw.relatedKeywords.filter(Boolean).slice(0, 8) : [];
+    if (related.length) {
+      parts.push(
+        '<div class="tr-modal__section">' +
+          '<p class="tr-modal__section-title">' +
+            '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 1 7 0l3 3a5 5 0 0 1-7 7l-1-1"/><path d="M14 11a5 5 0 0 1-7 0l-3-3a5 5 0 0 1 7-7l1 1"/></svg>' +
+            '관련 키워드' +
+          '</p>' +
+          '<div class="tr-modal__related">' +
+            related.map(function (r) { return '<span class="tr-modal__related-tag">#' + escHtml(r) + '</span>'; }).join('') +
+          '</div>' +
+        '</div>'
+      );
+    }
+
+    return parts.join('');
+  }
+
+  function openModal(kw) {
+    ensureModalRefs();
+    if (!modalEl || !kw) return;
+
+    var word = kw.keyword || kw.tag || '';
+    if (modalKwEl) modalKwEl.textContent = word;
+
+    /* chips: 카테고리 + signalTier + isNew */
+    var chips = [];
+    if (CURRENT_LABEL) chips.push('<span class="tr-modal__chip">' + escHtml(CURRENT_LABEL) + '</span>');
+    if (kw.isNew) chips.push('<span class="tr-modal__chip">NEW</span>');
+    if (kw.signalTier === 'strong' || kw.signalTier === 'rising') {
+      chips.push('<span class="tr-modal__chip" data-variant="neutral">' + (kw.signalTier === 'strong' ? '강한 신호' : '상승중') + '</span>');
+    }
+    if (modalChipsEl) modalChipsEl.innerHTML = chips.join('');
+
+    if (modalBodyEl) modalBodyEl.innerHTML = buildModalBody(kw);
+
+    if (modalCtaEl) {
+      modalCtaEl.setAttribute('href', '/register-product?keyword=' + encKw(word));
+    }
+
+    lastFocused = document.activeElement;
+    modalEl.setAttribute('data-open', 'true');
+    modalEl.setAttribute('aria-hidden', 'false');
+    document.body.setAttribute('data-modal-open', 'true');
+    /* 포커스 이동 */
+    setTimeout(function () { if (modalCloseBtn) modalCloseBtn.focus(); }, 30);
+  }
+
+  function closeModal() {
+    if (!modalEl) return;
+    modalEl.setAttribute('data-open', 'false');
+    modalEl.setAttribute('aria-hidden', 'true');
+    document.body.removeAttribute('data-modal-open');
+    if (lastFocused && typeof lastFocused.focus === 'function') {
+      try { lastFocused.focus(); } catch (e) {}
+    }
+  }
 
   function renderTrends(data) {
     var keywords = (data && data.keywords) || [];
     var tags = (data && data.tags) || [];
+    CURRENT_LABEL = (data && data.categoryLabel) || '';
+    KEYWORD_INDEX = keywords.slice();
+
     if (!keywords.length) { renderEmpty(); return; }
 
     var hotCardWrap = document.getElementById('hotCardWrap');
@@ -761,16 +1161,16 @@ body {
     var hotKw = hot.keyword || hot.tag || '';
     var hotTagsHtml = tags.slice(0, 4).map(function (t) {
       var tag = t.startsWith('#') ? t : '#' + t;
-      return '<span class="tr-hot__tag">' + tag + '</span>';
+      return '<span class="tr-hot__tag">' + escHtml(tag) + '</span>';
     }).join('');
     if (hotCardWrap) {
       hotCardWrap.innerHTML =
-        '<a class="tr-hot" href="/register-product?keyword=' + encKw(hotKw) + '" id="hotCard" aria-label="HOT 트렌드: ' + hotKw + ' — 게시 만들기">' +
+        '<button type="button" class="tr-hot" id="hotCard" data-kw-index="0" aria-label="HOT 트렌드: ' + escHtml(hotKw) + ' — 상세 보기">' +
           '<div class="tr-hot__badge"><span class="tr-hot__badge-dot" aria-hidden="true"></span>HOT 1위</div>' +
-          '<h2 class="tr-hot__keyword">' + hotKw + '</h2>' +
+          '<h2 class="tr-hot__keyword">' + escHtml(hotKw) + '</h2>' +
           '<div class="tr-hot__meta"><span class="tr-hot__rate">' + (hot.trend === 'up' ? '↑ 상승중' : '→ 보합') + '</span></div>' +
           (hotTagsHtml ? '<div class="tr-hot__tags" aria-label="관련 키워드">' + hotTagsHtml + '</div>' : '') +
-        '</a>';
+        '</button>';
     }
 
     /* 인사이트 바 */
@@ -786,15 +1186,33 @@ body {
     if (grid) {
       grid.innerHTML = gridKws.map(function (kw, i) {
         var word = kw.keyword || kw.tag || '';
-        return '<a class="tr-card tr-reveal lumi-hoverable is-visible" href="/register-product?keyword=' + encKw(word) + '" role="listitem" aria-label="' + word + '">' +
+        var idx = i + 1;
+        return '<button type="button" class="tr-card tr-reveal lumi-hoverable is-visible" data-kw-index="' + idx + '" role="listitem" aria-label="' + escHtml(word) + ' 상세 보기" style="text-align:left;font-family:inherit;">' +
           '<span class="tr-card__rank" aria-hidden="true">' + (i + 2) + '</span>' +
-          '<h3 class="tr-card__keyword">' + word + '</h3>' +
-        '</a>';
+          '<h3 class="tr-card__keyword">' + escHtml(word) + '</h3>' +
+        '</button>';
       }).join('');
     }
 
+    /* 카드 클릭 → 모달 (이벤트 위임) */
+    bindCardClicks();
+
     /* reveal 나머지 */
     document.querySelectorAll('.tr-reveal').forEach(function (el) { el.classList.add('is-visible'); });
+  }
+
+  var _delegatesBound = false;
+  function bindCardClicks() {
+    if (_delegatesBound) return;
+    _delegatesBound = true;
+    document.addEventListener('click', function (e) {
+      var target = e.target.closest('[data-kw-index]');
+      if (!target) return;
+      var idx = parseInt(target.getAttribute('data-kw-index'), 10);
+      if (isNaN(idx) || !KEYWORD_INDEX[idx]) return;
+      e.preventDefault();
+      openModal(KEYWORD_INDEX[idx]);
+    });
   }
 
   /* ── 카테고리 탭 바인딩 + 캐싱 ── */
@@ -832,7 +1250,8 @@ body {
 
     showLoading();
     try {
-      var r = await fetch('/api/get-trends?category=' + encodeURIComponent(cat));
+      // scope=domestic: 백엔드가 v2 필드(narrative, origin, signalTier, relatedKeywords) 함께 내려줌
+      var r = await fetch('/api/get-trends?category=' + encodeURIComponent(cat) + '&scope=domestic');
       if (!r.ok) { renderEmpty(); return; }
       var data = await r.json();
       TREND_CACHE.set(cat, data);
