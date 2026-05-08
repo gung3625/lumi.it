@@ -120,11 +120,14 @@ body {
   background: var(--lumi-gradient-brand);
   border-color: transparent;
   color: white;
-  box-shadow: var(--lumi-shadow-glow-sm);
+  font-weight: var(--lumi-weight-bold);
+  padding-inline: var(--lumi-space-5);
+  box-shadow: var(--lumi-shadow-glow), 0 6px 18px color-mix(in srgb, var(--lumi-brand-pink) 42%, transparent);
+  transform: translateY(-1px);
 }
 .tr-chip[data-active="true"]:hover {
-  transform: var(--lumi-lift-sm);
-  box-shadow: var(--lumi-shadow-glow);
+  transform: translateY(-2px);
+  box-shadow: var(--lumi-shadow-glow), 0 8px 22px color-mix(in srgb, var(--lumi-brand-pink) 50%, transparent);
 }
 
 /* ── Main content area ──────────────────────────────────── */
@@ -408,17 +411,86 @@ body {
   position: absolute;
   top: var(--lumi-space-3);
   right: var(--lumi-space-3);
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: var(--lumi-radius-pill);
   background: var(--lumi-surface-deep);
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
+  gap: 2px;
   font-size: var(--lumi-text-overline);
   font-weight: var(--lumi-weight-bold);
-  color: var(--lumi-ink-faint);
+  color: var(--lumi-ink-soft);
   font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+.tr-card__rank-num { font-size: 12px; }
+.tr-card__rank-suffix {
+  font-size: 10px;
+  color: var(--lumi-ink-faint);
+  font-weight: var(--lumi-weight-semibold);
+}
+
+/* origin chip (출처) — 카테고리 chip 옆에 작게 */
+.tr-card__chips {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: var(--lumi-space-2);
+}
+.tr-card__chips .tr-card__cat { margin-bottom: 0; }
+.tr-card__origin {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: var(--lumi-radius-pill);
+  background: var(--lumi-surface-deep);
+  color: var(--lumi-ink-soft);
+  font-size: 10px;
+  font-weight: var(--lumi-weight-bold);
+  letter-spacing: 0.04em;
+  border: 1px solid var(--lumi-line);
+}
+
+/* HOT 카드 origin chip */
+.tr-hot__origin {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: var(--lumi-radius-pill);
+  background: rgba(255, 255, 255, 0.18);
+  font-size: var(--lumi-text-caption);
+  font-weight: var(--lumi-weight-bold);
+  color: white;
+  letter-spacing: 0.02em;
+}
+
+/* HOT 카드 — 정량 수치 강조 */
+.tr-hot__delta {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 카드 정량 수치 (그리드) */
+.tr-card__rate-row {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.tr-card__rate-suffix {
+  font-size: var(--lumi-text-caption);
+  font-weight: var(--lumi-weight-semibold);
+  color: var(--lumi-ink-muted);
+  letter-spacing: 0;
+}
+
+/* 모바일 — 푸터 숨김 (하단 탭바가 메인 nav) */
+@media (max-width: 767px) {
+  .lumi-foot[data-lumi-foot] { display: none; }
 }
 
 .tr-card__cat {
@@ -442,7 +514,7 @@ body {
   color: var(--lumi-ink-strong);
   margin: 0 0 var(--lumi-space-2);
   word-break: keep-all;
-  padding-right: var(--lumi-space-8);
+  padding-right: 56px;
 }
 
 .tr-card__rate {
@@ -1353,12 +1425,31 @@ body[data-modal-open="true"] {
       var tag = t.startsWith('#') ? t : '#' + t;
       return '<span class="tr-hot__tag">' + escHtml(tag) + '</span>';
     }).join('');
+
+    /* HOT — 정량 상승률 (velocityPct 있으면 %, 없으면 fallback 텍스트) */
+    var hotRateHtml;
+    if (typeof hot.velocityPct === 'number' && isFinite(hot.velocityPct)) {
+      var hotPct = Math.round(hot.velocityPct);
+      var hotSign = hotPct > 0 ? '+' : '';
+      hotRateHtml = '↑ <span class="tr-hot__delta">' + hotSign + escHtml(hotPct) + '%</span>';
+    } else {
+      hotRateHtml = hot.trend === 'up' ? '↑ 상승중' : '→ 보합';
+    }
+    /* HOT — 출처 chip */
+    var hotOriginLabel = hot.origin ? originLabel(hot.origin.sourceType) : null;
+    var hotOriginHtml = hotOriginLabel
+      ? '<span class="tr-hot__origin" aria-label="출처">' + escHtml(hotOriginLabel) + '</span>'
+      : '';
+
     if (hotCardWrap) {
       hotCardWrap.innerHTML =
         '<button type="button" class="tr-hot" id="hotCard" data-kw-index="0" aria-label="HOT 트렌드: ' + escHtml(hotKw) + ' — 상세 보기">' +
           '<div class="tr-hot__badge"><span class="tr-hot__badge-dot" aria-hidden="true"></span>HOT 1위</div>' +
           '<h2 class="tr-hot__keyword">' + escHtml(hotKw) + '</h2>' +
-          '<div class="tr-hot__meta"><span class="tr-hot__rate">' + (hot.trend === 'up' ? '↑ 상승중' : '→ 보합') + '</span></div>' +
+          '<div class="tr-hot__meta">' +
+            '<span class="tr-hot__rate">' + hotRateHtml + '</span>' +
+            hotOriginHtml +
+          '</div>' +
           (hotTagsHtml ? '<div class="tr-hot__tags" aria-label="관련 키워드">' + hotTagsHtml + '</div>' : '') +
         '</button>';
     }
@@ -1377,9 +1468,33 @@ body[data-modal-open="true"] {
       grid.innerHTML = gridKws.map(function (kw, i) {
         var word = kw.keyword || kw.tag || '';
         var idx = i + 1;
-        return '<button type="button" class="tr-card tr-reveal lumi-hoverable is-visible" data-kw-index="' + idx + '" role="listitem" aria-label="' + escHtml(word) + ' 상세 보기" style="text-align:left;font-family:inherit;">' +
-          '<span class="tr-card__rank" aria-hidden="true">' + (i + 2) + '</span>' +
+        var rank = i + 2;
+
+        /* origin chip */
+        var oLabel = kw.origin ? originLabel(kw.origin.sourceType) : null;
+        var originHtml = oLabel
+          ? '<span class="tr-card__origin" aria-label="출처">' + escHtml(oLabel) + '</span>'
+          : '';
+
+        /* 정량 상승률 (있을 때만) */
+        var rateHtml = '';
+        if (typeof kw.velocityPct === 'number' && isFinite(kw.velocityPct)) {
+          var pct = Math.round(kw.velocityPct);
+          var sign = pct > 0 ? '+' : '';
+          rateHtml = '<div class="tr-card__rate-row" aria-label="상승률">' +
+            '<span class="tr-card__rate">↑ ' + sign + escHtml(pct) + '%</span>' +
+            '<span class="tr-card__rate-suffix">상승</span>' +
+          '</div>';
+        }
+
+        return '<button type="button" class="tr-card tr-reveal lumi-hoverable is-visible" data-kw-index="' + idx + '" role="listitem" aria-label="' + escHtml(word) + ' (' + rank + '위) 상세 보기" style="text-align:left;font-family:inherit;">' +
+          '<span class="tr-card__rank" aria-label="순위 ' + rank + '위">' +
+            '<span class="tr-card__rank-num">' + rank + '</span>' +
+            '<span class="tr-card__rank-suffix">위</span>' +
+          '</span>' +
+          (originHtml ? '<div class="tr-card__chips">' + originHtml + '</div>' : '') +
           '<h3 class="tr-card__keyword">' + escHtml(word) + '</h3>' +
+          rateHtml +
         '</button>';
       }).join('');
     }
