@@ -975,10 +975,6 @@ body[data-modal-open="true"] {
         <h2 class="tr-modal__keyword" id="trModalKeyword">키워드</h2>
       </div>
       <div id="trModalBody"></div>
-      <a href="#" class="tr-modal__cta" id="trModalCta">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-        <span>이 키워드로 게시 만들기</span>
-      </a>
     </div>
   </div>
 
@@ -1197,27 +1193,6 @@ body[data-modal-open="true"] {
         '</div>'
       );
     }
-    if (!narrative && detail && Array.isArray(detail.ideas) && detail.ideas.length) {
-      parts.push(
-        '<div class="tr-modal__section">' +
-          '<p class="tr-modal__section-title">' + ICON.bulb + '매장 활용 아이디어</p>' +
-          '<ul class="tr-modal__ideas">' +
-            detail.ideas.map(function (it) { return '<li>' + escHtml(it) + '</li>'; }).join('') +
-          '</ul>' +
-        '</div>'
-      );
-    }
-    if (!narrative && detail && Array.isArray(detail.hashtags) && detail.hashtags.length) {
-      parts.push(
-        '<div class="tr-modal__section">' +
-          '<p class="tr-modal__section-title">' + ICON.hash + '추천 해시태그</p>' +
-          '<div class="tr-modal__hashtags">' +
-            detail.hashtags.map(function (h) { return '<span class="tr-modal__hashtag">' + escHtml(h) + '</span>'; }).join('') +
-          '</div>' +
-        '</div>'
-      );
-    }
-
     /* 출처 / 신호 메타 */
     var origin = kw && kw.origin;
     var metaItems = [];
@@ -1325,10 +1300,6 @@ body[data-modal-open="true"] {
     }
 
     if (modalBodyEl) modalBodyEl.innerHTML = buildModalBody(kw, detail);
-
-    if (modalCtaEl) {
-      modalCtaEl.setAttribute('href', '/register-product?keyword=' + encKw(word));
-    }
 
     lastFocused = document.activeElement;
     modalEl.setAttribute('data-open', 'true');
