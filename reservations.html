@@ -317,16 +317,30 @@
 /* ─── 캘린더 그리드 ─── */
 .rsv-calendar {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 0;
   padding: var(--lumi-space-3) var(--lumi-page-x) var(--lumi-space-8);
   background: var(--lumi-surface-alt);
-  overflow-x: auto;
-  scrollbar-width: none;
+  overflow: hidden;
   align-items: start;
+  max-width: 100%;
 }
 
-.rsv-calendar::-webkit-scrollbar { display: none; }
+.rsv-calendar-scroll {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.rsv-day-headers {
+  grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* 빈 상태 가이드는 캘린더 grid 외부 sibling으로 표시될 수 있게 grid-column 강제 */
+.rsv-empty-guide {
+  grid-column: 1 / -1 !important;
+}
 
 /* 모바일: 7일 균등 배치 (가로 스크롤 X) */
 @media (max-width: 767px) {
