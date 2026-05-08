@@ -210,23 +210,19 @@
   background: var(--lumi-surface);
   border-bottom: 1px solid var(--lumi-line);
   padding: 0 var(--lumi-page-x);
-  overflow-x: auto;
-  scrollbar-width: none;
 }
 
-.rsv-day-headers::-webkit-scrollbar { display: none; }
-
 .rsv-day-header {
-  min-width: 80px;
+  min-width: 0;
   min-height: 56px;
-  padding: var(--lumi-space-2) var(--lumi-space-2);
+  padding: var(--lumi-space-2) 4px;
   text-align: center;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   border-radius: var(--lumi-radius-md);
   transition:
     background var(--lumi-duration-fast) var(--lumi-ease-soft),
-    transform var(--lumi-duration-snap) var(--lumi-ease-toss);
+    box-shadow var(--lumi-duration-base) var(--lumi-ease-soft);
 }
 
 @media (hover: hover) {
@@ -266,11 +262,12 @@
   margin-top: 2px;
 }
 
-/* 선택 강화 — 핑크 그라디언트 + scale */
+/* 선택 강화 — 핑크 그라디언트 + glow (transform 사용 X, grid cell 침범 방지) */
 .rsv-day-header--selected {
   background: var(--lumi-gradient-brand-135);
-  box-shadow: 0 6px 16px color-mix(in srgb, var(--lumi-brand-fill) 28%, transparent);
-  transform: scale(1.04);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--lumi-brand-fill) 35%, transparent),
+    0 4px 14px color-mix(in srgb, var(--lumi-brand-fill) 30%, transparent);
 }
 
 .rsv-day-header--selected .rsv-day-header__name,
@@ -331,22 +328,25 @@
 
 .rsv-calendar::-webkit-scrollbar { display: none; }
 
-/* 모바일: 가로 스크롤 가능하게 최소 너비 */
+/* 모바일: 7일 균등 배치 (가로 스크롤 X) */
 @media (max-width: 767px) {
-  .rsv-day-headers,
+  .rsv-day-headers {
+    padding-left: var(--lumi-space-2);
+    padding-right: var(--lumi-space-2);
+  }
+  .rsv-day-header {
+    padding-left: 2px;
+    padding-right: 2px;
+  }
+  .rsv-day-header__name {
+    font-size: var(--lumi-text-caption);
+  }
+  .rsv-day-header__num {
+    font-size: var(--lumi-text-body-sm);
+  }
   .rsv-calendar {
-    min-width: 560px;
-    overflow-x: auto;
-    padding-left: var(--lumi-page-x);
-    padding-right: var(--lumi-page-x);
+    overflow-x: hidden;
   }
-  /* 스크롤 컨테이너 */
-  .rsv-calendar-scroll {
-    overflow-x: auto;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-  }
-  .rsv-calendar-scroll::-webkit-scrollbar { display: none; }
 }
 
 /* ─── 날짜 열 ─── */
