@@ -723,6 +723,217 @@
   bottom: calc(80px + env(safe-area-inset-bottom, 0px));
 }
 
+/* ─── 보안 chip (Meta OAuth 신뢰감) ─── */
+.stg-trust-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--lumi-radius-pill);
+  font-size: var(--lumi-text-label);
+  font-weight: var(--lumi-weight-semibold);
+  background: var(--lumi-brand-soft);
+  color: var(--lumi-brand-text);
+  margin-bottom: var(--lumi-space-2);
+}
+.stg-trust-chip svg {
+  flex-shrink: 0;
+}
+
+/* ─── 틱톡 기대감 배너 ─── */
+.stg-tiktok-soon {
+  display: flex;
+  align-items: center;
+  gap: var(--lumi-space-2);
+  margin-top: var(--lumi-space-2);
+  padding: var(--lumi-space-3) var(--lumi-space-4);
+  border-radius: var(--lumi-radius-md);
+  background: var(--lumi-brand-soft);
+  font-size: var(--lumi-text-caption);
+  color: var(--lumi-brand-text);
+  line-height: var(--lumi-leading-relaxed);
+  word-break: keep-all;
+}
+.stg-tiktok-soon svg {
+  flex-shrink: 0;
+  color: var(--lumi-brand-text);
+}
+
+/* ─── 말투 샘플 가이드 (?) 버튼 ─── */
+.stg-field__label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--lumi-space-2);
+}
+.stg-help-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--lumi-radius-full);
+  border: 1px solid var(--lumi-line);
+  background: var(--lumi-surface);
+  color: var(--lumi-ink-muted);
+  font-size: 13px;
+  font-weight: var(--lumi-weight-bold);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    border-color var(--lumi-duration-fast) var(--lumi-ease-soft),
+    color var(--lumi-duration-fast) var(--lumi-ease-soft),
+    background var(--lumi-duration-fast) var(--lumi-ease-soft);
+}
+.stg-help-btn:hover {
+  border-color: var(--lumi-brand-fill);
+  color: var(--lumi-brand-text);
+  background: var(--lumi-brand-soft);
+}
+
+/* ─── 학습 예시 모달 (말투 가이드) ─── */
+.stg-tone-examples {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lumi-space-4);
+}
+.stg-tone-ex {
+  border-radius: var(--lumi-radius-md);
+  padding: var(--lumi-space-3) var(--lumi-space-4);
+  border: 1px solid var(--lumi-line);
+}
+.stg-tone-ex--good {
+  background: rgba(52, 199, 89, 0.06);
+  border-color: rgba(52, 199, 89, 0.22);
+}
+.stg-tone-ex--bad {
+  background: rgba(255, 59, 48, 0.05);
+  border-color: rgba(255, 59, 48, 0.18);
+}
+.stg-tone-ex__head {
+  display: flex;
+  align-items: center;
+  gap: var(--lumi-space-2);
+  font-size: var(--lumi-text-body-sm);
+  font-weight: var(--lumi-weight-bold);
+  margin-bottom: var(--lumi-space-2);
+}
+.stg-tone-ex--good .stg-tone-ex__head { color: color-mix(in srgb, var(--lumi-success) 80%, #000); }
+.stg-tone-ex--bad  .stg-tone-ex__head { color: var(--lumi-error); }
+.stg-tone-ex__body {
+  font-size: var(--lumi-text-caption);
+  color: var(--lumi-ink-soft);
+  line-height: var(--lumi-leading-relaxed);
+  word-break: keep-all;
+  white-space: pre-line;
+}
+
+/* ─── Sticky 저장 바 (변경사항 감지 시 등장) ─── */
+.stg-sticky-save {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--lumi-space-5) + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%) translateY(calc(100% + 24px));
+  z-index: var(--lumi-z-overlay);
+  display: flex;
+  align-items: center;
+  gap: var(--lumi-space-3);
+  padding: 10px 12px 10px 18px;
+  border-radius: var(--lumi-radius-pill);
+  background: var(--lumi-surface);
+  border: 1px solid var(--lumi-line);
+  box-shadow: var(--lumi-shadow-lg, 0 12px 32px rgba(0,0,0,0.18));
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform var(--lumi-duration-base) var(--lumi-ease-toss),
+    opacity var(--lumi-duration-base) var(--lumi-ease-soft);
+  max-width: calc(100vw - 32px);
+}
+.stg-sticky-save.is-show {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+.stg-sticky-save__text {
+  font-size: var(--lumi-text-body-sm);
+  font-weight: var(--lumi-weight-semibold);
+  color: var(--lumi-ink-strong);
+  white-space: nowrap;
+}
+.stg-sticky-save__btn {
+  border: none;
+  border-radius: var(--lumi-radius-pill);
+  padding: 10px 18px;
+  font-size: var(--lumi-text-body-sm);
+  font-weight: var(--lumi-weight-bold);
+  color: #fff;
+  background: var(--lumi-gradient-brand, linear-gradient(135deg, #C8507A, #E47BA0));
+  cursor: pointer;
+  transition: transform var(--lumi-duration-snap) var(--lumi-ease-toss);
+}
+.stg-sticky-save__btn:hover { transform: translateY(-1px); }
+.stg-sticky-save__btn:active { transform: scale(0.97); }
+.stg-sticky-save__btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 탭바 있을 때 sticky 위로 */
+.has-lumi-tabs .stg-sticky-save {
+  bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+}
+
+@media (max-width: 480px) {
+  .stg-sticky-save {
+    left: var(--lumi-space-4);
+    right: var(--lumi-space-4);
+    transform: translateY(calc(100% + 24px));
+    justify-content: space-between;
+    width: calc(100vw - 32px);
+  }
+  .stg-sticky-save.is-show {
+    transform: translateY(0);
+  }
+}
+
+/* ─── Collapsible details (보안·개인정보) ─── */
+.stg-collapsible {
+  border-radius: var(--lumi-radius-md);
+  overflow: hidden;
+}
+.stg-collapsible > summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--lumi-space-3);
+  padding: var(--lumi-space-3) var(--lumi-space-4);
+  border-radius: var(--lumi-radius-md);
+  background: var(--lumi-surface-alt);
+  font-size: var(--lumi-text-body-sm);
+  font-weight: var(--lumi-weight-semibold);
+  color: var(--lumi-ink-strong);
+  transition: background var(--lumi-duration-fast) var(--lumi-ease-soft);
+}
+.stg-collapsible > summary::-webkit-details-marker { display: none; }
+.stg-collapsible > summary:hover { background: var(--lumi-surface-deep); }
+.stg-collapsible__chev {
+  transition: transform var(--lumi-duration-snap) var(--lumi-ease-toss);
+  color: var(--lumi-ink-muted);
+  flex-shrink: 0;
+}
+.stg-collapsible[open] .stg-collapsible__chev {
+  transform: rotate(180deg);
+}
+.stg-collapsible__body {
+  padding-top: var(--lumi-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--lumi-space-3);
+}
+
 /* ─── 다크모드 오버라이드 ─── */
 [data-theme="dark"] .stg-ig-status,
 [data-theme="dark"] .stg-danger-row {
@@ -737,6 +948,20 @@
 [data-theme="dark"] .stg-modal__box {
   background: var(--lumi-neutral-900);
 }
+
+[data-theme="dark"] .stg-sticky-save {
+  background: var(--lumi-neutral-900);
+  border-color: var(--lumi-line-strong);
+}
+
+[data-theme="dark"] .stg-collapsible > summary {
+  background: var(--lumi-neutral-900);
+}
+[data-theme="dark"] .stg-help-btn {
+  background: var(--lumi-neutral-900);
+}
+[data-theme="dark"] .stg-tone-ex--good { background: rgba(52,199,89,0.12); }
+[data-theme="dark"] .stg-tone-ex--bad { background: rgba(255,59,48,0.10); }
   </style>
 </head>
 <body class="stg-page">
@@ -892,13 +1117,16 @@ window.lumiSupa.auth.onAuthStateChange(function(event, session){
     </div>
 
     <div class="stg-field">
-      <span class="stg-field__label">말투 샘플 <span style="font-weight:400;opacity:.7;">(최대 3개 — 인스타 캡션 그대로)</span></span>
-      <div class="stg-tone-list">
-        <input class="stg-field__input" type="text" id="s-tone-1" placeholder="예: 오늘도 쨍한 햇살 아래 커피 한 잔 ☀️" autocorrect="off" spellcheck="false" />
-        <input class="stg-field__input" type="text" id="s-tone-2" placeholder="두 번째 캡션 샘플 (선택)" autocorrect="off" spellcheck="false" />
-        <input class="stg-field__input" type="text" id="s-tone-3" placeholder="세 번째 캡션 샘플 (선택)" autocorrect="off" spellcheck="false" />
+      <div class="stg-field__label-row">
+        <span class="stg-field__label">말투 샘플 <span style="font-weight:400;opacity:.7;">(최대 3개 — 인스타 캡션 그대로)</span></span>
+        <button type="button" class="stg-help-btn" id="tone-help-btn" onclick="openToneGuide()" aria-label="말투 샘플 작성 가이드 열기" title="좋은 예시 보기">?</button>
       </div>
-      <span class="stg-field__note">루미가 사장님만의 말투를 학습해요. 실제 올린 캡션을 그대로 붙여넣으셔도 돼요</span>
+      <div class="stg-tone-list">
+        <input class="stg-field__input" type="text" id="s-tone-1" placeholder="예: 오늘도 쨍한 햇살 아래 커피 한 잔. 시원한 라떼 어떠세요?" autocorrect="off" spellcheck="false" />
+        <input class="stg-field__input" type="text" id="s-tone-2" placeholder="사장님 인스타 게시물 그대로 복사해도 OK" autocorrect="off" spellcheck="false" />
+        <input class="stg-field__input" type="text" id="s-tone-3" placeholder="세 번째 캡션 샘플 (선택) — 길수록 학습이 정확해져요" autocorrect="off" spellcheck="false" />
+      </div>
+      <span class="stg-field__note">루미가 사장님만의 말투를 학습해요. 실제 올린 캡션을 그대로 붙여넣으셔도 돼요. <button type="button" onclick="openToneGuide()" style="background:none;border:none;color:var(--lumi-brand-text);font-size:inherit;font-weight:600;cursor:pointer;padding:0;text-decoration:underline;">좋은 예시 보기</button></span>
     </div>
 
     <div class="stg-actions">
@@ -930,6 +1158,13 @@ window.lumiSupa.auth.onAuthStateChange(function(event, session){
 
     <!-- 미연동 CTA -->
     <div id="ig-connect-section">
+      <span class="stg-trust-chip" aria-label="Meta 공식 OAuth 보안 인증">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+        보안 인증 · Meta 공식 OAuth
+      </span>
       <button class="lumi-btn lumi-btn--primary lumi-btn--full" onclick="location.href='/api/ig-oauth?step=start'">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
@@ -938,6 +1173,7 @@ window.lumiSupa.auth.onAuthStateChange(function(event, session){
         </svg>
         Meta 공식 OAuth로 연동하기
       </button>
+      <p class="stg-field__note" style="margin-top:var(--lumi-space-2);text-align:center;">비밀번호는 저장하지 않아요 · 토큰은 암호화 저장</p>
     </div>
 
     <!-- 연동됨 해제 버튼 (hidden by default) -->
@@ -980,12 +1216,16 @@ window.lumiSupa.auth.onAuthStateChange(function(event, session){
       <button class="lumi-btn lumi-btn--secondary lumi-btn--full" disabled style="opacity:.55;cursor:not-allowed;" id="tiktok-connect-btn" onclick="connectTiktok()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <circle cx="12" cy="12" r="10"/>
-          <line x1="12" y1="8" x2="12" y2="12"/>
-          <line x1="12" y1="16" x2="12.01" y2="16"/>
+          <polyline points="12 6 12 12 16 14"/>
         </svg>
-        TikTok 계정 연결 — 앱 심사 대기 중
+        TikTok 계정 연결 — 곧 오픈 예정
       </button>
-      <p class="stg-field__note" style="margin-top:var(--lumi-space-2);text-align:center;">TikTok 개발자 앱 심사 통과 후 활성화됩니다</p>
+      <div class="stg-tiktok-soon" role="note">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 12l5 5L20 7"/>
+        </svg>
+        <span><strong>곧 오픈 예정입니다.</strong> TikTok 개발자 앱 심사 통과 후 자동 활성화돼요</span>
+      </div>
     </div>
 
     <!-- 연결됨 해제 버튼 (hidden by default) -->
@@ -1018,7 +1258,7 @@ window.lumiSupa.auth.onAuthStateChange(function(event, session){
     <div class="stg-toggle-row">
       <div class="stg-toggle-text">
         <p class="stg-toggle-label">카카오 알림톡</p>
-        <p class="stg-toggle-desc">게시 완료·실패·트렌드 추천 등 알림</p>
+        <p class="stg-toggle-desc">예약된 게시물이 성공적으로 올라가면 알려드려요. 실패 시 즉시 안내드려요</p>
       </div>
       <button class="stg-toggle is-on" id="t-kakao" role="switch" aria-checked="true" onclick="toggleNotif(this, 'kakao')"></button>
     </div>
@@ -1026,13 +1266,16 @@ window.lumiSupa.auth.onAuthStateChange(function(event, session){
     <div class="stg-toggle-row">
       <div class="stg-toggle-text">
         <p class="stg-toggle-label">이메일 알림</p>
-        <p class="stg-toggle-desc">월간 리포트, 공지사항</p>
+        <p class="stg-toggle-desc">매월 1일에 지난 달 게시물·트렌드 요약 리포트와 새 기능 공지를 보내드려요</p>
       </div>
       <button class="stg-toggle is-on" id="t-email" role="switch" aria-checked="true" onclick="toggleNotif(this, 'email')"></button>
     </div>
 
     <div class="stg-schedule-row">
-      <span class="stg-schedule-row__label">데일리 스케줄 알림</span>
+      <div class="stg-schedule-row__label">
+        <span style="display:block;">데일리 스케줄 알림</span>
+        <span style="display:block;font-weight:400;font-size:var(--lumi-text-caption);color:var(--lumi-ink-muted);margin-top:2px;">선택한 시간에 오늘 예약된 게시물·할 일을 짚어드려요</span>
+      </div>
       <select class="stg-schedule-row__select" id="s-notif-time" onchange="saveNotifTime()">
         <option value="07:00">오전 7시</option>
         <option value="08:00">오전 8시</option>
@@ -1125,36 +1368,50 @@ window.lumiSupa.auth.onAuthStateChange(function(event, session){
       <h2 class="stg-card__title">데이터·계정 관리</h2>
     </div>
 
-    <div style="display:flex;flex-direction:column;gap:var(--lumi-space-3);">
-      <div class="stg-danger-row">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--lumi-brand-text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;" aria-hidden="true">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="7 10 12 15 17 10"/>
-          <line x1="12" y1="15" x2="12" y2="3"/>
+    <details class="stg-collapsible">
+      <summary>
+        <span style="display:inline-flex;align-items:center;gap:var(--lumi-space-2);">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--lumi-brand-text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          보안 및 개인정보
+        </span>
+        <svg class="stg-collapsible__chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="6 9 12 15 18 9"/>
         </svg>
-        <div class="stg-danger-row__content">
-          <p class="stg-danger-row__title">개인정보 다운로드</p>
-          <p class="stg-danger-row__desc">매장 정보·등록 이미지·예약 이력을 JSON으로 내려받아요 (개인정보보호법 §35 포터빌리티)</p>
-        </div>
-        <button class="lumi-btn lumi-btn--primary lumi-btn--sm" id="export-btn" onclick="exportMyData()">요청하기</button>
-      </div>
+      </summary>
 
-      <div class="stg-danger-row">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--lumi-error)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;" aria-hidden="true">
-          <polyline points="3 6 5 6 21 6"/>
-          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-          <path d="M10 11v6M14 11v6"/>
-          <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>
-        </svg>
-        <div class="stg-danger-row__content">
-          <p class="stg-danger-row__title">데이터 삭제 안내</p>
-          <p class="stg-danger-row__desc">수집된 개인정보 삭제 절차와 요건을 확인하세요</p>
+      <div class="stg-collapsible__body">
+        <div class="stg-danger-row">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--lumi-brand-text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          <div class="stg-danger-row__content">
+            <p class="stg-danger-row__title">개인정보 다운로드</p>
+            <p class="stg-danger-row__desc">매장 정보·등록 이미지·예약 이력을 JSON으로 내려받아요 (개인정보보호법 §35 포터빌리티)</p>
+          </div>
+          <button class="lumi-btn lumi-btn--primary lumi-btn--sm" id="export-btn" onclick="exportMyData()">요청하기</button>
         </div>
-        <a href="/privacy#data-deletion" class="lumi-btn lumi-btn--secondary lumi-btn--sm">안내 보기</a>
-      </div>
-    </div>
 
-    <p class="stg-danger-legal">법정 보존 의무(접속 로그 3개월) 대상 데이터는 기간 만료 후 자동 파기됩니다. 자세한 내용은 <a href="/privacy">개인정보처리방침</a> 참조.</p>
+        <div class="stg-danger-row">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--lumi-error)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;" aria-hidden="true">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+            <path d="M10 11v6M14 11v6"/>
+            <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>
+          </svg>
+          <div class="stg-danger-row__content">
+            <p class="stg-danger-row__title">데이터 삭제 안내</p>
+            <p class="stg-danger-row__desc">수집된 개인정보 삭제 절차와 요건을 확인하세요</p>
+          </div>
+          <a href="/privacy#data-deletion" class="lumi-btn lumi-btn--secondary lumi-btn--sm">안내 보기</a>
+        </div>
+
+        <p class="stg-danger-legal">법정 보존 의무(접속 로그 3개월) 대상 데이터는 기간 만료 후 자동 파기됩니다. 자세한 내용은 <a href="/privacy">개인정보처리방침</a> 참조.</p>
+      </div>
+    </details>
 
     <div class="stg-actions">
       <button class="lumi-btn lumi-btn--danger" onclick="openDeleteModal()">계정 삭제 (30일 유예)</button>
@@ -1162,6 +1419,60 @@ window.lumiSupa.auth.onAuthStateChange(function(event, session){
   </div>
 
 </div><!-- /stg-layout -->
+
+<!-- Sticky 저장 바 (매장 정보 변경사항 감지 시 등장) -->
+<div class="stg-sticky-save" id="stg-sticky-save" role="region" aria-label="저장되지 않은 변경사항">
+  <span class="stg-sticky-save__text">저장되지 않은 변경사항이 있어요</span>
+  <button type="button" class="stg-sticky-save__btn" id="stg-sticky-save-btn" onclick="saveProfile()">변경사항 저장</button>
+</div>
+
+<!-- 말투 학습 가이드 모달 -->
+<div class="stg-modal" id="tone-guide-modal" role="dialog" aria-modal="true" aria-labelledby="tone-guide-title">
+  <div class="stg-modal__box">
+    <div class="stg-modal__header">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--lumi-brand-text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+        <line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+      <h3 class="stg-modal__title" id="tone-guide-title">말투 샘플 — 좋은 예시</h3>
+    </div>
+    <p class="stg-modal__body">사장님이 평소 인스타에 올리던 캡션을 그대로 붙여넣으면 가장 잘 학습돼요. 아래 예시를 참고해 주세요.</p>
+
+    <div class="stg-tone-examples">
+      <div class="stg-tone-ex stg-tone-ex--good">
+        <div class="stg-tone-ex__head">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          이렇게 쓰면 좋아요
+        </div>
+        <div class="stg-tone-ex__body">"오늘은 정말 더운 하루였어요. 시원한 라떼 한 잔 어떠세요? 매장 안은 에어컨 빵빵하니 잠깐 들렀다 가셔도 좋아요"
+
+— 사장님 말투·매장 분위기·자연스러운 권유까지 한 번에 담겨 학습이 빨라요</div>
+      </div>
+
+      <div class="stg-tone-ex stg-tone-ex--bad">
+        <div class="stg-tone-ex__head">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+          피해주세요
+        </div>
+        <div class="stg-tone-ex__body">"신메뉴 출시! 빨리 오세요!!! #카페 #신메뉴"
+
+— 너무 짧은 광고 문구는 말투 학습이 어려워요. 평소 게시물처럼 자연스러운 문장으로 적어주세요</div>
+      </div>
+    </div>
+
+    <p class="stg-modal__note">팁: 입력 칸 3개를 모두 채울수록 캡션 품질이 올라가요. 다음 방문 때 새로 만든 캡션도 자동 학습되니, 처음엔 1~2개만 적어도 괜찮아요.</p>
+
+    <div class="stg-modal__actions">
+      <button class="lumi-btn lumi-btn--primary lumi-btn--sm" onclick="closeToneGuide()">알겠어요</button>
+    </div>
+  </div>
+</div>
 
 <!-- 회원 탈퇴 확인 모달 -->
 <div class="stg-modal" id="delete-modal" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
@@ -1332,6 +1643,8 @@ function applySocialStatus(u) {
 
 // 초기 적용
 applyUserToUI(user);
+// 초기 적용 후 dirty 스냅샷 갱신 (sticky bar 오노출 방지)
+setTimeout(function(){ try { snapshotProfile(); } catch(_){} }, 0);
 if (settings.kakaoNotif === false) {
   var tk = document.getElementById('t-kakao');
   tk.classList.remove('is-on');
@@ -1365,8 +1678,53 @@ if (localStorage.getItem('lumi_token')) {
       user = Object.assign(user, mapped);
       localStorage.setItem('lumi_user', JSON.stringify(user));
       applyUserToUI(user);
+      try { snapshotProfile(); } catch(_){}
     })
     .catch(function(){});
+}
+
+/* ── 매장 정보 dirty 감지 + sticky save bar ── */
+var profileBaseline = '';
+function readProfileFields() {
+  return JSON.stringify({
+    n: (document.getElementById('s-store') || {}).value || '',
+    b: (document.getElementById('s-biz') || {}).value || '',
+    d: (document.getElementById('s-store-desc') || {}).value || '',
+    t1: (document.getElementById('s-tone-1') || {}).value || '',
+    t2: (document.getElementById('s-tone-2') || {}).value || '',
+    t3: (document.getElementById('s-tone-3') || {}).value || ''
+  });
+}
+function snapshotProfile() {
+  profileBaseline = readProfileFields();
+  hideStickySave();
+}
+function checkDirty() {
+  var bar = document.getElementById('stg-sticky-save');
+  if (!bar) return;
+  var dirty = readProfileFields() !== profileBaseline;
+  if (dirty) bar.classList.add('is-show');
+  else bar.classList.remove('is-show');
+}
+function hideStickySave() {
+  var bar = document.getElementById('stg-sticky-save');
+  if (bar) bar.classList.remove('is-show');
+}
+['s-store','s-biz','s-store-desc','s-tone-1','s-tone-2','s-tone-3'].forEach(function(id){
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('input', checkDirty);
+  el.addEventListener('change', checkDirty);
+});
+
+/* ── 말투 학습 가이드 모달 ── */
+function openToneGuide() {
+  var m = document.getElementById('tone-guide-modal');
+  if (m) m.classList.add('is-open');
+}
+function closeToneGuide() {
+  var m = document.getElementById('tone-guide-modal');
+  if (m) m.classList.remove('is-open');
 }
 
 /* ── 카드 등장 애니메이션 ── */
@@ -1416,6 +1774,9 @@ function saveProfile() {
     toneSample3: tone3
   };
 
+  var stickyBtn = document.getElementById('stg-sticky-save-btn');
+  if (stickyBtn) { stickyBtn.disabled = true; stickyBtn.textContent = '저장 중…'; }
+
   fetch('/api/update-profile', {
     method: 'POST',
     headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
@@ -1428,8 +1789,12 @@ function saveProfile() {
         return;
       }
       showToast('매장 정보가 저장됐어요');
+      try { snapshotProfile(); } catch(_){}
     })
-    .catch(function(){ showToast('네트워크 오류가 발생했어요. 잠시 후 다시 시도해 주세요.'); });
+    .catch(function(){ showToast('네트워크 오류가 발생했어요. 잠시 후 다시 시도해 주세요.'); })
+    .finally(function(){
+      if (stickyBtn) { stickyBtn.disabled = false; stickyBtn.textContent = '변경사항 저장'; }
+    });
 }
 
 /* ── 인스타 연동 해제 ── */
@@ -1677,14 +2042,18 @@ function disconnectTiktok() {
 
 /* ── 모달 외부 클릭 닫기 ── */
 document.addEventListener('click', function(ev) {
-  var m = document.getElementById('delete-modal');
-  if (!m || !m.classList.contains('is-open')) return;
-  if (ev.target === m) closeDeleteModal();
+  var dm = document.getElementById('delete-modal');
+  if (dm && dm.classList.contains('is-open') && ev.target === dm) closeDeleteModal();
+  var tm = document.getElementById('tone-guide-modal');
+  if (tm && tm.classList.contains('is-open') && ev.target === tm) closeToneGuide();
 });
 
 /* ── ESC 닫기 ── */
 document.addEventListener('keydown', function(ev) {
-  if (ev.key === 'Escape') closeDeleteModal();
+  if (ev.key === 'Escape') {
+    closeDeleteModal();
+    closeToneGuide();
+  }
 });
 
 /* ── 토스트 ── */
