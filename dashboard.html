@@ -1503,14 +1503,26 @@ body {
     return 'D-' + diff;
   }
 
+  async function getDashToken() {
+    // Supabase session → lumi_token → lumi_seller_jwt 순 (카카오 가입자 호환)
+    try {
+      if (window.lumiSupa) {
+        var s = await window.lumiSupa.auth.getSession();
+        var sess = s && s.data && s.data.session;
+        if (sess && sess.access_token) return sess.access_token;
+      }
+    } catch (e) {}
+    try {
+      var ls = localStorage.getItem('lumi_token') || localStorage.getItem('lumi_seller_jwt');
+      if (ls) return ls;
+    } catch (e) {}
+    return null;
+  }
+
   async function loadDashStats() {
     /* 1. reservations → dashCardScheduled + railScheduleList */
     try {
-      var token = null;
-      if (window.lumiSupa) {
-        var sess = await window.lumiSupa.auth.getSession();
-        token = sess.data && sess.data.session && sess.data.session.access_token;
-      }
+      var token = await getDashToken();
       if (token) {
         var rr = await fetch('/api/list-reservations', { headers: { Authorization: 'Bearer ' + token } });
         if (rr.ok) {
@@ -1550,11 +1562,7 @@ body {
 
     /* 2. seller industry → trends count + railTrendList */
     try {
-      var token2 = null;
-      if (window.lumiSupa) {
-        var sess2 = await window.lumiSupa.auth.getSession();
-        token2 = sess2.data && sess2.data.session && sess2.data.session.access_token;
-      }
+      var token2 = await getDashToken();
       var cat = 'cafe';
       if (token2) {
         try {
