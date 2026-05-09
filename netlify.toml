@@ -69,6 +69,12 @@
 [functions."scheduler"]
   schedule = "* * * * *"
 
+# cron 잠수 감시 — heartbeat stale 시 LUMI_ADMIN_EMAILS 로 메일 알림
+# 매시간 실행. 6시간 cooldown 으로 동일 cron 반복 알림 억제.
+# 2026-05-01~08 .catch 안티패턴이 9일 잠복하던 사고 재발 방지용.
+[functions."cron-watchdog-background"]
+  schedule = "0 * * * *"
+
 # TikTok access_token 만료 임박 계정 일괄 갱신 (매 6시간)
 [functions."tiktok-token-refresh-background"]
   schedule = "0 */6 * * *"
@@ -112,26 +118,6 @@
   status = 200
   force = true
 
-# Sprint 2 — 첫 상품 등록 풀 흐름
-[[redirects]]
-  from = "/api/upload-product-image"
-  to = "/.netlify/functions/upload-product-image"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/cs-threads"
-  to = "/.netlify/functions/cs-threads"
-  status = 200
-  force = true
-
-# Sprint 4 — 대시보드 트렌드
-[[redirects]]
-  from = "/api/trend-recommendations"
-  to = "/.netlify/functions/trend-recommendations"
-  status = 200
-  force = true
-
 [[redirects]]
   from = "/api/live-events"
   to = "/.netlify/functions/live-events"
@@ -143,14 +129,6 @@
   to = "/.netlify/functions/dismiss-trend"
   status = 200
   force = true
-
-
-[[redirects]]
-  from = "/api/priority-queue"
-  to = "/.netlify/functions/priority-queue"
-  status = 200
-  force = true
-
 
 # 예약 홍보 게시 수동 트리거용 리다이렉트
 [[redirects]]

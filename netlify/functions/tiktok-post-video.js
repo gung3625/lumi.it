@@ -19,6 +19,7 @@
 
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
+const { safeAwait } = require('./_shared/supa-safe');
 
 const TIKTOK_VIDEO_ENDPOINT = 'https://open.tiktokapis.com/v2/post/publish/video/init/';
 
@@ -154,11 +155,13 @@ exports.handler = async (event) => {
 
       // 토큰 만료 감지 → tiktok_accounts 상태 초기화
       if (errCode === 'access_token_invalid' || errCode === 'scope_not_authorized' || apiRes.status === 401) {
-        await supabase
-          .from('tiktok_accounts')
-          .update({ token_status: 'expired', updated_at: new Date().toISOString() })
-          .eq('seller_id', seller_id)
-          .catch((e) => console.error('[tiktok-post-video] 토큰 만료 상태 기록 실패:', e.message));
+        const { error: updErr } = await safeAwait(
+          supabase
+            .from('tiktok_accounts')
+            .update({ token_status: 'expired', updated_at: new Date().toISOString() })
+            .eq('seller_id', seller_id)
+        );
+        if (updErr) console.error('[tiktok-post-video] 토큰 만료 상태 기록 실패:', updErr.message);
       }
 
       return {

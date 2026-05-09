@@ -16,6 +16,7 @@
 'use strict';
 
 const { getAdminClient } = require('./supabase-admin');
+const { safeAwait } = require('./supa-safe');
 
 // ── 모델별 추정 비용 ──────────────────────────────────────
 const MODEL_COST_KRW = {
@@ -184,13 +185,13 @@ async function checkAndIncrementQuota(sellerId, model = 'gpt-4o', estCostKrw) {
 async function bumpQuota(admin, sellerId, today, thisMonth, cost) {
   if (!sellerId) return;
 
-  // RPC atomic 시도
-  const { error: rpcErr } = await admin.rpc('bump_openai_quota_atomic', {
+  // RPC atomic 시도 (PostgrestBuilder 는 .catch 가 없어 직접 체이닝 금지 → safeAwait)
+  const { error: rpcErr } = await safeAwait(admin.rpc('bump_openai_quota_atomic', {
     p_seller_id: sellerId,
     p_daily_date: today,
     p_month_date: thisMonth,
     p_cost_krw: cost,
-  }).catch(() => ({ error: { message: 'rpc_catch' } }));
+  }));
 
   if (!rpcErr) return;
 
