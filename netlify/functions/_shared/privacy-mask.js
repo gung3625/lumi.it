@@ -76,15 +76,6 @@ function maskEmail(email) {
 }
 
 /**
- * 사업자번호 마스킹 — "1234567890" → "123-45-***90"
- */
-function maskBusinessNumber(input) {
-  const num = String(input || '').replace(/\D/g, '');
-  if (num.length !== 10) return '***';
-  return `${num.slice(0, 3)}-${num.slice(3, 5)}-***${num.slice(8)}`;
-}
-
-/**
  * 자격증명 마스킹 — 중간을 ●로, 마지막 4자리만 노출
  */
 function maskCredential(input) {
@@ -150,7 +141,6 @@ module.exports = {
   maskPhone,
   maskAddress,
   maskEmail,
-  maskBusinessNumber,
   maskCredential,
   maskBuyerFields,
   maskOrderForResponse,

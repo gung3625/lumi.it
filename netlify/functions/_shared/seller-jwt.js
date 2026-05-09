@@ -1,7 +1,7 @@
 // 셀러 전용 JWT 발급/검증 헬퍼
 // - HS256, JWT_SECRET 환경변수 사용
-// - 14일 유효, payload = { seller_id, business_number_masked }
-// - Sprint 1 전용 (기존 Supabase Auth와 별도, 향후 통합 예정)
+// - 14일 유효, payload = { seller_id }
+// - 기존 Supabase Auth와 별도, 향후 통합 예정
 const crypto = require('crypto');
 
 const JWT_TTL_SECONDS = 60 * 60 * 24 * 14; // 14일
@@ -30,7 +30,7 @@ function getSecret() {
 
 /**
  * 셀러 JWT 발급
- * @param {{ seller_id: string, business_number_masked?: string }} payload
+ * @param {{ seller_id: string }} payload
  * @returns {string} JWT 토큰
  */
 function signSellerToken(payload) {

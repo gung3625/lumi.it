@@ -15,7 +15,6 @@
 // 주의:
 //   - 빈 문자열은 NULL로 변환 (사용자가 명시적으로 비움)
 //   - 미전달 키 (undefined)는 무시 (부분 업데이트)
-//   - business_number는 보안상 변경 금지 (사업자 인증 별도 흐름)
 
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifySellerToken, extractBearerToken } = require('./_shared/seller-jwt');
