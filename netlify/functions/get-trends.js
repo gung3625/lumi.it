@@ -148,28 +148,87 @@ function splitBeautyCategory(keywords, requestedCat) {
   return keywords;
 }
 
-// 월별 시즌 키워드 (fallback)
+// 월별 시즌 키워드 — 대분류별로 차별화. sub 카테고리는 SUB_TO_MAJOR 로 매핑.
+// 빙수가 네일샵·헬스장에도 추천되던 버그 fix.
 const SEASON_EVENTS = {
-  1: ['신년', '새해', '겨울간식', '따뜻한음료'],
-  2: ['발렌타인', '딸기시즌', '봄신메뉴', '설날'],
-  3: ['벚꽃', '봄나들이', '화이트데이', '봄맞이'],
-  4: ['봄꽃', '피크닉', '야외테라스', '꽃놀이'],
-  5: ['어버이날', '스승의날', '가정의달', '감사이벤트'],
-  6: ['여름시작', '빙수', '아이스메뉴', '냉면'],
-  7: ['빙수', '여름휴가', '수박', '시즌한정'],
-  8: ['가을준비', '얼리가을', '빙수라스트', '방학'],
-  9: ['추석', '명절선물', '단풍', '가을감성'],
-  10: ['핼러윈', '단풍', '가을축제', '고구마'],
-  11: ['수능', '블랙프라이데이', '겨울준비', '연말'],
-  12: ['크리스마스', '연말파티', '겨울한정', '송년'],
+  // 외식 (cafe / food) — 메뉴·디저트·명절 음식 위주
+  foodservice: {
+    1:  ['신년', '따뜻한음료', '겨울간식', '귤시즌'],
+    2:  ['발렌타인', '딸기시즌', '봄신메뉴', '설날'],
+    3:  ['화이트데이', '벚꽃카페', '봄신메뉴', '봄나들이'],
+    4:  ['봄꽃', '피크닉', '야외테라스', '딸기디저트'],
+    5:  ['어버이날', '스승의날', '가정의달', '감사선물'],
+    6:  ['여름시작', '빙수', '아이스메뉴', '냉음료'],
+    7:  ['빙수', '여름휴가', '수박', '시즌한정'],
+    8:  ['빙수마지막', '휴가복귀', '얼리가을', '말차디저트'],
+    9:  ['추석', '명절선물', '가을신메뉴', '밤디저트'],
+    10: ['핼러윈', '단풍감성', '가을디저트', '고구마'],
+    11: ['수능간식', '블랙프라이데이', '겨울준비', '연말이벤트'],
+    12: ['크리스마스', '연말파티', '겨울한정', '송년'],
+  },
+  // 미용 (hair / nail / beauty) — 시술·메이크업·시즌 컬러
+  beauty_service: {
+    1:  ['신년단장', '겨울보습', '새해스타일', '핸드크림'],
+    2:  ['발렌타인메이크업', '졸업식헤어', '입학식준비', '봄대비'],
+    3:  ['입학식', '봄염색', '꽃봄네일', '봄피부관리'],
+    4:  ['봄데이트룩', '체리블라썸네일', '봄메이크업', '결혼시즌'],
+    5:  ['어버이날선물', '웨딩시즌', '봄결혼식', '가정의달'],
+    6:  ['여름메이크업', '자외선차단', '땀에강한', '여름네일'],
+    7:  ['여름네일', '바캉스헤어', '휴가메이크업', '쿨톤네일'],
+    8:  ['트러블케어', '여름끝', '가을준비', '워터프루프'],
+    9:  ['가을염색', '웜톤메이크업', '추석명절룩', '머리결관리'],
+    10: ['가을웨딩', '차분한컬러', '단풍네일', '뿌리염색'],
+    11: ['송년모임헤어', '연말네일', '이벤트메이크업', '글리터'],
+    12: ['크리스마스파티', '연말룩', '글래머네일', '새해단장'],
+  },
+  // 소매 (fashion / flower / pet) — 시즌 의류·꽃·반려동물용품
+  retail: {
+    1:  ['새해선물', '겨울세일', '신년코디', '실내반려'],
+    2:  ['발렌타인선물', '겨울끝세일', '졸업식꽃', '봄간절기'],
+    3:  ['입학식', '봄신상', '봄꽃부케', '봄산책'],
+    4:  ['봄피크닉', '결혼시즌', '봄꽃부케', '벚꽃산책'],
+    5:  ['어버이날카네이션', '스승의날선물', '가정의달', '결혼식부케'],
+    6:  ['여름시작', '간절기마무리', '여름꽃', '반려동물여름'],
+    7:  ['휴가룩', '바캉스아이템', '여름꽃', '쿨링용품'],
+    8:  ['휴가마무리', '가을신상', '진드기예방', '말복'],
+    9:  ['추석명절선물', '가을신상', '추석꽃', '명절선물'],
+    10: ['가을웨딩', '핼러윈', '단풍산책룩', '가을산책용품'],
+    11: ['블랙프라이데이', '겨울아우터', '연말선물', '실내놀이'],
+    12: ['크리스마스선물', '연말선물', '새해준비', '겨울보온'],
+  },
+  // 운동·레저 (fitness) — 다이어트·시즌 운동
+  wellness: {
+    1:  ['새해다이어트', '신년운동', '홈트레이닝', '체중감량'],
+    2:  ['다이어트지속', '체중관리', '실내운동', '근력'],
+    3:  ['봄운동', '야외러닝', '다이어트시작', '봄피크닉체력'],
+    4:  ['봄야외운동', '등산시즌', '자전거', '체력관리'],
+    5:  ['가정의달건강', '체력보강', '5월건강', '엄마건강'],
+    6:  ['여름몸만들기', '바프준비', '다이어트시즌', '수영시즌'],
+    7:  ['여름휴가전', '바캉스몸매', '수영', '비치바디'],
+    8:  ['휴가후관리', '체중복구', '가을준비', '휴가후바디'],
+    9:  ['가을등산', '러닝시즌', '실외운동', '추석후다이어트'],
+    10: ['가을트레킹', '마라톤시즌', '등산', '단풍러닝'],
+    11: ['겨울운동', '실내운동전환', '체중관리', '11월다이어트'],
+    12: ['송년건강', '연말운동', '새해준비', '연말몸매관리'],
+  },
+};
+
+// sub 카테고리 → 대분류 매핑 (프론트 categories.js 와 동일 그룹)
+const SUB_TO_MAJOR = {
+  cafe: 'foodservice', food: 'foodservice',
+  hair: 'beauty_service', nail: 'beauty_service', beauty: 'beauty_service',
+  fashion: 'retail', flower: 'retail', pet: 'retail',
+  fitness: 'wellness',
 };
 
 const CORS = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' };
 
-function getSeasonInfo() {
+function getSeasonInfo(category) {
+  const major = SUB_TO_MAJOR[category] || 'foodservice';
   const month = new Date().getMonth() + 1;
-  const now = SEASON_EVENTS[month] || [];
-  const next = SEASON_EVENTS[(month % 12) + 1] || [];
+  const table = SEASON_EVENTS[major] || SEASON_EVENTS.foodservice;
+  const now = table[month] || [];
+  const next = table[(month % 12) + 1] || [];
   return { now, upcoming: next.slice(0, 3) };
 }
 
@@ -364,7 +423,7 @@ exports.handler = async (event) => {
       body: JSON.stringify({
         category, categoryLabel: '지원하지 않는 업종',
         tags: [], keywords: [],
-        season: getSeasonInfo(),
+        season: getSeasonInfo(category),
         updatedAt: new Date().toISOString(),
         source: 'unsupported-category',
         error: `Unknown category '${category}'. Supported: ${knownCategories.join(', ')}`,
@@ -374,7 +433,7 @@ exports.handler = async (event) => {
   const storeKey = DB_KEY_MAP[category] || category;
   // splitBeautyCategory 분리 필터 비활성 (hair/nail 자체 row 사용)
   const beautySubcat = null;
-  const season = getSeasonInfo();
+  const season = getSeasonInfo(category);
   // label은 요청 카테고리 기준 (hair/nail은 storeKey=beauty이지만 라벨은 각자)
   const label = CATEGORY_LABELS[category] || CATEGORY_LABELS[storeKey] || '일반';
 
