@@ -335,12 +335,6 @@
 
 
 
-# 에이전트 오피스 라우팅
-[[redirects]]
-  from = "/office"
-  to = "/office/index.html"
-  status = 200
-
 [[redirects]]
   from = "/support"
   to = "/support.html"
@@ -365,12 +359,6 @@
   from = "/prototype.html"
   to = "/"
   status = 301
-
-[[redirects]]
-  from = "/api/admin/apply-launch-migrations"
-  to = "/.netlify/functions/admin-apply-launch-migrations"
-  status = 200
-  force = true
 
 # 30일 유예 회원 탈퇴 — 만료 처리 (UTC 18:00 = KST 03:00)
 [functions."process-account-deletion-background"]
@@ -434,6 +422,15 @@
 [[redirects]]
   from = "/api/brand-settings"
   to = "/.netlify/functions/brand-settings"
+  status = 200
+  force = true
+
+# 데모 이미지 12장 자동 생성 — 관리자 전용 (LUMI_SECRET).
+# OpenAI Images API → assets/demo/NN.jpg 로 GitHub Contents API direct commit.
+# /api/* 일반 splat이 -background 접미사를 자동 안 붙여주므로 별도 redirect.
+[[redirects]]
+  from = "/api/admin-generate-demo-images"
+  to = "/.netlify/functions/admin-generate-demo-images-background"
   status = 200
   force = true
 
