@@ -184,7 +184,148 @@
       .add-button::before,
       .add-button::after,
       .coach,
-      .add-button { animation: none; }
+      .add-button,
+      .step,
+      .gallery__check { animation: none; }
+    }
+
+    /* === Step 공통 (전환 애니) === */
+    .step {
+      animation: step-enter 400ms var(--ease-toss);
+    }
+    @keyframes step-enter {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0);    }
+    }
+    .step[hidden] { display: none; }
+
+    /* === Step 2: 갤러리 === */
+    .gallery-step {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      min-height: 100dvh;
+      background: var(--bg);
+      isolation: isolate;
+    }
+    .gallery-step .coach {
+      margin: calc(env(safe-area-inset-top) + var(--space-12)) 0 var(--space-6);
+      padding: 0 var(--space-5);
+      animation: rise 600ms var(--ease-toss) 100ms backwards;
+    }
+    .gallery-wrap {
+      flex: 1;
+      padding: var(--space-2) var(--space-5) var(--space-32);
+    }
+
+    .gallery {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+    .gallery__item { aspect-ratio: 1 / 1; }
+    .gallery__card {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      transition:
+        transform var(--duration-snap) var(--ease-toss),
+        box-shadow var(--duration-fast) var(--ease-toss);
+    }
+    .gallery__card:active { transform: scale(0.96); }
+    .gallery__card.is-selected {
+      box-shadow:
+        inset 0 0 0 3px var(--pink-500),
+        var(--shadow-glow-sm);
+    }
+    .gallery__bg {
+      position: absolute;
+      inset: 0;
+      display: block;
+    }
+    .gallery__bg--g1  { background: linear-gradient(135deg, #FF6B8B, #DDA0DD); }
+    .gallery__bg--g2  { background: linear-gradient(135deg, #DDA0DD, #EDD080); }
+    .gallery__bg--g3  { background: linear-gradient(135deg, #EDD080, #DABA65); }
+    .gallery__bg--g4  { background: linear-gradient(135deg, #FF6B8B, #FFE6EE); }
+    .gallery__bg--g5  { background: linear-gradient(45deg, #FF6B8B, #EDD080); }
+    .gallery__bg--g6  { background: radial-gradient(circle at 30% 30%, #DDA0DD, #FF6B8B); }
+    .gallery__bg--g7  { background: linear-gradient(180deg, #EDD080, #DABA65); }
+    .gallery__bg--g8  { background: radial-gradient(ellipse at top, #FF6B8B, #DDA0DD 70%); }
+    .gallery__bg--g9  { background: linear-gradient(225deg, #DABA65, #FF6B8B); }
+    .gallery__bg--g10 { background: conic-gradient(from 0deg, #FF6B8B, #DDA0DD, #EDD080, #DABA65, #FF6B8B); }
+    .gallery__bg--g11 { background: linear-gradient(135deg, #FFE6EE, #FFD0DD); }
+    .gallery__bg--g12 { background: linear-gradient(45deg, #C8507A, #FF6B8B); }
+
+    .gallery__check {
+      position: absolute;
+      top: var(--space-2);
+      right: var(--space-2);
+      width: 28px;
+      height: 28px;
+      border-radius: var(--radius-full);
+      background: var(--pink-500);
+      color: var(--neutral-0);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--shadow-md);
+      opacity: 0;
+      transform: scale(0);
+      transition:
+        opacity var(--duration-snap) var(--ease-toss),
+        transform var(--duration-snap) var(--ease-spring);
+    }
+    .gallery__card.is-selected .gallery__check {
+      opacity: 1;
+      transform: scale(1);
+    }
+    .gallery__check svg {
+      width: 16px;
+      height: 16px;
+      stroke-width: 3;
+    }
+
+    /* === Sticky CTA (다음 버튼) === */
+    .step__cta {
+      position: sticky;
+      bottom: 0;
+      padding:
+        var(--space-4)
+        var(--space-5)
+        calc(env(safe-area-inset-bottom) + var(--space-5));
+      background: linear-gradient(180deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.9) 40%,
+        var(--bg) 100%);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 5;
+    }
+    .cta-button {
+      width: 100%;
+      height: var(--btn-h-lg);
+      border-radius: var(--radius-pill);
+      background: var(--gradient-signature);
+      color: var(--neutral-0);
+      font-size: var(--text-body-lg);
+      font-weight: var(--weight-semibold);
+      letter-spacing: var(--tracking-snug);
+      box-shadow: var(--shadow-glow);
+      transition:
+        transform var(--duration-snap) var(--ease-toss),
+        opacity var(--duration-fast) var(--ease-toss);
+    }
+    .cta-button:active { transform: scale(0.97); }
+    .cta-button[disabled] {
+      background: var(--neutral-100);
+      color: var(--neutral-400);
+      box-shadow: none;
+      pointer-events: none;
     }
 
     /* === 푸터 === */
@@ -293,32 +434,72 @@
   </style>
 </head>
 <body>
-  <main class="stage" role="main">
-    <!-- 진행 6스텝 -->
-    <div class="progress" aria-label="튜토리얼 진행">
-      <span class="progress-dot is-active" aria-current="step"></span>
-      <span class="progress-dot"></span>
-      <span class="progress-dot"></span>
-      <span class="progress-dot"></span>
-      <span class="progress-dot"></span>
-      <span class="progress-dot"></span>
-    </div>
+  <main role="main">
 
-    <!-- 건너뛰기 -->
-    <button class="skip" type="button">건너뛰기</button>
+    <!-- Step 1: 빈 홈 + 사진 추가 -->
+    <section class="stage step" data-step="1" id="step-1">
+      <div class="progress" aria-label="튜토리얼 진행">
+        <span class="progress-dot is-active" aria-current="step"></span>
+        <span class="progress-dot"></span>
+        <span class="progress-dot"></span>
+        <span class="progress-dot"></span>
+        <span class="progress-dot"></span>
+        <span class="progress-dot"></span>
+      </div>
 
-    <!-- 코치 카피 -->
-    <div class="coach">
-      <h1 class="coach-title">사진 한 장이면 돼요</h1>
-      <p class="coach-sub">글은 루미가 써요</p>
-    </div>
+      <button class="skip" type="button">건너뛰기</button>
 
-    <!-- 사진 추가 버튼 -->
-    <button class="add-button" type="button" aria-label="사진 추가">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M12 5v14M5 12h14"/>
-      </svg>
-    </button>
+      <div class="coach">
+        <h1 class="coach-title">사진 한 장이면 돼요</h1>
+        <p class="coach-sub">글은 루미가 써요</p>
+      </div>
+
+      <button class="add-button" type="button" aria-label="사진 추가">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+      </button>
+    </section>
+
+    <!-- Step 2: 갤러리 -->
+    <section class="gallery-step step" data-step="2" id="step-2" hidden>
+      <div class="progress" aria-label="튜토리얼 진행">
+        <span class="progress-dot"></span>
+        <span class="progress-dot is-active" aria-current="step"></span>
+        <span class="progress-dot"></span>
+        <span class="progress-dot"></span>
+        <span class="progress-dot"></span>
+        <span class="progress-dot"></span>
+      </div>
+
+      <button class="skip" type="button">건너뛰기</button>
+
+      <div class="coach">
+        <h1 class="coach-title">사진을 골라보세요</h1>
+        <p class="coach-sub">한 장이든 10장이든</p>
+      </div>
+
+      <div class="gallery-wrap">
+        <ul class="gallery" role="list">
+          <li class="gallery__item"><button class="gallery__card" type="button" data-photo="g1"  aria-pressed="false" aria-label="사진 선택"><span class="gallery__bg gallery__bg--g1"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span></button></li>
+          <li class="gallery__item"><button class="gallery__card" type="button" data-photo="g2"  aria-pressed="false" aria-label="사진 선택"><span class="gallery__bg gallery__bg--g2"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span></button></li>
+          <li class="gallery__item"><button class="gallery__card" type="button" data-photo="g3"  aria-pressed="false" aria-label="사진 선택"><span class="gallery__bg gallery__bg--g3"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span></button></li>
+          <li class="gallery__item"><button class="gallery__card" type="button" data-photo="g4"  aria-pressed="false" aria-label="사진 선택"><span class="gallery__bg gallery__bg--g4"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span></button></li>
+          <li class="gallery__item"><button class="gallery__card" type="button" data-photo="g5"  aria-pressed="false" aria-label="사진 선택"><span class="gallery__bg gallery__bg--g5"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span></button></li>
+          <li class="gallery__item"><button class="gallery__card" type="button" data-photo="g6"  aria-pressed="false" aria-label="사진 선택"><span class="gallery__bg gallery__bg--g6"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span></button></li>
+          <li class="gallery__item"><button class="gallery__card" type="button" data-photo="g7"  aria-pressed="false" aria-label="사진 선택"><span class="gallery__bg gallery__bg--g7"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span></button></li>
+          <li class="gallery__item"><button class="gallery__card" type="button" data-photo="g8"  aria-pressed="false" aria-label="사진 선택"><span class="gallery__bg gallery__bg--g8"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span></button></li>
+          <li class="gallery__item"><button class="gallery__card" type="button" data-photo="g9"  aria-pressed="false" aria-label="사진 선택"><span class="gallery__bg gallery__bg--g9"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span></button></li>
+          <li class="gallery__item"><button class="gallery__card" type="button" data-photo="g10" aria-pressed="false" aria-label="사진 선택"><span class="gallery__bg gallery__bg--g10"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span></button></li>
+          <li class="gallery__item"><button class="gallery__card" type="button" data-photo="g11" aria-pressed="false" aria-label="사진 선택"><span class="gallery__bg gallery__bg--g11"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span></button></li>
+          <li class="gallery__item"><button class="gallery__card" type="button" data-photo="g12" aria-pressed="false" aria-label="사진 선택"><span class="gallery__bg gallery__bg--g12"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span></button></li>
+        </ul>
+      </div>
+
+      <div class="step__cta">
+        <button class="cta-button" type="button" data-next disabled>다음</button>
+      </div>
+    </section>
 
   </main>
 
@@ -362,5 +543,65 @@
 
     </div>
   </footer>
+
+  <script>
+    (function () {
+      const STEPS = document.querySelectorAll('[data-step]');
+      const TOTAL = 6;
+      const MAX_PHOTOS = 10;
+      const selected = new Set();
+
+      function goTo(n) {
+        if (n < 1 || n > TOTAL) return;
+        STEPS.forEach(s => {
+          const isActive = Number(s.dataset.step) === n;
+          s.hidden = !isActive;
+          s.setAttribute('aria-hidden', String(!isActive));
+        });
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      }
+
+      // Step 1 → Step 2
+      const addBtn = document.querySelector('.add-button');
+      if (addBtn) addBtn.addEventListener('click', () => goTo(2));
+
+      // Step 2: 사진 카드 토글
+      document.querySelectorAll('.gallery__card').forEach(card => {
+        card.addEventListener('click', () => {
+          const id = card.dataset.photo;
+          if (selected.has(id)) {
+            selected.delete(id);
+            card.classList.remove('is-selected');
+            card.setAttribute('aria-pressed', 'false');
+          } else {
+            if (selected.size >= MAX_PHOTOS) return;
+            selected.add(id);
+            card.classList.add('is-selected');
+            card.setAttribute('aria-pressed', 'true');
+          }
+          const next = document.querySelector('[data-next]');
+          if (next) next.disabled = selected.size === 0;
+        });
+      });
+
+      // Step 2 다음 버튼 (Step 3 미구현 — TODO)
+      const nextBtn = document.querySelector('[data-next]');
+      if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+          if (selected.size === 0) return;
+          // TODO: goTo(3) 활성 (Step 3 구현 후)
+          console.log('선택 사진:', Array.from(selected));
+        });
+      }
+
+      // 건너뛰기 — 마지막(가입) step (TODO)
+      document.querySelectorAll('.skip').forEach(btn => {
+        btn.addEventListener('click', () => {
+          // TODO: goTo(TOTAL) 활성 (Step 6 가입 구현 후)
+          console.log('건너뛰기');
+        });
+      });
+    })();
+  </script>
 </body>
 </html>
