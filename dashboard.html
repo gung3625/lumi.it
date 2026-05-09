@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#ffffff">
   <meta name="robots" content="noindex,nofollow">
   <meta name="description" content="루미 — 사장님 대시보드">
-  <title>루미 대시보드</title>
+  <title>루미</title>
 
   <link rel="icon" type="image/png" href="/assets/favicon.png">
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
@@ -18,183 +18,266 @@
   <link rel="stylesheet" href="/css/base.css">
 
   <style>
-    .dash {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      min-height: 100dvh;
-      padding-bottom: calc(env(safe-area-inset-bottom) + 64px + var(--space-5));
-      background: var(--bg);
-      isolation: isolate;
-    }
-    .dash::before {
-      content: "";
-      position: absolute;
-      top: 25%;
-      left: 50%;
-      width: 130vmax;
-      height: 70vmax;
-      transform: translate(-50%, -50%);
-      background:
-        radial-gradient(ellipse at center,
-          rgba(255, 107, 139, 0.08) 0%,
-          rgba(221, 160, 221, 0.05) 30%,
-          rgba(237, 208, 128, 0.03) 55%,
-          transparent 70%);
-      pointer-events: none;
-      z-index: -1;
-      animation: drift 18s var(--ease-soft) infinite alternate;
-    }
-    @keyframes drift {
-      0%   { transform: translate(-50%, -50%) scale(1)    rotate(0deg);   }
-      100% { transform: translate(-48%, -52%) scale(1.08) rotate(8deg);   }
+    body {
+      padding-bottom: calc(env(safe-area-inset-bottom) + 56px);
     }
 
-    /* 인사 */
-    .dash-greet {
+    /* === 상단 헤더 === */
+    .topbar {
+      position: sticky;
+      top: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 52px;
       padding:
-        calc(env(safe-area-inset-top) + var(--space-8))
-        var(--space-5)
-        var(--space-8);
-      animation: rise 600ms var(--ease-toss) 80ms backwards;
+        env(safe-area-inset-top)
+        var(--space-4)
+        0;
+      padding-top: max(env(safe-area-inset-top), var(--space-2));
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border-bottom: 1px solid var(--line);
+      z-index: var(--z-sticky);
     }
-    @keyframes rise {
-      from { opacity: 0; transform: translateY(12px); }
-      to   { opacity: 1; transform: translateY(0);    }
-    }
-    .dash-greet__line {
-      font-size: var(--text-body);
-      color: var(--ink-muted);
-      letter-spacing: var(--tracking-snug);
-      margin-bottom: var(--space-2);
-    }
-    .dash-greet__store {
-      font-size: var(--text-headline);
-      font-weight: var(--weight-bold);
+    .topbar__icon {
+      width: 28px;
+      height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       color: var(--ink);
-      letter-spacing: var(--tracking-tight);
-      line-height: var(--leading-tight);
+      transition: transform var(--duration-snap) var(--ease-toss);
+    }
+    .topbar__icon:active { transform: scale(0.9); }
+    .topbar__icon svg { width: 24px; height: 24px; stroke-width: 2; }
+    .topbar__brand {
+      display: inline-flex;
+      align-items: center;
+    }
+    .topbar__brand img { height: 22px; width: auto; }
+
+    /* === 스토리 트레이 === */
+    .stories {
+      display: flex;
+      gap: var(--space-3);
+      padding: var(--space-4);
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-snap-type: x proximity;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      border-bottom: 1px solid var(--line);
+    }
+    .stories::-webkit-scrollbar { display: none; }
+    .story {
+      flex: 0 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      width: 72px;
+      scroll-snap-align: start;
+    }
+    .story__avatar {
+      position: relative;
+      width: 64px;
+      height: 64px;
+      border-radius: var(--radius-full);
+      padding: 3px;
+      background: var(--gradient-signature);
+      transition: transform var(--duration-snap) var(--ease-toss);
+    }
+    .story:active .story__avatar { transform: scale(0.94); }
+    .story__avatar-inner {
+      width: 100%;
+      height: 100%;
+      border-radius: var(--radius-full);
+      background: var(--bg);
+      padding: 2px;
+      box-sizing: border-box;
+    }
+    .story__avatar-bg {
+      width: 100%;
+      height: 100%;
+      border-radius: var(--radius-full);
+      background-size: cover;
+      background-position: center;
+    }
+    /* 첫 슬롯 = 내 매장 (+ 마크) */
+    .story--mine .story__avatar { background: var(--neutral-200); padding: 2px; }
+    .story--mine .story__avatar-inner { padding: 0; }
+    .story--mine .story__avatar-bg {
+      background: var(--bg-soft);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--pink-500);
+    }
+    .story--mine .story__avatar-bg svg { width: 22px; height: 22px; stroke-width: 2.5; }
+    .story__label {
+      font-size: var(--text-label);
+      color: var(--ink-soft);
+      letter-spacing: var(--tracking-normal);
+      max-width: 72px;
+      text-align: center;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
-    /* 메인 액션 — 거대 + 버튼 */
-    .dash-action {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: var(--space-12) var(--space-5);
-      animation: rise 600ms var(--ease-toss) 240ms backwards;
+    /* === 메인 피드 (인스타 카드) === */
+    .feed {
+      padding-bottom: var(--space-6);
     }
-    .dash-add {
-      position: relative;
+    .post {
+      border-bottom: 1px solid var(--line);
+      animation: rise 500ms var(--ease-toss) backwards;
+    }
+    .post:nth-child(2) { animation-delay: 80ms; }
+    .post:nth-child(3) { animation-delay: 160ms; }
+
+    .post__head {
       display: flex;
-      flex-direction: column;
       align-items: center;
-      justify-content: center;
-      gap: var(--space-4);
-      width: 100%;
-      max-width: 420px;
-      padding: var(--space-12) var(--space-6);
-      border-radius: var(--radius-2xl);
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+    }
+    .post__avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-full);
       background: var(--gradient-signature);
-      box-shadow: var(--shadow-glow-lg);
-      color: var(--neutral-0);
-      transition:
-        transform var(--duration-snap) var(--ease-toss),
-        box-shadow var(--duration-fast) var(--ease-toss);
+      padding: 1.5px;
+      flex-shrink: 0;
     }
-    .dash-add:active {
-      transform: scale(0.98);
-      box-shadow: var(--shadow-glow);
+    .post__avatar-inner {
+      width: 100%;
+      height: 100%;
+      border-radius: var(--radius-full);
+      background: var(--bg);
+      background-size: cover;
+      background-position: center;
     }
-    .dash-add svg {
-      width: 56px;
-      height: 56px;
-      stroke-width: 2.5;
-    }
-    .dash-add span {
-      font-size: var(--text-title);
-      font-weight: var(--weight-bold);
+    .post__name {
+      flex: 1;
+      font-size: var(--text-body);
+      font-weight: var(--weight-semibold);
+      color: var(--ink);
       letter-spacing: var(--tracking-snug);
     }
-    .dash-add::before,
-    .dash-add::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      border-radius: var(--radius-2xl);
-      border: 2px solid rgba(255, 107, 139, 0.35);
-      animation: pulse 2.4s var(--ease-soft) infinite;
-      pointer-events: none;
+    .post__menu {
+      width: 28px;
+      height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--ink-soft);
     }
-    .dash-add::after { animation-delay: 1.2s; }
-    @keyframes pulse {
-      0%   { transform: scale(1);    opacity: 0.6; }
-      80%  { opacity: 0; }
-      100% { transform: scale(1.08); opacity: 0; }
+    .post__menu svg { width: 18px; height: 18px; }
+
+    .post__media {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      background: var(--bg-deep);
     }
 
-    /* 통계 — 이번 달 */
-    .dash-stats {
-      padding: 0 var(--space-5) var(--space-8);
-      animation: rise 600ms var(--ease-toss) 380ms backwards;
+    .post__actions {
+      display: flex;
+      gap: var(--space-4);
+      padding: var(--space-3) var(--space-4) var(--space-2);
     }
-    .dash-stats__title {
-      font-size: var(--text-caption);
+    .post__action {
+      width: 26px;
+      height: 26px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--ink);
+      transition: transform var(--duration-snap) var(--ease-toss);
+    }
+    .post__action:active { transform: scale(0.85); }
+    .post__action svg { width: 24px; height: 24px; stroke-width: 2; }
+    .post__action--like.is-liked svg { fill: #ff3a4f; color: #ff3a4f; }
+    .post__action--save { margin-left: auto; }
+
+    .post__likes {
+      padding: 0 var(--space-4) var(--space-2);
+      font-size: var(--text-body);
       font-weight: var(--weight-semibold);
+      color: var(--ink);
+    }
+    .post__caption {
+      padding: 0 var(--space-4) var(--space-2);
+      font-size: var(--text-body);
+      line-height: var(--leading-snug);
+      color: var(--ink);
+    }
+    .post__caption strong {
+      font-weight: var(--weight-semibold);
+      margin-right: 6px;
+    }
+    .post__time {
+      padding: 0 var(--space-4) var(--space-3);
+      font-size: var(--text-label);
       color: var(--ink-muted);
       letter-spacing: 0.04em;
       text-transform: uppercase;
-      margin-bottom: var(--space-3);
-    }
-    .dash-stats__grid {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: var(--space-3);
-    }
-    .dash-stats__grid li {
-      padding: var(--space-4);
-      background: var(--bg-soft);
-      border: 1px solid var(--line);
-      border-radius: var(--radius-lg);
-    }
-    .dash-stat__label {
-      font-size: var(--text-caption);
-      color: var(--ink-muted);
-      margin-bottom: var(--space-1);
-    }
-    .dash-stat__value {
-      font-size: var(--text-headline);
-      font-weight: var(--weight-bold);
-      color: var(--ink);
-      letter-spacing: var(--tracking-tight);
-      line-height: var(--leading-tight);
     }
 
-    /* 하단 탭바 */
+    /* 빈 피드 안내 */
+    .empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-16) var(--space-5);
+      text-align: center;
+    }
+    .empty__icon {
+      width: 64px;
+      height: 64px;
+      border-radius: var(--radius-full);
+      background: var(--bg-soft);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--ink-muted);
+    }
+    .empty__icon svg { width: 28px; height: 28px; stroke-width: 1.8; }
+    .empty__title {
+      font-size: var(--text-title);
+      font-weight: var(--weight-semibold);
+      color: var(--ink);
+      letter-spacing: var(--tracking-snug);
+    }
+    .empty__sub {
+      font-size: var(--text-body);
+      color: var(--ink-muted);
+    }
+
+    /* === 하단 탭바 (5개, 가운데 = 큰 + 액션) === */
     .tabbar {
       position: fixed;
       bottom: 0;
       left: 0;
       right: 0;
-      display: flex;
-      justify-content: space-around;
+      display: grid;
+      grid-template-columns: 1fr 1fr auto 1fr 1fr;
+      align-items: center;
+      gap: 0;
       padding:
         var(--space-2)
-        var(--space-2)
+        var(--space-3)
         calc(env(safe-area-inset-bottom) + var(--space-2));
-      background: rgba(255, 255, 255, 0.92);
+      background: rgba(255, 255, 255, 0.94);
       backdrop-filter: blur(20px) saturate(180%);
       -webkit-backdrop-filter: blur(20px) saturate(180%);
       border-top: 1px solid var(--line);
       z-index: var(--z-sticky);
     }
     .tab {
-      flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -203,62 +286,229 @@
       font-size: var(--text-label);
       font-weight: var(--weight-medium);
       color: var(--ink-muted);
-      letter-spacing: var(--tracking-normal);
       transition:
         color var(--duration-snap) var(--ease-toss),
         transform var(--duration-snap) var(--ease-toss);
     }
     .tab:active { transform: scale(0.94); }
-    .tab.is-active { color: var(--pink-500); }
-    .tab svg {
-      width: 22px;
-      height: 22px;
-      stroke-width: 2;
+    .tab.is-active { color: var(--ink); }
+    .tab.is-active svg { stroke-width: 2.5; }
+    .tab svg { width: 22px; height: 22px; stroke-width: 2; }
+
+    /* 가운데 + 큰 액션 버튼 */
+    .tab-add {
+      width: 56px;
+      height: 56px;
+      border-radius: var(--radius-2xl);
+      background: var(--gradient-signature);
+      box-shadow: var(--shadow-glow);
+      color: var(--neutral-0);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition:
+        transform var(--duration-snap) var(--ease-toss),
+        box-shadow var(--duration-fast) var(--ease-toss);
+    }
+    .tab-add:active {
+      transform: scale(0.94);
+      box-shadow: var(--shadow-glow-sm);
+    }
+    .tab-add svg {
+      width: 28px;
+      height: 28px;
+      stroke-width: 2.5;
+    }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0);    }
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .dash::before,
-      .dash-add::before,
-      .dash-add::after,
-      .dash-greet,
-      .dash-action,
-      .dash-stats { animation: none; }
+      .post { animation: none; }
     }
   </style>
 </head>
 <body>
-  <main class="dash" role="main">
 
-    <header class="dash-greet">
-      <p class="dash-greet__line">안녕하세요</p>
-      <h1 class="dash-greet__store" data-store-name>매장 이름</h1>
-    </header>
+  <!-- 상단 헤더 -->
+  <header class="topbar" role="banner">
+    <a class="topbar__icon" href="/register-product" aria-label="사진 추가">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 5v14M5 12h14"/>
+      </svg>
+    </a>
+    <a class="topbar__brand" href="/dashboard" aria-label="루미 홈">
+      <img src="/assets/logo-wordmark.png" alt="lumi" width="50" height="22" loading="eager">
+    </a>
+    <a class="topbar__icon" href="/insights" aria-label="이번 달 인사이트">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 3v18h18"/>
+        <path d="M7 14l4-4 4 4 5-5"/>
+      </svg>
+    </a>
+  </header>
 
-    <div class="dash-action">
-      <a class="dash-add" href="/register-product" aria-label="사진 올리기">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M12 5v14M5 12h14"/>
-        </svg>
-        <span>사진 올리기</span>
+  <!-- 스토리 트레이 -->
+  <section class="stories" aria-label="스토리">
+    <div class="story story--mine">
+      <a class="story__avatar" href="/register-product" aria-label="새 게시 추가">
+        <span class="story__avatar-inner">
+          <span class="story__avatar-bg">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+          </span>
+        </span>
       </a>
+      <span class="story__label">내 매장</span>
     </div>
 
-    <section class="dash-stats" aria-label="이번 달 통계">
-      <h2 class="dash-stats__title">이번 달</h2>
-      <ul class="dash-stats__grid" role="list">
-        <li>
-          <div class="dash-stat__label">좋아요</div>
-          <div class="dash-stat__value" data-stat-likes>—</div>
-        </li>
-        <li>
-          <div class="dash-stat__label">도달</div>
-          <div class="dash-stat__value" data-stat-reach>—</div>
-        </li>
-      </ul>
-    </section>
+    <div class="story">
+      <a class="story__avatar" href="/trends" aria-label="오늘의 트렌드">
+        <span class="story__avatar-inner">
+          <span class="story__avatar-bg" style="background: linear-gradient(135deg, #FF6B8B, #DDA0DD);"></span>
+        </span>
+      </a>
+      <span class="story__label">오늘 트렌드</span>
+    </div>
+
+    <div class="story">
+      <a class="story__avatar" href="/reservations" aria-label="이번 주 예약">
+        <span class="story__avatar-inner">
+          <span class="story__avatar-bg" style="background: linear-gradient(135deg, #DDA0DD, #EDD080);"></span>
+        </span>
+      </a>
+      <span class="story__label">이번 주</span>
+    </div>
+
+    <div class="story">
+      <a class="story__avatar" href="/insights" aria-label="이번 달 인사이트">
+        <span class="story__avatar-inner">
+          <span class="story__avatar-bg" style="background: linear-gradient(135deg, #EDD080, #DABA65);"></span>
+        </span>
+      </a>
+      <span class="story__label">이번 달</span>
+    </div>
+
+    <div class="story">
+      <a class="story__avatar" href="/comments" aria-label="새 댓글">
+        <span class="story__avatar-inner">
+          <span class="story__avatar-bg" style="background: linear-gradient(135deg, #FF6B8B, #FFE6EE);"></span>
+        </span>
+      </a>
+      <span class="story__label">댓글</span>
+    </div>
+
+    <div class="story">
+      <a class="story__avatar" href="/missions" aria-label="오늘 미션">
+        <span class="story__avatar-inner">
+          <span class="story__avatar-bg" style="background: radial-gradient(circle at 30% 30%, #DABA65, #FF6B8B);"></span>
+        </span>
+      </a>
+      <span class="story__label">미션</span>
+    </div>
+  </section>
+
+  <!-- 메인 피드 -->
+  <main class="feed" role="main" data-feed>
+
+    <!-- 게시물 1 (placeholder) -->
+    <article class="post">
+      <header class="post__head">
+        <div class="post__avatar">
+          <span class="post__avatar-inner" style="background: var(--gradient-signature);"></span>
+        </div>
+        <span class="post__name" data-store-name>매장 이름</span>
+        <button class="post__menu" type="button" aria-label="더보기">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <circle cx="5" cy="12" r="1.5"/>
+            <circle cx="12" cy="12" r="1.5"/>
+            <circle cx="19" cy="12" r="1.5"/>
+          </svg>
+        </button>
+      </header>
+      <div class="post__media" style="background: linear-gradient(135deg, #FF6B8B, #DDA0DD);"></div>
+      <div class="post__actions">
+        <button class="post__action post__action--like" type="button" aria-label="좋아요">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+        </button>
+        <button class="post__action" type="button" aria-label="댓글">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8z"/>
+          </svg>
+        </button>
+        <button class="post__action" type="button" aria-label="공유">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+        <button class="post__action post__action--save" type="button" aria-label="저장">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+          </svg>
+        </button>
+      </div>
+      <p class="post__likes">좋아요 142개</p>
+      <p class="post__caption">
+        <strong>매장 이름</strong>오늘도 천천히 흘러가는 시간을 한 잔에 담아봤어요.
+      </p>
+      <p class="post__time">3시간 전</p>
+    </article>
+
+    <!-- 게시물 2 -->
+    <article class="post">
+      <header class="post__head">
+        <div class="post__avatar">
+          <span class="post__avatar-inner" style="background: var(--gradient-signature);"></span>
+        </div>
+        <span class="post__name">매장 이름</span>
+        <button class="post__menu" type="button" aria-label="더보기">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <circle cx="5" cy="12" r="1.5"/>
+            <circle cx="12" cy="12" r="1.5"/>
+            <circle cx="19" cy="12" r="1.5"/>
+          </svg>
+        </button>
+      </header>
+      <div class="post__media" style="background: linear-gradient(135deg, #EDD080, #DABA65);"></div>
+      <div class="post__actions">
+        <button class="post__action post__action--like" type="button" aria-label="좋아요">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+        </button>
+        <button class="post__action" type="button" aria-label="댓글">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8z"/>
+          </svg>
+        </button>
+        <button class="post__action" type="button" aria-label="공유">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+        <button class="post__action post__action--save" type="button" aria-label="저장">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+          </svg>
+        </button>
+      </div>
+      <p class="post__likes">좋아요 87개</p>
+      <p class="post__caption">
+        <strong>매장 이름</strong>오늘 점심엔 따뜻한 국물 한 그릇 어떠세요.
+      </p>
+      <p class="post__time">어제</p>
+    </article>
 
   </main>
 
+  <!-- 하단 탭바 -->
   <nav class="tabbar" aria-label="메뉴">
     <a class="tab is-active" href="/dashboard" aria-current="page">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -266,19 +516,24 @@
       </svg>
       홈
     </a>
-    <a class="tab" href="/reservations">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <rect x="3" y="4" width="18" height="18" rx="2"/>
-        <path d="M16 2v4M8 2v4M3 10h18"/>
-      </svg>
-      예약
-    </a>
     <a class="tab" href="/trends">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M22 12l-4-4-4 4-6-6-6 6"/>
         <path d="M22 12v6H2"/>
       </svg>
       트렌드
+    </a>
+    <a class="tab-add" href="/register-product" aria-label="사진 올리기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 5v14M5 12h14"/>
+      </svg>
+    </a>
+    <a class="tab" href="/reservations">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="3" y="4" width="18" height="18" rx="2"/>
+        <path d="M16 2v4M8 2v4M3 10h18"/>
+      </svg>
+      예약
     </a>
     <a class="tab" href="/settings">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -296,6 +551,7 @@
         localStorage.getItem('lumi_auth') ||
         localStorage.getItem('seller_jwt');
 
+      // 매장 이름 채우기
       async function loadMe() {
         try {
           const res = await fetch('/api/me', {
@@ -306,34 +562,17 @@
           const name =
             (data && (data.store_name || (data.seller && data.seller.store_name) || (data.user && data.user.store_name)));
           if (name) {
-            const el = document.querySelector('[data-store-name]');
-            if (el) el.textContent = name + ' 사장님';
+            document.querySelectorAll('[data-store-name]').forEach(el => { el.textContent = name; });
           }
         } catch {}
       }
 
-      async function loadStats() {
-        try {
-          const res = await fetch('/api/insight-monthly', {
-            headers: token ? { Authorization: 'Bearer ' + token } : {},
-          });
-          if (!res.ok) return;
-          const data = await res.json();
-          const likes = (data && (data.likes !== undefined ? data.likes : data.total_likes));
-          const reach = (data && (data.reach !== undefined ? data.reach : data.total_reach));
-          if (typeof likes === 'number') {
-            const el = document.querySelector('[data-stat-likes]');
-            if (el) el.textContent = likes.toLocaleString();
-          }
-          if (typeof reach === 'number') {
-            const el = document.querySelector('[data-stat-reach]');
-            if (el) el.textContent = reach.toLocaleString();
-          }
-        } catch {}
-      }
+      // 좋아요 토글 (인터랙션만, 백엔드 호출 X)
+      document.querySelectorAll('.post__action--like').forEach(btn => {
+        btn.addEventListener('click', () => btn.classList.toggle('is-liked'));
+      });
 
       loadMe();
-      loadStats();
     })();
   </script>
 </body>
