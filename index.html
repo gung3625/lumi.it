@@ -474,30 +474,6 @@
       50.01%, 100%  { opacity: 0; }
     }
 
-    /* 톤 칩 */
-    .tone-chips {
-      display: flex;
-      gap: var(--space-2);
-      flex-wrap: wrap;
-    }
-    .tone-chip {
-      padding: var(--space-2) var(--space-4);
-      border-radius: var(--radius-pill);
-      background: var(--neutral-100);
-      color: var(--ink-soft);
-      font-size: var(--text-body);
-      font-weight: var(--weight-medium);
-      transition:
-        background var(--duration-snap) var(--ease-toss),
-        color var(--duration-snap) var(--ease-toss),
-        transform var(--duration-snap) var(--ease-toss);
-    }
-    .tone-chip:active { transform: scale(0.95); }
-    .tone-chip.is-selected {
-      background: var(--pink-500);
-      color: var(--neutral-0);
-    }
-
     /* === Step 4: 채널 선택 + 게시 === */
     .publish-step {
       position: relative;
@@ -850,13 +826,6 @@
 
       <div class="caption-wrap">
         <p class="caption-text" data-caption></p>
-
-        <div class="tone-chips" role="group" aria-label="톤 변경">
-          <button class="tone-chip is-selected" type="button" data-tone="감성">감성</button>
-          <button class="tone-chip" type="button" data-tone="친근">친근</button>
-          <button class="tone-chip" type="button" data-tone="정중">정중</button>
-          <button class="tone-chip" type="button" data-tone="유머">유머</button>
-        </div>
       </div>
 
       <div class="step__cta">
@@ -1018,14 +987,9 @@
         });
       });
 
-      // === Step 3: 캡션 typewriter + 톤 변경 ===
-      const TONES = {
-        '감성': '오늘도 천천히 흘러가는 시간을 한 잔에 담아봤어요.\n\n#카페 #라떼아트 #오늘의한잔 #카페일상',
-        '친근': '오늘 라떼 한 잔 어떠세요? 오전이라 자연광이 예뻐요 ☕\n\n#카페 #라떼 #오전 #카페추천',
-        '정중': '저희 매장에서 오늘도 정성껏 내린 라떼를 준비했습니다. 따뜻한 분위기 속에서 편안한 시간 보내세요.\n\n#카페 #라떼 #브런치 #카페추천',
-        '유머': '아침잠 깨우는 데는 라떼가 최고. 오늘도 한 잔 ☕✨\n\n#카페 #라떼 #모닝커피 #출근전',
-      };
-      let currentTone = '감성';
+      // === Step 3: 캡션 typewriter ===
+      const CAPTION =
+        '오늘도 천천히 흘러가는 시간을 한 잔에 담아봤어요.\n\n#카페 #라떼아트 #오늘의한잔 #카페일상';
       let typewriterTimer;
 
       function typewrite(text, target) {
@@ -1053,33 +1017,18 @@
           if (selected.size === 0) return;
           goTo(3);
 
-          // 첫 선택 사진의 그라디언트를 분석 photo에 적용
-          const firstPhoto = Array.from(selected)[0]; // "g1" 같은 형태
+          const firstPhoto = Array.from(selected)[0];
           const photoEl = document.querySelector('[data-analyze-photo]');
           if (photoEl) photoEl.className = 'analyze-photo gallery__bg--' + firstPhoto;
 
-          // 캡션 typewriter 시작 (분석 끝나는 ~1.8초 후)
           const captionEl = document.querySelector('[data-caption]');
           const next3 = document.querySelector('[data-next-3]');
           if (next3) next3.disabled = true;
           if (captionEl) {
-            setTimeout(() => typewrite(TONES[currentTone], captionEl), 1800);
+            setTimeout(() => typewrite(CAPTION, captionEl), 1800);
           }
         });
       }
-
-      // 톤 칩 변경
-      document.querySelectorAll('.tone-chip').forEach(chip => {
-        chip.addEventListener('click', () => {
-          document.querySelectorAll('.tone-chip').forEach(c => c.classList.remove('is-selected'));
-          chip.classList.add('is-selected');
-          currentTone = chip.dataset.tone;
-          const captionEl = document.querySelector('[data-caption]');
-          const next3 = document.querySelector('[data-next-3]');
-          if (next3) next3.disabled = true;
-          if (captionEl) typewrite(TONES[currentTone], captionEl);
-        });
-      });
 
       // Step 3 → Step 4
       const next3Btn = document.querySelector('[data-next-3]');
@@ -1087,7 +1036,7 @@
         next3Btn.addEventListener('click', () => {
           goTo(4);
           const preview = document.querySelector('[data-caption-preview]');
-          if (preview) preview.textContent = TONES[currentTone];
+          if (preview) preview.textContent = CAPTION;
         });
       }
 
@@ -1114,7 +1063,7 @@
       if (publishBtn) {
         publishBtn.addEventListener('click', () => {
           // TODO: goTo(5) 구현 후
-          console.log('게시:', { channels: Array.from(channels), caption: TONES[currentTone] });
+          console.log('게시:', { channels: Array.from(channels), caption: CAPTION });
         });
       }
 
