@@ -1,16 +1,15 @@
-// 현재 셀러 조회 — Sprint 1
+// 현재 셀러 조회
 // GET /api/me
 // 헤더: Authorization: Bearer <jwt>
 // 응답: { success: true, seller: { id, ownerName, plan, signupStep, ... } }
 //
 // 보안:
-// - 응답에서 사업자번호/휴대폰/이메일은 마스킹된 형태만 노출
+// - 응답에서 휴대폰/이메일은 마스킹된 형태만 노출
 // - 평문 PII는 응답에 포함 금지
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { signSellerToken, verifySellerToken, extractBearerToken } = require('./_shared/seller-jwt');
 const { corsHeaders, getOrigin } = require('./_shared/auth');
 const {
-  maskBusinessNumber,
   maskPhone,
   maskEmail,
 } = require('./_shared/onboarding-utils');
@@ -55,12 +54,10 @@ exports.handler = async (event) => {
         seller: {
           id: mockPayload ? mockPayload.seller_id : 'mock',
           ownerName: '사장님',
-          businessNumberMasked: (mockPayload && mockPayload.business_number_masked) || '***',
           phoneMasked: '***',
           emailMasked: null,
           signupStep: 5,
           signupCompleted: true,
-          businessVerified: true,
           plan: 'trial',
           trialStart: new Date().toISOString(),
           marketingConsent: false,
@@ -106,7 +103,7 @@ exports.handler = async (event) => {
   // sellers 조회: Supabase JWT → email 매칭, seller-jwt → id 매칭
   const sellerQuery = admin
     .from('sellers')
-    .select('id, business_number, owner_name, phone, email, store_name, signup_step, signup_completed_at, business_verified, business_verified_at, plan, trial_start, marketing_consent, referral_code, created_at, onboarded, signup_method, display_name, avatar_url, age_range, industry, store_desc, tone_sample_1, tone_sample_2, tone_sample_3, deletion_requested_at, deletion_scheduled_at, deletion_cancelled_at');
+    .select('id, owner_name, phone, email, store_name, signup_step, signup_completed_at, plan, trial_start, marketing_consent, referral_code, created_at, onboarded, signup_method, display_name, avatar_url, age_range, industry, store_desc, tone_sample_1, tone_sample_2, tone_sample_3, deletion_requested_at, deletion_scheduled_at, deletion_cancelled_at');
 
   let { data: seller, error: selErr } = sellerQueryField
     ? await sellerQuery.eq(sellerQueryField, sellerQueryValue).maybeSingle()
@@ -140,24 +137,20 @@ exports.handler = async (event) => {
     if (isAdmin) {
       console.log('[me] 관리자 계정 — sellers 자동 생성:', userEmail);
       const now = new Date().toISOString();
-      const adminBusinessNumber = '404-09-66416';
       const { data: created, error: insErr } = await admin
         .from('sellers')
         .insert({
           email: userEmail,
-          business_number: adminBusinessNumber,
           owner_name: 'Admin',
           phone: '01000000000',
           store_name: 'Lumi Admin',
           signup_step: 5,
           signup_completed_at: now,
-          business_verified: true,
-          business_verified_at: now,
           plan: 'beta',
           trial_start: now,
           marketing_consent: false,
         })
-        .select('id, business_number, owner_name, phone, email, store_name, signup_step, signup_completed_at, business_verified, business_verified_at, plan, trial_start, marketing_consent, referral_code, created_at, onboarded, signup_method, display_name, avatar_url, age_range, industry, store_desc, tone_sample_1, tone_sample_2, tone_sample_3, deletion_requested_at, deletion_scheduled_at, deletion_cancelled_at')
+        .select('id, owner_name, phone, email, store_name, signup_step, signup_completed_at, plan, trial_start, marketing_consent, referral_code, created_at, onboarded, signup_method, display_name, avatar_url, age_range, industry, store_desc, tone_sample_1, tone_sample_2, tone_sample_3, deletion_requested_at, deletion_scheduled_at, deletion_cancelled_at')
         .single();
       if (!insErr && created) {
         seller = created;
@@ -180,10 +173,7 @@ exports.handler = async (event) => {
   // OAuth 재방문 사용자용 seller-jwt 발급 (클라이언트 localStorage 복원용)
   let sellerToken = null;
   try {
-    sellerToken = signSellerToken({
-      seller_id: seller.id,
-      business_number_masked: maskBusinessNumber(seller.business_number),
-    });
+    sellerToken = signSellerToken({ seller_id: seller.id });
   } catch (e) {
     console.error('[me] sellerToken 발급 실패:', e.message);
   }
@@ -201,7 +191,6 @@ exports.handler = async (event) => {
         avatarUrl: seller.avatar_url || null,
         ageRange: seller.age_range || null,
         storeName: seller.store_name,
-        businessNumberMasked: maskBusinessNumber(seller.business_number),
         phoneMasked: maskPhone(seller.phone),
         emailMasked: seller.email ? maskEmail(seller.email) : null,
         signupStep: seller.signup_step,
@@ -214,7 +203,6 @@ exports.handler = async (event) => {
         toneSample1: seller.tone_sample_1 || null,
         toneSample2: seller.tone_sample_2 || null,
         toneSample3: seller.tone_sample_3 || null,
-        businessVerified: seller.business_verified,
         plan: seller.plan,
         trialStart: seller.trial_start,
         marketingConsent: seller.marketing_consent,

@@ -1,54 +1,8 @@
-// Sprint 1 가입 플로우 공용 헬퍼
-// - 사업자번호 정규화/검증 (체크섬 포함)
-// - 휴대폰/사업자번호/이메일 마스킹 (로그 표시용)
+// 가입 플로우 공용 헬퍼
+// - 휴대폰/이메일 마스킹 (로그 표시용)
 // - IP/UA 추출 (감사 로그용)
 // - 감사 로그 기록 헬퍼
-
-/**
- * 사업자번호를 숫자 10자리로 정규화 (하이픈 제거)
- * @param {string} input
- * @returns {string} '1234567890' 또는 빈 문자열
- */
-function normalizeBusinessNumber(input) {
-  if (!input || typeof input !== 'string') return '';
-  return input.replace(/\D/g, '');
-}
-
-/**
- * 사업자번호 형식 + 체크섬 검증 (국세청 표준)
- * @param {string} input
- * @returns {boolean}
- */
-function isValidBusinessNumber(input) {
-  const num = normalizeBusinessNumber(input);
-  if (!/^\d{10}$/.test(num)) return false;
-  const weights = [1, 3, 7, 1, 3, 7, 1, 3, 5];
-  let sum = 0;
-  for (let i = 0; i < 9; i += 1) {
-    sum += parseInt(num[i], 10) * weights[i];
-  }
-  sum += Math.floor((parseInt(num[8], 10) * 5) / 10);
-  const check = (10 - (sum % 10)) % 10;
-  return check === parseInt(num[9], 10);
-}
-
-/**
- * 사업자번호 표시용 포맷 'xxx-xx-xxxxx'
- */
-function formatBusinessNumber(input) {
-  const num = normalizeBusinessNumber(input);
-  if (num.length !== 10) return input;
-  return `${num.slice(0, 3)}-${num.slice(3, 5)}-${num.slice(5)}`;
-}
-
-/**
- * 사업자번호 마스킹 (로그용) — 'xxx-xx-***90'
- */
-function maskBusinessNumber(input) {
-  const num = normalizeBusinessNumber(input);
-  if (num.length !== 10) return '***';
-  return `${num.slice(0, 3)}-${num.slice(3, 5)}-***${num.slice(8)}`;
-}
+// - 추천 코드 생성
 
 /**
  * 휴대폰 번호 정규화 (숫자만)
@@ -134,7 +88,7 @@ async function recordAudit(admin, params) {
 }
 
 /**
- * referral_code 6자리 영숫자 (사업자번호 해시 기반 결정론적)
+ * referral_code 6자리 영숫자 — seed(seller_id 등) + 시각 해시 기반
  */
 function generateReferralCode(seed) {
   const crypto = require('crypto');
@@ -144,10 +98,6 @@ function generateReferralCode(seed) {
 }
 
 module.exports = {
-  normalizeBusinessNumber,
-  isValidBusinessNumber,
-  formatBusinessNumber,
-  maskBusinessNumber,
   normalizePhone,
   isValidPhone,
   maskPhone,
