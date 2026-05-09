@@ -75,6 +75,47 @@
       color: var(--ink-muted);
     }
 
+    /* 카테고리 탭 (가로 스크롤) */
+    .cat-tabs {
+      display: flex;
+      gap: var(--space-2);
+      padding: 0 var(--space-4) var(--space-3);
+      overflow-x: auto;
+      overflow-y: hidden;
+      scrollbar-width: none;
+      position: sticky;
+      top: 52px;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border-bottom: 1px solid var(--line);
+      padding-top: var(--space-3);
+      z-index: calc(var(--z-sticky) - 1);
+    }
+    .cat-tabs::-webkit-scrollbar { display: none; }
+    .cat-tab {
+      flex: 0 0 auto;
+      padding: var(--space-2) var(--space-4);
+      border-radius: var(--radius-pill);
+      background: transparent;
+      border: 1px solid var(--line-strong);
+      font-size: var(--text-body);
+      font-weight: var(--weight-medium);
+      color: var(--ink-soft);
+      letter-spacing: var(--tracking-snug);
+      transition:
+        background var(--duration-snap) var(--ease-toss),
+        color var(--duration-snap) var(--ease-toss),
+        border-color var(--duration-snap) var(--ease-toss),
+        transform var(--duration-snap) var(--ease-toss);
+    }
+    .cat-tab:active { transform: scale(0.96); }
+    .cat-tab.is-active {
+      background: var(--ink);
+      border-color: var(--ink);
+      color: var(--neutral-0);
+    }
+
     /* 키워드 리스트 */
     .kw-list {
       list-style: none;
@@ -329,6 +370,19 @@
     <span class="topbar__icon" aria-hidden="true"></span>
   </header>
 
+  <!-- 카테고리 탭 -->
+  <nav class="cat-tabs" data-cat-tabs aria-label="카테고리">
+    <button class="cat-tab" type="button" data-cat="cafe">카페</button>
+    <button class="cat-tab" type="button" data-cat="food">식당</button>
+    <button class="cat-tab" type="button" data-cat="hair">미용실</button>
+    <button class="cat-tab" type="button" data-cat="nail">네일</button>
+    <button class="cat-tab" type="button" data-cat="beauty">뷰티</button>
+    <button class="cat-tab" type="button" data-cat="fashion">옷가게</button>
+    <button class="cat-tab" type="button" data-cat="flower">플라워</button>
+    <button class="cat-tab" type="button" data-cat="fitness">운동</button>
+    <button class="cat-tab" type="button" data-cat="pet">펫</button>
+  </nav>
+
   <main class="wrap" role="main">
 
     <div class="meta-row">
@@ -419,6 +473,29 @@
           return `${t.getMonth() + 1}/${t.getDate()} ${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')} 갱신`;
         } catch { return ''; }
       }
+
+      function setActiveTab(cat) {
+        document.querySelectorAll('.cat-tab').forEach(t => {
+          t.classList.toggle('is-active', t.dataset.cat === cat);
+        });
+        const active = document.querySelector(`.cat-tab[data-cat="${cat}"]`);
+        if (active && active.scrollIntoView) {
+          active.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        }
+      }
+
+      // 카테고리 탭 클릭 → 다시 로드
+      document.querySelectorAll('.cat-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          const cat = tab.dataset.cat;
+          if (!cat || cat === currentCategory) return;
+          currentCategory = cat;
+          setActiveTab(cat);
+          stateEl.textContent = '키워드를 가져오는 중…';
+          listEl.innerHTML = '<li class="state" data-state>키워드를 가져오는 중…</li>';
+          loadTrends();
+        });
+      });
 
       // 사장님 매장 카테고리 결정 (실패 시 cafe 기본)
       async function detectCategory() {
@@ -564,6 +641,7 @@
       // 시작
       (async () => {
         await detectCategory();
+        setActiveTab(currentCategory);
         await loadTrends();
       })();
     })();
