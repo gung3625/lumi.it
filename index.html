@@ -517,6 +517,113 @@
       50.01%, 100%  { opacity: 0; }
     }
 
+    /* === Step 4: 결과 대시보드 === */
+    .result-step {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      min-height: 100dvh;
+      background: var(--bg);
+      isolation: isolate;
+    }
+    .result-step .coach {
+      margin: calc(env(safe-area-inset-top) + var(--space-12)) 0 var(--space-6);
+      padding: 0 var(--space-5);
+      text-align: center;
+      animation: rise 600ms var(--ease-toss) 100ms backwards;
+    }
+    .result-wrap {
+      flex: 1;
+      padding: 0 var(--space-5) var(--space-32);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+
+    /* 사진 + 좋아요 카드 */
+    .result-card {
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-glow-sm);
+    }
+    .result-photo {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+    }
+    .result-meta {
+      display: flex;
+      gap: var(--space-5);
+      padding: var(--space-4);
+      font-size: var(--text-body);
+      font-weight: var(--weight-semibold);
+      color: var(--ink);
+    }
+    .result-meta-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .result-meta-item svg {
+      width: 18px;
+      height: 18px;
+    }
+    .result-meta-item--like svg { color: #ff3a4f; fill: #ff3a4f; }
+
+    /* 통계 그리드 */
+    .result-stats {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-3);
+    }
+    .result-stats li {
+      padding: var(--space-4);
+      background: var(--bg-soft);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--line);
+    }
+    .stat-label {
+      font-size: var(--text-caption);
+      font-weight: var(--weight-medium);
+      color: var(--ink-muted);
+      margin-bottom: var(--space-1);
+    }
+    .stat-value {
+      font-size: var(--text-headline);
+      font-weight: var(--weight-bold);
+      color: var(--ink);
+      letter-spacing: var(--tracking-tight);
+      line-height: var(--leading-tight);
+    }
+
+    /* 댓글 슬라이드 인 */
+    .result-comment {
+      padding: var(--space-4);
+      background: var(--bg-soft);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--line);
+      opacity: 0;
+      transform: translateY(20px);
+      animation: comment-in 500ms var(--ease-toss) 1500ms forwards;
+    }
+    .result-comment__label {
+      font-size: var(--text-caption);
+      font-weight: var(--weight-semibold);
+      color: var(--pink-500);
+      margin-bottom: 4px;
+    }
+    .result-comment__text {
+      font-size: var(--text-body);
+      color: var(--ink-soft);
+    }
+    @keyframes comment-in {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
     /* === 푸터 === */
     .foot {
       position: relative;
@@ -752,6 +859,62 @@
       </div>
     </section>
 
+    <!-- Step 4: 결과 대시보드 -->
+    <section class="result-step step" data-step="4" id="step-4" hidden>
+      <div class="progress" aria-label="튜토리얼 진행">
+        <span class="progress-dot"></span>
+        <span class="progress-dot"></span>
+        <span class="progress-dot"></span>
+        <span class="progress-dot is-active" aria-current="step"></span>
+        <span class="progress-dot"></span>
+      </div>
+
+      <button class="skip" type="button">건너뛰기</button>
+
+      <div class="coach">
+        <h1 class="coach-title">올라갔어요</h1>
+        <p class="coach-sub">지금 인스타에서</p>
+      </div>
+
+      <div class="result-wrap">
+
+        <div class="result-card">
+          <div class="result-photo" data-result-photo></div>
+          <div class="result-meta">
+            <span class="result-meta-item result-meta-item--like">
+              <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              <span data-count="142">0</span>
+            </span>
+            <span class="result-meta-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              <span data-count="8">0</span>
+            </span>
+          </div>
+        </div>
+
+        <ul class="result-stats" role="list">
+          <li>
+            <div class="stat-label">도달</div>
+            <div class="stat-value"><span data-count="1247">0</span>명</div>
+          </li>
+          <li>
+            <div class="stat-label">새 팔로워</div>
+            <div class="stat-value">+<span data-count="18">0</span></div>
+          </li>
+        </ul>
+
+        <div class="result-comment">
+          <div class="result-comment__label">방금 댓글</div>
+          <p class="result-comment__text">"분위기 너무 좋아요!"</p>
+        </div>
+
+      </div>
+
+      <div class="step__cta">
+        <button class="cta-button" type="button" data-next-4>지금 시작하기</button>
+      </div>
+    </section>
+
   </main>
 
   <footer class="foot" role="contentinfo">
@@ -933,13 +1096,49 @@
         });
       }
 
-      // Step 3 → Step 4 (결과 대시보드, 미구현 — TODO)
+      // Step 3 → Step 4 (결과)
       const next3Btn = document.querySelector('[data-next-3]');
       if (next3Btn) {
         next3Btn.addEventListener('click', () => {
-          // TODO: goTo(4) 활성 (Step 4 결과 대시보드 구현 후)
-          console.log('Step 4 (결과) 진행 — 캡션:', CAPTION);
+          goTo(4);
+
+          // 첫 선택 사진의 그라디언트를 결과 카드에 적용
+          const firstPhoto = Array.from(selected)[0];
+          const photoEl = document.querySelector('[data-result-photo]');
+          if (photoEl) photoEl.className = 'result-photo gallery__bg--' + firstPhoto;
+
+          // 카운트 업 (진입 후 잠시 뒤)
+          setTimeout(() => {
+            document.querySelectorAll('[data-count]').forEach(el => {
+              const target = parseInt(el.dataset.count, 10);
+              countUp(el, target);
+            });
+          }, 400);
         });
+      }
+
+      // Step 4 → Step 5 (가입, 미구현 — TODO)
+      const next4Btn = document.querySelector('[data-next-4]');
+      if (next4Btn) {
+        next4Btn.addEventListener('click', () => {
+          // TODO: goTo(5) 활성 (Step 5 가입 구현 후)
+          console.log('Step 5 가입');
+        });
+      }
+
+      // 카운트 업 애니메이션 (ease-out cubic)
+      function countUp(el, target, duration) {
+        duration = duration || 1200;
+        const start = 0;
+        const startTime = performance.now();
+        function tick(now) {
+          const elapsed = now - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          const eased = 1 - Math.pow(1 - progress, 3);
+          el.textContent = Math.floor(start + (target - start) * eased).toLocaleString();
+          if (progress < 1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
       }
 
       // 건너뛰기 — 마지막(가입) step (TODO)
