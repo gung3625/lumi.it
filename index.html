@@ -474,128 +474,6 @@
       50.01%, 100%  { opacity: 0; }
     }
 
-    /* === Step 4: 채널 선택 + 게시 === */
-    .publish-step {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      min-height: 100dvh;
-      background: var(--bg);
-      isolation: isolate;
-    }
-    .publish-step .coach {
-      margin: calc(env(safe-area-inset-top) + var(--space-12)) 0 var(--space-6);
-      padding: 0 var(--space-5);
-      animation: rise 600ms var(--ease-toss) 100ms backwards;
-    }
-
-    .publish-wrap {
-      flex: 1;
-      padding: 0 var(--space-5) var(--space-32);
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-6);
-    }
-
-    /* 캡션 미리보기 카드 */
-    .caption-preview {
-      padding: var(--space-4) var(--space-5);
-      background: var(--bg-soft);
-      border-radius: var(--radius-lg);
-      border: 1px solid var(--line);
-    }
-    .caption-preview__label {
-      font-size: var(--text-caption);
-      font-weight: var(--weight-semibold);
-      color: var(--ink-muted);
-      letter-spacing: var(--tracking-snug);
-      margin-bottom: var(--space-2);
-    }
-    .caption-preview__text {
-      font-size: var(--text-body);
-      line-height: var(--leading-relaxed);
-      color: var(--ink-soft);
-      white-space: pre-wrap;
-    }
-
-    /* 채널 그리드 */
-    .channels {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: var(--space-3);
-    }
-    .channel-card {
-      position: relative;
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: var(--space-2);
-      padding: var(--space-5) var(--space-3);
-      background: var(--bg);
-      border: 2px solid var(--line);
-      border-radius: var(--radius-lg);
-      transition:
-        border-color var(--duration-snap) var(--ease-toss),
-        box-shadow var(--duration-snap) var(--ease-toss),
-        transform var(--duration-snap) var(--ease-toss);
-    }
-    .channel-card:active { transform: scale(0.97); }
-    .channel-card.is-selected {
-      border-color: var(--pink-500);
-      box-shadow: var(--shadow-glow-sm);
-    }
-
-    .channel-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: var(--radius-md);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--neutral-0);
-      font-weight: var(--weight-bold);
-      font-size: 18px;
-      letter-spacing: -0.02em;
-    }
-    .channel-icon--ig    { background: linear-gradient(135deg, #FFB347, #FF6B8B 50%, #DDA0DD); }
-    .channel-icon--tt    { background: #000000; }
-    .channel-icon--nblog { background: #03C75A; }
-    .channel-icon--kakao { background: #FAE100; color: #3C1E1E; }
-
-    .channel-name {
-      font-size: var(--text-body);
-      font-weight: var(--weight-medium);
-      color: var(--ink);
-    }
-
-    .channel-check {
-      position: absolute;
-      top: var(--space-2);
-      right: var(--space-2);
-      width: 22px;
-      height: 22px;
-      border-radius: var(--radius-full);
-      background: var(--pink-500);
-      color: var(--neutral-0);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      opacity: 0;
-      transform: scale(0);
-      transition:
-        opacity var(--duration-snap) var(--ease-toss),
-        transform var(--duration-snap) var(--ease-spring);
-    }
-    .channel-card.is-selected .channel-check {
-      opacity: 1;
-      transform: scale(1);
-    }
-    .channel-check svg { width: 12px; height: 12px; stroke-width: 3; }
-
     /* === 푸터 === */
     .foot {
       position: relative;
@@ -712,7 +590,6 @@
         <span class="progress-dot"></span>
         <span class="progress-dot"></span>
         <span class="progress-dot"></span>
-        <span class="progress-dot"></span>
       </div>
 
       <button class="skip" type="button">건너뛰기</button>
@@ -734,7 +611,6 @@
       <div class="progress" aria-label="튜토리얼 진행">
         <span class="progress-dot"></span>
         <span class="progress-dot is-active" aria-current="step"></span>
-        <span class="progress-dot"></span>
         <span class="progress-dot"></span>
         <span class="progress-dot"></span>
         <span class="progress-dot"></span>
@@ -775,7 +651,6 @@
         <span class="progress-dot"></span>
         <span class="progress-dot"></span>
         <span class="progress-dot is-active" aria-current="step"></span>
-        <span class="progress-dot"></span>
         <span class="progress-dot"></span>
         <span class="progress-dot"></span>
       </div>
@@ -833,77 +708,6 @@
       </div>
     </section>
 
-    <!-- Step 4: 채널 선택 + 게시 -->
-    <section class="publish-step step" data-step="4" id="step-4" hidden>
-      <div class="progress" aria-label="튜토리얼 진행">
-        <span class="progress-dot"></span>
-        <span class="progress-dot"></span>
-        <span class="progress-dot"></span>
-        <span class="progress-dot is-active" aria-current="step"></span>
-        <span class="progress-dot"></span>
-        <span class="progress-dot"></span>
-      </div>
-
-      <button class="skip" type="button">건너뛰기</button>
-
-      <div class="coach">
-        <h1 class="coach-title">어디에 올릴까요?</h1>
-        <p class="coach-sub">한 번에 여러 채널까지</p>
-      </div>
-
-      <div class="publish-wrap">
-
-        <div class="caption-preview">
-          <div class="caption-preview__label">캡션</div>
-          <p class="caption-preview__text" data-caption-preview></p>
-        </div>
-
-        <ul class="channels" role="list">
-          <li>
-            <button class="channel-card is-selected" type="button" data-channel="ig" aria-pressed="true">
-              <span class="channel-icon channel-icon--ig">IG</span>
-              <span class="channel-name">인스타그램</span>
-              <span class="channel-check" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
-              </span>
-            </button>
-          </li>
-          <li>
-            <button class="channel-card" type="button" data-channel="tt" aria-pressed="false">
-              <span class="channel-icon channel-icon--tt">TT</span>
-              <span class="channel-name">틱톡</span>
-              <span class="channel-check" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
-              </span>
-            </button>
-          </li>
-          <li>
-            <button class="channel-card" type="button" data-channel="nblog" aria-pressed="false">
-              <span class="channel-icon channel-icon--nblog">N</span>
-              <span class="channel-name">네이버 블로그</span>
-              <span class="channel-check" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
-              </span>
-            </button>
-          </li>
-          <li>
-            <button class="channel-card" type="button" data-channel="kakao" aria-pressed="false">
-              <span class="channel-icon channel-icon--kakao">K</span>
-              <span class="channel-name">카카오톡 채널</span>
-              <span class="channel-check" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
-              </span>
-            </button>
-          </li>
-        </ul>
-
-      </div>
-
-      <div class="step__cta">
-        <button class="cta-button" type="button" data-publish>게시하기</button>
-      </div>
-    </section>
-
   </main>
 
   <footer class="foot" role="contentinfo">
@@ -950,7 +754,7 @@
   <script>
     (function () {
       const STEPS = document.querySelectorAll('[data-step]');
-      const TOTAL = 6;
+      const TOTAL = 5;
       const MAX_PHOTOS = 10;
       const selected = new Set();
 
@@ -1030,40 +834,12 @@
         });
       }
 
-      // Step 3 → Step 4
+      // Step 3 → Step 4 (결과 대시보드, 미구현 — TODO)
       const next3Btn = document.querySelector('[data-next-3]');
       if (next3Btn) {
         next3Btn.addEventListener('click', () => {
-          goTo(4);
-          const preview = document.querySelector('[data-caption-preview]');
-          if (preview) preview.textContent = CAPTION;
-        });
-      }
-
-      // === Step 4: 채널 선택 + 게시 ===
-      const channels = new Set(['ig']); // 기본 인스타 선택
-      document.querySelectorAll('.channel-card').forEach(card => {
-        card.addEventListener('click', () => {
-          const id = card.dataset.channel;
-          if (channels.has(id)) {
-            if (channels.size <= 1) return; // 최소 1개 유지
-            channels.delete(id);
-            card.classList.remove('is-selected');
-            card.setAttribute('aria-pressed', 'false');
-          } else {
-            channels.add(id);
-            card.classList.add('is-selected');
-            card.setAttribute('aria-pressed', 'true');
-          }
-        });
-      });
-
-      // 게시 버튼 (Step 5 미구현 — TODO)
-      const publishBtn = document.querySelector('[data-publish]');
-      if (publishBtn) {
-        publishBtn.addEventListener('click', () => {
-          // TODO: goTo(5) 구현 후
-          console.log('게시:', { channels: Array.from(channels), caption: CAPTION });
+          // TODO: goTo(4) 활성 (Step 4 결과 대시보드 구현 후)
+          console.log('Step 4 (결과) 진행 — 캡션:', CAPTION);
         });
       }
 
