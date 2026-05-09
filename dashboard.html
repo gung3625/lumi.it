@@ -569,12 +569,15 @@
         localStorage.getItem('seller_jwt');
       const authHeaders = token ? { Authorization: 'Bearer ' + token } : {};
 
+      // 사장님 카테고리 — loadMe 가 갱신, loadTrends/loadBestTime 이 사용. 미감지 시 'cafe' fallback.
+      let userCategory = 'cafe';
+
       function setText(sel, text) {
         const el = document.querySelector(sel);
         if (el) el.textContent = text;
       }
 
-      // 매장 이름
+      // 매장 이름 + 카테고리
       async function loadMe() {
         try {
           const res = await fetch('/api/me', { headers: authHeaders });
@@ -587,6 +590,11 @@
           if (name) {
             document.querySelectorAll('[data-store-name]').forEach(el => { el.textContent = name; });
           }
+          const cat =
+            data.category ||
+            (data.seller && data.seller.category) ||
+            (data.user && data.user.category);
+          if (cat) userCategory = String(cat).toLowerCase();
         } catch {}
       }
 
@@ -611,10 +619,10 @@
         } catch {}
       }
 
-      // 요즘 뜨는 키워드 (get-trends)
+      // 요즘 뜨는 키워드 (get-trends) — 사장님 카테고리 기반
       async function loadTrends() {
         try {
-          const res = await fetch('/api/get-trends?category=cafe');
+          const res = await fetch('/api/get-trends?category=' + encodeURIComponent(userCategory));
           if (!res.ok) return;
           const json = await res.json();
           const tags = (json && json.tags) || [];
@@ -674,7 +682,7 @@
           const res = await fetch('/api/get-best-time', {
             method: 'POST',
             headers: { ...authHeaders, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ category: 'cafe' }),
+            body: JSON.stringify({ category: userCategory }),
           });
           if (!res.ok) return;
           const json = await res.json();
@@ -695,11 +703,15 @@
         });
       }
 
-      loadMe();
-      loadStats();
-      loadTrends();
-      loadScheduled();
-      loadBestTime();
+      // loadMe 가 userCategory 를 정한 뒤에 카테고리 의존 호출들이 시작되도록 순서 보장.
+      // 카테고리 무관 호출(loadStats/loadScheduled)은 병렬.
+      (async () => {
+        await loadMe();
+        loadStats();
+        loadScheduled();
+        loadTrends();
+        loadBestTime();
+      })();
     })();
   </script>
 </body>
