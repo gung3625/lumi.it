@@ -12,6 +12,7 @@ const { corsHeaders, getOrigin, verifyLumiSecret } = require('./_shared/auth');
 const { createHmac } = require('crypto');
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { checkAndIncrementQuota, QuotaExceededError } = require('./_shared/openai-quota');
+const { safeAwait } = require('./_shared/supa-safe');
 const { deleteReservationStorage } = require('./_shared/storage-cleanup');
 const { generateBrandFooter } = require('./_shared/brand-footer');
 
@@ -930,10 +931,10 @@ exports.handler = async (event) => {
       await checkAndIncrementQuota(reservation.user_id, 'gpt-4o');
     } catch (e) {
       if (e instanceof QuotaExceededError) {
-        await supabase.from('reservations').update({
+        await safeAwait(supabase.from('reservations').update({
           caption_status: 'error',
           caption_error: e.message,
-        }).eq('reserve_key', reservationKey).catch(() => {});
+        }).eq('reserve_key', reservationKey));
         return;
       }
       throw e;

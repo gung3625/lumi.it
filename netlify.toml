@@ -69,6 +69,12 @@
 [functions."scheduler"]
   schedule = "* * * * *"
 
+# cron 잠수 감시 — heartbeat stale 시 LUMI_ADMIN_EMAILS 로 메일 알림
+# 매시간 실행. 6시간 cooldown 으로 동일 cron 반복 알림 억제.
+# 2026-05-01~08 .catch 안티패턴이 9일 잠복하던 사고 재발 방지용.
+[functions."cron-watchdog-background"]
+  schedule = "0 * * * *"
+
 # TikTok access_token 만료 임박 계정 일괄 갱신 (매 6시간)
 [functions."tiktok-token-refresh-background"]
   schedule = "0 */6 * * *"

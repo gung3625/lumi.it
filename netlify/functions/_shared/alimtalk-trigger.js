@@ -9,6 +9,7 @@
 
 const crypto = require('crypto');
 const { maskPhone, normalizePhone } = require('./onboarding-utils');
+const { safeAwait } = require('./supa-safe');
 
 // ------------------------------------------------------------------
 // 상수
@@ -65,12 +66,12 @@ async function checkAndIncrementRateLimit(admin, sellerId, type) {
   const perTypeKey = `${type}:${dailyKey}:${bucketIdx}`;
   const nowIso = now.toISOString();
 
-  // 1) RPC atomic 시도 (daily)
-  const dailyRpc = await admin.rpc('bump_alimtalk_rate_limit_atomic', {
+  // 1) RPC atomic 시도 (daily) — PostgrestBuilder 직접 .catch 금지, safeAwait 사용
+  const dailyRpc = await safeAwait(admin.rpc('bump_alimtalk_rate_limit_atomic', {
     p_seller_id: sellerId,
     p_window_kind: 'daily',
     p_window_key: dailyKey,
-  }).catch(() => ({ error: true, data: null }));
+  }));
 
   if (!dailyRpc.error && Array.isArray(dailyRpc.data)) {
     const dailyCount = dailyRpc.data[0]?.count ?? 0;
@@ -78,11 +79,11 @@ async function checkAndIncrementRateLimit(admin, sellerId, type) {
       return { allowed: false, reason: `일 ${DAILY_LIMIT}건 한도 초과` };
     }
     // per-type 30분 atomic
-    const typeRpc = await admin.rpc('bump_alimtalk_rate_limit_atomic', {
+    const typeRpc = await safeAwait(admin.rpc('bump_alimtalk_rate_limit_atomic', {
       p_seller_id: sellerId,
       p_window_kind: 'per_type_30min',
       p_window_key: perTypeKey,
-    }).catch(() => ({ error: true, data: null }));
+    }));
 
     if (!typeRpc.error && Array.isArray(typeRpc.data)) {
       const typeCount = typeRpc.data[0]?.count ?? 0;

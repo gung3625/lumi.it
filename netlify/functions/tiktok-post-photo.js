@@ -19,6 +19,7 @@
 
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
+const { safeAwait } = require('./_shared/supa-safe');
 
 const TIKTOK_PHOTO_ENDPOINT = 'https://open.tiktokapis.com/v2/post/publish/content/init/';
 
@@ -163,11 +164,13 @@ exports.handler = async (event) => {
       // 토큰 만료 감지
       if (errCode === 'access_token_invalid' || errCode === 'scope_not_authorized' || apiRes.status === 401) {
         // tiktok_accounts에 연동 상태 초기화 (재연동 필요 플래그)
-        await supabase
-          .from('tiktok_accounts')
-          .update({ token_status: 'expired', updated_at: new Date().toISOString() })
-          .eq('seller_id', seller_id)
-          .catch((e) => console.error('[tiktok-post-photo] 토큰 만료 상태 기록 실패:', e.message));
+        const { error: updErr } = await safeAwait(
+          supabase
+            .from('tiktok_accounts')
+            .update({ token_status: 'expired', updated_at: new Date().toISOString() })
+            .eq('seller_id', seller_id)
+        );
+        if (updErr) console.error('[tiktok-post-photo] 토큰 만료 상태 기록 실패:', updErr.message);
       }
 
       return {

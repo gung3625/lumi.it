@@ -17,6 +17,7 @@
 //   LUMI_SECRET                — 수동 트리거 인증용
 
 const { getAdminClient } = require('./_shared/supabase-admin');
+const { safeAwait } = require('./_shared/supa-safe');
 
 const TIKTOK_TOKEN_ENDPOINT = 'https://open.tiktokapis.com/v2/oauth/token/';
 
@@ -114,11 +115,13 @@ exports.handler = async (event) => {
       failed++;
       failReasons.push({ open_id, reason: 'refresh_token 없음 (재연동 필요)' });
       // 재연동 필요 상태 기록
-      await supabase
-        .from('tiktok_accounts')
-        .update({ token_status: 'expired', updated_at: new Date().toISOString() })
-        .eq('open_id', open_id)
-        .catch((e) => console.error(`[tiktok-token-refresh] ${open_id}: 상태 기록 실패 — ${e.message}`));
+      const { error: updErr } = await safeAwait(
+        supabase
+          .from('tiktok_accounts')
+          .update({ token_status: 'expired', updated_at: new Date().toISOString() })
+          .eq('open_id', open_id)
+      );
+      if (updErr) console.error(`[tiktok-token-refresh] ${open_id}: 상태 기록 실패 — ${updErr.message}`);
       continue;
     }
 
@@ -157,11 +160,13 @@ exports.handler = async (event) => {
 
         // refresh_token 자체 만료 — 재연동 필요 상태
         if (result.error === 'invalid_request' || result.error === 'invalid_grant') {
-          await supabase
-            .from('tiktok_accounts')
-            .update({ token_status: 'expired', updated_at: new Date().toISOString() })
-            .eq('open_id', open_id)
-            .catch((e) => console.error(`[tiktok-token-refresh] ${open_id}: 상태 기록 실패 — ${e.message}`));
+          const { error: updErr } = await safeAwait(
+            supabase
+              .from('tiktok_accounts')
+              .update({ token_status: 'expired', updated_at: new Date().toISOString() })
+              .eq('open_id', open_id)
+          );
+          if (updErr) console.error(`[tiktok-token-refresh] ${open_id}: 상태 기록 실패 — ${updErr.message}`);
         }
         continue;
       }
