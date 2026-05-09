@@ -548,9 +548,11 @@
       overflow: hidden;
       box-shadow: var(--shadow-glow-sm);
     }
-    .result-photo {
+    .result-photo-frame {
+      position: relative;
       width: 100%;
       aspect-ratio: 1 / 1;
+      overflow: hidden;
     }
     .result-meta {
       display: flex;
@@ -879,7 +881,10 @@
       <div class="result-wrap">
 
         <div class="result-card">
-          <div class="result-photo" data-result-photo></div>
+          <div class="result-photo-frame">
+            <div class="analyze-carousel" data-result-carousel></div>
+            <div class="analyze-dots" data-result-dots></div>
+          </div>
           <div class="result-meta">
             <span class="result-meta-item result-meta-item--like">
               <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
@@ -1021,72 +1026,59 @@
         }, 35);
       }
 
+      // 카루셀 셋업 (사진 N장 자동 슬라이드 + 점 인디케이터 + 사용자 스와이프)
+      function setupCarousel(carouselEl, dotsEl, photoIds, autoMs) {
+        autoMs = autoMs || 1800;
+        if (!carouselEl) return;
+        carouselEl.innerHTML = photoIds
+          .map(id => '<div class="analyze-slide gallery__bg--' + id + '"></div>')
+          .join('');
+        if (dotsEl) {
+          dotsEl.innerHTML = photoIds.length > 1
+            ? photoIds.map((_, i) => '<span class="analyze-dot' + (i === 0 ? ' is-active' : '') + '"></span>').join('')
+            : '';
+        }
+        let timer;
+        if (photoIds.length > 1) {
+          let idx = 0;
+          timer = setInterval(() => {
+            idx = (idx + 1) % photoIds.length;
+            carouselEl.scrollTo({ left: idx * carouselEl.clientWidth, behavior: 'smooth' });
+          }, autoMs);
+        }
+        carouselEl.addEventListener('touchstart', () => {
+          if (timer) { clearInterval(timer); timer = null; }
+        }, { passive: true });
+        carouselEl.addEventListener('scroll', () => {
+          if (!dotsEl) return;
+          const i = Math.round(carouselEl.scrollLeft / carouselEl.clientWidth);
+          dotsEl.querySelectorAll('.analyze-dot').forEach((d, di) => {
+            d.classList.toggle('is-active', di === i);
+          });
+        }, { passive: true });
+      }
+
       // Step 2 → Step 3
       const nextBtn = document.querySelector('[data-next]');
-      let autoSlideTimer;
       if (nextBtn) {
         nextBtn.addEventListener('click', () => {
           if (selected.size === 0) return;
           goTo(3);
 
           const photos = Array.from(selected);
-          const carousel = document.querySelector('[data-analyze-carousel]');
-          const dots = document.querySelector('[data-analyze-dots]');
+          setupCarousel(
+            document.querySelector('[data-analyze-carousel]'),
+            document.querySelector('[data-analyze-dots]'),
+            photos,
+          );
+
           const label = document.querySelector('[data-analyze-label]');
-
-          // 캐러셀: 선택한 사진별 슬라이드 생성
-          if (carousel) {
-            carousel.innerHTML = photos
-              .map(id => `<div class="analyze-slide gallery__bg--${id}"></div>`)
-              .join('');
-          }
-
-          // 점 인디케이터: 사진 2장 이상일 때만
-          if (dots) {
-            dots.innerHTML = photos.length > 1
-              ? photos.map((_, i) => `<span class="analyze-dot${i === 0 ? ' is-active' : ''}"></span>`).join('')
-              : '';
-          }
-
-          // 분석 라벨에 사진 수 반영
           if (label) {
             label.textContent = photos.length > 1
               ? `루미가 사진 ${photos.length}장을 보고 있어요`
               : '루미가 보고 있어요';
           }
 
-          // 자동 슬라이드 (사진 2장 이상일 때만)
-          if (autoSlideTimer) clearInterval(autoSlideTimer);
-          if (carousel && photos.length > 1) {
-            let idx = 0;
-            autoSlideTimer = setInterval(() => {
-              idx = (idx + 1) % photos.length;
-              carousel.scrollTo({
-                left: idx * carousel.clientWidth,
-                behavior: 'smooth',
-              });
-            }, 1800);
-          }
-
-          // 사용자가 직접 스와이프 시 자동 슬라이드 멈춤 + 점 활성 갱신
-          if (carousel) {
-            let userScrolling = false;
-            carousel.addEventListener('touchstart', () => {
-              userScrolling = true;
-              if (autoSlideTimer) {
-                clearInterval(autoSlideTimer);
-                autoSlideTimer = null;
-              }
-            }, { passive: true });
-
-            carousel.addEventListener('scroll', () => {
-              const i = Math.round(carousel.scrollLeft / carousel.clientWidth);
-              const dotEls = document.querySelectorAll('.analyze-dot');
-              dotEls.forEach((d, di) => d.classList.toggle('is-active', di === i));
-            }, { passive: true });
-          }
-
-          // 캡션 typewriter
           const captionEl = document.querySelector('[data-caption]');
           const next3 = document.querySelector('[data-next-3]');
           if (next3) next3.disabled = true;
@@ -1102,10 +1094,13 @@
         next3Btn.addEventListener('click', () => {
           goTo(4);
 
-          // 첫 선택 사진의 그라디언트를 결과 카드에 적용
-          const firstPhoto = Array.from(selected)[0];
-          const photoEl = document.querySelector('[data-result-photo]');
-          if (photoEl) photoEl.className = 'result-photo gallery__bg--' + firstPhoto;
+          // 결과 카드에도 같은 사진들 캐러셀
+          const photos = Array.from(selected);
+          setupCarousel(
+            document.querySelector('[data-result-carousel]'),
+            document.querySelector('[data-result-dots]'),
+            photos,
+          );
 
           // 카운트 업 (진입 후 잠시 뒤)
           setTimeout(() => {
