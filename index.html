@@ -178,19 +178,30 @@
       100% { transform: scale(1.55); opacity: 0; }
     }
 
-    /* === 작은 브랜드 마크 (하단) === */
+    /* === 브랜드 워드마크 (하단) === */
     .brand {
       position: absolute;
       bottom: calc(env(safe-area-inset-bottom) + var(--space-6));
       left: 50%;
       transform: translateX(-50%);
-      font-size: var(--text-label);
-      font-weight: var(--weight-medium);
-      letter-spacing: 0.08em;
-      color: var(--ink-muted);
-      text-transform: uppercase;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-pill);
+      opacity: 0.7;
+      transition:
+        opacity var(--duration-fast) var(--ease-toss),
+        transform var(--duration-snap) var(--ease-toss);
       z-index: 1;
       animation: rise 700ms var(--ease-toss) 380ms backwards;
+    }
+    .brand:hover  { opacity: 1; }
+    .brand:active { transform: translateX(-50%) scale(0.96); }
+    .brand img {
+      height: 24px;
+      width: auto;
+      display: block;
     }
 
     /* 모션 줄이기 */
@@ -232,8 +243,10 @@
       </svg>
     </button>
 
-    <!-- 브랜드 마크 -->
-    <div class="brand">LUMI</div>
+    <!-- 브랜드 워드마크 -->
+    <a class="brand" href="/" aria-label="루미 홈">
+      <img src="/assets/logo-wordmark.png" alt="lumi" width="50" height="24" loading="eager" decoding="sync">
+    </a>
   </main>
 </body>
 </html>
