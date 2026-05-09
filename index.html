@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="robots" content="index,follow">
+  <meta name="description" content="루미 — 사진 한 장이면 글은 루미가 씁니다.">
+  <title>루미</title>
+
+  <link rel="icon" type="image/png" href="/assets/favicon.png">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+
+  <!-- Pretendard Variable -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+
+  <style>
+    /* === Step 1: 빈 홈 + 사진 추가 === */
+    .stage {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding:
+        calc(env(safe-area-inset-top) + var(--space-12))
+        var(--space-5)
+        calc(env(safe-area-inset-bottom) + var(--space-12));
+      background: var(--bg);
+      overflow: hidden;
+      isolation: isolate;
+    }
+
+    /* 시그니처 글로우 — 배경 깊이 */
+    .stage::before {
+      content: "";
+      position: absolute;
+      top: 38%;
+      left: 50%;
+      width: 130vmax;
+      height: 70vmax;
+      transform: translate(-50%, -50%);
+      background:
+        radial-gradient(ellipse at center,
+          rgba(255, 107, 139, 0.10) 0%,
+          rgba(221, 160, 221, 0.06) 30%,
+          rgba(237, 208, 128, 0.03) 55%,
+          transparent 70%);
+      pointer-events: none;
+      z-index: -1;
+      animation: drift 18s var(--ease-soft) infinite alternate;
+    }
+    @keyframes drift {
+      0%   { transform: translate(-50%, -50%) scale(1)    rotate(0deg);   }
+      100% { transform: translate(-48%, -52%) scale(1.08) rotate(8deg);   }
+    }
+
+    /* === 진행 인디케이터 (6스텝) === */
+    .progress {
+      position: absolute;
+      top: calc(env(safe-area-inset-top) + var(--space-5));
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 6px;
+      z-index: 2;
+    }
+    .progress-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: var(--radius-full);
+      background: var(--neutral-200);
+      transition:
+        width var(--duration-base) var(--ease-toss),
+        background var(--duration-base) var(--ease-toss);
+    }
+    .progress-dot.is-active {
+      width: 24px;
+      background: var(--pink-500);
+    }
+
+    /* === 건너뛰기 === */
+    .skip {
+      position: absolute;
+      top: calc(env(safe-area-inset-top) + var(--space-3));
+      right: var(--space-4);
+      padding: var(--space-2) var(--space-3);
+      font-size: var(--text-caption);
+      font-weight: var(--weight-medium);
+      color: var(--ink-muted);
+      letter-spacing: var(--tracking-normal);
+      transition:
+        color var(--duration-snap) var(--ease-toss),
+        transform var(--duration-snap) var(--ease-toss);
+      z-index: 2;
+    }
+    .skip:hover { color: var(--ink-soft); }
+    .skip:active { transform: scale(0.95); color: var(--ink); }
+
+    /* === 코치 카피 === */
+    .coach {
+      position: relative;
+      margin-bottom: var(--space-12);
+      text-align: center;
+      z-index: 1;
+      animation: rise 700ms var(--ease-toss) 100ms backwards;
+    }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0);    }
+    }
+
+    .coach-title {
+      font-size: var(--text-headline);
+      font-weight: var(--weight-bold);
+      color: var(--ink);
+      letter-spacing: var(--tracking-tight);
+      line-height: var(--leading-tight);
+    }
+    .coach-sub {
+      margin-top: var(--space-3);
+      font-size: var(--text-body-lg);
+      font-weight: var(--weight-regular);
+      color: var(--ink-muted);
+      letter-spacing: var(--tracking-snug);
+      line-height: var(--leading-snug);
+    }
+
+    /* === 메인 + 버튼 === */
+    .add-button {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 96px;
+      height: 96px;
+      border-radius: var(--radius-2xl);
+      background: var(--gradient-signature);
+      box-shadow: var(--shadow-glow-lg);
+      color: var(--neutral-0);
+      transition:
+        transform var(--duration-snap) var(--ease-toss),
+        box-shadow var(--duration-fast) var(--ease-toss);
+      z-index: 1;
+      animation: rise 700ms var(--ease-toss) 240ms backwards;
+    }
+    .add-button:active {
+      transform: scale(0.94);
+      box-shadow: var(--shadow-glow);
+    }
+    .add-button svg {
+      width: 36px;
+      height: 36px;
+      stroke-width: 2.5;
+    }
+
+    /* 펄스 ring (두 개, 시차 1.2s) */
+    .add-button::before,
+    .add-button::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: var(--radius-2xl);
+      border: 2px solid rgba(255, 107, 139, 0.45);
+      animation: pulse 2.4s var(--ease-soft) infinite;
+      pointer-events: none;
+    }
+    .add-button::after { animation-delay: 1.2s; }
+
+    @keyframes pulse {
+      0%   { transform: scale(1);    opacity: 0.7; }
+      80%  { opacity: 0; }
+      100% { transform: scale(1.55); opacity: 0; }
+    }
+
+    /* === 작은 브랜드 마크 (하단) === */
+    .brand {
+      position: absolute;
+      bottom: calc(env(safe-area-inset-bottom) + var(--space-6));
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: var(--text-label);
+      font-weight: var(--weight-medium);
+      letter-spacing: 0.08em;
+      color: var(--ink-muted);
+      text-transform: uppercase;
+      z-index: 1;
+      animation: rise 700ms var(--ease-toss) 380ms backwards;
+    }
+
+    /* 모션 줄이기 */
+    @media (prefers-reduced-motion: reduce) {
+      .stage::before,
+      .add-button::before,
+      .add-button::after,
+      .coach,
+      .add-button,
+      .brand { animation: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="stage" role="main">
+    <!-- 진행 6스텝 -->
+    <div class="progress" aria-label="튜토리얼 진행">
+      <span class="progress-dot is-active" aria-current="step"></span>
+      <span class="progress-dot"></span>
+      <span class="progress-dot"></span>
+      <span class="progress-dot"></span>
+      <span class="progress-dot"></span>
+      <span class="progress-dot"></span>
+    </div>
+
+    <!-- 건너뛰기 -->
+    <button class="skip" type="button">건너뛰기</button>
+
+    <!-- 코치 카피 -->
+    <div class="coach">
+      <h1 class="coach-title">사진 한 장이면 돼요</h1>
+      <p class="coach-sub">글은 루미가 써요</p>
+    </div>
+
+    <!-- 사진 추가 버튼 -->
+    <button class="add-button" type="button" aria-label="사진 추가">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 5v14M5 12h14"/>
+      </svg>
+    </button>
+
+    <!-- 브랜드 마크 -->
+    <div class="brand">LUMI</div>
+  </main>
+</body>
+</html>
