@@ -656,6 +656,7 @@
         majorId: '',
         sub: '',
         phone: '',
+        skipPhoneStep: false,
         igChecks: { 1: false, 2: false, 3: false },
       };
 
@@ -754,16 +755,17 @@
         return true;
       }
 
-      // signup-complete 호출
+      // signup-complete 호출 — phone 은 카카오에서 받은 게 있으면 생략(서버가 DB 값 유지)
       async function submitSignupComplete() {
+        const payload = {
+          store_name: state.storeName,
+          industry: state.sub,
+        };
+        if (state.phone) payload.phone = state.phone;
         const res = await fetch('/api/signup-complete', {
           method: 'POST',
           headers: { ...authHeaders, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            store_name: state.storeName,
-            industry: state.sub,
-            phone: state.phone,
-          }),
+          body: JSON.stringify(payload),
         });
         const json = await res.json().catch(() => ({}));
         if (!res.ok) {
@@ -775,8 +777,27 @@
       // 다음/이전 버튼
       document.querySelectorAll('[data-next]').forEach(btn => {
         btn.addEventListener('click', async () => {
-          const target = Number(btn.dataset.next);
-          if (state.step === 1 && !validateStep1()) return;
+          let target = Number(btn.dataset.next);
+          if (state.step === 1) {
+            if (!validateStep1()) return;
+            // 카카오에서 이미 폰 받았으면 step 2 스킵 → step 1 에서 바로 signup-complete + step 3
+            if (state.skipPhoneStep) {
+              btn.disabled = true;
+              btn.textContent = '저장 중…';
+              try {
+                await submitSignupComplete();
+              } catch (e) {
+                document.querySelector('[data-step1-err]').textContent = e.message;
+                btn.disabled = false;
+                btn.textContent = '다음';
+                return;
+              }
+              btn.disabled = false;
+              btn.textContent = '다음';
+              target = 3;
+              setDoneTitle();
+            }
+          }
           if (state.step === 2) {
             if (!validateStep2()) return;
             // step 2 → 3 이동 시점에 signup-complete 저장 (필수 정보 다 모임)
@@ -841,7 +862,7 @@
       }
       document.querySelectorAll('[data-next="3"]').forEach(b => b.addEventListener('click', setDoneTitle));
 
-      // /api/me 호출 — 카카오에서 자동 채워진 phone 미리 채움
+      // /api/me 호출 — 카카오에서 자동 채워진 store_name / phone 감지
       (async function detectPrefill() {
         try {
           const r = await fetch('/api/me', { headers: authHeaders });
@@ -852,19 +873,15 @@
           if (seller.storeName || seller.store_name) {
             document.getElementById('store-name').value = seller.storeName || seller.store_name;
             state.storeName = document.getElementById('store-name').value;
-          }
-          // phone 미리 채움 (마스킹된 형태만 응답에 있어 placeholder 로만 표시)
-          // 카카오 자동 채움 시 사장님은 다시 입력만 해주시면 됨.
-          if (seller.phoneMasked && seller.phoneMasked !== '***') {
-            phoneInput.placeholder = seller.phoneMasked + ' (다시 입력해주세요)';
-            phoneInput.classList.add('is-prefilled');
-            setTimeout(() => phoneInput.classList.remove('is-prefilled'), 1200);
-          }
-          // 매장 이름 prefill 효과
-          if (seller.storeName || seller.store_name) {
             const nameInput = document.getElementById('store-name');
             nameInput.classList.add('is-prefilled');
             setTimeout(() => nameInput.classList.remove('is-prefilled'), 1200);
+          }
+          // phone 이 카카오에서 이미 채워졌으면 step 2 자체 스킵
+          if (seller.hasPhone) {
+            state.skipPhoneStep = true;
+            const dot2 = document.querySelector('[data-dot="2"]');
+            if (dot2) dot2.style.display = 'none';
           }
         } catch (_) {}
       })();

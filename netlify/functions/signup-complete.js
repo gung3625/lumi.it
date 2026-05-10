@@ -85,28 +85,49 @@ exports.handler = async (event) => {
     };
   }
 
-  const phone = normalizePhone(body.phone || '');
-  if (!phone || !isValidPhone(phone)) {
-    return {
-      statusCode: 400,
-      headers: CORS,
-      body: JSON.stringify({ error: '휴대폰 번호를 010으로 시작하는 11자리 숫자로 입력해주세요.' }),
-    };
+  // phone: 카카오에서 이미 받았으면 body 에서 안 보내도 됨. body 에 있으면 검증 후 사용.
+  let phone = null;
+  if (body.phone) {
+    const normalized = normalizePhone(body.phone);
+    if (!isValidPhone(normalized)) {
+      return {
+        statusCode: 400,
+        headers: CORS,
+        body: JSON.stringify({ error: '휴대폰 번호를 010으로 시작하는 11자리 숫자로 입력해주세요.' }),
+      };
+    }
+    phone = normalized;
+  } else {
+    // body 에 phone 없으면 DB 에 저장된 값 확인 (카카오 callback 이 채웠을 것)
+    const { data: existing } = await admin
+      .from('sellers')
+      .select('phone')
+      .eq('id', sellerId)
+      .maybeSingle();
+    if (!existing?.phone || !isValidPhone(existing.phone)) {
+      return {
+        statusCode: 400,
+        headers: CORS,
+        body: JSON.stringify({ error: '휴대폰 번호를 010으로 시작하는 11자리 숫자로 입력해주세요.' }),
+      };
+    }
   }
 
   // ──────────────────────────────────────────────
   // 3) sellers UPDATE
   // ──────────────────────────────────────────────
   try {
+    const updatePayload = {
+      store_name: store_name.trim(),
+      industry: industry.trim(),
+      signup_completed_at: new Date().toISOString(),
+      onboarded: true,
+    };
+    if (phone) updatePayload.phone = phone;
+
     const { error: updErr } = await admin
       .from('sellers')
-      .update({
-        store_name: store_name.trim(),
-        industry: industry.trim(),
-        phone,
-        signup_completed_at: new Date().toISOString(),
-        onboarded: true,
-      })
+      .update(updatePayload)
       .eq('id', sellerId);
 
     if (updErr) {

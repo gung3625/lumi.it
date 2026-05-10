@@ -191,6 +191,7 @@ exports.handler = async (event) => {
         avatarUrl: seller.avatar_url || null,
         ageRange: seller.age_range || null,
         storeName: seller.store_name,
+        hasPhone: Boolean(seller.phone && /^010\d{7,8}$/.test(seller.phone)),
         phoneMasked: maskPhone(seller.phone),
         emailMasked: seller.email ? maskEmail(seller.email) : null,
         signupStep: seller.signup_step,
