@@ -35,6 +35,8 @@ exports.handler = async (event) => {
   if (!['like', 'dislike', 'skip'].includes(rating)) {
     return { statusCode: 400, headers: headers, body: JSON.stringify({ error: 'rating은 like | dislike | skip 중 하나' }) };
   }
+  // 사장님이 적은 코멘트 (선택). 다음 캡션 생성에 참고용으로 주입됨.
+  const comment = typeof body.comment === 'string' ? body.comment.trim().slice(0, 300) : '';
 
   try {
     const admin = getAdminClient();
@@ -89,6 +91,7 @@ exports.handler = async (event) => {
           user_id: user.id,
           kind: rating,
           caption: captionText,
+          comment: comment || null,
           reservation_id: reservation.id,
           created_at: new Date().toISOString(),
         });

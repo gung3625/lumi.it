@@ -161,15 +161,27 @@ async function moderateCaption(text) {
 }
 
 // ─────────── 말투 가이드 빌드 ───────────
+// likes / dislikes 는 [{ caption, comment }] 배열.
+// 각 항목을 "캡션 — 코멘트" 형태로 풀어 프롬프트에 노출.
 function buildToneGuide(likes, dislikes) {
+  const fmt = (arr) => arr
+    .map((it) => {
+      const cap = (it.caption || '').trim();
+      const cmt = (it.comment || '').trim();
+      if (cap && cmt) return `- "${cap}" → 사장님 메모: ${cmt}`;
+      if (cap) return `- "${cap}"`;
+      if (cmt) return `- 사장님 메모: ${cmt}`;
+      return '';
+    })
+    .filter(Boolean)
+    .join('\n');
+
   let guide = '';
-  if (likes) {
-    const items = likes.split('|||').filter(Boolean);
-    if (items.length) guide += '✅ 좋아했던 스타일:\n' + items.map((s) => `- ${s}`).join('\n') + '\n\n';
+  if (Array.isArray(likes) && likes.length) {
+    guide += '✅ 좋아했던 스타일:\n' + fmt(likes) + '\n\n';
   }
-  if (dislikes) {
-    const items = dislikes.split('|||').filter(Boolean);
-    if (items.length) guide += '❌ 싫어했던 스타일:\n' + items.map((s) => `- ${s}`).join('\n');
+  if (Array.isArray(dislikes) && dislikes.length) {
+    guide += '❌ 싫어했던 스타일:\n' + fmt(dislikes);
   }
   return guide;
 }
@@ -822,16 +834,16 @@ async function loadToneFeedback(supabase, userId, kind) {
   try {
     const { data } = await supabase
       .from('tone_feedback')
-      .select('caption')
+      .select('caption, comment')
       .eq('user_id', userId)
       .eq('kind', kind)
       .order('created_at', { ascending: false })
       .limit(20);
-    if (!data || !data.length) return '';
-    return data.map((r) => r.caption).join('|||');
+    if (!data || !data.length) return [];
+    return data.map((r) => ({ caption: r.caption || '', comment: r.comment || '' }));
   } catch (e) {
     console.error('[process-and-post] tone_feedback 조회 실패:', e.message);
-    return '';
+    return [];
   }
 }
 

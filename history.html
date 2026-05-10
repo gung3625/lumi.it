@@ -214,10 +214,15 @@
 
     .state { padding: var(--space-12); text-align: center; color: var(--ink-muted); }
 
-    /* 평가 버튼 (게시됨만) */
-    .res__rate {
-      display: inline-flex; align-items: center; gap: 6px;
-      margin-top: var(--space-1);
+    /* 평가 버튼 + 코멘트 (게시됨만) */
+    .res__rate-wrap {
+      margin-top: var(--space-2);
+      display: flex; flex-direction: column;
+      gap: var(--space-2);
+    }
+    .res__rate-row {
+      display: flex; align-items: center; gap: 8px;
+      flex-wrap: wrap;
     }
     .rate-btn {
       width: 32px; height: 32px;
@@ -248,6 +253,65 @@
       0%   { transform: scale(1); }
       40%  { transform: scale(1.18); }
       100% { transform: scale(1); }
+    }
+    .rate-hint {
+      font-size: var(--text-label);
+      color: var(--ink-muted);
+      line-height: 1.5;
+    }
+    .rate-comment {
+      display: none; flex-direction: column; gap: 6px;
+      padding: var(--space-2);
+      background: var(--bg-soft);
+      border-radius: var(--radius-md);
+      animation: comment-rise 280ms var(--ease-toss);
+    }
+    .rate-comment.is-open { display: flex; }
+    @keyframes comment-rise {
+      from { opacity: 0; transform: translateY(-4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .rate-comment__input {
+      width: 100%;
+      padding: 8px 10px;
+      font-size: max(16px, var(--text-body));
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-md);
+      background: var(--bg);
+      color: var(--ink);
+      font-family: inherit;
+      resize: vertical;
+      min-height: 44px;
+    }
+    .rate-comment__input:focus {
+      outline: none;
+      border-color: var(--pink-500);
+      box-shadow: 0 0 0 3px rgba(255, 107, 139, 0.12);
+    }
+    .rate-comment__row {
+      display: flex; justify-content: flex-end; gap: 6px;
+    }
+    .rate-comment__btn {
+      padding: 6px 12px;
+      border-radius: var(--radius-pill);
+      border: 1px solid var(--line-strong);
+      background: var(--bg);
+      color: var(--ink-soft);
+      font-size: var(--text-caption);
+      transition:
+        background var(--duration-snap) var(--ease-toss),
+        transform var(--duration-snap) var(--ease-toss);
+    }
+    .rate-comment__btn:active { transform: scale(0.96); }
+    .rate-comment__btn--save {
+      background: var(--gradient-signature);
+      color: var(--neutral-0);
+      border-color: transparent;
+    }
+    .rate-thanks {
+      font-size: var(--text-caption);
+      color: var(--ink-soft);
+      animation: rate-pop 360ms var(--ease-toss);
     }
 
     /* 하단 탭바 — /css/tabbar.css 참조 */
@@ -404,9 +468,23 @@
         if (r.is_sent && !r.cancelled) {
           const rated = r.tone_rated === true;
           rateBlock = `
-            <div class="res__rate" data-rate-block data-rid="${r.id || ''}" ${rated ? 'data-rated="1"' : ''}>
-              <button class="rate-btn" type="button" data-rate="like" aria-label="좋은 캡션" ${rated ? 'disabled' : ''}>👍</button>
-              <button class="rate-btn" type="button" data-rate="dislike" aria-label="아쉬운 캡션" ${rated ? 'disabled' : ''}>👎</button>
+            <div class="res__rate-wrap" data-rate-block data-rid="${r.id || ''}" ${rated ? 'data-rated="1"' : ''}>
+              ${rated ? `
+                <div class="rate-thanks">평가해주셔서 감사해요. 다음 캡션 만들 때 참고할게요.</div>
+              ` : `
+                <div class="res__rate-row">
+                  <button class="rate-btn" type="button" data-rate="like" aria-label="좋은 캡션">👍</button>
+                  <button class="rate-btn" type="button" data-rate="dislike" aria-label="아쉬운 캡션">👎</button>
+                  <span class="rate-hint">평가 + 코멘트 남기시면 다음 캡션에 반영해요</span>
+                </div>
+                <div class="rate-comment" data-rate-comment>
+                  <textarea class="rate-comment__input" data-rate-comment-input maxlength="300" placeholder="왜 좋았어요? / 어디가 아쉬웠어요? (선택)"></textarea>
+                  <div class="rate-comment__row">
+                    <button class="rate-comment__btn" type="button" data-rate-comment-skip>코멘트 없이 저장</button>
+                    <button class="rate-comment__btn rate-comment__btn--save" type="button" data-rate-comment-save>저장</button>
+                  </div>
+                </div>
+              `}
             </div>`;
         }
 
@@ -462,33 +540,60 @@
             pastSec.hidden = false;
           }
 
-          // 캡션 평가 핸들러 (게시됨 항목)
+          // 캡션 평가 — 2단계: 등급 선택 → 코멘트 입력(선택) → 저장
           document.querySelectorAll('[data-rate-block]').forEach(block => {
             if (block.dataset.rated === '1') return;
             const rid = Number(block.dataset.rid);
             if (!rid) return;
+            const commentBox = block.querySelector('[data-rate-comment]');
+            const commentInput = block.querySelector('[data-rate-comment-input]');
+            const saveBtn = block.querySelector('[data-rate-comment-save]');
+            const skipBtn = block.querySelector('[data-rate-comment-skip]');
+            let chosenRating = null;
+
+            // 등급 클릭 → 코멘트 박스 펼치기 (아직 서버 호출 X)
             block.querySelectorAll('[data-rate]').forEach(btn => {
-              btn.addEventListener('click', async () => {
+              btn.addEventListener('click', () => {
                 if (block.dataset.rated === '1') return;
-                const rating = btn.dataset.rate; // 'like' | 'dislike'
-                block.querySelectorAll('[data-rate]').forEach(b => { b.disabled = true; });
-                btn.classList.add(rating === 'like' ? 'is-active--like' : 'is-active--dislike');
-                try {
-                  const r = await fetch('/api/rate-caption', {
-                    method: 'POST',
-                    headers: { ...authHeaders, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ reservation_id: rid, rating }),
-                  });
-                  if (!r.ok) throw new Error('실패');
-                  block.dataset.rated = '1';
-                } catch (e) {
-                  // 실패 시 롤백
-                  btn.classList.remove('is-active--like', 'is-active--dislike');
-                  block.querySelectorAll('[data-rate]').forEach(b => { b.disabled = false; });
-                  alert('평가 저장에 실패했어요. 잠시 후 다시 시도해주세요.');
-                }
+                chosenRating = btn.dataset.rate;
+                block.querySelectorAll('[data-rate]').forEach(b => {
+                  b.classList.remove('is-active--like', 'is-active--dislike');
+                });
+                btn.classList.add(chosenRating === 'like' ? 'is-active--like' : 'is-active--dislike');
+                if (commentBox) commentBox.classList.add('is-open');
+                if (commentInput) setTimeout(() => commentInput.focus(), 100);
               });
             });
+
+            async function submit(comment) {
+              if (!chosenRating) {
+                alert('먼저 👍 또는 👎 를 선택해주세요.');
+                return;
+              }
+              if (saveBtn) saveBtn.disabled = true;
+              if (skipBtn) skipBtn.disabled = true;
+              try {
+                const r = await fetch('/api/rate-caption', {
+                  method: 'POST',
+                  headers: { ...authHeaders, 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ reservation_id: rid, rating: chosenRating, comment }),
+                });
+                if (!r.ok) throw new Error('실패');
+                block.dataset.rated = '1';
+                // 평가 성공 — block 안 모든 요소를 감사 메시지로 교체
+                block.innerHTML = '<div class="rate-thanks">평가해주셔서 감사해요. 다음 캡션 만들 때 참고할게요.</div>';
+              } catch (e) {
+                if (saveBtn) saveBtn.disabled = false;
+                if (skipBtn) skipBtn.disabled = false;
+                alert('평가 저장에 실패했어요. 잠시 후 다시 시도해주세요.');
+              }
+            }
+            if (saveBtn) {
+              saveBtn.addEventListener('click', () => submit((commentInput && commentInput.value || '').trim()));
+            }
+            if (skipBtn) {
+              skipBtn.addEventListener('click', () => submit(''));
+            }
           });
 
           // 취소/삭제 핸들러 (같은 endpoint — 서버가 미게시면 행+스토리지 삭제)
