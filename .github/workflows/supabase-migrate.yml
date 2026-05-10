@@ -2,14 +2,14 @@ name: Apply Supabase migrations
 
 # 트리거:
 #   - main 에 supabase/migrations/ 변경이 머지되면 자동 적용
-#   - workflow_dispatch — Actions 탭에서 수동 실행 (누적 미적용분 일괄 처리, 신규 secret 등록 직후 catch-up 용)
+#   - workflow_dispatch — Actions 탭에서 수동 실행 (catch-up 용)
 #
-# 필요한 GitHub Secrets (Settings → Secrets and variables → Actions):
-#   SUPABASE_ACCESS_TOKEN — https://supabase.com/dashboard/account/tokens 에서 발급
-#   SUPABASE_DB_PASSWORD  — Project Settings → Database → Connection string 의 비번
-#   SUPABASE_PROJECT_ID   — Project Settings → General → Reference ID (예: abcdefghijklmnop)
+# 필요한 GitHub Secret (1개만):
+#   SUPABASE_DB_URL — postgresql://postgres.{ref}:{password}@{host}:5432/postgres
+#                     (Netlify env 의 동일 키 값을 그대로 복사)
 #
-# `supabase db push` 는 적용된 migration 은 다시 안 돌리는 idempotent 명령.
+# `supabase db push --db-url` 은 적용된 migration 은 다시 안 돌리는 idempotent 명령.
+# DB URL 안에 비번이 포함되어 있어 access token / project ref 등 별도 인증 불필요.
 
 on:
   push:
@@ -22,10 +22,6 @@ on:
 jobs:
   migrate:
     runs-on: ubuntu-latest
-    env:
-      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      SUPABASE_DB_PASSWORD:  ${{ secrets.SUPABASE_DB_PASSWORD  }}
-      SUPABASE_PROJECT_ID:   ${{ secrets.SUPABASE_PROJECT_ID   }}
     steps:
       - uses: actions/checkout@v4
 
@@ -33,21 +29,23 @@ jobs:
         with:
           version: latest
 
-      - name: Verify required secrets
+      - name: Verify required secret
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
-          [ -z "$SUPABASE_ACCESS_TOKEN" ] && { echo "::error::SUPABASE_ACCESS_TOKEN secret 미설정"; exit 1; } || true
-          [ -z "$SUPABASE_DB_PASSWORD"  ] && { echo "::error::SUPABASE_DB_PASSWORD secret 미설정"; exit 1; } || true
-          [ -z "$SUPABASE_PROJECT_ID"   ] && { echo "::error::SUPABASE_PROJECT_ID secret 미설정"; exit 1; } || true
-
-      - name: Link to remote project
-        run: supabase link --project-ref "$SUPABASE_PROJECT_ID"
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "::error::SUPABASE_DB_URL secret 미설정. Netlify env 의 동일 키 값을 GitHub Settings → Secrets and variables → Actions 에 등록하세요."
+            exit 1
+          fi
 
       - name: Push migrations
-        run: supabase db push --include-all
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: supabase db push --include-all --db-url "$SUPABASE_DB_URL"
 
       - name: Summary
         if: always()
         run: |
           echo "### Supabase migration push 결과" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "프로젝트: \`$SUPABASE_PROJECT_ID\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- conclusion: ${{ job.status }}" >> "$GITHUB_STEP_SUMMARY"
