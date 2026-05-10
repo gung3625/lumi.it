@@ -177,19 +177,8 @@ exports.handler = async (event) => {
         }
 
         // 유저 프로필(custom_captions) 조회
-        let customCaptionsStr = '';
-        try {
-          const { data: profile } = await supabase
-            .from('users')
-            .select('custom_captions')
-            .eq('id', user.id)
-            .maybeSingle();
-          if (profile && Array.isArray(profile.custom_captions)) {
-            customCaptionsStr = profile.custom_captions.filter(c => c && c.trim()).join('|||');
-          }
-        } catch (e) {
-          console.error('[reserve] users 프로필 조회 실패:', e.message);
-        }
+        // custom_captions 는 옛 멀티마켓 features. 현재 미사용.
+        const customCaptionsStr = '';
 
         // 릴레이 모드 폐지됨 — 항상 true (캡션 확인 후 바로 게시)
         const relayMode = true;
@@ -235,15 +224,7 @@ exports.handler = async (event) => {
         const scheduledAt = fields.scheduledAt || new Date().toISOString();
         const submittedAt = fields.submittedAt || new Date().toISOString();
 
-        // 모든 OAuth provider 케이스 커버: public.users에 user_id 없으면 자동 생성
-        try {
-          await supabase.from('users').upsert({
-            id: user.id,
-            email: user.email || '',
-          }, { onConflict: 'id', ignoreDuplicates: true });
-        } catch (e) {
-          console.error('[reserve] users upsert 실패(non-fatal):', e.message);
-        }
+        // (옛 public.users FK 보장용 upsert 는 sellers 로 FK 재지정 후 불필요해서 제거)
 
         // reservations insert
         const reservationRow = {
