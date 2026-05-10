@@ -204,7 +204,25 @@
         transform var(--duration-snap) var(--ease-toss);
     }
     .keyword-chip:active { transform: scale(0.96); }
-    .keyword-chip:hover { background: var(--pink-50); border-color: var(--pink-300); }
+    @media (hover: hover) {
+      .keyword-chip:hover { background: var(--pink-50); border-color: var(--pink-300); }
+    }
+    /* skeleton — loadTrends 응답 전 빈 자리 표시 */
+    .keyword-chip--skeleton {
+      color: transparent;
+      background: linear-gradient(90deg, var(--bg-soft) 0%, var(--neutral-100, #ececec) 50%, var(--bg-soft) 100%);
+      background-size: 200% 100%;
+      animation: chip-shimmer 1.4s var(--ease-soft) infinite;
+      border-color: transparent;
+      pointer-events: none;
+    }
+    @keyframes chip-shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .keyword-chip--skeleton { animation: none; }
+    }
 
     /* 다음 자동 게시 예약 — 강조 카드 */
     .scheduled-card {
@@ -401,11 +419,9 @@
     <section aria-labelledby="sec-keywords">
       <h2 class="section-title" id="sec-keywords">요즘 뜨는 키워드</h2>
       <div class="keywords" data-keywords>
-        <a class="keyword-chip" href="/trends?q=%EC%B9%B4%ED%8E%98%EC%B6%94%EC%B2%9C">#카페추천</a>
-        <a class="keyword-chip" href="/trends?q=%EB%B8%8C%EB%9F%B0%EC%B9%98">#브런치</a>
-        <a class="keyword-chip" href="/trends?q=%EC%98%A4%ED%9B%84%EC%9D%98%EC%BB%A4%ED%94%BC">#오후의커피</a>
-        <a class="keyword-chip" href="/trends?q=%EA%B0%90%EC%84%B1%EC%B9%B4%ED%8E%98">#감성카페</a>
-        <a class="keyword-chip" href="/trends?q=%EC%98%A4%EB%8A%98%EC%9D%98%ED%95%9C%EC%9E%94">#오늘의한잔</a>
+        <span class="keyword-chip keyword-chip--skeleton" aria-hidden="true">　　　　　</span>
+        <span class="keyword-chip keyword-chip--skeleton" aria-hidden="true">　　　　</span>
+        <span class="keyword-chip keyword-chip--skeleton" aria-hidden="true">　　　　　</span>
       </div>
     </section>
 
