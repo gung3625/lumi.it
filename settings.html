@@ -686,7 +686,7 @@
             actionBtn.className = 'ig-card__action ig-card__action--connect';
             actionBtn.hidden = false;
             actionBtn.onclick = () => {
-              location.href = '/api/ig-oauth?token=' + encodeURIComponent(token);
+              location.href = '/api/ig-oauth?token=' + encodeURIComponent(token) + '&return_to=/settings';
             };
           }
         } catch (e) {
@@ -735,6 +735,28 @@
           loadIg();
         } catch (e) {
           toast('정보를 불러오지 못했어요');
+        }
+      })();
+
+      // IG OAuth 콜백 결과 표시 (?ig=connected / ?oauth_error=N)
+      (function handleIgReturn() {
+        const qs = new URLSearchParams(location.search);
+        if (qs.get('ig') === 'connected') {
+          toast('인스타 연동 완료');
+        } else if (qs.has('oauth_error')) {
+          const code = qs.get('oauth_error');
+          const msg = ({
+            '1': '로그인 토큰이 만료됐어요. 다시 시도해주세요.',
+            '2': 'Facebook 인증이 끊겼어요.',
+            '3': '연결 가능한 인스타 비즈니스 계정을 못 찾았어요.',
+            '4': '세션이 만료됐어요. 다시 시도해주세요.',
+            '5': '저장에 실패했어요.',
+            '6': '저장에 실패했어요.',
+          })[code] || '연동에 실패했어요.';
+          toast(msg, 3000);
+        }
+        if (qs.has('ig') || qs.has('oauth_error')) {
+          history.replaceState(null, '', location.pathname);
         }
       })();
     })();

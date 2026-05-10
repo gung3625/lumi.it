@@ -30,6 +30,13 @@ function computeExpiresAt(expiresInSec) {
   return new Date(Date.now() + secs * 1000).toISOString();
 }
 
+// 안전한 복귀 경로만 허용 (open redirect 방어)
+const SAFE_RETURN_TO = new Set(['/dashboard', '/settings', '/signup']);
+function sanitizeReturnTo(raw) {
+  if (!raw || typeof raw !== 'string') return '/dashboard';
+  return SAFE_RETURN_TO.has(raw) ? raw : '/dashboard';
+}
+
 exports.handler = async (event) => {
   const params = new URLSearchParams(event.rawQuery || '');
   const code = params.get('code');
@@ -70,12 +77,14 @@ exports.handler = async (event) => {
       return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/dashboard?oauth_error=1' } };
     }
     const nonce = crypto.randomBytes(16).toString('hex');
+    const returnTo = sanitizeReturnTo(params.get('return_to'));
 
     try {
       await supabase.from('oauth_nonces').insert({
         nonce: 'ig:' + nonce,
         user_id: userId,
         lumi_token: null,
+        redirect_to: returnTo,
       });
     } catch (e) {
       console.error('[ig-oauth] nonce 저장 실패:', e.message);
@@ -150,22 +159,24 @@ exports.handler = async (event) => {
     }
 
     // ────────────────────────────────────────────
-    // 5) nonce → user_id 복원 (oauth_nonces)
+    // 5) nonce → user_id + redirect_to 복원 (oauth_nonces)
     //    10분 만료 & 일회용
     // ────────────────────────────────────────────
     let userId = null;
+    let returnTo = '/dashboard';
     if (state) {
       try {
         const nonceKey = 'ig:' + state;
         const { data: nonceRow } = await supabase
           .from('oauth_nonces')
-          .select('user_id, lumi_token, created_at')
+          .select('user_id, lumi_token, redirect_to, created_at')
           .eq('nonce', nonceKey)
           .maybeSingle();
         if (nonceRow) {
           const ageMs = Date.now() - new Date(nonceRow.created_at).getTime();
           if (ageMs < 10 * 60 * 1000) {
             userId = nonceRow.user_id || null;
+            returnTo = sanitizeReturnTo(nonceRow.redirect_to);
           }
           // 일회용: 즉시 삭제
           await supabase.from('oauth_nonces').delete().eq('nonce', nonceKey);
@@ -251,7 +262,7 @@ exports.handler = async (event) => {
 
     // 토큰/secret_id는 절대 로그에 남기지 않음. ig_user_id만.
     console.log('[ig-oauth] Instagram 연동 완료. ig_user_id:', igUserId);
-    return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/dashboard?ig=connected' } };
+    return { statusCode: 302, headers: { Location: `https://lumi.it.kr${returnTo}?ig=connected` } };
 
   } catch (e) {
     console.error('[ig-oauth] OAuth 처리 오류:', e.message);
