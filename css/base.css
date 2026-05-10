@@ -43,6 +43,10 @@ input, textarea, select {
   border: 0;
   outline: 0;
   background: transparent;
+  /* iOS Safari 자동 줌 방지: 폼 요소 font-size < 16px 일 때 focus 시
+     자동으로 zoom in 되고 새로고침해도 그 상태가 남는 버그.
+     컴포넌트 측에서 var(--text-body) 같은 작은 값을 지정해도 16px 하한 보장. */
+  font-size: max(16px, var(--text-body, 15px));
 }
 
 img, svg, video {
