@@ -462,10 +462,12 @@
       const MAX_BYTES = 10 * 1024 * 1024;          // 입력 한 장 최대 (압축 전)
       // IG carousel 비율 제약: 0.8(4:5) ~ 1.91(1.91:1).
       // 폰 세로 사진(9:16=0.5625)은 IG 가 거절 → 4:5 로 cover crop.
-      const IG_TARGET_W = 1080;
-      const IG_TARGET_H = 1350;                    // 1080 × 1350 = 4:5
+      // IG 가 받는 4:5 최대 권장 해상도 = 1440×1800. 그 이상 업로드 해도 IG 내부에서
+      // 다시 다운샘플링됨. 품질·파일크기 균형점.
+      const IG_TARGET_W = 1440;
+      const IG_TARGET_H = 1800;                    // 1440 × 1800 = 4:5
       const IG_TARGET_RATIO = IG_TARGET_W / IG_TARGET_H;
-      const COMPRESS_QUALITY = 0.85;               // JPEG 품질
+      const COMPRESS_QUALITY = 0.92;               // JPEG 품질 — 시각적으로 거의 손실 없음
       const ALLOWED = ['image/jpeg', 'image/png', 'image/webp'];
 
       const photoArea = document.querySelector('[data-photo-area]');

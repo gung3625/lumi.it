@@ -352,9 +352,17 @@
         const caption = captionPreview(r);
         const t = thumb(r);
         const thumbStyle = t ? `background-image:url('${t}')` : '';
-        const cancelBtn = (!r.cancelled && !r.is_sent && (r.caption_status === 'scheduled' || r.caption_status === 'ready' || r.caption_status === 'pending'))
-          ? `<button class="res__cancel" type="button" data-cancel="${r.reserve_key}">취소</button>`
-          : '';
+        // 게시 안 된 건은 취소 / 실패한 건은 삭제 — 같은 endpoint(cancel-reservation),
+        //   서버가 is_sent=false 면 행+스토리지 모두 삭제. is_sent=true 만 cancelled=true 마킹.
+        let actionBtn = '';
+        if (!r.cancelled && !r.is_sent) {
+          if (r.caption_status === 'failed') {
+            actionBtn = `<button class="res__cancel" type="button" data-cancel="${r.reserve_key}" data-action="delete">삭제</button>`;
+          } else if (['scheduled', 'ready', 'pending', 'error'].includes(r.caption_status)) {
+            actionBtn = `<button class="res__cancel" type="button" data-cancel="${r.reserve_key}" data-action="cancel">취소</button>`;
+          }
+        }
+        const cancelBtn = actionBtn;
         return `
           <li class="res" data-key="${r.reserve_key}">
             <div class="res__thumb" style="${thumbStyle}"></div>
@@ -406,13 +414,17 @@
             pastSec.hidden = false;
           }
 
-          // 취소 핸들러
+          // 취소/삭제 핸들러 (같은 endpoint — 서버가 미게시면 행+스토리지 삭제)
           document.querySelectorAll('[data-cancel]').forEach(btn => {
             btn.addEventListener('click', async (e) => {
               e.preventDefault();
-              if (!confirm('이 예약을 취소할까요?')) return;
+              const action = btn.dataset.action || 'cancel';
+              const isDelete = action === 'delete';
+              const confirmMsg = isDelete ? '실패한 예약을 삭제할까요?' : '이 예약을 취소할까요?';
+              if (!confirm(confirmMsg)) return;
               const key = btn.dataset.cancel;
-              btn.disabled = true; btn.textContent = '취소 중…';
+              btn.disabled = true;
+              btn.textContent = isDelete ? '삭제 중…' : '취소 중…';
               try {
                 const r = await fetch('/api/cancel-reservation', {
                   method: 'POST',
@@ -422,9 +434,9 @@
                 if (!r.ok) throw new Error('실패');
                 load();
               } catch (e) {
-                alert('취소에 실패했어요.');
+                alert(isDelete ? '삭제에 실패했어요.' : '취소에 실패했어요.');
                 btn.disabled = false;
-                btn.textContent = '취소';
+                btn.textContent = isDelete ? '삭제' : '취소';
               }
             });
           });
