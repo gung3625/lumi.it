@@ -1,7 +1,5 @@
 // 가입 플로우 공용 헬퍼
 // - 휴대폰/이메일 마스킹 (로그 표시용)
-// - IP/UA 추출 (감사 로그용)
-// - 감사 로그 기록 헬퍼
 // - 추천 코드 생성
 
 /**
@@ -53,40 +51,6 @@ function normalizeBirthDate(input) {
   return '';
 }
 
-function getClientIp(event) {
-  const h = event.headers || {};
-  return h['x-nf-client-connection-ip']
-    || h['client-ip']
-    || (h['x-forwarded-for'] || '').split(',')[0].trim()
-    || null;
-}
-
-function getUserAgent(event) {
-  const h = event.headers || {};
-  return h['user-agent'] || h['User-Agent'] || null;
-}
-
-/**
- * 감사 로그 기록 — 실패해도 throw 안 함 (best-effort)
- */
-async function recordAudit(admin, params) {
-  const { actor_id, actor_type, action, resource_type, resource_id, metadata, event } = params;
-  try {
-    await admin.from('audit_logs').insert({
-      actor_id: actor_id || null,
-      actor_type: actor_type || 'system',
-      action,
-      resource_type: resource_type || null,
-      resource_id: resource_id || null,
-      metadata: metadata || null,
-      ip_address: event ? getClientIp(event) : null,
-      user_agent: event ? getUserAgent(event) : null,
-    });
-  } catch (e) {
-    console.error(`[audit] 기록 실패 action=${action}:`, e.message);
-  }
-}
-
 /**
  * referral_code 6자리 영숫자 — seed(seller_id 등) + 시각 해시 기반
  */
@@ -103,8 +67,5 @@ module.exports = {
   maskPhone,
   maskEmail,
   normalizeBirthDate,
-  getClientIp,
-  getUserAgent,
-  recordAudit,
   generateReferralCode,
 };
