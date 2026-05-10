@@ -64,6 +64,11 @@
 [functions."cleanup-stale-background"]
   schedule = "0 * * * *"
 
+# 매일 04:00 KST (= 19:00 UTC) reservations row 없는 storage orphan 일괄 제거
+# (cleanup-stale 가 잡지 못하는 row-less 파일 — 업로드 후 insert 실패 잔존, 옛 직삭제 등)
+[functions."cleanup-orphan-storage-background"]
+  schedule = "0 19 * * *"
+
 
 # 매분 예약 게시 픽업 (scheduled_at 도달한 예약 자동 처리)
 [functions."scheduler"]
