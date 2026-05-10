@@ -368,6 +368,31 @@
       color: var(--ink-soft);
     }
 
+    /* sheet 안 v2 메타 섹션 — 수집 시 모은 신호 (narrative / origin / sources / saturation) */
+    .sheet__meta-line {
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+      line-height: var(--leading-snug);
+    }
+    .sheet__source-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-1);
+    }
+    .sheet__source-chip {
+      padding: 2px 8px;
+      background: var(--bg-soft);
+      border-radius: var(--radius-pill);
+      font-size: 11px;
+      color: var(--ink-soft);
+    }
+    .sheet__source-chip strong { color: var(--ink); margin-left: 3px; }
+    .sheet__divider {
+      height: 1px;
+      background: var(--line);
+      margin: var(--space-2) 0;
+    }
+
     /* 하단 탭바 (대시보드와 동일) */
     .tabbar {
       position: fixed;
@@ -528,6 +553,8 @@
       const C = window.LumiCategories;
       let currentCategory = C.defaultSub;
       let currentMajor = C.findMajorBySub(currentCategory).id;
+      // 마지막으로 렌더한 키워드 객체들 — sheet 클릭 시 v2 메타 즉시 표시용
+      let lastItems = [];
 
       function fmtTime(iso) {
         if (!iso) return '';
@@ -614,6 +641,7 @@
           if (catLabel) catLabel.textContent = data.categoryLabel || '트렌드';
           if (catTime) catTime.textContent = fmtTime(data.updatedAt);
           const items = (data.keywords || []).slice(0, 30);
+          lastItems = items;
           if (items.length === 0) {
             stateEl.textContent = '아직 수집된 키워드가 없어요.';
             return;
@@ -650,27 +678,101 @@
             `;
           }).join('');
 
-          // 클릭 핸들러
-          listEl.querySelectorAll('.kw-item').forEach(btn => {
-            btn.addEventListener('click', () => openSheet(decodeURIComponent(btn.dataset.kw)));
+          // 클릭 핸들러 — idx 기반으로 lastItems 객체 전달
+          listEl.querySelectorAll('.kw-item').forEach((btn, idx) => {
+            btn.addEventListener('click', () => {
+              const item = lastItems[idx] || { keyword: decodeURIComponent(btn.dataset.kw) };
+              openSheet(item);
+            });
           });
 
-          // ?q=KEYWORD 자동 펼치기
+          // ?q=KEYWORD 자동 펼치기 — lastItems 에서 일치 검색, 없으면 minimal
           const params = new URLSearchParams(location.search);
           const q = params.get('q');
-          if (q) openSheet(q);
+          if (q) {
+            const found = lastItems.find(i => i.keyword === q) || { keyword: q };
+            openSheet(found);
+          }
         } catch (e) {
           stateEl.textContent = '키워드를 가져오지 못했어요.';
         }
       }
 
-      function openSheet(keyword) {
+      // sheet 안 v2 메타(narrative/origin/sources/saturation) — 수집 시점에 cron 이 모은 신호.
+      // keyword-detail 의 GPT 즉석 해석 도착 전에 즉시 보여줌.
+      function renderV2MetaSection(item) {
+        if (!item) return '';
+        const blocks = [];
+
+        // 1) cron 이 추출 시 GPT 가 만든 한줄 요약 (narrative) + 출처 단서 (origin)
+        if (item.narrative || item.origin) {
+          const lines = [];
+          if (item.narrative) lines.push(`<p class="sheet__text">${item.narrative}</p>`);
+          if (item.origin)    lines.push(`<p class="sheet__meta-line">${item.origin}</p>`);
+          blocks.push(`
+            <div class="sheet__section">
+              <div class="sheet__label">루미 수집 메모</div>
+              ${lines.join('')}
+            </div>
+          `);
+        }
+
+        // 2) 어디서 발견됐나 — sources 분포 (네이버/블로그/유튜브/인스타/구글/뉴스/커뮤니티)
+        const SOURCE_LABELS = {
+          naver: '네이버', datalab: '네이버', blog: '블로그',
+          youtube: '유튜브', yt: '유튜브', ytKR: '유튜브',
+          ig: '인스타', insta: '인스타', google: '구글',
+          news: '뉴스', community: '커뮤니티',
+        };
+        if (item.sources && typeof item.sources === 'object') {
+          const chips = Object.entries(item.sources)
+            .filter(([, count]) => Number(count) > 0)
+            .sort(([, a], [, b]) => Number(b) - Number(a))
+            .map(([key, count]) =>
+              `<span class="sheet__source-chip">${SOURCE_LABELS[key] || key}<strong>${count}</strong></span>`
+            );
+          if (chips.length) {
+            blocks.push(`
+              <div class="sheet__section">
+                <div class="sheet__label">어디서 봤나요</div>
+                <div class="sheet__source-chips">${chips.join('')}</div>
+              </div>
+            `);
+          }
+        }
+
+        // 3) 신호 강도 — saturationLevel / signalTier / 사용자 피드백
+        const signals = [];
+        if (item.signalTier === 'real') signals.push('확실 신호 (2개 이상 소스에서 발견)');
+        if (item.signalTier === 'weak') signals.push('약한 신호 (1개 소스만)');
+        if (item.saturationLevel === 'low')    signals.push('포화도 낮음 (덜 흔함)');
+        if (item.saturationLevel === 'high')   signals.push('포화도 높음 (이미 흔함)');
+        if (typeof item.likes === 'number'    && item.likes > 0)    signals.push(`👍 ${item.likes}`);
+        if (typeof item.dislikes === 'number' && item.dislikes > 0) signals.push(`👎 ${item.dislikes}`);
+        if (signals.length) {
+          blocks.push(`
+            <div class="sheet__section">
+              <div class="sheet__label">신호</div>
+              <p class="sheet__meta-line">${signals.join(' · ')}</p>
+            </div>
+          `);
+        }
+
+        if (!blocks.length) return '';
+        return blocks.join('') + '<div class="sheet__divider"></div>';
+      }
+
+      function openSheet(item) {
+        // 호환: 옛 호출이 keyword 문자열만 넘기면 객체로 감싸기
+        if (typeof item === 'string') item = { keyword: item };
+        const keyword = item.keyword || '';
         sheetTitle.textContent = '#' + keyword;
-        sheetBody.innerHTML = '<div class="state">루미가 해석 중…</div>';
+        const metaHtml = renderV2MetaSection(item);
+        sheetBody.innerHTML = metaHtml + '<div class="state" data-detail-loading>루미가 해석 중…</div>';
         backdrop.classList.add('is-open');
         sheet.classList.add('is-open');
         document.body.style.overflow = 'hidden';
-        loadDetail(keyword);
+        loadDetail(keyword, metaHtml);
       }
 
       function closeSheet() {
@@ -683,13 +785,13 @@
       document.querySelector('[data-sheet-close]')?.addEventListener('click', closeSheet);
       document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
 
-      async function loadDetail(keyword) {
+      async function loadDetail(keyword, metaHtml = '') {
         try {
           const url = `/api/keyword-detail?keyword=${encodeURIComponent(keyword)}&category=${encodeURIComponent(currentCategory)}`;
           const res = await fetch(url);
           const json = await res.json();
           if (!json.ok || !json.data) {
-            sheetBody.innerHTML = '<div class="state">해석을 가져오지 못했어요.</div>';
+            sheetBody.innerHTML = metaHtml + '<div class="state">해석을 가져오지 못했어요.</div>';
             return;
           }
           const d = json.data;
@@ -738,9 +840,10 @@
               </div>
             `);
           }
-          sheetBody.innerHTML = sections.join('') || '<div class="state">해석이 비어 있어요.</div>';
+          const detailHtml = sections.join('') || '<div class="state">해석이 비어 있어요.</div>';
+          sheetBody.innerHTML = metaHtml + detailHtml;
         } catch {
-          sheetBody.innerHTML = '<div class="state">해석을 가져오지 못했어요.</div>';
+          sheetBody.innerHTML = metaHtml + '<div class="state">해석을 가져오지 못했어요.</div>';
         }
       }
 
