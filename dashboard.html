@@ -511,11 +511,25 @@
 
   <script>
     (function () {
+      // 0) URL hash 의 lumi_token (카카오 callback 직후) → localStorage 저장
+      //    onboarded=true 사장님은 callback 이 /dashboard#lumi_token=... 으로 보냄.
+      //    여기서 저장 안 하면 다른 탭 가는 순간 토큰 없어 /로 튕김.
+      try {
+        if (location.hash && location.hash.indexOf('lumi_token=') !== -1) {
+          const params = new URLSearchParams(location.hash.replace(/^#/, ''));
+          const t = params.get('lumi_token');
+          if (t) localStorage.setItem('lumi-auth', t);
+          history.replaceState(null, '', location.pathname);
+        }
+      } catch (_) {}
+
       const token =
         localStorage.getItem('lumi-auth') ||
         localStorage.getItem('lumi_auth') ||
         localStorage.getItem('seller_jwt');
-      const authHeaders = token ? { Authorization: 'Bearer ' + token } : {};
+      // 토큰 없으면 즉시 / 로 — 인증 안 된 채 dashboard 떠 있으면 다음 탭 이동에서 튕김
+      if (!token) { location.replace('/'); return; }
+      const authHeaders = { Authorization: 'Bearer ' + token };
 
       // 사장님 카테고리 — loadMe 가 갱신, loadTrends/loadBestTime 이 사용. 미감지 시 'cafe' fallback.
       let userCategory = 'cafe';
