@@ -14,6 +14,7 @@
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { runGuarded } = require('./_shared/cron-guard');
 const { checkAndIncrementQuota, QuotaExceededError } = require('./_shared/openai-quota');
+const { fetchRelatedFromSeeds } = require('./_shared/naver-ad-keyword-tool');
 const https = require('https');
 
 // ─────────────────────────────────────────────
@@ -1905,9 +1906,29 @@ exports.handler = runGuarded({
     // ─── 3단계: GPT 분류 ────────────────────────
     await ctx.stage('classification', {});
 
+    // 3-a) 네이버 검색광고 연관키워드 도구로 시드 자동 확장 (env 부재 시 noop, silent fallback)
+    //      카테고리당 시드 3개 → 연관 키워드 + 월 검색량 → GPT 분류 raw 데이터에 합류.
+    //      lumi 의 NAVER_KEYWORDS 하드코딩 의존도를 줄이고 실제 검색 트래픽 기반 신호 도입.
+    const adKeywordsByCat = {};
+    await Promise.all(categories.map(async (cat) => {
+      const seeds = (NAVER_KEYWORDS[cat] || [])
+        .slice(0, 3)
+        .map(g => (g.keywords || [])[0])
+        .filter(Boolean);
+      if (seeds.length === 0) return;
+      try {
+        const related = await fetchRelatedFromSeeds(seeds, { limit: 60 });
+        if (related.length > 0) adKeywordsByCat[cat] = related;
+      } catch (e) {
+        console.warn(`[naver-ad] ${cat} 실패:`, e.message);
+      }
+    }));
+
     const domesticTexts = {};
     for (const cat of categories) {
       const r = rawByCategory[cat];
+      const adKeywords = adKeywordsByCat[cat] || [];
+      const adTexts = adKeywords.map(k => `${k.keyword} (월간검색 ${k.monthlyTotal})`);
       domesticTexts[cat] = [
         ...r.naverData,
         ...r.blogData,
@@ -1916,6 +1937,7 @@ exports.handler = runGuarded({
         ...r.igTexts,
         ...(r.newsData || []),
         ...(r.communityData || []),  // 커뮤니티 트렌드 (맘카페·디시·더쿠 등)
+        ...adTexts,                   // 검색광고 연관키워드 (env 있을 때만)
       ];
     }
 
