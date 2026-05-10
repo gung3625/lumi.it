@@ -11,11 +11,13 @@ if (!APP_ID || !APP_SECRET) {
   throw new Error('META_APP_ID / META_APP_SECRET 환경변수 필수');
 }
 const REDIRECT_URI = 'https://lumi.it.kr/.netlify/functions/ig-oauth';
+// Facebook Login(facebook.com/dialog/oauth) + me/accounts → instagram_business_account 흐름.
+// 이 엔드포인트는 옛 instagram_* 스코프만 받음 (instagram_business_* 는 instagram.com OAuth 전용).
 const SCOPES = [
-  'instagram_business_basic',
-  'instagram_business_content_publish',
-  'instagram_business_manage_comments',
-  'instagram_business_manage_insights',
+  'instagram_basic',
+  'instagram_content_publish',
+  'instagram_manage_comments',
+  'instagram_manage_insights',
   'pages_show_list',
   'pages_read_engagement',
   'pages_manage_metadata',
