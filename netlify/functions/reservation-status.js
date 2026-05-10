@@ -42,7 +42,7 @@ exports.handler = async (event) => {
 
   const { data, error } = await admin
     .from('reservations')
-    .select('reserve_key, user_id, caption_status, is_sent, cancelled, caption_error, selected_caption_index, captions, post_mode, ig_permalink')
+    .select('reserve_key, user_id, caption_status, is_sent, cancelled, caption_error, selected_caption_index, captions, post_mode, ig_post_id')
     .eq('reserve_key', reserveKey)
     .eq('user_id', user.id)
     .maybeSingle();
