@@ -460,7 +460,11 @@
 
       const MAX_PHOTOS = 10;
       const MAX_BYTES = 10 * 1024 * 1024;          // 입력 한 장 최대 (압축 전)
-      const COMPRESS_MAX_DIM = 1440;               // IG carousel 권장 1080~1440
+      // IG carousel 비율 제약: 0.8(4:5) ~ 1.91(1.91:1).
+      // 폰 세로 사진(9:16=0.5625)은 IG 가 거절 → 4:5 로 cover crop.
+      const IG_TARGET_W = 1080;
+      const IG_TARGET_H = 1350;                    // 1080 × 1350 = 4:5
+      const IG_TARGET_RATIO = IG_TARGET_W / IG_TARGET_H;
       const COMPRESS_QUALITY = 0.85;               // JPEG 품질
       const ALLOWED = ['image/jpeg', 'image/png', 'image/webp'];
 
@@ -629,27 +633,44 @@
         });
       });
 
-      // Canvas 로 1440px 리사이즈 + JPEG 압축 (Netlify 6MB body 한도 회피)
+      // Canvas 로 4:5(1080×1350) cover crop + JPEG 압축.
+      // - IG carousel 호환 비율(4:5 = 0.8) 강제 → "aspect ratio not supported" 에러 차단
+      // - 폰 세로 사진(9:16) 은 위·아래 살짝 잘리고, 가로 사진은 좌·우 잘림
+      // - Netlify 6MB body 한도도 자연스레 충족 (사진당 ~200~500KB)
       function compressImage(file) {
         return new Promise((resolve, reject) => {
           const img = new Image();
           const url = URL.createObjectURL(file);
           img.onload = () => {
             URL.revokeObjectURL(url);
-            const ratio = Math.min(1, COMPRESS_MAX_DIM / Math.max(img.width, img.height));
-            const w = Math.round(img.width * ratio);
-            const h = Math.round(img.height * ratio);
+
+            const sourceRatio = img.width / img.height;
+            let sx, sy, sw, sh;
+            if (sourceRatio > IG_TARGET_RATIO) {
+              // 원본이 4:5 보다 넓음 → 좌우 자르기
+              sh = img.height;
+              sw = Math.round(sh * IG_TARGET_RATIO);
+              sx = Math.round((img.width - sw) / 2);
+              sy = 0;
+            } else {
+              // 원본이 4:5 보다 좁음(폰 세로) → 위아래 자르기
+              sw = img.width;
+              sh = Math.round(sw / IG_TARGET_RATIO);
+              sx = 0;
+              sy = Math.round((img.height - sh) / 2);
+            }
+
             const canvas = document.createElement('canvas');
-            canvas.width = w; canvas.height = h;
+            canvas.width = IG_TARGET_W;
+            canvas.height = IG_TARGET_H;
             const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, w, h);
+            // 화이트 배경 — 투명 PNG 입력 대비
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, IG_TARGET_W, IG_TARGET_H);
+            ctx.drawImage(img, sx, sy, sw, sh, 0, 0, IG_TARGET_W, IG_TARGET_H);
+
             canvas.toBlob(blob => {
               if (!blob) return reject(new Error('압축 실패'));
-              // 압축본이 원본보다 크면 원본 반환 (드물지만 가능)
-              if (blob.size >= file.size) {
-                resolve(file);
-                return;
-              }
               const name = (file.name || 'photo').replace(/\.\w+$/, '') + '.jpg';
               resolve(new File([blob], name, { type: 'image/jpeg' }));
             }, 'image/jpeg', COMPRESS_QUALITY);
