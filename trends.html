@@ -210,6 +210,29 @@
     .kw-item__trend--down { color: #c8507a; }
     .kw-item__trend svg { width: 14px; height: 14px; stroke-width: 2.5; }
 
+    /* 신호 메타 배지 (NEW · 급등 등) */
+    .kw-item__badges {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .kw-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: var(--radius-pill);
+      font-size: 10px;
+      font-weight: var(--weight-bold);
+      letter-spacing: 0.02em;
+      line-height: 1.4;
+      white-space: nowrap;
+    }
+    .kw-badge--new { background: #fff0f5; color: #c8507a; }
+    .kw-badge--hot { background: #fff4e8; color: #c2410c; }
+    /* 약신호 (signalTier=weak) — 카드 살짝 흐리게 */
+    .kw-item--weak .kw-item__text { color: var(--ink-soft); }
+    .kw-item--weak .kw-item__rank { opacity: 0.6; }
+
     /* 빈 / 로딩 안내 */
     .state {
       padding: var(--space-12) var(--space-4);
@@ -605,11 +628,22 @@
               : trend === 'down'
               ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 15 12 21 18 15"/><line x1="12" y1="3" x2="12" y2="21"/></svg>'
               : '';
+            // v2 신호 메타 배지: NEW (신규 등장) · 🔥 급등 (velocity ≥ 50%)
+            const isNew = item.isNew === true;
+            const velocity = typeof item.velocityPct === 'number' ? item.velocityPct : null;
+            const isHot = velocity !== null && velocity >= 50;
+            const isWeak = item.signalTier === 'weak';
+            const badges = [];
+            if (isNew) badges.push('<span class="kw-badge kw-badge--new">NEW</span>');
+            if (isHot) badges.push(`<span class="kw-badge kw-badge--hot">🔥 +${Math.round(velocity)}%</span>`);
+            const badgeHtml = badges.length ? `<span class="kw-item__badges">${badges.join('')}</span>` : '';
+            const itemClass = 'kw-item' + (isWeak ? ' kw-item--weak' : '');
             return `
               <li>
-                <button class="kw-item" type="button" data-kw="${encodeURIComponent(kw)}">
+                <button class="${itemClass}" type="button" data-kw="${encodeURIComponent(kw)}">
                   <span class="kw-item__rank">${rank}</span>
                   <span class="kw-item__text">${kw}</span>
+                  ${badgeHtml}
                   <span class="kw-item__trend${trendClass}">${trendIcon}</span>
                 </button>
               </li>
