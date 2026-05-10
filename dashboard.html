@@ -507,19 +507,8 @@
         <h2 class="section-title" id="sec-comments">새 댓글</h2>
         <div class="comments-card">
           <ul class="comments-card__list" role="list" data-comments>
-            <li class="comments-card__item">
-              <span class="comments-card__avatar">S</span>
-              <div class="comments-card__body">
-                <div class="comments-card__user">soyeon_92</div>
-                <div class="comments-card__text">분위기 너무 좋아요! 어디 카페에요?</div>
-              </div>
-            </li>
-            <li class="comments-card__item">
-              <span class="comments-card__avatar">J</span>
-              <div class="comments-card__body">
-                <div class="comments-card__user">junwoo.k</div>
-                <div class="comments-card__text">메뉴 추천 좀 부탁드려요!</div>
-              </div>
+            <li class="comments-card__item comments-card__empty" data-comments-empty>
+              <span class="comments-card__text" style="color: var(--ink-muted);">댓글을 가져오는 중…</span>
             </li>
           </ul>
         </div>
@@ -679,6 +668,44 @@
         } catch {}
       }
 
+      // 새 댓글 카드 (Phase 1: IG 미연동 안내 또는 빈 상태. 실제 댓글 fetch 는 Phase 2)
+      async function loadComments() {
+        const listEl = document.querySelector('[data-comments]');
+        if (!listEl) return;
+        try {
+          const res = await fetch('/api/comments?limit=3', { headers: authHeaders });
+          if (!res.ok) {
+            listEl.innerHTML = '<li class="comments-card__item comments-card__empty"><span class="comments-card__text" style="color: var(--ink-muted);">댓글을 가져오지 못했어요.</span></li>';
+            return;
+          }
+          const json = await res.json();
+          const items = (json && json.items) || [];
+          if (items.length === 0) {
+            const msg = json.igConnected
+              ? '아직 새 댓글이 없어요'
+              : '인스타 연동 후 새 댓글이 여기 표시돼요';
+            listEl.innerHTML = `<li class="comments-card__item comments-card__empty"><span class="comments-card__text" style="color: var(--ink-muted);">${msg}</span></li>`;
+            return;
+          }
+          listEl.innerHTML = items.slice(0, 3).map(c => {
+            const u = (c.username || c.from || '익명').slice(0, 24);
+            const initial = (u[0] || '·').toUpperCase();
+            const text = (c.text || '').slice(0, 60);
+            return `
+              <li class="comments-card__item">
+                <span class="comments-card__avatar">${initial}</span>
+                <div class="comments-card__body">
+                  <div class="comments-card__user">${u}</div>
+                  <div class="comments-card__text">${text}</div>
+                </div>
+              </li>
+            `;
+          }).join('');
+        } catch (e) {
+          listEl.innerHTML = '<li class="comments-card__item comments-card__empty"><span class="comments-card__text" style="color: var(--ink-muted);">댓글을 가져오지 못했어요.</span></li>';
+        }
+      }
+
       // 베스트 시간 (get-best-time)
       async function loadBestTime() {
         try {
@@ -707,11 +734,12 @@
       }
 
       // loadMe 가 userCategory 를 정한 뒤에 카테고리 의존 호출들이 시작되도록 순서 보장.
-      // 카테고리 무관 호출(loadStats/loadScheduled)은 병렬.
+      // 카테고리 무관 호출(loadStats/loadScheduled/loadComments)은 병렬.
       (async () => {
         await loadMe();
         loadStats();
         loadScheduled();
+        loadComments();
         loadTrends();
         loadBestTime();
       })();
