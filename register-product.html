@@ -579,6 +579,33 @@
                `T${pad(date.getHours())}:${pad(date.getMinutes())}`;
       }
 
+      // 예약 범위 — 매번 picker 열 때 새로 계산 (페이지를 오래 켜둔 경우 대비)
+      function getScheduleBounds() {
+        const now = Date.now();
+        return {
+          min: new Date(now),
+          max: new Date(now + 30 * 24 * 60 * 60 * 1000),
+          def: new Date(now + 60 * 60 * 1000),
+        };
+      }
+
+      // 사용자가 과거를 골라도 즉시 min 으로 끌어올리고, max 초과는 max 로 자른다.
+      function clampScheduleValue() {
+        if (!scheduleAtEl.value) return;
+        const picked = new Date(scheduleAtEl.value).getTime();
+        const { min, max } = getScheduleBounds();
+        if (picked < min.getTime()) {
+          scheduleAtEl.value = toLocalDtIso(min);
+          toast('과거 시간은 예약할 수 없어요');
+        } else if (picked > max.getTime()) {
+          scheduleAtEl.value = toLocalDtIso(max);
+          toast('한 달 이내까지만 예약할 수 있어요');
+        }
+      }
+      scheduleAtEl.addEventListener('input', clampScheduleValue);
+      scheduleAtEl.addEventListener('change', clampScheduleValue);
+      scheduleAtEl.addEventListener('blur', clampScheduleValue);
+
       // 게시 시점 토글
       document.querySelectorAll('[data-schedule]').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -586,10 +613,7 @@
           document.querySelectorAll('[data-schedule]').forEach(b => b.classList.toggle('is-active', b === btn));
           if (scheduleMode === 'scheduled') {
             scheduleAtEl.hidden = false;
-            const now = new Date();
-            const min = new Date(now.getTime());                  // 지금부터 (과거 차단)
-            const max = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30일 뒤까지
-            const def = new Date(now.getTime() + 60 * 60 * 1000); // 기본값: +1시간
+            const { min, max, def } = getScheduleBounds();
             scheduleAtEl.min = toLocalDtIso(min);
             scheduleAtEl.max = toLocalDtIso(max);
             scheduleAtEl.value = toLocalDtIso(def);
