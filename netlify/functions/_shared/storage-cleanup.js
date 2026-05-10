@@ -2,7 +2,9 @@
 // 예약 실패/완료/스테일 케이스에서 orphan 스토리지 파일과 row를 안전하게 제거.
 // 모든 네트워크 호출은 AbortController 30초 타임아웃 + 에러 스왈로우.
 
-const STORAGE_TIMEOUT_MS = 30_000;
+// 단건 storage delete 타임아웃 — 사용자 즉시 액션 (예약 취소/삭제) 의 응답성 우선.
+// 너무 길면 클라이언트 "삭제 중…" 이 매달려 보임. 실패한 파일은 cleanup-stale cron 이 잡음.
+const STORAGE_TIMEOUT_MS = 5_000;
 
 function getSupabaseEnv() {
   const url = process.env.SUPABASE_URL;

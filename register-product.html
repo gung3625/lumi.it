@@ -711,14 +711,14 @@
         overlayEl.setAttribute('aria-hidden', open ? 'false' : 'true');
       }
       function setOverlayCopy(title, sub) {
+        // 페이드 transition 은 글자 길이/폭이 다른 두 텍스트 전환 시 sub-pixel
+        // 잔상(예: "ㅅ캡션 쓰는 중ㄷ" 같은 자모 잘림)이 생겨서 즉시 swap.
         if (title && progressTitleEl.textContent !== title) {
-          progressTitleEl.style.opacity = '0';
-          setTimeout(() => {
-            progressTitleEl.textContent = title;
-            progressTitleEl.style.opacity = '1';
-          }, 160);
+          progressTitleEl.textContent = title;
         }
-        if (sub != null) progressSubEl.textContent = sub;
+        if (sub != null && progressSubEl.textContent !== sub) {
+          progressSubEl.textContent = sub;
+        }
       }
 
       // status → step 매핑
@@ -778,8 +778,10 @@
         return { ok: 'timeout' };
       }
 
-      // 제출
+      // 제출 — iOS Safari 등에서 더블탭이 짧게 두 번 fire 되는 경우 대비 idempotency 락.
+      let isSubmitting = false;
       submitBtn.addEventListener('click', async () => {
+        if (isSubmitting) return;
         if (photos.length === 0) return;
         if (scheduleMode === 'scheduled') {
           if (!scheduleAtEl.value) {
@@ -798,6 +800,7 @@
             return;
           }
         }
+        isSubmitting = true;
         submitBtn.disabled = true;
         submitBtn.textContent = '준비 중…';
         showOverlay(true);
@@ -853,6 +856,7 @@
           toast(e.message || '게시 실패');
           submitBtn.disabled = false;
           submitBtn.textContent = '📷 캡션 만들고 게시';
+          isSubmitting = false;
         }
       });
 

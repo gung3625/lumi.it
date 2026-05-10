@@ -415,28 +415,37 @@
           }
 
           // 취소/삭제 핸들러 (같은 endpoint — 서버가 미게시면 행+스토리지 삭제)
+          // 더블탭 방지 + 15초 타임아웃 (네트워크/서버 지연 시 "삭제 중…" 매달림 방지)
           document.querySelectorAll('[data-cancel]').forEach(btn => {
             btn.addEventListener('click', async (e) => {
               e.preventDefault();
+              if (btn.dataset.busy === '1') return;
               const action = btn.dataset.action || 'cancel';
               const isDelete = action === 'delete';
               const confirmMsg = isDelete ? '실패한 예약을 삭제할까요?' : '이 예약을 취소할까요?';
               if (!confirm(confirmMsg)) return;
               const key = btn.dataset.cancel;
+              btn.dataset.busy = '1';
               btn.disabled = true;
               btn.textContent = isDelete ? '삭제 중…' : '취소 중…';
+              const ctrl = new AbortController();
+              const tid = setTimeout(() => ctrl.abort(), 15000);
               try {
                 const r = await fetch('/api/cancel-reservation', {
                   method: 'POST',
                   headers: { ...authHeaders, 'Content-Type': 'application/json' },
                   body: JSON.stringify({ reserve_key: key }),
+                  signal: ctrl.signal,
                 });
                 if (!r.ok) throw new Error('실패');
                 load();
               } catch (e) {
-                alert(isDelete ? '삭제에 실패했어요.' : '취소에 실패했어요.');
+                alert(isDelete ? '삭제에 실패했어요. 잠시 후 다시 시도해주세요.' : '취소에 실패했어요.');
                 btn.disabled = false;
                 btn.textContent = isDelete ? '삭제' : '취소';
+                btn.dataset.busy = '0';
+              } finally {
+                clearTimeout(tid);
               }
             });
           });
