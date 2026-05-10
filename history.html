@@ -226,56 +226,86 @@
     }
     .rate-btn {
       position: relative;
-      width: 36px; height: 36px;
+      width: 40px; height: 40px;
       border-radius: var(--radius-full);
       background: var(--bg-soft);
       border: 1px solid var(--line);
       display: inline-flex; align-items: center; justify-content: center;
       font-size: 18px;
       cursor: pointer;
+      overflow: hidden;
+      isolation: isolate;
+      /* 부드러운 ease-soft 로 통일. 회전은 절대 사용 안 함 (촌스러움 방지) */
       transition:
-        background var(--duration-snap) var(--ease-toss),
-        border-color var(--duration-snap) var(--ease-toss),
-        box-shadow var(--duration-base) var(--ease-soft),
-        transform var(--duration-snap) var(--ease-toss);
+        background 280ms var(--ease-soft),
+        border-color 280ms var(--ease-soft),
+        box-shadow 320ms var(--ease-soft),
+        transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
     }
-    .rate-btn:active { transform: scale(0.88); }
+    /* 터치 즉각 피드백 — 깊게 살짝 눌림 */
+    .rate-btn:active {
+      transform: scale(0.92);
+      transition-duration: 80ms;
+    }
     @media (hover: hover) {
       .rate-btn:hover {
         background: var(--pink-50);
         border-color: var(--pink-300);
         transform: translateY(-1px);
-        box-shadow: var(--shadow-sm);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
       }
     }
-    /* idle 상태에서 미세한 가벼운 호흡 — "살아있다" 느낌 */
+    /* 터치 ripple — :active 시 중앙에서 부드럽게 퍼짐 */
+    .rate-btn::after {
+      content: '';
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 140%; height: 140%;
+      background: radial-gradient(circle, rgba(255, 107, 139, 0.42) 0%, rgba(255, 107, 139, 0) 65%);
+      border-radius: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      opacity: 0;
+      pointer-events: none;
+      z-index: -1;
+    }
+    .rate-btn:active::after {
+      animation: ripple-soft 560ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    @keyframes ripple-soft {
+      0%   { transform: translate(-50%, -50%) scale(0.15); opacity: 0.7; }
+      100% { transform: translate(-50%, -50%) scale(1.6);  opacity: 0; }
+    }
+    /* idle 호흡 — 매우 미세하게, 천천히 (1.025 / 4초) */
     .rate-btn:not(:disabled):not(.is-active--like):not(.is-active--dislike) {
-      animation: rate-idle 3.6s var(--ease-soft) infinite;
+      animation: rate-breathe 4s ease-in-out infinite;
     }
-    @keyframes rate-idle {
+    @keyframes rate-breathe {
       0%, 100% { transform: scale(1); }
-      50%      { transform: scale(1.04); }
+      50%      { transform: scale(1.025); }
     }
+    /* 선택 후 — 스프링 한 번, 회전 없음. 그림자 ring 이 부드럽게 퍼짐 */
     .rate-btn.is-active--like {
       background: #e8f5ee; border-color: #00713c;
-      box-shadow: 0 0 0 3px rgba(0, 113, 60, 0.12);
-      animation: rate-pop 540ms var(--ease-toss);
+      animation: rate-confirm-like 720ms cubic-bezier(0.34, 1.56, 0.64, 1);
     }
     .rate-btn.is-active--dislike {
       background: #fde8e8; border-color: #b8221c;
-      box-shadow: 0 0 0 3px rgba(184, 34, 28, 0.12);
-      animation: rate-pop 540ms var(--ease-toss);
+      animation: rate-confirm-dislike 720ms cubic-bezier(0.34, 1.56, 0.64, 1);
     }
-    .rate-btn:disabled { opacity: 0.5; cursor: not-allowed; animation: none; }
-    @keyframes rate-pop {
-      0%   { transform: scale(1) rotate(0deg); }
-      30%  { transform: scale(1.25) rotate(-8deg); }
-      55%  { transform: scale(1.1)  rotate(6deg); }
-      80%  { transform: scale(1.15) rotate(-2deg); }
-      100% { transform: scale(1)    rotate(0deg); }
+    @keyframes rate-confirm-like {
+      0%   { transform: scale(0.92); box-shadow: 0 0 0 0 rgba(0, 113, 60, 0); }
+      45%  { transform: scale(1.18); box-shadow: 0 0 0 10px rgba(0, 113, 60, 0.18); }
+      100% { transform: scale(1);    box-shadow: 0 0 0 3px rgba(0, 113, 60, 0.14); }
     }
+    @keyframes rate-confirm-dislike {
+      0%   { transform: scale(0.92); box-shadow: 0 0 0 0 rgba(184, 34, 28, 0); }
+      45%  { transform: scale(1.18); box-shadow: 0 0 0 10px rgba(184, 34, 28, 0.18); }
+      100% { transform: scale(1);    box-shadow: 0 0 0 3px rgba(184, 34, 28, 0.14); }
+    }
+    .rate-btn:disabled { opacity: 0.55; cursor: not-allowed; animation: none; }
     @media (prefers-reduced-motion: reduce) {
       .rate-btn:not(:disabled) { animation: none !important; }
+      .rate-btn::after { display: none; }
     }
     .rate-hint {
       font-size: var(--text-label);
