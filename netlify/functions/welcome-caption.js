@@ -125,7 +125,8 @@ ${toneInstruction}
       },
       body: JSON.stringify({
         model: 'gpt-5.4',
-        max_tokens: 1500,
+        // GPT-5 series: max_tokens deprecated → max_completion_tokens
+        max_completion_tokens: 1500,
         messages: [{ role: 'user', content: prompt }],
       }),
     });
