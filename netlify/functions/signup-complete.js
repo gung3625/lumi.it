@@ -114,14 +114,30 @@ exports.handler = async (event) => {
   }
 
   // ──────────────────────────────────────────────
-  // 3) sellers UPDATE
+  // 3) 약관·개인정보 동의 검증 (필수)
+  // ──────────────────────────────────────────────
+  const consents = body.consents || {};
+  if (!consents.terms || !consents.privacy) {
+    return {
+      statusCode: 400,
+      headers: CORS,
+      body: JSON.stringify({ error: '이용약관과 개인정보처리방침 동의가 필요해요.' }),
+    };
+  }
+
+  // ──────────────────────────────────────────────
+  // 4) sellers UPDATE
   // ──────────────────────────────────────────────
   try {
     // 기본 정보(매장/업종/폰)만 저장 — onboarded 는 IG 연동 또는 명시적 skip 후 셋.
+    const nowIso = new Date().toISOString();
     const updatePayload = {
       store_name: store_name.trim(),
       industry: industry.trim(),
-      signup_completed_at: new Date().toISOString(),
+      signup_completed_at: nowIso,
+      terms_consent_at: nowIso,
+      privacy_consent_at: nowIso,
+      marketing_consent: !!consents.marketing,
     };
     if (phone) updatePayload.phone = phone;
 

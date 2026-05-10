@@ -383,6 +383,46 @@
       .ig-step__guide  { display: block; }
     }
 
+    /* 동의 체크박스 */
+    .consent-block {
+      margin-top: var(--space-5);
+      padding: var(--space-4);
+      background: var(--bg-soft);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      display: flex; flex-direction: column;
+      gap: var(--space-2);
+    }
+    .consent-row {
+      display: flex; align-items: center; gap: 10px;
+      cursor: pointer;
+      padding: 4px 0;
+    }
+    .consent-row input[type="checkbox"] {
+      flex-shrink: 0;
+      width: 20px; height: 20px;
+      accent-color: var(--pink-500);
+      cursor: pointer;
+    }
+    .consent-row__text {
+      font-size: var(--text-body);
+      color: var(--ink);
+      line-height: 1.5;
+    }
+    .consent-row__text a {
+      color: var(--pink-500);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    @media (hover: hover) {
+      .consent-row__text a:hover { color: var(--pink-700); }
+    }
+    .consent-row--all {
+      padding-bottom: var(--space-2);
+      margin-bottom: 2px;
+      border-bottom: 1px solid var(--line);
+    }
+
     /* CTA */
     .cta-row {
       margin-top: auto;
@@ -558,8 +598,28 @@
 
       <div class="field__error" data-step1-err></div>
 
+      <!-- 동의 체크박스 — 개인정보보호법 §15 / 정보통신망법 §22 / 약관규제법 §3 준수 -->
+      <div class="consent-block">
+        <label class="consent-row consent-row--all">
+          <input type="checkbox" data-consent-all>
+          <span class="consent-row__text"><strong>전체 동의</strong></span>
+        </label>
+        <label class="consent-row">
+          <input type="checkbox" data-consent="terms" required>
+          <span class="consent-row__text">[필수] <a href="/terms" target="_blank" rel="noopener">이용약관</a> 동의</span>
+        </label>
+        <label class="consent-row">
+          <input type="checkbox" data-consent="privacy" required>
+          <span class="consent-row__text">[필수] <a href="/privacy" target="_blank" rel="noopener">개인정보처리방침</a> 동의</span>
+        </label>
+        <label class="consent-row">
+          <input type="checkbox" data-consent="marketing">
+          <span class="consent-row__text">[선택] 마케팅·이벤트 알림 수신 동의</span>
+        </label>
+      </div>
+
       <div class="cta-row">
-        <button class="cta-primary" type="button" data-next="2">다음</button>
+        <button class="cta-primary" type="button" data-next="2" disabled>다음</button>
       </div>
     </section>
 
@@ -785,6 +845,8 @@
         const payload = {
           store_name: state.storeName,
           industry: state.sub,
+          // 약관·개인정보 동의 (필수). 마케팅은 선택. 서버가 시각으로 저장.
+          consents: state.consents || {},
         };
         if (state.phone) payload.phone = state.phone;
         const res = await fetch('/api/signup-complete', {
@@ -798,6 +860,43 @@
         }
         return json;
       }
+
+      // ── 동의 체크박스 ──
+      const consentAllEl = document.querySelector('[data-consent-all]');
+      const consentTermsEl = document.querySelector('[data-consent="terms"]');
+      const consentPrivacyEl = document.querySelector('[data-consent="privacy"]');
+      const consentMarketingEl = document.querySelector('[data-consent="marketing"]');
+      const step1NextBtn = document.querySelector('[data-step="1"] [data-next]');
+
+      function refreshConsentState() {
+        // 필수 두 개 모두 체크돼야 다음 버튼 활성
+        const allRequired = consentTermsEl.checked && consentPrivacyEl.checked;
+        if (step1NextBtn) {
+          step1NextBtn.disabled = !allRequired;
+          step1NextBtn.classList.toggle('is-ready', allRequired);
+        }
+        // 전체동의 상태 동기화
+        if (consentAllEl) {
+          consentAllEl.checked = consentTermsEl.checked && consentPrivacyEl.checked && consentMarketingEl.checked;
+        }
+        state.consents = {
+          terms: consentTermsEl.checked,
+          privacy: consentPrivacyEl.checked,
+          marketing: consentMarketingEl.checked,
+        };
+      }
+      [consentTermsEl, consentPrivacyEl, consentMarketingEl].forEach(el => {
+        if (el) el.addEventListener('change', refreshConsentState);
+      });
+      if (consentAllEl) {
+        consentAllEl.addEventListener('change', () => {
+          consentTermsEl.checked = consentAllEl.checked;
+          consentPrivacyEl.checked = consentAllEl.checked;
+          consentMarketingEl.checked = consentAllEl.checked;
+          refreshConsentState();
+        });
+      }
+      refreshConsentState();
 
       // 다음/이전 버튼
       document.querySelectorAll('[data-next]').forEach(btn => {

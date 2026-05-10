@@ -20,6 +20,7 @@
   <link rel="stylesheet" href="/css/base.css">
   <link rel="stylesheet" href="/css/motion.css">
   <link rel="stylesheet" href="/css/tabbar.css">
+  <link rel="stylesheet" href="/css/legal.css">
 
   <style>
     body {
@@ -534,6 +535,15 @@
       </section>
     </a>
 
+    <!-- 6. 푸터 — 법적 링크 -->
+    <footer class="app-footer">
+      <div class="app-footer__links">
+        <a href="/terms">이용약관</a>
+        <span class="app-footer__sep">·</span>
+        <a href="/privacy">개인정보처리방침</a>
+      </div>
+      <div>© 2026 루미 · lumi.it.kr</div>
+    </footer>
   </main>
 
   <!-- 하단 탭바 -->
@@ -755,8 +765,11 @@
           });
           if (!res.ok) return;
           const json = await res.json();
-          if (json && json.label) {
-            setText('[data-besttime]', json.label + '에 올리면 좋아요');
+          // /api/get-best-time 응답: { bestTime, reason, tip, allSlots, source }
+          // (옛 'label' 필드는 없음 — bestTime 사용)
+          const bt = json && (json.bestTime || json.label);
+          if (bt) {
+            setText('[data-besttime]', bt + '에 올리면 좋아요');
             if (json.reason) setText('[data-besttime-sub]', json.reason);
           }
         } catch {}
