@@ -521,7 +521,11 @@
       const IG_TARGET_W = 1440;
       const IG_TARGET_H = 1800;                    // 1440 × 1800 = 4:5
       const IG_TARGET_RATIO = IG_TARGET_W / IG_TARGET_H;
-      const COMPRESS_QUALITY = 0.92;               // JPEG 품질 — 시각적으로 거의 손실 없음
+      // JPEG 품질 단계 — 0.92 면 시각적 무손실. 9~10장 캐러셀에서 Netlify 6MB body 한도
+      // 임박 시 0.85 → 0.78 로 자동 하향. 0.85 도 SNS 화면 기준 거의 인지 불가.
+      const COMPRESS_QUALITY_STEPS = [0.92, 0.85, 0.78];
+      // multipart 오버헤드(boundary·필드) + userMessage 여유분 0.5MB 빼고 5.5MB 안전선.
+      const SAFE_TOTAL_BYTES = 5.5 * 1024 * 1024;
       const ALLOWED = ['image/jpeg', 'image/png', 'image/webp'];
 
       const photoArea = document.querySelector('[data-photo-area]');
@@ -701,7 +705,7 @@
       // - IG carousel 호환 비율(4:5 = 0.8) 강제 → "aspect ratio not supported" 에러 차단
       // - 폰 세로 사진(9:16) 은 위·아래 살짝 잘리고, 가로 사진은 좌·우 잘림
       // - Netlify 6MB body 한도도 자연스레 충족 (사진당 ~200~500KB)
-      function compressImage(file) {
+      function compressImage(file, quality) {
         return new Promise((resolve, reject) => {
           const img = new Image();
           const url = URL.createObjectURL(file);
@@ -737,11 +741,26 @@
               if (!blob) return reject(new Error('압축 실패'));
               const name = (file.name || 'photo').replace(/\.\w+$/, '') + '.jpg';
               resolve(new File([blob], name, { type: 'image/jpeg' }));
-            }, 'image/jpeg', COMPRESS_QUALITY);
+            }, 'image/jpeg', quality);
           };
           img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('이미지 읽기 실패')); };
           img.src = url;
         });
+      }
+
+      // 첫 단계(0.92)로 압축 → 합계가 안전선 넘으면 다음 단계로 재압축.
+      // 대부분(1~5장)은 한 번에 통과 → 추가 비용 0. 9~10장 헤비 케이스만 fallback.
+      async function compressAllAdaptive(files) {
+        for (let i = 0; i < COMPRESS_QUALITY_STEPS.length; i++) {
+          const q = COMPRESS_QUALITY_STEPS[i];
+          const compressed = await Promise.all(files.map(f => compressImage(f, q)));
+          const total = compressed.reduce((s, f) => s + f.size, 0);
+          const isLast = i === COMPRESS_QUALITY_STEPS.length - 1;
+          if (total <= SAFE_TOTAL_BYTES || isLast) {
+            return { files: compressed, total, quality: q };
+          }
+          setOverlayCopy('사진 최적화 중', '용량이 커서 한 번 더 다듬고 있어요.');
+        }
       }
 
       // ── 진행 오버레이 컨트롤 ──
@@ -870,8 +889,12 @@
         activateUpTo('upload');
 
         try {
-          // 1) 압축 (병렬)
-          const compressed = await Promise.all(photos.map(compressImage));
+          // 1) 압축 (병렬) + 총 합계가 Netlify 6MB body 한도 임박 시 quality 자동 하향
+          const { files: compressed, total: compressedTotal } = await compressAllAdaptive(photos);
+          if (compressedTotal > SAFE_TOTAL_BYTES) {
+            // 최저 quality 까지 갔는데도 안전선 초과 → 서버 413 가기 전 친절하게 차단
+            throw new Error('사진이 너무 많거나 커요. 장수를 줄여주세요.');
+          }
           setOverlayCopy('사진 업로드 중', '서버로 보내고 있어요.');
 
           // 2) reserve 호출 (서버에서 storage 업로드 병렬)
