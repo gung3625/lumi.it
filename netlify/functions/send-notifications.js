@@ -273,7 +273,7 @@ function buildRetentionHtml({ heading, body, ctaText, ctaUrl, userName, email })
   </td></tr>
   <tr><td style="padding:24px 32px;border-top:1px solid #eee;font-size:12px;color:#999;line-height:1.6;">
     <p style="margin:0;">본 메일은 lumi 서비스에 마케팅 수신 동의한 회원에게 발송됩니다.</p>
-    <p style="margin:4px 0 0;">발신: 루미(lumi) | 서울특별시 | 문의: help@lumi.it.kr</p>
+    <p style="margin:4px 0 0;">발신: 루미(lumi) | 서울특별시 | 문의: lumi@lumi.it.kr</p>
     <p style="margin:8px 0 0;"><a href="${unsubUrl}" style="color:#999;text-decoration:underline;">수신거부</a></p>
   </td></tr>
 </table>
