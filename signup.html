@@ -870,8 +870,18 @@
         location.href = '/api/ig-oauth?token=' + encodeURIComponent(token);
       });
 
-      // 나중에
-      document.querySelector('[data-ig-skip]').addEventListener('click', () => {
+      // 나중에 — sellers.onboarded=true 박은 후 step 4 (다음 로그인 시 dashboard 직행)
+      document.querySelector('[data-ig-skip]').addEventListener('click', async (e) => {
+        const btn = e.currentTarget;
+        const orig = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = '저장 중…';
+        try {
+          await fetch('/api/signup-skip-ig', { method: 'POST', headers: authHeaders });
+        } catch (_) { /* 실패해도 UI 는 진행 — 다음 로그인에서 다시 step 3 으로 옴 */ }
+        btn.disabled = false;
+        btn.textContent = orig;
+        setDoneTitle();
         showStep(4);
       });
 
@@ -907,6 +917,13 @@
             state.skipPhoneStep = true;
             const dot2 = document.querySelector('[data-dot="2"]');
             if (dot2) dot2.style.display = 'none';
+          }
+          // 이전에 step 1-2 끝내고 IG 단계에서 이탈했던 경우 → step 3 으로 점프
+          if (seller.signupCompleted && !seller.onboarded) {
+            // industry/sub 도 state 에 복원 (signup-complete 호출은 이미 됐지만 방어적으로)
+            if (seller.industry) state.sub = seller.industry;
+            setDoneTitle();
+            showStep(3);
           }
         } catch (_) {}
       })();

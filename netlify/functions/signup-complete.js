@@ -117,11 +117,11 @@ exports.handler = async (event) => {
   // 3) sellers UPDATE
   // ──────────────────────────────────────────────
   try {
+    // 기본 정보(매장/업종/폰)만 저장 — onboarded 는 IG 연동 또는 명시적 skip 후 셋.
     const updatePayload = {
       store_name: store_name.trim(),
       industry: industry.trim(),
       signup_completed_at: new Date().toISOString(),
-      onboarded: true,
     };
     if (phone) updatePayload.phone = phone;
 

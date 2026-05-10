@@ -239,6 +239,16 @@ exports.handler = async (event) => {
       return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/dashboard?oauth_error=5' } };
     }
 
+    // 9) sellers.onboarded=true — IG 연동 완료가 onboarding 의 진짜 끝.
+    //    실패해도 IG 연동 자체는 성공이라 dashboard 로 보냄 (warn 만).
+    const { error: onbErr } = await supabase
+      .from('sellers')
+      .update({ onboarded: true })
+      .eq('id', userId);
+    if (onbErr) {
+      console.warn('[ig-oauth] sellers.onboarded UPDATE 실패 (무시):', onbErr.message);
+    }
+
     // 토큰/secret_id는 절대 로그에 남기지 않음. ig_user_id만.
     console.log('[ig-oauth] Instagram 연동 완료. ig_user_id:', igUserId);
     return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/dashboard?ig=connected' } };
