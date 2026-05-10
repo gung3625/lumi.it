@@ -38,7 +38,7 @@ exports.handler = async (event) => {
 
   if (error) {
     console.error('[ig-oauth] OAuth 에러:', error);
-    return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/?oauth_error=1' } };
+    return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/dashboard?oauth_error=1' } };
   }
 
   const supabase = getAdminClient();
@@ -50,7 +50,7 @@ exports.handler = async (event) => {
     const lumiToken = params.get('token') || '';
     if (!lumiToken) {
       console.error('[ig-oauth] OAuth 시작 실패: 토큰 없음');
-      return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/?oauth_error=1' } };
+      return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/dashboard?oauth_error=1' } };
     }
 
     // Supabase JWT 우선, 실패 시 seller-jwt(HS256) fallback (카카오 가입자)
@@ -67,7 +67,7 @@ exports.handler = async (event) => {
     }
     if (!userId) {
       console.error('[ig-oauth] OAuth 시작 실패: 토큰 검증 실패 (Supabase + seller-jwt 둘 다)');
-      return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/?oauth_error=1' } };
+      return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/dashboard?oauth_error=1' } };
     }
     const nonce = crypto.randomBytes(16).toString('hex');
 
@@ -103,7 +103,7 @@ exports.handler = async (event) => {
     const tokenData = await tokenRes.json();
     if (!tokenData.access_token) {
       console.error('[ig-oauth] 단기 토큰 교환 실패 (access_token 없음)');
-      return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/?oauth_error=2' } };
+      return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/dashboard?oauth_error=2' } };
     }
 
     // ────────────────────────────────────────────
@@ -146,7 +146,7 @@ exports.handler = async (event) => {
 
     if (!igUserId) {
       console.error('[ig-oauth] Instagram 비즈니스 계정 없음');
-      return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/?oauth_error=3' } };
+      return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/dashboard?oauth_error=3' } };
     }
 
     // ────────────────────────────────────────────
@@ -177,7 +177,7 @@ exports.handler = async (event) => {
 
     if (!userId) {
       console.error('[ig-oauth] user_id 확인 불가 (nonce 만료 또는 세션 없음)');
-      return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/?oauth_error=4' } };
+      return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/dashboard?oauth_error=4' } };
     }
 
     // ────────────────────────────────────────────
@@ -199,7 +199,7 @@ exports.handler = async (event) => {
     });
     if (accessErr) {
       console.error('[ig-oauth] set_ig_access_token 실패:', accessErr.message);
-      return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/?oauth_error=6' } };
+      return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/dashboard?oauth_error=6' } };
     }
 
     let pageSecretId = null;
@@ -236,15 +236,15 @@ exports.handler = async (event) => {
 
     if (upsertErr) {
       console.error('[ig-oauth] ig_accounts upsert 실패:', upsertErr.message);
-      return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/?oauth_error=5' } };
+      return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/dashboard?oauth_error=5' } };
     }
 
     // 토큰/secret_id는 절대 로그에 남기지 않음. ig_user_id만.
     console.log('[ig-oauth] Instagram 연동 완료. ig_user_id:', igUserId);
-    return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/?ig=connected' } };
+    return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/dashboard?ig=connected' } };
 
   } catch (e) {
     console.error('[ig-oauth] OAuth 처리 오류:', e.message);
-    return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/?oauth_error=99' } };
+    return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/dashboard?oauth_error=99' } };
   }
 };
