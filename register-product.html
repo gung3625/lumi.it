@@ -571,6 +571,14 @@
       }
       wireDropzone();
 
+      // 로컬 datetime → "YYYY-MM-DDTHH:mm" (datetime-local input 포맷, KST 기준).
+      // toISOString() 은 UTC 라 KST 와 9시간 차이 → 로컬 메서드로 직접 만든다.
+      function toLocalDtIso(date) {
+        const pad = n => String(n).padStart(2, '0');
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
+               `T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+      }
+
       // 게시 시점 토글
       document.querySelectorAll('[data-schedule]').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -578,8 +586,13 @@
           document.querySelectorAll('[data-schedule]').forEach(b => b.classList.toggle('is-active', b === btn));
           if (scheduleMode === 'scheduled') {
             scheduleAtEl.hidden = false;
-            const now = new Date(Date.now() + 60 * 60 * 1000);
-            scheduleAtEl.value = now.toISOString().slice(0, 16);
+            const now = new Date();
+            const min = new Date(now.getTime());                  // 지금부터 (과거 차단)
+            const max = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30일 뒤까지
+            const def = new Date(now.getTime() + 60 * 60 * 1000); // 기본값: +1시간
+            scheduleAtEl.min = toLocalDtIso(min);
+            scheduleAtEl.max = toLocalDtIso(max);
+            scheduleAtEl.value = toLocalDtIso(def);
           } else {
             scheduleAtEl.hidden = true;
             scheduleAtEl.value = '';
@@ -714,9 +727,22 @@
       // 제출
       submitBtn.addEventListener('click', async () => {
         if (photos.length === 0) return;
-        if (scheduleMode === 'scheduled' && !scheduleAtEl.value) {
-          toast('예약 시간을 선택해주세요');
-          return;
+        if (scheduleMode === 'scheduled') {
+          if (!scheduleAtEl.value) {
+            toast('예약 시간을 선택해주세요');
+            return;
+          }
+          // 브라우저가 min/max 무시하는 경우 대비 — JS 측에서도 한 번 더 검증
+          const picked = new Date(scheduleAtEl.value).getTime();
+          const now = Date.now();
+          if (picked < now) {
+            toast('과거 시간은 예약할 수 없어요');
+            return;
+          }
+          if (picked > now + 30 * 24 * 60 * 60 * 1000) {
+            toast('예약은 한 달 이내까지만 가능해요');
+            return;
+          }
         }
         submitBtn.disabled = true;
         submitBtn.textContent = '준비 중…';
