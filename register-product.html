@@ -709,8 +709,10 @@
         const TIMEOUT_MS = 90 * 1000; // 1.5분 한도 — 그 이상이면 예약 페이지로 이동
         const INTERVAL_MS = 1500;
         const start = Date.now();
-        // 첫 단계는 caption (분석/작성) 으로 보여 — 업로드는 이미 끝났음
+        // 첫 단계는 caption (분석/작성) 으로 — 업로드는 이미 끝났음.
+        // 첫 폴링 응답이 1.5초 후에 오므로 타이틀도 즉시 동기화 (단계와 mismatch 방지)
         activateUpTo('caption');
+        setOverlayCopy('캡션 쓰는 중', '사진 보면서 어울리는 글 쓰고 있어요.');
         while (Date.now() - start < TIMEOUT_MS) {
           await new Promise(r => setTimeout(r, INTERVAL_MS));
           let s = null;
