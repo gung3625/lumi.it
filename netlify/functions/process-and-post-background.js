@@ -949,12 +949,13 @@ exports.handler = async (event) => {
     //    industry → biz_category 매핑. tone_profile → caption_tone 매핑.
     const { data: sellerProfile } = await supabase
       .from('sellers')
-      .select('industry, tone_profile, phone, feat_toggles')
+      .select('industry, tone_profile, tone_request, phone, feat_toggles')
       .eq('id', reservation.user_id)
       .maybeSingle();
     const userProfile = sellerProfile ? {
       biz_category: sellerProfile.industry,
-      caption_tone: sellerProfile.tone_profile,
+      // tone_request(자유 텍스트) 우선, 없으면 tone_profile(legacy 학습 결과)
+      caption_tone: (sellerProfile.tone_request && sellerProfile.tone_request.trim()) || sellerProfile.tone_profile,
       phone: sellerProfile.phone,
       feat_toggles: sellerProfile.feat_toggles,
     } : null;

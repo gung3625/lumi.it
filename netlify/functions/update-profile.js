@@ -31,6 +31,7 @@ const FIELD_MAP = {
   toneSample1: 'tone_sample_1',
   toneSample2: 'tone_sample_2',
   toneSample3: 'tone_sample_3',
+  toneRequest: 'tone_request',
 };
 
 // 길이 제한 (sellers 컬럼 특성에 맞게)
@@ -44,6 +45,7 @@ const MAX_LEN = {
   tone_sample_1: 500,
   tone_sample_2: 500,
   tone_sample_3: 500,
+  tone_request: 500,
 };
 
 function sanitizeValue(snakeKey, raw) {
@@ -146,7 +148,7 @@ exports.handler = async (event) => {
       .from('sellers')
       .update(update)
       .eq(sellerQuery.field, sellerQuery.value)
-      .select('id, store_name, industry, phone, display_name, owner_name, store_desc, tone_sample_1, tone_sample_2, tone_sample_3, updated_at')
+      .select('id, store_name, industry, phone, display_name, owner_name, store_desc, tone_sample_1, tone_sample_2, tone_sample_3, tone_request, updated_at')
       .maybeSingle();
 
     if (error) {
@@ -176,6 +178,7 @@ exports.handler = async (event) => {
           toneSample1: data.tone_sample_1 || null,
           toneSample2: data.tone_sample_2 || null,
           toneSample3: data.tone_sample_3 || null,
+          toneRequest: data.tone_request || '',
           updatedAt: data.updated_at,
         },
       }),

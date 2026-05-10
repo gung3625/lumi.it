@@ -183,6 +183,97 @@
     }
     .ig-card__action--disconnect:hover { border-color: #c8507a; color: #c8507a; }
 
+    /* 톤 지시 카드 */
+    .tone-card {
+      padding: var(--space-4);
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      transition:
+        border-color var(--duration-base) var(--ease-soft),
+        box-shadow var(--duration-base) var(--ease-soft);
+    }
+    @media (hover: hover) {
+      .tone-card:focus-within { border-color: var(--pink-300); box-shadow: var(--shadow-sm); }
+    }
+    .tone-card__title {
+      font-size: var(--text-body);
+      font-weight: var(--weight-semibold);
+      color: var(--ink);
+      margin-bottom: 4px;
+    }
+    .tone-card__hint {
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+      line-height: 1.55;
+      margin-bottom: var(--space-3);
+    }
+    .tone-card__examples {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      margin-bottom: var(--space-3);
+    }
+    .tone-card__example {
+      padding: 4px 10px;
+      border-radius: var(--radius-pill);
+      background: var(--bg-soft);
+      border: 1px solid var(--line);
+      font-size: var(--text-caption);
+      color: var(--ink-soft);
+      cursor: pointer;
+      transition:
+        background var(--duration-snap) var(--ease-toss),
+        border-color var(--duration-snap) var(--ease-toss),
+        transform var(--duration-snap) var(--ease-toss);
+    }
+    .tone-card__example:active { transform: scale(0.96); }
+    @media (hover: hover) {
+      .tone-card__example:hover { background: var(--pink-50); border-color: var(--pink-300); }
+    }
+    .tone-card__textarea {
+      width: 100%;
+      min-height: 80px;
+      padding: var(--space-3);
+      font-size: max(16px, var(--text-body));
+      line-height: 1.5;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-md);
+      background: var(--bg);
+      color: var(--ink);
+      font-family: inherit;
+      resize: vertical;
+      transition:
+        border-color var(--duration-snap) var(--ease-toss),
+        box-shadow var(--duration-base) var(--ease-soft);
+    }
+    .tone-card__textarea:focus {
+      outline: none;
+      border-color: var(--pink-500);
+      box-shadow: 0 0 0 4px rgba(255, 107, 139, 0.12);
+    }
+    .tone-card__row {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: var(--space-3);
+      margin-top: var(--space-2);
+    }
+    .tone-card__count {
+      font-size: var(--text-label);
+      color: var(--ink-muted);
+    }
+    .tone-card__save {
+      padding: 8px 16px;
+      background: var(--gradient-signature);
+      color: var(--neutral-0);
+      font-size: var(--text-caption);
+      font-weight: var(--weight-semibold);
+      border-radius: var(--radius-pill);
+      border: none;
+      box-shadow: var(--shadow-glow-sm);
+      transition: box-shadow var(--duration-base) var(--ease-soft), transform var(--duration-snap) var(--ease-toss);
+    }
+    .tone-card__save:hover { box-shadow: var(--shadow-glow); }
+    .tone-card__save:active { transform: scale(0.96); }
+    .tone-card__save:disabled { opacity: 0.4; box-shadow: none; cursor: not-allowed; }
+
     /* 단순 액션 버튼 */
     .action-btn {
       width: 100%;
@@ -375,6 +466,23 @@
         <div class="ig-card__sub" data-ig-sub></div>
       </div>
       <button class="ig-card__action ig-card__action--connect" type="button" data-ig-action hidden></button>
+    </div>
+
+    <h2 class="section-title">캡션 말투</h2>
+    <div class="tone-card">
+      <div class="tone-card__title">루미가 어떻게 써주면 좋을까요?</div>
+      <p class="tone-card__hint">사장님이 쓰던 말투, 매장 분위기를 한두 줄로 적어주세요. 루미가 캡션 만들 때 그대로 따라 씁니다.</p>
+      <div class="tone-card__examples" data-tone-examples>
+        <button type="button" class="tone-card__example" data-tone-example>시크하게, 한 문장씩 끊어서</button>
+        <button type="button" class="tone-card__example" data-tone-example>유머러스하게, 단골에게 농담하듯</button>
+        <button type="button" class="tone-card__example" data-tone-example>따뜻하고 차분하게, 짧은 문장 위주</button>
+        <button type="button" class="tone-card__example" data-tone-example>20대 여성에게 친근한 말투, 이모지 자주</button>
+      </div>
+      <textarea class="tone-card__textarea" data-tone-input maxlength="500" placeholder="예) 시크하게, 한 문장씩 끊어서 / 단골에게 말하듯 친근하게"></textarea>
+      <div class="tone-card__row">
+        <span class="tone-card__count" data-tone-count>0 / 500</span>
+        <button class="tone-card__save" type="button" data-tone-save disabled>저장</button>
+      </div>
     </div>
 
     <h2 class="section-title">계정</h2>
@@ -700,6 +808,45 @@
         }
       });
 
+      // ── 캡션 말투 카드 ──
+      const toneInput = document.querySelector('[data-tone-input]');
+      const toneCount = document.querySelector('[data-tone-count]');
+      const toneSaveBtn = document.querySelector('[data-tone-save]');
+      let toneOriginal = '';
+      function refreshToneState() {
+        const v = toneInput.value;
+        toneCount.textContent = `${v.length} / 500`;
+        toneSaveBtn.disabled = v.trim() === toneOriginal.trim();
+      }
+      toneInput.addEventListener('input', refreshToneState);
+      document.querySelectorAll('[data-tone-example]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          toneInput.value = btn.textContent.trim();
+          toneInput.focus();
+          refreshToneState();
+        });
+      });
+      toneSaveBtn.addEventListener('click', async () => {
+        const value = toneInput.value.trim();
+        toneSaveBtn.disabled = true;
+        toneSaveBtn.textContent = '저장 중…';
+        try {
+          const r = await fetch('/api/update-profile', {
+            method: 'POST',
+            headers: { ...authHeaders, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ toneRequest: value }),
+          });
+          if (!r.ok) throw new Error('저장 실패');
+          toneOriginal = value;
+          toast(value ? '말투를 저장했어요' : '말투 지시를 비웠어요');
+        } catch (e) {
+          toast(e.message || '저장 실패');
+        } finally {
+          toneSaveBtn.textContent = '저장';
+          refreshToneState();
+        }
+      });
+
       // ── 초기 로드 ──
       (async () => {
         try {
@@ -712,6 +859,10 @@
           seller.phoneMasked = s.phoneMasked || '';
           renderInfo();
           loadIg();
+          // 캡션 말투 prefill
+          toneOriginal = (s.toneRequest || '').trim();
+          toneInput.value = toneOriginal;
+          refreshToneState();
         } catch (e) {
           toast('정보를 불러오지 못했어요');
         }
