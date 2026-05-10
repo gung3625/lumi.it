@@ -67,6 +67,7 @@
 
     .res-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
     .res {
+      position: relative;
       display: flex;
       gap: var(--space-3);
       padding: var(--space-3);
@@ -74,6 +75,11 @@
       border: 1px solid var(--line);
       border-radius: var(--radius-lg);
       animation: rise 360ms var(--ease-toss) backwards;
+      transition:
+        border-color var(--duration-base) var(--ease-soft),
+        box-shadow var(--duration-base) var(--ease-soft),
+        background var(--duration-base) var(--ease-soft),
+        transform var(--duration-snap) var(--ease-toss);
     }
     @keyframes rise {
       from { opacity: 0; transform: translateY(6px); }
@@ -84,7 +90,19 @@
     .res:nth-child(3) { animation-delay: 120ms; }
     .res:nth-child(4) { animation-delay: 180ms; }
     .res:nth-child(5) { animation-delay: 240ms; }
-    .res:hover { border-color: var(--pink-300); }
+    /* hover 는 데스크톱(진짜 hover 디바이스)에서만 — 모바일 터치 시 sticky hover 방지 */
+    @media (hover: hover) {
+      .res:hover {
+        border-color: var(--pink-200, #f7c5d3);
+        box-shadow: var(--shadow-sm);
+      }
+    }
+    /* 터치 직후 부드럽게 살짝 눌리는 피드백 */
+    .res:active {
+      transform: scale(0.992);
+      background: linear-gradient(180deg, var(--bg) 0%, var(--pink-50) 220%);
+      transition-duration: var(--duration-fast);
+    }
 
     .res__thumb {
       width: 64px; height: 64px;

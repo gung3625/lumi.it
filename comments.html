@@ -126,6 +126,11 @@
       border: 1px solid var(--line);
       border-radius: var(--radius-lg);
       animation: rise 360ms var(--ease-toss) backwards;
+      transition:
+        border-color var(--duration-base) var(--ease-soft),
+        box-shadow var(--duration-base) var(--ease-soft),
+        background var(--duration-base) var(--ease-soft),
+        transform var(--duration-snap) var(--ease-toss);
     }
     @keyframes rise {
       from { opacity: 0; transform: translateY(6px); }
@@ -136,7 +141,10 @@
     .comment:nth-child(3) { animation-delay: 120ms; }
     .comment:nth-child(4) { animation-delay: 180ms; }
     .comment:nth-child(5) { animation-delay: 240ms; }
-    .comment:hover { border-color: var(--pink-300); }
+    @media (hover: hover) {
+      .comment:hover { border-color: var(--pink-200, #f7c5d3); box-shadow: var(--shadow-sm); }
+    }
+    .comment:active { transform: scale(0.992); }
 
     .comment__avatar {
       width: 36px;

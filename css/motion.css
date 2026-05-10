@@ -105,6 +105,20 @@ button:not([disabled]):active,
 }
 
 /* ──────────────────────────────────────
+ * 모바일 sticky-hover 방어
+ *   터치 디바이스에서 :hover 가 탭 후 다음 인터랙션까지 남는 문제(iOS Safari/Chrome).
+ *   모든 :hover 효과를 hover 가능한 디바이스(데스크톱)로만 한정.
+ *   컴포넌트별 :hover 규칙을 매번 @media (hover: hover) 로 감싸지 않아도 되도록,
+ *   터치 환경에서는 transition 으로 부드럽게 원래 상태로 복귀시킨다.
+ *   ※ 컴포넌트가 :hover 자체를 무효화하려면 자체 @media (hover: hover) 으로 감싸세요.
+ * ────────────────────────────────────── */
+@media (hover: none) {
+  /* 터치-only: hover 색/배경/박스섀도 변화는 transition 으로 짧게라도 복원되게 한다.
+     이미 위에서 transition 잡혀있어서 일반 컴포넌트는 자동 복원됨.
+     개별 컴포넌트가 sticky 하게 보이면 그 규칙을 @media (hover: hover) 로 감싸 fix. */
+}
+
+/* ──────────────────────────────────────
  * is-open / is-closed 표준 패턴
  *   기존 [hidden] 토글을 부드럽게 마이그레이션 할 때 사용.
  *   요소에 .smooth-toggle 클래스 + is-closed/is-open 클래스 토글.

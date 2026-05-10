@@ -184,11 +184,19 @@
       border: 1px solid var(--line);
       border-radius: var(--radius-lg);
       animation: rise 360ms var(--ease-toss) backwards;
+      transition:
+        border-color var(--duration-base) var(--ease-soft),
+        box-shadow var(--duration-base) var(--ease-soft),
+        background var(--duration-base) var(--ease-soft),
+        transform var(--duration-snap) var(--ease-toss);
     }
     .time-card:nth-child(1) { animation-delay: 0ms; }
     .time-card:nth-child(2) { animation-delay: 80ms; }
     .time-card:nth-child(3) { animation-delay: 160ms; }
-    .time-card:hover { border-color: var(--pink-300); }
+    @media (hover: hover) {
+      .time-card:hover { border-color: var(--pink-200, #f7c5d3); box-shadow: var(--shadow-sm); }
+    }
+    .time-card:active { transform: scale(0.992); }
     .time-card.is-best {
       border-color: var(--pink-500);
       background: var(--pink-50);
