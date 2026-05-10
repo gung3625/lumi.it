@@ -272,6 +272,59 @@
       color: var(--ink-muted);
     }
 
+    /* 예약 빈 상태 */
+    .scheduled-empty {
+      display: flex; align-items: center; gap: var(--space-3);
+      padding: var(--space-4);
+      background: var(--bg-soft);
+      border: 1px dashed var(--line-strong);
+      border-radius: var(--radius-lg);
+      color: var(--ink);
+      text-decoration: none;
+      animation: rise 500ms var(--ease-toss) 160ms backwards;
+      transition:
+        background var(--duration-base) var(--ease-soft),
+        border-color var(--duration-base) var(--ease-soft),
+        transform var(--duration-snap) var(--ease-toss),
+        box-shadow var(--duration-base) var(--ease-soft);
+    }
+    @media (hover: hover) {
+      .scheduled-empty:hover {
+        background: var(--pink-50);
+        border-color: var(--pink-300);
+        box-shadow: var(--shadow-sm);
+      }
+    }
+    .scheduled-empty:active { transform: scale(0.992); }
+    .scheduled-empty__icon {
+      width: 40px; height: 40px;
+      flex-shrink: 0;
+      border-radius: var(--radius-full);
+      background: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--pink-500);
+    }
+    .scheduled-empty__icon svg { width: 20px; height: 20px; stroke-width: 2; }
+    .scheduled-empty__body { flex: 1; min-width: 0; }
+    .scheduled-empty__title {
+      font-size: var(--text-body);
+      font-weight: var(--weight-semibold);
+      color: var(--ink);
+      margin-bottom: 2px;
+    }
+    .scheduled-empty__sub {
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+    }
+    .scheduled-empty__chev {
+      font-size: 18px;
+      color: var(--ink-muted);
+      transition: transform var(--duration-snap) var(--ease-toss);
+    }
+    @media (hover: hover) {
+      .scheduled-empty:hover .scheduled-empty__chev { transform: translateX(2px); color: var(--pink-500); }
+    }
+
     /* 베스트 시간 카드 */
     .besttime-card {
       display: flex;
@@ -425,10 +478,10 @@
       </div>
     </section>
 
-    <!-- 3. 다음 예약 — 데이터 있을 때만 표시 -->
-    <section aria-labelledby="sec-scheduled" data-scheduled-section hidden>
+    <!-- 3. 다음 예약 -->
+    <section aria-labelledby="sec-scheduled">
       <h2 class="section-title" id="sec-scheduled">다음 예약</h2>
-      <a class="scheduled-card" href="/history" aria-label="히스토리">
+      <a class="scheduled-card" href="/history" aria-label="히스토리" data-scheduled-card hidden>
         <div class="scheduled-card__thumb" data-scheduled-thumb style="background: linear-gradient(135deg, #FF6B8B, #DDA0DD);"></div>
         <div class="scheduled-card__body">
           <div class="scheduled-card__time" data-scheduled-time></div>
@@ -436,10 +489,20 @@
           <div class="scheduled-card__channels" data-scheduled-channels></div>
         </div>
       </a>
+      <a class="scheduled-empty" href="/register-product" data-scheduled-empty>
+        <div class="scheduled-empty__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        </div>
+        <div class="scheduled-empty__body">
+          <div class="scheduled-empty__title">예약된 게시가 없어요</div>
+          <div class="scheduled-empty__sub">사진을 올려서 첫 예약을 만들어보세요</div>
+        </div>
+        <span class="scheduled-empty__chev" aria-hidden="true">→</span>
+      </a>
     </section>
 
-    <!-- 4. 베스트 시간 — 데이터 있을 때만 표시 -->
-    <a href="/insights/best-time" aria-label="베스트 시간 분석" style="text-decoration:none;color:inherit;" data-besttime-link hidden>
+    <!-- 4. 베스트 시간 -->
+    <a href="/insights/best-time" aria-label="베스트 시간 분석" style="text-decoration:none;color:inherit;" data-besttime-link>
       <section aria-labelledby="sec-besttime">
         <h2 class="section-title" id="sec-besttime" style="position:absolute;left:-9999px;">베스트 시간</h2>
         <div class="besttime-card">
@@ -450,8 +513,8 @@
             </svg>
           </div>
           <div class="besttime-card__body">
-            <div class="besttime-card__title" data-besttime></div>
-            <div class="besttime-card__sub" data-besttime-sub></div>
+            <div class="besttime-card__title" data-besttime>데이터 모으는 중이에요</div>
+            <div class="besttime-card__sub" data-besttime-sub>게시가 쌓이면 가장 반응 좋은 시간을 알려드려요</div>
           </div>
         </div>
       </section>
@@ -601,7 +664,8 @@
 
       // 다음 예약 (list-reservations 중 가장 가까운 미래)
       async function loadScheduled() {
-        const sectionEl = document.querySelector('[data-scheduled-section]');
+        const cardEl = document.querySelector('[data-scheduled-card]');
+        const emptyEl = document.querySelector('[data-scheduled-empty]');
         try {
           const res = await fetch('/api/list-reservations', { headers: authHeaders });
           if (!res.ok) return;
@@ -612,7 +676,9 @@
             .filter(r => r.scheduled_at && new Date(r.scheduled_at).getTime() > now && !r.is_sent && !r.cancelled)
             .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))[0];
           if (!next) return;
-          if (sectionEl) sectionEl.hidden = false;
+          // 데이터 있음 → 카드 보이고 empty 숨김
+          if (cardEl) cardEl.hidden = false;
+          if (emptyEl) emptyEl.hidden = true;
 
           const t = new Date(next.scheduled_at);
           const today = new Date();
@@ -692,8 +758,6 @@
           if (json && json.label) {
             setText('[data-besttime]', json.label + '에 올리면 좋아요');
             if (json.reason) setText('[data-besttime-sub]', json.reason);
-            const linkEl = document.querySelector('[data-besttime-link]');
-            if (linkEl) linkEl.hidden = false;
           }
         } catch {}
       }
