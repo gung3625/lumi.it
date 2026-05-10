@@ -314,7 +314,9 @@
       const authHeaders = { Authorization: 'Bearer ' + token };
 
       const MAX_PHOTOS = 10;
-      const MAX_BYTES = 10 * 1024 * 1024;
+      const MAX_BYTES = 10 * 1024 * 1024;          // 입력 한 장 최대 (압축 전)
+      const COMPRESS_MAX_DIM = 1440;               // IG carousel 권장 1080~1440
+      const COMPRESS_QUALITY = 0.85;               // JPEG 품질
       const ALLOWED = ['image/jpeg', 'image/png', 'image/webp'];
 
       const photoArea = document.querySelector('[data-photo-area]');
@@ -445,6 +447,36 @@
         });
       });
 
+      // Canvas 로 1440px 리사이즈 + JPEG 압축 (Netlify 6MB body 한도 회피)
+      function compressImage(file) {
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          const url = URL.createObjectURL(file);
+          img.onload = () => {
+            URL.revokeObjectURL(url);
+            const ratio = Math.min(1, COMPRESS_MAX_DIM / Math.max(img.width, img.height));
+            const w = Math.round(img.width * ratio);
+            const h = Math.round(img.height * ratio);
+            const canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            canvas.toBlob(blob => {
+              if (!blob) return reject(new Error('압축 실패'));
+              // 압축본이 원본보다 크면 원본 반환 (드물지만 가능)
+              if (blob.size >= file.size) {
+                resolve(file);
+                return;
+              }
+              const name = (file.name || 'photo').replace(/\.\w+$/, '') + '.jpg';
+              resolve(new File([blob], name, { type: 'image/jpeg' }));
+            }, 'image/jpeg', COMPRESS_QUALITY);
+          };
+          img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('이미지 읽기 실패')); };
+          img.src = url;
+        });
+      }
+
       // 제출
       submitBtn.addEventListener('click', async () => {
         if (photos.length === 0) return;
@@ -453,10 +485,14 @@
           return;
         }
         submitBtn.disabled = true;
-        submitBtn.textContent = '올리는 중…';
+        submitBtn.textContent = '준비 중…';
         try {
+          // 압축 (병렬)
+          const compressed = await Promise.all(photos.map(compressImage));
+          submitBtn.textContent = '올리는 중…';
+
           const fd = new FormData();
-          photos.forEach((f, i) => fd.append('file' + i, f, f.name));
+          compressed.forEach((f, i) => fd.append('file' + i, f, f.name));
           fd.append('userMessage', msgEl.value || '');
           fd.append('postMode', scheduleMode);
           if (scheduleMode === 'scheduled' && scheduleAtEl.value) {
@@ -469,7 +505,11 @@
             body: fd,
           });
           const json = await res.json().catch(() => ({}));
-          if (!res.ok) throw new Error(json.error || '게시 실패');
+          if (!res.ok) {
+            // 413/요청 본문 너무 큼 케이스 친절 메시지
+            if (res.status === 413) throw new Error('사진 용량이 너무 커요. 장수를 줄여주세요.');
+            throw new Error(json.error || '게시 실패');
+          }
           toast('루미가 캡션을 만들고 있어요');
           setTimeout(() => location.href = '/reservations', 800);
         } catch (e) {
