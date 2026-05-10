@@ -651,13 +651,16 @@ exports.handler = async (event) => {
         }));
         if (beautySubcat) kwList = splitBeautyCategory(kwList, beautySubcat);
         const filteredKw = filterBlacklist(kwList);
+        // v2 메타 결합 — trend_keywords 의 crossSourceCount/weightedScore/velocityPct/signalTier/
+        // narrative/origin/sources 등을 응답에 추가. silent fallback (실패 시 filteredKw 그대로).
+        const mergedKw = await mergeV2Fields(supa, filteredKw, storeKey, null, axisFilter, region, subcatParam);
         return {
           statusCode: 200, headers: CORS,
           body: JSON.stringify({
             category,
             categoryLabel: label,
-            tags: filteredKw.map(k => '#' + k.keyword),
-            keywords: filteredKw,
+            tags: mergedKw.map(k => '#' + k.keyword).filter(Boolean),
+            keywords: mergedKw,
             season,
             updatedAt: cached.updatedAt || trendsRow.collected_at || new Date().toISOString(),
             source: cached.source || 'last30days',
@@ -680,13 +683,15 @@ exports.handler = async (event) => {
         }));
         if (beautySubcat) kwList = splitBeautyCategory(kwList, beautySubcat);
         const filteredKw = filterBlacklist(kwList);
+        // v2 메타 결합 — silent fallback
+        const mergedKw = await mergeV2Fields(supa, filteredKw, storeKey, null, axisFilter, region, subcatParam);
         return {
           statusCode: 200, headers: CORS,
           body: JSON.stringify({
             category,
             categoryLabel: label,
-            tags: filteredKw.map(k => '#' + k.keyword).filter(Boolean),
-            keywords: filteredKw,
+            tags: mergedKw.map(k => '#' + k.keyword).filter(Boolean),
+            keywords: mergedKw,
             season,
             updatedAt: l30d.updatedAt || l30dRow.collected_at || new Date().toISOString(),
             source: 'last30days',
