@@ -415,7 +415,7 @@ exports.handler = async (event) => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
         },
-        body: JSON.stringify({ model: 'gpt-4o', input: captionPrompt, store: true, temperature: 0.78 }),
+        body: JSON.stringify({ model: 'gpt-5.4', input: captionPrompt, store: true, temperature: 0.78 }),
         signal: regenCtrl.signal,
       });
     } finally {
