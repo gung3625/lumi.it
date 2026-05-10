@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="description" content="루미 — 예약 자동 게시">
+  <title>예약 · 루미</title>
+
+  <link rel="icon" type="image/png" href="/assets/favicon.png">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+
+  <meta name="view-transition" content="same-origin">
+
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/motion.css">
+
+  <style>
+    body { padding-bottom: calc(env(safe-area-inset-bottom) + 56px); }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border-bottom: 1px solid var(--line);
+      z-index: var(--z-sticky);
+      min-height: 52px;
+    }
+    .topbar__back {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 36px; height: 36px; border-radius: var(--radius-full);
+      color: var(--ink);
+    }
+    .topbar__back:hover { background: var(--bg-soft); }
+    .topbar__back svg { width: 20px; height: 20px; stroke-width: 2.2; }
+    .topbar__title {
+      font-size: var(--text-headline);
+      font-weight: var(--weight-semibold);
+      color: var(--ink);
+      letter-spacing: var(--tracking-tight);
+      flex: 1;
+    }
+
+    .wrap { padding: var(--space-4); max-width: 600px; margin: 0 auto; }
+
+    .section-title {
+      font-size: var(--text-caption);
+      font-weight: var(--weight-semibold);
+      color: var(--ink-muted);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin: var(--space-5) 0 var(--space-2);
+    }
+    .section-title:first-child { margin-top: 0; }
+
+    .res-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+    .res {
+      display: flex;
+      gap: var(--space-3);
+      padding: var(--space-3);
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      animation: rise 360ms var(--ease-toss) backwards;
+    }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .res:nth-child(1) { animation-delay: 0ms; }
+    .res:nth-child(2) { animation-delay: 60ms; }
+    .res:nth-child(3) { animation-delay: 120ms; }
+    .res:nth-child(4) { animation-delay: 180ms; }
+    .res:nth-child(5) { animation-delay: 240ms; }
+    .res:hover { border-color: var(--pink-300); }
+
+    .res__thumb {
+      width: 64px; height: 64px;
+      flex-shrink: 0;
+      border-radius: var(--radius-md);
+      background: linear-gradient(135deg, #FF6B8B, #DDA0DD);
+      background-size: cover;
+      background-position: center;
+    }
+    .res__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+    .res__time {
+      font-size: var(--text-body-lg);
+      font-weight: var(--weight-bold);
+      color: var(--ink);
+      letter-spacing: var(--tracking-tight);
+    }
+    .res__caption {
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+      line-height: var(--leading-snug);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .res__meta {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      flex-wrap: wrap;
+      margin-top: 2px;
+    }
+    .res__badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+      font-size: 10px;
+      font-weight: var(--weight-bold);
+      letter-spacing: 0.02em;
+    }
+    .badge--pending  { background: #fff8e8; color: #c08400; }
+    .badge--ready    { background: #e8f4ff; color: #0867b8; }
+    .badge--scheduled{ background: #fff0f5; color: #c8507a; }
+    .badge--posting  { background: var(--gradient-signature); color: white; animation: posting-pulse 1.4s var(--ease-soft) infinite; }
+    .badge--posted   { background: #e8f5ee; color: #00713c; }
+    .badge--failed   { background: #fde8e8; color: #b8221c; }
+    .badge--cancelled{ background: var(--bg-soft); color: var(--ink-muted); }
+    @keyframes posting-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(255,107,139,0.5); }
+      50%      { box-shadow: 0 0 0 8px rgba(255,107,139,0); }
+    }
+
+    .res__cancel {
+      padding: var(--space-2) var(--space-3);
+      background: transparent;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-pill);
+      font-size: 11px;
+      color: var(--ink-soft);
+      align-self: flex-start;
+      margin-top: var(--space-1);
+    }
+    .res__cancel:hover { border-color: #c8507a; color: #c8507a; }
+    .res__cancel:active { transform: scale(0.95); }
+
+    .empty {
+      padding: var(--space-12) var(--space-5);
+      text-align: center;
+      color: var(--ink-muted);
+    }
+    .empty__icon {
+      width: 64px; height: 64px;
+      margin: 0 auto var(--space-4);
+      border-radius: var(--radius-full);
+      background: var(--bg-soft);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--pink-500);
+      animation: empty-bob 2.4s var(--ease-soft) infinite;
+    }
+    .empty__icon svg { width: 28px; height: 28px; stroke-width: 2; }
+    @keyframes empty-bob {
+      0%, 100% { transform: translateY(0); }
+      50%      { transform: translateY(-4px); }
+    }
+    .empty__title {
+      font-size: var(--text-body-lg);
+      font-weight: var(--weight-semibold);
+      color: var(--ink);
+      margin-bottom: var(--space-2);
+    }
+    .empty__sub {
+      font-size: var(--text-body);
+      color: var(--ink-muted);
+      line-height: var(--leading-snug);
+      margin-bottom: var(--space-5);
+    }
+    .cta {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: var(--space-3) var(--space-5);
+      background: var(--gradient-signature);
+      color: var(--neutral-0);
+      font-size: var(--text-body);
+      font-weight: var(--weight-semibold);
+      border-radius: var(--radius-pill);
+      box-shadow: var(--shadow-glow-sm);
+      text-decoration: none;
+    }
+    .cta:hover { box-shadow: var(--shadow-glow); transform: translateY(-1px); }
+
+    .state { padding: var(--space-12); text-align: center; color: var(--ink-muted); }
+
+    /* 하단 탭바 */
+    .tabbar {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      display: flex; justify-content: space-around; align-items: center;
+      padding: var(--space-2) var(--space-3) calc(var(--space-2) + env(safe-area-inset-bottom));
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border-top: 1px solid var(--line);
+      z-index: var(--z-sticky);
+    }
+    .tab {
+      flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
+      padding: var(--space-2) 0;
+      font-size: 11px; font-weight: var(--weight-medium);
+      color: var(--ink-muted); text-decoration: none;
+      letter-spacing: var(--tracking-snug);
+    }
+    .tab:active { transform: scale(0.94); }
+    .tab.is-active { color: var(--ink); }
+    .tab.is-active svg { stroke-width: 2.5; }
+    .tab svg { width: 22px; height: 22px; stroke-width: 2; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="topbar__back" href="/dashboard" aria-label="뒤로">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M15 18l-6-6 6-6"/>
+      </svg>
+    </a>
+    <h1 class="topbar__title">예약 자동 게시</h1>
+  </header>
+
+  <main class="wrap" role="main">
+    <div class="state" data-state>예약을 가져오는 중…</div>
+
+    <section data-upcoming hidden>
+      <h2 class="section-title">다가올 예약</h2>
+      <ul class="res-list" data-upcoming-list></ul>
+    </section>
+
+    <section data-past hidden>
+      <h2 class="section-title">지난 게시</h2>
+      <ul class="res-list" data-past-list></ul>
+    </section>
+
+    <div class="empty" data-empty hidden>
+      <div class="empty__icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="4" width="18" height="18" rx="2"/>
+          <path d="M16 2v4M8 2v4M3 10h18"/>
+        </svg>
+      </div>
+      <div class="empty__title">예약된 자동 게시가 없어요</div>
+      <p class="empty__sub">사진을 올리면 루미가 캡션을 만들어 예약합니다.</p>
+      <a class="cta" href="/register-product">📷 사진 올리기</a>
+    </div>
+  </main>
+
+  <nav class="tabbar" aria-label="메뉴">
+    <a class="tab" href="/dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 12L12 3l9 9M5 10v11h14V10"/>
+      </svg>
+      홈
+    </a>
+    <a class="tab" href="/trends">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M22 12l-4-4-4 4-6-6-6 6"/>
+        <path d="M22 12v6H2"/>
+      </svg>
+      트렌드
+    </a>
+    <a class="tab" href="/register-product" aria-label="사진 올리기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 5v14M5 12h14"/>
+      </svg>
+      올리기
+    </a>
+    <a class="tab is-active" href="/reservations" aria-current="page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="3" y="4" width="18" height="18" rx="2"/>
+        <path d="M16 2v4M8 2v4M3 10h18"/>
+      </svg>
+      예약
+    </a>
+    <a class="tab" href="/settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>
+      </svg>
+      설정
+    </a>
+  </nav>
+
+  <script>
+    (function () {
+      const token =
+        localStorage.getItem('lumi-auth') ||
+        localStorage.getItem('lumi_auth') ||
+        localStorage.getItem('seller_jwt') || '';
+      if (!token) { location.replace('/'); return; }
+      const authHeaders = { Authorization: 'Bearer ' + token };
+
+      const stateEl = document.querySelector('[data-state]');
+      const upcomingSec = document.querySelector('[data-upcoming]');
+      const pastSec = document.querySelector('[data-past]');
+      const upcomingList = document.querySelector('[data-upcoming-list]');
+      const pastList = document.querySelector('[data-past-list]');
+      const emptyEl = document.querySelector('[data-empty]');
+
+      function fmtTime(iso) {
+        if (!iso) return '—';
+        const t = new Date(iso);
+        const today = new Date();
+        const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+        const isToday = t.toDateString() === today.toDateString();
+        const isTomorrow = t.toDateString() === tomorrow.toDateString();
+        const hh = String(t.getHours()).padStart(2, '0');
+        const mm = String(t.getMinutes()).padStart(2, '0');
+        const day = isToday ? '오늘' : isTomorrow ? '내일' : `${t.getMonth() + 1}/${t.getDate()}`;
+        return `${day} ${hh}:${mm}`;
+      }
+
+      function statusBadge(r) {
+        if (r.cancelled) return { cls: 'cancelled', label: '취소됨' };
+        if (r.is_sent) return { cls: 'posted', label: '게시됨' };
+        const s = r.caption_status || 'pending';
+        const map = {
+          pending:  { cls: 'pending',   label: '캡션 작성 중' },
+          ready:    { cls: 'ready',     label: '준비 완료' },
+          scheduled:{ cls: 'scheduled', label: '예약됨' },
+          posting:  { cls: 'posting',   label: '게시 중' },
+          posted:   { cls: 'posted',    label: '게시됨' },
+          failed:   { cls: 'failed',    label: '실패' },
+        };
+        return map[s] || map.pending;
+      }
+
+      function captionPreview(r) {
+        if (Array.isArray(r.captions) && typeof r.selected_caption_index === 'number') {
+          const c = r.captions[r.selected_caption_index];
+          if (c) return (c.text || c).slice(0, 80);
+        }
+        if (r.user_message) return r.user_message.slice(0, 80);
+        return '';
+      }
+
+      function thumb(r) {
+        if (Array.isArray(r.image_urls) && r.image_urls[0]) return r.image_urls[0];
+        return null;
+      }
+
+      function renderItem(r) {
+        const badge = statusBadge(r);
+        const time = fmtTime(r.scheduled_at);
+        const caption = captionPreview(r);
+        const t = thumb(r);
+        const thumbStyle = t ? `background-image:url('${t}')` : '';
+        const cancelBtn = (!r.cancelled && !r.is_sent && (r.caption_status === 'scheduled' || r.caption_status === 'ready' || r.caption_status === 'pending'))
+          ? `<button class="res__cancel" type="button" data-cancel="${r.reserve_key}">취소</button>`
+          : '';
+        return `
+          <li class="res" data-key="${r.reserve_key}">
+            <div class="res__thumb" style="${thumbStyle}"></div>
+            <div class="res__body">
+              <div class="res__time">${time}</div>
+              ${caption ? `<div class="res__caption">${caption}</div>` : ''}
+              <div class="res__meta">
+                <span class="res__badge badge--${badge.cls}">${badge.label}</span>
+                ${cancelBtn}
+              </div>
+            </div>
+          </li>
+        `;
+      }
+
+      async function load() {
+        try {
+          const res = await fetch('/api/list-reservations', { headers: authHeaders });
+          if (!res.ok) {
+            stateEl.textContent = '예약을 가져오지 못했어요.';
+            return;
+          }
+          const json = await res.json();
+          const items = (json && json.items) || [];
+          stateEl.hidden = true;
+
+          if (items.length === 0) {
+            emptyEl.hidden = false;
+            return;
+          }
+
+          const now = Date.now();
+          const upcoming = [];
+          const past = [];
+          for (const r of items) {
+            const t = r.scheduled_at ? new Date(r.scheduled_at).getTime() : 0;
+            const isPast = r.is_sent || r.cancelled || (t && t < now);
+            if (isPast) past.push(r); else upcoming.push(r);
+          }
+          upcoming.sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at));
+          past.sort((a, b) => new Date(b.scheduled_at || b.submitted_at) - new Date(a.scheduled_at || a.submitted_at));
+
+          if (upcoming.length) {
+            upcomingList.innerHTML = upcoming.map(renderItem).join('');
+            upcomingSec.hidden = false;
+          }
+          if (past.length) {
+            pastList.innerHTML = past.slice(0, 30).map(renderItem).join('');
+            pastSec.hidden = false;
+          }
+
+          // 취소 핸들러
+          document.querySelectorAll('[data-cancel]').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+              e.preventDefault();
+              if (!confirm('이 예약을 취소할까요?')) return;
+              const key = btn.dataset.cancel;
+              btn.disabled = true; btn.textContent = '취소 중…';
+              try {
+                const r = await fetch('/api/cancel-reservation', {
+                  method: 'POST',
+                  headers: { ...authHeaders, 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ reserve_key: key }),
+                });
+                if (!r.ok) throw new Error('실패');
+                load();
+              } catch (e) {
+                alert('취소에 실패했어요.');
+                btn.disabled = false;
+                btn.textContent = '취소';
+              }
+            });
+          });
+        } catch (e) {
+          stateEl.textContent = '예약을 가져오지 못했어요.';
+        }
+      }
+
+      load();
+    })();
+  </script>
+</body>
+</html>
