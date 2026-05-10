@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#ffffff">
   <meta name="robots" content="noindex,nofollow">
-  <meta name="description" content="루미 — 예약 목록">
-  <title>예약 · 루미</title>
+  <meta name="description" content="루미 — 히스토리">
+  <title>히스토리 · 루미</title>
 
   <link rel="icon" type="image/png" href="/assets/favicon.png">
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
@@ -214,6 +214,42 @@
 
     .state { padding: var(--space-12); text-align: center; color: var(--ink-muted); }
 
+    /* 평가 버튼 (게시됨만) */
+    .res__rate {
+      display: inline-flex; align-items: center; gap: 6px;
+      margin-top: var(--space-1);
+    }
+    .rate-btn {
+      width: 32px; height: 32px;
+      border-radius: var(--radius-full);
+      background: var(--bg-soft);
+      border: 1px solid var(--line);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      transition:
+        background var(--duration-snap) var(--ease-toss),
+        border-color var(--duration-snap) var(--ease-toss),
+        transform var(--duration-snap) var(--ease-toss);
+    }
+    .rate-btn:active { transform: scale(0.92); }
+    @media (hover: hover) {
+      .rate-btn:hover { background: var(--pink-50); border-color: var(--pink-300); }
+    }
+    .rate-btn.is-active--like {
+      background: #e8f5ee; border-color: #00713c;
+      animation: rate-pop 360ms var(--ease-toss);
+    }
+    .rate-btn.is-active--dislike {
+      background: #fde8e8; border-color: #b8221c;
+      animation: rate-pop 360ms var(--ease-toss);
+    }
+    .rate-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    @keyframes rate-pop {
+      0%   { transform: scale(1); }
+      40%  { transform: scale(1.18); }
+      100% { transform: scale(1); }
+    }
+
     /* 하단 탭바 — /css/tabbar.css 참조 */
   </style>
 </head>
@@ -224,7 +260,7 @@
         <path d="M15 18l-6-6 6-6"/>
       </svg>
     </a>
-    <h1 class="topbar__title">예약 목록</h1>
+    <h1 class="topbar__title">히스토리</h1>
   </header>
 
   <main class="wrap" role="main">
@@ -272,12 +308,12 @@
         <path d="M12 5v14M5 12h14"/>
       </svg>
     </a>
-    <a class="tab is-active" href="/reservations" aria-current="page">
+    <a class="tab is-active" href="/history" aria-current="page">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <rect x="3" y="4" width="18" height="18" rx="2"/>
-        <path d="M16 2v4M8 2v4M3 10h18"/>
+        <circle cx="12" cy="12" r="9"/>
+        <polyline points="12 7 12 12 15 14"/>
       </svg>
-      예약
+      히스토리
     </a>
     <a class="tab" href="/settings">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -362,7 +398,18 @@
             actionBtn = `<button class="res__cancel" type="button" data-cancel="${r.reserve_key}" data-action="cancel">취소</button>`;
           }
         }
-        const cancelBtn = actionBtn;
+
+        // 게시됨이면 캡션 평가 버튼 — tone_rated 가 false 일 때만 활성
+        let rateBlock = '';
+        if (r.is_sent && !r.cancelled) {
+          const rated = r.tone_rated === true;
+          rateBlock = `
+            <div class="res__rate" data-rate-block data-rid="${r.id || ''}" ${rated ? 'data-rated="1"' : ''}>
+              <button class="rate-btn" type="button" data-rate="like" aria-label="좋은 캡션" ${rated ? 'disabled' : ''}>👍</button>
+              <button class="rate-btn" type="button" data-rate="dislike" aria-label="아쉬운 캡션" ${rated ? 'disabled' : ''}>👎</button>
+            </div>`;
+        }
+
         return `
           <li class="res" data-key="${r.reserve_key}">
             <div class="res__thumb" style="${thumbStyle}"></div>
@@ -371,8 +418,9 @@
               ${caption ? `<div class="res__caption">${caption}</div>` : ''}
               <div class="res__meta">
                 <span class="res__badge badge--${badge.cls}">${badge.label}</span>
-                ${cancelBtn}
+                ${actionBtn}
               </div>
+              ${rateBlock}
             </div>
           </li>
         `;
@@ -413,6 +461,35 @@
             pastList.innerHTML = past.slice(0, 30).map(renderItem).join('');
             pastSec.hidden = false;
           }
+
+          // 캡션 평가 핸들러 (게시됨 항목)
+          document.querySelectorAll('[data-rate-block]').forEach(block => {
+            if (block.dataset.rated === '1') return;
+            const rid = Number(block.dataset.rid);
+            if (!rid) return;
+            block.querySelectorAll('[data-rate]').forEach(btn => {
+              btn.addEventListener('click', async () => {
+                if (block.dataset.rated === '1') return;
+                const rating = btn.dataset.rate; // 'like' | 'dislike'
+                block.querySelectorAll('[data-rate]').forEach(b => { b.disabled = true; });
+                btn.classList.add(rating === 'like' ? 'is-active--like' : 'is-active--dislike');
+                try {
+                  const r = await fetch('/api/rate-caption', {
+                    method: 'POST',
+                    headers: { ...authHeaders, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reservation_id: rid, rating }),
+                  });
+                  if (!r.ok) throw new Error('실패');
+                  block.dataset.rated = '1';
+                } catch (e) {
+                  // 실패 시 롤백
+                  btn.classList.remove('is-active--like', 'is-active--dislike');
+                  block.querySelectorAll('[data-rate]').forEach(b => { b.disabled = false; });
+                  alert('평가 저장에 실패했어요. 잠시 후 다시 시도해주세요.');
+                }
+              });
+            });
+          });
 
           // 취소/삭제 핸들러 (같은 endpoint — 서버가 미게시면 행+스토리지 삭제)
           // 더블탭 방지 + 15초 타임아웃 (네트워크/서버 지연 시 "삭제 중…" 매달림 방지)
