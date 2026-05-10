@@ -363,6 +363,26 @@
     }
     .ig-step__link:active { transform: scale(0.96); }
 
+    /* 모바일에서 IG 앱이 deep link 가로채서 홈으로 떨어뜨림 — 가이드 텍스트로 대체 */
+    .ig-step__guide {
+      display: none;
+      margin-top: var(--space-2);
+      padding: var(--space-3);
+      background: var(--bg-soft);
+      border-radius: var(--radius-md);
+      font-size: var(--text-caption);
+      color: var(--ink);
+      line-height: 1.55;
+    }
+    .ig-step__guide b { color: var(--pink-700); }
+    .is-desktop-only { display: initial; }
+    .is-mobile-only  { display: none; }
+    @media (pointer: coarse) {
+      .is-desktop-only { display: none; }
+      .is-mobile-only  { display: initial; }
+      .ig-step__guide  { display: block; }
+    }
+
     /* CTA */
     .cta-row {
       margin-top: auto;
@@ -595,9 +615,14 @@
         <div class="ig-step__num">3</div>
         <div class="ig-step__body">
           <div class="ig-step__title">인스타 비즈니스 전환 + 페이지 연결</div>
-          <p class="ig-step__hint">인스타 도구 페이지에서 두 가지를 한 번에 처리할 수 있어요.</p>
+          <p class="ig-step__hint is-desktop-only">인스타 도구 페이지에서 두 가지를 한 번에 처리할 수 있어요.</p>
+          <p class="ig-step__hint is-mobile-only">모바일은 IG 앱에서 직접 전환해야 해요.</p>
+          <div class="ig-step__guide">
+            인스타 앱 → <b>내 프로필</b> → <b>≡ 메뉴</b> → <b>"프로페셔널 계정으로 전환"</b><br>
+            전환 중 카테고리·연락처 입력 후, 마지막에 <b>위 페이스북 페이지</b>를 연결해주세요.
+          </div>
           <div class="ig-step__actions">
-            <a class="ig-step__link" href="https://www.instagram.com/accounts/professional_account_tools/" target="_blank" rel="noopener noreferrer">인스타 도구 열기 ↗</a>
+            <a class="ig-step__link is-desktop-only" href="https://www.instagram.com/accounts/professional_account_tools/" target="_blank" rel="noopener noreferrer">인스타 도구 열기 ↗</a>
             <button class="ig-step__check" type="button" data-ig-check="3">✓ 다 됐어요</button>
           </div>
         </div>
