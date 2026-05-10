@@ -1,0 +1,743 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="description" content="루미 — 설정">
+  <title>설정 · 루미</title>
+
+  <link rel="icon" type="image/png" href="/assets/favicon.png">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+
+  <meta name="view-transition" content="same-origin">
+
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/motion.css">
+
+  <script src="/assets/categories.js"></script>
+
+  <style>
+    body { padding-bottom: calc(env(safe-area-inset-bottom) + 56px); }
+
+    .topbar {
+      position: sticky; top: 0;
+      display: flex; align-items: center; gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border-bottom: 1px solid var(--line);
+      z-index: var(--z-sticky);
+      min-height: 52px;
+    }
+    .topbar__back {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 36px; height: 36px; border-radius: var(--radius-full);
+      color: var(--ink);
+    }
+    .topbar__back:hover { background: var(--bg-soft); }
+    .topbar__back svg { width: 20px; height: 20px; stroke-width: 2.2; }
+    .topbar__title {
+      font-size: var(--text-headline);
+      font-weight: var(--weight-semibold);
+      color: var(--ink); letter-spacing: var(--tracking-tight);
+      flex: 1;
+    }
+
+    .wrap { padding: var(--space-4); max-width: 600px; margin: 0 auto; }
+
+    .section-title {
+      font-size: var(--text-caption);
+      font-weight: var(--weight-semibold);
+      color: var(--ink-muted);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin: var(--space-5) 0 var(--space-2);
+    }
+    .section-title:first-child { margin-top: 0; }
+
+    .card {
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: var(--space-3);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+    .row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-2) var(--space-2);
+    }
+    .row + .row { border-top: 1px solid var(--line); }
+    .row__label {
+      width: 80px;
+      flex-shrink: 0;
+      font-size: var(--text-caption);
+      font-weight: var(--weight-semibold);
+      color: var(--ink-soft);
+    }
+    .row__value {
+      flex: 1;
+      font-size: var(--text-body);
+      color: var(--ink);
+      min-width: 0;
+      word-break: break-word;
+    }
+    .row__edit {
+      padding: 6px 12px;
+      font-size: var(--text-caption);
+      color: var(--ink-soft);
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-pill);
+      background: transparent;
+    }
+    .row__edit:hover { border-color: var(--pink-300); color: var(--ink); }
+    .row__edit:active { transform: scale(0.96); }
+
+    /* 인라인 입력 모드 */
+    .row__input {
+      flex: 1;
+      padding: 8px 12px;
+      font-size: var(--text-body);
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-md);
+      background: var(--bg);
+    }
+    .row__save {
+      padding: 8px 14px;
+      background: var(--gradient-signature);
+      color: var(--neutral-0);
+      font-size: var(--text-caption);
+      font-weight: var(--weight-semibold);
+      border-radius: var(--radius-pill);
+      border: none;
+      box-shadow: var(--shadow-glow-sm);
+    }
+    .row__save:hover { box-shadow: var(--shadow-glow); }
+    .row__cancel {
+      padding: 8px 12px;
+      background: transparent;
+      color: var(--ink-muted);
+      font-size: var(--text-caption);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-pill);
+    }
+
+    /* 인스타 카드 */
+    .ig-card {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-4);
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+    }
+    .ig-card.is-connected { border-color: var(--pink-300); background: var(--pink-50); }
+    .ig-card__icon {
+      width: 44px; height: 44px;
+      border-radius: var(--radius-md);
+      background: var(--gradient-signature);
+      display: flex; align-items: center; justify-content: center;
+      color: white;
+    }
+    .ig-card__icon svg { width: 22px; height: 22px; stroke-width: 2; }
+    .ig-card__body { flex: 1; min-width: 0; }
+    .ig-card__title {
+      font-size: var(--text-body);
+      font-weight: var(--weight-semibold);
+      color: var(--ink);
+    }
+    .ig-card__sub {
+      margin-top: 2px;
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+    }
+    .ig-card__action {
+      padding: 8px 14px;
+      border-radius: var(--radius-pill);
+      font-size: var(--text-caption);
+      font-weight: var(--weight-semibold);
+    }
+    .ig-card__action--connect {
+      background: var(--gradient-signature);
+      color: var(--neutral-0);
+      border: none;
+      box-shadow: var(--shadow-glow-sm);
+    }
+    .ig-card__action--connect:hover { box-shadow: var(--shadow-glow); }
+    .ig-card__action--disconnect {
+      background: transparent;
+      color: var(--ink-soft);
+      border: 1px solid var(--line-strong);
+    }
+    .ig-card__action--disconnect:hover { border-color: #c8507a; color: #c8507a; }
+
+    /* 단순 액션 버튼 */
+    .action-btn {
+      width: 100%;
+      padding: var(--space-4);
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      font-size: var(--text-body);
+      color: var(--ink);
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+    .action-btn:hover { background: var(--bg-soft); }
+    .action-btn:active { transform: scale(0.99); }
+    .action-btn--danger {
+      color: #c8507a;
+    }
+    .action-btn--danger:hover { background: #fff5f7; }
+    .action-btn__icon { width: 22px; height: 22px; flex-shrink: 0; }
+    .action-btn__icon svg { width: 100%; height: 100%; stroke-width: 2; }
+    .action-btn__chev { margin-left: auto; color: var(--ink-muted); }
+    .action-btn__chev svg { width: 18px; height: 18px; }
+
+    /* 모달 */
+    .modal-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.4);
+      backdrop-filter: blur(2px);
+      opacity: 0; pointer-events: none;
+      transition: opacity var(--duration-fast) var(--ease-soft);
+      z-index: var(--z-overlay);
+    }
+    .modal-backdrop.is-open { opacity: 1; pointer-events: auto; }
+    .modal {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      max-height: 85dvh;
+      background: var(--bg);
+      border-top-left-radius: var(--radius-2xl);
+      border-top-right-radius: var(--radius-2xl);
+      box-shadow: var(--shadow-xl);
+      transform: translateY(100%);
+      transition: transform var(--duration-base) var(--ease-toss);
+      overflow-y: auto;
+      z-index: var(--z-modal);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .modal.is-open { transform: translateY(0); }
+    .modal__head {
+      padding: var(--space-4) var(--space-5);
+      border-bottom: 1px solid var(--line);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .modal__title {
+      font-size: var(--text-headline);
+      font-weight: var(--weight-bold);
+      color: var(--ink);
+    }
+    .modal__close {
+      width: 32px; height: 32px;
+      border-radius: var(--radius-full);
+      display: inline-flex; align-items: center; justify-content: center;
+      color: var(--ink-soft);
+    }
+    .modal__close:hover { background: var(--bg-soft); color: var(--ink); }
+    .modal__close svg { width: 18px; height: 18px; stroke-width: 2; }
+    .modal__body { padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-4); }
+    .modal__cta {
+      width: 100%;
+      padding: var(--space-4);
+      background: var(--gradient-signature);
+      color: var(--neutral-0);
+      font-size: var(--text-body-lg);
+      font-weight: var(--weight-semibold);
+      border: none;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-glow-sm);
+    }
+    .modal__cta:hover { box-shadow: var(--shadow-glow); }
+    .modal__cta:disabled { opacity: 0.4; box-shadow: none; }
+
+    /* 대분류·세부 칩 (signup 과 동일 패턴) */
+    .major-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2);
+    }
+    .major-card {
+      padding: var(--space-4) var(--space-3);
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-lg);
+      background: var(--bg);
+      font-size: var(--text-body);
+      font-weight: var(--weight-semibold);
+      color: var(--ink);
+    }
+    .major-card.is-active {
+      background: var(--pink-50);
+      border-color: var(--pink-500);
+      color: var(--pink-700);
+      box-shadow: var(--shadow-glow-sm);
+      animation: card-pop 420ms var(--ease-toss);
+    }
+    @keyframes card-pop {
+      0%, 100% { transform: scale(1); }
+      50%      { transform: scale(1.04); }
+    }
+    .sub-chips {
+      display: flex; flex-wrap: wrap; gap: var(--space-2);
+      max-height: 240px; opacity: 1;
+      transition:
+        max-height var(--duration-base) var(--ease-soft),
+        opacity   var(--duration-base) var(--ease-soft);
+    }
+    .sub-chips.is-hidden { max-height: 0; opacity: 0; pointer-events: none; overflow: hidden; }
+    .sub-chip {
+      padding: var(--space-2) var(--space-4);
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-pill);
+      background: transparent;
+      font-size: var(--text-body);
+      color: var(--ink-soft);
+    }
+    .sub-chip.is-active { background: var(--ink); border-color: var(--ink); color: var(--neutral-0); }
+
+    /* 탭바 */
+    .tabbar {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      display: flex; justify-content: space-around; align-items: center;
+      padding: var(--space-2) var(--space-3) calc(var(--space-2) + env(safe-area-inset-bottom));
+      background: rgba(255,255,255,0.94);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border-top: 1px solid var(--line);
+      z-index: var(--z-sticky);
+    }
+    .tab {
+      flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
+      padding: var(--space-2) 0;
+      font-size: 11px; font-weight: var(--weight-medium);
+      color: var(--ink-muted); text-decoration: none;
+      letter-spacing: var(--tracking-snug);
+    }
+    .tab:active { transform: scale(0.94); }
+    .tab.is-active { color: var(--ink); }
+    .tab.is-active svg { stroke-width: 2.5; }
+    .tab svg { width: 22px; height: 22px; stroke-width: 2; }
+
+    .toast {
+      position: fixed;
+      left: 50%; bottom: 80px;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--ink);
+      color: white;
+      padding: var(--space-3) var(--space-4);
+      border-radius: var(--radius-pill);
+      font-size: var(--text-body);
+      box-shadow: var(--shadow-lg);
+      opacity: 0; pointer-events: none;
+      transition:
+        opacity var(--duration-base) var(--ease-soft),
+        transform var(--duration-base) var(--ease-toss);
+      z-index: var(--z-modal);
+    }
+    .toast.is-open {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="topbar__back" href="/dashboard" aria-label="뒤로">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M15 18l-6-6 6-6"/>
+      </svg>
+    </a>
+    <h1 class="topbar__title">설정</h1>
+  </header>
+
+  <main class="wrap" role="main">
+    <h2 class="section-title">매장 정보</h2>
+    <div class="card" data-info-card>
+      <div class="row" data-row="storeName">
+        <span class="row__label">매장 이름</span>
+        <span class="row__value" data-display>—</span>
+        <button class="row__edit" type="button" data-edit>수정</button>
+      </div>
+      <div class="row" data-row="industry">
+        <span class="row__label">업종</span>
+        <span class="row__value" data-display>—</span>
+        <button class="row__edit" type="button" data-edit-industry>변경</button>
+      </div>
+      <div class="row" data-row="phone">
+        <span class="row__label">휴대폰</span>
+        <span class="row__value" data-display>—</span>
+        <button class="row__edit" type="button" data-edit>수정</button>
+      </div>
+    </div>
+
+    <h2 class="section-title">인스타그램</h2>
+    <div class="ig-card" data-ig-card>
+      <div class="ig-card__icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="3" width="18" height="18" rx="5"/>
+          <circle cx="12" cy="12" r="4"/>
+          <circle cx="17.5" cy="6.5" r="1" fill="currentColor"/>
+        </svg>
+      </div>
+      <div class="ig-card__body">
+        <div class="ig-card__title" data-ig-title>인스타 연동 확인 중…</div>
+        <div class="ig-card__sub" data-ig-sub></div>
+      </div>
+      <button class="ig-card__action ig-card__action--connect" type="button" data-ig-action hidden></button>
+    </div>
+
+    <h2 class="section-title">계정</h2>
+    <div style="display: flex; flex-direction: column; gap: var(--space-2);">
+      <button class="action-btn" type="button" data-logout>
+        <span class="action-btn__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </span>
+        로그아웃
+        <span class="action-btn__chev">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        </span>
+      </button>
+      <button class="action-btn action-btn--danger" type="button" data-delete>
+        <span class="action-btn__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+        </span>
+        회원 탈퇴
+        <span class="action-btn__chev">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        </span>
+      </button>
+    </div>
+  </main>
+
+  <!-- 업종 변경 모달 -->
+  <div class="modal-backdrop" data-modal-backdrop></div>
+  <div class="modal" data-modal>
+    <div class="modal__head">
+      <h2 class="modal__title">업종 변경</h2>
+      <button class="modal__close" type="button" data-modal-close aria-label="닫기">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal__body">
+      <div>
+        <div style="font-size: var(--text-caption); font-weight: var(--weight-semibold); color: var(--ink-soft); margin-bottom: var(--space-2);">대분류</div>
+        <div class="major-grid" data-major-grid></div>
+      </div>
+      <div>
+        <div style="font-size: var(--text-caption); font-weight: var(--weight-semibold); color: var(--ink-soft); margin-bottom: var(--space-2);">세부</div>
+        <div class="sub-chips is-hidden" data-sub-chips></div>
+      </div>
+      <button class="modal__cta" type="button" data-industry-save disabled>저장</button>
+    </div>
+  </div>
+
+  <div class="toast" data-toast></div>
+
+  <nav class="tabbar" aria-label="메뉴">
+    <a class="tab" href="/dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12L12 3l9 9M5 10v11h14V10"/></svg>
+      홈
+    </a>
+    <a class="tab" href="/trends">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12l-4-4-4 4-6-6-6 6"/><path d="M22 12v6H2"/></svg>
+      트렌드
+    </a>
+    <a class="tab" href="/register-product">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+      올리기
+    </a>
+    <a class="tab" href="/reservations">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      예약
+    </a>
+    <a class="tab is-active" href="/settings" aria-current="page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      설정
+    </a>
+  </nav>
+
+  <script>
+    (function () {
+      const token =
+        localStorage.getItem('lumi-auth') ||
+        localStorage.getItem('lumi_auth') ||
+        localStorage.getItem('seller_jwt') || '';
+      if (!token) { location.replace('/'); return; }
+      const authHeaders = { Authorization: 'Bearer ' + token };
+      const C = window.LumiCategories;
+
+      const toastEl = document.querySelector('[data-toast]');
+      function toast(msg, ms = 1800) {
+        toastEl.textContent = msg;
+        toastEl.classList.add('is-open');
+        setTimeout(() => toastEl.classList.remove('is-open'), ms);
+      }
+
+      const seller = {};
+
+      function setRow(name, value) {
+        const row = document.querySelector(`[data-row="${name}"]`);
+        if (!row) return;
+        row.querySelector('[data-display]').textContent = value || '—';
+      }
+      function categoryLabel(sub) {
+        if (!sub) return '—';
+        return (C.SUB_LABEL && C.SUB_LABEL[sub]) || sub;
+      }
+
+      // ── 매장 정보 인라인 편집 ──
+      function openEdit(rowName) {
+        const row = document.querySelector(`[data-row="${rowName}"]`);
+        if (!row) return;
+        const current = (seller[rowName === 'storeName' ? 'store_name' : rowName] || '').toString();
+        row.innerHTML = `
+          <span class="row__label">${rowName === 'storeName' ? '매장 이름' : '휴대폰'}</span>
+          <input class="row__input" type="${rowName === 'phone' ? 'tel' : 'text'}" maxlength="${rowName === 'phone' ? 13 : 50}" value="${current}" data-input>
+          <button class="row__save" type="button" data-save>저장</button>
+          <button class="row__cancel" type="button" data-cancel>취소</button>
+        `;
+        const input = row.querySelector('[data-input]');
+        input.focus();
+        if (rowName === 'phone') {
+          input.addEventListener('input', () => {
+            const d = input.value.replace(/\D/g, '').slice(0, 11);
+            input.value = d.length < 4 ? d : d.length < 8 ? d.slice(0,3)+'-'+d.slice(3) : d.slice(0,3)+'-'+d.slice(3,7)+'-'+d.slice(7);
+          });
+        }
+        row.querySelector('[data-cancel]').addEventListener('click', () => renderInfo());
+        row.querySelector('[data-save]').addEventListener('click', async () => {
+          const val = input.value.trim();
+          const camelKey = rowName;
+          const payload = {};
+          payload[camelKey] = rowName === 'phone' ? val.replace(/\D/g, '') : val;
+          try {
+            const res = await fetch('/api/update-profile', {
+              method: 'POST',
+              headers: { ...authHeaders, 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            });
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.error || '저장 실패');
+            seller[rowName === 'storeName' ? 'store_name' : rowName] = payload[camelKey];
+            renderInfo();
+            toast('저장되었어요');
+          } catch (e) {
+            toast(e.message || '저장 실패');
+          }
+        });
+      }
+
+      function renderInfo() {
+        const card = document.querySelector('[data-info-card]');
+        card.innerHTML = `
+          <div class="row" data-row="storeName">
+            <span class="row__label">매장 이름</span>
+            <span class="row__value" data-display>${seller.store_name || '—'}</span>
+            <button class="row__edit" type="button" data-edit-name>수정</button>
+          </div>
+          <div class="row" data-row="industry">
+            <span class="row__label">업종</span>
+            <span class="row__value" data-display>${categoryLabel(seller.industry)}</span>
+            <button class="row__edit" type="button" data-edit-industry>변경</button>
+          </div>
+          <div class="row" data-row="phone">
+            <span class="row__label">휴대폰</span>
+            <span class="row__value" data-display>${seller.phone || seller.phoneMasked || '—'}</span>
+            <button class="row__edit" type="button" data-edit-phone>수정</button>
+          </div>
+        `;
+        card.querySelector('[data-edit-name]').addEventListener('click', () => openEdit('storeName'));
+        card.querySelector('[data-edit-phone]').addEventListener('click', () => openEdit('phone'));
+        card.querySelector('[data-edit-industry]').addEventListener('click', openIndustryModal);
+      }
+
+      // ── 업종 변경 모달 ──
+      const modal = document.querySelector('[data-modal]');
+      const modalBackdrop = document.querySelector('[data-modal-backdrop]');
+      const modalClose = document.querySelector('[data-modal-close]');
+      const majorGrid = document.querySelector('[data-major-grid]');
+      const subChipsEl = document.querySelector('[data-sub-chips]');
+      const industrySaveBtn = document.querySelector('[data-industry-save]');
+      let modalState = { major: '', sub: '' };
+
+      function openIndustryModal() {
+        const cur = seller.industry;
+        modalState.major = cur ? (C.SUB_TO_MAJOR[cur] || '') : '';
+        modalState.sub = cur || '';
+        renderMajor();
+        renderSubs();
+        refreshSaveBtn();
+        modal.classList.add('is-open');
+        modalBackdrop.classList.add('is-open');
+        document.body.style.overflow = 'hidden';
+      }
+      function closeIndustryModal() {
+        modal.classList.remove('is-open');
+        modalBackdrop.classList.remove('is-open');
+        document.body.style.overflow = '';
+      }
+      modalClose.addEventListener('click', closeIndustryModal);
+      modalBackdrop.addEventListener('click', closeIndustryModal);
+
+      function renderMajor() {
+        majorGrid.innerHTML = C.MAJOR_GROUPS.map(g =>
+          `<button class="major-card${g.id === modalState.major ? ' is-active' : ''}" type="button" data-major="${g.id}">${g.label}</button>`
+        ).join('');
+        majorGrid.querySelectorAll('.major-card').forEach(b => {
+          b.addEventListener('click', () => {
+            modalState.major = b.dataset.major;
+            const group = C.findGroup(modalState.major);
+            modalState.sub = group.subs.length === 1 ? group.subs[0].id : '';
+            renderMajor();
+            renderSubs();
+            refreshSaveBtn();
+          });
+        });
+      }
+      function renderSubs() {
+        const group = C.findGroup(modalState.major);
+        if (!group || group.subs.length <= 1) {
+          subChipsEl.classList.add('is-hidden');
+          return;
+        }
+        subChipsEl.classList.remove('is-hidden');
+        subChipsEl.innerHTML = group.subs.map(s =>
+          `<button class="sub-chip${s.id === modalState.sub ? ' is-active' : ''}" type="button" data-sub="${s.id}">${s.label}</button>`
+        ).join('');
+        subChipsEl.querySelectorAll('.sub-chip').forEach(c => {
+          c.addEventListener('click', () => {
+            modalState.sub = c.dataset.sub;
+            renderSubs();
+            refreshSaveBtn();
+          });
+        });
+      }
+      function refreshSaveBtn() {
+        industrySaveBtn.disabled = !modalState.sub;
+      }
+      industrySaveBtn.addEventListener('click', async () => {
+        if (!modalState.sub) return;
+        industrySaveBtn.disabled = true;
+        industrySaveBtn.textContent = '저장 중…';
+        try {
+          const res = await fetch('/api/update-profile', {
+            method: 'POST',
+            headers: { ...authHeaders, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ industry: modalState.sub }),
+          });
+          if (!res.ok) throw new Error('저장 실패');
+          seller.industry = modalState.sub;
+          renderInfo();
+          closeIndustryModal();
+          toast('업종이 변경됐어요');
+        } catch (e) {
+          toast(e.message || '저장 실패');
+        } finally {
+          industrySaveBtn.disabled = false;
+          industrySaveBtn.textContent = '저장';
+        }
+      });
+
+      // ── 인스타 연동 카드 ──
+      async function loadIg() {
+        const titleEl = document.querySelector('[data-ig-title]');
+        const subEl = document.querySelector('[data-ig-sub]');
+        const actionBtn = document.querySelector('[data-ig-action]');
+        const card = document.querySelector('[data-ig-card]');
+        try {
+          const res = await fetch('/api/comments?limit=1', { headers: authHeaders });
+          const json = await res.json();
+          const connected = json && json.igConnected;
+          card.classList.toggle('is-connected', !!connected);
+          if (connected) {
+            titleEl.textContent = '인스타 연동됨';
+            subEl.textContent = '자동 게시·댓글 알림 작동 중';
+            actionBtn.textContent = '연결 해제';
+            actionBtn.className = 'ig-card__action ig-card__action--disconnect';
+            actionBtn.hidden = false;
+            actionBtn.onclick = async () => {
+              if (!confirm('인스타 연결을 해제할까요? 자동 게시가 멈춥니다.')) return;
+              actionBtn.disabled = true; actionBtn.textContent = '해제 중…';
+              try {
+                const r = await fetch('/api/disconnect-ig', { method: 'POST', headers: authHeaders });
+                if (!r.ok) throw new Error('해제 실패');
+                toast('인스타 연결을 해제했어요');
+                loadIg();
+              } catch (e) {
+                toast(e.message || '해제 실패');
+                actionBtn.disabled = false;
+              }
+            };
+          } else {
+            titleEl.textContent = '인스타 미연동';
+            subEl.textContent = '비즈니스/크리에이터 계정 필요';
+            actionBtn.textContent = '연결하기';
+            actionBtn.className = 'ig-card__action ig-card__action--connect';
+            actionBtn.hidden = false;
+            actionBtn.onclick = () => {
+              location.href = '/api/ig-oauth?token=' + encodeURIComponent(token);
+            };
+          }
+        } catch (e) {
+          titleEl.textContent = '연동 상태 확인 실패';
+          subEl.textContent = '잠시 후 다시 시도해주세요';
+        }
+      }
+
+      // ── 로그아웃·탈퇴 ──
+      document.querySelector('[data-logout]').addEventListener('click', () => {
+        if (!confirm('로그아웃 하시겠어요?')) return;
+        ['lumi-auth','lumi_auth','seller_jwt'].forEach(k => localStorage.removeItem(k));
+        location.href = '/';
+      });
+      document.querySelector('[data-delete]').addEventListener('click', async () => {
+        const reason = prompt('회원 탈퇴 사유를 적어주세요 (선택)');
+        if (reason === null) return;
+        if (!confirm('정말 탈퇴할까요? 30일 동안 복구할 수 있어요.')) return;
+        try {
+          const r = await fetch('/api/account-delete', {
+            method: 'POST',
+            headers: { ...authHeaders, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reason: reason || '' }),
+          });
+          const json = await r.json();
+          if (!r.ok) throw new Error(json.error || '탈퇴 실패');
+          alert(`탈퇴가 접수되었어요. ${json.graceDays || 30}일 안에 다시 로그인하시면 복구됩니다.`);
+          ['lumi-auth','lumi_auth','seller_jwt'].forEach(k => localStorage.removeItem(k));
+          location.href = '/';
+        } catch (e) {
+          toast(e.message || '탈퇴 실패');
+        }
+      });
+
+      // ── 초기 로드 ──
+      (async () => {
+        try {
+          const res = await fetch('/api/me', { headers: authHeaders });
+          const json = await res.json();
+          const s = json.seller || json;
+          seller.store_name = s.storeName || s.store_name || '';
+          seller.industry = s.industry || '';
+          seller.phone = s.phone || '';
+          seller.phoneMasked = s.phoneMasked || '';
+          renderInfo();
+          loadIg();
+        } catch (e) {
+          toast('정보를 불러오지 못했어요');
+        }
+      })();
+    })();
+  </script>
+</body>
+</html>
