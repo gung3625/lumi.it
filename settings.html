@@ -641,12 +641,12 @@
           card.classList.toggle('is-connected', !!connected);
           if (connected) {
             titleEl.textContent = '인스타 연동됨';
-            subEl.textContent = '자동 게시·댓글 알림 작동 중';
+            subEl.textContent = '게시·댓글 알림 작동 중';
             actionBtn.textContent = '연결 해제';
             actionBtn.className = 'ig-card__action ig-card__action--disconnect';
             actionBtn.hidden = false;
             actionBtn.onclick = async () => {
-              if (!confirm('인스타 연결을 해제할까요? 자동 게시가 멈춥니다.')) return;
+              if (!confirm('인스타 연결을 해제할까요? 게시가 멈춥니다.')) return;
               actionBtn.disabled = true; actionBtn.textContent = '해제 중…';
               try {
                 const r = await fetch('/api/disconnect-ig', { method: 'POST', headers: authHeaders });

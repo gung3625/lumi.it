@@ -401,7 +401,7 @@
   <div class="progress-overlay" data-progress-overlay aria-live="polite" aria-hidden="true">
     <div class="progress-mascot" aria-hidden="true">📷</div>
     <h2 class="progress-title" data-progress-title>사진 올리는 중…</h2>
-    <p class="progress-sub" data-progress-sub>잠시만요, 사장님 매장에 맞는 캡션을 만들고 있어요.</p>
+    <p class="progress-sub" data-progress-sub>잠시만요, 캡션 만들고 있어요.</p>
     <ol class="progress-steps" aria-label="게시 진행 단계">
       <li class="progress-step" data-step="upload">
         <span class="progress-step__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span>
@@ -660,10 +660,10 @@
       function statusToStage(s) {
         if (s.is_sent || s.caption_status === 'posted') return { step: 'publish', state: 'done', title: '완료!', sub: '인스타에 게시됐어요.' };
         if (s.caption_status === 'posting') return { step: 'publish', state: 'active', title: '인스타 게시 중', sub: '곧 피드에 올라가요.' };
-        if (s.caption_status === 'scheduled' && s.post_mode === 'scheduled') return { step: 'caption', state: 'done', title: '예약 완료', sub: '시간 되면 자동으로 올라갑니다.' };
+        if (s.caption_status === 'scheduled' && s.post_mode === 'scheduled') return { step: 'caption', state: 'done', title: '예약 완료', sub: '시간 되면 알아서 올려드려요.' };
         if (s.caption_status === 'scheduled') return { step: 'publish', state: 'active', title: '인스타 게시 중', sub: '곧 피드에 올라가요.' };
         if (s.caption_status === 'ready') return { step: 'caption', state: 'done', title: '캡션 완성', sub: '잠시 후 게시 시작.' };
-        if (s.caption_status === 'pending') return { step: 'caption', state: 'active', title: '캡션 만드는 중', sub: '사진을 분석해서 사장님 매장에 맞는 캡션을 작성하고 있어요.' };
+        if (s.caption_status === 'pending') return { step: 'caption', state: 'active', title: '캡션 쓰는 중', sub: '사진 보면서 어울리는 글 쓰고 있어요.' };
         if (s.caption_status === 'failed' || s.caption_status === 'error') return { step: null, state: 'fail', title: '게시 실패', sub: s.caption_error || '잠시 후 다시 시도해주세요.' };
         return null;
       }
@@ -759,7 +759,7 @@
 
           if (final.ok === true) {
             // 성공
-            setOverlayCopy(final.scheduled ? '예약 완료' : '게시 완료!', final.scheduled ? '시간 되면 자동으로 올라갑니다.' : '인스타에서 확인해보세요.');
+            setOverlayCopy(final.scheduled ? '예약 완료' : '게시 완료!', final.scheduled ? '시간 되면 알아서 올려드려요.' : '인스타에서 확인해보세요.');
             setTimeout(() => { location.href = '/reservations'; }, 1400);
           } else if (final.ok === 'timeout') {
             // 백그라운드 처리 중 — 예약 페이지에서 진행 확인
