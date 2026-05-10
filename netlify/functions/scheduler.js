@@ -32,8 +32,9 @@ exports.handler = async () => {
 
     for (const row of rows) {
       try {
-        // 즉시 게시 모드는 select-caption → select-and-post-background 가 전담 — scheduler 불개입
-        if (row.post_mode === 'immediate') continue;
+        // post_mode='immediate' 은 process-and-post 가 캡션 생성 직후 직접
+        // select-and-post 를 트리거함. 여기선 그게 실패해서 stuck 된 경우만 복구한다.
+        // (status='scheduled' + selected_caption_index 셋팅된 immediate 도 분기 통과)
 
         // captionStatus 분기
         if (row.caption_status === 'scheduled' && row.selected_caption_index !== null && row.selected_caption_index !== undefined) {

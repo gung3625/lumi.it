@@ -1013,23 +1013,19 @@ exports.handler = async (event) => {
       }
     }
 
-    // 4.5) 캡션 즉시 저장 (ready) — 사용자 UX: 자막 처리와 분리
-    //       brand-auto: 자동 게시 위해 status=scheduled + selected_caption_index=0 으로 즉시 확정
-    const isBrandAuto = reservation.is_brand_auto === true;
-    const readyPayload = isBrandAuto ? {
+    // 4.5) 캡션 저장 + 자동 게시 진입.
+    //       사장님 UX: "지금" / "예약" 모두 캡션 선택 단계 없이 첫 캡션으로 자동 진행.
+    //       (캡션 선택 UI 가 사용자 측에 없음 — ready 로 두면 영원히 대기 상태)
+    //       caption_status='scheduled' + selected_caption_index=0 으로 확정.
+    //       - post_mode='immediate'  → 아래 5.5) 에서 select-and-post 직접 트리거
+    //       - post_mode='scheduled' / 'best-time' → scheduler cron 이 scheduled_at 도달 시 트리거
+    const readyPayload = {
       generated_captions: finalCaptions,
       captions: finalCaptions,
       image_analysis: imageAnalysis,
       captions_generated_at: new Date().toISOString(),
       caption_status: 'scheduled',
       selected_caption_index: 0,
-      caption_error: null,
-    } : {
-      generated_captions: finalCaptions,
-      captions: finalCaptions,
-      image_analysis: imageAnalysis,
-      captions_generated_at: new Date().toISOString(),
-      caption_status: 'ready',
       caption_error: null,
     };
     {
@@ -1071,6 +1067,7 @@ exports.handler = async (event) => {
     // 5.5) TikTok 게시 분기
     // post_channel: 'instagram'(기본) | 'tiktok' | 'both'
     // brand-auto는 항상 instagram 전용이므로 TikTok 분기 제외
+    const isBrandAuto = reservation.is_brand_auto === true;
     const postChannel = (!isBrandAuto && reservation.post_channel) ? reservation.post_channel : 'instagram';
     const shouldPostTikTok = postChannel === 'tiktok' || postChannel === 'both';
 
@@ -1141,7 +1138,31 @@ exports.handler = async (event) => {
     // const phone = userProfile?.phone || sp.phone || sp.ownerPhone;
     // if (phone) { await sendAlimtalk(phone, ...); }
 
-    console.log('[process-and-post] 캡션 준비 완료 — 사용자 선택 대기');
+    // 7) post_mode='immediate' → 캡션 생성 즉시 IG 게시 트리거.
+    //    'scheduled' / 'best-time' 은 scheduler cron 이 scheduled_at 도달 시 트리거.
+    //    brand-auto 는 daily-content-background 가 별도로 처리 — 여기서 immediate 트리거 제외.
+    if (reservation.post_mode === 'immediate' && !isBrandAuto) {
+      try {
+        const base = process.env.URL || process.env.DEPLOY_URL || 'https://lumi.it.kr';
+        const sapRes = await fetch(`${base.replace(/\/$/, '')}/.netlify/functions/select-and-post-background`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.LUMI_SECRET}`,
+          },
+          body: JSON.stringify({
+            reservationKey,
+            captionIndex: 0,
+          }),
+        });
+        console.log('[process-and-post] immediate select-and-post 트리거:', sapRes.status);
+      } catch (e) {
+        console.warn('[process-and-post] immediate select-and-post 트리거 실패:', e.message);
+        // 실패해도 status='scheduled' 라 다음 scheduler 사이클에서 정리됨 (immediate 분기 추가 필요)
+      }
+    }
+
+    console.log('[process-and-post] 캡션 자동 게시 진입 완료');
     return;
 
   } catch (err) {
