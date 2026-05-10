@@ -1,0 +1,659 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="description" content="루미 — 가입 완료">
+  <title>가입 완료 · 루미</title>
+
+  <link rel="icon" type="image/png" href="/assets/favicon.png">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+
+  <script src="/assets/categories.js"></script>
+
+  <style>
+    body {
+      min-height: 100dvh;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .page {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: var(--space-5) var(--space-5) var(--space-12);
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 진행 인디케이터 */
+    .steps {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      padding: var(--space-3) 0 var(--space-6);
+    }
+    .steps-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: var(--radius-full);
+      background: var(--neutral-200);
+      transition: width var(--duration-base) var(--ease-toss), background var(--duration-base) var(--ease-toss);
+    }
+    .steps-dot.is-active {
+      width: 24px;
+      background: var(--pink-500);
+    }
+    .steps-dot.is-done { background: var(--pink-300); }
+
+    .step { display: none; flex: 1; flex-direction: column; animation: rise 350ms var(--ease-toss); }
+    .step.is-active { display: flex; }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .step__title {
+      font-size: var(--text-headline);
+      font-weight: var(--weight-bold);
+      color: var(--ink);
+      letter-spacing: var(--tracking-tight);
+      line-height: var(--leading-tight);
+      margin-bottom: var(--space-2);
+    }
+    .step__sub {
+      font-size: var(--text-body);
+      color: var(--ink-muted);
+      line-height: var(--leading-snug);
+      margin-bottom: var(--space-8);
+    }
+
+    /* 폼 */
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+      margin-bottom: var(--space-5);
+    }
+    .field__label {
+      font-size: var(--text-caption);
+      font-weight: var(--weight-semibold);
+      color: var(--ink-soft);
+      letter-spacing: 0.02em;
+    }
+    .field__input {
+      padding: var(--space-3) var(--space-4);
+      font-size: var(--text-body-lg);
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-md);
+      background: var(--bg);
+      color: var(--ink);
+      transition: border-color var(--duration-snap) var(--ease-toss);
+    }
+    .field__input:focus {
+      outline: none;
+      border-color: var(--pink-500);
+    }
+    .field__hint {
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+    }
+    .field__error {
+      font-size: var(--text-caption);
+      color: #c8507a;
+      min-height: 1.2em;
+    }
+
+    /* 대분류 카드 */
+    .major-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-2);
+    }
+    .major-card {
+      padding: var(--space-5) var(--space-3);
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-lg);
+      background: var(--bg);
+      font-size: var(--text-body-lg);
+      font-weight: var(--weight-semibold);
+      color: var(--ink);
+      transition: all var(--duration-snap) var(--ease-toss);
+    }
+    .major-card:active { transform: scale(0.97); }
+    .major-card.is-active {
+      background: var(--pink-50);
+      border-color: var(--pink-500);
+      color: var(--pink-700);
+    }
+
+    /* 세부 칩 */
+    .sub-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+      margin-top: var(--space-4);
+    }
+    .sub-chips[hidden] { display: none; }
+    .sub-chip {
+      padding: var(--space-2) var(--space-4);
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-pill);
+      background: transparent;
+      font-size: var(--text-body);
+      color: var(--ink-soft);
+      transition: all var(--duration-snap) var(--ease-toss);
+    }
+    .sub-chip.is-active {
+      background: var(--ink);
+      border-color: var(--ink);
+      color: var(--neutral-0);
+    }
+
+    /* IG 마법사 */
+    .ig-step {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-3);
+      padding: var(--space-4);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      background: var(--bg);
+      margin-bottom: var(--space-3);
+      transition: border-color var(--duration-snap) var(--ease-toss);
+    }
+    .ig-step.is-done { border-color: var(--pink-300); background: var(--pink-50); }
+    .ig-step__num {
+      width: 28px;
+      height: 28px;
+      flex-shrink: 0;
+      border-radius: var(--radius-full);
+      background: var(--neutral-200);
+      color: var(--ink);
+      font-weight: var(--weight-bold);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: var(--text-caption);
+    }
+    .ig-step.is-done .ig-step__num {
+      background: var(--pink-500);
+      color: var(--neutral-0);
+    }
+    .ig-step__body { flex: 1; }
+    .ig-step__title {
+      font-size: var(--text-body);
+      font-weight: var(--weight-semibold);
+      color: var(--ink);
+      margin-bottom: var(--space-1);
+    }
+    .ig-step__hint {
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+      line-height: var(--leading-snug);
+      margin-bottom: var(--space-3);
+    }
+    .ig-step__actions {
+      display: flex;
+      gap: var(--space-2);
+      flex-wrap: wrap;
+    }
+    .ig-step__link {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: var(--space-2) var(--space-3);
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-md);
+      background: var(--bg);
+      font-size: var(--text-caption);
+      color: var(--ink-soft);
+      text-decoration: none;
+    }
+    .ig-step__link:active { transform: scale(0.97); }
+    .ig-step__check {
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-md);
+      background: transparent;
+      border: 1px solid var(--line);
+      color: var(--ink-muted);
+      font-size: var(--text-caption);
+    }
+    .ig-step__check.is-checked {
+      background: var(--pink-500);
+      border-color: var(--pink-500);
+      color: var(--neutral-0);
+    }
+
+    /* CTA */
+    .cta-row {
+      margin-top: auto;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+      padding-top: var(--space-5);
+    }
+    .cta-primary {
+      width: 100%;
+      padding: var(--space-4);
+      background: var(--gradient-signature);
+      color: var(--neutral-0);
+      font-size: var(--text-body-lg);
+      font-weight: var(--weight-semibold);
+      border-radius: var(--radius-lg);
+      border: none;
+      box-shadow: var(--shadow-glow-sm);
+      transition: transform var(--duration-snap) var(--ease-toss), opacity var(--duration-snap) var(--ease-toss);
+    }
+    .cta-primary:active { transform: scale(0.98); }
+    .cta-primary:disabled {
+      opacity: 0.4;
+      box-shadow: none;
+    }
+    .cta-secondary {
+      width: 100%;
+      padding: var(--space-4);
+      background: transparent;
+      color: var(--ink-soft);
+      font-size: var(--text-body);
+      font-weight: var(--weight-medium);
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-lg);
+    }
+    .cta-secondary:active { transform: scale(0.98); }
+
+    /* 완료 화면 */
+    .done {
+      text-align: center;
+      padding: var(--space-12) 0;
+    }
+    .done__icon {
+      width: 72px;
+      height: 72px;
+      margin: 0 auto var(--space-5);
+      border-radius: var(--radius-full);
+      background: var(--gradient-signature);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--shadow-glow);
+    }
+    .done__icon svg { width: 36px; height: 36px; stroke: white; stroke-width: 3; }
+    .done__title {
+      font-size: var(--text-headline);
+      font-weight: var(--weight-bold);
+      color: var(--ink);
+      margin-bottom: var(--space-2);
+    }
+    .done__sub {
+      font-size: var(--text-body);
+      color: var(--ink-muted);
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <nav class="steps" aria-label="가입 진행">
+      <span class="steps-dot is-active" data-dot="1"></span>
+      <span class="steps-dot" data-dot="2"></span>
+      <span class="steps-dot" data-dot="3"></span>
+      <span class="steps-dot" data-dot="4"></span>
+    </nav>
+
+    <!-- ─────── Step 1: 매장 정보 ─────── -->
+    <section class="step is-active" data-step="1">
+      <h1 class="step__title">매장 정보를 알려주세요</h1>
+      <p class="step__sub">트렌드와 자동 게시를 사장님 매장에 맞춰드릴게요.</p>
+
+      <div class="field">
+        <label class="field__label" for="store-name">매장 이름</label>
+        <input class="field__input" id="store-name" type="text" maxlength="50" placeholder="예: 수민이네 카페" autocomplete="organization">
+      </div>
+
+      <div class="field">
+        <label class="field__label">업종 (대분류)</label>
+        <div class="major-grid" data-major-grid></div>
+      </div>
+
+      <div class="field">
+        <label class="field__label">세부 업종</label>
+        <div class="sub-chips" data-sub-chips hidden></div>
+        <div class="field__hint" data-sub-hint>대분류를 먼저 선택해주세요.</div>
+      </div>
+
+      <div class="field__error" data-step1-err></div>
+
+      <div class="cta-row">
+        <button class="cta-primary" type="button" data-next="2">다음</button>
+      </div>
+    </section>
+
+    <!-- ─────── Step 2: 휴대폰 ─────── -->
+    <section class="step" data-step="2">
+      <h1 class="step__title">휴대폰 번호를 확인해주세요</h1>
+      <p class="step__sub">예약 알림·매출 리포트 등 알림톡을 받을 번호예요.</p>
+
+      <div class="field">
+        <label class="field__label" for="phone">휴대폰 번호</label>
+        <input class="field__input" id="phone" type="tel" inputmode="numeric" maxlength="13" placeholder="010-0000-0000" autocomplete="tel">
+        <p class="field__hint" data-phone-hint>010으로 시작하는 11자리</p>
+      </div>
+
+      <div class="field__error" data-step2-err></div>
+
+      <div class="cta-row">
+        <button class="cta-primary" type="button" data-next="3">다음</button>
+        <button class="cta-secondary" type="button" data-prev="1">이전</button>
+      </div>
+    </section>
+
+    <!-- ─────── Step 3: 인스타 연동 ─────── -->
+    <section class="step" data-step="3">
+      <h1 class="step__title">인스타로 자동 게시하시겠어요?</h1>
+      <p class="step__sub">사장님이 사진만 올리면 루미가 캡션·해시태그·시간을 다 처리해요. 비즈니스 계정만 가능해 사전 준비가 필요해요.</p>
+
+      <div class="ig-step" data-ig-step="1">
+        <div class="ig-step__num">1</div>
+        <div class="ig-step__body">
+          <div class="ig-step__title">페이스북 가입</div>
+          <p class="ig-step__hint">이미 페이스북 계정이 있으면 건너뛰셔도 됩니다.</p>
+          <div class="ig-step__actions">
+            <a class="ig-step__link" href="https://www.facebook.com/r.php" target="_blank" rel="noopener noreferrer">가입하기 ↗</a>
+            <button class="ig-step__check" type="button" data-ig-check="1">✓ 됐어요</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="ig-step" data-ig-step="2">
+        <div class="ig-step__num">2</div>
+        <div class="ig-step__body">
+          <div class="ig-step__title">매장 이름의 페이스북 페이지 만들기</div>
+          <p class="ig-step__hint">"수민이네 카페" 같은 이름. 사진·소개는 비워도 OK. 1분이면 끝나요.</p>
+          <div class="ig-step__actions">
+            <a class="ig-step__link" href="https://www.facebook.com/pages/create" target="_blank" rel="noopener noreferrer">페이지 만들기 ↗</a>
+            <button class="ig-step__check" type="button" data-ig-check="2">✓ 만들었어요</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="ig-step" data-ig-step="3">
+        <div class="ig-step__num">3</div>
+        <div class="ig-step__body">
+          <div class="ig-step__title">인스타 비즈니스 전환 + 페이지 연결</div>
+          <p class="ig-step__hint">인스타 도구 페이지에서 두 가지를 한 번에 처리할 수 있어요.</p>
+          <div class="ig-step__actions">
+            <a class="ig-step__link" href="https://www.instagram.com/accounts/professional_account_tools/" target="_blank" rel="noopener noreferrer">인스타 도구 열기 ↗</a>
+            <button class="ig-step__check" type="button" data-ig-check="3">✓ 다 됐어요</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="cta-row">
+        <button class="cta-primary" type="button" data-ig-connect disabled>📷 루미와 인스타 연동하기</button>
+        <button class="cta-secondary" type="button" data-ig-skip>나중에 할게요</button>
+      </div>
+    </section>
+
+    <!-- ─────── Step 4: 완료 ─────── -->
+    <section class="step" data-step="4">
+      <div class="done">
+        <div class="done__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M5 13l4 4L19 7"/>
+          </svg>
+        </div>
+        <h1 class="done__title" data-done-title>환영해요</h1>
+        <p class="done__sub">루미가 지금부터 사장님 매장을 도울게요.</p>
+      </div>
+
+      <div class="cta-row">
+        <button class="cta-primary" type="button" data-go-dashboard>루미 시작하기</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      const C = window.LumiCategories;
+
+      // 0) URL hash 의 lumi_token (카카오 callback 직후) → localStorage 저장
+      try {
+        if (location.hash && location.hash.indexOf('lumi_token=') !== -1) {
+          const params = new URLSearchParams(location.hash.replace(/^#/, ''));
+          const t = params.get('lumi_token');
+          if (t) localStorage.setItem('lumi-auth', t);
+          history.replaceState(null, '', location.pathname);
+        }
+      } catch (_) {}
+
+      const token = localStorage.getItem('lumi-auth') || localStorage.getItem('lumi_auth') || localStorage.getItem('seller_jwt') || '';
+      const authHeaders = token ? { Authorization: 'Bearer ' + token } : {};
+
+      // 토큰 없으면 홈으로
+      if (!token) {
+        location.replace('/');
+        return;
+      }
+
+      const state = {
+        step: 1,
+        storeName: '',
+        majorId: '',
+        sub: '',
+        phone: '',
+        igChecks: { 1: false, 2: false, 3: false },
+      };
+
+      const stepsEl = document.querySelectorAll('.step');
+      const dotsEl = document.querySelectorAll('.steps-dot');
+
+      function showStep(n) {
+        state.step = n;
+        stepsEl.forEach(el => el.classList.toggle('is-active', Number(el.dataset.step) === n));
+        dotsEl.forEach(d => {
+          const num = Number(d.dataset.dot);
+          d.classList.toggle('is-active', num === n);
+          d.classList.toggle('is-done', num < n);
+        });
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      }
+
+      // 대분류 그리드 렌더
+      const majorGrid = document.querySelector('[data-major-grid]');
+      majorGrid.innerHTML = C.MAJOR_GROUPS.map(g =>
+        `<button class="major-card" type="button" data-major="${g.id}">${g.label}</button>`
+      ).join('');
+      const subChipsEl = document.querySelector('[data-sub-chips]');
+      const subHintEl = document.querySelector('[data-sub-hint]');
+
+      majorGrid.querySelectorAll('.major-card').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.major;
+          state.majorId = id;
+          state.sub = '';
+          majorGrid.querySelectorAll('.major-card').forEach(b => b.classList.toggle('is-active', b.dataset.major === id));
+          renderSubChips();
+        });
+      });
+
+      function renderSubChips() {
+        const group = C.findGroup(state.majorId);
+        if (!group || !group.subs.length) {
+          subChipsEl.hidden = true;
+          subHintEl.style.display = '';
+          return;
+        }
+        subHintEl.style.display = 'none';
+        subChipsEl.hidden = false;
+        // sub 1개면 자동 선택 (운동·레저)
+        if (group.subs.length === 1) state.sub = group.subs[0].id;
+        subChipsEl.innerHTML = group.subs.map(s =>
+          `<button class="sub-chip${s.id === state.sub ? ' is-active' : ''}" type="button" data-sub="${s.id}">${s.label}</button>`
+        ).join('');
+        subChipsEl.querySelectorAll('.sub-chip').forEach(chip => {
+          chip.addEventListener('click', () => {
+            state.sub = chip.dataset.sub;
+            subChipsEl.querySelectorAll('.sub-chip').forEach(c => c.classList.toggle('is-active', c.dataset.sub === state.sub));
+          });
+        });
+      }
+
+      // phone 입력 자동 하이픈
+      const phoneInput = document.getElementById('phone');
+      function formatPhone(raw) {
+        const d = String(raw || '').replace(/\D/g, '').slice(0, 11);
+        if (d.length < 4) return d;
+        if (d.length < 8) return d.slice(0, 3) + '-' + d.slice(3);
+        return d.slice(0, 3) + '-' + d.slice(3, 7) + '-' + d.slice(7);
+      }
+      phoneInput.addEventListener('input', () => {
+        phoneInput.value = formatPhone(phoneInput.value);
+        state.phone = phoneInput.value.replace(/\D/g, '');
+      });
+
+      // step 1 검증
+      function validateStep1() {
+        const name = document.getElementById('store-name').value.trim();
+        const errEl = document.querySelector('[data-step1-err]');
+        if (name.length < 1 || name.length > 50) {
+          errEl.textContent = '매장 이름을 1~50자로 입력해주세요.';
+          return false;
+        }
+        if (!state.majorId || !state.sub) {
+          errEl.textContent = '업종을 선택해주세요.';
+          return false;
+        }
+        state.storeName = name;
+        errEl.textContent = '';
+        return true;
+      }
+
+      // step 2 검증
+      function validateStep2() {
+        const errEl = document.querySelector('[data-step2-err]');
+        if (!/^010\d{7,8}$/.test(state.phone)) {
+          errEl.textContent = '010으로 시작하는 11자리 숫자로 입력해주세요.';
+          return false;
+        }
+        errEl.textContent = '';
+        return true;
+      }
+
+      // signup-complete 호출
+      async function submitSignupComplete() {
+        const res = await fetch('/api/signup-complete', {
+          method: 'POST',
+          headers: { ...authHeaders, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            store_name: state.storeName,
+            industry: state.sub,
+            phone: state.phone,
+          }),
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(json.error || '저장에 실패했습니다.');
+        }
+        return json;
+      }
+
+      // 다음/이전 버튼
+      document.querySelectorAll('[data-next]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const target = Number(btn.dataset.next);
+          if (state.step === 1 && !validateStep1()) return;
+          if (state.step === 2) {
+            if (!validateStep2()) return;
+            // step 2 → 3 이동 시점에 signup-complete 저장 (필수 정보 다 모임)
+            btn.disabled = true;
+            btn.textContent = '저장 중…';
+            try {
+              await submitSignupComplete();
+            } catch (e) {
+              document.querySelector('[data-step2-err]').textContent = e.message;
+              btn.disabled = false;
+              btn.textContent = '다음';
+              return;
+            }
+            btn.disabled = false;
+            btn.textContent = '다음';
+          }
+          showStep(target);
+        });
+      });
+      document.querySelectorAll('[data-prev]').forEach(btn => {
+        btn.addEventListener('click', () => showStep(Number(btn.dataset.prev)));
+      });
+
+      // IG 마법사 체크박스
+      const igConnectBtn = document.querySelector('[data-ig-connect]');
+      function refreshIgConnect() {
+        const allDone = state.igChecks[1] && state.igChecks[2] && state.igChecks[3];
+        igConnectBtn.disabled = !allDone;
+      }
+      document.querySelectorAll('[data-ig-check]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const n = Number(btn.dataset.igCheck);
+          state.igChecks[n] = !state.igChecks[n];
+          btn.classList.toggle('is-checked', state.igChecks[n]);
+          btn.textContent = state.igChecks[n] ? '✓ 완료' : (n === 1 ? '✓ 됐어요' : (n === 2 ? '✓ 만들었어요' : '✓ 다 됐어요'));
+          document.querySelector(`[data-ig-step="${n}"]`).classList.toggle('is-done', state.igChecks[n]);
+          refreshIgConnect();
+        });
+      });
+
+      // IG 연동 시작 — Meta OAuth
+      igConnectBtn.addEventListener('click', () => {
+        // /api/ig-oauth 가 token query 로 받는다 (기존 코드 호환)
+        location.href = '/api/ig-oauth?token=' + encodeURIComponent(token);
+      });
+
+      // 나중에
+      document.querySelector('[data-ig-skip]').addEventListener('click', () => {
+        showStep(4);
+      });
+
+      // 완료 화면 → dashboard
+      document.querySelector('[data-go-dashboard]').addEventListener('click', () => {
+        location.href = '/dashboard';
+      });
+
+      // 완료 메시지 채우기
+      function setDoneTitle() {
+        const t = document.querySelector('[data-done-title]');
+        if (t && state.storeName) t.textContent = state.storeName + '님, 환영해요';
+      }
+      document.querySelectorAll('[data-next="3"]').forEach(b => b.addEventListener('click', setDoneTitle));
+
+      // /api/me 호출 — 카카오에서 자동 채워진 phone 미리 채움
+      (async function detectPrefill() {
+        try {
+          const r = await fetch('/api/me', { headers: authHeaders });
+          if (!r.ok) return;
+          const data = await r.json();
+          const seller = data.seller || data;
+          // store_name 미리 채움 (있으면)
+          if (seller.storeName || seller.store_name) {
+            document.getElementById('store-name').value = seller.storeName || seller.store_name;
+            state.storeName = document.getElementById('store-name').value;
+          }
+          // phone 미리 채움 (마스킹된 형태가 아닌 raw 가 응답에 없음 → me 응답엔 phoneMasked 만)
+          // 카카오 자동 채움이라 사장님이 그대로 두면 됨. 빈 칸이면 직접 입력.
+          // 마스킹값을 placeholder 로만 표시.
+          if (seller.phoneMasked && seller.phoneMasked !== '***') {
+            phoneInput.placeholder = seller.phoneMasked + ' (그대로 두면 자동 사용)';
+          }
+        } catch (_) {}
+      })();
+    })();
+  </script>
+</body>
+</html>
