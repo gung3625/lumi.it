@@ -639,7 +639,12 @@
           const res = await fetch('/api/me', { headers: authHeaders });
           if (!res.ok) return;
           const data = await res.json();
-          const cat = data.category || (data.seller && data.seller.category) || (data.user && data.user.category);
+          // /api/me 는 sellers.industry 를 그대로 반환 (data.seller.industry).
+          // 옛 멀티마켓 시절 data.category / data.user.category 호환은 보존.
+          const cat =
+            (data.seller && (data.seller.industry || data.seller.category)) ||
+            data.category ||
+            (data.user && data.user.category);
           if (cat) {
             const sub = String(cat).toLowerCase();
             if (C.SUB_TO_MAJOR[sub]) {
