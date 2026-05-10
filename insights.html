@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="description" content="루미 — 인사이트">
+  <title>인사이트 · 루미</title>
+
+  <link rel="icon" type="image/png" href="/assets/favicon.png">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+
+  <meta name="view-transition" content="same-origin">
+
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/motion.css">
+
+  <style>
+    body { padding-bottom: calc(env(safe-area-inset-bottom) + 56px); }
+
+    .topbar {
+      position: sticky; top: 0;
+      display: flex; align-items: center; gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border-bottom: 1px solid var(--line);
+      z-index: var(--z-sticky); min-height: 52px;
+    }
+    .topbar__back {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 36px; height: 36px; border-radius: var(--radius-full); color: var(--ink);
+    }
+    .topbar__back:hover { background: var(--bg-soft); }
+    .topbar__back svg { width: 20px; height: 20px; stroke-width: 2.2; }
+    .topbar__title { font-size: var(--text-headline); font-weight: var(--weight-semibold); color: var(--ink); flex: 1; }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-1);
+      padding: var(--space-2) var(--space-4);
+      position: sticky;
+      top: 52px;
+      background: rgba(255,255,255,0.94);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      z-index: calc(var(--z-sticky) - 1);
+      border-bottom: 1px solid var(--line);
+    }
+    .tab-btn {
+      padding: var(--space-2) 0;
+      background: transparent;
+      border: none;
+      font-size: var(--text-body);
+      font-weight: var(--weight-medium);
+      color: var(--ink-muted);
+      position: relative;
+    }
+    .tab-btn.is-active { color: var(--ink); font-weight: var(--weight-semibold); }
+    .tab-btn.is-active::after {
+      content: '';
+      position: absolute;
+      left: 50%; bottom: -2px;
+      width: 24px; height: 2px;
+      background: var(--ink);
+      transform: translateX(-50%);
+      border-radius: var(--radius-pill);
+    }
+
+    .wrap { padding: var(--space-4); max-width: 600px; margin: 0 auto; }
+
+    .pane { display: none; flex-direction: column; gap: var(--space-4); }
+    .pane.is-active {
+      display: flex;
+      animation: pane-enter 320ms var(--ease-toss);
+    }
+    @keyframes pane-enter {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 통계 카드 */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-2);
+    }
+    .stat {
+      padding: var(--space-4);
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      animation: rise 360ms var(--ease-toss) backwards;
+    }
+    .stat:nth-child(1) { animation-delay: 0ms; }
+    .stat:nth-child(2) { animation-delay: 60ms; }
+    .stat:nth-child(3) { animation-delay: 120ms; }
+    .stat:nth-child(4) { animation-delay: 180ms; }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .stat__label {
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+      letter-spacing: 0.02em;
+      margin-bottom: var(--space-1);
+    }
+    .stat__value {
+      font-size: 28px;
+      font-weight: var(--weight-bold);
+      color: var(--ink);
+      letter-spacing: var(--tracking-tight);
+      line-height: 1.1;
+    }
+    .stat__delta {
+      margin-top: 4px;
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+    }
+    .stat__delta--up { color: #00713c; }
+    .stat__delta--down { color: #c8507a; }
+
+    .summary-card {
+      padding: var(--space-4);
+      background: var(--pink-50);
+      border: 1px solid var(--pink-300);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-glow-sm);
+    }
+    .summary-card__title {
+      font-size: var(--text-caption);
+      color: var(--pink-700);
+      font-weight: var(--weight-semibold);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: var(--space-2);
+    }
+    .summary-card__text {
+      font-size: var(--text-body);
+      color: var(--ink);
+      line-height: var(--leading-snug);
+    }
+
+    /* 베스트 시간 */
+    .day-toggle {
+      display: inline-flex;
+      gap: var(--space-1);
+      padding: 4px;
+      background: var(--bg-soft);
+      border-radius: var(--radius-pill);
+      align-self: flex-start;
+    }
+    .day-toggle button {
+      padding: 6px 14px;
+      background: transparent;
+      border: none;
+      font-size: var(--text-caption);
+      font-weight: var(--weight-medium);
+      color: var(--ink-muted);
+      border-radius: var(--radius-pill);
+    }
+    .day-toggle button.is-active {
+      background: var(--bg);
+      color: var(--ink);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .time-list { display: flex; flex-direction: column; gap: var(--space-2); }
+    .time-card {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-4);
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      animation: rise 360ms var(--ease-toss) backwards;
+    }
+    .time-card:nth-child(1) { animation-delay: 0ms; }
+    .time-card:nth-child(2) { animation-delay: 80ms; }
+    .time-card:nth-child(3) { animation-delay: 160ms; }
+    .time-card:hover { border-color: var(--pink-300); }
+    .time-card.is-best {
+      border-color: var(--pink-500);
+      background: var(--pink-50);
+      box-shadow: var(--shadow-glow-sm);
+    }
+    .time-card__hour {
+      font-size: 24px;
+      font-weight: var(--weight-bold);
+      color: var(--ink);
+      letter-spacing: var(--tracking-tight);
+      width: 80px;
+      flex-shrink: 0;
+    }
+    .time-card__reason {
+      flex: 1;
+      font-size: var(--text-body);
+      color: var(--ink-soft);
+      line-height: var(--leading-snug);
+    }
+
+    .state { padding: var(--space-12); text-align: center; color: var(--ink-muted); }
+    .empty { padding: var(--space-12) var(--space-5); text-align: center; color: var(--ink-muted); }
+    .empty__title { font-size: var(--text-body-lg); font-weight: var(--weight-semibold); color: var(--ink); margin-bottom: var(--space-2); }
+    .empty__sub { font-size: var(--text-body); color: var(--ink-muted); }
+
+    /* 탭바 */
+    .tabbar {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      display: flex; justify-content: space-around; align-items: center;
+      padding: var(--space-2) var(--space-3) calc(var(--space-2) + env(safe-area-inset-bottom));
+      background: rgba(255,255,255,0.94);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border-top: 1px solid var(--line);
+      z-index: var(--z-sticky);
+    }
+    .tab {
+      flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
+      padding: var(--space-2) 0;
+      font-size: 11px; font-weight: var(--weight-medium);
+      color: var(--ink-muted); text-decoration: none;
+    }
+    .tab:active { transform: scale(0.94); }
+    .tab.is-active { color: var(--ink); }
+    .tab svg { width: 22px; height: 22px; stroke-width: 2; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="topbar__back" href="/dashboard" aria-label="뒤로">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M15 18l-6-6 6-6"/>
+      </svg>
+    </a>
+    <h1 class="topbar__title">인사이트</h1>
+  </header>
+
+  <nav class="tabs" aria-label="탭">
+    <button class="tab-btn is-active" type="button" data-tab="weekly">이번 주</button>
+    <button class="tab-btn" type="button" data-tab="monthly">이번 달</button>
+    <button class="tab-btn" type="button" data-tab="best-time">베스트 시간</button>
+  </nav>
+
+  <main class="wrap" role="main">
+    <!-- 주간 -->
+    <section class="pane is-active" data-pane="weekly">
+      <div class="state" data-weekly-state>가져오는 중…</div>
+      <div data-weekly-content hidden>
+        <div class="stat-grid" data-weekly-grid></div>
+        <div class="summary-card" data-weekly-summary hidden></div>
+      </div>
+    </section>
+
+    <!-- 월간 -->
+    <section class="pane" data-pane="monthly">
+      <div class="state" data-monthly-state>가져오는 중…</div>
+      <div data-monthly-content hidden>
+        <div class="stat-grid" data-monthly-grid></div>
+        <div class="summary-card" data-monthly-summary hidden></div>
+      </div>
+    </section>
+
+    <!-- 베스트 시간 -->
+    <section class="pane" data-pane="best-time">
+      <div class="state" data-bt-state>가져오는 중…</div>
+      <div data-bt-content hidden>
+        <div class="day-toggle">
+          <button type="button" data-day="weekday" class="is-active">평일</button>
+          <button type="button" data-day="weekend">주말</button>
+        </div>
+        <div class="time-list" data-bt-list></div>
+      </div>
+    </section>
+  </main>
+
+  <nav class="tabbar" aria-label="메뉴">
+    <a class="tab" href="/dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12L12 3l9 9M5 10v11h14V10"/></svg>
+      홈
+    </a>
+    <a class="tab" href="/trends">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12l-4-4-4 4-6-6-6 6"/><path d="M22 12v6H2"/></svg>
+      트렌드
+    </a>
+    <a class="tab" href="/register-product">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+      올리기
+    </a>
+    <a class="tab" href="/reservations">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      예약
+    </a>
+    <a class="tab" href="/settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      설정
+    </a>
+  </nav>
+
+  <script>
+    (function () {
+      const token =
+        localStorage.getItem('lumi-auth') ||
+        localStorage.getItem('lumi_auth') ||
+        localStorage.getItem('seller_jwt') || '';
+      if (!token) { location.replace('/'); return; }
+      const authHeaders = { Authorization: 'Bearer ' + token };
+
+      // 탭 전환 — /insights/best-time 진입 시 자동으로 best-time 탭, 그 외엔 hash 또는 default
+      const pathBased = location.pathname.includes('/insights/best-time') ? 'best-time' : '';
+      const initialTab = pathBased || (location.hash || '').replace('#', '') || 'weekly';
+      function switchTab(name) {
+        document.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('is-active', b.dataset.tab === name));
+        document.querySelectorAll('[data-pane]').forEach(p => p.classList.toggle('is-active', p.dataset.pane === name));
+        if (location.hash !== '#' + name) history.replaceState(null, '', '#' + name);
+      }
+      document.querySelectorAll('[data-tab]').forEach(b => {
+        b.addEventListener('click', () => switchTab(b.dataset.tab));
+      });
+      switchTab(['weekly','monthly','best-time'].includes(initialTab) ? initialTab : 'weekly');
+
+      // ── 통계 렌더 ──
+      function fmtNum(n) {
+        if (typeof n !== 'number') return '—';
+        if (n >= 10000) return (n / 10000).toFixed(1) + '만';
+        return n.toLocaleString();
+      }
+      function fmtDelta(n) {
+        if (typeof n !== 'number' || n === 0) return '';
+        const sign = n > 0 ? '+' : '';
+        return `${sign}${n.toLocaleString()}`;
+      }
+      function deltaClass(n) {
+        if (typeof n !== 'number' || n === 0) return '';
+        return n > 0 ? 'stat__delta--up' : 'stat__delta--down';
+      }
+      function renderStats(grid, data, period) {
+        const followers = data.followers;
+        const likes = data.likesTotal;
+        const reach = data.reach;
+        const profileViews = data.profileViews;
+        const followersChange = data.followersChange;
+        const items = [
+          { label: '팔로워', value: fmtNum(followers), delta: fmtDelta(followersChange), deltaCls: deltaClass(followersChange) },
+          { label: period === 'weekly' ? '이번 주 좋아요' : '이번 달 좋아요', value: fmtNum(likes), delta: '', deltaCls: '' },
+          { label: '도달', value: fmtNum(reach), delta: '', deltaCls: '' },
+          { label: '프로필 조회', value: fmtNum(profileViews), delta: '', deltaCls: '' },
+        ];
+        grid.innerHTML = items.map(it => `
+          <div class="stat">
+            <div class="stat__label">${it.label}</div>
+            <div class="stat__value">${it.value}</div>
+            ${it.delta ? `<div class="stat__delta ${it.deltaCls}">${it.delta}</div>` : ''}
+          </div>
+        `).join('');
+      }
+
+      async function loadInsight(period) {
+        const stateEl = document.querySelector(`[data-${period}-state]`);
+        const contentEl = document.querySelector(`[data-${period}-content]`);
+        const gridEl = document.querySelector(`[data-${period}-grid]`);
+        const summaryEl = document.querySelector(`[data-${period}-summary]`);
+        try {
+          const url = period === 'weekly' ? '/api/insight-weekly' : '/api/insight-monthly';
+          const res = await fetch(url, { headers: authHeaders });
+          if (!res.ok) {
+            stateEl.textContent = '인사이트를 가져오지 못했어요. 인스타가 연동돼 있나요?';
+            return;
+          }
+          const json = await res.json();
+          const data = (json && json.data) || {};
+          stateEl.hidden = true;
+          contentEl.hidden = false;
+          renderStats(gridEl, data, period);
+          if (data.mediaCountInRange != null) {
+            const days = period === 'weekly' ? '이번 주' : '이번 달';
+            summaryEl.innerHTML = `<div class="summary-card__title">${days} 게시물</div><div class="summary-card__text">총 ${data.mediaCountInRange}건 게시했어요${data.commentsTotal ? `, 댓글 ${data.commentsTotal}개` : ''}.</div>`;
+            summaryEl.hidden = false;
+          }
+        } catch (e) {
+          stateEl.textContent = '인사이트를 가져오지 못했어요.';
+        }
+      }
+      loadInsight('weekly');
+      loadInsight('monthly');
+
+      // ── 베스트 시간 ──
+      let btCache = null;
+      let currentDay = 'weekday';
+      function renderBest() {
+        const listEl = document.querySelector('[data-bt-list]');
+        if (!btCache) return;
+        const items = btCache[currentDay] || [];
+        if (!items.length) {
+          listEl.innerHTML = '<div class="empty"><div class="empty__title">데이터가 부족해요</div><div class="empty__sub">게시물이 좀 더 쌓이면 정확해집니다.</div></div>';
+          return;
+        }
+        listEl.innerHTML = items.map((it, i) => `
+          <div class="time-card${i === 0 ? ' is-best' : ''}">
+            <div class="time-card__hour">${it.time || '—'}</div>
+            <div class="time-card__reason">${it.reason || ''}</div>
+          </div>
+        `).join('');
+      }
+      document.querySelectorAll('[data-day]').forEach(b => {
+        b.addEventListener('click', () => {
+          currentDay = b.dataset.day;
+          document.querySelectorAll('[data-day]').forEach(x => x.classList.toggle('is-active', x === b));
+          renderBest();
+        });
+      });
+      async function loadBest() {
+        const stateEl = document.querySelector('[data-bt-state]');
+        const contentEl = document.querySelector('[data-bt-content]');
+        try {
+          const meRes = await fetch('/api/me', { headers: authHeaders });
+          const meJson = await meRes.json();
+          const cat = (meJson.seller || meJson).industry || 'cafe';
+          const res = await fetch('/api/get-best-time', {
+            method: 'POST',
+            headers: { ...authHeaders, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ category: cat }),
+          });
+          const json = await res.json();
+          if (!res.ok) {
+            stateEl.textContent = '베스트 시간을 가져오지 못했어요.';
+            return;
+          }
+          btCache = json && (json.data || json);
+          stateEl.hidden = true;
+          contentEl.hidden = false;
+          renderBest();
+        } catch (e) {
+          stateEl.textContent = '베스트 시간을 가져오지 못했어요.';
+        }
+      }
+      loadBest();
+    })();
+  </script>
+</body>
+</html>
