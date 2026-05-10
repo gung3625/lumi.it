@@ -884,12 +884,20 @@ exports.handler = async (event) => {
     console.log(`[process-and-post] 시작: ${reservationKey}, 사진 ${imageUrls.length}장`);
     await markStage('03_images_validated');
 
-    // 2) 사용자 프로필 + 말투 학습 데이터 로드 (Supabase 직접 조회)
-    const { data: userProfile } = await supabase
-      .from('users')
-      .select('biz_category, caption_tone, tag_style, custom_captions, phone, feat_toggles')
+    // 2) 사장님 프로필 + feature flags 로드 (sellers — 옛 public.users 정리)
+    //    legacy 컬럼(caption_tone, tag_style, custom_captions) 은 sellers 에 없음.
+    //    industry → biz_category 매핑. tone_profile → caption_tone 매핑.
+    const { data: sellerProfile } = await supabase
+      .from('sellers')
+      .select('industry, tone_profile, phone, feat_toggles')
       .eq('id', reservation.user_id)
       .maybeSingle();
+    const userProfile = sellerProfile ? {
+      biz_category: sellerProfile.industry,
+      caption_tone: sellerProfile.tone_profile,
+      phone: sellerProfile.phone,
+      feat_toggles: sellerProfile.feat_toggles,
+    } : null;
     await markStage('04_user_profile_loaded');
 
     // 링크인바이오 슬러그 조회
@@ -913,9 +921,8 @@ exports.handler = async (event) => {
     const bizCat = reservation.biz_category || userProfile?.biz_category || sp.category || 'cafe';
     const captionTone = reservation.caption_tone || userProfile?.caption_tone || '친근하게';
 
-    const customCaptions = (userProfile?.custom_captions || [])
-      .filter((c) => c && c.trim())
-      .join('|||');
+    // custom_captions 는 옛 멀티마켓 SaaS feature — sellers 에 없음, 빈 값.
+    const customCaptions = '';
 
     const [toneLikes, toneDislikes] = await Promise.all([
       loadToneFeedback(supabase, reservation.user_id, 'like'),

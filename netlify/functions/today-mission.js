@@ -137,11 +137,11 @@ exports.handler = async (event) => {
   try {
     const supa = getAdminClient();
 
-    // 사용자 업종 조회
+    // 사장님 업종 조회 (sellers.industry)
     let category = 'cafe';
     try {
-      const { data } = await supa.from('users').select('business_category, store_category').eq('id', userId).maybeSingle();
-      const c = data?.business_category || data?.store_category;
+      const { data } = await supa.from('sellers').select('industry').eq('id', userId).maybeSingle();
+      const c = data?.industry;
       if (c && CATEGORY_KR[c]) category = c;
     } catch (_) {}
 

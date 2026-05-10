@@ -53,16 +53,16 @@ async function requireAdmin(event, admin) {
     return { ok: true, user: { id: userId, email: userEmail } };
   }
 
-  // 2) users.is_admin 조회 (Service role — RLS 우회)
+  // 2) sellers.is_admin 조회 (Service role — RLS 우회)
   try {
     const { data: row, error: dbErr } = await admin
-      .from('users')
+      .from('sellers')
       .select('is_admin')
       .eq('id', userId)
       .maybeSingle();
 
     if (dbErr) {
-      console.error('[admin-guard] users select 오류:', dbErr.message);
+      console.error('[admin-guard] sellers select 오류:', dbErr.message);
       return { ok: false, status: 500, error: '관리자 권한 조회 실패' };
     }
 

@@ -111,7 +111,7 @@ exports.handler = async (event) => {
 
     // 1) 관리자 계정 조회
     const { data: adminRow, error: adminErr } = await supabase
-      .from('users')
+      .from('sellers')
       .select('id')
       .eq('is_admin', true)
       .limit(1)

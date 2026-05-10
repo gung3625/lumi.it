@@ -39,68 +39,25 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 // 학습 소스 수집
 // ──────────────────────────────────────────────
 
-// sellers row + (이메일이 매칭되는) users.id 조회.
+// sellers row 조회. sellers.id == user_id (FK 가 sellers 로 재지정 후 단일 동일성).
 // 반환: { seller, userId } | { error, status }
 async function loadSellerAndUser(admin, target) {
-  // target = { sellerId } | { userId }
-  let sellerRow = null;
+  // target = { sellerId } | { userId } — 모두 sellers.id 와 같음.
+  const sellerId = target.sellerId || target.userId;
+  if (!sellerId) return { error: '대상 식별자가 없습니다.', status: 400 };
 
-  if (target.sellerId) {
-    const { data, error } = await admin
-      .from('sellers')
-      .select('id, email, tone_sample_1, tone_sample_2, tone_sample_3')
-      .eq('id', target.sellerId)
-      .maybeSingle();
-    if (error) {
-      console.error('[brand-retrain] sellers select 오류:', error.message);
-      return { error: '셀러 조회 실패', status: 500 };
-    }
-    sellerRow = data;
-  } else if (target.userId) {
-    // userId(=users.id)로 시작 → users.email 거쳐 sellers row 매칭
-    const { data: u, error: uErr } = await admin
-      .from('users')
-      .select('id, email')
-      .eq('id', target.userId)
-      .maybeSingle();
-    if (uErr) {
-      console.error('[brand-retrain] users select 오류:', uErr.message);
-      return { error: '사용자 조회 실패', status: 500 };
-    }
-    if (!u) return { error: '사용자를 찾을 수 없습니다.', status: 404 };
-
-    const { data: s, error: sErr } = await admin
-      .from('sellers')
-      .select('id, email, tone_sample_1, tone_sample_2, tone_sample_3')
-      .eq('email', u.email)
-      .maybeSingle();
-    if (sErr) {
-      console.error('[brand-retrain] sellers by email 오류:', sErr.message);
-      return { error: '셀러 조회 실패', status: 500 };
-    }
-    sellerRow = s;
+  const { data, error } = await admin
+    .from('sellers')
+    .select('id, email, tone_sample_1, tone_sample_2, tone_sample_3')
+    .eq('id', sellerId)
+    .maybeSingle();
+  if (error) {
+    console.error('[brand-retrain] sellers select 오류:', error.message);
+    return { error: '셀러 조회 실패', status: 500 };
   }
+  if (!data) return { error: '셀러를 찾을 수 없습니다.', status: 404 };
 
-  if (!sellerRow) {
-    return { error: '셀러를 찾을 수 없습니다.', status: 404 };
-  }
-
-  // sellers.email → users.id 매칭 (caption_history/tone_feedback이 user_id 기반)
-  let userId = null;
-  if (sellerRow.email) {
-    const { data: linkedUser, error: luErr } = await admin
-      .from('users')
-      .select('id')
-      .eq('email', sellerRow.email)
-      .maybeSingle();
-    if (luErr) {
-      console.warn('[brand-retrain] users by email 경고:', luErr.message);
-    } else if (linkedUser) {
-      userId = linkedUser.id;
-    }
-  }
-
-  return { seller: sellerRow, userId };
+  return { seller: data, userId: data.id };
 }
 
 // caption_history 최근 N개

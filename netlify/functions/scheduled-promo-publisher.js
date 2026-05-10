@@ -55,7 +55,7 @@ async function publishMedia(igUserId, igAccessToken, creationId) {
 
 async function fetchAdminIgTokens(supabase) {
   const { data: adminRow, error: adminErr } = await supabase
-    .from('users')
+    .from('sellers')
     .select('id')
     .eq('is_admin', true)
     .limit(1)

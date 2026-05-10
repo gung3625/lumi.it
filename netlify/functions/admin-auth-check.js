@@ -1,5 +1,5 @@
 const { corsHeaders, getOrigin } = require('./_shared/auth');
-// admin-auth-check.js — Supabase JWT 검증 후 users.is_admin 조회.
+// admin-auth-check.js — Supabase JWT 검증 후 sellers.is_admin 조회.
 // POST /api/admin-auth-check
 // Response: { is_admin: true } | 401
 // 향후 admin API들의 공용 인증 체크로 재사용 가능.
@@ -24,13 +24,13 @@ exports.handler = async (event) => {
     const admin = getAdminClient();
 
     const { data, error: dbErr } = await admin
-      .from('users')
+      .from('sellers')
       .select('is_admin')
       .eq('id', user.id)
       .single();
 
     if (dbErr || !data) {
-      console.error('[admin-auth-check] users select error:', dbErr && dbErr.message);
+      console.error('[admin-auth-check] sellers select error:', dbErr && dbErr.message);
       return { statusCode: 500, headers: headers, body: JSON.stringify({ error: '사용자 조회 실패' }) };
     }
 

@@ -382,7 +382,7 @@ exports.handler = async (event) => {
     // 5.5. 링크인바이오 토글 조회 (캡션 AI에 유도 지시 전달용)
     try {
       const { data: userRow } = await admin
-        .from('users').select('feat_toggles').eq('id', user.id).maybeSingle();
+        .from('sellers').select('feat_toggles').eq('id', user.id).maybeSingle();
       const ft = (userRow && userRow.feat_toggles) || {};
       if (ft.linkinbio === true) {
         const { data: linkPage } = await admin

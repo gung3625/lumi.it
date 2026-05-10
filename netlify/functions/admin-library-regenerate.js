@@ -18,7 +18,7 @@ async function requireAdmin(event) {
   if (authErr || !user) throw Object.assign(new Error('인증이 필요합니다.'), { statusCode: 401 });
 
   const admin = getAdminClient();
-  const { data, error: dbErr } = await admin.from('users').select('is_admin').eq('id', user.id).single();
+  const { data, error: dbErr } = await admin.from('sellers').select('is_admin').eq('id', user.id).single();
   if (dbErr || !data) throw Object.assign(new Error('사용자 조회 실패'), { statusCode: 500 });
   if (!data.is_admin) throw Object.assign(new Error('관리자 권한이 없습니다.'), { statusCode: 401 });
 

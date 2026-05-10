@@ -112,16 +112,25 @@ exports.handler = async (event) => {
       }
     } catch (e) { console.log('날씨 조회 실패:', e.message); }
 
-    // 유료 플랜 구독자 조회: plan in ('standard','pro') + phone NOT NULL
+    // 유료 플랜 구독자 조회: sellers (옛 public.users 정리)
+    //   - name → owner_name 매핑
+    //   - biz_category → industry 매핑
     const { data: users, error: userErr } = await supabase
-      .from('users')
-      .select('id, name, store_name, phone, biz_category, plan')
+      .from('sellers')
+      .select('id, owner_name, store_name, phone, industry, plan')
       .in('plan', ['standard', 'pro'])
       .not('phone', 'is', null);
 
     if (userErr) {
-      console.error('[send-daily-schedule] users 조회 실패:', userErr.message);
+      console.error('[send-daily-schedule] sellers 조회 실패:', userErr.message);
       return { statusCode: 500, headers: headers, body: JSON.stringify({ error: '조회 실패' }) };
+    }
+    // 본문 호환을 위해 옛 컬럼명 alias
+    if (Array.isArray(users)) {
+      for (const u of users) {
+        u.name = u.owner_name;
+        u.biz_category = u.industry;
+      }
     }
 
     // 업종별 트렌드 캐시 로드 (한 번만)

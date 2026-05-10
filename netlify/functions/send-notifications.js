@@ -545,16 +545,25 @@ exports.handler = async (event) => {
   try {
     const supabase = getAdminClient();
 
-    // 전체 유저 한 번에 로드 (기존 Blobs list 대체)
+    // 전체 사장님 한 번에 로드 (sellers — 옛 public.users 정리)
+    //   name → owner_name, biz_category → industry, agree_marketing → marketing_consent.
+    //   retention_unsubscribed 는 sellers 에 없음 — 항상 false 로 취급(베타 데이터 비웠음).
     const { data: users, error: userErr } = await supabase
-      .from('users')
-      .select('id, email, name, store_name, phone, plan, biz_category, agree_marketing, retention_unsubscribed, created_at');
+      .from('sellers')
+      .select('id, email, owner_name, store_name, phone, plan, industry, marketing_consent, created_at');
     if (userErr) {
-      console.error('[send-notifications] users 조회 실패:', userErr.message);
+      console.error('[send-notifications] sellers 조회 실패:', userErr.message);
       return { statusCode: 500, headers: headers, body: JSON.stringify({ error: '조회 실패' }) };
     }
 
-    const userList = users || [];
+    // 본문 호환 alias
+    const userList = (users || []).map(u => ({
+      ...u,
+      name: u.owner_name,
+      biz_category: u.industry,
+      agree_marketing: u.marketing_consent,
+      retention_unsubscribed: false,
+    }));
 
     // 알림톡 3종 (독립적으로 병렬 실행)
     const [monthly, season, firstPost] = await Promise.all([

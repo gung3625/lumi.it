@@ -58,12 +58,12 @@ async function getIgContext(supabase, igUserId) {
 
     let email = null;
     if (data.user_id) {
-      const { data: user } = await supabase
-        .from('users')
+      const { data: seller } = await supabase
+        .from('sellers')
         .select('email')
         .eq('id', data.user_id)
         .maybeSingle();
-      email = user?.email || null;
+      email = seller?.email || null;
     }
     return { accessToken: data.page_access_token || data.access_token || null, userId: data.user_id || null, email };
   } catch (e) {
@@ -72,11 +72,11 @@ async function getIgContext(supabase, igUserId) {
   }
 }
 
-// users 테이블에서 plan 조회
+// sellers 테이블에서 plan 조회
 async function getUserPlan(supabase, userId) {
   try {
     const { data, error } = await supabase
-      .from('users')
+      .from('sellers')
       .select('plan, store_name, store_desc')
       .eq('id', userId)
       .maybeSingle();
