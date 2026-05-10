@@ -15,8 +15,7 @@
 //   - SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_ANON_KEY
 
 const { getAdminClient } = require('./_shared/supabase-admin');
-const { verifySellerToken, extractBearerToken } = require('./_shared/seller-jwt');
-const { verifyBearerToken } = require('./_shared/supabase-auth');
+const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
 const { corsHeaders, getOrigin } = require('./_shared/auth');
 
 exports.handler = async (event) => {
@@ -47,37 +46,15 @@ exports.handler = async (event) => {
     return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '서버 오류가 발생했습니다.' }) };
   }
 
-  let sellerId = null;
-  let supaUserId = null; // Supabase Auth user.id (user_metadata 동기화용, 카카오 사용자는 null)
-
-  // seller-jwt 우선 시도 (카카오 로그인 사용자)
-  const { payload: sellerPayload, error: sellerErr } = verifySellerToken(rawToken);
-  if (!sellerErr && sellerPayload && sellerPayload.seller_id) {
-    sellerId = sellerPayload.seller_id;
-    console.log('[signup-complete] seller-jwt 검증 성공');
-  } else {
-    // Supabase JWT fallback (Google 로그인 사용자)
-    const { user: supaUser, error: supaErr } = await verifyBearerToken(rawToken);
-    if (supaErr || !supaUser) {
-      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증이 필요합니다.' }) };
-    }
-
-    supaUserId = supaUser.id || null;
-
-    // Supabase user → sellers에서 id 조회
-    const { data: found } = await admin
-      .from('sellers')
-      .select('id')
-      .eq('email', supaUser.email)
-      .maybeSingle();
-
-    if (!found) {
-      return { statusCode: 404, headers: CORS, body: JSON.stringify({ error: '계정을 찾을 수 없습니다.' }) };
-    }
-
-    sellerId = found.id;
-    console.log('[signup-complete] Supabase JWT 검증 성공');
+  // verifyBearerToken 이 supabase JWT / seller-jwt 둘 다 처리하고 user.id 를 sellers.id 로 정착시켜준다.
+  const { user, error: authErr } = await verifyBearerToken(rawToken);
+  if (authErr || !user || !user.id) {
+    return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증이 필요합니다.' }) };
   }
+  const sellerId = user.id;
+  // 옛 구글 사용자(=auth.users) 는 user.id 가 sellers.id 와 다를 수 있어 user_metadata 동기화 분기 보존.
+  // 카카오 사용자는 user.user_metadata 가 sellers 에서 채운 값이라 별도 동기화 불필요.
+  const supaUserId = user.email && !user.user_metadata?.store_name ? user.id : null;
 
   // ──────────────────────────────────────────────
   // 2) 입력 검증
