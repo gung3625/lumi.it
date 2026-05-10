@@ -156,6 +156,35 @@
     .photo__add input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 
     /* 입력 */
+    /* 한 줄 메모 — 예시 칩 */
+    .memo-hint {
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+      line-height: 1.55;
+      margin-bottom: var(--space-2);
+    }
+    .memo-examples {
+      display: flex; flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: var(--space-2);
+    }
+    .memo-example {
+      padding: 4px 10px;
+      border-radius: var(--radius-pill);
+      background: var(--bg-soft);
+      border: 1px solid var(--line);
+      font-size: var(--text-caption);
+      color: var(--ink-soft);
+      transition:
+        background var(--duration-snap) var(--ease-toss),
+        border-color var(--duration-snap) var(--ease-toss),
+        transform var(--duration-snap) var(--ease-toss);
+    }
+    .memo-example:active { transform: scale(0.96); }
+    @media (hover: hover) {
+      .memo-example:hover { background: var(--pink-50); border-color: var(--pink-300); }
+    }
+
     .input, textarea.input {
       padding: var(--space-3) var(--space-4);
       font-size: max(16px, var(--text-body)); /* iOS Safari 자동 줌 방지 */
@@ -385,7 +414,15 @@
 
     <div class="field">
       <label class="field__label" for="msg">한 줄 메모 (선택)</label>
-      <textarea class="input" id="msg" maxlength="200" placeholder="예: 오늘 신메뉴 / 매장 분위기 사진" data-msg></textarea>
+      <p class="memo-hint">사진에 대한 짧은 설명을 남겨주시면 루미가 캡션 만들 때 참고합니다. 메뉴명·상황·분위기 어느 거든 좋아요.</p>
+      <div class="memo-examples" data-memo-examples>
+        <button type="button" class="memo-example" data-memo-example>오늘 처음 내린 신메뉴 라떼예요</button>
+        <button type="button" class="memo-example" data-memo-example>이번 주 한정 메뉴</button>
+        <button type="button" class="memo-example" data-memo-example>매장 인테리어 새로 바꿨어요</button>
+        <button type="button" class="memo-example" data-memo-example>단골 손님이 두고 간 꽃다발</button>
+        <button type="button" class="memo-example" data-memo-example>비 오는 날 가게 분위기</button>
+      </div>
+      <textarea class="input" id="msg" maxlength="200" placeholder="예) 어떤 사진인지 / 어떤 상황인지 / 어떤 메뉴인지" data-msg></textarea>
     </div>
 
     <div class="field">
@@ -475,6 +512,14 @@
       const submitBtn = document.querySelector('[data-submit]');
       const scheduleAtEl = document.querySelector('[data-scheduled-at]');
       const toastEl = document.querySelector('[data-toast]');
+
+      // 메모 예시 칩 — 누르면 textarea 채우고 포커스
+      document.querySelectorAll('[data-memo-example]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          msgEl.value = btn.textContent.trim();
+          msgEl.focus();
+        });
+      });
 
       let photos = [];
       let scheduleMode = 'immediate';
