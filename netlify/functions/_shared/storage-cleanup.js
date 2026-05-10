@@ -13,7 +13,11 @@ function getSupabaseEnv() {
   return { url, serviceKey };
 }
 
-// 단일 버킷 일괄 삭제 — POST + method:DELETE + {prefixes:[...]} 스펙 사용.
+// 단일 버킷 일괄 삭제 — Supabase Storage REST 의 단일 객체 DELETE 를 path 별로 호출.
+// 이전엔 {prefixes:[...]} 일괄 body 를 썼는데, "prefixes" 필드가 일부 버전에서
+// 진짜 prefix(LIKE) 매칭으로 동작해 의도치 않게 다른 예약의 파일까지 영향을
+// 줄 가능성이 있어 path 별 단일 DELETE 로 변경 (정확한 매칭 + 한 건 실패해도
+// 나머지 진행).
 async function bulkDelete(bucket, keys) {
   const list = Array.isArray(keys) ? keys.filter((k) => typeof k === 'string' && k.trim()) : [];
   if (!list.length) return { deleted: 0, error: null };
@@ -25,29 +29,37 @@ async function bulkDelete(bucket, keys) {
     return { deleted: 0, error: e.message };
   }
 
-  const ctrl = new AbortController();
-  const tid = setTimeout(() => ctrl.abort(), STORAGE_TIMEOUT_MS);
-  try {
-    const res = await fetch(`${url}/storage/v1/object/${bucket}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${serviceKey}`,
-        'apikey': serviceKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ prefixes: list }),
-      signal: ctrl.signal,
-    });
-    if (!res.ok) {
-      const text = await res.text().catch(() => '');
-      return { deleted: 0, error: `status=${res.status} ${text.slice(0, 200)}` };
+  let deleted = 0;
+  const errors = [];
+  await Promise.all(list.map(async (path) => {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), STORAGE_TIMEOUT_MS);
+    try {
+      // 경로 안 ':' (예: reserve:12345) 등 reserved 문자 보호 — 세그먼트별 인코딩.
+      const encodedPath = path.split('/').map(encodeURIComponent).join('/');
+      const res = await fetch(`${url}/storage/v1/object/${bucket}/${encodedPath}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${serviceKey}`,
+          'apikey': serviceKey,
+        },
+        signal: ctrl.signal,
+      });
+      // 200/204 = 삭제 성공, 404 = 이미 없음(무해)
+      if (res.ok || res.status === 404) {
+        deleted += 1;
+      } else {
+        const text = await res.text().catch(() => '');
+        errors.push(`${path}: status=${res.status} ${text.slice(0, 120)}`);
+      }
+    } catch (e) {
+      errors.push(`${path}: ${e?.message || String(e)}`);
+    } finally {
+      clearTimeout(tid);
     }
-    return { deleted: list.length, error: null };
-  } catch (e) {
-    return { deleted: 0, error: e?.message || String(e) };
-  } finally {
-    clearTimeout(tid);
-  }
+  }));
+
+  return { deleted, error: errors.length ? errors.join(' | ') : null };
 }
 
 // reservation row를 받아 image_keys / video_key에 해당하는 스토리지 파일 삭제.
