@@ -42,9 +42,10 @@ exports.handler = async (event) => {
     const admin = getAdminClient();
 
     // IDOR 방지: 예약이 해당 user 소유인지 확인
+    // (옛 'caption' 컬럼은 schema 에 없어 SELECT 가 통째로 실패하던 버그 — 제거)
     const { data: reservation, error: resErr } = await admin
       .from('reservations')
-      .select('id, user_id, captions, selected_caption_index, caption')
+      .select('id, user_id, captions, selected_caption_index')
       .eq('id', reservation_id)
       .maybeSingle();
 
@@ -57,16 +58,14 @@ exports.handler = async (event) => {
 
     // like / dislike 이면 tone_feedback insert (20개 롤링)
     if (rating === 'like' || rating === 'dislike') {
-      // 캡션 텍스트 추출
+      // 캡션 텍스트 추출 — captions(jsonb) 만 사용
       let captionText = '';
-      if (reservation.caption) {
-        captionText = reservation.caption;
-      } else if (Array.isArray(reservation.captions) && reservation.captions.length > 0) {
+      if (Array.isArray(reservation.captions) && reservation.captions.length > 0) {
         const idx = typeof reservation.selected_caption_index === 'number'
           ? reservation.selected_caption_index
           : 0;
         const raw = reservation.captions[idx] || reservation.captions[0];
-        captionText = typeof raw === 'string' ? raw : JSON.stringify(raw);
+        captionText = typeof raw === 'string' ? raw : (raw?.text || JSON.stringify(raw));
       }
 
       try {
