@@ -14,8 +14,11 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 
+  <meta name="view-transition" content="same-origin">
+
   <link rel="stylesheet" href="/css/tokens.css">
   <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/motion.css">
 
   <script src="/assets/categories.js"></script>
 
@@ -134,7 +137,24 @@
       padding-top: var(--space-3);
       z-index: calc(var(--z-sticky) - 1);
     }
-    .cat-tabs[hidden] { display: none; }
+    .cat-tabs {
+      max-height: 80px;
+      opacity: 1;
+      transition:
+        max-height var(--duration-base) var(--ease-soft),
+        opacity   var(--duration-base) var(--ease-soft),
+        padding   var(--duration-base) var(--ease-soft),
+        border-color var(--duration-base) var(--ease-soft);
+    }
+    .cat-tabs.is-hidden {
+      max-height: 0;
+      opacity: 0;
+      padding-top: 0;
+      padding-bottom: 0;
+      border-color: transparent;
+      pointer-events: none;
+      overflow: hidden;
+    }
     .cat-tabs::-webkit-scrollbar { display: none; }
     .cat-tab {
       flex: 0 0 auto;
@@ -588,13 +608,13 @@
       // 선택된 대분류의 세부 칩 렌더
       function renderCatTabs() {
         const group = C.findGroup(currentMajor);
-        // sub가 1개면 칩 줄 자체 숨김 (운동·레저 = fitness 단독)
+        // sub가 1개면 칩 줄 자체 숨김 (운동·레저 = fitness 단독) — opacity/height 트랜지션으로 부드럽게
         if (group.subs.length <= 1) {
-          catTabsEl.hidden = true;
+          catTabsEl.classList.add('is-hidden');
           catTabsEl.innerHTML = '';
           return;
         }
-        catTabsEl.hidden = false;
+        catTabsEl.classList.remove('is-hidden');
         catTabsEl.innerHTML = group.subs.map(s =>
           `<button class="cat-tab${s.id === currentCategory ? ' is-active' : ''}" type="button" data-cat="${s.id}">${s.label}</button>`
         ).join('');

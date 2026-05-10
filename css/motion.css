@@ -1,0 +1,143 @@
+/* motion.css — lumi 전역 부드러움 레이어
+ *
+ * 목적: 사장님이 어떤 액션을 하더라도 인터페이스가 살아 움직이는 느낌.
+ * 정적·즉각 변화 없이 모든 hover/focus/state-change/page-transition 이 자연스러운 시간 곡선으로 흐름.
+ *
+ * 적용 범위:
+ *   - 인터랙티브 요소 (a / button / [role=button] / input / textarea / select / .card / .chip)
+ *     기본 트랜지션 (≤200ms, ease-toss/soft) — 컴포넌트별 추가 효과는 그 위에 누적.
+ *   - 전체 문서 scroll-behavior smooth.
+ *   - 페이지 첫 paint fade-in.
+ *   - prefers-reduced-motion 시 전 모션 비활성.
+ *
+ * 의존: tokens.css (--duration-*, --ease-*, --shadow-glow-*, --pink-*, --gradient-*).
+ * 로드: 모든 HTML 의 head 에 tokens.css 다음, base.css 다음에 link.
+ */
+
+/* ──────────────────────────────────────
+ * 전역 스크롤 + 페이지 진입
+ * ────────────────────────────────────── */
+html { scroll-behavior: smooth; }
+
+@keyframes page-enter {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+body {
+  animation: page-enter 320ms var(--ease-soft) backwards;
+}
+
+/* ──────────────────────────────────────
+ * View Transitions (Chrome/Edge/Safari 17+)
+ * <meta name="view-transition" content="same-origin"> 와 함께.
+ * 페이지 이동 시 자동 cross-fade.
+ * ────────────────────────────────────── */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 280ms;
+  animation-timing-function: var(--ease-soft);
+}
+
+/* ──────────────────────────────────────
+ * 인터랙티브 요소 글로벌 default
+ *   각 컴포넌트의 별도 transition 보다 약한 default — 충돌 시 컴포넌트가 우선.
+ *   transform 은 ease-toss (살짝 통통), 색·그림자는 ease-soft (부드러움).
+ * ────────────────────────────────────── */
+a,
+button,
+[role="button"],
+input,
+textarea,
+select,
+.card,
+.chip,
+.kw-item,
+.major-card,
+.sub-chip,
+.cta-button,
+.cta-primary,
+.cta-secondary,
+.ig-step,
+.ig-step__check,
+.ig-step__link,
+.tab,
+.cat-tab,
+.major-tab,
+.kw-badge,
+.sheet,
+.sheet-backdrop,
+.sheet__chip,
+.sheet__source-chip,
+.steps-dot,
+.field__input,
+.oauth-button,
+.skip {
+  transition:
+    background-color var(--duration-snap) var(--ease-soft),
+    color           var(--duration-snap) var(--ease-soft),
+    border-color    var(--duration-snap) var(--ease-soft),
+    fill            var(--duration-snap) var(--ease-soft),
+    stroke          var(--duration-snap) var(--ease-soft),
+    opacity         var(--duration-base) var(--ease-soft),
+    box-shadow      var(--duration-base) var(--ease-soft),
+    transform       var(--duration-snap) var(--ease-toss);
+}
+
+/* 입력 요소 focus ring — 모든 페이지 일관 적용 */
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--pink-500);
+  box-shadow: 0 0 0 4px rgba(255, 107, 139, 0.12);
+}
+
+/* 클릭 가능 요소 hover lift 기본 — 컴포넌트별 효과 위에 누적되지 않도록 약하게 */
+a:hover:not(.no-lift),
+button:not([disabled]):hover:not(.no-lift),
+[role="button"]:not([aria-disabled="true"]):hover:not(.no-lift) {
+  /* 기본 hover lift 는 의도된 컴포넌트만 — 너무 광범위하면 시각 노이즈 */
+}
+a:active,
+button:not([disabled]):active,
+[role="button"]:not([aria-disabled="true"]):active {
+  transform: scale(0.98);
+}
+
+/* ──────────────────────────────────────
+ * is-open / is-closed 표준 패턴
+ *   기존 [hidden] 토글을 부드럽게 마이그레이션 할 때 사용.
+ *   요소에 .smooth-toggle 클래스 + is-closed/is-open 클래스 토글.
+ * ────────────────────────────────────── */
+.smooth-toggle {
+  transition:
+    opacity   var(--duration-base) var(--ease-soft),
+    transform var(--duration-base) var(--ease-toss),
+    max-height var(--duration-base) var(--ease-soft);
+  overflow: hidden;
+}
+.smooth-toggle.is-closed {
+  opacity: 0;
+  transform: translateY(-4px);
+  max-height: 0;
+  pointer-events: none;
+}
+.smooth-toggle.is-open {
+  opacity: 1;
+  transform: translateY(0);
+  max-height: 1000px;
+}
+
+/* ──────────────────────────────────────
+ * 접근성 — prefers-reduced-motion 시 전체 모션 비활성
+ * ────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

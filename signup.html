@@ -14,8 +14,11 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 
+  <meta name="view-transition" content="same-origin">
+
   <link rel="stylesheet" href="/css/tokens.css">
   <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/motion.css">
 
   <script src="/assets/categories.js"></script>
 
@@ -193,14 +196,26 @@
       100% { transform: scale(1); }
     }
 
-    /* 세부 칩 */
+    /* 세부 칩 — 부드러운 등장/퇴장 (hidden 즉시 사라짐 대신 opacity·height 트랜지션) */
     .sub-chips {
       display: flex;
       flex-wrap: wrap;
       gap: var(--space-2);
       margin-top: var(--space-4);
+      max-height: 280px;
+      opacity: 1;
+      overflow: hidden;
+      transition:
+        max-height var(--duration-base) var(--ease-soft),
+        opacity   var(--duration-base) var(--ease-soft),
+        margin-top var(--duration-base) var(--ease-soft);
     }
-    .sub-chips[hidden] { display: none; }
+    .sub-chips.is-hidden {
+      max-height: 0;
+      opacity: 0;
+      margin-top: 0;
+      pointer-events: none;
+    }
     .sub-chip {
       padding: var(--space-2) var(--space-4);
       border: 1px solid var(--line-strong);
@@ -517,7 +532,7 @@
 
       <div class="field">
         <label class="field__label">세부 업종</label>
-        <div class="sub-chips" data-sub-chips hidden></div>
+        <div class="sub-chips is-hidden" data-sub-chips></div>
         <div class="field__hint" data-sub-hint>대분류를 먼저 선택해주세요.</div>
       </div>
 
@@ -679,12 +694,12 @@
       function renderSubChips() {
         const group = C.findGroup(state.majorId);
         if (!group || !group.subs.length) {
-          subChipsEl.hidden = true;
+          subChipsEl.classList.add('is-hidden');
           subHintEl.style.display = '';
           return;
         }
         subHintEl.style.display = 'none';
-        subChipsEl.hidden = false;
+        subChipsEl.classList.remove('is-hidden');
         // sub 1개면 자동 선택 (운동·레저)
         if (group.subs.length === 1) state.sub = group.subs[0].id;
         subChipsEl.innerHTML = group.subs.map(s =>
