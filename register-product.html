@@ -235,6 +235,121 @@
     }
     .toast.is-open { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+    /* 풀스크린 진행 오버레이 */
+    .progress-overlay {
+      position: fixed; inset: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,230,238,0.98) 100%);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: var(--space-6);
+      padding: var(--space-5);
+      z-index: var(--z-modal);
+      opacity: 0; pointer-events: none;
+      transition: opacity 320ms var(--ease-soft);
+    }
+    .progress-overlay.is-open { opacity: 1; pointer-events: auto; }
+    .progress-mascot {
+      width: 96px; height: 96px;
+      border-radius: var(--radius-full);
+      background: var(--gradient-signature);
+      box-shadow: var(--shadow-glow);
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 48px;
+      animation: mascot-bob 1.6s var(--ease-soft) infinite;
+      position: relative;
+    }
+    @keyframes mascot-bob {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50%      { transform: translateY(-6px) scale(1.04); }
+    }
+    .progress-mascot::after {
+      content: '';
+      position: absolute; inset: -8px;
+      border-radius: inherit;
+      border: 2px solid rgba(255, 107, 139, 0.3);
+      animation: mascot-ring 2.4s var(--ease-soft) infinite;
+    }
+    @keyframes mascot-ring {
+      0%   { transform: scale(0.85); opacity: 0.7; }
+      100% { transform: scale(1.4);  opacity: 0; }
+    }
+    .progress-title {
+      font-size: var(--text-headline);
+      font-weight: var(--weight-bold);
+      color: var(--ink);
+      text-align: center;
+      transition: opacity 240ms var(--ease-soft);
+    }
+    .progress-sub {
+      font-size: var(--text-body);
+      color: var(--ink-muted);
+      text-align: center;
+      margin-top: -16px;
+    }
+    .progress-steps {
+      display: flex; flex-direction: column;
+      gap: var(--space-3);
+      width: 100%; max-width: 360px;
+    }
+    .progress-step {
+      display: flex; align-items: center; gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      background: rgba(255,255,255,0.7);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      font-size: var(--text-body);
+      color: var(--ink-muted);
+      transition:
+        color var(--duration-base) var(--ease-soft),
+        border-color var(--duration-base) var(--ease-soft),
+        background var(--duration-base) var(--ease-soft),
+        transform var(--duration-snap) var(--ease-toss);
+    }
+    .progress-step__icon {
+      width: 24px; height: 24px;
+      border-radius: var(--radius-full);
+      border: 2px solid var(--line-strong);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: all var(--duration-base) var(--ease-toss);
+    }
+    .progress-step__icon svg { width: 14px; height: 14px; stroke-width: 3; opacity: 0; }
+    .progress-step.is-active {
+      color: var(--ink);
+      border-color: var(--pink-300);
+      background: var(--pink-50);
+      transform: translateX(4px);
+    }
+    .progress-step.is-active .progress-step__icon {
+      border-color: var(--pink-500);
+      background: var(--pink-50);
+      animation: step-pulse 1.2s var(--ease-soft) infinite;
+    }
+    @keyframes step-pulse {
+      0%, 100% { box-shadow: 0 0 0 0   rgba(200, 80, 122, 0.5); }
+      50%      { box-shadow: 0 0 0 6px rgba(200, 80, 122, 0); }
+    }
+    .progress-step.is-done {
+      color: var(--ink);
+      border-color: var(--pink-300);
+    }
+    .progress-step.is-done .progress-step__icon {
+      background: var(--pink-500);
+      border-color: var(--pink-500);
+      color: white;
+    }
+    .progress-step.is-done .progress-step__icon svg { opacity: 1; }
+    .progress-overlay.is-success .progress-mascot { animation: mascot-pop 540ms var(--ease-toss); }
+    @keyframes mascot-pop {
+      0%   { transform: scale(1); }
+      35%  { transform: scale(1.18); }
+      100% { transform: scale(1); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .progress-mascot, .progress-mascot::after, .progress-step.is-active .progress-step__icon { animation: none !important; }
+    }
+
     /* 탭바 — /css/tabbar.css 참조 */
   </style>
 </head>
@@ -281,6 +396,31 @@
   </main>
 
   <div class="toast" data-toast></div>
+
+  <!-- 게시 진행 오버레이 -->
+  <div class="progress-overlay" data-progress-overlay aria-live="polite" aria-hidden="true">
+    <div class="progress-mascot" aria-hidden="true">📷</div>
+    <h2 class="progress-title" data-progress-title>사진 올리는 중…</h2>
+    <p class="progress-sub" data-progress-sub>잠시만요, 사장님 매장에 맞는 캡션을 만들고 있어요.</p>
+    <ol class="progress-steps" aria-label="게시 진행 단계">
+      <li class="progress-step" data-step="upload">
+        <span class="progress-step__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span>
+        사진 업로드
+      </li>
+      <li class="progress-step" data-step="analyze">
+        <span class="progress-step__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span>
+        사진 분석
+      </li>
+      <li class="progress-step" data-step="caption">
+        <span class="progress-step__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span>
+        캡션 작성
+      </li>
+      <li class="progress-step" data-step="publish">
+        <span class="progress-step__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span>
+        인스타 게시
+      </li>
+    </ol>
+  </div>
 
   <nav class="tabbar" aria-label="메뉴">
     <a class="tab" href="/dashboard">
@@ -477,6 +617,100 @@
         });
       }
 
+      // ── 진행 오버레이 컨트롤 ──
+      const overlayEl = document.querySelector('[data-progress-overlay]');
+      const progressTitleEl = document.querySelector('[data-progress-title]');
+      const progressSubEl = document.querySelector('[data-progress-sub]');
+      const STEP_ORDER = ['upload', 'analyze', 'caption', 'publish'];
+
+      function setStep(stepKey, state) {
+        // state: 'active' | 'done'
+        document.querySelectorAll('.progress-step').forEach(el => {
+          if (el.dataset.step === stepKey) {
+            el.classList.toggle('is-active', state === 'active');
+            el.classList.toggle('is-done', state === 'done');
+          }
+        });
+      }
+      function activateUpTo(stepKey) {
+        // 해당 step 까지를 done 처리하고 다음 step 을 active 로
+        const idx = STEP_ORDER.indexOf(stepKey);
+        STEP_ORDER.forEach((k, i) => {
+          if (i < idx) setStep(k, 'done');
+          else if (i === idx) setStep(k, 'active');
+          else setStep(k, null);
+        });
+      }
+      function showOverlay(open) {
+        overlayEl.classList.toggle('is-open', open);
+        overlayEl.setAttribute('aria-hidden', open ? 'false' : 'true');
+      }
+      function setOverlayCopy(title, sub) {
+        if (title && progressTitleEl.textContent !== title) {
+          progressTitleEl.style.opacity = '0';
+          setTimeout(() => {
+            progressTitleEl.textContent = title;
+            progressTitleEl.style.opacity = '1';
+          }, 160);
+        }
+        if (sub != null) progressSubEl.textContent = sub;
+      }
+
+      // status → step 매핑
+      function statusToStage(s) {
+        if (s.is_sent || s.caption_status === 'posted') return { step: 'publish', state: 'done', title: '완료!', sub: '인스타에 게시됐어요.' };
+        if (s.caption_status === 'posting') return { step: 'publish', state: 'active', title: '인스타 게시 중', sub: '곧 피드에 올라가요.' };
+        if (s.caption_status === 'scheduled' && s.post_mode === 'scheduled') return { step: 'caption', state: 'done', title: '예약 완료', sub: '시간 되면 자동으로 올라갑니다.' };
+        if (s.caption_status === 'scheduled') return { step: 'publish', state: 'active', title: '인스타 게시 중', sub: '곧 피드에 올라가요.' };
+        if (s.caption_status === 'ready') return { step: 'caption', state: 'done', title: '캡션 완성', sub: '잠시 후 게시 시작.' };
+        if (s.caption_status === 'pending') return { step: 'caption', state: 'active', title: '캡션 만드는 중', sub: '사진을 분석해서 사장님 매장에 맞는 캡션을 작성하고 있어요.' };
+        if (s.caption_status === 'failed' || s.caption_status === 'error') return { step: null, state: 'fail', title: '게시 실패', sub: s.caption_error || '잠시 후 다시 시도해주세요.' };
+        return null;
+      }
+
+      async function pollUntilDone(reserveKey) {
+        const TIMEOUT_MS = 90 * 1000; // 1.5분 한도 — 그 이상이면 예약 페이지로 이동
+        const INTERVAL_MS = 1500;
+        const start = Date.now();
+        // 첫 단계는 caption (분석/작성) 으로 보여 — 업로드는 이미 끝났음
+        activateUpTo('caption');
+        while (Date.now() - start < TIMEOUT_MS) {
+          await new Promise(r => setTimeout(r, INTERVAL_MS));
+          let s = null;
+          try {
+            const r = await fetch('/api/reservation-status?key=' + encodeURIComponent(reserveKey), { headers: authHeaders });
+            if (r.ok) {
+              const j = await r.json();
+              s = j.status;
+            }
+          } catch (_) { /* 네트워크 깜빡 — 다음 사이클에 재시도 */ }
+          if (!s) continue;
+
+          const stage = statusToStage(s);
+          if (!stage) continue;
+          setOverlayCopy(stage.title, stage.sub);
+
+          if (stage.state === 'fail') {
+            return { ok: false, error: stage.sub };
+          }
+          if (stage.step === 'publish' && stage.state === 'done') {
+            // 완료 — 단계 4 까지 마크
+            STEP_ORDER.forEach(k => setStep(k, 'done'));
+            overlayEl.classList.add('is-success');
+            return { ok: true, scheduled: false, ig_permalink: s.ig_permalink || null };
+          }
+          if (stage.step === 'caption' && stage.state === 'done' && s.post_mode === 'scheduled') {
+            // 예약 게시 — 캡션까지만 작성하고 종료
+            STEP_ORDER.slice(0, 3).forEach(k => setStep(k, 'done'));
+            overlayEl.classList.add('is-success');
+            return { ok: true, scheduled: true };
+          }
+          // 진행 단계 시각화
+          activateUpTo(stage.step);
+        }
+        return { ok: 'timeout' };
+      }
+
       // 제출
       submitBtn.addEventListener('click', async () => {
         if (photos.length === 0) return;
@@ -486,11 +720,16 @@
         }
         submitBtn.disabled = true;
         submitBtn.textContent = '준비 중…';
-        try {
-          // 압축 (병렬)
-          const compressed = await Promise.all(photos.map(compressImage));
-          submitBtn.textContent = '올리는 중…';
+        showOverlay(true);
+        setOverlayCopy('사진 준비 중', '잠시만요, 압축 후 업로드를 시작할게요.');
+        activateUpTo('upload');
 
+        try {
+          // 1) 압축 (병렬)
+          const compressed = await Promise.all(photos.map(compressImage));
+          setOverlayCopy('사진 업로드 중', '서버로 보내고 있어요.');
+
+          // 2) reserve 호출 (서버에서 storage 업로드 병렬)
           const fd = new FormData();
           compressed.forEach((f, i) => fd.append('file' + i, f, f.name));
           fd.append('userMessage', msgEl.value || '');
@@ -506,13 +745,31 @@
           });
           const json = await res.json().catch(() => ({}));
           if (!res.ok) {
-            // 413/요청 본문 너무 큼 케이스 친절 메시지
             if (res.status === 413) throw new Error('사진 용량이 너무 커요. 장수를 줄여주세요.');
             throw new Error(json.error || '게시 실패');
           }
-          toast('루미가 캡션을 만들고 있어요');
-          setTimeout(() => location.href = '/reservations', 800);
+          // upload 완료
+          setStep('upload', 'done');
+
+          const reserveKey = json.reserveKey || json.reservationKey;
+          if (!reserveKey) throw new Error('예약 키를 받지 못했어요.');
+
+          // 3) 폴링으로 단계 표시
+          const final = await pollUntilDone(reserveKey);
+
+          if (final.ok === true) {
+            // 성공
+            setOverlayCopy(final.scheduled ? '예약 완료' : '게시 완료!', final.scheduled ? '시간 되면 자동으로 올라갑니다.' : '인스타에서 확인해보세요.');
+            setTimeout(() => { location.href = '/reservations'; }, 1400);
+          } else if (final.ok === 'timeout') {
+            // 백그라운드 처리 중 — 예약 페이지에서 진행 확인
+            setOverlayCopy('백그라운드 처리 중', '예약 페이지에서 진행 상황을 확인할 수 있어요.');
+            setTimeout(() => { location.href = '/reservations'; }, 1200);
+          } else {
+            throw new Error(final.error || '게시 실패');
+          }
         } catch (e) {
+          showOverlay(false);
           toast(e.message || '게시 실패');
           submitBtn.disabled = false;
           submitBtn.textContent = '📷 캡션 만들고 게시';

@@ -185,37 +185,37 @@ exports.handler = async (event) => {
 
         const reserveKey = `reserve:${Date.now()}`;
 
-        // Storage 업로드 경로 포맷: {user_id}/{reserveKey}/{timestamp}-{nonce}.ext
-        // nonce = 8바이트 hex → 예측 불가
-        const imageUrls = [];
-        const imageKeys = [];
-        const uploadedPaths = [];
+        // Storage 업로드 — 병렬 처리 (Promise.all). 사진 N장 직렬 → 동시 업로드로
+        // 함수 응답시간 N배 단축. 경로: {user_id}/{reserveKey}/{ts}-{nonce}.ext.
+        let imageUrls = [];
+        let imageKeys = [];
+        let uploadedPaths = [];
         try {
-          for (let i = 0; i < photos.length; i++) {
-            const p = photos[i];
+          const ts = Date.now();
+          const tasks = photos.map(async (p) => {
             const nonce = crypto.randomBytes(8).toString('hex');
-            const ts = Date.now();
             const ext = contentTypeToExt(p.mimeType);
             const path = `${user.id}/${reserveKey}/${ts}-${nonce}.${ext}`;
-
             const { error: upErr } = await supabase.storage
               .from(BUCKET)
               .upload(path, p.buffer, { contentType: p.mimeType, upsert: false });
-            if (upErr) {
-              console.error('[reserve] Storage 업로드 실패:', upErr.message);
-              throw new Error('이미지 업로드 실패');
-            }
+            if (upErr) throw new Error(`이미지 업로드 실패: ${upErr.message}`);
             const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path);
-            imageUrls.push(pub && pub.publicUrl ? pub.publicUrl : '');
-            imageKeys.push(path);
-            uploadedPaths.push(path);
-          }
+            return { path, url: (pub && pub.publicUrl) || '' };
+          });
+          const results = await Promise.all(tasks);
+          imageUrls = results.map(r => r.url);
+          imageKeys = results.map(r => r.path);
+          uploadedPaths = results.map(r => r.path);
         } catch (uploadErr) {
-          // 롤백: 이미 업로드된 파일 제거 (best-effort)
-          if (uploadedPaths.length) {
-            try { await supabase.storage.from(BUCKET).remove(uploadedPaths); }
-            catch (e) { console.error('[reserve] 롤백 실패:', e.message); }
-          }
+          // 롤백: 부분 업로드된 파일 제거 (best-effort) — Promise.all 실패 시
+          //        성공한 path 정보가 결과에서 사라지므로 prefix 단위로 정리.
+          try {
+            const prefix = `${user.id}/${reserveKey}/`;
+            const { data: list } = await supabase.storage.from(BUCKET).list(prefix);
+            const orphans = (list || []).map(f => prefix + f.name);
+            if (orphans.length) await supabase.storage.from(BUCKET).remove(orphans);
+          } catch (e) { console.error('[reserve] 롤백 실패:', e.message); }
           console.error('[reserve] 업로드 중 오류:', uploadErr.message);
           return resolve({ statusCode: 500, headers: CORS, body: JSON.stringify({ error: '이미지 업로드에 실패했습니다.' }) });
         }
