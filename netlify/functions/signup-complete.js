@@ -17,6 +17,7 @@
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
 const { corsHeaders, getOrigin } = require('./_shared/auth');
+const { normalizePhone, isValidPhone } = require('./_shared/onboarding-utils');
 
 exports.handler = async (event) => {
   const CORS = corsHeaders(getOrigin(event), { 'Access-Control-Allow-Methods': 'POST, OPTIONS' });
@@ -84,6 +85,15 @@ exports.handler = async (event) => {
     };
   }
 
+  const phone = normalizePhone(body.phone || '');
+  if (!phone || !isValidPhone(phone)) {
+    return {
+      statusCode: 400,
+      headers: CORS,
+      body: JSON.stringify({ error: '휴대폰 번호를 010으로 시작하는 11자리 숫자로 입력해주세요.' }),
+    };
+  }
+
   // ──────────────────────────────────────────────
   // 3) sellers UPDATE
   // ──────────────────────────────────────────────
@@ -93,6 +103,7 @@ exports.handler = async (event) => {
       .update({
         store_name: store_name.trim(),
         industry: industry.trim(),
+        phone,
         signup_completed_at: new Date().toISOString(),
         onboarded: true,
       })
