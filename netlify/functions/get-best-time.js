@@ -168,11 +168,27 @@ function pickPeakHour(followerMap) {
   return { hour: bestHour, value: bestValue };
 }
 
-// seller_post_history → 평일/주말 분리 30분 버킷 빈도. KST 변환 + 06~23시 필터.
+// performance score — insights 있으면 reach/engagement 가중치, 없으면 1.
+// log(1+x) 로 outlier 영향 완화. reach 가 1차 신호, engagement 는 보조.
+function rowScore(row) {
+  const reach = typeof row.reach === 'number' ? row.reach : null;
+  const engagement = typeof row.engagement === 'number' ? row.engagement : null;
+  if (reach === null && engagement === null) return 1;       // insights 없음 — 단순 빈도
+  const r = reach !== null ? Math.log(1 + reach) : 0;
+  const e = engagement !== null ? Math.log(1 + engagement) : 0;
+  // 가중 평균. 둘 다 0 이면 최소 0.5 — 도달 0건 시각은 평균보다 약하게 평가.
+  const s = 0.7 * r + 0.3 * e;
+  return Math.max(0.5, 1 + s / 3);   // 보통 1~3 사이로 분포
+}
+
+// seller_post_history → 평일/주말 분리 30분 버킷 가중합. KST 변환 + 06~23시 필터.
 // 임계값 충족 시 top3 슬롯, 미달 시 시드 fallback. 충족됐지만 3개 미만이면 시드로 보충.
+// insights 채워진 row 가 있으면 그 row 들은 가중치 점수, 미채워진 row 는 count 1 로 처리.
 function computePersonalizedSlots(history, seed) {
-  const counts = { weekday: 0, weekend: 0 };
-  const buckets = { weekday: {}, weekend: {} };
+  const counts = { weekday: 0, weekend: 0 };          // raw count — 임계값 비교용
+  const buckets = { weekday: {}, weekend: {} };       // weighted sum — top3 선정용
+  const rawCounts = { weekday: {}, weekend: {} };     // raw count — reason 노출용
+  let weighted = false;
 
   for (const row of (history || [])) {
     if (!row || !row.posted_at) continue;
@@ -186,17 +202,20 @@ function computePersonalizedSlots(history, seed) {
     const mm = kst.getUTCMinutes() < 30 ? '00' : '30';
     const key = `${String(hh).padStart(2, '0')}:${mm}`;
     const grp = (dow === 0 || dow === 6) ? 'weekend' : 'weekday';
-    buckets[grp][key] = (buckets[grp][key] || 0) + 1;
+    const score = rowScore(row);
+    if (score !== 1) weighted = true;
+    buckets[grp][key] = (buckets[grp][key] || 0) + score;
+    rawCounts[grp][key] = (rawCounts[grp][key] || 0) + 1;
     counts[grp]++;
   }
 
-  function topSlots(bucket) {
+  function topSlots(bucket, rawBucket) {
     return Object.entries(bucket)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 3)
-      .map(([time, count], i) => ({
+      .map(([time], i) => ({
         time,
-        reason: `내 평소 게시 ${i + 1}위 · ${count}회`,
+        reason: `내 평소 게시 ${i + 1}위 · ${rawBucket[time] || 0}회`,
       }));
   }
 
@@ -219,11 +238,11 @@ function computePersonalizedSlots(history, seed) {
   let weekend = seed.weekend;
 
   if (weekdayReady) {
-    weekday = fillFromSeed(topSlots(buckets.weekday), seed.weekday);
+    weekday = fillFromSeed(topSlots(buckets.weekday, rawCounts.weekday), seed.weekday);
     modes.weekday = 'personal';
   }
   if (weekendReady) {
-    weekend = fillFromSeed(topSlots(buckets.weekend), seed.weekend);
+    weekend = fillFromSeed(topSlots(buckets.weekend, rawCounts.weekend), seed.weekend);
     modes.weekend = 'personal';
   }
 
@@ -232,6 +251,7 @@ function computePersonalizedSlots(history, seed) {
     weekend,
     modes,
     counts,
+    weighted,    // insights 가중치 적용 여부 — 디버깅·관찰용
   };
 }
 
@@ -284,7 +304,7 @@ exports.handler = async (event) => {
     const since = new Date(Date.now() - HISTORY_WINDOW_DAYS * 24 * 3600 * 1000).toISOString();
     const { data: history, error: histErr } = await supabase
       .from('seller_post_history')
-      .select('posted_at')
+      .select('posted_at, reach, engagement')
       .eq('user_id', user.id)
       .gte('posted_at', since)
       .order('posted_at', { ascending: false })
@@ -324,12 +344,13 @@ exports.handler = async (event) => {
       }
     }
 
-    // source 갱신 — 시드/개인화/부분개인화
+    // source 갱신 — 시드/개인화/부분개인화. weighted 면 명시.
     if (result.progress.ready) {
-      result.source = 'personal-history';
+      result.source = personalized.weighted ? 'personal-history-weighted' : 'personal-history';
     } else if (result.modes.weekday === 'personal' || result.modes.weekend === 'personal') {
-      result.source = 'personal-history-partial';
+      result.source = personalized.weighted ? 'personal-history-partial-weighted' : 'personal-history-partial';
     }
+    result.weighted = !!personalized.weighted;
 
     // ── Tier 1a: Meta online_followers → bestTime 단일 점 덮어쓰기 ───────
     // (요일별 슬롯은 Tier 3 결과 유지 — Tier 1a 는 시간 차원만 신뢰.)
