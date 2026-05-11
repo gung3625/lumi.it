@@ -501,6 +501,17 @@
       </button>
     </div>
 
+    <div class="field">
+      <span class="field__label">날씨</span>
+      <button type="button" class="story-toggle is-on" data-weather-toggle aria-pressed="true">
+        <div class="story-toggle__body">
+          <div class="story-toggle__title">매장 지역 날씨를 캡션에 반영</div>
+          <div class="story-toggle__hint">예: "오늘처럼 선선한 날엔", "비 오는 오후" 같은 자연스러운 표현으로 녹여줍니다</div>
+        </div>
+        <span class="story-toggle__switch" aria-hidden="true"></span>
+      </button>
+    </div>
+
     <button class="cta" type="button" data-submit disabled>📷 캡션 만들고 게시</button>
 
     <footer class="app-footer">
@@ -611,6 +622,7 @@
       let photos = [];
       let scheduleMode = 'immediate';
       let storyEnabled = false;
+      let weatherEnabled = true;  // 디폴트 ON
 
       // 스토리 자동 업로드 토글
       const storyBtn = document.querySelector('[data-story-toggle]');
@@ -619,6 +631,15 @@
           storyEnabled = !storyEnabled;
           storyBtn.classList.toggle('is-on', storyEnabled);
           storyBtn.setAttribute('aria-pressed', String(storyEnabled));
+        });
+      }
+      // 날씨 반영 토글
+      const weatherBtn = document.querySelector('[data-weather-toggle]');
+      if (weatherBtn) {
+        weatherBtn.addEventListener('click', () => {
+          weatherEnabled = !weatherEnabled;
+          weatherBtn.classList.toggle('is-on', weatherEnabled);
+          weatherBtn.setAttribute('aria-pressed', String(weatherEnabled));
         });
       }
 
@@ -980,9 +1001,28 @@
           fd.append('userMessage', msgEl.value || '');
           fd.append('postMode', scheduleMode);
           fd.append('postToStory', String(storyEnabled));
+          fd.append('useWeather', String(weatherEnabled));
           if (scheduleMode === 'scheduled' && scheduleAtEl.value) {
             const iso = new Date(scheduleAtEl.value).toISOString();
             fd.append('scheduledAt', iso);
+          }
+          // 날씨 ON 이면 /api/get-weather 한 번 호출해서 캡션 생성에 쓸 컨텍스트 첨부.
+          // 실패해도 무시 — caption 단계가 "정보 없음" 으로 자연스럽게 fallback.
+          if (weatherEnabled) {
+            try {
+              const wRes = await fetch('/api/get-weather', { headers: authHeaders });
+              if (wRes.ok) {
+                const wJson = await wRes.json();
+                if (wJson && wJson.ok && !wJson.noRegion && !wJson.error && wJson.status) {
+                  fd.append('weather', JSON.stringify({
+                    status: wJson.status,
+                    temperature: wJson.temperature,
+                    mood: wJson.mood,
+                    locationName: wJson.shortName,
+                  }));
+                }
+              }
+            } catch {}
           }
           const res = await fetch('/api/reserve', {
             method: 'POST',
