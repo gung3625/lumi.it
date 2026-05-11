@@ -63,7 +63,7 @@ function normalizeCategory(cat) {
   if (/네일|nail/.test(key)) return 'nail';
   if (/플라워|꽃|flower/.test(key)) return 'flower';
   if (/의류|옷|패션|clothing|fashion/.test(key)) return 'clothing';
-  if (/운동|헬스|필라테스|요가|gym|pilates|yoga/.test(key)) return 'gym';
+  if (/운동|헬스|필라테스|요가|gym|pilates|yoga|fitness|크로스핏|crossfit/.test(key)) return 'gym';
   return 'other';
 }
 
