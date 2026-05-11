@@ -22,7 +22,10 @@ const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-au
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { getIgTokenForSeller, igGraphRequest, IgGraphError } = require('./_shared/ig-graph');
 
-const CACHE_TTL_MS = 5 * 60 * 1000;
+// TTL 2분 — IG 에서 댓글 삭제·신규 시 사장님 체감 신선도 ↑.
+// reply-comment.js 가 답글 직후 즉시 무효화하지만 사장님이 IG 앱에서 직접
+// 단/지운 케이스는 캐시 만료까지 안 보임. 5분 → 2분 (Graph rate limit 영향 미미).
+const CACHE_TTL_MS = 2 * 60 * 1000;
 const MEDIA_LIMIT = 15;
 const COMMENTS_PER_MEDIA = 20;
 const REPLIES_PER_COMMENT = 5;
