@@ -73,6 +73,11 @@ function flattenComments(mediaList, ownerHandle) {
   const items = [];
   for (const media of mediaList || []) {
     const permalink = media.permalink || '';
+    // 게시물 썸네일: VIDEO/REELS 는 thumbnail_url, 사진은 media_url.
+    const isVideo = media.media_type === 'VIDEO' || media.media_type === 'REELS';
+    const postThumb = isVideo ? (media.thumbnail_url || '') : (media.media_url || '');
+    // 캡션 미리보기 — 줄바꿈/공백 정리 후 40자.
+    const postCaption = String(media.caption || '').replace(/\s+/g, ' ').trim().slice(0, 40);
     const comments = (media.comments && media.comments.data) || [];
     for (const c of comments) {
       const handle = normalizeHandle(c.username);
@@ -95,6 +100,8 @@ function flattenComments(mediaList, ownerHandle) {
         timestamp: c.timestamp || '',
         reply_text: replyText,
         permalink,
+        post_thumb: postThumb,
+        post_caption: postCaption,
       });
     }
   }
@@ -110,10 +117,15 @@ function flattenComments(mediaList, ownerHandle) {
 async function fetchCommentsFromGraph(igCtx) {
   // 필드 확장 — Graph v25 가 comments{} / replies{} 중첩 확장을 지원.
   // 동작 안 하면 다음 단계: /{media}/comments 로 N+1 호출 fallback.
+  // post_thumb 용으로 media_type/media_url/thumbnail_url 추가 (사장님이 어느 게시물 댓글인지 식별).
   const fields = [
     'id',
     'permalink',
     'timestamp',
+    'media_type',
+    'media_url',
+    'thumbnail_url',
+    'caption',
     `comments.limit(${COMMENTS_PER_MEDIA}){id,text,username,timestamp,replies.limit(${REPLIES_PER_COMMENT}){id,text,username,timestamp}}`,
   ].join(',');
   const resp = await igGraphRequest(igCtx.accessToken, `/${igCtx.igUserId}/media`, {
