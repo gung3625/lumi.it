@@ -278,6 +278,20 @@
       letter-spacing: -0.01em;
       margin-bottom: var(--space-2);
     }
+    .bt-progress__stage + .bt-progress__stage { margin-top: var(--space-3); }
+    .bt-progress__stage-title {
+      font-size: 12px;
+      font-weight: var(--weight-semibold);
+      letter-spacing: -0.01em;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+    .bt-progress__stage.is-locked { opacity: 0.55; }
+    .bt-progress__stage.is-locked .bt-progress__stage-title::after {
+      content: ' (1단계 후 활성)';
+      color: var(--ink-muted);
+      font-weight: var(--weight-medium);
+    }
     .bt-progress__row {
       display: flex;
       align-items: center;
@@ -483,15 +497,33 @@
         </div>
         <div class="bt-progress" data-bt-progress hidden>
           <div class="bt-progress__hint" data-bt-progress-hint></div>
-          <div class="bt-progress__row" data-bt-progress-row="weekday">
-            <span class="bt-progress__label">평일</span>
-            <span class="bt-progress__bar"><i data-bt-progress-fill="weekday"></i></span>
-            <span class="bt-progress__count" data-bt-progress-count="weekday">0/5</span>
+          <!-- 1단계: 내 게시물 도달 데이터 (Tier 1) -->
+          <div class="bt-progress__stage" data-bt-progress-stage="t1">
+            <div class="bt-progress__stage-title">1. 내 게시물 도달 데이터</div>
+            <div class="bt-progress__row" data-bt-progress-row="weekday">
+              <span class="bt-progress__label">평일</span>
+              <span class="bt-progress__bar"><i data-bt-progress-fill="weekday"></i></span>
+              <span class="bt-progress__count" data-bt-progress-count="weekday">0/5</span>
+            </div>
+            <div class="bt-progress__row" data-bt-progress-row="weekend">
+              <span class="bt-progress__label">주말</span>
+              <span class="bt-progress__bar"><i data-bt-progress-fill="weekend"></i></span>
+              <span class="bt-progress__count" data-bt-progress-count="weekend">0/3</span>
+            </div>
           </div>
-          <div class="bt-progress__row" data-bt-progress-row="weekend">
-            <span class="bt-progress__label">주말</span>
-            <span class="bt-progress__bar"><i data-bt-progress-fill="weekend"></i></span>
-            <span class="bt-progress__count" data-bt-progress-count="weekend">0/3</span>
+          <!-- 2단계: 내 팔로워 활동 데이터 (Tier 2) -->
+          <div class="bt-progress__stage" data-bt-progress-stage="t2">
+            <div class="bt-progress__stage-title">2. 내 팔로워 활동 데이터</div>
+            <div class="bt-progress__row" data-bt-progress-row-t2="weekday">
+              <span class="bt-progress__label">평일</span>
+              <span class="bt-progress__bar"><i data-bt-progress-fill-t2="weekday"></i></span>
+              <span class="bt-progress__count" data-bt-progress-count-t2="weekday">0/15일</span>
+            </div>
+            <div class="bt-progress__row" data-bt-progress-row-t2="weekend">
+              <span class="bt-progress__label">주말</span>
+              <span class="bt-progress__bar"><i data-bt-progress-fill-t2="weekend"></i></span>
+              <span class="bt-progress__count" data-bt-progress-count-t2="weekend">0/6일</span>
+            </div>
           </div>
         </div>
         <div class="time-list" data-bt-list></div>
@@ -658,17 +690,21 @@
           modeEl.hidden = false;
         }
 
-        // 진행 카드 (둘 다 ready 면 숨김)
+        // 진행 카드 — 1·2 단계 둘 다 완료면 숨김
         const progEl = document.querySelector('[data-bt-progress]');
         const hintEl = document.querySelector('[data-bt-progress-hint]');
         if (!progEl) return;
-        if (!progress || progress.ready) {
+        const tier2 = btCache.tier2_progress || null;
+        const t1BothReady = !!(progress && progress.ready);
+        const t2BothReady = !!(tier2 && tier2.weekday && tier2.weekday.ready && tier2.weekend && tier2.weekend.ready);
+        if (t1BothReady && t2BothReady) {
           progEl.hidden = true;
           return;
         }
         progEl.hidden = false;
+        // 1단계 — 내 게시물 도달 데이터
         ['weekday', 'weekend'].forEach((dow) => {
-          const p = progress[dow] || { have: 0, need: thresholds[dow], ready: false };
+          const p = (progress && progress[dow]) || { have: 0, need: thresholds[dow], ready: false };
           const have = Math.max(0, Number(p.have) || 0);
           const need = Math.max(1, Number(p.need) || thresholds[dow]);
           const ratio = Math.min(100, Math.round((have / need) * 100));
@@ -679,18 +715,28 @@
           if (count) count.textContent = `${have}/${need}`;
           if (row) row.classList.toggle('is-ready', !!p.ready);
         });
-        // hint — sources[currentDay] 기준 카피
-        const sources = btCache.sources || {};
-        const curSrc = sources[currentDay] || 'tier4';
-        const t2 = (btCache.tier2_progress && btCache.tier2_progress[currentDay]) || null;
-        if (curSrc === 'tier2') {
-          hintEl.textContent = '내 팔로워 활동 데이터로 추천 중. 슬롯을 눌러 자세히 보세요.';
-        } else if (curSrc === 'tier1') {
-          const needT2 = t2 ? `${t2.needed_days}일` : '약 3주';
-          hintEl.textContent = `내 게시물 도달 데이터 기준 추천 중. 팔로워 활동이 ${needT2} 더 모이면 더 정확해져요.`;
+        // 2단계 — 내 팔로워 활동 데이터. 1단계 미완료면 locked.
+        const stage2El = document.querySelector('[data-bt-progress-stage="t2"]');
+        if (stage2El) stage2El.classList.toggle('is-locked', !t1BothReady);
+        ['weekday', 'weekend'].forEach((dow) => {
+          const p2 = (tier2 && tier2[dow]) || { snapshot_days: 0, needed_days: dow === 'weekend' ? 6 : 15, ready: false };
+          const have = Math.max(0, Number(p2.snapshot_days) || 0);
+          const need = Math.max(1, Number(p2.needed_days) || (dow === 'weekend' ? 6 : 15));
+          const ratio = Math.min(100, Math.round((have / need) * 100));
+          const fill = document.querySelector(`[data-bt-progress-fill-t2="${dow}"]`);
+          const count = document.querySelector(`[data-bt-progress-count-t2="${dow}"]`);
+          const row = document.querySelector(`[data-bt-progress-row-t2="${dow}"]`);
+          if (fill) fill.style.width = (p2.ready ? 100 : ratio) + '%';
+          if (count) count.textContent = `${have}/${need}일`;
+          if (row) row.classList.toggle('is-ready', !!p2.ready);
+        });
+        // hint — 단계별 카피. 1·2단계 진행 상황을 한 줄로 표현.
+        if (t2BothReady) {
+          hintEl.textContent = '내 팔로워 활동 데이터로 추천 중. 가장 정확한 단계예요.';
+        } else if (t1BothReady) {
+          hintEl.textContent = '내 게시물 도달 데이터 기준 추천 중. 팔로워 활동이 더 모이면 정확도가 올라요.';
         } else {
-          // tier4 (시드) — 사람들이 많이 볼 만한 시간대 평균
-          hintEl.textContent = '사람들이 많이 볼 만한 시간대 평균을 보여드려요. 도달 데이터가 모이면 내 팔로워 기준으로 전환돼요.';
+          hintEl.textContent = '사람들이 많이 볼 만한 시간대 평균을 보여드려요. 도달 데이터가 모이면 내 팔로워 기준으로 자동 전환돼요.';
         }
       }
       function renderBest() {
