@@ -67,7 +67,7 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '잘못된 요청 형식입니다.' }) };
   }
 
-  const { store_name, industry } = body;
+  const { store_name, industry, region } = body;
 
   if (!store_name || typeof store_name !== 'string' || store_name.trim().length < 1 || store_name.trim().length > 50) {
     return {
@@ -82,6 +82,16 @@ exports.handler = async (event) => {
       statusCode: 400,
       headers: CORS,
       body: JSON.stringify({ error: '업종을 선택해주세요.' }),
+    };
+  }
+
+  // region: 선택값 (예: "서울특별시 용산구"). 비어있으면 null 로 저장 (옵셔널).
+  // 형식 검증은 신뢰 가능한 client 만 사용 가정 — 길이 한도만 체크.
+  if (region && (typeof region !== 'string' || region.trim().length > 60)) {
+    return {
+      statusCode: 400,
+      headers: CORS,
+      body: JSON.stringify({ error: '지역 정보가 올바르지 않습니다.' }),
     };
   }
 
@@ -140,6 +150,7 @@ exports.handler = async (event) => {
       marketing_consent: !!consents.marketing,
     };
     if (phone) updatePayload.phone = phone;
+    if (region && region.trim()) updatePayload.region = region.trim();
 
     const { error: updErr } = await admin
       .from('sellers')
