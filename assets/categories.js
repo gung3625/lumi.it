@@ -25,7 +25,7 @@
       id: 'retail',
       label: '소매',
       subs: [
-        { id: 'fashion', label: '옷가게' },
+        { id: 'fashion', label: '패션' },
         { id: 'flower',  label: '플라워' },
         { id: 'pet',     label: '펫' },
       ],
