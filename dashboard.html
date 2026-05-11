@@ -155,6 +155,23 @@
       grid-template-columns: 1fr 1fr;
       gap: var(--space-3);
     }
+    .stat-empty {
+      padding: var(--space-4);
+      background: var(--bg-soft);
+      border: 1px dashed var(--line-strong);
+      border-radius: var(--radius-lg);
+      text-align: center;
+    }
+    .stat-empty__title {
+      font-size: var(--text-body);
+      font-weight: var(--weight-semibold);
+      color: var(--ink);
+    }
+    .stat-empty__sub {
+      margin-top: 4px;
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+    }
     .stat-card {
       padding: var(--space-4);
       background: var(--bg-soft);
@@ -578,7 +595,7 @@
     <a href="/insights" aria-label="이번 주 인사이트" style="text-decoration:none;color:inherit;">
       <section aria-labelledby="sec-stats">
         <h2 class="section-title" id="sec-stats">이번 주</h2>
-        <div class="stat-row">
+        <div class="stat-row" data-stat-row>
           <div class="stat-card">
             <div class="stat-card__label">좋아요</div>
             <div class="stat-card__value" data-stat-likes>—</div>
@@ -589,6 +606,10 @@
             <div class="stat-card__value" data-stat-followers>—</div>
             <div class="stat-card__delta stat-card__delta--up" data-stat-followers-delta></div>
           </div>
+        </div>
+        <div class="stat-empty" data-stat-empty hidden>
+          <div class="stat-empty__title">첫 게시 후 보여드릴게요</div>
+          <div class="stat-empty__sub">좋아요·팔로워 변화가 한 주마다 여기 모입니다.</div>
         </div>
       </section>
     </a>
@@ -766,24 +787,37 @@
       }
 
       // 이번 주 좋아요·팔로워 (insight-weekly)
+      // 신규 사용자(데이터 없음/0) → 카드 통째 숨기고 "첫 게시 후" 안내 카드 노출
       async function loadStats() {
+        const statRow = document.querySelector('[data-stat-row]');
+        const statEmpty = document.querySelector('[data-stat-empty]');
+        let hasData = false;
         try {
           const res = await fetch('/api/insight-weekly', { headers: authHeaders });
-          if (!res.ok) return;
-          const json = await res.json();
-          const data = json && json.data;
-          if (!data) return;
-          if (typeof data.likesTotal === 'number') {
-            setText('[data-stat-likes]', data.likesTotal.toLocaleString());
-          }
-          if (typeof data.followers === 'number') {
-            setText('[data-stat-followers]', data.followers.toLocaleString());
-          }
-          if (typeof data.followersChange === 'number' && data.followersChange !== 0) {
-            const sign = data.followersChange > 0 ? '+' : '';
-            setText('[data-stat-followers-delta]', sign + data.followersChange + ' 이번 주');
+          if (res.ok) {
+            const json = await res.json();
+            const data = json && json.data;
+            if (data) {
+              if (typeof data.likesTotal === 'number') {
+                setText('[data-stat-likes]', data.likesTotal.toLocaleString());
+                if (data.likesTotal > 0) hasData = true;
+              }
+              if (typeof data.followers === 'number') {
+                setText('[data-stat-followers]', data.followers.toLocaleString());
+                if (data.followers > 0) hasData = true;
+              }
+              if (typeof data.followersChange === 'number' && data.followersChange !== 0) {
+                const sign = data.followersChange > 0 ? '+' : '';
+                setText('[data-stat-followers-delta]', sign + data.followersChange + ' 이번 주');
+              }
+            }
           }
         } catch {}
+        // hasData=false (응답 실패 OR 모두 0) → 카드 숨기고 안내 표시
+        if (!hasData) {
+          if (statRow) statRow.hidden = true;
+          if (statEmpty) statEmpty.hidden = false;
+        }
       }
 
       // 요즘 뜨는 키워드 (get-trends) — 사장님 카테고리 기반
@@ -949,10 +983,16 @@
               `;
             }).join('');
             slotsEl.hidden = false;
-            // 기존 단일 title/sub 는 숨김 — 단, 오늘 슬롯 다 지났으면 sub 에 안내 한 줄.
+            // 기존 단일 title 은 숨김. sub 는 상황별 안내:
+            //   1) source=industry-seed 면 본인 데이터 부족 → "본인 게시 N개 더 쌓이면 정확해져요"
+            //   2) 오늘 슬롯 다 지났으면 "내일" 안내
+            //   3) 그 외는 숨김
             if (titleEl) titleEl.hidden = true;
             if (subEl) {
-              if (allPassed) {
+              if (json.source === 'industry-seed') {
+                subEl.textContent = '아직 업종 평균 시간이에요. 본인 게시가 3개 이상 쌓이면 더 정확해져요.';
+                subEl.hidden = false;
+              } else if (allPassed) {
                 subEl.textContent = '오늘 추천 시간은 모두 지났어요. 내일 다시 알려드릴게요.';
                 subEl.hidden = false;
               } else {
