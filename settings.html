@@ -564,6 +564,29 @@
     </div>
   </div>
 
+  <!-- 지역 변경 모달 -->
+  <div class="modal-backdrop" data-region-backdrop></div>
+  <div class="modal" data-region-modal>
+    <div class="modal__head">
+      <h2 class="modal__title">지역 변경</h2>
+      <button class="modal__close" type="button" data-region-close aria-label="닫기">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal__body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2);">
+        <select class="field__input" data-region-sido aria-label="시·도">
+          <option value="">시·도 선택</option>
+        </select>
+        <select class="field__input" data-region-gugun aria-label="구·군" disabled>
+          <option value="">구·군 선택</option>
+        </select>
+      </div>
+      <div style="font-size: var(--text-caption); color: var(--ink-muted); margin-top: 4px;">상세 주소는 안 받아요. 트렌드·노출 분석에 씁니다.</div>
+      <button class="modal__cta" type="button" data-region-save disabled>저장</button>
+    </div>
+  </div>
+
   <div class="toast" data-toast></div>
 
   <nav class="tabbar" aria-label="메뉴">
@@ -672,6 +695,11 @@
             <span class="row__value" data-display>${categoryLabel(seller.industry)}</span>
             <button class="row__edit" type="button" data-edit-industry>변경</button>
           </div>
+          <div class="row" data-row="region">
+            <span class="row__label">지역</span>
+            <span class="row__value" data-display>${seller.region || '—'}</span>
+            <button class="row__edit" type="button" data-edit-region>변경</button>
+          </div>
           <div class="row" data-row="phone">
             <span class="row__label">휴대폰</span>
             <span class="row__value" data-display>${seller.phone || seller.phoneMasked || '—'}</span>
@@ -681,6 +709,7 @@
         card.querySelector('[data-edit-name]').addEventListener('click', () => openEdit('storeName'));
         card.querySelector('[data-edit-phone]').addEventListener('click', () => openEdit('phone'));
         card.querySelector('[data-edit-industry]').addEventListener('click', openIndustryModal);
+        card.querySelector('[data-edit-region]').addEventListener('click', openRegionModal);
       }
 
       // ── 업종 변경 모달 ──
@@ -767,6 +796,111 @@
         } finally {
           industrySaveBtn.disabled = false;
           industrySaveBtn.textContent = '저장';
+        }
+      });
+
+      // ── 지역 변경 모달 ──
+      const REGIONS = {
+        '서울특별시': ['강남구','강동구','강북구','강서구','관악구','광진구','구로구','금천구','노원구','도봉구','동대문구','동작구','마포구','서대문구','서초구','성동구','성북구','송파구','양천구','영등포구','용산구','은평구','종로구','중구','중랑구'],
+        '부산광역시': ['강서구','금정구','기장군','남구','동구','동래구','부산진구','북구','사상구','사하구','서구','수영구','연제구','영도구','중구','해운대구'],
+        '인천광역시': ['강화군','계양구','남동구','동구','미추홀구','부평구','서구','연수구','옹진군','중구'],
+        '대구광역시': ['군위군','남구','달서구','달성군','동구','북구','서구','수성구','중구'],
+        '광주광역시': ['광산구','남구','동구','북구','서구'],
+        '대전광역시': ['대덕구','동구','서구','유성구','중구'],
+        '울산광역시': ['남구','동구','북구','울주군','중구'],
+        '세종특별자치시': ['세종시'],
+        '경기도': ['가평군','고양시','과천시','광명시','광주시','구리시','군포시','김포시','남양주시','동두천시','부천시','성남시','수원시','시흥시','안산시','안성시','안양시','양주시','양평군','여주시','연천군','오산시','용인시','의왕시','의정부시','이천시','파주시','평택시','포천시','하남시','화성시'],
+        '강원특별자치도': ['강릉시','고성군','동해시','삼척시','속초시','양구군','양양군','영월군','원주시','인제군','정선군','철원군','춘천시','태백시','평창군','홍천군','화천군','횡성군'],
+        '충청북도': ['괴산군','단양군','보은군','영동군','옥천군','음성군','제천시','증평군','진천군','청주시','충주시'],
+        '충청남도': ['계룡시','공주시','금산군','논산시','당진시','보령시','부여군','서산시','서천군','아산시','예산군','천안시','청양군','태안군','홍성군'],
+        '전북특별자치도': ['고창군','군산시','김제시','남원시','무주군','부안군','순창군','완주군','익산시','임실군','장수군','전주시','정읍시','진안군'],
+        '전라남도': ['강진군','고흥군','곡성군','광양시','구례군','나주시','담양군','목포시','무안군','보성군','순천시','신안군','여수시','영광군','영암군','완도군','장성군','장흥군','진도군','함평군','해남군','화순군'],
+        '경상북도': ['경산시','경주시','고령군','구미시','김천시','문경시','봉화군','상주시','성주군','안동시','영덕군','영양군','영주시','영천시','예천군','울릉군','울진군','의성군','청도군','청송군','칠곡군','포항시'],
+        '경상남도': ['거제시','거창군','고성군','김해시','남해군','밀양시','사천시','산청군','양산시','의령군','진주시','창녕군','창원시','통영시','하동군','함안군','함양군','합천군'],
+        '제주특별자치도': ['서귀포시','제주시'],
+      };
+      const regionModal = document.querySelector('[data-region-modal]');
+      const regionBackdrop = document.querySelector('[data-region-backdrop]');
+      const regionSido = document.querySelector('[data-region-sido]');
+      const regionGugun = document.querySelector('[data-region-gugun]');
+      const regionSaveBtn = document.querySelector('[data-region-save]');
+      const regionCloseBtn = document.querySelector('[data-region-close]');
+      // 시·도 옵션 한 번만 채움
+      Object.keys(REGIONS).forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s; opt.textContent = s;
+        regionSido.appendChild(opt);
+      });
+      function fillGugun(sido, selectedGugun) {
+        regionGugun.innerHTML = '<option value="">구·군 선택</option>';
+        if (sido && REGIONS[sido]) {
+          REGIONS[sido].forEach(g => {
+            const opt = document.createElement('option');
+            opt.value = g; opt.textContent = g;
+            if (g === selectedGugun) opt.selected = true;
+            regionGugun.appendChild(opt);
+          });
+          regionGugun.disabled = false;
+        } else {
+          regionGugun.disabled = true;
+        }
+      }
+      function updateRegionSaveBtn() {
+        regionSaveBtn.disabled = !(regionSido.value && regionGugun.value);
+      }
+      regionSido.addEventListener('change', () => {
+        fillGugun(regionSido.value, '');
+        updateRegionSaveBtn();
+      });
+      regionGugun.addEventListener('change', updateRegionSaveBtn);
+
+      function openRegionModal() {
+        // 현재 region 값 기반 초기화 ("시·도 구·군" 형태로 저장됨)
+        const cur = (seller.region || '').trim();
+        let curSido = '', curGugun = '';
+        if (cur) {
+          for (const s of Object.keys(REGIONS)) {
+            if (cur.startsWith(s + ' ')) {
+              curSido = s;
+              curGugun = cur.slice(s.length + 1);
+              break;
+            }
+          }
+        }
+        regionSido.value = curSido;
+        fillGugun(curSido, curGugun);
+        updateRegionSaveBtn();
+        regionModal.classList.add('is-open');
+        regionBackdrop.classList.add('is-open');
+      }
+      function closeRegionModal() {
+        regionModal.classList.remove('is-open');
+        regionBackdrop.classList.remove('is-open');
+      }
+      regionCloseBtn.addEventListener('click', closeRegionModal);
+      regionBackdrop.addEventListener('click', closeRegionModal);
+
+      regionSaveBtn.addEventListener('click', async () => {
+        if (!regionSido.value || !regionGugun.value) return;
+        const newRegion = `${regionSido.value} ${regionGugun.value}`;
+        regionSaveBtn.disabled = true;
+        regionSaveBtn.textContent = '저장 중…';
+        try {
+          const res = await fetch('/api/update-profile', {
+            method: 'POST',
+            headers: { ...authHeaders, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ region: newRegion }),
+          });
+          if (!res.ok) throw new Error('저장 실패');
+          seller.region = newRegion;
+          renderInfo();
+          closeRegionModal();
+          toast('지역이 변경됐어요');
+        } catch (e) {
+          toast(e.message || '저장 실패');
+        } finally {
+          regionSaveBtn.disabled = false;
+          regionSaveBtn.textContent = '저장';
         }
       });
 

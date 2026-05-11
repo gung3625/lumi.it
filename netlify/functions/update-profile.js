@@ -24,6 +24,7 @@ const { corsHeaders, getOrigin } = require('./_shared/auth');
 const FIELD_MAP = {
   storeName: 'store_name',
   industry: 'industry',
+  region: 'region',
   phone: 'phone',
   displayName: 'display_name',
   ownerName: 'owner_name',
@@ -38,6 +39,7 @@ const FIELD_MAP = {
 const MAX_LEN = {
   store_name: 50,    // signup-complete와 일치
   industry: 50,
+  region: 60,
   phone: 20,
   display_name: 50,
   owner_name: 50,
@@ -148,7 +150,7 @@ exports.handler = async (event) => {
       .from('sellers')
       .update(update)
       .eq(sellerQuery.field, sellerQuery.value)
-      .select('id, store_name, industry, phone, display_name, owner_name, store_desc, tone_sample_1, tone_sample_2, tone_sample_3, tone_request, updated_at')
+      .select('id, store_name, industry, region, phone, display_name, owner_name, store_desc, tone_sample_1, tone_sample_2, tone_sample_3, tone_request, updated_at')
       .maybeSingle();
 
     if (error) {
@@ -172,6 +174,7 @@ exports.handler = async (event) => {
           id: data.id,
           storeName: data.store_name || null,
           industry: data.industry || null,
+          region: data.region || null,
           displayName: data.display_name || null,
           ownerName: data.owner_name || null,
           storeDesc: data.store_desc || null,
