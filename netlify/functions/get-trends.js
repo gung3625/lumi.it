@@ -243,7 +243,10 @@ function getSeasonInfo(category) {
 const DEFAULT_AXIS_WHITELIST = ['general', 'menu', 'goods', 'domestic'];
 async function mergeV2Fields(supa, keywords, category, collectedDate, axisFilter, region = 'all', subcatFilter = null) {
   try {
-    const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    // cutoff 30일 — beauty 처럼 신선 row 가 부족한 카테고리도 응답 보존.
+    // weak 신호는 어차피 별도로 제외하므로 옛 데이터 풀이 노이즈로 새 들어올 위험 X.
+    // (이전 7일 cutoff 에서 beauty real 3 row 가 2026-04-24 라 모두 빠져 응답 0였음)
+    const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
     let query = supa
       .from('trend_keywords')
