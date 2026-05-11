@@ -132,6 +132,9 @@
         box-shadow var(--duration-base) var(--ease-soft),
         background var(--duration-base) var(--ease-soft),
         transform var(--duration-snap) var(--ease-toss);
+      /* 답글 컴포저가 본문 row 와 같은 flex 컨텍스트에 있으면 본문 column 이 squeeze 됨.
+         flex-wrap 으로 composer 가 다음 줄로 내려가게 강제. */
+      flex-wrap: wrap;
     }
     @keyframes rise {
       from { opacity: 0; transform: translateY(6px); }
@@ -478,9 +481,9 @@
                   <div class="comment__body">
                     <span class="comment__user">${esc(u)}</span>
                     <span class="comment__time">${esc(time)}</span>
+                    ${captionLine}
                     <div class="comment__text">${esc(text)}</div>
                     ${reply}
-                    ${captionLine}
                   </div>
                   ${thumb}
                 `)}
