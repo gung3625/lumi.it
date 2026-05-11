@@ -1,9 +1,30 @@
 const { corsHeaders, getOrigin } = require('./_shared/auth');
-// 업종별 인스타그램 최적 게시 시간 (3-tier 하이브리드)
-// - Tier 1a: Meta online_followers + 최근 게시물 reach (계정 성숙 시)
-// - Tier 1b: 본인 게시 이력 posted_at 최빈 시간 (3건 이상)
-// - Tier 3: 업종 × 요일 시드 매트릭스 (외부 리서치 수치 기반)
-// Bearer 토큰 검증 + 이상치 필터(06~23시)
+// 업종별 인스타그램 최적 게시 시간 (4-tier 가중 하이브리드 — 1단계)
+//
+// 데이터 소스 우선순위:
+//   Tier 1a: Meta online_followers  (IG 연동 + 응답 데이터 있을 때)
+//            → bestTime 단일 점만 개인화
+//   Tier 1b: 게시별 reach 가중치    (후속 PR 에서 활성 — Tier 1 본격 데이터)
+//   Tier 3:  seller_post_history    (가입 전 + Lumi 게시 통합) 빈도 기반
+//            → weekday[]/weekend[] 슬롯 배열 자체를 개인화
+//            → 임계값: 평일 ≥ 5건 / 주말 ≥ 3건 (요일별 독립 충족)
+//   Tier 4:  업종 × 요일 시드 매트릭스 (조건 미달 시 fallback)
+//
+// 응답 필드 (기존 호환):
+//   bestTime, reason, tip, allSlots, weekday, weekend, source
+// 신규 필드 (UI 모드 배지·진행 카드용):
+//   modes       — { weekday: 'personal'|'seed', weekend: 'personal'|'seed' }
+//   progress    — { weekday: {have, need}, weekend: {have, need}, ready }
+//   thresholds  — { weekday, weekend }
+//   source 값:
+//     'meta-online-followers'      Tier 1a 활성 (bestTime 만 개인화)
+//     'personal-history'           평일·주말 모두 Tier 3 개인화
+//     'personal-history-partial'   한쪽만 Tier 3 개인화
+//     'industry-seed'              전부 시드
+//
+// 가입 전 게시 이력은 ig-backfill-history-background.js 가 IG 연동 직후
+// seller_post_history (source='pre-lumi') 로 채움. Lumi 게시는 select-and-post-
+// background 가 source='lumi' 로 append. 이 함수는 둘을 합쳐 본다.
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
 
@@ -52,6 +73,10 @@ const INDUSTRY_MATRIX = {
   },
 };
 
+const THRESHOLDS = { weekday: 5, weekend: 3 };   // 임계값 — 요일별 독립
+const HISTORY_WINDOW_DAYS = 90;                  // 최근 90일치 history 만 카운트
+const HISTORY_LIMIT = 500;                       // 안전 상한 (300개 이상 게시는 거의 없음)
+
 function normalizeCategory(cat) {
   if (!cat) return 'other';
   const key = String(cat).toLowerCase();
@@ -67,46 +92,44 @@ function normalizeCategory(cat) {
   return 'other';
 }
 
-// 요일별 슬롯 선택
+// 현재 시각 이후(+30분 마진) 가장 가까운 슬롯 → 오늘 게시 가능한 추천 시간 1개
+function pickUpcoming(slots) {
+  if (!Array.isArray(slots) || !slots.length) return null;
+  const now = new Date();
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const withMinutes = slots
+    .filter((s) => s && typeof s.time === 'string')
+    .map((s) => {
+      const [hh, mm] = s.time.split(':').map(Number);
+      return { ...s, minutes: hh * 60 + mm };
+    });
+  return withMinutes.find((s) => s.minutes > nowMinutes + 30) || withMinutes[0] || null;
+}
+
+// 요일별 슬롯 + 오늘 추천 슬롯 1개 — send-daily-schedule 등 외부 호출용으로도 유지
 function getSeedSlot(category) {
   const data = INDUSTRY_MATRIX[category] || INDUSTRY_MATRIX.other;
   const day = new Date().getDay();
   const isWeekend = day === 0 || day === 6;
   const slots = isWeekend ? data.weekend : data.weekday;
-
-  // 현재 시각 이후 가장 가까운 슬롯 선택 (오늘 게시 가능)
-  const now = new Date();
-  const nowMinutes = now.getHours() * 60 + now.getMinutes();
-  const withMinutes = slots.map((s) => {
-    const [hh, mm] = s.time.split(':').map(Number);
-    return { ...s, minutes: hh * 60 + mm };
-  });
-  const upcoming = withMinutes.find((s) => s.minutes > nowMinutes + 30);
-  const picked = upcoming || withMinutes[0];
-
+  const picked = pickUpcoming(slots) || slots[0];
   return {
     time: picked.time,
     reason: picked.reason,
     tip: data.tip,
     allSlots: slots,
-    // insights.html 의 요일 탭 (data-day="weekday"/"weekend") 이 직접 읽는 키.
-    // Tier 1/2 에서도 시드 fallback 으로 함께 반환 — 개인화는 단일 bestTime 에만,
-    // 요일별 상세는 업종 시드를 보여주는 게 현재 데이터로는 가장 정확.
     weekday: data.weekday,
     weekend: data.weekend,
   };
 }
 
-// Meta online_followers 메트릭 호출 → 시간대별 팔로워 수 맵 반환
-// 반환값: { '07': 12, '19': 45, ... } 또는 null (데이터 없음)
+// Meta online_followers — 시간대별 팔로워 수 평균 맵
 async function fetchOnlineFollowers(igUserId, accessToken) {
   try {
     const url = `https://graph.facebook.com/v25.0/${igUserId}/insights?metric=online_followers&period=lifetime&access_token=${accessToken}`;
     const res = await fetch(url);
     const data = await res.json();
     if (!data.data || !data.data[0]?.values) return null;
-
-    // 최근 7일치 values 합산해 시간대별 평균
     const hourSums = {};
     const hourCounts = {};
     for (const v of data.data[0].values) {
@@ -118,9 +141,7 @@ async function fetchOnlineFollowers(igUserId, accessToken) {
       }
     }
     const avg = {};
-    for (const h of Object.keys(hourSums)) {
-      avg[h] = hourSums[h] / hourCounts[h];
-    }
+    for (const h of Object.keys(hourSums)) avg[h] = hourSums[h] / hourCounts[h];
     return Object.keys(avg).length ? avg : null;
   } catch (e) {
     console.warn('[get-best-time] online_followers 조회 실패:', e.message);
@@ -128,8 +149,7 @@ async function fetchOnlineFollowers(igUserId, accessToken) {
   }
 }
 
-// 이상치 필터: 06~23시만 허용 + 최대값 hour 반환
-// followerMap: UTC 기준 시간 → KST로 변환 (UTC+9)
+// 이상치 필터: KST 06~23시 만 허용 + 최대값 hour 반환
 function pickPeakHour(followerMap) {
   if (!followerMap) return null;
   let bestHour = null;
@@ -148,56 +168,171 @@ function pickPeakHour(followerMap) {
   return { hour: bestHour, value: bestValue };
 }
 
-// 본인 이력 기반 최빈 시간 계산
-function calcBestFromHistory(history) {
-  if (!Array.isArray(history) || history.length < 3) return null;
-  const buckets = {};
-  for (const row of history) {
-    if (!row.posted_at) continue;
+// seller_post_history → 평일/주말 분리 30분 버킷 빈도. KST 변환 + 06~23시 필터.
+// 임계값 충족 시 top3 슬롯, 미달 시 시드 fallback. 충족됐지만 3개 미만이면 시드로 보충.
+function computePersonalizedSlots(history, seed) {
+  const counts = { weekday: 0, weekend: 0 };
+  const buckets = { weekday: {}, weekend: {} };
+
+  for (const row of (history || [])) {
+    if (!row || !row.posted_at) continue;
     const d = new Date(row.posted_at);
     if (isNaN(d.getTime())) continue;
-    const hh = String(d.getHours()).padStart(2, '0');
-    const mm = d.getMinutes() < 30 ? '00' : '30';
-    const key = `${hh}:${mm}`;
-    buckets[key] = (buckets[key] || 0) + 1;
+    // posted_at 은 UTC ISO. KST = UTC+9 변환.
+    const kst = new Date(d.getTime() + 9 * 3600 * 1000);
+    const dow = kst.getUTCDay();
+    const hh = kst.getUTCHours();
+    if (hh < 6 || hh > 23) continue;
+    const mm = kst.getUTCMinutes() < 30 ? '00' : '30';
+    const key = `${String(hh).padStart(2, '0')}:${mm}`;
+    const grp = (dow === 0 || dow === 6) ? 'weekend' : 'weekday';
+    buckets[grp][key] = (buckets[grp][key] || 0) + 1;
+    counts[grp]++;
   }
-  let bestKey = null;
-  let bestCount = 0;
-  for (const [key, count] of Object.entries(buckets)) {
-    if (count > bestCount) { bestCount = count; bestKey = key; }
-  }
-  if (!bestKey) return null;
-  return { time: bestKey, sampleSize: history.length, count: bestCount };
-}
 
+  function topSlots(bucket) {
+    return Object.entries(bucket)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([time, count], i) => ({
+        time,
+        reason: `내 평소 게시 ${i + 1}위 · ${count}회`,
+      }));
+  }
+
+  function fillFromSeed(personal, seedSlots, target = 3) {
+    if (personal.length >= target) return personal.slice(0, target);
+    const used = new Set(personal.map((s) => s.time));
+    const padded = [...personal];
+    for (const s of seedSlots || []) {
+      if (padded.length >= target) break;
+      if (!used.has(s.time)) padded.push({ ...s, reason: `${s.reason} · 업종 평균 보충` });
+    }
+    return padded;
+  }
+
+  const weekdayReady = counts.weekday >= THRESHOLDS.weekday;
+  const weekendReady = counts.weekend >= THRESHOLDS.weekend;
+
+  const modes = { weekday: 'seed', weekend: 'seed' };
+  let weekday = seed.weekday;
+  let weekend = seed.weekend;
+
+  if (weekdayReady) {
+    weekday = fillFromSeed(topSlots(buckets.weekday), seed.weekday);
+    modes.weekday = 'personal';
+  }
+  if (weekendReady) {
+    weekend = fillFromSeed(topSlots(buckets.weekend), seed.weekend);
+    modes.weekend = 'personal';
+  }
+
+  return {
+    weekday,
+    weekend,
+    modes,
+    counts,
+  };
+}
 
 exports.handler = async (event) => {
   const headers = corsHeaders(getOrigin(event));
-  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: headers, body: '' };
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers, body: '' };
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, headers: headers, body: JSON.stringify({ error: 'Method not allowed' }) };
+    return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
   const token = extractBearerToken(event);
-  if (!token) return { statusCode: 401, headers: headers, body: JSON.stringify({ error: '로그인이 필요합니다.' }) };
+  if (!token) return { statusCode: 401, headers, body: JSON.stringify({ error: '로그인이 필요합니다.' }) };
   const { user, error: authErr } = await verifyBearerToken(token);
   if (authErr || !user) {
     console.warn('[get-best-time] 토큰 검증 실패');
-    return { statusCode: 401, headers: headers, body: JSON.stringify({ error: '인증에 실패했습니다.' }) };
+    return { statusCode: 401, headers, body: JSON.stringify({ error: '인증에 실패했습니다.' }) };
   }
 
   let body = {};
   try { body = JSON.parse(event.body || '{}'); } catch {
-    return { statusCode: 400, headers: headers, body: JSON.stringify({ error: '잘못된 요청' }) };
+    return { statusCode: 400, headers, body: JSON.stringify({ error: '잘못된 요청' }) };
   }
   const cat = normalizeCategory(body.category);
-
   const seed = getSeedSlot(cat);
+  const isWeekendToday = (() => { const d = new Date().getDay(); return d === 0 || d === 6; })();
+
+  // 응답 기본값 — 시드.
+  const result = {
+    category: cat,
+    bestTime: seed.time,
+    reason: seed.reason,
+    tip: seed.tip,
+    allSlots: seed.allSlots,
+    weekday: seed.weekday,
+    weekend: seed.weekend,
+    source: 'industry-seed',
+    modes: { weekday: 'seed', weekend: 'seed' },
+    progress: {
+      weekday: { have: 0, need: THRESHOLDS.weekday, ready: false },
+      weekend: { have: 0, need: THRESHOLDS.weekend, ready: false },
+      ready: false,
+    },
+    thresholds: THRESHOLDS,
+  };
 
   try {
     const supabase = getAdminClient();
 
-    // Tier 1a: Meta online_followers (IG 연동 시만)
+    // ── Tier 3: seller_post_history 기반 weekday/weekend 슬롯 ─────────────
+    const since = new Date(Date.now() - HISTORY_WINDOW_DAYS * 24 * 3600 * 1000).toISOString();
+    const { data: history, error: histErr } = await supabase
+      .from('seller_post_history')
+      .select('posted_at')
+      .eq('user_id', user.id)
+      .gte('posted_at', since)
+      .order('posted_at', { ascending: false })
+      .limit(HISTORY_LIMIT);
+
+    if (histErr) {
+      console.warn('[get-best-time] seller_post_history 조회 경고:', histErr.message);
+    }
+
+    const personalized = computePersonalizedSlots(history || [], seed);
+    result.weekday = personalized.weekday;
+    result.weekend = personalized.weekend;
+    result.modes = personalized.modes;
+    result.progress = {
+      weekday: {
+        have: personalized.counts.weekday,
+        need: THRESHOLDS.weekday,
+        ready: personalized.modes.weekday === 'personal',
+      },
+      weekend: {
+        have: personalized.counts.weekend,
+        need: THRESHOLDS.weekend,
+        ready: personalized.modes.weekend === 'personal',
+      },
+      ready: personalized.modes.weekday === 'personal' && personalized.modes.weekend === 'personal',
+    };
+
+    // 오늘 요일 기준 allSlots 갱신 — 대시보드 "오늘 베스트 시간" 위젯이 읽음.
+    result.allSlots = isWeekendToday ? result.weekend : result.weekday;
+
+    // 개인화된 슬롯이 있으면 bestTime 도 그 안에서 픽 (시드 bestTime 덮어쓰기).
+    if (personalized.modes[isWeekendToday ? 'weekend' : 'weekday'] === 'personal') {
+      const picked = pickUpcoming(result.allSlots);
+      if (picked) {
+        result.bestTime = picked.time;
+        result.reason = picked.reason;
+      }
+    }
+
+    // source 갱신 — 시드/개인화/부분개인화
+    if (result.progress.ready) {
+      result.source = 'personal-history';
+    } else if (result.modes.weekday === 'personal' || result.modes.weekend === 'personal') {
+      result.source = 'personal-history-partial';
+    }
+
+    // ── Tier 1a: Meta online_followers → bestTime 단일 점 덮어쓰기 ───────
+    // (요일별 슬롯은 Tier 3 결과 유지 — Tier 1a 는 시간 차원만 신뢰.)
     const { data: igRow } = await supabase
       .from('ig_accounts_decrypted')
       .select('ig_user_id, access_token, page_access_token')
@@ -209,68 +344,19 @@ exports.handler = async (event) => {
       const peak = pickPeakHour(followerMap);
       if (peak) {
         const hh = String(peak.hour).padStart(2, '0');
-        return {
-          statusCode: 200,
-          headers: headers,
-          body: JSON.stringify({
-            category: cat,
-            bestTime: `${hh}:00`,
-            reason: `내 팔로워가 가장 많이 접속하는 시간대`,
-            tip: seed.tip,
-            allSlots: seed.allSlots,
-            weekday: seed.weekday,
-            weekend: seed.weekend,
-            source: 'meta-online-followers',
-          }),
-        };
+        result.bestTime = `${hh}:00`;
+        result.reason = '내 팔로워가 가장 많이 접속하는 시간대';
+        result.source = 'meta-online-followers';
       }
-    }
-
-    // Tier 1b: 본인 게시 이력 최빈 시간
-    const { data: history } = await supabase
-      .from('reservations')
-      .select('posted_at')
-      .eq('user_id', user.id)
-      .eq('caption_status', 'posted')
-      .order('posted_at', { ascending: false })
-      .limit(200);
-
-    const fromHistory = calcBestFromHistory(history);
-    if (fromHistory) {
-      return {
-        statusCode: 200,
-        headers: headers,
-        body: JSON.stringify({
-          category: cat,
-          bestTime: fromHistory.time,
-          reason: `내 계정 이력 기준 ${fromHistory.count}회 게시 시간대`,
-          tip: seed.tip,
-          allSlots: seed.allSlots,
-          weekday: seed.weekday,
-          weekend: seed.weekend,
-          source: 'user-history',
-          sampleSize: fromHistory.sampleSize,
-        }),
-      };
     }
   } catch (err) {
     console.error('[get-best-time] 조회 오류:', err.message);
   }
 
-  // Tier 3: 업종 시드 매트릭스
   return {
     statusCode: 200,
-    headers: headers,
-    body: JSON.stringify({
-      category: cat,
-      bestTime: seed.time,
-      reason: seed.reason,
-      tip: seed.tip,
-      allSlots: seed.allSlots,
-      weekday: seed.weekday,
-      weekend: seed.weekend,
-      source: 'industry-seed',
-    }),
+    headers,
+    body: JSON.stringify(result),
   };
 };
 
