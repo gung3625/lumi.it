@@ -219,6 +219,60 @@
       box-shadow: var(--shadow-glow-sm);
       animation: card-pop 420ms var(--ease-toss);
     }
+    /* 스토리 자동 업로드 토글 */
+    .story-toggle {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      width: 100%;
+      padding: var(--space-3) var(--space-4);
+      background: var(--bg);
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-lg);
+      text-align: left;
+      cursor: pointer;
+      transition: all 200ms var(--ease-toss);
+    }
+    .story-toggle.is-on {
+      background: var(--pink-50);
+      border-color: var(--pink-500);
+    }
+    .story-toggle__body { flex: 1; min-width: 0; }
+    .story-toggle__title {
+      font-size: var(--text-body);
+      font-weight: var(--weight-semibold);
+      color: var(--ink);
+    }
+    .story-toggle.is-on .story-toggle__title { color: var(--pink-700); }
+    .story-toggle__hint {
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+      margin-top: 2px;
+    }
+    .story-toggle__switch {
+      flex-shrink: 0;
+      width: 42px;
+      height: 24px;
+      background: var(--neutral-300, #d4d4d8);
+      border-radius: 999px;
+      position: relative;
+      transition: background 200ms var(--ease-toss);
+    }
+    .story-toggle__switch::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 20px;
+      height: 20px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 200ms var(--ease-toss);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    }
+    .story-toggle.is-on .story-toggle__switch { background: var(--pink-500); }
+    .story-toggle.is-on .story-toggle__switch::after { transform: translateX(18px); }
+    .story-toggle:active { transform: scale(0.99); }
     @keyframes card-pop {
       0%, 100% { transform: scale(1); }
       50%      { transform: scale(1.03); }
@@ -435,6 +489,17 @@
       <input class="input" type="datetime-local" data-scheduled-at hidden>
     </div>
 
+    <div class="field">
+      <span class="field__label">스토리</span>
+      <button type="button" class="story-toggle" data-story-toggle aria-pressed="false">
+        <div class="story-toggle__body">
+          <div class="story-toggle__title">스토리에도 자동 업로드</div>
+          <div class="story-toggle__hint">켜면 피드 게시와 함께 24시간 스토리도 자동으로 올라가요</div>
+        </div>
+        <span class="story-toggle__switch" aria-hidden="true"></span>
+      </button>
+    </div>
+
     <button class="cta" type="button" data-submit disabled>📷 캡션 만들고 게시</button>
 
     <footer class="app-footer">
@@ -544,6 +609,17 @@
 
       let photos = [];
       let scheduleMode = 'immediate';
+      let storyEnabled = false;
+
+      // 스토리 자동 업로드 토글
+      const storyBtn = document.querySelector('[data-story-toggle]');
+      if (storyBtn) {
+        storyBtn.addEventListener('click', () => {
+          storyEnabled = !storyEnabled;
+          storyBtn.classList.toggle('is-on', storyEnabled);
+          storyBtn.setAttribute('aria-pressed', String(storyEnabled));
+        });
+      }
 
       function toast(msg, ms = 1800) {
         toastEl.textContent = msg;
@@ -902,6 +978,7 @@
           compressed.forEach((f, i) => fd.append('file' + i, f, f.name));
           fd.append('userMessage', msgEl.value || '');
           fd.append('postMode', scheduleMode);
+          fd.append('postToStory', String(storyEnabled));
           if (scheduleMode === 'scheduled' && scheduleAtEl.value) {
             const iso = new Date(scheduleAtEl.value).toISOString();
             fd.append('scheduledAt', iso);
