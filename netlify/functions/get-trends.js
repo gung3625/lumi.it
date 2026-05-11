@@ -341,13 +341,16 @@ async function mergeV2Fields(supa, keywords, category, collectedDate, axisFilter
 
     // trends row 의 keywords 가 너무 적은 카테고리(예: fitness=3) 보강 —
     // trend_keywords 에 있지만 응답에 없는 키워드를 weighted_score 순으로 append.
-    // axis 화이트리스트는 동일하게 적용. 슬롯 한도는 호출 측(trends.html slice 30)이 책임.
+    // axis 화이트리스트 + signal_tier='weak' 제외 — weak 는 cross_source_count<=1 추정의
+    // 노이즈성 신호라 사장님이 보는 추천 목록엔 부적합 (단, 기존 입력 keywords 의 메타
+    // 보강은 그대로 — 옛 응답 호환).
     const existing = new Set(merged.map(k => (k.keyword || '').toLowerCase().trim()));
     const extras = [];
     for (const row of data) {
       const key = (row.keyword || '').toLowerCase().trim();
       if (!key || existing.has(key)) continue;
       if (!axisAllowed(row.axis)) continue;
+      if (row.signal_tier === 'weak') continue;
       const fb = fbMap.get(row.keyword) || { likes: 0, dislikes: 0 };
       extras.push({
         keyword: row.keyword,
