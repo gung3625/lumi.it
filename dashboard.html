@@ -474,6 +474,21 @@
     @media (hover: hover) {
       .comments-card__link:hover .comments-card__post-thumb { opacity: 0.88; }
     }
+    .comments-card__more {
+      display: block;
+      margin-top: var(--space-3);
+      padding-top: var(--space-3);
+      border-top: 1px dashed var(--line);
+      text-align: center;
+      font-size: var(--text-caption);
+      color: var(--pink-600, #c8507a);
+      font-weight: var(--weight-semibold);
+      text-decoration: none;
+      transition: opacity 160ms var(--ease-toss);
+    }
+    @media (hover: hover) {
+      .comments-card__more:hover { opacity: 0.7; }
+    }
 
     /* 하단 탭바 — /css/tabbar.css 참조 */
 
@@ -580,18 +595,17 @@
     </a>
 
     <!-- 5. 새 댓글 -->
-    <a href="/comments" aria-label="새 댓글 전체" style="text-decoration:none;color:inherit;">
-      <section aria-labelledby="sec-comments">
-        <h2 class="section-title" id="sec-comments">새 댓글</h2>
-        <div class="comments-card">
-          <ul class="comments-card__list" role="list" data-comments>
-            <li class="comments-card__item comments-card__empty" data-comments-empty>
-              <span class="comments-card__text" style="color: var(--ink-muted);">댓글을 가져오는 중…</span>
-            </li>
-          </ul>
-        </div>
-      </section>
-    </a>
+    <section aria-labelledby="sec-comments">
+      <h2 class="section-title" id="sec-comments">새 댓글</h2>
+      <div class="comments-card">
+        <ul class="comments-card__list" role="list" data-comments>
+          <li class="comments-card__item comments-card__empty" data-comments-empty>
+            <span class="comments-card__text" style="color: var(--ink-muted);">댓글을 가져오는 중…</span>
+          </li>
+        </ul>
+        <a href="/comments" class="comments-card__more" data-comments-more hidden>↳ 답글 달기·전체 보기</a>
+      </div>
+    </section>
 
     <!-- 6. 푸터 — 로고 + 법적 링크 + 사업자 정보 -->
     <footer class="app-footer">
@@ -826,6 +840,9 @@
               : `<div class="comments-card__link">${inner}</div>`;
             return `<li class="comments-card__item">${link}</li>`;
           }).join('');
+          // 댓글이 있으면 위젯 끝에 "답글 달기·전체 보기" 링크 노출 (/comments 로 이동).
+          const moreEl = document.querySelector('[data-comments-more]');
+          if (moreEl) moreEl.hidden = false;
         } catch (e) {
           listEl.innerHTML = '<li class="comments-card__item comments-card__empty"><span class="comments-card__text" style="color: var(--ink-muted);">댓글을 가져오지 못했어요.</span></li>';
         }

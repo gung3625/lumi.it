@@ -79,12 +79,25 @@ async function getIgTokenForSeller(sellerId, supabase) {
 async function igGraphRequest(token, path, params = {}, opts = {}) {
   if (!token) throw new IgGraphError('access_token 누락', { status: 401, code: 190 });
   const safePath = path.startsWith('/') ? path : `/${path}`;
+  const method = (opts.method || 'GET').toUpperCase();
+
+  // GET 은 params 를 query string 으로. POST/DELETE 는 body 로 보내고 access_token 만 query.
   const qs = new URLSearchParams();
-  for (const [k, v] of Object.entries(params || {})) {
-    if (v === undefined || v === null) continue;
-    qs.set(k, String(v));
+  let bodyForm = null;
+  if (method === 'GET') {
+    for (const [k, v] of Object.entries(params || {})) {
+      if (v === undefined || v === null) continue;
+      qs.set(k, String(v));
+    }
+    qs.set('access_token', token);
+  } else {
+    bodyForm = new URLSearchParams();
+    for (const [k, v] of Object.entries(params || {})) {
+      if (v === undefined || v === null) continue;
+      bodyForm.set(k, String(v));
+    }
+    qs.set('access_token', token);
   }
-  qs.set('access_token', token);
   const url = `${GRAPH_BASE}${safePath}?${qs.toString()}`;
 
   const timeoutMs = opts.timeoutMs || 8000;
@@ -92,7 +105,12 @@ async function igGraphRequest(token, path, params = {}, opts = {}) {
   const tid = setTimeout(() => ctrl.abort(), timeoutMs);
   let res;
   try {
-    res = await fetch(url, { signal: ctrl.signal });
+    const fetchOpts = { signal: ctrl.signal, method };
+    if (bodyForm) {
+      fetchOpts.body = bodyForm;
+      fetchOpts.headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
+    }
+    res = await fetch(url, fetchOpts);
   } catch (e) {
     clearTimeout(tid);
     throw new IgGraphError(`fetch 실패: ${e.message || 'unknown'}`, { status: 0 });
