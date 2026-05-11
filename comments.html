@@ -210,9 +210,89 @@
       line-height: var(--leading-snug);
     }
     .comment__reply::before {
-      content: '↳ 자동 답장: ';
+      content: '↳ 내 답글: ';
       color: var(--pink-500);
       font-weight: var(--weight-semibold);
+    }
+
+    /* 답글 작성 컴포저 */
+    .comment__reply-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: var(--space-2);
+      padding: 4px 10px;
+      background: transparent;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-full);
+      font-size: var(--text-caption);
+      color: var(--ink-soft);
+      cursor: pointer;
+      transition: all 160ms var(--ease-toss);
+    }
+    @media (hover: hover) {
+      .comment__reply-toggle:hover {
+        border-color: var(--pink-200, #f7c5d3);
+        color: var(--pink-600, #c8507a);
+      }
+    }
+    .comment__reply-toggle:active { transform: scale(0.96); }
+    .comment__reply-form {
+      margin-top: var(--space-2);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .comment__reply-form[hidden] { display: none; }
+    .comment__reply-textarea {
+      width: 100%;
+      min-height: 64px;
+      max-height: 200px;
+      padding: var(--space-2) var(--space-3);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      font-size: var(--text-body);
+      font-family: inherit;
+      line-height: var(--leading-snug);
+      resize: vertical;
+      background: var(--bg-card, #fff);
+      color: var(--ink);
+    }
+    .comment__reply-textarea:focus {
+      outline: none;
+      border-color: var(--pink-400, #e8849c);
+    }
+    .comment__reply-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+    .comment__reply-btn {
+      padding: 6px 14px;
+      border-radius: var(--radius-full);
+      font-size: var(--text-caption);
+      font-weight: var(--weight-semibold);
+      cursor: pointer;
+      transition: all 160ms var(--ease-toss);
+    }
+    .comment__reply-btn--cancel {
+      background: transparent;
+      border: 1px solid var(--line);
+      color: var(--ink-muted);
+    }
+    .comment__reply-btn--send {
+      background: var(--pink-500);
+      border: 1px solid var(--pink-500);
+      color: var(--neutral-0, #fff);
+    }
+    .comment__reply-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .comment__reply-btn:not(:disabled):active { transform: scale(0.96); }
+    .comment__reply-error {
+      font-size: var(--text-caption);
+      color: var(--pink-600, #c8507a);
     }
 
     /* 하단 탭바 — /css/tabbar.css 참조 */
@@ -379,8 +459,20 @@
             const wrap = c.permalink
               ? (inner) => `<a href="${esc(c.permalink)}" target="_blank" rel="noopener noreferrer" class="comment__link">${inner}</a>`
               : (inner) => inner;
+            // 답글 컴포저: 이미 사장님이 답글 단 댓글은 컴포저 숨김 (1회만 답글 가능 정책).
+            const composer = !replyText && c.id ? `
+              <button type="button" class="comment__reply-toggle" data-reply-toggle="${esc(c.id)}">↳ 답글 달기</button>
+              <form class="comment__reply-form" data-reply-form="${esc(c.id)}" hidden>
+                <textarea class="comment__reply-textarea" maxlength="2200" placeholder="답글을 적어주세요" data-reply-text></textarea>
+                <div class="comment__reply-error" data-reply-error hidden></div>
+                <div class="comment__reply-actions">
+                  <button type="button" class="comment__reply-btn comment__reply-btn--cancel" data-reply-cancel>취소</button>
+                  <button type="submit" class="comment__reply-btn comment__reply-btn--send" data-reply-send>전송</button>
+                </div>
+              </form>
+            ` : '';
             return `
-              <li class="comment">
+              <li class="comment" data-comment-id="${esc(c.id || '')}">
                 ${wrap(`
                   <span class="comment__avatar">${esc(initial)}</span>
                   <div class="comment__body">
@@ -392,6 +484,7 @@
                   </div>
                   ${thumb}
                 `)}
+                ${composer}
               </li>
             `;
           }).join('');
@@ -400,6 +493,94 @@
           stateEl.textContent = '댓글을 가져오지 못했어요.';
         }
       }
+
+      // 답글 컴포저 동작 — 이벤트 위임으로 한 번만 바인딩.
+      // 토글: "↳ 답글 달기" → 폼 펼침. 취소: 폼 접고 비움. 전송: POST /api/reply-comment.
+      listEl.addEventListener('click', (e) => {
+        const toggle = e.target.closest('[data-reply-toggle]');
+        if (toggle) {
+          e.preventDefault();
+          const commentId = toggle.dataset.replyToggle;
+          const form = listEl.querySelector(`[data-reply-form="${CSS.escape(commentId)}"]`);
+          if (form) {
+            form.hidden = false;
+            toggle.style.display = 'none';
+            form.querySelector('[data-reply-text]')?.focus();
+          }
+          return;
+        }
+        const cancel = e.target.closest('[data-reply-cancel]');
+        if (cancel) {
+          e.preventDefault();
+          const form = cancel.closest('[data-reply-form]');
+          if (form) {
+            form.hidden = true;
+            form.querySelector('[data-reply-text]').value = '';
+            const errEl = form.querySelector('[data-reply-error]');
+            errEl.hidden = true;
+            errEl.textContent = '';
+            // 토글 버튼 복원
+            const commentId = form.dataset.replyForm;
+            const toggle = listEl.querySelector(`[data-reply-toggle="${CSS.escape(commentId)}"]`);
+            if (toggle) toggle.style.display = '';
+          }
+        }
+      });
+
+      listEl.addEventListener('submit', async (e) => {
+        const form = e.target.closest('[data-reply-form]');
+        if (!form) return;
+        e.preventDefault();
+        const commentId = form.dataset.replyForm;
+        const textEl = form.querySelector('[data-reply-text]');
+        const sendBtn = form.querySelector('[data-reply-send]');
+        const errEl = form.querySelector('[data-reply-error]');
+        const message = (textEl.value || '').trim();
+        if (!message) {
+          errEl.textContent = '답글 내용을 입력해주세요.';
+          errEl.hidden = false;
+          return;
+        }
+        sendBtn.disabled = true;
+        sendBtn.textContent = '전송 중…';
+        errEl.hidden = true;
+        errEl.textContent = '';
+        try {
+          const res = await fetch('/api/reply-comment', {
+            method: 'POST',
+            headers: { ...authHeaders, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ commentId, message }),
+          });
+          const json = await res.json().catch(() => ({}));
+          if (!res.ok || !json.ok) {
+            if (json.tokenExpired) {
+              errEl.textContent = 'IG 토큰이 만료됐어요. 설정에서 재연동해주세요.';
+            } else {
+              errEl.textContent = json.error || '답글 전송 실패';
+            }
+            errEl.hidden = false;
+            return;
+          }
+          // 성공 — 답글을 즉시 화면에 반영 (낙관적 업데이트) 후 다음 load 시 fresh.
+          const li = form.closest('.comment');
+          const body = li?.querySelector('.comment__body');
+          if (body && !body.querySelector('.comment__reply')) {
+            const replyDiv = document.createElement('div');
+            replyDiv.className = 'comment__reply';
+            replyDiv.textContent = message;
+            body.appendChild(replyDiv);
+          }
+          form.remove();
+          const toggle = li?.querySelector('[data-reply-toggle]');
+          if (toggle) toggle.remove();
+        } catch (err) {
+          errEl.textContent = '네트워크 오류 — 다시 시도해주세요.';
+          errEl.hidden = false;
+        } finally {
+          sendBtn.disabled = false;
+          sendBtn.textContent = '전송';
+        }
+      });
 
       load();
     })();
