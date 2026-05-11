@@ -66,6 +66,34 @@
     }
     .section-title:first-child { margin-top: 0; }
 
+    /* 탭 — 예약 목록 / 히스토리 */
+    .history-tabs {
+      display: flex;
+      gap: var(--space-1, 4px);
+      border-bottom: 1px solid var(--line);
+      margin-bottom: var(--space-4);
+    }
+    .history-tab {
+      flex: 1;
+      padding: var(--space-3) var(--space-2);
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      font-size: var(--text-body);
+      font-weight: var(--weight-semibold);
+      color: var(--ink-muted);
+      cursor: pointer;
+      transition: color 160ms var(--ease-toss), border-color 160ms var(--ease-toss);
+      margin-bottom: -1px;
+    }
+    .history-tab.is-active {
+      color: var(--pink-600, #c8507a);
+      border-bottom-color: var(--pink-500);
+    }
+    @media (hover: hover) {
+      .history-tab:hover:not(.is-active) { color: var(--ink); }
+    }
+
     .res-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
     .res {
       position: relative;
@@ -416,13 +444,16 @@
   <main class="wrap" role="main">
     <div class="state" data-state>히스토리를 불러오는 중…</div>
 
-    <section data-upcoming hidden>
-      <h2 class="section-title">다가올 예약</h2>
+    <div class="history-tabs" data-tabs hidden role="tablist">
+      <button type="button" class="history-tab is-active" data-tab="upcoming" role="tab">예약 목록</button>
+      <button type="button" class="history-tab" data-tab="past" role="tab">히스토리</button>
+    </div>
+
+    <section data-pane="upcoming" hidden>
       <ul class="res-list" data-upcoming-list></ul>
     </section>
 
-    <section data-past hidden>
-      <h2 class="section-title">지난 게시</h2>
+    <section data-pane="past" hidden>
       <ul class="res-list" data-past-list></ul>
     </section>
 
@@ -499,11 +530,44 @@
       const authHeaders = { Authorization: 'Bearer ' + token };
 
       const stateEl = document.querySelector('[data-state]');
-      const upcomingSec = document.querySelector('[data-upcoming]');
-      const pastSec = document.querySelector('[data-past]');
+      const tabsEl = document.querySelector('[data-tabs]');
+      const upcomingSec = document.querySelector('[data-pane="upcoming"]');
+      const pastSec = document.querySelector('[data-pane="past"]');
       const upcomingList = document.querySelector('[data-upcoming-list]');
       const pastList = document.querySelector('[data-past-list]');
       const emptyEl = document.querySelector('[data-empty]');
+
+      // ── 탭 동작 ──
+      // URL ?tab=upcoming|past 로 디폴트 탭 결정. 미지정 시 upcoming (예약 목록).
+      function getInitialTab() {
+        try {
+          const t = new URLSearchParams(location.search).get('tab');
+          if (t === 'past' || t === 'upcoming') return t;
+        } catch {}
+        return 'upcoming';
+      }
+      let activeTab = getInitialTab();
+      function applyTab() {
+        document.querySelectorAll('[data-tab]').forEach(b => {
+          b.classList.toggle('is-active', b.dataset.tab === activeTab);
+        });
+        if (upcomingSec) upcomingSec.hidden = activeTab !== 'upcoming';
+        if (pastSec) pastSec.hidden = activeTab !== 'past';
+        // 각 탭의 빈 placeholder 는 list 안에 inline 으로 들어감 (load() 에서). 외곽 emptyEl 은
+        // "예약/게시 모두 0" 인 전체 빈 상태에만 노출됨 (load() 에서 처리).
+      }
+      document.querySelectorAll('[data-tab]').forEach(b => {
+        b.addEventListener('click', () => {
+          activeTab = b.dataset.tab;
+          // URL 동기화 (뒤로가기 안전)
+          try {
+            const url = new URL(location.href);
+            url.searchParams.set('tab', activeTab);
+            history.replaceState(null, '', url);
+          } catch {}
+          applyTab();
+        });
+      });
 
       function fmtTime(iso) {
         if (!iso) return '—';
@@ -636,14 +700,16 @@
           upcoming.sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at));
           past.sort((a, b) => new Date(b.scheduled_at || b.submitted_at) - new Date(a.scheduled_at || a.submitted_at));
 
-          if (upcoming.length) {
-            upcomingList.innerHTML = upcoming.map(renderItem).join('');
-            upcomingSec.hidden = false;
-          }
-          if (past.length) {
-            pastList.innerHTML = past.slice(0, 30).map(renderItem).join('');
-            pastSec.hidden = false;
-          }
+          // 두 리스트 모두 렌더 — 탭 전환 시 즉시 반영. 빈 리스트면 빈 placeholder.
+          upcomingList.innerHTML = upcoming.length
+            ? upcoming.map(renderItem).join('')
+            : '<li class="empty"><div class="empty__title">예약된 게시가 없어요</div><div class="empty__sub">새 사진을 올려서 예약을 만들어보세요.</div></li>';
+          pastList.innerHTML = past.length
+            ? past.slice(0, 30).map(renderItem).join('')
+            : '<li class="empty"><div class="empty__title">아직 게시 이력이 없어요</div><div class="empty__sub">첫 게시가 올라가면 여기에 쌓여요.</div></li>';
+          // 탭 표시 + 활성 탭에 따라 섹션 한 쪽만 노출
+          if (tabsEl) tabsEl.hidden = false;
+          applyTab();
 
           // 캡션 평가 — 2단계: 등급 선택 → 코멘트 입력(선택) → 저장
           document.querySelectorAll('[data-rate-block]').forEach(block => {
