@@ -115,7 +115,7 @@ const CATEGORY_LABELS = {
   nail: '네일',
   flower: '꽃집·플라워',
   fashion: '패션·의류',
-  fitness: '헬스·필라테스',
+  fitness: '운동·레저',
   health: '건강·헬스',
   pet: '반려동물·펫',
   kids: '키즈',
