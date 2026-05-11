@@ -455,6 +455,25 @@
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
     }
+    .comments-card__post-thumb {
+      flex: 0 0 40px;
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-md);
+      object-fit: cover;
+      background: var(--neutral-200);
+    }
+    .comments-card__link {
+      display: flex;
+      gap: var(--space-3);
+      width: 100%;
+      align-items: center;
+      text-decoration: none;
+      color: inherit;
+    }
+    @media (hover: hover) {
+      .comments-card__link:hover .comments-card__post-thumb { opacity: 0.88; }
+    }
 
     /* 하단 탭바 — /css/tabbar.css 참조 */
 
@@ -782,19 +801,30 @@
             listEl.innerHTML = `<li class="comments-card__item comments-card__empty"><span class="comments-card__text" style="color: var(--ink-muted);">${msg}</span></li>`;
             return;
           }
+          // 외부 IG 입력 → escape 필수.
+          const esc = (s) => String(s == null ? '' : s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
           listEl.innerHTML = items.slice(0, 3).map(c => {
             const u = (c.username || c.from || '익명').slice(0, 24);
             const initial = (u[0] || '·').toUpperCase();
             const text = (c.text || '').slice(0, 60);
-            return `
-              <li class="comments-card__item">
-                <span class="comments-card__avatar">${initial}</span>
-                <div class="comments-card__body">
-                  <div class="comments-card__user">${u}</div>
-                  <div class="comments-card__text">${text}</div>
-                </div>
-              </li>
+            const thumb = c.post_thumb
+              ? `<img class="comments-card__post-thumb" src="${esc(c.post_thumb)}" alt="댓글 달린 게시물" loading="lazy">`
+              : '';
+            const inner = `
+              <span class="comments-card__avatar">${esc(initial)}</span>
+              <div class="comments-card__body">
+                <div class="comments-card__user">${esc(u)}</div>
+                <div class="comments-card__text">${esc(text)}</div>
+              </div>
+              ${thumb}
             `;
+            // permalink 있으면 IG 게시물 새 탭으로 열기. 없으면 그냥 div.
+            const link = c.permalink
+              ? `<a href="${esc(c.permalink)}" target="_blank" rel="noopener noreferrer" class="comments-card__link">${inner}</a>`
+              : `<div class="comments-card__link">${inner}</div>`;
+            return `<li class="comments-card__item">${link}</li>`;
           }).join('');
         } catch (e) {
           listEl.innerHTML = '<li class="comments-card__item comments-card__empty"><span class="comments-card__text" style="color: var(--ink-muted);">댓글을 가져오지 못했어요.</span></li>';

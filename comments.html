@@ -160,6 +160,28 @@
       font-weight: var(--weight-bold);
     }
     .comment__body { flex: 1; min-width: 0; }
+    .comment__post-thumb {
+      flex: 0 0 48px;
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-md);
+      object-fit: cover;
+      background: var(--neutral-200);
+      align-self: center;
+    }
+    .comment__post-caption {
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+      margin-top: 4px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .comment__link {
+      display: contents;
+      color: inherit;
+      text-decoration: none;
+    }
     .comment__user {
       font-size: var(--text-body);
       font-weight: var(--weight-semibold);
@@ -346,15 +368,30 @@
             const time = fmtTime(c.timestamp || c.created_at);
             const replyText = (c.reply_text || '').slice(0, 240);
             const reply = replyText ? `<div class="comment__reply">${esc(replyText)}</div>` : '';
+            const postCaption = (c.post_caption || '').slice(0, 40);
+            const captionLine = postCaption
+              ? `<div class="comment__post-caption">📷 ${esc(postCaption)}…</div>`
+              : '';
+            const thumb = c.post_thumb
+              ? `<img class="comment__post-thumb" src="${esc(c.post_thumb)}" alt="댓글 달린 게시물" loading="lazy">`
+              : '';
+            // permalink 있으면 IG 게시물 새 탭으로 열기. display:contents 로 레이아웃 유지.
+            const wrap = c.permalink
+              ? (inner) => `<a href="${esc(c.permalink)}" target="_blank" rel="noopener noreferrer" class="comment__link">${inner}</a>`
+              : (inner) => inner;
             return `
               <li class="comment">
-                <span class="comment__avatar">${esc(initial)}</span>
-                <div class="comment__body">
-                  <span class="comment__user">${esc(u)}</span>
-                  <span class="comment__time">${esc(time)}</span>
-                  <div class="comment__text">${esc(text)}</div>
-                  ${reply}
-                </div>
+                ${wrap(`
+                  <span class="comment__avatar">${esc(initial)}</span>
+                  <div class="comment__body">
+                    <span class="comment__user">${esc(u)}</span>
+                    <span class="comment__time">${esc(time)}</span>
+                    <div class="comment__text">${esc(text)}</div>
+                    ${reply}
+                    ${captionLine}
+                  </div>
+                  ${thumb}
+                `)}
               </li>
             `;
           }).join('');
