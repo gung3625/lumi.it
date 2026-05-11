@@ -391,6 +391,17 @@
     .besttime-slot.is-now .besttime-slot__time {
       color: var(--pink-600, #c8507a);
     }
+    .besttime-slot__badge {
+      margin-left: auto;
+      font-size: var(--text-tiny, 11px);
+      color: var(--pink-600, #c8507a);
+      background: var(--pink-50, #ffeef3);
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-weight: var(--weight-semibold);
+      letter-spacing: -0.01em;
+      flex-shrink: 0;
+    }
 
     /* 새 댓글 카드 */
     .comments-card {
@@ -813,28 +824,42 @@
           const subEl = document.querySelector('[data-besttime-sub]');
 
           if (Array.isArray(slots) && slots.length) {
-            // 현재 시각 이후 가장 가까운 슬롯 인덱스 — 없으면 첫 번째.
+            // 현재 시각 + 30분 이후 가장 가까운 슬롯 = "다음 임박" 강조 대상.
+            // 30분 마진 = 사진 찍고 캡션 생성·게시까지 걸리는 시간 여유.
+            // 오늘 슬롯이 모두 지났으면(nowIdx = -1) 강조 없음 — "내일" 안내.
             const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
             const slotMins = slots.map(s => {
               const [hh, mm] = String(s.time || '0:0').split(':').map(Number);
               return hh * 60 + mm;
             });
-            let nowIdx = slotMins.findIndex(m => m > nowMin + 30);
-            if (nowIdx === -1) nowIdx = 0;
+            const nowIdx = slotMins.findIndex(m => m > nowMin + 30);
+            const allPassed = nowIdx === -1;
 
             const esc = (s) => String(s == null ? '' : s)
               .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
               .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-            slotsEl.innerHTML = slots.map((s, i) => `
-              <div class="besttime-slot${i === nowIdx ? ' is-now' : ''}">
-                <span class="besttime-slot__time">${esc(s.time || '—')}</span>
-                <span class="besttime-slot__reason">${esc(s.reason || '')}</span>
-              </div>
-            `).join('');
+            slotsEl.innerHTML = slots.map((s, i) => {
+              const isNow = i === nowIdx;
+              const badge = isNow ? '<span class="besttime-slot__badge">다음 임박</span>' : '';
+              return `
+                <div class="besttime-slot${isNow ? ' is-now' : ''}">
+                  <span class="besttime-slot__time">${esc(s.time || '—')}</span>
+                  <span class="besttime-slot__reason">${esc(s.reason || '')}</span>
+                  ${badge}
+                </div>
+              `;
+            }).join('');
             slotsEl.hidden = false;
-            // 기존 단일 title/sub 는 숨김 (슬롯 리스트가 대체)
+            // 기존 단일 title/sub 는 숨김 — 단, 오늘 슬롯 다 지났으면 sub 에 안내 한 줄.
             if (titleEl) titleEl.hidden = true;
-            if (subEl) subEl.hidden = true;
+            if (subEl) {
+              if (allPassed) {
+                subEl.textContent = '오늘 추천 시간은 모두 지났어요. 내일 다시 알려드릴게요.';
+                subEl.hidden = false;
+              } else {
+                subEl.hidden = true;
+              }
+            }
           } else {
             // 폴백: 옛 단일 bestTime 표시 유지
             const bt = json && (json.bestTime || json.label);
