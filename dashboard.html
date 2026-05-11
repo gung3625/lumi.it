@@ -364,6 +364,33 @@
       color: var(--ink-muted);
       margin-top: 2px;
     }
+    /* 오늘의 베스트 시간 슬롯 리스트 (3개) */
+    .besttime-slots {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .besttime-slot {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      font-size: var(--text-body);
+      color: var(--ink);
+    }
+    .besttime-slot__time {
+      font-weight: var(--weight-bold);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.01em;
+      flex-shrink: 0;
+      min-width: 48px;
+    }
+    .besttime-slot__reason {
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+    }
+    .besttime-slot.is-now .besttime-slot__time {
+      color: var(--pink-600, #c8507a);
+    }
 
     /* 새 댓글 카드 */
     .comments-card {
@@ -516,6 +543,7 @@
           <div class="besttime-card__body">
             <div class="besttime-card__title" data-besttime>데이터 모으는 중이에요</div>
             <div class="besttime-card__sub" data-besttime-sub>게시가 쌓이면 가장 반응 좋은 시간을 알려드려요</div>
+            <div class="besttime-slots" data-besttime-slots hidden></div>
           </div>
         </div>
       </section>
@@ -763,6 +791,9 @@
       }
 
       // 베스트 시간 (get-best-time)
+      // 응답: { bestTime, reason, tip, allSlots, weekday[], weekend[], source }
+      // 오늘이 평일이면 weekday, 주말이면 weekend 슬롯 전체를 렌더. 현재 시각 이후
+      // 가장 가까운 슬롯에 is-now 강조.
       async function loadBestTime() {
         try {
           const res = await fetch('/api/get-best-time', {
@@ -772,12 +803,45 @@
           });
           if (!res.ok) return;
           const json = await res.json();
-          // /api/get-best-time 응답: { bestTime, reason, tip, allSlots, source }
-          // (옛 'label' 필드는 없음 — bestTime 사용)
-          const bt = json && (json.bestTime || json.label);
-          if (bt) {
-            setText('[data-besttime]', bt + '에 올리면 좋아요');
-            if (json.reason) setText('[data-besttime-sub]', json.reason);
+          const day = new Date().getDay();
+          const isWeekend = day === 0 || day === 6;
+          const slots = (isWeekend ? json.weekend : json.weekday)
+            || json.allSlots
+            || [];
+          const slotsEl = document.querySelector('[data-besttime-slots]');
+          const titleEl = document.querySelector('[data-besttime]');
+          const subEl = document.querySelector('[data-besttime-sub]');
+
+          if (Array.isArray(slots) && slots.length) {
+            // 현재 시각 이후 가장 가까운 슬롯 인덱스 — 없으면 첫 번째.
+            const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+            const slotMins = slots.map(s => {
+              const [hh, mm] = String(s.time || '0:0').split(':').map(Number);
+              return hh * 60 + mm;
+            });
+            let nowIdx = slotMins.findIndex(m => m > nowMin + 30);
+            if (nowIdx === -1) nowIdx = 0;
+
+            const esc = (s) => String(s == null ? '' : s)
+              .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+            slotsEl.innerHTML = slots.map((s, i) => `
+              <div class="besttime-slot${i === nowIdx ? ' is-now' : ''}">
+                <span class="besttime-slot__time">${esc(s.time || '—')}</span>
+                <span class="besttime-slot__reason">${esc(s.reason || '')}</span>
+              </div>
+            `).join('');
+            slotsEl.hidden = false;
+            // 기존 단일 title/sub 는 숨김 (슬롯 리스트가 대체)
+            if (titleEl) titleEl.hidden = true;
+            if (subEl) subEl.hidden = true;
+          } else {
+            // 폴백: 옛 단일 bestTime 표시 유지
+            const bt = json && (json.bestTime || json.label);
+            if (bt) {
+              setText('[data-besttime]', bt + '에 올리면 좋아요');
+              if (json.reason) setText('[data-besttime-sub]', json.reason);
+            }
           }
         } catch {}
       }
