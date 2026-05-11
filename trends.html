@@ -204,6 +204,19 @@
         transform var(--duration-snap) var(--ease-toss),
         border-color var(--duration-snap) var(--ease-toss);
       text-align: left;
+      flex-wrap: wrap;  /* 활용 팁 미리보기 가 다음 줄에 들어가도록 */
+    }
+    .kw-item__hint {
+      flex: 1 1 100%;
+      margin-top: 6px;
+      padding-left: 32px;  /* rank width(24) + gap(8) ~ */
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+      line-height: var(--leading-snug);
+      font-weight: var(--weight-regular);
+    }
+    .kw-item__hint::before {
+      content: '💡 ';
     }
     .kw-item:active { transform: scale(0.98); }
     .kw-item:hover { background: var(--pink-50); border-color: var(--pink-300); }
@@ -727,6 +740,37 @@
               openSheet(item);
             });
           });
+
+          // 가장 hot 한 top 2 키워드의 활용 팁 첫 줄을 카드 아래에 inline 미리보기.
+          // keyword-detail API 가 server-side 30일 cache 라 비용 거의 0.
+          // 사장님이 "이 키워드 어떻게 써먹지" 즉시 감 잡도록.
+          (async () => {
+            const topHot = lastItems
+              .map((item, idx) => ({ item, idx }))
+              .filter(({ item }) => (typeof item.velocityPct === 'number' && item.velocityPct >= 50) || item.isNew)
+              .sort((a, b) => (b.item.velocityPct || 0) - (a.item.velocityPct || 0))
+              .slice(0, 2);
+            const escHint = (s) => String(s == null ? '' : s)
+              .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+            await Promise.all(topHot.map(async ({ item, idx }) => {
+              try {
+                const url = `/api/keyword-detail?keyword=${encodeURIComponent(item.keyword)}&category=${encodeURIComponent(currentCategory)}`;
+                const r = await fetch(url);
+                if (!r.ok) return;
+                const j = await r.json();
+                const ideas = j && j.data && Array.isArray(j.data.ideas) ? j.data.ideas : [];
+                const first = (ideas[0] || '').trim().slice(0, 60);
+                if (!first) return;
+                const btn = listEl.querySelectorAll('.kw-item')[idx];
+                if (!btn) return;
+                const hint = document.createElement('div');
+                hint.className = 'kw-item__hint';
+                hint.innerHTML = escHint(first);
+                btn.appendChild(hint);
+              } catch {}
+            }));
+          })();
 
           // ?q=KEYWORD 자동 펼치기 — lastItems 에서 일치 검색, 없으면 minimal
           const params = new URLSearchParams(location.search);
