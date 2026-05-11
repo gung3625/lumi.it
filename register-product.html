@@ -742,17 +742,17 @@
         };
       }
 
-      // 사용자가 과거를 골라도 즉시 min 으로 끌어올리고, max 초과는 max 로 자른다.
+      // 사용자가 과거/한달 초과를 골랐을 때 토스트로 안내. 값은 그대로 두어
+      // submit 시 명확히 차단 (이전엔 자동으로 min/max 로 클램프하면서 동시에
+      // 토스트만 띄워서 "안 된다" 라고 했는데 사실 진행되는 모순이 있었음).
       function clampScheduleValue() {
         if (!scheduleAtEl.value) return;
         const picked = new Date(scheduleAtEl.value).getTime();
         const { min, max } = getScheduleBounds();
         if (picked < min.getTime()) {
-          scheduleAtEl.value = toLocalDtIso(min);
-          toast('과거 시간은 예약할 수 없어요');
+          toast('과거 시간은 예약할 수 없어요. 다른 시간을 선택해주세요.');
         } else if (picked > max.getTime()) {
-          scheduleAtEl.value = toLocalDtIso(max);
-          toast('한 달 이내까지만 예약할 수 있어요');
+          toast('한 달 이내까지만 예약할 수 있어요. 다른 시간을 선택해주세요.');
         }
       }
       scheduleAtEl.addEventListener('input', clampScheduleValue);
