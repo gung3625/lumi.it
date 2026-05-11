@@ -217,6 +217,25 @@
       color: var(--ink-soft);
       line-height: var(--leading-snug);
     }
+    .time-card__badge {
+      margin-left: auto;
+      font-size: 12px;
+      color: var(--pink-600, #c8507a);
+      background: var(--pink-100, #ffeef3);
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-weight: var(--weight-semibold);
+      letter-spacing: -0.01em;
+      flex-shrink: 0;
+    }
+    .bt-note {
+      margin: 0 0 var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      background: var(--bg-soft);
+      border-radius: var(--radius-md);
+      color: var(--ink-muted);
+      font-size: var(--text-caption);
+    }
 
     .state { padding: var(--space-12); text-align: center; color: var(--ink-muted); }
     .empty { padding: var(--space-12) var(--space-5); text-align: center; color: var(--ink-muted); }
@@ -410,12 +429,38 @@
           listEl.innerHTML = '<div class="empty"><div class="empty__title">데이터가 부족해요</div><div class="empty__sub">게시물이 좀 더 쌓이면 정확해집니다.</div></div>';
           return;
         }
-        listEl.innerHTML = items.map((it, i) => `
-          <div class="time-card${i === 0 ? ' is-best' : ''}">
-            <div class="time-card__hour">${it.time || '—'}</div>
-            <div class="time-card__reason">${it.reason || ''}</div>
-          </div>
-        `).join('');
+        // 현재 시각 + 30분 이후 가장 가까운 슬롯에 "다음 임박" 강조.
+        // 단 현재 탭이 오늘 요일과 일치할 때만 (평일 탭 + 오늘 평일, 주말 탭 + 오늘 주말).
+        // 그 외엔 강조 없음 — 다른 요일 참고용으로만 보임.
+        const today = new Date().getDay();
+        const todayIsWeekend = today === 0 || today === 6;
+        const tabMatchesToday = (currentDay === 'weekday' && !todayIsWeekend) || (currentDay === 'weekend' && todayIsWeekend);
+        let nowIdx = -1;
+        if (tabMatchesToday) {
+          const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+          const slotMins = items.map(it => {
+            const [hh, mm] = String(it.time || '0:0').split(':').map(Number);
+            return hh * 60 + mm;
+          });
+          nowIdx = slotMins.findIndex(m => m > nowMin + 30);
+        }
+        const note = (tabMatchesToday && nowIdx === -1)
+          ? '<div class="bt-note">오늘 추천 시간은 모두 지났어요. 내일 다시 알려드릴게요.</div>'
+          : '';
+        const esc = (s) => String(s == null ? '' : s)
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        listEl.innerHTML = note + items.map((it, i) => {
+          const isNow = i === nowIdx;
+          const badge = isNow ? '<span class="time-card__badge">다음 임박</span>' : '';
+          return `
+            <div class="time-card${isNow ? ' is-best' : ''}">
+              <div class="time-card__hour">${esc(it.time || '—')}</div>
+              <div class="time-card__reason">${esc(it.reason || '')}</div>
+              ${badge}
+            </div>
+          `;
+        }).join('');
       }
       document.querySelectorAll('[data-day]').forEach(b => {
         b.addEventListener('click', () => {
