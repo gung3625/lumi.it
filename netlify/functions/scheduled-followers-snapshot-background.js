@@ -32,7 +32,8 @@ async function fetchOnlineFollowers(igUserId, accessToken) {
     const data = await res.json();
     if (data.error) {
       console.warn('[followers-snapshot] Graph 오류:', { code: data.error.code, msg: data.error.message });
-      return null;
+      // 호출 측이 토큰 무효 감지 가능하도록 에러 코드 전파.
+      return { _error: { code: data.error.code, message: data.error.message, status: res.status } };
     }
     if (!data.data || !data.data[0]?.values) return null;
     return data.data[0].values;   // 7일치 row 배열
@@ -122,7 +123,32 @@ exports.handler = async () => {
     const ig = await getIgTokenForSeller(s.id, supabase);
     if (!ig) { noToken++; continue; }
 
+    // 이미 토큰 무효 표시된 사장님 skip — Meta rate limit 낭비 방지.
+    try {
+      const { data: igRow } = await supabase
+        .from('ig_accounts')
+        .select('token_invalid_at')
+        .eq('user_id', s.id)
+        .maybeSingle();
+      if (igRow && igRow.token_invalid_at) { noToken++; continue; }
+    } catch (_) { /* check 실패해도 진행 */ }
+
     const values = await fetchOnlineFollowers(ig.igUserId, ig.accessToken);
+    // 토큰 무효 응답 — 기록 후 다음 사장님
+    if (values && values._error) {
+      const err = values._error;
+      if (err.code === 190 || err.status === 401) {
+        try {
+          await supabase
+            .from('ig_accounts')
+            .update({ token_invalid_at: new Date().toISOString() })
+            .eq('user_id', s.id);
+          console.warn('[followers-snapshot] 토큰 무효 표시:', s.id.slice(0, 8));
+        } catch (_) { /* noop */ }
+      }
+      noFollowers++;
+      continue;
+    }
     if (!values || values.length === 0) {
       // Meta 가 빈 응답 — 팔로워 100명 미만 또는 메트릭 미지원
       noFollowers++;

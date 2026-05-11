@@ -75,6 +75,25 @@ exports.handler = async () => {
       continue;
     }
 
+    // 토큰 무효 표시된 사장님은 skip — Meta 호출 낭비 방지.
+    try {
+      const { data: igRow } = await supabase
+        .from('ig_accounts')
+        .select('token_invalid_at')
+        .eq('user_id', userId)
+        .maybeSingle();
+      if (igRow && igRow.token_invalid_at) {
+        const ids = medias.map((m) => m.ig_media_id);
+        await supabase
+          .from('seller_post_history')
+          .update({ insights_fetched_at: new Date().toISOString() })
+          .eq('user_id', userId)
+          .in('ig_media_id', ids);
+        skippedNoToken += medias.length;
+        continue;
+      }
+    } catch (_) { /* check 실패해도 계속 진행 */ }
+
     for (const m of medias) {
       let valMap = {};
       try {
@@ -94,6 +113,17 @@ exports.handler = async () => {
         // 일별 cron 이라 일시 실패 데이터는 잃지만 ≥5건 임계 안에서 노이즈로 흡수.
         if (e instanceof IgGraphError) {
           console.warn('[post-insights] Graph 실패:', { media: m.ig_media_id, status: e.status, code: e.code });
+          // 토큰 무효(code 190 또는 401) 감지 시 ig_accounts.token_invalid_at 기록.
+          // 이후 같은 cron 실행에서 이 사장님의 남은 row 는 위 무효 체크로 skip 됨.
+          if (e.code === 190 || e.status === 401) {
+            try {
+              await supabase
+                .from('ig_accounts')
+                .update({ token_invalid_at: new Date().toISOString() })
+                .eq('user_id', userId);
+              console.warn('[post-insights] 토큰 무효 표시:', userId.slice(0, 8));
+            } catch (_) { /* noop */ }
+          }
         } else {
           console.warn('[post-insights] 예외:', m.ig_media_id, e && e.message);
         }

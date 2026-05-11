@@ -243,6 +243,7 @@ exports.handler = async (event) => {
         updated_at: nowIso,
         access_token_secret_id: accessSecretId,
         page_access_token_secret_id: pageSecretId,
+        token_invalid_at: null,    // 재연동 = 토큰 무효 플래그 복구
       }, { onConflict: 'ig_user_id' });
 
     if (upsertErr) {

@@ -85,6 +85,16 @@ exports.handler = async (event) => {
   } catch (e) {
     if (e instanceof IgGraphError) {
       console.error('[ig-backfill] Graph 오류:', { status: e.status, code: e.code, message: e.message });
+      // 토큰 무효(code 190 또는 401) 즉시 기록 — 사장님 첫 연동 직후 토큰 실패는 드물지만 안전망.
+      if (e.code === 190 || e.status === 401) {
+        try {
+          await supabase
+            .from('ig_accounts')
+            .update({ token_invalid_at: new Date().toISOString() })
+            .eq('user_id', userId);
+          console.warn('[ig-backfill] 토큰 무효 표시:', userId.slice(0, 8));
+        } catch (_) { /* noop */ }
+      }
     } else {
       console.error('[ig-backfill] 페이지네이션 예외:', e && e.message);
     }
