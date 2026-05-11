@@ -327,6 +327,40 @@
       .scheduled-empty:hover .scheduled-empty__chev { transform: translateX(2px); color: var(--pink-500); }
     }
 
+    /* 오늘 날씨 카드 */
+    .weather-card {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      background: var(--bg-soft);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      animation: rise 500ms var(--ease-toss) backwards;
+    }
+    .weather-card__emoji {
+      font-size: 28px;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    .weather-card__body { flex: 1; min-width: 0; }
+    .weather-card__line {
+      font-size: var(--text-body);
+      font-weight: var(--weight-semibold);
+      color: var(--ink);
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .weather-card__dot { color: var(--ink-muted); }
+    .weather-card__status { color: var(--ink-soft); }
+    .weather-card__mood {
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+      margin-top: 2px;
+    }
+
     /* 베스트 시간 카드 */
     .besttime-card {
       display: flex;
@@ -522,6 +556,23 @@
 
   <!-- 메인 피드 -->
   <main class="feed" role="main" data-feed>
+
+    <!-- 0. 오늘 날씨 -->
+    <section aria-labelledby="sec-weather">
+      <h2 class="section-title" id="sec-weather" style="position:absolute;left:-9999px;">오늘 날씨</h2>
+      <div class="weather-card" data-weather-card hidden>
+        <span class="weather-card__emoji" data-weather-emoji>🌤️</span>
+        <div class="weather-card__body">
+          <div class="weather-card__line">
+            <span class="weather-card__region" data-weather-region></span>
+            <span class="weather-card__dot">·</span>
+            <span class="weather-card__temp" data-weather-temp></span>
+            <span class="weather-card__status" data-weather-status></span>
+          </div>
+          <div class="weather-card__mood" data-weather-mood></div>
+        </div>
+      </div>
+    </section>
 
     <!-- 1. 이번 주 통계 -->
     <a href="/insights" aria-label="이번 주 인사이트" style="text-decoration:none;color:inherit;">
@@ -932,6 +983,25 @@
       }
 
       // loadMe 가 userCategory 를 정한 뒤에 카테고리 의존 호출들이 시작되도록 순서 보장.
+      // 오늘 날씨 (get-weather) — region 기반. region 없으면 카드 안 보임.
+      async function loadWeather() {
+        const cardEl = document.querySelector('[data-weather-card]');
+        if (!cardEl) return;
+        try {
+          const res = await fetch('/api/get-weather', { headers: authHeaders });
+          if (!res.ok) return;
+          const j = await res.json();
+          if (!j || !j.ok || j.noRegion || j.error) return;
+          const setT = (sel, text) => { const el = cardEl.querySelector(sel); if (el) el.textContent = text || ''; };
+          setT('[data-weather-emoji]', j.emoji || '🌤️');
+          setT('[data-weather-region]', j.shortName || '');
+          setT('[data-weather-temp]', (j.temperature != null ? j.temperature + '°' : ''));
+          setT('[data-weather-status]', j.status || '');
+          setT('[data-weather-mood]', j.mood || '');
+          cardEl.hidden = false;
+        } catch {}
+      }
+
       // 카테고리 무관 호출(loadStats/loadScheduled/loadComments)은 병렬.
       (async () => {
         await loadMe();
@@ -940,6 +1010,7 @@
         loadComments();
         loadTrends();
         loadBestTime();
+        loadWeather();
       })();
     })();
   </script>
