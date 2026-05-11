@@ -262,6 +262,24 @@ exports.handler = async (event) => {
 
     // 토큰/secret_id는 절대 로그에 남기지 않음. ig_user_id만.
     console.log('[ig-oauth] Instagram 연동 완료. ig_user_id:', igUserId);
+
+    // 10) 베스트 시간 개인화용 게시 이력 백필 — fire-and-forget.
+    //     실패해도 IG 연동 자체는 성공이라 redirect 막지 않음.
+    try {
+      const siteUrl = process.env.URL || process.env.DEPLOY_PRIME_URL || 'https://lumi.it.kr';
+      // 응답 안 기다림 (await X) — Background 함수가 비동기로 처리.
+      fetch(`${siteUrl}/.netlify/functions/ig-backfill-history-background`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.LUMI_SECRET}`,
+        },
+        body: JSON.stringify({ user_id: userId }),
+      }).catch((err) => console.warn('[ig-oauth] backfill 트리거 fetch 경고:', err && err.message));
+    } catch (e) {
+      console.warn('[ig-oauth] backfill 트리거 예외 (무시):', e && e.message);
+    }
+
     return { statusCode: 302, headers: { Location: `https://lumi.it.kr${returnTo}?ig=connected` } };
 
   } catch (e) {
