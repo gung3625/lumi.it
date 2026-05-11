@@ -368,6 +368,7 @@ async function mergeV2Fields(supa, keywords, category, collectedDate, axisFilter
       if (!key || existing.has(key)) continue;
       if (!axisAllowed(row.axis)) continue;
       if (row.signal_tier === 'weak') continue;
+      existing.add(key); // self-dedupe: trend_keywords 에 같은 keyword 가 2 row 면 첫 row 만 push
       const fb = fbMap.get(row.keyword) || { likes: 0, dislikes: 0 };
       extras.push({
         keyword: row.keyword,
