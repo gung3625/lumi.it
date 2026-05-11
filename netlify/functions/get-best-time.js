@@ -1,30 +1,39 @@
 const { corsHeaders, getOrigin } = require('./_shared/auth');
-// 업종별 인스타그램 최적 게시 시간 (4-tier 가중 하이브리드 — 1단계)
+// 업종별 인스타그램 최적 게시 시간 — 2-stage 개인화
 //
-// 데이터 소스 우선순위:
-//   Tier 1a: Meta online_followers  (IG 연동 + 응답 데이터 있을 때)
-//            → bestTime 단일 점만 개인화
-//   Tier 1b: 게시별 reach 가중치    (후속 PR 에서 활성 — Tier 1 본격 데이터)
-//   Tier 3:  seller_post_history    (가입 전 + Lumi 게시 통합) 빈도 기반
-//            → weekday[]/weekend[] 슬롯 배열 자체를 개인화
-//            → 임계값: 평일 ≥ 5건 / 주말 ≥ 3건 (요일별 독립 충족)
-//   Tier 4:  업종 × 요일 시드 매트릭스 (조건 미달 시 fallback)
+// 추천의 본질은 "팔로워가 그 시간에 인스타에서 내 게시물을 본다" — 사장님 게시
+// 빈도(한가했던 시간)는 신호가 아니므로 명시적으로 제외한다.
+//
+// 단계:
+//   부족 단계: 업종 시드 — "사람들이 많이 볼만한 시간대 평균"
+//   누적 완료: 본인 데이터 — "내 팔로워가 내 게시물을 가장 많이 본 시간"
+//
+// 데이터 소스 우선순위 (누적 완료 단계 안에서):
+//   Tier 2:  follower_activity_snapshots  (팔로워 활동 매트릭스, 28일 누적)
+//            → 가장 직접적 — 팔로워가 IG 에 있는 시간 자체
+//   Tier 1:  seller_post_history.reach    (게시별 도달 가중치)
+//            → 결과로 본 "사람들이 본 시간". rowScore = 0.7·log(1+reach) + 0.3·log(1+engagement)
+//            → 임계: 도달 데이터(reach 채워진) row 평일 ≥ 5건 / 주말 ≥ 3건
+//            → insights cron 이 채워지길 기다림
+//   Tier 4:  업종 × 요일 시드 매트릭스    (위 둘 다 미달 시 fallback)
 //
 // 응답 필드 (기존 호환):
 //   bestTime, reason, tip, allSlots, weekday, weekend, source
 // 신규 필드 (UI 모드 배지·진행 카드용):
 //   modes       — { weekday: 'personal'|'seed', weekend: 'personal'|'seed' }
-//   progress    — { weekday: {have, need}, weekend: {have, need}, ready }
-//   thresholds  — { weekday, weekend }
-//   source 값:
-//     'meta-online-followers'      Tier 1a 활성 (bestTime 만 개인화)
-//     'personal-history'           평일·주말 모두 Tier 3 개인화
-//     'personal-history-partial'   한쪽만 Tier 3 개인화
-//     'industry-seed'              전부 시드
+//   progress    — { weekday: {have, need, ready}, weekend: {...}, ready }
+//                  have = 도달 데이터 채워진 게시물 수 (요일군별)
+//   sources     — { weekday: 'tier1'|'tier2'|'tier4', weekend: ... }
+//   tier2_progress — { weekday: {snapshot_days, needed_days, ready}, weekend: {...} }
+//   thresholds  — { weekday: 5, weekend: 3 }   (Tier 1 reach 데이터 기준)
 //
-// 가입 전 게시 이력은 ig-backfill-history-background.js 가 IG 연동 직후
-// seller_post_history (source='pre-lumi') 로 채움. Lumi 게시는 select-and-post-
-// background 가 source='lumi' 로 append. 이 함수는 둘을 합쳐 본다.
+// source 값:
+//   'meta-online-followers'  Tier 1a 활성 (bestTime 점만 보강, 슬롯은 시드)
+//   'personal-followers'     Tier 2 양쪽 ready
+//   'personal-mixed'         Tier 2 한쪽만 ready
+//   'personal-history-weighted' Tier 1 ready (가중치)
+//   'personal-history-partial-weighted' Tier 1 한쪽만 ready
+//   'industry-seed'          전부 시드
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
 
@@ -208,30 +217,28 @@ function computeActivitySlots(snapshots) {
   };
 }
 
-// performance score — insights 있으면 reach/engagement 가중치, 없으면 1.
-// log(1+x) 로 outlier 영향 완화. reach 가 1차 신호, engagement 는 보조.
+// performance score — reach 1차 + engagement 보조. log(1+x) 로 outlier 완화.
 function rowScore(row) {
-  const reach = typeof row.reach === 'number' ? row.reach : null;
-  const engagement = typeof row.engagement === 'number' ? row.engagement : null;
-  if (reach === null && engagement === null) return 1;       // insights 없음 — 단순 빈도
-  const r = reach !== null ? Math.log(1 + reach) : 0;
-  const e = engagement !== null ? Math.log(1 + engagement) : 0;
-  // 가중 평균. 둘 다 0 이면 최소 0.5 — 도달 0건 시각은 평균보다 약하게 평가.
-  const s = 0.7 * r + 0.3 * e;
-  return Math.max(0.5, 1 + s / 3);   // 보통 1~3 사이로 분포
+  const reach = typeof row.reach === 'number' ? row.reach : 0;
+  const engagement = typeof row.engagement === 'number' ? row.engagement : 0;
+  const r = Math.log(1 + reach);
+  const e = Math.log(1 + engagement);
+  return 0.7 * r + 0.3 * e + 0.5; // 도달 0건 row 도 최소치 0.5 확보 (시각 분포는 유지)
 }
 
 // seller_post_history → 평일/주말 분리 30분 버킷 가중합. KST 변환 + 06~23시 필터.
-// 임계값 충족 시 top3 슬롯, 미달 시 시드 fallback. 충족됐지만 3개 미만이면 시드로 보충.
-// insights 채워진 row 가 있으면 그 row 들은 가중치 점수, 미채워진 row 는 count 1 로 처리.
+// 핵심: **reach 채워진 row 만 카운트** — 단순 게시 빈도는 추천 신호가 아니므로 제외.
+// 임계값 충족(평일 ≥5건 / 주말 ≥3건) 시 top3 슬롯, 미달 시 시드 fallback.
+// insights cron 이 reach 를 채워나가는 동안엔 자연스럽게 시드 유지 → 채워지면 자동 전환.
 function computePersonalizedSlots(history, seed) {
-  const counts = { weekday: 0, weekend: 0 };          // raw count — 임계값 비교용
+  const counts = { weekday: 0, weekend: 0 };          // reach 채워진 row 만 카운트
   const buckets = { weekday: {}, weekend: {} };       // weighted sum — top3 선정용
   const rawCounts = { weekday: {}, weekend: {} };     // raw count — reason 노출용
-  let weighted = false;
 
   for (const row of (history || [])) {
     if (!row || !row.posted_at) continue;
+    // reach 미수집 row 는 추천 신호 아님 — 카운트·집계 모두 제외.
+    if (typeof row.reach !== 'number') continue;
     const d = new Date(row.posted_at);
     if (isNaN(d.getTime())) continue;
     // posted_at 은 UTC ISO. KST = UTC+9 변환.
@@ -242,9 +249,7 @@ function computePersonalizedSlots(history, seed) {
     const mm = kst.getUTCMinutes() < 30 ? '00' : '30';
     const key = `${String(hh).padStart(2, '0')}:${mm}`;
     const grp = (dow === 0 || dow === 6) ? 'weekend' : 'weekday';
-    const score = rowScore(row);
-    if (score !== 1) weighted = true;
-    buckets[grp][key] = (buckets[grp][key] || 0) + score;
+    buckets[grp][key] = (buckets[grp][key] || 0) + rowScore(row);
     rawCounts[grp][key] = (rawCounts[grp][key] || 0) + 1;
     counts[grp]++;
   }
@@ -255,7 +260,7 @@ function computePersonalizedSlots(history, seed) {
       .slice(0, 3)
       .map(([time], i) => ({
         time,
-        reason: `내 평소 게시 ${i + 1}위 · ${rawBucket[time] || 0}회`,
+        reason: `내 팔로워가 가장 많이 본 시각 ${i + 1}위 · ${rawBucket[time] || 0}건 기준`,
       }));
   }
 
@@ -291,7 +296,6 @@ function computePersonalizedSlots(history, seed) {
     weekend,
     modes,
     counts,
-    weighted,    // insights 가중치 적용 여부 — 디버깅·관찰용
   };
 }
 
@@ -384,24 +388,19 @@ exports.handler = async (event) => {
       }
     }
 
-    // 슬롯 별 출처 추적 — UI(#110)에서 sheet 카피 분기용. 일단 weekday/weekend 단위.
-    // 'tier1'=history-weighted, 'tier3'=history-frequency, 'tier4'=seed
+    // 슬롯 별 출처 추적 — UI sheet 카피 분기용.
+    // personal 이면 항상 tier1 (reach 가중치 — 빈도 tier3 는 더 이상 사용 안 함).
     const sources = {
-      weekday: result.modes.weekday === 'personal'
-        ? (personalized.weighted ? 'tier1' : 'tier3')
-        : 'tier4',
-      weekend: result.modes.weekend === 'personal'
-        ? (personalized.weighted ? 'tier1' : 'tier3')
-        : 'tier4',
+      weekday: result.modes.weekday === 'personal' ? 'tier1' : 'tier4',
+      weekend: result.modes.weekend === 'personal' ? 'tier1' : 'tier4',
     };
 
-    // source 갱신 — 시드/개인화/부분개인화. weighted 면 명시.
+    // source 갱신 — 시드 / Tier 1 / Tier 1 부분.
     if (result.progress.ready) {
-      result.source = personalized.weighted ? 'personal-history-weighted' : 'personal-history';
+      result.source = 'personal-history-weighted';
     } else if (result.modes.weekday === 'personal' || result.modes.weekend === 'personal') {
-      result.source = personalized.weighted ? 'personal-history-partial-weighted' : 'personal-history-partial';
+      result.source = 'personal-history-partial-weighted';
     }
-    result.weighted = !!personalized.weighted;
 
     // ── Tier 2: follower_activity_snapshots 기반 매트릭스 ────────────────
     // history 가중치(Tier 1) 보다 우선 — 팔로워 활동 시간 = 외부 도달 신호.

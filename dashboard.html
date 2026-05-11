@@ -1127,12 +1127,12 @@
                   if (count) count.textContent = `${have}/${need}`;
                   if (row) row.classList.toggle('is-ready', !!p.ready);
                 });
-                // 안내 카피 — 부분 개인화 vs 전면 미충족 분기
+                // 안내 카피 — 오늘 요일 ready 여부 기준
                 const todayReady = isWeekend ? progress.weekend?.ready : progress.weekday?.ready;
                 if (todayReady) {
-                  progressHintEl.textContent = '오늘은 내 데이터로 추천해요. 반대 요일도 모이면 함께 전환돼요.';
+                  progressHintEl.textContent = '오늘은 내 팔로워가 본 시간 기준이에요. 반대 요일도 모이면 함께 전환돼요.';
                 } else {
-                  progressHintEl.textContent = '게시가 더 쌓이면 내 패턴으로 자동 전환돼요.';
+                  progressHintEl.textContent = '내 게시물 도달 데이터가 더 모이면 내 팔로워 기준으로 자동 전환돼요.';
                 }
               }
             }
