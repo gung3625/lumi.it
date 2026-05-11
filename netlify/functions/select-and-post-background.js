@@ -441,6 +441,25 @@ exports.handler = async (event) => {
       .eq('reserve_key', reservationKey);
     if (updErr) console.error('[select-and-post] 예약 업데이트 실패:', updErr.message);
 
+    // 6-1) seller_post_history append — 베스트 시간 개인화용 통합 이력.
+    //      (가입 전 백필분 + Lumi 게시분 한 테이블. media_type 은 IG CDN 역조회 단계에서 update.)
+    //      실패해도 게시 흐름엔 영향 없음 — warn 만.
+    if (reservation.user_id) {
+      try {
+        const { error: histErr } = await supabase
+          .from('seller_post_history')
+          .upsert({
+            user_id: reservation.user_id,
+            ig_media_id: String(postId),
+            posted_at: postedAt,
+            source: 'lumi',
+          }, { onConflict: 'user_id,ig_media_id', ignoreDuplicates: true });
+        if (histErr) console.warn('[select-and-post] seller_post_history upsert 경고:', histErr.message);
+      } catch (e) {
+        console.warn('[select-and-post] seller_post_history 예외 (무시):', e && e.message);
+      }
+    }
+
     // 6-0) Instagram CDN URL 역조회 — Supabase Storage URL 대신 IG CDN URL로 교체
     // 스토리지 정리 전에 실행해야 이후 대시보드에서 사진/영상이 보임
     try {
@@ -476,6 +495,15 @@ exports.handler = async (event) => {
               .eq('reserve_key', reservationKey);
             if (cdnErr) console.error('[select-and-post] CDN URL 저장 실패:', cdnErr.message);
             else console.log('[select-and-post] IG CDN URL 교체 완료 media_type=' + mt);
+          }
+          // seller_post_history 의 media_type 보강 (위 6-1에서 null 로 들어간 row)
+          if (mt && reservation.user_id) {
+            const { error: histMtErr } = await supabase
+              .from('seller_post_history')
+              .update({ media_type: mt })
+              .eq('user_id', reservation.user_id)
+              .eq('ig_media_id', String(postId));
+            if (histMtErr) console.warn('[select-and-post] seller_post_history media_type update 경고:', histMtErr.message);
           }
         } else {
           console.warn('[select-and-post] IG media 조회 API 오류:', igMedia.error.message);
