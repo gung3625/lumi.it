@@ -304,6 +304,16 @@
         } catch { return ''; }
       }
 
+      // IG 댓글 텍스트·username 은 외부 입력 → innerHTML 삽입 전 escape 필수.
+      function esc(s) {
+        return String(s == null ? '' : s)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
       async function load() {
         try {
           const res = await fetch('/api/comments?limit=50', { headers: authHeaders });
@@ -334,14 +344,15 @@
             const initial = (u[0] || '·').toUpperCase();
             const text = (c.text || '').slice(0, 240);
             const time = fmtTime(c.timestamp || c.created_at);
-            const reply = c.reply_text ? `<div class="comment__reply">${c.reply_text}</div>` : '';
+            const replyText = (c.reply_text || '').slice(0, 240);
+            const reply = replyText ? `<div class="comment__reply">${esc(replyText)}</div>` : '';
             return `
               <li class="comment">
-                <span class="comment__avatar">${initial}</span>
+                <span class="comment__avatar">${esc(initial)}</span>
                 <div class="comment__body">
-                  <span class="comment__user">${u}</span>
-                  <span class="comment__time">${time}</span>
-                  <div class="comment__text">${text}</div>
+                  <span class="comment__user">${esc(u)}</span>
+                  <span class="comment__time">${esc(time)}</span>
+                  <div class="comment__text">${esc(text)}</div>
                   ${reply}
                 </div>
               </li>
