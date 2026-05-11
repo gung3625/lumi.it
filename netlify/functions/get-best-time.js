@@ -89,6 +89,11 @@ function getSeedSlot(category) {
     reason: picked.reason,
     tip: data.tip,
     allSlots: slots,
+    // insights.html 의 요일 탭 (data-day="weekday"/"weekend") 이 직접 읽는 키.
+    // Tier 1/2 에서도 시드 fallback 으로 함께 반환 — 개인화는 단일 bestTime 에만,
+    // 요일별 상세는 업종 시드를 보여주는 게 현재 데이터로는 가장 정확.
+    weekday: data.weekday,
+    weekend: data.weekend,
   };
 }
 
@@ -213,6 +218,8 @@ exports.handler = async (event) => {
             reason: `내 팔로워가 가장 많이 접속하는 시간대`,
             tip: seed.tip,
             allSlots: seed.allSlots,
+            weekday: seed.weekday,
+            weekend: seed.weekend,
             source: 'meta-online-followers',
           }),
         };
@@ -239,6 +246,8 @@ exports.handler = async (event) => {
           reason: `내 계정 이력 기준 ${fromHistory.count}회 게시 시간대`,
           tip: seed.tip,
           allSlots: seed.allSlots,
+          weekday: seed.weekday,
+          weekend: seed.weekend,
           source: 'user-history',
           sampleSize: fromHistory.sampleSize,
         }),
@@ -258,6 +267,8 @@ exports.handler = async (event) => {
       reason: seed.reason,
       tip: seed.tip,
       allSlots: seed.allSlots,
+      weekday: seed.weekday,
+      weekend: seed.weekend,
       source: 'industry-seed',
     }),
   };
