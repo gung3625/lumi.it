@@ -78,6 +78,7 @@
       align-items: center;
       gap: var(--space-3);
       padding: var(--space-2) var(--space-2);
+      flex-wrap: wrap;
     }
     .row + .row { border-top: 1px solid var(--line); }
     .row__label {
@@ -107,7 +108,8 @@
 
     /* 인라인 입력 모드 */
     .row__input {
-      flex: 1;
+      flex: 1 1 12em;        /* 12em 기본 — 좁아지면 wrap 으로 버튼이 다음 줄 */
+      min-width: 0;          /* flex 아이템 intrinsic min-width 무시 (좁은 화면에서 buttons 안 잘리게) */
       padding: 8px 12px;
       font-size: max(16px, var(--text-body)); /* iOS 자동 줌 방지 */
       border: 1px solid var(--line-strong);
