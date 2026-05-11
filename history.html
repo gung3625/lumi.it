@@ -414,7 +414,7 @@
   </header>
 
   <main class="wrap" role="main">
-    <div class="state" data-state>예약을 가져오는 중…</div>
+    <div class="state" data-state>히스토리를 불러오는 중…</div>
 
     <section data-upcoming hidden>
       <h2 class="section-title">다가올 예약</h2>
@@ -606,10 +606,14 @@
       }
 
       async function load() {
+        // 15초 timeout — 서버 hang 시 무한 "불러오는 중" 방지
+        const ctrl = new AbortController();
+        const tid = setTimeout(() => ctrl.abort(), 15_000);
         try {
-          const res = await fetch('/api/list-reservations', { headers: authHeaders });
+          const res = await fetch('/api/list-reservations', { headers: authHeaders, signal: ctrl.signal });
+          clearTimeout(tid);
           if (!res.ok) {
-            stateEl.textContent = '예약을 가져오지 못했어요.';
+            stateEl.textContent = '히스토리를 불러오지 못했어요.';
             return;
           }
           const json = await res.json();
@@ -733,7 +737,10 @@
             });
           });
         } catch (e) {
-          stateEl.textContent = '예약을 가져오지 못했어요.';
+          clearTimeout(tid);
+          stateEl.textContent = e && e.name === 'AbortError'
+            ? '시간이 초과됐어요. 새로고침해주세요.'
+            : '히스토리를 불러오지 못했어요.';
         }
       }
 
