@@ -725,6 +725,13 @@
                   signal: ctrl.signal,
                 });
                 if (!r.ok) throw new Error('실패');
+                // 낙관적 UI — 취소된 카드 즉시 DOM 에서 제거.
+                // 이전엔 load() 결과를 await 해서 버튼이 "취소 중…" 에 매달림.
+                // load() 가 hang 하면 (직전 list-reservations 무한 로딩 이슈 등)
+                // 버튼이 그대로 멈춰 보이던 버그.
+                const li = btn.closest('li');
+                if (li) li.remove();
+                // 백그라운드로 최신 상태 동기화 — 실패해도 위 DOM 제거는 이미 반영.
                 load();
               } catch (e) {
                 alert(isDelete ? '삭제에 실패했어요. 잠시 후 다시 시도해주세요.' : '취소에 실패했어요.');
