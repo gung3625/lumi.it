@@ -251,6 +251,8 @@
     }
     .kw-badge--new { background: #fff0f5; color: #c8507a; }
     .kw-badge--hot { background: #fff4e8; color: #c2410c; }
+    /* 다중 소스 신뢰도 배지 — 2곳 이상에서 잡힌 키워드 강조 */
+    .kw-badge--src { background: var(--bg-soft); color: var(--ink-muted); font-weight: var(--weight-semibold); }
     /* 약신호 (signalTier=weak) — 카드 살짝 흐리게 */
     .kw-item--weak .kw-item__text { color: var(--ink-soft); }
     .kw-item--weak .kw-item__rank { opacity: 0.6; }
@@ -722,6 +724,11 @@
             const badges = [];
             if (isNew) badges.push('<span class="kw-badge kw-badge--new">NEW</span>');
             if (isHot) badges.push(`<span class="kw-badge kw-badge--hot">🔥 +${Math.round(velocity)}%</span>`);
+            // 다중 소스 신뢰도 — 2곳 이상에서 잡힌 키워드만 표시 (1곳은 노이즈 가능)
+            const srcCount = typeof item.crossSourceCount === 'number' ? item.crossSourceCount : null;
+            if (srcCount !== null && srcCount >= 2) {
+              badges.push(`<span class="kw-badge kw-badge--src" title="${srcCount}개 소스에서 잡힘">${srcCount}곳</span>`);
+            }
             const badgeHtml = badges.length ? `<span class="kw-item__badges">${badges.join('')}</span>` : '';
             const itemClass = 'kw-item' + (isWeak ? ' kw-item--weak' : '');
             return `
