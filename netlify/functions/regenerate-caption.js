@@ -319,11 +319,30 @@ exports.handler = async (event) => {
       return { statusCode: 429, headers: headers, body: JSON.stringify({ error: '재생성은 최대 3회까지 가능합니다', remaining: 0 }) };
     }
 
-    // 3. 이미지 분석 결과 확인
+    // 3. 이미지 분석 결과 확인 (JSON 또는 레거시 텍스트)
     const imageAnalysis = reservation.image_analysis;
     if (!imageAnalysis) {
       return { statusCode: 400, headers: headers, body: JSON.stringify({ error: '이미지 분석 결과가 없어요. 먼저 예약을 처리해주세요.' }) };
     }
+    // JSON 이면 캡션 프롬프트가 읽기 좋은 텍스트로 변환 (process-and-post 의 visionToContext 와 같은 패턴)
+    const imageAnalysisText = (() => {
+      try {
+        const v = JSON.parse(imageAnalysis);
+        if (!v || !v.business_relevance) return imageAnalysis;
+        const subjects = Array.isArray(v.subjects) ? v.subjects.map(s => `${s.label}(${s.details})`).join(' · ') : '';
+        const keywords = Array.isArray(v.caption_keywords) ? v.caption_keywords.join(', ') : '';
+        const lines = [
+          `business_relevance: ${v.business_relevance} — ${v.business_relevance_reason}`,
+          `scene_type: ${v.scene_type} / tone_register: ${v.tone_register}`,
+          `피사체: ${subjects}`,
+          `첫인상: ${v.first_impression}`,
+          `핵심: ${v.core_analysis}`,
+        ];
+        if (v.story_arc) lines.push(`스토리 아크: ${v.story_arc}`);
+        lines.push(`키워드: ${keywords}`);
+        return lines.join('\n');
+      } catch { return imageAnalysis; }
+    })();
 
     // 4. 최신 트렌드 가져오기
     const item = { ...reservation };
@@ -403,7 +422,7 @@ exports.handler = async (event) => {
 
     // GPT-4o로 캡션 재생성 (재생성은 속도 우선 — 4o 사용)
     const toneGuide = buildToneGuide(toneLikes, toneDislikes);
-    const captionPrompt = buildCaptionPrompt(item, imageAnalysis, toneGuide);
+    const captionPrompt = buildCaptionPrompt(item, imageAnalysisText, toneGuide);
 
     const regenCtrl = new AbortController();
     const regenTid = setTimeout(() => regenCtrl.abort(), 60_000);
