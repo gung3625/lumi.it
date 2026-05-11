@@ -325,6 +325,104 @@
     @media (prefers-reduced-motion: reduce) {
       .bt-mode, .bt-progress, .bt-progress__bar > i { transition: none; animation: none; }
     }
+    /* time-card 가 <button> 으로 렌더 — 기본 스타일 reset */
+    .time-card {
+      width: 100%;
+      text-align: left;
+      font: inherit;
+      color: inherit;
+      cursor: pointer;
+    }
+    .time-card:focus-visible {
+      outline: 2px solid var(--pink-400, #f17ba3);
+      outline-offset: 2px;
+    }
+    /* "왜 이 시간?" sheet */
+    .bt-sheet {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .bt-sheet__backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.4);
+      animation: fadeIn 200ms var(--ease-soft);
+    }
+    .bt-sheet__panel {
+      position: relative;
+      width: 100%;
+      max-width: 520px;
+      background: var(--bg);
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      padding: var(--space-5) var(--space-5) var(--space-6);
+      box-shadow: var(--shadow-lg);
+      animation: slideUp 280ms var(--ease-toss);
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .bt-sheet__close {
+      position: absolute;
+      top: 10px;
+      right: 14px;
+      background: transparent;
+      border: none;
+      font-size: 24px;
+      line-height: 1;
+      color: var(--ink-muted);
+      cursor: pointer;
+      padding: 4px 8px;
+      transition: color 160ms var(--ease-soft);
+    }
+    .bt-sheet__close:hover { color: var(--ink); }
+    .bt-sheet__time {
+      font-size: 28px;
+      font-weight: var(--weight-bold);
+      letter-spacing: var(--tracking-tight);
+      font-variant-numeric: tabular-nums;
+    }
+    .bt-sheet__day {
+      display: inline-block;
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+      background: var(--bg-soft);
+      padding: 2px 10px;
+      border-radius: 999px;
+      margin-top: 4px;
+    }
+    .bt-sheet__body {
+      margin-top: var(--space-4);
+      font-size: var(--text-body);
+      color: var(--ink);
+      line-height: var(--leading-relaxed);
+    }
+    .bt-sheet__body p { margin: 0 0 var(--space-2); }
+    .bt-sheet__body strong { color: var(--pink-600, #c8507a); font-weight: var(--weight-semibold); }
+    .bt-sheet__tier {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: var(--weight-semibold);
+      letter-spacing: -0.01em;
+      padding: 2px 8px;
+      border-radius: 999px;
+      margin-top: 6px;
+    }
+    .bt-sheet__tier.is-tier1, .bt-sheet__tier.is-tier2 {
+      color: var(--pink-600, #c8507a);
+      background: var(--pink-100, #ffeef3);
+    }
+    .bt-sheet__tier.is-tier3, .bt-sheet__tier.is-tier4 {
+      color: var(--ink-muted);
+      background: var(--bg-soft);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .bt-sheet__backdrop, .bt-sheet__panel { animation: none; }
+    }
 
     .state { padding: var(--space-12); text-align: center; color: var(--ink-muted); }
     .empty { padding: var(--space-12) var(--space-5); text-align: center; color: var(--ink-muted); }
@@ -399,6 +497,18 @@
         <div class="time-list" data-bt-list></div>
       </div>
     </section>
+
+    <!-- "왜 이 시간?" sheet — time-card 클릭 시 등장 -->
+    <div class="bt-sheet" data-bt-sheet hidden role="dialog" aria-modal="true" aria-labelledby="bt-sheet-title">
+      <div class="bt-sheet__backdrop" data-bt-sheet-close></div>
+      <div class="bt-sheet__panel" role="document">
+        <button type="button" class="bt-sheet__close" data-bt-sheet-close aria-label="닫기">×</button>
+        <div class="bt-sheet__time" id="bt-sheet-title" data-bt-sheet-time>—</div>
+        <span class="bt-sheet__day" data-bt-sheet-day>평일</span>
+        <span class="bt-sheet__tier is-tier4" data-bt-sheet-tier>업종 평균</span>
+        <div class="bt-sheet__body" data-bt-sheet-body></div>
+      </div>
+    </div>
 
     <footer class="app-footer">
       <img class="app-footer__logo" src="/assets/logo-wordmark.png" alt="루미" loading="lazy" decoding="async">
@@ -569,10 +679,23 @@
           if (count) count.textContent = `${have}/${need}`;
           if (row) row.classList.toggle('is-ready', !!p.ready);
         });
+        // hint — sources[currentDay] 기준 더 정확한 카피
+        const sources = btCache.sources || {};
+        const curSrc = sources[currentDay] || 'tier4';
         const curReady = progress[currentDay] && progress[currentDay].ready;
-        hintEl.textContent = curReady
-          ? '이 요일은 내 데이터로 추천 중. 다른 요일도 모이면 함께 전환돼요.'
-          : '게시가 더 쌓이면 내 패턴으로 자동 전환돼요.';
+        const t2 = (btCache.tier2_progress && btCache.tier2_progress[currentDay]) || null;
+        if (curSrc === 'tier2') {
+          hintEl.textContent = '내 팔로워 활동 매트릭스로 추천 중. 슬롯을 눌러 자세히 보세요.';
+        } else if (curSrc === 'tier1') {
+          const needT2 = t2 ? `${t2.needed_days}일` : '약 3주';
+          hintEl.textContent = `내 게시 성과 기준 추천 중. 팔로워 활동 ${needT2} 누적되면 더 정확해져요.`;
+        } else if (curSrc === 'tier3') {
+          hintEl.textContent = '내 게시 빈도 기준 추천 중. 도달 데이터가 채워지면 자동으로 더 정확해져요.';
+        } else if (curReady) {
+          hintEl.textContent = '이 요일은 내 데이터로 추천 중.';
+        } else {
+          hintEl.textContent = '게시가 더 쌓이면 내 패턴으로 자동 전환돼요.';
+        }
       }
       function renderBest() {
         const listEl = document.querySelector('[data-bt-list]');
@@ -608,13 +731,101 @@
           const isNow = i === nowIdx;
           const badge = isNow ? '<span class="time-card__badge">다음 임박</span>' : '';
           return `
-            <div class="time-card${isNow ? ' is-best' : ''}">
+            <button type="button" class="time-card${isNow ? ' is-best' : ''}"
+                    data-card-time="${esc(it.time || '')}"
+                    data-card-reason="${esc(it.reason || '')}">
               <div class="time-card__hour">${esc(it.time || '—')}</div>
               <div class="time-card__reason">${esc(it.reason || '')}</div>
               ${badge}
-            </div>
+            </button>
           `;
         }).join('');
+      }
+      // time-card 는 button 으로 렌더 — 기본 스타일 reset (인라인 가벼움)
+      // sheet open / close / tier 별 카피
+      const sheetEl = document.querySelector('[data-bt-sheet]');
+      const sheetTime = document.querySelector('[data-bt-sheet-time]');
+      const sheetDay = document.querySelector('[data-bt-sheet-day]');
+      const sheetTier = document.querySelector('[data-bt-sheet-tier]');
+      const sheetBody = document.querySelector('[data-bt-sheet-body]');
+      let lastFocused = null;
+
+      function tierMeta(tier, mode) {
+        // 사장님이 보는 라벨 — UI 단순화 위해 4종.
+        if (tier === 'tier2') return { label: '내 팔로워 활동', cls: 'is-tier2' };
+        if (tier === 'tier1') return { label: '내 게시 성과', cls: 'is-tier1' };
+        if (tier === 'tier3') return { label: '내 게시 빈도', cls: 'is-tier3' };
+        return { label: '업종 평균', cls: 'is-tier4' };
+      }
+      function sheetCopy(tier, day, reason, ctx) {
+        const dayLabel = day === 'weekend' ? '주말' : '평일';
+        const p = ctx.progress || {};
+        const t2 = ctx.tier2_progress || {};
+        const dayP = p[day] || { have: 0, need: 0 };
+        const dayT2 = t2[day] || { snapshot_days: 0, needed_days: 0 };
+        if (tier === 'tier2') {
+          return `
+            <p>${dayLabel} 이 시각대에 <strong>내 팔로워가 가장 많이 접속</strong>해요.</p>
+            <p>최근 ${dayLabel} ${dayT2.snapshot_days}일 분 누적된 인스타그램 활동 데이터 기준입니다. 이 시간 게시는 첫 1시간 노출량이 평균보다 높을 가능성이 큽니다.</p>
+          `;
+        }
+        if (tier === 'tier1') {
+          return `
+            <p>이 시각에 올린 <strong>내 게시물이 실제로 더 잘 됐어요</strong>.</p>
+            <p>${dayLabel} 게시 ${dayP.have || 0}건의 reach·저장 데이터를 가중 평균한 결과입니다. 팔로워 활동 매트릭스가 ${dayT2.needed_days}일 분 누적되면 더 정확해져요.</p>
+          `;
+        }
+        if (tier === 'tier3') {
+          return `
+            <p>${dayLabel}에 <strong>내가 평소 게시하던 시간</strong>이에요.</p>
+            <p>${dayP.have || 0}/${dayP.need || THRESHOLDS_LABEL[day]}건 기준. 게시별 도달 데이터가 채워지면 "잘 됐던 시간" 기준으로 자동 전환돼요.</p>
+          `;
+        }
+        // tier4 (시드)
+        return `
+          <p>아직 데이터가 부족해 <strong>업종 평균 시간</strong>을 보여드려요.</p>
+          <p>${dayLabel} 게시 ${dayP.have || 0}/${dayP.need || THRESHOLDS_LABEL[day]}건이 쌓이거나, 인스타 활동 데이터가 ${dayT2.snapshot_days || 0}/${dayT2.needed_days || (day === 'weekend' ? 6 : 15)}일 누적되면 내 패턴으로 자동 전환됩니다.</p>
+        `;
+      }
+      const THRESHOLDS_LABEL = { weekday: 5, weekend: 3 };
+
+      function openSheet(time, reason) {
+        if (!btCache) return;
+        const tier = (btCache.sources && btCache.sources[currentDay]) || 'tier4';
+        const meta = tierMeta(tier, btCache.modes && btCache.modes[currentDay]);
+        sheetTime.textContent = time || '—';
+        sheetDay.textContent = currentDay === 'weekend' ? '주말' : '평일';
+        sheetTier.className = 'bt-sheet__tier ' + meta.cls;
+        sheetTier.textContent = meta.label;
+        sheetBody.innerHTML = sheetCopy(tier, currentDay, reason, btCache);
+        lastFocused = document.activeElement;
+        sheetEl.hidden = false;
+        // panel 에 focus — esc 처리 위해
+        const closeBtn = sheetEl.querySelector('.bt-sheet__close');
+        if (closeBtn) closeBtn.focus();
+        document.addEventListener('keydown', onSheetKey);
+      }
+      function closeSheet() {
+        sheetEl.hidden = true;
+        document.removeEventListener('keydown', onSheetKey);
+        if (lastFocused && typeof lastFocused.focus === 'function') {
+          try { lastFocused.focus(); } catch {}
+        }
+      }
+      function onSheetKey(e) {
+        if (e.key === 'Escape') closeSheet();
+      }
+      document.querySelectorAll('[data-bt-sheet-close]').forEach((el) => {
+        el.addEventListener('click', closeSheet);
+      });
+      // 카드 클릭(이벤트 위임) — listEl 안의 button 만
+      const listElForSheet = document.querySelector('[data-bt-list]');
+      if (listElForSheet) {
+        listElForSheet.addEventListener('click', (e) => {
+          const card = e.target.closest('[data-card-time]');
+          if (!card) return;
+          openSheet(card.getAttribute('data-card-time'), card.getAttribute('data-card-reason'));
+        });
       }
       document.querySelectorAll('[data-day]').forEach(b => {
         b.addEventListener('click', () => {
