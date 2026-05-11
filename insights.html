@@ -237,6 +237,94 @@
       color: var(--ink-muted);
       font-size: var(--text-caption);
     }
+    /* 모드 배지 + 진행 카드 (PR #107) */
+    .bt-mode {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: var(--weight-semibold);
+      letter-spacing: -0.01em;
+      padding: 3px 10px;
+      border-radius: 999px;
+      transition: background-color 200ms var(--ease-soft), color 200ms var(--ease-soft);
+    }
+    .bt-mode.is-personal {
+      color: var(--pink-600, #c8507a);
+      background: var(--pink-100, #ffeef3);
+    }
+    .bt-mode.is-seed {
+      color: var(--ink-muted);
+      background: var(--bg-soft);
+    }
+    .bt-mode__dot { width: 6px; height: 6px; border-radius: 999px; background: currentColor; }
+    .day-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+      margin-bottom: var(--space-3);
+    }
+    .bt-progress {
+      margin: 0 0 var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      background: var(--bg-soft);
+      border-radius: var(--radius-md);
+      animation: rise 400ms var(--ease-toss) backwards;
+    }
+    .bt-progress__hint {
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+      letter-spacing: -0.01em;
+      margin-bottom: var(--space-2);
+    }
+    .bt-progress__row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .bt-progress__row:first-of-type { margin-top: 0; }
+    .bt-progress__label {
+      flex-shrink: 0;
+      width: 36px;
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+    }
+    .bt-progress__bar {
+      flex: 1;
+      height: 6px;
+      background: var(--line, rgba(0,0,0,0.08));
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .bt-progress__bar > i {
+      display: block;
+      height: 100%;
+      width: 0%;
+      background: var(--gradient-signature);
+      border-radius: 999px;
+      transition: width 600ms var(--ease-toss);
+    }
+    .bt-progress__row.is-ready .bt-progress__bar > i {
+      background: var(--pink-600, #c8507a);
+    }
+    .bt-progress__count {
+      flex-shrink: 0;
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+      color: var(--ink-muted);
+      letter-spacing: -0.01em;
+      min-width: 40px;
+      text-align: right;
+    }
+    .bt-progress__row.is-ready .bt-progress__count {
+      color: var(--pink-600, #c8507a);
+      font-weight: var(--weight-semibold);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .bt-mode, .bt-progress, .bt-progress__bar > i { transition: none; animation: none; }
+    }
 
     .state { padding: var(--space-12); text-align: center; color: var(--ink-muted); }
     .empty { padding: var(--space-12) var(--space-5); text-align: center; color: var(--ink-muted); }
@@ -285,9 +373,28 @@
     <section class="pane" data-pane="best-time">
       <div class="state" data-bt-state>가져오는 중…</div>
       <div data-bt-content hidden>
-        <div class="day-toggle">
-          <button type="button" data-day="weekday" class="is-active">평일</button>
-          <button type="button" data-day="weekend">주말</button>
+        <div class="day-row">
+          <div class="day-toggle">
+            <button type="button" data-day="weekday" class="is-active">평일</button>
+            <button type="button" data-day="weekend">주말</button>
+          </div>
+          <span class="bt-mode is-seed" data-bt-mode hidden>
+            <span class="bt-mode__dot" aria-hidden="true"></span>
+            <span data-bt-mode-label>업종 평균</span>
+          </span>
+        </div>
+        <div class="bt-progress" data-bt-progress hidden>
+          <div class="bt-progress__hint" data-bt-progress-hint></div>
+          <div class="bt-progress__row" data-bt-progress-row="weekday">
+            <span class="bt-progress__label">평일</span>
+            <span class="bt-progress__bar"><i data-bt-progress-fill="weekday"></i></span>
+            <span class="bt-progress__count" data-bt-progress-count="weekday">0/5</span>
+          </div>
+          <div class="bt-progress__row" data-bt-progress-row="weekend">
+            <span class="bt-progress__label">주말</span>
+            <span class="bt-progress__bar"><i data-bt-progress-fill="weekend"></i></span>
+            <span class="bt-progress__count" data-bt-progress-count="weekend">0/3</span>
+          </div>
         </div>
         <div class="time-list" data-bt-list></div>
       </div>
@@ -422,9 +529,55 @@
       // ── 베스트 시간 ──
       let btCache = null;
       let currentDay = 'weekday';
+      // 응답의 modes/progress/thresholds 를 받아 모드 배지·진행 카드 갱신.
+      // currentDay 가 'personal' 이면 핑크 "내 데이터", 아니면 회색 "업종 평균".
+      function renderModeAndProgress() {
+        if (!btCache) return;
+        const modes = btCache.modes || {};
+        const progress = btCache.progress || null;
+        const thresholds = btCache.thresholds || { weekday: 5, weekend: 3 };
+
+        // 모드 배지 (현재 탭 요일군 기준)
+        const modeEl = document.querySelector('[data-bt-mode]');
+        const modeLabelEl = document.querySelector('[data-bt-mode-label]');
+        if (modeEl && modeLabelEl) {
+          const personal = modes[currentDay] === 'personal';
+          modeEl.classList.toggle('is-personal', personal);
+          modeEl.classList.toggle('is-seed', !personal);
+          modeLabelEl.textContent = personal ? '내 데이터' : '업종 평균';
+          modeEl.hidden = false;
+        }
+
+        // 진행 카드 (둘 다 ready 면 숨김)
+        const progEl = document.querySelector('[data-bt-progress]');
+        const hintEl = document.querySelector('[data-bt-progress-hint]');
+        if (!progEl) return;
+        if (!progress || progress.ready) {
+          progEl.hidden = true;
+          return;
+        }
+        progEl.hidden = false;
+        ['weekday', 'weekend'].forEach((dow) => {
+          const p = progress[dow] || { have: 0, need: thresholds[dow], ready: false };
+          const have = Math.max(0, Number(p.have) || 0);
+          const need = Math.max(1, Number(p.need) || thresholds[dow]);
+          const ratio = Math.min(100, Math.round((have / need) * 100));
+          const fill = document.querySelector(`[data-bt-progress-fill="${dow}"]`);
+          const count = document.querySelector(`[data-bt-progress-count="${dow}"]`);
+          const row = document.querySelector(`[data-bt-progress-row="${dow}"]`);
+          if (fill) fill.style.width = (p.ready ? 100 : ratio) + '%';
+          if (count) count.textContent = `${have}/${need}`;
+          if (row) row.classList.toggle('is-ready', !!p.ready);
+        });
+        const curReady = progress[currentDay] && progress[currentDay].ready;
+        hintEl.textContent = curReady
+          ? '이 요일은 내 데이터로 추천 중. 다른 요일도 모이면 함께 전환돼요.'
+          : '게시가 더 쌓이면 내 패턴으로 자동 전환돼요.';
+      }
       function renderBest() {
         const listEl = document.querySelector('[data-bt-list]');
         if (!btCache) return;
+        renderModeAndProgress();
         const items = btCache[currentDay] || [];
         if (!items.length) {
           listEl.innerHTML = '<div class="empty"><div class="empty__title">데이터가 부족해요</div><div class="empty__sub">게시물이 좀 더 쌓이면 정확해집니다.</div></div>';
