@@ -57,6 +57,26 @@
       letter-spacing: var(--tracking-tight);
       flex: 1;
     }
+    .topbar__refresh {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-full);
+      color: var(--ink);
+      cursor: pointer;
+      transition: background 160ms var(--ease-toss);
+    }
+    .topbar__refresh:hover { background: var(--bg-soft); }
+    .topbar__refresh:active { transform: scale(0.92); }
+    .topbar__refresh svg { width: 20px; height: 20px; stroke-width: 2.2; }
+    .topbar__refresh.is-spinning svg {
+      animation: refresh-spin 800ms linear infinite;
+    }
+    @keyframes refresh-spin {
+      to { transform: rotate(360deg); }
+    }
 
     .wrap { padding: var(--space-4); max-width: 600px; margin: 0 auto; }
 
@@ -311,6 +331,13 @@
       </svg>
     </a>
     <h1 class="topbar__title">새 댓글</h1>
+    <button type="button" class="topbar__refresh" data-refresh aria-label="새로고침">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polyline points="23 4 23 10 17 10"/>
+        <polyline points="1 20 1 14 7 14"/>
+        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+      </svg>
+    </button>
   </header>
 
   <main class="wrap" role="main">
@@ -419,9 +446,11 @@
           .replace(/'/g, '&#39;');
       }
 
-      async function load() {
+      // forceRefresh=true 면 서버 캐시 우회 (사장님이 IG 에서 게시물·답글 삭제 후 즉시 반영).
+      async function load(forceRefresh = false) {
         try {
-          const res = await fetch('/api/comments?limit=50', { headers: authHeaders });
+          const url = '/api/comments?limit=50' + (forceRefresh ? '&refresh=1' : '');
+          const res = await fetch(url, { headers: authHeaders });
           if (!res.ok) {
             stateEl.textContent = '댓글을 가져오지 못했어요.';
             return;
@@ -585,7 +614,35 @@
         }
       });
 
+      // 새로고침 버튼 — 캐시 우회 fresh fetch + 회전 애니메이션.
+      const refreshBtn = document.querySelector('[data-refresh]');
+      let isRefreshing = false;
+      async function manualRefresh() {
+        if (isRefreshing) return;
+        isRefreshing = true;
+        refreshBtn?.classList.add('is-spinning');
+        try {
+          await load(true);
+        } finally {
+          isRefreshing = false;
+          refreshBtn?.classList.remove('is-spinning');
+        }
+      }
+      refreshBtn?.addEventListener('click', manualRefresh);
+
+      // 페이지 가시성 변화 시 자동 갱신 — 다른 탭에서 IG 삭제 후 돌아왔을 때 즉시 반영.
+      // 30초 이상 지났을 때만 (잦은 탭 전환 시 무한 fetch 방지).
+      let lastLoadAt = Date.now();
+      const AUTO_REFRESH_THRESHOLD_MS = 30 * 1000;
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState !== 'visible') return;
+        if (Date.now() - lastLoadAt < AUTO_REFRESH_THRESHOLD_MS) return;
+        lastLoadAt = Date.now();
+        load(true);
+      });
+
       load();
+      lastLoadAt = Date.now();
     })();
   </script>
 </body>

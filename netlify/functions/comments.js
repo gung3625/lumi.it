@@ -172,8 +172,11 @@ exports.handler = async (event) => {
     };
   }
 
-  // 캐시 hit
-  const cached = await readCache(user.id);
+  // refresh=1 — 캐시 우회 (사장님이 IG 에서 게시물·답글 삭제 후 즉시 반영 원할 때).
+  const forceRefresh = qs.refresh === '1' || qs.refresh === 'true';
+
+  // 캐시 hit (refresh 시 스킵)
+  const cached = !forceRefresh ? await readCache(user.id) : null;
   if (cached) {
     return {
       statusCode: 200,
