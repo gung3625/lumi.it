@@ -1,6 +1,7 @@
 // categories.js — 대분류 ↔ 세부 카테고리 매핑 (프론트엔드 공용)
 // 백엔드는 9개 세부 카테고리(cafe/food/hair/nail/beauty/fashion/flower/fitness/pet) 그대로.
-// 프론트엔드 UI에서만 4개 대분류로 묶어 보여준다.
+// 프론트엔드 UI에서 5개 대분류로 묶어 보여준다 (네이버 쇼핑인사이트 분류 참고).
+// "소매" 가 너무 광범위해서 패션을 독립 분리, 플라워·펫은 라이프로 묶음.
 
 (function () {
   const MAJOR_GROUPS = [
@@ -22,12 +23,10 @@
       ],
     },
     {
-      id: 'retail',
-      label: '소매',
+      id: 'fashion_group',
+      label: '패션',
       subs: [
         { id: 'fashion', label: '패션' },
-        { id: 'flower',  label: '플라워' },
-        { id: 'pet',     label: '펫' },
       ],
     },
     {
@@ -35,6 +34,14 @@
       label: '운동·레저',
       subs: [
         { id: 'fitness', label: '운동' },
+      ],
+    },
+    {
+      id: 'life',
+      label: '라이프',
+      subs: [
+        { id: 'flower', label: '플라워' },
+        { id: 'pet',    label: '펫' },
       ],
     },
   ];
