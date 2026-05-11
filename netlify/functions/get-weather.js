@@ -87,15 +87,19 @@ exports.handler = async (event) => {
 
   const region = (seller && seller.region || '').trim();
   let coords = null;
+  let gugun = '';
   for (const sido of Object.keys(SIDO_COORDS)) {
     if (region.startsWith(sido)) {
       coords = { sido, ...SIDO_COORDS[sido] };
+      gugun = region.slice(sido.length).trim(); // "용산구" 또는 ""
       break;
     }
   }
   if (!coords) {
     return { statusCode: 200, headers: CORS, body: JSON.stringify({ ok: true, noRegion: true }) };
   }
+  // 표시용 — short 시·도 + 구·군 ("서울 용산구"). 구·군 없으면 short 만.
+  const displayName = gugun ? `${coords.short} ${gugun}` : coords.short;
 
   // Open-Meteo current weather
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${coords.lat}&longitude=${coords.lng}&current=temperature_2m,weather_code&timezone=Asia%2FSeoul`;
@@ -126,6 +130,8 @@ exports.handler = async (event) => {
       ok: true,
       sido: coords.sido,
       shortName: coords.short,
+      gugun,
+      displayName,
       temperature: Number.isFinite(temp) ? temp : null,
       status: w.status,
       emoji: w.emoji,
