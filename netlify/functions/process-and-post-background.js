@@ -344,7 +344,10 @@ ${isReels ? '7. **릴스**: 첫 3초 훅 강도(1~5) + 마지막 3초 마무리(
 }
 
 // ─────────── 톤 컨텍스트 머지 ───────────
-// 5계층 톤 시그널을 우선순위로 합쳐 캡션 프롬프트가 한 블록만 참조하도록.
+// 5계층 톤 시그널을 우선순위로 합쳐 캡션 프롬프트가 참조하도록.
+// 반환 { mandatory, context }:
+//   mandatory — 사장님 자유 톤 지시 원문 (있으면). 프롬프트 최상단에 강하게 박을 용도.
+//   context  — 나머지 시그널 (샘플/학습/업종참고/프리셋). 프롬프트 중간 톤 섹션용.
 function buildToneContext(item) {
   const lines = [];
   const tone = (item.captionTone || '').trim();
@@ -356,10 +359,8 @@ function buildToneContext(item) {
     '신뢰감 있게': '정중하되 딱딱하지 않게. 사실 위주. 영업 클리셰 금지.',
   };
   const usingFreeTone = tone && !presets[tone];
+  const mandatory = usingFreeTone ? tone : '';
 
-  if (usingFreeTone) {
-    lines.push(`[1·필수] 사장님 직접 지시 (최우선):\n  "${tone}"\n  → 어미·문장 길이·이모지까지 그대로. 아래 시그널은 보조.`);
-  }
   if (item.customCaptions) {
     const samples = String(item.customCaptions).split('|||').filter(Boolean).map(s => s.trim()).filter(Boolean);
     if (samples.length) {
@@ -377,7 +378,7 @@ function buildToneContext(item) {
     const presetName = presets[tone] ? tone : '친근하게';
     lines.push(`[5·프리셋] "${presetName}": ${presets[presetName]}`);
   }
-  return lines.join('\n\n');
+  return { mandatory, context: lines.join('\n\n') || '(추가 시그널 없음)' };
 }
 
 // Vision JSON → 캡션 프롬프트용 컨텍스트 텍스트로 변환.
@@ -418,11 +419,12 @@ const VALIDATOR_SCHEMA = {
         properties: {
           photo_match: { type: 'integer', minimum: 1, maximum: 5 },
           tone_appropriate: { type: 'integer', minimum: 1, maximum: 5 },
+          tone_match: { type: 'integer', minimum: 1, maximum: 5, description: '사장님 자유 톤 지시와 일치 (지시 없으면 5)' },
           cliche_free: { type: 'integer', minimum: 1, maximum: 5 },
           brand_safe: { type: 'integer', minimum: 1, maximum: 5 },
           length_ok: { type: 'integer', minimum: 1, maximum: 5 },
         },
-        required: ['photo_match', 'tone_appropriate', 'cliche_free', 'brand_safe', 'length_ok'],
+        required: ['photo_match', 'tone_appropriate', 'tone_match', 'cliche_free', 'brand_safe', 'length_ok'],
         additionalProperties: false,
       },
       overall: { type: 'integer', minimum: 1, maximum: 5 },
@@ -434,7 +436,7 @@ const VALIDATOR_SCHEMA = {
   },
 };
 
-async function validateCaption(caption, visionJson, brandTokens) {
+async function validateCaption(caption, visionJson, brandTokens, mandatoryTone = '') {
   const isBusinessContent = ['high', 'medium'].includes(visionJson.business_relevance);
   const prompt = `당신은 인스타그램 캡션 품질 검수자입니다. JSON 으로만 출력.
 
@@ -444,6 +446,9 @@ scene_type: ${visionJson.scene_type}
 첫인상: ${visionJson.first_impression}
 핵심: ${visionJson.core_analysis}
 
+[사장님 톤 지시]
+${mandatoryTone ? `"${mandatoryTone}"` : '(없음 — tone_match 는 5 고정)'}
+
 [캡션]
 """
 ${caption}
@@ -452,13 +457,14 @@ ${caption}
 ## 채점 (각 1~5, 1=실패 5=완벽)
 1. photo_match: 캡션이 사진 분석과 일치하나
 2. tone_appropriate: ${isBusinessContent ? '매장 톤이 적절한가' : '일상 톤 — 캡션에 "매장"·"저희 가게"·"저희 공간" 등 비즈니스 표현이 **없는지** (있으면 1)'}
-3. cliche_free: AI 클리셰("정성스러운"·"프리미엄"·"특별한"·"잊지 못할" 등) 부재
-4. brand_safe: 다음 토큰 누출 없음 (있으면 1): ${brandTokens.length ? brandTokens.join(', ') : '(없음 — 5 고정)'}
-5. length_ok: 본문(해시태그 제외) 길이 ${isBusinessContent ? '80~250자' : '50~180자'} 권장 범위
+3. tone_match: ${mandatoryTone ? `사장님 직접 톤 지시 ("${mandatoryTone}") 와 일치도. 캡션의 어미·유머 강도·문장 구조가 그 톤을 명확히 따르면 5, 형식적으로만 따르면 3, 무시되면 1.` : '(지시 없음 → 5 고정)'}
+4. cliche_free: AI 클리셰("정성스러운"·"프리미엄"·"특별한"·"잊지 못할" 등) 부재
+5. brand_safe: 다음 토큰 누출 없음 (있으면 1): ${brandTokens.length ? brandTokens.join(', ') : '(없음 — 5 고정)'}
+6. length_ok: 본문(해시태그 제외) 길이 ${isBusinessContent ? '80~250자' : '50~180자'} 권장 범위
 
-overall = 5개 평균 (소수 버림).
-pass = overall ≥ 3 AND brand_safe == 5 AND tone_appropriate ≥ 3.
-issues: 점수 깎인 이유를 짧고 구체적인 한국어 한 줄씩.`;
+overall = 6개 평균 (소수 버림).
+pass = overall ≥ 3 AND brand_safe == 5 AND tone_appropriate ≥ 3 AND tone_match ≥ 4.
+issues: 점수 깎인 이유를 짧고 구체적인 한국어 한 줄씩. tone_match 가 낮으면 "유머 강도 부족", "어미가 지시한 톤과 다름" 같이 구체적으로.`;
 
   const ctrl = new AbortController();
   const tid = setTimeout(() => ctrl.abort(), 30_000);
@@ -527,7 +533,7 @@ async function generateCaptions(imageAnalysis, item, progress, retryFeedback = '
     sp.description ? `소개: ${sp.description}` : '',
   ].filter(Boolean).join(' / ') || '(정보 없음)';
 
-  const toneContext = buildToneContext(item);
+  const tone = buildToneContext(item);
 
   const lengthGuide = isBusinessContent
     ? '본문 80~250자, 400자 hard cap. 첫 125자가 승부.'
@@ -560,7 +566,14 @@ async function generateCaptions(imageAnalysis, item, progress, retryFeedback = '
     : '';
 
   const prompt = `당신은 인스타그램 캡션 카피라이터입니다. 사장님이 그 순간 휴대폰으로 직접 적은 것처럼 자연스러운 한국어 캡션 한 편을 씁니다. 사진은 못 봅니다 — [이미지 분석] 만 진실의 원천.
+${tone.mandatory ? `
 
+## ⚡ 사장님 톤 — 최우선 (다른 모든 룰보다 우선)
+사장님이 직접 지정한 캡션 톤:
+**"${tone.mandatory}"**
+
+이 톤은 어미·문장 길이·이모지 사용·유머 강도·문장 구조에 그대로 반영됩니다. 매장 콘텐츠/일상 콘텐츠 분기, AI 클리셰 차단, 길이 가이드 같은 다른 룰을 만족하면서도 **이 톤이 캡션에서 명확히 느껴져야** 합니다. 톤이 어긋난 캡션은 검수에서 폐기되어 재생성됩니다.
+` : ''}
 ## 사진 분류
 business_relevance: **${visionJson?.business_relevance || 'unknown'}** → **${isBusinessContent ? '매장 콘텐츠' : '일상 콘텐츠'}** 모드.
 
@@ -600,8 +613,8 @@ ${trendBlock}
 [미디어]
 ${isReels ? '릴스 영상' : photoCount === 1 ? '사진 1장' : `캐러셀 ${photoCount}장 (사진 번호 직접 언급 X)`}
 
-## 사장님 톤 (우선순위 순)
-${toneContext}
+## 사장님 톤 (보조 시그널)
+${tone.context}
 
 ## 해시태그
 - 총 ${tagCount}
@@ -656,7 +669,7 @@ ${toneContext}
   // Validator — JSON 분석이 있고 첫 시도일 때만
   if (visionJson && !retryFeedback) {
     try {
-      const v = await validateCaption(safeCaptions[0], visionJson, brandTokens);
+      const v = await validateCaption(safeCaptions[0], visionJson, brandTokens, tone.mandatory);
       console.log('[validator]', JSON.stringify({ scores: v.scores, overall: v.overall, pass: v.pass }));
       if (!v.pass && Array.isArray(v.issues) && v.issues.length) {
         await mark('gen_retry');
