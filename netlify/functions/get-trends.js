@@ -310,7 +310,7 @@ async function mergeV2Fields(supa, keywords, category, collectedDate, axisFilter
       return DEFAULT_AXIS_WHITELIST.includes(axis);
     };
 
-    return keywords
+    const merged = keywords
       .map(kw => {
         const key = (kw.keyword || '').toLowerCase().trim();
         const v2 = v2Map.get(key);
@@ -338,6 +338,36 @@ async function mergeV2Fields(supa, keywords, category, collectedDate, axisFilter
       })
       // axis 화이트리스트 필터 — v2 row의 axis가 interior/experience면 응답에서 제거 (axisFilter='all' 시 통과)
       .filter(k => axisAllowed(k.axis));
+
+    // trends row 의 keywords 가 너무 적은 카테고리(예: fitness=3) 보강 —
+    // trend_keywords 에 있지만 응답에 없는 키워드를 weighted_score 순으로 append.
+    // axis 화이트리스트는 동일하게 적용. 슬롯 한도는 호출 측(trends.html slice 30)이 책임.
+    const existing = new Set(merged.map(k => (k.keyword || '').toLowerCase().trim()));
+    const extras = [];
+    for (const row of data) {
+      const key = (row.keyword || '').toLowerCase().trim();
+      if (!key || existing.has(key)) continue;
+      if (!axisAllowed(row.axis)) continue;
+      const fb = fbMap.get(row.keyword) || { likes: 0, dislikes: 0 };
+      extras.push({
+        keyword: row.keyword,
+        score: row.weighted_score ?? 0,
+        crossSourceCount: row.cross_source_count ?? undefined,
+        weightedScore: row.weighted_score ?? undefined,
+        velocityPct: row.velocity_pct ?? undefined,
+        signalTier: row.signal_tier ?? undefined,
+        isNew: row.is_new ?? undefined,
+        axis: row.axis ?? undefined,
+        narrative: row.narrative ?? null,
+        origin: row.origin ?? null,
+        saturationTotal: row.raw_mentions?.saturation_total ?? undefined,
+        saturationLevel: row.raw_mentions?.saturation_level ?? undefined,
+        likes: fb.likes,
+        dislikes: fb.dislikes,
+      });
+    }
+    extras.sort((a, b) => (b.weightedScore ?? 0) - (a.weightedScore ?? 0));
+    return [...merged, ...extras];
   } catch(e) {
     // silent fallback — v2 조회 실패해도 기존 응답 유지
     return keywords;
