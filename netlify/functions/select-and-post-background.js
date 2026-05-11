@@ -311,12 +311,27 @@ exports.handler = async (event) => {
     }
     if (reservation.is_sent) { console.log('[select-and-post] 이미 게시됨'); return; }
 
-    // 2) 중복 호출 방지 — posting 상태로 선 마킹
-    if (reservation.caption_status !== 'posting') {
-      await supabase
+    // 2) 중복 호출 방지 — atomic CAS 로 'scheduled' → 'posting' 전이.
+    //    동일 row 에 대해 process-and-post 직접 트리거 + scheduler cron 트리거 가
+    //    동시에 select-and-post 를 호출하던 race 가 여기서 차단된다.
+    //    Postgres 가 row lock 안에서 WHERE 재검사하므로 오직 한 호출만 affected rows>0 을 받음.
+    //    이전엔 select-then-update 패턴이라 둘 다 통과 → 동일 사진 N개 게시되는 버그 발생.
+    {
+      const { data: claimed, error: claimErr } = await supabase
         .from('reservations')
         .update({ caption_status: 'posting' })
-        .eq('reserve_key', reservationKey);
+        .eq('reserve_key', reservationKey)
+        .eq('caption_status', 'scheduled')
+        .eq('is_sent', false)
+        .select('reserve_key');
+      if (claimErr) {
+        console.error('[select-and-post] claim 실패:', claimErr.message);
+        return;
+      }
+      if (!claimed || claimed.length === 0) {
+        console.log('[select-and-post] 다른 호출이 이미 진행 중/완료 — 스킵:', reservationKey);
+        return;
+      }
     }
 
     const captions = reservation.generated_captions || reservation.captions || [];
