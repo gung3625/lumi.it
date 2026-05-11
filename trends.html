@@ -588,7 +588,18 @@
       const sheetBody = document.querySelector('[data-sheet-body]');
 
       const C = window.LumiCategories;
+      // 트렌드 페이지에서만 숨길 카테고리 (categories.js 전역 정의는 유지 — 가입/캡션 흐름은 그대로)
+      const HIDDEN_CATS = new Set(['pet']);
+      function visibleSubs(group) {
+        return (group && group.subs) ? group.subs.filter(s => !HIDDEN_CATS.has(s.id)) : [];
+      }
       let currentCategory = C.defaultSub;
+      if (HIDDEN_CATS.has(currentCategory)) {
+        // default 가 숨김 카테고리면 같은 그룹의 첫 visible sub 으로 교체
+        const grp = C.findMajorBySub(currentCategory);
+        const visible = grp ? visibleSubs(grp) : [];
+        currentCategory = visible[0] ? visible[0].id : C.defaultSub;
+      }
       let currentMajor = C.findMajorBySub(currentCategory).id;
       // 마지막으로 렌더한 키워드 객체들 — sheet 클릭 시 v2 메타 즉시 표시용
       let lastItems = [];
@@ -612,7 +623,8 @@
             if (!id || id === currentMajor) return;
             currentMajor = id;
             const group = C.findGroup(id);
-            currentCategory = group.subs[0].id;
+            const visible = visibleSubs(group);
+            currentCategory = (visible[0] || group.subs[0]).id;
             renderMajorTabs();
             renderCatTabs();
             stateEl.textContent = '키워드를 가져오는 중…';
@@ -625,14 +637,15 @@
       // 선택된 대분류의 세부 칩 렌더
       function renderCatTabs() {
         const group = C.findGroup(currentMajor);
-        // sub가 1개면 칩 줄 자체 숨김 (운동·레저 = fitness 단독) — opacity/height 트랜지션으로 부드럽게
-        if (group.subs.length <= 1) {
+        const subs = visibleSubs(group);
+        // visible sub 가 1개 이하면 칩 줄 자체 숨김 (운동·레저 = fitness 단독 등)
+        if (subs.length <= 1) {
           catTabsEl.classList.add('is-hidden');
           catTabsEl.innerHTML = '';
           return;
         }
         catTabsEl.classList.remove('is-hidden');
-        catTabsEl.innerHTML = group.subs.map(s =>
+        catTabsEl.innerHTML = subs.map(s =>
           `<button class="cat-tab${s.id === currentCategory ? ' is-active' : ''}" type="button" data-cat="${s.id}">${s.label}</button>`
         ).join('');
         catTabsEl.querySelectorAll('.cat-tab').forEach(tab => {
@@ -664,7 +677,7 @@
             (data.user && data.user.category);
           if (cat) {
             const sub = String(cat).toLowerCase();
-            if (C.SUB_TO_MAJOR[sub]) {
+            if (C.SUB_TO_MAJOR[sub] && !HIDDEN_CATS.has(sub)) {
               currentCategory = sub;
               currentMajor = C.SUB_TO_MAJOR[sub];
             }
