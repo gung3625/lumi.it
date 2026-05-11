@@ -204,19 +204,6 @@
         transform var(--duration-snap) var(--ease-toss),
         border-color var(--duration-snap) var(--ease-toss);
       text-align: left;
-      flex-wrap: wrap;  /* 활용 팁 미리보기 가 다음 줄에 들어가도록 */
-    }
-    .kw-item__hint {
-      flex: 1 1 100%;
-      margin-top: 6px;
-      padding-left: 32px;  /* rank width(24) + gap(8) ~ */
-      font-size: var(--text-caption);
-      color: var(--ink-muted);
-      line-height: var(--leading-snug);
-      font-weight: var(--weight-regular);
-    }
-    .kw-item__hint::before {
-      content: '💡 ';
     }
     .kw-item:active { transform: scale(0.98); }
     .kw-item:hover { background: var(--pink-50); border-color: var(--pink-300); }
@@ -740,45 +727,6 @@
               openSheet(item);
             });
           });
-
-          // 가장 hot 한 top 2 키워드의 활용 팁 첫 줄을 카드 아래에 inline 미리보기.
-          // keyword-detail API 가 server-side 30일 cache 라 비용 거의 0.
-          // 사장님이 "이 키워드 어떻게 써먹지" 즉시 감 잡도록.
-          //
-          // RACE GUARD: 카테고리 전환 시 이전 prefetch 가 새 카테고리 카드에 잘못
-          // inject 되던 버그 차단. 호출 시점의 카테고리를 capture 하고 응답 도착 시
-          // currentCategory 가 같을 때만 적용.
-          (async (renderCategory) => {
-            const topHot = lastItems
-              .map((item, idx) => ({ item, idx }))
-              .filter(({ item }) => (typeof item.velocityPct === 'number' && item.velocityPct >= 50) || item.isNew)
-              .sort((a, b) => (b.item.velocityPct || 0) - (a.item.velocityPct || 0))
-              .slice(0, 2);
-            const escHint = (s) => String(s == null ? '' : s)
-              .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-              .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-            await Promise.all(topHot.map(async ({ item, idx }) => {
-              try {
-                const url = `/api/keyword-detail?keyword=${encodeURIComponent(item.keyword)}&category=${encodeURIComponent(renderCategory)}`;
-                const r = await fetch(url);
-                if (!r.ok) return;
-                // 응답 도착 시점에 사용자가 다른 카테고리로 옮겼으면 무시
-                if (currentCategory !== renderCategory) return;
-                const j = await r.json();
-                const ideas = j && j.data && Array.isArray(j.data.ideas) ? j.data.ideas : [];
-                const first = (ideas[0] || '').trim().slice(0, 60);
-                if (!first) return;
-                // 다시 한 번 — JSON parse 후 DOM 접근 직전에도 검증
-                if (currentCategory !== renderCategory) return;
-                const btn = listEl.querySelectorAll('.kw-item')[idx];
-                if (!btn) return;
-                const hint = document.createElement('div');
-                hint.className = 'kw-item__hint';
-                hint.innerHTML = escHint(first);
-                btn.appendChild(hint);
-              } catch {}
-            }));
-          })(currentCategory);
 
           // ?q=KEYWORD 자동 펼치기 — lastItems 에서 일치 검색, 없으면 minimal
           const params = new URLSearchParams(location.search);
