@@ -38,6 +38,7 @@ const {
   getIgTokenForSeller,
   igGraphRequest,
   IgGraphError,
+  markIgTokenInvalid,
 } = require('./_shared/ig-graph');
 
 const CACHE_TTL_MS = 30 * 60 * 1000; // 30분
@@ -265,6 +266,7 @@ exports.handler = async (event) => {
   } catch (e) {
     if (e instanceof IgGraphError && e.isTokenExpired()) {
       console.warn(`[insight-weekly] seller=${String(sellerId).slice(0, 8)} 토큰 만료 (code=${e.code})`);
+      await markIgTokenInvalid(admin, sellerId, 'insight-weekly');
       return {
         statusCode: 200,
         headers: CORS,

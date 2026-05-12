@@ -2,6 +2,7 @@ const { corsHeaders, getOrigin } = require('./_shared/auth');
 // 최근 게시물 1건 조회 — Bearer 토큰 검증.
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
+const { markIgTokenInvalid } = require('./_shared/ig-graph');
 
 
 // Supabase Storage URL 여부 판단
@@ -95,9 +96,18 @@ exports.handler = async (event) => {
                 return { statusCode: 200, headers: headers, body: JSON.stringify({ post: { ...data, ...cdnUpdate } }) };
               }
             } else {
+              // 토큰 만료(code 190) 감지 → ig_accounts.token_invalid_at 마킹.
+              // 누락 시 동일 사장님의 후속 호출이 계속 401 받아 rate limit 소진.
+              if (igMedia.error.code === 190) {
+                await markIgTokenInvalid(admin, user.id, 'last-post');
+              }
               console.warn('[last-post] IG media API 오류:', igMedia.error.message);
             }
           } else {
+            // 401 → 토큰 만료 가능. body 없는 케이스 대비.
+            if (igMediaRes.status === 401) {
+              await markIgTokenInvalid(admin, user.id, 'last-post');
+            }
             console.warn('[last-post] IG media HTTP 오류:', igMediaRes.status);
           }
         }
