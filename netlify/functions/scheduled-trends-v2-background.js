@@ -6,7 +6,6 @@
 //   - 크로스 소스 검증: 2+ 소스 → signal_tier='real', 1소스 → 'weak'
 //   - Velocity 스코어링: 전 주 대비 mention 증가율 (%)
 //   - 소스별 가중치: datalab=3 / blog=1 / youtube=2 / ig=2 / google=1
-//   - 신조어 감지: 지난 90일 trend_keywords에 없던 키워드 → is_new=true
 //   - 레거시 키 6종 그대로 유지 (프론트 호환)
 //   - runGuarded + heartbeat 키 'scheduled-trends' 그대로
 //   - 카나리 전략: TREND_V2_CANARY_CATS env ('all' or comma-separated)
@@ -785,14 +784,6 @@ function classifySaturation(total) {
   if (total < 5000) return 'growing';
   if (total < 50000) return 'established';
   return 'saturated';
-}
-
-function classifyNewConfidence(isNew, saturationTotal) {
-  if (!isNew) return null;
-  if (saturationTotal == null) return 'medium';  // 데이터 없으면 중간
-  if (saturationTotal < 100) return 'high';
-  if (saturationTotal < 1000) return 'medium';
-  return 'low';
 }
 
 async function fetchGoogleTrendsLib(geo) {
@@ -1644,38 +1635,6 @@ async function computeVelocity({ supa, keyword, category, todayCount, todayRank 
 }
 
 // ─────────────────────────────────────────────
-// 신조어 감지: 지난 90일 trend_keywords에 없는 키워드
-// ─────────────────────────────────────────────
-async function checkIsNew({ supa, keyword, category }) {
-  try {
-    // Bootstrap 가드: 카테고리 전체 누적 행 < 50이면 신조어 판별 비활성 (테이블이 아직 young)
-    const { count: totalCount } = await supa
-      .from('trend_keywords')
-      .select('id', { count: 'exact', head: true })
-      .eq('category', category);
-
-    if (!totalCount || totalCount < 50) return false;
-
-    const cutoff = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-    const { data, error } = await supa
-      .from('trend_keywords')
-      .select('id')
-      .eq('keyword', keyword)
-      .eq('category', category)
-      .lt('collected_date', cutoff)
-      .limit(1);
-
-    if (error) {
-      return false;
-    }
-    // 90일 이전 기록이 없으면 신조어
-    return !data || data.length === 0;
-  } catch(e) {
-    return false;
-  }
-}
-
-// ─────────────────────────────────────────────
 // 가중치 스코어 계산
 // ─────────────────────────────────────────────
 function computeWeightedScore(counts) {
@@ -1787,14 +1746,14 @@ async function saveTrendKeywordsV2({ supa, category, enrichedKeywords, collected
       cross_source_count: item.crossSourceCount,
       weighted_score: item.weightedScore,
       velocity_pct: item.velocityPct,
-      is_new: item.isNew,
+      // is_new 컬럼은 사용 안 함 — 응답·UI 에서 NEW 라벨 제거 (PR #130). 항상 false 저장.
+      is_new: false,
       sources: sourcesObj,  // DB 스키마의 sources jsonb 컬럼
       narrative: item.narrative || null,
       origin: item.origin || null,
       raw_mentions: {
         saturation_total: item.saturationTotal ?? null,
         saturation_level: item.saturationLevel ?? null,
-        is_new_confidence: item.isNewConfidence ?? null,
       },
     };
   });
@@ -1990,10 +1949,8 @@ exports.handler = runGuarded({
             const todayScore = 100 - idx * 5;
             // velocity 2-tier: trend_keywords weighted_score 우선, 실패시 legacy rank 스냅샷 fallback
             const velocityPct = await computeVelocity({ supa, keyword, category, todayCount: weightedScore, todayRank: idx });
-            const isNew = await checkIsNew({ supa, keyword, category });
             const saturationTotal = await fetchKeywordSaturation(keyword);
             const saturationLevel = classifySaturation(saturationTotal);
-            const isNewConfidence = classifyNewConfidence(isNew, saturationTotal);
 
             return {
               keyword,
@@ -2002,8 +1959,6 @@ exports.handler = runGuarded({
               signalTier,
               weightedScore,
               velocityPct,
-              isNew,
-              isNewConfidence,
               counts,
               saturationTotal,
               saturationLevel,
