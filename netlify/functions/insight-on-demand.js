@@ -25,7 +25,7 @@
 // }
 //
 // IG 미연동:        { ok: true, data: null, message: 'IG 미연동' }                (200)
-// 토큰 만료:        { ok: true, data: null, error: 'token_expired' }              (200)
+// 토큰 만료:        { ok: true, data: null, tokenExpired: true, error: 'token_expired' }  (200)
 // mediaId 누락:     { ok: false, error: 'mediaId 누락' }                          (400)
 // 잘못된 mediaId:   { ok: false, error: 'media_not_found' }                       (404)
 // 인증 실패:        { ok: false, error: '인증이 필요합니다.' }                    (401)
@@ -221,7 +221,7 @@ exports.handler = async (event) => {
         return {
           statusCode: 200,
           headers: CORS,
-          body: JSON.stringify({ ok: true, data: null, error: 'token_expired' }),
+          body: JSON.stringify({ ok: true, data: null, tokenExpired: true, error: 'token_expired' }),
         };
       }
       // 권한 없음 / 잘못된 mediaId — 보통 code 100 (Object does not exist) / 803 등
@@ -282,7 +282,7 @@ exports.handler = async (event) => {
       return {
         statusCode: 200,
         headers: CORS,
-        body: JSON.stringify({ ok: true, data: null, error: 'token_expired' }),
+        body: JSON.stringify({ ok: true, data: null, tokenExpired: true, error: 'token_expired' }),
       };
     }
     console.error('[insight-on-demand] IG Graph API 오류:', e && e.message);

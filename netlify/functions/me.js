@@ -178,8 +178,10 @@ exports.handler = async (event) => {
     console.error('[me] sellerToken 발급 실패:', e.message);
   }
 
-  // IG 연동 + 토큰 무효 상태 (대시보드/설정의 "재연동 필요" 카드용)
-  let igStatus = { connected: false, tokenInvalid: false };
+  // IG 연동 + 토큰 만료 상태 (대시보드/설정의 "재연동 필요" 카드용).
+  // 응답 키 통일 — 모든 IG 토큰 만료 응답은 tokenExpired 사용 (PR #169).
+  // tokenInvalid 는 dashboard.html 옛 호환용 alias 로 유지.
+  let igStatus = { connected: false, tokenExpired: false, tokenInvalid: false };
   try {
     const { data: igRow } = await admin
       .from('ig_accounts')
@@ -187,7 +189,8 @@ exports.handler = async (event) => {
       .eq('user_id', seller.id)
       .maybeSingle();
     if (igRow && igRow.ig_user_id) {
-      igStatus = { connected: true, tokenInvalid: !!igRow.token_invalid_at };
+      const expired = !!igRow.token_invalid_at;
+      igStatus = { connected: true, tokenExpired: expired, tokenInvalid: expired };
     }
   } catch (e) {
     console.warn('[me] ig_accounts 조회 경고:', e && e.message);

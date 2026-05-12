@@ -15,12 +15,12 @@
 //   LUMI_SECRET     — admin 인증
 // 환경변수 옵션:
 //   GITHUB_REPO     — 기본 "gung3625/lumi.it"
-//   GITHUB_BRANCH   — 기본 "claude/rebuild-all-files-Jhc1i"
+//   GITHUB_BRANCH   — 기본 "main"
 //
 // background 함수 (timeout 15분). 12장 순차 처리 (각 ~10-30초).
 
 const REPO = process.env.GITHUB_REPO || 'gung3625/lumi.it';
-const BRANCH = process.env.GITHUB_BRANCH || 'main';   // 옛 default 'claude/rebuild-...' 옛 dev 브랜치 잔재
+const BRANCH = process.env.GITHUB_BRANCH || 'main';
 
 const PROMPTS = [
   'Top-down photo of Korean bibimbap with vibrant vegetables on a warm wooden table, natural daylight, photorealistic shot on iPhone',
