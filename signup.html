@@ -722,8 +722,10 @@
 
       <div class="cta-row">
         <button class="cta-primary" type="button" data-ig-connect disabled>📷 루미와 인스타 연동하기</button>
+        <button class="cta-secondary" type="button" data-threads-connect>💬 쓰레드도 연동 (선택)</button>
         <button class="cta-secondary" type="button" data-ig-skip>나중에 할게요</button>
       </div>
+      <p class="step__sub" style="margin-top:8px;font-size:13px;color:#888;">쓰레드 연동은 인스타 연동 후 가능해요. 회원가입 후 설정에서도 추가할 수 있어요.</p>
     </section>
 
     <!-- ─────── Step 4: 완료 ─────── -->
@@ -1059,6 +1061,13 @@
         location.href = '/api/ig-oauth?token=' + encodeURIComponent(token);
       });
 
+      // 쓰레드 연동 시작 — Threads OAuth (별도 flow, 결정 #1 revised)
+      // IG 미연동 시 백엔드(threads-oauth.js)가 ?threads_oauth_error=10 으로
+      // /settings 리다이렉트 → 사장님은 거기서 안내 메시지 확인.
+      document.querySelector('[data-threads-connect]').addEventListener('click', () => {
+        location.href = '/api/threads-oauth?token=' + encodeURIComponent(token) + '&return_to=/signup';
+      });
+
       // 나중에 — sellers.onboarded=true 박은 후 step 4 (다음 로그인 시 dashboard 직행)
       document.querySelector('[data-ig-skip]').addEventListener('click', async (e) => {
         const btn = e.currentTarget;
@@ -1115,6 +1124,15 @@
             showStep(3);
           }
         } catch (_) {}
+      })();
+
+      // Threads OAuth 콜백 결과 — 성공만 처리 (에러는 threads-oauth.js 가 /settings 로 보냄)
+      (function handleThreadsReturn() {
+        const qs = new URLSearchParams(location.search);
+        if (qs.get('threads') === 'connected') {
+          alert('쓰레드 연동이 완료됐어요.');
+          history.replaceState(null, '', location.pathname);
+        }
       })();
     })();
   </script>
