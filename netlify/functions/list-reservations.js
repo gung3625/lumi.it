@@ -41,7 +41,38 @@ exports.handler = async (event) => {
       console.error('[list-reservations] select error:', error.message);
       return { statusCode: 500, headers: headers, body: JSON.stringify({ error: '예약 목록 조회 실패' }) };
     }
-    return { statusCode: 200, headers: headers, body: JSON.stringify({ items: data || [] }) };
+
+    // M3.2 — channel_posts join (멀티 채널 게시 상태). history.html 에서 IG / Threads 배지 표시용.
+    //        reservations 50건 한도 안에서 IN 절 — 추가 쿼리 1회로 N+1 없음.
+    const items = data || [];
+    const ids = items.map((r) => r.id).filter((v) => v !== null && v !== undefined);
+    let channelsByReservation = {};
+    if (ids.length) {
+      try {
+        const { data: cps, error: cpErr } = await admin
+          .from('channel_posts')
+          .select('reservation_id, channel, status, post_id, posted_at')
+          .in('reservation_id', ids);
+        if (cpErr) {
+          console.warn('[list-reservations] channel_posts select 경고:', cpErr.message);
+        } else if (Array.isArray(cps)) {
+          for (const cp of cps) {
+            const key = String(cp.reservation_id);
+            (channelsByReservation[key] = channelsByReservation[key] || []).push({
+              channel:   cp.channel,
+              status:    cp.status,
+              post_id:   cp.post_id || null,
+              posted_at: cp.posted_at || null,
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('[list-reservations] channel_posts 예외 (무시):', e && e.message);
+      }
+    }
+    const merged = items.map((r) => ({ ...r, channels: channelsByReservation[String(r.id)] || [] }));
+
+    return { statusCode: 200, headers: headers, body: JSON.stringify({ items: merged }) };
   } catch (err) {
     console.error('[list-reservations] unexpected:', err && err.message);
     return { statusCode: 500, headers: headers, body: JSON.stringify({ error: '서버 오류' }) };
