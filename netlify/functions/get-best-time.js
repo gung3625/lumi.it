@@ -36,6 +36,7 @@ const { corsHeaders, getOrigin } = require('./_shared/auth');
 //   'industry-seed'          전부 시드
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
+const { kstHourDow } = require('./_shared/kst-utils');
 const {
   HISTORY_THRESHOLDS,
   HISTORY_WINDOW_DAYS,
@@ -243,14 +244,11 @@ function computePersonalizedSlots(history, seed) {
     if (!row || !row.posted_at) continue;
     // reach 미수집 row 는 추천 신호 아님 — 카운트·집계 모두 제외.
     if (typeof row.reach !== 'number') continue;
-    const d = new Date(row.posted_at);
-    if (isNaN(d.getTime())) continue;
-    // posted_at 은 UTC ISO. KST = UTC+9 변환.
-    const kst = new Date(d.getTime() + 9 * 3600 * 1000);
-    const dow = kst.getUTCDay();
-    const hh = kst.getUTCHours();
+    const k = kstHourDow(row.posted_at);
+    if (!k) continue;
+    const { hour: hh, dow, minute } = k;
     if (hh < 6 || hh > 23) continue;
-    const mm = kst.getUTCMinutes() < 30 ? '00' : '30';
+    const mm = minute < 30 ? '00' : '30';
     const key = `${String(hh).padStart(2, '0')}:${mm}`;
     const grp = (dow === 0 || dow === 6) ? 'weekend' : 'weekday';
     buckets[grp][key] = (buckets[grp][key] || 0) + rowScore(row);
