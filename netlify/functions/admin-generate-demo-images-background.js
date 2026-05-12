@@ -105,9 +105,22 @@ exports.handler = async (event) => {
       }
 
       const imgJson = await imgRes.json();
-      const b64 = imgJson && imgJson.data && imgJson.data[0] && imgJson.data[0].b64_json;
+      const first = imgJson && imgJson.data && imgJson.data[0];
+      let b64 = first && first.b64_json;
+      // v2 default 응답은 url. url 만 있으면 fetch 해서 base64 인코딩.
+      if (!b64 && first && first.url) {
+        try {
+          const cdnRes = await fetch(first.url);
+          if (cdnRes.ok) {
+            const buf = Buffer.from(await cdnRes.arrayBuffer());
+            b64 = buf.toString('base64');
+          }
+        } catch (e) {
+          log.push({ idx, stage: 'cdn-fetch', err: e.message });
+        }
+      }
       if (!b64) {
-        log.push({ idx, stage: 'openai', err: 'no b64_json in response' });
+        log.push({ idx, stage: 'openai', err: 'no b64_json or url in response', keys: first ? Object.keys(first) : null });
         continue;
       }
 
