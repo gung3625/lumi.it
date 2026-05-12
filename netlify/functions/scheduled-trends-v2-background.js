@@ -1588,9 +1588,11 @@ async function computeVelocity({ supa, keyword, category, todayCount, todayRank 
 
     if (!error && data && data.length > 0) {
       const prevScore = Number(data[0].weighted_score);
-      if (prevScore > 0) {
+      // 매우 작은 prev (< 1.0) 는 분모 작아 비율이 폭발 → 신뢰성 ↓. 측정 불가로 처리.
+      if (prevScore >= 1.0) {
         const pct = ((todayCount - prevScore) / prevScore) * 100;
-        const v = Math.max(-100, Math.min(2000, Math.round(pct * 10) / 10));
+        // clamp -100 ~ 300 (옛 2000 → 사장님 체감 신뢰도. 진짜 폭증은 hot 배지 자체로 표현).
+        const v = Math.max(-100, Math.min(300, Math.round(pct * 10) / 10));
         console.log(`[velocity] ${category}/${keyword} tier1 OK prev=${prevScore} today=${todayCount} v=${v}`);
         return v;
       }
@@ -1628,7 +1630,8 @@ async function computeVelocity({ supa, keyword, category, todayCount, todayRank 
 
     const todayScoreProxy = 100 - (todayRank || 0) * 5;
     const pct = ((todayScoreProxy - prevScore) / prevScore) * 100;
-    return Math.max(-100, Math.min(2000, Math.round(pct * 10) / 10));
+    // clamp -100 ~ 300 (옛 2000) — Tier 1 와 동일 범위로 통일
+    return Math.max(-100, Math.min(300, Math.round(pct * 10) / 10));
   } catch(e) {
     console.error(`[velocity] ${category}/${keyword} 예외:`, e.message);
     return null;
