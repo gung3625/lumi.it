@@ -82,7 +82,7 @@ async function callGptMini(systemPrompt, userPrompt) {
 }
 
 /**
- * 업종별 이미지 프롬프트 생성 (gpt-image-1용, 세로 1024×1536)
+ * 업종별 이미지 프롬프트 생성 (gpt-image-2용, 세로 1024×1536)
  * @param {string} industry - cafe | restaurant | beauty | nail | flower | clothing | gym
  * @param {number} variationSeed - 0~13 (14개 슬롯 인덱스)
  * @returns {Promise<string>} 영문 프롬프트
