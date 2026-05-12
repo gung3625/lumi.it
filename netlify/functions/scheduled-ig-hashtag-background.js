@@ -1,6 +1,6 @@
 // scheduled-ig-hashtag-background.js — 매일 IG 해시태그 트렌드 수집 (3일 업종 로테이션)
 // IG Graph API rate limit 회피: 하루 3업종 × 3태그 = 9개/일, 고유 27개/주 (한도 30개 이내)
-// scheduled-trends-background.js의 fetchInstagram은 여기서 쓴 캐시만 읽음.
+// 이 캐시는 scheduled-trends-v2-background.js 가 fetchInstagram 단계에서 읽음.
 // 스케줄: 매일 UTC 18:00 = KST 03:00
 
 const { getAdminClient } = require('./_shared/supabase-admin');
