@@ -12,7 +12,7 @@
 
 'use strict';
 
-const { fetchRelatedFromSeeds } = require('./_shared/naver-ad-keyword-tool');
+const { fetchRelatedFromSeeds, fetchKeywordSearchVolume } = require('./_shared/naver-ad-keyword-tool');
 
 const HEADERS = {
   'Content-Type': 'application/json',
@@ -56,6 +56,19 @@ exports.handler = async (event) => {
   } catch (e) {
     error = e.message || String(e);
   }
+
+  // PR #173 의 fetchKeywordSearchVolume 도 동시 테스트 — cron 에서 null 반환 원인 디버그.
+  // 각 seed 에 대해 단일 키워드 검색량 조회 시도.
+  const volumeResults = [];
+  for (const s of seeds) {
+    try {
+      const v = await fetchKeywordSearchVolume(s);
+      volumeResults.push({ keyword: s, volume: v });
+    } catch (e) {
+      volumeResults.push({ keyword: s, volume: null, error: e.message });
+    }
+  }
+
   const elapsedMs = Date.now() - startedAt;
 
   return {
@@ -66,6 +79,7 @@ exports.handler = async (event) => {
       seeds,
       total: related.length,
       sample: related.slice(0, 10),
+      volumeResults,
       elapsedMs,
       error,
       envState,
