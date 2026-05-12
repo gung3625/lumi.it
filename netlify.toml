@@ -310,6 +310,14 @@
   to = "/signup.html"
   status = 200
 
+# 데모 이미지 12장 자동 생성 — 관리자 전용 (LUMI_SECRET). 함수 -background 접미사라 splat 자동 매핑 불가.
+# /api/* splat 보다 반드시 앞에 와야 매칭됨.
+[[redirects]]
+  from = "/api/admin-generate-demo-images"
+  to = "/.netlify/functions/admin-generate-demo-images-background"
+  status = 200
+  force = true
+
 # API 라우팅
 [[redirects]]
   from = "/api/*"
@@ -462,15 +470,6 @@
 [[redirects]]
   from = "/api/brand-settings"
   to = "/.netlify/functions/brand-settings"
-  status = 200
-  force = true
-
-# 데모 이미지 12장 자동 생성 — 관리자 전용 (LUMI_SECRET).
-# OpenAI Images API → assets/demo/NN.jpg 로 GitHub Contents API direct commit.
-# /api/* 일반 splat이 -background 접미사를 자동 안 붙여주므로 별도 redirect.
-[[redirects]]
-  from = "/api/admin-generate-demo-images"
-  to = "/.netlify/functions/admin-generate-demo-images-background"
   status = 200
   force = true
 
