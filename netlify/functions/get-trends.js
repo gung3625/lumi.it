@@ -393,9 +393,8 @@ async function mergeV2Fields(supa, keywords, category, collectedDate, axisFilter
     // base(trends.keywords) + extras(trend_keywords append) 통합 정렬.
     // 정적 fallback (DEFAULT_TRENDS) 의 옛 키워드는 weightedScore 가 없거나 낮아
     // 자연스레 후순위로 밀리고, trend_keywords 의 real 신호(weighted_score 큼)가 상위.
-    // isNew 가 가장 우선 — 신조어 노출 보장.
+    // (NEW 배지/신조어 우선 분기 제거 — 키워드 클릭 시 sheet 의 GPT 설명이 자연스레 안내)
     const combined = [...merged, ...extras].sort((a, b) => {
-      if (!!a.isNew !== !!b.isNew) return a.isNew ? -1 : 1;
       const sa = typeof a.weightedScore === 'number' ? a.weightedScore : (typeof a.score === 'number' ? a.score : 0);
       const sb = typeof b.weightedScore === 'number' ? b.weightedScore : (typeof b.score === 'number' ? b.score : 0);
       return sb - sa;
