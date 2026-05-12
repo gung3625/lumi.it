@@ -62,9 +62,19 @@ exports.handler = async (event) => {
     };
   }
 
+  // ?count=N (1~12) — 처음 N개만 생성. 옵션 호환·비용 테스트용. 미지정 시 전체 12장.
+  // ?startIndex=K (0~11) — 부분 재시도용 (예: 5번부터 끝까지 = startIndex=4&count=8)
+  let count = parseInt(qp.count || String(PROMPTS.length), 10);
+  if (!Number.isFinite(count) || count < 1) count = PROMPTS.length;
+  if (count > PROMPTS.length) count = PROMPTS.length;
+  let startIndex = parseInt(qp.startIndex || '0', 10);
+  if (!Number.isFinite(startIndex) || startIndex < 0) startIndex = 0;
+  if (startIndex >= PROMPTS.length) startIndex = 0;
+  const endIndex = Math.min(startIndex + count, PROMPTS.length);
+
   const log = [];
 
-  for (let i = 0; i < PROMPTS.length; i++) {
+  for (let i = startIndex; i < endIndex; i++) {
     const idx = String(i + 1).padStart(2, '0');
     const path = `assets/demo/${idx}.jpg`;
 
