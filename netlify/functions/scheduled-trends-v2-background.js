@@ -1029,11 +1029,11 @@ async function splitKeywordsByAxis(keywords, category) {
   const prompt = `다음은 "${CATEGORY_KO[category] || category}" 업종의 트렌드 키워드 목록입니다.
 각 키워드를 아래 4개 축 중 가장 적합한 하나로 분류해 JSON으로 반환하세요.
 
-축 정의:
-- menu: 먹는/마시는 제품, 메뉴, 식재료
-- interior: 공간 집기, 가구, 소품, 인테리어 요소
-- goods: 텀블러, 키링, 굿즈 등 판매 상품
-- experience: 컨셉, 이벤트, 클래스, 팝업 등 체험
+축 정의 (업종 무관 일반 의미):
+- menu: 이 업종의 **주력 판매 제품** (cafe→음료/디저트, food→음식, flower→꽃 종류, fashion→의류, pet→사료/간식)
+- interior: 사장님이 **매장 안에 배치하는 것** (가구·집기·인테리어 요소·디스플레이)
+- goods: 주력 외 **부가 판매 상품** (cafe 텀블러, food 굿즈/밀키트, flower 부케/리스, fashion 잡화, pet 용품)
+- experience: 매장에서 제공하는 **체험·이벤트·클래스·팝업**
 
 업종별 예시:
 ${exampleStr}
@@ -1041,7 +1041,8 @@ ${exampleStr}
 키워드 목록: ${keywords.join(', ')}
 
 규칙:
-- 애매한 키워드는 menu에 배정
+- 위 축 정의를 우선 적용하고, 업종별 예시는 보조 참고만
+- **애매하면 menu (주력 제품)** 에 배정 — interior/goods 로 잘못 새는 것보다 안전
 - 각 키워드는 반드시 하나의 축에만 배정
 - 출력: JSON 객체만 ({"menu":["..."],"interior":["..."],"goods":["..."],"experience":["..."]})`;
 
