@@ -4,6 +4,8 @@
 //
 // 환경변수: OPENAI_API_KEY (필수). 값은 절대 로그·응답에 노출 금지.
 
+const { utcToKstDate } = require('./kst-utils');
+
 const OPENAI_BASE = 'https://api.openai.com/v1';
 const PROMPT_TIMEOUT_MS = 30_000;
 
@@ -150,8 +152,7 @@ async function getBrandCaption(industry, contentType) {
   const mediaLabel = contentType === 'video' ? '짧은 릴스 영상' : '감성 이미지';
 
   // 현재 월·계절 컨텍스트 (시즌감 녹이기용)
-  const now = new Date();
-  const kstMonth = new Date(now.getTime() + 9 * 3600 * 1000).getUTCMonth() + 1;
+  const kstMonth = utcToKstDate(new Date()).getUTCMonth() + 1;
   const seasonMap = { 1:'겨울',2:'겨울',3:'봄',4:'봄',5:'봄',6:'초여름',7:'여름',8:'여름',9:'초가을',10:'가을',11:'늦가을',12:'겨울' };
   const season = seasonMap[kstMonth];
 

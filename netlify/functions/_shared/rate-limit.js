@@ -8,6 +8,7 @@
 //   total (전체 합산): daily 300
 
 const { getAdminClient } = require('./supabase-admin');
+const { kstDateString } = require('./kst-utils');
 
 const LIMITS = {
   tier3_vision: { daily: 30, monthly: 100 },
@@ -17,10 +18,7 @@ const LIMITS = {
 };
 
 function todayDateString() {
-  const d = new Date();
-  // KST 기준 일자 (Asia/Seoul = UTC+9)
-  const kst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
-  return kst.toISOString().slice(0, 10);
+  return kstDateString();
 }
 
 /**

@@ -7,6 +7,7 @@ const { corsHeaders, getOrigin } = require('./_shared/auth');
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
 const { checkAndIncrementQuota, QuotaExceededError } = require('./_shared/openai-quota');
+const { utcToKstDate } = require('./_shared/kst-utils');
 
 
 function httpsGet(url, timeoutMs = 10000) {
@@ -179,15 +180,13 @@ async function fetchFestivals(sidoCode) {
 }
 
 function getKstDateStr(offsetDays = 0) {
-  const now = new Date();
-  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  const kst = utcToKstDate(new Date());
   kst.setUTCDate(kst.getUTCDate() + offsetDays);
   return kst.toISOString().slice(0, 10).replace(/-/g, '');
 }
 
 function getVilageFcstBaseTime() {
-  const now = new Date();
-  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  const kst = utcToKstDate(new Date());
   const hh = kst.getUTCHours();
   const mm = kst.getUTCMinutes();
   const baseTimes = [23, 20, 17, 14, 11, 8, 5, 2];
@@ -201,8 +200,7 @@ function getVilageFcstBaseTime() {
 }
 
 function getMidTmFc() {
-  const now = new Date();
-  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  const kst = utcToKstDate(new Date());
   const hh = kst.getUTCHours();
   const dateStr = getKstDateStr(hh < 6 ? -1 : 0);
   const timeStr = hh >= 18 ? '1800' : '0600';

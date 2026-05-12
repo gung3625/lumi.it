@@ -2,6 +2,7 @@
 // admin-shuffle-weekday.js 와 동일한 로직이지만 인증 체크 없이 cron 자동 실행용.
 // 관심사 분리: 관리자 수동 셔플(admin-shuffle-weekday) vs 자동 주간 셔플(본 파일).
 const { getAdminClient } = require('./_shared/supabase-admin');
+const { utcToKstDate } = require('./_shared/kst-utils');
 
 const INDUSTRIES = ['cafe', 'restaurant', 'beauty', 'nail', 'flower', 'clothing', 'gym'];
 
@@ -17,8 +18,7 @@ function shuffleArray(arr) {
 
 // 이번 주 월요일 날짜 (YYYY-MM-DD) — KST 기준
 function getThisMonday() {
-  const nowUtc = new Date();
-  const kst = new Date(nowUtc.getTime() + 9 * 60 * 60 * 1000);
+  const kst = utcToKstDate(new Date());
   const day = kst.getUTCDay(); // KST 기준 요일 (월=1)
   const diff = day === 0 ? -6 : 1 - day;
   kst.setUTCDate(kst.getUTCDate() + diff);

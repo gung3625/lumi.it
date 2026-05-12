@@ -18,6 +18,7 @@
 
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { getIgTokenForSeller } = require('./_shared/ig-graph');
+const { utcToKstDate } = require('./_shared/kst-utils');
 
 const META_GRAPH = 'https://graph.facebook.com/v25.0';
 const FETCH_TIMEOUT_MS = 10000;
@@ -54,7 +55,7 @@ function expandValueToRows(userId, valueRow) {
   const endUtc = new Date(valueRow.end_time);
   if (isNaN(endUtc.getTime())) return [];
   // end_time 의 KST 기준 일자 = 그 row 가 대표하는 "어제" (KST 자정 기준 종료)
-  const endKst = new Date(endUtc.getTime() + 9 * 3600 * 1000);
+  const endKst = utcToKstDate(endUtc);
   // 자정 종료 → 그 전 24시간이 대상 일자. KST 시각이 00:00 이면 전날.
   let baseKst = new Date(endKst.getTime() - 1);
   baseKst.setUTCHours(0, 0, 0, 0);

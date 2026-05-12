@@ -36,6 +36,7 @@ const { getStore } = require('@netlify/blobs');
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { corsHeaders, getOrigin } = require('./_shared/auth');
 const { requireAdmin } = require('./_shared/admin-guard');
+const { utcToKstDate } = require('./_shared/kst-utils');
 
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5분
 
@@ -132,7 +133,7 @@ async function safeLatest(admin, table, orderColumn) {
 // KST 기준 날짜 경계 (00:00 KST → UTC ISO).
 function kstStartOfTodayIso() {
   const now = new Date();
-  const kstNow = new Date(now.getTime() + 9 * 3600 * 1000);
+  const kstNow = utcToKstDate(now);
   const dayKey = kstNow.toISOString().slice(0, 10); // YYYY-MM-DD
   return new Date(`${dayKey}T00:00:00+09:00`).toISOString();
 }
@@ -140,7 +141,7 @@ function kstStartOfTodayIso() {
 function kstStartOfThisWeekIso() {
   // 주 시작: 월요일 00:00 KST
   const now = new Date();
-  const kstNow = new Date(now.getTime() + 9 * 3600 * 1000);
+  const kstNow = utcToKstDate(now);
   const day = kstNow.getUTCDay(); // 0=일,1=월,...
   const offset = day === 0 ? 6 : day - 1;
   const monday = new Date(kstNow.getTime() - offset * 24 * 3600 * 1000);
@@ -150,7 +151,7 @@ function kstStartOfThisWeekIso() {
 
 function kstStartOfThisMonthIso() {
   const now = new Date();
-  const kstNow = new Date(now.getTime() + 9 * 3600 * 1000);
+  const kstNow = utcToKstDate(now);
   const yy = kstNow.getUTCFullYear();
   const mm = String(kstNow.getUTCMonth() + 1).padStart(2, '0');
   return new Date(`${yy}-${mm}-01T00:00:00+09:00`).toISOString();
