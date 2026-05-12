@@ -1659,6 +1659,27 @@ function toKeywordObjects(tags, source) {
   }));
 }
 
+// GPT 분류 실패 시 fallback 태그 산출 — 직전 cron 결과 우선, 없으면 DEFAULT_TRENDS.
+// 정적 fallback 만 쓰면 3년 묵은 키워드("말차라떼" 등)가 영구 상위 노출되는 부채.
+async function loadFallbackTags(supa, scope, category) {
+  try {
+    const { data } = await supa
+      .from('trends')
+      .select('keywords')
+      .eq('category', `l30d-${scope}:${category}`)
+      .maybeSingle();
+    const arr = data?.keywords?.keywords;
+    if (Array.isArray(arr) && arr.length) {
+      const tags = arr
+        .map((k) => (typeof k === 'string' ? k : (k && k.keyword)))
+        .filter((s) => typeof s === 'string' && s.trim())
+        .slice(0, 10);
+      if (tags.length) return tags;
+    }
+  } catch (_) { /* DB 조회 실패 → 정적 fallback */ }
+  return (DEFAULT_TRENDS[category] || []);
+}
+
 async function saveScope({ supa, scope, category, tags, updatedAt, source }) {
   const scopeKey = `l30d-${scope}:${category}`;
   const prevKey = `l30d-${scope}-prev:${category}`;
@@ -2078,7 +2099,10 @@ exports.handler = runGuarded({
       } catch(e) {
         console.error(`[trends-v2] ${category} 실패:`, e.message);
         try {
-          await saveScope({ supa, scope: 'domestic', category, tags: DEFAULT_TRENDS[category] || [], updatedAt, source: 'fallback' });
+          // 동적 fallback — 직전 cron 결과 우선 재사용, 없으면 DEFAULT_TRENDS 정적값.
+          // 정적 키워드(3년 묵음) 가 사장님 응답 상위에 박히는 부채를 막음.
+          const fbTags = await loadFallbackTags(supa, 'domestic', category);
+          await saveScope({ supa, scope: 'domestic', category, tags: fbTags, updatedAt, source: 'fallback' });
         } catch(e2) {}
         return { category, error: e.message };
       }
