@@ -274,6 +274,8 @@
     .story-toggle.is-on .story-toggle__switch { background: var(--pink-500); }
     .story-toggle.is-on .story-toggle__switch::after { transform: translateX(18px); }
     .story-toggle:active { transform: scale(0.99); }
+    .story-toggle:disabled { opacity: 0.5; cursor: not-allowed; }
+    .story-toggle:disabled:active { transform: none; }
     @keyframes card-pop {
       0%, 100% { transform: scale(1); }
       50%      { transform: scale(1.03); }
@@ -512,6 +514,17 @@
       </button>
     </div>
 
+    <div class="field">
+      <span class="field__label">쓰레드</span>
+      <button type="button" class="story-toggle" data-threads-toggle aria-pressed="false" disabled>
+        <div class="story-toggle__body">
+          <div class="story-toggle__title" data-threads-toggle-title>쓰레드에도 자동 업로드</div>
+          <div class="story-toggle__hint" data-threads-toggle-hint>쓰레드 연동 상태 확인 중…</div>
+        </div>
+        <span class="story-toggle__switch" aria-hidden="true"></span>
+      </button>
+    </div>
+
     <button class="cta" type="button" data-submit disabled>📷 캡션 만들고 게시</button>
 
     <footer class="app-footer">
@@ -623,6 +636,8 @@
       let scheduleMode = 'immediate';
       let storyEnabled = false;
       let weatherEnabled = true;  // 디폴트 ON
+      let threadsEnabled = false; // 결정 §12-A #3: 디폴트 OFF
+      let threadsConnected = false;
 
       // 스토리 자동 업로드 토글
       const storyBtn = document.querySelector('[data-story-toggle]');
@@ -641,6 +656,40 @@
           weatherBtn.classList.toggle('is-on', weatherEnabled);
           weatherBtn.setAttribute('aria-pressed', String(weatherEnabled));
         });
+      }
+      // 쓰레드 자동 업로드 토글 (결정 §12-A #3 — 디폴트 OFF, 연동된 사장님만 ON 가능)
+      const threadsBtn = document.querySelector('[data-threads-toggle]');
+      const threadsTitleEl = document.querySelector('[data-threads-toggle-title]');
+      const threadsHintEl = document.querySelector('[data-threads-toggle-hint]');
+      if (threadsBtn) {
+        threadsBtn.addEventListener('click', () => {
+          if (threadsBtn.disabled) return;
+          threadsEnabled = !threadsEnabled;
+          threadsBtn.classList.toggle('is-on', threadsEnabled);
+          threadsBtn.setAttribute('aria-pressed', String(threadsEnabled));
+        });
+        // 연동 상태 비동기 조회 — 미연동/만료면 disabled, 연동됐으면 활성
+        (async () => {
+          try {
+            const r = await fetch('/api/threads-status', { headers: authHeaders });
+            if (!r.ok) throw new Error('status fetch failed');
+            const j = await r.json();
+            threadsConnected = !!j.threadsConnected;
+            if (j.tokenExpired) {
+              threadsBtn.disabled = true;
+              threadsHintEl.textContent = '쓰레드 토큰이 만료됐어요. 설정에서 재연동 후 사용';
+            } else if (threadsConnected) {
+              threadsBtn.disabled = false;
+              threadsHintEl.textContent = '켜면 인스타와 함께 쓰레드에도 자동 업로드 (캡션은 쓰레드용으로 별도 생성)';
+            } else {
+              threadsBtn.disabled = true;
+              threadsHintEl.textContent = '설정에서 쓰레드 연동 후 사용 가능';
+            }
+          } catch (_) {
+            threadsBtn.disabled = true;
+            threadsHintEl.textContent = '연동 상태 확인 실패 — 잠시 후 다시 시도';
+          }
+        })();
       }
 
       function toast(msg, ms = 1800) {
@@ -1002,6 +1051,7 @@
           fd.append('postMode', scheduleMode);
           fd.append('postToStory', String(storyEnabled));
           fd.append('useWeather', String(weatherEnabled));
+          fd.append('postToThread', String(threadsEnabled));
           if (scheduleMode === 'scheduled' && scheduleAtEl.value) {
             const iso = new Date(scheduleAtEl.value).toISOString();
             fd.append('scheduledAt', iso);
