@@ -320,7 +320,7 @@ sellers.id = reservations.user_id = ig_accounts.user_id = tone_feedback.user_id
 
 | # | 결정사항 | 선택 | 이유 / 함의 |
 |---|---|---|---|
-| 1 | **OAuth 방식** | IG 연동 시 Threads도 함께 (Meta 통합 OAuth) | 사장님 연동 단계 1회로 끝. Threads 자체 스코프 `threads_basic` / `threads_content_publish` / `threads_manage_replies` / `threads_manage_insights` 를 IG 스코프와 같은 동의 화면에 추가. 사장님 IG-Threads 사전 연결 전제. |
+| 1 | **OAuth 방식** | ~~IG 연동 시 Threads도 함께 (Meta 통합 OAuth)~~ → **revised 2026-05-12 (M1.3b)**: IG·Threads 별도 OAuth flow. 회원가입·settings 각각에 IG 버튼 + Threads 버튼 분리 표시, 사장님이 개별 클릭. 사유: Threads 는 자체 인증 엔드포인트 `threads.net/oauth/authorize` 와 자체 토큰 엔드포인트 `graph.threads.net/oauth/access_token` 을 강제 → Facebook Login `facebook.com/dialog/oauth` 와 합칠 수 없음 (Meta 공식 문서로 확인). M1 제약: IG 먼저 연동 필수 — `ig_accounts` 가 IG 전제 NOT NULL 컬럼 다수라 Threads 단독 row 생성 불가. |
 | 2 | **파이프라인 구조** | `post-channels-background.js` 로 통합 재설계 | 채널 추상화 계층 신설. IG/Threads/(향후 TikTok·YouTube)를 동일 인터페이스로. 큰 리팩터지만 장기 확장성 최우선. |
 | 3 | **사장님 게시 선택 UX** | register-product 매번 토글 (스토리 토글 옆) | "Threads에도 업로드" 체크박스. PR #80 의 스토리 토글 패턴 그대로 재사용. 세밀한 제어, 디폴트는 OFF. |
 | 4 | **캡션 처리** | Threads 전용 캡션 GPT 별도 생성 | IG 캡션은 첫 125자 + 해시태그 구조, Threads는 500자 + 대화체. process-and-post 에서 IG/Threads 각각 호출. **GPT 호출 2배 = 사장님 횟수 차감도 2배** (공정 과금). |
@@ -335,7 +335,11 @@ sellers.id = reservations.user_id = ig_accounts.user_id = tone_feedback.user_id
 - 한 채널 실패 시 재시도 UI
 
 **구현 마일스톤 (안):**
-1. **인프라** — `channel_posts` 마이그레이션 + `_shared/threads-graph.js` 클라이언트 + OAuth 스코프 확장
+1. **인프라** — 완료
+   - 1.1 `channel_posts` 마이그레이션 ✅ (PR #183)
+   - 1.2 `_shared/threads-graph.js` 클라이언트 ✅ (PR #184)
+   - 1.3a `ig_accounts.threads_*` 컬럼 4개 + 뷰 ✅ (PR #185)
+   - 1.3b `set_threads_token` Vault RPC + `netlify/functions/threads-oauth.js` (별도 OAuth flow — 결정 #1 revised). 후속 PR 에서 회원가입·settings 의 'Threads 연동' 버튼 추가 필요.
 2. **게시** — `post-channels-background.js` (IG/Threads 분기) + Threads 전용 캡션 GPT + register-product 토글
 3. **운영 UX** — 토큰 만료 감지·재연동 카드 채널 확장 + history 채널 표시
 4. **댓글/인사이트** — Threads comments API + insights API 통합 (페이지 UI 결정 후)
