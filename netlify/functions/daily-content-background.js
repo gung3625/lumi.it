@@ -15,6 +15,7 @@ const { getAdminClient } = require('./_shared/supabase-admin');
 const { getBrandCaption } = require('./_shared/brand-prompts');
 const { generateBrandFooter } = require('./_shared/brand-footer');
 const { checkAndIncrementQuota, QuotaExceededError } = require('./_shared/openai-quota');
+const { utcToKstDate, kstDateString, KST_OFFSET_MS } = require('./_shared/kst-utils');
 
 const headers = {
   'Content-Type': 'application/json',
@@ -34,9 +35,7 @@ const INDUSTRY_PEAK_TIME = {
 
 // KST 기준 오늘 요일 (0=일, 6=토)
 function getTodayWeekdayKST() {
-  const nowUtc = new Date();
-  // KST = UTC + 9h
-  const kst = new Date(nowUtc.getTime() + 9 * 60 * 60 * 1000);
+  const kst = utcToKstDate(new Date());
   return kst.getUTCDay();
 }
 
@@ -48,10 +47,8 @@ function buildScheduledAtIso(industry, hourOffset = 0) {
   if (targetHourKst > 23) targetHourKst = 23;
   const targetMinute = peak.minute;
 
-  const nowUtc = new Date();
-  // "오늘 KST 날짜" 구하기: UTC 기준 + 9h 후의 YYYY-MM-DD
-  const kstTodayMs = nowUtc.getTime() + 9 * 60 * 60 * 1000;
-  const kstToday = new Date(kstTodayMs);
+  // "오늘 KST 날짜" 구하기: UTC + 9h 후의 YYYY-MM-DD
+  const kstToday = utcToKstDate(new Date());
   const y = kstToday.getUTCFullYear();
   const m = kstToday.getUTCMonth();
   const d = kstToday.getUTCDate();
@@ -135,7 +132,7 @@ async function buildReservationRow({
 
   const finalCaption = footer ? `${captionText}\n\n${footer}` : captionText;
 
-  const kstDateStr = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+  const kstDateStr = kstDateString();
   const reserveKey = `brand-auto:${kstDateStr}:${contentType}:${industry}`;
   const isReels = contentType === 'video';
   const publicUrl = libraryRow.public_url;
@@ -235,7 +232,7 @@ exports.handler = async (event) => {
       ? adminBody.industries.filter((i) => ALL_INDUSTRIES.includes(i))
       : ALL_INDUSTRIES;
 
-    const kstDateStr = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+    const kstDateStr = kstDateString();
     const reservationRows = [];
     const libraryIdsToMark = [];
     const report = [];
@@ -382,7 +379,7 @@ exports.handler = async (event) => {
     }
 
     // 3) 멱등성: 당일 is_brand_auto 예약 이미 존재 시 스킵
-    const kstDateStr = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+    const kstDateStr = kstDateString();
     const kstStart = new Date(`${kstDateStr}T00:00:00+09:00`).toISOString();
     const { data: existing } = await supabase
       .from('reservations')

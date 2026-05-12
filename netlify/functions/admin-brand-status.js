@@ -3,6 +3,7 @@ const { corsHeaders, getOrigin } = require('./_shared/auth');
 // Background Function이 아닌 regular function이라 즉시 응답 반환.
 // POST { adminSecret }
 const { getAdminClient } = require('./_shared/supabase-admin');
+const { kstDateString } = require('./_shared/kst-utils');
 
 
 const ALL_INDUSTRIES = ['cafe', 'restaurant', 'beauty', 'nail', 'flower', 'clothing', 'gym'];
@@ -130,7 +131,7 @@ exports.handler = async (event) => {
     }
 
     // 오늘 예약 현황
-    const kstDateStr = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+    const kstDateStr = kstDateString();
     const kstStart = new Date(`${kstDateStr}T00:00:00+09:00`).toISOString();
     const { data: todayRows } = await supabase
       .from('reservations')

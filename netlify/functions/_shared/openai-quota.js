@@ -17,6 +17,7 @@
 
 const { getAdminClient } = require('./supabase-admin');
 const { safeAwait } = require('./supa-safe');
+const { utcToKstDate } = require('./kst-utils');
 
 // ── 모델별 추정 비용 ──────────────────────────────────────
 const MODEL_COST_KRW = {
@@ -35,15 +36,13 @@ function getServiceDailyLimit() {
   return isNaN(v) ? 100_000 : v;             // 기본 서비스 전체 일 ₩100,000
 }
 
-// ── 날짜 유틸 (KST 기준) ────────────────────────────────
+// ── 날짜 유틸 (KST 기준) — _shared/kst-utils 의 utcToKstDate 활용 ────────
 function kstDateString() {
-  const d = new Date(Date.now() + 9 * 60 * 60 * 1000);
-  return d.toISOString().slice(0, 10);       // YYYY-MM-DD (KST)
+  return utcToKstDate(new Date()).toISOString().slice(0, 10);       // YYYY-MM-DD (KST)
 }
 
 function kstMonthString() {
-  const d = new Date(Date.now() + 9 * 60 * 60 * 1000);
-  return d.toISOString().slice(0, 7) + '-01'; // YYYY-MM-01 (DATE 컬럼용)
+  return utcToKstDate(new Date()).toISOString().slice(0, 7) + '-01'; // YYYY-MM-01 (DATE 컬럼용)
 }
 
 // ── 커스텀 에러 ─────────────────────────────────────────
