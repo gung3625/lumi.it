@@ -306,6 +306,38 @@ sellers.id = reservations.user_id = ig_accounts.user_id = tone_feedback.user_id
 
 ### 🔴 우선
 1. **결제 시스템** — 토스페이먼츠/포트원 연동 + 자동결제 동의 흐름 + 환불 처리 + 구독 약관 분책
+2. **Threads 자동 게시** — 멀티 채널 SaaS 로의 첫 확장. 결정사항은 아래 §12-A 참조.
+
+### 🔵 §12-A. Threads 자동 게시 — 확정 결정사항 (2026-05-12)
+
+사용자 인터뷰로 확정한 설계 결정 8건. 구현 시 그대로 적용.
+
+| # | 결정사항 | 선택 | 이유 / 함의 |
+|---|---|---|---|
+| 1 | **OAuth 방식** | IG 연동 시 Threads도 함께 (Meta 통합 OAuth) | 사장님 연동 단계 1회로 끝. Threads 자체 스코프 `threads_basic` / `threads_content_publish` / `threads_manage_replies` / `threads_manage_insights` 를 IG 스코프와 같은 동의 화면에 추가. 사장님 IG-Threads 사전 연결 전제. |
+| 2 | **파이프라인 구조** | `post-channels-background.js` 로 통합 재설계 | 채널 추상화 계층 신설. IG/Threads/(향후 TikTok·YouTube)를 동일 인터페이스로. 큰 리팩터지만 장기 확장성 최우선. |
+| 3 | **사장님 게시 선택 UX** | register-product 매번 토글 (스토리 토글 옆) | "Threads에도 업로드" 체크박스. PR #80 의 스토리 토글 패턴 그대로 재사용. 세밀한 제어, 디폴트는 OFF. |
+| 4 | **캡션 처리** | Threads 전용 캡션 GPT 별도 생성 | IG 캡션은 첫 125자 + 해시태그 구조, Threads는 500자 + 대화체. process-and-post 에서 IG/Threads 각각 호출. **GPT 호출 2배 = 사장님 횟수 차감도 2배** (공정 과금). |
+| 5 | **App Review 시점** | 실사장님 모집 시점에 IG·Threads 동시 신청 | 지금은 Meta 앱 development 모드 + 본인 테스트 유저 등록으로 심사 없이 검증 가능. 결제 시스템 + 실사장님 출시와 동시에 심사 신청. |
+| 6 | **DB 스키마** | `channel_posts` 테이블 신설 (정규화) | `reservations` 1:N `channel_posts` (reservation_id, channel, status, post_id, posted_at, error). TikTok/YouTube 추가 시 동일 테이블 사용. |
+| 7 | **부분 실패 차감** | 성공한 채널만 차감 (사장님 친화) | IG✅+Threads❌ → 1회, 둘 다 성공 → 2회, 둘 다 실패 → 0회. GPT 원가는 운영 측 손해 감수. 베타 신뢰 형성 우선. |
+| 8 | **MVP 범위** | 게시 + 댓글 + 인사이트 전수 | Threads 도 IG 풀스택 동급. `_shared/ig-graph.js` 의 `markIgTokenInvalid` 패턴, comments/insights 페이지, 베스트 시간 데이터 소스 모두 채널 추상화. |
+
+**남은 결정사항 (구현 진행하며 결정):**
+- 댓글/인사이트 페이지 UI 구조 (탭 vs 통합 리스트 vs 분리 페이지)
+- register-product 토글 디테일 (Threads 미연동 시 disabled 처리, 직전 상태 기억)
+- 한 채널 실패 시 재시도 UI
+
+**구현 마일스톤 (안):**
+1. **인프라** — `channel_posts` 마이그레이션 + `_shared/threads-graph.js` 클라이언트 + OAuth 스코프 확장
+2. **게시** — `post-channels-background.js` (IG/Threads 분기) + Threads 전용 캡션 GPT + register-product 토글
+3. **운영 UX** — 토큰 만료 감지·재연동 카드 채널 확장 + history 채널 표시
+4. **댓글/인사이트** — Threads comments API + insights API 통합 (페이지 UI 결정 후)
+5. **App Review** — 실사장님 모집 시점에 신청
+
+---
+
+
 
 ### 🟡 보강
 - **카카오 동의 화면 UI** — 사장님이 처음 가입할 때 카카오 측 동의 화면이 익숙하지 않을 수 있음. 가이드 보강.
