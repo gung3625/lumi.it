@@ -443,6 +443,59 @@
     .empty__title { font-size: var(--text-body-lg); font-weight: var(--weight-semibold); color: var(--ink); margin-bottom: var(--space-2); }
     .empty__sub { font-size: var(--text-body); color: var(--ink-muted); }
 
+    /* IG 토큰 만료 — 인사이트 영역 inline 배너 (dashboard ig-reconnect 와 동일 톤) */
+    .ig-expired {
+      margin: var(--space-4);
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      background: #fff8ea;
+      border: 1px solid #f5a623;
+      border-radius: var(--radius-lg);
+      color: #b45309;
+      text-decoration: none;
+      animation: ig-expired-pulse 1.6s var(--ease-soft) infinite alternate, rise 500ms var(--ease-toss) 80ms backwards;
+      transition: transform var(--duration-snap) var(--ease-toss);
+      text-align: left;
+    }
+    .ig-expired:active { transform: scale(0.992); }
+    .ig-expired__icon {
+      width: 40px;
+      height: 40px;
+      flex-shrink: 0;
+      border-radius: var(--radius-full);
+      background: linear-gradient(135deg, #f5a623, #ec4899);
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+    .ig-expired__body { flex: 1; min-width: 0; }
+    .ig-expired__title {
+      font-size: var(--text-body);
+      font-weight: var(--weight-semibold);
+      color: #b45309;
+    }
+    .ig-expired__sub {
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+      margin-top: 2px;
+    }
+    .ig-expired__chev {
+      font-size: 18px;
+      color: #b45309;
+      flex-shrink: 0;
+    }
+    @keyframes ig-expired-pulse {
+      from { box-shadow: 0 0 0 0 rgba(245, 166, 35, 0.20); }
+      to   { box-shadow: 0 0 0 8px rgba(245, 166, 35, 0); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .ig-expired { animation: none; }
+    }
+
     /* 탭바 — /css/tabbar.css 참조 */
   </style>
 </head>
@@ -639,6 +692,23 @@
         `).join('');
       }
 
+      // 토큰 만료 응답일 때 stateEl 영역을 재연동 배너로 교체.
+      // 백엔드(insight-weekly/monthly)는 토큰 만료 시 200 + { error: 'token_expired', data: null } 응답.
+      function renderTokenExpiredBanner(stateEl) {
+        stateEl.classList.remove('state');
+        stateEl.removeAttribute('hidden');
+        stateEl.innerHTML = `
+          <a class="ig-expired" href="/settings">
+            <span class="ig-expired__icon" aria-hidden="true">⚠️</span>
+            <div class="ig-expired__body">
+              <div class="ig-expired__title">인스타 재연동이 필요해요</div>
+              <div class="ig-expired__sub">토큰이 만료돼서 인사이트를 못 가져왔어요. 설정에서 재연동.</div>
+            </div>
+            <span class="ig-expired__chev" aria-hidden="true">→</span>
+          </a>
+        `;
+      }
+
       async function loadInsight(period) {
         const stateEl = document.querySelector(`[data-${period}-state]`);
         const contentEl = document.querySelector(`[data-${period}-content]`);
@@ -652,6 +722,11 @@
             return;
           }
           const json = await res.json();
+          // 토큰 만료 — 인사이트 데이터 없음. 재연동 배너로 교체.
+          if (json && json.error === 'token_expired') {
+            renderTokenExpiredBanner(stateEl);
+            return;
+          }
           const data = (json && json.data) || {};
           stateEl.hidden = true;
           contentEl.hidden = false;
