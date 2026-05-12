@@ -321,6 +321,19 @@
 
     /* 하단 탭바 — /css/tabbar.css 참조 */
 
+    /* prefers-reduced-motion 존중 — 사용자 메모리 룰 (모든 UI 작업 필수) */
+    @media (prefers-reduced-motion: reduce) {
+      .topbar__refresh.is-spinning { animation: none; }
+      .empty__icon { animation: none; }
+      .comment {
+        animation: none;
+        transition: none;
+      }
+      .comment__reply-btn,
+      .comment__reply-toggle { transition: none; }
+      .comment__reply-btn:not(:disabled):active { transform: none; }
+    }
+
     .state { padding: var(--space-12); text-align: center; color: var(--ink-muted); }
   </style>
 </head>

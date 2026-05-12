@@ -1008,7 +1008,10 @@
           if (reconnectSection && ig && ig.connected && ig.tokenInvalid) {
             reconnectSection.hidden = false;
           }
-        } catch {}
+        } catch (e) {
+          // 인증 실패 같은 critical 시나리오일 가능성 — devtools 에 로그 + 매장 정보 미수집.
+          console.warn('[dashboard] /api/me 실패:', e && e.message);
+        }
       }
 
       // 이번 주 좋아요·팔로워 (insight-weekly)
@@ -1037,7 +1040,9 @@
               }
             }
           }
-        } catch {}
+        } catch (e) {
+          console.warn('[dashboard] /api/insight-weekly 실패:', e && e.message);
+        }
         // hasData=false (응답 실패 OR 모두 0) → 카드 숨기고 안내 표시
         if (!hasData) {
           if (statRow) statRow.hidden = true;
@@ -1059,7 +1064,9 @@
             const clean = String(tag).replace(/^#/, '');
             return `<a class="keyword-chip" href="/trends?q=${encodeURIComponent(clean)}">#${esc(clean)}</a>`;
           }).join('');
-        } catch {}
+        } catch (e) {
+          console.warn('[dashboard] /api/get-trends 실패:', e && e.message);
+        }
       }
 
       // 다음 예약 (list-reservations 중 가장 가까운 미래)
@@ -1104,7 +1111,9 @@
             const labels = { ig: '인스타', tt: '틱톡', nblog: '블로그', kakao: '카톡 채널' };
             setText('[data-scheduled-channels]', next.channels.map(c => labels[c] || c).join(' · '));
           }
-        } catch {}
+        } catch (e) {
+          console.warn('[dashboard] /api/list-reservations 실패:', e && e.message);
+        }
       }
 
       // 새 댓글 카드 (Phase 1: IG 미연동 안내 또는 빈 상태. 실제 댓글 fetch 는 Phase 2)
@@ -1299,7 +1308,9 @@
               if (json.reason) setText('[data-besttime-sub]', json.reason);
             }
           }
-        } catch {}
+        } catch (e) {
+          console.warn('[dashboard] /api/get-best-time 실패:', e && e.message);
+        }
       }
 
       // 로그아웃
@@ -1331,7 +1342,9 @@
           setT('[data-weather-status]', j.status || '');
           setT('[data-weather-mood]', j.mood || '');
           cardEl.hidden = false;
-        } catch {}
+        } catch (e) {
+          console.warn('[dashboard] /api/get-weather 실패:', e && e.message);
+        }
       }
 
       // 카테고리 무관 호출(loadStats/loadScheduled/loadComments)은 병렬.
