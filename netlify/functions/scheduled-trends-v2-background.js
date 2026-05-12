@@ -1907,7 +1907,7 @@ exports.handler = runGuarded({
       domesticClassified = await classifyBatchWithGPT({ rawTextsByCategory: domesticTexts });
     }
 
-    // ─── 4단계: 스코어링 + 신조어 감지 ───────────
+    // ─── 4단계: 스코어링 ───────────
     await ctx.stage('scoring', {});
 
     // ─── 5단계: 레거시 저장 + v2 저장 ─────────────
