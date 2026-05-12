@@ -292,6 +292,7 @@ exports.handler = async (event) => {
 
   const supabase = getAdminClient();
   let reservationKey = null;
+  let userIdForTokenMark = null;   // catch 블록에서 IG 토큰 만료 마킹용
 
   try {
     const body = JSON.parse(event.body || '{}');
@@ -310,6 +311,7 @@ exports.handler = async (event) => {
       return;
     }
     if (reservation.is_sent) { console.log('[select-and-post] 이미 게시됨'); return; }
+    userIdForTokenMark = reservation.user_id;
 
     // 2) 중복 호출 방지 — atomic CAS 로 'scheduled' → 'posting' 전이.
     //    동일 row 에 대해 process-and-post 직접 트리거 + scheduler cron 트리거 가
@@ -551,13 +553,38 @@ exports.handler = async (event) => {
 
   } catch (err) {
     console.error('[select-and-post] 에러:', err.message);
+    // IG 토큰 만료 패턴 감지 — postToInstagram 이 d.error.message 만 throw 하므로
+    // Graph 표준 표현(code 190 / OAuthException / "session has expired" / "Invalid OAuth access token") 으로 매칭.
+    const msg = String(err && err.message || '');
+    const isIgTokenExpired =
+      /code["']?\s*:\s*190/i.test(msg) ||
+      /OAuthException/i.test(msg) ||
+      /session has expired/i.test(msg) ||
+      /access token.*(expired|invalid)/i.test(msg) ||
+      /Invalid OAuth/i.test(msg);
+
+    // 토큰 만료면 ig_accounts.token_invalid_at 마킹 → 대시보드 배너·comments/insight 사전 차단 활성화.
+    if (isIgTokenExpired && userIdForTokenMark) {
+      try {
+        await supabase
+          .from('ig_accounts')
+          .update({ token_invalid_at: new Date().toISOString() })
+          .eq('user_id', userIdForTokenMark);
+        console.log('[select-and-post] token_invalid_at 마킹:', userIdForTokenMark);
+      } catch (e) {
+        console.warn('[select-and-post] token_invalid_at 마킹 실패:', e.message);
+      }
+    }
+
     if (reservationKey) {
       try {
         await supabase
           .from('reservations')
           .update({
             caption_status: 'failed',
-            caption_error: err.message || '게시 중 오류가 발생했습니다.',
+            caption_error: isIgTokenExpired
+              ? 'IG 토큰이 만료됐어요. 설정 → 인스타 재연동 후 다시 게시해주세요.'
+              : (err.message || '게시 중 오류가 발생했습니다.'),
           })
           .eq('reserve_key', reservationKey);
       } catch (_) { /* noop */ }

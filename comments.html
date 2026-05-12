@@ -461,13 +461,22 @@
           stateEl.hidden = true;
 
           if (items.length === 0) {
-            if (json.igConnected) {
+            if (json.tokenExpired) {
+              // 토큰 만료 — 재연동 유도 (대시보드 배너와 별개로 페이지 진입 직접 케이스 커버)
+              emptyTitle.textContent = '인스타 재연동이 필요해요';
+              emptySub.textContent = '토큰이 만료돼서 댓글을 못 가져왔어요. 설정에서 재연동하면 다시 모입니다.';
+              emptyCta.textContent = '⚙️ 설정에서 재연동';
+              emptyCta.setAttribute('href', '/settings');
+              emptyCta.hidden = false;
+            } else if (json.igConnected) {
               emptyTitle.textContent = '아직 새 댓글이 없어요';
               emptySub.textContent = '새 인스타 댓글이 들어오면 여기 모입니다.';
               emptyCta.hidden = true;
             } else {
               emptyTitle.textContent = '인스타 연동 후 댓글이 표시돼요';
               emptySub.textContent = '비즈니스/크리에이터 계정과 연동하면 받은 댓글이 한곳에 모입니다.';
+              emptyCta.textContent = '📷 인스타 연동하기';
+              emptyCta.setAttribute('href', '/dashboard');
               emptyCta.hidden = false;
             }
             emptyEl.hidden = false;
