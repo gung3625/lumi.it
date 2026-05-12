@@ -7,6 +7,13 @@ const { createHmac } = require('crypto');
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { deleteReservationStorage } = require('./_shared/storage-cleanup');
 const { toProxyUrl } = require('./_shared/ig-image-url');
+const {
+  getThreadsTokenForSeller,
+  createThreadsContainer,
+  publishThreadsContainer,
+  markThreadsTokenInvalid,
+  ThreadsGraphError,
+} = require('./_shared/threads-graph');
 
 
 async function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
@@ -211,48 +218,36 @@ async function postToInstagram({ igUserId, igAccessToken, igUserAccessToken, sto
   return postId;
 }
 
-async function postToThreads(caption, imageUrl, videoUrl) {
-  const userId = process.env.THREADS_USER_ID;
-  const token = process.env.THREADS_ACCESS_TOKEN;
-  if (!userId || !token) throw new Error('Threads 환경변수 없음');
+async function postToThreadsForSeller(supabase, sellerId, caption, imageUrl, videoUrl) {
+  // M2.1 — 글로벌 env 토큰(THREADS_USER_ID/ACCESS_TOKEN) 대신 사장님별 OAuth 토큰 사용.
+  // 1단계: ig_accounts_decrypted 뷰에서 threads_user_id + threads_token 조회
+  // 2단계: createThreadsContainer (POST /{user-id}/threads) → creation_id
+  // 3단계: 30초 대기 (Meta 처리 시간) → publishThreadsContainer (POST /{user-id}/threads_publish)
+  // 실패 시 ThreadsGraphError 던짐. isTokenExpired() true 면 호출 측이 markThreadsTokenInvalid.
+  const cred = await getThreadsTokenForSeller(sellerId, supabase);
+  if (!cred) throw new ThreadsGraphError('Threads 미연동 또는 토큰 없음', { status: 0 });
 
-  const body = videoUrl
-    ? { media_type: 'VIDEO', video_url: videoUrl, text: caption, access_token: token }
-    : { media_type: 'IMAGE', image_url: imageUrl, text: caption, access_token: token };
-
-  const tCreateCtrl = new AbortController();
-  const tCreateTid = setTimeout(() => tCreateCtrl.abort(), 60_000);
-  let createRes;
-  try {
-    createRes = await fetch(`https://graph.threads.net/v1.0/${userId}/threads`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-      signal: tCreateCtrl.signal,
-    });
-  } finally {
-    clearTimeout(tCreateTid);
-  }
-  const createData = await createRes.json();
-  if (createData.error) throw new Error(`Threads container error: ${createData.error.message || 'unknown'}`);
-  const creationId = createData.id;
+  const { threadsUserId, accessToken } = cred;
+  const mediaType = videoUrl ? 'VIDEO' : 'IMAGE';
+  const created = await createThreadsContainer({
+    token: accessToken,
+    threadsUserId,
+    mediaType,
+    imageUrl: videoUrl ? null : imageUrl,
+    videoUrl: videoUrl || null,
+    text: caption,
+  }, { timeoutMs: 60000 });
+  if (!created || !created.id) throw new ThreadsGraphError('Threads 컨테이너 생성 응답에 id 없음');
 
   await sleep(30000);
 
-  const tPubCtrl = new AbortController();
-  const tPubTid = setTimeout(() => tPubCtrl.abort(), 60_000);
-  let pubRes;
-  try {
-    pubRes = await fetch(`https://graph.threads.net/v1.0/${userId}/threads_publish`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ creation_id: creationId, access_token: token }),
-      signal: tPubCtrl.signal,
-    });
-  } finally {
-    clearTimeout(tPubTid);
-  }
-  return pubRes.json();
+  const published = await publishThreadsContainer({
+    token: accessToken,
+    threadsUserId,
+    creationId: created.id,
+  }, { timeoutMs: 60000 });
+  if (!published || !published.id) throw new ThreadsGraphError('Threads publish 응답에 id 없음');
+  return published.id;
 }
 
 async function sendAlimtalk(phone, text) {
@@ -391,35 +386,80 @@ exports.handler = async (event) => {
     );
     console.log('[select-and-post] Instagram 게시 완료:', postId);
 
-    // 5) Threads 게시 (옵션)
-    let threadsUpdate = {};
+    // 4-1) channel_posts 에 IG 성공 row 기록 (결정 §12-A #6, #7)
+    //      - PK (reservation_id, channel) 충돌 시 upsert 로 멱등 처리.
+    //      - credit_consumed=true 가 성공 채널 차감 source of truth.
+    //      - IG 게시는 reservations.ig_post_id 도 그대로 유지 (M2.1 추가만, 제거 X).
+    try {
+      const postedAtIso = new Date().toISOString();
+      const { error: cpIgErr } = await supabase
+        .from('channel_posts')
+        .upsert({
+          reservation_id: reservation.id,
+          channel: 'ig',
+          status: 'posted',
+          post_id: String(postId),
+          posted_at: postedAtIso,
+          credit_consumed: true,
+        }, { onConflict: 'reservation_id,channel' });
+      if (cpIgErr) console.warn('[select-and-post] channel_posts(ig) upsert 경고:', cpIgErr.message);
+    } catch (e) {
+      console.warn('[select-and-post] channel_posts(ig) 예외 (무시):', e && e.message);
+    }
+
+    // 5) Threads 게시 (옵션) — M2.1 부터 per-seller OAuth 토큰 사용
     if (reservation.post_to_thread && (imageUrls[0] || mediaType === 'REELS')) {
-      let threadsStatus = 'failed';
-      let threadsError = null;
-      let threadsPostId = null;
+      let threadsStatus  = 'failed';
+      let threadsErrMsg  = null;
+      let threadsPostId  = null;
+      let tokenExpired   = false;
+
+      // 5-0) channel_posts(threads, posting) 선마킹 — race 차단 + UI 가시성
       try {
-        console.log('[select-and-post] Threads 게시 시작');
-        const threadsResult = mediaType === 'REELS'
-          ? await postToThreads(selectedCaption, null, reservation.video_url)
-          : await postToThreads(selectedCaption, imageUrls[0]);
-        if (threadsResult.error) {
-          threadsError = threadsResult.error.message || 'threads error';
-          if (threadsResult.error.code === 190) threadsStatus = 'token_expired';
-          console.error('[select-and-post] Threads 게시 실패');
-        } else {
-          threadsStatus = 'ok';
-          threadsPostId = threadsResult.id || null;
-          console.log('[select-and-post] Threads 게시 완료:', threadsPostId);
-        }
-      } catch (te) {
-        threadsError = te.message || String(te);
-        if (/code":\s*190|expired|invalid.*token/i.test(threadsError)) threadsStatus = 'token_expired';
-        console.error('[select-and-post] Threads 예외');
+        await supabase.from('channel_posts').upsert({
+          reservation_id: reservation.id,
+          channel: 'threads',
+          status: 'posting',
+          credit_consumed: false,
+        }, { onConflict: 'reservation_id,channel' });
+      } catch (e) {
+        console.warn('[select-and-post] channel_posts(threads pending) 경고:', e && e.message);
       }
-      threadsUpdate = {
-        // reservations 테이블에는 threads 전용 컬럼이 없음 — 현재 스키마 유지 범위에서는 로그만.
-      };
-      if (threadsStatus === 'token_expired') {
+
+      try {
+        console.log('[select-and-post] Threads 게시 시작 (per-seller token)');
+        threadsPostId = mediaType === 'REELS'
+          ? await postToThreadsForSeller(supabase, reservation.user_id, selectedCaption, null, reservation.video_url)
+          : await postToThreadsForSeller(supabase, reservation.user_id, selectedCaption, imageUrls[0], null);
+        threadsStatus = 'posted';
+        console.log('[select-and-post] Threads 게시 완료:', threadsPostId);
+      } catch (te) {
+        threadsErrMsg = te && te.message ? te.message : String(te);
+        tokenExpired = (te instanceof ThreadsGraphError && te.isTokenExpired()) ||
+                       /code":\s*190|expired|invalid.*token/i.test(threadsErrMsg);
+        console.error('[select-and-post] Threads 게시 실패:', threadsErrMsg);
+      }
+
+      // 5-1) channel_posts(threads) 최종 상태 반영 (결정 §12-A #7 — 성공 시에만 credit_consumed=true)
+      try {
+        const patch = threadsStatus === 'posted'
+          ? { status: 'posted', post_id: threadsPostId ? String(threadsPostId) : null, posted_at: new Date().toISOString(), credit_consumed: true, error_message: null }
+          : { status: 'failed', error_message: (threadsErrMsg || 'unknown').slice(0, 500), credit_consumed: false };
+        const { error: cpThErr } = await supabase
+          .from('channel_posts')
+          .upsert({
+            reservation_id: reservation.id,
+            channel: 'threads',
+            ...patch,
+          }, { onConflict: 'reservation_id,channel' });
+        if (cpThErr) console.warn('[select-and-post] channel_posts(threads final) 경고:', cpThErr.message);
+      } catch (e) {
+        console.warn('[select-and-post] channel_posts(threads final) 예외 (무시):', e && e.message);
+      }
+
+      // 5-2) 토큰 만료 마킹 + 알림톡
+      if (tokenExpired) {
+        try { await markThreadsTokenInvalid(supabase, reservation.user_id, 'select-and-post'); } catch (_) { /* noop */ }
         try {
           await sendAlimtalk(
             '01064246284',
