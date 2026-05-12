@@ -160,12 +160,14 @@ exports.handler = runGuarded({
       const DB_KEY_MAP = { hair: 'beauty', nail: 'beauty' };
       const dbCat = DB_KEY_MAP[cat] || cat;
 
+      // sub_category 미분류 row 조회 — scheduled-trends-v2 가 빈 문자열('') 로 저장하므로
+      // NULL + '' 둘 다 미분류로 취급. 이게 빠지면 longtail 이 영구 0건 처리됨.
       const { data: kws, error: kwErr } = await supa
         .from('trend_keywords')
         .select('id, keyword, category, sub_category')
         .eq('category', dbCat)
         .gte('collected_date', cutoff)
-        .is('sub_category', null)
+        .or('sub_category.is.null,sub_category.eq.')
         .limit(200);
 
       if (kwErr) {
