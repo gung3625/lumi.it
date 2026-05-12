@@ -270,7 +270,8 @@ exports.handler = async (event) => {
       return {
         statusCode: 200,
         headers: CORS,
-        body: JSON.stringify({ ok: true, data: null, error: 'token_expired' }),
+        // tokenExpired: true 추가 — 응답 키 통일 (PR #169). error 는 옛 호환용 유지.
+        body: JSON.stringify({ ok: true, data: null, tokenExpired: true, error: 'token_expired' }),
       };
     }
     console.error('[insight-weekly] IG Graph API 오류:', e && e.message);

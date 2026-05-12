@@ -1002,10 +1002,11 @@
             (data.user && data.user.category);
           if (cat) userCategory = String(cat).toLowerCase();
 
-          // IG 토큰 무효 — 재연동 카드 노출
+          // IG 토큰 만료 — 재연동 카드 노출. tokenExpired 표준 키 사용,
+          // tokenInvalid 는 옛 응답 호환용 (PR #169 통일).
           const ig = data.igStatus || null;
           const reconnectSection = document.querySelector('[data-ig-reconnect-section]');
-          if (reconnectSection && ig && ig.connected && ig.tokenInvalid) {
+          if (reconnectSection && ig && ig.connected && (ig.tokenExpired || ig.tokenInvalid)) {
             reconnectSection.hidden = false;
           }
         } catch (e) {

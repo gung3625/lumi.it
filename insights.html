@@ -723,7 +723,8 @@
           }
           const json = await res.json();
           // 토큰 만료 — 인사이트 데이터 없음. 재연동 배너로 교체.
-          if (json && json.error === 'token_expired') {
+          // tokenExpired 표준 키 우선, error='token_expired' 는 옛 호환 (PR #169).
+          if (json && (json.tokenExpired || json.error === 'token_expired')) {
             renderTokenExpiredBanner(stateEl);
             return;
           }

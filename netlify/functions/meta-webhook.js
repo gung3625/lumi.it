@@ -41,7 +41,13 @@ async function callGraphAPI(path, method, body, accessToken) {
 
 // ig_accounts_decrypted 뷰에서 access_token + user_id 한 번에 조회 (service_role 전용)
 async function getIgContext(supabase, igUserId) {
-  if (igUserId === TEST_IG_USER_ID) {
+  // 개발/심사용 fallback: TEST_IG_USER_ID 가 명시적으로 설정됐고 일치할 때만 활성.
+  // production 에서 env 가 비어 있으면 자동으로 fallback 비활성화 (백도어 차단).
+  if (TEST_IG_USER_ID && igUserId === TEST_IG_USER_ID) {
+    if (!TEST_ACCESS_TOKEN) {
+      console.warn('[meta-webhook] TEST_IG_USER_ID 매칭됐으나 TEST_ACCESS_TOKEN 미설정 — fallback 거부');
+      return null;
+    }
     return {
       accessToken: TEST_ACCESS_TOKEN,
       userId: null,
