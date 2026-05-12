@@ -58,18 +58,18 @@ ${config.communities.join(', ')}
 **반드시 실제 웹 검색 결과에서 나온 정보만** JSON 배열로 반환. 각 항목:
 {
   "keyword": "구체적 트렌드 키워드 (한글 2-15자)",
-  "source_url": "실제 검색 결과 URL",
-  "excerpt": "원문에서 직접 인용 30자 이상",
-  "community": "출처 커뮤니티명",
-  "confidence": 60-100 (확신 정도)
+  "source_url": "실제 검색 결과 URL (없으면 빈 문자열)",
+  "excerpt": "원문에서 직접 인용 20자 이상",
+  "community": "출처 커뮤니티명 (예: 맘카페·디시·더쿠)",
+  "confidence": 40-100 (확신 정도)
 }
 
-엄격 규칙:
-- confidence 60 미만은 반환 금지 (불확실하면 아예 빼기)
-- source_url은 검색 결과에서 실제 본 URL만
-- excerpt는 원문에서 그대로 복붙 (요약·변형 금지)
-- 트렌드가 명확하지 않으면 적게 반환해도 됨 (거짓 키워드 금지)
-- 최대한 3개 이상 찾도록 노력. 못 찾으면 빈 배열 []
+규칙:
+- confidence 40 미만은 반환 금지 (불확실하면 아예 빼기)
+- source_url 은 검색에서 실제 본 URL — 없으면 빈 문자열 ""
+- excerpt 는 원문에서 그대로 복붙 (요약·변형 금지)
+- 거짓 키워드 절대 금지
+- **반드시 3개 이상 찾도록 노력** — 못 찾으면 검색 키워드를 더 일반적으로 바꿔서 재시도
 - 설명·마크다운 없이 JSON 배열만 출력`;
 }
 
@@ -236,11 +236,14 @@ exports.handler = runGuarded({
         const rawItems = await fetchCommunityForCategory(category, COMMUNITY_QUERIES[category]);
 
         // URL 검증 제거 — 커뮤니티 사이트는 봇 차단으로 HEAD 항상 실패
-        // confidence + keyword + excerpt 기반 필터만 적용
+        // confidence + keyword + excerpt/community 기반 필터.
+        // source_url 은 봇 차단으로 GPT 가 못 가져올 때가 많아 선택 필드로 완화.
         const validated = [];
         for (const item of (rawItems || [])) {
-          if (!item?.keyword || !item?.source_url || !item?.excerpt) continue;
-          if (typeof item.confidence !== 'number' || item.confidence < 50) continue;
+          if (!item?.keyword) continue;
+          // excerpt 또는 community 둘 중 하나만 있어도 채택 — 키워드 자체가 핵심
+          if (!item?.excerpt && !item?.community) continue;
+          if (typeof item.confidence !== 'number' || item.confidence < 40) continue;
           validated.push(item);
         }
         console.log(`[community] ${category} validated 수:`, validated.length);
