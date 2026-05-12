@@ -699,6 +699,91 @@ ${tone.context}
   return { captions: safeCaptions, validator: null };
 }
 
+// ─────────── Threads 전용 캡션 (결정 §12-A #4) ───────────
+// IG 캡션은 첫 125자 + 해시태그 구조. Threads 는 글이 메인이고 사진 보조,
+// 해시태그 거의 없음, 캐주얼한 대화체. 따라서 IG 캡션을 그대로 재사용하지 않고
+// 별도 GPT 호출로 생성해 reservations.generated_threads_caption 에 저장.
+// 검수 루프(validator) X — Threads 는 IG 만큼 톤 규칙이 강하지 않아 단발성 호출.
+async function generateThreadsCaption(imageAnalysis, item, igCaption) {
+  const sp = item.storeProfile || {};
+  const vision = visionToContext(imageAnalysis);
+  const visionBlock = vision ? vision.text : imageAnalysis;
+
+  const storeBlock = [
+    sp.name        ? `매장명: ${sp.name}` : '',
+    item.bizCategory || sp.category ? `업종: ${item.bizCategory || sp.category}` : '',
+    sp.region      ? `지역: ${sp.region}` : '',
+    sp.description ? `소개: ${sp.description}` : '',
+  ].filter(Boolean).join(' / ') || '(정보 없음)';
+
+  const toneHints = [
+    Array.isArray(item.toneLikes)    && item.toneLikes.length    ? `선호: ${item.toneLikes.join(', ')}`    : '',
+    Array.isArray(item.toneDislikes) && item.toneDislikes.length ? `회피: ${item.toneDislikes.join(', ')}` : '',
+    item.toneRequest ? `요청: ${item.toneRequest}` : '',
+  ].filter(Boolean).join(' / ') || '(특별 지시 없음)';
+
+  const prompt = `당신은 한국 자영업자(매장)의 SNS 운영을 돕는 카피라이터입니다. 인스타그램과 함께 올라갈 쓰레드(Threads) 본문을 작성합니다.
+
+## 쓰레드 vs 인스타그램
+- 쓰레드는 글이 메인, 사진 보조. 첫 줄로 잡지 않고 전체가 한 호흡으로 읽힘.
+- 해시태그·@태그 거의 안 씀. 있어도 본문 흐름 안에 자연스럽게 1개 이내.
+- 인스타보다 캐주얼. 친구한테 말 걸듯.
+
+## 매장
+${storeBlock}
+
+## 사진/영상 컨텍스트
+${visionBlock}
+
+## 인스타 캡션 (참고 — 그대로 베끼지 X, 풀어서 자연스럽게 재구성)
+${igCaption || '(없음)'}
+
+## 톤 시그널
+${toneHints}
+
+## 작성 지침
+- 길이: 300~500자 hard cap.
+- 단락: 2~3개. 줄바꿈으로 호흡.
+- 말투: 친구한테 말하듯 약간 캐주얼. "~예요/~네요" 보다 "~해요/~지/~거든요" 톤.
+- 해시태그·이모지: 안 쓰거나 정말 자연스러울 때만 1개.
+- 마무리: 질문, 한 줄 단상, 또는 공감. "DM 주세요" 같은 강요·명령조 X.
+
+## 출력
+본문만. 따옴표·제목·설명 없이 본문 텍스트 그대로.`;
+
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), 60_000);
+  let res;
+  try {
+    res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` },
+      body: JSON.stringify({
+        model: 'gpt-5.4',
+        messages: [{ role: 'user', content: prompt }],
+        max_completion_tokens: 900,
+        temperature: 0.85,
+      }),
+      signal: ctrl.signal,
+    });
+  } finally { clearTimeout(tid); }
+  if (!res.ok) {
+    const errBody = await res.text().catch(() => '');
+    throw new Error(`gpt-5.4(threads) HTTP ${res.status}: ${errBody.substring(0, 200)}`);
+  }
+  const data = await res.json();
+  if (data.error) throw new Error(`gpt-5.4(threads) 오류: ${data.error.message || JSON.stringify(data.error)}`);
+  let text = (data.choices?.[0]?.message?.content || '').trim();
+  if (!text) throw new Error('gpt-5.4(threads) 응답 없음');
+
+  // 길이 hard cap (Threads 500자 한도 + 안전 마진)
+  if (text.length > 500) text = text.slice(0, 500);
+
+  const safe = await moderateCaption(text);
+  if (!safe) throw new Error('Threads 캡션 moderation 차단');
+  return text;
+}
+
 
 // ─────────── REELS 자막 burn-in (Phase 2b) ───────────
 // 캡션 본문을 기반으로 GPT-4o-mini가 짧은 한국어 SRT(3~5블록)를 생성.
@@ -1096,6 +1181,21 @@ exports.handler = async (event) => {
     console.log('[process-and-post] 캡션 생성 완료:', captions.length, '개',
       validator ? `pass=${validator.pass} regen=${!!validator.regenerated}` : 'no-validator');
 
+    // M2.2 — Threads 전용 캡션 (결정 §12-A #4).
+    //   post_to_thread=true 일 때만 추가 호출. 실패해도 IG 게시 흐름엔 영향 0
+    //   (Threads 게시 시점에 generated_threads_caption 이 null 이면 IG 캡션 fallback).
+    let generatedThreadsCaption = null;
+    if (reservation.post_to_thread === true && captions[0]) {
+      try {
+        await captionProgress('threads_gen_start');
+        generatedThreadsCaption = await generateThreadsCaption(imageAnalysis, captionInput, captions[0]);
+        console.log('[process-and-post] Threads 캡션 생성 완료 (len=' + generatedThreadsCaption.length + ')');
+      } catch (e) {
+        console.warn('[process-and-post] Threads 캡션 생성 실패 (IG 캡션으로 fallback):', e && e.message);
+        generatedThreadsCaption = null;
+      }
+    }
+
     // 캡션 v2 운영 검증 — caption_history 에 'generated' row 적재 (validator 결과 동봉).
     // 실패해도 게시 흐름엔 영향 X. admin endpoint 가 이 row 들로 임계값 튜닝 데이터 확보.
     if (reservation.user_id && captions[0]) {
@@ -1150,6 +1250,7 @@ exports.handler = async (event) => {
       caption_status: 'scheduled',
       selected_caption_index: 0,
       caption_error: null,
+      generated_threads_caption: generatedThreadsCaption,
     };
     {
       const { error: readyErr } = await supabase

@@ -428,9 +428,12 @@ exports.handler = async (event) => {
 
       try {
         console.log('[select-and-post] Threads 게시 시작 (per-seller token)');
+        // M2.2 — Threads 전용 캡션 (결정 §12-A #4) 우선, 없으면 IG 캡션 fallback
+        const threadsCaption = (reservation.generated_threads_caption && String(reservation.generated_threads_caption).trim())
+          || selectedCaption;
         threadsPostId = mediaType === 'REELS'
-          ? await postToThreadsForSeller(supabase, reservation.user_id, selectedCaption, null, reservation.video_url)
-          : await postToThreadsForSeller(supabase, reservation.user_id, selectedCaption, imageUrls[0], null);
+          ? await postToThreadsForSeller(supabase, reservation.user_id, threadsCaption, null, reservation.video_url)
+          : await postToThreadsForSeller(supabase, reservation.user_id, threadsCaption, imageUrls[0], null);
         threadsStatus = 'posted';
         console.log('[select-and-post] Threads 게시 완료:', threadsPostId);
       } catch (te) {
