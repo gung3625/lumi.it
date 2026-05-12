@@ -896,6 +896,13 @@
       regionCloseBtn.addEventListener('click', closeRegionModal);
       regionBackdrop.addEventListener('click', closeRegionModal);
 
+      // Escape 키로 열려 있는 모달 닫기 — insights.html / trends.html 와 일관성.
+      document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape') return;
+        if (regionModal.classList.contains('is-open')) closeRegionModal();
+        else if (modal.classList.contains('is-open')) closeIndustryModal();
+      });
+
       regionSaveBtn.addEventListener('click', async () => {
         if (!regionSido.value || !regionGugun.value) return;
         const newRegion = `${regionSido.value} ${regionGugun.value}`;
