@@ -90,13 +90,28 @@ exports.handler = async (event) => {
       return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ok: false, log }) };
     }
 
-    b64 = imgJson && imgJson.data && imgJson.data[0] && imgJson.data[0].b64_json;
+    const first = imgJson && imgJson.data && imgJson.data[0];
+    b64 = first && first.b64_json;
+    let usedUrl = null;
+    if (!b64 && first && first.url) {
+      usedUrl = first.url;
+      try {
+        const cdnRes = await fetch(first.url);
+        log.push({ stage: 'cdn_fetch', status: cdnRes.status });
+        if (cdnRes.ok) {
+          const buf = Buffer.from(await cdnRes.arrayBuffer());
+          b64 = buf.toString('base64');
+        }
+      } catch (e) {
+        log.push({ stage: 'cdn_fetch_throw', err: e.message });
+      }
+    }
     if (!b64) {
-      log.push({ stage: 'openai_no_b64', keys: imgJson?.data?.[0] ? Object.keys(imgJson.data[0]) : null });
+      log.push({ stage: 'openai_no_b64_no_url', keys: first ? Object.keys(first) : null });
       return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ok: false, log, response_keys: imgJson ? Object.keys(imgJson) : null }) };
     }
-    imageMeta = { bytes: b64.length, response_keys: Object.keys(imgJson) };
-    log.push({ stage: 'openai_ok', b64_chars: b64.length });
+    imageMeta = { bytes: b64.length, response_keys: Object.keys(imgJson), used_url: !!usedUrl };
+    log.push({ stage: 'openai_ok', b64_chars: b64.length, used_url: !!usedUrl });
   } catch (e) {
     log.push({ stage: 'openai_throw', err: e.message });
     return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ok: false, log }) };
