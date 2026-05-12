@@ -250,7 +250,7 @@ async function mergeV2Fields(supa, keywords, category, collectedDate, axisFilter
 
     let query = supa
       .from('trend_keywords')
-      .select('keyword, cross_source_count, weighted_score, velocity_pct, signal_tier, axis, narrative, origin, raw_mentions, sub_category, related_keywords, sources')
+      .select('keyword, cross_source_count, weighted_score, velocity_pct, signal_tier, axis, narrative, origin, raw_mentions, sub_category, related_keywords, sources, monthly_search_total')
       .eq('category', category)
       .eq('region', region)
       .gte('collected_date', cutoff)
@@ -332,6 +332,7 @@ async function mergeV2Fields(supa, keywords, category, collectedDate, axisFilter
           subCategory: v2.sub_category ?? null,
           relatedKeywords: v2.related_keywords || [],
           sources: v2.sources || {},
+          monthlySearchTotal: v2.monthly_search_total ?? null,
         } : kw;
         base.likes = fb ? fb.likes : 0;
         base.dislikes = fb ? fb.dislikes : 0;
@@ -383,6 +384,7 @@ async function mergeV2Fields(supa, keywords, category, collectedDate, axisFilter
         origin: row.origin ?? null,
         saturationTotal: row.raw_mentions?.saturation_total ?? undefined,
         saturationLevel: row.raw_mentions?.saturation_level ?? undefined,
+        monthlySearchTotal: row.monthly_search_total ?? null,
         likes: fb.likes,
         dislikes: fb.dislikes,
       });

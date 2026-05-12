@@ -252,6 +252,8 @@
     .kw-badge--hot { background: #fff4e8; color: #c2410c; }
     /* 다중 소스 신뢰도 배지 — 2곳 이상에서 잡힌 키워드 강조 */
     .kw-badge--src { background: var(--bg-soft); color: var(--ink-muted); font-weight: var(--weight-semibold); }
+    /* 월간 검색량 배지 — 네이버 검색광고 API 실수치 (PR #173+) */
+    .kw-badge--vol { background: #eef6ff; color: #1e40af; }
     /* 약신호 (signalTier=weak) — 카드 살짝 흐리게 */
     .kw-item--weak .kw-item__text { color: var(--ink-soft); }
     .kw-item--weak .kw-item__rank { opacity: 0.6; }
@@ -718,11 +720,29 @@
             }
           });
         }
+        // ranking 정렬 — 실 검색량 우선 → velocity 보조.
+        //
+        // 정책 (PR #173+):
+        //   final_score = monthlySearchTotal × (1 + velocityPct/100)
+        //   - monthlySearchTotal: 네이버 검색광고 API 월간 PC+모바일 합산 (절대량)
+        //   - velocityPct: 전 cron 대비 weighted_score 상승률 (가산점)
+        //
+        // monthlySearchTotal 이 없으면 (env 부재 / 매칭 실패) 그 키워드는 weightedScore
+        // 기반으로 fallback 정렬. 같은 ranking 안에서 검색량 있는 키워드가 상위.
+        function rankScore(k) {
+          const v = typeof k.velocityPct === 'number' ? k.velocityPct : 0;
+          if (typeof k.monthlySearchTotal === 'number' && k.monthlySearchTotal > 0) {
+            return k.monthlySearchTotal * (1 + v / 100);
+          }
+          // fallback — weighted_score 사용. 단 절대값이 monthlyTotal 보다 훨씬 작아
+          // 자연스레 하위 정렬. -1 곱해 절대 보유 키워드 뒤로 보냄.
+          return -((typeof k.weightedScore === 'number' ? k.weightedScore : 0));
+        }
         const sorted = Array.from(merged.values()).sort((a, b) => {
-          const va = typeof a.velocityPct === 'number' ? a.velocityPct : 0;
-          const vb = typeof b.velocityPct === 'number' ? b.velocityPct : 0;
-          if (va !== vb) return vb - va;
-          return a.sourceRank - b.sourceRank;
+          const sa = rankScore(a);
+          const sb = rankScore(b);
+          if (sa !== sb) return sb - sa;
+          return a.sourceRank - b.sourceRank;  // tie-breaker
         });
         return { items: sorted, categoryLabel: group.label, updatedAt: latestUpdatedAt };
       }
@@ -752,12 +772,18 @@
               : trend === 'down'
               ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 15 12 21 18 15"/><line x1="12" y1="3" x2="12" y2="21"/></svg>'
               : '';
-            // v2 신호 메타 배지: 🔥 급등 (velocity ≥ 50%)
-            // (NEW 배지는 제거 — 키워드 클릭 시 sheet 에서 GPT 가 직접 "이 키워드는 어떤 거예요" 설명)
+            // v2 신호 메타 배지: 월간 검색량 + 🔥 급등 (velocity ≥ 50%) + 다중 소스
             const velocity = typeof item.velocityPct === 'number' ? item.velocityPct : null;
             const isHot = velocity !== null && velocity >= 50;
             const isWeak = item.signalTier === 'weak';
             const badges = [];
+            // 월간 검색량 chip — 사장님이 1~10위 절대 신호 직관적으로 인지.
+            // 단위 축약 (10000회 → 1만, 1500000회 → 150만).
+            const mst = typeof item.monthlySearchTotal === 'number' ? item.monthlySearchTotal : null;
+            if (mst !== null && mst > 0) {
+              const short = mst >= 10000 ? `${Math.round(mst / 1000) / 10}만` : `${mst.toLocaleString()}`;
+              badges.push(`<span class="kw-badge kw-badge--vol" title="월간 검색량 (네이버 PC+모바일)">🔎 ${short}</span>`);
+            }
             if (isHot) badges.push(`<span class="kw-badge kw-badge--hot">🔥 +${Math.round(velocity)}%</span>`);
             // 다중 소스 신뢰도 — 2곳 이상에서 잡힌 키워드만 표시 (1곳은 노이즈 가능)
             const srcCount = typeof item.crossSourceCount === 'number' ? item.crossSourceCount : null;
@@ -805,11 +831,21 @@
         const blocks = [];
 
         // 0) "왜 이 순위?" — 사장님이 1위 키워드의 근거를 알 수 있도록 명시.
-        //    velocityPct(상승률) + crossSourceCount(소스 다양성) + signalTier(신호 강도) 종합.
+        //    monthlySearchTotal(실 검색량) + velocityPct(상승률) + crossSourceCount(소스 다양성) 종합.
         const rankSignals = [];
+        // 1차 정렬 기준 — 네이버 검색광고 API 의 월간 PC + 모바일 합산
+        if (typeof item.monthlySearchTotal === 'number' && item.monthlySearchTotal > 0) {
+          const total = item.monthlySearchTotal;
+          let icon = '🔎';
+          if (total >= 100000) icon = '🚀';        // 10만+
+          else if (total >= 10000) icon = '🔥';    // 1만+
+          else if (total >= 1000) icon = '📈';     // 1천+
+          rankSignals.push(`${icon} 월간 검색량 <strong>${total.toLocaleString()}회</strong> (네이버 PC + 모바일 합산)`);
+        }
+        // 2차 — 상승률 가산점
         const v = typeof item.velocityPct === 'number' ? item.velocityPct : null;
         if (v !== null) {
-          if (v >= 50) rankSignals.push(`🔥 검색·게시물 상승률 <strong>+${Math.round(v)}%</strong> (전 cron 대비)`);
+          if (v >= 50) rankSignals.push(`🔥 상승률 <strong>+${Math.round(v)}%</strong> (전 cron 대비)`);
           else if (v > 0) rankSignals.push(`📈 상승률 +${Math.round(v)}%`);
           else if (v <= -30) rankSignals.push(`📉 ${Math.round(v)}% 하락 중`);
           else rankSignals.push(`📊 상승률 ${Math.round(v)}% (안정)`);
@@ -820,9 +856,6 @@
         } else if (csc === 1) {
           rankSignals.push(`⚠️ 1개 소스만 등장 (약한 신호)`);
         }
-        if (typeof item.weightedScore === 'number' && item.weightedScore > 0) {
-          rankSignals.push(`💯 종합 점수 ${item.weightedScore.toFixed ? item.weightedScore.toFixed(1) : item.weightedScore}`);
-        }
         if (rankSignals.length) {
           blocks.push(`
             <div class="sheet__section sheet__section--rank">
@@ -830,7 +863,7 @@
               <ul class="sheet__rank-list">
                 ${rankSignals.map(s => `<li>${s}</li>`).join('')}
               </ul>
-              <p class="sheet__meta-line" style="margin-top:6px;">정렬: 상승률 우선 → 같으면 GPT 카테고리 적합도</p>
+              <p class="sheet__meta-line" style="margin-top:6px;">정렬: 월간 검색량 × (1 + 상승률) — 절대 검색량 우선, 상승 중이면 가산</p>
             </div>
           `);
         }

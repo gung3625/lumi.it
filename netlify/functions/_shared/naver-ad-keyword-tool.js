@@ -143,4 +143,34 @@ async function fetchRelatedFromSeeds(seeds, options = {}) {
     .slice(0, limit);
 }
 
-module.exports = { fetchRelatedKeywords, fetchRelatedFromSeeds };
+/**
+ * 단일 키워드의 월간 검색량 (PC + 모바일) 조회.
+ *
+ * 네이버 검색광고 API 는 hint 키워드를 받으면 응답에 hint 자체의 통계도 포함.
+ * 정확 매칭 또는 normalized 매칭으로 hint 자체의 monthlyTotal 추출.
+ *
+ * @param {string} keyword
+ * @returns {Promise<{monthlyTotal: number, monthlyPc: number, monthlyMobile: number, competitionIdx: string|null}|null>}
+ *          매칭 없으면 null. env 부재 / API 실패 시도 null.
+ */
+async function fetchKeywordSearchVolume(keyword) {
+  if (!keyword || typeof keyword !== 'string') return null;
+  const list = await fetchRelatedKeywords(keyword);
+  if (!Array.isArray(list) || list.length === 0) return null;
+
+  // 정확 매칭 우선. 공백·대소문자 무관 normalized 매칭 fallback.
+  const normTarget = keyword.replace(/\s+/g, '').toLowerCase();
+  let hit = list.find(item => item.keyword === keyword);
+  if (!hit) {
+    hit = list.find(item => item.keyword.replace(/\s+/g, '').toLowerCase() === normTarget);
+  }
+  if (!hit) return null;
+  return {
+    monthlyTotal: hit.monthlyTotal,
+    monthlyPc: hit.monthlyPc,
+    monthlyMobile: hit.monthlyMobile,
+    competitionIdx: hit.competitionIdx,
+  };
+}
+
+module.exports = { fetchRelatedKeywords, fetchRelatedFromSeeds, fetchKeywordSearchVolume };
