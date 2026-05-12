@@ -178,6 +178,7 @@ history.html — 사장님 평가 👍/👎 + 코멘트 → tone_feedback 누적
 | `account_deletion_requests` | 30일 grace 탈퇴 큐 |
 | `seller_post_history` | **IG 게시 이력 통합** — 가입 전 직접 게시(source='pre-lumi') + Lumi 게시(source='lumi'). PK(user_id, ig_media_id). 게시별 reach/saved/engagement/insights_fetched_at. 베스트 시간 Tier 1/3 데이터. |
 | `follower_activity_snapshots` | **Meta `online_followers` 누적 매트릭스** — 일별 cron 으로 hour×day_of_week 채움. PK(user_id, snapshot_date, hour). 28일 분 누적되면 베스트 시간 Tier 2 활성. |
+| `channel_posts` | **멀티 채널 게시 상태 정규화** — 1 reservation × N 채널 (현재 'ig'/'threads', 향후 TikTok/YouTube). PK(reservation_id, channel). status(pending→posting→posted/failed) atomic CAS. `credit_consumed` 컬럼이 결정사항 §12-A #7 (성공 채널만 차감) 의 source of truth. 2026-05-12 prod 적용 (마이그레이션 `20260512200000_channel_posts.sql`). M2(post-channels-background) 부터 실제 사용. |
 
 ### 중요 invariant
 
