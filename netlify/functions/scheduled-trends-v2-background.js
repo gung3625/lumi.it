@@ -5,7 +5,7 @@
 //   - gpt-4o 전환 (분류·예측·스토리 전부), 전처리만 mini 폴백 가능
 //   - 크로스 소스 검증: 2+ 소스 → signal_tier='real', 1소스 → 'weak'
 //   - Velocity 스코어링: 전 주 대비 mention 증가율 (%)
-//   - 소스별 가중치: datalab=3 / blog=1 / youtube=2 / ig=2 / google=1
+//   - 소스별 가중치: datalab=3 / blog=1 / youtube=2 / ig=2 / news=2 / shopping=3
 //   - 레거시 키 6종 그대로 유지 (프론트 호환)
 //   - runGuarded + heartbeat 키 'scheduled-trends' 그대로
 //   - 카나리 전략: TREND_V2_CANARY_CATS env ('all' or comma-separated)
@@ -58,7 +58,6 @@ const SOURCE_WEIGHTS = {
   blog: 1,
   youtube: 2,
   ig: 2,
-  google: 1,
   news: 2,        // 뉴스는 신뢰도 높음
   // 쇼핑 신호 가중치 3 — 검색 데이터랩과 동등. 구매 의도 신호라 가치 높음.
   shopping: 3,
@@ -981,52 +980,6 @@ function classifySaturation(total) {
   return 'saturated';
 }
 
-async function fetchGoogleTrendsLib(geo) {
-  try {
-    const googleTrends = require('google-trends-api');
-    const raw = await Promise.race([
-      googleTrends.dailyTrends({ trendDate: new Date(), geo }),
-      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000)),
-    ]);
-    const parsed = JSON.parse(raw);
-    const days = parsed?.default?.trendingSearchesDays || [];
-    const titles = [];
-    for (const day of days) {
-      for (const ts of (day.trendingSearches || [])) {
-        const t = ts?.title?.query;
-        if (t) titles.push(t);
-        for (const rel of (ts.relatedQueries || [])) {
-          if (rel?.query) titles.push(rel.query);
-        }
-      }
-    }
-    return titles.slice(0, 40);
-  } catch(e) {
-    console.error(`[google-${geo}] lib 실패, RSS fallback:`, e.message);
-    return fetchGoogleRSS(geo);
-  }
-}
-
-async function fetchGoogleRSS(geo) {
-  try {
-    const url = `https://trends.google.com/trends/trendingsearches/daily/rss?geo=${geo}`;
-    const result = await httpsGet(url);
-    if (result.status !== 200) return [];
-    const titles = [];
-    const matches = result.body.matchAll(/<title><!\[CDATA\[([^\]]+)\]\]><\/title>/g);
-    for (const match of matches) {
-      const title = match[1].trim();
-      if (title && title !== 'Google Trends' && titles.length < 40) {
-        titles.push(title);
-      }
-    }
-    return titles;
-  } catch(e) {
-    console.error(`[google-rss-${geo}]`, e.message);
-    return [];
-  }
-}
-
 async function fetchYouTube(category) {
   const apiKey = process.env.YOUTUBE_API_KEY;
   if (!apiKey) return [];
@@ -1374,7 +1327,7 @@ async function classifyBatchWithGPT({ rawTextsByCategory, demographicsByCategory
 
   const prompt = `당신은 국내(한국) 소상공인(카페·음식점·뷰티·꽃집·패션·피트니스·반려동물·인테리어·교육·스튜디오) 인스타그램 트렌드 분석 전문가입니다.
 
-아래 외부 소스(네이버 데이터랩·네이버 블로그·네이버 뉴스·네이버 쇼핑인사이트·구글 트렌드·YouTube·Instagram)에서 수집한 원시 텍스트를 읽고,
+아래 외부 소스(네이버 데이터랩·네이버 블로그·네이버 뉴스·네이버 쇼핑인사이트·YouTube·Instagram)에서 수집한 원시 텍스트를 읽고,
 각 업종 카테고리에서 실제 유행하는 **트렌드 대상** 키워드 5~12개씩 선별해 JSON으로 반환하세요.
 (데이터가 부족한 카테고리 — 피트니스·반려동물·인테리어·교육·스튜디오 — 는 시드 키워드 관련 구체적 상품·스타일·기법이면 넓게 포함 가능)
 
@@ -1646,12 +1599,11 @@ async function evaluatePredictionAccuracy({ supa, category }) {
 // ─────────────────────────────────────────────
 // Rising 예측 (gpt-4o + gpt-4o-mini 폴백)
 // ─────────────────────────────────────────────
-async function predictRisingWithGPT({ category, domesticTags, naverData, blogData, youtubeData, googleKR }) {
+async function predictRisingWithGPT({ category, domesticTags, naverData, blogData, youtubeData }) {
   const categoryKo = CATEGORY_KO[category] || '일반';
   const recentStr = (naverData || []).slice(0, 8).join(', ') || '없음';
   const blogStr = (blogData || []).slice(0, 6).join(' | ').slice(0, 500) || '없음';
   const ytStr = (youtubeData || []).slice(0, 6).join(' | ').slice(0, 500) || '없음';
-  const googleStr = (googleKR || []).slice(0, 8).join(', ') || '없음';
   const currentStr = (domesticTags || []).slice(0, 8).join(', ') || '없음';
 
   const prompt = `당신은 인스타그램 트렌드 예측 전문가입니다.
@@ -1669,9 +1621,6 @@ ${blogStr}
 
 [YouTube 인기 영상 제목]
 ${ytStr}
-
-[구글 트렌드(한국)]
-${googleStr}
 
 각 키워드에 대해 다음을 JSON 배열로 응답하세요:
 - keyword: 예측 키워드 (한국어, 2~20자, # 없이)
@@ -1732,7 +1681,7 @@ function textMatchKeyword(text, keyword) {
   return false;
 }
 
-function buildCrossSourceCount({ keyword, naverData, blogData, ytKR, igTexts, googleKR, newsData, shoppingData }) {
+function buildCrossSourceCount({ keyword, naverData, blogData, ytKR, igTexts, newsData, shoppingData }) {
   function countMatches(arr) {
     if (!arr) return 0;
     return arr.filter(t => textMatchKeyword(String(t), keyword)).length;
@@ -1743,7 +1692,6 @@ function buildCrossSourceCount({ keyword, naverData, blogData, ytKR, igTexts, go
     blog: countMatches(blogData),
     youtube: countMatches(ytKR),
     ig: countMatches(igTexts),
-    google: countMatches(googleKR),
     news: countMatches(newsData),
     // 쇼핑인사이트 — 카테고리명 자체가 텍스트에 포함되면 매칭 (낮은 매칭률).
     // 실제 가치는 GPT 분류 단계에서 raw 텍스트로 인입 + demographics 컨텍스트 주입.
@@ -2052,14 +2000,6 @@ exports.handler = runGuarded({
     // ─── 1단계: 수집 ───────────────────────────
     await ctx.stage('collecting', { cats: categories.length });
 
-    let googleKR = [];
-    try {
-      googleKR = await fetchGoogleTrendsLib('KR');
-    } catch(e) {
-      console.error('[sources] google-kr 수집 실패 (계속 진행):', e.message);
-    }
-    console.log(`[sources] google-kr: ${googleKR.length}`);
-
     const rawEntries = await Promise.all(COLLECT_CATEGORIES.map(async (category) => {
       const [naverData, blogData, ytKR, igTexts, newsData, shoppingSignals] = await Promise.all([
         fetchNaverDatalab(category),
@@ -2109,7 +2049,6 @@ exports.handler = runGuarded({
         ...r.naverData,
         ...r.blogData,
         ...r.ytKR,
-        ...googleKR,
         ...r.igTexts,
         ...(r.newsData || []),
         ...(r.shoppingData || []),   // 네이버 쇼핑인사이트 카테고리 강도 표시
@@ -2163,7 +2102,6 @@ exports.handler = runGuarded({
               blogData: r.blogData,
               ytKR: r.ytKR,
               igTexts: r.igTexts,
-              googleKR,
               newsData: r.newsData,
               shoppingData: r.shoppingData,
             });
@@ -2310,7 +2248,7 @@ exports.handler = runGuarded({
             ? predictRisingWithGPT({
                 category, domesticTags,
                 naverData: r.naverData, blogData: r.blogData,
-                youtubeData: r.ytKR, googleKR,
+                youtubeData: r.ytKR,
               })
             : Promise.resolve(null),
         ]);
