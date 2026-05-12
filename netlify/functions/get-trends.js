@@ -1,7 +1,7 @@
 // get-trends.js — Supabase public.trends 기반 리더 (Phase 1 재구축)
 // scheduled-trends.js 가 저장한 category 키 포맷을 그대로 조회해서 기존 응답 포맷으로 반환
 // 응답 포맷은 변경 없음 (프론트 호환 유지)
-// v2: trend_keywords 테이블에서 crossSourceCount, weightedScore, velocityPct, signalTier, isNew 선택적 merge
+// v2: trend_keywords 테이블에서 crossSourceCount, weightedScore, velocityPct, signalTier 선택적 merge
 
 const { getAdminClient } = require('./_shared/supabase-admin');
 
@@ -250,7 +250,7 @@ async function mergeV2Fields(supa, keywords, category, collectedDate, axisFilter
 
     let query = supa
       .from('trend_keywords')
-      .select('keyword, cross_source_count, weighted_score, velocity_pct, signal_tier, is_new, axis, narrative, origin, raw_mentions, sub_category, related_keywords, sources')
+      .select('keyword, cross_source_count, weighted_score, velocity_pct, signal_tier, axis, narrative, origin, raw_mentions, sub_category, related_keywords, sources')
       .eq('category', category)
       .eq('region', region)
       .gte('collected_date', cutoff)
@@ -324,13 +324,11 @@ async function mergeV2Fields(supa, keywords, category, collectedDate, axisFilter
           weightedScore: v2.weighted_score ?? undefined,
           velocityPct: v2.velocity_pct ?? undefined,
           signalTier: v2.signal_tier ?? undefined,
-          isNew: v2.is_new ?? undefined,
           axis: v2.axis ?? undefined,
           narrative: v2.narrative ?? null,
           origin: v2.origin ?? null,
           saturationTotal: v2.raw_mentions?.saturation_total ?? undefined,
           saturationLevel: v2.raw_mentions?.saturation_level ?? undefined,
-          isNewConfidence: v2.raw_mentions?.is_new_confidence ?? undefined,
           subCategory: v2.sub_category ?? null,
           relatedKeywords: v2.related_keywords || [],
           sources: v2.sources || {},
@@ -380,7 +378,6 @@ async function mergeV2Fields(supa, keywords, category, collectedDate, axisFilter
         weightedScore: row.weighted_score ?? undefined,
         velocityPct: row.velocity_pct ?? undefined,
         signalTier: row.signal_tier ?? undefined,
-        isNew: row.is_new ?? undefined,
         axis: row.axis ?? undefined,
         narrative: row.narrative ?? null,
         origin: row.origin ?? null,
