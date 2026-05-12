@@ -68,7 +68,8 @@ exports.handler = async (event) => {
         size: '1024x1024',
         quality: 'medium',
         n: 1,
-        response_format: 'b64_json',
+        // response_format 제거 — v2 가 'Unknown parameter' 거부 (v1 옵션)
+        // gpt-image-2 는 default 로 b64_json 반환 (확인 필요)
         output_format: 'jpeg',
         output_compression: 85,
       }),
