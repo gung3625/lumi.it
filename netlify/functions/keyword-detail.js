@@ -2,17 +2,19 @@
 // GET /api/keyword-detail?keyword=<kw>&category=<cat>
 //
 // 동작:
-//   1) Netlify Blobs `keyword-detail` 캐시 lookup (key: <category>/<encodedKeyword>)
-//      - hit (TTL 30일 이내) → cached: true 로 즉시 반환
-//   2) miss → OpenAI Chat Completions (gpt-4o-mini, JSON mode, timeout 10초) 호출
-//   3) 응답 검증 후 캐시 저장 (TTL 30일)
+//   1) Bearer 토큰 검증 — 회원 전용 (트렌드 페이지가 회원 진입이라 외부 직접 호출은 차단)
+//   2) Netlify Blobs `keyword-detail` 캐시 lookup (key: <category>/<encodedKeyword>)
+//      - hit (TTL 30일 이내) → cached: true 로 즉시 반환 (quota 차감 X)
+//   3) miss → OpenAI quota gate (sellerId, gpt-4o-mini) → 호출 → 캐시 저장
 //   4) { ok:true, data:{ keyword, category, definition, audience, why, ideas[], hashtags[], generatedAt, cached } }
 //
-// 인증: 익명 허용 (트렌드 페이지는 회원 전용 진입). CORS 표준.
-// 에러: OpenAI 실패 시 { ok:false, error:'generation_failed' } → 모달이 기존 fallback 표시.
+// 에러:
+//   401 invalid_token / 429 quota_exceeded / 200 ok:false generation_failed → 모달 fallback
 
 const { getStore } = require('@netlify/blobs');
 const { corsHeaders, getOrigin } = require('./_shared/auth');
+const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
+const { checkAndIncrementQuota, QuotaExceededError } = require('./_shared/openai-quota');
 
 const OPENAI_TIMEOUT_MS = 10_000;
 const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30일
@@ -174,6 +176,16 @@ exports.handler = async (event) => {
   }
 
   try {
+    // 0) 회원 인증 — 외부에서 직접 호출해 GPT 자원 소모하는 경로 차단
+    const token = extractBearerToken(event);
+    if (!token) {
+      return { statusCode: 401, headers, body: JSON.stringify({ ok: false, error: 'unauthorized' }) };
+    }
+    const { user, error: authErr } = await verifyBearerToken(token);
+    if (authErr || !user) {
+      return { statusCode: 401, headers, body: JSON.stringify({ ok: false, error: 'invalid_token' }) };
+    }
+
     const qs = event.queryStringParameters || {};
     const keyword = String(qs.keyword || '').trim();
     let category = String(qs.category || 'all').trim().toLowerCase();
@@ -194,7 +206,7 @@ exports.handler = async (event) => {
     }
     if (!ALLOWED_CATEGORIES.has(category)) category = 'all';
 
-    // 1) 캐시 lookup
+    // 1) 캐시 lookup — hit 면 quota 차감 없이 즉시 반환 (글로벌 30일 캐시 효과)
     const cached = await readCache(category, keyword);
     if (cached) {
       return {
@@ -207,7 +219,21 @@ exports.handler = async (event) => {
       };
     }
 
-    // 2) miss → OpenAI 즉석 생성
+    // 2) miss → OpenAI quota gate (cache miss 만 카운트). 한도 초과 시 429.
+    try {
+      await checkAndIncrementQuota(user.id, 'gpt-4o-mini');
+    } catch (qe) {
+      if (qe instanceof QuotaExceededError) {
+        return {
+          statusCode: 429,
+          headers,
+          body: JSON.stringify({ ok: false, error: 'quota_exceeded', reason: qe.reason || null }),
+        };
+      }
+      console.warn('[keyword-detail] quota 체크 실패 (fail-open으로 진행):', qe && qe.message);
+    }
+
+    // 3) OpenAI 즉석 생성
     let detail;
     try {
       detail = await generateWithOpenAI(keyword, category);
@@ -220,7 +246,7 @@ exports.handler = async (event) => {
       };
     }
 
-    // 3) 캐시 저장 (best-effort)
+    // 4) 캐시 저장 (best-effort)
     await writeCache(category, keyword, detail);
 
     return {

@@ -852,8 +852,12 @@
         try {
           const useCat = cat || currentCategory;
           const url = `/api/keyword-detail?keyword=${encodeURIComponent(keyword)}&category=${encodeURIComponent(useCat)}`;
-          const res = await fetch(url);
+          const res = await fetch(url, { headers: authHeaders });
           const json = await res.json();
+          if (res.status === 429) {
+            sheetBody.innerHTML = metaHtml + '<div class="state">오늘 설명 한도를 다 썼어요. 내일 다시 시도해주세요.</div>';
+            return;
+          }
           if (!json.ok || !json.data) {
             sheetBody.innerHTML = metaHtml + '<div class="state">해석을 가져오지 못했어요.</div>';
             return;
