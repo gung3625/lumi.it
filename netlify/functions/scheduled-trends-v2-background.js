@@ -13,7 +13,7 @@
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { runGuarded } = require('./_shared/cron-guard');
 const { checkAndIncrementQuota, QuotaExceededError } = require('./_shared/openai-quota');
-const { fetchRelatedFromSeeds } = require('./_shared/naver-ad-keyword-tool');
+const { fetchRelatedFromSeeds, fetchKeywordSearchVolume } = require('./_shared/naver-ad-keyword-tool');
 const {
   LUMI_INDUSTRY_CATEGORIES,
   fetchCategoryTrend,
@@ -1912,6 +1912,7 @@ async function saveTrendKeywordsV2({ supa, category, enrichedKeywords, collected
       sources: sourcesObj,  // DB 스키마의 sources jsonb 컬럼
       narrative: item.narrative || null,
       origin: item.origin || null,
+      monthly_search_total: item.monthlySearchTotal ?? null,
       raw_mentions: {
         saturation_total: item.saturationTotal ?? null,
         saturation_level: item.saturationLevel ?? null,
@@ -2128,6 +2129,19 @@ exports.handler = runGuarded({
             const saturationTotal = await fetchKeywordSaturation(keyword);
             const saturationLevel = classifySaturation(saturationTotal);
 
+            // 네이버 검색광고 API 로 월간 실 검색량 (PC + 모바일 합산) 조회.
+            // ranking 1차 정렬 기준. env 부재 / 매칭 실패 시 null → 그 키워드는 velocity 기반
+            // 정렬로 fallback. quota 일일 25,000 의 0.5% (~90 호출/일).
+            let monthlySearchTotal = null;
+            try {
+              const vol = await fetchKeywordSearchVolume(keyword);
+              if (vol && Number.isFinite(vol.monthlyTotal)) {
+                monthlySearchTotal = vol.monthlyTotal;
+              }
+            } catch (e) {
+              console.warn(`[search-volume] ${category}/${keyword} 실패:`, e.message);
+            }
+
             return {
               keyword,
               score: todayScore,
@@ -2135,6 +2149,7 @@ exports.handler = runGuarded({
               signalTier,
               weightedScore,
               velocityPct,
+              monthlySearchTotal,
               counts,
               saturationTotal,
               saturationLevel,
