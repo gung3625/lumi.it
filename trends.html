@@ -249,7 +249,6 @@
       line-height: 1.4;
       white-space: nowrap;
     }
-    .kw-badge--new { background: #fff0f5; color: #c8507a; }
     .kw-badge--hot { background: #fff4e8; color: #c2410c; }
     /* 다중 소스 신뢰도 배지 — 2곳 이상에서 잡힌 키워드 강조 */
     .kw-badge--src { background: var(--bg-soft); color: var(--ink-muted); font-weight: var(--weight-semibold); }
@@ -653,8 +652,8 @@
       }
 
       // 그룹 안 모든 visible sub 를 parallel fetch 후 키워드 머지.
-      // 같은 키워드가 여러 sub 에 있으면 sourceRank 작은 쪽 우선 + isNew/velocityPct 보존.
-      // 정렬: isNew > velocityPct desc > sourceRank asc.
+      // 같은 키워드가 여러 sub 에 있으면 sourceRank 작은 쪽 우선 + velocityPct 보존.
+      // 정렬: velocityPct desc > sourceRank asc.
       async function fetchGroupTrends(group) {
         const subs = visibleSubs(group);
         if (subs.length === 0) return { items: [], categoryLabel: group.label, updatedAt: null };
@@ -676,16 +675,14 @@
             if (!prev || idx < prev.sourceRank) {
               merged.set(key, { ...kw, sourceSub: sub.id, sourceRank: idx });
             } else {
-              // 다른 sub 에서 같은 키워드 isNew/velocity 가 더 강하면 메타만 보강
+              // 다른 sub 에서 같은 키워드 velocity 가 더 강하면 메타만 보강
               const v = typeof kw.velocityPct === 'number' ? kw.velocityPct : -Infinity;
               const pv = typeof prev.velocityPct === 'number' ? prev.velocityPct : -Infinity;
-              if (kw.isNew && !prev.isNew) prev.isNew = true;
               if (v > pv) prev.velocityPct = kw.velocityPct;
             }
           });
         }
         const sorted = Array.from(merged.values()).sort((a, b) => {
-          if (!!a.isNew !== !!b.isNew) return a.isNew ? -1 : 1;
           const va = typeof a.velocityPct === 'number' ? a.velocityPct : 0;
           const vb = typeof b.velocityPct === 'number' ? b.velocityPct : 0;
           if (va !== vb) return vb - va;
@@ -716,13 +713,12 @@
               : trend === 'down'
               ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 15 12 21 18 15"/><line x1="12" y1="3" x2="12" y2="21"/></svg>'
               : '';
-            // v2 신호 메타 배지: NEW (신규 등장) · 🔥 급등 (velocity ≥ 50%)
-            const isNew = item.isNew === true;
+            // v2 신호 메타 배지: 🔥 급등 (velocity ≥ 50%)
+            // (NEW 배지는 제거 — 키워드 클릭 시 sheet 에서 GPT 가 직접 "이 키워드는 어떤 거예요" 설명)
             const velocity = typeof item.velocityPct === 'number' ? item.velocityPct : null;
             const isHot = velocity !== null && velocity >= 50;
             const isWeak = item.signalTier === 'weak';
             const badges = [];
-            if (isNew) badges.push('<span class="kw-badge kw-badge--new">NEW</span>');
             if (isHot) badges.push(`<span class="kw-badge kw-badge--hot">🔥 +${Math.round(velocity)}%</span>`);
             // 다중 소스 신뢰도 — 2곳 이상에서 잡힌 키워드만 표시 (1곳은 노이즈 가능)
             const srcCount = typeof item.crossSourceCount === 'number' ? item.crossSourceCount : null;
