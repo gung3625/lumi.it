@@ -574,6 +574,17 @@
         localStorage.getItem('seller_jwt');
       const authHeaders = token ? { Authorization: 'Bearer ' + token } : {};
 
+      // HTML escape — GPT 응답·키워드·소스 URL 모두 innerHTML 삽입 전 통과.
+      // GPT prompt injection 으로 응답에 <img onerror> 같은 게 섞일 가능성 차단.
+      function esc(s) {
+        return String(s == null ? '' : s)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
       const listEl = document.querySelector('[data-kw-list]');
       const stateEl = document.querySelector('[data-state]');
       const catLabel = document.querySelector('[data-cat-label]');
@@ -731,7 +742,7 @@
               <li>
                 <button class="${itemClass}" type="button" data-kw="${encodeURIComponent(kw)}">
                   <span class="kw-item__rank">${rank}</span>
-                  <span class="kw-item__text">${kw}</span>
+                  <span class="kw-item__text">${esc(kw)}</span>
                   ${badgeHtml}
                   <span class="kw-item__trend${trendClass}">${trendIcon}</span>
                 </button>
@@ -768,8 +779,8 @@
         // 1) cron 이 추출 시 GPT 가 만든 한줄 요약 (narrative) + 출처 단서 (origin)
         if (item.narrative || item.origin) {
           const lines = [];
-          if (item.narrative) lines.push(`<p class="sheet__text">${item.narrative}</p>`);
-          if (item.origin)    lines.push(`<p class="sheet__meta-line">${item.origin}</p>`);
+          if (item.narrative) lines.push(`<p class="sheet__text">${esc(item.narrative)}</p>`);
+          if (item.origin)    lines.push(`<p class="sheet__meta-line">${esc(item.origin)}</p>`);
           blocks.push(`
             <div class="sheet__section">
               <div class="sheet__label">루미 수집 메모</div>
@@ -790,7 +801,7 @@
             .filter(([, count]) => Number(count) > 0)
             .sort(([, a], [, b]) => Number(b) - Number(a))
             .map(([key, count]) =>
-              `<span class="sheet__source-chip">${SOURCE_LABELS[key] || key}<strong>${count}</strong></span>`
+              `<span class="sheet__source-chip">${esc(SOURCE_LABELS[key] || key)}<strong>${esc(count)}</strong></span>`
             );
           if (chips.length) {
             blocks.push(`
@@ -868,7 +879,7 @@
             sections.push(`
               <div class="sheet__section">
                 <div class="sheet__label">키워드</div>
-                <p class="sheet__text">${d.definition}</p>
+                <p class="sheet__text">${esc(d.definition)}</p>
               </div>
             `);
           }
@@ -876,7 +887,7 @@
             sections.push(`
               <div class="sheet__section">
                 <div class="sheet__label">누가 쓰나요</div>
-                <p class="sheet__text">${d.audience}</p>
+                <p class="sheet__text">${esc(d.audience)}</p>
               </div>
             `);
           }
@@ -884,7 +895,7 @@
             sections.push(`
               <div class="sheet__section">
                 <div class="sheet__label">왜 뜨나요</div>
-                <p class="sheet__text">${d.why}</p>
+                <p class="sheet__text">${esc(d.why)}</p>
               </div>
             `);
           }
@@ -893,7 +904,7 @@
               <div class="sheet__section">
                 <div class="sheet__label">활용 아이디어</div>
                 <ul class="sheet__list">
-                  ${d.ideas.map(i => `<li>${i}</li>`).join('')}
+                  ${d.ideas.map(i => `<li>${esc(i)}</li>`).join('')}
                 </ul>
               </div>
             `);
@@ -903,7 +914,7 @@
               <div class="sheet__section">
                 <div class="sheet__label">관련 해시태그</div>
                 <div class="sheet__chips">
-                  ${d.hashtags.map(h => `<span class="sheet__chip">#${String(h).replace(/^#/, '')}</span>`).join('')}
+                  ${d.hashtags.map(h => `<span class="sheet__chip">#${esc(String(h).replace(/^#/, ''))}</span>`).join('')}
                 </div>
               </div>
             `);

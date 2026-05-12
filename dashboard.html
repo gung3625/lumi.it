@@ -964,6 +964,16 @@
       if (!token) { location.replace('/'); return; }
       const authHeaders = { Authorization: 'Bearer ' + token };
 
+      // HTML escape — 트렌드 키워드(외부 cron 수집)·예약 캡션 등 innerHTML 삽입 전 항상 통과.
+      function esc(s) {
+        return String(s == null ? '' : s)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
       // 사장님 카테고리 — loadMe 가 갱신, loadTrends/loadBestTime 이 사용. 미감지 시 'cafe' fallback.
       let userCategory = 'cafe';
 
@@ -1047,7 +1057,7 @@
           if (!container) return;
           container.innerHTML = tags.slice(0, 5).map(tag => {
             const clean = String(tag).replace(/^#/, '');
-            return `<a class="keyword-chip" href="/trends?q=${encodeURIComponent(clean)}">#${clean}</a>`;
+            return `<a class="keyword-chip" href="/trends?q=${encodeURIComponent(clean)}">#${esc(clean)}</a>`;
           }).join('');
         } catch {}
       }
