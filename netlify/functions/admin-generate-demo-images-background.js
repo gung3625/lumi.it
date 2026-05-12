@@ -20,7 +20,7 @@
 // background 함수 (timeout 15분). 12장 순차 처리 (각 ~10-30초).
 
 const REPO = process.env.GITHUB_REPO || 'gung3625/lumi.it';
-const BRANCH = process.env.GITHUB_BRANCH || 'claude/rebuild-all-files-Jhc1i';
+const BRANCH = process.env.GITHUB_BRANCH || 'main';   // 옛 default 'claude/rebuild-...' 옛 dev 브랜치 잔재
 
 const PROMPTS = [
   'Top-down photo of Korean bibimbap with vibrant vegetables on a warm wooden table, natural daylight, photorealistic shot on iPhone',
