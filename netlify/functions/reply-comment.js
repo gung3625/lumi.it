@@ -21,7 +21,7 @@ const { getStore } = require('@netlify/blobs');
 const { corsHeaders, getOrigin } = require('./_shared/auth');
 const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
 const { getAdminClient } = require('./_shared/supabase-admin');
-const { getIgTokenForSeller, igGraphRequest, IgGraphError } = require('./_shared/ig-graph');
+const { getIgTokenForSeller, igGraphRequest, IgGraphError, markIgTokenInvalid } = require('./_shared/ig-graph');
 
 // IG 댓글 id: 보통 긴 숫자 또는 18_숫자 형태. 보수적으로 영숫자/_/- 허용.
 const COMMENT_ID_RE = /^[A-Za-z0-9_-]{3,64}$/;
@@ -87,6 +87,7 @@ exports.handler = async (event) => {
     resp = await igGraphRequest(igCtx.accessToken, `/${commentId}/replies`, { message }, { method: 'POST' });
   } catch (e) {
     if (e instanceof IgGraphError && e.isTokenExpired()) {
+      await markIgTokenInvalid(admin, user.id, 'reply-comment');
       return { statusCode: 200, headers: CORS, body: JSON.stringify({ ok: false, tokenExpired: true }) };
     }
     console.warn('[reply-comment] Graph 호출 실패:', e && e.message);

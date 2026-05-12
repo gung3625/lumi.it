@@ -144,9 +144,40 @@ async function igGraphRequest(token, path, params = {}, opts = {}) {
   return data;
 }
 
+/**
+ * ig_accounts.token_invalid_at 마킹 헬퍼.
+ *
+ * Graph API 호출에서 IgGraphError.isTokenExpired() 가 true 면 모든 호출자가
+ * 이 함수를 호출해 사장님 row 를 즉시 무효 마킹해야 함:
+ *   - 대시보드 / settings / comments / insights 의 재연동 배너 노출
+ *   - 다음 cron · 사용자 요청들의 사전 차단 (rate limit 절약)
+ *
+ * 누락되면 토큰 만료 발견 후에도 같은 사장님의 후속 호출이 계속 401 받아
+ * Meta rate limit 소진. PR #158 에서 select-and-post 만 마킹하던 걸 본
+ * 헬퍼로 일원화 (PR #161+).
+ *
+ * @param {object} admin - getAdminClient() 결과 (service_role)
+ * @param {string} userId - ig_accounts.user_id (= sellerId)
+ * @param {string} [context] - 로그용 호출 함수 이름. 누락 시 'ig-graph'.
+ * @returns {Promise<void>} — 실패해도 throw 하지 않음 (best-effort)
+ */
+async function markIgTokenInvalid(admin, userId, context = 'ig-graph') {
+  if (!admin || !userId) return;
+  try {
+    await admin
+      .from('ig_accounts')
+      .update({ token_invalid_at: new Date().toISOString() })
+      .eq('user_id', userId);
+    console.log(`[${context}] token_invalid_at 마킹: user=${String(userId).slice(0, 8)}`);
+  } catch (e) {
+    console.warn(`[${context}] token_invalid_at 마킹 실패:`, e && e.message);
+  }
+}
+
 module.exports = {
   getIgTokenForSeller,
   igGraphRequest,
+  markIgTokenInvalid,
   IgGraphError,
   GRAPH_API_VERSION,
   GRAPH_BASE,

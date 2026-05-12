@@ -47,6 +47,7 @@ const {
   getIgTokenForSeller,
   igGraphRequest,
   IgGraphError,
+  markIgTokenInvalid,
 } = require('./_shared/ig-graph');
 
 const CACHE_TTL_MS = 15 * 60 * 1000; // 15분 (단건 단기)
@@ -216,6 +217,7 @@ exports.handler = async (event) => {
     } catch (e) {
       if (e instanceof IgGraphError && e.isTokenExpired()) {
         console.warn(`[insight-on-demand] seller=${String(sellerId).slice(0, 8)} 토큰 만료 (code=${e.code})`);
+        await markIgTokenInvalid(admin, sellerId, 'insight-on-demand');
         return {
           statusCode: 200,
           headers: CORS,
@@ -276,6 +278,7 @@ exports.handler = async (event) => {
   } catch (e) {
     if (e instanceof IgGraphError && e.isTokenExpired()) {
       console.warn(`[insight-on-demand] seller=${String(sellerId).slice(0, 8)} 토큰 만료 (code=${e.code})`);
+      await markIgTokenInvalid(admin, sellerId, 'insight-on-demand');
       return {
         statusCode: 200,
         headers: CORS,
