@@ -344,6 +344,58 @@
       .scheduled-empty:hover .scheduled-empty__chev { transform: translateX(2px); color: var(--pink-500); }
     }
 
+    /* IG 재연동 필요 카드 (token_invalid_at 표시된 사장님만 노출) */
+    .ig-reconnect {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      background: #fff8ea;
+      border: 1px solid #f5a623;
+      border-radius: var(--radius-lg);
+      color: #b45309;
+      text-decoration: none;
+      animation: ig-reconnect-pulse 1.6s var(--ease-soft) infinite alternate, rise 500ms var(--ease-toss) 80ms backwards;
+      transition: transform var(--duration-snap) var(--ease-toss);
+    }
+    .ig-reconnect:active { transform: scale(0.992); }
+    .ig-reconnect__icon {
+      width: 40px;
+      height: 40px;
+      flex-shrink: 0;
+      border-radius: var(--radius-full);
+      background: linear-gradient(135deg, #f5a623, #ec4899);
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .ig-reconnect__icon svg { width: 22px; height: 22px; }
+    .ig-reconnect__body { flex: 1; min-width: 0; }
+    .ig-reconnect__title {
+      font-size: var(--text-body);
+      font-weight: var(--weight-semibold);
+      color: #b45309;
+      letter-spacing: var(--tracking-snug);
+    }
+    .ig-reconnect__sub {
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+      margin-top: 2px;
+    }
+    .ig-reconnect__chev {
+      font-size: 18px;
+      color: #b45309;
+      flex-shrink: 0;
+    }
+    @keyframes ig-reconnect-pulse {
+      from { box-shadow: 0 0 0 0 rgba(245, 166, 35, 0.20); }
+      to   { box-shadow: 0 0 0 8px rgba(245, 166, 35, 0); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .ig-reconnect { animation: none; }
+    }
+
     /* 오늘 날씨 카드 */
     .weather-card {
       display: flex;
@@ -676,6 +728,25 @@
   <!-- 메인 피드 -->
   <main class="feed" role="main" data-feed>
 
+    <!-- 0a. IG 재연동 필요 안내 (token_invalid_at 표시된 사장님만) -->
+    <section aria-labelledby="sec-ig-reconnect" hidden data-ig-reconnect-section>
+      <h2 class="section-title" id="sec-ig-reconnect" style="position:absolute;left:-9999px;">인스타 재연동</h2>
+      <a class="ig-reconnect" href="/settings" data-ig-reconnect-link>
+        <span class="ig-reconnect__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="5"/>
+            <circle cx="12" cy="12" r="4"/>
+            <circle cx="17.5" cy="6.5" r="1.2" fill="currentColor"/>
+          </svg>
+        </span>
+        <div class="ig-reconnect__body">
+          <div class="ig-reconnect__title">인스타 재연동이 필요해요</div>
+          <div class="ig-reconnect__sub">토큰이 만료돼서 게시·댓글·트렌드 갱신이 멈춤. 설정에서 한 번에 재연동.</div>
+        </div>
+        <span class="ig-reconnect__chev" aria-hidden="true">→</span>
+      </a>
+    </section>
+
     <!-- 0. 오늘 날씨 -->
     <section aria-labelledby="sec-weather">
       <h2 class="section-title" id="sec-weather" style="position:absolute;left:-9999px;">오늘 날씨</h2>
@@ -920,6 +991,13 @@
             data.category ||
             (data.user && data.user.category);
           if (cat) userCategory = String(cat).toLowerCase();
+
+          // IG 토큰 무효 — 재연동 카드 노출
+          const ig = data.igStatus || null;
+          const reconnectSection = document.querySelector('[data-ig-reconnect-section]');
+          if (reconnectSection && ig && ig.connected && ig.tokenInvalid) {
+            reconnectSection.hidden = false;
+          }
         } catch {}
       }
 
