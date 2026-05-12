@@ -18,7 +18,7 @@
 
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { getIgTokenForSeller } = require('./_shared/ig-graph');
-const { utcToKstDate } = require('./_shared/kst-utils');
+const { utcToKstDate, utcHourToKstHour } = require('./_shared/kst-utils');
 
 const META_GRAPH = 'https://graph.facebook.com/v25.0';
 const FETCH_TIMEOUT_MS = 10000;
@@ -69,7 +69,7 @@ function expandValueToRows(userId, valueRow) {
   for (const [hourStr, count] of Object.entries(valueRow.value)) {
     const utcHour = Number(hourStr);
     if (Number.isNaN(utcHour) || utcHour < 0 || utcHour > 23) continue;
-    const kstHour = (utcHour + 9) % 24;
+    const kstHour = utcHourToKstHour(utcHour);
     // KST 변환으로 인해 한 row 의 24시간이 2개 날짜에 걸침 — 단순화:
     // utcHour < 15 면 baseKst 일자, ≥15 면 baseKst-1 (전날) — 이건 정확히 보면
     // 24시간이 모두 같은 KST 일자에 속하는 게 아니라 일부는 다음 KST 일자에 속함.

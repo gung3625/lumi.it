@@ -36,7 +36,7 @@ const { corsHeaders, getOrigin } = require('./_shared/auth');
 //   'industry-seed'          전부 시드
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
-const { kstHourDow } = require('./_shared/kst-utils');
+const { kstHourDow, utcHourToKstHour } = require('./_shared/kst-utils');
 const {
   HISTORY_THRESHOLDS,
   HISTORY_WINDOW_DAYS,
@@ -174,7 +174,7 @@ function pickPeakHour(followerMap) {
   for (const [hourStr, value] of Object.entries(followerMap)) {
     const utcHour = Number(hourStr);
     if (Number.isNaN(utcHour)) continue;
-    const kstHour = (utcHour + 9) % 24;
+    const kstHour = utcHourToKstHour(utcHour);
     if (kstHour < 6 || kstHour > 23) continue;
     if (value > bestValue) {
       bestValue = value;

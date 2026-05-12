@@ -1,5 +1,6 @@
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { checkAndIncrementQuota, QuotaExceededError } = require('./_shared/openai-quota');
+const { utcToKstDate } = require('./_shared/kst-utils');
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
@@ -77,11 +78,12 @@ exports.handler = async (event) => {
       return { statusCode: 429, headers, body: JSON.stringify({ error: '체험 횟수(3회)를 모두 사용했어요. 더 다양한 캡션을 원하시면 무료로 가입해보세요!' }) };
     }
 
-    // ── 날짜/시즌 ──
-    const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
-    const month = now.getMonth() + 1;
-    const day = now.getDate();
-    const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][now.getDay()];
+    // ── 날짜/시즌 (KST) ──
+    // kst-utils: utcToKstDate 가 반환하는 가짜 UTC Date 에서 getUTC* 로 KST 시각 추출.
+    const kstNow = utcToKstDate(Date.now());
+    const month = kstNow.getUTCMonth() + 1;
+    const day = kstNow.getUTCDate();
+    const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][kstNow.getUTCDay()];
     const seasonMap = { 1:'겨울',2:'겨울',3:'봄',4:'봄',5:'봄',6:'여름',7:'여름',8:'여름',9:'가을',10:'가을',11:'가을',12:'겨울' };
     const season = seasonMap[month];
 
