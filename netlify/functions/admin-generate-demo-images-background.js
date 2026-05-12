@@ -1,6 +1,10 @@
 // netlify/functions/admin-generate-demo-images-background.js
-// Admin: 12장 데모 매장 사진을 OpenAI Images API(gpt-image-1)로 생성 →
+// Admin: 12장 데모 매장 사진을 OpenAI Images API(gpt-image-2)로 생성 →
 // GitHub Contents API로 assets/demo/NN.jpg 에 직접 commit.
+//
+// 2026-05 PR #151: gpt-image-1 → gpt-image-2 (출시 2026-04-21, GPT-5.4 backbone).
+// 텍스트 렌더 정확도·속도·multi-turn editing 개선. transparent 배경은 v2 미지원
+// (jpeg 출력엔 영향 없음).
 //
 // 호출: GET /api/admin-generate-demo-images?secret=<LUMI_SECRET>
 //   또는 헤더 X-Lumi-Secret: <LUMI_SECRET>
@@ -73,12 +77,14 @@ exports.handler = async (event) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-image-1',
+          model: 'gpt-image-2',
           prompt: PROMPTS[i],
-          size: '1024x1024',
-          quality: 'medium',
+          size: '1024x1024',              // v2 도 지원 (v2 가 default 는 auto)
+          quality: 'medium',               // v2: low/medium/high/auto
           n: 1,
-          output_format: 'jpeg',
+          response_format: 'b64_json',     // v2 default 가 'url' 이라 명시 필요 (b64 추출 호환)
+          output_format: 'jpeg',           // 인코딩
+          output_compression: 85,          // jpeg 압축 품질 (0~100). v2 신규 옵션.
         }),
       });
 
