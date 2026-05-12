@@ -47,6 +47,11 @@ exports.handler = async (event) => {
   const doCommit = qp.commit !== '0';
   let index = parseInt(qp.index || '0', 10);
   if (!Number.isFinite(index) || index < 0 || index >= PROMPTS.length) index = 0;
+  // ?quality=low|medium|high|auto (default low) — 10초 timeout 안 응답 받기 위해 default low.
+  const ALLOWED_Q = new Set(['low', 'medium', 'high', 'auto']);
+  const quality = ALLOWED_Q.has(qp.quality) ? qp.quality : 'low';
+  // ?size=1024x1024|... (default 1024 그대로)
+  const size = qp.size || '1024x1024';
 
   const log = [];
   const idx = String(index + 1).padStart(2, '0');
@@ -65,11 +70,9 @@ exports.handler = async (event) => {
       body: JSON.stringify({
         model: 'gpt-image-2',
         prompt: PROMPTS[index],
-        size: '1024x1024',
-        quality: 'medium',
+        size,
+        quality,
         n: 1,
-        // response_format 제거 — v2 가 'Unknown parameter' 거부 (v1 옵션)
-        // gpt-image-2 는 default 로 b64_json 반환 (확인 필요)
         output_format: 'jpeg',
         output_compression: 85,
       }),
