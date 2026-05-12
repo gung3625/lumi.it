@@ -178,6 +178,21 @@ exports.handler = async (event) => {
     console.error('[me] sellerToken 발급 실패:', e.message);
   }
 
+  // IG 연동 + 토큰 무효 상태 (대시보드/설정의 "재연동 필요" 카드용)
+  let igStatus = { connected: false, tokenInvalid: false };
+  try {
+    const { data: igRow } = await admin
+      .from('ig_accounts')
+      .select('ig_user_id, token_invalid_at')
+      .eq('user_id', seller.id)
+      .maybeSingle();
+    if (igRow && igRow.ig_user_id) {
+      igStatus = { connected: true, tokenInvalid: !!igRow.token_invalid_at };
+    }
+  } catch (e) {
+    console.warn('[me] ig_accounts 조회 경고:', e && e.message);
+  }
+
   return {
     statusCode: 200,
     headers: CORS,
@@ -216,6 +231,7 @@ exports.handler = async (event) => {
         deletionCancelledAt: seller.deletion_cancelled_at || null,
         deletionPending: Boolean(seller.deletion_requested_at && !seller.deletion_cancelled_at),
       },
+      igStatus,
     }),
   };
 };
