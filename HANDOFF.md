@@ -272,7 +272,10 @@ sellers.id = reservations.user_id = ig_accounts.user_id = tone_feedback.user_id
 ### 커밋
 - 한국어 메시지. 첫 줄 50자 안쪽. 본문 이유·맥락 위주.
 - Co-Authored-By 필요 시 추가.
-- main 직접 push (PR 안 만듦, 베타 단계).
+- **main 직접 push 정책** (베타 단계라 보통 PR 안 만듦):
+  · **로컬 사용자** — `git push origin main` 가능. 디폴트 흐름.
+  · **Claude (웹/원격 에이전트)** — 직접 push 는 HTTP 403 으로 차단됨 (2026-05-12 검증, 빈 커밋 테스트 PR #129 로 확인). 반드시 **작업 브랜치 push → PR 생성 → GitHub MCP `merge_pull_request` 로 squash 머지** 경로 사용. 머지되면 main 반영 + Netlify 자동 배포까지 정상 동작.
+  · Claude 가 push 후 원격 브랜치 삭제도 403 으로 막힘 (MCP 에 delete_branch 도구 부재). 머지 끝난 브랜치는 사용자가 GitHub UI 에서 직접 정리하거나 그대로 둘 것.
 
 ### UI
 - **마이크로 인터랙션 필수** — 모든 버튼/카드에 hover/active/transition + reduced-motion 가드.
