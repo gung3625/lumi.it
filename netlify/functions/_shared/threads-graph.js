@@ -1,0 +1,233 @@
+// Threads Graph API 공통 헬퍼 (M1.2 스켈레톤)
+//
+// 패턴은 _shared/ig-graph.js 와 1:1 대응. Threads 가 Meta 인프라라 에러 코드
+// 체계(190 = 토큰 만료 등)도 동일. 다만 base URL 이 graph.facebook.com 이
+// 아니라 graph.threads.net 으로 분리돼 있음 → 별도 모듈로 둠.
+//
+// 보안 원칙 (ig-graph.js 와 동일):
+//   - access_token 은 로그·응답에 절대 출력 X
+//   - 토큰은 호출 직전에만 메모리에 두고 즉시 폐기
+//   - service_role 클라이언트(getAdminClient)에서만 호출
+//
+// 현재 단계 (M1.2): 호출자 0. 함수 정의만 두고 M2 (post-channels-background)
+// 가 도입되는 시점부터 실사용. getThreadsTokenForSeller / markThreadsTokenInvalid
+// 는 ig_accounts.threads_* 컬럼을 참조하므로 M1.3 마이그레이션 후에 정상 동작.
+
+const THREADS_API_VERSION = 'v1.0';                       // Meta 측 변경 시 여기만 갱신
+const THREADS_BASE = `https://graph.threads.net/${THREADS_API_VERSION}`;
+
+class ThreadsGraphError extends Error {
+  constructor(message, { status, code, type, fbtrace_id } = {}) {
+    super(message);
+    this.name = 'ThreadsGraphError';
+    this.status = status || null;
+    this.code = code || null;          // Meta 표준 코드 (190 = 토큰 무효)
+    this.type = type || null;
+    this.fbtrace_id = fbtrace_id || null;
+  }
+  isTokenExpired() {
+    if (this.status === 401) return true;
+    if (this.code === 190) return true;
+    return false;
+  }
+}
+
+/**
+ * 사장님의 Threads 토큰·계정 정보 조회.
+ *
+ * 결정사항 §12-A #1 — Meta 통합 OAuth 로 IG 연동 시 Threads 토큰도 같이
+ * `ig_accounts` 의 threads_* 컬럼에 저장. 별도 테이블 안 둠.
+ *
+ * 의존 컬럼 (M1.3 에서 추가):
+ *   - ig_accounts.threads_user_id
+ *   - ig_accounts.threads_token
+ *   - ig_accounts.threads_token_expires_at
+ *   - ig_accounts.threads_token_invalid_at
+ *
+ * @param {string} sellerId
+ * @param {object} supabase - getAdminClient() 결과 (service_role)
+ * @returns {Promise<{threadsUserId, accessToken, tokenExpiresAt}|null>}
+ */
+async function getThreadsTokenForSeller(sellerId, supabase) {
+  if (!sellerId || !supabase) return null;
+  try {
+    const { data, error } = await supabase
+      .from('ig_accounts_decrypted')
+      .select('threads_user_id, threads_token, threads_token_expires_at, threads_token_invalid_at')
+      .eq('user_id', sellerId)
+      .maybeSingle();
+    if (error) {
+      console.warn('[threads-graph] ig_accounts_decrypted 조회 경고:', error.message);
+      return null;
+    }
+    if (!data || !data.threads_user_id) return null;
+    if (data.threads_token_invalid_at) return null;       // 토큰 무효 마킹된 사장님 자동 차단
+    const token = data.threads_token || null;
+    if (!token) return null;
+    return {
+      threadsUserId: data.threads_user_id,
+      accessToken: token,
+      tokenExpiresAt: data.threads_token_expires_at || null,
+    };
+  } catch (e) {
+    console.warn('[threads-graph] getThreadsTokenForSeller 예외:', e && e.message);
+    return null;
+  }
+}
+
+/**
+ * Threads Graph API 호출 wrapper.
+ * - access_token 은 query string (Meta 표준)
+ * - 에러 응답이면 ThreadsGraphError 던짐
+ *
+ * @param {string} token
+ * @param {string} path - "/{threads-user-id}/threads" 등
+ * @param {object} params
+ * @param {object} opts - { method, timeoutMs }
+ */
+async function threadsGraphRequest(token, path, params = {}, opts = {}) {
+  if (!token) throw new ThreadsGraphError('access_token 누락', { status: 401, code: 190 });
+  const safePath = path.startsWith('/') ? path : `/${path}`;
+  const method = (opts.method || 'GET').toUpperCase();
+
+  const qs = new URLSearchParams();
+  let bodyForm = null;
+  if (method === 'GET') {
+    for (const [k, v] of Object.entries(params || {})) {
+      if (v === undefined || v === null) continue;
+      qs.set(k, String(v));
+    }
+    qs.set('access_token', token);
+  } else {
+    bodyForm = new URLSearchParams();
+    for (const [k, v] of Object.entries(params || {})) {
+      if (v === undefined || v === null) continue;
+      bodyForm.set(k, String(v));
+    }
+    qs.set('access_token', token);
+  }
+  const url = `${THREADS_BASE}${safePath}?${qs.toString()}`;
+
+  const timeoutMs = opts.timeoutMs || 8000;
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), timeoutMs);
+  let res;
+  try {
+    const fetchOpts = { signal: ctrl.signal, method };
+    if (bodyForm) {
+      fetchOpts.body = bodyForm;
+      fetchOpts.headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
+    }
+    res = await fetch(url, fetchOpts);
+  } catch (e) {
+    clearTimeout(tid);
+    throw new ThreadsGraphError(`fetch 실패: ${e.message || 'unknown'}`, { status: 0 });
+  }
+  clearTimeout(tid);
+
+  const usage = res.headers.get('x-business-use-case-usage') || res.headers.get('x-app-usage');
+  if (usage) {
+    const truncated = usage.length > 1024 ? usage.slice(0, 1024) + '…' : usage;
+    console.log(`[threads-graph] usage ${safePath} ${truncated}`);
+  }
+
+  let data;
+  try {
+    data = await res.json();
+  } catch (_) {
+    throw new ThreadsGraphError(`응답 JSON 파싱 실패 (status=${res.status})`, { status: res.status });
+  }
+
+  if (!res.ok || (data && data.error)) {
+    const e = (data && data.error) || {};
+    throw new ThreadsGraphError(e.message || `Threads API 오류 (status=${res.status})`, {
+      status: res.status,
+      code: e.code || null,
+      type: e.type || null,
+      fbtrace_id: e.fbtrace_id || null,
+    });
+  }
+  return data;
+}
+
+/**
+ * Threads 미디어 컨테이너 생성 (2단계 게시의 1단계).
+ *
+ * Threads API 게시 흐름:
+ *   1. POST /{user-id}/threads        — 컨테이너 생성 (creation_id 반환)
+ *   2. POST /{user-id}/threads_publish — creation_id 로 실제 게시
+ *
+ * @param {object} args
+ * @param {string} args.token
+ * @param {string} args.threadsUserId
+ * @param {string} args.mediaType   - 'TEXT' | 'IMAGE' | 'VIDEO' | 'CAROUSEL'
+ * @param {string} [args.imageUrl]  - IMAGE 일 때
+ * @param {string} [args.videoUrl]  - VIDEO 일 때
+ * @param {string} [args.text]      - 본문 (Threads 500자 한도)
+ * @param {string[]} [args.children] - CAROUSEL 의 자식 container id 배열
+ * @param {object} [opts]
+ * @returns {Promise<{id: string}>} — id = creation_id
+ */
+async function createThreadsContainer({ token, threadsUserId, mediaType, imageUrl, videoUrl, text, children }, opts = {}) {
+  if (!threadsUserId) throw new ThreadsGraphError('threadsUserId 누락');
+  if (!mediaType) throw new ThreadsGraphError('mediaType 누락');
+  const params = { media_type: mediaType };
+  if (text)     params.text = text;
+  if (imageUrl) params.image_url = imageUrl;
+  if (videoUrl) params.video_url = videoUrl;
+  if (Array.isArray(children) && children.length) params.children = children.join(',');
+  return threadsGraphRequest(token, `/${threadsUserId}/threads`, params, { method: 'POST', ...opts });
+}
+
+/**
+ * Threads 컨테이너 publish (2단계 게시의 2단계).
+ *
+ * @param {object} args
+ * @param {string} args.token
+ * @param {string} args.threadsUserId
+ * @param {string} args.creationId   - createThreadsContainer 가 반환한 id
+ * @returns {Promise<{id: string}>} — id = thread_id (channel_posts.post_id 에 저장)
+ */
+async function publishThreadsContainer({ token, threadsUserId, creationId }, opts = {}) {
+  if (!threadsUserId) throw new ThreadsGraphError('threadsUserId 누락');
+  if (!creationId)    throw new ThreadsGraphError('creationId 누락');
+  return threadsGraphRequest(token, `/${threadsUserId}/threads_publish`, { creation_id: creationId }, { method: 'POST', ...opts });
+}
+
+/**
+ * ig_accounts.threads_token_invalid_at 마킹 헬퍼.
+ *
+ * Threads Graph 호출에서 ThreadsGraphError.isTokenExpired() 가 true 면
+ * 모든 호출자가 이 함수로 즉시 마킹 — cron · 사장님 요청의 사전 차단.
+ * (ig-graph.js 의 markIgTokenInvalid 와 1:1 대응)
+ *
+ * 의존 컬럼: ig_accounts.threads_token_invalid_at (M1.3 에서 추가).
+ * 컬럼 없는 동안에는 update 가 catch 로 떨어져 silent fail — best-effort.
+ *
+ * @param {object} admin - getAdminClient() 결과 (service_role)
+ * @param {string} userId
+ * @param {string} [context] - 로그용 호출 함수 이름
+ */
+async function markThreadsTokenInvalid(admin, userId, context = 'threads-graph') {
+  if (!admin || !userId) return;
+  try {
+    await admin
+      .from('ig_accounts')
+      .update({ threads_token_invalid_at: new Date().toISOString() })
+      .eq('user_id', userId);
+    console.log(`[${context}] threads_token_invalid_at 마킹: user=${String(userId).slice(0, 8)}`);
+  } catch (e) {
+    console.warn(`[${context}] threads_token_invalid_at 마킹 실패:`, e && e.message);
+  }
+}
+
+module.exports = {
+  getThreadsTokenForSeller,
+  threadsGraphRequest,
+  createThreadsContainer,
+  publishThreadsContainer,
+  markThreadsTokenInvalid,
+  ThreadsGraphError,
+  THREADS_API_VERSION,
+  THREADS_BASE,
+};
