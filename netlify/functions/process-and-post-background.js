@@ -1281,7 +1281,10 @@ exports.handler = async (event) => {
         console.log('[process-and-post] immediate select-and-post 트리거:', sapRes.status);
       } catch (e) {
         console.warn('[process-and-post] immediate select-and-post 트리거 실패:', e.message);
-        // 실패해도 status='scheduled' 라 다음 scheduler 사이클에서 정리됨 (immediate 분기 추가 필요)
+        // 복구: caption_status='scheduled' + selected_caption_index=0 이미 세팅됨 (위 4.5 단계).
+        // scheduler cron 라인 40 분기가 'scheduled' + index 채워진 row 를 다음 1분 cycle 에서
+        // select-and-post 로 재호출 → 자동 복구. reserve.js 가 immediate 의 scheduled_at 을
+        // 강제 now() 로 채우므로 scheduler 의 lte('scheduled_at', now) 픽업 100% 보장.
       }
     }
 
