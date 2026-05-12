@@ -201,6 +201,11 @@ sellers.id = reservations.user_id = ig_accounts.user_id = tone_feedback.user_id
 ### ig_accounts 주요 컬럼 (최근 추가)
 
 - `token_invalid_at` (timestamptz) — 실 API 호출에서 401/code 190 받은 시각 (PR #122). `token_expires_at`(예상 만료)와 별개. cron 들이 표시된 사장님은 자동 skip → Meta rate limit 보호. 재연동(`ig-oauth.js` 콜백)시 NULL 복구.
+- **Threads 통합 컬럼 4개** (2026-05-12, Threads M1.3a) — 결정사항 §12-A #1 Meta 통합 OAuth 의 토큰 저장소. 별도 threads_accounts 테이블 두지 않고 ig_accounts 확장으로 처리.
+  · `threads_user_id` (text) — NULL 이면 Threads 미연동.
+  · `threads_token_secret_id` (uuid) — Vault secret id. `ig_accounts_decrypted` 뷰에서 `threads_token` 으로 복호화 노출.
+  · `threads_token_expires_at` (timestamptz) — 예상 만료.
+  · `threads_token_invalid_at` (timestamptz) — 실 API 호출 401/190 시각. `_shared/threads-graph.js` 의 `markThreadsTokenInvalid` 가 마킹.
 - `region` (text) — 매장 지역 "시·도 구·군" 문자열. signup step1 + settings 양쪽에서 입력. 날씨 카드/캡션의 지역 기반 추천 근거. (2026-05-11 마이그레이션 `20260511000001_add_sellers_region.sql` 로 복구 — sellers_drop_business_columns 때 함께 drop 됐었음)
 
 ---
