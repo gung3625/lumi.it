@@ -221,7 +221,13 @@ exports.handler = async (event) => {
         }
 
         const postMode = fields.postMode || 'immediate';
-        const scheduledAt = fields.scheduledAt || new Date().toISOString();
+        // immediate 는 scheduled_at 을 무조건 now() 로 강제 — 프론트가 실수로 미래 값을
+        // 보내도 scheduler cron 이 즉시 픽업 가능. (이전엔 fields.scheduledAt 우선 사용
+        // 해서 frontend 버그로 미래 시각 들어오면 stuck 가능했음.)
+        const isScheduledMode = postMode === 'scheduled' || postMode === 'best-time';
+        const scheduledAt = isScheduledMode
+          ? (fields.scheduledAt || new Date().toISOString())
+          : new Date().toISOString();
         const submittedAt = fields.submittedAt || new Date().toISOString();
 
         // (옛 public.users FK 보장용 upsert 는 sellers 로 FK 재지정 후 불필요해서 제거)

@@ -124,47 +124,64 @@ exports.handler = async (event) => {
         continue;
       }
 
-      // 2) GitHub: 기존 파일 SHA 조회 (있으면 update, 없으면 create)
-      let sha;
-      const ghGet = await fetch(
-        `https://api.github.com/repos/${REPO}/contents/${path}?ref=${encodeURIComponent(BRANCH)}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${ghToken}`,
-            'Accept': 'application/vnd.github+json',
-            'X-GitHub-Api-Version': '2022-11-28',
-            'User-Agent': 'lumi-admin-bot',
-          },
+      // 2) GitHub: PUT with conflict retry — SHA race 차단.
+      //    두 호출이 동시에 진행되면 둘 다 같은 SHA 를 GET 한 후 PUT → 후자가
+      //    409 conflict 받음. 409 이면 최신 SHA 재조회 후 한 번 재시도.
+      let ghPutOk = false;
+      let ghPutErrSnippet = '';
+      let ghPutStatus = null;
+      for (let attempt = 0; attempt < 2 && !ghPutOk; attempt++) {
+        let sha;
+        const ghGet = await fetch(
+          `https://api.github.com/repos/${REPO}/contents/${path}?ref=${encodeURIComponent(BRANCH)}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${ghToken}`,
+              'Accept': 'application/vnd.github+json',
+              'X-GitHub-Api-Version': '2022-11-28',
+              'User-Agent': 'lumi-admin-bot',
+            },
+          }
+        );
+        if (ghGet.ok) {
+          const existing = await ghGet.json();
+          sha = existing && existing.sha;
         }
-      );
-      if (ghGet.ok) {
-        const existing = await ghGet.json();
-        sha = existing && existing.sha;
+
+        const ghPut = await fetch(
+          `https://api.github.com/repos/${REPO}/contents/${path}`,
+          {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${ghToken}`,
+              'Accept': 'application/vnd.github+json',
+              'X-GitHub-Api-Version': '2022-11-28',
+              'Content-Type': 'application/json',
+              'User-Agent': 'lumi-admin-bot',
+            },
+            body: JSON.stringify({
+              message: `chore: 데모 이미지 ${idx} 생성/갱신`,
+              content: b64,
+              branch: BRANCH,
+              ...(sha ? { sha } : {}),
+            }),
+          }
+        );
+        ghPutStatus = ghPut.status;
+        if (ghPut.ok) {
+          ghPutOk = true;
+        } else if (ghPut.status === 409 && attempt === 0) {
+          // SHA race — 재시도 1회. 새 cycle 에서 GET 다시.
+          console.warn(`[admin-generate-demo-images] ${idx} 409 conflict — SHA 재조회 후 재시도`);
+          continue;
+        } else {
+          ghPutErrSnippet = (await ghPut.text()).slice(0, 300);
+          break;
+        }
       }
 
-      // 3) GitHub: PUT (create or update)
-      const ghPut = await fetch(
-        `https://api.github.com/repos/${REPO}/contents/${path}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${ghToken}`,
-            'Accept': 'application/vnd.github+json',
-            'X-GitHub-Api-Version': '2022-11-28',
-            'Content-Type': 'application/json',
-            'User-Agent': 'lumi-admin-bot',
-          },
-          body: JSON.stringify({
-            message: `chore: 데모 이미지 ${idx} 생성/갱신`,
-            content: b64,
-            branch: BRANCH,
-            ...(sha ? { sha } : {}),
-          }),
-        }
-      );
-      if (!ghPut.ok) {
-        const err = await ghPut.text();
-        log.push({ idx, stage: 'github', status: ghPut.status, err: err.slice(0, 300) });
+      if (!ghPutOk) {
+        log.push({ idx, stage: 'github', status: ghPutStatus, err: ghPutErrSnippet });
         continue;
       }
 
