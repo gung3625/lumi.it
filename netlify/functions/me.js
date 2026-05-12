@@ -181,16 +181,21 @@ exports.handler = async (event) => {
   // IG 연동 + 토큰 만료 상태 (대시보드/설정의 "재연동 필요" 카드용).
   // 응답 키 통일 — 모든 IG 토큰 만료 응답은 tokenExpired 사용 (PR #169).
   // tokenInvalid 는 dashboard.html 옛 호환용 alias 로 유지.
-  let igStatus = { connected: false, tokenExpired: false, tokenInvalid: false };
+  // M3.1 — 같은 row 에서 threads_user_id / threads_token_invalid_at 도 동시 조회.
+  let igStatus      = { connected: false, tokenExpired: false, tokenInvalid: false };
+  let threadsStatus = { connected: false, tokenExpired: false };
   try {
     const { data: igRow } = await admin
       .from('ig_accounts')
-      .select('ig_user_id, token_invalid_at')
+      .select('ig_user_id, token_invalid_at, threads_user_id, threads_token_invalid_at')
       .eq('user_id', seller.id)
       .maybeSingle();
     if (igRow && igRow.ig_user_id) {
       const expired = !!igRow.token_invalid_at;
       igStatus = { connected: true, tokenExpired: expired, tokenInvalid: expired };
+    }
+    if (igRow && igRow.threads_user_id) {
+      threadsStatus = { connected: true, tokenExpired: !!igRow.threads_token_invalid_at };
     }
   } catch (e) {
     console.warn('[me] ig_accounts 조회 경고:', e && e.message);
@@ -235,6 +240,7 @@ exports.handler = async (event) => {
         deletionPending: Boolean(seller.deletion_requested_at && !seller.deletion_cancelled_at),
       },
       igStatus,
+      threadsStatus,
     }),
   };
 };
