@@ -14,6 +14,13 @@ const { getAdminClient } = require('./_shared/supabase-admin');
 const { runGuarded } = require('./_shared/cron-guard');
 const { checkAndIncrementQuota, QuotaExceededError } = require('./_shared/openai-quota');
 const { fetchRelatedFromSeeds } = require('./_shared/naver-ad-keyword-tool');
+const {
+  LUMI_INDUSTRY_CATEGORIES,
+  fetchCategoryTrend,
+  fetchCategoryKeywords,
+  fetchCategoryByAge,
+  fetchCategoryByGender,
+} = require('./_shared/naver-shopping-insight');
 const https = require('https');
 
 // ─────────────────────────────────────────────
@@ -52,8 +59,12 @@ const SOURCE_WEIGHTS = {
   youtube: 2,
   ig: 2,
   google: 1,
-  news: 2,  // 뉴스는 신뢰도 높음
-  community: 2,  // 커뮤니티 (맘카페·디시·더쿠 등)
+  news: 2,        // 뉴스는 신뢰도 높음
+  community: 2,   // 커뮤니티 (맘카페·디시·더쿠 등)
+  // 쇼핑 신호 가중치 3 — 검색 데이터랩과 동등. 구매 의도 신호라 가치 높음.
+  // 단 카페·식당·헤어·피트니스에서는 카테고리 매핑 시 1차 카테고리(식품/화장품/스포츠)
+  // 만 매칭되므로 실제 raw 데이터 hit 빈도가 낮아 자연 감쇄됨.
+  shopping: 3,
 };
 
 // ─────────────────────────────────────────────
@@ -753,6 +764,112 @@ async function fetchNaverNews(category) {
   return texts;
 }
 
+// ─────────────────────────────────────────────
+// 네이버 쇼핑인사이트 — 8 lumi 업종 → 카테고리 매핑
+// trends-v2 카테고리명 ≠ lumi industry 명. 매핑 dictionary 로 변환.
+// pet 는 매핑 없음 (skip), 나머지 8개 모두 가치 있는 카테고리 매핑 보유.
+// ─────────────────────────────────────────────
+const TRENDS_CAT_TO_LUMI_INDUSTRY = {
+  cafe: 'cafe',
+  food: 'restaurant',
+  beauty: 'beauty',
+  nail: 'nail',
+  hair: 'hair',
+  flower: 'flower',
+  fashion: 'clothing',
+  fitness: 'fitness',
+  pet: null,  // 매핑 없음
+};
+
+/**
+ * 네이버 쇼핑인사이트 신호 수집.
+ * Lumi 업종별 매핑된 네이버 카테고리에서 다음 3종 수집:
+ *   1) 카테고리 검색 추이 (B 그룹) — 시계열 ratio (정보용)
+ *   2) 카테고리 × 연령 분포 — 캡션 톤 결정용 (어떤 연령대가 검색?)
+ *   3) 카테고리 × 성별 분포 — 캡션 톤 결정용
+ *
+ * 키워드 트렌드 (C 그룹: category/keywords) 는 카테고리 raw 텍스트로 GPT 분석
+ * 단계에서 자동 활용 — 본 함수에서는 메타 신호만 수집해 카테고리 컨텍스트 형성.
+ *
+ * @param {string} trendsCategory - trends-v2 의 카테고리 (cafe/food/beauty/...)
+ * @returns {Promise<{shoppingTexts: string[], demographics: {age:object,gender:object}|null}>}
+ *          shoppingTexts: GPT 분류에 들어갈 인덱스 텍스트 (카테고리명 + 메타)
+ *          demographics: GPT prompt 에 컨텍스트로 주입할 분포
+ */
+async function fetchNaverShoppingSignals(trendsCategory) {
+  const lumiIndustry = TRENDS_CAT_TO_LUMI_INDUSTRY[trendsCategory];
+  if (!lumiIndustry) return { shoppingTexts: [], demographics: null };
+
+  const cats = LUMI_INDUSTRY_CATEGORIES[lumiIndustry];
+  if (!cats || cats.length === 0) return { shoppingTexts: [], demographics: null };
+
+  const shoppingTexts = [];
+  const ageBucketAgg = {};       // group → cumulative ratio
+  const genderBucketAgg = {};
+
+  for (const cat of cats) {
+    try {
+      // 1) 카테고리 추이 — 시계열 ratio 합산해 "검색 강세 카테고리" 표시
+      const trend = await fetchCategoryTrend({
+        categoryCode: cat.code,
+        categoryName: cat.name,
+        timeUnit: 'week',
+      });
+      const sumRatio = (trend.results || []).reduce((s, r) =>
+        s + (r.data || []).reduce((ss, d) => ss + (d.ratio || 0), 0), 0);
+      // GPT 가 raw 텍스트로 받을 인덱스 (cross-source count 매칭용은 아님)
+      shoppingTexts.push(`${cat.name} 쇼핑 검색 추이 강도 ${Math.round(sumRatio)}`);
+
+      // 2) 연령 분포
+      const ageRes = await fetchCategoryByAge({
+        categoryCode: cat.code,
+        categoryName: cat.name,
+        timeUnit: 'month',
+      });
+      for (const r of ageRes.results || []) {
+        for (const d of r.data || []) {
+          const g = d.group || r.title || 'unknown';
+          ageBucketAgg[g] = (ageBucketAgg[g] || 0) + (d.ratio || 0);
+        }
+      }
+
+      // 3) 성별 분포
+      const genderRes = await fetchCategoryByGender({
+        categoryCode: cat.code,
+        categoryName: cat.name,
+        timeUnit: 'month',
+      });
+      for (const r of genderRes.results || []) {
+        for (const d of r.data || []) {
+          const g = d.group || r.title || 'unknown';
+          genderBucketAgg[g] = (genderBucketAgg[g] || 0) + (d.ratio || 0);
+        }
+      }
+    } catch (e) {
+      // 친절한 에러 라벨 활용. 한 카테고리 실패해도 나머지 진행.
+      const friendly = (e && e.friendly && e.friendly.title) || e.message;
+      console.warn(`[naver-shopping] ${trendsCategory}/${cat.code} 실패:`, friendly);
+    }
+  }
+
+  // 분포 정규화 (% 환산)
+  function normalize(agg) {
+    const total = Object.values(agg).reduce((s, v) => s + v, 0);
+    if (total === 0) return null;
+    const norm = {};
+    for (const [k, v] of Object.entries(agg)) {
+      norm[k] = Math.round((v / total) * 1000) / 10;  // 소수점 1자리 %
+    }
+    return norm;
+  }
+
+  const demographics = (Object.keys(ageBucketAgg).length || Object.keys(genderBucketAgg).length)
+    ? { age: normalize(ageBucketAgg), gender: normalize(genderBucketAgg) }
+    : null;
+
+  return { shoppingTexts, demographics };
+}
+
 async function fetchKeywordSaturation(keyword) {
   const clientId = process.env.NAVER_CLIENT_ID;
   const clientSecret = process.env.NAVER_CLIENT_SECRET;
@@ -1181,15 +1298,33 @@ async function generateNarrativeAndOriginBatch({ keywords, category, rawTexts })
 // ─────────────────────────────────────────────
 // 분류기: gpt-4o (+ gpt-4o-mini 폴백)
 // ─────────────────────────────────────────────
-async function classifyBatchWithGPT({ rawTextsByCategory }) {
+// demographics 객체 (group → 비율%) 를 "30대 42% > 20대 31% > 40대 18%" 처럼 정렬 출력.
+function formatDist(dist) {
+  if (!dist) return '없음';
+  return Object.entries(dist)
+    .filter(([, v]) => v > 0)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 4)
+    .map(([k, v]) => `${k} ${v}%`)
+    .join(' > ') || '없음';
+}
+
+async function classifyBatchWithGPT({ rawTextsByCategory, demographicsByCategory }) {
   const sections = Object.entries(rawTextsByCategory).map(([cat, lines]) => {
     const clip = (lines || []).slice(0, 40).join(' | ').slice(0, 2000);
-    return `## ${CATEGORY_KO[cat] || cat} (key=${cat})\n${clip || '없음'}`;
+    // 네이버 쇼핑인사이트 demographics 가 있으면 카테고리 헤더에 인구통계 컨텍스트 주입.
+    // 키워드 선별 자체에는 영향 작지만 GPT 가 "그 분야 검색자 성향" 을 알고 키워드 톤
+    // 판단 시 활용 가능. 예: 30대 여성 비중 높으면 트렌디·세련된 키워드 우선.
+    const demo = (demographicsByCategory && demographicsByCategory[cat]) || null;
+    const demoLine = demo
+      ? `\n[네이버 쇼핑 분야 검색자 분포] 연령: ${formatDist(demo.age)} / 성별: ${formatDist(demo.gender)}`
+      : '';
+    return `## ${CATEGORY_KO[cat] || cat} (key=${cat})${demoLine}\n${clip || '없음'}`;
   }).join('\n\n');
 
   const prompt = `당신은 국내(한국) 소상공인(카페·음식점·뷰티·꽃집·패션·피트니스·반려동물·인테리어·교육·스튜디오) 인스타그램 트렌드 분석 전문가입니다.
 
-아래 5개 외부 소스(네이버 데이터랩·네이버 블로그·구글 트렌드·YouTube·Instagram)에서 수집한 원시 텍스트를 읽고,
+아래 7개 외부 소스(네이버 데이터랩·네이버 블로그·네이버 뉴스·네이버 쇼핑인사이트·구글 트렌드·YouTube·Instagram·맘카페/디시/더쿠 같은 커뮤니티)에서 수집한 원시 텍스트를 읽고,
 각 업종 카테고리에서 실제 유행하는 **트렌드 대상** 키워드 5~12개씩 선별해 JSON으로 반환하세요.
 (데이터가 부족한 카테고리 — 피트니스·반려동물·인테리어·교육·스튜디오 — 는 시드 키워드 관련 구체적 상품·스타일·기법이면 넓게 포함 가능)
 
@@ -1547,7 +1682,7 @@ function textMatchKeyword(text, keyword) {
   return false;
 }
 
-function buildCrossSourceCount({ keyword, naverData, blogData, ytKR, igTexts, googleKR, newsData, communityData }) {
+function buildCrossSourceCount({ keyword, naverData, blogData, ytKR, igTexts, googleKR, newsData, communityData, shoppingData }) {
   function countMatches(arr) {
     if (!arr) return 0;
     return arr.filter(t => textMatchKeyword(String(t), keyword)).length;
@@ -1561,6 +1696,9 @@ function buildCrossSourceCount({ keyword, naverData, blogData, ytKR, igTexts, go
     google: countMatches(googleKR),
     news: countMatches(newsData),
     community: countMatches(communityData),
+    // 쇼핑인사이트 — 카테고리명 자체가 텍스트에 포함되면 매칭 (낮은 매칭률).
+    // 실제 가치는 GPT 분류 단계에서 raw 텍스트로 인입 + demographics 컨텍스트 주입.
+    shopping: countMatches(shoppingData),
   };
 }
 
@@ -1871,16 +2009,19 @@ exports.handler = runGuarded({
     console.log(`[sources] google-kr: ${googleKR.length}`);
 
     const rawEntries = await Promise.all(COLLECT_CATEGORIES.map(async (category) => {
-      const [naverData, blogData, ytKR, igTexts, newsData, communityData] = await Promise.all([
+      const [naverData, blogData, ytKR, igTexts, newsData, communityData, shoppingSignals] = await Promise.all([
         fetchNaverDatalab(category),
         fetchNaverBlogs(category),
         fetchYouTube(category),
         fetchInstagram(supa, category),
-        fetchNaverNews(category),  // 신규: 뉴스 소스
+        fetchNaverNews(category),
         fetchCommunityData(supa, category),  // 커뮤니티 트렌드 (맘카페·디시·더쿠 등)
+        fetchNaverShoppingSignals(category), // 신규: 네이버 쇼핑인사이트 (의류/뷰티/꽃·식품·운동·헤어)
       ]);
-      console.log(`[${category}] naver=${naverData.length} blog=${blogData.length} yt-kr=${ytKR.length} ig=${igTexts.length} news=${newsData.length} community=${communityData.length}`);
-      return [category, { naverData, blogData, ytKR, igTexts, newsData, communityData }];
+      const shoppingData = (shoppingSignals && shoppingSignals.shoppingTexts) || [];
+      const demographics = (shoppingSignals && shoppingSignals.demographics) || null;
+      console.log(`[${category}] naver=${naverData.length} blog=${blogData.length} yt-kr=${ytKR.length} ig=${igTexts.length} news=${newsData.length} community=${communityData.length} shopping=${shoppingData.length}${demographics ? ' demo=Y' : ''}`);
+      return [category, { naverData, blogData, ytKR, igTexts, newsData, communityData, shoppingData, demographics }];
     }));
     const rawByCategory = Object.fromEntries(rawEntries);
 
@@ -1921,13 +2062,24 @@ exports.handler = runGuarded({
         ...r.igTexts,
         ...(r.newsData || []),
         ...(r.communityData || []),  // 커뮤니티 트렌드 (맘카페·디시·더쿠 등)
+        ...(r.shoppingData || []),   // 네이버 쇼핑인사이트 카테고리 강도 표시
         ...adTexts,                   // 검색광고 연관키워드 (env 있을 때만)
       ];
     }
 
+    // demographics 객체 모음 (쇼핑인사이트 fetch 가 만들어둠) — GPT 분류에 컨텍스트 주입.
+    const demographicsByCategory = {};
+    for (const cat of categories) {
+      const d = (rawByCategory[cat] && rawByCategory[cat].demographics);
+      if (d) demographicsByCategory[cat] = d;
+    }
+
     let domesticClassified = null;
     if (process.env.OPENAI_API_KEY) {
-      domesticClassified = await classifyBatchWithGPT({ rawTextsByCategory: domesticTexts });
+      domesticClassified = await classifyBatchWithGPT({
+        rawTextsByCategory: domesticTexts,
+        demographicsByCategory,
+      });
     }
 
     // ─── 4단계: 스코어링 ───────────
@@ -1964,6 +2116,7 @@ exports.handler = runGuarded({
               googleKR,
               newsData: r.newsData,
               communityData: r.communityData,
+              shoppingData: r.shoppingData,
             });
 
             const crossSourceCount = Object.values(counts).filter(c => c > 0).length;
