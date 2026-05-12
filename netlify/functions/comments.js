@@ -175,6 +175,23 @@ exports.handler = async (event) => {
     };
   }
 
+  // 사전 차단 — token_invalid_at 표시된 사장님은 Graph 호출 안 함 (rate limit 보호).
+  // settings UI 가 tokenExpired 카드 표시해서 재연동 유도.
+  try {
+    const { data: igRow } = await admin
+      .from('ig_accounts')
+      .select('token_invalid_at')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (igRow && igRow.token_invalid_at) {
+      return {
+        statusCode: 200,
+        headers: CORS,
+        body: JSON.stringify({ ok: true, igConnected: true, tokenExpired: true, items: [] }),
+      };
+    }
+  } catch (_) { /* check 실패해도 진행 */ }
+
   // refresh=1 — 캐시 우회 (사장님이 IG 에서 게시물·답글 삭제 후 즉시 반영 원할 때).
   const forceRefresh = qs.refresh === '1' || qs.refresh === 'true';
 
@@ -199,6 +216,13 @@ exports.handler = async (event) => {
     mediaList = await fetchCommentsFromGraph(igCtx);
   } catch (e) {
     if (e instanceof IgGraphError && e.isTokenExpired()) {
+      // 토큰 무효 자동 기록 — 다음 cron/요청 들이 사전 차단해 rate limit 절약.
+      try {
+        await admin
+          .from('ig_accounts')
+          .update({ token_invalid_at: new Date().toISOString() })
+          .eq('user_id', user.id);
+      } catch (_) { /* noop */ }
       return {
         statusCode: 200,
         headers: CORS,
