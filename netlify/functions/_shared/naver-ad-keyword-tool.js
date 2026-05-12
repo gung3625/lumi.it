@@ -171,6 +171,12 @@ async function fetchKeywordSearchVolume(keyword) {
   if (!hit) {
     return null;
   }
+  // monthlyTotal === 0 이면 valid 매칭 아님 — Naver 가 의미 없는 substring 에 대해
+  // 검색량 0 row 를 반환하는 케이스 차단 (예: "자라버뮤" → 0). Layer 2 fallback 이
+  // 다음 candidate 시도하도록 null 반환.
+  if (!Number.isFinite(hit.monthlyTotal) || hit.monthlyTotal <= 0) {
+    return null;
+  }
   return {
     monthlyTotal: hit.monthlyTotal,
     monthlyPc: hit.monthlyPc,
