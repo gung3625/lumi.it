@@ -7,7 +7,7 @@
 // 스케줄: 매시간 (netlify.toml: 0 * * * *)
 // 동작:
 //   1. cron-guard 가 기록하는 trends 테이블의 heartbeat 행 4건 조회
-//      (scheduled-trends, scheduled-community-trends, scheduled-trends-longtail,
+//      (scheduled-trends, scheduled-trends-longtail,
 //       scheduled-trends-embeddings)
 //   2. 각 cron 별 임계치(=주기 + 안전마진) 와 비교
 //   3. minutesSinceLastRun 초과 OR lastSuccess === false 인 경우 ALERT
@@ -32,7 +32,6 @@ const { safeAwait } = require('./_shared/supa-safe');
 // 주간 cron 은 7일 + 12h grace = 7.5일 = 10800분
 const WATCH_TARGETS = [
   { name: 'scheduled-trends',            thresholdMin:  1530, periodLabel: '매일 KST 00:00' },
-  { name: 'scheduled-community-trends',  thresholdMin: 10800, periodLabel: '매주 화 KST 02:00' },
   { name: 'scheduled-trends-longtail',   thresholdMin: 10800, periodLabel: '매주 월 KST 04:00' },
   { name: 'scheduled-trends-embeddings', thresholdMin: 10800, periodLabel: '매주 화 KST 03:00' },
 ];

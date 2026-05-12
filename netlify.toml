@@ -88,11 +88,6 @@
 [functions."scheduled-weekday-shuffle-background"]
   schedule = "0 18 * * 0"
 
-# 커뮤니티 트렌드 수집 (GPT 웹 검색, 주 1회)
-# 맘카페·디시·더쿠 등 공식 API 없는 소스 — 매주 수요일 KST 02:00 (= UTC 화요일 17:00)
-[functions."scheduled-community-trends-background"]
-  schedule = "0 17 * * 2"
-
 # 게시별 reach/saved/engagement 일별 1회 수집 (베스트 시간 Tier 1 가중치 근거)
 # 매일 KST 03:30 (= UTC 18:30) — 어제 게시물 메트릭 안정화 후 채움.
 [functions."scheduled-post-insights-background"]
@@ -167,11 +162,6 @@
   status = 200
 
 # 커뮤니티 트렌드 수집 수동 트리거용 리다이렉트
-[[redirects]]
-  from = "/api/scheduled-community-trends"
-  to = "/.netlify/functions/scheduled-community-trends-background"
-  status = 200
-
 [[redirects]]
   from = "/api/rate-trend-keyword"
   to = "/.netlify/functions/rate-trend-keyword"

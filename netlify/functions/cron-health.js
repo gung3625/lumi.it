@@ -16,7 +16,6 @@ const CORS_HEADERS = {
 
 const CRON_NAMES = [
   'scheduled-trends',
-  'scheduled-community-trends',
   'scheduled-trends-longtail',
   'scheduled-trends-embeddings',
   'cron-watchdog',
