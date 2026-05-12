@@ -180,6 +180,21 @@
     .badge--posted   { background: #e8f5ee; color: #00713c; }
     .badge--failed   { background: #fde8e8; color: #b8221c; }
     .badge--cancelled{ background: var(--bg-soft); color: var(--ink-muted); }
+    /* M3.2 — 채널 칩 (IG / Threads 게시 결과 표시). status='posted' 면 컬러, 'failed' 면 흐림+취소선 */
+    .chan-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .chan-chip--ig.is-posted      { background: #fce7f3; color: #be185d; }
+    .chan-chip--threads.is-posted { background: #e0e7ff; color: #3730a3; }
+    .chan-chip.is-failed          { background: #fde8e8; color: #b8221c; text-decoration: line-through; opacity: 0.8; }
+    .chan-chip.is-posting         { background: var(--gradient-signature); color: #fff; }
     @keyframes posting-pulse {
       0%, 100% { box-shadow: 0 0 0 0 rgba(255,107,139,0.5); }
       50%      { box-shadow: 0 0 0 8px rgba(255,107,139,0); }
@@ -666,6 +681,19 @@
             </div>`;
         }
 
+        // M3.2 — 채널 칩 (channel_posts join 결과). 게시됨/게시 중 행에만 노출.
+        let chipBlock = '';
+        if ((r.is_sent || r.caption_status === 'posting') && Array.isArray(r.channels) && r.channels.length) {
+          const labelMap = { ig: '인스타', threads: '쓰레드' };
+          const chips = r.channels
+            .filter((c) => labelMap[c.channel])
+            .map((c) => {
+              const stCls = c.status === 'posted' ? 'is-posted' : (c.status === 'failed' ? 'is-failed' : 'is-posting');
+              return `<span class="chan-chip chan-chip--${esc(c.channel)} ${stCls}">${esc(labelMap[c.channel])}</span>`;
+            }).join('');
+          if (chips) chipBlock = chips;
+        }
+
         return `
           <li class="res" data-key="${esc(r.reserve_key)}">
             <div class="res__thumb" style="${thumbStyle}"></div>
@@ -674,6 +702,7 @@
               ${caption ? `<div class="res__caption">${esc(caption)}</div>` : ''}
               <div class="res__meta">
                 <span class="res__badge badge--${esc(badge.cls)}">${esc(badge.label)}</span>
+                ${chipBlock}
                 ${actionBtn}
               </div>
               ${rateBlock}
