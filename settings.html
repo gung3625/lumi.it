@@ -633,6 +633,17 @@
         setTimeout(() => toastEl.classList.remove('is-open'), ms);
       }
 
+      // HTML escape — store_name 등 사용자 입력을 innerHTML 에 삽입 전 항상 통과.
+      // attribute (value="..." 안 포함) 까지 안전하도록 &/<>/"/' 모두 처리.
+      function esc(s) {
+        return String(s == null ? '' : s)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
       const seller = {};
 
       function setRow(name, value) {
@@ -652,7 +663,7 @@
         const current = (seller[rowName === 'storeName' ? 'store_name' : rowName] || '').toString();
         row.innerHTML = `
           <span class="row__label">${rowName === 'storeName' ? '매장 이름' : '휴대폰'}</span>
-          <input class="row__input" type="${rowName === 'phone' ? 'tel' : 'text'}" maxlength="${rowName === 'phone' ? 13 : 50}" value="${current}" data-input>
+          <input class="row__input" type="${rowName === 'phone' ? 'tel' : 'text'}" maxlength="${rowName === 'phone' ? 13 : 50}" value="${esc(current)}" data-input>
           <button class="row__save" type="button" data-save>저장</button>
           <button class="row__cancel" type="button" data-cancel>취소</button>
         `;
@@ -692,22 +703,22 @@
         card.innerHTML = `
           <div class="row" data-row="storeName">
             <span class="row__label">매장 이름</span>
-            <span class="row__value" data-display>${seller.store_name || '—'}</span>
+            <span class="row__value" data-display>${esc(seller.store_name || '—')}</span>
             <button class="row__edit" type="button" data-edit-name>수정</button>
           </div>
           <div class="row" data-row="industry">
             <span class="row__label">업종</span>
-            <span class="row__value" data-display>${categoryLabel(seller.industry)}</span>
+            <span class="row__value" data-display>${esc(categoryLabel(seller.industry))}</span>
             <button class="row__edit" type="button" data-edit-industry>변경</button>
           </div>
           <div class="row" data-row="region">
             <span class="row__label">지역</span>
-            <span class="row__value${seller.region ? '' : ' row__value--missing'}" data-display>${seller.region || '미설정 — 트렌드·날씨를 위해 설정해주세요'}</span>
+            <span class="row__value${seller.region ? '' : ' row__value--missing'}" data-display>${esc(seller.region || '미설정 — 트렌드·날씨를 위해 설정해주세요')}</span>
             <button class="row__edit" type="button" data-edit-region>변경</button>
           </div>
           <div class="row" data-row="phone">
             <span class="row__label">휴대폰</span>
-            <span class="row__value" data-display>${seller.phone || seller.phoneMasked || '—'}</span>
+            <span class="row__value" data-display>${esc(seller.phone || seller.phoneMasked || '—')}</span>
             <button class="row__edit" type="button" data-edit-phone>수정</button>
           </div>
         `;
