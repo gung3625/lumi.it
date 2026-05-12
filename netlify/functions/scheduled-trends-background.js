@@ -1,3 +1,10 @@
+// ⚠️ DEPRECATED — 이 파일은 더 이상 cron 으로 실행되지 않습니다.
+//    netlify.toml 의 [functions."scheduled-trends-background"] 라인이 주석 처리됐고,
+//    in-code module.exports.config.schedule 도 없음. scheduled-trends-v2-background.js
+//    로 통합됐습니다. 코드 참고용으로만 남겨두며 추후 정리 PR 에서 파일 자체 삭제 예정.
+//    cron-health.js 의 heartbeat 이름 'scheduled-trends' 는 v2 가 사용 중 (HANDOFF 참고).
+//
+// (이하 원본 헤더)
 // scheduled-trends-background.js — 5개 외부 소스 (IG는 주간 캐시) + gpt-4o-mini 분류 파이프라인 (Phase 1 재구축)
 // 소스: 네이버 데이터랩, 네이버 검색(블로그), 구글 트렌드, YouTube Data API v3, Instagram Graph API(주간 캐시 읽기)
 // 저장: Supabase public.trends (category 컬럼을 복합 키로 사용)
