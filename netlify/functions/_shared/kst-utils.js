@@ -34,9 +34,17 @@ function kstHourDow(utcInput) {
   };
 }
 
+// UTC hour (0~23 정수) → KST hour (0~23 정수). Meta online_followers 같은
+// 시간 축 응답을 KST 로 변환할 때 사용. 인라인 `(utcHour + 9) % 24` 패턴 통합.
+function utcHourToKstHour(utcHour) {
+  if (!Number.isFinite(utcHour)) return null;
+  return ((Math.trunc(utcHour) + 9) % 24 + 24) % 24;
+}
+
 module.exports = {
   KST_OFFSET_MS,
   utcToKstDate,
   kstDateString,
   kstHourDow,
+  utcHourToKstHour,
 };
