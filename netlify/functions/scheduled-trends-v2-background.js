@@ -13,7 +13,7 @@
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { runGuarded } = require('./_shared/cron-guard');
 const { checkAndIncrementQuota, QuotaExceededError } = require('./_shared/openai-quota');
-const { fetchRelatedFromSeeds, fetchKeywordSearchVolume } = require('./_shared/naver-ad-keyword-tool');
+const { fetchRelatedFromSeeds, fetchKeywordSearchVolumeRobust } = require('./_shared/naver-ad-keyword-tool');
 const {
   LUMI_INDUSTRY_CATEGORIES,
   fetchCategoryTrend,
@@ -868,6 +868,87 @@ async function fetchNaverShoppingSignals(trendsCategory) {
     : null;
 
   return { shoppingTexts, demographics };
+}
+
+/**
+ * Layer 3 — DataLab ratio cross-reference 로 키워드 검색량 추정.
+ *
+ * 원리:
+ *   anchor 키워드는 absolute monthlyTotal 알고 있음 (Layer 1 exact 매칭).
+ *   DataLab /search 호출로 [anchor, target] 둘 다 30일 ratio (0~100) 조회.
+ *   anchor 의 ratio 평균 = anchorRatio, target 의 ratio 평균 = targetRatio.
+ *   estimate = anchor.monthlyTotal × (targetRatio / anchorRatio)
+ *
+ * 한계:
+ *   - DataLab ratio 는 100 기준 상대값이라 두 키워드 사이 상대 비율 추정만 가능
+ *   - target ratio 가 너무 작으면 (분모/분자 신뢰도 ↓) null 반환
+ *   - 카테고리 무관 추정이라 같은 시즌 비교만 안정적
+ *
+ * @param {{keyword:string, monthlySearchTotal:number}} anchor
+ * @param {string} target
+ * @returns {Promise<{monthlyTotal:number, ratioPct:number}|null>}
+ */
+async function estimateByDataLabRatio(anchor, target) {
+  if (!anchor || !anchor.keyword || !Number.isFinite(anchor.monthlySearchTotal)) return null;
+  if (!target || typeof target !== 'string') return null;
+
+  const clientId = process.env.NAVER_CLIENT_ID;
+  const clientSecret = process.env.NAVER_CLIENT_SECRET;
+  if (!clientId || !clientSecret) return null;
+
+  const today = new Date();
+  const endDate = today.toISOString().slice(0, 10);
+  const startDate = new Date(today - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+  let result;
+  try {
+    result = await httpsPost(
+      'openapi.naver.com',
+      '/v1/datalab/search',
+      {
+        'Content-Type': 'application/json',
+        'X-Naver-Client-Id': clientId,
+        'X-Naver-Client-Secret': clientSecret,
+      },
+      {
+        startDate, endDate, timeUnit: 'week',
+        keywordGroups: [
+          { groupName: 'anchor', keywords: [anchor.keyword] },
+          { groupName: 'target', keywords: [target] },
+        ],
+        device: 'mo',
+        ages: ['2', '3', '4', '5'],
+        gender: 'f',
+      }
+    );
+  } catch (e) {
+    return null;
+  }
+  if (result.status !== 200) return null;
+
+  let data;
+  try { data = JSON.parse(result.body); } catch (_) { return null; }
+  if (!data.results || data.results.length < 2) return null;
+
+  const anchorRow = data.results.find(r => r.title === 'anchor');
+  const targetRow = data.results.find(r => r.title === 'target');
+  if (!anchorRow || !targetRow) return null;
+
+  const avg = arr => (arr && arr.length) ? arr.reduce((s, d) => s + (d.ratio || 0), 0) / arr.length : 0;
+  const anchorRatio = avg(anchorRow.data);
+  const targetRatio = avg(targetRow.data);
+
+  // anchor ratio 가 신뢰도 너무 낮으면 (분모 작음) 추정 거부
+  if (anchorRatio < 5) return null;
+  // target ratio 도 너무 작으면 (검색 거의 없음) 0 추정보단 null
+  if (targetRatio < 0.5) return null;
+
+  const ratio = targetRatio / anchorRatio;
+  const monthlyTotal = Math.round(anchor.monthlySearchTotal * ratio);
+  return {
+    monthlyTotal,
+    ratioPct: Math.round(ratio * 100),
+  };
 }
 
 async function fetchKeywordSaturation(keyword) {
@@ -1913,6 +1994,8 @@ async function saveTrendKeywordsV2({ supa, category, enrichedKeywords, collected
       narrative: item.narrative || null,
       origin: item.origin || null,
       monthly_search_total: item.monthlySearchTotal ?? null,
+      search_volume_match_type: item.searchVolumeMatchType ?? null,
+      search_volume_root_keyword: item.searchVolumeRootKeyword ?? null,
       raw_mentions: {
         saturation_total: item.saturationTotal ?? null,
         saturation_level: item.saturationLevel ?? null,
@@ -2130,13 +2213,17 @@ exports.handler = runGuarded({
             const saturationLevel = classifySaturation(saturationTotal);
 
             // 네이버 검색광고 API 로 월간 실 검색량 (PC + 모바일 합산) 조회.
-            // ranking 1차 정렬 기준. env 부재 / 매칭 실패 시 null → 그 키워드는 velocity 기반
-            // 정렬로 fallback. quota 일일 25,000 의 0.5% (~90 호출/일).
+            // Layer 1 (exact/normalized) + Layer 2 (한국어 합성어 분해 → root keyword) 결합.
+            // quota 일일 25,000 의 ~0.5% (~90 호출/일 + Layer 2 fallback ~200 호출).
             let monthlySearchTotal = null;
+            let searchVolumeMatchType = null;   // 'exact' | 'normalized' | 'root_morpheme' | 'datalab_estimate' | null
+            let searchVolumeRootKeyword = null;
             try {
-              const vol = await fetchKeywordSearchVolume(keyword);
+              const vol = await fetchKeywordSearchVolumeRobust(keyword);
               if (vol && Number.isFinite(vol.monthlyTotal)) {
                 monthlySearchTotal = vol.monthlyTotal;
+                searchVolumeMatchType = vol.matchType || null;
+                searchVolumeRootKeyword = vol.rootKeyword || null;
               }
             } catch (e) {
               console.warn(`[search-volume] ${category}/${keyword} 실패:`, e.message);
@@ -2150,12 +2237,42 @@ exports.handler = runGuarded({
               weightedScore,
               velocityPct,
               monthlySearchTotal,
+              searchVolumeMatchType,
+              searchVolumeRootKeyword,
               counts,
               saturationTotal,
               saturationLevel,
               axis: 'general',  // Phase 2에서 덮어씌워짐
             };
           }));
+
+          // Layer 3 — DataLab ratio cross-reference fallback.
+          // Layer 1/2 모두 실패한 키워드들에 대해 DataLab ratio 로 절대량 추정.
+          // 같은 카테고리의 exact-matched 키워드 1개를 anchor 로 잡고, target 과 함께
+          // DataLab 호출 → ratio 비율로 anchor monthlyTotal × (target_ratio / anchor_ratio).
+          //
+          // anchor 가 없으면 (전부 root 매칭이거나 전부 fail) Layer 3 스킵.
+          const missingKeywords = enrichedKeywords.filter(k => k.monthlySearchTotal === null);
+          const exactAnchors = enrichedKeywords.filter(k =>
+            k.monthlySearchTotal !== null && k.searchVolumeMatchType === 'exact'
+          );
+          if (missingKeywords.length > 0 && exactAnchors.length > 0) {
+            const anchor = exactAnchors[0];
+            for (const miss of missingKeywords) {
+              try {
+                const est = await estimateByDataLabRatio(anchor, miss.keyword);
+                if (est && Number.isFinite(est.monthlyTotal)) {
+                  miss.monthlySearchTotal = est.monthlyTotal;
+                  miss.searchVolumeMatchType = 'datalab_estimate';
+                  miss.searchVolumeRootKeyword = `(${anchor.keyword} 비교 ratio ${est.ratioPct}%)`;
+                  console.log(`[search-volume] datalab_estimate "${miss.keyword}" → ${est.monthlyTotal} (anchor=${anchor.keyword})`);
+                }
+              } catch (e) {
+                // 한 키워드 실패해도 다른 진행
+                console.warn(`[datalab-estimate] ${category}/${miss.keyword} 실패:`, e.message);
+              }
+            }
+          }
         }
 
         // Phase 2: 4축 분할 (AXIS_CATEGORIES에 속한 카테고리만)

@@ -254,6 +254,8 @@
     .kw-badge--src { background: var(--bg-soft); color: var(--ink-muted); font-weight: var(--weight-semibold); }
     /* 월간 검색량 배지 — 네이버 검색광고 API 실수치 (PR #173+) */
     .kw-badge--vol { background: #eef6ff; color: #1e40af; }
+    /* 근사·추정 검색량 배지 — root_morpheme / datalab_estimate (PR #175+) */
+    .kw-badge--vol-approx { background: #fff8ea; color: #b45309; }
     /* 약신호 (signalTier=weak) — 카드 살짝 흐리게 */
     .kw-item--weak .kw-item__text { color: var(--ink-soft); }
     .kw-item--weak .kw-item__rank { opacity: 0.6; }
@@ -720,22 +722,32 @@
             }
           });
         }
-        // ranking 정렬 — 실 검색량 우선 → velocity 보조.
+        // ranking 정렬 — 검색량 × 신뢰도 가중 × velocity 보조.
         //
-        // 정책 (PR #173+):
-        //   final_score = monthlySearchTotal × (1 + velocityPct/100)
-        //   - monthlySearchTotal: 네이버 검색광고 API 월간 PC+모바일 합산 (절대량)
-        //   - velocityPct: 전 cron 대비 weighted_score 상승률 (가산점)
+        // 정책 (PR #175+ Option F):
+        //   final_score = monthlySearchTotal × confidence_weight × (1 + velocityPct/100)
         //
-        // monthlySearchTotal 이 없으면 (env 부재 / 매칭 실패) 그 키워드는 weightedScore
-        // 기반으로 fallback 정렬. 같은 ranking 안에서 검색량 있는 키워드가 상위.
+        // confidence_weight (searchVolumeMatchType 별):
+        //   exact:            1.0  ✅✅✅
+        //   normalized:       0.95 ✅✅✅
+        //   root_morpheme:    0.6  ✅✅ (root 키워드 검색량 = target 보다 흔히 큰 값 → 부풀린 ranking 차단용 weight 감쇄)
+        //   datalab_estimate: 0.4  ✅ (DataLab ratio 환산 = 추정)
+        //   null/매칭실패:   weightedScore 음수 fallback (절대값 보유 키워드 뒤로)
+        function confidenceWeight(type) {
+          switch (type) {
+            case 'exact':            return 1.0;
+            case 'normalized':       return 0.95;
+            case 'root_morpheme':    return 0.6;
+            case 'datalab_estimate': return 0.4;
+            default:                  return 0;
+          }
+        }
         function rankScore(k) {
           const v = typeof k.velocityPct === 'number' ? k.velocityPct : 0;
           if (typeof k.monthlySearchTotal === 'number' && k.monthlySearchTotal > 0) {
-            return k.monthlySearchTotal * (1 + v / 100);
+            const w = confidenceWeight(k.searchVolumeMatchType);
+            if (w > 0) return k.monthlySearchTotal * w * (1 + v / 100);
           }
-          // fallback — weighted_score 사용. 단 절대값이 monthlyTotal 보다 훨씬 작아
-          // 자연스레 하위 정렬. -1 곱해 절대 보유 키워드 뒤로 보냄.
           return -((typeof k.weightedScore === 'number' ? k.weightedScore : 0));
         }
         const sorted = Array.from(merged.values()).sort((a, b) => {
@@ -777,12 +789,20 @@
             const isHot = velocity !== null && velocity >= 50;
             const isWeak = item.signalTier === 'weak';
             const badges = [];
-            // 월간 검색량 chip — 사장님이 1~10위 절대 신호 직관적으로 인지.
-            // 단위 축약 (10000회 → 1만, 1500000회 → 150만).
+            // 월간 검색량 chip — 신뢰도 등급별 라벨 분기.
+            // exact/normalized = 정확. root_morpheme = ~ prefix + 작은 글씨. datalab_estimate = 추정 라벨.
             const mst = typeof item.monthlySearchTotal === 'number' ? item.monthlySearchTotal : null;
-            if (mst !== null && mst > 0) {
+            const svType = item.searchVolumeMatchType || null;
+            if (mst !== null && mst > 0 && svType) {
               const short = mst >= 10000 ? `${Math.round(mst / 1000) / 10}만` : `${mst.toLocaleString()}`;
-              badges.push(`<span class="kw-badge kw-badge--vol" title="월간 검색량 (네이버 PC+모바일)">🔎 ${short}</span>`);
+              if (svType === 'exact' || svType === 'normalized') {
+                badges.push(`<span class="kw-badge kw-badge--vol" title="월간 검색량 (네이버 PC+모바일)">🔎 ${short}</span>`);
+              } else if (svType === 'root_morpheme') {
+                const root = item.searchVolumeRootKeyword || '';
+                badges.push(`<span class="kw-badge kw-badge--vol-approx" title="root 키워드 (${root}) 검색량 — target 보다 클 수 있음">🔎 ~${short}</span>`);
+              } else if (svType === 'datalab_estimate') {
+                badges.push(`<span class="kw-badge kw-badge--vol-approx" title="DataLab ratio 추정">🔎 ~${short}</span>`);
+              }
             }
             if (isHot) badges.push(`<span class="kw-badge kw-badge--hot">🔥 +${Math.round(velocity)}%</span>`);
             // 다중 소스 신뢰도 — 2곳 이상에서 잡힌 키워드만 표시 (1곳은 노이즈 가능)
@@ -833,14 +853,28 @@
         // 0) "왜 이 순위?" — 사장님이 1위 키워드의 근거를 알 수 있도록 명시.
         //    monthlySearchTotal(실 검색량) + velocityPct(상승률) + crossSourceCount(소스 다양성) 종합.
         const rankSignals = [];
-        // 1차 정렬 기준 — 네이버 검색광고 API 의 월간 PC + 모바일 합산
+        // 1차 정렬 기준 — 네이버 검색광고 API 의 월간 PC + 모바일 합산.
+        // 신뢰도 등급별로 다른 라벨 노출 — 사장님이 정확/근사/추정 판단 가능.
         if (typeof item.monthlySearchTotal === 'number' && item.monthlySearchTotal > 0) {
           const total = item.monthlySearchTotal;
+          const svType = item.searchVolumeMatchType;
+          const root = item.searchVolumeRootKeyword || '';
           let icon = '🔎';
-          if (total >= 100000) icon = '🚀';        // 10만+
-          else if (total >= 10000) icon = '🔥';    // 1만+
-          else if (total >= 1000) icon = '📈';     // 1천+
-          rankSignals.push(`${icon} 월간 검색량 <strong>${total.toLocaleString()}회</strong> (네이버 PC + 모바일 합산)`);
+          if (total >= 100000) icon = '🚀';
+          else if (total >= 10000) icon = '🔥';
+          else if (total >= 1000) icon = '📈';
+
+          if (svType === 'exact' || svType === 'normalized') {
+            rankSignals.push(`${icon} 월간 검색량 <strong>${total.toLocaleString()}회</strong> (네이버 PC + 모바일, 정확)`);
+          } else if (svType === 'root_morpheme') {
+            rankSignals.push(`${icon} 월간 검색량 <strong>약 ${total.toLocaleString()}회</strong> <span style="color:var(--ink-muted);font-size:11px;">("${esc(root)}" root 키워드 기준 — 실제 키워드는 더 작을 수 있음)</span>`);
+          } else if (svType === 'datalab_estimate') {
+            rankSignals.push(`${icon} 월간 검색량 <strong>약 ${total.toLocaleString()}회</strong> <span style="color:var(--ink-muted);font-size:11px;">(DataLab ratio 추정 ${esc(root)})</span>`);
+          } else {
+            rankSignals.push(`${icon} 월간 검색량 ${total.toLocaleString()}회`);
+          }
+        } else if (item.signalTier !== 'weak') {
+          rankSignals.push(`<span style="color:var(--ink-muted);">검색량 미수집 — 네이버 키워드 도구에 데이터 없음 (새로 떠오르는 신호일 수 있음)</span>`);
         }
         // 2차 — 상승률 가산점
         const v = typeof item.velocityPct === 'number' ? item.velocityPct : null;
@@ -863,7 +897,7 @@
               <ul class="sheet__rank-list">
                 ${rankSignals.map(s => `<li>${s}</li>`).join('')}
               </ul>
-              <p class="sheet__meta-line" style="margin-top:6px;">정렬: 월간 검색량 × (1 + 상승률) — 절대 검색량 우선, 상승 중이면 가산</p>
+              <p class="sheet__meta-line" style="margin-top:6px;">정렬: 월간 검색량 × 신뢰도 × (1 + 상승률) — 정확한 검색량 우선 (root/추정 보유 키워드는 가중치 감쇄)</p>
             </div>
           `);
         }
