@@ -1746,8 +1746,6 @@ async function saveTrendKeywordsV2({ supa, category, enrichedKeywords, collected
       cross_source_count: item.crossSourceCount,
       weighted_score: item.weightedScore,
       velocity_pct: item.velocityPct,
-      // is_new 컬럼은 사용 안 함 — 응답·UI 에서 NEW 라벨 제거 (PR #130). 항상 false 저장.
-      is_new: false,
       sources: sourcesObj,  // DB 스키마의 sources jsonb 컬럼
       narrative: item.narrative || null,
       origin: item.origin || null,
