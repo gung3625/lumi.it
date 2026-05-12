@@ -250,7 +250,7 @@ async function mergeV2Fields(supa, keywords, category, collectedDate, axisFilter
 
     let query = supa
       .from('trend_keywords')
-      .select('keyword, cross_source_count, weighted_score, velocity_pct, signal_tier, axis, narrative, origin, raw_mentions, sub_category, related_keywords, sources, monthly_search_total')
+      .select('keyword, cross_source_count, weighted_score, velocity_pct, signal_tier, axis, narrative, origin, raw_mentions, sub_category, related_keywords, sources, monthly_search_total, search_volume_match_type, search_volume_root_keyword')
       .eq('category', category)
       .eq('region', region)
       .gte('collected_date', cutoff)
@@ -333,6 +333,8 @@ async function mergeV2Fields(supa, keywords, category, collectedDate, axisFilter
           relatedKeywords: v2.related_keywords || [],
           sources: v2.sources || {},
           monthlySearchTotal: v2.monthly_search_total ?? null,
+          searchVolumeMatchType: v2.search_volume_match_type ?? null,
+          searchVolumeRootKeyword: v2.search_volume_root_keyword ?? null,
         } : kw;
         base.likes = fb ? fb.likes : 0;
         base.dislikes = fb ? fb.dislikes : 0;
@@ -385,6 +387,8 @@ async function mergeV2Fields(supa, keywords, category, collectedDate, axisFilter
         saturationTotal: row.raw_mentions?.saturation_total ?? undefined,
         saturationLevel: row.raw_mentions?.saturation_level ?? undefined,
         monthlySearchTotal: row.monthly_search_total ?? null,
+        searchVolumeMatchType: row.search_volume_match_type ?? null,
+        searchVolumeRootKeyword: row.search_volume_root_keyword ?? null,
         likes: fb.likes,
         dislikes: fb.dislikes,
       });

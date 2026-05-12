@@ -157,7 +157,6 @@ async function fetchKeywordSearchVolume(keyword) {
   if (!keyword || typeof keyword !== 'string') return null;
   const list = await fetchRelatedKeywords(keyword);
   if (!Array.isArray(list) || list.length === 0) {
-    console.warn(`[search-volume] empty response for "${keyword}"`);
     return null;
   }
 
@@ -170,19 +169,114 @@ async function fetchKeywordSearchVolume(keyword) {
     matchType = hit ? 'normalized' : '';
   }
   if (!hit) {
-    // 디버그 — Naver 가 hint 와 다른 형식으로 반환하는 케이스 추적용.
-    // 응답 첫 3개 키워드만 로그 (rate limit·log volume 고려).
-    const preview = list.slice(0, 3).map(i => i.keyword).join(' | ');
-    console.warn(`[search-volume] no match for "${keyword}" — listLen=${list.length} preview=[${preview}]`);
     return null;
   }
-  console.log(`[search-volume] ${matchType} match "${keyword}" → ${hit.monthlyTotal}`);
   return {
     monthlyTotal: hit.monthlyTotal,
     monthlyPc: hit.monthlyPc,
     monthlyMobile: hit.monthlyMobile,
     competitionIdx: hit.competitionIdx,
+    matchType,
+    rootKeyword: keyword,
   };
 }
 
-module.exports = { fetchRelatedKeywords, fetchRelatedFromSeeds, fetchKeywordSearchVolume };
+/**
+ * 한국어 합성어 분해 — Netlify Functions 환경에서 native NLP 못 쓰므로 휴리스틱 사용.
+ *
+ * 전략 (긴 root 우선 = 더 구체적 검색량 추정):
+ *   1) 4-syllable suffix / prefix
+ *   2) 3-syllable suffix / prefix
+ *   3) 2-syllable suffix / prefix (가장 일반, 마지막 fallback)
+ *
+ * 응답: 후보 substrings sorted by 길이 desc.
+ *
+ * 예: "수국드라이플라워" (8 syllables) →
+ *   ['수국드라', '국드라이', '드라이플', '라이플라', '이플라워', '수국드', '국드라', '드라이', '라이플', '이플라', '플라워', '수국', ...]
+ *
+ * 너무 많은 후보는 API 비용 ↑ 이라 maxCandidates 로 제한.
+ */
+function splitCompoundKorean(keyword, maxCandidates = 8) {
+  if (!keyword || keyword.length < 4) return [];
+  const k = keyword.replace(/\s+/g, '');
+  const len = k.length;
+  const subs = new Set();
+
+  // Suffix priority — 합성어의 의미 핵심은 보통 마지막 root.
+  // (예: "수국드라이플라워" → 핵심 "플라워")
+  // length 4, 3, 2 순으로
+  for (let l = 4; l >= 2; l--) {
+    if (l < len) {
+      subs.add(k.slice(-l));    // suffix
+      subs.add(k.slice(0, l));  // prefix (보조)
+    }
+  }
+
+  // Middle 부분 — 5음절+ 합성어에서 의미 있을 수 있음
+  if (len >= 6) {
+    for (let l = 4; l >= 3; l--) {
+      for (let s = 1; s <= len - l - 1; s++) {
+        subs.add(k.slice(s, s + l));
+        if (subs.size >= maxCandidates * 2) break;
+      }
+    }
+  }
+
+  // 길이 desc 로 정렬 — 긴 root 가 더 구체적 = 가치 높은 추정
+  return Array.from(subs)
+    .filter(s => s.length >= 2 && s !== k)
+    .sort((a, b) => b.length - a.length)
+    .slice(0, maxCandidates);
+}
+
+/**
+ * 검색량 조회 with multi-layer fallback.
+ *
+ * Layer 1: exact / normalized 매칭 (fetchKeywordSearchVolume)
+ * Layer 2: 한국어 합성어 분해 → root 키워드별 시도. 매칭 성공 시 monthlyTotal +
+ *          rootKeyword 메타 반환. 사용자 UI 가 "유사 키워드 기준" 라벨 노출 가능.
+ *
+ * Layer 3 (DataLab ratio 환산) 은 scheduled-trends-v2-background 의 cron 에서
+ * 별도 호출 (anchor 키워드 카테고리별 관리 필요해 helper 책임 분리).
+ *
+ * @param {string} keyword
+ * @returns {Promise<object|null>}
+ *   { monthlyTotal, monthlyPc, monthlyMobile, competitionIdx, matchType, rootKeyword }
+ *   matchType: 'exact' | 'normalized' | 'root_morpheme' | (null = Layer 3 위임)
+ */
+async function fetchKeywordSearchVolumeRobust(keyword) {
+  // Layer 1
+  const exact = await fetchKeywordSearchVolume(keyword);
+  if (exact) {
+    console.log(`[search-volume] ${exact.matchType} match "${keyword}" → ${exact.monthlyTotal}`);
+    return exact;
+  }
+
+  // Layer 2: 합성어 분해 — 긴 root 부터 시도
+  const candidates = splitCompoundKorean(keyword);
+  for (const candidate of candidates) {
+    const sub = await fetchKeywordSearchVolume(candidate);
+    if (sub) {
+      console.log(`[search-volume] root_morpheme "${keyword}" → root="${candidate}" → ${sub.monthlyTotal}`);
+      return {
+        monthlyTotal: sub.monthlyTotal,
+        monthlyPc: sub.monthlyPc,
+        monthlyMobile: sub.monthlyMobile,
+        competitionIdx: sub.competitionIdx,
+        matchType: 'root_morpheme',
+        rootKeyword: candidate,
+      };
+    }
+  }
+
+  console.warn(`[search-volume] all layers failed for "${keyword}" (candidates tried: ${candidates.length})`);
+  return null;
+}
+
+module.exports = {
+  fetchRelatedKeywords,
+  fetchRelatedFromSeeds,
+  fetchKeywordSearchVolume,
+  fetchKeywordSearchVolumeRobust,
+  splitCompoundKorean,
+};
