@@ -60,10 +60,7 @@ const SOURCE_WEIGHTS = {
   ig: 2,
   google: 1,
   news: 2,        // 뉴스는 신뢰도 높음
-  community: 2,   // 커뮤니티 (맘카페·디시·더쿠 등)
   // 쇼핑 신호 가중치 3 — 검색 데이터랩과 동등. 구매 의도 신호라 가치 높음.
-  // 단 카페·식당·헤어·피트니스에서는 카테고리 매핑 시 1차 카테고리(식품/화장품/스포츠)
-  // 만 매칭되므로 실제 raw 데이터 hit 빈도가 낮아 자연 감쇄됨.
   shopping: 3,
 };
 
@@ -1084,34 +1081,6 @@ async function fetchInstagram(supa, category) {
 }
 
 // ─────────────────────────────────────────────
-// 커뮤니티 트렌드 데이터 로드 (scheduled-community-trends 수집분)
-// ─────────────────────────────────────────────
-async function fetchCommunityData(supa, category) {
-  try {
-    const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-    const { data: rows } = await supa
-      .from('trends')
-      .select('keywords, collected_at')
-      .or(`category.eq.community:${category},category.like.community:${category}:%`)
-      .gte('collected_at', cutoff + 'T00:00:00Z');
-
-    if (!rows || rows.length === 0) return [];
-
-    // items 병합 + keyword로 중복 제거
-    const merged = new Set();
-    for (const row of rows) {
-      const items = row.keywords?.items || [];
-      items.forEach(it => {
-        if (it?.keyword) merged.add(it.keyword);
-      });
-    }
-    return Array.from(merged);
-  } catch (e) {
-    return [];
-  }
-}
-
-// ─────────────────────────────────────────────
 // GPT 호출 헬퍼 (gpt-4o 우선, 실패 시 gpt-4o-mini 폴백)
 // ─────────────────────────────────────────────
 async function callGPT({ prompt, maxTokens = 1200, temperature = 0.2, preferMini = false }) {
@@ -1405,7 +1374,7 @@ async function classifyBatchWithGPT({ rawTextsByCategory, demographicsByCategory
 
   const prompt = `당신은 국내(한국) 소상공인(카페·음식점·뷰티·꽃집·패션·피트니스·반려동물·인테리어·교육·스튜디오) 인스타그램 트렌드 분석 전문가입니다.
 
-아래 7개 외부 소스(네이버 데이터랩·네이버 블로그·네이버 뉴스·네이버 쇼핑인사이트·구글 트렌드·YouTube·Instagram·맘카페/디시/더쿠 같은 커뮤니티)에서 수집한 원시 텍스트를 읽고,
+아래 외부 소스(네이버 데이터랩·네이버 블로그·네이버 뉴스·네이버 쇼핑인사이트·구글 트렌드·YouTube·Instagram)에서 수집한 원시 텍스트를 읽고,
 각 업종 카테고리에서 실제 유행하는 **트렌드 대상** 키워드 5~12개씩 선별해 JSON으로 반환하세요.
 (데이터가 부족한 카테고리 — 피트니스·반려동물·인테리어·교육·스튜디오 — 는 시드 키워드 관련 구체적 상품·스타일·기법이면 넓게 포함 가능)
 
@@ -1763,7 +1732,7 @@ function textMatchKeyword(text, keyword) {
   return false;
 }
 
-function buildCrossSourceCount({ keyword, naverData, blogData, ytKR, igTexts, googleKR, newsData, communityData, shoppingData }) {
+function buildCrossSourceCount({ keyword, naverData, blogData, ytKR, igTexts, googleKR, newsData, shoppingData }) {
   function countMatches(arr) {
     if (!arr) return 0;
     return arr.filter(t => textMatchKeyword(String(t), keyword)).length;
@@ -1776,7 +1745,6 @@ function buildCrossSourceCount({ keyword, naverData, blogData, ytKR, igTexts, go
     ig: countMatches(igTexts),
     google: countMatches(googleKR),
     news: countMatches(newsData),
-    community: countMatches(communityData),
     // 쇼핑인사이트 — 카테고리명 자체가 텍스트에 포함되면 매칭 (낮은 매칭률).
     // 실제 가치는 GPT 분류 단계에서 raw 텍스트로 인입 + demographics 컨텍스트 주입.
     shopping: countMatches(shoppingData),
@@ -2093,19 +2061,18 @@ exports.handler = runGuarded({
     console.log(`[sources] google-kr: ${googleKR.length}`);
 
     const rawEntries = await Promise.all(COLLECT_CATEGORIES.map(async (category) => {
-      const [naverData, blogData, ytKR, igTexts, newsData, communityData, shoppingSignals] = await Promise.all([
+      const [naverData, blogData, ytKR, igTexts, newsData, shoppingSignals] = await Promise.all([
         fetchNaverDatalab(category),
         fetchNaverBlogs(category),
         fetchYouTube(category),
         fetchInstagram(supa, category),
         fetchNaverNews(category),
-        fetchCommunityData(supa, category),  // 커뮤니티 트렌드 (맘카페·디시·더쿠 등)
-        fetchNaverShoppingSignals(category), // 신규: 네이버 쇼핑인사이트 (의류/뷰티/꽃·식품·운동·헤어)
+        fetchNaverShoppingSignals(category), // 네이버 쇼핑인사이트 (의류/뷰티/꽃·식품·운동·헤어)
       ]);
       const shoppingData = (shoppingSignals && shoppingSignals.shoppingTexts) || [];
       const demographics = (shoppingSignals && shoppingSignals.demographics) || null;
-      console.log(`[${category}] naver=${naverData.length} blog=${blogData.length} yt-kr=${ytKR.length} ig=${igTexts.length} news=${newsData.length} community=${communityData.length} shopping=${shoppingData.length}${demographics ? ' demo=Y' : ''}`);
-      return [category, { naverData, blogData, ytKR, igTexts, newsData, communityData, shoppingData, demographics }];
+      console.log(`[${category}] naver=${naverData.length} blog=${blogData.length} yt-kr=${ytKR.length} ig=${igTexts.length} news=${newsData.length} shopping=${shoppingData.length}${demographics ? ' demo=Y' : ''}`);
+      return [category, { naverData, blogData, ytKR, igTexts, newsData, shoppingData, demographics }];
     }));
     const rawByCategory = Object.fromEntries(rawEntries);
 
@@ -2145,7 +2112,6 @@ exports.handler = runGuarded({
         ...googleKR,
         ...r.igTexts,
         ...(r.newsData || []),
-        ...(r.communityData || []),  // 커뮤니티 트렌드 (맘카페·디시·더쿠 등)
         ...(r.shoppingData || []),   // 네이버 쇼핑인사이트 카테고리 강도 표시
         ...adTexts,                   // 검색광고 연관키워드 (env 있을 때만)
       ];
@@ -2199,7 +2165,6 @@ exports.handler = runGuarded({
               igTexts: r.igTexts,
               googleKR,
               newsData: r.newsData,
-              communityData: r.communityData,
               shoppingData: r.shoppingData,
             });
 
