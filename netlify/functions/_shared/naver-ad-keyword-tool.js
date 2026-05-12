@@ -156,15 +156,27 @@ async function fetchRelatedFromSeeds(seeds, options = {}) {
 async function fetchKeywordSearchVolume(keyword) {
   if (!keyword || typeof keyword !== 'string') return null;
   const list = await fetchRelatedKeywords(keyword);
-  if (!Array.isArray(list) || list.length === 0) return null;
+  if (!Array.isArray(list) || list.length === 0) {
+    console.warn(`[search-volume] empty response for "${keyword}"`);
+    return null;
+  }
 
   // 정확 매칭 우선. 공백·대소문자 무관 normalized 매칭 fallback.
   const normTarget = keyword.replace(/\s+/g, '').toLowerCase();
   let hit = list.find(item => item.keyword === keyword);
+  let matchType = 'exact';
   if (!hit) {
     hit = list.find(item => item.keyword.replace(/\s+/g, '').toLowerCase() === normTarget);
+    matchType = hit ? 'normalized' : '';
   }
-  if (!hit) return null;
+  if (!hit) {
+    // 디버그 — Naver 가 hint 와 다른 형식으로 반환하는 케이스 추적용.
+    // 응답 첫 3개 키워드만 로그 (rate limit·log volume 고려).
+    const preview = list.slice(0, 3).map(i => i.keyword).join(' | ');
+    console.warn(`[search-volume] no match for "${keyword}" — listLen=${list.length} preview=[${preview}]`);
+    return null;
+  }
+  console.log(`[search-volume] ${matchType} match "${keyword}" → ${hit.monthlyTotal}`);
   return {
     monthlyTotal: hit.monthlyTotal,
     monthlyPc: hit.monthlyPc,
