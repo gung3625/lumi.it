@@ -89,12 +89,12 @@ exports.handler = async (event) => {
         body: JSON.stringify({
           model: 'gpt-image-2',
           prompt: PROMPTS[i],
-          size: '1024x1024',              // v2 도 지원 (v2 가 default 는 auto)
+          size: '1024x1024',              // v2 도 지원 (v2 default 는 auto)
           quality: 'medium',               // v2: low/medium/high/auto
           n: 1,
-          response_format: 'b64_json',     // v2 default 가 'url' 이라 명시 필요 (b64 추출 호환)
+          // response_format 제거 — v2 가 거부 (v1 옵션). v2 default 응답 구조에서 b64_json 자동 포함됨.
           output_format: 'jpeg',           // 인코딩
-          output_compression: 85,          // jpeg 압축 품질 (0~100). v2 신규 옵션.
+          output_compression: 85,          // jpeg 압축 품질 (0~100)
         }),
       });
 
