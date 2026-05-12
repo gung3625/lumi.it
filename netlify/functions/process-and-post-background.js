@@ -667,6 +667,8 @@ ${tone.context}
   }
 
   // Validator — JSON 분석이 있고 첫 시도일 때만
+  // return: { captions, validator: { scores, pass, issues, overall, regenerated } | null }
+  // 재생성 발생 시 recursive call 결과의 validator 에 regenerated=true 표시.
   if (visionJson && !retryFeedback) {
     try {
       const v = await validateCaption(safeCaptions[0], visionJson, brandTokens, tone.mandatory);
@@ -675,13 +677,26 @@ ${tone.context}
         await mark('gen_retry');
         const feedback = v.issues.map(i => '- ' + i).join('\n');
         console.log('[validator] 재생성 — 피드백:', feedback);
-        return await generateCaptions(imageAnalysis, item, progress, feedback);
+        const retried = await generateCaptions(imageAnalysis, item, progress, feedback);
+        // 재생성 후 validator 메타에 regenerated 마크 + 옛 점수 보존
+        return {
+          captions: retried.captions,
+          validator: {
+            ...(retried.validator || { scores: null, pass: null, overall: null, issues: [] }),
+            regenerated: true,
+            firstAttempt: { scores: v.scores, pass: v.pass, overall: v.overall, issues: v.issues },
+          },
+        };
       }
+      return {
+        captions: safeCaptions,
+        validator: { scores: v.scores, pass: v.pass, overall: v.overall, issues: v.issues, regenerated: false },
+      };
     } catch (e) {
       console.warn('[validator] 검수 실패 (무시):', e.message);
     }
   }
-  return safeCaptions;
+  return { captions: safeCaptions, validator: null };
 }
 
 
@@ -1077,8 +1092,31 @@ exports.handler = async (event) => {
     const captionProgress = async (tag) => {
       await supabase.from('reservations').update({ caption_error: 'STAGE:' + tag }).eq('reserve_key', reservationKey);
     };
-    const captions = await generateCaptions(imageAnalysis, captionInput, captionProgress);
-    console.log('[process-and-post] 캡션 생성 완료:', captions.length, '개');
+    const { captions, validator } = await generateCaptions(imageAnalysis, captionInput, captionProgress);
+    console.log('[process-and-post] 캡션 생성 완료:', captions.length, '개',
+      validator ? `pass=${validator.pass} regen=${!!validator.regenerated}` : 'no-validator');
+
+    // 캡션 v2 운영 검증 — caption_history 에 'generated' row 적재 (validator 결과 동봉).
+    // 실패해도 게시 흐름엔 영향 X. admin endpoint 가 이 row 들로 임계값 튜닝 데이터 확보.
+    if (reservation.user_id && captions[0]) {
+      try {
+        await supabase.from('caption_history').insert({
+          user_id: reservation.user_id,
+          caption: String(captions[0]).trim(),
+          caption_type: 'generated',
+          validator_scores: validator ? {
+            scores: validator.scores ?? null,
+            overall: validator.overall ?? null,
+            issues: validator.issues ?? [],
+            firstAttempt: validator.firstAttempt ?? null,
+          } : null,
+          validator_pass: validator ? !!validator.pass : null,
+          regenerated: validator ? !!validator.regenerated : false,
+        });
+      } catch (e) {
+        console.warn('[process-and-post] caption_history(generated) insert 실패 (무시):', e.message);
+      }
+    }
 
     // 4.1) 브랜드 자동 게시(is_brand_auto=true)만: lumi 홍보 footer append
     //       일반 사용자 예약에는 영향 제로 (플래그 false면 분기 미실행)
