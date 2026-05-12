@@ -416,6 +416,31 @@
       margin: var(--space-2) 0;
     }
 
+    /* "왜 이 순위?" 섹션 — 정렬 근거 명시. 약간 강조 톤. */
+    .sheet__section--rank {
+      padding: var(--space-3);
+      background: linear-gradient(135deg, #fff8ea 0%, #fff 100%);
+      border: 1px solid #f5d68b;
+      border-radius: var(--radius-lg);
+    }
+    .sheet__rank-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .sheet__rank-list li {
+      font-size: 13px;
+      color: var(--ink);
+      line-height: 1.5;
+    }
+    .sheet__rank-list li strong {
+      color: var(--pink-600, #c8507a);
+      font-weight: var(--weight-semibold);
+    }
+
     /* 하단 탭바 (대시보드와 동일) */
     .tabbar {
       position: fixed;
@@ -708,7 +733,10 @@
           const data = await fetchGroupTrends(group);
           if (catLabel) catLabel.textContent = data.categoryLabel || '트렌드';
           if (catTime) catTime.textContent = fmtTime(data.updatedAt);
-          const items = (data.items || []).slice(0, 30);
+          // 1위 ~ 10위 한정. 그 이하는 신호 약해 의사결정 가치 ↓.
+          // sort 기준은 velocity desc > sourceRank asc (renderV2MetaSection 의
+          // "신호 강도" 섹션에서 사용자에게 근거 노출).
+          const items = (data.items || []).slice(0, 10);
           lastItems = items;
           if (items.length === 0) {
             stateEl.textContent = '아직 수집된 키워드가 없어요.';
@@ -775,6 +803,37 @@
       function renderV2MetaSection(item) {
         if (!item) return '';
         const blocks = [];
+
+        // 0) "왜 이 순위?" — 사장님이 1위 키워드의 근거를 알 수 있도록 명시.
+        //    velocityPct(상승률) + crossSourceCount(소스 다양성) + signalTier(신호 강도) 종합.
+        const rankSignals = [];
+        const v = typeof item.velocityPct === 'number' ? item.velocityPct : null;
+        if (v !== null) {
+          if (v >= 50) rankSignals.push(`🔥 검색·게시물 상승률 <strong>+${Math.round(v)}%</strong> (전 cron 대비)`);
+          else if (v > 0) rankSignals.push(`📈 상승률 +${Math.round(v)}%`);
+          else if (v <= -30) rankSignals.push(`📉 ${Math.round(v)}% 하락 중`);
+          else rankSignals.push(`📊 상승률 ${Math.round(v)}% (안정)`);
+        }
+        const csc = typeof item.crossSourceCount === 'number' ? item.crossSourceCount : null;
+        if (csc !== null && csc >= 2) {
+          rankSignals.push(`🔁 <strong>${csc}개 소스</strong>에서 동시 노출`);
+        } else if (csc === 1) {
+          rankSignals.push(`⚠️ 1개 소스만 등장 (약한 신호)`);
+        }
+        if (typeof item.weightedScore === 'number' && item.weightedScore > 0) {
+          rankSignals.push(`💯 종합 점수 ${item.weightedScore.toFixed ? item.weightedScore.toFixed(1) : item.weightedScore}`);
+        }
+        if (rankSignals.length) {
+          blocks.push(`
+            <div class="sheet__section sheet__section--rank">
+              <div class="sheet__label">왜 이 순위?</div>
+              <ul class="sheet__rank-list">
+                ${rankSignals.map(s => `<li>${s}</li>`).join('')}
+              </ul>
+              <p class="sheet__meta-line" style="margin-top:6px;">정렬: 상승률 우선 → 같으면 GPT 카테고리 적합도</p>
+            </div>
+          `);
+        }
 
         // 1) cron 이 추출 시 GPT 가 만든 한줄 요약 (narrative) + 출처 단서 (origin)
         if (item.narrative || item.origin) {
