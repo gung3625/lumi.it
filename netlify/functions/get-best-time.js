@@ -36,6 +36,13 @@ const { corsHeaders, getOrigin } = require('./_shared/auth');
 //   'industry-seed'          전부 시드
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
+const {
+  HISTORY_THRESHOLDS,
+  HISTORY_WINDOW_DAYS,
+  HISTORY_LIMIT,
+  ACTIVITY_WINDOW_DAYS,
+  ACTIVITY_THRESHOLDS,
+} = require('./_shared/best-time-constants');
 
 // 업종 × 요일 시드 매트릭스 (평일=0, 주말=1)
 // 근거: 국내 SNS 벤치마크 리서치 경향 종합. 고객 데이터 쌓이면 자동 대체됨.
@@ -82,12 +89,9 @@ const INDUSTRY_MATRIX = {
   },
 };
 
-const THRESHOLDS = { weekday: 5, weekend: 3 };   // history 임계값 — 요일별 독립
-const HISTORY_WINDOW_DAYS = 90;                  // 최근 90일치 history 만 카운트
-const HISTORY_LIMIT = 500;                       // 안전 상한 (300개 이상 게시는 거의 없음)
-// Tier 2 (follower_activity_snapshots) 임계값
-const ACTIVITY_WINDOW_DAYS = 28;
-const ACTIVITY_THRESHOLDS = { weekday: 15, weekend: 6 }; // 약 3주 분
+// 임계값/윈도우 상수는 _shared/best-time-constants.js 단일 source of truth.
+// (HISTORY_THRESHOLDS = THRESHOLDS 별칭 — 코드 내부 사용처 유지)
+const THRESHOLDS = HISTORY_THRESHOLDS;
 
 function normalizeCategory(cat) {
   if (!cat) return 'other';
