@@ -154,6 +154,19 @@
       border-radius: var(--radius-lg);
     }
     .ig-card.is-connected { border-color: var(--pink-300); background: var(--pink-50); }
+    .ig-card.is-expired {
+      border-color: #f5a623;
+      background: #fff8ea;
+      animation: ig-expired-pulse 1.4s var(--ease-soft) infinite alternate;
+    }
+    .ig-card.is-expired .ig-card__title { color: #b45309; }
+    @keyframes ig-expired-pulse {
+      from { box-shadow: 0 0 0 0 rgba(245, 166, 35, 0.18); }
+      to   { box-shadow: 0 0 0 6px rgba(245, 166, 35, 0); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .ig-card.is-expired { animation: none; }
+    }
     .ig-card__icon {
       width: 44px; height: 44px;
       border-radius: var(--radius-md);
@@ -906,8 +919,21 @@
           const res = await fetch('/api/comments?limit=1', { headers: authHeaders });
           const json = await res.json();
           const connected = json && json.igConnected;
-          card.classList.toggle('is-connected', !!connected);
-          if (connected) {
+          const tokenExpired = !!(json && json.tokenExpired);
+          card.classList.toggle('is-connected', !!connected && !tokenExpired);
+          card.classList.toggle('is-expired', !!connected && tokenExpired);
+
+          if (connected && tokenExpired) {
+            // 토큰 만료/무효 — 즉시 재연동 유도
+            titleEl.textContent = '인스타 재연동 필요';
+            subEl.textContent = '토큰이 만료됐어요. 게시·댓글·트렌드 갱신이 멈춤';
+            actionBtn.textContent = '재연동';
+            actionBtn.className = 'ig-card__action ig-card__action--connect';
+            actionBtn.hidden = false;
+            actionBtn.onclick = () => {
+              location.href = '/api/ig-oauth?token=' + encodeURIComponent(token) + '&return_to=/settings';
+            };
+          } else if (connected) {
             titleEl.textContent = '인스타 연동됨';
             subEl.textContent = '게시·댓글 알림 작동 중';
             actionBtn.textContent = '연결 해제';
