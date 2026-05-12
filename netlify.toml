@@ -35,14 +35,9 @@
   [headers.values]
     Cache-Control = "no-store, no-cache, must-revalidate, max-age=0"
 
-# 매일 자정 KST 기준 전후 트렌드 수집 (naver + google + gpt 파이프라인)
-# 외부 릴레이 푸시는 폐지, scheduled-trends 자체 실행
-# -background 접미사로 15분 타임아웃 확보 (5소스 + GPT 파이프라인은 30초 초과 가능)
-# v1 롤백용 보존 — 필요 시 주석 해제
-# [functions."scheduled-trends-background"]
-#   schedule = "0 15 * * *"
-
-# v2: gpt-4o + 크로스소스검증 + velocity + 가중치 + 신조어
+# 매일 자정 KST 트렌드 파이프라인 — gpt-4o + 크로스소스 + velocity + 가중치 (v2)
+# -background 접미사로 15분 타임아웃 확보. 5소스 + GPT 파이프라인은 30초 초과 가능.
+# (v1 scheduled-trends-background 는 파일 삭제 — PR #147)
 [functions."scheduled-trends-v2-background"]
   schedule = "0 15 * * *"
 
@@ -165,8 +160,7 @@
   status = 200
   force = true
 
-# 트렌드 파이프라인 수동 트리거용 리다이렉트 (v2로 전환)
-# v1 롤백: to = "/.netlify/functions/scheduled-trends-background"
+# 트렌드 파이프라인 수동 트리거용 리다이렉트 (v2)
 [[redirects]]
   from = "/api/scheduled-trends"
   to = "/.netlify/functions/scheduled-trends-v2-background"
