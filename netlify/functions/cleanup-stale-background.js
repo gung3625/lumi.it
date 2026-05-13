@@ -113,20 +113,70 @@ async function cleanupPostedStorage(supabase) {
   return count;
 }
 
+// trends 테이블 진단·메타 row 자동 cleanup.
+//
+// 배경 (2026-05-13): trends 테이블에 진짜 카테고리 row (cafe/food/...) 외
+// 진단/메타 row 가 누적됨 (l30d-rising:*, l30d-domestic-prev:*, cron-heartbeat:*,
+// cron-stage:*, ig-hashtag-cache:*, today-mission:*). 분포 점검 결과 진단 row 가
+// 진짜 데이터의 20+ 배. schema 분리는 광범위 코드 수정 필요 (reader/writer 8 파일+)
+// 라 단순 자동 cleanup 으로 누적 차단.
+//
+// 보존 기간 (각 reader 가 요구하는 최대 lookback 고려):
+//   - l30d-*           : 60일 (28일 전 evaluatePredictionAccuracy 용 + buffer 30일)
+//   - cron-heartbeat/stage : 30일 (cron-health.js 가 직전 실행만 보면 충분)
+//   - ig-hashtag-cache : 14일 (해시태그 캐시 신선도 한계)
+//   - today-mission    : 14일 (당일 미션이라 옛 row 불필요)
+//   - 기타 잡 row (interior/education/studio/other/trends:other) : 즉시
+async function cleanupTrendsMeta(supabase) {
+  const D60 = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString();
+  const D30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const D14 = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+
+  const targets = [
+    { label: 'l30d-old',          filter: (q) => q.like('category', 'l30d-%').lt('collected_at', D60) },
+    { label: 'cron-heartbeat-old', filter: (q) => q.like('category', 'cron-heartbeat:%').lt('collected_at', D30) },
+    { label: 'cron-stage-old',     filter: (q) => q.like('category', 'cron-stage:%').lt('collected_at', D30) },
+    { label: 'ig-hashtag-cache-old', filter: (q) => q.like('category', 'ig-hashtag-cache:%').lt('collected_at', D14) },
+    { label: 'today-mission-old',   filter: (q) => q.like('category', 'today-mission:%').lt('collected_at', D14) },
+    { label: 'orphan-categories',   filter: (q) => q.in('category', ['interior','education','studio','trends:interior','trends:other','other']) },
+  ];
+
+  let total = 0;
+  for (const t of targets) {
+    try {
+      let q = supabase.from('trends').delete({ count: 'exact' });
+      q = t.filter(q);
+      const { error, count } = await q.select('category');
+      if (error) {
+        console.warn(`[cleanup-stale] trends ${t.label} 삭제 경고:`, error.message);
+        continue;
+      }
+      if (count) {
+        console.log(`[cleanup-stale] trends ${t.label} → ${count}건 삭제`);
+        total += count;
+      }
+    } catch (e) {
+      console.warn(`[cleanup-stale] trends ${t.label} 예외:`, e && e.message);
+    }
+  }
+  return total;
+}
+
 exports.handler = async () => {
   const headers = corsHeaders(getOrigin(event));
   try {
     const supabase = getAdminClient();
-    const [pending, failed, posted] = await Promise.all([
+    const [pending, failed, posted, trendsMeta] = await Promise.all([
       cleanupPendingOrphans(supabase),
       cleanupFailedOld(supabase),
       cleanupPostedStorage(supabase),
+      cleanupTrendsMeta(supabase),
     ]);
-    console.log(`[cleanup-stale] pending=${pending} failed=${failed} posted=${posted}`);
+    console.log(`[cleanup-stale] pending=${pending} failed=${failed} posted=${posted} trendsMeta=${trendsMeta}`);
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ success: true, pending, failed, posted }),
+      body: JSON.stringify({ success: true, pending, failed, posted, trendsMeta }),
     };
   } catch (err) {
     console.error('[cleanup-stale] 실행 실패:', err.message);
