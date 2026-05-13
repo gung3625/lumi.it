@@ -586,31 +586,27 @@
         </div>
         <div class="bt-progress" data-bt-progress hidden>
           <div class="bt-progress__hint" data-bt-progress-hint></div>
-          <!-- 1단계: 내 게시물 도달 데이터 (Tier 1) -->
+          <!-- 1단계: 팔로워 접속 시간 (Tier 1a — online_followers) -->
           <div class="bt-progress__stage" data-bt-progress-stage="t1">
-            <div class="bt-progress__stage-title">1. 내 게시물 도달 데이터</div>
+            <div class="bt-progress__stage-title">1. 팔로워 접속 시간</div>
             <div class="bt-progress__row" data-bt-progress-row="weekday">
               <span class="bt-progress__label">평일</span>
               <span class="bt-progress__bar">
                 <i class="is-measured" data-bt-progress-fill="weekday"></i>
-                <i class="is-pending" data-bt-progress-fill-pending="weekday"></i>
               </span>
-              <span class="bt-progress__count" data-bt-progress-count="weekday">0/5</span>
+              <span class="bt-progress__count" data-bt-progress-count="weekday">0/1</span>
             </div>
-            <div class="bt-progress__measure-note" data-bt-progress-measure-note="weekday" hidden></div>
             <div class="bt-progress__row" data-bt-progress-row="weekend">
               <span class="bt-progress__label">주말</span>
               <span class="bt-progress__bar">
                 <i class="is-measured" data-bt-progress-fill="weekend"></i>
-                <i class="is-pending" data-bt-progress-fill-pending="weekend"></i>
               </span>
-              <span class="bt-progress__count" data-bt-progress-count="weekend">0/3</span>
+              <span class="bt-progress__count" data-bt-progress-count="weekend">0/1</span>
             </div>
-            <div class="bt-progress__measure-note" data-bt-progress-measure-note="weekend" hidden></div>
           </div>
-          <!-- 2단계: 내 팔로워 활동 데이터 (Tier 2) -->
+          <!-- 2단계: 팔로워 활동 시간대 (Tier 2 — 28일 누적, 요일별 분리) -->
           <div class="bt-progress__stage" data-bt-progress-stage="t2">
-            <div class="bt-progress__stage-title">2. 내 팔로워 활동 데이터</div>
+            <div class="bt-progress__stage-title">2. 팔로워 활동 시간대 (28일 누적)</div>
             <div class="bt-progress__row" data-bt-progress-row-t2="weekday">
               <span class="bt-progress__label">평일</span>
               <span class="bt-progress__bar"><i data-bt-progress-fill-t2="weekday"></i></span>
@@ -849,32 +845,18 @@
           return;
         }
         progEl.hidden = false;
-        // 1단계 — 내 게시물 도달 데이터
-        // 막대 measured + pending 두 segment. pending > 0 이면 "측정 대기 N건 · 30분 안에 자동 측정".
+        // 1단계 — 팔로워 접속 시간 (Tier 1a, online_followers). have=1 면 활성.
         ['weekday', 'weekend'].forEach((dow) => {
-          const p = (progress && progress[dow]) || { have: 0, pending: 0, need: thresholds[dow], ready: false };
+          const p = (progress && progress[dow]) || { have: 0, need: 1, ready: false };
           const have = Math.max(0, Number(p.have) || 0);
-          const pending = Math.max(0, Number(p.pending) || 0);
-          const need = Math.max(1, Number(p.need) || thresholds[dow]);
-          const measuredRatio = Math.min(100, Math.round((have / need) * 100));
-          const pendingRatio = Math.min(100 - measuredRatio, Math.round((pending / need) * 100));
+          const need = Math.max(1, Number(p.need) || 1);
+          const ratio = p.ready ? 100 : Math.min(100, Math.round((have / need) * 100));
           const fill = document.querySelector(`[data-bt-progress-fill="${dow}"]`);
-          const fillPending = document.querySelector(`[data-bt-progress-fill-pending="${dow}"]`);
           const count = document.querySelector(`[data-bt-progress-count="${dow}"]`);
           const row = document.querySelector(`[data-bt-progress-row="${dow}"]`);
-          const note = document.querySelector(`[data-bt-progress-measure-note="${dow}"]`);
-          if (fill) fill.style.width = (p.ready ? 100 : measuredRatio) + '%';
-          if (fillPending) fillPending.style.width = (p.ready ? 0 : pendingRatio) + '%';
+          if (fill) fill.style.width = ratio + '%';
           if (count) count.textContent = `${have}/${need}`;
           if (row) row.classList.toggle('is-ready', !!p.ready);
-          if (note) {
-            if (pending > 0 && !p.ready) {
-              note.innerHTML = `<strong>측정 대기 ${pending}건</strong> · 30분 안에 자동 측정`;
-              note.hidden = false;
-            } else {
-              note.hidden = true;
-            }
-          }
         });
         // 2단계 — 내 팔로워 활동 데이터. 1단계 미완료면 locked.
         const stage2El = document.querySelector('[data-bt-progress-stage="t2"]');
@@ -893,11 +875,11 @@
         });
         // hint — 단계별 카피. 1·2단계 진행 상황을 한 줄로 표현.
         if (t2BothReady) {
-          hintEl.textContent = '내 팔로워 활동 데이터로 추천 중. 가장 정확한 단계예요.';
+          hintEl.textContent = '내 팔로워 활동 시간대 (28일 누적) 기반 추천. 가장 정확한 단계예요.';
         } else if (t1BothReady) {
-          hintEl.textContent = '내 게시물 도달 데이터 기준 추천 중. 팔로워 활동이 더 모이면 정확도가 올라요.';
+          hintEl.textContent = '팔로워 접속 시간 기반 추천 중. 28일 누적되면 요일별로 더 정확해져요.';
         } else {
-          hintEl.textContent = '사람들이 많이 볼 만한 시간대 평균을 보여드려요. 도달 데이터가 모이면 내 팔로워 기준으로 자동 전환돼요.';
+          hintEl.textContent = '사람들이 많이 볼 만한 시간대 평균을 보여드려요. IG 연동 시 내 팔로워 접속 시간 기반으로 자동 전환돼요.';
         }
       }
       function renderBest() {
