@@ -532,12 +532,14 @@
             const chipLabel = channel === 'threads' ? '쓰레드' : '인스타';
             const chipHtml = `<span class="chan-chip chan-chip--${channel}">${chipLabel}</span>`;
             // 답글 컴포저: 이미 사장님이 답글 단 댓글은 컴포저 숨김 (1회만 답글 가능 정책).
-            // M4.1 — Threads 답글 API 통합은 M4.2 후속 → Threads 댓글에는 컴포저 숨김.
-            const canReply = channel === 'ig' && !replyText && c.id;
+            // IG/Threads 둘 다 지원 — channel 에 따라 maxlength 와 placeholder 분기.
+            const canReply = !replyText && c.id;
+            const replyMax = channel === 'threads' ? 500 : 2200;
+            const replyPlaceholder = channel === 'threads' ? '답글을 적어주세요 (500자)' : '답글을 적어주세요';
             const composer = canReply ? `
               <button type="button" class="comment__reply-toggle" data-reply-toggle="${esc(c.id)}">↳ 답글 달기</button>
-              <form class="comment__reply-form" data-reply-form="${esc(c.id)}" hidden>
-                <textarea class="comment__reply-textarea" maxlength="2200" placeholder="답글을 적어주세요" data-reply-text></textarea>
+              <form class="comment__reply-form" data-reply-form="${esc(c.id)}" data-reply-channel="${channel}" hidden>
+                <textarea class="comment__reply-textarea" maxlength="${replyMax}" placeholder="${esc(replyPlaceholder)}" data-reply-text></textarea>
                 <div class="comment__reply-error" data-reply-error hidden></div>
                 <div class="comment__reply-actions">
                   <button type="button" class="comment__reply-btn comment__reply-btn--cancel" data-reply-cancel>취소</button>
@@ -607,6 +609,7 @@
         if (!form) return;
         e.preventDefault();
         const commentId = form.dataset.replyForm;
+        const channel = form.dataset.replyChannel === 'threads' ? 'threads' : 'ig';
         const textEl = form.querySelector('[data-reply-text]');
         const sendBtn = form.querySelector('[data-reply-send]');
         const errEl = form.querySelector('[data-reply-error]');
@@ -624,12 +627,13 @@
           const res = await fetch('/api/reply-comment', {
             method: 'POST',
             headers: { ...authHeaders, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ commentId, message }),
+            body: JSON.stringify({ commentId, message, channel }),
           });
           const json = await res.json().catch(() => ({}));
           if (!res.ok || !json.ok) {
             if (json.tokenExpired) {
-              errEl.textContent = 'IG 토큰이 만료됐어요. 설정에서 재연동해주세요.';
+              const chLabel = channel === 'threads' ? 'Threads' : 'IG';
+              errEl.textContent = `${chLabel} 토큰이 만료됐어요. 설정에서 재연동해주세요.`;
             } else {
               errEl.textContent = json.error || '답글 전송 실패';
             }
