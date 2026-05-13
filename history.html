@@ -574,17 +574,9 @@
       </div>
     </div>
 
-    <div class="empty" data-empty hidden>
-      <div class="empty__icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <rect x="3" y="4" width="18" height="18" rx="2"/>
-          <path d="M16 2v4M8 2v4M3 10h18"/>
-        </svg>
-      </div>
-      <div class="empty__title">예약이 없어요</div>
-      <p class="empty__sub">사진을 올리면 캡션이 만들어져 여기에 쌓여요.</p>
-      <a class="cta" href="/register-product">📷 사진 올리기</a>
-    </div>
+    <!-- 외곽 empty 박스 제거 — 탭 내부 placeholder 가 탭별 맞춤 메시지 담당.
+         data-empty 변수 참조 호환을 위해 hidden 빈 div 유지 (JS 가 emptyEl.hidden 만 쓰므로 안전). -->
+    <div class="empty" data-empty hidden aria-hidden="true"></div>
     <footer class="app-footer">
       <img class="app-footer__logo" src="/assets/logo-wordmark.png" alt="루미" loading="lazy" decoding="async">
       <nav class="app-footer__links" aria-label="법적 정보">
@@ -869,10 +861,8 @@
           const items = (json && json.items) || [];
           stateEl.hidden = true;
 
-          if (items.length === 0) {
-            emptyEl.hidden = false;
-            return;
-          }
+          // 외곽 emptyEl 은 사용 안 함 (탭별 메시지가 달라 혼동) — 탭 내부 placeholder 만 사용.
+          if (emptyEl) emptyEl.hidden = true;
 
           const now = Date.now();
           const upcoming = [];
@@ -885,13 +875,11 @@
           upcoming.sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at));
           past.sort((a, b) => new Date(b.scheduled_at || b.submitted_at) - new Date(a.scheduled_at || a.submitted_at));
 
-          // 두 리스트 모두 렌더 — 탭 전환 시 즉시 반영. 빈 리스트면 빈 placeholder.
-          upcomingList.innerHTML = upcoming.length
-            ? upcoming.map(renderItem).join('')
-            : '<li class="empty"><div class="empty__title">예약된 게시가 없어요</div><div class="empty__sub">새 사진을 올려서 예약을 만들어보세요.</div></li>';
-          pastList.innerHTML = past.length
-            ? past.slice(0, 30).map(renderItem).join('')
-            : '<li class="empty"><div class="empty__title">아직 게시 이력이 없어요</div><div class="empty__sub">첫 게시가 올라가면 여기에 쌓여요.</div></li>';
+          // 두 리스트 모두 렌더 — 탭 전환 시 즉시 반영. 빈 리스트면 탭별 맞춤 placeholder.
+          const upcomingEmpty = '<li class="empty"><div class="empty__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div><div class="empty__title">예약된 게시가 없어요</div><p class="empty__sub">새 사진을 올려서 예약을 만들어보세요.</p><a class="cta" href="/register-product">📷 사진 올리기</a></li>';
+          const pastEmpty = '<li class="empty"><div class="empty__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div><div class="empty__title">아직 게시 이력이 없어요</div><p class="empty__sub">첫 게시가 올라가면 여기에 쌓여요.</p><a class="cta" href="/register-product">📷 사진 올리기</a></li>';
+          upcomingList.innerHTML = upcoming.length ? upcoming.map(renderItem).join('') : upcomingEmpty;
+          pastList.innerHTML = past.length ? past.slice(0, 30).map(renderItem).join('') : pastEmpty;
           // 탭 표시 + 활성 탭에 따라 섹션 한 쪽만 노출
           if (tabsEl) tabsEl.hidden = false;
           if (tabToolsEl) tabToolsEl.hidden = false;
