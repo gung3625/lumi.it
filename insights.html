@@ -95,6 +95,30 @@
       grid-template-columns: 1fr 1fr;
       gap: var(--space-2);
     }
+    /* M4.2 — 채널 섹션 라벨 (인스타 / 쓰레드 구분) */
+    .stat-section-label {
+      grid-column: 1 / -1;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ink-muted);
+      letter-spacing: 0.04em;
+      text-transform: none;
+      margin-top: 8px;
+      margin-bottom: -4px;
+    }
+    .stat-section-label:first-child { margin-top: 0; }
+    .stat--threads {
+      border-color: #c7d2fe;
+      background: #eef2ff;
+    }
+    .stat--threads .stat__label,
+    .stat--threads .stat__value { color: #3730a3; }
+    .stat--threads-expired {
+      grid-column: 1 / -1;
+      border-color: #f5a623;
+      background: #fff8ea;
+      color: #b45309;
+    }
     .stat {
       padding: var(--space-4);
       background: var(--bg);
@@ -683,13 +707,40 @@
           { label: '도달', value: fmtNum(reach), delta: '', deltaCls: '' },
           { label: '프로필 조회', value: fmtNum(profileViews), delta: '', deltaCls: '' },
         ];
-        grid.innerHTML = items.map(it => `
+        let html = '<div class="stat-section-label">인스타그램</div>' + items.map(it => `
           <div class="stat">
             <div class="stat__label">${it.label}</div>
             <div class="stat__value">${it.value}</div>
             ${it.delta ? `<div class="stat__delta ${it.deltaCls}">${it.delta}</div>` : ''}
           </div>
         `).join('');
+
+        // M4.2 — Threads 섹션 (연동된 사장님만).
+        // tokenExpired 시 안내 카드, 정상 시 views/likes/replies/reposts/quotes.
+        const t = data.threads;
+        if (t && t.connected) {
+          if (t.tokenExpired) {
+            html += `<div class="stat-section-label">쓰레드</div>
+              <div class="stat stat--threads-expired">
+                <div class="stat__label">⚠️ 쓰레드 재연동 필요</div>
+                <div class="stat__value" style="font-size:14px;">설정에서 토큰 갱신</div>
+              </div>`;
+          } else {
+            const threadsItems = [
+              { label: period === 'weekly' ? '이번 주 조회' : '이번 달 조회',   value: fmtNum(t.views) },
+              { label: period === 'weekly' ? '이번 주 좋아요' : '이번 달 좋아요', value: fmtNum(t.likes) },
+              { label: '답글',     value: fmtNum(t.replies) },
+              { label: '리포스트', value: fmtNum(t.reposts) },
+            ];
+            html += '<div class="stat-section-label">쓰레드</div>' + threadsItems.map(it => `
+              <div class="stat stat--threads">
+                <div class="stat__label">${it.label}</div>
+                <div class="stat__value">${it.value}</div>
+              </div>
+            `).join('');
+          }
+        }
+        grid.innerHTML = html;
       }
 
       // 토큰 만료 응답일 때 stateEl 영역을 재연동 배너로 교체.

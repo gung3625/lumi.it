@@ -198,6 +198,51 @@ async function publishThreadsContainer({ token, threadsUserId, creationId }, opt
 }
 
 /**
+ * Threads 사장님 단위 인사이트 — 기간 합산.
+ *
+ * M4.2 — insights.html 의 주간/월간 Threads 섹션용. IG fetchAccountInsights
+ * 와 유사 패턴. since/until 은 unix seconds.
+ *
+ * Threads API 엔드포인트:
+ *   GET /{threads-user-id}/threads_insights
+ *     ?metric=views,likes,replies,reposts,quotes
+ *     &since=<unix-sec>&until=<unix-sec>
+ *
+ * 응답은 IG 와 유사한 { data: [{ name, total_value: { value } }] } 형식.
+ * 매트릭마다 total_value 가 있으면 그걸 사용, 없으면 values 배열 합산.
+ *
+ * @param {object} args
+ * @param {string} args.token
+ * @param {string} args.threadsUserId
+ * @param {number} args.sinceSec
+ * @param {number} args.untilSec
+ * @returns {Promise<{views:number,likes:number,replies:number,reposts:number,quotes:number}>}
+ */
+async function getThreadsAccountInsights({ token, threadsUserId, sinceSec, untilSec }, opts = {}) {
+  if (!threadsUserId) throw new ThreadsGraphError('threadsUserId 누락');
+  const resp = await threadsGraphRequest(token, `/${threadsUserId}/threads_insights`, {
+    metric: 'views,likes,replies,reposts,quotes',
+    since: sinceSec,
+    until: untilSec,
+  }, opts);
+  const out = { views: 0, likes: 0, replies: 0, reposts: 0, quotes: 0 };
+  const rows = (resp && resp.data) || [];
+  for (const row of rows) {
+    if (!row || !row.name) continue;
+    let val = 0;
+    if (row.total_value && typeof row.total_value.value === 'number') {
+      val = row.total_value.value;
+    } else if (Array.isArray(row.values)) {
+      val = row.values.reduce((s, v) => s + (Number(v && v.value) || 0), 0);
+    }
+    if (Object.prototype.hasOwnProperty.call(out, row.name)) {
+      out[row.name] = val;
+    }
+  }
+  return out;
+}
+
+/**
  * ig_accounts.threads_token_invalid_at 마킹 헬퍼.
  *
  * Threads Graph 호출에서 ThreadsGraphError.isTokenExpired() 가 true 면
@@ -229,6 +274,7 @@ module.exports = {
   threadsGraphRequest,
   createThreadsContainer,
   publishThreadsContainer,
+  getThreadsAccountInsights,
   markThreadsTokenInvalid,
   ThreadsGraphError,
   THREADS_API_VERSION,
