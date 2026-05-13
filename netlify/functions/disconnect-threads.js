@@ -1,6 +1,6 @@
 // Threads 연동 해제 — settings 페이지의 쓰레드 카드 '해제' 버튼용.
 // disconnect-ig.js 패턴 1:1, 단 ig_accounts row 자체는 보존하고
-// threads_* 컬럼만 NULL 로 리셋 (IG 연동은 유지).
+// threads_* 컬럼만 NULL 리셋 (IG 연동은 유지).
 
 const { corsHeaders, getOrigin } = require('./_shared/auth');
 const { getAdminClient } = require('./_shared/supabase-admin');
@@ -29,8 +29,15 @@ exports.handler = async (event) => {
 
   try {
     const admin = getAdminClient();
-    // Vault secret 자체는 두고(과거 추적용) ig_accounts 의 threads_* 만 비움.
-    // 재연동 시 set_threads_token RPC 가 새 secret_id 받으므로 orphan 우려 0.
+
+    // 코드 리뷰 #4 — Vault secret 청소: update 전에 threads_token_secret_id
+    // 확보 후 delete_vault_secret RPC 로 평문 토큰 즉시 폐기.
+    const { data: row } = await admin
+      .from('ig_accounts')
+      .select('threads_token_secret_id')
+      .eq('user_id', userId)
+      .maybeSingle();
+
     const { error } = await admin
       .from('ig_accounts')
       .update({
@@ -45,6 +52,16 @@ exports.handler = async (event) => {
       console.error('[disconnect-threads] update error:', error.message);
       return { statusCode: 500, headers, body: JSON.stringify({ error: '해제 실패' }) };
     }
+
+    // Vault 청소 — best-effort
+    if (row && row.threads_token_secret_id) {
+      try {
+        await admin.rpc('delete_vault_secret', { p_secret_id: row.threads_token_secret_id });
+      } catch (e) {
+        console.warn('[disconnect-threads] delete_vault_secret 경고 (무시):', e && e.message);
+      }
+    }
+
     return {
       statusCode: 200,
       headers: { ...headers, 'Content-Type': 'application/json' },
