@@ -378,6 +378,43 @@
     }
     .modal__cta:hover { box-shadow: var(--shadow-glow); }
     .modal__cta:disabled { opacity: 0.4; box-shadow: none; }
+    /* 회원 탈퇴 모달 — danger CTA */
+    .modal__cta--danger {
+      background: #fde8e8;
+      color: #b8221c;
+      box-shadow: none;
+    }
+    .modal__cta--danger:not(:disabled):hover { background: #fbd5d5; }
+    .modal__warning {
+      background: #fff8ea;
+      border: 1px solid #f5a623;
+      color: #92560f;
+      padding: var(--space-3);
+      border-radius: var(--radius-md);
+      font-size: var(--text-caption);
+      line-height: var(--leading-snug);
+    }
+    .modal__warning strong { color: #b45309; }
+    .modal__confirm-input {
+      width: 100%;
+      padding: var(--space-3);
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-md);
+      font-size: var(--text-body);
+      font-family: inherit;
+    }
+    .modal__confirm-input:focus { outline: 2px solid var(--pink-500); outline-offset: 1px; }
+    /* 탈퇴 신청 상태 안내 (action-btn 아래) */
+    .deletion-info {
+      padding: var(--space-3);
+      background: #fff8ea;
+      border: 1px solid #f5a623;
+      color: #92560f;
+      border-radius: var(--radius-md);
+      font-size: var(--text-caption);
+      line-height: var(--leading-snug);
+    }
+    .deletion-info strong { color: #b45309; }
 
     /* 대분류·세부 칩 (signup 과 동일 패턴) */
     .major-grid {
@@ -537,11 +574,12 @@
         <span class="action-btn__icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
         </span>
-        회원 탈퇴
+        <span data-delete-label>회원 탈퇴</span>
         <span class="action-btn__chev">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
         </span>
       </button>
+      <div class="deletion-info" data-deletion-info hidden></div>
     </div>
 
     <footer class="app-footer">
@@ -603,6 +641,28 @@
       </div>
       <div style="font-size: var(--text-caption); color: var(--ink-muted); margin-top: 4px;">상세 주소는 안 받아요. 트렌드·노출 분석에 씁니다.</div>
       <button class="modal__cta" type="button" data-region-save disabled>저장</button>
+    </div>
+  </div>
+
+  <!-- 회원 탈퇴 확인 모달 -->
+  <div class="modal-backdrop" data-delete-backdrop></div>
+  <div class="modal" data-delete-modal>
+    <div class="modal__head">
+      <h2 class="modal__title">회원 탈퇴</h2>
+      <button class="modal__close" type="button" data-delete-close aria-label="닫기">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal__body">
+      <div class="modal__warning">
+        <strong>30일 유예 기간이 있어요.</strong><br>
+        탈퇴 신청 후 30일 동안은 데이터가 유예 보관되며, <strong>같은 버튼을 다시 누르면 언제든 취소</strong>됩니다. 30일이 지나면 매장 정보·게시 이력·인스타·쓰레드 연동 정보가 영구 삭제됩니다.
+      </div>
+      <div>
+        <div style="font-size: var(--text-caption); font-weight: var(--weight-semibold); color: var(--ink-soft); margin-bottom: var(--space-2);">확인을 위해 아래에 <strong>회원 탈퇴</strong>라고 입력해주세요</div>
+        <input class="modal__confirm-input" type="text" data-delete-confirm-input placeholder="회원 탈퇴" autocomplete="off">
+      </div>
+      <button class="modal__cta modal__cta--danger" type="button" data-delete-confirm-btn disabled>탈퇴 신청</button>
     </div>
   </div>
 
@@ -1064,23 +1124,101 @@
         ['lumi-auth','lumi_auth','seller_jwt'].forEach(k => localStorage.removeItem(k));
         location.href = '/';
       });
-      document.querySelector('[data-delete]').addEventListener('click', async () => {
-        const reason = prompt('회원 탈퇴 사유를 적어주세요 (선택)');
-        if (reason === null) return;
-        if (!confirm('정말 탈퇴할까요? 30일 동안 복구할 수 있어요.')) return;
+      // ── 회원 탈퇴 / 신청 취소 ──
+      // 흐름:
+      //   1) 신청 전: [회원 탈퇴] 버튼 → 모달 열림 → "회원 탈퇴" 입력 일치 시 활성 →
+      //      POST /api/account-delete → 버튼 라벨 "탈퇴 신청 취소" 로 변경 + 안내 표시
+      //   2) 신청 후(유예 기간): 같은 버튼 클릭 → confirm → POST /api/account-restore →
+      //      버튼 원래대로
+      // 로그아웃 X — 사장님이 같은 페이지에서 취소 동선 확인 가능해야 함.
+      let deletionPending = false;
+      let deletionScheduledAt = null;
+
+      function fmtKDate(iso) {
+        if (!iso) return null;
+        const d = new Date(iso);
+        if (Number.isNaN(d.getTime())) return null;
+        return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
+      }
+
+      function renderDeleteUi() {
+        const btn = document.querySelector('[data-delete]');
+        const label = btn.querySelector('[data-delete-label]');
+        const infoEl = document.querySelector('[data-deletion-info]');
+        if (deletionPending) {
+          label.textContent = '탈퇴 신청 취소';
+          if (infoEl) {
+            const dstr = fmtKDate(deletionScheduledAt) || '약 30일 뒤';
+            infoEl.innerHTML = `<strong>탈퇴 신청 완료</strong> · <strong>${dstr}</strong>에 영구 삭제 예정.<br>그 전에 같은 버튼을 다시 누르면 신청이 취소돼요.`;
+            infoEl.hidden = false;
+          }
+        } else {
+          label.textContent = '회원 탈퇴';
+          if (infoEl) infoEl.hidden = true;
+        }
+      }
+
+      // 모달 열고 닫기
+      const delBackdrop = document.querySelector('[data-delete-backdrop]');
+      const delModal = document.querySelector('[data-delete-modal]');
+      const delConfirmInput = document.querySelector('[data-delete-confirm-input]');
+      const delConfirmBtn = document.querySelector('[data-delete-confirm-btn]');
+      function openDeleteModal() {
+        delConfirmInput.value = '';
+        delConfirmBtn.disabled = true;
+        delConfirmBtn.textContent = '탈퇴 신청';
+        delBackdrop.classList.add('is-open');
+        delModal.classList.add('is-open');
+        setTimeout(() => delConfirmInput.focus(), 50);
+      }
+      function closeDeleteModal() {
+        delBackdrop.classList.remove('is-open');
+        delModal.classList.remove('is-open');
+      }
+      delBackdrop.addEventListener('click', closeDeleteModal);
+      document.querySelectorAll('[data-delete-close]').forEach(el => el.addEventListener('click', closeDeleteModal));
+
+      // "회원 탈퇴" 정확 입력 시 활성화 (앞뒤 공백 허용)
+      delConfirmInput.addEventListener('input', () => {
+        delConfirmBtn.disabled = delConfirmInput.value.trim() !== '회원 탈퇴';
+      });
+
+      delConfirmBtn.addEventListener('click', async () => {
+        delConfirmBtn.disabled = true;
+        delConfirmBtn.textContent = '신청 중…';
         try {
-          const r = await fetch('/api/account-delete', {
-            method: 'POST',
-            headers: { ...authHeaders, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ reason: reason || '' }),
-          });
+          const r = await fetch('/api/account-delete', { method: 'POST', headers: authHeaders });
           const json = await r.json();
-          if (!r.ok) throw new Error(json.error || '탈퇴 실패');
-          alert(`탈퇴가 접수되었어요. ${json.graceDays || 30}일 안에 다시 로그인하시면 복구됩니다.`);
-          ['lumi-auth','lumi_auth','seller_jwt'].forEach(k => localStorage.removeItem(k));
-          location.href = '/';
+          if (!r.ok) throw new Error(json.error || '신청 실패');
+          deletionPending = true;
+          deletionScheduledAt = json.deletionScheduledAt || null;
+          renderDeleteUi();
+          closeDeleteModal();
+          toast('탈퇴 신청 완료. 30일 후 영구 삭제 예정', 2400);
         } catch (e) {
-          toast(e.message || '탈퇴 실패');
+          toast(e.message || '신청 실패');
+          delConfirmBtn.disabled = false;
+          delConfirmBtn.textContent = '탈퇴 신청';
+        }
+      });
+
+      // 메인 [data-delete] 버튼 — 상태에 따라 분기
+      document.querySelector('[data-delete]').addEventListener('click', async () => {
+        if (deletionPending) {
+          if (!confirm('탈퇴 신청을 취소할까요?\n취소하면 영구 삭제 일정이 사라지고 계정이 다시 활성화돼요.')) return;
+          try {
+            const r = await fetch('/api/account-restore', { method: 'POST', headers: authHeaders });
+            const json = await r.json();
+            if (!r.ok) throw new Error(json.error || '취소 실패');
+            deletionPending = false;
+            deletionScheduledAt = null;
+            renderDeleteUi();
+            toast('탈퇴 신청을 취소했어요');
+          } catch (e) {
+            toast(e.message || '취소 실패');
+          }
+        } else {
+          openDeleteModal();
         }
       });
 
@@ -1137,6 +1275,10 @@
           renderInfo();
           loadIg();
           loadThreads();
+          // 탈퇴 신청 상태 동기화 — me.js 응답의 deletionPending / deletionScheduledAt
+          deletionPending = !!s.deletionPending;
+          deletionScheduledAt = s.deletionScheduledAt || null;
+          renderDeleteUi();
           // 캡션 말투 prefill
           toneOriginal = (s.toneRequest || '').trim();
           toneInput.value = toneOriginal;
