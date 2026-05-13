@@ -300,6 +300,11 @@
     }
     .del-modal__btn--danger:hover { background: #b8456c; }
     .del-modal__btn--danger[disabled] { opacity: 0.4; pointer-events: none; }
+    .del-modal__btn--primary {
+      background: var(--ink, #1a1a1a); border-color: var(--ink, #1a1a1a); color: #fff;
+    }
+    .del-modal__btn--primary:hover { background: var(--ink-soft, #333); }
+    .del-modal__btn--primary[disabled] { opacity: 0.4; pointer-events: none; }
 
     /* insight modal — chip 클릭 시 게시별 인사이트 노출. del-modal 패턴 모방. */
     .insight-modal {
@@ -753,14 +758,17 @@
       const delCancel = document.querySelector('[data-del-cancel]');
       let delPendingAction = null; // () => Promise<void>
 
-      function openDelModal({ title, body, requireTyping, onConfirm }) {
+      function openDelModal({ title, body, requireTyping, confirmText, variant, onConfirm }) {
         delTitle.textContent = title || '삭제하시겠어요?';
         delBody.textContent = body || '이 기록만 루미 히스토리에서 사라져요. 인스타·쓰레드의 실제 게시물은 그대로 남습니다.';
         delHint.hidden = !requireTyping;
         delInput.hidden = !requireTyping;
         delInput.value = '';
         delConfirm.disabled = !!requireTyping;
-        delConfirm.textContent = '삭제';
+        delConfirm.textContent = confirmText || '삭제';
+        // variant: 'danger' (디폴트) | 'primary'. danger = 빨강 (삭제), primary = 다크 (긍정 액션).
+        delConfirm.classList.toggle('del-modal__btn--danger',  variant !== 'primary');
+        delConfirm.classList.toggle('del-modal__btn--primary', variant === 'primary');
         delPendingAction = onConfirm;
         delModal.classList.add('is-open');
         delModal.setAttribute('aria-hidden', 'false');
@@ -781,9 +789,15 @@
       });
       delConfirm.addEventListener('click', async () => {
         if (delConfirm.disabled || !delPendingAction) return;
+        const originalLabel = delConfirm.textContent;
         delConfirm.disabled = true;
-        delConfirm.textContent = '삭제 중…';
-        try { await delPendingAction(); } finally { closeDelModal(); }
+        delConfirm.textContent = '진행 중…';
+        try {
+          await delPendingAction();
+        } finally {
+          delConfirm.textContent = originalLabel;
+          closeDelModal();
+        }
       });
 
       // ── 인사이트 모달 — 채널 chip 클릭 시 게시별 metric 표시 ──
@@ -888,6 +902,52 @@
         const postId  = chip.dataset.postId || '';
         if (!postId) return;
         loadInsight(channel, postId);
+      });
+
+      // 재시도 chip (Threads failed only) — confirm modal → POST /api/retry-channel-post
+      async function retryThreadsPost(reservationId, chipEl) {
+        if (!reservationId) return;
+        try {
+          const res = await fetch('/api/retry-channel-post', {
+            method: 'POST',
+            headers: { ...authHeaders, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reservationId, channel: 'threads' }),
+          });
+          const json = await res.json().catch(() => ({}));
+          if (!res.ok || !json.ok) {
+            if (json.tokenExpired) {
+              alert('쓰레드 토큰이 만료됐어요. 설정에서 재연동해주세요.');
+            } else {
+              alert(json.error || '재시도 실패');
+            }
+            return;
+          }
+          // 성공 — chip 즉시 posted 모양으로 교체, 다음 load 시 fresh.
+          if (chipEl) {
+            chipEl.classList.remove('is-failed');
+            chipEl.classList.add('is-posted');
+            chipEl.removeAttribute('data-retry-chip');
+            chipEl.setAttribute('data-insight-chip', '');
+            chipEl.setAttribute('data-post-id', json.postId || '');
+            chipEl.setAttribute('aria-label', '쓰레드 게시 인사이트 보기');
+          }
+        } catch (e) {
+          alert('네트워크 오류 — 다시 시도해주세요.');
+        }
+      }
+      document.addEventListener('click', (e) => {
+        const chip = e.target.closest('[data-retry-chip]');
+        if (!chip) return;
+        e.preventDefault();
+        const reservationId = chip.dataset.reservationId;
+        if (!reservationId) return;
+        openDelModal({
+          title: '다시 시도할까요?',
+          body: '쓰레드 게시가 실패한 기록입니다. 같은 사진·캡션으로 한 번 더 게시해요.',
+          confirmText: '다시 시도',
+          variant: 'primary',
+          onConfirm: () => retryThreadsPost(reservationId, chip),
+        });
       });
       insightCloseBtn?.addEventListener('click', closeInsightModal);
       insightModal?.addEventListener('click', (e) => { if (e.target === insightModal) closeInsightModal(); });
@@ -1015,7 +1075,8 @@
         }
 
         // M3.2 — 채널 칩 (channel_posts join 결과). 게시됨/게시 중 행에만 노출.
-        // posted 상태 + post_id 있으면 button 으로 렌더 — 클릭 시 insight modal 열림.
+        // posted+post_id 있으면 인사이트 button, threads failed 면 retry button.
+        // (IG failed retry 는 베타에서 토큰 만료가 주 원인이라 재연동 흐름으로 처리)
         let chipBlock = '';
         if ((r.is_sent || r.caption_status === 'posting') && Array.isArray(r.channels) && r.channels.length) {
           const labelMap = { ig: '인스타', threads: '쓰레드' };
@@ -1023,9 +1084,11 @@
             .filter((c) => labelMap[c.channel])
             .map((c) => {
               const stCls = c.status === 'posted' ? 'is-posted' : (c.status === 'failed' ? 'is-failed' : 'is-posting');
-              const clickable = c.status === 'posted' && c.post_id;
-              if (clickable) {
+              if (c.status === 'posted' && c.post_id) {
                 return `<button type="button" class="chan-chip chan-chip--${esc(c.channel)} ${stCls}" data-insight-chip data-channel="${esc(c.channel)}" data-post-id="${esc(c.post_id)}" aria-label="${esc(labelMap[c.channel])} 게시 인사이트 보기">${esc(labelMap[c.channel])}</button>`;
+              }
+              if (c.status === 'failed' && c.channel === 'threads') {
+                return `<button type="button" class="chan-chip chan-chip--${esc(c.channel)} ${stCls}" data-retry-chip data-channel="threads" data-reservation-id="${esc(r.id)}" aria-label="쓰레드 게시 다시 시도">${esc(labelMap[c.channel])}</button>`;
               }
               return `<span class="chan-chip chan-chip--${esc(c.channel)} ${stCls}">${esc(labelMap[c.channel])}</span>`;
             }).join('');
