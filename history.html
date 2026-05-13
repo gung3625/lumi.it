@@ -195,16 +195,37 @@
     .chan-chip--threads.is-posted { background: #e0e7ff; color: #3730a3; }
     .chan-chip.is-failed          { background: #fde8e8; color: #b8221c; text-decoration: line-through; opacity: 0.8; }
     .chan-chip.is-posting         { background: var(--gradient-signature); color: #fff; }
-    /* button 으로 렌더된 chip — 기본 스타일 reset + 호버 affordance */
-    button.chan-chip {
-      border: 0; cursor: pointer; font-family: inherit;
+    /* 재시도 링크 — failed chip 옆에 명시적 액션 affordance. 카드 밖에서 바로 보임. */
+    .chan-retry {
+      border: 0;
+      background: transparent;
+      color: var(--ink, #1a1a1a);
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      padding: 2px 4px;
+      margin-left: 4px;
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      transition: color var(--duration-snap, 120ms) var(--ease-toss, ease-out);
+    }
+    .chan-retry:hover { color: var(--pink-600, #c8507a); }
+    .chan-retry:active { transform: scale(0.97); }
+    @media (prefers-reduced-motion: reduce) {
+      .chan-retry, .chan-retry:active { transform: none; transition: none; }
+    }
+    /* 카드 hover — posted 채널 있는 카드만 클릭 가능 표시 */
+    .res.is-clickable {
+      cursor: pointer;
       transition: transform var(--duration-snap, 120ms) var(--ease-toss, ease-out),
                   box-shadow var(--duration-snap, 120ms) var(--ease-toss, ease-out);
     }
-    button.chan-chip:hover  { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
-    button.chan-chip:active { transform: scale(0.97); }
+    .res.is-clickable:hover  { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .res.is-clickable:active { transform: scale(0.995); }
     @media (prefers-reduced-motion: reduce) {
-      button.chan-chip, button.chan-chip:hover, button.chan-chip:active { transform: none; transition: none; }
+      .res.is-clickable, .res.is-clickable:hover, .res.is-clickable:active { transform: none; transition: none; }
     }
     @keyframes posting-pulse {
       0%, 100% { box-shadow: 0 0 0 0 rgba(255,107,139,0.5); }
@@ -352,6 +373,32 @@
     }
     .insight-stat__label { font-size: 12px; color: var(--ink-muted); }
     .insight-stat__value { font-size: 18px; font-weight: var(--weight-semibold); color: var(--ink); font-variant-numeric: tabular-nums; }
+    .insight-modal__tabs {
+      display: flex; gap: 4px;
+      border-bottom: 1px solid var(--line, rgba(0,0,0,0.08));
+      margin-top: 4px;
+    }
+    .insight-modal__tab {
+      flex: 1;
+      padding: 8px 12px;
+      border: 0; background: transparent;
+      font-family: inherit;
+      font-size: 13px; font-weight: var(--weight-semibold, 600);
+      color: var(--ink-muted);
+      letter-spacing: -0.01em;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: color var(--duration-snap, 120ms) var(--ease-toss, ease-out),
+                  border-color var(--duration-snap, 120ms) var(--ease-toss, ease-out);
+    }
+    .insight-modal__tab.is-active {
+      color: var(--ink, #1a1a1a);
+      border-bottom-color: var(--pink-600, #c8507a);
+    }
+    .insight-modal__tab:hover { color: var(--ink, #1a1a1a); }
+    @media (prefers-reduced-motion: reduce) {
+      .insight-modal__tab { transition: none; }
+    }
     .insight-modal__caption {
       font-size: 13px; color: var(--ink-soft); line-height: 1.5;
       max-height: 4.5em; overflow: hidden; text-overflow: ellipsis;
@@ -648,7 +695,7 @@
       </div>
     </div>
 
-    <!-- 채널 chip 클릭 시 게시별 인사이트 (IG / Threads). -->
+    <!-- 카드 click 시 인사이트 상세. 두 채널 모두 posted 면 채널 탭 노출. -->
     <div class="insight-modal" data-insight-modal aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="insight-modal-title">
       <div class="insight-modal__card">
         <div class="insight-modal__head">
@@ -656,6 +703,7 @@
           <button type="button" class="insight-modal__close" data-insight-close aria-label="닫기">×</button>
         </div>
         <div class="insight-modal__sub" data-insight-sub hidden></div>
+        <div class="insight-modal__tabs" data-insight-tabs role="tablist" hidden></div>
         <div class="insight-modal__state" data-insight-state>불러오는 중…</div>
         <div class="insight-modal__grid" data-insight-grid hidden></div>
         <div class="insight-modal__caption" data-insight-caption hidden></div>
@@ -804,6 +852,7 @@
       const insightModal     = document.querySelector('[data-insight-modal]');
       const insightTitleEl   = insightModal?.querySelector('[data-insight-title]');
       const insightSubEl     = insightModal?.querySelector('[data-insight-sub]');
+      const insightTabsEl    = insightModal?.querySelector('[data-insight-tabs]');
       const insightStateEl   = insightModal?.querySelector('[data-insight-state]');
       const insightGridEl    = insightModal?.querySelector('[data-insight-grid]');
       const insightCaptionEl = insightModal?.querySelector('[data-insight-caption]');
@@ -822,10 +871,67 @@
       }
       function resetInsightModal() {
         if (insightSubEl)     { insightSubEl.hidden = true; insightSubEl.textContent = ''; }
+        if (insightTabsEl)    { insightTabsEl.hidden = true; insightTabsEl.innerHTML = ''; }
         if (insightStateEl)   { insightStateEl.hidden = false; insightStateEl.textContent = '불러오는 중…'; }
         if (insightGridEl)    { insightGridEl.hidden = true; insightGridEl.innerHTML = ''; }
         if (insightCaptionEl) { insightCaptionEl.hidden = true; insightCaptionEl.textContent = ''; }
         if (insightLinkEl)    { insightLinkEl.hidden = true; insightLinkEl.removeAttribute('href'); }
+      }
+
+      // 두 채널 모두 posted 인 경우 — 탭 노출 + 첫 탭(IG 우선) 자동 활성.
+      function renderInsightTabs(items) {
+        if (!insightTabsEl || !items || items.length < 2) return;
+        const labelMap = { ig: '인스타', threads: '쓰레드' };
+        // IG 우선 정렬 (사장님 주 채널 가정)
+        items = [...items].sort((a, b) => (a.channel === 'ig' ? -1 : 1));
+        insightTabsEl.innerHTML = items.map((it, i) => `
+          <button type="button" class="insight-modal__tab ${i === 0 ? 'is-active' : ''}" role="tab" data-insight-tab="${it.channel}" data-post-id="${it.postId}">
+            ${labelMap[it.channel] || it.channel}
+          </button>
+        `).join('');
+        insightTabsEl.hidden = false;
+        loadInsight(items[0].channel, items[0].postId);
+      }
+      // 탭 클릭 → 해당 채널 insight 재로드.
+      insightTabsEl?.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-insight-tab]');
+        if (!btn) return;
+        insightTabsEl.querySelectorAll('.insight-modal__tab').forEach((el) => el.classList.toggle('is-active', el === btn));
+        // grid/caption/link 만 reset, sub 와 tabs 는 유지
+        if (insightStateEl)   { insightStateEl.hidden = false; insightStateEl.textContent = '불러오는 중…'; }
+        if (insightGridEl)    { insightGridEl.hidden = true; insightGridEl.innerHTML = ''; }
+        if (insightCaptionEl) { insightCaptionEl.hidden = true; insightCaptionEl.textContent = ''; }
+        if (insightLinkEl)    { insightLinkEl.hidden = true; insightLinkEl.removeAttribute('href'); }
+        const channel = btn.dataset.insightTab === 'threads' ? 'threads' : 'ig';
+        const postId  = btn.dataset.postId || '';
+        if (postId) loadInsightFetchOnly(channel, postId);
+      });
+      // 탭 전환용 — openInsightModal/resetInsightModal 안 호출 (이미 열려있음)
+      async function loadInsightFetchOnly(channel, postId) {
+        try {
+          const url = `/api/insight-on-demand?mediaId=${encodeURIComponent(postId)}&channel=${encodeURIComponent(channel)}`;
+          const res = await fetch(url, { headers: authHeaders });
+          const json = await res.json().catch(() => ({}));
+          if (!res.ok || !json.ok) {
+            if (insightStateEl) insightStateEl.textContent = json.error === 'media_not_found'
+              ? '게시물을 찾을 수 없어요. 삭제됐을 수 있어요.'
+              : '인사이트를 가져오지 못했어요.';
+            return;
+          }
+          if (json.tokenExpired || (json.data === null && json.error === 'token_expired')) {
+            const chLabel = channel === 'threads' ? 'Threads' : 'IG';
+            if (insightStateEl) insightStateEl.textContent = `${chLabel} 토큰이 만료됐어요. 설정에서 재연동해주세요.`;
+            return;
+          }
+          if (!json.data) {
+            const chLabel = channel === 'threads' ? '쓰레드' : '인스타';
+            if (insightStateEl) insightStateEl.textContent = `${chLabel} 연동이 필요해요.`;
+            return;
+          }
+          renderInsight(channel, json.data);
+        } catch (e) {
+          if (insightStateEl) insightStateEl.textContent = '네트워크 오류 — 다시 시도해주세요.';
+        }
       }
 
       const STAT_LABELS = {
@@ -893,19 +999,38 @@
         }
       }
 
-      // chip 클릭 위임 — 동적 렌더된 button.chan-chip[data-insight-chip]
+      // 카드 전체 click → 인사이트 모달. posted 채널이 있는 카드만 진입 (.is-clickable).
+      // 둘 다 posted = 모달 안 채널 탭, 단일 posted = 그 채널만, 그 외 = 클릭 비활성.
+      // failed retry 는 카드 밖 별도 링크 (.chan-retry) — 카드 click 과 분리.
       document.addEventListener('click', (e) => {
-        const chip = e.target.closest('[data-insight-chip]');
-        if (!chip) return;
+        // 1) retry 링크 가 클릭됐다면 그 핸들러로 위임 (아래) — 카드 click 무시
+        if (e.target.closest('[data-retry-link]')) return;
+        // 2) 카드 내부의 interactive 요소 (취소 버튼 등) 클릭은 카드 click 으로 처리 X
+        if (e.target.closest('button, a, input, textarea, select')) return;
+        const card = e.target.closest('.res.is-clickable');
+        if (!card) return;
+        const channels = card.dataset.postedChannels || '';
+        if (!channels) return;
         e.preventDefault();
-        const channel = chip.dataset.channel === 'threads' ? 'threads' : 'ig';
-        const postId  = chip.dataset.postId || '';
-        if (!postId) return;
-        loadInsight(channel, postId);
+        // posted 채널 목록 — 콤마 구분 "ig:<postId>,threads:<postId>"
+        const items = channels.split(',').filter(Boolean).map((s) => {
+          const [ch, pid] = s.split(':');
+          return { channel: ch === 'threads' ? 'threads' : 'ig', postId: pid || '' };
+        }).filter((x) => x.postId);
+        if (!items.length) return;
+        openInsightModal();
+        resetInsightModal();
+        // 단일 채널 = 즉시 fetch, 둘 다 = 채널 탭 노출
+        if (items.length === 1) {
+          loadInsight(items[0].channel, items[0].postId);
+        } else {
+          renderInsightTabs(items);
+        }
       });
 
-      // 재시도 chip (IG/Threads failed) — confirm modal → POST /api/retry-channel-post
-      async function retryChannelPost(channel, reservationId, chipEl) {
+      // 재시도 링크 (IG/Threads failed) — confirm modal → POST /api/retry-channel-post.
+      // 성공 시 retry link 제거 + 옆 chip 의 시각을 is-failed → is-posted 로 갱신.
+      async function retryChannelPost(channel, reservationId, linkEl) {
         if (!reservationId || !channel) return;
         const chLabel = channel === 'threads' ? '쓰레드' : '인스타';
         try {
@@ -923,25 +1048,34 @@
             }
             return;
           }
-          // 성공 — chip 즉시 posted 모양으로 교체, 다음 load 시 fresh.
-          if (chipEl) {
-            chipEl.classList.remove('is-failed');
-            chipEl.classList.add('is-posted');
-            chipEl.removeAttribute('data-retry-chip');
-            chipEl.setAttribute('data-insight-chip', '');
-            chipEl.setAttribute('data-post-id', json.postId || '');
-            chipEl.setAttribute('aria-label', `${chLabel} 게시 인사이트 보기`);
+          // 성공 — retry link 의 형제 chip 을 posted 시각으로 교체, link 제거.
+          if (linkEl) {
+            const sibling = linkEl.previousElementSibling;
+            if (sibling && sibling.classList.contains('chan-chip')) {
+              sibling.classList.remove('is-failed');
+              sibling.classList.add('is-posted');
+            }
+            // 카드 의 dataset 에 새 post_id 추가 → 다음 카드 click 에서 모달 진입 가능
+            const card = linkEl.closest('.res');
+            if (card && json.postId) {
+              const existing = card.dataset.postedChannels || '';
+              const next = (existing ? existing + ',' : '') + `${channel}:${json.postId}`;
+              card.dataset.postedChannels = next;
+              card.classList.add('is-clickable');
+            }
+            linkEl.remove();
           }
         } catch (e) {
           alert('네트워크 오류 — 다시 시도해주세요.');
         }
       }
       document.addEventListener('click', (e) => {
-        const chip = e.target.closest('[data-retry-chip]');
-        if (!chip) return;
+        const link = e.target.closest('[data-retry-link]');
+        if (!link) return;
         e.preventDefault();
-        const channel = chip.dataset.channel === 'ig' ? 'ig' : 'threads';
-        const reservationId = chip.dataset.reservationId;
+        e.stopPropagation();
+        const channel = link.dataset.channel === 'ig' ? 'ig' : 'threads';
+        const reservationId = link.dataset.reservationId;
         if (!reservationId) return;
         const chLabel = channel === 'threads' ? '쓰레드' : '인스타';
         openDelModal({
@@ -949,7 +1083,7 @@
           body: `${chLabel} 게시가 실패한 기록입니다. 같은 사진·캡션으로 한 번 더 게시해요.`,
           confirmText: '다시 시도',
           variant: 'primary',
-          onConfirm: () => retryChannelPost(channel, reservationId, chip),
+          onConfirm: () => retryChannelPost(channel, reservationId, link),
         });
       });
       insightCloseBtn?.addEventListener('click', closeInsightModal);
@@ -1077,28 +1211,37 @@
             </div>`;
         }
 
-        // M3.2 — 채널 칩 (channel_posts join 결과). 게시됨/게시 중 행에만 노출.
-        // posted+post_id 있으면 인사이트 button, failed 면 retry button (IG/Threads 모두).
+        // 채널 칩 — 상태 라벨 본연 역할 (span). 클릭 진입점 아님.
+        // 인사이트 진입 = 카드 전체 클릭 (posted 채널 있을 때만).
+        // 재시도 진입 = failed 채널 옆의 별도 "↻ 다시 시도" 링크 (카드 밖에서 바로 보임).
         let chipBlock = '';
         if ((r.is_sent || r.caption_status === 'posting') && Array.isArray(r.channels) && r.channels.length) {
           const labelMap = { ig: '인스타', threads: '쓰레드' };
-          const chips = r.channels
+          const parts = r.channels
             .filter((c) => labelMap[c.channel])
             .map((c) => {
               const stCls = c.status === 'posted' ? 'is-posted' : (c.status === 'failed' ? 'is-failed' : 'is-posting');
-              if (c.status === 'posted' && c.post_id) {
-                return `<button type="button" class="chan-chip chan-chip--${esc(c.channel)} ${stCls}" data-insight-chip data-channel="${esc(c.channel)}" data-post-id="${esc(c.post_id)}" aria-label="${esc(labelMap[c.channel])} 게시 인사이트 보기">${esc(labelMap[c.channel])}</button>`;
-              }
+              const chip = `<span class="chan-chip chan-chip--${esc(c.channel)} ${stCls}">${esc(labelMap[c.channel])}</span>`;
               if (c.status === 'failed') {
-                return `<button type="button" class="chan-chip chan-chip--${esc(c.channel)} ${stCls}" data-retry-chip data-channel="${esc(c.channel)}" data-reservation-id="${esc(r.id)}" aria-label="${esc(labelMap[c.channel])} 게시 다시 시도">${esc(labelMap[c.channel])}</button>`;
+                const retry = `<button type="button" class="chan-retry" data-retry-link data-channel="${esc(c.channel)}" data-reservation-id="${esc(r.id)}" aria-label="${esc(labelMap[c.channel])} 게시 다시 시도">↻ 다시 시도</button>`;
+                return chip + retry;
               }
-              return `<span class="chan-chip chan-chip--${esc(c.channel)} ${stCls}">${esc(labelMap[c.channel])}</span>`;
-            }).join('');
-          if (chips) chipBlock = chips;
+              return chip;
+            });
+          if (parts.length) chipBlock = parts.join('');
         }
 
+        // posted 채널 목록 — 카드 click 시 인사이트 모달에 어떤 채널 노출할지 결정.
+        // "ig:<postId>,threads:<postId>" 형식.
+        const postedChannels = Array.isArray(r.channels)
+          ? r.channels
+              .filter((c) => c.status === 'posted' && c.post_id && (c.channel === 'ig' || c.channel === 'threads'))
+              .map((c) => `${c.channel}:${c.post_id}`)
+              .join(',')
+          : '';
+        const isClickable = !!postedChannels;
         return `
-          <li class="res" data-key="${esc(r.reserve_key)}">
+          <li class="res${isClickable ? ' is-clickable' : ''}" data-key="${esc(r.reserve_key)}"${isClickable ? ` data-posted-channels="${esc(postedChannels)}"` : ''}>
             <div class="res__thumb" style="${thumbStyle}"></div>
             <div class="res__body">
               <div class="res__time">${esc(time)}</div>
