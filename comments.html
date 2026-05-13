@@ -217,6 +217,19 @@
       color: var(--ink-muted);
       font-weight: var(--weight-regular);
     }
+    /* M4.1 — 채널 칩 (IG / 쓰레드 식별) */
+    .chan-chip {
+      display: inline-block;
+      margin-left: 6px;
+      padding: 1px 6px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      vertical-align: 1px;
+    }
+    .chan-chip--ig      { background: #fce7f3; color: #be185d; }
+    .chan-chip--threads { background: #e0e7ff; color: #3730a3; }
     .comment__text {
       margin-top: 4px;
       font-size: var(--text-body);
@@ -514,8 +527,14 @@
             const wrap = c.permalink
               ? (inner) => `<a href="${esc(c.permalink)}" target="_blank" rel="noopener noreferrer" class="comment__link">${inner}</a>`
               : (inner) => inner;
+            // M4.1 — 채널 칩. channel 없으면 'ig' fallback (옛 응답 호환).
+            const channel = (c.channel === 'threads') ? 'threads' : 'ig';
+            const chipLabel = channel === 'threads' ? '쓰레드' : '인스타';
+            const chipHtml = `<span class="chan-chip chan-chip--${channel}">${chipLabel}</span>`;
             // 답글 컴포저: 이미 사장님이 답글 단 댓글은 컴포저 숨김 (1회만 답글 가능 정책).
-            const composer = !replyText && c.id ? `
+            // M4.1 — Threads 답글 API 통합은 M4.2 후속 → Threads 댓글에는 컴포저 숨김.
+            const canReply = channel === 'ig' && !replyText && c.id;
+            const composer = canReply ? `
               <button type="button" class="comment__reply-toggle" data-reply-toggle="${esc(c.id)}">↳ 답글 달기</button>
               <form class="comment__reply-form" data-reply-form="${esc(c.id)}" hidden>
                 <textarea class="comment__reply-textarea" maxlength="2200" placeholder="답글을 적어주세요" data-reply-text></textarea>
@@ -527,11 +546,12 @@
               </form>
             ` : '';
             return `
-              <li class="comment" data-comment-id="${esc(c.id || '')}">
+              <li class="comment" data-comment-id="${esc(c.id || '')}" data-channel="${channel}">
                 ${wrap(`
                   <span class="comment__avatar">${esc(initial)}</span>
                   <div class="comment__body">
                     <span class="comment__user">${esc(u)}</span>
+                    ${chipHtml}
                     <span class="comment__time">${esc(time)}</span>
                     ${captionLine}
                     <div class="comment__text">${esc(text)}</div>
