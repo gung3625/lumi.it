@@ -173,7 +173,6 @@ exports.handler = async (event) => {
       console.error('[threads-oauth] 단기 토큰 교환 실패:', shortData.error_message || shortData.error || 'access_token 없음');
       return { statusCode: 302, headers: { Location: `https://lumi.it.kr${returnTo}?threads_oauth_error=2` } };
     }
-    const threadsUserId = shortData.user_id ? String(shortData.user_id) : null;
 
     // ────────────────────────────────────────────
     // 3) 장기 토큰 교환 (60일) — Threads 는 GET, grant_type=th_exchange_token
@@ -188,17 +187,18 @@ exports.handler = async (event) => {
     const expiresAt = computeExpiresAt(longData.expires_in);
 
     // ────────────────────────────────────────────
-    // 4) user_id 보강 (단기 토큰 응답에 없으면 /me 호출)
+    // 4) user_id 확정 — 항상 /me 호출 (검증 2026-05-13)
+    //    shortData.user_id 가 실제 Threads user ID 와 ±1 차이를 보이는
+    //    Meta API quirk 가 확인됨 (게시 시 "Object does not exist" 거부).
+    //    /me?fields=id 가 게시 가능한 정확한 ID 를 반환.
     // ────────────────────────────────────────────
-    let resolvedThreadsUserId = threadsUserId;
-    if (!resolvedThreadsUserId) {
-      try {
-        const meRes  = await fetch(`https://graph.threads.net/v1.0/me?fields=id&access_token=${encodeURIComponent(longToken)}`);
-        const meData = await meRes.json();
-        if (meData && meData.id) resolvedThreadsUserId = String(meData.id);
-      } catch (e) {
-        console.warn('[threads-oauth] /me 조회 실패:', e && e.message);
-      }
+    let resolvedThreadsUserId = null;
+    try {
+      const meRes  = await fetch(`https://graph.threads.net/v1.0/me?fields=id&access_token=${encodeURIComponent(longToken)}`);
+      const meData = await meRes.json();
+      if (meData && meData.id) resolvedThreadsUserId = String(meData.id);
+    } catch (e) {
+      console.warn('[threads-oauth] /me 조회 실패:', e && e.message);
     }
     if (!resolvedThreadsUserId) {
       console.error('[threads-oauth] Threads user_id 확인 실패');
