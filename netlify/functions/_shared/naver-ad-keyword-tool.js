@@ -171,10 +171,12 @@ async function fetchKeywordSearchVolume(keyword) {
   if (!hit) {
     return null;
   }
-  // monthlyTotal === 0 이면 valid 매칭 아님 — Naver 가 의미 없는 substring 에 대해
-  // 검색량 0 row 를 반환하는 케이스 차단 (예: "자라버뮤" → 0). Layer 2 fallback 이
-  // 다음 candidate 시도하도록 null 반환.
-  if (!Number.isFinite(hit.monthlyTotal) || hit.monthlyTotal <= 0) {
+  // monthlyTotal 100 미만이면 valid 매칭 아님 (검증 2026-05-13).
+  //   - 이전: monthlyTotal === 0 만 거부 → 의미 없는 root_morpheme 매칭 (검색량
+  //     10~30) 이 통과해 사장님 화면 TOP 10 에 noise 노출.
+  //   - 신규: 한국 월 검색량 100 회 미만 = 거의 검색 없음 = 트렌드로 의미 없음.
+  //     reject 하고 Layer 2/3 다음 candidate 시도.
+  if (!Number.isFinite(hit.monthlyTotal) || hit.monthlyTotal < 100) {
     return null;
   }
   return {
