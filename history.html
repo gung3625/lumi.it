@@ -193,7 +193,8 @@
     }
     .chan-chip--ig.is-posted      { background: #fce7f3; color: #be185d; }
     .chan-chip--threads.is-posted { background: #e0e7ff; color: #3730a3; }
-    .chan-chip.is-failed          { background: #fde8e8; color: #b8221c; text-decoration: line-through; opacity: 0.8; }
+    /* failed — 명확한 빨강 경고 (취소선 X, 진한 톤 + ⚠️ 아이콘은 마크업에서 prepend) */
+    .chan-chip.is-failed          { background: #fee2e2; color: #b91c1c; font-weight: 700; }
     .chan-chip.is-posting         { background: var(--gradient-signature); color: #fff; }
     /* 재시도 링크 — failed chip 옆에 명시적 액션 affordance. 카드 밖에서 바로 보임. */
     .chan-retry {
@@ -1021,7 +1022,11 @@
           const card = document.querySelector(`.res[data-reservation-id="${reservationId}"]`);
           if (card) {
             const chip = card.querySelector(`.chan-chip--${channel}`);
-            if (chip) { chip.classList.remove('is-failed'); chip.classList.add('is-posted'); }
+            if (chip) {
+              chip.classList.remove('is-failed');
+              chip.classList.add('is-posted');
+              chip.textContent = chLabel; // 실패 라벨 → 채널명만으로 복원
+            }
             const link = card.querySelector(`[data-retry-link][data-channel="${channel}"]`);
             if (link) link.remove();
             // dataset 갱신
@@ -1156,6 +1161,7 @@
             if (sibling && sibling.classList.contains('chan-chip')) {
               sibling.classList.remove('is-failed');
               sibling.classList.add('is-posted');
+              sibling.textContent = chLabel; // "⚠️ ... 게시 실패" → "쓰레드" 라벨 복원
             }
             // 카드 의 dataset 에 새 post_id 추가 → 다음 카드 click 에서 모달 진입 가능
             const card = linkEl.closest('.res');
@@ -1323,7 +1329,11 @@
             .filter((c) => labelMap[c.channel])
             .map((c) => {
               const stCls = c.status === 'posted' ? 'is-posted' : (c.status === 'failed' ? 'is-failed' : 'is-posting');
-              const chip = `<span class="chan-chip chan-chip--${esc(c.channel)} ${stCls}">${esc(labelMap[c.channel])}</span>`;
+              // failed 면 chip 라벨에 ⚠️ + "게시 실패" 명시 — 취소선만으론 약함
+              const chipText = c.status === 'failed'
+                ? `⚠️ ${labelMap[c.channel]} 게시 실패`
+                : labelMap[c.channel];
+              const chip = `<span class="chan-chip chan-chip--${esc(c.channel)} ${stCls}">${esc(chipText)}</span>`;
               if (c.status === 'failed') {
                 const retry = `<button type="button" class="chan-retry" data-retry-link data-channel="${esc(c.channel)}" data-reservation-id="${esc(r.id)}" aria-label="${esc(labelMap[c.channel])} 게시 다시 시도">↻ 다시 시도</button>`;
                 return chip + retry;
