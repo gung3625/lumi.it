@@ -718,8 +718,13 @@
         });
         if (upcomingSec) upcomingSec.hidden = activeTab !== 'upcoming';
         if (pastSec) pastSec.hidden = activeTab !== 'past';
-        // 각 탭의 빈 placeholder 는 list 안에 inline 으로 들어감 (load() 에서). 외곽 emptyEl 은
-        // "예약/게시 모두 0" 인 전체 빈 상태에만 노출됨 (load() 에서 처리).
+        // '모두 삭제' 버튼은 활성 탭에 항목 1건 이상일 때만 enabled.
+        //   .res 카드는 data-key 가 있고, 빈 placeholder li.empty 는 없음 → 그걸로 구분.
+        if (bulkBtn) {
+          const activeList = activeTab === 'past' ? pastList : upcomingList;
+          const hasItems = !!(activeList && activeList.querySelector('li[data-key]'));
+          bulkBtn.disabled = !hasItems;
+        }
       }
       document.querySelectorAll('[data-tab]').forEach(b => {
         b.addEventListener('click', () => {
