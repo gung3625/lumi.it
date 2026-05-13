@@ -546,6 +546,17 @@
       margin-bottom: 8px;
     }
     .besttime-progress__stage + .besttime-progress__stage { margin-top: 10px; }
+    /* 1단계 compact — Tier 1a 는 요일 분리 없음 → 단일 상태 줄 */
+    .besttime-progress__status {
+      display: flex; align-items: center; gap: 8px;
+      padding: 2px 0;
+      font-size: var(--text-caption);
+      color: var(--ink-soft);
+    }
+    .besttime-progress__status-icon { font-size: 14px; line-height: 1; }
+    .besttime-progress__status-label { flex: 1; font-weight: var(--weight-semibold, 600); color: var(--ink); }
+    .besttime-progress__status-state { color: var(--ink-muted); font-size: var(--text-tiny, 11px); }
+    .besttime-progress__stage--compact.is-ready .besttime-progress__status-state { color: var(--pink-600, #c8507a); font-weight: 600; }
     .besttime-progress__stage-title {
       font-size: var(--text-tiny, 11px);
       font-weight: var(--weight-semibold);
@@ -872,22 +883,12 @@
             <div class="besttime-slots" data-besttime-slots hidden></div>
             <div class="besttime-progress" data-besttime-progress hidden>
               <div class="besttime-progress__hint" data-besttime-progress-hint></div>
-              <!-- 1단계: 팔로워 접속 시간 (Tier 1a — online_followers) -->
-              <div class="besttime-progress__stage" data-progress-stage="t1">
-                <div class="besttime-progress__stage-title">1. 팔로워 접속 시간</div>
-                <div class="besttime-progress__row" data-progress-row="weekday">
-                  <span class="besttime-progress__label">평일</span>
-                  <span class="besttime-progress__bar">
-                    <i class="is-measured" data-progress-fill="weekday"></i>
-                  </span>
-                  <span class="besttime-progress__count" data-progress-count="weekday">0/1</span>
-                </div>
-                <div class="besttime-progress__row" data-progress-row="weekend">
-                  <span class="besttime-progress__label">주말</span>
-                  <span class="besttime-progress__bar">
-                    <i class="is-measured" data-progress-fill="weekend"></i>
-                  </span>
-                  <span class="besttime-progress__count" data-progress-count="weekend">0/1</span>
+              <!-- 1단계: 팔로워 접속 시간 (Tier 1a — online_followers, 요일 분리 없음) -->
+              <div class="besttime-progress__stage besttime-progress__stage--compact" data-progress-stage="t1">
+                <div class="besttime-progress__status" data-progress-status="t1">
+                  <span class="besttime-progress__status-icon" aria-hidden="true">⏳</span>
+                  <span class="besttime-progress__status-label">1. 팔로워 접속 시간</span>
+                  <span class="besttime-progress__status-state" data-progress-state="t1">IG 연동 필요</span>
                 </div>
               </div>
               <!-- 2단계: 팔로워 활동 시간대 (Tier 2 — 28일 누적, 요일별 분리) -->
@@ -1289,20 +1290,15 @@
                 progressEl.hidden = true;
               } else {
                 progressEl.hidden = false;
-                // 1단계 — 팔로워 접속 시간 (Tier 1a, online_followers).
-                // 활성 여부만 — have=1 면 막대 100% + count "1/1" + is-ready 핑크.
-                ['weekday', 'weekend'].forEach((dow) => {
-                  const p = progress[dow] || { have: 0, need: 1, ready: false };
-                  const have = Math.max(0, Number(p.have) || 0);
-                  const need = Math.max(1, Number(p.need) || 1);
-                  const ratio = p.ready ? 100 : Math.min(100, Math.round((have / need) * 100));
-                  const fill = document.querySelector(`[data-progress-fill="${dow}"]`);
-                  const count = document.querySelector(`[data-progress-count="${dow}"]`);
-                  const row = document.querySelector(`[data-progress-row="${dow}"]`);
-                  if (fill) fill.style.width = ratio + '%';
-                  if (count) count.textContent = `${have}/${need}`;
-                  if (row) row.classList.toggle('is-ready', !!p.ready);
-                });
+                // 1단계 — 팔로워 접속 시간 (Tier 1a). 단일 상태 표시 ✓/⏳ + 라벨.
+                // weekday/weekend ready 가 동일 (online_followers 는 요일 분리 없음).
+                const t1Ready = !!(progress.weekday && progress.weekday.ready);
+                const stage1El = document.querySelector('[data-progress-stage="t1"]');
+                const stage1IconEl  = stage1El?.querySelector('.besttime-progress__status-icon');
+                const stage1StateEl = document.querySelector('[data-progress-state="t1"]');
+                if (stage1El) stage1El.classList.toggle('is-ready', t1Ready);
+                if (stage1IconEl)  stage1IconEl.textContent  = t1Ready ? '✓' : '⏳';
+                if (stage1StateEl) stage1StateEl.textContent = t1Ready ? '활성' : 'IG 연동 필요';
                 // 2단계 — 내 팔로워 활동 데이터 (Tier 2). 1단계 미충족 시 locked.
                 const stage2El = document.querySelector('[data-progress-stage="t2"]');
                 if (stage2El) stage2El.classList.toggle('is-locked', !t1BothReady);
