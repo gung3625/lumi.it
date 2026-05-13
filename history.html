@@ -1046,15 +1046,15 @@
       // 모두 삭제 — 활성 탭의 항목만 일괄 soft delete.
       //   예약 목록(upcoming) → is_sent=false 만
       //   히스토리(past)       → is_sent=true 만
-      //   강한 확인: '삭제' 텍스트 입력 검증 (회원탈퇴 패턴과 동일).
+      //   soft delete 라 학습 데이터 보존 + 외부 게시물 영향 0 → 단순 confirm 으로 충분.
       if (bulkBtn) {
         bulkBtn.addEventListener('click', () => {
           const scope = activeTab === 'past' ? 'past' : 'upcoming';
           const scopeLabel = scope === 'past' ? '게시 기록' : '예약된 게시';
           openDelModal({
             title: `${scopeLabel} 전체를 삭제할까요?`,
-            body: `현재 탭의 모든 ${scopeLabel}이 루미 히스토리에서 사라져요. 인스타·쓰레드의 실제 게시물은 그대로 남습니다. 되돌릴 수 없습니다.`,
-            requireTyping: true,
+            body: `현재 탭의 모든 ${scopeLabel}이 루미 히스토리에서 사라져요. 인스타·쓰레드의 실제 게시물은 그대로 남습니다.`,
+            requireTyping: false,
             onConfirm: async () => {
               bulkBtn.disabled = true;
               const ctrl = new AbortController();
