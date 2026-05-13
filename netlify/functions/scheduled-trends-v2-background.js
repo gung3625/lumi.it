@@ -63,6 +63,33 @@ const SOURCE_WEIGHTS = {
   shopping: 3,
 };
 
+// fashion 카테고리 sub_category 분류 — 옷(clothing) vs 신발(footwear).
+//   GPT 분류기는 9개 메이저 카테고리만 출력하므로, fashion 안에서 sub 는
+//   여기서 keyword pattern matching 으로 결정. frontend (categories.js) 의
+//   fashion sub 탭 (옷/신발) 과 1:1.
+//
+// footwear 신호:
+//   - 신발류 명사 (운동화·스니커즈·러닝화·구두·샌들·부츠·로퍼·플랫·힐 등)
+//   - 신발 전문 브랜드 prefix (나이키·아디다스·호카·온러닝·뉴발란스·반스·컨버스
+//     ·푸마·아식스·살로몬·크록스·휠라·언더아머)
+// 위 외 fashion 키워드는 'clothing' 기본값.
+const FOOTWEAR_TOKENS = [
+  // 명사
+  '운동화', '스니커즈', '러닝화', '구두', '샌들', '부츠', '로퍼', '플랫', '힐', '신발',
+  '슬리퍼', '슬리포츠', '워커', '슬립온', '뮬', '크록스',
+  // 브랜드 (소상공인이 자기 매장 카탈로그 만들 때 참고하는 시그널 브랜드)
+  '나이키', '아디다스', '호카', '온러닝', '뉴발란스', '뉴발', '반스', '컨버스',
+  '푸마', '아식스', '살로몬', '휠라', '언더아머', '리복', '아디다스',
+];
+function classifyFashionSubcat(keyword) {
+  if (!keyword || typeof keyword !== 'string') return 'clothing';
+  const k = keyword.replace(/\s+/g, '');
+  for (const t of FOOTWEAR_TOKENS) {
+    if (k.includes(t)) return 'footwear';
+  }
+  return 'clothing';
+}
+
 // ─────────────────────────────────────────────
 // 카테고리별 anchor 후보 — Layer 3 DataLab ratio fallback 용.
 // Layer 3 는 anchor (검색량 큰 일반 키워드) 와 target (검색량 모르는 키워드) 의
@@ -2031,11 +2058,16 @@ async function saveTrendKeywordsV2({ supa, category, enrichedKeywords, collected
     // axis: Phase 2 분류 결과 (menu/interior/goods/experience) 또는 'general' 기본값
     // 'domestic'은 이 컬럼 의미와 충돌하므로 사용 안 함
     const axis = item.axis || 'general';
+    // fashion 카테고리 sub_category 자동 마킹 — 옷·신발 sub 탭 분리 (2026-05-13).
+    //   GPT 가 sub_category 직접 출력 안 하므로 keyword pattern matching 으로 보강.
+    //   footwear 신호 (운동화·스니커즈·신발류 명사 또는 신발 브랜드 prefix) 매칭 시 'footwear'.
+    //   그 외 fashion 키워드는 'clothing' 기본값.
+    const subCategory = (category === 'fashion') ? classifyFashionSubcat(item.keyword) : '';
     return {
       keyword: item.keyword,
       category,
       axis,
-      sub_category: '',  // empty string (NULL 회피 — 인덱스 dedup 일관성)
+      sub_category: subCategory,
       region,            // 지역 분할 (Phase 1: 항상 'all', Phase 2에서 지역별 수집 시 변경)
       collected_date: collectedDate,
       signal_tier: item.signalTier,
