@@ -2,6 +2,18 @@
   publish = "."
   command = "npm install"
 
+# PR branch / 일반 branch push 의 deploy preview·branch deploy 빌드 스킵.
+# Netlify free/starter 플랜의 동시 build limit (=1) 이라 PR 머지 시점에
+# preview build 와 production build 가 동시 큐 진입 → production build 가 큐에
+# 막혀 lumi.it.kr 반영 지연됨 (검증 2026-05-13, 매 PR 머지마다 재현).
+# lumi 는 PR preview URL 사용 X (사장님·Claude 둘만 작업) → preview 빌드는
+# 자원 낭비 + 운영 사고 원인. ignore=exit 0 으로 해당 context build 자체 skip.
+[context.deploy-preview]
+  ignore = "exit 0"
+
+[context.branch-deploy]
+  ignore = "exit 0"
+
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
