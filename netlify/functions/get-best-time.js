@@ -1,46 +1,38 @@
 const { corsHeaders, getOrigin } = require('./_shared/auth');
-// 업종별 인스타그램 최적 게시 시간 — 2-stage 개인화
+// 업종별 인스타그램 최적 게시 시간 — 팔로워 활동 기반 추천 (PR #237 재구성).
 //
-// 추천의 본질은 "팔로워가 그 시간에 인스타에서 내 게시물을 본다" — 사장님 게시
-// 빈도(한가했던 시간)는 신호가 아니므로 명시적으로 제외한다.
+// 본질: 베스트 시간 = 팔로워가 IG 접속해서 내 게시물을 보는 시간.
+//       사장님이 *언제 올렸는지* 자체는 신호 아님.
 //
-// 단계:
-//   부족 단계: 업종 시드 — "사람들이 많이 볼만한 시간대 평균"
-//   누적 완료: 본인 데이터 — "내 팔로워가 내 게시물을 가장 많이 본 시간"
+// 데이터 소스 우선순위:
+//   Tier 1a: Meta online_followers  (시간별 팔로워 접속 평균, IG 연동 즉시)
+//            → 요일 분리 없음 — 평일/주말 동일 3 peak 슬롯
+//            → 직접 신호. lumi 의 기본 데이터 소스.
+//   Tier 2:  follower_activity_snapshots  (요일별 매트릭스, 28일 누적)
+//            → 더 정확 — 요일별 분리. 누적되면 Tier 1a 덮어씀.
+//   Tier 4:  업종 × 요일 시드             (둘 다 미달 시 fallback)
 //
-// 데이터 소스 우선순위 (누적 완료 단계 안에서):
-//   Tier 2:  follower_activity_snapshots  (팔로워 활동 매트릭스, 28일 누적)
-//            → 가장 직접적 — 팔로워가 IG 에 있는 시간 자체
-//   Tier 1:  seller_post_history.reach    (게시별 도달 가중치)
-//            → 결과로 본 "사람들이 본 시간". rowScore = 0.7·log(1+reach) + 0.3·log(1+engagement)
-//            → 임계: 도달 데이터(reach 채워진) row 평일 ≥ 5건 / 주말 ≥ 3건
-//            → insights cron 이 채워지길 기다림
-//   Tier 4:  업종 × 요일 시드 매트릭스    (위 둘 다 미달 시 fallback)
+// 옛 Tier 1 (seller_post_history.reach 가중치) 는 폐기 — 간접 신호로 우회하던 단계.
+// 사장님 통찰: \"내가 어느 시간에 자주 올리는지가 왜 필요한가\" → 직접 신호로 통합.
 //
-// 응답 필드 (기존 호환):
+// 응답 필드:
 //   bestTime, reason, tip, allSlots, weekday, weekend, source
-// 신규 필드 (UI 모드 배지·진행 카드용):
-//   modes       — { weekday: 'personal'|'seed', weekend: 'personal'|'seed' }
-//   progress    — { weekday: {have, need, ready}, weekend: {...}, ready }
-//                  have = 도달 데이터 채워진 게시물 수 (요일군별)
-//   sources     — { weekday: 'tier1'|'tier2'|'tier4', weekend: ... }
-//   tier2_progress — { weekday: {snapshot_days, needed_days, ready}, weekend: {...} }
-//   thresholds  — { weekday: 5, weekend: 3 }   (Tier 1 reach 데이터 기준)
+//   modes          — { weekday: 'personal'|'seed', weekend: 'personal'|'seed' }
+//   progress       — { weekday: {have, need, ready}, weekend, ready }
+//                    have=1 일 때 1단계 (online_followers) 활성
+//                    progress.ready = Tier 2 양쪽 ready (28일 누적 완료)
+//   sources        — { weekday: 'online_followers'|'tier2'|'seed', weekend }
+//   tier2_progress — { weekday: {snapshot_days, needed_days, ready}, weekend }
 //
 // source 값:
-//   'meta-online-followers'  Tier 1a 활성 (bestTime 점만 보강, 슬롯은 시드)
-//   'personal-followers'     Tier 2 양쪽 ready
-//   'personal-mixed'         Tier 2 한쪽만 ready
-//   'personal-history-weighted' Tier 1 ready (가중치)
-//   'personal-history-partial-weighted' Tier 1 한쪽만 ready
-//   'industry-seed'          전부 시드
+//   'personal-followers-activity'  Tier 2 양쪽 ready
+//   'personal-mixed'               Tier 2 한쪽만 ready
+//   'personal-online-followers'    Tier 1a 활성
+//   'industry-seed'                전부 시드
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
 const { kstHourDow, utcHourToKstHour } = require('./_shared/kst-utils');
 const {
-  HISTORY_THRESHOLDS,
-  HISTORY_WINDOW_DAYS,
-  HISTORY_LIMIT,
   ACTIVITY_WINDOW_DAYS,
   ACTIVITY_THRESHOLDS,
 } = require('./_shared/best-time-constants');
@@ -89,10 +81,6 @@ const INDUSTRY_MATRIX = {
     tip: '일주일 3~5회 꾸준한 업로드 주기가 알고리즘에 가장 유리해요.',
   },
 };
-
-// 임계값/윈도우 상수는 _shared/best-time-constants.js 단일 source of truth.
-// (HISTORY_THRESHOLDS = THRESHOLDS 별칭 — 코드 내부 사용처 유지)
-const THRESHOLDS = HISTORY_THRESHOLDS;
 
 function normalizeCategory(cat) {
   if (!cat) return 'other';
@@ -166,7 +154,7 @@ async function fetchOnlineFollowers(igUserId, accessToken) {
   }
 }
 
-// 이상치 필터: KST 06~23시 만 허용 + 최대값 hour 반환
+// 이상치 필터: KST 06~23시 만 허용 + 최대값 hour 반환 (단일)
 function pickPeakHour(followerMap) {
   if (!followerMap) return null;
   let bestHour = null;
@@ -183,6 +171,26 @@ function pickPeakHour(followerMap) {
   }
   if (bestHour === null) return null;
   return { hour: bestHour, value: bestValue };
+}
+
+// online_followers 에서 상위 N개 peak hour 추출 → { time, reason } 슬롯 배열.
+// Tier 1a 슬롯 채움용 — 사장님 게시 reach 우회 없이 *직접 신호* (팔로워 접속 시각).
+function pickTopHoursFromOnlineFollowers(followerMap, n = 3) {
+  if (!followerMap) return [];
+  const entries = [];
+  for (const [hourStr, value] of Object.entries(followerMap)) {
+    const utcHour = Number(hourStr);
+    if (Number.isNaN(utcHour)) continue;
+    const kstHour = utcHourToKstHour(utcHour);
+    if (kstHour < 6 || kstHour > 23) continue;
+    if (!(value > 0)) continue;
+    entries.push({ kstHour, value });
+  }
+  entries.sort((a, b) => b.value - a.value);
+  return entries.slice(0, n).map((e, i) => ({
+    time: `${String(e.kstHour).padStart(2, '0')}:00`,
+    reason: `내 팔로워가 가장 많이 접속하는 시간 ${i + 1}위`,
+  }));
 }
 
 // follower_activity_snapshots → 요일군별 hour × 평균 follower_count 매트릭스.
@@ -222,85 +230,6 @@ function computeActivitySlots(snapshots) {
   };
 }
 
-// performance score — reach 1차 + engagement 보조. log(1+x) 로 outlier 완화.
-function rowScore(row) {
-  const reach = typeof row.reach === 'number' ? row.reach : 0;
-  const engagement = typeof row.engagement === 'number' ? row.engagement : 0;
-  const r = Math.log(1 + reach);
-  const e = Math.log(1 + engagement);
-  return 0.7 * r + 0.3 * e + 0.5; // 도달 0건 row 도 최소치 0.5 확보 (시각 분포는 유지)
-}
-
-// seller_post_history → 평일/주말 분리 30분 버킷 가중합. KST 변환 + 06~23시 필터.
-// 핵심: **reach 채워진 row 만 카운트** — 단순 게시 빈도는 추천 신호가 아니므로 제외.
-// 임계값 충족(평일 ≥5건 / 주말 ≥3건) 시 top3 슬롯, 미달 시 시드 fallback.
-// insights cron 이 reach 를 채워나가는 동안엔 자연스럽게 시드 유지 → 채워지면 자동 전환.
-function computePersonalizedSlots(history, seed) {
-  const counts = { weekday: 0, weekend: 0 };          // reach 채워진 row 만 카운트
-  const buckets = { weekday: {}, weekend: {} };       // weighted sum — top3 선정용
-  const rawCounts = { weekday: {}, weekend: {} };     // raw count — reason 노출용
-
-  for (const row of (history || [])) {
-    if (!row || !row.posted_at) continue;
-    // reach 미수집 row 는 추천 신호 아님 — 카운트·집계 모두 제외.
-    if (typeof row.reach !== 'number') continue;
-    const k = kstHourDow(row.posted_at);
-    if (!k) continue;
-    const { hour: hh, dow, minute } = k;
-    if (hh < 6 || hh > 23) continue;
-    const mm = minute < 30 ? '00' : '30';
-    const key = `${String(hh).padStart(2, '0')}:${mm}`;
-    const grp = (dow === 0 || dow === 6) ? 'weekend' : 'weekday';
-    buckets[grp][key] = (buckets[grp][key] || 0) + rowScore(row);
-    rawCounts[grp][key] = (rawCounts[grp][key] || 0) + 1;
-    counts[grp]++;
-  }
-
-  function topSlots(bucket, rawBucket) {
-    return Object.entries(bucket)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3)
-      .map(([time], i) => ({
-        time,
-        reason: `내 팔로워가 가장 많이 본 시각 ${i + 1}위 · ${rawBucket[time] || 0}건 기준`,
-      }));
-  }
-
-  function fillFromSeed(personal, seedSlots, target = 3) {
-    if (personal.length >= target) return personal.slice(0, target);
-    const used = new Set(personal.map((s) => s.time));
-    const padded = [...personal];
-    for (const s of seedSlots || []) {
-      if (padded.length >= target) break;
-      if (!used.has(s.time)) padded.push({ ...s, reason: `${s.reason} · 업종 평균 보충` });
-    }
-    return padded;
-  }
-
-  const weekdayReady = counts.weekday >= THRESHOLDS.weekday;
-  const weekendReady = counts.weekend >= THRESHOLDS.weekend;
-
-  const modes = { weekday: 'seed', weekend: 'seed' };
-  let weekday = seed.weekday;
-  let weekend = seed.weekend;
-
-  if (weekdayReady) {
-    weekday = fillFromSeed(topSlots(buckets.weekday, rawCounts.weekday), seed.weekday);
-    modes.weekday = 'personal';
-  }
-  if (weekendReady) {
-    weekend = fillFromSeed(topSlots(buckets.weekend, rawCounts.weekend), seed.weekend);
-    modes.weekend = 'personal';
-  }
-
-  return {
-    weekday,
-    weekend,
-    modes,
-    counts,
-  };
-}
-
 exports.handler = async (event) => {
   const headers = corsHeaders(getOrigin(event));
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers, body: '' };
@@ -324,7 +253,9 @@ exports.handler = async (event) => {
   const seed = getSeedSlot(cat);
   const isWeekendToday = (() => { const d = new Date().getDay(); return d === 0 || d === 6; })();
 
-  // 응답 기본값 — 시드.
+  // 응답 기본값 — 시드. progress 는 새 구조 (PR #237): 1단계 = online_followers 활성,
+  // 2단계 = follower_activity_snapshots 누적. weekday/weekend.have/need 는 옛 frontend
+  // 호환성 유지용 — have=1 일 때 1단계 ready 로 카드 색 변환.
   const result = {
     category: cat,
     bestTime: seed.time,
@@ -336,68 +267,53 @@ exports.handler = async (event) => {
     source: 'industry-seed',
     modes: { weekday: 'seed', weekend: 'seed' },
     progress: {
-      weekday: { have: 0, pending: 0, need: THRESHOLDS.weekday, ready: false },
-      weekend: { have: 0, pending: 0, need: THRESHOLDS.weekend, ready: false },
+      weekday: { have: 0, need: 1, ready: false },
+      weekend: { have: 0, need: 1, ready: false },
       ready: false,
     },
-    thresholds: THRESHOLDS,
   };
 
   try {
     const supabase = getAdminClient();
 
-    // ── Tier 3: seller_post_history 기반 weekday/weekend 슬롯 ─────────────
-    const since = new Date(Date.now() - HISTORY_WINDOW_DAYS * 24 * 3600 * 1000).toISOString();
-    const { data: history, error: histErr } = await supabase
-      .from('seller_post_history')
-      .select('posted_at, reach, engagement, insights_fetched_at')
-      .eq('user_id', user.id)
-      .gte('posted_at', since)
-      .order('posted_at', { ascending: false })
-      .limit(HISTORY_LIMIT);
-
-    if (histErr) {
-      console.warn('[get-best-time] seller_post_history 조회 경고:', histErr.message);
+    // ── Tier 1a: Meta online_followers → 3 peak hour 슬롯 ─────────────
+    //   사장님 게시 시간대(옛 Tier 1)는 *간접 신호* 라 폐기. 베스트 시간 = 팔로워가
+    //   실제 접속해서 보는 시간. online_followers 가 *직접 신호* 라 IG 연동 즉시 사용.
+    //   요일 정보 없는 단일 시간 분포 → 평일·주말 동일 슬롯 (Tier 2 매트릭스 가 누적
+    //   되면 요일별로 분기).
+    const sources = { weekday: 'seed', weekend: 'seed' };
+    let onlineFollowersReady = false;
+    try {
+      const { data: igRow } = await supabase
+        .from('ig_accounts_decrypted')
+        .select('ig_user_id, access_token, page_access_token')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (igRow && igRow.ig_user_id) {
+        const followerMap = await fetchOnlineFollowers(
+          igRow.ig_user_id,
+          igRow.page_access_token || igRow.access_token,
+        );
+        const topSlots = pickTopHoursFromOnlineFollowers(followerMap, 3);
+        if (topSlots.length) {
+          // 평일·주말 동일 (요일 분리는 Tier 2 가 채움)
+          result.weekday = topSlots;
+          result.weekend = topSlots;
+          result.modes.weekday = 'personal';
+          result.modes.weekend = 'personal';
+          sources.weekday = 'online_followers';
+          sources.weekend = 'online_followers';
+          result.source = 'personal-online-followers';
+          onlineFollowersReady = true;
+        }
+      }
+    } catch (e) {
+      console.warn('[get-best-time] online_followers 호출 경고:', e && e.message);
     }
 
-    // 측정 대기 카운트 — 게시는 됐지만 아직 1차 insights 측정 전인 row (KST 요일별).
-    // cron(scheduled-post-insights-background)이 게시 후 1h 통과 시 stage 1 측정.
-    // 사장님 카드에 "측정 대기 N건" 으로 노출 → "0/5" 가 거짓말처럼 보이는 UX 결함 해소.
-    const pending = { weekday: 0, weekend: 0 };
-    for (const row of (history || [])) {
-      if (!row || !row.posted_at) continue;
-      if (row.insights_fetched_at) continue; // 1차 측정 완료된 row 는 pending 아님
-      const k = kstHourDow(row.posted_at);
-      if (!k) continue;
-      const grp = (k.dow === 0 || k.dow === 6) ? 'weekend' : 'weekday';
-      pending[grp]++;
-    }
-
-    const personalized = computePersonalizedSlots(history || [], seed);
-    result.weekday = personalized.weekday;
-    result.weekend = personalized.weekend;
-    result.modes = personalized.modes;
-    result.progress = {
-      weekday: {
-        have: personalized.counts.weekday,
-        pending: pending.weekday,
-        need: THRESHOLDS.weekday,
-        ready: personalized.modes.weekday === 'personal',
-      },
-      weekend: {
-        have: personalized.counts.weekend,
-        pending: pending.weekend,
-        need: THRESHOLDS.weekend,
-        ready: personalized.modes.weekend === 'personal',
-      },
-      ready: personalized.modes.weekday === 'personal' && personalized.modes.weekend === 'personal',
-    };
-
-    // 오늘 요일 기준 allSlots 갱신 — 대시보드 "오늘 베스트 시간" 위젯이 읽음.
+    // Tier 1a 활성 시 오늘 슬롯 + bestTime 갱신.
     result.allSlots = isWeekendToday ? result.weekend : result.weekday;
-
-    // 개인화된 슬롯이 있으면 bestTime 도 그 안에서 픽 (시드 bestTime 덮어쓰기).
-    if (personalized.modes[isWeekendToday ? 'weekend' : 'weekday'] === 'personal') {
+    if (onlineFollowersReady) {
       const picked = pickUpcoming(result.allSlots);
       if (picked) {
         result.bestTime = picked.time;
@@ -405,23 +321,8 @@ exports.handler = async (event) => {
       }
     }
 
-    // 슬롯 별 출처 추적 — UI sheet 카피 분기용.
-    // personal 이면 항상 tier1 (reach 가중치 — 빈도 tier3 는 더 이상 사용 안 함).
-    const sources = {
-      weekday: result.modes.weekday === 'personal' ? 'tier1' : 'tier4',
-      weekend: result.modes.weekend === 'personal' ? 'tier1' : 'tier4',
-    };
-
-    // source 갱신 — 시드 / Tier 1 / Tier 1 부분.
-    if (result.progress.ready) {
-      result.source = 'personal-history-weighted';
-    } else if (result.modes.weekday === 'personal' || result.modes.weekend === 'personal') {
-      result.source = 'personal-history-partial-weighted';
-    }
-
-    // ── Tier 2: follower_activity_snapshots 기반 매트릭스 ────────────────
-    // history 가중치(Tier 1) 보다 우선 — 팔로워 활동 시간 = 외부 도달 신호.
-    // 단 요일군별 누적 충족돼야 함 (평일 15일 이상 / 주말 6일 이상).
+    // ── Tier 2: follower_activity_snapshots → 요일별 매트릭스 (28일 누적) ──
+    //   Tier 1a 보다 더 정확 — 요일별 분리 + 28일 평균. 누적되면 덮어씀.
     const activitySince = new Date(Date.now() - ACTIVITY_WINDOW_DAYS * 24 * 3600 * 1000)
       .toISOString().slice(0, 10);
     const { data: snapshots } = await supabase
@@ -441,55 +342,33 @@ exports.handler = async (event) => {
       result.modes.weekend = 'personal';
       sources.weekend = 'tier2';
     }
-    // progress.ready 도 Tier 2 활성 반영
-    result.progress.weekday.ready = result.progress.weekday.ready || !!activity.weekday;
-    result.progress.weekend.ready = result.progress.weekend.ready || !!activity.weekend;
-    result.progress.ready = result.progress.weekday.ready && result.progress.weekend.ready;
     if (activity.weekday || activity.weekend) {
       result.source = (sources.weekday === 'tier2' && sources.weekend === 'tier2')
-        ? 'personal-followers'
+        ? 'personal-followers-activity'
         : 'personal-mixed';
     }
-    // Tier 2 진척률 응답 — UI(#110)에서 "팔로워 활동 매트릭스 N/21일 누적" 표시용.
+
+    // progress 응답 — 1단계 = online_followers 활성, 2단계 = 28일 누적 follower 활동.
+    // 옛 weekday/weekend.have/need 구조 유지 (frontend 카드 진척 막대 호환).
+    // online_followers 는 요일 분리 없음 → 활성 시 weekday/weekend 둘 다 1/1 채움.
+    result.progress = {
+      weekday: { have: onlineFollowersReady ? 1 : 0, need: 1, ready: onlineFollowersReady },
+      weekend: { have: onlineFollowersReady ? 1 : 0, need: 1, ready: onlineFollowersReady },
+      ready: !!(activity.weekday && activity.weekend),
+    };
     result.tier2_progress = {
       weekday: { snapshot_days: activity.counts.weekday, needed_days: ACTIVITY_THRESHOLDS.weekday, ready: !!activity.weekday },
       weekend: { snapshot_days: activity.counts.weekend, needed_days: ACTIVITY_THRESHOLDS.weekend, ready: !!activity.weekend },
     };
     result.sources = sources;
 
-    // Tier 2 가 슬롯 갈아끼웠을 수 있으니 오늘 기준 allSlots/bestTime 재계산.
+    // Tier 2 가 슬롯 갈아끼웠을 수 있으니 오늘 기준 재계산.
     result.allSlots = isWeekendToday ? result.weekend : result.weekday;
     if (result.modes[isWeekendToday ? 'weekend' : 'weekday'] === 'personal') {
       const picked = pickUpcoming(result.allSlots);
       if (picked) {
         result.bestTime = picked.time;
         result.reason = picked.reason;
-      }
-    }
-
-    // ── Tier 1a: Meta online_followers → bestTime 단일 점 덮어쓰기 ───────
-    // (요일별 슬롯은 Tier 3 결과 유지 — Tier 1a 는 시간 차원만 신뢰.)
-    // Tier 2 가 활성이면 같은 메트릭을 누적 매트릭스로 이미 사용 중이라 호출 스킵.
-    const tier2BothReady = !!(activity.weekday && activity.weekend);
-    if (!tier2BothReady) {
-      const { data: igRow } = await supabase
-        .from('ig_accounts_decrypted')
-        .select('ig_user_id, access_token, page_access_token')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (igRow && igRow.ig_user_id) {
-        const followerMap = await fetchOnlineFollowers(igRow.ig_user_id, igRow.page_access_token || igRow.access_token);
-        const peak = pickPeakHour(followerMap);
-        if (peak) {
-          const hh = String(peak.hour).padStart(2, '0');
-          // Tier 2 가 한쪽이라도 활성이면 그 결과를 우선 — bestTime 만 보강.
-          if (!result.progress[isWeekendToday ? 'weekend' : 'weekday'].ready) {
-            result.bestTime = `${hh}:00`;
-            result.reason = '내 팔로워가 가장 많이 접속하는 시간대';
-            if (result.source === 'industry-seed') result.source = 'meta-online-followers';
-          }
-        }
       }
     }
   } catch (err) {
