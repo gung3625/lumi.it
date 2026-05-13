@@ -810,7 +810,7 @@
     <div class="del-modal" data-del-modal aria-hidden="true" role="dialog" aria-modal="true">
       <div class="del-modal__card">
         <div class="del-modal__title" data-del-title>삭제하시겠어요?</div>
-        <div class="del-modal__body" data-del-body>이 기록만 루미 히스토리에서 사라져요. 인스타·쓰레드의 실제 게시물은 그대로 남습니다.</div>
+        <div class="del-modal__body" data-del-body>이 기록만 히스토리에서 사라져요. 인스타·쓰레드의 실제 게시물은 그대로 남습니다.</div>
         <!-- 원본 게시물 삭제 옵션 — Meta DELETE 호출 (instagram_manage_contents / threads_delete) -->
         <label class="del-modal__media-opt" data-del-media-opt hidden>
           <input type="checkbox" data-del-media-check />
@@ -944,7 +944,7 @@
       // showMediaOption=true 면 "원본 게시물도 삭제" 체크박스 노출. onConfirm 호출 시 { deleteMedia } 전달.
       function openDelModal({ title, body, requireTyping, confirmText, variant, showMediaOption, onConfirm }) {
         delTitle.textContent = title || '삭제하시겠어요?';
-        delBody.textContent = body || '이 기록만 루미 히스토리에서 사라져요. 인스타·쓰레드의 실제 게시물은 그대로 남습니다.';
+        delBody.textContent = body || '이 기록만 히스토리에서 사라져요. 인스타·쓰레드의 실제 게시물은 그대로 남습니다.';
         delHint.hidden = !requireTyping;
         delInput.hidden = !requireTyping;
         delInput.value = '';
@@ -1649,7 +1649,7 @@
           const scopeLabel = scope === 'past' ? '게시 기록' : '예약된 게시';
           openDelModal({
             title: `${scopeLabel} 전체를 삭제할까요?`,
-            body: `현재 탭의 모든 ${scopeLabel}이 루미 히스토리에서 사라져요.`,
+            body: `현재 탭의 모든 ${scopeLabel}이 히스토리에서 사라져요.`,
             requireTyping: false,
             showMediaOption: scope === 'past', // 미게시 row 는 원본 게시물 없음 → 옵션 숨김
             onConfirm: async ({ deleteMedia }) => {
@@ -1752,7 +1752,7 @@
         const isPast = activeTab === 'past';
         openDelModal({
           title: `선택한 ${keys.length}건을 삭제할까요?`,
-          body: '루미 히스토리에서 사라져요.',
+          body: '히스토리에서 사라져요.',
           requireTyping: false,
           showMediaOption: isPast, // 미게시 row 는 원본 없음
           onConfirm: async ({ deleteMedia }) => {
