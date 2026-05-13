@@ -282,6 +282,23 @@ exports.handler = async (event) => {
           console.log('[reserve] 예약 저장 완료:', reserveKey, '사진:', imageUrls.length, '장');
         }
 
+        // 토글 마지막 상태 영속화 — 다음 게시 때 디폴트로 복원 (UX).
+        // 실패해도 게시 흐름은 영향 0 (best-effort).
+        try {
+          const prefs = {
+            storyEnabled:   fields.postToStory  === 'true',
+            weatherEnabled: fields.useWeather   !== 'false',
+            threadsEnabled: fields.postToThread === 'true',
+          };
+          const { error: prefErr } = await supabase
+            .from('sellers')
+            .update({ publish_prefs: prefs })
+            .eq('id', user.id);
+          if (prefErr) console.warn('[reserve] publish_prefs update 경고:', prefErr.message);
+        } catch (e) {
+          console.warn('[reserve] publish_prefs update 예외 (무시):', e && e.message);
+        }
+
         // 캡션 생성 Background Function 트리거 (postMode 무관하게 항상 캡션 생성)
         const siteUrl = 'https://lumi.it.kr';
         console.log('[reserve] process-and-post 트리거 시도 (postMode:', postMode, ')');

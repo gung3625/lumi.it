@@ -635,62 +635,90 @@
       let photos = [];
       let scheduleMode = 'immediate';
       let storyEnabled = false;
-      let weatherEnabled = true;  // 디폴트 ON
+      let weatherEnabled = true;  // 디폴트 ON (publishPrefs 적용 전)
       let threadsEnabled = false; // 결정 §12-A #3: 디폴트 OFF
       let threadsConnected = false;
 
+      const storyBtn      = document.querySelector('[data-story-toggle]');
+      const weatherBtn    = document.querySelector('[data-weather-toggle]');
+      const threadsBtn    = document.querySelector('[data-threads-toggle]');
+      const threadsTitleEl = document.querySelector('[data-threads-toggle-title]');
+      const threadsHintEl = document.querySelector('[data-threads-toggle-hint]');
+
+      function syncToggleUI(btn, on) {
+        if (!btn) return;
+        btn.classList.toggle('is-on', on);
+        btn.setAttribute('aria-pressed', String(on));
+      }
+
       // 스토리 자동 업로드 토글
-      const storyBtn = document.querySelector('[data-story-toggle]');
       if (storyBtn) {
         storyBtn.addEventListener('click', () => {
           storyEnabled = !storyEnabled;
-          storyBtn.classList.toggle('is-on', storyEnabled);
-          storyBtn.setAttribute('aria-pressed', String(storyEnabled));
+          syncToggleUI(storyBtn, storyEnabled);
         });
       }
       // 날씨 반영 토글
-      const weatherBtn = document.querySelector('[data-weather-toggle]');
       if (weatherBtn) {
         weatherBtn.addEventListener('click', () => {
           weatherEnabled = !weatherEnabled;
-          weatherBtn.classList.toggle('is-on', weatherEnabled);
-          weatherBtn.setAttribute('aria-pressed', String(weatherEnabled));
+          syncToggleUI(weatherBtn, weatherEnabled);
         });
       }
       // 쓰레드 자동 업로드 토글 (결정 §12-A #3 — 디폴트 OFF, 연동된 사장님만 ON 가능)
-      const threadsBtn = document.querySelector('[data-threads-toggle]');
-      const threadsTitleEl = document.querySelector('[data-threads-toggle-title]');
-      const threadsHintEl = document.querySelector('[data-threads-toggle-hint]');
       if (threadsBtn) {
         threadsBtn.addEventListener('click', () => {
           if (threadsBtn.disabled) return;
           threadsEnabled = !threadsEnabled;
-          threadsBtn.classList.toggle('is-on', threadsEnabled);
-          threadsBtn.setAttribute('aria-pressed', String(threadsEnabled));
+          syncToggleUI(threadsBtn, threadsEnabled);
         });
-        // 연동 상태 비동기 조회 — 미연동/만료면 disabled, 연동됐으면 활성
-        (async () => {
-          try {
-            const r = await fetch('/api/threads-status', { headers: authHeaders });
-            if (!r.ok) throw new Error('status fetch failed');
-            const j = await r.json();
-            threadsConnected = !!j.threadsConnected;
-            if (j.tokenExpired) {
+      }
+
+      // /api/me 한 번 호출로 publishPrefs + threadsStatus 동시 처리.
+      // 마지막 토글 상태 복원 + 쓰레드 연동 상태 반영.
+      (async () => {
+        try {
+          const r = await fetch('/api/me', { headers: authHeaders });
+          if (!r.ok) throw new Error('me fetch failed');
+          const j = await r.json();
+          const prefs = (j && j.seller && j.seller.publishPrefs) || {};
+          if (typeof prefs.storyEnabled === 'boolean') {
+            storyEnabled = prefs.storyEnabled;
+            syncToggleUI(storyBtn, storyEnabled);
+          }
+          if (typeof prefs.weatherEnabled === 'boolean') {
+            weatherEnabled = prefs.weatherEnabled;
+            syncToggleUI(weatherBtn, weatherEnabled);
+          }
+          const ts = (j && j.threadsStatus) || {};
+          threadsConnected = !!ts.connected;
+          if (threadsBtn) {
+            if (ts.tokenExpired) {
               threadsBtn.disabled = true;
-              threadsHintEl.textContent = '쓰레드 토큰이 만료됐어요. 설정에서 재연동 후 사용';
+              if (threadsHintEl) threadsHintEl.textContent = '쓰레드 토큰이 만료됐어요. 설정에서 재연동 후 사용';
+              threadsEnabled = false;
+              syncToggleUI(threadsBtn, false);
             } else if (threadsConnected) {
               threadsBtn.disabled = false;
-              threadsHintEl.textContent = '켜면 인스타와 함께 쓰레드에도 자동 업로드 (캡션은 쓰레드용으로 별도 생성)';
+              if (threadsHintEl) threadsHintEl.textContent = '켜면 인스타와 함께 쓰레드에도 자동 업로드 (캡션은 쓰레드용으로 별도 생성)';
+              if (typeof prefs.threadsEnabled === 'boolean') {
+                threadsEnabled = prefs.threadsEnabled;
+                syncToggleUI(threadsBtn, threadsEnabled);
+              }
             } else {
               threadsBtn.disabled = true;
-              threadsHintEl.textContent = '설정에서 쓰레드 연동 후 사용 가능';
+              if (threadsHintEl) threadsHintEl.textContent = '설정에서 쓰레드 연동 후 사용 가능';
+              threadsEnabled = false;
+              syncToggleUI(threadsBtn, false);
             }
-          } catch (_) {
-            threadsBtn.disabled = true;
-            threadsHintEl.textContent = '연동 상태 확인 실패 — 잠시 후 다시 시도';
           }
-        })();
-      }
+        } catch (_) {
+          if (threadsBtn) {
+            threadsBtn.disabled = true;
+            if (threadsHintEl) threadsHintEl.textContent = '연동 상태 확인 실패 — 잠시 후 다시 시도';
+          }
+        }
+      })();
 
       function toast(msg, ms = 1800) {
         toastEl.textContent = msg;
