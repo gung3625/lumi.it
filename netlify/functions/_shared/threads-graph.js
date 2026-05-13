@@ -35,14 +35,18 @@ class ThreadsGraphError extends Error {
 /**
  * 사장님의 Threads 토큰·계정 정보 조회.
  *
- * 결정사항 §12-A #1 — Meta 통합 OAuth 로 IG 연동 시 Threads 토큰도 같이
- * `ig_accounts` 의 threads_* 컬럼에 저장. 별도 테이블 안 둠.
+ * 결정사항 §12-A #1 (revised) — IG·Threads 별도 OAuth flow.
+ * Threads 토큰은 ig_accounts 의 threads_* 컬럼에 저장.
  *
- * 의존 컬럼 (M1.3 에서 추가):
+ * 의존 컬럼 (M1.3a):
  *   - ig_accounts.threads_user_id
- *   - ig_accounts.threads_token
+ *   - ig_accounts.threads_token (Vault 복호화)
  *   - ig_accounts.threads_token_expires_at
- *   - ig_accounts.threads_token_invalid_at
+ *
+ * 코드 리뷰 #2 — IG 헬퍼 (ig-graph.js getIgTokenForSeller) 와 패턴 일치:
+ *   토큰 무효 마킹(threads_token_invalid_at) 사전 차단은 호출자 책임.
+ *   본 헬퍼는 단순히 토큰만 반환 (무효 마킹돼도 토큰 자체는 있으면 반환).
+ *   호출자가 ig_accounts.threads_token_invalid_at 별도 체크해 사전 차단.
  *
  * @param {string} sellerId
  * @param {object} supabase - getAdminClient() 결과 (service_role)
@@ -53,7 +57,7 @@ async function getThreadsTokenForSeller(sellerId, supabase) {
   try {
     const { data, error } = await supabase
       .from('ig_accounts_decrypted')
-      .select('threads_user_id, threads_token, threads_token_expires_at, threads_token_invalid_at')
+      .select('threads_user_id, threads_token, threads_token_expires_at')
       .eq('user_id', sellerId)
       .maybeSingle();
     if (error) {
@@ -61,7 +65,6 @@ async function getThreadsTokenForSeller(sellerId, supabase) {
       return null;
     }
     if (!data || !data.threads_user_id) return null;
-    if (data.threads_token_invalid_at) return null;       // 토큰 무효 마킹된 사장님 자동 차단
     const token = data.threads_token || null;
     if (!token) return null;
     return {

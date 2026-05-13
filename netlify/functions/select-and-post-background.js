@@ -288,6 +288,8 @@ exports.handler = async (event) => {
   const supabase = getAdminClient();
   let reservationKey = null;
   let userIdForTokenMark = null;   // catch 블록에서 IG 토큰 만료 마킹용
+  let reservationIdForChannelMark = null;  // catch 블록에서 channel_posts(ig, failed) 마킹용
+  let igAttempted = false;          // postToInstagram 호출 시점부터 true → catch 에서 IG 실패만 마킹
 
   try {
     const body = JSON.parse(event.body || '{}');
@@ -371,7 +373,9 @@ exports.handler = async (event) => {
 
     console.log(`[select-and-post] 게시 시작: ${reservationKey}, captionIndex=${captionIndex}`);
 
-    // 4) Instagram 게시
+    // 4) Instagram 게시 — catch 블록의 IG 실패 마킹 가드용 플래그·id 노출
+    reservationIdForChannelMark = reservation.id;
+    igAttempted = true;
     const postId = await postToInstagram(
       {
         igUserId,
@@ -631,6 +635,25 @@ exports.handler = async (event) => {
           })
           .eq('reserve_key', reservationKey);
       } catch (_) { /* noop */ }
+    }
+
+    // 코드 리뷰 #1 — IG 실패 시 channel_posts(ig, failed) 마킹.
+    // postToInstagram 호출 시점부터 igAttempted=true 라 IG attempt 였음을 보장.
+    // history.html 의 채널 칩에 IG 실패가 정상 표시되도록.
+    if (igAttempted && reservationIdForChannelMark) {
+      try {
+        await supabase
+          .from('channel_posts')
+          .upsert({
+            reservation_id: reservationIdForChannelMark,
+            channel: 'ig',
+            status: 'failed',
+            error_message: String(err && err.message || 'unknown').slice(0, 500),
+            credit_consumed: false,
+          }, { onConflict: 'reservation_id,channel' });
+      } catch (e) {
+        console.warn('[select-and-post] channel_posts(ig, failed) 마킹 실패 (무시):', e && e.message);
+      }
     }
   }
 };
