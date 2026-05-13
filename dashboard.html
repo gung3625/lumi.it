@@ -578,17 +578,31 @@
       background: var(--line, rgba(0,0,0,0.08));
       border-radius: 999px;
       overflow: hidden;
+      display: flex;
     }
     .besttime-progress__bar > i {
       display: block;
       height: 100%;
       width: 0%;
-      background: var(--gradient-signature);
-      border-radius: 999px;
       transition: width 600ms var(--ease-toss);
     }
-    .besttime-progress__row.is-ready .besttime-progress__bar > i {
+    .besttime-progress__bar > i.is-measured { background: var(--gradient-signature); }
+    /* 측정 대기 segment — 옅은 핑크. measured 옆에 이어 붙음. */
+    .besttime-progress__bar > i.is-pending { background: rgba(200, 80, 122, 0.28); }
+    .besttime-progress__row.is-ready .besttime-progress__bar > i.is-measured {
       background: var(--pink-600, #c8507a);
+    }
+    /* 측정 대기 안내 — pending > 0 일 때만 표시. */
+    .besttime-progress__measure-note {
+      font-size: var(--text-tiny, 11px);
+      color: var(--ink-muted);
+      letter-spacing: -0.01em;
+      margin-top: 4px;
+      padding-left: 38px; /* 평일/주말 label 너비(30px) + gap(8px) 맞춰 막대 정렬 */
+    }
+    .besttime-progress__measure-note strong {
+      color: var(--ink);
+      font-weight: var(--weight-semibold);
     }
     .besttime-progress__count {
       flex-shrink: 0;
@@ -863,14 +877,22 @@
                 <div class="besttime-progress__stage-title">1. 내 게시물 도달 데이터</div>
                 <div class="besttime-progress__row" data-progress-row="weekday">
                   <span class="besttime-progress__label">평일</span>
-                  <span class="besttime-progress__bar"><i data-progress-fill="weekday"></i></span>
+                  <span class="besttime-progress__bar">
+                    <i class="is-measured" data-progress-fill="weekday"></i>
+                    <i class="is-pending" data-progress-fill-pending="weekday"></i>
+                  </span>
                   <span class="besttime-progress__count" data-progress-count="weekday">0/5</span>
                 </div>
+                <div class="besttime-progress__measure-note" data-progress-measure-note="weekday" hidden></div>
                 <div class="besttime-progress__row" data-progress-row="weekend">
                   <span class="besttime-progress__label">주말</span>
-                  <span class="besttime-progress__bar"><i data-progress-fill="weekend"></i></span>
+                  <span class="besttime-progress__bar">
+                    <i class="is-measured" data-progress-fill="weekend"></i>
+                    <i class="is-pending" data-progress-fill-pending="weekend"></i>
+                  </span>
                   <span class="besttime-progress__count" data-progress-count="weekend">0/3</span>
                 </div>
+                <div class="besttime-progress__measure-note" data-progress-measure-note="weekend" hidden></div>
               </div>
               <!-- 2단계: 내 팔로워 활동 데이터 (Tier 2) -->
               <div class="besttime-progress__stage" data-progress-stage="t2">
@@ -1272,17 +1294,33 @@
               } else {
                 progressEl.hidden = false;
                 // 1단계 — 내 게시물 도달 데이터 (Tier 1)
+                // 막대는 measured + pending 두 segment. count 는 측정 완료 기준.
+                // pending > 0 이면 "측정 대기 N건 · 30분 안에 자동 측정" 안내 노출.
                 ['weekday', 'weekend'].forEach((dow) => {
-                  const p = progress[dow] || { have: 0, need: thresholds[dow], ready: false };
+                  const p = progress[dow] || { have: 0, pending: 0, need: thresholds[dow], ready: false };
                   const have = Math.max(0, Number(p.have) || 0);
+                  const pending = Math.max(0, Number(p.pending) || 0);
                   const need = Math.max(1, Number(p.need) || thresholds[dow]);
-                  const ratio = Math.min(100, Math.round((have / need) * 100));
+                  const measuredRatio = Math.min(100, Math.round((have / need) * 100));
+                  // pending segment 는 measured 다음 위치까지만 채움 (총합 100% 상한)
+                  const pendingRatio = Math.min(100 - measuredRatio, Math.round((pending / need) * 100));
                   const fill = document.querySelector(`[data-progress-fill="${dow}"]`);
+                  const fillPending = document.querySelector(`[data-progress-fill-pending="${dow}"]`);
                   const count = document.querySelector(`[data-progress-count="${dow}"]`);
                   const row = document.querySelector(`[data-progress-row="${dow}"]`);
-                  if (fill) fill.style.width = (p.ready ? 100 : ratio) + '%';
+                  const note = document.querySelector(`[data-progress-measure-note="${dow}"]`);
+                  if (fill) fill.style.width = (p.ready ? 100 : measuredRatio) + '%';
+                  if (fillPending) fillPending.style.width = (p.ready ? 0 : pendingRatio) + '%';
                   if (count) count.textContent = `${have}/${need}`;
                   if (row) row.classList.toggle('is-ready', !!p.ready);
+                  if (note) {
+                    if (pending > 0 && !p.ready) {
+                      note.innerHTML = `<strong>측정 대기 ${pending}건</strong> · 30분 안에 자동 측정`;
+                      note.hidden = false;
+                    } else {
+                      note.hidden = true;
+                    }
+                  }
                 });
                 // 2단계 — 내 팔로워 활동 데이터 (Tier 2). 1단계 미충족 시 locked.
                 const stage2El = document.querySelector('[data-progress-stage="t2"]');
