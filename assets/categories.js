@@ -6,10 +6,16 @@
 (function () {
   const MAJOR_GROUPS = [
     {
-      id: 'foodservice',
-      label: '외식',
+      id: 'cafe',
+      label: '카페',
       subs: [
         { id: 'cafe', label: '카페' },
+      ],
+    },
+    {
+      id: 'food',
+      label: '식당',
+      subs: [
         { id: 'food', label: '식당' },
       ],
     },
