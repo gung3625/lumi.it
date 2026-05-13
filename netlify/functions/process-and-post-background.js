@@ -1184,15 +1184,32 @@ exports.handler = async (event) => {
     // M2.2 — Threads 전용 캡션 (결정 §12-A #4).
     //   post_to_thread=true 일 때만 추가 호출. 실패해도 IG 게시 흐름엔 영향 0
     //   (Threads 게시 시점에 generated_threads_caption 이 null 이면 IG 캡션 fallback).
+    //
+    // 코드 리뷰 #3 — gpt-5.4 호출 1회 추가 비용 발생. checkAndIncrementQuota 로
+    //   사장님 OpenAI quota 잡기 (실패해도 fallback 으로 IG 게시는 진행).
     let generatedThreadsCaption = null;
     if (reservation.post_to_thread === true && captions[0]) {
+      let quotaOk = true;
       try {
-        await captionProgress('threads_gen_start');
-        generatedThreadsCaption = await generateThreadsCaption(imageAnalysis, captionInput, captions[0]);
-        console.log('[process-and-post] Threads 캡션 생성 완료 (len=' + generatedThreadsCaption.length + ')');
-      } catch (e) {
-        console.warn('[process-and-post] Threads 캡션 생성 실패 (IG 캡션으로 fallback):', e && e.message);
-        generatedThreadsCaption = null;
+        await checkAndIncrementQuota(reservation.user_id, 'gpt-5.4');
+      } catch (qe) {
+        if (qe instanceof QuotaExceededError) {
+          quotaOk = false;
+          console.warn('[process-and-post] Threads 캡션 quota 초과 (IG 캡션으로 fallback):', qe.message);
+        } else {
+          quotaOk = false;
+          console.warn('[process-and-post] Threads 캡션 quota 체크 예외 (IG 캡션으로 fallback):', qe && qe.message);
+        }
+      }
+      if (quotaOk) {
+        try {
+          await captionProgress('threads_gen_start');
+          generatedThreadsCaption = await generateThreadsCaption(imageAnalysis, captionInput, captions[0]);
+          console.log('[process-and-post] Threads 캡션 생성 완료 (len=' + generatedThreadsCaption.length + ')');
+        } catch (e) {
+          console.warn('[process-and-post] Threads 캡션 생성 실패 (IG 캡션으로 fallback):', e && e.message);
+          generatedThreadsCaption = null;
+        }
       }
     }
 

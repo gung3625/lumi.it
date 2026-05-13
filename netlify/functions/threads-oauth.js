@@ -120,6 +120,38 @@ exports.handler = async (event) => {
     return { statusCode: 302, headers: { Location: authUrl } };
   }
 
+  // ──────────────────────────────────────────────
+  // 1.5) nonce 우선 파싱 — 모든 이후 에러 redirect 가 returnTo 를 쓰도록.
+  //      코드 리뷰 #5 — 사장님이 signup 에서 시작했으면 signup 으로 돌아와 안내 표시.
+  //      nonce 는 일회용이라 이 시점에 즉시 삭제 (성공·실패 무관).
+  // ──────────────────────────────────────────────
+  let userId    = null;
+  let returnTo  = '/settings';
+  if (state) {
+    try {
+      const nonceKey = 'threads:' + state;
+      const { data: nonceRow } = await supabase
+        .from('oauth_nonces')
+        .select('user_id, redirect_to, created_at')
+        .eq('nonce', nonceKey)
+        .maybeSingle();
+      if (nonceRow) {
+        const ageMs = Date.now() - new Date(nonceRow.created_at).getTime();
+        if (ageMs < 10 * 60 * 1000) {
+          userId   = nonceRow.user_id || null;
+          returnTo = sanitizeReturnTo(nonceRow.redirect_to);
+        }
+        await supabase.from('oauth_nonces').delete().eq('nonce', nonceKey);
+      }
+    } catch (e) {
+      console.error('[threads-oauth] nonce 조회 실패:', e.message);
+    }
+  }
+  if (!userId) {
+    console.error('[threads-oauth] user_id 확인 불가 (nonce 만료 또는 세션 없음)');
+    return { statusCode: 302, headers: { Location: `https://lumi.it.kr${returnTo}?threads_oauth_error=4` } };
+  }
+
   try {
     // ────────────────────────────────────────────
     // 2) code → 단기 토큰 교환 (Threads 는 POST form-data)
@@ -139,7 +171,7 @@ exports.handler = async (event) => {
     const shortData = await shortRes.json();
     if (!shortData.access_token) {
       console.error('[threads-oauth] 단기 토큰 교환 실패:', shortData.error_message || shortData.error || 'access_token 없음');
-      return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/settings?threads_oauth_error=2' } };
+      return { statusCode: 302, headers: { Location: `https://lumi.it.kr${returnTo}?threads_oauth_error=2` } };
     }
     const threadsUserId = shortData.user_id ? String(shortData.user_id) : null;
 
@@ -170,38 +202,12 @@ exports.handler = async (event) => {
     }
     if (!resolvedThreadsUserId) {
       console.error('[threads-oauth] Threads user_id 확인 실패');
-      return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/settings?threads_oauth_error=3' } };
+      return { statusCode: 302, headers: { Location: `https://lumi.it.kr${returnTo}?threads_oauth_error=3` } };
     }
 
     // ────────────────────────────────────────────
-    // 5) nonce → user_id + redirect_to 복원 (10분 만료 & 일회용)
+    // 5) (이전 'nonce 복원' 단계 — 1.5 단계로 이전됐음. 코드 리뷰 #5)
     // ────────────────────────────────────────────
-    let userId    = null;
-    let returnTo  = '/settings';
-    if (state) {
-      try {
-        const nonceKey = 'threads:' + state;
-        const { data: nonceRow } = await supabase
-          .from('oauth_nonces')
-          .select('user_id, redirect_to, created_at')
-          .eq('nonce', nonceKey)
-          .maybeSingle();
-        if (nonceRow) {
-          const ageMs = Date.now() - new Date(nonceRow.created_at).getTime();
-          if (ageMs < 10 * 60 * 1000) {
-            userId   = nonceRow.user_id || null;
-            returnTo = sanitizeReturnTo(nonceRow.redirect_to);
-          }
-          await supabase.from('oauth_nonces').delete().eq('nonce', nonceKey);
-        }
-      } catch (e) {
-        console.error('[threads-oauth] nonce 조회 실패:', e.message);
-      }
-    }
-    if (!userId) {
-      console.error('[threads-oauth] user_id 확인 불가 (nonce 만료 또는 세션 없음)');
-      return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/settings?threads_oauth_error=4' } };
-    }
 
     // ────────────────────────────────────────────
     // 6) 기존 ig_accounts row 확인 — IG 연동 필수 전제.
@@ -216,7 +222,7 @@ exports.handler = async (event) => {
 
     if (!existingRow) {
       console.warn('[threads-oauth] IG 미연동 사장님 — Threads 연동 차단');
-      return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/settings?threads_oauth_error=10' } };
+      return { statusCode: 302, headers: { Location: `https://lumi.it.kr${returnTo}?threads_oauth_error=10` } };
     }
 
     // ────────────────────────────────────────────
@@ -229,7 +235,7 @@ exports.handler = async (event) => {
     });
     if (secretErr) {
       console.error('[threads-oauth] set_threads_token RPC 실패:', secretErr.message);
-      return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/settings?threads_oauth_error=6' } };
+      return { statusCode: 302, headers: { Location: `https://lumi.it.kr${returnTo}?threads_oauth_error=6` } };
     }
 
     // ────────────────────────────────────────────
@@ -249,7 +255,7 @@ exports.handler = async (event) => {
 
     if (upsertErr) {
       console.error('[threads-oauth] ig_accounts update 실패:', upsertErr.message);
-      return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/settings?threads_oauth_error=5' } };
+      return { statusCode: 302, headers: { Location: `https://lumi.it.kr${returnTo}?threads_oauth_error=5` } };
     }
 
     // 토큰/secret_id 는 절대 로그에 남기지 않음. threads_user_id 만.
@@ -259,6 +265,6 @@ exports.handler = async (event) => {
 
   } catch (e) {
     console.error('[threads-oauth] OAuth 처리 오류:', e.message);
-    return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/settings?threads_oauth_error=99' } };
+    return { statusCode: 302, headers: { Location: `https://lumi.it.kr${returnTo}?threads_oauth_error=99` } };
   }
 };
