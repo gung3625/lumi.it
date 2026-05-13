@@ -21,6 +21,12 @@ const { corsHeaders, getOrigin } = require('./_shared/auth');
 const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { getIgTokenForSeller, igGraphRequest, IgGraphError } = require('./_shared/ig-graph');
+const {
+  getThreadsTokenForSeller,
+  threadsGraphRequest,
+  markThreadsTokenInvalid,
+  ThreadsGraphError,
+} = require('./_shared/threads-graph');
 
 // TTL 2분 — IG 에서 댓글 삭제·신규 시 사장님 체감 신선도 ↑.
 // reply-comment.js 가 답글 직후 즉시 무효화하지만 사장님이 IG 앱에서 직접
@@ -29,6 +35,9 @@ const CACHE_TTL_MS = 2 * 60 * 1000;
 const MEDIA_LIMIT = 15;
 const COMMENTS_PER_MEDIA = 20;
 const REPLIES_PER_COMMENT = 5;
+// M4.1 — Threads 측 limit (별도 — IG 와 호출 비용 분리)
+const THREADS_LIMIT = 15;
+const REPLIES_PER_THREAD = 10;
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 100;
 
@@ -46,6 +55,9 @@ async function readCache(sellerId) {
     const raw = await getCacheStore().get(`sellers/${sellerId}.json`, { type: 'json' });
     if (!raw || !raw.cachedAt) return null;
     if (Date.now() - new Date(raw.cachedAt).getTime() > CACHE_TTL_MS) return null;
+    // M4.1 — 캐시 shape 가 옛 형식 (배열) 이면 무시 (자연스럽게 새로 채워짐)
+    if (Array.isArray(raw.data)) return null;
+    if (!raw.data || !Array.isArray(raw.data.items)) return null;
     return raw.data;
   } catch (e) {
     console.warn('[comments] cache read 무시:', e && e.message);
@@ -105,6 +117,7 @@ function flattenComments(mediaList, ownerHandle) {
         permalink,
         post_thumb: postThumb,
         post_caption: postCaption,
+        channel: 'ig',
       });
     }
   }
@@ -114,6 +127,40 @@ function flattenComments(mediaList, ownerHandle) {
     if (!b.timestamp) return -1;
     return b.timestamp.localeCompare(a.timestamp);
   });
+  return items;
+}
+
+// M4.1 — Threads replies 평탄화.
+// IG flattenComments 와 1:1 대응. 단 두 가지 차이:
+//   1) Threads 의 'reply_text' (사장님 본인 답글의 답글) 는 별도 호출 필요 →
+//      M4.1 에서는 빈 값. M4.2 에서 답글 통합 시 채울 예정.
+//   2) 사장님 본인 답글 필터링은 IG username 으로 fallback (Threads username
+//      별도 컬럼 없음). 정확한 필터는 ig_accounts 에 threads_username 추가하는
+//      후속 PR 에서. 잘못 필터되면 사장님 답글이 통합 리스트에 보이는 정도.
+function flattenThreadsComments(threadsList, ownerHandle) {
+  const items = [];
+  for (const thread of threadsList || []) {
+    const permalink = thread.permalink || '';
+    const isVideo = thread.media_type === 'VIDEO';
+    const postThumb = isVideo ? (thread.thumbnail_url || '') : (thread.media_url || '');
+    const postCaption = String(thread.text || '').replace(/\s+/g, ' ').trim().slice(0, 40);
+    const replies = (thread.replies && thread.replies.data) || [];
+    for (const r of replies) {
+      const handle = normalizeHandle(r.username);
+      if (ownerHandle && handle === ownerHandle) continue;
+      items.push({
+        id: r.id || '',
+        username: r.username || '',
+        text: r.text || '',
+        timestamp: r.timestamp || '',
+        reply_text: '',   // Threads 답글의 답글 통합은 M4.2 후속
+        permalink,
+        post_thumb: postThumb,
+        post_caption: postCaption,
+        channel: 'threads',
+      });
+    }
+  }
   return items;
 }
 
@@ -134,6 +181,26 @@ async function fetchCommentsFromGraph(igCtx) {
   const resp = await igGraphRequest(igCtx.accessToken, `/${igCtx.igUserId}/media`, {
     fields,
     limit: MEDIA_LIMIT,
+  });
+  return resp && resp.data ? resp.data : [];
+}
+
+// M4.1 — Threads replies fetch (IG fetchCommentsFromGraph 와 동일 패턴).
+// 필드 확장 시도. 실패 시 호출자에서 catch.
+async function fetchThreadsRepliesFromGraph(threadsCtx) {
+  const fields = [
+    'id',
+    'permalink',
+    'timestamp',
+    'media_type',
+    'media_url',
+    'thumbnail_url',
+    'text',
+    `replies.limit(${REPLIES_PER_THREAD}){id,text,username,timestamp}`,
+  ].join(',');
+  const resp = await threadsGraphRequest(threadsCtx.accessToken, `/${threadsCtx.threadsUserId}/threads`, {
+    fields,
+    limit: THREADS_LIMIT,
   });
   return resp && resp.data ? resp.data : [];
 }
@@ -165,34 +232,10 @@ exports.handler = async (event) => {
     return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '서버 오류' }) };
   }
 
-  // IG 연동 + 토큰 한 번에 가져오기 (ig_accounts_decrypted 뷰)
-  const igCtx = await getIgTokenForSeller(user.id, admin);
-  if (!igCtx) {
-    return {
-      statusCode: 200,
-      headers: CORS,
-      body: JSON.stringify({ ok: true, igConnected: false, items: [] }),
-    };
-  }
+  // M4.1 — IG + Threads 둘 다 시도. 한쪽 실패해도 다른 쪽은 진행.
+  // 응답 shape: { ok, igConnected, tokenExpired, threadsConnected, threadsTokenExpired, items, cached? }
+  // 각 item 은 channel: 'ig' | 'threads' 태그됨.
 
-  // 사전 차단 — token_invalid_at 표시된 사장님은 Graph 호출 안 함 (rate limit 보호).
-  // settings UI 가 tokenExpired 카드 표시해서 재연동 유도.
-  try {
-    const { data: igRow } = await admin
-      .from('ig_accounts')
-      .select('token_invalid_at')
-      .eq('user_id', user.id)
-      .maybeSingle();
-    if (igRow && igRow.token_invalid_at) {
-      return {
-        statusCode: 200,
-        headers: CORS,
-        body: JSON.stringify({ ok: true, igConnected: true, tokenExpired: true, items: [] }),
-      };
-    }
-  } catch (_) { /* check 실패해도 진행 */ }
-
-  // refresh=1 — 캐시 우회 (사장님이 IG 에서 게시물·답글 삭제 후 즉시 반영 원할 때).
   const forceRefresh = qs.refresh === '1' || qs.refresh === 'true';
 
   // 캐시 hit (refresh 시 스킵)
@@ -203,52 +246,126 @@ exports.handler = async (event) => {
       headers: CORS,
       body: JSON.stringify({
         ok: true,
-        igConnected: true,
+        igConnected:          cached.igConnected || false,
+        tokenExpired:         cached.tokenExpired || false,
+        threadsConnected:     cached.threadsConnected || false,
+        threadsTokenExpired:  cached.threadsTokenExpired || false,
         cached: true,
-        items: cached.slice(0, limit),
+        items: cached.items.slice(0, limit),
       }),
     };
   }
 
-  // Graph 호출
-  let mediaList;
+  // ──────────────────────────────────────────────
+  // 1) IG / Threads 연동 상태 + 사전 차단 플래그 동시 조회
+  // ──────────────────────────────────────────────
+  const igCtx      = await getIgTokenForSeller(user.id, admin);
+  const threadsCtx = await getThreadsTokenForSeller(user.id, admin);
+
+  let igInvalidAt      = null;
+  let threadsInvalidAt = null;
   try {
-    mediaList = await fetchCommentsFromGraph(igCtx);
-  } catch (e) {
-    if (e instanceof IgGraphError && e.isTokenExpired()) {
-      // 토큰 무효 자동 기록 — 다음 cron/요청 들이 사전 차단해 rate limit 절약.
-      try {
-        await admin
-          .from('ig_accounts')
-          .update({ token_invalid_at: new Date().toISOString() })
-          .eq('user_id', user.id);
-      } catch (_) { /* noop */ }
-      return {
-        statusCode: 200,
-        headers: CORS,
-        body: JSON.stringify({ ok: true, igConnected: true, tokenExpired: true, items: [] }),
-      };
+    const { data: row } = await admin
+      .from('ig_accounts')
+      .select('token_invalid_at, threads_token_invalid_at')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (row) {
+      igInvalidAt      = row.token_invalid_at || null;
+      threadsInvalidAt = row.threads_token_invalid_at || null;
     }
-    console.warn('[comments] Graph 호출 실패:', e && e.message);
+  } catch (_) { /* 사전 차단 못 해도 진행 — Graph 가 실패 → mark 함 */ }
+
+  const igConnected         = !!igCtx;
+  const igTokenExpired      = igConnected && !!igInvalidAt;
+  const threadsConnected    = !!threadsCtx;
+  const threadsTokenExpired = threadsConnected && !!threadsInvalidAt;
+
+  // 둘 다 미연동이면 즉시 빈 응답
+  if (!igConnected && !threadsConnected) {
     return {
       statusCode: 200,
       headers: CORS,
-      body: JSON.stringify({ ok: true, igConnected: true, items: [], error: 'graph_failed' }),
+      body: JSON.stringify({ ok: true, igConnected: false, threadsConnected: false, items: [] }),
     };
   }
 
-  const ownerHandle = normalizeHandle(igCtx.igUsername);
-  const items = flattenComments(mediaList, ownerHandle);
+  // ──────────────────────────────────────────────
+  // 2) IG / Threads Graph 병렬 호출 — 각각 독립 try/catch
+  // ──────────────────────────────────────────────
+  const ownerHandle = normalizeHandle(igCtx?.igUsername);
 
-  // 캐시는 풀 데이터 보관 — 클라이언트가 limit 다르게 호출해도 재사용
-  await writeCache(user.id, items);
+  const igPromise = (async () => {
+    if (!igConnected || igTokenExpired) return [];
+    try {
+      const mediaList = await fetchCommentsFromGraph(igCtx);
+      return flattenComments(mediaList, ownerHandle);
+    } catch (e) {
+      if (e instanceof IgGraphError && e.isTokenExpired()) {
+        try {
+          await admin.from('ig_accounts').update({ token_invalid_at: new Date().toISOString() }).eq('user_id', user.id);
+        } catch (_) { /* noop */ }
+        return { _expired: true };
+      }
+      console.warn('[comments] IG Graph 호출 실패:', e && e.message);
+      return [];
+    }
+  })();
+
+  const threadsPromise = (async () => {
+    if (!threadsConnected || threadsTokenExpired) return [];
+    try {
+      const threadsList = await fetchThreadsRepliesFromGraph(threadsCtx);
+      // 사장님 본인 Threads username 별도 컬럼 없음 — IG username 으로 fallback.
+      // 정확한 필터는 후속 PR (threads_username 컬럼 추가) 에서.
+      return flattenThreadsComments(threadsList, ownerHandle);
+    } catch (e) {
+      if (e instanceof ThreadsGraphError && e.isTokenExpired()) {
+        try { await markThreadsTokenInvalid(admin, user.id, 'comments'); } catch (_) { /* noop */ }
+        return { _expired: true };
+      }
+      console.warn('[comments] Threads Graph 호출 실패:', e && e.message);
+      return [];
+    }
+  })();
+
+  const [igResult, threadsResult] = await Promise.all([igPromise, threadsPromise]);
+
+  // 토큰 만료 발견 시 응답에 반영 (사전 차단 안 됐던 케이스 — 첫 호출에서 발견)
+  const finalIgTokenExpired      = igTokenExpired      || (igResult      && igResult._expired);
+  const finalThreadsTokenExpired = threadsTokenExpired || (threadsResult && threadsResult._expired);
+
+  const igItems      = Array.isArray(igResult)      ? igResult      : [];
+  const threadsItems = Array.isArray(threadsResult) ? threadsResult : [];
+
+  // ──────────────────────────────────────────────
+  // 3) merge + 시간 역순 정렬
+  // ──────────────────────────────────────────────
+  const items = [...igItems, ...threadsItems];
+  items.sort((a, b) => {
+    if (!a.timestamp) return 1;
+    if (!b.timestamp) return -1;
+    return b.timestamp.localeCompare(a.timestamp);
+  });
+
+  // 캐시 — 풀 데이터 보관 (limit 다르게 호출해도 재사용)
+  await writeCache(user.id, {
+    igConnected,
+    tokenExpired: !!finalIgTokenExpired,
+    threadsConnected,
+    threadsTokenExpired: !!finalThreadsTokenExpired,
+    items,
+  });
 
   return {
     statusCode: 200,
     headers: CORS,
     body: JSON.stringify({
       ok: true,
-      igConnected: true,
+      igConnected,
+      tokenExpired: !!finalIgTokenExpired,
+      threadsConnected,
+      threadsTokenExpired: !!finalThreadsTokenExpired,
       items: items.slice(0, limit),
     }),
   };
