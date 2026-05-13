@@ -1049,10 +1049,37 @@ exports.handler = async (event) => {
     console.log('[process-and-post] RESERVATION_LOADED status=', reservation.caption_status);
     await markStage('02_reservation_loaded');
 
-    // 사용자가 이미 캡션을 선택했거나 게시 중/완료된 건은 스킵
-    if (['scheduled', 'posting', 'posted'].includes(reservation.caption_status)) {
+    // 사용자가 이미 캡션을 선택했거나 게시 중/완료/생성 중인 건은 스킵
+    if (['generating', 'scheduled', 'posting', 'posted'].includes(reservation.caption_status)) {
       console.log(`[process-and-post] 이미 처리된 건 스킵: ${reservationKey}, status=${reservation.caption_status}`);
       return { statusCode: 200, headers, body: JSON.stringify({ skipped: true }) };
+    }
+
+    // 2.5) 중복 호출 방지 — atomic CAS 로 'pending' → 'generating' 전이.
+    //      reserve.js 의 직접 트리거 + scheduler cron 의 stuck 복구 트리거가 race 할 때
+    //      여기서 한 호출만 통과시킨다. Postgres row lock 안에서 WHERE 재검사 → 오직
+    //      affected_rows=1 받은 호출만 진행. (select-and-post 의 'scheduled'→'posting'
+    //      CAS 와 동일 패턴.)
+    //
+    //      이전엔 select-then-check 라 'pending' 상태에서 두 invocation 이 모두
+    //      통과 → 같은 사진을 다른 캡션으로 IG/Threads/스토리 각각 두 번 게시되는
+    //      버그 (검증 2026-05-13, reservation 76).
+    {
+      const { data: claimed, error: claimErr } = await supabase
+        .from('reservations')
+        .update({ caption_status: 'generating' })
+        .eq('reserve_key', reservationKey)
+        .eq('caption_status', 'pending')
+        .eq('is_sent', false)
+        .select('reserve_key');
+      if (claimErr) {
+        console.error('[process-and-post] claim 실패:', claimErr.message);
+        return;
+      }
+      if (!claimed || claimed.length === 0) {
+        console.log('[process-and-post] 다른 호출이 이미 진행 중/완료 — 스킵:', reservationKey);
+        return { statusCode: 200, headers, body: JSON.stringify({ skipped: true }) };
+      }
     }
 
     const imageUrls = Array.isArray(reservation.image_urls) ? reservation.image_urls : [];
