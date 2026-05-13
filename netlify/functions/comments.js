@@ -130,13 +130,9 @@ function flattenComments(mediaList, ownerHandle) {
   return items;
 }
 
-// M4.1 — Threads replies 평탄화.
-// IG flattenComments 와 1:1 대응. 단 두 가지 차이:
-//   1) Threads 의 'reply_text' (사장님 본인 답글의 답글) 는 별도 호출 필요 →
-//      M4.1 에서는 빈 값. M4.2 에서 답글 통합 시 채울 예정.
-//   2) 사장님 본인 답글 필터링은 IG username 으로 fallback (Threads username
-//      별도 컬럼 없음). 정확한 필터는 ig_accounts 에 threads_username 추가하는
-//      후속 PR 에서. 잘못 필터되면 사장님 답글이 통합 리스트에 보이는 정도.
+// Threads replies 평탄화. IG flattenComments 와 1:1 대응.
+// ownerHandle 은 ig_accounts.threads_username (우선) 또는 IG username (fallback).
+// 'reply_text' (사장님 본인 답글의 답글) 는 별도 호출 필요 — 현재 빈 값 유지.
 function flattenThreadsComments(threadsList, ownerHandle) {
   const items = [];
   for (const thread of threadsList || []) {
@@ -264,15 +260,17 @@ exports.handler = async (event) => {
 
   let igInvalidAt      = null;
   let threadsInvalidAt = null;
+  let threadsUsername  = null;
   try {
     const { data: row } = await admin
       .from('ig_accounts')
-      .select('token_invalid_at, threads_token_invalid_at')
+      .select('token_invalid_at, threads_token_invalid_at, threads_username')
       .eq('user_id', user.id)
       .maybeSingle();
     if (row) {
       igInvalidAt      = row.token_invalid_at || null;
       threadsInvalidAt = row.threads_token_invalid_at || null;
+      threadsUsername  = row.threads_username || null;
     }
   } catch (_) { /* 사전 차단 못 해도 진행 — Graph 가 실패 → mark 함 */ }
 
@@ -293,13 +291,14 @@ exports.handler = async (event) => {
   // ──────────────────────────────────────────────
   // 2) IG / Threads Graph 병렬 호출 — 각각 독립 try/catch
   // ──────────────────────────────────────────────
-  const ownerHandle = normalizeHandle(igCtx?.igUsername);
+  const ownerIgHandle      = normalizeHandle(igCtx?.igUsername);
+  const ownerThreadsHandle = normalizeHandle(threadsUsername) || ownerIgHandle;
 
   const igPromise = (async () => {
     if (!igConnected || igTokenExpired) return [];
     try {
       const mediaList = await fetchCommentsFromGraph(igCtx);
-      return flattenComments(mediaList, ownerHandle);
+      return flattenComments(mediaList, ownerIgHandle);
     } catch (e) {
       if (e instanceof IgGraphError && e.isTokenExpired()) {
         try {
@@ -316,9 +315,8 @@ exports.handler = async (event) => {
     if (!threadsConnected || threadsTokenExpired) return [];
     try {
       const threadsList = await fetchThreadsRepliesFromGraph(threadsCtx);
-      // 사장님 본인 Threads username 별도 컬럼 없음 — IG username 으로 fallback.
-      // 정확한 필터는 후속 PR (threads_username 컬럼 추가) 에서.
-      return flattenThreadsComments(threadsList, ownerHandle);
+      // Threads 본인 핸들 — ig_accounts.threads_username 우선, 없으면 IG 핸들 fallback.
+      return flattenThreadsComments(threadsList, ownerThreadsHandle);
     } catch (e) {
       if (e instanceof ThreadsGraphError && e.isTokenExpired()) {
         try { await markThreadsTokenInvalid(admin, user.id, 'comments'); } catch (_) { /* noop */ }

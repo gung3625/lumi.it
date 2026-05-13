@@ -160,6 +160,8 @@ async function threadsGraphRequest(token, path, params = {}, opts = {}) {
  *   1. POST /{user-id}/threads        — 컨테이너 생성 (creation_id 반환)
  *   2. POST /{user-id}/threads_publish — creation_id 로 실제 게시
  *
+ * 답글 작성도 동일 흐름 — replyToId 지정 시 reply thread 컨테이너 생성.
+ *
  * @param {object} args
  * @param {string} args.token
  * @param {string} args.threadsUserId
@@ -168,18 +170,47 @@ async function threadsGraphRequest(token, path, params = {}, opts = {}) {
  * @param {string} [args.videoUrl]  - VIDEO 일 때
  * @param {string} [args.text]      - 본문 (Threads 500자 한도)
  * @param {string[]} [args.children] - CAROUSEL 의 자식 container id 배열
+ * @param {string} [args.replyToId] - 답글일 때 부모 thread/comment id
  * @param {object} [opts]
  * @returns {Promise<{id: string}>} — id = creation_id
  */
-async function createThreadsContainer({ token, threadsUserId, mediaType, imageUrl, videoUrl, text, children }, opts = {}) {
+async function createThreadsContainer({ token, threadsUserId, mediaType, imageUrl, videoUrl, text, children, replyToId }, opts = {}) {
   if (!threadsUserId) throw new ThreadsGraphError('threadsUserId 누락');
   if (!mediaType) throw new ThreadsGraphError('mediaType 누락');
   const params = { media_type: mediaType };
-  if (text)     params.text = text;
-  if (imageUrl) params.image_url = imageUrl;
-  if (videoUrl) params.video_url = videoUrl;
+  if (text)      params.text = text;
+  if (imageUrl)  params.image_url = imageUrl;
+  if (videoUrl)  params.video_url = videoUrl;
+  if (replyToId) params.reply_to_id = replyToId;
   if (Array.isArray(children) && children.length) params.children = children.join(',');
   return threadsGraphRequest(token, `/${threadsUserId}/threads`, params, { method: 'POST', ...opts });
+}
+
+/**
+ * Threads 댓글에 답글 작성. 내부적으로 3단계:
+ *   1) reply 컨테이너 생성 (replyToId 지정)
+ *   2) status='FINISHED' 폴링 (텍스트 단독이라 보통 즉시)
+ *   3) publish — 실제 thread 발행
+ *
+ * IG 의 reply-comment 와 의미는 동일하지만 Threads 는 *답글도 thread* 라
+ * 게시 흐름과 같은 2-step. 텍스트만이라 빠름.
+ *
+ * @param {object} args
+ * @param {string} args.token
+ * @param {string} args.threadsUserId
+ * @param {string} args.parentId   - 원 thread 또는 reply id
+ * @param {string} args.text       - 답글 본문 (Threads 500자 한도)
+ * @returns {Promise<{id: string}>} — 발행된 답 thread id
+ */
+async function replyToThreadsComment({ token, threadsUserId, parentId, text }, opts = {}) {
+  if (!parentId) throw new ThreadsGraphError('parentId 누락');
+  if (!text)     throw new ThreadsGraphError('text 누락');
+  const container = await createThreadsContainer({
+    token, threadsUserId, mediaType: 'TEXT', text, replyToId: parentId,
+  }, opts);
+  if (!container || !container.id) throw new ThreadsGraphError('답글 컨테이너 생성 실패');
+  await waitForThreadsContainer({ token, creationId: container.id }, opts);
+  return publishThreadsContainer({ token, threadsUserId, creationId: container.id }, opts);
 }
 
 /**
@@ -328,6 +359,7 @@ module.exports = {
   createThreadsContainer,
   waitForThreadsContainer,
   publishThreadsContainer,
+  replyToThreadsComment,
   getThreadsAccountInsights,
   markThreadsTokenInvalid,
   ThreadsGraphError,
