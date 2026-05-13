@@ -1,5 +1,6 @@
-// 단건 게시물 IG 인사이트 — dashboard 게시물 카드 클릭 시 상세 패널/모달용
-// GET /api/insight-on-demand?mediaId=<ig-media-id>
+// 단건 게시물 IG/Threads 인사이트 — dashboard·history 카드 클릭 시 상세 패널/모달용
+// GET /api/insight-on-demand?mediaId=<id>&channel=ig|threads
+//   channel 미지정 시 'ig' (옛 호환)
 // 헤더: Authorization: Bearer <jwt> (Supabase JWT 우선, seller-jwt fallback)
 //
 // 응답:
@@ -49,6 +50,12 @@ const {
   IgGraphError,
   markIgTokenInvalid,
 } = require('./_shared/ig-graph');
+const {
+  getThreadsTokenForSeller,
+  getThreadInsights,
+  ThreadsGraphError,
+  markThreadsTokenInvalid,
+} = require('./_shared/threads-graph');
 
 const CACHE_TTL_MS = 15 * 60 * 1000; // 15분 (단건 단기)
 // IG media id: 보통 숫자(긴 정수), 일부 환경에서 underscore/hyphen 포함 가능 → 보수적으로 영숫자/_/- 허용
@@ -63,10 +70,16 @@ function getCacheStore() {
   });
 }
 
-async function readCache(mediaId) {
+// 캐시 키 prefix 는 channel 별 분리 — IG/Threads media id 가 겹칠 가능성은 0 에 가깝지만
+// 응답 schema 가 다르므로 prefix 로 안전하게 격리.
+function cacheKey(channel, mediaId) {
+  return channel === 'threads' ? `threads/${mediaId}` : `media/${mediaId}`;
+}
+
+async function readCache(channel, mediaId) {
   try {
     const store = getCacheStore();
-    const raw = await store.get(`media/${mediaId}`, { type: 'json' });
+    const raw = await store.get(cacheKey(channel, mediaId), { type: 'json' });
     if (!raw || !raw.cachedAt) return null;
     if (Date.now() - new Date(raw.cachedAt).getTime() > CACHE_TTL_MS) return null;
     return raw.data;
@@ -76,10 +89,10 @@ async function readCache(mediaId) {
   }
 }
 
-async function writeCache(mediaId, data) {
+async function writeCache(channel, mediaId, data) {
   try {
     const store = getCacheStore();
-    await store.setJSON(`media/${mediaId}`, {
+    await store.setJSON(cacheKey(channel, mediaId), {
       cachedAt: new Date().toISOString(),
       data,
     });
@@ -144,9 +157,11 @@ exports.handler = async (event) => {
     return { statusCode: 405, headers: CORS, body: JSON.stringify({ ok: false, error: 'Method not allowed' }) };
   }
 
-  // mediaId 파싱 + sanitize
+  // mediaId + channel 파싱 + sanitize
   const rawMediaId = (event.queryStringParameters && event.queryStringParameters.mediaId) || '';
   const mediaId = String(rawMediaId).trim();
+  const channel = (event.queryStringParameters && event.queryStringParameters.channel) === 'threads'
+    ? 'threads' : 'ig';
   if (!mediaId) {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ ok: false, error: 'mediaId 누락' }) };
   }
@@ -189,14 +204,72 @@ exports.handler = async (event) => {
     return { statusCode: 401, headers: CORS, body: JSON.stringify({ ok: false, error: '인증이 필요합니다.' }) };
   }
 
-  // 캐시 hit (mediaId 단위) — sellerId 까지 묶을 수도 있으나, IG media id 자체가 전역 유니크라 mediaId 만으로 충분
-  const cached = await readCache(mediaId);
+  // 캐시 hit (channel + mediaId 단위)
+  const cached = await readCache(channel, mediaId);
   if (cached) {
     return {
       statusCode: 200,
       headers: { ...CORS, 'X-Insight-Cache': 'hit' },
-      body: JSON.stringify({ ok: true, data: cached }),
+      body: JSON.stringify({ ok: true, data: cached, channel }),
     };
+  }
+
+  // Threads 분기 — IG 와 응답 schema 가 다름 (likes/comments/reach 대신 views/replies/reposts/quotes).
+  if (channel === 'threads') {
+    const threadsCtx = await getThreadsTokenForSeller(sellerId, admin);
+    if (!threadsCtx) {
+      return {
+        statusCode: 200,
+        headers: CORS,
+        body: JSON.stringify({ ok: true, data: null, message: 'Threads 미연동', channel }),
+      };
+    }
+    try {
+      const { meta, metrics } = await getThreadInsights({
+        token: threadsCtx.accessToken,
+        threadId: mediaId,
+      });
+      const data = {
+        mediaId: (meta && meta.id) || mediaId,
+        mediaType: (meta && meta.media_type) || 'TEXT_POST',
+        permalink: (meta && meta.permalink) || null,
+        thumbnail: (meta && (meta.thumbnail_url || meta.media_url)) || null,
+        caption: (meta && meta.text) || null,
+        timestamp: (meta && meta.timestamp) || null,
+        metrics,
+      };
+      await writeCache(channel, mediaId, data);
+      console.log(`[insight-on-demand] seller=${String(sellerId).slice(0,8)} thread=${mediaId} views=${metrics.views} likes=${metrics.likes}`);
+      return {
+        statusCode: 200,
+        headers: { ...CORS, 'X-Insight-Cache': 'miss' },
+        body: JSON.stringify({ ok: true, data, channel }),
+      };
+    } catch (e) {
+      if (e instanceof ThreadsGraphError && e.isTokenExpired()) {
+        console.warn(`[insight-on-demand] seller=${String(sellerId).slice(0,8)} Threads 토큰 만료 (code=${e.code})`);
+        await markThreadsTokenInvalid(admin, sellerId, 'insight-on-demand');
+        return {
+          statusCode: 200,
+          headers: CORS,
+          body: JSON.stringify({ ok: true, data: null, tokenExpired: true, error: 'token_expired', channel }),
+        };
+      }
+      if (e instanceof ThreadsGraphError && e.status && e.status >= 400 && e.status < 500) {
+        console.warn(`[insight-on-demand] seller=${String(sellerId).slice(0,8)} thread=${mediaId} not_found (code=${e.code})`);
+        return {
+          statusCode: 404,
+          headers: CORS,
+          body: JSON.stringify({ ok: false, error: 'media_not_found', channel }),
+        };
+      }
+      console.error('[insight-on-demand] Threads API 오류:', e && e.message);
+      return {
+        statusCode: 502,
+        headers: CORS,
+        body: JSON.stringify({ ok: false, error: 'Threads 인사이트 조회 실패', detail: e && e.message ? e.message : null, channel }),
+      };
+    }
   }
 
   // IG 토큰 조회
@@ -205,7 +278,7 @@ exports.handler = async (event) => {
     return {
       statusCode: 200,
       headers: CORS,
-      body: JSON.stringify({ ok: true, data: null, message: 'IG 미연동' }),
+      body: JSON.stringify({ ok: true, data: null, message: 'IG 미연동', channel }),
     };
   }
 
@@ -264,7 +337,7 @@ exports.handler = async (event) => {
       metrics,
     };
 
-    await writeCache(mediaId, data);
+    await writeCache(channel, mediaId, data);
 
     console.log(
       `[insight-on-demand] seller=${String(sellerId).slice(0, 8)} media=${mediaId} type=${mediaType} likes=${metrics.likes} reach=${metrics.reach}`
@@ -273,7 +346,7 @@ exports.handler = async (event) => {
     return {
       statusCode: 200,
       headers: { ...CORS, 'X-Insight-Cache': 'miss' },
-      body: JSON.stringify({ ok: true, data }),
+      body: JSON.stringify({ ok: true, data, channel }),
     };
   } catch (e) {
     if (e instanceof IgGraphError && e.isTokenExpired()) {
@@ -282,14 +355,14 @@ exports.handler = async (event) => {
       return {
         statusCode: 200,
         headers: CORS,
-        body: JSON.stringify({ ok: true, data: null, tokenExpired: true, error: 'token_expired' }),
+        body: JSON.stringify({ ok: true, data: null, tokenExpired: true, error: 'token_expired', channel }),
       };
     }
     console.error('[insight-on-demand] IG Graph API 오류:', e && e.message);
     return {
       statusCode: 502,
       headers: CORS,
-      body: JSON.stringify({ ok: false, error: 'IG 인사이트 조회 실패', detail: e && e.message ? e.message : null }),
+      body: JSON.stringify({ ok: false, error: 'IG 인사이트 조회 실패', detail: e && e.message ? e.message : null, channel }),
     };
   }
 };

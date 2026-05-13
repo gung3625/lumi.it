@@ -327,6 +327,53 @@ async function getThreadsAccountInsights({ token, threadsUserId, sinceSec, until
 }
 
 /**
+ * Threads 단건 thread 메타 + 인사이트.
+ *
+ * insight-on-demand 의 Threads 분기용. IG fetchMediaMeta+fetchMediaInsights 와
+ * 1:1 대응이지만 Threads 는 thread 자체에 like_count 등 표면 메트릭이 없고
+ * 인사이트 API 의 metric 들이 단일 source — 한 번 호출로 끝.
+ *
+ * Threads per-post Insights:
+ *   GET /{thread-id}/insights?metric=views,likes,replies,reposts,quotes
+ *   응답: { data: [{ name, values: [{ value }], total_value: { value } }] }
+ *
+ * @param {object} args
+ * @param {string} args.token
+ * @param {string} args.threadId
+ * @returns {Promise<{meta: object, metrics: {views, likes, replies, reposts, quotes}}>}
+ */
+async function getThreadInsights({ token, threadId }, opts = {}) {
+  if (!threadId) throw new ThreadsGraphError('threadId 누락');
+  const meta = await threadsGraphRequest(token, `/${threadId}`, {
+    fields: 'id,permalink,timestamp,media_type,media_url,thumbnail_url,text',
+  }, opts);
+  let metrics = { views: 0, likes: 0, replies: 0, reposts: 0, quotes: 0 };
+  try {
+    const resp = await threadsGraphRequest(token, `/${threadId}/insights`, {
+      metric: 'views,likes,replies,reposts,quotes',
+    }, opts);
+    for (const row of (resp && resp.data) || []) {
+      if (!row || !row.name) continue;
+      let val = 0;
+      if (row.total_value && typeof row.total_value.value === 'number') {
+        val = row.total_value.value;
+      } else if (Array.isArray(row.values) && row.values.length) {
+        val = row.values.reduce((s, v) => s + (Number(v && v.value) || 0), 0);
+      }
+      if (Object.prototype.hasOwnProperty.call(metrics, row.name)) {
+        metrics[row.name] = val;
+      }
+    }
+  } catch (e) {
+    // 권한·미디어 종류에 따라 일부 메트릭 미지원 — 0 으로 graceful.
+    // 토큰 만료는 위로 throw (호출자가 mark).
+    if (e instanceof ThreadsGraphError && e.isTokenExpired()) throw e;
+    console.warn('[threads-graph] thread insights 조회 경고:', e && e.message);
+  }
+  return { meta, metrics };
+}
+
+/**
  * ig_accounts.threads_token_invalid_at 마킹 헬퍼.
  *
  * Threads Graph 호출에서 ThreadsGraphError.isTokenExpired() 가 true 면
@@ -361,6 +408,7 @@ module.exports = {
   publishThreadsContainer,
   replyToThreadsComment,
   getThreadsAccountInsights,
+  getThreadInsights,
   markThreadsTokenInvalid,
   ThreadsGraphError,
   THREADS_API_VERSION,
