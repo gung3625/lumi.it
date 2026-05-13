@@ -42,6 +42,7 @@ exports.handler = async (event) => {
       .from('ig_accounts')
       .update({
         threads_user_id:           null,
+        threads_username:          null,
         threads_token_secret_id:   null,
         threads_token_expires_at:  null,
         threads_token_invalid_at:  null,

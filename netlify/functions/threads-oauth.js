@@ -187,16 +187,19 @@ exports.handler = async (event) => {
     const expiresAt = computeExpiresAt(longData.expires_in);
 
     // ────────────────────────────────────────────
-    // 4) user_id 확정 — 항상 /me 호출 (검증 2026-05-13)
+    // 4) user_id + username 확정 — 항상 /me 호출 (검증 2026-05-13)
     //    shortData.user_id 가 실제 Threads user ID 와 ±1 차이를 보이는
     //    Meta API quirk 가 확인됨 (게시 시 "Object does not exist" 거부).
-    //    /me?fields=id 가 게시 가능한 정확한 ID 를 반환.
+    //    /me?fields=id,username 이 게시 가능한 정확한 ID + 핸들을 반환.
+    //    username 은 답글 작성 시 본인 댓글 필터링에 사용 (reply-comment.js).
     // ────────────────────────────────────────────
     let resolvedThreadsUserId = null;
+    let resolvedThreadsUsername = null;
     try {
-      const meRes  = await fetch(`https://graph.threads.net/v1.0/me?fields=id&access_token=${encodeURIComponent(longToken)}`);
+      const meRes  = await fetch(`https://graph.threads.net/v1.0/me?fields=id,username&access_token=${encodeURIComponent(longToken)}`);
       const meData = await meRes.json();
       if (meData && meData.id) resolvedThreadsUserId = String(meData.id);
+      if (meData && meData.username) resolvedThreadsUsername = String(meData.username);
     } catch (e) {
       console.warn('[threads-oauth] /me 조회 실패:', e && e.message);
     }
@@ -246,6 +249,7 @@ exports.handler = async (event) => {
       .from('ig_accounts')
       .update({
         threads_user_id:           resolvedThreadsUserId,
+        threads_username:          resolvedThreadsUsername,
         threads_token_secret_id:   threadsSecretId,
         threads_token_expires_at:  expiresAt,
         threads_token_invalid_at:  null,
