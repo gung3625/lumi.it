@@ -195,6 +195,17 @@
     .chan-chip--threads.is-posted { background: #e0e7ff; color: #3730a3; }
     .chan-chip.is-failed          { background: #fde8e8; color: #b8221c; text-decoration: line-through; opacity: 0.8; }
     .chan-chip.is-posting         { background: var(--gradient-signature); color: #fff; }
+    /* button 으로 렌더된 chip — 기본 스타일 reset + 호버 affordance */
+    button.chan-chip {
+      border: 0; cursor: pointer; font-family: inherit;
+      transition: transform var(--duration-snap, 120ms) var(--ease-toss, ease-out),
+                  box-shadow var(--duration-snap, 120ms) var(--ease-toss, ease-out);
+    }
+    button.chan-chip:hover  { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+    button.chan-chip:active { transform: scale(0.97); }
+    @media (prefers-reduced-motion: reduce) {
+      button.chan-chip, button.chan-chip:hover, button.chan-chip:active { transform: none; transition: none; }
+    }
     @keyframes posting-pulse {
       0%, 100% { box-shadow: 0 0 0 0 rgba(255,107,139,0.5); }
       50%      { box-shadow: 0 0 0 8px rgba(255,107,139,0); }
@@ -289,6 +300,64 @@
     }
     .del-modal__btn--danger:hover { background: #b8456c; }
     .del-modal__btn--danger[disabled] { opacity: 0.4; pointer-events: none; }
+
+    /* insight modal — chip 클릭 시 게시별 인사이트 노출. del-modal 패턴 모방. */
+    .insight-modal {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex; align-items: center; justify-content: center;
+      padding: var(--space-4);
+      z-index: var(--z-modal);
+      opacity: 0; pointer-events: none;
+      transition: opacity var(--duration-base) var(--ease-toss);
+    }
+    .insight-modal.is-open { opacity: 1; pointer-events: auto; }
+    .insight-modal__card {
+      width: 100%; max-width: 420px;
+      background: var(--bg);
+      border-radius: var(--radius-lg);
+      padding: var(--space-5);
+      display: flex; flex-direction: column; gap: var(--space-3);
+      transform: translateY(8px) scale(0.98);
+      transition: transform var(--duration-base) var(--ease-toss);
+    }
+    .insight-modal.is-open .insight-modal__card { transform: translateY(0) scale(1); }
+    .insight-modal__head {
+      display: flex; align-items: center; justify-content: space-between; gap: var(--space-2);
+    }
+    .insight-modal__title { font-size: var(--text-headline); font-weight: var(--weight-semibold); color: var(--ink); }
+    .insight-modal__close {
+      background: transparent; border: 0; cursor: pointer;
+      font-size: 22px; line-height: 1; color: var(--ink-muted);
+      padding: 4px 8px;
+    }
+    .insight-modal__close:hover { color: var(--ink); }
+    .insight-modal__sub { font-size: var(--text-caption); color: var(--ink-muted); }
+    .insight-modal__state { font-size: var(--text-body); color: var(--ink-soft); padding: var(--space-3) 0; }
+    .insight-modal__grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-2);
+    }
+    .insight-stat {
+      background: var(--bg-soft);
+      border-radius: var(--radius-md);
+      padding: var(--space-3);
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .insight-stat__label { font-size: 12px; color: var(--ink-muted); }
+    .insight-stat__value { font-size: 18px; font-weight: var(--weight-semibold); color: var(--ink); font-variant-numeric: tabular-nums; }
+    .insight-modal__caption {
+      font-size: 13px; color: var(--ink-soft); line-height: 1.5;
+      max-height: 4.5em; overflow: hidden; text-overflow: ellipsis;
+    }
+    .insight-modal__link {
+      font-size: 12px; color: var(--ink-muted);
+      text-decoration: underline; margin-top: 4px;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .insight-modal, .insight-modal__card { transition: none; }
+    }
 
     @media (prefers-reduced-motion: reduce) {
       .del-modal, .del-modal__card, .res__cancel, .tab-tools__bulk {
@@ -574,6 +643,21 @@
       </div>
     </div>
 
+    <!-- 채널 chip 클릭 시 게시별 인사이트 (IG / Threads). -->
+    <div class="insight-modal" data-insight-modal aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="insight-modal-title">
+      <div class="insight-modal__card">
+        <div class="insight-modal__head">
+          <div class="insight-modal__title" id="insight-modal-title" data-insight-title>게시 인사이트</div>
+          <button type="button" class="insight-modal__close" data-insight-close aria-label="닫기">×</button>
+        </div>
+        <div class="insight-modal__sub" data-insight-sub hidden></div>
+        <div class="insight-modal__state" data-insight-state>불러오는 중…</div>
+        <div class="insight-modal__grid" data-insight-grid hidden></div>
+        <div class="insight-modal__caption" data-insight-caption hidden></div>
+        <a class="insight-modal__link" data-insight-permalink hidden target="_blank" rel="noopener noreferrer">원본 게시물 보기 →</a>
+      </div>
+    </div>
+
     <!-- 외곽 empty 박스 제거 — 탭 내부 placeholder 가 탭별 맞춤 메시지 담당.
          data-empty 변수 참조 호환을 위해 hidden 빈 div 유지 (JS 가 emptyEl.hidden 만 쓰므로 안전). -->
     <div class="empty" data-empty hidden aria-hidden="true"></div>
@@ -702,6 +786,115 @@
         try { await delPendingAction(); } finally { closeDelModal(); }
       });
 
+      // ── 인사이트 모달 — 채널 chip 클릭 시 게시별 metric 표시 ──
+      const insightModal     = document.querySelector('[data-insight-modal]');
+      const insightTitleEl   = insightModal?.querySelector('[data-insight-title]');
+      const insightSubEl     = insightModal?.querySelector('[data-insight-sub]');
+      const insightStateEl   = insightModal?.querySelector('[data-insight-state]');
+      const insightGridEl    = insightModal?.querySelector('[data-insight-grid]');
+      const insightCaptionEl = insightModal?.querySelector('[data-insight-caption]');
+      const insightLinkEl    = insightModal?.querySelector('[data-insight-permalink]');
+      const insightCloseBtn  = insightModal?.querySelector('[data-insight-close]');
+
+      function openInsightModal() {
+        if (!insightModal) return;
+        insightModal.classList.add('is-open');
+        insightModal.setAttribute('aria-hidden', 'false');
+      }
+      function closeInsightModal() {
+        if (!insightModal) return;
+        insightModal.classList.remove('is-open');
+        insightModal.setAttribute('aria-hidden', 'true');
+      }
+      function resetInsightModal() {
+        if (insightSubEl)     { insightSubEl.hidden = true; insightSubEl.textContent = ''; }
+        if (insightStateEl)   { insightStateEl.hidden = false; insightStateEl.textContent = '불러오는 중…'; }
+        if (insightGridEl)    { insightGridEl.hidden = true; insightGridEl.innerHTML = ''; }
+        if (insightCaptionEl) { insightCaptionEl.hidden = true; insightCaptionEl.textContent = ''; }
+        if (insightLinkEl)    { insightLinkEl.hidden = true; insightLinkEl.removeAttribute('href'); }
+      }
+
+      const STAT_LABELS = {
+        ig:      [['likes', '좋아요'], ['comments', '댓글'], ['reach', '도달'], ['saved', '저장']],
+        threads: [['views', '조회'],   ['likes', '좋아요'], ['replies', '답글'], ['reposts', '리포스트']],
+      };
+      function renderInsight(channel, data) {
+        const chLabel = channel === 'threads' ? '쓰레드' : '인스타';
+        if (insightTitleEl) insightTitleEl.textContent = `${chLabel} 게시 인사이트`;
+        if (insightSubEl && data.timestamp) {
+          try {
+            const d = new Date(data.timestamp);
+            insightSubEl.textContent = d.toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+            insightSubEl.hidden = false;
+          } catch { /* noop */ }
+        }
+        if (insightCaptionEl && data.caption) {
+          insightCaptionEl.textContent = data.caption;
+          insightCaptionEl.hidden = false;
+        }
+        if (insightLinkEl && data.permalink) {
+          insightLinkEl.setAttribute('href', data.permalink);
+          insightLinkEl.hidden = false;
+        }
+        if (insightGridEl) {
+          const fmt = (n) => Number(n || 0).toLocaleString('ko-KR');
+          const labels = STAT_LABELS[channel] || STAT_LABELS.ig;
+          insightGridEl.innerHTML = labels.map(([key, label]) => `
+            <div class="insight-stat">
+              <div class="insight-stat__label">${label}</div>
+              <div class="insight-stat__value">${fmt(data.metrics && data.metrics[key])}</div>
+            </div>
+          `).join('');
+          insightGridEl.hidden = false;
+        }
+        if (insightStateEl) insightStateEl.hidden = true;
+      }
+
+      async function loadInsight(channel, postId) {
+        openInsightModal();
+        resetInsightModal();
+        try {
+          const url = `/api/insight-on-demand?mediaId=${encodeURIComponent(postId)}&channel=${encodeURIComponent(channel)}`;
+          const res = await fetch(url, { headers: authHeaders });
+          const json = await res.json().catch(() => ({}));
+          if (!res.ok || !json.ok) {
+            if (insightStateEl) insightStateEl.textContent = json.error === 'media_not_found'
+              ? '게시물을 찾을 수 없어요. 삭제됐을 수 있어요.'
+              : '인사이트를 가져오지 못했어요.';
+            return;
+          }
+          if (json.tokenExpired || (json.data === null && json.error === 'token_expired')) {
+            const chLabel = channel === 'threads' ? 'Threads' : 'IG';
+            if (insightStateEl) insightStateEl.textContent = `${chLabel} 토큰이 만료됐어요. 설정에서 재연동해주세요.`;
+            return;
+          }
+          if (!json.data) {
+            const chLabel = channel === 'threads' ? '쓰레드' : '인스타';
+            if (insightStateEl) insightStateEl.textContent = `${chLabel} 연동이 필요해요.`;
+            return;
+          }
+          renderInsight(channel, json.data);
+        } catch (e) {
+          if (insightStateEl) insightStateEl.textContent = '네트워크 오류 — 다시 시도해주세요.';
+        }
+      }
+
+      // chip 클릭 위임 — 동적 렌더된 button.chan-chip[data-insight-chip]
+      document.addEventListener('click', (e) => {
+        const chip = e.target.closest('[data-insight-chip]');
+        if (!chip) return;
+        e.preventDefault();
+        const channel = chip.dataset.channel === 'threads' ? 'threads' : 'ig';
+        const postId  = chip.dataset.postId || '';
+        if (!postId) return;
+        loadInsight(channel, postId);
+      });
+      insightCloseBtn?.addEventListener('click', closeInsightModal);
+      insightModal?.addEventListener('click', (e) => { if (e.target === insightModal) closeInsightModal(); });
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && insightModal?.classList.contains('is-open')) closeInsightModal();
+      });
+
       // ── 탭 동작 ──
       // URL ?tab=upcoming|past 로 디폴트 탭 결정. 미지정 시 upcoming (예약 목록).
       function getInitialTab() {
@@ -822,6 +1015,7 @@
         }
 
         // M3.2 — 채널 칩 (channel_posts join 결과). 게시됨/게시 중 행에만 노출.
+        // posted 상태 + post_id 있으면 button 으로 렌더 — 클릭 시 insight modal 열림.
         let chipBlock = '';
         if ((r.is_sent || r.caption_status === 'posting') && Array.isArray(r.channels) && r.channels.length) {
           const labelMap = { ig: '인스타', threads: '쓰레드' };
@@ -829,6 +1023,10 @@
             .filter((c) => labelMap[c.channel])
             .map((c) => {
               const stCls = c.status === 'posted' ? 'is-posted' : (c.status === 'failed' ? 'is-failed' : 'is-posting');
+              const clickable = c.status === 'posted' && c.post_id;
+              if (clickable) {
+                return `<button type="button" class="chan-chip chan-chip--${esc(c.channel)} ${stCls}" data-insight-chip data-channel="${esc(c.channel)}" data-post-id="${esc(c.post_id)}" aria-label="${esc(labelMap[c.channel])} 게시 인사이트 보기">${esc(labelMap[c.channel])}</button>`;
+              }
               return `<span class="chan-chip chan-chip--${esc(c.channel)} ${stCls}">${esc(labelMap[c.channel])}</span>`;
             }).join('');
           if (chips) chipBlock = chips;
