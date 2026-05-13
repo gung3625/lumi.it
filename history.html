@@ -285,34 +285,49 @@
     }
     [data-select-confirm]:not([disabled]):hover { background: var(--ink-soft, #333); color: #fff; }
 
-    /* 선택 모드 — 카드 좌측 체크박스 + 클릭 시 토글 */
+    /* 선택 모드 — 카드 좌측 세로 가운데에 큰 체크 원 (사장님 피드백: 흐림 → 더 명확하게) */
     .res__check {
-      position: absolute; top: 12px; left: 12px;
-      width: 22px; height: 22px;
+      position: absolute;
+      top: 50%; left: 12px;
+      transform: translateY(-50%) scale(0.85);
+      width: 30px; height: 30px;
       border-radius: 50%;
-      border: 2px solid var(--line-strong, rgba(0,0,0,0.18));
-      background: rgba(255,255,255,0.95);
+      border: 2px solid var(--line-strong, rgba(0,0,0,0.25));
+      background: #fff;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
       display: none; align-items: center; justify-content: center;
       pointer-events: none;
-      transition: background var(--duration-snap) var(--ease-toss),
+      opacity: 0;
+      transition: opacity var(--duration-base) var(--ease-toss),
+                  transform var(--duration-base) var(--ease-toss),
+                  background var(--duration-snap) var(--ease-toss),
                   border-color var(--duration-snap) var(--ease-toss);
     }
     .res__check::after {
       content: '✓';
-      font-size: 13px; color: #fff; line-height: 1;
-      opacity: 0; transform: scale(0.7);
+      font-size: 16px; font-weight: 800; color: #fff; line-height: 1;
+      opacity: 0; transform: scale(0.6);
       transition: opacity var(--duration-snap) var(--ease-toss),
                   transform var(--duration-snap) var(--ease-toss);
     }
-    .res.is-checked .res__check { background: #c8507a; border-color: #c8507a; }
+    .res.is-checked .res__check {
+      background: #c8507a;
+      border-color: #c8507a;
+      box-shadow: 0 2px 8px rgba(200, 80, 122, 0.35);
+    }
     .res.is-checked .res__check::after { opacity: 1; transform: scale(1); }
     body.is-select-mode .res { position: relative; cursor: pointer; }
-    body.is-select-mode .res__check { display: flex; }
-    body.is-select-mode .res__thumb { opacity: 0.8; }
+    body.is-select-mode .res__check {
+      display: flex;
+      opacity: 1;
+      transform: translateY(-50%) scale(1);
+    }
+    /* 좌측 체크 원이 카드 위로 떠 있어 명확 — thumb dim 제거 (PR #233 에서 흐림 피드백) */
     body.is-select-mode .chan-retry,
     body.is-select-mode .res__cancel { pointer-events: none; opacity: 0.5; }
     @media (prefers-reduced-motion: reduce) {
-      .res__check, .res__check::after { transition: none; }
+      .res__check { transition: none; transform: translateY(-50%) scale(1); }
+      .res__check::after { transition: none; }
     }
 
     /* 삭제 확인 모달 (회원탈퇴 패턴과 동일 — 텍스트 입력 검증) */
