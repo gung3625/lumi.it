@@ -35,6 +35,7 @@ exports.handler = async (event) => {
       .from('reservations')
       .select('*')
       .eq('user_id', userId)
+      .is('deleted_at', null)
       .order('created_at', { ascending: false })
       .limit(50);
     if (error) {

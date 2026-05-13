@@ -209,9 +209,92 @@
       color: var(--ink-soft);
       align-self: flex-start;
       margin-top: var(--space-1);
+      transition:
+        border-color var(--duration-snap) var(--ease-toss),
+        color var(--duration-snap) var(--ease-toss),
+        transform var(--duration-snap) var(--ease-toss);
     }
     .res__cancel:hover { border-color: #c8507a; color: #c8507a; }
+    .res__cancel:focus-visible { outline: 2px solid #c8507a; outline-offset: 2px; }
     .res__cancel:active { transform: scale(0.95); }
+
+    /* 모두 삭제 — 탭 상단 우측 */
+    .tab-tools {
+      display: flex; align-items: center; justify-content: flex-end;
+      padding: 0 var(--space-4) var(--space-2);
+    }
+    .tab-tools__bulk {
+      padding: 6px var(--space-3);
+      background: transparent;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-pill);
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+      transition:
+        border-color var(--duration-snap) var(--ease-toss),
+        color var(--duration-snap) var(--ease-toss),
+        transform var(--duration-snap) var(--ease-toss);
+    }
+    .tab-tools__bulk:hover { border-color: #c8507a; color: #c8507a; }
+    .tab-tools__bulk:focus-visible { outline: 2px solid #c8507a; outline-offset: 2px; }
+    .tab-tools__bulk:active { transform: scale(0.97); }
+    .tab-tools__bulk[disabled] { opacity: 0.4; pointer-events: none; }
+
+    /* 삭제 확인 모달 (회원탈퇴 패턴과 동일 — 텍스트 입력 검증) */
+    .del-modal {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex; align-items: center; justify-content: center;
+      padding: var(--space-4);
+      z-index: var(--z-modal);
+      opacity: 0; pointer-events: none;
+      transition: opacity var(--duration-base) var(--ease-toss);
+    }
+    .del-modal.is-open { opacity: 1; pointer-events: auto; }
+    .del-modal__card {
+      width: 100%; max-width: 420px;
+      background: var(--bg);
+      border-radius: var(--radius-lg);
+      padding: var(--space-5);
+      display: flex; flex-direction: column; gap: var(--space-3);
+      transform: translateY(8px) scale(0.98);
+      transition: transform var(--duration-base) var(--ease-toss);
+    }
+    .del-modal.is-open .del-modal__card { transform: translateY(0) scale(1); }
+    .del-modal__title { font-size: var(--text-headline); font-weight: var(--weight-semibold); color: var(--ink); }
+    .del-modal__body { font-size: var(--text-body); color: var(--ink-soft); line-height: 1.5; }
+    .del-modal__hint { font-size: var(--text-caption); color: var(--ink-muted); }
+    .del-modal__input {
+      padding: var(--space-3); font-size: max(16px, var(--text-body));
+      border: 1px solid var(--line-strong); border-radius: var(--radius-md);
+      background: var(--bg); color: var(--ink);
+    }
+    .del-modal__row { display: flex; gap: var(--space-2); justify-content: flex-end; margin-top: var(--space-2); }
+    .del-modal__btn {
+      padding: var(--space-2) var(--space-4);
+      border-radius: var(--radius-pill);
+      border: 1px solid var(--line-strong);
+      background: transparent;
+      color: var(--ink-soft);
+      font-size: var(--text-body);
+      transition:
+        background var(--duration-snap) var(--ease-toss),
+        color var(--duration-snap) var(--ease-toss),
+        transform var(--duration-snap) var(--ease-toss);
+    }
+    .del-modal__btn:hover { background: var(--bg-soft); }
+    .del-modal__btn:active { transform: scale(0.97); }
+    .del-modal__btn--danger {
+      background: #c8507a; border-color: #c8507a; color: #fff;
+    }
+    .del-modal__btn--danger:hover { background: #b8456c; }
+    .del-modal__btn--danger[disabled] { opacity: 0.4; pointer-events: none; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .del-modal, .del-modal__card, .res__cancel, .tab-tools__bulk {
+        transition: none;
+      }
+    }
 
     .empty {
       padding: var(--space-12) var(--space-5);
@@ -465,6 +548,10 @@
       <button type="button" class="history-tab" data-tab="past" role="tab">히스토리</button>
     </div>
 
+    <div class="tab-tools" data-tab-tools hidden>
+      <button type="button" class="tab-tools__bulk" data-bulk-delete>모두 삭제</button>
+    </div>
+
     <section data-pane="upcoming" hidden>
       <ul class="res-list" data-upcoming-list></ul>
     </section>
@@ -472,6 +559,20 @@
     <section data-pane="past" hidden>
       <ul class="res-list" data-past-list></ul>
     </section>
+
+    <!-- 삭제 확인 모달 — 개별 / 모두 삭제 둘 다 사용. 모두 삭제 시 텍스트 입력 검증. -->
+    <div class="del-modal" data-del-modal aria-hidden="true" role="dialog" aria-modal="true">
+      <div class="del-modal__card">
+        <div class="del-modal__title" data-del-title>삭제하시겠어요?</div>
+        <div class="del-modal__body" data-del-body>이 기록만 루미 히스토리에서 사라져요. 인스타·쓰레드의 실제 게시물은 그대로 남습니다.</div>
+        <div class="del-modal__hint" data-del-hint hidden>실수 방지를 위해 <b>삭제</b> 를 정확히 입력해주세요.</div>
+        <input type="text" class="del-modal__input" data-del-input hidden placeholder="삭제" autocomplete="off" inputmode="text" />
+        <div class="del-modal__row">
+          <button type="button" class="del-modal__btn" data-del-cancel>취소</button>
+          <button type="button" class="del-modal__btn del-modal__btn--danger" data-del-confirm>삭제</button>
+        </div>
+      </div>
+    </div>
 
     <div class="empty" data-empty hidden>
       <div class="empty__icon">
@@ -557,11 +658,57 @@
 
       const stateEl = document.querySelector('[data-state]');
       const tabsEl = document.querySelector('[data-tabs]');
+      const tabToolsEl = document.querySelector('[data-tab-tools]');
+      const bulkBtn = document.querySelector('[data-bulk-delete]');
       const upcomingSec = document.querySelector('[data-pane="upcoming"]');
       const pastSec = document.querySelector('[data-pane="past"]');
       const upcomingList = document.querySelector('[data-upcoming-list]');
       const pastList = document.querySelector('[data-past-list]');
       const emptyEl = document.querySelector('[data-empty]');
+
+      // ── 삭제 확인 모달 ──
+      // 개별: 가벼운 확인. 모두 삭제: 실수 방지를 위해 '삭제' 텍스트 입력 검증.
+      const delModal = document.querySelector('[data-del-modal]');
+      const delTitle = document.querySelector('[data-del-title]');
+      const delBody = document.querySelector('[data-del-body]');
+      const delHint = document.querySelector('[data-del-hint]');
+      const delInput = document.querySelector('[data-del-input]');
+      const delConfirm = document.querySelector('[data-del-confirm]');
+      const delCancel = document.querySelector('[data-del-cancel]');
+      let delPendingAction = null; // () => Promise<void>
+
+      function openDelModal({ title, body, requireTyping, onConfirm }) {
+        delTitle.textContent = title || '삭제하시겠어요?';
+        delBody.textContent = body || '이 기록만 루미 히스토리에서 사라져요. 인스타·쓰레드의 실제 게시물은 그대로 남습니다.';
+        delHint.hidden = !requireTyping;
+        delInput.hidden = !requireTyping;
+        delInput.value = '';
+        delConfirm.disabled = !!requireTyping;
+        delConfirm.textContent = '삭제';
+        delPendingAction = onConfirm;
+        delModal.classList.add('is-open');
+        delModal.setAttribute('aria-hidden', 'false');
+        if (requireTyping) setTimeout(() => delInput.focus(), 50);
+      }
+      function closeDelModal() {
+        delModal.classList.remove('is-open');
+        delModal.setAttribute('aria-hidden', 'true');
+        delPendingAction = null;
+      }
+      delInput.addEventListener('input', () => {
+        delConfirm.disabled = delInput.value.trim() !== '삭제';
+      });
+      delCancel.addEventListener('click', closeDelModal);
+      delModal.addEventListener('click', (e) => { if (e.target === delModal) closeDelModal(); });
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && delModal.classList.contains('is-open')) closeDelModal();
+      });
+      delConfirm.addEventListener('click', async () => {
+        if (delConfirm.disabled || !delPendingAction) return;
+        delConfirm.disabled = true;
+        delConfirm.textContent = '삭제 중…';
+        try { await delPendingAction(); } finally { closeDelModal(); }
+      });
 
       // ── 탭 동작 ──
       // URL ?tab=upcoming|past 로 디폴트 탭 결정. 미지정 시 upcoming (예약 목록).
@@ -645,15 +792,11 @@
         // url 안 single-quote 가 들어오면 style 속성 탈출 → encodeURI 로 1차 차단.
         // Supabase signed URL 은 안전하지만 가드 없음 → 명시 처리.
         const thumbStyle = t ? `background-image:url('${encodeURI(t).replace(/'/g, '%27')}')` : '';
-        // 게시 안 된 건은 취소 / 실패한 건은 삭제 — 같은 endpoint(cancel-reservation),
-        //   서버가 is_sent=false 면 행+스토리지 모두 삭제. is_sent=true 만 cancelled=true 마킹.
-        let actionBtn = '';
-        if (!r.cancelled && !r.is_sent) {
-          if (r.caption_status === 'failed') {
-            actionBtn = `<button class="res__cancel" type="button" data-cancel="${esc(r.reserve_key)}" data-action="delete">삭제</button>`;
-          } else if (['scheduled', 'ready', 'pending', 'error'].includes(r.caption_status)) {
-            actionBtn = `<button class="res__cancel" type="button" data-cancel="${esc(r.reserve_key)}" data-action="cancel">취소</button>`;
-          }
+        // 액션 — 모든 카드에 '삭제' (히스토리에서 숨김, IG/Threads 게시물은 그대로).
+        //   미게시 + 진행 중(scheduled/ready/pending/error) 인 건은 '취소' 도 함께 노출.
+        let actionBtn = `<button class="res__cancel" type="button" data-delete="${esc(r.reserve_key)}">삭제</button>`;
+        if (!r.cancelled && !r.is_sent && ['scheduled', 'ready', 'pending', 'error'].includes(r.caption_status)) {
+          actionBtn = `<button class="res__cancel" type="button" data-cancel="${esc(r.reserve_key)}" data-action="cancel">취소</button>` + actionBtn;
         }
 
         // 게시됨이면 캡션 평가 버튼 — tone_rated 가 false 일 때만 활성
@@ -751,6 +894,7 @@
             : '<li class="empty"><div class="empty__title">아직 게시 이력이 없어요</div><div class="empty__sub">첫 게시가 올라가면 여기에 쌓여요.</div></li>';
           // 탭 표시 + 활성 탭에 따라 섹션 한 쪽만 노출
           if (tabsEl) tabsEl.hidden = false;
+          if (tabToolsEl) tabToolsEl.hidden = false;
           applyTab();
 
           // 캡션 평가 — 2단계: 등급 선택 → 코멘트 입력(선택) → 저장
@@ -809,8 +953,48 @@
             }
           });
 
-          // 취소/삭제 핸들러 (같은 endpoint — 서버가 미게시면 행+스토리지 삭제)
-          // 더블탭 방지 + 15초 타임아웃 (네트워크/서버 지연 시 "삭제 중…" 매달림 방지)
+          // 개별 삭제 (soft delete) — 모든 카드의 [data-delete] 버튼.
+          //   서버: /api/delete-reservation 가 deleted_at 마킹 + Storage 정리.
+          //   IG/Threads 실 게시물은 손대지 않음.
+          document.querySelectorAll('[data-delete]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+              e.preventDefault();
+              if (btn.dataset.busy === '1') return;
+              const key = btn.dataset.delete;
+              openDelModal({
+                title: '이 기록을 삭제할까요?',
+                body: '루미 히스토리에서만 사라져요. 인스타·쓰레드의 실제 게시물은 그대로 남습니다.',
+                requireTyping: false,
+                onConfirm: async () => {
+                  btn.dataset.busy = '1';
+                  btn.disabled = true;
+                  const ctrl = new AbortController();
+                  const tid = setTimeout(() => ctrl.abort(), 15000);
+                  try {
+                    const r = await fetch('/api/delete-reservation', {
+                      method: 'POST',
+                      headers: { ...authHeaders, 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ reserve_key: key }),
+                      signal: ctrl.signal,
+                    });
+                    if (!r.ok) throw new Error('실패');
+                    const li = btn.closest('li');
+                    if (li) li.remove();
+                    load();
+                  } catch (err) {
+                    alert('삭제에 실패했어요. 잠시 후 다시 시도해주세요.');
+                    btn.disabled = false;
+                    btn.dataset.busy = '0';
+                  } finally {
+                    clearTimeout(tid);
+                  }
+                },
+              });
+            });
+          });
+
+          // 취소 핸들러 (기존, 미게시 진행 중 row 전용) — /api/cancel-reservation
+          // 더블탭 방지 + 15초 타임아웃 (네트워크/서버 지연 시 "취소 중…" 매달림 방지)
           document.querySelectorAll('[data-cancel]').forEach(btn => {
             btn.addEventListener('click', async (e) => {
               e.preventDefault();
@@ -857,6 +1041,45 @@
             ? '시간이 초과됐어요. 새로고침해주세요.'
             : '히스토리를 불러오지 못했어요.';
         }
+      }
+
+      // 모두 삭제 — 활성 탭의 항목만 일괄 soft delete.
+      //   예약 목록(upcoming) → is_sent=false 만
+      //   히스토리(past)       → is_sent=true 만
+      //   강한 확인: '삭제' 텍스트 입력 검증 (회원탈퇴 패턴과 동일).
+      if (bulkBtn) {
+        bulkBtn.addEventListener('click', () => {
+          const scope = activeTab === 'past' ? 'past' : 'upcoming';
+          const scopeLabel = scope === 'past' ? '게시 기록' : '예약된 게시';
+          openDelModal({
+            title: `${scopeLabel} 전체를 삭제할까요?`,
+            body: `현재 탭의 모든 ${scopeLabel}이 루미 히스토리에서 사라져요. 인스타·쓰레드의 실제 게시물은 그대로 남습니다. 되돌릴 수 없습니다.`,
+            requireTyping: true,
+            onConfirm: async () => {
+              bulkBtn.disabled = true;
+              const ctrl = new AbortController();
+              const tid = setTimeout(() => ctrl.abort(), 30000);
+              try {
+                const r = await fetch('/api/delete-reservations-bulk', {
+                  method: 'POST',
+                  headers: { ...authHeaders, 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ scope }),
+                  signal: ctrl.signal,
+                });
+                if (!r.ok) throw new Error('실패');
+                // 활성 탭 리스트 즉시 비움 + reload
+                const targetList = scope === 'past' ? pastList : upcomingList;
+                if (targetList) targetList.innerHTML = '';
+                load();
+              } catch (err) {
+                alert('일괄 삭제에 실패했어요. 잠시 후 다시 시도해주세요.');
+              } finally {
+                clearTimeout(tid);
+                bulkBtn.disabled = false;
+              }
+            },
+          });
+        });
       }
 
       load();
