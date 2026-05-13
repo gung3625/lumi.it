@@ -343,36 +343,71 @@ async function mergeV2Fields(supa, keywords, category, collectedDate, axisFilter
       // axis 화이트리스트 필터 — v2 row의 axis가 interior/experience면 응답에서 제거 (axisFilter='all' 시 통과)
       .filter(k => axisAllowed(k.axis));
 
-    // base dedupe — 같은 키워드 중복(예: 레그프레스루틴 2번) 제거.
+    // base dedupe — 같은 키워드 중복(예: 마라탕 strong row + weak row 두 개) merge.
     //
-    // 이전엔 signalTier='weak' 를 일괄 제외했는데, scheduled-trends-v2 의 분류가
-    // 'cross_source >= 2 ? real : weak' 단순 이분법이라 검색량·velocity 좋은
-    // 키워드도 weak 로 묻혀 응답이 거의 비는 사고. 2026-05-13 다축 3-tier
-    // (strong/medium/weak) 도입 후 weak 도 의미 있는 long-tail 일 수 있으므로
-    // 일괄 제외 폐기. 정렬에서 후순위로만 처리.
+    // scheduled-trends-v2-background 가 같은 키워드를 cross_source 매칭본(strong/실데이터)
+    // 과 검색량 매칭본(weak/검색량) 으로 별도 row 만들 때가 있음 — dedup 시
+    // 한쪽만 살리면 정보 손실. 두 row 의 정보를 통합:
+    //   - tier 높은 쪽 유지
+    //   - 검색량/velocity 등 빈 값은 다른 row 의 값으로 채움
+    //   - crossSourceCount 는 max
+    //
+    // 정렬: tier(strong>medium>weak/real) → effectiveScore 순.
+    //   effectiveScore = weightedScore × source 보너스 + 검색량 log + velocity log.
+    //   옛 cron 의 weighted_score 는 검색량/velocity 미반영이라 동적 가중으로 보정.
     //
     // 옛 'real' 값은 backward-compat 으로 strong 동급 취급.
+    const TIER_RANK = { strong: 3, real: 3, medium: 2, weak: 1 };
+    const tierVal = (t) => TIER_RANK[t] || 0;
+
+    function mergePair(a, b) {
+      // tier 높은 쪽이 winner, 빈 값은 loser 로 채움.
+      const aTier = tierVal(a.signalTier);
+      const bTier = tierVal(b.signalTier);
+      const winner = aTier >= bTier ? a : b;
+      const loser  = winner === a ? b : a;
+      return {
+        ...loser,
+        ...winner,
+        monthlySearchTotal:        winner.monthlySearchTotal ?? loser.monthlySearchTotal,
+        searchVolumeMatchType:     winner.searchVolumeMatchType ?? loser.searchVolumeMatchType,
+        searchVolumeRootKeyword:   winner.searchVolumeRootKeyword ?? loser.searchVolumeRootKeyword,
+        velocityPct:               typeof winner.velocityPct === 'number' ? winner.velocityPct : loser.velocityPct,
+        crossSourceCount:          Math.max(winner.crossSourceCount || 0, loser.crossSourceCount || 0),
+        weightedScore:             Math.max(
+                                     typeof winner.weightedScore === 'number' ? winner.weightedScore : -Infinity,
+                                     typeof loser.weightedScore === 'number'  ? loser.weightedScore  : -Infinity,
+                                   ),
+      };
+    }
+
     const dedup = new Map();
     for (const k of baseMerged) {
       const key = (k.keyword || '').toLowerCase().trim();
       if (!key) continue;
       const prev = dedup.get(key);
-      if (!prev) { dedup.set(key, k); continue; }
-      // 같은 키워드 중복 시 weightedScore 큰 쪽 유지
-      const pw = typeof prev.weightedScore === 'number' ? prev.weightedScore : -Infinity;
-      const cw = typeof k.weightedScore === 'number' ? k.weightedScore : -Infinity;
-      if (cw > pw) dedup.set(key, k);
+      dedup.set(key, prev ? mergePair(prev, k) : k);
     }
-    // tier 우선순위 (strong > medium > weak/undefined) + weightedScore 정렬.
-    const TIER_RANK = { strong: 3, real: 3, medium: 2, weak: 1 };
-    const tierVal = (t) => TIER_RANK[t] || 0;
+
+    // 효과적 점수 — 옛 cron 의 weighted_score 가 검색량/velocity 미반영이라
+    // get-trends 가 동적 가중. 새 cron 데이터에도 같은 정렬식 적용 (일관성).
+    function effectiveScore(k) {
+      let s = typeof k.weightedScore === 'number' ? k.weightedScore : 0;
+      if (typeof k.crossSourceCount === 'number' && k.crossSourceCount >= 2) s *= 1.5;
+      if (typeof k.monthlySearchTotal === 'number' && k.monthlySearchTotal >= 1000) {
+        s += Math.log(k.monthlySearchTotal) * 0.3;
+      }
+      if (typeof k.velocityPct === 'number' && k.velocityPct > 0) {
+        s += Math.log(k.velocityPct + 1) * 0.5;
+      }
+      return s;
+    }
+
     const merged = Array.from(dedup.values()).sort((a, b) => {
       const ta = tierVal(a.signalTier);
       const tb = tierVal(b.signalTier);
       if (tb !== ta) return tb - ta;
-      const wa = typeof a.weightedScore === 'number' ? a.weightedScore : -Infinity;
-      const wb = typeof b.weightedScore === 'number' ? b.weightedScore : -Infinity;
-      return wb - wa;
+      return effectiveScore(b) - effectiveScore(a);
     });
 
     // trends row 의 keywords 가 너무 적은 카테고리(예: fitness=3) 보강 —
