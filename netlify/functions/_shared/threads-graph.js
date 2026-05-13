@@ -183,6 +183,59 @@ async function createThreadsContainer({ token, threadsUserId, mediaType, imageUr
 }
 
 /**
+ * Threads 컨테이너 상태 폴링 — publish 호출 전 status='FINISHED' 대기.
+ *
+ * Meta 공식 (developers.facebook.com/docs/threads/troubleshooting):
+ *   GET /{container-id}?fields=status,error_message
+ *   status: IN_PROGRESS → FINISHED → (publish 후) PUBLISHED
+ *           ERROR / EXPIRED 는 즉시 실패
+ *
+ * lumi 는 IG `waitForContainer` 와 일관되게 5초 간격 × 24회 (최대 2분).
+ * Meta 권장 1분 간격은 보수적이라 단축. 단일 IMAGE 는 보통 5~10초 내 FINISHED.
+ *
+ * @param {object} args
+ * @param {string} args.token
+ * @param {string} args.creationId
+ * @param {object} [opts] - { intervalMs, maxAttempts, timeoutMs }
+ * @returns {Promise<{status: string}>} - status 가 FINISHED|PUBLISHED 일 때만 반환
+ * @throws {ThreadsGraphError} - ERROR/EXPIRED/timeout/토큰만료
+ */
+async function waitForThreadsContainer({ token, creationId }, opts = {}) {
+  if (!creationId) throw new ThreadsGraphError('creationId 누락');
+  const intervalMs  = opts.intervalMs  || 5000;
+  const maxAttempts = opts.maxAttempts || 24;
+  const timeoutMs   = opts.timeoutMs   || 8000;
+  let lastStatus = null;
+  for (let i = 0; i < maxAttempts; i++) {
+    await new Promise(r => setTimeout(r, intervalMs));
+    let data;
+    try {
+      data = await threadsGraphRequest(
+        token,
+        `/${creationId}`,
+        { fields: 'status,error_message' },
+        { method: 'GET', timeoutMs },
+      );
+    } catch (e) {
+      if (e instanceof ThreadsGraphError && e.isTokenExpired()) throw e;
+      continue;
+    }
+    lastStatus = data && data.status;
+    if (lastStatus === 'FINISHED' || lastStatus === 'PUBLISHED') return data;
+    if (lastStatus === 'ERROR' || lastStatus === 'EXPIRED') {
+      throw new ThreadsGraphError(
+        `Threads 컨테이너 ${lastStatus}: ${(data && data.error_message) || 'unknown'}`,
+        { status: 0 },
+      );
+    }
+  }
+  throw new ThreadsGraphError(
+    `Threads 컨테이너 ${maxAttempts}회 폴링 후 status 미확정 (last=${lastStatus || 'null'})`,
+    { status: 0 },
+  );
+}
+
+/**
  * Threads 컨테이너 publish (2단계 게시의 2단계).
  *
  * @param {object} args
@@ -273,6 +326,7 @@ module.exports = {
   getThreadsTokenForSeller,
   threadsGraphRequest,
   createThreadsContainer,
+  waitForThreadsContainer,
   publishThreadsContainer,
   getThreadsAccountInsights,
   markThreadsTokenInvalid,
