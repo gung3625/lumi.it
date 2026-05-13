@@ -179,6 +179,7 @@ history.html — 사장님 평가 👍/👎 + 코멘트 → tone_feedback 누적
 | `seller_post_history` | **IG 게시 이력 통합** — 가입 전 직접 게시(source='pre-lumi') + Lumi 게시(source='lumi'). PK(user_id, ig_media_id). 게시별 reach/saved/engagement/insights_fetched_at. 베스트 시간 Tier 1/3 데이터. |
 | `follower_activity_snapshots` | **Meta `online_followers` 누적 매트릭스** — 일별 cron 으로 hour×day_of_week 채움. PK(user_id, snapshot_date, hour). 28일 분 누적되면 베스트 시간 Tier 2 활성. |
 | `channel_posts` | **멀티 채널 게시 상태 정규화** — 1 reservation × N 채널 (현재 'ig'/'threads', 향후 TikTok/YouTube). PK(reservation_id, channel). status(pending→posting→posted/failed) atomic CAS. `credit_consumed` 컬럼이 결정사항 §12-A #7 (성공 채널만 차감) 의 source of truth. 2026-05-12 prod 적용 (마이그레이션 `20260512200000_channel_posts.sql`). M2(post-channels-background) 부터 실제 사용. |
+| `data_deletion_requests` | **Meta 데이터 삭제 콜백 추적** — Meta App Review 정책 준수. 사장님이 facebook.com / threads.net 에서 lumi 앱 권한 회수 시 `/api/data-deletion-callback` 이 1 row 생성. `confirmation_code`(unique) 로 사장님이 `/data-deletion-status?code=...` 에서 진행 상황 확인. status: pending/completed/not_found/failed. seller_id 매칭 실패는 not_found (사장님 별도 문의 유도). 2026-05-13 prod 적용. |
 
 ### 중요 invariant
 
@@ -359,6 +360,7 @@ sellers.id = reservations.user_id = ig_accounts.user_id = tone_feedback.user_id
 
 **운영자 후속 작업 (출시 전 필수):**
 - Meta 앱 콘솔에서 **Threads use case 활성화** + redirect URI 등록: `https://lumi.it.kr/.netlify/functions/threads-oauth`
+- **데이터 삭제 콜백 URL 등록:** `https://lumi.it.kr/.netlify/functions/data-deletion-callback` (앱 설정 → 사용자 데이터 삭제 → "데이터 삭제 콜백 URL" 선택). signed_request HMAC 검증은 `META_APP_SECRET` / `THREADS_APP_SECRET` 양쪽 시도하므로 단일 콜백 URL 로 IG·Threads 모두 처리.
 - (선택) 별도 Threads 앱 사용 시 `THREADS_APP_ID` / `THREADS_APP_SECRET` 환경변수. 미설정 시 `META_APP_ID` / `META_APP_SECRET` fallback.
 
 **남은 후속 (우선순위 낮음):**
