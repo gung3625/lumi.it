@@ -188,29 +188,65 @@ async function fetchKeywordSearchVolume(keyword) {
 }
 
 /**
- * 한국어 합성어 분해 — Netlify Functions 환경에서 native NLP 못 쓰므로 휴리스틱 사용.
+ * 한국어 product/style suffix 사전 — 카테고리별 product noun.
+ *
+ * splitCompoundKorean 이 키워드 끝에서 이 사전의 형태소를 만나면 그걸 1순위
+ * candidate 으로 시도. 일반 휴리스틱 (4/3/2-syllable slice) 보다 우선.
+ *
+ * 추가 시 product noun 만 (브랜드/형용사 X). 길이 desc 로 매칭.
+ */
+const KO_PRODUCT_SUFFIXES = [
+  // 4 syllables
+  '드라이플라워', '스트레이트', '러닝화신상', '레이스탑',
+  // 3 syllables
+  '아메리카', '러닝화', '에센스', '클렌저', '스니커즈', '레깅스', '오마카세',
+  '스커트', '재킷', '점퍼', '코트', '셔츠', '블라우스', '원피스', '청바지',
+  '브라운', '하이라이트', '아이라이너', '립스틱', '쿠션',
+  '디저트', '케이크', '쿠키', '스무디', '마카롱', '크로플',
+  '하네스', '간식바', '장난감',
+  // 2 syllables — 가장 일반 product noun
+  '세럼', '앰플', '크림', '토너', '미스트', '마스크', '에센스',
+  '컷트', '컷', '펌', '단발',
+  '네일', '젤네일',
+  '신상', '팬츠', '롱원피스', '신발', '운동화', '샌들', '구두',
+  '라떼', '커피', '빵', '디저트', '메뉴',
+  '사료', '간식', '용품',
+  '필라테스', '요가', '러닝',
+  '꽃집', '부케', '리스', '향기', '장미', '튤립',
+];
+
+/**
+ * 한국어 합성어 분해 — Netlify Functions 환경에서 native NLP 못 쓰므로 휴리스틱.
  *
  * 전략 (긴 root 우선 = 더 구체적 검색량 추정):
+ *   0) KO_PRODUCT_SUFFIXES 사전 매칭 — 키워드 끝이 product noun 이면 그 noun 우선
+ *      (예: "자라데님스커트" → "스커트", "에코피니티세럼" → "세럼")
  *   1) 4-syllable suffix / prefix
  *   2) 3-syllable suffix / prefix
  *   3) 2-syllable suffix / prefix (가장 일반, 마지막 fallback)
  *
- * 응답: 후보 substrings sorted by 길이 desc.
- *
- * 예: "수국드라이플라워" (8 syllables) →
- *   ['수국드라', '국드라이', '드라이플', '라이플라', '이플라워', '수국드', '국드라', '드라이', '라이플', '이플라', '플라워', '수국', ...]
+ * 응답: 후보 substrings sorted by 길이 desc, 단 사전 매칭은 항상 1순위.
  *
  * 너무 많은 후보는 API 비용 ↑ 이라 maxCandidates 로 제한.
  */
-function splitCompoundKorean(keyword, maxCandidates = 8) {
+function splitCompoundKorean(keyword, maxCandidates = 12) {
   if (!keyword || keyword.length < 4) return [];
   const k = keyword.replace(/\s+/g, '');
   const len = k.length;
-  const subs = new Set();
 
-  // Suffix priority — 합성어의 의미 핵심은 보통 마지막 root.
-  // (예: "수국드라이플라워" → 핵심 "플라워")
-  // length 4, 3, 2 순으로
+  // Layer 0 — 사전 suffix 매칭 (1순위)
+  const priorityHits = [];
+  for (const suffix of KO_PRODUCT_SUFFIXES) {
+    if (suffix.length < len && k.endsWith(suffix)) {
+      priorityHits.push(suffix);
+    }
+  }
+  // 길이 desc — 긴 매칭이 더 구체적
+  priorityHits.sort((a, b) => b.length - a.length);
+
+  const subs = new Set(priorityHits);
+
+  // Layer 1 — 일반 휴리스틱 (suffix/prefix 4·3·2 syllable)
   for (let l = 4; l >= 2; l--) {
     if (l < len) {
       subs.add(k.slice(-l));    // suffix
@@ -218,7 +254,7 @@ function splitCompoundKorean(keyword, maxCandidates = 8) {
     }
   }
 
-  // Middle 부분 — 5음절+ 합성어에서 의미 있을 수 있음
+  // Layer 2 — Middle 부분 (5음절+ 합성어)
   if (len >= 6) {
     for (let l = 4; l >= 3; l--) {
       for (let s = 1; s <= len - l - 1; s++) {
@@ -228,11 +264,13 @@ function splitCompoundKorean(keyword, maxCandidates = 8) {
     }
   }
 
-  // 길이 desc 로 정렬 — 긴 root 가 더 구체적 = 가치 높은 추정
-  return Array.from(subs)
-    .filter(s => s.length >= 2 && s !== k)
-    .sort((a, b) => b.length - a.length)
-    .slice(0, maxCandidates);
+  // 길이 desc 정렬 — 단 priorityHits 는 사전 등록 순서로 앞에 유지
+  const result = [];
+  for (const p of priorityHits) result.push(p);
+  for (const s of Array.from(subs).filter(s => !priorityHits.includes(s)).sort((a, b) => b.length - a.length)) {
+    result.push(s);
+  }
+  return result.filter(s => s.length >= 2 && s !== k).slice(0, maxCandidates);
 }
 
 /**
@@ -285,4 +323,5 @@ module.exports = {
   fetchKeywordSearchVolume,
   fetchKeywordSearchVolumeRobust,
   splitCompoundKorean,
+  KO_PRODUCT_SUFFIXES,
 };

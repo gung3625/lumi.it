@@ -13,7 +13,7 @@
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { runGuarded } = require('./_shared/cron-guard');
 const { checkAndIncrementQuota, QuotaExceededError } = require('./_shared/openai-quota');
-const { fetchRelatedFromSeeds, fetchKeywordSearchVolumeRobust } = require('./_shared/naver-ad-keyword-tool');
+const { fetchRelatedFromSeeds, fetchKeywordSearchVolume, fetchKeywordSearchVolumeRobust } = require('./_shared/naver-ad-keyword-tool');
 const {
   LUMI_INDUSTRY_CATEGORIES,
   fetchCategoryTrend,
@@ -62,6 +62,66 @@ const SOURCE_WEIGHTS = {
   // 쇼핑 신호 가중치 3 — 검색 데이터랩과 동등. 구매 의도 신호라 가치 높음.
   shopping: 3,
 };
+
+// ─────────────────────────────────────────────
+// 카테고리별 anchor 후보 — Layer 3 DataLab ratio fallback 용.
+// Layer 3 는 anchor (검색량 큰 일반 키워드) 와 target (검색량 모르는 키워드) 의
+// ratio 를 비교해 target 검색량 추정. anchor 가 같은 카테고리·시즌이어야 정확.
+//
+// 기존: enrichedKeywords 안의 exact-matched 키워드를 anchor 로 사용. 미용/네일은
+// exact 매칭이 거의 없어 anchor=0 → Layer 3 skip → 검색량 매칭률 0~10% (사고).
+//
+// 신규: 카테고리별 후보 list 사전 등록. 매 cron 시작 시 첫 매칭되는 anchor 의
+// 검색량 fetch 후 카테고리 cache. Layer 3 fallback 이 enrichedKeywords anchor
+// 없으면 cache 의 카테고리 anchor 사용.
+//
+// 후보 선정 기준:
+//   1) 카테고리 대표 product noun (일반 검색량 ≥1k 예상)
+//   2) 시즌 무관 안정적 키워드
+//   3) GPT blacklist 에 들어가는 카테고리 총칭은 피함 (검색량은 있어도 anchor 로 사용 OK)
+// ─────────────────────────────────────────────
+const CATEGORY_ANCHORS = {
+  cafe:    ['아메리카노', '라떼', '카페라떼', '카페추천'],
+  food:    ['치킨', '피자', '맛집', '오마카세'],
+  beauty:  ['스킨케어', '토너', '세럼', '쿠션'],
+  hair:    ['헤어컷', '단발머리', '염색'],
+  nail:    ['젤네일', '네일아트', '네일'],
+  fashion: ['원피스', '운동화', '청바지', '신발'],
+  flower:  ['꽃다발', '장미', '튤립', '부케'],
+  fitness: ['필라테스', '헬스장', '요가'],
+  pet:     ['강아지사료', '강아지간식', '고양이장난감'],
+};
+
+// 카테고리 anchor cache — cron 1회 실행 동안 카테고리당 1회만 fetch
+const CATEGORY_ANCHOR_CACHE = new Map();
+
+/**
+ * 카테고리의 anchor 키워드 + 검색량 반환.
+ * 후보 list 를 순서대로 fetchKeywordSearchVolume — 첫 매칭 캐시.
+ *
+ * @param {string} category
+ * @returns {Promise<{keyword:string, monthlySearchTotal:number} | null>}
+ */
+async function resolveCategoryAnchor(category) {
+  if (CATEGORY_ANCHOR_CACHE.has(category)) return CATEGORY_ANCHOR_CACHE.get(category);
+  const candidates = CATEGORY_ANCHORS[category] || [];
+  for (const cand of candidates) {
+    try {
+      const vol = await fetchKeywordSearchVolume(cand);
+      if (vol && Number.isFinite(vol.monthlyTotal) && vol.monthlyTotal > 0) {
+        const anchor = { keyword: cand, monthlySearchTotal: vol.monthlyTotal };
+        CATEGORY_ANCHOR_CACHE.set(category, anchor);
+        console.log(`[category-anchor] ${category} → "${cand}" (${vol.monthlyTotal})`);
+        return anchor;
+      }
+    } catch (e) {
+      // 다음 후보 시도
+    }
+  }
+  CATEGORY_ANCHOR_CACHE.set(category, null);
+  console.warn(`[category-anchor] ${category} — 모든 후보 매칭 실패`);
+  return null;
+}
 
 // ─────────────────────────────────────────────
 // 필터
@@ -1468,7 +1528,10 @@ JSON 객체만 반환. 설명·마크다운·코드블록 금지.
 - 배열 내 중복 금지`;
 
   try {
-    const content = await callGPT({ prompt, maxTokens: 1200, temperature: 0.2 });
+    // 파라미터 보강 (2026-05-13):
+    //   temperature 0.2 → 0.1 — 분류 결정성 ↑ (같은 입력 반복 시 흔들림 ↓)
+    //   maxTokens 1200 → 2000 — 9 카테고리 × 최대 12 keyword JSON 출력 잘림 차단
+    const content = await callGPT({ prompt, maxTokens: 2000, temperature: 0.1 });
     if (!content) return null;
 
     const clean = content.replace(/```json|```/g, '').trim();
@@ -1482,16 +1545,44 @@ JSON 객체만 반환. 설명·마크다운·코드블록 금지.
       return null;
     }
 
+    // schema validate — 9개 카테고리 키 중 하나라도 배열이 아니면 fallback (null)
+    const CATS = ['cafe', 'food', 'beauty', 'nail', 'hair', 'flower', 'fashion', 'fitness', 'pet'];
+    const validKeys = CATS.filter(c => Array.isArray(parsed[c]));
+    if (validKeys.length === 0) {
+      console.error('[gpt-classify] 응답에 유효한 카테고리 배열 0 — fallback');
+      return null;
+    }
+
+    // 브랜드 prefix 도배 차단 (GPT 의 다양성 25% 규칙이 자주 무시됨, 검증 2026-05-13).
+    //   카테고리당 같은 prefix (앞 2~3음절) 키워드는 max 2개. 셋째부터 drop.
+    //   예: 자라데님스커트, 자라스트라이프니트, 자라버뮤다팬츠, 자라와이드팬츠
+    //   → 처음 2개만 유지, 나머지 drop. 사장님 화면이 한 브랜드로 도배되는 사고 방지.
+    function brandPrefix(k) {
+      const s = String(k).replace(/\s+/g, '');
+      // 2~3음절 prefix 가 브랜드명일 가능성 높음 (자라/유니클로/룰루레몬/닥터지/코스알엑스 등)
+      // 단 짧은 키워드는 prefix=전체로 fallback
+      if (s.length <= 3) return s;
+      return s.slice(0, 3);
+    }
+
     const out = {};
-    for (const cat of ['cafe', 'food', 'beauty', 'nail', 'hair', 'flower', 'fashion', 'fitness', 'pet']) {
+    for (const cat of CATS) {
       const arr = Array.isArray(parsed[cat]) ? parsed[cat] : [];
       const seen = new Set();
+      const prefixCount = new Map();
       const cleaned = [];
       for (const t of arr) {
         const norm = normalize(t);
         const key = norm.toLowerCase();
         if (!norm || seen.has(key)) continue;
         if (isBadKeyword(norm)) continue;
+        const pfx = brandPrefix(norm);
+        const cnt = prefixCount.get(pfx) || 0;
+        if (cnt >= 2) {
+          console.log(`[gpt-classify] ${cat} brand-dedup drop "${norm}" (prefix="${pfx}" 이미 2개)`);
+          continue;
+        }
+        prefixCount.set(pfx, cnt + 1);
         seen.add(key);
         cleaned.push(norm);
         if (cleaned.length >= 12) break;
@@ -2196,16 +2287,24 @@ exports.handler = runGuarded({
 
           // Layer 3 — DataLab ratio cross-reference fallback.
           // Layer 1/2 모두 실패한 키워드들에 대해 DataLab ratio 로 절대량 추정.
-          // 같은 카테고리의 exact-matched 키워드 1개를 anchor 로 잡고, target 과 함께
-          // DataLab 호출 → ratio 비율로 anchor monthlyTotal × (target_ratio / anchor_ratio).
           //
-          // anchor 가 없으면 (전부 root 매칭이거나 전부 fail) Layer 3 스킵.
+          // anchor 선택:
+          //   1순위) enrichedKeywords 의 exact-matched 키워드 (같은 cron 응답 안)
+          //   2순위) CATEGORY_ANCHORS 사전 (cron 시작 시 cache) — 미용/네일/패션 등
+          //          exact 매칭이 거의 없는 카테고리도 항상 anchor 확보 (검증 2026-05-13).
+          //
+          // anchor 가 둘 다 없으면 Layer 3 스킵 (드물지만 가능 — 사전 후보도 매칭 실패).
           const missingKeywords = enrichedKeywords.filter(k => k.monthlySearchTotal === null);
           const exactAnchors = enrichedKeywords.filter(k =>
             k.monthlySearchTotal !== null && k.searchVolumeMatchType === 'exact'
           );
-          if (missingKeywords.length > 0 && exactAnchors.length > 0) {
-            const anchor = exactAnchors[0];
+          let anchor = null;
+          if (exactAnchors.length > 0) {
+            anchor = exactAnchors[0];
+          } else if (missingKeywords.length > 0) {
+            anchor = await resolveCategoryAnchor(category);
+          }
+          if (missingKeywords.length > 0 && anchor) {
             for (const miss of missingKeywords) {
               try {
                 const est = await estimateByDataLabRatio(anchor, miss.keyword);
