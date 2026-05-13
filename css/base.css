@@ -23,7 +23,10 @@ html, body {
 }
 
 body {
-  overflow-x: hidden;
+  /* overflow-x: hidden 은 iOS Safari 에서 position:fixed 의 containing block 을
+     body 로 만들어 하단 탭바 fixed 가 깨지는 알려진 버그가 있음. clip 은 동일하게
+     가로 over flow 차단하면서 containing block 은 만들지 않음. iOS Safari 16+ 지원. */
+  overflow-x: clip;
   touch-action: manipulation;
 }
 

@@ -323,6 +323,17 @@
       margin-top: 6px;
     }
     .bt-progress__row:first-of-type { margin-top: 0; }
+    /* 1단계 compact — Tier 1a 는 요일 분리 없음 → 단일 상태 줄 */
+    .bt-progress__status {
+      display: flex; align-items: center; gap: 8px;
+      padding: 2px 0;
+      font-size: var(--text-caption);
+      color: var(--ink-soft);
+    }
+    .bt-progress__status-icon { font-size: 14px; line-height: 1; }
+    .bt-progress__status-label { flex: 1; font-weight: var(--weight-semibold, 600); color: var(--ink); }
+    .bt-progress__status-state { color: var(--ink-muted); font-size: 11px; }
+    .bt-progress__stage--compact.is-ready .bt-progress__status-state { color: var(--pink-600, #c8507a); font-weight: 600; }
     .bt-progress__label {
       flex-shrink: 0;
       width: 36px;
@@ -586,22 +597,12 @@
         </div>
         <div class="bt-progress" data-bt-progress hidden>
           <div class="bt-progress__hint" data-bt-progress-hint></div>
-          <!-- 1단계: 팔로워 접속 시간 (Tier 1a — online_followers) -->
-          <div class="bt-progress__stage" data-bt-progress-stage="t1">
-            <div class="bt-progress__stage-title">1. 팔로워 접속 시간</div>
-            <div class="bt-progress__row" data-bt-progress-row="weekday">
-              <span class="bt-progress__label">평일</span>
-              <span class="bt-progress__bar">
-                <i class="is-measured" data-bt-progress-fill="weekday"></i>
-              </span>
-              <span class="bt-progress__count" data-bt-progress-count="weekday">0/1</span>
-            </div>
-            <div class="bt-progress__row" data-bt-progress-row="weekend">
-              <span class="bt-progress__label">주말</span>
-              <span class="bt-progress__bar">
-                <i class="is-measured" data-bt-progress-fill="weekend"></i>
-              </span>
-              <span class="bt-progress__count" data-bt-progress-count="weekend">0/1</span>
+          <!-- 1단계: 팔로워 접속 시간 (Tier 1a — online_followers, 요일 분리 없음) -->
+          <div class="bt-progress__stage bt-progress__stage--compact" data-bt-progress-stage="t1">
+            <div class="bt-progress__status">
+              <span class="bt-progress__status-icon" aria-hidden="true">⏳</span>
+              <span class="bt-progress__status-label">1. 팔로워 접속 시간</span>
+              <span class="bt-progress__status-state" data-bt-progress-state="t1">IG 연동 필요</span>
             </div>
           </div>
           <!-- 2단계: 팔로워 활동 시간대 (Tier 2 — 28일 누적, 요일별 분리) -->
@@ -845,19 +846,14 @@
           return;
         }
         progEl.hidden = false;
-        // 1단계 — 팔로워 접속 시간 (Tier 1a, online_followers). have=1 면 활성.
-        ['weekday', 'weekend'].forEach((dow) => {
-          const p = (progress && progress[dow]) || { have: 0, need: 1, ready: false };
-          const have = Math.max(0, Number(p.have) || 0);
-          const need = Math.max(1, Number(p.need) || 1);
-          const ratio = p.ready ? 100 : Math.min(100, Math.round((have / need) * 100));
-          const fill = document.querySelector(`[data-bt-progress-fill="${dow}"]`);
-          const count = document.querySelector(`[data-bt-progress-count="${dow}"]`);
-          const row = document.querySelector(`[data-bt-progress-row="${dow}"]`);
-          if (fill) fill.style.width = ratio + '%';
-          if (count) count.textContent = `${have}/${need}`;
-          if (row) row.classList.toggle('is-ready', !!p.ready);
-        });
+        // 1단계 — 팔로워 접속 시간 (Tier 1a). 단일 상태 ✓/⏳ + 라벨.
+        const t1Ready = !!(progress && progress.weekday && progress.weekday.ready);
+        const stage1El = document.querySelector('[data-bt-progress-stage="t1"]');
+        const stage1IconEl = stage1El?.querySelector('.bt-progress__status-icon');
+        const stage1StateEl = document.querySelector('[data-bt-progress-state="t1"]');
+        if (stage1El) stage1El.classList.toggle('is-ready', t1Ready);
+        if (stage1IconEl) stage1IconEl.textContent = t1Ready ? '✓' : '⏳';
+        if (stage1StateEl) stage1StateEl.textContent = t1Ready ? '활성' : 'IG 연동 필요';
         // 2단계 — 내 팔로워 활동 데이터. 1단계 미완료면 locked.
         const stage2El = document.querySelector('[data-bt-progress-stage="t2"]');
         if (stage2El) stage2El.classList.toggle('is-locked', !t1BothReady);
