@@ -336,8 +336,8 @@ exports.handler = async (event) => {
     source: 'industry-seed',
     modes: { weekday: 'seed', weekend: 'seed' },
     progress: {
-      weekday: { have: 0, need: THRESHOLDS.weekday, ready: false },
-      weekend: { have: 0, need: THRESHOLDS.weekend, ready: false },
+      weekday: { have: 0, pending: 0, need: THRESHOLDS.weekday, ready: false },
+      weekend: { have: 0, pending: 0, need: THRESHOLDS.weekend, ready: false },
       ready: false,
     },
     thresholds: THRESHOLDS,
@@ -350,7 +350,7 @@ exports.handler = async (event) => {
     const since = new Date(Date.now() - HISTORY_WINDOW_DAYS * 24 * 3600 * 1000).toISOString();
     const { data: history, error: histErr } = await supabase
       .from('seller_post_history')
-      .select('posted_at, reach, engagement')
+      .select('posted_at, reach, engagement, insights_fetched_at')
       .eq('user_id', user.id)
       .gte('posted_at', since)
       .order('posted_at', { ascending: false })
@@ -360,6 +360,19 @@ exports.handler = async (event) => {
       console.warn('[get-best-time] seller_post_history 조회 경고:', histErr.message);
     }
 
+    // 측정 대기 카운트 — 게시는 됐지만 아직 1차 insights 측정 전인 row (KST 요일별).
+    // cron(scheduled-post-insights-background)이 게시 후 1h 통과 시 stage 1 측정.
+    // 사장님 카드에 "측정 대기 N건" 으로 노출 → "0/5" 가 거짓말처럼 보이는 UX 결함 해소.
+    const pending = { weekday: 0, weekend: 0 };
+    for (const row of (history || [])) {
+      if (!row || !row.posted_at) continue;
+      if (row.insights_fetched_at) continue; // 1차 측정 완료된 row 는 pending 아님
+      const k = kstHourDow(row.posted_at);
+      if (!k) continue;
+      const grp = (k.dow === 0 || k.dow === 6) ? 'weekend' : 'weekday';
+      pending[grp]++;
+    }
+
     const personalized = computePersonalizedSlots(history || [], seed);
     result.weekday = personalized.weekday;
     result.weekend = personalized.weekend;
@@ -367,11 +380,13 @@ exports.handler = async (event) => {
     result.progress = {
       weekday: {
         have: personalized.counts.weekday,
+        pending: pending.weekday,
         need: THRESHOLDS.weekday,
         ready: personalized.modes.weekday === 'personal',
       },
       weekend: {
         have: personalized.counts.weekend,
+        pending: pending.weekend,
         need: THRESHOLDS.weekend,
         ready: personalized.modes.weekend === 'personal',
       },

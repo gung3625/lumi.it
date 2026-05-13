@@ -364,7 +364,6 @@ sellers.id = reservations.user_id = ig_accounts.user_id = tone_feedback.user_id
 - ✅ 콜백 URL 승인 취소(Deauthorize) + 데이터 삭제 콜백 둘 다 `https://lumi.it.kr/.netlify/functions/data-deletion-callback` 로 등록
 - ✅ `THREADS_APP_ID=925799773719688` + `THREADS_APP_SECRET` Netlify env 등록 + production deploy 적용
 - ⏳ **App Review 신청** — 실사장님 모집 시점에 (결정 #5)
-- 🚨 **보안 — Threads 앱 시크릿 재발급 필수** — 2026-05-13 작업 중 시크릿 평문 채팅 노출. Meta 콘솔에서 새 시크릿 생성 → Netlify env `THREADS_APP_SECRET` 갱신 → 옛 시크릿 자동 무효화. Netlify env 의 변수 옆 ⋮ → "Mark as secret" 도 권장 (build 로그에서 가림).
 
 **남은 후속 (우선순위 낮음):**
 - Threads 댓글 답글 기능 (`reply-comment.js` 채널 분기)

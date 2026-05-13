@@ -100,10 +100,11 @@
 [functions."scheduled-weekday-shuffle-background"]
   schedule = "0 18 * * 0"
 
-# 게시별 reach/saved/engagement 일별 1회 수집 (베스트 시간 Tier 1 가중치 근거)
-# 매일 KST 03:30 (= UTC 18:30) — 어제 게시물 메트릭 안정화 후 채움.
+# 게시별 reach/saved/engagement 2-stage 측정 (베스트 시간 Tier 1 가중치 근거)
+# 30분 주기 — 게시 후 1h(1차) / 24h(final) 시점 통과 row 픽업.
+# 사장님 카드의 "측정 대기" 표시가 최대 30분 안에 측정 완료로 갱신되도록.
 [functions."scheduled-post-insights-background"]
-  schedule = "30 18 * * *"
+  schedule = "*/30 * * * *"
 
 # Meta online_followers 누적 (베스트 시간 Tier 2 — 팔로워 활동 시간 매트릭스)
 # 매일 KST 04:00 (= UTC 19:00). 사장님별 follower_activity_snapshots upsert.
