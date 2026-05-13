@@ -40,6 +40,12 @@ const {
   IgGraphError,
   markIgTokenInvalid,
 } = require('./_shared/ig-graph');
+const {
+  getThreadsTokenForSeller,
+  getThreadsAccountInsights,
+  markThreadsTokenInvalid,
+  ThreadsGraphError,
+} = require('./_shared/threads-graph');
 
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1시간
 const RANGE_DAYS = 30;
@@ -230,6 +236,39 @@ exports.handler = async (event) => {
       fetchMediaSums(igCtx.igUserId, igCtx.accessToken, since.getTime()),
     ]);
 
+    // M4.2 — Threads 사장님 단위 인사이트 (있으면). insight-weekly.js 패턴 동일.
+    const sinceSec = Math.floor(since.getTime() / 1000);
+    const untilSec = Math.floor(now.getTime() / 1000);
+    let threadsBlock = null;
+    try {
+      const threadsCtx = await getThreadsTokenForSeller(sellerId, admin);
+      if (threadsCtx) {
+        const { data: trow } = await admin
+          .from('ig_accounts')
+          .select('threads_token_invalid_at')
+          .eq('user_id', sellerId)
+          .maybeSingle();
+        if (!trow || !trow.threads_token_invalid_at) {
+          const ti = await getThreadsAccountInsights({
+            token: threadsCtx.accessToken,
+            threadsUserId: threadsCtx.threadsUserId,
+            sinceSec,
+            untilSec,
+          });
+          threadsBlock = { ...ti, connected: true, tokenExpired: false };
+        } else {
+          threadsBlock = { views: 0, likes: 0, replies: 0, reposts: 0, quotes: 0, connected: true, tokenExpired: true };
+        }
+      }
+    } catch (te) {
+      if (te instanceof ThreadsGraphError && te.isTokenExpired()) {
+        try { await markThreadsTokenInvalid(admin, sellerId, 'insight-monthly'); } catch (_) {}
+        threadsBlock = { views: 0, likes: 0, replies: 0, reposts: 0, quotes: 0, connected: true, tokenExpired: true };
+      } else {
+        console.warn('[insight-monthly] Threads insights 실패 (무시):', te && te.message);
+      }
+    }
+
     const data = {
       period: 'monthly',
       rangeStart,
@@ -242,6 +281,7 @@ exports.handler = async (event) => {
       profileViews: insights.profileViews,
       followersChange: null,
       ig: { username: igCtx.igUsername || null },
+      threads: threadsBlock,
     };
 
     // 캐시 저장 (실패 무시)
