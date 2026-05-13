@@ -81,10 +81,11 @@ async function igGraphRequest(token, path, params = {}, opts = {}) {
   const safePath = path.startsWith('/') ? path : `/${path}`;
   const method = (opts.method || 'GET').toUpperCase();
 
-  // GET 은 params 를 query string 으로. POST/DELETE 는 body 로 보내고 access_token 만 query.
+  // GET / DELETE 는 params 를 query string 으로 (body 없음).
+  // POST/PUT 등은 params 를 form-encoded body, access_token 만 query.
   const qs = new URLSearchParams();
   let bodyForm = null;
-  if (method === 'GET') {
+  if (method === 'GET' || method === 'DELETE') {
     for (const [k, v] of Object.entries(params || {})) {
       if (v === undefined || v === null) continue;
       qs.set(k, String(v));
@@ -174,9 +175,28 @@ async function markIgTokenInvalid(admin, userId, context = 'ig-graph') {
   }
 }
 
+/**
+ * IG 게시물 삭제 — DELETE /{ig-media-id}.
+ *
+ * Meta 정책 (developers.facebook.com/docs/instagram-platform/instagram-graph-api/reference/ig-media):
+ *   - 권한: instagram_basic + instagram_manage_contents (ig-oauth SCOPES 에 추가됨)
+ *   - 본인 미디어만 (사장님 IG Business 계정 본인 게시물)
+ *   - 지원: 비광고 post / story / reels / 전체 carousel album (개별 carousel item 은 X)
+ *   - Facebook Login 흐름에서만 (Instagram Login 아님 — lumi 는 Facebook Login)
+ *
+ * @param {string} token - igAccessToken (page_access_token 우선)
+ * @param {string} mediaId
+ * @returns {Promise<{success: boolean}>}
+ */
+async function deleteIgMedia(token, mediaId, opts = {}) {
+  if (!mediaId) throw new IgGraphError('mediaId 누락', { status: 400 });
+  return igGraphRequest(token, `/${mediaId}`, {}, { method: 'DELETE', ...opts });
+}
+
 module.exports = {
   getIgTokenForSeller,
   igGraphRequest,
+  deleteIgMedia,
   markIgTokenInvalid,
   IgGraphError,
   GRAPH_API_VERSION,

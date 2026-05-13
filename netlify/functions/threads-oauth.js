@@ -42,6 +42,7 @@ const REDIRECT_URI = 'https://lumi.it.kr/.netlify/functions/threads-oauth';
 const SCOPES = [
   'threads_basic',
   'threads_content_publish',
+  'threads_delete',  // DELETE /{threads-media-id} — 원본 게시물 삭제 (history 모달에서 옵션 선택 시). 일일 100건/계정 한도.
 ].join(',');
 
 const SAFE_RETURN_TO = new Set(['/dashboard', '/settings', '/signup']);
