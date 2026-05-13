@@ -343,15 +343,19 @@ async function mergeV2Fields(supa, keywords, category, collectedDate, axisFilter
       // axis 화이트리스트 필터 — v2 row의 axis가 interior/experience면 응답에서 제거 (axisFilter='all' 시 통과)
       .filter(k => axisAllowed(k.axis));
 
-    // base dedupe + weak 제외 — 라이브 응답에서 base 안에 같은 키워드 중복(예: 레그프레스루틴 2번)
-    // 과 weak 시그널이 노출되던 문제 정리. weak 는 trend_keywords 매칭 결과로 들어온
-    // 시그널이라 base 도 동일하게 노이즈 취급. signalTier 가 undefined 인 키워드는
-    // trend_keywords 매칭 실패 (정적 fallback) — 그대로 유지하되 통합 정렬에서 후순위.
+    // base dedupe — 같은 키워드 중복(예: 레그프레스루틴 2번) 제거.
+    //
+    // 이전엔 signalTier='weak' 를 일괄 제외했는데, scheduled-trends-v2 의 분류가
+    // 'cross_source >= 2 ? real : weak' 단순 이분법이라 검색량·velocity 좋은
+    // 키워드도 weak 로 묻혀 응답이 거의 비는 사고. 2026-05-13 다축 3-tier
+    // (strong/medium/weak) 도입 후 weak 도 의미 있는 long-tail 일 수 있으므로
+    // 일괄 제외 폐기. 정렬에서 후순위로만 처리.
+    //
+    // 옛 'real' 값은 backward-compat 으로 strong 동급 취급.
     const dedup = new Map();
     for (const k of baseMerged) {
       const key = (k.keyword || '').toLowerCase().trim();
       if (!key) continue;
-      if (k.signalTier === 'weak') continue;
       const prev = dedup.get(key);
       if (!prev) { dedup.set(key, k); continue; }
       // 같은 키워드 중복 시 weightedScore 큰 쪽 유지
@@ -359,19 +363,27 @@ async function mergeV2Fields(supa, keywords, category, collectedDate, axisFilter
       const cw = typeof k.weightedScore === 'number' ? k.weightedScore : -Infinity;
       if (cw > pw) dedup.set(key, k);
     }
-    const merged = Array.from(dedup.values());
+    // tier 우선순위 (strong > medium > weak/undefined) + weightedScore 정렬.
+    const TIER_RANK = { strong: 3, real: 3, medium: 2, weak: 1 };
+    const tierVal = (t) => TIER_RANK[t] || 0;
+    const merged = Array.from(dedup.values()).sort((a, b) => {
+      const ta = tierVal(a.signalTier);
+      const tb = tierVal(b.signalTier);
+      if (tb !== ta) return tb - ta;
+      const wa = typeof a.weightedScore === 'number' ? a.weightedScore : -Infinity;
+      const wb = typeof b.weightedScore === 'number' ? b.weightedScore : -Infinity;
+      return wb - wa;
+    });
 
     // trends row 의 keywords 가 너무 적은 카테고리(예: fitness=3) 보강 —
     // trend_keywords 에 있지만 응답에 없는 키워드를 weighted_score 순으로 append.
-    // axis 화이트리스트 + signal_tier='weak' 제외 — weak 는 cross_source_count<=1 추정의
-    // 노이즈성 신호라 사장님이 보는 추천 목록엔 부적합.
+    // axis 화이트리스트 적용. signal_tier 무관 (weak 도 정렬 후순위로 포함).
     const existing = new Set(merged.map(k => (k.keyword || '').toLowerCase().trim()));
     const extras = [];
     for (const row of data) {
       const key = (row.keyword || '').toLowerCase().trim();
       if (!key || existing.has(key)) continue;
       if (!axisAllowed(row.axis)) continue;
-      if (row.signal_tier === 'weak') continue;
       existing.add(key); // self-dedupe: trend_keywords 에 같은 keyword 가 2 row 면 첫 row 만 push
       const fb = fbMap.get(row.keyword) || { likes: 0, dislikes: 0 };
       extras.push({

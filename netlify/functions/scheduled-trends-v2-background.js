@@ -1776,14 +1776,55 @@ async function computeVelocity({ supa, keyword, category, todayCount, todayRank 
 // ─────────────────────────────────────────────
 // 가중치 스코어 계산
 // ─────────────────────────────────────────────
-function computeWeightedScore(counts) {
-  let score = 0;
+// 다축 가중 점수 — source 다양성 + raw count + 실 검색량 + velocity 통합.
+//   기존: 단일 축(source counts) 만 → real 키워드가 weak 보다 정렬상 아래로 가는 사고.
+//   신규: 4개 축 종합.
+//     1) source 다양성 보너스 — cross_source >= 2 면 base × 1.5
+//     2) raw count log 합 (각 source 가중)
+//     3) 검색량 log 가중 (10k → +2.8, 100k → +3.5)
+//     4) velocity log 가중 (양수 velocity 만, +50% → +2.0)
+//   결과: 진짜 quality 가 높은 키워드가 정렬 상위.
+function computeWeightedScore(counts, monthlySearchTotal, velocityPct) {
+  let base = 0;
+  let sourcesUsed = 0;
   for (const [src, cnt] of Object.entries(counts)) {
     if (cnt > 0) {
-      score += (SOURCE_WEIGHTS[src] || 1) * Math.log(cnt + 1);  // log 스케일로 급증 완화
+      base += (SOURCE_WEIGHTS[src] || 1) * Math.log(cnt + 1);
+      sourcesUsed++;
     }
   }
-  return Math.round(score * 10) / 10;
+  // 1) source 다양성 보너스
+  if (sourcesUsed >= 2) base *= 1.5;
+
+  // 2) 검색량 보너스 — log 스케일 (1k 미만은 거의 0, 10k 이상 의미)
+  let volumeBonus = 0;
+  if (monthlySearchTotal && monthlySearchTotal >= 1000) {
+    volumeBonus = Math.log(monthlySearchTotal) * 0.3;
+  }
+
+  // 3) velocity 보너스 — 양수 velocity 만 가중
+  let velocityBonus = 0;
+  if (typeof velocityPct === 'number' && velocityPct > 0) {
+    velocityBonus = Math.log(velocityPct + 1) * 0.5;
+  }
+
+  return Math.round((base + volumeBonus + velocityBonus) * 10) / 10;
+}
+
+// 3-tier 분류 — 4축 시그널 (cross_source, 검색량, velocity) 중 충족 개수 기반.
+//   strong: 2개 이상 충족 (예: multi-source + 검색량 ≥5k)
+//   medium: 1개 충족 (예: 단일 source 지만 velocity ≥30%)
+//   weak:   0개 (의미 적은 long-tail)
+//   이전: cross_source ≥2 → 'real', 미만 → 'weak' 이분법. weak 안에 quality 가
+//   높은 키워드가 묻혀 get-trends 에서 일괄 제외되던 사고. 다축 도입으로 해소.
+function classifySignalTier({ crossSourceCount, monthlySearchTotal, velocityPct }) {
+  const hasMultiSource = crossSourceCount >= 2;
+  const hasVolume      = typeof monthlySearchTotal === 'number' && monthlySearchTotal >= 5000;
+  const hasVelocity    = typeof velocityPct === 'number' && velocityPct >= 30;
+  const score = (hasMultiSource ? 1 : 0) + (hasVolume ? 1 : 0) + (hasVelocity ? 1 : 0);
+  if (score >= 2) return 'strong';
+  if (score === 1) return 'medium';
+  return 'weak';
 }
 
 // ─────────────────────────────────────────────
@@ -2107,11 +2148,11 @@ exports.handler = runGuarded({
             });
 
             const crossSourceCount = Object.values(counts).filter(c => c > 0).length;
-            const signalTier = crossSourceCount >= 2 ? 'real' : 'weak';
-            const weightedScore = computeWeightedScore(counts);
+            // 1차 base 점수 (velocity 계산용) — 검색량/velocity 미반영
+            const baseScore = computeWeightedScore(counts);
             const todayScore = 100 - idx * 5;
             // velocity 2-tier: trend_keywords weighted_score 우선, 실패시 legacy rank 스냅샷 fallback
-            const velocityPct = await computeVelocity({ supa, keyword, category, todayCount: weightedScore, todayRank: idx });
+            const velocityPct = await computeVelocity({ supa, keyword, category, todayCount: baseScore, todayRank: idx });
             const saturationTotal = await fetchKeywordSaturation(keyword);
             const saturationLevel = classifySaturation(saturationTotal);
 
@@ -2131,6 +2172,10 @@ exports.handler = runGuarded({
             } catch (e) {
               console.warn(`[search-volume] ${category}/${keyword} 실패:`, e.message);
             }
+
+            // 다축 최종 점수 + tier — base 점수에 검색량/velocity 가중 + 3-tier 분류.
+            const weightedScore = computeWeightedScore(counts, monthlySearchTotal, velocityPct);
+            const signalTier = classifySignalTier({ crossSourceCount, monthlySearchTotal, velocityPct });
 
             return {
               keyword,
