@@ -20,11 +20,23 @@
       ],
     },
     {
-      id: 'beauty_service',
-      label: '미용',
+      id: 'hair',
+      label: '헤어',
       subs: [
-        { id: 'hair',   label: '미용실' },
-        { id: 'nail',   label: '네일' },
+        { id: 'hair', label: '헤어' },
+      ],
+    },
+    {
+      id: 'nail',
+      label: '네일',
+      subs: [
+        { id: 'nail', label: '네일' },
+      ],
+    },
+    {
+      id: 'beauty',
+      label: '뷰티',
+      subs: [
         { id: 'beauty', label: '뷰티' },
       ],
     },
