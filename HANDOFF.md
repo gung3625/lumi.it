@@ -361,7 +361,7 @@ sellers.id = reservations.user_id = ig_accounts.user_id = tone_feedback.user_id
 **운영자 후속 작업 (출시 전 필수):**
 - Meta 앱 콘솔에서 **Threads use case 활성화** + redirect URI 등록: `https://lumi.it.kr/.netlify/functions/threads-oauth`
 - **데이터 삭제 콜백 URL 등록:** `https://lumi.it.kr/.netlify/functions/data-deletion-callback` (앱 설정 → 사용자 데이터 삭제 → "데이터 삭제 콜백 URL" 선택). signed_request HMAC 검증은 `META_APP_SECRET` / `THREADS_APP_SECRET` 양쪽 시도하므로 단일 콜백 URL 로 IG·Threads 모두 처리.
-- (선택) 별도 Threads 앱 사용 시 `THREADS_APP_ID` / `THREADS_APP_SECRET` 환경변수. 미설정 시 `META_APP_ID` / `META_APP_SECRET` fallback.
+- **`THREADS_APP_ID` / `THREADS_APP_SECRET` 필수** (2026-05-13 검증): Threads.net OAuth 는 `META_APP_ID(1233639725586126)` fallback 을 인식하지 못함 — `client_id` 누락 에러 `4476002`. lumi 운영용 Threads 앱 ID = `925799773719688`. 시크릿은 Meta 콘솔에서 발급 후 Netlify env 에 직접 입력 (secret 마킹 권장).
 
 **남은 후속 (우선순위 낮음):**
 - Threads 댓글 답글 기능 (`reply-comment.js` 채널 분기)
