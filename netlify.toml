@@ -111,6 +111,11 @@
 [functions."scheduled-followers-snapshot-background"]
   schedule = "0 19 * * *"
 
+# Vault orphan secret 청소 — 주 1회.
+# 매주 월요일 KST 04:45 (= 일요일 UTC 19:45). followers-snapshot 과 시각 어긋내기.
+[functions."scheduled-vault-cleanup-background"]
+  schedule = "45 19 * * 0"
+
 
 # 포스트 프로세싱 비활성화 (이메일 난독화 등 JS 삽입 방지)
 [build.processing]
