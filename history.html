@@ -403,6 +403,34 @@
       font-size: 13px; color: var(--ink-soft); line-height: 1.5;
       max-height: 4.5em; overflow: hidden; text-overflow: ellipsis;
     }
+    /* 모달 안 채널 탭이 failed 상태일 때 노출되는 인라인 안내 + 재시도 버튼 */
+    .insight-failed {
+      grid-column: 1 / -1;
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      padding: 20px 12px;
+      background: var(--bg-soft);
+      border-radius: var(--radius-md);
+      text-align: center;
+    }
+    .insight-failed__icon { font-size: 28px; line-height: 1; }
+    .insight-failed__msg  { font-size: 14px; color: var(--ink-soft); line-height: 1.5; }
+    .insight-failed__retry {
+      padding: 10px 20px;
+      border: 0;
+      border-radius: var(--radius-pill);
+      background: var(--ink, #1a1a1a);
+      color: #fff;
+      font-family: inherit;
+      font-size: 14px; font-weight: var(--weight-semibold, 600);
+      cursor: pointer;
+      transition: background var(--duration-snap, 120ms) var(--ease-toss, ease-out),
+                  transform var(--duration-snap, 120ms) var(--ease-toss, ease-out);
+    }
+    .insight-failed__retry:hover  { background: var(--ink-soft, #333); }
+    .insight-failed__retry:active { transform: scale(0.97); }
+    @media (prefers-reduced-motion: reduce) {
+      .insight-failed__retry, .insight-failed__retry:active { transform: none; transition: none; }
+    }
     .insight-modal__link {
       font-size: 12px; color: var(--ink-muted);
       text-decoration: underline; margin-top: 4px;
@@ -878,34 +906,137 @@
         if (insightLinkEl)    { insightLinkEl.hidden = true; insightLinkEl.removeAttribute('href'); }
       }
 
-      // 두 채널 모두 posted 인 경우 — 탭 노출 + 첫 탭(IG 우선) 자동 활성.
-      function renderInsightTabs(items) {
-        if (!insightTabsEl || !items || items.length < 2) return;
-        const labelMap = { ig: '인스타', threads: '쓰레드' };
-        // IG 우선 정렬 (사장님 주 채널 가정)
+      // 카드 click 진입 — 모든 채널 탭 노출. IG 우선 + 상태 아이콘 (✓ ⚠️ …).
+      // 단일 채널만 있으면 탭 hidden + 콘텐츠만.
+      let _currentReservationId = '';
+      let _currentItems = [];
+      function renderInsightTabs(items, reservationId) {
+        if (!insightTabsEl || !items || !items.length) return;
+        // IG 우선 정렬
         items = [...items].sort((a, b) => (a.channel === 'ig' ? -1 : 1));
-        insightTabsEl.innerHTML = items.map((it, i) => `
-          <button type="button" class="insight-modal__tab ${i === 0 ? 'is-active' : ''}" role="tab" data-insight-tab="${it.channel}" data-post-id="${it.postId}">
-            ${labelMap[it.channel] || it.channel}
-          </button>
-        `).join('');
-        insightTabsEl.hidden = false;
-        loadInsight(items[0].channel, items[0].postId);
+        _currentReservationId = reservationId || '';
+        _currentItems = items;
+        const labelMap  = { ig: '인스타', threads: '쓰레드' };
+        const statusIcon = (st) => st === 'posted' ? '✓' : st === 'failed' ? '⚠️' : '…';
+        if (items.length === 1) {
+          insightTabsEl.hidden = true;
+        } else {
+          insightTabsEl.innerHTML = items.map((it, i) => `
+            <button type="button" class="insight-modal__tab ${i === 0 ? 'is-active' : ''}" role="tab" data-insight-tab="${it.channel}">
+              ${labelMap[it.channel] || it.channel} <span aria-hidden="true">${statusIcon(it.status)}</span>
+            </button>
+          `).join('');
+          insightTabsEl.hidden = false;
+        }
+        renderChannelContent(items[0]);
       }
-      // 탭 클릭 → 해당 채널 insight 재로드.
+      // 한 채널 콘텐츠 렌더 — 상태별 분기.
+      function renderChannelContent(item) {
+        const channel = item.channel;
+        const status  = item.status;
+        // 콘텐츠 영역 초기화 (sub/tabs 유지)
+        if (insightStateEl)   { insightStateEl.hidden = true; insightStateEl.textContent = ''; }
+        if (insightGridEl)    { insightGridEl.hidden = true; insightGridEl.innerHTML = ''; }
+        if (insightCaptionEl) { insightCaptionEl.hidden = true; insightCaptionEl.textContent = ''; }
+        if (insightLinkEl)    { insightLinkEl.hidden = true; insightLinkEl.removeAttribute('href'); }
+        if (status === 'posted' && item.postId) {
+          if (insightStateEl) { insightStateEl.hidden = false; insightStateEl.textContent = '불러오는 중…'; }
+          loadInsightFetchOnly(channel, item.postId);
+          return;
+        }
+        if (status === 'failed') {
+          // 실패 안내 + 큰 다시 시도 버튼 — grid 영역에 inline 렌더
+          const chLabel = channel === 'threads' ? '쓰레드' : '인스타';
+          if (insightGridEl) {
+            insightGridEl.innerHTML = `
+              <div class="insight-failed">
+                <div class="insight-failed__icon" aria-hidden="true">⚠️</div>
+                <div class="insight-failed__msg">${chLabel} 게시가 실패했어요.<br>한 번 더 게시해볼까요?</div>
+                <button type="button" class="insight-failed__retry" data-modal-retry data-channel="${channel}">↻ 다시 시도</button>
+              </div>
+            `;
+            insightGridEl.hidden = false;
+          }
+          return;
+        }
+        // posting / pending 등
+        if (insightStateEl) {
+          insightStateEl.hidden = false;
+          insightStateEl.textContent = '아직 게시 중이에요.';
+        }
+      }
+      // 탭 클릭 → 해당 채널 콘텐츠 렌더.
       insightTabsEl?.addEventListener('click', (e) => {
         const btn = e.target.closest('[data-insight-tab]');
         if (!btn) return;
         insightTabsEl.querySelectorAll('.insight-modal__tab').forEach((el) => el.classList.toggle('is-active', el === btn));
-        // grid/caption/link 만 reset, sub 와 tabs 는 유지
-        if (insightStateEl)   { insightStateEl.hidden = false; insightStateEl.textContent = '불러오는 중…'; }
-        if (insightGridEl)    { insightGridEl.hidden = true; insightGridEl.innerHTML = ''; }
-        if (insightCaptionEl) { insightCaptionEl.hidden = true; insightCaptionEl.textContent = ''; }
-        if (insightLinkEl)    { insightLinkEl.hidden = true; insightLinkEl.removeAttribute('href'); }
         const channel = btn.dataset.insightTab === 'threads' ? 'threads' : 'ig';
-        const postId  = btn.dataset.postId || '';
-        if (postId) loadInsightFetchOnly(channel, postId);
+        const item = _currentItems.find((it) => it.channel === channel);
+        if (item) renderChannelContent(item);
       });
+      // 모달 안 다시 시도 버튼 → 같은 confirm modal 호출. 성공 시 탭 상태·콘텐츠 갱신.
+      document.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-modal-retry]');
+        if (!btn) return;
+        e.preventDefault();
+        const channel = btn.dataset.channel === 'ig' ? 'ig' : 'threads';
+        const reservationId = _currentReservationId;
+        if (!reservationId) return;
+        const chLabel = channel === 'threads' ? '쓰레드' : '인스타';
+        openDelModal({
+          title: '다시 시도할까요?',
+          body: `${chLabel} 게시가 실패한 기록입니다. 같은 사진·캡션으로 한 번 더 게시해요.`,
+          confirmText: '다시 시도',
+          variant: 'primary',
+          onConfirm: () => retryFromModal(channel, reservationId),
+        });
+      });
+      async function retryFromModal(channel, reservationId) {
+        const chLabel = channel === 'threads' ? '쓰레드' : '인스타';
+        try {
+          const res = await fetch('/api/retry-channel-post', {
+            method: 'POST',
+            headers: { ...authHeaders, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reservationId, channel }),
+          });
+          const json = await res.json().catch(() => ({}));
+          if (!res.ok || !json.ok) {
+            if (json.tokenExpired) alert(`${chLabel} 토큰이 만료됐어요. 설정에서 재연동해주세요.`);
+            else alert(json.error || '재시도 실패');
+            return;
+          }
+          // _currentItems 갱신 + 탭 아이콘 / 콘텐츠 즉시 반영
+          const item = _currentItems.find((it) => it.channel === channel);
+          if (item) {
+            item.status = 'posted';
+            item.postId = json.postId || '';
+          }
+          const tabBtn = insightTabsEl?.querySelector(`[data-insight-tab="${channel}"]`);
+          if (tabBtn) {
+            const icon = tabBtn.querySelector('span[aria-hidden="true"]');
+            if (icon) icon.textContent = '✓';
+          }
+          renderChannelContent(item);
+          // 카드 시각도 갱신 — chip → posted, retry link 제거.
+          const card = document.querySelector(`.res[data-reservation-id="${reservationId}"]`);
+          if (card) {
+            const chip = card.querySelector(`.chan-chip--${channel}`);
+            if (chip) { chip.classList.remove('is-failed'); chip.classList.add('is-posted'); }
+            const link = card.querySelector(`[data-retry-link][data-channel="${channel}"]`);
+            if (link) link.remove();
+            // dataset 갱신
+            const raw = card.dataset.channels || '';
+            const next = raw.split(',').map((s) => {
+              const [ch] = s.split(':');
+              return ch === channel ? `${channel}:posted:${json.postId || ''}` : s;
+            }).join(',');
+            card.dataset.channels = next;
+            card.classList.add('is-clickable');
+          }
+        } catch (err) {
+          alert('네트워크 오류 — 다시 시도해주세요.');
+        }
+      }
       // 탭 전환용 — openInsightModal/resetInsightModal 안 호출 (이미 열려있음)
       async function loadInsightFetchOnly(channel, postId) {
         try {
@@ -970,35 +1101,6 @@
         if (insightStateEl) insightStateEl.hidden = true;
       }
 
-      async function loadInsight(channel, postId) {
-        openInsightModal();
-        resetInsightModal();
-        try {
-          const url = `/api/insight-on-demand?mediaId=${encodeURIComponent(postId)}&channel=${encodeURIComponent(channel)}`;
-          const res = await fetch(url, { headers: authHeaders });
-          const json = await res.json().catch(() => ({}));
-          if (!res.ok || !json.ok) {
-            if (insightStateEl) insightStateEl.textContent = json.error === 'media_not_found'
-              ? '게시물을 찾을 수 없어요. 삭제됐을 수 있어요.'
-              : '인사이트를 가져오지 못했어요.';
-            return;
-          }
-          if (json.tokenExpired || (json.data === null && json.error === 'token_expired')) {
-            const chLabel = channel === 'threads' ? 'Threads' : 'IG';
-            if (insightStateEl) insightStateEl.textContent = `${chLabel} 토큰이 만료됐어요. 설정에서 재연동해주세요.`;
-            return;
-          }
-          if (!json.data) {
-            const chLabel = channel === 'threads' ? '쓰레드' : '인스타';
-            if (insightStateEl) insightStateEl.textContent = `${chLabel} 연동이 필요해요.`;
-            return;
-          }
-          renderInsight(channel, json.data);
-        } catch (e) {
-          if (insightStateEl) insightStateEl.textContent = '네트워크 오류 — 다시 시도해주세요.';
-        }
-      }
-
       // 카드 전체 click → 인사이트 모달. posted 채널이 있는 카드만 진입 (.is-clickable).
       // 둘 다 posted = 모달 안 채널 탭, 단일 posted = 그 채널만, 그 외 = 클릭 비활성.
       // failed retry 는 카드 밖 별도 링크 (.chan-retry) — 카드 click 과 분리.
@@ -1009,23 +1111,23 @@
         if (e.target.closest('button, a, input, textarea, select')) return;
         const card = e.target.closest('.res.is-clickable');
         if (!card) return;
-        const channels = card.dataset.postedChannels || '';
-        if (!channels) return;
+        const raw = card.dataset.channels || '';
+        if (!raw) return;
         e.preventDefault();
-        // posted 채널 목록 — 콤마 구분 "ig:<postId>,threads:<postId>"
-        const items = channels.split(',').filter(Boolean).map((s) => {
-          const [ch, pid] = s.split(':');
-          return { channel: ch === 'threads' ? 'threads' : 'ig', postId: pid || '' };
-        }).filter((x) => x.postId);
+        // 모든 채널 — "ig:posted:<postId>,threads:failed:" 형식
+        const items = raw.split(',').filter(Boolean).map((s) => {
+          const [ch, st, pid] = s.split(':');
+          return {
+            channel: ch === 'threads' ? 'threads' : 'ig',
+            status:  st || 'pending',
+            postId:  pid || '',
+          };
+        });
         if (!items.length) return;
+        const reservationId = card.dataset.reservationId || '';
         openInsightModal();
         resetInsightModal();
-        // 단일 채널 = 즉시 fetch, 둘 다 = 채널 탭 노출
-        if (items.length === 1) {
-          loadInsight(items[0].channel, items[0].postId);
-        } else {
-          renderInsightTabs(items);
-        }
+        renderInsightTabs(items, reservationId);
       });
 
       // 재시도 링크 (IG/Threads failed) — confirm modal → POST /api/retry-channel-post.
@@ -1231,17 +1333,18 @@
           if (parts.length) chipBlock = parts.join('');
         }
 
-        // posted 채널 목록 — 카드 click 시 인사이트 모달에 어떤 채널 노출할지 결정.
-        // "ig:<postId>,threads:<postId>" 형식.
-        const postedChannels = Array.isArray(r.channels)
-          ? r.channels
-              .filter((c) => c.status === 'posted' && c.post_id && (c.channel === 'ig' || c.channel === 'threads'))
-              .map((c) => `${c.channel}:${c.post_id}`)
-              .join(',')
-          : '';
-        const isClickable = !!postedChannels;
+        // 카드 모든 채널 — posted / failed / posting 다 포함. 카드 click 진입 조건은
+        // *posted 가 하나라도 있을 때*. 모달 안 탭에서는 모든 채널 상태 노출.
+        // 직렬화: "ig:posted:<postId>,threads:failed:" (post_id 없으면 빈 문자열)
+        const allChannelsArr = Array.isArray(r.channels)
+          ? r.channels.filter((c) => c.channel === 'ig' || c.channel === 'threads')
+          : [];
+        const allChannelsStr = allChannelsArr
+          .map((c) => `${c.channel}:${c.status || 'pending'}:${c.post_id || ''}`)
+          .join(',');
+        const hasPosted = allChannelsArr.some((c) => c.status === 'posted' && c.post_id);
         return `
-          <li class="res${isClickable ? ' is-clickable' : ''}" data-key="${esc(r.reserve_key)}"${isClickable ? ` data-posted-channels="${esc(postedChannels)}"` : ''}>
+          <li class="res${hasPosted ? ' is-clickable' : ''}" data-key="${esc(r.reserve_key)}"${allChannelsStr ? ` data-channels="${esc(allChannelsStr)}"` : ''}${hasPosted ? ` data-reservation-id="${esc(r.id)}"` : ''}>
             <div class="res__thumb" style="${thumbStyle}"></div>
             <div class="res__body">
               <div class="res__time">${esc(time)}</div>
