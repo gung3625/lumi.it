@@ -994,10 +994,14 @@ async function estimateByDataLabRatio(anchor, target) {
   const anchorRatio = avg(anchorRow.data);
   const targetRatio = avg(targetRow.data);
 
-  // anchor ratio 가 신뢰도 너무 낮으면 (분모 작음) 추정 거부
-  if (anchorRatio < 5) return null;
-  // target ratio 도 너무 작으면 (검색 거의 없음) 0 추정보단 null
-  if (targetRatio < 0.5) return null;
+  // anchor ratio 가 신뢰도 너무 낮으면 (분모 작음) 추정 거부.
+  //   5 → 3 으로 완화 (2026-05-13) — anchor 가 niche 카테고리 (피트니스/플라워) 면
+  //   ratio 자체 작아도 anchor monthlyTotal 이 크면 의미 있는 절대량 추정 가능.
+  if (anchorRatio < 3) return null;
+  // target ratio 도 너무 작으면 (검색 거의 없음) 0 추정보단 null.
+  //   0.5 → 0.1 으로 완화 — fitness 같이 long-tail brand+product 키워드는
+  //   ratio 0.1~0.5 가 흔함 (검증 2026-05-13, 매칭률 0% 사고).
+  if (targetRatio < 0.1) return null;
 
   const ratio = targetRatio / anchorRatio;
   const monthlyTotal = Math.round(anchor.monthlySearchTotal * ratio);
