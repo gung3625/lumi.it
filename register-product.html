@@ -1124,11 +1124,13 @@
           if (final.ok === true) {
             // 성공
             setOverlayCopy(final.scheduled ? '예약 완료' : '게시 완료!', final.scheduled ? '시간 되면 알아서 올려드려요.' : '인스타에서 확인해보세요.');
-            setTimeout(() => { location.href = '/history'; }, 1400);
+            // 즉시 게시는 히스토리 탭으로, 예약은 예약 목록 탭으로 (UX — 사장님이 직접 한번 더 클릭 안 하도록).
+            const nextTab = final.scheduled ? 'upcoming' : 'past';
+            setTimeout(() => { location.href = `/history?tab=${nextTab}`; }, 1400);
           } else if (final.ok === 'timeout') {
-            // 백그라운드 처리 중 — 예약 페이지에서 진행 확인
+            // 백그라운드 처리 중 — 예약 목록 탭에서 진행 확인 (아직 결과 미정)
             setOverlayCopy('백그라운드 처리 중', '예약 페이지에서 진행 상황을 확인할 수 있어요.');
-            setTimeout(() => { location.href = '/history'; }, 1200);
+            setTimeout(() => { location.href = '/history?tab=upcoming'; }, 1200);
           } else {
             throw new Error(final.error || '게시 실패');
           }
