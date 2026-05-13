@@ -44,7 +44,12 @@
       id: 'fashion_group',
       label: '패션',
       subs: [
-        { id: 'fashion', label: '패션' },
+        // 서브카테고리 분기: parent + subcat 필드. trends.html fetchGroupTrends 가
+        // ?category=fashion&subcat=clothing 형태로 호출 → get-trends.js 가
+        // trend_keywords.sub_category 컬럼 필터.
+        // GPT 분류기는 fashion 키워드 분류 시 sub_category='clothing'|'footwear' 마킹.
+        { id: 'fashion-clothing', label: '옷',    parent: 'fashion', subcat: 'clothing' },
+        { id: 'fashion-footwear', label: '신발',  parent: 'fashion', subcat: 'footwear' },
       ],
     },
     {

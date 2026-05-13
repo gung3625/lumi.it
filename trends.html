@@ -697,8 +697,15 @@
       async function fetchGroupTrends(group) {
         const subs = visibleSubs(group);
         if (subs.length === 0) return { items: [], categoryLabel: group.label, updatedAt: null };
+        // sub 가 parent + subcat 필드 있으면 (서브카테고리 분기) ?category=parent&subcat=value 형태 호출.
+        // 없으면 기존대로 sub.id 를 category 로 보냄.
         const settled = await Promise.allSettled(
-          subs.map(s => fetch(`/api/get-trends?category=${encodeURIComponent(s.id)}`).then(r => r.ok ? r.json() : null).then(d => ({ sub: s, data: d })))
+          subs.map(s => {
+            const url = s.parent && s.subcat
+              ? `/api/get-trends?category=${encodeURIComponent(s.parent)}&subcat=${encodeURIComponent(s.subcat)}`
+              : `/api/get-trends?category=${encodeURIComponent(s.id)}`;
+            return fetch(url).then(r => r.ok ? r.json() : null).then(d => ({ sub: s, data: d }));
+          })
         );
         const merged = new Map();
         let latestUpdatedAt = null;
