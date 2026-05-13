@@ -10,6 +10,7 @@ const { toProxyUrl } = require('./_shared/ig-image-url');
 const {
   getThreadsTokenForSeller,
   createThreadsContainer,
+  waitForThreadsContainer,
   publishThreadsContainer,
   markThreadsTokenInvalid,
   ThreadsGraphError,
@@ -222,7 +223,7 @@ async function postToThreadsForSeller(supabase, sellerId, caption, imageUrl, vid
   // M2.1 — 글로벌 env 토큰(THREADS_USER_ID/ACCESS_TOKEN) 대신 사장님별 OAuth 토큰 사용.
   // 1단계: ig_accounts_decrypted 뷰에서 threads_user_id + threads_token 조회
   // 2단계: createThreadsContainer (POST /{user-id}/threads) → creation_id
-  // 3단계: 30초 대기 (Meta 처리 시간) → publishThreadsContainer (POST /{user-id}/threads_publish)
+  // 3단계: waitForThreadsContainer 폴링 (status='FINISHED' 대기) → publishThreadsContainer
   // 실패 시 ThreadsGraphError 던짐. isTokenExpired() true 면 호출 측이 markThreadsTokenInvalid.
   const cred = await getThreadsTokenForSeller(sellerId, supabase);
   if (!cred) throw new ThreadsGraphError('Threads 미연동 또는 토큰 없음', { status: 0 });
@@ -239,7 +240,7 @@ async function postToThreadsForSeller(supabase, sellerId, caption, imageUrl, vid
   }, { timeoutMs: 60000 });
   if (!created || !created.id) throw new ThreadsGraphError('Threads 컨테이너 생성 응답에 id 없음');
 
-  await sleep(30000);
+  await waitForThreadsContainer({ token: accessToken, creationId: created.id });
 
   const published = await publishThreadsContainer({
     token: accessToken,
