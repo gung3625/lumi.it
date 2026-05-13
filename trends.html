@@ -796,21 +796,9 @@
             const isHot = velocity !== null && velocity >= 50;
             const isWeak = item.signalTier === 'weak';
             const badges = [];
-            // 월간 검색량 chip — 신뢰도 등급별 라벨 분기.
-            // exact/normalized = 정확. root_morpheme = ~ prefix + 작은 글씨. datalab_estimate = 추정 라벨.
-            const mst = typeof item.monthlySearchTotal === 'number' ? item.monthlySearchTotal : null;
-            const svType = item.searchVolumeMatchType || null;
-            if (mst !== null && mst > 0 && svType) {
-              const short = mst >= 10000 ? `${Math.round(mst / 1000) / 10}만` : `${mst.toLocaleString()}`;
-              if (svType === 'exact' || svType === 'normalized') {
-                badges.push(`<span class="kw-badge kw-badge--vol" title="월간 검색량 (네이버 PC+모바일)">🔎 ${short}</span>`);
-              } else if (svType === 'root_morpheme') {
-                const root = item.searchVolumeRootKeyword || '';
-                badges.push(`<span class="kw-badge kw-badge--vol-approx" title="root 키워드 (${root}) 검색량 — target 보다 클 수 있음">🔎 ~${short}</span>`);
-              } else if (svType === 'datalab_estimate') {
-                badges.push(`<span class="kw-badge kw-badge--vol-approx" title="DataLab ratio 추정">🔎 ~${short}</span>`);
-              }
-            }
+            // 사장님 요청 (2026-05-13): 순위 list 에서는 검색량 표시 제거.
+            //   클릭 시 detail sheet 의 "왜 이 순위?" 섹션에서 정확한 검색량 노출.
+            //   list 카드엔 상승률 (velocity) + 소스 다양성만 — 시각 노이즈 ↓.
             if (isHot) badges.push(`<span class="kw-badge kw-badge--hot">🔥 +${Math.round(velocity)}%</span>`);
             // 다중 소스 신뢰도 — 2곳 이상에서 잡힌 키워드만 표시 (1곳은 노이즈 가능)
             const srcCount = typeof item.crossSourceCount === 'number' ? item.crossSourceCount : null;
