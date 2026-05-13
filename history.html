@@ -109,6 +109,7 @@
         border-color var(--duration-base) var(--ease-soft),
         box-shadow var(--duration-base) var(--ease-soft),
         background var(--duration-base) var(--ease-soft),
+        padding-left var(--duration-base) var(--ease-toss),
         transform var(--duration-snap) var(--ease-toss);
     }
     @keyframes rise {
@@ -316,7 +317,12 @@
       box-shadow: 0 2px 8px rgba(200, 80, 122, 0.35);
     }
     .res.is-checked .res__check::after { opacity: 1; transform: scale(1); }
-    body.is-select-mode .res { position: relative; cursor: pointer; }
+    /* 선택 모드 ON 시 카드 전체가 우측으로 밀려 체크 원 공간 확보 — 사진·글씨 겹침 차단 */
+    body.is-select-mode .res {
+      position: relative;
+      cursor: pointer;
+      padding-left: calc(var(--space-3) + 42px); /* 체크 원 30 + 좌측 여백 12 */
+    }
     body.is-select-mode .res__check {
       display: flex;
       opacity: 1;
