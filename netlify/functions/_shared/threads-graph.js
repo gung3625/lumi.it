@@ -95,7 +95,9 @@ async function threadsGraphRequest(token, path, params = {}, opts = {}) {
 
   const qs = new URLSearchParams();
   let bodyForm = null;
-  if (method === 'GET') {
+  // GET / DELETE — params 모두 query string. body 없음.
+  // 그 외 (POST/PUT 등) — params 는 form-encoded body, token 만 query string.
+  if (method === 'GET' || method === 'DELETE') {
     for (const [k, v] of Object.entries(params || {})) {
       if (v === undefined || v === null) continue;
       qs.set(k, String(v));
@@ -374,6 +376,24 @@ async function getThreadInsights({ token, threadId }, opts = {}) {
 }
 
 /**
+ * Threads 게시물 삭제 — DELETE /{threads-media-id}.
+ *
+ * Meta 정책 (developers.facebook.com/docs/threads/posts/delete-posts):
+ *   - 권한: threads_basic + threads_delete (threads-oauth SCOPES 에 추가됨)
+ *   - 한도: 계정당 100건/일
+ *   - 본인 게시물만 삭제 가능
+ *
+ * @param {object} args
+ * @param {string} args.token
+ * @param {string} args.threadId
+ * @returns {Promise<{success: boolean}>}
+ */
+async function deleteThreadsPost({ token, threadId }, opts = {}) {
+  if (!threadId) throw new ThreadsGraphError('threadId 누락');
+  return threadsGraphRequest(token, `/${threadId}`, {}, { method: 'DELETE', ...opts });
+}
+
+/**
  * ig_accounts.threads_token_invalid_at 마킹 헬퍼.
  *
  * Threads Graph 호출에서 ThreadsGraphError.isTokenExpired() 가 true 면
@@ -409,6 +429,7 @@ module.exports = {
   replyToThreadsComment,
   getThreadsAccountInsights,
   getThreadInsights,
+  deleteThreadsPost,
   markThreadsTokenInvalid,
   ThreadsGraphError,
   THREADS_API_VERSION,

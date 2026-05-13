@@ -18,6 +18,7 @@ const SCOPES = [
   'instagram_content_publish',
   'instagram_manage_comments',
   'instagram_manage_insights',
+  'instagram_manage_contents',  // DELETE /{ig-media-id} — 원본 게시물 삭제 (history 모달에서 옵션 선택 시)
   'pages_show_list',
   'pages_read_engagement',
   'pages_manage_metadata',
