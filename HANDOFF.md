@@ -329,21 +329,44 @@ sellers.id = reservations.user_id = ig_accounts.user_id = tone_feedback.user_id
 | 7 | **부분 실패 차감** | 성공한 채널만 차감 (사장님 친화) | IG✅+Threads❌ → 1회, 둘 다 성공 → 2회, 둘 다 실패 → 0회. GPT 원가는 운영 측 손해 감수. 베타 신뢰 형성 우선. |
 | 8 | **MVP 범위** | 게시 + 댓글 + 인사이트 전수 | Threads 도 IG 풀스택 동급. `_shared/ig-graph.js` 의 `markIgTokenInvalid` 패턴, comments/insights 페이지, 베스트 시간 데이터 소스 모두 채널 추상화. |
 
-**남은 결정사항 (구현 진행하며 결정):**
-- 댓글/인사이트 페이지 UI 구조 (탭 vs 통합 리스트 vs 분리 페이지)
-- register-product 토글 디테일 (Threads 미연동 시 disabled 처리, 직전 상태 기억)
-- 한 채널 실패 시 재시도 UI
+**해소된 결정사항 (구현 후 확정):**
+- 댓글/인사이트 페이지 UI 구조 → **통합 리스트** 채택 (M4.1 #195, M4.2 #196). 한 화면에 IG·Threads 시간순 머지 + 채널 칩.
+- register-product 토글 디테일 → **Threads 미연동 시 disabled** 처리, `/api/threads-status` 비동기 조회 (M2.3 #190). 직전 상태 기억은 미구현 (디폴트 OFF 매번 유지).
+- 한 채널 실패 시 재시도 UI → 미구현. 현재는 `channel_posts.status='failed'` 마킹만, history 채널 칩에 취소선 표시. 사장님 수동 재시도는 후속.
 
-**구현 마일스톤 (안):**
-1. **인프라** — 완료
-   - 1.1 `channel_posts` 마이그레이션 ✅ (PR #183)
-   - 1.2 `_shared/threads-graph.js` 클라이언트 ✅ (PR #184)
-   - 1.3a `ig_accounts.threads_*` 컬럼 4개 + 뷰 ✅ (PR #185)
-   - 1.3b `set_threads_token` Vault RPC + `netlify/functions/threads-oauth.js` (별도 OAuth flow — 결정 #1 revised). 후속 PR 에서 회원가입·settings 의 'Threads 연동' 버튼 추가 필요.
-2. **게시** — `post-channels-background.js` (IG/Threads 분기) + Threads 전용 캡션 GPT + register-product 토글
-3. **운영 UX** — 토큰 만료 감지·재연동 카드 채널 확장 + history 채널 표시
-4. **댓글/인사이트** — Threads comments API + insights API 통합 (페이지 UI 결정 후)
-5. **App Review** — 실사장님 모집 시점에 신청
+**구현 마일스톤 — 완료 현황:**
+1. **인프라** ✅
+   - 1.1 `channel_posts` 마이그레이션 (#183)
+   - 1.2 `_shared/threads-graph.js` 클라이언트 (#184)
+   - 1.3a `ig_accounts.threads_*` 컬럼 4개 + 뷰 (#185)
+   - 1.3b-1 `set_threads_token` Vault RPC + `netlify/functions/threads-oauth.js` (#186)
+   - 1.3b-2 settings 카드 + signup 버튼 + `threads-status` / `disconnect-threads` (#187)
+2. **통합 게시 파이프라인** ✅
+   - 2.1 `channel_posts` 활성화 + per-seller Threads 토큰 + `credit_consumed` 마킹 (#188)
+   - 2.2 `generateThreadsCaption` + `reservations.generated_threads_caption` (#189)
+   - 2.3 register-product 'Threads 자동 업로드' 토글 (#190)
+3. **운영 UX** ✅
+   - 3.1 대시보드 Threads 토큰 만료 재연동 카드 + `me.js` `threadsStatus` (#191)
+   - 3.2 history 페이지 채널 배지 + `list-reservations` channels join (#192)
+4. **댓글·인사이트 통합** ✅
+   - 4.1 `comments.js` IG+Threads 병렬 fetch → 통합 리스트 + 채널 칩 (#195)
+   - 4.2 `getThreadsAccountInsights` + `insight-weekly/monthly` 확장 + insights.html Threads 섹션 (#196)
+5. **App Review** ⏳ — 실사장님 모집 시점에 신청 (결정 #5 그대로)
+
+**코드 리뷰 후속 (M1~M3 종합 리뷰):** (#193 + #194)
+- #193 IG 실패 시 `channel_posts(ig, failed)` 마킹, `getThreadsTokenForSeller` IG 패턴 일관, `generateThreadsCaption` quota 체크, signup Threads 에러 토스트
+- #194 `delete_vault_secret` RPC + disconnect 시 Vault 평문 토큰 즉시 폐기
+
+**운영자 후속 작업 (출시 전 필수):**
+- Meta 앱 콘솔에서 **Threads use case 활성화** + redirect URI 등록: `https://lumi.it.kr/.netlify/functions/threads-oauth`
+- (선택) 별도 Threads 앱 사용 시 `THREADS_APP_ID` / `THREADS_APP_SECRET` 환경변수. 미설정 시 `META_APP_ID` / `META_APP_SECRET` fallback.
+
+**남은 후속 (우선순위 낮음):**
+- Threads 댓글 답글 기능 (`reply-comment.js` 채널 분기)
+- `ig_accounts.threads_username` 컬럼 추가 (사장님 본인 답글 정확 필터)
+- per-thread Threads insights drill-down (현재 사장님 단위 합산만)
+- 한 채널 실패 시 수동 재시도 UI
+- Vault orphan cleanup cron (`delete_vault_secret` 재사용)
 
 ---
 
