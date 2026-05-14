@@ -256,7 +256,8 @@ const VISION_SCHEMA = {
       reels_hook_score: { type: 'integer', minimum: 0, maximum: 5, description: '릴스만 1~5, 사진은 0' },
       reels_ending_score: { type: 'integer', minimum: 0, maximum: 5 },
       caption_keywords: { type: 'array', items: { type: 'string' }, description: '5~7개, 시각적 특징 기반 (날씨/계절 제외)' },
-      visible_text: { type: 'array', items: { type: 'string' }, description: '간판·메뉴판·라벨 보이는 텍스트 (마스킹 후)' },
+      visible_text_raw: { type: 'array', items: { type: 'string' }, description: '간판·메뉴판·라벨에서 OCR 된 원문 그대로 (디버그용). 캡션 AI 는 사용 X.' },
+      visible_text: { type: 'array', items: { type: 'string' }, description: '캡션 AI 가 안전하게 사용할 마스킹 버전. 매장명·핸들이 보이면 "(매장명)" 으로 치환. 다른 브랜드는 그대로.' },
       tone_register: { type: 'string', enum: ['shop', 'personal', 'neutral'] },
       quality: { type: 'string', enum: ['good', 'ok', 'poor'] },
       quality_note: { type: 'string' },
@@ -266,7 +267,7 @@ const VISION_SCHEMA = {
       'first_impression', 'core_analysis',
       'carousel_cover_hook', 'carousel_middle_notes', 'carousel_closer', 'story_arc',
       'reels_hook_score', 'reels_ending_score',
-      'caption_keywords', 'visible_text', 'tone_register', 'quality', 'quality_note',
+      'caption_keywords', 'visible_text_raw', 'visible_text', 'tone_register', 'quality', 'quality_note',
     ],
     additionalProperties: false,
   },
@@ -286,26 +287,42 @@ async function analyzeImages(imageBuffers, bizCategory, mediaType, storeName, ig
 미디어: ${mediaLabel}
 
 ## 핵심 룰
-1. **사실은 사진에서만**. 메뉴명·간판 텍스트는 보이는 그대로. 추측이면 "확실치 않지만" 명시.
-${brandTokens.length ? `2. **매장명 마스킹**: 사진에 다음 텍스트 보이면 "(매장명)" 으로 적기: ${brandTokens.map(t => `"${t}"`).join(', ')}. 다른 브랜드는 그대로 (광고처럼 띄우진 X).` : '2. 보이는 다른 브랜드는 그대로 (광고처럼 띄우진 X).'}
-3. **사진 우선**. 업종 힌트와 사진이 다르면 사진을 따른다. business_relevance 를 정직하게 — 펫·가족·일상·풍경은 "none" 또는 "low". 애매하면 더 낮게.
+1. **사실은 사진에서만**. 메뉴명·간판 텍스트는 보이는 그대로 visible_text_raw 에 넣고, 마스킹 후 안전 버전은 visible_text 에. 추측이 필요하면 core_analysis 안에서만 "확실치 않지만 ~로 보임" 형태로 허용.
+${brandTokens.length ? `2. **매장명 마스킹 (visible_text 필드용)**: 사진에 다음 텍스트 보이면 visible_text 에 "(매장명)" 으로 치환해서 넣어. visible_text_raw 에는 원문 그대로 유지: ${brandTokens.map(t => `"${t}"`).join(', ')}. 다른 브랜드는 그대로 (광고처럼 띄우진 X).` : '2. 보이는 다른 브랜드는 그대로 (광고처럼 띄우진 X). visible_text_raw·visible_text 동일하게.'}
+3. **사진 우선**. 업종 힌트와 사진이 다르면 사진을 따른다 (아래 판정 트리 참조).
 4. **사람**: 표정·자세·인원수 OK. 외모 평가/이름 추측 X.
-5. **추상 금지**: "예쁘다"·"감성적" → "비 오는 오후 창가에 혼자 앉은 느낌" 수준의 구체.
+5. **추상 금지**: 다음 표현은 출력 X — "예쁘다·이쁘다·아름답다·감성적·감성가득·힐링·따뜻한·포근한·분위기있는·대박·인생샷·완벽한". 대신 구체 묘사: "비 오는 오후 창가에 혼자 앉은 느낌"·"노란 조명 아래 김 올라오는 한 잔" 수준.
 6. **나열 금지**. 한 문장에 감각·관계·움직임 녹이기.
-${isReels ? '7. **릴스**: 첫 3초 훅 강도(1~5) + 마지막 3초 마무리(1~5) 채점.' : ''}
+${isReels ? '7. **릴스**: 첫 3초 훅 + 마지막 3초 마무리 채점 (아래 점수 기준 참조).' : ''}
+
+## business_relevance 판정 트리 (단호하게 적용)
+IF 사진에 매장 메뉴/시술 결과/상품 클로즈업 → **high**
+ELSE IF 매장 내부·간판·직원 업무·매장 공간 → **medium**
+ELSE IF 사장님 개인 일상 (반려동물·가족·여행) → **low**
+ELSE IF 풍경·밈·리포스트·완전 무관 → **none**
+
+※ 업종 힌트(${bizCategory || '미지정'})와 사진이 어긋나면 → **사진 기준 판정 + 한 단계 더 낮추기**
+   (예: 카페 사장님이 강아지 셀카 → low/none 강제, medium 금지)
 
 ## 필드 가이드
-- **business_relevance**: ${bizCategory || '업종'} 콘텐츠로 적합한 정도. 매장 메뉴/시술/공간 = "high". 사장님이 매장에서 찍은 일상 = "medium". 사장님 개인 일상 (반려동물·가족·여행·풍경) = "low" 또는 "none". 단호하게.
 - **scene_type**: 사진의 주된 카테고리.
 - **subjects**: [{label, details}]. label="강아지", details="프렌치불독+흰 강아지, 회색 쿠션 위" 같이.
 - **first_impression**: 0.3초 첫인상 — 캡션 첫 문장의 씨앗.
 - **core_analysis**: 3~5문장 전체 분석.
 - **carousel_***: 캐러셀일 때만. 그 외 빈 문자열.
 - **story_arc**: 캐러셀 서사 / 릴스 장면 흐름. 단일 사진 = 빈 문자열.
-- **reels_***: 릴스만 1~5 점수. 사진은 0.
+${isReels ? `- **reels_hook_score** (1~5):
+    5 = 첫 프레임에 얼굴+텍스트(메뉴명·후킹 문구)+움직임 3개 모두
+    3 = 셋 중 둘
+    1 = 정적 풍경, 훅 부재
+  **reels_ending_score** (1~5):
+    5 = CTA 텍스트(예약·방문·DM) + 로고 노출
+    3 = CTA 없지만 자연스러운 종결
+    1 = 갑자기 끊김` : '- **reels_***: 사진이므로 0.'}
 - **caption_keywords**: 5~7개 (날씨/계절 제외).
-- **visible_text**: 간판·메뉴판·라벨·티셔츠 등 보이는 텍스트 배열.
-- **tone_register**: 사진에 어울리는 톤. 매장 콘텐츠="shop", 일상="personal", 모호="neutral".
+- **visible_text_raw**: 보이는 텍스트 OCR 원문 그대로 (디버그용).
+- **visible_text**: 캡션 AI 가 사용할 마스킹 버전 (매장명 "(매장명)" 치환).
+- **tone_register**: shop = 간판/가격/메뉴 보임 + 매장 공간 / personal = 셀카·일상·반려동물 / neutral = 모호.
 - **quality**: "good"=선명, "ok"=분석 가능, "poor"=흐림/어두움/부적절. poor 일 때 quality_note 에 사유.`;
 
   const content = [{ type: 'text', text: prompt }];
