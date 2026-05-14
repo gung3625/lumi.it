@@ -63,18 +63,13 @@ exports.handler = async (event) => {
       }
     }
 
-    // Comments cache 무효화 — threadsConnected 옛값이 cache 에 남아있던 사고 차단
+    // 사장님 channel-state cache 일괄 무효화 (comments + insights/weekly + insights/monthly)
     try {
-      const { getStore } = require('@netlify/blobs');
-      const store = getStore({
-        name: 'comments',
-        consistency: 'eventual',
-        siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
-        token: process.env.NETLIFY_TOKEN,
-      });
-      await store.delete(`sellers/${userId}.json`);
+      const { invalidateSellerChannelCaches } = require('./_shared/seller-cache');
+      const result = await invalidateSellerChannelCaches(userId);
+      console.log('[disconnect-threads] cache 무효화:', result);
     } catch (e) {
-      console.warn('[disconnect-threads] comments cache 무효화 경고 (무시):', e && e.message);
+      console.warn('[disconnect-threads] cache 무효화 경고 (무시):', e && e.message);
     }
 
     return {

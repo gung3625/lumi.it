@@ -252,19 +252,14 @@ exports.handler = async (event) => {
       return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/dashboard?oauth_error=5' } };
     }
 
-    // Comments cache 무효화 — 재연동 후에도 옛 igConnected:false 응답이 cache 에
-    // 남아 dashboard·settings UI 가 "미연동" 으로 보이던 사고 차단 (2026-05-14).
+    // 사장님 channel-state cache 일괄 무효화 (comments + insights/weekly + insights/monthly)
+    // 재연동 후 dashboard 의 새 댓글·인사이트·베스트 시간 등이 옛 "미연동" 상태로 보이던 사고 차단.
     try {
-      const { getStore } = require('@netlify/blobs');
-      const store = getStore({
-        name: 'comments',
-        consistency: 'eventual',
-        siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
-        token: process.env.NETLIFY_TOKEN,
-      });
-      await store.delete(`sellers/${userId}.json`);
+      const { invalidateSellerChannelCaches } = require('./_shared/seller-cache');
+      const result = await invalidateSellerChannelCaches(userId);
+      console.log('[ig-oauth] cache 무효화:', result);
     } catch (e) {
-      console.warn('[ig-oauth] comments cache 무효화 경고 (무시):', e && e.message);
+      console.warn('[ig-oauth] cache 무효화 경고 (무시):', e && e.message);
     }
 
     // 9) sellers.onboarded=true — IG 연동 완료가 onboarding 의 진짜 끝.
