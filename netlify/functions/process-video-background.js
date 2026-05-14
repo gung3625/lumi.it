@@ -340,39 +340,61 @@ exports.handler = async (event) => {
     const fontFile = findFontFile();
     if (!fontFile) console.warn('[process-video] 한글 폰트 파일 없음 — 시스템 fallback (한글 깨질 수 있음)');
 
-    const { filter, needPad } = buildFilter({
-      width,
-      height,
-      srtPath: useSrt ? srtPath : null,
-      overlayText: hasOverlay ? overlayText : null,
-      fontFile,
-    });
-    console.log('[process-video] 블러패딩:', needPad, '자막:', useSrt, '화면텍스트:', hasOverlay);
+    // ffmpeg args 생성 헬퍼 — withSubtitles 토글로 subtitles 필터 ON/OFF.
+    // ffmpeg-static binary 가 libass 미포함이라 subtitles 필터 시도 시 exit=8 가능.
+    // 1차 시도 (자막+drawtext) → fail 시 drawtext 만으로 재시도 (overlay text 만은 확실히 박힘).
+    const buildArgs = (withSubtitles) => {
+      const { filter } = buildFilter({
+        width,
+        height,
+        srtPath: withSubtitles && useSrt ? srtPath : null,
+        overlayText: hasOverlay ? overlayText : null,
+        fontFile,
+      });
+      return [
+        '-hide_banner', '-y',
+        '-i', inPath,
+        '-t', String(MAX_DURATION_SEC),
+        '-filter_complex', filter,
+        '-map', '[vout]',
+        '-map', '0:a?',
+        '-c:v', 'libx264',
+        '-preset', 'medium',
+        '-crf', '20',
+        '-maxrate', MAX_VIDEO_BITRATE,
+        '-bufsize', VIDEO_BUFSIZE,
+        '-c:a', 'aac',
+        '-b:a', AUDIO_BITRATE,
+        '-ar', AUDIO_SAMPLE_RATE,
+        '-movflags', '+faststart',
+        '-pix_fmt', 'yuv420p',
+        outPath,
+      ];
+    };
 
-    // 90초 trim + CRF 20 + maxrate 25M + AAC 48kHz + preset medium (화질 보존)
-    const args = [
-      '-hide_banner', '-y',
-      '-i', inPath,
-      '-t', String(MAX_DURATION_SEC),           // 90초 trim
-      '-filter_complex', filter,
-      '-map', '[vout]',
-      '-map', '0:a?',
-      '-c:v', 'libx264',
-      '-preset', 'medium',                       // veryfast → medium (압축 효율 ↑)
-      '-crf', '20',                              // 23 → 20 (화질 ↑)
-      '-maxrate', MAX_VIDEO_BITRATE,             // 25M (Meta 한도)
-      '-bufsize', VIDEO_BUFSIZE,
-      '-c:a', 'aac',
-      '-b:a', AUDIO_BITRATE,                     // 128k → 192k
-      '-ar', AUDIO_SAMPLE_RATE,                  // 48kHz 명시 (Meta 권장)
-      '-movflags', '+faststart',                 // moov atom 앞 (Meta 필수)
-      '-pix_fmt', 'yuv420p',
-      outPath,
-    ];
-    await trace('pre-ffmpeg');
-    await runFfmpeg(args);
-    await trace('ffmpegDone');
-    console.log('[process-video] ffmpeg 완료:', Date.now() - t0, 'ms');
+    console.log('[process-video] 블러패딩:', '자막:', useSrt, '화면텍스트:', hasOverlay);
+    let subtitlesAttempted = useSrt;
+    let subtitlesApplied = false;
+    if (useSrt) {
+      await trace('pre-ffmpeg-with-subtitles');
+      try {
+        await runFfmpeg(buildArgs(true));
+        subtitlesApplied = true;
+        await trace('ffmpegDone-with-subtitles');
+      } catch (e) {
+        // libass 또는 subtitles 필터 fail — drawtext 만으로 재시도.
+        await trace(`subtitleFail-retry:${(e.message || '').slice(0, 60)}`);
+        console.warn('[process-video] 자막 필터 fail, drawtext-only 재시도:', e.message);
+        try { fs.unlinkSync(outPath); } catch(_) {}
+        await runFfmpeg(buildArgs(false));
+        await trace('ffmpegDone-no-subtitles');
+      }
+    } else {
+      await trace('pre-ffmpeg-no-subtitles');
+      await runFfmpeg(buildArgs(false));
+      await trace('ffmpegDone-no-subtitles');
+    }
+    console.log('[process-video] ffmpeg 완료:', Date.now() - t0, 'ms', 'subtitles=', subtitlesApplied);
 
     await trace('pre-upload');
     const destKey = `${userId}/${reservationKey}/processed-${ts}.mp4`;
