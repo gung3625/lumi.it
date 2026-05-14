@@ -1377,10 +1377,27 @@
         if (r.cancelled) return { cls: 'cancelled', label: '취소됨' };
         if (r.is_sent) return { cls: 'posted', label: '게시됨' };
         const s = r.caption_status || 'pending';
+
+        // caption_status='scheduled' 는 두 의미를 동시에 갖는다:
+        //  1) 사장님이 직접 예약 시간 지정 (post_mode='scheduled' 또는 'best-time')
+        //  2) immediate 인데 게시 직전 transient — 특히 REELS 는 ffmpeg 후처리 60~150초 동안
+        //     이 상태에 머문다. 같은 '예약됨' 라벨로 보이면 사장님이 진짜 예약처럼 오인.
+        // post_mode 로 분기해서 라벨/색을 분리한다.
+        if (s === 'scheduled') {
+          if (r.post_mode === 'best-time') return { cls: 'posting', label: '최적 시간 대기' };
+          if (r.post_mode === 'immediate') {
+            // REELS 는 영상 처리 중임을 명시. PHOTO 는 transient 가 짧아 '곧 게시'.
+            if (r.media_type === 'REELS' && !r.video_processed_at) {
+              return { cls: 'posting', label: '영상 처리 중 · 곧 게시' };
+            }
+            return { cls: 'posting', label: '곧 게시' };
+          }
+          return { cls: 'scheduled', label: '예약됨' };
+        }
+
         const map = {
           pending:  { cls: 'pending',   label: '캡션 작성 중' },
           ready:    { cls: 'ready',     label: '준비 완료' },
-          scheduled:{ cls: 'scheduled', label: '예약됨' },
           posting:  { cls: 'posting',   label: '게시 중' },
           posted:   { cls: 'posted',    label: '게시됨' },
           failed:   { cls: 'failed',    label: '실패' },
