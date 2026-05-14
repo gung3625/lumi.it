@@ -380,12 +380,14 @@ exports.handler = async (event) => {
 
     return { statusCode: 200, headers, body: JSON.stringify({ success: true, videoUrl: publicUrl }) };
   } catch (err) {
-    console.error('[process-video] 에러:', err.message);
+    console.error('[process-video] 에러:', err.message, err.stack);
     try {
       // 실패 시에도 video_processed_at 마킹 → 원본 video_url 로라도 게시 진행 (overlay/자막만 누락).
-      // 미세팅 상태로 두면 select-and-post 가 영원히 대기 → 사장님 게시 실패로 보임.
+      // 에러 메시지를 subtitle_status 에 prefix 로 저장 → 사장님이 history UI 또는 DB 에서
+      // 진단 가능 (검증 2026-05-15: 'skipped' 만 저장 시 원인 추적 불가).
+      const errSummary = String(err && err.message || 'unknown').slice(0, 180);
       await supabase.from('reservations').update({
-        subtitle_status: 'skipped',
+        subtitle_status: `skipped:${errSummary}`,
         video_processed_at: new Date().toISOString(),
       }).eq('reserve_key', reservationKey);
       await triggerSelectAndPostIfImmediate(supabase, reservationKey);
