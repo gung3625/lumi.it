@@ -483,64 +483,6 @@
 
     /* 프로필 링크 (링크트리) 섹션 */
     .lt-edit { display: flex; flex-direction: column; gap: var(--space-3); }
-
-    /* 공개 toggle */
-    .lt-toggle {
-      display: flex;
-      align-items: center;
-      gap: var(--space-3);
-      width: 100%;
-      padding: var(--space-3) var(--space-4);
-      background: var(--bg);
-      border: 1px solid var(--line);
-      border-radius: var(--radius-md);
-      text-align: left;
-      transition: all 200ms var(--ease-toss);
-    }
-    .lt-toggle.is-on {
-      background: var(--pink-50);
-      border-color: var(--pink-500);
-    }
-    .lt-toggle__body { flex: 1; min-width: 0; }
-    .lt-toggle__title {
-      font-size: var(--text-body);
-      font-weight: var(--weight-semibold);
-      color: var(--ink);
-    }
-    .lt-toggle.is-on .lt-toggle__title { color: var(--pink-700); }
-    .lt-toggle__hint {
-      font-size: var(--text-caption);
-      color: var(--ink-muted);
-      margin-top: 2px;
-    }
-    .lt-toggle__switch {
-      flex-shrink: 0;
-      width: 42px;
-      height: 24px;
-      background: var(--neutral-300, #d4d4d8);
-      border-radius: 999px;
-      position: relative;
-      transition: background 200ms var(--ease-toss);
-    }
-    .lt-toggle__switch::after {
-      content: '';
-      position: absolute;
-      top: 2px;
-      left: 2px;
-      width: 20px;
-      height: 20px;
-      background: #fff;
-      border-radius: 50%;
-      transition: transform 200ms var(--ease-toss);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
-    }
-    .lt-toggle.is-on .lt-toggle__switch { background: var(--pink-500); }
-    .lt-toggle.is-on .lt-toggle__switch::after { transform: translateX(18px); }
-    .lt-toggle:active { transform: scale(0.99); }
-    .lt-toggle[disabled] { opacity: 0.5; pointer-events: none; }
-
-    /* 비공개 시 URL 카드 dim */
-    .lt-url-card.is-disabled { opacity: 0.5; }
     .lt-url-card {
       display: flex; align-items: center; gap: var(--space-2);
       padding: var(--space-3) var(--space-4);
@@ -797,14 +739,6 @@
       인스타 프로필엔 링크 1개만 넣을 수 있어요. 이 페이지에 매장의 <strong>메뉴·예약·배달·지도</strong> 같은 모든 외부 링크를 모으고, 인스타 bio 에 아래 주소 하나만 붙여넣으세요.
     </p>
     <div class="lt-edit" data-lt-edit>
-      <button type="button" class="lt-toggle" data-lt-enabled-toggle aria-pressed="false">
-        <div class="lt-toggle__body">
-          <div class="lt-toggle__title" data-lt-toggle-title>공개 꺼짐</div>
-          <div class="lt-toggle__hint" data-lt-toggle-hint>켜야 손님이 이 페이지에 접속할 수 있어요.</div>
-        </div>
-        <span class="lt-toggle__switch" aria-hidden="true"></span>
-      </button>
-
       <div>
         <div class="lt-url-card" data-lt-url-card>
           <span class="lt-url-card__text lt-url-card__text--loading" data-lt-url>주소 준비 중…</span>
@@ -1620,16 +1554,12 @@
         if (!editEl) return;
 
         const urlEl = editEl.querySelector('[data-lt-url]');
-        const urlCardEl = editEl.querySelector('[data-lt-url-card]');
         const copyBtn = editEl.querySelector('[data-lt-copy]');
         const listEl = editEl.querySelector('[data-lt-list]');
         const emptyEl = editEl.querySelector('[data-lt-empty]');
         const addBtn = editEl.querySelector('[data-lt-add]');
         const saveBtn = editEl.querySelector('[data-lt-save]');
         const openBtn = editEl.querySelector('[data-lt-open]');
-        const toggleBtn = editEl.querySelector('[data-lt-enabled-toggle]');
-        const toggleTitle = editEl.querySelector('[data-lt-toggle-title]');
-        const toggleHint = editEl.querySelector('[data-lt-toggle-hint]');
 
         const URL_PLACEHOLDERS = {
           menu: 'https://order.naver.com/... (네이버 스마트오더·메뉴판 URL)',
@@ -1664,24 +1594,7 @@
         ];
 
         let currentSlug = null;
-        let currentEnabled = false;
         let state = { links: [] };
-
-        function renderToggle(enabled) {
-          currentEnabled = !!enabled;
-          if (toggleBtn) {
-            toggleBtn.classList.toggle('is-on', currentEnabled);
-            toggleBtn.setAttribute('aria-pressed', currentEnabled ? 'true' : 'false');
-          }
-          if (toggleTitle) toggleTitle.textContent = currentEnabled ? '공개 켜짐' : '공개 꺼짐';
-          if (toggleHint) {
-            toggleHint.textContent = currentEnabled
-              ? '손님이 아래 주소로 사장님 페이지에 접속할 수 있어요.'
-              : '켜야 손님이 이 페이지에 접속할 수 있어요.';
-          }
-          if (urlCardEl) urlCardEl.classList.toggle('is-disabled', !currentEnabled);
-          if (openBtn) openBtn.disabled = !currentSlug || !currentEnabled;
-        }
 
         function escapeHtml(s) {
           return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
@@ -1701,7 +1614,7 @@
             urlEl.textContent = fullUrl(slug);
             urlEl.classList.remove('lt-url-card__text--loading');
             copyBtn.disabled = false;
-            openBtn.disabled = !currentEnabled;
+            openBtn.disabled = false;
           } else {
             urlEl.textContent = '주소를 가져오지 못했어요';
             urlEl.classList.add('lt-url-card__text--loading');
@@ -1757,40 +1670,6 @@
           });
           // 빈 상태 안내 toggle
           if (emptyEl) emptyEl.hidden = state.links.length > 0;
-        }
-
-        // 공개 toggle — 클릭 즉시 저장. 별도 "저장" 버튼 누를 필요 X.
-        if (toggleBtn) {
-          toggleBtn.addEventListener('click', async () => {
-            const next = !currentEnabled;
-            toggleBtn.disabled = true;
-            // 낙관적 업데이트 (실패 시 revert)
-            renderToggle(next);
-            try {
-              const res = await fetch('/api/save-linktree', {
-                method: 'POST',
-                headers: { ...authHeaders, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ enabled: next, links: state.links.map((l, i) => ({
-                  label: (l.label || '').trim(),
-                  url: (l.url || '').trim(),
-                  type: l.type || 'custom',
-                  sortOrder: i,
-                })).filter((l) => l.label && l.url) }),
-              });
-              const data = await res.json().catch(() => ({}));
-              if (!res.ok || !data.success) {
-                renderToggle(!next);
-                toast(data.error || '저장에 실패했어요', 3000);
-              } else {
-                toast(next ? '공개로 켰어요' : '비공개로 껐어요');
-              }
-            } catch (e) {
-              renderToggle(!next);
-              toast('저장에 실패했어요', 3000);
-            } finally {
-              toggleBtn.disabled = false;
-            }
-          });
         }
 
         copyBtn.addEventListener('click', async () => {
@@ -1888,7 +1767,6 @@
               return;
             }
             if (data.slug && data.slug !== currentSlug) renderSlug(data.slug);
-            if (typeof data.enabled === 'boolean' && data.enabled !== currentEnabled) renderToggle(data.enabled);
             state.links = (data.links || []).map((l) => ({
               id: l.id, label: l.label, url: l.url, type: l.type,
             }));
@@ -1904,17 +1782,14 @@
         try {
           const r = await fetch('/api/my-linktree', { headers: authHeaders });
           if (!r.ok) {
-            renderToggle(false);
             renderSlug(null);
             return;
           }
           const data = await r.json();
           if (!data || !data.success) {
-            renderToggle(false);
             renderSlug(null);
             return;
           }
-          renderToggle(!!data.enabled);
           renderSlug(data.slug || null);
           state.links = (data.links || []).map((l) => ({
             id: l.id, label: l.label, url: l.url, type: l.type,
@@ -1922,7 +1797,6 @@
           renderList();
         } catch (e) {
           console.error('[linktree] load 실패:', e);
-          renderToggle(false);
           renderSlug(null);
         }
       })();

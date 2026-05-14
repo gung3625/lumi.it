@@ -248,6 +248,7 @@ exports.handler = async (event) => {
           submitted_at: submittedAt,
           story_enabled: fields.postToStory === 'true',
           post_to_thread: fields.postToThread === 'true',
+          include_linktree: fields.includeLinktree === 'true',
           nearby_event: festivals.length > 0,
           nearby_festivals: festivals.length > 0
             ? festivals.map(f => `${f.title}(${f.startDate}~${f.endDate}, ${f.addr}${f.dist ? ', ' + f.dist + 'km' : ''})`).join(' / ')
@@ -289,6 +290,7 @@ exports.handler = async (event) => {
             storyEnabled:   fields.postToStory  === 'true',
             weatherEnabled: fields.useWeather   !== 'false',
             threadsEnabled: fields.postToThread === 'true',
+            includeLinktree: fields.includeLinktree === 'true',
           };
           const { error: prefErr } = await supabase
             .from('sellers')

@@ -525,6 +525,17 @@
       </button>
     </div>
 
+    <div class="field">
+      <span class="field__label">프로필 링크</span>
+      <button type="button" class="story-toggle" data-linktree-toggle aria-pressed="false">
+        <div class="story-toggle__body">
+          <div class="story-toggle__title">캡션 끝에 내 프로필 링크 자동 포함</div>
+          <div class="story-toggle__hint">"메뉴·예약·배달 → lumi.it.kr/r/내주소" 같이 캡션 마지막 줄에 추가됩니다</div>
+        </div>
+        <span class="story-toggle__switch" aria-hidden="true"></span>
+      </button>
+    </div>
+
     <button class="cta" type="button" data-submit disabled>📷 캡션 만들고 게시</button>
 
     <footer class="app-footer">
@@ -638,12 +649,14 @@
       let weatherEnabled = true;  // 디폴트 ON (publishPrefs 적용 전)
       let threadsEnabled = false; // 결정 §12-A #3: 디폴트 OFF
       let threadsConnected = false;
+      let linktreeEnabled = false; // 프로필 링크 캡션 포함 — 디폴트 OFF
 
       const storyBtn      = document.querySelector('[data-story-toggle]');
       const weatherBtn    = document.querySelector('[data-weather-toggle]');
       const threadsBtn    = document.querySelector('[data-threads-toggle]');
       const threadsTitleEl = document.querySelector('[data-threads-toggle-title]');
       const threadsHintEl = document.querySelector('[data-threads-toggle-hint]');
+      const linktreeBtn    = document.querySelector('[data-linktree-toggle]');
 
       function syncToggleUI(btn, on) {
         if (!btn) return;
@@ -673,6 +686,13 @@
           syncToggleUI(threadsBtn, threadsEnabled);
         });
       }
+      // 프로필 링크 캡션 포함 토글
+      if (linktreeBtn) {
+        linktreeBtn.addEventListener('click', () => {
+          linktreeEnabled = !linktreeEnabled;
+          syncToggleUI(linktreeBtn, linktreeEnabled);
+        });
+      }
 
       // /api/me 한 번 호출로 publishPrefs + threadsStatus 동시 처리.
       // 마지막 토글 상태 복원 + 쓰레드 연동 상태 반영.
@@ -689,6 +709,10 @@
           if (typeof prefs.weatherEnabled === 'boolean') {
             weatherEnabled = prefs.weatherEnabled;
             syncToggleUI(weatherBtn, weatherEnabled);
+          }
+          if (typeof prefs.includeLinktree === 'boolean') {
+            linktreeEnabled = prefs.includeLinktree;
+            syncToggleUI(linktreeBtn, linktreeEnabled);
           }
           const ts = (j && j.threadsStatus) || {};
           threadsConnected = !!ts.connected;
@@ -1080,6 +1104,7 @@
           fd.append('postToStory', String(storyEnabled));
           fd.append('useWeather', String(weatherEnabled));
           fd.append('postToThread', String(threadsEnabled));
+          fd.append('includeLinktree', String(linktreeEnabled));
           if (scheduleMode === 'scheduled' && scheduleAtEl.value) {
             const iso = new Date(scheduleAtEl.value).toISOString();
             fd.append('scheduledAt', iso);

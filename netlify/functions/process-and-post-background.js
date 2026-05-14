@@ -1256,6 +1256,32 @@ exports.handler = async (event) => {
       }
     }
 
+    // 4.2) 사장님 프로필 링크 캡션 포함 (include_linktree=true)
+    //       register-product 토글 ON 시 캡션 끝에 lumi.it.kr/r/{slug} append.
+    //       IG 캡션·Threads 캡션 둘 다 동일 처리.
+    if (reservation.include_linktree === true && reservation.user_id) {
+      try {
+        const { data: slugRow } = await supabase
+          .from('sellers')
+          .select('linktree_slug')
+          .eq('id', reservation.user_id)
+          .maybeSingle();
+        const slug = slugRow && slugRow.linktree_slug;
+        if (slug) {
+          const linkLine = `\n\n메뉴·예약·배달 → lumi.it.kr/r/${slug}`;
+          finalCaptions = finalCaptions.map((c) => (c ? `${c}${linkLine}` : c));
+          if (generatedThreadsCaption) {
+            generatedThreadsCaption = `${generatedThreadsCaption}${linkLine}`;
+          }
+          console.log('[process-and-post] 프로필 링크 캡션 append 완료');
+        } else {
+          console.warn('[process-and-post] include_linktree=true 인데 사장님 linktree_slug 없음 — append 스킵');
+        }
+      } catch (e) {
+        console.warn('[process-and-post] 프로필 링크 캡션 append 실패 (스킵):', e.message);
+      }
+    }
+
     // 4.5) 캡션 저장 + 자동 게시 진입.
     //       사장님 UX: "지금" / "예약" 모두 캡션 선택 단계 없이 첫 캡션으로 자동 진행.
     //       (캡션 선택 UI 가 사용자 측에 없음 — ready 로 두면 영원히 대기 상태)

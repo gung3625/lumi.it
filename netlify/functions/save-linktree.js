@@ -112,18 +112,6 @@ exports.handler = async (event) => {
     return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증이 필요합니다.' }) };
   }
 
-  // 0) enabled toggle (있을 때만) — body 에 enabled boolean 명시된 경우만 변경.
-  if (typeof body.enabled === 'boolean') {
-    const { error: enErr } = await admin
-      .from('sellers')
-      .update({ linktree_enabled: body.enabled })
-      .eq('id', sellerId);
-    if (enErr) {
-      console.error('[save-linktree] enabled 업데이트 오류:', enErr.message);
-      return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '공개 상태 저장에 실패했습니다.' }) };
-    }
-  }
-
   // 1) slug 변경 (있을 때만)
   if (slugCheck.value) {
     // 중복 체크 — 본인 외 다른 sellers 가 같은 slug 쓰는지
@@ -184,10 +172,10 @@ exports.handler = async (event) => {
     insertedLinks = inserted || [];
   }
 
-  // 4) 최종 slug + enabled + 링크 반환
+  // 4) 최종 slug + 링크 반환
   const { data: finalSeller } = await admin
     .from('sellers')
-    .select('linktree_slug, linktree_enabled')
+    .select('linktree_slug')
     .eq('id', sellerId)
     .maybeSingle();
 
@@ -197,7 +185,6 @@ exports.handler = async (event) => {
     body: JSON.stringify({
       success: true,
       slug: (finalSeller && finalSeller.linktree_slug) || null,
-      enabled: !!(finalSeller && finalSeller.linktree_enabled),
       links: insertedLinks.map((l) => ({
         id: l.id,
         label: l.label,

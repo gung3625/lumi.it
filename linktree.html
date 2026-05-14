@@ -337,14 +337,7 @@
             headers: { 'Content-Type': 'application/json' },
           });
           if (r.status === 404) {
-            // 사장님이 의도적으로 OFF 한 케이스는 'disabled' 플래그로 구분.
-            let body = null;
-            try { body = await r.json(); } catch (_) {}
-            if (body && body.disabled) {
-              renderState('이 페이지는 현재 비공개 상태예요', contentEl);
-            } else {
-              renderState('페이지를 찾을 수 없어요', contentEl);
-            }
+            renderState('페이지를 찾을 수 없어요', contentEl);
             return;
           }
           if (!r.ok) {

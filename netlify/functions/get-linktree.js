@@ -33,7 +33,7 @@ exports.handler = async (event) => {
 
   const { data: seller, error: selErr } = await admin
     .from('sellers')
-    .select('id, store_name, store_desc, avatar_url, industry, region, linktree_enabled')
+    .select('id, store_name, store_desc, avatar_url, industry, region')
     .eq('linktree_slug', slug)
     .maybeSingle();
 
@@ -43,10 +43,6 @@ exports.handler = async (event) => {
   }
   if (!seller) {
     return { statusCode: 404, headers: CORS, body: JSON.stringify({ error: '페이지를 찾을 수 없습니다.' }) };
-  }
-  // 사장님이 OFF 한 페이지는 비공개 처리 (404 와 구분 — 일부러 끈 케이스).
-  if (!seller.linktree_enabled) {
-    return { statusCode: 404, headers: CORS, body: JSON.stringify({ error: '비공개 상태인 페이지입니다.', disabled: true }) };
   }
 
   const { data: links, error: linkErr } = await admin
