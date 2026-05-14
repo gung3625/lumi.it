@@ -1,5 +1,11 @@
 /* 하단 탭바 — 5개 (가운데 = 큰 + 액션) */
 
+/* 탭바가 있는 페이지: body 끝(푸터)이 탭바에 가려지지 않도록 패딩 확보
+   탭바 실제 높이 ≈ 72px (padding 8 + tab-add 56 + padding 8) + safe-area */
+body:has(.tabbar) {
+  padding-bottom: calc(80px + env(safe-area-inset-bottom));
+}
+
 .tabbar {
   position: fixed;
   bottom: 0;
