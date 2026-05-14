@@ -517,6 +517,59 @@
     .lt-url-card__copy.is-copied { background: var(--pink-500); color: var(--neutral-0); border-color: var(--pink-500); }
     .lt-edit__slug-hint { font-size: var(--text-label); color: var(--ink-muted); line-height: 1.55; }
 
+    /* 헤더 영역 — 섹션 의미 명확화 */
+    .lt-intro {
+      margin: calc(var(--space-2) * -1) 0 var(--space-2);
+      font-size: var(--text-caption);
+      color: var(--ink-soft);
+      line-height: 1.55;
+    }
+
+    /* 빈 상태 — 추천 chip + 안내 */
+    .lt-empty {
+      padding: var(--space-5) var(--space-4);
+      background: var(--bg-soft);
+      border: 1px dashed var(--line);
+      border-radius: var(--radius-md);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-3);
+      text-align: center;
+    }
+    .lt-empty__title {
+      font-size: var(--text-body);
+      font-weight: var(--weight-semibold);
+      color: var(--ink);
+    }
+    .lt-empty__hint {
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+      line-height: 1.5;
+      max-width: 280px;
+    }
+    .lt-empty__chips {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: var(--space-2);
+      margin-top: var(--space-1);
+    }
+    .lt-empty__chip {
+      padding: var(--space-2) var(--space-3);
+      background: var(--neutral-0);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-full);
+      font-size: var(--text-label);
+      font-weight: var(--weight-medium);
+      color: var(--ink);
+      transition: border-color var(--duration-snap) var(--ease-soft), color var(--duration-snap) var(--ease-soft);
+    }
+    @media (hover: hover) {
+      .lt-empty__chip:hover { border-color: var(--pink-300, #f6a8c2); color: var(--pink-500); }
+    }
+    .lt-empty__chip:active { transform: scale(0.96); }
+
     .lt-edit__list { display: flex; flex-direction: column; gap: var(--space-2); }
     .lt-edit__row {
       display: grid;
@@ -682,6 +735,9 @@
     </div>
 
     <h2 class="section-title">내 링크</h2>
+    <p class="lt-intro">
+      인스타 프로필엔 링크 1개만 넣을 수 있어요. 이 페이지에 매장의 <strong>메뉴·예약·배달·지도</strong> 같은 모든 외부 링크를 모으고, 인스타 bio 에 아래 주소 하나만 붙여넣으세요.
+    </p>
     <div class="lt-edit" data-lt-edit>
       <div>
         <div class="lt-url-card">
@@ -689,8 +745,21 @@
           <button class="lt-url-card__copy" type="button" data-lt-copy disabled>복사</button>
         </div>
         <p class="lt-edit__slug-hint">
-          이 주소를 인스타 프로필 링크에 붙여넣으세요. 매장 정보·메뉴·예약·배달 링크가 한 페이지에 모입니다.
+          위 주소를 인스타 프로필 링크 칸에 그대로 붙여넣으세요.
         </p>
+      </div>
+
+      <div class="lt-empty" data-lt-empty hidden>
+        <div class="lt-empty__title">아직 등록된 링크가 없어요</div>
+        <p class="lt-empty__hint">
+          매장 메뉴판 · 예약 페이지 · 배달앱 · 지도 등 사장님이 손님에게 보여주고 싶은 모든 링크를 여기 모아주세요.
+        </p>
+        <div class="lt-empty__chips">
+          <button type="button" class="lt-empty__chip" data-lt-quick="menu">🍽️ 메뉴 추가</button>
+          <button type="button" class="lt-empty__chip" data-lt-quick="reservation">📅 예약 추가</button>
+          <button type="button" class="lt-empty__chip" data-lt-quick="delivery">🛵 배달앱 추가</button>
+          <button type="button" class="lt-empty__chip" data-lt-quick="map">📍 지도 추가</button>
+        </div>
       </div>
 
       <div class="lt-edit__list" data-lt-list></div>
@@ -1487,9 +1556,31 @@
         const urlEl = editEl.querySelector('[data-lt-url]');
         const copyBtn = editEl.querySelector('[data-lt-copy]');
         const listEl = editEl.querySelector('[data-lt-list]');
+        const emptyEl = editEl.querySelector('[data-lt-empty]');
         const addBtn = editEl.querySelector('[data-lt-add]');
         const saveBtn = editEl.querySelector('[data-lt-save]');
         const openBtn = editEl.querySelector('[data-lt-open]');
+
+        const URL_PLACEHOLDERS = {
+          menu: 'https://order.naver.com/... (네이버 스마트오더·메뉴판 URL)',
+          reservation: 'https://booking.naver.com/... (네이버 예약·캐치테이블 등)',
+          delivery: 'https://baemin.me/... (배민·요기요·쿠팡이츠 등)',
+          map: 'https://naver.me/... (네이버지도·카카오맵 공유 URL)',
+          phone: 'tel:01012345678',
+          kakao: 'https://pf.kakao.com/_xxxxx (카카오톡 채널 URL)',
+          website: 'https://...',
+          custom: 'https://...',
+        };
+        const TYPE_DEFAULT_LABELS = {
+          menu: '메뉴 보기',
+          reservation: '예약하기',
+          delivery: '배달 주문',
+          map: '지도에서 보기',
+          phone: '전화하기',
+          kakao: '카카오톡 문의',
+          website: '홈페이지',
+          custom: '',
+        };
 
         const TYPES = [
           { value: 'custom', label: '🔗 기타' },
@@ -1535,6 +1626,7 @@
         function renderRow(link, idx) {
           const row = document.createElement('div');
           row.className = 'lt-edit__row';
+          const urlPlaceholder = URL_PLACEHOLDERS[link.type] || URL_PLACEHOLDERS.custom;
           row.innerHTML = `
             <div class="lt-edit__row-fields">
               <div class="lt-edit__row-top">
@@ -1543,21 +1635,23 @@
                 </select>
                 <input type="text" data-lt-label maxlength="60" placeholder="이름 (예: 오늘의 메뉴)" value="${escapeHtml(link.label)}">
               </div>
-              <input type="url" data-lt-url maxlength="2000" placeholder="https://..." value="${escapeHtml(link.url)}">
+              <input type="url" data-lt-url maxlength="2000" placeholder="${escapeHtml(urlPlaceholder)}" value="${escapeHtml(link.url)}">
             </div>
             <button class="lt-edit__row-delete" type="button" data-lt-delete aria-label="삭제">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
             </button>
           `;
+          const urlInput = row.querySelector('[data-lt-url]');
           row.querySelector('[data-lt-type]').addEventListener('change', (e) => {
             state.links[idx].type = e.target.value;
+            urlInput.placeholder = URL_PLACEHOLDERS[e.target.value] || URL_PLACEHOLDERS.custom;
             markDirty();
           });
           row.querySelector('[data-lt-label]').addEventListener('input', (e) => {
             state.links[idx].label = e.target.value;
             markDirty();
           });
-          row.querySelector('[data-lt-url]').addEventListener('input', (e) => {
+          urlInput.addEventListener('input', (e) => {
             state.links[idx].url = e.target.value.trim();
             markDirty();
           });
@@ -1574,6 +1668,8 @@
           state.links.forEach((link, i) => {
             listEl.appendChild(renderRow(link, i));
           });
+          // 빈 상태 안내 toggle
+          if (emptyEl) emptyEl.hidden = state.links.length > 0;
         }
 
         copyBtn.addEventListener('click', async () => {
@@ -1618,6 +1714,33 @@
           renderList();
           markDirty();
         });
+
+        // 빈 상태의 추천 chip — 클릭 시 해당 type 으로 prefilled 카드 생성
+        if (emptyEl) {
+          emptyEl.querySelectorAll('[data-lt-quick]').forEach((chip) => {
+            chip.addEventListener('click', () => {
+              if (state.links.length >= 20) {
+                toast('링크는 최대 20개까지 추가할 수 있어요', 2500);
+                return;
+              }
+              const type = chip.dataset.ltQuick;
+              state.links.push({
+                label: TYPE_DEFAULT_LABELS[type] || '',
+                url: '',
+                type,
+              });
+              renderList();
+              markDirty();
+              // 새 카드의 label input 에 자동 포커스 (사장님이 매장명·메뉴명 등 바꿀 수 있게)
+              const rows = listEl.querySelectorAll('.lt-edit__row');
+              const lastRow = rows[rows.length - 1];
+              if (lastRow) {
+                const labelInput = lastRow.querySelector('[data-lt-label]');
+                if (labelInput) labelInput.focus();
+              }
+            });
+          });
+        }
 
         saveBtn.addEventListener('click', async () => {
           saveBtn.disabled = true;
