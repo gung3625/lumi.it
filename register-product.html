@@ -1264,8 +1264,9 @@
         return null;
       }
 
-      async function pollUntilDone(reserveKey) {
-        const TIMEOUT_MS = 90 * 1000; // 1.5분 한도 — 그 이상이면 예약 페이지로 이동
+      async function pollUntilDone(reserveKey, opts = {}) {
+        // 이미지: 90초, 영상: 180초 (ffmpeg 90초 trim+CRF20 medium + Meta REELS 컨테이너 polling 합쳐서 평균 90~150초)
+        const TIMEOUT_MS = opts.timeoutMs || 90 * 1000;
         const INTERVAL_MS = 1500;
         const start = Date.now();
         // 첫 단계는 caption (분석/작성) 으로 — 업로드는 이미 끝났음.
@@ -1429,14 +1430,19 @@
           const reserveKey = json.reserveKey || json.reservationKey;
           if (!reserveKey) throw new Error('예약 키를 받지 못했어요.');
 
-          // 5) 폴링으로 단계 표시
-          const final = await pollUntilDone(reserveKey);
+          // 5) 폴링으로 단계 표시 — 영상은 ffmpeg 후처리 + Meta REELS 컨테이너 polling 합쳐 길게.
+          const final = await pollUntilDone(reserveKey, { timeoutMs: 180 * 1000 });
           if (final.ok === true) {
             setOverlayCopy('완료!', '영상이 인스타에 올라갔어요.');
             setTimeout(() => location.replace('/dashboard'), 1500);
           } else if (final.ok === 'scheduled') {
             setOverlayCopy('예약 완료', '예약 시간에 자동으로 올라가요.');
             setTimeout(() => location.replace('/dashboard'), 1500);
+          } else if (final.ok === 'timeout') {
+            // 영상은 백엔드 비동기 처리 — timeout 은 실패 아니라 "아직 처리 중".
+            // 사용자에게 안내 후 대시보드로 보냄. 게시 자체는 백그라운드에서 마무리.
+            setOverlayCopy('처리 중', '영상은 시간이 조금 더 걸려요. 곧 인스타에 올라가요.');
+            setTimeout(() => location.replace('/dashboard'), 2000);
           } else {
             throw new Error(final.error || '게시 실패');
           }
