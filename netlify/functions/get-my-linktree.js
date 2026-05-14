@@ -60,6 +60,14 @@ exports.handler = async (event) => {
     return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '서버 오류입니다.' }) };
   }
 
+  // 공개 toggle 상태 조회
+  const { data: enabledRow } = await admin
+    .from('sellers')
+    .select('linktree_enabled')
+    .eq('id', sellerId)
+    .maybeSingle();
+  const enabled = !!(enabledRow && enabledRow.linktree_enabled);
+
   const { data: links, error: linkErr } = await admin
     .from('seller_links')
     .select('id, label, url, link_type, sort_order')
@@ -79,6 +87,7 @@ exports.handler = async (event) => {
     body: JSON.stringify({
       success: true,
       slug,
+      enabled,
       links: (links || []).map((l) => ({
         id: l.id,
         label: l.label,
