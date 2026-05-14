@@ -533,14 +533,25 @@ async function generateCaptions(imageAnalysis, item, progress, retryFeedback = '
     return msg;
   })();
 
+  // w.mood 가 명사("흐림"·"비" 등) 면 모델이 반복하므로 형용사로 미리 변환.
+  const moodToAdj = (m) => ({
+    '맑음': '쨍한', '맑은': '쨍한', '맑': '쨍한',
+    '흐림': '꾸물꾸물한', '흐린': '꾸물꾸물한', '흐': '꾸물꾸물한',
+    '구름': '구름 낀', '구름많음': '구름 낀',
+    '비': '비 내리는', '소나기': '비 내리는',
+    '눈': '눈 내리는',
+    '안개': '안개 낀',
+    '바람': '바람 부는',
+  }[m] || m || '');
+  const moodAdj = moodToAdj(w.mood);
   const weatherBlock = (item.useWeather === false || !isBusinessContent)
     ? '(날씨 언급 X)'
     : w.status
-      ? `${w.status}${w.temperature ? ' / ' + w.temperature + '°C 체감' : ''}${w.mood ? ' / ' + w.mood : ''} — 숫자 직접 X, "선선한 날" 같이 풀어 쓰기.${w.airQuality ? ` 미세먼지 ${w.airQuality} 는 실내 포근함/개방감으로 은유.` : ''}`
+      ? `${w.status}${w.temperature ? ' / ' + w.temperature + '°C 체감' : ''}${moodAdj ? ' / ' + moodAdj : ''} — 숫자 직접 X, "선선한 날"·"꾸물꾸물한 오후" 같이 형용사로 풀어 쓰기.${w.airQuality ? ` 미세먼지 ${w.airQuality} 는 실내 포근함/개방감으로 은유.` : ''}`
       : '(정보 없음)';
 
   const trendBlock = (Array.isArray(item.trends) && item.trends.length > 0 && isBusinessContent)
-    ? `${item.trends.join(', ')} — 사진과 자연스럽게 연결될 때만 해시태그 사용. "요즘 유행" 직접 언급 X.`
+    ? `${item.trends.join(', ')} — visible_text 나 subjects 에 트렌드 키워드 있을 때만 해시태그 1개 허용. "요즘 유행" 직접 언급 X.`
     : '(트렌드 사용 X)';
 
   const storeBlock = [
@@ -555,6 +566,12 @@ async function generateCaptions(imageAnalysis, item, progress, retryFeedback = '
   const lengthGuide = isBusinessContent
     ? '본문 80~250자, 400자 hard cap. 첫 125자가 승부.'
     : '본문 50~180자. 일상 콘텐츠는 짧고 담백하게.';
+  // 미디어 형식별 권장 길이 — 위 isBusinessContent 분기에 미디어 분기 추가.
+  const mediaLengthGuide = isReels
+    ? '릴스 권장: 70~120자 (짧고 강하게 — 영상이 본체)'
+    : photoCount > 1
+      ? `캐러셀(${photoCount}장) 권장: 150~220자`
+      : '단일 사진 권장: 120~180자';
 
   const closingGuide = (() => {
     if (!isBusinessContent) return '사진 내용에 맞는 자연스러운 한 줄. 예: 펫→"우리 애도 이래요 댓글 환영" / 풍경→"오늘 이런 하늘 보셨어요?" / 일상→"이런 날 있잖아요". 업종 CTA 강제 X.';
@@ -589,7 +606,9 @@ ${tone.mandatory ? `
 사장님이 직접 지정한 캡션 톤:
 **"${tone.mandatory}"**
 
-이 톤은 어미·문장 길이·이모지 사용·유머 강도·문장 구조에 그대로 반영됩니다. 매장 콘텐츠/일상 콘텐츠 분기, AI 클리셰 차단, 길이 가이드 같은 다른 룰을 만족하면서도 **이 톤이 캡션에서 명확히 느껴져야** 합니다. 톤이 어긋난 캡션은 검수에서 폐기되어 재생성됩니다.
+→ 어미·문장 길이·이모지 사용·유머 강도·문장 구조를 이 지시에 100% 맞춥니다.
+→ 하단 [사장님 톤 (보조 시그널)] 섹션은 참고용 예시일 뿐이며, 충돌 시 이 지시가 항상 이깁니다.
+→ 톤이 어긋난 캡션은 검수에서 폐기되어 재생성됩니다.
 ` : ''}
 ## 사진 분류
 business_relevance: **${visionJson?.business_relevance || 'unknown'}** → **${isBusinessContent ? '매장 콘텐츠' : '일상 콘텐츠'}** 모드.
@@ -603,11 +622,16 @@ ${isBusinessContent
 3. **AI 클리셰** X: 안녕하세요/맛있는/신선한/정성스러운/놀러 오세요/많은 관심/특별한 경험/잊지 못할/최고의/프리미엄/JMT/감성 가득/분위기 깡패, 번역체("~을 즐기실 수 있는"·"~을 만나보세요"), 홍보 멘트("DM 부탁드립니다"·"많은 사랑").
 4. **수치 단언** X: 기온/미세먼지 수치, "이번 주까지만" 같은 절대 시기.
 5. **메타 텍스트** X: "아래는 캡션입니다"·JSON·점수·설명. 캡션 본문 + 해시태그만.
+6. **재생성 메타 노출 X**: 이전 시도 문제·재시도 사실을 캡션 본문에 언급·사과·변명 금지. 캡션 자체에 "다시 써봤어요"·"이번엔" 같은 메타 신호 0건.
 
 ## 좋은 캡션
-- 첫 문장: 질문형/감성형/직관형 중 가장 강한 하나. 평범하면 폐기.
+- **첫 문장 3유형 중 택 1** — 12자 내외, 이모지 0~1개, "안녕하세요/오늘은" 절대 금지:
+  - 질문형: "이 각도, 반칙 아니에요?" (호기심)
+  - 감성형: "창밖에 비, 안에는 이 향" (장면)
+  - 직관형: "오늘의 주인공, 드디어" (정보)
+  안전 질문형("오늘 뭐 먹지?") 으로 도피 금지 — 사진과 직접 연결된 첫 문장.
 - 호흡: 짧게 끊고 줄바꿈 적극. 이모지 1~3개.
-- ${lengthGuide}
+- 길이: ${lengthGuide} | ${mediaLengthGuide}
 - 마지막: ${closingGuide}
 
 ## 입력
@@ -630,13 +654,18 @@ ${trendBlock}
 [미디어]
 ${isReels ? '릴스 영상' : photoCount === 1 ? '사진 1장' : `캐러셀 ${photoCount}장 (사진 번호 직접 언급 X)`}
 
-## 사장님 톤 (보조 시그널)
+## 사장님 톤 (보조 시그널 — 참고용 예시)
 ${tone.context}
+${tone.mandatory ? '※ 위 [⚡ 사장님 톤 최우선] 지시와 충돌 시 최우선 지시가 이깁니다. 이 섹션은 보조 예시.' : ''}
 
 ## 해시태그
-- 총 ${tagCount}
-- ${tagFrameRule}
-- 시즌 어긋남 (${seasonalRule}) X. 매장명·핸들 포함 태그 X.
+${isBusinessContent
+  ? `- **매장 모드 8~12개 구성**: 대형 2개 + 중형 4개 + 소형 3개 + 지역 1~2개 (사장님 ${tagCount} 선호 시 ±)
+- 대형 = #카페·#디저트 등 카테고리. 중형 = #말차라떼·#수원카페 등 구체. 소형 = #핸드드립러버 등 niche.
+- 사진과 직접 관련 있는 태그만.`
+  : `- **일상 모드 3~5개**: 일상·감정 태그만 (#퇴근길·#비오는날·#오늘하늘·#반려견·#댕댕이 등).
+- **업종 일반 태그 절대 금지** (#카페스타그램·#맛집·#디저트 등). 매장명 태그 X.`}
+- 시즌 어긋남 (${seasonalRule}) X.
 - 본문 끝 줄바꿈 후 한 블록.${retryBlock}
 
 ## 출력
