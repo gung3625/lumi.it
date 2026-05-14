@@ -61,7 +61,7 @@ exports.handler = async (event) => {
   const { data: igAcc } = await admin
     .from('ig_accounts')
     .select('ig_username, threads_username')
-    .eq('seller_id', seller.id)
+    .eq('user_id', seller.id)
     .maybeSingle();
 
   return {

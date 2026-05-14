@@ -82,7 +82,7 @@ async function ensureSlugForSeller(admin, sellerId) {
   const { data: igAcc } = await admin
     .from('ig_accounts')
     .select('ig_username')
-    .eq('seller_id', sellerId)
+    .eq('user_id', sellerId)
     .maybeSingle();
   if (igAcc && igAcc.ig_username) {
     candidate = normalizeIgHandle(igAcc.ig_username);
