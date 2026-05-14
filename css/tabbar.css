@@ -27,6 +27,14 @@ body:has(.tabbar) {
   z-index: var(--z-sticky);
 }
 
+/* iOS Chrome: viewport home indicator 영역 (env safe-area-inset-bottom) 뒤로 화면
+   default 회색이 비쳐 회색 띠처럼 보이는 케이스 차단. html/body background 를
+   흰색으로 명시하면 alpha 0.94 tabbar 뒤 영역도 흰색 위로 비쳐 거의 흰색으로 보임.
+   (검증 2026-05-15 사장님 스크린샷 — 탭바 아래 home indicator 영역 회색 노출) */
+html, body {
+  background-color: var(--neutral-0);
+}
+
 .tab {
   display: flex;
   flex-direction: column;
