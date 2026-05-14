@@ -249,6 +249,8 @@ exports.handler = async (event) => {
           story_enabled: fields.postToStory === 'true',
           post_to_thread: fields.postToThread === 'true',
           include_linktree: fields.includeLinktree === 'true',
+          overlay_text: (mediaType === 'REELS' && fields.overlayText) ? String(fields.overlayText).trim().slice(0, 40) || null : null,
+          use_subtitle: mediaType === 'REELS' ? (fields.useSubtitle !== 'false') : true,
           nearby_event: festivals.length > 0,
           nearby_festivals: festivals.length > 0
             ? festivals.map(f => `${f.title}(${f.startDate}~${f.endDate}, ${f.addr}${f.dist ? ', ' + f.dist + 'km' : ''})`).join(' / ')

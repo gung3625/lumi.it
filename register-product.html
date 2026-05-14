@@ -1309,6 +1309,147 @@
         return { ok: 'timeout' };
       }
 
+      // ─── 영상 제출 흐름 ───
+      // 1) signed URL 받기 → 2) 클라이언트가 Supabase Storage 에 직접 PUT
+      // → 3) 첫 프레임 추출(커버) → 4) reserve API 호출 → 5) 처리 폴링
+      async function extractCoverFrame(file, atSec = 0.5) {
+        return new Promise((resolve, reject) => {
+          const url = URL.createObjectURL(file);
+          const v = document.createElement('video');
+          v.src = url;
+          v.muted = true;
+          v.preload = 'auto';
+          v.crossOrigin = 'anonymous';
+          v.onloadeddata = () => {
+            try { v.currentTime = Math.min(atSec, (v.duration || 1) - 0.1); } catch (_) {}
+          };
+          v.onseeked = () => {
+            try {
+              const canvas = document.createElement('canvas');
+              const w = v.videoWidth || 720;
+              const h = v.videoHeight || 1280;
+              canvas.width = w;
+              canvas.height = h;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(v, 0, 0, w, h);
+              canvas.toBlob((blob) => {
+                URL.revokeObjectURL(url);
+                if (!blob) return reject(new Error('cover frame blob fail'));
+                resolve(blob);
+              }, 'image/jpeg', 0.85);
+            } catch (e) {
+              URL.revokeObjectURL(url);
+              reject(e);
+            }
+          };
+          v.onerror = () => { URL.revokeObjectURL(url); reject(new Error('cover frame video load fail')); };
+          setTimeout(() => reject(new Error('cover frame timeout')), 20_000);
+        });
+      }
+
+      async function submitVideo() {
+        isSubmitting = true;
+        submitBtn.disabled = true;
+        submitBtn.textContent = '준비 중…';
+        showOverlay(true);
+        setOverlayCopy('영상 업로드 중', '서버로 보내고 있어요. 잠시만 기다려주세요.');
+        activateUpTo('upload');
+
+        try {
+          // 1) signed URL 요청
+          const urlRes = await fetch('/api/video-upload-url', {
+            method: 'POST',
+            headers: { ...authHeaders, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              filename: videoFile.name,
+              contentType: videoFile.type || 'video/mp4',
+              size: videoFile.size,
+            }),
+          });
+          const urlData = await urlRes.json().catch(() => ({}));
+          if (!urlRes.ok || !urlData.ok || !urlData.uploadUrl) {
+            throw new Error(urlData.error || '업로드 URL 발급 실패');
+          }
+
+          // 2) 클라이언트 직접 PUT 업로드
+          const putRes = await fetch(urlData.uploadUrl, {
+            method: 'PUT',
+            headers: { 'Content-Type': videoFile.type || 'video/mp4' },
+            body: videoFile,
+          });
+          if (!putRes.ok) {
+            const t = await putRes.text().catch(() => '');
+            throw new Error(`영상 업로드 실패 (HTTP ${putRes.status}): ${t.slice(0, 120)}`);
+          }
+          const videoUrl = urlData.publicUrl;
+          const videoKey = urlData.path;
+
+          // 3) 첫 프레임 추출 → 커버 이미지 (image_urls[0])
+          setOverlayCopy('커버 만드는 중', '영상에서 첫 장면을 추출하고 있어요.');
+          let coverBlob = null;
+          try {
+            coverBlob = await extractCoverFrame(videoFile, 0.5);
+          } catch (e) {
+            console.warn('[submit-video] 커버 추출 실패 (스킵):', e.message);
+          }
+
+          // 4) reserve API 호출 (multipart) — 커버 1장 + 영상 메타
+          setOverlayCopy('예약 등록 중', '거의 다 됐어요.');
+          const fd = new FormData();
+          if (coverBlob) {
+            fd.append('file0', coverBlob, 'cover.jpg');
+          }
+          fd.append('userMessage', msgEl.value || '');
+          fd.append('postMode', scheduleMode);
+          fd.append('postToStory', String(storyEnabled));
+          fd.append('useWeather', String(weatherEnabled));
+          fd.append('postToThread', String(threadsEnabled));
+          fd.append('includeLinktree', String(linktreeEnabled));
+          fd.append('mediaType', 'REELS');
+          fd.append('videoUrl', videoUrl);
+          fd.append('videoKey', videoKey);
+          fd.append('overlayText', overlayText || '');
+          fd.append('useSubtitle', String(useSubtitle));
+          if (scheduleMode === 'scheduled' && scheduleAtEl.value) {
+            const iso = new Date(scheduleAtEl.value).toISOString();
+            fd.append('scheduledAt', iso);
+          }
+
+          const res = await fetch('/api/reserve', {
+            method: 'POST',
+            headers: authHeaders,
+            body: fd,
+          });
+          const json = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            throw new Error(json.error || '예약 등록 실패');
+          }
+          setStep('upload', 'done');
+
+          const reserveKey = json.reserveKey || json.reservationKey;
+          if (!reserveKey) throw new Error('예약 키를 받지 못했어요.');
+
+          // 5) 폴링으로 단계 표시
+          const final = await pollUntilDone(reserveKey);
+          if (final.ok === true) {
+            setOverlayCopy('완료!', '영상이 인스타에 올라갔어요.');
+            setTimeout(() => location.replace('/dashboard'), 1500);
+          } else if (final.ok === 'scheduled') {
+            setOverlayCopy('예약 완료', '예약 시간에 자동으로 올라가요.');
+            setTimeout(() => location.replace('/dashboard'), 1500);
+          } else {
+            throw new Error(final.error || '게시 실패');
+          }
+        } catch (err) {
+          console.error('[submit-video] 실패:', err);
+          showOverlay(false);
+          toast(err.message || '게시에 실패했어요', 3500);
+          isSubmitting = false;
+          submitBtn.disabled = false;
+          submitBtn.textContent = '📷 캡션 만들고 게시';
+        }
+      }
+
       // 제출 — iOS Safari 등에서 더블탭이 짧게 두 번 fire 되는 경우 대비 idempotency 락.
       let isSubmitting = false;
       submitBtn.addEventListener('click', async () => {
@@ -1316,8 +1457,7 @@
         if (mediaMode === 'image' && photos.length === 0) return;
         if (mediaMode === 'video' && !videoFile) return;
         if (mediaMode === 'video') {
-          // 영상 업로드·게시 흐름은 다음 phase 에서 활성화 (signed URL endpoint + ffmpeg)
-          toast('영상 업로드 기능은 준비 중이에요. 곧 출시!', 3000);
+          await submitVideo();
           return;
         }
         if (scheduleMode === 'scheduled') {

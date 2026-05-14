@@ -1373,6 +1373,8 @@ exports.handler = async (event) => {
             videoUrl: reservation.video_url,
             srt: srt || null,
             userId: reservation.user_id,
+            overlayText: reservation.overlay_text || null,
+            useSubtitle: reservation.use_subtitle !== false,
           }),
         }).catch((e) => console.warn('[process-and-post] process-video 트리거 실패:', e.message));
       } catch (e) {
