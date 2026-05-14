@@ -2353,41 +2353,11 @@ exports.handler = runGuarded({
             };
           }));
 
-          // Layer 3 — DataLab ratio cross-reference fallback.
-          // Layer 1/2 모두 실패한 키워드들에 대해 DataLab ratio 로 절대량 추정.
-          //
-          // anchor 선택:
-          //   1순위) enrichedKeywords 의 exact-matched 키워드 (같은 cron 응답 안)
-          //   2순위) CATEGORY_ANCHORS 사전 (cron 시작 시 cache) — 미용/네일/패션 등
-          //          exact 매칭이 거의 없는 카테고리도 항상 anchor 확보 (검증 2026-05-13).
-          //
-          // anchor 가 둘 다 없으면 Layer 3 스킵 (드물지만 가능 — 사전 후보도 매칭 실패).
-          const missingKeywords = enrichedKeywords.filter(k => k.monthlySearchTotal === null);
-          const exactAnchors = enrichedKeywords.filter(k =>
-            k.monthlySearchTotal !== null && k.searchVolumeMatchType === 'exact'
-          );
-          let anchor = null;
-          if (exactAnchors.length > 0) {
-            anchor = exactAnchors[0];
-          } else if (missingKeywords.length > 0) {
-            anchor = await resolveCategoryAnchor(category);
-          }
-          if (missingKeywords.length > 0 && anchor) {
-            for (const miss of missingKeywords) {
-              try {
-                const est = await estimateByDataLabRatio(anchor, miss.keyword);
-                if (est && Number.isFinite(est.monthlyTotal)) {
-                  miss.monthlySearchTotal = est.monthlyTotal;
-                  miss.searchVolumeMatchType = 'datalab_estimate';
-                  miss.searchVolumeRootKeyword = `(${anchor.keyword} 비교 ratio ${est.ratioPct}%)`;
-                  console.log(`[search-volume] datalab_estimate "${miss.keyword}" → ${est.monthlyTotal} (anchor=${anchor.keyword})`);
-                }
-              } catch (e) {
-                // 한 키워드 실패해도 다른 진행
-                console.warn(`[datalab-estimate] ${category}/${miss.keyword} 실패:`, e.message);
-              }
-            }
-          }
+          // Layer 3 (DataLab ratio cross-reference fallback) — 폐기 (사용자 지시 2026-05-14).
+          // 사유: 햄버거를 노티드도넛 ratio 로 환산하는 등 카테고리 의미 무관한
+          // anchor 환산이 발생 → 부정확한 검색량이 사장님 화면에 노출.
+          // Layer 1/2 모두 실패한 키워드는 monthly_search_total = null 유지 → 정렬에서
+          // 자연스레 후순위로 밀림 (클라이언트 rankScore 의 null fallback 분기).
         }
 
         // Phase 2: 4축 분할 (AXIS_CATEGORIES에 속한 카테고리만)
