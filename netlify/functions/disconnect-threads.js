@@ -63,6 +63,20 @@ exports.handler = async (event) => {
       }
     }
 
+    // Comments cache 무효화 — threadsConnected 옛값이 cache 에 남아있던 사고 차단
+    try {
+      const { getStore } = require('@netlify/blobs');
+      const store = getStore({
+        name: 'comments',
+        consistency: 'eventual',
+        siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
+        token: process.env.NETLIFY_TOKEN,
+      });
+      await store.delete(`sellers/${userId}.json`);
+    } catch (e) {
+      console.warn('[disconnect-threads] comments cache 무효화 경고 (무시):', e && e.message);
+    }
+
     return {
       statusCode: 200,
       headers: { ...headers, 'Content-Type': 'application/json' },

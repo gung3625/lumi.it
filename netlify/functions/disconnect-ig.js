@@ -63,6 +63,21 @@ exports.handler = async (event) => {
       }
     }
 
+    // Comments cache 무효화 — 사장님 disconnect 후에도 옛 igConnected:true 가
+    // 2분 TTL 내내 반환되던 사고 차단 (사장님 UI 가 "연동됨" 유지되는 증상).
+    try {
+      const { getStore } = require('@netlify/blobs');
+      const store = getStore({
+        name: 'comments',
+        consistency: 'eventual',
+        siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
+        token: process.env.NETLIFY_TOKEN,
+      });
+      await store.delete(`sellers/${userId}.json`);
+    } catch (e) {
+      console.warn('[disconnect-ig] comments cache 무효화 경고 (무시):', e && e.message);
+    }
+
     return { statusCode: 200, headers: headers, body: JSON.stringify({ success: true }) };
   } catch (err) {
     console.error('[disconnect-ig] unexpected:', err && err.message);
