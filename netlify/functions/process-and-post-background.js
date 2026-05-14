@@ -1354,13 +1354,26 @@ exports.handler = async (event) => {
 
     // 5) REELS 전용: 블러 패딩 + 자막 burn-in (fire-and-forget, 사용자에겐 이미 캡션 완료 상태)
     //     process-video-background가 ffmpeg로 후처리 후 video_url 갱신.
+    //
+    // 핵심: SRT fallback DB 저장 실패가 절대 process-video 트리거를 막지 않도록 try 를 분리.
+    // (2026-05-15 검증: subtitle_srt 컬럼 부재 시 update throw → fetch 미실행 → 영상 무한 stuck)
     if (isReels && reservation.video_url) {
+      let srt = '';
       try {
         const primaryCaption = captions[0] || '';
-        const srt = await generateSubtitleSrt(primaryCaption, 15);
-        if (srt) {
+        srt = await generateSubtitleSrt(primaryCaption, 15);
+      } catch (e) {
+        console.warn('[process-and-post] SRT 생성 실패 — Whisper 만 의존:', e.message);
+      }
+      if (srt) {
+        try {
           await supabase.from('reservations').update({ subtitle_srt: srt }).eq('reserve_key', reservationKey);
+        } catch (e) {
+          // SRT DB 저장 실패는 무시 — body 로 직접 전달하므로 영향 없음.
+          console.warn('[process-and-post] subtitle_srt 저장 실패 (무시):', e.message);
         }
+      }
+      try {
         const base = process.env.URL || process.env.DEPLOY_URL || 'https://lumi.it.kr';
         fetch(`${base.replace(/\/$/, '')}/.netlify/functions/process-video-background`, {
           method: 'POST',
@@ -1378,7 +1391,7 @@ exports.handler = async (event) => {
           }),
         }).catch((e) => console.warn('[process-and-post] process-video 트리거 실패:', e.message));
       } catch (e) {
-        console.warn('[process-and-post] 영상 후처리 트리거 예외:', e.message);
+        console.warn('[process-and-post] process-video 트리거 예외:', e.message);
       }
     }
 
