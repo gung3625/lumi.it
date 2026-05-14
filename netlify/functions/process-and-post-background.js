@@ -1374,8 +1374,13 @@ exports.handler = async (event) => {
         }
       }
       try {
+        // CRITICAL: await 필수.
+        // Netlify Background Function 은 handler return 시 pending Promise 가 즉시 abort 된다.
+        // fire-and-forget fetch (.catch 만) 로 두면 process-and-post 27초 종료 시점에 fetch 가
+        // 끊겨서 process-video invocation 자체가 트리거되지 않는다 (검증 2026-05-15 logs).
+        // POST 자체는 빠르게 202 (background queued) 받고 끝나므로 await 비용 작다.
         const base = process.env.URL || process.env.DEPLOY_URL || 'https://lumi.it.kr';
-        fetch(`${base.replace(/\/$/, '')}/.netlify/functions/process-video-background`, {
+        const pvRes = await fetch(`${base.replace(/\/$/, '')}/.netlify/functions/process-video-background`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -1389,7 +1394,8 @@ exports.handler = async (event) => {
             overlayText: reservation.overlay_text || null,
             useSubtitle: reservation.use_subtitle !== false,
           }),
-        }).catch((e) => console.warn('[process-and-post] process-video 트리거 실패:', e.message));
+        });
+        console.log('[process-and-post] process-video 트리거 status:', pvRes.status);
       } catch (e) {
         console.warn('[process-and-post] process-video 트리거 예외:', e.message);
       }
