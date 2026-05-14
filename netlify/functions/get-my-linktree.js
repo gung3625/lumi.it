@@ -5,6 +5,7 @@
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifySellerToken, extractBearerToken } = require('./_shared/seller-jwt');
 const { corsHeaders, getOrigin } = require('./_shared/auth');
+const { ensureSlugForSeller } = require('./_shared/linktree-slug');
 
 exports.handler = async (event) => {
   const CORS = corsHeaders(getOrigin(event), { 'Access-Control-Allow-Methods': 'GET, OPTIONS' });
@@ -53,14 +54,10 @@ exports.handler = async (event) => {
     sellerId = payload.seller_id;
   }
 
-  const { data: seller, error: selErr } = await admin
-    .from('sellers')
-    .select('linktree_slug')
-    .eq('id', sellerId)
-    .maybeSingle();
-
-  if (selErr) {
-    console.error('[get-my-linktree] sellers select 오류:', selErr.message);
+  // slug 자동 부여 (없는 사장님은 첫 호출 시 자동 생성·저장)
+  const slug = await ensureSlugForSeller(admin, sellerId);
+  if (!slug) {
+    console.error('[get-my-linktree] slug 자동 부여 실패');
     return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '서버 오류입니다.' }) };
   }
 
@@ -82,7 +79,7 @@ exports.handler = async (event) => {
     headers: CORS,
     body: JSON.stringify({
       success: true,
-      slug: (seller && seller.linktree_slug) || null,
+      slug,
       links: (links || []).map((l) => ({
         id: l.id,
         label: l.label,
