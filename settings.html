@@ -1761,6 +1761,7 @@
               map: '지도에서 보기', phone: '전화하기', kakao: '카카오톡 문의',
               website: '홈페이지', custom: '링크',
             };
+            const hadCards = state.links.length > 0;
             body.links = body.links
               .filter((l) => l.url)
               .map((l) => ({
@@ -1768,7 +1769,9 @@
                 label: l.label || TYPE_LABEL_FALLBACK[l.type] || '링크',
                 url: PREFIX_RE.test(l.url) ? l.url : 'https://' + l.url,
               }));
-            if (body.links.length === 0) {
+            // 카드는 있는데 모든 URL 이 비어있는 경우만 경고 (입력 실수).
+            // 카드 자체가 0 개면 의도적 비우기 → 저장 허용 (전부 삭제 케이스).
+            if (body.links.length === 0 && hadCards) {
               toast('URL 을 입력해주세요', 2500);
               saveBtn.disabled = false;
               return;
