@@ -740,16 +740,15 @@
         //   final_score = monthlySearchTotal × confidence_weight × (1 + velocityPct/100)
         //
         // confidence_weight (searchVolumeMatchType 별):
-        //   exact:            1.0  ✅✅✅
-        //   normalized:       0.95 ✅✅✅
-        //   root_morpheme:    0.6  ✅✅ (root 키워드 검색량 = target 보다 흔히 큰 값 → 부풀린 ranking 차단용 weight 감쇄)
-        //   datalab_estimate: 0    ❌ 환산값 정렬 차단 (사용자 지시 2026-05-14) — null fallback 분기로 떨어져 후순위
-        //   null/매칭실패:   weightedScore 음수 fallback (절대값 보유 키워드 뒤로)
+        //   exact:            1.0  ✅✅✅ 사람들이 그 키워드 직접 검색
+        //   normalized:       0.95 ✅✅✅ 띄어쓰기 차이만 있음
+        //   root_morpheme:    0    ❌ 폐기 (사용자 지시 2026-05-14) — root 검색량은 거짓 신호
+        //   datalab_estimate: 0    ❌ 폐기 (commit facebf3) — 환산값
+        //   null/매칭실패:    weightedScore 음수 fallback (절대값 보유 키워드 뒤로)
         function confidenceWeight(type) {
           switch (type) {
             case 'exact':            return 1.0;
             case 'normalized':       return 0.95;
-            case 'root_morpheme':    return 0.6;
             default:                  return 0;
           }
         }
@@ -865,12 +864,10 @@
 
           if (svType === 'exact' || svType === 'normalized') {
             rankSignals.push(`${icon} 월간 검색량 <strong>${total.toLocaleString()}회</strong> (네이버 PC + 모바일, 정확)`);
-          } else if (svType === 'root_morpheme') {
-            rankSignals.push(`${icon} 월간 검색량 <strong>약 ${total.toLocaleString()}회</strong> <span style="color:var(--ink-muted);font-size:11px;">("${esc(root)}" root 키워드 기준 — 실제 키워드는 더 작을 수 있음)</span>`);
           } else {
-            // datalab_estimate 등 환산값은 raw 노출 X — 사용자 지시 2026-05-14.
-            // "햄버거 → 노티드도넛 ratio 환산" 같은 도메인 무관 추정치를 사장님이 정확한
-            // 검색량으로 오해하던 사고 방지. 정렬 weight 도 0 (rankScore 의 null fallback).
+            // root_morpheme · datalab_estimate 등 직접 매칭 외 모든 케이스 — raw 노출 X.
+            // 사용자 지시 2026-05-14: 네이버 광고 API 가 직접 검색량을 못 주는 키워드는
+            // 사람들이 사실상 검색 안 하는 것 = 트렌드 아님. root 검색량/환산값 노출은 거짓 신호.
             rankSignals.push(`<span style="color:var(--ink-muted);">검색량 정확 매칭 실패 — 네이버 키워드 도구에 직접 데이터 없음</span>`);
           }
         } else if (item.signalTier !== 'weak') {
@@ -897,7 +894,7 @@
               <ul class="sheet__rank-list">
                 ${rankSignals.map(s => `<li>${s}</li>`).join('')}
               </ul>
-              <p class="sheet__meta-line" style="margin-top:6px;">정렬: 월간 검색량 × 신뢰도 × (1 + 상승률) — 정확 매칭(exact·normalized) 우선, root 매칭 키워드는 가중치 감쇄, 환산값은 정렬 제외</p>
+              <p class="sheet__meta-line" style="margin-top:6px;">정렬: 월간 검색량 × (1 + 상승률) — 네이버 광고 API 에 직접 검색량 있는 키워드(exact·normalized) 만 정렬에 사용. root 매칭·환산값은 거짓 신호이므로 정렬 제외.</p>
             </div>
           `);
         }

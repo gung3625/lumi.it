@@ -296,31 +296,18 @@ function splitCompoundKorean(keyword, maxCandidates = 12) {
  *   matchType: 'exact' | 'normalized' | 'root_morpheme' | (null = Layer 3 위임)
  */
 async function fetchKeywordSearchVolumeRobust(keyword) {
-  // Layer 1
+  // Layer 1 — exact / normalized 매칭만 사용 (사용자 지시 2026-05-14)
   const exact = await fetchKeywordSearchVolume(keyword);
   if (exact) {
     console.log(`[search-volume] ${exact.matchType} match "${keyword}" → ${exact.monthlyTotal}`);
     return exact;
   }
 
-  // Layer 2: 합성어 분해 — 긴 root 부터 시도
-  const candidates = splitCompoundKorean(keyword);
-  for (const candidate of candidates) {
-    const sub = await fetchKeywordSearchVolume(candidate);
-    if (sub) {
-      console.log(`[search-volume] root_morpheme "${keyword}" → root="${candidate}" → ${sub.monthlyTotal}`);
-      return {
-        monthlyTotal: sub.monthlyTotal,
-        monthlyPc: sub.monthlyPc,
-        monthlyMobile: sub.monthlyMobile,
-        competitionIdx: sub.competitionIdx,
-        matchType: 'root_morpheme',
-        rootKeyword: candidate,
-      };
-    }
-  }
-
-  console.warn(`[search-volume] all layers failed for "${keyword}" (candidates tried: ${candidates.length})`);
+  // Layer 2 (root_morpheme 합성어 분해) — 폐기.
+  // 사유: 네이버 광고 API 가 "흑임자크림라떼" 직접 검색량 못 주면 = 월 10회 미만
+  // 검색 = 사람들이 그 단어로 거의 검색 안 함 = 트렌드 아님. root "라떼" 검색량을
+  // 보여주는 건 거짓 신호. exact/normalized 매칭만 진짜 트렌드 신호.
+  console.warn(`[search-volume] no exact/normalized match for "${keyword}" — root_morpheme fallback 폐기됨`);
   return null;
 }
 
