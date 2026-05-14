@@ -10,7 +10,9 @@ exports.handler = async (event) => {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
-    'Cache-Control': 'public, max-age=60',
+    // 매 fetch 마다 fresh — 사장님이 settings 에서 링크 수정 후 공개 페이지에
+    // 즉시 반영되도록. 함수 비용 영향 미미 (DB 한 query + ig_accounts join).
+    'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
     'Content-Type': 'application/json',
   };
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };

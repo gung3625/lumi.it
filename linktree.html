@@ -333,8 +333,11 @@
         }
 
         try {
-          const r = await fetch(`/api/linktree?slug=${encodeURIComponent(slug)}`, {
+          // cache-bust — 매 페이지 로드마다 최신 데이터 보장 (사장님이 settings
+          // 에서 링크 수정 후 즉시 반영되도록)
+          const r = await fetch(`/api/linktree?slug=${encodeURIComponent(slug)}&t=${Date.now()}`, {
             headers: { 'Content-Type': 'application/json' },
+            cache: 'no-store',
           });
           if (r.status === 404) {
             renderState('페이지를 찾을 수 없어요', contentEl);
