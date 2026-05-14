@@ -293,20 +293,33 @@ exports.handler = async (event) => {
   const audioPath = `/tmp/audio_${safeKey}_${ts}.mp3`;
   const srtPath = `/tmp/sub_${safeKey}_${ts}.srt`;
 
+  // 진단 trace 헬퍼 — 단계마다 DB 의 subtitle_status 에 marker.
+  // Netlify CLI logs API 가 process-video 의 stdout 을 capture 못 함 (2026-05-15 검증).
+  // dashboard 캡쳐 없이 DB 폴링으로 어디서 stuck 되는지 추적.
+  const trace = async (stage) => {
+    try { await supabase.from('reservations').update({ subtitle_status: `trace:${stage}` }).eq('reserve_key', reservationKey); } catch(_) {}
+  };
+
   const t0 = Date.now();
   try {
     console.log('[process-video] 시작:', reservationKey);
+    await trace('start');
     await downloadTo(videoUrl, inPath);
+    await trace('downloaded');
     const { width, height } = await probeVideo(inPath);
+    await trace(`probed:${width}x${height}`);
     console.log('[process-video] 해상도:', `${width}x${height}`);
 
     // ─── 자막 결정: Whisper 우선, 실패 시 fallback ───
     let srtUsed = '';
     if (wantSubtitle) {
       try {
+        await trace('pre-extractAudio');
         await extractAudio(inPath, audioPath);
+        await trace('audioExtracted');
         console.log('[process-video] 오디오 추출 완료');
         const whisperSrt = await transcribeWithWhisper(audioPath);
+        await trace(whisperSrt ? 'whisperOK' : 'whisperEmpty');
         if (whisperSrt) {
           srtUsed = whisperSrt;
           console.log('[process-video] Whisper SRT 사용 (음성 기반)');
@@ -315,6 +328,7 @@ exports.handler = async (event) => {
           console.log('[process-video] Whisper 결과 없음 → 캡션 기반 SRT fallback');
         }
       } catch (whErr) {
+        await trace(`whisperFail:${(whErr.message || '').slice(0, 80)}`);
         console.warn('[process-video] Whisper 실패 → 캡션 SRT fallback:', whErr.message);
         if (fallbackSrt) srtUsed = fallbackSrt;
       }
@@ -355,11 +369,15 @@ exports.handler = async (event) => {
       '-pix_fmt', 'yuv420p',
       outPath,
     ];
+    await trace('pre-ffmpeg');
     await runFfmpeg(args);
+    await trace('ffmpegDone');
     console.log('[process-video] ffmpeg 완료:', Date.now() - t0, 'ms');
 
+    await trace('pre-upload');
     const destKey = `${userId}/${reservationKey}/processed-${ts}.mp4`;
     const publicUrl = await uploadToSupabase({ filepath: outPath, destKey });
+    await trace('uploaded');
     console.log('[process-video] 업로드 완료:', destKey);
 
     const { error: upErr } = await supabase
