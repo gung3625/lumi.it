@@ -22,14 +22,16 @@ const VIDEO_BUFSIZE = '50M';
 const AUDIO_BITRATE = '192k';      // 화질 보존 (128k → 192k)
 const AUDIO_SAMPLE_RATE = '48000'; // Meta 권장
 
-// 한글 폰트 — 함수 디렉토리 옆 _fonts/ 에 있으면 사용, 없으면 시스템 fallback.
-// 별도 step 에서 NanumGothic.ttf 또는 NotoSansKR.otf 번들 예정.
+// 한글 폰트 — 함수 디렉토리 옆 _fonts/ 에서 Pretendard-Bold.ttf 로드.
+// lumi 사이트 전체가 Pretendard 사용 — 브랜드 일관 + SNS 영상 자막 표준 폰트.
+// netlify.toml 의 included_files 로 번들.
 const FONT_DIR = __dirname + '/_fonts';
+const FONT_FAMILY = 'Pretendard Bold';
 function findFontFile() {
   const candidates = [
+    FONT_DIR + '/Pretendard-Bold.ttf',
     FONT_DIR + '/NanumGothic-Regular.ttf',
     FONT_DIR + '/NotoSansKR-Regular.otf',
-    FONT_DIR + '/NotoSansKR-Bold.otf',
   ];
   for (const p of candidates) {
     try { if (fs.existsSync(p)) return p; } catch (_) {}
@@ -84,11 +86,13 @@ function buildFilter({ width, height, srtPath, overlayText, fontFile }) {
   }
 
   let stage = '[v0]';
-  // 자막 burn-in (srt 있을 때)
+  // 자막 burn-in (srt 있을 때) — libass 가 fontsdir 의 Pretendard-Bold.ttf 로드
   if (srtPath) {
     const esc = escapeSubtitlePath(srtPath);
-    const fontname = fontFile ? 'NanumGothic' : 'NanumGothic'; // force_style fontname은 시스템 폰트 의존
-    parts.push(`${stage}subtitles='${esc}':force_style='Fontname=${fontname},Fontsize=20,PrimaryColour=&HFFFFFFFF&,OutlineColour=&H00000000&,BorderStyle=3,Outline=2,MarginV=80'[v1]`);
+    const fontsDirOpt = fontFile
+      ? `:fontsdir='${escapeSubtitlePath(FONT_DIR)}'`
+      : '';
+    parts.push(`${stage}subtitles='${esc}'${fontsDirOpt}:force_style='Fontname=${FONT_FAMILY},Fontsize=22,PrimaryColour=&HFFFFFFFF&,OutlineColour=&H00000000&,BorderStyle=3,Outline=2,MarginV=80'[v1]`);
     stage = '[v1]';
   }
 
