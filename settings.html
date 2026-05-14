@@ -1753,12 +1753,26 @@
                 sortOrder: i,
               })),
             };
-            // 빈 행은 클라이언트 측에서 미리 정리 + prefix 자동 보정 (사장님이
-            // "naver.com/menu" 처럼 https:// 빼고 입력해도 저장 가능하도록)
+            // 빈 행 정리 + URL prefix 자동 보정 + 빈 label 자동 채움.
+            // URL 만 있으면 type 기본 라벨로 자동 라벨링 (사장님이 라벨 안 채워도 저장 가능).
             const PREFIX_RE = /^(https?:\/\/|tel:|mailto:|kakaotalk:)/i;
+            const TYPE_LABEL_FALLBACK = {
+              menu: '메뉴 보기', reservation: '예약하기', delivery: '배달 주문',
+              map: '지도에서 보기', phone: '전화하기', kakao: '카카오톡 문의',
+              website: '홈페이지', custom: '링크',
+            };
             body.links = body.links
-              .filter((l) => l.label && l.url)
-              .map((l) => ({ ...l, url: PREFIX_RE.test(l.url) ? l.url : 'https://' + l.url }));
+              .filter((l) => l.url)
+              .map((l) => ({
+                ...l,
+                label: l.label || TYPE_LABEL_FALLBACK[l.type] || '링크',
+                url: PREFIX_RE.test(l.url) ? l.url : 'https://' + l.url,
+              }));
+            if (body.links.length === 0) {
+              toast('URL 을 입력해주세요', 2500);
+              saveBtn.disabled = false;
+              return;
+            }
             const res = await fetch('/api/save-linktree', {
               method: 'POST',
               headers: { ...authHeaders, 'Content-Type': 'application/json' },
