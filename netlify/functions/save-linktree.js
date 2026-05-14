@@ -87,7 +87,7 @@ exports.handler = async (event) => {
     return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '서버 설정 오류입니다.' }) };
   }
 
-  // 인증
+  // 인증: Supabase JWT email 매칭 → 실패 시 seller-jwt fallback (get-my-linktree 와 동일)
   let sellerId = null;
   let supaAuthData = null;
   try {
@@ -97,21 +97,19 @@ exports.handler = async (event) => {
     console.log('[save-linktree] Supabase JWT 검증 예외 — seller-jwt fallback:', e && e.message);
   }
   if (supaAuthData && supaAuthData.user && supaAuthData.user.email) {
-    const { data: byEmail, error } = await admin
+    const { data: byEmail } = await admin
       .from('sellers')
       .select('id')
       .eq('email', supaAuthData.user.email)
       .maybeSingle();
-    if (error || !byEmail) {
-      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '셀러 정보를 찾을 수 없습니다.' }) };
-    }
-    sellerId = byEmail.id;
-  } else {
-    const { payload, error: authErr } = verifySellerToken(token);
-    if (authErr || !payload) {
-      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증이 필요합니다.' }) };
-    }
-    sellerId = payload.seller_id;
+    if (byEmail) sellerId = byEmail.id;
+  }
+  if (!sellerId) {
+    const { payload } = verifySellerToken(token);
+    if (payload && payload.seller_id) sellerId = payload.seller_id;
+  }
+  if (!sellerId) {
+    return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증이 필요합니다.' }) };
   }
 
   // 1) slug 변경 (있을 때만)

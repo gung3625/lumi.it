@@ -27,7 +27,8 @@ exports.handler = async (event) => {
     return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '서버 설정 오류입니다.' }) };
   }
 
-  // me.js 와 동일 인증 패턴: Supabase JWT 우선 → seller-jwt fallback
+  // me.js 와 동일 인증 패턴: Supabase JWT email 매칭 → 실패 시 seller-jwt fallback.
+  // (사장님 카카오 OAuth = Supabase user.email 과 sellers.email 이 다를 수 있어 fallback 필수)
   let sellerId = null;
   let supaAuthData = null;
   try {
@@ -37,21 +38,19 @@ exports.handler = async (event) => {
     console.log('[get-my-linktree] Supabase JWT 검증 예외 — seller-jwt fallback:', e && e.message);
   }
   if (supaAuthData && supaAuthData.user && supaAuthData.user.email) {
-    const { data: byEmail, error } = await admin
+    const { data: byEmail } = await admin
       .from('sellers')
       .select('id')
       .eq('email', supaAuthData.user.email)
       .maybeSingle();
-    if (error || !byEmail) {
-      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '셀러 정보를 찾을 수 없습니다.' }) };
-    }
-    sellerId = byEmail.id;
-  } else {
-    const { payload, error: authErr } = verifySellerToken(token);
-    if (authErr || !payload) {
-      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증이 필요합니다.' }) };
-    }
-    sellerId = payload.seller_id;
+    if (byEmail) sellerId = byEmail.id;
+  }
+  if (!sellerId) {
+    const { payload } = verifySellerToken(token);
+    if (payload && payload.seller_id) sellerId = payload.seller_id;
+  }
+  if (!sellerId) {
+    return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: '인증이 필요합니다.' }) };
   }
 
   // slug 자동 부여 (없는 사장님은 첫 호출 시 자동 생성·저장)
