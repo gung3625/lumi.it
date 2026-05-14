@@ -488,3 +488,30 @@
   status = 200
   force = true
 
+# 링크트리 — 공개 페이지 데이터 fetch (인증 없음, slug 기반)
+[[redirects]]
+  from = "/api/linktree"
+  to = "/.netlify/functions/get-linktree"
+  status = 200
+  force = true
+
+# 링크트리 — 본인 데이터 조회 (settings 편집용, JWT 인증)
+[[redirects]]
+  from = "/api/my-linktree"
+  to = "/.netlify/functions/get-my-linktree"
+  status = 200
+  force = true
+
+# 링크트리 — slug + links 저장 (JWT 인증)
+[[redirects]]
+  from = "/api/save-linktree"
+  to = "/.netlify/functions/save-linktree"
+  status = 200
+  force = true
+
+# 링크트리 — 공개 페이지 URL (/r/{slug} → /linktree.html, slug 은 클라이언트에서 path 파싱)
+[[redirects]]
+  from = "/r/*"
+  to = "/linktree.html"
+  status = 200
+
