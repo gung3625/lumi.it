@@ -99,6 +99,82 @@
     .dropzone__sub { font-size: var(--text-caption); }
     .dropzone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 
+    /* 미디어 탭 — 이미지 / 영상 */
+    .media-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-2);
+      margin-bottom: var(--space-4);
+    }
+    .media-tab {
+      padding: var(--space-3) var(--space-4);
+      background: var(--bg-soft);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      font-size: var(--text-body);
+      font-weight: var(--weight-medium);
+      color: var(--ink-muted);
+      transition: all var(--duration-snap) var(--ease-toss);
+    }
+    .media-tab.is-active {
+      background: var(--pink-50);
+      border-color: var(--pink-500);
+      color: var(--pink-700);
+      font-weight: var(--weight-semibold);
+    }
+    .media-tab:active { transform: scale(0.98); }
+    .media-panel[hidden] { display: none; }
+
+    /* 영상 dropzone + 미리보기 */
+    .video-preview {
+      position: relative;
+      width: 100%;
+      max-width: 100%;
+      background: #000;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      aspect-ratio: 9 / 16;
+      max-height: 480px;
+      margin-bottom: var(--space-3);
+    }
+    .video-preview video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+    .video-preview__remove {
+      position: absolute; top: 8px; right: 8px;
+      width: 32px; height: 32px;
+      background: rgba(0,0,0,0.6);
+      border-radius: var(--radius-full);
+      color: #fff;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+    .video-meta {
+      display: flex; gap: var(--space-3);
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+      margin-top: var(--space-1);
+    }
+    .video-meta__warn { color: #b45309; font-weight: var(--weight-medium); }
+
+    .video-overlay-input {
+      width: 100%;
+      padding: var(--space-3);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      font-size: 16px;
+      font-family: inherit;
+      background: var(--neutral-0);
+      color: var(--ink);
+    }
+    .video-overlay-input:focus {
+      outline: 2px solid var(--pink-300, #f6a8c2);
+      outline-offset: -1px;
+    }
+
     /* 사진 그리드 */
     .photos {
       display: grid;
@@ -435,17 +511,68 @@
   </header>
 
   <main class="wrap" role="main">
-    <div class="field">
-      <span class="field__label">사진 (최대 10장, 한 장당 10MB)</span>
-      <div data-photo-area>
-        <label class="dropzone" data-dropzone>
-          <span class="dropzone__icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-          </span>
-          <div class="dropzone__title">사진을 선택하거나 끌어다 놓아주세요</div>
-          <div class="dropzone__sub">JPG · PNG · WebP / 1~10장</div>
-          <input type="file" accept="image/jpeg,image/png,image/webp" multiple data-input>
-        </label>
+    <!-- 미디어 탭: 이미지 / 영상 -->
+    <div class="media-tabs" role="tablist" aria-label="미디어 종류">
+      <button type="button" class="media-tab is-active" role="tab" aria-selected="true" data-media-tab="image">📸 이미지</button>
+      <button type="button" class="media-tab" role="tab" aria-selected="false" data-media-tab="video">🎬 영상</button>
+    </div>
+
+    <!-- 이미지 탭 -->
+    <div class="media-panel" data-media-panel="image">
+      <div class="field">
+        <span class="field__label">사진 (최대 10장, 한 장당 10MB)</span>
+        <div data-photo-area>
+          <label class="dropzone" data-dropzone>
+            <span class="dropzone__icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            </span>
+            <div class="dropzone__title">사진을 선택하거나 끌어다 놓아주세요</div>
+            <div class="dropzone__sub">JPG · PNG · WebP / 1~10장</div>
+            <input type="file" accept="image/jpeg,image/png,image/webp" multiple data-input>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- 영상 탭 -->
+    <div class="media-panel" data-media-panel="video" hidden>
+      <div class="field">
+        <span class="field__label">영상 (최대 5분, 300MB)</span>
+        <p class="memo-hint">90초 초과 영상은 자동으로 90초까지 잘립니다. 9:16 비율이 아니면 자동으로 변환됩니다. 화질·해상도는 최대한 보존됩니다.</p>
+        <div data-video-area>
+          <label class="dropzone" data-video-dropzone>
+            <span class="dropzone__icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+            </span>
+            <div class="dropzone__title">영상을 선택하거나 끌어다 놓아주세요</div>
+            <div class="dropzone__sub">MP4 · MOV / 5분 이내 / 300MB 이내</div>
+            <input type="file" accept="video/mp4,video/quicktime,video/mov" data-video-input>
+          </label>
+        </div>
+      </div>
+
+      <div class="field" data-video-overlay-field hidden>
+        <label class="field__label" for="overlay-text">화면 텍스트 (선택)</label>
+        <p class="memo-hint">영상 상단 중앙에 박을 텍스트입니다. 예: "신메뉴 출시", "오늘만 할인", 매장 이름.</p>
+        <input
+          type="text"
+          id="overlay-text"
+          class="video-overlay-input"
+          data-overlay-text
+          maxlength="40"
+          placeholder="예) 신메뉴 출시"
+          autocomplete="off">
+      </div>
+
+      <div class="field" data-video-subtitle-field hidden>
+        <span class="field__label">자막</span>
+        <button type="button" class="story-toggle is-on" data-subtitle-toggle aria-pressed="true">
+          <div class="story-toggle__body">
+            <div class="story-toggle__title">자막 자동 생성</div>
+            <div class="story-toggle__hint">영상에 음성이 있으면 음성을 따라 자막, 없으면 캡션 기반 감성 자막을 영상에 직접 그립니다</div>
+          </div>
+          <span class="story-toggle__switch" aria-hidden="true"></span>
+        </button>
       </div>
     </div>
 
@@ -615,6 +742,165 @@
       let threadsConnected = false;
       let linktreeEnabled = false; // 프로필 링크 캡션 포함 — 디폴트 OFF
 
+      // ─── 영상 (REELS) 상태 ───
+      const MAX_VIDEO_DURATION_SEC = 5 * 60;       // 5분 (Netlify Function 처리 시간 한계)
+      const MAX_VIDEO_BYTES = 300 * 1024 * 1024;   // 300MB (Meta API 한도)
+      const ALLOWED_VIDEO = ['video/mp4', 'video/quicktime', 'video/mov'];
+      let mediaMode = 'image';   // 'image' | 'video'
+      let videoFile = null;       // File object
+      let videoDuration = 0;      // seconds
+      let overlayText = '';
+      let useSubtitle = true;
+
+      const mediaTabs = document.querySelectorAll('[data-media-tab]');
+      const mediaPanels = document.querySelectorAll('[data-media-panel]');
+      const videoArea = document.querySelector('[data-video-area]');
+      const videoInput = document.querySelector('[data-video-input]');
+      const videoOverlayField = document.querySelector('[data-video-overlay-field]');
+      const videoSubtitleField = document.querySelector('[data-video-subtitle-field]');
+      const overlayTextInput = document.querySelector('[data-overlay-text]');
+      const subtitleBtn = document.querySelector('[data-subtitle-toggle]');
+
+      // 탭 전환
+      mediaTabs.forEach((tab) => {
+        tab.addEventListener('click', () => {
+          const target = tab.dataset.mediaTab;
+          mediaMode = target;
+          mediaTabs.forEach((t) => {
+            const on = t === tab;
+            t.classList.toggle('is-active', on);
+            t.setAttribute('aria-selected', String(on));
+          });
+          mediaPanels.forEach((p) => {
+            p.hidden = p.dataset.mediaPanel !== target;
+          });
+          updateSubmitState();
+        });
+      });
+
+      // 영상 input 이벤트
+      if (videoInput) {
+        videoInput.addEventListener('change', (e) => {
+          const file = e.target.files && e.target.files[0];
+          if (!file) return;
+          handleVideoFile(file);
+        });
+      }
+
+      function formatBytes(b) {
+        if (b < 1024 * 1024) return (b / 1024).toFixed(1) + 'KB';
+        return (b / 1024 / 1024).toFixed(1) + 'MB';
+      }
+      function formatDuration(s) {
+        const m = Math.floor(s / 60);
+        const sec = Math.round(s % 60);
+        return m ? `${m}분 ${sec}초` : `${sec}초`;
+      }
+
+      async function handleVideoFile(file) {
+        // 1) MIME 검증
+        if (!ALLOWED_VIDEO.includes(file.type) && !/\.(mp4|mov)$/i.test(file.name)) {
+          toast('영상은 MP4 또는 MOV 만 지원해요', 3000);
+          return;
+        }
+        // 2) 크기 검증
+        if (file.size > MAX_VIDEO_BYTES) {
+          toast(`영상이 너무 커요 (${formatBytes(file.size)}). 300MB 이하로 줄여주세요.`, 3500);
+          return;
+        }
+        // 3) 길이 측정 (브라우저 메타데이터)
+        const url = URL.createObjectURL(file);
+        const tempVideo = document.createElement('video');
+        tempVideo.preload = 'metadata';
+        tempVideo.src = url;
+        const duration = await new Promise((resolve, reject) => {
+          tempVideo.onloadedmetadata = () => resolve(tempVideo.duration);
+          tempVideo.onerror = () => reject(new Error('영상 메타데이터 읽기 실패'));
+          setTimeout(() => reject(new Error('영상 메타데이터 읽기 시간 초과')), 10_000);
+        }).catch((err) => {
+          console.warn('[register-product] video metadata:', err.message);
+          return 0;
+        });
+
+        if (duration > MAX_VIDEO_DURATION_SEC) {
+          URL.revokeObjectURL(url);
+          toast(`영상이 너무 길어요 (${formatDuration(duration)}). 5분 이하로 편집해서 올려주세요.`, 4000);
+          return;
+        }
+        videoFile = file;
+        videoDuration = duration;
+        renderVideoPreview(file, url);
+        videoOverlayField.hidden = false;
+        videoSubtitleField.hidden = false;
+        updateSubmitState();
+      }
+
+      function renderVideoPreview(file, url) {
+        const dz = videoArea.querySelector('[data-video-dropzone]');
+        if (dz) dz.hidden = true;
+        // 기존 preview 제거
+        const old = videoArea.querySelector('.video-preview');
+        if (old) old.remove();
+        const oldMeta = videoArea.querySelector('.video-meta');
+        if (oldMeta) oldMeta.remove();
+
+        const wrap = document.createElement('div');
+        wrap.className = 'video-preview';
+        wrap.innerHTML = `
+          <video src="${url}" controls playsinline></video>
+          <button type="button" class="video-preview__remove" data-video-remove aria-label="삭제">×</button>
+        `;
+        videoArea.appendChild(wrap);
+
+        const meta = document.createElement('div');
+        meta.className = 'video-meta';
+        const trimWarn = videoDuration > 90
+          ? `<span class="video-meta__warn">⚠️ ${formatDuration(videoDuration)} → 90초까지 자동 잘림</span>`
+          : '';
+        meta.innerHTML = `
+          <span>${formatDuration(videoDuration)}</span>
+          <span>${formatBytes(file.size)}</span>
+          ${trimWarn}
+        `;
+        videoArea.appendChild(meta);
+
+        wrap.querySelector('[data-video-remove]').addEventListener('click', () => {
+          URL.revokeObjectURL(url);
+          videoFile = null;
+          videoDuration = 0;
+          wrap.remove();
+          meta.remove();
+          if (dz) dz.hidden = false;
+          videoOverlayField.hidden = true;
+          videoSubtitleField.hidden = true;
+          if (overlayTextInput) overlayTextInput.value = '';
+          overlayText = '';
+          updateSubmitState();
+        });
+      }
+
+      // 화면 텍스트 입력
+      if (overlayTextInput) {
+        overlayTextInput.addEventListener('input', () => {
+          overlayText = (overlayTextInput.value || '').trim();
+        });
+      }
+
+      // 자막 토글 (디폴트 ON)
+      if (subtitleBtn) {
+        subtitleBtn.addEventListener('click', () => {
+          useSubtitle = !useSubtitle;
+          syncToggleUI(subtitleBtn, useSubtitle);
+        });
+      }
+
+      // submitBtn 활성화 — 이미지/영상 모드별로 조건 다름
+      function updateSubmitState() {
+        if (!submitBtn) return;
+        const ready = mediaMode === 'image' ? photos.length > 0 : !!videoFile;
+        submitBtn.disabled = !ready;
+      }
+
       const storyBtn      = document.querySelector('[data-story-toggle]');
       const weatherBtn    = document.querySelector('[data-weather-toggle]');
       const threadsBtn    = document.querySelector('[data-threads-toggle]');
@@ -715,7 +1001,8 @@
       }
 
       function refreshSubmit() {
-        submitBtn.disabled = photos.length === 0;
+        // 미디어 모드별 활성화 조건 분기
+        updateSubmitState();
       }
 
       function addFiles(fileList) {
@@ -1026,7 +1313,13 @@
       let isSubmitting = false;
       submitBtn.addEventListener('click', async () => {
         if (isSubmitting) return;
-        if (photos.length === 0) return;
+        if (mediaMode === 'image' && photos.length === 0) return;
+        if (mediaMode === 'video' && !videoFile) return;
+        if (mediaMode === 'video') {
+          // 영상 업로드·게시 흐름은 다음 phase 에서 활성화 (signed URL endpoint + ffmpeg)
+          toast('영상 업로드 기능은 준비 중이에요. 곧 출시!', 3000);
+          return;
+        }
         if (scheduleMode === 'scheduled') {
           if (!scheduleAtEl.value) {
             toast('예약 시간을 선택해주세요');
