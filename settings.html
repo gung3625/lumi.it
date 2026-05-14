@@ -872,8 +872,8 @@
     </div>
     <div class="modal__body">
       <div class="modal__warning">
-        <strong>30일 유예 기간이 있어요.</strong><br>
-        탈퇴 신청 후 30일 동안은 데이터가 유예 보관되며, <strong>같은 버튼을 다시 누르면 언제든 취소</strong>됩니다. 30일이 지나면 매장 정보·게시 이력·인스타·쓰레드 연동 정보가 영구 삭제됩니다.
+        <strong>7일 유예 기간이 있어요.</strong><br>
+        탈퇴 신청 후 7일 동안은 데이터가 유예 보관되며, <strong>같은 버튼을 다시 누르면 언제든 취소</strong>됩니다. 7일이 지나면 매장 정보·게시 이력·인스타·쓰레드 연동 정보가 영구 삭제됩니다.
       </div>
       <div>
         <div style="font-size: var(--text-caption); font-weight: var(--weight-semibold); color: var(--ink-soft); margin-bottom: var(--space-2);">확인을 위해 아래에 <strong>회원 탈퇴</strong>라고 입력해주세요</div>
@@ -1365,7 +1365,7 @@
         if (deletionPending) {
           label.textContent = '탈퇴 신청 취소';
           if (infoEl) {
-            const dstr = fmtKDate(deletionScheduledAt) || '약 30일 뒤';
+            const dstr = fmtKDate(deletionScheduledAt) || '약 7일 뒤';
             infoEl.innerHTML = `<strong>탈퇴 신청 완료</strong> · <strong>${dstr}</strong>에 영구 삭제 예정.<br>그 전에 같은 버튼을 다시 누르면 신청이 취소돼요.`;
             infoEl.hidden = false;
           }
@@ -1411,7 +1411,7 @@
           deletionScheduledAt = json.deletionScheduledAt || null;
           renderDeleteUi();
           closeDeleteModal();
-          toast('탈퇴 신청 완료. 30일 후 영구 삭제 예정', 2400);
+          toast('탈퇴 신청 완료. 7일 후 영구 삭제 예정', 2400);
         } catch (e) {
           toast(e.message || '신청 실패');
           delConfirmBtn.disabled = false;

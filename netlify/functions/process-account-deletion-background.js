@@ -1,4 +1,4 @@
-// 30일 유예기간 만료 회원 영구 삭제 cron
+// 유예기간 만료 회원 영구 삭제 cron (유예 7일 — account-delete.js GRACE_DAYS)
 // schedule: 0 18 * * *  (UTC 18:00 = KST 03:00)
 // 동작:
 //   1) deletion_scheduled_at <= now() AND deletion_cancelled_at IS NULL 인 row 조회

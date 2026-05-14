@@ -1,4 +1,4 @@
-// 30일 유예 회원 탈퇴 요청
+// 7일 유예 회원 탈퇴 요청
 // POST /api/account-delete
 // 헤더: Authorization: Bearer <jwt> (Supabase JWT or seller-jwt)
 // 응답: { ok: true, deletionScheduledAt: '<ISO>' }
@@ -6,18 +6,21 @@
 // 동작:
 //   1) JWT 검증 → seller 행 식별 (Supabase JWT 우선, seller-jwt fallback)
 //   2) sellers UPDATE: deletion_requested_at = now(),
-//                      deletion_scheduled_at = now() + interval '30 days',
+//                      deletion_scheduled_at = now() + interval '7 days',
 //                      deletion_cancelled_at = NULL
 //
 // 클라이언트 측에서는 응답 후 logout 처리 + index.html 로 redirect.
-// 30일 내 다시 로그인하면 auth-guard 가 배너로 복구 옵션 노출.
+// 7일 내 다시 로그인하면 auth-guard 가 배너로 복구 옵션 노출.
 // 안내·reminder·최종 알림은 모두 UI 배너로 대체 (이메일 발송 없음).
+//
+// 2026-05-15 변경: 30일 → 7일 (Meta Platform Terms 의 promptly 요건 부합
+// + 한국 개인정보보호법 시행령 10일 이내 권고 부합).
 
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifySellerToken, extractBearerToken } = require('./_shared/seller-jwt');
 const { corsHeaders, getOrigin } = require('./_shared/auth');
 
-const GRACE_DAYS = 30;
+const GRACE_DAYS = 7;
 
 exports.handler = async (event) => {
   const CORS = corsHeaders(getOrigin(event), { 'Access-Control-Allow-Methods': 'POST, OPTIONS' });

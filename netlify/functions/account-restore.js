@@ -1,4 +1,4 @@
-// 회원 탈퇴 복구 (30일 유예 내)
+// 회원 탈퇴 복구 (7일 유예 내)
 // POST /api/account-restore
 // 헤더: Authorization: Bearer <jwt>
 // 응답: { ok: true }
