@@ -283,12 +283,14 @@ exports.handler = async (event) => {
     //   되면 요일별로 분기).
     const sources = { weekday: 'seed', weekend: 'seed' };
     let onlineFollowersReady = false;
+    let igConnected = false;
     try {
       const { data: igRow } = await supabase
         .from('ig_accounts_decrypted')
         .select('ig_user_id, access_token, page_access_token')
         .eq('user_id', user.id)
         .maybeSingle();
+      igConnected = !!(igRow && igRow.ig_user_id);
       if (igRow && igRow.ig_user_id) {
         const followerMap = await fetchOnlineFollowers(
           igRow.ig_user_id,
@@ -361,6 +363,10 @@ exports.handler = async (event) => {
       weekend: { snapshot_days: activity.counts.weekend, needed_days: ACTIVITY_THRESHOLDS.weekend, ready: !!activity.weekend },
     };
     result.sources = sources;
+    // dashboard 가 "IG 연동 필요" vs "데이터 수집 중" 분기 위해 노출.
+    // ig_connected=true 인데 progress.weekday.ready=false 면 = IG 는 연동됐는데
+    // online_followers 데이터 누적 대기 중 (재연동 직후 24~48시간).
+    result.ig_connected = igConnected;
 
     // Tier 2 가 슬롯 갈아끼웠을 수 있으니 오늘 기준 재계산.
     result.allSlots = isWeekendToday ? result.weekend : result.weekday;
