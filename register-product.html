@@ -1434,15 +1434,15 @@
           const final = await pollUntilDone(reserveKey, { timeoutMs: 180 * 1000 });
           if (final.ok === true) {
             setOverlayCopy('완료!', '영상이 인스타에 올라갔어요.');
-            setTimeout(() => location.replace('/dashboard'), 1500);
+            setTimeout(() => { location.href = '/history?tab=past'; }, 1500);
           } else if (final.ok === 'scheduled') {
             setOverlayCopy('예약 완료', '예약 시간에 자동으로 올라가요.');
-            setTimeout(() => location.replace('/dashboard'), 1500);
+            setTimeout(() => { location.href = '/history?tab=upcoming'; }, 1500);
           } else if (final.ok === 'timeout') {
             // 영상은 백엔드 비동기 처리 — timeout 은 실패 아니라 "아직 처리 중".
-            // 사용자에게 안내 후 대시보드로 보냄. 게시 자체는 백그라운드에서 마무리.
+            // 히스토리(예약 목록) 에서 진행 상황 확인 가능.
             setOverlayCopy('처리 중', '영상은 시간이 조금 더 걸려요. 곧 인스타에 올라가요.');
-            setTimeout(() => location.replace('/dashboard'), 2000);
+            setTimeout(() => { location.href = '/history?tab=upcoming'; }, 2000);
           } else {
             throw new Error(final.error || '게시 실패');
           }
