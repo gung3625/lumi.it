@@ -17,13 +17,13 @@
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
-  external_node_modules = ["ffmpeg-static"]
 
-# 영상 후처리용 한글 폰트 (Pretendard-Bold.ttf 약 2.5MB).
-# process-video-background 함수 전용으로만 번들 — 글로벌 [functions] 에 두면
-# 98개 함수 모두 폰트가 박혀서 zip/upload 가 hang 됨 (검증 2026-05-15).
+# 영상 후처리 한 함수 전용 의존성 — 글로벌 [functions] 에 두면 98개 함수
+# 모두에 ffmpeg-static (Linux x64 binary ≈32MB) + Pretendard-Bold.ttf (2.5MB)
+# 가 번들돼 deploy zip 누적 ~3GB → upload hang (검증 2026-05-15).
 [functions."process-video-background"]
   included_files = ["netlify/functions/_fonts/**"]
+  external_node_modules = ["ffmpeg-static"]
 
 
 # Phase 3 Long-tail 서브카테고리 주간 분류 cron (월요일 KST 04:00 = UTC 일요일 19:00)
