@@ -234,6 +234,36 @@ function safeEqual(a, b) {
   return crypto.timingSafeEqual(ab, bb);
 }
 
+// post_mode='immediate' 인 REELS 만 즉시 select-and-post 호출.
+// 'scheduled' / 'best-time' / brand-auto 는 scheduler cron 이 다음 cycle 에 픽업.
+async function triggerSelectAndPostIfImmediate(supabase, reservationKey) {
+  try {
+    const { data: row } = await supabase
+      .from('reservations')
+      .select('post_mode, is_brand_auto, selected_caption_index, caption_status')
+      .eq('reserve_key', reservationKey)
+      .maybeSingle();
+    if (!row) return;
+    if (row.is_brand_auto === true) return;
+    if (row.post_mode !== 'immediate') return;
+    if (row.caption_status !== 'scheduled') return;
+
+    const captionIndex = (row.selected_caption_index ?? 0);
+    const base = process.env.URL || process.env.DEPLOY_URL || 'https://lumi.it.kr';
+    const res = await fetch(`${base.replace(/\/$/, '')}/.netlify/functions/select-and-post-background`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.LUMI_SECRET}`,
+      },
+      body: JSON.stringify({ reservationKey, captionIndex }),
+    });
+    console.log('[process-video] select-and-post 핸드오프:', res.status);
+  } catch (e) {
+    console.warn('[process-video] select-and-post 핸드오프 실패:', e.message);
+  }
+}
+
 exports.handler = async (event) => {
   const headers = corsHeaders(getOrigin(event));
   const authHeader = (event.headers['authorization'] || '').replace('Bearer ', '');
@@ -334,15 +364,31 @@ exports.handler = async (event) => {
 
     const { error: upErr } = await supabase
       .from('reservations')
-      .update({ video_url: publicUrl, subtitle_status: 'applied' })
+      .update({
+        video_url: publicUrl,
+        subtitle_status: 'applied',
+        video_processed_at: new Date().toISOString(),
+      })
       .eq('reserve_key', reservationKey);
     if (upErr) console.error('[process-video] 예약 업데이트 실패:', upErr.message);
+
+    // 후처리 완료 → select-and-post 핸드오프.
+    // race 차단: process-and-post 는 REELS 일 때 select-and-post 를 트리거하지 않는다.
+    // immediate 만 즉시 트리거. scheduled / best-time 은 scheduler cron 이 video_processed_at 세팅된
+    // row 를 다음 cycle 에 픽업.
+    await triggerSelectAndPostIfImmediate(supabase, reservationKey);
 
     return { statusCode: 200, headers, body: JSON.stringify({ success: true, videoUrl: publicUrl }) };
   } catch (err) {
     console.error('[process-video] 에러:', err.message);
     try {
-      await supabase.from('reservations').update({ subtitle_status: 'skipped' }).eq('reserve_key', reservationKey);
+      // 실패 시에도 video_processed_at 마킹 → 원본 video_url 로라도 게시 진행 (overlay/자막만 누락).
+      // 미세팅 상태로 두면 select-and-post 가 영원히 대기 → 사장님 게시 실패로 보임.
+      await supabase.from('reservations').update({
+        subtitle_status: 'skipped',
+        video_processed_at: new Date().toISOString(),
+      }).eq('reserve_key', reservationKey);
+      await triggerSelectAndPostIfImmediate(supabase, reservationKey);
     } catch(_) {}
     return { statusCode: 500, headers, body: JSON.stringify({ error: '영상 후처리 실패' }) };
   } finally {

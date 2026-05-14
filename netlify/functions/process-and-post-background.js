@@ -1459,7 +1459,10 @@ exports.handler = async (event) => {
     // 7) post_mode='immediate' → 캡션 생성 즉시 IG 게시 트리거.
     //    'scheduled' / 'best-time' 은 scheduler cron 이 scheduled_at 도달 시 트리거.
     //    brand-auto 는 daily-content-background 가 별도로 처리 — 여기서 immediate 트리거 제외.
-    if (reservation.post_mode === 'immediate' && !isBrandAuto) {
+    //    REELS 는 process-video 후처리 완료 후 process-video 가 직접 select-and-post 호출
+    //    (race 차단: 원본 .mov 로 게시되어 overlay/자막 누락되는 사고 방지).
+    const skipImmediateForReels = isReels && !!reservation.video_url;
+    if (reservation.post_mode === 'immediate' && !isBrandAuto && !skipImmediateForReels) {
       try {
         const base = process.env.URL || process.env.DEPLOY_URL || 'https://lumi.it.kr';
         const sapRes = await fetch(`${base.replace(/\/$/, '')}/.netlify/functions/select-and-post-background`, {

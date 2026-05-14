@@ -110,6 +110,14 @@ exports.handler = async (event) => {
     if (reservation.is_sent) { console.log('[select-and-post] 이미 게시됨'); return; }
     userIdForTokenMark = reservation.user_id;
 
+    // REELS gate: 후처리 미완료면 보류. process-video 가 완료 시 자신이 다시 트리거하거나
+    // scheduler 가 다음 cycle 에서 픽업하므로 안전하게 return 만 한다.
+    // (원본 .mov 가 그대로 Meta 로 업로드되어 overlay/자막 누락되는 사고 방지)
+    if ((reservation.media_type || 'IMAGE') === 'REELS' && !reservation.video_processed_at) {
+      console.log('[select-and-post] REELS 후처리 미완료 — 보류:', reservationKey);
+      return;
+    }
+
     // 2) 중복 호출 방지 — atomic CAS 로 'scheduled' → 'posting' 전이.
     //    동일 row 에 대해 process-and-post 직접 트리거 + scheduler cron 트리거 가
     //    동시에 select-and-post 를 호출하던 race 가 여기서 차단된다.

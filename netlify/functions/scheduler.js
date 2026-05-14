@@ -12,7 +12,7 @@ exports.handler = async () => {
     // caption_status 는 뒤에서 분기 처리.
     const { data: rows, error } = await supabase
       .from('reservations')
-      .select('reserve_key, caption_status, selected_caption_index, post_mode, scheduled_at, is_sent, cancelled, user_id, created_at')
+      .select('reserve_key, caption_status, selected_caption_index, post_mode, scheduled_at, is_sent, cancelled, user_id, created_at, media_type, video_processed_at')
       .eq('is_sent', false)
       .eq('cancelled', false)
       .not('scheduled_at', 'is', null)
@@ -38,6 +38,12 @@ exports.handler = async () => {
 
         // captionStatus 분기
         if (row.caption_status === 'scheduled' && row.selected_caption_index !== null && row.selected_caption_index !== undefined) {
+          // REELS gate: ffmpeg 후처리(자막 burn-in, overlay text)가 끝나기 전엔 원본 .mov 로
+          // 게시되지 않도록 차단. process-video 가 완료 시 video_processed_at 을 세팅한다.
+          if (row.media_type === 'REELS' && !row.video_processed_at) {
+            console.log('[scheduler] 스킵 REELS 후처리 대기:', row.reserve_key);
+            continue;
+          }
           // 사용자가 이미 캡션을 선택한 예약 → select-and-post-background 로 IG 게시
           const res = await fetch(`${siteUrl}/.netlify/functions/select-and-post-background`, {
             method: 'POST',
