@@ -1753,8 +1753,12 @@
                 sortOrder: i,
               })),
             };
-            // 빈 행은 클라이언트 측에서 미리 정리
-            body.links = body.links.filter((l) => l.label && l.url);
+            // 빈 행은 클라이언트 측에서 미리 정리 + prefix 자동 보정 (사장님이
+            // "naver.com/menu" 처럼 https:// 빼고 입력해도 저장 가능하도록)
+            const PREFIX_RE = /^(https?:\/\/|tel:|mailto:|kakaotalk:)/i;
+            body.links = body.links
+              .filter((l) => l.label && l.url)
+              .map((l) => ({ ...l, url: PREFIX_RE.test(l.url) ? l.url : 'https://' + l.url }));
             const res = await fetch('/api/save-linktree', {
               method: 'POST',
               headers: { ...authHeaders, 'Content-Type': 'application/json' },
