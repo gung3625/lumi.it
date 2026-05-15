@@ -752,37 +752,44 @@
             }
           });
         }
-        // ranking 정렬 — 검색량 × 신뢰도 가중 × velocity 보조.
+        // ranking 정렬 — signal_tier 우선 (Option B, 사장님 결정 2026-05-15).
         //
-        // 정책 (PR #175+ Option F):
-        //   final_score = monthlySearchTotal × confidence_weight × (1 + velocityPct/100)
+        // 1차 정렬: signalTier (strong > medium > weak)
+        //   strong: cross_source ≥2 / 검색량 ≥5k / velocity ≥30% 중 2개 이상 충족
+        //   medium: 1개 충족
+        //   weak:   0개
         //
-        // confidence_weight (searchVolumeMatchType 별):
-        //   exact:            1.0  ✅✅✅ 사람들이 그 키워드 직접 검색
-        //   normalized:       0.95 ✅✅✅ 띄어쓰기 차이만 있음
-        //   root_morpheme:    0    ❌ 폐기 (사용자 지시 2026-05-14) — root 검색량은 거짓 신호
-        //   datalab_estimate: 0    ❌ 폐기 (commit facebf3) — 환산값
-        //   null/매칭실패:    weightedScore 음수 fallback (절대값 보유 키워드 뒤로)
-        function confidenceWeight(type) {
-          switch (type) {
-            case 'exact':            return 1.0;
-            case 'normalized':       return 0.95;
-            default:                  return 0;
-          }
+        // 2차 정렬 (같은 tier 내): weightedScore desc
+        //   weightedScore 는 backend computeWeightedScore() 가 산출:
+        //     base (counts × source 다양성 ≥2 면 ×1.5) + log(monthly) × 0.3 + log(velocity+1) × 0.5
+        //   = cross_source 다양성 + 검색량 + velocity 종합. 검색량 매칭 실패한 신조어도
+        //     cross_source/velocity 가 강하면 같은 tier 내 상위 위치.
+        //
+        // 변경 이력:
+        //   - 이전 (PR #175+ Option F): monthlySearchTotal × confidence × (1+v/100) 만 사용.
+        //     검색량 매칭 실패한 신조어는 -weightedScore (음수) 로 매칭 성공 키워드 뒤로
+        //     강제 밀림. cross_source 4곳 + velocity 200% strong 신조어가 묻힘 → 사장님이
+        //     활용할 떠오르는 트렌드가 안 보이는 부작용.
+        //   - 신규 (Option B, 2026-05-15): tier 우선 → 신호 강한 키워드가 검색량 유무
+        //     무관하게 상위. detail sheet "왜 이 순위?" 가 검색량 미수집 사유 명시.
+        //
+        // root_morpheme · datalab_estimate 환산값은 여전히 사용 안 함 (거짓 신호 정책 유지).
+        function tierRank(tier) {
+          if (tier === 'strong') return 2;
+          if (tier === 'medium') return 1;
+          return 0; // weak 또는 undefined
         }
         function rankScore(k) {
-          const v = typeof k.velocityPct === 'number' ? k.velocityPct : 0;
-          if (typeof k.monthlySearchTotal === 'number' && k.monthlySearchTotal > 0) {
-            const w = confidenceWeight(k.searchVolumeMatchType);
-            if (w > 0) return k.monthlySearchTotal * w * (1 + v / 100);
-          }
-          return -((typeof k.weightedScore === 'number' ? k.weightedScore : 0));
+          // tier × 1000 으로 tier 가 절대 우선. weightedScore 는 보통 < 60 이라 안전.
+          const tier = tierRank(k.signalTier);
+          const ws = typeof k.weightedScore === 'number' ? k.weightedScore : 0;
+          return tier * 1000 + ws;
         }
         const sorted = Array.from(merged.values()).sort((a, b) => {
           const sa = rankScore(a);
           const sb = rankScore(b);
           if (sa !== sb) return sb - sa;
-          return a.sourceRank - b.sourceRank;  // tie-breaker
+          return a.sourceRank - b.sourceRank;  // tie-breaker (sub-category 우선순위)
         });
         return { items: sorted, categoryLabel: group.label, updatedAt: latestUpdatedAt };
       }
@@ -912,7 +919,7 @@
               <ul class="sheet__rank-list">
                 ${rankSignals.map(s => `<li>${s}</li>`).join('')}
               </ul>
-              <p class="sheet__meta-line" style="margin-top:6px;">정렬: 월간 검색량 × (1 + 상승률) — 네이버 광고 API 에 직접 검색량 있는 키워드(exact·normalized) 만 정렬에 사용. root 매칭·환산값은 거짓 신호이므로 정렬 제외.</p>
+              <p class="sheet__meta-line" style="margin-top:6px;">정렬: 신호 강도(강함 > 보통 > 약함) 우선, 그 안에서 종합 점수(cross-source 다양성 + 검색량 + 상승률) 내림차순. 검색량 정확매칭 실패해도 다른 신호(소스 다양성·상승률)가 강하면 상위 노출.</p>
             </div>
           `);
         }
