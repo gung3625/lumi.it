@@ -65,8 +65,11 @@ exports.handler = async (event) => {
   }
 
   const ext = EXT_FROM_MIME[contentType] || 'mp4';
-  const reserveKey = `reserve:${Date.now()}`;
+  // I-B (2026-05-15): reserveKey 충돌 차단. 이전 'reserve:${Date.now()}' 는 동일 ms 두 요청 시 충돌.
+  // crypto.randomBytes 4 byte hex suffix 추가 (4B = 4억 가지) → 사실상 unique.
   const nonce = require('crypto').randomBytes(8).toString('hex');
+  const suffix = require('crypto').randomBytes(4).toString('hex');
+  const reserveKey = `reserve:${Date.now()}-${suffix}`;
   const path = `${userId}/${reserveKey}/video-${nonce}.${ext}`;
 
   let admin;

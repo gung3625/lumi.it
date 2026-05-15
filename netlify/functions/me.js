@@ -142,7 +142,9 @@ exports.handler = async (event) => {
         .insert({
           email: userEmail,
           owner_name: 'Admin',
-          phone: '01000000000',
+          // I-C (2026-05-15): 더미 phone hardcode 제거. nullable.
+          // 알림 발송 로직이 phone null 인 관리자 row 를 skip 하도록.
+          phone: null,
           store_name: 'Lumi Admin',
           signup_step: 5,
           signup_completed_at: now,

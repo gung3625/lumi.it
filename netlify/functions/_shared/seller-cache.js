@@ -5,8 +5,13 @@
 const { getStore } = require('@netlify/blobs');
 
 function siteParams() {
+  // I-F (2026-05-15): hardcoded fallback siteID 제거.
+  // 이전: env 미설정 시 lumi prod siteID 가 코드에 평문 노출 + dev/staging 에서 prod cache 오염.
+  // env 강제. 누락 시 throw (Netlify Blobs 호출 자체 차단 — invalid client 만들지 않음).
+  if (!process.env.NETLIFY_SITE_ID) throw new Error('NETLIFY_SITE_ID 환경변수 누락');
+  if (!process.env.NETLIFY_TOKEN) throw new Error('NETLIFY_TOKEN 환경변수 누락');
   return {
-    siteID: process.env.NETLIFY_SITE_ID || '28d60e0e-6aa4-4b45-b117-0bcc3c4268fc',
+    siteID: process.env.NETLIFY_SITE_ID,
     token: process.env.NETLIFY_TOKEN,
     consistency: 'eventual',
   };

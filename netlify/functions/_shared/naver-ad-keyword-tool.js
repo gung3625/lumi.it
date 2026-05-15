@@ -127,7 +127,15 @@ async function fetchRelatedFromSeeds(seeds, options = {}) {
   const limit = options.limit || 80;
   if (!Array.isArray(seeds) || seeds.length === 0) return [];
 
-  const results = await Promise.all(seeds.slice(0, 10).map(fetchRelatedKeywords));
+  // I-G (2026-05-15): chunk concurrency 3 으로 네이버 검색광고 API RPS 안전.
+  // 이전 Promise.all 10 동시 호출 → 429 burst 시 silent return [] 데이터 누락.
+  const seedSlice = seeds.slice(0, 10);
+  const results = [];
+  for (let i = 0; i < seedSlice.length; i += 3) {
+    const chunk = seedSlice.slice(i, i + 3);
+    const chunkRes = await Promise.allSettled(chunk.map(fetchRelatedKeywords));
+    for (const r of chunkRes) results.push(r.status === 'fulfilled' ? r.value : []);
+  }
   const merged = new Map();
   for (const list of results) {
     for (const item of list) {

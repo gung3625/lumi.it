@@ -1146,9 +1146,15 @@
           }
           if (next.image_url || next.thumbnail_url) {
             const thumb = document.querySelector('[data-scheduled-thumb]');
-            if (thumb) thumb.style.backgroundImage = `url(${next.image_url || next.thumbnail_url})`;
-            if (thumb) thumb.style.backgroundSize = 'cover';
-            if (thumb) thumb.style.backgroundPosition = 'center';
+            // I-H (2026-05-15): CSS injection 차단 — URL 안 ')' / ';' 로 context 탈출 가능.
+            // encodeURI + 싱글쿼터 escape + 싱글쿼터 감싸기 (history.html:1429 패턴 동일).
+            if (thumb) {
+              const rawUrl = String(next.image_url || next.thumbnail_url || '');
+              const safeUrl = encodeURI(rawUrl).replace(/'/g, '%27');
+              thumb.style.backgroundImage = `url('${safeUrl}')`;
+              thumb.style.backgroundSize = 'cover';
+              thumb.style.backgroundPosition = 'center';
+            }
           }
           if (Array.isArray(next.channels) && next.channels.length > 0) {
             const labels = { ig: '인스타', tt: '틱톡', nblog: '블로그', kakao: '카톡 채널' };

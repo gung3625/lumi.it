@@ -199,7 +199,9 @@ exports.handler = async (event) => {
         // 릴레이 모드 폐지됨 — 항상 true (캡션 확인 후 바로 게시)
         const relayMode = true;
 
-        const reserveKey = `reserve:${Date.now()}`;
+        // I-B (2026-05-15): reserveKey 충돌 차단 — Date.now() 만으로는 동일 ms 두 요청 충돌.
+        // 4 byte hex suffix 추가.
+        const reserveKey = `reserve:${Date.now()}-${require('crypto').randomBytes(4).toString('hex')}`;
 
         // Storage 업로드 — 병렬 처리 (Promise.all). 사진 N장 직렬 → 동시 업로드로
         // 함수 응답시간 N배 단축. 경로: {user_id}/{reserveKey}/{ts}-{nonce}.ext.

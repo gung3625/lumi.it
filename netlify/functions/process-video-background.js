@@ -62,7 +62,12 @@ function runFfmpeg(args, timeoutMs = 600_000) {
 }
 
 async function probeVideo(filepath) {
-  const out = await runFfmpeg(['-hide_banner', '-i', filepath, '-f', 'null', '-'], 30_000).catch((e) => e.message);
+  // I-A (2026-05-15): 영상 전체 디코드 → 한 프레임만 (4~10초 단축).
+  // 이전: -f null - 가 영상 끝까지 디코드해서 stderr 파싱.
+  // 변경: -frames:v 1 -an (한 프레임 + 오디오 무시). stderr 의 Stream metadata 는 동일.
+  const out = await runFfmpeg([
+    '-hide_banner', '-i', filepath, '-frames:v', '1', '-an', '-f', 'null', '-',
+  ], 15_000).catch((e) => e.message);
   const m = String(out).match(/Stream.*Video:.*?(\d+)x(\d+)/);
   if (!m) throw new Error('영상 해상도 파싱 실패');
   return { width: Number(m[1]), height: Number(m[2]) };
