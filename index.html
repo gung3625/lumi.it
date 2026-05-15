@@ -303,16 +303,22 @@
       100% { opacity: 1; transform: translate(-50%, 0) scale(1); }
     }
 
-    /* 갤러리 wrap — 가용 세로 공간 모두 차지 (toolbar 아래 ~ safe-area 까지) */
+    /* 갤러리 wrap — 가용 세로 공간 모두 차지 (toolbar 아래 ~ safe-area 까지).
+       자식 .gallery 에 flex 분배해야 grid-template-rows: 1fr 가 동작.
+       flex item 안의 자식 height:100% 는 부모 explicit height 가 필요해서
+       동작 안 했음 → wrap 자체를 flex container 로 만들고 .gallery 는 flex:1. */
     .gallery-wrap {
       flex: 1;
       padding: 0;
       padding-bottom: env(safe-area-inset-bottom);
       min-height: 0; /* flex 자식이 부모 크기 넘지 않게 */
+      display: flex;
+      flex-direction: column;
     }
 
     /* 3x3 그리드 — 9장이 화면 가용 영역 전체 채움 (공백 0) */
     .gallery {
+      flex: 1;
       list-style: none;
       margin: 0;
       padding: 0;
@@ -321,7 +327,7 @@
       grid-template-rows: repeat(3, 1fr);
       gap: 2px;
       width: 100%;
-      height: 100%;
+      min-height: 0; /* grid 자체가 부모 안에서 줄어들 수 있게 */
     }
     .gallery__item {
       /* aspect-ratio 제거 — 그리드 row 가 1fr 로 가용 높이 분배. 셀은 자동 직사각형. */
@@ -351,16 +357,17 @@
       transition: filter var(--duration-snap) var(--ease-toss);
     }
 
-    /* 카페 분위기 그라데이션 10종 — 라떼/디저트/인테리어/외관/메뉴 등 시각 차별화 */
+    /* 음식 사진 그라데이션 9종 — 디저트·식당 메뉴 (입에 들어가는 것). 사장님 결정 2026-05-15.
+       카페 인테리어/외관/메뉴판 같은 비-음식 제거. 라떼·케이크·파스타·샐러드 등 다양화. */
     .gallery__bg--cafe-1  { background: linear-gradient(135deg, #c8a27a 0%, #f5e5d3 100%); }              /* 라떼아트 — 베이지·크림 */
-    .gallery__bg--cafe-2  { background: linear-gradient(135deg, #f5d4b3 0%, #e8a87c 100%); }              /* 디저트 — 오렌지 크림 */
-    .gallery__bg--cafe-3  { background: linear-gradient(135deg, #a89788 0%, #5b4a3f 100%); }              /* 인테리어 — 우드 */
-    .gallery__bg--cafe-4  { background: linear-gradient(135deg, #4a3528 0%, #8b6f5c 100%); }              /* 핸드드립 — 짙은 갈색 */
-    .gallery__bg--cafe-5  { background: linear-gradient(135deg, #ece9e3 0%, #b4a89a 100%); }              /* 외관 — 베이지 화이트 */
-    .gallery__bg--cafe-6  { background: linear-gradient(135deg, #2d2520 0%, #d4a85c 100%); }              /* 메뉴판 — 검정·노랑 */
-    .gallery__bg--cafe-7  { background: radial-gradient(circle at 30% 30%, #6b3f24, #2a1810); }           /* 커피잔 — 짙은 갈색 클로즈업 */
-    .gallery__bg--cafe-8  { background: linear-gradient(135deg, #fff2e0 0%, #f5b6c5 100%); }              /* 디저트 플레이팅 — 파스텔 */
-    .gallery__bg--cafe-9  { background: linear-gradient(135deg, #b8b6b3 0%, #ddd9d3 100%); }              /* 텀블러 — 회색 */
+    .gallery__bg--cafe-2  { background: linear-gradient(135deg, #f5d4b3 0%, #e8a87c 100%); }              /* 케이크 — 크림·연갈색 */
+    .gallery__bg--cafe-3  { background: linear-gradient(135deg, #f8c8d8 0%, #c8a8e0 100%); }              /* 마카롱 — 핑크·라일락 */
+    .gallery__bg--cafe-4  { background: linear-gradient(135deg, #d4a85c 0%, #8b6f3c 100%); }              /* 크로플 — 황금·갈색 */
+    .gallery__bg--cafe-5  { background: linear-gradient(135deg, #e85c5c 0%, #f5b878 100%); }              /* 파스타 — 빨강·노랑 */
+    .gallery__bg--cafe-6  { background: linear-gradient(135deg, #a8d878 0%, #f5e088 100%); }              /* 샐러드 — 연두·노랑 */
+    .gallery__bg--cafe-7  { background: linear-gradient(135deg, #c89868 0%, #f5d588 100%); }              /* 빵 — 갈색·노랑 */
+    .gallery__bg--cafe-8  { background: linear-gradient(135deg, #b8a8e0 0%, #f8a8c8 100%); }              /* 스무디 — 보라·핑크 */
+    .gallery__bg--cafe-9  { background: linear-gradient(135deg, #fff2e0 0%, #f5b6c5 100%); }              /* 디저트 플레이팅 — 파스텔·핑크 */
 
     /* iOS 체크 마크 — 미선택: 반투명 검정 + 흰 border / 선택: 핑크 채움 */
     .gallery__check {
@@ -985,14 +992,14 @@
       <div class="gallery-wrap">
         <ul class="gallery" role="list">
           <li class="gallery__item" style="--idx:0"><button class="gallery__card" type="button" data-photo="cafe-1"  aria-pressed="false" aria-label="라떼아트 사진 선택"><span class="gallery__bg gallery__bg--cafe-1"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span><span class="gallery__order" data-order aria-hidden="true"></span></button></li>
-          <li class="gallery__item" style="--idx:1"><button class="gallery__card" type="button" data-photo="cafe-2"  aria-pressed="false" aria-label="디저트 사진 선택"><span class="gallery__bg gallery__bg--cafe-2"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span><span class="gallery__order" data-order aria-hidden="true"></span></button></li>
-          <li class="gallery__item" style="--idx:2"><button class="gallery__card" type="button" data-photo="cafe-3"  aria-pressed="false" aria-label="인테리어 사진 선택"><span class="gallery__bg gallery__bg--cafe-3"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span><span class="gallery__order" data-order aria-hidden="true"></span></button></li>
-          <li class="gallery__item" style="--idx:3"><button class="gallery__card" type="button" data-photo="cafe-4"  aria-pressed="false" aria-label="핸드드립 사진 선택"><span class="gallery__bg gallery__bg--cafe-4"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span><span class="gallery__order" data-order aria-hidden="true"></span></button></li>
-          <li class="gallery__item" style="--idx:4"><button class="gallery__card" type="button" data-photo="cafe-5"  aria-pressed="false" aria-label="외관 사진 선택"><span class="gallery__bg gallery__bg--cafe-5"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span><span class="gallery__order" data-order aria-hidden="true"></span></button></li>
-          <li class="gallery__item" style="--idx:5"><button class="gallery__card" type="button" data-photo="cafe-6"  aria-pressed="false" aria-label="메뉴판 사진 선택"><span class="gallery__bg gallery__bg--cafe-6"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span><span class="gallery__order" data-order aria-hidden="true"></span></button></li>
-          <li class="gallery__item" style="--idx:6"><button class="gallery__card" type="button" data-photo="cafe-7"  aria-pressed="false" aria-label="커피잔 사진 선택"><span class="gallery__bg gallery__bg--cafe-7"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span><span class="gallery__order" data-order aria-hidden="true"></span></button></li>
-          <li class="gallery__item" style="--idx:7"><button class="gallery__card" type="button" data-photo="cafe-8"  aria-pressed="false" aria-label="디저트 플레이팅 사진 선택"><span class="gallery__bg gallery__bg--cafe-8"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span><span class="gallery__order" data-order aria-hidden="true"></span></button></li>
-          <li class="gallery__item" style="--idx:8"><button class="gallery__card" type="button" data-photo="cafe-9"  aria-pressed="false" aria-label="텀블러 사진 선택"><span class="gallery__bg gallery__bg--cafe-9"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span><span class="gallery__order" data-order aria-hidden="true"></span></button></li>
+          <li class="gallery__item" style="--idx:1"><button class="gallery__card" type="button" data-photo="cafe-2"  aria-pressed="false" aria-label="케이크 사진 선택"><span class="gallery__bg gallery__bg--cafe-2"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span><span class="gallery__order" data-order aria-hidden="true"></span></button></li>
+          <li class="gallery__item" style="--idx:2"><button class="gallery__card" type="button" data-photo="cafe-3"  aria-pressed="false" aria-label="마카롱 사진 선택"><span class="gallery__bg gallery__bg--cafe-3"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span><span class="gallery__order" data-order aria-hidden="true"></span></button></li>
+          <li class="gallery__item" style="--idx:3"><button class="gallery__card" type="button" data-photo="cafe-4"  aria-pressed="false" aria-label="크로플 사진 선택"><span class="gallery__bg gallery__bg--cafe-4"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span><span class="gallery__order" data-order aria-hidden="true"></span></button></li>
+          <li class="gallery__item" style="--idx:4"><button class="gallery__card" type="button" data-photo="cafe-5"  aria-pressed="false" aria-label="파스타 사진 선택"><span class="gallery__bg gallery__bg--cafe-5"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span><span class="gallery__order" data-order aria-hidden="true"></span></button></li>
+          <li class="gallery__item" style="--idx:5"><button class="gallery__card" type="button" data-photo="cafe-6"  aria-pressed="false" aria-label="샐러드 사진 선택"><span class="gallery__bg gallery__bg--cafe-6"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span><span class="gallery__order" data-order aria-hidden="true"></span></button></li>
+          <li class="gallery__item" style="--idx:6"><button class="gallery__card" type="button" data-photo="cafe-7"  aria-pressed="false" aria-label="빵 사진 선택"><span class="gallery__bg gallery__bg--cafe-7"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span><span class="gallery__order" data-order aria-hidden="true"></span></button></li>
+          <li class="gallery__item" style="--idx:7"><button class="gallery__card" type="button" data-photo="cafe-8"  aria-pressed="false" aria-label="스무디 사진 선택"><span class="gallery__bg gallery__bg--cafe-8"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span><span class="gallery__order" data-order aria-hidden="true"></span></button></li>
+          <li class="gallery__item" style="--idx:8"><button class="gallery__card" type="button" data-photo="cafe-9"  aria-pressed="false" aria-label="디저트 플레이팅 사진 선택"><span class="gallery__bg gallery__bg--cafe-9"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span><span class="gallery__order" data-order aria-hidden="true"></span></button></li>
         </ul>
       </div>
     </section>
