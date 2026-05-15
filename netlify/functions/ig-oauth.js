@@ -55,7 +55,22 @@ exports.handler = async (event) => {
   // 1) code 없음 → OAuth 시작 (nonce 발급 + Facebook 인증 리다이렉트)
   // ──────────────────────────────────────────────
   if (!code) {
-    const lumiToken = params.get('token') || '';
+    // S1 (2026-05-15): JWT URL query 노출 차단. POST body 또는 Authorization 헤더 우선,
+    // 없으면 GET query (backward compat — 점진 마이그레이션).
+    let lumiToken = '';
+    if (event.httpMethod === 'POST') {
+      try {
+        const body = JSON.parse(event.body || '{}');
+        lumiToken = body.token || '';
+      } catch (_) { /* fall through */ }
+    }
+    if (!lumiToken) {
+      const authHeader = event.headers && (event.headers['authorization'] || event.headers['Authorization']);
+      if (authHeader) lumiToken = String(authHeader).replace(/^Bearer\s+/i, '').trim();
+    }
+    if (!lumiToken) {
+      lumiToken = params.get('token') || '';
+    }
     if (!lumiToken) {
       console.error('[ig-oauth] OAuth 시작 실패: 토큰 없음');
       return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/dashboard?oauth_error=1' } };
@@ -98,6 +113,11 @@ exports.handler = async (event) => {
       `&scope=${encodeURIComponent(SCOPES)}` +
       `&response_type=code` +
       `&state=${encodeURIComponent(nonce)}`;
+    // POST 면 JSON 으로 URL 반환 (클라 측에서 location.href = url 처리 — token 이 URL 에 절대 안 박힘).
+    // GET 면 기존 302 redirect (backward compat).
+    if (event.httpMethod === 'POST') {
+      return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: authUrl }) };
+    }
     return { statusCode: 302, headers: { Location: authUrl } };
   }
 

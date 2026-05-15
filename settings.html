@@ -915,6 +915,26 @@
         localStorage.getItem('seller_jwt') || '';
       if (!token) { location.replace('/'); return; }
       const authHeaders = { Authorization: 'Bearer ' + token };
+
+      // S1 (2026-05-15): OAuth 시작 시 token 을 URL query 가 아닌 POST body 로.
+      // 응답 JSON 의 url 로 location.href → Facebook/Threads OAuth URL 만 노출, JWT 보호.
+      async function startSocialOAuth(endpoint, returnTo) {
+        try {
+          const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ token, return_to: returnTo }),
+          });
+          const j = await res.json().catch(() => ({}));
+          if (res.ok && j.url) {
+            location.href = j.url;
+          } else {
+            toast('OAuth 시작 실패. 다시 시도해주세요.');
+          }
+        } catch (e) {
+          toast('네트워크 오류. 다시 시도해주세요.');
+        }
+      }
       const C = window.LumiCategories;
 
       const toastEl = document.querySelector('[data-toast]');
@@ -1239,9 +1259,7 @@
             actionBtn.textContent = '재연동';
             actionBtn.className = 'ig-card__action ig-card__action--connect';
             actionBtn.hidden = false;
-            actionBtn.onclick = () => {
-              location.href = '/api/ig-oauth?token=' + encodeURIComponent(token) + '&return_to=/settings';
-            };
+            actionBtn.onclick = () => startSocialOAuth('/api/ig-oauth', '/settings');
           } else if (connected) {
             titleEl.textContent = '인스타 연동됨';
             subEl.textContent = '게시·댓글 알림 작동 중';
@@ -1267,9 +1285,7 @@
             actionBtn.textContent = '연결하기';
             actionBtn.className = 'ig-card__action ig-card__action--connect';
             actionBtn.hidden = false;
-            actionBtn.onclick = () => {
-              location.href = '/api/ig-oauth?token=' + encodeURIComponent(token) + '&return_to=/settings';
-            };
+            actionBtn.onclick = () => startSocialOAuth('/api/ig-oauth', '/settings');
           }
         } catch (e) {
           titleEl.textContent = '연동 상태 확인 실패';
@@ -1297,9 +1313,7 @@
             actionBtn.textContent = '재연동';
             actionBtn.className = 'ig-card__action ig-card__action--connect';
             actionBtn.hidden = false;
-            actionBtn.onclick = () => {
-              location.href = '/api/threads-oauth?token=' + encodeURIComponent(token) + '&return_to=/settings';
-            };
+            actionBtn.onclick = () => startSocialOAuth('/api/threads-oauth', '/settings');
           } else if (connected) {
             titleEl.textContent = '쓰레드 연동됨';
             subEl.textContent = '쓰레드에도 함께 올라가요';
@@ -1325,9 +1339,7 @@
             actionBtn.textContent = '연결하기';
             actionBtn.className = 'ig-card__action ig-card__action--connect';
             actionBtn.hidden = false;
-            actionBtn.onclick = () => {
-              location.href = '/api/threads-oauth?token=' + encodeURIComponent(token) + '&return_to=/settings';
-            };
+            actionBtn.onclick = () => startSocialOAuth('/api/threads-oauth', '/settings');
           }
         } catch (e) {
           titleEl.textContent = '연동 상태 확인 실패';

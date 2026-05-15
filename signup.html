@@ -1055,18 +1055,28 @@
         });
       });
 
-      // IG 연동 시작 — Meta OAuth
-      igConnectBtn.addEventListener('click', () => {
-        // /api/ig-oauth 가 token query 로 받는다 (기존 코드 호환)
-        location.href = '/api/ig-oauth?token=' + encodeURIComponent(token);
-      });
-
-      // 쓰레드 연동 시작 — Threads OAuth (별도 flow, 결정 #1 revised)
-      // IG 미연동 시 백엔드(threads-oauth.js)가 ?threads_oauth_error=10 으로
-      // /settings 리다이렉트 → 사장님은 거기서 안내 메시지 확인.
-      document.querySelector('[data-threads-connect]').addEventListener('click', () => {
-        location.href = '/api/threads-oauth?token=' + encodeURIComponent(token) + '&return_to=/signup';
-      });
+      // S1 (2026-05-15): OAuth 시작 시 token 을 URL query 가 아닌 POST body 로 전송.
+      // 응답 JSON 의 url 로 location.href → Facebook/Threads OAuth URL 만 노출, JWT 보호.
+      async function startOAuth(endpoint, returnTo) {
+        try {
+          const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ token, return_to: returnTo }),
+          });
+          const j = await res.json().catch(() => ({}));
+          if (res.ok && j.url) {
+            location.href = j.url;
+          } else {
+            location.href = '/dashboard?oauth_error=1';
+          }
+        } catch (e) {
+          location.href = '/dashboard?oauth_error=1';
+        }
+      }
+      igConnectBtn.addEventListener('click', () => startOAuth('/api/ig-oauth', '/signup'));
+      document.querySelector('[data-threads-connect]').addEventListener('click', () =>
+        startOAuth('/api/threads-oauth', '/signup'));
 
       // 나중에 — sellers.onboarded=true 박은 후 step 4 (다음 로그인 시 dashboard 직행)
       document.querySelector('[data-ig-skip]').addEventListener('click', async (e) => {

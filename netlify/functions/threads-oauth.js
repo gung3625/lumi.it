@@ -74,7 +74,16 @@ exports.handler = async (event) => {
   // 1) code 없음 → OAuth 시작 (nonce 발급 + Threads 인증 리다이렉트)
   // ──────────────────────────────────────────────
   if (!code) {
-    const lumiToken = params.get('token') || '';
+    // S1 (2026-05-15): JWT URL query 노출 차단 — POST body / Authorization header 우선.
+    let lumiToken = '';
+    if (event.httpMethod === 'POST') {
+      try { lumiToken = (JSON.parse(event.body || '{}').token) || ''; } catch (_) {}
+    }
+    if (!lumiToken) {
+      const authHeader = event.headers && (event.headers['authorization'] || event.headers['Authorization']);
+      if (authHeader) lumiToken = String(authHeader).replace(/^Bearer\s+/i, '').trim();
+    }
+    if (!lumiToken) lumiToken = params.get('token') || '';
     if (!lumiToken) {
       console.error('[threads-oauth] OAuth 시작 실패: 토큰 없음');
       return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/settings?threads_oauth_error=1' } };
@@ -118,6 +127,9 @@ exports.handler = async (event) => {
       `&scope=${encodeURIComponent(SCOPES)}` +
       `&response_type=code` +
       `&state=${encodeURIComponent(nonce)}`;
+    if (event.httpMethod === 'POST') {
+      return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: authUrl }) };
+    }
     return { statusCode: 302, headers: { Location: authUrl } };
   }
 
