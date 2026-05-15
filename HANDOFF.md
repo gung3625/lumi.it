@@ -1,7 +1,89 @@
 # 루미(lumi) 인수인계 문서
 
-마지막 업데이트: 2026-05-15
-기준 커밋: `main` 최신 (`ac56c18`) — 2026-05-14 까지 PR #69~#240 + main 커밋 9건. 2026-05-15 추가 13건 (universal media format / trends 정렬 Option B / tier 잔재 정리 / 코드 리뷰 fix / 튜토리얼 Phase A1·A2).
+마지막 업데이트: 2026-05-16
+기준 커밋: `main` 최신 (`5585902`) — 2026-05-15 인계 (de55071) + 2026-05-16 새벽 자율 audit 4건 (9ed88e4 / 222d7b1 / 5585902).
+
+---
+
+## 🔍 자율 audit 결과 (2026-05-16 새벽)
+
+사장님이 "코드 리뷰 스킬로 루미 자체를 전부 진행해 보안도 확인하고 싹 다 놓치지말고
+진행해. 내 의견 묻지말고 전부 해결해 난 자고 올게" 명령. code-review-excellence
+스킬 + Explore agent 3개 병렬 정찰 (보안 / 코드 품질 / UI·CSS) 결과를 우선순위
+🔴 / 🟡 / 🟢 분류 후 자동 fix.
+
+### A) 🔴 Critical 해결 (commit `9ed88e4`)
+
+**보안 — OAuth nonce TOCTOU 동일 패턴 3건**
+- `auth-tiktok-login-callback.js:86-122` / `threads-oauth.js:148-167` / `ig-oauth.js:192-211`
+- 증상: SELECT then DELETE 분리 → 두 번 동시 callback 시 둘 다 같은 nonce row 획득 가능 → 토큰 중복 발급 위험
+- fix: atomic DELETE-RETURNING 으로 통일 (이미 `auth-kakao-callback.js:160-166` 가 이 패턴)
+- 룰 적용: [feedback_proactive_monitoring] "같은 증상 두 번이면 환경 fix" → 4개 OAuth callback 모두 동일 패턴
+
+**UI 일관성 — view-transition meta 4페이지 누락**
+- `refund.html`, `support.html`, `linktree.html`, `data-deletion-status.html`
+- 11/15 → 15/15 통일 (페이지 전환 native cross-fade)
+
+**UI — `data-deletion-status.html` CSS 경로 404**
+- `<link rel="stylesheet" href="/assets/css/base.css">` ← `/assets/css/` 디렉터리 존재 X
+- 페이지가 CSS variable fallback 만으로 렌더링됨 (디자인 토큰 완전 미적용)
+- fix: `/css/tokens.css` + `/css/base.css` + `/css/motion.css` 로 교체
+
+**UI — `comments.html` 모바일 hover sticky 3건**
+- `.topbar__back`, `.topbar__refresh`, `.cta` 에 `@media (hover: hover)` 가드 추가
+- iOS Safari 터치 후 hover 상태 잔존 차단
+
+### B) 🟡 Important 해결 (commit `222d7b1` + `5585902`)
+
+**보안 — CORS production 누출 차단**
+- `_shared/auth.js:30-40`
+- `NETLIFY_DEV !== 'true' && NODE_ENV === 'production'` 이면 localhost allowlist 자동 제외
+
+**보안 — `update-profile` 제어 문자 sanitize**
+- ASCII 제어 (U+0000-U+001F) / DEL (U+007F) / zero-width (U+200B-U+200F) / 양방향 (U+2066-U+206F) / BOM (U+FEFF) 제거 후 trim
+- 표시 노이즈 / homograph / display 우회 차단
+
+**코드 품질 — `cron-*` 매직스트링 단일 source 화**
+- 신규 `_shared/cron-keys.js` — `heartbeatKey()` / `errorKey()` / `stageKey()` 헬퍼
+- 적용: `_shared/cron-guard.js`, `cron-health.js`, `cron-watchdog-background.js`
+- `cleanup-stale-background.js` 는 LIKE wildcard 라 literal 유지 + 동기화 주석
+
+**UI — tokens.css 누락 토큰 추가**
+- `--pink-200` (#F7C5D3 — history/comments fallback 이었던 값 그대로)
+- `--pink-600` (#B14770 — chan-retry hover 강조)
+
+### C) ⏭️ SKIP 결정 (사유 명시)
+
+| 항목 | 사유 |
+|---|---|
+| OpenAI 셀러 한도 무력화 | 사장님 명시 결정 ([feedback_production_grade] 예외 명시 — "정식 출시 후에도 quota 복귀 X") |
+| `process-and-post-background.js:1498` fire-and-forget | 이미 `await fetch(...)` (주석에 검증 명시) — agent 보고가 stale |
+| `delete-reservations-bulk.js:95-130` 의 sequential await | comment "rate limit 보호" 명시, IG/Meta API 거부 위험으로 의도된 sequential |
+| `export-my-data` `select('*')` | PIPA §35 자기정보 이동권 목적상 의도된 디자인 (코드 주석 명시) |
+
+### D) 📋 다음 세션 추천 항목 (긴 작업이라 분리)
+
+- **CSP `'unsafe-inline'` 제거** (netlify.toml:64) — inline `<script>` 전부 external 또는 nonce. 정식 출시 마일스톤.
+- **하드코딩 색상 290+ 인스턴스 토큰화** — history.html (70), index.html (42), insights.html (35), settings.html (29), dashboard.html (28), register-product.html (19) 등 hex/rgba 직접 사용. tokens.css 의 토큰으로 일관 대체.
+- **console.log 781건** — production 로깅 구조화. 로그 레벨 분리 (INFO vs DEBUG) 또는 JSON.
+- **refresh token 도입** — 현재 seller-jwt 만, refresh 메커니즘 없음. 토큰 만료 시 사용자 재로그인.
+- **`_shared/env-loader.js`** — process.env 18곳 접근 패턴 차이 (`fallback || default` vs `no check`) 일관성.
+- **`export-my-data` 컬럼 명시화 시점** — 향후 sellers 테이블에 admin-only 컬럼 (internal_notes, admin_flag 등) 추가 시 select('*') → 컬럼 화이트리스트로 전환 필요. **현재는 의도된 디자인이라 SKIP, 컬럼 추가 시 동시 검토**.
+
+### E) ⚠️ 사장님 디바이스 검증 필요 (누적)
+
+- `ac56c18` 흔들림 fix (인계 직전부터)
+- `de55071` Step 1 footer 스크롤 fix (2026-05-15 마지막)
+- 이번 audit fix 4건 — OAuth callback 흐름 (kakao/ig/threads/tiktok 4개 모두 같은 nonce 패턴), 튜토리얼 5단계, comments 화면, 4페이지 직접 진입
+
+### F) 룰 적용 검증
+
+- [feedback_no_re_confirm]: agent 정찰 후 사장님 확인 X 즉시 fix 진행 ✓
+- [feedback_no_guessing_facts]: agent 보고 그대로 받지 않고 실제 코드 확인 (3건 SKIP) ✓
+- [feedback_proactive_monitoring]: 같은 TOCTOU 패턴 4개 OAuth 전수 점검 ✓
+- [feedback_production_grade]: 베타 변명 없이 정식 단계 기준 적용 ✓
+- [feedback_ui_no_overlay]: hover sticky / overlay 차단 적용 ✓
+- 외과 수술 원칙: 작업 직결만, 불필요한 리팩토링 X ✓
 
 ---
 
