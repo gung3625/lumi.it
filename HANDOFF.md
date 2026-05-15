@@ -1,7 +1,150 @@
 # 루미(lumi) 인수인계 문서
 
-마지막 업데이트: 2026-05-14
-기준 커밋: `main` 최신 (`48549e2`) — PR #69~#240 170+ 건 + 2026-05-14 직접 main 커밋 9건 (메타 비즈니스 인증 대비 + 탭바 padding 복구 + 트렌드 분류기 강화 + datalab_estimate·root_morpheme 폐기)
+마지막 업데이트: 2026-05-15
+기준 커밋: `main` 최신 (`ac56c18`) — 2026-05-14 까지 PR #69~#240 + main 커밋 9건. 2026-05-15 추가 13건 (universal media format / trends 정렬 Option B / tier 잔재 정리 / 코드 리뷰 fix / 튜토리얼 Phase A1·A2).
+
+---
+
+## 🔄 진행 중 / 인수인계 (2026-05-15)
+
+**이 섹션은 사장님 요청으로 작성됨 — "너랑은 일 못하겠다, 인수인계 준비해".**
+다음 작업자가 컨텍스트 손실 없이 이어받을 수 있도록 오늘 한 일 / 사장님 결정 / 미완료 / 검증 안 된 fix / 사장님 피드백 패턴을 정리.
+
+### 1) 오늘 머지된 커밋 (시간순)
+
+| 커밋 | 내용 | 상태 |
+|---|---|---|
+| `36adb5e` | universal image/video format (heic-convert + sharp + 영상 다포맷) | ✅ |
+| `7ebdb7d` | trends 정렬 Option B (signal_tier 우선) | ✅ |
+| `ba412de` | 옛 binary tier 'real' 잔재 정리 (trends.html + 적중 판정) | ✅ |
+| `8bac545` | JPEG 마커 검증 + medium tier 0.5 가중 적중 | ✅ |
+| `c6106eb` | llm-cache dead `hit_count` write 제거 (어디서도 read 안 함) | ✅ |
+| `d953cb7` | 튜토리얼 Step 2 iOS Photos 갤러리 (4열 → 10장) | ✅ |
+| `1e95230` | Step 2 3x3 + 9장 (사장님 스크린샷 반영 — 하단 공백 제거) | ✅ |
+| `545e7ab` | Step 2 그리드 잘림 fix + 음식 사진 9종 | ✅ |
+| `848e885` | Step 1 dashboard 모사 (Phase A2) | ✅ |
+| `abb4e95` | 튜토리얼 안내 배너 추가 | ✅ |
+| `822ffc3` | 배너 skip 가독성 + padding 여유 | (이후 49b2523 으로 일부 폐기) |
+| `49b2523` | skip 을 로고와 같은 줄 우측으로 + 문구 "튜토리얼" 명시 | ✅ |
+| `369b4f3` | 스크롤 흔들림 1차 시도 — body padding override | ❌ 부족 |
+| `a8ee5ed` | 흔들림 2차 — body overflow hidden + footer hidden | ❌ 양극단 (스크롤 자체 차단) |
+| `ac56c18` | 흔들림 3차 — 자연 스크롤 + overscroll-behavior + tabbar sticky | ⚠️ **사장님 검증 전** — 이 직후 인수인계 요청 |
+
+### 2) 사장님 확정 결정 (튜토리얼)
+
+- **1업종 통일** — 카페 컨텍스트 1종. "업종이 다르다고 기능 쓰는 방식이 달라지는 건 아니야" (사장님 직접 표현)
+- **사진 9장 (3x3 그리드)** — 이전 10장 / 4열 → 3x3 으로 변경 (사장님 스크린샷 보고 하단 공백 지적)
+- **사진 = 음식 (디저트 + 식당 메뉴 / "입에 들어가는 것")** — 카페 인테리어/외관/메뉴판/텀블러 같은 비-음식 제거
+- **실제 화면 markup 재사용** — "실제 사용할 때도 이질감 없게". dashboard / register-product / history / insights 의 클래스·markup 재사용
+- **튜토리얼 명시** — Step 1 상단 핑크 배너 "✨ 1분 미리보기 튜토리얼"
+- **건너뛰기 위치** — 로고와 같은 줄 우측 (배너 안 X — 배너 안에 두면 모바일에서 잘림)
+- **앱화 전략 (별개 결정)** — Capacitor 2번 옵션 (PWA 1단계 → Capacitor 2단계 → native 풀 리라이트 3단계 X). 풀 native 비용 대비 가치 낮다고 사장님 결론
+
+### 3) 미완료 — 튜토리얼 Phase B / C / D
+
+다음 작업자가 이어받을 작업:
+
+**Phase B — Step 3 (분석 + 캡션)**
+- 실제 `register-product.html` 의 `.progress-overlay` (마스코트 + 단계별 체크) + 분석 결과 카드 + 캡션 typewriter 재사용
+- 사장님이 갤러리에서 선택한 사진 N장 → 카루셀 + 분석 4축 (주제 / 분위기 / 시간대 / 색감) + 톤 + 캡션 (35ms/글자 typewriter)
+- 데이터: 선택한 첫 번째 사진의 분석 결과 표시 (이미 9종 정의됨 — 본 문서 다음 § 참조)
+
+**Phase C — Step 4 (결과)**
+- `history.html` 의 `.res` 게시 카드 + `insights.html` 의 `.stat-grid` 재사용
+- 좋아요 142 · 댓글 8 · 도달 1,247명 · 새 팔로워 +18 · 댓글 1개 ("분위기 너무 좋아요!" 같은)
+- countUp 애니메이션 1.2s ease-out cubic
+
+**Phase D — 폴리시**
+- Step 5 (가입) 진입 시 footer 자동 표시 검증 (현재 ac56c18 의 tabbar sticky 흐름)
+- reduced-motion 존중 (사장님 메모리 [feedback_lumi_micro_interactions])
+- 모든 step 에 일관 안내 (Step 2 toolbar 의 "최근 항목" 타이틀 옆에 "튜토리얼" 미니 배지 추가 검토)
+
+**분석 결과 9종 (Phase B 데이터셋 — 이미 정의됨, gallery aria-label 과 동기)**
+
+| ID | 음식 | 분석 (주제 / 분위기 / 시간대 / 색감) |
+|---|---|---|
+| cafe-1 | 라떼아트 | 라떼아트·우드테이블 / 따뜻함·평온함 / 오전·자연광 / 베이지·브라운 |
+| cafe-2 | 케이크 | 케이크·디저트 / 달콤함·휴식 / 오후·실내조명 / 크림·연갈색 |
+| cafe-3 | 마카롱 | 마카롱·디저트트레이 / 달콤함·화사함 / 오후·자연광 / 파스텔·핑크 |
+| cafe-4 | 크로플 | 크로플·황금색 / 바삭함·달콤함 / 오전·자연광 / 황금·갈색 |
+| cafe-5 | 파스타 | 파스타·식사 / 든든함·진한맛 / 점심·실내조명 / 빨강·노랑 |
+| cafe-6 | 샐러드 | 샐러드·신선함 / 깔끔함·건강함 / 점심·자연광 / 연두·노랑 |
+| cafe-7 | 빵 | 빵·베이커리 / 정성·따뜻함 / 오전·자연광 / 갈색·노랑 |
+| cafe-8 | 스무디 | 스무디·컬러풀 / 산뜻함·에너지 / 오후·자연광 / 보라·핑크 |
+| cafe-9 | 디저트 플레이팅 | 디저트플레이팅·정성 / 정성·솜씨 / 오후·실내조명 / 파스텔·흰색 |
+
+캡션 (모든 사진 통합 1개, 실제와 동일):
+```
+오늘도 천천히 흘러가는 시간을 한 잔에 담아봤어요.
+
+산미는 부드럽고 끝맛은 깔끔해요.
+
+#카페 #라떼아트 #오늘의한잔 #카페일상 #감성카페
+```
+(메뉴 따라 캡션 다양화는 Phase D 폴리시 영역. 일단 카페 톤 1개 고정.)
+
+### 4) ⚠️ 사장님 검증 안 된 fix — `ac56c18`
+
+**증상 (사장님 보고 순서):**
+1. "스크롤 아래로 내리면 화면이 흔들려" (rubber-band)
+2. "푸터가 하단 탭바에 가려져서 안 보여"
+3. "이제는 아예 스크롤 자체가 안 되서 푸터는 보이지도 않는데?" (직전 fix 양극단)
+4. "왜 너는 중간이 없는거야?" → 인수인계 요청
+
+**`ac56c18` 의 절충 (검증 전):**
+- `html, body { overscroll-behavior: none }` — rubber-band 차단만
+- body 자체 스크롤 유지 (footer 노출 가능하게)
+- `.stage .tabbar { position: sticky; bottom: 0 }` — Step 1 의 tabbar 만 sticky 로 (footer 끝까지 스크롤 시 tabbar 가 같이 위로 사라져서 footer 노출). 다른 페이지의 `.tabbar` 는 `css/tabbar.css` 의 `fixed` 그대로.
+
+**다음 작업자가 확인할 것:**
+- 사장님 iPhone Safari 에서 흔들림 사라졌는지
+- 스크롤 다운 시 푸터 (사업자 정보) 가 tabbar 에 안 가리고 자연 노출되는지
+- 안 되면 추가 fix 필요 (옵션: footer 를 stage 안으로 옮기거나, tabbar 자체를 Step 1 markup 에서 빼고 별도 floating 처리)
+
+### 5) 사장님 피드백 패턴 (다음 작업자 필수 숙지)
+
+오늘 사장님 화나게 한 내 실수 패턴 — 다음 사람은 피해야 할 것:
+
+1. **양극단 fix 금지** — "왜 너는 중간이 없는거야?" (직접 표현)
+   - 흔들림 fix 할 때 body overflow:hidden 으로 다 차단 → 푸터 안 보임 (양극단)
+   - 사장님은 "흔들림 X + 푸터 노출" 둘 다 원함 → 절충 필요
+   - 다음부턴 fix 전에 "0 / 100 / 중간" 옵션 다 따져볼 것
+
+2. **같은 증상 2번이면 환경 fix** ([feedback_proactive_monitoring])
+   - 흔들림 1차 fix (369b4f3) → 사장님 "여전히 흔들려"
+   - 그 자리에서 더 깊게 진단해야 했음 (footer 가 body 안에 있다 발견하기까지 2~3 turn 낭비)
+
+3. **추측 금지, 1차 source 확인** ([feedback_no_guessing_facts])
+   - 베스트 시간 시드 추측으로 답해서 사장님이 화냄 → 결국 NHN DATA / Sprout / Later 등 실제 조사 후 재작성
+   - 가격·정책·사양은 추측 X. 추정이면 명시.
+
+4. **재확인 금지** ([feedback_no_re_confirm])
+   - 명확한 작업 동사 있으면 OK 재질문 없이 즉시 시작
+   - "다른작업 일단 계속하자" 같은 명령엔 사이 작업 후보 짚어주기만 OK
+
+5. **정식 운영 단계** ([feedback_production_grade])
+   - "베타라 X 생략" 정당화 금지. 인증·quota·rate limit·에러 핸들링 기본 포함.
+
+6. **마이크로 인터랙션 필수** ([feedback_lumi_micro_interactions])
+   - 모든 UI 작업에 hover/focus/상태 변경/stagger/유도 인터랙션 + reduced-motion 존중
+
+7. **UI 새 요소는 공간 확보로 처리** ([feedback_ui_no_overlay])
+   - absolute 로 콘텐츠 위에 띄우지 말고 padding/flex 로 공간 분리
+   - 사진·글씨 겹침 차단
+
+8. **삭제 등 확인 모달 강도 조절** ([feedback_confirm_intensity])
+   - 회원탈퇴급만 텍스트 입력 검증, soft delete 는 단순 confirm
+
+9. **Netlify build trigger 안전한 방법** ([reference_netlify_build_trigger])
+   - 강제 /builds API 금지, git push 만
+
+10. **인계 시점 검증 누락 인정** — 본 문서 마지막에 명시:
+    `ac56c18` 의 흔들림 fix 가 사장님 검증 전인데 인수인계 요청 받음. 다음 사람이 사장님 디바이스 (iPhone Safari) 에서 실제 확인 후 다음 작업 진행할 것.
+
+### 6) 다른 작업 별개 후속 — 2026-05-15 외 작업들
+
+- **HEIC 업로드 실제 검증** — `36adb5e` 의 universal format 이 사장님 iPhone 에서 실제 HEIC 업로드 → 게시까지 가는지 사장님 직접 확인 필요. 코드는 push 됐지만 실제 사장님 케이스 검증 X.
+- **트렌드 카드 시각적 tier 구분** — `7ebdb7d` 의 Option B 도입 후 검색량 없는 strong 신조어도 상위 노출됨. 사장님이 list 만 봐선 "이게 매칭 성공인지 신조어인지" 구분 어려움. 배지 (예: 🆕 신조어, 또는 tier 색상) 추가 검토.
 
 ---
 
