@@ -38,12 +38,11 @@ const PROMPTS = [
 ];
 
 exports.handler = async (event) => {
+  // S2 (2026-05-15): LUMI_SECRET 을 URL query 로 받지 않음.
+  // query string 은 Netlify access log / 브라우저 history / 중간 proxy 에 평문 잔존 → 누출 위험.
+  // X-Lumi-Secret 헤더만 허용.
   const headers = event.headers || {};
-  const qp = event.queryStringParameters || {};
-  const secret =
-    headers['x-lumi-secret'] ||
-    headers['X-Lumi-Secret'] ||
-    qp.secret;
+  const secret = headers['x-lumi-secret'] || headers['X-Lumi-Secret'];
 
   if (!secret || secret !== process.env.LUMI_SECRET) {
     return { statusCode: 401, body: 'unauthorized' };

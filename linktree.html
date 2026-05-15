@@ -290,14 +290,20 @@
 
         const desc = profile.storeDesc ? `<p class="lt-desc">${esc(profile.storeDesc)}</p>` : '';
 
+        // S5 (2026-05-15): 렌더 단계 protocol 화이트리스트 — defense-in-depth.
+        // save-linktree.js 가 protocol 검증하지만 DB 직접 수정·관리자 실수 등으로
+        // javascript:/data: 가 들어와도 stored XSS 차단.
+        const SAFE_URL_RE = /^(https?:|mailto:|tel:|kakaotalk:)/i;
+        const safeHref = (u) => (u && SAFE_URL_RE.test(String(u).trim())) ? String(u).trim() : '#';
         const cardsHtml = allCards.length
           ? allCards.map((l, i) => {
               const iconCls = l.type === 'instagram' ? ' lt-card__icon--ig'
                             : l.type === 'threads'    ? ' lt-card__icon--threads'
                             : '';
-              const target = l.url && /^https?:/i.test(l.url) ? ' target="_blank" rel="noopener noreferrer"' : '';
+              const href = safeHref(l.url);
+              const target = href !== '#' && /^https?:/i.test(href) ? ' target="_blank" rel="noopener noreferrer"' : '';
               return `
-                <a class="lt-card" href="${esc(l.url)}"${target} style="animation-delay:${i * 40}ms">
+                <a class="lt-card" href="${esc(href)}"${target} style="animation-delay:${i * 40}ms">
                   <span class="lt-card__icon${iconCls}">${iconFor(l.type)}</span>
                   <span class="lt-card__label">${esc(l.label)}</span>
                   <span class="lt-card__arrow">${ARROW}</span>

@@ -161,7 +161,7 @@ exports.handler = async (event) => {
     const refreshToken = td.refresh_token || null;
     const expiresIn = td.expires_in || 0;           // seconds
     const refreshExpiresIn = td.refresh_expires_in || 0;
-    const scope = td.scope || REDIRECT_URI;
+    const scope = td.scope || null;
 
     if (!accessToken) {
       console.error('[auth-tiktok-login-callback] access_token 누락');

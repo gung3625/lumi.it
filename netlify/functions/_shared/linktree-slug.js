@@ -23,9 +23,13 @@ function normalizeIgHandle(handle) {
 }
 
 function randomBase36(len) {
+  // C5 (2026-05-15): Math.random() 은 예측 가능. 공개 URL 식별자라
+  // crypto.randomBytes 로 CSPRNG 기반 생성. base36 변환.
+  const crypto = require('crypto');
   let s = '';
   while (s.length < len) {
-    s += Math.random().toString(36).slice(2);
+    // 8 bytes = 16 hex char = ~12 base36 char
+    s += BigInt('0x' + crypto.randomBytes(8).toString('hex')).toString(36);
   }
   return s.slice(0, len);
 }

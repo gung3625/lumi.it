@@ -32,7 +32,9 @@ async function waitForContainer(containerId, accessToken, maxRetries = 18) {
       if (data.status_code === 'ERROR') return false;
     } catch (e) { /* 다음 retry */ }
   }
-  return true;
+  // C2 (2026-05-15): timeout 시 fail-closed (false). 이전엔 true 반환해서 IN_PROGRESS
+  // 상태에서 publish 시도 → 빈 게시물 / 잘못된 게시 위험. STORIES 분기와 일관성도 회복.
+  return false;
 }
 
 async function createMediaContainer(igUserId, igAccessToken, imageUrl, isCarousel) {
@@ -186,7 +188,8 @@ async function postToInstagram({ igUserId, igAccessToken, igUserAccessToken, sto
     }
     const cData = await cRes.json();
     if (cData.error) throw new Error(cData.error.message);
-    await waitForContainer(cData.id, igAccessToken);
+    const carouselReady = await waitForContainer(cData.id, igAccessToken);
+    if (!carouselReady) throw new Error('CAROUSEL 컨테이너 처리 실패');
     const pData = await publishMedia(igUserId, igAccessToken, cData.id);
     if (pData.error) throw new Error(pData.error.message);
     postId = pData.id;
@@ -207,7 +210,8 @@ async function postToInstagram({ igUserId, igAccessToken, igUserAccessToken, sto
     }
     const d = await res.json();
     if (d.error) throw new Error(d.error.message);
-    await waitForContainer(d.id, igAccessToken);
+    const imgReady = await waitForContainer(d.id, igAccessToken);
+    if (!imgReady) throw new Error('IMAGE 컨테이너 처리 실패');
     const pData = await publishMedia(igUserId, igAccessToken, d.id);
     if (pData.error) throw new Error(pData.error.message);
     postId = pData.id;
@@ -233,11 +237,19 @@ async function postToInstagram({ igUserId, igAccessToken, igUserAccessToken, sto
       }
       const sData = await sRes.json();
       if (sData.error) {
-        console.error('[ig-publish] 스토리 컨테이너 생성 실패');
+        console.error('[ig-publish] 스토리 컨테이너 생성 실패:', sData.error.message || sData.error);
       } else {
-        await waitForContainer(sData.id, storyToken);
-        await publishMedia(igUserId, storyToken, sData.id);
-        console.log('[ig-publish] 스토리 게시 완료');
+        const stReady = await waitForContainer(sData.id, storyToken);
+        if (!stReady) {
+          console.error('[ig-publish] 이미지 스토리 컨테이너 status=ERROR/timeout — publish skip');
+        } else {
+          const sPub = await publishMedia(igUserId, storyToken, sData.id);
+          if (sPub && sPub.error) {
+            console.error('[ig-publish] 이미지 스토리 publish 실패:', sPub.error.message || JSON.stringify(sPub.error));
+          } else {
+            console.log('[ig-publish] 스토리 게시 완료, story_id=', sPub && sPub.id);
+          }
+        }
       }
     } catch (e) { console.error('[ig-publish] 스토리 예외:', e.message); }
   }
