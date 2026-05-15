@@ -118,14 +118,51 @@ async function checkAndIncrementQuota(sellerId, model = 'gpt-4o', estCostKrw) {
   const today = kstDateString();
   const thisMonth = kstMonthString();
 
-  // 1) 서비스 전체 일일 한도 체크
-  const svcCheck = await checkServiceDailyQuota(admin, cost);
-  if (!svcCheck.allowed) {
-    console.warn(`[openai-quota] 서비스 전체 한도 초과: ${svcCheck.reason}`);
-    throw new QuotaExceededError(
-      '서비스 전체 일일 AI 예산을 초과했습니다. 내일 다시 시도해 주세요.',
-      'service_daily_exceeded'
-    );
+  // 1) 서비스 전체 일일 한도 체크 + atomic bump
+  // C4 (2026-05-15): SELECT-then-check 의 TOCTOU race 제거.
+  // RPC check_and_bump_service_quota_atomic 가 SELECT FOR UPDATE + RAISE 로 atomic 처리.
+  // service quota 가 atomic bump 까지 한 번에 처리되므로 아래 service bumpQuota 별도 호출 불필요.
+  const serviceLimit = getServiceDailyLimit();
+  let svcBumped = false;
+  try {
+    const { error: svcErr } = await admin.rpc('check_and_bump_service_quota_atomic', {
+      p_daily_date: today,
+      p_month_date: thisMonth,
+      p_cost_krw: cost,
+      p_daily_limit: serviceLimit,
+    });
+    if (svcErr) {
+      // P0001 = 한도 초과 RAISE. 그 외 = DB 오류.
+      const msg = String(svcErr.message || '');
+      if (msg.includes('service_daily_quota_exceeded') || svcErr.code === 'P0001') {
+        console.warn('[openai-quota] 서비스 전체 한도 초과 (atomic):', msg);
+        throw new QuotaExceededError(
+          '서비스 전체 일일 AI 예산을 초과했습니다. 내일 다시 시도해 주세요.',
+          'service_daily_exceeded'
+        );
+      }
+      // RPC 미배포 시 fallback: 기존 SELECT-then-check (race 위험)
+      console.warn('[openai-quota] atomic RPC 실패 fallback:', msg);
+      const svcCheck = await checkServiceDailyQuota(admin, cost);
+      if (!svcCheck.allowed) {
+        throw new QuotaExceededError(
+          '서비스 전체 일일 AI 예산을 초과했습니다. 내일 다시 시도해 주세요.',
+          'service_daily_exceeded'
+        );
+      }
+    } else {
+      svcBumped = true;
+    }
+  } catch (e) {
+    if (e instanceof QuotaExceededError) throw e;
+    console.warn('[openai-quota] atomic RPC 예외 fallback:', e.message);
+    const svcCheck = await checkServiceDailyQuota(admin, cost);
+    if (!svcCheck.allowed) {
+      throw new QuotaExceededError(
+        '서비스 전체 일일 AI 예산을 초과했습니다. 내일 다시 시도해 주세요.',
+        'service_daily_exceeded'
+      );
+    }
   }
 
   // 2) 셀러 한도 체크 (sellerId가 있을 때만)
@@ -175,11 +212,13 @@ async function checkAndIncrementQuota(sellerId, model = 'gpt-4o', estCostKrw) {
     }
   }
 
-  // 3) 카운트 증가 (atomic RPC 시도 → 실패 시 fallback upsert)
+  // 3) 셀러 카운트 증가 (atomic RPC 시도 → 실패 시 fallback upsert)
   await bumpQuota(admin, sellerId, today, thisMonth, cost);
 
-  // 4) 서비스 전체 카운터도 증가
-  await bumpQuota(admin, SERVICE_SELLER_ID, today, thisMonth, cost);
+  // 4) 서비스 전체 카운터 — atomic RPC 가 이미 bump 했으면 skip, 아니면 fallback bump.
+  if (!svcBumped) {
+    await bumpQuota(admin, SERVICE_SELLER_ID, today, thisMonth, cost);
+  }
 }
 
 // ── Atomic 증가 ─────────────────────────────────────────

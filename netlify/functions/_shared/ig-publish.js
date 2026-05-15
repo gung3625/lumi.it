@@ -23,10 +23,15 @@ async function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
 // 호출자가 maxRetries 명시한 케이스 (REELS=24, STORIES=12) 도 cycle 변경 의도 반영해
 // 자동 2.5배 (REELS 60, STORIES 30) — 본 함수에서 override 하지 않고 호출처에서 새 값 명시.
 async function waitForContainer(containerId, accessToken, maxRetries = 18) {
+  // S7 (2026-05-15): access_token 을 URL query 가 아닌 Authorization 헤더로.
+  // 이전엔 ?access_token=... 로 GET → Netlify access log / 중간 proxy / browser referrer
+  // 에 토큰 평문 잔존. POST body 패턴 (createMediaContainer/publishMedia) 과 일관성도 회복.
   for (let i = 0; i < maxRetries; i++) {
     await sleep(2000);
     try {
-      const res = await fetch(`${GRAPH_BASE}/${containerId}?fields=status_code&access_token=${accessToken}`);
+      const res = await fetch(`${GRAPH_BASE}/${containerId}?fields=status_code`, {
+        headers: { 'Authorization': `Bearer ${accessToken}` },
+      });
       const data = await res.json();
       if (data.status_code === 'FINISHED') return true;
       if (data.status_code === 'ERROR') return false;
