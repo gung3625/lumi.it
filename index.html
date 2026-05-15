@@ -310,8 +310,12 @@
     }
     .step[hidden] { display: none; }
 
-    /* === Step 2: 휴대폰 갤러리 (iOS Photos 패턴) === */
-    .gallery-step {
+    /* === Step 2: 사진 올리기 (실제 register-product.html 모사) ===
+       사장님 결정 2026-05-16: "실제는 사진 업로드를 누르면 업로드 페이지로 가서 여러
+       설정을 확인 후 사진을 올리잖아." → 이전 iOS Photos 단독 갤러리 패턴 → 실제
+       register-product 페이지 모사. 미디어 탭 + dropzone + 한 줄 메모 + 게시 시점 +
+       스토리/날씨/쓰레드/링크 토글 + CTA. 갤러리는 dropzone 클릭 시 sheet 로 분리. */
+    .upload-step {
       position: relative;
       display: flex;
       flex-direction: column;
@@ -319,8 +323,306 @@
       background: var(--bg);
       isolation: isolate;
     }
+    .upload-topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding:
+        calc(env(safe-area-inset-top) + var(--space-3))
+        var(--space-4)
+        var(--space-3);
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border-bottom: 1px solid var(--line);
+      min-height: 52px;
+    }
+    .upload-topbar__back {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 36px; height: 36px;
+      border-radius: var(--radius-full);
+      color: var(--ink);
+      background: transparent;
+      border: 0;
+      cursor: pointer;
+      transition: background var(--duration-snap) var(--ease-toss);
+    }
+    @media (hover: hover) {
+      .upload-topbar__back:hover { background: var(--bg-soft); }
+    }
+    .upload-topbar__back svg { width: 20px; height: 20px; stroke-width: 2.2; }
+    .upload-topbar__title {
+      font-size: var(--text-headline);
+      font-weight: var(--weight-semibold);
+      color: var(--ink);
+      flex: 1;
+      margin: 0;
+    }
+    .upload-wrap {
+      padding: var(--space-4);
+      max-width: 600px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-5);
+      width: 100%;
+    }
+    .media-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-2);
+    }
+    .media-tab {
+      padding: var(--space-3) var(--space-4);
+      background: var(--bg-soft);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      font-size: var(--text-body);
+      font-weight: var(--weight-medium);
+      color: var(--ink-muted);
+      transition: all var(--duration-snap) var(--ease-toss);
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .media-tab.is-active {
+      background: var(--pink-50);
+      border-color: var(--pink-500);
+      color: var(--pink-700);
+      font-weight: var(--weight-semibold);
+    }
+    .media-tab:disabled { opacity: 0.5; cursor: not-allowed; }
+    .media-tab:active:not(:disabled) { transform: scale(0.98); }
+    .upload-field { display: flex; flex-direction: column; gap: var(--space-2); }
+    .upload-field__label {
+      font-size: var(--text-caption);
+      font-weight: var(--weight-semibold);
+      color: var(--ink-soft);
+      letter-spacing: 0.02em;
+    }
+    .upload-dropzone {
+      display: block;
+      position: relative;
+      padding: var(--space-12) var(--space-5);
+      background: var(--bg-soft);
+      border: 2px dashed var(--line-strong);
+      border-radius: var(--radius-lg);
+      text-align: center;
+      color: var(--ink-muted);
+      cursor: pointer;
+      transition:
+        border-color var(--duration-snap) var(--ease-toss),
+        background var(--duration-snap) var(--ease-toss),
+        transform var(--duration-snap) var(--ease-toss);
+      width: 100%;
+      font-family: inherit;
+    }
+    @media (hover: hover) {
+      .upload-dropzone:hover { border-color: var(--pink-300); background: var(--pink-50); }
+    }
+    .upload-dropzone:active { transform: scale(0.995); }
+    .upload-dropzone__icon {
+      width: 56px; height: 56px;
+      margin: 0 auto var(--space-3);
+      border-radius: var(--radius-full);
+      background: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--pink-500);
+      box-shadow: var(--shadow-sm);
+      animation: drop-bob 2.4s var(--ease-soft) infinite;
+    }
+    .upload-dropzone__icon svg { width: 28px; height: 28px; stroke-width: 2; }
+    @keyframes drop-bob {
+      0%, 100% { transform: translateY(0); }
+      50%      { transform: translateY(-3px); }
+    }
+    .upload-dropzone__title {
+      font-size: var(--text-body-lg);
+      font-weight: var(--weight-semibold);
+      color: var(--ink);
+      margin-bottom: 4px;
+    }
+    .upload-dropzone__sub { font-size: var(--text-caption); }
+    .photo-thumbs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-2);
+    }
+    .photo-thumbs__item {
+      position: relative;
+      aspect-ratio: 1 / 1;
+      background: var(--bg-soft);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      animation: thumb-rise 320ms var(--ease-toss) calc(var(--idx, 0) * 40ms) backwards;
+    }
+    @keyframes thumb-rise {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .photo-thumbs__bg { position: absolute; inset: 0; }
+    .photo-thumbs__edit {
+      margin-top: var(--space-2);
+      padding: var(--space-2) var(--space-4);
+      background: var(--bg);
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-pill);
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+      cursor: pointer;
+      font-family: inherit;
+      align-self: flex-start;
+    }
+    @media (hover: hover) {
+      .photo-thumbs__edit:hover { color: var(--ink); border-color: var(--pink-300); }
+    }
+    .upload-memo-hint {
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+      line-height: 1.55;
+      margin: 0;
+    }
+    .upload-input {
+      padding: var(--space-3) var(--space-4);
+      font-size: max(16px, var(--text-body));
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-md);
+      background: var(--bg);
+      color: var(--ink);
+      width: 100%;
+      font-family: inherit;
+      min-height: 80px;
+      resize: vertical;
+    }
+    .upload-schedule {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-2);
+    }
+    .upload-schedule__card {
+      padding: var(--space-4);
+      background: var(--bg);
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-lg);
+      text-align: center;
+      font-weight: var(--weight-semibold);
+      color: var(--ink);
+      cursor: pointer;
+      transition: all var(--duration-snap) var(--ease-toss);
+      font-family: inherit;
+    }
+    .upload-schedule__card.is-active {
+      background: var(--pink-50);
+      border-color: var(--pink-500);
+      color: var(--pink-700);
+      box-shadow: var(--shadow-glow-sm);
+    }
+    .upload-schedule__card:active { transform: scale(0.98); }
+    .upload-toggle {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      width: 100%;
+      padding: var(--space-3) var(--space-4);
+      background: var(--bg);
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-lg);
+      text-align: left;
+      cursor: pointer;
+      transition: all 200ms var(--ease-toss);
+      font-family: inherit;
+    }
+    .upload-toggle.is-on {
+      background: var(--pink-50);
+      border-color: var(--pink-500);
+    }
+    .upload-toggle__body { flex: 1; min-width: 0; }
+    .upload-toggle__title {
+      font-size: var(--text-body);
+      font-weight: var(--weight-semibold);
+      color: var(--ink);
+    }
+    .upload-toggle.is-on .upload-toggle__title { color: var(--pink-700); }
+    .upload-toggle__hint {
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+      margin-top: 2px;
+    }
+    .upload-toggle__switch {
+      flex-shrink: 0;
+      width: 42px;
+      height: 24px;
+      background: var(--neutral-300);
+      border-radius: 999px;
+      position: relative;
+      transition: background 200ms var(--ease-toss);
+    }
+    .upload-toggle__switch::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 20px;
+      height: 20px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 200ms var(--ease-toss);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    }
+    .upload-toggle.is-on .upload-toggle__switch { background: var(--pink-500); }
+    .upload-toggle.is-on .upload-toggle__switch::after { transform: translateX(18px); }
+    .upload-toggle:active { transform: scale(0.99); }
+    .upload-toggle:disabled { opacity: 0.5; cursor: not-allowed; }
+    .upload-toggle:disabled:active { transform: none; }
+    .cta-submit {
+      width: 100%;
+      padding: var(--space-4);
+      background: var(--gradient-signature);
+      color: var(--neutral-0);
+      font-size: var(--text-body-lg);
+      font-weight: var(--weight-semibold);
+      border-radius: var(--radius-lg);
+      border: none;
+      box-shadow: var(--shadow-glow-sm);
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .cta-submit::before {
+      content: '';
+      position: absolute; inset: 0;
+      border-radius: inherit;
+      background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.25) 50%, transparent 70%);
+      transform: translateX(-100%);
+      transition: transform 600ms var(--ease-toss);
+      pointer-events: none;
+    }
+    @media (hover: hover) {
+      .cta-submit:hover::before { transform: translateX(100%); }
+      .cta-submit:hover { box-shadow: var(--shadow-glow); }
+    }
+    .cta-submit:disabled { opacity: 0.4; box-shadow: none; cursor: not-allowed; }
+    .cta-submit:active:not(:disabled) { transform: scale(0.98); }
 
-    /* 상단 toolbar (iOS: 취소 | 최근 항목 | 다음) */
+    /* === 갤러리 sheet — dropzone 누르면 슬라이드 업 모달로 표시 ===
+       iOS Photos 갤러리 (3x3 9장) 패턴은 그대로. step 자체가 아닌 sheet 안. */
+    .gallery-sheet {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      transform: translateY(100%);
+      transition: transform 320ms var(--ease-toss);
+      isolation: isolate;
+    }
+    .gallery-sheet.is-open { transform: translateY(0); }
+
+    /* 상단 toolbar (iOS: 취소 | 최근 항목 | 완료) — sheet 안에서 동작 */
     .gallery-toolbar {
       position: sticky;
       top: 0;
@@ -1313,19 +1615,120 @@
       </nav>
     </section>
 
-    <!-- Step 2: 갤러리 -->
-    <section class="gallery-step step" data-step="2" id="step-2" hidden>
-      <!-- iOS Photos 상단 toolbar: 취소 | 최근 항목 + 카운터 | 다음 -->
+    <!-- Step 2: 사진 올리기 (실제 register-product.html 모사) -->
+    <section class="upload-step step" data-step="2" id="step-2" hidden>
+      <header class="upload-topbar">
+        <button class="upload-topbar__back" type="button" data-back-to-1 aria-label="뒤로">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <h1 class="upload-topbar__title">사진 올리기</h1>
+      </header>
+
+      <main class="upload-wrap">
+        <!-- 미디어 탭 — 튜토리얼은 이미지만, 영상 탭은 disabled -->
+        <div class="media-tabs" role="tablist" aria-label="미디어 종류">
+          <button type="button" class="media-tab is-active" role="tab" aria-selected="true">📸 이미지</button>
+          <button type="button" class="media-tab" role="tab" aria-selected="false" disabled aria-label="영상 (튜토리얼은 이미지만)">🎬 영상</button>
+        </div>
+
+        <!-- 사진 영역 — dropzone 클릭 시 갤러리 sheet 열림 -->
+        <div class="upload-field">
+          <span class="upload-field__label">사진 (최대 10장, 한 장당 10MB)</span>
+          <div data-upload-photo-area>
+            <button class="upload-dropzone" type="button" data-open-gallery>
+              <span class="upload-dropzone__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              </span>
+              <div class="upload-dropzone__title">사진을 선택해주세요</div>
+              <div class="upload-dropzone__sub">JPG · PNG · WebP / 1~10장</div>
+            </button>
+            <!-- 선택 후: thumbs grid + 사진 다시 선택 버튼 -->
+            <div class="photo-thumbs" data-upload-thumbs hidden></div>
+            <button class="photo-thumbs__edit" type="button" data-open-gallery data-thumbs-edit hidden>사진 다시 선택</button>
+          </div>
+        </div>
+
+        <!-- 한 줄 메모 -->
+        <div class="upload-field">
+          <label class="upload-field__label" for="tutorial-memo">한 줄 메모 (선택)</label>
+          <p class="upload-memo-hint">사진이 어떤 메뉴·상황·분위기인지 짧게 적어주시면 루미가 참고해요.</p>
+          <textarea class="upload-input" id="tutorial-memo" maxlength="200" placeholder="예) 시그니처 라떼 신메뉴 출시"></textarea>
+        </div>
+
+        <!-- 게시 시점 -->
+        <div class="upload-field">
+          <span class="upload-field__label">게시 시점</span>
+          <div class="upload-schedule">
+            <button type="button" class="upload-schedule__card is-active" data-schedule="immediate">지금</button>
+            <button type="button" class="upload-schedule__card" data-schedule="scheduled">예약</button>
+          </div>
+        </div>
+
+        <!-- 스토리 -->
+        <div class="upload-field">
+          <span class="upload-field__label">스토리</span>
+          <button type="button" class="upload-toggle" data-toggle="story" aria-pressed="false">
+            <div class="upload-toggle__body">
+              <div class="upload-toggle__title">스토리에도 자동 업로드</div>
+              <div class="upload-toggle__hint">켜면 피드 게시와 함께 24시간 스토리도 자동으로 올라가요</div>
+            </div>
+            <span class="upload-toggle__switch" aria-hidden="true"></span>
+          </button>
+        </div>
+
+        <!-- 날씨 (기본 ON) -->
+        <div class="upload-field">
+          <span class="upload-field__label">날씨</span>
+          <button type="button" class="upload-toggle is-on" data-toggle="weather" aria-pressed="true">
+            <div class="upload-toggle__body">
+              <div class="upload-toggle__title">매장 지역 날씨를 캡션에 반영</div>
+              <div class="upload-toggle__hint">예: "오늘처럼 선선한 날엔", "비 오는 오후" 같은 자연스러운 표현으로 녹여줍니다</div>
+            </div>
+            <span class="upload-toggle__switch" aria-hidden="true"></span>
+          </button>
+        </div>
+
+        <!-- 쓰레드 (튜토리얼은 미연동 상태) -->
+        <div class="upload-field">
+          <span class="upload-field__label">쓰레드</span>
+          <button type="button" class="upload-toggle" data-toggle="threads" aria-pressed="false" disabled>
+            <div class="upload-toggle__body">
+              <div class="upload-toggle__title">쓰레드에도 자동 업로드</div>
+              <div class="upload-toggle__hint">가입 후 설정에서 쓰레드를 연동하면 켤 수 있어요</div>
+            </div>
+            <span class="upload-toggle__switch" aria-hidden="true"></span>
+          </button>
+        </div>
+
+        <!-- 프로필 링크 -->
+        <div class="upload-field">
+          <span class="upload-field__label">프로필 링크</span>
+          <button type="button" class="upload-toggle" data-toggle="linktree" aria-pressed="false">
+            <div class="upload-toggle__body">
+              <div class="upload-toggle__title">캡션 끝에 내 프로필 링크 자동 포함</div>
+              <div class="upload-toggle__hint">"메뉴·예약·배달 → lumi.it.kr/r/내주소" 같이 캡션 마지막 줄에 추가됩니다</div>
+            </div>
+            <span class="upload-toggle__switch" aria-hidden="true"></span>
+          </button>
+        </div>
+
+        <!-- 게시 CTA -->
+        <button class="cta-submit" type="button" data-submit-upload disabled>📷 캡션 만들고 게시</button>
+      </main>
+    </section>
+
+    <!-- 갤러리 sheet — Step 2 의 dropzone 누르면 슬라이드 업 모달 -->
+    <div class="gallery-sheet" data-gallery-sheet role="dialog" aria-modal="true" aria-label="사진 선택" aria-hidden="true">
       <header class="gallery-toolbar">
         <button class="gallery-toolbar__cancel" type="button" data-gallery-cancel aria-label="취소">취소</button>
         <div class="gallery-toolbar__center">
           <div class="gallery-toolbar__title">최근 항목</div>
           <div class="gallery-toolbar__counter" data-gallery-counter>9장 중 0장 선택</div>
         </div>
-        <button class="gallery-toolbar__next" type="button" data-next disabled aria-label="선택한 사진으로 다음 단계로">다음</button>
+        <button class="gallery-toolbar__next" type="button" data-gallery-done disabled aria-label="선택한 사진으로 완료">완료</button>
       </header>
 
-      <!-- 코치 bubble — 1초 후 fade out (사장님 시선 유도) -->
+      <!-- 코치 bubble — 1장 이상 선택하면 즉시 사라짐 -->
       <div class="coach-bubble" data-coach-bubble role="status">1장 이상 골라보세요</div>
 
       <div class="gallery-wrap">
@@ -1341,7 +1744,7 @@
           <li class="gallery__item" style="--idx:8"><button class="gallery__card" type="button" data-photo="cafe-9"  aria-pressed="false" aria-label="디저트 플레이팅 사진 선택"><span class="gallery__bg gallery__bg--cafe-9"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span><span class="gallery__order" data-order aria-hidden="true"></span></button></li>
         </ul>
       </div>
-    </section>
+    </div>
 
     <!-- Step 3: 루미 분석 + 캡션 -->
     <section class="analyze-step step" data-step="3" id="step-3" hidden>
@@ -1611,24 +2014,57 @@
       const addBtn = document.querySelector('[data-tutorial-add]');
       if (addBtn) addBtn.addEventListener('click', () => goTo(2));
 
-      // Step 2: 사진 카드 토글 — iOS Photos 패턴 (선택 순서 번호 표시 + 카운터)
+      // Step 2 → Step 1 (topbar 뒤로)
+      const backBtn = document.querySelector('[data-back-to-1]');
+      if (backBtn) backBtn.addEventListener('click', () => goTo(1));
+
+      // Step 2 게시 시점 토글 — [지금] / [예약] 중 active
+      document.querySelectorAll('[data-schedule]').forEach(card => {
+        card.addEventListener('click', () => {
+          if (card.disabled) return;
+          document.querySelectorAll('[data-schedule]').forEach(c => c.classList.remove('is-active'));
+          card.classList.add('is-active');
+        });
+      });
+
+      // Step 2 옵션 토글 — 스토리/날씨/쓰레드/링크 (실제 register-product 와 같은 마이크로 인터랙션)
+      document.querySelectorAll('[data-toggle]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (btn.disabled) return;
+          const on = !btn.classList.contains('is-on');
+          btn.classList.toggle('is-on', on);
+          btn.setAttribute('aria-pressed', String(on));
+        });
+      });
+
+      // 갤러리 sheet — Step 2 dropzone 클릭 시 슬라이드 업 모달로 표시
+      const gallerySheet = document.querySelector('[data-gallery-sheet]');
+      function openGallerySheet() {
+        if (!gallerySheet) return;
+        gallerySheet.classList.add('is-open');
+        gallerySheet.setAttribute('aria-hidden', 'false');
+      }
+      function closeGallerySheet() {
+        if (!gallerySheet) return;
+        gallerySheet.classList.remove('is-open');
+        gallerySheet.setAttribute('aria-hidden', 'true');
+      }
+      document.querySelectorAll('[data-open-gallery]').forEach(btn => {
+        btn.addEventListener('click', openGallerySheet);
+      });
+
+      // 갤러리 안 사진 카드 토글 — iOS Photos 패턴 (선택 순서 번호 표시 + 카운터)
       //   selected 가 insertion-ordered Set 이라 size === 순서 + Array.from(selected).indexOf(id) 로 순번 추출.
       //   해제 시 뒤 번호들이 1씩 당겨지므로 매번 renderOrderBadges 로 전체 갱신.
       const counterEl = document.querySelector('[data-gallery-counter]');
       const coachBubble = document.querySelector('[data-coach-bubble]');
+      const galleryDoneBtn = document.querySelector('[data-gallery-done]');
       function updateGalleryUI() {
-        // 카운터 갱신
         if (counterEl) {
           counterEl.textContent = `9장 중 ${selected.size}장 선택`;
         }
-        // 다음 버튼 토글
-        const next = document.querySelector('[data-next]');
-        if (next) next.disabled = selected.size === 0;
-        // 코치 bubble — 한 장 선택하면 즉시 사라짐 (역할 끝)
-        if (coachBubble) {
-          coachBubble.hidden = selected.size > 0;
-        }
-        // 선택 순서 번호 batch 갱신
+        if (galleryDoneBtn) galleryDoneBtn.disabled = selected.size === 0;
+        if (coachBubble) coachBubble.hidden = selected.size > 0;
         const order = Array.from(selected);
         document.querySelectorAll('.gallery__card').forEach(card => {
           const id = card.dataset.photo;
@@ -1654,11 +2090,10 @@
         });
       });
 
-      // 갤러리 toolbar "취소" — Step 1 로 복귀 (선택 상태 유지하지 않음)
+      // 갤러리 "취소" — sheet 만 닫고 선택 초기화 (Step 2 화면 유지)
       const galleryCancel = document.querySelector('[data-gallery-cancel]');
       if (galleryCancel) {
         galleryCancel.addEventListener('click', () => {
-          // 선택 초기화 후 Step 1 으로
           selected.forEach(id => {
             const card = document.querySelector(`.gallery__card[data-photo="${id}"]`);
             if (card) {
@@ -1669,7 +2104,33 @@
           selected.clear();
           updateGalleryUI();
           if (coachBubble) coachBubble.hidden = false;
-          goTo(1);
+          closeGallerySheet();
+        });
+      }
+
+      // 갤러리 "완료" — sheet 닫고 dropzone 자리에 thumbs grid 표시 + CTA 활성
+      const uploadDropzone = document.querySelector('.upload-dropzone[data-open-gallery]');
+      const uploadThumbs = document.querySelector('[data-upload-thumbs]');
+      const uploadThumbsEdit = document.querySelector('[data-thumbs-edit]');
+      const submitUploadBtn = document.querySelector('[data-submit-upload]');
+      function renderUploadThumbs() {
+        if (!uploadThumbs) return;
+        const photos = Array.from(selected);
+        uploadThumbs.innerHTML = photos.map((id, i) =>
+          `<div class="photo-thumbs__item" style="--idx:${i}">`
+          + `<span class="photo-thumbs__bg gallery__bg gallery__bg--${id}"></span>`
+          + `</div>`
+        ).join('');
+      }
+      if (galleryDoneBtn) {
+        galleryDoneBtn.addEventListener('click', () => {
+          if (selected.size === 0) return;
+          renderUploadThumbs();
+          if (uploadDropzone) uploadDropzone.hidden = true;
+          if (uploadThumbs) uploadThumbs.hidden = false;
+          if (uploadThumbsEdit) uploadThumbsEdit.hidden = false;
+          if (submitUploadBtn) submitUploadBtn.disabled = false;
+          closeGallerySheet();
         });
       }
 
@@ -1779,10 +2240,9 @@
         }, { passive: true });
       }
 
-      // Step 2 → Step 3
-      const nextBtn = document.querySelector('[data-next]');
-      if (nextBtn) {
-        nextBtn.addEventListener('click', () => {
+      // Step 2 → Step 3 — CTA "캡션 만들고 게시" 클릭 (사진 선택 완료 후 활성)
+      if (submitUploadBtn) {
+        submitUploadBtn.addEventListener('click', () => {
           if (selected.size === 0) return;
           goTo(3);
 
