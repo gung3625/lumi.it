@@ -7,15 +7,10 @@ const crypto = require('crypto');
 const { spawn } = require('child_process');
 const { pipeline } = require('stream/promises');
 const { Readable } = require('stream');
-// ffmpeg binary 선택 — @ffmpeg-installer/ffmpeg 우선 (full build, drawtext/subtitles 포함).
-// 실패 시 ffmpeg-static fallback (minimal build, drawtext 없음 — 텍스트 박기 불가).
-// 검증 2026-05-15: ffmpeg-static 만 쓰면 'Filter not found' 에러.
-let ffmpegPath;
-try {
-  ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
-} catch (_) {
-  ffmpegPath = require('ffmpeg-static');
-}
+// ffmpeg binary — ffmpeg-static (minimal build). drawtext / subtitles 필터 미포함.
+// 텍스트 박기는 sharp 로 PNG 렌더 → ffmpeg overlay 필터로 합성 (overlay 는 minimal 도 OK).
+const ffmpegPath = require('ffmpeg-static');
+const sharp = require('sharp');
 const { corsHeaders, getOrigin } = require('./_shared/auth');
 const { getAdminClient } = require('./_shared/supabase-admin');
 
@@ -78,7 +73,34 @@ function escapeDrawText(s) {
   return String(s || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/:/g, '\\:').replace(/%/g, '\\%');
 }
 
-function buildFilter({ width, height, srtPath, overlayText, fontFile }) {
+// sharp 로 텍스트 PNG 생성 — 폰트 파일을 base64 로 SVG 안에 embed → fontconfig 의존성 0.
+// width = TARGET_W (1080), height 자동 (텍스트 + 안전 마진).
+async function makeOverlayTextPng({ text, fontFile, width = TARGET_W, fontSize = 64 }) {
+  const safe = String(text || '').slice(0, 40)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+  if (!safe) return null;
+  // 폰트 파일을 base64 embed (시스템 폰트 fallback 의존 X).
+  let fontFace = '';
+  if (fontFile && fs.existsSync(fontFile)) {
+    const b64 = fs.readFileSync(fontFile).toString('base64');
+    fontFace = `<style>@font-face{font-family:'Pretendard';src:url('data:font/ttf;base64,${b64}') format('truetype');}</style>`;
+  }
+  const h = Math.round(fontSize * 1.8);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}">
+${fontFace}
+<text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle"
+  font-family="Pretendard, sans-serif" font-size="${fontSize}" font-weight="700"
+  fill="white" stroke="black" stroke-width="6" paint-order="stroke fill">${safe}</text>
+</svg>`;
+  const png = await sharp(Buffer.from(svg)).png().toBuffer();
+  return png;
+}
+
+function buildFilter({ width, height, hasOverlayPng }) {
   const ar = width / height;
   const needPad = Math.abs(ar - TARGET_AR) > AR_TOLERANCE;
   const parts = [];
@@ -93,35 +115,13 @@ function buildFilter({ width, height, srtPath, overlayText, fontFile }) {
     parts.push(`[0:v]scale=${TARGET_W}:${TARGET_H}[v0]`);
   }
 
-  let stage = '[v0]';
-  // 자막 burn-in (srt 있을 때) — libass 가 fontsdir 의 Pretendard-Bold.ttf 로드
-  if (srtPath) {
-    const esc = escapeSubtitlePath(srtPath);
-    const fontsDirOpt = fontFile
-      ? `:fontsdir='${escapeSubtitlePath(FONT_DIR)}'`
-      : '';
-    parts.push(`${stage}subtitles='${esc}'${fontsDirOpt}:force_style='Fontname=${FONT_FAMILY},Fontsize=22,PrimaryColour=&HFFFFFFFF&,OutlineColour=&H00000000&,BorderStyle=3,Outline=2,MarginV=80'[v1]`);
-    stage = '[v1]';
-  }
-
-  // 화면 텍스트 (overlayText) — 상단 중앙
-  if (overlayText) {
-    const text = escapeDrawText(overlayText);
-    // 폰트 파일 있으면 fontfile, 없으면 fontconfig 의 default
-    const fontOpt = fontFile ? `fontfile='${fontFile.replace(/'/g, "\\'")}'` : '';
-    const drawArgs = [
-      fontOpt,
-      `text='${text}'`,
-      `fontsize=56`,
-      `fontcolor=white`,
-      `borderw=4`,
-      `bordercolor=black@0.85`,
-      `x=(w-text_w)/2`,
-      `y=120`,
-    ].filter(Boolean).join(':');
-    parts.push(`${stage}drawtext=${drawArgs}[vout]`);
+  // 화면 텍스트 — sharp 로 만든 PNG 를 두 번째 입력 [1:v] 으로 받아 overlay 합성.
+  // ffmpeg-static minimal 도 overlay 필터는 포함 (drawtext / subtitles 와 달리).
+  // 위치: 상단 중앙, y=120.
+  if (hasOverlayPng) {
+    parts.push(`[v0][1:v]overlay=(W-w)/2:120[vout]`);
   } else {
-    parts.push(`${stage}null[vout]`);
+    parts.push(`[v0]null[vout]`);
   }
 
   return { filter: parts.join(';'), needPad };
@@ -346,63 +346,56 @@ exports.handler = async (event) => {
     if (useSrt) fs.writeFileSync(srtPath, srtUsed, 'utf8');
 
     const fontFile = findFontFile();
-    if (!fontFile) console.warn('[process-video] 한글 폰트 파일 없음 — 시스템 fallback (한글 깨질 수 있음)');
+    if (!fontFile) console.warn('[process-video] 한글 폰트 파일 없음 — SVG 안에 embed 못 함');
 
-    // ffmpeg args 생성 헬퍼 — withSubtitles 토글로 subtitles 필터 ON/OFF.
-    // ffmpeg-static binary 가 libass 미포함이라 subtitles 필터 시도 시 exit=8 가능.
-    // 1차 시도 (자막+drawtext) → fail 시 drawtext 만으로 재시도 (overlay text 만은 확실히 박힘).
-    const buildArgs = (withSubtitles) => {
-      const { filter } = buildFilter({
-        width,
-        height,
-        srtPath: withSubtitles && useSrt ? srtPath : null,
-        overlayText: hasOverlay ? overlayText : null,
-        fontFile,
-      });
-      return [
-        '-hide_banner', '-y',
-        '-i', inPath,
-        '-t', String(MAX_DURATION_SEC),
-        '-filter_complex', filter,
-        '-map', '[vout]',
-        '-map', '0:a?',
-        '-c:v', 'libx264',
-        '-preset', 'medium',
-        '-crf', '20',
-        '-maxrate', MAX_VIDEO_BITRATE,
-        '-bufsize', VIDEO_BUFSIZE,
-        '-c:a', 'aac',
-        '-b:a', AUDIO_BITRATE,
-        '-ar', AUDIO_SAMPLE_RATE,
-        '-movflags', '+faststart',
-        '-pix_fmt', 'yuv420p',
-        outPath,
-      ];
-    };
-
-    console.log('[process-video] 블러패딩:', '자막:', useSrt, '화면텍스트:', hasOverlay);
-    let subtitlesAttempted = useSrt;
-    let subtitlesApplied = false;
-    if (useSrt) {
-      await trace('pre-ffmpeg-with-subtitles');
+    // 화면 텍스트 → sharp 로 PNG 사전 렌더링 (ffmpeg-static drawtext 미포함 우회).
+    // PNG 파일을 ffmpeg 의 두 번째 입력 [1:v] 으로 받아 overlay 필터로 합성.
+    const overlayPngPath = `/tmp/overlay_${safeKey}_${ts}.png`;
+    let hasOverlayPng = false;
+    if (hasOverlay) {
       try {
-        await runFfmpeg(buildArgs(true));
-        subtitlesApplied = true;
-        await trace('ffmpegDone-with-subtitles');
+        await trace('pre-overlayPng');
+        const pngBuf = await makeOverlayTextPng({ text: overlayText, fontFile, width: TARGET_W, fontSize: 64 });
+        if (pngBuf) {
+          fs.writeFileSync(overlayPngPath, pngBuf);
+          hasOverlayPng = true;
+          await trace('overlayPngReady');
+        }
       } catch (e) {
-        // libass 또는 subtitles 필터 fail — drawtext 만으로 재시도.
-        await trace(`subtitleFail-retry:${(e.message || '').slice(0, 60)}`);
-        console.warn('[process-video] 자막 필터 fail, drawtext-only 재시도:', e.message);
-        try { fs.unlinkSync(outPath); } catch(_) {}
-        await runFfmpeg(buildArgs(false));
-        await trace('ffmpegDone-no-subtitles');
+        await trace(`overlayPngFail:${(e.message || '').slice(0, 60)}`);
+        console.warn('[process-video] overlay PNG 생성 실패:', e.message);
       }
-    } else {
-      await trace('pre-ffmpeg-no-subtitles');
-      await runFfmpeg(buildArgs(false));
-      await trace('ffmpegDone-no-subtitles');
     }
-    console.log('[process-video] ffmpeg 완료:', Date.now() - t0, 'ms', 'subtitles=', subtitlesApplied);
+
+    const { filter } = buildFilter({ width, height, hasOverlayPng });
+    const args = [
+      '-hide_banner', '-y',
+      '-i', inPath,
+    ];
+    if (hasOverlayPng) args.push('-i', overlayPngPath);
+    args.push(
+      '-t', String(MAX_DURATION_SEC),
+      '-filter_complex', filter,
+      '-map', '[vout]',
+      '-map', '0:a?',
+      '-c:v', 'libx264',
+      '-preset', 'medium',
+      '-crf', '20',
+      '-maxrate', MAX_VIDEO_BITRATE,
+      '-bufsize', VIDEO_BUFSIZE,
+      '-c:a', 'aac',
+      '-b:a', AUDIO_BITRATE,
+      '-ar', AUDIO_SAMPLE_RATE,
+      '-movflags', '+faststart',
+      '-pix_fmt', 'yuv420p',
+      outPath,
+    );
+
+    console.log('[process-video] 화면텍스트:', hasOverlayPng, '자막:', useSrt, '(subtitles=libass 미지원으로 일단 skip)');
+    await trace('pre-ffmpeg');
+    await runFfmpeg(args);
+    await trace('ffmpegDone');
+    console.log('[process-video] ffmpeg 완료:', Date.now() - t0, 'ms');
 
     await trace('pre-upload');
     const destKey = `${userId}/${reservationKey}/processed-${ts}.mp4`;
@@ -446,6 +439,7 @@ exports.handler = async (event) => {
     safeUnlink(outPath);
     safeUnlink(audioPath);
     safeUnlink(srtPath);
+    try { safeUnlink(`/tmp/overlay_${safeKey}_${ts}.png`); } catch(_) {}
   }
 };
 
