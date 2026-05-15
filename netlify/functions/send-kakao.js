@@ -90,6 +90,37 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: 'type, to 필수' }) };
   }
 
+  // S4 (2026-05-15): recipient 검증 — `to` 가 실제 sellers.phone 인지 확인.
+  // 이전엔 LUMI_SECRET 만 가지면 임의 번호로 발송 가능 → 스팸 도구화 + SMS 비용 사장님 부담.
+  // 인증된 호출자라도 등록된 셀러 phone 으로만 발송.
+  try {
+    const phoneNormalized = String(to).replace(/[^0-9]/g, '');
+    if (!phoneNormalized || phoneNormalized.length < 9 || phoneNormalized.length > 13) {
+      return { statusCode: 400, body: JSON.stringify({ error: '잘못된 전화번호 형식' }) };
+    }
+    const { getAdminClient } = require('./_shared/supabase-admin');
+    const admin = getAdminClient();
+    // sellers.phone 은 다양한 포맷일 수 있어 숫자만 비교.
+    // RPC 또는 SQL LIKE 가 더 안전하지만 단순 select + filter 로 충분.
+    const { data: rows, error } = await admin
+      .from('sellers')
+      .select('id, phone')
+      .ilike('phone', `%${phoneNormalized.slice(-8)}%`)
+      .limit(5);
+    if (error) {
+      console.warn('[send-kakao] phone 검증 query 실패:', error.message);
+      return { statusCode: 500, body: JSON.stringify({ error: '발송 검증 실패' }) };
+    }
+    const matched = (rows || []).some((r) => String(r.phone || '').replace(/[^0-9]/g, '') === phoneNormalized);
+    if (!matched) {
+      console.warn('[send-kakao] recipient 미등록 셀러 — 차단:', phoneNormalized.slice(0, 3) + '***');
+      return { statusCode: 403, body: JSON.stringify({ error: '등록되지 않은 수신자' }) };
+    }
+  } catch (vErr) {
+    console.error('[send-kakao] recipient 검증 예외:', vErr.message);
+    return { statusCode: 500, body: JSON.stringify({ error: '발송 검증 예외' }) };
+  }
+
   const template = TEMPLATES[type];
   if (!template) {
     return { statusCode: 400, body: JSON.stringify({ error: '알 수 없는 템플릿 타입' }) };
