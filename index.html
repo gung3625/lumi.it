@@ -38,14 +38,16 @@
       padding-bottom: calc(110px + env(safe-area-inset-bottom));
     }
 
-    /* 튜토리얼 안내 배너 — 사장님이 "이게 미리보기" 라고 즉시 인지 (2026-05-15 사장님 요청) */
+    /* 튜토리얼 안내 배너 — 사장님이 "이게 미리보기" 라고 즉시 인지 (2026-05-15 사장님 요청).
+       skip 은 헤더(로고 줄) 우측으로 이동 → 배너는 안내 텍스트만 (잘림 걱정 ↓). */
     .tutorial-banner {
       position: sticky;
       top: 0;
       z-index: 50;
       display: flex;
       align-items: center;
-      gap: var(--space-3);
+      justify-content: center;
+      gap: var(--space-2);
       padding:
         calc(env(safe-area-inset-top) + var(--space-3))
         var(--space-4)
@@ -56,55 +58,45 @@
       font-weight: var(--weight-semibold);
       letter-spacing: var(--tracking-tight);
       box-shadow: 0 2px 12px rgba(255, 107, 139, 0.22);
-    }
-    .tutorial-banner__main {
-      flex: 1;
-      min-width: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: var(--space-2);
-      overflow: hidden;
-      white-space: nowrap;
-      text-overflow: ellipsis;
+      text-align: center;
     }
     .tutorial-banner__icon {
       flex: 0 0 auto;
       font-size: var(--text-body);
       line-height: 1;
     }
-    .tutorial-banner__text {
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
     .tutorial-banner__text strong {
       font-weight: var(--weight-bold);
     }
-    /* skip 버튼 — 흰 알약에 핑크 글자. 핑크 배너 위에서 가장 강한 대비. */
-    .tutorial-banner__skip {
-      flex: 0 0 auto;
-      padding: 6px 14px;
-      font-size: var(--text-label);
-      font-weight: var(--weight-semibold);
-      color: #FF6B8B;
-      background: #ffffff;
+
+    /* 헤더 우측 skip — 로고와 같은 라인 (사장님 2026-05-15 결정) */
+    .home-skip {
+      position: absolute;
+      right: var(--space-4);
+      top: 50%;
+      transform: translateY(-50%);
+      padding: var(--space-2) var(--space-3);
+      font-size: var(--text-caption);
+      font-weight: var(--weight-medium);
+      color: var(--ink-muted);
+      background: none;
       border: 0;
-      border-radius: var(--radius-full);
       cursor: pointer;
-      white-space: nowrap;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      z-index: 10;
       transition:
-        transform var(--duration-snap) var(--ease-toss),
-        box-shadow var(--duration-snap) var(--ease-toss);
+        color var(--duration-snap) var(--ease-toss),
+        transform var(--duration-snap) var(--ease-toss);
     }
-    .tutorial-banner__skip:active {
-      transform: scale(0.94);
-      box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+    .home-skip:hover { color: var(--ink-soft); }
+    .home-skip:active {
+      color: var(--ink);
+      transform: translateY(-50%) scale(0.96);
     }
 
-    /* 상단 로고 헤더 — 배너가 sticky 라 safe-area 는 배너에 흡수, 헤더는 일반 간격 */
+    /* 상단 로고 헤더 — 배너가 sticky 라 safe-area 는 배너에 흡수, 헤더는 일반 간격.
+       position relative — .home-skip 의 absolute 기준점. */
     .home-header {
+      position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -1050,17 +1042,15 @@
 
     <!-- Step 1: 홈 (실제 dashboard 모사 — 신규 사용자 첫 진입 동일) -->
     <section class="stage step" data-step="1" id="step-1">
-      <!-- 튜토리얼 안내 배너 — 사장님이 "이게 미리보기" 즉시 인지 + skip 통합 -->
+      <!-- 튜토리얼 안내 배너 — 사장님이 "이게 미리보기" 즉시 인지 -->
       <div class="tutorial-banner" role="status" aria-live="polite">
-        <span class="tutorial-banner__main">
-          <span class="tutorial-banner__icon" aria-hidden="true">✨</span>
-          <span class="tutorial-banner__text"><strong>1분 미리보기</strong> · 따라하면 사용법이 보여요</span>
-        </span>
-        <button class="tutorial-banner__skip skip" type="button" aria-label="튜토리얼 건너뛰고 가입으로">건너뛰기</button>
+        <span class="tutorial-banner__icon" aria-hidden="true">✨</span>
+        <span class="tutorial-banner__text"><strong>1분 미리보기 튜토리얼</strong></span>
       </div>
 
       <header class="home-header">
         <img class="home-logo" src="/assets/logo-wordmark.png" alt="루미" width="56" height="28" loading="eager" decoding="async">
+        <button class="home-skip" type="button" aria-label="튜토리얼 건너뛰고 가입으로">건너뛰기</button>
       </header>
 
       <main class="home-feed">
@@ -1570,7 +1560,7 @@
       }
 
       // 건너뛰기 → 가입 페이지로 점프
-      document.querySelectorAll('.skip').forEach(btn => {
+      document.querySelectorAll('.skip, .home-skip').forEach(btn => {
         btn.addEventListener('click', () => goTo(TOTAL));
       });
     })();
