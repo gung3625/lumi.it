@@ -500,7 +500,7 @@ exports.handler = async (event) => {
   // Phase 3: 서브카테고리 필터 (예: cafe-specialty, food-japanese)
   const subcatParam = (params.get('subcat') || '').trim() || null;
   // 프론트 TREND_CATS 9개 + health(fitness 별칭) + all(종합)
-  const knownCategories = ['cafe', 'food', 'beauty', 'hair', 'nail', 'flower', 'fashion', 'fitness', 'health', 'pet', 'all'];
+  const knownCategories = ['cafe', 'food', 'beauty', 'hair', 'nail', 'flower', 'fashion', 'fitness', 'health', 'all'];
 
   const CATEGORY_ALIAS = {
     '카페': 'cafe', '카페·음료': 'cafe', '카페·베이커리': 'cafe', '커피': 'cafe', '베이커리': 'cafe',
@@ -513,7 +513,6 @@ exports.handler = async (event) => {
     '패션': 'fashion', '패션·의류': 'fashion', '쇼핑·의류': 'fashion', '의류': 'fashion',
     '헬스': 'fitness', '필라테스': 'fitness', '헬스·필라테스': 'fitness', '요가': 'fitness', '운동': 'fitness',
     '건강': 'health', '건강·헬스': 'health',
-    '반려동물': 'pet', '반려동물·펫': 'pet', '펫': 'pet',
     '키즈': 'kids', '아동': 'kids', '어린이': 'kids',
     '공방': 'shop', '소품': 'shop', '공방·소품': 'shop',
     'restaurant': 'food', 'bakery': 'cafe',

@@ -7,6 +7,7 @@ const { getAdminClient } = require('./_shared/supabase-admin');
 const https = require('https');
 
 // 9업종 × 3개 해시태그 (고유 27개, 주 30개 한도 이내)
+// 사장님 결정 (2026-05-15): pet 업종 폐기. 8업종으로 4일 rotation (2업종 × 4일).
 const IG_HASHTAGS = {
   cafe:    ['카페추천', '디저트', '카페스타그램'],
   food:    ['맛집', '오마카세', '맛스타그램'],
@@ -16,14 +17,14 @@ const IG_HASHTAGS = {
   flower:  ['꽃집', '드라이플라워', '플라워샵'],
   fashion: ['패션', '코디', 'Y2K'],
   fitness: ['필라테스', '바디프로필', '헬스타그램'],
-  pet:     ['강아지', '고양이', '반려동물'],
 };
 
-// 3일 주기 로테이션 그룹
+// 4일 주기 로테이션 그룹 (8업종 → 매일 2업종)
 const ROTATION_GROUPS = [
-  ['cafe', 'food', 'beauty'],    // rotation 0
-  ['hair', 'nail', 'flower'],    // rotation 1
-  ['fashion', 'fitness', 'pet'], // rotation 2
+  ['cafe', 'food'],       // rotation 0
+  ['beauty', 'hair'],     // rotation 1
+  ['nail', 'flower'],     // rotation 2
+  ['fashion', 'fitness'], // rotation 3
 ];
 
 // 오늘의 3업종 반환 (연중 일수 % 3)
@@ -31,7 +32,7 @@ function getTodayCategories() {
   const now = new Date();
   const startOfYear = new Date(now.getFullYear(), 0, 0);
   const dayOfYear = Math.floor((now - startOfYear) / (24 * 60 * 60 * 1000));
-  const rotation = dayOfYear % 3;
+  const rotation = dayOfYear % ROTATION_GROUPS.length;
   return ROTATION_GROUPS[rotation];
 }
 

@@ -1,6 +1,7 @@
 // scheduled-trends-v2-background.js — Trend Hub v2 Phase 1
-// Lumi 지원 업종 (9개): cafe, food, beauty, hair, nail, flower, fashion, fitness, pet
-// 제거됨: education, interior, studio (2026-04-23, 소상공인 인스타 SaaS 타깃 불일치)
+// Lumi 지원 업종 (8개): cafe, food, beauty, hair, nail, flower, fashion, fitness
+// 제거됨: education, interior, studio (2026-04-23), pet (2026-05-15, 사장님 결정)
+// 시드/prompt 의 pet 언급은 dead code — 카테고리 list 에서 빠져 cron 이 처리 skip.
 // 변경 사항 (v1 대비):
 //   - gpt-4o 전환 (분류·예측·스토리 전부), 전처리만 mini 폴백 가능
 //   - 크로스 소스 검증: 2+ 소스 → signal_tier='real', 1소스 → 'weak'
@@ -26,7 +27,7 @@ const https = require('https');
 // ─────────────────────────────────────────────
 // Phase 2: 4축 분할 대상 카테고리
 // ─────────────────────────────────────────────
-const AXIS_CATEGORIES = ['cafe', 'food', 'flower', 'fashion', 'pet'];
+const AXIS_CATEGORIES = ['cafe', 'food', 'flower', 'fashion'];
 
 // ─────────────────────────────────────────────
 // 지역 분할 (Phase 1: 구조 준비, 실제 수집은 Phase 2)
@@ -1627,7 +1628,7 @@ JSON 객체만 반환. 설명·마크다운·코드블록 금지.
     }
 
     // schema validate — 9개 카테고리 키 중 하나라도 배열이 아니면 fallback (null)
-    const CATS = ['cafe', 'food', 'beauty', 'nail', 'hair', 'flower', 'fashion', 'fitness', 'pet'];
+    const CATS = ['cafe', 'food', 'beauty', 'nail', 'hair', 'flower', 'fashion', 'fitness'];
     const validKeys = CATS.filter(c => Array.isArray(parsed[c]));
     if (validKeys.length === 0) {
       console.error('[gpt-classify] 응답에 유효한 카테고리 배열 0 — fallback');
@@ -2199,8 +2200,8 @@ exports.handler = runGuarded({
       };
     }
 
-    const categories = ['cafe', 'food', 'beauty', 'nail', 'hair', 'flower', 'fashion', 'fitness', 'pet'];
-    const COLLECT_CATEGORIES = ['cafe', 'food', 'beauty', 'hair', 'nail', 'flower', 'fashion', 'fitness', 'pet'];
+    const categories = ['cafe', 'food', 'beauty', 'nail', 'hair', 'flower', 'fashion', 'fitness'];
+    const COLLECT_CATEGORIES = ['cafe', 'food', 'beauty', 'hair', 'nail', 'flower', 'fashion', 'fitness'];
     const updatedAt = new Date().toISOString();
     const collectedDate = updatedAt.slice(0, 10);
 

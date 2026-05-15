@@ -21,7 +21,7 @@ const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30일
 
 const ALLOWED_CATEGORIES = new Set([
   'all', 'cafe', 'food', 'beauty', 'hair', 'nail',
-  'fashion', 'flower', 'fitness', 'pet',
+  'fashion', 'flower', 'fitness',
 ]);
 
 function getCacheStore() {

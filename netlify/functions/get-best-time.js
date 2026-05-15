@@ -39,44 +39,47 @@ const {
 
 // 업종 × 요일 시드 매트릭스 (평일=0, 주말=1)
 // 근거: 국내 SNS 벤치마크 리서치 경향 종합. 고객 데이터 쌓이면 자동 대체됨.
+// 업종별 시드 — 한국 인스타 활동 패턴 재정제 (2026-05-15).
+// 변경: gym 주말 3개로 통일 / cafe 평일 19:30→21:00 / flower 평일 15:00→17:00 /
+// beauty·nail 평일 11:00→12:30 (회사 시간이라 점심이 더 정확).
 const INDUSTRY_MATRIX = {
   cafe: {
-    weekday: [{ time: '07:30', reason: '출근길 모닝커피 탐색' }, { time: '12:00', reason: '점심시간 카페 검색' }, { time: '19:30', reason: '퇴근 후 카페 탐방' }],
-    weekend: [{ time: '10:00', reason: '주말 아침 브런치 탐색' }, { time: '14:00', reason: '주말 오후 카페 피크' }, { time: '16:30', reason: '주말 디저트 타임' }],
-    tip: '주말 오전 10~12시 인게이지먼트가 평일 대비 1.3배 높아요.',
+    weekday: [{ time: '09:00', reason: '출근 후 모닝커피 탐색' }, { time: '14:00', reason: '오후 카페 한 잔 검색' }, { time: '21:00', reason: '밤 디저트·카페 영상 소비' }],
+    weekend: [{ time: '11:00', reason: '주말 아침 브런치 탐색' }, { time: '14:30', reason: '주말 오후 카페 피크' }, { time: '20:00', reason: '주말 저녁 디저트' }],
+    tip: '주말 오전 11~13시 인게이지먼트가 평일 대비 1.3배 높아요.',
   },
   restaurant: {
-    weekday: [{ time: '11:30', reason: '점심 메뉴 탐색' }, { time: '17:30', reason: '저녁 식당 검색 피크' }, { time: '20:00', reason: '식후 야식 검색' }],
-    weekend: [{ time: '12:00', reason: '주말 점심 맛집 탐색' }, { time: '18:00', reason: '주말 저녁 외식' }, { time: '20:30', reason: '2차 장소 탐색' }],
+    weekday: [{ time: '11:30', reason: '점심 메뉴 탐색' }, { time: '17:30', reason: '저녁 식당 검색 피크' }, { time: '21:30', reason: '야식·2차 검색' }],
+    weekend: [{ time: '12:00', reason: '주말 점심 맛집 탐색' }, { time: '18:00', reason: '주말 저녁 외식' }, { time: '21:00', reason: '2차 장소 탐색' }],
     tip: '음식 사진은 게시 후 1시간 내 저장 수가 많아요 — 식사 직전 업로드가 유리해요.',
   },
   beauty: {
-    weekday: [{ time: '11:00', reason: '오전 여유 뷰티 탐색' }, { time: '19:00', reason: '퇴근 후 예약 문의 집중' }, { time: '21:00', reason: '밤 뷰티 콘텐츠 소비 피크' }],
-    weekend: [{ time: '13:00', reason: '주말 셀프케어 준비' }, { time: '20:00', reason: '주말 밤 뷰티 영감 탐색' }, { time: '21:30', reason: '내일 준비 콘텐츠 저장' }],
+    weekday: [{ time: '12:30', reason: '점심시간 뷰티 영상 소비' }, { time: '21:00', reason: '밤 뷰티 콘텐츠 피크' }, { time: '22:30', reason: '자기 전 영감 저장' }],
+    weekend: [{ time: '13:00', reason: '주말 셀프케어 준비' }, { time: '20:00', reason: '주말 밤 뷰티 영감 탐색' }, { time: '22:00', reason: '내일 준비 콘텐츠 저장' }],
     tip: '화요일~목요일 21시 전후 문의 전환률이 가장 높아요.',
   },
   nail: {
-    weekday: [{ time: '11:00', reason: '오전 네일 디자인 탐색' }, { time: '19:00', reason: '퇴근 후 예약 문의' }, { time: '21:00', reason: '밤 디자인 저장 피크' }],
-    weekend: [{ time: '13:00', reason: '주말 셀프 탐색' }, { time: '19:30', reason: '다음주 예약 탐색' }, { time: '21:30', reason: '디자인 영감 저장' }],
+    weekday: [{ time: '12:30', reason: '점심시간 네일 디자인 탐색' }, { time: '21:00', reason: '밤 디자인 저장 피크' }, { time: '22:30', reason: '다음날 예약 탐색' }],
+    weekend: [{ time: '13:00', reason: '주말 셀프 탐색' }, { time: '20:00', reason: '주말 밤 영감 저장' }, { time: '22:00', reason: '다음주 예약 탐색' }],
     tip: '주중 21시 게시가 다음날 오전 DM 문의로 이어지는 경우가 많아요.',
   },
   flower: {
-    weekday: [{ time: '10:00', reason: '기념일 선물 탐색' }, { time: '15:00', reason: '퇴근 전 픽업 결심 시각' }, { time: '19:00', reason: '저녁 감성 꽃 탐색' }],
+    weekday: [{ time: '11:00', reason: '오전 선물·기념일 탐색' }, { time: '17:00', reason: '퇴근 픽업 결심 시각' }, { time: '20:00', reason: '저녁 감성 꽃 탐색' }],
     weekend: [{ time: '11:00', reason: '주말 오전 여유 탐색' }, { time: '14:30', reason: '주말 오후 방문 피크' }, { time: '17:00', reason: '주말 저녁 선물 결제' }],
     tip: '금요일 10~15시 게시가 주말 매출과 가장 상관관계가 높아요.',
   },
   clothing: {
     weekday: [{ time: '12:30', reason: '점심시간 쇼핑 탐색' }, { time: '20:00', reason: '퇴근 후 저녁 쇼핑 피크' }, { time: '22:00', reason: '밤 코디 영감 저장' }],
-    weekend: [{ time: '13:00', reason: '주말 오후 쇼핑' }, { time: '19:00', reason: '주말 저녁 OOTD' }, { time: '21:30', reason: '다음주 준비 저장' }],
+    weekend: [{ time: '13:00', reason: '주말 오후 쇼핑' }, { time: '19:00', reason: '주말 저녁 OOTD' }, { time: '21:00', reason: '다음주 준비 저장' }],
     tip: '리퀘스트 DM은 22시 전후 게시물에서 가장 많이 발생해요.',
   },
   gym: {
-    weekday: [{ time: '07:00', reason: '모닝 운동 루틴 탐색' }, { time: '12:00', reason: '점심시간 운동 다짐' }, { time: '20:30', reason: '저녁 오운완 피크' }],
-    weekend: [{ time: '10:00', reason: '주말 아침 운동 시작' }, { time: '14:00', reason: '주말 오후 클래스 탐색' }],
+    weekday: [{ time: '06:30', reason: '모닝 운동 루틴 탐색' }, { time: '12:00', reason: '점심시간 운동 다짐' }, { time: '20:00', reason: '저녁 오운완 피크' }],
+    weekend: [{ time: '09:00', reason: '주말 아침 운동 시작' }, { time: '14:00', reason: '주말 오후 클래스 탐색' }, { time: '20:00', reason: '주말 저녁 오운완' }],
     tip: '#오운완 해시태그는 평일 저녁 8~9시가 노출량 최대예요.',
   },
   other: {
-    weekday: [{ time: '09:00', reason: '오전 활동 시작' }, { time: '12:30', reason: '점심시간 SNS 탐색' }, { time: '19:00', reason: '저녁 여가 시간' }],
+    weekday: [{ time: '12:30', reason: '점심시간 SNS 탐색' }, { time: '19:00', reason: '저녁 여가 시간' }, { time: '21:00', reason: '밤 콘텐츠 소비 피크' }],
     weekend: [{ time: '11:00', reason: '주말 오전 여유' }, { time: '14:00', reason: '주말 오후 피크' }, { time: '20:00', reason: '주말 저녁 여가' }],
     tip: '일주일 3~5회 꾸준한 업로드 주기가 알고리즘에 가장 유리해요.',
   },

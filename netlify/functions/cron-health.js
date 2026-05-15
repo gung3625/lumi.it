@@ -109,7 +109,7 @@ exports.handler = async (event) => {
     }
 
     // 트렌드 카테고리별 staleness 체크 (24시간 이상 미갱신 감지)
-    const TREND_CATS = ['cafe', 'food', 'beauty', 'hair', 'nail', 'flower', 'fashion', 'fitness', 'pet'];
+    const TREND_CATS = ['cafe', 'food', 'beauty', 'hair', 'nail', 'flower', 'fashion', 'fitness'];
     try {
       const { data: trendRows } = await supa
         .from('trends')
