@@ -25,25 +25,25 @@
   <link rel="stylesheet" href="/css/tabbar.css">
 
   <style>
-    /* === 튜토리얼 페이지 — body 스크롤 차단 ===
-       문제 (사장님 보고 2026-05-15):
-         1. body 끝에 footer (사업자 정보) 가 있어 body height > viewport → 스크롤 가능
-         2. 스크롤하면 footer 가 fixed tabbar 에 가려져 안 보임
-         3. 짧은 콘텐츠라 rubber-band bounce 흔들림
-
-       해결: body 자체 스크롤 X. 각 step 이 자체 dvh layout 관리.
-       footer 는 가입 step (Step 5) 활성 시에만 표시 — script 에서 토글. */
+    /* === 튜토리얼 페이지 — 자연 스크롤 + 흔들림만 차단 ===
+       사장님 피드백 (2026-05-15): "중간이 없다 — 흔들리거나, 아예 스크롤 안되거나"
+       절충:
+         - body 자연 스크롤 유지 (footer 정상 표시)
+         - rubber-band 흔들림만 overscroll-behavior 로 차단
+         - tabbar (Step 1) 는 fixed → sticky 로 변경 — 콘텐츠 위쪽까지만 따라가고
+           스크롤 끝까지 가면 footer 가 가려지지 않음 */
     html, body {
-      height: 100%;
-      overflow: hidden;
+      overscroll-behavior: none;
       margin: 0;
     }
     body {
       padding-bottom: 0 !important;
-      overscroll-behavior: none;
     }
-    /* footer 기본 hidden — Step 5 (가입) 활성 시 script 가 표시 */
-    .foot { display: none; }
+    /* Step 1 안의 tabbar 만 sticky (다른 페이지의 .tabbar 는 css/tabbar.css 의 fixed 유지) */
+    .stage .tabbar {
+      position: sticky;
+      bottom: 0;
+    }
 
     /* === Step 1: 홈 (dashboard 모사 — 실제 dashboard 와 시각적 동일) === */
     /* 사장님 결정 2026-05-15: 튜토리얼 = 실제 사용 미리보기. 가입 후 보는 dashboard 와
@@ -1373,7 +1373,6 @@
       const MAX_PHOTOS = 9;
       const selected = new Set();
 
-      const footerEl = document.querySelector('.foot');
       function goTo(n) {
         if (n < 1 || n > TOTAL) return;
         STEPS.forEach(s => {
@@ -1381,13 +1380,6 @@
           s.hidden = !isActive;
           s.setAttribute('aria-hidden', String(!isActive));
         });
-        // 가입 step (Step 5) 활성 시에만 footer (사업자 정보 + 약관) 표시.
-        // 다른 step 은 자체 dvh layout 안에서 콘텐츠 마무리 → body 스크롤 X.
-        if (footerEl) {
-          footerEl.style.display = (n === TOTAL) ? '' : 'none';
-        }
-        // Step 5 는 가입 동의 + 사업자 정보 노출 위해 스크롤 허용. 다른 step 은 차단.
-        document.body.style.overflow = (n === TOTAL) ? 'auto' : 'hidden';
         window.scrollTo({ top: 0, behavior: 'instant' });
       }
 
