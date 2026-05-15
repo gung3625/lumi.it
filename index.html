@@ -25,23 +25,19 @@
   <link rel="stylesheet" href="/css/tabbar.css">
 
   <style>
-    /* === 튜토리얼 페이지 — 흔들림 차단 + footer 는 가입 step 만 ===
-       사장님 피드백 (2026-05-15):
-         - "흔들리거나, 아예 스크롤 안되거나" → 흔들림만 차단, 스크롤은 유지
-         - 첫 화면(Step 1)에 사업자 정보 footer 가 침범해 디자인 깨짐 → 가입 step 만 표시
-       해결:
-         - overscroll-behavior 로 rubber-band 만 차단 (body 자연 스크롤 유지)
-         - footer 는 기본 hidden, script 에서 Step 5 활성 시에만 표시
-         - tabbar 는 fixed 유지 (footer 가 안 뜨면 가릴 일 없음) */
+    /* === 튜토리얼 페이지 — dashboard 의 정상 패턴 그대로 ===
+       2026-05-15 (수정): 사장님 지적 — "Step 1 에서 스크롤이 아예 안되고 푸터가 안 보여".
+       이전 ac56c18 의 body padding-bottom:0 !important + .foot display:none 가
+       dashboard 의 정상 패턴 (tabbar.css body:has(.tabbar) padding-bottom 110px)을
+       막아 footer 가 viewport 끝과 정확히 일치해 스크롤 0, footer hidden 으로 노출 X.
+
+       해결: dashboard.html 패턴 그대로 — body padding 정상화 + .foot 기본 노출.
+       흔들림 차단은 overscroll-behavior 만으로 충분 (rubber-band 만 막는 본 룰).
+       footer 노출 step 토글은 JS goTo() 가 명시적으로 처리 (Step 1 + Step 5 만 'block'). */
     html, body {
       overscroll-behavior: none;
       margin: 0;
     }
-    body {
-      padding-bottom: 0 !important;
-    }
-    /* footer 기본 숨김 — Step 5 활성 시 script 가 표시 */
-    .foot { display: none; }
 
     /* === Step 1: 홈 (dashboard 모사 — 실제 dashboard 와 시각적 동일) === */
     /* 사장님 결정 2026-05-15: 튜토리얼 = 실제 사용 미리보기. 가입 후 보는 dashboard 와
@@ -52,8 +48,7 @@
       flex-direction: column;
       min-height: 100dvh;
       background: var(--bg);
-      /* 탭바 높이 만큼 하단 패딩 (tabbar.css 의 body:has(.tabbar) 와 동등) */
-      padding-bottom: calc(110px + env(safe-area-inset-bottom));
+      /* padding-bottom 은 tabbar.css 의 body:has(.tabbar) 가 통합 관리 — 중복 제거 */
     }
 
     /* 튜토리얼 안내 배너 — 사장님이 "이게 미리보기" 라고 즉시 인지 (2026-05-15 사장님 요청).
@@ -235,7 +230,9 @@
       color: var(--ink-muted);
     }
 
-    /* 코치 bubble — + 버튼 위로 화살표 (사장님 시선 유도) */
+    /* 코치 bubble — + 버튼 위로 화살표 (사장님 시선 유도)
+       사장님 스크롤 시 footer 글씨 위에 겹치지 않도록 scroll 시 fade-out
+       (JS scroll listener 가 is-hidden 토글) — [feedback_ui_no_overlay] 차단. */
     .home-coach-bubble {
       position: fixed;
       bottom: calc(96px + env(safe-area-inset-bottom));
@@ -252,7 +249,9 @@
       white-space: nowrap;
       pointer-events: none;
       animation: bubble-in 400ms var(--ease-spring) 700ms backwards;
+      transition: opacity var(--duration-base) var(--ease-soft);
     }
+    .home-coach-bubble.is-hidden { opacity: 0; }
     .home-coach-bubble::after {
       content: "";
       position: absolute;
@@ -1586,14 +1585,26 @@
           s.hidden = !isActive;
           s.setAttribute('aria-hidden', String(!isActive));
         });
-        // 가입 step (Step 5) 활성 시에만 footer 표시 — 사업자 정보·약관은 가입 단계 필요.
-        // CSS .foot { display: none } 이 기본값이라 인라인 style = '' 로 비우면 hidden 으로 fallback.
-        // 따라서 명시적으로 'block' 지정 (footer 는 block 요소).
-        // body overflow 는 토글하지 않음 (양극단 회귀 X) — 흔들림 차단은 overscroll-behavior 로 충분.
+        // 사장님 결정 2026-05-15(수정): Step 1(홈) + Step 5(가입) 에서 footer 노출.
+        // Step 1 의 dashboard 모사는 실제 dashboard 와 마찬가지로 페이지 끝에 사업자
+        // 정보 footer 가 자연 흐름. footer 가 붙으면 body scrollHeight > viewport 라
+        // 자연 스크롤도 같이 회복. 풀스크린 UI인 2(갤러리)/3(분석)/4(결과)는 footer 숨김.
         if (footerEl) {
-          footerEl.style.display = (n === TOTAL) ? 'block' : 'none';
+          footerEl.style.display = (n === 1 || n === TOTAL) ? 'block' : 'none';
         }
         window.scrollTo({ top: 0, behavior: 'instant' });
+      }
+      // 초기 진입 — Step 1 활성 + footer 표시 적용.
+      goTo(1);
+
+      // Step 1 코치 bubble — scroll 시 footer 글씨 위 겹침 차단 ([feedback_ui_no_overlay]).
+      // 사장님이 + 안 누르고 아래로 스크롤하면 fade-out, 위로 되돌리면 다시 보임.
+      const homeBubble = document.querySelector('.home-coach-bubble');
+      if (homeBubble) {
+        const onScroll = () => {
+          homeBubble.classList.toggle('is-hidden', window.scrollY > 40);
+        };
+        window.addEventListener('scroll', onScroll, { passive: true });
       }
 
       // Step 1 → Step 2 (탭바 가운데 + 버튼 클릭)
