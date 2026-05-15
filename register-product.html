@@ -528,7 +528,7 @@
             </span>
             <div class="dropzone__title">사진을 선택하거나 끌어다 놓아주세요</div>
             <div class="dropzone__sub">JPG · PNG · WebP / 1~10장</div>
-            <input type="file" accept="image/jpeg,image/png,image/webp" multiple data-input>
+            <input type="file" accept="image/*" multiple data-input>
           </label>
         </div>
       </div>
@@ -545,8 +545,8 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
             </span>
             <div class="dropzone__title">영상을 선택하거나 끌어다 놓아주세요</div>
-            <div class="dropzone__sub">MP4 · MOV / 최대 90초 게시 / 300MB 이내</div>
-            <input type="file" accept="video/mp4,video/quicktime,video/mov" data-video-input>
+            <div class="dropzone__sub">어떤 영상 포맷이든 OK / 최대 90초 게시 / 300MB 이내</div>
+            <input type="file" accept="video/*" data-video-input>
           </label>
         </div>
       </div>
@@ -726,7 +726,10 @@
       const COMPRESS_QUALITY_STEPS = [0.92, 0.85, 0.78];
       // multipart 오버헤드(boundary·필드) + userMessage 여유분 0.5MB 빼고 5.5MB 안전선.
       const SAFE_TOTAL_BYTES = 5.5 * 1024 * 1024;
-      const ALLOWED = ['image/jpeg', 'image/png', 'image/webp'];
+      // 사장님 결정 (2026-05-15): 모든 이미지 포맷 허용. 서버에서 sharp/heic-convert 로 JPEG 변환.
+      // - 클라 측 검사: image/* 시작하는 MIME 또는 빈 MIME (브라우저가 안 채우는 경우, 예: HEIC 일부)
+      const ALLOWED_RE = /^image\/.+/i;
+      const isAllowedImage = (t) => !t || ALLOWED_RE.test(t);
 
       const photoArea = document.querySelector('[data-photo-area]');
       const msgEl = document.querySelector('[data-msg]');
@@ -745,7 +748,15 @@
       // ─── 영상 (REELS) 상태 ───
       const MAX_VIDEO_DURATION_SEC = 5 * 60;       // 5분 (Netlify Function 처리 시간 한계)
       const MAX_VIDEO_BYTES = 300 * 1024 * 1024;   // 300MB (Meta API 한도)
-      const ALLOWED_VIDEO = ['video/mp4', 'video/quicktime', 'video/mov'];
+      // 사장님 결정 (2026-05-15): 모든 영상 포맷 허용. process-video-background 가 H.264/AAC MP4 로
+      // 강제 transcode → IG Reels 호환. 클라 검사는 video/* 시작 또는 흔한 확장자만 본다.
+      const ALLOWED_VIDEO_EXT_RE = /\.(mp4|mov|m4v|avi|mkv|webm|mpe?g|ts|3gp2?|flv|wmv|hevc|h265)$/i;
+      const isAllowedVideoFile = (file) => {
+        const t = String(file.type || '').toLowerCase();
+        if (t.startsWith('video/')) return true;
+        if (!t) return ALLOWED_VIDEO_EXT_RE.test(file.name || '');
+        return false;
+      };
       let mediaMode = 'image';   // 'image' | 'video'
       let videoFile = null;       // File object
       let videoDuration = 0;      // seconds
@@ -806,9 +817,9 @@
       }
 
       async function handleVideoFile(file) {
-        // 1) MIME 검증
-        if (!ALLOWED_VIDEO.includes(file.type) && !/\.(mp4|mov)$/i.test(file.name)) {
-          toast('영상은 MP4 또는 MOV 만 지원해요', 3000);
+        // 1) MIME 검증 — video/* 시작 또는 흔한 확장자면 통과. 실제 디코드는 서버 ffmpeg 가 판단.
+        if (!isAllowedVideoFile(file)) {
+          toast('영상 파일만 올릴 수 있어요', 3000);
           return;
         }
         // 2) 크기 검증
@@ -1020,8 +1031,8 @@
             toast('최대 10장까지 가능해요');
             break;
           }
-          if (!ALLOWED.includes(f.type)) {
-            toast('JPG·PNG·WebP만 가능해요');
+          if (!isAllowedImage(f.type)) {
+            toast('이미지 파일만 가능해요');
             continue;
           }
           if (f.size > MAX_BYTES) {
@@ -1043,7 +1054,7 @@
               </span>
               <div class="dropzone__title">사진을 선택하거나 끌어다 놓아주세요</div>
               <div class="dropzone__sub">JPG · PNG · WebP / 1~10장</div>
-              <input type="file" accept="image/jpeg,image/png,image/webp" multiple data-input>
+              <input type="file" accept="image/*" multiple data-input>
             </label>
           `;
           wireDropzone();
@@ -1068,7 +1079,7 @@
           adder.className = 'photo__add';
           adder.innerHTML = `
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-            <input type="file" accept="image/jpeg,image/png,image/webp" multiple data-input>
+            <input type="file" accept="image/*" multiple data-input>
           `;
           grid.appendChild(adder);
         }
@@ -1163,45 +1174,66 @@
       // - IG carousel 호환 비율(4:5 = 0.8) 강제 → "aspect ratio not supported" 에러 차단
       // - 폰 세로 사진(9:16) 은 위·아래 살짝 잘리고, 가로 사진은 좌·우 잘림
       // - Netlify 6MB body 한도도 자연스레 충족 (사진당 ~200~500KB)
+      // - HEIC 등 브라우저가 디코드 못 하는 포맷은 원본을 그대로 서버로 넘김
+      //   (서버 reserve.js 가 heic-convert + sharp 로 JPEG 변환 처리)
       function compressImage(file, quality) {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
           const img = new Image();
           const url = URL.createObjectURL(file);
-          img.onload = () => {
+          let settled = false;
+          const settle = (v) => {
+            if (settled) return;
+            settled = true;
             URL.revokeObjectURL(url);
-
-            const sourceRatio = img.width / img.height;
-            let sx, sy, sw, sh;
-            if (sourceRatio > IG_TARGET_RATIO) {
-              // 원본이 4:5 보다 넓음 → 좌우 자르기
-              sh = img.height;
-              sw = Math.round(sh * IG_TARGET_RATIO);
-              sx = Math.round((img.width - sw) / 2);
-              sy = 0;
-            } else {
-              // 원본이 4:5 보다 좁음(폰 세로) → 위아래 자르기
-              sw = img.width;
-              sh = Math.round(sw / IG_TARGET_RATIO);
-              sx = 0;
-              sy = Math.round((img.height - sh) / 2);
-            }
-
-            const canvas = document.createElement('canvas');
-            canvas.width = IG_TARGET_W;
-            canvas.height = IG_TARGET_H;
-            const ctx = canvas.getContext('2d');
-            // 화이트 배경 — 투명 PNG 입력 대비
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, IG_TARGET_W, IG_TARGET_H);
-            ctx.drawImage(img, sx, sy, sw, sh, 0, 0, IG_TARGET_W, IG_TARGET_H);
-
-            canvas.toBlob(blob => {
-              if (!blob) return reject(new Error('압축 실패'));
-              const name = (file.name || 'photo').replace(/\.\w+$/, '') + '.jpg';
-              resolve(new File([blob], name, { type: 'image/jpeg' }));
-            }, 'image/jpeg', quality);
+            resolve(v);
           };
-          img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('이미지 읽기 실패')); };
+
+          img.onload = () => {
+            try {
+              const sourceRatio = img.width / img.height;
+              if (!isFinite(sourceRatio) || sourceRatio <= 0) {
+                // 디코드는 됐지만 크기 정보가 이상함 → 서버 위임
+                return settle(file);
+              }
+              let sx, sy, sw, sh;
+              if (sourceRatio > IG_TARGET_RATIO) {
+                // 원본이 4:5 보다 넓음 → 좌우 자르기
+                sh = img.height;
+                sw = Math.round(sh * IG_TARGET_RATIO);
+                sx = Math.round((img.width - sw) / 2);
+                sy = 0;
+              } else {
+                // 원본이 4:5 보다 좁음(폰 세로) → 위아래 자르기
+                sw = img.width;
+                sh = Math.round(sw / IG_TARGET_RATIO);
+                sx = 0;
+                sy = Math.round((img.height - sh) / 2);
+              }
+
+              const canvas = document.createElement('canvas');
+              canvas.width = IG_TARGET_W;
+              canvas.height = IG_TARGET_H;
+              const ctx = canvas.getContext('2d');
+              // 화이트 배경 — 투명 PNG 입력 대비
+              ctx.fillStyle = '#ffffff';
+              ctx.fillRect(0, 0, IG_TARGET_W, IG_TARGET_H);
+              ctx.drawImage(img, sx, sy, sw, sh, 0, 0, IG_TARGET_W, IG_TARGET_H);
+
+              canvas.toBlob(blob => {
+                if (!blob) return settle(file); // encoder 실패 시 원본 fallback
+                const name = (file.name || 'photo').replace(/\.\w+$/, '') + '.jpg';
+                settle(new File([blob], name, { type: 'image/jpeg' }));
+              }, 'image/jpeg', quality);
+            } catch (e) {
+              console.warn('[compressImage] canvas fallback → 원본 전송:', e?.message);
+              settle(file);
+            }
+          };
+          img.onerror = () => {
+            // 브라우저 디코더가 못 읽는 포맷(Chrome 의 HEIC 등) → 원본을 서버로 위임
+            console.warn('[compressImage] 디코드 실패, 원본 그대로 서버 변환:', file.name);
+            settle(file);
+          };
           img.src = url;
         });
       }
@@ -1404,7 +1436,30 @@
           try {
             coverBlob = await extractCoverFrame(videoFile, 0.5);
           } catch (e) {
-            console.warn('[submit-video] 커버 추출 실패 (스킵):', e.message);
+            console.warn('[submit-video] 커버 추출 실패 → placeholder 사용:', e.message);
+          }
+          // 브라우저가 디코드 못 하는 포맷(예: AVI, MKV) → 합성 placeholder 커버.
+          // 서버 reserve.js 는 photos.length > 0 을 요구. IG 가 진짜 cover 를 영상에서 자동 추출하므로
+          // 우리 image_urls[0] 은 vision 분석용 placeholder 로만 사용.
+          if (!coverBlob) {
+            try {
+              const c = document.createElement('canvas');
+              c.width = 1080; c.height = 1350;
+              const ctx = c.getContext('2d');
+              const grad = ctx.createLinearGradient(0, 0, 0, c.height);
+              grad.addColorStop(0, '#1a1a1a');
+              grad.addColorStop(1, '#3a3a3a');
+              ctx.fillStyle = grad;
+              ctx.fillRect(0, 0, c.width, c.height);
+              ctx.fillStyle = '#ffffff';
+              ctx.font = 'bold 80px -apple-system, BlinkMacSystemFont, "Pretendard", sans-serif';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText('🎬 영상', c.width / 2, c.height / 2);
+              coverBlob = await new Promise((r) => c.toBlob(r, 'image/jpeg', 0.85));
+            } catch (genErr) {
+              console.warn('[submit-video] placeholder 생성 실패:', genErr?.message);
+            }
           }
 
           // 4) reserve API 호출 (multipart) — 커버 1장 + 영상 메타

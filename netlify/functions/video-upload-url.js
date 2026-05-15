@@ -15,13 +15,52 @@ const { verifySellerToken } = require('./_shared/seller-jwt');
 const { corsHeaders, getOrigin } = require('./_shared/auth');
 
 const BUCKET = 'lumi-videos';
-const ALLOWED_VIDEO_MIME = ['video/mp4', 'video/quicktime', 'video/x-quicktime'];
+// 사장님 결정 (2026-05-15): 모든 영상 포맷 허용. process-video-background 의 ffmpeg-static
+// 이 H.264/AAC MP4 로 강제 transcode → IG Reels 호환. 따라서 입력 코덱이 무엇이든 OK.
+// - 화이트리스트: 자주 쓰는 mime 명시 (검증 메시지 친절화)
+// - 그 외에도 video/* prefix 면 허용 (브라우저별 mime 변형 대응)
+const ALLOWED_VIDEO_MIME = [
+  'video/mp4', 'video/quicktime', 'video/x-quicktime',
+  'video/x-msvideo', 'video/avi',                       // AVI
+  'video/x-matroska', 'video/webm',                     // MKV / WebM
+  'video/mpeg', 'video/mp2t', 'video/x-m4v',            // MPEG / TS / M4V
+  'video/3gpp', 'video/3gpp2',                          // 3GP (구형 폰)
+  'video/x-flv', 'video/x-ms-wmv',                      // FLV / WMV
+  'video/hevc', 'video/h265', 'video/h264',             // 코덱 명시 (드물게 들어옴)
+];
+const isAllowedVideoMime = (m) => {
+  if (!m) return true; // 일부 브라우저가 mime 안 채움 — 확장자만 보고 진행
+  const lower = String(m).toLowerCase();
+  if (ALLOWED_VIDEO_MIME.includes(lower)) return true;
+  return lower.startsWith('video/');
+};
 const MAX_VIDEO_BYTES = 300 * 1024 * 1024; // 300MB (Meta Reels API 한도)
+// 확장자 매핑 — 모르는 mime 은 파일명 확장자에서 추출 (fallback 'mp4').
 const EXT_FROM_MIME = {
   'video/mp4': 'mp4',
   'video/quicktime': 'mov',
   'video/x-quicktime': 'mov',
+  'video/x-msvideo': 'avi',
+  'video/avi': 'avi',
+  'video/x-matroska': 'mkv',
+  'video/webm': 'webm',
+  'video/mpeg': 'mpg',
+  'video/mp2t': 'ts',
+  'video/x-m4v': 'm4v',
+  'video/3gpp': '3gp',
+  'video/3gpp2': '3g2',
+  'video/x-flv': 'flv',
+  'video/x-ms-wmv': 'wmv',
 };
+// Storage path 에 쓸 확장자 — 단순 영숫자만 (path traversal/특수문자 차단)
+const SAFE_EXT_RE = /^[a-z0-9]{1,5}$/;
+function pickExt(contentType, filename) {
+  const fromMime = EXT_FROM_MIME[String(contentType || '').toLowerCase()];
+  if (fromMime) return fromMime;
+  const m = String(filename || '').toLowerCase().match(/\.([a-z0-9]{1,5})$/);
+  if (m && SAFE_EXT_RE.test(m[1])) return m[1];
+  return 'mp4';
+}
 
 exports.handler = async (event) => {
   const CORS = corsHeaders(getOrigin(event), { 'Access-Control-Allow-Methods': 'POST, OPTIONS' });
@@ -57,14 +96,14 @@ exports.handler = async (event) => {
   const contentType = String(body.contentType || '').trim().toLowerCase();
   const size = Number(body.size) || 0;
 
-  if (!ALLOWED_VIDEO_MIME.includes(contentType)) {
-    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '영상은 MP4 또는 MOV 만 지원합니다.' }) };
+  if (!isAllowedVideoMime(contentType)) {
+    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: '영상 파일만 업로드할 수 있어요.' }) };
   }
   if (size <= 0 || size > MAX_VIDEO_BYTES) {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: `영상 크기는 300MB 이하여야 합니다. (현재 ${(size / 1024 / 1024).toFixed(1)}MB)` }) };
   }
 
-  const ext = EXT_FROM_MIME[contentType] || 'mp4';
+  const ext = pickExt(contentType, filename);
   // I-B (2026-05-15): reserveKey 충돌 차단. 이전 'reserve:${Date.now()}' 는 동일 ms 두 요청 시 충돌.
   // crypto.randomBytes 4 byte hex suffix 추가 (4B = 4억 가지) → 사실상 unique.
   const nonce = require('crypto').randomBytes(8).toString('hex');

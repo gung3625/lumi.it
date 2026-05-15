@@ -14,7 +14,11 @@ const CORS = {
   'Content-Type': 'application/json',
 };
 
-const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp'];
+// 사장님 결정 (2026-05-15): 모든 이미지 포맷 허용. 서버에서 JPEG 변환.
+// busboy 가 mimeType 안 채워도 통과 (일부 브라우저). 변환은 sharp + heic-convert 가 처리.
+const ALLOWED_MIME_PREFIX = 'image/';
+const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif',
+  'image/tiff', 'image/bmp', 'image/gif', 'image/avif', 'application/octet-stream'];
 const BUCKET = 'lumi-images';
 const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
 
@@ -78,7 +82,10 @@ exports.handler = async (event) => {
     let oversize = false;
 
     bb.on('file', (name, file, info) => {
-      if (!ALLOWED_MIME.includes(info.mimeType)) {
+      const mt = String(info.mimeType || '').toLowerCase();
+      // 사장님 결정: image/* 전부 허용 + octet-stream (브라우저가 MIME 미지정 시) 도 통과.
+      // 실제 디코드 가능 여부는 sharp/heic-convert 가 판단 → 실패 시 에러 메시지로 안내.
+      if (!mt.startsWith(ALLOWED_MIME_PREFIX) && mt !== 'application/octet-stream') {
         file.resume();
         return;
       }
@@ -210,13 +217,44 @@ exports.handler = async (event) => {
         let uploadedPaths = [];
         try {
           const ts = Date.now();
+          // 사장님 결정 (2026-05-15): 어떤 이미지 포맷이든 받아서 JPEG 변환 후 업로드.
+          // - HEIC/HEIF (iPhone) → heic-convert 로 JPEG buffer 변환
+          // - 그 외 (PNG/WEBP/TIFF/BMP/GIF/AVIF/...) → sharp 로 JPEG 변환
+          // - 이미 JPEG 면 sharp 로 압축 + EXIF rotate 정규화
+          // Meta IG API 는 JPG/PNG 만 받으므로 JPEG 통일.
+          const sharp = require('sharp');
+          const ensureJpeg = async (buf, mime) => {
+            const lower = String(mime || '').toLowerCase();
+            // 1) HEIC/HEIF 우선 처리
+            if (lower.includes('heic') || lower.includes('heif')) {
+              try {
+                const heicConvert = require('heic-convert');
+                const out = await heicConvert({ buffer: buf, format: 'JPEG', quality: 0.85 });
+                return Buffer.from(out);
+              } catch (e) {
+                console.warn('[reserve] heic-convert 실패, sharp 시도:', e.message);
+              }
+            }
+            // 2) sharp 로 통합 처리 — rotate(EXIF), JPEG quality 85, autoOrient
+            return await sharp(buf, { failOn: 'none' })
+              .rotate() // EXIF orientation 적용
+              .jpeg({ quality: 85, mozjpeg: true })
+              .toBuffer();
+          };
+
           const tasks = photos.map(async (p) => {
+            // 업로드 전 JPEG 변환. 실패 시 throw → catch 에서 사용자 안내.
+            let outBuf;
+            try {
+              outBuf = await ensureJpeg(p.buffer, p.mimeType);
+            } catch (convErr) {
+              throw new Error(`이미지 포맷을 읽을 수 없어요 (${p.fileName || 'unknown'}): ${convErr.message}`);
+            }
             const nonce = crypto.randomBytes(8).toString('hex');
-            const ext = contentTypeToExt(p.mimeType);
-            const path = `${user.id}/${reserveKey}/${ts}-${nonce}.${ext}`;
+            const path = `${user.id}/${reserveKey}/${ts}-${nonce}.jpg`;
             const { error: upErr } = await supabase.storage
               .from(BUCKET)
-              .upload(path, p.buffer, { contentType: p.mimeType, upsert: false });
+              .upload(path, outBuf, { contentType: 'image/jpeg', upsert: false });
             if (upErr) throw new Error(`이미지 업로드 실패: ${upErr.message}`);
             const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path);
             return { path, url: (pub && pub.publicUrl) || '' };

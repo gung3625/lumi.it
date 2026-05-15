@@ -32,6 +32,12 @@
 [functions."process-and-post-background"]
   external_node_modules = ["sharp"]
 
+# 사장님 결정 (2026-05-15): 이미지 전 포맷 지원 — reserve 가 HEIC/HEIF/TIFF/BMP/GIF/AVIF 등
+# 어떤 포맷 받아도 JPEG 로 변환 후 supabase 업로드.
+# sharp: 대부분 포맷 + EXIF rotate, heic-convert: iPhone HEIC 전용 pure JS 디코더.
+[functions."reserve"]
+  external_node_modules = ["sharp", "heic-convert"]
+
 
 # Phase 3 Long-tail 서브카테고리 주간 분류 cron (월요일 KST 04:00 = UTC 일요일 19:00)
 [functions."scheduled-trends-longtail-background"]
