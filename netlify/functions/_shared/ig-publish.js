@@ -17,9 +17,14 @@ const GRAPH_BASE = 'https://graph.facebook.com/v25.0';
 async function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
 
 // IG 컨테이너 status 폴링 — 5초 × maxRetries 회.
-async function waitForContainer(containerId, accessToken, maxRetries = 6) {
+// D 옵션 (2026-05-15): polling interval 5초 → 2초.
+// 평균 5~10초 단축 (REELS+STORIES 둘 다 폴링하므로 2배 효과).
+// maxRetries default 6 → 18 (5×6=30초 → 2×18=36초 — 동일 cap 유지).
+// 호출자가 maxRetries 명시한 케이스 (REELS=24, STORIES=12) 도 cycle 변경 의도 반영해
+// 자동 2.5배 (REELS 60, STORIES 30) — 본 함수에서 override 하지 않고 호출처에서 새 값 명시.
+async function waitForContainer(containerId, accessToken, maxRetries = 18) {
   for (let i = 0; i < maxRetries; i++) {
-    await sleep(5000);
+    await sleep(2000);
     try {
       const res = await fetch(`${GRAPH_BASE}/${containerId}?fields=status_code&access_token=${accessToken}`);
       const data = await res.json();
@@ -111,7 +116,7 @@ async function postToInstagram({ igUserId, igAccessToken, igUserAccessToken, sto
     }
     const d = await res.json();
     if (d.error) throw new Error(d.error.message || 'Reels 컨테이너 생성 실패');
-    const ready = await waitForContainer(d.id, igAccessToken, 24);
+    const ready = await waitForContainer(d.id, igAccessToken, 60);
     if (!ready) throw new Error('Reels 컨테이너 처리 시간 초과');
     const pData = await publishMedia(igUserId, igAccessToken, d.id);
     if (pData.error) throw new Error(pData.error.message || 'Reels publish 실패');
@@ -141,7 +146,7 @@ async function postToInstagram({ igUserId, igAccessToken, igUserAccessToken, sto
         } else {
           // waitForContainer 결과 검증 — false 면 status=ERROR, publish skip.
           // STORIES 영상 처리는 30초 부족할 수 있어 maxRetries 12 (총 60초) 로 확대.
-          const storyReady = await waitForContainer(sData.id, storyToken, 12);
+          const storyReady = await waitForContainer(sData.id, storyToken, 30);
           if (!storyReady) {
             console.error('[ig-publish] REELS 스토리 컨테이너 status=ERROR — publish skip');
           } else {
