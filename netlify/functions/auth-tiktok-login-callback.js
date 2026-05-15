@@ -86,20 +86,26 @@ exports.handler = async (event) => {
   if (state && /^[a-f0-9]{32}$/i.test(state)) {
     try {
       const nonceKey = 'tiktok_login:' + state;
-      const { data: nonceRow } = await admin
+      // TOCTOU 차단: SELECT + DELETE 분리하면 두 번 동시 콜백 시 둘 다 nonce row 받아
+      // 토큰 중복 발급 가능. atomic DELETE-RETURNING 으로 한 쪽만 row 획득.
+      const { data: nonceRows, error: nonceDelErr } = await admin
         .from('oauth_nonces')
-        .select('user_id, lumi_token, created_at')
+        .delete()
         .eq('nonce', nonceKey)
-        .maybeSingle();
+        .select('user_id, lumi_token, created_at');
 
+      if (nonceDelErr) {
+        console.error('[auth-tiktok-login-callback] nonce delete 예외:', nonceDelErr.message);
+        return errorRedirect('server_error');
+      }
+
+      const nonceRow = nonceRows && nonceRows[0];
       if (!nonceRow) {
         console.error('[auth-tiktok-login-callback] nonce not found:', nonceKey);
         return errorRedirect('invalid_state');
       }
 
       const ageMs = Date.now() - new Date(nonceRow.created_at).getTime();
-      // 일회용: 즉시 삭제
-      await admin.from('oauth_nonces').delete().eq('nonce', nonceKey);
 
       if (ageMs > 10 * 60 * 1000) {
         console.error('[auth-tiktok-login-callback] nonce 만료');

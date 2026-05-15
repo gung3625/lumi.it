@@ -192,19 +192,19 @@ exports.handler = async (event) => {
     if (state) {
       try {
         const nonceKey = 'ig:' + state;
-        const { data: nonceRow } = await supabase
+        // TOCTOU 차단: SELECT + DELETE 분리 시 두 번 동시 callback 가능. atomic DELETE-RETURNING.
+        const { data: nonceRows } = await supabase
           .from('oauth_nonces')
-          .select('user_id, lumi_token, redirect_to, created_at')
+          .delete()
           .eq('nonce', nonceKey)
-          .maybeSingle();
+          .select('user_id, lumi_token, redirect_to, created_at');
+        const nonceRow = nonceRows && nonceRows[0];
         if (nonceRow) {
           const ageMs = Date.now() - new Date(nonceRow.created_at).getTime();
           if (ageMs < 10 * 60 * 1000) {
             userId = nonceRow.user_id || null;
             returnTo = sanitizeReturnTo(nonceRow.redirect_to);
           }
-          // 일회용: 즉시 삭제
-          await supabase.from('oauth_nonces').delete().eq('nonce', nonceKey);
         }
       } catch (e) {
         console.error('[ig-oauth] nonce 조회 실패:', e.message);
