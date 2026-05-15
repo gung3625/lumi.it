@@ -8,9 +8,13 @@ const { spawn } = require('child_process');
 const { pipeline } = require('stream/promises');
 const { Readable } = require('stream');
 // ffmpeg binary — ffmpeg-static (minimal build). drawtext / subtitles 필터 미포함.
-// 텍스트 박기는 sharp 로 PNG 렌더 → ffmpeg overlay 필터로 합성 (overlay 는 minimal 도 OK).
+// 텍스트 박기 흐름:
+//   1) text-to-svg: 폰트 ttf 파일 직접 파싱 → 한글 글리프를 SVG path 로 변환 (pure JS, 시스템 폰트 의존성 0)
+//   2) sharp: SVG → PNG buffer (path 만 있어서 librsvg fontconfig 불필요)
+//   3) ffmpeg overlay 필터: PNG 를 영상 위에 합성 (minimal build 도 overlay 포함)
 const ffmpegPath = require('ffmpeg-static');
 const sharp = require('sharp');
+const TextToSVG = require('text-to-svg');
 const { corsHeaders, getOrigin } = require('./_shared/auth');
 const { getAdminClient } = require('./_shared/supabase-admin');
 
@@ -73,28 +77,45 @@ function escapeDrawText(s) {
   return String(s || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/:/g, '\\:').replace(/%/g, '\\%');
 }
 
-// sharp 로 텍스트 PNG 생성 — 폰트 파일을 base64 로 SVG 안에 embed → fontconfig 의존성 0.
-// width = TARGET_W (1080), height 자동 (텍스트 + 안전 마진).
+// 텍스트 PNG 생성 — text-to-svg 가 ttf 파일을 직접 파싱해서 글리프를 SVG path 로
+// 변환. librsvg/fontconfig 의 시스템 폰트 fallback (tofu) 우회. 한글 OK.
 async function makeOverlayTextPng({ text, fontFile, width = TARGET_W, fontSize = 64 }) {
-  const safe = String(text || '').slice(0, 40)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
-  if (!safe) return null;
-  // 폰트 파일을 base64 embed (시스템 폰트 fallback 의존 X).
-  let fontFace = '';
-  if (fontFile && fs.existsSync(fontFile)) {
-    const b64 = fs.readFileSync(fontFile).toString('base64');
-    fontFace = `<style>@font-face{font-family:'Pretendard';src:url('data:font/ttf;base64,${b64}') format('truetype');}</style>`;
+  const safe = String(text || '').slice(0, 40);
+  if (!safe.trim()) return null;
+  if (!fontFile || !fs.existsSync(fontFile)) {
+    console.warn('[process-video] 한글 폰트 파일 없음 — overlay PNG skip');
+    return null;
   }
-  const h = Math.round(fontSize * 1.8);
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}">
-${fontFace}
-<text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle"
-  font-family="Pretendard, sans-serif" font-size="${fontSize}" font-weight="700"
-  fill="white" stroke="black" stroke-width="6" paint-order="stroke fill">${safe}</text>
+
+  // text-to-svg: 폰트 파일 직접 파싱. ttf 의 각 문자를 vector path 로 추출.
+  const textToSVG = TextToSVG.loadSync(fontFile);
+  // 텍스트 path 만 — 캔버스 안에 중앙 정렬. attributes 로 흰 채움 + 검은 외곽선.
+  const pathSvg = textToSVG.getSVG(safe, {
+    x: 0,
+    y: 0,
+    fontSize,
+    anchor: 'top',
+    attributes: {
+      fill: 'white',
+      stroke: 'black',
+      'stroke-width': '6',
+      'stroke-linejoin': 'round',
+      'paint-order': 'stroke fill',
+    },
+  });
+
+  // getSVG 가 fitted SVG 반환 (width/height 자동). 캔버스 크기 측정.
+  const metrics = textToSVG.getMetrics(safe, { fontSize });
+  const textW = Math.ceil(metrics.width);
+  const textH = Math.ceil(metrics.height + 24); // 외곽선 두께 여유
+  // 캔버스 너비 = TARGET_W (영상 너비), 텍스트 중앙 배치.
+  const x = Math.round((width - textW) / 2);
+  // pathSvg 가 자체 <svg> wrapper 라 inner path 만 추출.
+  const innerMatch = pathSvg.match(/<path[^>]*\/>/);
+  const innerPath = innerMatch ? innerMatch[0] : '';
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${textH}">
+  <g transform="translate(${x}, 12)">${innerPath}</g>
 </svg>`;
   const png = await sharp(Buffer.from(svg)).png().toBuffer();
   return png;
