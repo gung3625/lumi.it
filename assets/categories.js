@@ -64,7 +64,6 @@
       label: '라이프',
       subs: [
         { id: 'flower', label: '플라워' },
-        { id: 'pet',    label: '펫' },
       ],
     },
   ];
