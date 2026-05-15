@@ -148,7 +148,27 @@ function buildFilter({ width, height, hasOverlayPng }) {
   return { filter: parts.join(';'), needPad };
 }
 
+// S3 (2026-05-15): SSRF 차단 — videoUrl 의 host 화이트리스트 검증.
+// 이전엔 LUMI_SECRET 만 가지면 임의 URL 다운로드 가능 → 169.254.169.254 같은
+// metadata endpoint / 사설망 노출 위험. supabase storage / IG CDN 만 허용.
+function assertSafeFetchUrl(url) {
+  let u;
+  try { u = new URL(url); } catch (_) {
+    throw new Error('invalid url');
+  }
+  if (u.protocol !== 'https:') throw new Error('https only');
+  const host = u.hostname.toLowerCase();
+  // 1) Supabase project storage (사장님 영상 업로드 위치)
+  if (host.endsWith('.supabase.co')) return;
+  // 2) Meta CDN (이미 게시된 영상 reprocess 등)
+  if (host.endsWith('.cdninstagram.com') || host.endsWith('.fbcdn.net')) return;
+  // 3) lumi 도메인 (proxy/serve-image 경유 등)
+  if (host === 'lumi.it.kr' || host.endsWith('.lumi.it.kr')) return;
+  throw new Error(`download host not allowed: ${host}`);
+}
+
 async function downloadTo(url, dest, timeoutMs = 60_000) {
+  assertSafeFetchUrl(url);
   const ctrl = new AbortController();
   const tid = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
@@ -315,6 +335,30 @@ exports.handler = async (event) => {
   const hasOverlay = !!(overlayText && String(overlayText).trim());
 
   const supabase = getAdminClient();
+
+  // C6 (2026-05-15): 멱등성 가드 — 이미 처리 중이거나 완료된 reservation 은 즉시 종료.
+  // reserve.js 가 즉시 트리거하고 process-and-post 도 동일 reservation 에 트리거 →
+  // 두 process-video invocation 발생. ffmpeg + Whisper 2배 비용.
+  // video_processed_at IS NOT NULL = 이미 한 번 처리됨 (성공·실패 다음 video_url 갱신됨).
+  // subtitle_status='trace:start' 같은 진행 표시는 짧은 race window 라 무시.
+  try {
+    const { data: pre } = await supabase
+      .from('reservations')
+      .select('video_processed_at, subtitle_status, is_sent')
+      .eq('reserve_key', reservationKey)
+      .maybeSingle();
+    if (pre && pre.video_processed_at) {
+      console.log('[process-video] 이미 처리됨 — skip (video_processed_at=' + pre.video_processed_at + ')');
+      return { statusCode: 200, headers, body: JSON.stringify({ skipped: true, reason: 'already_processed' }) };
+    }
+    if (pre && pre.is_sent) {
+      console.log('[process-video] 이미 게시됨 — skip');
+      return { statusCode: 200, headers, body: JSON.stringify({ skipped: true, reason: 'already_sent' }) };
+    }
+  } catch (preErr) {
+    console.warn('[process-video] 멱등 체크 실패 (계속 진행):', preErr.message);
+  }
+
   const ts = Date.now();
   const safeKey = reservationKey.replace(/[^a-zA-Z0-9-_]/g, '_');
   const inPath = `/tmp/in_${safeKey}_${ts}.mp4`;

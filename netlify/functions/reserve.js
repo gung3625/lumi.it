@@ -52,8 +52,24 @@ exports.handler = async (event) => {
   }
 
   const headers = event.headers;
+  // C3 (2026-05-15): Netlify Functions 에서 multipart/form-data 같은 binary content 는
+  // isBase64Encoded=true 로 들어옴. 만약 isBase64Encoded=false 인데 multipart 면
+  // utf8 디코드 시 binary 손상 (이미지가 깨짐). 그래서 강제 검증:
+  //   - multipart 면 isBase64Encoded 반드시 true 가정
+  //   - 아니면 binary 'latin1' 으로 fallback (byte-safe 인코딩)
+  // multipart 가 아니면 utf8 디코드 OK (JSON 등).
   const isBase64Encoded = event.isBase64Encoded;
-  const bodyBuffer = Buffer.from(event.body, isBase64Encoded ? 'base64' : 'utf8');
+  const contentType = String(headers['content-type'] || headers['Content-Type'] || '');
+  const isMultipart = contentType.toLowerCase().includes('multipart/');
+  let bodyBuffer;
+  if (isBase64Encoded) {
+    bodyBuffer = Buffer.from(event.body, 'base64');
+  } else if (isMultipart) {
+    // Netlify 가 multipart 인데 base64 인코딩 안 한 케이스 — latin1 으로 byte-preserving 디코드.
+    bodyBuffer = Buffer.from(event.body, 'latin1');
+  } else {
+    bodyBuffer = Buffer.from(event.body, 'utf8');
+  }
 
   return new Promise((resolve) => {
     const bb = busboy({ headers, limits: { fileSize: MAX_BYTES } });

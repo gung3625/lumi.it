@@ -1123,13 +1123,39 @@ exports.handler = async (event) => {
     await markStage('02_reservation_loaded');
 
     // 사용자가 이미 캡션을 선택했거나 게시 중/완료된 건은 스킵
-    if (['scheduled', 'posting', 'posted'].includes(reservation.caption_status)) {
+    if (['scheduled', 'posting', 'posted', 'generating'].includes(reservation.caption_status)) {
       console.log(`[process-and-post] 이미 처리된 건 스킵: ${reservationKey}, status=${reservation.caption_status}`);
       return { statusCode: 200, headers, body: JSON.stringify({ skipped: true }) };
     }
-    // PR #204 의 'pending'→'generating' atomic CAS 는 prod 에서 02 직후 stuck 유발
-    // (reservation 77, 78). 정밀 원인 조사 전까지 revert. race 완화는 scheduler 의
-    // 5분 임계값 + select-and-post 의 'scheduled'→'posting' CAS 로 임시 커버.
+
+    // C1 (2026-05-15): atomic CAS pending → generating. 동시 호출 race 차단.
+    // reserve.js 직접 트리거 + scheduler 5분 stuck 복구가 겹치는 케이스에서
+    // 두 호출이 모두 select 결과 'pending' 받고 양쪽 다 진입해서 캡션 2번 생성·게시되던 문제.
+    // PR #204 에서 시도했다가 stuck 우려로 revert 됐지만, 그때 stuck 원인은 별도(다른 race)였다.
+    // 이번엔 'pending' 만 명시적으로 CAS, 다른 상태는 위 early return 으로 분리해서 stuck 방지.
+    // 또한 generating 도 위 early return 에 포함 → 두 번째 호출이 generating 보고 즉시 skip.
+    if (reservation.caption_status === 'pending' || !reservation.caption_status) {
+      const { data: claimed, error: claimErr } = await supabase
+        .from('reservations')
+        .update({ caption_status: 'generating' })
+        .eq('reserve_key', reservationKey)
+        .in('caption_status', ['pending'])  // null 도 차단하려면 .or() 필요. 일단 pending 만 atomic.
+        .select('reserve_key');
+      if (claimErr) {
+        console.error('[process-and-post] CAS claim 실패:', claimErr.message);
+        // claim 실패해도 일단 진행 (fail-open) — schedule 5분 임계가 backup.
+      } else if (!claimed || claimed.length === 0) {
+        // null status 였거나 다른 호출이 먼저 잡음.
+        if (reservation.caption_status === null || reservation.caption_status === undefined) {
+          console.log('[process-and-post] null status — CAS 미적용, 계속 진행');
+        } else {
+          console.log('[process-and-post] CAS 미선점 — 다른 호출이 진행 중, 스킵');
+          return { statusCode: 200, headers, body: JSON.stringify({ skipped: true, reason: 'cas_lost' }) };
+        }
+      } else {
+        console.log('[process-and-post] CAS 선점 OK: pending → generating');
+      }
+    }
 
     const imageUrls = Array.isArray(reservation.image_urls) ? reservation.image_urls : [];
     if (!imageUrls.length) {
