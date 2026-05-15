@@ -21,74 +21,54 @@
   <link rel="stylesheet" href="/css/base.css">
   <script data-scroll-top-on-reload>if("scrollRestoration" in history)history.scrollRestoration="manual";window.scrollTo(0,0);window.addEventListener("DOMContentLoaded",function(){window.scrollTo(0,0)});</script>
   <link rel="stylesheet" href="/css/motion.css">
+  <!-- Step 1 (dashboard 모사) 용 — 하단 탭바 실제 사용 화면과 동일 디자인 -->
+  <link rel="stylesheet" href="/css/tabbar.css">
 
   <style>
-    /* === Step 1: 빈 홈 + 사진 추가 === */
+    /* === Step 1: 홈 (dashboard 모사 — 실제 dashboard 와 시각적 동일) === */
+    /* 사장님 결정 2026-05-15: 튜토리얼 = 실제 사용 미리보기. 가입 후 보는 dashboard 와
+       이질감 0. 빈 상태(stat-empty + scheduled-empty)로 신규 사용자 첫 진입 그대로 모사. */
     .stage {
       position: relative;
       display: flex;
       flex-direction: column;
+      min-height: 100dvh;
+      background: var(--bg);
+      /* 탭바 높이 만큼 하단 패딩 (tabbar.css 의 body:has(.tabbar) 와 동등) */
+      padding-bottom: calc(110px + env(safe-area-inset-bottom));
+    }
+
+    /* 상단 로고 헤더 */
+    .home-header {
+      display: flex;
       align-items: center;
       justify-content: center;
-      min-height: 100dvh;
       padding:
-        calc(env(safe-area-inset-top) + var(--space-12))
+        calc(env(safe-area-inset-top) + var(--space-5))
         var(--space-5)
-        calc(env(safe-area-inset-bottom) + var(--space-12));
-      background: var(--bg);
-      overflow: hidden;
-      isolation: isolate;
+        var(--space-4);
+    }
+    .home-logo {
+      height: 28px;
+      width: auto;
     }
 
-    /* 시그니처 글로우 — 배경 깊이 */
-    .stage::before {
-      content: "";
-      position: absolute;
-      top: 38%;
-      left: 50%;
-      width: 130vmax;
-      height: 70vmax;
-      transform: translate(-50%, -50%);
-      background:
-        radial-gradient(ellipse at center,
-          rgba(255, 107, 139, 0.10) 0%,
-          rgba(221, 160, 221, 0.06) 30%,
-          rgba(237, 208, 128, 0.03) 55%,
-          transparent 70%);
-      pointer-events: none;
-      z-index: -1;
-      animation: drift 18s var(--ease-soft) infinite alternate;
-    }
-    @keyframes drift {
-      0%   { transform: translate(-50%, -50%) scale(1)    rotate(0deg);   }
-      100% { transform: translate(-48%, -52%) scale(1.08) rotate(8deg);   }
-    }
-
-    /* === 진행 인디케이터 (6스텝) === */
-    .progress {
-      position: absolute;
-      top: calc(env(safe-area-inset-top) + var(--space-5));
-      left: 50%;
-      transform: translateX(-50%);
+    /* 피드 영역 (dashboard 의 .feed 와 같은 구조) */
+    .home-feed {
       display: flex;
-      gap: 6px;
-      z-index: 2;
-    }
-    .progress-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: var(--radius-full);
-      background: var(--neutral-200);
-      transition:
-        width var(--duration-base) var(--ease-toss),
-        background var(--duration-base) var(--ease-toss);
-    }
-    .progress-dot.is-active {
-      width: 24px;
-      background: var(--pink-500);
+      flex-direction: column;
+      gap: var(--space-5);
+      padding: var(--space-2) var(--space-4) var(--space-6);
+      flex: 1;
     }
 
-    /* === 건너뛰기 === */
+    /* === Step 공통 (전환 애니) === */
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0);    }
+    }
+
+    /* skip 버튼 — dashboard 영역 위에 floating */
     .skip {
       position: absolute;
       top: calc(env(safe-area-inset-top) + var(--space-3));
@@ -98,97 +78,153 @@
       font-weight: var(--weight-medium);
       color: var(--ink-muted);
       letter-spacing: var(--tracking-normal);
+      background: none;
+      border: 0;
+      cursor: pointer;
       transition:
         color var(--duration-snap) var(--ease-toss),
         transform var(--duration-snap) var(--ease-toss);
-      z-index: 2;
+      z-index: 10;
     }
     .skip:hover { color: var(--ink-soft); }
     .skip:active { transform: scale(0.95); color: var(--ink); }
 
-    /* === 코치 카피 === */
-    .coach {
-      position: relative;
-      margin-bottom: var(--space-12);
-      text-align: center;
-      z-index: 1;
-      animation: rise 700ms var(--ease-toss) 100ms backwards;
-    }
-    @keyframes rise {
-      from { opacity: 0; transform: translateY(12px); }
-      to   { opacity: 1; transform: translateY(0);    }
+    /* === dashboard 카드 styles (실제 dashboard.html inline 에서 복사) === */
+    .home-section {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+      animation: rise 500ms var(--ease-toss) calc(var(--idx, 0) * 80ms) backwards;
     }
 
-    .coach-title {
-      font-size: var(--text-headline);
-      font-weight: var(--weight-bold);
-      color: var(--ink);
-      letter-spacing: var(--tracking-tight);
-      line-height: var(--leading-tight);
-    }
-    .coach-sub {
-      margin-top: var(--space-3);
-      font-size: var(--text-body-lg);
-      font-weight: var(--weight-regular);
+    .section-title {
+      font-size: var(--text-caption);
+      font-weight: var(--weight-semibold);
       color: var(--ink-muted);
-      letter-spacing: var(--tracking-snug);
-      line-height: var(--leading-snug);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin: 0 var(--space-1);
     }
 
-    /* === 메인 + 버튼 === */
-    .add-button {
-      position: relative;
+    /* 빈 상태 카드 (이번 주 통계 — "첫 게시 후 보여드릴게요") */
+    .stat-empty {
+      padding: var(--space-4);
+      background: var(--bg-soft);
+      border: 1px dashed var(--line-strong);
+      border-radius: var(--radius-lg);
+      text-align: center;
+    }
+    .stat-empty__title {
+      font-size: var(--text-body);
+      font-weight: var(--weight-semibold);
+      color: var(--ink);
+    }
+    .stat-empty__sub {
+      margin-top: 4px;
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+    }
+
+    /* 예약 빈 카드 */
+    .home-scheduled-empty {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-4);
+      background: var(--bg-soft);
+      border: 1px dashed var(--line-strong);
+      border-radius: var(--radius-lg);
+    }
+    .home-scheduled-empty__icon {
+      flex: 0 0 36px;
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-full);
+      background: var(--bg);
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 96px;
-      height: 96px;
-      border-radius: var(--radius-2xl);
-      background: var(--gradient-signature);
-      box-shadow: var(--shadow-glow-lg);
-      color: var(--neutral-0);
-      transition:
-        transform var(--duration-snap) var(--ease-toss),
-        box-shadow var(--duration-fast) var(--ease-toss);
-      z-index: 1;
-      animation: rise 700ms var(--ease-toss) 240ms backwards;
+      color: var(--pink-500);
     }
-    .add-button:active {
-      transform: scale(0.94);
-      box-shadow: var(--shadow-glow);
+    .home-scheduled-empty__icon svg {
+      width: 20px;
+      height: 20px;
+      stroke-width: 2;
     }
-    .add-button svg {
-      width: 36px;
-      height: 36px;
-      stroke-width: 2.5;
+    .home-scheduled-empty__body { flex: 1; }
+    .home-scheduled-empty__title {
+      font-size: var(--text-body);
+      font-weight: var(--weight-semibold);
+      color: var(--ink);
+    }
+    .home-scheduled-empty__sub {
+      margin-top: 2px;
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
     }
 
-    /* 펄스 ring (두 개, 시차 1.2s) */
-    .add-button::before,
-    .add-button::after {
+    /* 코치 bubble — + 버튼 위로 화살표 (사장님 시선 유도) */
+    .home-coach-bubble {
+      position: fixed;
+      bottom: calc(96px + env(safe-area-inset-bottom));
+      left: 50%;
+      transform: translateX(-50%);
+      padding: var(--space-2) var(--space-4);
+      background: var(--ink);
+      color: var(--bg);
+      border-radius: var(--radius-full);
+      font-size: var(--text-caption);
+      font-weight: var(--weight-medium);
+      box-shadow: var(--shadow-lg);
+      z-index: 100;
+      white-space: nowrap;
+      pointer-events: none;
+      animation: bubble-in 400ms var(--ease-spring) 700ms backwards;
+    }
+    .home-coach-bubble::after {
       content: "";
       position: absolute;
-      inset: 0;
+      bottom: -6px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 12px;
+      height: 6px;
+      background: var(--ink);
+      clip-path: polygon(0 0, 100% 0, 50% 100%);
+    }
+
+    /* + 버튼 펄스 강조 — 사장님 시선 더 유도 */
+    .tab-add[data-tutorial-add] {
+      position: relative;
+      border: 0;
+      cursor: pointer;
+    }
+    .tab-add[data-tutorial-add]::after {
+      content: "";
+      position: absolute;
+      inset: -4px;
       border-radius: var(--radius-2xl);
-      border: 2px solid rgba(255, 107, 139, 0.45);
-      animation: pulse 2.4s var(--ease-soft) infinite;
+      border: 2px solid var(--pink-500);
+      animation: tab-add-pulse 1.8s var(--ease-soft) infinite;
       pointer-events: none;
     }
-    .add-button::after { animation-delay: 1.2s; }
+    @keyframes tab-add-pulse {
+      0%   { transform: scale(1);    opacity: 0.6; }
+      70%  { opacity: 0; }
+      100% { transform: scale(1.4); opacity: 0; }
+    }
 
-    @keyframes pulse {
-      0%   { transform: scale(1);    opacity: 0.7; }
-      80%  { opacity: 0; }
-      100% { transform: scale(1.55); opacity: 0; }
+    /* 다른 탭은 클릭 비활성 (튜토리얼 흐름 가두기 — 사장님이 + 만 누르도록) */
+    .tabbar .tab[data-tutorial-tab] {
+      cursor: default;
+      pointer-events: none;
     }
 
     /* 모션 줄이기 */
     @media (prefers-reduced-motion: reduce) {
-      .stage::before,
-      .add-button::before,
-      .add-button::after,
-      .coach,
-      .add-button,
+      .home-section,
+      .home-coach-bubble,
+      .tab-add[data-tutorial-add]::after,
       .step,
       .gallery__check { animation: none; }
     }
@@ -950,28 +986,82 @@
 <body>
   <main role="main">
 
-    <!-- Step 1: 빈 홈 + 사진 추가 -->
+    <!-- Step 1: 홈 (실제 dashboard 모사 — 신규 사용자 첫 진입 동일) -->
     <section class="stage step" data-step="1" id="step-1">
-      <div class="progress" aria-label="튜토리얼 진행">
-        <span class="progress-dot is-active" aria-current="step"></span>
-        <span class="progress-dot"></span>
-        <span class="progress-dot"></span>
-        <span class="progress-dot"></span>
-        <span class="progress-dot"></span>
-      </div>
+      <button class="skip" type="button" aria-label="튜토리얼 건너뛰고 가입으로">건너뛰기</button>
 
-      <button class="skip" type="button">건너뛰기</button>
+      <header class="home-header">
+        <img class="home-logo" src="/assets/logo-wordmark.png" alt="루미" width="56" height="28" loading="eager" decoding="async">
+      </header>
 
-      <div class="coach">
-        <h1 class="coach-title">사진 한 장이면 돼요!</h1>
-        <p class="coach-sub">글은 루미가 써요</p>
-      </div>
+      <main class="home-feed">
+        <!-- 이번 주 통계 — 신규 사용자라 빈 상태 -->
+        <section class="home-section" style="--idx:0">
+          <h2 class="section-title">이번 주</h2>
+          <div class="stat-empty">
+            <div class="stat-empty__title">첫 게시 후 보여드릴게요</div>
+            <div class="stat-empty__sub">좋아요·팔로워 변화가 한 주마다 여기 모입니다.</div>
+          </div>
+        </section>
 
-      <button class="add-button" type="button" aria-label="사진 추가">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M12 5v14M5 12h14"/>
-        </svg>
-      </button>
+        <!-- 다음 예약 — 신규 사용자라 비어있음 -->
+        <section class="home-section" style="--idx:1">
+          <h2 class="section-title">다음 예약</h2>
+          <div class="home-scheduled-empty">
+            <div class="home-scheduled-empty__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+            </div>
+            <div class="home-scheduled-empty__body">
+              <div class="home-scheduled-empty__title">아직 예약된 게시가 없어요</div>
+              <div class="home-scheduled-empty__sub">사진을 올리면 첫 게시가 여기 표시돼요</div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <!-- 코치 bubble — + 버튼 위로 화살표 -->
+      <div class="home-coach-bubble" role="status">아래 + 버튼을 눌러보세요</div>
+
+      <!-- 하단 탭바 (실제 dashboard 와 동일) -->
+      <nav class="tabbar" aria-label="메뉴">
+        <a class="tab is-active" data-tutorial-tab aria-current="page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 12L12 3l9 9M5 10v11h14V10"/>
+          </svg>
+          홈
+        </a>
+        <a class="tab" data-tutorial-tab>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M22 12l-4-4-4 4-6-6-6 6"/>
+            <path d="M22 12v6H2"/>
+          </svg>
+          트렌드
+        </a>
+        <button class="tab-add" type="button" data-tutorial-add aria-label="사진 올리기">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+        </button>
+        <a class="tab" data-tutorial-tab>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9"/>
+            <polyline points="12 7 12 12 15 14"/>
+          </svg>
+          히스토리
+        </a>
+        <a class="tab" data-tutorial-tab>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>
+          </svg>
+          설정
+        </a>
+      </nav>
     </section>
 
     <!-- Step 2: 갤러리 -->
@@ -1214,8 +1304,8 @@
         window.scrollTo({ top: 0, behavior: 'instant' });
       }
 
-      // Step 1 → Step 2
-      const addBtn = document.querySelector('.add-button');
+      // Step 1 → Step 2 (탭바 가운데 + 버튼 클릭)
+      const addBtn = document.querySelector('[data-tutorial-add]');
       if (addBtn) addBtn.addEventListener('click', () => goTo(2));
 
       // Step 2: 사진 카드 토글 — iOS Photos 패턴 (선택 순서 번호 표시 + 카운터)
