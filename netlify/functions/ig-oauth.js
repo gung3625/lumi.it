@@ -58,10 +58,12 @@ exports.handler = async (event) => {
     // S1 (2026-05-15): JWT URL query 노출 차단. POST body 또는 Authorization 헤더 우선,
     // 없으면 GET query (backward compat — 점진 마이그레이션).
     let lumiToken = '';
+    let postReturnTo = null;
     if (event.httpMethod === 'POST') {
       try {
         const body = JSON.parse(event.body || '{}');
         lumiToken = body.token || '';
+        postReturnTo = body.return_to || null;
       } catch (_) { /* fall through */ }
     }
     if (!lumiToken) {
@@ -93,7 +95,9 @@ exports.handler = async (event) => {
       return { statusCode: 302, headers: { Location: 'https://lumi.it.kr/dashboard?oauth_error=1' } };
     }
     const nonce = crypto.randomBytes(16).toString('hex');
-    const returnTo = sanitizeReturnTo(params.get('return_to'));
+    // 사장님 결정 (2026-05-15): POST body 의 return_to 우선 (query 보다).
+    // 이전엔 POST body 의 return_to 무시 → 항상 default 홈 복귀 버그.
+    const returnTo = sanitizeReturnTo(postReturnTo || params.get('return_to'));
 
     try {
       await supabase.from('oauth_nonces').insert({

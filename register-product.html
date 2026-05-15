@@ -1439,8 +1439,8 @@
           //    이전: pollUntilDone 으로 게시 완료까지 (90~180초) 화면 묶음 → 사용자 시간 낭비.
           //    변경: reserve 응답 받으면 즉시 /history?tab=upcoming 이동. 백엔드는 비동기 진행.
           //    history 에서 statusBadge 가 "영상 처리 중 · 곧 게시" / "곧 게시" 로 진행 표시.
-          //    scheduled 모드면 past 가 아니라 upcoming (예약 카드).
-          const targetTab = (scheduleMode === 'scheduled') ? 'upcoming' : 'upcoming';
+          // 사장님 결정 (2026-05-15): 즉시 게시 → 히스토리 탭(past), 예약 → 예약 목록 탭(upcoming).
+          const targetTab = (scheduleMode === 'scheduled') ? 'upcoming' : 'past';
           setOverlayCopy('업로드 완료', '백엔드에서 캡션·영상 처리 중. 히스토리에서 확인하세요.');
           setStep('caption', 'active');
           setTimeout(() => { location.href = '/history?tab=' + targetTab; }, 800);
@@ -1553,7 +1553,9 @@
           //    history statusBadge 가 "곧 게시" / "예약됨" 으로 진행 표시.
           setOverlayCopy('업로드 완료', '캡션 만들고 인스타에 올릴 예정. 히스토리에서 확인하세요.');
           setStep('caption', 'active');
-          setTimeout(() => { location.href = '/history?tab=upcoming'; }, 800);
+          // 사장님 결정 (2026-05-15): 즉시 게시 → 히스토리 탭(past), 예약 → 예약 목록(upcoming).
+          const imgTargetTab = (scheduleMode === 'scheduled') ? 'upcoming' : 'past';
+          setTimeout(() => { location.href = '/history?tab=' + imgTargetTab; }, 800);
         } catch (e) {
           showOverlay(false);
           toast(e.message || '게시 실패');

@@ -76,8 +76,13 @@ exports.handler = async (event) => {
   if (!code) {
     // S1 (2026-05-15): JWT URL query 노출 차단 — POST body / Authorization header 우선.
     let lumiToken = '';
+    let postReturnTo = null;
     if (event.httpMethod === 'POST') {
-      try { lumiToken = (JSON.parse(event.body || '{}').token) || ''; } catch (_) {}
+      try {
+        const b = JSON.parse(event.body || '{}');
+        lumiToken = b.token || '';
+        postReturnTo = b.return_to || null;
+      } catch (_) {}
     }
     if (!lumiToken) {
       const authHeader = event.headers && (event.headers['authorization'] || event.headers['Authorization']);
@@ -107,7 +112,7 @@ exports.handler = async (event) => {
     }
 
     const nonce    = crypto.randomBytes(16).toString('hex');
-    const returnTo = sanitizeReturnTo(params.get('return_to'));
+    const returnTo = sanitizeReturnTo(postReturnTo || params.get('return_to'));
 
     try {
       await supabase.from('oauth_nonces').insert({
