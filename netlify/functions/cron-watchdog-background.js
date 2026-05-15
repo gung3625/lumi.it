@@ -25,6 +25,7 @@ const { Resend } = require('resend');
 const { runGuarded } = require('./_shared/cron-guard');
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { safeAwait } = require('./_shared/supa-safe');
+const { heartbeatKey } = require('./_shared/cron-keys');
 
 // ── 감시 대상 cron 정의 ─────────────────────────────────
 // thresholdMin = cron 주기 + 안전마진. 이 시간을 넘기면 ALERT.
@@ -40,7 +41,7 @@ const COOLDOWN_HOURS = 6;
 
 async function loadHeartbeat(supa, name) {
   const { data, error } = await safeAwait(
-    supa.from('trends').select('keywords').eq('category', `cron-heartbeat:${name}`).maybeSingle()
+    supa.from('trends').select('keywords').eq('category', heartbeatKey(name)).maybeSingle()
   );
   if (error || !data) return null;
   return data.keywords || null;

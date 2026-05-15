@@ -27,11 +27,14 @@ function verifyLumiSecret(provided) {
 }
 
 // 인증 필요한 endpoint용 origin allowlist.
+// localhost 는 로컬 dev (netlify dev) 에서만 허용 — production runtime 에는 NETLIFY_DEV
+// 환경 변수가 없으므로 자동 제외. NODE_ENV !== 'production' fallback 도 보호.
+const IS_LOCAL_DEV =
+  process.env.NETLIFY_DEV === 'true' || process.env.NODE_ENV !== 'production';
 const ALLOWED_ORIGINS = new Set([
   'https://lumi.it.kr',
   'https://www.lumi.it.kr',
-  'http://localhost:8888',
-  'http://127.0.0.1:8888',
+  ...(IS_LOCAL_DEV ? ['http://localhost:8888', 'http://127.0.0.1:8888'] : []),
 ]);
 
 // origin을 echo. allowlist에 없으면 기본 도메인으로 대체.

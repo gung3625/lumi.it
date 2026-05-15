@@ -27,10 +27,12 @@ function runGuarded({ name, handler }) {
   if (!name) throw new Error('cron-guard: name is required');
   if (typeof handler !== 'function') throw new Error('cron-guard: handler must be a function');
 
+  const { heartbeatKey: kHeartbeat, errorKey: kError, stageKey: kStage } = require('./cron-keys');
+
   return async function guardedHandler(event, context) {
     const startedAt = new Date().toISOString();
-    const heartbeatKey = `cron-heartbeat:${name}`;
-    const errorKey = `cron-last-error:${name}`;
+    const heartbeatKey = kHeartbeat(name);
+    const errorKey = kError(name);
 
     let supa;
     try {
@@ -44,8 +46,8 @@ function runGuarded({ name, handler }) {
       };
     }
 
-    // stage 트래킹 헬퍼 — cron-stage:{name} row upsert
-    const stageKey = `cron-stage:${name}`;
+    // stage 트래킹 헬퍼 — cron-stage:{name} row upsert (cron-keys.js)
+    const stageKey = kStage(name);
     const stageHistory = [];
     const ctx = {
       /**

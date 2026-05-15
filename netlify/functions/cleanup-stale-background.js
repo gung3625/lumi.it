@@ -134,6 +134,7 @@ async function cleanupTrendsMeta(supabase) {
 
   const targets = [
     { label: 'l30d-old',          filter: (q) => q.like('category', 'l30d-%').lt('collected_at', D60) },
+    // cron-keys.js HEARTBEAT_PREFIX / STAGE_PREFIX 와 동기 (require X — LIKE wildcard 패턴이라 string literal 유지가 맞음, 단 keys 변경 시 함께 검토)
     { label: 'cron-heartbeat-old', filter: (q) => q.like('category', 'cron-heartbeat:%').lt('collected_at', D30) },
     { label: 'cron-stage-old',     filter: (q) => q.like('category', 'cron-stage:%').lt('collected_at', D30) },
     { label: 'ig-hashtag-cache-old', filter: (q) => q.like('category', 'ig-hashtag-cache:%').lt('collected_at', D14) },

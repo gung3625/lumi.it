@@ -6,6 +6,7 @@
 //   }
 
 const { getAdminClient } = require('./_shared/supabase-admin');
+const { heartbeatKey, errorKey, stageKey } = require('./_shared/cron-keys');
 
 const CORS_HEADERS = {
   'Content-Type': 'application/json',
@@ -41,11 +42,11 @@ exports.handler = async (event) => {
   const now = Date.now();
 
   try {
-    // heartbeat, error, stage 행 일괄 조회
+    // heartbeat, error, stage 행 일괄 조회 (cron-keys.js 헬퍼)
     const keys = [
-      ...CRON_NAMES.map(n => `cron-heartbeat:${n}`),
-      ...CRON_NAMES.map(n => `cron-last-error:${n}`),
-      ...CRON_NAMES.map(n => `cron-stage:${n}`),
+      ...CRON_NAMES.map(heartbeatKey),
+      ...CRON_NAMES.map(errorKey),
+      ...CRON_NAMES.map(stageKey),
     ];
 
     const { data: rows, error } = await supa
@@ -61,9 +62,12 @@ exports.handler = async (event) => {
     }
 
     for (const name of CRON_NAMES) {
-      const hbRow = rowMap[`cron-heartbeat:${name}`];
-      const errRow = rowMap[`cron-last-error:${name}`];
-      const stageRow = rowMap[`cron-stage:${name}`];
+      const hbK = heartbeatKey(name);
+      const errK = errorKey(name);
+      const stK = stageKey(name);
+      const hbRow = rowMap[hbK];
+      const errRow = rowMap[errK];
+      const stageRow = rowMap[stK];
 
       if (hbRow && hbRow.keywords) {
         const kw = hbRow.keywords;
@@ -73,7 +77,7 @@ exports.handler = async (event) => {
           ? Math.floor((now - new Date(lastStartedAt).getTime()) / 60000)
           : null;
 
-        health[`cron-heartbeat:${name}`] = {
+        health[hbK] = {
           lastStartedAt,
           lastCompletedAt,
           lastSuccess: kw.success !== undefined ? kw.success : null,
@@ -82,29 +86,29 @@ exports.handler = async (event) => {
           nodeVersion: kw.nodeVersion || null,
         };
       } else {
-        health[`cron-heartbeat:${name}`] = null;
+        health[hbK] = null;
       }
 
       if (errRow && errRow.keywords) {
         const kw = errRow.keywords;
-        health[`cron-last-error:${name}`] = {
+        health[errK] = {
           errorAt: kw.errorAt || null,
           message: kw.message || null,
           stack: kw.stack || null,
         };
       } else {
-        health[`cron-last-error:${name}`] = null;
+        health[errK] = null;
       }
 
       // stage 트래킹 — 없으면 null (옵셔널)
       if (stageRow && stageRow.keywords) {
         const kw = stageRow.keywords;
-        health[`cron-stage:${name}`] = {
+        health[stK] = {
           current: kw.current || null,
           history: kw.history || [],
         };
       } else {
-        health[`cron-stage:${name}`] = null;
+        health[stK] = null;
       }
     }
 
