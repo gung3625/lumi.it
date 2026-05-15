@@ -1714,19 +1714,27 @@ async function evaluatePredictionAccuracy({ supa, category }) {
       todayMap.set((r.keyword || '').toLowerCase().trim(), r);
     });
 
-    // 4. 적중 판정 (엄격: signal_tier=strong/real OR velocity_pct>50)
-    //    이전엔 'real' 만 매칭 → backend 가 'strong' 만 출력하던 시점부터 영구 false.
-    //    적중률 통계가 velocity 기반만 잡혀서 cross_source/검색량 강한 키워드는 누락됨.
+    // 4. 적중 판정 — 3-tier 시스템 (2026-05-15 사장님 결정):
+    //    strong/real OR velocity_pct>50  → 1.0 카운트 + hit_keywords 포함
+    //    medium (3 지표 중 1개 강함)     → 0.5 카운트 (부분 적중, hit_keywords 제외)
+    //    weak                              → 0
+    //
+    //    이전엔 'real' 만 매칭 → 'strong' 출력 시점부터 영구 false 였고, medium 도 누락됨.
+    //    medium 도 1개 지표는 강한 신호이므로 0.5 가중으로 적중률 통계에 반영.
     let matched = 0;
     const hitKeywords = [];
     for (const kw of predictedKeywords) {
       const r = todayMap.get((kw || '').toLowerCase().trim());
       const tier = r?.signal_tier;
       const isStrong = tier === 'strong' || tier === 'real';
+      const isMedium = tier === 'medium';
       const isHotVelocity = r && r.velocity_pct != null && r.velocity_pct > 50;
       if (isStrong || isHotVelocity) {
-        matched++;
+        matched += 1.0;
         hitKeywords.push(kw);
+      } else if (isMedium) {
+        // 부분 적중 — 1개 지표만 강한 medium tier 는 0.5 가중. hit_keywords 제외 (확정 적중만 표시).
+        matched += 0.5;
       }
     }
 
@@ -1739,9 +1747,12 @@ async function evaluatePredictionAccuracy({ supa, category }) {
 
     const prevCumulative = prevAccuracy?.keywords?.cumulative || { total_predicted: 0, total_matched: 0 };
 
+    // matched 가 medium 부분 적중 도입으로 float (e.g. 2.5) — 소수 1자리로 round 해서 저장.
+    const round1 = (n) => Math.round(n * 10) / 10;
+    const newTotalMatched = round1((prevCumulative.total_matched || 0) + matched);
     const newCumulative = {
       total_predicted: prevCumulative.total_predicted + predictedKeywords.length,
-      total_matched: prevCumulative.total_matched + matched,
+      total_matched: newTotalMatched,
       accuracy: 0,
       updated_at: new Date().toISOString(),
     };
@@ -1749,7 +1760,7 @@ async function evaluatePredictionAccuracy({ supa, category }) {
 
     const recent28d = {
       total_predicted: predictedKeywords.length,
-      total_matched: matched,
+      total_matched: round1(matched),
       accuracy: Math.round(matched / predictedKeywords.length * 1000) / 10,
       hit_keywords: hitKeywords.slice(0, 5),
     };

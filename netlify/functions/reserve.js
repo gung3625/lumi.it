@@ -223,6 +223,18 @@ exports.handler = async (event) => {
           // - 이미 JPEG 면 sharp 로 압축 + EXIF rotate 정규화
           // Meta IG API 는 JPG/PNG 만 받으므로 JPEG 통일.
           const sharp = require('sharp');
+          // JPEG SOI 마커 검증 — 출력 buffer 가 진짜 JPEG 인지 magic byte 로 확인.
+          // sharp { failOn: 'none' } 가 손상된 입력에서 부분 디코드 결과를 반환할 수
+          // 있고, octet-stream 우회로 들어온 비-image binary 도 sharp 가 error 없이
+          // tiny buffer 를 만들 가능성 있음. SOI (FF D8 FF) 미일치 = 비-JPEG → throw.
+          const assertJpegBuffer = (buf, srcMime) => {
+            if (!buf || buf.length < 4) {
+              throw new Error(`변환 결과가 비어있음 (mime=${srcMime || 'unknown'})`);
+            }
+            if (buf[0] !== 0xFF || buf[1] !== 0xD8 || buf[2] !== 0xFF) {
+              throw new Error(`JPEG 마커 검증 실패 — 디코딩 가능한 이미지가 아닌 것 같아요 (mime=${srcMime || 'unknown'})`);
+            }
+          };
           const ensureJpeg = async (buf, mime) => {
             const lower = String(mime || '').toLowerCase();
             // 1) HEIC/HEIF 우선 처리
@@ -230,16 +242,20 @@ exports.handler = async (event) => {
               try {
                 const heicConvert = require('heic-convert');
                 const out = await heicConvert({ buffer: buf, format: 'JPEG', quality: 0.85 });
-                return Buffer.from(out);
+                const outBuf = Buffer.from(out);
+                assertJpegBuffer(outBuf, mime);
+                return outBuf;
               } catch (e) {
                 console.warn('[reserve] heic-convert 실패, sharp 시도:', e.message);
               }
             }
             // 2) sharp 로 통합 처리 — rotate(EXIF), JPEG quality 85, autoOrient
-            return await sharp(buf, { failOn: 'none' })
+            const out = await sharp(buf, { failOn: 'none' })
               .rotate() // EXIF orientation 적용
               .jpeg({ quality: 85, mozjpeg: true })
               .toBuffer();
+            assertJpegBuffer(out, mime);
+            return out;
           };
 
           const tasks = photos.map(async (p) => {
