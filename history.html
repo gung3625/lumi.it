@@ -1797,6 +1797,35 @@
       });
 
       load();
+
+      // 자동 폴링 — 진행 중 reservation 이 하나라도 있으면 5초 마다 refresh.
+      // 2026-05-15: register-product 가 reserve 응답 받으면 즉시 history 이동 (UX 개선).
+      // 사용자가 화면 보고 있을 때 게시 완료 실시간 반영 → 새로고침 없이 결과 확인.
+      // visibilitychange (탭 다시 활성화) 도 trigger.
+      const POLL_MS = 5000;
+      let pollTimer = null;
+      function shouldPoll() {
+        // _currentItems 갱신 시점 별도라 DOM 의 active badge 로 판단.
+        const activeBadges = document.querySelectorAll('.res__badge.badge--pending, .res__badge.badge--posting, .res__badge.badge--ready');
+        return activeBadges.length > 0;
+      }
+      function startPoll() {
+        if (pollTimer) return;
+        pollTimer = setInterval(() => {
+          if (document.visibilityState !== 'visible') return;
+          if (!shouldPoll()) { clearInterval(pollTimer); pollTimer = null; return; }
+          load();
+        }, POLL_MS);
+      }
+      // 페이지 로드 직후 한 번 진행 중 항목 있는지 검사. 없으면 polling skip.
+      setTimeout(() => { if (shouldPoll()) startPoll(); }, 1000);
+      // 다시 활성화 시 한 번 refresh
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          load();
+          setTimeout(() => { if (shouldPoll()) startPoll(); }, 500);
+        }
+      });
     })();
   </script>
 </body>

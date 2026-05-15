@@ -1435,22 +1435,15 @@
           const reserveKey = json.reserveKey || json.reservationKey;
           if (!reserveKey) throw new Error('예약 키를 받지 못했어요.');
 
-          // 5) 폴링으로 단계 표시 — 영상은 ffmpeg 후처리 + Meta REELS 컨테이너 polling 합쳐 길게.
-          const final = await pollUntilDone(reserveKey, { timeoutMs: 180 * 1000 });
-          if (final.ok === true) {
-            setOverlayCopy('완료!', '영상이 인스타에 올라갔어요.');
-            setTimeout(() => { location.href = '/history?tab=past'; }, 1500);
-          } else if (final.ok === 'scheduled') {
-            setOverlayCopy('예약 완료', '예약 시간에 자동으로 올라가요.');
-            setTimeout(() => { location.href = '/history?tab=upcoming'; }, 1500);
-          } else if (final.ok === 'timeout') {
-            // 영상은 백엔드 비동기 처리 — timeout 은 실패 아니라 "아직 처리 중".
-            // 히스토리(예약 목록) 에서 진행 상황 확인 가능.
-            setOverlayCopy('처리 중', '영상은 시간이 조금 더 걸려요. 곧 인스타에 올라가요.');
-            setTimeout(() => { location.href = '/history?tab=upcoming'; }, 2000);
-          } else {
-            throw new Error(final.error || '게시 실패');
-          }
+          // 5) 즉시 히스토리 이동 (2026-05-15 UX 개선).
+          //    이전: pollUntilDone 으로 게시 완료까지 (90~180초) 화면 묶음 → 사용자 시간 낭비.
+          //    변경: reserve 응답 받으면 즉시 /history?tab=upcoming 이동. 백엔드는 비동기 진행.
+          //    history 에서 statusBadge 가 "영상 처리 중 · 곧 게시" / "곧 게시" 로 진행 표시.
+          //    scheduled 모드면 past 가 아니라 upcoming (예약 카드).
+          const targetTab = (scheduleMode === 'scheduled') ? 'upcoming' : 'upcoming';
+          setOverlayCopy('업로드 완료', '백엔드에서 캡션·영상 처리 중. 히스토리에서 확인하세요.');
+          setStep('caption', 'active');
+          setTimeout(() => { location.href = '/history?tab=' + targetTab; }, 800);
         } catch (err) {
           console.error('[submit-video] 실패:', err);
           showOverlay(false);
@@ -1554,22 +1547,13 @@
           const reserveKey = json.reserveKey || json.reservationKey;
           if (!reserveKey) throw new Error('예약 키를 받지 못했어요.');
 
-          // 3) 폴링으로 단계 표시
-          const final = await pollUntilDone(reserveKey);
-
-          if (final.ok === true) {
-            // 성공
-            setOverlayCopy(final.scheduled ? '예약 완료' : '게시 완료!', final.scheduled ? '시간 되면 알아서 올려드려요.' : '인스타에서 확인해보세요.');
-            // 즉시 게시는 히스토리 탭으로, 예약은 예약 목록 탭으로 (UX — 사장님이 직접 한번 더 클릭 안 하도록).
-            const nextTab = final.scheduled ? 'upcoming' : 'past';
-            setTimeout(() => { location.href = `/history?tab=${nextTab}`; }, 1400);
-          } else if (final.ok === 'timeout') {
-            // 백그라운드 처리 중 — 예약 목록 탭에서 진행 확인 (아직 결과 미정)
-            setOverlayCopy('백그라운드 처리 중', '예약 페이지에서 진행 상황을 확인할 수 있어요.');
-            setTimeout(() => { location.href = '/history?tab=upcoming'; }, 1200);
-          } else {
-            throw new Error(final.error || '게시 실패');
-          }
+          // 3) 즉시 히스토리 이동 (2026-05-15 UX 개선).
+          //    이전: pollUntilDone 으로 게시 완료까지 화면 묶음.
+          //    변경: reserve 응답 받으면 즉시 /history?tab=upcoming 이동. 백엔드는 비동기 진행.
+          //    history statusBadge 가 "곧 게시" / "예약됨" 으로 진행 표시.
+          setOverlayCopy('업로드 완료', '캡션 만들고 인스타에 올릴 예정. 히스토리에서 확인하세요.');
+          setStep('caption', 'active');
+          setTimeout(() => { location.href = '/history?tab=upcoming'; }, 800);
         } catch (e) {
           showOverlay(false);
           toast(e.message || '게시 실패');
