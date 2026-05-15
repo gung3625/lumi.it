@@ -589,9 +589,14 @@ async function generateCaptions(imageAnalysis, item, progress, retryFeedback = '
       ? `${w.status}${w.temperature ? ' / ' + w.temperature + '°C 체감' : ''}${moodAdj ? ' / ' + moodAdj : ''} — 숫자 직접 X, "선선한 날"·"꾸물꾸물한 오후" 같이 형용사로 풀어 쓰기.${w.airQuality ? ` 미세먼지 ${w.airQuality} 는 실내 포근함/개방감으로 은유.` : ''}`
       : '(정보 없음)';
 
+  // 트렌드 키워드 (정제) + IG 실제 trending 해시태그 (raw 빈도 상위).
+  // IG 신호는 사진 주제와 맞으면 해시태그 블록에 1~3개까지 활용 가능.
+  const igTagSnippet = (Array.isArray(item.igHashtags) && item.igHashtags.length > 0 && isBusinessContent)
+    ? `\n[IG 실제 trending 해시태그 (top_media 빈도)]: ${item.igHashtags.slice(0, 10).join(' ')} — 사진 주제와 맞을 때만 해시태그 블록에 1~3개 활용. 매장 카테고리에 안 맞으면 무시.`
+    : '';
   const trendBlock = (Array.isArray(item.trends) && item.trends.length > 0 && isBusinessContent)
-    ? `${item.trends.join(', ')} — visible_text 나 subjects 에 트렌드 키워드 있을 때만 해시태그 1개 허용. "요즘 유행" 직접 언급 X.`
-    : '(트렌드 사용 X)';
+    ? `${item.trends.join(', ')} — visible_text 나 subjects 에 트렌드 키워드 있을 때만 해시태그 1개 허용. "요즘 유행" 직접 언급 X.${igTagSnippet}`
+    : (igTagSnippet ? `(정제 트렌드 없음)${igTagSnippet}` : '(트렌드 사용 X)');
 
   const storeBlock = [
     sp.name ? `매장명: ${sp.name}` : '',
@@ -995,16 +1000,43 @@ async function sendAlimtalk(phone, text) {
 }
 
 // ─────────── 트렌드/캡션뱅크 조회 (Supabase) ───────────
+// 정제된 키워드 (trends.keywords) + raw IG trending 해시태그 (ig-hashtag-cache).
+// 캡션 생성 GPT 가 IG 실제 trending 태그를 직접 참고하도록 둘 다 컨텍스트 제공.
 async function loadTrends(supabase, category) {
   try {
-    const { data } = await supabase
-      .from('trends')
-      .select('keywords, insights')
-      .eq('category', category)
-      .maybeSingle();
-    if (!data) return null;
-    const keywords = Array.isArray(data.keywords) ? data.keywords : [];
-    return { keywords, insights: data.insights || null };
+    const [trendsRes, igCacheRes] = await Promise.allSettled([
+      supabase.from('trends').select('keywords, insights').eq('category', category).maybeSingle(),
+      supabase.from('trends').select('keywords').eq('category', `ig-hashtag-cache:${category}`).maybeSingle(),
+    ]);
+
+    let keywords = [];
+    let insights = null;
+    if (trendsRes.status === 'fulfilled' && trendsRes.value.data) {
+      keywords = Array.isArray(trendsRes.value.data.keywords) ? trendsRes.value.data.keywords : [];
+      insights = trendsRes.value.data.insights || null;
+    }
+
+    // IG raw 캡션에서 #해시태그 추출 → 빈도순 상위 N개. GPT 가 "진짜 trending" 신호로 사용.
+    let igHashtags = [];
+    if (igCacheRes.status === 'fulfilled' && igCacheRes.value.data) {
+      const captions = Array.isArray(igCacheRes.value.data.keywords?.captions)
+        ? igCacheRes.value.data.keywords.captions : [];
+      const tagCount = new Map();
+      for (const cap of captions.slice(0, 200)) {
+        const matches = String(cap || '').match(/#[\p{L}\p{N}_]+/gu) || [];
+        for (const t of matches) {
+          const key = t.toLowerCase();
+          tagCount.set(key, (tagCount.get(key) || 0) + 1);
+        }
+      }
+      igHashtags = Array.from(tagCount.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 15)
+        .map(([t]) => t);
+    }
+
+    if (!keywords.length && !igHashtags.length) return null;
+    return { keywords, insights, igHashtags };
   } catch (e) {
     console.error('[process-and-post] trends 조회 실패:', e.message);
     return null;
@@ -1286,6 +1318,7 @@ exports.handler = async (event) => {
       captionBank,
       trends: trendKeywords,
       trendInsights: trendResult?.insights || '',
+      igHashtags: trendResult?.igHashtags || [],
       useWeather: reservation.use_weather !== false,
       photoCount: isReels ? 1 : imageUrls.length,
       mediaType,

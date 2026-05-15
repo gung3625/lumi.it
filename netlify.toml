@@ -114,6 +114,12 @@
 [functions."daily-content-background"]
   schedule = "0 23 * * *"
 
+# IG 해시태그 trending 캡션 수집 (3일 업종 rotation, 9업종 × 3태그 = 27 calls/day)
+# Meta ig_hashtag_search rate limit 30/day/biz account 안전. KST 02:00 (UTC 17:00).
+# trends 시스템(scheduled-trends-v2)이 매일 KST 00:00 (UTC 15:00) 실행되므로 그 후 신선.
+[functions."scheduled-ig-hashtag-background"]
+  schedule = "0 17 * * *"
+
 # 매주 월요일 KST 03:00 (= UTC 일요일 18:00) 요일↔업종 주간 셔플
 [functions."scheduled-weekday-shuffle-background"]
   schedule = "0 18 * * 0"
