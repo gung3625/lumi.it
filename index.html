@@ -303,23 +303,29 @@
       100% { opacity: 1; transform: translate(-50%, 0) scale(1); }
     }
 
-    /* 갤러리 wrap (스크롤 영역) */
+    /* 갤러리 wrap — 가용 세로 공간 모두 차지 (toolbar 아래 ~ safe-area 까지) */
     .gallery-wrap {
       flex: 1;
       padding: 0;
+      padding-bottom: env(safe-area-inset-bottom);
+      min-height: 0; /* flex 자식이 부모 크기 넘지 않게 */
     }
 
-    /* iOS Photos 4열 그리드 — gap 2px (사각형 셀, 채도 있는 grid) */
+    /* 3x3 그리드 — 9장이 화면 가용 영역 전체 채움 (공백 0) */
     .gallery {
       list-style: none;
       margin: 0;
       padding: 0;
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
       gap: 2px;
+      width: 100%;
+      height: 100%;
     }
     .gallery__item {
-      aspect-ratio: 1 / 1;
+      /* aspect-ratio 제거 — 그리드 row 가 1fr 로 가용 높이 분배. 셀은 자동 직사각형. */
+      min-height: 0;
       animation: rise 280ms var(--ease-toss) calc(var(--idx, 0) * 18ms) backwards;
     }
     .gallery__card {
@@ -355,7 +361,6 @@
     .gallery__bg--cafe-7  { background: radial-gradient(circle at 30% 30%, #6b3f24, #2a1810); }           /* 커피잔 — 짙은 갈색 클로즈업 */
     .gallery__bg--cafe-8  { background: linear-gradient(135deg, #fff2e0 0%, #f5b6c5 100%); }              /* 디저트 플레이팅 — 파스텔 */
     .gallery__bg--cafe-9  { background: linear-gradient(135deg, #b8b6b3 0%, #ddd9d3 100%); }              /* 텀블러 — 회색 */
-    .gallery__bg--cafe-10 { background: linear-gradient(135deg, #a89066 0%, #d4b896 100%); }              /* 공간 — 우드·베이지 */
 
     /* iOS 체크 마크 — 미선택: 반투명 검정 + 흰 border / 선택: 핑크 채움 */
     .gallery__check {
@@ -969,7 +974,7 @@
         <button class="gallery-toolbar__cancel" type="button" data-gallery-cancel aria-label="취소">취소</button>
         <div class="gallery-toolbar__center">
           <div class="gallery-toolbar__title">최근 항목</div>
-          <div class="gallery-toolbar__counter" data-gallery-counter>10장 중 0장 선택</div>
+          <div class="gallery-toolbar__counter" data-gallery-counter>9장 중 0장 선택</div>
         </div>
         <button class="gallery-toolbar__next" type="button" data-next disabled aria-label="선택한 사진으로 다음 단계로">다음</button>
       </header>
@@ -988,7 +993,6 @@
           <li class="gallery__item" style="--idx:6"><button class="gallery__card" type="button" data-photo="cafe-7"  aria-pressed="false" aria-label="커피잔 사진 선택"><span class="gallery__bg gallery__bg--cafe-7"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span><span class="gallery__order" data-order aria-hidden="true"></span></button></li>
           <li class="gallery__item" style="--idx:7"><button class="gallery__card" type="button" data-photo="cafe-8"  aria-pressed="false" aria-label="디저트 플레이팅 사진 선택"><span class="gallery__bg gallery__bg--cafe-8"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span><span class="gallery__order" data-order aria-hidden="true"></span></button></li>
           <li class="gallery__item" style="--idx:8"><button class="gallery__card" type="button" data-photo="cafe-9"  aria-pressed="false" aria-label="텀블러 사진 선택"><span class="gallery__bg gallery__bg--cafe-9"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span><span class="gallery__order" data-order aria-hidden="true"></span></button></li>
-          <li class="gallery__item" style="--idx:9"><button class="gallery__card" type="button" data-photo="cafe-10" aria-pressed="false" aria-label="공간 사진 선택"><span class="gallery__bg gallery__bg--cafe-10"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span><span class="gallery__order" data-order aria-hidden="true"></span></button></li>
         </ul>
       </div>
     </section>
@@ -1190,7 +1194,7 @@
     (function () {
       const STEPS = document.querySelectorAll('[data-step]');
       const TOTAL = 5;
-      const MAX_PHOTOS = 10;
+      const MAX_PHOTOS = 9;
       const selected = new Set();
 
       function goTo(n) {
@@ -1215,7 +1219,7 @@
       function updateGalleryUI() {
         // 카운터 갱신
         if (counterEl) {
-          counterEl.textContent = `10장 중 ${selected.size}장 선택`;
+          counterEl.textContent = `9장 중 ${selected.size}장 선택`;
         }
         // 다음 버튼 토글
         const next = document.querySelector('[data-next]');
