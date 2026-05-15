@@ -25,13 +25,14 @@
   <link rel="stylesheet" href="/css/tabbar.css">
 
   <style>
-    /* === 튜토리얼 페이지 — 자연 스크롤 + 흔들림만 차단 ===
-       사장님 피드백 (2026-05-15): "중간이 없다 — 흔들리거나, 아예 스크롤 안되거나"
-       절충:
-         - body 자연 스크롤 유지 (footer 정상 표시)
-         - rubber-band 흔들림만 overscroll-behavior 로 차단
-         - tabbar (Step 1) 는 fixed → sticky 로 변경 — 콘텐츠 위쪽까지만 따라가고
-           스크롤 끝까지 가면 footer 가 가려지지 않음 */
+    /* === 튜토리얼 페이지 — 흔들림 차단 + footer 는 가입 step 만 ===
+       사장님 피드백 (2026-05-15):
+         - "흔들리거나, 아예 스크롤 안되거나" → 흔들림만 차단, 스크롤은 유지
+         - 첫 화면(Step 1)에 사업자 정보 footer 가 침범해 디자인 깨짐 → 가입 step 만 표시
+       해결:
+         - overscroll-behavior 로 rubber-band 만 차단 (body 자연 스크롤 유지)
+         - footer 는 기본 hidden, script 에서 Step 5 활성 시에만 표시
+         - tabbar 는 fixed 유지 (footer 가 안 뜨면 가릴 일 없음) */
     html, body {
       overscroll-behavior: none;
       margin: 0;
@@ -39,11 +40,8 @@
     body {
       padding-bottom: 0 !important;
     }
-    /* Step 1 안의 tabbar 만 sticky (다른 페이지의 .tabbar 는 css/tabbar.css 의 fixed 유지) */
-    .stage .tabbar {
-      position: sticky;
-      bottom: 0;
-    }
+    /* footer 기본 숨김 — Step 5 활성 시 script 가 표시 */
+    .foot { display: none; }
 
     /* === Step 1: 홈 (dashboard 모사 — 실제 dashboard 와 시각적 동일) === */
     /* 사장님 결정 2026-05-15: 튜토리얼 = 실제 사용 미리보기. 가입 후 보는 dashboard 와
@@ -1373,6 +1371,7 @@
       const MAX_PHOTOS = 9;
       const selected = new Set();
 
+      const footerEl = document.querySelector('.foot');
       function goTo(n) {
         if (n < 1 || n > TOTAL) return;
         STEPS.forEach(s => {
@@ -1380,6 +1379,13 @@
           s.hidden = !isActive;
           s.setAttribute('aria-hidden', String(!isActive));
         });
+        // 가입 step (Step 5) 활성 시에만 footer 표시 — 사업자 정보·약관은 가입 단계 필요.
+        // CSS .foot { display: none } 이 기본값이라 인라인 style = '' 로 비우면 hidden 으로 fallback.
+        // 따라서 명시적으로 'block' 지정 (footer 는 block 요소).
+        // body overflow 는 토글하지 않음 (양극단 회귀 X) — 흔들림 차단은 overscroll-behavior 로 충분.
+        if (footerEl) {
+          footerEl.style.display = (n === TOTAL) ? 'block' : 'none';
+        }
         window.scrollTo({ top: 0, behavior: 'instant' });
       }
 
