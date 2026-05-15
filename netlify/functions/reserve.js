@@ -304,6 +304,9 @@ exports.handler = async (event) => {
         }
 
         // 캡션 생성 Background Function 트리거 (postMode 무관하게 항상 캡션 생성)
+        // A 옵션 (2026-05-15): REELS 인 경우 process-video 도 동시에 트리거.
+        // 캡션 작성(27초) ↔ ffmpeg(60~120초) 가 병렬 진행 → 약 30초 단축.
+        // select-and-post 의 기존 gate (REELS && !video_processed_at 보류) 가 안전망.
         const siteUrl = 'https://lumi.it.kr';
         console.log('[reserve] process-and-post 트리거 시도 (postMode:', postMode, ')');
         try {
@@ -315,6 +318,31 @@ exports.handler = async (event) => {
           console.log('[reserve] process-and-post-background 트리거:', ppRes.status);
         } catch (ppErr) {
           console.error('[reserve] 트리거 실패:', ppErr.message);
+        }
+
+        // REELS 동시 트리거 — ffmpeg 후처리를 캡션 작성과 병렬 시작.
+        // process-and-post 의 isReels 분기에 있는 fetch 와 중복인데, race condition fix
+        // 측면에서 select-and-post 의 video_processed_at gate 가 양쪽 다 동기화.
+        // process-and-post 측 fetch 는 그대로 두되 (백업), reserve 가 먼저 트리거 →
+        // 같은 reservation key 로 두 번 호출되어도 process-video 내부 멱등성으로 안전.
+        if (mediaType === 'REELS' && videoUrl) {
+          try {
+            const pvRes = await fetch(`${siteUrl}/.netlify/functions/process-video-background`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.LUMI_SECRET}` },
+              body: JSON.stringify({
+                reservationKey: reserveKey,
+                videoUrl,
+                srt: null,
+                userId: user.id,
+                overlayText: fields.overlayText || null,
+                useSubtitle: fields.useSubtitle !== 'false',
+              }),
+            });
+            console.log('[reserve] process-video-background 트리거 (병렬):', pvRes.status);
+          } catch (pvErr) {
+            console.warn('[reserve] process-video 트리거 실패 (process-and-post 가 재시도):', pvErr.message);
+          }
         }
 
         // 응답: reservationKey(기존 프론트 호환) + reserveKey(신규 스펙)
