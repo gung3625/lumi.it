@@ -25,6 +25,17 @@
   <link rel="stylesheet" href="/css/tabbar.css">
 
   <style>
+    /* === 튜토리얼 페이지 — body 스크롤 정리 ===
+       tabbar.css 의 body:has(.tabbar) { padding-bottom: 110px + safe-area } 가 적용되면
+       각 step 의 100dvh layout 위에 110px 빈 공간이 더해져 viewport 초과 → 스크롤
+       흔들림 (사장님 보고 2026-05-15). 튜토리얼은 step 이 자체 dvh 관리하므로 body
+       padding 불필요. 또 overscroll bounce 차단으로 짧은 콘텐츠 step 의 rubber-band
+       흔들림 방지. */
+    body {
+      padding-bottom: 0 !important;
+      overscroll-behavior-y: contain;
+    }
+
     /* === Step 1: 홈 (dashboard 모사 — 실제 dashboard 와 시각적 동일) === */
     /* 사장님 결정 2026-05-15: 튜토리얼 = 실제 사용 미리보기. 가입 후 보는 dashboard 와
        이질감 0. 빈 상태(stat-empty + scheduled-empty)로 신규 사용자 첫 진입 그대로 모사. */
