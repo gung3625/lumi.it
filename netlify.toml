@@ -27,6 +27,11 @@
   # sharp: 텍스트를 PNG 로 미리 렌더 → ffmpeg overlay 필터로 영상 위 합성
   external_node_modules = ["ffmpeg-static", "sharp", "text-to-svg"]
 
+# H 옵션 (2026-05-15): 이미지 분석 전 sharp 로 1024px 리사이즈.
+# gpt-4o vision 권장 해상도로 줄여 분석 정확도 유지 + 전송 시간 2~3초 단축.
+[functions."process-and-post-background"]
+  external_node_modules = ["sharp"]
+
 
 # Phase 3 Long-tail 서브카테고리 주간 분류 cron (월요일 KST 04:00 = UTC 일요일 19:00)
 [functions."scheduled-trends-longtail-background"]

@@ -190,7 +190,20 @@ function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
 
 // ─────────── Storage 이미지 → base64 로드 (GPT-4o 분석용) ───────────
 // image_urls 가 Supabase Storage public URL 이라고 가정. 원격 fetch 후 base64 변환.
+// H 옵션 (2026-05-15): 이미지 분석 전 sharp 로 1024px 리사이즈.
+// gpt-4o vision 권장 해상도 = short side 768, long side 1024. 그 이상은 분석 정확도
+// 영향 없이 토큰만 낭비 (+ base64 전송 시간 ↑).
+// 사장님 폰 사진은 4032×3024 같은 큰 사이즈인 경우가 흔함 → 약 2~3초 단축 가능.
+let _sharpForResize;
+function getSharp() {
+  if (_sharpForResize === undefined) {
+    try { _sharpForResize = require('sharp'); } catch (_) { _sharpForResize = null; }
+  }
+  return _sharpForResize;
+}
+
 async function loadImagesAsBase64(imageUrls) {
+  const sharp = getSharp();
   return Promise.all(imageUrls.map(async (url, i) => {
     if (!url || typeof url !== 'string') {
       console.error('[process-and-post] 이미지 URL 비어있음: idx=' + i);
@@ -209,7 +222,21 @@ async function loadImagesAsBase64(imageUrls) {
       console.error('[process-and-post] 이미지 로드 실패: idx=' + i + ' status=' + res.status + ' url=' + url.slice(0, 120) + ' body=' + body.slice(0, 200));
       throw new Error('이미지 다운로드 실패 (status=' + res.status + ', idx=' + i + ')');
     }
-    return Buffer.from(await res.arrayBuffer()).toString('base64');
+    const raw = Buffer.from(await res.arrayBuffer());
+    // sharp 사용 가능하면 분석용으로 1024px 리사이즈 + JPEG 80% 재인코딩.
+    // 원본 이미지는 supabase storage 에 그대로 유지 (게시는 원본 URL 사용).
+    if (sharp) {
+      try {
+        const resized = await sharp(raw)
+          .resize({ width: 1024, height: 1024, fit: 'inside', withoutEnlargement: true })
+          .jpeg({ quality: 80 })
+          .toBuffer();
+        return resized.toString('base64');
+      } catch (e) {
+        console.warn('[process-and-post] 이미지 리사이즈 실패 (원본 사용):', e.message);
+      }
+    }
+    return raw.toString('base64');
   }));
 }
 
