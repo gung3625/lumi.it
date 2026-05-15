@@ -27,15 +27,15 @@
   <style>
     /* === 튜토리얼 페이지 — dashboard 의 정상 패턴 그대로 ===
        2026-05-15 (수정): 사장님 지적 — "Step 1 에서 스크롤이 아예 안되고 푸터가 안 보여".
-       이전 ac56c18 의 body padding-bottom:0 !important + .foot display:none 가
-       dashboard 의 정상 패턴 (tabbar.css body:has(.tabbar) padding-bottom 110px)을
-       막아 footer 가 viewport 끝과 정확히 일치해 스크롤 0, footer hidden 으로 노출 X.
+       2026-05-16 (재수정): 사장님 지적 — "스크롤을 위로 올리면 새로고침이 됐는데 안된다".
+       이전 ac56c18 의 overscroll-behavior:none 가 흔들림(rubber-band) + iOS Safari 의
+       pull-to-refresh 둘 다 차단. 사장님은 pull-to-refresh 유지를 원함.
 
-       해결: dashboard.html 패턴 그대로 — body padding 정상화 + .foot 기본 노출.
-       흔들림 차단은 overscroll-behavior 만으로 충분 (rubber-band 만 막는 본 룰).
-       footer 노출 step 토글은 JS goTo() 가 명시적으로 처리 (Step 1 + Step 5 만 'block'). */
+       흔들림의 진짜 원인은 body padding-bottom 중복 (.stage padding + tabbar.css
+       body padding 누적) 이었고, de55071 에서 dashboard 정상 패턴 복귀로 padding
+       중복 해소. overscroll-behavior:none 은 보험성이라 제거해도 흔들림 재발 가능성
+       낮음 (사장님 검증 필요). pull-to-refresh 우선. */
     html, body {
-      overscroll-behavior: none;
       margin: 0;
     }
 
