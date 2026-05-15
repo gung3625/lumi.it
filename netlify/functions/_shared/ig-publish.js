@@ -137,11 +137,21 @@ async function postToInstagram({ igUserId, igAccessToken, igUserAccessToken, sto
         }
         const sData = await sRes.json();
         if (sData.error) {
-          console.error('[ig-publish] REELS 스토리 컨테이너 생성 실패');
+          console.error('[ig-publish] REELS 스토리 컨테이너 생성 실패:', sData.error.message || sData.error);
         } else {
-          await waitForContainer(sData.id, storyToken);
-          await publishMedia(igUserId, storyToken, sData.id);
-          console.log('[ig-publish] REELS 스토리 게시 완료');
+          // waitForContainer 결과 검증 — false 면 status=ERROR, publish skip.
+          // STORIES 영상 처리는 30초 부족할 수 있어 maxRetries 12 (총 60초) 로 확대.
+          const storyReady = await waitForContainer(sData.id, storyToken, 12);
+          if (!storyReady) {
+            console.error('[ig-publish] REELS 스토리 컨테이너 status=ERROR — publish skip');
+          } else {
+            const sPub = await publishMedia(igUserId, storyToken, sData.id);
+            if (sPub && sPub.error) {
+              console.error('[ig-publish] REELS 스토리 publish 실패:', sPub.error.message || JSON.stringify(sPub.error));
+            } else {
+              console.log('[ig-publish] REELS 스토리 게시 완료, story_id=', sPub && sPub.id);
+            }
+          }
         }
       } catch (e) { console.error('[ig-publish] REELS 스토리 예외:', e.message); }
     }
