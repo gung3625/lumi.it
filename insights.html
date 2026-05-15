@@ -666,9 +666,13 @@
       if (!token) { location.replace('/'); return; }
       const authHeaders = { Authorization: 'Bearer ' + token };
 
-      // 탭 전환 — /insights/best-time 진입 시 자동으로 best-time 탭, 그 외엔 hash 또는 default
+      // 탭 전환 — hash 가 있으면 무조건 hash 우선 (사장님 새로고침 시 보던 탭 유지).
+      // 그 다음 path-based (/insights/best-time 진입), 마지막 default 'weekly'.
+      // 이전 버그: pathBased 가 hash 보다 우선되어 사장님이 '이번 주' 탭 보다가 새로고침하면
+      // path 가 /insights/best-time 그대로라 베스트 시간 탭으로 강제 복귀.
+      const hashTab = (location.hash || '').replace('#', '');
       const pathBased = location.pathname.includes('/insights/best-time') ? 'best-time' : '';
-      const initialTab = pathBased || (location.hash || '').replace('#', '') || 'weekly';
+      const initialTab = hashTab || pathBased || 'weekly';
       function switchTab(name) {
         document.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('is-active', b.dataset.tab === name));
         document.querySelectorAll('[data-pane]').forEach(p => p.classList.toggle('is-active', p.dataset.pane === name));

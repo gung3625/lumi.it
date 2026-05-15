@@ -761,22 +761,30 @@
       const overlayTextInput = document.querySelector('[data-overlay-text]');
       const subtitleBtn = document.querySelector('[data-subtitle-toggle]');
 
-      // 탭 전환
+      // 탭 전환 — 사장님이 보던 탭 새로고침 시 유지 (#media=video|image hash).
+      function activateMediaTab(target) {
+        if (target !== 'image' && target !== 'video') target = 'image';
+        mediaMode = target;
+        mediaTabs.forEach((t) => {
+          const on = t.dataset.mediaTab === target;
+          t.classList.toggle('is-active', on);
+          t.setAttribute('aria-selected', String(on));
+        });
+        mediaPanels.forEach((p) => {
+          p.hidden = p.dataset.mediaPanel !== target;
+        });
+        updateSubmitState();
+      }
       mediaTabs.forEach((tab) => {
         tab.addEventListener('click', () => {
           const target = tab.dataset.mediaTab;
-          mediaMode = target;
-          mediaTabs.forEach((t) => {
-            const on = t === tab;
-            t.classList.toggle('is-active', on);
-            t.setAttribute('aria-selected', String(on));
-          });
-          mediaPanels.forEach((p) => {
-            p.hidden = p.dataset.mediaPanel !== target;
-          });
-          updateSubmitState();
+          activateMediaTab(target);
+          try { history.replaceState(null, '', '#media=' + target); } catch (_) {}
         });
       });
+      // 초기 진입 시 hash 의 media 우선
+      const initialMediaMatch = (location.hash || '').match(/media=(image|video)/);
+      if (initialMediaMatch) activateMediaTab(initialMediaMatch[1]);
 
       // 영상 input 이벤트
       if (videoInput) {

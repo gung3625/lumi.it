@@ -664,12 +664,30 @@
             const visible = visibleSubs(group);
             // currentCategory 는 sheet 의 keyword-detail 호출용 fallback sub id
             currentCategory = (visible[0] || group.subs[0]).id;
+            // 사장님이 보던 대분류 유지 — 새로고침 시 hash 로 복원.
+            try { history.replaceState(null, '', '#major=' + id); } catch (_) {}
             renderMajorTabs();
             stateEl.textContent = '키워드를 가져오는 중…';
             listEl.innerHTML = '<li class="state" data-state>키워드를 가져오는 중…</li>';
             loadTrends();
           });
         });
+      }
+
+      // 페이지 로드 시 hash 의 major 값 우선 → detectCategory 보다 우선.
+      // 사장님이 "패션" 매장이라도 "음식" 대분류 보다 새로고침하면 그대로 유지.
+      function applyHashMajor() {
+        const m = (location.hash || '').match(/major=([a-z0-9_-]+)/i);
+        if (!m) return false;
+        const id = m[1];
+        if (C.findGroup(id)) {
+          currentMajor = id;
+          const group = C.findGroup(id);
+          const visible = visibleSubs(group);
+          currentCategory = (visible[0] || group.subs[0]).id;
+          return true;
+        }
+        return false;
       }
 
       // 사장님 매장 카테고리 결정 (실패 시 기본 그룹 유지). sub → 대분류 자동 도출.
@@ -1042,9 +1060,10 @@
         }
       }
 
-      // 시작
+      // 시작 — hash 의 major 가 있으면 그것 우선, 없으면 사장님 매장 industry 기반 자동 결정.
       (async () => {
-        await detectCategory();
+        const hashApplied = applyHashMajor();
+        if (!hashApplied) await detectCategory();
         renderMajorTabs();
         await loadTrends();
       })();

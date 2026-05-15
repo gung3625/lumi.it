@@ -18,7 +18,17 @@
 
   <link rel="stylesheet" href="/css/tokens.css">
   <link rel="stylesheet" href="/css/base.css">
-  <script data-scroll-top-on-reload>if("scrollRestoration" in history)history.scrollRestoration="manual";window.scrollTo(0,0);window.addEventListener("DOMContentLoaded",function(){window.scrollTo(0,0)});</script>
+  <script data-scroll-top-on-reload>
+  // hash 가 없을 때만 최상단으로. hash 있으면 브라우저 기본 앵커 스크롤 보존.
+  // 사장님 보고: 외부 deep link (#instagram, #account 등) 가 무력화되던 버그 fix.
+  if("scrollRestoration" in history)history.scrollRestoration="manual";
+  if(!location.hash){window.scrollTo(0,0);}
+  window.addEventListener("DOMContentLoaded",function(){
+    if(!location.hash){window.scrollTo(0,0);return;}
+    var el=document.getElementById(location.hash.slice(1));
+    if(el)el.scrollIntoView({block:"start"});
+  });
+  </script>
   <link rel="stylesheet" href="/css/motion.css">
   <link rel="stylesheet" href="/css/tabbar.css">
   <link rel="stylesheet" href="/css/legal.css">
