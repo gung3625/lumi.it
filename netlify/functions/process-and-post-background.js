@@ -710,6 +710,15 @@ ${isBusinessContent
   : `- **일상 모드 3~5개**: 일상·감정 태그만 (#퇴근길·#비오는날·#오늘하늘·#반려견·#댕댕이 등).
 - **업종 일반 태그 절대 금지** (#카페스타그램·#맛집·#디저트 등). 매장명 태그 X.`}
 - 시즌 어긋남 (${seasonalRule}) X.
+
+### 🚫 무관한 트렌드 해시태그 절대 금지 (강력 룰)
+사장님 매장 카테고리에 유행 키워드가 있어도 **사진과 무관하면 절대 사용 금지**.
+- 예시: "#버터떡" 이 유행 — 사장님 매장이 식당. 사진은 김밥.
+  → 사진의 subjects/visible_text 에 "버터떡" 이 없음 → **#버터떡 사용 절대 금지**.
+- 사용 조건: 트렌드 키워드가 (1) 사진의 visible_text 에 보이거나 (2) subjects 중 하나와 동일 또는 직접 일치하는 경우만.
+- 카테고리 일치 ≠ 사진 일치. "음식 카테고리니까 음식 트렌드 다 사용 OK" 는 **잘못된 추론**.
+- 애매하면 트렌드 해시태그는 **0개**. 일반 카테고리·니치 태그로 채워라.
+
 - 본문 끝 줄바꿈 후 한 블록.${retryBlock}
 
 ## 출력
@@ -1296,14 +1305,46 @@ exports.handler = async (event) => {
     ]);
     try { await supabase.from('reservations').update({ caption_error: 'STAGE:generating' }).eq('reserve_key', reservationKey); } catch(_) {}
 
-    const trendKeywords = trendResult?.keywords?.length
+    // 트렌드 키워드 + IG raw 해시태그 → 사진 subjects/visible_text + 사장님 메모 매칭 필터.
+    // 사장님 걱정 (2026-05-15): '버터떡' 유행 + 다른 음식 사진 → 잘못된 해시태그 위험.
+    // 사진에 명시적으로 등장하거나 사장님이 메모에 키워드 적은 경우만 GPT prompt 에 통과.
+    // (vision 정확도 한계 — gpt-4o 가 흰 떡을 "버터떡" 으로 정확히 명명 못할 수 있음.
+    //  사장님 메모에 '오늘 신메뉴 버터떡' 처럼 적으면 그것도 신뢰 source 로 활용)
+    const visualText = String(
+      [
+        ...(Array.isArray(imageAnalysis?.subjects) ? imageAnalysis.subjects : []),
+        ...(Array.isArray(imageAnalysis?.visible_text_masked) ? imageAnalysis.visible_text_masked : []),
+        ...(Array.isArray(imageAnalysis?.visible_text) ? imageAnalysis.visible_text : []),
+        imageAnalysis?.scene_description || '',
+        reservation.user_message || '',  // 사장님 한 줄 메모 — 사장님이 직접 적은 키워드는 신뢰
+      ].join(' ').toLowerCase()
+    );
+    const matchesVisual = (kw) => {
+      const stripped = String(kw || '').replace(/^#/, '').toLowerCase().trim();
+      if (!stripped) return false;
+      // 2글자 이상이면 부분 일치, 그 미만은 정확 일치만.
+      if (stripped.length < 2) return visualText.split(/\s+/).includes(stripped);
+      return visualText.includes(stripped);
+    };
+
+    const rawTrendKeywords = trendResult?.keywords?.length
       ? trendResult.keywords.map((k) => {
           const kw = typeof k === 'string' ? k : (k.keyword || '');
           return kw.startsWith('#') ? kw : '#' + kw;
         })
       : [];
+    // 매칭되는 트렌드만 통과. visualText 가 비어있으면 모두 차단 (안전 fail-closed).
+    const trendKeywords = visualText.trim()
+      ? rawTrendKeywords.filter(matchesVisual)
+      : [];
 
-    console.log('[process-and-post] 이미지 분석 + 트렌드 + 캡션뱅크 병렬 완료');
+    const rawIgHashtags = trendResult?.igHashtags || [];
+    const filteredIgHashtags = visualText.trim()
+      ? rawIgHashtags.filter(matchesVisual)
+      : [];
+
+    console.log('[process-and-post] 이미지 분석 + 트렌드 + 캡션뱅크 병렬 완료',
+      `trends=${rawTrendKeywords.length}→${trendKeywords.length} ig=${rawIgHashtags.length}→${filteredIgHashtags.length}`);
 
     // 4) 캡션 생성
     const captionInput = {
