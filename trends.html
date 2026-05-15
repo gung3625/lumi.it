@@ -962,10 +962,14 @@
           }
         }
 
-        // 3) 신호 강도 — saturationLevel / signalTier / 사용자 피드백
+        // 3) 신호 강도 — signalTier / saturationLevel / 사용자 피드백
+        //    Tier 는 backend classifySignalTier() 가 산출:
+        //    cross_source ≥2 / 검색량 ≥5k / velocity ≥30% 중 충족 개수 → strong(2+)/medium(1)/weak(0)
+        //    구체 수치는 sheet 상단 "왜 이 순위?" 섹션이 이미 노출하므로 여기선 tier 라벨만.
         const signals = [];
-        if (item.signalTier === 'real') signals.push('확실 신호 (2개 이상 소스에서 발견)');
-        if (item.signalTier === 'weak') signals.push('약한 신호 (1개 소스만)');
+        if (item.signalTier === 'strong')      signals.push('확실 신호 (3개 지표 중 2개 이상 강함)');
+        else if (item.signalTier === 'medium') signals.push('주목 신호 (1개 지표 강함)');
+        else if (item.signalTier === 'weak')   signals.push('약한 신호 (지표 모두 약함)');
         if (item.saturationLevel === 'low')    signals.push('포화도 낮음 (덜 흔함)');
         if (item.saturationLevel === 'high')   signals.push('포화도 높음 (이미 흔함)');
         if (typeof item.likes === 'number'    && item.likes > 0)    signals.push(`👍 ${item.likes}`);

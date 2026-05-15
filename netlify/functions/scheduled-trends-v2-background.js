@@ -4,7 +4,8 @@
 // 시드/prompt 의 pet 언급은 dead code — 카테고리 list 에서 빠져 cron 이 처리 skip.
 // 변경 사항 (v1 대비):
 //   - gpt-4o 전환 (분류·예측·스토리 전부), 전처리만 mini 폴백 가능
-//   - 크로스 소스 검증: 2+ 소스 → signal_tier='real', 1소스 → 'weak'
+//   - 크로스 소스 검증 + 다축 tier 분류: cross_source ≥2 / 검색량 ≥5k / velocity ≥30%
+//     중 충족 개수 → strong(2+) / medium(1) / weak(0). 옛 'real' tier 는 strong 동급.
 //   - Velocity 스코어링: 전 주 대비 mention 증가율 (%)
 //   - 소스별 가중치: datalab=3 / blog=1 / youtube=2 / ig=2 / news=2 / shopping=3
 //   - 레거시 키 6종 그대로 유지 (프론트 호환)
@@ -1699,7 +1700,8 @@ async function evaluatePredictionAccuracy({ supa, category }) {
     const predictedKeywords = oldPrediction.keywords.items.map(i => i.keyword).slice(0, 10);
     if (predictedKeywords.length === 0) return null;
 
-    // 3. 오늘의 trend_keywords 조회 (signal_tier='real' 또는 velocity_pct>50)
+    // 3. 오늘의 trend_keywords 조회 (signal_tier='strong'/'real' 또는 velocity_pct>50)
+    //    backend tier 체계가 strong/medium/weak (옛 'real' 은 strong 동급, backward-compat)
     const today = new Date().toISOString().slice(0, 10);
     const { data: todayRows } = await supa
       .from('trend_keywords')
@@ -1712,12 +1714,17 @@ async function evaluatePredictionAccuracy({ supa, category }) {
       todayMap.set((r.keyword || '').toLowerCase().trim(), r);
     });
 
-    // 4. 적중 판정 (엄격: signal_tier=real OR velocity_pct>50)
+    // 4. 적중 판정 (엄격: signal_tier=strong/real OR velocity_pct>50)
+    //    이전엔 'real' 만 매칭 → backend 가 'strong' 만 출력하던 시점부터 영구 false.
+    //    적중률 통계가 velocity 기반만 잡혀서 cross_source/검색량 강한 키워드는 누락됨.
     let matched = 0;
     const hitKeywords = [];
     for (const kw of predictedKeywords) {
       const r = todayMap.get((kw || '').toLowerCase().trim());
-      if (r && (r.signal_tier === 'real' || (r.velocity_pct != null && r.velocity_pct > 50))) {
+      const tier = r?.signal_tier;
+      const isStrong = tier === 'strong' || tier === 'real';
+      const isHotVelocity = r && r.velocity_pct != null && r.velocity_pct > 50;
+      if (isStrong || isHotVelocity) {
         matched++;
         hitKeywords.push(kw);
       }
