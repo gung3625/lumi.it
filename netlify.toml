@@ -23,7 +23,10 @@
 # 가 번들돼 deploy zip 누적 ~3GB → upload hang (검증 2026-05-15).
 [functions."process-video-background"]
   included_files = ["netlify/functions/_fonts/**"]
-  external_node_modules = ["ffmpeg-static"]
+  # @ffmpeg-installer/ffmpeg: full build (drawtext/subtitles 포함)
+  # ffmpeg-static: minimal fallback
+  # sharp: 텍스트 PNG overlay 대비 (ffmpeg 텍스트 필터 fail 시 fallback)
+  external_node_modules = ["@ffmpeg-installer/ffmpeg", "ffmpeg-static", "sharp"]
 
 
 # Phase 3 Long-tail 서브카테고리 주간 분류 cron (월요일 KST 04:00 = UTC 일요일 19:00)

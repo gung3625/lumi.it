@@ -7,7 +7,15 @@ const crypto = require('crypto');
 const { spawn } = require('child_process');
 const { pipeline } = require('stream/promises');
 const { Readable } = require('stream');
-const ffmpegPath = require('ffmpeg-static');
+// ffmpeg binary 선택 — @ffmpeg-installer/ffmpeg 우선 (full build, drawtext/subtitles 포함).
+// 실패 시 ffmpeg-static fallback (minimal build, drawtext 없음 — 텍스트 박기 불가).
+// 검증 2026-05-15: ffmpeg-static 만 쓰면 'Filter not found' 에러.
+let ffmpegPath;
+try {
+  ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
+} catch (_) {
+  ffmpegPath = require('ffmpeg-static');
+}
 const { corsHeaders, getOrigin } = require('./_shared/auth');
 const { getAdminClient } = require('./_shared/supabase-admin');
 
