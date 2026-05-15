@@ -596,10 +596,10 @@
           </span>
         </div>
         <div class="bt-progress" data-bt-progress hidden>
-          <!-- 사장님 결정 (2026-05-15): 단계별 progress 막대 제거. 한 줄 안내로 통일. -->
+          <!-- 사장님 결정 (2026-05-15 재정정): seed 면 슬롯 + 본 안내, personal 이면 본 카드 hidden. -->
           <div class="bt-progress__hint" data-bt-progress-hint>
-            내 팔로워에게 내 게시물이 언제 가장 노출되는지 시간을 수집하고 있어요.<br>
-            수집이 완료되면 이 기능이 자동으로 활성화돼요.
+            지금 보여지는 건 <strong>업종별 평균 베스트 시간</strong>이에요.<br>
+            내 팔로워의 실제 활동 시간이 모이면 자동으로 더 정확하게 바뀝니다.
           </div>
         </div>
         <div class="time-list" data-bt-list></div>
@@ -803,29 +803,24 @@
       let currentDay = 'weekday';
       // 응답의 modes/progress/thresholds 를 받아 모드 배지·진행 카드 갱신.
       // currentDay 가 'personal' 이면 핑크 "내 데이터", 아니면 회색 "업종 평균".
-      // 사장님 결정 (2026-05-15):
-      // - '업종 평균' fallback 노출 X. 내 팔로워 데이터(personal) 모드일 때만 슬롯 표시.
-      // - 진행 안내는 HTML 정적 한 줄. JS 단계별 분기 제거.
+      // 사장님 결정 (2026-05-15 재정정):
+      // personal/seed 둘 다 슬롯 3개 표시. seed 면 모드 배지 '업종 평균' + 안내 카드 노출.
       function renderModeAndProgress() {
         if (!btCache) return;
         const modes = btCache.modes || {};
         const personal = modes[currentDay] === 'personal';
 
-        // 모드 배지 — personal 일 때만 "내 데이터" 표시. seed 면 숨김.
+        // 모드 배지 — personal/seed 둘 다 표시.
         const modeEl = document.querySelector('[data-bt-mode]');
         const modeLabelEl = document.querySelector('[data-bt-mode-label]');
         if (modeEl && modeLabelEl) {
-          if (personal) {
-            modeEl.classList.add('is-personal');
-            modeEl.classList.remove('is-seed');
-            modeLabelEl.textContent = '내 데이터';
-            modeEl.hidden = false;
-          } else {
-            modeEl.hidden = true;
-          }
+          modeEl.classList.toggle('is-personal', personal);
+          modeEl.classList.toggle('is-seed', !personal);
+          modeLabelEl.textContent = personal ? '내 데이터' : '업종 평균';
+          modeEl.hidden = false;
         }
 
-        // 진행 카드 — personal 완료면 숨김, 아니면 정적 안내 노출.
+        // 진행 카드 — personal 이면 hide, seed 면 표시 ('업종 평균 표시 중, 내 데이터 수집 중').
         const progEl = document.querySelector('[data-bt-progress]');
         if (!progEl) return;
         progEl.hidden = personal;
@@ -834,12 +829,9 @@
         const listEl = document.querySelector('[data-bt-list]');
         if (!btCache) return;
         renderModeAndProgress();
-        // 사장님 결정: personal 모드일 때만 슬롯 표시. seed (업종 평균) 면 슬롯 숨김.
-        const modes = btCache.modes || {};
-        const personal = modes[currentDay] === 'personal';
-        const items = personal ? (btCache[currentDay] || []) : [];
+        // 사장님 결정 (재정정): seed 도 슬롯 표시.
+        const items = btCache[currentDay] || [];
         if (!items.length) {
-          // personal 미달 상태에선 진행 카드 정적 안내가 보이므로 list 영역은 비움.
           listEl.innerHTML = '';
           return;
         }

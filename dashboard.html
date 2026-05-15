@@ -882,11 +882,11 @@
             <div class="besttime-card__sub" data-besttime-sub>게시가 쌓이면 가장 반응 좋은 시간을 알려드려요</div>
             <div class="besttime-slots" data-besttime-slots hidden></div>
             <div class="besttime-progress" data-besttime-progress hidden>
-              <!-- 사장님 결정 (2026-05-15): 단계별 progress 막대 제거.
-                   팔로워 노출 시간 수집 중이라는 한 줄 안내 + 자동 활성 안내. -->
+              <!-- 사장님 결정 (2026-05-15 재정정): seed 면 업종 평균 슬롯 표시 + 본 안내.
+                   personal 완료 시 본 카드 hidden + 모드 배지 '내 데이터' 표시. -->
               <div class="besttime-progress__hint" data-besttime-progress-hint>
-                내 팔로워에게 내 게시물이 언제 가장 노출되는지 시간을 수집하고 있어요.<br>
-                수집이 완료되면 이 기능이 자동으로 활성화돼요.
+                지금 보여지는 건 <strong>업종별 평균 베스트 시간</strong>이에요.<br>
+                내 팔로워의 실제 활동 시간이 모이면 자동으로 더 정확하게 바뀝니다.
               </div>
             </div>
           </div>
@@ -1215,14 +1215,9 @@
           const json = await res.json();
           const day = new Date().getDay();
           const isWeekend = day === 0 || day === 6;
-          // 사장님 결정 (2026-05-15): '업종 평균' fallback 노출 차단.
-          // personal (내 팔로워 데이터) 모드일 때만 슬롯 표시. seed (업종 평균) 면 수집 중 안내 유지.
-          const modes = (json && json.modes) || {};
-          const todayMode = isWeekend ? modes.weekend : modes.weekday;
-          const isPersonal = todayMode === 'personal';
-          const slots = isPersonal
-            ? ((isWeekend ? json.weekend : json.weekday) || json.allSlots || [])
-            : [];
+          // 사장님 결정 (2026-05-15 재정정): personal/seed 둘 다 슬롯 3개 표시.
+          // seed 면 배지가 '업종 평균' 으로 명시 + 진행 카드 안내 ('내 베스트 시간 수집 중') 유지.
+          const slots = (isWeekend ? json.weekend : json.weekday) || json.allSlots || [];
           const slotsEl = document.querySelector('[data-besttime-slots]');
           const titleEl = document.querySelector('[data-besttime]');
           const subEl = document.querySelector('[data-besttime-sub]');
@@ -1270,13 +1265,18 @@
               modeEl.hidden = false;
             }
 
-            // ── 진행 카드 (둘 다 ready 면 숨김, 아니면 평일·주말 막대 표시) ──
+            // ── 진행 카드 — seed 면 안내 표시, personal 이면 숨김 ──
+            // 사장님 결정 (2026-05-15 재정정): personal 활성 시 안내 카드 hide.
+            //   seed 면 슬롯 + 안내 ('업종 평균 표시 중, 내 데이터 모이면 정확해짐') 보존.
             const progress = (json && json.progress) || null;
             const thresholds = (json && json.thresholds) || { weekday: 5, weekend: 3 };
             const progressEl = document.querySelector('[data-besttime-progress]');
             const progressHintEl = document.querySelector('[data-besttime-progress-hint]');
-            if (progressEl && progress) {
-              // tier2 도 모두 ready 면 더 보여줄 진척 없음 → 카드 숨김.
+            if (progressEl) {
+              const isPersonalToday = todayMode === 'personal';
+              progressEl.hidden = isPersonalToday;
+            }
+            if (false) {
               const tier2 = (json && json.tier2_progress) || null;
               const t2BothReady = !!(tier2 && tier2.weekday && tier2.weekday.ready && tier2.weekend && tier2.weekend.ready);
               const t1BothReady = !!progress.ready;
