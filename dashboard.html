@@ -882,28 +882,11 @@
             <div class="besttime-card__sub" data-besttime-sub>게시가 쌓이면 가장 반응 좋은 시간을 알려드려요</div>
             <div class="besttime-slots" data-besttime-slots hidden></div>
             <div class="besttime-progress" data-besttime-progress hidden>
-              <div class="besttime-progress__hint" data-besttime-progress-hint></div>
-              <!-- 1단계: 팔로워 접속 시간 (Tier 1a — online_followers, 요일 분리 없음) -->
-              <div class="besttime-progress__stage besttime-progress__stage--compact" data-progress-stage="t1">
-                <div class="besttime-progress__status" data-progress-status="t1">
-                  <span class="besttime-progress__status-icon" aria-hidden="true">⏳</span>
-                  <span class="besttime-progress__status-label">1. 팔로워 접속 시간</span>
-                  <span class="besttime-progress__status-state" data-progress-state="t1">IG 연동 필요</span>
-                </div>
-              </div>
-              <!-- 2단계: 팔로워 활동 시간대 (Tier 2 — 28일 누적, 요일별 분리) -->
-              <div class="besttime-progress__stage" data-progress-stage="t2">
-                <div class="besttime-progress__stage-title">2. 팔로워 활동 시간대 (28일 누적)</div>
-                <div class="besttime-progress__row" data-progress-row-t2="weekday">
-                  <span class="besttime-progress__label">평일</span>
-                  <span class="besttime-progress__bar"><i data-progress-fill-t2="weekday"></i></span>
-                  <span class="besttime-progress__count" data-progress-count-t2="weekday">0/15일</span>
-                </div>
-                <div class="besttime-progress__row" data-progress-row-t2="weekend">
-                  <span class="besttime-progress__label">주말</span>
-                  <span class="besttime-progress__bar"><i data-progress-fill-t2="weekend"></i></span>
-                  <span class="besttime-progress__count" data-progress-count-t2="weekend">0/6일</span>
-                </div>
+              <!-- 사장님 결정 (2026-05-15): 단계별 progress 막대 제거.
+                   팔로워 노출 시간 수집 중이라는 한 줄 안내 + 자동 활성 안내. -->
+              <div class="besttime-progress__hint" data-besttime-progress-hint>
+                내 팔로워에게 내 게시물이 언제 가장 노출되는지 시간을 수집하고 있어요.<br>
+                수집이 완료되면 이 기능이 자동으로 활성화돼요.
               </div>
             </div>
           </div>
@@ -1323,16 +1306,8 @@
                   if (count) count.textContent = `${have}/${need}일`;
                   if (row) row.classList.toggle('is-ready', !!p2.ready);
                 });
-                // 안내 카피 — 진행 단계에 따라 분기
-                if (t2BothReady) {
-                  progressHintEl.textContent = '내 팔로워 활동 시간대 (28일 누적) 기반 추천. 가장 정확한 단계예요.';
-                } else if (t1BothReady) {
-                  progressHintEl.textContent = '팔로워 접속 시간 기반 추천 중. 28일 누적되면 요일별로 더 정확해져요.';
-                } else if (igOk) {
-                  progressHintEl.textContent = '팔로워 접속 데이터 수집 중 — 인스타 연동 후 24~48시간 안에 자동 활성돼요.';
-                } else {
-                  progressHintEl.textContent = 'IG 연동 시 팔로워 접속 시간 기반 추천이 자동 활성돼요.';
-                }
+                // 사장님 결정 (2026-05-15): 단계별 progress / 분기 안내 제거.
+                // HTML 의 정적 한 줄 안내 그대로 유지 (data-besttime-progress-hint).
               }
             }
 
