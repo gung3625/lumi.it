@@ -203,7 +203,7 @@
     }
     .step[hidden] { display: none; }
 
-    /* === Step 2: 갤러리 === */
+    /* === Step 2: 휴대폰 갤러리 (iOS Photos 패턴) === */
     .gallery-step {
       position: relative;
       display: flex;
@@ -212,86 +212,213 @@
       background: var(--bg);
       isolation: isolate;
     }
-    .gallery-step .coach {
-      margin: calc(env(safe-area-inset-top) + var(--space-12)) 0 var(--space-6);
-      padding: 0 var(--space-5);
-      animation: rise 600ms var(--ease-toss) 100ms backwards;
+
+    /* 상단 toolbar (iOS: 취소 | 최근 항목 | 다음) */
+    .gallery-toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+      padding:
+        calc(env(safe-area-inset-top) + var(--space-3))
+        var(--space-4)
+        var(--space-3);
+      background: var(--bg);
+      border-bottom: 1px solid var(--line);
     }
-    .gallery-wrap {
+    .gallery-toolbar__cancel,
+    .gallery-toolbar__next {
+      font-size: var(--text-body);
+      font-weight: var(--weight-medium);
+      color: var(--ink-muted);
+      padding: var(--space-2) var(--space-1);
+      background: none;
+      border: 0;
+      cursor: pointer;
+      transition: color var(--duration-snap) var(--ease-toss);
+    }
+    .gallery-toolbar__cancel:active { color: var(--ink); }
+    .gallery-toolbar__next {
+      color: var(--pink-500);
+      font-weight: var(--weight-semibold);
+    }
+    .gallery-toolbar__next:disabled {
+      color: var(--neutral-300);
+      cursor: default;
+    }
+    .gallery-toolbar__center {
+      text-align: center;
       flex: 1;
-      padding: var(--space-2) var(--space-5) var(--space-32);
+      min-width: 0;
+    }
+    .gallery-toolbar__title {
+      font-size: var(--text-body);
+      font-weight: var(--weight-semibold);
+      color: var(--ink);
+      line-height: 1.2;
+    }
+    .gallery-toolbar__counter {
+      display: block;
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+      margin-top: 2px;
+      letter-spacing: var(--tracking-normal);
     }
 
+    /* 코치 bubble — 사장님 시선 유도용 (휴대폰 갤러리에는 progress dots 대신 bubble) */
+    .coach-bubble {
+      position: absolute;
+      top: calc(env(safe-area-inset-top) + 76px);
+      left: 50%;
+      transform: translateX(-50%);
+      padding: var(--space-2) var(--space-4);
+      background: var(--ink);
+      color: var(--bg);
+      border-radius: var(--radius-full);
+      font-size: var(--text-caption);
+      font-weight: var(--weight-medium);
+      box-shadow: var(--shadow-lg);
+      z-index: 9;
+      white-space: nowrap;
+      pointer-events: none;
+      animation: bubble-in 400ms var(--ease-spring) 240ms backwards;
+    }
+    .coach-bubble::after {
+      content: "";
+      position: absolute;
+      top: -6px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 12px;
+      height: 6px;
+      background: var(--ink);
+      clip-path: polygon(50% 0, 100% 100%, 0 100%);
+    }
+    .coach-bubble[hidden] { display: none !important; }
+    @keyframes bubble-in {
+      0%   { opacity: 0; transform: translate(-50%, 8px) scale(0.92); }
+      100% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+    }
+
+    /* 갤러리 wrap (스크롤 영역) */
+    .gallery-wrap {
+      flex: 1;
+      padding: 0;
+    }
+
+    /* iOS Photos 4열 그리드 — gap 2px (사각형 셀, 채도 있는 grid) */
     .gallery {
       list-style: none;
       margin: 0;
       padding: 0;
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 6px;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 2px;
     }
-    .gallery__item { aspect-ratio: 1 / 1; }
+    .gallery__item {
+      aspect-ratio: 1 / 1;
+      animation: rise 280ms var(--ease-toss) calc(var(--idx, 0) * 18ms) backwards;
+    }
     .gallery__card {
       position: relative;
       width: 100%;
       height: 100%;
-      border-radius: var(--radius-md);
+      padding: 0;
+      border: 0;
+      background: none;
       overflow: hidden;
-      transition:
-        transform var(--duration-snap) var(--ease-toss),
-        box-shadow var(--duration-fast) var(--ease-toss);
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: transform var(--duration-snap) var(--ease-toss);
     }
-    .gallery__card:active { transform: scale(0.96); }
-    .gallery__card.is-selected {
-      box-shadow:
-        inset 0 0 0 3px var(--pink-500),
-        var(--shadow-glow-sm);
+    .gallery__card:active { transform: scale(0.97); }
+    .gallery__card.is-selected .gallery__bg {
+      filter: brightness(0.82);
     }
     .gallery__bg {
       position: absolute;
       inset: 0;
       display: block;
+      transition: filter var(--duration-snap) var(--ease-toss);
     }
-    .gallery__bg--g1  { background: linear-gradient(135deg, #FF6B8B, #DDA0DD); }
-    .gallery__bg--g2  { background: linear-gradient(135deg, #DDA0DD, #EDD080); }
-    .gallery__bg--g3  { background: linear-gradient(135deg, #EDD080, #DABA65); }
-    .gallery__bg--g4  { background: linear-gradient(135deg, #FF6B8B, #FFE6EE); }
-    .gallery__bg--g5  { background: linear-gradient(45deg, #FF6B8B, #EDD080); }
-    .gallery__bg--g6  { background: radial-gradient(circle at 30% 30%, #DDA0DD, #FF6B8B); }
-    .gallery__bg--g7  { background: linear-gradient(180deg, #EDD080, #DABA65); }
-    .gallery__bg--g8  { background: radial-gradient(ellipse at top, #FF6B8B, #DDA0DD 70%); }
-    .gallery__bg--g9  { background: linear-gradient(225deg, #DABA65, #FF6B8B); }
-    .gallery__bg--g10 { background: conic-gradient(from 0deg, #FF6B8B, #DDA0DD, #EDD080, #DABA65, #FF6B8B); }
-    .gallery__bg--g11 { background: linear-gradient(135deg, #FFE6EE, #FFD0DD); }
-    .gallery__bg--g12 { background: linear-gradient(45deg, #C8507A, #FF6B8B); }
 
+    /* 카페 분위기 그라데이션 10종 — 라떼/디저트/인테리어/외관/메뉴 등 시각 차별화 */
+    .gallery__bg--cafe-1  { background: linear-gradient(135deg, #c8a27a 0%, #f5e5d3 100%); }              /* 라떼아트 — 베이지·크림 */
+    .gallery__bg--cafe-2  { background: linear-gradient(135deg, #f5d4b3 0%, #e8a87c 100%); }              /* 디저트 — 오렌지 크림 */
+    .gallery__bg--cafe-3  { background: linear-gradient(135deg, #a89788 0%, #5b4a3f 100%); }              /* 인테리어 — 우드 */
+    .gallery__bg--cafe-4  { background: linear-gradient(135deg, #4a3528 0%, #8b6f5c 100%); }              /* 핸드드립 — 짙은 갈색 */
+    .gallery__bg--cafe-5  { background: linear-gradient(135deg, #ece9e3 0%, #b4a89a 100%); }              /* 외관 — 베이지 화이트 */
+    .gallery__bg--cafe-6  { background: linear-gradient(135deg, #2d2520 0%, #d4a85c 100%); }              /* 메뉴판 — 검정·노랑 */
+    .gallery__bg--cafe-7  { background: radial-gradient(circle at 30% 30%, #6b3f24, #2a1810); }           /* 커피잔 — 짙은 갈색 클로즈업 */
+    .gallery__bg--cafe-8  { background: linear-gradient(135deg, #fff2e0 0%, #f5b6c5 100%); }              /* 디저트 플레이팅 — 파스텔 */
+    .gallery__bg--cafe-9  { background: linear-gradient(135deg, #b8b6b3 0%, #ddd9d3 100%); }              /* 텀블러 — 회색 */
+    .gallery__bg--cafe-10 { background: linear-gradient(135deg, #a89066 0%, #d4b896 100%); }              /* 공간 — 우드·베이지 */
+
+    /* iOS 체크 마크 — 미선택: 반투명 검정 + 흰 border / 선택: 핑크 채움 */
     .gallery__check {
       position: absolute;
       top: var(--space-2);
       right: var(--space-2);
-      width: 28px;
-      height: 28px;
+      width: 24px;
+      height: 24px;
       border-radius: var(--radius-full);
-      background: var(--pink-500);
-      color: var(--neutral-0);
+      border: 2px solid rgba(255, 255, 255, 0.92);
+      background: rgba(0, 0, 0, 0.18);
+      backdrop-filter: blur(2px);
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: var(--shadow-md);
+      color: transparent;
+      transition:
+        background var(--duration-snap) var(--ease-toss),
+        border-color var(--duration-snap) var(--ease-toss),
+        color var(--duration-snap) var(--ease-toss),
+        transform var(--duration-snap) var(--ease-spring);
+    }
+    .gallery__card.is-selected .gallery__check {
+      background: var(--pink-500);
+      border-color: var(--pink-500);
+      color: var(--neutral-0);
+      transform: scale(1.08);
+    }
+    .gallery__check svg {
+      width: 14px;
+      height: 14px;
+      stroke-width: 3.5;
+    }
+
+    /* 선택 순서 번호 (iOS 패턴 — 선택 순서대로 1, 2, 3...) */
+    .gallery__order {
+      position: absolute;
+      top: var(--space-2);
+      right: var(--space-2);
+      width: 24px;
+      height: 24px;
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: var(--weight-bold);
+      color: var(--neutral-0);
+      background: var(--pink-500);
       opacity: 0;
       transform: scale(0);
+      pointer-events: none;
       transition:
         opacity var(--duration-snap) var(--ease-toss),
         transform var(--duration-snap) var(--ease-spring);
     }
-    .gallery__card.is-selected .gallery__check {
+    .gallery__card.is-selected .gallery__order {
       opacity: 1;
       transform: scale(1);
     }
-    .gallery__check svg {
-      width: 16px;
-      height: 16px;
-      stroke-width: 3;
+    /* 선택 시엔 number 만 보이고 check 는 숨김 */
+    .gallery__card.is-selected .gallery__check {
+      opacity: 0;
     }
 
     /* === Sticky CTA (다음 버튼) === */
@@ -837,40 +964,32 @@
 
     <!-- Step 2: 갤러리 -->
     <section class="gallery-step step" data-step="2" id="step-2" hidden>
-      <div class="progress" aria-label="튜토리얼 진행">
-        <span class="progress-dot"></span>
-        <span class="progress-dot is-active" aria-current="step"></span>
-        <span class="progress-dot"></span>
-        <span class="progress-dot"></span>
-        <span class="progress-dot"></span>
-      </div>
+      <!-- iOS Photos 상단 toolbar: 취소 | 최근 항목 + 카운터 | 다음 -->
+      <header class="gallery-toolbar">
+        <button class="gallery-toolbar__cancel" type="button" data-gallery-cancel aria-label="취소">취소</button>
+        <div class="gallery-toolbar__center">
+          <div class="gallery-toolbar__title">최근 항목</div>
+          <div class="gallery-toolbar__counter" data-gallery-counter>10장 중 0장 선택</div>
+        </div>
+        <button class="gallery-toolbar__next" type="button" data-next disabled aria-label="선택한 사진으로 다음 단계로">다음</button>
+      </header>
 
-      <button class="skip" type="button">건너뛰기</button>
-
-      <div class="coach">
-        <h1 class="coach-title">사진을 골라보세요!</h1>
-        <p class="coach-sub">1장에서 최대 10장까지 업로드 가능해요</p>
-      </div>
+      <!-- 코치 bubble — 1초 후 fade out (사장님 시선 유도) -->
+      <div class="coach-bubble" data-coach-bubble role="status">1장 이상 골라보세요</div>
 
       <div class="gallery-wrap">
         <ul class="gallery" role="list">
-          <li class="gallery__item"><button class="gallery__card" type="button" data-photo="g1"  aria-pressed="false" aria-label="사진 선택"><span class="gallery__bg gallery__bg--g1"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span></button></li>
-          <li class="gallery__item"><button class="gallery__card" type="button" data-photo="g2"  aria-pressed="false" aria-label="사진 선택"><span class="gallery__bg gallery__bg--g2"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span></button></li>
-          <li class="gallery__item"><button class="gallery__card" type="button" data-photo="g3"  aria-pressed="false" aria-label="사진 선택"><span class="gallery__bg gallery__bg--g3"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span></button></li>
-          <li class="gallery__item"><button class="gallery__card" type="button" data-photo="g4"  aria-pressed="false" aria-label="사진 선택"><span class="gallery__bg gallery__bg--g4"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span></button></li>
-          <li class="gallery__item"><button class="gallery__card" type="button" data-photo="g5"  aria-pressed="false" aria-label="사진 선택"><span class="gallery__bg gallery__bg--g5"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span></button></li>
-          <li class="gallery__item"><button class="gallery__card" type="button" data-photo="g6"  aria-pressed="false" aria-label="사진 선택"><span class="gallery__bg gallery__bg--g6"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span></button></li>
-          <li class="gallery__item"><button class="gallery__card" type="button" data-photo="g7"  aria-pressed="false" aria-label="사진 선택"><span class="gallery__bg gallery__bg--g7"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span></button></li>
-          <li class="gallery__item"><button class="gallery__card" type="button" data-photo="g8"  aria-pressed="false" aria-label="사진 선택"><span class="gallery__bg gallery__bg--g8"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span></button></li>
-          <li class="gallery__item"><button class="gallery__card" type="button" data-photo="g9"  aria-pressed="false" aria-label="사진 선택"><span class="gallery__bg gallery__bg--g9"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span></button></li>
-          <li class="gallery__item"><button class="gallery__card" type="button" data-photo="g10" aria-pressed="false" aria-label="사진 선택"><span class="gallery__bg gallery__bg--g10"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span></button></li>
-          <li class="gallery__item"><button class="gallery__card" type="button" data-photo="g11" aria-pressed="false" aria-label="사진 선택"><span class="gallery__bg gallery__bg--g11"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span></button></li>
-          <li class="gallery__item"><button class="gallery__card" type="button" data-photo="g12" aria-pressed="false" aria-label="사진 선택"><span class="gallery__bg gallery__bg--g12"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span></button></li>
+          <li class="gallery__item" style="--idx:0"><button class="gallery__card" type="button" data-photo="cafe-1"  aria-pressed="false" aria-label="라떼아트 사진 선택"><span class="gallery__bg gallery__bg--cafe-1"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span><span class="gallery__order" data-order aria-hidden="true"></span></button></li>
+          <li class="gallery__item" style="--idx:1"><button class="gallery__card" type="button" data-photo="cafe-2"  aria-pressed="false" aria-label="디저트 사진 선택"><span class="gallery__bg gallery__bg--cafe-2"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span><span class="gallery__order" data-order aria-hidden="true"></span></button></li>
+          <li class="gallery__item" style="--idx:2"><button class="gallery__card" type="button" data-photo="cafe-3"  aria-pressed="false" aria-label="인테리어 사진 선택"><span class="gallery__bg gallery__bg--cafe-3"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span><span class="gallery__order" data-order aria-hidden="true"></span></button></li>
+          <li class="gallery__item" style="--idx:3"><button class="gallery__card" type="button" data-photo="cafe-4"  aria-pressed="false" aria-label="핸드드립 사진 선택"><span class="gallery__bg gallery__bg--cafe-4"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span><span class="gallery__order" data-order aria-hidden="true"></span></button></li>
+          <li class="gallery__item" style="--idx:4"><button class="gallery__card" type="button" data-photo="cafe-5"  aria-pressed="false" aria-label="외관 사진 선택"><span class="gallery__bg gallery__bg--cafe-5"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span><span class="gallery__order" data-order aria-hidden="true"></span></button></li>
+          <li class="gallery__item" style="--idx:5"><button class="gallery__card" type="button" data-photo="cafe-6"  aria-pressed="false" aria-label="메뉴판 사진 선택"><span class="gallery__bg gallery__bg--cafe-6"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span><span class="gallery__order" data-order aria-hidden="true"></span></button></li>
+          <li class="gallery__item" style="--idx:6"><button class="gallery__card" type="button" data-photo="cafe-7"  aria-pressed="false" aria-label="커피잔 사진 선택"><span class="gallery__bg gallery__bg--cafe-7"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span><span class="gallery__order" data-order aria-hidden="true"></span></button></li>
+          <li class="gallery__item" style="--idx:7"><button class="gallery__card" type="button" data-photo="cafe-8"  aria-pressed="false" aria-label="디저트 플레이팅 사진 선택"><span class="gallery__bg gallery__bg--cafe-8"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span><span class="gallery__order" data-order aria-hidden="true"></span></button></li>
+          <li class="gallery__item" style="--idx:8"><button class="gallery__card" type="button" data-photo="cafe-9"  aria-pressed="false" aria-label="텀블러 사진 선택"><span class="gallery__bg gallery__bg--cafe-9"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span><span class="gallery__order" data-order aria-hidden="true"></span></button></li>
+          <li class="gallery__item" style="--idx:9"><button class="gallery__card" type="button" data-photo="cafe-10" aria-pressed="false" aria-label="공간 사진 선택"><span class="gallery__bg gallery__bg--cafe-10"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span><span class="gallery__order" data-order aria-hidden="true"></span></button></li>
         </ul>
-      </div>
-
-      <div class="step__cta">
-        <button class="cta-button" type="button" data-next disabled>다음</button>
       </div>
     </section>
 
@@ -1088,7 +1207,32 @@
       const addBtn = document.querySelector('.add-button');
       if (addBtn) addBtn.addEventListener('click', () => goTo(2));
 
-      // Step 2: 사진 카드 토글
+      // Step 2: 사진 카드 토글 — iOS Photos 패턴 (선택 순서 번호 표시 + 카운터)
+      //   selected 가 insertion-ordered Set 이라 size === 순서 + Array.from(selected).indexOf(id) 로 순번 추출.
+      //   해제 시 뒤 번호들이 1씩 당겨지므로 매번 renderOrderBadges 로 전체 갱신.
+      const counterEl = document.querySelector('[data-gallery-counter]');
+      const coachBubble = document.querySelector('[data-coach-bubble]');
+      function updateGalleryUI() {
+        // 카운터 갱신
+        if (counterEl) {
+          counterEl.textContent = `10장 중 ${selected.size}장 선택`;
+        }
+        // 다음 버튼 토글
+        const next = document.querySelector('[data-next]');
+        if (next) next.disabled = selected.size === 0;
+        // 코치 bubble — 한 장 선택하면 즉시 사라짐 (역할 끝)
+        if (coachBubble) {
+          coachBubble.hidden = selected.size > 0;
+        }
+        // 선택 순서 번호 batch 갱신
+        const order = Array.from(selected);
+        document.querySelectorAll('.gallery__card').forEach(card => {
+          const id = card.dataset.photo;
+          const idx = order.indexOf(id);
+          const badge = card.querySelector('[data-order]');
+          if (badge) badge.textContent = idx >= 0 ? String(idx + 1) : '';
+        });
+      }
       document.querySelectorAll('.gallery__card').forEach(card => {
         card.addEventListener('click', () => {
           const id = card.dataset.photo;
@@ -1102,10 +1246,28 @@
             card.classList.add('is-selected');
             card.setAttribute('aria-pressed', 'true');
           }
-          const next = document.querySelector('[data-next]');
-          if (next) next.disabled = selected.size === 0;
+          updateGalleryUI();
         });
       });
+
+      // 갤러리 toolbar "취소" — Step 1 로 복귀 (선택 상태 유지하지 않음)
+      const galleryCancel = document.querySelector('[data-gallery-cancel]');
+      if (galleryCancel) {
+        galleryCancel.addEventListener('click', () => {
+          // 선택 초기화 후 Step 1 으로
+          selected.forEach(id => {
+            const card = document.querySelector(`.gallery__card[data-photo="${id}"]`);
+            if (card) {
+              card.classList.remove('is-selected');
+              card.setAttribute('aria-pressed', 'false');
+            }
+          });
+          selected.clear();
+          updateGalleryUI();
+          if (coachBubble) coachBubble.hidden = false;
+          goTo(1);
+        });
+      }
 
       // === Step 3: 캡션 typewriter ===
       const CAPTION =
