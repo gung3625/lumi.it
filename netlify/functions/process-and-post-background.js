@@ -204,7 +204,10 @@ function getSharp() {
 
 async function loadImagesAsBase64(imageUrls) {
   const sharp = getSharp();
-  return Promise.all(imageUrls.map(async (url, i) => {
+  // Important fix (2026-05-15): allSettled 로 부분 실패 허용.
+  // 이전 Promise.all 은 캐러셀 5장 중 1장 실패해도 전체 throw → 캡션 무산.
+  // 1장 이상 성공하면 그것으로 분석 진행, 모두 실패면 throw.
+  const results = await Promise.allSettled(imageUrls.map(async (url, i) => {
     if (!url || typeof url !== 'string') {
       console.error('[process-and-post] 이미지 URL 비어있음: idx=' + i);
       throw new Error('이미지 URL이 비어 있습니다. (idx=' + i + ')');
@@ -238,6 +241,15 @@ async function loadImagesAsBase64(imageUrls) {
     }
     return raw.toString('base64');
   }));
+  const successes = results.filter((r) => r.status === 'fulfilled').map((r) => r.value);
+  if (successes.length === 0) {
+    const firstErr = results.find((r) => r.status === 'rejected');
+    throw new Error('모든 이미지 로드 실패: ' + (firstErr?.reason?.message || 'unknown'));
+  }
+  if (successes.length < results.length) {
+    console.warn(`[process-and-post] 이미지 ${results.length - successes.length}/${results.length} 장 실패 — 성공한 ${successes.length} 장만 분석`);
+  }
+  return successes;
 }
 
 // ─────────── 끝판왕 v2: Vision JSON 분석 + 컴팩트 캡션 + 검수 ───────────
@@ -1220,9 +1232,13 @@ exports.handler = async (event) => {
     // 관찰용: 진행단계 표시
     try { await supabase.from('reservations').update({ caption_error: 'STAGE:loading_images' }).eq('reserve_key', reservationKey); } catch(_) {}
 
-    // 3) Quota 검증 (gpt-4o ₩50/호출 — 이미지 분석 + 캡션 생성)
+    // 3) Quota 검증 — 한 reservation 처리 시 총 비용 합산.
+    // Important fix (2026-05-15): 이전엔 gpt-4o ₩50 한 번만 차감 → 실제 비용
+    // (gpt-4o vision + gpt-5.4 IG 캡션 + gpt-4o-mini 검수 + 재생성 + SRT) 약 ₩200+ 누락.
+    // 한 번에 estCost=200 으로 차감 (재생성 발생 시에도 추가 차감 없이 cap 안에서).
+    // 정확도보단 차감 누락 / TOCTOU 회피가 우선.
     try {
-      await checkAndIncrementQuota(reservation.user_id, 'gpt-4o');
+      await checkAndIncrementQuota(reservation.user_id, 'gpt-4o', 200);
     } catch (e) {
       if (e instanceof QuotaExceededError) {
         await safeAwait(supabase.from('reservations').update({

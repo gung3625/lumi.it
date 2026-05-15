@@ -30,7 +30,20 @@ exports.handler = async () => {
     const siteUrl = 'https://lumi.it.kr';
     let triggered = 0;
 
-    for (const row of rows) {
+    // Important fix (2026-05-15): row 직렬 await 가 hang 하면 1분 cycle 안에 50건 처리 불가.
+    // Promise.allSettled + AbortController 5초 timeout 으로 병렬화.
+    // background function 트리거 자체는 202 즉시 응답이라 5초 cap 안전.
+    const safeFetch = async (url, opts) => {
+      const ctrl = new AbortController();
+      const tid = setTimeout(() => ctrl.abort(), 5000);
+      try {
+        return await fetch(url, { ...opts, signal: ctrl.signal });
+      } finally {
+        clearTimeout(tid);
+      }
+    };
+
+    const results = await Promise.allSettled(rows.map(async (row) => {
       try {
         // post_mode='immediate' 은 process-and-post 가 캡션 생성 직후 직접
         // select-and-post 를 트리거함. 여기선 그게 실패해서 stuck 된 경우만 복구한다.
@@ -45,7 +58,7 @@ exports.handler = async () => {
             continue;
           }
           // 사용자가 이미 캡션을 선택한 예약 → select-and-post-background 로 IG 게시
-          const res = await fetch(`${siteUrl}/.netlify/functions/select-and-post-background`, {
+          const res = await safeFetch(`${siteUrl}/.netlify/functions/select-and-post-background`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -84,7 +97,7 @@ exports.handler = async () => {
             console.log('[scheduler] 스킵 pending (신규, reserve.js 가 처리 중일 가능성):', row.reserve_key);
             continue;
           }
-          const res = await fetch(`${siteUrl}/.netlify/functions/process-and-post-background`, {
+          const res = await safeFetch(`${siteUrl}/.netlify/functions/process-and-post-background`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -102,9 +115,9 @@ exports.handler = async () => {
       } catch (e) {
         console.error('[scheduler] 항목 오류:', row.reserve_key, e.message);
       }
-    }
-
-    console.log(`[scheduler] 완료: ${triggered}건 트리거 / ${rows.length}건 조회`);
+    }));
+    const failed = results.filter((r) => r.status === 'rejected').length;
+    console.log(`[scheduler] 완료: ${triggered}건 트리거 / ${rows.length}건 조회 / ${failed}건 실패`);
     return { statusCode: 200 };
 
   } catch (err) {
