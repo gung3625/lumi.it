@@ -42,20 +42,19 @@ async function getCached(key) {
   try {
     const { data, error } = await admin
       .from('llm_cache')
-      .select('result_json, expires_at, hit_count')
+      .select('result_json, expires_at')
       .eq('cache_key', key)
       .maybeSingle();
 
     if (error || !data) return null;
     if (new Date(data.expires_at).getTime() < Date.now()) return null;
 
-    // hit_count 증가 (silent fail)
-    admin.from('llm_cache')
-      .update({ hit_count: (data.hit_count || 0) + 1 })
-      .eq('cache_key', key)
-      .then(() => {})
-      .catch(() => {});
-
+    // hit_count 증가 로직 제거 (2026-05-15 코드 리뷰).
+    //   - 어디서도 READ 안 하는 dead column → 매 cache hit 마다 dead DB write.
+    //   - 기존 fire-and-forget `.then(...).catch(...)` 패턴은 Netlify Function
+    //     종료 시 race condition 위험까지 동반했음.
+    //   - 향후 캐시 통계가 필요해지면 별도 collection 설계 (예: hot key sampling).
+    //   - DB column 자체는 남겨둠 (migration 회피, setCached 의 INSERT 초기값=0 유지).
     return data.result_json;
   } catch (_) {
     return null;
