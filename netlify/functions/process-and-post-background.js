@@ -1232,35 +1232,11 @@ exports.handler = async (event) => {
 
     // M2.2 — Threads 전용 캡션 (결정 §12-A #4).
     //   post_to_thread=true 일 때만 추가 호출. 실패해도 IG 게시 흐름엔 영향 0
-    //   (Threads 게시 시점에 generated_threads_caption 이 null 이면 IG 캡션 fallback).
-    //
-    // 코드 리뷰 #3 — gpt-5.4 호출 1회 추가 비용 발생. checkAndIncrementQuota 로
-    //   사장님 OpenAI quota 잡기 (실패해도 fallback 으로 IG 게시는 진행).
-    let generatedThreadsCaption = null;
-    if (reservation.post_to_thread === true && captions[0]) {
-      let quotaOk = true;
-      try {
-        await checkAndIncrementQuota(reservation.user_id, 'gpt-5.4');
-      } catch (qe) {
-        if (qe instanceof QuotaExceededError) {
-          quotaOk = false;
-          console.warn('[process-and-post] Threads 캡션 quota 초과 (IG 캡션으로 fallback):', qe.message);
-        } else {
-          quotaOk = false;
-          console.warn('[process-and-post] Threads 캡션 quota 체크 예외 (IG 캡션으로 fallback):', qe && qe.message);
-        }
-      }
-      if (quotaOk) {
-        try {
-          await captionProgress('threads_gen_start');
-          generatedThreadsCaption = await generateThreadsCaption(imageAnalysis, captionInput, captions[0]);
-          console.log('[process-and-post] Threads 캡션 생성 완료 (len=' + generatedThreadsCaption.length + ')');
-        } catch (e) {
-          console.warn('[process-and-post] Threads 캡션 생성 실패 (IG 캡션으로 fallback):', e && e.message);
-          generatedThreadsCaption = null;
-        }
-      }
-    }
+    // 사장님 결정 (2026-05-15): Threads 캡션 별도 GPT 호출 폐기.
+    // 이유: 사장님 관찰상 Threads 캡션이 IG 보다 더 길게 나옴 (prompt 의도 '짧고 캐주얼'과 반대).
+    // 별도 호출 가치 없음. IG 캡션을 Threads 도 그대로 사용 → gpt-5.4 1회 절약 (~7초 + 비용 50%).
+    // generated_threads_caption 컬럼은 null 로 두면 select-and-post 가 자동으로 IG 캡션 fallback.
+    const generatedThreadsCaption = null;
 
     // 캡션 v2 운영 검증 — caption_history 에 'generated' row 적재 (validator 결과 동봉).
     // 실패해도 게시 흐름엔 영향 X. admin endpoint 가 이 row 들로 임계값 튜닝 데이터 확보.
