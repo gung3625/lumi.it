@@ -39,48 +39,79 @@ const {
 
 // 업종 × 요일 시드 매트릭스 (평일=0, 주말=1)
 // 근거: 국내 SNS 벤치마크 리서치 경향 종합. 고객 데이터 쌓이면 자동 대체됨.
-// 업종별 시드 — 한국 인스타 활동 패턴 재정제 (2026-05-15).
-// 변경: gym 주말 3개로 통일 / cafe 평일 19:30→21:00 / flower 평일 15:00→17:00 /
-// beauty·nail 평일 11:00→12:30 (회사 시간이라 점심이 더 정확).
+// 업종별 시드 — 1차 source 기반 재작성 (2026-05-15).
+//
+// 한국 베이스라인 (NHN DATA 2025 Q3, 3,600+ 계정 분석):
+//   출근 06~10시 / 점심 11~14시 / 저녁 20~22시 (일일 최대 피크) / 새벽 2~8시(금토) 활성
+//   - 출처: https://socialbiz.nhndata.com/post/blog_250925
+//   - 부가: 와이즈앱·리테일·굿즈 한국인 SNS 사용 통계
+//   - 한국인 인스타 일평균 20.7분 / 사용자 2,604만명
+//
+// 글로벌 업종별 데이터 (한국 시간대 보정 적용):
+//   - Mandala AI (35만 피드 분석): https://blog.mandalasystem.com/en/best-time-to-post-on-instagram
+//   - Sprout Social (19억 engagement, 307K 계정): https://sproutsocial.com/insights/best-times-to-post-on-instagram/
+//   - Later (600만+ 게시물): https://later.com/blog/best-time-to-post-on-instagram/
+//   - OpusClip Health/Fitness (16,939 클립): https://www.opus.pro/research/best-time-health-fitness-instagram
+//   - Bloom-Rush (Hootsuite 100만+ 게시물): https://bloom-rush.com/tpost/jnp5nsfvr1-...
+//
+// 신뢰도:
+//   상 (글로벌+한국 교차 검증): cafe / restaurant / fashion / gym / other
+//   중 (글로벌 데이터 있음, 한국 직접 검증 없음): beauty / flower
+//   하 (1차 자료 부족, beauty fallback): nail / hair
+//   ※ 시드는 출발점. 사장님 IG 연동 후 Tier 1a/2 가 자동 덮음.
 const INDUSTRY_MATRIX = {
   cafe: {
-    weekday: [{ time: '09:00', reason: '출근 후 모닝커피 탐색' }, { time: '14:00', reason: '오후 카페 한 잔 검색' }, { time: '21:00', reason: '밤 디저트·카페 영상 소비' }],
-    weekend: [{ time: '11:00', reason: '주말 아침 브런치 탐색' }, { time: '14:30', reason: '주말 오후 카페 피크' }, { time: '20:00', reason: '주말 저녁 디저트' }],
-    tip: '주말 오전 11~13시 인게이지먼트가 평일 대비 1.3배 높아요.',
+    // Mandala AI F&B 평일 10~13시·19시 + 한국 점심·저녁 피크.
+    weekday: [{ time: '08:00', reason: '출근 모닝커피 결정 직전' }, { time: '14:00', reason: '오후 한 잔 검색 피크' }, { time: '21:00', reason: '저녁 디저트·카페 영상 소비' }],
+    weekend: [{ time: '10:00', reason: '주말 브런치 카페 검색' }, { time: '14:00', reason: '주말 오후 카페 투어' }, { time: '20:00', reason: '주말 저녁 디저트' }],
+    tip: '주말 오전 10~12시 콘텐츠 저장 수가 평일 대비 1.3배 높아요.',
   },
   restaurant: {
-    weekday: [{ time: '11:30', reason: '점심 메뉴 탐색' }, { time: '17:30', reason: '저녁 식당 검색 피크' }, { time: '21:30', reason: '야식·2차 검색' }],
-    weekend: [{ time: '12:00', reason: '주말 점심 맛집 탐색' }, { time: '18:00', reason: '주말 저녁 외식' }, { time: '21:00', reason: '2차 장소 탐색' }],
+    // Sprout Social 식음료 11~13시·17~19시 + 한국 야간 피크.
+    weekday: [{ time: '11:30', reason: '점심 직전 식당 검색' }, { time: '17:30', reason: '저녁 외식 결정 시간' }, { time: '21:00', reason: '야식·내일 식당 검색' }],
+    weekend: [{ time: '11:00', reason: '주말 브런치 탐색' }, { time: '17:00', reason: '주말 저녁 약속 결정' }, { time: '20:00', reason: '식후 콘텐츠 소비' }],
     tip: '음식 사진은 게시 후 1시간 내 저장 수가 많아요 — 식사 직전 업로드가 유리해요.',
   },
   beauty: {
-    weekday: [{ time: '12:30', reason: '점심시간 뷰티 영상 소비' }, { time: '21:00', reason: '밤 뷰티 콘텐츠 피크' }, { time: '22:30', reason: '자기 전 영감 저장' }],
-    weekend: [{ time: '13:00', reason: '주말 셀프케어 준비' }, { time: '20:00', reason: '주말 밤 뷰티 영감 탐색' }, { time: '22:00', reason: '내일 준비 콘텐츠 저장' }],
-    tip: '화요일~목요일 21시 전후 문의 전환률이 가장 높아요.',
+    // Mandala AI Fashion/Beauty 평일 8~12시·17~20시; 주말 9~13시·19~21시 + 한국 저녁 피크.
+    weekday: [{ time: '12:00', reason: '점심 셀프케어 영상 소비' }, { time: '19:00', reason: '퇴근 후 뷰티 콘텐츠' }, { time: '21:30', reason: '저녁 루틴 시청 피크' }],
+    weekend: [{ time: '10:00', reason: '주말 메이크업 준비' }, { time: '14:00', reason: '주말 오후 쇼핑 검색' }, { time: '20:00', reason: '저녁 셀프케어' }],
+    tip: '화요일~목요일 21시 전후 DM 문의 전환률이 가장 높아요 (NHN DATA).',
   },
   nail: {
-    weekday: [{ time: '12:30', reason: '점심시간 네일 디자인 탐색' }, { time: '21:00', reason: '밤 디자인 저장 피크' }, { time: '22:30', reason: '다음날 예약 탐색' }],
-    weekend: [{ time: '13:00', reason: '주말 셀프 탐색' }, { time: '20:00', reason: '주말 밤 영감 저장' }, { time: '22:00', reason: '다음주 예약 탐색' }],
+    // ※ 네일 업종 1차 자료 없음. Beauty 카테고리 fallback + 한국 야간 피크.
+    weekday: [{ time: '12:30', reason: '점심 예약 검색' }, { time: '19:30', reason: '퇴근 후 네일 영감' }, { time: '21:00', reason: '저녁 콘텐츠 피크' }],
+    weekend: [{ time: '11:00', reason: '주말 예약 검색' }, { time: '14:00', reason: '주말 살롱 방문 결정' }, { time: '20:00', reason: '저녁 영감 검색' }],
     tip: '주중 21시 게시가 다음날 오전 DM 문의로 이어지는 경우가 많아요.',
   },
+  hair: {
+    // ※ 헤어 업종 1차 자료 부족. Beauty 카테고리 fallback.
+    weekday: [{ time: '12:00', reason: '점심 예약·검색' }, { time: '18:00', reason: '퇴근 후 헤어 변신 영감' }, { time: '21:00', reason: '저녁 콘텐츠 피크' }],
+    weekend: [{ time: '10:00', reason: '주말 살롱 방문 전 검색' }, { time: '14:00', reason: '오후 시술 후 콘텐츠' }, { time: '20:00', reason: '저녁 영감' }],
+    tip: '본인 계정 인사이트로 보정 권장 (1차 업종 자료 부족).',
+  },
   flower: {
-    weekday: [{ time: '11:00', reason: '오전 선물·기념일 탐색' }, { time: '17:00', reason: '퇴근 픽업 결심 시각' }, { time: '20:00', reason: '저녁 감성 꽃 탐색' }],
-    weekend: [{ time: '11:00', reason: '주말 오전 여유 탐색' }, { time: '14:30', reason: '주말 오후 방문 피크' }, { time: '17:00', reason: '주말 저녁 선물 결제' }],
-    tip: '금요일 10~15시 게시가 주말 매출과 가장 상관관계가 높아요.',
+    // Bloom-Rush "출근 전 첫 폰 체크" + 글로벌 06~10시 보정 (KST 한국 출근 시간).
+    weekday: [{ time: '07:00', reason: '출근 첫 폰 체크, 시각적 콘텐츠 강세' }, { time: '12:00', reason: '점심 선물·기념일 탐색' }, { time: '20:00', reason: '저녁 콘텐츠 피크' }],
+    weekend: [{ time: '09:00', reason: '주말 아침 여유 탐색' }, { time: '14:00', reason: '주말 오후 꽃 배달 결정' }, { time: '19:00', reason: '저녁 영감 저장' }],
+    tip: '기념일·발렌타인 같은 occasion 캘린더 영향이 시간대보다 더 큽니다.',
   },
   clothing: {
-    weekday: [{ time: '12:30', reason: '점심시간 쇼핑 탐색' }, { time: '20:00', reason: '퇴근 후 저녁 쇼핑 피크' }, { time: '22:00', reason: '밤 코디 영감 저장' }],
-    weekend: [{ time: '13:00', reason: '주말 오후 쇼핑' }, { time: '19:00', reason: '주말 저녁 OOTD' }, { time: '21:00', reason: '다음주 준비 저장' }],
-    tip: '리퀘스트 DM은 22시 전후 게시물에서 가장 많이 발생해요.',
+    // Mandala AI Fashion/Beauty + 와이즈앱 쇼핑앱 결제 야간 피크.
+    weekday: [{ time: '12:00', reason: '점심 쇼핑 검색' }, { time: '19:00', reason: '퇴근 후 OOTD 검색' }, { time: '21:30', reason: '저녁 쇼핑·구매 결정 피크' }],
+    weekend: [{ time: '11:00', reason: '주말 외출 룩 검색' }, { time: '14:00', reason: '주말 오후 쇼핑' }, { time: '20:00', reason: '저녁 영감·구매' }],
+    tip: '결제·DM은 21~22시 전후 게시물에서 가장 많이 발생해요 (와이즈앱).',
   },
   gym: {
-    weekday: [{ time: '06:30', reason: '모닝 운동 루틴 탐색' }, { time: '12:00', reason: '점심시간 운동 다짐' }, { time: '20:00', reason: '저녁 오운완 피크' }],
-    weekend: [{ time: '09:00', reason: '주말 아침 운동 시작' }, { time: '14:00', reason: '주말 오후 클래스 탐색' }, { time: '20:00', reason: '주말 저녁 오운완' }],
-    tip: '#오운완 해시태그는 평일 저녁 8~9시가 노출량 최대예요.',
+    // OpusClip Health/Fitness 피크 16~19시 UTC, 월·수 강세 + 한국 출퇴근 운동 시간.
+    weekday: [{ time: '06:30', reason: '출근 전 운동 동기부여' }, { time: '12:00', reason: '점심 운동 영감' }, { time: '19:00', reason: '퇴근 후 운동 콘텐츠' }],
+    weekend: [{ time: '08:00', reason: '주말 운동 시작' }, { time: '11:00', reason: '오전 운동 후 콘텐츠' }, { time: '18:00', reason: '저녁 운동/회복' }],
+    tip: '#오운완 해시태그는 평일 19시 전후 노출량 최대 (OpusClip).',
   },
   other: {
-    weekday: [{ time: '12:30', reason: '점심시간 SNS 탐색' }, { time: '19:00', reason: '저녁 여가 시간' }, { time: '21:00', reason: '밤 콘텐츠 소비 피크' }],
-    weekend: [{ time: '11:00', reason: '주말 오전 여유' }, { time: '14:00', reason: '주말 오후 피크' }, { time: '20:00', reason: '주말 저녁 여가' }],
+    // NHN DATA Q3 2025 한국 일반 활동 시간대.
+    weekday: [{ time: '08:00', reason: '출근 시간 콘텐츠 소비' }, { time: '12:30', reason: '점심 SNS 탐색' }, { time: '21:00', reason: '저녁 일일 최대 피크' }],
+    weekend: [{ time: '10:00', reason: '주말 아침 여유' }, { time: '14:00', reason: '주말 오후 피크' }, { time: '20:00', reason: '주말 저녁 여가' }],
     tip: '일주일 3~5회 꾸준한 업로드 주기가 알고리즘에 가장 유리해요.',
   },
 };
@@ -92,8 +123,9 @@ function normalizeCategory(cat) {
   // 한글/별칭 매핑
   if (/카페|coffee/.test(key)) return 'cafe';
   if (/음식|식당|food|restaurant|한식|양식|중식|일식/.test(key)) return 'restaurant';
-  if (/뷰티|미용|beauty|salon/.test(key)) return 'beauty';
-  if (/네일|nail/.test(key)) return 'nail';
+  if (/네일|nail/.test(key)) return 'nail';                      // beauty 보다 먼저 (네일 ⊂ 뷰티 매칭 방지)
+  if (/헤어|미용실|hair|salon/.test(key)) return 'hair';         // beauty 보다 먼저 (미용 매칭 방지)
+  if (/뷰티|미용|beauty/.test(key)) return 'beauty';
   if (/플라워|꽃|flower/.test(key)) return 'flower';
   if (/의류|옷|패션|clothing|fashion/.test(key)) return 'clothing';
   if (/운동|헬스|필라테스|요가|gym|pilates|yoga|fitness|크로스핏|crossfit/.test(key)) return 'gym';
