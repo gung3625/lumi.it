@@ -92,21 +92,26 @@ async function writeCache(sellerId, data) {
   }
 }
 
-// IG insights 호출 — period=days_28 + metric_type=total_value 가 v22+ 필수
-async function fetchAccountInsights(igUserId, token) {
-  // reach + profile_views 둘 다 동일 호출에서 가져온다. 일부 권한/계정에서 한쪽이 빠질 수 있으므로
-  // try/catch 로 graceful 처리.
+// IG insights 호출 — 28일 윈도우.
+// 사장님 보고 (2026-05-15): period=days_28 가 일부 계정에서 0 반환 → weekly 와 동일하게
+// period=day + since/until 28일 + 클라이언트 합산 패턴으로 통일.
+async function fetchAccountInsights(igUserId, token, sinceSec, untilSec) {
   try {
     const resp = await igGraphRequest(token, `/${igUserId}/insights`, {
       metric: 'reach,profile_views',
-      period: 'days_28',
+      period: 'day',
       metric_type: 'total_value',
+      since: sinceSec,
+      until: untilSec,
     });
     const out = { reach: 0, profileViews: 0 };
     for (const m of resp.data || []) {
-      const total = (m.total_value && typeof m.total_value.value === 'number')
-        ? m.total_value.value
-        : (Array.isArray(m.values) && m.values.length ? Number(m.values[m.values.length - 1].value || 0) : 0);
+      let total = 0;
+      if (m.total_value && typeof m.total_value.value === 'number') {
+        total = m.total_value.value;
+      } else if (Array.isArray(m.values) && m.values.length) {
+        total = m.values.reduce((s, v) => s + Number(v.value || 0), 0);
+      }
       if (m.name === 'reach') out.reach = Number(total) || 0;
       else if (m.name === 'profile_views') out.profileViews = Number(total) || 0;
     }
@@ -230,15 +235,15 @@ exports.handler = async (event) => {
 
   // Graph API 병렬 호출
   try {
+    const sinceSec = Math.floor(since.getTime() / 1000);
+    const untilSec = Math.floor(now.getTime() / 1000);
     const [snapshot, insights, mediaSums] = await Promise.all([
       fetchAccountSnapshot(igCtx.igUserId, igCtx.accessToken),
-      fetchAccountInsights(igCtx.igUserId, igCtx.accessToken),
+      fetchAccountInsights(igCtx.igUserId, igCtx.accessToken, sinceSec, untilSec),
       fetchMediaSums(igCtx.igUserId, igCtx.accessToken, since.getTime()),
     ]);
 
     // M4.2 — Threads 사장님 단위 인사이트 (있으면). insight-weekly.js 패턴 동일.
-    const sinceSec = Math.floor(since.getTime() / 1000);
-    const untilSec = Math.floor(now.getTime() / 1000);
     let threadsBlock = null;
     try {
       const threadsCtx = await getThreadsTokenForSeller(sellerId, admin);
