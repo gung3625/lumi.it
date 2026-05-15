@@ -1268,6 +1268,7 @@
         // 이미지: 90초, 영상: 180초 (ffmpeg 90초 trim+CRF20 medium + Meta REELS 컨테이너 polling 합쳐서 평균 90~150초)
         const TIMEOUT_MS = opts.timeoutMs || 90 * 1000;
         const INTERVAL_MS = 1500;
+        const FETCH_TIMEOUT_MS = 8000;  // 매 폴링 fetch 8초 cap — backend hang 방어
         const start = Date.now();
         // 첫 단계는 caption (분석/작성) 으로 — 업로드는 이미 끝났음.
         // 첫 폴링 응답이 1.5초 후에 오므로 타이틀도 즉시 동기화 (단계와 mismatch 방지)
@@ -1276,13 +1277,17 @@
         while (Date.now() - start < TIMEOUT_MS) {
           await new Promise(r => setTimeout(r, INTERVAL_MS));
           let s = null;
+          // AbortController 로 매 fetch timeout cap — 무한 대기로 인한 while loop stuck 방어
+          const ctrl = new AbortController();
+          const fetchTid = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
           try {
-            const r = await fetch('/api/reservation-status?key=' + encodeURIComponent(reserveKey), { headers: authHeaders });
+            const r = await fetch('/api/reservation-status?key=' + encodeURIComponent(reserveKey), { headers: authHeaders, signal: ctrl.signal });
             if (r.ok) {
               const j = await r.json();
               s = j.status;
             }
-          } catch (_) { /* 네트워크 깜빡 — 다음 사이클에 재시도 */ }
+          } catch (_) { /* 네트워크 깜빡 / timeout — 다음 사이클에 재시도 */
+          } finally { clearTimeout(fetchTid); }
           if (!s) continue;
 
           const stage = statusToStage(s);
@@ -1453,6 +1458,9 @@
           isSubmitting = false;
           submitBtn.disabled = false;
           submitBtn.textContent = '📷 캡션 만들고 게시';
+          // 5초 후 히스토리로 강제 이동 — register-product 페이지에 stuck 되어 무한 로딩으로
+          // 보이는 케이스 방어 (사장님 보고 2026-05-15). 사장님이 결과 확인 + 재시도 시 진입 가능.
+          setTimeout(() => { if (!isSubmitting) location.href = '/history?tab=past'; }, 5000);
         }
       }
 
