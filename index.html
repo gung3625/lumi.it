@@ -38,15 +38,61 @@
       padding-bottom: calc(110px + env(safe-area-inset-bottom));
     }
 
-    /* 상단 로고 헤더 */
+    /* 튜토리얼 안내 배너 — 사장님이 "이게 미리보기" 라고 즉시 인지 (2026-05-15 사장님 요청) */
+    .tutorial-banner {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding:
+        calc(env(safe-area-inset-top) + var(--space-2))
+        var(--space-3)
+        var(--space-2);
+      background: linear-gradient(135deg, #FF6B8B 0%, #DDA0DD 100%);
+      color: var(--neutral-0);
+      font-size: var(--text-caption);
+      font-weight: var(--weight-semibold);
+      letter-spacing: var(--tracking-tight);
+      box-shadow: 0 2px 12px rgba(255, 107, 139, 0.22);
+    }
+    .tutorial-banner__main {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+    }
+    .tutorial-banner__icon {
+      font-size: var(--text-body);
+      line-height: 1;
+    }
+    .tutorial-banner__text strong {
+      font-weight: var(--weight-bold);
+    }
+    .tutorial-banner__skip {
+      flex: 0 0 auto;
+      padding: 4px var(--space-2);
+      font-size: var(--text-label);
+      font-weight: var(--weight-medium);
+      color: rgba(255, 255, 255, 0.92);
+      background: rgba(255, 255, 255, 0.18);
+      border: 0;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background var(--duration-snap) var(--ease-toss);
+    }
+    .tutorial-banner__skip:active { background: rgba(255, 255, 255, 0.32); }
+
+    /* 상단 로고 헤더 — 배너가 sticky 라 safe-area 는 배너에 흡수, 헤더는 일반 간격 */
     .home-header {
       display: flex;
       align-items: center;
       justify-content: center;
-      padding:
-        calc(env(safe-area-inset-top) + var(--space-5))
-        var(--space-5)
-        var(--space-4);
+      padding: var(--space-5) var(--space-5) var(--space-4);
     }
     .home-logo {
       height: 28px;
@@ -988,7 +1034,14 @@
 
     <!-- Step 1: 홈 (실제 dashboard 모사 — 신규 사용자 첫 진입 동일) -->
     <section class="stage step" data-step="1" id="step-1">
-      <button class="skip" type="button" aria-label="튜토리얼 건너뛰고 가입으로">건너뛰기</button>
+      <!-- 튜토리얼 안내 배너 — 사장님이 "이게 미리보기" 즉시 인지 + skip 통합 -->
+      <div class="tutorial-banner" role="status" aria-live="polite">
+        <span class="tutorial-banner__main">
+          <span class="tutorial-banner__icon" aria-hidden="true">✨</span>
+          <span class="tutorial-banner__text"><strong>1분 미리보기</strong> · 따라가 보면 어떻게 게시되는지 보여요</span>
+        </span>
+        <button class="tutorial-banner__skip skip" type="button" aria-label="튜토리얼 건너뛰고 가입으로">건너뛰기</button>
+      </div>
 
       <header class="home-header">
         <img class="home-logo" src="/assets/logo-wordmark.png" alt="루미" width="56" height="28" loading="eager" decoding="async">
@@ -1025,7 +1078,7 @@
       </main>
 
       <!-- 코치 bubble — + 버튼 위로 화살표 -->
-      <div class="home-coach-bubble" role="status">아래 + 버튼을 눌러보세요</div>
+      <div class="home-coach-bubble" role="status">사진 올리려면 가운데 + 버튼을 눌러보세요</div>
 
       <!-- 하단 탭바 (실제 dashboard 와 동일) -->
       <nav class="tabbar" aria-label="메뉴">
