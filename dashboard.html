@@ -1215,9 +1215,14 @@
           const json = await res.json();
           const day = new Date().getDay();
           const isWeekend = day === 0 || day === 6;
-          const slots = (isWeekend ? json.weekend : json.weekday)
-            || json.allSlots
-            || [];
+          // 사장님 결정 (2026-05-15): '업종 평균' fallback 노출 차단.
+          // personal (내 팔로워 데이터) 모드일 때만 슬롯 표시. seed (업종 평균) 면 수집 중 안내 유지.
+          const modes = (json && json.modes) || {};
+          const todayMode = isWeekend ? modes.weekend : modes.weekday;
+          const isPersonal = todayMode === 'personal';
+          const slots = isPersonal
+            ? ((isWeekend ? json.weekend : json.weekday) || json.allSlots || [])
+            : [];
           const slotsEl = document.querySelector('[data-besttime-slots]');
           const titleEl = document.querySelector('[data-besttime]');
           const subEl = document.querySelector('[data-besttime-sub]');
