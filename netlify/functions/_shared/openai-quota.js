@@ -28,8 +28,10 @@ const MODEL_COST_KRW = {
 };
 
 // 한도 상수
-const SELLER_DAILY_LIMIT_KRW  =  1_000;   // 셀러당 일 ₩1,000
-const SELLER_MONTHLY_LIMIT_KRW = 10_000;  // 셀러당 월 ₩10,000
+// 셀러당 한도 무력화 — 사장님 결정 (2026-05-15). usage 카운팅은 그대로 (통계용).
+// 서비스 전체 일일 ₩100,000 안전망만 유지 (SERVICE_DAILY_LIMIT_KRW, 환경변수 오버라이드 가능).
+const SELLER_DAILY_LIMIT_KRW  = Number.MAX_SAFE_INTEGER;
+const SELLER_MONTHLY_LIMIT_KRW = Number.MAX_SAFE_INTEGER;
 
 function getServiceDailyLimit() {
   const v = parseInt(process.env.LUMI_DAILY_OPENAI_BUDGET, 10);
