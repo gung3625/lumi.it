@@ -2130,7 +2130,9 @@
       }
       // 현재 tour step + scroll listener — 사장님 스크롤 시 spotlight 따라가게 (CTA 가 cutout
       // 자리로 들어오면 안 가리는 버그 fix, 2026-05-17).
-      let currentTourIdx = null;
+      // var 사용 — closeTour() 가 goTo(1) → IIFE 초기화 단계에서 호출되어 currentTourIdx
+      // 접근 시 let TDZ 위반으로 IIFE 전체 throw 했던 버그 fix (2026-05-17).
+      var currentTourIdx = null;
       function calcCurrentRect() {
         if (currentTourIdx == null) return null;
         const cur = TOUR_STEPS[currentTourIdx];
