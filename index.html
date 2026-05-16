@@ -22,14 +22,12 @@
   <style>
     /* === 랜딩 페이지 (mobile-first / bento + oversized hero, 2026 트렌드) === */
     /* 사장님 지적 2026-05-16: "스크롤을 아래로 쭉 내리면 흔들리는 현상이 있어."
-       원인 추정: ① iOS Safari rubber-band (페이지 끝) + ② 18개 카드 호흡 box-shadow
-       paint 가 scroll compositor 와 충돌 → frame drop.
-       fix ①: overscroll-behavior: none (랜딩은 pull-to-refresh 불필요).
-       fix ②: 카드에 contain + will-change → paint 격리, GPU layer 분리. */
+       1차 시도였던 overscroll-behavior:none 은 Chrome pull-to-refresh 도 함께
+       차단해서 즉시 제거. 흔들림 fix 는 카드의 contain + will-change 만 유지
+       (paint 격리, scroll compositor 와 분리). */
     html, body {
       margin: 0;
       background: var(--bg);
-      overscroll-behavior: none;
     }
     body {
       font-family: var(--font-system);
