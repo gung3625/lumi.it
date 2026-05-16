@@ -65,6 +65,12 @@
       height: 28px;
       width: auto;
     }
+    /* topbar 우측: 로그인(ghost) + 회원가입(강조 pill) 묶음 */
+    .hero__nav {
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+    }
     .hero__login {
       font-size: var(--text-caption);
       font-weight: var(--weight-semibold);
@@ -77,6 +83,23 @@
     @media (hover: hover) {
       .hero__login:hover { color: var(--ink); background: var(--bg-soft); }
     }
+    .hero__signup {
+      font-size: var(--text-caption);
+      font-weight: var(--weight-semibold);
+      color: var(--neutral-0);
+      text-decoration: none;
+      padding: var(--space-2) var(--space-4);
+      border-radius: var(--radius-pill);
+      background: var(--gradient-signature);
+      box-shadow: var(--shadow-glow-sm);
+      transition:
+        transform var(--duration-snap) var(--ease-toss),
+        box-shadow var(--duration-base) var(--ease-soft);
+    }
+    @media (hover: hover) {
+      .hero__signup:hover { box-shadow: var(--shadow-glow); }
+    }
+    .hero__signup:active { transform: scale(0.96); }
 
     .hero__body {
       flex: 1;
@@ -163,24 +186,6 @@
     }
     .hero__cta-primary:active { transform: scale(0.98); }
     .hero__cta-primary svg { width: 18px; height: 18px; stroke-width: 2.4; }
-
-    .hero__cta-secondary {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: var(--space-2);
-      padding: var(--space-3) var(--space-4);
-      color: var(--ink-soft);
-      font-size: var(--text-body);
-      font-weight: var(--weight-medium);
-      text-decoration: none;
-      border-radius: var(--radius-pill);
-      transition: color var(--duration-snap) var(--ease-toss), background var(--duration-snap) var(--ease-toss);
-    }
-    @media (hover: hover) {
-      .hero__cta-secondary:hover { color: var(--ink); background: var(--bg-soft); }
-    }
-    .hero__cta-secondary svg { width: 14px; height: 14px; stroke-width: 2.4; opacity: 0.7; }
 
     .hero__scroll-hint {
       align-self: center;
@@ -436,7 +441,10 @@
       <a class="hero__logo" href="/" aria-label="루미(lumi) 홈">
         <img src="/assets/logo-wordmark.png" alt="루미(lumi)" width="56" height="28" decoding="async">
       </a>
-      <a class="hero__login" href="/dashboard">로그인</a>
+      <nav class="hero__nav" aria-label="계정">
+        <a class="hero__login" href="/dashboard">로그인</a>
+        <a class="hero__signup" href="/signup">회원가입</a>
+      </nav>
     </header>
 
     <div class="hero__body">
@@ -453,10 +461,6 @@
         <a class="hero__cta-primary" href="/tutorial" aria-label="1분 미리보기 튜토리얼">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"/></svg>
           1분 미리보기 튜토리얼
-        </a>
-        <a class="hero__cta-secondary" href="/signup">
-          카카오로 바로 시작
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
         </a>
       </div>
     </div>
