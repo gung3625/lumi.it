@@ -677,6 +677,13 @@
       </svg>
     </a>
     <h1 class="topbar__title">설정</h1>
+    <button class="topbar__logout" type="button" data-logout aria-label="로그아웃">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+        <polyline points="16 17 21 12 16 7"/>
+        <line x1="21" y1="12" x2="9" y2="12"/>
+      </svg>
+    </button>
   </header>
 
   <main class="wrap" role="main">
@@ -1358,10 +1365,16 @@
       }
 
       // ── 로그아웃·탈퇴 ──
-      document.querySelector('[data-logout]').addEventListener('click', () => {
-        if (!confirm('로그아웃 하시겠어요?')) return;
-        ['lumi-auth','lumi_auth','seller_jwt'].forEach(k => localStorage.removeItem(k));
-        location.href = '/';
+      // 모든 [data-logout] (topbar + action-btn) 에 동일 핸들러 — 2026-05-16 사장님 결정 "모든 탭".
+      document.querySelectorAll('[data-logout]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (!confirm('로그아웃 하시겠어요?')) return;
+          ['lumi-auth','lumi_auth','seller_jwt'].forEach(k => {
+            try { localStorage.removeItem(k); } catch {}
+          });
+          try { sessionStorage.clear(); } catch {}
+          location.href = '/';
+        });
       });
       // ── 회원 탈퇴 / 신청 취소 ──
       // 흐름:

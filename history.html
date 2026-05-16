@@ -776,6 +776,13 @@
       </svg>
     </a>
     <h1 class="topbar__title">히스토리</h1>
+    <button class="topbar__logout" type="button" data-logout aria-label="로그아웃">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+        <polyline points="16 17 21 12 16 7"/>
+        <line x1="21" y1="12" x2="9" y2="12"/>
+      </svg>
+    </button>
   </header>
 
   <main class="wrap" role="main">
@@ -907,6 +914,18 @@
         localStorage.getItem('seller_jwt') || '';
       if (!token) { location.replace('/'); return; }
       const authHeaders = { Authorization: 'Bearer ' + token };
+
+      // 로그아웃 — topbar [data-logout] (2026-05-16 사장님: 모든 탭에 로그아웃)
+      document.querySelectorAll('[data-logout]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (!confirm('로그아웃 하시겠어요?')) return;
+          ['lumi-auth','lumi_auth','seller_jwt'].forEach(k => {
+            try { localStorage.removeItem(k); } catch {}
+          });
+          try { sessionStorage.clear(); } catch {}
+          location.href = '/';
+        });
+      });
 
       // HTML escape — 사용자 입력 캡션·예약 키·URL 을 innerHTML 에 삽입 전 항상 통과.
       function esc(s) {

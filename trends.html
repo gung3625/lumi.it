@@ -515,7 +515,13 @@
       </svg>
     </a>
     <span class="topbar__title">요즘 뜨는 키워드</span>
-    <span class="topbar__icon" aria-hidden="true"></span>
+    <button class="topbar__logout" type="button" data-logout aria-label="로그아웃">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+        <polyline points="16 17 21 12 16 7"/>
+        <line x1="21" y1="12" x2="9" y2="12"/>
+      </svg>
+    </button>
   </header>
 
   <!-- 대분류 탭 (5개) — JS에서 동적 렌더. 소분류는 사용하지 않음 (그룹 내 모든 sub 키워드를 머지 표시). -->
@@ -607,6 +613,18 @@
         localStorage.getItem('lumi_auth') ||
         localStorage.getItem('seller_jwt');
       const authHeaders = token ? { Authorization: 'Bearer ' + token } : {};
+
+      // 로그아웃 — topbar [data-logout] (2026-05-16 사장님: 모든 탭에 로그아웃)
+      document.querySelectorAll('[data-logout]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (!confirm('로그아웃 하시겠어요?')) return;
+          ['lumi-auth','lumi_auth','seller_jwt'].forEach(k => {
+            try { localStorage.removeItem(k); } catch {}
+          });
+          try { sessionStorage.clear(); } catch {}
+          location.href = '/';
+        });
+      });
 
       // HTML escape — GPT 응답·키워드·소스 URL 모두 innerHTML 삽입 전 통과.
       // GPT prompt injection 으로 응답에 <img onerror> 같은 게 섞일 가능성 차단.

@@ -741,7 +741,7 @@
     <a class="topbar__brand" href="/dashboard" aria-label="루미(lumi) 홈">
       <img src="/assets/logo-wordmark.png" alt="루미(lumi)" width="50" height="22" loading="eager">
     </a>
-    <button class="topbar__icon" type="button" data-logout aria-label="로그아웃">
+    <button class="topbar__logout" type="button" data-logout aria-label="로그아웃">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
         <polyline points="16 17 21 12 16 7"/>
@@ -1338,17 +1338,17 @@
         }
       }
 
-      // 로그아웃
-      const logoutBtn = document.querySelector('[data-logout]');
-      if (logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
+      // 로그아웃 — confirm + 토큰 삭제 + 홈으로. 모든 [data-logout] 에 일관 패턴 (2026-05-16).
+      document.querySelectorAll('[data-logout]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (!confirm('로그아웃 하시겠어요?')) return;
           ['lumi-auth', 'lumi_auth', 'seller_jwt'].forEach(k => {
             try { localStorage.removeItem(k); } catch {}
           });
           try { sessionStorage.clear(); } catch {}
           window.location.href = '/';
         });
-      }
+      });
 
       // loadMe 가 userCategory 를 정한 뒤에 카테고리 의존 호출들이 시작되도록 순서 보장.
       // 오늘 날씨 (get-weather) — region 기반. region 없으면 카드 안 보임.

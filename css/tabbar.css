@@ -35,6 +35,35 @@ html, body {
   background-color: var(--neutral-0);
 }
 
+/* === 우측 로그아웃 버튼 — 모든 메인 페이지 topbar 공통 ===
+   2026-05-16 사장님 결정: "탭마다 로그아웃 버튼" — dashboard 외에도
+   trends / register-product / history / settings 모든 메인 페이지 topbar
+   우측에 logout 노출. [data-logout] 셀렉터로 JS 가 핸들 (각 페이지 inline 스크립트). */
+.topbar__logout {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin-left: auto;
+  border-radius: var(--radius-full);
+  color: var(--ink-muted);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font-family: inherit;
+  flex-shrink: 0;
+  transition:
+    background var(--duration-snap) var(--ease-toss),
+    color var(--duration-snap) var(--ease-toss),
+    transform var(--duration-snap) var(--ease-toss);
+}
+@media (hover: hover) {
+  .topbar__logout:hover { background: var(--bg-soft); color: var(--ink); }
+}
+.topbar__logout:active { transform: scale(0.9); }
+.topbar__logout svg { width: 20px; height: 20px; stroke-width: 2.2; }
+
 .tab {
   display: flex;
   flex-direction: column;
