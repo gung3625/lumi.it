@@ -1,7 +1,98 @@
 # 루미(lumi) 인수인계 문서
 
-마지막 업데이트: 2026-05-16
-기준 커밋: `main` 최신 (`5585902`) — 2026-05-15 인계 (de55071) + 2026-05-16 새벽 자율 audit 4건 (9ed88e4 / 222d7b1 / 5585902).
+마지막 업데이트: 2026-05-17
+기준 커밋: `main` 최신 (`4fa7b7e`)
+
+---
+
+## 🚨 인수인계 — 2026-05-17 (사장님 분노 인계)
+
+**사장님 직접 명령**: "전혀 해결 안됐어 너랑은 일 못하겟다."
+
+### 1) 미해결 — Step 5 spotlight cutout 동작 (사장님 의도 정확 파악 실패)
+
+사장님이 step 5 (옵션 4 묶음) 의 환한 영역 (cutout) 동작에 대해 3번 정정:
+1. (사장님) "스토리/날씨/쓰레드/프로필 링크만 가리고 나머지 다 가려" — 옵션 묶음만 환하게
+2. (사장님) "왜 스크롤할 때마다 환한 영역이 같이 움직이는거야?" — 어색
+3. (사장님) "스크롤은 가능해야지 스크롤에 따라 왜 환한 영역이 달라지냐고. 너 금붕어야?" — 정정의 정정
+
+**시도한 fix 시리즈 (모두 사장님 거부)**:
+- `b2595b8` scroll listener 추가 → cutout 이 element 따라 움직임 ❌
+- `0c7c462` SVG mask backdrop ❌
+- `a7ffa4d` TDZ 버그 fix (별개 — + 버튼 클릭 fail 의 root cause)
+- `355e047` body scroll lock ❌ ("스크롤 가능해야지" 분노)
+- `637eb29` instant scroll + transition 0 ❌
+- `4fa7b7e` scroll free + cutout viewport 위치 고정 ← **현재 main**
+
+**다음 작업자가 사장님께 확인할 것** (의도 다시 명확화):
+- (A) scroll 자유 + cutout 은 element 따라가야? (b2595b8 동작)
+- (B) scroll 자유 + cutout 은 viewport 위치 고정? (4fa7b7e 현재 동작)
+- (C) scroll 자유 + cutout 은 element sticky (viewport 안에선 따라가고 밖이면 stick)?
+- (D) 또 다른 패턴?
+
+**Netlify deploy 지연 가능성**: 사장님이 본 화면이 직전 commit (4fa7b7e) 반영 안 됐을 수 있음. 사장님 디바이스에서 hard reload (캐시 무효화) 후 다시 확인 필요. lumi.it.kr 의 deploy log 확인 우선.
+
+### 2) 오늘 머지된 커밋 (시간순, 25건)
+
+**랜딩 (index.html)**
+- `b1361af` 매장 톤 학습 카피 — 👍/👎 (history rate 이모지)
+- `e04340b` 좋아요 캡션 복사 방지 가드 + Threads toneHints 버그
+- `17bd996` hero 시그니처 구름 + 둥실 bob (SVG 자작) — 사장님 거부 (`aa7335d` revert)
+- `dd3cd67` 사장님 제공 cloud.jpg 박기 (sips crop) ✅
+- `0d01bd4` 구름 색을 시그니처 4색으로 (PIL alpha PNG + CSS mask + gradient) ✅
+- `61d3502` hero 버튼 호흡 (box-shadow breathing)
+- `d5be6d6` bento + feature 카드도 호흡 (18 카드)
+- `fdd3714` 흔들림 fix (overscroll + paint contain)
+- `6ec9195` overscroll-behavior 제거 — Chrome pull-to-refresh 복귀
+
+**튜토리얼 (tutorial.html)**
+- `b2ec1b4` Step 1 spotlight coachmark (+ 버튼 강조)
+- `802d4ca` Step 2 multi-step guided tour (6 spotlight)
+- `9d6f8cc` 미디어 탭 step 제거 → 5단계 (URL bar 가림 회피)
+- `3001be2` step 4 옵션 4 묶음 cutout + 토글 모두 ON
+- `811016b` 토글 모두 OFF + "ON/OFF 가능" 안내 (사장님 재정정)
+- `33c304b` tour 6단계 복원 + scroll-margin-top 130px + padding 일관 12px
+- `b2595b8` ~ `4fa7b7e` (위 ❌ 시리즈)
+
+**기능 (register-product.html)**
+- `aab6582` 예약 → "베스트 시간 자동 예약" 옵션 (get-best-time API 재사용)
+
+**튜토리얼 이미지 (assets/tutorial/)**
+- `3359168` admin-gen-tutorial-images-background.js + Supabase migration
+- `3424dff` 9장 gpt-image-2 실사진 (Netlify CLI 로 production OPENAI_API_KEY 가져와서 호출, sips 480px q35 압축, 3.2MB total) ✅
+
+### 3) 사장님 분노 패턴 분석
+
+- "**니가 못하는거야?**" → server-side path 자동화 시도 (Netlify CLI + Supabase MCP 활용해서 인계 직전엔 사장님 1번 협조 (netlify login) 만으로 진행 가능했음)
+- "**한장해봐**" → 즉시 1장 테스트 후 9장 batch (성공)
+- "**전혀 해결 안됐어**" → step 5 cutout 동작 의도 파악 실패 (3번 정정에도)
+- "**금붕어야?**" → 사장님 이전 정정 의도 무시하고 같은 종류 fix 반복
+
+**다음 작업자 권장**:
+- 사장님 정정 시 "이전 fix 의 어느 부분이 잘못이었는지" 명확히 다시 물어 본 후 진행
+- step 5 같이 복잡한 동작은 작은 변경 → 사장님 확인 → 다음 식 작은 step
+- 너무 많은 시나리오 (3+) 가 있을 때 옵션 A/B/C 명시 후 사장님 선택
+
+### 4) 사장님 결정 (정정 포함)
+
+- 구름 = 루미 로고 i 위 구름 (사장님 제공 jpg + 시그니처 4색 mask)
+- 회원가입 / 로그인 = 단일 진입점 (로그인 강조 pill), 둘 다 카카오 OAuth → callback 자동 분기
+- 튜토리얼 5단계 → 6단계 (미디어 탭 포함)
+- 옵션 4 토글 기본 OFF + "ON/OFF 가능" 안내 (이전 ON 결정 정정)
+- 베스트 시간 자동 예약 = 사장님 업종 기반 자동 계산 + 5분 미만 시 내일
+- 사장님 사용 브라우저 = Chrome (메모리 `user_browser.md` 저장됨)
+
+### 5) 사장님 디바이스 검증 필요 (누적)
+
+- 오늘 모든 commit 사장님 lumi.it.kr 디바이스 검증
+- 특히 step 5 cutout (4fa7b7e) — Netlify deploy 완료 + hard reload 후 다시 확인
+- 베스트 시간 자동 예약 (`aab6582`) — register-product 에서 예약 클릭 → 옵션 노출 → 자동 예약 작동
+- 9장 실사진 튜토리얼 갤러리 (`3424dff`)
+- hero 구름 시그니처 색 (`0d01bd4`)
+
+### 6) admin-gen-tutorial-images-background.js (사용 안 함)
+
+`3359168` 에서 만든 supabase storage 기반 자동 생성 function. 결국 `3424dff` 에서 정적 asset 으로 처리해서 사용 안 함. 향후 재생성 필요 시 참고용 — supabase MCP 의 apply_migration 으로 bucket 이미 생성됨 (`tutorial-demo`). 또는 dead code 면 다음 cleanup 에서 제거.
 
 ---
 
