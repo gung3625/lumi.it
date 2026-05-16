@@ -2158,52 +2158,28 @@
         tt.style.top  = top  + 'px';
         tt.style.left = left + 'px';
       }
-      // resize 만 reposition (viewport 회전 / 키보드 등). scroll listener 는 없음 — body lock.
-      function onTourResize() {
-        const rect = calcCurrentRect();
-        if (!rect) return;
-        placeSpotlight(rect);
-        repositionTooltip(rect);
-      }
-
-      // body scroll lock — tour 진행 중 사장님 스크롤 차단 (cutout 이 따라 움직이는 어색함 차단).
-      // 사장님 결정 2026-05-17: "왜 내가 스크롤을 움직일때마다 환한 부분이 같이 움직이는거야?"
-      // tour 시작 시 element scrollIntoView 후 body overflow hidden.
-      function lockScroll() {
-        document.body.style.overflow = 'hidden';
-        document.documentElement.style.overflow = 'hidden';
-      }
-      function unlockScroll() {
-        document.body.style.overflow = '';
-        document.documentElement.style.overflow = '';
-      }
+      // 사장님 결정 2026-05-17 (재정정): scroll 은 자유롭게, cutout 은 처음 잡힌 viewport
+      // 위치에 fixed. scroll listener / body lock 없음. 사장님이 스크롤해도 환한 영역 안 움직임.
 
       function showTourStep(idx) {
         if (idx >= TOUR_STEPS.length) { closeTour(); return; }
         currentTourIdx = idx;
-        window.removeEventListener('resize', onTourResize);
-        window.addEventListener('resize', onTourResize, { passive: true });
         const cur = TOUR_STEPS[idx];
         const els = cur.multi
           ? Array.from(document.querySelectorAll(cur.target))
           : [document.querySelector(cur.target)].filter(Boolean);
         if (!els.length) { showTourStep(idx + 1); return; }
-        // 단계 전환 — lock 해제 → instant scroll → 즉시 위치 잡기 → 다시 lock.
-        // 사장님 결정 2026-05-17: "바로 영역이 잡히면" — smooth 대신 instant.
-        unlockScroll();
+        // 단계 전환 — instant scroll 로 element 위치 자동 정렬 후 cutout 즉시 잡기.
         els[0].scrollIntoView({ behavior: 'instant', block: 'center' });
         requestAnimationFrame(() => {
           const rect = calcCurrentRect();
           if (!rect) return;
           placeSpotlight(rect);
           placeTooltip(rect, cur, idx);
-          lockScroll();
         });
       }
       function closeTour() {
         currentTourIdx = null;
-        window.removeEventListener('resize', onTourResize);
-        unlockScroll();
         ['.tour-backdrop', '.tour-tooltip'].forEach(sel => {
           const el = document.querySelector(sel);
           if (!el) return;
