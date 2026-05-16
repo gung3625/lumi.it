@@ -2113,10 +2113,59 @@
           }
         });
       }
+      // 현재 tour step + scroll listener — 사장님 스크롤 시 spotlight 따라가게 (CTA 가 cutout
+      // 자리로 들어오면 안 가리는 버그 fix, 2026-05-17).
+      let currentTourIdx = null;
+      function calcCurrentRect() {
+        if (currentTourIdx == null) return null;
+        const cur = TOUR_STEPS[currentTourIdx];
+        const els = cur.multi
+          ? Array.from(document.querySelectorAll(cur.target))
+          : [document.querySelector(cur.target)].filter(Boolean);
+        if (!els.length) return null;
+        const rects = els.map(e => e.getBoundingClientRect());
+        const top    = Math.min(...rects.map(r => r.top));
+        const left   = Math.min(...rects.map(r => r.left));
+        const right  = Math.max(...rects.map(r => r.right));
+        const bottom = Math.max(...rects.map(r => r.bottom));
+        return { top, left, right, bottom, width: right - left, height: bottom - top };
+      }
+      function repositionTooltip(rect) {
+        const tt = document.querySelector('.tour-tooltip');
+        if (!tt) return;
+        const ttRect = tt.getBoundingClientRect();
+        const belowSpace = window.innerHeight - rect.bottom;
+        const aboveSpace = rect.top;
+        const placeBelow = belowSpace > ttRect.height + 24 || belowSpace > aboveSpace;
+        tt.dataset.arrow = placeBelow ? 'up' : 'down';
+        const gap = 14;
+        const top = placeBelow ? (rect.bottom + gap) : (rect.top - ttRect.height - gap);
+        const centerLeft = rect.left + rect.width / 2 - ttRect.width / 2;
+        const left = Math.max(12, Math.min(window.innerWidth - ttRect.width - 12, centerLeft));
+        tt.style.top  = top  + 'px';
+        tt.style.left = left + 'px';
+      }
+      let scrollRaf = 0;
+      function onTourScroll() {
+        if (scrollRaf) return;
+        scrollRaf = requestAnimationFrame(() => {
+          scrollRaf = 0;
+          const rect = calcCurrentRect();
+          if (!rect) return;
+          placeSpotlight(rect);
+          repositionTooltip(rect);
+        });
+      }
+
       function showTourStep(idx) {
         if (idx >= TOUR_STEPS.length) { closeTour(); return; }
+        currentTourIdx = idx;
+        // scroll listener 등록 (이미 있으면 중복 X — passive 라 추가 cost 작음)
+        window.removeEventListener('scroll', onTourScroll);
+        window.addEventListener('scroll', onTourScroll, { passive: true });
+        window.removeEventListener('resize', onTourScroll);
+        window.addEventListener('resize', onTourScroll, { passive: true });
         const cur = TOUR_STEPS[idx];
-        // multi target — 여러 element 의 union rect (스토리/날씨/쓰레드/링크 묶음 cutout)
         const els = cur.multi
           ? Array.from(document.querySelectorAll(cur.target))
           : [document.querySelector(cur.target)].filter(Boolean);
@@ -2124,17 +2173,16 @@
         els[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
         // smooth scroll 끝난 후 위치 계산 (~400ms)
         setTimeout(() => {
-          const rects = els.map(e => e.getBoundingClientRect());
-          const top    = Math.min(...rects.map(r => r.top));
-          const left   = Math.min(...rects.map(r => r.left));
-          const right  = Math.max(...rects.map(r => r.right));
-          const bottom = Math.max(...rects.map(r => r.bottom));
-          const rect = { top, left, right, bottom, width: right - left, height: bottom - top };
+          const rect = calcCurrentRect();
+          if (!rect) return;
           placeSpotlight(rect);
           placeTooltip(rect, cur, idx);
         }, 420);
       }
       function closeTour() {
+        currentTourIdx = null;
+        window.removeEventListener('scroll', onTourScroll);
+        window.removeEventListener('resize', onTourScroll);
         ['.tour-spotlight', '.tour-tooltip'].forEach(sel => {
           const el = document.querySelector(sel);
           if (!el) return;
