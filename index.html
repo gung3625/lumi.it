@@ -65,25 +65,9 @@
       height: 28px;
       width: auto;
     }
-    /* topbar 우측: 로그인(ghost) + 회원가입(강조 pill) 묶음 */
-    .hero__nav {
-      display: flex;
-      align-items: center;
-      gap: var(--space-1);
-    }
+    /* topbar 우측: 로그인 단일 진입점 (강조 gradient pill).
+       카카오 callback 이 onboarded 여부로 dashboard / signup 자동 분기 → 회원가입 별도 버튼 불필요. */
     .hero__login {
-      font-size: var(--text-caption);
-      font-weight: var(--weight-semibold);
-      color: var(--ink-soft);
-      text-decoration: none;
-      padding: var(--space-2) var(--space-3);
-      border-radius: var(--radius-pill);
-      transition: color var(--duration-snap) var(--ease-toss), background var(--duration-snap) var(--ease-toss);
-    }
-    @media (hover: hover) {
-      .hero__login:hover { color: var(--ink); background: var(--bg-soft); }
-    }
-    .hero__signup {
       font-size: var(--text-caption);
       font-weight: var(--weight-semibold);
       color: var(--neutral-0);
@@ -97,9 +81,9 @@
         box-shadow var(--duration-base) var(--ease-soft);
     }
     @media (hover: hover) {
-      .hero__signup:hover { box-shadow: var(--shadow-glow); }
+      .hero__login:hover { box-shadow: var(--shadow-glow); }
     }
-    .hero__signup:active { transform: scale(0.96); }
+    .hero__login:active { transform: scale(0.96); }
 
     .hero__body {
       flex: 1;
@@ -441,14 +425,10 @@
       <a class="hero__logo" href="/" aria-label="루미(lumi) 홈">
         <img src="/assets/logo-wordmark.png" alt="루미(lumi)" width="56" height="28" decoding="async">
       </a>
-      <nav class="hero__nav" aria-label="계정">
-        <!-- 로그인·회원가입 모두 카카오 OAuth 단일 흐름. callback (auth-kakao-callback.js:386)
-             이 onboarded 여부로 자동 분기 — onboarded=true → /dashboard (기존),
-             false → /signup 가입 마법사 (신규). 라벨만 다르고 동작 동일.
-             /signup 직접 link 는 토큰 검증으로 홈 튕김 (signup.html:767-770). -->
-        <a class="hero__login" href="/api/auth/kakao/start">로그인</a>
-        <a class="hero__signup" href="/api/auth/kakao/start">회원가입</a>
-      </nav>
+      <!-- 로그인 단일 진입점. 카카오 OAuth → callback (auth-kakao-callback.js:386)
+           이 onboarded 여부로 자동 분기 — onboarded=true → /dashboard (기존),
+           false → /signup 가입 마법사 (신규). 신규/기존 구분 불필요. -->
+      <a class="hero__login" href="/api/auth/kakao/start">로그인</a>
     </header>
 
     <div class="hero__body">
