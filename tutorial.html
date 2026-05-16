@@ -2158,21 +2158,43 @@
         tt.style.top  = top  + 'px';
         tt.style.left = left + 'px';
       }
-      // 사장님 결정 2026-05-17 (재정정): scroll 은 자유롭게, cutout 은 처음 잡힌 viewport
-      // 위치에 fixed. scroll listener / body lock 없음. 사장님이 스크롤해도 환한 영역 안 움직임.
+      // 사장님 결정 2026-05-17 (재재정정): cutout 이 항상 target element 를 cover.
+      // 사장님 스크롤하면 cutout 도 element 따라 이동 → cutout 안 보이는 element 가 항상 same.
+      // viewport fixed 시도 (이전 commit) 는 스크롤 시 cutout 안에 엉뚱한 element 들어와서 거부.
+      // scroll listener 가 rAF batching 안에서 즉시 align (transition 없음, jitter 차단).
+      let tourScrollRaf = 0;
+      function onTourScroll() {
+        if (tourScrollRaf) return;
+        tourScrollRaf = requestAnimationFrame(() => {
+          tourScrollRaf = 0;
+          const rect = calcCurrentRect();
+          if (!rect) return;
+          placeSpotlight(rect);
+          repositionTooltip(rect);
+        });
+      }
 
       function showTourStep(idx) {
         if (idx >= TOUR_STEPS.length) { closeTour(); return; }
         currentTourIdx = idx;
+        // scroll/resize/visualViewport 변화 시 cutout + tooltip align (passive)
+        window.removeEventListener('scroll', onTourScroll);
+        window.addEventListener('scroll', onTourScroll, { passive: true });
+        window.removeEventListener('resize', onTourScroll);
+        window.addEventListener('resize', onTourScroll, { passive: true });
+        if (window.visualViewport) {
+          window.visualViewport.removeEventListener('scroll', onTourScroll);
+          window.visualViewport.removeEventListener('resize', onTourScroll);
+          window.visualViewport.addEventListener('scroll', onTourScroll, { passive: true });
+          window.visualViewport.addEventListener('resize', onTourScroll, { passive: true });
+        }
         const cur = TOUR_STEPS[idx];
         const els = cur.multi
           ? Array.from(document.querySelectorAll(cur.target))
           : [document.querySelector(cur.target)].filter(Boolean);
         if (!els.length) { showTourStep(idx + 1); return; }
-        // multi target (옵션 4 묶음) — 묶음 전체 bounding box center 를 viewport center 로 align.
-        // 단일 element scrollIntoView 하면 묶음 첫 element 만 center, 나머지는 viewport 밖에 있어
-        // cutout 이 viewport 보다 커짐. 스크롤 시 옵션이 cutout 안/밖 transition → 사장님 눈엔
-        // "환한 영역이 스크롤 따라옴" 으로 보임. group center scroll 로 묶음 전체 viewport 안 fit.
+        // 단계 진입 시 target 을 viewport 안에 자동 정렬 (사장님 굳이 스크롤 안 해도 보임).
+        // multi 면 묶음 전체 center, single 이면 element center.
         if (cur.multi) {
           const rects0 = els.map(e => e.getBoundingClientRect());
           const groupTop = Math.min(...rects0.map(r => r.top));
@@ -2191,6 +2213,12 @@
       }
       function closeTour() {
         currentTourIdx = null;
+        window.removeEventListener('scroll', onTourScroll);
+        window.removeEventListener('resize', onTourScroll);
+        if (window.visualViewport) {
+          window.visualViewport.removeEventListener('scroll', onTourScroll);
+          window.visualViewport.removeEventListener('resize', onTourScroll);
+        }
         ['.tour-backdrop', '.tour-tooltip'].forEach(sel => {
           const el = document.querySelector(sel);
           if (!el) return;
