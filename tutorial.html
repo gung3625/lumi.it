@@ -2034,13 +2034,14 @@
       // === Step 2 Guided Tour — 6단계 sequential spotlight ===
       // 사장님 결정: "이미지·영상 두 가지 업로드 가능 → 다음 부분 강조 → 또 설명 → 아래로 쭉".
       // 각 단계: target element scrollIntoView + cutout spotlight + tooltip (위/아래 자동) + "다음 →" 버튼.
+      // 5단계 tour — 첫 step "미디어 탭" 은 페이지 최상단이라 모바일 URL bar 에 가려져 제외.
+      // 미디어 탭 (이미지·영상 둘 다 가능) 정보는 dropzone step 의 hint 에 통합.
       const TOUR_STEPS = [
-        { target: '.media-tabs',                            title: '이미지·영상 두 가지를 업로드 할 수 있어요', hint: '튜토리얼은 이미지로 보여드려요' },
-        { target: '.upload-dropzone[data-open-gallery]',    title: '여기를 눌러서 사진을 골라요',                hint: '갤러리가 열리면 1장 이상 선택' },
-        { target: '#tutorial-memo',                         title: '한 줄 메모는 선택이에요',                    hint: '메뉴·분위기 짧게 적으면 캡션이 더 정확해져요' },
-        { target: '.upload-schedule',                       title: '지금 올릴지, 예약할지 골라요',               hint: '예약은 한 달 이내까지' },
-        { target: '[data-toggle="story"]',                  title: '스토리·날씨·쓰레드·링크 옵션',               hint: '필요한 것만 켜두세요' },
-        { target: '[data-submit-upload]',                   title: '준비 끝! 누르면 분석이 시작돼요',            hint: '캡션·해시태그가 자동으로 만들어져요' },
+        { target: '.upload-dropzone[data-open-gallery]',    title: '여기를 눌러서 사진을 골라요',     hint: '이미지·영상 둘 다 OK · 1~10장' },
+        { target: '#tutorial-memo',                         title: '한 줄 메모는 선택이에요',          hint: '메뉴·분위기 짧게 적으면 캡션이 더 정확' },
+        { target: '.upload-schedule',                       title: '지금 올릴지, 예약할지 골라요',     hint: '예약은 한 달 이내까지' },
+        { target: '[data-toggle="story"]',                  title: '스토리·날씨·쓰레드·링크 옵션',     hint: '필요한 것만 켜두세요' },
+        { target: '[data-submit-upload]',                   title: '준비 끝! 누르면 분석이 시작돼요',  hint: '캡션·해시태그가 자동으로 만들어져요' },
       ];
 
       function placeSpotlight(rect) {
