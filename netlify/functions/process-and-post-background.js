@@ -425,7 +425,10 @@ function buildToneContext(item) {
   }
   const toneGuide = buildToneGuide(item.toneLikes, item.toneDislikes);
   if (toneGuide) {
-    lines.push(`[3·학습] 사장님 평가 패턴:\n${toneGuide}\n→ ✅ 흡수, ❌ 회피.`);
+    // 사장님 우려 (2026-05-16): "좋아요 누른 캡션을 그대로 다시 쓰진 않겠지?"
+    // → 이전엔 "✅ 흡수" 만 명시. 강한 모델은 [2·샘플] 의 룰을 일반화하지만 100% 보장 X.
+    //   명시 가드 추가 — IG 중복 콘텐츠 위험 + 사장님 입장에서 같은 캡션 반복은 어색.
+    lines.push(`[3·학습] 사장님 평가 패턴:\n${toneGuide}\n→ ✅ 톤·문체·해시태그 스타일만 흡수 (캡션 문장 그대로 베끼지 X), ❌ 회피.`);
   }
   if (item.captionBank) {
     lines.push(`[4·업종 참고] 같은 업종 좋아요 많은 캡션 (구조·리듬만 참고):\n${item.captionBank}`);
@@ -815,11 +818,14 @@ async function generateThreadsCaption(imageAnalysis, item, igCaption) {
     sp.description ? `소개: ${sp.description}` : '',
   ].filter(Boolean).join(' / ') || '(정보 없음)';
 
+  // 사장님 평가 패턴 — Threads prompt 용으로 IG 의 buildToneGuide 와 동일 형식 사용.
+  // 이전 버그: toneLikes.join(', ') 가 {caption, comment} 객체 배열을 join 해서
+  // "[object Object], [object Object]" 가 prompt 에 들어감 (사장님 평가 사실상 미반영).
+  const threadsToneGuide = buildToneGuide(item.toneLikes, item.toneDislikes);
   const toneHints = [
-    Array.isArray(item.toneLikes)    && item.toneLikes.length    ? `선호: ${item.toneLikes.join(', ')}`    : '',
-    Array.isArray(item.toneDislikes) && item.toneDislikes.length ? `회피: ${item.toneDislikes.join(', ')}` : '',
+    threadsToneGuide || '',
     item.toneRequest ? `요청: ${item.toneRequest}` : '',
-  ].filter(Boolean).join(' / ') || '(특별 지시 없음)';
+  ].filter(Boolean).join('\n\n') || '(특별 지시 없음)';
 
   const prompt = `당신은 한국 자영업자(매장)의 SNS 운영을 돕는 카피라이터입니다. 인스타그램과 함께 올라갈 쓰레드(Threads) 본문을 작성합니다.
 
