@@ -93,16 +93,26 @@
       gap: var(--space-6);
     }
 
-    /* 루미 시그니처 구름 — 사장님 제공 cloud.jpg, hero 제목 위에서 둥실 bob.
-       이미지가 JPG 라 흰 배경 boundary 가 살짝 있을 수 있음. hero::before radial gradient
-       위에 white 배경 cloud 가 올라가 자연 융화. mix-blend-mode: multiply 로 흰 부분 투명화 효과. */
+    /* 루미 시그니처 구름 — 사장님 cloud.jpg 의 silhouette 만 alpha PNG (cloud-alpha.png)
+       으로 추출 후 CSS mask 로 사용. 그 자리에 루미 로고 시그니처 4색
+       (gradient-signature: 핑크→라일락→노랑→골드) 입힘 = 로고와 같은 색의 구름.
+       사장님 결정 2026-05-16: "구름 색깔을 루미 로고의 색". */
     .hero__cloud {
       width: clamp(140px, 36vw, 220px);
-      height: auto;
+      aspect-ratio: 660 / 520;
       display: block;
       margin: 0 auto var(--space-4);
+      background: var(--gradient-signature);
+      -webkit-mask-image: url('/assets/cloud-alpha.png');
+              mask-image: url('/assets/cloud-alpha.png');
+      -webkit-mask-size: contain;
+              mask-size: contain;
+      -webkit-mask-repeat: no-repeat;
+              mask-repeat: no-repeat;
+      -webkit-mask-position: center;
+              mask-position: center;
       animation: cloud-bob 5.4s var(--ease-soft) infinite;
-      mix-blend-mode: multiply;
+      filter: drop-shadow(0 10px 24px rgba(255, 107, 139, 0.28));
     }
     @keyframes cloud-bob {
       0%, 100% { transform: translateY(0); }
@@ -555,7 +565,7 @@
     </header>
 
     <div class="hero__body">
-      <img class="hero__cloud" src="/assets/cloud.jpg" alt="" aria-hidden="true" width="220" height="172" decoding="async">
+      <div class="hero__cloud" role="presentation" aria-hidden="true"></div>
 
       <h1 class="hero__title">
         <span class="hero__title-line">사진 한 장이면</span>
