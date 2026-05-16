@@ -2169,8 +2169,19 @@
           ? Array.from(document.querySelectorAll(cur.target))
           : [document.querySelector(cur.target)].filter(Boolean);
         if (!els.length) { showTourStep(idx + 1); return; }
-        // 단계 전환 — instant scroll 로 element 위치 자동 정렬 후 cutout 즉시 잡기.
-        els[0].scrollIntoView({ behavior: 'instant', block: 'center' });
+        // multi target (옵션 4 묶음) — 묶음 전체 bounding box center 를 viewport center 로 align.
+        // 단일 element scrollIntoView 하면 묶음 첫 element 만 center, 나머지는 viewport 밖에 있어
+        // cutout 이 viewport 보다 커짐. 스크롤 시 옵션이 cutout 안/밖 transition → 사장님 눈엔
+        // "환한 영역이 스크롤 따라옴" 으로 보임. group center scroll 로 묶음 전체 viewport 안 fit.
+        if (cur.multi) {
+          const rects0 = els.map(e => e.getBoundingClientRect());
+          const groupTop = Math.min(...rects0.map(r => r.top));
+          const groupBot = Math.max(...rects0.map(r => r.bottom));
+          const groupCenterDoc = (groupTop + groupBot) / 2 + window.scrollY;
+          window.scrollTo({ top: Math.max(0, groupCenterDoc - window.innerHeight / 2), behavior: 'instant' });
+        } else {
+          els[0].scrollIntoView({ behavior: 'instant', block: 'center' });
+        }
         requestAnimationFrame(() => {
           const rect = calcCurrentRect();
           if (!rect) return;
