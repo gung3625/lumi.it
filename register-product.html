@@ -275,6 +275,83 @@
       box-shadow: var(--shadow-glow-sm);
       animation: card-pop 420ms var(--ease-toss);
     }
+
+    /* 예약 옵션 — [예약] 활성 시 표시. 베스트 시간 자동 + 수동 datetime 두 가지. */
+    .schedule-options {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+      margin-top: var(--space-3);
+      animation: pane-enter 320ms var(--ease-toss);
+    }
+    @keyframes pane-enter {
+      from { opacity: 0; transform: translateY(-4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .schedule-best-auto {
+      position: relative;
+      padding: var(--space-3) var(--space-4);
+      background: var(--pink-50);
+      border: 1px solid var(--pink-300);
+      border-radius: var(--radius-lg);
+      text-align: left;
+      font-family: inherit;
+      cursor: pointer;
+      color: var(--ink);
+      transition:
+        background var(--duration-snap) var(--ease-soft),
+        border-color var(--duration-snap) var(--ease-soft),
+        box-shadow var(--duration-base) var(--ease-soft),
+        transform var(--duration-snap) var(--ease-toss);
+    }
+    @media (hover: hover) {
+      .schedule-best-auto:hover {
+        background: var(--pink-100);
+        border-color: var(--pink-500);
+      }
+    }
+    .schedule-best-auto:active { transform: scale(0.99); }
+    .schedule-best-auto:disabled { opacity: 0.6; cursor: not-allowed; }
+    .schedule-best-auto strong {
+      display: block;
+      font-size: var(--text-body);
+      font-weight: var(--weight-bold);
+      color: var(--pink-700);
+    }
+    .schedule-best-auto__sub {
+      display: block;
+      margin-top: 4px;
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+      line-height: var(--leading-snug);
+    }
+    .schedule-best-auto.is-set {
+      background: var(--gradient-signature);
+      border-color: transparent;
+      box-shadow: var(--shadow-glow-sm);
+    }
+    .schedule-best-auto.is-set strong,
+    .schedule-best-auto.is-set .schedule-best-auto__sub {
+      color: var(--neutral-0);
+    }
+    .schedule-best-auto.is-set .schedule-best-auto__sub { color: rgba(255,255,255,0.88); }
+
+    .schedule-divider {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+      letter-spacing: 0.04em;
+    }
+    .schedule-divider::before,
+    .schedule-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--line);
+    }
+
     /* 스토리 자동 업로드 토글 */
     .story-toggle {
       display: flex;
@@ -595,7 +672,15 @@
         <button type="button" class="schedule-card is-active" data-schedule="immediate">지금</button>
         <button type="button" class="schedule-card" data-schedule="scheduled">예약</button>
       </div>
-      <input class="input" type="datetime-local" data-scheduled-at hidden>
+      <!-- 예약 옵션 — scheduled 모드 시 표시 -->
+      <div class="schedule-options" data-schedule-options hidden>
+        <button type="button" class="schedule-best-auto" data-best-auto>
+          <strong>⏰ 가장 가까운 베스트 시간에 자동 예약</strong>
+          <span class="schedule-best-auto__sub" data-best-auto-sub>탭하면 사장님 업종의 베스트 시간을 자동 계산해서 예약해요</span>
+        </button>
+        <div class="schedule-divider">또는 직접 선택</div>
+        <input class="input" type="datetime-local" data-scheduled-at>
+      </div>
     </div>
 
     <div class="field">
@@ -982,13 +1067,16 @@
         });
       }
 
-      // /api/me 한 번 호출로 publishPrefs + threadsStatus 동시 처리.
-      // 마지막 토글 상태 복원 + 쓰레드 연동 상태 반영.
+      // /api/me 한 번 호출로 publishPrefs + threadsStatus + biz_category 동시 처리.
+      // biz_category 는 베스트 시간 자동 예약 (get-best-time) 의 category 인자.
+      let bizCategoryFromMe = '';
       (async () => {
         try {
           const r = await fetch('/api/me', { headers: authHeaders });
           if (!r.ok) throw new Error('me fetch failed');
           const j = await r.json();
+          bizCategoryFromMe =
+            (j && j.seller && (j.seller.biz_category || j.seller.bizCategory || j.seller.category)) || '';
           const prefs = (j && j.seller && j.seller.publishPrefs) || {};
           if (typeof prefs.storyEnabled === 'boolean') {
             storyEnabled = prefs.storyEnabled;
@@ -1171,23 +1259,77 @@
       scheduleAtEl.addEventListener('change', clampScheduleValue);
       scheduleAtEl.addEventListener('blur', clampScheduleValue);
 
-      // 게시 시점 토글
+      // 게시 시점 토글 — scheduled 모드면 schedule-options 표시 (best-auto + datetime picker)
+      const scheduleOptsEl = document.querySelector('[data-schedule-options]');
+      const bestAutoBtn = document.querySelector('[data-best-auto]');
+      const bestAutoSub = document.querySelector('[data-best-auto-sub]');
       document.querySelectorAll('[data-schedule]').forEach(btn => {
         btn.addEventListener('click', () => {
           scheduleMode = btn.dataset.schedule;
           document.querySelectorAll('[data-schedule]').forEach(b => b.classList.toggle('is-active', b === btn));
           if (scheduleMode === 'scheduled') {
-            scheduleAtEl.hidden = false;
+            if (scheduleOptsEl) scheduleOptsEl.hidden = false;
             const { min, max, def } = getScheduleBounds();
             scheduleAtEl.min = toLocalDtIso(min);
             scheduleAtEl.max = toLocalDtIso(max);
             scheduleAtEl.value = toLocalDtIso(def);
           } else {
-            scheduleAtEl.hidden = true;
+            if (scheduleOptsEl) scheduleOptsEl.hidden = true;
             scheduleAtEl.value = '';
+            // best-auto 상태 리셋
+            if (bestAutoBtn) bestAutoBtn.classList.remove('is-set');
+            if (bestAutoSub) bestAutoSub.textContent = '탭하면 사장님 업종의 베스트 시간을 자동 계산해서 예약해요';
           }
         });
       });
+
+      // 베스트 시간 자동 예약 — /api/get-best-time → 가장 가까운 미래 베스트 시간 계산 → datetime input 자동 set.
+      // 사장님 결정 2026-05-16: 예약 누르면 옵션이 나오고 그 옵션을 누르면 베스트 시간에 알아서 예약.
+      if (bestAutoBtn) {
+        bestAutoBtn.addEventListener('click', async () => {
+          bestAutoBtn.disabled = true;
+          if (bestAutoSub) bestAutoSub.textContent = '베스트 시간 가져오는 중…';
+          try {
+            const res = await fetch('/api/get-best-time', {
+              method: 'POST',
+              headers: { ...authHeaders, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ category: bizCategoryFromMe || '' }),
+            });
+            if (!res.ok) throw new Error('best-time http ' + res.status);
+            const data = await res.json();
+            const bestTimeStr = (data && data.bestTime) || '';
+            const mm = /^(\d{1,2}):(\d{2})$/.exec(bestTimeStr);
+            if (!mm) throw new Error('best-time invalid: ' + bestTimeStr);
+            const h = Number(mm[1]);
+            const m = Number(mm[2]);
+            const now = new Date();
+            const target = new Date(now);
+            target.setHours(h, m, 0, 0);
+            // 지금에서 5분 이내면 너무 임박 → 내일 같은 시간
+            if (target.getTime() <= now.getTime() + 5 * 60 * 1000) {
+              target.setDate(target.getDate() + 1);
+            }
+            // 예약 범위 max 보호 (한 달)
+            const { max } = getScheduleBounds();
+            if (target.getTime() > max.getTime()) target.setTime(max.getTime());
+
+            scheduleAtEl.value = toLocalDtIso(target);
+            bestAutoBtn.classList.add('is-set');
+            const sameDay = target.toDateString() === now.toDateString();
+            const dayLabel = sameDay ? '오늘' : '내일';
+            const hh = String(target.getHours()).padStart(2, '0');
+            const mmStr = String(target.getMinutes()).padStart(2, '0');
+            if (bestAutoSub) bestAutoSub.textContent = `${dayLabel} ${hh}:${mmStr} 자동 예약 — 다시 누르면 갱신`;
+            toast(`${dayLabel} ${hh}:${mmStr} 으로 예약했어요`);
+          } catch (e) {
+            console.error('[best-auto] 실패:', e && e.message);
+            if (bestAutoSub) bestAutoSub.textContent = '베스트 시간을 가져오지 못했어요. 직접 선택해주세요.';
+            toast('베스트 시간을 가져오지 못했어요');
+          } finally {
+            bestAutoBtn.disabled = false;
+          }
+        });
+      }
 
       // Canvas 로 4:5(1080×1350) cover crop + JPEG 압축.
       // - IG carousel 호환 비율(4:5 = 0.8) 강제 → "aspect ratio not supported" 에러 차단
