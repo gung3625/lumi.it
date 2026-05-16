@@ -283,17 +283,26 @@
         transform var(--duration-base) var(--ease-toss),
         box-shadow var(--duration-base) var(--ease-soft),
         border-color var(--duration-base) var(--ease-soft);
-      animation: bento-rise 500ms var(--ease-toss) calc(var(--idx, 0) * 80ms) backwards;
+      animation:
+        bento-rise 500ms var(--ease-toss) calc(var(--idx, 0) * 80ms) backwards,
+        card-breathe 6s var(--ease-soft) calc(var(--idx, 0) * 0.5s + 800ms) infinite;
     }
     @keyframes bento-rise {
       from { opacity: 0; transform: translateY(12px); }
       to   { opacity: 1; transform: translateY(0); }
+    }
+    /* 카드 호흡 — box-shadow + border 강도만 변화 (transform 안 건드림 → hover lift 보존).
+       사장님 결정 2026-05-16: "각각의 버튼들이 살아숨쉬듯이 움직였으면 좋겠어 / 모든 버튼". */
+    @keyframes card-breathe {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(255, 107, 139, 0); border-color: var(--line); }
+      50%      { box-shadow: 0 6px 22px -8px rgba(255, 107, 139, 0.22); border-color: var(--pink-200); }
     }
     @media (hover: hover) {
       .bento__card:hover {
         transform: translateY(-3px);
         box-shadow: var(--shadow-glow-sm);
         border-color: var(--pink-200);
+        animation-play-state: paused;
       }
     }
     .bento__card--accent {
@@ -531,7 +540,9 @@
         transform var(--duration-base) var(--ease-toss),
         box-shadow var(--duration-base) var(--ease-soft),
         border-color var(--duration-base) var(--ease-soft);
-      animation: feat-rise 460ms var(--ease-toss) calc(var(--idx, 0) * 60ms) backwards;
+      animation:
+        feat-rise 460ms var(--ease-toss) calc(var(--idx, 0) * 60ms) backwards,
+        card-breathe 6s var(--ease-soft) calc(var(--idx, 0) * 0.35s + 700ms) infinite;
     }
     @keyframes feat-rise {
       from { opacity: 0; transform: translateY(8px); }
@@ -542,7 +553,11 @@
         transform: translateY(-2px);
         box-shadow: var(--shadow-glow-sm);
         border-color: var(--pink-200);
+        animation-play-state: paused;
       }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .bento__card, .feature-card { animation: none; }
     }
     .feature-card__icon {
       width: 32px; height: 32px;
