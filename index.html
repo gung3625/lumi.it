@@ -442,9 +442,12 @@
         <img src="/assets/logo-wordmark.png" alt="루미(lumi)" width="56" height="28" decoding="async">
       </a>
       <nav class="hero__nav" aria-label="계정">
-        <!-- 로그인 → 카카오 OAuth 시작 → callback 에서 onboarded면 /dashboard, 아니면 /signup 으로 자동 분기 (edge function auth-kakao-callback.js:386) -->
+        <!-- 로그인·회원가입 모두 카카오 OAuth 단일 흐름. callback (auth-kakao-callback.js:386)
+             이 onboarded 여부로 자동 분기 — onboarded=true → /dashboard (기존),
+             false → /signup 가입 마법사 (신규). 라벨만 다르고 동작 동일.
+             /signup 직접 link 는 토큰 검증으로 홈 튕김 (signup.html:767-770). -->
         <a class="hero__login" href="/api/auth/kakao/start">로그인</a>
-        <a class="hero__signup" href="/signup">회원가입</a>
+        <a class="hero__signup" href="/api/auth/kakao/start">회원가입</a>
       </nav>
     </header>
 
