@@ -231,38 +231,92 @@
       color: var(--ink-muted);
     }
 
-    /* 코치 bubble — + 버튼 위로 화살표 (사장님 시선 유도)
-       사장님 스크롤 시 footer 글씨 위에 겹치지 않도록 scroll 시 fade-out
-       (JS scroll listener 가 is-hidden 토글) — [feedback_ui_no_overlay] 차단. */
-    .home-coach-bubble {
+    /* === Step 1 Spotlight (Coachmark / Spotlight tutorial 패턴) ===
+       사장님 결정 2026-05-16: 튜토리얼 들어가면 + 버튼만 강조 보이게 하고
+       나머지는 어둡게. "이 버튼 누르면 업로드 페이지로 간다" 안내까지.
+       - .spotlight-overlay: 큰 box-shadow 트릭으로 동그라미 cutout (+ 버튼만 환하게)
+       - .spotlight-tooltip: + 버튼 위 floating 말풍선 + 하단 화살표
+       - + 버튼 z-index 가 overlay 보다 위 (사용자 클릭 가능)
+       - Step 2 진입 시 overlay/tooltip 자동 제거 (JS) */
+    .spotlight-overlay {
       position: fixed;
-      bottom: calc(96px + env(safe-area-inset-bottom));
+      /* + 버튼 중심 — tabbar 안 가운데, bottom 약 56px (tabbar 80px 의 가운데) */
+      bottom: calc(env(safe-area-inset-bottom) + 28px);
       left: 50%;
       transform: translateX(-50%);
-      padding: var(--space-2) var(--space-4);
-      background: var(--ink);
-      color: var(--bg);
-      border-radius: var(--radius-full);
-      font-size: var(--text-caption);
-      font-weight: var(--weight-medium);
-      box-shadow: var(--shadow-lg);
-      z-index: 100;
-      white-space: nowrap;
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      /* 큰 box-shadow 가 viewport 전체를 어둡게 덮고, element 자체는 transparent */
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.62);
       pointer-events: none;
-      animation: bubble-in 400ms var(--ease-spring) 700ms backwards;
-      transition: opacity var(--duration-base) var(--ease-soft);
+      z-index: 90;
+      animation: spotlight-in 400ms var(--ease-soft) backwards;
     }
-    .home-coach-bubble.is-hidden { opacity: 0; }
-    .home-coach-bubble::after {
+    @keyframes spotlight-in {
+      from { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0); }
+      to   { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.62); }
+    }
+
+    /* 안내 말풍선 — + 버튼 위로 띄움 */
+    .spotlight-tooltip {
+      position: fixed;
+      bottom: calc(env(safe-area-inset-bottom) + 120px);
+      left: 50%;
+      transform: translateX(-50%);
+      max-width: min(80vw, 280px);
+      padding: var(--space-3) var(--space-4);
+      background: var(--bg);
+      color: var(--ink);
+      border-radius: var(--radius-lg);
+      font-size: var(--text-body);
+      font-weight: var(--weight-medium);
+      line-height: var(--leading-snug);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+      z-index: 91;
+      text-align: center;
+      pointer-events: none;
+      animation: tooltip-in 500ms var(--ease-spring) 200ms backwards;
+    }
+    .spotlight-tooltip::after {
       content: "";
       position: absolute;
-      bottom: -6px;
+      bottom: -8px;
       left: 50%;
       transform: translateX(-50%);
-      width: 12px;
-      height: 6px;
-      background: var(--ink);
+      width: 16px;
+      height: 8px;
+      background: var(--bg);
       clip-path: polygon(0 0, 100% 0, 50% 100%);
+    }
+    .spotlight-tooltip__hint {
+      display: block;
+      margin-top: 4px;
+      font-size: var(--text-caption);
+      color: var(--pink-500);
+      font-weight: var(--weight-semibold);
+    }
+    @keyframes tooltip-in {
+      0%   { opacity: 0; transform: translate(-50%, 8px) scale(0.95); }
+      100% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+    }
+
+    /* + 버튼이 overlay·tooltip 위에 떠야 사장님이 누를 수 있음.
+       tabbar 의 + 버튼만 z-index 위로 올림. */
+    .stage .tabbar .tab-add[data-tutorial-add] {
+      position: relative;
+      z-index: 95;
+    }
+
+    /* Spotlight 닫힘 — Step 2 진입 시 .is-closing 후 0.3s 후 markup 제거 */
+    .spotlight-overlay.is-closing,
+    .spotlight-tooltip.is-closing {
+      opacity: 0;
+      transition: opacity 300ms var(--ease-soft);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .spotlight-overlay, .spotlight-tooltip { animation: none; }
     }
 
     /* + 버튼 펄스 강조 — 사장님 시선 더 유도 */
@@ -1474,8 +1528,13 @@
         </section>
       </main>
 
-      <!-- 코치 bubble — + 버튼 위로 화살표 -->
-      <div class="home-coach-bubble" role="status">사진 올리려면 가운데 + 버튼을 눌러보세요</div>
+      <!-- Spotlight 코치마크 — + 버튼만 환하게 보이고 나머지 어둡게.
+           + 버튼 누르면 JS 가 둘 다 fade-out + 제거. Step 2 진입. -->
+      <div class="spotlight-overlay" data-spotlight-overlay aria-hidden="true"></div>
+      <div class="spotlight-tooltip" data-spotlight-tooltip role="status" aria-live="polite">
+        가운데 <strong>+</strong> 버튼을 눌러보세요
+        <span class="spotlight-tooltip__hint">사진 올리기 페이지로 이동해요</span>
+      </div>
 
       <!-- 하단 탭바 (실제 dashboard 와 동일) -->
       <nav class="tabbar" aria-label="메뉴">
@@ -1853,19 +1912,25 @@
       // 초기 진입 — Step 1 활성.
       goTo(1);
 
-      // Step 1 코치 bubble — scroll 시 footer 글씨 위 겹침 차단 ([feedback_ui_no_overlay]).
-      // 사장님이 + 안 누르고 아래로 스크롤하면 fade-out, 위로 되돌리면 다시 보임.
-      const homeBubble = document.querySelector('.home-coach-bubble');
-      if (homeBubble) {
-        const onScroll = () => {
-          homeBubble.classList.toggle('is-hidden', window.scrollY > 40);
-        };
-        window.addEventListener('scroll', onScroll, { passive: true });
+      // Spotlight 코치마크 — Step 1 진입 시 + 버튼만 환하게 + 안내 말풍선.
+      // Step 1 → Step 2 클릭 (또는 다른 Step 로 강제 이동) 시 fade-out + remove.
+      function closeSpotlight() {
+        ['[data-spotlight-overlay]', '[data-spotlight-tooltip]'].forEach(sel => {
+          const el = document.querySelector(sel);
+          if (!el) return;
+          el.classList.add('is-closing');
+          setTimeout(() => { try { el.remove(); } catch (_) {} }, 320);
+        });
       }
 
-      // Step 1 → Step 2 (탭바 가운데 + 버튼 클릭)
+      // Step 1 → Step 2 (탭바 가운데 + 버튼 클릭) — spotlight 닫고 Step 2 진입.
       const addBtn = document.querySelector('[data-tutorial-add]');
-      if (addBtn) addBtn.addEventListener('click', () => goTo(2));
+      if (addBtn) {
+        addBtn.addEventListener('click', () => {
+          closeSpotlight();
+          goTo(2);
+        });
+      }
 
       // Step 2 → Step 1 (topbar 뒤로)
       const backBtn = document.querySelector('[data-back-to-1]');
