@@ -21,7 +21,16 @@
 
   <style>
     /* === 랜딩 페이지 (mobile-first / bento + oversized hero, 2026 트렌드) === */
-    html, body { margin: 0; background: var(--bg); }
+    /* 사장님 지적 2026-05-16: "스크롤을 아래로 쭉 내리면 흔들리는 현상이 있어."
+       원인 추정: ① iOS Safari rubber-band (페이지 끝) + ② 18개 카드 호흡 box-shadow
+       paint 가 scroll compositor 와 충돌 → frame drop.
+       fix ①: overscroll-behavior: none (랜딩은 pull-to-refresh 불필요).
+       fix ②: 카드에 contain + will-change → paint 격리, GPU layer 분리. */
+    html, body {
+      margin: 0;
+      background: var(--bg);
+      overscroll-behavior: none;
+    }
     body {
       font-family: var(--font-system);
       color: var(--ink);
@@ -279,6 +288,8 @@
       border: 1px solid var(--line);
       border-radius: var(--radius-xl);
       overflow: hidden;
+      contain: layout paint;
+      will-change: box-shadow;
       transition:
         transform var(--duration-base) var(--ease-toss),
         box-shadow var(--duration-base) var(--ease-soft),
@@ -536,6 +547,8 @@
       background: var(--bg);
       border: 1px solid var(--line);
       border-radius: var(--radius-lg);
+      contain: layout paint;
+      will-change: box-shadow;
       transition:
         transform var(--duration-base) var(--ease-toss),
         box-shadow var(--duration-base) var(--ease-soft),
