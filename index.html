@@ -415,6 +415,110 @@
       gap: 4px;
     }
 
+    /* ── 기능 상세 섹션 — 4분류 x 12 카드 ─────────────── */
+    .features {
+      padding: var(--space-12) var(--space-5) var(--space-16);
+      max-width: 920px;
+      margin: 0 auto;
+    }
+    .features__eyebrow {
+      font-size: var(--text-caption);
+      font-weight: var(--weight-semibold);
+      color: var(--pink-500);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin: 0 0 var(--space-2);
+    }
+    .features__title {
+      font-size: clamp(26px, 5.5vw, 40px);
+      font-weight: var(--weight-bold);
+      letter-spacing: var(--tracking-tight);
+      line-height: var(--leading-snug);
+      color: var(--ink);
+      margin: 0 0 var(--space-10);
+    }
+    .feature-group {
+      margin-bottom: var(--space-12);
+    }
+    .feature-group:last-child { margin-bottom: 0; }
+    .feature-group__header {
+      display: flex;
+      align-items: baseline;
+      gap: var(--space-3);
+      margin-bottom: var(--space-5);
+      padding-bottom: var(--space-3);
+      border-bottom: 1px solid var(--line);
+    }
+    .feature-group__num {
+      font-size: var(--text-caption);
+      font-weight: var(--weight-semibold);
+      color: var(--pink-500);
+      letter-spacing: 0.06em;
+    }
+    .feature-group__title {
+      font-size: var(--text-title);
+      font-weight: var(--weight-bold);
+      color: var(--ink);
+      letter-spacing: var(--tracking-tight);
+      margin: 0;
+    }
+    /* 모바일·데스크톱 모두 2열 — 사장님 결정 "한 줄에 2개씩으로 스크롤 줄여" */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-2);
+    }
+    @media (min-width: 720px) {
+      .feature-grid { gap: var(--space-3); }
+    }
+    .feature-card {
+      padding: var(--space-4);
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      transition:
+        transform var(--duration-base) var(--ease-toss),
+        box-shadow var(--duration-base) var(--ease-soft),
+        border-color var(--duration-base) var(--ease-soft);
+      animation: feat-rise 460ms var(--ease-toss) calc(var(--idx, 0) * 60ms) backwards;
+    }
+    @keyframes feat-rise {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @media (hover: hover) {
+      .feature-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-glow-sm);
+        border-color: var(--pink-200);
+      }
+    }
+    .feature-card__icon {
+      width: 32px; height: 32px;
+      border-radius: var(--radius-md);
+      background: var(--pink-50);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--pink-500);
+      margin-bottom: var(--space-2);
+    }
+    .feature-card__icon svg { width: 18px; height: 18px; stroke-width: 2.2; }
+    .feature-card__title {
+      font-size: var(--text-body);
+      font-weight: var(--weight-bold);
+      color: var(--ink);
+      letter-spacing: var(--tracking-tight);
+      margin: 0 0 var(--space-1);
+      line-height: var(--leading-snug);
+    }
+    .feature-card__desc {
+      font-size: var(--text-caption);
+      color: var(--ink-soft);
+      line-height: var(--leading-relaxed);
+      margin: 0;
+    }
+
     /* prefers-reduced-motion 은 motion.css 전역 룰이 처리 */
   </style>
 </head>
@@ -515,6 +619,126 @@
         <h3 class="bento__card__title">결과 인사이트</h3>
         <p class="bento__card__desc">도달·팔로워·댓글 한눈에.</p>
       </article>
+    </div>
+  </section>
+
+  <!-- ====================== 기능 상세 (3분류 x 4카드, 모바일도 2열) ====================== -->
+  <section class="features" aria-label="루미 기능 상세">
+    <p class="features__eyebrow">기능 상세</p>
+    <h2 class="features__title">사장님 SNS 하루를 통째로 맡아요.</h2>
+
+    <!-- 분류 1: 캡션·콘텐츠 -->
+    <div class="feature-group">
+      <header class="feature-group__header">
+        <span class="feature-group__num">01</span>
+        <h3 class="feature-group__title">캡션·콘텐츠</h3>
+      </header>
+      <div class="feature-grid" role="list">
+        <article class="feature-card" style="--idx:0" role="listitem">
+          <span class="feature-card__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+          </span>
+          <h4 class="feature-card__title">매장 톤 학습</h4>
+          <p class="feature-card__desc">평소 쓰던 캡션 3개만 주면 말투·이모지·해시태그 스타일 그대로. 매번 새로 쓸 일 없어요.</p>
+        </article>
+        <article class="feature-card" style="--idx:1" role="listitem">
+          <span class="feature-card__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+          </span>
+          <h4 class="feature-card__title">트렌드 자동 반영</h4>
+          <p class="feature-card__desc">업종·계절·요일·시간대 인기 키워드를 캡션에 자연스럽게 녹여요.</p>
+        </article>
+        <article class="feature-card" style="--idx:2" role="listitem">
+          <span class="feature-card__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+          </span>
+          <h4 class="feature-card__title">매장 지역 날씨</h4>
+          <p class="feature-card__desc">"선선한 오후", "비 오는 날" 같이 그날 날씨를 자연스러운 한 줄로 녹여줘요.</p>
+        </article>
+        <article class="feature-card" style="--idx:3" role="listitem">
+          <span class="feature-card__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          </span>
+          <h4 class="feature-card__title">아이폰 사진 그대로</h4>
+          <p class="feature-card__desc">JPG·PNG·WebP·HEIC, 어떤 영상 포맷이든 변환 없이 폰에서 바로 올려요.</p>
+        </article>
+      </div>
+    </div>
+
+    <!-- 분류 2: 자동 게시 -->
+    <div class="feature-group">
+      <header class="feature-group__header">
+        <span class="feature-group__num">02</span>
+        <h3 class="feature-group__title">자동 게시</h3>
+      </header>
+      <div class="feature-grid" role="list">
+        <article class="feature-card" style="--idx:0" role="listitem">
+          <span class="feature-card__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.5" fill="currentColor"/></svg>
+          </span>
+          <h4 class="feature-card__title">인스타·스토리·쓰레드</h4>
+          <p class="feature-card__desc">한 번 올리면 피드·24시간 스토리·쓰레드까지 같이 올라가요.</p>
+        </article>
+        <article class="feature-card" style="--idx:1" role="listitem">
+          <span class="feature-card__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+          </span>
+          <h4 class="feature-card__title">베스트 시간대</h4>
+          <p class="feature-card__desc">사장님 팔로워가 가장 많이 보는 시간대를 분석해서 게시 시간을 추천해요.</p>
+        </article>
+        <article class="feature-card" style="--idx:2" role="listitem">
+          <span class="feature-card__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </span>
+          <h4 class="feature-card__title">예약 게시</h4>
+          <p class="feature-card__desc">한 달 이내 원하는 시간에 자동 게시. 시간 되면 알아서 올려드려요.</p>
+        </article>
+        <article class="feature-card" style="--idx:3" role="listitem">
+          <span class="feature-card__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+          </span>
+          <h4 class="feature-card__title">영상 90초 자동 처리</h4>
+          <p class="feature-card__desc">긴 영상은 90초로, 비율은 9:16으로, 자막·화면 텍스트까지 자동.</p>
+        </article>
+      </div>
+    </div>
+
+    <!-- 분류 3: 운영·관리 -->
+    <div class="feature-group">
+      <header class="feature-group__header">
+        <span class="feature-group__num">03</span>
+        <h3 class="feature-group__title">운영·관리</h3>
+      </header>
+      <div class="feature-grid" role="list">
+        <article class="feature-card" style="--idx:0" role="listitem">
+          <span class="feature-card__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </span>
+          <h4 class="feature-card__title">댓글 자동 답글</h4>
+          <p class="feature-card__desc">달린 댓글에 매장 톤으로 짧게 답글. 사장님이 손 안 대도 자연스럽게.</p>
+        </article>
+        <article class="feature-card" style="--idx:1" role="listitem">
+          <span class="feature-card__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg>
+          </span>
+          <h4 class="feature-card__title">결과 인사이트</h4>
+          <p class="feature-card__desc">도달·새 팔로워·댓글 변화를 주마다 한눈에 볼 수 있어요.</p>
+        </article>
+        <article class="feature-card" style="--idx:2" role="listitem">
+          <span class="feature-card__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+          </span>
+          <h4 class="feature-card__title">히스토리 관리</h4>
+          <p class="feature-card__desc">예약·게시된 글, 실패 재시도, 채널별 결과까지 한 곳에서.</p>
+        </article>
+        <article class="feature-card" style="--idx:3" role="listitem">
+          <span class="feature-card__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          </span>
+          <h4 class="feature-card__title">프로필 링크</h4>
+          <p class="feature-card__desc">lumi.it.kr/r/내주소 한 링크로 메뉴·예약·배달·인스타까지 한 번에.</p>
+        </article>
+      </div>
     </div>
   </section>
 
