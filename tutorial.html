@@ -352,7 +352,7 @@
        단계별 spotlight (target element 좌표 기반 cutout) + tooltip + 다음 버튼. */
     .tour-spotlight {
       position: fixed;
-      border-radius: 14px;
+      border-radius: 16px;
       box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.62);
       pointer-events: none;
       z-index: 9000;
@@ -361,6 +361,17 @@
         left 360ms var(--ease-soft),
         width 360ms var(--ease-soft),
         height 360ms var(--ease-soft);
+    }
+
+    /* tour target 공통 — scrollIntoView 시 모바일 URL bar 아래로 130px 여유.
+       페이지 최상단 element (미디어 탭) 도 visualViewport 안에 정상 표시. */
+    .media-tabs,
+    .upload-dropzone[data-open-gallery],
+    #tutorial-memo,
+    .upload-schedule,
+    [data-tour-option],
+    [data-submit-upload] {
+      scroll-margin-top: 130px;
     }
     .tour-tooltip {
       position: fixed;
@@ -2041,11 +2052,12 @@
       // 미디어 탭 (이미지·영상 둘 다 가능) 정보는 dropzone step 의 hint 에 통합.
       // step 4 (옵션) 은 multi target — 스토리/날씨/쓰레드/링크 4개 .upload-field 묶음.
       const TOUR_STEPS = [
-        { target: '.upload-dropzone[data-open-gallery]',    title: '여기를 눌러서 사진을 골라요',     hint: '이미지·영상 둘 다 OK · 1~10장' },
-        { target: '#tutorial-memo',                         title: '한 줄 메모는 선택이에요',          hint: '메뉴·분위기 짧게 적으면 캡션이 더 정확' },
-        { target: '.upload-schedule',                       title: '지금 올릴지, 예약할지 골라요',     hint: '예약은 한 달 이내까지' },
-        { target: '[data-tour-option]',                     title: '스토리·날씨·쓰레드·프로필 링크',   hint: '4가지 기능을 자유롭게 ON/OFF — 필요한 것만 켜세요', multi: true },
-        { target: '[data-submit-upload]',                   title: '준비 끝! 누르면 분석이 시작돼요',  hint: '캡션·해시태그가 자동으로 만들어져요' },
+        { target: '.media-tabs',                         title: '먼저 종류를 골라요',                 hint: '이미지·영상 둘 다 업로드 가능' },
+        { target: '.upload-dropzone[data-open-gallery]', title: '여기를 눌러 사진을 골라요',          hint: '갤러리에서 1~10장 선택' },
+        { target: '#tutorial-memo',                      title: '한 줄 메모는 선택이에요',            hint: '메뉴·분위기 짧게 적으면 캡션이 더 정확' },
+        { target: '.upload-schedule',                    title: '지금 올릴지, 예약할지 골라요',       hint: '예약은 한 달 이내, 베스트 시간 자동 옵션도 있어요' },
+        { target: '[data-tour-option]',                  title: '스토리·날씨·쓰레드·프로필 링크',     hint: '4가지 기능을 자유롭게 ON/OFF — 필요한 것만 켜세요', multi: true },
+        { target: '[data-submit-upload]',                title: '마지막! 누르면 분석이 시작돼요',     hint: '캡션·해시태그가 자동으로 만들어져요' },
       ];
 
       function placeSpotlight(rect) {
@@ -2055,7 +2067,8 @@
           sp.className = 'tour-spotlight';
           document.body.appendChild(sp);
         }
-        const pad = 8;
+        // 사장님 결정 2026-05-17: cutout padding 일관 (8 → 12) — element 크기 들쭉날쭉 보정.
+        const pad = 12;
         sp.style.top    = (rect.top    - pad) + 'px';
         sp.style.left   = (rect.left   - pad) + 'px';
         sp.style.width  = (rect.width  + pad * 2) + 'px';
