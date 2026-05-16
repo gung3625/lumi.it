@@ -346,6 +346,100 @@
       pointer-events: none;
     }
 
+    /* === Step 2 Guided Tour (multi-step coachmark) ===
+       사장님 결정 2026-05-16: "업로드 페이지로 오면 두 부분 제외하고 나머지 어둡게,
+       이미지·영상 두 가지 업로드 가능 안내 → 다음 부분 강조 → 또 설명 → 아래로 쭉".
+       단계별 spotlight (target element 좌표 기반 cutout) + tooltip + 다음 버튼. */
+    .tour-spotlight {
+      position: fixed;
+      border-radius: 14px;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.62);
+      pointer-events: none;
+      z-index: 9000;
+      transition:
+        top 360ms var(--ease-soft),
+        left 360ms var(--ease-soft),
+        width 360ms var(--ease-soft),
+        height 360ms var(--ease-soft);
+    }
+    .tour-tooltip {
+      position: fixed;
+      max-width: min(86vw, 320px);
+      padding: var(--space-3) var(--space-4) var(--space-3);
+      background: var(--bg);
+      color: var(--ink);
+      border-radius: var(--radius-lg);
+      font-size: var(--text-body);
+      font-weight: var(--weight-medium);
+      line-height: var(--leading-snug);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+      z-index: 9001;
+      animation: tour-tip-in 360ms var(--ease-spring);
+    }
+    @keyframes tour-tip-in {
+      0%   { opacity: 0; transform: translateY(8px) scale(0.96); }
+      100% { opacity: 1; transform: translateY(0)  scale(1); }
+    }
+    .tour-tooltip::after {
+      content: "";
+      position: absolute;
+      width: 16px;
+      height: 8px;
+      background: var(--bg);
+    }
+    /* 화살표 — target 위치에 따라 위/아래 */
+    .tour-tooltip[data-arrow="up"]::after {
+      top: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      clip-path: polygon(50% 0, 100% 100%, 0 100%);
+    }
+    .tour-tooltip[data-arrow="down"]::after {
+      bottom: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      clip-path: polygon(0 0, 100% 0, 50% 100%);
+    }
+    .tour-tooltip__hint {
+      display: block;
+      margin-top: 4px;
+      font-size: var(--text-caption);
+      color: var(--pink-500);
+      font-weight: var(--weight-semibold);
+    }
+    .tour-tooltip__nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+      margin-top: var(--space-3);
+      padding-top: var(--space-2);
+      border-top: 1px solid var(--line);
+    }
+    .tour-tooltip__step {
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+      font-weight: var(--weight-semibold);
+      letter-spacing: 0.04em;
+    }
+    .tour-tooltip__next {
+      padding: 6px var(--space-3);
+      background: var(--gradient-signature);
+      color: var(--neutral-0);
+      font-size: var(--text-caption);
+      font-weight: var(--weight-semibold);
+      border: 0;
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      transition: transform var(--duration-snap) var(--ease-toss);
+      box-shadow: var(--shadow-glow-sm);
+    }
+    .tour-tooltip__next:active { transform: scale(0.96); }
+    .tour-spotlight.is-closing, .tour-tooltip.is-closing {
+      opacity: 0;
+      transition: opacity 280ms var(--ease-soft);
+    }
+
     /* 모션 줄이기 */
     @media (prefers-reduced-motion: reduce) {
       .home-section,
@@ -667,7 +761,8 @@
     .gallery-sheet {
       position: fixed;
       inset: 0;
-      z-index: 200;
+      /* tour spotlight 9000 위에 떠야 갤러리 흐름이 가려지지 않음 (2026-05-16 사장님 guided tour 적용) */
+      z-index: 9500;
       background: var(--bg);
       display: flex;
       flex-direction: column;
@@ -1900,6 +1995,8 @@
 
       function goTo(n) {
         if (n < 1 || n > TOTAL) return;
+        // Step 2 가 아닌 다른 step 으로 가면 guided tour 강제 종료 (남아 있으면 다른 화면 가림).
+        if (n !== 2 && typeof closeTour === 'function') closeTour();
         STEPS.forEach(s => {
           const isActive = Number(s.dataset.step) === n;
           s.hidden = !isActive;
@@ -1923,14 +2020,104 @@
         });
       }
 
-      // Step 1 → Step 2 (탭바 가운데 + 버튼 클릭) — spotlight 닫고 Step 2 진입.
+      // Step 1 → Step 2 (탭바 가운데 + 버튼 클릭) — spotlight 닫고 Step 2 진입 + tour 시작.
       const addBtn = document.querySelector('[data-tutorial-add]');
       if (addBtn) {
         addBtn.addEventListener('click', () => {
           closeSpotlight();
           goTo(2);
+          // Step 2 진입 애니메이션 (step-enter 400ms) 후 tour 시작
+          setTimeout(() => startUploadTour(), 500);
         });
       }
+
+      // === Step 2 Guided Tour — 6단계 sequential spotlight ===
+      // 사장님 결정: "이미지·영상 두 가지 업로드 가능 → 다음 부분 강조 → 또 설명 → 아래로 쭉".
+      // 각 단계: target element scrollIntoView + cutout spotlight + tooltip (위/아래 자동) + "다음 →" 버튼.
+      const TOUR_STEPS = [
+        { target: '.media-tabs',                            title: '이미지·영상 두 가지를 업로드 할 수 있어요', hint: '튜토리얼은 이미지로 보여드려요' },
+        { target: '.upload-dropzone[data-open-gallery]',    title: '여기를 눌러서 사진을 골라요',                hint: '갤러리가 열리면 1장 이상 선택' },
+        { target: '#tutorial-memo',                         title: '한 줄 메모는 선택이에요',                    hint: '메뉴·분위기 짧게 적으면 캡션이 더 정확해져요' },
+        { target: '.upload-schedule',                       title: '지금 올릴지, 예약할지 골라요',               hint: '예약은 한 달 이내까지' },
+        { target: '[data-toggle="story"]',                  title: '스토리·날씨·쓰레드·링크 옵션',               hint: '필요한 것만 켜두세요' },
+        { target: '[data-submit-upload]',                   title: '준비 끝! 누르면 분석이 시작돼요',            hint: '캡션·해시태그가 자동으로 만들어져요' },
+      ];
+
+      function placeSpotlight(rect) {
+        let sp = document.querySelector('.tour-spotlight');
+        if (!sp) {
+          sp = document.createElement('div');
+          sp.className = 'tour-spotlight';
+          document.body.appendChild(sp);
+        }
+        const pad = 8;
+        sp.style.top    = (rect.top    - pad) + 'px';
+        sp.style.left   = (rect.left   - pad) + 'px';
+        sp.style.width  = (rect.width  + pad * 2) + 'px';
+        sp.style.height = (rect.height + pad * 2) + 'px';
+        return sp;
+      }
+      function placeTooltip(rect, cur, idx) {
+        const old = document.querySelector('.tour-tooltip');
+        if (old) old.remove();
+        const tt = document.createElement('div');
+        tt.className = 'tour-tooltip';
+        const isLast = idx + 1 === TOUR_STEPS.length;
+        tt.innerHTML =
+          cur.title +
+          '<span class="tour-tooltip__hint">' + cur.hint + '</span>' +
+          '<div class="tour-tooltip__nav">' +
+            '<span class="tour-tooltip__step">' + (idx + 1) + '/' + TOUR_STEPS.length + '</span>' +
+            '<button class="tour-tooltip__next" type="button" data-tour-next>' +
+              (isLast ? '시작! ▶' : '다음 →') +
+            '</button>' +
+          '</div>';
+        document.body.appendChild(tt);
+        // 위치 — target 아래 공간 충분하면 below, 아니면 above
+        const ttRect = tt.getBoundingClientRect();
+        const belowSpace = window.innerHeight - rect.bottom;
+        const aboveSpace = rect.top;
+        const placeBelow = belowSpace > ttRect.height + 24 || belowSpace > aboveSpace;
+        tt.dataset.arrow = placeBelow ? 'up' : 'down';
+        const gap = 14;
+        const top = placeBelow ? (rect.bottom + gap) : (rect.top - ttRect.height - gap);
+        const centerLeft = rect.left + rect.width / 2 - ttRect.width / 2;
+        const left = Math.max(12, Math.min(window.innerWidth - ttRect.width - 12, centerLeft));
+        tt.style.top  = top  + 'px';
+        tt.style.left = left + 'px';
+        tt.querySelector('[data-tour-next]').addEventListener('click', () => {
+          if (isLast) {
+            closeTour();
+            const submit = document.querySelector('[data-submit-upload]');
+            if (submit && !submit.disabled) submit.click();
+          } else {
+            showTourStep(idx + 1);
+          }
+        });
+      }
+      function showTourStep(idx) {
+        if (idx >= TOUR_STEPS.length) { closeTour(); return; }
+        const cur = TOUR_STEPS[idx];
+        const target = document.querySelector(cur.target);
+        if (!target) { showTourStep(idx + 1); return; }
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // smooth scroll 끝난 후 위치 계산 (~400ms)
+        setTimeout(() => {
+          const rect = target.getBoundingClientRect();
+          placeSpotlight(rect);
+          placeTooltip(rect, cur, idx);
+        }, 420);
+      }
+      function closeTour() {
+        ['.tour-spotlight', '.tour-tooltip'].forEach(sel => {
+          const el = document.querySelector(sel);
+          if (!el) return;
+          el.classList.add('is-closing');
+          setTimeout(() => { try { el.remove(); } catch (_) {} }, 300);
+        });
+      }
+      function startUploadTour() { showTourStep(0); }
+      // 다른 step 진입 시 tour 자동 종료 처리는 goTo() 안에서 직접 closeTour() 호출.
 
       // Step 2 → Step 1 (topbar 뒤로)
       const backBtn = document.querySelector('[data-back-to-1]');
