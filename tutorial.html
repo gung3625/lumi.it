@@ -1717,10 +1717,11 @@
           </div>
         </div>
 
-        <!-- 스토리 -->
-        <div class="upload-field">
+        <!-- 옵션 4개 묶음 — 사장님 결정 2026-05-16: 기본 모두 ON. tour step 4 multi-target cutout. -->
+        <!-- 스토리 (기본 ON) -->
+        <div class="upload-field" data-tour-option>
           <span class="upload-field__label">스토리</span>
-          <button type="button" class="upload-toggle" data-toggle="story" aria-pressed="false">
+          <button type="button" class="upload-toggle is-on" data-toggle="story" aria-pressed="true">
             <div class="upload-toggle__body">
               <div class="upload-toggle__title">스토리에도 자동 업로드</div>
               <div class="upload-toggle__hint">켜면 피드 게시와 함께 24시간 스토리도 자동으로 올라가요</div>
@@ -1730,7 +1731,7 @@
         </div>
 
         <!-- 날씨 (기본 ON) -->
-        <div class="upload-field">
+        <div class="upload-field" data-tour-option>
           <span class="upload-field__label">날씨</span>
           <button type="button" class="upload-toggle is-on" data-toggle="weather" aria-pressed="true">
             <div class="upload-toggle__body">
@@ -1741,22 +1742,22 @@
           </button>
         </div>
 
-        <!-- 쓰레드 (튜토리얼은 미연동 상태) -->
-        <div class="upload-field">
+        <!-- 쓰레드 (기본 ON — 사장님 결정으로 disabled 제거, 시각 일관성) -->
+        <div class="upload-field" data-tour-option>
           <span class="upload-field__label">쓰레드</span>
-          <button type="button" class="upload-toggle" data-toggle="threads" aria-pressed="false" disabled>
+          <button type="button" class="upload-toggle is-on" data-toggle="threads" aria-pressed="true">
             <div class="upload-toggle__body">
               <div class="upload-toggle__title">쓰레드에도 자동 업로드</div>
-              <div class="upload-toggle__hint">가입 후 설정에서 쓰레드를 연동하면 켤 수 있어요</div>
+              <div class="upload-toggle__hint">켜면 인스타와 함께 쓰레드에도 자동 업로드 (캡션은 쓰레드용 별도 생성)</div>
             </div>
             <span class="upload-toggle__switch" aria-hidden="true"></span>
           </button>
         </div>
 
-        <!-- 프로필 링크 -->
-        <div class="upload-field">
+        <!-- 프로필 링크 (기본 ON) -->
+        <div class="upload-field" data-tour-option>
           <span class="upload-field__label">프로필 링크</span>
-          <button type="button" class="upload-toggle" data-toggle="linktree" aria-pressed="false">
+          <button type="button" class="upload-toggle is-on" data-toggle="linktree" aria-pressed="true">
             <div class="upload-toggle__body">
               <div class="upload-toggle__title">캡션 끝에 내 프로필 링크 자동 포함</div>
               <div class="upload-toggle__hint">"메뉴·예약·배달 → lumi.it.kr/r/내주소" 같이 캡션 마지막 줄에 추가됩니다</div>
@@ -2036,11 +2037,12 @@
       // 각 단계: target element scrollIntoView + cutout spotlight + tooltip (위/아래 자동) + "다음 →" 버튼.
       // 5단계 tour — 첫 step "미디어 탭" 은 페이지 최상단이라 모바일 URL bar 에 가려져 제외.
       // 미디어 탭 (이미지·영상 둘 다 가능) 정보는 dropzone step 의 hint 에 통합.
+      // step 4 (옵션) 은 multi target — 스토리/날씨/쓰레드/링크 4개 .upload-field 묶음.
       const TOUR_STEPS = [
         { target: '.upload-dropzone[data-open-gallery]',    title: '여기를 눌러서 사진을 골라요',     hint: '이미지·영상 둘 다 OK · 1~10장' },
         { target: '#tutorial-memo',                         title: '한 줄 메모는 선택이에요',          hint: '메뉴·분위기 짧게 적으면 캡션이 더 정확' },
         { target: '.upload-schedule',                       title: '지금 올릴지, 예약할지 골라요',     hint: '예약은 한 달 이내까지' },
-        { target: '[data-toggle="story"]',                  title: '스토리·날씨·쓰레드·링크 옵션',     hint: '필요한 것만 켜두세요' },
+        { target: '[data-tour-option]',                     title: '스토리·날씨·쓰레드·링크 옵션',     hint: '기본은 모두 켜져 있어요. 끄려면 탭하세요', multi: true },
         { target: '[data-submit-upload]',                   title: '준비 끝! 누르면 분석이 시작돼요',  hint: '캡션·해시태그가 자동으로 만들어져요' },
       ];
 
@@ -2099,12 +2101,20 @@
       function showTourStep(idx) {
         if (idx >= TOUR_STEPS.length) { closeTour(); return; }
         const cur = TOUR_STEPS[idx];
-        const target = document.querySelector(cur.target);
-        if (!target) { showTourStep(idx + 1); return; }
-        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // multi target — 여러 element 의 union rect (스토리/날씨/쓰레드/링크 묶음 cutout)
+        const els = cur.multi
+          ? Array.from(document.querySelectorAll(cur.target))
+          : [document.querySelector(cur.target)].filter(Boolean);
+        if (!els.length) { showTourStep(idx + 1); return; }
+        els[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
         // smooth scroll 끝난 후 위치 계산 (~400ms)
         setTimeout(() => {
-          const rect = target.getBoundingClientRect();
+          const rects = els.map(e => e.getBoundingClientRect());
+          const top    = Math.min(...rects.map(r => r.top));
+          const left   = Math.min(...rects.map(r => r.left));
+          const right  = Math.max(...rects.map(r => r.right));
+          const bottom = Math.max(...rects.map(r => r.bottom));
+          const rect = { top, left, right, bottom, width: right - left, height: bottom - top };
           placeSpotlight(rect);
           placeTooltip(rect, cur, idx);
         }, 420);
