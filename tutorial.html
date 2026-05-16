@@ -350,15 +350,21 @@
        사장님 결정 2026-05-16: "업로드 페이지로 오면 두 부분 제외하고 나머지 어둡게,
        이미지·영상 두 가지 업로드 가능 안내 → 다음 부분 강조 → 또 설명 → 아래로 쭉".
        단계별 spotlight (target element 좌표 기반 cutout) + tooltip + 다음 버튼. */
-    .tour-spotlight {
+    /* tour backdrop — fixed full viewport + SVG mask 로 cutout 영역만 transparent.
+       이전 box-shadow 9999px 패턴은 element 가 viewport 일부 벗어나면 cast 누락 → CTA 가
+       cutout 자리 외에도 보이는 버그. SVG mask 는 viewport 전체 일관 어둡게. */
+    .tour-backdrop {
       position: fixed;
-      border-radius: 16px;
-      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.62);
+      inset: 0;
+      width: 100%;
+      height: 100%;
       pointer-events: none;
       z-index: 9000;
+    }
+    .tour-backdrop .cutout-rect {
       transition:
-        top 360ms var(--ease-soft),
-        left 360ms var(--ease-soft),
+        x 360ms var(--ease-soft),
+        y 360ms var(--ease-soft),
         width 360ms var(--ease-soft),
         height 360ms var(--ease-soft);
     }
@@ -446,7 +452,7 @@
       box-shadow: var(--shadow-glow-sm);
     }
     .tour-tooltip__next:active { transform: scale(0.96); }
-    .tour-spotlight.is-closing, .tour-tooltip.is-closing {
+    .tour-backdrop.is-closing, .tour-tooltip.is-closing {
       opacity: 0;
       transition: opacity 280ms var(--ease-soft);
     }
@@ -2061,18 +2067,27 @@
       ];
 
       function placeSpotlight(rect) {
-        let sp = document.querySelector('.tour-spotlight');
+        let sp = document.querySelector('.tour-backdrop');
         if (!sp) {
-          sp = document.createElement('div');
-          sp.className = 'tour-spotlight';
+          // SVG mask 패턴 — backdrop 이 viewport 전체 어둡게 + mask 의 검정 rect 가
+          // 그 자리만 transparent (cutout). element 가 어디 있든 viewport 일관 어둡게.
+          sp = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+          sp.setAttribute('class', 'tour-backdrop');
+          sp.setAttribute('preserveAspectRatio', 'none');
+          sp.innerHTML =
+            '<defs><mask id="tourCutoutMask">' +
+              '<rect width="100%" height="100%" fill="white"/>' +
+              '<rect class="cutout-rect" fill="black" rx="16" ry="16"/>' +
+            '</mask></defs>' +
+            '<rect width="100%" height="100%" fill="rgba(0,0,0,0.62)" mask="url(#tourCutoutMask)"/>';
           document.body.appendChild(sp);
         }
-        // 사장님 결정 2026-05-17: cutout padding 일관 (8 → 12) — element 크기 들쭉날쭉 보정.
         const pad = 12;
-        sp.style.top    = (rect.top    - pad) + 'px';
-        sp.style.left   = (rect.left   - pad) + 'px';
-        sp.style.width  = (rect.width  + pad * 2) + 'px';
-        sp.style.height = (rect.height + pad * 2) + 'px';
+        const cr = sp.querySelector('.cutout-rect');
+        cr.setAttribute('x',      String(rect.left - pad));
+        cr.setAttribute('y',      String(rect.top  - pad));
+        cr.setAttribute('width',  String(rect.width  + pad * 2));
+        cr.setAttribute('height', String(rect.height + pad * 2));
         return sp;
       }
       function placeTooltip(rect, cur, idx) {
@@ -2183,7 +2198,7 @@
         currentTourIdx = null;
         window.removeEventListener('scroll', onTourScroll);
         window.removeEventListener('resize', onTourScroll);
-        ['.tour-spotlight', '.tour-tooltip'].forEach(sel => {
+        ['.tour-backdrop', '.tour-tooltip'].forEach(sel => {
           const el = document.querySelector(sel);
           if (!el) return;
           el.classList.add('is-closing');
