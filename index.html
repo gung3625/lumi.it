@@ -93,8 +93,24 @@
       gap: var(--space-6);
     }
 
-    /* 루미 시그니처 구름은 사장님 제공 PNG 파일 (assets/cloud.png) 로 박을 예정.
-       이미지 저장 후 hero__body 안에 <img class="hero__cloud"> 로 추가. */
+    /* 루미 시그니처 구름 — 사장님 제공 cloud.jpg, hero 제목 위에서 둥실 bob.
+       이미지가 JPG 라 흰 배경 boundary 가 살짝 있을 수 있음. hero::before radial gradient
+       위에 white 배경 cloud 가 올라가 자연 융화. mix-blend-mode: multiply 로 흰 부분 투명화 효과. */
+    .hero__cloud {
+      width: clamp(140px, 36vw, 220px);
+      height: auto;
+      display: block;
+      margin: 0 auto var(--space-4);
+      animation: cloud-bob 5.4s var(--ease-soft) infinite;
+      mix-blend-mode: multiply;
+    }
+    @keyframes cloud-bob {
+      0%, 100% { transform: translateY(0); }
+      50%      { transform: translateY(-8px); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .hero__cloud { animation: none; }
+    }
 
     /* 거대 타이포 — viewport-scaled (2026 트렌드 #2) */
     .hero__title {
@@ -539,6 +555,8 @@
     </header>
 
     <div class="hero__body">
+      <img class="hero__cloud" src="/assets/cloud.jpg" alt="" aria-hidden="true" width="220" height="172" decoding="async">
+
       <h1 class="hero__title">
         <span class="hero__title-line">사진 한 장이면</span>
         <span class="hero__title-line hero__title-line--accent">SNS는 루미가.</span>
