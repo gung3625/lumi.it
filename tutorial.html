@@ -1425,109 +1425,7 @@
     }
     .signup-terms a:hover { color: var(--pink-500); }
 
-    /* === 푸터 === */
-    .foot {
-      position: relative;
-      padding:
-        var(--space-12)
-        var(--page-x)
-        calc(env(safe-area-inset-bottom) + var(--space-8));
-      background: var(--bg);
-      border-top: 1px solid var(--line);
-      color: var(--ink-muted);
-    }
-    .foot__inner {
-      max-width: 720px;
-      margin: 0 auto;
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-8);
-    }
-
-    .foot__brand {
-      display: flex;
-      justify-content: center;
-    }
-    .foot__brand a {
-      display: inline-flex;
-      align-items: center;
-      padding: var(--space-2) var(--space-3);
-      border-radius: var(--radius-pill);
-      opacity: 0.85;
-      transition:
-        opacity var(--duration-fast) var(--ease-toss),
-        transform var(--duration-snap) var(--ease-toss);
-    }
-    .foot__brand a:hover  { opacity: 1; }
-    .foot__brand a:active { transform: scale(0.96); }
-    .foot__brand img { height: 24px; width: auto; display: block; }
-
-    .foot__nav {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: var(--space-3) var(--space-5);
-      font-size: var(--text-body);
-      font-weight: var(--weight-medium);
-    }
-    .foot__nav a {
-      padding: var(--space-1) 0;
-      color: var(--ink-soft);
-      transition: color var(--duration-snap) var(--ease-toss);
-    }
-    .foot__nav a:hover  { color: var(--pink-500); }
-    .foot__nav a:active { color: var(--pink-700); }
-
-    .foot__biz dl {
-      margin: 0 auto;
-      display: grid;
-      grid-template-columns: auto 1fr;
-      gap: 4px var(--space-4);
-      max-width: 360px;
-      font-size: var(--text-caption);
-      line-height: var(--leading-snug);
-    }
-    .foot__biz dt {
-      margin: 0;
-      font-weight: var(--weight-semibold);
-      color: var(--ink-soft);
-      white-space: nowrap;
-    }
-    .foot__biz dd {
-      margin: 0;
-      color: var(--ink-muted);
-    }
-
-    .foot__contact {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: var(--space-2) var(--space-4);
-      font-size: var(--text-caption);
-    }
-    .foot__contact a {
-      color: var(--ink-muted);
-      transition: color var(--duration-snap) var(--ease-toss);
-    }
-    .foot__contact a:hover { color: var(--pink-500); }
-
-    .foot__bottom {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: var(--space-2);
-      padding-top: var(--space-6);
-      border-top: 1px solid var(--line);
-      font-size: var(--text-label);
-      letter-spacing: 0.04em;
-      text-align: center;
-    }
-    .foot__copy   { color: var(--ink-muted); }
-    .foot__notice { color: var(--ink-muted); line-height: var(--leading-snug); }
-    .foot__notice strong {
-      font-weight: var(--weight-semibold);
-      color: var(--ink-soft);
-    }
+    /* 푸터는 소개 랜딩 (index.html) 에 위치. 튜토리얼에는 불필요 (사장님 2026-05-16). */
   </style>
 </head>
 <body>
@@ -1932,47 +1830,7 @@
 
   </main>
 
-  <footer class="foot" role="contentinfo">
-    <div class="foot__inner">
-
-      <div class="foot__brand">
-        <a href="/" aria-label="루미(lumi) 홈">
-          <img src="/assets/logo-wordmark.png" alt="루미(lumi)" width="50" height="24" loading="lazy" decoding="async">
-        </a>
-      </div>
-
-      <nav class="foot__nav" aria-label="법적 정보">
-        <a href="/terms">이용약관</a>
-        <a href="/privacy">개인정보처리방침</a>
-        <a href="/privacy#data-deletion">데이터 삭제 안내</a>
-        <a href="/refund">환불정책</a>
-        <a href="/support">고객지원</a>
-      </nav>
-
-      <div class="foot__biz" aria-label="사업자 정보">
-        <dl>
-          <dt>상호</dt><dd>루미(lumi)</dd>
-          <dt>대표</dt><dd>김현</dd>
-          <dt>사업자등록번호</dt><dd>404-09-66416</dd>
-          <dt>통신판매업</dt><dd>제2024-서울용산-1166호</dd>
-          <dt>주소</dt><dd>서울특별시 용산구 회나무로 32-7 (이태원동) 04345</dd>
-        </dl>
-      </div>
-
-      <div class="foot__contact">
-        <a href="mailto:lumi@lumi.it.kr">lumi@lumi.it.kr</a>
-        <a href="tel:010-6424-6284">010-6424-6284</a>
-      </div>
-
-      <div class="foot__bottom">
-        <p class="foot__copy">© 2026 루미(lumi)</p>
-        <p class="foot__notice">
-          본 서비스는 <strong>Meta Platform Terms</strong> 및 <strong>Developer Policies</strong>를 준수합니다.
-        </p>
-      </div>
-
-    </div>
-  </footer>
+<!-- 푸터는 index.html (소개 랜딩) 에서 노출. 튜토리얼은 단순 미리보기라 footer 불필요 (사장님 2026-05-16 결정). -->
 
   <script>
     (function () {
@@ -1981,7 +1839,6 @@
       const MAX_PHOTOS = 9;
       const selected = new Set();
 
-      const footerEl = document.querySelector('.foot');
       function goTo(n) {
         if (n < 1 || n > TOTAL) return;
         STEPS.forEach(s => {
@@ -1989,16 +1846,11 @@
           s.hidden = !isActive;
           s.setAttribute('aria-hidden', String(!isActive));
         });
-        // 사장님 결정 2026-05-15(수정): Step 1(홈) + Step 5(가입) 에서 footer 노출.
-        // Step 1 의 dashboard 모사는 실제 dashboard 와 마찬가지로 페이지 끝에 사업자
-        // 정보 footer 가 자연 흐름. footer 가 붙으면 body scrollHeight > viewport 라
-        // 자연 스크롤도 같이 회복. 풀스크린 UI인 2(갤러리)/3(분석)/4(결과)는 footer 숨김.
-        if (footerEl) {
-          footerEl.style.display = (n === 1 || n === TOTAL) ? 'block' : 'none';
-        }
+        // 사장님 결정 2026-05-16: 튜토리얼에는 footer 불필요. 사업자 정보·약관은
+        // 소개 랜딩 (index.html) 에서 노출. 튜토리얼은 단순 미리보기 흐름만.
         window.scrollTo({ top: 0, behavior: 'instant' });
       }
-      // 초기 진입 — Step 1 활성 + footer 표시 적용.
+      // 초기 진입 — Step 1 활성.
       goTo(1);
 
       // Step 1 코치 bubble — scroll 시 footer 글씨 위 겹침 차단 ([feedback_ui_no_overlay]).
