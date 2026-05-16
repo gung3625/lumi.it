@@ -1,0 +1,2343 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="robots" content="noindex,follow">
+  <meta name="description" content="루미(lumi) 1분 미리보기 튜토리얼 — 사진 올리면 캡션·게시까지.">
+  <meta name="view-transition" content="same-origin">
+  <title>1분 미리보기 튜토리얼 · 루미(lumi)</title>
+
+  <link rel="icon" type="image/png" href="/assets/favicon.png">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+
+  <!-- Pretendard Variable -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+
+  <meta name="view-transition" content="same-origin">
+
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <script data-scroll-top-on-reload>if("scrollRestoration" in history)history.scrollRestoration="manual";window.scrollTo(0,0);window.addEventListener("DOMContentLoaded",function(){window.scrollTo(0,0)});</script>
+  <link rel="stylesheet" href="/css/motion.css">
+  <!-- Step 1 (dashboard 모사) 용 — 하단 탭바 실제 사용 화면과 동일 디자인 -->
+  <link rel="stylesheet" href="/css/tabbar.css">
+
+  <style>
+    /* === 튜토리얼 페이지 — dashboard 의 정상 패턴 그대로 ===
+       2026-05-15 (수정): 사장님 지적 — "Step 1 에서 스크롤이 아예 안되고 푸터가 안 보여".
+       2026-05-16 (재수정): 사장님 지적 — "스크롤을 위로 올리면 새로고침이 됐는데 안된다".
+       이전 ac56c18 의 overscroll-behavior:none 가 흔들림(rubber-band) + iOS Safari 의
+       pull-to-refresh 둘 다 차단. 사장님은 pull-to-refresh 유지를 원함.
+
+       흔들림의 진짜 원인은 body padding-bottom 중복 (.stage padding + tabbar.css
+       body padding 누적) 이었고, de55071 에서 dashboard 정상 패턴 복귀로 padding
+       중복 해소. overscroll-behavior:none 은 보험성이라 제거해도 흔들림 재발 가능성
+       낮음 (사장님 검증 필요). pull-to-refresh 우선. */
+    html, body {
+      margin: 0;
+    }
+
+    /* === Step 1: 홈 (dashboard 모사 — 실제 dashboard 와 시각적 동일) === */
+    /* 사장님 결정 2026-05-15: 튜토리얼 = 실제 사용 미리보기. 가입 후 보는 dashboard 와
+       이질감 0. 빈 상태(stat-empty + scheduled-empty)로 신규 사용자 첫 진입 그대로 모사. */
+    .stage {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      min-height: 100dvh;
+      background: var(--bg);
+      /* padding-bottom 은 tabbar.css 의 body:has(.tabbar) 가 통합 관리 — 중복 제거 */
+    }
+
+    /* 튜토리얼 안내 배너 — 사장님이 "이게 미리보기" 라고 즉시 인지 (2026-05-15 사장님 요청).
+       skip 은 헤더(로고 줄) 우측으로 이동 → 배너는 안내 텍스트만 (잘림 걱정 ↓). */
+    .tutorial-banner {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+      padding:
+        calc(env(safe-area-inset-top) + var(--space-3))
+        var(--space-4)
+        var(--space-3);
+      background: linear-gradient(135deg, #FF6B8B 0%, #DDA0DD 100%);
+      color: var(--neutral-0);
+      font-size: var(--text-caption);
+      font-weight: var(--weight-semibold);
+      letter-spacing: var(--tracking-tight);
+      box-shadow: 0 2px 12px rgba(255, 107, 139, 0.22);
+      text-align: center;
+    }
+    .tutorial-banner__icon {
+      flex: 0 0 auto;
+      font-size: var(--text-body);
+      line-height: 1;
+    }
+    .tutorial-banner__text strong {
+      font-weight: var(--weight-bold);
+    }
+
+    /* 헤더 우측 skip — 로고와 같은 라인 (사장님 2026-05-15 결정) */
+    .home-skip {
+      position: absolute;
+      right: var(--space-4);
+      top: 50%;
+      transform: translateY(-50%);
+      padding: var(--space-2) var(--space-3);
+      font-size: var(--text-caption);
+      font-weight: var(--weight-medium);
+      color: var(--ink-muted);
+      background: none;
+      border: 0;
+      cursor: pointer;
+      z-index: 10;
+      transition:
+        color var(--duration-snap) var(--ease-toss),
+        transform var(--duration-snap) var(--ease-toss);
+    }
+    .home-skip:hover { color: var(--ink-soft); }
+    .home-skip:active {
+      color: var(--ink);
+      transform: translateY(-50%) scale(0.96);
+    }
+
+    /* 상단 로고 헤더 — 배너가 sticky 라 safe-area 는 배너에 흡수, 헤더는 일반 간격.
+       position relative — .home-skip 의 absolute 기준점. */
+    .home-header {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-5) var(--space-5) var(--space-4);
+    }
+    .home-logo {
+      height: 28px;
+      width: auto;
+    }
+
+    /* 피드 영역 (dashboard 의 .feed 와 같은 구조) */
+    .home-feed {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-5);
+      padding: var(--space-2) var(--space-4) var(--space-6);
+      flex: 1;
+    }
+
+    /* === Step 공통 (전환 애니) === */
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0);    }
+    }
+
+    /* skip 버튼 — dashboard 영역 위에 floating */
+    .skip {
+      position: absolute;
+      top: calc(env(safe-area-inset-top) + var(--space-3));
+      right: var(--space-4);
+      padding: var(--space-2) var(--space-3);
+      font-size: var(--text-caption);
+      font-weight: var(--weight-medium);
+      color: var(--ink-muted);
+      letter-spacing: var(--tracking-normal);
+      background: none;
+      border: 0;
+      cursor: pointer;
+      transition:
+        color var(--duration-snap) var(--ease-toss),
+        transform var(--duration-snap) var(--ease-toss);
+      z-index: 10;
+    }
+    .skip:hover { color: var(--ink-soft); }
+    .skip:active { transform: scale(0.95); color: var(--ink); }
+
+    /* === dashboard 카드 styles (실제 dashboard.html inline 에서 복사) === */
+    .home-section {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+      animation: rise 500ms var(--ease-toss) calc(var(--idx, 0) * 80ms) backwards;
+    }
+
+    .section-title {
+      font-size: var(--text-caption);
+      font-weight: var(--weight-semibold);
+      color: var(--ink-muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin: 0 var(--space-1);
+    }
+
+    /* 빈 상태 카드 (이번 주 통계 — "첫 게시 후 보여드릴게요") */
+    .stat-empty {
+      padding: var(--space-4);
+      background: var(--bg-soft);
+      border: 1px dashed var(--line-strong);
+      border-radius: var(--radius-lg);
+      text-align: center;
+    }
+    .stat-empty__title {
+      font-size: var(--text-body);
+      font-weight: var(--weight-semibold);
+      color: var(--ink);
+    }
+    .stat-empty__sub {
+      margin-top: 4px;
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+    }
+
+    /* 예약 빈 카드 */
+    .home-scheduled-empty {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-4);
+      background: var(--bg-soft);
+      border: 1px dashed var(--line-strong);
+      border-radius: var(--radius-lg);
+    }
+    .home-scheduled-empty__icon {
+      flex: 0 0 36px;
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-full);
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--pink-500);
+    }
+    .home-scheduled-empty__icon svg {
+      width: 20px;
+      height: 20px;
+      stroke-width: 2;
+    }
+    .home-scheduled-empty__body { flex: 1; }
+    .home-scheduled-empty__title {
+      font-size: var(--text-body);
+      font-weight: var(--weight-semibold);
+      color: var(--ink);
+    }
+    .home-scheduled-empty__sub {
+      margin-top: 2px;
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+    }
+
+    /* 코치 bubble — + 버튼 위로 화살표 (사장님 시선 유도)
+       사장님 스크롤 시 footer 글씨 위에 겹치지 않도록 scroll 시 fade-out
+       (JS scroll listener 가 is-hidden 토글) — [feedback_ui_no_overlay] 차단. */
+    .home-coach-bubble {
+      position: fixed;
+      bottom: calc(96px + env(safe-area-inset-bottom));
+      left: 50%;
+      transform: translateX(-50%);
+      padding: var(--space-2) var(--space-4);
+      background: var(--ink);
+      color: var(--bg);
+      border-radius: var(--radius-full);
+      font-size: var(--text-caption);
+      font-weight: var(--weight-medium);
+      box-shadow: var(--shadow-lg);
+      z-index: 100;
+      white-space: nowrap;
+      pointer-events: none;
+      animation: bubble-in 400ms var(--ease-spring) 700ms backwards;
+      transition: opacity var(--duration-base) var(--ease-soft);
+    }
+    .home-coach-bubble.is-hidden { opacity: 0; }
+    .home-coach-bubble::after {
+      content: "";
+      position: absolute;
+      bottom: -6px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 12px;
+      height: 6px;
+      background: var(--ink);
+      clip-path: polygon(0 0, 100% 0, 50% 100%);
+    }
+
+    /* + 버튼 펄스 강조 — 사장님 시선 더 유도 */
+    .tab-add[data-tutorial-add] {
+      position: relative;
+      border: 0;
+      cursor: pointer;
+    }
+    .tab-add[data-tutorial-add]::after {
+      content: "";
+      position: absolute;
+      inset: -4px;
+      border-radius: var(--radius-2xl);
+      border: 2px solid var(--pink-500);
+      animation: tab-add-pulse 1.8s var(--ease-soft) infinite;
+      pointer-events: none;
+    }
+    @keyframes tab-add-pulse {
+      0%   { transform: scale(1);    opacity: 0.6; }
+      70%  { opacity: 0; }
+      100% { transform: scale(1.4); opacity: 0; }
+    }
+
+    /* 다른 탭은 클릭 비활성 (튜토리얼 흐름 가두기 — 사장님이 + 만 누르도록) */
+    .tabbar .tab[data-tutorial-tab] {
+      cursor: default;
+      pointer-events: none;
+    }
+
+    /* 모션 줄이기 */
+    @media (prefers-reduced-motion: reduce) {
+      .home-section,
+      .home-coach-bubble,
+      .tab-add[data-tutorial-add]::after,
+      .step,
+      .gallery__check { animation: none; }
+    }
+
+    /* === Step 공통 (전환 애니) === */
+    .step {
+      animation: step-enter 400ms var(--ease-toss);
+    }
+    @keyframes step-enter {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0);    }
+    }
+    .step[hidden] { display: none; }
+
+    /* === Step 2: 사진 올리기 (실제 register-product.html 모사) ===
+       사장님 결정 2026-05-16: "실제는 사진 업로드를 누르면 업로드 페이지로 가서 여러
+       설정을 확인 후 사진을 올리잖아." → 이전 iOS Photos 단독 갤러리 패턴 → 실제
+       register-product 페이지 모사. 미디어 탭 + dropzone + 한 줄 메모 + 게시 시점 +
+       스토리/날씨/쓰레드/링크 토글 + CTA. 갤러리는 dropzone 클릭 시 sheet 로 분리. */
+    .upload-step {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      min-height: 100dvh;
+      background: var(--bg);
+      isolation: isolate;
+    }
+    .upload-topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding:
+        calc(env(safe-area-inset-top) + var(--space-3))
+        var(--space-4)
+        var(--space-3);
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border-bottom: 1px solid var(--line);
+      min-height: 52px;
+    }
+    .upload-topbar__back {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 36px; height: 36px;
+      border-radius: var(--radius-full);
+      color: var(--ink);
+      background: transparent;
+      border: 0;
+      cursor: pointer;
+      transition: background var(--duration-snap) var(--ease-toss);
+    }
+    @media (hover: hover) {
+      .upload-topbar__back:hover { background: var(--bg-soft); }
+    }
+    .upload-topbar__back svg { width: 20px; height: 20px; stroke-width: 2.2; }
+    .upload-topbar__title {
+      font-size: var(--text-headline);
+      font-weight: var(--weight-semibold);
+      color: var(--ink);
+      flex: 1;
+      margin: 0;
+    }
+    .upload-wrap {
+      padding: var(--space-4);
+      max-width: 600px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-5);
+      width: 100%;
+    }
+    .media-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-2);
+    }
+    .media-tab {
+      padding: var(--space-3) var(--space-4);
+      background: var(--bg-soft);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      font-size: var(--text-body);
+      font-weight: var(--weight-medium);
+      color: var(--ink-muted);
+      transition: all var(--duration-snap) var(--ease-toss);
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .media-tab.is-active {
+      background: var(--pink-50);
+      border-color: var(--pink-500);
+      color: var(--pink-700);
+      font-weight: var(--weight-semibold);
+    }
+    .media-tab:disabled { opacity: 0.5; cursor: not-allowed; }
+    .media-tab:active:not(:disabled) { transform: scale(0.98); }
+    .upload-field { display: flex; flex-direction: column; gap: var(--space-2); }
+    .upload-field__label {
+      font-size: var(--text-caption);
+      font-weight: var(--weight-semibold);
+      color: var(--ink-soft);
+      letter-spacing: 0.02em;
+    }
+    .upload-dropzone {
+      display: block;
+      position: relative;
+      padding: var(--space-12) var(--space-5);
+      background: var(--bg-soft);
+      border: 2px dashed var(--line-strong);
+      border-radius: var(--radius-lg);
+      text-align: center;
+      color: var(--ink-muted);
+      cursor: pointer;
+      transition:
+        border-color var(--duration-snap) var(--ease-toss),
+        background var(--duration-snap) var(--ease-toss),
+        transform var(--duration-snap) var(--ease-toss);
+      width: 100%;
+      font-family: inherit;
+    }
+    @media (hover: hover) {
+      .upload-dropzone:hover { border-color: var(--pink-300); background: var(--pink-50); }
+    }
+    .upload-dropzone:active { transform: scale(0.995); }
+    .upload-dropzone__icon {
+      width: 56px; height: 56px;
+      margin: 0 auto var(--space-3);
+      border-radius: var(--radius-full);
+      background: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--pink-500);
+      box-shadow: var(--shadow-sm);
+      animation: drop-bob 2.4s var(--ease-soft) infinite;
+    }
+    .upload-dropzone__icon svg { width: 28px; height: 28px; stroke-width: 2; }
+    @keyframes drop-bob {
+      0%, 100% { transform: translateY(0); }
+      50%      { transform: translateY(-3px); }
+    }
+    .upload-dropzone__title {
+      font-size: var(--text-body-lg);
+      font-weight: var(--weight-semibold);
+      color: var(--ink);
+      margin-bottom: 4px;
+    }
+    .upload-dropzone__sub { font-size: var(--text-caption); }
+    .photo-thumbs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-2);
+    }
+    .photo-thumbs__item {
+      position: relative;
+      aspect-ratio: 1 / 1;
+      background: var(--bg-soft);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      animation: thumb-rise 320ms var(--ease-toss) calc(var(--idx, 0) * 40ms) backwards;
+    }
+    @keyframes thumb-rise {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .photo-thumbs__bg { position: absolute; inset: 0; }
+    .photo-thumbs__edit {
+      margin-top: var(--space-2);
+      padding: var(--space-2) var(--space-4);
+      background: var(--bg);
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-pill);
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+      cursor: pointer;
+      font-family: inherit;
+      align-self: flex-start;
+    }
+    @media (hover: hover) {
+      .photo-thumbs__edit:hover { color: var(--ink); border-color: var(--pink-300); }
+    }
+    .upload-memo-hint {
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+      line-height: 1.55;
+      margin: 0;
+    }
+    .upload-input {
+      padding: var(--space-3) var(--space-4);
+      font-size: max(16px, var(--text-body));
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-md);
+      background: var(--bg);
+      color: var(--ink);
+      width: 100%;
+      font-family: inherit;
+      min-height: 80px;
+      resize: vertical;
+    }
+    .upload-schedule {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-2);
+    }
+    .upload-schedule__card {
+      padding: var(--space-4);
+      background: var(--bg);
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-lg);
+      text-align: center;
+      font-weight: var(--weight-semibold);
+      color: var(--ink);
+      cursor: pointer;
+      transition: all var(--duration-snap) var(--ease-toss);
+      font-family: inherit;
+    }
+    .upload-schedule__card.is-active {
+      background: var(--pink-50);
+      border-color: var(--pink-500);
+      color: var(--pink-700);
+      box-shadow: var(--shadow-glow-sm);
+    }
+    .upload-schedule__card:active { transform: scale(0.98); }
+    .upload-toggle {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      width: 100%;
+      padding: var(--space-3) var(--space-4);
+      background: var(--bg);
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-lg);
+      text-align: left;
+      cursor: pointer;
+      transition: all 200ms var(--ease-toss);
+      font-family: inherit;
+    }
+    .upload-toggle.is-on {
+      background: var(--pink-50);
+      border-color: var(--pink-500);
+    }
+    .upload-toggle__body { flex: 1; min-width: 0; }
+    .upload-toggle__title {
+      font-size: var(--text-body);
+      font-weight: var(--weight-semibold);
+      color: var(--ink);
+    }
+    .upload-toggle.is-on .upload-toggle__title { color: var(--pink-700); }
+    .upload-toggle__hint {
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+      margin-top: 2px;
+    }
+    .upload-toggle__switch {
+      flex-shrink: 0;
+      width: 42px;
+      height: 24px;
+      background: var(--neutral-300);
+      border-radius: 999px;
+      position: relative;
+      transition: background 200ms var(--ease-toss);
+    }
+    .upload-toggle__switch::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 20px;
+      height: 20px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 200ms var(--ease-toss);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    }
+    .upload-toggle.is-on .upload-toggle__switch { background: var(--pink-500); }
+    .upload-toggle.is-on .upload-toggle__switch::after { transform: translateX(18px); }
+    .upload-toggle:active { transform: scale(0.99); }
+    .upload-toggle:disabled { opacity: 0.5; cursor: not-allowed; }
+    .upload-toggle:disabled:active { transform: none; }
+    .cta-submit {
+      width: 100%;
+      padding: var(--space-4);
+      background: var(--gradient-signature);
+      color: var(--neutral-0);
+      font-size: var(--text-body-lg);
+      font-weight: var(--weight-semibold);
+      border-radius: var(--radius-lg);
+      border: none;
+      box-shadow: var(--shadow-glow-sm);
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .cta-submit::before {
+      content: '';
+      position: absolute; inset: 0;
+      border-radius: inherit;
+      background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.25) 50%, transparent 70%);
+      transform: translateX(-100%);
+      transition: transform 600ms var(--ease-toss);
+      pointer-events: none;
+    }
+    @media (hover: hover) {
+      .cta-submit:hover::before { transform: translateX(100%); }
+      .cta-submit:hover { box-shadow: var(--shadow-glow); }
+    }
+    .cta-submit:disabled { opacity: 0.4; box-shadow: none; cursor: not-allowed; }
+    .cta-submit:active:not(:disabled) { transform: scale(0.98); }
+
+    /* === 갤러리 sheet — dropzone 누르면 슬라이드 업 모달로 표시 ===
+       iOS Photos 갤러리 (3x3 9장) 패턴은 그대로. step 자체가 아닌 sheet 안. */
+    .gallery-sheet {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      transform: translateY(100%);
+      transition: transform 320ms var(--ease-toss);
+      isolation: isolate;
+    }
+    .gallery-sheet.is-open { transform: translateY(0); }
+
+    /* 상단 toolbar (iOS: 취소 | 최근 항목 | 완료) — sheet 안에서 동작 */
+    .gallery-toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+      padding:
+        calc(env(safe-area-inset-top) + var(--space-3))
+        var(--space-4)
+        var(--space-3);
+      background: var(--bg);
+      border-bottom: 1px solid var(--line);
+    }
+    .gallery-toolbar__cancel,
+    .gallery-toolbar__next {
+      font-size: var(--text-body);
+      font-weight: var(--weight-medium);
+      color: var(--ink-muted);
+      padding: var(--space-2) var(--space-1);
+      background: none;
+      border: 0;
+      cursor: pointer;
+      transition: color var(--duration-snap) var(--ease-toss);
+    }
+    .gallery-toolbar__cancel:active { color: var(--ink); }
+    .gallery-toolbar__next {
+      color: var(--pink-500);
+      font-weight: var(--weight-semibold);
+    }
+    .gallery-toolbar__next:disabled {
+      color: var(--neutral-300);
+      cursor: default;
+    }
+    .gallery-toolbar__center {
+      text-align: center;
+      flex: 1;
+      min-width: 0;
+    }
+    .gallery-toolbar__title {
+      font-size: var(--text-body);
+      font-weight: var(--weight-semibold);
+      color: var(--ink);
+      line-height: 1.2;
+    }
+    .gallery-toolbar__counter {
+      display: block;
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+      margin-top: 2px;
+      letter-spacing: var(--tracking-normal);
+    }
+
+    /* 코치 bubble — 사장님 시선 유도용 (휴대폰 갤러리에는 progress dots 대신 bubble) */
+    .coach-bubble {
+      position: absolute;
+      top: calc(env(safe-area-inset-top) + 76px);
+      left: 50%;
+      transform: translateX(-50%);
+      padding: var(--space-2) var(--space-4);
+      background: var(--ink);
+      color: var(--bg);
+      border-radius: var(--radius-full);
+      font-size: var(--text-caption);
+      font-weight: var(--weight-medium);
+      box-shadow: var(--shadow-lg);
+      z-index: 9;
+      white-space: nowrap;
+      pointer-events: none;
+      animation: bubble-in 400ms var(--ease-spring) 240ms backwards;
+    }
+    .coach-bubble::after {
+      content: "";
+      position: absolute;
+      top: -6px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 12px;
+      height: 6px;
+      background: var(--ink);
+      clip-path: polygon(50% 0, 100% 100%, 0 100%);
+    }
+    .coach-bubble[hidden] { display: none !important; }
+    @keyframes bubble-in {
+      0%   { opacity: 0; transform: translate(-50%, 8px) scale(0.92); }
+      100% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+    }
+
+    /* 갤러리 wrap — 가용 세로 공간 모두 차지 (toolbar 아래 ~ safe-area 까지).
+       자식 .gallery 에 flex 분배해야 grid-template-rows: 1fr 가 동작.
+       flex item 안의 자식 height:100% 는 부모 explicit height 가 필요해서
+       동작 안 했음 → wrap 자체를 flex container 로 만들고 .gallery 는 flex:1. */
+    .gallery-wrap {
+      flex: 1;
+      padding: 0;
+      padding-bottom: env(safe-area-inset-bottom);
+      min-height: 0; /* flex 자식이 부모 크기 넘지 않게 */
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 3x3 그리드 — 9장이 화면 가용 영역 전체 채움 (공백 0) */
+    .gallery {
+      flex: 1;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 2px;
+      width: 100%;
+      min-height: 0; /* grid 자체가 부모 안에서 줄어들 수 있게 */
+    }
+    .gallery__item {
+      /* aspect-ratio 제거 — 그리드 row 가 1fr 로 가용 높이 분배. 셀은 자동 직사각형. */
+      min-height: 0;
+      animation: rise 280ms var(--ease-toss) calc(var(--idx, 0) * 18ms) backwards;
+    }
+    .gallery__card {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      padding: 0;
+      border: 0;
+      background: none;
+      overflow: hidden;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: transform var(--duration-snap) var(--ease-toss);
+    }
+    .gallery__card:active { transform: scale(0.97); }
+    .gallery__card.is-selected .gallery__bg {
+      filter: brightness(0.82);
+    }
+    .gallery__bg {
+      position: absolute;
+      inset: 0;
+      display: block;
+      transition: filter var(--duration-snap) var(--ease-toss);
+    }
+
+    /* 음식 사진 그라데이션 9종 — 디저트·식당 메뉴 (입에 들어가는 것). 사장님 결정 2026-05-15.
+       카페 인테리어/외관/메뉴판 같은 비-음식 제거. 라떼·케이크·파스타·샐러드 등 다양화. */
+    .gallery__bg--cafe-1  { background: linear-gradient(135deg, #c8a27a 0%, #f5e5d3 100%); }              /* 라떼아트 — 베이지·크림 */
+    .gallery__bg--cafe-2  { background: linear-gradient(135deg, #f5d4b3 0%, #e8a87c 100%); }              /* 케이크 — 크림·연갈색 */
+    .gallery__bg--cafe-3  { background: linear-gradient(135deg, #f8c8d8 0%, #c8a8e0 100%); }              /* 마카롱 — 핑크·라일락 */
+    .gallery__bg--cafe-4  { background: linear-gradient(135deg, #d4a85c 0%, #8b6f3c 100%); }              /* 크로플 — 황금·갈색 */
+    .gallery__bg--cafe-5  { background: linear-gradient(135deg, #e85c5c 0%, #f5b878 100%); }              /* 파스타 — 빨강·노랑 */
+    .gallery__bg--cafe-6  { background: linear-gradient(135deg, #a8d878 0%, #f5e088 100%); }              /* 샐러드 — 연두·노랑 */
+    .gallery__bg--cafe-7  { background: linear-gradient(135deg, #c89868 0%, #f5d588 100%); }              /* 빵 — 갈색·노랑 */
+    .gallery__bg--cafe-8  { background: linear-gradient(135deg, #b8a8e0 0%, #f8a8c8 100%); }              /* 스무디 — 보라·핑크 */
+    .gallery__bg--cafe-9  { background: linear-gradient(135deg, #fff2e0 0%, #f5b6c5 100%); }              /* 디저트 플레이팅 — 파스텔·핑크 */
+
+    /* iOS 체크 마크 — 미선택: 반투명 검정 + 흰 border / 선택: 핑크 채움 */
+    .gallery__check {
+      position: absolute;
+      top: var(--space-2);
+      right: var(--space-2);
+      width: 24px;
+      height: 24px;
+      border-radius: var(--radius-full);
+      border: 2px solid rgba(255, 255, 255, 0.92);
+      background: rgba(0, 0, 0, 0.18);
+      backdrop-filter: blur(2px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: transparent;
+      transition:
+        background var(--duration-snap) var(--ease-toss),
+        border-color var(--duration-snap) var(--ease-toss),
+        color var(--duration-snap) var(--ease-toss),
+        transform var(--duration-snap) var(--ease-spring);
+    }
+    .gallery__card.is-selected .gallery__check {
+      background: var(--pink-500);
+      border-color: var(--pink-500);
+      color: var(--neutral-0);
+      transform: scale(1.08);
+    }
+    .gallery__check svg {
+      width: 14px;
+      height: 14px;
+      stroke-width: 3.5;
+    }
+
+    /* 선택 순서 번호 (iOS 패턴 — 선택 순서대로 1, 2, 3...) */
+    .gallery__order {
+      position: absolute;
+      top: var(--space-2);
+      right: var(--space-2);
+      width: 24px;
+      height: 24px;
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: var(--weight-bold);
+      color: var(--neutral-0);
+      background: var(--pink-500);
+      opacity: 0;
+      transform: scale(0);
+      pointer-events: none;
+      transition:
+        opacity var(--duration-snap) var(--ease-toss),
+        transform var(--duration-snap) var(--ease-spring);
+    }
+    .gallery__card.is-selected .gallery__order {
+      opacity: 1;
+      transform: scale(1);
+    }
+    /* 선택 시엔 number 만 보이고 check 는 숨김 */
+    .gallery__card.is-selected .gallery__check {
+      opacity: 0;
+    }
+
+    /* === Sticky CTA (다음 버튼) === */
+    .step__cta {
+      position: sticky;
+      bottom: 0;
+      padding:
+        var(--space-4)
+        var(--space-5)
+        calc(env(safe-area-inset-bottom) + var(--space-5));
+      background: linear-gradient(180deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.9) 40%,
+        var(--bg) 100%);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 5;
+    }
+    .cta-button {
+      width: 100%;
+      height: var(--btn-h-lg);
+      border-radius: var(--radius-pill);
+      background: var(--gradient-signature);
+      color: var(--neutral-0);
+      font-size: var(--text-body-lg);
+      font-weight: var(--weight-semibold);
+      letter-spacing: var(--tracking-snug);
+      box-shadow: var(--shadow-glow);
+      transition:
+        transform var(--duration-snap) var(--ease-toss),
+        opacity var(--duration-fast) var(--ease-toss);
+    }
+    .cta-button:active { transform: scale(0.97); }
+    .cta-button[disabled] {
+      background: var(--neutral-100);
+      color: var(--neutral-400);
+      box-shadow: none;
+      pointer-events: none;
+    }
+
+    /* === Step 3: 루미 분석 + 캡션 === */
+    .analyze-step {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      min-height: 100dvh;
+      background: var(--bg);
+      isolation: isolate;
+    }
+
+    .analyze-photo-frame {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      margin-top: calc(env(safe-area-inset-top) + var(--space-12));
+      overflow: hidden;
+      animation: rise 600ms var(--ease-toss);
+    }
+
+    /* 카루셀 (선택한 N장 가로 슬라이드) */
+    .analyze-carousel {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-snap-type: x mandatory;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .analyze-carousel::-webkit-scrollbar { display: none; }
+    .analyze-slide {
+      flex: 0 0 100%;
+      width: 100%;
+      height: 100%;
+      scroll-snap-align: start;
+      position: relative;
+    }
+
+    /* 점 인디케이터 (선택한 사진 수만큼) */
+    .analyze-dots {
+      position: absolute;
+      top: var(--space-4);
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 5px;
+      padding: 5px 10px;
+      background: rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-radius: var(--radius-pill);
+      z-index: 2;
+    }
+    .analyze-dots:empty { display: none; }
+    .analyze-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: var(--radius-full);
+      background: rgba(255, 255, 255, 0.5);
+      transition:
+        width var(--duration-base) var(--ease-toss),
+        background var(--duration-base) var(--ease-toss);
+    }
+    .analyze-dot.is-active {
+      width: 18px;
+      background: var(--neutral-0);
+      border-radius: var(--radius-pill);
+    }
+
+    /* 분석 카드 (사진 영역 아래, 사진 가리지 않음) */
+    .analyze-overlay {
+      margin: var(--space-4) var(--space-3) 0;
+      padding: var(--space-4);
+      background: var(--bg-soft);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+
+    .analyze-label {
+      font-size: var(--text-caption);
+      font-weight: var(--weight-semibold);
+      color: var(--pink-500);
+      letter-spacing: var(--tracking-snug);
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+    .analyze-label::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: var(--radius-full);
+      background: var(--pink-500);
+      animation: pulse-dot 1.4s var(--ease-soft) infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%      { opacity: 0.4; transform: scale(0.6); }
+    }
+
+    .analyze-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .analyze-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      font-size: var(--text-body);
+      opacity: 0;
+      transform: translateY(6px);
+      animation: analyze-pop 350ms var(--ease-toss) forwards;
+    }
+    .analyze-item:nth-child(1) { animation-delay: 250ms; }
+    .analyze-item:nth-child(2) { animation-delay: 450ms; }
+    .analyze-item:nth-child(3) { animation-delay: 650ms; }
+    .analyze-item:nth-child(4) { animation-delay: 850ms; }
+    .analyze-item:nth-child(5) { animation-delay: 1050ms; }
+    @keyframes analyze-pop {
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .analyze-check {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+      color: var(--pink-500);
+      stroke-width: 3;
+    }
+    .analyze-key {
+      color: var(--ink-muted);
+      min-width: 52px;
+      font-weight: var(--weight-medium);
+    }
+    .analyze-value {
+      color: var(--ink);
+      font-weight: var(--weight-medium);
+    }
+
+    .analyze-tone-block {
+      padding-top: var(--space-3);
+      border-top: 1px solid var(--line);
+      opacity: 0;
+      animation: analyze-pop 400ms var(--ease-toss) 1350ms forwards;
+    }
+    .analyze-tone {
+      margin-top: 6px;
+      font-size: var(--text-body);
+      font-weight: var(--weight-semibold);
+      color: var(--ink);
+    }
+
+    /* 캡션 영역 */
+    .caption-wrap {
+      flex: 1;
+      padding: var(--space-6) var(--space-5) var(--space-4);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-5);
+      justify-content: center;
+    }
+    .caption-text {
+      font-size: var(--text-body-lg);
+      line-height: var(--leading-relaxed);
+      color: var(--ink);
+      letter-spacing: var(--tracking-snug);
+      white-space: pre-wrap;
+      min-height: 4em;
+    }
+    .caption-text::after {
+      content: "▋";
+      color: var(--pink-500);
+      animation: blink 1s step-end infinite;
+      margin-left: 2px;
+    }
+    .caption-text.is-done::after { display: none; }
+    @keyframes blink {
+      0%, 50%       { opacity: 1; }
+      50.01%, 100%  { opacity: 0; }
+    }
+
+    /* === Step 3 진입 오버레이 — register-product.html .progress-overlay 와 동일 패턴 ===
+       사장님 결정: 실제 사용 시 보는 progress-overlay (마스코트 + 단계별 체크) 를
+       튜토리얼에서도 동일하게 노출. 진입 ~3.6s 후 자동 닫힘 → 그 뒤 분석/캡션 노출. */
+    .tutorial-progress {
+      position: fixed; inset: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,230,238,0.98) 100%);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: var(--space-6);
+      padding: var(--space-5);
+      z-index: 100;
+      opacity: 0; pointer-events: none;
+      transition: opacity 320ms var(--ease-soft);
+    }
+    .tutorial-progress.is-open { opacity: 1; pointer-events: auto; }
+    .tutorial-progress__mascot {
+      width: 96px; height: 96px;
+      border-radius: var(--radius-full);
+      background: var(--gradient-signature);
+      box-shadow: var(--shadow-glow);
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 48px;
+      animation: tprog-bob 1.6s var(--ease-soft) infinite;
+      position: relative;
+    }
+    @keyframes tprog-bob {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50%      { transform: translateY(-6px) scale(1.04); }
+    }
+    .tutorial-progress__mascot::after {
+      content: '';
+      position: absolute; inset: -8px;
+      border-radius: inherit;
+      border: 2px solid rgba(255, 107, 139, 0.3);
+      animation: tprog-ring 2.4s var(--ease-soft) infinite;
+    }
+    @keyframes tprog-ring {
+      0%   { transform: scale(0.85); opacity: 0.7; }
+      100% { transform: scale(1.4);  opacity: 0; }
+    }
+    .tutorial-progress__title {
+      font-size: var(--text-headline);
+      font-weight: var(--weight-bold);
+      color: var(--ink);
+      text-align: center;
+      margin: 0;
+    }
+    .tutorial-progress__sub {
+      font-size: var(--text-body);
+      color: var(--ink-muted);
+      text-align: center;
+      margin: -16px 0 0;
+    }
+    .tutorial-progress__steps {
+      display: flex; flex-direction: column;
+      gap: var(--space-3);
+      width: 100%; max-width: 360px;
+      list-style: none;
+      padding: 0; margin: 0;
+    }
+    .tutorial-progress__step {
+      display: flex; align-items: center; gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      background: rgba(255,255,255,0.7);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      font-size: var(--text-body);
+      color: var(--ink-muted);
+      transition:
+        color var(--duration-base) var(--ease-soft),
+        border-color var(--duration-base) var(--ease-soft),
+        background var(--duration-base) var(--ease-soft);
+    }
+    .tutorial-progress__icon {
+      width: 24px; height: 24px;
+      border-radius: var(--radius-full);
+      border: 2px solid var(--line-strong);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: all var(--duration-base) var(--ease-toss);
+    }
+    .tutorial-progress__icon svg { width: 14px; height: 14px; stroke-width: 3; opacity: 0; }
+    .tutorial-progress__step.is-active {
+      color: var(--ink);
+      border-color: var(--pink-300);
+      background: var(--pink-50);
+      box-shadow: var(--shadow-sm);
+    }
+    .tutorial-progress__step.is-active .tutorial-progress__icon {
+      border-color: var(--pink-500);
+      background: var(--pink-50);
+      animation: tprog-pulse 1.2s var(--ease-soft) infinite;
+    }
+    @keyframes tprog-pulse {
+      0%, 100% { box-shadow: 0 0 0 0   rgba(200, 80, 122, 0.5); }
+      50%      { box-shadow: 0 0 0 6px rgba(200, 80, 122, 0); }
+    }
+    .tutorial-progress__step.is-done {
+      color: var(--ink);
+      border-color: var(--pink-300);
+    }
+    .tutorial-progress__step.is-done .tutorial-progress__icon {
+      background: var(--pink-500);
+      border-color: var(--pink-500);
+      color: white;
+    }
+    .tutorial-progress__step.is-done .tutorial-progress__icon svg { opacity: 1; }
+
+    /* === Step 4: 결과 대시보드 === */
+    .result-step {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      min-height: 100dvh;
+      background: var(--bg);
+      isolation: isolate;
+    }
+    .result-step .coach {
+      margin: calc(env(safe-area-inset-top) + var(--space-12)) 0 var(--space-6);
+      padding: 0 var(--space-5);
+      text-align: center;
+      animation: rise 600ms var(--ease-toss) 100ms backwards;
+    }
+    .result-wrap {
+      flex: 1;
+      padding: 0 var(--space-5) var(--space-32);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+
+    /* 게시 카드 — history.html .res 스타일 재사용 (사장님 결정: 실제와 이질감 0).
+       단 .res__thumb (64x64) 대신 큰 사진 carousel 영역(.result-photo-frame) 을 위에 둠. */
+    .res {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+      padding: 0;
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      animation: res-rise 360ms var(--ease-toss) backwards;
+      box-shadow: var(--shadow-glow-sm);
+    }
+    @keyframes res-rise {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .res__body {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: var(--space-3) var(--space-4) var(--space-4);
+    }
+    .res__time {
+      font-size: var(--text-body-lg);
+      font-weight: var(--weight-bold);
+      color: var(--ink);
+      letter-spacing: var(--tracking-tight);
+    }
+    .res__caption {
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+      line-height: var(--leading-snug);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .res__meta {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      flex-wrap: wrap;
+      margin-top: 2px;
+    }
+    .res__badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+      font-size: 10px;
+      font-weight: var(--weight-bold);
+      letter-spacing: 0.02em;
+    }
+    .badge--posted { background: #e8f5ee; color: #00713c; }
+    .chan-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .chan-chip--ig.is-posted { background: #fce7f3; color: #be185d; }
+
+    .result-photo-frame {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      overflow: hidden;
+    }
+    .result-meta {
+      display: flex;
+      gap: var(--space-5);
+      padding: var(--space-3) var(--space-4) 0;
+      font-size: var(--text-body);
+      font-weight: var(--weight-semibold);
+      color: var(--ink);
+    }
+    .result-meta-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .result-meta-item svg {
+      width: 18px;
+      height: 18px;
+    }
+    .result-meta-item--like svg { color: #ff3a4f; fill: #ff3a4f; }
+
+    /* 통계 그리드 — insights.html .stat-grid + .stat 재사용 */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-2);
+    }
+    .stat {
+      padding: var(--space-4);
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      animation: stat-rise 360ms var(--ease-toss) backwards;
+    }
+    .stat:nth-child(1) { animation-delay: 80ms; }
+    .stat:nth-child(2) { animation-delay: 160ms; }
+    @keyframes stat-rise {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .stat__label {
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+      letter-spacing: 0.02em;
+      margin-bottom: var(--space-1);
+    }
+    .stat__value {
+      font-size: 28px;
+      font-weight: var(--weight-bold);
+      color: var(--ink);
+      letter-spacing: var(--tracking-tight);
+      line-height: 1.1;
+    }
+
+    /* 댓글 슬라이드 인 */
+    .result-comment {
+      padding: var(--space-4);
+      background: var(--bg-soft);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--line);
+      opacity: 0;
+      transform: translateY(20px);
+      animation: comment-in 500ms var(--ease-toss) 1500ms forwards;
+    }
+    .result-comment__label {
+      font-size: var(--text-caption);
+      font-weight: var(--weight-semibold);
+      color: var(--pink-500);
+      margin-bottom: 4px;
+    }
+    .result-comment__text {
+      font-size: var(--text-body);
+      color: var(--ink-soft);
+    }
+    @keyframes comment-in {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* === Step 5: 회원가입 === */
+    .signup-step {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      min-height: 100dvh;
+      background: var(--bg);
+      isolation: isolate;
+      padding-top: calc(env(safe-area-inset-top) + var(--space-12));
+    }
+    .signup-step .coach {
+      margin: 0 0 var(--space-12);
+      padding: 0 var(--space-5);
+      text-align: center;
+      animation: rise 600ms var(--ease-toss) 100ms backwards;
+    }
+    .signup-wrap {
+      flex: 1;
+      padding: 0 var(--space-5) calc(env(safe-area-inset-bottom) + var(--space-12));
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: var(--space-3);
+      max-width: 420px;
+      margin: 0 auto;
+      width: 100%;
+      animation: rise 600ms var(--ease-toss) 280ms backwards;
+    }
+
+    .oauth-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-3);
+      width: 100%;
+      height: var(--btn-h-lg);
+      border-radius: var(--radius-lg);
+      font-size: var(--text-body-lg);
+      font-weight: var(--weight-semibold);
+      letter-spacing: var(--tracking-snug);
+      transition:
+        transform var(--duration-snap) var(--ease-toss),
+        background var(--duration-snap) var(--ease-toss),
+        box-shadow var(--duration-snap) var(--ease-toss);
+    }
+    .oauth-button:active { transform: scale(0.98); }
+    .oauth-button svg {
+      width: 22px;
+      height: 22px;
+      flex-shrink: 0;
+    }
+
+    .oauth-kakao {
+      background: #FEE500;
+      color: #3C1E1E;
+    }
+    .oauth-kakao:hover { background: #F5DD00; }
+
+    .signup-terms {
+      margin-top: var(--space-4);
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+      text-align: center;
+      line-height: var(--leading-snug);
+    }
+    .signup-terms a {
+      color: var(--ink-soft);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      transition: color var(--duration-snap) var(--ease-toss);
+    }
+    .signup-terms a:hover { color: var(--pink-500); }
+
+    /* === 푸터 === */
+    .foot {
+      position: relative;
+      padding:
+        var(--space-12)
+        var(--page-x)
+        calc(env(safe-area-inset-bottom) + var(--space-8));
+      background: var(--bg);
+      border-top: 1px solid var(--line);
+      color: var(--ink-muted);
+    }
+    .foot__inner {
+      max-width: 720px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-8);
+    }
+
+    .foot__brand {
+      display: flex;
+      justify-content: center;
+    }
+    .foot__brand a {
+      display: inline-flex;
+      align-items: center;
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-pill);
+      opacity: 0.85;
+      transition:
+        opacity var(--duration-fast) var(--ease-toss),
+        transform var(--duration-snap) var(--ease-toss);
+    }
+    .foot__brand a:hover  { opacity: 1; }
+    .foot__brand a:active { transform: scale(0.96); }
+    .foot__brand img { height: 24px; width: auto; display: block; }
+
+    .foot__nav {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: var(--space-3) var(--space-5);
+      font-size: var(--text-body);
+      font-weight: var(--weight-medium);
+    }
+    .foot__nav a {
+      padding: var(--space-1) 0;
+      color: var(--ink-soft);
+      transition: color var(--duration-snap) var(--ease-toss);
+    }
+    .foot__nav a:hover  { color: var(--pink-500); }
+    .foot__nav a:active { color: var(--pink-700); }
+
+    .foot__biz dl {
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 4px var(--space-4);
+      max-width: 360px;
+      font-size: var(--text-caption);
+      line-height: var(--leading-snug);
+    }
+    .foot__biz dt {
+      margin: 0;
+      font-weight: var(--weight-semibold);
+      color: var(--ink-soft);
+      white-space: nowrap;
+    }
+    .foot__biz dd {
+      margin: 0;
+      color: var(--ink-muted);
+    }
+
+    .foot__contact {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: var(--space-2) var(--space-4);
+      font-size: var(--text-caption);
+    }
+    .foot__contact a {
+      color: var(--ink-muted);
+      transition: color var(--duration-snap) var(--ease-toss);
+    }
+    .foot__contact a:hover { color: var(--pink-500); }
+
+    .foot__bottom {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-2);
+      padding-top: var(--space-6);
+      border-top: 1px solid var(--line);
+      font-size: var(--text-label);
+      letter-spacing: 0.04em;
+      text-align: center;
+    }
+    .foot__copy   { color: var(--ink-muted); }
+    .foot__notice { color: var(--ink-muted); line-height: var(--leading-snug); }
+    .foot__notice strong {
+      font-weight: var(--weight-semibold);
+      color: var(--ink-soft);
+    }
+  </style>
+</head>
+<body>
+  <main role="main">
+
+    <!-- Step 1: 홈 (실제 dashboard 모사 — 신규 사용자 첫 진입 동일) -->
+    <section class="stage step" data-step="1" id="step-1">
+      <!-- 튜토리얼 안내 배너 — 사장님이 "이게 미리보기" 즉시 인지 -->
+      <div class="tutorial-banner" role="status" aria-live="polite">
+        <span class="tutorial-banner__icon" aria-hidden="true">✨</span>
+        <span class="tutorial-banner__text"><strong>1분 미리보기 튜토리얼</strong></span>
+      </div>
+
+      <header class="home-header">
+        <img class="home-logo" src="/assets/logo-wordmark.png" alt="루미" width="56" height="28" loading="eager" decoding="async">
+        <button class="home-skip" type="button" aria-label="튜토리얼 건너뛰고 가입으로">건너뛰기</button>
+      </header>
+
+      <main class="home-feed">
+        <!-- 이번 주 통계 — 신규 사용자라 빈 상태 -->
+        <section class="home-section" style="--idx:0">
+          <h2 class="section-title">이번 주</h2>
+          <div class="stat-empty">
+            <div class="stat-empty__title">첫 게시 후 보여드릴게요</div>
+            <div class="stat-empty__sub">좋아요·팔로워 변화가 한 주마다 여기 모입니다.</div>
+          </div>
+        </section>
+
+        <!-- 다음 예약 — 신규 사용자라 비어있음 -->
+        <section class="home-section" style="--idx:1">
+          <h2 class="section-title">다음 예약</h2>
+          <div class="home-scheduled-empty">
+            <div class="home-scheduled-empty__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+            </div>
+            <div class="home-scheduled-empty__body">
+              <div class="home-scheduled-empty__title">아직 예약된 게시가 없어요</div>
+              <div class="home-scheduled-empty__sub">사진을 올리면 첫 게시가 여기 표시돼요</div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <!-- 코치 bubble — + 버튼 위로 화살표 -->
+      <div class="home-coach-bubble" role="status">사진 올리려면 가운데 + 버튼을 눌러보세요</div>
+
+      <!-- 하단 탭바 (실제 dashboard 와 동일) -->
+      <nav class="tabbar" aria-label="메뉴">
+        <a class="tab is-active" data-tutorial-tab aria-current="page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 12L12 3l9 9M5 10v11h14V10"/>
+          </svg>
+          홈
+        </a>
+        <a class="tab" data-tutorial-tab>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M22 12l-4-4-4 4-6-6-6 6"/>
+            <path d="M22 12v6H2"/>
+          </svg>
+          트렌드
+        </a>
+        <button class="tab-add" type="button" data-tutorial-add aria-label="사진 올리기">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+        </button>
+        <a class="tab" data-tutorial-tab>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9"/>
+            <polyline points="12 7 12 12 15 14"/>
+          </svg>
+          히스토리
+        </a>
+        <a class="tab" data-tutorial-tab>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>
+          </svg>
+          설정
+        </a>
+      </nav>
+    </section>
+
+    <!-- Step 2: 사진 올리기 (실제 register-product.html 모사) -->
+    <section class="upload-step step" data-step="2" id="step-2" hidden>
+      <header class="upload-topbar">
+        <button class="upload-topbar__back" type="button" data-back-to-1 aria-label="뒤로">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <h1 class="upload-topbar__title">사진 올리기</h1>
+      </header>
+
+      <main class="upload-wrap">
+        <!-- 미디어 탭 — 튜토리얼은 이미지만, 영상 탭은 disabled -->
+        <div class="media-tabs" role="tablist" aria-label="미디어 종류">
+          <button type="button" class="media-tab is-active" role="tab" aria-selected="true">📸 이미지</button>
+          <button type="button" class="media-tab" role="tab" aria-selected="false" disabled aria-label="영상 (튜토리얼은 이미지만)">🎬 영상</button>
+        </div>
+
+        <!-- 사진 영역 — dropzone 클릭 시 갤러리 sheet 열림 -->
+        <div class="upload-field">
+          <span class="upload-field__label">사진 (최대 10장, 한 장당 10MB)</span>
+          <div data-upload-photo-area>
+            <button class="upload-dropzone" type="button" data-open-gallery>
+              <span class="upload-dropzone__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              </span>
+              <div class="upload-dropzone__title">사진을 선택해주세요</div>
+              <div class="upload-dropzone__sub">JPG · PNG · WebP / 1~10장</div>
+            </button>
+            <!-- 선택 후: thumbs grid + 사진 다시 선택 버튼 -->
+            <div class="photo-thumbs" data-upload-thumbs hidden></div>
+            <button class="photo-thumbs__edit" type="button" data-open-gallery data-thumbs-edit hidden>사진 다시 선택</button>
+          </div>
+        </div>
+
+        <!-- 한 줄 메모 -->
+        <div class="upload-field">
+          <label class="upload-field__label" for="tutorial-memo">한 줄 메모 (선택)</label>
+          <p class="upload-memo-hint">사진이 어떤 메뉴·상황·분위기인지 짧게 적어주시면 루미가 참고해요.</p>
+          <textarea class="upload-input" id="tutorial-memo" maxlength="200" placeholder="예) 시그니처 라떼 신메뉴 출시"></textarea>
+        </div>
+
+        <!-- 게시 시점 -->
+        <div class="upload-field">
+          <span class="upload-field__label">게시 시점</span>
+          <div class="upload-schedule">
+            <button type="button" class="upload-schedule__card is-active" data-schedule="immediate">지금</button>
+            <button type="button" class="upload-schedule__card" data-schedule="scheduled">예약</button>
+          </div>
+        </div>
+
+        <!-- 스토리 -->
+        <div class="upload-field">
+          <span class="upload-field__label">스토리</span>
+          <button type="button" class="upload-toggle" data-toggle="story" aria-pressed="false">
+            <div class="upload-toggle__body">
+              <div class="upload-toggle__title">스토리에도 자동 업로드</div>
+              <div class="upload-toggle__hint">켜면 피드 게시와 함께 24시간 스토리도 자동으로 올라가요</div>
+            </div>
+            <span class="upload-toggle__switch" aria-hidden="true"></span>
+          </button>
+        </div>
+
+        <!-- 날씨 (기본 ON) -->
+        <div class="upload-field">
+          <span class="upload-field__label">날씨</span>
+          <button type="button" class="upload-toggle is-on" data-toggle="weather" aria-pressed="true">
+            <div class="upload-toggle__body">
+              <div class="upload-toggle__title">매장 지역 날씨를 캡션에 반영</div>
+              <div class="upload-toggle__hint">예: "오늘처럼 선선한 날엔", "비 오는 오후" 같은 자연스러운 표현으로 녹여줍니다</div>
+            </div>
+            <span class="upload-toggle__switch" aria-hidden="true"></span>
+          </button>
+        </div>
+
+        <!-- 쓰레드 (튜토리얼은 미연동 상태) -->
+        <div class="upload-field">
+          <span class="upload-field__label">쓰레드</span>
+          <button type="button" class="upload-toggle" data-toggle="threads" aria-pressed="false" disabled>
+            <div class="upload-toggle__body">
+              <div class="upload-toggle__title">쓰레드에도 자동 업로드</div>
+              <div class="upload-toggle__hint">가입 후 설정에서 쓰레드를 연동하면 켤 수 있어요</div>
+            </div>
+            <span class="upload-toggle__switch" aria-hidden="true"></span>
+          </button>
+        </div>
+
+        <!-- 프로필 링크 -->
+        <div class="upload-field">
+          <span class="upload-field__label">프로필 링크</span>
+          <button type="button" class="upload-toggle" data-toggle="linktree" aria-pressed="false">
+            <div class="upload-toggle__body">
+              <div class="upload-toggle__title">캡션 끝에 내 프로필 링크 자동 포함</div>
+              <div class="upload-toggle__hint">"메뉴·예약·배달 → lumi.it.kr/r/내주소" 같이 캡션 마지막 줄에 추가됩니다</div>
+            </div>
+            <span class="upload-toggle__switch" aria-hidden="true"></span>
+          </button>
+        </div>
+
+        <!-- 게시 CTA -->
+        <button class="cta-submit" type="button" data-submit-upload disabled>📷 캡션 만들고 게시</button>
+      </main>
+    </section>
+
+    <!-- 갤러리 sheet — Step 2 의 dropzone 누르면 슬라이드 업 모달 -->
+    <div class="gallery-sheet" data-gallery-sheet role="dialog" aria-modal="true" aria-label="사진 선택" aria-hidden="true">
+      <header class="gallery-toolbar">
+        <button class="gallery-toolbar__cancel" type="button" data-gallery-cancel aria-label="취소">취소</button>
+        <div class="gallery-toolbar__center">
+          <div class="gallery-toolbar__title">최근 항목</div>
+          <div class="gallery-toolbar__counter" data-gallery-counter>9장 중 0장 선택</div>
+        </div>
+        <button class="gallery-toolbar__next" type="button" data-gallery-done disabled aria-label="선택한 사진으로 완료">완료</button>
+      </header>
+
+      <!-- 코치 bubble — 1장 이상 선택하면 즉시 사라짐 -->
+      <div class="coach-bubble" data-coach-bubble role="status">1장 이상 골라보세요</div>
+
+      <div class="gallery-wrap">
+        <ul class="gallery" role="list">
+          <li class="gallery__item" style="--idx:0"><button class="gallery__card" type="button" data-photo="cafe-1"  aria-pressed="false" aria-label="라떼아트 사진 선택"><span class="gallery__bg gallery__bg--cafe-1"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span><span class="gallery__order" data-order aria-hidden="true"></span></button></li>
+          <li class="gallery__item" style="--idx:1"><button class="gallery__card" type="button" data-photo="cafe-2"  aria-pressed="false" aria-label="케이크 사진 선택"><span class="gallery__bg gallery__bg--cafe-2"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span><span class="gallery__order" data-order aria-hidden="true"></span></button></li>
+          <li class="gallery__item" style="--idx:2"><button class="gallery__card" type="button" data-photo="cafe-3"  aria-pressed="false" aria-label="마카롱 사진 선택"><span class="gallery__bg gallery__bg--cafe-3"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span><span class="gallery__order" data-order aria-hidden="true"></span></button></li>
+          <li class="gallery__item" style="--idx:3"><button class="gallery__card" type="button" data-photo="cafe-4"  aria-pressed="false" aria-label="크로플 사진 선택"><span class="gallery__bg gallery__bg--cafe-4"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span><span class="gallery__order" data-order aria-hidden="true"></span></button></li>
+          <li class="gallery__item" style="--idx:4"><button class="gallery__card" type="button" data-photo="cafe-5"  aria-pressed="false" aria-label="파스타 사진 선택"><span class="gallery__bg gallery__bg--cafe-5"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span><span class="gallery__order" data-order aria-hidden="true"></span></button></li>
+          <li class="gallery__item" style="--idx:5"><button class="gallery__card" type="button" data-photo="cafe-6"  aria-pressed="false" aria-label="샐러드 사진 선택"><span class="gallery__bg gallery__bg--cafe-6"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span><span class="gallery__order" data-order aria-hidden="true"></span></button></li>
+          <li class="gallery__item" style="--idx:6"><button class="gallery__card" type="button" data-photo="cafe-7"  aria-pressed="false" aria-label="빵 사진 선택"><span class="gallery__bg gallery__bg--cafe-7"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span><span class="gallery__order" data-order aria-hidden="true"></span></button></li>
+          <li class="gallery__item" style="--idx:7"><button class="gallery__card" type="button" data-photo="cafe-8"  aria-pressed="false" aria-label="스무디 사진 선택"><span class="gallery__bg gallery__bg--cafe-8"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span><span class="gallery__order" data-order aria-hidden="true"></span></button></li>
+          <li class="gallery__item" style="--idx:8"><button class="gallery__card" type="button" data-photo="cafe-9"  aria-pressed="false" aria-label="디저트 플레이팅 사진 선택"><span class="gallery__bg gallery__bg--cafe-9"></span><span class="gallery__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span><span class="gallery__order" data-order aria-hidden="true"></span></button></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Step 3: 루미 분석 + 캡션 -->
+    <section class="analyze-step step" data-step="3" id="step-3" hidden>
+      <div class="progress" aria-label="튜토리얼 진행">
+        <span class="progress-dot"></span>
+        <span class="progress-dot"></span>
+        <span class="progress-dot is-active" aria-current="step"></span>
+        <span class="progress-dot"></span>
+        <span class="progress-dot"></span>
+      </div>
+
+      <button class="skip" type="button">건너뛰기</button>
+
+      <!-- 진입 시 보이는 진행 오버레이 (register-product .progress-overlay 동일 패턴) -->
+      <div class="tutorial-progress" data-tutorial-progress aria-live="polite" aria-hidden="true">
+        <div class="tutorial-progress__mascot" aria-hidden="true">📷</div>
+        <h2 class="tutorial-progress__title">루미가 사진을 보고 있어요</h2>
+        <p class="tutorial-progress__sub">잠시만요, 캡션 만들고 있어요.</p>
+        <ol class="tutorial-progress__steps" aria-label="분석 진행 단계">
+          <li class="tutorial-progress__step" data-tprog-step="upload">
+            <span class="tutorial-progress__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span>
+            사진 업로드
+          </li>
+          <li class="tutorial-progress__step" data-tprog-step="analyze">
+            <span class="tutorial-progress__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span>
+            사진 분석
+          </li>
+          <li class="tutorial-progress__step" data-tprog-step="caption">
+            <span class="tutorial-progress__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span>
+            캡션 작성
+          </li>
+        </ol>
+      </div>
+
+      <div class="analyze-photo-frame">
+        <div class="analyze-carousel" data-analyze-carousel></div>
+        <div class="analyze-dots" data-analyze-dots></div>
+      </div>
+
+      <div class="analyze-overlay">
+        <div>
+          <div class="analyze-label" data-analyze-label>루미가 보고 있어요</div>
+            <ul class="analyze-list">
+            <li class="analyze-item">
+              <svg class="analyze-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>
+              <span class="analyze-key">주제</span>
+              <span class="analyze-value" data-analyze-subject>라떼아트 · 우드 테이블</span>
+            </li>
+            <li class="analyze-item">
+              <svg class="analyze-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>
+              <span class="analyze-key">분위기</span>
+              <span class="analyze-value" data-analyze-mood>따뜻함 · 평온함</span>
+            </li>
+            <li class="analyze-item">
+              <svg class="analyze-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>
+              <span class="analyze-key">시간대</span>
+              <span class="analyze-value" data-analyze-time>오전 · 자연광</span>
+            </li>
+            <li class="analyze-item">
+              <svg class="analyze-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>
+              <span class="analyze-key">색감</span>
+              <span class="analyze-value" data-analyze-color>베이지 · 브라운</span>
+            </li>
+            <li class="analyze-item">
+              <svg class="analyze-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>
+              <span class="analyze-key">업종</span>
+              <span class="analyze-value">카페</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="analyze-tone-block">
+          <div class="analyze-label">루미가 톤을 잡았어요</div>
+          <p class="analyze-tone" data-analyze-tone>친근·서정 톤으로 갈게요</p>
+        </div>
+      </div>
+
+      <div class="caption-wrap">
+        <p class="caption-text" data-caption></p>
+      </div>
+
+      <div class="step__cta">
+        <button class="cta-button" type="button" data-next-3 disabled>다음</button>
+      </div>
+    </section>
+
+    <!-- Step 4: 결과 대시보드 -->
+    <section class="result-step step" data-step="4" id="step-4" hidden>
+      <div class="progress" aria-label="튜토리얼 진행">
+        <span class="progress-dot"></span>
+        <span class="progress-dot"></span>
+        <span class="progress-dot"></span>
+        <span class="progress-dot is-active" aria-current="step"></span>
+        <span class="progress-dot"></span>
+      </div>
+
+      <button class="skip" type="button">건너뛰기</button>
+
+      <div class="coach">
+        <h1 class="coach-title">올라갔어요!</h1>
+        <p class="coach-sub">벌써 반응이 와요!</p>
+      </div>
+
+      <div class="result-wrap">
+
+        <!-- 게시 카드 — history.html .res 마크업 재사용 (실제 게시 후 보는 카드와 동일) -->
+        <article class="res">
+          <div class="result-photo-frame">
+            <div class="analyze-carousel" data-result-carousel></div>
+            <div class="analyze-dots" data-result-dots></div>
+          </div>
+          <div class="result-meta">
+            <span class="result-meta-item result-meta-item--like">
+              <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              <span data-count="142">0</span>
+            </span>
+            <span class="result-meta-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              <span data-count="8">0</span>
+            </span>
+          </div>
+          <div class="res__body">
+            <div class="res__time">방금 게시</div>
+            <p class="res__caption">오늘도 천천히 흘러가는 시간을 한 잔에 담아봤어요.</p>
+            <div class="res__meta">
+              <span class="res__badge badge--posted">게시됨</span>
+              <span class="chan-chip chan-chip--ig is-posted">
+                <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.5" fill="currentColor"/></svg>
+                IG
+              </span>
+            </div>
+          </div>
+        </article>
+
+        <!-- 통계 그리드 — insights.html .stat-grid + .stat 마크업 재사용 -->
+        <div class="stat-grid">
+          <div class="stat">
+            <div class="stat__label">도달</div>
+            <div class="stat__value"><span data-count="1247">0</span>명</div>
+          </div>
+          <div class="stat">
+            <div class="stat__label">새 팔로워</div>
+            <div class="stat__value">+<span data-count="18">0</span></div>
+          </div>
+        </div>
+
+        <div class="result-comment">
+          <div class="result-comment__label">방금 댓글</div>
+          <p class="result-comment__text">"분위기 너무 좋아요!"</p>
+        </div>
+
+      </div>
+
+      <div class="step__cta">
+        <button class="cta-button" type="button" data-next-4>지금 시작하기</button>
+      </div>
+    </section>
+
+    <!-- Step 5: 회원가입 -->
+    <section class="signup-step step" data-step="5" id="step-5" hidden>
+      <div class="progress" aria-label="튜토리얼 진행">
+        <span class="progress-dot"></span>
+        <span class="progress-dot"></span>
+        <span class="progress-dot"></span>
+        <span class="progress-dot"></span>
+        <span class="progress-dot is-active" aria-current="step"></span>
+      </div>
+
+      <div class="signup-wrap">
+
+        <a class="oauth-button oauth-kakao" href="/api/auth/kakao/start">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 3C6.48 3 2 6.48 2 10.8c0 2.79 1.86 5.23 4.65 6.6l-1.18 4.32 4.5-2.97c.66.09 1.34.15 2.03.15 5.52 0 10-3.48 10-7.8C22 6.48 17.52 3 12 3z"/>
+          </svg>
+          카카오로 시작하기
+        </a>
+
+        <p class="signup-terms">
+          가입 시 <a href="/terms">이용약관</a>과 <a href="/privacy">개인정보처리방침</a>에 동의해요
+        </p>
+
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="foot" role="contentinfo">
+    <div class="foot__inner">
+
+      <div class="foot__brand">
+        <a href="/" aria-label="루미(lumi) 홈">
+          <img src="/assets/logo-wordmark.png" alt="루미(lumi)" width="50" height="24" loading="lazy" decoding="async">
+        </a>
+      </div>
+
+      <nav class="foot__nav" aria-label="법적 정보">
+        <a href="/terms">이용약관</a>
+        <a href="/privacy">개인정보처리방침</a>
+        <a href="/privacy#data-deletion">데이터 삭제 안내</a>
+        <a href="/refund">환불정책</a>
+        <a href="/support">고객지원</a>
+      </nav>
+
+      <div class="foot__biz" aria-label="사업자 정보">
+        <dl>
+          <dt>상호</dt><dd>루미(lumi)</dd>
+          <dt>대표</dt><dd>김현</dd>
+          <dt>사업자등록번호</dt><dd>404-09-66416</dd>
+          <dt>통신판매업</dt><dd>제2024-서울용산-1166호</dd>
+          <dt>주소</dt><dd>서울특별시 용산구 회나무로 32-7 (이태원동) 04345</dd>
+        </dl>
+      </div>
+
+      <div class="foot__contact">
+        <a href="mailto:lumi@lumi.it.kr">lumi@lumi.it.kr</a>
+        <a href="tel:010-6424-6284">010-6424-6284</a>
+      </div>
+
+      <div class="foot__bottom">
+        <p class="foot__copy">© 2026 루미(lumi)</p>
+        <p class="foot__notice">
+          본 서비스는 <strong>Meta Platform Terms</strong> 및 <strong>Developer Policies</strong>를 준수합니다.
+        </p>
+      </div>
+
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      const STEPS = document.querySelectorAll('[data-step]');
+      const TOTAL = 5;
+      const MAX_PHOTOS = 9;
+      const selected = new Set();
+
+      const footerEl = document.querySelector('.foot');
+      function goTo(n) {
+        if (n < 1 || n > TOTAL) return;
+        STEPS.forEach(s => {
+          const isActive = Number(s.dataset.step) === n;
+          s.hidden = !isActive;
+          s.setAttribute('aria-hidden', String(!isActive));
+        });
+        // 사장님 결정 2026-05-15(수정): Step 1(홈) + Step 5(가입) 에서 footer 노출.
+        // Step 1 의 dashboard 모사는 실제 dashboard 와 마찬가지로 페이지 끝에 사업자
+        // 정보 footer 가 자연 흐름. footer 가 붙으면 body scrollHeight > viewport 라
+        // 자연 스크롤도 같이 회복. 풀스크린 UI인 2(갤러리)/3(분석)/4(결과)는 footer 숨김.
+        if (footerEl) {
+          footerEl.style.display = (n === 1 || n === TOTAL) ? 'block' : 'none';
+        }
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      }
+      // 초기 진입 — Step 1 활성 + footer 표시 적용.
+      goTo(1);
+
+      // Step 1 코치 bubble — scroll 시 footer 글씨 위 겹침 차단 ([feedback_ui_no_overlay]).
+      // 사장님이 + 안 누르고 아래로 스크롤하면 fade-out, 위로 되돌리면 다시 보임.
+      const homeBubble = document.querySelector('.home-coach-bubble');
+      if (homeBubble) {
+        const onScroll = () => {
+          homeBubble.classList.toggle('is-hidden', window.scrollY > 40);
+        };
+        window.addEventListener('scroll', onScroll, { passive: true });
+      }
+
+      // Step 1 → Step 2 (탭바 가운데 + 버튼 클릭)
+      const addBtn = document.querySelector('[data-tutorial-add]');
+      if (addBtn) addBtn.addEventListener('click', () => goTo(2));
+
+      // Step 2 → Step 1 (topbar 뒤로)
+      const backBtn = document.querySelector('[data-back-to-1]');
+      if (backBtn) backBtn.addEventListener('click', () => goTo(1));
+
+      // Step 2 게시 시점 토글 — [지금] / [예약] 중 active
+      document.querySelectorAll('[data-schedule]').forEach(card => {
+        card.addEventListener('click', () => {
+          if (card.disabled) return;
+          document.querySelectorAll('[data-schedule]').forEach(c => c.classList.remove('is-active'));
+          card.classList.add('is-active');
+        });
+      });
+
+      // Step 2 옵션 토글 — 스토리/날씨/쓰레드/링크 (실제 register-product 와 같은 마이크로 인터랙션)
+      document.querySelectorAll('[data-toggle]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (btn.disabled) return;
+          const on = !btn.classList.contains('is-on');
+          btn.classList.toggle('is-on', on);
+          btn.setAttribute('aria-pressed', String(on));
+        });
+      });
+
+      // 갤러리 sheet — Step 2 dropzone 클릭 시 슬라이드 업 모달로 표시
+      const gallerySheet = document.querySelector('[data-gallery-sheet]');
+      function openGallerySheet() {
+        if (!gallerySheet) return;
+        gallerySheet.classList.add('is-open');
+        gallerySheet.setAttribute('aria-hidden', 'false');
+      }
+      function closeGallerySheet() {
+        if (!gallerySheet) return;
+        gallerySheet.classList.remove('is-open');
+        gallerySheet.setAttribute('aria-hidden', 'true');
+      }
+      document.querySelectorAll('[data-open-gallery]').forEach(btn => {
+        btn.addEventListener('click', openGallerySheet);
+      });
+
+      // 갤러리 안 사진 카드 토글 — iOS Photos 패턴 (선택 순서 번호 표시 + 카운터)
+      //   selected 가 insertion-ordered Set 이라 size === 순서 + Array.from(selected).indexOf(id) 로 순번 추출.
+      //   해제 시 뒤 번호들이 1씩 당겨지므로 매번 renderOrderBadges 로 전체 갱신.
+      const counterEl = document.querySelector('[data-gallery-counter]');
+      const coachBubble = document.querySelector('[data-coach-bubble]');
+      const galleryDoneBtn = document.querySelector('[data-gallery-done]');
+      function updateGalleryUI() {
+        if (counterEl) {
+          counterEl.textContent = `9장 중 ${selected.size}장 선택`;
+        }
+        if (galleryDoneBtn) galleryDoneBtn.disabled = selected.size === 0;
+        if (coachBubble) coachBubble.hidden = selected.size > 0;
+        const order = Array.from(selected);
+        document.querySelectorAll('.gallery__card').forEach(card => {
+          const id = card.dataset.photo;
+          const idx = order.indexOf(id);
+          const badge = card.querySelector('[data-order]');
+          if (badge) badge.textContent = idx >= 0 ? String(idx + 1) : '';
+        });
+      }
+      document.querySelectorAll('.gallery__card').forEach(card => {
+        card.addEventListener('click', () => {
+          const id = card.dataset.photo;
+          if (selected.has(id)) {
+            selected.delete(id);
+            card.classList.remove('is-selected');
+            card.setAttribute('aria-pressed', 'false');
+          } else {
+            if (selected.size >= MAX_PHOTOS) return;
+            selected.add(id);
+            card.classList.add('is-selected');
+            card.setAttribute('aria-pressed', 'true');
+          }
+          updateGalleryUI();
+        });
+      });
+
+      // 갤러리 "취소" — sheet 만 닫고 선택 초기화 (Step 2 화면 유지)
+      const galleryCancel = document.querySelector('[data-gallery-cancel]');
+      if (galleryCancel) {
+        galleryCancel.addEventListener('click', () => {
+          selected.forEach(id => {
+            const card = document.querySelector(`.gallery__card[data-photo="${id}"]`);
+            if (card) {
+              card.classList.remove('is-selected');
+              card.setAttribute('aria-pressed', 'false');
+            }
+          });
+          selected.clear();
+          updateGalleryUI();
+          if (coachBubble) coachBubble.hidden = false;
+          closeGallerySheet();
+        });
+      }
+
+      // 갤러리 "완료" — sheet 닫고 dropzone 자리에 thumbs grid 표시 + CTA 활성
+      const uploadDropzone = document.querySelector('.upload-dropzone[data-open-gallery]');
+      const uploadThumbs = document.querySelector('[data-upload-thumbs]');
+      const uploadThumbsEdit = document.querySelector('[data-thumbs-edit]');
+      const submitUploadBtn = document.querySelector('[data-submit-upload]');
+      function renderUploadThumbs() {
+        if (!uploadThumbs) return;
+        const photos = Array.from(selected);
+        uploadThumbs.innerHTML = photos.map((id, i) =>
+          `<div class="photo-thumbs__item" style="--idx:${i}">`
+          + `<span class="photo-thumbs__bg gallery__bg gallery__bg--${id}"></span>`
+          + `</div>`
+        ).join('');
+      }
+      if (galleryDoneBtn) {
+        galleryDoneBtn.addEventListener('click', () => {
+          if (selected.size === 0) return;
+          renderUploadThumbs();
+          if (uploadDropzone) uploadDropzone.hidden = true;
+          if (uploadThumbs) uploadThumbs.hidden = false;
+          if (uploadThumbsEdit) uploadThumbsEdit.hidden = false;
+          if (submitUploadBtn) submitUploadBtn.disabled = false;
+          closeGallerySheet();
+        });
+      }
+
+      // === Step 3: 9종 사진별 분석 데이터 ===
+      // gallery aria-label / HANDOFF.md "분석 결과 9종 (Phase B 데이터셋)" 과 동기화.
+      // 선택한 첫 번째 사진의 데이터를 분석 카드에 채움.
+      const PHOTO_DATA = {
+        'cafe-1': { subject: '라떼아트 · 우드 테이블',  mood: '따뜻함 · 평온함',    time: '오전 · 자연광',  color: '베이지 · 브라운', tone: '친근·서정 톤으로 갈게요' },
+        'cafe-2': { subject: '케이크 · 디저트',         mood: '달콤함 · 휴식',       time: '오후 · 실내조명', color: '크림 · 연갈색',  tone: '달콤·여유 톤으로 갈게요' },
+        'cafe-3': { subject: '마카롱 · 디저트 트레이',  mood: '달콤함 · 화사함',     time: '오후 · 자연광',  color: '파스텔 · 핑크',  tone: '화사·달콤 톤으로 갈게요' },
+        'cafe-4': { subject: '크로플 · 황금색',         mood: '바삭함 · 달콤함',     time: '오전 · 자연광',  color: '황금 · 갈색',    tone: '활기·따뜻 톤으로 갈게요' },
+        'cafe-5': { subject: '파스타 · 식사',           mood: '든든함 · 진한 맛',    time: '점심 · 실내조명', color: '빨강 · 노랑',    tone: '든든·정성 톤으로 갈게요' },
+        'cafe-6': { subject: '샐러드 · 신선함',         mood: '깔끔함 · 건강함',     time: '점심 · 자연광',  color: '연두 · 노랑',    tone: '신선·깔끔 톤으로 갈게요' },
+        'cafe-7': { subject: '빵 · 베이커리',           mood: '정성 · 따뜻함',       time: '오전 · 자연광',  color: '갈색 · 노랑',    tone: '담백·따뜻 톤으로 갈게요' },
+        'cafe-8': { subject: '스무디 · 컬러풀',         mood: '산뜻함 · 에너지',     time: '오후 · 자연광',  color: '보라 · 핑크',    tone: '산뜻·발랄 톤으로 갈게요' },
+        'cafe-9': { subject: '디저트 플레이팅 · 정성',  mood: '정성 · 솜씨',         time: '오후 · 실내조명', color: '파스텔 · 흰색',  tone: '정성·고요 톤으로 갈게요' },
+      };
+
+      // 사장님 결정 (HANDOFF Phase D): "캡션 다양화는 일단 미루고 카페 톤 1개 고정"
+      const CAPTION =
+        '오늘도 천천히 흘러가는 시간을 한 잔에 담아봤어요.\n\n#카페 #라떼아트 #오늘의한잔 #카페일상';
+      let typewriterTimer;
+
+      function typewrite(text, target) {
+        if (typewriterTimer) clearInterval(typewriterTimer);
+        target.textContent = '';
+        target.classList.remove('is-done');
+        let i = 0;
+        typewriterTimer = setInterval(() => {
+          target.textContent += text[i];
+          i++;
+          if (i >= text.length) {
+            clearInterval(typewriterTimer);
+            typewriterTimer = null;
+            target.classList.add('is-done');
+            const next3 = document.querySelector('[data-next-3]');
+            if (next3) next3.disabled = false;
+          }
+        }, 35);
+      }
+
+      // progress-overlay 시퀀스 — register-product 의 실제 흐름과 동일
+      // upload (활성) → 1.0s → done · analyze (활성) → 1.1s → done · caption (활성) → 1.2s → done · 0.4s fade-out
+      function runProgressSequence(overlay, onDone) {
+        if (!overlay) { onDone && onDone(); return; }
+        const steps = overlay.querySelectorAll('[data-tprog-step]');
+        steps.forEach(s => s.classList.remove('is-active', 'is-done'));
+        overlay.classList.add('is-open');
+        overlay.setAttribute('aria-hidden', 'false');
+
+        const order = ['upload', 'analyze', 'caption'];
+        const durations = [1000, 1100, 1200];
+        let idx = 0;
+        const lit = (key, cls) => {
+          const el = overlay.querySelector('[data-tprog-step="' + key + '"]');
+          if (el) el.classList.add(cls);
+        };
+        lit(order[0], 'is-active');
+        const tick = () => {
+          const cur = order[idx];
+          overlay.querySelector('[data-tprog-step="' + cur + '"]').classList.remove('is-active');
+          lit(cur, 'is-done');
+          idx++;
+          if (idx >= order.length) {
+            setTimeout(() => {
+              overlay.classList.remove('is-open');
+              overlay.setAttribute('aria-hidden', 'true');
+              onDone && onDone();
+            }, 400);
+            return;
+          }
+          lit(order[idx], 'is-active');
+          setTimeout(tick, durations[idx]);
+        };
+        setTimeout(tick, durations[0]);
+      }
+
+      // 카루셀 셋업 (사진 N장 자동 슬라이드 + 점 인디케이터 + 사용자 스와이프)
+      function setupCarousel(carouselEl, dotsEl, photoIds, autoMs) {
+        autoMs = autoMs || 1800;
+        if (!carouselEl) return;
+        carouselEl.innerHTML = photoIds
+          .map(id => '<div class="analyze-slide gallery__bg--' + id + '"></div>')
+          .join('');
+        if (dotsEl) {
+          dotsEl.innerHTML = photoIds.length > 1
+            ? photoIds.map((_, i) => '<span class="analyze-dot' + (i === 0 ? ' is-active' : '') + '"></span>').join('')
+            : '';
+        }
+        let timer;
+        if (photoIds.length > 1) {
+          let idx = 0;
+          timer = setInterval(() => {
+            idx = (idx + 1) % photoIds.length;
+            carouselEl.scrollTo({ left: idx * carouselEl.clientWidth, behavior: 'smooth' });
+          }, autoMs);
+        }
+        carouselEl.addEventListener('touchstart', () => {
+          if (timer) { clearInterval(timer); timer = null; }
+        }, { passive: true });
+        carouselEl.addEventListener('scroll', () => {
+          if (!dotsEl) return;
+          const i = Math.round(carouselEl.scrollLeft / carouselEl.clientWidth);
+          dotsEl.querySelectorAll('.analyze-dot').forEach((d, di) => {
+            d.classList.toggle('is-active', di === i);
+          });
+        }, { passive: true });
+      }
+
+      // Step 2 → Step 3 — CTA "캡션 만들고 게시" 클릭 (사진 선택 완료 후 활성)
+      if (submitUploadBtn) {
+        submitUploadBtn.addEventListener('click', () => {
+          if (selected.size === 0) return;
+          goTo(3);
+
+          const photos = Array.from(selected);
+          setupCarousel(
+            document.querySelector('[data-analyze-carousel]'),
+            document.querySelector('[data-analyze-dots]'),
+            photos,
+          );
+
+          // 첫 번째 선택 사진의 분석 데이터로 카드 채움 (PHOTO_DATA — HANDOFF Phase B 데이터셋)
+          const firstId = photos[0];
+          const data = PHOTO_DATA[firstId] || PHOTO_DATA['cafe-1'];
+          const setText = (sel, val) => {
+            const el = document.querySelector(sel);
+            if (el && val != null) el.textContent = val;
+          };
+          setText('[data-analyze-subject]', data.subject);
+          setText('[data-analyze-mood]',    data.mood);
+          setText('[data-analyze-time]',    data.time);
+          setText('[data-analyze-color]',   data.color);
+          setText('[data-analyze-tone]',    data.tone);
+
+          const label = document.querySelector('[data-analyze-label]');
+          if (label) {
+            label.textContent = photos.length > 1
+              ? `루미가 사진 ${photos.length}장을 보고 있어요`
+              : '루미가 보고 있어요';
+          }
+
+          const captionEl = document.querySelector('[data-caption]');
+          const next3 = document.querySelector('[data-next-3]');
+          if (next3) next3.disabled = true;
+          if (captionEl) captionEl.textContent = '';
+
+          // progress-overlay 시퀀스 (~3.7s) 끝나면 typewriter 시작.
+          // 사장님 디바이스에서 마스코트 + 단계별 체크가 실제 register-product 와 동일하게 보이도록.
+          const overlay = document.querySelector('[data-tutorial-progress]');
+          runProgressSequence(overlay, () => {
+            if (captionEl) typewrite(CAPTION, captionEl);
+          });
+        });
+      }
+
+      // Step 3 → Step 4 (결과)
+      const next3Btn = document.querySelector('[data-next-3]');
+      if (next3Btn) {
+        next3Btn.addEventListener('click', () => {
+          goTo(4);
+
+          // 결과 카드에도 같은 사진들 캐러셀
+          const photos = Array.from(selected);
+          setupCarousel(
+            document.querySelector('[data-result-carousel]'),
+            document.querySelector('[data-result-dots]'),
+            photos,
+          );
+
+          // 카운트 업 (진입 후 잠시 뒤)
+          setTimeout(() => {
+            document.querySelectorAll('[data-count]').forEach(el => {
+              const target = parseInt(el.dataset.count, 10);
+              countUp(el, target);
+            });
+          }, 400);
+        });
+      }
+
+      // Step 4 → Step 5 (가입)
+      const next4Btn = document.querySelector('[data-next-4]');
+      if (next4Btn) {
+        next4Btn.addEventListener('click', () => goTo(5));
+      }
+
+      // 카운트 업 애니메이션 (ease-out cubic)
+      function countUp(el, target, duration) {
+        duration = duration || 1200;
+        const start = 0;
+        const startTime = performance.now();
+        function tick(now) {
+          const elapsed = now - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          const eased = 1 - Math.pow(1 - progress, 3);
+          el.textContent = Math.floor(start + (target - start) * eased).toLocaleString();
+          if (progress < 1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+      }
+
+      // 건너뛰기 → 가입 페이지로 점프
+      document.querySelectorAll('.skip, .home-skip').forEach(btn => {
+        btn.addEventListener('click', () => goTo(TOTAL));
+      });
+    })();
+  </script>
+</body>
+</html>
