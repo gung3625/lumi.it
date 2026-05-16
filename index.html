@@ -76,12 +76,16 @@
       border-radius: var(--radius-pill);
       background: var(--gradient-signature);
       box-shadow: var(--shadow-glow-sm);
+      animation: btn-breathe-soft 4.2s var(--ease-soft) infinite;
       transition:
         transform var(--duration-snap) var(--ease-toss),
         box-shadow var(--duration-base) var(--ease-soft);
     }
     @media (hover: hover) {
-      .hero__login:hover { box-shadow: var(--shadow-glow); }
+      .hero__login:hover {
+        box-shadow: var(--shadow-glow);
+        animation-play-state: paused;
+      }
     }
     .hero__login:active { transform: scale(0.96); }
 
@@ -183,7 +187,22 @@
       text-decoration: none;
       position: relative;
       overflow: hidden;
+      animation: btn-breathe 3.6s var(--ease-soft) infinite;
       transition: transform var(--duration-snap) var(--ease-toss), box-shadow var(--duration-base) var(--ease-soft);
+    }
+    /* 호흡 — box-shadow 강도만 변화 (transform 안 건드림 → :active scale 보존).
+       사장님 결정 2026-05-16: "각각의 버튼들이 살아숨쉬듯이 움직였으면 좋겠어". */
+    @keyframes btn-breathe {
+      0%, 100% { box-shadow: 0 6px 20px -6px rgba(255, 107, 139, 0.42); }
+      50%      { box-shadow: 0 12px 36px -8px rgba(255, 107, 139, 0.65); }
+    }
+    @keyframes btn-breathe-soft {
+      0%, 100% { box-shadow: 0 3px 12px -4px rgba(255, 107, 139, 0.28); }
+      50%      { box-shadow: 0 6px 22px -6px rgba(255, 107, 139, 0.48); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .hero__cta-primary,
+      .hero__login { animation: none; }
     }
     .hero__cta-primary::before {
       content: '';
@@ -194,7 +213,10 @@
       pointer-events: none;
     }
     @media (hover: hover) {
-      .hero__cta-primary:hover { box-shadow: var(--shadow-glow-lg); }
+      .hero__cta-primary:hover {
+        box-shadow: var(--shadow-glow-lg);
+        animation-play-state: paused;
+      }
       .hero__cta-primary:hover::before { transform: translateX(100%); }
     }
     .hero__cta-primary:active { transform: scale(0.98); }
