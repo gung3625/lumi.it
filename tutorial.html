@@ -361,13 +361,9 @@
       pointer-events: none;
       z-index: 9000;
     }
-    .tour-backdrop .cutout-rect {
-      transition:
-        x 360ms var(--ease-soft),
-        y 360ms var(--ease-soft),
-        width 360ms var(--ease-soft),
-        height 360ms var(--ease-soft);
-    }
+    /* cutout 위치 transition 제거 — 사장님 결정 2026-05-17: 다음 스텝 전환 시 환한 영역이
+       즉시 새 자리에 잡혀야. transition 있으면 이전 위치 → 새 위치 부드럽게 이동해서 어색. */
+    .tour-backdrop .cutout-rect { transition: none; }
 
     /* tour target 공통 — scrollIntoView 시 모바일 URL bar 아래로 130px 여유.
        페이지 최상단 element (미디어 탭) 도 visualViewport 안에 정상 표시. */
@@ -2192,16 +2188,17 @@
           ? Array.from(document.querySelectorAll(cur.target))
           : [document.querySelector(cur.target)].filter(Boolean);
         if (!els.length) { showTourStep(idx + 1); return; }
-        // 단계 전환 — lock 해제 후 scrollIntoView, 위치 잡은 뒤 다시 lock
+        // 단계 전환 — lock 해제 → instant scroll → 즉시 위치 잡기 → 다시 lock.
+        // 사장님 결정 2026-05-17: "바로 영역이 잡히면" — smooth 대신 instant.
         unlockScroll();
-        els[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
-        setTimeout(() => {
+        els[0].scrollIntoView({ behavior: 'instant', block: 'center' });
+        requestAnimationFrame(() => {
           const rect = calcCurrentRect();
           if (!rect) return;
           placeSpotlight(rect);
           placeTooltip(rect, cur, idx);
           lockScroll();
-        }, 420);
+        });
       }
       function closeTour() {
         currentTourIdx = null;
