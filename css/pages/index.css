@@ -52,6 +52,12 @@
     }
     /* topbar 우측: 로그인 단일 진입점 (강조 gradient pill).
        카카오 callback 이 onboarded 여부로 dashboard / signup 자동 분기 → 회원가입 별도 버튼 불필요. */
+    /* topbar 우측 nav — 베타 신청 + 로그인 */
+    .hero__nav {
+      display: flex;
+      gap: var(--space-2);
+      align-items: center;
+    }
     .hero__login {
       font-size: var(--text-caption);
       font-weight: var(--weight-semibold);
@@ -73,6 +79,29 @@
       }
     }
     .hero__login:active { transform: scale(0.96); }
+
+    /* 베타 신청 — 로그인 옆 secondary link (로그인은 베타 사장님 진입, 베타 신청은 신규) */
+    .hero__beta {
+      font-size: var(--text-caption);
+      font-weight: var(--weight-semibold);
+      color: var(--pink-700);
+      text-decoration: none;
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-pill);
+      border: 1px solid var(--pink-300);
+      background: var(--bg);
+      transition:
+        background var(--duration-snap) var(--ease-soft),
+        border-color var(--duration-snap) var(--ease-soft),
+        transform var(--duration-snap) var(--ease-toss);
+    }
+    @media (hover: hover) {
+      .hero__beta:hover {
+        background: var(--pink-50);
+        border-color: var(--pink-500);
+      }
+    }
+    .hero__beta:active { transform: scale(0.96); }
 
     .hero__body {
       flex: 1;
