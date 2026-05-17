@@ -1,0 +1,761 @@
+    body { padding-bottom: env(safe-area-inset-bottom); }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border-bottom: 1px solid var(--line);
+      z-index: var(--z-sticky);
+      min-height: 52px;
+    }
+    .topbar__back {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 36px; height: 36px; border-radius: var(--radius-full);
+      color: var(--ink);
+    }
+    .topbar__back:hover { background: var(--bg-soft); }
+    .topbar__back svg { width: 20px; height: 20px; stroke-width: 2.2; }
+    .topbar__title {
+      font-size: var(--text-headline);
+      font-weight: var(--weight-semibold);
+      color: var(--ink);
+      letter-spacing: var(--tracking-tight);
+      flex: 1;
+    }
+
+    .wrap { padding: var(--space-4); max-width: 600px; margin: 0 auto; }
+
+    .section-title {
+      font-size: var(--text-caption);
+      font-weight: var(--weight-semibold);
+      color: var(--ink-muted);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin: var(--space-5) 0 var(--space-2);
+    }
+    .section-title:first-child { margin-top: 0; }
+
+    /* 탭 — 예약 목록 / 히스토리 */
+    .history-tabs {
+      display: flex;
+      gap: var(--space-1, 4px);
+      border-bottom: 1px solid var(--line);
+      margin-bottom: var(--space-4);
+    }
+    .history-tab {
+      flex: 1;
+      padding: var(--space-3) var(--space-2);
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      font-size: var(--text-body);
+      font-weight: var(--weight-semibold);
+      color: var(--ink-muted);
+      cursor: pointer;
+      transition: color 160ms var(--ease-toss), border-color 160ms var(--ease-toss);
+      margin-bottom: -1px;
+    }
+    .history-tab.is-active {
+      color: var(--pink-600, var(--pink-500));
+      border-bottom-color: var(--pink-500);
+    }
+    @media (hover: hover) {
+      .history-tab:hover:not(.is-active) { color: var(--ink); }
+    }
+
+    .res-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+    .res {
+      position: relative;
+      display: flex;
+      gap: var(--space-3);
+      padding: var(--space-3);
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      animation: rise 360ms var(--ease-toss) backwards;
+      transition:
+        border-color var(--duration-base) var(--ease-soft),
+        box-shadow var(--duration-base) var(--ease-soft),
+        background var(--duration-base) var(--ease-soft),
+        padding-left var(--duration-base) var(--ease-toss),
+        transform var(--duration-snap) var(--ease-toss);
+    }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .res:nth-child(1) { animation-delay: 0ms; }
+    .res:nth-child(2) { animation-delay: 60ms; }
+    .res:nth-child(3) { animation-delay: 120ms; }
+    .res:nth-child(4) { animation-delay: 180ms; }
+    .res:nth-child(5) { animation-delay: 240ms; }
+    /* hover 는 데스크톱(진짜 hover 디바이스)에서만 — 모바일 터치 시 sticky hover 방지 */
+    @media (hover: hover) {
+      .res:hover {
+        border-color: var(--pink-200, #f7c5d3);
+        box-shadow: var(--shadow-sm);
+      }
+    }
+    /* 터치 직후 부드럽게 살짝 눌리는 피드백 */
+    .res:active {
+      transform: scale(0.992);
+      background: linear-gradient(180deg, var(--bg) 0%, var(--pink-50) 220%);
+      transition-duration: var(--duration-fast);
+    }
+
+    .res__thumb {
+      width: 64px; height: 64px;
+      flex-shrink: 0;
+      border-radius: var(--radius-md);
+      background: linear-gradient(135deg, #FF6B8B, #DDA0DD);
+      background-size: cover;
+      background-position: center;
+    }
+    .res__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+    .res__time {
+      font-size: var(--text-body-lg);
+      font-weight: var(--weight-bold);
+      color: var(--ink);
+      letter-spacing: var(--tracking-tight);
+    }
+    .res__caption {
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+      line-height: var(--leading-snug);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .res__meta {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      flex-wrap: wrap;
+      margin-top: 2px;
+    }
+    .res__badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+      font-size: 10px;
+      font-weight: var(--weight-bold);
+      letter-spacing: 0.02em;
+    }
+    .badge--pending  { background: var(--status-pending-bg); color: var(--status-pending-fg); }
+    .badge--ready    { background: var(--status-ready-bg); color: var(--status-ready-fg); }
+    .badge--scheduled{ background: var(--status-scheduled-bg); color: var(--pink-500); }
+    .badge--posting  { background: var(--gradient-signature); color: white; animation: posting-pulse 1.4s var(--ease-soft) infinite; }
+    .badge--posted   { background: var(--status-success-bg); color: var(--status-success-fg); }
+    .badge--failed   { background: var(--status-error-bg); color: var(--status-error-fg); }
+    .badge--cancelled{ background: var(--bg-soft); color: var(--ink-muted); }
+    /* M3.2 — 채널 칩 (IG / Threads 게시 결과 표시). status='posted' 면 컬러, 'failed' 면 흐림+취소선 */
+    .chan-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .chan-chip--ig.is-posted      { background: var(--chan-ig-bg); color: var(--chan-ig-fg); }
+    .chan-chip--threads.is-posted { background: var(--chan-threads-bg); color: var(--chan-threads-fg); }
+    /* failed — 명확한 빨강 경고 (취소선 X, 진한 톤 + ⚠️ 아이콘은 마크업에서 prepend) */
+    .chan-chip.is-failed          { background: var(--chan-fail-bg); color: var(--chan-fail-fg); font-weight: 700; }
+    .chan-chip.is-posting         { background: var(--gradient-signature); color: var(--neutral-0); }
+    /* 재시도 링크 — failed chip 옆에 명시적 액션 affordance. 카드 밖에서 바로 보임. */
+    .chan-retry {
+      border: 0;
+      background: transparent;
+      color: var(--ink, #1a1a1a);
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      padding: 2px 4px;
+      margin-left: 4px;
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      transition: color var(--duration-snap, 120ms) var(--ease-toss, ease-out);
+    }
+    .chan-retry:hover { color: var(--pink-600, var(--pink-500)); }
+    .chan-retry:active { transform: scale(0.97); }
+    @media (prefers-reduced-motion: reduce) {
+      .chan-retry, .chan-retry:active { transform: none; transition: none; }
+    }
+    /* 카드 hover — posted 채널 있는 카드만 클릭 가능 표시 */
+    .res.is-clickable {
+      cursor: pointer;
+      transition: transform var(--duration-snap, 120ms) var(--ease-toss, ease-out),
+                  box-shadow var(--duration-snap, 120ms) var(--ease-toss, ease-out);
+    }
+    .res.is-clickable:hover  { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .res.is-clickable:active { transform: scale(0.995); }
+    @media (prefers-reduced-motion: reduce) {
+      .res.is-clickable, .res.is-clickable:hover, .res.is-clickable:active { transform: none; transition: none; }
+    }
+    @keyframes posting-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(255,107,139,0.5); }
+      50%      { box-shadow: 0 0 0 8px rgba(255,107,139,0); }
+    }
+
+    .res__cancel {
+      padding: var(--space-2) var(--space-3);
+      background: transparent;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-pill);
+      font-size: 11px;
+      color: var(--ink-soft);
+      align-self: flex-start;
+      margin-top: var(--space-1);
+      transition:
+        border-color var(--duration-snap) var(--ease-toss),
+        color var(--duration-snap) var(--ease-toss),
+        transform var(--duration-snap) var(--ease-toss);
+    }
+    .res__cancel:hover { border-color: var(--pink-500); color: var(--pink-500); }
+    .res__cancel:focus-visible { outline: 2px solid var(--pink-500); outline-offset: 2px; }
+    .res__cancel:active { transform: scale(0.95); }
+
+    /* 선택 삭제 / 모두 삭제 — 탭 상단 우측 */
+    .tab-tools {
+      display: flex; align-items: center; justify-content: flex-end;
+      padding: 0 var(--space-4) var(--space-2);
+    }
+    .tab-tools__default, .tab-tools__select {
+      display: flex; align-items: center; gap: 6px;
+    }
+    .tab-tools__bulk {
+      padding: 6px var(--space-3);
+      background: transparent;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-pill);
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+      cursor: pointer;
+      font-family: inherit;
+      transition:
+        border-color var(--duration-snap) var(--ease-toss),
+        color var(--duration-snap) var(--ease-toss),
+        transform var(--duration-snap) var(--ease-toss);
+    }
+    .tab-tools__bulk:hover { border-color: var(--pink-500); color: var(--pink-500); }
+    .tab-tools__bulk:focus-visible { outline: 2px solid var(--pink-500); outline-offset: 2px; }
+    .tab-tools__bulk:active { transform: scale(0.97); }
+    .tab-tools__bulk[disabled] { opacity: 0.4; pointer-events: none; }
+    /* 선택 모드 confirm 버튼 — 활성 시 다크 색 강조 */
+    [data-select-confirm]:not([disabled]) {
+      background: var(--ink, #1a1a1a);
+      color: var(--neutral-0);
+      border-color: var(--ink, #1a1a1a);
+    }
+    [data-select-confirm]:not([disabled]):hover { background: var(--ink-soft, #333); color: var(--neutral-0); }
+
+    /* 선택 모드 — 카드 좌측 세로 가운데에 큰 체크 원 (사장님 피드백: 흐림 → 더 명확하게) */
+    .res__check {
+      position: absolute;
+      top: 50%; left: 12px;
+      transform: translateY(-50%) scale(0.85);
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      border: 2px solid var(--line-strong, rgba(0,0,0,0.25));
+      background: var(--neutral-0);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      display: none; align-items: center; justify-content: center;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity var(--duration-base) var(--ease-toss),
+                  transform var(--duration-base) var(--ease-toss),
+                  background var(--duration-snap) var(--ease-toss),
+                  border-color var(--duration-snap) var(--ease-toss);
+    }
+    .res__check::after {
+      content: '✓';
+      font-size: 16px; font-weight: 800; color: var(--neutral-0); line-height: 1;
+      opacity: 0; transform: scale(0.6);
+      transition: opacity var(--duration-snap) var(--ease-toss),
+                  transform var(--duration-snap) var(--ease-toss);
+    }
+    .res.is-checked .res__check {
+      background: var(--pink-500);
+      border-color: var(--pink-500);
+      box-shadow: 0 2px 8px rgba(200, 80, 122, 0.35);
+    }
+    .res.is-checked .res__check::after { opacity: 1; transform: scale(1); }
+    /* 선택 모드 ON 시 카드 전체가 우측으로 밀려 체크 원 공간 확보 — 사진·글씨 겹침 차단 */
+    body.is-select-mode .res {
+      position: relative;
+      cursor: pointer;
+      padding-left: calc(var(--space-3) + 42px); /* 체크 원 30 + 좌측 여백 12 */
+    }
+    body.is-select-mode .res__check {
+      display: flex;
+      opacity: 1;
+      transform: translateY(-50%) scale(1);
+    }
+    /* 좌측 체크 원이 카드 위로 떠 있어 명확 — thumb dim 제거 (PR #233 에서 흐림 피드백) */
+    body.is-select-mode .chan-retry,
+    body.is-select-mode .res__cancel { pointer-events: none; opacity: 0.5; }
+    @media (prefers-reduced-motion: reduce) {
+      .res__check { transition: none; transform: translateY(-50%) scale(1); }
+      .res__check::after { transition: none; }
+    }
+
+    /* 삭제 확인 모달 (회원탈퇴 패턴과 동일 — 텍스트 입력 검증) */
+    .del-modal {
+      position: fixed; inset: 0;
+      background: var(--overlay-dim);
+      display: flex; align-items: center; justify-content: center;
+      padding: var(--space-4);
+      z-index: var(--z-modal);
+      opacity: 0; pointer-events: none;
+      transition: opacity var(--duration-base) var(--ease-toss);
+    }
+    .del-modal.is-open { opacity: 1; pointer-events: auto; }
+    .del-modal__card {
+      width: 100%; max-width: 420px;
+      background: var(--bg);
+      border-radius: var(--radius-lg);
+      padding: var(--space-5);
+      display: flex; flex-direction: column; gap: var(--space-3);
+      transform: translateY(8px) scale(0.98);
+      transition: transform var(--duration-base) var(--ease-toss);
+    }
+    .del-modal.is-open .del-modal__card { transform: translateY(0) scale(1); }
+    .del-modal__title { font-size: var(--text-headline); font-weight: var(--weight-semibold); color: var(--ink); }
+    .del-modal__body { font-size: var(--text-body); color: var(--ink-soft); line-height: 1.5; }
+    .del-modal__hint { font-size: var(--text-caption); color: var(--ink-muted); }
+    .del-modal__input {
+      padding: var(--space-3); font-size: max(16px, var(--text-body));
+      border: 1px solid var(--line-strong); border-radius: var(--radius-md);
+      background: var(--bg); color: var(--ink);
+    }
+    .del-modal__row { display: flex; gap: var(--space-2); justify-content: flex-end; margin-top: var(--space-2); }
+    .del-modal__btn {
+      padding: var(--space-2) var(--space-4);
+      border-radius: var(--radius-pill);
+      border: 1px solid var(--line-strong);
+      background: transparent;
+      color: var(--ink-soft);
+      font-size: var(--text-body);
+      transition:
+        background var(--duration-snap) var(--ease-toss),
+        color var(--duration-snap) var(--ease-toss),
+        transform var(--duration-snap) var(--ease-toss);
+    }
+    .del-modal__btn:hover { background: var(--bg-soft); }
+    .del-modal__btn:active { transform: scale(0.97); }
+    .del-modal__btn--danger {
+      background: var(--pink-500); border-color: var(--pink-500); color: var(--neutral-0);
+    }
+    .del-modal__btn--danger:hover { background: var(--pink-600); }
+    .del-modal__btn--danger[disabled] { opacity: 0.4; pointer-events: none; }
+    .del-modal__btn--primary {
+      background: var(--ink, #1a1a1a); border-color: var(--ink, #1a1a1a); color: var(--neutral-0);
+    }
+    .del-modal__btn--primary:hover { background: var(--ink-soft, #333); }
+    .del-modal__btn--primary[disabled] { opacity: 0.4; pointer-events: none; }
+    /* 원본 게시물 삭제 옵션 — confirm modal 안 체크박스 영역 */
+    .del-modal__media-opt {
+      display: flex; gap: 10px; align-items: flex-start;
+      padding: var(--space-3);
+      background: var(--bg-soft);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      font-size: var(--text-body);
+      color: var(--ink);
+      line-height: 1.5;
+    }
+    .del-modal__media-opt input[type="checkbox"] {
+      width: 18px; height: 18px;
+      margin-top: 2px;
+      accent-color: var(--pink-500);
+      flex-shrink: 0;
+    }
+    .del-modal__media-opt strong { font-weight: var(--weight-semibold, 600); }
+    .del-modal__media-warn { font-size: var(--text-caption); color: var(--ink-muted); }
+    /* danger 강조 — 체크 ON 일 때 confirm 버튼 라벨 동적 */
+    .del-modal.is-media-checked .del-modal__media-opt {
+      background: var(--status-error-bg);
+      box-shadow: 0 0 0 1px #fca5a5 inset;
+    }
+    .del-modal.is-media-checked .del-modal__media-warn { color: var(--chan-fail-fg); font-weight: 600; }
+
+    /* insight modal — chip 클릭 시 게시별 인사이트 노출. del-modal 패턴 모방. */
+    .insight-modal {
+      position: fixed; inset: 0;
+      background: var(--overlay-dim);
+      display: flex; align-items: center; justify-content: center;
+      padding: var(--space-4);
+      z-index: var(--z-modal);
+      opacity: 0; pointer-events: none;
+      transition: opacity var(--duration-base) var(--ease-toss);
+    }
+    .insight-modal.is-open { opacity: 1; pointer-events: auto; }
+    .insight-modal__card {
+      width: 100%; max-width: 420px;
+      background: var(--bg);
+      border-radius: var(--radius-lg);
+      padding: var(--space-5);
+      display: flex; flex-direction: column; gap: var(--space-3);
+      transform: translateY(8px) scale(0.98);
+      transition: transform var(--duration-base) var(--ease-toss);
+    }
+    .insight-modal.is-open .insight-modal__card { transform: translateY(0) scale(1); }
+    .insight-modal__head {
+      display: flex; align-items: center; justify-content: space-between; gap: var(--space-2);
+    }
+    .insight-modal__title { font-size: var(--text-headline); font-weight: var(--weight-semibold); color: var(--ink); }
+    .insight-modal__close {
+      background: transparent; border: 0; cursor: pointer;
+      font-size: 22px; line-height: 1; color: var(--ink-muted);
+      padding: 4px 8px;
+    }
+    .insight-modal__close:hover { color: var(--ink); }
+    .insight-modal__sub { font-size: var(--text-caption); color: var(--ink-muted); }
+    .insight-modal__state { font-size: var(--text-body); color: var(--ink-soft); padding: var(--space-3) 0; }
+    .insight-modal__grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-2);
+    }
+    .insight-stat {
+      background: var(--bg-soft);
+      border-radius: var(--radius-md);
+      padding: var(--space-3);
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .insight-stat__label { font-size: 12px; color: var(--ink-muted); }
+    .insight-stat__value { font-size: 18px; font-weight: var(--weight-semibold); color: var(--ink); font-variant-numeric: tabular-nums; }
+    .insight-modal__tabs {
+      display: flex; gap: 4px;
+      border-bottom: 1px solid var(--line, rgba(0,0,0,0.08));
+      margin-top: 4px;
+    }
+    .insight-modal__tab {
+      flex: 1;
+      padding: 8px 12px;
+      border: 0; background: transparent;
+      font-family: inherit;
+      font-size: 13px; font-weight: var(--weight-semibold, 600);
+      color: var(--ink-muted);
+      letter-spacing: -0.01em;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: color var(--duration-snap, 120ms) var(--ease-toss, ease-out),
+                  border-color var(--duration-snap, 120ms) var(--ease-toss, ease-out);
+    }
+    .insight-modal__tab.is-active {
+      color: var(--ink, #1a1a1a);
+      border-bottom-color: var(--pink-600, var(--pink-500));
+    }
+    .insight-modal__tab:hover { color: var(--ink, #1a1a1a); }
+    @media (prefers-reduced-motion: reduce) {
+      .insight-modal__tab { transition: none; }
+    }
+    .insight-modal__caption {
+      font-size: 13px; color: var(--ink-soft); line-height: 1.5;
+      max-height: 4.5em; overflow: hidden; text-overflow: ellipsis;
+    }
+    /* 모달 안 채널 탭이 failed 상태일 때 노출되는 인라인 안내 + 재시도 버튼 */
+    .insight-failed {
+      grid-column: 1 / -1;
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      padding: 20px 12px;
+      background: var(--bg-soft);
+      border-radius: var(--radius-md);
+      text-align: center;
+    }
+    .insight-failed__icon { font-size: 28px; line-height: 1; }
+    .insight-failed__msg  { font-size: 14px; color: var(--ink-soft); line-height: 1.5; }
+    .insight-failed__retry {
+      padding: 10px 20px;
+      border: 0;
+      border-radius: var(--radius-pill);
+      background: var(--ink, #1a1a1a);
+      color: var(--neutral-0);
+      font-family: inherit;
+      font-size: 14px; font-weight: var(--weight-semibold, 600);
+      cursor: pointer;
+      transition: background var(--duration-snap, 120ms) var(--ease-toss, ease-out),
+                  transform var(--duration-snap, 120ms) var(--ease-toss, ease-out);
+    }
+    .insight-failed__retry:hover  { background: var(--ink-soft, #333); }
+    .insight-failed__retry:active { transform: scale(0.97); }
+    @media (prefers-reduced-motion: reduce) {
+      .insight-failed__retry, .insight-failed__retry:active { transform: none; transition: none; }
+    }
+    .insight-modal__link {
+      font-size: 12px; color: var(--ink-muted);
+      text-decoration: underline; margin-top: 4px;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .insight-modal, .insight-modal__card { transition: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .del-modal, .del-modal__card, .res__cancel, .tab-tools__bulk {
+        transition: none;
+      }
+    }
+
+    .empty {
+      padding: var(--space-12) var(--space-5);
+      text-align: center;
+      color: var(--ink-muted);
+    }
+    .empty__icon {
+      width: 64px; height: 64px;
+      margin: 0 auto var(--space-4);
+      border-radius: var(--radius-full);
+      background: var(--bg-soft);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--pink-500);
+      animation: empty-bob 2.4s var(--ease-soft) infinite;
+    }
+    .empty__icon svg { width: 28px; height: 28px; stroke-width: 2; }
+    @keyframes empty-bob {
+      0%, 100% { transform: translateY(0); }
+      50%      { transform: translateY(-4px); }
+    }
+    .empty__title {
+      font-size: var(--text-body-lg);
+      font-weight: var(--weight-semibold);
+      color: var(--ink);
+      margin-bottom: var(--space-2);
+    }
+    .empty__sub {
+      font-size: var(--text-body);
+      color: var(--ink-muted);
+      line-height: var(--leading-snug);
+      margin-bottom: var(--space-5);
+    }
+    .cta {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: var(--space-3) var(--space-5);
+      background: var(--gradient-signature);
+      color: var(--neutral-0);
+      font-size: var(--text-body);
+      font-weight: var(--weight-semibold);
+      border-radius: var(--radius-pill);
+      box-shadow: var(--shadow-glow-sm);
+      text-decoration: none;
+    }
+    .cta:hover { box-shadow: var(--shadow-glow); transform: translateY(-1px); }
+
+    .state { padding: var(--space-12); text-align: center; color: var(--ink-muted); }
+
+    /* 평가 버튼 + 코멘트 (게시됨만) */
+    .res__rate-wrap {
+      margin-top: var(--space-2);
+      display: flex; flex-direction: column;
+      gap: var(--space-2);
+    }
+    .res__rate-row {
+      display: flex; align-items: center; gap: 8px;
+      flex-wrap: wrap;
+    }
+    .rate-btn {
+      position: relative;
+      width: 40px; height: 40px;
+      border-radius: var(--radius-full);
+      background: var(--bg-soft);
+      border: 1px solid var(--line);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      cursor: pointer;
+      overflow: hidden;
+      isolation: isolate;
+      /* 부드러운 ease-soft 로 통일. 회전은 절대 사용 안 함 (촌스러움 방지) */
+      transition:
+        background 280ms var(--ease-soft),
+        border-color 280ms var(--ease-soft),
+        box-shadow 320ms var(--ease-soft),
+        transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    /* 터치 즉각 피드백 — 깊게 살짝 눌림 */
+    .rate-btn:active {
+      transform: scale(0.92);
+      transition-duration: 80ms;
+    }
+    @media (hover: hover) {
+      .rate-btn:hover {
+        background: var(--pink-50);
+        border-color: var(--pink-300);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+      }
+    }
+    /* 터치 ripple — :active 시 중앙에서 부드럽게 퍼짐 */
+    .rate-btn::after {
+      content: '';
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 140%; height: 140%;
+      background: radial-gradient(circle, rgba(255, 107, 139, 0.42) 0%, rgba(255, 107, 139, 0) 65%);
+      border-radius: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      opacity: 0;
+      pointer-events: none;
+      z-index: -1;
+    }
+    .rate-btn:active::after {
+      animation: ripple-soft 560ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    @keyframes ripple-soft {
+      0%   { transform: translate(-50%, -50%) scale(0.15); opacity: 0.7; }
+      100% { transform: translate(-50%, -50%) scale(1.6);  opacity: 0; }
+    }
+    /* idle 호흡 — 매우 미세하게, 천천히 (1.025 / 4초) */
+    .rate-btn:not(:disabled):not(.is-active--like):not(.is-active--dislike) {
+      animation: rate-breathe 4s ease-in-out infinite;
+    }
+    @keyframes rate-breathe {
+      0%, 100% { transform: scale(1); }
+      50%      { transform: scale(1.025); }
+    }
+    /* 선택 후 — 스프링 한 번, 회전 없음. 그림자 ring 이 부드럽게 퍼짐 */
+    .rate-btn.is-active--like {
+      background: var(--status-success-bg); border-color: var(--status-success-fg);
+      animation: rate-confirm-like 720ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .rate-btn.is-active--dislike {
+      background: var(--status-error-bg); border-color: var(--status-error-fg);
+      animation: rate-confirm-dislike 720ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes rate-confirm-like {
+      0%   { transform: scale(0.92); box-shadow: 0 0 0 0 rgba(0, 113, 60, 0); }
+      45%  { transform: scale(1.18); box-shadow: 0 0 0 10px rgba(0, 113, 60, 0.18); }
+      100% { transform: scale(1);    box-shadow: 0 0 0 3px rgba(0, 113, 60, 0.14); }
+    }
+    @keyframes rate-confirm-dislike {
+      0%   { transform: scale(0.92); box-shadow: 0 0 0 0 rgba(184, 34, 28, 0); }
+      45%  { transform: scale(1.18); box-shadow: 0 0 0 10px rgba(184, 34, 28, 0.18); }
+      100% { transform: scale(1);    box-shadow: 0 0 0 3px rgba(184, 34, 28, 0.14); }
+    }
+    .rate-btn:disabled { opacity: 0.55; cursor: not-allowed; animation: none; }
+    @media (prefers-reduced-motion: reduce) {
+      .rate-btn:not(:disabled) { animation: none !important; }
+      .rate-btn::after { display: none; }
+    }
+    .rate-hint {
+      font-size: var(--text-label);
+      color: var(--ink-muted);
+      line-height: 1.5;
+    }
+    .rate-comment {
+      display: none; flex-direction: column; gap: 6px;
+      padding: var(--space-2);
+      background: var(--bg-soft);
+      border-radius: var(--radius-md);
+      animation: comment-rise 280ms var(--ease-toss);
+    }
+    .rate-comment.is-open { display: flex; }
+    @keyframes comment-rise {
+      from { opacity: 0; transform: translateY(-4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .rate-comment__input {
+      width: 100%;
+      padding: 8px 10px;
+      font-size: max(16px, var(--text-body));
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-md);
+      background: var(--bg);
+      color: var(--ink);
+      font-family: inherit;
+      resize: vertical;
+      min-height: 44px;
+    }
+    .rate-comment__input:focus {
+      outline: none;
+      border-color: var(--pink-500);
+      box-shadow: 0 0 0 3px rgba(255, 107, 139, 0.12);
+    }
+    .rate-comment__row {
+      display: flex; justify-content: flex-end; gap: 6px;
+    }
+    .rate-comment__btn {
+      position: relative;
+      padding: 8px 14px;
+      border-radius: var(--radius-pill);
+      border: 1px solid var(--line-strong);
+      background: var(--bg);
+      color: var(--ink-soft);
+      font-size: var(--text-caption);
+      font-weight: var(--weight-medium);
+      cursor: pointer;
+      overflow: hidden;
+      transition:
+        background var(--duration-snap) var(--ease-toss),
+        border-color var(--duration-snap) var(--ease-toss),
+        color var(--duration-snap) var(--ease-toss),
+        box-shadow var(--duration-base) var(--ease-soft),
+        transform var(--duration-snap) var(--ease-toss);
+    }
+    .rate-comment__btn:active { transform: scale(0.95); }
+    @media (hover: hover) {
+      .rate-comment__btn:hover {
+        border-color: var(--pink-300);
+        color: var(--ink);
+      }
+    }
+    .rate-comment__btn--save {
+      background: var(--gradient-signature);
+      color: var(--neutral-0);
+      border-color: transparent;
+      box-shadow: var(--shadow-glow-sm);
+    }
+    /* gradient sweep 효과 — CTA 와 동일 패턴 */
+    .rate-comment__btn--save::before {
+      content: '';
+      position: absolute; inset: 0;
+      border-radius: inherit;
+      background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.32) 50%, transparent 70%);
+      transform: translateX(-100%);
+      transition: transform 540ms var(--ease-toss);
+      pointer-events: none;
+    }
+    @media (hover: hover) {
+      .rate-comment__btn--save:hover::before { transform: translateX(100%); }
+      .rate-comment__btn--save:hover { box-shadow: var(--shadow-glow); color: var(--neutral-0); }
+    }
+    .rate-comment__btn:disabled {
+      opacity: 0.5; cursor: not-allowed; box-shadow: none;
+    }
+    .rate-comment__btn:disabled::before { display: none; }
+    .rate-thanks {
+      font-size: var(--text-caption);
+      color: var(--ink-soft);
+      animation: rate-pop 360ms var(--ease-toss);
+    }
+
+    /* 하단 탭바 — /css/tabbar.css 참조 */
+
+    /* 사장님 친화적 toast — toast() 대체 (audit #5) */
+    .toast {
+      position: fixed;
+      left: 50%; bottom: 80px;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--ink); color: white;
+      padding: var(--space-3) var(--space-4);
+      border-radius: var(--radius-pill);
+      font-size: var(--text-body);
+      box-shadow: var(--shadow-lg);
+      opacity: 0; pointer-events: none;
+      transition: opacity var(--duration-base) var(--ease-soft), transform var(--duration-base) var(--ease-toss);
+      z-index: var(--z-modal);
+      max-width: min(86vw, 360px);
+      text-align: center;
+      line-height: var(--leading-snug);
+    }
+    .toast.is-open { opacity: 1; transform: translateX(-50%) translateY(0); }

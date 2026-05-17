@@ -1,0 +1,1030 @@
+    (function () {
+      const token =
+        localStorage.getItem('lumi-auth') ||
+        localStorage.getItem('lumi_auth') ||
+        localStorage.getItem('seller_jwt') || '';
+      if (!token) { location.replace('/'); return; }
+      const authHeaders = { Authorization: 'Bearer ' + token };
+
+      // 로그아웃 — topbar [data-logout] (2026-05-16 사장님: 모든 탭에 로그아웃)
+      document.querySelectorAll('[data-logout]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (!confirm('로그아웃 하시겠어요?')) return;
+          ['lumi-auth','lumi_auth','seller_jwt'].forEach(k => {
+            try { localStorage.removeItem(k); } catch {}
+          });
+          try { sessionStorage.clear(); } catch {}
+          location.href = '/';
+        });
+      });
+
+      const MAX_PHOTOS = 10;
+      const MAX_BYTES = 10 * 1024 * 1024;          // 입력 한 장 최대 (압축 전)
+      // IG carousel 비율 제약: 0.8(4:5) ~ 1.91(1.91:1).
+      // 폰 세로 사진(9:16=0.5625)은 IG 가 거절 → 4:5 로 cover crop.
+      // IG 가 받는 4:5 최대 권장 해상도 = 1440×1800. 그 이상 업로드 해도 IG 내부에서
+      // 다시 다운샘플링됨. 품질·파일크기 균형점.
+      const IG_TARGET_W = 1440;
+      const IG_TARGET_H = 1800;                    // 1440 × 1800 = 4:5
+      const IG_TARGET_RATIO = IG_TARGET_W / IG_TARGET_H;
+      // JPEG 품질 단계 — 0.92 면 시각적 무손실. 9~10장 캐러셀에서 Netlify 6MB body 한도
+      // 임박 시 0.85 → 0.78 로 자동 하향. 0.85 도 SNS 화면 기준 거의 인지 불가.
+      const COMPRESS_QUALITY_STEPS = [0.92, 0.85, 0.78];
+      // multipart 오버헤드(boundary·필드) + userMessage 여유분 0.5MB 빼고 5.5MB 안전선.
+      const SAFE_TOTAL_BYTES = 5.5 * 1024 * 1024;
+      // 사장님 결정 (2026-05-15): 모든 이미지 포맷 허용. 서버에서 sharp/heic-convert 로 JPEG 변환.
+      // - 클라 측 검사: image/* 시작하는 MIME 또는 빈 MIME (브라우저가 안 채우는 경우, 예: HEIC 일부)
+      const ALLOWED_RE = /^image\/.+/i;
+      const isAllowedImage = (t) => !t || ALLOWED_RE.test(t);
+
+      const photoArea = document.querySelector('[data-photo-area]');
+      const msgEl = document.querySelector('[data-msg]');
+      const submitBtn = document.querySelector('[data-submit]');
+      const scheduleAtEl = document.querySelector('[data-scheduled-at]');
+      const toastEl = document.querySelector('[data-toast]');
+
+      let photos = [];
+      let scheduleMode = 'immediate';
+      let storyEnabled = false;
+      let weatherEnabled = true;  // 디폴트 ON (publishPrefs 적용 전)
+      let threadsEnabled = false; // 결정 §12-A #3: 디폴트 OFF
+      let threadsConnected = false;
+      let linktreeEnabled = false; // 프로필 링크 캡션 포함 — 디폴트 OFF
+
+      // ─── 영상 (REELS) 상태 ───
+      const MAX_VIDEO_DURATION_SEC = 5 * 60;       // 5분 (Netlify Function 처리 시간 한계)
+      const MAX_VIDEO_BYTES = 300 * 1024 * 1024;   // 300MB (Meta API 한도)
+      // 사장님 결정 (2026-05-15): 모든 영상 포맷 허용. process-video-background 가 H.264/AAC MP4 로
+      // 강제 transcode → IG Reels 호환. 클라 검사는 video/* 시작 또는 흔한 확장자만 본다.
+      const ALLOWED_VIDEO_EXT_RE = /\.(mp4|mov|m4v|avi|mkv|webm|mpe?g|ts|3gp2?|flv|wmv|hevc|h265)$/i;
+      const isAllowedVideoFile = (file) => {
+        const t = String(file.type || '').toLowerCase();
+        if (t.startsWith('video/')) return true;
+        if (!t) return ALLOWED_VIDEO_EXT_RE.test(file.name || '');
+        return false;
+      };
+      let mediaMode = 'image';   // 'image' | 'video'
+      let videoFile = null;       // File object
+      let videoDuration = 0;      // seconds
+      let overlayText = '';
+      let useSubtitle = true;
+
+      const mediaTabs = document.querySelectorAll('[data-media-tab]');
+      const mediaPanels = document.querySelectorAll('[data-media-panel]');
+      const videoArea = document.querySelector('[data-video-area]');
+      const videoInput = document.querySelector('[data-video-input]');
+      const videoOverlayField = document.querySelector('[data-video-overlay-field]');
+      const videoSubtitleField = document.querySelector('[data-video-subtitle-field]');
+      const overlayTextInput = document.querySelector('[data-overlay-text]');
+      const subtitleBtn = document.querySelector('[data-subtitle-toggle]');
+
+      // 탭 전환 — 사장님이 보던 탭 새로고침 시 유지 (#media=video|image hash).
+      function activateMediaTab(target) {
+        if (target !== 'image' && target !== 'video') target = 'image';
+        mediaMode = target;
+        mediaTabs.forEach((t) => {
+          const on = t.dataset.mediaTab === target;
+          t.classList.toggle('is-active', on);
+          t.setAttribute('aria-selected', String(on));
+        });
+        mediaPanels.forEach((p) => {
+          p.hidden = p.dataset.mediaPanel !== target;
+        });
+        updateSubmitState();
+      }
+      mediaTabs.forEach((tab) => {
+        tab.addEventListener('click', () => {
+          const target = tab.dataset.mediaTab;
+          activateMediaTab(target);
+          try { history.replaceState(null, '', '#media=' + target); } catch (_) {}
+        });
+      });
+      // 초기 진입 시 hash 의 media 우선
+      const initialMediaMatch = (location.hash || '').match(/media=(image|video)/);
+      if (initialMediaMatch) activateMediaTab(initialMediaMatch[1]);
+
+      // 영상 input 이벤트
+      if (videoInput) {
+        videoInput.addEventListener('change', (e) => {
+          const file = e.target.files && e.target.files[0];
+          if (!file) return;
+          handleVideoFile(file);
+        });
+      }
+
+      function formatBytes(b) {
+        if (b < 1024 * 1024) return (b / 1024).toFixed(1) + 'KB';
+        return (b / 1024 / 1024).toFixed(1) + 'MB';
+      }
+      function formatDuration(s) {
+        const m = Math.floor(s / 60);
+        const sec = Math.round(s % 60);
+        return m ? `${m}분 ${sec}초` : `${sec}초`;
+      }
+
+      async function handleVideoFile(file) {
+        // 1) MIME 검증 — video/* 시작 또는 흔한 확장자면 통과. 실제 디코드는 서버 ffmpeg 가 판단.
+        if (!isAllowedVideoFile(file)) {
+          toast('영상 파일만 올릴 수 있어요', 3000);
+          return;
+        }
+        // 2) 크기 검증
+        if (file.size > MAX_VIDEO_BYTES) {
+          toast(`영상이 너무 커요 (${formatBytes(file.size)}). 300MB 이하로 줄여주세요.`, 3500);
+          return;
+        }
+        // 3) 길이 측정 (브라우저 메타데이터)
+        const url = URL.createObjectURL(file);
+        const tempVideo = document.createElement('video');
+        tempVideo.preload = 'metadata';
+        tempVideo.src = url;
+        const duration = await new Promise((resolve, reject) => {
+          tempVideo.onloadedmetadata = () => resolve(tempVideo.duration);
+          tempVideo.onerror = () => reject(new Error('영상 메타데이터 읽기 실패'));
+          setTimeout(() => reject(new Error('영상 메타데이터 읽기 시간 초과')), 10_000);
+        }).catch((err) => {
+          console.warn('[register-product] video metadata:', err.message);
+          return 0;
+        });
+
+        if (duration > MAX_VIDEO_DURATION_SEC) {
+          URL.revokeObjectURL(url);
+          toast(`영상이 너무 길어요 (${formatDuration(duration)}). 5분 이하로 편집해서 올려주세요.`, 4000);
+          return;
+        }
+        videoFile = file;
+        videoDuration = duration;
+        renderVideoPreview(file, url);
+        videoOverlayField.hidden = false;
+        videoSubtitleField.hidden = false;
+        updateSubmitState();
+      }
+
+      function renderVideoPreview(file, url) {
+        const dz = videoArea.querySelector('[data-video-dropzone]');
+        if (dz) dz.hidden = true;
+        // 기존 preview 제거
+        const old = videoArea.querySelector('.video-preview');
+        if (old) old.remove();
+        const oldMeta = videoArea.querySelector('.video-meta');
+        if (oldMeta) oldMeta.remove();
+
+        const wrap = document.createElement('div');
+        wrap.className = 'video-preview';
+        wrap.innerHTML = `
+          <video src="${url}" controls playsinline></video>
+          <button type="button" class="video-preview__remove" data-video-remove aria-label="삭제">×</button>
+        `;
+        videoArea.appendChild(wrap);
+
+        const meta = document.createElement('div');
+        meta.className = 'video-meta';
+        const trimWarn = videoDuration > 90
+          ? `<span class="video-meta__warn">⚠️ ${formatDuration(videoDuration)} → 90초까지 자동 잘림</span>`
+          : '';
+        meta.innerHTML = `
+          <span>${formatDuration(videoDuration)}</span>
+          <span>${formatBytes(file.size)}</span>
+          ${trimWarn}
+        `;
+        videoArea.appendChild(meta);
+
+        wrap.querySelector('[data-video-remove]').addEventListener('click', () => {
+          URL.revokeObjectURL(url);
+          videoFile = null;
+          videoDuration = 0;
+          wrap.remove();
+          meta.remove();
+          if (dz) dz.hidden = false;
+          videoOverlayField.hidden = true;
+          videoSubtitleField.hidden = true;
+          if (overlayTextInput) overlayTextInput.value = '';
+          overlayText = '';
+          updateSubmitState();
+        });
+      }
+
+      // 화면 텍스트 입력
+      if (overlayTextInput) {
+        overlayTextInput.addEventListener('input', () => {
+          overlayText = (overlayTextInput.value || '').trim();
+        });
+      }
+
+      // 자막 토글 (디폴트 ON)
+      if (subtitleBtn) {
+        subtitleBtn.addEventListener('click', () => {
+          useSubtitle = !useSubtitle;
+          syncToggleUI(subtitleBtn, useSubtitle);
+        });
+      }
+
+      // submitBtn 활성화 — 이미지/영상 모드별로 조건 다름
+      function updateSubmitState() {
+        if (!submitBtn) return;
+        const ready = mediaMode === 'image' ? photos.length > 0 : !!videoFile;
+        submitBtn.disabled = !ready;
+      }
+
+      const storyBtn      = document.querySelector('[data-story-toggle]');
+      const weatherBtn    = document.querySelector('[data-weather-toggle]');
+      const threadsBtn    = document.querySelector('[data-threads-toggle]');
+      const threadsTitleEl = document.querySelector('[data-threads-toggle-title]');
+      const threadsHintEl = document.querySelector('[data-threads-toggle-hint]');
+      const linktreeBtn    = document.querySelector('[data-linktree-toggle]');
+
+      function syncToggleUI(btn, on) {
+        if (!btn) return;
+        btn.classList.toggle('is-on', on);
+        btn.setAttribute('aria-pressed', String(on));
+      }
+
+      // 스토리 자동 업로드 토글
+      if (storyBtn) {
+        storyBtn.addEventListener('click', () => {
+          storyEnabled = !storyEnabled;
+          syncToggleUI(storyBtn, storyEnabled);
+        });
+      }
+      // 날씨 반영 토글
+      if (weatherBtn) {
+        weatherBtn.addEventListener('click', () => {
+          weatherEnabled = !weatherEnabled;
+          syncToggleUI(weatherBtn, weatherEnabled);
+        });
+      }
+      // 쓰레드 자동 업로드 토글 (결정 §12-A #3 — 디폴트 OFF, 연동된 사장님만 ON 가능)
+      if (threadsBtn) {
+        threadsBtn.addEventListener('click', () => {
+          if (threadsBtn.disabled) return;
+          threadsEnabled = !threadsEnabled;
+          syncToggleUI(threadsBtn, threadsEnabled);
+        });
+      }
+      // 프로필 링크 캡션 포함 토글
+      if (linktreeBtn) {
+        linktreeBtn.addEventListener('click', () => {
+          linktreeEnabled = !linktreeEnabled;
+          syncToggleUI(linktreeBtn, linktreeEnabled);
+        });
+      }
+
+      // /api/me 한 번 호출로 publishPrefs + threadsStatus + biz_category 동시 처리.
+      // biz_category 는 베스트 시간 자동 예약 (get-best-time) 의 category 인자.
+      let bizCategoryFromMe = '';
+      (async () => {
+        try {
+          const r = await fetch('/api/me', { headers: authHeaders });
+          if (!r.ok) throw new Error('me fetch failed');
+          const j = await r.json();
+          bizCategoryFromMe =
+            (j && j.seller && (j.seller.biz_category || j.seller.bizCategory || j.seller.category)) || '';
+          const prefs = (j && j.seller && j.seller.publishPrefs) || {};
+          if (typeof prefs.storyEnabled === 'boolean') {
+            storyEnabled = prefs.storyEnabled;
+            syncToggleUI(storyBtn, storyEnabled);
+          }
+          if (typeof prefs.weatherEnabled === 'boolean') {
+            weatherEnabled = prefs.weatherEnabled;
+            syncToggleUI(weatherBtn, weatherEnabled);
+          }
+          if (typeof prefs.includeLinktree === 'boolean') {
+            linktreeEnabled = prefs.includeLinktree;
+            syncToggleUI(linktreeBtn, linktreeEnabled);
+          }
+          const ts = (j && j.threadsStatus) || {};
+          threadsConnected = !!ts.connected;
+          if (threadsBtn) {
+            if (ts.tokenExpired) {
+              threadsBtn.disabled = true;
+              if (threadsHintEl) threadsHintEl.textContent = '쓰레드 토큰이 만료됐어요. 설정에서 재연동 후 사용';
+              threadsEnabled = false;
+              syncToggleUI(threadsBtn, false);
+            } else if (threadsConnected) {
+              threadsBtn.disabled = false;
+              if (threadsHintEl) threadsHintEl.textContent = '켜면 인스타와 함께 쓰레드에도 자동 업로드 (캡션은 쓰레드용으로 별도 생성)';
+              if (typeof prefs.threadsEnabled === 'boolean') {
+                threadsEnabled = prefs.threadsEnabled;
+                syncToggleUI(threadsBtn, threadsEnabled);
+              }
+            } else {
+              threadsBtn.disabled = true;
+              if (threadsHintEl) threadsHintEl.textContent = '설정에서 쓰레드 연동 후 사용 가능';
+              threadsEnabled = false;
+              syncToggleUI(threadsBtn, false);
+            }
+          }
+        } catch (_) {
+          if (threadsBtn) {
+            threadsBtn.disabled = true;
+            if (threadsHintEl) threadsHintEl.textContent = '연동 상태 확인 실패 — 잠시 후 다시 시도';
+          }
+        }
+      })();
+
+      function toast(msg, ms = 1800) {
+        toastEl.textContent = msg;
+        toastEl.classList.add('is-open');
+        setTimeout(() => toastEl.classList.remove('is-open'), ms);
+      }
+
+      function refreshSubmit() {
+        // 미디어 모드별 활성화 조건 분기
+        updateSubmitState();
+      }
+
+      function addFiles(fileList) {
+        const arr = Array.from(fileList || []);
+        for (const f of arr) {
+          if (photos.length >= MAX_PHOTOS) {
+            toast('최대 10장까지 가능해요');
+            break;
+          }
+          if (!isAllowedImage(f.type)) {
+            toast('이미지 파일만 가능해요');
+            continue;
+          }
+          if (f.size > MAX_BYTES) {
+            toast('한 장당 10MB를 넘을 수 없어요');
+            continue;
+          }
+          photos.push(f);
+        }
+        renderPhotos();
+        refreshSubmit();
+      }
+
+      function renderPhotos() {
+        if (photos.length === 0) {
+          photoArea.innerHTML = `
+            <label class="dropzone" data-dropzone>
+              <span class="dropzone__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              </span>
+              <div class="dropzone__title">사진을 선택하거나 끌어다 놓아주세요</div>
+              <div class="dropzone__sub">JPG · PNG · WebP / 1~10장</div>
+              <input type="file" accept="image/*" multiple data-input>
+            </label>
+          `;
+          wireDropzone();
+          return;
+        }
+        const grid = document.createElement('div');
+        grid.className = 'photos';
+        photos.forEach((f, idx) => {
+          const url = URL.createObjectURL(f);
+          const item = document.createElement('div');
+          item.className = 'photo';
+          item.innerHTML = `
+            <img src="${url}" alt="">
+            <button class="photo__remove" type="button" data-remove="${idx}" aria-label="제거">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          `;
+          grid.appendChild(item);
+        });
+        if (photos.length < MAX_PHOTOS) {
+          const adder = document.createElement('label');
+          adder.className = 'photo__add';
+          adder.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+            <input type="file" accept="image/*" multiple data-input>
+          `;
+          grid.appendChild(adder);
+        }
+        photoArea.innerHTML = '';
+        photoArea.appendChild(grid);
+
+        photoArea.querySelectorAll('[data-remove]').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const i = Number(btn.dataset.remove);
+            photos.splice(i, 1);
+            renderPhotos();
+            refreshSubmit();
+          });
+        });
+        wireDropzone();
+      }
+
+      function wireDropzone() {
+        const dz = photoArea.querySelector('[data-dropzone]');
+        if (dz) {
+          dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('is-dragover'); });
+          dz.addEventListener('dragleave', () => dz.classList.remove('is-dragover'));
+          dz.addEventListener('drop', e => {
+            e.preventDefault(); dz.classList.remove('is-dragover');
+            addFiles(e.dataTransfer.files);
+          });
+        }
+        photoArea.querySelectorAll('[data-input]').forEach(inp => {
+          inp.addEventListener('change', e => {
+            addFiles(e.target.files);
+            e.target.value = '';
+          });
+        });
+      }
+      wireDropzone();
+
+      // 로컬 datetime → "YYYY-MM-DDTHH:mm" (datetime-local input 포맷, KST 기준).
+      // toISOString() 은 UTC 라 KST 와 9시간 차이 → 로컬 메서드로 직접 만든다.
+      function toLocalDtIso(date) {
+        const pad = n => String(n).padStart(2, '0');
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
+               `T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+      }
+
+      // 예약 범위 — 매번 picker 열 때 새로 계산 (페이지를 오래 켜둔 경우 대비)
+      function getScheduleBounds() {
+        const now = Date.now();
+        return {
+          min: new Date(now),
+          max: new Date(now + 30 * 24 * 60 * 60 * 1000),
+          def: new Date(now + 60 * 60 * 1000),
+        };
+      }
+
+      // 사용자가 과거/한달 초과를 골랐을 때 토스트로 안내. 값은 그대로 두어
+      // submit 시 명확히 차단 (이전엔 자동으로 min/max 로 클램프하면서 동시에
+      // 토스트만 띄워서 "안 된다" 라고 했는데 사실 진행되는 모순이 있었음).
+      function clampScheduleValue() {
+        if (!scheduleAtEl.value) return;
+        const picked = new Date(scheduleAtEl.value).getTime();
+        const { min, max } = getScheduleBounds();
+        if (picked < min.getTime()) {
+          toast('과거 시간은 예약할 수 없어요. 다른 시간을 선택해주세요.');
+        } else if (picked > max.getTime()) {
+          toast('한 달 이내까지만 예약할 수 있어요. 다른 시간을 선택해주세요.');
+        }
+      }
+      scheduleAtEl.addEventListener('input', clampScheduleValue);
+      scheduleAtEl.addEventListener('change', clampScheduleValue);
+      scheduleAtEl.addEventListener('blur', clampScheduleValue);
+
+      // 게시 시점 토글 — 사장님 결정 2026-05-17: immediate/scheduled/best 3 모드.
+      // scheduled = datetime picker, best = 자동 계산 결과 banner.
+      const scheduleOptsEl = document.querySelector('[data-schedule-options]');
+      const scheduleBestEl = document.querySelector('[data-schedule-best-result]');
+      const bestResultTitle = document.querySelector('[data-best-result-title]');
+      const bestResultSub = document.querySelector('[data-best-result-sub]');
+
+      async function applyBestTime() {
+        if (!scheduleBestEl) return;
+        scheduleBestEl.disabled = true;
+        if (bestResultTitle) bestResultTitle.textContent = '베스트 시간 가져오는 중…';
+        if (bestResultSub) bestResultSub.textContent = '사장님 데이터 기준 자동 계산';
+        try {
+          const res = await fetch('/api/get-best-time', {
+            method: 'POST',
+            headers: { ...authHeaders, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ category: bizCategoryFromMe || '' }),
+          });
+          if (!res.ok) throw new Error('best-time http ' + res.status);
+          const data = await res.json();
+          const bestTimeStr = (data && data.bestTime) || '';
+          const mm = /^(\d{1,2}):(\d{2})$/.exec(bestTimeStr);
+          if (!mm) throw new Error('best-time invalid: ' + bestTimeStr);
+          const h = Number(mm[1]);
+          const m = Number(mm[2]);
+          const now = new Date();
+          const target = new Date(now);
+          target.setHours(h, m, 0, 0);
+          // 지금에서 5분 이내면 너무 임박 → 내일 같은 시간
+          const targetSameDay = (target.getTime() > now.getTime() + 5 * 60 * 1000);
+          if (!targetSameDay) {
+            target.setDate(target.getDate() + 1);
+          }
+          // 예약 범위 max 보호 (한 달)
+          const { max } = getScheduleBounds();
+          if (target.getTime() > max.getTime()) target.setTime(max.getTime());
+
+          scheduleAtEl.value = toLocalDtIso(target);
+
+          // 사장님 결정 2026-05-17: dashboard 의 베스트 시간 카드와 일관 안내.
+          // modes.weekday/weekend = 'personal' (내 데이터) | 'seed' (업종 평균).
+          // 사용자 데이터 쌓인 사람과 안 쌓인 사람 다르게 안내 — dashboard wording 일관.
+          // 예약된 target 의 요일 기준 (오늘 못 잡고 내일 잡으면 내일 요일).
+          const tDay = target.getDay();
+          const tIsWeekend = (tDay === 0 || tDay === 6);
+          const modes = (data && data.modes) || {};
+          const tMode = tIsWeekend ? modes.weekend : modes.weekday;
+          const isPersonal = tMode === 'personal';
+
+          const sameDay = target.toDateString() === now.toDateString();
+          const dayLabel = sameDay ? '오늘' : '내일';
+          const hh = String(target.getHours()).padStart(2, '0');
+          const mmStr = String(target.getMinutes()).padStart(2, '0');
+          if (bestResultTitle) bestResultTitle.textContent = `⏰ ${dayLabel} ${hh}:${mmStr} 자동 예약`;
+          if (bestResultSub) {
+            // 사장님 결정 2026-05-17 (재정정): seed 안내 정확한 wording.
+            bestResultSub.textContent = isPersonal
+              ? '내 팔로워 활동 시간 기반 · 다시 누르면 갱신'
+              : '아직 나만의 베스트 시간 데이터가 모이지 않았어요. 지금은 평균 베스트 시간이에요';
+          }
+          // banner 색 — personal 은 시그니처 핑크 유지, seed 는 살짝 톤다운으로 구분
+          scheduleBestEl.classList.toggle('is-seed', !isPersonal);
+
+          toast(`${dayLabel} ${hh}:${mmStr} 으로 예약했어요`);
+        } catch (e) {
+          console.error('[best-time] 실패:', e && e.message);
+          if (bestResultTitle) bestResultTitle.textContent = '베스트 시간을 가져오지 못했어요';
+          if (bestResultSub) bestResultSub.textContent = '다시 누르거나 [예약] 으로 직접 선택해주세요';
+          scheduleAtEl.value = '';
+          toast('베스트 시간을 가져오지 못했어요');
+        } finally {
+          scheduleBestEl.disabled = false;
+        }
+      }
+
+      document.querySelectorAll('[data-schedule]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          scheduleMode = btn.dataset.schedule;
+          document.querySelectorAll('[data-schedule]').forEach(b => b.classList.toggle('is-active', b === btn));
+          if (scheduleOptsEl) scheduleOptsEl.hidden = (scheduleMode !== 'scheduled');
+          if (scheduleBestEl) scheduleBestEl.hidden = (scheduleMode !== 'best');
+          if (scheduleMode === 'scheduled') {
+            const { min, max, def } = getScheduleBounds();
+            scheduleAtEl.min = toLocalDtIso(min);
+            scheduleAtEl.max = toLocalDtIso(max);
+            scheduleAtEl.value = toLocalDtIso(def);
+          } else if (scheduleMode === 'best') {
+            const { min, max } = getScheduleBounds();
+            scheduleAtEl.min = toLocalDtIso(min);
+            scheduleAtEl.max = toLocalDtIso(max);
+            applyBestTime();
+          } else {
+            // immediate
+            scheduleAtEl.value = '';
+          }
+        });
+      });
+
+      // 베스트 시간 결과 banner — 다시 누르면 갱신 (밤사이 best time 변동 대응)
+      if (scheduleBestEl) {
+        scheduleBestEl.addEventListener('click', () => {
+          if (scheduleMode === 'best') applyBestTime();
+        });
+      }
+
+      // Canvas 로 4:5(1080×1350) cover crop + JPEG 압축.
+      // - IG carousel 호환 비율(4:5 = 0.8) 강제 → "aspect ratio not supported" 에러 차단
+      // - 폰 세로 사진(9:16) 은 위·아래 살짝 잘리고, 가로 사진은 좌·우 잘림
+      // - Netlify 6MB body 한도도 자연스레 충족 (사진당 ~200~500KB)
+      // - HEIC 등 브라우저가 디코드 못 하는 포맷은 원본을 그대로 서버로 넘김
+      //   (서버 reserve.js 가 heic-convert + sharp 로 JPEG 변환 처리)
+      function compressImage(file, quality) {
+        return new Promise((resolve) => {
+          const img = new Image();
+          const url = URL.createObjectURL(file);
+          let settled = false;
+          const settle = (v) => {
+            if (settled) return;
+            settled = true;
+            URL.revokeObjectURL(url);
+            resolve(v);
+          };
+
+          img.onload = () => {
+            try {
+              const sourceRatio = img.width / img.height;
+              if (!isFinite(sourceRatio) || sourceRatio <= 0) {
+                // 디코드는 됐지만 크기 정보가 이상함 → 서버 위임
+                return settle(file);
+              }
+              let sx, sy, sw, sh;
+              if (sourceRatio > IG_TARGET_RATIO) {
+                // 원본이 4:5 보다 넓음 → 좌우 자르기
+                sh = img.height;
+                sw = Math.round(sh * IG_TARGET_RATIO);
+                sx = Math.round((img.width - sw) / 2);
+                sy = 0;
+              } else {
+                // 원본이 4:5 보다 좁음(폰 세로) → 위아래 자르기
+                sw = img.width;
+                sh = Math.round(sw / IG_TARGET_RATIO);
+                sx = 0;
+                sy = Math.round((img.height - sh) / 2);
+              }
+
+              const canvas = document.createElement('canvas');
+              canvas.width = IG_TARGET_W;
+              canvas.height = IG_TARGET_H;
+              const ctx = canvas.getContext('2d');
+              // 화이트 배경 — 투명 PNG 입력 대비
+              ctx.fillStyle = '#ffffff';
+              ctx.fillRect(0, 0, IG_TARGET_W, IG_TARGET_H);
+              ctx.drawImage(img, sx, sy, sw, sh, 0, 0, IG_TARGET_W, IG_TARGET_H);
+
+              canvas.toBlob(blob => {
+                if (!blob) return settle(file); // encoder 실패 시 원본 fallback
+                const name = (file.name || 'photo').replace(/\.\w+$/, '') + '.jpg';
+                settle(new File([blob], name, { type: 'image/jpeg' }));
+              }, 'image/jpeg', quality);
+            } catch (e) {
+              console.warn('[compressImage] canvas fallback → 원본 전송:', e?.message);
+              settle(file);
+            }
+          };
+          img.onerror = () => {
+            // 브라우저 디코더가 못 읽는 포맷(Chrome 의 HEIC 등) → 원본을 서버로 위임
+            console.warn('[compressImage] 디코드 실패, 원본 그대로 서버 변환:', file.name);
+            settle(file);
+          };
+          img.src = url;
+        });
+      }
+
+      // 첫 단계(0.92)로 압축 → 합계가 안전선 넘으면 다음 단계로 재압축.
+      // 대부분(1~5장)은 한 번에 통과 → 추가 비용 0. 9~10장 헤비 케이스만 fallback.
+      async function compressAllAdaptive(files) {
+        for (let i = 0; i < COMPRESS_QUALITY_STEPS.length; i++) {
+          const q = COMPRESS_QUALITY_STEPS[i];
+          const compressed = await Promise.all(files.map(f => compressImage(f, q)));
+          const total = compressed.reduce((s, f) => s + f.size, 0);
+          const isLast = i === COMPRESS_QUALITY_STEPS.length - 1;
+          if (total <= SAFE_TOTAL_BYTES || isLast) {
+            return { files: compressed, total, quality: q };
+          }
+          setOverlayCopy('사진 최적화 중', '용량이 커서 한 번 더 다듬고 있어요.');
+        }
+      }
+
+      // ── 진행 오버레이 컨트롤 ──
+      const overlayEl = document.querySelector('[data-progress-overlay]');
+      const progressTitleEl = document.querySelector('[data-progress-title]');
+      const progressSubEl = document.querySelector('[data-progress-sub]');
+      const STEP_ORDER = ['upload', 'analyze', 'caption', 'publish'];
+
+      function setStep(stepKey, state) {
+        // state: 'active' | 'done'
+        document.querySelectorAll('.progress-step').forEach(el => {
+          if (el.dataset.step === stepKey) {
+            el.classList.toggle('is-active', state === 'active');
+            el.classList.toggle('is-done', state === 'done');
+          }
+        });
+      }
+      function activateUpTo(stepKey) {
+        // 해당 step 까지를 done 처리하고 다음 step 을 active 로
+        const idx = STEP_ORDER.indexOf(stepKey);
+        STEP_ORDER.forEach((k, i) => {
+          if (i < idx) setStep(k, 'done');
+          else if (i === idx) setStep(k, 'active');
+          else setStep(k, null);
+        });
+      }
+      function showOverlay(open) {
+        overlayEl.classList.toggle('is-open', open);
+        overlayEl.setAttribute('aria-hidden', open ? 'false' : 'true');
+      }
+      function setOverlayCopy(title, sub) {
+        // 페이드 transition 은 글자 길이/폭이 다른 두 텍스트 전환 시 sub-pixel
+        // 잔상(예: "ㅅ캡션 쓰는 중ㄷ" 같은 자모 잘림)이 생겨서 즉시 swap.
+        if (title && progressTitleEl.textContent !== title) {
+          progressTitleEl.textContent = title;
+        }
+        if (sub != null && progressSubEl.textContent !== sub) {
+          progressSubEl.textContent = sub;
+        }
+      }
+
+      // status → step 매핑
+      function statusToStage(s) {
+        if (s.is_sent || s.caption_status === 'posted') return { step: 'publish', state: 'done', title: '완료!', sub: '인스타에 게시됐어요.' };
+        if (s.caption_status === 'posting') return { step: 'publish', state: 'active', title: '인스타 게시 중', sub: '곧 피드에 올라가요.' };
+        if (s.caption_status === 'scheduled' && s.post_mode === 'scheduled') return { step: 'caption', state: 'done', title: '예약 완료', sub: '시간 되면 알아서 올려드려요.' };
+        if (s.caption_status === 'scheduled') return { step: 'publish', state: 'active', title: '인스타 게시 중', sub: '곧 피드에 올라가요.' };
+        if (s.caption_status === 'ready') return { step: 'caption', state: 'done', title: '캡션 완성', sub: '잠시 후 게시 시작.' };
+        if (s.caption_status === 'pending') return { step: 'caption', state: 'active', title: '캡션 쓰는 중', sub: '사진 보면서 어울리는 글 쓰고 있어요.' };
+        if (s.caption_status === 'failed' || s.caption_status === 'error') return { step: null, state: 'fail', title: '게시 실패', sub: s.caption_error || '잠시 후 다시 시도해주세요.' };
+        return null;
+      }
+
+      async function pollUntilDone(reserveKey, opts = {}) {
+        // 이미지: 90초, 영상: 180초 (ffmpeg 90초 trim+CRF20 medium + Meta REELS 컨테이너 polling 합쳐서 평균 90~150초)
+        const TIMEOUT_MS = opts.timeoutMs || 90 * 1000;
+        const INTERVAL_MS = 1500;
+        const FETCH_TIMEOUT_MS = 8000;  // 매 폴링 fetch 8초 cap — backend hang 방어
+        const start = Date.now();
+        // 첫 단계는 caption (분석/작성) 으로 — 업로드는 이미 끝났음.
+        // 첫 폴링 응답이 1.5초 후에 오므로 타이틀도 즉시 동기화 (단계와 mismatch 방지)
+        activateUpTo('caption');
+        setOverlayCopy('캡션 쓰는 중', '사진 보면서 어울리는 글 쓰고 있어요.');
+        while (Date.now() - start < TIMEOUT_MS) {
+          await new Promise(r => setTimeout(r, INTERVAL_MS));
+          let s = null;
+          // AbortController 로 매 fetch timeout cap — 무한 대기로 인한 while loop stuck 방어
+          const ctrl = new AbortController();
+          const fetchTid = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+          try {
+            const r = await fetch('/api/reservation-status?key=' + encodeURIComponent(reserveKey), { headers: authHeaders, signal: ctrl.signal });
+            if (r.ok) {
+              const j = await r.json();
+              s = j.status;
+            }
+          } catch (_) { /* 네트워크 깜빡 / timeout — 다음 사이클에 재시도 */
+          } finally { clearTimeout(fetchTid); }
+          if (!s) continue;
+
+          const stage = statusToStage(s);
+          if (!stage) continue;
+          setOverlayCopy(stage.title, stage.sub);
+
+          if (stage.state === 'fail') {
+            return { ok: false, error: stage.sub };
+          }
+          if (stage.step === 'publish' && stage.state === 'done') {
+            // 완료 — 단계 4 까지 마크
+            STEP_ORDER.forEach(k => setStep(k, 'done'));
+            overlayEl.classList.add('is-success');
+            return { ok: true, scheduled: false, ig_post_id: s.ig_post_id || null };
+          }
+          if (stage.step === 'caption' && stage.state === 'done' && s.post_mode === 'scheduled') {
+            // 예약 게시 — 캡션까지만 작성하고 종료
+            STEP_ORDER.slice(0, 3).forEach(k => setStep(k, 'done'));
+            overlayEl.classList.add('is-success');
+            return { ok: true, scheduled: true };
+          }
+          // 진행 단계 시각화
+          activateUpTo(stage.step);
+        }
+        return { ok: 'timeout' };
+      }
+
+      // ─── 영상 제출 흐름 ───
+      // 1) signed URL 받기 → 2) 클라이언트가 Supabase Storage 에 직접 PUT
+      // → 3) 첫 프레임 추출(커버) → 4) reserve API 호출 → 5) 처리 폴링
+      async function extractCoverFrame(file, atSec = 0.5) {
+        return new Promise((resolve, reject) => {
+          const url = URL.createObjectURL(file);
+          const v = document.createElement('video');
+          v.src = url;
+          v.muted = true;
+          v.preload = 'auto';
+          v.crossOrigin = 'anonymous';
+          v.onloadeddata = () => {
+            try { v.currentTime = Math.min(atSec, (v.duration || 1) - 0.1); } catch (_) {}
+          };
+          v.onseeked = () => {
+            try {
+              const canvas = document.createElement('canvas');
+              const w = v.videoWidth || 720;
+              const h = v.videoHeight || 1280;
+              canvas.width = w;
+              canvas.height = h;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(v, 0, 0, w, h);
+              canvas.toBlob((blob) => {
+                URL.revokeObjectURL(url);
+                if (!blob) return reject(new Error('cover frame blob fail'));
+                resolve(blob);
+              }, 'image/jpeg', 0.85);
+            } catch (e) {
+              URL.revokeObjectURL(url);
+              reject(e);
+            }
+          };
+          v.onerror = () => { URL.revokeObjectURL(url); reject(new Error('cover frame video load fail')); };
+          setTimeout(() => reject(new Error('cover frame timeout')), 20_000);
+        });
+      }
+
+      async function submitVideo() {
+        isSubmitting = true;
+        submitBtn.disabled = true;
+        submitBtn.textContent = '준비 중…'; submitBtn.classList.add('is-loading');
+        showOverlay(true);
+        setOverlayCopy('영상 업로드 중', '서버로 보내고 있어요. 잠시만 기다려주세요.');
+        activateUpTo('upload');
+
+        try {
+          // 1) signed URL 요청
+          const urlRes = await fetch('/api/video-upload-url', {
+            method: 'POST',
+            headers: { ...authHeaders, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              filename: videoFile.name,
+              contentType: videoFile.type || 'video/mp4',
+              size: videoFile.size,
+            }),
+          });
+          const urlData = await urlRes.json().catch(() => ({}));
+          if (!urlRes.ok || !urlData.ok || !urlData.uploadUrl) {
+            throw new Error(urlData.error || '업로드 URL 발급 실패');
+          }
+
+          // 2) 클라이언트 직접 PUT 업로드
+          const putRes = await fetch(urlData.uploadUrl, {
+            method: 'PUT',
+            headers: { 'Content-Type': videoFile.type || 'video/mp4' },
+            body: videoFile,
+          });
+          if (!putRes.ok) {
+            const t = await putRes.text().catch(() => '');
+            throw new Error(`영상 업로드 실패 (HTTP ${putRes.status}): ${t.slice(0, 120)}`);
+          }
+          const videoUrl = urlData.publicUrl;
+          const videoKey = urlData.path;
+
+          // 3) 첫 프레임 추출 → 커버 이미지 (image_urls[0])
+          setOverlayCopy('커버 만드는 중', '영상에서 첫 장면을 추출하고 있어요.');
+          let coverBlob = null;
+          try {
+            coverBlob = await extractCoverFrame(videoFile, 0.5);
+          } catch (e) {
+            console.warn('[submit-video] 커버 추출 실패 → placeholder 사용:', e.message);
+          }
+          // 브라우저가 디코드 못 하는 포맷(예: AVI, MKV) → 합성 placeholder 커버.
+          // 서버 reserve.js 는 photos.length > 0 을 요구. IG 가 진짜 cover 를 영상에서 자동 추출하므로
+          // 우리 image_urls[0] 은 vision 분석용 placeholder 로만 사용.
+          if (!coverBlob) {
+            try {
+              const c = document.createElement('canvas');
+              c.width = 1080; c.height = 1350;
+              const ctx = c.getContext('2d');
+              const grad = ctx.createLinearGradient(0, 0, 0, c.height);
+              grad.addColorStop(0, '#1a1a1a');
+              grad.addColorStop(1, '#3a3a3a');
+              ctx.fillStyle = grad;
+              ctx.fillRect(0, 0, c.width, c.height);
+              ctx.fillStyle = '#ffffff';
+              ctx.font = 'bold 80px -apple-system, BlinkMacSystemFont, "Pretendard", sans-serif';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText('🎬 영상', c.width / 2, c.height / 2);
+              coverBlob = await new Promise((r) => c.toBlob(r, 'image/jpeg', 0.85));
+            } catch (genErr) {
+              console.warn('[submit-video] placeholder 생성 실패:', genErr?.message);
+            }
+          }
+
+          // 4) reserve API 호출 (multipart) — 커버 1장 + 영상 메타
+          setOverlayCopy('업로드 중', '거의 다 됐어요.');
+          const fd = new FormData();
+          if (coverBlob) {
+            fd.append('file0', coverBlob, 'cover.jpg');
+          }
+          fd.append('userMessage', msgEl.value || '');
+          // best 모드도 백엔드에는 'scheduled' 로 전달 (scheduledAt 가 set 되어 있음).
+          fd.append('postMode', scheduleMode === 'best' ? 'scheduled' : scheduleMode);
+          fd.append('postToStory', String(storyEnabled));
+          fd.append('useWeather', String(weatherEnabled));
+          fd.append('postToThread', String(threadsEnabled));
+          fd.append('includeLinktree', String(linktreeEnabled));
+          fd.append('mediaType', 'REELS');
+          fd.append('videoUrl', videoUrl);
+          fd.append('videoKey', videoKey);
+          fd.append('overlayText', overlayText || '');
+          fd.append('useSubtitle', String(useSubtitle));
+          if ((scheduleMode === 'scheduled' || scheduleMode === 'best') && scheduleAtEl.value) {
+            const iso = new Date(scheduleAtEl.value).toISOString();
+            fd.append('scheduledAt', iso);
+          }
+
+          const res = await fetch('/api/reserve', {
+            method: 'POST',
+            headers: authHeaders,
+            body: fd,
+          });
+          const json = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            throw new Error(json.error || '예약 등록 실패');
+          }
+          setStep('upload', 'done');
+
+          const reserveKey = json.reserveKey || json.reservationKey;
+          if (!reserveKey) throw new Error('예약 키를 받지 못했어요.');
+
+          // 5) 즉시 히스토리 이동 (2026-05-15 UX 개선).
+          //    이전: pollUntilDone 으로 게시 완료까지 (90~180초) 화면 묶음 → 사용자 시간 낭비.
+          //    변경: reserve 응답 받으면 즉시 /history?tab=upcoming 이동. 백엔드는 비동기 진행.
+          //    history 에서 statusBadge 가 "영상 처리 중 · 곧 게시" / "곧 게시" 로 진행 표시.
+          // 사장님 결정 (2026-05-15): 즉시 게시 → 히스토리 탭(past), 예약 → 예약 목록 탭(upcoming).
+          const targetTab = (scheduleMode === 'scheduled' || scheduleMode === 'best') ? 'upcoming' : 'past';
+          setOverlayCopy('업로드 완료', '백엔드에서 캡션·영상 처리 중. 히스토리에서 확인하세요.');
+          setStep('caption', 'active');
+          setTimeout(() => { location.href = '/history?tab=' + targetTab; }, 800);
+        } catch (err) {
+          console.error('[submit-video] 실패:', err);
+          showOverlay(false);
+          toast(err.message || '게시에 실패했어요', 3500);
+          isSubmitting = false;
+          submitBtn.disabled = false;
+          submitBtn.textContent = '📷 캡션 만들고 게시'; submitBtn.classList.remove('is-loading');
+          // 5초 후 히스토리로 강제 이동 — register-product 페이지에 stuck 되어 무한 로딩으로
+          // 보이는 케이스 방어 (사장님 보고 2026-05-15). 사장님이 결과 확인 + 재시도 시 진입 가능.
+          setTimeout(() => { if (!isSubmitting) location.href = '/history?tab=past'; }, 5000);
+        }
+      }
+
+      // 제출 — iOS Safari 등에서 더블탭이 짧게 두 번 fire 되는 경우 대비 idempotency 락.
+      let isSubmitting = false;
+      submitBtn.addEventListener('click', async () => {
+        if (isSubmitting) return;
+        if (mediaMode === 'image' && photos.length === 0) return;
+        if (mediaMode === 'video' && !videoFile) return;
+        if (mediaMode === 'video') {
+          await submitVideo();
+          return;
+        }
+        if (scheduleMode === 'scheduled' || scheduleMode === 'best') {
+          if (!scheduleAtEl.value) {
+            toast(scheduleMode === 'best' ? '베스트 시간을 불러오는 중이에요' : '예약 시간을 선택해주세요');
+            return;
+          }
+          // 브라우저가 min/max 무시하는 경우 대비 — JS 측에서도 한 번 더 검증
+          const picked = new Date(scheduleAtEl.value).getTime();
+          const now = Date.now();
+          if (picked < now) {
+            toast('과거 시간은 예약할 수 없어요');
+            return;
+          }
+          if (picked > now + 30 * 24 * 60 * 60 * 1000) {
+            toast('예약은 한 달 이내까지만 가능해요');
+            return;
+          }
+        }
+        isSubmitting = true;
+        submitBtn.disabled = true;
+        submitBtn.textContent = '준비 중…'; submitBtn.classList.add('is-loading');
+        showOverlay(true);
+        setOverlayCopy('사진 준비 중', '잠시만요, 압축 후 업로드를 시작할게요.');
+        activateUpTo('upload');
+
+        try {
+          // 1) 압축 (병렬) + 총 합계가 Netlify 6MB body 한도 임박 시 quality 자동 하향
+          const { files: compressed, total: compressedTotal } = await compressAllAdaptive(photos);
+          if (compressedTotal > SAFE_TOTAL_BYTES) {
+            // 최저 quality 까지 갔는데도 안전선 초과 → 서버 413 가기 전 친절하게 차단
+            throw new Error('사진이 너무 많거나 커요. 장수를 줄여주세요.');
+          }
+          setOverlayCopy('사진 업로드 중', '서버로 보내고 있어요.');
+
+          // 2) reserve 호출 (서버에서 storage 업로드 병렬)
+          const fd = new FormData();
+          compressed.forEach((f, i) => fd.append('file' + i, f, f.name));
+          fd.append('userMessage', msgEl.value || '');
+          // best 모드도 백엔드에는 'scheduled' 로 전달 (scheduledAt 가 set 되어 있음).
+          fd.append('postMode', scheduleMode === 'best' ? 'scheduled' : scheduleMode);
+          fd.append('postToStory', String(storyEnabled));
+          fd.append('useWeather', String(weatherEnabled));
+          fd.append('postToThread', String(threadsEnabled));
+          fd.append('includeLinktree', String(linktreeEnabled));
+          if ((scheduleMode === 'scheduled' || scheduleMode === 'best') && scheduleAtEl.value) {
+            const iso = new Date(scheduleAtEl.value).toISOString();
+            fd.append('scheduledAt', iso);
+          }
+          // 날씨 ON 이면 /api/get-weather 한 번 호출해서 캡션 생성에 쓸 컨텍스트 첨부.
+          // 실패해도 무시 — caption 단계가 "정보 없음" 으로 자연스럽게 fallback.
+          if (weatherEnabled) {
+            try {
+              const wRes = await fetch('/api/get-weather', { headers: authHeaders });
+              if (wRes.ok) {
+                const wJson = await wRes.json();
+                if (wJson && wJson.ok && !wJson.noRegion && !wJson.error && wJson.status) {
+                  fd.append('weather', JSON.stringify({
+                    status: wJson.status,
+                    temperature: wJson.temperature,
+                    mood: wJson.mood,
+                    locationName: wJson.shortName,
+                  }));
+                }
+              }
+            } catch {}
+          }
+          const res = await fetch('/api/reserve', {
+            method: 'POST',
+            headers: authHeaders,
+            body: fd,
+          });
+          const json = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            if (res.status === 413) throw new Error('사진 용량이 너무 커요. 장수를 줄여주세요.');
+            throw new Error(json.error || '게시 실패');
+          }
+          // upload 완료
+          setStep('upload', 'done');
+
+          const reserveKey = json.reserveKey || json.reservationKey;
+          if (!reserveKey) throw new Error('예약 키를 받지 못했어요.');
+
+          // 3) 즉시 히스토리 이동 (2026-05-15 UX 개선).
+          //    이전: pollUntilDone 으로 게시 완료까지 화면 묶음.
+          //    변경: reserve 응답 받으면 즉시 /history?tab=upcoming 이동. 백엔드는 비동기 진행.
+          //    history statusBadge 가 "곧 게시" / "예약됨" 으로 진행 표시.
+          setOverlayCopy('업로드 완료', '캡션 만들고 인스타에 올릴 예정. 히스토리에서 확인하세요.');
+          setStep('caption', 'active');
+          // 사장님 결정 (2026-05-15): 즉시 게시 → 히스토리 탭(past), 예약 → 예약 목록(upcoming).
+          const imgTargetTab = (scheduleMode === 'scheduled' || scheduleMode === 'best') ? 'upcoming' : 'past';
+          setTimeout(() => { location.href = '/history?tab=' + imgTargetTab; }, 800);
+        } catch (e) {
+          showOverlay(false);
+          toast(e.message || '게시 실패');
+          submitBtn.disabled = false;
+          submitBtn.textContent = '📷 캡션 만들고 게시'; submitBtn.classList.remove('is-loading');
+          isSubmitting = false;
+        }
+      });
+
+      refreshSubmit();
+    })();
