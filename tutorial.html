@@ -2163,8 +2163,10 @@
       // cutout update 가 1-2 frame 늦음 → 사장님 눈에 lag/jitter. 대신 rAF loop 로 매 frame
       // 마다 element 위치 read + cutout update → element 와 cutout 이 같은 frame 에 paint
       // → desync 차단. 위치 변화 없으면 setAttribute skip (CPU 절약).
-      let tourRafId = 0;
-      let lastRectKey = '';
+      // var 사용 — closeTour() 가 goTo(1) → IIFE 초기화 단계에서 호출되어 tourRafId/lastRectKey
+      // 접근 시 let TDZ 위반으로 IIFE 전체 throw → + 버튼 listener 등록 누락 버그 (a7ffa4d 와 동일 패턴).
+      var tourRafId = 0;
+      var lastRectKey = '';
       function tourTick() {
         if (currentTourIdx == null) { tourRafId = 0; lastRectKey = ''; return; }
         const rect = calcCurrentRect();
