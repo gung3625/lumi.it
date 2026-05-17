@@ -89,7 +89,7 @@
       margin-bottom: -1px;
     }
     .history-tab.is-active {
-      color: var(--pink-600, #c8507a);
+      color: var(--pink-600, var(--pink-500));
       border-bottom-color: var(--pink-500);
     }
     @media (hover: hover) {
@@ -175,12 +175,12 @@
       font-weight: var(--weight-bold);
       letter-spacing: 0.02em;
     }
-    .badge--pending  { background: #fff8e8; color: #c08400; }
-    .badge--ready    { background: #e8f4ff; color: #0867b8; }
-    .badge--scheduled{ background: #fff0f5; color: #c8507a; }
+    .badge--pending  { background: var(--status-pending-bg); color: var(--status-pending-fg); }
+    .badge--ready    { background: var(--status-ready-bg); color: var(--status-ready-fg); }
+    .badge--scheduled{ background: var(--status-scheduled-bg); color: var(--pink-500); }
     .badge--posting  { background: var(--gradient-signature); color: white; animation: posting-pulse 1.4s var(--ease-soft) infinite; }
-    .badge--posted   { background: #e8f5ee; color: #00713c; }
-    .badge--failed   { background: #fde8e8; color: #b8221c; }
+    .badge--posted   { background: var(--status-success-bg); color: var(--status-success-fg); }
+    .badge--failed   { background: var(--status-error-bg); color: var(--status-error-fg); }
     .badge--cancelled{ background: var(--bg-soft); color: var(--ink-muted); }
     /* M3.2 — 채널 칩 (IG / Threads 게시 결과 표시). status='posted' 면 컬러, 'failed' 면 흐림+취소선 */
     .chan-chip {
@@ -193,11 +193,11 @@
       font-weight: 600;
       letter-spacing: 0.02em;
     }
-    .chan-chip--ig.is-posted      { background: #fce7f3; color: #be185d; }
-    .chan-chip--threads.is-posted { background: #e0e7ff; color: #3730a3; }
+    .chan-chip--ig.is-posted      { background: var(--chan-ig-bg); color: var(--chan-ig-fg); }
+    .chan-chip--threads.is-posted { background: var(--chan-threads-bg); color: var(--chan-threads-fg); }
     /* failed — 명확한 빨강 경고 (취소선 X, 진한 톤 + ⚠️ 아이콘은 마크업에서 prepend) */
-    .chan-chip.is-failed          { background: #fee2e2; color: #b91c1c; font-weight: 700; }
-    .chan-chip.is-posting         { background: var(--gradient-signature); color: #fff; }
+    .chan-chip.is-failed          { background: var(--chan-fail-bg); color: var(--chan-fail-fg); font-weight: 700; }
+    .chan-chip.is-posting         { background: var(--gradient-signature); color: var(--neutral-0); }
     /* 재시도 링크 — failed chip 옆에 명시적 액션 affordance. 카드 밖에서 바로 보임. */
     .chan-retry {
       border: 0;
@@ -214,7 +214,7 @@
       text-underline-offset: 2px;
       transition: color var(--duration-snap, 120ms) var(--ease-toss, ease-out);
     }
-    .chan-retry:hover { color: var(--pink-600, #c8507a); }
+    .chan-retry:hover { color: var(--pink-600, var(--pink-500)); }
     .chan-retry:active { transform: scale(0.97); }
     @media (prefers-reduced-motion: reduce) {
       .chan-retry, .chan-retry:active { transform: none; transition: none; }
@@ -249,8 +249,8 @@
         color var(--duration-snap) var(--ease-toss),
         transform var(--duration-snap) var(--ease-toss);
     }
-    .res__cancel:hover { border-color: #c8507a; color: #c8507a; }
-    .res__cancel:focus-visible { outline: 2px solid #c8507a; outline-offset: 2px; }
+    .res__cancel:hover { border-color: var(--pink-500); color: var(--pink-500); }
+    .res__cancel:focus-visible { outline: 2px solid var(--pink-500); outline-offset: 2px; }
     .res__cancel:active { transform: scale(0.95); }
 
     /* 선택 삭제 / 모두 삭제 — 탭 상단 우측 */
@@ -275,17 +275,17 @@
         color var(--duration-snap) var(--ease-toss),
         transform var(--duration-snap) var(--ease-toss);
     }
-    .tab-tools__bulk:hover { border-color: #c8507a; color: #c8507a; }
-    .tab-tools__bulk:focus-visible { outline: 2px solid #c8507a; outline-offset: 2px; }
+    .tab-tools__bulk:hover { border-color: var(--pink-500); color: var(--pink-500); }
+    .tab-tools__bulk:focus-visible { outline: 2px solid var(--pink-500); outline-offset: 2px; }
     .tab-tools__bulk:active { transform: scale(0.97); }
     .tab-tools__bulk[disabled] { opacity: 0.4; pointer-events: none; }
     /* 선택 모드 confirm 버튼 — 활성 시 다크 색 강조 */
     [data-select-confirm]:not([disabled]) {
       background: var(--ink, #1a1a1a);
-      color: #fff;
+      color: var(--neutral-0);
       border-color: var(--ink, #1a1a1a);
     }
-    [data-select-confirm]:not([disabled]):hover { background: var(--ink-soft, #333); color: #fff; }
+    [data-select-confirm]:not([disabled]):hover { background: var(--ink-soft, #333); color: var(--neutral-0); }
 
     /* 선택 모드 — 카드 좌측 세로 가운데에 큰 체크 원 (사장님 피드백: 흐림 → 더 명확하게) */
     .res__check {
@@ -295,7 +295,7 @@
       width: 30px; height: 30px;
       border-radius: 50%;
       border: 2px solid var(--line-strong, rgba(0,0,0,0.25));
-      background: #fff;
+      background: var(--neutral-0);
       box-shadow: 0 1px 4px rgba(0,0,0,0.08);
       display: none; align-items: center; justify-content: center;
       pointer-events: none;
@@ -307,14 +307,14 @@
     }
     .res__check::after {
       content: '✓';
-      font-size: 16px; font-weight: 800; color: #fff; line-height: 1;
+      font-size: 16px; font-weight: 800; color: var(--neutral-0); line-height: 1;
       opacity: 0; transform: scale(0.6);
       transition: opacity var(--duration-snap) var(--ease-toss),
                   transform var(--duration-snap) var(--ease-toss);
     }
     .res.is-checked .res__check {
-      background: #c8507a;
-      border-color: #c8507a;
+      background: var(--pink-500);
+      border-color: var(--pink-500);
       box-shadow: 0 2px 8px rgba(200, 80, 122, 0.35);
     }
     .res.is-checked .res__check::after { opacity: 1; transform: scale(1); }
@@ -340,7 +340,7 @@
     /* 삭제 확인 모달 (회원탈퇴 패턴과 동일 — 텍스트 입력 검증) */
     .del-modal {
       position: fixed; inset: 0;
-      background: rgba(0,0,0,0.5);
+      background: var(--overlay-dim);
       display: flex; align-items: center; justify-content: center;
       padding: var(--space-4);
       z-index: var(--z-modal);
@@ -382,12 +382,12 @@
     .del-modal__btn:hover { background: var(--bg-soft); }
     .del-modal__btn:active { transform: scale(0.97); }
     .del-modal__btn--danger {
-      background: #c8507a; border-color: #c8507a; color: #fff;
+      background: var(--pink-500); border-color: var(--pink-500); color: var(--neutral-0);
     }
-    .del-modal__btn--danger:hover { background: #b8456c; }
+    .del-modal__btn--danger:hover { background: var(--pink-600); }
     .del-modal__btn--danger[disabled] { opacity: 0.4; pointer-events: none; }
     .del-modal__btn--primary {
-      background: var(--ink, #1a1a1a); border-color: var(--ink, #1a1a1a); color: #fff;
+      background: var(--ink, #1a1a1a); border-color: var(--ink, #1a1a1a); color: var(--neutral-0);
     }
     .del-modal__btn--primary:hover { background: var(--ink-soft, #333); }
     .del-modal__btn--primary[disabled] { opacity: 0.4; pointer-events: none; }
@@ -405,22 +405,22 @@
     .del-modal__media-opt input[type="checkbox"] {
       width: 18px; height: 18px;
       margin-top: 2px;
-      accent-color: #c8507a;
+      accent-color: var(--pink-500);
       flex-shrink: 0;
     }
     .del-modal__media-opt strong { font-weight: var(--weight-semibold, 600); }
     .del-modal__media-warn { font-size: var(--text-caption); color: var(--ink-muted); }
     /* danger 강조 — 체크 ON 일 때 confirm 버튼 라벨 동적 */
     .del-modal.is-media-checked .del-modal__media-opt {
-      background: #fef2f2;
+      background: var(--status-error-bg);
       box-shadow: 0 0 0 1px #fca5a5 inset;
     }
-    .del-modal.is-media-checked .del-modal__media-warn { color: #b91c1c; font-weight: 600; }
+    .del-modal.is-media-checked .del-modal__media-warn { color: var(--chan-fail-fg); font-weight: 600; }
 
     /* insight modal — chip 클릭 시 게시별 인사이트 노출. del-modal 패턴 모방. */
     .insight-modal {
       position: fixed; inset: 0;
-      background: rgba(0,0,0,0.5);
+      background: var(--overlay-dim);
       display: flex; align-items: center; justify-content: center;
       padding: var(--space-4);
       z-index: var(--z-modal);
@@ -483,7 +483,7 @@
     }
     .insight-modal__tab.is-active {
       color: var(--ink, #1a1a1a);
-      border-bottom-color: var(--pink-600, #c8507a);
+      border-bottom-color: var(--pink-600, var(--pink-500));
     }
     .insight-modal__tab:hover { color: var(--ink, #1a1a1a); }
     @media (prefers-reduced-motion: reduce) {
@@ -509,7 +509,7 @@
       border: 0;
       border-radius: var(--radius-pill);
       background: var(--ink, #1a1a1a);
-      color: #fff;
+      color: var(--neutral-0);
       font-family: inherit;
       font-size: 14px; font-weight: var(--weight-semibold, 600);
       cursor: pointer;
@@ -652,11 +652,11 @@
     }
     /* 선택 후 — 스프링 한 번, 회전 없음. 그림자 ring 이 부드럽게 퍼짐 */
     .rate-btn.is-active--like {
-      background: #e8f5ee; border-color: #00713c;
+      background: var(--status-success-bg); border-color: var(--status-success-fg);
       animation: rate-confirm-like 720ms cubic-bezier(0.34, 1.56, 0.64, 1);
     }
     .rate-btn.is-active--dislike {
-      background: #fde8e8; border-color: #b8221c;
+      background: var(--status-error-bg); border-color: var(--status-error-fg);
       animation: rate-confirm-dislike 720ms cubic-bezier(0.34, 1.56, 0.64, 1);
     }
     @keyframes rate-confirm-like {
