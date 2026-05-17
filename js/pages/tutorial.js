@@ -114,6 +114,10 @@
         tt.querySelector('[data-tour-next]').addEventListener('click', () => {
           if (isLast) {
             closeTour();
+            // 사장님 결정 2026-05-17: tour 6단계 (마지막 "시작! ▶") 클릭 시 항상 페이지 최상단으로.
+            // 사진 선택됨 → goTo(3) 가 scrollTo(0) 처리 / 안 선택 → submit disabled 라 click 무시되니
+            // 여기서 명시적 scrollTo(0) — 사장님이 처음부터 다시 확인할 수 있게.
+            window.scrollTo({ top: 0, behavior: 'instant' });
             const submit = document.querySelector('[data-submit-upload]');
             if (submit && !submit.disabled) submit.click();
           } else {
