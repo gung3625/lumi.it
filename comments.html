@@ -18,6 +18,7 @@
 
   <link rel="stylesheet" href="/css/tokens.css">
   <link rel="stylesheet" href="/css/base.css">
+  <script src="/js/prod-log.js"></script>
   <script data-scroll-top-on-reload>if("scrollRestoration" in history)history.scrollRestoration="manual";window.scrollTo(0,0);window.addEventListener("DOMContentLoaded",function(){window.scrollTo(0,0)});</script>
   <link rel="stylesheet" href="/css/motion.css">
   <link rel="stylesheet" href="/css/tabbar.css">
@@ -360,6 +361,23 @@
     }
 
     .state { padding: var(--space-12); text-align: center; color: var(--ink-muted); }
+    .state-retry {
+      display: inline-block;
+      margin-left: var(--space-2);
+      padding: 4px 12px;
+      background: var(--bg);
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-pill);
+      color: var(--pink-700);
+      font-size: var(--text-caption);
+      font-weight: var(--weight-semibold);
+      cursor: pointer;
+      transition: transform var(--duration-snap) var(--ease-toss), background var(--duration-snap) var(--ease-soft);
+    }
+    .state-retry:active { transform: scale(0.96); }
+    @media (hover: hover) {
+      .state-retry:hover { background: var(--pink-50); border-color: var(--pink-500); }
+    }
   </style>
 </head>
 <body>
@@ -463,6 +481,15 @@
       const emptySub = document.querySelector('[data-empty-sub]');
       const emptyCta = document.querySelector('[data-empty-cta]');
 
+      // network-error retry — stateEl 안 [data-state-retry] 버튼 클릭 시 load() 재시도 (audit #9)
+      if (stateEl) {
+        stateEl.addEventListener('click', (e) => {
+          if (!e.target.closest('[data-state-retry]')) return;
+          stateEl.textContent = '댓글을 가져오는 중…';
+          load();
+        });
+      }
+
       function fmtTime(iso) {
         if (!iso) return '';
         try {
@@ -491,7 +518,7 @@
           const url = '/api/comments?limit=50' + (forceRefresh ? '&refresh=1' : '');
           const res = await fetch(url, { headers: authHeaders });
           if (!res.ok) {
-            stateEl.textContent = '댓글을 가져오지 못했어요.';
+            stateEl.innerHTML = '댓글을 가져오지 못했어요. <button type="button" class="state-retry" data-state-retry>다시 시도</button>';
             return;
           }
           const json = await res.json();
