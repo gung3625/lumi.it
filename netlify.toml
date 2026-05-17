@@ -1,6 +1,8 @@
 [build]
   publish = "."
-  command = "npm install"
+  # audit 후속 2026-05-17: deploy 직전 esbuild 로 js/css minify (in-place).
+  # Netlify 의 build.processing.js/css.minify 가 효과 없어서 자체 build script.
+  command = "npm install && npm run build"
 
 # PR branch / 일반 branch push 의 deploy preview·branch deploy 빌드 스킵.
 # Netlify free/starter 플랜의 동시 build limit (=1) 이라 PR 머지 시점에
