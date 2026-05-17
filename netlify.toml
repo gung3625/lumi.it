@@ -152,19 +152,22 @@
 
 
 # 포스트 프로세싱 비활성화 (이메일 난독화 등 JS 삽입 방지)
+# audit 후속 2026-05-17: skip_processing → false + css/js minify 활성화.
+# 사장님 카페 모바일 첫 페인트 latency 개선 — gzip 위에 minify 추가 (총 20-30% 감소 기대).
+# bundle = false 유지 — page 별 분리 (코드 변경 시 영향 페이지만 재배포).
 [build.processing]
-  skip_processing = true
+  skip_processing = false
 
 [build.processing.html]
   pretty_urls = true
 
 [build.processing.css]
   bundle = false
-  minify = false
+  minify = true
 
 [build.processing.js]
   bundle = false
-  minify = false
+  minify = true
 
 [build.processing.images]
   compress = false
