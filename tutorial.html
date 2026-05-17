@@ -2379,9 +2379,76 @@
         'cafe-9': { subject: '디저트 플레이팅 · 정성',  mood: '정성 · 솜씨',         time: '오후 · 실내조명', color: '파스텔 · 흰색',  tone: '정성·고요 톤으로 갈게요' },
       };
 
-      // 사장님 결정 (HANDOFF Phase D): "캡션 다양화는 일단 미루고 카페 톤 1개 고정"
-      const CAPTION =
-        '오늘도 천천히 흘러가는 시간을 한 잔에 담아봤어요.\n\n#카페 #라떼아트 #오늘의한잔 #카페일상';
+      // 사장님 결정 2026-05-17 (재정정): 9장 중 어떤 조합을 선택하든 그에 맞는 정성 캡션.
+      // 단일 사진 → 9개 hand-crafted / 같은 카테고리 다중 → 묶음 캡션 / 혼합 → 종합 캡션 /
+      // 메모 입력 시 첫 줄로 결합 / 해시태그 union (12개 cap).
+      const PHOTO_CAPTIONS = {
+        'cafe-1': { category: 'drink',
+          text: '오늘 첫 잔, 결을 따라 천천히 그려봤어요.\n한 모금에 마음까지 따뜻해지는 시간.\n오전의 자리, 늘 비워두고 기다릴게요.',
+          tags: ['#카페', '#라떼아트', '#오늘의한잔', '#카페일상', '#원두향', '#스페셜티커피'] },
+        'cafe-2': { category: 'dessert',
+          text: '한 조각에 잠깐 멈춰가는 오후.\n달콤한 한입이 오늘을 위로해 드릴 거예요.\n사진보다 더 폭신한 결, 직접 와서 잘라보세요.',
+          tags: ['#카페', '#케이크', '#디저트카페', '#달콤한오후', '#케이크맛집'] },
+        'cafe-3': { category: 'dessert',
+          text: '오늘의 마카롱, 색이 더 곱게 나왔어요.\n한 알씩 골라 담는 재미가 작은 행복이에요.\n티 한 잔이랑 같이 즐기시면 더 좋아요.',
+          tags: ['#카페', '#마카롱', '#디저트맛집', '#파스텔', '#마카롱맛집'] },
+        'cafe-4': { category: 'dessert',
+          text: '갓 구운 크로플, 결 사이로 바삭한 소리가 들려요.\n달콤한 한 조각에 오늘 아침이 환해져요.\n크림 듬뿍 올려서 따뜻할 때 드세요.',
+          tags: ['#카페', '#크로플', '#브런치카페', '#모닝카페', '#크로플맛집'] },
+        'cafe-5': { category: 'meal',
+          text: '점심에는 한 그릇으로 든든하게.\n면 한 가닥마다 정성껏 비빈 우리 집 파스타예요.\n오늘의 한 끼, 천천히 즐기다 가세요.',
+          tags: ['#카페', '#파스타', '#점심맛집', '#브런치', '#파스타맛집', '#식사카페'] },
+        'cafe-6': { category: 'meal',
+          text: '오늘 아침에 받은 채소, 그대로 담아냈어요.\n가벼운 한 그릇이 몸을 깨워줘요.\n건강 챙기는 분들께 추천드려요.',
+          tags: ['#카페', '#샐러드', '#건강한식사', '#브런치카페', '#샐러드맛집', '#신선한채소'] },
+        'cafe-7': { category: 'bakery',
+          text: '이른 아침부터 구워낸 오늘의 빵이에요.\n한 입 베어 물면 정성이 느껴지실 거예요.\n따끈할 때 만나러 들러주세요.',
+          tags: ['#카페', '#빵', '#베이커리', '#수제빵', '#빵맛집'] },
+        'cafe-8': { category: 'drink',
+          text: '한 잔에 과일 한가득, 오늘의 산뜻한 한 모금.\n색만 봐도 기분이 살아나죠.\n오후의 텁텁함은 이걸로 깨워보세요.',
+          tags: ['#카페', '#스무디', '#건강음료', '#스무디맛집', '#여름음료'] },
+        'cafe-9': { category: 'dessert',
+          text: '한 접시에 담은 오늘의 작은 순간들.\n보기에도 예쁘고 맛도 정성이에요.\n사진 한 장으로 남겨가셔도 좋아요.',
+          tags: ['#카페', '#디저트', '#플레이팅', '#감성카페', '#디저트맛집', '#카페추천'] },
+      };
+      const CATEGORY_MULTI = {
+        drink: {
+          text: '오늘의 한 잔, 골라 드시는 재미.\n따끈한 라떼부터 산뜻한 스무디까지\n원하시는 잔으로 채워드릴게요.',
+          tags: ['#카페', '#카페음료', '#오늘의한잔', '#커피', '#스무디', '#카페추천'] },
+        dessert: {
+          text: '오늘은 디저트 한 트레이로.\n조각마다 다른 단맛, 골라 드시는 즐거움이에요.\n티 한 잔이랑 함께 천천히 즐기세요.',
+          tags: ['#카페', '#디저트', '#디저트맛집', '#디저트카페', '#디저트모음', '#감성카페'] },
+        meal: {
+          text: '오늘 한 끼, 가볍게도 든든하게도.\n파스타로 속을 채우고 샐러드로 마무리.\n점심부터 저녁까지 편하게 들러주세요.',
+          tags: ['#카페', '#점심맛집', '#브런치', '#한끼', '#파스타', '#샐러드'] },
+        bakery: {
+          text: '오늘 구운 빵을 한 자리에 모았어요.\n결마다 다른 향이 가게에 가득해요.\n따끈할 때 골라가시면 더 좋아요.',
+          tags: ['#카페', '#빵', '#베이커리', '#수제빵', '#빵맛집', '#베이커리카페'] },
+        mixed: {
+          text: '오늘은 한 자리에서 다양하게.\n음료부터 디저트, 한 끼까지 골고루 준비했어요.\n천천히 둘러보시고 마음에 드는 메뉴 찾아보세요.',
+          tags: ['#카페', '#카페추천', '#카페일상', '#감성카페', '#카페투어', '#오늘의카페'] },
+      };
+      function buildTutorialCaption(photoIds, memo) {
+        const memoLine = (memo && memo.trim()) ? memo.trim() + '\n\n' : '';
+        if (photoIds.length === 1) {
+          const c = PHOTO_CAPTIONS[photoIds[0]] || PHOTO_CAPTIONS['cafe-1'];
+          return memoLine + c.text + '\n\n' + c.tags.join(' ');
+        }
+        const cats = new Set(photoIds.map(id => PHOTO_CAPTIONS[id]?.category).filter(Boolean));
+        let groupText, baseTags;
+        if (cats.size === 1) {
+          const grp = CATEGORY_MULTI[[...cats][0]] || CATEGORY_MULTI.mixed;
+          groupText = grp.text; baseTags = grp.tags;
+        } else {
+          groupText = CATEGORY_MULTI.mixed.text; baseTags = CATEGORY_MULTI.mixed.tags;
+        }
+        const tagSet = new Set(baseTags);
+        // 혼합이면 사진별 첫 3개 tag만, 같은 카테고리면 전부 union (12 cap)
+        const perPhotoSlice = cats.size === 1 ? 99 : 3;
+        photoIds.forEach(id => PHOTO_CAPTIONS[id]?.tags?.slice(0, perPhotoSlice).forEach(t => tagSet.add(t)));
+        const tags = Array.from(tagSet).slice(0, 12);
+        return memoLine + groupText + '\n\n' + tags.join(' ');
+      }
       let typewriterTimer;
 
       function typewrite(text, target) {
@@ -2508,12 +2575,19 @@
           if (next3) next3.disabled = true;
           if (captionEl) captionEl.textContent = '';
 
+          // 사장님 결정 2026-05-17: 선택 사진 + 메모 기반 정성 캡션 (튜토리얼이라도 production-grade).
+          const memoText = (document.querySelector('#tutorial-memo')?.value || '').trim();
+          const tutorialCaption = buildTutorialCaption(photos, memoText);
+
           // progress-overlay 시퀀스 (~3.7s) 끝나면 typewriter 시작.
           // 사장님 디바이스에서 마스코트 + 단계별 체크가 실제 register-product 와 동일하게 보이도록.
           const overlay = document.querySelector('[data-tutorial-progress]');
           runProgressSequence(overlay, () => {
-            if (captionEl) typewrite(CAPTION, captionEl);
+            if (captionEl) typewrite(tutorialCaption, captionEl);
           });
+          // step 4 (결과 카드) 의 res__caption 도 같은 캡션. step 4 진입 시 다시 set 안 하면
+          // 옛 hard-coded 라떼 카피 그대로. step 3 시점에 미리 prepare → step 4 진입 시 적용.
+          window.__lumiTutorialCaption = tutorialCaption;
         });
       }
 
@@ -2530,6 +2604,13 @@
             document.querySelector('[data-result-dots]'),
             photos,
           );
+
+          // 결과 카드의 res__caption — step 3 에서 생성한 동일 캡션으로 교체
+          // (옛 hard-coded "오늘도 천천히 흘러가는 시간을 한 잔에..." 라떼 카피 차단).
+          const resCaption = document.querySelector('.result-step .res__caption');
+          if (resCaption && window.__lumiTutorialCaption) {
+            resCaption.textContent = window.__lumiTutorialCaption;
+          }
 
           // 카운트 업 (진입 후 잠시 뒤)
           setTimeout(() => {
