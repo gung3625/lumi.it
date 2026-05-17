@@ -79,3 +79,108 @@ h1, h2, h3, h4, h5, h6, p {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* === utility class — audit #1 후속: inline style="" 제거용 (CSP style-src 'unsafe-inline' 제거 준비) === */
+
+/* 화면엔 안 보이지만 screen reader 가 읽는 텍스트 (h2 section title 등) */
+.u-sr-only {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* footer 안 메일/전화 링크 — 부모 색 그대로 (legal-style 페이지 공통) */
+.u-link-inherit { color: inherit; }
+
+/* legal 페이지 (privacy/refund/support) 안내 박스 */
+.u-info-box {
+  background: var(--bg-soft);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: var(--text-caption);
+}
+
+/* legal 페이지 끝 footer (signature + 연락처) */
+.u-legal-footer {
+  margin-top: var(--space-12);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--text-caption);
+  color: var(--ink-muted);
+}
+
+/* "다른 문서 보기 →" 류 link 한 줄 — 가운데 정렬, 위 여유 */
+.u-link-row { margin-top: var(--space-6); text-align: center; }
+.u-link-pink { color: var(--pink-500); text-decoration: none; }
+
+/* vertical stack — 작은 영역 (settings 의 action button 묶음 등) */
+.u-stack-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* small caption label (settings modal 안 "대분류" 같은) */
+.u-caption-label {
+  font-size: var(--text-caption);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-soft);
+  margin-bottom: var(--space-2);
+}
+
+/* signup.html 의 보조 안내 — muted hint */
+.u-hint-muted {
+  margin-top: var(--space-2);
+  font-size: var(--text-caption);
+  color: var(--ink-muted);
+}
+
+/* 텍스트 색만 muted */
+.u-text-muted { color: var(--ink-muted); }
+
+/* 링크 plain — 부모 색 + 밑줄 제거 */
+.u-link-plain { text-decoration: none; color: inherit; }
+
+/* 2-column grid (settings region row 등) */
+.u-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+/* small hint — caption 크기 + muted + 살짝 margin */
+.u-hint-small {
+  font-size: var(--text-caption);
+  color: var(--ink-muted);
+  margin-top: 4px;
+}
+
+/* dashboard 의 scheduled-card thumb default — signature gradient 폴백 */
+.u-thumb-signature {
+  background: var(--gradient-signature);
+}
+
+/* animation-delay 기반 stagger — style="--idx:N" 제거용 (audit #1 후속).
+   기존: index/tutorial 의 bento/feature/gallery cards 가 style 로 --idx 주입 → CSP 차단.
+   새: class 로 --idx 정의. 0~15 까지 cover (lumi 사용 최대 8). */
+.u-idx-0  { --idx: 0; }
+.u-idx-1  { --idx: 1; }
+.u-idx-2  { --idx: 2; }
+.u-idx-3  { --idx: 3; }
+.u-idx-4  { --idx: 4; }
+.u-idx-5  { --idx: 5; }
+.u-idx-6  { --idx: 6; }
+.u-idx-7  { --idx: 7; }
+.u-idx-8  { --idx: 8; }
+.u-idx-9  { --idx: 9; }
+.u-idx-10 { --idx: 10; }
+.u-idx-11 { --idx: 11; }
+.u-idx-12 { --idx: 12; }
+.u-idx-13 { --idx: 13; }
+.u-idx-14 { --idx: 14; }
+.u-idx-15 { --idx: 15; }
