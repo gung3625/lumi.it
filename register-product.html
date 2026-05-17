@@ -312,6 +312,15 @@
     }
     .schedule-best-result:active { transform: scale(0.99); }
     .schedule-best-result:disabled { opacity: 0.7; cursor: progress; }
+    /* seed 모드 (업종 평균) — personal 보다 살짝 톤다운으로 시각 구분 */
+    .schedule-best-result.is-seed {
+      background: var(--pink-50);
+      color: var(--ink);
+      box-shadow: none;
+      border: 1px solid var(--pink-300);
+    }
+    .schedule-best-result.is-seed .schedule-best-result__title { color: var(--pink-700); }
+    .schedule-best-result.is-seed .schedule-best-result__sub { color: var(--ink-muted); }
     .schedule-best-result__title {
       display: block;
       font-size: var(--text-body);
@@ -1244,7 +1253,7 @@
         if (!scheduleBestEl) return;
         scheduleBestEl.disabled = true;
         if (bestResultTitle) bestResultTitle.textContent = '베스트 시간 가져오는 중…';
-        if (bestResultSub) bestResultSub.textContent = '사장님 업종 기반 자동 계산';
+        if (bestResultSub) bestResultSub.textContent = '사장님 데이터 기준 자동 계산';
         try {
           const res = await fetch('/api/get-best-time', {
             method: 'POST',
@@ -1262,7 +1271,8 @@
           const target = new Date(now);
           target.setHours(h, m, 0, 0);
           // 지금에서 5분 이내면 너무 임박 → 내일 같은 시간
-          if (target.getTime() <= now.getTime() + 5 * 60 * 1000) {
+          const targetSameDay = (target.getTime() > now.getTime() + 5 * 60 * 1000);
+          if (!targetSameDay) {
             target.setDate(target.getDate() + 1);
           }
           // 예약 범위 max 보호 (한 달)
@@ -1270,12 +1280,30 @@
           if (target.getTime() > max.getTime()) target.setTime(max.getTime());
 
           scheduleAtEl.value = toLocalDtIso(target);
+
+          // 사장님 결정 2026-05-17: dashboard 의 베스트 시간 카드와 일관 안내.
+          // modes.weekday/weekend = 'personal' (내 데이터) | 'seed' (업종 평균).
+          // 사용자 데이터 쌓인 사람과 안 쌓인 사람 다르게 안내 — dashboard wording 일관.
+          // 예약된 target 의 요일 기준 (오늘 못 잡고 내일 잡으면 내일 요일).
+          const tDay = target.getDay();
+          const tIsWeekend = (tDay === 0 || tDay === 6);
+          const modes = (data && data.modes) || {};
+          const tMode = tIsWeekend ? modes.weekend : modes.weekday;
+          const isPersonal = tMode === 'personal';
+
           const sameDay = target.toDateString() === now.toDateString();
           const dayLabel = sameDay ? '오늘' : '내일';
           const hh = String(target.getHours()).padStart(2, '0');
           const mmStr = String(target.getMinutes()).padStart(2, '0');
           if (bestResultTitle) bestResultTitle.textContent = `⏰ ${dayLabel} ${hh}:${mmStr} 자동 예약`;
-          if (bestResultSub) bestResultSub.textContent = '사장님 업종 베스트 시간 — 다시 누르면 갱신';
+          if (bestResultSub) {
+            bestResultSub.textContent = isPersonal
+              ? '내 팔로워 활동 시간 기반 · 다시 누르면 갱신'
+              : '업종 평균 기준 · 데이터 모이면 더 정확해져요 · 다시 누르면 갱신';
+          }
+          // banner 색 — personal 은 시그니처 핑크 유지, seed 는 살짝 톤다운으로 구분
+          scheduleBestEl.classList.toggle('is-seed', !isPersonal);
+
           toast(`${dayLabel} ${hh}:${mmStr} 으로 예약했어요`);
         } catch (e) {
           console.error('[best-time] 실패:', e && e.message);
