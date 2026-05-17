@@ -15,6 +15,54 @@
 
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { corsHeaders, getOrigin } = require('./_shared/auth');
+const { Resend } = require('resend');
+
+const NOTIFY_TO = 'lumi@lumi.it.kr';
+const NOTIFY_FROM = 'lumi <noreply@lumi.it.kr>';
+
+function htmlEscape(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+async function notifyByEmail({ storeName, ownerName, category, phone, instagram, ip, userAgent, createdAt }) {
+  if (!process.env.RESEND_API_KEY) return { skipped: true };
+  const resend = new Resend(process.env.RESEND_API_KEY);
+  const e = htmlEscape;
+  const igCell = instagram
+    ? `<a href="https://instagram.com/${e(instagram)}" style="color:#C8507A;text-decoration:none;">@${e(instagram)}</a>`
+    : `<span style="color:#888;">(없음)</span>`;
+  const html = `
+    <div style="font-family:-apple-system,'Pretendard',sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#1d1d1f;">
+      <h1 style="font-size:20px;font-weight:800;margin:0 0 16px;">새 베타 신청자 — ${e(storeName)}</h1>
+      <p style="color:#6e6e73;margin:0 0 20px;font-size:14px;">lumi.it.kr/beta 폼 신청.</p>
+      <table style="width:100%;border-collapse:collapse;font-size:14px;">
+        <tr><td style="padding:8px 0;width:90px;color:#6e6e73;"><strong>매장 이름</strong></td><td style="padding:8px 0;">${e(storeName)}</td></tr>
+        <tr><td style="padding:8px 0;color:#6e6e73;"><strong>대표자</strong></td><td style="padding:8px 0;">${e(ownerName)}</td></tr>
+        <tr><td style="padding:8px 0;color:#6e6e73;"><strong>카테고리</strong></td><td style="padding:8px 0;">${e(category)}</td></tr>
+        <tr><td style="padding:8px 0;color:#6e6e73;"><strong>휴대폰</strong></td><td style="padding:8px 0;"><a href="tel:${e(phone)}" style="color:#C8507A;text-decoration:none;">${e(phone)}</a></td></tr>
+        <tr><td style="padding:8px 0;color:#6e6e73;"><strong>인스타</strong></td><td style="padding:8px 0;">${igCell}</td></tr>
+        <tr><td style="padding:8px 0;color:#6e6e73;"><strong>신청 시각</strong></td><td style="padding:8px 0;">${e(createdAt)}</td></tr>
+        <tr><td style="padding:8px 0;color:#6e6e73;"><strong>IP</strong></td><td style="padding:8px 0;color:#6e6e73;font-size:12px;">${e(ip || '-')}</td></tr>
+      </table>
+      <hr style="border:none;border-top:1px solid #e5e5e4;margin:24px 0;">
+      <p style="font-size:13px;color:#6e6e73;margin:0;">
+        Supabase 콘솔: <a href="https://supabase.com/dashboard/project/cldsozdocxpvkbuxwqep/editor" style="color:#C8507A;">beta_signups 보기</a>
+      </p>
+    </div>
+  `;
+  return resend.emails.send({
+    from: NOTIFY_FROM,
+    to: [NOTIFY_TO],
+    subject: `[lumi] 베타 신청 — ${storeName} (${ownerName})`,
+    html,
+    replyTo: NOTIFY_TO,
+  });
+}
 
 const MAX = { name: 80, phone: 20, category: 40, instagram: 40 };
 const PHONE_RE = /^01[016789]-?\d{3,4}-?\d{4}$/;
@@ -99,6 +147,19 @@ exports.handler = async (event) => {
       console.error('[beta-signup] insert 실패:', error.message);
       return { statusCode: 500, headers, body: JSON.stringify({ ok: false, error: '저장에 실패했어요. 잠시 후 다시 시도해주세요.' }) };
     }
+
+    // insert 성공 — lumi@lumi.it.kr 으로 알림 이메일.
+    // 이메일 실패해도 사용자에게는 성공 응답 (DB 저장은 됐으니 사장님이 콘솔에서도 볼 수 있음).
+    try {
+      await notifyByEmail({
+        storeName, ownerName, category, phone: normalized, instagram,
+        ip, userAgent: (event.headers && event.headers['user-agent']) || '',
+        createdAt: new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC',
+      });
+    } catch (e) {
+      console.error('[beta-signup] 이메일 알림 실패:', e && e.message);
+    }
+
     return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };
   } catch (e) {
     console.error('[beta-signup] 예외:', e && e.message);
