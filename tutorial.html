@@ -378,6 +378,18 @@
     [data-submit-upload] {
       scroll-margin-top: 130px;
     }
+    /* 작은 화면 (iPhone SE 등 max-height 700px) — scroll-margin 60px 축소 (audit #14)
+       URL bar 영역 빼면 사용 가능 영역 작음, 130px margin 이 cutout 을 fold 아래로 밀어버림. */
+    @media (max-height: 700px) {
+      .media-tabs,
+      .upload-dropzone[data-open-gallery],
+      .upload-field:has(#tutorial-memo),
+      .upload-field:has(.upload-schedule),
+      [data-tour-option],
+      [data-submit-upload] {
+        scroll-margin-top: 60px;
+      }
+    }
     .tour-tooltip {
       position: fixed;
       max-width: min(86vw, 320px);

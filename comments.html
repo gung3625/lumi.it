@@ -167,11 +167,17 @@
       from { opacity: 0; transform: translateY(6px); }
       to   { opacity: 1; transform: translateY(0); }
     }
-    .comment:nth-child(1) { animation-delay: 0ms; }
-    .comment:nth-child(2) { animation-delay: 60ms; }
-    .comment:nth-child(3) { animation-delay: 120ms; }
-    .comment:nth-child(4) { animation-delay: 180ms; }
-    .comment:nth-child(5) { animation-delay: 240ms; }
+    /* 댓글 stagger — 5개 cap 대신 nth-child(n) 공식으로 무제한 (audit #11).
+       6번째 이상 cap (delay 300ms+) — 너무 느린 진입감 차단. */
+    .comment {
+      animation-delay: calc(60ms * (var(--idx, 0) % 6));
+    }
+    .comment:nth-child(1) { --idx: 0; }
+    .comment:nth-child(2) { --idx: 1; }
+    .comment:nth-child(3) { --idx: 2; }
+    .comment:nth-child(4) { --idx: 3; }
+    .comment:nth-child(5) { --idx: 4; }
+    .comment:nth-child(n+6) { --idx: 5; }
     @media (hover: hover) {
       .comment:hover { border-color: var(--pink-200, #f7c5d3); box-shadow: var(--shadow-sm); }
     }
