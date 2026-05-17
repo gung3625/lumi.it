@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#ffffff">
   <meta name="robots" content="noindex,nofollow">
-  <meta name="description" content="루미(lumi) — 사진 올리기">
-  <title>사진 올리기 · 루미(lumi)</title>
+  <meta name="description" content="루미(lumi) — 사진·영상 올리기">
+  <title>사진·영상 올리기 · 루미(lumi)</title>
 
   <link rel="icon" type="image/png" href="/assets/favicon.png">
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
@@ -395,6 +395,23 @@
       50%      { transform: scale(1.03); }
     }
 
+    /* submit spinner — is-loading 상태 시 사장님 시각 피드백 (audit #15) */
+    @keyframes cta-spin { to { transform: rotate(360deg); } }
+    .cta.is-loading::after {
+      content: '';
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      margin-left: 8px;
+      border: 2px solid rgba(255, 255, 255, 0.35);
+      border-top-color: var(--neutral-0);
+      border-radius: 50%;
+      animation: cta-spin 600ms linear infinite;
+      vertical-align: -2px;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .cta.is-loading::after { animation: none; }
+    }
     .cta {
       width: 100%;
       padding: var(--space-4);
@@ -566,7 +583,7 @@
         <path d="M15 18l-6-6 6-6"/>
       </svg>
     </a>
-    <h1 class="topbar__title">사진 올리기</h1>
+    <h1 class="topbar__title">사진·영상 올리기</h1>
     <button class="topbar__logout" type="button" data-logout aria-label="로그아웃">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
@@ -765,7 +782,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12l-4-4-4 4-6-6-6 6"/><path d="M22 12v6H2"/></svg>
       트렌드
     </a>
-    <a class="tab-add" href="/register-product" aria-label="사진 올리기" aria-current="page">
+    <a class="tab-add" href="/register-product" aria-label="사진·영상 올리기" aria-current="page">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
     </a>
     <a class="tab" href="/history">
@@ -1573,7 +1590,7 @@
       async function submitVideo() {
         isSubmitting = true;
         submitBtn.disabled = true;
-        submitBtn.textContent = '준비 중…';
+        submitBtn.textContent = '준비 중…'; submitBtn.classList.add('is-loading');
         showOverlay(true);
         setOverlayCopy('영상 업로드 중', '서버로 보내고 있어요. 잠시만 기다려주세요.');
         activateUpTo('upload');
@@ -1691,7 +1708,7 @@
           toast(err.message || '게시에 실패했어요', 3500);
           isSubmitting = false;
           submitBtn.disabled = false;
-          submitBtn.textContent = '📷 캡션 만들고 게시';
+          submitBtn.textContent = '📷 캡션 만들고 게시'; submitBtn.classList.remove('is-loading');
           // 5초 후 히스토리로 강제 이동 — register-product 페이지에 stuck 되어 무한 로딩으로
           // 보이는 케이스 방어 (사장님 보고 2026-05-15). 사장님이 결과 확인 + 재시도 시 진입 가능.
           setTimeout(() => { if (!isSubmitting) location.href = '/history?tab=past'; }, 5000);
@@ -1727,7 +1744,7 @@
         }
         isSubmitting = true;
         submitBtn.disabled = true;
-        submitBtn.textContent = '준비 중…';
+        submitBtn.textContent = '준비 중…'; submitBtn.classList.add('is-loading');
         showOverlay(true);
         setOverlayCopy('사진 준비 중', '잠시만요, 압축 후 업로드를 시작할게요.');
         activateUpTo('upload');
@@ -1802,7 +1819,7 @@
           showOverlay(false);
           toast(e.message || '게시 실패');
           submitBtn.disabled = false;
-          submitBtn.textContent = '📷 캡션 만들고 게시';
+          submitBtn.textContent = '📷 캡션 만들고 게시'; submitBtn.classList.remove('is-loading');
           isSubmitting = false;
         }
       });

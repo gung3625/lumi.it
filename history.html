@@ -766,6 +766,25 @@
     }
 
     /* 하단 탭바 — /css/tabbar.css 참조 */
+
+    /* 사장님 친화적 toast — toast() 대체 (audit #5) */
+    .toast {
+      position: fixed;
+      left: 50%; bottom: 80px;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--ink); color: white;
+      padding: var(--space-3) var(--space-4);
+      border-radius: var(--radius-pill);
+      font-size: var(--text-body);
+      box-shadow: var(--shadow-lg);
+      opacity: 0; pointer-events: none;
+      transition: opacity var(--duration-base) var(--ease-soft), transform var(--duration-base) var(--ease-toss);
+      z-index: var(--z-modal);
+      max-width: min(86vw, 360px);
+      text-align: center;
+      line-height: var(--leading-snug);
+    }
+    .toast.is-open { opacity: 1; transform: translateX(-50%) translateY(0); }
   </style>
 </head>
 <body>
@@ -885,7 +904,7 @@
       </svg>
       트렌드
     </a>
-    <a class="tab-add" href="/register-product" aria-label="사진 올리기">
+    <a class="tab-add" href="/register-product" aria-label="사진·영상 올리기">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M12 5v14M5 12h14"/>
       </svg>
@@ -906,6 +925,8 @@
     </a>
   </nav>
 
+  <div class="toast" data-toast></div>
+
   <script>
     (function () {
       const token =
@@ -914,6 +935,17 @@
         localStorage.getItem('seller_jwt') || '';
       if (!token) { location.replace('/'); return; }
       const authHeaders = { Authorization: 'Bearer ' + token };
+
+      // 사장님 친화적 toast (audit #5 — toast() 대체)
+      const toastEl = document.querySelector('[data-toast]');
+      let toastTimer;
+      function toast(msg, ms) {
+        if (!toastEl) return;
+        toastEl.textContent = String(msg || '');
+        toastEl.classList.add('is-open');
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toastEl.classList.remove('is-open'), ms || 2200);
+      }
 
       // 로그아웃 — topbar [data-logout] (2026-05-16 사장님: 모든 탭에 로그아웃)
       document.querySelectorAll('[data-logout]').forEach(btn => {
@@ -1144,8 +1176,8 @@
           });
           const json = await res.json().catch(() => ({}));
           if (!res.ok || !json.ok) {
-            if (json.tokenExpired) alert(`${chLabel} 토큰이 만료됐어요. 설정에서 재연동해주세요.`);
-            else alert(json.error || '재시도 실패');
+            if (json.tokenExpired) toast(`${chLabel} 토큰이 만료됐어요. 설정에서 재연동해주세요.`);
+            else toast(json.error || '재시도 실패');
             return;
           }
           // _currentItems 갱신 + 탭 아이콘 / 콘텐츠 즉시 반영
@@ -1181,7 +1213,7 @@
             card.classList.add('is-clickable');
           }
         } catch (err) {
-          alert('네트워크 오류 — 다시 시도해주세요.');
+          toast('네트워크 오류 — 다시 시도해주세요.');
         }
       }
       // 탭 전환용 — openInsightModal/resetInsightModal 안 호출 (이미 열려있음)
@@ -1291,9 +1323,9 @@
           const json = await res.json().catch(() => ({}));
           if (!res.ok || !json.ok) {
             if (json.tokenExpired) {
-              alert(`${chLabel} 토큰이 만료됐어요. 설정에서 재연동해주세요.`);
+              toast(`${chLabel} 토큰이 만료됐어요. 설정에서 재연동해주세요.`);
             } else {
-              alert(json.error || '재시도 실패');
+              toast(json.error || '재시도 실패');
             }
             return;
           }
@@ -1316,7 +1348,7 @@
             linkEl.remove();
           }
         } catch (e) {
-          alert('네트워크 오류 — 다시 시도해주세요.');
+          toast('네트워크 오류 — 다시 시도해주세요.');
         }
       }
       document.addEventListener('click', (e) => {
@@ -1597,7 +1629,7 @@
 
             async function submit(comment) {
               if (!chosenRating) {
-                alert('먼저 👍 또는 👎 를 선택해주세요.');
+                toast('먼저 👍 또는 👎 를 선택해주세요.');
                 return;
               }
               if (saveBtn) saveBtn.disabled = true;
@@ -1615,7 +1647,7 @@
               } catch (e) {
                 if (saveBtn) saveBtn.disabled = false;
                 if (skipBtn) skipBtn.disabled = false;
-                alert('평가 저장에 실패했어요. 잠시 후 다시 시도해주세요.');
+                toast('평가 저장에 실패했어요. 잠시 후 다시 시도해주세요.');
               }
             }
             if (saveBtn) {
@@ -1661,7 +1693,7 @@
                 // 백그라운드로 최신 상태 동기화 — 실패해도 위 DOM 제거는 이미 반영.
                 load();
               } catch (e) {
-                alert(isDelete ? '삭제에 실패했어요. 잠시 후 다시 시도해주세요.' : '취소에 실패했어요.');
+                toast(isDelete ? '삭제에 실패했어요. 잠시 후 다시 시도해주세요.' : '취소에 실패했어요.');
                 btn.disabled = false;
                 btn.textContent = isDelete ? '삭제' : '취소';
                 btn.dataset.busy = '0';
@@ -1706,7 +1738,7 @@
                 if (targetList) targetList.innerHTML = '';
                 load();
               } catch (err) {
-                alert('일괄 삭제에 실패했어요. 잠시 후 다시 시도해주세요.');
+                toast('일괄 삭제에 실패했어요. 잠시 후 다시 시도해주세요.');
               } finally {
                 clearTimeout(tid);
                 bulkBtn.disabled = false;
@@ -1807,7 +1839,7 @@
               exitSelectMode();
               load();
             } catch (err) {
-              alert('선택 삭제에 실패했어요. 잠시 후 다시 시도해주세요.');
+              toast('선택 삭제에 실패했어요. 잠시 후 다시 시도해주세요.');
             } finally {
               clearTimeout(tid);
             }
