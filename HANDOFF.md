@@ -1,7 +1,94 @@
 # 루미(lumi) 인수인계 문서
 
-마지막 업데이트: 2026-05-17
-기준 커밋: `main` 최신 (`4fa7b7e`)
+마지막 업데이트: 2026-05-17 (저녁 audit 세션 후)
+기준 커밋: `main` 최신 (`f40ea6a`)
+
+---
+
+## ✅ 2026-05-17 저녁 — 전체 audit + 분노 해결 인계
+
+이전 인계 ("사장님 분노") 다음 작업자가 받은 후 진행 결과. **모두 라이브 반영 + 사장님 확인 완료**.
+
+### Step 5 cutout 동작 — 사장님 진짜 의도 파악 + fix 완성
+
+이전 작업자가 6번 시도 모두 거부됐던 `step 5 spotlight cutout` 동작 — 사장님이 보내준
+스크린샷 + 직접 명시로 진짜 의도 파악:
+
+- 사장님이 원한 동작: **cutout 안에 보이는 element 가 항상 target (절대 안 바뀜)**
+  사장님 표현 "환한 영역 고정" = cutout 안 내용 고정 (위치는 element 따라 움직여도 OK)
+- 이전 viewport-fixed (option B) → scroll 시 cutout 안에 엉뚱한 element 들어와서 거부
+
+최종 fix 시리즈 (모두 라이브):
+- `485b53d` cutout 이 target element 항상 cover (scroll listener 다시 추가)
+- `3db9625` scroll event → rAF loop 매 frame sync (lag/jitter 차단)
+- `b969f64` let → var TDZ fix (+ 버튼 listener 회귀)
+- `e9cff15` tour UX 3종 (메모 라벨 wrap / 다음 외 터치 차단 / 다음 버튼 pulse)
+- `cb19323` 9장 선택 조합별 정성 캡션 (1장 / 같은 카테고리 / 혼합 / 메모)
+- `247b606` tour step 6 "시작! ▶" 항상 페이지 최상단으로 scroll
+
+### 게시 시점 3카드 (지금/예약/베스트 시간)
+
+`0b834c8`: 기존 "예약 누르면 sub-옵션" 흐름 제거. "지금/예약/베스트 시간" 3카드로 분리.
+- 베스트 시간 카드 click → 즉시 `/api/get-best-time` 호출 → 결과 banner
+- `b8089a7` + `a0cf67f`: dashboard 와 일관 안내 (personal/seed mode 분기)
+  - personal: "내 팔로워 활동 시간 기반"
+  - seed: "아직 나만의 베스트 시간 데이터가 모이지 않았어요. 지금은 평균 베스트 시간이에요"
+
+### 전체 audit 실행 (사장님 "전체적으로 보고 부족한 부분 찾아봐" 명령)
+
+직접 grep + Explore agent 정찰 → priority list 16개 보고 → 사장님 "전부 진행" 명령 → 9 commits.
+
+| commit | 항목 |
+|---|---|
+| `42bae89` | #8 제목·라벨 영상 포함 / #5 history alert→toast (12건) / #15 cta submit spinner |
+| `45a4482` | #11 comments stagger 무제한 / #10 settings 라벨 통일 / #14 작은 화면 scroll-margin |
+| `d171edf` | #9 comments network-error retry / #7 prod-log.js (production console.log 무력화) |
+| `9509bfa` | #6 색상 토큰화 — status/chan/overlay tokens (290+ hex 정리) |
+| `27e9811` | **#2 refresh token** — DB + 서버 + 클라이언트 wrapper (audit 큰 작업) |
+| `6f4d75c` | **#1 CSP script-src 'unsafe-inline' 제거** — 모든 inline `<script>`/`<style>` external 화 |
+| `9fddc87` | #1 후속: style-src 'unsafe-inline' 제거 — element style="" → utility class (.u-idx-N, .u-link-inherit 등) |
+| `247b606` | tour step 6 시작 버튼 → 최상단 scroll |
+| `f40ea6a` | SEO: index.html OpenGraph + Twitter Card + supabase dns-prefetch |
+
+SKIP (verify 결과 이미 적용): #3 (37 unauth functions 모두 의도된 공개 endpoint), #4 (회원탈퇴
+7일 유예 modal + 텍스트 입력 검증), #12 (motion.css universal `*` reduced-motion), #13 (settings copy toast + is-copied), #16 (toggle .is-on)
+
+### #2 refresh token 흐름 (새 사용자만 활성)
+
+- DB: `public.seller_refresh_tokens` (token_hash sha256, 30일, rotation chain) — migration apply 됨
+- 서버: `seller-jwt.js` 의 `generateRefreshToken()` + `hashRefreshToken()` + 새 endpoint `/api/auth-refresh`
+- callback: `auth-kakao-callback.js` Edge function 에서 refresh 발급 + hash 에 `lumi_refresh` 추가
+- 클라이언트: `/js/auth-fetch.js` — 401 시 자동 refresh + 재요청 (모든 16 페이지에 link)
+- 기존 user (lumi_refresh 없음): tryRefresh 즉시 실패 → 기존 401 동작 (호환)
+- 신규 user (재로그인 후): 14일 access + 30일 refresh 자동 갱신 (사장님 인지 X)
+
+### #1 CSP 완전 강화 (script-src + style-src 'unsafe-inline' 둘 다 제거)
+
+- 모든 inline `<script>` → `/js/pages/<page>.js` 외부화 (16 페이지)
+- 모든 inline `<style>` → `/css/pages/<page>.css` 외부화
+- 공용 inline (data-scroll-top-on-reload) → `/js/scroll-top.js`
+- 모든 inline `style=""` attribute 40+ → utility class (`.u-idx-N`, `.u-link-inherit`, `.u-info-box` 등 — `css/base.css` 끝에 정의)
+- 라이브 CSP: `script-src 'self' + 외부 신뢰 source` / `style-src 'self' + 외부 신뢰 source`
+- XSS 방어 강화 완료. JS API (element.style.foo) 는 영향 없음 (CSP 적용 X).
+
+### 알려진 후속 (이번 audit 에서 남은 것)
+
+- **error tracking 부재** — production 사장님 device 에러 모니터링 없음. 사장님이 신고해야만 알 수 있음.
+  도입 가치 큼 (Sentry 외부 또는 자체 /api/error-log endpoint).
+- **linktree.html 동적 OG** — 정적 OG 만 있고 매장별 정보 (slug → 매장 이름·로고) 동적 rendering
+  부재. Netlify Edge function 으로 처리 가능.
+- **JS bundle 크기** — tutorial 34KB / trends 26KB / register-product (큰 IIFE). code split 검토.
+- **HANDOFF 의 D 섹션 옛 추천 다 처리됨** — CSP / 색상 / console.log / refresh token 다 완료.
+  남은 옛 추천: `_shared/env-loader.js` (process.env 18곳 일관성) — priority 낮음.
+
+### 룰 적용 검증 (이번 세션)
+
+- [feedback_no_re_confirm]: 작업 동사 즉시 진행 ✓
+- [feedback_proactive_monitoring]: 사장님 묻기 전 직접 진단 (cutout 좌표 자체 검증, deploy 마커 확인) ✓
+- [feedback_production_grade]: 9장 캡션 정성 작성, refresh token 완전 구현 (단순 변형 안 함) ✓
+- [feedback_lumi_micro_interactions]: 다음 버튼 pulse, submit spinner, reduced-motion 존중 ✓
+- [feedback_no_guessing_facts]: agent audit 가설 verify 후 5개 SKIP ✓
+- [feedback_confirm_intensity]: 회원탈퇴 7일 유예 modal + 텍스트 입력 검증 유지 ✓
 
 ---
 
