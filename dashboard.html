@@ -19,6 +19,7 @@
   <link rel="stylesheet" href="/css/tokens.css">
   <link rel="stylesheet" href="/css/base.css">
   <script src="/js/prod-log.js"></script>
+  <script src="/js/auth-fetch.js"></script>
   <script data-scroll-top-on-reload>if("scrollRestoration" in history)history.scrollRestoration="manual";window.scrollTo(0,0);window.addEventListener("DOMContentLoaded",function(){window.scrollTo(0,0)});</script>
   <link rel="stylesheet" href="/css/motion.css">
   <link rel="stylesheet" href="/css/tabbar.css">
@@ -964,14 +965,16 @@
 
   <script>
     (function () {
-      // 0) URL hash 의 lumi_token (카카오 callback 직후) → localStorage 저장
+      // 0) URL hash 의 lumi_token + lumi_refresh (카카오 callback 직후) → localStorage 저장.
       //    onboarded=true 사장님은 callback 이 /dashboard#lumi_token=... 으로 보냄.
-      //    여기서 저장 안 하면 다른 탭 가는 순간 토큰 없어 /로 튕김.
+      //    audit #2: refresh token 도 같이 받아서 자동 갱신 가능하게.
       try {
         if (location.hash && location.hash.indexOf('lumi_token=') !== -1) {
           const params = new URLSearchParams(location.hash.replace(/^#/, ''));
           const t = params.get('lumi_token');
+          const rt = params.get('lumi_refresh');
           if (t) localStorage.setItem('lumi-auth', t);
+          if (rt) localStorage.setItem('lumi_refresh', rt);
           history.replaceState(null, '', location.pathname);
         }
       } catch (_) {}

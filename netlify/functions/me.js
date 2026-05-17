@@ -7,7 +7,7 @@
 // - 응답에서 휴대폰/이메일은 마스킹된 형태만 노출
 // - 평문 PII는 응답에 포함 금지
 const { getAdminClient } = require('./_shared/supabase-admin');
-const { signSellerToken, verifySellerToken, extractBearerToken } = require('./_shared/seller-jwt');
+const { signSellerToken, verifySellerToken, extractBearerToken, generateRefreshToken } = require('./_shared/seller-jwt');
 const { corsHeaders, getOrigin } = require('./_shared/auth');
 const {
   maskPhone,
@@ -173,11 +173,35 @@ exports.handler = async (event) => {
   console.log(`[me] seller=${seller.id.slice(0, 8)} step=${seller.signup_step} plan=${seller.plan}`);
 
   // OAuth 재방문 사용자용 seller-jwt 발급 (클라이언트 localStorage 복원용)
+  // 사장님 결정 2026-05-17 (audit #2): refresh token 도 같이 발급 — access 14일 만료 시
+  // 사장님 매번 카카오 재로그인 안 하게 클라이언트가 /api/auth-refresh 자동 호출.
   let sellerToken = null;
+  let refreshToken = null;
+  let refreshExpiresAt = null;
   try {
     sellerToken = signSellerToken({ seller_id: seller.id });
   } catch (e) {
     console.error('[me] sellerToken 발급 실패:', e.message);
+  }
+  try {
+    const { plain, hash, expiresAt } = generateRefreshToken();
+    const { error: rtErr } = await admin
+      .from('seller_refresh_tokens')
+      .insert({
+        seller_id: seller.id,
+        token_hash: hash,
+        expires_at: expiresAt.toISOString(),
+        user_agent: event.headers && (event.headers['user-agent'] || event.headers['User-Agent']) || null,
+        ip_address: event.headers && (event.headers['x-forwarded-for'] || '').split(',')[0].trim() || null,
+      });
+    if (rtErr) {
+      console.error('[me] refresh token 저장 실패:', rtErr.message);
+    } else {
+      refreshToken = plain;
+      refreshExpiresAt = expiresAt.toISOString();
+    }
+  } catch (e) {
+    console.error('[me] refresh token 발급 실패:', e.message);
   }
 
   // IG 연동 + 토큰 만료 상태 (대시보드/설정의 "재연동 필요" 카드용).
@@ -209,6 +233,8 @@ exports.handler = async (event) => {
     body: JSON.stringify({
       success: true,
       sellerToken,
+      refreshToken,
+      refreshExpiresAt,
       seller: {
         id: seller.id,
         ownerName: seller.owner_name,

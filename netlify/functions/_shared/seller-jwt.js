@@ -119,4 +119,44 @@ function extractBearerToken(event) {
   return auth.replace(/^Bearer\s+/i, '').trim();
 }
 
-module.exports = { signSellerToken, verifySellerToken, extractBearerToken };
+// === refresh token (audit #2) ===
+// 사장님 결정 2026-05-17: access JWT 14일 만료 시 매번 카카오 재로그인 불편.
+// refresh token 도입 — 30일 TTL, sha256 hash 저장, 사용 시 rotation (옛 토큰 revoke).
+//
+// 동작:
+//   1) callback (kakao 등) → access JWT + refresh token plain 동시 발급. DB 에 hash 저장.
+//   2) 클라이언트 access 만료 임박 또는 401 → /api/auth-refresh 호출 (refresh plain 전달).
+//   3) 서버: hash 조회 → revoked_at NULL + expires_at 미래면 통과 → 새 access + 새 refresh 발급.
+//      옛 row revoked_at = now, replaced_by_id = 새 row (rotation chain — 도난 forensic).
+//   4) 사장님 재로그인 / 로그아웃 시 옛 refresh row 전부 revoke.
+
+const REFRESH_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 30; // 30일
+
+/**
+ * 신규 refresh token 생성 — 32바이트 random hex + sha256 hash.
+ * 평문은 클라이언트에 1번만 전달, DB 에는 hash 만 저장 (도난 방어).
+ * @returns {{ plain: string, hash: string, expiresAt: Date }}
+ */
+function generateRefreshToken() {
+  const plain = crypto.randomBytes(32).toString('hex');
+  const hash = crypto.createHash('sha256').update(plain).digest('hex');
+  const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_SECONDS * 1000);
+  return { plain, hash, expiresAt };
+}
+
+/**
+ * 평문 refresh token → sha256 hash (DB lookup 용).
+ */
+function hashRefreshToken(plain) {
+  if (!plain || typeof plain !== 'string') return null;
+  return crypto.createHash('sha256').update(plain).digest('hex');
+}
+
+module.exports = {
+  signSellerToken,
+  verifySellerToken,
+  extractBearerToken,
+  generateRefreshToken,
+  hashRefreshToken,
+  REFRESH_TOKEN_TTL_SECONDS,
+};

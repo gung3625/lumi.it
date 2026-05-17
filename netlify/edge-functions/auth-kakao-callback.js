@@ -380,8 +380,47 @@ export default async (request, _context) => {
 
   console.log('[auth-kakao-callback] 카카오 로그인 완료(Edge). seller_id:', sellerId, 'onboarded:', onboarded);
 
-  // 9) hash 에 onboarded flag 추가 — 클라이언트에서 /api/me 한 번 생략 가능
+  // 8.5) refresh token 발급 (audit #2) — 30일, sha256 hash 만 DB 저장.
+  //      평문은 hash 로 클라이언트에 전달. seller_refresh_tokens table insert.
+  let refreshPlain = '';
+  try {
+    const bytes = new Uint8Array(32);
+    crypto.getRandomValues(bytes);
+    refreshPlain = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+    const hashBuf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(refreshPlain));
+    const hashHex = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    const userAgent = request.headers.get('user-agent') || null;
+    const ipAddress = (request.headers.get('x-forwarded-for') || '').split(',')[0].trim() || null;
+    const insRtRes = await fetch(`${SUPABASE_URL}/rest/v1/seller_refresh_tokens`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal',
+      },
+      body: JSON.stringify({
+        seller_id: sellerId,
+        token_hash: hashHex,
+        expires_at: expiresAt,
+        user_agent: userAgent,
+        ip_address: ipAddress,
+      }),
+    });
+    if (!insRtRes.ok) {
+      const errText = await insRtRes.text().catch(() => '');
+      console.error('[auth-kakao-callback] refresh token 저장 실패:', insRtRes.status, errText.slice(0, 200));
+      refreshPlain = ''; // 실패 시 hash 에 안 넣음 — access 만 전달 (기존 동작)
+    }
+  } catch (e) {
+    console.error('[auth-kakao-callback] refresh token 생성 실패:', e && e.message);
+    refreshPlain = '';
+  }
+
+  // 9) hash 에 onboarded flag + lumi_refresh 추가 — 클라이언트에서 /api/me 한 번 생략 가능
   let hash = `#kakao=callback&lumi_token=${encodeURIComponent(sellerJwt)}`;
+  if (refreshPlain) hash += `&lumi_refresh=${encodeURIComponent(refreshPlain)}`;
   if (onboarded) hash += '&onboarded=1';
   const destination = onboarded ? `/dashboard${hash}` : `/signup${hash}`;
 
