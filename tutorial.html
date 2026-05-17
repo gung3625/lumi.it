@@ -2158,36 +2158,40 @@
         tt.style.top  = top  + 'px';
         tt.style.left = left + 'px';
       }
-      // 사장님 결정 2026-05-17 (재재정정): cutout 이 항상 target element 를 cover.
-      // 사장님 스크롤하면 cutout 도 element 따라 이동 → cutout 안 보이는 element 가 항상 same.
-      // viewport fixed 시도 (이전 commit) 는 스크롤 시 cutout 안에 엉뚱한 element 들어와서 거부.
-      // scroll listener 가 rAF batching 안에서 즉시 align (transition 없음, jitter 차단).
-      let tourScrollRaf = 0;
-      function onTourScroll() {
-        if (tourScrollRaf) return;
-        tourScrollRaf = requestAnimationFrame(() => {
-          tourScrollRaf = 0;
-          const rect = calcCurrentRect();
-          if (!rect) return;
-          placeSpotlight(rect);
-          repositionTooltip(rect);
-        });
+      // 사장님 결정 2026-05-17 (재재재정정): cutout 이 항상 target element 를 cover +
+      // 끊김/흔들림 없이 부드럽게. scroll event listener 는 main thread 에 비동기로 도착해
+      // cutout update 가 1-2 frame 늦음 → 사장님 눈에 lag/jitter. 대신 rAF loop 로 매 frame
+      // 마다 element 위치 read + cutout update → element 와 cutout 이 같은 frame 에 paint
+      // → desync 차단. 위치 변화 없으면 setAttribute skip (CPU 절약).
+      let tourRafId = 0;
+      let lastRectKey = '';
+      function tourTick() {
+        if (currentTourIdx == null) { tourRafId = 0; lastRectKey = ''; return; }
+        const rect = calcCurrentRect();
+        if (rect) {
+          const key = rect.left + '|' + rect.top + '|' + rect.width + '|' + rect.height;
+          if (key !== lastRectKey) {
+            lastRectKey = key;
+            placeSpotlight(rect);
+            repositionTooltip(rect);
+          }
+        }
+        tourRafId = requestAnimationFrame(tourTick);
+      }
+      function startTourTicker() {
+        if (!tourRafId) tourRafId = requestAnimationFrame(tourTick);
+      }
+      function stopTourTicker() {
+        if (tourRafId) { cancelAnimationFrame(tourRafId); tourRafId = 0; }
+        lastRectKey = '';
       }
 
       function showTourStep(idx) {
         if (idx >= TOUR_STEPS.length) { closeTour(); return; }
         currentTourIdx = idx;
-        // scroll/resize/visualViewport 변화 시 cutout + tooltip align (passive)
-        window.removeEventListener('scroll', onTourScroll);
-        window.addEventListener('scroll', onTourScroll, { passive: true });
-        window.removeEventListener('resize', onTourScroll);
-        window.addEventListener('resize', onTourScroll, { passive: true });
-        if (window.visualViewport) {
-          window.visualViewport.removeEventListener('scroll', onTourScroll);
-          window.visualViewport.removeEventListener('resize', onTourScroll);
-          window.visualViewport.addEventListener('scroll', onTourScroll, { passive: true });
-          window.visualViewport.addEventListener('resize', onTourScroll, { passive: true });
-        }
+        // 매 frame rAF loop — scroll event 의 main thread async lag 없이 element 동기 추적
+        lastRectKey = '';
+        startTourTicker();
         const cur = TOUR_STEPS[idx];
         const els = cur.multi
           ? Array.from(document.querySelectorAll(cur.target))
@@ -2213,12 +2217,7 @@
       }
       function closeTour() {
         currentTourIdx = null;
-        window.removeEventListener('scroll', onTourScroll);
-        window.removeEventListener('resize', onTourScroll);
-        if (window.visualViewport) {
-          window.visualViewport.removeEventListener('scroll', onTourScroll);
-          window.visualViewport.removeEventListener('resize', onTourScroll);
-        }
+        stopTourTicker();
         ['.tour-backdrop', '.tour-tooltip'].forEach(sel => {
           const el = document.querySelector(sel);
           if (!el) return;
