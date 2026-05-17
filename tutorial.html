@@ -672,11 +672,11 @@
     }
     .upload-schedule {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(3, 1fr);
       gap: var(--space-2);
     }
     .upload-schedule__card {
-      padding: var(--space-4);
+      padding: var(--space-3) var(--space-2);
       background: var(--bg);
       border: 1px solid var(--line-strong);
       border-radius: var(--radius-lg);
@@ -686,6 +686,8 @@
       cursor: pointer;
       transition: all var(--duration-snap) var(--ease-toss);
       font-family: inherit;
+      font-size: var(--text-caption);
+      line-height: 1.3;
     }
     .upload-schedule__card.is-active {
       background: var(--pink-50);
@@ -1740,6 +1742,7 @@
           <div class="upload-schedule">
             <button type="button" class="upload-schedule__card is-active" data-schedule="immediate">지금</button>
             <button type="button" class="upload-schedule__card" data-schedule="scheduled">예약</button>
+            <button type="button" class="upload-schedule__card" data-schedule="best">베스트 시간</button>
           </div>
         </div>
 
@@ -2071,7 +2074,7 @@
         { target: '.media-tabs',                         title: '먼저 종류를 골라요',                 hint: '이미지·영상 둘 다 업로드 가능' },
         { target: '.upload-dropzone[data-open-gallery]', title: '여기를 눌러 사진을 골라요',          hint: '갤러리에서 1~10장 선택' },
         { target: '.upload-field:has(#tutorial-memo)',   title: '한 줄 메모는 선택이에요',            hint: '메뉴·분위기 짧게 적으면 캡션이 더 정확해져요' },
-        { target: '.upload-field:has(.upload-schedule)', title: '지금 올릴지, 예약할지 골라요',       hint: '예약은 한 달 이내, 베스트 시간 자동 옵션도 있어요' },
+        { target: '.upload-field:has(.upload-schedule)', title: '게시 시점을 골라요',                 hint: '지금 / 예약 / 베스트 시간 — 베스트 시간은 사장님 업종 기반 자동 계산' },
         { target: '[data-tour-option]',                  title: '스토리·날씨·쓰레드·프로필 링크',     hint: '4가지 기능을 자유롭게 ON/OFF — 필요한 것만 켜세요', multi: true },
         { target: '[data-submit-upload]',                title: '마지막! 누르면 분석이 시작돼요',     hint: '캡션·해시태그가 자동으로 만들어져요' },
       ];
