@@ -227,6 +227,19 @@ async function watchdogHandler(event, ctx) {
   // ── stuck reservation 검사 (cron heartbeat 와 같은 cooldown 메커니즘) ──
   await ctx.stage('loading-stuck-reservations');
   const stuckList = await checkStuckReservations(supa, now);
+  // 진단 (2026-05-20): stuck check 결과를 trends 테이블에 기록 — Netlify logs 가
+  // background function stdout 안 잡아서 직접 dump.
+  try {
+    await safeAwait(supa.from('trends').upsert({
+      category: 'watchdog-diagnostic:stuck-check',
+      keywords: {
+        ts: new Date().toISOString(),
+        stuckListLen: stuckList.length,
+        stuckList: stuckList.map(s => ({ kind: s.kind, count: s.count, threshold: s.thresholdMin })),
+      },
+      collected_at: new Date().toISOString(),
+    }, { onConflict: 'category' }));
+  } catch (e) { console.warn('diag write 실패:', e.message); }
   const stuckIssues = [];
   for (const stuck of stuckList) {
     const stateKey = `stuck:${stuck.kind}`;
