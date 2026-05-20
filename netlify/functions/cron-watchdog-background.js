@@ -50,7 +50,9 @@ const COOLDOWN_HOURS = 6;
 //   process-and-post: ~30s (caption gen + storage + IG container 등)
 //   select-and-post:  ~20s (selected caption 확정 + IG publish)
 const STUCK_TARGETS = [
-  // 2026-05-20 fix: 모든 stuck check 에 deleted_at/cancelled/is_sent 필터 추가.
+  // 2026-05-20 fix: reservations 에 updated_at 컬럼 없음 → 모든 stuck 항목 created_at
+  // 기준. posting 은 다른 status 와 구분 위해 threshold 60분 (created_at 부터 60분
+  // 넘게 posting = 분명 stuck. 짧은 transient posting 은 정상 흐름이라 미감지).
   {
     key: 'pending',
     label: 'pending (process-and-post 시작 안됨)',
@@ -68,9 +70,9 @@ const STUCK_TARGETS = [
   {
     key: 'posting',
     label: 'posting (select-and-post 중간 죽음)',
-    thresholdMin: 10,
+    thresholdMin: 60,
     filter: q => q.eq('caption_status', 'posting').is('deleted_at', null).eq('cancelled', false).eq('is_sent', false),
-    timeColumn: 'updated_at',
+    timeColumn: 'created_at',
   },
   {
     // 2026-05-20 fix: deleted_at IS NULL + cancelled=false + is_sent=false 필터 추가.
@@ -149,9 +151,10 @@ async function checkStuckReservations(supa, now) {
   console.log(`[cron-watchdog] stuck check start (targets=${STUCK_TARGETS.length})`);
   for (const t of STUCK_TARGETS) {
     const cutoff = new Date(now - t.thresholdMin * 60000).toISOString();
+    // 2026-05-20 fix: updated_at 컬럼 reservations 에 없음. select 에서 제거.
     let q = supa
       .from('reservations')
-      .select('reserve_key, user_id, scheduled_at, created_at, updated_at, caption_status, ig_post_id')
+      .select('reserve_key, user_id, scheduled_at, created_at, caption_status, ig_post_id')
       .lt(t.timeColumn, cutoff)
       .order(t.timeColumn, { ascending: true })
       .limit(20);
