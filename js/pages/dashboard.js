@@ -134,6 +134,46 @@
       }
 
       // 다음 예약 (list-reservations 중 가장 가까운 미래)
+      // 발행 실패 알림 (Blocker C, 2026-05-19)
+      // 최근 7일 caption_status='failed'|'error' 또는 채널 발행 실패 건 카운트.
+      // 사장님이 "올렸는데 안 올라갔다" 를 watchdog 메일 기다리지 않고 dashboard 에서 즉시 확인.
+      async function loadFailures() {
+        const banner = document.querySelector('[data-failure-banner]');
+        if (!banner) return;
+        try {
+          const res = await fetch('/api/list-reservations', { headers: authHeaders });
+          if (!res.ok) return;
+          const json = await res.json();
+          const items = (json && json.items) || [];
+          const cutoff = Date.now() - 7 * 24 * 3600 * 1000; // 7일 cutoff
+          const failed = items.filter(r => {
+            const created = new Date(r.created_at || r.scheduled_at || 0).getTime();
+            if (created < cutoff) return false;
+            // 1) 명시적 실패 상태
+            if (r.caption_status === 'failed' || r.caption_status === 'error') return true;
+            // 2) scheduled 인데 scheduled_at 30분 이상 지났고 ig_post_id 없음 (stuck)
+            const scheduledAt = r.scheduled_at ? new Date(r.scheduled_at).getTime() : 0;
+            if (r.caption_status === 'scheduled' && !r.ig_post_id && scheduledAt && (Date.now() - scheduledAt > 30 * 60000)) return true;
+            // 3) 채널 발행 실패 (channel_posts.status 가 failed/error 인 채널 존재)
+            if (Array.isArray(r.channels) && r.channels.some(c => c.status === 'failed' || c.status === 'error')) return true;
+            return false;
+          });
+          if (failed.length === 0) return;
+          const countEl = banner.querySelector('[data-failure-count]');
+          const reasonEl = banner.querySelector('[data-failure-reason]');
+          if (countEl) countEl.textContent = String(failed.length);
+          // 가장 흔한 실패 사유 한 줄 (가장 최근 실패의 caption_error)
+          const latest = failed.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))[0];
+          if (reasonEl && latest) {
+            const err = (latest.caption_error || '').slice(0, 60);
+            reasonEl.textContent = err ? err : '탭하면 자세히 볼 수 있어요';
+          }
+          banner.hidden = false;
+        } catch (e) {
+          console.warn('[dashboard] loadFailures 실패:', e && e.message);
+        }
+      }
+
       async function loadScheduled() {
         const cardEl = document.querySelector('[data-scheduled-card]');
         const emptyEl = document.querySelector('[data-scheduled-empty]');
@@ -414,6 +454,7 @@
       (async () => {
         await loadMe();
         loadStats();
+        loadFailures();
         loadScheduled();
         loadComments();
         loadTrends();

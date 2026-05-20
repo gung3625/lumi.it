@@ -104,6 +104,13 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers, body: JSON.stringify({ ok: false, error: '잘못된 요청' }) };
   }
 
+  // honeypot — 사람 눈에 X 인 필드. 채워졌다면 봇. silent 200 으로 위장 (DB insert 스킵).
+  // rate-limit 만으로는 IP 회전 봇 차단 못 함 → 허니팟 보조.
+  if (body.website && String(body.website).trim() !== '') {
+    console.warn('[beta-signup] honeypot tripped — ip=' + ip + ' value=' + JSON.stringify(body.website).slice(0, 80));
+    return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };
+  }
+
   const storeName = clean(body.storeName, MAX.name);
   const ownerName = clean(body.ownerName, MAX.name);
   const category  = clean(body.category, MAX.category);

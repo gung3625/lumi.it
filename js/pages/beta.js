@@ -46,6 +46,7 @@
       phone:     (fd.get('phone')     || '').trim(),
       instagramHandle: (fd.get('instagramHandle') || '').trim(),
       termsAgreed: fd.get('termsAgreed') === 'on',
+      website:   (fd.get('website')   || '').trim(),  // honeypot — 사람 눈에 X
     };
 
     // 클라이언트 측 기본 검증 — 서버에서도 동일하게 검증

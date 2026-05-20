@@ -265,6 +265,58 @@
       color: var(--ink-muted);
     }
 
+    /* 발행 실패 배너 (Blocker C, 2026-05-19) — 최근 실패 있을 때만 노출 */
+    .failure-banner {
+      display: flex; align-items: center; gap: var(--space-3);
+      padding: var(--space-4);
+      background: var(--status-danger-bg, #fff0ee);
+      border: 1px solid var(--status-danger-line, #ffb4a8);
+      border-radius: var(--radius-lg);
+      color: var(--status-danger-ink, #b3261e);
+      text-decoration: none;
+      margin-bottom: var(--space-5);
+      animation: rise 500ms var(--ease-toss) backwards;
+      transition:
+        background var(--duration-base) var(--ease-soft),
+        border-color var(--duration-base) var(--ease-soft),
+        transform var(--duration-snap) var(--ease-toss);
+    }
+    @media (hover: hover) {
+      .failure-banner:hover {
+        background: #ffe4df;
+        border-color: var(--status-danger-line, #ff8a73);
+      }
+    }
+    .failure-banner:active { transform: scale(0.992); }
+    .failure-banner__icon {
+      width: 40px; height: 40px;
+      flex-shrink: 0;
+      border-radius: var(--radius-full);
+      background: #fff;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .failure-banner__icon svg { width: 22px; height: 22px; }
+    .failure-banner__body { flex: 1; min-width: 0; }
+    .failure-banner__title {
+      font-size: var(--text-body);
+      font-weight: var(--weight-semibold);
+      letter-spacing: -0.01em;
+    }
+    .failure-banner__title strong { color: inherit; }
+    .failure-banner__sub {
+      font-size: var(--text-caption);
+      color: var(--status-danger-ink-soft, #993827);
+      margin-top: 2px;
+    }
+    .failure-banner__chev {
+      font-size: var(--text-body);
+      color: var(--status-danger-ink, #b3261e);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .failure-banner { animation: none; }
+      .failure-banner:active { transform: none; }
+    }
+
     /* 예약 빈 상태 */
     .scheduled-empty {
       display: flex; align-items: center; gap: var(--space-3);

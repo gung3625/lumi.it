@@ -32,6 +32,10 @@ function* walk(dir, exts) {
 }
 
 async function main() {
+  // 1) 안티패턴 검사 (supabase 빌더 .catch / await 누락) — 발견 시 build fail
+  console.log('[build] check-antipatterns…');
+  execSync('node scripts/check-antipatterns.js', { cwd: ROOT, stdio: 'inherit' });
+
   const { build } = require('esbuild');
 
   const jsFiles  = [...walk(path.join(ROOT, 'js'), ['.js'])];

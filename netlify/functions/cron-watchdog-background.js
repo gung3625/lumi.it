@@ -6,13 +6,18 @@
 //
 // 스케줄: 매시간 (netlify.toml: 0 * * * *)
 // 동작:
-//   1. cron-guard 가 기록하는 trends 테이블의 heartbeat 행 4건 조회
-//      (scheduled-trends, scheduled-trends-longtail,
-//       scheduled-trends-embeddings)
+//   1. cron-guard 가 기록하는 trends 테이블의 heartbeat 행 조회
+//      (scheduled-trends, scheduled-trends-longtail, scheduled-trends-embeddings)
 //   2. 각 cron 별 임계치(=주기 + 안전마진) 와 비교
 //   3. minutesSinceLastRun 초과 OR lastSuccess === false 인 경우 ALERT
-//   4. ALERT → LUMI_ADMIN_EMAILS 로 Resend 메일 발송
-//   5. 같은 cron 의 ALERT 가 6시간 안에 이미 발송되었으면 중복 발송 안 함 (cooldown)
+//   4. + 발행 flow stuck reservation 감지 (Blocker B, 2026-05-19):
+//      - caption_status='pending' 가 10분 이상 → process-and-post 시작 실패
+//      - caption_status='generating' 가 15분 이상 → process-and-post 중간 죽음
+//      - caption_status='posting' 가 10분 이상 → select-and-post 중간 죽음
+//      - caption_status='scheduled' 인데 scheduled_at 지난지 10분+ 이고 ig_post_id null
+//        → select-and-post 가 아예 트리거 안 됨
+//   5. ALERT → LUMI_ADMIN_EMAILS 로 Resend 메일 발송
+//   6. 같은 항목 ALERT 가 6시간 안에 이미 발송되었으면 중복 발송 안 함 (cooldown)
 //      cooldown 상태는 trends 테이블의 watchdog-alert-state:{name} 행에 저장
 //
 // 환경변수:
@@ -38,6 +43,42 @@ const WATCH_TARGETS = [
 ];
 
 const COOLDOWN_HOURS = 6;
+
+// ── 발행 flow stuck 감지 정의 (Blocker B, 2026-05-19) ─────
+// 임계치 = 정상 실행 시간 + 안전마진. 초과하면 silent fail 가능성 높음.
+// 정상 실행 시간:
+//   process-and-post: ~30s (caption gen + storage + IG container 등)
+//   select-and-post:  ~20s (selected caption 확정 + IG publish)
+const STUCK_TARGETS = [
+  {
+    key: 'pending',
+    label: 'pending (process-and-post 시작 안됨)',
+    thresholdMin: 10,
+    filter: q => q.eq('caption_status', 'pending'),
+    timeColumn: 'created_at',
+  },
+  {
+    key: 'generating',
+    label: 'generating (process-and-post 중간 죽음)',
+    thresholdMin: 15,
+    filter: q => q.eq('caption_status', 'generating'),
+    timeColumn: 'created_at',
+  },
+  {
+    key: 'posting',
+    label: 'posting (select-and-post 중간 죽음)',
+    thresholdMin: 10,
+    filter: q => q.eq('caption_status', 'posting'),
+    timeColumn: 'updated_at',
+  },
+  {
+    key: 'scheduled-overdue',
+    label: 'scheduled overdue (select-and-post 트리거 안됨)',
+    thresholdMin: 10,
+    filter: q => q.eq('caption_status', 'scheduled').is('ig_post_id', null),
+    timeColumn: 'scheduled_at',
+  },
+];
 
 async function loadHeartbeat(supa, name) {
   const { data, error } = await safeAwait(
@@ -91,6 +132,43 @@ function evaluateTarget(target, hb, now) {
   return { alert: false, minutesSinceLastRun };
 }
 
+// ── stuck reservation 감지 ──────────────────────────────
+// 각 STUCK_TARGETS 항목별로 카운트 + sample 3건 조회.
+// 반환: [{ kind, label, thresholdMin, count, sample[] }, ...]  alert 대상만
+async function checkStuckReservations(supa, now) {
+  const out = [];
+  for (const t of STUCK_TARGETS) {
+    const cutoff = new Date(now - t.thresholdMin * 60000).toISOString();
+    let q = supa
+      .from('reservations')
+      .select('reserve_key, user_id, scheduled_at, created_at, updated_at, caption_status, ig_post_id')
+      .lt(t.timeColumn, cutoff)
+      .order(t.timeColumn, { ascending: true })
+      .limit(20);
+    q = t.filter(q);
+    const { data, error } = await safeAwait(q);
+    if (error) {
+      console.error(`[cron-watchdog] stuck check ${t.key} 실패:`, error.message);
+      continue;
+    }
+    if (data && data.length > 0) {
+      out.push({
+        kind: `stuck-${t.key}`,
+        label: t.label,
+        thresholdMin: t.thresholdMin,
+        count: data.length,
+        sample: data.slice(0, 3).map(r => ({
+          reserve_key: r.reserve_key,
+          user_id: r.user_id,
+          status: r.caption_status,
+          time: r[t.timeColumn],
+        })),
+      });
+    }
+  }
+  return out;
+}
+
 async function sendAlertEmail(resend, to, subject, lines) {
   const html = `
 <html><body style="font-family: -apple-system, sans-serif; line-height: 1.6; color: #222;">
@@ -136,18 +214,43 @@ async function watchdogHandler(event, ctx) {
     issues.push({ target, verdict });
   }
 
-  if (issues.length === 0) {
-    console.log('[cron-watchdog] 모든 cron 정상 (또는 cooldown 중)');
-    return { statusCode: 200, body: JSON.stringify({ checked: WATCH_TARGETS.length, alerts: 0 }) };
+  // ── stuck reservation 검사 (cron heartbeat 와 같은 cooldown 메커니즘) ──
+  await ctx.stage('loading-stuck-reservations');
+  const stuckList = await checkStuckReservations(supa, now);
+  const stuckIssues = [];
+  for (const stuck of stuckList) {
+    const stateKey = `stuck:${stuck.kind}`;
+    const state = await loadAlertState(supa, stateKey);
+    if (state && state.lastAlertAt) {
+      const ageH = (now - new Date(state.lastAlertAt).getTime()) / 3600000;
+      if (ageH < COOLDOWN_HOURS) {
+        console.log(`[cron-watchdog] ${stuck.kind}: alert 억제 (cooldown ${ageH.toFixed(1)}h < ${COOLDOWN_HOURS}h, count=${stuck.count})`);
+        continue;
+      }
+    }
+    stuckIssues.push(stuck);
   }
 
-  await ctx.stage('alerting', { count: issues.length });
+  if (issues.length === 0 && stuckIssues.length === 0) {
+    console.log('[cron-watchdog] 모든 cron + 발행 flow 정상 (또는 cooldown 중)');
+    return { statusCode: 200, body: JSON.stringify({ checked: WATCH_TARGETS.length, stuckChecked: STUCK_TARGETS.length, alerts: 0 }) };
+  }
 
-  // 메일 1통에 묶어 발송
-  const lines = issues.map(({ target, verdict }) =>
-    `[${target.name}] ${target.periodLabel}\n  → ${verdict.reason}`
-  );
-  const subject = `[루미] cron stale ${issues.length}건 — ${issues.map(i => i.target.name).join(', ')}`;
+  await ctx.stage('alerting', { cronCount: issues.length, stuckCount: stuckIssues.length });
+
+  // 메일 1통에 묶어 발송 (cron + stuck reservation 모두)
+  const lines = [];
+  for (const { target, verdict } of issues) {
+    lines.push(`[cron] ${target.name} (${target.periodLabel})\n  → ${verdict.reason}`);
+  }
+  for (const stuck of stuckIssues) {
+    const samples = stuck.sample.map(s => `    - ${s.reserve_key} (user=${s.user_id.slice(0, 8)}…, ${stuck.kind.replace('stuck-', '')} since ${s.time})`).join('\n');
+    lines.push(`[발행 stuck] ${stuck.label}\n  → ${stuck.count}건이 ${stuck.thresholdMin}분 이상 stuck. sample (최대 3):\n${samples}`);
+  }
+  const subjectParts = [];
+  if (issues.length > 0) subjectParts.push(`cron stale ${issues.length}건`);
+  if (stuckIssues.length > 0) subjectParts.push(`발행 stuck ${stuckIssues.reduce((s, x) => s + x.count, 0)}건`);
+  const subject = `[루미] ${subjectParts.join(' + ')}`;
 
   // 발송 — 환경변수 부재 시 콘솔로만
   if (!apiKey || adminEmails.length === 0) {
@@ -167,11 +270,19 @@ async function watchdogHandler(event, ctx) {
   }
 
   // cooldown 기록 (발송 성공/실패 무관 — 실패 시 재시도하면 매시간 메일 폭탄)
+  const nowIso = new Date().toISOString();
   for (const { target, verdict } of issues) {
     await saveAlertState(supa, target.name, {
-      lastAlertAt: new Date().toISOString(),
+      lastAlertAt: nowIso,
       reason: verdict.reason,
       minutesSinceLastRun: verdict.minutesSinceLastRun ?? null,
+    });
+  }
+  for (const stuck of stuckIssues) {
+    await saveAlertState(supa, `stuck:${stuck.kind}`, {
+      lastAlertAt: nowIso,
+      count: stuck.count,
+      thresholdMin: stuck.thresholdMin,
     });
   }
 
@@ -179,8 +290,10 @@ async function watchdogHandler(event, ctx) {
     statusCode: 200,
     body: JSON.stringify({
       checked: WATCH_TARGETS.length,
-      alerts: issues.length,
-      names: issues.map(i => i.target.name),
+      stuckChecked: STUCK_TARGETS.length,
+      alerts: issues.length + stuckIssues.length,
+      cronNames: issues.map(i => i.target.name),
+      stuckKinds: stuckIssues.map(s => s.kind),
     }),
   };
 }
