@@ -147,11 +147,9 @@ function evaluateTarget(target, hb, now) {
 // 반환: [{ kind, label, thresholdMin, count, sample[] }, ...]  alert 대상만
 async function checkStuckReservations(supa, now) {
   const out = [];
-  const perTargetTrace = [];  // 진단용 — 각 STUCK_TARGETS 결과
-  console.log(`[cron-watchdog] stuck check start (targets=${STUCK_TARGETS.length})`);
   for (const t of STUCK_TARGETS) {
     const cutoff = new Date(now - t.thresholdMin * 60000).toISOString();
-    // 2026-05-20 fix: updated_at 컬럼 reservations 에 없음. select 에서 제거.
+    // updated_at 컬럼 reservations 에 없음 (2026-05-20 fix). created_at / scheduled_at 만 사용.
     let q = supa
       .from('reservations')
       .select('reserve_key, user_id, scheduled_at, created_at, caption_status, ig_post_id')
@@ -160,19 +158,10 @@ async function checkStuckReservations(supa, now) {
       .limit(20);
     q = t.filter(q);
     const { data, error } = await safeAwait(q);
-    perTargetTrace.push({
-      key: t.key,
-      cutoff,
-      timeColumn: t.timeColumn,
-      count: data?.length || 0,
-      errorMsg: error?.message || null,
-      sampleKeys: (data || []).slice(0, 3).map(r => r.reserve_key),
-    });
     if (error) {
       console.error(`[cron-watchdog] stuck check ${t.key} 실패:`, error.message);
       continue;
     }
-    console.log(`[cron-watchdog] stuck check ${t.key}: ${data?.length || 0}건 (cutoff=${cutoff})`);
     if (data && data.length > 0) {
       out.push({
         kind: `stuck-${t.key}`,
@@ -188,8 +177,6 @@ async function checkStuckReservations(supa, now) {
       });
     }
   }
-  // 진단용 trace 도 함께 반환
-  out._trace = perTargetTrace;
   return out;
 }
 
@@ -241,20 +228,6 @@ async function watchdogHandler(event, ctx) {
   // ── stuck reservation 검사 (cron heartbeat 와 같은 cooldown 메커니즘) ──
   await ctx.stage('loading-stuck-reservations');
   const stuckList = await checkStuckReservations(supa, now);
-  // 진단 (2026-05-20): stuck check 결과를 trends 테이블에 기록 — Netlify logs 가
-  // background function stdout 안 잡아서 직접 dump.
-  try {
-    await safeAwait(supa.from('trends').upsert({
-      category: 'watchdog-diagnostic:stuck-check',
-      keywords: {
-        ts: new Date().toISOString(),
-        stuckListLen: stuckList.length,
-        stuckList: stuckList.map(s => ({ kind: s.kind, count: s.count, threshold: s.thresholdMin })),
-        perTargetTrace: stuckList._trace || [],
-      },
-      collected_at: new Date().toISOString(),
-    }, { onConflict: 'category' }));
-  } catch (e) { console.warn('diag write 실패:', e.message); }
   const stuckIssues = [];
   for (const stuck of stuckList) {
     const stateKey = `stuck:${stuck.kind}`;
