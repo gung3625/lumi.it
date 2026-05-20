@@ -580,6 +580,16 @@
             </div>`;
         }
 
+        // 자막/오버레이 처리 실패 칩 — REELS 만 해당.
+        // 2026-05-20 (E 재정의): process-video-background 가 ffmpeg/Whisper 실패 시
+        // 원본 영상 그대로 publish 진행하면서 subtitle_status='skipped:<reason>' 만 DB 에
+        // 기록 (사장님 무인지). 본 칩으로 history 에 가시화. reason 은 title 툴팁.
+        let subtitleWarnChip = '';
+        if (r.media_type === 'REELS' && typeof r.subtitle_status === 'string' && r.subtitle_status.startsWith('skipped:')) {
+          const reason = r.subtitle_status.slice('skipped:'.length).trim() || '알 수 없는 사유';
+          subtitleWarnChip = `<span class="chan-chip chan-chip--subtitle is-failed" title="${esc(reason)}">⚠️ 자막·오버레이 누락</span>`;
+        }
+
         // 채널 칩 — 상태 라벨 본연 역할 (span). 클릭 진입점 아님.
         // 인사이트 진입 = 카드 전체 클릭 (posted 채널 있을 때만).
         // 재시도 진입 = failed 채널 옆의 별도 "↻ 다시 시도" 링크 (카드 밖에서 바로 보임).
@@ -625,6 +635,7 @@
               <div class="res__meta">
                 <span class="res__badge badge--${esc(badge.cls)}">${esc(badge.label)}</span>
                 ${chipBlock}
+                ${subtitleWarnChip}
                 ${actionBtn}
               </div>
               ${rateBlock}

@@ -25,7 +25,7 @@ const { corsHeaders, getOrigin } = require('./_shared/auth');
 const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { markIgTokenInvalid } = require('./_shared/ig-graph');
-const { postToInstagram } = require('./_shared/ig-publish');
+const { postToInstagram, postToInstagramWithRefresh } = require('./_shared/ig-publish');
 const {
   getThreadsTokenForSeller,
   createThreadsContainer,
@@ -175,14 +175,17 @@ exports.handler = async (event) => {
     const igUserAccessToken = igRow.access_token;
     const igAccessToken = igRow.page_access_token || igRow.access_token;
     try {
-      publishedId = await postToInstagram({
+      // Important D (2026-05-20): postToInstagramWithRefresh — 401/code 190 받으면
+      // refreshIgTokenForSeller 호출 후 1회 재시도. retry 가 retry 자체이긴 하지만
+      // 토큰 갱신 후 재시도라 한 번만 더 시도 (무한 루프 X).
+      publishedId = await postToInstagramWithRefresh({
         igUserId: igRow.ig_user_id,
         igAccessToken,
         igUserAccessToken,
         storyEnabled: !!reservation.story_enabled,
         mediaType: reservation.media_type || 'IMAGE',
         videoUrl,
-      }, caption, imageUrls);
+      }, caption, imageUrls, { sellerId: user.id, supabase: admin });
     } catch (e) {
       const msg = String(e && e.message || '');
       // IG 토큰 만료 패턴 — postToInstagram 이 d.error.message 만 throw 하므로 문자열 매칭.

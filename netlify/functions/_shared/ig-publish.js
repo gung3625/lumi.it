@@ -262,10 +262,68 @@ async function postToInstagram({ igUserId, igAccessToken, igUserAccessToken, sto
   return postId;
 }
 
+// IG 토큰 만료 패턴 — Graph error message 가 다양해서 5개 패턴 매칭.
+// select-and-post + retry-channel-post 동일 매칭이라 헬퍼로 추출 (Important D, 2026-05-20).
+function isIgTokenExpiredMessage(msg) {
+  const s = String(msg || '');
+  return (
+    /code["']?\s*:\s*190/i.test(s) ||
+    /OAuthException/i.test(s) ||
+    /session has expired/i.test(s) ||
+    /access token.*(expired|invalid)/i.test(s) ||
+    /Invalid OAuth/i.test(s)
+  );
+}
+
+/**
+ * postToInstagram + 토큰 자동 갱신 1회 재시도.
+ *
+ * Important D (2026-05-20): scheduled-ig-token-refresh 가 매일 06:00 KST 만 돈다.
+ * 그 사이 24h 안에 토큰 expire 되면 발행 stuck (현재는 caption_status='failed' +
+ * 사장님 재연동 요구). 본 wrapper 는 401/code 190 받은 즉시 refreshIgTokenForSeller
+ * 호출 후 새 토큰으로 1회 재시도. 사장님 무인지 복구.
+ *
+ * 주의: REELS 의 경우 첫 fetch (container 생성) 가 401 받고 죽으면 retry 안전 —
+ * 중복 container 안 만들어짐. 만약 container 생성 후 publish 단계에서 401 받으면
+ * (희박) retry 가 새 container 만들어 게시 → 결과적으로 양쪽 다 OK (orphan container
+ * 는 24h 후 자동 만료).
+ *
+ * @param {object} ctx              - postToInstagram 의 첫 인자 (igUserId, igAccessToken 등)
+ * @param {string} caption
+ * @param {string[]} imageUrls
+ * @param {object} refreshOpts      - { sellerId, supabase } — refresh 에 필요한 컨텍스트
+ * @returns {Promise<string>}        - IG media id
+ */
+async function postToInstagramWithRefresh(ctx, caption, imageUrls, { sellerId, supabase }) {
+  try {
+    return await postToInstagram(ctx, caption, imageUrls);
+  } catch (err) {
+    if (!isIgTokenExpiredMessage(err && err.message)) throw err;
+    if (!sellerId || !supabase) throw err;  // refresh 컨텍스트 없으면 그대로 throw
+
+    console.log(`[ig-publish] 토큰 만료 감지 — 자동 갱신 시도 (seller=${String(sellerId).slice(0, 8)})`);
+    const { refreshIgTokenForSeller } = require('./ig-graph');
+    const refreshed = await refreshIgTokenForSeller(sellerId, supabase);
+    if (!refreshed || !refreshed.accessToken) {
+      console.warn('[ig-publish] 토큰 갱신 실패 — 원래 에러 throw');
+      throw err;
+    }
+
+    console.log('[ig-publish] 토큰 갱신 성공 — 게시 1회 재시도');
+    return await postToInstagram(
+      { ...ctx, igAccessToken: refreshed.accessToken },
+      caption,
+      imageUrls,
+    );
+  }
+}
+
 module.exports = {
   sleep,
   waitForContainer,
   createMediaContainer,
   publishMedia,
   postToInstagram,
+  postToInstagramWithRefresh,
+  isIgTokenExpiredMessage,
 };

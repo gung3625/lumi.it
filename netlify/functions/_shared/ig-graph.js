@@ -193,8 +193,105 @@ async function deleteIgMedia(token, mediaId, opts = {}) {
   return igGraphRequest(token, `/${mediaId}`, {}, { method: 'DELETE', ...opts });
 }
 
+/**
+ * 단일 셀러 IG 토큰을 즉시 갱신 (force-refresh).
+ *
+ * 용도: 발행 함수 (select-and-post, retry-channel-post) 가 401/code 190 받은
+ * 즉시 호출 → 다음 fetch 가 새 토큰으로 1회 재시도 (Important D, 2026-05-20).
+ *
+ * 배경: scheduled-ig-token-refresh-background 가 매일 06:00 KST 만 돈다.
+ * 갱신 cron 사이 24h 윈도우 안에 토큰 expire 되면 발행 stuck. 매시간 watchdog
+ * 이 stuck-scheduled-overdue 잡지만 사장님은 hours 단위 발행 지연 경험.
+ *
+ * Meta refresh_access_token endpoint 조건:
+ *   - 토큰이 24시간 이상 경과 + 만료 전이어야 함
+ *   - 이 조건 만족 안 하면 (예: 갓 발급 토큰이 invalid) 갱신 실패 — null 반환
+ *
+ * @param {string} sellerId - sellers.id (= ig_accounts.user_id)
+ * @param {object} supabase - getAdminClient() 결과 (service_role)
+ * @returns {Promise<{accessToken: string, expiresAt: string}|null>}
+ *          성공 시 새 토큰 정보. 실패 (만료/invalid/Vault 에러) 시 null.
+ */
+async function refreshIgTokenForSeller(sellerId, supabase) {
+  if (!sellerId || !supabase) return null;
+  try {
+    // 현재 plaintext 토큰 조회 (ig_accounts_decrypted view)
+    const { data: dec, error: decErr } = await supabase
+      .from('ig_accounts_decrypted')
+      .select('ig_user_id, access_token')
+      .eq('user_id', sellerId)
+      .maybeSingle();
+    if (decErr || !dec || !dec.access_token) {
+      console.warn('[ig-graph] refresh: 현재 토큰 조회 실패:', decErr?.message || 'no token');
+      return null;
+    }
+    const igUserId = dec.ig_user_id;
+    const oldToken = dec.access_token;
+
+    // Meta refresh endpoint 호출
+    const refreshUrl = `https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=${encodeURIComponent(oldToken)}`;
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 30_000);
+    let res;
+    try {
+      res = await fetch(refreshUrl, { signal: ctrl.signal });
+    } finally {
+      clearTimeout(tid);
+    }
+    if (!res.ok) {
+      const errBody = await res.text().catch(() => '');
+      console.warn(`[ig-graph] refresh: HTTP ${res.status} — ${errBody.slice(0, 200)}`);
+      return null;
+    }
+    const result = await res.json().catch(() => null);
+    if (!result || !result.access_token || !result.expires_in) {
+      console.warn('[ig-graph] refresh: 응답 파싱 실패');
+      return null;
+    }
+
+    const newToken = result.access_token;
+    const expiresIn = result.expires_in;
+    const newExpiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
+    const refreshedAt = new Date().toISOString();
+
+    // Vault 에 새 토큰 저장 (access_token_secret_id 는 ig_accounts 에서 조회)
+    const { data: accRow } = await supabase
+      .from('ig_accounts')
+      .select('access_token_secret_id')
+      .eq('ig_user_id', igUserId)
+      .maybeSingle();
+    const { error: vaultErr } = await supabase.rpc('set_ig_access_token', {
+      p_ig_user_id: igUserId,
+      p_existing_secret: accRow?.access_token_secret_id ?? null,
+      p_access_token: newToken,
+    });
+    if (vaultErr) {
+      console.warn('[ig-graph] refresh: Vault 저장 실패:', vaultErr.message);
+      return null;
+    }
+
+    // ig_accounts 만료/갱신 시각 업데이트 + token_invalid_at 해제
+    await supabase
+      .from('ig_accounts')
+      .update({
+        token_expires_at: newExpiresAt,
+        last_refreshed_at: refreshedAt,
+        updated_at: refreshedAt,
+        token_invalid_at: null,  // 갱신 성공이니 invalid 마킹 해제
+      })
+      .eq('ig_user_id', igUserId);
+
+    console.log(`[ig-graph] refresh: ${String(sellerId).slice(0, 8)} 토큰 갱신 완료 (만료=${newExpiresAt})`);
+    return { accessToken: newToken, expiresAt: newExpiresAt };
+  } catch (e) {
+    console.warn('[ig-graph] refresh: 예외:', e && e.message);
+    return null;
+  }
+}
+
 module.exports = {
   getIgTokenForSeller,
+  refreshIgTokenForSeller,
   igGraphRequest,
   deleteIgMedia,
   markIgTokenInvalid,

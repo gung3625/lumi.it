@@ -7,7 +7,7 @@ const { createHmac } = require('crypto');
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { deleteReservationStorage } = require('./_shared/storage-cleanup');
 // IG 게시 헬퍼는 retry-channel-post 와 공유 위해 _shared/ig-publish.js 로 추출.
-const { postToInstagram } = require('./_shared/ig-publish');
+const { postToInstagram, postToInstagramWithRefresh } = require('./_shared/ig-publish');
 const {
   getThreadsTokenForSeller,
   createThreadsContainer,
@@ -181,10 +181,12 @@ exports.handler = async (event) => {
 
     console.log(`[select-and-post] 게시 시작: ${reservationKey}, captionIndex=${captionIndex}`);
 
-    // 4) Instagram 게시 — catch 블록의 IG 실패 마킹 가드용 플래그·id 노출
+    // 4) Instagram 게시 — catch 블록의 IG 실패 마킹 가드용 플래그·id 노출.
+    // Important D (2026-05-20): postToInstagramWithRefresh — 401/code 190 받으면
+    // refreshIgTokenForSeller 호출 후 1회 재시도. 사장님 무인지 복구.
     reservationIdForChannelMark = reservation.id;
     igAttempted = true;
-    const postId = await postToInstagram(
+    const postId = await postToInstagramWithRefresh(
       {
         igUserId,
         igAccessToken,
@@ -194,7 +196,8 @@ exports.handler = async (event) => {
         videoUrl: reservation.video_url,
       },
       selectedCaption,
-      imageUrls
+      imageUrls,
+      { sellerId: userIdForTokenMark, supabase }
     );
     console.log('[select-and-post] Instagram 게시 완료:', postId);
 
