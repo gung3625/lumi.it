@@ -50,32 +50,40 @@ const COOLDOWN_HOURS = 6;
 //   process-and-post: ~30s (caption gen + storage + IG container 등)
 //   select-and-post:  ~20s (selected caption 확정 + IG publish)
 const STUCK_TARGETS = [
+  // 2026-05-20 fix: 모든 stuck check 에 deleted_at/cancelled/is_sent 필터 추가.
   {
     key: 'pending',
     label: 'pending (process-and-post 시작 안됨)',
     thresholdMin: 10,
-    filter: q => q.eq('caption_status', 'pending'),
+    filter: q => q.eq('caption_status', 'pending').is('deleted_at', null).eq('cancelled', false).eq('is_sent', false),
     timeColumn: 'created_at',
   },
   {
     key: 'generating',
     label: 'generating (process-and-post 중간 죽음)',
     thresholdMin: 15,
-    filter: q => q.eq('caption_status', 'generating'),
+    filter: q => q.eq('caption_status', 'generating').is('deleted_at', null).eq('cancelled', false).eq('is_sent', false),
     timeColumn: 'created_at',
   },
   {
     key: 'posting',
     label: 'posting (select-and-post 중간 죽음)',
     thresholdMin: 10,
-    filter: q => q.eq('caption_status', 'posting'),
+    filter: q => q.eq('caption_status', 'posting').is('deleted_at', null).eq('cancelled', false).eq('is_sent', false),
     timeColumn: 'updated_at',
   },
   {
+    // 2026-05-20 fix: deleted_at IS NULL + cancelled=false + is_sent=false 필터 추가.
+    // 사장님이 취소/삭제한 reservation 도 stuck 으로 잡혀서 false alert 가능.
     key: 'scheduled-overdue',
     label: 'scheduled overdue (select-and-post 트리거 안됨)',
     thresholdMin: 10,
-    filter: q => q.eq('caption_status', 'scheduled').is('ig_post_id', null),
+    filter: q => q
+      .eq('caption_status', 'scheduled')
+      .is('ig_post_id', null)
+      .is('deleted_at', null)
+      .eq('cancelled', false)
+      .eq('is_sent', false),
     timeColumn: 'scheduled_at',
   },
 ];
@@ -137,6 +145,7 @@ function evaluateTarget(target, hb, now) {
 // 반환: [{ kind, label, thresholdMin, count, sample[] }, ...]  alert 대상만
 async function checkStuckReservations(supa, now) {
   const out = [];
+  console.log(`[cron-watchdog] stuck check start (targets=${STUCK_TARGETS.length})`);
   for (const t of STUCK_TARGETS) {
     const cutoff = new Date(now - t.thresholdMin * 60000).toISOString();
     let q = supa
@@ -151,6 +160,7 @@ async function checkStuckReservations(supa, now) {
       console.error(`[cron-watchdog] stuck check ${t.key} 실패:`, error.message);
       continue;
     }
+    console.log(`[cron-watchdog] stuck check ${t.key}: ${data?.length || 0}건 (cutoff=${cutoff})`);
     if (data && data.length > 0) {
       out.push({
         kind: `stuck-${t.key}`,
