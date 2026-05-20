@@ -65,12 +65,18 @@ async function probeVideo(filepath) {
   // I-A (2026-05-15): 영상 전체 디코드 → 한 프레임만 (4~10초 단축).
   // 이전: -f null - 가 영상 끝까지 디코드해서 stderr 파싱.
   // 변경: -frames:v 1 -an (한 프레임 + 오디오 무시). stderr 의 Stream metadata 는 동일.
+  // 2026-05-20 prevention #4: durationSec 도 함께 파싱 — 동적 timeout 계산용.
   const out = await runFfmpeg([
     '-hide_banner', '-i', filepath, '-frames:v', '1', '-an', '-f', 'null', '-',
   ], 15_000).catch((e) => e.message);
   const m = String(out).match(/Stream.*Video:.*?(\d+)x(\d+)/);
   if (!m) throw new Error('영상 해상도 파싱 실패');
-  return { width: Number(m[1]), height: Number(m[2]) };
+  // Duration: 00:01:23.45 패턴 — 못 찾으면 0 (fallback timeout 사용).
+  const dm = String(out).match(/Duration:\s*(\d+):(\d+):(\d+\.\d+)/);
+  const durationSec = dm
+    ? Number(dm[1]) * 3600 + Number(dm[2]) * 60 + Number(dm[3])
+    : 0;
+  return { width: Number(m[1]), height: Number(m[2]), durationSec };
 }
 
 function escapeSubtitlePath(p) {
@@ -384,9 +390,9 @@ exports.handler = async (event) => {
     await trace('start');
     await downloadTo(videoUrl, inPath);
     await trace('downloaded');
-    const { width, height } = await probeVideo(inPath);
+    const { width, height, durationSec } = await probeVideo(inPath);
     await trace(`probed:${width}x${height}`);
-    console.log('[process-video] 해상도:', `${width}x${height}`);
+    console.log('[process-video] 해상도:', `${width}x${height}`, '길이:', durationSec.toFixed(1), '초');
 
     // ─── 자막 결정: Whisper 우선, 실패 시 fallback ───
     let srtUsed = '';
@@ -463,7 +469,14 @@ exports.handler = async (event) => {
 
     console.log('[process-video] 화면텍스트:', hasOverlayPng, '자막:', useSrt, '(subtitles=libass 미지원으로 일단 skip)');
     await trace('pre-ffmpeg');
-    await runFfmpeg(args);
+    // 2026-05-20 prevention #4: 동적 timeout — 영상 길이 × 8배 (ffmpeg 8x realtime budget).
+    // min 300s (짧은 영상도 인코딩+overlay 셋업 시간), max 1200s (Netlify background limit 1500s
+    // 안에서 다른 단계 여유 확보). durationSec 0 (probe 실패) 면 fallback 600s.
+    const ffmpegTimeoutMs = durationSec > 0
+      ? Math.min(1200_000, Math.max(300_000, Math.ceil(durationSec * 8) * 1000))
+      : 600_000;
+    console.log('[process-video] ffmpeg timeout:', (ffmpegTimeoutMs / 1000).toFixed(0), '초');
+    await runFfmpeg(args, ffmpegTimeoutMs);
     await trace('ffmpegDone');
     console.log('[process-video] ffmpeg 완료:', Date.now() - t0, 'ms');
 

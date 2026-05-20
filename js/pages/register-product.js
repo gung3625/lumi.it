@@ -103,6 +103,31 @@
       const initialMediaMatch = (location.hash || '').match(/media=(image|video)/);
       if (initialMediaMatch) activateMediaTab(initialMediaMatch[1]);
 
+      // 2026-05-20 prevention #5: OpenAI quota 사전 조회 → 임박/초과 시 배너 노출.
+      // 사장님이 사진 업로드 + 캡션 요청 후에야 한도 초과 알게 되는 상황 차단.
+      (async () => {
+        try {
+          const r = await fetch('/api/quota-status', { headers: authHeaders });
+          if (!r.ok) return;
+          const q = await r.json();
+          if (!q || q.status === 'ok') return;
+          const banner = document.createElement('div');
+          banner.className = `quota-banner quota-banner--${q.status}`;
+          banner.setAttribute('role', 'alert');
+          if (q.status === 'exceeded') {
+            banner.textContent = `⚠️ 오늘 서비스 전체 캡션 한도(${q.limit}원)를 이미 다 썼어요. 자정(KST) 이후 다시 시도해주세요.`;
+          } else if (q.status === 'critical') {
+            banner.textContent = `⚠️ 오늘 서비스 캡션 한도가 ${q.percentUsed}% 사용됐어요. 곧 한도 도달 가능 — 게시는 가능하지만 만약 실패하면 자정 이후 재시도 부탁드려요.`;
+          } else {
+            banner.textContent = `오늘 서비스 캡션 한도 ${q.percentUsed}% 사용 중.`;
+          }
+          const main = document.querySelector('main') || document.body;
+          main.insertBefore(banner, main.firstChild);
+        } catch (e) {
+          // quota 조회 실패는 silent — 캡션 흐름에 영향 없음
+        }
+      })();
+
       // 영상 input 이벤트
       if (videoInput) {
         videoInput.addEventListener('change', (e) => {

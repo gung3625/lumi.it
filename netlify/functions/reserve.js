@@ -131,6 +131,17 @@ exports.handler = async (event) => {
         return resolve({ statusCode: 400, headers: CORS, body: JSON.stringify({ error: '사진이 없습니다.' }) });
       }
 
+      // 2026-05-20 prevention #1: 사전 검증 — IG carousel max 10장.
+      // 초과하면 IG container API 가 거부. 미리 차단해서 업로드/캡션 비용 절약.
+      const MAX_PHOTOS = 10;
+      if (mediaType === 'IMAGE' && photos.length > MAX_PHOTOS) {
+        return resolve({
+          statusCode: 400,
+          headers: CORS,
+          body: JSON.stringify({ error: `사진은 최대 ${MAX_PHOTOS}장까지 올릴 수 있어요. (현재 ${photos.length}장)` }),
+        });
+      }
+
       const supabase = getAdminClient();
 
       try {
@@ -258,8 +269,58 @@ exports.handler = async (event) => {
             return out;
           };
 
+          // 2026-05-20 prevention #1: dimension/aspect ratio 사전 검증.
+          // IG 권장: 320×320 ~ 1440×1800, aspect 0.8 ~ 1.91. 범위 밖이면 IG 가 crop/distort.
+          // 작업 단순화 위해 강한 reject 는 아니고 너무 작거나 너무 큰 (1MB 이하 / 6000+) 만 차단.
+          const MIN_DIM = 320;
+          const MAX_DIM = 6000;
+          const probeDimensions = async (buf, fileName) => {
+            try {
+              const meta = await sharp(buf, { failOn: 'none' }).metadata();
+              if (!meta.width || !meta.height) {
+                throw new Error('해상도 정보 없음');
+              }
+              if (meta.width < MIN_DIM || meta.height < MIN_DIM) {
+                throw new Error(`너무 작은 이미지 (${meta.width}×${meta.height}, 최소 ${MIN_DIM}×${MIN_DIM} 권장)`);
+              }
+              if (meta.width > MAX_DIM || meta.height > MAX_DIM) {
+                throw new Error(`너무 큰 이미지 (${meta.width}×${meta.height}, 최대 ${MAX_DIM}×${MAX_DIM} 권장)`);
+              }
+              return { width: meta.width, height: meta.height };
+            } catch (e) {
+              throw new Error(`이미지 검증 실패 (${fileName || 'unknown'}): ${e.message}`);
+            }
+          };
+
+          // 2026-05-20 prevention #2: per-file upload retry (3회, exponential backoff).
+          // Supabase Storage transient 실패 (네트워크 글리치, S3 일시 장애) 자동 복구.
+          const uploadWithRetry = async (path, buf) => {
+            const MAX = 3;
+            let lastErr = null;
+            for (let attempt = 1; attempt <= MAX; attempt++) {
+              const { error: upErr } = await supabase.storage
+                .from(BUCKET)
+                .upload(path, buf, { contentType: 'image/jpeg', upsert: false });
+              if (!upErr) return;
+              lastErr = upErr;
+              // duplicate (이미 같은 path 가 있음) 는 retry 의미 없음 — 즉시 throw.
+              if (/duplicate|already exists|conflict/i.test(upErr.message || '')) {
+                throw new Error(`이미지 업로드 실패: ${upErr.message}`);
+              }
+              if (attempt < MAX) {
+                await new Promise(r => setTimeout(r, 400 * Math.pow(2, attempt - 1)));
+              }
+            }
+            throw new Error(`이미지 업로드 ${MAX}회 시도 실패: ${lastErr?.message || 'unknown'}`);
+          };
+
           const tasks = photos.map(async (p) => {
-            // 업로드 전 JPEG 변환. 실패 시 throw → catch 에서 사용자 안내.
+            // 업로드 전 dimension 검증 + JPEG 변환. 실패 시 throw → catch 에서 사용자 안내.
+            try {
+              await probeDimensions(p.buffer, p.fileName);
+            } catch (probeErr) {
+              throw new Error(probeErr.message);
+            }
             let outBuf;
             try {
               outBuf = await ensureJpeg(p.buffer, p.mimeType);
@@ -268,10 +329,7 @@ exports.handler = async (event) => {
             }
             const nonce = crypto.randomBytes(8).toString('hex');
             const path = `${user.id}/${reserveKey}/${ts}-${nonce}.jpg`;
-            const { error: upErr } = await supabase.storage
-              .from(BUCKET)
-              .upload(path, outBuf, { contentType: 'image/jpeg', upsert: false });
-            if (upErr) throw new Error(`이미지 업로드 실패: ${upErr.message}`);
+            await uploadWithRetry(path, outBuf);
             const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path);
             return { path, url: (pub && pub.publicUrl) || '' };
           });

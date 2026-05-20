@@ -228,24 +228,56 @@ async function refreshIgTokenForSeller(sellerId, supabase) {
     const igUserId = dec.ig_user_id;
     const oldToken = dec.access_token;
 
-    // Meta refresh endpoint 호출
+    // Meta refresh endpoint 호출 — transient 실패 대비 3회 재시도 (exponential backoff).
+    // 2026-05-20 prevention #3: 1회 시도로 끝내면 일시 네트워크 글리치에 사장님 수동 재연동
+    // 강요. 500ms → 1.5s → 4.5s 백오프 후 포기. invalid_grant 같은 4xx 는 즉시 포기 (재시도 의미 X).
     const refreshUrl = `https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=${encodeURIComponent(oldToken)}`;
-    const ctrl = new AbortController();
-    const tid = setTimeout(() => ctrl.abort(), 30_000);
-    let res;
-    try {
-      res = await fetch(refreshUrl, { signal: ctrl.signal });
-    } finally {
+    let result = null;
+    let lastErr = '';
+    const MAX_RETRIES = 3;
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      const ctrl = new AbortController();
+      const tid = setTimeout(() => ctrl.abort(), 30_000);
+      let res;
+      try {
+        res = await fetch(refreshUrl, { signal: ctrl.signal });
+      } catch (fetchErr) {
+        lastErr = `network: ${fetchErr.message || 'unknown'}`;
+        clearTimeout(tid);
+        if (attempt < MAX_RETRIES) {
+          await new Promise(r => setTimeout(r, 500 * Math.pow(3, attempt - 1)));
+          continue;
+        }
+        console.warn(`[ig-graph] refresh: ${MAX_RETRIES}회 시도 후 포기 — ${lastErr}`);
+        return null;
+      }
       clearTimeout(tid);
-    }
-    if (!res.ok) {
-      const errBody = await res.text().catch(() => '');
-      console.warn(`[ig-graph] refresh: HTTP ${res.status} — ${errBody.slice(0, 200)}`);
-      return null;
-    }
-    const result = await res.json().catch(() => null);
-    if (!result || !result.access_token || !result.expires_in) {
-      console.warn('[ig-graph] refresh: 응답 파싱 실패');
+
+      if (!res.ok) {
+        const errBody = await res.text().catch(() => '');
+        lastErr = `HTTP ${res.status} — ${errBody.slice(0, 200)}`;
+        // 4xx (invalid token/grant 등) 는 재시도 의미 없음 — 즉시 포기.
+        // 5xx (Meta 서버 일시 장애) 만 retry.
+        if (res.status >= 400 && res.status < 500) {
+          console.warn(`[ig-graph] refresh: 4xx 즉시 포기 — ${lastErr}`);
+          return null;
+        }
+        if (attempt < MAX_RETRIES) {
+          await new Promise(r => setTimeout(r, 500 * Math.pow(3, attempt - 1)));
+          continue;
+        }
+        console.warn(`[ig-graph] refresh: ${MAX_RETRIES}회 시도 후 포기 — ${lastErr}`);
+        return null;
+      }
+
+      result = await res.json().catch(() => null);
+      if (result && result.access_token && result.expires_in) break;
+      lastErr = '응답 파싱 실패';
+      if (attempt < MAX_RETRIES) {
+        await new Promise(r => setTimeout(r, 500 * Math.pow(3, attempt - 1)));
+        continue;
+      }
+      console.warn(`[ig-graph] refresh: ${MAX_RETRIES}회 시도 후 포기 — ${lastErr}`);
       return null;
     }
 

@@ -11,6 +11,8 @@
 'use strict';
 
 const { toProxyUrl } = require('./ig-image-url');
+// 2026-05-20 prevention #6: Meta Graph API 5xx 자동 재시도.
+const { fetchWithRetry } = require('./fetch-with-retry');
 
 const GRAPH_BASE = 'https://graph.facebook.com/v25.0';
 
@@ -45,38 +47,24 @@ async function waitForContainer(containerId, accessToken, maxRetries = 18) {
 async function createMediaContainer(igUserId, igAccessToken, imageUrl, isCarousel) {
   const params = new URLSearchParams({ image_url: imageUrl, access_token: igAccessToken });
   if (isCarousel) params.set('is_carousel_item', 'true');
-  const ctrl = new AbortController();
-  const tid = setTimeout(() => ctrl.abort(), 60_000);
-  let res;
-  try {
-    res = await fetch(`${GRAPH_BASE}/${igUserId}/media`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: params,
-      signal: ctrl.signal,
-    });
-  } finally {
-    clearTimeout(tid);
-  }
+  // 2026-05-20 prevention #6: fetchWithRetry — Meta Graph 5xx 자동 재시도.
+  const res = await fetchWithRetry(`${GRAPH_BASE}/${igUserId}/media`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params,
+  }, { timeoutMs: 60_000, label: 'ig-container' });
   const data = await res.json();
   if (data.error) throw new Error(`IG container error: ${data.error.message || 'unknown'}`);
   return data.id;
 }
 
 async function publishMedia(igUserId, igAccessToken, creationId) {
-  const ctrl = new AbortController();
-  const tid = setTimeout(() => ctrl.abort(), 60_000);
-  let res;
-  try {
-    res = await fetch(`${GRAPH_BASE}/${igUserId}/media_publish`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ creation_id: creationId, access_token: igAccessToken }),
-      signal: ctrl.signal,
-    });
-  } finally {
-    clearTimeout(tid);
-  }
+  // 2026-05-20 prevention #6: fetchWithRetry.
+  const res = await fetchWithRetry(`${GRAPH_BASE}/${igUserId}/media_publish`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ creation_id: creationId, access_token: igAccessToken }),
+  }, { timeoutMs: 60_000, label: 'ig-publish' });
   return res.json();
 }
 
