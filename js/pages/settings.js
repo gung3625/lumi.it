@@ -689,15 +689,15 @@
             <b>내 프로필</b> → <b>≡ 메뉴</b> → <b>계정 유형 및 도구</b> → <b>계정 유형 전환</b> →
             <b>비즈니스</b> 또는 <b>크리에이터</b> 선택 → 카테고리·연락처 입력.<br><br>
             전환 마지막에 <b>Facebook 페이지 연결</b> 화면이 나와요. 페이지 없으면 다음 단계로.`,
-          link: 'https://help.instagram.com/138925576505882',
-          linkText: '공식 가이드 보기 ↗',
+          link: '/guide-ig#step-3',
+          linkText: '📖 자세한 가이드 보기',
           actionText: '🔄 다 했어요, 다시 시도',
         },
         'no-fb-page': {
           title: 'Facebook 페이지 만들기',
-          html: `매장 이름의 Facebook 페이지가 필요해요. 사진·소개는 비워도 OK, 1분이면 끝나요.`,
-          link: 'https://www.facebook.com/pages/create',
-          linkText: '페이지 만들기 ↗',
+          html: `매장 이름의 Facebook 페이지가 필요해요. 사진·소개는 비워도 OK, 2-3분이면 끝나요.`,
+          link: '/guide-ig#step-2',
+          linkText: '📖 자세한 가이드 보기',
           actionText: '🔄 페이지 만들었어요, 다시 시도',
         },
         'page-not-linked': {
@@ -705,8 +705,8 @@
           html: `인스타 앱 → <b>내 프로필</b> → <b>≡ 메뉴</b> → <b>계정 유형 및 도구</b> →
             <b>Facebook 페이지 연결</b> 선택 → 위에서 만든 페이지 선택.<br><br>
             연결 완료되면 페이지 이름이 인스타 프로필에 표시돼요.`,
-          link: 'https://help.instagram.com/356902681064399',
-          linkText: '공식 가이드 보기 ↗',
+          link: '/guide-ig#step-4',
+          linkText: '📖 자세한 가이드 보기',
           actionText: '🔄 연결했어요, 다시 시도',
         },
         'all-done-still-fails': {
