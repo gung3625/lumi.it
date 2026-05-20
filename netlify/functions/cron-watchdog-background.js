@@ -145,6 +145,7 @@ function evaluateTarget(target, hb, now) {
 // 반환: [{ kind, label, thresholdMin, count, sample[] }, ...]  alert 대상만
 async function checkStuckReservations(supa, now) {
   const out = [];
+  const perTargetTrace = [];  // 진단용 — 각 STUCK_TARGETS 결과
   console.log(`[cron-watchdog] stuck check start (targets=${STUCK_TARGETS.length})`);
   for (const t of STUCK_TARGETS) {
     const cutoff = new Date(now - t.thresholdMin * 60000).toISOString();
@@ -156,6 +157,14 @@ async function checkStuckReservations(supa, now) {
       .limit(20);
     q = t.filter(q);
     const { data, error } = await safeAwait(q);
+    perTargetTrace.push({
+      key: t.key,
+      cutoff,
+      timeColumn: t.timeColumn,
+      count: data?.length || 0,
+      errorMsg: error?.message || null,
+      sampleKeys: (data || []).slice(0, 3).map(r => r.reserve_key),
+    });
     if (error) {
       console.error(`[cron-watchdog] stuck check ${t.key} 실패:`, error.message);
       continue;
@@ -176,6 +185,8 @@ async function checkStuckReservations(supa, now) {
       });
     }
   }
+  // 진단용 trace 도 함께 반환
+  out._trace = perTargetTrace;
   return out;
 }
 
@@ -236,6 +247,7 @@ async function watchdogHandler(event, ctx) {
         ts: new Date().toISOString(),
         stuckListLen: stuckList.length,
         stuckList: stuckList.map(s => ({ kind: s.kind, count: s.count, threshold: s.thresholdMin })),
+        perTargetTrace: stuckList._trace || [],
       },
       collected_at: new Date().toISOString(),
     }, { onConflict: 'category' }));
