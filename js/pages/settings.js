@@ -349,9 +349,10 @@
             actionBtn.textContent = '재연동';
             actionBtn.className = 'ig-card__action ig-card__action--connect';
             actionBtn.hidden = false;
-            actionBtn.onclick = () => startSocialOAuth('/api/ig-oauth', '/settings');
+            actionBtn.onclick = () => openIgCheckModal();  // 2026-05-20 #3: 체크리스트 먼저
           } else if (connected) {
-            titleEl.textContent = '인스타 연동됨';
+            // 2026-05-20 #1: 어느 인스타 계정에 연결됐는지 명시 (다중 페이지 보유 사장님 오연결 방지)
+            titleEl.textContent = connectedIgUsername ? `@${connectedIgUsername} 연동됨` : '인스타 연동됨';
             subEl.textContent = '게시·댓글 알림 작동 중';
             actionBtn.textContent = '연결 해제';
             actionBtn.className = 'ig-card__action ig-card__action--disconnect';
@@ -375,7 +376,7 @@
             actionBtn.textContent = '연결하기';
             actionBtn.className = 'ig-card__action ig-card__action--connect';
             actionBtn.hidden = false;
-            actionBtn.onclick = () => startSocialOAuth('/api/ig-oauth', '/settings');
+            actionBtn.onclick = () => openIgCheckModal();  // 2026-05-20 #3: 체크리스트 먼저
           }
         } catch (e) {
           titleEl.textContent = '연동 상태 확인 실패';
@@ -405,7 +406,8 @@
             actionBtn.hidden = false;
             actionBtn.onclick = () => startSocialOAuth('/api/threads-oauth', '/settings');
           } else if (connected) {
-            titleEl.textContent = '쓰레드 연동됨';
+            // 2026-05-20 #1: 어느 쓰레드 계정에 연결됐는지 명시
+            titleEl.textContent = connectedThreadsUsername ? `@${connectedThreadsUsername} 쓰레드 연동됨` : '쓰레드 연동됨';
             subEl.textContent = '쓰레드에도 함께 올라가요';
             actionBtn.textContent = '연결 해제';
             actionBtn.className = 'ig-card__action ig-card__action--disconnect';
@@ -586,6 +588,10 @@
         }
       });
 
+      // 2026-05-20 #1: me.js 응답의 igStatus.username 보관 — loadIg 에서 활용.
+      let connectedIgUsername = null;
+      let connectedThreadsUsername = null;
+
       // ── 초기 로드 ──
       (async () => {
         try {
@@ -597,6 +603,9 @@
           seller.region = s.region || '';
           seller.phone = s.phone || '';
           seller.phoneMasked = s.phoneMasked || '';
+          // IG / Threads username 추출 (2026-05-20 #1)
+          connectedIgUsername = (json.igStatus && json.igStatus.username) || null;
+          connectedThreadsUsername = (json.threadsStatus && json.threadsStatus.username) || null;
           renderInfo();
           loadIg();
           loadThreads();
@@ -614,26 +623,211 @@
       })();
 
       // IG OAuth 콜백 결과 표시 (?ig=connected / ?oauth_error=N)
+      // 2026-05-20 #2: oauth_error=3 (비즈니스 계정 없음) 일 때는 진단 모달 띄움.
       (function handleIgReturn() {
         const qs = new URLSearchParams(location.search);
         if (qs.get('ig') === 'connected') {
           toast('인스타 연동 완료');
         } else if (qs.has('oauth_error')) {
           const code = qs.get('oauth_error');
-          const msg = ({
-            '1': '로그인 토큰이 만료됐어요. 다시 시도해주세요.',
-            '2': 'Facebook 인증이 끊겼어요.',
-            '3': '연결 가능한 인스타 비즈니스 계정을 못 찾았어요.',
-            '4': '세션이 만료됐어요. 다시 시도해주세요.',
-            '5': '저장에 실패했어요.',
-            '6': '저장에 실패했어요.',
-          })[code] || '연동에 실패했어요.';
-          toast(msg, 3000);
+          if (code === '3') {
+            openIgDiagModal('oauth_error_3');
+          } else {
+            const msg = ({
+              '1': '로그인 토큰이 만료됐어요. 다시 시도해주세요.',
+              '2': 'Facebook 인증이 끊겼어요.',
+              '4': '세션이 만료됐어요. 다시 시도해주세요.',
+              '5': '저장에 실패했어요.',
+              '6': '저장에 실패했어요.',
+            })[code] || '연동에 실패했어요.';
+            toast(msg, 3000);
+          }
         }
         if (qs.has('ig') || qs.has('oauth_error')) {
           history.replaceState(null, '', location.pathname);
         }
       })();
+
+      // ── IG 연결 진단 모달 (2026-05-20 #2) ──────────────────────
+      // oauth_error=3 발생 시 또는 사장님이 settings IG 카드에서 직접 열 때 사용.
+      // 라디오 4종: 개인계정 / 페이지없음 / 연결안됨 / 다됐는데안됨.
+      // 각각의 액션: 외부 가이드 링크 또는 카톡 1:1 도움 요청.
+      const igDiagBackdrop = document.querySelector('[data-ig-diag-backdrop]');
+      const igDiagModal = document.querySelector('[data-ig-diag-modal]');
+      const igDiagGuide = document.querySelector('[data-ig-diag-guide]');
+      const igDiagMsgRow = document.querySelector('[data-ig-diag-msg-row]');
+      const igDiagMsg = document.querySelector('[data-ig-diag-msg]');
+      const igDiagAction = document.querySelector('[data-ig-diag-action]');
+      const igDiagCancel = document.querySelector('[data-ig-diag-cancel]');
+      const igDiagClose = document.querySelector('[data-ig-diag-close]');
+      const igDiagReasonRadios = document.querySelectorAll('input[name="ig-diag-reason"]');
+      let igDiagStage = 'settings_reconnect';
+
+      function openIgDiagModal(stage) {
+        igDiagStage = stage || 'settings_reconnect';
+        // reset state
+        igDiagReasonRadios.forEach(r => { r.checked = false; });
+        if (igDiagGuide) { igDiagGuide.hidden = true; igDiagGuide.innerHTML = ''; }
+        if (igDiagMsgRow) igDiagMsgRow.hidden = true;
+        if (igDiagMsg) igDiagMsg.value = '';
+        if (igDiagAction) { igDiagAction.disabled = true; igDiagAction.textContent = '다음'; }
+        if (igDiagBackdrop) igDiagBackdrop.classList.add('is-open');
+        if (igDiagModal) igDiagModal.classList.add('is-open');
+      }
+      function closeIgDiagModal() {
+        if (igDiagBackdrop) igDiagBackdrop.classList.remove('is-open');
+        if (igDiagModal) igDiagModal.classList.remove('is-open');
+      }
+      // 노출 — 모듈 내 다른 핸들러도 호출 가능하게
+      window.openIgDiagModal = openIgDiagModal;
+
+      // 라디오 선택 시 가이드 영역 채움
+      const IG_DIAG_GUIDES = {
+        'personal-account': {
+          title: '인스타 비즈니스 계정으로 전환',
+          html: `인스타 앱에서 다음 순서로:<br>
+            <b>내 프로필</b> → <b>≡ 메뉴</b> → <b>계정 유형 및 도구</b> → <b>계정 유형 전환</b> →
+            <b>비즈니스</b> 또는 <b>크리에이터</b> 선택 → 카테고리·연락처 입력.<br><br>
+            전환 마지막에 <b>Facebook 페이지 연결</b> 화면이 나와요. 페이지 없으면 다음 단계로.`,
+          link: 'https://help.instagram.com/138925576505882',
+          linkText: '공식 가이드 보기 ↗',
+          actionText: '🔄 다 했어요, 다시 시도',
+        },
+        'no-fb-page': {
+          title: 'Facebook 페이지 만들기',
+          html: `매장 이름의 Facebook 페이지가 필요해요. 사진·소개는 비워도 OK, 1분이면 끝나요.`,
+          link: 'https://www.facebook.com/pages/create',
+          linkText: '페이지 만들기 ↗',
+          actionText: '🔄 페이지 만들었어요, 다시 시도',
+        },
+        'page-not-linked': {
+          title: '인스타 ↔ 페이지 연결',
+          html: `인스타 앱 → <b>내 프로필</b> → <b>≡ 메뉴</b> → <b>계정 유형 및 도구</b> →
+            <b>Facebook 페이지 연결</b> 선택 → 위에서 만든 페이지 선택.<br><br>
+            연결 완료되면 페이지 이름이 인스타 프로필에 표시돼요.`,
+          link: 'https://help.instagram.com/356902681064399',
+          linkText: '공식 가이드 보기 ↗',
+          actionText: '🔄 연결했어요, 다시 시도',
+        },
+        'all-done-still-fails': {
+          title: '루미 팀이 도와드려요',
+          html: `위 3단계 다 마치셨는데 안 되시면 사장님 본인 환경의 특수한 이슈일 가능성이 커요.
+            아래 버튼 누르면 루미 팀에 사장님 정보가 전달되고, <b>1시간 안에 카톡으로 답장</b>드려요.`,
+          link: null,
+          linkText: null,
+          actionText: '📨 루미 팀에 도움 요청',
+        },
+      };
+
+      igDiagReasonRadios.forEach(radio => {
+        radio.addEventListener('change', () => {
+          if (!radio.checked) return;
+          const reason = radio.value;
+          const g = IG_DIAG_GUIDES[reason];
+          if (!g) return;
+          if (igDiagGuide) {
+            igDiagGuide.hidden = false;
+            const linkHtml = g.link ? `<a class="ig-diag__guide-link" href="${g.link}" target="_blank" rel="noopener noreferrer">${esc(g.linkText)}</a>` : '';
+            igDiagGuide.innerHTML = `
+              <div class="ig-diag__guide-title">${esc(g.title)}</div>
+              <div class="ig-diag__guide-body">${g.html}</div>
+              ${linkHtml}
+            `;
+          }
+          // "all-done" 만 추가 메시지 입력 노출
+          if (igDiagMsgRow) igDiagMsgRow.hidden = (reason !== 'all-done-still-fails');
+          if (igDiagAction) {
+            igDiagAction.disabled = false;
+            igDiagAction.textContent = g.actionText;
+          }
+        });
+      });
+
+      // ── IG 체크리스트 모달 (2026-05-20 #3) ─────────────────────
+      // settings 의 "연결하기" / "재연동" 클릭 시 OAuth 직전에 사전 체크.
+      const igCheckBackdrop = document.querySelector('[data-ig-check-backdrop]');
+      const igCheckModal = document.querySelector('[data-ig-check-modal]');
+      const igCheckBoxes = document.querySelectorAll('[data-ig-check-box]');
+      const igCheckProceed = document.querySelector('[data-ig-check-proceed]');
+      const igCheckCancel = document.querySelector('[data-ig-check-cancel]');
+      const igCheckClose = document.querySelector('[data-ig-check-close]');
+      const igCheckHelp = document.querySelector('[data-ig-check-help]');
+
+      function openIgCheckModal() {
+        igCheckBoxes.forEach(cb => { cb.checked = false; });
+        if (igCheckProceed) igCheckProceed.disabled = true;
+        if (igCheckBackdrop) igCheckBackdrop.classList.add('is-open');
+        if (igCheckModal) igCheckModal.classList.add('is-open');
+      }
+      function closeIgCheckModal() {
+        if (igCheckBackdrop) igCheckBackdrop.classList.remove('is-open');
+        if (igCheckModal) igCheckModal.classList.remove('is-open');
+      }
+      window.openIgCheckModal = openIgCheckModal;
+
+      function refreshIgCheckProceed() {
+        const allChecked = Array.from(igCheckBoxes).every(cb => cb.checked);
+        if (igCheckProceed) igCheckProceed.disabled = !allChecked;
+      }
+      igCheckBoxes.forEach(cb => cb.addEventListener('change', refreshIgCheckProceed));
+
+      if (igCheckProceed) igCheckProceed.addEventListener('click', () => {
+        closeIgCheckModal();
+        setTimeout(() => startSocialOAuth('/api/ig-oauth', '/settings'), 250);
+      });
+      if (igCheckCancel) igCheckCancel.addEventListener('click', closeIgCheckModal);
+      if (igCheckClose) igCheckClose.addEventListener('click', closeIgCheckModal);
+      if (igCheckBackdrop) igCheckBackdrop.addEventListener('click', closeIgCheckModal);
+      if (igCheckHelp) igCheckHelp.addEventListener('click', (e) => {
+        e.preventDefault();
+        closeIgCheckModal();
+        setTimeout(() => openIgDiagModal('settings_reconnect'), 250);
+      });
+
+      if (igDiagAction) {
+        igDiagAction.addEventListener('click', async () => {
+          const selected = document.querySelector('input[name="ig-diag-reason"]:checked');
+          if (!selected) return;
+          const reason = selected.value;
+          if (reason === 'all-done-still-fails') {
+            // 카톡/이메일 도움 요청
+            igDiagAction.disabled = true;
+            igDiagAction.textContent = '보내는 중…';
+            try {
+              const r = await fetch('/api/request-ig-help', {
+                method: 'POST',
+                headers: { ...authHeaders, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  stage: igDiagStage,
+                  userSelectedReason: reason,
+                  message: igDiagMsg ? igDiagMsg.value.trim() : '',
+                  contextUrl: location.href,
+                }),
+              });
+              if (r.ok) {
+                toast('루미 팀에 알렸어요. 1시간 안에 카톡으로 연락드릴게요.', 4000);
+                closeIgDiagModal();
+              } else {
+                toast('요청 실패. 다시 시도해주세요.', 3000);
+                igDiagAction.disabled = false;
+                igDiagAction.textContent = '📨 루미 팀에 도움 요청';
+              }
+            } catch (e) {
+              toast('네트워크 오류 — 다시 시도해주세요.', 3000);
+              igDiagAction.disabled = false;
+              igDiagAction.textContent = '📨 루미 팀에 도움 요청';
+            }
+            return;
+          }
+          // 그 외 — 다시 OAuth 시도
+          closeIgDiagModal();
+          // 약간 지연 후 OAuth (모달 닫힘 애니메이션 끝난 뒤)
+          setTimeout(() => startSocialOAuth('/api/ig-oauth', '/settings'), 250);
+        });
+      }
+      if (igDiagCancel) igDiagCancel.addEventListener('click', closeIgDiagModal);
+      if (igDiagClose) igDiagClose.addEventListener('click', closeIgDiagModal);
+      if (igDiagBackdrop) igDiagBackdrop.addEventListener('click', closeIgDiagModal);
 
       // Threads OAuth 콜백 결과 표시 (?threads=connected / ?threads_oauth_error=N)
       (function handleThreadsReturn() {

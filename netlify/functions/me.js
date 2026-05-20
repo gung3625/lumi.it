@@ -211,17 +211,29 @@ exports.handler = async (event) => {
   let igStatus      = { connected: false, tokenExpired: false, tokenInvalid: false };
   let threadsStatus = { connected: false, tokenExpired: false };
   try {
+    // 2026-05-20 #1: ig_username / threads_username 도 함께 조회 → 사장님이 어느 IG/Threads
+    // 계정에 연결됐는지 settings 페이지에서 확인 가능. 다중 페이지 보유 사장님이 오연결
+    // 즉시 알아챔.
     const { data: igRow } = await admin
       .from('ig_accounts')
-      .select('ig_user_id, token_invalid_at, threads_user_id, threads_token_invalid_at')
+      .select('ig_user_id, ig_username, token_invalid_at, threads_user_id, threads_username, threads_token_invalid_at')
       .eq('user_id', seller.id)
       .maybeSingle();
     if (igRow && igRow.ig_user_id) {
       const expired = !!igRow.token_invalid_at;
-      igStatus = { connected: true, tokenExpired: expired, tokenInvalid: expired };
+      igStatus = {
+        connected: true,
+        tokenExpired: expired,
+        tokenInvalid: expired,
+        username: igRow.ig_username || null,
+      };
     }
     if (igRow && igRow.threads_user_id) {
-      threadsStatus = { connected: true, tokenExpired: !!igRow.threads_token_invalid_at };
+      threadsStatus = {
+        connected: true,
+        tokenExpired: !!igRow.threads_token_invalid_at,
+        username: igRow.threads_username || null,
+      };
     }
   } catch (e) {
     console.warn('[me] ig_accounts 조회 경고:', e && e.message);

@@ -629,3 +629,83 @@
       font-weight: var(--weight-medium);
     }
     .lt-edit__open[disabled] { opacity: 0.4; pointer-events: none; }
+
+    /* IG 연결 진단 모달 (2026-05-20 #2) — oauth_error=3 시 라디오 진단 + 가이드. */
+    .modal--ig-diag .ig-diag__lead {
+      margin: 0 0 var(--space-3); font-size: var(--text-body);
+      color: var(--ink-soft); line-height: 1.5;
+    }
+    .ig-diag__reasons { list-style: none; padding: 0; margin: 0 0 var(--space-4); display: flex; flex-direction: column; gap: var(--space-2); }
+    .ig-diag__reason {
+      display: flex; flex-direction: column; gap: 4px;
+      padding: var(--space-3) var(--space-3) var(--space-3) calc(var(--space-3) + 22px);
+      background: var(--bg-soft); border: 1px solid var(--line);
+      border-radius: var(--radius-md); cursor: pointer; position: relative;
+      transition: border-color var(--duration-snap) var(--ease-toss), background var(--duration-snap) var(--ease-toss);
+    }
+    .ig-diag__reason input[type="radio"] {
+      position: absolute; left: var(--space-3); top: calc(var(--space-3) + 2px);
+      width: 16px; height: 16px; accent-color: var(--pink-500); cursor: pointer;
+    }
+    .ig-diag__reason:hover { border-color: var(--pink-300, var(--pink-200, #f7c5d3)); }
+    .ig-diag__reason input[type="radio"]:checked ~ .ig-diag__reason-title { color: var(--pink-500); }
+    .ig-diag__reasons li:has(input:checked) .ig-diag__reason { border-color: var(--pink-500); background: var(--pink-50, #fff5f8); }
+    .ig-diag__reason-title { font-size: var(--text-body); font-weight: 700; color: var(--ink); }
+    .ig-diag__reason-sub { font-size: var(--text-caption); color: var(--ink-muted); }
+
+    .ig-diag__guide {
+      background: var(--bg-soft); border: 1px solid var(--line);
+      border-radius: var(--radius-md); padding: var(--space-3);
+      margin-bottom: var(--space-3); animation: rise .24s var(--ease-toss);
+    }
+    @keyframes rise { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    .ig-diag__guide-title { font-size: var(--text-body); font-weight: 800; color: var(--ink); margin-bottom: var(--space-2); }
+    .ig-diag__guide-body { font-size: var(--text-caption); color: var(--ink-soft); line-height: 1.6; }
+    .ig-diag__guide-link {
+      display: inline-block; margin-top: var(--space-2);
+      padding: 6px 12px; background: var(--neutral-0); border: 1px solid var(--line);
+      border-radius: var(--radius-pill); font-size: var(--text-caption);
+      color: var(--pink-500); font-weight: 600; text-decoration: none;
+    }
+    .ig-diag__guide-link:hover { background: var(--pink-50, #fff5f8); border-color: var(--pink-500); }
+
+    .ig-diag__msg-row { display: flex; flex-direction: column; gap: 6px; margin-bottom: var(--space-3); }
+    .ig-diag__msg-label { font-size: var(--text-caption); color: var(--ink-muted); font-weight: 600; }
+    .ig-diag__msg-input {
+      width: 100%; min-height: 80px; padding: var(--space-2) var(--space-3);
+      border: 1px solid var(--line); border-radius: var(--radius-md);
+      font-family: inherit; font-size: var(--text-body); resize: vertical;
+    }
+    .ig-diag__msg-input:focus { border-color: var(--pink-500); outline: none; }
+
+    .ig-diag__actions { display: flex; gap: var(--space-2); justify-content: flex-end; }
+    .modal__cta--secondary {
+      background: var(--neutral-0) !important; color: var(--ink) !important;
+      border: 1px solid var(--line) !important; box-shadow: none !important;
+    }
+
+    /* IG 연결 체크리스트 모달 (2026-05-20 #3) — OAuth 진입 전 사전 체크 4단계. */
+    .modal--ig-check .ig-check__lead {
+      margin: 0 0 var(--space-3); font-size: var(--text-body);
+      color: var(--ink-soft); line-height: 1.5;
+    }
+    .ig-check__list { list-style: none; padding: 0; margin: 0 0 var(--space-4); display: flex; flex-direction: column; gap: var(--space-2); }
+    .ig-check__item {
+      display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);
+      padding: var(--space-3); background: var(--bg-soft);
+      border: 1px solid var(--line); border-radius: var(--radius-md);
+    }
+    .ig-check__row { display: flex; align-items: center; gap: var(--space-2); cursor: pointer; flex: 1; min-width: 0; }
+    .ig-check__row input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--pink-500); cursor: pointer; flex-shrink: 0; }
+    .ig-check__title { font-size: var(--text-body); font-weight: 600; color: var(--ink); line-height: 1.4; }
+    .ig-check__hint-link {
+      flex-shrink: 0; padding: 6px 12px; background: var(--neutral-0);
+      border: 1px solid var(--line); border-radius: var(--radius-pill);
+      font-size: var(--text-caption); color: var(--pink-500); font-weight: 600;
+      text-decoration: none; white-space: nowrap;
+    }
+    .ig-check__hint-link:hover { background: var(--pink-50, #fff5f8); border-color: var(--pink-500); }
+
+    .ig-check__actions { display: flex; gap: var(--space-2); justify-content: flex-end; margin-bottom: var(--space-2); }
+    .ig-check__footnote { font-size: var(--text-caption); color: var(--ink-muted); text-align: center; margin: 0; }
+    .ig-check__footnote a { color: var(--pink-500); text-decoration: underline; }
