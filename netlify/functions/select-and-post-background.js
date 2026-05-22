@@ -3,7 +3,6 @@ const { corsHeaders, getOrigin, verifyLumiSecret } = require('./_shared/auth');
 // 데이터 저장: public.reservations (Supabase).
 // 토큰 조회: ig_accounts_decrypted 뷰 (service_role 전용) — 절대 로그/응답에 노출 금지.
 // 이미지: reservations.image_urls (Supabase Storage public URL 권장).
-const { createHmac } = require('crypto');
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { deleteReservationStorage } = require('./_shared/storage-cleanup');
 // IG 게시 헬퍼는 retry-channel-post 와 공유 위해 _shared/ig-publish.js 로 추출.
@@ -48,22 +47,6 @@ async function postToThreadsForSeller(supabase, sellerId, caption, imageUrl, vid
   }, { timeoutMs: 60000 });
   if (!published || !published.id) throw new ThreadsGraphError('Threads publish 응답에 id 없음');
   return published.id;
-}
-
-async function sendAlimtalk(phone, text) {
-  try {
-    const now = new Date().toISOString();
-    const salt = `post_${Date.now()}`;
-    const sig = createHmac('sha256', process.env.SOLAPI_API_SECRET).update(`${now}${salt}`).digest('hex');
-    await fetch('https://api.solapi.com/messages/v4/send', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `HMAC-SHA256 ApiKey=${process.env.SOLAPI_API_KEY}, Date=${now}, Salt=${salt}, Signature=${sig}`,
-      },
-      body: JSON.stringify({ message: { to: phone, from: '01064246284', text } }),
-    });
-  } catch (e) { console.error('[select-and-post] 알림톡 실패:', e.message); }
 }
 
 async function saveCaptionHistory(supabase, userId, caption) {
@@ -275,15 +258,10 @@ exports.handler = async (event) => {
         console.warn('[select-and-post] channel_posts(threads final) 예외 (무시):', e && e.message);
       }
 
-      // 5-2) 토큰 만료 마킹 + 알림톡
+      // 5-2) 토큰 만료 마킹 — 2026-05-23 Solapi 제거. 사장님은 settings 의
+      // "쓰레드 재연동 필요" 배너로 인지 (token_invalid_at 마킹 → loadThreads UI).
       if (tokenExpired) {
         try { await markThreadsTokenInvalid(supabase, reservation.user_id, 'select-and-post'); } catch (_) { /* noop */ }
-        try {
-          await sendAlimtalk(
-            '01064246284',
-            '[lumi] 스레드 토큰 만료\n\n스레드 게시가 실패했어요.\n대시보드 설정에서 스레드 재연동이 필요합니다.\n\n예약: ' + reservationKey
-          );
-        } catch (_) { /* noop */ }
       }
     }
 
@@ -399,15 +377,8 @@ exports.handler = async (event) => {
     // 7) 캡션 히스토리 저장
     if (reservation.user_id) await saveCaptionHistory(supabase, reservation.user_id, selectedCaption);
 
-    // 8) 완료 알림톡 (storeProfile 에서 phone + 매장명 추출)
-    const sp = reservation.store_profile || {};
-    const phone = sp.phone || sp.ownerPhone;
-    if (phone) {
-      await sendAlimtalk(
-        phone,
-        `[lumi] 인스타그램에 게시됐어요! 📸\n\n${sp.name || '매장'} 게시물이 올라갔어요.\n인스타그램에서 확인해보세요!`
-      );
-    }
+    // 8) (구) 완료 알림톡 — 2026-05-23 Solapi 제거. 사장님은 history 페이지의
+    //    채널 chip (is-posted) + IG 자체 알림으로 게시 완료 인지.
 
   } catch (err) {
     console.error('[select-and-post] 에러:', err.message);

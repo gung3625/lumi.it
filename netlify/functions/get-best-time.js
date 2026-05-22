@@ -146,7 +146,7 @@ function pickUpcoming(slots) {
   return withMinutes.find((s) => s.minutes > nowMinutes + 30) || withMinutes[0] || null;
 }
 
-// 요일별 슬롯 + 오늘 추천 슬롯 1개 — send-daily-schedule 등 외부 호출용으로도 유지
+// 요일별 슬롯 + 오늘 추천 슬롯 1개 — 외부 호출용으로도 유지
 function getSeedSlot(category) {
   const data = INDUSTRY_MATRIX[category] || INDUSTRY_MATRIX.other;
   const day = new Date().getDay();

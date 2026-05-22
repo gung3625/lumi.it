@@ -9,7 +9,6 @@ const { corsHeaders, getOrigin, verifyLumiSecret } = require('./_shared/auth');
 //   - instagram (기본): 기존 IG 게시 흐름 (변경 없음)
 //   - tiktok: TikTok 사진/영상 게시
 //   - both: IG + TikTok 둘 다 게시, 각 결과 별도 기록
-const { createHmac } = require('crypto');
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { checkAndIncrementQuota, QuotaExceededError } = require('./_shared/openai-quota');
 const { safeAwait } = require('./_shared/supa-safe');
@@ -972,23 +971,6 @@ async function burnSubtitlesViaModal({ reservationKey, videoUrl, srt, userId }) 
   }
 }
 
-// ─────────── 알림톡 ───────────
-async function sendAlimtalk(phone, text) {
-  try {
-    const now = new Date().toISOString();
-    const salt = `post_${Date.now()}`;
-    const sig = createHmac('sha256', process.env.SOLAPI_API_SECRET).update(`${now}${salt}`).digest('hex');
-    await fetch('https://api.solapi.com/messages/v4/send', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `HMAC-SHA256 ApiKey=${process.env.SOLAPI_API_KEY}, Date=${now}, Salt=${salt}, Signature=${sig}`,
-      },
-      body: JSON.stringify({ message: { to: phone, from: '01064246284', text } }),
-    });
-  } catch (e) { console.error('[process-and-post] 알림톡 실패:', e.message); }
-}
-
 // ─────────── 트렌드/캡션뱅크 조회 (Supabase) ───────────
 // 정제된 키워드 (trends.keywords) + raw IG trending 해시태그 (ig-hashtag-cache).
 // 캡션 생성 GPT 가 IG 실제 trending 태그를 직접 참고하도록 둘 다 컨텍스트 제공.
@@ -1571,9 +1553,8 @@ exports.handler = async (event) => {
       }
     }
 
-    // 6) 알림톡 (솔라피 템플릿 승인 전까지 비활성화 — 기존 동작 유지)
-    // const phone = userProfile?.phone || sp.phone || sp.ownerPhone;
-    // if (phone) { await sendAlimtalk(phone, ...); }
+    // 6) (구) 알림톡 — 2026-05-23 Solapi 완전 제거. 외부 알림 안 보냄.
+    //    사장님은 lumi history 페이지에서 게시 상태 확인.
 
     // 7) post_mode='immediate' → 캡션 생성 즉시 IG 게시 트리거.
     //    'scheduled' / 'best-time' 은 scheduler cron 이 scheduled_at 도달 시 트리거.
