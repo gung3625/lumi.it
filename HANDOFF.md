@@ -1,7 +1,113 @@
 # 루미(lumi) 인수인계 문서
 
-마지막 업데이트: 2026-05-17 (저녁 audit 세션 후)
-기준 커밋: `main` 최신 (`f40ea6a`)
+마지막 업데이트: 2026-05-23 (베타 모집 직전 robustness + IG 가이드 보강)
+기준 커밋: `main` 최신 (`56f95c9`)
+
+---
+
+## ✅ 2026-05-23 — 베타 모집 직전 robustness + IG 가이드 5건
+
+배경: 사장님 "실패 자체가 발생하면 안 된다" 강조. 발행 흐름의 silent failure 가능성 차단 + IG 연결 진입장벽 (사장님 95% 가 비즈니스 계정 전환에서 막힐 가능성) 해소. 4개 Blocker + 7개 Prevention + IG 가이드 5건 + 사장님 UI 정정 4곳.
+
+### 4개 Blocker (커밋 `5a860f5` `1f3e63a` `1467911`)
+
+- **A. beta-signup 허니팟** — `name="website"` 숨김 input, 봇 채우면 silent 200 응답 + DB skip
+- **B. cron-watchdog 발행 stuck 감시 추가** — 4종 stuck 상태 감지 (`pending` >10분 / `generating` >15분 / `posting` >60분 / `scheduled` 인데 `scheduled_at` 지난지 10분+ AND `ig_post_id` null). 6h cooldown.
+  - **🐛 발견 + fix**: `reservations.updated_at` 컬럼 없음 → select 에 포함시켜 모든 query silent fail. 컬럼 제거 + posting timeColumn 을 `created_at` 으로 변경.
+  - 필터 추가: `deleted_at IS NULL` + `cancelled=false` + `is_sent=false` (사장님 취소/삭제한 row 제외)
+- **C. caption_status='failed' 사장님 history 가시화** — 채널 chip 에 ⚠️ + "게시 실패" 명시 + ↻ 다시 시도 링크
+- **antipattern check** (e032abf 재발 차단) — `scripts/check-antipatterns.js`, `npm run build` 첫 단계. supabase 빌더 `.catch` 체이닝 + heuristic await 누락 감지.
+
+### Important D — IG token 401 자동 복구 (커밋 `1f3e63a`)
+
+- `_shared/ig-graph.js`: `refreshIgTokenForSeller(sellerId, supabase)` — Meta refresh_access_token 즉시 호출. **3회 retry** (5xx/network only, 4xx 즉시 포기, 500ms→1.5s→4.5s exponential).
+- `_shared/ig-publish.js`: `postToInstagramWithRefresh(ctx, caption, urls, {sellerId, supabase})` — `postToInstagram` 가 401/code 190 throw 하면 refresh 후 1회 재시도.
+- `select-and-post-background.js` + `retry-channel-post.js` → wrapper 로 교체.
+- 효과: scheduled-ig-token-refresh-background (매일 06:00 KST) 사이 24h 윈도우에 토큰 expire 되면 무인지 복구. 갱신 실패 시 기존 path (`token_invalid_at` 마킹 + `caption_status='failed'`) fallthrough.
+
+### Important E (재정의) — 자막 실패 history 가시화 (커밋 `1f3e63a`)
+
+- E 원안 ("video processing 무한 stuck") 부정확. `process-video-background` 가 이미 fallback 처리 (실패 시 `video_processed_at` 세팅 + 원본 video_url 로 publish 진행 + `subtitle_status='skipped:<reason>'`).
+- 진짜 부족한 점: `subtitle_status='skipped:...'` 가 DB 만에 있고 사장님 모름.
+- `js/pages/history.js`: REELS + `subtitle_status.startsWith('skipped:')` → ⚠️ "자막·오버레이 누락" 칩 노출, `title` 툴팁에 사유. `list-reservations.js` 가 이미 `select('*')` 라 백엔드 변경 없음.
+
+### 7가지 Prevention (커밋 `1467911`)
+
+베타 사장님이 사진 올림 → 캡션 → 발행 전체 흐름에서 transient failure 자동 흡수.
+
+1. **refreshIgTokenForSeller 3회 retry** (위 D 와 동일)
+2. **ffmpeg 동적 timeout** — `process-video` 의 `probeVideo()` 가 `durationSec` 도 파싱. main 트랜스코드 timeout = `durationSec × 8` (clamp 300~1200s). 100MB+ 영상 자막 처리 가능.
+3. **이미지 사전 검증** (reserve.js) — `MAX_PHOTOS=10` (IG carousel 한도) + sharp metadata dimension 검증 (min 320, max 6000). 업로드/캡션 비용 발생 전 reject.
+4. **Storage 업로드 per-file retry** (reserve.js) — `uploadWithRetry()` 3회 시도 (400ms → 800ms → 1600ms backoff). duplicate 에러 즉시 포기. Promise.all all-or-nothing 의미는 유지.
+5. **OpenAI quota 사전 visibility** — 신규 endpoint `/api/quota-status` (Bearer 인증). register-product 페이지 로드 시 fetch → warn 70%+ / critical 90%+ / exceeded 100%+ 배너 노출.
+6. **Meta Graph 5xx 재시도** — `_shared/ig-publish.js` 의 createMediaContainer + publishMedia 에 `fetchWithRetry` (2회, 500ms → 1500ms).
+7. **OpenAI 5xx 재시도** — process-and-post 5곳 (`vision-analyze` / `validator` / `caption-gen` / `threads-caption` / `SRT`) 모두 `fetchWithRetry` 통과. AbortController 보일러플레이트 일괄 제거.
+
+**신규 공용 helper**: `netlify/functions/_shared/fetch-with-retry.js` — 5xx 자동 재시도 wrapper. 5xx 만 retry, 4xx 즉시 포기. 호출자는 res.ok / res.json() 평소대로 처리.
+
+### IG 연결 가이드 5건 (커밋 `5330c36` `938312b` `56f95c9`)
+
+베타 모집 시 사장님 진입장벽 1위 = 인스타 비즈니스 전환. signup step 3 는 이미 4단계 체크리스트 있지만 settings 경로 + 진단 + fallback + 영상 + handle 노출 약점.
+
+- **#5 신규 endpoint `/api/request-ig-help`** — 사장님이 "다 됐는데 안 돼요" 누르면 lumi@lumi.it.kr 으로 Resend 메일. 매장명·대표자·휴대폰·IG 핸들·막힌 단계·자유 메시지·URL 포함. rate-limit 사장님당 1h 5건.
+- **#2 settings 진단 모달** — `oauth_error=3` (비즈니스 계정 없음) 시 풀모달, 라디오 4종 (개인계정 / 페이지없음 / 연결안됨 / 다됐는데안됨) → 각 항목별 정확한 가이드 + 외부 링크. "다됐는데안됨" 만 자유 메시지 입력 + request-ig-help 발송.
+- **#3 settings IG 체크리스트 모달** — "연결하기"/"재연동" 클릭 시 OAuth 직전 4단계 체크 (FB 계정 / FB 페이지 / IG 비즈니스 / 연결). 모두 체크되어야 OAuth 진입. 빠진 항목 별 외부 링크. "잘 모르시면 도움 요청하기" → 진단 모달 fallthrough.
+- **#4 외부 가이드 링크** — signup step 3 + 진단 모달에 Instagram 공식 help 링크 (lumi 자체 영상 교체 예정).
+- **#1 IG handle settings 노출** — `me.js` 가 `igStatus.username` + `threadsStatus.username` 노출. settings 의 "인스타 연동됨" → "**@lumi__it 연동됨**". 다중 페이지 보유 사장님이 오연결 즉시 인지.
+
+### 사장님 검증 후 IG 가이드 UI 정정 4곳 (커밋 `938312b` `56f95c9`)
+
+사장님 디바이스 실제 화면 기준 (인스타 UI 자주 바뀜):
+
+| Before (잘못) | After (사장님 확인) |
+|---|---|
+| 내 프로필 → ≡ 햄버거 → 설정 및 활동 (3단계) | 하단 "내 프로필" 자체가 = "설정 및 활동" (1단계) |
+| 메뉴명 "계정 유형 및 도구" | "**계정 유형**" |
+| "프로페셔널 계정으로 전환" 별도 탭 | "계정 유형" 안에서 "**프로페셔널 계정으로 변경**" |
+
+정정 파일 4곳: `guide-ig.html` (Step 3 메인 + Step 4 사후 + 트러블슈팅 summary) / `js/pages/settings.js` (IG_DIAG_GUIDES personal-account + page-not-linked) / `signup.html` (step 3 ig-step__guide).
+
+Fallback tip 박스 유지: "메뉴가 다른 위치에 보이면 우측 상단 ≡ 안에 있을 수도" — 다른 인스타 버전 사장님 대응.
+
+### 인스타 홍보 reels 게시 (@lumi__it)
+
+| 영상 | URL | 페인포인트 |
+|---|---|---|
+| b 변형 (컨테이너+다이버 → lumi 카드) | reel/DYf_-sdiNgS | 마감 후 SNS — "장사 끝났는데 또 일" |
+| c 변형 (비행기 → lumi 카드) | reel/DYf_3uKD4sh | 글 막힘 — "또 #카페일상 #감성카페" |
+
+- 게시 스크립트: `scripts/post-reel.js` (lumi-promo Supabase bucket → IG Graph API REELS container → 폴링 → publish)
+- 1080×1920 native — HTML 카드 → puppeteer 1.5× device scale → PNG → ffmpeg xfade concat
+- 새 Supabase bucket: `lumi-promo` (public, 100MB, mp4/quicktime)
+
+### 환경변수 추가
+
+- `LUMI_ADMIN_EMAILS=lumi@lumi.it.kr` (production, **non-secret**)
+  - 사용처: cron-watchdog ALERT 이메일 + request-ig-help 도움 요청 이메일
+  - ⚠️ `--secret` 플래그로 set 하면 Netlify build 실패. non-secret 로 set 필요.
+
+### 라이브 검증 완료 (2026-05-20)
+
+- `/api/quota-status` HTTP 200, `{used:40, limit:100000, percentUsed:0, status:'ok'}` 응답 확인
+- beta-signup honeypot — 봇 시뮬레이션 200 OK 응답 + DB insert 안 됨 확인
+- cron-watchdog — stuck-scheduled-overdue 1건 잡고 alert state 저장 + 이메일 발송 확인
+- 옛 stuck reservation (5월 15일자 reserve:1778838130748-327be5ec) soft delete 처리
+
+### 신규 페이지 / endpoint 요약
+
+- `beta.html` + `/api/beta-signup` (2026-05-17 인계 시 이미 있음)
+- `guide-ig.html` (2026-05-20) — 사장님 IG 비즈니스 전환 가이드 5단계
+- `/api/quota-status` (GET, Bearer 인증)
+- `/api/request-ig-help` (POST, Bearer 인증)
+- `scripts/post-reel.js` — 수동 reels 게시 CLI
+- `scripts/check-antipatterns.js` — build 1단계
+
+### 알려진 제약 / 후속
+
+- `reservations.updated_at` 컬럼 없음 — watchdog 의 posting 항목이 `created_at` 사용 중. 정확도 떨어지므로 추후 컬럼 추가 검토.
+- Netlify CLI `netlify logs` 가 background function stdout 안 잡음 — 임시 진단 시 trends 테이블에 dump 추천 (cron-watchdog 진단 사례 참고).
+- IG 가이드 영상 (lumi 자체 제작) 아직 미작성 — 현재는 Instagram 공식 help 링크 placeholder.
+- 다중 IG biz 페이지 picker 미구현 — 사장님이 FB 페이지 여러 개 있을 때 첫 매칭 자동 선택 (95% 안전).
 
 ---
 
