@@ -31,6 +31,7 @@ const { runGuarded } = require('./_shared/cron-guard');
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { safeAwait } = require('./_shared/supa-safe');
 const { heartbeatKey } = require('./_shared/cron-keys');
+const { getServiceDailyUsage } = require('./_shared/openai-quota');
 
 // ── 감시 대상 cron 정의 ─────────────────────────────────
 // thresholdMin = cron 주기 + 안전마진. 이 시간을 넘기면 ALERT.
@@ -242,14 +243,40 @@ async function watchdogHandler(event, ctx) {
     stuckIssues.push(stuck);
   }
 
-  if (issues.length === 0 && stuckIssues.length === 0) {
-    console.log('[cron-watchdog] 모든 cron + 발행 flow 정상 (또는 cooldown 중)');
-    return { statusCode: 200, body: JSON.stringify({ checked: WATCH_TARGETS.length, stuckChecked: STUCK_TARGETS.length, alerts: 0 }) };
+  // ── OpenAI quota 80%+ 도달 체크 (2026-05-23 #11) ──────
+  // 한도 임박 = 사장님 미리 인지 → 캡션 요청 시 surprise 차단. quota-status endpoint
+  // 과 동일 로직 (getServiceDailyUsage). 80% 이상 시 ALERT, 12h cooldown.
+  await ctx.stage('loading-quota-status');
+  let quotaAlert = null;
+  try {
+    const q = await getServiceDailyUsage();
+    const pct = q.limit > 0 ? Math.round((q.used / q.limit) * 100) : 0;
+    if (pct >= 80) {
+      const state = await loadAlertState(supa, 'quota-80');
+      if (!state || !state.lastAlertAt || (now - new Date(state.lastAlertAt).getTime()) / 3600000 >= 12) {
+        quotaAlert = {
+          pct,
+          used: q.used,
+          limit: q.limit,
+          count: q.count,
+          severity: pct >= 100 ? 'EXCEEDED' : pct >= 90 ? 'CRITICAL' : 'WARN',
+        };
+      } else {
+        console.log(`[cron-watchdog] quota-80 cooldown 중 (pct=${pct}%)`);
+      }
+    }
+  } catch (e) {
+    console.error('[cron-watchdog] quota 조회 실패:', e && e.message);
   }
 
-  await ctx.stage('alerting', { cronCount: issues.length, stuckCount: stuckIssues.length });
+  if (issues.length === 0 && stuckIssues.length === 0 && !quotaAlert) {
+    console.log('[cron-watchdog] 모든 cron + 발행 flow + quota 정상 (또는 cooldown 중)');
+    return { statusCode: 200, body: JSON.stringify({ checked: WATCH_TARGETS.length, stuckChecked: STUCK_TARGETS.length, quotaChecked: true, alerts: 0 }) };
+  }
 
-  // 메일 1통에 묶어 발송 (cron + stuck reservation 모두)
+  await ctx.stage('alerting', { cronCount: issues.length, stuckCount: stuckIssues.length, quotaAlert: !!quotaAlert });
+
+  // 메일 1통에 묶어 발송 (cron + stuck reservation + quota)
   const lines = [];
   for (const { target, verdict } of issues) {
     lines.push(`[cron] ${target.name} (${target.periodLabel})\n  → ${verdict.reason}`);
@@ -258,9 +285,13 @@ async function watchdogHandler(event, ctx) {
     const samples = stuck.sample.map(s => `    - ${s.reserve_key} (user=${s.user_id.slice(0, 8)}…, ${stuck.kind.replace('stuck-', '')} since ${s.time})`).join('\n');
     lines.push(`[발행 stuck] ${stuck.label}\n  → ${stuck.count}건이 ${stuck.thresholdMin}분 이상 stuck. sample (최대 3):\n${samples}`);
   }
+  if (quotaAlert) {
+    lines.push(`[OpenAI quota ${quotaAlert.severity}] 오늘 ${quotaAlert.pct}% 사용 (₩${quotaAlert.used} / ₩${quotaAlert.limit}, 호출 ${quotaAlert.count}건).\n  → 한도 초과 시 캡션 생성 일시 차단. 자정(KST) 이후 리셋.`);
+  }
   const subjectParts = [];
   if (issues.length > 0) subjectParts.push(`cron stale ${issues.length}건`);
   if (stuckIssues.length > 0) subjectParts.push(`발행 stuck ${stuckIssues.reduce((s, x) => s + x.count, 0)}건`);
+  if (quotaAlert) subjectParts.push(`OpenAI quota ${quotaAlert.pct}%`);
   const subject = `[루미] ${subjectParts.join(' + ')}`;
 
   // 발송 — 환경변수 부재 시 콘솔로만
@@ -296,15 +327,25 @@ async function watchdogHandler(event, ctx) {
       thresholdMin: stuck.thresholdMin,
     });
   }
+  if (quotaAlert) {
+    await saveAlertState(supa, 'quota-80', {
+      lastAlertAt: nowIso,
+      pct: quotaAlert.pct,
+      used: quotaAlert.used,
+      limit: quotaAlert.limit,
+      severity: quotaAlert.severity,
+    });
+  }
 
   return {
     statusCode: 200,
     body: JSON.stringify({
       checked: WATCH_TARGETS.length,
       stuckChecked: STUCK_TARGETS.length,
-      alerts: issues.length + stuckIssues.length,
+      alerts: issues.length + stuckIssues.length + (quotaAlert ? 1 : 0),
       cronNames: issues.map(i => i.target.name),
       stuckKinds: stuckIssues.map(s => s.kind),
+      quotaAlert: quotaAlert ? quotaAlert.severity : null,
     }),
   };
 }
