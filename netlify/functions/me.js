@@ -103,7 +103,7 @@ exports.handler = async (event) => {
   // sellers 조회: Supabase JWT → email 매칭, seller-jwt → id 매칭
   const sellerQuery = admin
     .from('sellers')
-    .select('id, owner_name, phone, email, store_name, signup_step, signup_completed_at, plan, trial_start, marketing_consent, referral_code, created_at, onboarded, signup_method, display_name, avatar_url, age_range, industry, region, store_desc, tone_sample_1, tone_sample_2, tone_sample_3, tone_request, deletion_requested_at, deletion_scheduled_at, deletion_cancelled_at, publish_prefs');
+    .select('id, owner_name, phone, email, store_name, signup_step, signup_completed_at, plan, trial_start, marketing_consent, referral_code, created_at, onboarded, signup_method, display_name, avatar_url, age_range, industry, region, store_desc, tone_sample_1, tone_sample_2, tone_sample_3, tone_request, deletion_requested_at, deletion_scheduled_at, deletion_cancelled_at, publish_prefs, tester_requested_at, tester_requested_ig_handle, tester_invited_at');
 
   let { data: seller, error: selErr } = sellerQueryField
     ? await sellerQuery.eq(sellerQueryField, sellerQueryValue).maybeSingle()
@@ -282,6 +282,14 @@ exports.handler = async (event) => {
       },
       igStatus,
       threadsStatus,
+      // 메타 비즈니스 인증 대기 중 — Tester 초대 상태 (베타 흐름).
+      // pending = 요청 X, requested = 요청만, invited = 루미팀이 처리 완료 → OAuth 가능.
+      testerStatus: {
+        requestedAt: seller.tester_requested_at || null,
+        requestedIgHandle: seller.tester_requested_ig_handle || null,
+        invitedAt: seller.tester_invited_at || null,
+        state: seller.tester_invited_at ? 'invited' : (seller.tester_requested_at ? 'requested' : 'pending'),
+      },
     }),
   };
 };
