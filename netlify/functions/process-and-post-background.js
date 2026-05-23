@@ -282,8 +282,16 @@ const VISION_SCHEMA = {
         type: 'array',
         items: {
           type: 'object',
-          properties: { label: { type: 'string' }, details: { type: 'string' } },
-          required: ['label', 'details'],
+          properties: {
+            label: { type: 'string' },
+            details: { type: 'string' },
+            confidence: {
+              type: 'string',
+              enum: ['high', 'medium', 'low'],
+              description: 'high=visible_text 로 직접 확인됨 또는 형태가 명확. medium=업종 맥락으로 합리적 추정. low=형태만 보이고 메뉴/상품 명명은 추측.',
+            },
+          },
+          required: ['label', 'details', 'confidence'],
           additionalProperties: false,
         },
       },
@@ -346,7 +354,13 @@ ELSE IF 풍경·밈·리포스트·완전 무관 → **none**
 
 ## 필드 가이드
 - **scene_type**: 사진의 주된 카테고리.
-- **subjects**: [{label, details}]. label="강아지", details="프렌치불독+흰 강아지, 회색 쿠션 위" 같이.
+- **subjects**: [{label, details, confidence}].
+    label/details 예: "강아지" / "프렌치불독+흰 강아지, 회색 쿠션 위".
+    **confidence 룰 (엄수)**:
+      - **high** = visible_text 에서 그 이름이 직접 보임 (간판·메뉴판·라벨) 또는 형태가 누구나 같은 이름으로 부를 만큼 명확 (예: "라떼 한 잔" - 우유 거품 있는 갈색 음료).
+      - **medium** = 업종 맥락에서 합리적 추정 (예: 카페 사진에 "스콘처럼 보이는 빵" — visible_text 없지만 형태/맥락 일관).
+      - **low** = 형태만 보이고 메뉴/상품 명명은 추측. "흰 떡" 을 "버터떡" 으로 단정하는 류. 사진만으로는 100% 단언 불가.
+    ※ low 라벨은 캡션 AI 가 그 이름을 단언하지 않고 묘사형(재료·형태·색)으로 풀어 씁니다. 그러니 자신없으면 무조건 low.
 - **first_impression**: 0.3초 첫인상 — 캡션 첫 문장의 씨앗.
 - **core_analysis**: 3~5문장 전체 분석.
 - **carousel_***: 캐러셀일 때만. 그 외 빈 문자열.
@@ -367,7 +381,8 @@ ${isReels ? `- **reels_hook_score** (1~5):
 
   const content = [{ type: 'text', text: prompt }];
   for (const b64 of imageBuffers) {
-    content.push({ type: 'image_url', image_url: { url: `data:image/jpeg;base64,${b64}`, detail: isReels ? 'low' : 'high' } });
+    // 품질 우선: Reels 프레임도 detail='high' (low 시 65~70% 정확도 → high 시 90%+, vision 1회 호출이라 비용 영향 미미).
+    content.push({ type: 'image_url', image_url: { url: `data:image/jpeg;base64,${b64}`, detail: 'high' } });
   }
 
   // 2026-05-20 prevention #7: fetchWithRetry — 5xx 자동 2회 재시도.
@@ -440,7 +455,15 @@ function visionToContext(imageAnalysis) {
   let v;
   try { v = JSON.parse(imageAnalysis); } catch { return null; }
   if (!v || typeof v !== 'object' || !v.business_relevance) return null;
-  const subjects = Array.isArray(v.subjects) ? v.subjects.map(s => `${s.label}(${s.details})`).join(' · ') : '';
+  // confidence 표시: high 는 라벨만, medium/low 는 [medium]/[low] 마킹해서 Writer 가 단언 강도 조절.
+  const subjects = Array.isArray(v.subjects)
+    ? v.subjects.map(s => {
+        const conf = s.confidence === 'low' ? ' [LOW — 묘사형으로만, 단정 X]'
+                   : s.confidence === 'medium' ? ' [medium]'
+                   : '';
+        return `${s.label}(${s.details})${conf}`;
+      }).join(' · ')
+    : '';
   const keywords = Array.isArray(v.caption_keywords) ? v.caption_keywords.join(', ') : '';
   const visibleText = Array.isArray(v.visible_text) && v.visible_text.length ? v.visible_text.join(' / ') : '(없음)';
   const lines = [
@@ -460,7 +483,10 @@ function visionToContext(imageAnalysis) {
   return { text: lines.join('\n'), json: v };
 }
 
-// ─────────── 캡션 검수 (gpt-4o-mini) ───────────
+// ─────────── 캡션 검수 (gpt-4o + 이미지 첨부, vision-grounded) ───────────
+// 이전: gpt-4o-mini 가 Vision JSON 텍스트만 보고 채점 → Vision 환각이 그대로 통과.
+// 지금: gpt-4o 가 실제 이미지 + 캡션 둘 다 보고 photo_match 를 직접 검증.
+// 비용: ₩5 → ₩50 (10x). vision-grounded 가 multi-AI 검증의 본질이라 비용 가치 있음.
 const VALIDATOR_SCHEMA = {
   name: 'caption_validation',
   strict: true,
@@ -470,14 +496,15 @@ const VALIDATOR_SCHEMA = {
       scores: {
         type: 'object',
         properties: {
-          photo_match: { type: 'integer', minimum: 1, maximum: 5 },
+          photo_match: { type: 'integer', minimum: 1, maximum: 5, description: '실제 사진(첨부)과 캡션의 사실 일치. Vision JSON 이 아니라 이미지를 직접 보고 채점.' },
           tone_appropriate: { type: 'integer', minimum: 1, maximum: 5 },
           tone_match: { type: 'integer', minimum: 1, maximum: 5, description: '사장님 자유 톤 지시와 일치 (지시 없으면 5)' },
           cliche_free: { type: 'integer', minimum: 1, maximum: 5 },
           brand_safe: { type: 'integer', minimum: 1, maximum: 5 },
           length_ok: { type: 'integer', minimum: 1, maximum: 5 },
+          confidence_respected: { type: 'integer', minimum: 1, maximum: 5, description: 'Vision subjects 중 confidence=low 라벨을 캡션이 단언했는지. 단언했으면 1, 묘사형으로 풀었으면 5. low 라벨 없으면 5.' },
         },
-        required: ['photo_match', 'tone_appropriate', 'tone_match', 'cliche_free', 'brand_safe', 'length_ok'],
+        required: ['photo_match', 'tone_appropriate', 'tone_match', 'cliche_free', 'brand_safe', 'length_ok', 'confidence_respected'],
         additionalProperties: false,
       },
       overall: { type: 'integer', minimum: 1, maximum: 5 },
@@ -489,15 +516,19 @@ const VALIDATOR_SCHEMA = {
   },
 };
 
-async function validateCaption(caption, visionJson, brandTokens, mandatoryTone = '') {
+async function validateCaption(caption, visionJson, brandTokens, mandatoryTone = '', imageBuffers = []) {
   const isBusinessContent = ['high', 'medium'].includes(visionJson.business_relevance);
-  const prompt = `당신은 인스타그램 캡션 품질 검수자입니다. JSON 으로만 출력.
+  const lowConfidenceSubjects = Array.isArray(visionJson.subjects)
+    ? visionJson.subjects.filter(s => s && s.confidence === 'low').map(s => s.label).filter(Boolean)
+    : [];
+  const prompt = `당신은 인스타그램 캡션 품질 검수자입니다. **첨부된 실제 사진** 과 캡션을 직접 대조해서 채점합니다. JSON 으로만 출력.
 
-[Vision 분석]
+[Vision 분석 (참고용 — 실제 사진을 우선 신뢰)]
 business_relevance: ${visionJson.business_relevance} (${isBusinessContent ? '매장 콘텐츠' : '일상 콘텐츠'})
 scene_type: ${visionJson.scene_type}
 첫인상: ${visionJson.first_impression}
 핵심: ${visionJson.core_analysis}
+${lowConfidenceSubjects.length ? `⚠️ 저신뢰(low confidence) 라벨: ${lowConfidenceSubjects.join(', ')} — 캡션이 이 이름을 단언했으면 confidence_respected=1.` : '(저신뢰 라벨 없음 — confidence_respected 는 5 고정)'}
 
 [사장님 톤 지시]
 ${mandatoryTone ? `"${mandatoryTone}"` : '(없음 — tone_match 는 5 고정)'}
@@ -508,36 +539,45 @@ ${caption}
 """
 
 ## 채점 (각 1~5, 1=실패 5=완벽)
-1. photo_match: 캡션이 사진 분석과 일치하나
+1. **photo_match**: **첨부된 사진을 직접 보고** 캡션의 사실 (메뉴명·색·위치·인원·텍스트) 이 사진과 맞는지. Vision JSON 의 라벨이 사진과 다르면 사진 기준으로 채점. 사진에 없는 사물을 캡션이 언급 = 1, 사진 그대로 = 5.
 2. tone_appropriate: ${isBusinessContent ? '매장 톤이 적절한가' : '일상 톤 — 캡션에 "매장"·"저희 가게"·"저희 공간" 등 비즈니스 표현이 **없는지** (있으면 1)'}
 3. tone_match: ${mandatoryTone ? `사장님 직접 톤 지시 ("${mandatoryTone}") 와 일치도. 캡션의 어미·유머 강도·문장 구조가 그 톤을 명확히 따르면 5, 형식적으로만 따르면 3, 무시되면 1.` : '(지시 없음 → 5 고정)'}
 4. cliche_free: AI 클리셰("정성스러운"·"프리미엄"·"특별한"·"잊지 못할" 등) 부재
 5. brand_safe: 다음 토큰 누출 없음 (있으면 1): ${brandTokens.length ? brandTokens.join(', ') : '(없음 — 5 고정)'}
 6. length_ok: 본문(해시태그 제외) 길이 ${isBusinessContent ? '80~250자' : '50~180자'} 권장 범위
+7. **confidence_respected**: Vision 의 low confidence 라벨${lowConfidenceSubjects.length ? ` (${lowConfidenceSubjects.join(', ')})` : ''} 을 캡션이 단정 명명했는지. 단언=1, 묘사형(재료·형태·색)으로 풀었으면=5. 저신뢰 라벨 없으면 5.
 
-overall = 6개 평균 (소수 버림).
-pass = overall ≥ 3 AND brand_safe == 5 AND tone_appropriate ≥ 3 AND tone_match ≥ 4.
-issues: 점수 깎인 이유를 짧고 구체적인 한국어 한 줄씩. tone_match 가 낮으면 "유머 강도 부족", "어미가 지시한 톤과 다름" 같이 구체적으로.`;
+overall = 7개 평균 (소수 버림).
+pass = overall ≥ 4 AND brand_safe == 5 AND tone_appropriate ≥ 4 AND tone_match ≥ 4 AND photo_match ≥ 4 AND confidence_respected ≥ 4.
+issues: 점수 깎인 이유를 짧고 구체적인 한국어 한 줄씩. photo_match 낮으면 "사진에 보이는 X 를 캡션이 Y 로 잘못 명명", confidence_respected 낮으면 "추측 라벨을 단언했음" 같이 구체적으로.`;
+
+  // 실제 이미지 첨부 — vision-grounded validation 의 핵심.
+  // 멀티 이미지 (캐러셀) 도 전부 첨부해서 cover/middle/closer 일관성까지 보도록.
+  const content = [{ type: 'text', text: prompt }];
+  for (const b64 of imageBuffers) {
+    content.push({ type: 'image_url', image_url: { url: `data:image/jpeg;base64,${b64}`, detail: 'high' } });
+  }
 
   // 2026-05-20 prevention #7: fetchWithRetry.
   const res = await fetchWithRetry('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      messages: [{ role: 'user', content: prompt }],
-      max_tokens: 600,
+      model: 'gpt-4o',
+      messages: [{ role: 'user', content }],
+      max_tokens: 800,
       temperature: 0.2,
       response_format: { type: 'json_schema', json_schema: VALIDATOR_SCHEMA },
     }),
-  }, { timeoutMs: 30_000, label: 'openai-validator' });
+  }, { timeoutMs: 60_000, label: 'openai-validator' });
   const data = await res.json();
   if (data.error) throw new Error(`Validator 오류: ${data.error.message}`);
   return JSON.parse(data.choices?.[0]?.message?.content || '{}');
 }
 
-// ─────────── 캡션 생성 (gpt-5.4 + 검수 루프) ───────────
-async function generateCaptions(imageAnalysis, item, progress, retryFeedback = '') {
+// ─────────── 캡션 생성 (gpt-5.4 + vision-grounded 검수 루프) ───────────
+// retryDepth: 0=첫 시도, 1=1차 재생성, 2=2차 재생성. max 2회 재시도 (총 3번 호출 가능).
+async function generateCaptions(imageAnalysis, item, progress, retryFeedback = '', imageBuffers = [], retryDepth = 0) {
   const mark = async (tag) => { try { if (progress) await progress(tag); } catch(_) {} };
   const w = item.weather || {};
   const sp = item.storeProfile || {};
@@ -657,6 +697,7 @@ ${isBusinessContent
 4. **수치 단언** X: 기온/미세먼지 수치, "이번 주까지만" 같은 절대 시기.
 5. **메타 텍스트** X: "아래는 캡션입니다"·JSON·점수·설명. 캡션 본문 + 해시태그만.
 6. **재생성 메타 노출 X**: 이전 시도 문제·재시도 사실을 캡션 본문에 언급·사과·변명 금지. 캡션 자체에 "다시 써봤어요"·"이번엔" 같은 메타 신호 0건.
+7. **[LOW] 라벨 단정 X**: [이미지 분석] 피사체 옆에 **[LOW — 묘사형으로만, 단정 X]** 마킹이 있으면 그 이름을 캡션에서 단정해 부르지 마세요. 묘사형(재료·형태·색·향)으로만 풀어 씁니다. 예: "버터떡" [LOW] → "고소한 향이 도는 흰 떡" / "스콘" [LOW] → "겉이 바삭한 통밀 빵". [medium]/태깅 없음은 자연스럽게 명명 OK.
 
 ## 좋은 캡션
 - **첫 문장 3유형 중 택 1** — 12자 내외, 이모지 0~1개, "안녕하세요/오늘은" 절대 금지:
@@ -748,35 +789,43 @@ ${isBusinessContent
     throw new Error('캡션 안전성 검수 실패. 다시 시도해주세요.');
   }
 
-  // Validator — JSON 분석이 있고 첫 시도일 때만
-  // return: { captions, validator: { scores, pass, issues, overall, regenerated } | null }
-  // 재생성 발생 시 recursive call 결과의 validator 에 regenerated=true 표시.
-  if (visionJson && !retryFeedback) {
+  // Validator — JSON 분석이 있고 retryDepth < 2 일 때만 (최대 2회 재시도, 총 3번 캡션 생성).
+  // return: { captions, validator: { scores, pass, issues, overall, regenerated, retryDepth } | null }
+  // vision-grounded: validateCaption 에 imageBuffers 전달해서 실제 사진을 보고 채점.
+  const MAX_RETRY = 2;
+  if (visionJson && retryDepth < MAX_RETRY) {
     try {
-      const v = await validateCaption(safeCaptions[0], visionJson, brandTokens, tone.mandatory);
-      console.log('[validator]', JSON.stringify({ scores: v.scores, overall: v.overall, pass: v.pass }));
+      const v = await validateCaption(safeCaptions[0], visionJson, brandTokens, tone.mandatory, imageBuffers);
+      console.log('[validator]', JSON.stringify({ scores: v.scores, overall: v.overall, pass: v.pass, retryDepth }));
       if (!v.pass && Array.isArray(v.issues) && v.issues.length) {
         await mark('gen_retry');
         const feedback = v.issues.map(i => '- ' + i).join('\n');
-        console.log('[validator] 재생성 — 피드백:', feedback);
-        const retried = await generateCaptions(imageAnalysis, item, progress, feedback);
-        // 재생성 후 validator 메타에 regenerated 마크 + 옛 점수 보존
+        console.log(`[validator] 재생성 ${retryDepth + 1}/${MAX_RETRY} — 피드백:`, feedback);
+        const retried = await generateCaptions(imageAnalysis, item, progress, feedback, imageBuffers, retryDepth + 1);
+        // 재생성 후 validator 메타에 regenerated 마크 + 옛 점수 보존 (firstAttempt 는 최초 시도만 유지).
+        const firstAttempt = (retried.validator && retried.validator.firstAttempt)
+          ? retried.validator.firstAttempt
+          : { scores: v.scores, pass: v.pass, overall: v.overall, issues: v.issues };
         return {
           captions: retried.captions,
           validator: {
             ...(retried.validator || { scores: null, pass: null, overall: null, issues: [] }),
             regenerated: true,
-            firstAttempt: { scores: v.scores, pass: v.pass, overall: v.overall, issues: v.issues },
+            retryDepth: retried.validator?.retryDepth ?? (retryDepth + 1),
+            firstAttempt,
           },
         };
       }
       return {
         captions: safeCaptions,
-        validator: { scores: v.scores, pass: v.pass, overall: v.overall, issues: v.issues, regenerated: false },
+        validator: { scores: v.scores, pass: v.pass, overall: v.overall, issues: v.issues, regenerated: retryDepth > 0, retryDepth },
       };
     } catch (e) {
       console.warn('[validator] 검수 실패 (무시):', e.message);
     }
+  } else if (visionJson && retryDepth >= MAX_RETRY) {
+    // 2회 재시도 다 썼으면 최종 캡션 그대로 통과 (사장님 게시 막지 않음 — 발행 책임은 발행, 품질 한계는 stats 로 관측).
+    console.warn(`[validator] MAX_RETRY ${MAX_RETRY} 도달 — 최종 캡션 그대로 사용`);
   }
   return { captions: safeCaptions, validator: null };
 }
@@ -1237,12 +1286,15 @@ exports.handler = async (event) => {
     try { await supabase.from('reservations').update({ caption_error: 'STAGE:loading_images' }).eq('reserve_key', reservationKey); } catch(_) {}
 
     // 3) Quota 검증 — 한 reservation 처리 시 총 비용 합산.
-    // Important fix (2026-05-15): 이전엔 gpt-4o ₩50 한 번만 차감 → 실제 비용
-    // (gpt-4o vision + gpt-5.4 IG 캡션 + gpt-4o-mini 검수 + 재생성 + SRT) 약 ₩200+ 누락.
-    // 한 번에 estCost=200 으로 차감 (재생성 발생 시에도 추가 차감 없이 cap 안에서).
-    // 정확도보단 차감 누락 / TOCTOU 회피가 우선.
+    // 2026-05-23 품질 업그레이드:
+    //   - Validator: gpt-4o-mini ₩5 → gpt-4o ₩50 + 이미지 첨부 (vision-grounded)
+    //   - 재시도 1회 → 2회 (max 3번 캡션 생성 가능)
+    //   - 임계 overall≥3 → ≥4 (재시도 빈도 ↑ 가능)
+    // 최악 시나리오: vision ₩50 + writer ₩100×3 + validator ₩50×3 = ₩500.
+    // 평균: vision ₩50 + writer ₩100 + validator ₩50 + 1회 재생성 ₩150 = ₩250.
+    // cap ₩300 — 평균 안전 + 2회 재시도 발생 시 약간 여유 (한 reservation 다 못 마치면 quota 에러).
     try {
-      await checkAndIncrementQuota(reservation.user_id, 'gpt-4o', 200);
+      await checkAndIncrementQuota(reservation.user_id, 'gpt-4o', 300);
     } catch (e) {
       if (e instanceof QuotaExceededError) {
         await safeAwait(supabase.from('reservations').update({
@@ -1332,7 +1384,8 @@ exports.handler = async (event) => {
     const captionProgress = async (tag) => {
       await supabase.from('reservations').update({ caption_error: 'STAGE:' + tag }).eq('reserve_key', reservationKey);
     };
-    const { captions, validator } = await generateCaptions(imageAnalysis, captionInput, captionProgress);
+    // vision-grounded validator 가 imageBuffers 를 실제로 GPT-4o 에 첨부해서 사진/캡션 직접 대조.
+    const { captions, validator } = await generateCaptions(imageAnalysis, captionInput, captionProgress, '', imageBuffers, 0);
     console.log('[process-and-post] 캡션 생성 완료:', captions.length, '개',
       validator ? `pass=${validator.pass} regen=${!!validator.regenerated}` : 'no-validator');
 

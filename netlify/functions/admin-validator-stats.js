@@ -20,7 +20,9 @@ const { corsHeaders, getOrigin } = require('./_shared/auth');
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { requireAdmin } = require('./_shared/admin-guard');
 
-const AXIS_KEYS = ['photo_match', 'tone_appropriate', 'tone_match', 'cliche_free', 'brand_safe', 'length_ok'];
+// 2026-05-23: vision-grounded validator 도입으로 confidence_respected axis 추가 (7개).
+// 레거시 row (6개 axis 만) 도 그대로 통계에 잡힘 — 신규 axis 는 axisN/axisSum 에 누적되지 않아 평균 왜곡 없음.
+const AXIS_KEYS = ['photo_match', 'tone_appropriate', 'tone_match', 'cliche_free', 'brand_safe', 'length_ok', 'confidence_respected'];
 const FAIL_THRESHOLD = 4; // 4 미만이면 failure 카운트
 
 exports.handler = async (event) => {
