@@ -8,7 +8,9 @@
 // 캐시 bump: CACHE_VERSION 올리면 옛 cache 삭제 + 새로 받음.
 // 사장님 deploy 시 sw 코드 변경되면 자동으로 새 sw 활성화 (skipWaiting).
 
-const CACHE_VERSION = 'lumi-v1';
+// v2 (2026-05-24): 베타 흐름 전면 개편 — /beta·/dashboard·/guide-ig·beta.js·beta.css·dashboard.js·dashboard.css·guide-ig.js·guide-ig.css·me.js 변경.
+// 옛 캐시(v1) 사장님들이 베타 페이지 옛 폼 보고 약관 동의해도 카카오 버튼 활성화 안 되는 버그 — 캐시 bump 로 일괄 해소.
+const CACHE_VERSION = 'lumi-v2';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 
 const STATIC_RE = /\.(css|js|woff2?|ttf|otf|png|jpg|jpeg|webp|svg|ico|gif)$/i;
