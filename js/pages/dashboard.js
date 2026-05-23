@@ -66,6 +66,27 @@
           if (reconnectSection && ig && ig.connected && (ig.tokenExpired || ig.tokenInvalid)) {
             reconnectSection.hidden = false;
           }
+
+          // 2026-05-23 베타 흐름 — IG 미연동 사장님: 첫 연동 안내 카드 표시 + 다른 카드 숨김.
+          // 트렌드/사장님 정보는 그대로 두고, 인스타 데이터 의존 카드만 hidden.
+          // 탭 가드도 활성화 (사진 올리기·히스토리 클릭 시 모달).
+          window.__lumiIgConnected = !!(ig && ig.connected);
+          if (ig && !ig.connected) {
+            const igRequiredCard = document.querySelector('[data-ig-connect-required-section]');
+            if (igRequiredCard) igRequiredCard.hidden = false;
+            // IG 데이터 의존 카드 숨김 — 빈 상태 노출 방지.
+            // 트렌드(요즘 뜨는 키워드)·날씨·매장정보는 그대로 노출.
+            ['[data-stat-row]', '[data-failure-banner]', '[data-scheduled-card]', '[data-scheduled-empty]'].forEach((sel) => {
+              const el = document.querySelector(sel);
+              if (el) el.hidden = true;
+            });
+            // 이번 주 / 다음 예약 / 베스트 시간 / 댓글 섹션 통째 숨김 — 미연동이라 무의미.
+            ['sec-stats', 'sec-scheduled', 'sec-besttime', 'sec-comments'].forEach((id) => {
+              const section = document.getElementById(id);
+              const wrapperSection = section ? section.closest('section') : null;
+              if (wrapperSection) wrapperSection.hidden = true;
+            });
+          }
           // M3.1 — Threads 토큰 만료 카드 (IG 와 독립적으로 노출 가능)
           const threads = data.threadsStatus || null;
           const threadsReconnect = document.querySelector('[data-threads-reconnect-section]');
@@ -449,6 +470,38 @@
           console.warn('[dashboard] /api/get-weather 실패:', e && e.message);
         }
       }
+
+      // 2026-05-23 베타 흐름 — IG 미연동 사장님이 잠긴 탭 클릭 시 모달.
+      // window.__lumiIgConnected 는 loadMe() 에서 설정. 그 전엔 undefined → 잠금 안 함 (안전 fallback).
+      function showIgRequiredModal() {
+        const modal = document.querySelector('[data-ig-required-modal]');
+        if (!modal) return;
+        modal.hidden = false;
+        // 첫 포커스 — 접근성
+        const confirm = modal.querySelector('.ig-required-modal__confirm');
+        if (confirm) setTimeout(() => confirm.focus(), 50);
+      }
+      function hideIgRequiredModal() {
+        const modal = document.querySelector('[data-ig-required-modal]');
+        if (modal) modal.hidden = true;
+      }
+      document.querySelectorAll('[data-ig-guard]').forEach((el) => {
+        el.addEventListener('click', (ev) => {
+          // loadMe 가 아직 완료 안 된 경우 (__lumiIgConnected undefined) 는 그대로 통과.
+          // 명시적으로 false 인 경우만 차단.
+          if (window.__lumiIgConnected === false) {
+            ev.preventDefault();
+            showIgRequiredModal();
+          }
+        });
+      });
+      document.querySelectorAll('[data-ig-required-modal-close]').forEach((el) => {
+        el.addEventListener('click', hideIgRequiredModal);
+      });
+      // ESC 키로 모달 닫기
+      document.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Escape') hideIgRequiredModal();
+      });
 
       // 카테고리 무관 호출(loadStats/loadScheduled/loadComments)은 병렬.
       (async () => {

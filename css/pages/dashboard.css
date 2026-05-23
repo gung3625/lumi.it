@@ -757,3 +757,144 @@
     @media (prefers-reduced-motion: reduce) {
       .post { animation: none; }
     }
+
+    /* ─────── IG 첫 연동 안내 카드 (신규 베타 사장님 — ig.connected=false) ─────── */
+    .ig-required-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: var(--space-6) var(--space-5);
+      background: linear-gradient(135deg, rgba(255, 107, 139, 0.08), rgba(168, 85, 247, 0.08));
+      border: 1px solid var(--pink-300);
+      border-radius: var(--radius-card);
+      box-shadow: var(--shadow-card);
+    }
+    .ig-required-card__icon {
+      width: 56px;
+      height: 56px;
+      display: grid;
+      place-items: center;
+      background: var(--gradient-signature);
+      color: var(--neutral-0);
+      border-radius: 50%;
+      margin-bottom: var(--space-3);
+      box-shadow: var(--shadow-glow-sm);
+    }
+    .ig-required-card__icon svg { width: 28px; height: 28px; }
+    .ig-required-card__title {
+      font-size: var(--text-h3);
+      font-weight: var(--weight-bold);
+      color: var(--ink);
+      margin: 0 0 var(--space-2);
+    }
+    .ig-required-card__desc {
+      font-size: var(--text-body-sm);
+      color: var(--ink-muted);
+      line-height: 1.6;
+      margin: 0 0 var(--space-4);
+    }
+    .ig-required-card__cta {
+      display: inline-flex;
+      align-items: center;
+      padding: var(--space-3) var(--space-6);
+      background: var(--gradient-signature);
+      color: var(--neutral-0);
+      font-weight: var(--weight-bold);
+      border-radius: var(--radius-pill);
+      text-decoration: none;
+      box-shadow: var(--shadow-glow-sm);
+      transition: transform var(--duration-snap) var(--ease-toss), box-shadow var(--duration-snap) var(--ease-soft);
+    }
+    .ig-required-card__cta:active { transform: scale(0.97); }
+    @media (hover: hover) {
+      .ig-required-card__cta:hover { box-shadow: 0 8px 24px rgba(255, 107, 139, 0.45); }
+    }
+    .ig-required-card__hint {
+      margin: var(--space-3) 0 0;
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+    }
+
+    /* ─────── IG 미연동 탭 차단 모달 (사진 올리기·히스토리 클릭 시) ─────── */
+    .ig-required-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: grid;
+      place-items: center;
+      padding: var(--space-5);
+    }
+    .ig-required-modal[hidden] { display: none; }
+    .ig-required-modal__backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+      animation: igModalFadeIn var(--duration-snap) var(--ease-soft);
+    }
+    .ig-required-modal__panel {
+      position: relative;
+      max-width: 420px;
+      width: 100%;
+      padding: var(--space-6);
+      background: var(--bg);
+      border-radius: var(--radius-card);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      text-align: center;
+      animation: igModalRise var(--duration-base) var(--ease-toss);
+    }
+    .ig-required-modal__title {
+      font-size: var(--text-h3);
+      font-weight: var(--weight-bold);
+      color: var(--ink);
+      margin: 0 0 var(--space-3);
+    }
+    .ig-required-modal__desc {
+      font-size: var(--text-body-sm);
+      color: var(--ink-muted);
+      line-height: 1.6;
+      margin: 0 0 var(--space-5);
+    }
+    .ig-required-modal__actions {
+      display: flex;
+      gap: var(--space-3);
+      justify-content: center;
+    }
+    .ig-required-modal__cancel,
+    .ig-required-modal__confirm {
+      padding: var(--space-3) var(--space-5);
+      border-radius: var(--radius-pill);
+      font-weight: var(--weight-semibold);
+      font-size: var(--text-body-sm);
+      cursor: pointer;
+      transition: transform var(--duration-snap) var(--ease-toss);
+    }
+    .ig-required-modal__cancel {
+      background: var(--bg-soft);
+      color: var(--ink-muted);
+      border: 1px solid var(--line);
+    }
+    .ig-required-modal__confirm {
+      background: var(--gradient-signature);
+      color: var(--neutral-0);
+      text-decoration: none;
+      box-shadow: var(--shadow-glow-sm);
+      border: 0;
+      display: inline-flex;
+      align-items: center;
+    }
+    .ig-required-modal__cancel:active,
+    .ig-required-modal__confirm:active { transform: scale(0.97); }
+    @keyframes igModalFadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes igModalRise {
+      from { opacity: 0; transform: translateY(20px) scale(0.96); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .ig-required-modal__backdrop,
+      .ig-required-modal__panel { animation: none; }
+    }

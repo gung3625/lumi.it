@@ -376,4 +376,103 @@ body {
   .beta__done-cta:hover { background: var(--bg); border-color: var(--pink-300); }
 }
 
+/* 카카오 가입 CTA — 카카오 노란색 (#FEE500) + 검정 텍스트 */
+.beta__kakao-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  margin-top: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  background: #FEE500;
+  color: #191919;
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  text-decoration: none;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  opacity: 0.45;
+  pointer-events: none;
+  transition: opacity var(--duration-snap) var(--ease-soft), transform var(--duration-snap) var(--ease-toss), box-shadow var(--duration-snap) var(--ease-soft);
+}
+.beta__kakao-cta.is-active {
+  opacity: 1;
+  pointer-events: auto;
+}
+.beta__kakao-cta.is-active:active {
+  transform: scale(0.98);
+  box-shadow: var(--shadow-card-pressed, var(--shadow-card));
+}
+@media (hover: hover) {
+  .beta__kakao-cta.is-active:hover {
+    box-shadow: 0 8px 24px rgba(254, 229, 0, 0.35);
+  }
+}
+.beta__kakao-cta svg {
+  flex: 0 0 auto;
+}
+.beta__kakao-hint {
+  margin: var(--space-2) 0 0;
+  text-align: center;
+  font-size: var(--text-caption);
+  color: var(--ink-muted);
+}
+
+/* 약관 동의 체크박스 — 단일 행, 클릭 영역 넓힘 */
+.beta__checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  cursor: pointer;
+  transition: border-color var(--duration-snap) var(--ease-soft);
+}
+.beta__checkbox:has(input:checked) {
+  border-color: var(--pink-500);
+  background: rgba(255, 107, 139, 0.05);
+}
+.beta__checkbox input {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--pink-500);
+  cursor: pointer;
+}
+.beta__checkbox-text {
+  flex: 1 1 auto;
+  font-size: var(--text-body-sm);
+  line-height: 1.55;
+  color: var(--ink);
+}
+.beta__checkbox-text strong {
+  font-weight: var(--weight-semibold);
+}
+.beta__checkbox-detail {
+  display: block;
+  margin-top: 4px;
+  font-size: var(--text-caption);
+  color: var(--ink-muted);
+  font-weight: var(--weight-regular);
+}
+.beta__checkbox-detail a {
+  color: var(--pink-500);
+  text-decoration: underline;
+}
+
+/* 에러 메시지 */
+.beta__error {
+  margin: var(--space-3) 0;
+  padding: var(--space-3) var(--space-4);
+  background: rgba(220, 38, 38, 0.08);
+  color: #B91C1C;
+  font-size: var(--text-body-sm);
+  border-radius: var(--radius-card);
+  border-left: 3px solid #B91C1C;
+}
+
 /* Footer — 공용 .app-footer 사용 (legal.css). 별도 스타일 없음. */

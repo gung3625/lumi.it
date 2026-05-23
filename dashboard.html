@@ -55,6 +55,31 @@
   <!-- 메인 피드 -->
   <main class="feed" role="main" data-feed>
 
+    <!-- 0.0 IG 첫 연동 필요 안내 (신규 베타 사장님 — ig.connected=false) -->
+    <!-- 이 카드 표시되면 다른 카드들 (날씨/통계/베스트시간) 도 의미 없는 빈 상태이므로 -->
+    <!-- dashboard.js 가 ig-connected 체크 후 큰 안내만 노출하고 나머지 hidden 처리. -->
+    <section aria-labelledby="sec-ig-connect-required" hidden data-ig-connect-required-section>
+      <h2 class="section-title u-sr-only" id="sec-ig-connect-required">인스타 연동 필요</h2>
+      <div class="ig-required-card">
+        <div class="ig-required-card__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="5"/>
+            <circle cx="12" cy="12" r="4"/>
+            <circle cx="17.5" cy="6.5" r="1.2" fill="currentColor"/>
+          </svg>
+        </div>
+        <h3 class="ig-required-card__title">루미 시작하려면 인스타 연동이 필요해요</h3>
+        <p class="ig-required-card__desc">
+          사진을 올려도 인스타와 연결돼 있어야 캡션·게시·통계가 가능해요.<br>
+          처음이라 막막하시면 한 단계씩 도와드릴게요.
+        </p>
+        <a class="ig-required-card__cta" href="/guide-ig">
+          📷 인스타 연동하러 가기 →
+        </a>
+        <p class="ig-required-card__hint">트렌드는 연동 전에도 자유롭게 보실 수 있어요.</p>
+      </div>
+    </section>
+
     <!-- 0a. IG 재연동 필요 안내 (token_invalid_at 표시된 사장님만) -->
     <section aria-labelledby="sec-ig-reconnect" hidden data-ig-reconnect-section>
       <h2 class="section-title u-sr-only" id="sec-ig-reconnect">인스타 재연동</h2>
@@ -254,12 +279,12 @@
       </svg>
       트렌드
     </a>
-    <a class="tab-add" href="/register-product" aria-label="사진·영상 올리기">
+    <a class="tab-add" href="/register-product" aria-label="사진·영상 올리기" data-ig-guard>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M12 5v14M5 12h14"/>
       </svg>
     </a>
-    <a class="tab" href="/history?tab=past">
+    <a class="tab" href="/history?tab=past" data-ig-guard>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <circle cx="12" cy="12" r="9"/>
         <polyline points="12 7 12 12 15 14"/>
@@ -274,6 +299,22 @@
       설정
     </a>
   </nav>
+
+  <!-- IG 미연동 시 탭 차단 모달 (사진 올리기·히스토리 클릭 시) -->
+  <div class="ig-required-modal" data-ig-required-modal hidden role="dialog" aria-modal="true" aria-labelledby="ig-required-modal-title">
+    <div class="ig-required-modal__backdrop" data-ig-required-modal-close></div>
+    <div class="ig-required-modal__panel">
+      <h3 class="ig-required-modal__title" id="ig-required-modal-title">인스타 연동이 필요해요</h3>
+      <p class="ig-required-modal__desc">
+        이 기능은 인스타와 연결돼 있어야 사용할 수 있어요.<br>
+        처음이라 막막하시면 가이드대로 따라하시면 5~10분이면 끝나요.
+      </p>
+      <div class="ig-required-modal__actions">
+        <button type="button" class="ig-required-modal__cancel" data-ig-required-modal-close>나중에</button>
+        <a class="ig-required-modal__confirm" href="/guide-ig">📷 연동하러 가기</a>
+      </div>
+    </div>
+  </div>
 
   <script src="/js/pages/dashboard.js"></script>
 </body>

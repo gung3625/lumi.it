@@ -419,10 +419,13 @@ export default async (request, _context) => {
   }
 
   // 9) hash 에 onboarded flag + lumi_refresh 추가 — 클라이언트에서 /api/me 한 번 생략 가능
+  // 2026-05-23 변경: 베타 흐름 단순화 — onboarded 분기 폐기, 항상 /dashboard 로 직행.
+  // /signup 강제 onboarding 흐름 폐기. 매장 정보·인스타 연동은 대시보드에서 lazy 안내.
+  // (기존 signup.html 자체는 유지 — 직접 URL 접근 가능, 정식 출시 시 재활용 옵션)
   let hash = `#kakao=callback&lumi_token=${encodeURIComponent(sellerJwt)}`;
   if (refreshPlain) hash += `&lumi_refresh=${encodeURIComponent(refreshPlain)}`;
   if (onboarded) hash += '&onboarded=1';
-  const destination = onboarded ? `/dashboard${hash}` : `/signup${hash}`;
+  const destination = `/dashboard${hash}`;
 
   return redirect(destination, { 'Set-Cookie': cookieVal });
 };
