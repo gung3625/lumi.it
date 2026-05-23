@@ -20,9 +20,11 @@ const { corsHeaders, getOrigin } = require('./_shared/auth');
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { requireAdmin } = require('./_shared/admin-guard');
 
-// 2026-05-23: vision-grounded validator 도입으로 confidence_respected axis 추가 (7개).
-// 레거시 row (6개 axis 만) 도 그대로 통계에 잡힘 — 신규 axis 는 axisN/axisSum 에 누적되지 않아 평균 왜곡 없음.
-const AXIS_KEYS = ['photo_match', 'tone_appropriate', 'tone_match', 'cliche_free', 'brand_safe', 'length_ok', 'confidence_respected'];
+// 2026-05-23: 캡션 품질 업그레이드로 axis 8개.
+//   - confidence_respected: vision low confidence 라벨 단언 여부 (vision-grounded validator)
+//   - carousel_coverage:    캐러셀 모든 슬라이드 캡션 반영 여부 (단일 사진은 5 고정)
+// 레거시 row 는 누락 axis 자동 미반영 — axisN/axisSum 분기로 평균 왜곡 없음.
+const AXIS_KEYS = ['photo_match', 'tone_appropriate', 'tone_match', 'cliche_free', 'brand_safe', 'length_ok', 'confidence_respected', 'carousel_coverage'];
 const FAIL_THRESHOLD = 4; // 4 미만이면 failure 카운트
 
 exports.handler = async (event) => {

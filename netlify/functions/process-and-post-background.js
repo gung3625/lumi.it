@@ -161,6 +161,54 @@ async function moderateCaption(text) {
   }
 }
 
+// ─────────── 카테고리별 Few-shot 모범 캡션 (Writer 가이드용) ───────────
+// 사장님 매장 카테고리에 맞는 모범 캡션 1~2개를 Writer 프롬프트에 인라인.
+// 목적: 추상 룰(첫문장 3유형 등)을 구체 예시로 보강해 첫 문장·호흡 품질 ↑.
+// 위험: hardcoded 예시가 클리셰가 될 수 있음 → Writer 프롬프트에 "구조·리듬만 참고, 그대로 베끼지 X" 명시.
+// 유지보수: 분기별 점검 권장. 사장님 캡션 데이터 누적되면 자동 발굴 시스템으로 대체 가능.
+// 매장 콘텐츠 모드만 사용 (일상 콘텐츠는 별도 룰).
+const FEW_SHOT_EXAMPLES = {
+  cafe: [
+    `오후 3시.\n우드 테이블 위 라떼 한 잔.\n\n빛이 천천히 떨어지는 시간 ☕\n오늘은 이 한 잔이면 충분해요.\n\n#카페 #카페일상 #라떼 #우드인테리어`,
+    `매주 화요일이 가장 조용해요.\n\n혼자 책 들고 와서 두 시간쯤 머물다 가는 손님 보면\n괜히 저도 같은 책 펴고 싶어져요 📖\n\n#동네카페 #북카페 #혼커피`,
+  ],
+  dessert: [
+    `오늘 처음 구운 바질 크림 케이크.\n\n바질잎 한 장 꽂아두니 향이 더 살아나요.\n티타임에 어울리는 한 조각이에요 🌿\n\n#디저트 #홈베이킹 #케이크 #바질크림`,
+    `결이 살아있는 깜빠뉴.\n\n새벽 5시부터 반죽한 보람 있게\n칼 들어가는 순간 결이 갈라지는 소리가 좋아요.\n\n#베이커리 #천연발효 #깜빠뉴 #건강빵`,
+  ],
+  food: [
+    `간장게장 한 조각.\n\n게딱지에 밥 비벼 먹으면 끝나는 게 아쉬워서\n오늘은 한 마리 더 시켜놨어요 🦀\n\n#맛집 #간장게장 #밥도둑 #점심특선`,
+    `세 시간 끓인 사골 육수.\n\n진하게 우러난 국물 위에 파 송송, 후추 톡톡.\n뜨끈한 한 그릇으로 오늘 추위 마무리해요.\n\n#한식 #사골 #해장 #뜨끈한국물`,
+  ],
+  beauty: [
+    `오늘의 시술 — 무광 누드 톤.\n\n손톱 하나하나 결을 살려서\n빛에 따라 다른 느낌이 나도록 마무리했어요 ✨\n\n#네일아트 #누드네일 #젤네일 #무광`,
+    `반곱슬 머리, 디지털 펌으로 정리.\n\n드라이 안 해도 자연스러운 컬이 잡혀요.\n출근 5분 단축, 어떠세요?\n\n#디지털펌 #펌추천 #반곱슬머리 #저자극`,
+  ],
+  flower: [
+    `장미 한 송이씩 묶은 작은 다발.\n\n선물 받는 사람 얼굴이 떠올라\n포장 리본 색까지 고민했어요 🌹\n\n#꽃집 #플로리스트 #장미다발 #생일선물`,
+    `오늘 들어온 라넌큘러스, 색이 정말 곱죠.\n\n봄에 가장 인기 많은 꽃 중 하나예요.\n혹시 누구한테 보여주고 싶은 분 있으신가요?\n\n#꽃 #라넌큘러스 #봄꽃 #꽃추천`,
+  ],
+  pet: [
+    `오늘도 가게 한쪽 차지하고 있는 우리 강아지.\n\n손님 오면 꼬리 흔들고, 가면 한숨 쉬어요.\n다음에 또 와주세요, 얘 기다려요 🐶\n\n#반려견 #가게강아지 #프렌치불독`,
+    `미용 마치고 한 컷.\n\n털 짧아진 거 어색한지 자꾸 발을 핥아요.\n그래도 시원해 보여서 다행이에요 ✂️\n\n#반려동물미용 #강아지미용 #여름컷`,
+  ],
+  default: [
+    `오늘 입고된 신상품.\n\n색감이 사진보다 실제로 더 차분해요.\n한 번 들러보세요, 직접 보시면 더 좋아요.\n\n#오늘의신상 #추천 #동네가게`,
+    `매장 한 켠을 새로 꾸몄어요.\n\n작은 변화지만 들어오시는 분마다\n바뀐 거 알아채주셔서 기분 좋아요.\n\n#매장인테리어 #동네가게 #일상`,
+  ],
+};
+
+function getFewShotExamples(bizCategory) {
+  const cat = String(bizCategory || '').toLowerCase();
+  if (/카페|cafe|coffee|커피/.test(cat)) return FEW_SHOT_EXAMPLES.cafe;
+  if (/디저트|베이커리|빵|케이크|dessert|bakery|제과/.test(cat)) return FEW_SHOT_EXAMPLES.dessert;
+  if (/식당|음식|food|restaurant|한식|중식|일식|양식|분식|고기|치킨|피자/.test(cat)) return FEW_SHOT_EXAMPLES.food;
+  if (/뷰티|네일|미용|헤어|beauty|salon|nail|hair|왁싱|속눈썹|에스테틱/.test(cat)) return FEW_SHOT_EXAMPLES.beauty;
+  if (/꽃|flower|플로/.test(cat)) return FEW_SHOT_EXAMPLES.flower;
+  if (/펫|pet|반려|동물병원|애견/.test(cat)) return FEW_SHOT_EXAMPLES.pet;
+  return FEW_SHOT_EXAMPLES.default;
+}
+
 // ─────────── 말투 가이드 빌드 ───────────
 // likes / dislikes 는 [{ caption, comment }] 배열.
 // 각 항목을 "캡션 — 코멘트" 형태로 풀어 프롬프트에 노출.
@@ -432,12 +480,27 @@ function buildToneContext(item) {
       lines.push(`[2·샘플] 사장님 등록 캡션 (문체 흡수, 그대로 베끼지 X):\n${samples.map((c, i) => `  ${i + 1}. ${c}`).join('\n')}`);
     }
   }
-  const toneGuide = buildToneGuide(item.toneLikes, item.toneDislikes);
-  if (toneGuide) {
-    // 사장님 우려 (2026-05-16): "좋아요 누른 캡션을 그대로 다시 쓰진 않겠지?"
-    // → 이전엔 "✅ 흡수" 만 명시. 강한 모델은 [2·샘플] 의 룰을 일반화하지만 100% 보장 X.
-    //   명시 가드 추가 — IG 중복 콘텐츠 위험 + 사장님 입장에서 같은 캡션 반복은 어색.
-    lines.push(`[3·학습] 사장님 평가 패턴:\n${toneGuide}\n→ ✅ 톤·문체·해시태그 스타일만 흡수 (캡션 문장 그대로 베끼지 X), ❌ 회피.`);
+  // 사장님 평가 패턴 — 메타-LLM 자동 요약본이 있으면 우선 사용 (3건 이상 누적 시).
+  // 없으면 raw {caption, comment} 원문 폴백 (기존 동작).
+  if (item.toneSummary && item.toneSummary.summary) {
+    const s = item.toneSummary;
+    const parts = [`[3·학습] 사장님 평가 패턴 (요약): ${s.summary}`];
+    if (Array.isArray(s.goodExamples) && s.goodExamples.length) {
+      parts.push(`✅ 좋아한 첫 문장 류: ${s.goodExamples.map(e => `"${e}"`).join(' / ')}`);
+    }
+    if (Array.isArray(s.badExamples) && s.badExamples.length) {
+      parts.push(`❌ 싫어한 표현 류: ${s.badExamples.map(e => `"${e}"`).join(' / ')}`);
+    }
+    parts.push('→ 톤·문체·해시태그 스타일만 흡수. 예시 문장은 그대로 베끼지 X.');
+    lines.push(parts.join('\n'));
+  } else {
+    const toneGuide = buildToneGuide(item.toneLikes, item.toneDislikes);
+    if (toneGuide) {
+      // 사장님 우려 (2026-05-16): "좋아요 누른 캡션을 그대로 다시 쓰진 않겠지?"
+      // → 이전엔 "✅ 흡수" 만 명시. 강한 모델은 [2·샘플] 의 룰을 일반화하지만 100% 보장 X.
+      //   명시 가드 추가 — IG 중복 콘텐츠 위험 + 사장님 입장에서 같은 캡션 반복은 어색.
+      lines.push(`[3·학습] 사장님 평가 패턴:\n${toneGuide}\n→ ✅ 톤·문체·해시태그 스타일만 흡수 (캡션 문장 그대로 베끼지 X), ❌ 회피.`);
+    }
   }
   if (item.captionBank) {
     lines.push(`[4·업종 참고] 같은 업종 좋아요 많은 캡션 (구조·리듬만 참고):\n${item.captionBank}`);
@@ -503,8 +566,9 @@ const VALIDATOR_SCHEMA = {
           brand_safe: { type: 'integer', minimum: 1, maximum: 5 },
           length_ok: { type: 'integer', minimum: 1, maximum: 5 },
           confidence_respected: { type: 'integer', minimum: 1, maximum: 5, description: 'Vision subjects 중 confidence=low 라벨을 캡션이 단언했는지. 단언했으면 1, 묘사형으로 풀었으면 5. low 라벨 없으면 5.' },
+          carousel_coverage: { type: 'integer', minimum: 1, maximum: 5, description: '캐러셀일 때 모든 슬라이드(cover/middle/closer)가 캡션에 녹아 있나. 한 슬라이드만 강조하고 나머지 무시면 1, 골고루 언급/암시면 5. 단일 사진은 5 고정.' },
         },
-        required: ['photo_match', 'tone_appropriate', 'tone_match', 'cliche_free', 'brand_safe', 'length_ok', 'confidence_respected'],
+        required: ['photo_match', 'tone_appropriate', 'tone_match', 'cliche_free', 'brand_safe', 'length_ok', 'confidence_respected', 'carousel_coverage'],
         additionalProperties: false,
       },
       overall: { type: 'integer', minimum: 1, maximum: 5 },
@@ -521,14 +585,18 @@ async function validateCaption(caption, visionJson, brandTokens, mandatoryTone =
   const lowConfidenceSubjects = Array.isArray(visionJson.subjects)
     ? visionJson.subjects.filter(s => s && s.confidence === 'low').map(s => s.label).filter(Boolean)
     : [];
-  const prompt = `당신은 인스타그램 캡션 품질 검수자입니다. **첨부된 실제 사진** 과 캡션을 직접 대조해서 채점합니다. JSON 으로만 출력.
+  const isCarousel = imageBuffers.length > 1;
+  const carouselBlock = isCarousel
+    ? `\n[캐러셀 슬라이드 분석 (Vision)]\n- 커버 훅: ${visionJson.carousel_cover_hook || '(없음)'}\n- 중간: ${visionJson.carousel_middle_notes || '(없음)'}\n- 클로저: ${visionJson.carousel_closer || '(없음)'}\n- 스토리: ${visionJson.story_arc || '(없음)'}\n⚠️ 캡션이 한 슬라이드만 강조하고 나머지를 무시하면 carousel_coverage=1.`
+    : '';
+  const prompt = `당신은 인스타그램 캡션 품질 검수자입니다. **첨부된 실제 사진${isCarousel ? ' (캐러셀 ' + imageBuffers.length + '장 전부)' : ''}** 과 캡션을 직접 대조해서 채점합니다. JSON 으로만 출력.
 
 [Vision 분석 (참고용 — 실제 사진을 우선 신뢰)]
 business_relevance: ${visionJson.business_relevance} (${isBusinessContent ? '매장 콘텐츠' : '일상 콘텐츠'})
 scene_type: ${visionJson.scene_type}
 첫인상: ${visionJson.first_impression}
 핵심: ${visionJson.core_analysis}
-${lowConfidenceSubjects.length ? `⚠️ 저신뢰(low confidence) 라벨: ${lowConfidenceSubjects.join(', ')} — 캡션이 이 이름을 단언했으면 confidence_respected=1.` : '(저신뢰 라벨 없음 — confidence_respected 는 5 고정)'}
+${lowConfidenceSubjects.length ? `⚠️ 저신뢰(low confidence) 라벨: ${lowConfidenceSubjects.join(', ')} — 캡션이 이 이름을 단언했으면 confidence_respected=1.` : '(저신뢰 라벨 없음 — confidence_respected 는 5 고정)'}${carouselBlock}
 
 [사장님 톤 지시]
 ${mandatoryTone ? `"${mandatoryTone}"` : '(없음 — tone_match 는 5 고정)'}
@@ -546,10 +614,11 @@ ${caption}
 5. brand_safe: 다음 토큰 누출 없음 (있으면 1): ${brandTokens.length ? brandTokens.join(', ') : '(없음 — 5 고정)'}
 6. length_ok: 본문(해시태그 제외) 길이 ${isBusinessContent ? '80~250자' : '50~180자'} 권장 범위
 7. **confidence_respected**: Vision 의 low confidence 라벨${lowConfidenceSubjects.length ? ` (${lowConfidenceSubjects.join(', ')})` : ''} 을 캡션이 단정 명명했는지. 단언=1, 묘사형(재료·형태·색)으로 풀었으면=5. 저신뢰 라벨 없으면 5.
+8. **carousel_coverage**: ${isCarousel ? `캐러셀 ${imageBuffers.length}장 중 캡션이 모든 슬라이드를 자연스럽게 녹였는지. 한 장만 강조하고 나머지 무시면 1, 골고루 언급/암시(예: cover의 메뉴 + middle 의 분위기 + closer 의 마무리 모두 캡션에 반영)면 5.` : '단일 사진이므로 5 고정.'}
 
-overall = 7개 평균 (소수 버림).
-pass = overall ≥ 4 AND brand_safe == 5 AND tone_appropriate ≥ 4 AND tone_match ≥ 4 AND photo_match ≥ 4 AND confidence_respected ≥ 4.
-issues: 점수 깎인 이유를 짧고 구체적인 한국어 한 줄씩. photo_match 낮으면 "사진에 보이는 X 를 캡션이 Y 로 잘못 명명", confidence_respected 낮으면 "추측 라벨을 단언했음" 같이 구체적으로.`;
+overall = 8개 평균 (소수 버림).
+pass = overall ≥ 4 AND brand_safe == 5 AND tone_appropriate ≥ 4 AND tone_match ≥ 4 AND photo_match ≥ 4 AND confidence_respected ≥ 4${isCarousel ? ' AND carousel_coverage ≥ 4' : ''}.
+issues: 점수 깎인 이유를 짧고 구체적인 한국어 한 줄씩. photo_match 낮으면 "사진에 보이는 X 를 캡션이 Y 로 잘못 명명", confidence_respected 낮으면 "추측 라벨을 단언했음", carousel_coverage 낮으면 "중간/끝 슬라이드의 X 가 캡션에 없음" 같이 구체적으로.`;
 
   // 실제 이미지 첨부 — vision-grounded validation 의 핵심.
   // 멀티 이미지 (캐러셀) 도 전부 첨부해서 cover/middle/closer 일관성까지 보도록.
@@ -708,7 +777,12 @@ ${isBusinessContent
 - 호흡: 짧게 끊고 줄바꿈 적극. 이모지 1~3개.
 - 길이: ${lengthGuide} | ${mediaLengthGuide}
 - 마지막: ${closingGuide}
+${isBusinessContent ? `
+## 같은 업종 모범 예시 (구조·리듬·호흡만 참고)
+⚠️ 그대로 베끼기 X. 첫 문장 유형, 줄바꿈 패턴, 마지막 호흡만 차용. 사진/메뉴/상황은 이번 입력 기준으로 새로 작성.
 
+${getFewShotExamples(item.bizCategory || sp.category).map((ex, i) => `[예시 ${i + 1}]\n${ex}`).join('\n\n---\n\n')}
+` : ''}
 ## 입력
 [이미지 분석]
 ${visionBlock}
@@ -1097,6 +1171,68 @@ async function loadToneFeedback(supabase, userId, kind) {
   }
 }
 
+// ─────────── 사장님 평가 패턴 자동 요약 (gpt-4o-mini) ───────────
+// loadToneFeedback 의 raw {caption, comment} 배열을 1줄 패턴 요약으로 변환.
+// 이전: buildToneGuide 가 raw 원문을 그대로 프롬프트에 노출 → 누적될수록 프롬프트 길이 ↑, 노이즈 ↑.
+// 지금: 메타-LLM 이 "어미·문장 길이·이모지 사용·금지 클리셰" 패턴 한 줄로 추출.
+// 데이터 적으면 (총 3건 미만) null 반환 → 호출자가 기존 raw guide 폴백.
+// 실패 시 null 반환 — 안전성 우선 (게시 막지 않음).
+async function summarizeToneFeedback(likes, dislikes) {
+  const likeCount = Array.isArray(likes) ? likes.length : 0;
+  const dislikeCount = Array.isArray(dislikes) ? dislikes.length : 0;
+  if (likeCount + dislikeCount < 3) return null;
+
+  const fmtRows = (arr, prefix) => arr.slice(0, 10).map((it, i) => {
+    const cap = String(it.caption || '').trim().slice(0, 200);
+    const cmt = String(it.comment || '').trim().slice(0, 100);
+    return `  ${prefix}${i + 1}. "${cap}"${cmt ? ' — 메모: ' + cmt : ''}`;
+  }).join('\n');
+
+  const prompt = `당신은 인스타그램 캡션 톤 분석가입니다. 사장님이 평가한 캡션 패턴을 추출하세요.
+
+[👍 좋아한 캡션 (${likeCount}건, 최근 10개)]
+${likeCount ? fmtRows(likes, 'L') : '(없음)'}
+
+[👎 싫어한 캡션 (${dislikeCount}건, 최근 10개)]
+${dislikeCount ? fmtRows(dislikes, 'D') : '(없음)'}
+
+## 출력 (JSON only)
+{
+  "summary": "한 줄(80자 이내): 어미 스타일 + 문장 길이 + 이모지 강도 + 금지 패턴. 예: '~해요/~네요 어미, 짧은 호흡(2-3문장), 이모지 1-2개, 클리셰 정성스러운/특별한 회피.'",
+  "good_examples": ["가장 사장님 패턴 잘 보여주는 좋아한 캡션 1~2건의 첫 문장만 (각 30자 이내)"],
+  "bad_examples": ["가장 강한 싫어한 패턴 1~2건의 핵심 표현 (각 30자 이내)"]
+}`;
+
+  try {
+    const res = await fetchWithRetry('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 300,
+        temperature: 0.2,
+        response_format: { type: 'json_object' },
+      }),
+    }, { timeoutMs: 20_000, label: 'openai-tone-summary' });
+    const data = await res.json();
+    if (data.error) {
+      console.warn('[summarizeToneFeedback] API 오류 (무시):', data.error.message);
+      return null;
+    }
+    const parsed = JSON.parse(data.choices?.[0]?.message?.content || '{}');
+    if (!parsed.summary) return null;
+    return {
+      summary: String(parsed.summary).trim(),
+      goodExamples: Array.isArray(parsed.good_examples) ? parsed.good_examples.slice(0, 2) : [],
+      badExamples: Array.isArray(parsed.bad_examples) ? parsed.bad_examples.slice(0, 2) : [],
+    };
+  } catch (e) {
+    console.warn('[summarizeToneFeedback] 실패 (무시):', e.message);
+    return null;
+  }
+}
+
 // ─────────── PostgREST 직접 업데이트 (supabase client 없이도 동작) ───────────
 async function pgRestUpdate(reserveKey, body) {
   if (!reserveKey || !process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) return;
@@ -1282,6 +1418,10 @@ exports.handler = async (event) => {
     ]);
     await markStage('06_tone_feedback_loaded');
 
+    // 사장님 평가 패턴 자동 요약 (총 3건 미만이면 null → buildToneContext 가 raw guide 폴백)
+    const toneSummary = await summarizeToneFeedback(toneLikes, toneDislikes);
+    if (toneSummary) console.log('[tone-summary]', toneSummary.summary);
+
     // 관찰용: 진행단계 표시
     try { await supabase.from('reservations').update({ caption_error: 'STAGE:loading_images' }).eq('reserve_key', reservationKey); } catch(_) {}
 
@@ -1370,6 +1510,7 @@ exports.handler = async (event) => {
       userMessage: reservation.user_message || '',
       toneLikes,
       toneDislikes,
+      toneSummary,
       customCaptions,
       captionBank,
       trends: trendKeywords,
