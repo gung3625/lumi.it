@@ -7,7 +7,7 @@
       // 우드 테이블) 에 대해 lumi 가 매장 톤별로 다른 캡션 생성하는 능력 시연.
       // 톤 라벨 (sub) 도 같이 바꿔 "어떤 톤인지" 명시.
       const captionEl = document.querySelector('[data-landing-caption]');
-      const labelEl = document.querySelector('.demo__label');
+      const labelEl = document.querySelector('[data-landing-tone]');
       const CAPTIONS = [
         {
           tone: '시크 · 짧은 호흡',
@@ -53,7 +53,7 @@
 
       function setLabel(tone) {
         if (!labelEl) return;
-        labelEl.textContent = `루미가 캡션 쓰는 중 · ${tone}`;
+        labelEl.textContent = tone;
       }
 
       async function loop() {

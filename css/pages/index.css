@@ -1125,3 +1125,131 @@
       line-height: 1.6; text-align: center;
     }
     .qc-section__bottom strong { color: var(--ink); }
+
+    /* ============================================================
+     * 2026-05-23 BENTO HERO 재설계 — IG 게시물 mockup
+     * .ig-mock — 인스타 진짜 같은 카드 (header + photo + actions + caption)
+     * ============================================================ */
+    .bento__card--hero {
+      padding: 0; overflow: hidden;
+      background: var(--neutral-0);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      box-shadow: 0 16px 48px -12px rgba(0, 0, 0, 0.18),
+                  0 4px 12px -4px rgba(0, 0, 0, 0.08);
+      border-radius: 18px;
+    }
+    .ig-mock {
+      width: 100%; display: flex; flex-direction: column;
+      font-family: -apple-system, BlinkMacSystemFont, 'Pretendard Variable', sans-serif;
+    }
+
+    /* IG 헤더 */
+    .ig-mock__head {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    }
+    .ig-mock__avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: linear-gradient(135deg, #FF6B8B, #DDA0DD, #EDD080);
+      padding: 2px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .ig-mock__avatar img, .ig-mock__avatar picture {
+      width: 100%; height: 100%; border-radius: 50%;
+      background: var(--neutral-0); padding: 4px;
+      object-fit: contain; display: block;
+    }
+    .ig-mock__meta { flex: 1; min-width: 0; line-height: 1.2; }
+    .ig-mock__handle {
+      font-size: 14px; font-weight: 700; color: #262626;
+      letter-spacing: -0.01em;
+    }
+    .ig-mock__sub {
+      font-size: 11px; color: #737373; margin-top: 2px;
+    }
+    .ig-mock__dots {
+      background: transparent; border: 0; padding: 6px; color: #262626;
+      display: flex; align-items: center; cursor: default;
+    }
+    .ig-mock__dots svg { width: 18px; height: 18px; }
+
+    /* IG 사진 */
+    .ig-mock__photo {
+      position: relative;
+      aspect-ratio: 1 / 1;
+      background: #f5f5f5;
+      overflow: hidden;
+    }
+    .ig-mock__photo img {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+    }
+    .ig-mock__badge {
+      position: absolute; top: 12px; left: 12px;
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 12px;
+      background: rgba(20, 20, 22, 0.78);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      color: #fff; border-radius: 999px;
+      font-size: 11px; font-weight: 600; letter-spacing: -0.01em;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    }
+    .ig-mock__badge-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #FF6B8B; box-shadow: 0 0 0 0 rgba(255, 107, 139, 0.5);
+      animation: ig-mock-pulse 1.6s ease-out infinite;
+    }
+    @keyframes ig-mock-pulse {
+      0% { box-shadow: 0 0 0 0 rgba(255, 107, 139, 0.6); }
+      70% { box-shadow: 0 0 0 8px rgba(255, 107, 139, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(255, 107, 139, 0); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .ig-mock__badge-dot { animation: none; }
+    }
+    [data-landing-tone] {
+      font-weight: 700;
+      background: linear-gradient(135deg, #FF6B8B, #DDA0DD);
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* IG 액션 (좋아요/댓글/공유) */
+    .ig-mock__actions {
+      display: flex; align-items: center; gap: 14px;
+      padding: 10px 14px 4px;
+    }
+    .ig-mock__icon { width: 24px; height: 24px; color: #262626; }
+    .ig-mock__icon--right { margin-left: auto; }
+    .ig-mock__likes {
+      padding: 0 14px 6px; font-size: 13px; color: #262626;
+    }
+    .ig-mock__likes strong { font-weight: 700; }
+
+    /* IG 캡션 */
+    .ig-mock__body { padding: 4px 14px 16px; }
+    .ig-mock__caption {
+      font-size: 13.5px; line-height: 1.55; color: #262626;
+      margin: 0; white-space: pre-wrap; word-break: keep-all;
+      min-height: 6.5em;  /* layout shift 방지 (typewriter 동안) */
+    }
+    .ig-mock__caption strong {
+      font-weight: 700; color: #262626; margin-right: 4px;
+    }
+    .ig-mock__caption [data-landing-caption]::after {
+      content: '▍'; color: #FF6B8B; margin-left: 1px;
+      animation: ig-mock-blink 1s steps(2, end) infinite;
+      font-weight: 400;
+    }
+    .ig-mock__caption.is-done [data-landing-caption]::after,
+    .ig-mock__caption [data-landing-caption]:empty::after { display: none; }
+    @keyframes ig-mock-blink {
+      to { visibility: hidden; }
+    }
+
+    /* 모바일 */
+    @media (max-width: 700px) {
+      .bento__card--hero { box-shadow: 0 8px 24px -8px rgba(0,0,0,0.18); }
+      .ig-mock__head { padding: 10px 12px; }
+      .ig-mock__badge { font-size: 10px; padding: 5px 10px; top: 10px; left: 10px; }
+    }
