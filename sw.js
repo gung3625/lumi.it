@@ -8,8 +8,8 @@
 // 캐시 bump: CACHE_VERSION 올리면 옛 cache 삭제 + 새로 받음.
 // 사장님 deploy 시 sw 코드 변경되면 자동으로 새 sw 활성화 (skipWaiting).
 
-// v7: settings 프로필 링크 안내 copy — "왜 직접 붙여넣어야 하나요?" 설명 추가 (자동화 promise 충돌 해소).
-const CACHE_VERSION = 'lumi-v7';
+// v8: settings + register-product 프로필 링크 안내 더 구체화 (캡션 URL 클릭 불가 vs bio 1탭 클릭 차이 명시).
+const CACHE_VERSION = 'lumi-v8';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 
 const STATIC_RE = /\.(css|js|woff2?|ttf|otf|png|jpg|jpeg|webp|svg|ico|gif)$/i;
