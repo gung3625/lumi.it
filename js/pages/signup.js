@@ -245,12 +245,14 @@
       refreshConsentState();
 
       // 다음/이전 버튼
+      // 2026-05-24 베타 흐름 — Step 3 (인스타 연동) 폐기. 매장 정보 저장 후 곧바로 /dashboard.
+      // 인스타 연동은 /guide-ig 의 Tester 초대 요청 흐름으로 별도 처리 (메타 인증 대기 중).
       document.querySelectorAll('[data-next]').forEach(btn => {
         btn.addEventListener('click', async () => {
-          let target = Number(btn.dataset.next);
+          const target = Number(btn.dataset.next);
           if (state.step === 1) {
             if (!validateStep1()) return;
-            // 카카오에서 이미 폰 받았으면 step 2 스킵 → step 1 에서 바로 signup-complete + step 3
+            // 카카오에서 phone 받음 (대부분 케이스) → 바로 저장 + 대시보드
             if (state.skipPhoneStep) {
               btn.disabled = true;
               btn.textContent = '저장 중…';
@@ -262,15 +264,16 @@
                 btn.textContent = '다음';
                 return;
               }
-              btn.disabled = false;
-              btn.textContent = '다음';
-              target = 3;
-              setDoneTitle();
+              // 매장 정보 저장 완료 → /dashboard 직행. Step 3 (인스타 연동) 폐기.
+              location.href = '/dashboard';
+              return;
             }
+            // phone 없음 — Step 2 (휴대폰) 진행
+            showStep(target);
+            return;
           }
           if (state.step === 2) {
             if (!validateStep2()) return;
-            // step 2 → 3 이동 시점에 signup-complete 저장 (필수 정보 다 모임)
             btn.disabled = true;
             btn.textContent = '저장 중…';
             try {
@@ -281,8 +284,9 @@
               btn.textContent = '다음';
               return;
             }
-            btn.disabled = false;
-            btn.textContent = '다음';
+            // 저장 완료 → /dashboard 직행 (Step 3 폐기)
+            location.href = '/dashboard';
+            return;
           }
           showStep(target);
         });

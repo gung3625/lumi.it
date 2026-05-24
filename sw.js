@@ -8,8 +8,8 @@
 // 캐시 bump: CACHE_VERSION 올리면 옛 cache 삭제 + 새로 받음.
 // 사장님 deploy 시 sw 코드 변경되면 자동으로 새 sw 활성화 (skipWaiting).
 
-// v3 (2026-05-24): /guide-ig tester form UX fix — input spellcheck 점선 제거 / submit 버튼 정중앙 정렬 / 대시보드 돌아가기 버튼 여백 ↑.
-const CACHE_VERSION = 'lumi-v3';
+// v4 (2026-05-24): 베타 흐름 보강 — 카카오 가입 후 /signup Step 1 (매장명·업종·지역·약관) 거치고 /dashboard. signup.js 변경 + auth-kakao-callback redirect 복원.
+const CACHE_VERSION = 'lumi-v4';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 
 const STATIC_RE = /\.(css|js|woff2?|ttf|otf|png|jpg|jpeg|webp|svg|ico|gif)$/i;
