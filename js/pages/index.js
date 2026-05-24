@@ -10,34 +10,39 @@
       const labelEl = document.querySelector('[data-landing-tone]');
       const photoEl = document.querySelector('[data-landing-photo]');
       const photoSourceEl = document.querySelector('[data-landing-photo-source]');
+      // 각 SCENE 의 사진과 캡션이 정확히 매칭돼야 함 (사장님 피드백 2026-05-25):
+      //   cafe-1 = 라떼아트 (위에서 본 컵, 잎 패턴, 우드 테이블)
+      //   cafe-2 = 치즈케이크 한 조각 + 커피 한 잔 (흰 접시, 창가)
+      //   cafe-4 = 크로플(와플) + 바닐라 아이스크림 (나무 도마)  ← 메이플시럽 X
+      //   cafe-7 = 사워도우 통빵 1개 (천 위, 베이커리 배경)        ← 깜빠뉴 X
       const SCENES = [
         {
           photoWebp: '/assets/tutorial/cafe-1.webp',
           photoJpg:  '/assets/tutorial/cafe-1.jpg',
-          alt: '우드 테이블 위 라떼아트',
+          alt: '위에서 본 라떼아트 잎 패턴',
           tone: '시크 · 짧은 호흡',
-          text: '오후 세 시.\n우드 테이블 위 라떼 한 잔.\n오늘 두 번째예요.\n\n#스페셜티커피 #이태원카페 #핸드드립 #라떼아트',
+          text: '오후 세 시.\n라떼 잎 한 장.\n\n조용한 시간이 좋아요 ☕\n\n#카페 #라떼아트 #용산카페 #카페감성',
         },
         {
           photoWebp: '/assets/tutorial/cafe-2.webp',
           photoJpg:  '/assets/tutorial/cafe-2.jpg',
-          alt: '오늘의 디저트',
+          alt: '치즈케이크 한 조각과 커피',
           tone: '친근 · 단골 톤',
-          text: '오늘 신메뉴 — 바질 크림 케이크 들어왔어요 ㅋㅋ\n보자마자 단골 사장님 떠올라서 한 조각 챙겨뒀습니다.\n\n평일 디저트 1+1, 오후 4시까지!\n\n#홈베이킹 #이태원디저트 #용산구카페 #신메뉴',
+          text: '치즈케이크 한 입에 커피 한 모금.\n끝맛이 깔끔한 게 좋아요.\n\n같이 드시면 정답이에요.\n\n#치즈케이크 #카페디저트 #커피와디저트 #이태원카페',
         },
         {
           photoWebp: '/assets/tutorial/cafe-4.webp',
           photoJpg:  '/assets/tutorial/cafe-4.jpg',
-          alt: '갓 구운 크로플',
+          alt: '크로플 위 바닐라 아이스크림',
           tone: '감성 · 묘사',
-          text: '바삭하게 갈라진 결, 흘러내리는 메이플시럽.\n하나 더 굽고 있어요. 8분만 기다려주세요.\n\n오늘은 평일이라 자리 여유 있어요.\n\n#수제크로플 #이태원디저트 #브런치카페 #핸드드립',
+          text: '바삭하게 갈라진 결,\n천천히 녹는 바닐라.\n\n따뜻함과 시원함의 그 순간 ✨\n\n#크로플 #바닐라아이스크림 #카페디저트 #브런치카페',
         },
         {
           photoWebp: '/assets/tutorial/cafe-7.webp',
           photoJpg:  '/assets/tutorial/cafe-7.jpg',
-          alt: '천연발효 깜빠뉴',
-          tone: '분위기 · 추천',
-          text: '새벽 5시부터 반죽한 깜빠뉴.\n오후 6시 굽기 마지막 회차예요.\n\n오늘 못 만나신 분들 — 내일 또 만나요.\n\n#수제빵 #이태원베이커리 #천연발효 #깜빠뉴',
+          alt: '오늘 구운 사워도우 통빵',
+          tone: '친근 · 이야기',
+          text: '오늘 새벽에 구운 사워도우 🍞\n\n겉은 단단, 안은 쫀득.\n오븐 열면 매장 가득 향이 퍼져요.\n\n#베이커리 #사워도우 #천연발효 #이태원베이커리',
         },
       ];
       const TYPE_MS = 38;

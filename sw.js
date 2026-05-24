@@ -8,8 +8,8 @@
 // 캐시 bump: CACHE_VERSION 올리면 옛 cache 삭제 + 새로 받음.
 // 사장님 deploy 시 sw 코드 변경되면 자동으로 새 sw 활성화 (skipWaiting).
 
-// v13: SixShop 패턴 적용 — cases carousel (9 캡션 사례) + ecosystem grid (4 그룹 13 chip).
-const CACHE_VERSION = 'lumi-v13';
+// v14: cases-carousel 9개 + hero rotation 캡션을 진짜 사진과 일치시킴 (사장님 피드백: 마카롱 사진에 커피 캡션 mismatch).
+const CACHE_VERSION = 'lumi-v14';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 
 const STATIC_RE = /\.(css|js|woff2?|ttf|otf|png|jpg|jpeg|webp|svg|ico|gif)$/i;
