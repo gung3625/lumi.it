@@ -8,8 +8,8 @@
 // 캐시 bump: CACHE_VERSION 올리면 옛 cache 삭제 + 새로 받음.
 // 사장님 deploy 시 sw 코드 변경되면 자동으로 새 sw 활성화 (skipWaiting).
 
-// v9: index 에 flow-stack 섹션 추가 (sticky stacking cards 5개 — SixShop 스타일).
-const CACHE_VERSION = 'lumi-v9';
+// v10: flow-card padding/align 수정 — min-height 제거 + align-items: center (글씨 위로 몰리는 현상 해소).
+const CACHE_VERSION = 'lumi-v10';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 
 const STATIC_RE = /\.(css|js|woff2?|ttf|otf|png|jpg|jpeg|webp|svg|ico|gif)$/i;
