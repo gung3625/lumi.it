@@ -8,8 +8,8 @@
 // 캐시 bump: CACHE_VERSION 올리면 옛 cache 삭제 + 새로 받음.
 // 사장님 deploy 시 sw 코드 변경되면 자동으로 새 sw 활성화 (skipWaiting).
 
-// v14: cases-carousel 9개 + hero rotation 캡션을 진짜 사진과 일치시킴 (사장님 피드백: 마카롱 사진에 커피 캡션 mismatch).
-const CACHE_VERSION = 'lumi-v14';
+// v15: 캡션 진정성 업그레이드 — 사장님 본인 이야기 + 디테일 + 손님 대화 톤 (cases 9개 + hero 4개).
+const CACHE_VERSION = 'lumi-v15';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 
 const STATIC_RE = /\.(css|js|woff2?|ttf|otf|png|jpg|jpeg|webp|svg|ico|gif)$/i;
