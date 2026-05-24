@@ -8,8 +8,8 @@
 // 캐시 bump: CACHE_VERSION 올리면 옛 cache 삭제 + 새로 받음.
 // 사장님 deploy 시 sw 코드 변경되면 자동으로 새 sw 활성화 (skipWaiting).
 
-// v16: 공개 페이지에서 정확한 모델명 (GPT-4o/5.4/4o-mini, Sora 2) 제거 — 일반 명칭으로 (경쟁/보안).
-const CACHE_VERSION = 'lumi-v16';
+// v17: SixShop 격차 3개 한 번에 — Hero IG preview 카드 + flow-card 5 mini UI mockup + dashboard 미리보기 섹션.
+const CACHE_VERSION = 'lumi-v17';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 
 const STATIC_RE = /\.(css|js|woff2?|ttf|otf|png|jpg|jpeg|webp|svg|ico|gif)$/i;
