@@ -8,8 +8,8 @@
 // 캐시 bump: CACHE_VERSION 올리면 옛 cache 삭제 + 새로 받음.
 // 사장님 deploy 시 sw 코드 변경되면 자동으로 새 sw 활성화 (skipWaiting).
 
-// v4 (2026-05-24): 베타 흐름 보강 — 카카오 가입 후 /signup Step 1 (매장명·업종·지역·약관) 거치고 /dashboard. signup.js 변경 + auth-kakao-callback redirect 복원.
-const CACHE_VERSION = 'lumi-v4';
+// v5 (2026-05-24): /beta 약관 동의 게이트 제거 — /signup 에서만 정식 동의. beta.html/beta.js 단순화.
+const CACHE_VERSION = 'lumi-v5';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 
 const STATIC_RE = /\.(css|js|woff2?|ttf|otf|png|jpg|jpeg|webp|svg|ico|gif)$/i;
