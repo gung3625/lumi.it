@@ -8,8 +8,8 @@
 // 캐시 bump: CACHE_VERSION 올리면 옛 cache 삭제 + 새로 받음.
 // 사장님 deploy 시 sw 코드 변경되면 자동으로 새 sw 활성화 (skipWaiting).
 
-// v12: flow-card sticky 작동 fix — CSP 가 inline style 차단했음. top 값 inline → CSS class 로 이동.
-const CACHE_VERSION = 'lumi-v12';
+// v13: SixShop 패턴 적용 — cases carousel (9 캡션 사례) + ecosystem grid (4 그룹 13 chip).
+const CACHE_VERSION = 'lumi-v13';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 
 const STATIC_RE = /\.(css|js|woff2?|ttf|otf|png|jpg|jpeg|webp|svg|ico|gif)$/i;
