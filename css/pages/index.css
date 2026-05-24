@@ -1398,11 +1398,12 @@
 }
 
 /* 카드별 살짝 다른 그라데이션 (단조로움 방지) */
-.flow-card--1 { background: linear-gradient(145deg, #1d1d1f 0%, #3a1a3a 100%); }
-.flow-card--2 { background: linear-gradient(145deg, #1d1d1f 0%, #2a1a4a 100%); }
-.flow-card--3 { background: linear-gradient(145deg, #1d1d1f 0%, #4a1a2a 100%); }
-.flow-card--4 { background: linear-gradient(145deg, #1d1d1f 0%, #3a2a1a 100%); }
-.flow-card--5 { background: linear-gradient(145deg, #1d1d1f 0%, #2a2a4a 100%); }
+/* CSP 가 inline style 차단 → top 값을 CSS class 로 정의 (28px 씩 증가 = stacking 효과) */
+.flow-card--1 { top: 100px; background: linear-gradient(145deg, #1d1d1f 0%, #3a1a3a 100%); }
+.flow-card--2 { top: 128px; background: linear-gradient(145deg, #1d1d1f 0%, #2a1a4a 100%); }
+.flow-card--3 { top: 156px; background: linear-gradient(145deg, #1d1d1f 0%, #4a1a2a 100%); }
+.flow-card--4 { top: 184px; background: linear-gradient(145deg, #1d1d1f 0%, #3a2a1a 100%); }
+.flow-card--5 { top: 212px; background: linear-gradient(145deg, #1d1d1f 0%, #2a2a4a 100%); }
 
 /* ── Mobile (≤640px) ── 카드 padding ↓, top 값 비례 축소, num 위치 조정 */
 @media (max-width: 640px) {
@@ -1416,12 +1417,12 @@
   }
   .flow-card__num { font-size: 48px; }
   .flow-card__title { font-size: 20px; }
-  /* 모바일은 sticky top 값 작게 (header 없는 페이지) — inline 덮어쓰기 */
-  .flow-card[style*="top: 100px"] { top: 60px !important; }
-  .flow-card[style*="top: 128px"] { top: 78px !important; }
-  .flow-card[style*="top: 156px"] { top: 96px !important; }
-  .flow-card[style*="top: 184px"] { top: 114px !important; }
-  .flow-card[style*="top: 212px"] { top: 132px !important; }
+  /* 모바일은 sticky top 값 작게 (header 없음) — class 로 덮어쓰기 */
+  .flow-card--1 { top: 60px; }
+  .flow-card--2 { top: 78px; }
+  .flow-card--3 { top: 96px; }
+  .flow-card--4 { top: 114px; }
+  .flow-card--5 { top: 132px; }
 }
 
 /* ── reduced-motion ── sticky 풀고 일반 scroll (애니메이션 X) */

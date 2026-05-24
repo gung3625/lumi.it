@@ -8,8 +8,8 @@
 // 캐시 bump: CACHE_VERSION 올리면 옛 cache 삭제 + 새로 받음.
 // 사장님 deploy 시 sw 코드 변경되면 자동으로 새 sw 활성화 (skipWaiting).
 
-// v11: flow-card padding 증대 — 48px 위아래 / 40px 좌우 + min-height 360px 복원 (사장님: 글씨 답답).
-const CACHE_VERSION = 'lumi-v11';
+// v12: flow-card sticky 작동 fix — CSP 가 inline style 차단했음. top 값 inline → CSS class 로 이동.
+const CACHE_VERSION = 'lumi-v12';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 
 const STATIC_RE = /\.(css|js|woff2?|ttf|otf|png|jpg|jpeg|webp|svg|ico|gif)$/i;
