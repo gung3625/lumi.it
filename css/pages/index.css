@@ -22,17 +22,18 @@
         calc(env(safe-area-inset-top) + var(--space-6))
         var(--space-5)
         calc(env(safe-area-inset-bottom) + var(--space-8));
-      /* 2-col grid: 좌 (텍스트+CTA) / 우 (IG mockup preview) — SixShop hero 패턴.
-         topbar 와 scroll-hint 는 grid-column: 1 / -1 로 전체 폭 차지.
-         900px 이하는 1열 (모바일은 stack). */
+      /* 2-col grid: 좌 (텍스트+CTA) / 우 (IG mockup preview) — 1:1 균형.
+         topbar / cloud / scroll-hint 는 grid-column: 1 / -1 로 전체 폭. */
       display: grid;
-      grid-template-columns: 1.15fr 1fr;
-      grid-template-rows: auto 1fr auto;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: auto auto 1fr auto;
       column-gap: var(--space-8);
       isolation: isolate;
       overflow: hidden;
     }
     .hero__topbar { grid-column: 1 / -1; }
+    /* 구름은 hero 전체 폭 가운데 — 좌측 column 에 갇히지 않게 */
+    .hero__cloud { grid-column: 1 / -1; }
     .hero__scroll-hint { grid-column: 1 / -1; }
     @media (max-width: 900px) {
       .hero { grid-template-columns: 1fr; }
@@ -152,7 +153,8 @@
 
     /* 거대 타이포 — viewport-scaled (2026 트렌드 #2) */
     .hero__title {
-      font-size: clamp(40px, 11vw, 80px);
+      /* 좌측 column 안에 들어가야 하므로 max 64px (이전 80px 은 컬럼 침범 + wrap 깨짐) */
+      font-size: clamp(36px, 7.5vw, 64px);
       font-weight: var(--weight-heavy);
       letter-spacing: var(--tracking-tight);
       line-height: 1.05;
@@ -1699,12 +1701,14 @@
    사장님 사진 1장 → lumi 가 만든 게시물 모습 미니 mockup.
    데스크탑: hero 우하단 absolute. 모바일: hero body 끝 가운데.
    ═════════════════════════════════════════════════════════════ */
-/* preview = hero 의 우측 column grid item (이제 absolute 아님 → hero 와 자연스럽게 통합) */
+/* preview = hero 의 우측 column grid item (이제 absolute 아님 → hero 와 자연스럽게 통합).
+   align-self: end → 카드가 hero 아래쪽으로 — 좌측 텍스트 baseline 과 시각 균형. */
 .hero__preview {
-  align-self: center;
+  align-self: end;
   justify-self: center;
   width: 100%;
   max-width: 360px;
+  margin-bottom: var(--space-6);
   animation: hero-preview-rise 800ms var(--ease-toss) 700ms backwards;
 }
 @keyframes hero-preview-rise {

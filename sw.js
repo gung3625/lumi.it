@@ -8,8 +8,8 @@
 // 캐시 bump: CACHE_VERSION 올리면 옛 cache 삭제 + 새로 받음.
 // 사장님 deploy 시 sw 코드 변경되면 자동으로 새 sw 활성화 (skipWaiting).
 
-// v18: Hero 2-column grid 재구성 — preview 카드 absolute → grid item (좌 텍스트 / 우 mockup 자연 통합).
-const CACHE_VERSION = 'lumi-v18';
+// v19: Hero 밸런스 fix — 구름 전체 폭 가운데 / preview 카드 align-end (아래로) / title 80→64px / col 1:1.
+const CACHE_VERSION = 'lumi-v19';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 
 const STATIC_RE = /\.(css|js|woff2?|ttf|otf|png|jpg|jpeg|webp|svg|ico|gif)$/i;
