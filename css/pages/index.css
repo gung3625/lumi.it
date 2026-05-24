@@ -1262,3 +1262,173 @@
     @media (prefers-reduced-motion: reduce) {
       .ig-mock__photo img { transition: none; }
     }
+
+/* ═════════════════════════════════════════════════════════════
+   Flow Stack Section — sticky stacking cards (SixShop 패턴)
+   카드 5개가 position: sticky 로 계단처럼 쌓임. 스크롤 내릴 때
+   다음 카드가 위에 등장 + 이전 카드 윗부분 28px 살짝 보임.
+   ═════════════════════════════════════════════════════════════ */
+.flow-stack {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: var(--space-10) var(--space-5);
+  /* sticky 가 작동하려면 부모 overflow !=hidden, 부모 높이가 카드 합보다 커야 함 */
+}
+.flow-stack__intro {
+  text-align: center;
+  margin-bottom: var(--space-8);
+}
+.flow-stack__eyebrow {
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: var(--pink-500);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0 0 var(--space-2);
+}
+.flow-stack__title {
+  font-size: clamp(28px, 4.5vw, 40px);
+  font-weight: 800;
+  line-height: 1.25;
+  color: var(--ink);
+  margin: 0 0 var(--space-3);
+  letter-spacing: -0.02em;
+}
+.flow-stack__title-accent {
+  background: var(--gradient-signature);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.flow-stack__lead {
+  font-size: var(--text-body-sm);
+  color: var(--ink-muted);
+  margin: 0;
+}
+
+/* 카드 컨테이너 — 카드 5개 stack. sticky 가 작동할 충분한 부모 높이 */
+.flow-stack__cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);  /* 카드 사이 여백 → 스크롤할 거리 확보 (sticky 효과의 핵심) */
+}
+
+/* 카드 본체 — top 값은 인라인으로 설정 (100/128/156/184/212 = 28px 씩 증가) */
+.flow-card {
+  position: sticky;
+  /* top 은 inline style 로 지정 (각 카드별 다름) */
+  background: linear-gradient(145deg, #1d1d1f 0%, #2a1a3a 100%);
+  color: var(--neutral-0);
+  border-radius: 28px;
+  padding: var(--space-7) var(--space-6);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+  display: flex;
+  gap: var(--space-5);
+  align-items: flex-start;
+  min-height: 320px;
+  overflow: hidden;
+  /* sticky 시 transform 살짝 → 다음 카드 등장 효과 미세 보정 */
+  transition: box-shadow var(--duration-base) var(--ease-soft);
+}
+@media (hover: hover) {
+  .flow-card:hover { box-shadow: 0 32px 80px rgba(255, 107, 139, 0.25), 0 0 0 1px rgba(255, 107, 139, 0.2) inset; }
+}
+
+.flow-card__num {
+  flex: 0 0 auto;
+  font-size: 64px;
+  font-weight: 900;
+  line-height: 1;
+  background: var(--gradient-signature);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: -0.04em;
+  opacity: 0.55;
+}
+.flow-card__body { flex: 1 1 auto; }
+.flow-card__icon {
+  font-size: 36px;
+  line-height: 1;
+  margin-bottom: var(--space-3);
+}
+.flow-card__title {
+  font-size: clamp(20px, 3vw, 28px);
+  font-weight: 800;
+  margin: 0 0 var(--space-3);
+  color: var(--neutral-0);
+  letter-spacing: -0.01em;
+}
+.flow-card__desc {
+  font-size: var(--text-body-sm);
+  color: rgba(255, 255, 255, 0.78);
+  line-height: 1.65;
+  margin: 0 0 var(--space-3);
+}
+.flow-card__desc b { color: var(--neutral-0); font-weight: 600; }
+.flow-card__bullets {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.flow-card__bullets li {
+  font-size: var(--text-caption);
+  color: rgba(255, 255, 255, 0.65);
+  padding-left: 18px;
+  position: relative;
+  line-height: 1.55;
+}
+.flow-card__bullets li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: var(--pink-300, #ff8ba7);
+  font-weight: 700;
+}
+.flow-card__bullets b { color: rgba(255, 255, 255, 0.92); font-weight: 600; }
+.flow-card__bullets code {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--pink-300, #ff8ba7);
+}
+
+/* 카드별 살짝 다른 그라데이션 (단조로움 방지) */
+.flow-card--1 { background: linear-gradient(145deg, #1d1d1f 0%, #3a1a3a 100%); }
+.flow-card--2 { background: linear-gradient(145deg, #1d1d1f 0%, #2a1a4a 100%); }
+.flow-card--3 { background: linear-gradient(145deg, #1d1d1f 0%, #4a1a2a 100%); }
+.flow-card--4 { background: linear-gradient(145deg, #1d1d1f 0%, #3a2a1a 100%); }
+.flow-card--5 { background: linear-gradient(145deg, #1d1d1f 0%, #2a2a4a 100%); }
+
+/* ── Mobile (≤640px) ── 카드 padding ↓, top 값 비례 축소, num 위치 조정 */
+@media (max-width: 640px) {
+  .flow-stack { padding: var(--space-8) var(--space-4); }
+  .flow-card {
+    padding: var(--space-5);
+    flex-direction: column;
+    gap: var(--space-3);
+    min-height: 0;
+    border-radius: 20px;
+  }
+  .flow-card__num { font-size: 48px; }
+  .flow-card__title { font-size: 20px; }
+  /* 모바일은 sticky top 값 작게 (header 없는 페이지) — inline 덮어쓰기 */
+  .flow-card[style*="top: 100px"] { top: 60px !important; }
+  .flow-card[style*="top: 128px"] { top: 78px !important; }
+  .flow-card[style*="top: 156px"] { top: 96px !important; }
+  .flow-card[style*="top: 184px"] { top: 114px !important; }
+  .flow-card[style*="top: 212px"] { top: 132px !important; }
+}
+
+/* ── reduced-motion ── sticky 풀고 일반 scroll (애니메이션 X) */
+@media (prefers-reduced-motion: reduce) {
+  .flow-card {
+    position: relative;
+    top: auto !important;
+    transition: none;
+  }
+}

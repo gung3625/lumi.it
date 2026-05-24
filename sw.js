@@ -8,8 +8,8 @@
 // 캐시 bump: CACHE_VERSION 올리면 옛 cache 삭제 + 새로 받음.
 // 사장님 deploy 시 sw 코드 변경되면 자동으로 새 sw 활성화 (skipWaiting).
 
-// v8: settings + register-product 프로필 링크 안내 더 구체화 (캡션 URL 클릭 불가 vs bio 1탭 클릭 차이 명시).
-const CACHE_VERSION = 'lumi-v8';
+// v9: index 에 flow-stack 섹션 추가 (sticky stacking cards 5개 — SixShop 스타일).
+const CACHE_VERSION = 'lumi-v9';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 
 const STATIC_RE = /\.(css|js|woff2?|ttf|otf|png|jpg|jpeg|webp|svg|ico|gif)$/i;
