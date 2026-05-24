@@ -8,8 +8,8 @@
 // 캐시 bump: CACHE_VERSION 올리면 옛 cache 삭제 + 새로 받음.
 // 사장님 deploy 시 sw 코드 변경되면 자동으로 새 sw 활성화 (skipWaiting).
 
-// v17: SixShop 격차 3개 한 번에 — Hero IG preview 카드 + flow-card 5 mini UI mockup + dashboard 미리보기 섹션.
-const CACHE_VERSION = 'lumi-v17';
+// v18: Hero 2-column grid 재구성 — preview 카드 absolute → grid item (좌 텍스트 / 우 mockup 자연 통합).
+const CACHE_VERSION = 'lumi-v18';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 
 const STATIC_RE = /\.(css|js|woff2?|ttf|otf|png|jpg|jpeg|webp|svg|ico|gif)$/i;
