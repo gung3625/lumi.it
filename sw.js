@@ -8,8 +8,8 @@
 // 캐시 bump: CACHE_VERSION 올리면 옛 cache 삭제 + 새로 받음.
 // 사장님 deploy 시 sw 코드 변경되면 자동으로 새 sw 활성화 (skipWaiting).
 
-// v5 (2026-05-24): /beta 약관 동의 게이트 제거 — /signup 에서만 정식 동의. beta.html/beta.js 단순화.
-const CACHE_VERSION = 'lumi-v5';
+// v6 (2026-05-24): Hook 영상 풀 admin 페이지 + endpoint 추가 (/admin/hook-videos, /api/admin-hook-videos).
+const CACHE_VERSION = 'lumi-v6';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 
 const STATIC_RE = /\.(css|js|woff2?|ttf|otf|png|jpg|jpeg|webp|svg|ico|gif)$/i;

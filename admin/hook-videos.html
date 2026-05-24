@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="description" content="루미 admin — hook 영상 풀 관리">
+  <title>Hook 영상 풀 · 루미 admin</title>
+
+  <link rel="icon" type="image/png" href="/assets/favicon.png">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="dns-prefetch" href="https://cldsozdocxpvkbuxwqep.supabase.co">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <script src="/js/prod-log.js"></script>
+  <script src="/js/auth-fetch.js"></script>
+  <script src="/js/error-track.js"></script>
+
+  <link rel="stylesheet" href="/admin/hook-videos.css">
+</head>
+<body>
+  <main class="admin">
+    <header class="admin__topbar">
+      <a class="admin__logo" href="/dashboard" aria-label="루미 대시보드">
+        <picture><source srcset="/assets/logo-wordmark.webp" type="image/webp"><img src="/assets/logo-wordmark.png" alt="lumi" width="56" height="28"></picture>
+      </a>
+      <span class="admin__badge">ADMIN</span>
+      <h1 class="admin__title">Hook 영상 풀</h1>
+    </header>
+
+    <!-- 인증 실패 안내 (admin 아닌 경우 노출) -->
+    <section class="admin__auth-err" data-auth-err hidden>
+      <h2>관리자 권한이 없어요</h2>
+      <p>이 페이지는 루미 팀 전용이에요. <a href="/dashboard">대시보드로 돌아가기</a></p>
+    </section>
+
+    <!-- 카테고리 요약 -->
+    <section class="admin__summary" aria-label="카테고리별 요약" data-summary hidden>
+      <h2 class="admin__section-title">카테고리 현황</h2>
+      <div class="admin__summary-grid" data-summary-grid></div>
+    </section>
+
+    <!-- 업로드 폼 -->
+    <section class="admin__upload" aria-label="새 영상 업로드" data-upload-section hidden>
+      <h2 class="admin__section-title">새 영상 업로드</h2>
+      <form class="admin__form" data-upload-form>
+        <div class="admin__field">
+          <label class="admin__label" for="up-file">영상 파일 (mp4, 최대 50MB) <span aria-hidden="true">*</span></label>
+          <input class="admin__input" id="up-file" name="file" type="file" accept="video/mp4,video/quicktime,video/webm" required>
+          <p class="admin__hint" data-file-info></p>
+        </div>
+
+        <div class="admin__row">
+          <div class="admin__field admin__field--flex">
+            <label class="admin__label" for="up-category">카테고리 <span aria-hidden="true">*</span></label>
+            <select class="admin__input" id="up-category" name="category" required>
+              <option value="general">general (모든 매장 회전)</option>
+              <option value="cafe">cafe</option>
+              <option value="food">food</option>
+              <option value="beauty">beauty</option>
+              <option value="hair">hair</option>
+              <option value="nail">nail</option>
+              <option value="flower">flower</option>
+              <option value="fashion">fashion</option>
+              <option value="fitness">fitness</option>
+            </select>
+          </div>
+          <div class="admin__field admin__field--flex">
+            <label class="admin__label" for="up-source-model">생성 모델</label>
+            <select class="admin__input" id="up-source-model" name="source_model">
+              <option value="sora-2">Sora 2 (OpenAI)</option>
+              <option value="veo-3.1-fast">Veo 3.1 Fast (Google)</option>
+              <option value="veo-3">Veo 3 (Google)</option>
+              <option value="google-flow">Google Flow (무료)</option>
+              <option value="luma">Luma</option>
+              <option value="kling">Kling</option>
+              <option value="runway">Runway</option>
+              <option value="manual">사장님 직접 촬영</option>
+              <option value="other">기타</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="admin__field">
+          <label class="admin__label" for="up-title">제목 <span aria-hidden="true">*</span></label>
+          <input class="admin__input" id="up-title" name="title" type="text" maxlength="80" required placeholder="예: 라떼 pour 황금빛 close-up">
+        </div>
+
+        <div class="admin__field">
+          <label class="admin__label" for="up-prompt">사용한 AI prompt (선택)</label>
+          <textarea class="admin__input admin__input--area" id="up-prompt" name="prompt" rows="3" maxlength="1000" placeholder="다음 batch 생성 시 변형용. 예: Close-up POV of barista pouring espresso, golden steam, 9:16 vertical, 4 seconds"></textarea>
+        </div>
+
+        <div class="admin__field">
+          <label class="admin__label" for="up-notes">메모 (선택)</label>
+          <input class="admin__input" id="up-notes" name="notes" type="text" maxlength="500" placeholder="예: 어그로 효과 좋음 / 다음 batch 도 비슷한 스타일로">
+        </div>
+
+        <div class="admin__progress" data-progress hidden>
+          <div class="admin__progress-bar" data-progress-bar></div>
+          <div class="admin__progress-text" data-progress-text>준비 중…</div>
+        </div>
+
+        <div class="admin__error" data-err hidden></div>
+
+        <button type="submit" class="admin__submit" data-submit>업로드</button>
+      </form>
+    </section>
+
+    <!-- 영상 목록 -->
+    <section class="admin__list" aria-label="업로드된 영상 목록" data-list-section hidden>
+      <h2 class="admin__section-title">업로드된 영상 (<span data-list-count>0</span>)</h2>
+      <div class="admin__list-grid" data-list-grid>
+        <p class="admin__empty" data-list-empty>아직 영상이 없어요. 위에서 첫 영상을 업로드하세요.</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="/admin/hook-videos.js"></script>
+</body>
+</html>

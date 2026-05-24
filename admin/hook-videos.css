@@ -1,0 +1,269 @@
+/* /admin/hook-videos.css — Hook 영상 풀 admin UI */
+
+body {
+  background: var(--bg-soft);
+  min-height: 100dvh;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.admin {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 0 var(--space-5) var(--space-8);
+}
+
+.admin__topbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) 0;
+}
+.admin__logo img { height: 24px; width: auto; }
+.admin__badge {
+  padding: 4px 10px;
+  background: #1d1d1f;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  border-radius: 12px;
+}
+.admin__title {
+  font-size: var(--text-headline);
+  font-weight: 800;
+  margin: 0 0 0 var(--space-2);
+  color: var(--ink);
+}
+
+.admin__section-title {
+  font-size: var(--text-body);
+  font-weight: 700;
+  margin: var(--space-6) 0 var(--space-3);
+  color: var(--ink);
+}
+
+.admin__auth-err {
+  background: var(--bg);
+  padding: var(--space-6);
+  border-radius: var(--radius-card);
+  text-align: center;
+  margin-top: var(--space-6);
+}
+.admin__auth-err a { color: var(--pink-500); }
+
+/* ── 카테고리 요약 grid ── */
+.admin__summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--space-2);
+}
+.admin__summary-card {
+  background: var(--bg);
+  padding: var(--space-3);
+  border-radius: var(--radius-card);
+  border: 1px solid var(--line);
+  text-align: center;
+}
+.admin__summary-card.is-low {
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.05);
+}
+.admin__summary-cat {
+  font-size: var(--text-caption);
+  color: var(--ink-muted);
+}
+.admin__summary-stat {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--ink);
+  margin: 4px 0;
+}
+.admin__summary-stat strong { color: var(--pink-500); }
+.admin__summary-sub {
+  font-size: 11px;
+  color: var(--ink-muted);
+}
+
+/* ── 업로드 폼 ── */
+.admin__upload {
+  background: var(--bg);
+  padding: var(--space-5);
+  border-radius: var(--radius-card);
+  border: 1px solid var(--line);
+}
+.admin__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.admin__row { display: flex; gap: var(--space-3); flex-wrap: wrap; }
+.admin__field--flex { flex: 1 1 200px; }
+.admin__label {
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--ink);
+  display: block;
+  margin-bottom: 6px;
+}
+.admin__input {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  font-size: var(--text-body-sm);
+  font-family: inherit;
+  color: var(--ink);
+  outline: none;
+  transition: border-color var(--duration-snap) var(--ease-soft);
+}
+.admin__input:focus { border-color: var(--pink-500); }
+.admin__input--area { resize: vertical; min-height: 80px; }
+.admin__hint {
+  margin: 6px 0 0;
+  font-size: var(--text-caption);
+  color: var(--ink-muted);
+}
+
+.admin__progress {
+  margin-top: var(--space-3);
+  background: var(--bg-soft);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  position: relative;
+  height: 28px;
+}
+.admin__progress-bar {
+  height: 100%;
+  background: var(--gradient-signature);
+  width: 0%;
+  transition: width 0.3s ease;
+}
+.admin__progress-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.admin__error {
+  padding: var(--space-3) var(--space-4);
+  background: rgba(220, 38, 38, 0.08);
+  color: #B91C1C;
+  font-size: var(--text-body-sm);
+  border-radius: var(--radius-card);
+  border-left: 3px solid #B91C1C;
+}
+
+.admin__submit {
+  margin-top: var(--space-3);
+  padding: var(--space-3) var(--space-5);
+  background: var(--gradient-signature);
+  color: #fff;
+  font-weight: 700;
+  border: 0;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-body);
+  cursor: pointer;
+  box-shadow: var(--shadow-glow-sm);
+  transition: transform var(--duration-snap) var(--ease-toss);
+}
+.admin__submit:disabled { opacity: 0.5; cursor: wait; }
+.admin__submit:active { transform: scale(0.97); }
+
+/* ── 영상 목록 ── */
+.admin__list-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-3);
+}
+.admin__empty {
+  grid-column: 1 / -1;
+  padding: var(--space-8);
+  text-align: center;
+  color: var(--ink-muted);
+  background: var(--bg);
+  border-radius: var(--radius-card);
+  border: 1px dashed var(--line);
+}
+.admin__video {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.admin__video.is-inactive { opacity: 0.55; }
+.admin__video-preview {
+  position: relative;
+  aspect-ratio: 9 / 16;
+  background: #000;
+  overflow: hidden;
+}
+.admin__video-preview video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.admin__video-cat,
+.admin__video-dur {
+  position: absolute;
+  top: 8px;
+  padding: 3px 8px;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 4px;
+}
+.admin__video-cat { left: 8px; }
+.admin__video-dur { right: 8px; }
+.admin__video-body {
+  padding: var(--space-3);
+  flex: 1 1 auto;
+}
+.admin__video-title {
+  font-size: var(--text-body-sm);
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+.admin__video-meta {
+  font-size: 11px;
+  color: var(--ink-muted);
+  line-height: 1.5;
+}
+.admin__video-notes {
+  margin-top: 6px;
+  padding: 6px 8px;
+  background: var(--bg-soft);
+  border-radius: 6px;
+  font-size: 11px;
+  color: var(--ink);
+}
+.admin__video-actions {
+  display: flex;
+  gap: 6px;
+  padding: 0 var(--space-3) var(--space-3);
+}
+.admin__btn {
+  flex: 1 1 auto;
+  padding: 6px 10px;
+  background: var(--bg-soft);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.admin__btn:hover { border-color: var(--pink-500); color: var(--pink-500); }
+.admin__btn--danger:hover { border-color: #B91C1C; color: #B91C1C; }
+.admin__btn--toggle:hover { background: var(--pink-50, #fff5f7); }
