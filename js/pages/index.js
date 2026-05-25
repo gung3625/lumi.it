@@ -261,9 +261,12 @@
       root.addEventListener('mouseenter', stopRotate);
       root.addEventListener('mouseleave', () => { if (inView) startRotate(); });
 
+      // 초기 1회 — HTML 정적 캡션을 JS 데이터로 한 번 덮어써 일관성 보장.
+      // (HTML 의 옛 캡션과 JS 의 새 캡션이 어긋나도 첫 화면부터 새 캡션이 보이도록)
+      applySlide(0);
+
       // prefers-reduced-motion → 첫 슬라이드만 고정
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        applySlide(0);
         return;
       }
 

@@ -8,8 +8,8 @@
 // 캐시 bump: CACHE_VERSION 올리면 옛 cache 삭제 + 새로 받음.
 // 사장님 deploy 시 sw 코드 변경되면 자동으로 새 sw 활성화 (skipWaiting).
 
-// v30: hero slides 5장 캡션을 cases-carousel 의 풀버전 (진심 톤) 으로 통일.
-const CACHE_VERSION = 'lumi-v30';
+// v31: hero slides 첫 화면도 풀버전 캡션 — HTML 정적값 갱신 + JS 초기 applySlide(0) 호출.
+const CACHE_VERSION = 'lumi-v31';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 
 const STATIC_RE = /\.(css|js|woff2?|ttf|otf|png|jpg|jpeg|webp|svg|ico|gif)$/i;
