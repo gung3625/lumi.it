@@ -1,11 +1,178 @@
 # 루미(lumi) 인수인계 문서
 
-마지막 업데이트: 2026-05-23 (베타 모집 직전 robustness + IG 가이드 보강)
-기준 커밋: `main` 최신 (`56f95c9`)
+마지막 업데이트: 2026-05-25 (대청소 + 베타 흐름 개편 + SixShop UI 패턴 적용)
+기준 커밋: `main` 최신
 
 ---
 
-## ✅ 2026-05-23 — 베타 모집 직전 robustness + IG 가이드 5건
+## 📐 현재 lumi 구조 (2026-05-25 기준)
+
+### 규모
+| 항목 | 수 |
+|---|---|
+| HTML 페이지 | 19 (public 8 + app 7 + onboarding 1 + admin 1 + 기타 2) |
+| Netlify Functions | **78** (대청소 전 102 → -24) |
+| Edge Functions | 3 (kakao OAuth start/callback + linktree-og) |
+| Cron schedules | 14 |
+| DB Tables (public) | **25** (대청소 전 63 → -38) |
+| Storage Buckets | 8 |
+
+### 사용자 흐름 (Critical Path)
+```
+홍보글 → /beta → 카카오 OAuth (edge) → /signup Step 1 (매장명·지역·업종·약관)
+       → /dashboard → IG 미연동 모달 → /guide-ig → Tester 초대 요청 form
+       → (사장님 메타 콘솔 처리 + 카톡 알림) → /guide-ig → IG OAuth → 정상 사용
+```
+
+### 게시 흐름 (Beta 활성 시)
+```
+/register-product → /api/reserve → process-and-post-background
+   → analyzeImages (Vision)
+   → generateCaptions (Writer + 톤 학습 + few-shot + 재시도 max 2)
+   → validateCaption (vision-grounded, 8 axis 채점)
+   → select-and-post-background
+   → IG·Threads 자동 게시 (베스트 시간)
+```
+
+### 16 기능 영역
+1. **랜딩·진입**: index, beta, tutorial
+2. **인증**: kakao OAuth (edge), me, signup-complete, account-delete
+3. **온보딩**: signup (Step 1 매장 정보)
+4. **대시보드**: dashboard.html + js
+5. **게시**: register-product → reserve → process-and-post → select-and-post → IG·Threads
+6. **트렌드**: scheduled-trends-v2 + longtail + embeddings → get-trends, trends.html
+7. **베스트 시간**: get-best-time, scheduled-followers-snapshot, scheduled-post-insights
+8. **인사이트**: insight-weekly/monthly/on-demand, insights.html
+9. **댓글**: comments, reply-comment, comments.html
+10. **자막·영상**: burn-subtitles, process-video-background → Modal 외부
+11. **링크트리**: save/get-linktree, linktree.html, edge-functions/linktree-og.js
+12. **베타·Tester**: request-tester-invite, request-ig-help
+13. **소셜 플랫폼**: IG/Threads/TikTok OAuth + post + reconnect + token refresh
+14. **Admin**: hook-videos (Phase 1 풀 인프라 완성)
+15. **Cron 운영**: cron-health, cron-watchdog, scheduler (매분), cleanup 3개
+16. **법적·운영**: terms/privacy/refund/support, data-deletion, openai-quota
+
+### DB Tables 25개 (정리 후)
+- **핵심**: sellers, ig_accounts, oauth_nonces, seller_refresh_tokens, beta_signups
+- **게시**: reservations, caption_history, failure_log, follower_activity_snapshots
+- **트렌드**: trend_keywords (1018), trends (451), trend_subcategories (42), trend_dismissals, user_trend_feedback
+- **베타**: hook_videos (Phase 2 대기)
+- **운영**: openai_quota, rate_limits, client_errors, data_deletion_requests, migration_history
+- **확장**: tone_feedback, tiktok_accounts, link_pages, link_blocks, seller_consents
+- **보류**: auto_reply_log (meta-webhook 사용, Meta 인증 후 활성), kill_switch_log (admin)
+
+### 외부 통합
+- **OpenAI**: Vision (사진 분석) + Writer (캡션) + Validator (검수) + 향후 Sora (영상)
+- **Google AI** (계획): Veo 3.1 Lite (영상 합성 비용 50% 절감) + Gemini Omni (단일 호출 통합)
+- **Supabase**: DB + Storage (lumi-videos, lumi-hook-videos 등 8 버킷) + Auth
+- **Meta Graph API**: IG 게시 + Threads + webhook (현재 비즈니스 인증 대기 중)
+- **TikTok API**: OAuth + post (코드 완성, 활용 X)
+- **카카오 OAuth**: 1초 가입
+- **Resend**: 트랜잭션 이메일 (베타 신청, IG 도움 요청, Tester 초대)
+- **Netlify**: Functions + Edge + 정적 호스팅
+- **Modal**: 영상 처리 (burn-subtitles GPU 외부)
+- **OpenAI Sora 2**: 2026-09-24 EOL 예정 → Veo 3.1 Lite 대체 권장
+
+### 알려진 미완료 / Future
+- **Meta 비즈니스 인증** — 대기 중. 통과 후 IG OAuth 정상 운영
+- **Phase 2 영상 합성** — Veo 3.1 Lite + ffmpeg concat (hook + 매장 + outro). 사장님 영상 준비 후 진행
+- **TikTok 활성화** — 코드 완성, 다채널 게시 토글 UI 미통합
+- **OpenAI Auto-recharge** — 사장님 카드 등록 필요 (cron 비용 누적)
+- **Daily Brief** (Gemini Spark 패턴) — 매장 사장님 일일 알림 (장기)
+- **Agentic Mode** — "이번 주 알아서 운영" (장기 vision)
+
+### 트러블슈팅 메모
+- **CSP 가 inline style 차단** — `style="top:..."` 같은 inline 적용 안 됨. CSS class 로 정의 필요. (flow-card 사례)
+- **SW (sw.js) 캐시 — cache-first** — 페이지 변경 후 강제 새로고침 (Cmd+Shift+R) 또는 sw v++ bump 필요
+- **OpenAI Credit 0 → 401** — Auto-recharge OFF + Free Trial $5 소진 시 발생. cron 자동 멈춤
+- **inline script + CSP** — Netlify CSP 가 `script-src 'self' + 외부 도메인` 만 허용. inline script 차단
+
+---
+
+## 🧹 2026-05-25 — 대청소 + 베타 흐름 개편 + UI 격차 해소
+
+### A. 대청소 (Functions 24 + DB Tables 38 삭제)
+
+**Functions 삭제 (24)**:
+- 옛 멀티마켓 SaaS admin (12): admin-brand-status, admin-gen-tutorial-images, admin-generate-demo-images, admin-library-list/regenerate, admin-naver-ad-probe, admin-promo-publish/upload, admin-shuffle-weekday, brand-retrain/settings/stats
+- 옛 자동 promo cron (3): daily-content-background, scheduled-promo-publisher, scheduled-weekday-shuffle-background
+- 옛 onboarding/tutorial (3): demo-caption, today-mission, welcome-caption
+- 옛 콘텐츠 생성 (2): generate-calendar, generate-library-background
+- caller 0 dead (4): beta-signup, count-posts, get-reservation, last-post
+
+**DB Tables DROP (38)**:
+- 옛 멀티마켓 SaaS (19): products, marketplace_*, market_*, inventory_movements, courier_codes 등
+- 옛 자동 Promo/Brand (9): brand_content_library, brand_weekday_schedule, promo_schedule, season_events 등
+- 옛 CS/자동 응답 (5): cs_messages/threads, auto_reply_corrections/log/settings
+- 추가 0-caller 정리 (6): account_deletion_log, kill_switch_log, pii_unmask_events, shopping_insights, trend_snapshots, tracking_events
+
+**보류 (위험 회피)**:
+- regenerate-caption, select-caption, admin-validator-stats (옛 multi-caption 시스템, 향후 사용 가능성)
+- migration_history (Supabase 운영 잔재), link_blocks/pages (process-and-post 사용), auto_reply_log (meta-webhook 사용)
+- rate_limits, seller_consents (미래 가능성)
+
+**netlify.toml 정리**:
+- 2개 cron schedule 제거 (daily-content, weekday-shuffle)
+- 7개 redirect 제거 (brand-*, /api/scheduled-promo-publisher, /api/today-mission, /api/admin-generate-demo-images)
+
+### B. 베타 흐름 개편 (사장님 결정: 카카오 가입 + 매장 정보 → 대시보드)
+
+- /beta — 단순 폼 제거, "카카오로 1초 베타 시작" 버튼만 (약관 동의 X — /signup 에서 정식 동의)
+- 카카오 callback redirect — onboarded=false 면 /signup, true 면 /dashboard (원래 동작 복원)
+- /signup — Step 1 (매장명·지역·업종·약관) 완료 → /dashboard 직행 (Step 2 휴대폰 폐기, Step 3 IG 연동 폐기)
+- /dashboard — IG 미연동 시 큰 안내 카드 + "사진 올리기"/"히스토리" 탭 클릭 → 모달 차단 → /guide-ig
+- /guide-ig — Step 4 마지막에 Tester 초대 요청 form (Meta 인증 대기 중 우회)
+
+### C. Tester 초대 요청 흐름 (Meta 인증 대기 중)
+
+- DB: sellers 에 tester_requested_at / tester_requested_ig_handle / tester_invited_at / tester_invited_by 컬럼 + 부분 index
+- /api/request-tester-invite — IG 핸들 입력 → DB 저장 + lumi@lumi.it.kr 이메일 알림 (rate limit 3/1h)
+- /api/me 응답에 testerStatus { state, requestedAt, invitedAt } 포함
+- /guide-ig 3-state UI (pending / requested / invited)
+
+### D. Hook 영상 풀 Phase 1 (admin 인프라 완성)
+
+- DB: hook_videos 테이블 + 9 카테고리 + active/usage_count 추적
+- Supabase Storage 'lumi-hook-videos' 버킷 (50MB cap, public read)
+- /api/admin-hook-videos — GET (list) + POST (insert / signed upload URL) + PATCH + DELETE
+- /admin/hook-videos.html — 사장님 admin 페이지 (브라우저 native 영상 메타 추출 + 진행률 + 카테고리 grid)
+- Phase 2 (영상 합성) 미완 — 사장님 OpenAI 충전 / Veo 3.1 Lite 결정 후 진행
+
+### E. 캡션 품질 업그레이드 (multi-AI 검증)
+
+- Vision schema 에 confidence 추가 (high/medium/low) — 저신뢰 라벨 caption 단정 차단
+- Validator — gpt-4o-mini → gpt-4o + 이미지 첨부 (vision-grounded, 8 axis 채점)
+- 재시도 1회 → 2회 (MAX_RETRY=2), 통과 임계 overall ≥ 3 → ≥ 4
+- Few-shot 모범 캡션 (카페·디저트·뷰티 등 7 카테고리 × 2개) 인라인
+- 사장님 평가 패턴 자동 요약 (메타-LLM, ≥3건 누적 시)
+- 캐러셀 일관성 axis 신규 (carousel_coverage)
+- Reels vision detail 'low' → 'high' 정확도 ↑
+- Quota cap ₩200 → ₩300 (재시도 2회 cover)
+
+### F. SixShop UI 패턴 도입 (격차 5개 중 3개)
+
+- Hero 우측 IG mockup 카드 (2-col grid, 좌 텍스트 / 우 mockup)
+- flow-stack 5개 sticky 카드 + 각 카드 안 mini UI (Vision chip / Writer in→out / Validator 8축 / 베스트시간 슬롯)
+- Cases carousel 9개 (사진 + 캡션 + 톤 배지 + 진심 카피)
+- Dashboard preview 섹션 (폰 mockup + 마케팅 callout 3개)
+- Ecosystem grid 4 그룹 13 chip (SNS / Multi-AI / 매장 컨텍스트 / 가입·계정)
+- 정확한 모델명 (GPT-4o/5.4) 노출 제거 → "사진 분석 모델" 등 일반화
+
+### G. CSP 발견 + flow-card sticky fix
+
+- 격차: 라이브에서 sticky stack 효과 안 보임
+- 원인 진단: HTML `style="top:100px"` 적용 안 됨. CSP `style-src` 가 `'self'` 만 허용 + `'unsafe-inline'` 없음 → inline style 거부
+- 해결: top 값을 inline → CSS class (.flow-card--1~5 { top: N px }) 로 이동
+
+### H. Linktree 안내 copy 개선
+
+- 사장님 지적: "lumi 가 자동인데 왜 bio 링크는 직접 붙여야?"
+- 진실: 인스타 정책상 캡션 URL 클릭 불가능 (10년+) → bio 링크만 1탭 클릭 가능 → API 로 bio 링크 수정 불가능 (Meta 정책)
+- /settings 와 /register-product 에 이 내용 설명 박스 추가
+
+---
+
+
 
 배경: 사장님 "실패 자체가 발생하면 안 된다" 강조. 발행 흐름의 silent failure 가능성 차단 + IG 연결 진입장벽 (사장님 95% 가 비즈니스 계정 전환에서 막힐 가능성) 해소. 4개 Blocker + 7개 Prevention + IG 가이드 5건 + 사장님 UI 정정 4곳.
 
