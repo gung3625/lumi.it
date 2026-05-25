@@ -8,8 +8,8 @@
 // 캐시 bump: CACHE_VERSION 올리면 옛 cache 삭제 + 새로 받음.
 // 사장님 deploy 시 sw 코드 변경되면 자동으로 새 sw 활성화 (skipWaiting).
 
-// v20: TikTok chip status "코드 준비 완료" → "연결 준비 완료" (사용자 친화 표현).
-const CACHE_VERSION = 'lumi-v20';
+// v21: 대청소 — Functions 20개 + DB tables 33개 삭제 (옛 멀티마켓 + promo/brand + CS 시스템).
+const CACHE_VERSION = 'lumi-v21';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 
 const STATIC_RE = /\.(css|js|woff2?|ttf|otf|png|jpg|jpeg|webp|svg|ico|gif)$/i;

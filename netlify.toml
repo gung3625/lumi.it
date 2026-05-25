@@ -116,20 +116,15 @@
 [functions."tiktok-token-refresh-background"]
   schedule = "0 */6 * * *"
 
-# 매일 KST 08:00 (= UTC 23:00 전날) 브랜드 자동 게시 파이프라인
-# 라이브러리 pickup → reservations insert (image 1 + video 1)
-[functions."daily-content-background"]
-  schedule = "0 23 * * *"
+# (deprecated 2026-05-25) daily-content-background / scheduled-weekday-shuffle-background
+# 옛 자동 promo 시스템 (brand_content_library + promo_schedule + brand_weekday_schedule).
+# 베타 사장님 0명 + lumi 매장도 사용 안 함 → cron + tables 다 정리.
 
 # IG 해시태그 trending 캡션 수집 (3일 업종 rotation, 9업종 × 3태그 = 27 calls/day)
 # Meta ig_hashtag_search rate limit 30/day/biz account 안전. KST 02:00 (UTC 17:00).
 # trends 시스템(scheduled-trends-v2)이 매일 KST 00:00 (UTC 15:00) 실행되므로 그 후 신선.
 [functions."scheduled-ig-hashtag-background"]
   schedule = "0 17 * * *"
-
-# 매주 월요일 KST 03:00 (= UTC 일요일 18:00) 요일↔업종 주간 셔플
-[functions."scheduled-weekday-shuffle-background"]
-  schedule = "0 18 * * 0"
 
 # 게시별 reach/saved/engagement 2-stage 측정 (베스트 시간 Tier 1 가중치 근거)
 # 30분 주기 — 게시 후 1h(1차) / 24h(final) 시점 통과 row 픽업.
@@ -194,11 +189,7 @@
   status = 200
   force = true
 
-# 예약 홍보 게시 수동 트리거용 리다이렉트
-[[redirects]]
-  from = "/api/scheduled-promo-publisher"
-  to = "/.netlify/functions/scheduled-promo-publisher"
-  status = 200
+# (deprecated 2026-05-25) /api/scheduled-promo-publisher redirect 제거 — 옛 자동 promo 시스템.
 
 # 비디오 blur-pad + 자막 burn-in (백그라운드, 15분 타임아웃)
 # /api/* 일반 리다이렉트가 -background 접미사를 자동으로 붙여주지 않으므로 별도 리다이렉트 필요
@@ -252,10 +243,7 @@
   to = "/.netlify/functions/rate-caption"
   status = 200
 
-[[redirects]]
-  from = "/api/today-mission"
-  to = "/.netlify/functions/today-mission"
-  status = 200
+# (deprecated 2026-05-25) /api/today-mission redirect 제거 — 옛 일일 미션 시스템.
 
 
 # 매장 컨텍스트 API (명시적 리다이렉트 — /api/* splat보다 먼저 매칭)
@@ -365,13 +353,7 @@
   to = "/signup.html"
   status = 200
 
-# 데모 이미지 12장 자동 생성 — 관리자 전용 (LUMI_SECRET). 함수 -background 접미사라 splat 자동 매핑 불가.
-# /api/* splat 보다 반드시 앞에 와야 매칭됨.
-[[redirects]]
-  from = "/api/admin-generate-demo-images"
-  to = "/.netlify/functions/admin-generate-demo-images-background"
-  status = 200
-  force = true
+# (deprecated 2026-05-25) /api/admin-generate-demo-images redirect 제거 — admin-generate-demo-images-background 삭제됨.
 
 # API 라우팅
 [[redirects]]
@@ -521,26 +503,8 @@
   status = 200
   force = true
 
-# brand-admin 통계 dashboard — 관리자 전용 (users.is_admin 가드)
-[[redirects]]
-  from = "/api/brand-stats"
-  to = "/.netlify/functions/brand-stats"
-  status = 200
-  force = true
-
-# brand-admin 말투 재학습 — 관리자 전용 (users.is_admin 가드)
-[[redirects]]
-  from = "/api/brand-retrain"
-  to = "/.netlify/functions/brand-retrain"
-  status = 200
-  force = true
-
-# brand-admin 설정 저장/조회 — 관리자 전용 (users.is_admin 가드)
-[[redirects]]
-  from = "/api/brand-settings"
-  to = "/.netlify/functions/brand-settings"
-  status = 200
-  force = true
+# (deprecated 2026-05-25) brand-stats / brand-retrain / brand-settings redirects 제거 —
+# 옛 brand admin 시스템. functions 자체 삭제됨.
 
 # 링크트리 — 공개 페이지 데이터 fetch (인증 없음, slug 기반)
 [[redirects]]
