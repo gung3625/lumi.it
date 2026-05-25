@@ -8,8 +8,8 @@
 // 캐시 bump: CACHE_VERSION 올리면 옛 cache 삭제 + 새로 받음.
 // 사장님 deploy 시 sw 코드 변경되면 자동으로 새 sw 활성화 (skipWaiting).
 
-// v29: bento ig-mock + hero slides 캡션을 cases-carousel 톤으로 보강 (사장님 본인 이야기/디테일/손님 대화 살림).
-const CACHE_VERSION = 'lumi-v29';
+// v30: hero slides 5장 캡션을 cases-carousel 의 풀버전 (진심 톤) 으로 통일.
+const CACHE_VERSION = 'lumi-v30';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 
 const STATIC_RE = /\.(css|js|woff2?|ttf|otf|png|jpg|jpeg|webp|svg|ico|gif)$/i;
