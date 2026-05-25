@@ -8,8 +8,8 @@
 // 캐시 bump: CACHE_VERSION 올리면 옛 cache 삭제 + 새로 받음.
 // 사장님 deploy 시 sw 코드 변경되면 자동으로 새 sw 활성화 (skipWaiting).
 
-// v33: hero 구름 완전 제거 (사장님 지시). 텍스트와 카드 두 그룹만으로 단순화.
-const CACHE_VERSION = 'lumi-v33';
+// v34: 경쟁 카피 분석 적용 — hero diff/chips, 대행사 비교, 독점 배지, 신뢰 카운터/후기, 자는 동안 카피.
+const CACHE_VERSION = 'lumi-v34';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 
 const STATIC_RE = /\.(css|js|woff2?|ttf|otf|png|jpg|jpeg|webp|svg|ico|gif)$/i;

@@ -629,6 +629,41 @@
       color: var(--ink-muted); text-align: center;
     }
 
+    /* 차별 강조 한 줄 — 본문과 CTA 사이 (경쟁 분석 카피) */
+    .hero__diff {
+      margin: var(--space-4) 0 0;
+      padding: var(--space-3) var(--space-4);
+      background: rgba(255, 107, 139, 0.08);
+      border-left: 3px solid var(--pink-500);
+      border-radius: 8px;
+      font-size: var(--text-body);
+      color: var(--ink);
+      line-height: 1.5;
+      animation: hero-rise 700ms var(--ease-toss) 540ms backwards;
+    }
+    .hero__diff b { color: var(--pink-600, var(--pink-500)); font-weight: 800; }
+
+    /* CTA 아래 신뢰 라벨 칩 3개 (Buffer / TodayDM 패턴) */
+    .hero__chips {
+      list-style: none;
+      padding: 0;
+      margin: var(--space-3) 0 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      animation: hero-rise 700ms var(--ease-toss) 620ms backwards;
+    }
+    .hero__chip {
+      font-size: var(--text-caption);
+      font-weight: 600;
+      color: #16a34a;
+      background: rgba(34, 197, 94, 0.10);
+      padding: 6px 12px;
+      border-radius: 100px;
+      white-space: nowrap;
+    }
+
     /* ────── Pain Section ────── */
     .pain-section {
       padding: var(--space-12) var(--space-4);
@@ -723,6 +758,80 @@
       background: var(--bg-soft); border-radius: var(--radius-md);
       font-size: var(--text-body); color: var(--ink-soft);
       line-height: 1.6; text-align: center;
+    }
+
+    /* 대행사 vs 루미 — Ocoya 패턴 (마케팅 대행사 대체 어필) */
+    .diff-agency {
+      margin: var(--space-6) 0 0;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: var(--space-4);
+      align-items: stretch;
+    }
+    .diff-agency__col {
+      padding: var(--space-5);
+      border-radius: var(--radius-md);
+      background: var(--bg-soft);
+    }
+    .diff-agency__col--lumi {
+      background: linear-gradient(135deg, rgba(255,107,139,0.10), rgba(221,160,221,0.10));
+      border: 1px solid var(--pink-300);
+    }
+    .diff-agency__label {
+      font-size: var(--text-caption);
+      font-weight: 800;
+      color: var(--ink-soft);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin: 0 0 var(--space-3);
+    }
+    .diff-agency__label--lumi {
+      color: var(--pink-600, var(--pink-500));
+    }
+    .diff-agency__list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+      font-size: var(--text-body);
+      color: var(--ink);
+      line-height: 1.5;
+    }
+    .diff-agency__list li {
+      padding-left: 18px;
+      position: relative;
+    }
+    .diff-agency__list li::before {
+      content: '·';
+      position: absolute;
+      left: 6px;
+      font-weight: 800;
+      color: var(--ink-muted);
+    }
+    .diff-agency__col--lumi .diff-agency__list li::before {
+      content: '✓';
+      color: var(--pink-500);
+      font-weight: 800;
+      font-size: 12px;
+    }
+    .diff-agency__arrow {
+      align-self: center;
+      font-size: 28px;
+      color: var(--pink-500);
+      font-weight: 800;
+    }
+    @media (max-width: 640px) {
+      .diff-agency {
+        grid-template-columns: 1fr;
+        gap: var(--space-2);
+      }
+      .diff-agency__arrow {
+        transform: rotate(90deg);
+        text-align: center;
+        font-size: 20px;
+      }
     }
     @media (max-width: 640px) {
       .diff-table { grid-template-columns: 1fr; }
@@ -906,6 +1015,98 @@
     .faq-item__link {
       color: var(--pink-500); font-weight: 600;
       text-decoration: underline; text-underline-offset: 2px;
+    }
+
+    /* ────── Trust Signals (Buffer/Predis 카운터·후기 패턴) ────── */
+    .trust-section {
+      padding: var(--space-12) var(--space-4);
+      max-width: 1100px; margin: 0 auto; text-align: center;
+    }
+    .trust-section__eyebrow {
+      font-size: var(--text-caption); font-weight: 700;
+      color: var(--pink-500); letter-spacing: 0.08em;
+      text-transform: uppercase; margin: 0 0 var(--space-2);
+    }
+    .trust-section__title {
+      font-size: clamp(28px, 5vw, 42px); font-weight: 900;
+      letter-spacing: -0.03em; line-height: 1.15;
+      color: var(--ink); margin: 0 0 var(--space-8);
+    }
+    .trust-section__title-accent {
+      background: var(--gradient-signature);
+      -webkit-background-clip: text; background-clip: text;
+      color: transparent;
+    }
+    .trust-counters {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--space-4);
+      margin: 0 0 var(--space-8);
+    }
+    .trust-counter {
+      padding: var(--space-5) var(--space-3);
+      background: var(--neutral-0);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      display: flex; flex-direction: column; gap: 4px;
+      align-items: center;
+      transition: border-color var(--duration-snap) var(--ease-soft), transform var(--duration-snap) var(--ease-toss);
+    }
+    @media (hover: hover) {
+      .trust-counter:hover { border-color: var(--pink-300); transform: translateY(-2px); }
+    }
+    .trust-counter__num {
+      font-size: clamp(36px, 6vw, 56px);
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      background: var(--gradient-signature);
+      -webkit-background-clip: text; background-clip: text;
+      color: transparent;
+      line-height: 1;
+    }
+    .trust-counter__unit {
+      font-size: var(--text-body); font-weight: 700; color: var(--ink-soft);
+      margin-top: -8px;
+    }
+    .trust-counter__label {
+      margin-top: var(--space-2);
+      font-size: var(--text-caption);
+      color: var(--ink-soft);
+      font-weight: 600;
+    }
+    .trust-quotes {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-4);
+      margin: 0 0 var(--space-6);
+    }
+    .trust-quote {
+      margin: 0;
+      padding: var(--space-5);
+      background: var(--bg-soft);
+      border-radius: var(--radius-md);
+      text-align: left;
+    }
+    .trust-quote blockquote {
+      margin: 0 0 var(--space-3);
+      font-size: var(--text-body);
+      color: var(--ink);
+      line-height: 1.6;
+      font-weight: 500;
+    }
+    .trust-quote figcaption {
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+      font-weight: 600;
+    }
+    .trust-section__note {
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+      margin: 0;
+    }
+    @media (max-width: 900px) {
+      .trust-counters { grid-template-columns: repeat(2, 1fr); }
+      .trust-quotes { grid-template-columns: 1fr; }
     }
 
     /* ────── Final CTA ────── */
@@ -1335,6 +1536,19 @@
   font-size: 36px;
   line-height: 1;
   margin-bottom: var(--space-3);
+}
+/* 루미 독점 기능 배지 (다른 도구엔 없음 강조) */
+.flow-card__only {
+  display: inline-block;
+  margin-bottom: var(--space-3);
+  padding: 4px 10px;
+  background: linear-gradient(135deg, rgba(255,107,139,0.25), rgba(237,208,128,0.25));
+  border: 1px solid rgba(255,107,139,0.45);
+  color: var(--neutral-0);
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 100px;
+  letter-spacing: 0.02em;
 }
 .flow-card__title {
   font-size: clamp(20px, 3vw, 28px);
