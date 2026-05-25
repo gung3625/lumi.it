@@ -8,8 +8,8 @@
 // 캐시 bump: CACHE_VERSION 올리면 옛 cache 삭제 + 새로 받음.
 // 사장님 deploy 시 sw 코드 변경되면 자동으로 새 sw 활성화 (skipWaiting).
 
-// v22: 약점 fix + 2세대 톤 — QC 제거, urgency 제거, Hero 카피 공감 톤, dashpv 큰 숫자 카드, cases 카드 크게.
-const CACHE_VERSION = 'lumi-v22';
+// v23: 모바일 페이지 길이 fix — flow-card mockup 모바일 hide + dashpv 폰 mockup 축소.
+const CACHE_VERSION = 'lumi-v23';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 
 const STATIC_RE = /\.(css|js|woff2?|ttf|otf|png|jpg|jpeg|webp|svg|ico|gif)$/i;

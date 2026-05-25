@@ -1843,9 +1843,10 @@
   .flow-card {
     grid-template-columns: auto 1fr !important;
   }
+  /* 모바일에선 mini UI mockup hide — 페이지 길이 ↓ + 가독성 ↑
+     (mockup 은 데스크탑 sticky stack 효과의 부수, 모바일에선 정보 과다) */
   .flow-card__mock {
-    grid-column: 1 / -1;
-    margin-top: var(--space-4);
+    display: none !important;
   }
 }
 
@@ -2421,4 +2422,10 @@
 .case-card { flex: 0 0 420px !important; }
 @media (max-width: 640px) {
   .case-card { flex: 0 0 320px !important; }
+}
+
+/* 모바일 페이지 길이 fix — dashpv 폰 mockup 더 작게 */
+@media (max-width: 640px) {
+  .dashpv-phone { width: 280px; }
+  .dashpv-phone__screen { height: 480px; padding: 32px 12px 12px; }
 }
