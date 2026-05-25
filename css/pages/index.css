@@ -2352,3 +2352,73 @@
   font-size: var(--text-body-sm);
   color: var(--ink-muted);
 }
+
+/* ═════════════════════════════════════════════════════════════
+   Dashboard 큰 숫자 카드 (격차 #3 fix — SixShop 자사몰 패턴)
+   폰 mockup 옆 callout 만으론 임팩트 약함 → 큰 숫자 한 줄 강조.
+   ═════════════════════════════════════════════════════════════ */
+.dashpv-bignums {
+  max-width: 1000px;
+  margin: var(--space-12) auto 0;
+  padding: 0 var(--space-5);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+}
+@media (max-width: 800px) {
+  .dashpv-bignums { grid-template-columns: repeat(2, 1fr); gap: var(--space-3); }
+}
+.dashpv-bignum {
+  background: var(--neutral-0);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: var(--space-5);
+  text-align: left;
+  transition: transform var(--duration-snap) var(--ease-toss), box-shadow var(--duration-snap) var(--ease-soft);
+}
+@media (hover: hover) {
+  .dashpv-bignum:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 32px rgba(255, 107, 139, 0.15);
+  }
+}
+.dashpv-bignum__num {
+  display: block;
+  font-size: clamp(36px, 5vw, 56px);
+  font-weight: 900;
+  line-height: 1;
+  background: var(--gradient-signature);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: -0.04em;
+  margin-bottom: var(--space-2);
+}
+.dashpv-bignum__num small {
+  font-size: 0.5em;
+  font-weight: 700;
+  color: var(--ink-muted);
+  -webkit-text-fill-color: var(--ink-muted);
+  margin-left: 2px;
+}
+.dashpv-bignum__label {
+  display: block;
+  font-size: var(--text-body-sm);
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+.dashpv-bignum__delta {
+  display: block;
+  font-size: var(--text-caption);
+  color: var(--ink-muted);
+}
+
+/* ═════════════════════════════════════════════════════════════
+   Cases carousel 카드 크게 (격차 #4 fix — SixShop templates 만큼)
+   320 → 420px (모바일 280 → 320px)
+   ═════════════════════════════════════════════════════════════ */
+.case-card { flex: 0 0 420px !important; }
+@media (max-width: 640px) {
+  .case-card { flex: 0 0 320px !important; }
+}
