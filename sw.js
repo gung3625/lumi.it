@@ -8,8 +8,8 @@
 // 캐시 bump: CACHE_VERSION 올리면 옛 cache 삭제 + 새로 받음.
 // 사장님 deploy 시 sw 코드 변경되면 자동으로 새 sw 활성화 (skipWaiting).
 
-// v24: 카피 톤 정리 — 영어 라벨 한국어로, "AI" 표현을 "루미" 로 통일, 기계 어투 사람 말투로.
-const CACHE_VERSION = 'lumi-v24';
+// v25: ecosystem SNS 자동 게시에서 TikTok 제거 (인스타·쓰레드 2개만 표시).
+const CACHE_VERSION = 'lumi-v25';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 
 const STATIC_RE = /\.(css|js|woff2?|ttf|otf|png|jpg|jpeg|webp|svg|ico|gif)$/i;
