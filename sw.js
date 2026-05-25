@@ -8,8 +8,8 @@
 // 캐시 bump: CACHE_VERSION 올리면 옛 cache 삭제 + 새로 받음.
 // 사장님 deploy 시 sw 코드 변경되면 자동으로 새 sw 활성화 (skipWaiting).
 
-// v28: hero 우하단 미리보기 카드 — 라떼아트 한 장만 보여주지 않고 5장 자동 슬라이드.
-const CACHE_VERSION = 'lumi-v28';
+// v29: bento ig-mock + hero slides 캡션을 cases-carousel 톤으로 보강 (사장님 본인 이야기/디테일/손님 대화 살림).
+const CACHE_VERSION = 'lumi-v29';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 
 const STATIC_RE = /\.(css|js|woff2?|ttf|otf|png|jpg|jpeg|webp|svg|ico|gif)$/i;
