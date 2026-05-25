@@ -1822,6 +1822,47 @@
   }
 }
 
+/* ─── 슬라이드 회전 (사진+캡션 5장 자동 순환) ─── */
+.hero__preview-content {
+  display: block;
+  transition: opacity 320ms ease;
+}
+.hero__preview-content.is-fading {
+  opacity: 0.18;
+}
+.hero__preview-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 12px 14px;
+  border-top: 1px solid var(--line);
+  background: #fff;
+}
+.hero__preview-dot {
+  appearance: none;
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--line);
+  cursor: pointer;
+  transition: background 200ms ease, width 200ms ease;
+}
+.hero__preview-dot.is-active {
+  background: var(--accent, #ff7a59);
+  width: 22px;
+  border-radius: 4px;
+}
+.hero__preview-dot:focus-visible {
+  outline: 2px solid var(--accent, #ff7a59);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero__preview-card .hero__preview-content,
+  .hero__preview-dot { transition: none; }
+}
+
 /* ═════════════════════════════════════════════════════════════
    flow-card 안 mini UI mockup (SixShop 패턴, 격차 #2)
    각 단계가 어떻게 동작하는지 시각화. 카드 layout = num | body | mockup

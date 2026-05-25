@@ -92,7 +92,8 @@
 
     <!-- ====== Hero 우하단 — 실제 결과물 미리보기 (SixShop 패턴, 격차 #1 해소) ====== -->
     <!-- 사장님이 사진 1장 올리면 lumi 가 만들어 게시하는 진짜 모습 미니 mockup -->
-    <aside class="hero__preview" aria-label="lumi 가 만든 게시물 미리보기">
+    <!-- 슬라이드: 5장 사진+캡션 자동 회전 (4.5초마다) — 사진과 캡션이 진짜로 매번 다르다는 걸 보여주기 -->
+    <aside class="hero__preview" aria-label="lumi 가 만든 게시물 미리보기" data-hero-preview>
       <div class="hero__preview-card">
         <header class="hero__preview-head">
           <div class="hero__preview-avatar"><picture><source srcset="/assets/logo-wordmark.webp" type="image/webp"><img src="/assets/logo-wordmark.png" alt="lumi"></picture></div>
@@ -102,19 +103,28 @@
           </div>
           <span class="hero__preview-badge">방금 자동 게시</span>
         </header>
-        <div class="hero__preview-photo">
-          <picture><source srcset="/assets/tutorial/cafe-1.webp" type="image/webp"><img src="/assets/tutorial/cafe-1.jpg" alt="라떼아트" loading="eager"></picture>
-          <div class="hero__preview-tag">시크 · 짧은 호흡</div>
+        <div class="hero__preview-content" data-hero-preview-content>
+          <div class="hero__preview-photo">
+            <picture><source srcset="/assets/tutorial/cafe-1.webp" type="image/webp" data-hero-preview-source><img src="/assets/tutorial/cafe-1.jpg" alt="라떼아트" loading="eager" data-hero-preview-img></picture>
+            <div class="hero__preview-tag" data-hero-preview-tone>시크 · 짧은 호흡</div>
+          </div>
+          <div class="hero__preview-caption">
+            <p data-hero-preview-caption>오후 세 시.<br>손님 한 분, 저 한 명.<br><br>오늘은 손이 잘 됐어요.</p>
+            <p class="hero__preview-tags" data-hero-preview-tags>#카페 #라떼아트 #용산카페 #오후세시</p>
+          </div>
+          <footer class="hero__preview-foot">
+            <span data-hero-preview-likes>❤️ 127</span>
+            <span data-hero-preview-comments>💬 8</span>
+            <span class="hero__preview-foot-live">● 인스타·쓰레드 동시 발행</span>
+          </footer>
         </div>
-        <div class="hero__preview-caption">
-          <p>오후 세 시.<br>손님 한 분, 저 한 명.<br><br>오늘은 손이 잘 됐어요.</p>
-          <p class="hero__preview-tags">#카페 #라떼아트 #용산카페 #오후세시</p>
+        <div class="hero__preview-dots" role="tablist" aria-label="미리보기 슬라이드">
+          <button type="button" class="hero__preview-dot is-active" data-hero-preview-dot="0" aria-label="라떼아트" aria-current="true"></button>
+          <button type="button" class="hero__preview-dot" data-hero-preview-dot="1" aria-label="치즈케이크"></button>
+          <button type="button" class="hero__preview-dot" data-hero-preview-dot="2" aria-label="마카롱"></button>
+          <button type="button" class="hero__preview-dot" data-hero-preview-dot="3" aria-label="크로플"></button>
+          <button type="button" class="hero__preview-dot" data-hero-preview-dot="4" aria-label="스무디"></button>
         </div>
-        <footer class="hero__preview-foot">
-          <span>❤️ 127</span>
-          <span>💬 8</span>
-          <span class="hero__preview-foot-live">● 인스타·쓰레드 동시 발행</span>
-        </footer>
       </div>
     </aside>
 

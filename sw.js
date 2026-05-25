@@ -8,8 +8,8 @@
 // 캐시 bump: CACHE_VERSION 올리면 옛 cache 삭제 + 새로 받음.
 // 사장님 deploy 시 sw 코드 변경되면 자동으로 새 sw 활성화 (skipWaiting).
 
-// v27: 사진 팀 / 영상 팀 두 그룹으로 분리 + "준비 중" 표현 모두 제거 (정식 출시 톤).
-const CACHE_VERSION = 'lumi-v27';
+// v28: hero 우하단 미리보기 카드 — 라떼아트 한 장만 보여주지 않고 5장 자동 슬라이드.
+const CACHE_VERSION = 'lumi-v28';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 
 const STATIC_RE = /\.(css|js|woff2?|ttf|otf|png|jpg|jpeg|webp|svg|ico|gif)$/i;

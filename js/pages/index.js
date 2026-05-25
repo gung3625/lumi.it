@@ -124,3 +124,165 @@
         loop();
       }
     })();
+
+    // ── Hero 우하단 미리보기 카드: 사진+캡션 슬라이드 자동 회전 ────────────
+    // 라떼아트 한 장만 보여주지 말고, 5장 (카페·디저트·푸드) 이 순환해서
+    // "같은 매장 사진도 매번 다른 캡션" 이라는 lumi 의 핵심을 한눈에 보여주기.
+    (function () {
+      const root = document.querySelector('[data-hero-preview]');
+      if (!root) return;
+
+      const sourceEl   = root.querySelector('[data-hero-preview-source]');
+      const imgEl      = root.querySelector('[data-hero-preview-img]');
+      const toneEl     = root.querySelector('[data-hero-preview-tone]');
+      const captionEl  = root.querySelector('[data-hero-preview-caption]');
+      const tagsEl     = root.querySelector('[data-hero-preview-tags]');
+      const likesEl    = root.querySelector('[data-hero-preview-likes]');
+      const commentsEl = root.querySelector('[data-hero-preview-comments]');
+      const contentEl  = root.querySelector('[data-hero-preview-content]');
+      const dots       = root.querySelectorAll('[data-hero-preview-dot]');
+
+      if (!imgEl || !captionEl || !contentEl) return;
+
+      // 슬라이드 5장 — cases-carousel 의 사진+캡션 중 다양성이 가장 큰 5개 선별.
+      // 각 슬라이드의 likes/comments 도 메뉴 성격에 맞게 자연스럽게 변화시킴.
+      const SLIDES = [
+        {
+          webp: '/assets/tutorial/cafe-1.webp',
+          jpg:  '/assets/tutorial/cafe-1.jpg',
+          alt:  '라떼아트 잎 패턴',
+          tone: '시크 · 짧은 호흡',
+          captionHtml: '오후 세 시.<br>손님 한 분, 저 한 명.<br><br>오늘은 손이 잘 됐어요.',
+          tags: '#카페 #라떼아트 #용산카페 #오후세시',
+          likes: '❤️ 127',
+          comments: '💬 8',
+        },
+        {
+          webp: '/assets/tutorial/cafe-2.webp',
+          jpg:  '/assets/tutorial/cafe-2.jpg',
+          alt:  '치즈케이크 한 조각과 커피',
+          tone: '친근 · 단골 톤',
+          captionHtml: '치즈케이크 한 조각에<br>드립커피 한 잔.<br><br>이번 주 세트 1,000원 할인.',
+          tags: '#치즈케이크 #드립커피 #카페디저트 #이태원카페',
+          likes: '❤️ 89',
+          comments: '💬 4',
+        },
+        {
+          webp: '/assets/tutorial/cafe-3.webp',
+          jpg:  '/assets/tutorial/cafe-3.jpg',
+          alt:  '파스텔 마카롱 5개',
+          tone: '감성 · 시각 톤',
+          captionHtml: '오늘 만든 마카롱.<br>바닐라 · 민트 · 살구 · 라벤더 · 라즈베리.<br><br>오늘은 라벤더가 손에 잡혀요 💜',
+          tags: '#마카롱 #홈베이킹 #카페디저트',
+          likes: '❤️ 203',
+          comments: '💬 15',
+        },
+        {
+          webp: '/assets/tutorial/cafe-4.webp',
+          jpg:  '/assets/tutorial/cafe-4.jpg',
+          alt:  '크로플 위 바닐라 아이스크림',
+          tone: '감성 · 묘사',
+          captionHtml: '바삭한 결 사이로<br>바닐라가 천천히 녹습니다.<br><br>빨리 드세요 🍦',
+          tags: '#크로플 #바닐라아이스크림 #브런치카페',
+          likes: '❤️ 156',
+          comments: '💬 11',
+        },
+        {
+          webp: '/assets/tutorial/cafe-8.webp',
+          jpg:  '/assets/tutorial/cafe-8.jpg',
+          alt:  '블루베리 스무디와 딸기 스무디',
+          tone: '재미 · 여름 톤',
+          captionHtml: '오늘 더워요.<br>블루베리 한 잔, 딸기 한 잔.<br><br>오후 5시까지 2잔 9,000원 🍓',
+          tags: '#스무디 #베리스무디 #여름음료',
+          likes: '❤️ 94',
+          comments: '💬 6',
+        },
+      ];
+
+      const ROTATE_MS = 4500;
+      const FADE_MS = 320;
+      let idx = 0;
+      let rotateTimer = null;
+      let inView = false;
+
+      function applySlide(i) {
+        const s = SLIDES[i];
+        if (sourceEl) sourceEl.setAttribute('srcset', s.webp);
+        imgEl.setAttribute('src', s.jpg);
+        imgEl.setAttribute('alt', s.alt);
+        if (toneEl) toneEl.textContent = s.tone;
+        captionEl.innerHTML = s.captionHtml;
+        if (tagsEl) tagsEl.textContent = s.tags;
+        if (likesEl) likesEl.textContent = s.likes;
+        if (commentsEl) commentsEl.textContent = s.comments;
+        dots.forEach((d, di) => {
+          const active = di === i;
+          d.classList.toggle('is-active', active);
+          d.setAttribute('aria-current', active ? 'true' : 'false');
+        });
+      }
+
+      function goTo(i) {
+        if (i === idx) return;
+        contentEl.classList.add('is-fading');
+        setTimeout(() => {
+          idx = (i + SLIDES.length) % SLIDES.length;
+          applySlide(idx);
+          contentEl.classList.remove('is-fading');
+        }, FADE_MS);
+      }
+
+      function next() {
+        goTo((idx + 1) % SLIDES.length);
+      }
+
+      function startRotate() {
+        if (rotateTimer) return;
+        rotateTimer = setInterval(next, ROTATE_MS);
+      }
+
+      function stopRotate() {
+        if (!rotateTimer) return;
+        clearInterval(rotateTimer);
+        rotateTimer = null;
+      }
+
+      // dot 클릭 → 해당 슬라이드. 자동 회전 타이머도 reset.
+      dots.forEach((d) => {
+        d.addEventListener('click', () => {
+          const target = parseInt(d.getAttribute('data-hero-preview-dot'), 10);
+          if (Number.isNaN(target)) return;
+          goTo(target);
+          if (inView) { stopRotate(); startRotate(); }
+        });
+      });
+
+      // 호버 시 자동 회전 일시 정지 (사장님이 캡션 읽는 중 방해 X)
+      root.addEventListener('mouseenter', stopRotate);
+      root.addEventListener('mouseleave', () => { if (inView) startRotate(); });
+
+      // prefers-reduced-motion → 첫 슬라이드만 고정
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        applySlide(0);
+        return;
+      }
+
+      // 화면에 보일 때만 회전 (off-screen CPU 낭비 X)
+      if ('IntersectionObserver' in window) {
+        const io = new IntersectionObserver((entries) => {
+          for (const e of entries) {
+            if (e.isIntersecting) {
+              inView = true;
+              startRotate();
+            } else {
+              inView = false;
+              stopRotate();
+            }
+          }
+        }, { threshold: 0.2 });
+        io.observe(root);
+      } else {
+        inView = true;
+        startRotate();
+      }
+    })();
