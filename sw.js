@@ -8,8 +8,8 @@
 // 캐시 bump: CACHE_VERSION 올리면 옛 cache 삭제 + 새로 받음.
 // 사장님 deploy 시 sw 코드 변경되면 자동으로 새 sw 활성화 (skipWaiting).
 
-// v26: "루미 두뇌" → "루미네 사람들" 친근화, 사진가/작가/편집장/감독 루미 캐릭터 도입.
-const CACHE_VERSION = 'lumi-v26';
+// v27: 사진 팀 / 영상 팀 두 그룹으로 분리 + "준비 중" 표현 모두 제거 (정식 출시 톤).
+const CACHE_VERSION = 'lumi-v27';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 
 const STATIC_RE = /\.(css|js|woff2?|ttf|otf|png|jpg|jpeg|webp|svg|ico|gif)$/i;
