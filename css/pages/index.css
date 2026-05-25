@@ -23,17 +23,16 @@
         var(--space-5)
         calc(env(safe-area-inset-bottom) + var(--space-8));
       /* 2-col grid: 좌 (텍스트+CTA) / 우 (IG mockup preview) — 1:1 균형.
-         topbar / cloud / scroll-hint 는 grid-column: 1 / -1 로 전체 폭. */
+         구름은 좌측 텍스트 그룹 안의 작은 액센트로 흡수 (조화).
+         topbar / scroll-hint 만 grid-column: 1 / -1 로 전체 폭. */
       display: grid;
       grid-template-columns: 1fr 1fr;
-      grid-template-rows: auto auto 1fr auto;
-      column-gap: var(--space-8);
+      grid-template-rows: auto 1fr auto;
+      column-gap: var(--space-6);
       isolation: isolate;
       overflow: hidden;
     }
     .hero__topbar { grid-column: 1 / -1; }
-    /* 구름은 hero 전체 폭 가운데 — 좌측 column 에 갇히지 않게 */
-    .hero__cloud { grid-column: 1 / -1; }
     .hero__scroll-hint { grid-column: 1 / -1; }
     @media (max-width: 900px) {
       .hero { grid-template-columns: 1fr; }
@@ -127,10 +126,11 @@
        (gradient-signature: 핑크→라일락→노랑→골드) 입힘 = 로고와 같은 색의 구름.
        사장님 결정 2026-05-16: "구름 색깔을 루미 로고의 색". */
     .hero__cloud {
-      width: clamp(140px, 36vw, 220px);
+      /* 텍스트 그룹 안의 작은 시그니처 액센트 (이전 220px → 100px 으로 대폭 축소) */
+      width: clamp(72px, 12vw, 110px);
       aspect-ratio: 660 / 520;
       display: block;
-      margin: 0 auto var(--space-4);
+      margin: 0 0 var(--space-2);  /* 좌측 정렬 (텍스트 베이스라인 매칭) */
       background: var(--gradient-signature);
       -webkit-mask-image: url('/assets/cloud-alpha.png');
               mask-image: url('/assets/cloud-alpha.png');
@@ -141,7 +141,10 @@
       -webkit-mask-position: center;
               mask-position: center;
       animation: cloud-bob 5.4s var(--ease-soft) infinite;
-      filter: drop-shadow(0 10px 24px rgba(255, 107, 139, 0.28));
+      filter: drop-shadow(0 6px 16px rgba(255, 107, 139, 0.22));
+    }
+    @media (max-width: 900px) {
+      .hero__cloud { margin-left: auto; margin-right: auto; }
     }
     @keyframes cloud-bob {
       0%, 100% { transform: translateY(0); }
@@ -1704,11 +1707,12 @@
 /* preview = hero 의 우측 column grid item (이제 absolute 아님 → hero 와 자연스럽게 통합).
    align-self: end → 카드가 hero 아래쪽으로 — 좌측 텍스트 baseline 과 시각 균형. */
 .hero__preview {
-  align-self: end;
+  /* 텍스트 그룹과 같은 베이스라인 (이전 end → center) — 좌우 균형 통일 */
+  align-self: center;
   justify-self: center;
   width: 100%;
   max-width: 360px;
-  margin-bottom: var(--space-6);
+  margin-bottom: 0;
   animation: hero-preview-rise 800ms var(--ease-toss) 700ms backwards;
 }
 @keyframes hero-preview-rise {
