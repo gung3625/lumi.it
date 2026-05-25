@@ -121,38 +121,7 @@
       gap: var(--space-6);
     }
 
-    /* 루미 시그니처 구름 — 사장님 cloud.jpg 의 silhouette 만 alpha PNG (cloud-alpha.png)
-       으로 추출 후 CSS mask 로 사용. 그 자리에 루미 로고 시그니처 4색
-       (gradient-signature: 핑크→라일락→노랑→골드) 입힘 = 로고와 같은 색의 구름.
-       사장님 결정 2026-05-16: "구름 색깔을 루미 로고의 색". */
-    .hero__cloud {
-      /* 텍스트 그룹 안의 작은 시그니처 액센트 (이전 220px → 100px 으로 대폭 축소) */
-      width: clamp(72px, 12vw, 110px);
-      aspect-ratio: 660 / 520;
-      display: block;
-      margin: 0 0 var(--space-2);  /* 좌측 정렬 (텍스트 베이스라인 매칭) */
-      background: var(--gradient-signature);
-      -webkit-mask-image: url('/assets/cloud-alpha.png');
-              mask-image: url('/assets/cloud-alpha.png');
-      -webkit-mask-size: contain;
-              mask-size: contain;
-      -webkit-mask-repeat: no-repeat;
-              mask-repeat: no-repeat;
-      -webkit-mask-position: center;
-              mask-position: center;
-      animation: cloud-bob 5.4s var(--ease-soft) infinite;
-      filter: drop-shadow(0 6px 16px rgba(255, 107, 139, 0.22));
-    }
-    @media (max-width: 900px) {
-      .hero__cloud { margin-left: auto; margin-right: auto; }
-    }
-    @keyframes cloud-bob {
-      0%, 100% { transform: translateY(0); }
-      50%      { transform: translateY(-8px); }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      .hero__cloud { animation: none; }
-    }
+    /* (hero__cloud 제거됨 — 사장님 지시 2026-05-26. cloud-alpha.png asset 은 그대로 둠) */
 
     /* 거대 타이포 — viewport-scaled (2026 트렌드 #2) */
     .hero__title {
