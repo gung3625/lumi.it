@@ -8,8 +8,8 @@
 // 캐시 bump: CACHE_VERSION 올리면 옛 cache 삭제 + 새로 받음.
 // 사장님 deploy 시 sw 코드 변경되면 자동으로 새 sw 활성화 (skipWaiting).
 
-// v36: beta/signup/dashboard/support 카피 일관성 — 캐릭터 도입, 대행사 비교, "토큰" → "연결" 친화.
-const CACHE_VERSION = 'lumi-v36';
+// v42: R6 — 협업 카드 단일 캐릭터화 (사진가+감독, 감독+편집장)
+const CACHE_VERSION = 'lumi-v42';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 
 const STATIC_RE = /\.(css|js|woff2?|ttf|otf|png|jpg|jpeg|webp|svg|ico|gif)$/i;

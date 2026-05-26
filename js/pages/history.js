@@ -41,6 +41,7 @@
 
       const stateEl = document.querySelector('[data-state]');
       const tabsEl = document.querySelector('[data-tabs]');
+      const tabsHintEl = document.querySelector('[data-tabs-hint]');
       const tabToolsEl = document.querySelector('[data-tab-tools]');
       const bulkBtn = document.querySelector('[data-bulk-delete]');
       const upcomingSec = document.querySelector('[data-pane="upcoming"]');
@@ -674,12 +675,13 @@
           past.sort((a, b) => new Date(b.scheduled_at || b.submitted_at) - new Date(a.scheduled_at || a.submitted_at));
 
           // 두 리스트 모두 렌더 — 탭 전환 시 즉시 반영. 빈 리스트면 탭별 맞춤 placeholder.
-          const upcomingEmpty = '<li class="empty"><div class="empty__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div><div class="empty__title">예약된 게시가 없어요</div><p class="empty__sub">새 사진을 올려서 예약을 만들어보세요.</p><a class="cta" href="/register-product">📷 사진 올리기</a></li>';
-          const pastEmpty = '<li class="empty"><div class="empty__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div><div class="empty__title">아직 게시 이력이 없어요</div><p class="empty__sub">첫 게시가 올라가면 여기에 쌓여요.</p><a class="cta" href="/register-product">📷 사진 올리기</a></li>';
+          const upcomingEmpty = '<li class="empty"><div class="empty__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div><div class="empty__title">예약된 게시가 없어요</div><p class="empty__sub">사진가 루미가 사진 직접 읽으려고 기다리고 있어요. 새 사진 한 장만 올려보세요.</p><a class="cta" href="/register-product">📷 사진 올리기</a></li>';
+          const pastEmpty = '<li class="empty"><div class="empty__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div><div class="empty__title">아직 게시 이력이 없어요</div><p class="empty__sub">편집장 루미가 첫 게시 잘 올라갔는지 확인해서 이력으로 남길게요.</p><a class="cta" href="/register-product">📷 사진 올리기</a></li>';
           upcomingList.innerHTML = upcoming.length ? upcoming.map(renderItem).join('') : upcomingEmpty;
           pastList.innerHTML = past.length ? past.slice(0, 30).map(renderItem).join('') : pastEmpty;
           // 탭 표시 + 활성 탭에 따라 섹션 한 쪽만 노출
           if (tabsEl) tabsEl.hidden = false;
+          if (tabsHintEl) tabsHintEl.hidden = false;
           if (tabToolsEl) tabToolsEl.hidden = false;
           applyTab();
 
