@@ -30,6 +30,8 @@
       -webkit-backdrop-filter: blur(20px) saturate(180%);
       z-index: calc(var(--z-sticky) - 1);
       border-bottom: 1px solid var(--line);
+      /* R2 핫픽스 — 활성 탭 ::after z-index 보호 (stacking context 격리) */
+      isolation: isolate;
     }
     .tab-btn {
       padding: var(--space-2) 0;
@@ -41,25 +43,16 @@
       position: relative;
     }
     .tab-btn.is-active { color: var(--ink); font-weight: var(--weight-semibold); }
-    /* sprint R1 — 활성 탭에 종이 BG + glow 추가로 underline 단절 해소 */
-    .tab-btn.is-active::before {
-      content: '';
-      position: absolute;
-      inset: 4px 6px;
-      background: var(--gradient-paper);
-      border-radius: var(--radius-sm);
-      z-index: -1;
-      pointer-events: none;
-    }
+    /* R2 — 활성 탭 underline 을 hand-drawn 잔물결 SVG 로 교체 (R1 5 Critic 합의: 기계 그라데이션 어법 탈피).
+       lumi 만의 새 시그니처 어법 1종 신설 자리. 다른 underline 은 그대로 직선 유지 (어법 시그널). */
     .tab-btn.is-active::after {
       content: '';
       position: absolute;
-      left: 50%; bottom: -2px;
-      width: 32px; height: 2px;
-      background: var(--gradient-signature);
+      left: 50%; bottom: -3px;
+      width: 38px; height: 6px;
       transform: translateX(-50%);
-      border-radius: var(--radius-pill);
-      box-shadow: 0 2px 6px -1px rgba(255, 107, 139, 0.45);
+      background: url("/assets/wavy-underline.svg") no-repeat center / 100% 100%;
+      pointer-events: none;
     }
 
     .wrap { padding: var(--space-4); max-width: 600px; margin: 0 auto; }
@@ -123,6 +116,10 @@
         transform: translateY(-1px);
       }
     }
+    /* R2 핫픽스 — reduced-motion 시 hover translateY 가드 */
+    @media (prefers-reduced-motion: reduce) {
+      .stat:hover { transform: none; }
+    }
     .stat:nth-child(1) { animation-delay: 0ms; }
     .stat:nth-child(2) { animation-delay: 60ms; }
     .stat:nth-child(3) { animation-delay: 120ms; }
@@ -152,6 +149,7 @@
     .stat__delta--up { color: var(--status-success-fg); }
     .stat__delta--down { color: var(--pink-500); }
 
+    /* R2 brand fatigue — 상단 3px 그라 제거 (작가 요구: 이미 핑크 BG + glow — 시그니처 4번 누적 방지) */
     .summary-card {
       position: relative;
       padding: var(--space-4);
@@ -160,16 +158,6 @@
       border-radius: var(--radius-lg);
       box-shadow: var(--shadow-glow-sm);
       overflow: hidden;
-    }
-    /* sprint R1 — 결과 카드 상단에 시그니처 그라데이션 한 줄 */
-    .summary-card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 3px;
-      background: var(--gradient-signature);
-      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-      pointer-events: none;
     }
     .summary-card__title {
       font-size: var(--text-caption);

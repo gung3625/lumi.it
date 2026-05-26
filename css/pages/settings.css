@@ -180,16 +180,16 @@
     }
     .ig-card__action--disconnect:hover { border-color: var(--pink-500); color: var(--pink-500); }
 
-    /* 톤 지시 카드 — sprint R1: 종이 BG + hover warm glow */
+    /* 톤 지시 카드 — sprint R2: 종이 BG 제거 (활성 상태에 시그니처 그라 별도) + hover warm glow
+       R2 핫픽스: hover transition base(400ms) → fast(220ms) */
     .tone-card {
       padding: var(--space-4);
       background: var(--bg);
-      background-image: var(--gradient-paper);
       border: 1px solid var(--line);
       border-radius: var(--radius-lg);
       transition:
-        border-color var(--duration-base) var(--ease-soft),
-        box-shadow var(--duration-base) var(--ease-soft);
+        border-color var(--duration-fast) var(--ease-soft),
+        box-shadow var(--duration-fast) var(--ease-soft);
     }
     @media (hover: hover) {
       .tone-card:hover { border-color: var(--pink-200, #f7c5d3); box-shadow: var(--shadow-warm-glow); }
@@ -273,12 +273,11 @@
     .tone-card__save:active { transform: scale(0.96); }
     .tone-card__save:disabled { opacity: 0.4; box-shadow: none; cursor: not-allowed; }
 
-    /* 단순 액션 버튼 — sprint R1: 종이 BG */
+    /* 단순 액션 버튼 — sprint R2: 종이 BG 제거 (brand fatigue 줄임) */
     .action-btn {
       width: 100%;
       padding: var(--space-4);
       background: var(--bg);
-      background-image: var(--gradient-paper);
       border: 1px solid var(--line);
       border-radius: var(--radius-lg);
       font-size: var(--text-body);

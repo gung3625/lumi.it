@@ -146,17 +146,31 @@
       font-size: var(--text-caption);
       color: var(--ink-muted);
     }
-    /* sprint R1 — stat-card hover warm glow + 시그니처 침투 */
+    /* sprint R2 — stat-card 좌측 3px 정적 시그니처 라인 (모바일에서도 항상 보임).
+       hover 의존 X — 모바일 hover 없는 환경에서도 lumi 시그니처 인지 확보. */
     .stat-card {
+      position: relative;
       padding: var(--space-4);
+      padding-left: calc(var(--space-4) + 3px);
       background: var(--bg-soft);
       border: 1px solid var(--line);
       border-radius: var(--radius-lg);
       animation: rise 500ms var(--ease-toss) backwards;
+      overflow: hidden;
       transition:
         border-color var(--duration-fast) var(--ease-soft),
         box-shadow var(--duration-fast) var(--ease-soft),
         transform var(--duration-snap) var(--ease-toss);
+    }
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      background: var(--gradient-signature);
+      opacity: 0.7;
+      border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+      pointer-events: none;
     }
     @media (hover: hover) {
       .stat-card:hover {
@@ -164,6 +178,10 @@
         box-shadow: var(--shadow-warm-glow);
         transform: translateY(-1px);
       }
+    }
+    /* R2 핫픽스 — reduced-motion 시 hover translateY 가드 */
+    @media (prefers-reduced-motion: reduce) {
+      .stat-card:hover { transform: none; }
     }
     .stat-card__label {
       font-size: var(--text-caption);
@@ -486,19 +504,32 @@
       margin-top: 2px;
     }
 
-    /* 베스트 시간 카드 — sprint R1: hover warm glow */
+    /* 베스트 시간 카드 — sprint R2: 좌측 3px 정적 시그니처 라인 + hover warm glow */
     .besttime-card {
+      position: relative;
       display: flex;
       align-items: center;
       gap: var(--space-3);
       padding: var(--space-4);
+      padding-left: calc(var(--space-4) + 3px);
       background: var(--bg-soft);
       border: 1px solid var(--line);
       border-radius: var(--radius-lg);
       animation: rise 500ms var(--ease-toss) 240ms backwards;
+      overflow: hidden;
       transition:
         border-color var(--duration-fast) var(--ease-soft),
         box-shadow var(--duration-fast) var(--ease-soft);
+    }
+    .besttime-card::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      background: var(--gradient-signature);
+      opacity: 0.7;
+      border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+      pointer-events: none;
     }
     @media (hover: hover) {
       .besttime-card:hover {

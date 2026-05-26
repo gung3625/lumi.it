@@ -84,6 +84,8 @@
       backdrop-filter: blur(20px) saturate(180%);
       -webkit-backdrop-filter: blur(20px) saturate(180%);
       z-index: var(--z-sticky);
+      /* R2 핫픽스 — 활성 탭 ::after z-index 보호 (stacking context 격리) */
+      isolation: isolate;
     }
     .major-tab {
       padding: var(--space-2) 0;
@@ -102,16 +104,8 @@
       color: var(--ink);
       font-weight: var(--weight-semibold);
     }
-    /* sprint R1 — 활성 탭 위에 옅은 종이 그라데이션 BG 깔아 underline 만 떠 있는 느낌 제거 */
-    .major-tab.is-active::before {
-      content: '';
-      position: absolute;
-      inset: 2px 6px;
-      background: var(--gradient-paper);
-      border-radius: var(--radius-sm);
-      z-index: -1;
-      pointer-events: none;
-    }
+    /* sprint R2 — 활성 탭 ::before 종이 BG 제거 (R1 5 Critic 합의 brand fatigue + 4번 누적 방지).
+       직선 underline 은 그대로 (어법 시그널 — insights 만 hand-drawn). */
     .major-tab.is-active::after {
       content: '';
       position: absolute;
@@ -190,6 +184,8 @@
       flex-direction: column;
       gap: var(--space-2);
     }
+    /* R2 핫픽스 — border-left: 3px solid transparent 제거 (::before 가 left:0 으로 라인 그림).
+       padding-left 은 유지 — ::before 의 3px 폭 공간 확보용. */
     .kw-item {
       position: relative;
       width: 100%;
@@ -197,26 +193,26 @@
       align-items: center;
       gap: var(--space-3);
       padding: var(--space-4);
-      padding-left: calc(var(--space-4) + 3px); /* 좌측 시그니처 border 공간 확보 */
+      padding-left: calc(var(--space-4) + 3px);
       background: var(--bg);
       border: 1px solid var(--line);
-      border-left: 3px solid transparent;
       border-radius: var(--radius-lg);
       transition:
         background var(--duration-fast) var(--ease-soft),
         transform var(--duration-snap) var(--ease-toss),
         border-color var(--duration-fast) var(--ease-soft),
-        box-shadow var(--duration-fast) var(--ease-soft);
+        box-shadow var(--duration-fast) var(--ease-soft),
+        opacity var(--duration-fast) var(--ease-soft);
       text-align: left;
     }
-    /* sprint R1 — 좌측 시그니처 라인 (border-left transparent 위에 그라데이션 덮어 그라데이션 표현) */
+    /* R2 brand fatigue — 기본 opacity 0 (보이지 않음), hover 시만 1 (작가 요구: 시그니처 라인 4번 누적 방지) */
     .kw-item::before {
       content: '';
       position: absolute;
       left: 0; top: 0; bottom: 0;
       width: 3px;
       background: var(--gradient-signature);
-      opacity: 0.35;
+      opacity: 0;
       border-radius: var(--radius-lg) 0 0 var(--radius-lg);
       transition: opacity var(--duration-fast) var(--ease-soft);
       pointer-events: none;
