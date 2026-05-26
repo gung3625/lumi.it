@@ -146,12 +146,15 @@
       font-size: var(--text-caption);
       color: var(--ink-muted);
     }
-    /* sprint R2 — stat-card 좌측 3px 정적 시그니처 라인 (모바일에서도 항상 보임).
-       hover 의존 X — 모바일 hover 없는 환경에서도 lumi 시그니처 인지 확보. */
+    /* sprint R2 — stat-card 좌측 정적 시그니처 라인 (모바일에서도 항상 보임).
+       hover 의존 X — 모바일 hover 없는 환경에서도 lumi 시그니처 인지 확보.
+       R3 (Adversarial 처방) — 폭 3→4px, opacity 0.7→0.85 강화. 1차 정보 카드라 시그니처 우선순위 최상위.
+       [E] 의도된 절제: dashboard 만 모바일에서 정적 라인 노출 (trends/insights kw-item 은 hover-only).
+       모든 페이지에 정적 라인 = brand fatigue 위험. dashboard 는 첫 진입 화면이라 시그니처 인지 비용 OK. */
     .stat-card {
       position: relative;
       padding: var(--space-4);
-      padding-left: calc(var(--space-4) + 3px);
+      padding-left: calc(var(--space-4) + 4px);
       background: var(--bg-soft);
       border: 1px solid var(--line);
       border-radius: var(--radius-lg);
@@ -166,9 +169,9 @@
       content: '';
       position: absolute;
       left: 0; top: 0; bottom: 0;
-      width: 3px;
+      width: 4px;
       background: var(--gradient-signature);
-      opacity: 0.7;
+      opacity: 0.85;
       border-radius: var(--radius-lg) 0 0 var(--radius-lg);
       pointer-events: none;
     }
@@ -264,12 +267,15 @@
       animation: rise 500ms var(--ease-toss) 160ms backwards;
       overflow: hidden;
     }
+    /* R3 (Adversarial 처방) — 상단 2px 직선 그라 → 6px hand-drawn 잔물결 SVG.
+       wavy 어법 1곳 → 3곳 확산 (Originality 3.4 끌어올림).
+       scheduled-card 는 "다음 자동 게시 예약" 감성 강조점 → hand-drawn 따뜻함 적합. */
     .scheduled-card::before {
       content: '';
       position: absolute;
       top: 0; left: 0; right: 0;
-      height: 2px;
-      background: var(--gradient-signature);
+      height: 6px;
+      background: url("/assets/wavy-underline.svg") no-repeat center top / 100% 100%;
       pointer-events: none;
     }
     .scheduled-card:active { transform: scale(0.98); }
@@ -504,7 +510,9 @@
       margin-top: 2px;
     }
 
-    /* 베스트 시간 카드 — sprint R2: 좌측 3px 정적 시그니처 라인 + hover warm glow */
+    /* 베스트 시간 카드 — sprint R2: 좌측 정적 시그니처 라인 + hover warm glow.
+       R3 (편집장 균열 B 해소) — dashboard 시그니처 4개 (stat·scheduled top·besttime·comments) 누적 위반.
+       위계: stat-card(1차) 강화, besttime(2차) 약화. 폭 3px 유지하되 opacity 0.7→0.4 로 살짝 후퇴. */
     .besttime-card {
       position: relative;
       display: flex;
@@ -527,7 +535,7 @@
       left: 0; top: 0; bottom: 0;
       width: 3px;
       background: var(--gradient-signature);
-      opacity: 0.7;
+      opacity: 0.4;
       border-radius: var(--radius-lg) 0 0 var(--radius-lg);
       pointer-events: none;
     }

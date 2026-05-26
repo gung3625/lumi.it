@@ -11,7 +11,8 @@
 // v43: hero CTA 칩 "신용카드 안 받음" 제거 (사장님 지시).
 // v44: 시그니처 그라데이션 가입 후 5페이지 침투 (디자인 sprint R1)
 // v45: 디자인 R2 — paper alpha 2배, 적용 7→3곳 축소, 모바일 정적 시그니처 신설, hand-drawn underline 어법 1종 추가, 핫픽스 6건
-const CACHE_VERSION = 'lumi-v45';
+// v46: 디자인 R3 — wavy 어법 3곳 확산 (trends meta-cat / history tab / dashboard scheduled-card), 좌측 라인 4px/0.85, SVG path 정렬, besttime 약화
+const CACHE_VERSION = 'lumi-v46';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 
 const STATIC_RE = /\.(css|js|woff2?|ttf|otf|png|jpg|jpeg|webp|svg|ico|gif)$/i;
