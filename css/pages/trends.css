@@ -50,10 +50,24 @@
       margin-bottom: var(--space-4);
     }
     .meta-cat {
+      position: relative;
       font-size: var(--text-headline);
       font-weight: var(--weight-bold);
       color: var(--ink);
       letter-spacing: var(--tracking-tight);
+      padding-bottom: 4px;
+    }
+    /* sprint R1 — 카테고리 헤드라인 아래 그라데이션 라인. 가입 전 brand-mark 느낌 회복.
+       R3 (Adversarial 처방) — 직선 그라 → hand-drawn 잔물결 SVG 로 교체.
+       wavy 어법 1곳 → 3곳 확산 (Originality 3.4 끌어올림). 너비 36px, 높이 6px 로 잔물결 가시 확보. */
+    .meta-cat::after {
+      content: '';
+      position: absolute;
+      left: 0; bottom: -2px;
+      width: 36px; height: 6px;
+      background: url("/assets/wavy-underline.svg") no-repeat left center / 100% 100%;
+      opacity: 0.9;
+      pointer-events: none;
     }
     .meta-time {
       font-size: var(--text-caption);
@@ -72,6 +86,8 @@
       backdrop-filter: blur(20px) saturate(180%);
       -webkit-backdrop-filter: blur(20px) saturate(180%);
       z-index: var(--z-sticky);
+      /* R2 핫픽스 — 활성 탭 ::after z-index 보호 (stacking context 격리) */
+      isolation: isolate;
     }
     .major-tab {
       padding: var(--space-2) 0;
@@ -90,6 +106,8 @@
       color: var(--ink);
       font-weight: var(--weight-semibold);
     }
+    /* sprint R2 — 활성 탭 ::before 종이 BG 제거 (R1 5 Critic 합의 brand fatigue + 4번 누적 방지).
+       직선 underline 은 그대로 (어법 시그널 — insights 만 hand-drawn). */
     .major-tab.is-active::after {
       content: '';
       position: absolute;
@@ -168,23 +186,46 @@
       flex-direction: column;
       gap: var(--space-2);
     }
+    /* R2 핫픽스 — border-left: 3px solid transparent 제거 (::before 가 left:0 으로 라인 그림).
+       padding-left 은 유지 — ::before 의 3px 폭 공간 확보용. */
     .kw-item {
+      position: relative;
       width: 100%;
       display: flex;
       align-items: center;
       gap: var(--space-3);
       padding: var(--space-4);
+      padding-left: calc(var(--space-4) + 3px);
       background: var(--bg);
       border: 1px solid var(--line);
       border-radius: var(--radius-lg);
       transition:
-        background var(--duration-snap) var(--ease-toss),
+        background var(--duration-fast) var(--ease-soft),
         transform var(--duration-snap) var(--ease-toss),
-        border-color var(--duration-snap) var(--ease-toss);
+        border-color var(--duration-fast) var(--ease-soft),
+        box-shadow var(--duration-fast) var(--ease-soft),
+        opacity var(--duration-fast) var(--ease-soft);
       text-align: left;
     }
+    /* R2 brand fatigue — 기본 opacity 0 (보이지 않음), hover 시만 1 (작가 요구: 시그니처 라인 4번 누적 방지) */
+    .kw-item::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      background: var(--gradient-signature);
+      opacity: 0;
+      border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+      transition: opacity var(--duration-fast) var(--ease-soft);
+      pointer-events: none;
+    }
     .kw-item:active { transform: scale(0.98); }
-    .kw-item:hover { background: var(--pink-50); border-color: var(--pink-300); box-shadow: var(--shadow-glow-sm); }
+    .kw-item:hover {
+      background: var(--pink-50);
+      border-color: var(--pink-300);
+      box-shadow: var(--shadow-warm-glow);
+    }
+    .kw-item:hover::before { opacity: 1; }
     .kw-item__rank {
       font-size: var(--text-body);
       font-weight: var(--weight-bold);
@@ -238,12 +279,15 @@
     .kw-item--weak .kw-item__text { color: var(--ink-soft); }
     .kw-item--weak .kw-item__rank { opacity: 0.6; }
 
-    /* 빈 / 로딩 안내 */
+    /* 빈 / 로딩 안내 — sprint R1: 종이 그라데이션 BG 로 가입 전 톤 회복 */
     .state {
       padding: var(--space-12) var(--space-4);
       text-align: center;
       color: var(--ink-muted);
       font-size: var(--text-body);
+      background: var(--gradient-paper);
+      border-radius: var(--radius-lg);
+      margin: var(--space-2) 0;
     }
 
     /* === Bottom Sheet (AI 해석) === */

@@ -30,6 +30,8 @@
       -webkit-backdrop-filter: blur(20px) saturate(180%);
       z-index: calc(var(--z-sticky) - 1);
       border-bottom: 1px solid var(--line);
+      /* R2 핫픽스 — 활성 탭 ::after z-index 보호 (stacking context 격리) */
+      isolation: isolate;
     }
     .tab-btn {
       padding: var(--space-2) 0;
@@ -41,14 +43,16 @@
       position: relative;
     }
     .tab-btn.is-active { color: var(--ink); font-weight: var(--weight-semibold); }
+    /* R2 — 활성 탭 underline 을 hand-drawn 잔물결 SVG 로 교체 (R1 5 Critic 합의: 기계 그라데이션 어법 탈피).
+       lumi 만의 새 시그니처 어법 1종 신설 자리. 다른 underline 은 그대로 직선 유지 (어법 시그널). */
     .tab-btn.is-active::after {
       content: '';
       position: absolute;
-      left: 50%; bottom: -2px;
-      width: 24px; height: 2px;
-      background: var(--gradient-signature);
+      left: 50%; bottom: -3px;
+      width: 38px; height: 6px;
       transform: translateX(-50%);
-      border-radius: var(--radius-pill);
+      background: url("/assets/wavy-underline.svg") no-repeat center / 100% 100%;
+      pointer-events: none;
     }
 
     .wrap { padding: var(--space-4); max-width: 600px; margin: 0 auto; }
@@ -99,6 +103,22 @@
       border: 1px solid var(--line);
       border-radius: var(--radius-lg);
       animation: rise 360ms var(--ease-toss) backwards;
+      transition:
+        border-color var(--duration-fast) var(--ease-soft),
+        box-shadow var(--duration-fast) var(--ease-soft),
+        transform var(--duration-snap) var(--ease-toss);
+    }
+    /* sprint R1 — stat-card hover 시 warm glow */
+    @media (hover: hover) {
+      .stat:hover {
+        border-color: var(--pink-200, #f7c5d3);
+        box-shadow: var(--shadow-warm-glow);
+        transform: translateY(-1px);
+      }
+    }
+    /* R2 핫픽스 — reduced-motion 시 hover translateY 가드 */
+    @media (prefers-reduced-motion: reduce) {
+      .stat:hover { transform: none; }
     }
     .stat:nth-child(1) { animation-delay: 0ms; }
     .stat:nth-child(2) { animation-delay: 60ms; }
@@ -129,12 +149,15 @@
     .stat__delta--up { color: var(--status-success-fg); }
     .stat__delta--down { color: var(--pink-500); }
 
+    /* R2 brand fatigue — 상단 3px 그라 제거 (작가 요구: 이미 핑크 BG + glow — 시그니처 4번 누적 방지) */
     .summary-card {
+      position: relative;
       padding: var(--space-4);
       background: var(--pink-50);
       border: 1px solid var(--pink-300);
       border-radius: var(--radius-lg);
       box-shadow: var(--shadow-glow-sm);
+      overflow: hidden;
     }
     .summary-card__title {
       font-size: var(--text-caption);
@@ -460,7 +483,14 @@
     }
 
     .state { padding: var(--space-12); text-align: center; color: var(--ink-muted); }
-    .empty { padding: var(--space-12) var(--space-5); text-align: center; color: var(--ink-muted); }
+    /* sprint R1 — empty 상태에 종이 BG 깔아 가입 전 톤 회복 */
+    .empty {
+      padding: var(--space-12) var(--space-5);
+      text-align: center;
+      color: var(--ink-muted);
+      background: var(--gradient-paper);
+      border-radius: var(--radius-lg);
+    }
     .empty__title { font-size: var(--text-body-lg); font-weight: var(--weight-semibold); color: var(--ink); margin-bottom: var(--space-2); }
     .empty__sub { font-size: var(--text-body); color: var(--ink-muted); }
 
