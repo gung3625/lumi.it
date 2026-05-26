@@ -76,7 +76,7 @@
             // 사장님이 보던 대분류 유지 — 새로고침 시 hash 로 복원.
             try { history.replaceState(null, '', '#major=' + id); } catch (_) {}
             renderMajorTabs();
-            stateEl.textContent = '작가 루미가 키워드 고르는 중…';
+            stateEl.textContent = '키워드 고르는 중…';
             listEl.innerHTML = '<li class="state" data-state>작가 루미가 키워드 고르는 중…</li>';
             loadTrends();
           });

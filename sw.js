@@ -8,8 +8,8 @@
 // 캐시 bump: CACHE_VERSION 올리면 옛 cache 삭제 + 새로 받음.
 // 사장님 deploy 시 sw 코드 변경되면 자동으로 새 sw 활성화 (skipWaiting).
 
-// v40: 라운드 4 — dashboard 캐릭터 5건으로 압축, 모바일 hint 길이 단축, 사진가 단독 2회 보장.
-const CACHE_VERSION = 'lumi-v40';
+// v41: R5 — 사진가 3곳 유지, 작가 settings 3→1 + trends 4→3, 감독 dashboard 3→2, settings L59 단축
+const CACHE_VERSION = 'lumi-v41';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 
 const STATIC_RE = /\.(css|js|woff2?|ttf|otf|png|jpg|jpeg|webp|svg|ico|gif)$/i;
