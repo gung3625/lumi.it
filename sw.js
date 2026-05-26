@@ -8,8 +8,8 @@
 // 캐시 bump: CACHE_VERSION 올리면 옛 cache 삭제 + 새로 받음.
 // 사장님 deploy 시 sw 코드 변경되면 자동으로 새 sw 활성화 (skipWaiting).
 
-// v35: trust-section (베타 카운터/후기) 제거 — 사장님 지시.
-const CACHE_VERSION = 'lumi-v35';
+// v36: beta/signup/dashboard/support 카피 일관성 — 캐릭터 도입, 대행사 비교, "토큰" → "연결" 친화.
+const CACHE_VERSION = 'lumi-v36';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 
 const STATIC_RE = /\.(css|js|woff2?|ttf|otf|png|jpg|jpeg|webp|svg|ico|gif)$/i;
