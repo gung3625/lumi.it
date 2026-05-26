@@ -158,6 +158,9 @@
       line-height: var(--leading-snug);
       max-width: 32ch;
       margin: 0;
+      /* 한국어 단어 단위 줄바꿈 — "베스트 시간" 같은 단어가 음절 단위로 끊기지 않게 */
+      word-break: keep-all;
+      overflow-wrap: break-word;
       animation: hero-rise 700ms var(--ease-toss) 360ms backwards;
     }
     .hero__sub strong { color: var(--ink); font-weight: var(--weight-semibold); }
@@ -607,7 +610,8 @@
 
     .hero__sub-strong {
       display: inline-block; margin-top: 6px;
-      font-weight: 800; color: var(--ink);
+      /* hero__sub strong 과 동일 weight (사장님 지적: 한 단락 안 weight 격차 어색) */
+      font-weight: var(--weight-semibold); color: var(--ink);
     }
 
     .hero__cta { display: flex; gap: var(--space-2); flex-wrap: wrap; justify-content: center; }
