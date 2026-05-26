@@ -41,14 +41,25 @@
       position: relative;
     }
     .tab-btn.is-active { color: var(--ink); font-weight: var(--weight-semibold); }
+    /* sprint R1 — 활성 탭에 종이 BG + glow 추가로 underline 단절 해소 */
+    .tab-btn.is-active::before {
+      content: '';
+      position: absolute;
+      inset: 4px 6px;
+      background: var(--gradient-paper);
+      border-radius: var(--radius-sm);
+      z-index: -1;
+      pointer-events: none;
+    }
     .tab-btn.is-active::after {
       content: '';
       position: absolute;
       left: 50%; bottom: -2px;
-      width: 24px; height: 2px;
+      width: 32px; height: 2px;
       background: var(--gradient-signature);
       transform: translateX(-50%);
       border-radius: var(--radius-pill);
+      box-shadow: 0 2px 6px -1px rgba(255, 107, 139, 0.45);
     }
 
     .wrap { padding: var(--space-4); max-width: 600px; margin: 0 auto; }
@@ -99,6 +110,18 @@
       border: 1px solid var(--line);
       border-radius: var(--radius-lg);
       animation: rise 360ms var(--ease-toss) backwards;
+      transition:
+        border-color var(--duration-fast) var(--ease-soft),
+        box-shadow var(--duration-fast) var(--ease-soft),
+        transform var(--duration-snap) var(--ease-toss);
+    }
+    /* sprint R1 — stat-card hover 시 warm glow */
+    @media (hover: hover) {
+      .stat:hover {
+        border-color: var(--pink-200, #f7c5d3);
+        box-shadow: var(--shadow-warm-glow);
+        transform: translateY(-1px);
+      }
     }
     .stat:nth-child(1) { animation-delay: 0ms; }
     .stat:nth-child(2) { animation-delay: 60ms; }
@@ -130,11 +153,23 @@
     .stat__delta--down { color: var(--pink-500); }
 
     .summary-card {
+      position: relative;
       padding: var(--space-4);
       background: var(--pink-50);
       border: 1px solid var(--pink-300);
       border-radius: var(--radius-lg);
       box-shadow: var(--shadow-glow-sm);
+      overflow: hidden;
+    }
+    /* sprint R1 — 결과 카드 상단에 시그니처 그라데이션 한 줄 */
+    .summary-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--gradient-signature);
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      pointer-events: none;
     }
     .summary-card__title {
       font-size: var(--text-caption);
@@ -460,7 +495,14 @@
     }
 
     .state { padding: var(--space-12); text-align: center; color: var(--ink-muted); }
-    .empty { padding: var(--space-12) var(--space-5); text-align: center; color: var(--ink-muted); }
+    /* sprint R1 — empty 상태에 종이 BG 깔아 가입 전 톤 회복 */
+    .empty {
+      padding: var(--space-12) var(--space-5);
+      text-align: center;
+      color: var(--ink-muted);
+      background: var(--gradient-paper);
+      border-radius: var(--radius-lg);
+    }
     .empty__title { font-size: var(--text-body-lg); font-weight: var(--weight-semibold); color: var(--ink); margin-bottom: var(--space-2); }
     .empty__sub { font-size: var(--text-body); color: var(--ink-muted); }
 

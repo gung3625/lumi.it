@@ -37,8 +37,10 @@
     }
     .section-title:first-child { margin-top: 0; }
 
+    /* sprint R1 — 설정 카드에 옅은 종이 그라데이션. 흰색 → 종이 톤 */
     .card {
       background: var(--bg);
+      background-image: var(--gradient-paper);
       border: 1px solid var(--line);
       border-radius: var(--radius-lg);
       padding: var(--space-3);
@@ -178,10 +180,11 @@
     }
     .ig-card__action--disconnect:hover { border-color: var(--pink-500); color: var(--pink-500); }
 
-    /* 톤 지시 카드 */
+    /* 톤 지시 카드 — sprint R1: 종이 BG + hover warm glow */
     .tone-card {
       padding: var(--space-4);
       background: var(--bg);
+      background-image: var(--gradient-paper);
       border: 1px solid var(--line);
       border-radius: var(--radius-lg);
       transition:
@@ -189,7 +192,8 @@
         box-shadow var(--duration-base) var(--ease-soft);
     }
     @media (hover: hover) {
-      .tone-card:focus-within { border-color: var(--pink-300); box-shadow: var(--shadow-sm); }
+      .tone-card:hover { border-color: var(--pink-200, #f7c5d3); box-shadow: var(--shadow-warm-glow); }
+      .tone-card:focus-within { border-color: var(--pink-300); box-shadow: var(--shadow-warm-glow); }
     }
     .tone-card__title {
       font-size: var(--text-body);
@@ -269,11 +273,12 @@
     .tone-card__save:active { transform: scale(0.96); }
     .tone-card__save:disabled { opacity: 0.4; box-shadow: none; cursor: not-allowed; }
 
-    /* 단순 액션 버튼 */
+    /* 단순 액션 버튼 — sprint R1: 종이 BG */
     .action-btn {
       width: 100%;
       padding: var(--space-4);
       background: var(--bg);
+      background-image: var(--gradient-paper);
       border: 1px solid var(--line);
       border-radius: var(--radius-lg);
       font-size: var(--text-body);
@@ -282,6 +287,10 @@
       display: flex;
       align-items: center;
       gap: var(--space-3);
+      transition:
+        background var(--duration-snap) var(--ease-toss),
+        border-color var(--duration-snap) var(--ease-toss),
+        transform var(--duration-snap) var(--ease-toss);
     }
     .action-btn:hover { background: var(--bg-soft); }
     .action-btn:active { transform: scale(0.99); }
@@ -401,12 +410,24 @@
       font-weight: var(--weight-semibold);
       color: var(--ink);
     }
+    /* sprint R1 — 활성 카드 (대분류 토글) 에 시그니처 그라데이션 라인 강조 */
     .major-card.is-active {
+      position: relative;
       background: var(--pink-50);
+      background-image: linear-gradient(135deg, rgba(255,107,139,0.08), rgba(237,208,128,0.06));
       border-color: var(--pink-500);
       color: var(--pink-700);
-      box-shadow: var(--shadow-glow-sm);
+      box-shadow: var(--shadow-warm-glow);
       animation: card-pop 420ms var(--ease-toss);
+      overflow: hidden;
+    }
+    .major-card.is-active::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--gradient-signature);
+      pointer-events: none;
     }
     @keyframes card-pop {
       0%, 100% { transform: scale(1); }

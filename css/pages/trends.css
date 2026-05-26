@@ -50,10 +50,22 @@
       margin-bottom: var(--space-4);
     }
     .meta-cat {
+      position: relative;
       font-size: var(--text-headline);
       font-weight: var(--weight-bold);
       color: var(--ink);
       letter-spacing: var(--tracking-tight);
+      padding-bottom: 4px;
+    }
+    /* sprint R1 — 카테고리 헤드라인 아래 미세 그라데이션 라인. 가입 전 brand-mark 느낌 회복 */
+    .meta-cat::after {
+      content: '';
+      position: absolute;
+      left: 0; bottom: 0;
+      width: 32px; height: 3px;
+      background: var(--gradient-signature);
+      border-radius: var(--radius-pill);
+      opacity: 0.9;
     }
     .meta-time {
       font-size: var(--text-caption);
@@ -89,6 +101,16 @@
     .major-tab.is-active {
       color: var(--ink);
       font-weight: var(--weight-semibold);
+    }
+    /* sprint R1 — 활성 탭 위에 옅은 종이 그라데이션 BG 깔아 underline 만 떠 있는 느낌 제거 */
+    .major-tab.is-active::before {
+      content: '';
+      position: absolute;
+      inset: 2px 6px;
+      background: var(--gradient-paper);
+      border-radius: var(--radius-sm);
+      z-index: -1;
+      pointer-events: none;
     }
     .major-tab.is-active::after {
       content: '';
@@ -169,22 +191,43 @@
       gap: var(--space-2);
     }
     .kw-item {
+      position: relative;
       width: 100%;
       display: flex;
       align-items: center;
       gap: var(--space-3);
       padding: var(--space-4);
+      padding-left: calc(var(--space-4) + 3px); /* 좌측 시그니처 border 공간 확보 */
       background: var(--bg);
       border: 1px solid var(--line);
+      border-left: 3px solid transparent;
       border-radius: var(--radius-lg);
       transition:
-        background var(--duration-snap) var(--ease-toss),
+        background var(--duration-fast) var(--ease-soft),
         transform var(--duration-snap) var(--ease-toss),
-        border-color var(--duration-snap) var(--ease-toss);
+        border-color var(--duration-fast) var(--ease-soft),
+        box-shadow var(--duration-fast) var(--ease-soft);
       text-align: left;
     }
+    /* sprint R1 — 좌측 시그니처 라인 (border-left transparent 위에 그라데이션 덮어 그라데이션 표현) */
+    .kw-item::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      background: var(--gradient-signature);
+      opacity: 0.35;
+      border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+      transition: opacity var(--duration-fast) var(--ease-soft);
+      pointer-events: none;
+    }
     .kw-item:active { transform: scale(0.98); }
-    .kw-item:hover { background: var(--pink-50); border-color: var(--pink-300); box-shadow: var(--shadow-glow-sm); }
+    .kw-item:hover {
+      background: var(--pink-50);
+      border-color: var(--pink-300);
+      box-shadow: var(--shadow-warm-glow);
+    }
+    .kw-item:hover::before { opacity: 1; }
     .kw-item__rank {
       font-size: var(--text-body);
       font-weight: var(--weight-bold);
@@ -238,12 +281,15 @@
     .kw-item--weak .kw-item__text { color: var(--ink-soft); }
     .kw-item--weak .kw-item__rank { opacity: 0.6; }
 
-    /* 빈 / 로딩 안내 */
+    /* 빈 / 로딩 안내 — sprint R1: 종이 그라데이션 BG 로 가입 전 톤 회복 */
     .state {
       padding: var(--space-12) var(--space-4);
       text-align: center;
       color: var(--ink-muted);
       font-size: var(--text-body);
+      background: var(--gradient-paper);
+      border-radius: var(--radius-lg);
+      margin: var(--space-2) 0;
     }
 
     /* === Bottom Sheet (AI 해석) === */

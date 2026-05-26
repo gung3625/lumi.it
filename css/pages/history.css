@@ -63,7 +63,18 @@
     }
     .history-tab.is-active {
       color: var(--pink-600, var(--pink-500));
-      border-bottom-color: var(--pink-500);
+      border-bottom-color: transparent;
+      position: relative;
+    }
+    /* sprint R1 — 활성 탭 underline 을 시그니처 그라데이션으로 (기존 단색 핑크 → 4색 그라) */
+    .history-tab.is-active::after {
+      content: '';
+      position: absolute;
+      left: 0; right: 0; bottom: -1px;
+      height: 2px;
+      background: var(--gradient-signature);
+      border-radius: var(--radius-pill);
+      box-shadow: 0 2px 6px -1px rgba(255, 107, 139, 0.40);
     }
     @media (hover: hover) {
       .history-tab:hover:not(.is-active) { color: var(--ink); }
@@ -96,10 +107,11 @@
     .res:nth-child(4) { animation-delay: 180ms; }
     .res:nth-child(5) { animation-delay: 240ms; }
     /* hover 는 데스크톱(진짜 hover 디바이스)에서만 — 모바일 터치 시 sticky hover 방지 */
+    /* sprint R1 — hover 시 핑크 ring (shadow-glow-sm) + warm 톤 강화 */
     @media (hover: hover) {
       .res:hover {
         border-color: var(--pink-200, #f7c5d3);
-        box-shadow: var(--shadow-sm);
+        box-shadow: var(--shadow-glow-sm);
       }
     }
     /* 터치 직후 부드럽게 살짝 눌리는 피드백 */
@@ -511,10 +523,13 @@
       }
     }
 
+    /* sprint R1 — empty BG 에 종이 그라데이션. icon 위 backdrop 으로 따뜻한 톤 */
     .empty {
       padding: var(--space-12) var(--space-5);
       text-align: center;
       color: var(--ink-muted);
+      background: var(--gradient-paper);
+      border-radius: var(--radius-lg);
     }
     .empty__icon {
       width: 64px; height: 64px;

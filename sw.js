@@ -9,7 +9,8 @@
 // 사장님 deploy 시 sw 코드 변경되면 자동으로 새 sw 활성화 (skipWaiting).
 
 // v43: hero CTA 칩 "신용카드 안 받음" 제거 (사장님 지시).
-const CACHE_VERSION = 'lumi-v43';
+// v44: 시그니처 그라데이션 가입 후 5페이지 침투 (디자인 sprint R1)
+const CACHE_VERSION = 'lumi-v44';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 
 const STATIC_RE = /\.(css|js|woff2?|ttf|otf|png|jpg|jpeg|webp|svg|ico|gif)$/i;
