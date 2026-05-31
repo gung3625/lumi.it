@@ -1,0 +1,199 @@
+/* 요금제 페이지 — 심사·정식 안내용. 시그니처 톤 유지, 단순 2단 카드. */
+.pricing-wrap {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-5) var(--space-12);
+}
+
+/* 베타 안내 배너 */
+.pricing-beta {
+  background: linear-gradient(135deg, rgba(255,107,139,0.10), rgba(237,208,128,0.07));
+  border: 1px solid var(--pink-300);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  margin-bottom: var(--space-6);
+}
+.pricing-beta strong {
+  display: block;
+  font-size: var(--text-body-lg);
+  font-weight: 800;
+  color: var(--pink-700, var(--pink-500));
+  margin-bottom: var(--space-2);
+}
+.pricing-beta p {
+  margin: 0;
+  font-size: var(--text-body-sm);
+  color: var(--ink-soft);
+  line-height: 1.6;
+  word-break: keep-all;
+}
+
+.pricing-lead {
+  text-align: center;
+  font-size: var(--text-body-lg);
+  color: var(--ink);
+  font-weight: 700;
+  margin: 0 0 var(--space-6);
+  word-break: keep-all;
+}
+
+/* 2단 그리드 */
+.pricing-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
+}
+@media (max-width: 640px) {
+  .pricing-grid { grid-template-columns: 1fr; }
+}
+
+.pricing-card {
+  position: relative;
+  background: var(--neutral-0);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6) var(--space-5);
+  display: flex;
+  flex-direction: column;
+}
+.pricing-card--featured {
+  border: 2px solid var(--pink-400, var(--pink-300));
+  box-shadow: var(--shadow-warm-glow, 0 12px 32px -8px rgba(255,107,139,0.18));
+}
+.pricing-card__badge {
+  position: absolute;
+  top: -12px;
+  left: var(--space-5);
+  background: var(--gradient-signature);
+  color: var(--neutral-0);
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 100px;
+}
+.pricing-card__name {
+  font-size: var(--text-body);
+  font-weight: 800;
+  color: var(--ink-soft);
+  letter-spacing: 0.04em;
+}
+.pricing-card__price {
+  margin: var(--space-2) 0 4px;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.pricing-card__num {
+  font-size: clamp(28px, 6vw, 38px);
+  font-weight: 900;
+  color: var(--ink);
+  letter-spacing: -0.03em;
+}
+.pricing-card--featured .pricing-card__num {
+  background: var(--gradient-signature);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.pricing-card__per {
+  font-size: var(--text-body-sm);
+  color: var(--ink-muted);
+}
+.pricing-card__desc {
+  font-size: var(--text-body-sm);
+  color: var(--ink-soft);
+  margin-bottom: var(--space-4);
+}
+.pricing-card__list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1 1 auto;
+}
+.pricing-card__list li {
+  position: relative;
+  padding-left: 22px;
+  font-size: var(--text-body-sm);
+  color: var(--ink);
+  line-height: 1.45;
+  word-break: keep-all;
+}
+.pricing-card__list li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: var(--pink-500);
+  font-weight: 800;
+}
+.pricing-card__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-3) var(--space-5);
+  background: var(--gradient-signature);
+  color: var(--neutral-0);
+  font-weight: 800;
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+  box-shadow: var(--shadow-glow-sm);
+  transition: transform var(--duration-snap) var(--ease-toss);
+}
+.pricing-card__cta:active { transform: scale(0.97); }
+.pricing-card__cta--ghost {
+  background: var(--neutral-0);
+  color: var(--ink);
+  border: 2px solid var(--line);
+  box-shadow: none;
+}
+@media (hover: hover) {
+  .pricing-card__cta--ghost:hover { border-color: var(--pink-400, var(--pink-300)); }
+}
+
+/* 결제 안내 */
+.pricing-notes {
+  background: var(--bg-soft);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  margin-bottom: var(--space-6);
+}
+.pricing-notes h2 {
+  font-size: var(--text-body-lg);
+  font-weight: 800;
+  margin: 0 0 var(--space-3);
+  color: var(--ink);
+}
+.pricing-notes ul {
+  margin: 0 0 var(--space-3);
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pricing-notes li {
+  font-size: var(--text-body-sm);
+  color: var(--ink-soft);
+  line-height: 1.55;
+  word-break: keep-all;
+}
+.pricing-notes a { color: var(--pink-500); font-weight: 600; text-decoration: underline; }
+.pricing-notes__legal {
+  font-size: var(--text-caption);
+  color: var(--ink-muted);
+  line-height: 1.6;
+  margin: 0;
+  word-break: keep-all;
+}
+
+.pricing-foot {
+  font-size: var(--text-caption);
+  color: var(--ink-muted);
+  line-height: 1.7;
+  text-align: center;
+  border-top: 1px solid var(--line);
+  padding-top: var(--space-5);
+}
+.pricing-foot a { color: inherit; }

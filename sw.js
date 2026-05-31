@@ -13,7 +13,8 @@
 // v45: 디자인 R2 — paper alpha 2배, 적용 7→3곳 축소, 모바일 정적 시그니처 신설, hand-drawn underline 어법 1종 추가, 핫픽스 6건
 // v46: 디자인 R3 — wavy 어법 3곳 확산 (trends meta-cat / history tab / dashboard scheduled-card), 좌측 라인 4px/0.85, SVG path 정렬, besttime 약화
 // v49: hero__sub word-break keep-all + weight 통일 (사장님 지적: 단어 잘림 + weight 격차).
-const CACHE_VERSION = 'lumi-v49';
+// v50: /pricing 요금제 페이지 신설 (비즈니스 심사용 — 베타 무료 + Free/Pro 2단).
+const CACHE_VERSION = 'lumi-v50';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 
 const STATIC_RE = /\.(css|js|woff2?|ttf|otf|png|jpg|jpeg|webp|svg|ico|gif)$/i;
