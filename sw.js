@@ -16,7 +16,8 @@
 // v50: /pricing 요금제 페이지 신설 (비즈니스 심사용 — 베타 무료 + Free/Pro 2단).
 // v51: index 페이지에도 요금제 섹션 추가 (benefit 다음 — pricing.css 카드 재사용).
 // v52: 전체 퀄리티 업그레이드 — register-product/beta/signup/linktree/guide-ig 시그니처 침투
-const CACHE_VERSION = 'lumi-v52';
+// v53: 퀄업 R2 — linktree ring 버그 fix, wavy offset 통일, dropzone/guide 가시성, glow 중첩 해소
+const CACHE_VERSION = 'lumi-v53';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 
 const STATIC_RE = /\.(css|js|woff2?|ttf|otf|png|jpg|jpeg|webp|svg|ico|gif)$/i;

@@ -32,26 +32,26 @@
       to   { opacity: 1; transform: translateY(0); }
     }
 
-    /* v52: 손님이 보는 공개 페이지 — 아바타에 시그니처 4색 그라데이션 ring.
-       linktree.js 가 <img class="lt-avatar"> 단일 요소를 렌더 → 중첩 wrapper 불가.
-       padding-box 위에 gradient ring 을 background 로 깔고 흰 안쪽 테두리로 분리. */
+    /* v53: 손님이 보는 공개 페이지 — 아바타 시그니처 ring.
+       R1 의 background(padding/border-box) ring 은 불투명 cover 사진이 content-box 를
+       꽉 채워 background 를 다 덮어 실사진에선 ring 이 안 보이던 버그.
+       → box-shadow ring 으로 교체. cover 사진 위에서도 항상 보임 (방법 A). */
     .lt-avatar {
       width: 96px;
       height: 96px;
       border-radius: var(--radius-full);
       object-fit: cover;
-      background:
-        linear-gradient(var(--neutral-0), var(--neutral-0)) padding-box,
-        var(--gradient-signature) border-box;
-      border: 3px solid transparent;
-      box-shadow: var(--shadow-md), var(--shadow-warm-glow);
+      box-shadow:
+        0 0 0 3px var(--pink-400, #FF8FA3),
+        var(--shadow-md),
+        var(--shadow-warm-glow);
     }
     .lt-avatar--placeholder {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      /* placeholder 는 글자 배경이 그라데이션 — ring 대신 내부를 그라데이션으로 */
-      background: var(--gradient-signature) border-box;
+      /* img 버전과 외형 통일: 동일한 box-shadow ring + 내부는 그라데이션 면 */
+      background: var(--gradient-signature);
       color: var(--neutral-0);
       font-size: 36px;
       font-weight: var(--weight-bold);

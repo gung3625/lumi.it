@@ -35,7 +35,9 @@
       padding: var(--space-12) var(--space-5);
       background: var(--bg-soft);
       background-image: var(--gradient-paper);
-      border: 2px dashed var(--line-strong);
+      /* v53: gradient-paper 가 거의 흰 bg-soft 위라 빈 상태에선 시그니처가 안 보임.
+         점선 border 를 pink-300 으로 — 비어 있어도 시그니처 핑크가 드러나게. */
+      border: 2px dashed var(--pink-300, #E89AB1);
       border-radius: var(--radius-lg);
       text-align: center;
       color: var(--ink-muted);
@@ -564,7 +566,8 @@
     /* v52: 게시 완료 시그니처 — 마스코트 warm-glow + 완료 제목 hand-drawn wavy underline.
        완료 5페이지와 같은 어법으로 "끝맺음" 감성 강조. */
     .progress-overlay.is-success .progress-mascot {
-      box-shadow: var(--shadow-warm-glow), var(--shadow-glow);
+      /* v53: warm-glow + glow 중첩 → warm-glow 하나만 (시그니처 따뜻한 톤 유지). */
+      box-shadow: var(--shadow-warm-glow);
     }
     .progress-overlay.is-success .progress-title {
       position: relative;
@@ -573,7 +576,7 @@
     .progress-overlay.is-success .progress-title::after {
       content: '';
       position: absolute;
-      left: 50%; bottom: -8px;
+      left: 50%; bottom: -3px;
       width: 56px; height: 6px;
       transform: translateX(-50%);
       background: url("/assets/wavy-underline.svg") no-repeat center / 100% 100%;
