@@ -17,7 +17,8 @@
 // v51: index 페이지에도 요금제 섹션 추가 (benefit 다음 — pricing.css 카드 재사용).
 // v52: 전체 퀄리티 업그레이드 — register-product/beta/signup/linktree/guide-ig 시그니처 침투
 // v53: 퀄업 R2 — linktree ring 버그 fix, wavy offset 통일, dropzone/guide 가시성, glow 중첩 해소
-const CACHE_VERSION = 'lumi-v53';
+// v54: linktree ring 매직컬러 #FF8FA3 → --signature-1 토큰화 (시그니처 정색 일치)
+const CACHE_VERSION = 'lumi-v54';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 
 const STATIC_RE = /\.(css|js|woff2?|ttf|otf|png|jpg|jpeg|webp|svg|ico|gif)$/i;
