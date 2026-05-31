@@ -32,20 +32,26 @@
       to   { opacity: 1; transform: translateY(0); }
     }
 
+    /* v52: 손님이 보는 공개 페이지 — 아바타에 시그니처 4색 그라데이션 ring.
+       linktree.js 가 <img class="lt-avatar"> 단일 요소를 렌더 → 중첩 wrapper 불가.
+       padding-box 위에 gradient ring 을 background 로 깔고 흰 안쪽 테두리로 분리. */
     .lt-avatar {
       width: 96px;
       height: 96px;
       border-radius: var(--radius-full);
       object-fit: cover;
-      background: var(--bg-soft);
-      border: 2px solid var(--neutral-0);
-      box-shadow: var(--shadow-md);
+      background:
+        linear-gradient(var(--neutral-0), var(--neutral-0)) padding-box,
+        var(--gradient-signature) border-box;
+      border: 3px solid transparent;
+      box-shadow: var(--shadow-md), var(--shadow-warm-glow);
     }
     .lt-avatar--placeholder {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      background: var(--gradient-signature);
+      /* placeholder 는 글자 배경이 그라데이션 — ring 대신 내부를 그라데이션으로 */
+      background: var(--gradient-signature) border-box;
       color: var(--neutral-0);
       font-size: 36px;
       font-weight: var(--weight-bold);
@@ -107,9 +113,10 @@
       box-shadow: var(--shadow-xs);
     }
     @media (hover: hover) {
+      /* v52: 링크 카드 hover warm-glow (완료 5페이지 카드와 같은 격) */
       .lt-card:hover {
         border-color: var(--pink-300, #f6a8c2);
-        box-shadow: var(--shadow-md);
+        box-shadow: var(--shadow-md), var(--shadow-warm-glow);
       }
     }
 

@@ -15,7 +15,8 @@
 // v49: hero__sub word-break keep-all + weight 통일 (사장님 지적: 단어 잘림 + weight 격차).
 // v50: /pricing 요금제 페이지 신설 (비즈니스 심사용 — 베타 무료 + Free/Pro 2단).
 // v51: index 페이지에도 요금제 섹션 추가 (benefit 다음 — pricing.css 카드 재사용).
-const CACHE_VERSION = 'lumi-v51';
+// v52: 전체 퀄리티 업그레이드 — register-product/beta/signup/linktree/guide-ig 시그니처 침투
+const CACHE_VERSION = 'lumi-v52';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 
 const STATIC_RE = /\.(css|js|woff2?|ttf|otf|png|jpg|jpeg|webp|svg|ico|gif)$/i;
