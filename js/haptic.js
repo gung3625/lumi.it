@@ -1,7 +1,8 @@
-// haptic.js — lumi 전역 프레스 햅틱 (토스급 마이크로 인터랙션)
+// haptic.js — lumi 프레스 햅틱 (토스 실측 기준)
 //
-// 목적: 버튼·탭·CTA·링크 탭 시 아주 짧은 진동(8ms)으로 "눌렀다"는 물리 보상감.
-//       토스처럼 손끝에서 즉각 반응하는 느낌.
+// 토스 모션 원칙 (toss.tech 1차 확인): 햅틱은 "모든 버튼"이 아니라
+// 완료·확정·주요 CTA 같은 "의미 있는 확정 순간"에만 점적으로 쓴다.
+// → 탐색 탭·칩·일반 버튼엔 진동 X (절제). 주요 행동(가입·연동·게시·다음단계)에만.
 //
 // 방식: document 레벨 단일 pointerdown 리스너 (이벤트 위임 — 동적 요소도 자동 커버).
 //       클릭이 아니라 pointerdown 으로 눌리는 "순간" 진동 (체감 지연 최소).
@@ -23,26 +24,20 @@
   // reduce 선호 시 진동 off. matchMedia 가 라이브로 바뀔 수 있어 매번 확인.
   var reduceMQ = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
 
-  // 햅틱 대상 — 주요 인터랙션 요소. closest() 로 자식(아이콘 svg 등) 클릭도 커버.
+  // 햅틱 대상 — 완료·확정·주요 CTA 만 (토스 절제 원칙).
+  // 탐색 탭(.tab/.major-tab/.cat-tab)·칩(.chip)·일반 button 은 제외 — 진동 남발 방지.
+  // closest() 로 자식(아이콘 svg 등) 클릭도 커버.
   var HAPTIC_SELECTOR = [
-    'button',
-    '.cta',
+    '.cta',              // 주요 CTA (가입·시작)
     '.cta-button',
     '.cta-primary',
     '.cta-secondary',
-    '[role="button"]',
-    '.tab',
-    '.tab-add',
-    '.media-tab',
-    '.cat-tab',
-    '.major-tab',
-    '.schedule-card',
-    '.story-toggle',
-    '.chip',
-    '.sheet__chip',
-    'a.beta__kakao-cta',
-    '.oauth-button',
-    '.skip'
+    'a.beta__kakao-cta', // 카카오 가입 (확정)
+    '.oauth-button',     // 인스타·쓰레드 연동 (확정)
+    '[data-ig-connect]', // 인스타 연동
+    '[data-threads-connect]',
+    '[data-go-dashboard]', // 가입 완료
+    '[data-next]'        // 가입 단계 진행 (확정)
   ].join(',');
 
   function isDisabled(el) {
