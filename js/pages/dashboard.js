@@ -36,7 +36,11 @@
 
       function setText(sel, text) {
         const el = document.querySelector(sel);
-        if (el) el.textContent = text;
+        if (el) {
+          el.textContent = text;
+          // v55: 값 도착 시 스켈레톤 자리 해제 (있을 때만 — 데이터 로직 무변경)
+          el.classList.remove('skeleton', 'skeleton--text');
+        }
       }
 
       // 매장 이름 + 카테고리

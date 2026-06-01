@@ -233,22 +233,7 @@
     @media (hover: hover) {
       .keyword-chip:hover { background: var(--pink-50); border-color: var(--pink-300); }
     }
-    /* skeleton — loadTrends 응답 전 빈 자리 표시 */
-    .keyword-chip--skeleton {
-      color: transparent;
-      background: linear-gradient(90deg, var(--bg-soft) 0%, var(--neutral-100, #ececec) 50%, var(--bg-soft) 100%);
-      background-size: 200% 100%;
-      animation: chip-shimmer 1.4s var(--ease-soft) infinite;
-      border-color: transparent;
-      pointer-events: none;
-    }
-    @keyframes chip-shimmer {
-      0%   { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      .keyword-chip--skeleton { animation: none; }
-    }
+    /* skeleton — loadTrends 응답 전 빈 자리. v55: 공통 .skeleton 유틸(motion.css)로 이전. */
 
     /* 다음 자동 게시 예약 — 강조 카드. sprint R1: hover glow 상승 + 상단 시그니처 라인 */
     .scheduled-card {
@@ -264,7 +249,8 @@
         transform var(--duration-snap) var(--ease-toss),
         box-shadow var(--duration-fast) var(--ease-soft),
         border-color var(--duration-fast) var(--ease-soft);
-      animation: rise 500ms var(--ease-toss) 160ms backwards;
+      /* v55: 핵심 강조 카드("다음 자동 게시 예약") 진입에 spring — 살짝 통통 도착감 */
+      animation: rise 560ms var(--ease-spring) 160ms backwards;
       overflow: hidden;
     }
     /* R3 (Adversarial 처방) — 상단 2px 직선 그라 → 6px hand-drawn 잔물결 SVG.

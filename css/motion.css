@@ -101,7 +101,9 @@ button:not([disabled]):hover:not(.no-lift),
 a:active,
 button:not([disabled]):active,
 [role="button"]:not([aria-disabled="true"]):active {
-  transform: scale(0.98);
+  /* v55: 0.98 → 0.96 (토스급 프레스 깊이). breathe/통통 애니메이션과 충돌 없음 —
+     transform scale 은 누적이 아니라 마지막 규칙이 이김, :active 는 순간 상태라 안전. */
+  transform: scale(0.96);
 }
 
 /* ──────────────────────────────────────
@@ -140,6 +142,38 @@ button:not([disabled]):active,
   opacity: 1;
   transform: translateY(0);
   max-height: 1000px;
+}
+
+/* ──────────────────────────────────────
+ * 스켈레톤 — 로딩 중 빈 자리 shimmer (공통 유틸, v55)
+ *   dashboard 의 keyword-chip--skeleton shimmer 를 전역 유틸로 승격.
+ *   사용: 로딩 placeholder 요소에 .skeleton 추가, 데이터 도착 시 제거.
+ *   transform/opacity 가 아닌 background-position 이동 (저비용, reflow 없음).
+ *   .skeleton--text 는 한 줄 텍스트 자리(둥근 모서리), 기본은 요소 모양 따름.
+ * ────────────────────────────────────── */
+.skeleton {
+  color: transparent !important;
+  background: linear-gradient(90deg,
+    var(--bg-soft) 0%,
+    var(--neutral-100, #ececec) 50%,
+    var(--bg-soft) 100%) !important;
+  background-size: 200% 100% !important;
+  animation: skeleton-shimmer 1.4s var(--ease-soft) infinite;
+  border-color: transparent !important;
+  pointer-events: none;
+  user-select: none;
+}
+.skeleton--text {
+  border-radius: var(--radius-sm);
+  min-height: 1em;
+}
+@keyframes skeleton-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* reduce 시 흐르는 shimmer 끄고 정적 회색 자리만 */
+  .skeleton { animation: none; }
 }
 
 /* ──────────────────────────────────────

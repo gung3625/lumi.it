@@ -18,7 +18,8 @@
 // v52: 전체 퀄리티 업그레이드 — register-product/beta/signup/linktree/guide-ig 시그니처 침투
 // v53: 퀄업 R2 — linktree ring 버그 fix, wavy offset 통일, dropzone/guide 가시성, glow 중첩 해소
 // v54: linktree ring 매직컬러 #FF8FA3 → --signature-1 토큰화 (시그니처 정색 일치)
-const CACHE_VERSION = 'lumi-v54';
+// v55: 토스급 인터랙션 — 전역 햅틱, 완료 SVG 체크 draw, 로딩 개선, 스켈레톤 확산, spring
+const CACHE_VERSION = 'lumi-v55';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 
 const STATIC_RE = /\.(css|js|woff2?|ttf|otf|png|jpg|jpeg|webp|svg|ico|gif)$/i;

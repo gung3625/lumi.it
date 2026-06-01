@@ -389,22 +389,30 @@
       50%      { transform: scale(1.03); }
     }
 
-    /* submit spinner — is-loading 상태 시 사장님 시각 피드백 (audit #15) */
-    @keyframes cta-spin { to { transform: rotate(360deg); } }
+    /* submit spinner — is-loading 상태 시 사장님 시각 피드백 (audit #15).
+       v55: 단순 rotate → 부드러운 3-dot pulse (CSS only, transform/opacity).
+       가운데 점이 ::after, 좌·우 점은 box-shadow. 셋이 위상차로 통통 펄스. */
     .cta.is-loading::after {
       content: '';
       display: inline-block;
-      width: 14px;
-      height: 14px;
-      margin-left: 8px;
-      border: 2px solid rgba(255, 255, 255, 0.35);
-      border-top-color: var(--neutral-0);
+      width: 6px;
+      height: 6px;
+      margin-left: 22px;   /* 좌측 box-shadow 점 자리 확보 */
+      margin-right: 8px;
       border-radius: 50%;
-      animation: cta-spin 600ms linear infinite;
-      vertical-align: -2px;
+      background: var(--neutral-0);
+      vertical-align: 1px;
+      box-shadow: -12px 0 var(--neutral-0), 12px 0 var(--neutral-0);
+      animation: cta-dots 1s var(--ease-soft) infinite;
+    }
+    @keyframes cta-dots {
+      /* opacity 파동 — 가운데→양옆 순서로 밝아졌다 흐려짐 */
+      0%, 100% { opacity: 0.35; box-shadow: -12px 0 rgba(255,255,255,0.35), 12px 0 var(--neutral-0); }
+      33%      { opacity: 1;    box-shadow: -12px 0 rgba(255,255,255,0.35), 12px 0 rgba(255,255,255,0.35); }
+      66%      { opacity: 0.35; box-shadow: -12px 0 var(--neutral-0),       12px 0 rgba(255,255,255,0.35); }
     }
     @media (prefers-reduced-motion: reduce) {
-      .cta.is-loading::after { animation: none; }
+      .cta.is-loading::after { animation: none; opacity: 1; box-shadow: -12px 0 var(--neutral-0), 12px 0 var(--neutral-0); }
     }
     .cta {
       width: 100%;
@@ -557,18 +565,70 @@
       color: white;
     }
     .progress-step.is-done .progress-step__icon svg { opacity: 1; }
-    .progress-overlay.is-success .progress-mascot { animation: mascot-pop 540ms var(--ease-toss); }
-    @keyframes mascot-pop {
-      0%   { transform: scale(1); }
-      35%  { transform: scale(1.18); }
+    /* v55: 완료 순간 — 이모지 마스코트 → SVG 체크 draw 로 교체.
+       loading 중엔 마스코트(bob), is-success 시 마스코트 숨기고 체크 등장. */
+    .progress-success {
+      display: none;
+      position: relative;
+      width: 96px; height: 96px;
+    }
+    .progress-overlay.is-success .progress-mascot { display: none; }
+    .progress-overlay.is-success .progress-success { display: block; }
+
+    .progress-success__check {
+      width: 96px; height: 96px;
+      display: block;
+      /* spring 등장 — 살짝 통통 튀며 나타남 */
+      transform: scale(0);
+      animation: success-pop 520ms var(--ease-spring) both;
+    }
+    @keyframes success-pop {
+      0%   { transform: scale(0); }
       100% { transform: scale(1); }
     }
-    /* v52: 게시 완료 시그니처 — 마스코트 warm-glow + 완료 제목 hand-drawn wavy underline.
-       완료 5페이지와 같은 어법으로 "끝맺음" 감성 강조. */
-    .progress-overlay.is-success .progress-mascot {
-      /* v53: warm-glow + glow 중첩 → warm-glow 하나만 (시그니처 따뜻한 톤 유지). */
-      box-shadow: var(--shadow-warm-glow);
+    .progress-success__circle {
+      stroke: var(--pink-500);
+      stroke-width: 3;
+      stroke-dasharray: 151;   /* 2πr ≈ 2*π*24 */
+      stroke-dashoffset: 151;
+      animation: success-circle 480ms 120ms var(--ease-soft) forwards;
     }
+    .progress-success__mark {
+      stroke: var(--pink-500);
+      stroke-width: 4;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 40;
+      stroke-dashoffset: 40;
+      animation: success-mark 320ms 460ms var(--ease-toss) forwards;
+    }
+    @keyframes success-circle { to { stroke-dashoffset: 0; } }
+    @keyframes success-mark   { to { stroke-dashoffset: 0; } }
+
+    /* 주변 파티클 — 체크 등장 직후 사방으로 튐. transform/opacity 만 (GPU). */
+    .progress-success__particle {
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 8px; height: 8px;
+      margin: -4px 0 0 -4px;
+      border-radius: var(--radius-full);
+      background: var(--signature-1);
+      opacity: 0;
+      animation: success-particle 620ms 480ms var(--ease-toss) forwards;
+    }
+    .progress-success__particle:nth-child(2) { --px: 38px;  --py: -34px; background: var(--signature-2); }
+    .progress-success__particle:nth-child(3) { --px: -40px; --py: -28px; background: var(--signature-3); }
+    .progress-success__particle:nth-child(4) { --px: 44px;  --py: 26px;  background: var(--signature-4); }
+    .progress-success__particle:nth-child(5) { --px: -42px; --py: 30px;  background: var(--signature-1); }
+    .progress-success__particle:nth-child(6) { --px: 0px;   --py: -48px; background: var(--signature-2); }
+    @keyframes success-particle {
+      0%   { opacity: 0; transform: translate(0, 0) scale(0.4); }
+      35%  { opacity: 1; }
+      100% { opacity: 0; transform: translate(var(--px, 0), var(--py, 0)) scale(1); }
+    }
+
+    /* v52: 게시 완료 시그니처 — 완료 제목 hand-drawn wavy underline.
+       완료 5페이지와 같은 어법으로 "끝맺음" 감성 강조. */
     .progress-overlay.is-success .progress-title {
       position: relative;
       display: inline-block;
@@ -584,6 +644,11 @@
     }
     @media (prefers-reduced-motion: reduce) {
       .progress-mascot, .progress-mascot::after, .progress-step.is-active .progress-step__icon { animation: none !important; }
+      /* v55: reduce 시 체크는 그려진 정적 상태로 즉시 표시, 파티클은 숨김. */
+      .progress-success__check { animation: none !important; transform: none !important; }
+      .progress-success__circle,
+      .progress-success__mark { animation: none !important; stroke-dashoffset: 0 !important; }
+      .progress-success__particle { animation: none !important; display: none !important; }
     }
 
     /* 탭바 — /css/tabbar.css 참조 */

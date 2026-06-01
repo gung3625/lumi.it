@@ -28,6 +28,7 @@
   <script src="/js/auth-fetch.js"></script>
   <script src="/js/error-track.js"></script>
   <script src="/js/sw-register.js"></script>
+  <script src="/js/haptic.js"></script>
   <script src="/js/scroll-top.js" data-scroll-top-on-reload></script>
   <link rel="stylesheet" href="/css/motion.css">
   <link rel="stylesheet" href="/css/tabbar.css">
@@ -214,6 +215,18 @@
   <!-- 게시 진행 오버레이 -->
   <div class="progress-overlay" data-progress-overlay aria-live="polite" aria-hidden="true">
     <div class="progress-mascot" aria-hidden="true">📷</div>
+    <!-- v55: 완료 순간 SVG 체크 draw + spring + 파티클. is-success 시에만 표시 -->
+    <div class="progress-success" aria-hidden="true">
+      <svg class="progress-success__check" viewBox="0 0 52 52">
+        <circle class="progress-success__circle" cx="26" cy="26" r="24" fill="none"/>
+        <path class="progress-success__mark" fill="none" d="M14 27l8 8 16-16"/>
+      </svg>
+      <span class="progress-success__particle"></span>
+      <span class="progress-success__particle"></span>
+      <span class="progress-success__particle"></span>
+      <span class="progress-success__particle"></span>
+      <span class="progress-success__particle"></span>
+    </div>
     <h2 class="progress-title" data-progress-title>사진 올리는 중…</h2>
     <p class="progress-sub" data-progress-sub>잠시만요, 캡션 만들고 있어요.</p>
     <ol class="progress-steps" aria-label="게시 진행 단계">

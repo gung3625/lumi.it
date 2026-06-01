@@ -518,12 +518,24 @@
       pointer-events: none;
     }
     .done__icon::after { animation-delay: 1.2s; }
-    .done__icon svg {
+    /* v55: spring scale 등장 — icon-punch 를 ease-spring 으로 (더 통통) */
+    .done__icon {
+      animation: icon-punch 640ms var(--ease-spring) backwards;
+    }
+    /* v55: 정적 체크 → stroke-dasharray draw (그려지는 체크) */
+    .done__check {
       width: 36px;
       height: 36px;
+    }
+    .done__check-mark {
+      fill: none;
       stroke: white;
       stroke-width: 3;
-      animation: check-draw 600ms 200ms var(--ease-toss) backwards;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 30;
+      stroke-dashoffset: 30;
+      animation: check-draw 380ms 360ms var(--ease-toss) forwards;
     }
     @keyframes icon-punch {
       0%   { opacity: 0; transform: scale(0.4) rotate(-15deg); }
@@ -531,23 +543,47 @@
       100% { opacity: 1; transform: scale(1) rotate(0deg);     }
     }
     @keyframes check-draw {
-      from { opacity: 0; transform: scale(0.6); }
-      to   { opacity: 1; transform: scale(1);   }
+      to { stroke-dashoffset: 0; }
     }
     @keyframes ring-pulse {
       0%   { transform: scale(1);    opacity: 0.7; }
       80%  { opacity: 0; }
       100% { transform: scale(1.55); opacity: 0;   }
     }
+    /* v55: 가입 완료 confetti — 아이콘 등장 후 사방으로 튐 (transform/opacity 만) */
+    .done__confetti {
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 7px; height: 7px;
+      margin: -3.5px 0 0 -3.5px;
+      border-radius: 2px;
+      opacity: 0;
+      animation: confetti-burst 700ms 420ms var(--ease-toss) forwards;
+    }
+    /* nth-child 기준: .done__icon 의 자식 = svg(1) + confetti span(2~7) */
+    .done__confetti:nth-child(2) { --cx: 34px;  --cy: -30px; --rot: 140deg;  background: var(--signature-1); }
+    .done__confetti:nth-child(3) { --cx: -36px; --cy: -24px; --rot: -120deg; background: var(--signature-2); }
+    .done__confetti:nth-child(4) { --cx: 40px;  --cy: 22px;  --rot: 90deg;   background: var(--signature-3); }
+    .done__confetti:nth-child(5) { --cx: -38px; --cy: 28px;  --rot: -80deg;  background: var(--signature-4); }
+    .done__confetti:nth-child(6) { --cx: 4px;   --cy: -44px; --rot: 200deg;  background: var(--signature-1); }
+    .done__confetti:nth-child(7) { --cx: -8px;  --cy: 42px;  --rot: -160deg; background: var(--signature-2); }
+    @keyframes confetti-burst {
+      0%   { opacity: 0; transform: translate(0, 0) scale(0.5) rotate(0); }
+      30%  { opacity: 1; }
+      100% { opacity: 0; transform: translate(var(--cx, 0), var(--cy, 0)) scale(1) rotate(var(--rot, 0)); }
+    }
     @media (prefers-reduced-motion: reduce) {
       .done__icon,
       .done__icon::before,
       .done__icon::after,
-      .done__icon svg,
+      .done__check,
       .cta-primary.is-ready,
       .ig-step__check.is-checked,
       .ig-step.is-done .ig-step__num,
       .major-card.is-active { animation: none !important; }
+      /* v55: reduce 시 체크 정적으로 그려진 상태, confetti 숨김 */
+      .done__check-mark { animation: none !important; stroke-dashoffset: 0 !important; }
+      .done__confetti { animation: none !important; display: none !important; }
     }
     .done__title {
       font-size: var(--text-headline);
