@@ -4,10 +4,10 @@
 // 시드/prompt 의 pet 언급은 dead code — 카테고리 list 에서 빠져 cron 이 처리 skip.
 // 변경 사항 (v1 대비):
 //   - gpt-4o 전환 (분류·예측·스토리 전부), 전처리만 mini 폴백 가능
-//   - 네이버 단일 소스 (데이터랩·블로그·쇼핑) + 검색량/velocity 2축 tier 분류:
+//   - 네이버 단일 소스 (쇼핑인사이트 메인 + 데이터랩 검색량 보조) + 검색량/velocity 2축 tier 분류:
 //     strong = 검색량 ≥5k AND velocity ≥30% / medium = 둘 중 하나 / weak = 둘 다 미달.
 //   - Velocity 스코어링: 전 주 대비 mention 증가율 (%)
-//   - 소스별 가중치: datalab=3 / blog=1 / shopping=3
+//   - 소스별 가중치: shopping=4 (메인) / datalab=2 (보조) — 상품/메뉴 트렌드 중심
 //   - 레거시 키 6종 그대로 유지 (프론트 호환)
 //   - runGuarded + heartbeat 키 'scheduled-trends' 그대로
 //   - 카나리 전략: TREND_V2_CANARY_CATS env ('all' or comma-separated)
@@ -56,10 +56,10 @@ function expandSeedsWithRegion(baseSeeds, region) {
 // 소스 가중치
 // ─────────────────────────────────────────────
 const SOURCE_WEIGHTS = {
-  datalab: 3,
-  blog: 1,
-  // 쇼핑 신호 가중치 3 — 검색 데이터랩과 동등. 구매 의도 신호라 가치 높음.
-  shopping: 3,
+  // 쇼핑인사이트 메인 — 구매 의도 신호. 상품/메뉴 트렌드의 1차 소스 (사장님 결정 ②).
+  shopping: 4,
+  // 데이터랩 검색량 보조.
+  datalab: 2,
 };
 
 // fashion 카테고리 sub_category 분류 — 옷(clothing) vs 신발(footwear).
@@ -248,26 +248,6 @@ const DEFAULT_TRENDS = {
 };
 
 // ─────────────────────────────────────────────
-// 계절 헬퍼
-// ─────────────────────────────────────────────
-function getCurrentSeason() {
-  const month = new Date().getMonth() + 1;
-  if (month >= 3 && month <= 5) return '봄';
-  if (month >= 6 && month <= 8) return '여름';
-  if (month >= 9 && month <= 11) return '가을';
-  return '겨울';
-}
-
-function expandBlogSeedsWithSeason(baseSeeds, seasonalKeywords) {
-  const season = getCurrentSeason();
-  const expanded = [...baseSeeds];
-  for (const kw of seasonalKeywords) {
-    expanded.push(`${season} ${kw}`);
-  }
-  return expanded;
-}
-
-// ─────────────────────────────────────────────
 // 업종별 시드
 // ─────────────────────────────────────────────
 const NAVER_KEYWORDS = {
@@ -340,197 +320,6 @@ const NAVER_KEYWORDS = {
     { groupName: '펫서비스', keywords: ['펫호텔추천브랜드', '반려견유치원', '도그워커'] }
   ],
 };
-
-const BLOG_SEARCH_SEEDS_BASE = {
-  cafe: [
-    '말차라떼 유행 카페',
-    '흑임자 크림라떼 신상',
-    '버터라떼 트렌드',
-    '크로플 유행 카페',
-    '바스크 치즈케이크 브랜드',
-    '소금빵 유명 베이커리',
-    '런던베이글뮤지엄 신메뉴',
-    '테라로사 시그니처',
-    '블루보틀 콜드브루',
-    '말차 티라미수 카페',
-    '수박라떼 신상',
-    '흑임자 스무디 카페',
-    '마들렌 유행 베이커리',
-    '스콘 카페 추천',
-    '핸드드립 스페셜티 카페',
-    '레이어드 케이크 카페',
-  ],
-  food: [
-    '노티드 신상 메뉴',
-    '다운타우너 버거',
-    '오마카세 가성비',
-    '스시 오마카세 유행',
-    '파스타 트렌드',
-    '수제버거 브랜드',
-    '마라탕 유행 브랜드',
-    '이자카야 신메뉴',
-    '한식주점 유행 안주',
-    '팝업 레스토랑 오픈',
-    '셰프 테이블 예약',
-    '야장 포차 감성',
-    '와인바 안주 트렌드',
-    '성수 신상 맛집',
-    '연남동 요즘 맛집',
-    '한남동 레스토랑 신상',
-    '한우 오마카세',
-    '흑돼지 구이 유행',
-  ],
-  beauty: [
-    '요즘 뜨는 토너 브랜드',
-    '입소문 난 세럼',
-    '신상 쿠션 브랜드',
-    '올영 인기 선크림',
-    '닥터지 신제품',
-    '라네즈 신상',
-    '코스알엑스 인기 제품',
-    '이니스프리 신상 스킨',
-    '뷰티 유튜버 추천 제품',
-    '파우더룸 신상 리뷰',
-    '나이아신아마이드 세럼 추천',
-    '레티놀 크림 브랜드',
-    '글로우 파운데이션 추천',
-    '비건 쿠션 브랜드',
-    '속눈썹펌 후기',
-    '클렌징밤 브랜드 추천',
-    '선스틱 추천 브랜드',
-    '앰플 신상 리뷰',
-    '에센스 브랜드 유행',
-    '피부과 추천 화장품',
-  ],
-  hair: [
-    '2026 유행 헤어 스타일',
-    '요즘 뜨는 컷트 추천',
-    '허쉬컷 후기',
-    '레이어드컷 얼굴형별',
-    '볼륨펌 vs 디지털펌',
-    '뿌리펌 관리',
-    '시스루뱅 어울리는',
-    '2026 유행 염색 컬러',
-    '애쉬브라운 자연스러운',
-    '발레아쥬 염색 후기',
-    '하이라이트 염색 가격',
-    '뿌리염색 얼마나',
-    '남자 헤어 트렌드',
-    '여자 단발 스타일 추천',
-    '긴머리 스타일링',
-    '매직스트레이트 주기',
-    '앞머리펌 관리',
-  ],
-  nail: [
-    '2026 네일 트렌드',
-    '요즘 유행 네일 디자인',
-    '누드네일 연예인',
-    '오로라네일 홀로그램',
-    '마블네일 자연스러운',
-    '플라워네일 아트',
-    '크롬네일 미러',
-    '젤네일 vs 아크릴',
-    '봄 네일 컬러 추천',
-    '웨딩 네일 디자인',
-    '파티 네일 글리터',
-    '20대 네일 스타일',
-    '오피스 네일 단정한',
-    '프렌치 네일 변형',
-    '셀프 젤네일 추천',
-    '페디큐어 관리 후기',
-    '남자 네일 케어',
-  ],
-  flower: [
-    '라넌큘러스 부케 트렌드',
-    '수국 드라이플라워 인기',
-    '팜파스그라스 인테리어',
-    '유칼립투스 리스 유행',
-    '플라워샵 브랜드 추천',
-    '모리플라워 추천',
-    '바이블루밍 인기',
-    '목화솜 부케 유행',
-    '샴페인장미 부케',
-    '프리지어 향기 꽃집',
-    '드라이플라워 리스 만들기',
-    '플라워 원데이클래스 인기',
-    '버드나무가지 인테리어',
-    '봄 꽃 종류 트렌드',
-  ],
-  fashion: [
-    '자라 신상 코디',
-    '유니클로 히트텍 유행',
-    '무신사 픽 아이템',
-    '에잇세컨즈 신상',
-    '탑텐 신상',
-    '2026 유행 스타일',
-    '오버핏 블레이저 브랜드',
-    'Y2K 패션 아이템',
-    '코어코어 스타일',
-    '데님온데님 코디',
-    '자라 신상 가죽자켓',
-    '무신사 스탠다드 신상',
-    '롱스커트 유행 브랜드',
-    '니트 조끼 코디',
-    '빈티지 데님 재킷',
-    'Y2K 미니스커트 코디',
-    '온라인 패션 브랜드 추천',
-    '스파 브랜드 신상 추천',
-    '나이키 런닝화 신상',
-    '호카 신상 운동화',
-    '온러닝 추천',
-  ],
-  fitness: [
-    '룰루레몬 신상 레깅스',
-    '케이블 크로스 운동법',
-    '인기 필라테스 스튜디오 브랜드',
-    '리포머 프라이빗 후기',
-    '케틀벨 스윙 루틴',
-    '아디다스 레깅스 신상',
-    '소울사이클 후기',
-    '크로스핏 박스 추천',
-    '레그프레스 루틴',
-    '바디프로필 식단',
-    '스피닝 클래스 브랜드',
-    '요가 플로우 스튜디오',
-  ],
-  pet: [
-    '로얄캐닌 vs 오리젠',
-    '아카나 추천 후기',
-    '츄잇 신상 간식',
-    '강아지 유산균 브랜드',
-    '고양이 사료 브랜드 비교',
-    '신상 펫용품 추천',
-    '펫 브랜드 올해 신상',
-    '반려견 관절 영양제 추천',
-    '크라운펫 신상',
-    '캐릭터브라더스 추천',
-    '인기 반려동물 간식 브랜드',
-    '펫 유튜버 추천 사료',
-    '반려동물 프리미엄 브랜드',
-    '딩고 간식 신상',
-    '더리얼 사료 후기',
-  ],
-};
-
-// 계절 동적 확장 시드 (업종별 계절 키워드)
-const SEASONAL_EXTENSIONS = {
-  cafe: ['카페 음료', '디저트', '카페 메뉴'],
-  food: ['메뉴', '음식', '맛집'],
-  beauty: ['피부 관리', '메이크업'],
-  hair: ['헤어 스타일', '헤어 컬러'],
-  nail: ['네일 디자인', '네일 컬러'],
-  flower: ['꽃다발', '플라워 인테리어'],
-  fashion: ['코디', '패션 아이템'],
-  fitness: ['운동', '다이어트'],
-  pet: ['반려동물 용품'],
-};
-
-const BLOG_SEARCH_SEEDS = Object.fromEntries(
-  Object.entries(BLOG_SEARCH_SEEDS_BASE).map(([cat, seeds]) => [
-    cat,
-    expandBlogSeedsWithSeason(seeds, SEASONAL_EXTENSIONS[cat] || [])
-  ])
-);
 
 const CATEGORY_KO = {
   cafe: '카페/베이커리',
@@ -631,43 +420,6 @@ async function fetchNaverDatalab(category) {
     console.error('[naver-datalab]', category, 'error:', e.message);
     return [];
   }
-}
-
-async function fetchNaverBlogs(category) {
-  const clientId = process.env.NAVER_CLIENT_ID;
-  const clientSecret = process.env.NAVER_CLIENT_SECRET;
-  if (!clientId || !clientSecret) return [];
-
-  const seeds = BLOG_SEARCH_SEEDS[category] || BLOG_SEARCH_SEEDS.cafe;
-  const texts = [];
-  for (const query of seeds) {
-    try {
-      const path = `/v1/search/blog.json?query=${encodeURIComponent(query)}&display=100&sort=date`;
-      const result = await httpsGetWithHeaders(
-        'openapi.naver.com',
-        path,
-        { 'X-Naver-Client-Id': clientId, 'X-Naver-Client-Secret': clientSecret },
-        10000
-      );
-      if (result.status !== 200) continue;
-      const data = JSON.parse(result.body);
-      if (!data.items) continue;
-      const blogCutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-      const blogCutoffStr = blogCutoff.toISOString().slice(0, 10).replace(/-/g, '');  // YYYYMMDD
-      for (const item of data.items) {
-        const postdate = item.postdate || '';  // "20260401" 형식
-        if (postdate && postdate < blogCutoffStr) continue;  // 30일 이전 skip
-        const title = (item.title || '').replace(/<[^>]+>/g, '').trim();
-        const desc = (item.description || '').replace(/<[^>]+>/g, '').trim();
-        if (title) texts.push(title);
-        if (desc) texts.push(desc.slice(0, 120));
-      }
-      await new Promise(r => setTimeout(r, 200));
-    } catch(e) {
-      console.error('[naver-blog]', category, query, 'error:', e.message);
-    }
-  }
-  return texts;
 }
 
 // ─────────────────────────────────────────────
@@ -1110,7 +862,7 @@ ${keywordList.join(', ')}
 
 async function generateNarrativeAndOriginBatch({ keywords, category, rawTexts }) {
   // keywords: [{keyword, signalTier, ...}, ...]
-  // rawTexts: 해당 카테고리 원시 텍스트 배열 (blogData + shoppingData 등)
+  // rawTexts: 해당 카테고리 원시 텍스트 배열 (shoppingData 등)
   if (!keywords || keywords.length === 0) return {};
 
   try {
@@ -1558,10 +1310,10 @@ async function evaluatePredictionAccuracy({ supa, category }) {
 // ─────────────────────────────────────────────
 // Rising 예측 (gpt-4o + gpt-4o-mini 폴백)
 // ─────────────────────────────────────────────
-async function predictRisingWithGPT({ category, domesticTags, naverData, blogData }) {
+async function predictRisingWithGPT({ category, domesticTags, naverData, shoppingData }) {
   const categoryKo = CATEGORY_KO[category] || '일반';
   const recentStr = (naverData || []).slice(0, 8).join(', ') || '없음';
-  const blogStr = (blogData || []).slice(0, 6).join(' | ').slice(0, 500) || '없음';
+  const shoppingStr = (shoppingData || []).slice(0, 6).join(' | ').slice(0, 500) || '없음';
   const currentStr = (domesticTags || []).slice(0, 8).join(', ') || '없음';
 
   const prompt = `당신은 인스타그램 트렌드 예측 전문가입니다.
@@ -1574,8 +1326,8 @@ ${currentStr}
 [네이버 최근 급상승]
 ${recentStr}
 
-[블로그 신상 텍스트]
-${blogStr}
+[쇼핑인사이트 신상 텍스트]
+${shoppingStr}
 
 각 키워드에 대해 다음을 JSON 배열로 응답하세요:
 - keyword: 예측 키워드 (한국어, 2~20자, # 없이)
@@ -1636,18 +1388,18 @@ function textMatchKeyword(text, keyword) {
   return false;
 }
 
-function buildCrossSourceCount({ keyword, naverData, blogData, shoppingData }) {
+function buildCrossSourceCount({ keyword, naverData, shoppingData }) {
   function countMatches(arr) {
     if (!arr) return 0;
     return arr.filter(t => textMatchKeyword(String(t), keyword)).length;
   }
 
+  // 2종 다양성: 쇼핑인사이트(메인) + 데이터랩(보조). "N곳" 배지 최대 2.
   return {
-    datalab: countMatches(naverData),
-    blog: countMatches(blogData),
     // 쇼핑인사이트 — 카테고리명 자체가 텍스트에 포함되면 매칭 (낮은 매칭률).
     // 실제 가치는 GPT 분류 단계에서 raw 텍스트로 인입 + demographics 컨텍스트 주입.
     shopping: countMatches(shoppingData),
+    datalab: countMatches(naverData),
   };
 }
 
@@ -1732,10 +1484,11 @@ async function computeVelocity({ supa, keyword, category, todayCount, todayRank 
 //   기존: 단일 축(source counts) 만 → real 키워드가 weak 보다 정렬상 아래로 가는 사고.
 //   신규: 4개 축 종합.
 //     1) source 다양성 보너스 — cross_source >= 2 면 base × 1.5
-//     2) raw count log 합 (각 source 가중)
+//     2) raw count log 합 (각 source 가중) — shopping=4 (메인) > datalab=2 (보조)
+//        쇼핑 신호가 매칭된 키워드가 base 점수에서 우대 → 정렬 상위로.
 //     3) 검색량 log 가중 (10k → +2.8, 100k → +3.5)
 //     4) velocity log 가중 (양수 velocity 만, +50% → +2.0)
-//   결과: 진짜 quality 가 높은 키워드가 정렬 상위.
+//   결과: 쇼핑인사이트(구매 의도) 신호가 강한 상품/메뉴 트렌드가 정렬 상위.
 function computeWeightedScore(counts, monthlySearchTotal, velocityPct) {
   let base = 0;
   let sourcesUsed = 0;
@@ -1768,8 +1521,8 @@ function computeWeightedScore(counts, monthlySearchTotal, velocityPct) {
 //   medium: 둘 중 하나만 충족
 //   weak:   둘 다 미달
 //   검색량 매칭 실패(null)면 hasVolume=false → 신조어 남발 방지.
-//   cross_source 는 tier 에서 제외 (네이버 단일 소스 전환). sources 다양성 카운트는
-//   computeWeightedScore 정렬 보너스 + 프론트 "N곳" 배지로만 유지.
+//   cross_source 는 tier 에서 제외 (쇼핑인사이트+데이터랩 2종). sources 다양성 카운트는
+//   computeWeightedScore 정렬 보너스 + 프론트 "N곳" 배지(최대 2)로만 유지.
 function classifySignalTier({ monthlySearchTotal, velocityPct }) {
   const hasVolume   = typeof monthlySearchTotal === 'number' && monthlySearchTotal >= 5000;
   const hasVelocity = typeof velocityPct === 'number' && velocityPct >= 30;
@@ -1881,7 +1634,7 @@ async function saveScope({ supa, scope, category, tags, updatedAt, source }) {
 async function saveTrendKeywordsV2({ supa, category, enrichedKeywords, collectedDate, region = 'all' }) {
   if (!enrichedKeywords || enrichedKeywords.length === 0) return;
 
-  // sources: counts object → { datalab: 3, blog: 15, ... } 형태로 jsonb 저장
+  // sources: counts object → { shopping: 3, datalab: 15, ... } 형태로 jsonb 저장
   const rows = enrichedKeywords.map(item => {
     const sourcesObj = item.counts || {};
     // axis: Phase 2 분류 결과 (menu/interior/goods/experience) 또는 'general' 기본값
@@ -1998,15 +1751,14 @@ exports.handler = runGuarded({
     await ctx.stage('collecting', { cats: categories.length });
 
     const rawEntries = await Promise.all(COLLECT_CATEGORIES.map(async (category) => {
-      const [naverData, blogData, shoppingSignals] = await Promise.all([
+      const [naverData, shoppingSignals] = await Promise.all([
         fetchNaverDatalab(category),
-        fetchNaverBlogs(category),
-        fetchNaverShoppingSignals(category), // 네이버 쇼핑인사이트 (의류/뷰티/꽃·식품·운동·헤어)
+        fetchNaverShoppingSignals(category), // 네이버 쇼핑인사이트 (의류/뷰티/꽃·식품·운동·헤어) — 메인 소스
       ]);
       const shoppingData = (shoppingSignals && shoppingSignals.shoppingTexts) || [];
       const demographics = (shoppingSignals && shoppingSignals.demographics) || null;
-      console.log(`[${category}] naver=${naverData.length} blog=${blogData.length} shopping=${shoppingData.length}${demographics ? ' demo=Y' : ''}`);
-      return [category, { naverData, blogData, shoppingData, demographics }];
+      console.log(`[${category}] naver=${naverData.length} shopping=${shoppingData.length}${demographics ? ' demo=Y' : ''}`);
+      return [category, { naverData, shoppingData, demographics }];
     }));
     const rawByCategory = Object.fromEntries(rawEntries);
 
@@ -2040,9 +1792,8 @@ exports.handler = runGuarded({
       const adKeywords = adKeywordsByCat[cat] || [];
       const adTexts = adKeywords.map(k => `${k.keyword} (월간검색 ${k.monthlyTotal})`);
       domesticTexts[cat] = [
-        ...r.naverData,
-        ...r.blogData,
-        ...(r.shoppingData || []),   // 네이버 쇼핑인사이트 카테고리 강도 표시
+        ...(r.shoppingData || []),   // 네이버 쇼핑인사이트 카테고리 강도 — 메인 소스 (맨 앞)
+        ...r.naverData,              // 데이터랩 검색량 — 보조
         ...adTexts,                   // 검색광고 연관키워드 (env 있을 때만)
       ];
     }
@@ -2090,7 +1841,6 @@ exports.handler = runGuarded({
             const counts = buildCrossSourceCount({
               keyword,
               naverData: r.naverData,
-              blogData: r.blogData,
               shoppingData: r.shoppingData,
             });
 
@@ -2176,7 +1926,7 @@ exports.handler = runGuarded({
         // Phase 2: narrative + origin 배치 생성 (real 키워드만, 최대 5개씩 배치)
         if (isV2Cat && process.env.OPENAI_API_KEY) {
           try {
-            const rawTexts = [...(r.blogData || []), ...(r.shoppingData || [])];
+            const rawTexts = [...(r.shoppingData || [])];
             const BATCH_SIZE = 5;
             const narrativeMap = {};
 
@@ -2217,7 +1967,7 @@ exports.handler = runGuarded({
           process.env.OPENAI_API_KEY
             ? predictRisingWithGPT({
                 category, domesticTags,
-                naverData: r.naverData, blogData: r.blogData,
+                naverData: r.naverData, shoppingData: r.shoppingData,
               })
             : Promise.resolve(null),
         ]);

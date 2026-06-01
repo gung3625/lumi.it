@@ -346,10 +346,10 @@
           `);
         }
 
-        // 2) 어디서 발견됐나 — sources 분포 (네이버/블로그/쇼핑)
+        // 2) 어디서 발견됐나 — sources 분포 (쇼핑인사이트 메인 + 데이터랩 검색량)
         const SOURCE_LABELS = {
-          naver: '네이버', datalab: '네이버', blog: '블로그',
-          shopping: '쇼핑',  // 네이버 쇼핑인사이트 (의류/뷰티/꽃·식품·운동·헤어 카테고리 강도)
+          shopping: '쇼핑',  // 네이버 쇼핑인사이트 (의류/뷰티/꽃·식품·운동·헤어 카테고리 강도) — 메인
+          naver: '네이버', datalab: '네이버',  // 데이터랩 검색량 — 보조
         };
         if (item.sources && typeof item.sources === 'object') {
           const chips = Object.entries(item.sources)
