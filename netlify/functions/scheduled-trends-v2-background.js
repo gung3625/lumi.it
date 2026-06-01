@@ -4,10 +4,10 @@
 // 시드/prompt 의 pet 언급은 dead code — 카테고리 list 에서 빠져 cron 이 처리 skip.
 // 변경 사항 (v1 대비):
 //   - gpt-4o 전환 (분류·예측·스토리 전부), 전처리만 mini 폴백 가능
-//   - 크로스 소스 검증 + 다축 tier 분류: cross_source ≥2 / 검색량 ≥5k / velocity ≥30%
-//     중 충족 개수 → strong(2+) / medium(1) / weak(0). 옛 'real' tier 는 strong 동급.
+//   - 네이버 단일 소스 (데이터랩·블로그·쇼핑) + 검색량/velocity 2축 tier 분류:
+//     strong = 검색량 ≥5k AND velocity ≥30% / medium = 둘 중 하나 / weak = 둘 다 미달.
 //   - Velocity 스코어링: 전 주 대비 mention 증가율 (%)
-//   - 소스별 가중치: datalab=3 / blog=1 / youtube=2 / ig=2 / news=2 / shopping=3
+//   - 소스별 가중치: datalab=3 / blog=1 / shopping=3
 //   - 레거시 키 6종 그대로 유지 (프론트 호환)
 //   - runGuarded + heartbeat 키 'scheduled-trends' 그대로
 //   - 카나리 전략: TREND_V2_CANARY_CATS env ('all' or comma-separated)
@@ -58,9 +58,6 @@ function expandSeedsWithRegion(baseSeeds, region) {
 const SOURCE_WEIGHTS = {
   datalab: 3,
   blog: 1,
-  youtube: 2,
-  ig: 2,
-  news: 2,        // 뉴스는 신뢰도 높음
   // 쇼핑 신호 가중치 3 — 검색 데이터랩과 동등. 구매 의도 신호라 가치 높음.
   shopping: 3,
 };
@@ -515,46 +512,6 @@ const BLOG_SEARCH_SEEDS_BASE = {
   ],
 };
 
-// 업종별 뉴스 검색 시드 — 드라마·PPL·이슈·신상 제품 중심
-const NEWS_SEARCH_SEEDS = {
-  cafe: [
-    '카페 트렌드', '신상 음료', '디저트 신메뉴',
-    '인기 카페', '카페 오픈', '스페셜티 커피'
-  ],
-  food: [
-    '외식 트렌드', '신상 맛집', '요즘 인기 음식',
-    '맛집 오픈', '신메뉴 출시', '미쉐린 가이드'
-  ],
-  beauty: [
-    '뷰티 트렌드', '신상 화장품', '인기 브랜드',
-    '뷰티 신제품', '립스틱 신상', '스킨케어 트렌드'
-  ],
-  hair: [
-    '헤어 트렌드', '연예인 헤어스타일', '펌 신상',
-    '염색 트렌드', '미용실 인기', '헤어 시술'
-  ],
-  nail: [
-    '네일 트렌드', '네일아트 신상', '젤네일 유행',
-    '연예인 네일', '네일 디자인 인기'
-  ],
-  flower: [
-    '플라워 트렌드', '웨딩 부케', '꽃 선물 트렌드',
-    '드라이플라워 인기', '플라워샵 오픈', '꽃 배달'
-  ],
-  fashion: [
-    '패션 트렌드', '신상 의류', 'Y2K 패션',
-    '연예인 패션', '가을 트렌드', '브랜드 런칭'
-  ],
-  fitness: [
-    '피트니스 트렌드', '필라테스 유행', '운동 트렌드',
-    '다이어트 신상', '바디프로필 인기', '홈트 신제품'
-  ],
-  pet: [
-    '반려동물 트렌드', '펫 신상품', '강아지 간식 인기',
-    '고양이 용품 트렌드', '펫호텔 오픈', '반려견 서비스'
-  ]
-};
-
 // 계절 동적 확장 시드 (업종별 계절 키워드)
 const SEASONAL_EXTENSIONS = {
   cafe: ['카페 음료', '디저트', '카페 메뉴'],
@@ -574,99 +531,6 @@ const BLOG_SEARCH_SEEDS = Object.fromEntries(
     expandBlogSeedsWithSeason(seeds, SEASONAL_EXTENSIONS[cat] || [])
   ])
 );
-
-const YOUTUBE_SEEDS_KR = {
-  cafe: [
-    '말차라떼 신상 리뷰',
-    '흑임자 크림라떼 만들기',
-    '크로플 카페 브이로그',
-    '테라로사 시그니처 리뷰',
-    '블루보틀 콜드브루 후기',
-    '바스크 치즈케이크 베이커리',
-    '런던베이글뮤지엄 신메뉴',
-    '소금빵 베이커리 투어',
-  ],
-  food: [
-    '오마카세 가성비 리뷰',
-    '노티드 신상 먹방',
-    '수제버거 브랜드 비교',
-    '한식주점 안주 메뉴',
-    '파스타 트렌드 맛집',
-    '팝업 레스토랑 후기',
-    '야장 포차 브이로그',
-    '마라탕 브랜드 리뷰',
-  ],
-  beauty: [
-    '닥터지 신제품 리뷰',
-    '라네즈 워터뱅크 후기',
-    '코스알엑스 스네일 루틴',
-    '나이아신아마이드 세럼 비교',
-    '올영 인기 선크림 추천',
-    '뷰티 하울 신상',
-    '글로우 파운데이션 추천',
-    '비건 쿠션 브랜드 리뷰',
-  ],
-  hair: [
-    '2026 헤어 트렌드',
-    '허쉬컷 스타일링',
-    '볼륨펌 후기',
-    '유행 염색 컬러',
-    '발레아쥬 염색',
-    '단발 스타일 추천',
-    '앞머리 자르기 꿀팁',
-    '미용실 시술 후기',
-  ],
-  nail: [
-    '네일 트렌드 2026',
-    '유행 네일 디자인',
-    '오로라네일 셀프',
-    '크롬 네일 방법',
-    '봄 네일 아트',
-    '웨딩 네일 추천',
-    '네일샵 후기',
-    '젤네일 vs 패디큐어',
-  ],
-  flower: [
-    '라넌큘러스 부케 만들기',
-    '수국 드라이플라워 리뷰',
-    '유칼립투스 리스 DIY',
-    '팜파스 그라스 인테리어',
-    '플라워 원데이클래스 브이로그',
-    '모리플라워 꽃집 소개',
-    '샴페인장미 부케 제작',
-    '드라이플라워 인테리어 DIY',
-  ],
-  fashion: [
-    '자라 신상 하울',
-    '유니클로 히트텍 리뷰',
-    '무신사 픽 아이템 하울',
-    'Y2K 패션 코디',
-    '오버핏 블레이저 스타일링',
-    '데님온데님 코디',
-    '에잇세컨즈 신상 하울',
-    '코어코어 스타일 코디',
-    '나이키 런닝화 신상 리뷰',
-    '호카 vs 온러닝 비교',
-  ],
-  fitness: [
-    '리포머 프라이빗 후기',
-    '룰루레몬 신상 레깅스 리뷰',
-    '케이블 크로스 운동법',
-    '소울사이클 클래스 후기',
-    '케틀벨 스윙 루틴',
-    '바디프로필 식단 영상',
-  ],
-  pet: [
-    '사료 브랜드 비교 리뷰',
-    '강아지 간식 추천 브랜드',
-    '반려견 유산균 후기',
-    '펫용품 신상 언박싱',
-    '고양이 사료 추천',
-    '반려동물 영양제 리뷰',
-    '로얄캐닌 vs 아카나 비교',
-    '츄잇 신상 간식 리뷰',
-  ],
-};
 
 const CATEGORY_KO = {
   cafe: '카페/베이커리',
@@ -801,49 +665,6 @@ async function fetchNaverBlogs(category) {
       await new Promise(r => setTimeout(r, 200));
     } catch(e) {
       console.error('[naver-blog]', category, query, 'error:', e.message);
-    }
-  }
-  return texts;
-}
-
-async function fetchNaverNews(category) {
-  const clientId = process.env.NAVER_CLIENT_ID;
-  const clientSecret = process.env.NAVER_CLIENT_SECRET;
-  if (!clientId || !clientSecret) return [];
-
-  const seeds = NEWS_SEARCH_SEEDS[category] || NEWS_SEARCH_SEEDS.cafe;
-  const texts = [];
-  for (const query of seeds) {
-    try {
-      const path = `/v1/search/news.json?query=${encodeURIComponent(query)}&display=30&sort=date`;
-      const result = await httpsGetWithHeaders(
-        'openapi.naver.com',
-        path,
-        {
-          'X-Naver-Client-Id': clientId,
-          'X-Naver-Client-Secret': clientSecret
-        },
-        10000
-      );
-      if (result.status !== 200) continue;
-      const data = JSON.parse(result.body);
-      if (!data.items) continue;
-
-      const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-
-      for (const item of data.items) {
-        // pubDate: "Thu, 23 Apr 2026 10:00:00 +0900" 형식
-        const pubDate = new Date(item.pubDate || '');
-        if (isNaN(pubDate) || pubDate < cutoff) continue;  // 30일 이내만
-
-        const title = (item.title || '').replace(/<[^>]+>/g, '').trim();
-        const desc = (item.description || '').replace(/<[^>]+>/g, '').trim();
-        if (title) texts.push(title);
-        if (desc) texts.push(desc.slice(0, 120));
-      }
-      await new Promise(r => setTimeout(r, 200));
-    } catch(e) {
-      console.error('[naver-news]', category, query, 'error:', e.message);
     }
   }
   return texts;
@@ -1075,59 +896,6 @@ function classifySaturation(total) {
   return 'saturated';
 }
 
-async function fetchYouTube(category) {
-  const apiKey = process.env.YOUTUBE_API_KEY;
-  if (!apiKey) return [];
-
-  const seeds = YOUTUBE_SEEDS_KR[category] || YOUTUBE_SEEDS_KR.cafe;
-  const titles = [];
-
-  for (const query of seeds) {
-    try {
-      const searchPath = `/youtube/v3/search?part=snippet&type=video&order=viewCount&maxResults=50` +
-        `&regionCode=KR` +
-        `&publishedAfter=${encodeURIComponent(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())}` +
-        `&q=${encodeURIComponent(query)}` +
-        `&key=${apiKey}`;
-      const result = await httpsGetRaw({
-        hostname: 'www.googleapis.com',
-        path: searchPath,
-        method: 'GET',
-        headers: { 'Accept': 'application/json' }
-      }, 10000);
-      if (result.status !== 200) {
-        console.error('[youtube] search status:', result.status, category, query);
-        continue;
-      }
-      const data = JSON.parse(result.body);
-      for (const item of (data.items || [])) {
-        const title = item?.snippet?.title;
-        if (title) titles.push(title);
-      }
-      await new Promise(r => setTimeout(r, 200));
-    } catch(e) {
-      console.error('[youtube]', category, query, 'error:', e.message);
-    }
-  }
-  return titles;
-}
-
-async function fetchInstagram(supa, category) {
-  try {
-    const { data, error } = await supa
-      .from('trends')
-      .select('keywords, collected_at')
-      .eq('category', `ig-hashtag-cache:${category}`)
-      .maybeSingle();
-    if (error || !data || !data.keywords) return [];
-    const captions = Array.isArray(data.keywords.captions) ? data.keywords.captions : [];
-    return captions;
-  } catch (e) {
-    console.error('[instagram-cache]', category, 'skip:', e.message);
-    return [];
-  }
-}
-
 // ─────────────────────────────────────────────
 // GPT 호출 헬퍼 (gpt-4o 우선, 실패 시 gpt-4o-mini 폴백)
 // ─────────────────────────────────────────────
@@ -1342,7 +1110,7 @@ ${keywordList.join(', ')}
 
 async function generateNarrativeAndOriginBatch({ keywords, category, rawTexts }) {
   // keywords: [{keyword, signalTier, ...}, ...]
-  // rawTexts: 해당 카테고리 원시 텍스트 배열 (blogData + ytKR + igTexts 등)
+  // rawTexts: 해당 카테고리 원시 텍스트 배열 (blogData + shoppingData 등)
   if (!keywords || keywords.length === 0) return {};
 
   try {
@@ -1790,11 +1558,10 @@ async function evaluatePredictionAccuracy({ supa, category }) {
 // ─────────────────────────────────────────────
 // Rising 예측 (gpt-4o + gpt-4o-mini 폴백)
 // ─────────────────────────────────────────────
-async function predictRisingWithGPT({ category, domesticTags, naverData, blogData, youtubeData }) {
+async function predictRisingWithGPT({ category, domesticTags, naverData, blogData }) {
   const categoryKo = CATEGORY_KO[category] || '일반';
   const recentStr = (naverData || []).slice(0, 8).join(', ') || '없음';
   const blogStr = (blogData || []).slice(0, 6).join(' | ').slice(0, 500) || '없음';
-  const ytStr = (youtubeData || []).slice(0, 6).join(' | ').slice(0, 500) || '없음';
   const currentStr = (domesticTags || []).slice(0, 8).join(', ') || '없음';
 
   const prompt = `당신은 인스타그램 트렌드 예측 전문가입니다.
@@ -1809,9 +1576,6 @@ ${recentStr}
 
 [블로그 신상 텍스트]
 ${blogStr}
-
-[YouTube 인기 영상 제목]
-${ytStr}
 
 각 키워드에 대해 다음을 JSON 배열로 응답하세요:
 - keyword: 예측 키워드 (한국어, 2~20자, # 없이)
@@ -1872,7 +1636,7 @@ function textMatchKeyword(text, keyword) {
   return false;
 }
 
-function buildCrossSourceCount({ keyword, naverData, blogData, ytKR, igTexts, newsData, shoppingData }) {
+function buildCrossSourceCount({ keyword, naverData, blogData, shoppingData }) {
   function countMatches(arr) {
     if (!arr) return 0;
     return arr.filter(t => textMatchKeyword(String(t), keyword)).length;
@@ -1881,9 +1645,6 @@ function buildCrossSourceCount({ keyword, naverData, blogData, ytKR, igTexts, ne
   return {
     datalab: countMatches(naverData),
     blog: countMatches(blogData),
-    youtube: countMatches(ytKR),
-    ig: countMatches(igTexts),
-    news: countMatches(newsData),
     // 쇼핑인사이트 — 카테고리명 자체가 텍스트에 포함되면 매칭 (낮은 매칭률).
     // 실제 가치는 GPT 분류 단계에서 raw 텍스트로 인입 + demographics 컨텍스트 주입.
     shopping: countMatches(shoppingData),
@@ -2002,19 +1763,18 @@ function computeWeightedScore(counts, monthlySearchTotal, velocityPct) {
   return Math.round((base + volumeBonus + velocityBonus) * 10) / 10;
 }
 
-// 3-tier 분류 — 4축 시그널 (cross_source, 검색량, velocity) 중 충족 개수 기반.
-//   strong: 2개 이상 충족 (예: multi-source + 검색량 ≥5k)
-//   medium: 1개 충족 (예: 단일 source 지만 velocity ≥30%)
-//   weak:   0개 (의미 적은 long-tail)
-//   이전: cross_source ≥2 → 'real', 미만 → 'weak' 이분법. weak 안에 quality 가
-//   높은 키워드가 묻혀 get-trends 에서 일괄 제외되던 사고. 다축 도입으로 해소.
-function classifySignalTier({ crossSourceCount, monthlySearchTotal, velocityPct }) {
-  const hasMultiSource = crossSourceCount >= 2;
-  const hasVolume      = typeof monthlySearchTotal === 'number' && monthlySearchTotal >= 5000;
-  const hasVelocity    = typeof velocityPct === 'number' && velocityPct >= 30;
-  const score = (hasMultiSource ? 1 : 0) + (hasVolume ? 1 : 0) + (hasVelocity ? 1 : 0);
-  if (score >= 2) return 'strong';
-  if (score === 1) return 'medium';
+// 3-tier 분류 — 검색량 + velocity 2축.
+//   strong: 검색량 ≥5k AND velocity ≥30% (둘 다 — "아무거나 strong" 방지)
+//   medium: 둘 중 하나만 충족
+//   weak:   둘 다 미달
+//   검색량 매칭 실패(null)면 hasVolume=false → 신조어 남발 방지.
+//   cross_source 는 tier 에서 제외 (네이버 단일 소스 전환). sources 다양성 카운트는
+//   computeWeightedScore 정렬 보너스 + 프론트 "N곳" 배지로만 유지.
+function classifySignalTier({ monthlySearchTotal, velocityPct }) {
+  const hasVolume   = typeof monthlySearchTotal === 'number' && monthlySearchTotal >= 5000;
+  const hasVelocity = typeof velocityPct === 'number' && velocityPct >= 30;
+  if (hasVolume && hasVelocity) return 'strong';
+  if (hasVolume || hasVelocity) return 'medium';
   return 'weak';
 }
 
@@ -2238,18 +1998,15 @@ exports.handler = runGuarded({
     await ctx.stage('collecting', { cats: categories.length });
 
     const rawEntries = await Promise.all(COLLECT_CATEGORIES.map(async (category) => {
-      const [naverData, blogData, ytKR, igTexts, newsData, shoppingSignals] = await Promise.all([
+      const [naverData, blogData, shoppingSignals] = await Promise.all([
         fetchNaverDatalab(category),
         fetchNaverBlogs(category),
-        fetchYouTube(category),
-        fetchInstagram(supa, category),
-        fetchNaverNews(category),
         fetchNaverShoppingSignals(category), // 네이버 쇼핑인사이트 (의류/뷰티/꽃·식품·운동·헤어)
       ]);
       const shoppingData = (shoppingSignals && shoppingSignals.shoppingTexts) || [];
       const demographics = (shoppingSignals && shoppingSignals.demographics) || null;
-      console.log(`[${category}] naver=${naverData.length} blog=${blogData.length} yt-kr=${ytKR.length} ig=${igTexts.length} news=${newsData.length} shopping=${shoppingData.length}${demographics ? ' demo=Y' : ''}`);
-      return [category, { naverData, blogData, ytKR, igTexts, newsData, shoppingData, demographics }];
+      console.log(`[${category}] naver=${naverData.length} blog=${blogData.length} shopping=${shoppingData.length}${demographics ? ' demo=Y' : ''}`);
+      return [category, { naverData, blogData, shoppingData, demographics }];
     }));
     const rawByCategory = Object.fromEntries(rawEntries);
 
@@ -2285,9 +2042,6 @@ exports.handler = runGuarded({
       domesticTexts[cat] = [
         ...r.naverData,
         ...r.blogData,
-        ...r.ytKR,
-        ...r.igTexts,
-        ...(r.newsData || []),
         ...(r.shoppingData || []),   // 네이버 쇼핑인사이트 카테고리 강도 표시
         ...adTexts,                   // 검색광고 연관키워드 (env 있을 때만)
       ];
@@ -2337,9 +2091,6 @@ exports.handler = runGuarded({
               keyword,
               naverData: r.naverData,
               blogData: r.blogData,
-              ytKR: r.ytKR,
-              igTexts: r.igTexts,
-              newsData: r.newsData,
               shoppingData: r.shoppingData,
             });
 
@@ -2371,7 +2122,7 @@ exports.handler = runGuarded({
 
             // 다축 최종 점수 + tier — base 점수에 검색량/velocity 가중 + 3-tier 분류.
             const weightedScore = computeWeightedScore(counts, monthlySearchTotal, velocityPct);
-            const signalTier = classifySignalTier({ crossSourceCount, monthlySearchTotal, velocityPct });
+            const signalTier = classifySignalTier({ monthlySearchTotal, velocityPct });
 
             return {
               keyword,
@@ -2425,7 +2176,7 @@ exports.handler = runGuarded({
         // Phase 2: narrative + origin 배치 생성 (real 키워드만, 최대 5개씩 배치)
         if (isV2Cat && process.env.OPENAI_API_KEY) {
           try {
-            const rawTexts = [...(r.blogData || []), ...(r.ytKR || []), ...(r.igTexts || [])];
+            const rawTexts = [...(r.blogData || []), ...(r.shoppingData || [])];
             const BATCH_SIZE = 5;
             const narrativeMap = {};
 
@@ -2467,7 +2218,6 @@ exports.handler = runGuarded({
             ? predictRisingWithGPT({
                 category, domesticTags,
                 naverData: r.naverData, blogData: r.blogData,
-                youtubeData: r.ytKR,
               })
             : Promise.resolve(null),
         ]);

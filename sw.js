@@ -19,7 +19,8 @@
 // v53: 퀄업 R2 — linktree ring 버그 fix, wavy offset 통일, dropzone/guide 가시성, glow 중첩 해소
 // v54: linktree ring 매직컬러 #FF8FA3 → --signature-1 토큰화 (시그니처 정색 일치)
 // v55: 토스급 인터랙션 — 전역 햅틱, 완료 SVG 체크 draw, 로딩 개선, 스켈레톤 확산, spring
-const CACHE_VERSION = 'lumi-v56';
+// v57: 트렌드 네이버 소스 단일화 (youtube/ig/news 제거, tier 검색량+velocity 2축)
+const CACHE_VERSION = 'lumi-v57';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 
 const STATIC_RE = /\.(css|js|woff2?|ttf|otf|png|jpg|jpeg|webp|svg|ico|gif)$/i;

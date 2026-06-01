@@ -164,20 +164,20 @@
         // ranking 정렬 — signal_tier 우선 (Option B, 사장님 결정 2026-05-15).
         //
         // 1차 정렬: signalTier (strong > medium > weak)
-        //   strong: cross_source ≥2 / 검색량 ≥5k / velocity ≥30% 중 2개 이상 충족
-        //   medium: 1개 충족
-        //   weak:   0개
+        //   strong: 검색량 ≥5k AND velocity ≥30% (검색량·상승률 둘 다 강함)
+        //   medium: 둘 중 하나만 강함
+        //   weak:   둘 다 미달
         //
         // 2차 정렬 (같은 tier 내): weightedScore desc
         //   weightedScore 는 backend computeWeightedScore() 가 산출:
         //     base (counts × source 다양성 ≥2 면 ×1.5) + log(monthly) × 0.3 + log(velocity+1) × 0.5
-        //   = cross_source 다양성 + 검색량 + velocity 종합. 검색량 매칭 실패한 신조어도
-        //     cross_source/velocity 가 강하면 같은 tier 내 상위 위치.
+        //   = 소스 다양성 + 검색량 + velocity 종합. 검색량 매칭 실패한 신조어도
+        //     소스 다양성/velocity 가 강하면 같은 tier 내 상위 위치.
         //
         // 변경 이력:
         //   - 이전 (PR #175+ Option F): monthlySearchTotal × confidence × (1+v/100) 만 사용.
         //     검색량 매칭 실패한 신조어는 -weightedScore (음수) 로 매칭 성공 키워드 뒤로
-        //     강제 밀림. cross_source 4곳 + velocity 200% strong 신조어가 묻힘 → 사장님이
+        //     강제 밀림. velocity 200% strong 신조어가 묻힘 → 사장님이
         //     활용할 떠오르는 트렌드가 안 보이는 부작용.
         //   - 신규 (Option B, 2026-05-15): tier 우선 → 신호 강한 키워드가 검색량 유무
         //     무관하게 상위. detail sheet "왜 이 순위?" 가 검색량 미수집 사유 명시.
@@ -328,7 +328,7 @@
               <ul class="sheet__rank-list">
                 ${rankSignals.map(s => `<li>${s}</li>`).join('')}
               </ul>
-              <p class="sheet__meta-line" style="margin-top:6px;">정렬: 신호 강도(강함 > 보통 > 약함) 우선, 그 안에서 종합 점수(cross-source 다양성 + 검색량 + 상승률) 내림차순. 검색량 정확매칭 실패해도 다른 신호(소스 다양성·상승률)가 강하면 상위 노출.</p>
+              <p class="sheet__meta-line" style="margin-top:6px;">정렬: 신호 강도(강함 > 보통 > 약함) 우선, 그 안에서 종합 점수(검색량 + 상승률 + 소스 다양성) 내림차순. 검색량 정확매칭 실패해도 다른 신호(소스 다양성·상승률)가 강하면 상위 노출.</p>
             </div>
           `);
         }
@@ -346,12 +346,9 @@
           `);
         }
 
-        // 2) 어디서 발견됐나 — sources 분포 (네이버/블로그/유튜브/인스타/뉴스/쇼핑)
+        // 2) 어디서 발견됐나 — sources 분포 (네이버/블로그/쇼핑)
         const SOURCE_LABELS = {
           naver: '네이버', datalab: '네이버', blog: '블로그',
-          youtube: '유튜브', yt: '유튜브', ytKR: '유튜브',
-          ig: '인스타', insta: '인스타',
-          news: '뉴스',
           shopping: '쇼핑',  // 네이버 쇼핑인사이트 (의류/뷰티/꽃·식품·운동·헤어 카테고리 강도)
         };
         if (item.sources && typeof item.sources === 'object') {
@@ -373,12 +370,12 @@
 
         // 3) 신호 강도 — signalTier / saturationLevel / 사용자 피드백
         //    Tier 는 backend classifySignalTier() 가 산출:
-        //    cross_source ≥2 / 검색량 ≥5k / velocity ≥30% 중 충족 개수 → strong(2+)/medium(1)/weak(0)
+        //    검색량 ≥5k AND velocity ≥30% → strong / 둘 중 하나 → medium / 둘 다 미달 → weak
         //    구체 수치는 sheet 상단 "왜 이 순위?" 섹션이 이미 노출하므로 여기선 tier 라벨만.
         const signals = [];
-        if (item.signalTier === 'strong')      signals.push('확실 신호 (3개 지표 중 2개 이상 강함)');
-        else if (item.signalTier === 'medium') signals.push('주목 신호 (1개 지표 강함)');
-        else if (item.signalTier === 'weak')   signals.push('약한 신호 (지표 모두 약함)');
+        if (item.signalTier === 'strong')      signals.push('확실 신호 (검색량·상승률 둘 다 강함)');
+        else if (item.signalTier === 'medium') signals.push('주목 신호 (검색량·상승률 중 하나 강함)');
+        else if (item.signalTier === 'weak')   signals.push('약한 신호 (검색량·상승률 둘 다 약함)');
         if (item.saturationLevel === 'low')    signals.push('포화도 낮음 (덜 흔함)');
         if (item.saturationLevel === 'high')   signals.push('포화도 높음 (이미 흔함)');
         if (typeof item.likes === 'number'    && item.likes > 0)    signals.push(`👍 ${item.likes}`);
