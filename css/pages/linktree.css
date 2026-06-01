@@ -32,19 +32,25 @@
       to   { opacity: 1; transform: translateY(0); }
     }
 
+    /* v53: 손님이 보는 공개 페이지 — 아바타 시그니처 ring.
+       R1 의 background(padding/border-box) ring 은 불투명 cover 사진이 content-box 를
+       꽉 채워 background 를 다 덮어 실사진에선 ring 이 안 보이던 버그.
+       → box-shadow ring 으로 교체. cover 사진 위에서도 항상 보임 (방법 A). */
     .lt-avatar {
       width: 96px;
       height: 96px;
       border-radius: var(--radius-full);
       object-fit: cover;
-      background: var(--bg-soft);
-      border: 2px solid var(--neutral-0);
-      box-shadow: var(--shadow-md);
+      box-shadow:
+        0 0 0 3px var(--signature-1),
+        var(--shadow-md),
+        var(--shadow-warm-glow);
     }
     .lt-avatar--placeholder {
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      /* img 버전과 외형 통일: 동일한 box-shadow ring + 내부는 그라데이션 면 */
       background: var(--gradient-signature);
       color: var(--neutral-0);
       font-size: 36px;
@@ -107,9 +113,10 @@
       box-shadow: var(--shadow-xs);
     }
     @media (hover: hover) {
+      /* v52: 링크 카드 hover warm-glow (완료 5페이지 카드와 같은 격) */
       .lt-card:hover {
         border-color: var(--pink-300, #f6a8c2);
-        box-shadow: var(--shadow-md);
+        box-shadow: var(--shadow-md), var(--shadow-warm-glow);
       }
     }
 

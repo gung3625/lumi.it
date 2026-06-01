@@ -107,14 +107,24 @@ body {
   .beta__hero-cta { animation: none; }
 }
 
-/* Section title */
+/* Section title — v52: hand-drawn 잔물결 underline 1곳 (완료 5페이지 시그니처 어법) */
 .beta__section-title {
+  position: relative;
   font-size: var(--text-headline);
   font-weight: var(--weight-bold);
   letter-spacing: var(--tracking-tight);
   color: var(--ink);
-  margin: 0 0 var(--space-5);
+  margin: 0 0 var(--space-6);
   text-align: center;
+}
+.beta__section-title::after {
+  content: '';
+  position: absolute;
+  left: 50%; bottom: -2px;
+  width: 64px; height: 6px;
+  transform: translateX(-50%);
+  background: url("/assets/wavy-underline.svg") no-repeat center / 100% 100%;
+  pointer-events: none;
 }
 
 /* Benefits */
@@ -134,7 +144,15 @@ body {
   transition: transform var(--duration-snap) var(--ease-toss), box-shadow var(--duration-base) var(--ease-soft);
 }
 @media (hover: hover) {
-  .beta__benefit:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  /* v52: 혜택 카드 hover 에 warm-glow (완료 5페이지 데이터 카드와 같은 격) */
+  .beta__benefit:hover {
+    transform: translateY(-2px);
+    border-color: var(--pink-200, #f7c5d3);
+    box-shadow: var(--shadow-warm-glow);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .beta__benefit:hover { transform: none; }
 }
 .beta__benefit-icon {
   display: inline-flex;

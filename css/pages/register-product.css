@@ -28,13 +28,16 @@
       letter-spacing: 0.02em;
     }
 
-    /* 드롭존 */
+    /* 드롭존 — v52: 흰색 일색 깨는 종이 그라데이션 BG (가입 후 5페이지 시그니처 침투) */
     .dropzone {
       display: block;
       position: relative;
       padding: var(--space-12) var(--space-5);
       background: var(--bg-soft);
-      border: 2px dashed var(--line-strong);
+      background-image: var(--gradient-paper);
+      /* v53: gradient-paper 가 거의 흰 bg-soft 위라 빈 상태에선 시그니처가 안 보임.
+         점선 border 를 pink-300 으로 — 비어 있어도 시그니처 핑크가 드러나게. */
+      border: 2px dashed var(--pink-300, #E89AB1);
       border-radius: var(--radius-lg);
       text-align: center;
       color: var(--ink-muted);
@@ -559,6 +562,25 @@
       0%   { transform: scale(1); }
       35%  { transform: scale(1.18); }
       100% { transform: scale(1); }
+    }
+    /* v52: 게시 완료 시그니처 — 마스코트 warm-glow + 완료 제목 hand-drawn wavy underline.
+       완료 5페이지와 같은 어법으로 "끝맺음" 감성 강조. */
+    .progress-overlay.is-success .progress-mascot {
+      /* v53: warm-glow + glow 중첩 → warm-glow 하나만 (시그니처 따뜻한 톤 유지). */
+      box-shadow: var(--shadow-warm-glow);
+    }
+    .progress-overlay.is-success .progress-title {
+      position: relative;
+      display: inline-block;
+    }
+    .progress-overlay.is-success .progress-title::after {
+      content: '';
+      position: absolute;
+      left: 50%; bottom: -3px;
+      width: 56px; height: 6px;
+      transform: translateX(-50%);
+      background: url("/assets/wavy-underline.svg") no-repeat center / 100% 100%;
+      pointer-events: none;
     }
     @media (prefers-reduced-motion: reduce) {
       .progress-mascot, .progress-mascot::after, .progress-step.is-active .progress-step__icon { animation: none !important; }
