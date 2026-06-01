@@ -28,6 +28,7 @@
   <script src="/js/auth-fetch.js"></script>
   <script src="/js/error-track.js"></script>
   <script src="/js/sw-register.js"></script>
+  <script src="/js/haptic.js"></script>
   <script src="/js/scroll-top.js" data-scroll-top-on-reload></script>
   <link rel="stylesheet" href="/css/motion.css">
   <link rel="stylesheet" href="/css/tabbar.css">
@@ -53,7 +54,33 @@
   </header>
 
   <main class="wrap" role="main">
-    <div class="state" data-state>편집장 루미가 게시 결과 확인 중…</div>
+    <!-- v55: 로딩 중 스켈레톤 카드 (data 도착 시 JS 가 stateEl.hidden=true 로 숨김) -->
+    <div class="state" data-state>
+      <p class="state__msg">편집장 루미가 게시 결과 확인 중…</p>
+      <ul class="res-skeleton-list" aria-hidden="true">
+        <li class="res-skeleton">
+          <span class="res-skeleton__thumb skeleton"></span>
+          <span class="res-skeleton__lines">
+            <span class="skeleton skeleton--text res-skeleton__line res-skeleton__line--lg"></span>
+            <span class="skeleton skeleton--text res-skeleton__line res-skeleton__line--sm"></span>
+          </span>
+        </li>
+        <li class="res-skeleton">
+          <span class="res-skeleton__thumb skeleton"></span>
+          <span class="res-skeleton__lines">
+            <span class="skeleton skeleton--text res-skeleton__line res-skeleton__line--lg"></span>
+            <span class="skeleton skeleton--text res-skeleton__line res-skeleton__line--sm"></span>
+          </span>
+        </li>
+        <li class="res-skeleton">
+          <span class="res-skeleton__thumb skeleton"></span>
+          <span class="res-skeleton__lines">
+            <span class="skeleton skeleton--text res-skeleton__line res-skeleton__line--lg"></span>
+            <span class="skeleton skeleton--text res-skeleton__line res-skeleton__line--sm"></span>
+          </span>
+        </li>
+      </ul>
+    </div>
 
     <div class="history-tabs" data-tabs hidden role="tablist">
       <button type="button" class="history-tab is-active" data-tab="upcoming" role="tab">예약 목록</button>

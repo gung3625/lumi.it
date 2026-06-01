@@ -496,7 +496,8 @@
       async function applyBestTime() {
         if (!scheduleBestEl) return;
         scheduleBestEl.disabled = true;
-        if (bestResultTitle) bestResultTitle.textContent = '베스트 시간 가져오는 중…';
+        // v55: 계산 중 제목 자리에 스켈레톤 shimmer (결과/에러 시 해제)
+        if (bestResultTitle) { bestResultTitle.textContent = '베스트 시간 가져오는 중…'; bestResultTitle.classList.add('skeleton', 'skeleton--text'); }
         if (bestResultSub) bestResultSub.textContent = '사장님 데이터 기준 자동 계산';
         try {
           const res = await fetch('/api/get-best-time', {
@@ -539,7 +540,7 @@
           const dayLabel = sameDay ? '오늘' : '내일';
           const hh = String(target.getHours()).padStart(2, '0');
           const mmStr = String(target.getMinutes()).padStart(2, '0');
-          if (bestResultTitle) bestResultTitle.textContent = `⏰ ${dayLabel} ${hh}:${mmStr} 자동 예약`;
+          if (bestResultTitle) { bestResultTitle.classList.remove('skeleton', 'skeleton--text'); bestResultTitle.textContent = `⏰ ${dayLabel} ${hh}:${mmStr} 자동 예약`; }
           if (bestResultSub) {
             // 사장님 결정 2026-05-17 (재정정): seed 안내 정확한 wording.
             bestResultSub.textContent = isPersonal
@@ -552,7 +553,7 @@
           toast(`${dayLabel} ${hh}:${mmStr} 으로 예약했어요`);
         } catch (e) {
           console.error('[best-time] 실패:', e && e.message);
-          if (bestResultTitle) bestResultTitle.textContent = '베스트 시간을 가져오지 못했어요';
+          if (bestResultTitle) { bestResultTitle.classList.remove('skeleton', 'skeleton--text'); bestResultTitle.textContent = '베스트 시간을 가져오지 못했어요'; }
           if (bestResultSub) bestResultSub.textContent = '다시 누르거나 [예약] 으로 직접 선택해주세요';
           scheduleAtEl.value = '';
           toast('베스트 시간을 가져오지 못했어요');
