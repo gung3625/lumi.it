@@ -145,16 +145,18 @@ exports.handler = async (event) => {
       const supabase = getAdminClient();
 
       try {
-        let weather = {};
-        let trends = [];
-        let storeProfile = {};
-        let airQuality = {};
-        let festivals = [];
-        try { weather = JSON.parse(fields.weather || '{}'); } catch(e) {}
-        try { trends = JSON.parse(fields.trends || '[]'); } catch(e) {}
-        try { storeProfile = JSON.parse(fields.storeProfile || '{}'); } catch(e) {}
-        try { airQuality = JSON.parse(fields.airQuality || '{}'); } catch(e) {}
-        try { festivals = JSON.parse(fields.festivals || '[]'); } catch(e) {}
+        // 입력 크기 캡 — 비정상적으로 큰 JSON blob 차단 (DB 비대화 + 프롬프트 인젝션 표면 축소).
+        // 초과/파싱실패 시 기존과 동일하게 기본값으로 폴백 (정상 입력엔 영향 없음).
+        const MAX_JSON_FIELD = 16384; // 16KB — 정상 weather/trends/storeProfile 은 수 KB 이하
+        const parseField = (raw, fallback) => {
+          if (typeof raw !== 'string' || raw.length > MAX_JSON_FIELD) return fallback;
+          try { return JSON.parse(raw); } catch (e) { return fallback; }
+        };
+        let weather = parseField(fields.weather, {});
+        let trends = parseField(fields.trends, []);
+        let storeProfile = parseField(fields.storeProfile, {});
+        let airQuality = parseField(fields.airQuality, {});
+        let festivals = parseField(fields.festivals, []);
 
         const airGrade = airQuality.pm25Grade || (airQuality.pm25Value ? getPm25Grade(airQuality.pm25Value) : '알 수 없음');
 

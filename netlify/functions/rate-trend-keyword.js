@@ -5,6 +5,7 @@
 
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { corsHeaders, getOrigin } = require('./_shared/auth');
+const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
 
 exports.handler = async (event) => {
   const headers = corsHeaders(getOrigin(event));
@@ -14,19 +15,16 @@ exports.handler = async (event) => {
   }
 
   try {
-    // Supabase JWT에서 user_id 추출
-    const auth = (event.headers.authorization || '').replace('Bearer ', '');
-    if (!auth) {
+    // 카카오(seller-jwt) + supabase JWT 모두 허용 — 듀얼 토큰 (다른 엔드포인트와 동일 패턴).
+    // 기존엔 supabase JWT 만 받아 카카오 가입(라이브 사용자 전원)이 거부되던 버그.
+    const token = extractBearerToken(event);
+    const { user, error: authErr } = await verifyBearerToken(token);
+    if (authErr || !user) {
       return { statusCode: 401, headers, body: JSON.stringify({ error: '인증 필요' }) };
     }
 
+    const userId = user.id;
     const supa = getAdminClient();
-    const { data: userData, error: userErr } = await supa.auth.getUser(auth);
-    if (userErr || !userData?.user?.id) {
-      return { statusCode: 401, headers, body: JSON.stringify({ error: '유효하지 않은 세션' }) };
-    }
-
-    const userId = userData.user.id;
     const body = JSON.parse(event.body || '{}');
     const keyword = (body.keyword || '').trim();
     const category = (body.category || '').trim();

@@ -60,9 +60,13 @@ exports.handler = async (event) => {
       return { statusCode: 400, headers: headers, body: JSON.stringify({ error: '잘못된 요청입니다.' }) };
     }
 
+    const MAX_FIELD_LEN = 4000; // 필드별 문자열 값 상한 (정상 입력 대비 충분, 거대 값 차단)
     const update = { updated_at: new Date().toISOString() };
     for (const field of ALLOWED_FIELDS) {
-      if (body[field] !== undefined) update[field] = body[field];
+      if (body[field] === undefined) continue;
+      const v = body[field];
+      // 거대 문자열 값만 절단 — 비문자열(객체/숫자/null)은 기존대로 통과(타입 보존).
+      update[field] = (typeof v === 'string' && v.length > MAX_FIELD_LEN) ? v.slice(0, MAX_FIELD_LEN) : v;
     }
 
     const { data: upserted, error: upsertErr } = await admin
@@ -84,6 +88,6 @@ exports.handler = async (event) => {
     };
   } catch (err) {
     console.error('[store-context] 예외:', err.message);
-    return { statusCode: 500, headers: headers, body: JSON.stringify({ error: err.message || '서버 오류' }) };
+    return { statusCode: 500, headers: headers, body: JSON.stringify({ error: '서버 오류' }) };
   }
 };
