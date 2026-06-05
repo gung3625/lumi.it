@@ -289,3 +289,19 @@
         startRotate();
       }
     })();
+
+    // ── 스크롤 고정 CTA — 히어로 CTA 가 화면 밖이고 최종 CTA 도 안 보일 때만 노출 ──
+    (function () {
+      var sticky = document.querySelector('[data-sticky-cta]');
+      var heroCta = document.querySelector('.hero__cta');
+      if (!sticky || !heroCta || !('IntersectionObserver' in window)) return;
+      var finalCta = document.querySelector('.final-cta');
+      var heroVisible = true, finalVisible = false;
+      function update() {
+        sticky.classList.toggle('is-visible', !heroVisible && !finalVisible);
+      }
+      new IntersectionObserver(function (e) { heroVisible = e[0].isIntersecting; update(); }).observe(heroCta);
+      if (finalCta) {
+        new IntersectionObserver(function (e) { finalVisible = e[0].isIntersecting; update(); }).observe(finalCta);
+      }
+    })();
