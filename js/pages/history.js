@@ -457,7 +457,9 @@
       let activeTab = getInitialTab();
       function applyTab() {
         document.querySelectorAll('[data-tab]').forEach(b => {
-          b.classList.toggle('is-active', b.dataset.tab === activeTab);
+          const on = b.dataset.tab === activeTab;
+          b.classList.toggle('is-active', on);
+          b.setAttribute('aria-selected', String(on));
         });
         if (upcomingSec) upcomingSec.hidden = activeTab !== 'upcoming';
         if (pastSec) pastSec.hidden = activeTab !== 'past';
