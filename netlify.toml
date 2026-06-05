@@ -68,14 +68,32 @@
     # 모든 inline <style> 는 /css/pages/<page>.css 로 외부화.
     # element 의 style="" attr 40+ 개도 utility class (.u-idx-N, .u-link-inherit 등) 로 추출 — css/base.css.
     Content-Security-Policy = "default-src 'self'; script-src 'self' https://unpkg.com https://code.iconify.design https://cdn.jsdelivr.net https://t1.kakaocdn.net https://developers.kakao.com https://www.googletagmanager.com https://www.google-analytics.com https://googletagmanager.com; style-src 'self' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data: https: blob:; media-src 'self' data: blob: https:; connect-src 'self' https://*.netlify.com https://*.supabase.co https://lumi.it.kr https://api.resend.com https://unpkg.com https://cdn.jsdelivr.net https://www.google-analytics.com https://www.googletagmanager.com https://open.tiktokapis.com https://www.tiktok.com https://kauth.kakao.com https://kapi.kakao.com; frame-src 'none'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self' https://kauth.kakao.com;"
+    # HTML(및 매칭 안 되는 모든 경로): 항상 최신. 정적 자원은 아래 별도 규칙으로 캐싱.
     Cache-Control = "no-store, no-cache, must-revalidate, max-age=0"
-    Pragma = "no-cache"
-    Expires = "0"
 
 [[headers]]
   for = "/api/*"
   [headers.values]
     Cache-Control = "no-store, no-cache, must-revalidate, max-age=0"
+
+# 정적 자원 캐싱 (audit: no-store 전체적용 → 매 방문 재다운로드 문제 해소)
+# ⚠️ 자산은 콘텐츠 해시(fingerprint)가 없어 immutable/장기 캐시는 배포 후 staleness 위험.
+#    → 이미지·파비콘 등 잘 안 변하는 /assets 는 30일, 자주 바뀌는 /css·/js 는 1시간+revalidate.
+#    (추후 build.js 에 파일명 해시 도입 시 /css·/js 도 immutable 1년 안전)
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=2592000"
+
+[[headers]]
+  for = "/css/*"
+  [headers.values]
+    Cache-Control = "public, max-age=3600, must-revalidate"
+
+[[headers]]
+  for = "/js/*"
+  [headers.values]
+    Cache-Control = "public, max-age=3600, must-revalidate"
 
 # 매일 자정 KST 트렌드 파이프라인 — gpt-4o + 크로스소스 + velocity + 가중치 (v2)
 # -background 접미사로 15분 타임아웃 확보. 5소스 + GPT 파이프라인은 30초 초과 가능.
