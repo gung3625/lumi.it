@@ -1615,7 +1615,7 @@ exports.handler = async (event) => {
       captions: finalCaptions,
       image_analysis: imageAnalysis,
       captions_generated_at: new Date().toISOString(),
-      caption_status: 'scheduled',
+      caption_status: (reservation.post_mode === 'draft') ? 'draft' : 'scheduled',
       selected_caption_index: 0,
       caption_error: null,
       generated_threads_caption: generatedThreadsCaption,
@@ -1682,7 +1682,8 @@ exports.handler = async (event) => {
     // brand-auto는 항상 instagram 전용이므로 TikTok 분기 제외
     const isBrandAuto = reservation.is_brand_auto === true;
     const postChannel = (!isBrandAuto && reservation.post_channel) ? reservation.post_channel : 'instagram';
-    const shouldPostTikTok = postChannel === 'tiktok' || postChannel === 'both';
+    const shouldPostTikTok = (postChannel === 'tiktok' || postChannel === 'both')
+      && reservation.post_mode !== 'draft';  // 초안 모드: 어떤 채널도 게시 안 함
 
     if (shouldPostTikTok) {
       let tiktokStatus = 'failed';

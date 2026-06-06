@@ -357,9 +357,13 @@ exports.handler = async (event) => {
         // 보내도 scheduler cron 이 즉시 픽업 가능. (이전엔 fields.scheduledAt 우선 사용
         // 해서 frontend 버그로 미래 시각 들어오면 stuck 가능했음.)
         const isScheduledMode = postMode === 'scheduled' || postMode === 'best-time';
-        const scheduledAt = isScheduledMode
-          ? (fields.scheduledAt || new Date().toISOString())
-          : new Date().toISOString();
+        // 초안(draft) 모드: 캡션만 생성하고 게시 안 함 (Meta 불필요) → scheduled_at=null 로
+        // scheduler 픽업에서 제외 (scheduler 는 scheduled_at IS NOT NULL 만 조회).
+        const scheduledAt = (postMode === 'draft')
+          ? null
+          : isScheduledMode
+            ? (fields.scheduledAt || new Date().toISOString())
+            : new Date().toISOString();
         const submittedAt = fields.submittedAt || new Date().toISOString();
 
         // (옛 public.users FK 보장용 upsert 는 sellers 로 FK 재지정 후 불필요해서 제거)
@@ -375,7 +379,7 @@ exports.handler = async (event) => {
           weather: { ...weather, airQuality: airGrade },
           trends: Array.isArray(trends) ? trends : [],
           store_profile: storeProfile,
-          post_mode: (postMode === 'scheduled' || postMode === 'best-time') ? postMode : 'immediate',
+          post_mode: ['scheduled', 'best-time', 'draft'].includes(postMode) ? postMode : 'immediate',
           scheduled_at: scheduledAt,
           submitted_at: submittedAt,
           story_enabled: fields.postToStory === 'true',
