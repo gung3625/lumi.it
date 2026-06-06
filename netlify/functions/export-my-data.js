@@ -104,18 +104,10 @@ exports.handler = async (event) => {
   // ────────────────────────────────────────────────────────────
   const [
     tiktokAccounts,
-    marketplaceClaims,
     failureLog,
-    optionChangeLog,
-    productChangeLog,
-    orderMappings,
   ] = await Promise.all([
-    safeSelect(admin, 'tiktok_accounts',     'seller_id', sellerId),
-    safeSelect(admin, 'marketplace_claims',  'seller_id', sellerId),
-    safeSelect(admin, 'failure_log',         'seller_id', sellerId),
-    safeSelect(admin, 'option_change_log',   'seller_id', sellerId),
-    safeSelect(admin, 'product_change_log',  'seller_id', sellerId),
-    safeSelect(admin, 'order_mappings',      'seller_id', sellerId),
+    safeSelect(admin, 'tiktok_accounts', 'seller_id', sellerId),
+    safeSelect(admin, 'failure_log',     'seller_id', sellerId),
   ]);
 
   // ────────────────────────────────────────────────────────────
@@ -123,21 +115,17 @@ exports.handler = async (event) => {
   // — Supabase JWT 사용자만 매칭 가능
   // ────────────────────────────────────────────────────────────
   const [
-    usersProfile,
     igAccounts,
     reservations,
-    orders,
     toneFeedback,
     captionHistory,
     linkpages,
   ] = await Promise.all([
-    safeSelect(admin, 'users',           'id',      userId),
     safeSelect(admin, 'ig_accounts',     'user_id', userId),
     safeSelect(admin, 'reservations',    'user_id', userId),
-    safeSelect(admin, 'orders',          'user_id', userId),
     safeSelect(admin, 'tone_feedback',   'user_id', userId),
     safeSelect(admin, 'caption_history', 'user_id', userId),
-    safeSelect(admin, 'linkpages',       'user_id', userId),
+    safeSelect(admin, 'link_pages',      'user_id', userId),  // 버그수정: 'linkpages'(없는 테이블)→'link_pages'
   ]);
 
   console.log(`[export-my-data] seller=${String(sellerId).slice(0, 8)} reservations=${reservations.length} ig=${igAccounts.length} tiktok=${tiktokAccounts.length}`);
@@ -151,19 +139,13 @@ exports.handler = async (event) => {
     note: '본 파일은 회원 본인의 lumi 서비스 데이터 전체입니다. 개인정보보호법 §35 자기정보이동권에 의거 발급되었습니다. 파일을 안전하게 보관하세요.',
     data: {
       profile: seller,
-      usersProfile: usersProfile.length ? usersProfile[0] : null,
       instagramAccounts: igAccounts,
       tiktokAccounts,
       reservations,
-      orders,
       toneFeedback,
       captionHistory,
       linkpages,
-      marketplaceClaims,
       failureLog,
-      optionChangeLog,
-      productChangeLog,
-      orderMappings,
     },
   };
 
