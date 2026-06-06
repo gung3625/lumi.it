@@ -568,6 +568,8 @@
           document.querySelectorAll('[data-schedule]').forEach(b => b.classList.toggle('is-active', b === btn));
           if (scheduleOptsEl) scheduleOptsEl.hidden = (scheduleMode !== 'scheduled');
           if (scheduleBestEl) scheduleBestEl.hidden = (scheduleMode !== 'best');
+          const draftHintEl = document.querySelector('[data-draft-hint]');
+          if (draftHintEl) draftHintEl.hidden = (scheduleMode !== 'draft');
           if (scheduleMode === 'scheduled') {
             const { min, max, def } = getScheduleBounds();
             scheduleAtEl.min = toLocalDtIso(min);
@@ -584,6 +586,12 @@
           }
         });
       });
+
+      // ?draft=1 (대시보드 'IG 없이 초안만' 진입) → 초안 모드 자동 선택
+      if (new URLSearchParams(location.search).get('draft')) {
+        const draftBtn = document.querySelector('[data-schedule="draft"]');
+        if (draftBtn) draftBtn.click();
+      }
 
       // 베스트 시간 결과 banner — 다시 누르면 갱신 (밤사이 best time 변동 대응)
       if (scheduleBestEl) {

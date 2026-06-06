@@ -521,6 +521,7 @@
 
         const map = {
           pending:  { cls: 'pending',   label: '캡션 작성 중' },
+          draft:    { cls: 'draft',     label: '초안 · 복사용' },
           ready:    { cls: 'ready',     label: '준비 완료' },
           posting:  { cls: 'posting',   label: '게시 중' },
           posted:   { cls: 'posted',    label: '게시됨' },
@@ -547,6 +548,14 @@
         const badge = statusBadge(r);
         const time = fmtTime(r.scheduled_at);
         const caption = captionPreview(r);
+        // 초안 모드: 캡션 전체 복사 버튼 (게시 안 함 → 사장님이 직접 복사해 올림)
+        let copyBtn = '';
+        if ((r.caption_status || '') === 'draft') {
+          const idx = (typeof r.selected_caption_index === 'number') ? r.selected_caption_index : 0;
+          const cObj = Array.isArray(r.captions) ? r.captions[idx] : null;
+          const fullCaption = cObj ? (cObj.text || cObj) : (caption || '');
+          copyBtn = `<button class="res__copy" type="button" data-action="copy-caption" data-copy="${esc(String(fullCaption))}">📋 캡션 복사</button>`;
+        }
         const t = thumb(r);
         // url 안 single-quote 가 들어오면 style 속성 탈출 → encodeURI 로 1차 차단.
         // Supabase signed URL 은 안전하지만 가드 없음 → 명시 처리.
@@ -641,11 +650,27 @@
                 ${subtitleWarnChip}
                 ${actionBtn}
               </div>
+              ${copyBtn}
               ${rateBlock}
             </div>
           </li>
         `;
       }
+
+      // 초안 캡션 복사 (data-action="copy-caption") — 게시 안 하는 초안 모드용
+      document.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-action="copy-caption"]');
+        if (!btn) return;
+        const text = btn.dataset.copy || '';
+        if (!text) return;
+        const ok = () => toast('캡션 복사됐어요 — 인스타에 붙여넣어 올리세요 📷');
+        const fail = () => toast('복사 실패 — 캡션을 길게 눌러 직접 복사해주세요');
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(ok).catch(fail);
+        } else {
+          fail();
+        }
+      });
 
       async function load() {
         // 15초 timeout — 서버 hang 시 무한 "불러오는 중" 방지
