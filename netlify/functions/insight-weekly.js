@@ -317,7 +317,7 @@ exports.handler = async (event) => {
     return {
       statusCode: 502,
       headers: CORS,
-      body: JSON.stringify({ ok: false, error: 'IG 인사이트 조회 실패', detail: e && e.message ? e.message : null }),
+      body: JSON.stringify({ ok: false, error: 'IG 인사이트 조회 실패', detail: null }),
     };
   }
 };

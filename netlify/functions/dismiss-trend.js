@@ -96,6 +96,6 @@ exports.handler = async (event) => {
       }),
     };
   } catch (e) {
-    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: e.message }) };
+    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '처리 중 오류가 발생했어요' }) };
   }
 };

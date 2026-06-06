@@ -102,7 +102,7 @@ exports.handler = async (event) => {
       }
       console.warn('[reply-comment] Threads 호출 실패:', e && e.message);
       const status = (e instanceof ThreadsGraphError && e.status >= 400 && e.status < 500) ? e.status : 502;
-      return { statusCode: status, headers: CORS, body: JSON.stringify({ ok: false, error: (e && e.message) || '답글 전송 실패', channel }) };
+      return { statusCode: status, headers: CORS, body: JSON.stringify({ ok: false, error: '답글 전송 실패', channel }) };
     }
   } else {
     const igCtx = await getIgTokenForSeller(user.id, admin);
@@ -119,7 +119,7 @@ exports.handler = async (event) => {
       }
       console.warn('[reply-comment] Graph 호출 실패:', e && e.message);
       const status = (e instanceof IgGraphError && e.status >= 400 && e.status < 500) ? e.status : 502;
-      return { statusCode: status, headers: CORS, body: JSON.stringify({ ok: false, error: (e && e.message) || '답글 전송 실패', channel }) };
+      return { statusCode: status, headers: CORS, body: JSON.stringify({ ok: false, error: '답글 전송 실패', channel }) };
     }
   }
 

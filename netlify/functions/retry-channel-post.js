@@ -148,7 +148,7 @@ exports.handler = async (event) => {
       try { await admin.from('channel_posts').update({ error_message: String(e && e.message || 'unknown') })
         .eq('reservation_id', reservation.id).eq('channel', 'threads'); } catch (_) { /* noop */ }
       const status = (e instanceof ThreadsGraphError && e.status >= 400 && e.status < 500) ? e.status : 502;
-      return { statusCode: status, headers: CORS, body: JSON.stringify({ ok: false, error: (e && e.message) || '재시도 실패', channel }) };
+      return { statusCode: status, headers: CORS, body: JSON.stringify({ ok: false, error: '재시도 실패', channel }) };
     }
   } else {
     // 4-B) IG 게시 — select-and-post 와 동일 헬퍼 (carousel/single/REELS + STORIES)

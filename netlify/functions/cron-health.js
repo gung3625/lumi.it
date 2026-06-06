@@ -7,6 +7,7 @@
 
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { heartbeatKey, errorKey, stageKey } = require('./_shared/cron-keys');
+const { verifyLumiSecret } = require('./_shared/auth');
 
 const CORS_HEADERS = {
   'Content-Type': 'application/json',
@@ -26,6 +27,10 @@ exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 204, headers: CORS_HEADERS, body: '' };
   }
+
+  // 내부 에러 메시지·스택은 LUMI_SECRET 인증 시에만 노출 (공개 정보유출 방지).
+  // 하트비트(성공/시각)는 비민감이라 공개 유지.
+  const isAuthed = verifyLumiSecret(event.headers.authorization || event.headers.Authorization || '');
 
   let supa;
   try {
@@ -93,8 +98,9 @@ exports.handler = async (event) => {
         const kw = errRow.keywords;
         health[errK] = {
           errorAt: kw.errorAt || null,
-          message: kw.message || null,
-          stack: kw.stack || null,
+          ...(isAuthed
+            ? { message: kw.message || null, stack: kw.stack || null }
+            : { hasError: !!(kw.message || kw.stack) }),
         };
       } else {
         health[errK] = null;
@@ -131,7 +137,7 @@ exports.handler = async (event) => {
       }
       health['trend-categories'] = trendHealth;
     } catch (trendErr) {
-      health['trend-categories'] = { error: trendErr.message };
+      health['trend-categories'] = { error: isAuthed ? trendErr.message : '조회 실패' };
     }
 
     return {
@@ -144,7 +150,7 @@ exports.handler = async (event) => {
     return {
       statusCode: 500,
       headers: CORS_HEADERS,
-      body: JSON.stringify({ error: e.message }),
+      body: JSON.stringify({ error: isAuthed ? e.message : 'cron-health 조회 실패' }),
     };
   }
 };
