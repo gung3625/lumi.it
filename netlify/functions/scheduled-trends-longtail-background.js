@@ -110,6 +110,10 @@ const HEADERS = {
 exports.handler = runGuarded({
   name: 'scheduled-trends-longtail',
   handler: async (event, ctx) => {
+    // 트렌드 OpenAI 미사용 (2026-06-07 사장님 지시 "트렌드 돈 안 씀") — 롱테일 cron 전체 skip.
+    //   gpt-4o-mini 호출이 비용 발생원 → 호출 전 즉시 종료. 되돌리려면 이 줄 제거.
+    return { statusCode: 200, headers: HEADERS, body: JSON.stringify({ skipped: 'openai-disabled' }) };
+    // eslint-disable-next-line no-unreachable
     // Netlify cron 호출은 event.httpMethod가 없음 → 인증 스킵
     // 외부 HTTP 호출만 LUMI_SECRET 검증
     const isScheduled = !event || !event.httpMethod;
