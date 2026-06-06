@@ -1999,14 +1999,22 @@ exports.handler = runGuarded({
 
         let risingItems = risingItemsRaw;
         if (!risingItems || risingItems.length < 2) {
-          // fallback 제거 — domesticTags만 사용, 없으면 빈 배열 허용
-          const pool = domesticTags.slice(0, 10);
-          risingItems = pool.map((kw, i) => ({
-            keyword: kw,
-            confidence: Math.max(30, 75 - i * 5),
-            growthRate: '+' + Math.max(5, 25 - i * 2) + '%',
-            reason: '국내 트렌드 상승세',
-          }));
+          // GPT 예측 미사용 → 실제 네이버 신호 기반 (지어낸 수치 금지 — 추측금지 원칙).
+          //   실 검색량 상승률(velocityPct) 우선 정렬, growthRate 는 실제 velocity 있을 때만 표기(없으면 null).
+          const tierConf = { strong: 90, medium: 60, weak: 30 };
+          if (enrichedKeywords.length > 0) {
+            risingItems = enrichedKeywords.slice()
+              .sort((a, b) => (b.velocityPct || 0) - (a.velocityPct || 0) || (b.weightedScore || 0) - (a.weightedScore || 0))
+              .slice(0, 10)
+              .map(k => ({
+                keyword: k.keyword,
+                confidence: tierConf[k.signalTier] || 40,
+                growthRate: (Number.isFinite(k.velocityPct) && k.velocityPct > 0) ? '+' + Math.round(k.velocityPct) + '%' : null,
+                reason: '네이버 검색량 기준',
+              }));
+          } else {
+            risingItems = domesticTags.slice(0, 10).map(kw => ({ keyword: kw, confidence: 40, growthRate: null, reason: '네이버 트렌드' }));
+          }
         }
 
         try {
