@@ -1733,18 +1733,23 @@ exports.handler = runGuarded({
 
     const categories = ['cafe', 'food', 'beauty', 'nail', 'hair', 'flower', 'fashion', 'fitness'];
     const COLLECT_CATEGORIES = ['cafe', 'food', 'beauty', 'hair', 'nail', 'flower', 'fashion', 'fitness'];
+    // 트렌드 OpenAI(GPT) 미사용 — 분류·축분할·내러티브·rising 전부 네이버 데이터 직접 (2026-06-07, 돈 안 씀).
+    // 되돌리려면 true 로 (기존 GPT 경로 복원).
+    const TRENDS_USE_OPENAI = false;
     const updatedAt = new Date().toISOString();
     const collectedDate = updatedAt.slice(0, 10);
 
-    // 서비스 전체 예산 체크 (cron — 9개 카테고리 × ₩5 = ₩45 추정)
-    try {
-      await checkAndIncrementQuota(null, 'gpt-4o-mini', categories.length * 5);
-    } catch (e) {
-      if (e instanceof QuotaExceededError) {
-        console.warn('[trends-v2] 서비스 전체 OpenAI 예산 초과 — cron 중단:', e.message);
-        return { statusCode: 429, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify({ error: e.message, skipped: true }) };
+    // 서비스 전체 예산 체크 — OpenAI 사용 시에만 (현재 미사용이라 skip → ₩0).
+    if (TRENDS_USE_OPENAI) {
+      try {
+        await checkAndIncrementQuota(null, 'gpt-4o-mini', categories.length * 5);
+      } catch (e) {
+        if (e instanceof QuotaExceededError) {
+          console.warn('[trends-v2] 서비스 전체 OpenAI 예산 초과 — cron 중단:', e.message);
+          return { statusCode: 429, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify({ error: e.message, skipped: true }) };
+        }
+        throw e;
       }
-      throw e;
     }
 
     // ─── 1단계: 수집 ───────────────────────────
@@ -1805,12 +1810,28 @@ exports.handler = runGuarded({
       if (d) demographicsByCategory[cat] = d;
     }
 
-    let domesticClassified = null;
-    if (process.env.OPENAI_API_KEY) {
+    // GPT 분류 제거 (사용자 지시 2026-06-07: 돈 안 씀) → 네이버 데이터 직접.
+    // 검색광고 연관키워드(깨끗+검색량) 우선, 부족분은 쇼핑인사이트 텍스트로 보강. 카테고리당 최대 15개.
+    let domesticClassified;
+    if (TRENDS_USE_OPENAI && process.env.OPENAI_API_KEY) {
       domesticClassified = await classifyBatchWithGPT({
         rawTextsByCategory: domesticTexts,
         demographicsByCategory,
       });
+    } else {
+      domesticClassified = {};
+      for (const cat of categories) {
+        const adKws = (adKeywordsByCat[cat] || []).map(k => k && k.keyword).filter(Boolean);
+        const shopKws = (rawByCategory[cat] && rawByCategory[cat].shoppingData) || [];
+        const seen = new Set();
+        const merged = [];
+        for (const raw of [...adKws, ...shopKws]) {
+          const k = String(raw || '').trim();
+          if (k && k.length <= 40 && !seen.has(k)) { seen.add(k); merged.push(k); }
+          if (merged.length >= 15) break;
+        }
+        domesticClassified[cat] = merged;
+      }
     }
 
     // ─── 4단계: 스코어링 ───────────
@@ -1899,7 +1920,7 @@ exports.handler = runGuarded({
         }
 
         // Phase 2: 4축 분할 (AXIS_CATEGORIES에 속한 카테고리만)
-        if (isV2Cat && AXIS_CATEGORIES.includes(category) && enrichedKeywords.length > 0) {
+        if (TRENDS_USE_OPENAI && isV2Cat && AXIS_CATEGORIES.includes(category) && enrichedKeywords.length > 0) {
           try {
             const axisResult = await splitKeywordsByAxis(domesticTags, category);
             if (axisResult) {
@@ -1924,7 +1945,7 @@ exports.handler = runGuarded({
         }
 
         // Phase 2: narrative + origin 배치 생성 (real 키워드만, 최대 5개씩 배치)
-        if (isV2Cat && process.env.OPENAI_API_KEY) {
+        if (TRENDS_USE_OPENAI && isV2Cat && process.env.OPENAI_API_KEY) {
           try {
             const rawTexts = [...(r.shoppingData || [])];
             const BATCH_SIZE = 5;
@@ -1964,7 +1985,7 @@ exports.handler = runGuarded({
               return saveTrendKeywordsV2({ supa, category, enrichedKeywords, collectedDate, region: 'all' });
             }
           })(),
-          process.env.OPENAI_API_KEY
+          (TRENDS_USE_OPENAI && process.env.OPENAI_API_KEY)
             ? predictRisingWithGPT({
                 category, domesticTags,
                 naverData: r.naverData, shoppingData: r.shoppingData,
