@@ -219,6 +219,11 @@ exports.handler = async (event) => {
       };
     }
 
+    // 트렌드 OpenAI 미사용 (2026-06-07 사장님 지시 "트렌드 돈 안 씀") — 캐시 미스 시 OpenAI 호출 안 함 (₩0).
+    //   이미 해석된 키워드는 위 캐시에서 반환됨. 새 키워드는 상세해석 없이 graceful 응답(프론트 기존 처리).
+    //   되돌리려면 이 return 제거.
+    return { statusCode: 200, headers, body: JSON.stringify({ ok: false, error: 'generation_failed' }) };
+
     // 2) miss → OpenAI quota gate (cache miss 만 카운트). 한도 초과 시 429.
     try {
       await checkAndIncrementQuota(user.id, 'gpt-4o-mini');
