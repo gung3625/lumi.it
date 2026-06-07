@@ -1465,13 +1465,22 @@ exports.handler = async (event) => {
     // 사진에 명시적으로 등장하거나 사장님이 메모에 키워드 적은 경우만 GPT prompt 에 통과.
     // (vision 정확도 한계 — gpt-4o 가 흰 떡을 "버터떡" 으로 정확히 명명 못할 수 있음.
     //  사장님 메모에 '오늘 신메뉴 버터떡' 처럼 적으면 그것도 신뢰 source 로 활용)
+    // imageAnalysis 는 analyzeImages 가 JSON "문자열" 로 반환 → 파싱해서 사진 기반 매칭에 사용.
+    // (버그 수정: 이전엔 문자열에 .subjects/.scene_description 처럼 객체 접근 → 전부 undefined +
+    //  schema 에 없는 필드명(visible_text_masked·scene_description) → 사진 매칭이 통째로 죽고
+    //  사장님 메모만 반영됐음. visionToContext 로 정확히 파싱 + 올바른 필드명으로 복구.)
+    const visionForMatch = visionToContext(imageAnalysis);
+    const visionObj = visionForMatch ? visionForMatch.json : null;
     const visualText = String(
       [
-        ...(Array.isArray(imageAnalysis?.subjects) ? imageAnalysis.subjects : []),
-        ...(Array.isArray(imageAnalysis?.visible_text_masked) ? imageAnalysis.visible_text_masked : []),
-        ...(Array.isArray(imageAnalysis?.visible_text) ? imageAnalysis.visible_text : []),
-        imageAnalysis?.scene_description || '',
-        reservation.user_message || '',  // 사장님 한 줄 메모 — 사장님이 직접 적은 키워드는 신뢰
+        ...(Array.isArray(visionObj?.subjects)
+          ? visionObj.subjects.map((s) => (s && typeof s === 'object') ? `${s.label || ''} ${s.details || ''}` : String(s || ''))
+          : []),
+        ...(Array.isArray(visionObj?.visible_text) ? visionObj.visible_text : []),
+        ...(Array.isArray(visionObj?.caption_keywords) ? visionObj.caption_keywords : []),
+        visionObj?.core_analysis || '',
+        visionObj?.first_impression || '',
+        reservation.user_message || '',  // 사장님 한 줄 메모 — 사장님이 직접 적은 키워드도 신뢰
       ].join(' ').toLowerCase()
     );
     const matchesVisual = (kw) => {
