@@ -570,6 +570,10 @@
           if (scheduleBestEl) scheduleBestEl.hidden = (scheduleMode !== 'best');
           const draftHintEl = document.querySelector('[data-draft-hint]');
           if (draftHintEl) draftHintEl.hidden = (scheduleMode !== 'draft');
+          // 초안 모드면 제출 버튼도 "게시" 빼고 "초안 만들기" 로 (loading 중이 아닐 때만).
+          if (submitBtn && !submitBtn.classList.contains('is-loading')) {
+            submitBtn.textContent = (scheduleMode === 'draft') ? '📝 초안 캡션 만들기' : '📷 캡션 만들고 게시';
+          }
           if (scheduleMode === 'scheduled') {
             const { min, max, def } = getScheduleBounds();
             scheduleAtEl.min = toLocalDtIso(min);
