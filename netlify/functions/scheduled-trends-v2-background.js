@@ -1822,10 +1822,13 @@ exports.handler = runGuarded({
       domesticClassified = {};
       for (const cat of categories) {
         const adKws = (adKeywordsByCat[cat] || []).map(k => k && k.keyword).filter(Boolean);
-        const shopKws = (rawByCategory[cat] && rawByCategory[cat].shoppingData) || [];
+        // 검색광고 부족분은 데이터랩 실 키워드로 보강.
+        // ⚠️ shoppingData 는 "○○ 쇼핑 검색 추이 강도 N" 메타 텍스트(GPT 해석용)라
+        //    키워드로 직접 쓰면 트렌드에 쓰레기가 노출됨 → naverData(데이터랩 실 키워드) 사용.
+        const datalabKws = (rawByCategory[cat] && rawByCategory[cat].naverData) || [];
         const seen = new Set();
         const merged = [];
-        for (const raw of [...adKws, ...shopKws]) {
+        for (const raw of [...adKws, ...datalabKws]) {
           const k = String(raw || '').trim();
           if (k && k.length <= 40 && !seen.has(k)) { seen.add(k); merged.push(k); }
           if (merged.length >= 15) break;
