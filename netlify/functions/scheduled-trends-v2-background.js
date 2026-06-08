@@ -252,28 +252,28 @@ const DEFAULT_TRENDS = {
 // ─────────────────────────────────────────────
 const NAVER_KEYWORDS = {
   cafe: [
-    { groupName: '시그니처음료', keywords: ['말차라떼유행', '흑임자라떼신상', '크림라떼브랜드'] },
-    { groupName: '베이커리브랜드', keywords: ['런던베이글뮤지엄', '소금빵브랜드', '크로플카페'] },
-    { groupName: '스페셜티브랜드', keywords: ['테라로사시그니처', '블루보틀콜드브루', '스페셜티핸드드립'] },
-    { groupName: '디저트트렌드', keywords: ['크로플신상', '마들렌유행', '바스크치즈케이크'] },
+    { groupName: '시그니처음료', keywords: ['말차라떼', '흑임자라떼', '크림라떼'] },
+    { groupName: '베이커리브랜드', keywords: ['런던베이글뮤지엄', '소금빵', '크로플'] },
+    { groupName: '스페셜티브랜드', keywords: ['테라로사', '블루보틀', '핸드드립'] },
+    { groupName: '디저트트렌드', keywords: ['휘낭시에', '마들렌', '바스크치즈케이크'] },
     { groupName: '음료트렌드', keywords: ['버터라떼', '흑임자스무디', '말차티라미수'] },
-    { groupName: '컨셉카페브랜드', keywords: ['감성카페인테리어', '팝업카페오픈', '루프탑카페브랜드'] }
+    { groupName: '컨셉카페브랜드', keywords: ['감성카페', '팝업카페', '루프탑카페'] }
   ],
   food: [
-    { groupName: '브랜드맛집', keywords: ['노티드신상', '다운타우너버거', '런던베이글'] },
-    { groupName: '오마카세트렌드', keywords: ['오마카세가성비', '스시오마카세', '한우오마카세'] },
-    { groupName: '유행메뉴', keywords: ['마라탕유행', '수제버거브랜드', '파스타트렌드'] },
-    { groupName: '주점트렌드', keywords: ['한식주점메뉴', '이자카야신메뉴', '와인바안주'] },
-    { groupName: '팝업레스토랑', keywords: ['팝업레스토랑오픈', '셰프테이블', '야장감성포차'] },
-    { groupName: '신흥맛집', keywords: ['성수맛집신상', '연남동신상', '한남동레스토랑'] }
+    { groupName: '브랜드맛집', keywords: ['노티드', '다운타우너버거', '런던베이글'] },
+    { groupName: '오마카세트렌드', keywords: ['오마카세', '스시오마카세', '한우오마카세'] },
+    { groupName: '유행메뉴', keywords: ['마라탕', '수제버거', '파스타맛집'] },
+    { groupName: '주점트렌드', keywords: ['한식주점', '이자카야', '와인바'] },
+    { groupName: '팝업레스토랑', keywords: ['팝업레스토랑', '셰프테이블', '야장포차'] },
+    { groupName: '신흥맛집', keywords: ['성수맛집', '연남동맛집', '한남동맛집'] }
   ],
   beauty: [
-    { groupName: '브랜드토너추천', keywords: ['토너추천브랜드', '신상앰플', '에센스유행'] },
-    { groupName: '입소문선크림', keywords: ['입소문난선크림', '올영인기선크림', '선스틱브랜드'] },
-    { groupName: '브랜드신제품', keywords: ['닥터지신제품', '라네즈신상', '코스알엑스인기제품'] },
-    { groupName: '이니스프리스킨', keywords: ['이니스프리신상스킨', '뷰티유튜버추천제품', '파우더룸신상리뷰'] },
-    { groupName: '성분트렌드', keywords: ['나이아신아마이드세럼', '레티놀크림', '히알루론산토너'] },
-    { groupName: '쿠션파운데이션', keywords: ['신상쿠션브랜드', '비건쿠션파운데이션', '글로우파운데이션'] }
+    { groupName: '브랜드토너추천', keywords: ['토너', '앰플', '에센스'] },
+    { groupName: '입소문선크림', keywords: ['선크림', '올리브영선크림', '선스틱'] },
+    { groupName: '브랜드신제품', keywords: ['닥터지', '라네즈', '코스알엑스'] },
+    { groupName: '이니스프리스킨', keywords: ['이니스프리', '토너패드', '비건스킨케어'] },
+    { groupName: '성분트렌드', keywords: ['나이아신아마이드', '레티놀', '히알루론산'] },
+    { groupName: '쿠션파운데이션', keywords: ['쿠션팩트', '비건쿠션', '글로우파운데이션'] }
   ],
   hair: [
     { groupName: '유행컷트', keywords: ['레이어드컷', '허쉬컷', '풀단발'] },
@@ -298,19 +298,19 @@ const NAVER_KEYWORDS = {
     { groupName: '플라워클래스', keywords: ['플라워원데이클래스', '리스만들기클래스', '부케제작클래스'] }
   ],
   fashion: [
-    { groupName: '자라신상', keywords: ['자라신상', '유니클로히트', '무신사유행'] },
-    { groupName: 'SPA신상', keywords: ['에잇세컨즈신상', '탑텐신상', '스파브랜드신상'] },
-    { groupName: '유행스타일', keywords: ['오버핏블레이저', 'Y2K패션', '코어코어스타일'] },
-    { groupName: '데님트렌드', keywords: ['데님온데님코디', '와이드데님팬츠', '빈티지데님재킷'] },
-    { groupName: '아이템트렌드', keywords: ['롱스커트유행', '가죽자켓브랜드', '니트조끼코디'] },
-    { groupName: '무신사브랜드', keywords: ['무신사픽아이템', '무신사스탠다드신상', '온라인패션브랜드'] },
-    { groupName: '스니커즈브랜드', keywords: ['나이키런닝화신상', '호카신상', '온러닝추천'] }
+    { groupName: '자라신상', keywords: ['자라', '유니클로', '무신사'] },
+    { groupName: 'SPA신상', keywords: ['에잇세컨즈', '탑텐', '스파오'] },
+    { groupName: '유행스타일', keywords: ['오버핏블레이저', 'Y2K패션', '코어코어룩'] },
+    { groupName: '데님트렌드', keywords: ['데님온데님', '와이드데님', '빈티지데님'] },
+    { groupName: '아이템트렌드', keywords: ['롱스커트', '가죽자켓', '니트조끼'] },
+    { groupName: '무신사브랜드', keywords: ['무신사스탠다드', '무신사픽', '온라인패션'] },
+    { groupName: '스니커즈브랜드', keywords: ['나이키운동화', '호카', '온러닝'] }
   ],
   fitness: [
-    { groupName: '리포머필라테스', keywords: ['리포머프라이빗', '기구필라테스브랜드', '필라테스스튜디오추천'] },
-    { groupName: '운동복브랜드', keywords: ['룰루레몬신상', '나이키운동복', '아디다스레깅스'] },
-    { groupName: '기구트렌드', keywords: ['케이블크로스운동', '레그프레스루틴', '케틀벨스윙'] },
-    { groupName: '그룹운동프로그램', keywords: ['소울사이클', '크로스핏박스', '댄스피트니스'] }
+    { groupName: '리포머필라테스', keywords: ['리포머필라테스', '기구필라테스', '필라테스'] },
+    { groupName: '운동복브랜드', keywords: ['룰루레몬', '나이키운동복', '아디다스레깅스'] },
+    { groupName: '기구트렌드', keywords: ['케이블크로스', '레그프레스', '케틀벨스윙'] },
+    { groupName: '그룹운동프로그램', keywords: ['소울사이클', '크로스핏', '댄스피트니스'] }
   ],
   pet: [
     { groupName: '사료브랜드', keywords: ['로얄캐닌', '아카나', '오리젠'] },
