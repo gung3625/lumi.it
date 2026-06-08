@@ -1825,13 +1825,14 @@ exports.handler = runGuarded({
       domesticClassified = {};
       for (const cat of categories) {
         const adKws = (adKeywordsByCat[cat] || []).map(k => k && k.keyword).filter(Boolean);
-        // 검색광고 부족분은 데이터랩 실 키워드로 보강.
-        // ⚠️ shoppingData 는 "○○ 쇼핑 검색 추이 강도 N" 메타 텍스트(GPT 해석용)라
-        //    키워드로 직접 쓰면 트렌드에 쓰레기가 노출됨 → naverData(데이터랩 실 키워드) 사용.
+        // 큐레이션된 데이터랩 시드를 "우선"(깨끗·업종적합) + 검색광고(adKws)로 보강.
+        // ⚠️ shoppingData(쇼핑인사이트)는 "○○ 검색 추이 강도 N" 메타 텍스트라 키워드 부적합 → naverData 사용.
+        // ⚠️ adKws 를 우선하면 cafe/food 에서 검색광고 연관키워드가 의미 드리프트(녹차효능·주변맛집 등)
+        //    해 업종 트렌드 신뢰도가 떨어짐 → 큐레이션 시드를 앞에 두고 adKws 는 부족분 보강만.
         const datalabKws = (rawByCategory[cat] && rawByCategory[cat].naverData) || [];
         const seen = new Set();
         const merged = [];
-        for (const raw of [...adKws, ...datalabKws]) {
+        for (const raw of [...datalabKws, ...adKws]) {
           const k = String(raw || '').trim();
           if (k && k.length <= 40 && !seen.has(k)) { seen.add(k); merged.push(k); }
           if (merged.length >= 15) break;
