@@ -386,7 +386,10 @@ async function fetchNaverDatalab(category) {
   const today = new Date();
   const endDate = today.toISOString().slice(0, 10);
   const startDate = new Date(today - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-  const keywordGroups = NAVER_KEYWORDS[category] || NAVER_KEYWORDS.cafe;
+  // 네이버 데이터랩 통합검색어 트렌드 API 는 keywordGroups 최대 5개 — 초과 시 400 에러로
+  // 전체가 빈 배열 반환됨. 6~7개 그룹 카테고리(cafe/food/beauty/hair/fashion)의 데이터랩
+  // 폴백이 통째 실패해 cafe/food/hair 가 0건이 되던 원인. 상위 5개 그룹만 사용.
+  const keywordGroups = (NAVER_KEYWORDS[category] || NAVER_KEYWORDS.cafe).slice(0, 5);
 
   try {
     const result = await httpsPost(
