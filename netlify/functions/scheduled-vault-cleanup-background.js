@@ -14,8 +14,13 @@
 // 멱등: 호출마다 현재 시점 orphan 만 삭제 → 동시 실행도 안전.
 
 const { getAdminClient } = require('./_shared/supabase-admin');
+const { allowScheduledOrSecret } = require('./_shared/auth');
 
-exports.handler = async () => {
+exports.handler = async (event) => {
+  // 외부 임의 HTTP 트리거 차단 (네이티브 cron 또는 LUMI_SECRET 만 허용).
+  if (!allowScheduledOrSecret(event)) {
+    return { statusCode: 401, body: JSON.stringify({ ok: false, error: 'unauthorized' }) };
+  }
   const supabase = getAdminClient();
   try {
     const { data, error } = await supabase.rpc('cleanup_orphan_vault_secrets');

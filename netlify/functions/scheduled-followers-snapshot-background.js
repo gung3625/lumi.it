@@ -97,7 +97,13 @@ function expandValueToRows(userId, valueRow) {
   return rows;
 }
 
-exports.handler = async () => {
+const { allowScheduledOrSecret } = require('./_shared/auth');
+
+exports.handler = async (event) => {
+  // 외부 임의 HTTP 트리거 차단 (네이티브 cron 또는 LUMI_SECRET 만 허용) — IG API 쿼터 남용 방지.
+  if (!allowScheduledOrSecret(event)) {
+    return { statusCode: 401, body: JSON.stringify({ ok: false, error: 'unauthorized' }) };
+  }
   const supabase = getAdminClient();
 
   // 활성 사장님 + IG 연동된 분만 후보

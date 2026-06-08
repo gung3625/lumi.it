@@ -32,6 +32,7 @@ const { getAdminClient } = require('./_shared/supabase-admin');
 const { safeAwait } = require('./_shared/supa-safe');
 const { heartbeatKey } = require('./_shared/cron-keys');
 const { getServiceDailyUsage } = require('./_shared/openai-quota');
+const { allowScheduledOrSecret } = require('./_shared/auth');
 
 // ── 감시 대상 cron 정의 ─────────────────────────────────
 // thresholdMin = cron 주기 + 안전마진. 이 시간을 넘기면 ALERT.
@@ -198,6 +199,10 @@ async function sendAlertEmail(resend, to, subject, lines) {
 }
 
 async function watchdogHandler(event, ctx) {
+  // 외부 임의 HTTP 트리거 차단 (네이티브 cron 또는 LUMI_SECRET 만 허용).
+  if (!allowScheduledOrSecret(event)) {
+    return { statusCode: 401, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'unauthorized' }) };
+  }
   const apiKey = process.env.RESEND_API_KEY;
   const adminEmailsRaw = process.env.LUMI_ADMIN_EMAILS || '';
   const adminEmails = adminEmailsRaw.split(',').map(s => s.trim()).filter(Boolean);

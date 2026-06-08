@@ -124,7 +124,13 @@ async function deleteOrphanFiles(supabase, prefix) {
   return deleted;
 }
 
-exports.handler = async () => {
+const { allowScheduledOrSecret } = require('./_shared/auth');
+
+exports.handler = async (event) => {
+  // 외부 임의 HTTP 트리거 차단 (네이티브 cron 또는 LUMI_SECRET 만 허용) — 조기 파일 삭제 남용 방지.
+  if (!allowScheduledOrSecret(event)) {
+    return { statusCode: 401, body: JSON.stringify({ error: 'unauthorized' }) };
+  }
   try {
     const supabase = getAdminClient();
     const candidates = await collectOrphanCandidates(supabase);
