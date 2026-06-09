@@ -28,25 +28,14 @@ async function deleteSellerCascade(admin, seller) {
     }
   }
 
-  // auth.users 삭제 — email 매핑으로 식별 (sellers 에 user_id 컬럼 없음 가정)
-  let authUserId = null;
-  if (seller.email) {
-    try {
-      // listUsers 는 admin API 의 페이징이 1000 default. 단순 대조용 — 실제 운영시 emaill 직접 매핑 권장.
-      const { data: list } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
-      const found = (list && list.users || []).find(u => (u.email || '').toLowerCase() === String(seller.email).toLowerCase());
-      if (found) authUserId = found.id;
-    } catch (e) {
-      console.warn(`[process-account-deletion] auth listUsers 실패 seller=${seller.id.slice(0, 8)}:`, e.message);
-    }
-  }
-  if (authUserId) {
-    try {
-      const { error } = await admin.auth.admin.deleteUser(authUserId);
-      if (error) console.warn(`[process-account-deletion] auth.users delete 경고 ${authUserId}:`, error.message);
-    } catch (e) {
-      console.warn(`[process-account-deletion] auth.users delete 예외 ${authUserId}:`, e.message);
-    }
+  // auth.users 삭제 — sellers.id = auth.users.id 불변식(handle_auth_user_sync 트리거)으로 직접 삭제.
+  // (이전: email 로 listUsers 첫 200명만 대조 → 200명 초과 시 못 찾아 auth.users 가 고아로 남음 = GDPR 위반.
+  //  seller.id 가 곧 auth user id 이므로 페이징/이메일 대조 불필요.)
+  try {
+    const { error } = await admin.auth.admin.deleteUser(seller.id);
+    if (error) console.warn(`[process-account-deletion] auth.users delete 경고 ${seller.id.slice(0, 8)}:`, error.message);
+  } catch (e) {
+    console.warn(`[process-account-deletion] auth.users delete 예외 ${seller.id.slice(0, 8)}:`, e.message);
   }
 
   // 마지막으로 sellers row 삭제

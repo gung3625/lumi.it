@@ -1,4 +1,4 @@
-const { corsHeaders, getOrigin } = require('./_shared/auth');
+const { corsHeaders, getOrigin, allowScheduledOrSecret } = require('./_shared/auth');
 // Scheduled Background Function — 스테일/실패/완료 예약 자동 정리.
 // Netlify 스케줄러가 내부 트리거로 실행 (LUMI_SECRET 불필요).
 // 매시간 실행 (netlify.toml: "0 * * * *").
@@ -163,7 +163,11 @@ async function cleanupTrendsMeta(supabase) {
   return total;
 }
 
-exports.handler = async () => {
+exports.handler = async (event) => {
+  // 외부 임의 HTTP 트리거 차단 (네이티브 cron 또는 LUMI_SECRET 만 허용).
+  if (!allowScheduledOrSecret(event)) {
+    return { statusCode: 401, body: JSON.stringify({ error: 'unauthorized' }) };
+  }
   const headers = corsHeaders(getOrigin(event));
   try {
     const supabase = getAdminClient();
