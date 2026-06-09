@@ -2,8 +2,13 @@
 // public.reservations 에서 pending/scheduled 상태 + scheduled_at <= now() 조회 후
 // process-and-post-background / select-and-post-background 로 위임.
 const { getAdminClient } = require('./_shared/supabase-admin');
+const { allowScheduledOrSecret } = require('./_shared/auth');
 
-exports.handler = async () => {
+exports.handler = async (event) => {
+  // 외부 임의 HTTP 트리거 차단 (네이티브 1분 cron 또는 LUMI_SECRET 만 허용) — 백그라운드 5종과 동일 게이트.
+  if (!allowScheduledOrSecret(event)) {
+    return { statusCode: 401, body: JSON.stringify({ error: 'unauthorized' }) };
+  }
   try {
     const supabase = getAdminClient();
     const nowIso = new Date().toISOString();
