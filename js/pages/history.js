@@ -178,6 +178,7 @@
       }
       // 한 채널 콘텐츠 렌더 — 상태별 분기.
       function renderChannelContent(item) {
+        if (!item) { if (insightStateEl) { insightStateEl.hidden = false; insightStateEl.textContent = '채널 정보를 찾을 수 없어요.'; } return; }
         const channel = item.channel;
         const status  = item.status;
         // 콘텐츠 영역 초기화 (sub/tabs 유지)

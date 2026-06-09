@@ -428,31 +428,27 @@ exports.handler = async (event) => {
     const regenTid = setTimeout(() => regenCtrl.abort(), 60_000);
     let gptHttpRes;
     try {
-      gptHttpRes = await fetch('https://api.openai.com/v1/responses', {
+      gptHttpRes = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
         },
-        body: JSON.stringify({ model: 'gpt-5.4', input: captionPrompt, store: true, temperature: 0.78 }),
+        body: JSON.stringify({
+          model: 'gpt-5.4',
+          messages: [{ role: 'user', content: captionPrompt }],
+          max_completion_tokens: 1536,
+          temperature: 0.78,
+        }),
         signal: regenCtrl.signal,
       });
     } finally {
       clearTimeout(regenTid);
     }
     const gptData = await gptHttpRes.json();
-    if (gptData.error) throw new Error(`gpt-4o 오류: ${gptData.error.message || JSON.stringify(gptData.error)}`);
+    if (gptData.error) throw new Error(`gpt-5.4 오류: ${gptData.error.message || JSON.stringify(gptData.error)}`);
 
-    let outputText = gptData.output_text || '';
-    if (!outputText && Array.isArray(gptData.output)) {
-      for (const it of gptData.output) {
-        if (it && Array.isArray(it.content)) {
-          for (const c of it.content) {
-            if (c && typeof c.text === 'string') outputText += c.text;
-          }
-        }
-      }
-    }
+    const outputText = gptData.choices?.[0]?.message?.content || '';
     const captions = parseCaptions(outputText);
     if (!captions.length) {
       console.error('[regenerate-caption] 파싱 실패. GPT 원문:', outputText.substring(0, 500));

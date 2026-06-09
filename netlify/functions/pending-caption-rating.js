@@ -71,7 +71,7 @@ exports.handler = async (event) => {
     let storeName = '';
     try {
       const { data: profile } = await admin
-        .from('profiles')
+        .from('sellers')
         .select('store_name')
         .eq('id', user.id)
         .maybeSingle();

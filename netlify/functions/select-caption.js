@@ -204,12 +204,12 @@ exports.handler = async (event) => {
         return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: '게시 요청 실패' }) };
       }
 
-      console.log(`[select-caption] 예약 저장 완료 (postMode=${postMode}): ${reservationKey}, scheduledAt=${reservation.scheduled_at}`);
+      console.log(`[select-caption] 예약 저장 완료 (postMode=${postMode}): ${reservationKey}, scheduledAt=${effectiveScheduledAt}`);
 
       return {
         statusCode: 200,
         headers: CORS,
-        body: JSON.stringify({ success: true, status: 'scheduled', scheduledAt: reservation.scheduled_at }),
+        body: JSON.stringify({ success: true, status: 'scheduled', scheduledAt: effectiveScheduledAt }),
       };
     }
 

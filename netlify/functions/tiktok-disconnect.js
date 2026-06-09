@@ -39,7 +39,7 @@ exports.handler = async (event) => {
     const { error: taErr } = await admin
       .from('tiktok_accounts')
       .delete()
-      .eq('user_id', userId);
+      .eq('seller_id', userId);
     if (taErr) {
       console.error('[tiktok-disconnect] tiktok_accounts 삭제 실패:', taErr.message);
     }
@@ -48,7 +48,7 @@ exports.handler = async (event) => {
     const { error: selErr } = await admin
       .from('sellers')
       .update({ tiktok_connected: false, tiktok_disconnected_at: new Date().toISOString() })
-      .eq('user_id', userId);
+      .eq('id', userId);
     if (selErr) {
       console.error('[tiktok-disconnect] sellers 업데이트 실패:', selErr.message);
     }

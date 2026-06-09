@@ -153,7 +153,7 @@ exports.handler = async (event) => {
           console.warn('[followers-snapshot] 토큰 무효 표시:', s.id.slice(0, 8));
         } catch (_) { /* noop */ }
       }
-      noFollowers++;
+      noToken++;
       continue;
     }
     if (!values || values.length === 0) {
