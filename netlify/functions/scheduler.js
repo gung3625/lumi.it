@@ -55,7 +55,7 @@ exports.handler = async () => {
           // 게시되지 않도록 차단. process-video 가 완료 시 video_processed_at 을 세팅한다.
           if (row.media_type === 'REELS' && !row.video_processed_at) {
             console.log('[scheduler] 스킵 REELS 후처리 대기:', row.reserve_key);
-            continue;
+            return;
           }
           // 사용자가 이미 캡션을 선택한 예약 → select-and-post-background 로 IG 게시
           const res = await safeFetch(`${siteUrl}/.netlify/functions/select-and-post-background`, {
@@ -78,7 +78,7 @@ exports.handler = async () => {
         } else if (['ready', 'posting', 'failed', 'generating'].includes(row.caption_status)) {
           // 캡션 선택 대기 중 또는 진행 중 / 실패 — 스킵
           console.log('[scheduler] 스킵 caption_status=' + row.caption_status + ':', row.reserve_key);
-          continue;
+          return;
         } else {
           // 캡션 미생성 (pending 등) → 캡션 생성 + 게시 파이프라인 트리거.
           //
@@ -95,7 +95,7 @@ exports.handler = async () => {
           const STUCK_THRESHOLD_MS = 5 * 60 * 1000;
           if (ageMs < STUCK_THRESHOLD_MS) {
             console.log('[scheduler] 스킵 pending (신규, reserve.js 가 처리 중일 가능성):', row.reserve_key);
-            continue;
+            return;
           }
           const res = await safeFetch(`${siteUrl}/.netlify/functions/process-and-post-background`, {
             method: 'POST',
