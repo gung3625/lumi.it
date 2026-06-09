@@ -10,10 +10,19 @@
 - **배포**: `git push main` 만으로 빌드 트리거. ⚠️ 강제 `/builds` API 금지 (push만).
 - **인증**: `~/.ssh/` 격리, GitHub PAT 키체인 저장 → push 자동.
 - **브라우저 정정**: 메모리 `user_browser.md`에 "Chrome"으로 적혀 있는데 **사장님은 크롬 안 씀**(직접 정정함). 메모리가 틀림 — pull-to-refresh/overscroll 가정 시 주의.
-- **현재 상태**: `main` 브랜치, 워킹트리 클린, 최신 커밋 `9e44ca3`, SW `lumi-v58`.
+- **현재 상태(2026-06-08 갱신)**: `main`, 최신 커밋 `c4b2373`. 코드 클린. 루트에 미적용 ops SQL 2개 untracked — `security-hardening.sql`(✅적용완료), `performance-rls.sql`(선택, 0명 규모라 비긴급).
 
 ## 1. lumi 현재 배포 상태 (전부 main 머지 완료)
 
+### ⭐ 2026-06-07~08 대규모 세션 (가장 최근 — git log 가 정확한 소스)
+- **초안 모드**(`post_mode='draft'`): Meta 승인 없이 사진→캡션 생성 후 게시 안 함(유일한 런칭 경로). register "초안만" 버튼·`?draft=1`, history 캡션 복사 버튼, dashboard IG모달 진입로. 흐름: reserve(scheduled_at=null)→process-and-post(status='draft', TikTok·즉시IG 둘다 스킵)→scheduler 무시→list-reservations(필터없음)→history. ⚠️ **끝-끝(실 업로드) 미검증 — 사진 1장 테스트 필요**.
+- **트렌드 = 완전 정상화 + OpenAI 0원**: ①GPT 전부 제거(`TRENDS_USE_OPENAI=false`, 네이버 직접) ②데이터랩 keywordGroups 5개 제한 버그 수정(cafe/food/hair 0건 원인) ③큐레이션 데이터랩 시드 우선(merge `[datalab,adKws]` — 검색광고 의미드리프트 차단) ④시드 접미사 정리. **8개 카테고리 깨끗·업종적합 검증완료**(수동 크론 3회, collected_date 2026-06-08). 05-27부터 11일 멈춤 해소. ⚠️ get-trends.js 읽기필터(BLACKLIST 오마카세·마라탕·크로플 등 일반메뉴명 + `X맛집` 패턴)가 특정 트렌드만 노출 → 시드에 일반명사 넣어도 페이지엔 안 뜸.
+- **캡션 버그 수정**(`acfc812`): 트렌드/해시태그 사진매칭 visualText 가 imageAnalysis(JSON 문자열)에 `.subjects` 객체접근→undefined로 죽어있던 것 복구(visionToContext 파싱).
+- **보안 최상화**: 어드바이저 WARN 35건 해소(anon/auth SECURITY DEFINER 함수 16 REVOKE+service_role 재GRANT, 공개버킷 listing 6 DROP, 함수 search_path 13 `public,pg_temp` 고정) + **엔드포인트 78개 전수 감사**(네이티브 cron 백그라운드 5개 외부 HTTP 트리거 차단 `c4b2373`, `_shared/auth.js allowScheduledOrSecret`). RLS-no-policy 7테이블=백엔드전용 deny-all로 안전. tiktok-oauth-callback=중화확인. 남은 건 Leaked password protection 토글(Pro 전용, 무료면 스킵 OK).
+- **품질**: 텍스트 그라데이션 헤드라인 가독성 전면수정(`--gradient-signature-text`, index/beta/pricing 12곳), 멀티마켓 잔재 제거.
+- **OpenAI 쿼터 게이트 점검**: 셀러별 무제한, 서비스 ₩100k/일(사용량 0) → 초안 캡션 안 막힘. **키 충전만 하면 작동**.
+
+### (이전) 2026-06-04 작업
 - **트렌드 네이버 단일화** (`9e44ca3`): 쇼핑인사이트 메인 + 데이터랩 보조. 블로그/유튜브/IG/뉴스 소스 전부 제거.
   - `SOURCE_WEIGHTS = { shopping: 4, datalab: 2 }`
   - `classifySignalTier` 2축(monthlySearchTotal≥5000 = volume, velocityPct≥30 = velocity): 둘 다=strong, 하나=medium, 없음=weak.
@@ -26,9 +35,9 @@
 
 ## 2. lumi 미해결 / 진행중 ⚠️ (가장 중요)
 
-- **★ trends cron 죽어 있음** — `OPENAI_API_KEY` invalid. 05-27부터 0 rows(6일+). `scheduled-trends-v2-background.js` 655·1809·1927·1967행이 OpenAI 의존. 이미지 생성(gpt-image-2)도 같은 키라 같이 죽음.
-  - **결정 필요**: (a) OpenAI 결제/충전 vs (b) graceful degradation — OpenAI 없어도 네이버 키워드만이라도 노출되게. 사장님 아직 미결정.
-- **todo (in_progress)**: 첫 trends cron 로그 모니터링 (쇼핑 상위·tier·에러 확인). `netlify logs` 또는 `/api/cron-health`로 확인.
+- **✅ trends cron 해결됨**(2026-06-08): OpenAI 의존 제거(돈 안 씀)+네이버 직접+데이터랩 버그 수정. 8개 카테고리 정상 적재 검증. 결정은 **(b) graceful degradation**(OpenAI 없이 네이버만)으로 확정. → 내일 아침 *네이티브* 00:00 KST 크론(수동아닌)도 8개 적재하는지 한 번 확인하면 완결.
+- **★ 코어 루프 끝-끝 미검증**: `reservations`·`caption_history` 0건 = 사진→캡션→게시가 실 작동한 적 0회. **초안 모드로 사진 1장 테스트** 필요(Meta 자동게시 막혀 draft 가 유일 런칭 경로). 코드 경로는 전부 검증됨, 런타임만 미확인.
+- **★ OpenAI 키 충전 확인**: 캡션 생성(gpt-4o vision)에 필수 — 키 invalid 면 캡션 status='failed'. (트렌드는 OpenAI 0원이라 무관.) 쿼터 게이트는 첫 캡션 안 막음(셀러 무제한·서비스 ₩100k/일 사용량0, 점검완료).
 - **앱인토스 출시 [보류]**: 외부 OAuth(카카오/메타) 금지가 걸림돌. 워크어라운드 아이디어 = 웹에서 인스타 1회 연동 → 미니앱은 Supabase Vault에 저장된 토큰 사용(기술적으로 유효). 사장님이 "잠시 보류"함.
 
 ## 3. 사업자 / 비즈니스 인증 (마지막 작업 — 중단됨)
@@ -57,6 +66,8 @@
 
 ## 6. 새 세션에서 할 것 (우선순위)
 
-1. (사장님 선택 대기) 통신판매업 전화번호 증빙 문제 이어받기 → BRN+전화번호 함께 나오는 문서 찾기.
-2. trends cron OpenAI 이슈 결정 (충전 vs graceful degradation).
-3. (선택 시) AI 콘텐츠 수익화 ①/②/③ 중 하나 실행 플랜.
+1. **★ 초안 모드 사진 1장 테스트** — 실 업로드→캡션 생성 확인(런칭 게이트). 실패 시 `reservations.caption_error` / netlify logs / `/api/cron-health` 로 디버깅.
+2. **★ OpenAI 키 충전 확인** — 1번이 되려면 필수.
+3. (확인) 내일 아침 `/trends` *네이티브* 크론이 cafe/food/hair 포함 8개 적재했는지.
+4. (사장님 선택 대기) 통신판매업 전화번호 증빙 → BRN+전화번호 함께 나오는 문서 찾기.
+5. (선택) `performance-rls.sql` 실행(스케일 전), AI 콘텐츠 수익화 ①대행/②lumi500명/③디지털상품 중 선택.
