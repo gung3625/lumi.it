@@ -15,6 +15,7 @@
 ## 1. lumi 현재 배포 상태 (전부 main 머지 완료)
 
 ### ⭐ 2026-06-09~10 세션 (가장 최근)
+- **카피 원칙 확정 — 의인화 금지** (`cc62fb0`): 사장님 피드백("루미네 사람들 4명 = AI 티") → 4인 캐릭터(사진가·작가·편집장·감독 루미) 전면 제거, "루미" 단일 목소리. 11개 파일 30여 곳, 잔존 0 검증. **향후 카피 가이드: 의인화 금지, 동작을 담백하게, "루미 팀"(실제 사람)만 허용.**
 - **몰입 레이어 R1** (`4fa3897`): 사장님 지시 "몰입형 UI/UX+마이크로 인터랙션 전체" — 풀 리디자인 아닌 레이어 추가. @view-transition MPA 전환 + .rv 스크롤 리빌(자체 애니 보유 요소 자동 제외) + index 카운트업 + hero 오로라 + tick-pop. js/immersive.js 신규(19/19 페이지), reduced-motion/미지원 완전 무동작, CSP 준수. 프리뷰 탭 hidden=rAF/IO 정지라 실모션은 실기기 확인 필요.
 - **scheduler 26일 잠수 발견·수습** (`ad92098`): 05-15 커밋 3be1470 이 for→map 변환하며 `continue` 3개를 남겨 `SyntaxError: Illegal continue` → 모듈 로드 실패 → **매분 예약픽업 크론 26일 사망**. continue→return 수정 + 게이트 추가(`e5c1fc0`). 교훈: **배포 성공 ≠ 함수 로드 성공** — `node --check` 전수 + 스텁 로드테스트 필수.
 - **전수 버그감사** (134 에이전트 워크플로): 확정 8건 수정(`9322af4`, `9c71849`) — regenerate-caption 잘못된 OpenAI responses API→chat/completions, tiktok-disconnect 없는 user_id 컬럼, pending-caption-rating 없는 profiles 테이블, select-caption stale scheduled_at 반환, followers-snapshot noToken 카운터, history.js null 가드, process-account-deletion listUsers 200명 페이징→sellers.id 직접 deleteUser, cleanup-stale event ReferenceError(시간당 크론 사망). 오탐 5건 검증 후 기각.
