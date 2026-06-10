@@ -66,7 +66,7 @@
             html += `<div class="stat-section-label">쓰레드</div>
               <div class="stat stat--threads-expired">
                 <div class="stat__label">⚠️ 쓰레드 재연동 필요</div>
-                <div class="stat__value" style="font-size:14px;">설정에서 토큰 갱신</div>
+                <div class="stat__value stat__value--sm">설정에서 토큰 갱신</div>
               </div>`;
           } else {
             const threadsItems = [

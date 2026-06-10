@@ -333,11 +333,16 @@
       function renderUploadThumbs() {
         if (!uploadThumbs) return;
         const photos = Array.from(selected);
-        uploadThumbs.innerHTML = photos.map((id, i) =>
-          `<div class="photo-thumbs__item" style="--idx:${i}">`
+        uploadThumbs.innerHTML = photos.map((id) =>
+          `<div class="photo-thumbs__item">`
           + `<span class="photo-thumbs__bg gallery__bg gallery__bg--${id}"></span>`
           + `</div>`
         ).join('');
+        // CSP: style-src 에 unsafe-inline 없음 → innerHTML 의 style 속성은 무시됨.
+        // 스태거 인덱스(--idx)는 CSSOM 으로 지정.
+        uploadThumbs.querySelectorAll('.photo-thumbs__item').forEach((el, i) => {
+          el.style.setProperty('--idx', String(i));
+        });
       }
       if (galleryDoneBtn) {
         galleryDoneBtn.addEventListener('click', () => {

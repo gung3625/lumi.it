@@ -302,10 +302,10 @@
             // root_morpheme · datalab_estimate 등 직접 매칭 외 모든 케이스 — raw 노출 X.
             // 사용자 지시 2026-05-14: 네이버 광고 API 가 직접 검색량을 못 주는 키워드는
             // 사람들이 사실상 검색 안 하는 것 = 트렌드 아님. root 검색량/환산값 노출은 거짓 신호.
-            rankSignals.push(`<span style="color:var(--ink-muted);">검색량 정확 매칭 실패 — 네이버 키워드 도구에 직접 데이터 없음</span>`);
+            rankSignals.push(`<span class="u-text-muted">검색량 정확 매칭 실패 — 네이버 키워드 도구에 직접 데이터 없음</span>`);
           }
         } else if (item.signalTier !== 'weak') {
-          rankSignals.push(`<span style="color:var(--ink-muted);">검색량 미수집 — 네이버 키워드 도구에 데이터 없음 (새로 떠오르는 신호일 수 있음)</span>`);
+          rankSignals.push(`<span class="u-text-muted">검색량 미수집 — 네이버 키워드 도구에 데이터 없음 (새로 떠오르는 신호일 수 있음)</span>`);
         }
         // 2차 — 상승률 가산점
         const v = typeof item.velocityPct === 'number' ? item.velocityPct : null;
@@ -328,7 +328,7 @@
               <ul class="sheet__rank-list">
                 ${rankSignals.map(s => `<li>${s}</li>`).join('')}
               </ul>
-              <p class="sheet__meta-line" style="margin-top:6px;">정렬: 신호 강도(강함 > 보통 > 약함) 우선, 그 안에서 종합 점수(검색량 + 상승률 + 소스 다양성) 내림차순. 검색량 정확매칭 실패해도 다른 신호(소스 다양성·상승률)가 강하면 상위 노출.</p>
+              <p class="sheet__meta-line sheet__meta-line--gap">정렬: 신호 강도(강함 > 보통 > 약함) 우선, 그 안에서 종합 점수(검색량 + 상승률 + 소스 다양성) 내림차순. 검색량 정확매칭 실패해도 다른 신호(소스 다양성·상승률)가 강하면 상위 노출.</p>
             </div>
           `);
         }

@@ -558,9 +558,6 @@
           copyBtn = `<button class="res__copy" type="button" data-action="copy-caption" data-copy="${esc(String(fullCaption))}">📋 캡션 복사</button>`;
         }
         const t = thumb(r);
-        // url 안 single-quote 가 들어오면 style 속성 탈출 → encodeURI 로 1차 차단.
-        // Supabase signed URL 은 안전하지만 가드 없음 → 명시 처리.
-        const thumbStyle = t ? `background-image:url('${encodeURI(t).replace(/'/g, '%27')}')` : '';
         // 액션 — '삭제' 버튼은 상단 "선택 삭제" / "모두 삭제" 로 일원화 (PR #232 이후 카드 제거).
         // 미게시 + 진행 중 row 만 '취소' 버튼 유지 (별도 의미).
         let actionBtn = '';
@@ -641,7 +638,7 @@
         return `
           <li class="res${hasPosted ? ' is-clickable' : ''}" data-key="${esc(r.reserve_key)}"${allChannelsStr ? ` data-channels="${esc(allChannelsStr)}"` : ''}${hasPosted ? ` data-reservation-id="${esc(r.id)}"` : ''}>
             <span class="res__check" aria-hidden="true"></span>
-            <div class="res__thumb" style="${thumbStyle}"></div>
+            <div class="res__thumb"${t ? ` data-thumb="${esc(t)}"` : ''}></div>
             <div class="res__body">
               <div class="res__time">${esc(time)}</div>
               ${caption ? `<div class="res__caption">${esc(caption)}</div>` : ''}
@@ -707,6 +704,13 @@
           const pastEmpty = '<li class="empty"><div class="empty__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div><div class="empty__title">아직 게시 이력이 없어요</div><p class="empty__sub">편집장 루미가 첫 게시 잘 올라갔는지 확인해서 이력으로 남길게요.</p><a class="cta" href="/register-product">📷 사진 올리기</a></li>';
           upcomingList.innerHTML = upcoming.length ? upcoming.map(renderItem).join('') : upcomingEmpty;
           pastList.innerHTML = past.length ? past.slice(0, 30).map(renderItem).join('') : pastEmpty;
+          // CSP: style-src 에 unsafe-inline 없음 → innerHTML 의 style 속성은 브라우저가 무시.
+          // 썸네일 배경은 CSSOM 으로 지정 (dashboard [data-scheduled-thumb] 패턴 동일).
+          // url 안 single-quote 는 encodeURI + %27 치환으로 context 탈출 차단.
+          document.querySelectorAll('.res__thumb[data-thumb]').forEach((el) => {
+            const u = el.getAttribute('data-thumb') || '';
+            el.style.backgroundImage = `url('${encodeURI(u).replace(/'/g, '%27')}')`;
+          });
           // 탭 표시 + 활성 탭에 따라 섹션 한 쪽만 노출
           if (tabsEl) tabsEl.hidden = false;
           if (tabsHintEl) tabsHintEl.hidden = false;

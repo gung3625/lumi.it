@@ -938,7 +938,8 @@
           //    변경: reserve 응답 받으면 즉시 /history?tab=upcoming 이동. 백엔드는 비동기 진행.
           //    history 에서 statusBadge 가 "영상 처리 중 · 곧 게시" / "곧 게시" 로 진행 표시.
           // 사장님 결정 (2026-05-15): 즉시 게시 → 히스토리 탭(past), 예약 → 예약 목록 탭(upcoming).
-          const targetTab = (scheduleMode === 'scheduled' || scheduleMode === 'best') ? 'upcoming' : 'past';
+          // 초안도 upcoming (history 분류와 일치 — 2026-06-10 image 경로와 동일 수정).
+          const targetTab = (scheduleMode === 'immediate') ? 'past' : 'upcoming';
           setOverlayCopy('업로드 완료', '백엔드에서 캡션·영상 처리 중. 히스토리에서 확인하세요.');
           setStep('caption', 'active');
           setTimeout(() => { location.href = '/history?tab=' + targetTab; }, 800);
@@ -948,7 +949,9 @@
           toast(err.message || '게시에 실패했어요', 3500);
           isSubmitting = false;
           submitBtn.disabled = false;
-          submitBtn.textContent = '📷 캡션 만들고 게시'; submitBtn.classList.remove('is-loading');
+          // 실패 시 라벨 복원 — 초안 모드면 초안 라벨로.
+          submitBtn.textContent = (scheduleMode === 'draft') ? '📝 초안 캡션 만들기' : '📷 캡션 만들고 게시';
+          submitBtn.classList.remove('is-loading');
           // 5초 후 히스토리로 강제 이동 — register-product 페이지에 stuck 되어 무한 로딩으로
           // 보이는 케이스 방어 (사장님 보고 2026-05-15). 사장님이 결과 확인 + 재시도 시 진입 가능.
           setTimeout(() => { if (!isSubmitting) location.href = '/history?tab=past'; }, 5000);
@@ -1053,13 +1056,17 @@
           setOverlayCopy('업로드 완료', '캡션 만들고 인스타에 올릴 예정. 히스토리에서 확인하세요.');
           setStep('caption', 'active');
           // 사장님 결정 (2026-05-15): 즉시 게시 → 히스토리 탭(past), 예약 → 예약 목록(upcoming).
-          const imgTargetTab = (scheduleMode === 'scheduled' || scheduleMode === 'best') ? 'upcoming' : 'past';
+          // 초안도 upcoming — history 분류(is_sent=false + scheduled_at=null → upcoming)와 일치.
+          // past 로 보내면 방금 만든 초안이 빈 화면 뒤에 숨는 UX 버그 (2026-06-10 수정).
+          const imgTargetTab = (scheduleMode === 'immediate') ? 'past' : 'upcoming';
           setTimeout(() => { location.href = '/history?tab=' + imgTargetTab; }, 800);
         } catch (e) {
           showOverlay(false);
           toast(e.message || '게시 실패');
           submitBtn.disabled = false;
-          submitBtn.textContent = '📷 캡션 만들고 게시'; submitBtn.classList.remove('is-loading');
+          // 실패 시 라벨 복원 — 초안 모드면 초안 라벨로 (모드 토글 핸들러와 동일 문구).
+          submitBtn.textContent = (scheduleMode === 'draft') ? '📝 초안 캡션 만들기' : '📷 캡션 만들고 게시';
+          submitBtn.classList.remove('is-loading');
           isSubmitting = false;
         }
       });

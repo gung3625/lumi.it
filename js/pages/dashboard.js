@@ -258,7 +258,7 @@
         try {
           const res = await fetch('/api/comments?limit=3', { headers: authHeaders });
           if (!res.ok) {
-            listEl.innerHTML = '<li class="comments-card__item comments-card__empty"><span class="comments-card__text" style="color: var(--ink-muted);">댓글을 가져오지 못했어요.</span></li>';
+            listEl.innerHTML = '<li class="comments-card__item comments-card__empty"><span class="comments-card__text u-text-muted">댓글을 가져오지 못했어요.</span></li>';
             return;
           }
           const json = await res.json();
@@ -267,7 +267,7 @@
             const msg = json.igConnected
               ? '아직 새 댓글이 없어요'
               : '인스타 연동 후 새 댓글이 여기 표시돼요';
-            listEl.innerHTML = `<li class="comments-card__item comments-card__empty"><span class="comments-card__text" style="color: var(--ink-muted);">${msg}</span></li>`;
+            listEl.innerHTML = `<li class="comments-card__item comments-card__empty"><span class="comments-card__text u-text-muted">${msg}</span></li>`;
             return;
           }
           // 외부 IG 입력 → escape 필수.
@@ -299,7 +299,7 @@
           const moreEl = document.querySelector('[data-comments-more]');
           if (moreEl) moreEl.hidden = false;
         } catch (e) {
-          listEl.innerHTML = '<li class="comments-card__item comments-card__empty"><span class="comments-card__text" style="color: var(--ink-muted);">댓글을 가져오지 못했어요.</span></li>';
+          listEl.innerHTML = '<li class="comments-card__item comments-card__empty"><span class="comments-card__text u-text-muted">댓글을 가져오지 못했어요.</span></li>';
         }
       }
 

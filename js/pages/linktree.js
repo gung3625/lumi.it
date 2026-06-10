@@ -85,7 +85,7 @@
               const href = safeHref(l.url);
               const target = href !== '#' && /^https?:/i.test(href) ? ' target="_blank" rel="noopener noreferrer"' : '';
               return `
-                <a class="lt-card" href="${esc(href)}"${target} style="animation-delay:${i * 40}ms">
+                <a class="lt-card" href="${esc(href)}"${target}>
                   <span class="lt-card__icon${iconCls}">${iconFor(l.type)}</span>
                   <span class="lt-card__label">${esc(l.label)}</span>
                   <span class="lt-card__arrow">${ARROW}</span>
@@ -106,6 +106,11 @@
             ${cardsHtml}
           </nav>
         `;
+        // CSP: style-src 에 unsafe-inline 없음 → innerHTML 의 style 속성은 무시됨.
+        // 카드 스태거 딜레이는 CSSOM 으로 지정.
+        contentEl.querySelectorAll('.lt-card').forEach((el, i) => {
+          el.style.animationDelay = (i * 40) + 'ms';
+        });
 
         if (profile.storeName) {
           document.title = `${profile.storeName} · 루미(lumi)`;
