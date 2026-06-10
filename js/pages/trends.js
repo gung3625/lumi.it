@@ -77,7 +77,7 @@
             try { history.replaceState(null, '', '#major=' + id); } catch (_) {}
             renderMajorTabs();
             stateEl.textContent = '키워드 고르는 중…';
-            listEl.innerHTML = '<li class="state" data-state>작가 루미가 키워드 고르는 중…</li>';
+            listEl.innerHTML = '<li class="state" data-state>요즘 뜨는 키워드 고르는 중…</li>';
             loadTrends();
           });
         });
