@@ -15,7 +15,7 @@
 ## 1. lumi 현재 배포 상태 (전부 main 머지 완료)
 
 ### ⭐ 2026-06-09~10 세션 (가장 최근)
-- **몰입 레이어 R1** (`4fa3897`): 사장님 지시 "몰입형 UI/UX+마이크로 인터랙션 전체" — 풀 리디자인 아닌 레이어 추가. \-transition MPA 전환 + .rv 스크롤 리빌(자체 애니 보유 요소 자동 제외) + index 카운트업 + hero 오로라 + tick-pop. js/immersive.js 신규(19/19 페이지), reduced-motion/미지원 완전 무동작, CSP 준수. 프리뷰 탭 hidden=rAF/IO 정지라 실모션은 실기기 확인 필요.
+- **몰입 레이어 R1** (`4fa3897`): 사장님 지시 "몰입형 UI/UX+마이크로 인터랙션 전체" — 풀 리디자인 아닌 레이어 추가. @view-transition MPA 전환 + .rv 스크롤 리빌(자체 애니 보유 요소 자동 제외) + index 카운트업 + hero 오로라 + tick-pop. js/immersive.js 신규(19/19 페이지), reduced-motion/미지원 완전 무동작, CSP 준수. 프리뷰 탭 hidden=rAF/IO 정지라 실모션은 실기기 확인 필요.
 - **scheduler 26일 잠수 발견·수습** (`ad92098`): 05-15 커밋 3be1470 이 for→map 변환하며 `continue` 3개를 남겨 `SyntaxError: Illegal continue` → 모듈 로드 실패 → **매분 예약픽업 크론 26일 사망**. continue→return 수정 + 게이트 추가(`e5c1fc0`). 교훈: **배포 성공 ≠ 함수 로드 성공** — `node --check` 전수 + 스텁 로드테스트 필수.
 - **전수 버그감사** (134 에이전트 워크플로): 확정 8건 수정(`9322af4`, `9c71849`) — regenerate-caption 잘못된 OpenAI responses API→chat/completions, tiktok-disconnect 없는 user_id 컬럼, pending-caption-rating 없는 profiles 테이블, select-caption stale scheduled_at 반환, followers-snapshot noToken 카운터, history.js null 가드, process-account-deletion listUsers 200명 페이징→sellers.id 직접 deleteUser, cleanup-stale event ReferenceError(시간당 크론 사망). 오탐 5건 검증 후 기각.
 - **워치독 감시망 전수 확장** (`84ce073`): scheduler 26일 잠수를 워치독이 못 잡은 원인 = WATCH_TARGETS 가 트렌드 3종뿐. **스케줄 함수 13개 전체에 cron-guard heartbeat** (9개 신규 runGuarded 래핑, 게이트는 가드 밖 = 외부 poke 의 heartbeat 위장 차단), WATCH_TARGETS 3→12(주기별 임계치), cron-health 4→13, heartbeat 9행 사전 시딩(false alert 방지). process-account-deletion 에 게이트 신규 추가(유일하게 없었음). **라이브 검증: scheduler heartbeat success=true 프로덕션 확인**. 이제 어떤 cron 이 죽어도 워치독이 임계치 내 메일 알림.
