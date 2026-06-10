@@ -451,6 +451,36 @@
           location.href = '/';
         });
       });
+      // ── 내 데이터 다운로드 (PIPA §35 이동권 — 방침 §8 약속 경로) ──
+      // export-my-data 는 Bearer 헤더 필수라 <a href> 직링크 불가 → fetch + Blob 다운로드.
+      const exportBtn = document.querySelector('[data-export-data]');
+      if (exportBtn) {
+        const exportLabel = exportBtn.querySelector('[data-export-label]');
+        exportBtn.addEventListener('click', async () => {
+          exportBtn.disabled = true;
+          if (exportLabel) exportLabel.textContent = '준비 중…';
+          try {
+            const r = await fetch('/api/export-my-data', { headers: authHeaders });
+            if (!r.ok) throw new Error('다운로드에 실패했어요');
+            const blob = await r.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `lumi-my-data-${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 4000);
+            toast('내 데이터를 JSON 으로 내려받았어요');
+          } catch (e) {
+            toast(e.message || '다운로드에 실패했어요');
+          } finally {
+            exportBtn.disabled = false;
+            if (exportLabel) exportLabel.textContent = '내 데이터 다운로드';
+          }
+        });
+      }
+
       // ── 회원 탈퇴 / 신청 취소 ──
       // 흐름:
       //   1) 신청 전: [회원 탈퇴] 버튼 → 모달 열림 → "회원 탈퇴" 입력 일치 시 활성 →

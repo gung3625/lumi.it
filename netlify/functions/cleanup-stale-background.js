@@ -164,21 +164,42 @@ async function cleanupTrendsMeta(supabase) {
   return total;
 }
 
+// client_errors 보존 30일 — error-track.js(프런트) → error-log.js 가 쌓는 오류 로그.
+// 정리 cron 이 없어 무한 누적되던 것 차단 (PIPA 데이터 최소화 — privacy §3 "오류 로그 30일" 과 동기).
+async function cleanupClientErrors(supabase) {
+  const cutoff = new Date(Date.now() - THIRTY_DAYS_MS).toISOString();
+  try {
+    const { error, count } = await supabase
+      .from('client_errors')
+      .delete({ count: 'exact' })
+      .lt('created_at', cutoff);
+    if (error) {
+      console.warn('[cleanup-stale] client_errors 삭제 경고:', error.message);
+      return 0;
+    }
+    return count || 0;
+  } catch (e) {
+    console.warn('[cleanup-stale] client_errors 예외:', e && e.message);
+    return 0;
+  }
+}
+
 const cleanupStaleHandler = async (event) => {
   const headers = corsHeaders(getOrigin(event));
   try {
     const supabase = getAdminClient();
-    const [pending, failed, posted, trendsMeta] = await Promise.all([
+    const [pending, failed, posted, trendsMeta, clientErrors] = await Promise.all([
       cleanupPendingOrphans(supabase),
       cleanupFailedOld(supabase),
       cleanupPostedStorage(supabase),
       cleanupTrendsMeta(supabase),
+      cleanupClientErrors(supabase),
     ]);
-    console.log(`[cleanup-stale] pending=${pending} failed=${failed} posted=${posted} trendsMeta=${trendsMeta}`);
+    console.log(`[cleanup-stale] pending=${pending} failed=${failed} posted=${posted} trendsMeta=${trendsMeta} clientErrors=${clientErrors}`);
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ success: true, pending, failed, posted, trendsMeta }),
+      body: JSON.stringify({ success: true, pending, failed, posted, trendsMeta, clientErrors }),
     };
   } catch (err) {
     console.error('[cleanup-stale] 실행 실패:', err.message);

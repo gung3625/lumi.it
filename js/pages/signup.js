@@ -14,6 +14,16 @@
         }
       } catch (_) {}
 
+      // 카카오 로그인 실패 (?kakao_error=N) — 토큰 체크보다 먼저.
+      // 신규 유저는 토큰이 없어서 아래 분기가 바로 홈으로 튕김 → 에러 안내가 통째로
+      // 사라지던 문제 (2026-06-10). 안내 후 홈(재시도 CTA 있는 곳)으로 보낸다.
+      const kakaoErr = new URLSearchParams(location.search).get('kakao_error');
+      if (kakaoErr) {
+        alert('카카오 로그인이 완료되지 않았어요. 다시 시도해주세요. (코드: ' + kakaoErr + ')');
+        location.replace('/');
+        return;
+      }
+
       const token = localStorage.getItem('lumi-auth') || localStorage.getItem('lumi_auth') || localStorage.getItem('seller_jwt') || '';
       const authHeaders = token ? { Authorization: 'Bearer ' + token } : {};
 
