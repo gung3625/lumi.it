@@ -345,7 +345,7 @@
           if (connected && tokenExpired) {
             // 토큰 만료/무효 — 즉시 재연동 유도
             titleEl.textContent = '인스타 재연동 필요';
-            subEl.textContent = '토큰이 만료됐어요. 게시·댓글·트렌드 갱신이 멈춤';
+            subEl.textContent = '연결이 만료돼 게시·댓글이 멈췄어요. 재연동하면 바로 살아나요';
             actionBtn.textContent = '재연동';
             actionBtn.className = 'ig-card__action ig-card__action--connect';
             actionBtn.hidden = false;
@@ -400,7 +400,7 @@
 
           if (connected && tokenExpired) {
             titleEl.textContent = '쓰레드 재연동 필요';
-            subEl.textContent = '토큰이 만료됐어요. 쓰레드 게시가 멈춤';
+            subEl.textContent = '연결이 만료돼 쓰레드 게시가 멈췄어요. 재연동해주세요';
             actionBtn.textContent = '재연동';
             actionBtn.className = 'ig-card__action ig-card__action--connect';
             actionBtn.hidden = false;
