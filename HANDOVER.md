@@ -25,6 +25,7 @@
 - ig-hashtag 스케줄 이중선언(toml 17:00 vs in-code 18:00 UTC) → **17:00 통일** (`2e17bd7`).
 - 라이브 검증 10/10 통과 (법적 문구·JS 픽스·GA 제거 전부 프로덕션 확인).
 - 미수정 플래그(저영향): signup.js 가 raw fetch 라 만료토큰 시 refresh 재시도 없음(재로그인 유도로 충분), register-product pollUntilDone 죽은 코드(~90줄, 리다이렉트 방식 전환으로 미사용), dashboard if(false) 진행카드 블록(의도적 비활성).
+- **설정·베타 인입 점검** (`3784f68`): 🔴 **'내 데이터 다운로드' 버튼 부재** — 방침 §8 약속 + 백엔드(export-my-data) 실존인데 UI 진입점이 없었음(PIPA §35 이동권 행사 수단 부재) → 설정 계정 섹션에 신설(fetch+Blob, Bearer 필수라 a href 불가). 🔴 **카카오 로그인 실패 무안내** — 콜백이 /signup?kakao_error 로 보내는데 처리 0곳 + 토큰 없으면 즉시 홈 튕김 → 안내 후 홈 복귀로 수정. client_errors 30일 정리(cleanup-stale 5번째 청소) + 방침 §3 동기화. comments/insights/trends JS·베타 깔때기·error-log = 무결 확인. 모바일 375px 공개 페이지 전부 가로 오버플로 0. beta_signups 는 죽은 테이블(쓰는 곳 0 — 옛 대기열 설계 잔재, deny-all 이라 무해).
 
 ### 2026-06-07~08 대규모 세션 (git log 가 정확한 소스)
 - **초안 모드**(`post_mode='draft'`): Meta 승인 없이 사진→캡션 생성 후 게시 안 함(유일한 런칭 경로). register "초안만" 버튼·`?draft=1`, history 캡션 복사 버튼, dashboard IG모달 진입로. 흐름: reserve(scheduled_at=null)→process-and-post(status='draft', TikTok·즉시IG 둘다 스킵)→scheduler 무시→list-reservations(필터없음)→history. ⚠️ **끝-끝(실 업로드) 미검증 — 사진 1장 테스트 필요**.
