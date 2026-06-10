@@ -1,7 +1,7 @@
 // scheduled-ig-hashtag-background.js — 매일 IG 해시태그 트렌드 수집 (3일 업종 로테이션)
 // IG Graph API rate limit 회피: 하루 3업종 × 3태그 = 9개/일, 고유 27개/주 (한도 30개 이내)
 // 이 캐시는 scheduled-trends-v2-background.js 가 fetchInstagram 단계에서 읽음.
-// 스케줄: 매일 UTC 18:00 = KST 03:00
+// 스케줄: 매일 UTC 17:00 = KST 02:00 (netlify.toml 과 in-code config 동일 값 유지)
 
 const { getAdminClient } = require('./_shared/supabase-admin');
 const https = require('https');
@@ -209,5 +209,7 @@ exports.handler = async (event, context) => {
 };
 
 module.exports.config = {
-  schedule: '0 18 * * *', // 매일 KST 03:00 (= UTC 18:00)
+  // netlify.toml 과 동일 값으로 통일 (2026-06-10 — 이중선언이 17:00/18:00 로 어긋나 있었음).
+  // KST 02:00 = trends cron(KST 00:00) 직후라 캐시 신선 + Meta rate limit 분산.
+  schedule: '0 17 * * *', // 매일 KST 02:00 (= UTC 17:00)
 };

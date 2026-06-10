@@ -48,7 +48,7 @@ const WATCH_TARGETS = [
   { name: 'scheduled-post-insights',      thresholdMin:   120, periodLabel: '30분마다' },
   { name: 'cleanup-stale',                thresholdMin:   180, periodLabel: '매시간' },
   { name: 'tiktok-token-refresh',         thresholdMin:   480, periodLabel: '6시간마다' },
-  { name: 'scheduled-ig-hashtag',         thresholdMin:  1530, periodLabel: '매일 KST 03:00' },
+  { name: 'scheduled-ig-hashtag',         thresholdMin:  1530, periodLabel: '매일 KST 02:00' },
   { name: 'process-account-deletion',     thresholdMin:  1530, periodLabel: '매일 KST 03:00' },
   { name: 'cleanup-orphan-storage',       thresholdMin:  1530, periodLabel: '매일 KST 04:00' },
   { name: 'scheduled-followers-snapshot', thresholdMin:  1530, periodLabel: '매일 KST 04:00' },
