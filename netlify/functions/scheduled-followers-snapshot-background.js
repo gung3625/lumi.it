@@ -98,12 +98,9 @@ function expandValueToRows(userId, valueRow) {
 }
 
 const { allowScheduledOrSecret } = require('./_shared/auth');
+const { runGuarded } = require('./_shared/cron-guard');
 
-exports.handler = async (event) => {
-  // 외부 임의 HTTP 트리거 차단 (네이티브 cron 또는 LUMI_SECRET 만 허용) — IG API 쿼터 남용 방지.
-  if (!allowScheduledOrSecret(event)) {
-    return { statusCode: 401, body: JSON.stringify({ ok: false, error: 'unauthorized' }) };
-  }
+const followersSnapshotHandler = async (event) => {
   const supabase = getAdminClient();
 
   // 활성 사장님 + IG 연동된 분만 후보
@@ -189,4 +186,14 @@ exports.handler = async (event) => {
     statusCode: 200,
     body: JSON.stringify({ ok: true, sellers: sellers.length, processed, rows: inserted, no_followers: noFollowers, no_token: noToken }),
   };
+};
+
+// cron-guard heartbeat — cron-watchdog 감시용. 게이트는 가드 밖 (외부 poke 의 heartbeat 갱신 차단).
+const guarded = runGuarded({ name: 'scheduled-followers-snapshot', handler: followersSnapshotHandler });
+exports.handler = async (event, context) => {
+  // 외부 임의 HTTP 트리거 차단 (네이티브 cron 또는 LUMI_SECRET 만 허용) — IG API 쿼터 남용 방지.
+  if (!allowScheduledOrSecret(event)) {
+    return { statusCode: 401, body: JSON.stringify({ ok: false, error: 'unauthorized' }) };
+  }
+  return guarded(event, context);
 };

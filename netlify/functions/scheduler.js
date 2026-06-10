@@ -3,12 +3,9 @@
 // process-and-post-background / select-and-post-background 로 위임.
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { allowScheduledOrSecret } = require('./_shared/auth');
+const { runGuarded } = require('./_shared/cron-guard');
 
-exports.handler = async (event) => {
-  // 외부 임의 HTTP 트리거 차단 (네이티브 1분 cron 또는 LUMI_SECRET 만 허용) — 백그라운드 5종과 동일 게이트.
-  if (!allowScheduledOrSecret(event)) {
-    return { statusCode: 401, body: JSON.stringify({ error: 'unauthorized' }) };
-  }
+const schedulerHandler = async (event) => {
   try {
     const supabase = getAdminClient();
     const nowIso = new Date().toISOString();
@@ -129,6 +126,17 @@ exports.handler = async (event) => {
     console.error('[scheduler] error:', err.message);
     return { statusCode: 500 };
   }
+};
+
+// cron-guard heartbeat — cron-watchdog 감시용 (26일 잠수 사고 재발 방지).
+// 게이트를 가드 밖에 둠: 외부 임의 poke 가 heartbeat 를 갱신해 죽은 cron 을 가리지 않도록.
+const guarded = runGuarded({ name: 'scheduler', handler: schedulerHandler });
+exports.handler = async (event, context) => {
+  // 외부 임의 HTTP 트리거 차단 (네이티브 1분 cron 또는 LUMI_SECRET 만 허용) — 백그라운드 5종과 동일 게이트.
+  if (!allowScheduledOrSecret(event)) {
+    return { statusCode: 401, body: JSON.stringify({ error: 'unauthorized' }) };
+  }
+  return guarded(event, context);
 };
 
 module.exports.config = {

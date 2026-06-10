@@ -5,6 +5,8 @@
 
 const { getAdminClient } = require('./_shared/supabase-admin');
 const https = require('https');
+const { allowScheduledOrSecret } = require('./_shared/auth');
+const { runGuarded } = require('./_shared/cron-guard');
 
 // 9업종 × 3개 해시태그 (고유 27개, 주 30개 한도 이내)
 // 사장님 결정 (2026-05-15): pet 업종 폐기. 8업종으로 4일 rotation (2업종 × 4일).
@@ -104,7 +106,7 @@ async function fetchIgHashtag({ businessId, accessToken, tag }) {
   }
 }
 
-exports.handler = async (event) => {
+const igHashtagHandler = async (event) => {
   const bodyObj = (() => { try { return JSON.parse(event?.body || '{}'); } catch(_) { return {}; } })();
   const isScheduled = !event || !event.httpMethod || !!bodyObj.next_run;
   // 수동 트리거도 허용: x-lumi-secret 헤더 체크
@@ -194,6 +196,16 @@ exports.handler = async (event) => {
       counts: Object.fromEntries(Object.entries(results).map(([k, v]) => [k, v.length])),
     }),
   };
+};
+
+// cron-guard heartbeat — cron-watchdog 감시용. 게이트는 가드 밖 (외부 poke 의 heartbeat 갱신 차단).
+// 핸들러 내부의 기존 수동 트리거 인증(x-lumi-secret)은 그대로 유지 — 이중 게이트 무해.
+const guarded = runGuarded({ name: 'scheduled-ig-hashtag', handler: igHashtagHandler });
+exports.handler = async (event, context) => {
+  if (!allowScheduledOrSecret(event)) {
+    return { statusCode: 401, body: JSON.stringify({ error: 'unauthorized' }) };
+  }
+  return guarded(event, context);
 };
 
 module.exports.config = {

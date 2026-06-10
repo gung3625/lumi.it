@@ -9,9 +9,11 @@
 //   3) 한 row 실패해도 다음 row 계속, 마지막에 성공/실패 카운트 로그
 //
 // 알림 이메일은 발송하지 않음 (UI 배너로 대체).
-// 주의: 외부 트리거 (Netlify scheduled background) — LUMI_SECRET 검증 불필요.
+// 외부 임의 HTTP 트리거는 allowScheduledOrSecret 게이트로 차단 (2026-06-10 — 다른 cron 과 통일).
 
 const { getAdminClient } = require('./_shared/supabase-admin');
+const { allowScheduledOrSecret } = require('./_shared/auth');
+const { runGuarded } = require('./_shared/cron-guard');
 
 const PROCESS_LIMIT = 100;
 
@@ -45,7 +47,7 @@ async function deleteSellerCascade(admin, seller) {
   }
 }
 
-exports.handler = async (event) => {
+const processDeletionHandler = async (event) => {
   // Netlify scheduled background: event 객체가 거의 비어있음
   let admin;
   try {
@@ -94,4 +96,14 @@ exports.handler = async (event) => {
     statusCode: 200,
     body: JSON.stringify({ success: true, processed: list.length, ok: success, failed }),
   };
+};
+
+// cron-guard heartbeat — cron-watchdog 감시용. 게이트는 가드 밖 (외부 poke 의 heartbeat 갱신 차단).
+const guarded = runGuarded({ name: 'process-account-deletion', handler: processDeletionHandler });
+exports.handler = async (event, context) => {
+  // 외부 임의 HTTP 트리거 차단 (네이티브 cron 또는 LUMI_SECRET 만 허용) — 멱등이지만 DB 부하 남용 방지.
+  if (!allowScheduledOrSecret(event)) {
+    return { statusCode: 401, body: JSON.stringify({ error: 'unauthorized' }) };
+  }
+  return guarded(event, context);
 };

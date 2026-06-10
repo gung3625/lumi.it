@@ -18,10 +18,12 @@
 
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { safeAwait } = require('./_shared/supa-safe');
+const { allowScheduledOrSecret } = require('./_shared/auth');
+const { runGuarded } = require('./_shared/cron-guard');
 
 const TIKTOK_TOKEN_ENDPOINT = 'https://open.tiktokapis.com/v2/oauth/token/';
 
-exports.handler = async (event) => {
+const tiktokRefreshHandler = async (event) => {
   // 수동 트리거 인증 (cron 호출은 httpMethod 없음)
   const isScheduled = !event?.httpMethod;
   if (!isScheduled) {
@@ -252,4 +254,14 @@ exports.handler = async (event) => {
       failReasons: failed > 0 ? failReasons : undefined,
     }),
   };
+};
+
+// cron-guard heartbeat — cron-watchdog 감시용. 게이트는 가드 밖 (외부 poke 의 heartbeat 갱신 차단).
+// 핸들러 내부의 기존 수동 트리거 인증(OPTIONS/force 처리 포함)은 그대로 유지 — 이중 게이트 무해.
+const guarded = runGuarded({ name: 'tiktok-token-refresh', handler: tiktokRefreshHandler });
+exports.handler = async (event, context) => {
+  if (!allowScheduledOrSecret(event)) {
+    return { statusCode: 401, body: JSON.stringify({ error: 'unauthorized' }) };
+  }
+  return guarded(event, context);
 };

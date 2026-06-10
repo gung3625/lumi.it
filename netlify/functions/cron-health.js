@@ -21,6 +21,16 @@ const CRON_NAMES = [
   'scheduled-trends-longtail',
   'scheduled-trends-embeddings',
   'cron-watchdog',
+  // 2026-06-10: cron-guard heartbeat 전수 확장 — cron-watchdog WATCH_TARGETS 와 동기 유지.
+  'scheduler',
+  'scheduled-post-insights',
+  'cleanup-stale',
+  'tiktok-token-refresh',
+  'scheduled-ig-hashtag',
+  'process-account-deletion',
+  'cleanup-orphan-storage',
+  'scheduled-followers-snapshot',
+  'scheduled-vault-cleanup',
 ];
 
 exports.handler = async (event) => {

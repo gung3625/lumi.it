@@ -11,6 +11,7 @@ const { corsHeaders, getOrigin, allowScheduledOrSecret } = require('./_shared/au
 
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { deleteReservationStorage, deleteReservationRow } = require('./_shared/storage-cleanup');
+const { runGuarded } = require('./_shared/cron-guard');
 
 
 const LIMIT = 100;
@@ -163,11 +164,7 @@ async function cleanupTrendsMeta(supabase) {
   return total;
 }
 
-exports.handler = async (event) => {
-  // 외부 임의 HTTP 트리거 차단 (네이티브 cron 또는 LUMI_SECRET 만 허용).
-  if (!allowScheduledOrSecret(event)) {
-    return { statusCode: 401, body: JSON.stringify({ error: 'unauthorized' }) };
-  }
+const cleanupStaleHandler = async (event) => {
   const headers = corsHeaders(getOrigin(event));
   try {
     const supabase = getAdminClient();
@@ -191,5 +188,15 @@ exports.handler = async (event) => {
       body: JSON.stringify({ error: '스케줄 정리 중 오류가 발생했습니다.' }),
     };
   }
+};
+
+// cron-guard heartbeat — cron-watchdog 감시용. 게이트는 가드 밖 (외부 poke 의 heartbeat 갱신 차단).
+const guarded = runGuarded({ name: 'cleanup-stale', handler: cleanupStaleHandler });
+exports.handler = async (event, context) => {
+  // 외부 임의 HTTP 트리거 차단 (네이티브 cron 또는 LUMI_SECRET 만 허용).
+  if (!allowScheduledOrSecret(event)) {
+    return { statusCode: 401, body: JSON.stringify({ error: 'unauthorized' }) };
+  }
+  return guarded(event, context);
 };
 

@@ -125,12 +125,9 @@ async function deleteOrphanFiles(supabase, prefix) {
 }
 
 const { allowScheduledOrSecret } = require('./_shared/auth');
+const { runGuarded } = require('./_shared/cron-guard');
 
-exports.handler = async (event) => {
-  // 외부 임의 HTTP 트리거 차단 (네이티브 cron 또는 LUMI_SECRET 만 허용) — 조기 파일 삭제 남용 방지.
-  if (!allowScheduledOrSecret(event)) {
-    return { statusCode: 401, body: JSON.stringify({ error: 'unauthorized' }) };
-  }
+const cleanupOrphanHandler = async (event) => {
   try {
     const supabase = getAdminClient();
     const candidates = await collectOrphanCandidates(supabase);
@@ -163,4 +160,14 @@ exports.handler = async (event) => {
     console.error('[cleanup-orphan] 실행 실패:', err.message);
     return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
   }
+};
+
+// cron-guard heartbeat — cron-watchdog 감시용. 게이트는 가드 밖 (외부 poke 의 heartbeat 갱신 차단).
+const guarded = runGuarded({ name: 'cleanup-orphan-storage', handler: cleanupOrphanHandler });
+exports.handler = async (event, context) => {
+  // 외부 임의 HTTP 트리거 차단 (네이티브 cron 또는 LUMI_SECRET 만 허용) — 조기 파일 삭제 남용 방지.
+  if (!allowScheduledOrSecret(event)) {
+    return { statusCode: 401, body: JSON.stringify({ error: 'unauthorized' }) };
+  }
+  return guarded(event, context);
 };

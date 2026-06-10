@@ -15,12 +15,9 @@
 
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { allowScheduledOrSecret } = require('./_shared/auth');
+const { runGuarded } = require('./_shared/cron-guard');
 
-exports.handler = async (event) => {
-  // 외부 임의 HTTP 트리거 차단 (네이티브 cron 또는 LUMI_SECRET 만 허용).
-  if (!allowScheduledOrSecret(event)) {
-    return { statusCode: 401, body: JSON.stringify({ ok: false, error: 'unauthorized' }) };
-  }
+const vaultCleanupHandler = async (event) => {
   const supabase = getAdminClient();
   try {
     const { data, error } = await supabase.rpc('cleanup_orphan_vault_secrets');
@@ -35,4 +32,14 @@ exports.handler = async (event) => {
     console.error('[vault-cleanup] 예외:', e && e.message);
     return { statusCode: 500, body: JSON.stringify({ ok: false, error: e && e.message }) };
   }
+};
+
+// cron-guard heartbeat — cron-watchdog 감시용. 게이트는 가드 밖 (외부 poke 의 heartbeat 갱신 차단).
+const guarded = runGuarded({ name: 'scheduled-vault-cleanup', handler: vaultCleanupHandler });
+exports.handler = async (event, context) => {
+  // 외부 임의 HTTP 트리거 차단 (네이티브 cron 또는 LUMI_SECRET 만 허용).
+  if (!allowScheduledOrSecret(event)) {
+    return { statusCode: 401, body: JSON.stringify({ ok: false, error: 'unauthorized' }) };
+  }
+  return guarded(event, context);
 };

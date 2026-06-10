@@ -42,6 +42,17 @@ const WATCH_TARGETS = [
   { name: 'scheduled-trends',            thresholdMin:  1530, periodLabel: '매일 KST 00:00' },
   { name: 'scheduled-trends-longtail',   thresholdMin: 10800, periodLabel: '매주 월 KST 04:00' },
   { name: 'scheduled-trends-embeddings', thresholdMin: 10800, periodLabel: '매주 화 KST 03:00' },
+  // 2026-06-10 확장: scheduler 가 26일 죽어있어도 (illegal continue, ad92098) 아무도 몰랐던
+  // 이유 = 위 3개만 감시했기 때문. 스케줄 함수 전체에 cron-guard heartbeat 를 달고 전수 감시.
+  { name: 'scheduler',                    thresholdMin:    30, periodLabel: '매분' },
+  { name: 'scheduled-post-insights',      thresholdMin:   120, periodLabel: '30분마다' },
+  { name: 'cleanup-stale',                thresholdMin:   180, periodLabel: '매시간' },
+  { name: 'tiktok-token-refresh',         thresholdMin:   480, periodLabel: '6시간마다' },
+  { name: 'scheduled-ig-hashtag',         thresholdMin:  1530, periodLabel: '매일 KST 03:00' },
+  { name: 'process-account-deletion',     thresholdMin:  1530, periodLabel: '매일 KST 03:00' },
+  { name: 'cleanup-orphan-storage',       thresholdMin:  1530, periodLabel: '매일 KST 04:00' },
+  { name: 'scheduled-followers-snapshot', thresholdMin:  1530, periodLabel: '매일 KST 04:00' },
+  { name: 'scheduled-vault-cleanup',      thresholdMin: 10800, periodLabel: '매주 월 KST 04:45' },
 ];
 
 const COOLDOWN_HOURS = 6;
