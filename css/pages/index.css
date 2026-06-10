@@ -48,6 +48,24 @@
         var(--bg);
       z-index: -1;
     }
+    /* 몰입 R1 — 오로라 앰비언트. 시그니처 3색 블롭이 아주 천천히 떠다님.
+       transform-only(GPU) + ::before 정적 배경 위에 겹쳐 깊이감. reduced-motion 시
+       motion.css 전역 가드가 애니메이션 정지 → 정적 블롭만 남음 (무해). */
+    .hero::after {
+      content: '';
+      position: absolute; inset: -22%;
+      z-index: -1;
+      pointer-events: none;
+      background:
+        radial-gradient(420px 420px at 20% 24%, rgba(255,107,139,0.13) 0%, rgba(255,107,139,0) 65%),
+        radial-gradient(520px 520px at 84% 14%, rgba(221,160,221,0.12) 0%, rgba(221,160,221,0) 65%),
+        radial-gradient(480px 480px at 76% 84%, rgba(237,208,128,0.11) 0%, rgba(237,208,128,0) 65%);
+      animation: aurora-drift 24s var(--ease-soft) infinite alternate;
+    }
+    @keyframes aurora-drift {
+      from { transform: translate3d(-2%, -1.5%, 0) scale(1); }
+      to   { transform: translate3d(2.5%, 2%, 0) scale(1.07); }
+    }
     .hero__topbar {
       display: flex;
       align-items: center;

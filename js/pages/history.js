@@ -661,7 +661,12 @@
         if (!btn) return;
         const text = btn.dataset.copy || '';
         if (!text) return;
-        const ok = () => toast('캡션 복사됐어요 — 인스타에 붙여넣어 올리세요 📷');
+        const ok = () => {
+          toast('캡션 복사됐어요 — 인스타에 붙여넣어 올리세요 📷');
+          // 몰입 R1 — 성공 마이크로 피드백 (motion.css .tick-pop, 1회 후 제거)
+          btn.classList.add('tick-pop');
+          btn.addEventListener('animationend', () => btn.classList.remove('tick-pop'), { once: true });
+        };
         const fail = () => toast('복사 실패 — 캡션을 길게 눌러 직접 복사해주세요');
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(text).then(ok).catch(fail);

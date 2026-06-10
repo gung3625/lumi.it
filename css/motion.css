@@ -28,15 +28,27 @@ body {
 }
 
 /* ──────────────────────────────────────
- * View Transitions (Chrome/Edge/Safari 17+)
- * <meta name="view-transition" content="same-origin"> 와 함께.
- * 페이지 이동 시 자동 cross-fade.
+ * View Transitions — MPA 몰입 전환 (몰입 R1, 2026-06-10)
+ * @view-transition 으로 문서 간 이동도 SPA 처럼 흐르게 (Chrome 126+ / Safari 18.2+).
+ * 구형 브라우저는 룰 무시 → 기존 body page-enter 페이드 유지 (점진적 향상).
+ * 떠나는 화면은 살짝 위로 빠지고, 새 화면이 아래에서 떠오름 — 토스 내비게이션 감각.
  * ────────────────────────────────────── */
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation-duration: 280ms;
-  animation-timing-function: var(--ease-soft);
+@view-transition { navigation: auto; }
+
+::view-transition-old(root) {
+  animation: vt-leave 200ms var(--ease-soft) both;
 }
+::view-transition-new(root) {
+  animation: vt-enter 320ms var(--ease-toss) both;
+}
+@keyframes vt-leave {
+  to { opacity: 0; transform: translateY(-8px); }
+}
+@keyframes vt-enter {
+  from { opacity: 0; transform: translateY(12px); }
+}
+/* VT 진행 중엔 body 자체 페이드 끔 — 이중 페이드 방지 (VT 지원 브라우저만 매칭) */
+html:active-view-transition body { animation: none; }
 
 /* ──────────────────────────────────────
  * 인터랙티브 요소 글로벌 default
@@ -175,6 +187,49 @@ button:not([disabled]):active,
   /* reduce 시 흐르는 shimmer 끄고 정적 회색 자리만 */
   .skeleton { animation: none; }
 }
+
+/* ──────────────────────────────────────
+ * 스크롤 리빌 (몰입 R1) — js/immersive.js 가 .rv 부여 + 뷰포트 진입 시 .rv-in.
+ *   JS 미실행/미지원/reduced-motion 이면 .rv 자체가 안 붙음 → 콘텐츠 항상 보임 (안전 기본값).
+ *   스태거는 --rv-delay (JS 가 CSSOM 으로 세팅 — CSP 인라인 style 금지 준수).
+ * ────────────────────────────────────── */
+.rv {
+  opacity: 0;
+  transform: translateY(14px);
+  transition:
+    opacity   620ms var(--ease-soft),
+    transform 620ms var(--ease-toss);
+  transition-delay: var(--rv-delay, 0ms);
+  will-change: opacity, transform;
+}
+.rv.rv-in {
+  opacity: 1;
+  transform: none;
+  will-change: auto;
+}
+
+/* ──────────────────────────────────────
+ * 카드 hover lift (몰입 R1) — 데스크톱(hover 가능 기기)만.
+ *   js/immersive.js 가 스태거 카드에 .hover-lift 부여 (자체 transform 애니메이션
+ *   있는 컴포넌트와의 충돌 방지를 위해 JS 쪽 선별 목록으로만 적용).
+ * ────────────────────────────────────── */
+@media (hover: hover) {
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+}
+
+/* ──────────────────────────────────────
+ * 성공 마이크로 피드백 (몰입 R1) — 복사/저장 성공 순간 1회 통통.
+ *   사용: el.classList.add('tick-pop') → animationend 시 제거.
+ * ────────────────────────────────────── */
+@keyframes tick-pop {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.07); }
+  100% { transform: scale(1); }
+}
+.tick-pop { animation: tick-pop 360ms var(--ease-spring); }
 
 /* ──────────────────────────────────────
  * 접근성 — prefers-reduced-motion 시 전체 모션 비활성

@@ -472,6 +472,9 @@
             a.remove();
             setTimeout(() => URL.revokeObjectURL(url), 4000);
             toast('내 데이터를 JSON 으로 내려받았어요');
+            // 몰입 R1 — 성공 마이크로 피드백
+            exportBtn.classList.add('tick-pop');
+            exportBtn.addEventListener('animationend', () => exportBtn.classList.remove('tick-pop'), { once: true });
           } catch (e) {
             toast(e.message || '다운로드에 실패했어요');
           } finally {
@@ -1022,7 +1025,8 @@
               sel.removeAllRanges();
             }
             copyBtn.textContent = '복사됨';
-            copyBtn.classList.add('is-copied');
+            copyBtn.classList.add('is-copied', 'tick-pop');
+            copyBtn.addEventListener('animationend', () => copyBtn.classList.remove('tick-pop'), { once: true });
             setTimeout(() => {
               copyBtn.textContent = '복사';
               copyBtn.classList.remove('is-copied');
