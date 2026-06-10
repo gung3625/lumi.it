@@ -20,7 +20,11 @@
 - **워치독 감시망 전수 확장** (`84ce073`): scheduler 26일 잠수를 워치독이 못 잡은 원인 = WATCH_TARGETS 가 트렌드 3종뿐. **스케줄 함수 13개 전체에 cron-guard heartbeat** (9개 신규 runGuarded 래핑, 게이트는 가드 밖 = 외부 poke 의 heartbeat 위장 차단), WATCH_TARGETS 3→12(주기별 임계치), cron-health 4→13, heartbeat 9행 사전 시딩(false alert 방지). process-account-deletion 에 게이트 신규 추가(유일하게 없었음). **라이브 검증: scheduler heartbeat success=true 프로덕션 확인**. 이제 어떤 cron 이 죽어도 워치독이 임계치 내 메일 알림.
 - **토스 UX라이팅 적용** (`8c81157`, `415a5cd`): index/pricing 기능카드 제목 기능명→유저결과("내 매장 말투 그대로" 등), '실시간 트렌드' 허위표현 4곳→'매일 갱신'.
 - **data-deletion-callback 멱등성 검증완료**(수정 불필요): Meta 재시도 → not_found 200 + 추적 row, 오류/중복삭제 없음. 비즈니스 심사 안전.
-- 참고: ig-hashtag 크론 스케줄 이중선언(netlify.toml 17:00 UTC vs 파일 config 18:00 UTC — 둘 다 일간이라 감시 무영향, 통일은 추후).
+- **법적 페이지 정합성 감사** (`6f90aa6`): privacy/terms 를 실코드와 전수 대조 — 쓰레드 연동정보 명시, 틱톡 연동정보 신설(제공 시 조건부 — TikTok 심사가 방침 내 기재 요구), 제3자/국외이전에 TikTok·Resend 추가, 트렌드 출처 네이버로 정정, 댓글 '도입예정'→라이브 정정. refund 는 현실 일치(무변경). + 🔴 **로그아웃이 lumi_refresh 안 지우던 버그**(공용기기 재로그인 가능) 5개 페이지 수정. GA dns-prefetch 18파일 제거(추적코드 없는데 힌트만 잔존).
+- **프런트 크리티컬 패스 점검** (`e7f81a6`): 🔴 CSP(unsafe-inline 제거)가 **innerHTML 주입 style 속성을 전부 무시** — history 예약카드 썸네일이 통째로 빈칸이던 버그(예약 0건이라 미발견) 포함 6파일 수리(data-thumb+CSSOM / u-text-muted 클래스). 🔴 초안 제출 후 past 탭 리다이렉트 → 초안은 upcoming 분류라 빈 화면부터 보이던 UX 버그(immediate 만 past). 가입 마법사·dashboard 게이트·reserve 무게이트(신규도 초안 가능)·무한루프 없음 검증 완료.
+- ig-hashtag 스케줄 이중선언(toml 17:00 vs in-code 18:00 UTC) → **17:00 통일** (`2e17bd7`).
+- 라이브 검증 10/10 통과 (법적 문구·JS 픽스·GA 제거 전부 프로덕션 확인).
+- 미수정 플래그(저영향): signup.js 가 raw fetch 라 만료토큰 시 refresh 재시도 없음(재로그인 유도로 충분), register-product pollUntilDone 죽은 코드(~90줄, 리다이렉트 방식 전환으로 미사용), dashboard if(false) 진행카드 블록(의도적 비활성).
 
 ### 2026-06-07~08 대규모 세션 (git log 가 정확한 소스)
 - **초안 모드**(`post_mode='draft'`): Meta 승인 없이 사진→캡션 생성 후 게시 안 함(유일한 런칭 경로). register "초안만" 버튼·`?draft=1`, history 캡션 복사 버튼, dashboard IG모달 진입로. 흐름: reserve(scheduled_at=null)→process-and-post(status='draft', TikTok·즉시IG 둘다 스킵)→scheduler 무시→list-reservations(필터없음)→history. ⚠️ **끝-끝(실 업로드) 미검증 — 사진 1장 테스트 필요**.
