@@ -14,7 +14,15 @@
 
 ## 1. lumi 현재 배포 상태 (전부 main 머지 완료)
 
-### ⭐ 2026-06-07~08 대규모 세션 (가장 최근 — git log 가 정확한 소스)
+### ⭐ 2026-06-09~10 세션 (가장 최근)
+- **scheduler 26일 잠수 발견·수습** (`ad92098`): 05-15 커밋 3be1470 이 for→map 변환하며 `continue` 3개를 남겨 `SyntaxError: Illegal continue` → 모듈 로드 실패 → **매분 예약픽업 크론 26일 사망**. continue→return 수정 + 게이트 추가(`e5c1fc0`). 교훈: **배포 성공 ≠ 함수 로드 성공** — `node --check` 전수 + 스텁 로드테스트 필수.
+- **전수 버그감사** (134 에이전트 워크플로): 확정 8건 수정(`9322af4`, `9c71849`) — regenerate-caption 잘못된 OpenAI responses API→chat/completions, tiktok-disconnect 없는 user_id 컬럼, pending-caption-rating 없는 profiles 테이블, select-caption stale scheduled_at 반환, followers-snapshot noToken 카운터, history.js null 가드, process-account-deletion listUsers 200명 페이징→sellers.id 직접 deleteUser, cleanup-stale event ReferenceError(시간당 크론 사망). 오탐 5건 검증 후 기각.
+- **워치독 감시망 전수 확장** (`84ce073`): scheduler 26일 잠수를 워치독이 못 잡은 원인 = WATCH_TARGETS 가 트렌드 3종뿐. **스케줄 함수 13개 전체에 cron-guard heartbeat** (9개 신규 runGuarded 래핑, 게이트는 가드 밖 = 외부 poke 의 heartbeat 위장 차단), WATCH_TARGETS 3→12(주기별 임계치), cron-health 4→13, heartbeat 9행 사전 시딩(false alert 방지). process-account-deletion 에 게이트 신규 추가(유일하게 없었음). **라이브 검증: scheduler heartbeat success=true 프로덕션 확인**. 이제 어떤 cron 이 죽어도 워치독이 임계치 내 메일 알림.
+- **토스 UX라이팅 적용** (`8c81157`, `415a5cd`): index/pricing 기능카드 제목 기능명→유저결과("내 매장 말투 그대로" 등), '실시간 트렌드' 허위표현 4곳→'매일 갱신'.
+- **data-deletion-callback 멱등성 검증완료**(수정 불필요): Meta 재시도 → not_found 200 + 추적 row, 오류/중복삭제 없음. 비즈니스 심사 안전.
+- 참고: ig-hashtag 크론 스케줄 이중선언(netlify.toml 17:00 UTC vs 파일 config 18:00 UTC — 둘 다 일간이라 감시 무영향, 통일은 추후).
+
+### 2026-06-07~08 대규모 세션 (git log 가 정확한 소스)
 - **초안 모드**(`post_mode='draft'`): Meta 승인 없이 사진→캡션 생성 후 게시 안 함(유일한 런칭 경로). register "초안만" 버튼·`?draft=1`, history 캡션 복사 버튼, dashboard IG모달 진입로. 흐름: reserve(scheduled_at=null)→process-and-post(status='draft', TikTok·즉시IG 둘다 스킵)→scheduler 무시→list-reservations(필터없음)→history. ⚠️ **끝-끝(실 업로드) 미검증 — 사진 1장 테스트 필요**.
 - **트렌드 = 완전 정상화 + OpenAI 0원**: ①GPT 전부 제거(`TRENDS_USE_OPENAI=false`, 네이버 직접) ②데이터랩 keywordGroups 5개 제한 버그 수정(cafe/food/hair 0건 원인) ③큐레이션 데이터랩 시드 우선(merge `[datalab,adKws]` — 검색광고 의미드리프트 차단) ④시드 접미사 정리. **8개 카테고리 깨끗·업종적합 검증완료**(수동 크론 3회, collected_date 2026-06-08). 05-27부터 11일 멈춤 해소. ⚠️ get-trends.js 읽기필터(BLACKLIST 오마카세·마라탕·크로플 등 일반메뉴명 + `X맛집` 패턴)가 특정 트렌드만 노출 → 시드에 일반명사 넣어도 페이지엔 안 뜸.
 - **캡션 버그 수정**(`acfc812`): 트렌드/해시태그 사진매칭 visualText 가 imageAnalysis(JSON 문자열)에 `.subjects` 객체접근→undefined로 죽어있던 것 복구(visionToContext 파싱).
