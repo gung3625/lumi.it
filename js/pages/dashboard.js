@@ -117,10 +117,13 @@
             if (data) {
               if (typeof data.likesTotal === 'number') {
                 setText('[data-stat-likes]', data.likesTotal.toLocaleString());
+                // 몰입 R2 — 실데이터 도착 순간 0→값 카운트업 (모션 비활성 환경선 미정의 → 스킵)
+                if (window.lumiCountUp) window.lumiCountUp(document.querySelector('[data-stat-likes]'));
                 if (data.likesTotal > 0) hasData = true;
               }
               if (typeof data.followers === 'number') {
                 setText('[data-stat-followers]', data.followers.toLocaleString());
+                if (window.lumiCountUp) window.lumiCountUp(document.querySelector('[data-stat-followers]'));
                 if (data.followers > 0) hasData = true;
               }
               if (typeof data.followersChange === 'number' && data.followersChange !== 0) {

@@ -219,6 +219,9 @@
             replyDiv.className = 'comment__reply';
             replyDiv.textContent = message;
             body.appendChild(replyDiv);
+            // 몰입 R2 — 답글 등록 성공 마이크로 피드백 (motion.css .tick-pop)
+            replyDiv.classList.add('tick-pop');
+            replyDiv.addEventListener('animationend', () => replyDiv.classList.remove('tick-pop'), { once: true });
           }
           form.remove();
           const toggle = li?.querySelector('[data-reply-toggle]');

@@ -942,6 +942,8 @@
           const targetTab = (scheduleMode === 'immediate') ? 'past' : 'upcoming';
           setOverlayCopy('업로드 완료', '백엔드에서 캡션·영상 처리 중. 히스토리에서 확인하세요.');
           setStep('caption', 'active');
+          // 몰입 R2 — 성공 모먼트 (이미지 경로와 동일)
+          overlayEl.classList.add('is-success');
           setTimeout(() => { location.href = '/history?tab=' + targetTab; }, 800);
         } catch (err) {
           console.error('[submit-video] 실패:', err);
@@ -1055,6 +1057,9 @@
           //    history statusBadge 가 "곧 게시" / "예약됨" 으로 진행 표시.
           setOverlayCopy('업로드 완료', '캡션 만들고 인스타에 올릴 예정. 히스토리에서 확인하세요.');
           setStep('caption', 'active');
+          // 몰입 R2 — 성공 모먼트 (마스코트→체크 전환, register-product.css .is-success).
+          // 폴링→리다이렉트 방식 전환 때 호출이 끊겨 죽어있던 축하 연출 복원.
+          overlayEl.classList.add('is-success');
           // 사장님 결정 (2026-05-15): 즉시 게시 → 히스토리 탭(past), 예약 → 예약 목록(upcoming).
           // 초안도 upcoming — history 분류(is_sent=false + scheduled_at=null → upcoming)와 일치.
           // past 로 보내면 방금 만든 초안이 빈 화면 뒤에 숨는 UX 버그 (2026-06-10 수정).

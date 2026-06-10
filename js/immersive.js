@@ -69,12 +69,13 @@
   }
 
   function init() {
-    // 마케팅·일반 페이지: main 안 섹션 (히어로 제외)
-    var sections = document.querySelectorAll('main > section:not(.hero), main > .legal');
+    // 마케팅·일반 페이지: main 안 섹션 (히어로 제외).
+    // dashboard 처럼 <a> 로 감싼 섹션도 포함 (R2 — 앵커 래핑 누락 수정).
+    var sections = document.querySelectorAll('main > section:not(.hero), main > a > section');
     for (var i = 0; i < sections.length; i++) armSection(sections[i]);
 
     // 앱 페이지: 섹션 제목 + 정적 카드 (동적 렌더 목록은 제외 — 각자 패턴 유지)
-    var appBits = document.querySelectorAll('.section-title');
+    var appBits = document.querySelectorAll('.section-title, .card, .ig-card, .tone-card, .lt-intro, .lt-edit');
     for (var k = 0; k < appBits.length; k++) arm(appBits[k], 0);
 
     initCountUp();
@@ -124,6 +125,10 @@
     }
     requestAnimationFrame(frame);
   }
+
+  // 동적 숫자 카운트업 — 페이지 스크립트가 값 채운 직후 호출 (dashboard 통계 등).
+  // 모션 비활성 환경에선 이 IIFE 자체가 종료돼 미정의 → 호출부는 존재 체크 후 사용.
+  window.lumiCountUp = runCountUp;
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
