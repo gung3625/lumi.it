@@ -10,7 +10,7 @@
       document.querySelectorAll('[data-logout]').forEach(btn => {
         btn.addEventListener('click', () => {
           if (!confirm('로그아웃 하시겠어요?')) return;
-          ['lumi-auth','lumi_auth','seller_jwt'].forEach(k => {
+          ['lumi-auth','lumi_auth','seller_jwt','lumi_refresh'].forEach(k => {
             try { localStorage.removeItem(k); } catch {}
           });
           try { sessionStorage.clear(); } catch {}
