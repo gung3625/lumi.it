@@ -3001,3 +3001,121 @@
 .final-cta__sub { color: var(--noir-muted); }
 .final-cta__btn { box-shadow: 0 14px 44px -10px rgba(255, 107, 139, 0.5); }
 .final-cta__hint { color: var(--noir-faint); }
+
+/* ═══════════════════════════════════════════════════════════════
+   NOIR-2 시네마 오프닝 (2026-06-12 — 사장님 "도색 말고 구조를 갈아라")
+   히어로: 2단 그리드 → 풀스크린 중앙 무대. 초대형 센터 타이포 +
+   3D 틸트 폰 목업 무대 + 바닥 글로우. 마크업 동일, 구도만 재조립.
+   ═══════════════════════════════════════════════════════════════ */
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: auto;
+  padding-bottom: var(--space-12);
+}
+.hero__topbar { width: 100%; }
+.hero__body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 880px;
+  margin: 0 auto;
+  padding-top: clamp(28px, 6vh, 72px);
+}
+.hero__title {
+  font-size: clamp(44px, 9.6vw, 112px);
+  line-height: 1.02;
+  letter-spacing: -0.045em;
+}
+.hero__sub {
+  font-size: clamp(16px, 1.4vw, 20px);
+  max-width: 640px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.hero__diff {
+  max-width: 560px;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: left;
+}
+.hero__cta { justify-content: center; }
+.hero__chips { justify-content: center; }
+.hero__cta-hint { text-align: center; }
+
+/* 무대: 3D 틸트 목업 + 바닥 글로우 */
+.hero__preview {
+  width: 100%;
+  max-width: 480px;
+  margin: clamp(28px, 5vh, 56px) auto 0;
+  perspective: 1400px;
+  position: relative;
+}
+.hero__preview::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -44px;
+  width: 130%;
+  height: 90px;
+  transform: translateX(-50%);
+  background: radial-gradient(50% 100% at 50% 0%, rgba(255, 90, 130, 0.40) 0%, rgba(255, 90, 130, 0) 75%);
+  filter: blur(14px);
+  pointer-events: none;
+}
+.hero__preview-card {
+  transform: rotateX(7deg) rotateY(-7deg) rotateZ(0.6deg);
+  transform-style: preserve-3d;
+  transition: transform 700ms var(--ease-soft), box-shadow 700ms var(--ease-soft);
+}
+.hero__preview-card:hover {
+  transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg);
+}
+.hero__float--a { top: 4%; right: -12%; }
+.hero__float--b { top: 42%; left: -16%; }
+.hero__float--c { bottom: -2%; right: -8%; }
+@media (max-width: 720px) {
+  .hero__preview-card { transform: none; }
+  .hero__preview::after { bottom: -30px; height: 60px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero__preview-card { transform: none; transition: none; }
+}
+
+/* ── 숫자 스트립: 한 줄 리듬 섹션 ── */
+.stat-band {
+  background: var(--noir);
+  padding: var(--space-8) max(var(--space-4), calc((100% - 1080px) / 2)) var(--space-10);
+}
+.stat-band__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+}
+.stat-band__item {
+  text-align: center;
+  padding: var(--space-4) var(--space-2);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.035);
+}
+.stat-band__num {
+  font-size: clamp(30px, 3.4vw, 46px);
+  font-weight: var(--weight-heavy);
+  letter-spacing: -0.03em;
+  background: linear-gradient(115deg, #FF8FA8 0%, #FF6B8B 40%, #FFD9A0 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  line-height: 1.1;
+}
+.stat-band__label {
+  margin-top: 6px;
+  font-size: var(--text-caption);
+  color: var(--noir-muted);
+}
+@media (max-width: 760px) {
+  .stat-band__grid { grid-template-columns: 1fr 1fr; }
+}
