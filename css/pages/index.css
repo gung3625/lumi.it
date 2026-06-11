@@ -37,16 +37,28 @@
     @media (max-width: 900px) {
       .hero { grid-template-columns: 1fr; }
     }
-    /* 시그니처 그라데이션 배경 — soft, 큰 영역에 부드럽게 */
+    /* 시그니처 배경 — 시네마틱 카페 사진(풀블리드) 위에 화이트 베일 + 핑크 워시.
+       사진은 따뜻한 질감만 비치게, 텍스트 가독성은 베일이 보장. */
     .hero::before {
       content: '';
       position: absolute; inset: 0;
       background:
-        radial-gradient(60% 50% at 50% 0%, rgba(255,107,139,0.18) 0%, rgba(255,107,139,0) 70%),
-        radial-gradient(50% 40% at 90% 20%, rgba(221,160,221,0.22) 0%, rgba(221,160,221,0) 70%),
-        radial-gradient(60% 45% at 10% 70%, rgba(237,208,128,0.16) 0%, rgba(237,208,128,0) 70%),
+        linear-gradient(180deg, rgba(255,251,250,0.90) 0%, rgba(255,248,247,0.80) 42%, rgba(255,252,251,0.97) 100%),
+        radial-gradient(60% 50% at 50% 0%, rgba(255,107,139,0.16) 0%, rgba(255,107,139,0) 70%),
+        radial-gradient(50% 40% at 90% 20%, rgba(221,160,221,0.20) 0%, rgba(221,160,221,0) 70%),
+        radial-gradient(60% 45% at 10% 70%, rgba(237,208,128,0.14) 0%, rgba(237,208,128,0) 70%),
+        url('/assets/hero-cafe.webp') center / cover no-repeat,
         var(--bg);
       z-index: -1;
+    }
+    @media (max-width: 720px) {
+      .hero::before {
+        background:
+          linear-gradient(180deg, rgba(255,251,250,0.92) 0%, rgba(255,248,247,0.84) 42%, rgba(255,252,251,0.97) 100%),
+          radial-gradient(60% 50% at 50% 0%, rgba(255,107,139,0.16) 0%, rgba(255,107,139,0) 70%),
+          url('/assets/hero-cafe-m.webp') center / cover no-repeat,
+          var(--bg);
+      }
     }
     /* 몰입 R1 — 오로라 앰비언트. 시그니처 3색 블롭이 아주 천천히 떠다님.
        transform-only(GPU) + ::before 정적 배경 위에 겹쳐 깊이감. reduced-motion 시
@@ -2732,4 +2744,85 @@
     .bench-section__footnote {
       margin: var(--space-1) 0 0;
       font-size: 12px; color: var(--ink-muted);
+    }
+
+    /* ── 프리미엄 패스 R1 — 데스크탑 마감 (모바일 무영향, min-width 오버라이드만) ── */
+    @media (min-width: 900px) {
+      /* CTA: 풀폭 스트레치 → 본문형 버튼 한 쌍 (좌측 정렬, 자체 폭) */
+      .hero__cta { flex-direction: row; align-items: center; justify-content: flex-start; }
+      .hero__cta-primary { width: auto; padding: 18px 44px; }
+      .hero__cta-secondary { width: auto; }
+      .hero__chips { justify-content: flex-start; }
+      .hero__cta-hint { text-align: left; }
+    }
+    @media (min-width: 1200px) {
+      .hero__title { font-size: 74px; }
+      .hero__sub { font-size: 19px; }
+    }
+
+    /* 벤치마크 섹션 — 데스크탑 2단 (좌 텍스트·CTA / 우 리포트 목업) */
+    @media (min-width: 960px) {
+      .bench-section {
+        max-width: 1080px;
+        display: grid;
+        grid-template-columns: 1.05fr 1fr;
+        column-gap: var(--space-10);
+        align-items: center;
+        text-align: left;
+      }
+      .bench-section__eyebrow,
+      .bench-section__title,
+      .bench-section__lead,
+      .bench-section__cta,
+      .bench-section__hint,
+      .bench-section__footnote { grid-column: 1; }
+      .bench-section__lead { margin-left: 0; margin-right: 0; max-width: none; }
+      .bench-mock {
+        grid-column: 2;
+        grid-row: 1 / span 6;
+        margin: 0;
+        width: 100%;
+        max-width: 460px;
+        justify-self: end;
+        box-shadow: 0 24px 60px -24px rgba(255, 107, 139, 0.35);
+      }
+      .bench-section__cta { justify-self: start; }
+    }
+
+    /* ── 트렌드 마퀴 — 매일 갱신 키워드가 흐르는 띠 (기능 암시 + 모션 디테일) ── */
+    .trend-marquee {
+      overflow: hidden;
+      padding: 16px 0;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      background: var(--bg);
+    }
+    .trend-marquee__track {
+      display: inline-flex;
+      white-space: nowrap;
+      animation: tm-scroll 38s linear infinite;
+      will-change: transform;
+    }
+    .trend-marquee__set {
+      display: flex;
+      gap: 10px;
+      padding-right: 10px;
+    }
+    .trend-marquee__chip {
+      padding: 8px 16px;
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+      background: var(--bg-soft);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+    }
+    .trend-marquee__chip--hot {
+      color: var(--pink-500);
+      border-color: var(--pink-300);
+      background: var(--pink-50);
+      font-weight: var(--weight-semibold);
+    }
+    @keyframes tm-scroll { to { transform: translateX(-50%); } }
+    @media (prefers-reduced-motion: reduce) {
+      .trend-marquee__track { animation: none; }
     }
