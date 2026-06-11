@@ -2816,3 +2816,188 @@
     @media (prefers-reduced-motion: reduce) {
       .trend-marquee__track { animation: none; }
     }
+
+/* ═══════════════════════════════════════════════════════════════
+   NOIR 시네마틱 패스 (2026-06-12, 사장님 "싹 갈아도 되니 엄청난 퀄로")
+   다크 북엔드 구조: 히어로→마퀴→벤치마크 = 딥 느와르 / 본문 = 밝게 유지 /
+   파이널 CTA = 다크 카드. 콘텐츠·카피는 그대로, 비주얼 시스템만 교체.
+   전부 기존 셀렉터 오버라이드 — 되돌리려면 이 블록 삭제.
+   ═══════════════════════════════════════════════════════════════ */
+:root {
+  --noir: #0F0C12;
+  --noir-glass: rgba(255, 255, 255, 0.06);
+  --noir-line: rgba(255, 255, 255, 0.13);
+  --noir-ink: #FFF7F4;
+  --noir-muted: rgba(255, 243, 240, 0.72);
+  --noir-faint: rgba(255, 243, 240, 0.48);
+}
+
+/* ── 히어로: 딥 느와르 + 네온 오로라 ── */
+.hero::before {
+  background:
+    radial-gradient(70% 56% at 50% -6%, rgba(255, 107, 139, 0.20) 0%, rgba(255, 107, 139, 0) 62%),
+    radial-gradient(52% 44% at 88% 16%, rgba(190, 122, 255, 0.16) 0%, rgba(190, 122, 255, 0) 64%),
+    radial-gradient(60% 48% at 8% 78%, rgba(255, 196, 110, 0.10) 0%, rgba(255, 196, 110, 0) 66%),
+    var(--noir);
+}
+.hero::after {
+  background:
+    radial-gradient(460px 460px at 22% 26%, rgba(255, 107, 139, 0.26) 0%, rgba(255, 107, 139, 0) 64%),
+    radial-gradient(560px 560px at 84% 12%, rgba(190, 122, 255, 0.20) 0%, rgba(190, 122, 255, 0) 64%),
+    radial-gradient(520px 520px at 74% 86%, rgba(255, 196, 110, 0.16) 0%, rgba(255, 196, 110, 0) 64%);
+  filter: blur(2px);
+}
+.hero__pill {
+  background: var(--noir-glass);
+  border-color: var(--noir-line);
+  color: var(--noir-muted);
+  backdrop-filter: blur(12px);
+}
+.hero__title { color: var(--noir-ink); }
+.hero__title-line--accent {
+  background: linear-gradient(115deg, #FF8FA8 0%, #FF6B8B 34%, #D9A0FF 68%, #FFD9A0 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.hero__sub { color: var(--noir-muted); }
+.hero__sub strong, .hero__sub-strong { color: var(--noir-ink); }
+.hero__diff {
+  background: var(--noir-glass);
+  border-left-color: #FF6B8B;
+  color: var(--noir-muted);
+  backdrop-filter: blur(12px);
+}
+.hero__diff b { color: #FF9FB4; }
+.hero__cta-primary {
+  box-shadow: 0 14px 44px -10px rgba(255, 107, 139, 0.55), 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+.hero__cta-secondary {
+  background: transparent;
+  border-color: var(--noir-line);
+  color: var(--noir-ink);
+}
+.hero__cta-secondary:hover { border-color: rgba(255, 255, 255, 0.4); }
+.hero__chip {
+  background: rgba(120, 240, 180, 0.10);
+  border: 1px solid rgba(120, 240, 180, 0.25);
+  color: #9FF0C8;
+}
+.hero__cta-hint { color: var(--noir-faint); }
+.hero__beta {
+  background: transparent;
+  border-color: var(--noir-line);
+  color: var(--noir-ink);
+}
+.hero__scroll-hint { color: var(--noir-faint); }
+
+/* 프리뷰 카드 — 어둠 위에 떠 있는 실물 게시물 (화이트 유지 + 네온 글로우) */
+.hero__preview-card {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow:
+    0 50px 120px -30px rgba(255, 80, 130, 0.45),
+    0 24px 60px -20px rgba(0, 0, 0, 0.6);
+}
+
+/* 부유 글래스 칩 — 제품 능력 암시 (데스크탑 전용) */
+.hero__float {
+  display: none;
+  position: absolute;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: var(--weight-semibold);
+  color: var(--noir-ink);
+  background: rgba(28, 22, 32, 0.72);
+  border: 1px solid var(--noir-line);
+  border-radius: 999px;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 14px 38px -12px rgba(0, 0, 0, 0.55);
+  white-space: nowrap;
+  animation: float-soft 7s ease-in-out infinite alternate;
+  z-index: 2;
+}
+.hero__float--a { top: 6%; right: -3%; animation-delay: 0s; }
+.hero__float--b { top: 40%; left: -7%; animation-delay: 1.4s; }
+.hero__float--c { bottom: -3%; right: 8%; animation-delay: 2.8s; }
+@keyframes float-soft {
+  from { transform: translate3d(0, -7px, 0); }
+  to   { transform: translate3d(0, 9px, 0); }
+}
+@media (min-width: 1000px) {
+  .hero__preview { position: relative; }
+  .hero__float { display: inline-flex; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero__float { animation: none; }
+}
+
+/* ── 마퀴: 느와르 연속 ── */
+.trend-marquee {
+  background: var(--noir);
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  border-bottom: none;
+  padding: 20px 0;
+}
+.trend-marquee__chip {
+  background: var(--noir-glass);
+  border-color: var(--noir-line);
+  color: var(--noir-muted);
+}
+.trend-marquee__chip--hot {
+  background: rgba(255, 107, 139, 0.14);
+  border-color: rgba(255, 107, 139, 0.45);
+  color: #FF9FB4;
+  box-shadow: 0 0 18px -4px rgba(255, 107, 139, 0.5);
+}
+
+/* ── 벤치마크 쇼케이스: 느와르 마지막 장 ── */
+.bench-section {
+  max-width: none;
+  background: var(--noir);
+  padding-left: max(var(--space-4), calc((100% - 1080px) / 2));
+  padding-right: max(var(--space-4), calc((100% - 1080px) / 2));
+  padding-bottom: calc(var(--space-12) + 36px);
+  margin: 0;
+}
+.bench-section__eyebrow { color: #FF8FA8; }
+.bench-section__title { color: var(--noir-ink); }
+.bench-section__lead { color: var(--noir-muted); }
+.bench-section__lead strong { color: var(--noir-ink); }
+.bench-mock {
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 40px 100px -28px rgba(255, 80, 130, 0.5), 0 20px 50px -20px rgba(0, 0, 0, 0.6);
+}
+.bench-section__cta {
+  box-shadow: 0 14px 44px -10px rgba(255, 107, 139, 0.55);
+}
+.bench-section__hint { color: var(--noir-faint); }
+.bench-section__footnote { color: rgba(255, 243, 240, 0.36); }
+@media (min-width: 960px) {
+  .bench-section { padding-left: max(var(--space-4), calc((100% - 1080px) / 2)); padding-right: max(var(--space-4), calc((100% - 1080px) / 2)); }
+}
+
+/* 느와르 → 라이트 시트 전환 (둥근 어깨로 본문이 떠오름) */
+.pain-section {
+  background: var(--bg);
+  border-radius: 32px 32px 0 0;
+  margin-top: -32px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── 파이널 CTA: 다크 라운드 카드 북엔드 ── */
+.final-cta {
+  max-width: 1080px;
+  margin: var(--space-8) auto var(--space-12);
+  padding: var(--space-12) var(--space-6);
+  background:
+    radial-gradient(60% 80% at 50% 0%, rgba(255, 107, 139, 0.22) 0%, rgba(255, 107, 139, 0) 70%),
+    radial-gradient(40% 60% at 85% 90%, rgba(190, 122, 255, 0.16) 0%, rgba(190, 122, 255, 0) 70%),
+    var(--noir);
+  border-radius: 32px;
+  box-shadow: 0 40px 100px -30px rgba(255, 80, 130, 0.35);
+}
+.final-cta__title { color: var(--noir-ink); }
+.final-cta__sub { color: var(--noir-muted); }
+.final-cta__btn { box-shadow: 0 14px 44px -10px rgba(255, 107, 139, 0.5); }
+.final-cta__hint { color: var(--noir-faint); }
