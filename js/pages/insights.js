@@ -412,7 +412,7 @@
           }
           const busy = r && r.status === 'running';
           return `
-            <article class="bm-card rv" data-bm-card="${acc.id}">
+            <article class="bm-card" data-bm-card="${acc.id}">
               <div class="bm-card__head">
                 <a class="bm-card__name" href="https://www.instagram.com/${esc(acc.ig_username)}/" target="_blank" rel="noopener">@${esc(acc.ig_username)}</a>
                 <div class="bm-card__actions">
