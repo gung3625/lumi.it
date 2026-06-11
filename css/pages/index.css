@@ -37,28 +37,18 @@
     @media (max-width: 900px) {
       .hero { grid-template-columns: 1fr; }
     }
-    /* 시그니처 배경 — 시네마틱 카페 사진(풀블리드) 위에 화이트 베일 + 핑크 워시.
-       사진은 따뜻한 질감만 비치게, 텍스트 가독성은 베일이 보장. */
+    /* 시그니처 그라데이션 배경 — soft, 큰 영역에 부드럽게.
+       (2026-06-12 반투명 사진 배경 실험 → 베일 아래 형체가 음산하게 비쳐 롤백.
+        밝은 테마의 프리미엄은 사진이 아니라 타이포·밀도·목업 선명도로.) */
     .hero::before {
       content: '';
       position: absolute; inset: 0;
       background:
-        linear-gradient(180deg, rgba(255,251,250,0.90) 0%, rgba(255,248,247,0.80) 42%, rgba(255,252,251,0.97) 100%),
-        radial-gradient(60% 50% at 50% 0%, rgba(255,107,139,0.16) 0%, rgba(255,107,139,0) 70%),
-        radial-gradient(50% 40% at 90% 20%, rgba(221,160,221,0.20) 0%, rgba(221,160,221,0) 70%),
-        radial-gradient(60% 45% at 10% 70%, rgba(237,208,128,0.14) 0%, rgba(237,208,128,0) 70%),
-        url('/assets/hero-cafe.webp') center / cover no-repeat,
+        radial-gradient(60% 50% at 50% 0%, rgba(255,107,139,0.18) 0%, rgba(255,107,139,0) 70%),
+        radial-gradient(50% 40% at 90% 20%, rgba(221,160,221,0.22) 0%, rgba(221,160,221,0) 70%),
+        radial-gradient(60% 45% at 10% 70%, rgba(237,208,128,0.16) 0%, rgba(237,208,128,0) 70%),
         var(--bg);
       z-index: -1;
-    }
-    @media (max-width: 720px) {
-      .hero::before {
-        background:
-          linear-gradient(180deg, rgba(255,251,250,0.92) 0%, rgba(255,248,247,0.84) 42%, rgba(255,252,251,0.97) 100%),
-          radial-gradient(60% 50% at 50% 0%, rgba(255,107,139,0.16) 0%, rgba(255,107,139,0) 70%),
-          url('/assets/hero-cafe-m.webp') center / cover no-repeat,
-          var(--bg);
-      }
     }
     /* 몰입 R1 — 오로라 앰비언트. 시그니처 3색 블롭이 아주 천천히 떠다님.
        transform-only(GPU) + ::before 정적 배경 위에 겹쳐 깊이감. reduced-motion 시
