@@ -142,37 +142,29 @@
       const contentEl  = root.querySelector('[data-hero-preview-content]');
       const dots       = root.querySelectorAll('[data-hero-preview-dot]');
       const cardEl     = root.querySelector('.hero__preview-card');
-      const statusEl   = root.querySelector('[data-demo-status]');
-      // 라이브 데모 페이즈 (사진→작성→검수→게시). reduced-motion 이면 비활성 = 항상 완성 상태.
+      // 라이브 데모 — 2박자: 캡션이 차분히 써지고(write) 게시 배지가 뜬다(live).
+      // reduced-motion 이면 비활성 = 항상 완성 상태.
       const demoEnabled = cardEl && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      const PH = { shot: 0, write: 1300, check: 4100, live: 5700 };
-      const STATUS_TEXT = { shot: '📷 사진 한 장 받았어요', write: '✍️ 매장 톤으로 쓰는 중…', check: '🔎 게시 전 검수 중' };
       let phTimers = [];
 
       function clearPhases() {
         phTimers.forEach(clearTimeout);
         phTimers = [];
-        if (cardEl) cardEl.classList.remove('is-ph-shot', 'is-ph-write', 'is-ph-check', 'is-ph-live');
+        if (cardEl) cardEl.classList.remove('is-ph-write', 'is-ph-live');
       }
 
       function settleFull() {
         // 데모 끝 상태로 고정 (오프스크린/비활성 시 완성된 게시물 모습)
         clearPhases();
-        if (cardEl) cardEl.classList.add('is-ph-write', 'is-ph-check', 'is-ph-live');
+        if (cardEl) cardEl.classList.add('is-ph-write', 'is-ph-live');
       }
 
       function startPhases() {
         if (!demoEnabled) return;
         clearPhases();
         cardEl.classList.add('is-demo');
-        const phase = (name) => {
-          cardEl.classList.add('is-ph-' + name);
-          if (statusEl) statusEl.textContent = STATUS_TEXT[name] || '';
-        };
-        phase('shot');
-        phTimers.push(setTimeout(() => phase('write'), PH.write));
-        phTimers.push(setTimeout(() => phase('check'), PH.check));
-        phTimers.push(setTimeout(() => phase('live'), PH.live));
+        phTimers.push(setTimeout(() => cardEl.classList.add('is-ph-write'), 450));
+        phTimers.push(setTimeout(() => cardEl.classList.add('is-ph-live'), 4300));
       }
 
       if (!imgEl || !captionEl || !contentEl) return;
@@ -232,7 +224,7 @@
         },
       ];
 
-      const ROTATE_MS = 8400;
+      const ROTATE_MS = 7600;
       const FADE_MS = 320;
       let idx = 0;
       let rotateTimer = null;
