@@ -3119,3 +3119,136 @@
 @media (max-width: 760px) {
   .stat-band__grid { grid-template-columns: 1fr 1fr; }
 }
+
+/* ── 히어로 라이브 데모 — 폰 목업이 스스로 시연 (사진→작성→검수→게시) ──
+   페이즈 클래스는 누적 부여(write 후에도 줄 유지). .is-demo 없으면(reduced-motion)
+   전부 기본 표시 = 완성 상태. */
+.hero__demo-status {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  padding: 7px 13px;
+  font-size: 12.5px;
+  font-weight: var(--weight-semibold);
+  color: #FFF7F4;
+  background: rgba(20, 16, 24, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  backdrop-filter: blur(10px);
+  opacity: 0;
+  transition: opacity 300ms var(--ease-soft);
+  pointer-events: none;
+  z-index: 2;
+}
+.is-demo .hero__demo-status { opacity: 1; }
+.is-demo.is-ph-live .hero__demo-status { opacity: 0; }
+
+.hero__demo-checks {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+  z-index: 2;
+  pointer-events: none;
+}
+.hero__demo-check {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+  color: #1E7A4E;
+  background: rgba(235, 255, 244, 0.95);
+  border: 1px solid rgba(30, 122, 78, 0.35);
+  border-radius: 999px;
+  box-shadow: 0 6px 18px -6px rgba(0, 0, 0, 0.35);
+}
+.is-demo .hero__demo-check {
+  opacity: 0;
+  transform: translateX(12px) scale(0.92);
+}
+.is-demo.is-ph-check .hero__demo-check {
+  opacity: 1;
+  transform: none;
+  transition: opacity 380ms var(--ease-toss), transform 380ms var(--ease-toss);
+}
+.is-demo.is-ph-check .hero__demo-check:nth-child(2) { transition-delay: 220ms; }
+.is-demo.is-ph-check .hero__demo-check:nth-child(3) { transition-delay: 440ms; }
+
+/* 캡션 줄 스태거 + 타이핑 커서 */
+.cap-gap { display: block; height: 0.65em; }
+.cap-line { display: block; }
+.is-demo .cap-line {
+  opacity: 0;
+  transform: translateY(7px);
+}
+.is-demo.is-ph-write .cap-line {
+  opacity: 1;
+  transform: none;
+  transition: opacity 420ms var(--ease-soft), transform 420ms var(--ease-soft);
+  transition-delay: calc(var(--li, 0) * 300ms);
+}
+.is-demo.is-ph-write:not(.is-ph-check) .hero__preview-caption::after {
+  content: '';
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 3px;
+  vertical-align: -0.15em;
+  background: #FF6B8B;
+  animation: demo-blink 0.85s steps(1) infinite;
+}
+@keyframes demo-blink { 50% { opacity: 0; } }
+
+/* 태그·푸터·배지 — 게시 완료 때 등장 */
+.is-demo .hero__preview-tags,
+.is-demo .hero__preview-foot {
+  opacity: 0;
+  transition: opacity 420ms var(--ease-soft);
+}
+.is-demo.is-ph-live .hero__preview-tags,
+.is-demo.is-ph-live .hero__preview-foot { opacity: 1; }
+.is-demo .hero__preview-badge {
+  opacity: 0;
+  transform: scale(0.7);
+}
+.is-demo.is-ph-live .hero__preview-badge {
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 420ms var(--ease-toss), transform 420ms var(--ease-toss);
+}
+.is-demo.is-ph-shot .hero__preview-photo img {
+  animation: demo-shot-in 750ms var(--ease-toss) backwards;
+}
+@keyframes demo-shot-in {
+  from { transform: scale(1.06); opacity: 0.4; }
+  to   { transform: scale(1); opacity: 1; }
+}
+.is-demo.is-ph-live {
+  animation: demo-glow 1.5s var(--ease-soft) 1;
+}
+@keyframes demo-glow {
+  0%   { box-shadow: 0 50px 120px -30px rgba(255, 80, 130, 0.45), 0 24px 60px -20px rgba(0, 0, 0, 0.6); }
+  35%  { box-shadow: 0 50px 130px -24px rgba(255, 80, 130, 0.75), 0 24px 60px -20px rgba(0, 0, 0, 0.6); }
+  100% { box-shadow: 0 50px 120px -30px rgba(255, 80, 130, 0.45), 0 24px 60px -20px rgba(0, 0, 0, 0.6); }
+}
+
+/* 작성 전 단계 — 캡션 자리 스켈레톤 (흰 공백 방지) */
+.is-demo:not(.is-ph-write) .hero__preview-caption { position: relative; min-height: 96px; }
+.is-demo:not(.is-ph-write) .hero__preview-caption::before {
+  content: '';
+  position: absolute;
+  inset: 4px 0 auto 0;
+  height: 88px;
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.09) 45%, rgba(0,0,0,0.05) 90%) 0 0 / 86% 14px no-repeat,
+    linear-gradient(90deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.09) 45%, rgba(0,0,0,0.05) 90%) 0 26px / 70% 14px no-repeat,
+    linear-gradient(90deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.09) 45%, rgba(0,0,0,0.05) 90%) 0 52px / 78% 14px no-repeat;
+  animation: demo-skeleton 1.1s ease-in-out infinite;
+}
+@keyframes demo-skeleton { 50% { opacity: 0.45; } }
+/* 톤 태그도 작성 단계부터 (톤은 루미가 '잡은' 결과물) */
+.is-demo:not(.is-ph-write) .hero__preview-tag { opacity: 0; }
+.is-demo.is-ph-write .hero__preview-tag { opacity: 1; transition: opacity 360ms var(--ease-soft); }
