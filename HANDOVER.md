@@ -86,3 +86,13 @@
 3. (확인) 내일 아침 `/trends` *네이티브* 크론이 cafe/food/hair 포함 8개 적재했는지.
 4. (사장님 선택 대기) 통신판매업 전화번호 증빙 → BRN+전화번호 함께 나오는 문서 찾기.
 5. (선택) `performance-rls.sql` 실행(스케일 전), AI 콘텐츠 수익화 ①대행/②lumi500명/③디지털상품 중 선택.
+
+## 벤치마크 v1.1 — 경쟁 계정 분석 (2026-06-11)
+- **인사이트 4번째 탭** "벤치마크": 궁금한 가게 인스타 등록(최대 3개) → 분석 → 나 vs 상대 비교표 + AI 해석(차이·성공 공식·이번 주 제안) + 초안 CTA.
+- 파이프라인: Apify 수집(공개 데이터만: apify/instagram-profile-scraper + apify/instagram-scraper, **필드명 2026-06-11 실측 고정**) → `_shared/benchmark-stats.js` 통계(코드) → gpt-4o-mini 해석(openai-quota 통과 시, 실패해도 통계만으로 done).
+- 함수 3개: `benchmark-accounts`(POST 추가/DELETE 삭제), `benchmark-scrape-background`(워커 — /api/benchmark-scrape 리다이렉트, 202 즉시 응답 후 작업, 클라이언트는 get-benchmark 폴링), `get-benchmark`(계정+최신 리포트).
+- 테이블: `benchmark_accounts`/`benchmark_posts`/`benchmark_reports` — deny-all RLS(service role 전용).
+- 가드: 셀러당 계정 3개, 같은 계정 재분석 쿨다운 6시간, 일일 분석 10회, 비공개 계정 거부.
+- **ENV 필요: `APIFY_TOKEN`** (Apify Console → Settings → API & Integrations). 미설정 시 get-benchmark가 enabled=false → UI "준비 중" 안내, 워커는 안전 종료.
+- 원가: 분석 1회 ≈ $0.08 (Apify) + AI ~5원. Apify 무료 플랜 $5/월 = 약 60회.
+- 한계(고지문 UI 반영): 공개 데이터 추정 — 광고 집행·도달 미포함. 내 계정 비교는 IG 연동 시에만.

@@ -21,7 +21,7 @@
       document.querySelectorAll('[data-tab]').forEach(b => {
         b.addEventListener('click', () => switchTab(b.dataset.tab));
       });
-      switchTab(['weekly','monthly','best-time'].includes(initialTab) ? initialTab : 'weekly');
+      switchTab(['weekly','monthly','best-time','benchmark'].includes(initialTab) ? initialTab : 'weekly');
 
       // ── 통계 렌더 ──
       function fmtNum(n) {
@@ -322,4 +322,180 @@
         }
       }
       loadBest();
+
+      // ── 벤치마크 탭 ──
+      (function benchmark() {
+        const listEl = document.querySelector('[data-bm-list]');
+        const stateEl = document.querySelector('[data-bm-state]');
+        const formEl = document.querySelector('[data-bm-form]');
+        const inputEl = document.querySelector('[data-bm-input]');
+        if (!listEl || !formEl) return;
+
+        const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => (
+          { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+        ));
+        const fmt = (n) => (typeof n === 'number') ? (n >= 10000 ? (n / 10000).toFixed(1) + '만' : n.toLocaleString()) : '—';
+        const pct = (n) => (typeof n === 'number') ? n + '%' : '—';
+        let pollTimer = null;
+
+        function compareRows(mine, theirs) {
+          const rows = [
+            ['팔로워', fmt(mine?.followers), fmt(theirs?.followers)],
+            ['참여율', mine?.engagementRate != null ? mine.engagementRate + '%' : '—', theirs?.engagementRate != null ? theirs.engagementRate + '%' : '—'],
+            ['주당 게시물', mine?.perWeek ?? '—', theirs?.perWeek ?? '—'],
+            ['릴 비중', pct(mine?.formatMix?.reel), pct(theirs?.formatMix?.reel)],
+            ['평균 좋아요', fmt(mine?.avgLikes), fmt(theirs?.avgLikes)],
+          ];
+          return rows.map(([k, a, b]) => `
+            <div class="bm-cmp__row">
+              <span class="bm-cmp__key">${k}</span>
+              <span class="bm-cmp__val">${esc(a)}</span>
+              <span class="bm-cmp__val bm-cmp__val--theirs">${esc(b)}</span>
+            </div>`).join('');
+        }
+
+        function aiCards(report) {
+          if (!report) {
+            return '<div class="bm-hint">통계는 준비됐어요. 루미의 해석 리포트는 잠시 뒤 분석을 다시 누르면 함께 만들어 드려요.</div>';
+          }
+          const block = (title, items) => `
+            <div class="bm-ai">
+              <div class="bm-ai__title">${title}</div>
+              ${(items || []).map((it) => `
+                <div class="bm-ai__item">
+                  <div class="bm-ai__item-title">${esc(it.title)}</div>
+                  <div class="bm-ai__item-body">${esc(it.body)}</div>
+                </div>`).join('')}
+            </div>`;
+          return block('사장님 계정과 다른 점', report.differences)
+            + block('이 가게가 잘 되는 방식', report.formula)
+            + block('이번 주에 해볼 일', report.suggestions)
+            + '<a class="bm-cta hover-lift" href="/register-product">위 아이디어로 게시물 만들러 가기</a>';
+        }
+
+        function statsChips(theirs) {
+          if (!theirs) return '';
+          const tags = (theirs.topHashtags || []).slice(0, 5).map((t) => `<span class="bm-chip">#${esc(t.tag)}</span>`).join('');
+          const hours = (theirs.topHours || []).map((h) => `${h.hour}시`).join(' · ');
+          const days = (theirs.topDays || []).map((d) => d.day).join(' · ');
+          return `
+            <div class="bm-chips">
+              ${hours ? `<span class="bm-chip bm-chip--time">주로 ${esc(hours)}</span>` : ''}
+              ${days ? `<span class="bm-chip bm-chip--time">${esc(days)}요일</span>` : ''}
+              ${tags}
+            </div>`;
+        }
+
+        function cardHtml(acc) {
+          const r = acc.latestReport;
+          let body = '';
+          if (!r) {
+            body = '<div class="bm-hint">아직 분석 전이에요. 분석을 누르면 1~2분 안에 정리해 드려요.</div>';
+          } else if (r.status === 'running') {
+            body = '<div class="bm-hint bm-hint--busy">게시물을 모으고 있어요… 1~2분 정도 걸려요.</div>';
+          } else if (r.status === 'error') {
+            body = `<div class="bm-hint bm-hint--err">${esc(r.error || '분석에 실패했어요. 다시 시도해 주세요.')}</div>`;
+          } else if (r.status === 'done' && r.stats) {
+            const mine = r.stats.mine, theirs = r.stats.theirs;
+            body = `
+              <div class="bm-cmp">
+                <div class="bm-cmp__row bm-cmp__row--head">
+                  <span class="bm-cmp__key"></span>
+                  <span class="bm-cmp__val">내 계정</span>
+                  <span class="bm-cmp__val bm-cmp__val--theirs">@${esc(theirs?.username || '')}</span>
+                </div>
+                ${compareRows(mine, theirs)}
+              </div>
+              ${mine ? '' : '<div class="bm-hint">인스타그램을 연동하면 내 계정 숫자도 나란히 보여드려요.</div>'}
+              ${statsChips(theirs)}
+              ${aiCards(r.report)}`;
+          }
+          const busy = r && r.status === 'running';
+          return `
+            <article class="bm-card rv" data-bm-card="${acc.id}">
+              <div class="bm-card__head">
+                <a class="bm-card__name" href="https://www.instagram.com/${esc(acc.ig_username)}/" target="_blank" rel="noopener">@${esc(acc.ig_username)}</a>
+                <div class="bm-card__actions">
+                  <button type="button" class="bm-card__analyze hover-lift" data-bm-analyze="${acc.id}" ${busy ? 'disabled' : ''}>${busy ? '분석 중…' : '분석'}</button>
+                  <button type="button" class="bm-card__remove" data-bm-remove="${acc.id}" aria-label="삭제">×</button>
+                </div>
+              </div>
+              <div class="bm-card__body">${body}</div>
+            </article>`;
+        }
+
+        async function load(silent) {
+          try {
+            const res = await fetch('/api/get-benchmark', { headers: authHeaders });
+            const json = await res.json();
+            if (!json.ok) throw new Error(json.error || 'load_failed');
+            if (json.enabled === false) {
+              stateEl.hidden = false;
+              stateEl.textContent = '벤치마크 분석은 지금 준비 중이에요. 곧 열릴 예정이에요.';
+            } else {
+              stateEl.hidden = true;
+            }
+            listEl.innerHTML = (json.accounts || []).map(cardHtml).join('')
+              || '<div class="bm-hint">아직 등록한 가게가 없어요. 궁금한 가게 계정을 위에 입력해 보세요.</div>';
+            const anyRunning = (json.accounts || []).some((a) => a.latestReport && a.latestReport.status === 'running');
+            clearTimeout(pollTimer);
+            if (anyRunning) pollTimer = setTimeout(() => load(true), 8000);
+          } catch (e) {
+            if (!silent) {
+              stateEl.hidden = false;
+              stateEl.textContent = '벤치마크 정보를 가져오지 못했어요. 잠시 후 다시 시도해 주세요.';
+            }
+          }
+        }
+
+        formEl.addEventListener('submit', async (ev) => {
+          ev.preventDefault();
+          const username = (inputEl.value || '').trim();
+          if (!username) return;
+          const btn = formEl.querySelector('[data-bm-add-btn]');
+          btn.disabled = true;
+          try {
+            const res = await fetch('/api/benchmark-accounts', {
+              method: 'POST',
+              headers: { ...authHeaders, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ username }),
+            });
+            const json = await res.json();
+            if (!json.ok) { alert(json.error || '등록에 실패했어요.'); return; }
+            inputEl.value = '';
+            await load();
+          } finally {
+            btn.disabled = false;
+          }
+        });
+
+        listEl.addEventListener('click', async (ev) => {
+          const analyzeId = ev.target.closest && ev.target.closest('[data-bm-analyze]')?.dataset.bmAnalyze;
+          const removeId = ev.target.closest && ev.target.closest('[data-bm-remove]')?.dataset.bmRemove;
+          if (analyzeId) {
+            const btn = ev.target.closest('[data-bm-analyze]');
+            btn.disabled = true;
+            btn.textContent = '분석 중…';
+            await fetch('/api/benchmark-scrape', {
+              method: 'POST',
+              headers: { ...authHeaders, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ accountId: analyzeId }),
+            }).catch(() => {});
+            setTimeout(() => load(true), 1500);
+            pollTimer = setTimeout(() => load(true), 8000);
+          }
+          if (removeId) {
+            if (!confirm('이 가게를 벤치마크에서 뺄까요? 분석 기록도 같이 지워져요.')) return;
+            const res = await fetch('/api/benchmark-accounts?id=' + encodeURIComponent(removeId), {
+              method: 'DELETE',
+              headers: authHeaders,
+            });
+            const json = await res.json().catch(() => ({}));
+            if (!json.ok) { alert(json.error || '삭제에 실패했어요.'); return; }
+            await load();
+          }
+        });
+
+        load();
+      })();
     })();
