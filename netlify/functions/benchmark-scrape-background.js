@@ -61,13 +61,14 @@ function normalizeApifyPost(item) {
 const GRAPH_MEDIA_TYPE_MAP = { IMAGE: 'Image', VIDEO: 'Video', CAROUSEL_ALBUM: 'Sidecar' };
 
 async function fetchMyPosts(sellerId, supa) {
+  // getIgTokenForSeller 반환은 camelCase: { igUserId, accessToken, igUsername }
   const ig = await getIgTokenForSeller(sellerId, supa);
-  if (!ig || !ig.ig_user_id) return null;
-  const token = ig.access_token || ig.page_access_token;
+  if (!ig || !ig.igUserId) return null;
+  const token = ig.accessToken;
   if (!token) return null;
   try {
-    const me = await igGraphRequest(token, `/${ig.ig_user_id}`, { fields: 'followers_count' });
-    const media = await igGraphRequest(token, `/${ig.ig_user_id}/media`, {
+    const me = await igGraphRequest(token, `/${ig.igUserId}`, { fields: 'followers_count' });
+    const media = await igGraphRequest(token, `/${ig.igUserId}/media`, {
       fields: 'media_type,media_product_type,like_count,comments_count,timestamp,caption,permalink',
       limit: POSTS_LIMIT,
     });
@@ -81,7 +82,7 @@ async function fetchMyPosts(sellerId, supa) {
       views: null,
       url: m.permalink || null,
     }));
-    return { posts, followers: me.followers_count ?? null, username: ig.ig_username || null };
+    return { posts, followers: me.followers_count ?? null, username: ig.igUsername || null };
   } catch (e) {
     // 토큰 만료 등 — 비교 없이 상대 분석만 진행
     console.log('[benchmark] my-posts skip:', e.message);
