@@ -78,8 +78,10 @@
 
 # 정적 자원 캐싱 (audit: no-store 전체적용 → 매 방문 재다운로드 문제 해소)
 # ⚠️ 자산은 콘텐츠 해시(fingerprint)가 없어 immutable/장기 캐시는 배포 후 staleness 위험.
-#    → 이미지·파비콘 등 잘 안 변하는 /assets 는 30일, 자주 바뀌는 /css·/js 는 1시간+revalidate.
-#    (추후 build.js 에 파일명 해시 도입 시 /css·/js 도 immutable 1년 안전)
+#    → 이미지·파비콘 등 잘 안 변하는 /assets 는 30일.
+# 2026-06-11: /css·/js 1시간 캐시 제거 — 배포 직후 "새 HTML + 옛 CSS" 불일치로
+#    인덱스 벤치마크 섹션이 무스타일 노출됨(사장님 실보고). 베타 동안 max-age=0+ETag 재검증
+#    (304 응답이라 비용 미미). 정식 출시 시 파일명 해시 도입 후 장기 캐시로 전환할 것.
 [[headers]]
   for = "/assets/*"
   [headers.values]
@@ -88,12 +90,12 @@
 [[headers]]
   for = "/css/*"
   [headers.values]
-    Cache-Control = "public, max-age=3600, must-revalidate"
+    Cache-Control = "public, max-age=0, must-revalidate"
 
 [[headers]]
   for = "/js/*"
   [headers.values]
-    Cache-Control = "public, max-age=3600, must-revalidate"
+    Cache-Control = "public, max-age=0, must-revalidate"
 
 # 매일 자정 KST 트렌드 파이프라인 — gpt-4o + 크로스소스 + velocity + 가중치 (v2)
 # -background 접미사로 15분 타임아웃 확보. 5소스 + GPT 파이프라인은 30초 초과 가능.
