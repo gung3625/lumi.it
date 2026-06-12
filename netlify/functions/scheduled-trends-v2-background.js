@@ -14,6 +14,7 @@
 
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { runGuarded } = require('./_shared/cron-guard');
+const { applyCategoryGuard } = require('./_shared/trend-guards');
 const { checkAndIncrementQuota, QuotaExceededError } = require('./_shared/openai-quota');
 const { fetchRelatedFromSeeds, fetchKeywordSearchVolume, fetchKeywordSearchVolumeRobust } = require('./_shared/naver-ad-keyword-tool');
 const {
@@ -1636,6 +1637,9 @@ async function saveScope({ supa, scope, category, tags, updatedAt, source }) {
 // ─────────────────────────────────────────────
 async function saveTrendKeywordsV2({ supa, category, enrichedKeywords, collectedDate, region = 'all' }) {
   if (!enrichedKeywords || enrichedKeywords.length === 0) return;
+  // 카테고리 교차 오염 가드 — 적재 단계 차단 (읽기 가드와 동일 규칙, _shared/trend-guards)
+  enrichedKeywords = applyCategoryGuard(enrichedKeywords, category, 'write');
+  if (enrichedKeywords.length === 0) return;
 
   // sources: counts object → { shopping: 3, datalab: 15, ... } 형태로 jsonb 저장
   const rows = enrichedKeywords.map(item => {

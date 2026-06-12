@@ -94,15 +94,11 @@ function isBadKeyword(raw) {
   return false;
 }
 
-// cafe 전용 키워드가 food/flower 에 끼는 것 차단 — 시드·연관확장 오염 가드
-// (2026-06-12: food 에 우베라떼·노티드·런던베이글 노출. GPT 분류 규칙은 OpenAI-off 라 미작동,
-//  읽기 시점에서 강제. 디저트·음료·베이커리류는 전부 cafe 소관)
-const CAFE_ONLY_RE = /라떼|아메리카노|에스프레소|원두|도넛|도너츠|베이글|크로플|마카롱|케이크|베이커리|스콘|휘낭시에|마들렌|빙수|푸딩|소금빵|타르트|쿠키|브라우니|디저트|노티드/;
-const CATEGORY_EXCLUDE = { food: CAFE_ONLY_RE, flower: CAFE_ONLY_RE };
+// 카테고리 교차 오염 가드 — 적재(scheduled-trends-v2)와 동일 규칙 공유 (_shared/trend-guards)
+const { applyCategoryGuard } = require('./_shared/trend-guards');
 
 function filterBlacklist(keywords, category) {
-  const catRe = CATEGORY_EXCLUDE[category];
-  if (catRe) keywords = keywords.filter(k => !catRe.test(String(k.keyword || '')));
+  keywords = applyCategoryGuard(keywords, category, 'read');
   const seen = new Set();
   const deduped = keywords.filter(k => {
     const kw = (k.keyword || '').replace(/^#/, '').trim().toLowerCase();
