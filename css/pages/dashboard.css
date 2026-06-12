@@ -886,62 +886,67 @@
     }
 
     /* ─────── IG 첫 연동 안내 카드 (신규 베타 사장님 — ig.connected=false) ─────── */
-    .ig-required-card {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      padding: var(--space-6) var(--space-5);
-      background: linear-gradient(135deg, rgba(255, 107, 139, 0.08), rgba(168, 85, 247, 0.08));
+    /* 신규 시작 체크리스트 (미연동 동안 노출) — 첫 3분 동선 */
+    .start-checklist {
+      padding: var(--space-5);
+      background: var(--bg);
       border: 1px solid var(--pink-300);
       border-radius: var(--radius-card);
-      box-shadow: var(--shadow-card);
+      box-shadow: var(--shadow-sm);
+      animation: rise 500ms var(--ease-toss) 60ms backwards;
     }
-    .ig-required-card__icon {
-      width: 56px;
-      height: 56px;
-      display: grid;
-      place-items: center;
-      background: var(--gradient-signature);
-      color: var(--neutral-0);
-      border-radius: 50%;
-      margin-bottom: var(--space-3);
-      box-shadow: var(--shadow-glow-sm);
-    }
-    .ig-required-card__icon svg { width: 28px; height: 28px; }
-    .ig-required-card__title {
-      font-size: var(--text-h3);
-      font-weight: var(--weight-bold);
+    .start-checklist__title {
+      font-size: 17px;
+      font-weight: 700;
       color: var(--ink);
-      margin: 0 0 var(--space-2);
+      margin: 0 0 4px;
     }
-    .ig-required-card__desc {
-      font-size: var(--text-body-sm);
-      color: var(--ink-muted);
-      line-height: 1.6;
-      margin: 0 0 var(--space-4);
-    }
-    .ig-required-card__cta {
-      display: inline-flex;
-      align-items: center;
-      padding: var(--space-3) var(--space-6);
-      background: var(--gradient-signature);
-      color: var(--neutral-0);
-      font-weight: var(--weight-bold);
-      border-radius: var(--radius-pill);
-      text-decoration: none;
-      box-shadow: var(--shadow-glow-sm);
-      transition: transform var(--duration-snap) var(--ease-toss), box-shadow var(--duration-snap) var(--ease-soft);
-    }
-    .ig-required-card__cta:active { transform: scale(0.97); }
-    @media (hover: hover) {
-      .ig-required-card__cta:hover { box-shadow: 0 8px 24px rgba(255, 107, 139, 0.45); }
-    }
-    .ig-required-card__hint {
-      margin: var(--space-3) 0 0;
+    .start-checklist__sub {
       font-size: var(--text-caption);
       color: var(--ink-muted);
+      margin: 0 0 var(--space-3);
     }
+    .start-step {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3);
+      background: var(--bg-soft);
+      border-radius: var(--radius-lg);
+      text-decoration: none;
+      color: var(--ink);
+      margin-bottom: 8px;
+      transition:
+        background var(--duration-base) var(--ease-soft),
+        transform var(--duration-snap) var(--ease-toss);
+    }
+    .start-step:last-child { margin-bottom: 0; }
+    @media (hover: hover) {
+      .start-step:hover { background: var(--pink-50); }
+      .start-step:hover .start-step__chev { transform: translateX(2px); color: var(--pink-500); }
+    }
+    .start-step:active { transform: scale(0.992); }
+    .start-step__num {
+      width: 28px; height: 28px;
+      flex-shrink: 0;
+      border-radius: var(--radius-full);
+      background: var(--pink-500);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .start-step__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+    .start-step__name { font-size: var(--text-body); font-weight: var(--weight-semibold); }
+    .start-step__hint { font-size: var(--text-caption); color: var(--ink-muted); }
+    .start-step__chev {
+      color: var(--ink-muted);
+      transition: transform var(--duration-snap) var(--ease-toss);
+    }
+    .start-step.is-done { opacity: 0.7; }
+    .start-step.is-done .start-step__num { background: var(--status-success-fg); }
+    .start-step.is-done .start-step__name { text-decoration: line-through; text-decoration-thickness: 1px; }
+
 
     /* ─────── IG 미연동 탭 차단 모달 (사진 올리기·히스토리 클릭 시) ─────── */
     .ig-required-modal {

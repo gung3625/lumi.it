@@ -498,116 +498,9 @@
       gap: 4px;
     }
 
-    /* ── 기능 상세 섹션 — 4분류 x 12 카드 ─────────────── */
-    .features {
-      padding: var(--space-12) var(--space-5) var(--space-16);
-      max-width: 920px;
-      margin: 0 auto;
-    }
-    .features__eyebrow {
-      font-size: var(--text-caption);
-      font-weight: var(--weight-semibold);
-      color: var(--pink-500);
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      margin: 0 0 var(--space-2);
-    }
-    .features__title {
-      font-size: clamp(26px, 5.5vw, 40px);
-      font-weight: var(--weight-bold);
-      letter-spacing: var(--tracking-tight);
-      line-height: var(--leading-snug);
-      color: var(--ink);
-      margin: 0 0 var(--space-10);
-    }
-    .feature-group {
-      margin-bottom: var(--space-12);
-    }
-    .feature-group:last-child { margin-bottom: 0; }
-    .feature-group__header {
-      display: flex;
-      align-items: baseline;
-      gap: var(--space-3);
-      margin-bottom: var(--space-5);
-      padding-bottom: var(--space-3);
-      border-bottom: 1px solid var(--line);
-    }
-    .feature-group__num {
-      font-size: var(--text-caption);
-      font-weight: var(--weight-semibold);
-      color: var(--pink-500);
-      letter-spacing: 0.06em;
-    }
-    .feature-group__title {
-      font-size: var(--text-title);
-      font-weight: var(--weight-bold);
-      color: var(--ink);
-      letter-spacing: var(--tracking-tight);
-      margin: 0;
-    }
-    /* 모바일·데스크톱 모두 2열 — 사장님 결정 "한 줄에 2개씩으로 스크롤 줄여" */
-    .feature-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: var(--space-2);
-    }
-    @media (min-width: 720px) {
-      .feature-grid { gap: var(--space-3); }
-    }
-    .feature-card {
-      padding: var(--space-4);
-      background: var(--bg);
-      border: 1px solid var(--line);
-      border-radius: var(--radius-lg);
-      contain: layout paint;
-      will-change: box-shadow;
-      transition:
-        transform var(--duration-base) var(--ease-toss),
-        box-shadow var(--duration-base) var(--ease-soft),
-        border-color var(--duration-base) var(--ease-soft);
-      animation:
-        feat-rise 460ms var(--ease-toss) calc(var(--idx, 0) * 60ms) backwards,
-        card-breathe 6s var(--ease-soft) calc(var(--idx, 0) * 0.35s + 700ms) infinite;
-    }
-    @keyframes feat-rise {
-      from { opacity: 0; transform: translateY(8px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    @media (hover: hover) {
-      .feature-card:hover {
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-glow-sm);
-        border-color: var(--pink-200);
-        animation-play-state: paused;
-      }
-    }
+    /* bento 카드 reduced-motion (기능 상세 섹션 삭제 때 bento 룰만 보존) */
     @media (prefers-reduced-motion: reduce) {
-      .bento__card, .feature-card { animation: none; }
-    }
-    .feature-card__icon {
-      width: 32px; height: 32px;
-      border-radius: var(--radius-md);
-      background: var(--pink-50);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--pink-500);
-      margin-bottom: var(--space-2);
-    }
-    .feature-card__icon svg { width: 18px; height: 18px; stroke-width: 2.2; }
-    .feature-card__title {
-      font-size: var(--text-body);
-      font-weight: var(--weight-bold);
-      color: var(--ink);
-      letter-spacing: var(--tracking-tight);
-      margin: 0 0 var(--space-1);
-      line-height: var(--leading-snug);
-    }
-    .feature-card__desc {
-      font-size: var(--text-caption);
-      color: var(--ink-soft);
-      line-height: var(--leading-relaxed);
-      margin: 0;
+      .bento__card { animation: none; }
     }
 
     /* prefers-reduced-motion 은 motion.css 전역 룰이 처리 */
@@ -860,6 +753,25 @@
     @media (max-width: 640px) {
       .diff-table { grid-template-columns: 1fr; }
       .diff-row--header { display: none; }
+      /* 헤더가 사라지는 모바일에선 셀 안에 작은 라벨로 주체 표기 */
+      .diff-cell--other::before {
+        content: 'ChatGPT';
+        display: inline-block;
+        margin-right: 8px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        color: var(--ink-faint, #a3a3a3);
+      }
+      .diff-cell--lumi::before {
+        content: '루미';
+        display: inline-block;
+        margin-right: 8px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        color: var(--pink-500);
+      }
       .diff-cell { padding: var(--space-2) var(--space-3); }
       .diff-cell--feat {
         background: var(--bg-soft); font-size: var(--text-caption);
@@ -1466,12 +1378,12 @@
 .flow-card {
   position: sticky;
   /* top 은 inline style 로 지정 (각 카드별 다름) */
-  background: linear-gradient(145deg, #1d1d1f 0%, #2a1a3a 100%);
-  color: var(--neutral-0);
+  background: linear-gradient(165deg, #ffffff 0%, #fff1f5 100%);
+  color: var(--ink);
   border-radius: 28px;
   /* padding 시원하게 — 글씨가 카드 가장자리에서 충분히 떨어지도록 */
   padding: var(--space-12) var(--space-10);  /* 위·아래 48px / 좌·우 40px */
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+  box-shadow: 0 24px 60px rgba(17, 17, 17, 0.10), 0 0 0 1px var(--line) inset;
   display: flex;
   gap: var(--space-8);
   align-items: center;  /* num 과 body 세로 중앙 정렬 */
@@ -1480,7 +1392,7 @@
   transition: box-shadow var(--duration-base) var(--ease-soft);
 }
 @media (hover: hover) {
-  .flow-card:hover { box-shadow: 0 32px 80px rgba(255, 107, 139, 0.25), 0 0 0 1px rgba(255, 107, 139, 0.2) inset; }
+  .flow-card:hover { box-shadow: 0 32px 80px rgba(255, 107, 139, 0.18), 0 0 0 1px var(--pink-300) inset; }
 }
 
 .flow-card__num {
@@ -1506,9 +1418,9 @@
   display: inline-block;
   margin-bottom: var(--space-3);
   padding: 4px 10px;
-  background: linear-gradient(135deg, rgba(255,107,139,0.25), rgba(237,208,128,0.25));
-  border: 1px solid rgba(255,107,139,0.45);
-  color: var(--neutral-0);
+  background: var(--pink-50);
+  border: 1px solid var(--pink-300);
+  color: var(--pink-500);
   font-size: 11px;
   font-weight: 700;
   border-radius: 100px;
@@ -1518,16 +1430,16 @@
   font-size: clamp(20px, 3vw, 28px);
   font-weight: 800;
   margin: 0 0 var(--space-3);
-  color: var(--neutral-0);
+  color: var(--ink);
   letter-spacing: -0.01em;
 }
 .flow-card__desc {
   font-size: var(--text-body-sm);
-  color: rgba(255, 255, 255, 0.78);
+  color: var(--ink-muted);
   line-height: 1.65;
   margin: 0 0 var(--space-3);
 }
-.flow-card__desc b { color: var(--neutral-0); font-weight: 600; }
+.flow-card__desc b { color: var(--ink); font-weight: 600; }
 .flow-card__bullets {
   list-style: none;
   padding: 0;
@@ -1538,7 +1450,7 @@
 }
 .flow-card__bullets li {
   font-size: var(--text-caption);
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--ink-soft);
   padding-left: 18px;
   position: relative;
   line-height: 1.55;
@@ -1547,25 +1459,25 @@
   content: '✓';
   position: absolute;
   left: 0;
-  color: var(--pink-300, #ff8ba7);
+  color: var(--pink-500);
   font-weight: 700;
 }
-.flow-card__bullets b { color: rgba(255, 255, 255, 0.92); font-weight: 600; }
+.flow-card__bullets b { color: var(--ink); font-weight: 600; }
 .flow-card__bullets code {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--pink-50);
   padding: 1px 6px;
   border-radius: 4px;
   font-size: 11px;
-  color: var(--pink-300, #ff8ba7);
+  color: var(--pink-500);
 }
 
 /* 카드별 살짝 다른 그라데이션 (단조로움 방지) */
 /* CSP 가 inline style 차단 → top 값을 CSS class 로 정의 (28px 씩 증가 = stacking 효과) */
-.flow-card--1 { top: 100px; background: linear-gradient(145deg, #1d1d1f 0%, #3a1a3a 100%); }
-.flow-card--2 { top: 128px; background: linear-gradient(145deg, #1d1d1f 0%, #2a1a4a 100%); }
-.flow-card--3 { top: 156px; background: linear-gradient(145deg, #1d1d1f 0%, #4a1a2a 100%); }
-.flow-card--4 { top: 184px; background: linear-gradient(145deg, #1d1d1f 0%, #3a2a1a 100%); }
-.flow-card--5 { top: 212px; background: linear-gradient(145deg, #1d1d1f 0%, #2a2a4a 100%); }
+.flow-card--1 { top: 100px; background: linear-gradient(165deg, #ffffff 0%, #fff1f5 100%); }
+.flow-card--2 { top: 128px; background: linear-gradient(165deg, #ffffff 0%, #fff8ee 100%); }
+.flow-card--3 { top: 156px; background: linear-gradient(165deg, #ffffff 0%, #fdf2f8 100%); }
+.flow-card--4 { top: 184px; background: linear-gradient(165deg, #ffffff 0%, #fff3f0 100%); }
+.flow-card--5 { top: 212px; background: linear-gradient(165deg, #ffffff 0%, #f9f4ff 100%); }
 
 /* ── Mobile (≤640px) ── 카드 padding ↓, top 값 비례 축소, num 위치 조정 */
 @media (max-width: 640px) {
@@ -1594,6 +1506,17 @@
     top: auto !important;
     transition: none;
   }
+}
+
+.bento-extras {
+  max-width: 920px;
+  margin: var(--space-5) auto 0;
+  padding: 0 var(--space-5);
+  text-align: center;
+  font-size: var(--text-caption);
+  color: var(--ink-muted);
+  line-height: 1.8;
+  word-break: keep-all;
 }
 
 /* ═════════════════════════════════════════════════════════════
@@ -2844,6 +2767,7 @@
   font-size: clamp(42px, 8.8vw, 96px);
   line-height: 1.04;
   letter-spacing: -0.045em;
+  word-break: keep-all; /* "인스/타" 단어 중간 줄바꿈 방지 */
 }
 .hero__sub {
   font-size: clamp(16px, 1.4vw, 19px);

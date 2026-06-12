@@ -78,6 +78,24 @@
           if (ig && !ig.connected) {
             const igRequiredCard = document.querySelector('[data-ig-connect-required-section]');
             if (igRequiredCard) igRequiredCard.hidden = false;
+            // 시작 체크리스트 — 이미 한 단계는 ✓ 표시 (①옆 가게 분석 ②초안)
+            (async () => {
+              const setDone = (sel) => {
+                const a = document.querySelector(sel);
+                if (!a) return;
+                a.classList.add('is-done');
+                const num = a.querySelector('.start-step__num');
+                if (num) num.textContent = '✓';
+              };
+              try {
+                const [bm, rv] = await Promise.all([
+                  fetch('/api/get-benchmark', { headers: authHeaders }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+                  fetch('/api/list-reservations', { headers: authHeaders }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+                ]);
+                if (bm && Array.isArray(bm.accounts) && bm.accounts.length) setDone('[data-step-bench]');
+                if (rv && Array.isArray(rv.items) && rv.items.length) setDone('[data-step-draft]');
+              } catch (_) {}
+            })();
             // IG 데이터 의존 카드 숨김 — 빈 상태 노출 방지.
             // 트렌드(요즘 뜨는 키워드)·날씨·매장정보는 그대로 노출.
             ['[data-stat-row]', '[data-failure-banner]', '[data-scheduled-card]', '[data-scheduled-empty]'].forEach((sel) => {
