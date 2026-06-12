@@ -101,7 +101,8 @@ async function aiInterpret(sellerId, mine, theirs, username) {
     + 'theirs: 상대 계정의 운영 특징 1~2문장(통계 인용), gap: 둘의 가장 중요한 차이 하나와 그것이 의미하는 바 1~2문장. '
     + 'differences=사장님 계정과의 핵심 차이(mine 없으면 일반 소상공인 대비), formula=이 계정이 잘 되는 방식, '
     + 'suggestions=사장님이 이번 주에 바로 해볼 일(루미로 게시물을 만들 수 있게 구체적 소재로). '
-    + 'body는 2문장 이내, 수치 인용은 입력 JSON에 있는 것만.';
+    + 'body는 2문장 이내, 수치 인용은 입력 JSON에 있는 것만. '
+    + '용어는 쉬운 말로: 캐러셀→"여러 장 게시물", 릴스→"릴", 해시태그·참여율은 그대로 OK.';
   const userMsg = JSON.stringify({ benchmarkUsername: username, mine, theirs });
 
   const res = await llmChat({
