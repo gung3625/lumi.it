@@ -39,8 +39,69 @@
   <main class="page">
     <section class="guide-hero">
       <div class="guide-hero__badge">📷</div>
-      <h2 class="guide-hero__title">10분이면 끝나요</h2>
-      <p class="guide-hero__sub">루미와 인스타를 연결하려면 아래 4가지가 모두 준비돼야 해요.<br>처음 보면 복잡해 보여도, 천천히 따라가시면 됩니다.</p>
+      <h2 class="guide-hero__title">연동, 루미 팀이 같이 해드려요</h2>
+      <p class="guide-hero__sub">사장님은 아래에 <b>인스타 아이디만</b> 남겨주세요. 나머지는 루미 팀이 카톡으로 같이 진행해요.<br>직접 해보고 싶으시면 아래 4단계 가이드를 따라가셔도 됩니다.</p>
+    </section>
+
+      <div class="guide-success" data-tester-block>
+        <!-- 상태 1: 아직 테스터 요청 안 함 (베타 사장님 기본) -->
+        <div data-tester-state="pending">
+          <div class="guide-success__icon">🎉</div>
+          <h4 class="guide-success__title">사장님은 아이디만 남겨주세요</h4>
+          <p class="guide-success__sub">
+            인스타 연동, <b>루미 팀이 처음부터 끝까지 카톡으로 같이 진행해 드려요.</b>
+            아래에 매장 인스타 아이디만 남겨주시면 24시간 안에 카톡 드릴게요.
+            복잡한 준비는 그때 하나씩 같이 하면 돼요.
+          </p>
+          <form class="tester-form" data-tester-form>
+            <label class="tester-form__label" for="tester-ig-handle">사장님 인스타 아이디 (@ 없이)</label>
+            <div class="tester-form__row">
+              <span class="tester-form__prefix">@</span>
+              <input class="tester-form__input" id="tester-ig-handle" name="igHandle" type="text" maxlength="30" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="text" placeholder="예: lumi_cafe" required>
+            </div>
+            <p class="tester-form__hint">사장님 매장 인스타 계정이에요. 영문·숫자·_·. 만 가능.</p>
+            <p class="guide-success__error" data-tester-error hidden></p>
+            <button type="submit" class="guide-success__cta guide-success__cta--block" data-tester-submit>📨 루미 팀에 연동 맡기기</button>
+          </form>
+          <a class="guide-success__cta-alt guide-success__cta-alt--spaced" href="/dashboard">루미 홈으로 돌아가기</a>
+        </div>
+
+        <!-- 상태 2: 요청 완료, 사장님(루미팀) 처리 대기 -->
+        <div data-tester-state="requested" hidden>
+          <div class="guide-success__icon">⏳</div>
+          <h4 class="guide-success__title">요청 보냈어요!</h4>
+          <p class="guide-success__sub">
+            <b><span data-tester-handle-display></span></b> 으로 요청 접수됐어요.<br>
+            루미 팀이 연동 준비를 마치고 <b>24시간 안에 카톡</b>으로 다음 단계를 안내해 드릴게요.<br>
+            "준비 완료" 카톡 받으셨으면 아래 버튼을 누르세요.
+          </p>
+          <div class="guide-success__actions">
+            <button type="button" class="guide-success__cta" data-ig-connect-now>📷 이제 루미와 연결하기</button>
+            <a class="guide-success__cta-alt" href="/dashboard">루미 홈으로</a>
+          </div>
+          <p class="tester-form__hint tester-form__hint--loose">
+            ※ 아직 알림 못 받으셨는데 시도하면 "권한 없음" 에러가 나요. 그 땐 카톡 기다려주세요.
+          </p>
+          <button type="button" class="tester-form__re-edit" data-tester-re-edit>인스타 아이디 다시 입력</button>
+          <p class="guide-success__error" data-ig-connect-error hidden></p>
+        </div>
+
+        <!-- 상태 3: 테스터 추가 완료 — OAuth 진행 가능 -->
+        <div data-tester-state="invited" hidden>
+          <div class="guide-success__icon">✅</div>
+          <h4 class="guide-success__title">연동 준비 완료!</h4>
+          <p class="guide-success__sub">아래 버튼 누르시면 바로 페이스북 / 인스타 권한 허용 화면이 떠요.</p>
+          <div class="guide-success__actions">
+            <button type="button" class="guide-success__cta" data-ig-connect-now>📷 이제 루미와 연결하기</button>
+            <a class="guide-success__cta-alt" href="/dashboard">루미 홈으로</a>
+          </div>
+          <p class="guide-success__error" data-ig-connect-error hidden></p>
+        </div>
+      </div>
+
+    <section class="guide-hero guide-hero--secondary">
+      <h2 class="guide-hero__title">직접 해보고 싶으신가요?</h2>
+      <p class="guide-hero__sub">아래 4단계를 따라가면 돼요. 막히는 곳이 있으면 언제든 위에 아이디만 남겨주세요.</p>
       <ul class="guide-hero__steps" aria-label="진행 단계">
         <li><a href="#step-1" class="guide-hero__step">① Facebook 계정</a></li>
         <li><a href="#step-2" class="guide-hero__step">② Facebook 페이지</a></li>
@@ -312,61 +373,6 @@
         </ol>
       </details>
 
-      <div class="guide-success" data-tester-block>
-        <!-- 상태 1: 아직 테스터 요청 안 함 (베타 사장님 기본) -->
-        <div data-tester-state="pending">
-          <div class="guide-success__icon">🎉</div>
-          <h4 class="guide-success__title">거의 다 왔어요!</h4>
-          <p class="guide-success__sub">
-            루미는 현재 메타(Facebook) 비즈니스 심사 중이라, 일반 연결 대신
-            <b>사장님 인스타를 루미 팀이 "테스터" 로 직접 추가</b>해드려야 권한을 받을 수 있어요.
-            아래에 사장님 인스타 아이디만 알려주세요. 24시간 안에 추가하고 카톡으로 알려드릴게요.
-          </p>
-          <form class="tester-form" data-tester-form>
-            <label class="tester-form__label" for="tester-ig-handle">사장님 인스타 아이디 (@ 없이)</label>
-            <div class="tester-form__row">
-              <span class="tester-form__prefix">@</span>
-              <input class="tester-form__input" id="tester-ig-handle" name="igHandle" type="text" maxlength="30" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="text" placeholder="예: lumi_cafe" required>
-            </div>
-            <p class="tester-form__hint">위 Step 3 에서 비즈니스로 전환한 그 계정이에요. 영문·숫자·_·. 만 가능.</p>
-            <p class="guide-success__error" data-tester-error hidden></p>
-            <button type="submit" class="guide-success__cta guide-success__cta--block" data-tester-submit>📨 테스터로 추가해주세요</button>
-          </form>
-          <a class="guide-success__cta-alt guide-success__cta-alt--spaced" href="/dashboard">루미 홈으로 돌아가기</a>
-        </div>
-
-        <!-- 상태 2: 요청 완료, 사장님(루미팀) 처리 대기 -->
-        <div data-tester-state="requested" hidden>
-          <div class="guide-success__icon">⏳</div>
-          <h4 class="guide-success__title">요청 보냈어요!</h4>
-          <p class="guide-success__sub">
-            <b><span data-tester-handle-display></span></b> 으로 요청 접수됐어요.<br>
-            루미 팀이 메타 콘솔에서 추가 후 <b>24시간 안에 카톡</b>으로 알려드릴게요.<br>
-            "테스터로 추가 완료" 알림 받으셨으면 아래 버튼을 누르세요.
-          </p>
-          <div class="guide-success__actions">
-            <button type="button" class="guide-success__cta" data-ig-connect-now>📷 이제 루미와 연결하기</button>
-            <a class="guide-success__cta-alt" href="/dashboard">루미 홈으로</a>
-          </div>
-          <p class="tester-form__hint tester-form__hint--loose">
-            ※ 아직 알림 못 받으셨는데 시도하면 "권한 없음" 에러가 나요. 그 땐 카톡 기다려주세요.
-          </p>
-          <button type="button" class="tester-form__re-edit" data-tester-re-edit>인스타 아이디 다시 입력</button>
-          <p class="guide-success__error" data-ig-connect-error hidden></p>
-        </div>
-
-        <!-- 상태 3: 테스터 추가 완료 — OAuth 진행 가능 -->
-        <div data-tester-state="invited" hidden>
-          <div class="guide-success__icon">✅</div>
-          <h4 class="guide-success__title">테스터 추가 완료!</h4>
-          <p class="guide-success__sub">아래 버튼 누르시면 바로 페이스북 / 인스타 권한 허용 화면이 떠요.</p>
-          <div class="guide-success__actions">
-            <button type="button" class="guide-success__cta" data-ig-connect-now>📷 이제 루미와 연결하기</button>
-            <a class="guide-success__cta-alt" href="/dashboard">루미 홈으로</a>
-          </div>
-          <p class="guide-success__error" data-ig-connect-error hidden></p>
-        </div>
-      </div>
     </section>
 
     <!-- ─────────────── 마지막 안전망 ─────────────── -->
