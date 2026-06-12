@@ -15,7 +15,7 @@ const { safeAwait } = require('./_shared/supa-safe');
 const { deleteReservationStorage } = require('./_shared/storage-cleanup');
 const { generateBrandFooter } = require('./_shared/brand-footer');
 // 2026-05-20 prevention #7: OpenAI chat completions 5xx 자동 재시도 helper.
-const { fetchWithRetry } = require('./_shared/fetch-with-retry');
+const { llmChat } = require('./_shared/llm-call');
 
 // ─────────── TikTok 게시 헬퍼 ───────────
 // TikTok Content Posting API 엔드포인트
@@ -434,17 +434,13 @@ ${isReels ? `- **reels_hook_score** (1~5):
   }
 
   // 2026-05-20 prevention #7: fetchWithRetry — 5xx 자동 2회 재시도.
-  const res = await fetchWithRetry('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` },
-    body: JSON.stringify({
+  const res = await llmChat({
       model: 'gpt-4o',
       messages: [{ role: 'user', content }],
       max_tokens: photoCount > 1 ? 1800 : 1200,
       temperature: 0.3,
       response_format: { type: 'json_schema', json_schema: VISION_SCHEMA },
-    }),
-  }, { timeoutMs: 120_000, label: 'openai-vision' });
+    }, { timeoutMs: 120_000, label: 'openai-vision' });
   const data = await res.json();
   if (data.error) throw new Error(`GPT-4o 오류: ${data.error.message}`);
   const text = data.choices?.[0]?.message?.content || '';
@@ -628,17 +624,13 @@ issues: 점수 깎인 이유를 짧고 구체적인 한국어 한 줄씩. photo_
   }
 
   // 2026-05-20 prevention #7: fetchWithRetry.
-  const res = await fetchWithRetry('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` },
-    body: JSON.stringify({
+  const res = await llmChat({
       model: 'gpt-4o',
       messages: [{ role: 'user', content }],
       max_tokens: 800,
       temperature: 0.2,
       response_format: { type: 'json_schema', json_schema: VALIDATOR_SCHEMA },
-    }),
-  }, { timeoutMs: 60_000, label: 'openai-validator' });
+    }, { timeoutMs: 60_000, label: 'openai-validator' });
   const data = await res.json();
   if (data.error) throw new Error(`Validator 오류: ${data.error.message}`);
   return JSON.parse(data.choices?.[0]?.message?.content || '{}');
@@ -831,16 +823,12 @@ ${isBusinessContent
 
   await mark('gen_fetching');
   // 2026-05-20 prevention #7: fetchWithRetry.
-  const res = await fetchWithRetry('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` },
-    body: JSON.stringify({
+  const res = await llmChat({
       model: 'gpt-5.4',
       messages: [{ role: 'user', content: prompt }],
       max_completion_tokens: 1536,
       temperature: 0.85,
-    }),
-  }, { timeoutMs: 90_000, label: 'openai-caption-gen' });
+    }, { timeoutMs: 90_000, label: 'openai-caption-gen' });
   await mark('gen_fetch_done');
   if (!res.ok) {
     const errBody = await res.text().catch(() => '');
@@ -960,16 +948,12 @@ ${toneHints}
 본문만. 따옴표·제목·설명 없이 본문 텍스트 그대로.`;
 
   // 2026-05-20 prevention #7: fetchWithRetry.
-  const res = await fetchWithRetry('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` },
-    body: JSON.stringify({
+  const res = await llmChat({
       model: 'gpt-5.4',
       messages: [{ role: 'user', content: prompt }],
       max_completion_tokens: 900,
       temperature: 0.85,
-    }),
-  }, { timeoutMs: 60_000, label: 'openai-threads-caption' });
+    }, { timeoutMs: 60_000, label: 'openai-threads-caption' });
   if (!res.ok) {
     const errBody = await res.text().catch(() => '');
     throw new Error(`gpt-5.4(threads) HTTP ${res.status}: ${errBody.substring(0, 200)}`);
@@ -1020,16 +1004,12 @@ ${clean}
     // 2026-05-20 prevention #7: fetchWithRetry.
     let res;
     try {
-      res = await fetchWithRetry('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` },
-        body: JSON.stringify({
+      res = await llmChat({
           model: 'gpt-4o-mini',
           messages: [{ role: 'user', content: prompt }],
           max_tokens: 512,
           temperature: 0.3,
-        }),
-      }, { timeoutMs: 20_000, label: 'openai-srt' });
+        }, { timeoutMs: 20_000, label: 'openai-srt' });
     } catch (e) {
       console.warn('[process-and-post] SRT 생성 fetch 실패:', e.message);
       return '';
@@ -1204,17 +1184,13 @@ ${dislikeCount ? fmtRows(dislikes, 'D') : '(없음)'}
 }`;
 
   try {
-    const res = await fetchWithRetry('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` },
-      body: JSON.stringify({
+    const res = await llmChat({
         model: 'gpt-4o-mini',
         messages: [{ role: 'user', content: prompt }],
         max_tokens: 300,
         temperature: 0.2,
         response_format: { type: 'json_object' },
-      }),
-    }, { timeoutMs: 20_000, label: 'openai-tone-summary' });
+      }, { timeoutMs: 20_000, label: 'openai-tone-summary' });
     const data = await res.json();
     if (data.error) {
       console.warn('[summarizeToneFeedback] API 오류 (무시):', data.error.message);

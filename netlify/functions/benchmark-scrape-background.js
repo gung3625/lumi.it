@@ -20,7 +20,7 @@ const { verifyBearerToken } = require('./_shared/supabase-auth');
 const { computeStats } = require('./_shared/benchmark-stats');
 const { getIgTokenForSeller, igGraphRequest } = require('./_shared/ig-graph');
 const { checkAndIncrementQuota, QuotaExceededError } = require('./_shared/openai-quota');
-const { fetchWithRetry } = require('./_shared/fetch-with-retry');
+const { llmChat } = require('./_shared/llm-call');
 
 const COOLDOWN_HOURS = 6;       // 같은 계정 재분석 쿨다운
 const DAILY_LIMIT = 10;         // 셀러당 하루 분석 횟수
@@ -102,23 +102,16 @@ async function aiInterpret(sellerId, mine, theirs, username) {
     + 'body는 2문장 이내, 수치 인용은 입력 JSON에 있는 것만.';
   const userMsg = JSON.stringify({ benchmarkUsername: username, mine, theirs });
 
-  const res = await fetchWithRetry('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      response_format: { type: 'json_object' },
-      temperature: 0.4,
-      max_tokens: 900,
-      messages: [
-        { role: 'system', content: sys },
-        { role: 'user', content: userMsg },
-      ],
-    }),
-  });
+  const res = await llmChat({
+    model: 'gpt-4o-mini',
+    response_format: { type: 'json_object' },
+    temperature: 0.4,
+    max_tokens: 900,
+    messages: [
+      { role: 'system', content: sys },
+      { role: 'user', content: userMsg },
+    ],
+  }, { timeoutMs: 60_000, label: 'benchmark-interpret' });
   if (!res.ok) throw new Error(`openai_${res.status}`);
   const json = await res.json();
   const parsed = JSON.parse(json.choices?.[0]?.message?.content || '{}');

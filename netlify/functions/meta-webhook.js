@@ -3,6 +3,7 @@
 // 플랜별 분기: standard=응답 없음 / pro=키워드 매칭 / business=AI 자동응답 (댓글만)
 // Shadow mode 기본값=true (발송 없이 로그만 기록)
 const crypto = require('crypto');
+const { llmChat } = require('./_shared/llm-call');
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { checkAndIncrementQuota, QuotaExceededError } = require('./_shared/openai-quota');
 
@@ -234,22 +235,15 @@ ${storeBlock}${learningBlock}
   "reply": "답변 텍스트 또는 빈 문자열"
 }`;
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      max_tokens: 300,
-      response_format: { type: 'json_object' },
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: receivedText },
-      ],
-    }),
-  });
+  const response = await llmChat({
+    model: 'gpt-4o-mini',
+    max_tokens: 300,
+    response_format: { type: 'json_object' },
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: receivedText },
+    ],
+  }, { timeoutMs: 30_000, label: 'comment-ai-reply' });
 
   if (!response.ok) {
     const errText = await response.text();

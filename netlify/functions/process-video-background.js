@@ -3,6 +3,7 @@
 // 내부 호출 전용(LUMI_SECRET). Modal 의존성 없음.
 
 const fs = require('fs');
+const { geminiGenerate } = require('./_shared/llm-call');
 const crypto = require('crypto');
 const { spawn } = require('child_process');
 const { pipeline } = require('stream/promises');
@@ -244,9 +245,8 @@ async function extractAudio(videoPath, audioPath) {
 
 // Whisper API 호출 → SRT 자막 텍스트 반환
 async function transcribeWithWhisper(audioPath) {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error('OPENAI_API_KEY missing');
   if (!fs.existsSync(audioPath)) throw new Error('audio file not found');
+  const apiKey = process.env.OPENAI_API_KEY;
 
   const stat = fs.statSync(audioPath);
   if (stat.size < 1024) {
@@ -266,24 +266,56 @@ async function transcribeWithWhisper(audioPath) {
   fd.append('response_format', 'srt');
   fd.append('language', 'ko');             // 한국어 명시 (정확도 ↑)
 
-  const ctrl = new AbortController();
-  const tid = setTimeout(() => ctrl.abort(), 90_000);
-  try {
-    const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${apiKey}`, ...fd.getHeaders() },
-      body: fd,
-      signal: ctrl.signal,
-    });
-    if (!res.ok) {
-      const errText = await res.text().catch(() => '');
-      throw new Error(`Whisper HTTP ${res.status}: ${errText.slice(0, 200)}`);
+  if (apiKey) {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 90_000);
+    try {
+      const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${apiKey}`, ...fd.getHeaders() },
+        body: fd,
+        signal: ctrl.signal,
+      });
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        throw new Error(`Whisper HTTP ${res.status}: ${errText.slice(0, 200)}`);
+      }
+      const srt = await res.text();
+      if (/-->/.test(srt)) return srt.trim();
+      console.warn('[process-video] Whisper 응답이 SRT 형식 아님 → Gemini 전사 폴백');
+    } catch (e) {
+      console.warn('[process-video] Whisper 실패 → Gemini 전사 폴백:', e.message);
+    } finally {
+      clearTimeout(tid);
     }
-    const srt = await res.text();
+  } else {
+    console.warn('[process-video] OPENAI_API_KEY 없음 → Gemini 전사');
+  }
+  return transcribeWithGemini(audioPath);
+}
+
+// Gemini 전사 폴백 — 오디오(mp3, 릴 ≤60s 기준 수백 KB)를 inlineData 로 전달.
+// 실패/무음이면 '' 반환 → 호출부의 캡션 기반 SRT fallback 체인 그대로.
+async function transcribeWithGemini(audioPath) {
+  try {
+    const audioB64 = fs.readFileSync(audioPath).toString('base64');
+    const req = {
+      contents: [{
+        role: 'user',
+        parts: [
+          { text: '이 오디오의 한국어 음성을 그대로 받아 적어 SRT 자막을 만들어라. 규칙: 블록당 2~4초, 타임스탬프 형식 "00:00:00,000 --> 00:00:02,500", 들리는 말만 적고 음성이 없으면 아무것도 출력하지 않는다. SRT 텍스트 외 다른 말 금지.' },
+          { inlineData: { mimeType: 'audio/mpeg', data: audioB64 } },
+        ],
+      }],
+      generationConfig: { temperature: 0, maxOutputTokens: 2048, thinkingConfig: { thinkingBudget: 0 } },
+    };
+    let srt = await geminiGenerate(req, { timeoutMs: 90_000, label: 'gemini-transcribe' });
+    srt = srt.replace(/^```[a-zA-Z]*\n?/, '').replace(/\n?```$/, '').trim();
     if (!/-->/.test(srt)) return '';
-    return srt.trim();
-  } finally {
-    clearTimeout(tid);
+    return srt;
+  } catch (e) {
+    console.warn('[process-video] Gemini 전사 실패:', e.message);
+    return '';
   }
 }
 

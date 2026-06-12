@@ -2,6 +2,7 @@ const { corsHeaders, getOrigin } = require('./_shared/auth');
 const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
 const { checkAndIncrementQuota, QuotaExceededError } = require('./_shared/openai-quota');
+const { llmChat } = require('./_shared/llm-call');
 
 
 function buildToneGuide(toneLikes, toneDislikes) {
@@ -424,27 +425,12 @@ exports.handler = async (event) => {
     const toneGuide = buildToneGuide(toneLikes, toneDislikes);
     const captionPrompt = buildCaptionPrompt(item, imageAnalysisText, toneGuide);
 
-    const regenCtrl = new AbortController();
-    const regenTid = setTimeout(() => regenCtrl.abort(), 60_000);
-    let gptHttpRes;
-    try {
-      gptHttpRes = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: 'gpt-5.4',
-          messages: [{ role: 'user', content: captionPrompt }],
-          max_completion_tokens: 1536,
-          temperature: 0.78,
-        }),
-        signal: regenCtrl.signal,
-      });
-    } finally {
-      clearTimeout(regenTid);
-    }
+    const gptHttpRes = await llmChat({
+      model: 'gpt-5.4',
+      messages: [{ role: 'user', content: captionPrompt }],
+      max_completion_tokens: 1536,
+      temperature: 0.78,
+    }, { timeoutMs: 60_000, label: 'regen-caption' });
     const gptData = await gptHttpRes.json();
     if (gptData.error) throw new Error(`gpt-5.4 오류: ${gptData.error.message || JSON.stringify(gptData.error)}`);
 

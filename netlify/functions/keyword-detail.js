@@ -14,7 +14,6 @@
 const { getStore } = require('@netlify/blobs');
 const { corsHeaders, getOrigin } = require('./_shared/auth');
 const { verifyBearerToken, extractBearerToken } = require('./_shared/supabase-auth');
-const { checkAndIncrementQuota, QuotaExceededError } = require('./_shared/openai-quota');
 
 const OPENAI_TIMEOUT_MS = 10_000;
 const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30일
