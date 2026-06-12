@@ -1635,10 +1635,64 @@ async function saveScope({ supa, scope, category, tags, updatedAt, source }) {
 // ─────────────────────────────────────────────
 // trend_keywords 테이블 upsert (v2 신규)
 // ─────────────────────────────────────────────
+// ── Gemini 무료 티어 카테고리 감사 (2026-06-12, 사장님 "무료로 근본 해결") ──
+// 적재 직전 키워드 배치를 의미 기반으로 검증 — 카테고리 부적합 키워드 제거.
+// GEMINI_API_KEY 없음/호출 실패/형식 오류 → 원본 그대로 반환 (패턴 가드가 백업).
+// 호출량: 카테고리당 1회/일 = 일 8회 (무료 쿼터 대비 미미).
+const GEMINI_AUDIT_LABELS = {
+  cafe: '카페·음료·디저트', food: '음식점·외식(카페 제외)', beauty: '뷰티·화장품',
+  hair: '헤어샵', nail: '네일샵', flower: '꽃집', fashion: '패션·의류', fitness: '운동·피트니스',
+};
+
+async function geminiCategoryAudit(keywords, category) {
+  const key = process.env.GEMINI_API_KEY;
+  const label = GEMINI_AUDIT_LABELS[category];
+  if (!key || !label || !keywords || keywords.length === 0) return keywords;
+  const names = keywords.map(k => k.keyword).filter(Boolean);
+  if (names.length === 0) return keywords;
+  try {
+    const prompt = `다음은 한국 소상공인 "${label}" 업종의 SNS 트렌드 키워드 후보입니다.\n` +
+      `이 업종과 명백히 무관하거나 다른 업종(예: 식당 목록에 카페 디저트, 꽃집 목록에 케이크)에 속하는 키워드만 골라 JSON 배열로 답하세요.\n` +
+      `애매하면 포함하지 마세요(과잉 제거 금지). 전부 적합하면 [] 를 답하세요.\n` +
+      `규칙: 라떼·도넛·베이글·케이크·디저트·베이커리류는 카페 전용입니다. 고기·술·식사류는 음식점입니다.\n\n` +
+      `키워드: ${JSON.stringify(names)}`;
+    const res = await fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + key,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { responseMimeType: 'application/json', temperature: 0 },
+        }),
+        signal: AbortSignal.timeout(20000),
+      }
+    );
+    if (!res.ok) { console.log(`[gemini-audit] ${category} HTTP ${res.status} — 패턴 가드만 적용`); return keywords; }
+    const j = await res.json();
+    const text = j?.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
+    const badList = JSON.parse(text);
+    if (!Array.isArray(badList) || badList.length === 0) return keywords;
+    const badSet = new Set(badList.map(b => String(b).trim()));
+    const kept = keywords.filter(k => !badSet.has(String(k.keyword || '').trim()));
+    if (kept.length < keywords.length) {
+      console.log(`[gemini-audit] ${category} 부적합 ${keywords.length - kept.length}건 제거:`, [...badSet].join(', '));
+    }
+    // 안전판: 절반 넘게 지우려 들면 오판 가능성 — 무시하고 원본 유지
+    return kept.length >= Math.ceil(keywords.length / 2) ? kept : keywords;
+  } catch (e) {
+    console.log(`[gemini-audit] ${category} 실패(${e.message}) — 패턴 가드만 적용`);
+    return keywords;
+  }
+}
+
 async function saveTrendKeywordsV2({ supa, category, enrichedKeywords, collectedDate, region = 'all' }) {
   if (!enrichedKeywords || enrichedKeywords.length === 0) return;
   // 카테고리 교차 오염 가드 — 적재 단계 차단 (읽기 가드와 동일 규칙, _shared/trend-guards)
   enrichedKeywords = applyCategoryGuard(enrichedKeywords, category, 'write');
+  if (enrichedKeywords.length === 0) return;
+  // 의미 기반 감사 (Gemini 무료 티어) — 실패해도 무해, 패턴 가드가 백업
+  enrichedKeywords = await geminiCategoryAudit(enrichedKeywords, category);
   if (enrichedKeywords.length === 0) return;
 
   // sources: counts object → { shopping: 3, datalab: 15, ... } 형태로 jsonb 저장
