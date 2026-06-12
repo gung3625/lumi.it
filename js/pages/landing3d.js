@@ -361,11 +361,11 @@ function layout(p, t) {
 
   // 내 가게 카드: 옆에 작게 → 중앙 크게
   const miX = mob ? lerp(0.42, 0, s2) : lerp(1.85, 0.15, s2);
-  const miY = Math.sin(t * 0.8 + 1.7) * 0.06 * float + lerp(mob ? -2.9 : -0.25, mob ? -0.45 : -0.05, s2) + lerp(0, 0.12, s3);
+  const miY = Math.sin(t * 0.8 + 1.7) * 0.06 * float + lerp(mob ? -2.9 : -0.25, mob ? 1.2 : 0.3, s2) + lerp(0, mob ? 0.05 : 0.4, s3);
   const miZ = lerp(-1.4, 0.6, s2) + lerp(0, 0.7, s3);
   mine.position.set(miX, miY, miZ);
   mine.rotation.y = lerp(-0.22, -0.04, s2) + px * 0.05;
-  const miS = lerp(0.86, 1.0, s2) * lerp(1, 1.08, s3);
+  const miS = lerp(0.84, 0.94, s2) * lerp(1, 1.02, s3);
   mine.scale.setScalar(miS);
   mineDone.material.opacity = s2;
   mineEmpty.material.opacity = 1 - s2 * 0.92;
