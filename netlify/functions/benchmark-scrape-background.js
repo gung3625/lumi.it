@@ -99,6 +99,13 @@ async function contentAnalysis(posts, username) {
     .map((p) => ({ ...p, eng: (p.likes > 0 ? p.likes : 0) + (p.comments || 0) * 3 }))
     .sort((a, b) => b.eng - a.eng);
   const top = scored.slice(0, 8).map((p, i) => ({ ...p, idx: i + 1 }));
+  // 인기작 편향 방지 — 최신작도 함께 본다 ("터지는 공식" vs "평소 운영")
+  const topIds = new Set(top.map((p) => p.igPostId));
+  const recent = [...posts]
+    .sort((a, b) => new Date(b.takenAt) - new Date(a.takenAt))
+    .filter((p) => !topIds.has(p.igPostId))
+    .slice(0, 8)
+    .map((p, i) => ({ ...p, idx: 100 + i + 1 }));
 
   const parts = [{
     text: JSON.stringify({
@@ -108,27 +115,39 @@ async function contentAnalysis(posts, username) {
         hour_kst: p.takenAt ? new Date(new Date(p.takenAt).getTime() + 9 * 3600e3).getUTCHours() : null,
         caption: (p.caption || '').slice(0, 300), url: p.url,
       })),
+      recent_posts: recent.map((p) => ({
+        idx: p.idx, type: p.mediaType, likes: p.likes,
+        caption: (p.caption || '').slice(0, 200), url: p.url,
+      })),
       all_captions_sample: posts.slice(0, 30).map((p) => (p.caption || '').slice(0, 160)).filter(Boolean),
     }),
   }];
 
-  // 인기 게시물 사진 최대 6장 inline (IG CDN 서명 URL — 지금만 유효)
-  let added = 0;
-  for (const p of top) {
-    if (added >= 6 || !p.imageUrl) continue;
-    try {
-      const r = await fetch(p.imageUrl);
-      if (!r.ok) continue;
-      const buf = Buffer.from(await r.arrayBuffer());
-      if (buf.length > 3_500_000) continue;
-      parts.push({ text: `(아래 사진 = top_posts idx ${p.idx})` });
-      parts.push({ inlineData: { mimeType: 'image/jpeg', data: buf.toString('base64') } });
-      added++;
-    } catch (_) { /* 한 장 실패는 무시 */ }
-  }
+  // 사진 12장 inline — 인기작 6 + 최신작 6 (IG CDN 서명 URL — 지금만 유효)
+  const attach = async (list, label, max) => {
+    let added = 0;
+    for (const p of list) {
+      if (added >= max || !p.imageUrl) continue;
+      try {
+        const r = await fetch(p.imageUrl);
+        if (!r.ok) continue;
+        const buf = Buffer.from(await r.arrayBuffer());
+        if (buf.length > 3_500_000) continue;
+        parts.push({ text: `(아래 사진 = ${label} idx ${p.idx})` });
+        parts.push({ inlineData: { mimeType: 'image/jpeg', data: buf.toString('base64') } });
+        added++;
+      } catch (_) { /* 한 장 실패는 무시 */ }
+    }
+    return added;
+  };
+  const nTop = await attach(top, 'top_posts', 6);
+  const nRecent = await attach(recent, 'recent_posts', 6);
+  console.log('[benchmark] content 사진:', nTop, '+', nRecent);
 
   const sys = '너는 "루미" — 소상공인 사장님의 SNS 컨설턴트다. 입력: 잘되는 인스타 계정의 인기 게시물 메타(JSON)와 실제 사진들. '
-    + '사진과 캡션을 직접 보고 이 계정의 콘텐츠 비결을 해부하라. 과장·단정 금지("~로 보여요" 톤), 존댓말, 쉬운 말(캐러셀→여러 장 게시물). '
+    + 'top_posts(인기작)와 recent_posts(최신작) 사진·캡션을 직접 보고 이 계정의 콘텐츠 비결을 해부하라. '
+    + '인기작에서는 "터지는 공식"을, 최신작에서는 "평소 운영 패턴"을 읽고 content_mix 는 둘을 합쳐 전체 경향으로. '
+    + '과장·단정 금지("~로 보여요" 톤), 존댓말, 쉬운 말(캐러셀→여러 장 게시물). '
     + '반드시 JSON만 출력: {"secret":"이 가게 콘텐츠 비결 한 줄(45자 이내)",'
     + '"content_mix":[{"label":"메뉴 클로즈업 같은 분류","pct":숫자}…3~4개(합 100)],'
     + '"photo_style":"사진들의 공통 스타일 1문장(빛·구도·톤)",'
