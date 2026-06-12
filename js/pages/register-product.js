@@ -39,6 +39,9 @@
 
       const photoArea = document.querySelector('[data-photo-area]');
       const msgEl = document.querySelector('[data-msg]');
+      // 벤치마크 '이번 주에 해볼 일' 카드에서 진입 시 아이디어를 메모에 프리필 (?idea=)
+      const ideaParam = new URLSearchParams(location.search).get('idea');
+      if (ideaParam && msgEl && !msgEl.value) msgEl.value = ideaParam.slice(0, 200);
       const submitBtn = document.querySelector('[data-submit]');
       const scheduleAtEl = document.querySelector('[data-scheduled-at]');
       const toastEl = document.querySelector('[data-toast]');

@@ -358,10 +358,17 @@
           if (!report) {
             return '<div class="bm-hint">통계는 준비됐어요. 루미의 해석 리포트는 잠시 뒤 분석을 다시 누르면 함께 만들어 드려요.</div>';
           }
-          const block = (title, items) => `
+          // linkify: '이번 주에 해볼 일'은 카드를 누르면 그 아이디어가 업로드 메모에
+          // 담긴 채(?idea=) 등록 페이지로 — 캡션 AI 가 소재로 사용.
+          const block = (title, items, linkify) => `
             <div class="bm-ai">
               <div class="bm-ai__title">${title}</div>
-              ${(items || []).map((it) => `
+              ${(items || []).map((it) => linkify ? `
+                <a class="bm-ai__item bm-ai__item--link" href="/register-product?idea=${encodeURIComponent(it.title || '')}">
+                  <div class="bm-ai__item-title">${esc(it.title)}</div>
+                  <div class="bm-ai__item-body">${esc(it.body)}</div>
+                  <div class="bm-ai__item-go">📷 이 아이디어로 만들기 →</div>
+                </a>` : `
                 <div class="bm-ai__item">
                   <div class="bm-ai__item-title">${esc(it.title)}</div>
                   <div class="bm-ai__item-body">${esc(it.body)}</div>
@@ -369,8 +376,8 @@
             </div>`;
           return block('사장님 계정과 다른 점', report.differences)
             + block('이 가게가 잘 되는 방식', report.formula)
-            + block('이번 주에 해볼 일', report.suggestions)
-            + '<a class="bm-cta hover-lift" href="/register-product">위 아이디어로 게시물 만들러 가기</a>';
+            + block('이번 주에 해볼 일', report.suggestions, true)
+            + '<a class="bm-cta hover-lift" href="/register-product">사진 올리러 가기</a>';
         }
 
         function statsChips(theirs) {
