@@ -94,7 +94,15 @@ function isBadKeyword(raw) {
   return false;
 }
 
-function filterBlacklist(keywords) {
+// cafe 전용 키워드가 food/flower 에 끼는 것 차단 — 시드·연관확장 오염 가드
+// (2026-06-12: food 에 우베라떼·노티드·런던베이글 노출. GPT 분류 규칙은 OpenAI-off 라 미작동,
+//  읽기 시점에서 강제. 디저트·음료·베이커리류는 전부 cafe 소관)
+const CAFE_ONLY_RE = /라떼|아메리카노|에스프레소|원두|도넛|도너츠|베이글|크로플|마카롱|케이크|베이커리|스콘|휘낭시에|마들렌|빙수|푸딩|소금빵|타르트|쿠키|브라우니|디저트|노티드/;
+const CATEGORY_EXCLUDE = { food: CAFE_ONLY_RE, flower: CAFE_ONLY_RE };
+
+function filterBlacklist(keywords, category) {
+  const catRe = CATEGORY_EXCLUDE[category];
+  if (catRe) keywords = keywords.filter(k => !catRe.test(String(k.keyword || '')));
   const seen = new Set();
   const deduped = keywords.filter(k => {
     const kw = (k.keyword || '').replace(/^#/, '').trim().toLowerCase();
@@ -695,7 +703,7 @@ exports.handler = async (event) => {
           rawKeywords = splitBeautyCategory(rawKeywords, beautySubcat);
         }
 
-        const filteredKeywords = filterBlacklist(rawKeywords);
+        const filteredKeywords = filterBlacklist(rawKeywords, category);
         const scopeTags = filteredKeywords.map(k => '#' + k.keyword).filter(Boolean);
 
         // v2 필드 merge (실패 시 silent fallback — filteredKeywords 그대로)
@@ -761,7 +769,7 @@ exports.handler = async (event) => {
           source: cached.source || 'last30days',
         }));
         if (beautySubcat) kwList = splitBeautyCategory(kwList, beautySubcat);
-        const filteredKw = filterBlacklist(kwList);
+        const filteredKw = filterBlacklist(kwList, category);
         // v2 메타 결합 — trend_keywords 의 crossSourceCount/weightedScore/velocityPct/signalTier/
         // narrative/origin/sources 등을 응답에 추가. silent fallback (실패 시 filteredKw 그대로).
         const mergedKw = await mergeV2Fields(supa, filteredKw, storeKey, null, axisFilter, region, subcatParam);
@@ -793,7 +801,7 @@ exports.handler = async (event) => {
           source: 'last30days',
         }));
         if (beautySubcat) kwList = splitBeautyCategory(kwList, beautySubcat);
-        const filteredKw = filterBlacklist(kwList);
+        const filteredKw = filterBlacklist(kwList, category);
         // v2 메타 결합 — silent fallback
         const mergedKw = await mergeV2Fields(supa, filteredKw, storeKey, null, axisFilter, region, subcatParam);
         return {
