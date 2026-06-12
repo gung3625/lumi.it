@@ -1,7 +1,8 @@
 // sw.js — lumi Service Worker (audit 후속, 전체 최적화).
 //
 // 전략 (사장님 device 두 번째 visit 부터 즉시 로드):
-// - 정적 asset (/css/*, /js/*, /assets/*) → cache-first + 백그라운드 갱신
+// - css/js → network-first (HTML 과 항상 한 몸 — 옛 CSS 첫화면 깨짐 방지, v59)
+// - 폰트·이미지 → cache-first + 백그라운드 갱신
 // - HTML (.html, /, /dashboard 등) → network-first (사장님 새 변경 즉시 반영)
 // - API (/api/*, /.netlify/*) → sw 우회 (그대로 fetch — 캐시 X)
 //
@@ -21,10 +22,13 @@
 // v55: 토스급 인터랙션 — 전역 햅틱, 완료 SVG 체크 draw, 로딩 개선, 스켈레톤 확산, spring
 // v57: 트렌드 네이버 소스 단일화 (youtube/ig/news 제거, tier 검색량+velocity 2축)
 // v58: 트렌드 ② — 블로그 트렌드 소스 제거, 쇼핑인사이트 메인 격상 (상품/메뉴 트렌드 중심)
-const CACHE_VERSION = 'lumi-v58';
+// v59: css/js cache-first → network-first. cache-first(SWR)는 배포 직후 '새 HTML+옛 CSS'
+//      첫 화면을 만들었음(생 텍스트·거대 SVG 두 차례). netlify 헤더로는 sw 캐시 못 뚫음.
+const CACHE_VERSION = 'lumi-v59';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 
-const STATIC_RE = /\.(css|js|woff2?|ttf|otf|png|jpg|jpeg|webp|svg|ico|gif)$/i;
+const CSSJS_RE  = /\.(css|js)$/i;
+const ASSET_RE  = /\.(woff2?|ttf|otf|png|jpg|jpeg|webp|svg|ico|gif)$/i;
 const API_RE    = /\/(api|\.netlify\/functions|r)\//;
 
 self.addEventListener('install', (event) => {
@@ -54,8 +58,15 @@ self.addEventListener('fetch', (event) => {
   // API call — sw 우회 (실시간 데이터 보존)
   if (API_RE.test(url.pathname)) return;
 
-  // 정적 asset — cache-first + 백그라운드 갱신
-  if (STATIC_RE.test(url.pathname)) {
+  // css/js — network-first (HTML 과 버전 불일치 금지. networkFirst 가 200 을 캐시에
+  // 넣어두므로 오프라인 fallback 은 유지됨)
+  if (CSSJS_RE.test(url.pathname)) {
+    event.respondWith(networkFirst(req));
+    return;
+  }
+
+  // 폰트·이미지 — cache-first + 백그라운드 갱신
+  if (ASSET_RE.test(url.pathname)) {
     event.respondWith(cacheFirst(req));
     return;
   }
