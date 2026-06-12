@@ -374,7 +374,17 @@
                   <div class="bm-ai__item-body">${esc(it.body)}</div>
                 </div>`).join('')}
             </div>`;
-          return block('사장님 계정과 다른 점', report.differences)
+          const v = report.verdict || {};
+          const vRow = (k, val, mod) => val
+            ? `<div class="bm-verdict__row${mod ? ' bm-verdict__row--gap' : ''}"><span class="bm-verdict__k">${k}</span><span class="bm-verdict__v">${esc(val)}</span></div>`
+            : '';
+          const verdictHtml = (v.mine || v.theirs || v.gap) ? `
+            <div class="bm-verdict">
+              <div class="bm-ai__title">총평</div>
+              ${vRow('내 계정', v.mine)}${vRow('옆 가게', v.theirs)}${vRow('핵심 차이', v.gap, true)}
+            </div>` : '';
+          return verdictHtml
+            + block('사장님 계정과 다른 점', report.differences)
             + block('이 가게가 잘 되는 방식', report.formula)
             + block('이번 주에 해볼 일', report.suggestions, true)
             + '<a class="bm-cta hover-lift" href="/register-product">사진 올리러 가기</a>';
