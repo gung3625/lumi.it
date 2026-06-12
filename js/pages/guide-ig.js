@@ -86,7 +86,7 @@
         block.hidden = true;
         const doneMsg = document.createElement('div');
         doneMsg.className = 'guide-success';
-        doneMsg.innerHTML = '<div class="guide-success__icon">🎉</div><h4 class="guide-success__title">이미 연결 완료!</h4><p class="guide-success__sub">루미 대시보드에서 게시 시작하세요.</p><div class="guide-success__actions"><a class="guide-success__cta" href="/dashboard">대시보드로</a></div>';
+        doneMsg.innerHTML = '<div class="guide-success__icon">🎉</div><h4 class="guide-success__title">이미 연결 완료!</h4><p class="guide-success__sub">루미 홈에서 게시 시작하세요.</p><div class="guide-success__actions"><a class="guide-success__cta" href="/dashboard">대시보드로</a></div>';
         block.parentNode.insertBefore(doneMsg, block);
         return;
       }
