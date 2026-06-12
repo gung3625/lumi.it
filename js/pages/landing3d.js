@@ -358,18 +358,25 @@ window.addEventListener('pointermove', (e) => {
   py = (e.clientY / window.innerHeight - 0.5) * 2;
 }, { passive: true });
 
+const trackEl = document.querySelector('[data-l3d-track]');
 function getScrollProgress() {
-  const doc = document.documentElement;
-  const max = doc.scrollHeight - window.innerHeight;
+  const max = (trackEl ? trackEl.offsetHeight : document.documentElement.scrollHeight) - window.innerHeight;
   return max > 0 ? clamp01(window.scrollY / max) : 0;
+}
+// 스토리를 지나 본편으로 들어가면 캔버스가 부드럽게 물러남
+function getPastStory() {
+  if (!trackEl) return 0;
+  const past = window.scrollY - (trackEl.offsetHeight - window.innerHeight);
+  return clamp01(past / (window.innerHeight * 0.55));
 }
 
 // 비트 텍스트 토글
 const BEAT_RANGES = [[0, 0.15], [0.21, 0.45], [0.51, 0.72], [0.79, 1.01]];
 function updateBeats(p) {
+  const gone = getPastStory() > 0.25;
   beats.forEach((el, i) => {
     const [a, b] = BEAT_RANGES[i];
-    el.classList.toggle('is-on', p >= a && p < b);
+    el.classList.toggle('is-on', !gone && p >= a && p < b);
   });
 }
 
@@ -489,12 +496,15 @@ function tick() {
   progress += (targetP - progress) * 0.09;
   if (Math.abs(targetP - progress) < 0.0006) progress = targetP;
   updateBeats(targetP); // 텍스트 전환은 즉답
-  // 입장 연출: 첫 0.9초 동안 무대가 떠오르며 나타남
+  // 입장 연출 + 본편 진입 시 퇴장
   const intro = smooth(Math.min(1, t / 0.9));
-  canvas.style.opacity = intro;
-  world.position.y = (1 - intro) * -0.35;
-  layout(progress, t);
-  renderer.render(scene, camera);
+  const past = getPastStory();
+  canvas.style.opacity = intro * (1 - past);
+  world.position.y = (1 - intro) * -0.35 + past * 0.6;
+  if (past < 1) {
+    layout(progress, t);
+    renderer.render(scene, camera);
+  }
   requestAnimationFrame(tick);
 }
 
@@ -502,6 +512,19 @@ window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// 본편 섹션 스크롤 리빌
+const rvIO = ('IntersectionObserver' in window)
+  ? new IntersectionObserver((ents) => {
+      for (const e of ents) {
+        if (e.isIntersecting) { e.target.classList.add('is-in'); rvIO.unobserve(e.target); }
+      }
+    }, { threshold: 0.18 })
+  : null;
+document.querySelectorAll('.l3s[data-rv]').forEach((el) => {
+  if (rvIO) rvIO.observe(el);
+  else el.classList.add('is-in');
 });
 
 // 디버그 훅 (프리뷰 검증·시연용)
