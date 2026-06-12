@@ -51,7 +51,7 @@ function roundRectPath(ctx, x, y, w, h, r) {
 
 function makeCardTexture({ photo, handle, mode }) {
   // mode: 'theirs' | 'empty' | 'done'
-  const W = 768, H = 960, R = 44;
+  const W = 768, H = 1040, R = 44;
   const c = document.createElement('canvas');
   c.width = W; c.height = H;
   const x = c.getContext('2d');
@@ -106,8 +106,19 @@ function makeCardTexture({ photo, handle, mode }) {
     x.restore();
   }
 
+  // 아이콘·좋아요 줄 (인스타 문법) — empty 는 생략
+  let capY = pY + pH + 36;
+  if (mode !== 'empty') {
+    x.font = '32px sans-serif';
+    x.fillText('❤️', 40, capY + 30);
+    x.fillText('💬', 92, capY + 30);
+    x.fillText('📤', 144, capY + 30);
+    x.font = '700 26px "Pretendard Variable", Pretendard, -apple-system, sans-serif';
+    x.fillStyle = '#3c3137';
+    x.fillText(mode === 'theirs' ? '좋아요 1,247개' : '좋아요 89개', 40, capY + 76);
+    capY += 102;
+  }
   // 캡션 줄 (회색 바)
-  const capY = pY + pH + 40;
   x.fillStyle = mode === 'empty' ? '#f3e9ed' : '#efe3e8';
   roundRectPath(x, 40, capY, W - 240, 22, 11); x.fill();
   roundRectPath(x, 40, capY + 40, W - 130, 22, 11); x.fill();
@@ -229,7 +240,7 @@ function loadImg(src) {
   });
 }
 
-const CARD_W = 3.0, CARD_H = 3.75;
+const CARD_W = 3.0, CARD_H = 4.06;
 const isMobile = window.innerWidth < 760;
 
 function cardMesh(tex) {
@@ -240,9 +251,10 @@ function cardMesh(tex) {
   return m;
 }
 
-let theirs, mineEmpty, mineDone, scan, glow, chips = [], shadows = [];
+let theirs, mineEmpty, mineDone, scan, glow, chips = [], shadows = [], sparkles = [];
 const clock = new THREE.Clock();
 let progress = 0, manualProgress = null;
+let targetP = 0; // 스크롤(목표)을 progress 가 부드럽게 추적
 
 Promise.all([
   loadImg('/assets/3d/salt-bread.jpg'), // Higgsfield 생성 — 칩(#소금빵)과 스토리 일치
@@ -291,6 +303,29 @@ Promise.all([
   );
   glow.material.opacity = 0;
   world.add(glow);
+
+  // 피날레 반짝이 12개
+  const sparkTex = (() => {
+    const c = document.createElement('canvas');
+    c.width = 64; c.height = 64;
+    const sx = c.getContext('2d');
+    const g = sx.createRadialGradient(32, 32, 2, 32, 32, 30);
+    g.addColorStop(0, 'rgba(255, 255, 255, 1)');
+    g.addColorStop(0.35, 'rgba(255, 170, 195, 0.9)');
+    g.addColorStop(1, 'rgba(255, 170, 195, 0)');
+    sx.fillStyle = g;
+    sx.fillRect(0, 0, 64, 64);
+    return new THREE.CanvasTexture(c);
+  })();
+  for (let i = 0; i < 12; i++) {
+    const sp = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.16, 0.16),
+      new THREE.MeshBasicMaterial({ map: sparkTex, transparent: true, depthWrite: false })
+    );
+    sp.material.opacity = 0;
+    sparkles.push(sp);
+    world.add(sp);
+  }
 
   // 비결 칩 4종
   const labels = ['화 12시', '여러 장 77%', '#소금빵', '참여율 13.8%'];
@@ -357,16 +392,17 @@ function layout(p, t) {
   theirs.position.set(thX, thY, thZ);
   theirs.rotation.y = lerp(0.16, 0.05, s1) + lerp(0, 0.5, s3) + px * 0.04;
   theirs.rotation.z = lerp(-0.02, 0, s1);
+  theirs.rotation.x = -py * 0.035;
   theirs.material.opacity = lerp(1, 0.55, s3);
 
   // 내 가게 카드: 옆에 작게 → 중앙 크게
   const miX = mob ? lerp(0.42, 0, s2) : lerp(1.85, 0.15, s2);
-  const miY = Math.sin(t * 0.8 + 1.7) * 0.06 * float + lerp(mob ? -2.9 : -0.25, mob ? 1.2 : 0.3, s2) + lerp(0, mob ? 0.05 : 0.4, s3);
+  const miY = Math.sin(t * 0.8 + 1.7) * 0.06 * float + lerp(mob ? -2.9 : -0.25, mob ? 1.2 : 0.3, s2) + lerp(0, mob ? -0.15 : 0.28, s3);
   const miZ = lerp(-1.4, 0.6, s2) + lerp(0, 0.7, s3);
   mine.position.set(miX, miY, miZ);
   mine.rotation.y = lerp(-0.22, -0.04, s2) + px * 0.05;
+  mine.rotation.x = -py * 0.04;
   const miS = lerp(0.84, 0.94, s2) * lerp(1, 1.02, s3);
-  mine.scale.setScalar(miS);
   mineDone.material.opacity = s2;
   mineEmpty.material.opacity = 1 - s2 * 0.92;
 
@@ -387,6 +423,7 @@ function layout(p, t) {
     scan.material.opacity = 0;
   }
 
+  let absorbPulse = 0;
   // 칩: 스캔 후 등장 → 호버 → 내 카드로 비행 → 흡수
   chips.forEach((chip, i) => {
     const born = seg(p, 0.24 + i * 0.045, 0.30 + i * 0.045); // 등장
@@ -414,6 +451,23 @@ function layout(p, t) {
     chip.scale.setScalar(pop * (1 - sink * 0.85));
     chip.material.opacity = born * (1 - sink);
     chip.rotation.y = px * 0.06;
+    absorbPulse += Math.sin(sink * Math.PI) * 0.011; // 꽂힐 때 카드 출렁
+  });
+  mine.scale.setScalar(miS * (1 + absorbPulse));
+
+  // 피날레 반짝이 — 카드 주위에서 떠오르며 사라지길 반복
+  sparkles.forEach((sp, i) => {
+    const frac = (t * 0.42 + i * 0.21) % 1;
+    const ang = (i / 12) * Math.PI * 2 + t * 0.07;
+    const r = 1.9 + (i % 3) * 0.34;
+    sp.position.set(
+      mine.position.x + Math.cos(ang) * r * 0.78,
+      mine.position.y - 1.1 + frac * 2.6,
+      mine.position.z + 0.5 + Math.sin(ang) * 0.25
+    );
+    sp.material.opacity = s3 * Math.sin(frac * Math.PI) * 0.85;
+    const ss = 0.7 + Math.sin(frac * Math.PI) * 0.55;
+    sp.scale.setScalar(ss);
   });
 
   // 피날레 글로우
@@ -430,8 +484,15 @@ function layout(p, t) {
 
 function tick() {
   const t = clock.getElapsedTime();
-  progress = manualProgress != null ? manualProgress : getScrollProgress();
-  updateBeats(progress);
+  targetP = manualProgress != null ? manualProgress : getScrollProgress();
+  // 부드러운 추적 — 손가락 스크롤의 뚝뚝 끊김 제거
+  progress += (targetP - progress) * 0.09;
+  if (Math.abs(targetP - progress) < 0.0006) progress = targetP;
+  updateBeats(targetP); // 텍스트 전환은 즉답
+  // 입장 연출: 첫 0.9초 동안 무대가 떠오르며 나타남
+  const intro = smooth(Math.min(1, t / 0.9));
+  canvas.style.opacity = intro;
+  world.position.y = (1 - intro) * -0.35;
   layout(progress, t);
   renderer.render(scene, camera);
   requestAnimationFrame(tick);
