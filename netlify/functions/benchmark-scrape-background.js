@@ -19,6 +19,7 @@ const { getAdminClient } = require('./_shared/supabase-admin');
 const { verifyBearerToken } = require('./_shared/supabase-auth');
 const { computeStats } = require('./_shared/benchmark-stats');
 const { getIgTokenForSeller, igGraphRequest } = require('./_shared/ig-graph');
+const { geminiGenerate } = require('./_shared/llm-call');
 const { checkAndIncrementQuota, QuotaExceededError } = require('./_shared/openai-quota');
 const { llmChat } = require('./_shared/llm-call');
 
@@ -54,6 +55,7 @@ function normalizeApifyPost(item) {
     comments: typeof item.commentsCount === 'number' && item.commentsCount >= 0 ? item.commentsCount : null,
     views: item.videoPlayCount ?? item.videoViewCount ?? null,
     url: item.url || null,
+    imageUrl: item.displayUrl || null, // 콘텐츠 분석용 (IG CDN 서명 URL — 런타임에만 사용, DB 저장 안 함)
   };
 }
 
@@ -91,7 +93,59 @@ async function fetchMyPosts(sellerId, supa) {
 }
 
 // ── OpenAI 해석 ────────────────────────────────────────
-async function aiInterpret(sellerId, mine, theirs, username) {
+// ── 콘텐츠 해부 — 인기 게시물 사진·캡션을 Gemini 비전으로 직접 읽기 (₩0) ──
+async function contentAnalysis(posts, username) {
+  const scored = posts
+    .map((p) => ({ ...p, eng: (p.likes > 0 ? p.likes : 0) + (p.comments || 0) * 3 }))
+    .sort((a, b) => b.eng - a.eng);
+  const top = scored.slice(0, 8).map((p, i) => ({ ...p, idx: i + 1 }));
+
+  const parts = [{
+    text: JSON.stringify({
+      username,
+      top_posts: top.map((p) => ({
+        idx: p.idx, type: p.mediaType, likes: p.likes, comments: p.comments,
+        hour_kst: p.takenAt ? new Date(new Date(p.takenAt).getTime() + 9 * 3600e3).getUTCHours() : null,
+        caption: (p.caption || '').slice(0, 300), url: p.url,
+      })),
+      all_captions_sample: posts.slice(0, 30).map((p) => (p.caption || '').slice(0, 160)).filter(Boolean),
+    }),
+  }];
+
+  // 인기 게시물 사진 최대 6장 inline (IG CDN 서명 URL — 지금만 유효)
+  let added = 0;
+  for (const p of top) {
+    if (added >= 6 || !p.imageUrl) continue;
+    try {
+      const r = await fetch(p.imageUrl);
+      if (!r.ok) continue;
+      const buf = Buffer.from(await r.arrayBuffer());
+      if (buf.length > 3_500_000) continue;
+      parts.push({ text: `(아래 사진 = top_posts idx ${p.idx})` });
+      parts.push({ inlineData: { mimeType: 'image/jpeg', data: buf.toString('base64') } });
+      added++;
+    } catch (_) { /* 한 장 실패는 무시 */ }
+  }
+
+  const sys = '너는 "루미" — 소상공인 사장님의 SNS 컨설턴트다. 입력: 잘되는 인스타 계정의 인기 게시물 메타(JSON)와 실제 사진들. '
+    + '사진과 캡션을 직접 보고 이 계정의 콘텐츠 비결을 해부하라. 과장·단정 금지("~로 보여요" 톤), 존댓말, 쉬운 말(캐러셀→여러 장 게시물). '
+    + '반드시 JSON만 출력: {"secret":"이 가게 콘텐츠 비결 한 줄(45자 이내)",'
+    + '"content_mix":[{"label":"메뉴 클로즈업 같은 분류","pct":숫자}…3~4개(합 100)],'
+    + '"photo_style":"사진들의 공통 스타일 1문장(빛·구도·톤)",'
+    + '"caption_style":{"tone":"말투","length":"길이","emoji":"이모지 사용","cta":"행동 유도 방식"},'
+    + '"top_why":[{"url":"게시물 url","reason":"이 게시물이 터진 이유 1문장"}…3개]}';
+  const req = {
+    systemInstruction: { parts: [{ text: sys }] },
+    contents: [{ role: 'user', parts }],
+    generationConfig: { temperature: 0.35, maxOutputTokens: 2048, responseMimeType: 'application/json', thinkingConfig: { thinkingBudget: 0 } },
+  };
+  const text = await geminiGenerate(req, { timeoutMs: 75_000, label: 'benchmark-content' });
+  const parsed = JSON.parse(text);
+  if (!parsed.secret || !Array.isArray(parsed.content_mix) || !parsed.caption_style) throw new Error('content_bad_shape');
+  return parsed;
+}
+
+async function aiInterpret(sellerId, mine, theirs, username, content) {
   await checkAndIncrementQuota(sellerId, 'gpt-4o-mini');
   const sys = '너는 "루미" — 소상공인 사장님의 SNS 마케팅을 돕는 차분하고 현실적인 컨설턴트다. '
     + '입력으로 두 인스타 계정의 통계(JSON)를 받는다: mine(사장님 계정, 없을 수 있음), theirs(벤치마크 계정). '
@@ -102,8 +156,12 @@ async function aiInterpret(sellerId, mine, theirs, username) {
     + 'differences=사장님 계정과의 핵심 차이(mine 없으면 일반 소상공인 대비), formula=이 계정이 잘 되는 방식, '
     + 'suggestions=사장님이 이번 주에 바로 해볼 일(루미로 게시물을 만들 수 있게 구체적 소재로). '
     + 'body는 2문장 이내, 수치 인용은 입력 JSON에 있는 것만. '
-    + '용어는 쉬운 말로: 캐러셀→"여러 장 게시물", 릴스→"릴", 해시태그·참여율은 그대로 OK.';
-  const userMsg = JSON.stringify({ benchmarkUsername: username, mine, theirs });
+    + '용어는 쉬운 말로: 캐러셀→"여러 장 게시물", 릴스→"릴", 해시태그·참여율은 그대로 OK. '
+    + 'content_findings(사진·캡션 실물 분석)가 있으면 formula 와 suggestions 는 그 비결을 구체적으로 인용해 사장님 매장에 적용하는 행동으로 쓴다(예: "창가 자연광에서 신메뉴 클로즈업 3장").';
+  const userMsg = JSON.stringify({
+    benchmarkUsername: username, mine, theirs,
+    content_findings: content ? { secret: content.secret, mix: content.content_mix, photo: content.photo_style, caption: content.caption_style } : null,
+  });
 
   const res = await llmChat({
     model: 'gpt-4o-mini',
@@ -223,18 +281,27 @@ exports.handler = async (event) => {
       mine: mineData ? { username: mineData.username, ...computeStats(mineData.posts, mineData.followers) } : null,
     };
 
-    // ⑤ AI 해석 — 키/쿼터 문제 시 통계만으로 완료
+    // ⑤-a 콘텐츠 해부 — 인기 게시물 사진+캡션을 직접 읽음 (Gemini 비전, 실패해도 진행)
+    let content = null;
+    try {
+      content = await contentAnalysis(theirsPosts, account.ig_username);
+    } catch (e) {
+      console.log('[benchmark] content 분석 skip:', String(e.message || e).slice(0, 120));
+    }
+
+    // ⑤-b AI 해석 — 콘텐츠 해부 결과를 반영해 제안을 구체화. 키/쿼터 문제 시 통계만으로 완료
     let aiReport = null, model = null;
     try {
-      aiReport = await aiInterpret(user.id, stats.mine, stats.theirs, account.ig_username);
+      aiReport = await aiInterpret(user.id, stats.mine, stats.theirs, account.ig_username, content);
       model = 'gpt-4o-mini';
     } catch (e) {
       const reason = e instanceof QuotaExceededError ? 'quota' : e.message;
       console.log('[benchmark] ai skip:', reason);
     }
+    const reportPayload = aiReport ? { ...aiReport, content } : (content ? { content } : null);
 
     await supa.from('benchmark_reports')
-      .update({ status: 'done', stats, report: aiReport, model, finished_at: new Date().toISOString() })
+      .update({ status: 'done', stats, report: reportPayload, model, finished_at: new Date().toISOString() })
       .eq('id', report.id);
     return { statusCode: 200, body: '' };
   } catch (e) {

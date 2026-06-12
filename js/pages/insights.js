@@ -383,7 +383,31 @@
               <div class="bm-ai__title">총평</div>
               ${vRow('내 계정', v.mine)}${vRow('그 가게', v.theirs)}${vRow('핵심 차이', v.gap, true)}
             </div>` : '';
+          const ct = report.content || {};
+          const mixHtml = (ct.content_mix || []).map((m) => `
+            <div class="bm-mix">
+              <span class="bm-mix__label">${esc(m.label)}</span>
+              <span class="bm-mix__bar"><i class="bm-mix__fill" data-mix-pct="${Math.min(100, Math.max(0, Number(m.pct) || 0))}"></i></span>
+              <b class="bm-mix__pct">${Math.min(100, Math.max(0, Number(m.pct) || 0))}%</b>
+            </div>`).join('');
+          const cs = ct.caption_style || {};
+          const csChips = [cs.tone, cs.length, cs.emoji, cs.cta].filter(Boolean)
+            .map((v) => `<span class="bm-cs-chip">${esc(v)}</span>`).join('');
+          const whyHtml = (ct.top_why || []).slice(0, 3).map((w) => `
+            <a class="bm-why" href="${esc(w.url || '#')}" target="_blank" rel="noopener">
+              <span class="bm-why__reason">${esc(w.reason)}</span><span class="bm-why__go">게시물 보기 →</span>
+            </a>`).join('');
+          const contentHtml = ct.secret ? `
+            <div class="bm-ai">
+              <div class="bm-ai__title">콘텐츠 비결 — 사진까지 직접 봤어요</div>
+              <div class="bm-secret">“${esc(ct.secret)}”</div>
+              ${mixHtml ? `<div class="bm-mix-wrap">${mixHtml}</div>` : ''}
+              ${ct.photo_style ? `<div class="bm-photo-style">📷 ${esc(ct.photo_style)}</div>` : ''}
+              ${csChips ? `<div class="bm-cs">${csChips}</div>` : ''}
+              ${whyHtml ? `<div class="bm-why-wrap"><div class="bm-why-label">가장 터진 게시물, 왜?</div>${whyHtml}</div>` : ''}
+            </div>` : '';
           return verdictHtml
+            + contentHtml
             + block('사장님 계정과 다른 점', report.differences)
             + block('이 가게가 잘 되는 방식', report.formula)
             + block('이번 주에 해볼 일', report.suggestions, true)
@@ -454,6 +478,8 @@
             }
             listEl.innerHTML = (json.accounts || []).map(cardHtml).join('')
               || '<div class="bm-hint">아직 등록한 가게가 없어요. 궁금한 가게 계정을 위에 입력해 보세요.</div>';
+            // 콘텐츠 믹스 막대 — CSP 가 innerHTML 의 style 을 막으므로 CSSOM 으로 폭 지정
+            listEl.querySelectorAll('[data-mix-pct]').forEach((el) => { el.style.width = el.dataset.mixPct + '%'; });
             const anyRunning = (json.accounts || []).some((a) => a.latestReport && a.latestReport.status === 'running');
             clearTimeout(pollTimer);
             if (anyRunning) pollTimer = setTimeout(() => load(true), 8000);
