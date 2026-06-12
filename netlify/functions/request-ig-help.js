@@ -135,7 +135,7 @@ exports.handler = async (event) => {
   const html = `
     <div style="font-family:-apple-system,'Pretendard',sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#1d1d1f;">
       <h1 style="font-size:20px;font-weight:800;margin:0 0 16px;color:#c0392b;">🆘 IG 연결 도움 요청 — ${storeName}</h1>
-      <p style="color:#6e6e73;margin:0 0 20px;font-size:14px;">베타 사장님이 인스타 연결에서 막혔어요. 카톡 또는 전화로 1:1 도움 부탁드려요.</p>
+      <p style="color:#6e6e73;margin:0 0 20px;font-size:14px;">사장님이 인스타 연결에서 막혔어요. 카톡 또는 전화로 1:1 도움 부탁드려요.</p>
       <table style="width:100%;border-collapse:collapse;font-size:14px;">
         <tr><td style="padding:8px 0;width:110px;color:#6e6e73;"><strong>매장</strong></td><td style="padding:8px 0;">${storeName}</td></tr>
         <tr><td style="padding:8px 0;color:#6e6e73;"><strong>대표자</strong></td><td style="padding:8px 0;">${sellerName}</td></tr>

@@ -1,9 +1,9 @@
-// request-tester-invite.js — 베타 사장님이 Meta Tester 초대 요청 보냄.
+// request-tester-invite.js — 사장님이 Meta Tester 초대 요청 보냄.
 //
 // 2026-05-23 (베타 흐름): 메타 비즈니스 인증 대기 중 — 일반 OAuth 불가능.
 // Tester 로 미리 추가된 IG 계정만 권한 받음. 자동화 X — 루미팀(김현)이 메타
 // Developer Console 에서 수동으로 Tester 추가해야 함.
-// 본 endpoint = 베타 사장님이 본인 IG 핸들 알려주고 추가 요청 보내는 채널.
+// 본 endpoint = 사장님이 본인 IG 핸들 알려주고 추가 요청 보내는 채널.
 //
 // POST /api/request-tester-invite
 // Auth: Bearer 토큰 (사장님 식별 필수)
@@ -165,7 +165,7 @@ exports.handler = async (event) => {
   const html = `
     <div style="font-family:-apple-system,'Pretendard',sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#1d1d1f;">
       <h1 style="font-size:20px;font-weight:800;margin:0 0 8px;color:#C8507A;">📨 Meta Tester 초대 요청 — ${storeName}</h1>
-      <p style="color:#6e6e73;margin:0 0 16px;font-size:14px;">베타 사장님이 IG OAuth 받으려면 Meta Developer Console 에서 Tester 로 추가해야 합니다.</p>
+      <p style="color:#6e6e73;margin:0 0 16px;font-size:14px;">사장님이 IG OAuth 받으려면 Meta Developer Console 에서 Tester 로 추가해야 합니다.</p>
       ${retryNote}
       <div style="background:#FEF3F2;padding:16px;border-radius:8px;margin:0 0 20px;border-left:3px solid #C8507A;">
         <div style="font-size:13px;color:#6e6e73;margin-bottom:4px;font-weight:600;">처리 절차</div>
@@ -204,7 +204,7 @@ exports.handler = async (event) => {
     await resend.emails.send({
       from: NOTIFY_FROM,
       to: [NOTIFY_TO],
-      subject: `[루미] 📨 Tester 초대 요청 — ${sellerInfo.store_name || sellerInfo.display_name || '베타 사장님'} (@${igHandle})`,
+      subject: `[루미] 📨 Tester 초대 요청 — ${sellerInfo.store_name || sellerInfo.display_name || '사장님'} (@${igHandle})`,
       html,
       replyTo: NOTIFY_TO,
     });
