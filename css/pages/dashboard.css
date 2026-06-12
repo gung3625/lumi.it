@@ -410,6 +410,59 @@
       .scheduled-empty:hover .scheduled-empty__chev { transform: translateX(2px); color: var(--pink-500); }
     }
 
+    /* 옆 가게 분석 진입 카드 (2026-06-12 홈 직노출) */
+    .bench-entry {
+      display: flex; align-items: center; gap: var(--space-3);
+      padding: var(--space-4);
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      color: var(--ink);
+      text-decoration: none;
+      animation: rise 500ms var(--ease-toss) 120ms backwards;
+      transition:
+        background var(--duration-base) var(--ease-soft),
+        border-color var(--duration-base) var(--ease-soft),
+        transform var(--duration-snap) var(--ease-toss),
+        box-shadow var(--duration-base) var(--ease-soft);
+    }
+    @media (hover: hover) {
+      .bench-entry:hover {
+        background: var(--pink-50);
+        border-color: var(--pink-300);
+        box-shadow: var(--shadow-sm);
+      }
+    }
+    .bench-entry:active { transform: scale(0.992); }
+    .bench-entry__icon {
+      width: 40px; height: 40px;
+      flex-shrink: 0;
+      border-radius: var(--radius-full);
+      background: var(--pink-50);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--pink-500);
+    }
+    .bench-entry__icon svg { width: 20px; height: 20px; stroke-width: 2; }
+    .bench-entry__body { flex: 1; min-width: 0; }
+    .bench-entry__title {
+      font-size: var(--text-body);
+      font-weight: var(--weight-semibold);
+      color: var(--ink);
+      margin-bottom: 2px;
+    }
+    .bench-entry__sub {
+      font-size: var(--text-caption);
+      color: var(--ink-muted);
+    }
+    .bench-entry__chev {
+      font-size: 18px;
+      color: var(--ink-muted);
+      transition: transform var(--duration-snap) var(--ease-toss);
+    }
+    @media (hover: hover) {
+      .bench-entry:hover .bench-entry__chev { transform: translateX(2px); color: var(--pink-500); }
+    }
+
     /* IG 재연동 필요 카드 (token_invalid_at 표시된 사장님만 노출) */
     .ig-reconnect {
       display: flex;
