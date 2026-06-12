@@ -177,6 +177,42 @@ exports.handler = async (event) => {
       }
     }
 
+    // 신규 가입 알림 — 정식 출시(직접 청구) 운영: 사장님이 가입 즉시 알아야 연락·청구 가능.
+    // 실패해도 가입은 정상 진행 (fire-and-forget).
+    try {
+      const apiKey = process.env.RESEND_API_KEY;
+      if (apiKey) {
+        const { Resend } = require('resend');
+        const resend = new Resend(apiKey);
+        const prefLabel = updatePayload.contact_preference === 'call' ? '📞 전화가 편함'
+          : updatePayload.contact_preference === 'sms' ? '💬 문자가 편함' : '(미선택)';
+        const row = (k, v) => `<tr><td style="padding:6px 12px;color:#6e6e73;white-space:nowrap;">${k}</td><td style="padding:6px 12px;color:#1d1d1f;font-weight:600;">${v || '-'}</td></tr>`;
+        await resend.emails.send({
+          from: 'lumi <noreply@lumi.it.kr>',
+          to: 'lumi@lumi.it.kr',
+          subject: `[루미] 🎉 신규 가입 — ${store_name.trim()} (${industry.trim()})`,
+          html: `<div style="font-family:-apple-system,sans-serif;max-width:560px;">
+            <h2 style="color:#1d1d1f;">신규 사장님이 가입을 완료했어요</h2>
+            <table style="border-collapse:collapse;background:#f5f5f7;border-radius:12px;width:100%;">
+              ${row('매장명', store_name.trim())}
+              ${row('업종', industry.trim())}
+              ${row('전화', phone)}
+              ${row('선호 연락', prefLabel)}
+              ${row('지역', region && region.trim())}
+              ${row('요금', '월 19,900원 (직접 청구)')}
+              ${row('seller_id', sellerId)}
+            </table>
+            <p style="color:#6e6e73;font-size:14px;margin-top:16px;">다음 할 일: ① 선호 채널로 인사 + 연동 안내 ② 결제 안내(직접 청구) ③ 연동 완료 후 첫 게시 챙기기</p>
+          </div>`,
+        });
+        console.log('[signup-complete] 신규 가입 알림 발송됨');
+      } else {
+        console.warn('[signup-complete] RESEND_API_KEY 미설정 — 가입 알림 스킵');
+      }
+    } catch (mailErr) {
+      console.warn('[signup-complete] 가입 알림 실패 (가입은 정상):', mailErr.message);
+    }
+
     console.log('[signup-complete] 온보딩 완료. seller_id:', sellerId);
 
     return {
