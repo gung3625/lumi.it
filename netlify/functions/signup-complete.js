@@ -150,6 +150,9 @@ exports.handler = async (event) => {
       marketing_consent: !!consents.marketing,
     };
     if (phone) updatePayload.phone = phone;
+    if (body.contact_preference === 'sms' || body.contact_preference === 'call') {
+      updatePayload.contact_preference = body.contact_preference;
+    }
     if (region && region.trim()) updatePayload.region = region.trim();
 
     const { error: updErr } = await admin

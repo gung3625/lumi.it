@@ -597,3 +597,39 @@
       font-size: var(--text-body);
       color: var(--ink-muted);
     }
+
+/* 연락 선호 채널 (가입 step2 — 연동 안내용, 2026-06-12) */
+.pref-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 8px;
+}
+.pref-opt { display: block; cursor: pointer; }
+.pref-opt__input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.pref-opt__card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 10px;
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--ink);
+  background: var(--bg-soft);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-lg);
+  transition: border-color var(--duration-snap) var(--ease-toss), background var(--duration-snap) var(--ease-toss);
+}
+.pref-opt__input:checked + .pref-opt__card {
+  border-color: var(--pink-500);
+  background: var(--pink-50);
+  color: var(--pink-500);
+}
+.pref-opt__input:focus-visible + .pref-opt__card {
+  outline: 2px solid var(--pink-300);
+  outline-offset: 2px;
+}

@@ -40,6 +40,7 @@
         sub: '',
         region: '',
         phone: '',
+        contactPref: '',
         skipPhoneStep: false,
         igChecks: { 1: false, 2: false, 3: false },
       };
@@ -158,6 +159,9 @@
         if (d.length < 8) return d.slice(0, 3) + '-' + d.slice(3);
         return d.slice(0, 3) + '-' + d.slice(3, 7) + '-' + d.slice(7);
       }
+      document.querySelectorAll('[data-contact-pref]').forEach((r) => {
+        r.addEventListener('change', () => { state.contactPref = r.value; });
+      });
       phoneInput.addEventListener('input', () => {
         phoneInput.value = formatPhone(phoneInput.value);
         state.phone = phoneInput.value.replace(/\D/g, '');
@@ -187,6 +191,10 @@
       // step 2 검증
       function validateStep2() {
         const errEl = document.querySelector('[data-step2-err]');
+        if (!state.contactPref) {
+          errEl.textContent = '연락 방법을 골라주세요. 연동 도와드릴 때 필요해요.';
+          return false;
+        }
         if (!/^010\d{7,8}$/.test(state.phone)) {
           errEl.textContent = '010으로 시작하는 11자리 숫자로 입력해주세요.';
           return false;
@@ -204,6 +212,7 @@
           consents: state.consents || {},
         };
         if (state.phone) payload.phone = state.phone;
+        if (state.contactPref) payload.contact_preference = state.contactPref;
         if (state.region) payload.region = state.region;
         const res = await fetch('/api/signup-complete', {
           method: 'POST',

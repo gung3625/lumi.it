@@ -111,7 +111,7 @@ exports.handler = async (event) => {
   try {
     const { data, error } = await admin
       .from('sellers')
-      .select('id, owner_name, store_name, phone, display_name, industry, tester_requested_at, tester_invited_at, tester_requested_ig_handle')
+      .select('id, owner_name, store_name, phone, display_name, industry, contact_preference, tester_requested_at, tester_invited_at, tester_requested_ig_handle')
       .eq('id', userId)
       .maybeSingle();
     if (!error && data) sellerInfo = data;
@@ -182,6 +182,7 @@ exports.handler = async (event) => {
         <tr><td style="padding:8px 0;color:#6e6e73;"><strong>대표자</strong></td><td style="padding:8px 0;">${ownerName}</td></tr>
         <tr><td style="padding:8px 0;color:#6e6e73;"><strong>카테고리</strong></td><td style="padding:8px 0;">${e(category)}</td></tr>
         <tr><td style="padding:8px 0;color:#6e6e73;"><strong>휴대폰</strong></td><td style="padding:8px 0;"><a href="tel:${e(phone)}" style="color:#C8507A;text-decoration:none;">${e(phone)}</a></td></tr>
+        <tr><td style="padding:8px 0;color:#6e6e73;"><strong>선호 연락</strong></td><td style="padding:8px 0;font-weight:700;">${sellerInfo.contact_preference === 'call' ? '📞 전화가 편함' : sellerInfo.contact_preference === 'sms' ? '💬 문자가 편함' : '(미선택 — 옛 가입자)'}</td></tr>
         <tr><td style="padding:8px 0;color:#6e6e73;"><strong>IG 핸들</strong></td><td style="padding:8px 0;"><a href="https://instagram.com/${e(igHandle)}" style="color:#C8507A;text-decoration:none;font-weight:700;font-size:16px;">@${e(igHandle)}</a> ← 이걸 복사하세요</td></tr>
         <tr><td style="padding:8px 0;color:#6e6e73;"><strong>seller_id</strong></td><td style="padding:8px 0;color:#888;font-size:12px;font-family:monospace;">${e(sellerInfo.id)}</td></tr>
         ${contextUrl ? `<tr><td style="padding:8px 0;color:#6e6e73;"><strong>URL</strong></td><td style="padding:8px 0;color:#888;font-size:12px;word-break:break-all;">${e(contextUrl)}</td></tr>` : ''}
