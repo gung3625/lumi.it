@@ -104,7 +104,7 @@ async function contentAnalysis(posts, username) {
   const recent = [...posts]
     .sort((a, b) => new Date(b.takenAt) - new Date(a.takenAt))
     .filter((p) => !topIds.has(p.igPostId))
-    .slice(0, 8)
+    .slice(0, 10)
     .map((p, i) => ({ ...p, idx: 100 + i + 1 }));
 
   const parts = [{
@@ -123,26 +123,35 @@ async function contentAnalysis(posts, username) {
     }),
   }];
 
-  // 사진 12장 inline — 인기작 6 + 최신작 6 (IG CDN 서명 URL — 지금만 유효)
-  const attach = async (list, label, max) => {
-    let added = 0;
-    for (const p of list) {
-      if (added >= max || !p.imageUrl) continue;
-      try {
-        const r = await fetch(p.imageUrl);
-        if (!r.ok) continue;
-        const buf = Buffer.from(await r.arrayBuffer());
-        if (buf.length > 3_500_000) continue;
-        parts.push({ text: `(아래 사진 = ${label} idx ${p.idx})` });
-        parts.push({ inlineData: { mimeType: 'image/jpeg', data: buf.toString('base64') } });
-        added++;
-      } catch (_) { /* 한 장 실패는 무시 */ }
-    }
-    return added;
-  };
-  const nTop = await attach(top, 'top_posts', 6);
-  const nRecent = await attach(recent, 'recent_posts', 6);
-  console.log('[benchmark] content 사진:', nTop, '+', nRecent);
+  // 사진 전수(최대 30장) inline — 인기작 전체 + 나머지 최신순. (사장님: "최대한 자세하게")
+  // sharp 가 있으면 768px 로 리사이즈해 페이로드를 1/3 로 (30장 ≈ 3MB, Gemini inline 한도 안).
+  let sharpLib = null;
+  try { sharpLib = require('sharp'); } catch (_) { /* 없으면 원본 사용 */ }
+  const rest = [...posts]
+    .filter((p) => !topIds.has(p.igPostId))
+    .sort((a, b) => new Date(b.takenAt) - new Date(a.takenAt))
+    .map((p, i) => ({ ...p, idx: 100 + i + 1 }));
+  const queue = [...top, ...rest].filter((p) => p.imageUrl).slice(0, 30);
+  const fetched = await Promise.all(queue.map(async (p) => {
+    try {
+      const r = await fetch(p.imageUrl);
+      if (!r.ok) return null;
+      let buf = Buffer.from(await r.arrayBuffer());
+      if (sharpLib) {
+        try { buf = await sharpLib(buf).resize({ width: 768, withoutEnlargement: true }).jpeg({ quality: 75 }).toBuffer(); } catch (_) {}
+      }
+      if (buf.length > 1_500_000) return null;
+      return { idx: p.idx, label: p.idx > 100 ? 'recent_posts' : 'top_posts', data: buf.toString('base64') };
+    } catch (_) { return null; }
+  }));
+  let nAttached = 0;
+  for (const f of fetched) {
+    if (!f) continue;
+    parts.push({ text: `(아래 사진 = ${f.label} idx ${f.idx})` });
+    parts.push({ inlineData: { mimeType: 'image/jpeg', data: f.data } });
+    nAttached++;
+  }
+  console.log('[benchmark] content 사진 전수:', nAttached, '/', queue.length, sharpLib ? '(리사이즈)' : '(원본)');
 
   const sys = '너는 "루미" — 소상공인 사장님의 SNS 컨설턴트다. 입력: 잘되는 인스타 계정의 인기 게시물 메타(JSON)와 실제 사진들. '
     + 'top_posts(인기작)와 recent_posts(최신작) 사진·캡션을 직접 보고 이 계정의 콘텐츠 비결을 해부하라. '
@@ -152,13 +161,15 @@ async function contentAnalysis(posts, username) {
     + '"content_mix":[{"label":"메뉴 클로즈업 같은 분류","pct":숫자}…3~4개(합 100)],'
     + '"photo_style":"사진들의 공통 스타일 1문장(빛·구도·톤)",'
     + '"caption_style":{"tone":"말투","length":"길이","emoji":"이모지 사용","cta":"행동 유도 방식"},'
+    + '"posting_pattern":"언제·어떤 리듬으로 올리는지 1문장",'
+    + '"hashtag_strategy":"해시태그를 어떻게 쓰는지 1문장",'
     + '"top_why":[{"url":"게시물 url","reason":"이 게시물이 터진 이유 1문장"}…3개]}';
   const req = {
     systemInstruction: { parts: [{ text: sys }] },
     contents: [{ role: 'user', parts }],
-    generationConfig: { temperature: 0.35, maxOutputTokens: 2048, responseMimeType: 'application/json', thinkingConfig: { thinkingBudget: 0 } },
+    generationConfig: { temperature: 0.35, maxOutputTokens: 3072, responseMimeType: 'application/json', thinkingConfig: { thinkingBudget: 0 } },
   };
-  const text = await geminiGenerate(req, { timeoutMs: 75_000, label: 'benchmark-content' });
+  const text = await geminiGenerate(req, { timeoutMs: 150_000, label: 'benchmark-content' });
   const parsed = JSON.parse(text);
   if (!parsed.secret || !Array.isArray(parsed.content_mix) || !parsed.caption_style) throw new Error('content_bad_shape');
   return parsed;

@@ -403,6 +403,8 @@
               <div class="bm-secret">“${esc(ct.secret)}”</div>
               ${mixHtml ? `<div class="bm-mix-wrap">${mixHtml}</div>` : ''}
               ${ct.photo_style ? `<div class="bm-photo-style">📷 ${esc(ct.photo_style)}</div>` : ''}
+              ${ct.posting_pattern ? `<div class="bm-photo-style">🗓 ${esc(ct.posting_pattern)}</div>` : ''}
+              ${ct.hashtag_strategy ? `<div class="bm-photo-style"># ${esc(ct.hashtag_strategy)}</div>` : ''}
               ${csChips ? `<div class="bm-cs">${csChips}</div>` : ''}
               ${whyHtml ? `<div class="bm-why-wrap"><div class="bm-why-label">가장 터진 게시물, 왜?</div>${whyHtml}</div>` : ''}
             </div>` : '';
