@@ -91,6 +91,58 @@ function normalizeDetail(parsed, keyword, category) {
   };
 }
 
+// Gemini 무료 티어 해석 생성 (2026-06-12) — 트렌드 ₩0 정책 유지하면서 해석 부활.
+// 같은 프롬프트·같은 normalizeDetail 사용. 30일 글로벌 캐시라 키워드당 사실상 1회.
+async function generateWithGemini(keyword, category) {
+  const key = process.env.GEMINI_API_KEY;
+  if (!key) throw new Error('GEMINI_API_KEY 미설정');
+
+  const systemPrompt =
+    '당신은 한국 소상공인 매장(카페·음식점·꽃집·미용 등)에게 트렌드 키워드를 알기 쉽게 설명하는 어시스턴트입니다.\n' +
+    'JSON으로만 답변. 키:\n' +
+    '- definition: 키워드의 정의·설명 (2~3문장)\n' +
+    '- audience: 누가 이 키워드를 찾는지 (1문장, 타겟 소비자층)\n' +
+    '- why: 왜 지금 뜨는지 (2~3문장, 트렌드 배경)\n' +
+    '- ideas: 매장 활용 아이디어 (배열, 문자열 3개, 각각 1문장 — 신메뉴·세트 구성·마케팅 활용 등 실행 가능한 제안)\n' +
+    '- hashtags: 관련 해시태그 (배열, 5~7개, # 포함)\n' +
+    '\n' +
+    '모든 답은 한국어. 정확하고 유익하게. 추측은 금지하고 일반적·검증 가능한 정보만.';
+
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), OPENAI_TIMEOUT_MS);
+  let res;
+  try {
+    res = await fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + key,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: systemPrompt + '\n\n키워드: ' + keyword + '\n카테고리: ' + category }] }],
+          generationConfig: { responseMimeType: 'application/json', temperature: 0.4 },
+        }),
+        signal: ctrl.signal,
+      }
+    );
+  } finally {
+    clearTimeout(tid);
+  }
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '');
+    throw new Error(`gemini HTTP ${res.status}: ${errText.slice(0, 200)}`);
+  }
+  const json = await res.json();
+  const raw = json && json.candidates && json.candidates[0] && json.candidates[0].content
+    && json.candidates[0].content.parts && json.candidates[0].content.parts[0]
+    && json.candidates[0].content.parts[0].text;
+  if (!raw || typeof raw !== 'string') throw new Error('gemini 응답 본문 없음');
+  let parsed;
+  try { parsed = JSON.parse(raw); } catch (e) { throw new Error('gemini JSON 파싱 실패'); }
+  const out = normalizeDetail(parsed, keyword, category);
+  if (!out.definition && !out.why) throw new Error('gemini 응답 비어있음');
+  return out;
+}
+
 async function generateWithOpenAI(keyword, category) {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error('OPENAI_API_KEY 미설정');
@@ -219,31 +271,13 @@ exports.handler = async (event) => {
       };
     }
 
-    // 트렌드 OpenAI 미사용 (2026-06-07 사장님 지시 "트렌드 돈 안 씀") — 캐시 미스 시 OpenAI 호출 안 함 (₩0).
-    //   이미 해석된 키워드는 위 캐시에서 반환됨. 새 키워드는 상세해석 없이 graceful 응답(프론트 기존 처리).
-    //   되돌리려면 이 return 제거.
-    return { statusCode: 200, headers, body: JSON.stringify({ ok: false, error: 'generation_failed' }) };
-
-    // 2) miss → OpenAI quota gate (cache miss 만 카운트). 한도 초과 시 429.
-    try {
-      await checkAndIncrementQuota(user.id, 'gpt-4o-mini');
-    } catch (qe) {
-      if (qe instanceof QuotaExceededError) {
-        return {
-          statusCode: 429,
-          headers,
-          body: JSON.stringify({ ok: false, error: 'quota_exceeded', reason: qe.reason || null }),
-        };
-      }
-      console.warn('[keyword-detail] quota 체크 실패 (fail-open으로 진행):', qe && qe.message);
-    }
-
-    // 3) OpenAI 즉석 생성
+    // 2) miss → Gemini 무료 생성 (2026-06-12, 사장님 "해석 안 나옴" — 트렌드 ₩0 정책 유지하며 부활)
+    //    OpenAI 비용 쿼터 게이트는 Gemini 무료라 미적용. 글로벌 30일 캐시가 호출량 상한.
     let detail;
     try {
-      detail = await generateWithOpenAI(keyword, category);
+      detail = await generateWithGemini(keyword, category);
     } catch (e) {
-      console.warn('[keyword-detail] openai 실패:', e && e.message);
+      console.warn('[keyword-detail] gemini 실패:', e && e.message);
       return {
         statusCode: 200,
         headers,
