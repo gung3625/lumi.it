@@ -245,7 +245,7 @@ const clock = new THREE.Clock();
 let progress = 0, manualProgress = null;
 
 Promise.all([
-  loadImg('/assets/tutorial/cafe-1.jpg'),
+  loadImg('/assets/3d/salt-bread.jpg'), // Higgsfield 생성 — 칩(#소금빵)과 스토리 일치
   loadImg('/assets/tutorial/cafe-2.jpg'),
   document.fonts ? document.fonts.ready : Promise.resolve(),
 ]).then(([ph1, ph2]) => {
