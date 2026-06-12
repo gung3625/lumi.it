@@ -381,7 +381,7 @@
           const verdictHtml = (v.mine || v.theirs || v.gap) ? `
             <div class="bm-verdict">
               <div class="bm-ai__title">총평</div>
-              ${vRow('내 계정', v.mine)}${vRow('옆 가게', v.theirs)}${vRow('핵심 차이', v.gap, true)}
+              ${vRow('내 계정', v.mine)}${vRow('그 가게', v.theirs)}${vRow('핵심 차이', v.gap, true)}
             </div>` : '';
           return verdictHtml
             + block('사장님 계정과 다른 점', report.differences)

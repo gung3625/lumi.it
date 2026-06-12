@@ -78,7 +78,7 @@
           if (ig && !ig.connected) {
             const igRequiredCard = document.querySelector('[data-ig-connect-required-section]');
             if (igRequiredCard) igRequiredCard.hidden = false;
-            // 시작 체크리스트 — 이미 한 단계는 ✓ 표시 (①옆 가게 분석 ②초안)
+            // 시작 체크리스트 — 이미 한 단계는 ✓ 표시 (①잘되는 가게 분석 ②초안)
             (async () => {
               const setDone = (sel) => {
                 const a = document.querySelector(sel);
