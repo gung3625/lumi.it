@@ -101,10 +101,21 @@ async function resolveRemoteImages(req, timeoutMs) {
   }
 }
 
+// 고객·민감 데이터(sensitive)는 무료 Gemini 금지 — 무료 티어는 입력을 Google 학습·검토에
+// 사용함(2026-06 확인). 유료 키(GEMINI_PAID_API_KEY)는 학습 미사용이라 어디든 OK.
+// llm-call 경유 = 기본 sensitive(고객 사진/캡션). 공개 게시물 분석만 호출부에서 sensitive:false.
+function pickGeminiKey(sensitive) {
+  const paid = process.env.GEMINI_PAID_API_KEY;
+  if (paid) return paid;
+  if (sensitive) return null;                  // 민감 데이터인데 유료 키 없음 → 호출 차단
+  return process.env.GEMINI_API_KEY || null;   // 비민감(공개·일반어)만 무료 허용
+}
+
 // 저수준 Gemini generateContent — llmChat 내부용 + 특수 입력(오디오 전사 등) 직접 호출용
 async function geminiGenerate(req, opts = {}) {
-  const key = process.env.GEMINI_API_KEY;
-  if (!key) throw new Error('GEMINI_API_KEY missing');
+  const sensitive = opts.sensitive !== false;  // 기본 true (고객 데이터 보호)
+  const key = pickGeminiKey(sensitive);
+  if (!key) throw new Error(sensitive ? 'sensitive_data_requires_paid_key' : 'GEMINI_API_KEY missing');
   const timeoutMs = opts.timeoutMs || 60_000;
   const label = opts.label || 'gemini';
   const res = await fetchWithRetry(
@@ -150,7 +161,7 @@ async function llmChat(payload, opts = {}) {
 
   const req = toGeminiRequest(payload);
   await resolveRemoteImages(req, timeoutMs);
-  const text = await geminiGenerate(req, { timeoutMs, label: `${label}:gemini` });
+  const text = await geminiGenerate(req, { timeoutMs, label: `${label}:gemini`, sensitive: opts.sensitive });
   return wrapAsResponse({ provider: 'gemini', choices: [{ message: { role: 'assistant', content: text } }] }, 'gemini');
 }
 

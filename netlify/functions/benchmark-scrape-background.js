@@ -169,7 +169,8 @@ async function contentAnalysis(posts, username) {
     contents: [{ role: 'user', parts }],
     generationConfig: { temperature: 0.35, maxOutputTokens: 3072, responseMimeType: 'application/json', thinkingConfig: { thinkingBudget: 0 } },
   };
-  const text = await geminiGenerate(req, { timeoutMs: 150_000, label: 'benchmark-content' });
+  // sensitive:false — 분석 대상은 회원이 지정한 제3자 "공개" 게시물(개인정보·기밀 아님)
+  const text = await geminiGenerate(req, { timeoutMs: 150_000, label: 'benchmark-content', sensitive: false });
   const parsed = JSON.parse(text);
   if (!parsed.secret || !Array.isArray(parsed.content_mix) || !parsed.caption_style) throw new Error('content_bad_shape');
   return parsed;
@@ -202,7 +203,7 @@ async function aiInterpret(sellerId, mine, theirs, username, content) {
       { role: 'system', content: sys },
       { role: 'user', content: userMsg },
     ],
-  }, { timeoutMs: 60_000, label: 'benchmark-interpret' });
+  }, { timeoutMs: 60_000, label: 'benchmark-interpret', sensitive: false });
   if (!res.ok) throw new Error(`openai_${res.status}`);
   const json = await res.json();
   const parsed = JSON.parse(json.choices?.[0]?.message?.content || '{}');
