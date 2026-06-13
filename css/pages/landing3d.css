@@ -106,11 +106,13 @@ body {
 
 .l3d-fallback[hidden] { display: none; }
 .l3d-fallback {
-  position: fixed; inset: 0;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  text-align: center; padding: 24px; z-index: 4;
-  background: linear-gradient(180deg, #ffffff, #fff6f9);
+  /* 흐름 요소 — 본편을 덮지 않고 위에 얹히는 정적 히어로 (3D 불가 시) */
+  position: relative; z-index: 2;
+  min-height: 62vh;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+  text-align: center; padding: 13vh 24px 7vh;
 }
+.l3d-fallback .l3d-cta { margin-top: 6px; }
 
 @media (prefers-reduced-motion: reduce) {
   .l3d-scroll-hint { animation: none; }
