@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#FF6B8B">
+  <meta name="theme-color" content="#ffffff">
   <meta name="robots" content="index,follow">
   <link rel="canonical" href="https://lumi.it.kr/">
   <script type="application/ld+json">
@@ -45,1213 +45,201 @@
   <link rel="icon" type="image/png" href="/assets/favicon.png">
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 
-  <!-- preconnect — 첫 페인트 전 외부 origin DNS+TLS handshake 미리 해 latency 단축 -->
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-  <link rel="dns-prefetch" href="https://cldsozdocxpvkbuxwqep.supabase.co">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="dns-prefetch" href="https://kauth.kakao.com">
-  <link rel="dns-prefetch" href="https://kapi.kakao.com">
-  <link rel="dns-prefetch" href="https://open.tiktokapis.com">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-
   <link rel="stylesheet" href="/css/tokens.css">
-  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/pages/landing3d.css">
   <script defer src="/js/prod-log.js"></script>
-  <script defer src="/js/auth-fetch.js"></script>
   <script defer src="/js/error-track.js"></script>
-  <script defer src="/js/sw-register.js"></script>
-  <script defer src="/js/immersive.js"></script>
-  <script defer src="/js/haptic.js"></script>
-  <link rel="stylesheet" href="/css/motion.css">
-
-  <link rel="stylesheet" href="/css/pages/index.css">
-  <link rel="stylesheet" href="/css/pages/pricing.css">
 </head>
 <body>
-  <a class="skip-link" href="#main">본문 바로가기</a>
-  <!-- ====================== Hero ====================== -->
-  <main id="main">
-  <section class="hero" aria-label="루미 소개">
-    <header class="hero__topbar">
-      <a class="hero__logo" href="/" aria-label="루미(lumi) 홈">
-        <picture><source srcset="/assets/logo-wordmark.webp" type="image/webp"><img src="/assets/logo-wordmark.png" alt="루미(lumi)" width="56" height="28" decoding="async"></picture>
-      </a>
-      <nav class="hero__nav" aria-label="진입">
-        <a class="hero__beta" href="/beta">시작하기</a>
-        <a class="hero__login" href="/api/auth/kakao/start">로그인</a>
+  <!-- 3D 무대 (고정) -->
+  <canvas class="l3d-canvas" data-l3d-canvas aria-hidden="true"></canvas>
+
+  <!-- WebGL 불가/모션 최소화 폴백 — 3D 대신 정적 히어로. 본편(2~5장)은 아래에 그대로 노출 -->
+  <div class="l3d-fallback" data-l3d-fallback hidden>
+    <span class="l3d-logo">lumi</span>
+    <h1 class="l3d-title">잘되는 가게는<br><em>운이 아니에요.</em></h1>
+    <p class="l3d-sub">다 이유가 있거든요. 루미가 그 이유를 찾아<br>사장님 가게 걸로 만들어 드려요.</p>
+    <a class="l3d-cta" href="/beta">지금 시작하기 →</a>
+  </div>
+
+  <!-- 스크롤 스토리 (500vh) -->
+  <div class="l3d-track" data-l3d-track>
+
+    <header class="l3d-top">
+      <a class="l3d-logo" href="/" aria-label="루미(lumi) 홈">lumi</a>
+      <nav class="l3d-nav" aria-label="진입">
+        <a class="l3d-nav__beta" href="/beta">시작하기</a>
+        <a class="l3d-nav__login" href="/api/auth/kakao/start">로그인</a>
       </nav>
     </header>
 
-    <div class="hero__body">
-      <div class="hero__pill" role="presentation">
-        <span class="hero__pill-tag">🇰🇷 한국 매장 사장님을 위한 SNS 도구</span>
-      </div>
+    <!-- beat 1 — 선언 -->
+    <section class="l3d-beat" data-beat="0">
+      <h1 class="l3d-title">잘되는 가게는<br><em>운이 아니에요.</em></h1>
+      <p class="l3d-sub">다 이유가 있거든요.<br>스크롤하면, 루미가 그 이유를 찾는 걸 보여드릴게요.</p>
+      <div class="l3d-scroll-hint" aria-hidden="true">↓</div>
+    </section>
 
-      <h1 class="hero__title">
-        <span class="hero__title-line">잘되는 가게는</span>
-        <span class="hero__title-line hero__title-line--accent">운이 아니에요.</span>
-      </h1>
-      <p class="hero__sub">
-        다 이유가 있거든요. 루미가 그 이유를 알아내서,<br>
-        <strong>사장님 가게 걸로 만들어 드려요.</strong><br>
-        <span class="hero__sub-strong">사진 한 장이면 끝이에요.</span>
-      </p>
+    <!-- beat 2 — 분석 -->
+    <section class="l3d-beat" data-beat="1">
+      <h2 class="l3d-h2">루미가 그 가게를 읽어요</h2>
+      <p class="l3d-sub">공개 게시물 30개에서<br>요일·시간·형식·해시태그 패턴을 찾아내요.</p>
+    </section>
 
-      <a class="hero__diff hero__diff--link" href="/beta">🔍 가입하면 바로, <b>궁금한 가게 분석부터.</b> 1~2분이면 이유가 보여요 →</a>
+    <!-- beat 3 — 이식 -->
+    <section class="l3d-beat" data-beat="2">
+      <h2 class="l3d-h2">찾은 비결을,<br><em>사장님 가게 걸로</em></h2>
+      <p class="l3d-sub">이번 주 할 일로 바꿔드려요.<br>사진 한 장이면 그 방향 그대로 게시까지.</p>
+    </section>
 
-      <div class="hero__cta">
-        <a class="hero__cta-primary" href="/beta" aria-label="지금 시작하기">
-          지금 시작하기 →
-        </a>
-        <a class="hero__cta-secondary" href="/tutorial" aria-label="1분 미리보기">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"/></svg>
-          1분 미리보기
-        </a>
-      </div>
+    <!-- beat 4 — 전환 -->
+    <section class="l3d-beat" data-beat="3">
+      <h2 class="l3d-h2">이제 사장님 차례예요.</h2>
+      <p class="l3d-sub">월 19,900원 · 숨은 요금 없음</p>
+      <a class="l3d-cta" href="/beta">지금 시작하기 →</a>
+    </section>
+  </div>
 
-      <ul class="hero__chips" aria-label="가입 안내">
-        <li class="hero__chip">✓ 설치 없이 웹에서 바로</li>
-        <li class="hero__chip">✓ 카카오 1초 가입</li>
-      </ul>
-      <p class="hero__cta-hint">월 19,900원 · 숨은 요금 없음</p>
-    </div>
+  <!-- ════════ 2장~5장 — 3D 스토리 뒤에 이어지는 본편 ════════ -->
+  <main class="l3-body" data-l3-body>
 
-    <!-- ====== Hero 우하단 — 실제 결과물 미리보기 (SixShop 패턴, 격차 #1 해소) ====== -->
-    <!-- 사장님이 사진 1장 올리면 lumi 가 만들어 게시하는 진짜 모습 미니 mockup -->
-    <!-- 슬라이드: 5장 사진+캡션 자동 회전 (4.5초마다) — 사진과 캡션이 진짜로 매번 다르다는 걸 보여주기 -->
-    <aside class="hero__preview" aria-label="루미가 만든 게시물 미리보기" data-hero-preview>
-      <div class="hero__preview-card">
-        <header class="hero__preview-head">
-          <div class="hero__preview-avatar"><picture><source srcset="/assets/logo-wordmark.webp" type="image/webp"><img src="/assets/logo-wordmark.png" alt="lumi"></picture></div>
-          <div class="hero__preview-meta">
-            <div class="hero__preview-handle">lumi__cafe</div>
-            <div class="hero__preview-sub">서울 · 용산구 이태원동</div>
-          </div>
-          <span class="hero__preview-badge">방금 자동 게시</span>
-        </header>
-        <div class="hero__preview-content" data-hero-preview-content>
-          <div class="hero__preview-photo">
-            <picture><source srcset="/assets/tutorial/cafe-1.webp" type="image/webp" data-hero-preview-source><img src="/assets/tutorial/cafe-1.jpg" alt="라떼아트" loading="eager" data-hero-preview-img></picture>
-            <div class="hero__preview-tag" data-hero-preview-tone>시크 · 짧은 호흡</div>
-          </div>
-          <div class="hero__preview-caption">
-            <p data-hero-preview-caption>오후 세 시.<br>손님 한 분, 저 한 명.<br><br>오늘은 손이 잘 됐어요.<br>잎이 깨끗하게 그려진 날.<br><br>이런 시간 때문에<br>아침 일찍 와요 ☕</p>
-            <p class="hero__preview-tags" data-hero-preview-tags>#카페 #라떼아트 #용산카페 #오후세시 #카페감성</p>
-          </div>
-          <footer class="hero__preview-foot">
-            <span data-hero-preview-likes>❤️ 127</span>
-            <span data-hero-preview-comments>💬 8</span>
-            <span class="hero__preview-foot-live">● 인스타·쓰레드 동시 발행</span>
-          </footer>
+    <!-- 2장. 분석 리포트 실물 -->
+    <section class="l3s" data-rv>
+      <p class="l3s-eyebrow">1~2분 분석</p>
+      <h2 class="l3s-title">궁금한 가게 넣으면,<br>이런 <em>리포트</em>가 나와요</h2>
+      <div class="l3-report">
+        <div class="l3-report__verdict">
+          <div class="l3-report__vrow"><span class="l3-report__vk">내 계정</span><span>아직 게시가 뜸해서 손님 눈에 띌 기회가 적어요.</span></div>
+          <div class="l3-report__vrow"><span class="l3-report__vk">그 가게</span><span>화·목 점심에 여러 장 게시물 위주로 꾸준히 올려요.</span></div>
+          <div class="l3-report__vrow l3-report__vrow--gap"><span class="l3-report__vk">핵심 차이</span><span>꾸준한 발행 리듬 — 이게 참여율 차이를 만들어요.</span></div>
         </div>
-        <div class="hero__preview-dots" role="tablist" aria-label="미리보기 슬라이드">
-          <button type="button" class="hero__preview-dot is-active" data-hero-preview-dot="0" aria-label="라떼아트" aria-current="true"></button>
-          <button type="button" class="hero__preview-dot" data-hero-preview-dot="1" aria-label="치즈케이크"></button>
-          <button type="button" class="hero__preview-dot" data-hero-preview-dot="2" aria-label="마카롱"></button>
-          <button type="button" class="hero__preview-dot" data-hero-preview-dot="3" aria-label="크로플"></button>
-          <button type="button" class="hero__preview-dot" data-hero-preview-dot="4" aria-label="스무디"></button>
+        <div class="l3-report__cmp">
+          <div class="l3-report__row"><span>팔로워</span><b>556</b><b class="is-theirs">5.8만</b></div>
+          <div class="l3-report__row"><span>참여율</span><b>—</b><b class="is-theirs">1.25%</b></div>
+          <div class="l3-report__row"><span>주당 게시</span><b>0</b><b class="is-theirs">3회</b></div>
+          <div class="l3-report__row"><span>여러 장 비중</span><b>—</b><b class="is-theirs">77%</b></div>
         </div>
-      </div>
-      <span class="hero__float hero__float--a" aria-hidden="true">📊 검수 4.6/5 통과</span>
-      <span class="hero__float hero__float--b" aria-hidden="true">⏰ 오늘 19:32 자동 게시</span>
-      <span class="hero__float hero__float--c" aria-hidden="true">🔍 잘되는 가게 분석 1~2분</span>
-    </aside>
-
-    <div class="hero__scroll-hint" aria-hidden="true">↓ 사장님이 매일 하는 일 보기</div>
-  </section>
-
-  <!-- ====================== Stat Band — 숫자 리듬 스트립 ====================== -->
-  <section class="bench-section" aria-label="잘되는 가게 분석">
-    <p class="bench-section__eyebrow">가입하면 바로 받는 첫 분석</p>
-    <h2 class="bench-section__title">그 가게가 잘되는 이유,<br>이렇게 찾아 드려요.</h2>
-    <p class="bench-section__lead">
-      궁금한 가게 <strong>@아이디만 넣으면 1~2분</strong>.
-      인기 게시물, 올리는 요일·시간, 해시태그, 그리고 사장님 계정과의 차이까지 정리해 드려요.
-      복잡한 준비 없이, <strong>가입만 하면 바로</strong> 쓸 수 있어요.
-    </p>
-
-    <div class="bench-mock" aria-hidden="true">
-      <div class="bench-mock__head">
-        <span class="bench-mock__icon">🔍</span>
-        <span class="bench-mock__name">@cafe_OO 분석</span>
-        <span class="bench-mock__time">방금 분석</span>
-      </div>
-      <div class="bench-mock__table">
-        <div class="bench-mock__row bench-mock__row--head"><span></span><span>내 계정</span><span>@cafe_OO</span></div>
-        <div class="bench-mock__row"><span>참여율</span><span>1.2%</span><span class="bench-mock__hot">4.8%</span></div>
-        <div class="bench-mock__row"><span>주당 게시물</span><span>1회</span><span class="bench-mock__hot">5회</span></div>
-        <div class="bench-mock__row"><span>릴 비중</span><span>10%</span><span class="bench-mock__hot">70%</span></div>
-        <div class="bench-mock__row"><span>주력 시간</span><span>불규칙</span><span class="bench-mock__hot">목·금 18시</span></div>
-      </div>
-      <div class="bench-mock__ai">
-        <span class="bench-mock__ai-label">루미의 제안</span>
-        이 가게는 릴 위주로 노출을 받고 있어요. 이번 주엔 신메뉴를 15초 릴로 올려보세요.
-      </div>
-    </div>
-
-    <a class="bench-section__cta" href="/beta">잘되는 가게 분석 받아보기 →</a>
-    <p class="bench-section__hint">카카오 1초 가입 · 복잡한 설정 없음</p>
-    <p class="bench-section__footnote">공개 게시물 기반 분석이라, 수치는 참고용이에요.</p>
-  </section>
-
-  <!-- ====================== Pain Section (NEW) — 사장님 고통 공감 ====================== -->
-  <section class="stat-band" aria-label="루미 한눈에">
-    <div class="stat-band__grid">
-      <div class="stat-band__item">
-        <div class="stat-band__num">30초</div>
-        <div class="stat-band__label">사진 한 장 → 캡션·해시태그</div>
-      </div>
-      <div class="stat-band__item">
-        <div class="stat-band__num">8가지</div>
-        <div class="stat-band__label">게시 전 자동 검수</div>
-      </div>
-      <div class="stat-band__item">
-        <div class="stat-band__num">1~2분</div>
-        <div class="stat-band__label">잘되는 가게 분석</div>
-      </div>
-      <div class="stat-band__item">
-        <div class="stat-band__num">₩19,900</div>
-        <div class="stat-band__label">월 정액, 전 기능 포함</div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ====================== Trend Marquee — 매일 갱신 키워드 띠 ====================== -->
-  <section class="trend-marquee" aria-label="요즘 뜨는 키워드 예시">
-    <div class="trend-marquee__track">
-      <div class="trend-marquee__set">
-        <span class="trend-marquee__chip trend-marquee__chip--hot">#오늘의커피</span>
-        <span class="trend-marquee__chip">#카페일상</span>
-        <span class="trend-marquee__chip">#용산카페</span>
-        <span class="trend-marquee__chip trend-marquee__chip--hot">#여름신메뉴</span>
-        <span class="trend-marquee__chip">#라떼아트</span>
-        <span class="trend-marquee__chip">#디저트맛집</span>
-        <span class="trend-marquee__chip">#브런치카페</span>
-        <span class="trend-marquee__chip trend-marquee__chip--hot">#케이크맛집</span>
-        <span class="trend-marquee__chip">#감성카페</span>
-        <span class="trend-marquee__chip">#베이커리</span>
-        <span class="trend-marquee__chip">#동네카페</span>
-        <span class="trend-marquee__chip">#사장님일상</span>
-      </div>
-      <div class="trend-marquee__set" aria-hidden="true">
-        <span class="trend-marquee__chip trend-marquee__chip--hot">#오늘의커피</span>
-        <span class="trend-marquee__chip">#카페일상</span>
-        <span class="trend-marquee__chip">#용산카페</span>
-        <span class="trend-marquee__chip trend-marquee__chip--hot">#여름신메뉴</span>
-        <span class="trend-marquee__chip">#라떼아트</span>
-        <span class="trend-marquee__chip">#디저트맛집</span>
-        <span class="trend-marquee__chip">#브런치카페</span>
-        <span class="trend-marquee__chip trend-marquee__chip--hot">#케이크맛집</span>
-        <span class="trend-marquee__chip">#감성카페</span>
-        <span class="trend-marquee__chip">#베이커리</span>
-        <span class="trend-marquee__chip">#동네카페</span>
-        <span class="trend-marquee__chip">#사장님일상</span>
-      </div>
-    </div>
-  </section>
-
-  <!-- ====================== Benchmark Section — 메인 훅: 가입 즉시 첫 분석 ====================== -->
-  <section class="pain-section" aria-label="사장님이 매일 하는 일">
-    <p class="pain-section__eyebrow">사장님이 매일 하는 일</p>
-    <h2 class="pain-section__title">매장은 바쁜데<br>SNS는 누가 챙기죠?</h2>
-
-    <div class="pain-grid" role="list">
-      <article class="pain-card pain-card--1" role="listitem">
-        <div class="pain-card__icon" aria-hidden="true">📷</div>
-        <div class="pain-card__body">
-          <div class="pain-card__quote">"사진은 30장 찍었는데..."</div>
-          <p class="pain-card__desc">카메라엔 사진 가득. 인스타엔 0장. 올릴 시간이 없었어요.</p>
-        </div>
-      </article>
-
-      <article class="pain-card pain-card--2" role="listitem">
-        <div class="pain-card__icon" aria-hidden="true">⏰</div>
-        <div class="pain-card__body">
-          <div class="pain-card__quote">"오늘은 또 뭐라고 쓰지..."</div>
-          <p class="pain-card__desc">캡션 한 줄에 30분. 또 #카페일상 #감성카페 똑같은 해시태그.</p>
-        </div>
-      </article>
-
-      <article class="pain-card pain-card--3" role="listitem">
-        <div class="pain-card__icon" aria-hidden="true">😮‍💨</div>
-        <div class="pain-card__body">
-          <div class="pain-card__quote">"마감했는데 또 SNS..."</div>
-          <p class="pain-card__desc">하루 종일 장사했는데, 남은 시간은 쉬는 데 써야 하잖아요.</p>
-        </div>
-      </article>
-
-      <article class="pain-card pain-card--4" role="listitem">
-        <div class="pain-card__icon" aria-hidden="true">🔍</div>
-        <div class="pain-card__body">
-          <div class="pain-card__quote">"잘되는 가게는 뭐가 다르지?"</div>
-          <p class="pain-card__desc">그 가게 인스타는 매일 잘되는 것 같은데, 뭐가 다른지는 모르겠어요.</p>
-        </div>
-      </article>
-    </div>
-
-    <div class="pain-section__bridge">
-      <p class="pain-section__bridge-line">하나하나, 루미가 대신 챙겨요.</p>
-    </div>
-  </section>
-
-  <!-- ====================== Bento Grid ====================== -->
-  <section class="bento-section" aria-label="루미의 5가지">
-    <p class="bento-section__eyebrow">루미가 하는 일</p>
-    <h2 class="bento-section__title">캡션·해시태그·시간, 전부 알아서.</h2>
-
-    <div class="bento" role="list">
-      <!-- 큰 카드: 인스타 게시물 mockup + 라이브 캡션 데모 -->
-      <article class="bento__card bento__card--hero u-idx-0" role="listitem">
-        <div class="ig-mock" role="img" aria-label="루미가 만든 인스타 게시물 미리보기">
-          <!-- 인스타 게시물 헤더 -->
-          <header class="ig-mock__head">
-            <div class="ig-mock__avatar" aria-hidden="true">
-              <picture><source srcset="/assets/logo-wordmark.webp" type="image/webp"><img src="/assets/logo-wordmark.png" alt=""></picture>
-            </div>
-            <div class="ig-mock__meta">
-              <div class="ig-mock__handle">lumi__cafe</div>
-              <div class="ig-mock__sub">서울 · 용산구 이태원동</div>
-            </div>
-            <button class="ig-mock__dots" type="button" aria-hidden="true" tabindex="-1">
-              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
-            </button>
-          </header>
-
-          <!-- 사진 (JS 가 SCENES rotation 에 맞춰 srcset / src 동적 swap) -->
-          <div class="ig-mock__photo">
-            <picture>
-              <source data-landing-photo-source srcset="/assets/tutorial/cafe-1.webp" type="image/webp">
-              <img data-landing-photo src="/assets/tutorial/cafe-1.jpg" alt="우드 테이블 위 라떼아트" loading="lazy" decoding="async">
-            </picture>
-            <div class="ig-mock__badge" aria-live="polite">
-              <span class="ig-mock__badge-dot" aria-hidden="true"></span>
-              루미가 캡션 쓰는 중 · <span data-landing-tone>시크</span>
-            </div>
-          </div>
-
-          <!-- 액션 -->
-          <div class="ig-mock__actions" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ig-mock__icon"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ig-mock__icon"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ig-mock__icon"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ig-mock__icon ig-mock__icon--right"><polygon points="19 21 12 16 5 21 5 5 19 5 19 21"/></svg>
-          </div>
-          <div class="ig-mock__likes">좋아요 <strong>142</strong>개</div>
-
-          <!-- 캡션 -->
-          <div class="ig-mock__body">
-            <p class="ig-mock__caption"><strong>lumi__cafe</strong> <span data-landing-caption></span></p>
+        <div class="l3-report__content">
+          <div class="l3-report__secret">“창가 자연광에서 찍은 메뉴 클로즈업 — 이게 이 집 공식이에요.”</div>
+          <div class="l3-mix"><span>메뉴 클로즈업</span><span class="l3-mix__bar"><i class="l3-mix__fill l3-mix__fill--60"></i></span><b>60%</b></div>
+          <div class="l3-mix"><span>매장 분위기</span><span class="l3-mix__bar"><i class="l3-mix__fill l3-mix__fill--25"></i></span><b>25%</b></div>
+          <div class="l3-mix"><span>만드는 과정</span><span class="l3-mix__bar"><i class="l3-mix__fill l3-mix__fill--15"></i></span><b>15%</b></div>
+          <div class="l3-report__cs">
+            <span>~해요체 · 짧은 호흡</span><span>이모지 문장당 1개</span><span>방문 유도 없이 담백</span>
           </div>
         </div>
-      </article>
-
-      <!-- 매장 톤 학습 -->
-      <article class="bento__card bento__card--medium u-idx-1" role="listitem">
-        <span class="bento__card__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-        </span>
-        <h3 class="bento__card__title">내 매장 말투 그대로</h3>
-        <p class="bento__card__desc">생성된 캡션에 👍·👎 만 눌러주세요. 좋은 캡션을 참고해 다음 캡션이 점점 사장님 톤에 맞춰져요.</p>
-      </article>
-
-      <!-- 트렌드 자동 반영 -->
-      <article class="bento__card bento__card--medium u-idx-2" role="listitem">
-        <span class="bento__card__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
-        </span>
-        <h3 class="bento__card__title">요즘 뜨는 키워드 자동</h3>
-        <p class="bento__card__desc">업종·계절·날씨·요일·시간대 트렌드 키워드를 캡션에 자연스럽게 녹여줘요.</p>
-      </article>
-
-      <!-- 예약 게시 -->
-      <article class="bento__card bento__card--small u-idx-3" role="listitem">
-        <span class="bento__card__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
-        </span>
-        <h3 class="bento__card__title">베스트 시간에 자동</h3>
-        <p class="bento__card__desc">팔로워가 가장 자주 들어오는 시간에 올라가요.</p>
-      </article>
-
-      <!-- 스토리·쓰레드 -->
-      <article class="bento__card bento__card--small u-idx-4" role="listitem">
-        <span class="bento__card__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.5" fill="currentColor"/></svg>
-        </span>
-        <h3 class="bento__card__title">한 번에 세 곳</h3>
-        <p class="bento__card__desc">피드·스토리·쓰레드에 같이 올라가요.</p>
-      </article>
-
-      <!-- 게시 후 인사이트 -->
-      <article class="bento__card bento__card--small u-idx-5" role="listitem">
-        <span class="bento__card__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg>
-        </span>
-        <h3 class="bento__card__title">반응 한눈에</h3>
-        <p class="bento__card__desc">도달·팔로워·댓글 변화를 주마다 모아드려요.</p>
-      </article>
-    </div>
-    <p class="bento-extras">그 밖에도 — 🌦️ 매장 동네 날씨 한 줄 · 📱 아이폰 사진(HEIC) 그대로 · 🎬 영상은 세로 변환·자막까지 · 🔗 프로필 링크 페이지</p>
-  </section>
-
-  <!-- ====================== Flow Stack (NEW) — sticky stacking cards (SixShop 스타일) ====================== -->
-  <section class="flow-stack" aria-label="루미가 게시까지 가는 5단계">
-    <div class="flow-stack__intro">
-      <p class="flow-stack__eyebrow">사진 한 장 → 게시까지</p>
-      <h2 class="flow-stack__title">사장님은 사진만,<br>나머지는 <span class="flow-stack__title-accent">루미가 5단계</span>로.</h2>
-      <p class="flow-stack__lead"><b>사장님 입력 = 사진 한 장.</b> 루미 결과 = 사진 분석 + 매장 톤 캡션 + 해시태그 + 8가지 검수 + 베스트 시간 자동 게시.<br>아래는 <b>사진 게시 흐름</b> 입니다. 영상도 같은 5단계로 처리돼요.</p>
-    </div>
-
-    <!-- 각 카드 5개 — position: sticky 로 stacking. 각 카드의 top 값을 28px 씩 증가 -->
-    <div class="flow-stack__cards">
-      <article class="flow-card flow-card--1">
-        <span class="flow-card__num">01</span>
-        <div class="flow-card__body">
-          <div class="flow-card__icon" aria-hidden="true">📸</div>
-          <h3 class="flow-card__title">사진 1장만 올리세요</h3>
-          <p class="flow-card__desc">매장 사진이나 영상 1장. 여러 장이면 한 게시물에 10장까지. 한 줄 메모는 안 쓰셔도 돼요.</p>
-          <ul class="flow-card__bullets">
-            <li>사진·영상·여러 장 다 지원</li>
-            <li>걸리는 시간 <b>10초</b></li>
-          </ul>
-        </div>
-        <!-- mockup: 폰 UI 업로드 화면 -->
-        <div class="flow-card__mock flow-card__mock--upload" aria-hidden="true">
-          <div class="mock-phone">
-            <div class="mock-phone__head">register-product</div>
-            <div class="mock-upload">
-              <picture><source srcset="/assets/tutorial/cafe-1.webp" type="image/webp"><img src="/assets/tutorial/cafe-1.jpg" alt=""></picture>
-            </div>
-            <div class="mock-input"><span class="mock-input__placeholder">+ 한 줄 메모 (옵션)</span></div>
-            <div class="mock-btn">📷 캡션 만들고 게시</div>
-          </div>
-        </div>
-      </article>
-
-      <article class="flow-card flow-card--2">
-        <span class="flow-card__num">02</span>
-        <div class="flow-card__body">
-          <div class="flow-card__icon" aria-hidden="true">👁️</div>
-          <span class="flow-card__only">🥇 다른 도구엔 없는 기능</span>
-          <h3 class="flow-card__title">사진을 꼼꼼히 읽어요</h3>
-          <p class="flow-card__desc">매장 사진인지 일상 사진인지, 무엇이 찍혔는지, 분위기는 어떤지, 사진 안에 글자가 있다면 어떤 글자인지 — 사장님 매장이 어떤 곳인지 미리 알고 봅니다.</p>
-          <ul class="flow-card__bullets">
-            <li>긴가민가한 건 단정 짓지 않아요. "흰 떡" 을 "버터떡" 이라고 함부로 부르지 않습니다</li>
-            <li>릴스 영상도 <b>선명한 장면 한 컷씩</b> 따로 봐요</li>
-          </ul>
-        </div>
-        <!-- mockup: 사진 + 분석 chip 결과 -->
-        <div class="flow-card__mock flow-card__mock--vision" aria-hidden="true">
-          <div class="mock-vision">
-            <div class="mock-vision__photo">
-              <picture><source srcset="/assets/tutorial/cafe-1.webp" type="image/webp"><img src="/assets/tutorial/cafe-1.jpg" alt=""></picture>
-            </div>
-            <div class="mock-vision__chips">
-              <div class="mock-chip mock-chip--ok"><span>매장 연관도</span><strong>높음</strong></div>
-              <div class="mock-chip"><span>사진 종류</span><strong>음식·음료</strong></div>
-              <div class="mock-chip"><span>주인공</span><strong>라떼아트 잎 (확실)</strong></div>
-              <div class="mock-chip"><span>분위기</span><strong>매장</strong></div>
-              <div class="mock-chip"><span>사진 품질</span><strong>좋음</strong></div>
-            </div>
-          </div>
-        </div>
-      </article>
-
-      <article class="flow-card flow-card--3">
-        <span class="flow-card__num">03</span>
-        <div class="flow-card__body">
-          <div class="flow-card__icon" aria-hidden="true">✍️</div>
-          <h3 class="flow-card__title">매장 톤으로 캡션을 써요</h3>
-          <p class="flow-card__desc">사장님이 좋아한 캡션, 요즘 한국에서 뜨는 단어, 오늘 매장 동네 날씨, 같은 업종의 잘된 예시까지 다 보고 — 그냥 자동 답변이 아니라 <b>사장님 매장만의 톤</b>으로 씁니다.</p>
-          <ul class="flow-card__bullets">
-            <li>👍·👎 다섯 번 누르시면 사장님 톤을 자동으로 정리해 둬요</li>
-            <li>카페·디저트·뷰티·꽃·반려동물 등 업종별 잘된 예시도 같이 봐요</li>
-          </ul>
-        </div>
-        <!-- mockup: input chip → 화살표 → 캡션 결과 -->
-        <div class="flow-card__mock flow-card__mock--writer" aria-hidden="true">
-          <div class="mock-writer">
-            <div class="mock-writer__inputs">
-              <span class="mock-inchip">📸 사진 분석</span>
-              <span class="mock-inchip">🎭 사장님 톤 "시크"</span>
-              <span class="mock-inchip">🌤️ 날씨 18°</span>
-              <span class="mock-inchip">📈 트렌드 #카페일상</span>
-              <span class="mock-inchip">📚 카페 모범 예시</span>
-            </div>
-            <div class="mock-writer__arrow">↓ 종합 작성 ↓</div>
-            <div class="mock-writer__output">
-              <p>오후 세 시.<br>손님 한 분, 저 한 명.<br><br>오늘은 손이 잘 됐어요.<br>잎이 깨끗하게 그려진 날 ☕</p>
-              <p class="mock-writer__tags">#카페 #라떼아트 #용산카페 #오후세시</p>
-            </div>
-          </div>
-        </div>
-      </article>
-
-      <article class="flow-card flow-card--4">
-        <span class="flow-card__num">04</span>
-        <div class="flow-card__body">
-          <div class="flow-card__icon" aria-hidden="true">🔍</div>
-          <span class="flow-card__only">🥇 다른 도구엔 없는 기능</span>
-          <h3 class="flow-card__title">사진과 캡션을 다시 맞춰봐요</h3>
-          <p class="flow-card__desc"><b>사진을 다시 직접 보면서</b> 8가지를 하나하나 확인합니다. 한 군데라도 어색하면 다시 써요 (최대 2번). <b>다른 캡션 도구는 한 번 쓰고 끝</b> — 루미는 한 번 더 봐요.</p>
-          <ul class="flow-card__bullets">
-            <li>사진 일치 · 매장 톤 · 흔한 표현 안 쓰기 · 여러 장 일관성 · 확실하지 않은 부분 조심하기 등</li>
-            <li>다른 캡션 도구가 못 하는 <b>8가지 검수</b></li>
-          </ul>
-        </div>
-        <!-- mockup: 8 axis 점수 박스 -->
-        <div class="flow-card__mock flow-card__mock--validator" aria-hidden="true">
-          <div class="mock-validator">
-            <div class="mock-validator__head">
-              <span>📊 검수 점수</span>
-              <span class="mock-validator__overall">종합 <strong>4.6</strong>/5 · 통과 ✓</span>
-            </div>
-            <div class="mock-validator__axes">
-              <div class="mock-axis"><span>사진 일치</span><div class="mock-bar"><div></div></div><strong>5</strong></div>
-              <div class="mock-axis"><span>매장 톤 적절</span><div class="mock-bar"><div></div></div><strong>5</strong></div>
-              <div class="mock-axis"><span>사장님 톤 일치</span><div class="mock-bar"><div class="is-partial"></div></div><strong>4</strong></div>
-              <div class="mock-axis"><span>클리셰 부재</span><div class="mock-bar"><div></div></div><strong>5</strong></div>
-              <div class="mock-axis"><span>브랜드 안전</span><div class="mock-bar"><div></div></div><strong>5</strong></div>
-              <div class="mock-axis"><span>길이 적절</span><div class="mock-bar"><div class="is-partial"></div></div><strong>4</strong></div>
-              <div class="mock-axis"><span>저신뢰 라벨 존중</span><div class="mock-bar"><div></div></div><strong>5</strong></div>
-              <div class="mock-axis"><span>여러 장 일관성</span><div class="mock-bar"><div></div></div><strong>5</strong></div>
-            </div>
-          </div>
-        </div>
-      </article>
-
-      <article class="flow-card flow-card--5">
-        <span class="flow-card__num">05</span>
-        <div class="flow-card__body">
-          <div class="flow-card__icon" aria-hidden="true">📲</div>
-          <h3 class="flow-card__title">베스트 시간 자동 게시</h3>
-          <p class="flow-card__desc">사장님 팔로워가 가장 자주 들어오는 시간에 맞춰 인스타·쓰레드에 자동으로 올려요. 사장님은 다음 사진 찍을 때까지 잊으셔도 됩니다.</p>
-          <ul class="flow-card__bullets">
-            <li>요일별 · 시간대별 최적 슬롯 추천</li>
-            <li>인스타와 쓰레드에 동시 발행</li>
-          </ul>
-        </div>
-        <!-- mockup: 시간 슬롯 + 채널 토글 + 예약 카드 -->
-        <div class="flow-card__mock flow-card__mock--publish" aria-hidden="true">
-          <div class="mock-publish">
-            <div class="mock-publish__head">📅 베스트 시간 추천</div>
-            <div class="mock-publish__slots">
-              <div class="mock-slot mock-slot--past"><span>화 12:30</span><small>지남</small></div>
-              <div class="mock-slot mock-slot--past"><span>화 18:15</span><small>지남</small></div>
-              <div class="mock-slot mock-slot--best"><span>오늘 19:32</span><small>★ 베스트</small></div>
-              <div class="mock-slot"><span>내일 11:45</span></div>
-            </div>
-            <div class="mock-publish__channels">
-              <span class="mock-channel mock-channel--on">✓ Instagram</span>
-              <span class="mock-channel mock-channel--on">✓ Threads</span>
-            </div>
-            <div class="mock-publish__confirm">
-              <span>📷 라떼아트 게시물</span>
-              <span class="mock-publish__time">오늘 19:32 자동 게시 예정</span>
-            </div>
-          </div>
-        </div>
-      </article>
-    </div>
-  </section>
-
-  <!-- ====================== Cases Carousel (NEW) — 카페 사진 → lumi 캡션 사례 갤러리 (SixShop templates 패턴) ====================== -->
-  <section class="cases-section" aria-label="루미가 만든 캡션 사례">
-    <div class="cases-section__intro">
-      <p class="cases-section__eyebrow">실제 사례</p>
-      <h2 class="cases-section__title">사진 한 장이<br><span class="cases-section__title-accent">사장님 톤 캡션</span>으로</h2>
-      <p class="cases-section__lead">매장 사진 9장 → 루미가 만든 캡션 9개. 같은 카페 사진이라도 톤·해시태그·길이가 매번 다릅니다.</p>
-    </div>
-
-    <div class="cases-carousel" data-cases-carousel>
-      <!-- 1: 라떼아트 (위에서 본 컵, 잎 패턴) -->
-      <article class="case-card">
-        <div class="case-card__photo"><picture><source srcset="/assets/tutorial/cafe-1.webp" type="image/webp"><img src="/assets/tutorial/cafe-1.jpg" alt="라떼아트 잎 패턴" loading="lazy"></picture></div>
-        <div class="case-card__caption">
-          <div class="case-card__tone">시크 · 짧은 호흡</div>
-          <p>오후 세 시.<br>손님 한 분, 저 한 명.<br><br>오늘은 손이 잘 됐어요.<br>잎이 깨끗하게 그려진 날.<br><br>이런 시간 때문에<br>아침 일찍 와요 ☕</p>
-          <p class="case-card__tags">#카페 #라떼아트 #용산카페 #오후세시 #카페감성</p>
-        </div>
-      </article>
-
-      <!-- 2: 치즈케이크 한 조각 + 커피 한 잔 -->
-      <article class="case-card">
-        <div class="case-card__photo"><picture><source srcset="/assets/tutorial/cafe-2.webp" type="image/webp"><img src="/assets/tutorial/cafe-2.jpg" alt="치즈케이크 한 조각과 커피" loading="lazy"></picture></div>
-        <div class="case-card__caption">
-          <div class="case-card__tone">친근 · 단골 톤</div>
-          <p>치즈케이크 한 조각에<br>드립커피 한 잔.<br><br>단골 사장님이 "같이 먹으면 어때요?" 하셔서<br>이번 주부터 세트 가격 1,000원 빼드려요.<br><br>평일 오후 들러보세요 :)</p>
-          <p class="case-card__tags">#치즈케이크 #드립커피 #카페디저트 #이태원카페</p>
-        </div>
-      </article>
-
-      <!-- 3: 마카롱 5개 (파스텔 색) -->
-      <article class="case-card">
-        <div class="case-card__photo"><picture><source srcset="/assets/tutorial/cafe-3.webp" type="image/webp"><img src="/assets/tutorial/cafe-3.jpg" alt="파스텔 색 마카롱 5개" loading="lazy"></picture></div>
-        <div class="case-card__caption">
-          <div class="case-card__tone">감성 · 시각 톤</div>
-          <p>오늘 만든 마카롱.<br><br>바닐라 · 민트 · 살구 · 라벤더 · 라즈베리.<br><br>색 보고 고르는 분도,<br>향 맡고 고르는 분도 있어요.<br><br>저는 오늘 라벤더가 손에 잡혀요 💜</p>
-          <p class="case-card__tags">#마카롱 #홈베이킹 #카페디저트 #파스텔디저트</p>
-        </div>
-      </article>
-
-      <!-- 4: 크로플 + 바닐라 아이스크림 (나무 도마) -->
-      <article class="case-card">
-        <div class="case-card__photo"><picture><source srcset="/assets/tutorial/cafe-4.webp" type="image/webp"><img src="/assets/tutorial/cafe-4.jpg" alt="크로플 위 바닐라 아이스크림" loading="lazy"></picture></div>
-        <div class="case-card__caption">
-          <div class="case-card__tone">감성 · 묘사</div>
-          <p>바삭한 결 사이로<br>바닐라가 천천히 녹습니다.<br><br>빨리 드세요.<br>저도 사진 찍는 사이 한 입 사라졌어요 🍦<br><br>오늘은 평일이라 자리 여유 있어요.</p>
-          <p class="case-card__tags">#크로플 #바닐라아이스크림 #카페디저트 #브런치카페</p>
-        </div>
-      </article>
-
-      <!-- 5: 로제 파스타 (페투치네 + 파마산) -->
-      <article class="case-card">
-        <div class="case-card__photo"><picture><source srcset="/assets/tutorial/cafe-5.webp" type="image/webp"><img src="/assets/tutorial/cafe-5.jpg" alt="로제 페투치네 파스타" loading="lazy"></picture></div>
-        <div class="case-card__caption">
-          <div class="case-card__tone">친근 · 식욕 자극</div>
-          <p>점심 메뉴 — 로제 페투치네.<br><br>토마토는 새벽 시장에서 직접 골라온 거,<br>파마산은 마지막에 듬뿍.<br><br>매콤 1단계부터 4단계까지 골라보세요 🍝<br>오늘은 1단계가 가장 잘 나가요.</p>
-          <p class="case-card__tags">#로제파스타 #파스타 #점심메뉴 #이태원맛집</p>
-        </div>
-      </article>
-
-      <!-- 6: 샐러드 (양상추 + 오렌지 + 토마토 + 옥수수) -->
-      <article class="case-card">
-        <div class="case-card__photo"><picture><source srcset="/assets/tutorial/cafe-6.webp" type="image/webp"><img src="/assets/tutorial/cafe-6.jpg" alt="시트러스 샐러드" loading="lazy"></picture></div>
-        <div class="case-card__caption">
-          <div class="case-card__tone">신뢰감 · 건강</div>
-          <p>오늘 들어온 채소 ☀️<br><br>양상추 · 오렌지 · 방울토마토 · 옥수수.<br>드레싱은 사장님이 직접 만든<br>시트러스 비네그레트.<br><br>샐러드도 매장 안에서 만든다는 게<br>사장님 자존심이에요.</p>
-          <p class="case-card__tags">#샐러드 #건강한식단 #브런치 #홈메이드드레싱</p>
-        </div>
-      </article>
-
-      <!-- 7: 사워도우 통빵 (천 위, 베이커리 배경) -->
-      <article class="case-card">
-        <div class="case-card__photo"><picture><source srcset="/assets/tutorial/cafe-7.webp" type="image/webp"><img src="/assets/tutorial/cafe-7.jpg" alt="사워도우 통빵" loading="lazy"></picture></div>
-        <div class="case-card__caption">
-          <div class="case-card__tone">친근 · 이야기</div>
-          <p>새벽 다섯 시 반죽,<br>오후 두 시 굽기.<br><br>오늘은 발효가 평소보다 잘 됐어요.<br>오븐 열었더니 매장 가득 빵 냄새 🍞<br><br>식기 전에 한 덩이 사가실 분?</p>
-          <p class="case-card__tags">#베이커리 #사워도우 #천연발효 #이태원베이커리</p>
-        </div>
-      </article>
-
-      <!-- 8: 베리 스무디 2잔 (블루베리·딸기) + 종이빨대 -->
-      <article class="case-card">
-        <div class="case-card__photo"><picture><source srcset="/assets/tutorial/cafe-8.webp" type="image/webp"><img src="/assets/tutorial/cafe-8.jpg" alt="블루베리 스무디와 딸기 스무디" loading="lazy"></picture></div>
-        <div class="case-card__caption">
-          <div class="case-card__tone">재미 · 여름 톤</div>
-          <p>오늘 더워요.<br><br>블루베리 한 잔, 딸기 한 잔.<br>"하나만 골라야 해요?" 손님 질문에<br>"둘 다 드세요" 답변 드립니다 🍓<br><br>오후 5시까지 2잔 9,000원.</p>
-          <p class="case-card__tags">#스무디 #베리스무디 #여름음료 #카페신메뉴</p>
-        </div>
-      </article>
-
-      <!-- 9: 판나코타 (에디블 플라워 + 라즈베리 소스) -->
-      <article class="case-card">
-        <div class="case-card__photo"><picture><source srcset="/assets/tutorial/cafe-9.webp" type="image/webp"><img src="/assets/tutorial/cafe-9.jpg" alt="판나코타 위 에디블 플라워" loading="lazy"></picture></div>
-        <div class="case-card__caption">
-          <div class="case-card__tone">정보 · 신메뉴 안내</div>
-          <p>신메뉴 — 라즈베리 판나코타 🌸<br><br>레시피 다섯 번 바꿨어요.<br>잘랐을 때 결이 곱게 떨어지도록<br>우유 비율 조정 + 24시간 냉장.<br><br>위에는 에디블 플라워 (먹어도 OK).<br>한정 30개, 오늘만 7,500원.</p>
-          <p class="case-card__tags">#판나코타 #신메뉴 #디저트 #에디블플라워</p>
-        </div>
-      </article>
-    </div>
-
-    <p class="cases-section__footer">전부 같은 카페 사진. 매번 다른 톤·해시태그·길이. <strong>사장님 매장 톤 학습 + 검수까지 자동.</strong></p>
-  </section>
-
-  <!-- ====================== Dashboard Preview (NEW) — 사장님이 가입 후 볼 진짜 화면 mockup (SixShop 자사몰 패턴, 격차 #3) ====================== -->
-  <section class="dashpv-section" aria-label="가입 후 보실 화면 미리보기">
-    <div class="dashpv-section__intro">
-      <p class="dashpv-section__eyebrow">가입 후 만나실 화면</p>
-      <h2 class="dashpv-section__title">내 매장 데이터,<br><span class="dashpv-section__title-accent">한 화면에서 다 보여요.</span></h2>
-      <p class="dashpv-section__lead">사진 올리는 곳 · 다음 예약 · 베스트 시간 · 좋아요·팔로워 변화 · IG 연동 상태. 가입하면 첫 화면이 이거예요.</p>
-    </div>
-
-    <div class="dashpv-mockup" role="img" aria-label="lumi 대시보드 미리보기">
-      <!-- 폰 프레임 -->
-      <div class="dashpv-phone">
-        <div class="dashpv-phone__notch"></div>
-        <div class="dashpv-phone__screen">
-          <!-- 상단 헤더 -->
-          <div class="dashpv-top">
-            <picture><source srcset="/assets/logo-wordmark.webp" type="image/webp"><img src="/assets/logo-wordmark.png" alt="lumi"></picture>
-            <span class="dashpv-top__logout">⎋</span>
-          </div>
-
-          <!-- 1. 날씨 카드 -->
-          <div class="dashpv-card dashpv-card--weather">
-            <span class="dashpv-emoji">🌤️</span>
+        <div class="l3-report__todo">
+          <div class="l3-report__todo-label">이번 주에 해볼 일</div>
+          <div class="l3-report__idea">
             <div>
-              <div class="dashpv-card__line">
-                <strong>서울 용산구</strong> · <strong>18°</strong>
-                <span class="dashpv-card__sub">맑음, 선선한 오후</span>
-              </div>
-              <div class="dashpv-card__mood">"오늘 라떼 한 잔에 어울리는 날씨"</div>
+              <div class="l3-report__idea-title">매장 분위기 담은 여러 장 게시물</div>
+              <div class="l3-report__idea-sub">가장 매력적인 공간 3~5곳을 찍어 올려보세요</div>
             </div>
-          </div>
-
-          <!-- 2. 이번 주 통계 -->
-          <div class="dashpv-section-title">이번 주</div>
-          <div class="dashpv-stats">
-            <div class="dashpv-stat">
-              <div class="dashpv-stat__label">좋아요</div>
-              <div class="dashpv-stat__val">1,247</div>
-              <div class="dashpv-stat__delta">↑ 127</div>
-            </div>
-            <div class="dashpv-stat">
-              <div class="dashpv-stat__label">팔로워</div>
-              <div class="dashpv-stat__val">328</div>
-              <div class="dashpv-stat__delta">↑ 12</div>
-            </div>
-          </div>
-
-          <!-- 3. 요즘 뜨는 키워드 -->
-          <div class="dashpv-section-title">요즘 뜨는 키워드</div>
-          <div class="dashpv-keywords">
-            <span class="dashpv-kw">#카페일상</span>
-            <span class="dashpv-kw">#용산카페</span>
-            <span class="dashpv-kw">#라떼아트</span>
-            <span class="dashpv-kw">#감성카페</span>
-            <span class="dashpv-kw">#오늘의커피</span>
-          </div>
-
-          <!-- 4. 다음 예약 -->
-          <div class="dashpv-section-title">다음 예약</div>
-          <a class="dashpv-sched" href="#">
-            <div class="dashpv-sched__thumb"><picture><source srcset="/assets/tutorial/cafe-1.webp" type="image/webp"><img src="/assets/tutorial/cafe-1.jpg" alt=""></picture></div>
-            <div class="dashpv-sched__body">
-              <div class="dashpv-sched__title">라떼아트 사진</div>
-              <div class="dashpv-sched__time">오늘 19:32 · IG + Threads</div>
-              <div class="dashpv-sched__tag">베스트 시간</div>
-            </div>
-            <span class="dashpv-sched__chev">→</span>
-          </a>
-
-          <!-- 5. 오늘 베스트 시간 -->
-          <div class="dashpv-section-title">오늘 베스트 시간</div>
-          <div class="dashpv-best">
-            <div class="dashpv-best__slot">12:30</div>
-            <div class="dashpv-best__slot dashpv-best__slot--star">19:32 ★</div>
-            <div class="dashpv-best__slot">21:15</div>
-          </div>
-        </div>
-
-        <!-- 폰 하단 탭바 -->
-        <div class="dashpv-tabbar">
-          <span>🏠 홈</span>
-          <span>📈 트렌드</span>
-          <span class="dashpv-tabbar__add">＋</span>
-          <span>🕐 히스토리</span>
-          <span>⚙️ 설정</span>
-        </div>
-      </div>
-
-      <!-- 폰 옆 마케팅 카드 (강조 포인트) -->
-      <div class="dashpv-callouts" aria-hidden="true">
-        <div class="dashpv-callout dashpv-callout--1">
-          <strong>👍 매주 자동 게시</strong>
-          <p>사장님은 사진만, 게시는 자동. 매주 평균 4건.</p>
-        </div>
-        <div class="dashpv-callout dashpv-callout--2">
-          <strong>📊 팔로워 활동 시간 기반</strong>
-          <p>"오늘 19:32" = 사장님 팔로워가 가장 자주 들어오는 시간.</p>
-        </div>
-        <div class="dashpv-callout dashpv-callout--3">
-          <strong>🌤️ 날씨도 캡션에</strong>
-          <p>"선선한 오후" — 매장 지역 실시간 날씨 자동 반영.</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- ⭐ 큰 숫자 카드 (가장 임팩트, SixShop 자사몰 패턴) ⭐ -->
-    <div class="dashpv-bignums">
-      <div class="dashpv-bignum">
-        <span class="dashpv-bignum__num">1,247</span>
-        <span class="dashpv-bignum__label">이번 주 좋아요</span>
-        <span class="dashpv-bignum__delta">↑ 127 (지난주 대비)</span>
-      </div>
-      <div class="dashpv-bignum">
-        <span class="dashpv-bignum__num">+12</span>
-        <span class="dashpv-bignum__label">신규 팔로워</span>
-        <span class="dashpv-bignum__delta">매주 자동 게시 효과</span>
-      </div>
-      <div class="dashpv-bignum">
-        <span class="dashpv-bignum__num">30<small>분</small></span>
-        <span class="dashpv-bignum__label">절약된 사장님 시간</span>
-        <span class="dashpv-bignum__delta">매일 30분씩, 일주일이면 3.5시간</span>
-      </div>
-      <div class="dashpv-bignum">
-        <span class="dashpv-bignum__num">0<small>건</small></span>
-        <span class="dashpv-bignum__label">사장님 캡션 직접 작성</span>
-        <span class="dashpv-bignum__delta">매장에만 집중하세요</span>
-      </div>
-    </div>
-
-    <p class="dashpv-section__footer">위 화면은 이해를 돕기 위한 예시예요. 결과는 매장마다 달라요.</p>
-  </section>
-
-  <!-- ====================== Ecosystem Grid (NEW) — lumi 가 연결/사용하는 서비스들 (SixShop 패턴) ====================== -->
-  <section class="ecosystem-section" aria-label="루미가 연결하는 서비스">
-    <div class="ecosystem-section__intro">
-      <p class="ecosystem-section__eyebrow">통합 운영</p>
-      <h2 class="ecosystem-section__title">사진 게시도, 영상 게시도<br><span class="ecosystem-section__title-accent">루미 하나로 끝나요</span></h2>
-      <p class="ecosystem-section__lead">사진은 분석부터 검수까지, 영상은 편집까지 거쳐 올라가요.<br>사장님은 올리기만 하면 됩니다.</p>
-    </div>
-
-    <div class="ecosystem-grid">
-      <!-- 그룹 1: SNS 채널 -->
-      <div class="ecosystem-group">
-        <span class="ecosystem-group__label">📲 SNS 자동 게시</span>
-        <div class="ecosystem-chips">
-          <div class="ecosystem-chip ecosystem-chip--ig">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="18" cy="6" r="1.2" fill="currentColor"/></svg>
-            <span>Instagram</span>
-            <span class="ecosystem-chip__status ecosystem-chip__status--live">자동 게시</span>
-          </div>
-          <div class="ecosystem-chip">
-            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19.59 13.5c-.16-.05-.32-.08-.48-.12-.28-3.86-2.16-6.07-5.69-6.09h-.06c-2.12 0-3.88.91-4.93 2.55l1.95 1.36c.78-1.18 2.01-1.43 2.99-1.43h.04c1.21.01 2.12.36 2.71 1.05.43.49.71 1.18.86 2.05-1.07-.18-2.23-.24-3.46-.17-3.48.2-5.7 2.27-5.55 5.05.07 1.41.79 2.62 2.01 3.42.99.65 2.27.94 3.6.79 1.76-.21 3.15-.91 4.1-2.1.72-.91 1.18-2.08 1.38-3.56.84.51 1.46 1.18 1.81 1.99.59 1.38.62 3.65-1.21 5.5-1.61 1.62-3.54 2.32-6.45 2.34-3.23-.02-5.68-1.07-7.27-3.1C2.74 17.07 1.97 14.55 1.94 12c.03-2.55.8-5.07 2.13-6.93C5.66 3.04 8.11 1.99 11.34 1.97c3.25.02 5.73 1.06 7.39 3.09.81 1 1.42 2.25 1.81 3.7l2.18-.58c-.47-1.79-1.21-3.33-2.21-4.58C18.4.93 15.4-.04 11.36-.06h-.01c-4.03.02-6.99 1-8.81 2.92C.94 4.61.02 7.21 0 12v.05c.02 4.78.94 7.39 2.55 9.13 1.81 1.93 4.77 2.91 8.81 2.92 3.59-.03 6.12-.97 8.2-3.07 2.72-2.74 2.64-6.18 1.74-8.29-.65-1.51-1.89-2.74-3.59-3.55z"/></svg>
-            <span>Threads</span>
-            <span class="ecosystem-chip__status ecosystem-chip__status--live">자동 게시</span>
+            <span class="l3-report__idea-go">📷 만들기 →</span>
           </div>
         </div>
       </div>
+      <p class="l3s-note">실제 리포트 화면 구성 예시예요. 공개 게시물 기반이라 수치는 참고용.</p>
+    </section>
 
-      <!-- 그룹 2A: 사진 게시 팀 -->
-      <div class="ecosystem-group">
-        <span class="ecosystem-group__label">📷 사진 게시</span>
-        <div class="ecosystem-chips">
-          <div class="ecosystem-chip">
-            <span class="ecosystem-chip__badge">루미</span>
-            <span>사진 분석</span>
-            <span class="ecosystem-chip__status">매장 분위기 읽기</span>
-          </div>
-          <div class="ecosystem-chip">
-            <span class="ecosystem-chip__badge">루미</span>
-            <span>캡션 작성</span>
-            <span class="ecosystem-chip__status">매장 톤 그대로</span>
-          </div>
-          <div class="ecosystem-chip">
-            <span class="ecosystem-chip__badge">루미</span>
-            <span>검수</span>
-            <span class="ecosystem-chip__status">사진과 맞춰 8가지 확인</span>
-          </div>
+    <!-- 3장. 실행 데모 -->
+    <section class="l3s" data-rv>
+      <p class="l3s-eyebrow">30초 실행</p>
+      <h2 class="l3s-title">사진 한 장이면,<br><em>그 방향 그대로</em> 게시까지</h2>
+      <div class="l3-demo">
+        <div class="l3-demo__head">
+          <span class="l3-demo__avatar" aria-hidden="true"></span>
+          <span class="l3-demo__handle">@my.gage</span>
+          <span class="l3-demo__badge">✓ 베스트 시간 예약됨</span>
+        </div>
+        <div class="l3-demo__photo"><img src="/assets/3d/salt-bread.jpg" alt="소금빵 사진" loading="lazy"></div>
+        <div class="l3-demo__cap">
+          <span class="l3-demo__line l3-demo__line--1">오늘 아침에 구운 소금빵,</span>
+          <span class="l3-demo__line l3-demo__line--2">버터 결이 유난히 고운 날이에요 🥐</span>
+          <span class="l3-demo__line l3-demo__line--3">#소금빵 #우리가게 #갓구운빵</span>
         </div>
       </div>
+      <ol class="l3-steps">
+        <li><b>사진 1장</b> 올리면</li>
+        <li>캡션·해시태그 쓰고 <b>8가지 검수</b></li>
+        <li>팔로워 많은 시간에 <b>자동 게시</b></li>
+      </ol>
+    </section>
 
-      <!-- 그룹 2B: 영상 게시 팀 -->
-      <div class="ecosystem-group">
-        <span class="ecosystem-group__label">🎬 영상 게시</span>
-        <div class="ecosystem-chips">
-          <div class="ecosystem-chip">
-            <span class="ecosystem-chip__badge">루미</span>
-            <span>후킹 합성</span>
-            <span class="ecosystem-chip__status">사장님 영상에 자동</span>
-          </div>
-          <div class="ecosystem-chip">
-            <span class="ecosystem-chip__badge">루미</span>
-            <span>영상 캡션</span>
-            <span class="ecosystem-chip__status">영상 호흡에 맞춰 작성</span>
-          </div>
-          <div class="ecosystem-chip">
-            <span class="ecosystem-chip__badge">루미</span>
-            <span>영상 검수</span>
-            <span class="ecosystem-chip__status">영상·캡션 일치 확인</span>
-          </div>
+    <!-- 4장. 지금 방법 vs 루미 -->
+    <section class="l3s" data-rv>
+      <p class="l3s-eyebrow">뭐가 다른가요</p>
+      <h2 class="l3s-title">지금은 <em>어떻게</em><br>하고 계세요?</h2>
+      <p class="l3s-sub">SNS 하는 방법은 보통 셋이에요. 루미는 셋을 한 번에 대신해요.</p>
+      <div class="l3-vs">
+        <div class="l3-vs__card">
+          <div class="l3-vs__way">😮‍💨 직접 한다</div>
+          <div class="l3-vs__pain">매일 30분~1시간, 끝이 없어요.</div>
+          <div class="l3-vs__lumi"><b>루미</b><span>사진 한 장이면 끝이에요.</span></div>
+        </div>
+        <div class="l3-vs__card">
+          <div class="l3-vs__way">💸 대행사 맡긴다</div>
+          <div class="l3-vs__pain">월 30~50만 원 + 내 매장 톤이 아니에요.</div>
+          <div class="l3-vs__lumi"><b>루미</b><span>월 1.9만 원, 내 매장 톤 그대로 학습해요.</span></div>
+        </div>
+        <div class="l3-vs__card">
+          <div class="l3-vs__way">🤖 AI로 캡션만 쓴다</div>
+          <div class="l3-vs__pain">게시·시간·분석은 여전히 내 몫이에요.</div>
+          <div class="l3-vs__lumi"><b>루미</b><span>잘되는 가게 분석부터 게시까지 한 번에.</span></div>
         </div>
       </div>
+    </section>
 
-      <!-- 그룹 3: 데이터/매장 -->
-      <div class="ecosystem-group">
-        <span class="ecosystem-group__label">📊 매장 컨텍스트</span>
-        <div class="ecosystem-chips">
-          <div class="ecosystem-chip">
-            <span class="ecosystem-chip__badge">네이버</span>
-            <span>트렌드·쇼핑 인사이트</span>
-            <span class="ecosystem-chip__status">매일 자동</span>
-          </div>
-          <div class="ecosystem-chip">
-            <span class="ecosystem-chip__badge">기상청</span>
-            <span>매장 지역 날씨</span>
-            <span class="ecosystem-chip__status">비 오면 비 오는 톤으로</span>
-          </div>
-          <div class="ecosystem-chip">
-            <span class="ecosystem-chip__badge">사장님</span>
-            <span>👍/👎 캡션 평가</span>
-            <span class="ecosystem-chip__status">톤 학습</span>
-          </div>
-          <div class="ecosystem-chip">
-            <span class="ecosystem-chip__badge">IG</span>
-            <span>Follower 활동 시간</span>
-            <span class="ecosystem-chip__status">베스트 시간</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- 그룹 4: 가입/결제 -->
-      <div class="ecosystem-group">
-        <span class="ecosystem-group__label">🔐 가입·계정</span>
-        <div class="ecosystem-chips">
-          <div class="ecosystem-chip">
-            <span class="ecosystem-chip__badge">카카오</span>
-            <span>1초 소셜 로그인</span>
-            <span class="ecosystem-chip__status">기본</span>
-          </div>
-          <div class="ecosystem-chip">
-            <span class="ecosystem-chip__badge">Meta</span>
-            <span>인스타 비즈니스 연동</span>
-            <span class="ecosystem-chip__status">자동 게시 권한</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <p class="ecosystem-section__footer">사장님은 사진 한 장만. 위 모든 연결은 루미가 알아서 해요.</p>
-  </section>
-
-  <!-- ====================== Differentiation (NEW) — vs ChatGPT/Canva ====================== -->
-  <section class="diff-section" aria-label="루미가 다른 점">
-    <p class="diff-section__eyebrow">왜 루미인가요?</p>
-    <h2 class="diff-section__title">ChatGPT 도 캡션 써주는데<br>왜 굳이 루미?</h2>
-
-    <div class="diff-table">
-      <div class="diff-row diff-row--header">
-        <div class="diff-cell diff-cell--feat">기능</div>
-        <div class="diff-cell diff-cell--other">ChatGPT / Canva</div>
-        <div class="diff-cell diff-cell--lumi">루미</div>
-      </div>
-
-      <div class="diff-row">
-        <div class="diff-cell diff-cell--feat">매장 톤 기억</div>
-        <div class="diff-cell diff-cell--other">매번 매장 설명 다시 입력</div>
-        <div class="diff-cell diff-cell--lumi">👍·👎 누르면 알아서 학습</div>
-      </div>
-
-      <div class="diff-row">
-        <div class="diff-cell diff-cell--feat">트렌드 해시태그</div>
-        <div class="diff-cell diff-cell--other">옛 데이터 — 한국 트렌드 X</div>
-        <div class="diff-cell diff-cell--lumi">네이버 검색량 기반 · 매일 갱신</div>
-      </div>
-
-      <div class="diff-row">
-        <div class="diff-cell diff-cell--feat">베스트 시간</div>
-        <div class="diff-cell diff-cell--other">사장님이 직접 분석</div>
-        <div class="diff-cell diff-cell--lumi">팔로워 활동 자동 분석</div>
-      </div>
-
-      <div class="diff-row">
-        <div class="diff-cell diff-cell--feat">자동 게시</div>
-        <div class="diff-cell diff-cell--other">사장님 손으로 인스타 앱 열어 복붙</div>
-        <div class="diff-cell diff-cell--lumi">예약 시간에 자동 발행</div>
-      </div>
-
-      <div class="diff-row">
-        <div class="diff-cell diff-cell--feat">날씨·계절</div>
-        <div class="diff-cell diff-cell--other">사장님이 직접 언급</div>
-        <div class="diff-cell diff-cell--lumi">"선선한 오후" 자동 반영</div>
-      </div>
-
-      <div class="diff-row">
-        <div class="diff-cell diff-cell--feat">인스타·쓰레드 동시</div>
-        <div class="diff-cell diff-cell--other">각각 따로 게시</div>
-        <div class="diff-cell diff-cell--lumi">한 번에 자동 게시</div>
-      </div>
-
-      <div class="diff-row">
-        <div class="diff-cell diff-cell--feat">검수 한 번 더</div>
-        <div class="diff-cell diff-cell--other">없음 (한 번 쓰고 끝)</div>
-        <div class="diff-cell diff-cell--lumi">사진 다시 확인 후 재작성 (최대 2번)</div>
-      </div>
-
-      <div class="diff-row">
-        <div class="diff-cell diff-cell--feat">잘되는 가게 분석</div>
-        <div class="diff-cell diff-cell--other">직접 눈으로 훑어보기</div>
-        <div class="diff-cell diff-cell--lumi">@아이디만 넣으면 1~2분이면 분석 완료</div>
-      </div>
-
-      <div class="diff-row">
-        <div class="diff-cell diff-cell--feat">월 비용</div>
-        <div class="diff-cell diff-cell--other">ChatGPT Plus 약 ₩28,000</div>
-        <div class="diff-cell diff-cell--lumi">₩19,900 — 게시·검수까지 포함</div>
-      </div>
-    </div>
-
-    <!-- 대행사 vs 루미 — Ocoya "Don't hire a social media agency" 패턴 -->
-    <div class="diff-agency">
-      <div class="diff-agency__col diff-agency__col--vs">
-        <div class="diff-agency__label">마케팅 대행사 맡기면</div>
-        <ul class="diff-agency__list">
-          <li>월 <strong>30~50만원</strong></li>
-          <li>처음 인터뷰 톤 (시간 지나면 사장님 톤 X)</li>
-          <li>주말·심야 응답 어려움</li>
-          <li>대행사 바뀌면 처음부터 다시</li>
-        </ul>
-      </div>
-      <div class="diff-agency__arrow" aria-hidden="true">→</div>
-      <div class="diff-agency__col diff-agency__col--lumi">
-        <div class="diff-agency__label diff-agency__label--lumi">루미는</div>
-        <ul class="diff-agency__list">
-          <li><strong>월 19,900원</strong> · 카카오 1초 가입</li>
-          <li>👍·👎 누를수록 사장님 매장 톤에 가까워짐</li>
-          <li>24시간 베스트 시간에 자동 게시</li>
-          <li>학습한 톤은 사장님 계정에 남음 (이전 가능)</li>
-        </ul>
-      </div>
-    </div>
-
-    <p class="diff-section__bottom">
-      <strong>요약</strong> — ChatGPT 는 만능 도구지만 매장 SNS 는 <strong>매장 톤 + 한국 트렌드 + 자동 게시 + 검수</strong> 가 핵심.
-      루미는 이 4가지에 집중하고, 대행사 비용 없이 사장님 매장만 챙깁니다.
-    </p>
-  </section>
-
-  <!-- ====================== Process (NEW) — 시작 흐름 3단계 ====================== -->
-  <section class="process-section" aria-label="시작 흐름">
-    <p class="process-section__eyebrow">시작은 3분이면 충분</p>
-    <h2 class="process-section__title">가입부터 첫 게시까지<br>3 단계.</h2>
-
-    <ol class="process-steps">
-      <li class="process-step">
-        <div class="process-step__num">1</div>
-        <div class="process-step__body">
-          <h3 class="process-step__title">카카오로 1초 가입</h3>
-          <p class="process-step__desc">번호·비밀번호 X. 카카오 로그인 한 번으로 끝.</p>
-          <div class="process-step__time">⏱ 1초</div>
-        </div>
-      </li>
-      <li class="process-step">
-        <div class="process-step__num">2</div>
-        <div class="process-step__body">
-          <h3 class="process-step__title">매장 정보 + 인스타 연동</h3>
-          <p class="process-step__desc">매장 이름·업종 입력 + 인스타 비즈니스 계정 연결. 잘되는 가게 분석은 연동 전에도 바로 쓸 수 있어요. <a href="/guide-ig" class="process-step__link">전체 가이드 →</a></p>
-          <div class="process-step__time">⏱ 3분</div>
-        </div>
-      </li>
-      <li class="process-step">
-        <div class="process-step__num">3</div>
-        <div class="process-step__body">
-          <h3 class="process-step__title">사진 한 장 업로드</h3>
-          <p class="process-step__desc">루미가 30초 안에 캡션·해시태그·베스트 시간 추천. 사장님이 확인 후 "게시" 한 번.</p>
-          <div class="process-step__time">⏱ 30초</div>
-        </div>
-      </li>
-    </ol>
-  </section>
-
-  <!-- ====================== Benefit Section — 루미의 약속 ====================== -->
-  <section class="benefit-section" aria-label="루미가 사장님께 약속하는 것">
-    <div class="benefit-card">
-      <div class="benefit-card__badge">루미의 약속</div>
-      <h2 class="benefit-card__title">사진 한 장 올리는 30초,<br>나머지는 진짜로 루미가.</h2>
-      <ul class="benefit-list">
-        <li class="benefit-item">
-          <span class="benefit-item__check">✓</span>
-          <div>
-            <strong>사장님이 손님 받는 시간, 루미는 SNS 챙기는 시간</strong>
-            <p>매장 영업하시는 동안 루미가 캡션 쓰고, 검수하고, 베스트 시간에 자동 게시까지. 사장님은 매장에만 집중하세요.</p>
-          </div>
-        </li>
-        <li class="benefit-item">
-          <span class="benefit-item__check">✓</span>
-          <div>
-            <strong>SNS 한 번도 안 해본 사장님도 OK</strong>
-            <p>인스타 비즈니스 계정 셋업부터 1:1로 안내해요. 카톡으로 막힌 부분 직접 도와드려요.</p>
-          </div>
-        </li>
-        <li class="benefit-item">
-          <span class="benefit-item__check">✓</span>
-          <div>
-            <strong>매장 톤이 점점 정확해져요</strong>
-            <p>사장님이 👍·👎 누르신 캡션을 루미가 기억해요. 한 달 쓰면 사장님이 직접 쓴 것 같은 톤이 됩니다.</p>
-          </div>
-        </li>
-        <li class="benefit-item">
-          <span class="benefit-item__check">✓</span>
-          <div>
-            <strong>품질 미달은 사장님께 안 보냅니다</strong>
-            <p>루미가 여덟 가지를 검수하고 부족하면 다시 씁니다. 흔한 표현·매장 톤 어긋남·브랜드 노출 사전에 막아요.</p>
-          </div>
-        </li>
-        <li class="benefit-item">
-          <span class="benefit-item__check">✓</span>
-          <div>
-            <strong>숨은 요금 없음 · 카카오 1초 가입</strong>
-            <p>카카오 로그인 한 번이면 바로 시작. 월 19,900원에 전부 포함이고, 결제는 사장님이 직접 동의한 경우에만 진행돼요.</p>
-          </div>
-        </li>
-      </ul>
-      <a class="benefit-card__cta" href="/beta">지금 시작하기 →</a>
-      <p class="benefit-card__hint">평일 영업시간 내 루미 팀 1:1 카톡 지원 · 평균 응답 시간 1시간</p>
-    </div>
-  </section>
-
-  <!-- ====================== 요금제 (NEW) ====================== -->
-  <section class="price-section" aria-label="요금제">
-    <p class="price-section__eyebrow">요금제</p>
-    <h2 class="price-section__title">월 <span class="price-section__title-accent">19,900원</span>, 전부 포함.</h2>
-    <p class="price-section__lead">마케팅 대행사 월 30~50만 원 대신. 숨은 요금 없이 이 가격 그대로예요.</p>
-
-    <div class="pricing-grid pricing-grid--solo price-section__grid">
-      <section class="pricing-card pricing-card--featured" aria-label="프로 요금제">
-        <div class="pricing-card__name">Pro</div>
-        <div class="pricing-card__price"><span class="pricing-card__num">₩19,900</span><span class="pricing-card__per">/ 월</span></div>
-        <div class="pricing-card__desc">매일 SNS 챙기는 사장님</div>
-        <ul class="pricing-card__list">
-          <li>월 게시 30건</li>
+    <!-- 5장. 요금 -->
+    <section class="l3s" data-rv>
+      <p class="l3s-eyebrow">요금</p>
+      <h2 class="l3s-title">월 <em>19,900원</em>, 전부 포함.</h2>
+      <p class="l3s-sub">마케팅 대행사 월 30~50만 원 대신. 숨은 요금 없어요.</p>
+      <div class="l3-price">
+        <ul class="l3-price__list">
+          <li>월 게시 30건 — 사진·영상</li>
           <li>내 매장 말투 그대로 (👍·👎 학습)</li>
           <li>8가지 항목 자동 검수 + 재작성</li>
-          <li>베스트 시간 자동 게시</li>
-          <li>인스타그램 + 쓰레드 동시</li>
+          <li>베스트 시간 자동 게시 · 인스타 + 쓰레드 동시</li>
           <li>매일 새로 뽑는 네이버 트렌드 해시태그</li>
           <li>잘되는 가게 분석</li>
           <li>1:1 카톡 지원</li>
         </ul>
-        <a class="pricing-card__cta" href="/beta">지금 시작하기</a>
-      </section>
-    </div>
+        <a class="l3-cta" href="/beta">지금 시작하기 →</a>
+        <p class="l3-price__hint">카카오 1초 가입 · 결제는 직접 동의한 경우에만</p>
+      </div>
+    </section>
 
-    <a class="price-section__more" href="/pricing">전체 요금제 자세히 보기 →</a>
-  </section>
+    <!-- FAQ -->
+    <section class="l3s" data-rv>
+      <p class="l3s-eyebrow">자주 묻는 질문</p>
+      <h2 class="l3s-title">사장님들이 가장 많이 물어요</h2>
+      <div class="l3-faq">
+        <details class="l3-faq__item"><summary>인스타 비즈니스 계정이 꼭 필요한가요?</summary><p>네, 인스타 정책상 외부 도구가 게시하려면 비즈니스/크리에이터 계정이어야 해요. 전환은 무료고 3~5분이면 끝나요. 막히면 루미 팀이 같이 해드려요.</p></details>
+        <details class="l3-faq__item"><summary>자동 게시는 어느 정도 자동인가요?</summary><p>즉시 게시 / 예약 게시 / 베스트 시간 자동 — 3가지 모드예요. 어떤 모드든 게시 전에 사장님이 캡션을 확인·수정할 수 있어요.</p></details>
+        <details class="l3-faq__item"><summary>잘되는 가게 분석, 상대가 알게 되나요?</summary><p>아니요. 누구나 볼 수 있는 공개 게시물만 살펴보고, 상대 계정에 알림이나 흔적이 남지 않아요. 비공개 계정은 분석할 수 없어요.</p></details>
+        <details class="l3-faq__item"><summary>내 사진·캡션 데이터는 안전한가요?</summary><p>사진과 캡션은 게시 목적 외로 쓰지 않고, 탈퇴하면 7일 유예 후 모두 삭제돼요. 자세한 내용은 개인정보처리방침에 있어요.</p></details>
+      </div>
+    </section>
 
-  <!-- ====================== FAQ (NEW) ====================== -->
-  <section class="faq-section" aria-label="자주 묻는 질문">
-    <p class="faq-section__eyebrow">자주 묻는 질문</p>
-    <h2 class="faq-section__title">사장님이 가장 많이 물으신 것</h2>
+    <!-- 마지막 CTA -->
+    <section class="l3s l3s--final" data-rv>
+      <h2 class="l3s-title">잘되는 가게는<br><em>운이 아니에요.</em></h2>
+      <p class="l3s-sub">이유를 알면, 사장님 가게도 됩니다.</p>
+      <a class="l3-cta l3-cta--big" href="/beta">지금 시작하기 →</a>
+    </section>
 
-    <div class="faq-list">
-      <details class="faq-item">
-        <summary class="faq-item__q">인스타 비즈니스 계정이 꼭 필요한가요?</summary>
-        <div class="faq-item__a">
-          <p>네, 인스타 정책상 외부 도구가 게시·인사이트를 가져오려면 비즈니스/크리에이터 계정이어야 합니다. 개인 계정에서 비즈니스로 전환은 무료, 3-5분이면 끝나요.</p>
-          <p><a href="/guide-ig" class="faq-item__link">📖 비즈니스 전환 전체 가이드 →</a></p>
-        </div>
-      </details>
-
-      <details class="faq-item">
-        <summary class="faq-item__q">가격이 얼마예요? 언제부터 돈을 내나요?</summary>
-        <div class="faq-item__a">
-          <p><strong>월 19,900원</strong>이에요. 게시 30건, 매장 말투 학습, 8가지 검수, 베스트 시간 자동 게시, 잘되는 가게 분석까지 전부 포함 — 숨은 요금은 없어요.</p>
-          <p>카카오 가입에는 결제 정보가 필요 없고, 결제는 사장님이 직접 동의한 경우에만 진행돼요. 자세한 내용은 <a href="/pricing" class="faq-item__link">요금제</a> · <a href="/refund" class="faq-item__link">환불정책</a> 참고.</p>
-        </div>
-      </details>
-
-      <details class="faq-item">
-        <summary class="faq-item__q">자동 게시는 어느 정도 자동인가요?</summary>
-        <div class="faq-item__a">
-          <p>3가지 모드:</p>
-          <ul>
-            <li><strong>즉시 게시</strong> — 사진 + 캡션 확인 → 바로 게시</li>
-            <li><strong>예약 게시</strong> — 사장님이 지정한 시간에 자동</li>
-            <li><strong>베스트 시간 자동</strong> — 사장님 팔로워가 가장 활발한 시간 분석 후 자동</li>
-          </ul>
-          <p>모든 게시는 사장님이 사전에 확인 가능. 사진 + 캡션 결정권은 사장님 100%.</p>
-        </div>
-      </details>
-
-      <details class="faq-item">
-        <summary class="faq-item__q">루미가 캡션 쓰는 건 ChatGPT 와 뭐가 다른가요?</summary>
-        <div class="faq-item__a">
-          <p>3가지가 다릅니다:</p>
-          <ol>
-            <li><strong>매장 톤 학습</strong> — 사장님이 좋아한 캡션을 기억해서 다음 캡션이 점점 사장님 톤에 맞춰져요. ChatGPT 는 매 대화마다 매장 설명을 다시 입력해야 해요.</li>
-            <li><strong>한국 트렌드 해시태그</strong> — 네이버 검색량 기반, 매일 갱신. ChatGPT 는 옛 데이터.</li>
-            <li><strong>자동 게시 + 베스트 시간</strong> — 캡션 만드는 데서 끝이 아니라 게시까지 자동.</li>
-          </ol>
-        </div>
-      </details>
-
-      <details class="faq-item">
-        <summary class="faq-item__q">내 사진·캡션 데이터는 안전한가요?</summary>
-        <div class="faq-item__a">
-          <p>네. 모든 데이터는 한국(서울) 데이터센터에 암호화해 저장해요. 인스타 접속 정보는 AES-256 금고에 따로 보관하고요. 사장님 사진·캡션은 외부 엔진 학습에 절대 쓰이지 않아요.</p>
-          <p>자세한 사항: <a href="/privacy" class="faq-item__link">개인정보처리방침 →</a></p>
-        </div>
-      </details>
-
-      <details class="faq-item">
-        <summary class="faq-item__q">사장님이 직접 검수 / 수정할 수 있나요?</summary>
-        <div class="faq-item__a">
-          <p>네. 루미가 캡션 3개를 추천하면 사장님이 그중 하나를 고르거나 직접 수정한 뒤 게시해요. 자동 모드(즉시/베스트 시간)도 게시 전에 미리 캡션을 확인할 수 있어요.</p>
-          <p>매번 검수 부담 줄이려면 👍·👎 평가로 매장 톤 학습 → 시간 지나면 사장님이 손 댈 일 점점 줄어듭니다.</p>
-        </div>
-      </details>
-
-      <details class="faq-item">
-        <summary class="faq-item__q">잘되는 가게 분석, 상대 가게가 알게 되나요?</summary>
-        <div class="faq-item__a">
-          <p>아니요. 누구나 볼 수 있는 공개 게시물만 살펴보는 거라 상대 계정에 알림이 가거나 흔적이 남지 않아요. 비공개 계정은 분석할 수 없어요.</p>
-          <p>광고 집행이나 정확한 도달처럼 공개되지 않는 숫자는 알 수 없어서, 결과는 참고용 추정치예요.</p>
-        </div>
-      </details>
-
-      <details class="faq-item">
-        <summary class="faq-item__q">탈퇴는 어떻게 하나요?</summary>
-        <div class="faq-item__a">
-          <p>설정 → 회원 탈퇴 버튼 한 번이면 끝. 7일 유예 기간 동안 같은 버튼으로 즉시 복구 가능. 7일 후 자동 영구 삭제. 즉시 삭제 원하시면 lumi@lumi.it.kr 으로 요청.</p>
-        </div>
-      </details>
-
-      <details class="faq-item">
-        <summary class="faq-item__q">한 달에 인스타 몇 건 올릴 수 있나요?</summary>
-        <div class="faq-item__a">
-          <p>매장 패턴에 맞춰 사장님이 정하시면 돼요. 매일 1~3건을 권장해요 (인스타 알고리즘이 너무 자주 올리는 계정의 노출을 줄여요). 예약 게시와 베스트 시간 자동 발행을 쓰면 손 안 대고도 꾸준히 올라갑니다.</p>
-          <p>사진은 한 번에 최대 10장. 영상은 90초로 잘라 자막까지 자동으로 입히고, 세로 화면으로 맞춰드려요.</p>
-        </div>
-      </details>
-    </div>
-  </section>
-
-  <!-- ====================== Final CTA (NEW) ====================== -->
-  <section class="final-cta" aria-label="시작하기">
-    <h2 class="final-cta__title">사진 한 장, 그 다음은<br>저희가 챙겨드릴게요.</h2>
-    <p class="final-cta__sub">한국 카페·식당·매장 사장님 옆에서 SNS 매일 거드는 도구.<br>지금은 카카오로 1초 시작.</p>
-    <a class="final-cta__btn" href="/beta">시작해보기 →</a>
-    <p class="final-cta__hint">막히면 카톡으로 같이 풀어드려요. 인스타 셋업도 함께.</p>
-  </section>
-
+    <footer class="l3-foot">
+      <div>상호 루미(lumi) · 대표 김현 · 사업자등록번호 404-09-66416</div>
+      <div>통신판매업 제2024-서울용산-1166호 · 서울특별시 용산구 회나무로 32-7 04345</div>
+      <div>문의 lumi@lumi.it.kr · 010-6424-6284</div>
+      <nav class="l3-foot__links"><a href="/terms">이용약관</a> · <a href="/privacy">개인정보처리방침</a> · <a href="/refund">환불정책</a></nav>
+    </footer>
   </main>
 
-  <!-- 스크롤 고정 CTA — 긴 랜딩에서 시작 버튼 상시 노출. 히어로/최종 CTA 보일 땐 숨김 (index.js) -->
-  <a class="sticky-cta" href="/beta" data-sticky-cta aria-label="지금 시작하기">지금 시작하기 →</a>
-
-  <!-- ====================== 푸터 ====================== -->
-  <footer class="foot" role="contentinfo">
-    <div class="foot__inner">
-
-      <div class="foot__brand">
-        <a href="/" aria-label="루미(lumi) 홈">
-          <picture><source srcset="/assets/logo-wordmark.webp" type="image/webp"><img src="/assets/logo-wordmark.png" alt="루미(lumi)" width="56" height="28" loading="lazy" decoding="async"></picture>
-        </a>
-      </div>
-
-      <nav class="foot__nav" aria-label="법적 정보">
-        <a href="/terms">이용약관</a>
-        <a href="/privacy">개인정보처리방침</a>
-        <a href="/privacy#data-deletion">데이터 삭제 안내</a>
-        <a href="/refund">환불정책</a>
-        <a href="/support">고객지원</a>
-      </nav>
-
-      <div class="foot__biz" aria-label="사업자 정보">
-        <dl>
-          <dt>상호</dt><dd>루미(lumi)</dd>
-          <dt>대표</dt><dd>김현</dd>
-          <dt>사업자등록번호</dt><dd>404-09-66416</dd>
-          <dt>통신판매업</dt><dd>제2024-서울용산-1166호</dd>
-          <dt>주소</dt><dd>서울특별시 용산구 회나무로 32-7 (이태원동) 04345</dd>
-        </dl>
-      </div>
-
-      <div class="foot__contact">
-        <a href="mailto:lumi@lumi.it.kr">lumi@lumi.it.kr</a>
-        <a href="tel:010-6424-6284">010-6424-6284</a>
-      </div>
-
-      <div class="foot__bottom">
-        <span>© 2026 루미(lumi)</span>
-        <span>본 서비스는 Meta Platform Terms 및 Developer Policies를 준수합니다.</span>
-      </div>
-
-    </div>
-  </footer>
-
-  <script defer src="/js/pages/index.js"></script>
+  <script type="module" src="/js/pages/landing3d.js"></script>
 </body>
 </html>
