@@ -126,7 +126,7 @@ function makeCardTexture({ photo, handle, mode }) {
 
   // 해시태그 칩 (theirs/done 만)
   if (mode !== 'empty') {
-    const tags = mode === 'theirs' ? ['#소금빵', '#성수카페'] : ['#소금빵', '#우리가게'];
+    const tags = mode === 'theirs' ? ['#소금빵', '#성수카페'] : ['#치즈케이크', '#우리가게'];
     let tx = 40;
     const ty = capY + 134;
     x.font = '700 24px "Pretendard Variable", Pretendard, -apple-system, sans-serif';
@@ -257,7 +257,7 @@ let progress = 0, manualProgress = null;
 let targetP = 0; // 스크롤(목표)을 progress 가 부드럽게 추적
 
 Promise.all([
-  loadImg('/assets/3d/salt-bread.jpg'), // Higgsfield 생성 — 칩(#소금빵)과 스토리 일치
+  loadImg('/assets/3d/salt-bread.jpg'), // Higgsfield 생성 — '잘되는 가게'(theirs) 소금빵 사진
   loadImg('/assets/tutorial/cafe-2.jpg'),
   document.fonts ? document.fonts.ready : Promise.resolve(),
 ]).then(([ph1, ph2]) => {
@@ -328,7 +328,7 @@ Promise.all([
   }
 
   // 비결 칩 4종
-  const labels = ['화 12시', '여러 장 77%', '#소금빵', '참여율 13.8%'];
+  const labels = ['화 12시', '여러 장 77%', '자연광 컷', '참여율 13.8%'];
   chips = labels.map((label) => {
     const m = new THREE.Mesh(
       new THREE.PlaneGeometry(1.6, 0.5),
