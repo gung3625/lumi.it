@@ -292,3 +292,33 @@ body {
 .l3-mix > b { flex: 0 0 34px; text-align: right; color: #ff4d80; font-size: 12px; }
 .l3-report__cs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .l3-report__cs span { font-size: 11.5px; font-weight: 700; color: #ff5c8a; background: #fff1f5; border: 1px solid #ffd3e0; padding: 4px 9px; border-radius: 100px; }
+
+/* ── 후기 (사용 예시) 무한 회전 캐러셀 ── */
+.l3s--rev { padding-bottom: 16px; }
+.l3-rev {
+  position: relative; z-index: 2;
+  display: flex; flex-direction: column; gap: 14px;
+  padding: 2px 0 10px;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+}
+.l3-rev__row { overflow: hidden; }
+.l3-rev__track { display: flex; gap: 14px; width: max-content; animation: l3RevScroll 64s linear infinite; }
+.l3-rev__row--rev .l3-rev__track { animation-direction: reverse; animation-duration: 80s; }
+.l3-rev:hover .l3-rev__track { animation-play-state: paused; }
+@keyframes l3RevScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.l3-rev__card {
+  flex: 0 0 auto; width: 250px; box-sizing: border-box;
+  background: #fff; border: 1px solid #f3e2e9; border-radius: 16px;
+  box-shadow: 0 12px 30px rgba(180, 110, 135, 0.10);
+  padding: 16px 18px; text-align: left;
+}
+.l3-rev__q { font-size: 14px; line-height: 1.55; color: #3c3137; margin: 0 0 12px; word-break: keep-all; }
+.l3-rev__w { display: flex; align-items: center; gap: 9px; font-size: 12.5px; font-weight: 700; color: #8a7b82; }
+.l3-rev__a { flex: 0 0 auto; width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, #ff8ba7, #ffb86b); color: #fff; font-weight: 800; font-size: 13px; display: flex; align-items: center; justify-content: center; }
+@media (prefers-reduced-motion: reduce) {
+  .l3-rev__track { animation: none; }
+  .l3-rev__row { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .l3-rev { -webkit-mask-image: none; mask-image: none; }
+}
