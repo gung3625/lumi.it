@@ -41,10 +41,11 @@ function allowScheduledOrSecret(event) {
 }
 
 // 인증 필요한 endpoint용 origin allowlist.
-// localhost 는 로컬 dev (netlify dev) 에서만 허용 — production runtime 에는 NETLIFY_DEV
-// 환경 변수가 없으므로 자동 제외. NODE_ENV !== 'production' fallback 도 보호.
-const IS_LOCAL_DEV =
-  process.env.NETLIFY_DEV === 'true' || process.env.NODE_ENV !== 'production';
+// localhost 는 로컬 dev (netlify dev) 에서만 허용 — netlify dev 가 NETLIFY_DEV=true 자동 설정.
+// production runtime 엔 NETLIFY_DEV 가 없어 자동 제외.
+// (NODE_ENV !== 'production' 폴백 제거 — production 에서 NODE_ENV 미설정 시 localhost 가
+//  허용 origin 에 새는 위험. 보안 리뷰 M3.)
+const IS_LOCAL_DEV = process.env.NETLIFY_DEV === 'true';
 const ALLOWED_ORIGINS = new Set([
   'https://lumi.it.kr',
   'https://www.lumi.it.kr',
