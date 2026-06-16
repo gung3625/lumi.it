@@ -250,6 +250,52 @@
         }
       }
 
+      // 이번 주 반응 (좋아요·팔로워) — 데스크톱 위젯
+      async function loadStats() {
+        try {
+          const res = await fetch('/api/insight-weekly', { headers: authHeaders });
+          if (!res.ok) return;
+          const json = await res.json();
+          const d = json && json.data;
+          if (!d) return;
+          if (typeof d.likesTotal === 'number') {
+            const el = document.querySelector('[data-stat-likes]');
+            if (el) { el.textContent = d.likesTotal.toLocaleString(); el.classList.remove('skeleton', 'skeleton--text'); }
+          }
+          if (typeof d.followers === 'number') {
+            const el = document.querySelector('[data-stat-followers]');
+            if (el) { el.textContent = d.followers.toLocaleString(); el.classList.remove('skeleton', 'skeleton--text'); }
+          }
+        } catch (e) {
+          console.warn('[dashboard] /api/insight-weekly 실패:', e && e.message);
+        }
+      }
+
+      // 새 댓글 — 데스크톱 위젯
+      async function loadComments() {
+        const listEl = document.querySelector('[data-comments]');
+        if (!listEl) return;
+        try {
+          const res = await fetch('/api/comments?limit=3', { headers: authHeaders });
+          if (!res.ok) { listEl.innerHTML = '<li class="comments-card__item comments-card__empty"><span class="comments-card__text u-text-muted">댓글을 가져오지 못했어요.</span></li>'; return; }
+          const json = await res.json();
+          const items = (json && json.items) || [];
+          if (items.length === 0) {
+            const msg = json.igConnected ? '아직 새 댓글이 없어요' : '인스타 연동 후 표시돼요';
+            listEl.innerHTML = `<li class="comments-card__item comments-card__empty"><span class="comments-card__text u-text-muted">${msg}</span></li>`;
+            return;
+          }
+          listEl.innerHTML = items.slice(0, 3).map(c => {
+            const u = (c.username || c.from || '익명').slice(0, 24);
+            const initial = (u[0] || '·').toUpperCase();
+            const text = (c.text || '').slice(0, 60);
+            return `<li class="comments-card__item"><span class="comments-card__avatar">${esc(initial)}</span><div class="comments-card__body"><div class="comments-card__user">${esc(u)}</div><div class="comments-card__text">${esc(text)}</div></div></li>`;
+          }).join('');
+        } catch (e) {
+          listEl.innerHTML = '<li class="comments-card__item comments-card__empty"><span class="comments-card__text u-text-muted">댓글을 가져오지 못했어요.</span></li>';
+        }
+      }
+
       // ── 캘린더 조작 (이전/다음 달, 날짜 선택) ──
       document.querySelector('[data-cal-prev]')?.addEventListener('click', () => {
         calM--; if (calM < 0) { calM = 11; calY--; }
@@ -306,5 +352,7 @@
         await loadMe();
         loadReservations();
         loadBestTime();
+        loadStats();
+        loadComments();
       })();
     })();
