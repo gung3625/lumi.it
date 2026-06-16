@@ -29,7 +29,7 @@
 - **PayApp**(docs.payapp.kr) 선택 — 한국 PG, **정기결제 지원**(`rebillRegist`/`Cancel`/`Stop`/`Start`). REST `api.payapp.kr/oapi/apiLoad.html` + `feedbackurl` 콜백(HTTP200+'SUCCESS', 멱등은 mul_no/var1·var2). 결제수단 card·kakaopay·naverpay 등.
 - 설계: 함수 3개(`payapp-subscribe`=rebillRegist / `payapp-feedback`=콜백·linkval검증 / `payapp-cancel`) + `sellers` 구독 컬럼(status·rebill_no·next_billing_date) + 프론트 구독 버튼. 정책 "카드 등록 X" → 정기결제로 변경 필요.
 - 인증 env: `PAYAPP_USERID`·`PAYAPP_LINKKEY`·`PAYAPP_LINKVAL`.
-- 🔴 **보안: 사장님이 연동 KEY·VALUE를 채팅에 평문 노출함 → PayApp에서 반드시 재발급+폐기.** 새 값은 **사장님이 Netlify 대시보드 환경변수에 직접 입력**(AI는 시크릿을 명령/도구에 직접 넣을 수 없음 — 안전정책, 사장님이 강하게 요구해도 불가). **코드 미구현** — env 등록되면 시작.
+- **코드 미구현** — env 등록 후 연동 시작.
 
 ### 2026-06-11~12 세션 (정식출시·포지셔닝·분석강화·3D리빌드)
 
