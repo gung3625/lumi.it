@@ -1,0 +1,289 @@
+/* subscribe.css — 구독/결제 페이지. lumi 정체성(핑크·시그니처·종이질감) 유지. */
+
+/* ===== topbar (앱 페이지 공통 패턴) ===== */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  height: 52px;
+  padding: 0 var(--space-3);
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: saturate(180%) blur(18px);
+  -webkit-backdrop-filter: saturate(180%) blur(18px);
+  border-bottom: 1px solid var(--line);
+}
+.topbar__back,
+.topbar__logout {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: background var(--duration-snap) var(--ease-soft);
+}
+.topbar__logout { color: var(--ink-muted); }
+@media (hover: hover) {
+  .topbar__back:hover,
+  .topbar__logout:hover { background: var(--bg-soft); }
+}
+.topbar__back:active,
+.topbar__logout:active { transform: scale(0.92); }
+.topbar__back svg,
+.topbar__logout svg { width: 20px; height: 20px; stroke-width: 2.2; }
+.topbar__title {
+  margin: 0;
+  font-size: var(--text-h3);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-snug);
+  text-align: center;
+  color: var(--ink);
+}
+
+/* ===== 레이아웃 ===== */
+.sub-wrap {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: var(--space-6) var(--page-x) var(--space-20);
+}
+.sub-lead {
+  margin: var(--space-2) 0 var(--space-6);
+  font-size: var(--text-body-lg);
+  line-height: var(--leading-snug);
+  letter-spacing: var(--tracking-snug);
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+/* ===== 플랜 카드 ===== */
+.sub-card {
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-card);
+  background-image: var(--gradient-paper);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-warm-glow), var(--shadow-card);
+  padding: var(--space-8) var(--space-6) var(--space-6);
+}
+.sub-card__glow {
+  position: absolute;
+  inset: -40% -20% auto -20%;
+  height: 220px;
+  background: var(--gradient-signature);
+  filter: blur(56px);
+  opacity: 0.20;
+  pointer-events: none;
+}
+.sub-card > * { position: relative; }
+
+.sub-badge {
+  position: absolute;
+  top: var(--space-5);
+  right: var(--space-5);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  font-size: var(--text-caption);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-snug);
+  border-radius: var(--radius-pill);
+  background: var(--status-success-bg);
+  color: var(--status-success-fg);
+}
+.sub-badge.is-active   { background: var(--status-success-bg); color: var(--status-success-fg); }
+.sub-badge.is-pending  { background: var(--status-pending-bg); color: var(--status-pending-fg); }
+.sub-badge.is-pastdue  { background: var(--status-error-bg);   color: var(--status-error-fg); }
+
+.sub-card__name {
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-snug);
+  color: var(--pink-500);
+}
+.sub-card__price {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: var(--space-2);
+}
+.sub-card__num {
+  font-size: clamp(34px, 9vw, 44px);
+  font-weight: var(--weight-heavy);
+  letter-spacing: var(--tracking-tight);
+  color: var(--ink);
+}
+.sub-card__per { font-size: var(--text-body); color: var(--ink-muted); }
+.sub-card__desc {
+  margin-top: var(--space-1);
+  font-size: var(--text-body-sm);
+  color: var(--ink-muted);
+}
+
+.sub-card__list {
+  list-style: none;
+  margin: var(--space-6) 0 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+.sub-card__list li {
+  position: relative;
+  padding-left: 28px;
+  font-size: var(--text-body);
+  line-height: var(--leading-snug);
+  color: var(--ink-soft);
+}
+.sub-card__list li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 1px;
+  width: 18px;
+  height: 18px;
+  background: var(--pink-500);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / 16px 16px no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / 16px 16px no-repeat;
+}
+
+/* ===== 상태별 액션 ===== */
+.sub-actions { margin-top: var(--space-8); }
+.sub-skel {
+  text-align: center;
+  font-size: var(--text-body-sm);
+  color: var(--ink-muted);
+  padding: var(--space-4) 0;
+}
+.sub-state { display: grid; gap: var(--space-3); }
+.sub-next {
+  margin: 0;
+  text-align: center;
+  font-size: var(--text-body-sm);
+  color: var(--ink-muted);
+}
+.sub-hint {
+  margin: 0;
+  text-align: center;
+  font-size: var(--text-body-sm);
+  line-height: var(--leading-snug);
+  color: var(--ink-muted);
+}
+.sub-hint--warn { color: var(--status-error-fg); }
+
+/* CTA — 핑크 그라데이션 pill */
+.sub-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: var(--btn-h);
+  padding: 0 var(--space-6);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(135deg, var(--pink-400) 0%, var(--pink-500) 55%, var(--pink-600) 100%);
+  color: #fff;
+  font-size: var(--text-body-lg);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-snug);
+  cursor: pointer;
+  box-shadow: var(--shadow-glow-sm);
+  transition: transform var(--duration-snap) var(--ease-spring),
+              box-shadow var(--duration-fast) var(--ease-soft),
+              opacity var(--duration-fast) var(--ease-soft);
+}
+@media (hover: hover) { .sub-cta:hover { box-shadow: var(--shadow-glow); } }
+.sub-cta:active { transform: scale(0.97); }
+.sub-cta--sm { width: auto; min-height: 44px; padding: 0 var(--space-5); font-size: var(--text-body); flex: 0 0 auto; }
+.sub-cta.is-busy { opacity: 0.6; pointer-events: none; }
+
+/* 해지 — 절제된 보조 버튼 */
+.sub-cancel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 46px;
+  padding: 0 var(--space-5);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--ink-muted);
+  font-size: var(--text-body);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+  transition: background var(--duration-snap) var(--ease-soft), color var(--duration-snap) var(--ease-soft);
+}
+@media (hover: hover) { .sub-cancel:hover { background: var(--status-error-bg); color: var(--status-error-fg); } }
+.sub-cancel:active { transform: scale(0.98); }
+.sub-cancel.is-busy { opacity: 0.6; pointer-events: none; }
+
+/* 전화번호 입력 폴백 */
+.sub-phone { margin-top: var(--space-4); display: grid; gap: var(--space-2); }
+.sub-phone__label { font-size: var(--text-caption); color: var(--ink-muted); }
+.sub-phone__row { display: flex; gap: var(--space-2); }
+.sub-phone__input {
+  flex: 1 1 auto;
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: var(--text-body);
+  font-family: var(--font-system);
+}
+.sub-phone__input:focus-visible { outline: 2px solid var(--pink-400); outline-offset: 1px; }
+
+/* ===== 결제 안내 ===== */
+.sub-legal {
+  margin-top: var(--space-8);
+  padding: var(--space-5) var(--space-5);
+  background: var(--bg-soft);
+  border-radius: var(--radius-lg);
+}
+.sub-legal h2 {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--ink);
+}
+.sub-legal ul { margin: 0; padding-left: 18px; display: grid; gap: var(--space-2); }
+.sub-legal li {
+  font-size: var(--text-body-sm);
+  line-height: var(--leading-snug);
+  color: var(--ink-muted);
+}
+.sub-legal strong { color: var(--ink-soft); font-weight: var(--weight-semibold); }
+.sub-legal a { color: var(--pink-600); text-decoration: none; }
+@media (hover: hover) { .sub-legal a:hover { text-decoration: underline; } }
+
+/* ===== toast ===== */
+.sub-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--space-6) + env(safe-area-inset-bottom));
+  transform: translate(-50%, 16px);
+  max-width: calc(100vw - 2 * var(--page-x));
+  padding: 12px 18px;
+  background: var(--neutral-800);
+  color: #fff;
+  font-size: var(--text-body-sm);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  pointer-events: none;
+  z-index: var(--z-toast);
+  transition: opacity var(--duration-fast) var(--ease-soft), transform var(--duration-fast) var(--ease-spring);
+}
+.sub-toast.is-open { opacity: 1; transform: translate(-50%, 0); }
+
+@media (max-width: 480px) {
+  .sub-card { padding: var(--space-6) var(--space-5) var(--space-5); }
+}

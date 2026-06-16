@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="robots" content="noindex">
+  <meta name="view-transition" content="same-origin">
+  <title>구독 · 루미(lumi)</title>
+
+  <link rel="icon" type="image/png" href="/assets/favicon.png">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <script defer src="/js/prod-log.js"></script>
+  <script defer src="/js/auth-fetch.js"></script>
+  <script defer src="/js/error-track.js"></script>
+  <script defer src="/js/sw-register.js"></script>
+  <script defer src="/js/immersive.js"></script>
+  <script defer src="/js/haptic.js"></script>
+  <script defer src="/js/scroll-top.js" data-scroll-top-on-reload></script>
+  <link rel="stylesheet" href="/css/motion.css">
+  <link rel="stylesheet" href="/css/pages/subscribe.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="topbar__back" href="/dashboard" aria-label="뒤로">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+    </a>
+    <h1 class="topbar__title">구독</h1>
+    <button class="topbar__logout" type="button" data-logout aria-label="로그아웃">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+    </button>
+  </header>
+
+  <main class="sub-wrap" role="main">
+    <p class="sub-lead">사진 한 장만 올리면, 캡션·검수·게시까지 루미가 챙겨요.</p>
+
+    <section class="sub-card" aria-label="Pro 요금제">
+      <div class="sub-card__glow" aria-hidden="true"></div>
+      <span class="sub-badge" data-sub-badge hidden></span>
+      <div class="sub-card__name">Pro</div>
+      <div class="sub-card__price"><span class="sub-card__num">₩19,900</span><span class="sub-card__per">/ 월</span></div>
+      <div class="sub-card__desc">매일 SNS 챙기는 사장님을 위한 전부</div>
+      <ul class="sub-card__list">
+        <li>월 게시 30건</li>
+        <li>내 매장 말투 그대로 (학습)</li>
+        <li>8가지 항목 자동 검수 + 재작성</li>
+        <li>베스트 시간 자동 게시</li>
+        <li>인스타그램 + 쓰레드 동시</li>
+        <li>매일 새로 뽑는 네이버 트렌드 해시태그</li>
+        <li>잘되는 가게 분석</li>
+        <li>1:1 카톡 지원</li>
+      </ul>
+
+      <!-- 상태별 액션 — subscribe.js 가 해당 상태 하나만 노출 -->
+      <div class="sub-actions" data-sub-actions>
+        <div class="sub-skel" data-state="loading">불러오는 중…</div>
+
+        <div class="sub-state" data-state="subscribe" hidden>
+          <button class="sub-cta" type="button" data-subscribe>구독하기</button>
+        </div>
+
+        <div class="sub-state" data-state="active" hidden>
+          <p class="sub-next" data-next-billing></p>
+          <button class="sub-cancel" type="button" data-cancel>구독 해지</button>
+        </div>
+
+        <div class="sub-state" data-state="pending" hidden>
+          <p class="sub-hint">결제창에서 카드 등록을 완료하면 구독이 시작돼요.</p>
+          <button class="sub-cta" type="button" data-subscribe>결제 다시 열기</button>
+        </div>
+
+        <div class="sub-state" data-state="pastdue" hidden>
+          <p class="sub-hint sub-hint--warn">최근 자동결제가 실패했어요. 카드 확인 후 다시 시도해주세요.</p>
+          <button class="sub-cta" type="button" data-subscribe>다시 구독하기</button>
+        </div>
+
+        <!-- 셀러 전화번호 미등록 시 노출 (subscribe 가 phone_required 반환) -->
+        <div class="sub-phone" data-phone-wrap hidden>
+          <label class="sub-phone__label" for="sub-phone-input">결제 안내를 받을 휴대폰 번호</label>
+          <div class="sub-phone__row">
+            <input class="sub-phone__input" id="sub-phone-input" type="tel" inputmode="numeric" placeholder="010-0000-0000" autocomplete="tel" data-phone-input>
+            <button class="sub-cta sub-cta--sm" type="button" data-phone-submit>진행</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="sub-legal">
+      <h2>결제 안내</h2>
+      <ul>
+        <li><strong>매월 자동 결제</strong>됩니다 (₩19,900/월). 최초 결제창에서 등록한 카드로 매월 같은 날 청구돼요.</li>
+        <li><strong>언제든 해지</strong>할 수 있어요 — 해지하면 다음 청구부터 결제되지 않습니다.</li>
+        <li>카드 정보는 <strong>PayApp(결제대행)</strong>이 안전하게 처리하며, 루미는 카드번호를 저장하지 않습니다.</li>
+        <li>자세한 내용은 <a href="/terms">이용약관</a> · <a href="/refund">환불정책</a> 참고.</li>
+      </ul>
+    </div>
+  </main>
+
+  <div class="sub-toast" data-toast role="status" aria-live="polite"></div>
+
+  <script defer src="/js/pages/subscribe.js"></script>
+</body>
+</html>
