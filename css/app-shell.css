@@ -1,0 +1,71 @@
+/* app-shell.css — 공유 앱 셸: 데스크톱 좌측 사이드바 + 레이아웃.
+   대시보드와 동일한 사이드바를 settings/trends/history 등 서브페이지에도 입혀 일관성 확보.
+   (모바일은 기존 .topbar + .tabbar 그대로 — 이 파일은 데스크톱 ≥960px 에서만 작동.)
+   ⚠️ 반드시 페이지별 CSS '뒤'에 로드 — 데스크톱에서 옛 .topbar 를 덮어써야 함. */
+
+.sidebar { display: none; }  /* 모바일: 하단 탭바 사용 */
+
+@media (min-width: 960px) {
+  body { display: flex; align-items: flex-start; }
+
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    width: 240px;
+    flex-shrink: 0;
+    padding: var(--space-5) var(--space-4);
+    background: var(--bg);
+    border-right: 1px solid var(--line);
+    overflow-y: auto;
+    z-index: 50;
+  }
+  .sidebar__brand { display: block; margin-bottom: var(--space-5); padding-left: var(--space-2); }
+  .sidebar__brand img { height: 26px; width: auto; }
+  .sidebar__account {
+    display: flex; align-items: center; gap: var(--space-2);
+    padding: var(--space-3) var(--space-2);
+    margin-bottom: var(--space-4);
+    border-radius: var(--radius-md);
+    background: var(--bg-soft);
+  }
+  .sidebar__avatar {
+    width: 32px; height: 32px; flex-shrink: 0;
+    border-radius: var(--radius-full);
+    background: var(--gradient-signature);
+    color: var(--neutral-0, #fff);
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .sidebar__avatar svg { width: 17px; height: 17px; }
+  .sidebar__store {
+    font-size: var(--text-body-sm, 15px); font-weight: var(--weight-semibold);
+    color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .sidebar__nav { display: flex; flex-direction: column; gap: 2px; }
+  .sidebar__link {
+    display: flex; align-items: center; gap: var(--space-3);
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    font-size: var(--text-body-sm, 15px); font-weight: var(--weight-medium);
+    color: var(--ink-soft); text-decoration: none;
+    background: none; border: 0; cursor: pointer; width: 100%; text-align: left;
+    font-family: inherit;
+    transition: background var(--duration-snap) var(--ease-toss), color var(--duration-snap) var(--ease-toss);
+  }
+  .sidebar__link svg { width: 20px; height: 20px; flex-shrink: 0; }
+  .sidebar__link:hover { background: var(--bg-soft); color: var(--ink); }
+  .sidebar__link.is-active { background: var(--pink-50); color: var(--pink-600, var(--pink-500)); font-weight: var(--weight-semibold); }
+  .sidebar__bottom { margin-top: auto; padding-top: var(--space-4); display: flex; flex-direction: column; gap: 2px; }
+  .sidebar__link--sub { font-size: var(--text-caption); color: var(--ink-muted); padding: var(--space-2) var(--space-3); }
+  .sidebar__legal { display: flex; flex-wrap: wrap; gap: 4px 10px; padding: var(--space-3) var(--space-3) 0; }
+  .sidebar__legal a { font-size: var(--text-tiny, 11px); color: var(--ink-muted); text-decoration: none; }
+  .sidebar__legal a:hover { color: var(--ink-soft); text-decoration: underline; }
+
+  /* 데스크톱: 사이드바가 nav 담당 → 모바일 상단바·하단탭바 숨김 */
+  .topbar, .tabbar { display: none; }
+
+  /* 서브페이지 본문(.wrap)이 사이드바 옆 공간을 채우도록 */
+  .wrap { flex: 1; min-width: 0; }
+}
