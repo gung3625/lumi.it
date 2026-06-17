@@ -24,7 +24,9 @@
 // v58: 트렌드 ② — 블로그 트렌드 소스 제거, 쇼핑인사이트 메인 격상 (상품/메뉴 트렌드 중심)
 // v59: css/js cache-first → network-first. cache-first(SWR)는 배포 직후 '새 HTML+옛 CSS'
 //      첫 화면을 만들었음(생 텍스트·거대 SVG 두 차례). netlify 헤더로는 sw 캐시 못 뚫음.
-const CACHE_VERSION = 'lumi-v59';
+// v60: 서브페이지 사이드바 통일 + 앱 푸터 제거 + 설정 캡션 말투 섹션 제거 반영.
+//      옛 SW/캐시가 옛 화면(캡션 말투 등)을 보여주던 것 무효화 (사장님 옛 화면 방지).
+const CACHE_VERSION = 'lumi-v60';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 
 const CSSJS_RE  = /\.(css|js)$/i;
