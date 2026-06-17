@@ -1,7 +1,33 @@
 # 루미(lumi) 인수인계 문서
 
-마지막 업데이트: 2026-05-25 (대청소 + 베타 흐름 개편 + SixShop UI 패턴 적용)
+마지막 업데이트: 2026-05-25 (구조 본문) · **2026-06-17 PayApp 결제 연동 추가**(아래 💳 섹션)
 기준 커밋: `main` 최신
+
+> ⚠️ 이 문서의 구조/스키마/env/트러블슈팅 **본문은 2026-05-25 기준**. 6월 작업(정식출시·3D 리빌드·분석강화·앱셸 통일·PayApp 등)의 세션 단위 변경은 **HANDOVER.md가 living doc** — 거기부터 볼 것. 아키텍처 영향 큰 PayApp만 아래 반영.
+
+---
+
+## 💳 PayApp 결제 연동 (2026-06-17 추가)
+
+월 19,900원 Pro **정기결제**. 방식=**REST**(JS 래퍼 아님), 응답=쿼리스트링(JSON 아님). 상세 스펙 = `docs/payapp-integration.md`.
+
+**환경변수 (Netlify, 모든 컨텍스트)**
+- `PAYAPP_USERID`(판매자 로그인ID = `gung3625`) · `PAYAPP_LINKKEY`(연동 KEY) · `PAYAPP_LINKVAL`(연동 VALUE — 콜백 위변조 검증 전용, 요청에 안 보냄, **로그 금지**)
+- 🔴 LINKKEY/LINKVAL 채팅 평문 노출됨 → **결제 정식 오픈 전 PayApp 콘솔서 재발급 필수**. 등록은 secrets.env→`netlify env:import`→삭제 방식.
+
+**DB** (마이그레이션 `payapp_subscription_columns_and_events` 적용완료)
+- `sellers` +6 컬럼: `subscription_status`(none\|pending\|active\|past_due\|stopped\|cancelled — **CHECK 미설정**: 'DB 체크제약 함정' 교훈) · `payapp_rebill_no` · `payapp_last_mul_no` · `subscription_started_at` · `subscription_cancelled_at` · `next_billing_date`
+- `payapp_events`(신규): `mul_no`(PK=멱등) · rebill_no · seller_id · pay_state · pay_type · price · var1 · raw(jsonb) · created_at. **deny-all RLS**(service role 전용).
+
+**Functions (신규)** + `_shared/payapp.js`(callPayApp 헬퍼)
+- `payapp-subscribe`(Bearer · rebillRegist → `payurl` 리다이렉트) · `payapp-webhook`(공개 · feedbackurl·failurl 공용 · `userid+linkkey+linkval` timing-safe 검증 + `mul_no` 멱등 + `pay_state` 4→active/99→past_due · 응답 `200`+`SUCCESS`) · `payapp-cancel`(Bearer · rebillCancel) · `get-subscription`(Bearer · 상태조회)
+- netlify.toml 라우트: `/api/payapp-subscribe|webhook|cancel` · `/api/get-subscription` · `/subscribe`
+
+**프론트**: `/subscribe`(인증 구독 페이지 — Pro카드+상태별 액션+자동결제 고지). 앱 페이지 공통 셸 = `css/app-shell.css`(데스크톱 사이드바, settings/trends/history 공유).
+
+**외부 통합 추가**: PayApp(`api.payapp.kr/oapi/apiLoad.html`) — 한국 PG, 정기결제 `rebillRegist`/`rebillCancel`/`rebillStop`/`rebillStart`. (Stripe는 한국 사업자 미지원이라 폐기.)
+
+**미완(라이브 전)**: PayApp 콘솔 정기결제 기능 ON·테스트모드 확인 · 노출키 재발급 · 진입 링크(구독 버튼) · 법무 카피 · 실 결제 1건 E2E. → HANDOVER.md §2 참조.
 
 ---
 
