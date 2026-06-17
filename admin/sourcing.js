@@ -33,8 +33,21 @@
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
+  function showAuthErr(title, msg, showLogin) {
+    if (intro) intro.hidden = true;
+    if (result) result.hidden = true;
+    if (loading) loading.hidden = true;
+    var t = document.querySelector('[data-autherr-title]');
+    var m = document.querySelector('[data-autherr-msg]');
+    var l = document.querySelector('[data-login-link]');
+    if (t && title) t.textContent = title;
+    if (m && msg) m.textContent = msg;
+    if (l) l.hidden = !showLogin;
+    if (authErr) authErr.hidden = false;
+  }
+
   var token = getToken();
-  if (!token) { if (intro) intro.hidden = true; if (authErr) authErr.hidden = false; return; }
+  if (!token) { showAuthErr('로그인이 필요해요', '운영자 계정으로 루미에 로그인한 뒤 이용할 수 있어요.', true); return; }
   var authHeaders = { Authorization: 'Bearer ' + token };
 
   // 간단 마크다운 → HTML (제목/리스트/볼드/번호) — 추천 텍스트용. 인라인 style 미사용.
@@ -93,7 +106,8 @@
       })
       .then(function (res) {
         running = false; loading.hidden = true;
-        if (res.status === 401 || res.status === 403) { authErr.hidden = false; toast('운영자 권한이 없어요'); return; }
+        if (res.status === 401) { showAuthErr('로그인이 필요해요', '세션이 만료됐어요. 다시 로그인해주세요.', true); return; }
+        if (res.status === 403) { showAuthErr('운영자 권한이 없어요', '이 계정은 운영자가 아니에요. (로그인 계정을 확인해주세요)', false); return; }
         if (!res.ok) { intro.hidden = false; toast((res.j && res.j.error) || '분석에 실패했어요'); return; }
         render(res.j);
       })
