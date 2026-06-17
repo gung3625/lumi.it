@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="description" content="루미 admin — 매입 분석">
+  <title>매입 분석 · 루미 admin</title>
+
+  <link rel="icon" type="image/png" href="/assets/favicon.png">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <script defer src="/js/prod-log.js"></script>
+  <script defer src="/js/auth-fetch.js"></script>
+  <script defer src="/js/error-track.js"></script>
+  <link rel="stylesheet" href="/admin/sourcing.css">
+</head>
+<body>
+  <main class="adm">
+    <header class="adm__top">
+      <a class="adm__logo" href="/dashboard" aria-label="루미 대시보드">
+        <picture><source srcset="/assets/logo-wordmark.webp" type="image/webp"><img src="/assets/logo-wordmark.png" alt="lumi" width="56" height="28"></picture>
+      </a>
+      <span class="adm__badge">ADMIN</span>
+      <h1 class="adm__title">매입 분석</h1>
+    </header>
+
+    <!-- 비관리자/미로그인 -->
+    <section class="adm__autherr" data-auth-err hidden>
+      <h2>운영자 전용</h2>
+      <p>이 페이지는 운영자만 볼 수 있어요. <a href="/dashboard">대시보드로 돌아가기</a></p>
+    </section>
+
+    <!-- 시작 -->
+    <section class="adm__intro" data-intro>
+      <p class="adm__lead">지금 <strong>시점·계절·네이버 실시간 검색량</strong>을 종합해 <strong>매입하면 좋을 상품</strong>을 추천해요.</p>
+      <button class="adm__run" type="button" data-run>분석 실행</button>
+      <p class="adm__note">네이버 검색량 조회 + AI 종합이라 10~30초 걸려요.</p>
+    </section>
+
+    <!-- 결과 -->
+    <section class="adm__result" data-result hidden>
+      <div class="adm__meta">
+        <span class="adm__chip" data-meta-season></span>
+        <span class="adm__when" data-meta-when></span>
+        <button class="adm__rerun" type="button" data-run>다시 분석</button>
+      </div>
+
+      <h2 class="adm__h2">지금 뜨는 키워드 <span class="adm__h2sub">네이버 월 검색량</span></h2>
+      <div class="adm__kw-wrap">
+        <p class="adm__empty" data-kw-empty hidden>네이버 검색량 데이터가 없어요(API 키 미설정 등). 아래 AI 추천은 시즌 일반 분석이에요.</p>
+        <table class="adm__kw" data-kw-table hidden>
+          <thead><tr><th>키워드</th><th class="num">월 검색량</th><th>경쟁</th></tr></thead>
+          <tbody data-kw-body></tbody>
+        </table>
+      </div>
+
+      <h2 class="adm__h2">AI 매입 추천</h2>
+      <div class="adm__rec" data-rec></div>
+
+      <p class="adm__disclaimer">※ 도매토피아 자동 매칭·쿠팡 판매가는 다음 단계(스크래퍼/파트너스 API). 지금은 수요 발굴 + 매입 방향까지.</p>
+    </section>
+
+    <!-- 로딩 -->
+    <div class="adm__loading" data-loading hidden>
+      <span class="adm__spinner" aria-hidden="true"></span>
+      <span data-loading-text>분석 중… (네이버 검색량 + AI 종합, 최대 30초)</span>
+    </div>
+  </main>
+
+  <div class="adm__toast" data-toast role="status" aria-live="polite"></div>
+
+  <script defer src="/admin/sourcing.js"></script>
+</body>
+</html>
