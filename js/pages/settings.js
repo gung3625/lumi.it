@@ -582,45 +582,6 @@
         }
       });
 
-      // ── 캡션 말투 카드 ──
-      const toneInput = document.querySelector('[data-tone-input]');
-      const toneCount = document.querySelector('[data-tone-count]');
-      const toneSaveBtn = document.querySelector('[data-tone-save]');
-      let toneOriginal = '';
-      function refreshToneState() {
-        const v = toneInput.value;
-        toneCount.textContent = `${v.length} / 500`;
-        toneSaveBtn.disabled = v.trim() === toneOriginal.trim();
-      }
-      toneInput.addEventListener('input', refreshToneState);
-      document.querySelectorAll('[data-tone-example]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          toneInput.value = btn.textContent.trim();
-          toneInput.focus();
-          refreshToneState();
-        });
-      });
-      toneSaveBtn.addEventListener('click', async () => {
-        const value = toneInput.value.trim();
-        toneSaveBtn.disabled = true;
-        toneSaveBtn.textContent = '저장 중…';
-        try {
-          const r = await fetch('/api/update-profile', {
-            method: 'POST',
-            headers: { ...authHeaders, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ toneRequest: value }),
-          });
-          if (!r.ok) throw new Error('저장 실패');
-          toneOriginal = value;
-          toast(value ? '말투를 저장했어요' : '말투 지시를 비웠어요');
-        } catch (e) {
-          toast(e.message || '저장 실패');
-        } finally {
-          toneSaveBtn.textContent = '저장';
-          refreshToneState();
-        }
-      });
-
       // 2026-05-20 #1: me.js 응답의 igStatus.username 보관 — loadIg 에서 활용.
       let connectedIgUsername = null;
       let connectedThreadsUsername = null;
@@ -646,10 +607,6 @@
           deletionPending = !!s.deletionPending;
           deletionScheduledAt = s.deletionScheduledAt || null;
           renderDeleteUi();
-          // 캡션 말투 prefill
-          toneOriginal = (s.toneRequest || '').trim();
-          toneInput.value = toneOriginal;
-          refreshToneState();
         } catch (e) {
           toast('정보를 불러오지 못했어요');
         }
