@@ -42,7 +42,7 @@
     var l = document.querySelector('[data-login-link]');
     if (t && title) t.textContent = title;
     if (m && msg) m.textContent = msg;
-    if (l) l.hidden = !showLogin;
+    if (l) l.hidden = false; // 인증 실패 상태에선 항상 '로그인' 노출 (재로그인 가능)
     if (authErr) authErr.hidden = false;
   }
 
