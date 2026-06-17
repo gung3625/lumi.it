@@ -1,4 +1,4 @@
-# 루미(lumi) 인수인계 — 2026-06-16
+# 루미(lumi) 인수인계 — 2026-06-17
 
 > 새 로컬/세션이 이어받기 위한 문서. `~/.claude` 자동 메모리는 머신 간 동기화 안 되므로 이 파일이 단일 소스.
 > 새 세션 첫 메시지에 이 내용을 붙여넣거나, repo에서 `git pull` 후 이 파일을 읽게 할 것.
@@ -14,22 +14,42 @@
 
 ## 1. lumi 현재 배포 상태 (전부 main 머지 완료)
 
+### ⭐ 2026-06-17 세션 (PayApp 결제 백엔드 + 앱 셸 통일 + 정리)
+
+**A. PayApp 정기결제 백엔드 — 구현·배포 완료** (`abb297e`·`9fccf2a`):
+- env 등록: `PAYAPP_USERID`(=`gung3625`)·`PAYAPP_LINKKEY`·`PAYAPP_LINKVAL` — secrets.env(루트, gitignore `*.env`)에 넣고 `netlify env:import` 후 파일 삭제(시크릿 코드/로그/repo 무노출). 🔴 **LINKKEY/LINKVAL은 채팅에 평문 노출됨 → 결제 정식 오픈 전 PayApp 콘솔서 재발급 필수.**
+- DB 마이그레이션 적용(`payapp_subscription_columns_and_events`): `sellers` 구독컬럼 6개(`subscription_status` none|pending|active|past_due|stopped|cancelled · `payapp_rebill_no` · `payapp_last_mul_no` · `subscription_started_at` · `subscription_cancelled_at` · `next_billing_date`) + `payapp_events`(mul_no PK 멱등, deny-all RLS). ★status에 CHECK 미설정(인수 'DB 체크제약 함정' 교훈).
+- 함수: `payapp-subscribe`(rebillRegist→`payurl` 리다이렉트) / `payapp-webhook`(feedbackurl·failurl 공용, `userid+linkkey+linkval` timing-safe 검증 + mul_no 멱등 + `pay_state`=4→active / =99→past_due) / `payapp-cancel`(rebillCancel) / `get-subscription`(상태조회) + `_shared/payapp.js`. netlify.toml `/api/payapp-*`·`/api/get-subscription`·`/subscribe` 라우트.
+- 스펙: [docs/payapp-integration.md](docs/payapp-integration.md) — 1차 source 정독본. 방식=**REST**(JS 래퍼 아님), 응답=쿼리스트링(JSON 아님), 결제수단 `card`.
+- 독립 보안리뷰+수정: 금액검증 fail-closed(price=0/누락 거부), **멱등 활성화-우선**(insert먼저면 UPDATE 실패 시 재시도가 멱등게이트에 막혀 활성화 영구누락), raw 감사(linkval/linkkey/userid 제외), pending 저장 실패 시 결제 진행 차단.
+- 프론트: **`/subscribe`** (인증 구독페이지 — Pro카드 + 상태별 액션[미구독/구독중/진행중/실패] + 자동결제 고지). lumi 정체성 유지. 미리보기 QA 완료.
+- ⚠️ **미완**: ① 실 결제 E2E 미검증 — PayApp 콘솔 **정기결제 기능 ON + 테스트모드 유무** 확인 후 가능(둘 다 문서 미기재, 안 켜졌으면 rebillRegist state=0) ② **진입 링크 없음**(직접 `/subscribe`만 — 대시보드/설정 "구독" 버튼 미추가) ③ **법무 카피**(pricing "1:1 안내"→자동결제 고지, terms 정기결제·해지 조항) 미반영.
+
+**B. 앱 셸 통일 + 정리**:
+- `css/app-shell.css` 신설 — settings/trends/history에 대시보드 동일 **데스크톱 좌측 사이드바**(≥960px만, 모바일 무영향). 사장님 "설정 누르면 옛 화면" 해소 (`d386028`). ⚠️ 사이드바 매장명은 서브페이지선 "내 매장" 기본값(대시보드만 실명 — 추후 각 페이지 JS에서 채우면 됨).
+- 앱 6페이지(settings/trends/history/insights/comments/register-product) **footer 제거**(`8ce394b`) — 대시보드 일관. 법적링크는 사이드바 하단, 사업자정보는 공개페이지(beta/index/pricing)에 유지. (`.app-footer` CSS는 legal.css/beta.css에 잔존 — beta가 씀, 무해.)
+- 설정 **캡션 말투 섹션 제거**(HTML+JS, `31f24ef`). `auth.js` CORS `NODE_ENV` 폴백 제거(보안 M3 — 프로덕션 localhost 노출 차단, `31d8605`). **SW v59→v60**(`8cf4fac` — 위 변경들 옛 캐시 무효화).
+
+**C. 경쟁/시장 조사 (코드 변경 X — 결정 대기)**:
+- **autoke.ai/ko 전수 분석** → lumi 가져올 것(우선순위): ①문제 프레임 3종("도구는 5개 성과는 0" 등) ②정량 숫자 대비(대행사 월 수백 vs 19,900 — **정직하게**, 보장수치 금지) ③FAQ 보강(편집/연동필수/해지) ④CTA "언제든 해지" ⑤펀치 클로징("비결은 루미가, 장사는 사장님이"). **안 가져올 것**: 가짜 사회적증명(50개 브랜드 — lumi 0고객+가짜후기 금지), 미니멀 흑백(핑크/시그니처 유지), 크레딧 다단계 요금(단일플랜 결정). → **구현은 사장님 픽 대기.**
+- **탭나우=TapNow(tapnow.ai)** 조사: AI 비주얼·영상 광고 생성 "크리에이티브 캔버스"(글로벌, 중국계 추정). lumi 직접경쟁 아님(레이어 다름 — 비주얼생성 vs 사진기반 캡션). 단 **영상합성 Phase2(Veo/Sora)와 겹침** → build-vs-buy 참고감.
+
 ### ⭐ 2026-06-16 세션 (대시보드 데스크톱 재설계 + PayApp 결제 검토)
 
 **A. 대시보드 재설계 — autoke(autoke.ai/ko/calendar) 벤치마킹**:
-- 커밋 `be96420`(캘린더 중심 재설계, **push·배포 완료**) + `7a14aa2`(데스크톱 사이드바·위젯·실측비율·푸터제거, **로컬 커밋 / 미push / 미배포**).
+- 커밋 `be96420`(캘린더 중심 재설계) + `7a14aa2`(데스크톱 사이드바·위젯·실측비율·푸터제거) — **둘 다 push·배포 완료**(6/17 확인).
 - 구조: **모바일** = 하단 탭바 + 세로 피드 / **데스크톱** = 좌측 사이드바(홈·트렌드·히스토리·설정) + 캘린더 2단(좌 캘린더 | 우 선택일 패널).
 - ★autoke는 **레이아웃(구조)만 참고**, 색·질감은 **lumi 정체성 유지**(시그니처 그라데이션·종이질감·warm-glow·핑크). ← 이거 한 번 놓쳐서 사장님 강하게 지적함. 미니멀 흑백으로 가지 말 것.
 - autoke 실측 반영: 캘린더 셀 88×112px·날짜 좌상단, 사이드바 ~240px, 메인 max 1280 중앙(사이드바 flex), '새 게시물' 버튼 작게.
 - 우측 정보 위젯(이번 주 반응·새 댓글 + '전체→' 링크) = 데스크톱 여백 활용(사장님 아이디어). 모바일은 칩. 위젯이 사이드바와 중복돼 사이드바에서 인사이트·댓글 뺌. 캘린더 날짜 점 = 예약●/게시✓/실패!.
-- ⚠️ **mock 데이터로만 검증** — 실 셀러 계정 e2e(실 예약으로 캘린더 점·날짜 탭·`register-product?date=` 처리) 미검증. **다음 세션: e2e 후 `git push`로 `7a14aa2` 배포.** 라이브엔 지금 `be96420`(데스크톱 미흡 첫 버전)만 떠 있음.
+- 배포는 완료(라이브=재설계판). ⚠️ 단 **실 셀러 계정 e2e**(실 예약으로 캘린더 점·날짜 탭·`register-product?date=` 처리)는 여전히 미검증 — mock 으로만 봄(긴급 아님, 실셀러 쓰면 자연 검증).
 
 **B. PayApp 결제 연동 검토 (Stripe 폐기 → PayApp)**:
 - ★Stripe = **한국 사업자 미지원**(원화·가맹점 계정 불가) → lumi(404-09-66416) 사용 불가. 폐기.
 - **PayApp**(docs.payapp.kr) 선택 — 한국 PG, **정기결제 지원**(`rebillRegist`/`Cancel`/`Stop`/`Start`). REST `api.payapp.kr/oapi/apiLoad.html` + `feedbackurl` 콜백(HTTP200+'SUCCESS', 멱등은 mul_no/var1·var2). 결제수단 card·kakaopay·naverpay 등.
 - 설계: 함수 3개(`payapp-subscribe`=rebillRegist / `payapp-feedback`=콜백·linkval검증 / `payapp-cancel`) + `sellers` 구독 컬럼(status·rebill_no·next_billing_date) + 프론트 구독 버튼. 정책 "카드 등록 X" → 정기결제로 변경 필요.
 - 인증 env: `PAYAPP_USERID`·`PAYAPP_LINKKEY`·`PAYAPP_LINKVAL`.
-- **코드 미구현** — env 등록 후 연동 시작.
+- **✅ 백엔드 구현·배포 완료** — 상세는 위 **2026-06-17 세션 A항목**(함수·DB·env·보안리뷰·`/subscribe`). 남은 건 콘솔 확인·재발급·진입링크·법무.
 
 ### 2026-06-11~12 세션 (정식출시·포지셔닝·분석강화·3D리빌드)
 
@@ -110,6 +130,7 @@
 - **✅ 코어 파이프라인 서버 실작동 검증됨**(6/12, E 항목): reservations 직접 insert → process-and-post → 24초 분석→캡션→draft. **남은 건 앱 브라우저 업로드 1회**(register-product 화면→결과, OpenAI 키 들어온 뒤).
 - **✅ trends cron 해결**(6/08~12): 네이버 직접+Gemini 의미감사. 8개 카테고리 청정 적재. food 오염 근절.
 - **✅ 3D 인덱스 교체 완료**(6/15, `d240854`~`cb60c36` #246~#251): 3D 리빌드를 정식 index로 승격, 기존은 `index-classic.html` 백업. (상세 G 항목)
+- **🔶 PayApp 결제 — 백엔드 완성·배포(6/17 A항목). 라이브 전 남은 것**: ① 🔴 PayApp 콘솔서 **정기결제 기능 ON + 테스트모드 유무** 확인(문서 미기재) ② 🔴 노출된 **LINKKEY/LINKVAL 재발급**(채팅 평문 노출) ③ **진입 링크**(대시보드/설정 "구독" 버튼 — 지금 `/subscribe` 직접만) ④ **법무 카피**(pricing 자동결제 고지·terms 정기결제/해지 조항) ⑤ **실 결제 1건 E2E**. `PAYAPP_USERID`=gung3625, LINKKEY/LINKVAL 등록됨.
 - **가상 리뷰 — 미결(사장님 보류)**: 가짜 후기는 표시광고법 리스크라 권하지 않음. '사용 예시'·창업자 메시지 대안 제시, 사장님 선택 대기.
 - **앱인토스 출시 [보류]**: 외부 OAuth(카카오/메타) 금지가 걸림돌. 보류.
 - **앱인토스 출시 [보류]**: 외부 OAuth(카카오/메타) 금지가 걸림돌. 워크어라운드 아이디어 = 웹에서 인스타 1회 연동 → 미니앱은 Supabase Vault에 저장된 토큰 사용(기술적으로 유효). 사장님이 "잠시 보류"함.
@@ -140,10 +161,12 @@
 
 ## 6. 새 세션에서 할 것 (우선순위)
 
-1. **🔴 OpenAI 새 키 등록·검증** — 사장님이 키 주면(§2 참조) Netlify 교체+초안 캡션 E2E. 캡션 생성 복구의 마지막 열쇠.
-2. (OpenAI 키 후) **앱에서 초안 사진 1장** — 브라우저 업로드 경로 최종 확인.
-3. **유통/첫 고객** — 제품 리스크는 거의 소진. 남은 승부=①첫 30명에게 닿는 발 ②한 달 뒤에도 쓰게 만드는 캡션 품질. (내 평가: 첫 10명 60~70%, 50명 30~40%, 500명 10~15% — 일반 솔로SaaS의 10배. 원가 0이라 런웨이 무한.)
-4. (사장님 선택 대기) 통신판매업 전화번호 증빙(BRN+전화번호 함께 나오는 문서), 가상리뷰 방식, performance-rls.sql.
+1. **🔴 OpenAI 새 키 등록·검증** — 사장님이 키 주면(§2 참조) 등록(6/17 확립 **secrets.env→`netlify env:import`→삭제** 방식)+빈커밋 재배포+초안 캡션 E2E. 캡션 생성 복구의 마지막 열쇠.
+2. **PayApp 결제 마무리** — 사장님: PayApp 콘솔 정기결제 ON+테스트모드 확인 + 노출키 재발급. 제가: 실 결제 1건 E2E + **진입 링크(구독 버튼)** + **법무 카피**. (§2 PayApp 항목)
+3. **autoke서 가져올 카피** — 문제프레임·숫자대비·FAQ보강·CTA"언제든해지"·펀치 클로징 (§1 2026-06-17 C항목). index/pricing 작업이라 리스크 낮음. 사장님 "ㄱㄱ" 하면 우선순위대로.
+4. (OpenAI 키 후) **앱에서 초안 사진 1장** — 브라우저 업로드 경로 최종 확인.
+5. **유통/첫 고객** — 제품 리스크는 거의 소진. 남은 승부=①첫 30명에게 닿는 발 ②한 달 뒤에도 쓰게 만드는 캡션 품질.
+6. (사장님 선택 대기) 통신판매업 전화번호 증빙(BRN+전화번호 함께 나오는 문서), 가상리뷰 방식, performance-rls.sql.
 
 ## 벤치마크 v1.1 — 경쟁 계정 분석 (2026-06-11)
 - **인사이트 4번째 탭** "벤치마크": 궁금한 가게 인스타 등록(최대 3개) → 분석 → 나 vs 상대 비교표 + AI 해석(차이·성공 공식·이번 주 제안) + 초안 CTA.
