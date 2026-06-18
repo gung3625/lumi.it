@@ -65,6 +65,7 @@ const SYSTEM = [
   '2) 검색량 높아도 "구매의도"가 아닌 "정보성 도구" 검색(예: 계산기=대출/연봉계산기)이면 skipped.',
   '3) 경쟁력 = 수요(쿠팡 판매+실구매 검색) × 순마진 × 리뷰벽(상위 리뷰 적을수록 신규 진입 쉬움). 브랜드 강세(리뷰벽 높음)라도 품질/가격 우위 가능하면 grade="고난도"로 살림.',
   '4) 작고 가벼운(배송비 유리) 상품 가산점. 부피 큰 저가품은 감점(택배가 마진 잠식).',
+  '5) 계절상품=true는 지금이 제철이라 수요가 급증하는 시기다. 마진·경쟁이 비슷하면 계절상품을 우선 추천하고 grade를 한 단계 가산. why에 "제철 수요" 근거를 넣어라.',
   '',
   '== 출력(JSON만) ==',
   '{"picks":[{"keyword","grade":"강력추천|추천|고난도|보류","priceLine":"도매 N원 → 권장 M원에 판매 (순마진 X%, 건당 ₩Y)","why":"왜 추천:수요근거+마진+경쟁상황 1~2문장","caution":"주의/차별화/번들·인증 포인트"}],"skipped":[{"keyword","reason"}]}',
@@ -80,11 +81,12 @@ exports.handler = async (event) => {
     return err(401, '인증 실패');
   }
 
-  let candidates, wantEmail = false;
+  let candidates, wantEmail = false, season = '';
   try {
     const parsed = JSON.parse(event.body || '{}');
     candidates = Array.isArray(parsed.candidates) ? parsed.candidates.slice(0, 20) : null;
     wantEmail = parsed.email === true;
+    season = typeof parsed.season === 'string' ? parsed.season : '';
   } catch (_) { return err(400, '잘못된 요청 형식'); }
   if (!candidates || !candidates.length) return err(400, 'candidates 배열이 필요합니다.');
 
@@ -98,9 +100,10 @@ exports.handler = async (event) => {
   }
 
   // 2) 가격분석 계산 (룰북 공식 — 결정적). 키워드별로 매핑해 뒤에서 Gemini 결과에 병합.
-  const pricingByKw = {};
+  const pricingByKw = {}, seasonalByKw = {};
   for (const c of candidates) {
     pricingByKw[c.kw] = computePricing(c.domeLow, c.medPrice);
+    seasonalByKw[c.kw] = !!c.seasonal;
   }
 
   // 3) Gemini 분석 (마진 숫자는 위 계산값을 그대로 전달 — 재계산 X)
@@ -111,6 +114,7 @@ exports.handler = async (event) => {
     도매_샘플: (c.domeSample || []).map((d) => ({ 이름: d.name, 도매가: d.w })),
     네이버_월검색: c.naverVolume,
     가격분석: pricingByKw[c.kw],
+    계절상품: !!c.seasonal,
   }));
 
   let report = null, llmErr = null;
@@ -133,6 +137,7 @@ exports.handler = async (event) => {
       for (const pk of report.picks) {
         const pr = pricingByKw[pk.keyword];
         if (pr) { pk.pricing = pr; }
+        pk.seasonal = !!seasonalByKw[pk.keyword];
       }
     }
   } catch (e) {
@@ -159,7 +164,8 @@ exports.handler = async (event) => {
       const items = report.picks.map((p, i) => (
         '<div style="margin:0 0 14px;padding:14px 16px;border:1px solid #eee;border-radius:12px">' +
         '<div style="font-size:15px;font-weight:800;color:#222">' + (i + 1) + '. ' + esc(p.keyword) +
-        ' <span style="font-size:12px;font-weight:700;color:#fff;background:' + gradeColor(p.grade) + ';border-radius:980px;padding:2px 10px;margin-left:6px">' + esc(p.grade || '') + '</span></div>' +
+        ' <span style="font-size:12px;font-weight:700;color:#fff;background:' + gradeColor(p.grade) + ';border-radius:980px;padding:2px 10px;margin-left:6px">' + esc(p.grade || '') + '</span>' +
+        (p.seasonal ? ' <span style="font-size:12px;font-weight:700;color:#fff;background:#e8820c;border-radius:980px;padding:2px 10px;margin-left:4px">🌞 제철</span>' : '') + '</div>' +
         priceBox(p.pricing) +
         (p.why ? '<div style="font-size:13px;color:#444;line-height:1.6;margin-top:6px">→ ' + esc(p.why) + '</div>' : '') +
         (p.caution ? '<div style="font-size:12px;color:#a1455f;line-height:1.6;margin-top:4px">⚠ ' + esc(p.caution) + '</div>' : '') +
@@ -168,6 +174,7 @@ exports.handler = async (event) => {
       const html = '<div style="max-width:600px;margin:0 auto;font-family:system-ui,-apple-system,sans-serif">' +
         '<h2 style="color:#C8507A;font-size:18px;margin-bottom:4px">🛒 오늘의 매입 분석 — ' + today + '</h2>' +
         '<p style="font-size:13px;color:#666;margin-top:0">네이버 검색량 + 쿠팡 경쟁 + 도매토피아 매입가 종합. 경쟁력 순.</p>' +
+        (season ? '<p style="font-size:13px;color:#e8820c;font-weight:700;margin:0 0 10px">🌞 이번 계절: ' + esc(season) + ' — 제철 상품 포함</p>' : '') +
         items +
         '<p style="font-size:11px;color:#999;margin-top:16px">※ "검증 필요" 마진은 같은 스펙 제품 도매가 재확인 권장. 루미 소싱봇 자동 생성.</p></div>';
       const resend = new Resend(process.env.RESEND_API_KEY);
