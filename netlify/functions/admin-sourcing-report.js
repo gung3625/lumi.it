@@ -31,18 +31,23 @@ function won(n) { return Math.round(n / 10) * 10; }
 function computePricing(wholesale, market) {
   if (!wholesale || !market || wholesale <= 0 || market <= 0) return null;
   const p = PRICING;
-  const varRate = p.feeRate + p.adRate + p.returnRate; // 판매가 비례 비용
-  const netAtMarket = market - wholesale - market * varRate - p.ship - p.pack; // 시장가에 팔 때 건당 순이익
-  const marginAtMarket = market > 0 ? netAtMarket / market : 0;
-  const floor = (wholesale + p.ship + p.pack) / (1 - varRate - p.targetMargin); // 25% 마진 달성 최소판매가
+  const w = Math.round(wholesale), m = Math.round(market);
+  const fees = Math.round(m * p.feeRate);            // 판매수수료+결제+VAT
+  const adRet = Math.round(m * (p.adRate + p.returnRate)); // 광고+반품 예비
+  const logi = p.ship + p.pack;                      // 택배+포장
+  const cost = w + fees + adRet + logi;              // 총원가
+  const net = m - cost;                              // 건당 순이익
+  const marginPct = Math.round((net / m) * 100);
+  const floor = (w + p.ship + p.pack) / (1 - p.feeRate - p.adRate - p.returnRate - p.targetMargin); // 25% 손익선
   return {
-    매입가: Math.round(wholesale),
-    시장가: Math.round(market),
-    권장판매가: won(market), // 시장 경쟁가에 맞춤
-    예상순마진율: Math.round(marginAtMarket * 100),
-    예상순이익: won(netAtMarket),
-    마진25_최소판매가: won(floor),
-    번들필요: marginAtMarket < p.targetMargin, // 단품으론 25% 미달 → 묶음/유료배송 권장
+    매입가: w,
+    시장가: m,
+    권장판매가: won(m),                               // 시장 경쟁가에 맞춤
+    예상순마진율: marginPct,
+    예상순이익: net,
+    마진25_최소판매가: won(floor),                    // 이 밑으로는 25% 마진 불가
+    번들필요: marginPct < p.targetMargin * 100,       // 단품 25% 미달 → 묶음/유료배송
+    원가구성: { 매입: w, 수수료VAT: fees, 광고반품: adRet, 택배포장: logi, 총원가: cost }, // 가격 근거 분해
   };
 }
 
@@ -68,8 +73,9 @@ const SYSTEM = [
   '5) 계절상품=true는 지금이 제철이라 수요가 급증하는 시기다. 마진·경쟁이 비슷하면 계절상품을 우선 추천하고 grade를 한 단계 가산. why에 "제철 수요" 근거를 넣어라.',
   '',
   '== 출력(JSON만) ==',
-  '{"picks":[{"keyword","grade":"강력추천|추천|고난도|보류","priceLine":"도매 N원 → 권장 M원에 판매 (순마진 X%, 건당 ₩Y)","why":"왜 추천:수요근거+마진+경쟁상황 1~2문장","caution":"주의/차별화/번들·인증 포인트"}],"skipped":[{"keyword","reason"}]}',
-  'priceLine은 들어온 매입가/권장판매가/예상순마진율/예상순이익을 그대로 써라(반올림 OK). 번들필요=true면 caution에 "묶음 판매로 객단가↑" 명시. picks는 순마진·수요 종합 경쟁력 순.',
+  '{"picks":[{"keyword","grade":"강력추천|추천|고난도|보류","priceReason":"이 가격을 권장한 근거 1~2문장","why":"왜 추천:수요근거+마진+경쟁상황 1~2문장","caution":"주의/차별화/번들·인증 포인트"}],"skipped":[{"keyword","reason"}]}',
+  'priceReason = 권장판매가를 "왜 그 가격으로" 잡았는지 분석한다. 반드시 이 관점으로: (a) 천장 = 쿠팡 시세(이 이상은 안 팔림), (b) 바닥 = 마진25_최소판매가(이 밑은 25% 마진 불가), (c) 시세에 팔면 순마진 몇 %인지 + 언더컷/인상 여력. 예: "쿠팡 시세 13,900원이 천장, 25% 손익선 12,500원이 바닥 → 시세 매칭 시 30% 확보, 초기 노출용 500~1,000원 언더컷 여력".',
+  '번들필요=true면 priceReason에 "단품은 손익선 위라 묶음/유료배송으로 객단가↑ 필요"를 넣어라. picks는 순마진·수요 종합 경쟁력 순.',
 ].join('\n');
 
 exports.handler = async (event) => {
@@ -158,6 +164,7 @@ exports.handler = async (event) => {
         return '<div style="font-size:13px;color:#333;background:#faf3f6;border-radius:8px;padding:8px 12px;margin-top:8px">' +
           '도매 <b>' + num(pr.매입가) + '원</b> → 권장판매 <b>' + num(pr.권장판매가) + '원</b>' +
           ' <span style="color:' + mColor + ';font-weight:800">순마진 ' + pr.예상순마진율 + '% (건당 ' + num(pr.예상순이익) + '원)</span>' +
+          (pr.원가구성 ? '<div style="font-size:11px;color:#888;margin-top:5px">원가: 매입 ' + num(pr.원가구성.매입) + ' + 수수료·VAT ' + num(pr.원가구성.수수료VAT) + ' + 택배·포장 ' + num(pr.원가구성.택배포장) + ' + 광고·반품 ' + num(pr.원가구성.광고반품) + ' = ' + num(pr.원가구성.총원가) + '원 → 권장가의 나머지가 순이익</div>' : '') +
           (pr.번들필요 ? '<div style="font-size:12px;color:#a1455f;margin-top:3px">※ 단품 마진 약함 — 25% 내려면 ' + num(pr.마진25_최소판매가) + '원, 묶음/유료배송 권장</div>' : '') +
           '</div>';
       };
@@ -167,6 +174,7 @@ exports.handler = async (event) => {
         ' <span style="font-size:12px;font-weight:700;color:#fff;background:' + gradeColor(p.grade) + ';border-radius:980px;padding:2px 10px;margin-left:6px">' + esc(p.grade || '') + '</span>' +
         (p.seasonal ? ' <span style="font-size:12px;font-weight:700;color:#fff;background:#e8820c;border-radius:980px;padding:2px 10px;margin-left:4px">🌞 제철</span>' : '') + '</div>' +
         priceBox(p.pricing) +
+        (p.priceReason ? '<div style="font-size:12px;color:#555;line-height:1.6;margin-top:5px">💡 <b>가격 근거:</b> ' + esc(p.priceReason) + '</div>' : '') +
         (p.why ? '<div style="font-size:13px;color:#444;line-height:1.6;margin-top:6px">→ ' + esc(p.why) + '</div>' : '') +
         (p.caution ? '<div style="font-size:12px;color:#a1455f;line-height:1.6;margin-top:4px">⚠ ' + esc(p.caution) + '</div>' : '') +
         '</div>'
