@@ -11,6 +11,7 @@
 
 const { fetchRelatedKeywords } = require('./_shared/naver-ad-keyword-tool');
 const { llmChat } = require('./_shared/llm-call');
+const { Resend } = require('resend');
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -45,10 +46,11 @@ exports.handler = async (event) => {
     return err(401, '인증 실패');
   }
 
-  let candidates;
+  let candidates, wantEmail = false;
   try {
     const parsed = JSON.parse(event.body || '{}');
     candidates = Array.isArray(parsed.candidates) ? parsed.candidates.slice(0, 20) : null;
+    wantEmail = parsed.email === true;
   } catch (_) { return err(400, '잘못된 요청 형식'); }
   if (!candidates || !candidates.length) return err(400, 'candidates 배열이 필요합니다.');
 
@@ -89,10 +91,43 @@ exports.handler = async (event) => {
     llmErr = e && e.message ? e.message : 'LLM 분석 실패';
   }
 
+  // 이메일 발송 (cron/전체 실행 시 email:true)
+  let emailed = false;
+  if (wantEmail && report && Array.isArray(report.picks) && report.picks.length && process.env.RESEND_API_KEY) {
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const gradeColor = (g) => (g && g.indexOf('강력') >= 0) ? '#C8507A' : (g && g.indexOf('추천') >= 0) ? '#D87595' : '#8a8a8a';
+      const items = report.picks.map((p, i) => (
+        '<div style="margin:0 0 14px;padding:14px 16px;border:1px solid #eee;border-radius:12px">' +
+        '<div style="font-size:15px;font-weight:800;color:#222">' + (i + 1) + '. ' + esc(p.keyword) +
+        ' <span style="font-size:12px;font-weight:700;color:#fff;background:' + gradeColor(p.grade) + ';border-radius:980px;padding:2px 10px;margin-left:6px">' + esc(p.grade || '') + '</span>' +
+        (p.margin ? ' <span style="font-size:13px;color:#C8507A;font-weight:700">' + esc(p.margin) + '</span>' : '') + '</div>' +
+        (p.why ? '<div style="font-size:13px;color:#444;line-height:1.6;margin-top:6px">→ ' + esc(p.why) + '</div>' : '') +
+        (p.caution ? '<div style="font-size:12px;color:#a1455f;line-height:1.6;margin-top:4px">⚠ ' + esc(p.caution) + '</div>' : '') +
+        '</div>'
+      )).join('');
+      const html = '<div style="max-width:600px;margin:0 auto;font-family:system-ui,-apple-system,sans-serif">' +
+        '<h2 style="color:#C8507A;font-size:18px;margin-bottom:4px">🛒 오늘의 매입 분석 — ' + today + '</h2>' +
+        '<p style="font-size:13px;color:#666;margin-top:0">네이버 검색량 + 쿠팡 경쟁 + 도매토피아 매입가 종합. 경쟁력 순.</p>' +
+        items +
+        '<p style="font-size:11px;color:#999;margin-top:16px">※ "검증 필요" 마진은 같은 스펙 제품 도매가 재확인 권장. 루미 소싱봇 자동 생성.</p></div>';
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      await resend.emails.send({
+        from: 'lumi <noreply@lumi.it.kr>',
+        to: process.env.ADMIN_EMAIL || 'gung3625@gmail.com',
+        subject: '🛒 오늘의 쿠팡 매입 분석 — ' + report.picks.length + '개 추천 (' + today + ')',
+        html,
+      });
+      emailed = true;
+    } catch (e) { console.error('[sourcing-report] 이메일 발송 실패:', e && e.message); }
+  }
+
   return ok({
     generatedAt: new Date().toISOString(),
     candidateCount: candidates.length,
     report,
+    emailed,
     llmError: llmErr,
   });
 };
