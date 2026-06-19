@@ -122,4 +122,21 @@ async function setOrderDome({ no, qty = 1, optCode = '', deliinfo, sellerMsg = '
   } catch (e) { return { ok: false, error: e.message }; }
 }
 
-module.exports = { domeggookSearch, getItemView, parsePrice, getDomeSession, domeLogin, setOrderDome, getDefaultDeliinfo };
+// 매입 주문 취소 신청(setOrdDeny v1.0, type=buy). ⚠배송중 이전 단계까지만 가능(이후엔 반품). e-money 환불.
+// result: true(승인 후 취소처리)/complete(취소완료)/req(배송준비중 취소요청 접수). dryRun 기본 true.
+async function cancelOrderDome({ orderNo, memo = '구매 취소', dryRun = true }) {
+  if (!orderNo) return { ok: false, error: 'orderNo 필요' };
+  const ses = await getDomeSession();
+  if (!ses) return { ok: false, error: '도매꾹 세션 발급 실패' };
+  const params = { ver: '1.0', mode: 'setOrdDeny', aid: process.env.DOMEGGOOK_API_KEY, id: ses.id, sId: ses.sId, type: 'buy', no: String(orderNo), memo, om: 'json' };
+  if (dryRun) return { ok: true, dryRun: true, request: { ...params, sId: '***', aid: '***' } };
+  try {
+    const r = await fetch('https://domeggook.com/ssl/api/', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(params).toString(), signal: AbortSignal.timeout(20000) });
+    const j = await r.json().catch(() => null); const root = j && (j.domeggook || j);
+    const res = root && root.result;
+    if (res === true || res === 'true' || res === 'complete' || res === 'req') return { ok: true, result: res, raw: root };
+    return { ok: false, error: root && root.errors ? JSON.stringify(root.errors) : '취소 실패', raw: root };
+  } catch (e) { return { ok: false, error: e.message }; }
+}
+
+module.exports = { domeggookSearch, getItemView, parsePrice, getDomeSession, domeLogin, setOrderDome, cancelOrderDome, getDefaultDeliinfo };
