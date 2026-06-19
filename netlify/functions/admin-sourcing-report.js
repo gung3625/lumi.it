@@ -202,7 +202,7 @@ exports.handler = async (event) => {
   }
 
   // 이메일 발송 (cron/전체 실행 시 email:true)
-  let emailed = false;
+  let emailed = false, emailError = null, emailTo = null;
   if (wantEmail && report && Array.isArray(report.picks) && report.picks.length && process.env.RESEND_API_KEY) {
     try {
       const today = new Date().toISOString().slice(0, 10);
@@ -241,14 +241,20 @@ exports.handler = async (event) => {
         items +
         '<p style="font-size:11px;color:#999;margin-top:16px">※ "검증 필요" 마진은 같은 스펙 제품 도매가 재확인 권장. 루미 소싱봇 자동 생성.</p></div>';
       const resend = new Resend(process.env.RESEND_API_KEY);
-      await resend.emails.send({
-        from: 'lumi <noreply@lumi.it.kr>',
-        to: process.env.ADMIN_EMAIL || 'gung3625@gmail.com',
+      emailTo = process.env.ADMIN_EMAIL || 'gung3625@gmail.com';
+      const sendRes = await resend.emails.send({
+        from: process.env.SOURCING_FROM || 'lumi <noreply@lumi.it.kr>',
+        to: emailTo,
         subject: '🛒 오늘의 쿠팡 매입 분석 — ' + report.picks.length + '개 추천 (' + today + ')',
         html,
       });
-      emailed = true;
-    } catch (e) { console.error('[sourcing-report] 이메일 발송 실패:', e && e.message); }
+      if (sendRes && sendRes.error) {
+        emailError = sendRes.error.message || (sendRes.error.name ? sendRes.error.name : JSON.stringify(sendRes.error));
+        console.error('[sourcing-report] Resend 거부:', emailError);
+      } else {
+        emailed = true;
+      }
+    } catch (e) { emailError = e && e.message ? e.message : String(e); console.error('[sourcing-report] 이메일 발송 실패:', emailError); }
   }
 
   return ok({
@@ -256,6 +262,8 @@ exports.handler = async (event) => {
     candidateCount: candidates.length,
     report,
     emailed,
+    emailTo,
+    emailError,
     llmError: llmErr,
   });
 };
