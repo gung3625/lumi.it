@@ -2,11 +2,12 @@
 // 도매꾹 OpenAPI getItemList — 키워드 검색 → [{name, w}] (coupang-scan domeSample과 동일 형태).
 // 멀티 도매처 비교용 2차 매입가 소스. 스크래핑 아님(공개 API라 도매토피아보다 안정적).
 //
-// 환경변수: DOMEGGOOK_API_KEY (domeggook.com 사업자회원 > API Key 관리에서 무료 발급).
-//   미설정 시 빈 배열 → 기존 도매토피아만 사용 (graceful).
+// 환경변수: DOMEGGOOK_API_KEY (domeggook.com 로그인 > API Key 무료 발급, 아이디당 5개).
+//   검색(getItemList)은 Open API라 사업자 인증 불필요. 미설정 시 빈 배열 → 도매토피아만 (graceful).
 //
-// ⚠ 응답 필드명은 도매꾹 실응답 1회로 확정 필요 — 아래는 방어적 다중 파싱(여러 형태 탐색).
-//    키 발급 후 첫 호출 결과를 보고 맞는 경로/키로 좁히면 됨.
+// 공식 문서 검증(openapi.domeggook.com): v4.1, GET https://domeggook.com/ssl/api/
+//   응답 = { header, list: { item: [{ title, price, unitQty, url, ... }] } }
+//   아래 파싱은 j.list.item[].title/.price 를 잡음(공식 구조). 다른 경로도 방어적으로 시도.
 
 async function domeggookSearch(kw) {
   const key = process.env.DOMEGGOOK_API_KEY;
