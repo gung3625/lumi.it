@@ -44,7 +44,7 @@ exports.handler = async (event) => {
   ]);
 
   // 6) 매입 주문(배송지는 setOrderDome이 기본 배송지 자동 사용)
-  const purchase = await setOrderDome({ no: body.no, qty: body.qty || 1, optCode: body.optCode || '', sellerMsg: body.sellerMsg || '', dryRun });
+  const purchase = await setOrderDome({ no: body.no, qty: body.qty || 1, optCode: body.optCode || '', deliMode: body.deliMode || 'gemi', sellerMsg: body.sellerMsg || '', dryRun });
 
   // 7) 로켓그로스 등록 spec 조립 — 도매꾹 이미지 URL을 vendorPath로(쿠팡이 http(s) URL 자동 다운로드, 포트80/443·200자↓)
   //   첫 장=REPRESENTATION(대표, 정사각 500x500↑ 권장), 나머지=DETAIL(최대 9). 별도 업로드 불필요.
