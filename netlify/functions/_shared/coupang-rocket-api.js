@@ -29,6 +29,26 @@ async function getReturnCenters() {
   return { ok: true, centers: list.map((c) => ({ code: c.returnCenterCode, name: c.shippingPlaceName || c.returnCenterName })) };
 }
 
+// 카테고리 자동추천(상품명→displayCategoryCode). 검증: POST .../categorization/predict.
+async function predictCategory({ productName, productDescription = '', brand = '', attributes = {} } = {}) {
+  if (!productName) return { ok: false, error: 'productName 필요' };
+  const r = await coupangCall('POST', '/v2/providers/openapi/apis/api/v1/categorization/predict', '', { productName, productDescription, brand, attributes });
+  if (!r.ok) return { ok: false, status: r.status, error: r.error || r.body };
+  const d = (r.body && r.body.data) || {};
+  return {
+    ok: d.autoCategorizationPredictionResultType === 'SUCCESS',
+    resultType: d.autoCategorizationPredictionResultType,
+    categoryId: d.predictedCategoryId ? Number(d.predictedCategoryId) : null,
+    categoryName: d.predictedCategoryName || null,
+  };
+}
+
+// 고시정보(notices) 기본값 — "기타 재화" 5필드(쿠팡 자동매칭 기본과 동일). spec.notices 주면 그걸 우선.
+const NOTICE_FIELDS = ['품명 및 모델명', '인증사항', '제조국(원산지)', '제조자(수입자)', '소비자상담 관련 전화번호'];
+function defaultNotices() {
+  return NOTICE_FIELDS.map((f) => ({ noticeCategoryName: '기타 재화', noticeCategoryDetailName: f, content: '상세페이지 참조' }));
+}
+
 // 정규화 spec → 로켓그로스 seller-products 요청 body 조립(공식 스키마 충실 + 보일러플레이트 기본값).
 // spec 필수: categoryCode, name, vendorUserId, outboundShippingPlaceCode, returnCenterCode,
 //   detailHtml, notices[](고시정보), images[]({imageOrder,imageType,vendorPath}),
@@ -59,7 +79,7 @@ function buildRocketGrowthBody(spec) {
       contents: [{ contentsType: 'HTML', contentDetails: [{ content: s.detailHtml || '', detailType: 'TEXT' }] }],
       offerDescription: '',
       attributes: s.attributes || [],
-      notices: s.notices || [],
+      notices: (s.notices && s.notices.length) ? s.notices : defaultNotices(),
       certifications: [{ certificationType: 'NOT_REQUIRED', certificationCode: '' }],
       taxType: s.taxType || 'TAX',
       adultOnly: 'EVERYONE',
@@ -101,8 +121,7 @@ function missingFields(s) {
   if (!s || !s.item || !s.item.barcode) miss.push('item.barcode');
   if (!s || !s.item || s.item.salePrice == null) miss.push('item.salePrice');
   if (!s || !Array.isArray(s.images) || !s.images.length) miss.push('images(vendorPath)');
-  if (!s || !Array.isArray(s.notices) || !s.notices.length) miss.push('notices(고시정보)');
-  return miss;
+  return miss; // notices는 기본템플릿 자동채움이라 필수 아님
 }
 
 async function createRocketGrowthProduct(spec, { dryRun = true } = {}) {
@@ -115,6 +134,6 @@ async function createRocketGrowthProduct(spec, { dryRun = true } = {}) {
 }
 
 module.exports = {
-  getOutboundShippingPlaces, getReturnCenters,
+  getOutboundShippingPlaces, getReturnCenters, predictCategory,
   buildRocketGrowthBody, createRocketGrowthProduct,
 };
