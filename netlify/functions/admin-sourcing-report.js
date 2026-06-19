@@ -10,6 +10,7 @@
 'use strict';
 
 const { fetchRelatedKeywords, fetchKeywordTrend } = require('./_shared/naver-ad-keyword-tool');
+const { domeggookSearch } = require('./_shared/domeggook-api');
 const { llmChat } = require('./_shared/llm-call');
 const { Resend } = require('resend');
 
@@ -172,10 +173,13 @@ const SYSTEM = [
   '- 차별화후킹: 색상/구성 옵션, 한국형 개선점, 사용 장면 강조',
   '- 긴급후킹: 한정수량·타임딜 (재고 적을 때만)',
   '',
+  '== 리뷰 불만 분석 (쿠팡_리뷰가 있을 때만) ==',
+  '쿠팡_리뷰는 상위 상품 실제 구매평이다. 반복되는 불만/아쉬움/개선요구를 2~3개로 요약(painPoints)하고, 그걸 뒤집은 구체적 차별화(diffHook)를 만들어라. 예: 불만 "배터리 금방 닳음" → diffHook "대용량 배터리 + 사용시간 숫자 표기". 리뷰에 근거 있을 때만(없는 약점 지어내기 금지), 불만이 sellingHook의 1순위 레버다.',
+  '',
   '== 출력(JSON만) ==',
-  '{"picks":[{"keyword","grade":"강력추천|추천|고난도|보류","priceReason":"가격 근거 1~2문장","sellingHook":"이렇게 팔면 혹한다 — 구체 전술 2~3개","why":"왜 추천 1~2문장","caution":"주의/스펙/인증"}],"skipped":[{"keyword","reason"}]}',
+  '{"picks":[{"keyword","grade":"강력추천|추천|고난도|보류","priceReason":"가격 근거 1~2문장","painPoints":"상위 상품 반복 불만 2~3개(리뷰 없으면 빈 문자열)","diffHook":"불만을 뒤집은 차별화(없으면 빈 문자열)","sellingHook":"이렇게 팔면 혹한다 — 구체 전술 2~3개","why":"왜 추천 1~2문장","caution":"주의/스펙/인증"}],"skipped":[{"keyword","reason"}]}',
   'priceReason = 권장가를 왜 그 가격으로: (a)천장=시세 (b)바닥=마진25_최소판매가 (c)순마진 %+언더컷 여력. 마진배수도 언급("도매 4.6배라 가격 방어력 큼").',
-  'sellingHook = 위 레버에서 골라 이 상품 맞춤으로. 예: "12,900원 단수가 + 2개 17,900 묶음으로 택배비 희석, 포토리뷰 적립 1,000원으로 초기 리뷰 확보, 썸네일에 풍량 3단계 강조".',
+  'sellingHook = 위 레버에서 골라 이 상품 맞춤으로(리뷰 불만 있으면 그 차별화를 1순위로). 예: "12,900원 단수가 + 2개 17,900 묶음, 포토리뷰 적립 1,000원, 썸네일에 풍량 3단계 강조".',
   'picks는 (회전 × 마진 × 경쟁) 종합 "잘 팔릴 순"으로 정렬. picks는 최대 10개만(가장 잘 팔릴 것), 나머지는 skipped에 키워드+짧은 사유.',
 ].join('\n');
 
@@ -219,11 +223,17 @@ exports.handler = async (event) => {
     const rep = (c.top && c.top[0]) ? c.top[0] : null;            // 대표상품 = 리뷰 1위
     thumbByKw[c.kw] = (rep && rep.th) ? rep.th : null;
     const repPrice = (rep && rep.p) ? rep.p : c.medPrice;         // 시장 anchor
-    const match = matchWholesale(rep, c.domeSample, c.kw);        // 같은 스펙 도매원가 환산
+    const dgk = await domeggookSearch(c.kw).catch(() => []);      // 도매꾹 보강(키 없으면 [])
+    const domeMatch = matchWholesale(rep, c.domeSample, c.kw);    // 도매토피아
+    const dgkMatch = matchWholesale(rep, dgk, c.kw);             // 도매꾹
+    // 두 매입처 중 환산 도매원가 낮은 쪽 채택
+    let match = domeMatch, source = (c.domeSample && c.domeSample.length) ? '도매토피아' : null;
+    if (dgkMatch && (!domeMatch || dgkMatch.환산도매원가 < domeMatch.환산도매원가)) { match = dgkMatch; source = '도매꾹'; }
     const wholesale = match ? match.환산도매원가 : c.domeLow;      // 매칭 실패 시 기존 최저가
     const pr = computePricing(wholesale, repPrice, inferCategory(c.kw));
     if (pr) {
       pr.쿠팡대표 = rep ? rep.n : null;
+      pr.매입처 = source;
       if (match) { pr.도매상품 = match.도매상품; pr.도매가원본 = match.도매가; pr.도매수량 = match.도매수량; pr.쿠팡수량 = match.쿠팡수량; pr.매칭신뢰 = match.매칭신뢰; }
       else { pr.매칭신뢰 = '낮음'; }
     }
@@ -235,6 +245,7 @@ exports.handler = async (event) => {
     linkByKw[c.kw] = {
       coupang: (rep && rep.l) ? rep.l : ('https://www.coupang.com/np/search?q=' + encKw),
       dome: 'https://dometopia.com/goods/search?search_text=' + encKw,
+      domeggook: 'https://domeggook.com/main/item/itemList.php?sf=ttl&sw=' + encKw,
     };
   }
 
@@ -251,6 +262,7 @@ exports.handler = async (event) => {
     가격분석: pricingByKw[c.kw],
     회전판정: gmroiByKw[c.kw],
     경쟁: compByKw[c.kw],
+    쿠팡_리뷰: (c.reviewSnips || []).slice(0, 8),
     계절상품: !!c.seasonal,
   }));
 
@@ -297,7 +309,7 @@ exports.handler = async (event) => {
         if (!pr) return '';
         const mColor = pr.예상순마진율 >= 30 ? '#1f9d57' : pr.예상순마진율 >= 20 ? '#C8507A' : '#c0392b';
         return '<div style="font-size:13px;color:#333;background:#faf3f6;border-radius:8px;padding:8px 12px;margin-top:8px">' +
-          '도매 <b>' + num(pr.매입가) + '원</b> → 권장판매 <b>' + num(pr.권장판매가) + '원</b>' +
+          '도매 <b>' + num(pr.매입가) + '원</b>' + (pr.매입처 ? ' <span style="font-size:11px;color:#999">(' + esc(pr.매입처) + ')</span>' : '') + ' → 권장판매 <b>' + num(pr.권장판매가) + '원</b>' +
           (pr.마진배수 ? ' <span style="color:#7a5; font-weight:700">(' + pr.마진배수 + '배)</span>' : '') +
           ' <span style="color:' + mColor + ';font-weight:800">순마진 ' + pr.예상순마진율 + '% (건당 ' + num(pr.예상순이익) + '원)</span>' +
           ((pr.쿠팡대표 || pr.도매상품) ? '<div style="font-size:11px;color:#777;margin-top:6px">🔎 쿠팡 "' + esc(String(pr.쿠팡대표 || '').slice(0, 26)) + '" ↔ 도매 "' + esc(String(pr.도매상품 || '?').slice(0, 26)) + '" ' + (pr.매칭신뢰 === '높음' ? '<span style="color:#1f9d57;font-weight:700">매칭✓</span>' : '<span style="color:#c0392b;font-weight:700">매칭 불확실 — 직접 확인</span>') + ((pr.도매수량 && pr.쿠팡수량 && pr.도매수량 !== pr.쿠팡수량) ? (' <span style="color:#999">(도매 ' + pr.도매수량 + '개→쿠팡 ' + pr.쿠팡수량 + '개 환산)</span>') : '') + '</div>' : '') +
@@ -307,7 +319,7 @@ exports.handler = async (event) => {
       };
       const gmroiColor = (v) => v === '최우선' ? '#1f9d57' : v === '박리다매' ? '#0a84c2' : v === '재고주의' ? '#e8820c' : '#999';
       const linkBtn = (href, label, bg) => '<a href="' + href + '" style="display:inline-block;font-size:12px;font-weight:700;color:#fff;background:' + bg + ';text-decoration:none;border-radius:980px;padding:6px 13px;margin-right:6px">' + label + '</a>';
-      const linksRow = (lk) => lk ? '<div style="margin-top:9px">' + linkBtn(lk.dome, '📦 도매토피아 매입', '#C8507A') + linkBtn(lk.coupang, '🛒 쿠팡에서 보기', '#555') + '</div>' : '';
+      const linksRow = (lk) => lk ? '<div style="margin-top:9px">' + linkBtn(lk.dome, '📦 도매토피아', '#C8507A') + (lk.domeggook ? linkBtn(lk.domeggook, '📦 도매꾹', '#b8456a') : '') + linkBtn(lk.coupang, '🛒 쿠팡', '#555') + '</div>' : '';
       const items = report.picks.map((p, i) => (
         '<div style="margin:0 0 14px;padding:14px 16px;border:1px solid #eee;border-radius:12px">' +
         (p.thumb ? '<img src="' + esc(p.thumb) + '" width="64" height="64" style="float:right;width:64px;height:64px;object-fit:cover;border-radius:8px;margin:0 0 6px 10px" alt="">' : '') +
@@ -318,6 +330,8 @@ exports.handler = async (event) => {
         (p.gmroi ? '<div style="font-size:12px;margin-top:6px"><span style="font-weight:700;color:#fff;background:' + gmroiColor(p.gmroi.판정) + ';border-radius:980px;padding:2px 9px">' + esc(p.gmroi.판정) + '</span> <span style="color:#666">' + esc(p.gmroi.전략) + '</span>' + (p.gmroi.성장가속 ? ' <span style="color:#1f9d57;font-weight:700">📈 뜨는 중</span>' : '') + ((p.gmroi.추세 && (p.gmroi.추세.검색증감 != null || p.gmroi.추세.리뷰증가율 != null)) ? '<span style="color:#999;font-size:11px"> (' + (p.gmroi.추세.검색증감 != null ? '검색 ' + (p.gmroi.추세.검색증감 >= 0 ? '+' : '') + p.gmroi.추세.검색증감 + '%' : '') + (p.gmroi.추세.리뷰증가율 != null ? ' 리뷰 ' + (p.gmroi.추세.리뷰증가율 >= 0 ? '+' : '') + p.gmroi.추세.리뷰증가율 + '%' : '') + ')</span>' : '') + '</div>' : '') +
         (p.comp && p.comp.가격최저 ? '<div style="font-size:11px;color:#888;margin-top:6px">🏷 경쟁: 상위 ' + p.comp.상위수 + '개 · 가격대 ' + num(p.comp.가격최저) + '~' + num(p.comp.가격최고) + '원' + (p.comp.PB개수 ? ' · <span style="color:#c0392b">PB ' + p.comp.PB개수 + '개</span>' : '') + (p.comp.로켓개수 ? ' · 🚀로켓 ' + p.comp.로켓개수 + '개' : '') + '</div>' : '') +
         (p.priceReason ? '<div style="font-size:12px;color:#555;line-height:1.6;margin-top:6px">💡 <b>가격 근거:</b> ' + esc(p.priceReason) + '</div>' : '') +
+        (p.painPoints ? '<div style="font-size:12px;color:#a1455f;line-height:1.6;margin-top:6px">😤 <b>상위 불만:</b> ' + esc(p.painPoints) + '</div>' : '') +
+        (p.diffHook ? '<div style="font-size:12px;color:#7a4;line-height:1.6;margin-top:3px">✨ <b>차별화:</b> ' + esc(p.diffHook) + '</div>' : '') +
         (p.sellingHook ? '<div style="font-size:13px;color:#1f6f43;background:#eef9f1;border-radius:8px;padding:8px 12px;line-height:1.6;margin-top:6px">🎯 <b>이렇게 팔아라:</b> ' + esc(p.sellingHook) + '</div>' : '') +
         (p.why ? '<div style="font-size:13px;color:#444;line-height:1.6;margin-top:6px">→ ' + esc(p.why) + '</div>' : '') +
         (p.caution ? '<div style="font-size:12px;color:#a1455f;line-height:1.6;margin-top:4px">⚠ ' + esc(p.caution) + '</div>' : '') +
