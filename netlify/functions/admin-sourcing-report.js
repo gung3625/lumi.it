@@ -223,13 +223,11 @@ exports.handler = async (event) => {
     const rep = (c.top && c.top[0]) ? c.top[0] : null;            // 대표상품 = 리뷰 1위
     thumbByKw[c.kw] = (rep && rep.th) ? rep.th : null;
     const repPrice = (rep && rep.p) ? rep.p : c.medPrice;         // 시장 anchor
-    const dgk = await domeggookSearch(c.kw).catch(() => []);      // 도매꾹 보강(키 없으면 [])
-    const domeMatch = matchWholesale(rep, c.domeSample, c.kw);    // 도매토피아
-    const dgkMatch = matchWholesale(rep, dgk, c.kw);             // 도매꾹
-    // 두 매입처 중 환산 도매원가 낮은 쪽 채택
-    let match = domeMatch, source = (c.domeSample && c.domeSample.length) ? '도매토피아' : null;
-    if (dgkMatch && (!domeMatch || dgkMatch.환산도매원가 < domeMatch.환산도매원가)) { match = dgkMatch; source = '도매꾹'; }
-    const wholesale = match ? match.환산도매원가 : c.domeLow;      // 매칭 실패 시 기존 최저가
+    const dgk = await domeggookSearch(c.kw).catch(() => []);      // 도매꾹 OpenAPI (단독 매입처)
+    const match = matchWholesale(rep, dgk, c.kw);                 // 같은 스펙 도매원가 환산
+    const dgkLow = dgk.length ? Math.min.apply(null, dgk.map((d) => d.w)) : null;
+    const source = dgk.length ? '도매꾹' : null;
+    const wholesale = match ? match.환산도매원가 : dgkLow;         // 매칭 실패 시 도매꾹 최저가
     const pr = computePricing(wholesale, repPrice, inferCategory(c.kw));
     if (pr) {
       pr.쿠팡대표 = rep ? rep.n : null;
@@ -244,7 +242,6 @@ exports.handler = async (event) => {
     const encKw = encodeURIComponent(c.kw);
     linkByKw[c.kw] = {
       coupang: (rep && rep.l) ? rep.l : ('https://www.coupang.com/np/search?q=' + encKw),
-      dome: 'https://dometopia.com/goods/search?search_text=' + encKw,
       domeggook: 'https://domeggook.com/main/item/itemList.php?sf=ttl&sw=' + encKw,
     };
   }
@@ -254,7 +251,6 @@ exports.handler = async (event) => {
     키워드: c.kw,
     쿠팡_상위: (c.top || []).slice(0, 4).map((p) => ({ 이름: p.n, 판매가: p.p, 리뷰: p.r })),
     쿠팡_중앙가: c.medPrice, 쿠팡_1위리뷰: c.topReviews, 쿠팡_중앙리뷰: c.medReviews,
-    도매_샘플: (c.domeSample || []).map((d) => ({ 이름: d.name, 도매가: d.w })),
     네이버_월검색: c.naverVolume,
     검색추세_증감: c.searchTrendPct,
     리뷰증가율: c.reviewGrowthPct,
@@ -319,7 +315,7 @@ exports.handler = async (event) => {
       };
       const gmroiColor = (v) => v === '최우선' ? '#1f9d57' : v === '박리다매' ? '#0a84c2' : v === '재고주의' ? '#e8820c' : '#999';
       const linkBtn = (href, label, bg) => '<a href="' + href + '" style="display:inline-block;font-size:12px;font-weight:700;color:#fff;background:' + bg + ';text-decoration:none;border-radius:980px;padding:6px 13px;margin-right:6px">' + label + '</a>';
-      const linksRow = (lk) => lk ? '<div style="margin-top:9px">' + linkBtn(lk.dome, '📦 도매토피아', '#C8507A') + (lk.domeggook ? linkBtn(lk.domeggook, '📦 도매꾹', '#b8456a') : '') + linkBtn(lk.coupang, '🛒 쿠팡', '#555') + '</div>' : '';
+      const linksRow = (lk) => lk ? '<div style="margin-top:9px">' + (lk.domeggook ? linkBtn(lk.domeggook, '📦 도매꾹 매입', '#C8507A') : '') + linkBtn(lk.coupang, '🛒 쿠팡 시세', '#555') + '</div>' : '';
       const items = report.picks.map((p, i) => (
         '<div style="margin:0 0 14px;padding:14px 16px;border:1px solid #eee;border-radius:12px">' +
         (p.thumb ? '<img src="' + esc(p.thumb) + '" width="64" height="64" style="float:right;width:64px;height:64px;object-fit:cover;border-radius:8px;margin:0 0 6px 10px" alt="">' : '') +
