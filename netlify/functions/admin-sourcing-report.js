@@ -24,58 +24,105 @@ function ok(body) { return { statusCode: 200, headers: CORS, body: JSON.stringif
 function err(code, msg) { return { statusCode: code, headers: CORS, body: JSON.stringify({ error: msg }) }; }
 
 // 매입 마진 계산 — docs/sourcing-playbook.md 기준 (쿠팡 실효비용).
-// feeRate(수수료+결제+VAT 효과) 15% + 광고 5% + 반품 3% = 판매가 비례 23%, 택배 3000 + 포장 500 = 건당 고정.
-const PRICING = { feeRate: 0.15, adRate: 0.05, returnRate: 0.03, ship: 3000, pack: 500, targetMargin: 0.25 };
+// 광고 5% + 반품 3% = 판매가 비례 8%(고정), 수수료+결제+VAT는 카테고리별(CATEGORY_FEE), 택배 3000 + 포장 500 = 건당 고정.
+const PRICING = { adRate: 0.05, returnRate: 0.03, ship: 3000, pack: 500, targetMargin: 0.25 };
+
+// 카테고리별 실효 차감율(쿠팡 판매수수료 + 결제 + VAT 합산). 고수 법칙: 카테고리마다 수수료가 다르다.
+const CATEGORY_FEE = {
+  뷰티: 0.155, 패션: 0.165, 식품: 0.165, 반려: 0.145,
+  디지털: 0.125, 가전: 0.13, 차량: 0.135, 유아: 0.135, 생활: 0.135, 기타: 0.145,
+};
+function inferCategory(kw) {
+  const s = String(kw || '');
+  if (/화장품|뷰티|네일|브러시|필링|헤어|메이크업|욕실|칫솔/.test(s)) return '뷰티';
+  if (/강아지|고양이|펫|반려/.test(s)) return '반려';
+  if (/유아|아기|완구|블록|퍼즐|보드게임/.test(s)) return '유아';
+  if (/폰|맥세이프|보조배터리|에어팟|태블릿|그립톡|충전|디지털/.test(s)) return '디지털';
+  if (/선풍기|제습기|에어컨|히터|가전|조명|무드등|수유등|LED|건조기/.test(s)) return '가전';
+  if (/차량|주차|트렁크/.test(s)) return '차량';
+  if (/에코백|파우치|지갑|모자|양말|장갑|가방|의류/.test(s)) return '패션';
+  if (/식품|간식|커피|도시락/.test(s)) return '식품';
+  return '생활';
+}
+
 function won(n) { return Math.round(n / 10) * 10; }
-// 매입가(도매)·시장가(쿠팡 현재가) → 권장판매가/예상순마진. 시장가에 팔 때 실제 남는 돈을 본다.
-function computePricing(wholesale, market) {
+// 매입가(도매)·시장가(쿠팡 현재가) → 권장판매가/순마진/마진배수. 시장가에 팔 때 실제 남는 돈을 본다.
+function computePricing(wholesale, market, category) {
   if (!wholesale || !market || wholesale <= 0 || market <= 0) return null;
   const p = PRICING;
+  const cat = category || '기타';
+  const feeRate = CATEGORY_FEE[cat] != null ? CATEGORY_FEE[cat] : CATEGORY_FEE['기타'];
   const w = Math.round(wholesale), m = Math.round(market);
-  const fees = Math.round(m * p.feeRate);            // 판매수수료+결제+VAT
+  const fees = Math.round(m * feeRate);              // 판매수수료+결제+VAT(카테고리별)
   const adRet = Math.round(m * (p.adRate + p.returnRate)); // 광고+반품 예비
   const logi = p.ship + p.pack;                      // 택배+포장
   const cost = w + fees + adRet + logi;              // 총원가
   const net = m - cost;                              // 건당 순이익
   const marginPct = Math.round((net / m) * 100);
-  const floor = (w + p.ship + p.pack) / (1 - p.feeRate - p.adRate - p.returnRate - p.targetMargin); // 25% 손익선
+  const varRate = feeRate + p.adRate + p.returnRate;
+  const floor = (w + p.ship + p.pack) / (1 - varRate - p.targetMargin); // 25% 손익선
+  const mult = +(m / w).toFixed(1);                  // 마진배수(도매가 대비) — 고수가 가격 잡는 단위
+  const multTier = mult >= 3 ? '브랜드급(3배+)' : mult >= 2 ? '적정(2~3배)' : mult >= 1.6 ? '박리(1.6~2배)' : '저배수(주의)';
   return {
-    매입가: w,
-    시장가: m,
-    권장판매가: won(m),                               // 시장 경쟁가에 맞춤
-    예상순마진율: marginPct,
-    예상순이익: net,
-    마진25_최소판매가: won(floor),                    // 이 밑으로는 25% 마진 불가
+    매입가: w, 시장가: m, 권장판매가: won(m),
+    카테고리: cat, 적용수수료율: Math.round(feeRate * 100),
+    마진배수: mult, 배수등급: multTier,
+    예상순마진율: marginPct, 예상순이익: net,
+    마진25_최소판매가: won(floor),
     번들필요: marginPct < p.targetMargin * 100,       // 단품 25% 미달 → 묶음/유료배송
-    원가구성: { 매입: w, 수수료VAT: fees, 광고반품: adRet, 택배포장: logi, 총원가: cost }, // 가격 근거 분해
+    원가구성: { 매입: w, 수수료VAT: fees, 광고반품: adRet, 택배포장: logi, 총원가: cost },
   };
 }
 
+// GMROI 관점 — 고수 법칙: 마진율만 보지 말고 "회전(팔리는 속도)"과 곱해라.
+function turnoverVerdict(naverVolume, medReviews, marginPct) {
+  const demand = (naverVolume || 0) + (medReviews || 0) * 30; // 리뷰 1개 ≈ 검색 30 가중
+  const 회전 = demand >= 30000 ? 'high' : demand >= 8000 ? 'mid' : 'low';
+  const 마진ok = marginPct >= 20;
+  let 판정, 전략;
+  if (회전 !== 'low' && 마진ok) { 판정 = '최우선'; 전략 = '잘 팔리고 마진도 남음 — 바로 사입'; }
+  else if (회전 !== 'low' && !마진ok) { 판정 = '박리다매'; 전략 = '마진 얇지만 회전 빨라 물량으로 번다 — 번들로 객단가↑'; }
+  else if (회전 === 'low' && 마진ok) { 판정 = '재고주의'; 전략 = '마진 좋아도 안 팔리면 흑자도산 — 소량 테스트부터'; }
+  else { 판정 = '비추천'; 전략 = '안 팔리고 마진도 얇음 — 패스'; }
+  return { 회전, 판정, 전략 };
+}
+
 const SYSTEM = [
-  '너는 한국 온라인셀러의 소싱(매입) 바이어다. 도매로 떼서 쿠팡/스마트스토어에 되팔 때',
-  '"무엇을 매입하면 경쟁력 있고, 도매가 대비 얼마에 올려 팔면 되는지"를 판단한다.',
-  '입력 후보마다: 쿠팡 인기상품(판매가·리뷰수), 도매토피아 샘플(상품명·도매가), 네이버 월검색량,',
-  '그리고 이미 계산된 가격분석(매입가/시장가/권장판매가/예상순마진율/예상순이익/마진25_최소판매가/번들필요)이 들어온다.',
+  '너는 한국 온라인셀러의 소싱(매입) 바이어이자 머천다이저다. "무엇을 매입하면 경쟁력 있고, 얼마에 올려, 어떻게 팔아야 잘 팔리는지"까지 판단한다.',
+  '입력 후보마다: 쿠팡 인기상품(판매가·리뷰수), 도매 샘플(상품명·도매가), 네이버 월검색량,',
+  '이미 계산된 가격분석(매입가/시장가/권장판매가/마진배수/배수등급/카테고리/적용수수료율/예상순마진율/예상순이익/마진25_최소판매가/번들필요), 회전판정(회전/판정/전략)이 들어온다.',
   '',
-  '== 마진은 계산이 끝나 들어온다. 너는 그 숫자를 해석·판단만 한다(다시 곱하기 금지). ==',
-  '예상순마진율 = 도매가로 떼서 시장가에 팔 때 모든 비용(수수료+결제+VAT+택배+포장+광고+반품) 빼고 남는 진짜 마진율이다.',
+  '== 마진·가격은 계산이 끝나 들어온다. 숫자 재계산 금지, 해석·판단만. ==',
+  '예상순마진율 = 도매가로 떼서 시장가에 팔 때 카테고리수수료+결제+VAT+택배+포장+광고+반품 다 빼고 남는 진짜 마진율.',
+  '마진배수 = 시장가÷도매가. 1.6~2배=박리다매, 2~3배=적정, 3배+=브랜드급. 배수 높을수록 가격 내려 경쟁할 여력 큼.',
   '',
   '== 게이트(하나라도 실패하면 grade="보류" + skipped 사유) ==',
-  'G1 마진: 예상순마진율 < 25% AND 예상순이익 < 3000원 이면 단품 매입가치 낮음. 번들필요=true면 "묶음/유료배송 시 가능"으로 살리되 grade는 최대 "고난도".',
-  'G2 규제: 화장품·식품·전기전자·유아아동·의료기기 등 인증(KC/제조판매업/영업신고)이 필요한 품목이면 caution에 "인증 필요" 명시(미보유 시 판매불가).',
+  'G1 마진: 예상순마진율 < 25% AND 예상순이익 < 3000원 이면 단품 매입가치 낮음. 번들필요=true면 "묶음 시 가능"으로 살리되 grade 최대 "고난도".',
+  'G2 규제: 화장품·식품·전기전자·유아아동·의료기기 등 인증(KC/제조판매업/영업신고) 필요 품목이면 caution에 "인증 필요" 명시.',
   'G3 정품: 브랜드 짝퉁/무단 병행수입 위험이 보이면 보류.',
   '',
   '== 판단 원칙 ==',
-  '1) 진짜 마진은 "같은 종류·스펙끼리" 비교다. 도매 샘플이 쿠팡 상품과 다른 품목(예: 강아지 검색인데 고양이 장난감)이면 들어온 마진은 과장이니 caution에 "스펙 재확인" 경고.',
-  '2) 검색량 높아도 "구매의도"가 아닌 "정보성 도구" 검색(예: 계산기=대출/연봉계산기)이면 skipped.',
-  '3) 경쟁력 = 수요(쿠팡 판매+실구매 검색) × 순마진 × 리뷰벽(상위 리뷰 적을수록 신규 진입 쉬움). 브랜드 강세(리뷰벽 높음)라도 품질/가격 우위 가능하면 grade="고난도"로 살림.',
-  '4) 작고 가벼운(배송비 유리) 상품 가산점. 부피 큰 저가품은 감점(택배가 마진 잠식).',
-  '5) 계절상품=true는 지금이 제철이라 수요가 급증하는 시기다. 마진·경쟁이 비슷하면 계절상품을 우선 추천하고 grade를 한 단계 가산. why에 "제철 수요" 근거를 넣어라.',
+  '1) 진짜 마진은 "같은 스펙끼리" 비교다. 도매 샘플이 쿠팡 상품과 다른 품목(예: 강아지 검색인데 고양이 장난감)이면 마진 과장이니 caution에 "스펙 재확인".',
+  '2) 검색량 높아도 "구매의도"가 아닌 "정보성 도구" 검색(예: 계산기)이면 skipped.',
+  '3) 경쟁력 = 수요 × 순마진 × 리뷰벽(상위 리뷰 적을수록 진입 쉬움). 브랜드 강세라도 품질/가격 우위 가능하면 grade="고난도"로 살림.',
+  '4) GMROI 법칙 = 마진율 × 회전(팔리는 속도). 회전판정을 반영하라: 판정="박리다매"면 마진 얇아도 회전으로 추천(번들 권장), "재고주의"(고마진·저수요)면 caution에 "소량 테스트(흑자도산 위험)", "비추천"이면 skipped.',
+  '5) 작고 가벼운 상품 가산, 부피 큰 저가품 감점(택배가 마진 잠식).',
+  '6) 계절상품=true는 제철 수요 급증 — grade 한 단계 가산, why에 "제철 수요" 근거.',
+  '',
+  '== 판매 전술: sellingHook = "어떻게 하면 사람이 혹해서 사는가" 2~3개 구체 전술(숫자 포함) ==',
+  '아래 레버 중 이 상품에 가장 잘 먹힐 것만 골라라:',
+  '- 가격후킹: 단수가격(9,900·12,900), 즉시할인 표시가(원가에 줄 긋고 세일가), 첫구매쿠폰',
+  '- 구성후킹: 묶음(2개·3개 세트)·1+1·사은품으로 가성비 인식+객단가↑ (번들필요=true면 필수)',
+  '- 신뢰후킹: 초기 포토리뷰 이벤트(적립금)로 리뷰 빠르게 — 리뷰수가 전환의 핵심',
+  '- 노출후킹: 제목에 핵심+롱테일 키워드 조합, 정확한 카테고리, 썸네일 첫 컷에 USP+숫자(용량·개수)',
+  '- 차별화후킹: 색상/구성 옵션, 한국형 개선점, 사용 장면 강조',
+  '- 긴급후킹: 한정수량·타임딜 (재고 적을 때만)',
   '',
   '== 출력(JSON만) ==',
-  '{"picks":[{"keyword","grade":"강력추천|추천|고난도|보류","priceReason":"이 가격을 권장한 근거 1~2문장","why":"왜 추천:수요근거+마진+경쟁상황 1~2문장","caution":"주의/차별화/번들·인증 포인트"}],"skipped":[{"keyword","reason"}]}',
-  'priceReason = 권장판매가를 "왜 그 가격으로" 잡았는지 분석한다. 반드시 이 관점으로: (a) 천장 = 쿠팡 시세(이 이상은 안 팔림), (b) 바닥 = 마진25_최소판매가(이 밑은 25% 마진 불가), (c) 시세에 팔면 순마진 몇 %인지 + 언더컷/인상 여력. 예: "쿠팡 시세 13,900원이 천장, 25% 손익선 12,500원이 바닥 → 시세 매칭 시 30% 확보, 초기 노출용 500~1,000원 언더컷 여력".',
-  '번들필요=true면 priceReason에 "단품은 손익선 위라 묶음/유료배송으로 객단가↑ 필요"를 넣어라. picks는 순마진·수요 종합 경쟁력 순.',
+  '{"picks":[{"keyword","grade":"강력추천|추천|고난도|보류","priceReason":"가격 근거 1~2문장","sellingHook":"이렇게 팔면 혹한다 — 구체 전술 2~3개","why":"왜 추천 1~2문장","caution":"주의/스펙/인증"}],"skipped":[{"keyword","reason"}]}',
+  'priceReason = 권장가를 왜 그 가격으로: (a)천장=시세 (b)바닥=마진25_최소판매가 (c)순마진 %+언더컷 여력. 마진배수도 언급("도매 4.6배라 가격 방어력 큼").',
+  'sellingHook = 위 레버에서 골라 이 상품 맞춤으로. 예: "12,900원 단수가 + 2개 17,900 묶음으로 택배비 희석, 포토리뷰 적립 1,000원으로 초기 리뷰 확보, 썸네일에 풍량 3단계 강조".',
+  'picks는 (회전 × 마진 × 경쟁) 종합 "잘 팔릴 순"으로 정렬.',
 ].join('\n');
 
 exports.handler = async (event) => {
@@ -106,20 +153,23 @@ exports.handler = async (event) => {
   }
 
   // 2) 가격분석 계산 (룰북 공식 — 결정적). 키워드별로 매핑해 뒤에서 Gemini 결과에 병합.
-  const pricingByKw = {}, seasonalByKw = {};
+  const pricingByKw = {}, seasonalByKw = {}, gmroiByKw = {};
   for (const c of candidates) {
-    pricingByKw[c.kw] = computePricing(c.domeLow, c.medPrice);
+    const pr = computePricing(c.domeLow, c.medPrice, inferCategory(c.kw));
+    pricingByKw[c.kw] = pr;
     seasonalByKw[c.kw] = !!c.seasonal;
+    gmroiByKw[c.kw] = turnoverVerdict(c.naverVolume, c.medReviews, pr ? pr.예상순마진율 : 0);
   }
 
   // 3) Gemini 분석 (마진 숫자는 위 계산값을 그대로 전달 — 재계산 X)
   const userPayload = candidates.map((c) => ({
     키워드: c.kw,
     쿠팡_상위: (c.top || []).slice(0, 4).map((p) => ({ 이름: p.n, 판매가: p.p, 리뷰: p.r })),
-    쿠팡_중앙가: c.medPrice, 쿠팡_1위리뷰: c.topReviews,
+    쿠팡_중앙가: c.medPrice, 쿠팡_1위리뷰: c.topReviews, 쿠팡_중앙리뷰: c.medReviews,
     도매_샘플: (c.domeSample || []).map((d) => ({ 이름: d.name, 도매가: d.w })),
     네이버_월검색: c.naverVolume,
     가격분석: pricingByKw[c.kw],
+    회전판정: gmroiByKw[c.kw],
     계절상품: !!c.seasonal,
   }));
 
@@ -131,7 +181,7 @@ exports.handler = async (event) => {
         { role: 'system', content: SYSTEM },
         { role: 'user', content: '아래 후보들을 분석해 경쟁력 순으로 추천해줘. JSON만 출력.\n\n' + JSON.stringify(userPayload, null, 1) },
       ],
-      max_tokens: 1800,
+      max_tokens: 3500,
       response_format: { type: 'json_object' },
     }, { timeoutMs: 60000, label: 'sourcing-report', sensitive: false });
     const data = await res.json();
@@ -144,6 +194,7 @@ exports.handler = async (event) => {
         const pr = pricingByKw[pk.keyword];
         if (pr) { pk.pricing = pr; }
         pk.seasonal = !!seasonalByKw[pk.keyword];
+        pk.gmroi = gmroiByKw[pk.keyword] || null;
       }
     }
   } catch (e) {
@@ -163,25 +214,29 @@ exports.handler = async (event) => {
         const mColor = pr.예상순마진율 >= 30 ? '#1f9d57' : pr.예상순마진율 >= 20 ? '#C8507A' : '#c0392b';
         return '<div style="font-size:13px;color:#333;background:#faf3f6;border-radius:8px;padding:8px 12px;margin-top:8px">' +
           '도매 <b>' + num(pr.매입가) + '원</b> → 권장판매 <b>' + num(pr.권장판매가) + '원</b>' +
+          (pr.마진배수 ? ' <span style="color:#7a5; font-weight:700">(' + pr.마진배수 + '배)</span>' : '') +
           ' <span style="color:' + mColor + ';font-weight:800">순마진 ' + pr.예상순마진율 + '% (건당 ' + num(pr.예상순이익) + '원)</span>' +
           (pr.원가구성 ? '<div style="font-size:11px;color:#888;margin-top:5px">원가: 매입 ' + num(pr.원가구성.매입) + ' + 수수료·VAT ' + num(pr.원가구성.수수료VAT) + ' + 택배·포장 ' + num(pr.원가구성.택배포장) + ' + 광고·반품 ' + num(pr.원가구성.광고반품) + ' = ' + num(pr.원가구성.총원가) + '원 → 권장가의 나머지가 순이익</div>' : '') +
           (pr.번들필요 ? '<div style="font-size:12px;color:#a1455f;margin-top:3px">※ 단품 마진 약함 — 25% 내려면 ' + num(pr.마진25_최소판매가) + '원, 묶음/유료배송 권장</div>' : '') +
           '</div>';
       };
+      const gmroiColor = (v) => v === '최우선' ? '#1f9d57' : v === '박리다매' ? '#0a84c2' : v === '재고주의' ? '#e8820c' : '#999';
       const items = report.picks.map((p, i) => (
         '<div style="margin:0 0 14px;padding:14px 16px;border:1px solid #eee;border-radius:12px">' +
         '<div style="font-size:15px;font-weight:800;color:#222">' + (i + 1) + '. ' + esc(p.keyword) +
         ' <span style="font-size:12px;font-weight:700;color:#fff;background:' + gradeColor(p.grade) + ';border-radius:980px;padding:2px 10px;margin-left:6px">' + esc(p.grade || '') + '</span>' +
         (p.seasonal ? ' <span style="font-size:12px;font-weight:700;color:#fff;background:#e8820c;border-radius:980px;padding:2px 10px;margin-left:4px">🌞 제철</span>' : '') + '</div>' +
         priceBox(p.pricing) +
-        (p.priceReason ? '<div style="font-size:12px;color:#555;line-height:1.6;margin-top:5px">💡 <b>가격 근거:</b> ' + esc(p.priceReason) + '</div>' : '') +
+        (p.gmroi ? '<div style="font-size:12px;margin-top:6px"><span style="font-weight:700;color:#fff;background:' + gmroiColor(p.gmroi.판정) + ';border-radius:980px;padding:2px 9px">' + esc(p.gmroi.판정) + '</span> <span style="color:#666">' + esc(p.gmroi.전략) + '</span></div>' : '') +
+        (p.priceReason ? '<div style="font-size:12px;color:#555;line-height:1.6;margin-top:6px">💡 <b>가격 근거:</b> ' + esc(p.priceReason) + '</div>' : '') +
+        (p.sellingHook ? '<div style="font-size:13px;color:#1f6f43;background:#eef9f1;border-radius:8px;padding:8px 12px;line-height:1.6;margin-top:6px">🎯 <b>이렇게 팔아라:</b> ' + esc(p.sellingHook) + '</div>' : '') +
         (p.why ? '<div style="font-size:13px;color:#444;line-height:1.6;margin-top:6px">→ ' + esc(p.why) + '</div>' : '') +
         (p.caution ? '<div style="font-size:12px;color:#a1455f;line-height:1.6;margin-top:4px">⚠ ' + esc(p.caution) + '</div>' : '') +
         '</div>'
       )).join('');
       const html = '<div style="max-width:600px;margin:0 auto;font-family:system-ui,-apple-system,sans-serif">' +
         '<h2 style="color:#C8507A;font-size:18px;margin-bottom:4px">🛒 오늘의 매입 분석 — ' + today + '</h2>' +
-        '<p style="font-size:13px;color:#666;margin-top:0">네이버 검색량 + 쿠팡 경쟁 + 도매토피아 매입가 종합. 경쟁력 순.</p>' +
+        '<p style="font-size:13px;color:#666;margin-top:0">수요(검색량·리뷰) × 순마진 × 회전(GMROI) 종합 — "잘 팔릴 순". 상품마다 가격 근거 + 판매 전술 포함.</p>' +
         (season ? '<p style="font-size:13px;color:#e8820c;font-weight:700;margin:0 0 10px">🌞 이번 계절: ' + esc(season) + ' — 제철 상품 포함</p>' : '') +
         items +
         '<p style="font-size:11px;color:#999;margin-top:16px">※ "검증 필요" 마진은 같은 스펙 제품 도매가 재확인 권장. 루미 소싱봇 자동 생성.</p></div>';
