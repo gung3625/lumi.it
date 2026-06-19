@@ -69,6 +69,12 @@ async function getItemView(no) {
 const HOME = process.env.HOME || '/home/lumi';
 const PW_FILE = HOME + '/.dgk_pw';        // 도매꾹 비번 (사장님이 직접 저장, 600)
 const SESS_FILE = HOME + '/.dgk_session'; // 발급된 세션(sId) 캐시
+const DELI_FILE = HOME + '/.dgk_deliinfo'; // 기본 매입 배송지 "이름|이메일|우편|주소|상세|휴대폰|전화|회사" (개인정보, 600)
+
+// 기본 배송지 로드(사장님 집). 매입 시 deliinfo 미지정이면 이걸 사용. 미설정이면 null.
+function getDefaultDeliinfo() {
+  try { const s = fs.readFileSync(DELI_FILE, 'utf8').trim(); return s || null; } catch (_) { return null; }
+}
 
 // 비번으로 로그인 → sId 세션 발급(30일) + 캐시. 검증된 스펙(POST body, ver4.1).
 async function domeLogin() {
@@ -100,7 +106,8 @@ async function getDomeSession() {
 // 매입 주문 생성(setOrder v4.3). ⚠ item 포맷은 연동매뉴얼 기준 — 첫 실주문 전 검증 필요. dryRun 기본 true(미발사).
 // deliinfo: "이름|이메일|우편번호|주소|상세주소|휴대폰|전화|회사명"
 async function setOrderDome({ no, qty = 1, optCode = '', deliinfo, sellerMsg = '', deliReq = '', receipt = '0', dryRun = true }) {
-  if (!no || !deliinfo) return { ok: false, error: 'no/deliinfo 필요' };
+  if (!deliinfo) deliinfo = getDefaultDeliinfo(); // 미지정 시 기본 배송지(사장님 집)
+  if (!no || !deliinfo) return { ok: false, error: 'no/deliinfo 필요(기본 배송지 미설정)' };
   const ses = await getDomeSession();
   if (!ses) return { ok: false, error: '도매꾹 세션 발급 실패(비번/키/아이디 확인)' };
   const params = { ver: '4.3', mode: 'setOrder', aid: process.env.DOMEGGOOK_API_KEY, id: ses.id, sId: ses.sId, receipt: String(receipt), om: 'json' };
@@ -115,4 +122,4 @@ async function setOrderDome({ no, qty = 1, optCode = '', deliinfo, sellerMsg = '
   } catch (e) { return { ok: false, error: e.message }; }
 }
 
-module.exports = { domeggookSearch, getItemView, parsePrice, getDomeSession, domeLogin, setOrderDome };
+module.exports = { domeggookSearch, getItemView, parsePrice, getDomeSession, domeLogin, setOrderDome, getDefaultDeliinfo };
