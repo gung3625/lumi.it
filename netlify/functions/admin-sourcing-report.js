@@ -87,6 +87,54 @@ function turnoverVerdict(naverVolume, medReviews, marginPct) {
   return { 회전, 판정, 전략 };
 }
 
+// ★ 같은 스펙 매칭 — 도매 최저가 맹신 금지. 쿠팡 대표상품과 같은 수량 기준으로 도매원가 환산.
+const PB_BRANDS = ['코멧', '탐사', '홈플래닛', '곰곰', '줄라이', '꼬리별', '베이스알파', '캐럿'];
+function parseQty(name) {
+  const s = String(name || '');
+  const m = s.match(/(\d+)\s*(개입|개|입|매|장|팩|세트|구|병|포|롤|p|ea)/i);
+  if (m) { const n = parseInt(m[1], 10); if (n > 0 && n <= 1000) return n; }
+  return 1;
+}
+function tokenize(s) {
+  return String(s || '').toLowerCase().replace(/[^가-힣a-z0-9]/g, ' ').split(/\s+/).filter((t) => t.length >= 2);
+}
+// 키워드 토큰을 뺀 "추가 공통 토큰" 수 — 키워드는 검색어라 양쪽에 다 있으니 신뢰 신호 못 됨.
+function extraOverlap(a, b, kwSet) {
+  const A = new Set(tokenize(a)); let c = 0;
+  for (const t of tokenize(b)) if (A.has(t) && !kwSet.has(t)) c++;
+  return c;
+}
+// 쿠팡 대표상품(top[0])과 가장 비슷한 도매 샘플을 골라 같은 수량 기준 도매원가 환산.
+function matchWholesale(rep, domeSample, kw) {
+  if (!rep || !Array.isArray(domeSample) || !domeSample.length) return null;
+  const kwSet = new Set(tokenize(kw));
+  let best = null, bestScore = -1;
+  for (const d of domeSample) {
+    const s = extraOverlap(rep.n, d.name, kwSet);
+    if (s > bestScore || (s === bestScore && best && d.w < best.w)) { bestScore = s; best = d; }
+  }
+  if (!best) return null;
+  const repQty = parseQty(rep.n), domeQty = parseQty(best.name);
+  const domeUnit = best.w / domeQty;              // 도매 개당 단가
+  const wholesaleForRepPack = Math.round(domeUnit * repQty); // 쿠팡과 같은 수량일 때 도매원가
+  // 신뢰 "높음" 조건: 키워드 외 공통 토큰 있음 AND 환산원가가 시장가의 8%+ (너무 싸면 다른 상품)
+  const priceOk = wholesaleForRepPack >= Math.round((rep.p || 0) * 0.08);
+  const conf = (bestScore >= 1 && priceOk) ? '높음' : '낮음';
+  return { 도매상품: best.name, 도매가: best.w, 도매수량: domeQty, 쿠팡수량: repQty, 환산도매원가: wholesaleForRepPack, 매칭신뢰: conf };
+}
+// 경쟁 심층 — 상위 가격분포 + PB 점유.
+function competitionInfo(top) {
+  const arr = Array.isArray(top) ? top : [];
+  const prices = arr.map((p) => p.p).filter((n) => n > 0).sort((a, b) => a - b);
+  const pb = arr.filter((p) => PB_BRANDS.some((b) => (p.n || '').indexOf(b) >= 0)).length;
+  return {
+    상위수: arr.length,
+    가격최저: prices.length ? prices[0] : null,
+    가격최고: prices.length ? prices[prices.length - 1] : null,
+    PB개수: pb,
+  };
+}
+
 const SYSTEM = [
   '너는 한국 온라인셀러의 소싱(매입) 바이어이자 머천다이저다. "무엇을 매입하면 경쟁력 있고, 얼마에 올려, 어떻게 팔아야 잘 팔리는지"까지 판단한다.',
   '입력 후보마다: 쿠팡 인기상품(판매가·리뷰수), 도매 샘플(상품명·도매가), 네이버 월검색량,',
@@ -102,9 +150,9 @@ const SYSTEM = [
   'G3 정품: 브랜드 짝퉁/무단 병행수입 위험이 보이면 보류.',
   '',
   '== 판단 원칙 ==',
-  '1) 진짜 마진은 "같은 스펙끼리" 비교다. 도매 샘플이 쿠팡 상품과 다른 품목(예: 강아지 검색인데 고양이 장난감)이면 마진 과장이니 caution에 "스펙 재확인".',
+  '1) 마진은 "같은 스펙·같은 수량" 기준으로 환산돼 들어온다. 가격분석.매칭신뢰="낮음"이면 도매-쿠팡이 다른 상품일 수 있으니 grade를 낮추고 caution에 "도매 상품 직접 확인(매칭 불확실)". 도매수량≠쿠팡수량이면 환산 사실을 why에 설명.',
   '2) 검색량 높아도 "구매의도"가 아닌 "정보성 도구" 검색(예: 계산기)이면 skipped.',
-  '3) 경쟁력 = 수요 × 순마진 × 리뷰벽(상위 리뷰 적을수록 진입 쉬움). 브랜드 강세라도 품질/가격 우위 가능하면 grade="고난도"로 살림.',
+  '3) 경쟁력 = 수요 × 순마진 × 리뷰벽(상위 리뷰 적을수록 진입 쉬움). 경쟁.PB개수가 많으면 상위 PB 장악이니 감점(품질/가격 우위 가능하면 "고난도"). 경쟁.가격최저~최고 폭이 좁고 낮으면 최저가 전쟁이라 caution.',
   '4) GMROI 법칙 = 마진율 × 회전(팔리는 속도). 회전판정을 반영하라: 판정="박리다매"면 마진 얇아도 회전으로 추천(번들 권장), "재고주의"(고마진·저수요)면 caution에 "소량 테스트(흑자도산 위험)", "비추천"이면 skipped.',
   '5) 작고 가벼운 상품 가산, 부피 큰 저가품 감점(택배가 마진 잠식).',
   '6) 계절상품=true는 제철 수요 급증 — grade 한 단계 가산, why에 "제철 수요" 근거.',
@@ -153,15 +201,25 @@ exports.handler = async (event) => {
   }
 
   // 2) 가격분석 계산 (룰북 공식 — 결정적). 키워드별로 매핑해 뒤에서 Gemini 결과에 병합.
-  const pricingByKw = {}, seasonalByKw = {}, gmroiByKw = {}, linkByKw = {};
+  const pricingByKw = {}, seasonalByKw = {}, gmroiByKw = {}, linkByKw = {}, compByKw = {};
   for (const c of candidates) {
-    const pr = computePricing(c.domeLow, c.medPrice, inferCategory(c.kw));
+    const rep = (c.top && c.top[0]) ? c.top[0] : null;            // 대표상품 = 리뷰 1위
+    const repPrice = (rep && rep.p) ? rep.p : c.medPrice;         // 시장 anchor
+    const match = matchWholesale(rep, c.domeSample, c.kw);        // 같은 스펙 도매원가 환산
+    const wholesale = match ? match.환산도매원가 : c.domeLow;      // 매칭 실패 시 기존 최저가
+    const pr = computePricing(wholesale, repPrice, inferCategory(c.kw));
+    if (pr) {
+      pr.쿠팡대표 = rep ? rep.n : null;
+      if (match) { pr.도매상품 = match.도매상품; pr.도매가원본 = match.도매가; pr.도매수량 = match.도매수량; pr.쿠팡수량 = match.쿠팡수량; pr.매칭신뢰 = match.매칭신뢰; }
+      else { pr.매칭신뢰 = '낮음'; }
+    }
     pricingByKw[c.kw] = pr;
     seasonalByKw[c.kw] = !!c.seasonal;
     gmroiByKw[c.kw] = turnoverVerdict(c.naverVolume, c.medReviews, pr ? pr.예상순마진율 : 0);
+    compByKw[c.kw] = competitionInfo(c.top);
     const encKw = encodeURIComponent(c.kw);
     linkByKw[c.kw] = {
-      coupang: (c.top && c.top[0] && c.top[0].l) ? c.top[0].l : ('https://www.coupang.com/np/search?q=' + encKw),
+      coupang: (rep && rep.l) ? rep.l : ('https://www.coupang.com/np/search?q=' + encKw),
       dome: 'https://dometopia.com/goods/search?search_text=' + encKw,
     };
   }
@@ -175,6 +233,7 @@ exports.handler = async (event) => {
     네이버_월검색: c.naverVolume,
     가격분석: pricingByKw[c.kw],
     회전판정: gmroiByKw[c.kw],
+    경쟁: compByKw[c.kw],
     계절상품: !!c.seasonal,
   }));
 
@@ -201,6 +260,7 @@ exports.handler = async (event) => {
         pk.seasonal = !!seasonalByKw[pk.keyword];
         pk.gmroi = gmroiByKw[pk.keyword] || null;
         pk.links = linkByKw[pk.keyword] || null;
+        pk.comp = compByKw[pk.keyword] || null;
       }
     }
   } catch (e) {
@@ -222,6 +282,7 @@ exports.handler = async (event) => {
           '도매 <b>' + num(pr.매입가) + '원</b> → 권장판매 <b>' + num(pr.권장판매가) + '원</b>' +
           (pr.마진배수 ? ' <span style="color:#7a5; font-weight:700">(' + pr.마진배수 + '배)</span>' : '') +
           ' <span style="color:' + mColor + ';font-weight:800">순마진 ' + pr.예상순마진율 + '% (건당 ' + num(pr.예상순이익) + '원)</span>' +
+          ((pr.쿠팡대표 || pr.도매상품) ? '<div style="font-size:11px;color:#777;margin-top:6px">🔎 쿠팡 "' + esc(String(pr.쿠팡대표 || '').slice(0, 26)) + '" ↔ 도매 "' + esc(String(pr.도매상품 || '?').slice(0, 26)) + '" ' + (pr.매칭신뢰 === '높음' ? '<span style="color:#1f9d57;font-weight:700">매칭✓</span>' : '<span style="color:#c0392b;font-weight:700">매칭 불확실 — 직접 확인</span>') + ((pr.도매수량 && pr.쿠팡수량 && pr.도매수량 !== pr.쿠팡수량) ? (' <span style="color:#999">(도매 ' + pr.도매수량 + '개→쿠팡 ' + pr.쿠팡수량 + '개 환산)</span>') : '') + '</div>' : '') +
           (pr.원가구성 ? '<div style="font-size:11px;color:#888;margin-top:5px">원가: 매입 ' + num(pr.원가구성.매입) + ' + 수수료·VAT ' + num(pr.원가구성.수수료VAT) + ' + 택배·포장 ' + num(pr.원가구성.택배포장) + ' + 광고·반품 ' + num(pr.원가구성.광고반품) + ' = ' + num(pr.원가구성.총원가) + '원 → 권장가의 나머지가 순이익</div>' : '') +
           (pr.번들필요 ? '<div style="font-size:12px;color:#a1455f;margin-top:3px">※ 단품 마진 약함 — 25% 내려면 ' + num(pr.마진25_최소판매가) + '원, 묶음/유료배송 권장</div>' : '') +
           '</div>';
@@ -236,6 +297,7 @@ exports.handler = async (event) => {
         (p.seasonal ? ' <span style="font-size:12px;font-weight:700;color:#fff;background:#e8820c;border-radius:980px;padding:2px 10px;margin-left:4px">🌞 제철</span>' : '') + '</div>' +
         priceBox(p.pricing) +
         (p.gmroi ? '<div style="font-size:12px;margin-top:6px"><span style="font-weight:700;color:#fff;background:' + gmroiColor(p.gmroi.판정) + ';border-radius:980px;padding:2px 9px">' + esc(p.gmroi.판정) + '</span> <span style="color:#666">' + esc(p.gmroi.전략) + '</span></div>' : '') +
+        (p.comp && p.comp.가격최저 ? '<div style="font-size:11px;color:#888;margin-top:6px">🏷 경쟁: 상위 ' + p.comp.상위수 + '개 · 가격대 ' + num(p.comp.가격최저) + '~' + num(p.comp.가격최고) + '원' + (p.comp.PB개수 ? ' · <span style="color:#c0392b">PB ' + p.comp.PB개수 + '개</span>' : '') + '</div>' : '') +
         (p.priceReason ? '<div style="font-size:12px;color:#555;line-height:1.6;margin-top:6px">💡 <b>가격 근거:</b> ' + esc(p.priceReason) + '</div>' : '') +
         (p.sellingHook ? '<div style="font-size:13px;color:#1f6f43;background:#eef9f1;border-radius:8px;padding:8px 12px;line-height:1.6;margin-top:6px">🎯 <b>이렇게 팔아라:</b> ' + esc(p.sellingHook) + '</div>' : '') +
         (p.why ? '<div style="font-size:13px;color:#444;line-height:1.6;margin-top:6px">→ ' + esc(p.why) + '</div>' : '') +
