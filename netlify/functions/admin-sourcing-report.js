@@ -25,8 +25,8 @@ function ok(body) { return { statusCode: 200, headers: CORS, body: JSON.stringif
 function err(code, msg) { return { statusCode: code, headers: CORS, body: JSON.stringify({ error: msg }) }; }
 
 // 매입 마진 계산 — docs/sourcing-playbook.md 기준 (쿠팡 실효비용).
-// 광고 5% + 반품 3% = 판매가 비례 8%(고정), 수수료+결제+VAT는 카테고리별(CATEGORY_FEE), 택배 3000 + 포장 500 = 건당 고정.
-const PRICING = { adRate: 0.05, returnRate: 0.03, ship: 3000, pack: 500, targetMargin: 0.25 };
+// ★무광고 전략: 유료광고 0(adRate 0) — 광고 없이 organic으로 팔리는 상품만 선별. 반품 3%만 판매가 비례, 수수료+결제+VAT는 카테고리별(CATEGORY_FEE), 택배 3000 + 포장 500 = 건당 고정.
+const PRICING = { adRate: 0, returnRate: 0.03, ship: 3000, pack: 500, targetMargin: 0.25 };
 
 // 카테고리별 실효 차감율(쿠팡 판매수수료 + 결제 + VAT 합산). 고수 법칙: 카테고리마다 수수료가 다르다.
 const CATEGORY_FEE = {
@@ -89,8 +89,8 @@ function turnoverVerdict(naverVolume, medReviews, marginPct, reviewGrowthPct, se
   const 회전 = demand >= 30000 ? 'high' : demand >= 8000 ? 'mid' : 'low';
   const 마진ok = marginPct >= 20;
   let 판정, 전략;
-  if (회전 !== 'low' && 마진ok && wall !== 'high') { 판정 = '최우선'; 전략 = '잘 팔리고 마진도 남고 진입여지 있음 — 바로 사입'; }
-  else if (회전 !== 'low' && 마진ok && wall === 'high') { 판정 = '고난도'; 전략 = '수요·마진 좋지만 1위 리뷰벽 높음 — 차별화·세트 아니면 진입 어려움'; }
+  if (회전 !== 'low' && 마진ok && wall === 'low') { 판정 = '최우선'; 전략 = '수요·마진 OK + 진입장벽 낮음 — 무광고로도 진입 가능, 바로 사입'; }
+  else if (회전 !== 'low' && 마진ok && wall !== 'low') { 판정 = '고난도'; 전략 = '수요·마진 좋지만 1위 리뷰벽 있음 — 무광고론 어렵고 차별화·세트 필요'; }
   else if (회전 !== 'low' && !마진ok) { 판정 = '박리다매'; 전략 = '마진 얇지만 회전 빨라 물량으로 번다 — 번들로 객단가↑'; }
   else if (회전 === 'low' && 마진ok) { 판정 = '재고주의'; 전략 = '마진 좋아도 안 팔리면 흑자도산 — 소량 테스트부터'; }
   else { 판정 = '비추천'; 전략 = '안 팔리고 마진도 얇음 — 패스'; }
@@ -161,6 +161,7 @@ const SYSTEM = [
   'G1 마진: 예상순마진율 < 25% AND 예상순이익 < 3000원 이면 단품 매입가치 낮음. 번들필요=true면 "묶음 시 가능"으로 살리되 grade 최대 "고난도".',
   'G2 규제: 화장품·식품·전기전자·유아아동·의료기기 등 인증(KC/제조판매업/영업신고) 필요 품목이면 caution에 "인증 필요" 명시.',
   'G3 정품: 브랜드 짝퉁/무단 병행수입 위험이 보이면 보류.',
+  'G4 무광고(핵심): 우리는 유료광고를 안 쓴다(광고비=0). 광고 없이 organic으로 팔리려면 ①진입장벽 낮음(회전판정.진입장벽="low", 1위 리뷰 적음) ②검색수요 충분 ③최저가 근처로 깔 수 있는 가격경쟁력 — 이 셋이 받쳐야 강력추천. 진입장벽 mid/high(판정="고난도")인데 차별화·세트 무기 없으면 보류. 광고 의존해야 팔릴 상품은 skipped.',
   '',
   '== 판단 원칙 ==',
   '1) 마진은 "같은 스펙·같은 수량" 기준으로 환산돼 들어온다. 가격분석.매칭신뢰="낮음"이면 도매-쿠팡이 다른 상품일 수 있으니 grade를 낮추고 caution에 "도매 상품 직접 확인(매칭 불확실)". 도매수량≠쿠팡수량이면 환산 사실을 why에 설명.',
