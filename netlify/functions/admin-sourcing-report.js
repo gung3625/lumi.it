@@ -122,7 +122,7 @@ const SYSTEM = [
   '{"picks":[{"keyword","grade":"강력추천|추천|고난도|보류","priceReason":"가격 근거 1~2문장","sellingHook":"이렇게 팔면 혹한다 — 구체 전술 2~3개","why":"왜 추천 1~2문장","caution":"주의/스펙/인증"}],"skipped":[{"keyword","reason"}]}',
   'priceReason = 권장가를 왜 그 가격으로: (a)천장=시세 (b)바닥=마진25_최소판매가 (c)순마진 %+언더컷 여력. 마진배수도 언급("도매 4.6배라 가격 방어력 큼").',
   'sellingHook = 위 레버에서 골라 이 상품 맞춤으로. 예: "12,900원 단수가 + 2개 17,900 묶음으로 택배비 희석, 포토리뷰 적립 1,000원으로 초기 리뷰 확보, 썸네일에 풍량 3단계 강조".',
-  'picks는 (회전 × 마진 × 경쟁) 종합 "잘 팔릴 순"으로 정렬.',
+  'picks는 (회전 × 마진 × 경쟁) 종합 "잘 팔릴 순"으로 정렬. picks는 최대 10개만(가장 잘 팔릴 것), 나머지는 skipped에 키워드+짧은 사유.',
 ].join('\n');
 
 exports.handler = async (event) => {
@@ -181,7 +181,7 @@ exports.handler = async (event) => {
         { role: 'system', content: SYSTEM },
         { role: 'user', content: '아래 후보들을 분석해 경쟁력 순으로 추천해줘. JSON만 출력.\n\n' + JSON.stringify(userPayload, null, 1) },
       ],
-      max_tokens: 3500,
+      max_tokens: 6000,
       response_format: { type: 'json_object' },
     }, { timeoutMs: 60000, label: 'sourcing-report', sensitive: false });
     const data = await res.json();
