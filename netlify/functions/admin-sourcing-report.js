@@ -76,19 +76,26 @@ function computePricing(wholesale, market, category) {
 }
 
 // GMROI 관점 — 고수 법칙: 마진율만 보지 말고 "회전(팔리는 속도)"과 곱해라.
-function turnoverVerdict(naverVolume, medReviews, marginPct, reviewGrowthPct, searchTrendPct) {
+function turnoverVerdict(naverVolume, medReviews, marginPct, reviewGrowthPct, searchTrendPct, topReviews) {
   let demand = (naverVolume || 0) + (medReviews || 0) * 30; // 리뷰 1개 ≈ 검색 30 가중
-  const growing = (reviewGrowthPct || 0) >= 15 || (searchTrendPct || 0) >= 20; // 뜨는 중
-  if (growing) demand *= 1.3;                                // 성장 가속 → 회전 가중
+  const rg = reviewGrowthPct || 0, st = searchTrendPct || 0;
+  const growing = rg >= 15 || st >= 20; // 뜨는 중
+  // 리뷰 증가속도 = "지금 실제로 팔리는 중"이라는 가장 강한 증거 → 강하게 반영
+  if (rg >= 30) demand *= 1.6;                    // 리뷰 급증 = 강한 실판매 신호
+  else if (growing) demand *= 1.3;                // 성장 가속
+  else if (rg <= -10 || st <= -15) demand *= 0.7; // 식는 중 → 감점
+  // 진입장벽 = 쿠팡 1위 리뷰수. 너무 높으면 수요 있어도 신규가 못 뚫음 → 높은확률 후보서 제외
+  const wall = (topReviews || 0) >= 5000 ? 'high' : (topReviews || 0) >= 1500 ? 'mid' : 'low';
   const 회전 = demand >= 30000 ? 'high' : demand >= 8000 ? 'mid' : 'low';
   const 마진ok = marginPct >= 20;
   let 판정, 전략;
-  if (회전 !== 'low' && 마진ok) { 판정 = '최우선'; 전략 = '잘 팔리고 마진도 남음 — 바로 사입'; }
+  if (회전 !== 'low' && 마진ok && wall !== 'high') { 판정 = '최우선'; 전략 = '잘 팔리고 마진도 남고 진입여지 있음 — 바로 사입'; }
+  else if (회전 !== 'low' && 마진ok && wall === 'high') { 판정 = '고난도'; 전략 = '수요·마진 좋지만 1위 리뷰벽 높음 — 차별화·세트 아니면 진입 어려움'; }
   else if (회전 !== 'low' && !마진ok) { 판정 = '박리다매'; 전략 = '마진 얇지만 회전 빨라 물량으로 번다 — 번들로 객단가↑'; }
   else if (회전 === 'low' && 마진ok) { 판정 = '재고주의'; 전략 = '마진 좋아도 안 팔리면 흑자도산 — 소량 테스트부터'; }
   else { 판정 = '비추천'; 전략 = '안 팔리고 마진도 얇음 — 패스'; }
-  if (growing && 판정 === '최우선') 전략 = '지금 뜨는 중 + 마진 OK — 최우선 사입';
-  return { 회전, 판정, 전략, 성장가속: growing, 추세: { 리뷰증가율: reviewGrowthPct == null ? null : reviewGrowthPct, 검색증감: searchTrendPct == null ? null : searchTrendPct } };
+  if (rg >= 30 && 판정 === '최우선') 전략 = '리뷰 급증(지금 뜨는 중) + 마진 OK — 최우선 사입';
+  return { 회전, 진입장벽: wall, 판정, 전략, 성장가속: growing, 리뷰급증: rg >= 30, 추세: { 리뷰증가율: reviewGrowthPct == null ? null : reviewGrowthPct, 검색증감: searchTrendPct == null ? null : searchTrendPct } };
 }
 
 // ★ 같은 스펙 매칭 — 도매 최저가 맹신 금지. 쿠팡 대표상품과 같은 수량 기준으로 도매원가 환산.
@@ -159,7 +166,7 @@ const SYSTEM = [
   '1) 마진은 "같은 스펙·같은 수량" 기준으로 환산돼 들어온다. 가격분석.매칭신뢰="낮음"이면 도매-쿠팡이 다른 상품일 수 있으니 grade를 낮추고 caution에 "도매 상품 직접 확인(매칭 불확실)". 도매수량≠쿠팡수량이면 환산 사실을 why에 설명.',
   '2) 검색량 높아도 "구매의도"가 아닌 "정보성 도구" 검색(예: 계산기)이면 skipped.',
   '3) 경쟁력 = 수요 × 순마진 × 리뷰벽(상위 리뷰 적을수록 진입 쉬움). 경쟁.PB개수가 많으면 상위 PB 장악이니 감점(품질/가격 우위 가능하면 "고난도"). 경쟁.가격최저~최고 폭이 좁고 낮으면 최저가 전쟁이라 caution.',
-  '4) GMROI 법칙 = 마진율 × 회전(팔리는 속도). 회전판정을 반영하라: 판정="박리다매"면 마진 얇아도 회전으로 추천(번들 권장), "재고주의"(고마진·저수요)면 caution에 "소량 테스트(흑자도산 위험)", "비추천"이면 skipped.',
+  '4) GMROI 법칙 = 마진율 × 회전(팔리는 속도). 회전판정을 반영하라: 판정="최우선"이면 높은확률 매입후보(grade 강력추천/추천), 판정="고난도"(수요·마진 좋으나 1위 리뷰벽 높음=진입장벽 high)는 grade 최대 "고난도"이며 차별화·세트 전술 없으면 보류, "박리다매"면 마진 얇아도 회전으로 추천(번들 권장), "재고주의"(고마진·저수요)면 caution에 "소량 테스트(흑자도산 위험)", "비추천"이면 skipped. 회전판정.리뷰급증=true(리뷰 급증=지금 실제로 팔리는 중)는 가장 강한 실판매 신호 — grade 가산 1순위.',
   '5) 작고 가벼운 상품 가산, 부피 큰 저가품 감점(택배가 마진 잠식).',
   '6) 계절상품=true는 제철 수요 급증 — grade 한 단계 가산, why에 "제철 수요" 근거.',
   '7) 추세: 회전판정.추세(검색증감%·리뷰증가율%)가 양수로 크면(검색 +20%↑ 또는 리뷰 +15%↑) "지금 뜨는 중" — grade 한 단계 가산, why에 근거. 음수로 크면 "식는 중"이라 caution. 단 추세는 가산점일 뿐, 적자(마진 게이트 실패) 상품을 살리지는 말 것.',
@@ -237,7 +244,7 @@ exports.handler = async (event) => {
     }
     pricingByKw[c.kw] = pr;
     seasonalByKw[c.kw] = !!c.seasonal;
-    gmroiByKw[c.kw] = turnoverVerdict(c.naverVolume, c.medReviews, pr ? pr.예상순마진율 : 0, c.reviewGrowthPct, c.searchTrendPct);
+    gmroiByKw[c.kw] = turnoverVerdict(c.naverVolume, c.medReviews, pr ? pr.예상순마진율 : 0, c.reviewGrowthPct, c.searchTrendPct, c.topReviews);
     compByKw[c.kw] = competitionInfo(c.top);
     const encKw = encodeURIComponent(c.kw);
     linkByKw[c.kw] = {
