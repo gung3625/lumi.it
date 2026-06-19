@@ -46,7 +46,13 @@ exports.handler = async (event) => {
   // 6) 매입 주문(배송지는 setOrderDome이 기본 배송지 자동 사용)
   const purchase = await setOrderDome({ no: body.no, qty: body.qty || 1, optCode: body.optCode || '', sellerMsg: body.sellerMsg || '', dryRun });
 
-  // 7) 로켓그로스 등록 spec 조립
+  // 7) 로켓그로스 등록 spec 조립 — 도매꾹 이미지 URL을 vendorPath로(쿠팡이 http(s) URL 자동 다운로드, 포트80/443·200자↓)
+  //   첫 장=REPRESENTATION(대표, 정사각 500x500↑ 권장), 나머지=DETAIL(최대 9). 별도 업로드 불필요.
+  const autoImages = (product.images || [])
+    .filter((u) => /^https?:\/\//.test(String(u)) && String(u).length <= 200)
+    .slice(0, 10)
+    .map((u, i) => ({ imageOrder: i, imageType: i === 0 ? 'REPRESENTATION' : 'DETAIL', vendorPath: u }));
+  const images = (body.images && body.images.length) ? body.images : autoImages;
   const spec = {
     categoryCode: cat && cat.ok ? cat.categoryId : null,
     name: (detail && detail.copy && detail.copy.seoTitle) || product.title,
@@ -55,7 +61,7 @@ exports.handler = async (event) => {
     returnCenterCode: retc && retc.ok && retc.centers[0] ? retc.centers[0].code : null,
     legalAgreement: body.legalAgreement,
     detailHtml: detail && detail.html ? detail.html : '',
-    images: body.images || [], // vendorPath(쿠팡 업로드 경로) — 이미지 업로드 미구현 시 비어있음
+    images,
     item: { itemName: product.title, barcode: body.barcode, salePrice: body.salePrice, sku: body.sku || {} },
   };
   const listing = await createRocketGrowthProduct(spec, { dryRun });
@@ -64,7 +70,7 @@ exports.handler = async (event) => {
   const todo = [];
   if (!body.salePrice) todo.push('salePrice(쿠팡 판매가)');
   if (!body.barcode) todo.push('barcode(GTIN)');
-  if (!body.images || !body.images.length) todo.push('images(쿠팡 업로드 vendorPath) — 이미지 업로드 단계 필요');
+  if (!images.length) todo.push('images(도매꾹 이미지 자동매핑 실패 — 수동 지정 필요)');
   if (!body.vendorUserId) todo.push('vendorUserId(쿠팡 WING 아이디)');
   if (!body.legalAgreement) todo.push('legalAgreement(로켓그로스 동의문구)');
   if (!body.sku || !body.sku.weight) todo.push('sku 무게/치수(실측)');
