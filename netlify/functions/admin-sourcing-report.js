@@ -9,7 +9,7 @@
 
 'use strict';
 
-const { fetchRelatedKeywords } = require('./_shared/naver-ad-keyword-tool');
+const { fetchRelatedKeywords, fetchKeywordTrend } = require('./_shared/naver-ad-keyword-tool');
 const { llmChat } = require('./_shared/llm-call');
 const { Resend } = require('resend');
 
@@ -75,8 +75,10 @@ function computePricing(wholesale, market, category) {
 }
 
 // GMROI 관점 — 고수 법칙: 마진율만 보지 말고 "회전(팔리는 속도)"과 곱해라.
-function turnoverVerdict(naverVolume, medReviews, marginPct) {
-  const demand = (naverVolume || 0) + (medReviews || 0) * 30; // 리뷰 1개 ≈ 검색 30 가중
+function turnoverVerdict(naverVolume, medReviews, marginPct, reviewGrowthPct, searchTrendPct) {
+  let demand = (naverVolume || 0) + (medReviews || 0) * 30; // 리뷰 1개 ≈ 검색 30 가중
+  const growing = (reviewGrowthPct || 0) >= 15 || (searchTrendPct || 0) >= 20; // 뜨는 중
+  if (growing) demand *= 1.3;                                // 성장 가속 → 회전 가중
   const 회전 = demand >= 30000 ? 'high' : demand >= 8000 ? 'mid' : 'low';
   const 마진ok = marginPct >= 20;
   let 판정, 전략;
@@ -84,7 +86,8 @@ function turnoverVerdict(naverVolume, medReviews, marginPct) {
   else if (회전 !== 'low' && !마진ok) { 판정 = '박리다매'; 전략 = '마진 얇지만 회전 빨라 물량으로 번다 — 번들로 객단가↑'; }
   else if (회전 === 'low' && 마진ok) { 판정 = '재고주의'; 전략 = '마진 좋아도 안 팔리면 흑자도산 — 소량 테스트부터'; }
   else { 판정 = '비추천'; 전략 = '안 팔리고 마진도 얇음 — 패스'; }
-  return { 회전, 판정, 전략 };
+  if (growing && 판정 === '최우선') 전략 = '지금 뜨는 중 + 마진 OK — 최우선 사입';
+  return { 회전, 판정, 전략, 성장가속: growing, 추세: { 리뷰증가율: reviewGrowthPct == null ? null : reviewGrowthPct, 검색증감: searchTrendPct == null ? null : searchTrendPct } };
 }
 
 // ★ 같은 스펙 매칭 — 도매 최저가 맹신 금지. 쿠팡 대표상품과 같은 수량 기준으로 도매원가 환산.
@@ -158,6 +161,7 @@ const SYSTEM = [
   '4) GMROI 법칙 = 마진율 × 회전(팔리는 속도). 회전판정을 반영하라: 판정="박리다매"면 마진 얇아도 회전으로 추천(번들 권장), "재고주의"(고마진·저수요)면 caution에 "소량 테스트(흑자도산 위험)", "비추천"이면 skipped.',
   '5) 작고 가벼운 상품 가산, 부피 큰 저가품 감점(택배가 마진 잠식).',
   '6) 계절상품=true는 제철 수요 급증 — grade 한 단계 가산, why에 "제철 수요" 근거.',
+  '7) 추세: 회전판정.추세(검색증감%·리뷰증가율%)가 양수로 크면(검색 +20%↑ 또는 리뷰 +15%↑) "지금 뜨는 중" — grade 한 단계 가산, why에 근거. 음수로 크면 "식는 중"이라 caution. 단 추세는 가산점일 뿐, 적자(마진 게이트 실패) 상품을 살리지는 말 것.',
   '',
   '== 판매 전술: sellingHook = "어떻게 하면 사람이 혹해서 사는가" 2~3개 구체 전술(숫자 포함) ==',
   '아래 레버 중 이 상품에 가장 잘 먹힐 것만 골라라:',
@@ -202,6 +206,13 @@ exports.handler = async (event) => {
     } catch (_) { c.naverVolume = null; }
   }
 
+  // 1-2) 검색량 추세(데이터랩) 보강 — 5개씩 묶어 호출, 실패해도 진행
+  for (let i = 0; i < candidates.length; i += 5) {
+    const chunk = candidates.slice(i, i + 5);
+    const t = await fetchKeywordTrend(chunk.map((c) => c.kw)).catch(() => ({}));
+    for (const c of chunk) c.searchTrendPct = (c.kw in t) ? t[c.kw] : null;
+  }
+
   // 2) 가격분석 계산 (룰북 공식 — 결정적). 키워드별로 매핑해 뒤에서 Gemini 결과에 병합.
   const pricingByKw = {}, seasonalByKw = {}, gmroiByKw = {}, linkByKw = {}, compByKw = {}, thumbByKw = {};
   for (const c of candidates) {
@@ -218,7 +229,7 @@ exports.handler = async (event) => {
     }
     pricingByKw[c.kw] = pr;
     seasonalByKw[c.kw] = !!c.seasonal;
-    gmroiByKw[c.kw] = turnoverVerdict(c.naverVolume, c.medReviews, pr ? pr.예상순마진율 : 0);
+    gmroiByKw[c.kw] = turnoverVerdict(c.naverVolume, c.medReviews, pr ? pr.예상순마진율 : 0, c.reviewGrowthPct, c.searchTrendPct);
     compByKw[c.kw] = competitionInfo(c.top);
     const encKw = encodeURIComponent(c.kw);
     linkByKw[c.kw] = {
@@ -234,6 +245,9 @@ exports.handler = async (event) => {
     쿠팡_중앙가: c.medPrice, 쿠팡_1위리뷰: c.topReviews, 쿠팡_중앙리뷰: c.medReviews,
     도매_샘플: (c.domeSample || []).map((d) => ({ 이름: d.name, 도매가: d.w })),
     네이버_월검색: c.naverVolume,
+    검색추세_증감: c.searchTrendPct,
+    리뷰증가율: c.reviewGrowthPct,
+    리뷰증가수: c.reviewDelta,
     가격분석: pricingByKw[c.kw],
     회전판정: gmroiByKw[c.kw],
     경쟁: compByKw[c.kw],
@@ -301,7 +315,7 @@ exports.handler = async (event) => {
         ' <span style="font-size:12px;font-weight:700;color:#fff;background:' + gradeColor(p.grade) + ';border-radius:980px;padding:2px 10px;margin-left:6px">' + esc(p.grade || '') + '</span>' +
         (p.seasonal ? ' <span style="font-size:12px;font-weight:700;color:#fff;background:#e8820c;border-radius:980px;padding:2px 10px;margin-left:4px">🌞 제철</span>' : '') + '</div>' +
         priceBox(p.pricing) +
-        (p.gmroi ? '<div style="font-size:12px;margin-top:6px"><span style="font-weight:700;color:#fff;background:' + gmroiColor(p.gmroi.판정) + ';border-radius:980px;padding:2px 9px">' + esc(p.gmroi.판정) + '</span> <span style="color:#666">' + esc(p.gmroi.전략) + '</span></div>' : '') +
+        (p.gmroi ? '<div style="font-size:12px;margin-top:6px"><span style="font-weight:700;color:#fff;background:' + gmroiColor(p.gmroi.판정) + ';border-radius:980px;padding:2px 9px">' + esc(p.gmroi.판정) + '</span> <span style="color:#666">' + esc(p.gmroi.전략) + '</span>' + (p.gmroi.성장가속 ? ' <span style="color:#1f9d57;font-weight:700">📈 뜨는 중</span>' : '') + ((p.gmroi.추세 && (p.gmroi.추세.검색증감 != null || p.gmroi.추세.리뷰증가율 != null)) ? '<span style="color:#999;font-size:11px"> (' + (p.gmroi.추세.검색증감 != null ? '검색 ' + (p.gmroi.추세.검색증감 >= 0 ? '+' : '') + p.gmroi.추세.검색증감 + '%' : '') + (p.gmroi.추세.리뷰증가율 != null ? ' 리뷰 ' + (p.gmroi.추세.리뷰증가율 >= 0 ? '+' : '') + p.gmroi.추세.리뷰증가율 + '%' : '') + ')</span>' : '') + '</div>' : '') +
         (p.comp && p.comp.가격최저 ? '<div style="font-size:11px;color:#888;margin-top:6px">🏷 경쟁: 상위 ' + p.comp.상위수 + '개 · 가격대 ' + num(p.comp.가격최저) + '~' + num(p.comp.가격최고) + '원' + (p.comp.PB개수 ? ' · <span style="color:#c0392b">PB ' + p.comp.PB개수 + '개</span>' : '') + (p.comp.로켓개수 ? ' · 🚀로켓 ' + p.comp.로켓개수 + '개' : '') + '</div>' : '') +
         (p.priceReason ? '<div style="font-size:12px;color:#555;line-height:1.6;margin-top:6px">💡 <b>가격 근거:</b> ' + esc(p.priceReason) + '</div>' : '') +
         (p.sellingHook ? '<div style="font-size:13px;color:#1f6f43;background:#eef9f1;border-radius:8px;padding:8px 12px;line-height:1.6;margin-top:6px">🎯 <b>이렇게 팔아라:</b> ' + esc(p.sellingHook) + '</div>' : '') +

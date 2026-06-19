@@ -319,11 +319,46 @@ async function fetchKeywordSearchVolumeRobust(keyword) {
   return null;
 }
 
+// 네이버 데이터랩 통합검색어 트렌드 → 키워드별 "검색 관심도 증감%"(절대량 아님, 0~100 상대지수의 추세).
+// 최근 8주 주간 데이터의 (최근 2주 평균 vs 그 앞 2주 평균) 비율. keywords는 최대 5개씩.
+// 인증: 기존 NAVER_CLIENT_ID/SECRET (데이터랩은 검색광고 키와 별개의 오픈API 키).
+function ymd(d) { return d.toISOString().slice(0, 10); }
+async function fetchKeywordTrend(keywords) {
+  const id = process.env.NAVER_CLIENT_ID, sec = process.env.NAVER_CLIENT_SECRET;
+  if (!id || !sec || !Array.isArray(keywords) || !keywords.length) return {};
+  const end = new Date(), start = new Date(end.getTime() - 56 * 864e5);
+  const body = JSON.stringify({
+    startDate: ymd(start), endDate: ymd(end), timeUnit: 'week',
+    keywordGroups: keywords.slice(0, 5).map((k) => ({ groupName: k, keywords: [k] })),
+  });
+  const res = await new Promise((ok) => {
+    const req = https.request({
+      hostname: 'openapi.naver.com', path: '/v1/datalab/search', method: 'POST',
+      headers: { 'X-Naver-Client-Id': id, 'X-Naver-Client-Secret': sec, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
+      timeout: 10000,
+    }, (r) => { let b = ''; r.on('data', (c) => { b += c; }); r.on('end', () => ok({ status: r.statusCode, body: b })); });
+    req.on('error', () => ok(null)); req.on('timeout', () => { req.destroy(); ok(null); });
+    req.write(body); req.end();
+  });
+  if (!res || res.status !== 200) return {};
+  let parsed; try { parsed = JSON.parse(res.body); } catch (_) { return {}; }
+  const out = {};
+  for (const g of (parsed.results || [])) {
+    const d = (g.data || []).map((x) => x.ratio || 0);
+    if (d.length < 4) { out[g.title] = null; continue; }
+    const recent = (d[d.length - 1] + d[d.length - 2]) / 2;
+    const prev = (d[d.length - 3] + d[d.length - 4]) / 2;
+    out[g.title] = prev > 0 ? Math.round(((recent - prev) / prev) * 100) : null;
+  }
+  return out;
+}
+
 module.exports = {
   fetchRelatedKeywords,
   fetchRelatedFromSeeds,
   fetchKeywordSearchVolume,
   fetchKeywordSearchVolumeRobust,
+  fetchKeywordTrend,
   splitCompoundKorean,
   KO_PRODUCT_SUFFIXES,
 };
