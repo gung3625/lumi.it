@@ -153,12 +153,17 @@ exports.handler = async (event) => {
   }
 
   // 2) 가격분석 계산 (룰북 공식 — 결정적). 키워드별로 매핑해 뒤에서 Gemini 결과에 병합.
-  const pricingByKw = {}, seasonalByKw = {}, gmroiByKw = {};
+  const pricingByKw = {}, seasonalByKw = {}, gmroiByKw = {}, linkByKw = {};
   for (const c of candidates) {
     const pr = computePricing(c.domeLow, c.medPrice, inferCategory(c.kw));
     pricingByKw[c.kw] = pr;
     seasonalByKw[c.kw] = !!c.seasonal;
     gmroiByKw[c.kw] = turnoverVerdict(c.naverVolume, c.medReviews, pr ? pr.예상순마진율 : 0);
+    const encKw = encodeURIComponent(c.kw);
+    linkByKw[c.kw] = {
+      coupang: (c.top && c.top[0] && c.top[0].l) ? c.top[0].l : ('https://www.coupang.com/np/search?q=' + encKw),
+      dome: 'https://dometopia.com/goods/search?search_text=' + encKw,
+    };
   }
 
   // 3) Gemini 분석 (마진 숫자는 위 계산값을 그대로 전달 — 재계산 X)
@@ -195,6 +200,7 @@ exports.handler = async (event) => {
         if (pr) { pk.pricing = pr; }
         pk.seasonal = !!seasonalByKw[pk.keyword];
         pk.gmroi = gmroiByKw[pk.keyword] || null;
+        pk.links = linkByKw[pk.keyword] || null;
       }
     }
   } catch (e) {
@@ -221,6 +227,8 @@ exports.handler = async (event) => {
           '</div>';
       };
       const gmroiColor = (v) => v === '최우선' ? '#1f9d57' : v === '박리다매' ? '#0a84c2' : v === '재고주의' ? '#e8820c' : '#999';
+      const linkBtn = (href, label, bg) => '<a href="' + href + '" style="display:inline-block;font-size:12px;font-weight:700;color:#fff;background:' + bg + ';text-decoration:none;border-radius:980px;padding:6px 13px;margin-right:6px">' + label + '</a>';
+      const linksRow = (lk) => lk ? '<div style="margin-top:9px">' + linkBtn(lk.dome, '📦 도매토피아 매입', '#C8507A') + linkBtn(lk.coupang, '🛒 쿠팡에서 보기', '#555') + '</div>' : '';
       const items = report.picks.map((p, i) => (
         '<div style="margin:0 0 14px;padding:14px 16px;border:1px solid #eee;border-radius:12px">' +
         '<div style="font-size:15px;font-weight:800;color:#222">' + (i + 1) + '. ' + esc(p.keyword) +
@@ -232,6 +240,7 @@ exports.handler = async (event) => {
         (p.sellingHook ? '<div style="font-size:13px;color:#1f6f43;background:#eef9f1;border-radius:8px;padding:8px 12px;line-height:1.6;margin-top:6px">🎯 <b>이렇게 팔아라:</b> ' + esc(p.sellingHook) + '</div>' : '') +
         (p.why ? '<div style="font-size:13px;color:#444;line-height:1.6;margin-top:6px">→ ' + esc(p.why) + '</div>' : '') +
         (p.caution ? '<div style="font-size:12px;color:#a1455f;line-height:1.6;margin-top:4px">⚠ ' + esc(p.caution) + '</div>' : '') +
+        linksRow(p.links) +
         '</div>'
       )).join('');
       const html = '<div style="max-width:600px;margin:0 auto;font-family:system-ui,-apple-system,sans-serif">' +
