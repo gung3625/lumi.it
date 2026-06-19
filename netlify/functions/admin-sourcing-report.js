@@ -127,11 +127,13 @@ function competitionInfo(top) {
   const arr = Array.isArray(top) ? top : [];
   const prices = arr.map((p) => p.p).filter((n) => n > 0).sort((a, b) => a - b);
   const pb = arr.filter((p) => PB_BRANDS.some((b) => (p.n || '').indexOf(b) >= 0)).length;
+  const rocket = arr.filter((p) => p.rk).length;
   return {
     상위수: arr.length,
     가격최저: prices.length ? prices[0] : null,
     가격최고: prices.length ? prices[prices.length - 1] : null,
     PB개수: pb,
+    로켓개수: rocket,
   };
 }
 
@@ -201,9 +203,10 @@ exports.handler = async (event) => {
   }
 
   // 2) 가격분석 계산 (룰북 공식 — 결정적). 키워드별로 매핑해 뒤에서 Gemini 결과에 병합.
-  const pricingByKw = {}, seasonalByKw = {}, gmroiByKw = {}, linkByKw = {}, compByKw = {};
+  const pricingByKw = {}, seasonalByKw = {}, gmroiByKw = {}, linkByKw = {}, compByKw = {}, thumbByKw = {};
   for (const c of candidates) {
     const rep = (c.top && c.top[0]) ? c.top[0] : null;            // 대표상품 = 리뷰 1위
+    thumbByKw[c.kw] = (rep && rep.th) ? rep.th : null;
     const repPrice = (rep && rep.p) ? rep.p : c.medPrice;         // 시장 anchor
     const match = matchWholesale(rep, c.domeSample, c.kw);        // 같은 스펙 도매원가 환산
     const wholesale = match ? match.환산도매원가 : c.domeLow;      // 매칭 실패 시 기존 최저가
@@ -261,6 +264,7 @@ exports.handler = async (event) => {
         pk.gmroi = gmroiByKw[pk.keyword] || null;
         pk.links = linkByKw[pk.keyword] || null;
         pk.comp = compByKw[pk.keyword] || null;
+        pk.thumb = thumbByKw[pk.keyword] || null;
       }
     }
   } catch (e) {
@@ -292,12 +296,13 @@ exports.handler = async (event) => {
       const linksRow = (lk) => lk ? '<div style="margin-top:9px">' + linkBtn(lk.dome, '📦 도매토피아 매입', '#C8507A') + linkBtn(lk.coupang, '🛒 쿠팡에서 보기', '#555') + '</div>' : '';
       const items = report.picks.map((p, i) => (
         '<div style="margin:0 0 14px;padding:14px 16px;border:1px solid #eee;border-radius:12px">' +
+        (p.thumb ? '<img src="' + esc(p.thumb) + '" width="64" height="64" style="float:right;width:64px;height:64px;object-fit:cover;border-radius:8px;margin:0 0 6px 10px" alt="">' : '') +
         '<div style="font-size:15px;font-weight:800;color:#222">' + (i + 1) + '. ' + esc(p.keyword) +
         ' <span style="font-size:12px;font-weight:700;color:#fff;background:' + gradeColor(p.grade) + ';border-radius:980px;padding:2px 10px;margin-left:6px">' + esc(p.grade || '') + '</span>' +
         (p.seasonal ? ' <span style="font-size:12px;font-weight:700;color:#fff;background:#e8820c;border-radius:980px;padding:2px 10px;margin-left:4px">🌞 제철</span>' : '') + '</div>' +
         priceBox(p.pricing) +
         (p.gmroi ? '<div style="font-size:12px;margin-top:6px"><span style="font-weight:700;color:#fff;background:' + gmroiColor(p.gmroi.판정) + ';border-radius:980px;padding:2px 9px">' + esc(p.gmroi.판정) + '</span> <span style="color:#666">' + esc(p.gmroi.전략) + '</span></div>' : '') +
-        (p.comp && p.comp.가격최저 ? '<div style="font-size:11px;color:#888;margin-top:6px">🏷 경쟁: 상위 ' + p.comp.상위수 + '개 · 가격대 ' + num(p.comp.가격최저) + '~' + num(p.comp.가격최고) + '원' + (p.comp.PB개수 ? ' · <span style="color:#c0392b">PB ' + p.comp.PB개수 + '개</span>' : '') + '</div>' : '') +
+        (p.comp && p.comp.가격최저 ? '<div style="font-size:11px;color:#888;margin-top:6px">🏷 경쟁: 상위 ' + p.comp.상위수 + '개 · 가격대 ' + num(p.comp.가격최저) + '~' + num(p.comp.가격최고) + '원' + (p.comp.PB개수 ? ' · <span style="color:#c0392b">PB ' + p.comp.PB개수 + '개</span>' : '') + (p.comp.로켓개수 ? ' · 🚀로켓 ' + p.comp.로켓개수 + '개' : '') + '</div>' : '') +
         (p.priceReason ? '<div style="font-size:12px;color:#555;line-height:1.6;margin-top:6px">💡 <b>가격 근거:</b> ' + esc(p.priceReason) + '</div>' : '') +
         (p.sellingHook ? '<div style="font-size:13px;color:#1f6f43;background:#eef9f1;border-radius:8px;padding:8px 12px;line-height:1.6;margin-top:6px">🎯 <b>이렇게 팔아라:</b> ' + esc(p.sellingHook) + '</div>' : '') +
         (p.why ? '<div style="font-size:13px;color:#444;line-height:1.6;margin-top:6px">→ ' + esc(p.why) + '</div>' : '') +
