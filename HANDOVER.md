@@ -1,4 +1,4 @@
-# 루미(lumi) 인수인계 — 2026-06-17
+# 루미(lumi) 인수인계 — 2026-06-20
 
 > 새 로컬/세션이 이어받기 위한 문서. `~/.claude` 자동 메모리는 머신 간 동기화 안 되므로 이 파일이 단일 소스.
 > 새 세션 첫 메시지에 이 내용을 붙여넣거나, repo에서 `git pull` 후 이 파일을 읽게 할 것.
@@ -13,6 +13,32 @@
 - **현재 상태(2026-06-08 갱신)**: `main`, 최신 커밋 `c4b2373`. 코드 클린. 루트에 미적용 ops SQL 2개 untracked — `security-hardening.sql`(✅적용완료), `performance-rls.sql`(선택, 0명 규모라 비긴급).
 
 ## 1. lumi 현재 배포 상태 (전부 main 머지 완료)
+
+### ⭐⭐ 2026-06-18~20 세션 — 소싱(매입 차익) 시스템 [별도 서브시스템, GCP 배포]
+
+> 사장님(gung3625@gmail.com) **메인 사업**. 캡션/인스타 제품과 별개. 이 기기 메모리 `~/.claude/.../memory/project_sourcing_system.md`에 더 상세(머신 동기화 안 됨 → 이 문단이 정본).
+
+**개요**: 도매꾹 매입 → 쿠팡 **로켓그로스** 재판매 차익 자동화. 흐름: 조사(쿠팡 수요+도매꾹 매입가)→높은확률 추천 메일(매일 8시)→[사장님 승인]→매입(setOrder)→상세페이지 자동생성→쿠팡 로켓그로스 등록.
+
+**⚠️⚠️ 배포가 다름 (Netlify push 아님 — GCP self-host)**:
+- 소싱은 **GCP VM `34.158.206.244`**: `server.js`(Express가 `netlify/functions/*.js`를 `/api/<name>` 자동마운트) + PM2(앱명 `lumi`) + Caddy(HTTPS). (쿠팡 WING IP 화이트리스트 + 도매꾹 세션파일 때문에 GCP 고정.)
+- **배포=rsync**: `rsync -e "ssh -i ~/.ssh/lumi_gcp" <파일> lumi@34.158.206.244:/home/lumi/lumi/<경로>` 후 `ssh -i ~/.ssh/lumi_gcp lumi@34.158.206.244 'pm2 reload lumi'`. SSH키=`~/.ssh/lumi_gcp`(user=lumi, HOME=/home/lumi). **env는 `~/lumi/ecosystem.config.js` apps[0].env**(PM2). git push는 버전관리만.
+- 서버 함수 테스트: `cd ~/lumi && node -e "const e=require('./ecosystem.config.js');Object.assign(process.env,e.apps[0].env);..."`.
+
+**핵심 파일**:
+- `scripts/coupang-scan.js`(Mac 로컬, gitignored, launchd `com.lumi.sourcing-daily` 매일8시): osascript로 진짜 크롬 제어→쿠팡 인기/리뷰 스크래핑(Akamai가 API·헤드리스 다 차단→이 방법뿐). GCP로 POST.
+- `admin-sourcing-report.js`: 소싱 두뇌. computePricing(무광고 adRate 0)·turnoverVerdict(수요×추세×진입장벽 게이트)·LLM 랭킹/카피. **provider:'gemini'(무료)**. Resend 메일.
+- `_shared/domeggook-api.js`: 도매꾹 OpenAPI. getItemView(스펙·옵션·**resale.allowed 재판매여부**·**descImages 상세컷이미지** 추출)·setOrderDome(매입,dryRun기본)·cancelOrderDome(취소)·getDefaultDeliinfo(집)/getGemiDeliinfo(개미창고).
+- `_shared/coupang-rocket-api.js`: 로켓그로스 등록(seller-products+rocketGrowthItemData)·predictCategory·출고/반품지.
+- `_shared/coupang-wing-api.js`: 쿠팡 WING HMAC.
+- `_shared/detail-page.js`: 상세페이지. webseller 구매심리 구조 + **aisyncclub/detail_page_codex_skill(MIT) 표준**(copy-compliance 위험표현필터·photo-analysis·cut-structure) 이식. **비전(Gemini)이 도매꾹 상세 이미지서 실제 기능 추출**(제목제약+판매자정보필터). 카피=**GPT-4o**.
+- `admin-source-to-listing.js`: 오케스트레이터(상품번호1개→매입+상세+등록, dryRun). `admin-detail-page.js`: 상세 단독.
+
+**인증/시크릿(GCP env + 서버 600파일)**: env=DOMEGGOOK_API_KEY(dd20…)·DOMEGGOOK_USER_ID=gung3625·COUPANG_ACCESS/SECRET/VENDOR_ID(A00968893)·OPENAI_API_KEY·GEMINI_API_KEY(무료)·NAVER_*·LUMI_SECRET. 파일=`~/.dgk_pw`(도매꾹비번,사장님직접)·`~/.dgk_session`·`~/.dgk_deliinfo`(집)·`~/.dgk_deliinfo_gemi`(개미창고). 도매꾹 Private API 권한 승인(로그인·주문조회·setOrder·setOrdDeny). 쿠팡 로켓그로스 API동의+출고지(21219014)+반품지(1001965390) 완료.
+
+**확정 결정**: ①매입처=도매꾹 단독(Phase1)/Phase2=AliExpress DS API/Temu·차이나꾹 제외. ②물류=**개미창고 3PL**(매입→개미창고 직배송→바코드·검수·쿠팡납품, 이천센터 배송지). ③**무광고 전략**(광고비=적자 주범, adRate0, 진입장벽 낮은 organic 판매가능 상품만). ④"높은확률만, 작게 사서 데이터로 키운다". ⑤LLM 소싱=무료Gemini/상세=GPT-4o. 영상 제외. ⑥이미지 정제=드랩아트(draph.art, 한국, 누끼무료+상세)/PicCopilot 검토(API 미확인, 수동부터).
+
+**남은 것**: ✅예치금 10만원 충전됨 → 실매입 테스트(저가상품 매입→즉시취소→환불) 미실행. **setOrder item포맷(옵션 optCode) 연동매뉴얼 검증 필요**(첫 실주문 전). resale.allowed 게이트 오케스트레이터에 미연결. 상품별 바코드/무게치수(로켓그로스 필수)=실물 실측 or 도매꾹값(자주 쓰레기). 쿠팡 이미지 정제 자동화 미구현. ⚠️교훈: 도매꾹 상세이미지엔 셀러 다른모델·연락처 섞임(필터필수). "창작" 단정 전 제목/스펙/옵션/이미지 다 확인할 것(사장님 4번 지적).
 
 ### ⭐ 2026-06-17 세션 (PayApp 결제 백엔드 + 앱 셸 통일 + 정리)
 
