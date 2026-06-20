@@ -79,7 +79,7 @@ function textBlock(t2s, text, { x, y, fontSize, lineHeight, fill, maxWidth, lett
       const w = t2s.getMetrics(ln, { fontSize, letterSpacing }).width;
       lx = align === 'center' ? x + (maxWidth - w) / 2 : x + (maxWidth - w);
     }
-    if (ln) svg += t2s.getPath(ln, { x: lx, y: y + i * lh, fontSize, letterSpacing, anchor, fill });
+    if (ln) svg += tp(t2s, ln, { x: lx, y: y + i * lh, fontSize, letterSpacing, anchor, fill });
   });
   return { svg, height: lines.length * lh, lines: lines.length };
 }
@@ -106,11 +106,39 @@ async function coverPhoto(src, w, h) {
 }
 
 const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+// text-to-svg getPath는 색을 options.attributes.fill 로만 반영(options.fill 무시) → fill을 attributes로 변환.
+function tp(font, text, o = {}) {
+  const { fill, attributes, ...rest } = o;
+  return font.getPath(text, { ...rest, attributes: { fill: fill || C.ink, ...(attributes || {}) } });
+}
 const EB_SIZE = 20, EB_LS = 0.18; // 아이브로: letterSpacing은 em 단위(0.18 = 적당한 트래킹)
 const eyebrowSvg = (F, t, x, y, color = C.accent) =>
-  (t ? F.bold.getPath(String(t).toUpperCase(), { x, y, fontSize: EB_SIZE, letterSpacing: EB_LS, anchor: 'left top', fill: color }) : '');
+  (t ? tp(F.bold, String(t).toUpperCase(), { x, y, fontSize: EB_SIZE, letterSpacing: EB_LS, anchor: "left top", fill: color }) : "");
 const ruleSvg = (x, y, color = C.accent, w = 56, h = 4) =>
   `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${color}"/>`;
+const roundRect = (x, y, w, h, r, fill, stroke) =>
+  `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${r}" ry="${r}" fill="${fill}"${stroke ? ` stroke="${stroke}" stroke-width="1"` : ''}/>`;
+
+// 흔한 한글/영문 색상명 → hex (색 스와치 컷용). 매칭 안 되면 제외.
+const COLOR_HEX = {
+  '블랙': '#1d1d1f', '검정': '#1d1d1f', '먹': '#2b2b2b', '차콜': '#3a3a3c',
+  '화이트': '#f6f4f0', '흰': '#f6f4f0', '아이보리': '#efe9dc', '크림': '#ece3d4',
+  '베이지': '#d9c7a8', '샌드': '#cdb892', '카멜': '#b3895a', '브라운': '#6b4a2f', '초콜릿': '#4a3526',
+  '그레이': '#9a958d', '회색': '#9a958d', '실버': '#c6c6c6',
+  '네이비': '#2a3550', '블루': '#3f5b86', '스카이': '#92b4cf', '민트': '#a8cfbf', '그린': '#5c7a55', '카키': '#6f6a4b', '올리브': '#6f6a4b',
+  '핑크': '#e3a7ad', '로즈': '#c97d83', '레드': '#a8403f', '버건디': '#6e2f33', '코랄': '#e08a72',
+  '옐로': '#e6c259', '머스타드': '#caa13f', '오렌지': '#d4863f', '퍼플': '#7d6a93', '라벤더': '#b3a5c4',
+};
+function extractColors(options) {
+  const seen = new Map();
+  for (const o of options || []) {
+    const s = String(o == null ? '' : (o.name || o.value || o)).trim();
+    for (const k of Object.keys(COLOR_HEX)) {
+      if (s.includes(k) && !seen.has(COLOR_HEX[k])) seen.set(COLOR_HEX[k], { name: s.length <= 6 ? s : k, hex: COLOR_HEX[k] });
+    }
+  }
+  return [...seen.values()].slice(0, 8);
+}
 
 // SVG 오버레이(투명)를 베이스(색/사진) 위에 합성 → 컷 PNG 버퍼.
 async function compose(width, height, baseBuf, overlaySvg) {
@@ -164,7 +192,7 @@ async function cutList(F, { theme, eyebrow, headline, items, numbered }) {
     else y += 4;
     if (numbered) {
       const num = String(i + 1).padStart(2, '0');
-      o += F.black.getPath(num, { x: PAD, y, fontSize: 30, anchor: 'left top', fill: C.accent });
+      o += tp(F.black, num, { x: PAD, y, fontSize: 30, anchor: 'left top', fill: C.accent });
       const tb = textBlock(F.medium, it, { x: PAD + 78, y: y - 2, fontSize: 31, lineHeight: 1.5, fill: fg, maxWidth: CONTENT - 78 });
       o += tb.svg; y += Math.max(tb.height, 38) + 36;
     } else {
@@ -176,25 +204,70 @@ async function cutList(F, { theme, eyebrow, headline, items, numbered }) {
   return { name: numbered ? 'benefits' : 'list', png: await compose(W, H, await solid(bg, H), o), height: H };
 }
 
-// 사용/실물 컷: 풀블리드 사진 + 하단 카피(번호+헤드라인+본문). 사진과 글이 한 컷.
+// 사용/실물 컷: 풀블리드 사진 + 하단 스크림 + 오버레이 카피(번호+헤드라인+본문) = 사진과 글이 한 장.
 async function cutSection(F, { photo, index, headline, body }) {
-  const photoH = 940;
-  const photo1 = await coverPhoto(photo, W, photoH);
-  // 카피 영역(크림)
-  let cy = 76;
-  let o = '';
+  const H = 1240;
+  const base = await coverPhoto(photo, W, H);
   const num = String(index).padStart(2, '0');
-  o += F.black.getPath(num, { x: PAD, y: cy, fontSize: 30, anchor: 'left top', fill: C.accent }); cy += 50;
-  const hb = textBlock(F.black, headline, { x: PAD, y: cy, fontSize: 44, lineHeight: 1.3, fill: C.ink, maxWidth: CONTENT });
-  o += hb.svg; cy += hb.height + 28;
-  const bb = textBlock(F.regular, body, { x: PAD, y: cy, fontSize: 30, lineHeight: 1.72, fill: C.body, maxWidth: CONTENT });
-  o += bb.svg; cy += bb.height + 80;
-  const copyH = cy;
-  const H = photoH + copyH;
-  const overlay = shift(o, 0, photoH);
-  const base = await sharp(await solid(C.cream, H))
-    .composite([{ input: photo1, top: 0, left: 0 }]).png().toBuffer();
-  return { name: 'section', png: await compose(W, H, base, overlay), height: H };
+  const hb = textBlock(F.black, headline, { x: PAD, y: 0, fontSize: 50, lineHeight: 1.24, fill: C.white, maxWidth: CONTENT });
+  const bb = body ? textBlock(F.regular, body, { x: PAD, y: 0, fontSize: 29, lineHeight: 1.7, fill: C.mutedOnDark, maxWidth: CONTENT - 30 }) : { svg: '', height: 0 };
+  const blockH = 64 + hb.height + (body ? 26 + bb.height : 0);
+  const top = H - 96 - blockH;
+  let o = `<defs><linearGradient id="scrim${index}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#16140f" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#16140f" stop-opacity="0.4"/>
+      <stop offset="1" stop-color="#16140f" stop-opacity="0.88"/></linearGradient></defs>
+    <rect x="0" y="${Math.round(H * 0.34)}" width="${W}" height="${Math.round(H * 0.66)}" fill="url(#scrim${index})"/>`;
+  o += tp(F.black, num, { x: PAD, y: top, fontSize: 30, anchor: 'left top', fill: C.accent });
+  o += ruleSvg(PAD + 56, top + 18, C.accent, 36, 2);
+  o += shift(hb.svg, 0, top + 64);
+  if (body) o += shift(bb.svg, 0, top + 64 + hb.height + 26);
+  return { name: 'section', png: await compose(W, H, base, o), height: H };
+}
+
+// 혜택 — 큰 숫자 + 라운드 카드(흰 배경). 단조 리스트 대신 디자인 컷.
+async function cutBenefits(F, items) {
+  let y = 108;
+  let o = centerEyebrow(F, 'Why It Matters', y, C.accent); y += 30;
+  o += `<rect x="${(W - 44) / 2}" y="${y}" width="44" height="3" fill="${C.accent}"/>`; y += 36;
+  const hb = textBlock(F.black, '이런 점이 다릅니다', { x: PAD, y, fontSize: 46, lineHeight: 1.3, fill: C.ink, maxWidth: CONTENT, align: 'center' });
+  o += hb.svg; y += hb.height + 52;
+  const cardPad = 42, numW = 104, textX = PAD + cardPad + numW, textW = CONTENT - cardPad * 2 - numW;
+  items.forEach((it, i) => {
+    const tb = textBlock(F.medium, it, { x: 0, y: 0, fontSize: 31, lineHeight: 1.45, fill: C.ink, maxWidth: textW });
+    const cardH = Math.max(tb.height + cardPad * 2, 140);
+    o += roundRect(PAD, y, CONTENT, cardH, 20, C.cream);
+    o += tp(F.black, String(i + 1).padStart(2, '0'), { x: PAD + cardPad, y: y + cardH / 2 - 26, fontSize: 50, anchor: 'left top', fill: C.accent });
+    o += shift(tb.svg, textX, y + (cardH - tb.height) / 2);
+    y += cardH + 22;
+  });
+  return { name: 'benefits', png: await compose(W, y + 76, await solid(C.white, y + 76), o), height: y + 76 };
+}
+
+// 색상 스와치 — 컬러 칩 그리드(드랩아트식 디자인 컷). colors: [{name,hex}]
+async function cutSwatch(F, colors) {
+  let y = 108;
+  let o = centerEyebrow(F, 'Color', y, C.accent); y += 30;
+  o += `<rect x="${(W - 44) / 2}" y="${y}" width="44" height="3" fill="${C.accent}"/>`; y += 36;
+  const title = colors.length + '가지 색으로,\n나만의 데일리';
+  const hb = textBlock(F.black, title, { x: PAD, y, fontSize: 44, lineHeight: 1.3, fill: C.ink, maxWidth: CONTENT, align: 'center' });
+  o += hb.svg; y += hb.height + 56;
+  const per = Math.min(4, colors.length), d = 132, rows = Math.ceil(colors.length / per);
+  const gap = per > 1 ? (CONTENT - per * d) / (per - 1) : 0;
+  for (let r = 0; r < rows; r++) {
+    const rowItems = colors.slice(r * per, r * per + per);
+    const rowW = rowItems.length * d + (rowItems.length - 1) * gap;
+    const startX = (W - rowW) / 2;
+    rowItems.forEach((c, ci) => {
+      const cx = startX + ci * (d + gap) + d / 2, cy = y + d / 2;
+      const lightBorder = /#(f|e)/i.test(c.hex);
+      o += `<circle cx="${cx}" cy="${cy}" r="${d / 2}" fill="${c.hex}"${lightBorder ? ` stroke="${C.lineCream}" stroke-width="1"` : ''}/>`;
+      const lw = F.medium.getMetrics(c.name, { fontSize: 24 }).width;
+      o += tp(F.medium, c.name, { x: cx - lw / 2, y: y + d + 22, fontSize: 24, anchor: 'left top', fill: C.body });
+    });
+    y += d + 64;
+  }
+  return { name: 'swatch', png: await compose(W, y + 40, await solid(C.cream, y + 40), o), height: y + 40 };
 }
 
 // 제품정보 표
@@ -206,9 +279,9 @@ async function cutSpec(F, rows) {
   o += hb.svg; y += hb.height + 44;
   rows.forEach((r) => {
     o += `<rect x="${PAD}" y="${y}" width="${CONTENT}" height="1" fill="${C.lineCream}"/>`; y += 30;
-    o += F.medium.getPath(String(r[0]), { x: PAD, y, fontSize: 28, anchor: 'left top', fill: C.body });
+    o += tp(F.medium, String(r[0]), { x: PAD, y, fontSize: 28, anchor: 'left top', fill: C.body });
     const vw = F.bold.getMetrics(String(r[1]), { fontSize: 28 }).width;
-    o += F.bold.getPath(String(r[1]), { x: W - PAD - vw, y, fontSize: 28, anchor: 'left top', fill: C.ink });
+    o += tp(F.bold, String(r[1]), { x: W - PAD - vw, y, fontSize: 28, anchor: 'left top', fill: C.ink });
     y += 50;
   });
   o += `<rect x="${PAD}" y="${y}" width="${CONTENT}" height="1" fill="${C.lineCream}"/>`;
@@ -247,7 +320,7 @@ async function cutCta(F, closing) {
 function shift(svgPaths, dx, dy) { return `<g transform="translate(${dx},${dy})">${svgPaths}</g>`; }
 function centerEyebrow(F, t, y, color) {
   const w = F.bold.getMetrics(String(t).toUpperCase(), { fontSize: EB_SIZE, letterSpacing: EB_LS }).width;
-  return F.bold.getPath(String(t).toUpperCase(), { x: (W - w) / 2, y, fontSize: EB_SIZE, letterSpacing: EB_LS, anchor: 'left top', fill: color });
+  return tp(F.bold, String(t).toUpperCase(), { x: (W - w) / 2, y, fontSize: EB_SIZE, letterSpacing: EB_LS, anchor: 'left top', fill: color });
 }
 async function solid(color, h) {
   return sharp({ create: { width: W, height: h, channels: 4, background: color } }).png().toBuffer();
@@ -265,8 +338,9 @@ async function renderDetailCuts(product, copy, opts = {}) {
   if (Array.isArray(c.concerns) && c.concerns.length)
     cuts.push(await cutList(F, { theme: 'cream', eyebrow: 'Your Concern', headline: '혹시, 이런 고민\n있으셨나요?', items: c.concerns }));
   if (Array.isArray(c.benefits) && c.benefits.length)
-    cuts.push(await cutList(F, { theme: 'white', eyebrow: 'Why It Matters', headline: '이런 점이 다릅니다', items: c.benefits, numbered: true }));
-  (Array.isArray(c.sections) ? c.sections : []).forEach(() => {});
+    cuts.push(await cutBenefits(F, c.benefits));
+  const colors = extractColors(product.options);
+  if (colors.length >= 3) cuts.push(await cutSwatch(F, colors));
   let si = 2;
   for (const s of (Array.isArray(c.sections) ? c.sections : [])) {
     cuts.push(await cutSection(F, { photo: px(si - 1), index: si, headline: s.headline || '', body: s.body || '' }));
