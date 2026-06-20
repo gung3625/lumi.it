@@ -52,6 +52,22 @@ async function getItemView(no) {
     const r = j && (j.domeggook || j);
     if (!r || !r.basis) return null;
     const images = [...new Set(JSON.stringify(r).match(/https:\/\/cdn[0-9]*\.domeggook\.com[^"\\]+?_img_[0-9]+[^"\\]*/g) || [])].slice(0, 6);
+    // 실제 스펙(고시정보·skuInfo 자동채움 원천) — 제목만 보고 GPT가 지어내지 않게.
+    const d = r.detail || {};
+    const clean = (v) => { const s = String(v == null ? '' : v).trim(); return (!s || /^[.\-_\s]+$/.test(s) || /^(해당\s*없음|없음|n\/?a|0|미상)$/i.test(s)) ? null : s; };
+    const spec = {
+      size: clean(d.size), weight: clean(d.weight), country: clean(d.country),
+      manufacturer: clean(d.manufacturer), model: clean(d.model),
+      kc: Array.isArray(d.safetyCert) ? d.safetyCert.filter((c) => c.cert === 'Y').map((c) => [c.type, c.name].filter(Boolean).join(' ').trim()).filter((s) => s && !/참조|해당\s*없음/.test(s)) : [],
+    };
+    let options = [];
+    try { const so = typeof r.selectOpt === 'string' ? JSON.parse(r.selectOpt) : r.selectOpt; if (so && Array.isArray(so.set)) options = [...new Set(so.set.flatMap((s) => s.opts || []))].slice(0, 20); } catch (_) {}
+    // 재판매(오픈마켓) 가능 여부 — 불가면 쿠팡에 올리면 안 됨(중요 게이트).
+    const licMsg = (r.desc && r.desc.license && r.desc.license.msg) || '';
+    const resale = { allowed: !/재판매\s*불가|오픈마켓[^]{0,12}불가|불가\s*상품/.test(licMsg), msg: licMsg || null };
+    const catTree = ((r.category && r.category.parents && r.category.parents.elem) || []).map((e) => e.name)
+      .concat((r.category && r.category.current && r.category.current.name) ? [r.category.current.name] : []);
+    const seller = (r.seller && r.seller.company) ? { name: r.seller.company.name || null, phone: r.seller.company.phone || null } : null;
     return {
       no: r.basis.no,
       title: r.basis.title || '',
@@ -59,6 +75,8 @@ async function getItemView(no) {
       domePrice: parsePrice(r.price && r.price.dome),
       moq: (r.qty && r.qty.domeMoq) || null,
       category: r.category || null,
+      categoryTree: catTree,
+      spec, options, resale, seller,
       images,
       thumb: images[0] || null,
     };
