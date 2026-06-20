@@ -31,14 +31,16 @@
 - `_shared/domeggook-api.js`: 도매꾹 OpenAPI. getItemView(스펙·옵션·**resale.allowed 재판매여부**·**descImages 상세컷이미지** 추출)·setOrderDome(매입,dryRun기본)·cancelOrderDome(취소)·getDefaultDeliinfo(집)/getGemiDeliinfo(개미창고).
 - `_shared/coupang-rocket-api.js`: 로켓그로스 등록(seller-products+rocketGrowthItemData)·predictCategory·출고/반품지.
 - `_shared/coupang-wing-api.js`: 쿠팡 WING HMAC.
-- `_shared/detail-page.js`: 상세페이지. webseller 구매심리 구조 + **aisyncclub/detail_page_codex_skill(MIT) 표준**(copy-compliance 위험표현필터·photo-analysis·cut-structure) 이식. **비전(Gemini)이 도매꾹 상세 이미지서 실제 기능 추출**(제목제약+판매자정보필터). 카피=**GPT-4o**.
+- `_shared/detail-page.js`: 상세페이지 카피/구조 엔진. webseller 구매심리 구조 + **aisyncclub/detail_page_codex_skill(MIT) 표준**(copy-compliance 위험표현필터·photo-analysis·cut-structure) 이식. **비전(Gemini)이 도매꾹 상세 이미지서 실제 기능 추출**(제목제약+판매자정보필터). 카피=**GPT-4o**. buildHtml 에디토리얼 재설계 커밋됨(`a9834d1`).
 - `admin-source-to-listing.js`: 오케스트레이터(상품번호1개→매입+상세+등록, dryRun). `admin-detail-page.js`: 상세 단독.
+
+> **⭐⭐ 상세페이지 방향 전환 (6/20, 사장님 확정 "네 이 방식으로 전체")**: HTML 템플릿(buildHtml)은 '사진 따로 / 글 따로'라 아무리 타이포·여백 다듬어도 퀄리티 천장(사장님 2번 "안좋다") → **디자인 이미지 컷 방식**으로 전환. 각 컷 = 사진+카피+그래픽이 **한 장에 합성**된 이미지(드랩아트/webseller 방식). **수동 데모만 존재**(텀블러 1건): `/tmp/full_detail.html` 7컷(히어로·혜택01~03·8색스와치·라이프스타일·THE DIFFERENCE·제품정보·CTA) → **로컬 Chrome headless 렌더**(`"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --hide-scrollbars --window-size=1080,6700 --virtual-time-budget=9000 --screenshot=out.png file:///tmp/full_detail.html` + Pretendard CDN link + **각 컷 height 고정**(가변컷에 px 명시→여백0)) → 1080×6700 PNG → rsync로 lumi.it.kr/_full_detail.png 호스팅. 디자인 토큰: 잉크 `#16140f` / 크림 `#f3efe8` / 흰 / 악센트 카라멜 `#c98a4e`, 다크↔크림↔흰 교대. **아직 코드화 안 됨** — buildHtml(HTML)→디자인컷 렌더러(PNG) 교체가 다음 작업.
 
 **인증/시크릿(GCP env + 서버 600파일)**: env=DOMEGGOOK_API_KEY(dd20…)·DOMEGGOOK_USER_ID=gung3625·COUPANG_ACCESS/SECRET/VENDOR_ID(A00968893)·OPENAI_API_KEY·GEMINI_API_KEY(무료)·NAVER_*·LUMI_SECRET. 파일=`~/.dgk_pw`(도매꾹비번,사장님직접)·`~/.dgk_session`·`~/.dgk_deliinfo`(집)·`~/.dgk_deliinfo_gemi`(개미창고). 도매꾹 Private API 권한 승인(로그인·주문조회·setOrder·setOrdDeny). 쿠팡 로켓그로스 API동의+출고지(21219014)+반품지(1001965390) 완료.
 
-**확정 결정**: ①매입처=도매꾹 단독(Phase1)/Phase2=AliExpress DS API/Temu·차이나꾹 제외. ②물류=**개미창고 3PL**(매입→개미창고 직배송→바코드·검수·쿠팡납품, 이천센터 배송지). ③**무광고 전략**(광고비=적자 주범, adRate0, 진입장벽 낮은 organic 판매가능 상품만). ④"높은확률만, 작게 사서 데이터로 키운다". ⑤LLM 소싱=무료Gemini/상세=GPT-4o. 영상 제외. ⑥이미지 정제=드랩아트(draph.art, 한국, 누끼무료+상세)/PicCopilot 검토(API 미확인, 수동부터).
+**확정 결정**: ①매입처=도매꾹 단독(Phase1)/Phase2=AliExpress DS API/Temu·차이나꾹 제외. ②물류=**개미창고 3PL**(매입→개미창고 직배송→바코드·검수·쿠팡납품, 이천센터 배송지). ③**무광고 전략**(광고비=적자 주범, adRate0, 진입장벽 낮은 organic 판매가능 상품만). ④"높은확률만, 작게 사서 데이터로 키운다". ⑤LLM 소싱=무료Gemini/상세=GPT-4o. 영상 제외. ⑥**이미지=Higgsfield marketing_studio_image로 직접 화보 생성**(도매꾹 평범사진→손모델+소품+사용장면 연출, MCP `mcp__f3d214c3-…`). ★텀블러는 '배경만 교체'라 약했음 → **연출 프롬프트에 손모델·소품·사용장면을 넣어야 드랩아트급 화보**(원본 octet-stream은 media_import_url 거부→lumi.it.kr에 .png 재호스팅 후 임포트, model='marketing_studio_image' 2크레딧/장, role:"image"). 드랩아트(draph.art, 장당 800원)/PicCopilot은 백업.
 
-**남은 것**: ✅예치금 10만원 충전됨 → 실매입 테스트(저가상품 매입→즉시취소→환불) 미실행. **setOrder item포맷(옵션 optCode) 연동매뉴얼 검증 필요**(첫 실주문 전). resale.allowed 게이트 오케스트레이터에 미연결. 상품별 바코드/무게치수(로켓그로스 필수)=실물 실측 or 도매꾹값(자주 쓰레기). 쿠팡 이미지 정제 자동화 미구현. ⚠️교훈: 도매꾹 상세이미지엔 셀러 다른모델·연락처 섞임(필터필수). "창작" 단정 전 제목/스펙/옵션/이미지 다 확인할 것(사장님 4번 지적).
+**남은 것**: ✅예치금 10만원 충전됨 → 실매입 테스트(저가상품 매입→즉시취소→환불) 미실행. **setOrder item포맷(옵션 optCode) 연동매뉴얼 검증 필요**(첫 실주문 전). resale.allowed 게이트 오케스트레이터에 미연결. 상품별 바코드/무게치수(로켓그로스 필수)=실물 실측 or 도매꾹값(자주 쓰레기). 🔴**Higgsfield 크레딧 블로커**: 무료 잔액 1크레딧(화보 1장=2크레딧)→지금 생성 불가. 본격화=**Higgsfield Plus 사장님 직접 결제**(~$34/월≈1000크레딧, 장당~90원). 결제하면 상세페이지 ≈**상품당 400원**(AI사진2장~350+카피GPT~37+컷합성 코드무료+비전Gemini무료, 드랩아트 800원의 절반). 🔴**디자인 컷 코드화 미완**(buildHtml→PNG 디자인컷 렌더러 교체, 현재 텀블러 수동데모 1건뿐). `domeggookSearch`는 **itemNo 미반환**(name+price만 줌)→검색결과로 getItemView 불가, 특정상품 화보는 도매꾹 URL/번호 직접 필요(영문브랜드는 한글검색 0건). ⚠️교훈: 도매꾹 상세이미지엔 셀러 다른모델·연락처 섞임(필터필수). "창작" 단정 전 제목/스펙/옵션/이미지 다 확인할 것(사장님 4번 지적).
 
 ### ⭐ 2026-06-17 세션 (PayApp 결제 백엔드 + 앱 셸 통일 + 정리)
 
@@ -187,6 +189,7 @@
 
 ## 6. 새 세션에서 할 것 (우선순위)
 
+0. **🟢 (메인 사업) 소싱 상세페이지 — 디자인 컷 방식 확정됨** (방향 정본 데모: lumi.it.kr/_full_detail.png). **Higgsfield Plus 결제되면**(사장님 직접, ~$34/월) → ① buildHtml(HTML)을 **디자인 컷 PNG 렌더러로 코드화** ② **화보 연출**(손모델·소품·사용장면) 파이프라인 연동 ③ 도매꾹 URL→자동 화보+상세 생성. 결제 전엔 생성 불가(무료 1크레딧). 상세는 §1 소싱 '남은 것'.
 1. **🔴 OpenAI 새 키 등록·검증** — 사장님이 키 주면(§2 참조) 등록(6/17 확립 **secrets.env→`netlify env:import`→삭제** 방식)+빈커밋 재배포+초안 캡션 E2E. 캡션 생성 복구의 마지막 열쇠.
 2. **PayApp 결제 마무리** — 사장님: PayApp 콘솔 정기결제 ON+테스트모드 확인 + 노출키 재발급. 제가: 실 결제 1건 E2E + **진입 링크(구독 버튼)** + **법무 카피**. (§2 PayApp 항목)
 3. **autoke서 가져올 카피** — 문제프레임·숫자대비·FAQ보강·CTA"언제든해지"·펀치 클로징 (§1 2026-06-17 C항목). index/pricing 작업이라 리스크 낮음. 사장님 "ㄱㄱ" 하면 우선순위대로.
