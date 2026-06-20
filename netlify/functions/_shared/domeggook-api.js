@@ -52,6 +52,9 @@ async function getItemView(no) {
     const r = j && (j.domeggook || j);
     if (!r || !r.basis) return null;
     const images = [...new Set(JSON.stringify(r).match(/https:\/\/cdn[0-9]*\.domeggook\.com[^"\\]+?_img_[0-9]+[^"\\]*/g) || [])].slice(0, 6);
+    // 상세설명 컷 이미지(실제 기능·스펙 텍스트가 박혀있음 — 비전 추출용). desc HTML에서 추출(_stt_ + 외부CDN).
+    const descImages = [...new Set((JSON.stringify(r.desc || {}).match(/https?:\/\/[^"\\\s]+?\.(?:jpg|jpeg|png|gif)/gi) || []))]
+      .filter((u) => !/_stt_(50|150)[^0-9]|icon|logo|notice|cou-notice|btn_|bnr|banner/i.test(u)).slice(0, 12);
     // 실제 스펙(고시정보·skuInfo 자동채움 원천) — 제목만 보고 GPT가 지어내지 않게.
     const d = r.detail || {};
     const clean = (v) => { const s = String(v == null ? '' : v).trim(); return (!s || /^[.\-_\s]+$/.test(s) || /^(해당\s*없음|없음|n\/?a|0|미상)$/i.test(s)) ? null : s; };
@@ -77,7 +80,7 @@ async function getItemView(no) {
       category: r.category || null,
       categoryTree: catTree,
       spec, options, resale, seller,
-      images,
+      images, descImages,
       thumb: images[0] || null,
     };
   } catch (_) { return null; }

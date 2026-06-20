@@ -1,38 +1,54 @@
 'use strict';
-// 상세페이지 생성 (공유 모듈). 도매꾹 실제 스펙 + 소싱 데이터 → 고급 소비자 상세페이지(카피+HTML).
-// 구조: webseller식 구매심리 순서(고객고민→혜택→소개→경쟁비교→신뢰→FAQ→배송환불→CTA).
-// 핵심: GPT는 주어진 실제 스펙(크기·무게·원산지·제조사·모델·KC·옵션)만 쓴다(창작 금지).
+// 상세페이지 생성 (공유 모듈). 도매꾹 상품데이터 + 상세이미지(비전 추출) + 소싱 데이터 → 고급 상세페이지.
+// 규칙/구조는 aisyncclub/detail_page_codex_skill(MIT)의 copy-compliance·cut-structure·photo-analysis 표준을 이식.
+//  - copy-compliance: 위험표현(절대·의료·순위·안전·통계 단정)만 차단, 주관적 어필(저소음 등)은 허용.
+//  - photo-analysis: 도매꾹 상세 이미지에서 "읽히는 사실"을 비전으로 추출(추론 금지) → 카피 정확도↑.
 const { llmChat } = require('./llm-call');
 
 const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
+// 도매꾹 이미지의 사이즈변형(_img_150/_330/_760)을 묶어 distinct 이미지만(가장 큰 사이즈) 반환.
+function distinctImages(images) {
+  const map = new Map();
+  for (const u of images || []) {
+    const m = String(u).match(/^(.*_img_)(\d+)/);
+    const key = m ? m[1] : String(u);
+    const size = m ? Number(m[2]) : 0;
+    const cur = map.get(key);
+    if (!cur || size > cur.size) map.set(key, { url: u, size });
+  }
+  return [...map.values()].map((x) => x.url);
+}
+
 const SYS = [
-  '너는 한국 이커머스 1위 상세페이지 카피라이터 겸 머천다이저다. 주어진 실제 상품 데이터로 "스크롤하며 사고 싶어지는" 소비자용 모바일 상세페이지 카피를 쓴다.',
+  '너는 한국 이커머스 1위 상세페이지 카피라이터 겸 머천다이저다. 주어진 상품데이터로 "스크롤하며 사고 싶어지는" 모바일 상세페이지 카피를 쓴다.',
   '',
-  '== 구매 심리 흐름(이 순서로 설계) ==',
-  '관심(Hero) → 공감(고객 고민) → 해결(혜택) → 이해(상품 소개) → 확신(경쟁 비교·신뢰) → 안심(FAQ·배송) → 행동(CTA).',
+  '== 좋은 카피 ==',
+  '- 헤드라인: 고객이 얻는 구체적 이익을 말한다(감성만 X).  - 서브: 특징을 구매 이유와 연결(특징 나열 X).',
+  '- 신뢰: 제공된 인증·리뷰·수치를 근거로(없는 수치 창작 X).  - CTA: 자연스럽게 유도(과도한 압박 X).',
+  '- 혜택 중심: 기능 나열이 아니라 "그래서 뭐가 좋아지는가". 슬롭("안정성과 편리함을 동시에", "다양한 기능") 금지.',
   '',
-  '== 절대 규칙 ==',
-  '1) ★사실 vs 어필 구분(핵심): ▸검증 가능한 "사실"(치수·무게·용량·구성품·인증·측정값 — mAh/W/L/dB/cm/KC/"케이블 포함" 등)은 [스펙]/[상품명]에 있는 것만 쓴다. 근거 없는 구체 수치·인증만 지어내지 마라(예 "최대 50000mAh", "소음 20dB", 없는 KC인증). 단 제품 일반 기능·옵션(각도조절·충전방식·색상·소재 등)은 상품명·옵션·상세 이미지에 흔히 있으니 무작정 "창작"으로 막지 말고 상품 성격에 맞게 자연스럽게 서술하라 — 명백한 거짓·과장만 피한다. 스펙 비면 구체 수치만 생략. ▸반대로 주관적 마케팅 "어필"(저소음·편안한·감각적·강력한·촉촉한·세련된 등 기준이 상대적인 형용)은 적극 써라 — 이게 구매를 만드는 설득이다. 절대 막지 마라.',
-  '1-1) "절대·측정 단정"(무소음·소음0·100%·최고·유일)은 [스펙]/[상품명]에 그 표현이 있으면 그대로 relay 가능(제조사 주장 전달), 없으면 창작 금지 — 대신 상대표현("저소음"·"조용한 편") 사용. 의료·건강·안전·살균 효과("99.9% 살균"·"탈모 개선")는 근거 없으면 금지(과대광고).',
-  '2) 슬롭 금지: "안정성과 편리함을 동시에", "다양한 기능", "원하는 대로" 같은 공허한 표현 금지. 구체적 장면·대비로 써라.',
-  '3) 혜택 중심: 기능 나열이 아니라 "그래서 사용자에게 뭐가 좋아지는가"로 번역.',
-  '4) 도매 거래조건(MOQ·도매단가·사업자·재판매조건)은 소비자 카피에 절대 넣지 마라. 소비자는 1개를 산다.',
-  '5) 한국어, 모바일 가독성(짧고 리듬감), 과장·허위 금지, 이모지 금지.',
-  '6) [소싱데이터]가 주어지면 적극 활용: 불만해소(경쟁상품 리뷰 불만)→concerns와 comparison, 차별화→comparison, 판매전술→benefits. 안 주어지면 상품 성격에서 합리적으로 도출(억지·창작 X).',
+  '== ★위험 표현 필터(이것만 제거/완화. 나머지 표현은 자유) ==',
+  '- 절대 주장: 100%·무조건·완벽·보장·평생·반드시 → 제거/완화.',
+  '- 의료·질병(승인 없으면): 치료·완치·예방·약효·효과 단정 → 금지.',
+  '- 근거 없는 순위: 국내1위·최고·최저가·유일·압도적 → 금지.',
+  '- 근거 없는 안전: 부작용 없음·누구나 안전·독성 없음 → 금지.   - 근거 없는 통계: 만족도·재구매율·판매량·누적고객 → 금지.',
+  '- 대체 표현: "도움을 줄 수 있는", "편하게 쓸 수 있는", "개인차가 있을 수 있음", "제공된 인증 기준".',
+  '★주관적 상대 표현(저소음·편안한·감각적·강력한·촉촉한·세련된)은 위험표현이 아니다 — 적극 써라. 막는 건 위 5종 단정뿐.',
+  '',
+  '== 사실 다루기 ==',
+  '제품 사실(치수·용량·구성품·인증·기능·옵션·색상)은 [상품데이터]·[이미지분석]에 있는 것을 쓴다. 거기 없거나 안 읽히는 사실(구체 수치·작동시간 등)은 추론·창작하지 말고 빼거나 "상세 참조". [이미지분석]에 기능(예 각도조절·풍량)이 있으면 그건 실제이니 적극 활용.',
+  '도매 거래조건(MOQ·도매단가·사업자·재판매)은 소비자 카피에 절대 X. 한국어·모바일 가독성·이모지 금지.',
+  '',
+  '== 컷 흐름(이 순서) ==',
+  '메인히어로 → 문제공감 → 해결혜택 → 핵심차별점 → 실물/사용장면 → 신뢰근거 → 구성/옵션 → 배송/주의 → FAQ → CTA.',
   '',
   '== 출력 JSON 키 ==',
-  'seoTitle: 검색 잘되는 60자내 제목(핵심키워드+용도).',
-  'heroHeadline: 첫 화면 큰 후킹(혜택·결과 중심, 12~22자).',
-  'heroSub: 보조 한 줄(누구의 어떤 문제 해결).',
-  'concerns: 고객이 공감할 불편/고민 2~3개. 각 1줄("이런 적 없으세요?" 톤). 불만해소 데이터 있으면 소비자 언어로 반영.',
-  'benefits: 핵심 혜택 3~4개. 각 1줄, "혜택 + 근거".',
-  'sections: 상품 소개/사용장면 1~2개 [{name:"사용장면|이런분께", headline, body(2~3문장)}].',
-  'comparison: {headline:"왜 이 제품인가", points:[차별점 2~3개]}. 차별화/불만해소 데이터 반영, 없으면 스펙 기반 실질 장점.',
-  'faq: 소비자 질문 2~3개 [{q,a}] — 사용법/관리/상황/호환/색상·옵션 등 소비자 관점. 상품 성격·옵션에 맞게 자연스럽게 답하되, 확실치 않은 구체 수치(정확한 작동시간·dB 등)만 "상세 참조"로.',
-  'closing: 구매를 미루지 않게 하는 마무리 한 줄(과장 긴급성 금지, 가치 재확인).',
-  '',
-  '출력은 위 키를 가진 JSON 하나만.',
+  'seoTitle: 검색 잘되는 60자내 제목.  heroHeadline: 첫화면 후킹(이익 중심 12~22자).  heroSub: 보조 한 줄.',
+  'concerns: 고객 고민 2~3개("이런 적 없으세요?" 톤, 불만해소 데이터 반영).',
+  'benefits: 핵심 혜택 3~4개(혜택+근거).  sections: 실물/사용장면 1~2개[{name,headline,body}].',
+  'comparison: {headline:"왜 이 제품인가", points:[차별점 2~3]}.  faq: 소비자질문 2~3개[{q,a}].  closing: 마무리 한 줄.',
+  '[소싱데이터]·[이미지분석]이 있으면 적극 반영. 출력은 위 키의 JSON 하나만.',
 ].join('\n');
 
 const CHECK = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" style="flex:0 0 auto;margin-top:2px;"><circle cx="12" cy="12" r="11" fill="#1a1a1a"/><path d="M7 12.5l3.2 3.2L17 9" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -66,7 +82,6 @@ function badges(spec) {
     + b.map((t) => '<span style="font-size:12.5px;color:#5a5a5a;background:#f3f2ef;border:1px solid #e9e8e4;border-radius:999px;padding:6px 13px;">' + esc(t) + '</span>').join('') + '</div>';
 }
 
-// 배송/교환/환불 — 고정(쿠팡 정책 따름, 과장 없이).
 function shippingBlock() {
   const items = [
     ['배송', '주문 후 신속하게 발송됩니다.'],
@@ -80,29 +95,22 @@ function shippingBlock() {
     + '</div>';
 }
 
-// 카피 + 도매꾹 실이미지 + 실제 스펙 → 고급 상세설명 HTML(구매심리 순서).
 function buildHtml(product, copy) {
-  const imgs = (product.images && product.images.length) ? product.images : [];
+  const imgs = distinctImages(product.images || []);
   const c = copy || {};
   const W = (s) => '<div style="max-width:780px;margin:0 auto;font-family:Pretendard,-apple-system,system-ui,sans-serif;background:#fff;color:#1a1a1a;line-height:1.6;">' + s + '</div>';
   let h = '';
-
-  // 1) HERO
   if (imgs[0]) h += '<img src="' + esc(imgs[0]) + '" alt="' + esc(c.seoTitle || product.title) + '" style="width:100%;display:block;">';
   h += '<div style="padding:38px 24px 24px;text-align:center;">'
     + '<h1 style="font-size:26px;font-weight:800;color:#161616;margin:0 0 12px;line-height:1.35;letter-spacing:-0.3px;">' + esc(c.heroHeadline || c.seoTitle || product.title) + '</h1>'
     + (c.heroSub ? '<p style="font-size:15px;color:#777;margin:0;line-height:1.6;">' + esc(c.heroSub) + '</p>' : '')
     + '</div>';
-
-  // 2) 고객 고민(공감)
   if (Array.isArray(c.concerns) && c.concerns.length) {
     h += DIV + '<div style="padding:32px 24px;background:#f8f6f3;">'
       + '<p style="font-size:13px;color:#b08968;font-weight:700;letter-spacing:0.5px;margin:0 0 14px;text-align:center;">혹시, 이런 적 없으세요?</p>'
       + c.concerns.map((x) => '<div style="background:#fff;border:1px solid #efe9e2;border-radius:10px;padding:14px 16px;margin:0 0 10px;font-size:15px;color:#5b5249;line-height:1.55;">' + esc(x) + '</div>').join('')
       + '</div>';
   }
-
-  // 3) 핵심 혜택(해결)
   if (Array.isArray(c.benefits) && c.benefits.length) {
     h += DIV + '<div style="padding:34px 24px 30px;max-width:520px;margin:0 auto;">'
       + '<h3 style="font-size:20px;font-weight:700;color:#1a1a1a;margin:0 0 18px;text-align:center;">이 제품이 해결합니다</h3>'
@@ -110,8 +118,6 @@ function buildHtml(product, copy) {
         + '<span style="font-size:15.5px;color:#2b2b2b;line-height:1.55;">' + esc(b) + '</span></div>').join('')
       + '</div>';
   }
-
-  // 4) 상품 소개/사용장면
   (Array.isArray(c.sections) ? c.sections : []).forEach((s, i) => {
     const img = imgs.length ? imgs[(i + 1) % imgs.length] : null;
     h += DIV + '<section style="padding:34px 24px;">'
@@ -120,8 +126,6 @@ function buildHtml(product, copy) {
       + '<p style="font-size:15.5px;color:#555;line-height:1.85;margin:0;white-space:pre-line;">' + esc(s.body || '') + '</p>'
       + '</section>';
   });
-
-  // 5) 경쟁 비교/차별점(확신)
   if (c.comparison && Array.isArray(c.comparison.points) && c.comparison.points.length) {
     h += DIV + '<div style="padding:34px 24px;background:#f4f6f5;">'
       + '<h3 style="font-size:20px;font-weight:700;color:#1a1a1a;margin:0 0 18px;text-align:center;">' + esc(c.comparison.headline || '왜 이 제품일까요?') + '</h3>'
@@ -130,14 +134,8 @@ function buildHtml(product, copy) {
         + '<span style="font-size:15px;color:#2b2b2b;line-height:1.55;">' + esc(p) + '</span></div>').join('')
       + '</div></div>';
   }
-
-  // 6) 제품 정보(스펙)
   h += DIV + specRows(product.spec);
-
-  // 7) 신뢰 배지
   h += badges(product.spec);
-
-  // 8) FAQ
   if (Array.isArray(c.faq) && c.faq.length) {
     h += DIV + '<div style="padding:30px 22px;">'
       + '<h3 style="font-size:18px;font-weight:700;color:#1a1a1a;margin:0 0 16px;">자주 묻는 질문</h3>'
@@ -146,33 +144,59 @@ function buildHtml(product, copy) {
         + '<p style="font-size:14.5px;color:#666;margin:0;line-height:1.7;">' + esc(f.a) + '</p></div>').join('')
       + '</div>';
   }
-
-  // 9) 배송/교환/환불
   h += DIV + shippingBlock();
-
-  // 10) CTA
   if (c.closing) h += '<div style="background:#161616;color:#fff;padding:36px 24px;text-align:center;">'
     + '<p style="font-size:18px;font-weight:700;margin:0;line-height:1.5;">' + esc(c.closing) + '</p></div>';
-
   return W(h);
 }
 
-// 상품(getItemView 결과) + 소싱 힌트 → { copy, html } 또는 { error }.
-async function generateDetailPage(product, { diffHook, painPoints, sellingHook, model } = {}) {
+// photo-analysis: 도매꾹 상세 이미지에서 "읽히는 사실"만 비전 추출(추론 금지). 무료 Gemini. best-effort(실패시 null).
+async function analyzeProductImages(images, title) {
+  const urls = distinctImages(images || []).slice(0, 5);
+  if (!urls.length) return null;
+  const prompt = '아래는 상품 "' + (title || '') + '"의 상세 이미지들이다. ★오직 이 상품 자체의 사실만 한국어로 추출하라. 같은 페이지에 다른 모델·관련상품·세트 카탈로그·타 사양(제목과 명백히 다른 단수/형태/용도)이 섞여 있으면 그건 무시하라(제목 "' + (title || '') + '"과 맞는 것만). 읽히는 사실(기능 예 각도조절·풍량단수, 옵션·색상, 수치, 인증, 구성품, 소재, 사용법)만. ★제외(절대 포함 금지): 판매자·회사 연락처/전화번호, 상담시간, 배송·교환·반품 정책, 휴무, CCTV, 회사소개. 안 보이거나 불확실하면 추론·창작 금지. JSON으로만: {"facts":["사실1"...]}';
+  try {
+    const res = await llmChat({
+      messages: [{ role: 'user', content: [{ type: 'text', text: prompt }, ...urls.map((u) => ({ type: 'image_url', image_url: { url: u } }))] }],
+      max_tokens: 700,
+      response_format: { type: 'json_object' },
+    }, { sensitive: false, provider: 'gemini', label: 'photo-analysis', timeoutMs: 70000 });
+    const d = await res.json();
+    const txt = d && d.choices && d.choices[0] && d.choices[0].message ? d.choices[0].message.content : '';
+    const o = JSON.parse(String(txt).replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim());
+    const DROP = /전화|연락처|상담|배송|발송|마감|휴무|cctv|문의|교환|반품|평일|오전|오후|정책|주문\s*변경|\d{2,4}[.\-]\d{3,4}/i;
+    const facts = Array.isArray(o.facts) ? o.facts.filter((x) => x && String(x).trim() && !DROP.test(String(x))).slice(0, 12) : [];
+    return facts.length ? facts : null;
+  } catch (_) { return null; }
+}
+
+// 위험 표현 결정적 안전망(프롬프트가 놓친 절대·순위 단정을 부드럽게 치환). copy-compliance 기준.
+const SOFTEN = [[/완벽히/g, '세심하게'], [/완벽한/g, '뛰어난'], [/완벽/g, '우수'], [/100\s*%/g, '높은 수준'], [/무조건/g, '언제든'], [/\s?보장(?=[\s.,!]|$)/g, ''], [/평생/g, '오래'], [/최고급/g, '고급'], [/최고의/g, '우수한'], [/최고(?![급])/g, '우수'], [/최저가/g, '합리적인 가격'], [/유일무이한?/g, '특별한'], [/유일한/g, '특별한'], [/국내\s*1위/g, '인기'], [/업계\s*1위/g, '인기']];
+function softenClaims(copy) {
+  const fix = (s) => typeof s === 'string' ? SOFTEN.reduce((a, [re, to]) => a.replace(re, to), s) : s;
+  const walk = (v) => Array.isArray(v) ? v.map(walk) : (v && typeof v === 'object') ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, walk(x)])) : fix(v);
+  return walk(copy);
+}
+
+// 상품(getItemView 결과) + 소싱 힌트 → { copy, html, imageFacts } 또는 { error }.
+async function generateDetailPage(product, { diffHook, painPoints, sellingHook, model, skipVision } = {}) {
   const sp = product.spec || {};
+  const visionImgs = (product.descImages && product.descImages.length) ? product.descImages : product.images;
+  const imageFacts = skipVision ? null : await analyzeProductImages(visionImgs, product.title);
   const ctx = {
     상품명: product.title,
     카테고리: (product.categoryTree || []).join(' > ') || null,
     키워드: (product.keywords || []).slice(0, 8),
     스펙: { 크기: sp.size || null, 무게: sp.weight || null, 원산지: sp.country || null, 제조사: sp.manufacturer || null, 모델: sp.model || null, 인증: (sp.kc || []) },
     옵션: (product.options || []).slice(0, 10),
+    이미지분석: imageFacts,
     소싱데이터: { 차별화: diffHook || null, 불만해소: painPoints || null, 판매전술: sellingHook || null },
   };
   let copy = null, llmErr = null;
   try {
     const res = await llmChat({
       model: model || 'gpt-4o',
-      messages: [{ role: 'system', content: SYS }, { role: 'user', content: '실제 상품 데이터:\n' + JSON.stringify(ctx, null, 1) + '\n\n위 데이터(주어진 스펙만)로 구매심리 흐름의 고급 상세페이지 카피를 JSON으로 작성.' }],
+      messages: [{ role: 'system', content: SYS }, { role: 'user', content: '상품데이터:\n' + JSON.stringify(ctx, null, 1) + '\n\n위 데이터(상품데이터·이미지분석에 있는 사실만)로 컷 흐름의 고급 상세페이지 카피를 JSON으로 작성.' }],
       max_tokens: 3800,
       response_format: { type: 'json_object' },
     }, { sensitive: false, label: 'detail-page', timeoutMs: 90000 });
@@ -182,7 +206,8 @@ async function generateDetailPage(product, { diffHook, painPoints, sellingHook, 
   } catch (e) { llmErr = e && e.message ? e.message : 'LLM 생성 실패'; }
   if (!copy || (!copy.heroHeadline && !Array.isArray(copy.sections) && !Array.isArray(copy.benefits))) return { error: llmErr || '빈 응답' };
   if (!Array.isArray(copy.sections)) copy.sections = [];
-  return { copy, html: buildHtml(product, copy) };
+  copy = softenClaims(copy); // 절대·순위 단정 결정적 제거(안전망)
+  return { copy, html: buildHtml(product, copy), imageFacts };
 }
 
-module.exports = { generateDetailPage, buildHtml, SYS, esc };
+module.exports = { generateDetailPage, buildHtml, analyzeProductImages, distinctImages, SYS, esc };
