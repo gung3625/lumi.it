@@ -280,7 +280,7 @@ exports.handler = async (event) => {
       ],
       max_tokens: 6000,
       response_format: { type: 'json_object' },
-    }, { timeoutMs: 60000, label: 'sourcing-report', sensitive: false });
+    }, { timeoutMs: 60000, label: 'sourcing-report', sensitive: false, provider: 'gemini' }); // 소싱=공개데이터 → 무료 Gemini(₩0). 선별은 코드가 결정, LLM은 랭킹·카피만.
     const data = await res.json();
     const txt = data && data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : '';
     const clean = String(txt).replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();

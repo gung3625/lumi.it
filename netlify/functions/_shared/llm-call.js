@@ -138,7 +138,7 @@ async function llmChat(payload, opts = {}) {
   const timeoutMs = opts.timeoutMs || 60_000;
   const label = opts.label || 'llm';
 
-  if (process.env.OPENAI_API_KEY) {
+  if (process.env.OPENAI_API_KEY && opts.provider !== 'gemini') {
     try {
       const res = await fetchWithRetry('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -156,7 +156,7 @@ async function llmChat(payload, opts = {}) {
       console.warn(`[llm:${label}] OpenAI 예외 → Gemini 폴백: ${e.message}`);
     }
   } else {
-    console.warn(`[llm:${label}] OPENAI_API_KEY 없음 → Gemini`);
+    console.warn(`[llm:${label}] ${opts.provider === 'gemini' ? 'provider=gemini 지정' : 'OPENAI_API_KEY 없음'} → Gemini`);
   }
 
   const req = toGeminiRequest(payload);
