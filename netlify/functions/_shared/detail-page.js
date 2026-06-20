@@ -51,8 +51,8 @@ const SYS = [
   '[소싱데이터]·[이미지분석]이 있으면 적극 반영. 출력은 위 키의 JSON 하나만.',
 ].join('\n');
 
-const CHECK = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" style="flex:0 0 auto;margin-top:2px;"><circle cx="12" cy="12" r="11" fill="#1a1a1a"/><path d="M7 12.5l3.2 3.2L17 9" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-const DIV = '<div style="height:9px;background:#f6f5f3;"></div>';
+const A = '#b3724a', INK = '#1a1613', MUT = '#8c8279', PAPER = '#f4f0ea', LINE = '#e9e3d9';
+const eyebrow = (t) => '<p style="font-size:12px;font-weight:700;letter-spacing:2.5px;color:' + A + ';margin:0 0 16px;text-transform:uppercase;">' + esc(t) + '</p>';
 
 function specRows(spec) {
   const rows = [];
@@ -66,11 +66,13 @@ function specRows(spec) {
   }
   // ★공급사(도매꾹 셀러) 이름·연락처는 소비자 상세페이지에 절대 노출 X.
   if (!rows.length) return '';
-  const trs = rows.map((r) =>
-    '<tr><td style="padding:11px 14px;background:#faf9f7;color:#888;font-size:13px;width:34%;border-bottom:1px solid #f0efec;">' + esc(r[0]) + '</td>'
-    + '<td style="padding:11px 14px;color:#333;font-size:14px;border-bottom:1px solid #f0efec;">' + esc(r[1]) + '</td></tr>').join('');
-  return '<div style="padding:30px 22px;"><h3 style="font-size:18px;font-weight:700;color:#1a1a1a;margin:0 0 14px;">제품 정보</h3>'
-    + '<table style="width:100%;border-collapse:collapse;border:1px solid #f0efec;border-radius:10px;overflow:hidden;">' + trs + '</table></div>';
+  const rowsH = rows.map((r) =>
+    '<div style="display:flex;justify-content:space-between;gap:20px;padding:15px 0;border-top:1px solid ' + LINE + ';">'
+    + '<span style="font-size:14px;color:' + MUT + ';">' + esc(r[0]) + '</span>'
+    + '<span style="font-size:14px;color:' + INK + ';font-weight:500;text-align:right;">' + esc(r[1]) + '</span></div>').join('');
+  return '<div style="padding:52px 34px;">' + eyebrow('Product Info')
+    + '<h2 style="font-size:22px;font-weight:800;letter-spacing:-0.5px;color:' + INK + ';margin:0 0 18px;">제품 정보</h2>'
+    + '<div style="border-bottom:1px solid ' + LINE + ';">' + rowsH + '</div></div>';
 }
 
 function badges(spec) {
@@ -78,8 +80,8 @@ function badges(spec) {
   if (spec && spec.kc && spec.kc.length) b.push('KC 인증');
   if (spec && spec.country) b.push(/국산|한국/.test(spec.country) ? '국산' : '정식 수입');
   b.push('사업자 판매');
-  return '<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding:6px 22px 30px;">'
-    + b.map((t) => '<span style="font-size:12.5px;color:#5a5a5a;background:#f3f2ef;border:1px solid #e9e8e4;border-radius:999px;padding:6px 13px;">' + esc(t) + '</span>').join('') + '</div>';
+  return '<div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;padding:0 34px 52px;">'
+    + b.map((t) => '<span style="font-size:12.5px;letter-spacing:0.3px;color:' + INK + ';border:1px solid ' + LINE + ';border-radius:2px;padding:8px 16px;">' + esc(t) + '</span>').join('') + '</div>';
 }
 
 function shippingBlock() {
@@ -88,65 +90,89 @@ function shippingBlock() {
     ['교환 · 반품', '수령 후 문제가 있으면 구매 페이지 안내에 따라 처리됩니다.'],
     ['문의', '궁금한 점은 쿠팡 고객센터를 통해 도와드립니다.'],
   ];
-  return '<div style="padding:28px 22px;"><h3 style="font-size:18px;font-weight:700;color:#1a1a1a;margin:0 0 14px;">배송 및 교환·반품 안내</h3>'
-    + items.map((it) => '<div style="display:flex;gap:12px;padding:8px 0;border-bottom:1px solid #f3f2ef;">'
-      + '<span style="flex:0 0 88px;font-size:13.5px;color:#999;font-weight:600;">' + esc(it[0]) + '</span>'
-      + '<span style="font-size:14px;color:#555;line-height:1.6;">' + esc(it[1]) + '</span></div>').join('')
+  return '<div style="padding:48px 34px;background:' + PAPER + ';">' + eyebrow('Notice')
+    + '<h2 style="font-size:20px;font-weight:800;color:' + INK + ';margin:0 0 18px;letter-spacing:-0.5px;">배송 · 교환 · 반품</h2>'
+    + items.map((it) => '<div style="display:flex;gap:16px;padding:13px 0;border-top:1px solid ' + LINE + ';">'
+      + '<span style="flex:0 0 84px;font-size:13px;color:' + A + ';font-weight:700;">' + esc(it[0]) + '</span>'
+      + '<span style="font-size:14px;color:#6b6259;line-height:1.7;">' + esc(it[1]) + '</span></div>').join('')
     + '</div>';
 }
 
 function buildHtml(product, copy) {
   const imgs = distinctImages(product.images || []);
   const c = copy || {};
-  const W = (s) => '<div style="max-width:780px;margin:0 auto;font-family:Pretendard,-apple-system,system-ui,sans-serif;background:#fff;color:#1a1a1a;line-height:1.6;">' + s + '</div>';
+  const W = (s) => '<div style="max-width:720px;margin:0 auto;font-family:Pretendard,-apple-system,system-ui,sans-serif;background:#fff;color:' + INK + ';line-height:1.6;">' + s + '</div>';
   let h = '';
+
+  // HERO — 풀블리드 이미지 + 에디토리얼 타이틀 블록(크림)
   if (imgs[0]) h += '<img src="' + esc(imgs[0]) + '" alt="' + esc(c.seoTitle || product.title) + '" style="width:100%;display:block;">';
-  h += '<div style="padding:38px 24px 24px;text-align:center;">'
-    + '<h1 style="font-size:26px;font-weight:800;color:#161616;margin:0 0 12px;line-height:1.35;letter-spacing:-0.3px;">' + esc(c.heroHeadline || c.seoTitle || product.title) + '</h1>'
-    + (c.heroSub ? '<p style="font-size:15px;color:#777;margin:0;line-height:1.6;">' + esc(c.heroSub) + '</p>' : '')
+  h += '<div style="padding:58px 32px 50px;text-align:center;background:' + PAPER + ';">'
+    + '<div style="width:36px;height:2px;background:' + A + ';margin:0 auto 22px;"></div>'
+    + '<h1 style="font-size:33px;font-weight:800;letter-spacing:-1px;line-height:1.28;margin:0 0 18px;color:' + INK + ';">' + esc(c.heroHeadline || c.seoTitle || product.title) + '</h1>'
+    + (c.heroSub ? '<p style="font-size:16px;color:' + MUT + ';line-height:1.75;margin:0 auto;max-width:430px;">' + esc(c.heroSub) + '</p>' : '')
     + '</div>';
+
+  // 고객 고민 — 중앙 정렬, 큰 헤드라인, 헤어라인
   if (Array.isArray(c.concerns) && c.concerns.length) {
-    h += DIV + '<div style="padding:32px 24px;background:#f8f6f3;">'
-      + '<p style="font-size:13px;color:#b08968;font-weight:700;letter-spacing:0.5px;margin:0 0 14px;text-align:center;">혹시, 이런 적 없으세요?</p>'
-      + c.concerns.map((x) => '<div style="background:#fff;border:1px solid #efe9e2;border-radius:10px;padding:14px 16px;margin:0 0 10px;font-size:15px;color:#5b5249;line-height:1.55;">' + esc(x) + '</div>').join('')
-      + '</div>';
-  }
-  if (Array.isArray(c.benefits) && c.benefits.length) {
-    h += DIV + '<div style="padding:34px 24px 30px;max-width:520px;margin:0 auto;">'
-      + '<h3 style="font-size:20px;font-weight:700;color:#1a1a1a;margin:0 0 18px;text-align:center;">이 제품이 해결합니다</h3>'
-      + c.benefits.map((b) => '<div style="display:flex;gap:11px;align-items:flex-start;padding:9px 0;">' + CHECK
-        + '<span style="font-size:15.5px;color:#2b2b2b;line-height:1.55;">' + esc(b) + '</span></div>').join('')
-      + '</div>';
-  }
-  (Array.isArray(c.sections) ? c.sections : []).forEach((s, i) => {
-    const img = imgs.length ? imgs[(i + 1) % imgs.length] : null;
-    h += DIV + '<section style="padding:34px 24px;">'
-      + (img ? '<img src="' + esc(img) + '" alt="" style="width:100%;display:block;border-radius:12px;margin:0 0 20px;">' : '')
-      + (s.headline ? '<h3 style="font-size:21px;font-weight:700;color:#1a1a1a;margin:0 0 12px;line-height:1.4;letter-spacing:-0.2px;">' + esc(s.headline) + '</h3>' : '')
-      + '<p style="font-size:15.5px;color:#555;line-height:1.85;margin:0;white-space:pre-line;">' + esc(s.body || '') + '</p>'
-      + '</section>';
-  });
-  if (c.comparison && Array.isArray(c.comparison.points) && c.comparison.points.length) {
-    h += DIV + '<div style="padding:34px 24px;background:#f4f6f5;">'
-      + '<h3 style="font-size:20px;font-weight:700;color:#1a1a1a;margin:0 0 18px;text-align:center;">' + esc(c.comparison.headline || '왜 이 제품일까요?') + '</h3>'
-      + '<div style="max-width:520px;margin:0 auto;">'
-      + c.comparison.points.map((p) => '<div style="display:flex;gap:11px;align-items:flex-start;background:#fff;border:1px solid #e6ece9;border-radius:10px;padding:14px 16px;margin:0 0 10px;">' + CHECK
-        + '<span style="font-size:15px;color:#2b2b2b;line-height:1.55;">' + esc(p) + '</span></div>').join('')
+    h += '<div style="padding:56px 34px;text-align:center;">' + eyebrow('Your Concern')
+      + '<h2 style="font-size:24px;font-weight:800;letter-spacing:-0.6px;color:' + INK + ';margin:0 0 28px;line-height:1.4;">혹시, 이런 고민<br>있으셨나요?</h2>'
+      + '<div style="max-width:460px;margin:0 auto;">'
+      + c.concerns.map((x, i) => '<p style="font-size:17px;color:#544c44;line-height:1.6;margin:0;padding:18px 0;' + (i ? 'border-top:1px solid ' + LINE + ';' : '') + '">' + esc(x) + '</p>').join('')
       + '</div></div>';
   }
-  h += DIV + specRows(product.spec);
+
+  // 혜택 — 번호 매긴 리스트(크림)
+  if (Array.isArray(c.benefits) && c.benefits.length) {
+    h += '<div style="padding:56px 34px;background:' + PAPER + ';"><div style="text-align:center;">' + eyebrow('Why It Matters')
+      + '<h2 style="font-size:24px;font-weight:800;letter-spacing:-0.6px;color:' + INK + ';margin:0 0 32px;">이런 점이 다릅니다</h2></div>'
+      + '<div style="max-width:480px;margin:0 auto;">'
+      + c.benefits.map((b, i) => '<div style="display:flex;gap:18px;align-items:baseline;padding:18px 0;' + (i ? 'border-top:1px solid ' + LINE + ';' : '') + '">'
+        + '<span style="flex:0 0 auto;font-size:15px;font-weight:800;color:' + A + ';letter-spacing:0.5px;">' + String(i + 1).padStart(2, '0') + '</span>'
+        + '<span style="font-size:17px;color:' + INK + ';line-height:1.55;font-weight:500;">' + esc(b) + '</span></div>').join('')
+      + '</div></div>';
+  }
+
+  // 실물/사용 섹션 — 풀블리드 이미지 + 번호 + 큰 헤드라인
+  (Array.isArray(c.sections) ? c.sections : []).forEach((s, i) => {
+    const img = imgs.length ? imgs[(i + 1) % imgs.length] : null;
+    h += (img ? '<img src="' + esc(img) + '" alt="" style="width:100%;display:block;">' : '')
+      + '<div style="padding:50px 34px;">'
+      + '<span style="font-size:14px;font-weight:800;color:' + A + ';letter-spacing:1px;">' + String(i + 2).padStart(2, '0') + '</span>'
+      + (s.headline ? '<h2 style="font-size:25px;font-weight:800;color:' + INK + ';margin:14px 0 14px;line-height:1.35;letter-spacing:-0.5px;">' + esc(s.headline) + '</h2>' : '')
+      + '<p style="font-size:16px;color:#5f574e;line-height:1.9;margin:0;white-space:pre-line;">' + esc(s.body || '') + '</p>'
+      + '</div>';
+  });
+
+  // 경쟁 비교 — 다크 포인트 섹션
+  if (c.comparison && Array.isArray(c.comparison.points) && c.comparison.points.length) {
+    h += '<div style="padding:56px 34px;background:' + INK + ';color:#fff;text-align:center;">'
+      + '<p style="font-size:12px;font-weight:700;letter-spacing:2.5px;color:' + A + ';margin:0 0 16px;text-transform:uppercase;">The Difference</p>'
+      + '<h2 style="font-size:24px;font-weight:800;letter-spacing:-0.6px;margin:0 0 30px;color:#fff;">' + esc(c.comparison.headline || '왜 이 제품일까요?') + '</h2>'
+      + '<div style="max-width:460px;margin:0 auto;">'
+      + c.comparison.points.map((p, i) => '<p style="font-size:16.5px;color:#e8e2da;line-height:1.6;margin:0;padding:17px 0;' + (i ? 'border-top:1px solid rgba(255,255,255,0.12);' : '') + '">' + esc(p) + '</p>').join('')
+      + '</div></div>';
+  }
+
+  h += specRows(product.spec);
   h += badges(product.spec);
+
+  // FAQ (크림)
   if (Array.isArray(c.faq) && c.faq.length) {
-    h += DIV + '<div style="padding:30px 22px;">'
-      + '<h3 style="font-size:18px;font-weight:700;color:#1a1a1a;margin:0 0 16px;">자주 묻는 질문</h3>'
-      + c.faq.map((f) => '<div style="border-bottom:1px solid #f0efec;padding:14px 0;">'
-        + '<p style="font-size:15px;font-weight:600;color:#1a1a1a;margin:0 0 6px;">Q. ' + esc(f.q) + '</p>'
-        + '<p style="font-size:14.5px;color:#666;margin:0;line-height:1.7;">' + esc(f.a) + '</p></div>').join('')
+    h += '<div style="padding:50px 34px;background:' + PAPER + ';">' + eyebrow('FAQ')
+      + '<h2 style="font-size:22px;font-weight:800;color:' + INK + ';margin:0 0 20px;letter-spacing:-0.5px;">자주 묻는 질문</h2>'
+      + c.faq.map((f, i) => '<div style="padding:18px 0;' + (i ? 'border-top:1px solid ' + LINE + ';' : '') + '">'
+        + '<p style="font-size:16px;font-weight:700;color:' + INK + ';margin:0 0 8px;">' + esc(f.q) + '</p>'
+        + '<p style="font-size:14.5px;color:#6b6259;margin:0;line-height:1.75;">' + esc(f.a) + '</p></div>').join('')
       + '</div>';
   }
-  h += DIV + shippingBlock();
-  if (c.closing) h += '<div style="background:#161616;color:#fff;padding:36px 24px;text-align:center;">'
-    + '<p style="font-size:18px;font-weight:700;margin:0;line-height:1.5;">' + esc(c.closing) + '</p></div>';
+
+  h += shippingBlock();
+
+  // CTA — 다크 + 악센트 룰
+  if (c.closing) h += '<div style="background:' + INK + ';color:#fff;padding:60px 34px;text-align:center;">'
+    + '<div style="width:36px;height:2px;background:' + A + ';margin:0 auto 24px;"></div>'
+    + '<p style="font-size:21px;font-weight:700;margin:0;line-height:1.55;letter-spacing:-0.3px;">' + esc(c.closing) + '</p></div>';
+
   return W(h);
 }
 
