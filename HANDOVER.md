@@ -5,12 +5,14 @@
 
 ## 0. 환경 / 접근
 
-- **repo**: `~/lumi.it` · **라이브**: lumi.it.kr · **진단**: `/api/cron-health`
-- **스택**: Netlify Functions + Supabase(ap-northeast-2 서울) + Netlify CDN
-- **배포**: `git push main` 만으로 빌드 트리거. ⚠️ 강제 `/builds` API 금지 (push만).
-- **인증**: `~/.ssh/` 격리, GitHub PAT 키체인 저장 → push 자동.
+> ⚠️ **2026-06-21 검증 정정**: lumi **전체가 Netlify→GCP self-host로 이전됨**(라이브 `lumi.it.kr` 응답 헤더 `via: Caddy` 확인, Netlify 아님). 아래 + **문서 곳곳의 'Netlify env / git push 빌드 / Netlify CDN' 표현은 전부 GCP 기준으로 읽을 것** — env=`ecosystem.config.js` apps[0].env(Netlify env 아님), 라이브 배포=rsync + `pm2 reload lumi`(git push 아님).
+
+- **repo**: `~/lumi.it` · **라이브**: lumi.it.kr (**GCP 서빙**) · **진단**: `/api/cron-health`
+- **스택**: **GCP VM `34.158.206.244` self-host** — `server.js`(Express)가 `netlify/functions/*.js`를 `/api/<name>` 자동 마운트(PORT 8080), **PM2**(앱 `lumi`, online), **Caddy**(HTTPS, `lumi.it.kr`·`www`→`localhost:8080`) + Supabase(ap-northeast-2 서울). (`NETLIFY_*` env는 일부 잔존하나 **라이브 서빙 경로 아님**.)
+- **배포**: ⚠️ **`git push` ≠ 라이브 배포**. git push는 GitHub 버전관리/백업만 — **라이브 반영은 `rsync` + `pm2 reload lumi`**(소싱 §1의 rsync 절차 참조). `netlify.toml`(라우팅)은 잔존하나 Netlify 빌드는 라이브와 무관.
+- **인증**: `~/.ssh/lumi_gcp`(GCP, user=lumi, HOME=/home/lumi) + GitHub PAT 키체인(push).
 - **브라우저 정정**: 메모리 `user_browser.md`에 "Chrome"으로 적혀 있는데 **사장님은 크롬 안 씀**(직접 정정함). 메모리가 틀림 — pull-to-refresh/overscroll 가정 시 주의.
-- **현재 상태(2026-06-08 갱신)**: `main`, 최신 커밋 `c4b2373`. 코드 클린. 루트에 미적용 ops SQL 2개 untracked — `security-hardening.sql`(✅적용완료), `performance-rls.sql`(선택, 0명 규모라 비긴급).
+- **현재 상태(2026-06-21 검증)**: `main`, 최신 커밋 `07a9220`(이전 문서의 `c4b2373`는 2026-06-08 시점 박제였음). **작업중 미커밋**: `server.js`·`_shared/blobs-shim.js`(신규) + 함수 8개(comments·insight-*·keyword-detail·reply-comment·naver-ad-keyword-tool·seller-cache) = **GCP 이전 잔여**(Netlify Blobs→shim 대체). 루트 ops SQL `performance-rls.sql`(선택, 비긴급).
 
 ## 1. lumi 현재 배포 상태 (전부 main 머지 완료)
 
@@ -36,7 +38,7 @@
 
 > **⭐⭐ 상세페이지 방향 전환 (6/20, 사장님 확정 "네 이 방식으로 전체")**: HTML 템플릿(buildHtml)은 '사진 따로 / 글 따로'라 아무리 타이포·여백 다듬어도 퀄리티 천장(사장님 2번 "안좋다") → **디자인 이미지 컷 방식**으로 전환. 각 컷 = 사진+카피+그래픽이 **한 장에 합성**된 이미지(드랩아트/webseller 방식). **수동 데모만 존재**(텀블러 1건): `/tmp/full_detail.html` 7컷(히어로·혜택01~03·8색스와치·라이프스타일·THE DIFFERENCE·제품정보·CTA) → **로컬 Chrome headless 렌더**(`"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --hide-scrollbars --window-size=1080,6700 --virtual-time-budget=9000 --screenshot=out.png file:///tmp/full_detail.html` + Pretendard CDN link + **각 컷 height 고정**(가변컷에 px 명시→여백0)) → 1080×6700 PNG → rsync로 lumi.it.kr/_full_detail.png 호스팅. 디자인 토큰: 잉크 `#16140f` / 크림 `#f3efe8` / 흰 / 악센트 카라멜 `#c98a4e`, 다크↔크림↔흰 교대. **아직 코드화 안 됨** — buildHtml(HTML)→디자인컷 렌더러(PNG) 교체가 다음 작업.
 
-**인증/시크릿(GCP env + 서버 600파일)**: env=DOMEGGOOK_API_KEY(dd20…)·DOMEGGOOK_USER_ID=gung3625·COUPANG_ACCESS/SECRET/VENDOR_ID(A00968893)·OPENAI_API_KEY·GEMINI_API_KEY(무료)·NAVER_*·LUMI_SECRET. 파일=`~/.dgk_pw`(도매꾹비번,사장님직접)·`~/.dgk_session`·`~/.dgk_deliinfo`(집)·`~/.dgk_deliinfo_gemi`(개미창고). 도매꾹 Private API 권한 승인(로그인·주문조회·setOrder·setOrdDeny). 쿠팡 로켓그로스 API동의+출고지(21219014)+반품지(1001965390) 완료.
+**인증/시크릿(GCP env + 서버 600파일)**: env=DOMEGGOOK_API_KEY(dd20…)·DOMEGGOOK_USER_ID=gung3625·COUPANG_ACCESS/SECRET/VENDOR_ID(A00968893)·OPENAI_API_KEY·GEMINI_API_KEY(무료)·NAVER_*·LUMI_SECRET. 파일=`~/.dgk_pw`(도매꾹비번,사장님직접)·`~/.dgk_session`·`~/.dgk_deliinfo`(집)·`~/.dgk_deliinfo_gemi`(개미창고). 도매꾹 Private API 권한 승인(로그인·주문조회·setOrder·setOrdDeny). 쿠팡 로켓그로스 API동의 완료. ★**출고지/반품지는 코드 하드코딩 아님**(검증 2026-06-21) — `getOutboundShippingPlaces()`/`getReturnCenters()`가 쿠팡 API서 조회 후 **첫번째 자동선택**(`places[0].code`). 사장님 메모 등록값(출고지 21219014/반품지 1001965390)이 목록 첫번째와 다르면 오선택 → **첫 실주문 전 places[0] 확인 필수**.
 
 **확정 결정**: ①매입처=도매꾹 단독(Phase1)/Phase2=AliExpress DS API/Temu·차이나꾹 제외. ②물류=**개미창고 3PL**(매입→개미창고 직배송→바코드·검수·쿠팡납품, 이천센터 배송지). ③**무광고 전략**(광고비=적자 주범, adRate0, 진입장벽 낮은 organic 판매가능 상품만). ④"높은확률만, 작게 사서 데이터로 키운다". ⑤LLM 소싱=무료Gemini/상세=GPT-4o. 영상 제외. ⑥**이미지=Higgsfield marketing_studio_image로 직접 화보 생성**(도매꾹 평범사진→손모델+소품+사용장면 연출, MCP `mcp__f3d214c3-…`). ★텀블러는 '배경만 교체'라 약했음 → **연출 프롬프트에 손모델·소품·사용장면을 넣어야 드랩아트급 화보**(원본 octet-stream은 media_import_url 거부→lumi.it.kr에 .png 재호스팅 후 임포트, model='marketing_studio_image' 2크레딧/장, role:"image"). 드랩아트(draph.art, 장당 800원)/PicCopilot은 백업.
 
