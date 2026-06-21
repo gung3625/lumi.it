@@ -1,4 +1,4 @@
-# 루미(lumi) 인수인계 — 2026-06-20
+# 루미(lumi) 인수인계 — 2026-06-21
 
 > 새 로컬/세션이 이어받기 위한 문서. `~/.claude` 자동 메모리는 머신 간 동기화 안 되므로 이 파일이 단일 소스.
 > 새 세션 첫 메시지에 이 내용을 붙여넣거나, repo에서 `git pull` 후 이 파일을 읽게 할 것.
@@ -13,6 +13,26 @@
 - **현재 상태(2026-06-08 갱신)**: `main`, 최신 커밋 `c4b2373`. 코드 클린. 루트에 미적용 ops SQL 2개 untracked — `security-hardening.sql`(✅적용완료), `performance-rls.sql`(선택, 0명 규모라 비긴급).
 
 ## 1. lumi 현재 배포 상태 (전부 main 머지 완료)
+
+### ⭐⭐⭐ 2026-06-21 세션 — 소싱 상세페이지 "디자인 컷 렌더러" 코드화 (PR #253, 미머지)
+
+> 6/20 확정 방향(buildHtml HTML → 디자인 컷 PNG)을 **실제 코드로 구현**. 브랜치 `claude/handover-receipt-bxng8z`, 최신 `7763553`. **PR #253 = draft(미머지)** — 디자인 리뷰/실검증 중. main 미반영.
+
+**신규 `netlify/functions/_shared/detail-render.js`** — 상품 사진+카피+그래픽을 **한 장 PNG로 합성**하는 디자인 컷 렌더러(기존 `buildHtml`의 '사진 따로/글 따로' 천장 해소 목적):
+- **헤드리스 브라우저 무의존**: `sharp`(래스터) + `text-to-svg`(번들 폰트→벡터 패스). **기존 의존성만** → GCP에 Chromium/fontconfig 설치 0, rsync만으로 동일 작동. (★이게 아키텍처 핵심 결정 — Higgsfield 데모처럼 로컬 Chrome headless 안 씀)
+- v1→v4 반복(사장님 피드백 루프, 각 커밋 메시지에 상세): v1 토대 → v2 합성·카드·**색버그수정**(text-to-svg는 `fill`을 `attributes.fill`로만 반영) → v3 아이콘배지·컬러테마 → **v4 = 레퍼런스 반영 최종**.
+- **v4 핵심**(레퍼런스: 사장님 제공 yolohollo 상세 PDF + 핀터레스트 식기 ins풍 캡처 분석): ①상품 사진색 **자동 추출**(`dominantAccent`, 배경 무채색 제외→채도색)→톤온톤 테마(복숭아→분홍 자동) ②**아치 프레임**(`archImage`, 히어로·쇼케이스) ③**세리프 영문**(Gloock 디스플레이 + CrimsonPro-Italic 이탤릭 = 감성 무드) ④**그래디언트 배경** ⑤원형 아이콘배지·둥근 컬러카드·색 스와치·제품 쇼케이스(누끼-온-컬러).
+- 컷: 히어로→고민→혜택→쇼케이스→색상→사용장면×N→다크비교→제품정보→FAQ→CTA. 세로 합본+컷별 PNG 반환. `renderDetailCuts(product, copy, {photos?, accent?, fontDir?})`.
+
+**폰트 번들** `_shared/fonts/`: 한글 Noto Sans KR 4종(Black/Bold/Medium/Regular)을 **한글 상용영역 서브셋**(pyftsubset, 각~2MB·합 8.1MB) + 영문세리프(Gloock, CrimsonPro-Italic). repo 동봉 → GCP 추가설치 0. (.gitignore `scripts/*`라 검증 스크립트는 `-f` 강제 add함)
+
+**검증 스크립트** `scripts/render-detail-sample.js`: `node scripts/render-detail-sample.js <도매꾹상품번호> [출력.png]` → getItemView → 카피(`generateDetailPage`) → `renderDetailCuts` → PNG(합본+컷별). `ecosystem.config.js` env 자동로드.
+
+**⚠️ 미완 / 다음 (우선순위순)**:
+- 🔴 **실제 GCP 검증 미실행** — 이 Claude 작업 컨테이너는 도매꾹 키·외부 네트워크·SSH 키 전부 **격리(403)**라 직접 못 돌림(도매꾹 API 자체는 정상, 사장님 아이맥/GCP선 됨). **사장님 아이맥/GCP에서 위 스크립트로 실상품 1건 검증 대기** — rsync 3파일(detail-render.js + fonts/ + 스크립트) + 실행 명령은 세션 마지막 안내 참조.
+- 🔴 **렌더러 미통합** — `admin-detail-page.js`는 아직 옛 `buildHtml` 사용(렌더러는 순수 추가, 기존 동작 무변경). 디자인 확정 후 교체 필요(반환형 HTML→PNG + 호스팅/쿠팡 업로드 연계).
+- 🔴 **누끼/실사 화보 = Higgsfield 결제 후** — 지금 사진은 플레이스홀더. 합성컷(히어로/쇼케이스)의 "와" 한끗은 실제 누끼 제품+라이프스타일 화보가 들어가야 완성(렌더러는 이미지 URL fetch 합성 준비됨 — GCP선 도매꾹 이미지 자동 사용).
+- 디테일: 기능배지↔혜택카드 **문구 중복**(LLM이 짧은태그 vs 상세로 분리 필요), 팔레트 아이콘 다듬기, 브랜드 폰트 Pretendard 교체 여부.
 
 ### ⭐⭐ 2026-06-18~20 세션 — 소싱(매입 차익) 시스템 [별도 서브시스템, GCP 배포]
 
@@ -189,7 +209,7 @@
 
 ## 6. 새 세션에서 할 것 (우선순위)
 
-0. **🟢 (메인 사업) 소싱 상세페이지 — 디자인 컷 방식 확정됨** (방향 정본 데모: lumi.it.kr/_full_detail.png). **Higgsfield Plus 결제되면**(사장님 직접, ~$34/월) → ① buildHtml(HTML)을 **디자인 컷 PNG 렌더러로 코드화** ② **화보 연출**(손모델·소품·사용장면) 파이프라인 연동 ③ 도매꾹 URL→자동 화보+상세 생성. 결제 전엔 생성 불가(무료 1크레딧). 상세는 §1 소싱 '남은 것'.
+0. **🟢 (메인 사업) 소싱 상세페이지 — 디자인 컷 렌더러 v4 코드화 완료** (PR #253 draft, 미머지. 상세=§1 2026-06-21 항목). 다음 순서: ① 🔴 **사장님 아이맥/GCP서 실상품 1건 검증**(`node scripts/render-detail-sample.js <상품번호>` — 이 컨테이너는 도매꾹/SSH 격리라 직접 불가) ② `admin-detail-page.js`에 렌더러 **통합**(buildHtml→PNG) ③ **Higgsfield Plus 결제 후**(사장님, ~$34/월) 누끼/화보 연동 → 아치·쇼케이스에 실제 사진. (구 데모: lumi.it.kr/_full_detail.png 은 수동 1건)
 1. **🔴 OpenAI 새 키 등록·검증** — 사장님이 키 주면(§2 참조) 등록(6/17 확립 **secrets.env→`netlify env:import`→삭제** 방식)+빈커밋 재배포+초안 캡션 E2E. 캡션 생성 복구의 마지막 열쇠.
 2. **PayApp 결제 마무리** — 사장님: PayApp 콘솔 정기결제 ON+테스트모드 확인 + 노출키 재발급. 제가: 실 결제 1건 E2E + **진입 링크(구독 버튼)** + **법무 카피**. (§2 PayApp 항목)
 3. **autoke서 가져올 카피** — 문제프레임·숫자대비·FAQ보강·CTA"언제든해지"·펀치 클로징 (§1 2026-06-17 C항목). index/pricing 작업이라 리스크 낮음. 사장님 "ㄱㄱ" 하면 우선순위대로.
