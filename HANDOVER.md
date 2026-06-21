@@ -156,7 +156,7 @@
 
 ## 2. lumi 미해결 / 진행중 ⚠️ (가장 중요)
 
-- **🔴 OpenAI 새 키 — 캡션 복구의 마지막 열쇠** (사장님이 직접 충전+발급하기로, 6/12): 현재 Netlify `OPENAI_API_KEY`는 `invalid_api_key`(billing 아닌 **키 자체 무효** — 폐기/조직변경). 충전과 별개로 **새 키 발급 필수**. 함정=충전 조직=키 발급 조직 일치. 새 키 받으면 → Netlify env 교체(account env endpoint, context:all) → 빈 커밋 push 재배포 → 초안 캡션 E2E(seller JWT→reserve→process-and-post)+벤치마크 OpenAI 경로 검증. **그 전까지 캡션 생성은 graceful 실패**(고객 데이터라 무료 Gemini 차단 — D 가드). 트렌드·벤치마크 분석은 무료 Gemini라 무관하게 작동.
+- **✅ OpenAI 키 — 2026-06-21 검증: 살아있음** (GCP `ecosystem.config.js` env, `/v1/models` 200). ⚠️ **이전 기록 stale·해소됨**: 6/12 'Netlify OPENAI_API_KEY `invalid_api_key` 키자체무효 → 새키 발급필수'였으나 사장님이 GCP env에 **유효키 투입 완료**. → **HANDOVER 1순위였던 OpenAI 블로커는 풀림.** 남은 건 **앱 초안 캡션 E2E 1회**(seller JWT→reserve→process-and-post)로 GPT-4o completion/billing 실작동 확인(models 200은 '키 유효'까지만 보증, 실 completion·잔액은 미확인). Gemini 키도 200 ✅(소싱 분석·비전 정상). 소싱 상세페이지 카피(GPT-4o)도 이 키로 작동.
 - **✅ 코어 파이프라인 서버 실작동 검증됨**(6/12, E 항목): reservations 직접 insert → process-and-post → 24초 분석→캡션→draft. **남은 건 앱 브라우저 업로드 1회**(register-product 화면→결과, OpenAI 키 들어온 뒤).
 - **✅ trends cron 해결**(6/08~12): 네이버 직접+Gemini 의미감사. 8개 카테고리 청정 적재. food 오염 근절.
 - **✅ 3D 인덱스 교체 완료**(6/15, `d240854`~`cb60c36` #246~#251): 3D 리빌드를 정식 index로 승격, 기존은 `index-classic.html` 백업. (상세 G 항목)
@@ -192,7 +192,7 @@
 ## 6. 새 세션에서 할 것 (우선순위)
 
 0. **🟢 (메인 사업) 소싱 상세페이지 — 디자인 컷 방식 확정됨** (방향 정본 데모: lumi.it.kr/_full_detail.png). **Higgsfield Plus 결제되면**(사장님 직접, ~$34/월) → ① buildHtml(HTML)을 **디자인 컷 PNG 렌더러로 코드화** ② **화보 연출**(손모델·소품·사용장면) 파이프라인 연동 ③ 도매꾹 URL→자동 화보+상세 생성. 결제 전엔 생성 불가(무료 1크레딧). 상세는 §1 소싱 '남은 것'.
-1. **🔴 OpenAI 새 키 등록·검증** — 사장님이 키 주면(§2 참조) 등록(6/17 확립 **secrets.env→`netlify env:import`→삭제** 방식)+빈커밋 재배포+초안 캡션 E2E. 캡션 생성 복구의 마지막 열쇠.
+1. **🟡 OpenAI 캡션 E2E 검증** — 키는 ✅살아있음(2026-06-21 GCP env `/v1/models` 200, §2 정정 참조). 남은 건 앱에서 **초안 사진 1장 업로드→캡션 결과** 1회로 GPT-4o 실작동 확인뿐. (등록방식은 Netlify env 아닌 `ecosystem.config.js` apps[0].env + `pm2 reload`.)
 2. **PayApp 결제 마무리** — 사장님: PayApp 콘솔 정기결제 ON+테스트모드 확인 + 노출키 재발급. 제가: 실 결제 1건 E2E + **진입 링크(구독 버튼)** + **법무 카피**. (§2 PayApp 항목)
 3. **autoke서 가져올 카피** — 문제프레임·숫자대비·FAQ보강·CTA"언제든해지"·펀치 클로징 (§1 2026-06-17 C항목). index/pricing 작업이라 리스크 낮음. 사장님 "ㄱㄱ" 하면 우선순위대로.
 4. (OpenAI 키 후) **앱에서 초안 사진 1장** — 브라우저 업로드 경로 최종 확인.
