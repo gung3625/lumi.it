@@ -2,7 +2,7 @@
 //   POST {url|title+imageBase64} → 즉시 jobId 반환(202), 백그라운드에서 생성.
 //   GET  ?jobId → 상태 조회(pending / done+html / error).
 // 생성이 1~3분 걸려서 동기 응답은 프록시·브라우저 타임아웃 위험 → 작업+폴링 방식.
-const { generateDetailPage, generateAiPhoto, photoPrompt, cutPlan, assembleCutPage } = require('./_shared/detail-page.js');
+const { generateDetailPage, generateAiPhoto, photoPrompt, cutPlan, assembleCutPage, accentPalette } = require('./_shared/detail-page.js');
 const { getItemView } = require('./_shared/domeggook-api.js');
 
 const headers = {
@@ -52,7 +52,7 @@ async function runGeneration(p) {
       cuts.push(...batch);
     }
     cutCount = cuts.filter((c) => c.img).length;
-    if (cutCount >= 2) html = assembleCutPage(cuts);
+    if (cutCount >= 2) { const palette = await accentPalette(((cuts.find((c) => c.img) || {}).img) || baseB64); html = assembleCutPage(cuts, palette); }
   }
   return { title: product.title, html, copy, reviewPoints: result.reviewPoints || [], photoGenerated: !!baseB64, cutCount };
 }

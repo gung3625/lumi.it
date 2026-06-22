@@ -146,7 +146,7 @@
 
     <div id="loading"><div class="spin"></div><p>AI가 화보·카피를 만드는 중... (약 1분)</p></div>
     <div class="errbox" id="err"></div>
-    <div id="result"><h3>✨ 완성된 상세페이지</h3><div class="preview"><iframe id="frame"></iframe></div></div>
+    <div id="result"><h3>✨ 완성된 상세페이지</h3><button class="btn" id="dl" style="max-width:320px;margin:0 auto 16px;display:block;">컷 이미지 전체 저장</button><div class="preview"><iframe id="frame"></iframe></div></div>
   </div>
 </div></section>
 
@@ -189,6 +189,17 @@
       else{setTimeout(function(){poll(jobId,n+1);},3000);}
     }).catch(function(){setTimeout(function(){poll(jobId,n+1);},3000);});
   }
+  var dl=document.getElementById('dl');
+  if(dl)dl.addEventListener('click',function(){
+    try{
+      var imgs=frame.contentDocument.querySelectorAll('img'),i=0;
+      Array.prototype.forEach.call(imgs,function(im){
+        if(!/^data:image/.test(im.src))return; i++;
+        var a=document.createElement('a');a.href=im.src;a.download='상세컷_'+i+'.png';document.body.appendChild(a);a.click();a.remove();
+      });
+      if(!i)alert('저장할 컷 이미지가 없습니다.');
+    }catch(e){alert('이미지 저장에 실패했습니다. 컷을 길게 눌러 저장해 주세요.');}
+  });
 })();
 </script>
 </body>

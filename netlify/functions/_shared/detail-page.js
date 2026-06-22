@@ -315,9 +315,40 @@ function cutPlan(product, copy) {
   return plan;
 }
 
-// 컷 이미지(base64) + 설명 텍스트(민트/흰 교대) 조립 → 풀 상세페이지 HTML.
-function assembleCutPage(cuts) {
-  const T1 = '#15302c', SOFT = '#eef7f5', MUT2 = '#5a6864';
+// HSL → hex (h:0~360, s/l:0~1)
+function hslHex(h, s, l) {
+  h /= 360; const f = (p, q, t) => { if (t < 0) t += 1; if (t > 1) t -= 1; if (t < 1 / 6) return p + (q - p) * 6 * t; if (t < 1 / 2) return q; if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6; return p; };
+  let r, g, b; if (s === 0) { r = g = b = l; } else { const q = l < 0.5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q; r = f(p, q, h + 1 / 3); g = f(p, q, h); b = f(p, q, h - 1 / 3); }
+  return '#' + [r, g, b].map((x) => Math.round(x * 255).toString(16).padStart(2, '0')).join('');
+}
+
+// 이미지(화보)에서 제품 대표색 추출 → {accent, soft(연한 배경), ink(짙은 제목)}. 무채색이면 null(기본 팔레트). 무료 sharp.
+async function accentPalette(src) {
+  let sharp; try { sharp = require('sharp'); } catch (_) { return null; }
+  try {
+    const buf = /^https?:/i.test(src) ? Buffer.from(await (await fetch(src)).arrayBuffer()) : Buffer.from(src, 'base64');
+    const { data, info } = await sharp(buf).resize(64, 64, { fit: 'inside' }).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+    const ch = info.channels, bk = {};
+    for (let i = 0; i < data.length; i += ch) {
+      const r = data[i] / 255, g = data[i + 1] / 255, b = data[i + 2] / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn;
+      if (d < 0.001) continue;
+      const s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
+      if (s < 0.22 || l < 0.16 || l > 0.9) continue;
+      let h; if (mx === r) h = ((g - b) / d + (g < b ? 6 : 0)); else if (mx === g) h = (b - r) / d + 2; else h = (r - g) / d + 4;
+      h = (Math.round(h * 60) % 360 + 360) % 360; const key = (Math.round(h / 15) * 15) % 360;
+      if (!bk[key]) bk[key] = { c: 0, s: 0 }; bk[key].c++; bk[key].s += s;
+    }
+    let best = null; for (const k in bk) if (best === null || bk[k].c > bk[best].c) best = k;
+    if (best === null) return null;
+    const h = Number(best), s = Math.min(0.6, bk[best].s / bk[best].c);
+    return { accent: hslHex(h, s, 0.45), soft: hslHex(h, Math.min(0.38, s), 0.95), ink: hslHex(h, Math.min(0.5, s + 0.1), 0.18) };
+  } catch (_) { return null; }
+}
+
+// 컷 이미지(base64) + 설명 텍스트(제품색 연한배경/흰 교대) 조립 → 풀 상세페이지 HTML.
+function assembleCutPage(cuts, palette) {
+  const p = palette || {};
+  const T1 = p.ink || '#15302c', SOFT = p.soft || '#eef7f5', MUT2 = '#5a6864';
   let h = '', ti = 0;
   (cuts || []).forEach((c) => {
     if (c.img) h += '<img src="data:image/png;base64,' + c.img + '" alt="" style="width:100%;display:block;">';
@@ -331,4 +362,4 @@ function assembleCutPage(cuts) {
   return '<div style="max-width:1024px;margin:0 auto;background:#fff;font-family:Pretendard,-apple-system,system-ui,sans-serif;">' + h + '</div>';
 }
 
-module.exports = { generateDetailPage, buildHtml, analyzeProductImages, distinctImages, generateAiPhoto, photoPrompt, cutPlan, assembleCutPage, SYS, esc };
+module.exports = { generateDetailPage, buildHtml, analyzeProductImages, distinctImages, generateAiPhoto, photoPrompt, cutPlan, assembleCutPage, accentPalette, SYS, esc };
