@@ -259,8 +259,9 @@ async function generateAiPhoto(src, prompt, { quality = 'low', size = '1024x1536
     } else { buf = Buffer.from(src, 'base64'); }
   } catch (_) { return null; }
   const ext = (ct.split('/')[1] || 'jpg');
-  // gpt-image-2 edits — 일시 실패가 있어 최대 3회 시도(화보 누락 방지)
+  // gpt-image-2 edits — 일시 실패/rate limit가 있어 최대 3회 시도(컷 누락 방지). 재시도 전 점증 대기.
   for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt > 0) await new Promise((r) => setTimeout(r, 2000 * attempt));
     try {
       const form = new FormData();
       form.append('model', 'gpt-image-2');
@@ -297,11 +298,13 @@ function cutPlan(product, copy) {
   const cut = (s) => String(s || '').slice(0, 30);
   const plan = [
     { key: 'hero', title: c.heroHeadline || product.title, desc: c.heroSub || '',
-      prompt: CUT_BASE + 'HERO section, the product as centerpiece with dynamic eye-catching composition. Large bold Korean headline: "' + cut(c.heroHeadline || product.title) + '". Add a small highlight badge.' },
+      prompt: CUT_BASE + 'HERO section. The product as centerpiece at a dynamic three-quarter TILTED angle with energy and motion. Large bold Korean headline: "' + cut(c.heroHeadline || product.title) + '". Add a small highlight badge.' },
     { key: 'scene', title: (c.sections && c.sections[0] && c.sections[0].headline) || '일상 속에서', desc: (c.sections && c.sections[0] && c.sections[0].body) || '',
-      prompt: CUT_BASE + 'LIFESTYLE section: a person naturally using or holding this exact product in a real daily scene (hand visible), warm authentic mood, soft natural light.' },
+      prompt: CUT_BASE + 'LIFESTYLE section: a person naturally using or holding this exact product, eye-level candid angle, hand visible, warm authentic mood, soft natural light.' },
+    { key: 'detail', title: '꼼꼼한 디테일', desc: '',
+      prompt: CUT_BASE + 'DETAIL section. Extreme CLOSE-UP macro shot of the product key parts (lid, opening, handle), shallow depth of field, showing premium texture and build quality.' },
     { key: 'benefit', title: '이런 점이 다릅니다', desc: (c.benefits || []).join('  ·  '),
-      prompt: CUT_BASE + 'BENEFITS section. Korean headline "이런 점이 다릅니다". Three benefit points with simple clean icons and short Korean labels reflecting: ' + (c.benefits || []).slice(0, 3).join(' / ').slice(0, 110) + '.' },
+      prompt: CUT_BASE + 'BENEFITS section, the product shown from a clean TOP-DOWN flat-lay angle. Korean headline "이런 점이 다릅니다". Three benefit points with simple clean icons and short Korean labels reflecting: ' + (c.benefits || []).slice(0, 3).join(' / ').slice(0, 110) + '.' },
   ];
   if (colors.length >= 2) plan.push({ key: 'color', title: '다양한 컬러', desc: '컬러 옵션: ' + colors.join(', '),
     prompt: CUT_BASE + 'COLOR LINEUP section. Korean headline "다양한 컬러". Show this exact product rendered in several real colors (' + colors.join(', ') + ') arranged neatly like a color lineup photo.' });
