@@ -54,17 +54,25 @@
     var d = extract();
     if (!d.title || !d.image) { set('상품 정보를 못 읽었어요', false); return; }
     btn.dataset.busy = '1';
-    set('만드는 중... 약 1분', true);
-    chrome.runtime.sendMessage({ type: 'lumi-generate', title: d.title, image: d.image }, function (resp) {
-      btn.dataset.busy = '';
+    set('만드는 중... 약 2분', true);
+    chrome.runtime.sendMessage({ type: 'lumi-start', title: d.title, image: d.image }, function (resp) {
       if (chrome.runtime.lastError || !resp || !resp.ok) {
-        set((resp && resp.error) || '실패 — 다시 눌러주세요', false);
-        return;
+        set((resp && resp.error) || '실패 — 다시 눌러주세요', false); btn.dataset.busy = ''; return;
       }
-      set('완성! 새 탭 확인', false);
-      var w = window.open('', '_blank');
-      if (w) { w.document.open(); w.document.write(resp.html); w.document.close(); }
-      else { set('팝업 허용 후 다시', false); }
+      pollLumi(resp.jobId, 0);
     });
   });
+
+  function pollLumi(jobId, n) {
+    if (n > 160) { set('시간이 너무 오래 걸려요 — 다시', false); btn.dataset.busy = ''; return; }
+    chrome.runtime.sendMessage({ type: 'lumi-poll', jobId: jobId }, function (j) {
+      if (chrome.runtime.lastError) { setTimeout(function () { pollLumi(jobId, n + 1); }, 3000); return; }
+      if (j && j.status === 'done' && j.html) {
+        set('완성! 새 탭 확인', false); btn.dataset.busy = '';
+        var w = window.open('', '_blank');
+        if (w) { w.document.open(); w.document.write(j.html); w.document.close(); } else set('팝업 허용 후 다시', false);
+      } else if (j && j.status === 'error') { set(j.error || '실패 — 다시', false); btn.dataset.busy = ''; }
+      else { setTimeout(function () { pollLumi(jobId, n + 1); }, 3000); }
+    });
+  }
 })();

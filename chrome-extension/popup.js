@@ -51,17 +51,27 @@ goBtn.addEventListener('click', function () {
       if (!resp.ok) throw new Error('이미지를 가져오지 못했습니다');
       var b64 = await blobToB64(await resp.blob());
 
-      msg.textContent = 'AI가 화보·카피를 만드는 중... (약 1분)';
-      var r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: data.title, imageBase64: b64, quality: 'low' }) });
+      msg.textContent = 'AI가 화보·카피를 만드는 중... (약 2분)';
+      var r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: data.title, imageBase64: b64, quality: 'medium' }) });
       var jj = await r.json();
-      if (!jj.success || !jj.html) { msg.textContent = jj.error || '생성에 실패했습니다.'; goBtn.disabled = false; return; }
-
-      var w = window.open('', '_blank');
-      if (w) { w.document.open(); w.document.write(jj.html); w.document.close(); msg.textContent = '✨ 완성! 새 탭에서 확인하세요.'; }
-      else { msg.textContent = '팝업이 차단됐어요. 팝업 허용 후 다시 시도해 주세요.'; }
-      goBtn.disabled = false;
+      if (!jj.jobId) { msg.textContent = jj.error || '생성을 시작하지 못했습니다.'; goBtn.disabled = false; return; }
+      pollPopup(jj.jobId, 0);
     } catch (e) {
       msg.textContent = '오류: ' + ((e && e.message) || '실패'); goBtn.disabled = false;
     }
   })();
 });
+
+function pollPopup(jobId, n) {
+  var msg = document.getElementById('msg'), goBtn = document.getElementById('go');
+  if (n > 160) { msg.textContent = '시간이 너무 오래 걸려요. 다시 시도해 주세요.'; goBtn.disabled = false; return; }
+  fetch('https://lumi.it.kr/api/generate-detail?jobId=' + encodeURIComponent(jobId)).then(function (r) { return r.json(); }).then(function (j) {
+    if (j && j.status === 'done' && j.html) {
+      var w = window.open('', '_blank');
+      if (w) { w.document.open(); w.document.write(j.html); w.document.close(); msg.textContent = '✨ 완성! 새 탭에서 확인하세요.'; }
+      else { msg.textContent = '팝업이 차단됐어요. 팝업 허용 후 다시.'; }
+      goBtn.disabled = false;
+    } else if (j && j.status === 'error') { msg.textContent = j.error || '생성에 실패했습니다.'; goBtn.disabled = false; }
+    else { setTimeout(function () { pollPopup(jobId, n + 1); }, 3000); }
+  }).catch(function () { setTimeout(function () { pollPopup(jobId, n + 1); }, 3000); });
+}
