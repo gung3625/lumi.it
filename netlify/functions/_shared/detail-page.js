@@ -23,10 +23,17 @@ function distinctImages(images) {
 const SYS = [
   '너는 한국 이커머스 1위 상세페이지 카피라이터 겸 머천다이저다. 주어진 상품데이터로 "스크롤하며 사고 싶어지는" 모바일 상세페이지 카피를 쓴다.',
   '',
+  '== ★기획 설계가 먼저(가장 중요) ==',
+  '그냥 구조만 채우지 마라. 먼저 [상품명]·[카테고리]·[이미지분석]으로 "이 제품군에서 고객의 구매를 결정하는 핵심 축"을 파악하고, 그 축으로 카피를 설계한다.',
+  '- 제품군별 핵심 축 예시: 화장품=텍스처·성분근거·사용감·인증 / 텀블러·주방=용량·보온보냉·재질·세척 / 의류=핏·소재·착용감 / 가전·전자=성능·호환·안전 / 생활용품=편의·내구·공간활용.',
+  '- 그 제품군에서 고객이 사기 전 가장 궁금·불안해하는 것을 반드시 다룬다(텀블러=보온지속·세척·용량 / 화장품=텍스처·자극감). 이게 빠지면 실패한 카피다.',
+  '- 다른 제품에도 그대로 통하는 일반 카피(예 "안정성과 편리함을 동시에")는 설계 실패다. 오직 [상품명]의 실제 소구점에만 맞춘다.',
+  '',
   '== 좋은 카피 ==',
   '- 헤드라인: 고객이 얻는 구체적 이익을 말한다(감성만 X).  - 서브: 특징을 구매 이유와 연결(특징 나열 X).',
   '- 신뢰: 제공된 인증·리뷰·수치를 근거로(없는 수치 창작 X).  - CTA: 자연스럽게 유도(과도한 압박 X).',
   '- 혜택 중심: 기능 나열이 아니라 "그래서 뭐가 좋아지는가". 슬롭("안정성과 편리함을 동시에", "다양한 기능") 금지.',
+  '- 섹션 연결(브릿지): concerns(고민)→benefits(해결)→comparison(차별점)이 논리로 이어지게 쓴다. "우리가 답이다"식 단절 금지 — 고민 제기→그 원인·신호→해결로 흐른다.',
   '',
   '== ★위험 표현 필터(이것만 제거/완화. 나머지 표현은 자유) ==',
   '- 절대 주장: 100%·무조건·완벽·보장·평생·반드시 → 제거/완화.',
@@ -48,6 +55,7 @@ const SYS = [
   'concerns: 고객 고민 2~3개("이런 적 없으세요?" 톤, 불만해소 데이터 반영).',
   'benefits: 핵심 혜택 3~4개(혜택+근거).  sections: 실물/사용장면 1~2개[{name,headline,body}].',
   'comparison: {headline:"왜 이 제품인가", points:[차별점 2~3]}.  faq: 소비자질문 2~3개[{q,a}].  closing: 마무리 한 줄.',
+  'reviewPoints: 판매자가 출고 전 꼭 확인할 항목 2~4개(추정으로 채운 사양, 강하게 단정한 카피, 빠졌을 수 있는 정보). 소비자 비노출 — 판매자 검수용.',
   '[소싱데이터]·[이미지분석]이 있으면 적극 반영. 출력은 위 키의 JSON 하나만.',
 ].join('\n');
 
@@ -233,7 +241,7 @@ async function generateDetailPage(product, { diffHook, painPoints, sellingHook, 
   if (!copy || (!copy.heroHeadline && !Array.isArray(copy.sections) && !Array.isArray(copy.benefits))) return { error: llmErr || '빈 응답' };
   if (!Array.isArray(copy.sections)) copy.sections = [];
   copy = softenClaims(copy); // 절대·순위 단정 결정적 제거(안전망)
-  return { copy, html: buildHtml(product, copy), imageFacts };
+  return { copy, html: buildHtml(product, copy), imageFacts, reviewPoints: Array.isArray(copy.reviewPoints) ? copy.reviewPoints : [] };
 }
 
 module.exports = { generateDetailPage, buildHtml, analyzeProductImages, distinctImages, SYS, esc };
