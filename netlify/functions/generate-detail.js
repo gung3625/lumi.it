@@ -45,11 +45,12 @@ exports.handler = async (event) => {
       product = { title, spec: {}, options: [], images: [], descImages: [] };
     }
 
-    // 1) AI 화보 생성(gpt-image-2). 실패 시 원본 사진으로 폴백.
+    // 1) AI 화보 생성(gpt-image-2). 성공 시 화보만 사용(도매꾹 원본 막샷 배제). 실패 시에만 원본 폴백.
     let photoB64 = null;
     if (!skipPhoto && srcForPhoto) photoB64 = await generateAiPhoto(srcForPhoto, photoPrompt(product.title), { quality: quality || 'low' });
-    if (photoB64) product.images = ['data:image/png;base64,' + photoB64].concat(product.images || []);
+    if (photoB64) product.images = ['data:image/png;base64,' + photoB64];
     else if (!url && srcForPhoto) product.images = ['data:image/png;base64,' + srcForPhoto];
+    // (url 모드에서 화보 실패 시엔 product.images = 도매꾹 원본 유지 → 최소한 제품은 보임)
 
     // 2) 카피 + 디자인 컷. URL 모드는 도매꾹 상세컷 비전 분석, 업로드 모드는 스킵.
     const result = await generateDetailPage(product, { sellingHook: features || '', skipVision: !url });

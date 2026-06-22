@@ -248,8 +248,8 @@ async function generateDetailPage(product, { diffHook, painPoints, sellingHook, 
 async function generateAiPhoto(src, prompt, { quality = 'low', size = '1024x1536' } = {}) {
   const key = process.env.OPENAI_API_KEY;
   if (!key || !src) return null;
+  let buf, ct = 'image/png';
   try {
-    let buf, ct = 'image/png';
     if (/^https?:/i.test(src)) {
       const r = await fetch(src, { signal: AbortSignal.timeout(20000) });
       if (!r.ok) return null;
@@ -257,23 +257,34 @@ async function generateAiPhoto(src, prompt, { quality = 'low', size = '1024x1536
       const c = (r.headers.get('content-type') || '').toLowerCase();
       if (/jpe?g/.test(c)) ct = 'image/jpeg'; else if (/webp/.test(c)) ct = 'image/webp'; else if (/png/.test(c)) ct = 'image/png'; else ct = 'image/jpeg'; // 도매꾹 octet-stream → jpeg 가정
     } else { buf = Buffer.from(src, 'base64'); }
-    const ext = (ct.split('/')[1] || 'jpg');
-    const form = new FormData();
-    form.append('model', 'gpt-image-2');
-    form.append('prompt', prompt);
-    form.append('image', new Blob([buf], { type: ct }), 'src.' + ext);
-    form.append('size', size);
-    form.append('quality', quality);
-    const res = await fetch('https://api.openai.com/v1/images/edits', { method: 'POST', headers: { Authorization: 'Bearer ' + key }, body: form, signal: AbortSignal.timeout(120000) });
-    const j = await res.json();
-    if (!j || j.error || !j.data || !j.data[0] || !j.data[0].b64_json) return null;
-    return j.data[0].b64_json;
   } catch (_) { return null; }
+  const ext = (ct.split('/')[1] || 'jpg');
+  // gpt-image-2 edits — 일시 실패가 있어 최대 3회 시도(화보 누락 방지)
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const form = new FormData();
+      form.append('model', 'gpt-image-2');
+      form.append('prompt', prompt);
+      form.append('image', new Blob([buf], { type: ct }), 'src.' + ext);
+      form.append('size', size);
+      form.append('quality', quality);
+      const res = await fetch('https://api.openai.com/v1/images/edits', { method: 'POST', headers: { Authorization: 'Bearer ' + key }, body: form, signal: AbortSignal.timeout(120000) });
+      const j = await res.json();
+      if (j && !j.error && j.data && j.data[0] && j.data[0].b64_json) return j.data[0].b64_json;
+    } catch (_) {}
+  }
+  return null;
 }
 
 // 제품 유지 + 어울리는 라이프스타일 연출 프롬프트.
+// 입력이 도매꾹 막샷(여러 제품·텍스트·잡배경)이어도 깨끗한 단일 화보가 나오도록 강하게 지시.
 function photoPrompt(title) {
-  return 'Create a premium lifestyle marketing photo of this exact product (' + String(title || '').slice(0, 60) + '). Place it in a tasteful real-life setting matching the product, with soft natural light and minimal complementary props. CRITICAL: keep the product shape, color, label text and all details identical to the input image — do not redesign the product. Photorealistic high-end commercial photography, vertical, no added text or watermark.';
+  return 'Take the single main product from this image (' + String(title || '').slice(0, 60) + ') and create a premium lifestyle marketing photo of it. '
+    + 'Show ONLY ONE product — if the input shows several units, keep just the single most prominent one and remove the rest. '
+    + 'COMPLETELY REPLACE the background with a clean, tasteful real-life scene (marble counter or styled tabletop), soft natural window light, minimal complementary props. '
+    + 'REMOVE every text overlay, price tag, korean caption, logo banner and watermark that exists in the original photo. '
+    + "Keep the product's true shape, color and material, but compose a fresh studio-quality scene. "
+    + 'Photorealistic high-end commercial product photography, vertical composition, no text anywhere.';
 }
 
 module.exports = { generateDetailPage, buildHtml, analyzeProductImages, distinctImages, generateAiPhoto, photoPrompt, SYS, esc };
