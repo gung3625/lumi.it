@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>루미 상세페이지 메이커 — 링크만 붙여넣으면 끝</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--pink:#C8507A;--ink:#1a1613;--mut:#8c8279;--line:#e9e3d9;--bg:#f5f5f7}
+  body{font-family:'Pretendard',-apple-system,system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:720px;margin:0 auto;padding:32px 20px 80px}
+  header{text-align:center;padding:24px 0 36px}
+  header .badge{display:inline-block;font-size:12px;font-weight:700;letter-spacing:1px;color:var(--pink);border:1px solid var(--pink);border-radius:999px;padding:5px 14px;margin-bottom:18px}
+  header h1{font-size:30px;font-weight:800;letter-spacing:-1px;margin-bottom:10px;line-height:1.25}
+  header p{font-size:16px;color:var(--mut)}
+  .card{background:#fff;border-radius:16px;padding:28px 24px;box-shadow:0 2px 20px rgba(0,0,0,.05)}
+  label{display:block;font-size:14px;font-weight:700;margin:0 0 8px}
+  .urlrow{display:flex;gap:10px}
+  input[type=text],textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:14px;font-size:15px;font-family:inherit;color:var(--ink);background:#fafafa}
+  input[type=text]:focus,textarea:focus{outline:none;border-color:var(--pink);background:#fff}
+  .hint{font-size:12.5px;color:var(--mut);margin-top:8px}
+  details{margin-top:18px}
+  summary{font-size:13.5px;color:var(--mut);cursor:pointer;font-weight:600}
+  details textarea{margin-top:10px;resize:vertical;min-height:64px}
+  .btn{width:100%;margin-top:22px;background:var(--pink);color:#fff;border:none;border-radius:980px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s}
+  .btn:hover{filter:brightness(.95)}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  #loading{display:none;text-align:center;padding:40px 0}
+  #loading.on{display:block}
+  .spin{width:40px;height:40px;border:4px solid var(--line);border-top-color:var(--pink);border-radius:50%;margin:0 auto 18px;animation:sp 1s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  #loading p{color:var(--mut);font-size:15px}
+  #loading .sub{font-size:13px;margin-top:6px}
+  .errbox{display:none;background:#fff0f3;border:1px solid #f3c2d1;color:#a8324f;border-radius:10px;padding:14px;margin-top:18px;font-size:14px}
+  .errbox.on{display:block}
+  #result{display:none;margin-top:28px}
+  #result.on{display:block}
+  #result h2{font-size:18px;font-weight:800;margin-bottom:14px;text-align:center}
+  .preview{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
+  .preview iframe{width:100%;border:none;display:block;min-height:600px}
+  .steps{display:flex;gap:8px;justify-content:center;margin-top:22px;flex-wrap:wrap}
+  .steps span{font-size:12.5px;color:var(--mut);background:#fff;border:1px solid var(--line);border-radius:999px;padding:6px 12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="badge">LUMI · AI 상세페이지</div>
+    <h1>상품 링크만 붙여넣으면,<br>상세페이지가 완성됩니다</h1>
+    <p>퀄리티 낮은 상세페이지, AI가 읽고 분석해서 화보·카피·디자인까지 새로 만들어 드립니다.</p>
+  </header>
+
+  <div class="card">
+    <label for="url">도매꾹 상품 링크</label>
+    <div class="urlrow">
+      <input type="text" id="url" placeholder="https://domeggook.com/상품번호" autocomplete="off">
+    </div>
+    <div class="hint">상품 링크만 넣으면 제목·사진·옵션을 자동으로 읽어옵니다. (현재 도매꾹 지원, 다른 사이트 순차 확대)</div>
+
+    <details>
+      <summary>+ 강조하고 싶은 특징 직접 추가 (선택)</summary>
+      <textarea id="features" placeholder="예: 보온 12시간, 식기세척기 사용 가능 — 아는 만큼만 적어주세요"></textarea>
+    </details>
+
+    <button class="btn" id="go">상세페이지 만들기</button>
+  </div>
+
+  <div id="loading">
+    <div class="spin"></div>
+    <p>AI가 페이지를 읽고 화보·카피를 만들고 있어요</p>
+    <p class="sub">약 1분 정도 걸립니다. 잠시만 기다려 주세요.</p>
+  </div>
+
+  <div class="errbox" id="err"></div>
+
+  <div id="result">
+    <h2>✨ 완성된 상세페이지</h2>
+    <div class="preview"><iframe id="frame"></iframe></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var go=document.getElementById('go');
+  var loading=document.getElementById('loading');
+  var result=document.getElementById('result');
+  var frame=document.getElementById('frame');
+  var err=document.getElementById('err');
+
+  go.addEventListener('click',function(){
+    var url=document.getElementById('url').value.trim();
+    var features=document.getElementById('features').value.trim();
+    err.classList.remove('on');
+    if(!url){err.textContent='도매꾹 상품 링크를 붙여넣어 주세요.';err.classList.add('on');return;}
+
+    go.disabled=true; result.classList.remove('on'); loading.classList.add('on');
+    fetch('/api/generate-detail',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({url:url,features:features,quality:'low'})
+    }).then(function(r){return r.json();}).then(function(j){
+      loading.classList.remove('on'); go.disabled=false;
+      if(!j.success||!j.html){
+        err.textContent=j.error||'생성에 실패했습니다. 링크를 확인하고 다시 시도해 주세요.';
+        err.classList.add('on'); return;
+      }
+      frame.srcdoc=j.html;
+      result.classList.add('on');
+      frame.onload=function(){
+        try{frame.style.height=(frame.contentWindow.document.body.scrollHeight+40)+'px';}catch(e){frame.style.height='2400px';}
+      };
+      result.scrollIntoView({behavior:'smooth'});
+    }).catch(function(){
+      loading.classList.remove('on'); go.disabled=false;
+      err.textContent='네트워크 오류가 발생했습니다. 다시 시도해 주세요.'; err.classList.add('on');
+    });
+  });
+})();
+</script>
+</body>
+</html>

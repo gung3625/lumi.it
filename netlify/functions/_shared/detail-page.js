@@ -249,16 +249,19 @@ async function generateAiPhoto(src, prompt, { quality = 'low', size = '1024x1536
   const key = process.env.OPENAI_API_KEY;
   if (!key || !src) return null;
   try {
-    let buf;
+    let buf, ct = 'image/png';
     if (/^https?:/i.test(src)) {
       const r = await fetch(src, { signal: AbortSignal.timeout(20000) });
       if (!r.ok) return null;
       buf = Buffer.from(await r.arrayBuffer());
+      const c = (r.headers.get('content-type') || '').toLowerCase();
+      if (/jpe?g/.test(c)) ct = 'image/jpeg'; else if (/webp/.test(c)) ct = 'image/webp'; else if (/png/.test(c)) ct = 'image/png'; else ct = 'image/jpeg'; // 도매꾹 octet-stream → jpeg 가정
     } else { buf = Buffer.from(src, 'base64'); }
+    const ext = (ct.split('/')[1] || 'jpg');
     const form = new FormData();
     form.append('model', 'gpt-image-2');
     form.append('prompt', prompt);
-    form.append('image', new Blob([buf], { type: 'image/png' }), 'src.png');
+    form.append('image', new Blob([buf], { type: ct }), 'src.' + ext);
     form.append('size', size);
     form.append('quality', quality);
     const res = await fetch('https://api.openai.com/v1/images/edits', { method: 'POST', headers: { Authorization: 'Bearer ' + key }, body: form, signal: AbortSignal.timeout(120000) });
