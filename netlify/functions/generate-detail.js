@@ -1,7 +1,7 @@
 // 상세페이지 생성 API (고객용 웹서비스)
 // 핵심: 도매꾹 상품 링크(url) 붙여넣기 → getItemView로 페이지 읽고 → 상세컷 비전 분석 → AI 화보 + 카피 + 디자인 컷.
 // 보조: 사진 직접 업로드(title + imageBase64) 모드도 지원.
-const { generateDetailPage, generateAiPhoto, photoPrompt } = require('./_shared/detail-page.js');
+const { generateDetailPage, generateAiPhoto, photoPrompt, cutPlan, assembleCutPage } = require('./_shared/detail-page.js');
 const { getItemView } = require('./_shared/domeggook-api.js');
 
 const headers = {
@@ -45,16 +45,23 @@ exports.handler = async (event) => {
       product = { title, spec: {}, options: [], images: [], descImages: [] };
     }
 
-    // 1) AI 화보 생성(gpt-image-2). 성공 시 화보만 사용(도매꾹 원본 막샷 배제). 실패 시에만 원본 폴백.
-    let photoB64 = null;
-    if (!skipPhoto && srcForPhoto) photoB64 = await generateAiPhoto(srcForPhoto, photoPrompt(product.title), { quality: quality || 'low' });
-    if (photoB64) product.images = ['data:image/png;base64,' + photoB64];
-    else if (!url && srcForPhoto) product.images = ['data:image/png;base64,' + srcForPhoto];
-    // (url 모드에서 화보 실패 시엔 product.images = 도매꾹 원본 유지 → 최소한 제품은 보임)
+    // 1) 베이스 화보(깨끗한 단일 제품) — 모든 디자인 컷의 입력이 됨
+    let baseB64 = null;
+    if (!skipPhoto && srcForPhoto) baseB64 = await generateAiPhoto(srcForPhoto, photoPrompt(product.title), { quality: 'low' });
 
-    // 2) 카피 + 디자인 컷. URL 모드는 도매꾹 상세컷 비전 분석, 업로드 모드는 스킵.
+    // 2) 카피(URL 모드는 도매꾹 상세컷 비전 그라운딩)
     const result = await generateDetailPage(product, { sellingHook: features || '', skipVision: !url });
     if (!result || result.error) return err(502, result && result.error ? result.error : '카피 생성 실패');
+    const copy = result.copy || {};
+
+    // 3) 디자인 컷 — 베이스 화보를 입력으로 컷별 다른 연출(히어로·손모델·혜택·색상·비교·CTA) 병렬 생성 → 컷+설명 조립
+    let html = result.html, cutCount = 0;
+    if (baseB64) {
+      const plan = cutPlan(product, copy);
+      const cuts = await Promise.all(plan.map(async (p) => ({ img: await generateAiPhoto(baseB64, p.prompt, { quality: quality || 'medium' }), title: p.title, desc: p.desc })));
+      cutCount = cuts.filter((c) => c.img).length;
+      if (cutCount >= 2) html = assembleCutPage(cuts); // 컷 대부분 성공 → 디자인 컷 페이지(아니면 buildHtml 폴백)
+    }
 
     return {
       statusCode: 200,
@@ -62,10 +69,11 @@ exports.handler = async (event) => {
       body: JSON.stringify({
         success: true,
         title: product.title,
-        html: result.html,
-        copy: result.copy,
+        html,
+        copy,
         reviewPoints: result.reviewPoints || [],
-        photoGenerated: !!photoB64,
+        photoGenerated: !!baseB64,
+        cutCount,
       }),
     };
   } catch (e) {
