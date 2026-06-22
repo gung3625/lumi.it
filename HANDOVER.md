@@ -16,7 +16,25 @@
 
 ## 1. lumi 현재 배포 상태 (전부 main 머지 완료)
 
-### ⭐⭐ 2026-06-18~20 세션 — 소싱(매입 차익) 시스템 [별도 서브시스템, GCP 배포]
+### ⭐⭐⭐ 2026-06-23 세션 — 상세페이지 메이커 [★현재 메인 사업, 소싱→상세제작 SaaS 피벗]
+
+> 도매꾹/쇼핑몰 상품 → **AI 디자인 컷 상세페이지 자동 생성**. 라이브: lumi.it.kr/detail-maker.html + 크롬 확장. 셀러의 평범한 상품사진을 너츠굿/PagePilot급 고퀄 상세페이지로 업그레이드.
+
+**흐름**: 입력(도매꾹 링크 or 사진) → 베이스 화보(gpt-image-2) → 카피 → **화려한 디자인 컷**(한글 그래픽 합성) + 설명 텍스트 교대 → 풀 상세페이지.
+
+**핵심 파일**:
+- `netlify/functions/generate-detail.js`: 생성 API. **비동기(job+폴링)** — POST{url|title+imageBase64}→jobId(202)→백그라운드 생성→GET?jobId 폴링(생성 2~3분이라 동기 응답은 프록시/브라우저 타임아웃). 모듈스코프 `jobs{}`(30분 TTL). runGeneration: getItemView→베이스화보→카피→디자인컷(3개씩 배치)→조립.
+- `_shared/detail-page.js`: 엔진. **generateAiPhoto**(gpt-image-2 edits, 제품유지+배경교체+한글, 3회 재시도). **photoPrompt**(단일제품/배경완전교체/텍스트제거). **cutPlan**(카피·옵션 기반 컷별 연출: 히어로 3/4틸트·손모델·디테일 클로즈업·혜택 탑다운·색상라인업·비교·CTA). **assembleCutPage**(컷+설명 교대, accent 팔레트). **accentPalette**(화보에서 유채색 hue 추출→{accent,soft,ink}, sharp; 무채색이면 기본 틸 graceful). buildHtml=레거시 폴백.
+- `detail-maker.html`: 랜딩+도구. 비포애프터(_src→_gpt2_low)/3단계/입력도구(폴링)/예시(_example.png)/CTA + **결과 컷 PNG 다운로드**.
+- `chrome-extension/`(MV3): content.js(상품페이지 자동 플로팅 버튼)+popup.js+background.js. **비동기 폴링**(lumi-start→jobId, lumi-poll→GET). 차단사이트(쿠팡/스마트스토어)는 content가 DOM(og/JSON-LD) 추출→차단 우회. ⚠️ 로컬 로드만(웹스토어 미등록).
+
+**확정**: ①이미지=**gpt-image-2 edits, quality medium**(실측 72원/장; low 19/high 258, high는 차이 작아 비추). ②상품당 **~400~540원**(베이스+5~7컷+카피). 드랩아트(800)/제디터(1300)보다 쌈. ③HTML 도형은 화려함 천장 — **gpt-image-2가 한글 안깨짐+그래픽 합성**이 돌파구. ④Higgsfield/Gemini 이미지는 무료티어 막힘→OpenAI(gpt-image-2)만. ⑤컷마다 다른 앵글/연출(손모델·색상·클로즈업). ⑥이 세션 OpenAI 테스트비용 누적 ~2천원대.
+
+**남은 것**: 🔴 사장님 도구/확장 실작동 테스트(브라우저). 크롬 웹스토어 등록(공개=추가버튼). 회원/결제(수익화). 타사이트 확대(스마트스토어/알리—확장으로 차단우회). 색상옵션별 실제화보(도매꾹 8색→각색 컷).
+
+### ⭐⭐ 2026-06-18~20 세션 — 소싱(매입 차익) 시스템 [⏸️ 2026-06-23 자동실행 중단(사장님 지시까지) · 별도 서브시스템, GCP 배포]
+
+> ⏸️ **소싱봇 중단**: `launchctl unload -w ~/Library/LaunchAgents/com.lumi.sourcing-daily.plist`로 매일8시 자동실행 끔(2026-06-23). 다시 켜기: `launchctl load -w ~/Library/LaunchAgents/com.lumi.sourcing-daily.plist`. (사장님이 상세페이지 메이커로 피벗 — "내가 말할 때까지 중단".)
 
 > 사장님(gung3625@gmail.com) **메인 사업**. 캡션/인스타 제품과 별개. 이 기기 메모리 `~/.claude/.../memory/project_sourcing_system.md`에 더 상세(머신 동기화 안 됨 → 이 문단이 정본).
 
@@ -191,7 +209,7 @@
 
 ## 6. 새 세션에서 할 것 (우선순위)
 
-0. **🟢 (메인 사업) 소싱 상세페이지 — 디자인 컷 방식 확정됨** (방향 정본 데모: lumi.it.kr/_full_detail.png). **Higgsfield Plus 결제되면**(사장님 직접, ~$34/월) → ① buildHtml(HTML)을 **디자인 컷 PNG 렌더러로 코드화** ② **화보 연출**(손모델·소품·사용장면) 파이프라인 연동 ③ 도매꾹 URL→자동 화보+상세 생성. 결제 전엔 생성 불가(무료 1크레딧). 상세는 §1 소싱 '남은 것'.
+0. **🟢 (메인 사업) 상세페이지 메이커 — 코드화 완성** (§1 ⭐⭐⭐ 참조). 도매꾹 링크→AI 디자인 컷 상세페이지 자동(gpt-image-2 medium, ~400원/상품, 비동기 job+폴링). 라이브 **lumi.it.kr/detail-maker.html** + 크롬확장(로컬로드). **남은 것**: 🔴 사장님 도구/확장 **실작동 테스트**(브라우저) → 크롬 웹스토어 등록(공개=추가버튼) → 회원/결제(수익화) → 타사이트 확대(스마트스토어·알리, 확장으로). ★Higgsfield 결제 불필요 — OpenAI gpt-image-2로 해결됨(과거 Higgsfield 메모는 stale).
 1. **🟡 OpenAI 캡션 E2E 검증** — 키는 ✅살아있음(2026-06-21 GCP env `/v1/models` 200, §2 정정 참조). 남은 건 앱에서 **초안 사진 1장 업로드→캡션 결과** 1회로 GPT-4o 실작동 확인뿐. (등록방식은 Netlify env 아닌 `ecosystem.config.js` apps[0].env + `pm2 reload`.)
 2. **PayApp 결제 마무리** — 사장님: PayApp 콘솔 정기결제 ON+테스트모드 확인 + 노출키 재발급. 제가: 실 결제 1건 E2E + **진입 링크(구독 버튼)** + **법무 카피**. (§2 PayApp 항목)
 3. **autoke서 가져올 카피** — 문제프레임·숫자대비·FAQ보강·CTA"언제든해지"·펀치 클로징 (§1 2026-06-17 C항목). index/pricing 작업이라 리스크 낮음. 사장님 "ㄱㄱ" 하면 우선순위대로.
