@@ -244,4 +244,33 @@ async function generateDetailPage(product, { diffHook, painPoints, sellingHook, 
   return { copy, html: buildHtml(product, copy), imageFacts, reviewPoints: Array.isArray(copy.reviewPoints) ? copy.reviewPoints : [] };
 }
 
-module.exports = { generateDetailPage, buildHtml, analyzeProductImages, distinctImages, SYS, esc };
+// gpt-image-2 edits로 도매꾹 사진→고급 화보(제품 유지). src=https URL 또는 base64 PNG. 실패 시 null. low=장당 ~19원.
+async function generateAiPhoto(src, prompt, { quality = 'low', size = '1024x1536' } = {}) {
+  const key = process.env.OPENAI_API_KEY;
+  if (!key || !src) return null;
+  try {
+    let buf;
+    if (/^https?:/i.test(src)) {
+      const r = await fetch(src, { signal: AbortSignal.timeout(20000) });
+      if (!r.ok) return null;
+      buf = Buffer.from(await r.arrayBuffer());
+    } else { buf = Buffer.from(src, 'base64'); }
+    const form = new FormData();
+    form.append('model', 'gpt-image-2');
+    form.append('prompt', prompt);
+    form.append('image', new Blob([buf], { type: 'image/png' }), 'src.png');
+    form.append('size', size);
+    form.append('quality', quality);
+    const res = await fetch('https://api.openai.com/v1/images/edits', { method: 'POST', headers: { Authorization: 'Bearer ' + key }, body: form, signal: AbortSignal.timeout(120000) });
+    const j = await res.json();
+    if (!j || j.error || !j.data || !j.data[0] || !j.data[0].b64_json) return null;
+    return j.data[0].b64_json;
+  } catch (_) { return null; }
+}
+
+// 제품 유지 + 어울리는 라이프스타일 연출 프롬프트.
+function photoPrompt(title) {
+  return 'Create a premium lifestyle marketing photo of this exact product (' + String(title || '').slice(0, 60) + '). Place it in a tasteful real-life setting matching the product, with soft natural light and minimal complementary props. CRITICAL: keep the product shape, color, label text and all details identical to the input image — do not redesign the product. Photorealistic high-end commercial photography, vertical, no added text or watermark.';
+}
+
+module.exports = { generateDetailPage, buildHtml, analyzeProductImages, distinctImages, generateAiPhoto, photoPrompt, SYS, esc };
