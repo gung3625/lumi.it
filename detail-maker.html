@@ -146,14 +146,14 @@
 
     <div id="loading"><div class="spin"></div><p>AI가 화보·카피를 만드는 중... (약 1분)</p></div>
     <div class="errbox" id="err"></div>
-    <div id="result"><h3>✨ 완성된 상세페이지</h3><button class="btn" id="dl" style="max-width:320px;margin:0 auto 16px;display:block;">컷 이미지 전체 저장</button><div class="preview"><iframe id="frame"></iframe></div></div>
+    <div id="result"><h3>✨ 완성된 상세페이지</h3><div id="rurl" style="text-align:center;font-size:13px;color:#5a6864;margin-bottom:12px;line-height:1.6;"></div><button class="btn" id="dl" style="max-width:320px;margin:0 auto 16px;display:block;">컷 이미지 전체 저장</button><div class="preview"><iframe id="frame"></iframe></div></div>
   </div>
 </div></section>
 
 <!-- EXAMPLE -->
 <section class="ex"><div class="wrap">
   <div class="sec-h"><div class="ey">EXAMPLE</div><h2>이런 상세페이지가 나옵니다</h2></div>
-  <div class="ex-img"><img src="https://lumi.it.kr/_full_detail.png" alt="완성 상세페이지 예시" loading="lazy"></div>
+  <div class="ex-img"><img src="https://lumi.it.kr/_example.png" alt="완성 상세페이지 예시" loading="lazy"></div>
 </div></section>
 
 <!-- CTA -->
@@ -180,11 +180,11 @@
       poll(j.jobId,0);
     }).catch(function(){loading.classList.remove('on');go.disabled=false;err.textContent='네트워크 오류입니다. 다시 시도해 주세요.';err.classList.add('on');});
   });
-  function showResult(html){frame.srcdoc=html;result.classList.add('on');frame.onload=function(){try{frame.style.height=(frame.contentWindow.document.body.scrollHeight+40)+'px';}catch(e){frame.style.height='3000px';}};result.scrollIntoView({behavior:'smooth'});}
+  function showResult(html,resultUrl){frame.srcdoc=html;result.classList.add('on');var ru=document.getElementById('rurl');if(ru)ru.innerHTML=resultUrl?'🔗 저장된 결과: <a href="'+resultUrl+'" target="_blank" style="color:#C8507A;font-weight:600;word-break:break-all;">'+resultUrl+'</a><br>(북마크해두면 언제든 다시 볼 수 있어요)':'';frame.onload=function(){try{frame.style.height=(frame.contentWindow.document.body.scrollHeight+40)+'px';}catch(e){frame.style.height='3000px';}};result.scrollIntoView({behavior:'smooth'});}
   function poll(jobId,n){
     if(n>150){loading.classList.remove('on');go.disabled=false;err.textContent='시간이 너무 오래 걸립니다. 다시 시도해 주세요.';err.classList.add('on');return;}
     fetch('/api/generate-detail?jobId='+encodeURIComponent(jobId)).then(function(r){return r.json();}).then(function(j){
-      if(j.status==='done'&&j.html){loading.classList.remove('on');go.disabled=false;showResult(j.html);}
+      if(j.status==='done'&&j.html){loading.classList.remove('on');go.disabled=false;showResult(j.html,j.resultUrl);}
       else if(j.status==='error'){loading.classList.remove('on');go.disabled=false;err.textContent=j.error||'생성에 실패했습니다.';err.classList.add('on');}
       else{setTimeout(function(){poll(jobId,n+1);},3000);}
     }).catch(function(){setTimeout(function(){poll(jobId,n+1);},3000);});

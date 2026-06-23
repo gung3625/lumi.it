@@ -4,6 +4,11 @@
 // 생성이 1~3분 걸려서 동기 응답은 프록시·브라우저 타임아웃 위험 → 작업+폴링 방식.
 const { generateDetailPage, generateAiPhoto, photoPrompt, cutPlan, assembleCutPage, accentPalette } = require('./_shared/detail-page.js');
 const { getItemView } = require('./_shared/domeggook-api.js');
+const fs = require('fs');
+const path = require('path');
+// 결과 영구 저장 폴더(~/lumi/r) — server.js 정적 서빙으로 lumi.it.kr/r/<jobId>.html 접근.
+const RESULTS_DIR = path.join(__dirname, '..', '..', 'r');
+try { fs.mkdirSync(RESULTS_DIR, { recursive: true }); } catch (_) {}
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
@@ -18,6 +23,16 @@ const stripDataUri = (s) => String(s || '').replace(/^data:image\/[a-zA-Z0-9.+-]
 // 작업 저장소(모듈 스코프 — server.js가 1회 require하므로 프로세스 동안 유지). 30분 TTL.
 const jobs = {};
 function gcJobs() { const now = Date.now(); for (const id in jobs) { if (now - jobs[id].ts > 1800000) delete jobs[id]; } }
+
+// 비용 방어: IP당 일일 생성 한도(무인증 공개 시 악용·비용폭탄 차단). 상품당 ~400원이라 필수.
+const RATE_LIMIT = 5;
+const rate = {};
+function allowRate(ip) {
+  const day = new Date().toISOString().slice(0, 10);
+  if (!rate[ip] || rate[ip].day !== day) rate[ip] = { day: day, n: 0 };
+  if (rate[ip].n >= RATE_LIMIT) return false;
+  rate[ip].n++; return true;
+}
 
 // 실제 생성 — 도매꾹 링크/사진 → 베이스 화보 → 카피 → 디자인 컷 → 조립.
 async function runGeneration(p) {
@@ -65,13 +80,15 @@ exports.handler = async (event) => {
     const id = (event.queryStringParameters || {}).jobId;
     const j = id && jobs[id];
     if (!j) return err(404, '작업을 찾을 수 없습니다. 다시 시도해 주세요');
-    if (j.status === 'done') return ok({ status: 'done', title: j.title, html: j.html, copy: j.copy, reviewPoints: j.reviewPoints, cutCount: j.cutCount });
+    if (j.status === 'done') return ok({ status: 'done', title: j.title, html: j.html, copy: j.copy, reviewPoints: j.reviewPoints, cutCount: j.cutCount, resultUrl: j.resultUrl });
     if (j.status === 'error') return ok({ status: 'error', error: j.error });
     return ok({ status: 'pending' });
   }
 
   // 작업 시작
   if (event.httpMethod !== 'POST') return err(405, 'POST만 허용됩니다');
+  var ip = String(event.headers['x-forwarded-for'] || '').split(',')[0].trim() || event.headers['x-real-ip'] || 'ip';
+  if (!allowRate(ip)) return err(429, '하루 생성 한도(' + RATE_LIMIT + '회)를 초과했습니다. 내일 다시 이용해 주세요.');
   let params;
   try { params = JSON.parse(event.body || '{}'); } catch (_) { return err(400, '잘못된 요청입니다'); }
   if (!params.url && !(params.title && params.imageBase64)) return err(400, '상품 링크를 넣거나, 상품명과 사진을 넣어주세요');
@@ -80,7 +97,10 @@ exports.handler = async (event) => {
   jobs[jobId] = { status: 'pending', ts: Date.now() };
   gcJobs();
   runGeneration(params)
-    .then((r) => { jobs[jobId] = { status: 'done', ts: Date.now(), ...r }; })
+    .then((r) => {
+      try { fs.writeFileSync(path.join(RESULTS_DIR, jobId + '.html'), r.html || ''); r.resultUrl = 'https://lumi.it.kr/r/' + jobId + '.html'; } catch (_) {}
+      jobs[jobId] = { status: 'done', ts: Date.now(), ...r };
+    })
     .catch((e) => { jobs[jobId] = { status: 'error', ts: Date.now(), error: (e && e.message) || '생성 중 오류가 발생했습니다' }; });
 
   return ok({ jobId }, 202);
