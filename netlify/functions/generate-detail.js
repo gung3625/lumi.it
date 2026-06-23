@@ -4,6 +4,7 @@
 // 생성이 1~3분 걸려서 동기 응답은 프록시·브라우저 타임아웃 위험 → 작업+폴링 방식.
 const { generateDetailPage, generateAiPhoto, photoPrompt, cutPlan, assembleCutPage, accentPalette } = require('./_shared/detail-page.js');
 const { getItemView } = require('./_shared/domeggook-api.js');
+const { getDometopiaItem, parseNo } = require('./_shared/dometopia.js');
 const fs = require('fs');
 const path = require('path');
 // 결과 영구 저장 폴더(~/lumi/r) — server.js 정적 서빙으로 lumi.it.kr/r/<jobId>.html 접근.
@@ -39,10 +40,17 @@ async function runGeneration(p) {
   const { url, title, features, imageBase64, quality, skipPhoto } = p || {};
   let product, srcForPhoto;
   if (url) {
-    const no = (String(url).match(/(\d{6,})/) || [])[1];
-    if (!no) throw new Error('도매꾹 상품 링크가 맞는지 확인해 주세요');
-    const item = await getItemView(no);
-    if (!item || !item.title) throw new Error('상품 정보를 불러오지 못했습니다. 도매꾹 상품 링크인지 확인해 주세요');
+    let item;
+    if (/dometopia\.com/i.test(url)) {
+      const no = parseNo(url);
+      if (!no) throw new Error('도매토피아 상품 링크가 맞는지 확인해 주세요');
+      item = await getDometopiaItem(no);
+    } else {
+      const no = (String(url).match(/(\d{6,})/) || [])[1];
+      if (!no) throw new Error('도매꾹 상품 링크가 맞는지 확인해 주세요');
+      item = await getItemView(no);
+    }
+    if (!item || !item.title) throw new Error('상품 정보를 불러오지 못했습니다. 링크를 확인해 주세요');
     srcForPhoto = (item.images || [])[0] || null;
     product = { title: item.title, spec: item.spec || {}, options: item.options || [], descImages: item.descImages || [], images: (item.images || []).slice(0, 4), keywords: item.keywords || [], categoryTree: item.categoryTree || [] };
   } else {
