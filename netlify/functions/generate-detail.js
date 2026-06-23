@@ -59,15 +59,17 @@ async function runGeneration(p) {
     srcForPhoto = (item.images || [])[0] || null;
     product = { title: item.title, spec: item.spec || {}, options: item.options || [], descImages: item.descImages || [], images: (item.images || []).slice(0, 4), keywords: item.keywords || [], categoryTree: item.categoryTree || [] };
   } else {
-    if (!title || !imageBase64) throw new Error('상품 링크를 넣거나, 상품명과 사진을 넣어주세요');
+    if (!title || !imageBase64) throw new Error('상품명과 대표 사진을 넣어주세요');
     srcForPhoto = stripDataUri(imageBase64);
-    product = { title, spec: {}, options: [], images: [], descImages: [] };
+    // 전체 캡처(선택) → 비전 분석으로 상품 정보(스펙·특징·설명) 추출 → 카피 보강. data URI로 넘긴다.
+    const cap = p.captureBase64 ? ('data:image/png;base64,' + stripDataUri(p.captureBase64)) : null;
+    product = { title, spec: {}, options: [], images: [], descImages: cap ? [cap] : [] };
   }
 
   let baseB64 = null;
   if (!skipPhoto && srcForPhoto) baseB64 = await generateAiPhoto(srcForPhoto, photoPrompt(product.title), { quality: 'low' });
 
-  const result = await generateDetailPage(product, { sellingHook: features || '', skipVision: !url });
+  const result = await generateDetailPage(product, { sellingHook: features || '', skipVision: !url && !(product.descImages || []).length });
   if (!result || result.error) throw new Error(result && result.error ? result.error : '카피 생성 실패');
   const copy = result.copy || {};
 

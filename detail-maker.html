@@ -136,9 +136,24 @@
 <section class="tool" id="tool"><div class="wrap">
   <div class="sec-h"><div class="ey">지금 바로</div><h2>직접 만들어보세요</h2></div>
   <div class="tool-card">
-    <label for="url">상품 링크</label>
-    <input type="text" id="url" placeholder="https://domeggook.com/상품번호" autocomplete="off">
-    <div class="hint">현재 도매꾹·도매토피아 지원 · 더 많은 사이트 순차 확대</div>
+    <div style="display:flex;gap:8px;margin-bottom:18px;">
+      <button type="button" class="tabbtn" data-mode="link" style="flex:1;padding:11px;border-radius:980px;border:1px solid #C8507A;font-size:14px;font-weight:600;cursor:pointer;background:#C8507A;color:#fff;">링크로</button>
+      <button type="button" class="tabbtn" data-mode="upload" style="flex:1;padding:11px;border-radius:980px;border:1px solid #C8507A;font-size:14px;font-weight:600;cursor:pointer;background:#fff;color:#C8507A;">이미지 업로드</button>
+    </div>
+    <div id="m-link">
+      <label for="url">상품 링크</label>
+      <input type="text" id="url" placeholder="https://domeggook.com/상품번호" autocomplete="off">
+      <div class="hint">도매꾹·도매토피아 링크 지원</div>
+    </div>
+    <div id="m-upload" style="display:none;">
+      <label for="ptitle">상품명</label>
+      <input type="text" id="ptitle" placeholder="예: 폰타나 제로슈거 오리엔탈 드레싱" autocomplete="off">
+      <label for="mainimg" style="display:block;margin-top:14px;">대표 상품 사진 <span style="color:#C8507A;">*</span> (화보용)</label>
+      <input type="file" id="mainimg" accept="image/*" style="width:100%;">
+      <label for="capimg" style="display:block;margin-top:14px;">전체 페이지 캡처 (선택 · 정보 추출용)</label>
+      <input type="file" id="capimg" accept="image/*" style="width:100%;">
+      <div class="hint">쿠팡·스마트스토어·알리 등 <b>어디든</b> OK. 전체 캡처는 <a href="https://chromewebstore.google.com/detail/fdpohaocaechififmbbbbbknoalclacl" target="_blank" style="color:#C8507A;font-weight:600;">GoFullPage</a>(무료) 추천 — 클릭 한 번에 전체 페이지 저장.</div>
+    </div>
     <details><summary>+ 강조할 특징 직접 추가 (선택)</summary>
       <textarea id="features" placeholder="예: 보온 12시간, 식기세척기 사용 가능"></textarea>
     </details>
@@ -168,24 +183,56 @@
 <script>
 (function(){
   var go=document.getElementById('go'),loading=document.getElementById('loading'),result=document.getElementById('result'),frame=document.getElementById('frame'),err=document.getElementById('err');
-  go.addEventListener('click',function(){
-    var url=document.getElementById('url').value.trim();
-    var features=document.getElementById('features').value.trim();
-    err.classList.remove('on');
-    if(!url){err.textContent='상품 링크를 붙여넣어 주세요.';err.classList.add('on');return;}
+  var mode='link';
+  var tabs=document.querySelectorAll('.tabbtn');
+  Array.prototype.forEach.call(tabs,function(t){
+    t.addEventListener('click',function(){
+      mode=t.getAttribute('data-mode');
+      Array.prototype.forEach.call(tabs,function(x){var on=x===t;x.style.background=on?'#C8507A':'#fff';x.style.color=on?'#fff':'#C8507A';});
+      document.getElementById('m-link').style.display=mode==='link'?'':'none';
+      document.getElementById('m-upload').style.display=mode==='upload'?'':'none';
+    });
+  });
+  function fileB64(id){return new Promise(function(res){var f=document.getElementById(id).files[0];if(!f){res(null);return;}var fr=new FileReader();fr.onload=function(){res(fr.result);};fr.onerror=function(){res(null);};fr.readAsDataURL(f);});}
+  function showErr(msg,suggest){
+    err.innerHTML=(msg||'오류가 발생했습니다.')+(suggest?'<br><button type="button" id="toup" style="margin-top:12px;padding:9px 18px;border-radius:980px;border:1px solid #C8507A;background:#C8507A;color:#fff;font-weight:600;cursor:pointer;">📷 이미지 업로드로 만들기</button>':'');
+    err.classList.add('on');
+    var b=document.getElementById('toup');
+    if(b)b.addEventListener('click',function(){var ut=document.querySelector('.tabbtn[data-mode="upload"]');if(ut)ut.click();err.classList.remove('on');err.innerHTML='';document.getElementById('tool').scrollIntoView({behavior:'smooth'});});
+  }
+  function start(body){
     go.disabled=true;result.classList.remove('on');loading.classList.add('on');
-    fetch('/api/generate-detail',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:url,features:features,quality:'medium'})})
+    fetch('/api/generate-detail',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
     .then(function(r){return r.json();}).then(function(j){
-      if(!j.jobId){loading.classList.remove('on');go.disabled=false;err.textContent=j.error||'생성을 시작하지 못했습니다.';err.classList.add('on');return;}
+      if(!j.jobId){loading.classList.remove('on');go.disabled=false;showErr(j.error||'생성을 시작하지 못했습니다.',mode==='link');return;}
       poll(j.jobId,0);
-    }).catch(function(){loading.classList.remove('on');go.disabled=false;err.textContent='네트워크 오류입니다. 다시 시도해 주세요.';err.classList.add('on');});
+    }).catch(function(){loading.classList.remove('on');go.disabled=false;showErr('네트워크 오류입니다. 다시 시도해 주세요.',false);});
+  }
+  go.addEventListener('click',function(){
+    err.classList.remove('on');
+    var features=document.getElementById('features').value.trim();
+    if(mode==='link'){
+      var url=document.getElementById('url').value.trim();
+      if(!url){err.textContent='상품 링크를 붙여넣어 주세요.';err.classList.add('on');return;}
+      start({url:url,features:features,quality:'medium'});
+    }else{
+      var title=document.getElementById('ptitle').value.trim();
+      if(!title){err.textContent='상품명을 입력해 주세요.';err.classList.add('on');return;}
+      go.disabled=true;
+      fileB64('mainimg').then(function(main){
+        if(!main){go.disabled=false;err.textContent='대표 상품 사진을 올려주세요.';err.classList.add('on');return;}
+        fileB64('capimg').then(function(cap){
+          start({title:title,imageBase64:main,captureBase64:cap||undefined,features:features,quality:'medium'});
+        });
+      });
+    }
   });
   function showResult(html,resultUrl){frame.srcdoc=html;result.classList.add('on');var ru=document.getElementById('rurl');if(ru)ru.innerHTML=resultUrl?'🔗 저장된 결과: <a href="'+resultUrl+'" target="_blank" style="color:#C8507A;font-weight:600;word-break:break-all;">'+resultUrl+'</a><br>(북마크해두면 언제든 다시 볼 수 있어요)':'';frame.onload=function(){try{frame.style.height=(frame.contentWindow.document.body.scrollHeight+40)+'px';}catch(e){frame.style.height='3000px';}};result.scrollIntoView({behavior:'smooth'});}
   function poll(jobId,n){
     if(n>150){loading.classList.remove('on');go.disabled=false;err.textContent='시간이 너무 오래 걸립니다. 다시 시도해 주세요.';err.classList.add('on');return;}
     fetch('/api/generate-detail?jobId='+encodeURIComponent(jobId)).then(function(r){return r.json();}).then(function(j){
       if(j.status==='done'&&j.html){loading.classList.remove('on');go.disabled=false;showResult(j.html,j.resultUrl);}
-      else if(j.status==='error'){loading.classList.remove('on');go.disabled=false;err.textContent=j.error||'생성에 실패했습니다.';err.classList.add('on');}
+      else if(j.status==='error'){loading.classList.remove('on');go.disabled=false;showErr(j.error||'생성에 실패했습니다.',mode==='link');}
       else{setTimeout(function(){poll(jobId,n+1);},3000);}
     }).catch(function(){setTimeout(function(){poll(jobId,n+1);},3000);});
   }

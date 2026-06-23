@@ -23,7 +23,7 @@ function abs(u, base) {
 async function fetchViaUnlocker(url) {
   const key = process.env.BRIGHTDATA_API_KEY;
   const zone = process.env.BRIGHTDATA_ZONE;
-  if (!key || !zone) throw new Error('이 사이트는 아직 준비 중입니다. 도매꾹·도매토피아 링크를 이용해 주세요');
+  if (!key || !zone) throw new Error('이 사이트는 링크로 직접 가져올 수 없어요(봇 차단). 아래 "이미지 업로드"에서 상품 페이지를 캡처해 올리면 만들 수 있어요.');
   const res = await fetch('https://api.brightdata.com/request', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
