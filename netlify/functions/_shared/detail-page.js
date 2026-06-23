@@ -227,10 +227,11 @@ function softenClaims(copy) {
 }
 
 // 상품(getItemView 결과) + 소싱 힌트 → { copy, html, imageFacts } 또는 { error }.
-async function generateDetailPage(product, { diffHook, painPoints, sellingHook, model, skipVision } = {}) {
+async function generateDetailPage(product, { diffHook, painPoints, sellingHook, model, skipVision, imageFacts: injectedFacts } = {}) {
   const sp = product.spec || {};
   const visionImgs = (product.descImages && product.descImages.length) ? product.descImages : product.images;
-  const imageFacts = skipVision ? null : await analyzeProductImages(visionImgs, product.title);
+  // 확정된 정보(사용자 검수)가 주입되면 재분석하지 않고 그대로 사용 — 2단계(분석→확인→생성) 흐름.
+  const imageFacts = injectedFacts !== undefined ? injectedFacts : (skipVision ? null : await analyzeProductImages(visionImgs, product.title));
   const ctx = {
     상품명: product.title,
     카테고리: (product.categoryTree || []).join(' > ') || null,

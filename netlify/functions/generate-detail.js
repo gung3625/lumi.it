@@ -2,7 +2,7 @@
 //   POST {url|title+imageBase64} → 즉시 jobId 반환(202), 백그라운드에서 생성.
 //   GET  ?jobId → 상태 조회(pending / done+html / error).
 // 생성이 1~3분 걸려서 동기 응답은 프록시·브라우저 타임아웃 위험 → 작업+폴링 방식.
-const { generateDetailPage, generateAiPhoto, photoPrompt, cutPlan, assembleCutPage, accentPalette, extractProductTitle } = require('./_shared/detail-page.js');
+const { generateDetailPage, generateAiPhoto, photoPrompt, cutPlan, assembleCutPage, accentPalette, extractProductTitle, analyzeProductImages } = require('./_shared/detail-page.js');
 const { getItemView } = require('./_shared/domeggook-api.js');
 const { getDometopiaItem, parseNo } = require('./_shared/dometopia.js');
 const { fetchViaUnlocker, parseUniversalProduct } = require('./_shared/universal.js');
@@ -36,6 +36,21 @@ function allowRate(ip) {
   rate[ip].n++; return true;
 }
 
+// 분석 단계(업로드 모드) — 사진/캡처에서 상품명·정보만 추출(화보·컷 없이). 사용자 확인·수정용.
+async function runAnalysis(p) {
+  const { title, imageBase64, features } = p || {};
+  if (!imageBase64) throw new Error('상품 사진을 올려주세요');
+  const mainUri = 'data:image/jpeg;base64,' + stripDataUri(imageBase64);
+  const cap = p.captureBase64 ? ('data:image/png;base64,' + stripDataUri(p.captureBase64)) : null;
+  const descImages = [mainUri, cap].filter(Boolean);
+  let t = String(title || '').trim();
+  if (!t) t = await extractProductTitle(cap || mainUri);
+  const facts = (await analyzeProductImages(descImages, t || '상품')) || [];
+  const info = String(features || '').trim();
+  const allFacts = info ? [info, ...facts] : facts;
+  return { title: t || '', facts: allFacts };
+}
+
 // 실제 생성 — 도매꾹 링크/사진 → 베이스 화보 → 카피 → 디자인 컷 → 조립.
 async function runGeneration(p) {
   const { url, title, features, imageBase64, quality, skipPhoto } = p || {};
@@ -61,26 +76,32 @@ async function runGeneration(p) {
   } else {
     if (!imageBase64) throw new Error('상품 대표 사진을 올려주세요');
     srcForPhoto = stripDataUri(imageBase64);
-    // 전체 캡처(선택) → 비전 분석으로 상품 정보(스펙·특징·설명) 추출. data URI로 넘긴다.
+    const mainUri = 'data:image/jpeg;base64,' + srcForPhoto;
     const cap = p.captureBase64 ? ('data:image/png;base64,' + stripDataUri(p.captureBase64)) : null;
-    const info = String(features || '').trim();
-    // ★거짓 방지: 캡처(비전) 또는 정보 입력 둘 다 없으면 생성 거부(정보 없이 지어내기 차단).
-    if (!cap && !info) throw new Error('상품 정보를 입력하거나 전체 페이지 캡처를 올려주세요. 정보 없이는 정확한 상세페이지를 만들 수 없어요.');
-    // 상품명 미입력 → 캡처(우선) 또는 대표사진에서 자동 인식.
+    // 대표사진·캡처 모두 비전 분석 대상 — 올린 사진 자체가 정보가 적힌 상세페이지 사진일 수 있다.
+    // (정보 유무는 비전 분석 후 판단 → 거짓 방지는 카피 단계에서)
+    const descImages = [mainUri, cap].filter(Boolean);
+    // 상품명 미입력 → 캡처/사진에서 자동 인식.
     let t = String(title || '').trim();
     if (!t) {
-      t = await extractProductTitle(cap || ('data:image/jpeg;base64,' + srcForPhoto));
+      t = await extractProductTitle(cap || mainUri);
       if (!t) throw new Error('상품명을 인식하지 못했어요. 상품명을 직접 입력해 주세요.');
     }
-    product = { title: t, spec: {}, options: [], images: [], descImages: cap ? [cap] : [] };
+    product = { title: t, spec: {}, options: [], images: [], descImages };
   }
+
+  // 2단계 확정 정보(facts)가 오면 재분석 없이 그대로 사용. 없으면 비전 분석.
+  const confirmedFacts = Array.isArray(p.facts) ? p.facts : undefined;
+  const result = await generateDetailPage(product, { sellingHook: features || '', skipVision: false, imageFacts: confirmedFacts });
+  if (!result || result.error) throw new Error(result && result.error ? result.error : '카피 생성 실패');
+  // ★거짓 방지(업로드 모드): 사진 비전·캡처·입력 어디에도 정보가 없으면 거부 → 지어내기 차단.
+  if (!url && !(result.imageFacts || []).length && !String(features || '').trim()) {
+    throw new Error('올리신 사진에 상품 정보가 없어요. ① 상품 정보를 입력하거나, 정보(스펙·설명)가 적힌 상세페이지 사진을 올려주세요.');
+  }
+  const copy = result.copy || {};
 
   let baseB64 = null;
   if (!skipPhoto && srcForPhoto) baseB64 = await generateAiPhoto(srcForPhoto, photoPrompt(product.title), { quality: 'low' });
-
-  const result = await generateDetailPage(product, { sellingHook: features || '', skipVision: !url && !(product.descImages || []).length });
-  if (!result || result.error) throw new Error(result && result.error ? result.error : '카피 생성 실패');
-  const copy = result.copy || {};
 
   let html = result.html, cutCount = 0;
   if (baseB64) {
@@ -111,11 +132,19 @@ exports.handler = async (event) => {
 
   // 작업 시작
   if (event.httpMethod !== 'POST') return err(405, 'POST만 허용됩니다');
-  var ip = String(event.headers['x-forwarded-for'] || '').split(',')[0].trim() || event.headers['x-real-ip'] || 'ip';
-  if (!allowRate(ip)) return err(429, '하루 생성 한도(' + RATE_LIMIT + '회)를 초과했습니다. 내일 다시 이용해 주세요.');
   let params;
   try { params = JSON.parse(event.body || '{}'); } catch (_) { return err(400, '잘못된 요청입니다'); }
   if (!params.url && !params.imageBase64) return err(400, '상품 링크를 넣거나, 대표 사진을 올려주세요');
+
+  // 분석 단계(업로드 모드): 정보만 추출해 동기 반환 → 프론트에서 확인·수정 후 생성 요청. (rate 면제)
+  if (params.step === 'analyze') {
+    try { return ok(await runAnalysis(params)); }
+    catch (e) { return err(400, (e && e.message) || '분석에 실패했어요. 다시 시도해 주세요.'); }
+  }
+
+  // 생성 단계: 비용 발생 → rate 체크
+  var ip = String(event.headers['x-forwarded-for'] || '').split(',')[0].trim() || event.headers['x-real-ip'] || 'ip';
+  if (!allowRate(ip)) return err(429, '하루 생성 한도(' + RATE_LIMIT + '회)를 초과했습니다. 내일 다시 이용해 주세요.');
 
   const jobId = Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
   jobs[jobId] = { status: 'pending', ts: Date.now() };
