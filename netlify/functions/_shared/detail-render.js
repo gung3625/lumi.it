@@ -198,16 +198,19 @@ const ICONS = {
   sparkle: '<path d="M12 3l2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2z"/>',
   check: '<path d="M4 12.5l5 5L20 6.5"/>',
 };
-function iconFor(text) {
+function iconFor(text, seq) {
   const s = String(text || '');
   if (/온도|보온|보냉|단열|따뜻|차갑/.test(s)) return 'thermo';
-  if (/가벼|무게|그립|한 손|휴대/.test(s)) return 'feather';
-  if (/세척|얼음|물|위생|입구|세정/.test(s)) return 'droplet';
-  if (/색|컬러|데일리/.test(s)) return 'palette';
-  if (/인증|안전|KC|안심/.test(s)) return 'shield';
-  if (/친환경|자연|성분|식물/.test(s)) return 'leaf';
-  if (/시간|오래|유지|지속/.test(s)) return 'clock';
-  return 'sparkle';
+  if (/가벼|무게|그립|한\s?손|휴대|슬림/.test(s)) return 'feather';
+  if (/세척|세정|얼음|방수|물|위생|입구|닦/.test(s)) return 'droplet';
+  if (/색|컬러|데일리|유약|광택|돋보|디자인|감각|무드/.test(s)) return 'palette';
+  if (/인증|안전|KC|안심|단단|튼튼|내구|견고|굽|마감|무독|식품/.test(s)) return 'shield';
+  if (/친환경|자연|성분|식물|원목|도자|세라믹/.test(s)) return 'leaf';
+  if (/시간|오래|유지|지속|보관|장기/.test(s)) return 'clock';
+  if (/전자레인지|세척기|호환|사용\s?가능|간편|편리|손쉽/.test(s)) return 'check';
+  // 매칭 없으면 순번으로 분산(같은 아이콘 반복 방지)
+  const fallback = ['sparkle', 'shield', 'leaf', 'clock'];
+  return fallback[(seq || 0) % fallback.length];
 }
 // 원형 배지 + 아이콘. cx,cy 중심, r 반지름.
 function iconBadge(name, cx, cy, r, color, bg) {
@@ -321,7 +324,7 @@ async function cutBenefits(F, items) {
     const tb = textBlock(F.medium, it, { x: 0, y: 0, fontSize: 30, lineHeight: 1.45, fill: C.ink, maxWidth: textW });
     const cardH = Math.max(tb.height + cardPad * 2, 132);
     o += roundRect(PAD, y, CONTENT, cardH, 22, T.tint);
-    o += iconBadge(iconFor(it), PAD + cardPad + br, y + cardH / 2, br, T.accent, '#ffffff');
+    o += iconBadge(iconFor(it, i), PAD + cardPad + br, y + cardH / 2, br, T.accent, '#ffffff');
     o += shift(tb.svg, textX, y + (cardH - tb.height) / 2);
     y += cardH + 20;
   });
@@ -359,7 +362,7 @@ async function cutFeatures(F, items) {
   let maxLabelH = 0;
   top.forEach((it, i) => {
     const cx = PAD + colW * i + colW / 2;
-    o += iconBadge(iconFor(it), cx, badgeCy, r, T.accent, T.tintSoft);
+    o += iconBadge(iconFor(it, i), cx, badgeCy, r, T.accent, T.tintSoft);
     const tb = textBlock(F.medium, it, { x: 0, y: 0, fontSize: 24, lineHeight: 1.45, fill: C.ink, maxWidth: labelW, align: 'center' });
     o += shift(tb.svg, cx - labelW / 2, badgeCy + r + 30);
     maxLabelH = Math.max(maxLabelH, tb.height);
@@ -485,6 +488,8 @@ async function renderDetailCuts(product, copy, opts = {}) {
   cuts.push(await cutHero(F, { photo: px(0), eyebrow: c.heroEyebrow || 'Lumi Select', moodEN: c.moodEN, headline: c.heroHeadline || product.title, sub: c.heroSub }));
   if (Array.isArray(c.concerns) && c.concerns.length)
     cuts.push(await cutList(F, { theme: 'cream', eyebrow: 'Your Concern', headline: '혹시, 이런 고민\n있으셨나요?', items: c.concerns }));
+  if (Array.isArray(c.features) && c.features.length >= 3) // 짧은 기능 태그 → 아이콘 3-up(혜택 카드와 별개)
+    cuts.push(await cutFeatures(F, c.features));
   if (Array.isArray(c.benefits) && c.benefits.length)
     cuts.push(await cutBenefits(F, c.benefits));
   cuts.push(await cutShowcase(F, { photo: px(1), headline: c.showcaseHeadline || '실물로 보는 차이', sub: c.heroSub }));

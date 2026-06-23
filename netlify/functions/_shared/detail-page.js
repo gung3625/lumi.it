@@ -47,6 +47,7 @@ const SYS = [
   'seoTitle: 검색 잘되는 60자내 제목.  heroHeadline: 첫화면 후킹(이익 중심 12~22자).  heroSub: 보조 한 줄.',
   'concerns: 고객 고민 2~3개("이런 적 없으세요?" 톤, 불만해소 데이터 반영).',
   'benefits: 핵심 혜택 3~4개(혜택+근거).  sections: 실물/사용장면 1~2개[{name,headline,body}].',
+  'features: 아이콘 옆에 넣을 짧은 기능 태그 3개(각 6~12자 명사구, 예 "오래가는 보온"·"가벼운 그립". benefits와 표현 중복 피하고 더 압축).',
   'comparison: {headline:"왜 이 제품인가", points:[차별점 2~3]}.  faq: 소비자질문 2~3개[{q,a}].  closing: 마무리 한 줄.',
   '[소싱데이터]·[이미지분석]이 있으면 적극 반영. 출력은 위 키의 JSON 하나만.',
 ].join('\n');
