@@ -2,7 +2,7 @@
 //   POST {url|title+imageBase64} → 즉시 jobId 반환(202), 백그라운드에서 생성.
 //   GET  ?jobId → 상태 조회(pending / done+html / error).
 // 생성이 1~3분 걸려서 동기 응답은 프록시·브라우저 타임아웃 위험 → 작업+폴링 방식.
-const { generateDetailPage, generateAiPhoto, photoPrompt, cutPlan, assembleCutPage, accentPalette } = require('./_shared/detail-page.js');
+const { generateDetailPage, generateAiPhoto, photoPrompt, cutPlan, assembleCutPage, accentPalette, extractProductTitle } = require('./_shared/detail-page.js');
 const { getItemView } = require('./_shared/domeggook-api.js');
 const { getDometopiaItem, parseNo } = require('./_shared/dometopia.js');
 const { fetchViaUnlocker, parseUniversalProduct } = require('./_shared/universal.js');
@@ -59,11 +59,20 @@ async function runGeneration(p) {
     srcForPhoto = (item.images || [])[0] || null;
     product = { title: item.title, spec: item.spec || {}, options: item.options || [], descImages: item.descImages || [], images: (item.images || []).slice(0, 4), keywords: item.keywords || [], categoryTree: item.categoryTree || [] };
   } else {
-    if (!title || !imageBase64) throw new Error('상품명과 대표 사진을 넣어주세요');
+    if (!imageBase64) throw new Error('상품 대표 사진을 올려주세요');
     srcForPhoto = stripDataUri(imageBase64);
-    // 전체 캡처(선택) → 비전 분석으로 상품 정보(스펙·특징·설명) 추출 → 카피 보강. data URI로 넘긴다.
+    // 전체 캡처(선택) → 비전 분석으로 상품 정보(스펙·특징·설명) 추출. data URI로 넘긴다.
     const cap = p.captureBase64 ? ('data:image/png;base64,' + stripDataUri(p.captureBase64)) : null;
-    product = { title, spec: {}, options: [], images: [], descImages: cap ? [cap] : [] };
+    const info = String(features || '').trim();
+    // ★거짓 방지: 캡처(비전) 또는 정보 입력 둘 다 없으면 생성 거부(정보 없이 지어내기 차단).
+    if (!cap && !info) throw new Error('상품 정보를 입력하거나 전체 페이지 캡처를 올려주세요. 정보 없이는 정확한 상세페이지를 만들 수 없어요.');
+    // 상품명 미입력 → 캡처(우선) 또는 대표사진에서 자동 인식.
+    let t = String(title || '').trim();
+    if (!t) {
+      t = await extractProductTitle(cap || ('data:image/jpeg;base64,' + srcForPhoto));
+      if (!t) throw new Error('상품명을 인식하지 못했어요. 상품명을 직접 입력해 주세요.');
+    }
+    product = { title: t, spec: {}, options: [], images: [], descImages: cap ? [cap] : [] };
   }
 
   let baseB64 = null;
@@ -106,7 +115,7 @@ exports.handler = async (event) => {
   if (!allowRate(ip)) return err(429, '하루 생성 한도(' + RATE_LIMIT + '회)를 초과했습니다. 내일 다시 이용해 주세요.');
   let params;
   try { params = JSON.parse(event.body || '{}'); } catch (_) { return err(400, '잘못된 요청입니다'); }
-  if (!params.url && !(params.title && params.imageBase64)) return err(400, '상품 링크를 넣거나, 상품명과 사진을 넣어주세요');
+  if (!params.url && !params.imageBase64) return err(400, '상품 링크를 넣거나, 대표 사진을 올려주세요');
 
   const jobId = Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
   jobs[jobId] = { status: 'pending', ts: Date.now() };

@@ -204,6 +204,20 @@ async function analyzeProductImages(images, title) {
   } catch (_) { return null; }
 }
 
+// 상품명 미입력 시(업로드 모드) 캡처/사진에서 상품명만 비전으로 추출.
+async function extractProductTitle(image) {
+  if (!image) return '';
+  try {
+    const res = await llmChat({
+      messages: [{ role: 'user', content: [{ type: 'text', text: '이 상품 이미지/캡처에서 정확한 상품명만 한국어 한 줄로 답하라. 브랜드+제품명만(설명·수식어·가격·옵션·배송 제외). 모르면 빈 문자열만.' }, { type: 'image_url', image_url: { url: image } }] }],
+      max_tokens: 60,
+    }, { sensitive: false, provider: 'gemini', label: 'title-extract', timeoutMs: 30000 });
+    const d = await res.json();
+    const txt = d && d.choices && d.choices[0] && d.choices[0].message ? d.choices[0].message.content : '';
+    return String(txt).trim().replace(/^["'`\s]+|["'`\s]+$/g, '').slice(0, 100);
+  } catch (_) { return ''; }
+}
+
 // 위험 표현 결정적 안전망(프롬프트가 놓친 절대·순위 단정을 부드럽게 치환). copy-compliance 기준.
 const SOFTEN = [[/완벽히/g, '세심하게'], [/완벽한/g, '뛰어난'], [/완벽/g, '우수'], [/100\s*%/g, '높은 수준'], [/무조건/g, '언제든'], [/\s?보장(?=[\s.,!]|$)/g, ''], [/평생/g, '오래'], [/최고급/g, '고급'], [/최고의/g, '우수한'], [/최고(?![급])/g, '우수'], [/최저가/g, '합리적인 가격'], [/유일무이한?/g, '특별한'], [/유일한/g, '특별한'], [/국내\s*1위/g, '인기'], [/업계\s*1위/g, '인기']];
 function softenClaims(copy) {
@@ -362,4 +376,4 @@ function assembleCutPage(cuts, palette) {
   return '<div style="max-width:1024px;margin:0 auto;background:#fff;font-family:Pretendard,-apple-system,system-ui,sans-serif;">' + h + '</div>';
 }
 
-module.exports = { generateDetailPage, buildHtml, analyzeProductImages, distinctImages, generateAiPhoto, photoPrompt, cutPlan, assembleCutPage, accentPalette, SYS, esc };
+module.exports = { generateDetailPage, buildHtml, analyzeProductImages, distinctImages, generateAiPhoto, photoPrompt, cutPlan, assembleCutPage, accentPalette, extractProductTitle, SYS, esc };

@@ -146,11 +146,14 @@
       <div class="hint">도매꾹·도매토피아 링크 지원</div>
     </div>
     <div id="m-upload" style="display:none;">
-      <label for="ptitle">상품명</label>
+      <label for="ptitle">상품명 <span style="color:#888;font-weight:400;font-size:13px;">(선택 · 캡처 올리면 자동 인식)</span></label>
       <input type="text" id="ptitle" placeholder="예: 폰타나 제로슈거 오리엔탈 드레싱" autocomplete="off">
       <label for="mainimg" style="display:block;margin-top:14px;">대표 상품 사진 <span style="color:#C8507A;">*</span> (화보용)</label>
       <input type="file" id="mainimg" accept="image/*" style="width:100%;">
-      <label style="display:block;margin-top:14px;">전체 페이지 캡처 (선택 · 정보 추출용)</label>
+      <div style="margin-top:18px;padding:12px 14px;background:#fdeef4;border-radius:8px;font-size:13px;color:#C8507A;font-weight:600;line-height:1.5;">📌 아래 <b>①·② 중 하나는 꼭</b> 채워주세요<br>상품 정보가 있어야 정확한 카피가 나옵니다 (없으면 지어내지 않고 생성을 멈춥니다)</div>
+      <label for="uinfo" style="display:block;margin-top:12px;">① 상품 정보·특징</label>
+      <textarea id="uinfo" placeholder="스펙·성분·기능·셀링포인트를 적어주세요. 예: 제로슈거, 칼로리 50% 감소, 오리엔탈 드레싱, 100ml, 식이섬유 함유"></textarea>
+      <label style="display:block;margin-top:14px;">② 전체 페이지 캡처 <span style="color:#888;font-weight:400;font-size:13px;">(AI가 캡처 속 정보를 읽음)</span></label>
       <div id="pastebox" tabindex="0" style="border:2px dashed #C8507A;border-radius:8px;padding:16px;text-align:center;color:#C8507A;cursor:pointer;font-size:14px;outline:none;">📋 여기 클릭 후 <b>Cmd+V</b>(또는 Ctrl+V)로 캡처 붙여넣기</div>
       <div id="cappreview" style="margin-top:8px;"></div>
       <input type="file" id="capimg" accept="image/*" style="width:100%;margin-top:8px;">
@@ -232,14 +235,15 @@
       if(!url){err.textContent='상품 링크를 붙여넣어 주세요.';err.classList.add('on');return;}
       start({url:url,features:features,quality:'medium'});
     }else{
-      var title=document.getElementById('ptitle').value.trim();
-      if(!title){err.textContent='상품명을 입력해 주세요.';err.classList.add('on');return;}
-      go.disabled=true;
+      var ptitle=document.getElementById('ptitle').value.trim();
+      var uinfo=document.getElementById('uinfo').value.trim();
       fileB64('mainimg').then(function(main){
-        if(!main){go.disabled=false;err.textContent='대표 상품 사진을 올려주세요.';err.classList.add('on');return;}
+        if(!main){showErr('대표 상품 사진을 올려주세요.',false);return;}
         fileB64('capimg').then(function(capf){
           var cap=capturePasted||capf;
-          start({title:title,imageBase64:main,captureBase64:cap||undefined,features:features,quality:'medium'});
+          if(!cap&&!uinfo){showErr('① 상품 정보·특징을 적거나, ② 전체 캡처를 올려주세요. 정보가 있어야 정확한 상세페이지가 나옵니다.',false);return;}
+          go.disabled=true;
+          start({title:ptitle||undefined,imageBase64:main,captureBase64:cap||undefined,features:uinfo||features,quality:'medium'});
         });
       });
     }
