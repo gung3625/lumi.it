@@ -5,6 +5,7 @@
 const { generateDetailPage, generateAiPhoto, photoPrompt, cutPlan, assembleCutPage, accentPalette } = require('./_shared/detail-page.js');
 const { getItemView } = require('./_shared/domeggook-api.js');
 const { getDometopiaItem, parseNo } = require('./_shared/dometopia.js');
+const { fetchViaUnlocker, parseUniversalProduct } = require('./_shared/universal.js');
 const fs = require('fs');
 const path = require('path');
 // 결과 영구 저장 폴더(~/lumi/r) — server.js 정적 서빙으로 lumi.it.kr/r/<jobId>.html 접근.
@@ -45,6 +46,10 @@ async function runGeneration(p) {
       const no = parseNo(url);
       if (!no) throw new Error('도매토피아 상품 링크가 맞는지 확인해 주세요');
       item = await getDometopiaItem(no);
+    } else if (/^https?:\/\//i.test(url) && !/domeggook/i.test(url)) {
+      // 도매꾹·도매토피아 외 사이트(쿠팡/스마트스토어/알리/G마켓 등) → Web Unlocker로 봇차단 우회 + 범용 파서
+      const html = await fetchViaUnlocker(url);
+      item = parseUniversalProduct(html, url);
     } else {
       const no = (String(url).match(/(\d{6,})/) || [])[1];
       if (!no) throw new Error('도매꾹 상품 링크가 맞는지 확인해 주세요');
