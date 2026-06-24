@@ -134,6 +134,13 @@ exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') return err(405, 'POST만 허용됩니다');
   let params;
   try { params = JSON.parse(event.body || '{}'); } catch (_) { return err(400, '잘못된 요청입니다'); }
+  // 생성 후 편집 저장: 수정된 HTML을 결과 파일에 덮어쓴다(생성 아님 → rate 무관).
+  if (params.action === 'save') {
+    const jid = String(params.jobId || '').replace(/[^a-z0-9]/gi, '');
+    if (!jid || !params.html) return err(400, '저장 정보가 부족합니다');
+    try { fs.writeFileSync(path.join(RESULTS_DIR, jid + '.html'), String(params.html)); return ok({ saved: true, resultUrl: 'https://lumi.it.kr/r/' + jid + '.html' }); }
+    catch (_) { return err(500, '저장에 실패했습니다'); }
+  }
   if (!params.url && !params.imageBase64) return err(400, '상품 링크를 넣거나, 대표 사진을 올려주세요');
 
   // 분석 단계(업로드 모드): 정보만 추출해 동기 반환 → 프론트에서 확인·수정 후 생성 요청. (rate 면제)
