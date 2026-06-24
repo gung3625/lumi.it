@@ -2,7 +2,7 @@
 //   POST {url|title+imageBase64} → 즉시 jobId 반환(202), 백그라운드에서 생성.
 //   GET  ?jobId → 상태 조회(pending / done+html / error).
 // 생성이 1~3분 걸려서 동기 응답은 프록시·브라우저 타임아웃 위험 → 작업+폴링 방식.
-const { generateDetailPage, generateAiPhoto, photoPrompt, cutPlan, assembleCutPage, accentPalette, extractProductTitle, analyzeProductImages } = require('./_shared/detail-page.js');
+const { generateDetailPage, generateAiPhoto, photoPrompt, scenePlan, copyToBlocks, renderBlocks, accentPalette, extractProductTitle, analyzeProductImages, analyzeReferenceStyle } = require('./_shared/detail-page.js');
 const { getItemView } = require('./_shared/domeggook-api.js');
 const { getDometopiaItem, parseNo } = require('./_shared/dometopia.js');
 const { fetchViaUnlocker, parseUniversalProduct } = require('./_shared/universal.js');
@@ -21,6 +21,15 @@ const headers = {
 const ok = (obj, code) => ({ statusCode: code || 200, headers, body: JSON.stringify(obj) });
 const err = (code, msg) => ({ statusCode: code, headers, body: JSON.stringify({ error: msg }) });
 const stripDataUri = (s) => String(s || '').replace(/^data:image\/[a-zA-Z0-9.+-]+;base64,/, '');
+
+// 레퍼런스 hex 팔레트 → {accent, ink(가장 어두운), soft(가장 밝은)}. 6자리 hex만 사용.
+function lum(hex) { const h = hex.replace('#', ''); return 0.299 * parseInt(h.slice(0, 2), 16) + 0.587 * parseInt(h.slice(2, 4), 16) + 0.114 * parseInt(h.slice(4, 6), 16); }
+function paletteFromHex(arr) {
+  const hs = (arr || []).filter((c) => /^#[0-9a-f]{6}$/i.test(String(c)));
+  if (!hs.length) return null;
+  const sorted = [...hs].sort((a, b) => lum(a) - lum(b));
+  return { accent: hs[0], ink: sorted[0], soft: sorted[sorted.length - 1] };
+}
 
 // 작업 저장소(모듈 스코프 — server.js가 1회 require하므로 프로세스 동안 유지). 30분 TTL.
 const jobs = {};
@@ -100,21 +109,32 @@ async function runGeneration(p) {
   }
   const copy = result.copy || {};
 
+  // 레퍼런스 스타일 분석(있으면) — 콘텐츠 아닌 비주얼 스타일만(법적 안전선).
+  let styleHint = null;
+  if (p.referenceImageBase64) {
+    try { styleHint = await analyzeReferenceStyle(['data:image/png;base64,' + stripDataUri(p.referenceImageBase64)]); } catch (_) {}
+  }
+
   let baseB64 = null;
   if (!skipPhoto && srcForPhoto) baseB64 = await generateAiPhoto(srcForPhoto, photoPrompt(product.title), { quality: 'low' });
 
-  let html = result.html, cutCount = 0;
+  // 글자 없는 깨끗한 화보 컷 생성(편집은 텍스트 레이어가 담당) → 편집가능 블록 조립.
+  let blocks = copyToBlocks(product, copy, []);
+  let palette = (styleHint && styleHint.palette && styleHint.palette.length) ? paletteFromHex(styleHint.palette) : null;
+  let sceneCount = 0;
   if (baseB64) {
-    const plan = cutPlan(product, copy);
-    const cuts = [];
+    const plan = scenePlan(product, copy, styleHint);
+    const scenes = [];
     for (let i = 0; i < plan.length; i += 3) {
-      const batch = await Promise.all(plan.slice(i, i + 3).map(async (c) => ({ img: await generateAiPhoto(baseB64, c.prompt, { quality: quality || 'medium' }), title: c.title, desc: c.desc })));
-      cuts.push(...batch);
+      const batch = await Promise.all(plan.slice(i, i + 3).map(async (c) => ({ key: c.key, img: await generateAiPhoto(baseB64, c.prompt, { quality: quality || 'medium' }) })));
+      scenes.push(...batch);
     }
-    cutCount = cuts.filter((c) => c.img).length;
-    if (cutCount >= 2) { const palette = await accentPalette(((cuts.find((c) => c.img) || {}).img) || baseB64); html = assembleCutPage(cuts, palette); }
+    sceneCount = scenes.filter((s) => s.img).length;
+    if (!palette) palette = await accentPalette((scenes.find((s) => s.img) || {}).img || baseB64);
+    blocks = copyToBlocks(product, copy, scenes);
   }
-  return { title: product.title, html, copy, reviewPoints: result.reviewPoints || [], photoGenerated: !!baseB64, cutCount };
+  const html = renderBlocks(blocks, palette);
+  return { title: product.title, html, blocks, palette, copy, reviewPoints: result.reviewPoints || [], photoGenerated: !!baseB64, sceneCount, styleHint: styleHint || null };
 }
 
 exports.handler = async (event) => {
@@ -125,7 +145,7 @@ exports.handler = async (event) => {
     const id = (event.queryStringParameters || {}).jobId;
     const j = id && jobs[id];
     if (!j) return err(404, '작업을 찾을 수 없습니다. 다시 시도해 주세요');
-    if (j.status === 'done') return ok({ status: 'done', title: j.title, html: j.html, copy: j.copy, reviewPoints: j.reviewPoints, cutCount: j.cutCount, resultUrl: j.resultUrl });
+    if (j.status === 'done') return ok({ status: 'done', title: j.title, html: j.html, blocks: j.blocks, palette: j.palette, styleHint: j.styleHint, copy: j.copy, reviewPoints: j.reviewPoints, sceneCount: j.sceneCount, resultUrl: j.resultUrl });
     if (j.status === 'error') return ok({ status: 'error', error: j.error });
     return ok({ status: 'pending' });
   }

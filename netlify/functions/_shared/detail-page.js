@@ -218,6 +218,27 @@ async function extractProductTitle(image) {
   } catch (_) { return ''; }
 }
 
+// 레퍼런스 상세페이지(캡처 이미지)에서 "디자인 스타일"만 비전 추출(콘텐츠·문구·사진 복제 X = 법적 안전선). 무료 Gemini. 실패 시 null.
+// 반환: { palette:[hex...], mood, layout, typography, graphics, stylePrompt(영문, 이미지 생성기 주입용) }.
+async function analyzeReferenceStyle(images) {
+  const urls = (Array.isArray(images) ? images : [images]).filter(Boolean).slice(0, 3);
+  if (!urls.length) return null;
+  const prompt = '아래는 사용자가 "이런 디자인 느낌으로 만들어줘"라고 가져온 상세페이지 레퍼런스다. ★디자인 스타일만 분석하라(실제 문구·상품·사진은 복제 대상 아님 — 오직 비주얼 스타일). 추출: 색 팔레트(주요 hex 2~4개), 전체 무드(예 고급/미니멀/키치/내추럴/팝), 레이아웃 방식(예 "풀블리드 사진+글자 오버레이", "카드형", "여백 큰 에디토리얼"), 타이포 느낌(굵기·크기감·세리프 여부), 그래픽 요소(그라디언트·도형·뱃지·라인 등). 그리고 이 스타일을 영어 이미지 생성 프롬프트 한 문장으로 요약(stylePrompt). JSON으로만: {"palette":["#xxxxxx"],"mood":"...","layout":"...","typography":"...","graphics":"...","stylePrompt":"english one-line visual style directive"}';
+  try {
+    const res = await llmChat({
+      messages: [{ role: 'user', content: [{ type: 'text', text: prompt }, ...urls.map((u) => ({ type: 'image_url', image_url: { url: u } }))] }],
+      max_tokens: 500,
+      response_format: { type: 'json_object' },
+    }, { sensitive: false, provider: 'gemini', label: 'reference-style', timeoutMs: 60000 });
+    const d = await res.json();
+    const txt = d && d.choices && d.choices[0] && d.choices[0].message ? d.choices[0].message.content : '';
+    const o = JSON.parse(String(txt).replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim());
+    if (!o || (!o.stylePrompt && !o.mood && !(o.palette && o.palette.length))) return null;
+    if (o.palette) o.palette = (Array.isArray(o.palette) ? o.palette : []).filter((c) => /^#?[0-9a-f]{3,8}$/i.test(String(c))).map((c) => String(c)[0] === '#' ? String(c) : '#' + c).slice(0, 4);
+    return o;
+  } catch (_) { return null; }
+}
+
 // 위험 표현 결정적 안전망(프롬프트가 놓친 절대·순위 단정을 부드럽게 치환). copy-compliance 기준.
 const SOFTEN = [[/완벽히/g, '세심하게'], [/완벽한/g, '뛰어난'], [/완벽/g, '우수'], [/100\s*%/g, '높은 수준'], [/무조건/g, '언제든'], [/\s?보장(?=[\s.,!]|$)/g, ''], [/평생/g, '오래'], [/최고급/g, '고급'], [/최고의/g, '우수한'], [/최고(?![급])/g, '우수'], [/최저가/g, '합리적인 가격'], [/유일무이한?/g, '특별한'], [/유일한/g, '특별한'], [/국내\s*1위/g, '인기'], [/업계\s*1위/g, '인기']];
 function softenClaims(copy) {
@@ -383,9 +404,11 @@ function assembleCutPage(cuts, palette) {
 // 블록 = { type, ...fields }. renderBlocks가 HTML 생성, 편집 텍스트에 data-b(블록 인덱스)/data-f(필드)/data-i(배열 항목) 마킹 → 에디터가 역매핑해 저장.
 
 // 글자 없는 연출 화보 프롬프트(컷마다 다른 앵글). cutPlan과 달리 텍스트를 굽지 않는다 — 편집은 HTML 레이어가 담당.
-function scenePlan(product, copy) {
+function scenePlan(product, copy, styleHint) {
   const colors = [...new Set((product.options || []).map((o) => String(o).replace(/\(.*?\)/g, '').replace(/[[\]]/g, '').trim()).filter(Boolean))].slice(0, 6);
-  const BASE = 'Premium Korean e-commerce lifestyle product photo. Keep THIS exact product faithful in shape, color and material. Clean tasteful real-life scene, soft natural light, minimal complementary props matching the product mood. ABSOLUTELY NO text, NO korean letters, NO captions, NO badges, NO logo, NO website UI anywhere in the image. Photorealistic high-end commercial photography, vertical. ';
+  // 레퍼런스 스타일이 있으면 화보 무드에 반영(콘텐츠 아닌 비주얼 톤만).
+  const styleTag = styleHint && styleHint.stylePrompt ? (' Match this visual mood: ' + String(styleHint.stylePrompt).slice(0, 240) + ' ') : '';
+  const BASE = 'Premium Korean e-commerce lifestyle product photo. Keep THIS exact product faithful in shape, color and material. Clean tasteful real-life scene, soft natural light, minimal complementary props matching the product mood. ABSOLUTELY NO text, NO korean letters, NO captions, NO badges, NO logo, NO website UI anywhere in the image. Photorealistic high-end commercial photography, vertical.' + styleTag + ' ';
   const plan = [
     { key: 'hero', prompt: BASE + 'HERO: the product as centerpiece at a dynamic three-quarter tilted angle, styled tabletop, editorial mood.' },
     { key: 'scene', prompt: BASE + 'LIFESTYLE: a person naturally using or holding this exact product, eye-level candid, hand visible, warm authentic mood.' },
@@ -507,4 +530,4 @@ function renderBlocks(blocks, palette) {
   return '<div class="lumi-detail" style="max-width:720px;margin:0 auto;font-family:Pretendard,-apple-system,system-ui,sans-serif;background:#fff;color:' + INK + ';line-height:1.6;">' + inner + '</div>';
 }
 
-module.exports = { generateDetailPage, buildHtml, analyzeProductImages, distinctImages, generateAiPhoto, photoPrompt, cutPlan, assembleCutPage, accentPalette, extractProductTitle, SYS, esc, scenePlan, specRowsData, copyToBlocks, renderBlock, renderBlocks };
+module.exports = { generateDetailPage, buildHtml, analyzeProductImages, distinctImages, generateAiPhoto, photoPrompt, cutPlan, assembleCutPage, accentPalette, extractProductTitle, SYS, esc, scenePlan, specRowsData, copyToBlocks, renderBlock, renderBlocks, analyzeReferenceStyle };
