@@ -304,7 +304,7 @@ function photoPrompt(title) {
 }
 
 // ===== 디자인 컷 방식(레퍼런스급) — 베이스 화보 → 컷별 다른 연출 디자인 이미지 + 설명 텍스트 교대 =====
-const CUT_BASE = 'Vibrant premium Korean e-commerce product detail page section. Keep THIS exact product faithful in shape and design. Soft tasteful gradient background with decorative graphics matching the product mood. ABSOLUTELY NO shopping-mall navigation bar, NO brand logo, NO fake website UI on top. Polished colorful commercial marketing design, vertical, clean Korean typography, no watermark. ';
+const CUT_BASE = 'Vibrant premium Korean e-commerce product photo. Keep THIS exact product faithful in shape and design. Soft tasteful gradient background with decorative graphics matching the product mood. ★ABSOLUTELY NO text, NO Korean letters, NO headline, NO typography, NO words or labels anywhere in the image (text is added separately later). NO navigation bar, NO logo, NO fake website UI. Polished colorful commercial product photography, vertical, no watermark. ';
 
 // 카피·옵션 기반 컷 계획 → [{key, prompt(컷 생성용), title/desc(설명 텍스트용)}]. 연출을 컷마다 다르게(히어로·손모델·혜택·색상·비교·CTA).
 function cutPlan(product, copy) {
@@ -313,20 +313,20 @@ function cutPlan(product, copy) {
   const cut = (s) => String(s || '').slice(0, 30);
   const plan = [
     { key: 'hero', title: c.heroHeadline || product.title, desc: c.heroSub || '',
-      prompt: CUT_BASE + 'HERO section. The product as centerpiece at a dynamic three-quarter TILTED angle with energy and motion. Large bold Korean headline: "' + cut(c.heroHeadline || product.title) + '". Add a small highlight badge.' },
+      prompt: CUT_BASE + 'HERO section. The product as centerpiece at a dynamic three-quarter TILTED angle with energy and motion, eye-catching premium composition.' },
     { key: 'scene', title: (c.sections && c.sections[0] && c.sections[0].headline) || '일상 속에서', desc: (c.sections && c.sections[0] && c.sections[0].body) || '',
       prompt: CUT_BASE + 'LIFESTYLE section: a person naturally using or holding this exact product, eye-level candid angle, hand visible, warm authentic mood, soft natural light.' },
     { key: 'detail', title: '꼼꼼한 디테일', desc: '',
       prompt: CUT_BASE + 'DETAIL section. Extreme CLOSE-UP macro shot of the product key parts (lid, opening, handle), shallow depth of field, showing premium texture and build quality.' },
     { key: 'benefit', title: '이런 점이 다릅니다', desc: (c.benefits || []).join('  ·  '),
-      prompt: CUT_BASE + 'BENEFITS section, the product shown from a clean TOP-DOWN flat-lay angle. Korean headline "이런 점이 다릅니다". Three benefit points with simple clean icons and short Korean labels reflecting: ' + (c.benefits || []).slice(0, 3).join(' / ').slice(0, 110) + '.' },
+      prompt: CUT_BASE + 'BENEFITS section. The product shown from a clean TOP-DOWN flat-lay angle with subtle decorative graphic elements arranged around it.' },
   ];
   if (colors.length >= 2) plan.push({ key: 'color', title: '다양한 컬러', desc: '컬러 옵션: ' + colors.join(', '),
-    prompt: CUT_BASE + 'COLOR LINEUP section. Korean headline "다양한 컬러". Show this exact product rendered in several real colors (' + colors.join(', ') + ') arranged neatly like a color lineup photo.' });
+    prompt: CUT_BASE + 'COLOR LINEUP. Show this exact product rendered in several real colors (' + colors.join(', ') + ') arranged neatly like a color lineup photo.' });
   if (c.comparison && Array.isArray(c.comparison.points) && c.comparison.points.length) plan.push({ key: 'compare', title: c.comparison.headline || '왜 이 제품인가', desc: (c.comparison.points || []).join('  ·  '),
-    prompt: CUT_BASE + 'COMPARISON section. Korean headline "' + cut(c.comparison.headline || '왜 이 제품인가') + '". A clean comparison graphic highlighting the product advantage.' });
+    prompt: CUT_BASE + 'COMPARISON section. A clean visual composition highlighting the product advantage with strong contrast.' });
   plan.push({ key: 'cta', title: c.closing || '지금 만나보세요', desc: '',
-    prompt: CUT_BASE + 'CLOSING section. Large elegant Korean headline "' + cut(c.closing || '지금 만나보세요') + '". Refined gradient, subtle sparkles, premium finish.' });
+    prompt: CUT_BASE + 'CLOSING section. Refined elegant gradient, subtle sparkles, premium finish, the product beautifully presented.' });
   return plan;
 }
 
@@ -367,11 +367,11 @@ function assembleCutPage(cuts, palette) {
   let h = '', ti = 0;
   (cuts || []).forEach((c) => {
     if (c.img) h += '<img src="data:image/png;base64,' + c.img + '" alt="" style="width:100%;display:block;">';
-    if (c.desc) {
+    if (c.title || c.desc) {
       const tint = ti % 2 === 0; ti++;
-      h += '<div style="padding:56px 54px;text-align:center;background:' + (tint ? SOFT : '#fff') + ';">'
-        + (c.title ? '<h3 style="font-size:30px;font-weight:800;letter-spacing:-1px;color:' + T1 + ';line-height:1.35;margin:0 0 16px;">' + esc(c.title) + '</h3>' : '')
-        + '<p style="font-size:18px;color:' + MUT2 + ';line-height:1.85;max-width:760px;margin:0 auto;">' + esc(c.desc) + '</p></div>';
+      h += '<div style="padding:48px 54px;text-align:center;background:' + (tint ? SOFT : '#fff') + ';">'
+        + (c.title ? '<h3 style="font-size:30px;font-weight:800;letter-spacing:-1px;color:' + T1 + ';line-height:1.35;margin:0 0 14px;">' + esc(c.title) + '</h3>' : '')
+        + (c.desc ? '<p style="font-size:18px;color:' + MUT2 + ';line-height:1.85;max-width:760px;margin:0 auto;">' + esc(c.desc) + '</p>' : '') + '</div>';
     }
   });
   return '<div style="max-width:1024px;margin:0 auto;background:#fff;font-family:Pretendard,-apple-system,system-ui,sans-serif;">' + h + '</div>';
