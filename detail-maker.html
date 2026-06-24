@@ -157,6 +157,10 @@
         <div class="hint">전체 페이지 캡처는 <a href="https://chromewebstore.google.com/detail/fdpohaocaechififmbbbbbknoalclacl" target="_blank" style="color:#C8507A;">GoFullPage</a>(무료) 추천.</div>
       </details>
     </div>
+    <details style="margin-top:10px;"><summary style="cursor:pointer;color:#C8507A;font-size:14px;font-weight:600;">+ 디자인 레퍼런스 (선택 — 맘에 드는 상세페이지 캡처)</summary>
+      <input type="file" id="refimg" accept="image/*" style="width:100%;margin-top:8px;">
+      <div class="hint">올리면 그 <b>색·무드·레이아웃</b>을 참고해 비슷한 느낌으로 만들어요. (실제 사진·문구를 베끼지 않아요)</div>
+    </details>
     <button class="btn" id="go">상세페이지 만들기</button>
     <div id="analyzebox" style="display:none;margin-top:18px;padding:16px;border:1px solid #C8507A;border-radius:8px;">
       <div style="font-weight:700;color:#C8507A;margin-bottom:4px;font-size:15px;">AI가 분석한 정보</div>
@@ -171,11 +175,11 @@
     <div id="loading"><div class="spin"></div><p id="loadmsg">AI가 화보·카피·디자인 컷을 만드는 중...<br>약 3~4분 걸려요. 창을 닫지 말고 기다려 주세요.</p></div>
     <div class="errbox" id="err"></div>
     <div id="result"><h3>완성된 상세페이지</h3><div id="rurl" style="text-align:center;font-size:13px;color:#5a6864;margin-bottom:12px;line-height:1.6;"></div>
-      <div style="display:flex;gap:8px;max-width:420px;margin:0 auto 14px;">
-        <button class="btn" id="editbtn" style="flex:1;background:#fff;color:#C8507A;border:1px solid #C8507A;">직접 수정</button>
-        <button class="btn" id="dl" style="flex:1;">컷 저장</button>
+      <div style="display:flex;gap:8px;max-width:480px;margin:0 auto 14px;">
+        <button class="btn" id="easyEdit" style="flex:1;background:#fff;color:#C8507A;border:1px solid #C8507A;">✏️ 글씨만 수정</button>
+        <button class="btn" id="proEdit" style="flex:1;">🎨 정밀 편집</button>
       </div>
-      <div id="editsave" style="display:none;text-align:center;margin-bottom:14px;padding:11px;background:#fdeef4;border-radius:8px;"><span style="font-size:13px;color:#C8507A;font-weight:600;">상세페이지의 글자를 클릭해서 고친 뒤, 아래 저장을 누르세요.</span><button class="btn" id="savebtn" style="max-width:240px;margin:10px auto 0;display:block;">수정한 내용 저장</button></div>
+      <div id="editsave" style="display:none;text-align:center;margin-bottom:14px;padding:11px;background:#fdeef4;border-radius:8px;"><span style="font-size:13px;color:#C8507A;font-weight:600;">노란 점선이 그어진 글자를 눌러 고친 뒤, 아래 저장을 누르세요.</span><button class="btn" id="savebtn" style="max-width:240px;margin:10px auto 0;display:block;">수정한 내용 저장</button></div>
       <div class="preview"><iframe id="frame"></iframe></div></div>
   </div>
 </div></section>
@@ -198,19 +202,29 @@
 <script>
 (function(){
   var go=document.getElementById('go'),loading=document.getElementById('loading'),result=document.getElementById('result'),frame=document.getElementById('frame'),err=document.getElementById('err');
-  var currentJobId=null;
-  var editbtn=document.getElementById('editbtn'),savebtn=document.getElementById('savebtn'),editsave=document.getElementById('editsave');
-  if(editbtn)editbtn.addEventListener('click',function(){
-    try{var d=frame.contentDocument;d.designMode='on';d.body.style.outline='2px dashed #C8507A';d.body.style.outlineOffset='-2px';}catch(e){alert('이 결과는 편집할 수 없어요.');return;}
-    editsave.style.display='block';editbtn.style.display='none';editsave.scrollIntoView({behavior:'smooth'});
+  var currentJobId=null,currentBlocks=null,currentPalette=null;
+  var easyEdit=document.getElementById('easyEdit'),proEdit=document.getElementById('proEdit'),savebtn=document.getElementById('savebtn'),editsave=document.getElementById('editsave');
+  // 쉬운 버전: 글씨(텍스트 레이어)만 인라인 수정 — data-f 마킹된 요소만 편집 허용.
+  if(easyEdit)easyEdit.addEventListener('click',function(){
+    try{var d=frame.contentDocument;var els=d.querySelectorAll('[data-f]');
+      if(!els.length){alert('이 결과는 글씨 수정을 지원하지 않아요. 정밀 편집을 이용해 주세요.');return;}
+      Array.prototype.forEach.call(els,function(el){el.setAttribute('contenteditable','true');el.style.outline='1px dashed #E8A23D';el.style.outlineOffset='2px';});
+    }catch(e){alert('이 결과는 편집할 수 없어요.');return;}
+    editsave.style.display='block';easyEdit.style.display='none';editsave.scrollIntoView({behavior:'smooth'});
   });
   if(savebtn)savebtn.addEventListener('click',function(){
     if(!currentJobId){alert('저장할 작업을 찾지 못했어요. 다시 만들어 주세요.');return;}
-    var html;try{var d=frame.contentDocument;d.designMode='off';d.body.style.outline='';html=d.documentElement.outerHTML;}catch(e){alert('수정 내용을 읽지 못했어요.');return;}
+    var html;try{var d=frame.contentDocument;Array.prototype.forEach.call(d.querySelectorAll('[data-f]'),function(el){el.removeAttribute('contenteditable');el.style.outline='';el.style.outlineOffset='';});html=d.documentElement.outerHTML;}catch(e){alert('수정 내용을 읽지 못했어요.');return;}
     savebtn.disabled=true;savebtn.textContent='저장 중...';
     fetch('/api/generate-detail',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',jobId:currentJobId,html:html})})
-    .then(function(r){return r.json();}).then(function(j){savebtn.disabled=false;savebtn.textContent='수정한 내용 저장';if(j.saved){editsave.innerHTML='<span style="color:#2a9d4a;font-weight:700;">저장됐어요! 저장된 링크에 반영됐습니다.</span>';editbtn.style.display='';}else{alert(j.error||'저장에 실패했어요.');}})
+    .then(function(r){return r.json();}).then(function(j){savebtn.disabled=false;savebtn.textContent='수정한 내용 저장';if(j.saved){editsave.innerHTML='<span style="color:#2a9d4a;font-weight:700;">저장됐어요! 저장된 링크에 반영됐습니다.</span>';easyEdit.style.display='';}else{alert(j.error||'저장에 실패했어요.');}})
     .catch(function(){savebtn.disabled=false;savebtn.textContent='수정한 내용 저장';alert('저장 중 오류가 발생했어요.');});
+  });
+  // 어려운 버전: blocks를 에디터로 넘겨 캔바식 풀 편집.
+  if(proEdit)proEdit.addEventListener('click',function(){
+    if(!currentBlocks||!currentBlocks.length){alert('정밀 편집용 데이터가 없어요. 다시 만들어 주세요.');return;}
+    try{sessionStorage.setItem('lumi_editor_blocks',JSON.stringify({blocks:currentBlocks,palette:currentPalette}));}catch(e){alert('편집 데이터가 너무 큽니다.');return;}
+    window.open('/editor.html','_blank');
   });
   var mode='link';
   var tabs=document.querySelectorAll('.tabbtn');
@@ -224,7 +238,9 @@
   });
   function fileB64(id){return new Promise(function(res){var f=document.getElementById(id).files[0];if(!f){res(null);return;}var fr=new FileReader();fr.onload=function(){res(fr.result);};fr.onerror=function(){res(null);};fr.readAsDataURL(f);});}
   var capturePasted=null;
-  var pendingMain=null, pendingCap=null;
+  var pendingMain=null, pendingCap=null, refData=null;
+  var refEl=document.getElementById('refimg');
+  if(refEl)refEl.addEventListener('change',function(){fileB64('refimg').then(function(d){refData=d;});});
   function setLoad(msg){var lm=document.getElementById('loadmsg');if(lm)lm.innerHTML=msg;}
   var pb=document.getElementById('pastebox');
   if(pb)pb.addEventListener('click',function(){pb.focus();pb.style.background='#fdeef4';});
@@ -258,7 +274,7 @@
     if(mode==='link'){
       var url=document.getElementById('url').value.trim();
       if(!url){err.textContent='상품 링크를 붙여넣어 주세요.';err.classList.add('on');return;}
-      start({url:url,quality:'medium'});
+      start({url:url,quality:'medium',referenceImageBase64:refData||undefined});
     }else{
       fileB64('mainimg').then(function(main){
         if(!main){showErr('상품 사진을 올려주세요.',false);return;}
@@ -283,7 +299,7 @@
   function poll(jobId,n){
     if(n>150){loading.classList.remove('on');go.disabled=false;err.textContent='시간이 너무 오래 걸립니다. 다시 시도해 주세요.';err.classList.add('on');return;}
     fetch('/api/generate-detail?jobId='+encodeURIComponent(jobId)).then(function(r){return r.json();}).then(function(j){
-      if(j.status==='done'&&j.html){currentJobId=jobId;loading.classList.remove('on');go.disabled=false;showResult(j.html,j.resultUrl);}
+      if(j.status==='done'&&j.html){currentJobId=jobId;currentBlocks=j.blocks||null;currentPalette=j.palette||null;loading.classList.remove('on');go.disabled=false;showResult(j.html,j.resultUrl);}
       else if(j.status==='error'){loading.classList.remove('on');go.disabled=false;showErr(j.error||'생성에 실패했습니다.',mode==='link');}
       else{setTimeout(function(){poll(jobId,n+1);},3000);}
     }).catch(function(){setTimeout(function(){poll(jobId,n+1);},3000);});
@@ -295,18 +311,7 @@
     if(!facts.length){showErr('상품 정보를 한 줄 이상 남겨주세요.',false);return;}
     document.getElementById('analyzebox').style.display='none';
     setLoad('AI가 화보·카피·디자인 컷을 만드는 중...<br>약 3~4분 걸려요. 창을 닫지 말고 기다려 주세요.');
-    start({title:t||undefined,facts:facts,imageBase64:pendingMain,captureBase64:pendingCap||undefined,quality:'medium'});
-  });
-  var dl=document.getElementById('dl');
-  if(dl)dl.addEventListener('click',function(){
-    try{
-      var imgs=frame.contentDocument.querySelectorAll('img'),i=0;
-      Array.prototype.forEach.call(imgs,function(im){
-        if(!/^data:image/.test(im.src))return; i++;
-        var a=document.createElement('a');a.href=im.src;a.download='상세컷_'+i+'.png';document.body.appendChild(a);a.click();a.remove();
-      });
-      if(!i)alert('저장할 컷 이미지가 없습니다.');
-    }catch(e){alert('이미지 저장에 실패했습니다. 컷을 길게 눌러 저장해 주세요.');}
+    start({title:t||undefined,facts:facts,imageBase64:pendingMain,captureBase64:pendingCap||undefined,quality:'medium',referenceImageBase64:refData||undefined});
   });
 })();
 </script>
