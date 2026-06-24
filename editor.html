@@ -40,10 +40,17 @@
   <div class="tb">
     <button class="btn" id="addText">＋ 글자</button>
     <button class="btn" id="addImg">＋ 사진</button>
+    <button class="btn" id="addRect">▭ 사각형</button>
+    <button class="btn" id="addCircle">● 원</button>
+    <button class="btn" id="addLine">― 선</button>
+    <span class="divider"></span>
+    <button class="btn" id="undo">↶ 취소</button>
+    <button class="btn" id="redo">↷ 다시</button>
     <span class="divider"></span>
     <button class="btn" id="dup">복제</button>
     <button class="btn" id="front">맨 앞</button>
     <button class="btn" id="back">맨 뒤</button>
+    <button class="btn" id="center">가운데</button>
     <button class="btn" id="del">삭제</button>
     <span class="divider"></span>
     <button class="btn" id="taller">캔버스 늘리기</button>
@@ -76,6 +83,7 @@
   <div class="grp" id="sizeGrp"><label>크기</label><input type="number" id="fontSize" min="8" max="200" value="40" style="width:64px"></div>
   <div class="grp"><label>색</label><input type="color" id="fill" value="#241a14"></div>
   <div class="grp" id="weightGrp"><span class="chip" id="bold">B</span><span class="chip" id="align">정렬</span></div>
+  <div class="grp" id="fxGrp"><span class="chip" id="shadow">그림자</span><span class="chip" id="stroke">외곽선</span></div>
   <div class="grp"><label>투명도</label><input type="number" id="opacity" min="0" max="100" value="100" style="width:60px"></div>
 </div>
 
@@ -102,13 +110,46 @@
     inp.click();
   };
 
+  // ---- 도형 추가 ----
+  document.getElementById('addRect').onclick=function(){var r=new fabric.Rect({left:80,top:canvas.getHeight()/2-60,width:240,height:140,fill:'#C8507A',rx:6,ry:6});canvas.add(r);canvas.setActiveObject(r);canvas.requestRenderAll();};
+  document.getElementById('addCircle').onclick=function(){var c=new fabric.Circle({left:120,top:120,radius:70,fill:'#F2A65A'});canvas.add(c);canvas.setActiveObject(c);canvas.requestRenderAll();};
+  document.getElementById('addLine').onclick=function(){var l=new fabric.Line([80,120,400,120],{stroke:'#241a14',strokeWidth:4});canvas.add(l);canvas.setActiveObject(l);canvas.requestRenderAll();};
+
   // ---- 레이어/편집 ----
   function active(){return canvas.getActiveObject();}
   document.getElementById('del').onclick=function(){var o=active();if(o){canvas.remove(o);canvas.requestRenderAll();panel.classList.remove('on');}};
   document.getElementById('dup').onclick=function(){var o=active();if(!o)return;o.clone(function(c){c.set({left:o.left+24,top:o.top+24});canvas.add(c);canvas.setActiveObject(c);canvas.requestRenderAll();});};
   document.getElementById('front').onclick=function(){var o=active();if(o){canvas.bringToFront(o);canvas.requestRenderAll();}};
   document.getElementById('back').onclick=function(){var o=active();if(o){canvas.sendToBack(o);canvas.requestRenderAll();}};
+  document.getElementById('center').onclick=function(){var o=active();if(o){canvas.centerObjectH(o);o.setCoords();canvas.requestRenderAll();}};
   document.getElementById('taller').onclick=function(){canvas.setHeight(canvas.getHeight()+800);canvas.requestRenderAll();};
+
+  // ---- 실행취소 / 다시실행 (상태 스냅샷 스택) ----
+  var history=[],hi=-1,locking=false,htimer=null;
+  function snapshot(){if(locking)return;clearTimeout(htimer);htimer=setTimeout(function(){history=history.slice(0,hi+1);history.push(JSON.stringify(canvas.toJSON()));if(history.length>60)history.shift();hi=history.length-1;},250);}
+  function restore(j){locking=true;canvas.loadFromJSON(JSON.parse(j),function(){canvas.requestRenderAll();locking=false;panel.classList.remove('on');});}
+  function undo(){if(hi<=0)return;hi--;restore(history[hi]);}
+  function redo(){if(hi>=history.length-1)return;hi++;restore(history[hi]);}
+  canvas.on('object:added',snapshot);canvas.on('object:modified',snapshot);canvas.on('object:removed',snapshot);
+  document.getElementById('undo').onclick=undo;document.getElementById('redo').onclick=redo;
+
+  // ---- 키보드 단축키 ----
+  var copied=null;
+  document.addEventListener('keydown',function(e){
+    if(/INPUT|SELECT|TEXTAREA/.test((e.target||{}).tagName||''))return;
+    var o=active();
+    if((e.key==='Delete'||e.key==='Backspace')&&o&&!o.isEditing){canvas.remove(o);canvas.requestRenderAll();panel.classList.remove('on');e.preventDefault();return;}
+    if(e.ctrlKey||e.metaKey){
+      var k=(e.key||'').toLowerCase();
+      if(k==='z'){e.preventDefault();undo();}
+      else if(k==='y'){e.preventDefault();redo();}
+      else if(k==='c'&&o){copied=o;}
+      else if(k==='v'&&copied){e.preventDefault();copied.clone(function(c){c.set({left:copied.left+24,top:copied.top+24});canvas.add(c);canvas.setActiveObject(c);canvas.requestRenderAll();});}
+      else if(k==='d'&&o){e.preventDefault();o.clone(function(c){c.set({left:o.left+24,top:o.top+24});canvas.add(c);canvas.setActiveObject(c);canvas.requestRenderAll();});}
+      return;
+    }
+    if(o&&!o.isEditing){var s=e.shiftKey?10:1;var mv={ArrowLeft:['left',-s],ArrowRight:['left',s],ArrowUp:['top',-s],ArrowDown:['top',s]}[e.key];if(mv){o.set(mv[0],o[mv[0]]+mv[1]);o.setCoords();canvas.requestRenderAll();e.preventDefault();}}
+  });
 
   // ---- 선택 패널 동기화 ----
   function syncPanel(){
@@ -116,16 +157,20 @@
     if(!o){panel.classList.remove('on');return;}
     panel.classList.add('on');
     var isText=o.type==='i-text'||o.type==='text'||o.type==='textbox';
+    var isShape=/^(rect|circle|triangle|polygon|line|ellipse|path)$/.test(o.type);
     document.getElementById('fontGrp').style.display=isText?'':'none';
     document.getElementById('sizeGrp').style.display=isText?'':'none';
     document.getElementById('weightGrp').style.display=isText?'':'none';
-    document.getElementById('fill').parentElement.style.display=isText?'':'none';
+    document.getElementById('fxGrp').style.display=isText?'':'none';
+    document.getElementById('fill').parentElement.style.display=(isText||isShape)?'':'none';
     if(isText){
       document.getElementById('fontFamily').value=o.fontFamily||'Pretendard';
       document.getElementById('fontSize').value=Math.round(o.fontSize||40);
-      document.getElementById('fill').value=fabric.Color?(toHex(o.fill)):'#241a14';
       document.getElementById('bold').classList.toggle('act',(o.fontWeight==='700'||o.fontWeight==='bold'||Number(o.fontWeight)>=600));
+      document.getElementById('shadow').classList.toggle('act',!!o.shadow);
+      document.getElementById('stroke').classList.toggle('act',!!(o.stroke&&o.strokeWidth));
     }
+    if(isText||isShape){document.getElementById('fill').value=toHex(o.type==='line'?o.stroke:o.fill);}
     document.getElementById('opacity').value=Math.round((o.opacity==null?1:o.opacity)*100);
   }
   function toHex(c){try{return new fabric.Color(c).toHexa().slice(0,7);}catch(e){return '#241a14';}}
@@ -136,10 +181,12 @@
   function setActive(prop,val){var o=active();if(!o)return;o.set(prop,val);canvas.requestRenderAll();}
   document.getElementById('fontFamily').onchange=function(e){var fam=e.target.value;loadFont(fam,function(){setActive('fontFamily',fam);});};
   document.getElementById('fontSize').oninput=function(e){setActive('fontSize',parseInt(e.target.value,10)||40);};
-  document.getElementById('fill').oninput=function(e){setActive('fill',e.target.value);};
+  document.getElementById('fill').oninput=function(e){var o=active();if(!o)return;if(o.type==='line')o.set('stroke',e.target.value);else o.set('fill',e.target.value);canvas.requestRenderAll();};
   document.getElementById('opacity').oninput=function(e){setActive('opacity',(parseInt(e.target.value,10)||0)/100);};
   document.getElementById('bold').onclick=function(){var o=active();if(!o)return;var b=(o.fontWeight==='700'||o.fontWeight==='bold');o.set('fontWeight',b?'400':'700');this.classList.toggle('act',!b);canvas.requestRenderAll();};
   document.getElementById('align').onclick=function(){var o=active();if(!o||!o.set)return;var seq=['left','center','right'];var cur=o.textAlign||'left';var nx=seq[(seq.indexOf(cur)+1)%3];o.set('textAlign',nx);canvas.requestRenderAll();};
+  document.getElementById('shadow').onclick=function(){var o=active();if(!o)return;if(o.shadow){o.set('shadow',null);this.classList.remove('act');}else{o.set('shadow',new fabric.Shadow({color:'rgba(0,0,0,0.45)',blur:8,offsetX:0,offsetY:3}));this.classList.add('act');}canvas.requestRenderAll();};
+  document.getElementById('stroke').onclick=function(){var o=active();if(!o)return;if(o.stroke&&o.strokeWidth){o.set({stroke:null,strokeWidth:0});this.classList.remove('act');}else{o.set({stroke:'#ffffff',strokeWidth:2,paintFirst:'stroke'});this.classList.add('act');}canvas.requestRenderAll();};
 
   // 웹폰트 로드 후 적용(fabric은 폰트 로드돼야 정확 렌더)
   function loadFont(fam,cb){if(fam==='Pretendard'){cb();return;}if(document.fonts&&document.fonts.load){document.fonts.load('40px "'+fam+'"').then(function(){canvas.requestRenderAll();cb();}).catch(cb);}else cb();}
@@ -170,8 +217,9 @@
   // 미니 토스트
   function toast(msg){var d=document.createElement('div');d.textContent=msg;d.style.cssText='position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#241a14;color:#fff;padding:11px 18px;border-radius:980px;font-size:13px;font-weight:600;z-index:200;box-shadow:0 6px 20px rgba(0,0,0,.25)';document.body.appendChild(d);setTimeout(function(){d.style.transition='opacity .4s';d.style.opacity='0';setTimeout(function(){d.remove();},400);},1600);}
 
-  // 시작 시 자동 복구
+  // 시작 시 자동 복구 + 초기 히스토리 기준점
   try{var saved=localStorage.getItem(KEY);if(saved){loadJSON(saved);}}catch(e){}
+  setTimeout(function(){history=[JSON.stringify(canvas.toJSON())];hi=0;},600);
 })();
 </script>
 </body>
