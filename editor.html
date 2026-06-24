@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>루미 상세페이지 에디터</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Do+Hyeon&family=Jua&family=Gowun+Dodum&family=Nanum+Pen+Script&family=Gaegu&family=Sunflower:wght@500;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--pink:#C8507A;--ink:#241a14;--line:#e7ded2;--bg:#f3efe9;--mut:#8a7d70}
+  body{font-family:'Pretendard',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  .topbar{position:sticky;top:0;z-index:50;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:6px;padding:8px 10px;flex-wrap:wrap}
+  .logo{font-weight:800;font-size:17px;margin-right:6px}.logo span{color:var(--pink)}
+  .tb{display:flex;gap:6px;flex-wrap:wrap;flex:1}
+  .btn{border:1px solid var(--line);background:#fff;border-radius:9px;padding:9px 12px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;transition:.12s}
+  .btn:hover{border-color:var(--pink);color:var(--pink)}
+  .btn.solid{background:var(--pink);color:#fff;border-color:var(--pink)}
+  .btn.solid:hover{filter:brightness(.94);color:#fff}
+  .stage{display:flex;justify-content:center;padding:22px 10px 120px}
+  .canvas-wrap{box-shadow:0 8px 40px rgba(80,55,35,.13);background:#fff;border-radius:4px;overflow:hidden}
+  /* 선택 객체 편집 패널 (하단 고정) */
+  .panel{position:fixed;left:0;right:0;bottom:0;z-index:60;background:#fff;border-top:1px solid var(--line);box-shadow:0 -6px 24px rgba(0,0,0,.08);padding:10px 12px;display:none;gap:8px;align-items:center;flex-wrap:wrap}
+  .panel.on{display:flex}
+  .panel .grp{display:flex;align-items:center;gap:6px}
+  .panel label{font-size:11px;color:var(--mut);font-weight:600}
+  .panel select,.panel input[type=number]{border:1px solid var(--line);border-radius:8px;padding:7px 8px;font-size:13px;font-family:inherit;background:#fafafa}
+  .panel input[type=color]{width:34px;height:34px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer;padding:2px}
+  .chip{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 10px;font-size:13px;font-weight:700;cursor:pointer}
+  .chip.act{background:var(--pink);color:#fff;border-color:var(--pink)}
+  .hint{font-size:12px;color:var(--mut);text-align:center;padding:6px}
+  .divider{width:1px;height:26px;background:var(--line);margin:0 2px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">lumi<span>.</span> 에디터</div>
+  <div class="tb">
+    <button class="btn" id="addText">＋ 글자</button>
+    <button class="btn" id="addImg">＋ 사진</button>
+    <span class="divider"></span>
+    <button class="btn" id="dup">복제</button>
+    <button class="btn" id="front">맨 앞</button>
+    <button class="btn" id="back">맨 뒤</button>
+    <button class="btn" id="del">삭제</button>
+    <span class="divider"></span>
+    <button class="btn" id="taller">캔버스 늘리기</button>
+    <span class="divider"></span>
+    <button class="btn" id="save">저장</button>
+    <button class="btn" id="load">불러오기</button>
+    <button class="btn solid" id="export">PNG 내보내기</button>
+  </div>
+</div>
+
+<div class="hint">글자를 더블클릭하면 내용 수정 · 끌어서 이동 · 모서리로 크기조절 · 아래 패널에서 폰트·색 변경</div>
+
+<div class="stage"><div class="canvas-wrap"><canvas id="c" width="720" height="1600"></canvas></div></div>
+
+<!-- 선택 객체 편집 패널 -->
+<div class="panel" id="panel">
+  <div class="grp" id="fontGrp">
+    <label>폰트</label>
+    <select id="fontFamily">
+      <option value="Pretendard">프리텐다드(기본)</option>
+      <option value="Black Han Sans">검은고딕(임팩트)</option>
+      <option value="Do Hyeon">도현체</option>
+      <option value="Jua">주아체(둥근)</option>
+      <option value="Gowun Dodum">고운돋움</option>
+      <option value="Sunflower">선플라워</option>
+      <option value="Nanum Pen Script">나눔손글씨</option>
+      <option value="Gaegu">개구체</option>
+    </select>
+  </div>
+  <div class="grp" id="sizeGrp"><label>크기</label><input type="number" id="fontSize" min="8" max="200" value="40" style="width:64px"></div>
+  <div class="grp"><label>색</label><input type="color" id="fill" value="#241a14"></div>
+  <div class="grp" id="weightGrp"><span class="chip" id="bold">B</span><span class="chip" id="align">정렬</span></div>
+  <div class="grp"><label>투명도</label><input type="number" id="opacity" min="0" max="100" value="100" style="width:60px"></div>
+</div>
+
+<script>
+(function(){
+  if(typeof fabric==='undefined'){document.body.innerHTML='<p style="padding:40px;text-align:center">에디터 로딩 실패 — 인터넷 연결을 확인해 주세요.</p>';return;}
+  var canvas=new fabric.Canvas('c',{backgroundColor:'#ffffff',preserveObjectStacking:true});
+  var panel=document.getElementById('panel');
+
+  // ---- 객체 추가 ----
+  document.getElementById('addText').onclick=function(){
+    var t=new fabric.IText('두 번 눌러 수정',{left:80,top:canvas.getHeight()/2-30,fontFamily:'Pretendard',fontSize:40,fill:'#241a14',fontWeight:'700'});
+    canvas.add(t);canvas.setActiveObject(t);canvas.requestRenderAll();
+  };
+  document.getElementById('addImg').onclick=function(){
+    var inp=document.createElement('input');inp.type='file';inp.accept='image/*';
+    inp.onchange=function(){var f=inp.files[0];if(!f)return;var fr=new FileReader();fr.onload=function(){
+      fabric.Image.fromURL(fr.result,function(img){
+        var maxW=canvas.getWidth()*0.9; if(img.width>maxW)img.scaleToWidth(maxW);
+        img.set({left:(canvas.getWidth()-img.getScaledWidth())/2,top:60});
+        canvas.add(img);canvas.setActiveObject(img);canvas.requestRenderAll();
+      });
+    };fr.readAsDataURL(f);};
+    inp.click();
+  };
+
+  // ---- 레이어/편집 ----
+  function active(){return canvas.getActiveObject();}
+  document.getElementById('del').onclick=function(){var o=active();if(o){canvas.remove(o);canvas.requestRenderAll();panel.classList.remove('on');}};
+  document.getElementById('dup').onclick=function(){var o=active();if(!o)return;o.clone(function(c){c.set({left:o.left+24,top:o.top+24});canvas.add(c);canvas.setActiveObject(c);canvas.requestRenderAll();});};
+  document.getElementById('front').onclick=function(){var o=active();if(o){canvas.bringToFront(o);canvas.requestRenderAll();}};
+  document.getElementById('back').onclick=function(){var o=active();if(o){canvas.sendToBack(o);canvas.requestRenderAll();}};
+  document.getElementById('taller').onclick=function(){canvas.setHeight(canvas.getHeight()+800);canvas.requestRenderAll();};
+
+  // ---- 선택 패널 동기화 ----
+  function syncPanel(){
+    var o=active();
+    if(!o){panel.classList.remove('on');return;}
+    panel.classList.add('on');
+    var isText=o.type==='i-text'||o.type==='text'||o.type==='textbox';
+    document.getElementById('fontGrp').style.display=isText?'':'none';
+    document.getElementById('sizeGrp').style.display=isText?'':'none';
+    document.getElementById('weightGrp').style.display=isText?'':'none';
+    document.getElementById('fill').parentElement.style.display=isText?'':'none';
+    if(isText){
+      document.getElementById('fontFamily').value=o.fontFamily||'Pretendard';
+      document.getElementById('fontSize').value=Math.round(o.fontSize||40);
+      document.getElementById('fill').value=fabric.Color?(toHex(o.fill)):'#241a14';
+      document.getElementById('bold').classList.toggle('act',(o.fontWeight==='700'||o.fontWeight==='bold'||Number(o.fontWeight)>=600));
+    }
+    document.getElementById('opacity').value=Math.round((o.opacity==null?1:o.opacity)*100);
+  }
+  function toHex(c){try{return new fabric.Color(c).toHexa().slice(0,7);}catch(e){return '#241a14';}}
+  canvas.on('selection:created',syncPanel);
+  canvas.on('selection:updated',syncPanel);
+  canvas.on('selection:cleared',function(){panel.classList.remove('on');});
+
+  function setActive(prop,val){var o=active();if(!o)return;o.set(prop,val);canvas.requestRenderAll();}
+  document.getElementById('fontFamily').onchange=function(e){var fam=e.target.value;loadFont(fam,function(){setActive('fontFamily',fam);});};
+  document.getElementById('fontSize').oninput=function(e){setActive('fontSize',parseInt(e.target.value,10)||40);};
+  document.getElementById('fill').oninput=function(e){setActive('fill',e.target.value);};
+  document.getElementById('opacity').oninput=function(e){setActive('opacity',(parseInt(e.target.value,10)||0)/100);};
+  document.getElementById('bold').onclick=function(){var o=active();if(!o)return;var b=(o.fontWeight==='700'||o.fontWeight==='bold');o.set('fontWeight',b?'400':'700');this.classList.toggle('act',!b);canvas.requestRenderAll();};
+  document.getElementById('align').onclick=function(){var o=active();if(!o||!o.set)return;var seq=['left','center','right'];var cur=o.textAlign||'left';var nx=seq[(seq.indexOf(cur)+1)%3];o.set('textAlign',nx);canvas.requestRenderAll();};
+
+  // 웹폰트 로드 후 적용(fabric은 폰트 로드돼야 정확 렌더)
+  function loadFont(fam,cb){if(fam==='Pretendard'){cb();return;}if(document.fonts&&document.fonts.load){document.fonts.load('40px "'+fam+'"').then(function(){canvas.requestRenderAll();cb();}).catch(cb);}else cb();}
+
+  // ---- 저장/불러오기/내보내기 ----
+  var KEY='lumi_editor_design';
+  function design(){return JSON.stringify(canvas.toJSON());}
+  document.getElementById('save').onclick=function(){
+    var json=design();
+    try{localStorage.setItem(KEY,json);}catch(e){}
+    var blob=new Blob([json],{type:'application/json'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='상세페이지_디자인.json';a.click();
+    toast('저장됐어요 (브라우저 + 파일)');
+  };
+  document.getElementById('load').onclick=function(){
+    var inp=document.createElement('input');inp.type='file';inp.accept='application/json';
+    inp.onchange=function(){var f=inp.files[0];if(!f){tryLocal();return;}var fr=new FileReader();fr.onload=function(){loadJSON(fr.result);};fr.readAsText(f);};
+    // 파일 안 고르고 닫으면 로컬 시도
+    inp.click();
+  };
+  function tryLocal(){var j=localStorage.getItem(KEY);if(j)loadJSON(j);else toast('저장된 디자인이 없어요');}
+  function loadJSON(j){try{var o=JSON.parse(j);canvas.loadFromJSON(o,function(){canvas.requestRenderAll();toast('불러왔어요');});}catch(e){toast('불러오기 실패');}}
+  document.getElementById('export').onclick=function(){
+    canvas.discardActiveObject();canvas.requestRenderAll();
+    var url=canvas.toDataURL({format:'png',multiplier:2});
+    var a=document.createElement('a');a.href=url;a.download='상세페이지.png';a.click();
+  };
+
+  // 미니 토스트
+  function toast(msg){var d=document.createElement('div');d.textContent=msg;d.style.cssText='position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#241a14;color:#fff;padding:11px 18px;border-radius:980px;font-size:13px;font-weight:600;z-index:200;box-shadow:0 6px 20px rgba(0,0,0,.25)';document.body.appendChild(d);setTimeout(function(){d.style.transition='opacity .4s';d.style.opacity='0';setTimeout(function(){d.remove();},400);},1600);}
+
+  // 시작 시 자동 복구
+  try{var saved=localStorage.getItem(KEY);if(saved){loadJSON(saved);}}catch(e){}
+})();
+</script>
+</body>
+</html>
