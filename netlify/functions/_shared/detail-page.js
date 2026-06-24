@@ -377,4 +377,134 @@ function assembleCutPage(cuts, palette) {
   return '<div style="max-width:1024px;margin:0 auto;background:#fff;font-family:Pretendard,-apple-system,system-ui,sans-serif;">' + h + '</div>';
 }
 
-module.exports = { generateDetailPage, buildHtml, analyzeProductImages, distinctImages, generateAiPhoto, photoPrompt, cutPlan, assembleCutPage, accentPalette, extractProductTitle, SYS, esc };
+// ===== 블록 기반 편집가능 상세페이지 (제디터/캔바식: 이미지 슬롯 + 진짜 편집되는 텍스트 레이어) =====
+// 핵심 전환: AI 사진은 "글자 없는 깨끗한 화보"(이미지 슬롯), 텍스트는 전부 HTML 블록 레이어
+//   → 퀄리티(화보) + 편집(텍스트) 동시. 글자를 이미지에 굽던 cutPlan/assembleCutPage 방식의 편집불가 문제 해소.
+// 블록 = { type, ...fields }. renderBlocks가 HTML 생성, 편집 텍스트에 data-b(블록 인덱스)/data-f(필드)/data-i(배열 항목) 마킹 → 에디터가 역매핑해 저장.
+
+// 글자 없는 연출 화보 프롬프트(컷마다 다른 앵글). cutPlan과 달리 텍스트를 굽지 않는다 — 편집은 HTML 레이어가 담당.
+function scenePlan(product, copy) {
+  const colors = [...new Set((product.options || []).map((o) => String(o).replace(/\(.*?\)/g, '').replace(/[[\]]/g, '').trim()).filter(Boolean))].slice(0, 6);
+  const BASE = 'Premium Korean e-commerce lifestyle product photo. Keep THIS exact product faithful in shape, color and material. Clean tasteful real-life scene, soft natural light, minimal complementary props matching the product mood. ABSOLUTELY NO text, NO korean letters, NO captions, NO badges, NO logo, NO website UI anywhere in the image. Photorealistic high-end commercial photography, vertical. ';
+  const plan = [
+    { key: 'hero', prompt: BASE + 'HERO: the product as centerpiece at a dynamic three-quarter tilted angle, styled tabletop, editorial mood.' },
+    { key: 'scene', prompt: BASE + 'LIFESTYLE: a person naturally using or holding this exact product, eye-level candid, hand visible, warm authentic mood.' },
+    { key: 'detail', prompt: BASE + 'DETAIL: extreme close-up macro of the product key parts, shallow depth of field, premium texture.' },
+    { key: 'benefit', prompt: BASE + 'TOP-DOWN flat-lay of the product neatly arranged with a few tasteful props, clean negative space.' },
+  ];
+  if (colors.length >= 2) plan.push({ key: 'color', prompt: BASE + 'COLOR LINEUP: this exact product shown in several real colors arranged neatly in a row.' });
+  return plan;
+}
+
+// 스펙 행 데이터만 추출(specRows의 HTML 생성 전 단계). 블록 모델용.
+function specRowsData(spec) {
+  const rows = [];
+  if (spec) {
+    if (spec.size && /[x×*]/i.test(String(spec.size))) rows.push(['크기', String(spec.size).replace(/[xX*]/g, ' × ') + ' cm']);
+    if (spec.weight && /^[0-9.]+$/.test(String(spec.weight)) && parseFloat(spec.weight) > 0) rows.push(['무게', String(spec.weight) + ' kg']);
+    if (spec.model) rows.push(['모델명', spec.model]);
+    if (spec.country) rows.push(['원산지', String(spec.country).replace(/_/g, ' ')]);
+    if (spec.manufacturer) rows.push(['제조/수입', spec.manufacturer]);
+    if (spec.kc && spec.kc.length) rows.push(['인증', spec.kc.join(', ')]);
+  }
+  return rows;
+}
+
+// 카피(copy) + 글자없는 화보(scenes=[{key,img}]) → 편집가능 블록 배열. 컷 흐름 순서대로.
+function copyToBlocks(product, copy, scenes) {
+  const c = copy || {};
+  const byKey = {};
+  (scenes || []).forEach((s) => { if (s && s.img) byKey[s.key] = s.img; });
+  const sections = Array.isArray(c.sections) ? c.sections : [];
+  const blocks = [];
+  blocks.push({ type: 'hero', image: byKey.hero || null, eyebrow: '', headline: c.heroHeadline || c.seoTitle || product.title, sub: c.heroSub || '' });
+  if (Array.isArray(c.concerns) && c.concerns.length) blocks.push({ type: 'concern', eyebrow: 'Your Concern', headline: '혹시, 이런 고민 있으셨나요?', items: c.concerns });
+  if (byKey.scene || (sections[0])) blocks.push({ type: 'scene', image: byKey.scene || null, eyebrow: '', headline: (sections[0] && sections[0].headline) || '일상 속에서', body: (sections[0] && sections[0].body) || '' });
+  if (Array.isArray(c.benefits) && c.benefits.length) blocks.push({ type: 'benefit', eyebrow: 'Why It Matters', headline: '이런 점이 다릅니다', items: c.benefits });
+  if (byKey.detail) blocks.push({ type: 'image', image: byKey.detail });
+  if (c.comparison && Array.isArray(c.comparison.points) && c.comparison.points.length) blocks.push({ type: 'comparison', headline: c.comparison.headline || '왜 이 제품일까요?', points: c.comparison.points });
+  if (byKey.color) blocks.push({ type: 'image', image: byKey.color });
+  sections.slice(1).forEach((s) => blocks.push({ type: 'scene', image: byKey.benefit || null, eyebrow: '', headline: s.headline || '', body: s.body || '' }));
+  const rows = specRowsData(product.spec);
+  if (rows.length) blocks.push({ type: 'spec', rows });
+  if (Array.isArray(c.faq) && c.faq.length) blocks.push({ type: 'faq', headline: '자주 묻는 질문', items: c.faq });
+  if (c.closing) blocks.push({ type: 'cta', headline: c.closing });
+  return blocks;
+}
+
+// 단일 블록 → HTML. 편집 텍스트엔 data-b/data-f(/data-i) 마킹. buildHtml의 검증된 에디토리얼 스타일 재사용.
+function renderBlock(b, i, pal) {
+  const p = pal || {};
+  const ACC = p.accent || A, T = p.ink || INK, SOFT = p.soft || PAPER;
+  const E = (f, tag, style, val) => (val != null && val !== '') ? '<' + tag + ' data-b="' + i + '" data-f="' + f + '" style="' + style + '">' + esc(val) + '</' + tag + '>' : '';
+  const EI = (f, ii, tag, style, val) => '<' + tag + ' data-b="' + i + '" data-f="' + f + '" data-i="' + ii + '" style="' + style + '">' + esc(val) + '</' + tag + '>';
+  const eb = (f, val) => val ? '<p data-b="' + i + '" data-f="' + f + '" style="font-size:12px;font-weight:700;letter-spacing:2.5px;color:' + ACC + ';margin:0 0 16px;text-transform:uppercase;">' + esc(val) + '</p>' : '';
+  const img = (src) => src ? '<img src="' + (/^https?:|^data:/.test(src) ? esc(src) : ('data:image/png;base64,' + src)) + '" alt="" style="width:100%;display:block;">' : '';
+  switch (b.type) {
+    case 'hero':
+      return img(b.image)
+        + '<div style="padding:58px 32px 50px;text-align:center;background:' + SOFT + ';">'
+        + '<div style="width:36px;height:2px;background:' + ACC + ';margin:0 auto 22px;"></div>'
+        + E('headline', 'h1', 'font-size:33px;font-weight:800;letter-spacing:-1px;line-height:1.28;margin:0 0 18px;color:' + T + ';', b.headline)
+        + E('sub', 'p', 'font-size:16px;color:' + MUT + ';line-height:1.75;margin:0 auto;max-width:430px;', b.sub)
+        + '</div>';
+    case 'concern':
+      return '<div style="padding:56px 34px;text-align:center;">' + eb('eyebrow', b.eyebrow)
+        + E('headline', 'h2', 'font-size:24px;font-weight:800;letter-spacing:-0.6px;color:' + T + ';margin:0 0 28px;line-height:1.4;', b.headline)
+        + '<div style="max-width:460px;margin:0 auto;">'
+        + (b.items || []).map((x, ii) => EI('items', ii, 'p', 'font-size:17px;color:#544c44;line-height:1.6;margin:0;padding:18px 0;' + (ii ? 'border-top:1px solid ' + LINE + ';' : ''), x)).join('')
+        + '</div></div>';
+    case 'benefit':
+      return '<div style="padding:56px 34px;background:' + SOFT + ';"><div style="text-align:center;">' + eb('eyebrow', b.eyebrow)
+        + E('headline', 'h2', 'font-size:24px;font-weight:800;letter-spacing:-0.6px;color:' + T + ';margin:0 0 32px;', b.headline) + '</div>'
+        + '<div style="max-width:480px;margin:0 auto;">'
+        + (b.items || []).map((x, ii) => '<div style="display:flex;gap:18px;align-items:baseline;padding:18px 0;' + (ii ? 'border-top:1px solid ' + LINE + ';' : '') + '">'
+          + '<span style="flex:0 0 auto;font-size:15px;font-weight:800;color:' + ACC + ';letter-spacing:0.5px;">' + String(ii + 1).padStart(2, '0') + '</span>'
+          + EI('items', ii, 'span', 'font-size:17px;color:' + T + ';line-height:1.55;font-weight:500;', x) + '</div>').join('')
+        + '</div></div>';
+    case 'scene':
+      return img(b.image)
+        + '<div style="padding:50px 34px;">' + eb('eyebrow', b.eyebrow)
+        + E('headline', 'h2', 'font-size:25px;font-weight:800;color:' + T + ';margin:0 0 14px;line-height:1.35;letter-spacing:-0.5px;', b.headline)
+        + E('body', 'p', 'font-size:16px;color:#5f574e;line-height:1.9;margin:0;white-space:pre-line;', b.body)
+        + '</div>';
+    case 'image':
+      return img(b.image);
+    case 'comparison':
+      return '<div style="padding:56px 34px;background:' + INK + ';color:#fff;text-align:center;">'
+        + '<p style="font-size:12px;font-weight:700;letter-spacing:2.5px;color:' + ACC + ';margin:0 0 16px;text-transform:uppercase;">The Difference</p>'
+        + E('headline', 'h2', 'font-size:24px;font-weight:800;letter-spacing:-0.6px;margin:0 0 30px;color:#fff;', b.headline)
+        + '<div style="max-width:460px;margin:0 auto;">'
+        + (b.points || []).map((x, ii) => EI('points', ii, 'p', 'font-size:16.5px;color:#e8e2da;line-height:1.6;margin:0;padding:17px 0;' + (ii ? 'border-top:1px solid rgba(255,255,255,0.12);' : ''), x)).join('')
+        + '</div></div>';
+    case 'spec':
+      return '<div style="padding:52px 34px;">' + eb('eyebrow', 'Product Info')
+        + '<h2 style="font-size:22px;font-weight:800;letter-spacing:-0.5px;color:' + T + ';margin:0 0 18px;">제품 정보</h2>'
+        + '<div style="border-bottom:1px solid ' + LINE + ';">'
+        + (b.rows || []).map((r) => '<div style="display:flex;justify-content:space-between;gap:20px;padding:15px 0;border-top:1px solid ' + LINE + ';">'
+          + '<span style="font-size:14px;color:' + MUT + ';">' + esc(r[0]) + '</span>'
+          + '<span style="font-size:14px;color:' + T + ';font-weight:500;text-align:right;">' + esc(r[1]) + '</span></div>').join('')
+        + '</div></div>';
+    case 'faq':
+      return '<div style="padding:50px 34px;background:' + SOFT + ';">' + eb('eyebrow', 'FAQ')
+        + E('headline', 'h2', 'font-size:22px;font-weight:800;color:' + T + ';margin:0 0 20px;letter-spacing:-0.5px;', b.headline)
+        + (b.items || []).map((f, ii) => '<div style="padding:18px 0;' + (ii ? 'border-top:1px solid ' + LINE + ';' : '') + '">'
+          + '<p data-b="' + i + '" data-f="faq.q" data-i="' + ii + '" style="font-size:16px;font-weight:700;color:' + T + ';margin:0 0 8px;">' + esc(f.q) + '</p>'
+          + '<p data-b="' + i + '" data-f="faq.a" data-i="' + ii + '" style="font-size:14.5px;color:#6b6259;margin:0;line-height:1.75;">' + esc(f.a) + '</p></div>').join('')
+        + '</div>';
+    case 'cta':
+      return '<div style="background:' + INK + ';color:#fff;padding:60px 34px;text-align:center;">'
+        + '<div style="width:36px;height:2px;background:' + ACC + ';margin:0 auto 24px;"></div>'
+        + E('headline', 'p', 'font-size:21px;font-weight:700;margin:0;line-height:1.55;letter-spacing:-0.3px;', b.headline) + '</div>';
+    default:
+      return '';
+  }
+}
+
+// 블록 배열 → 풀 상세페이지 HTML. 각 블록은 <section data-block> 래퍼(에디터가 블록 단위로 조작).
+function renderBlocks(blocks, palette) {
+  const inner = (blocks || []).map((b, i) => '<section data-block="' + i + '" data-type="' + esc(b.type) + '">' + renderBlock(b, i, palette) + '</section>').join('');
+  return '<div class="lumi-detail" style="max-width:720px;margin:0 auto;font-family:Pretendard,-apple-system,system-ui,sans-serif;background:#fff;color:' + INK + ';line-height:1.6;">' + inner + '</div>';
+}
+
+module.exports = { generateDetailPage, buildHtml, analyzeProductImages, distinctImages, generateAiPhoto, photoPrompt, cutPlan, assembleCutPage, accentPalette, extractProductTitle, SYS, esc, scenePlan, specRowsData, copyToBlocks, renderBlock, renderBlocks };
