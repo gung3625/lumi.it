@@ -147,15 +147,11 @@
       <div class="hint">주소를 넣으면 AI가 페이지를 읽어 분석합니다. 안 열리는 사이트는 사진으로 안내해 드려요.</div>
     </div>
     <div id="m-upload" style="display:none;">
-      <label for="mainimg">상품 사진 <span style="color:#C8507A;">*</span></label>
-      <input type="file" id="mainimg" accept="image/*" style="width:100%;">
-      <div class="hint">사진을 올리면 AI가 정보를 읽어 분석합니다. <b>다음 단계에서 확인·수정</b>할 수 있어요.</div>
-      <details style="margin-top:12px;"><summary style="cursor:pointer;color:#C8507A;font-size:14px;font-weight:600;">+ 상품 페이지를 통째로 캡처해 올리기 (정보 더 정확)</summary>
-        <div id="pastebox" tabindex="0" style="margin-top:10px;border:2px dashed #C8507A;border-radius:8px;padding:14px;text-align:center;color:#C8507A;cursor:pointer;font-size:13px;outline:none;">클릭 후 <b>Cmd+V</b>로 캡처 붙여넣기</div>
-        <div id="cappreview" style="margin-top:8px;"></div>
-        <input type="file" id="capimg" accept="image/*" style="width:100%;margin-top:8px;">
-        <div class="hint">전체 페이지 캡처는 <a href="https://chromewebstore.google.com/detail/fdpohaocaechififmbbbbbknoalclacl" target="_blank" style="color:#C8507A;">GoFullPage</a>(무료) 추천.</div>
-      </details>
+      <label for="mainimg">상품 사진 또는 페이지 캡처 <span style="color:#C8507A;">*</span></label>
+      <div id="pastebox" tabindex="0" style="margin-top:8px;border:2px dashed #C8507A;border-radius:8px;padding:14px;text-align:center;color:#C8507A;cursor:pointer;font-size:13px;outline:none;">클릭 후 <b>Cmd+V</b>로 붙여넣기</div>
+      <div id="cappreview" style="margin-top:8px;"></div>
+      <input type="file" id="mainimg" accept="image/*" style="width:100%;margin-top:8px;">
+      <div class="hint">제품 사진이든 상품페이지 캡처든 <b>1장</b>만 올리면 AI가 정보를 읽고 화보를 만듭니다. 제품이 선명한 사진일수록 화보가 예뻐요. 전체 캡처는 <a href="https://chromewebstore.google.com/detail/fdpohaocaechififmbbbbbknoalclacl" target="_blank" style="color:#C8507A;">GoFullPage</a>(무료) 추천. <b>다음 단계에서 정보 확인·수정</b>할 수 있어요.</div>
     </div>
     <details style="margin-top:10px;"><summary style="cursor:pointer;color:#C8507A;font-size:14px;font-weight:600;">+ 디자인 레퍼런스 (선택 — 맘에 드는 상세페이지 캡처)</summary>
       <div id="refpaste" tabindex="0" style="margin-top:8px;border:2px dashed #C8507A;border-radius:8px;padding:14px;text-align:center;color:#C8507A;cursor:pointer;font-size:13px;outline:none;">클릭 후 <b>Cmd+V</b>로 레퍼런스 붙여넣기</div>
@@ -259,7 +255,7 @@
         if(isRef){
           fr.onload=function(){refData=fr.result;var rp=document.getElementById('refpreview');if(rp)rp.innerHTML='<img src="'+fr.result+'" style="max-width:100%;border-radius:8px;border:1px solid #ddd;display:block;"><div style="font-size:13px;color:#2a9d4a;font-weight:600;margin-top:4px;">레퍼런스 붙여넣기 완료</div>';};
         }else{
-          fr.onload=function(){capturePasted=fr.result;var cp=document.getElementById('cappreview');if(cp)cp.innerHTML='<img src="'+fr.result+'" style="max-width:100%;border-radius:8px;border:1px solid #ddd;display:block;"><div style="font-size:13px;color:#2a9d4a;font-weight:600;margin-top:4px;">캡처 붙여넣기 완료</div>';};
+          fr.onload=function(){capturePasted=fr.result;var cp=document.getElementById('cappreview');if(cp)cp.innerHTML='<img src="'+fr.result+'" style="max-width:100%;border-radius:8px;border:1px solid #ddd;display:block;"><div style="font-size:13px;color:#2a9d4a;font-weight:600;margin-top:4px;">붙여넣기 완료</div>';};
         }
         fr.readAsDataURL(blob);e.preventDefault();break;
       }
@@ -286,22 +282,20 @@
       if(!url){err.textContent='상품 링크를 붙여넣어 주세요.';err.classList.add('on');return;}
       start({url:url,quality:'medium',referenceImageBase64:refData||undefined});
     }else{
-      fileB64('mainimg').then(function(main){
-        if(!main){showErr('상품 사진을 올려주세요.',false);return;}
-        fileB64('capimg').then(function(capf){
-          var cap=capturePasted||capf;
-          pendingMain=main;pendingCap=cap;
-          go.disabled=true;result.classList.remove('on');document.getElementById('analyzebox').style.display='none';
-          setLoad('상품 정보를 분석하는 중...<br>약 30초~1분 걸려요.');loading.classList.add('on');
-          fetch('/api/generate-detail',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({step:'analyze',imageBase64:main,captureBase64:cap||undefined})})
-          .then(function(r){return r.json();}).then(function(a){
-            loading.classList.remove('on');go.disabled=false;
-            if(a.error){showErr(a.error,false);return;}
-            document.getElementById('a-title').value=a.title||'';
-            document.getElementById('a-facts').value=(a.facts||[]).join('\n');
-            var ab=document.getElementById('analyzebox');ab.style.display='block';ab.scrollIntoView({behavior:'smooth'});
-          }).catch(function(){loading.classList.remove('on');go.disabled=false;showErr('분석 중 오류가 발생했어요. 다시 시도해 주세요.',false);});
-        });
+      fileB64('mainimg').then(function(mainf){
+        var main=capturePasted||mainf;
+        if(!main){showErr('상품 사진이나 페이지 캡처를 올려주세요.',false);return;}
+        pendingMain=main;pendingCap=null;
+        go.disabled=true;result.classList.remove('on');document.getElementById('analyzebox').style.display='none';
+        setLoad('상품 정보를 분석하는 중...<br>약 30초~1분 걸려요.');loading.classList.add('on');
+        fetch('/api/generate-detail',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({step:'analyze',imageBase64:main})})
+        .then(function(r){return r.json();}).then(function(a){
+          loading.classList.remove('on');go.disabled=false;
+          if(a.error){showErr(a.error,false);return;}
+          document.getElementById('a-title').value=a.title||'';
+          document.getElementById('a-facts').value=(a.facts||[]).join('\n');
+          var ab=document.getElementById('analyzebox');ab.style.display='block';ab.scrollIntoView({behavior:'smooth'});
+        }).catch(function(){loading.classList.remove('on');go.disabled=false;showErr('분석 중 오류가 발생했어요. 다시 시도해 주세요.',false);});
       });
     }
   });
@@ -321,7 +315,7 @@
     if(!facts.length){showErr('상품 정보를 한 줄 이상 남겨주세요.',false);return;}
     document.getElementById('analyzebox').style.display='none';
     setLoad('AI가 화보·카피·디자인 컷을 만드는 중...<br>약 3~4분 걸려요. 창을 닫지 말고 기다려 주세요.');
-    start({title:t||undefined,facts:facts,imageBase64:pendingMain,captureBase64:pendingCap||undefined,quality:'medium',referenceImageBase64:refData||undefined});
+    start({title:t||undefined,facts:facts,imageBase64:pendingMain,quality:'medium',referenceImageBase64:refData||undefined});
   });
 })();
 </script>
