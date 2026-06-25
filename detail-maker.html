@@ -158,8 +158,10 @@
       </details>
     </div>
     <details style="margin-top:10px;"><summary style="cursor:pointer;color:#C8507A;font-size:14px;font-weight:600;">+ 디자인 레퍼런스 (선택 — 맘에 드는 상세페이지 캡처)</summary>
+      <div id="refpaste" tabindex="0" style="margin-top:8px;border:2px dashed #C8507A;border-radius:8px;padding:14px;text-align:center;color:#C8507A;cursor:pointer;font-size:13px;outline:none;">클릭 후 <b>Cmd+V</b>로 레퍼런스 붙여넣기</div>
+      <div id="refpreview" style="margin-top:8px;"></div>
       <input type="file" id="refimg" accept="image/*" style="width:100%;margin-top:8px;">
-      <div class="hint">올리면 그 <b>색·무드·레이아웃</b>을 참고해 비슷한 느낌으로 만들어요. (실제 사진·문구를 베끼지 않아요)</div>
+      <div class="hint">붙여넣거나 올리면 그 <b>색·무드·레이아웃</b>을 참고해 비슷한 느낌으로 만들어요. (실제 사진·문구를 베끼지 않아요)</div>
     </details>
     <button class="btn" id="go">상세페이지 만들기</button>
     <div id="analyzebox" style="display:none;margin-top:18px;padding:16px;border:1px solid #C8507A;border-radius:8px;">
@@ -244,13 +246,21 @@
   function setLoad(msg){var lm=document.getElementById('loadmsg');if(lm)lm.innerHTML=msg;}
   var pb=document.getElementById('pastebox');
   if(pb)pb.addEventListener('click',function(){pb.focus();pb.style.background='#fdeef4';});
+  var rpb=document.getElementById('refpaste');
+  if(rpb)rpb.addEventListener('click',function(){rpb.focus();rpb.style.background='#fdeef4';});
   document.addEventListener('paste',function(e){
-    if(mode!=='upload')return;
+    var isRef=(document.activeElement===rpb);
+    // 레퍼런스 박스가 활성이면 레퍼런스로(어느 탭이든), 아니면 메인 캡처(업로드 탭일 때만).
+    if(!isRef&&mode!=='upload')return;
     var items=(e.clipboardData||{}).items||[];
     for(var i=0;i<items.length;i++){
       if(items[i].type&&items[i].type.indexOf('image')===0){
         var blob=items[i].getAsFile();var fr=new FileReader();
-        fr.onload=function(){capturePasted=fr.result;var cp=document.getElementById('cappreview');if(cp)cp.innerHTML='<img src="'+fr.result+'" style="max-width:100%;border-radius:8px;border:1px solid #ddd;display:block;"><div style="font-size:13px;color:#2a9d4a;font-weight:600;margin-top:4px;">캡처 붙여넣기 완료</div>';};
+        if(isRef){
+          fr.onload=function(){refData=fr.result;var rp=document.getElementById('refpreview');if(rp)rp.innerHTML='<img src="'+fr.result+'" style="max-width:100%;border-radius:8px;border:1px solid #ddd;display:block;"><div style="font-size:13px;color:#2a9d4a;font-weight:600;margin-top:4px;">레퍼런스 붙여넣기 완료</div>';};
+        }else{
+          fr.onload=function(){capturePasted=fr.result;var cp=document.getElementById('cappreview');if(cp)cp.innerHTML='<img src="'+fr.result+'" style="max-width:100%;border-radius:8px;border:1px solid #ddd;display:block;"><div style="font-size:13px;color:#2a9d4a;font-weight:600;margin-top:4px;">캡처 붙여넣기 완료</div>';};
+        }
         fr.readAsDataURL(blob);e.preventDefault();break;
       }
     }
