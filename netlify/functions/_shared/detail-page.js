@@ -455,7 +455,36 @@ function copyToBlocks(product, copy, scenes) {
   return blocks;
 }
 
-// 단일 블록 → HTML. 편집 텍스트엔 data-b/data-f(/data-i) 마킹. buildHtml의 검증된 에디토리얼 스타일 재사용.
+// 레퍼런스급 아이콘셋(원형 배지용) — receipt 렌더러 아이콘 이식(HTML/SVG, 장식).
+const DICONS = {
+  thermo: '<path d="M14 14.8V5a2 2 0 0 0-4 0v9.8a4 4 0 1 0 4 0z"/><path d="M12 9v6"/>',
+  feather: '<path d="M19 5a6 6 0 0 0-8.5 0L4 11.5V20h8.5L19 13.5A6 6 0 0 0 19 5z"/><path d="M5 19L12 12"/>',
+  droplet: '<path d="M12 3s6 6.4 6 10a6 6 0 1 1-12 0c0-3.6 6-10 6-10z"/>',
+  shield: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
+  leaf: '<path d="M4 20C4 11 11 4 20 4c0 9-7 16-16 16z"/><path d="M5 19c4-6 8-9 13-11"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2.2"/>',
+  bolt: '<path d="M13 2L4 14h6l-1 8 9-12h-6z"/>',
+  check: '<path d="M4 12.5l5 5L20 6.5"/>',
+  sparkle: '<path d="M12 3l2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2z"/>',
+};
+function pickIcon(text, seq) {
+  const s = String(text || '');
+  if (/온도|보온|보냉|단열|따뜻|시원|냉방|난방/.test(s)) return 'thermo';
+  if (/가벼|무게|그립|휴대|슬림|콤팩트|미니|한\s?손/.test(s)) return 'feather';
+  if (/세척|물|방수|위생|청결|관리|먼지/.test(s)) return 'droplet';
+  if (/안전|인증|KC|튼튼|내구|견고|안심|보호/.test(s)) return 'shield';
+  if (/친환경|자연|식물|원목|소재/.test(s)) return 'leaf';
+  if (/시간|오래|지속|충전|배터리|연속/.test(s)) return 'clock';
+  if (/전원|풍량|바람|강력|파워|모터|성능|속도|각도|회전/.test(s)) return 'bolt';
+  if (/간편|편리|손쉽|호환|사용|조작|버튼/.test(s)) return 'check';
+  return ['sparkle', 'shield', 'bolt', 'leaf'][(seq || 0) % 4];
+}
+function iconSvg(name, color, size) {
+  const sz = size || 24;
+  return '<svg viewBox="0 0 24 24" width="' + sz + '" height="' + sz + '" fill="none" stroke="' + color + '" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' + (DICONS[name] || DICONS.sparkle) + '</svg>';
+}
+
+// 단일 블록 → HTML. 편집 텍스트엔 data-b/data-f(/data-i) 마킹. 아이콘 배지·카드·섹션 색교대로 레퍼런스급 디자인.
 function renderBlock(b, i, pal) {
   const p = pal || {};
   const ACC = p.accent || A, T = p.ink || INK, SOFT = p.soft || PAPER;
@@ -466,42 +495,46 @@ function renderBlock(b, i, pal) {
   switch (b.type) {
     case 'hero':
       return img(b.image)
-        + '<div style="padding:58px 32px 50px;text-align:center;background:' + SOFT + ';">'
-        + '<div style="width:36px;height:2px;background:' + ACC + ';margin:0 auto 22px;"></div>'
-        + E('headline', 'h1', 'font-size:33px;font-weight:800;letter-spacing:-1px;line-height:1.28;margin:0 0 18px;color:' + T + ';', b.headline)
-        + E('sub', 'p', 'font-size:16px;color:' + MUT + ';line-height:1.75;margin:0 auto;max-width:430px;', b.sub)
+        + '<div style="padding:60px 32px 54px;text-align:center;background:' + SOFT + ';">'
+        + '<div style="width:40px;height:3px;background:' + ACC + ';margin:0 auto 24px;border-radius:2px;"></div>'
+        + E('headline', 'h1', 'font-size:clamp(28px,6vw,38px);font-weight:800;letter-spacing:-1.2px;line-height:1.25;margin:0 0 18px;color:' + T + ';', b.headline)
+        + E('sub', 'p', 'font-size:17px;color:' + MUT + ';line-height:1.7;margin:0 auto;max-width:440px;', b.sub)
         + '</div>';
     case 'concern':
-      return '<div style="padding:56px 34px;text-align:center;">' + eb('eyebrow', b.eyebrow)
-        + E('headline', 'h2', 'font-size:24px;font-weight:800;letter-spacing:-0.6px;color:' + T + ';margin:0 0 28px;line-height:1.4;', b.headline)
-        + '<div style="max-width:460px;margin:0 auto;">'
-        + (b.items || []).map((x, ii) => EI('items', ii, 'p', 'font-size:17px;color:#544c44;line-height:1.6;margin:0;padding:18px 0;' + (ii ? 'border-top:1px solid ' + LINE + ';' : ''), x)).join('')
+      return '<div style="padding:60px 34px;text-align:center;">' + eb('eyebrow', b.eyebrow)
+        + E('headline', 'h2', 'font-size:clamp(22px,5vw,28px);font-weight:800;letter-spacing:-0.6px;color:' + T + ';margin:0 0 32px;line-height:1.4;', b.headline)
+        + '<div style="max-width:460px;margin:0 auto;text-align:left;">'
+        + (b.items || []).map((x, ii) => '<div style="display:flex;gap:14px;align-items:flex-start;padding:16px 0;' + (ii ? 'border-top:1px solid ' + LINE + ';' : '') + '">'
+          + '<span style="flex:0 0 auto;width:26px;height:26px;border-radius:50%;background:' + SOFT + ';display:inline-flex;align-items:center;justify-content:center;margin-top:1px;">' + iconSvg('check', ACC, 15) + '</span>'
+          + EI('items', ii, 'span', 'font-size:16.5px;color:#544c44;line-height:1.6;', x) + '</div>').join('')
         + '</div></div>';
     case 'benefit':
-      return '<div style="padding:56px 34px;background:' + SOFT + ';"><div style="text-align:center;">' + eb('eyebrow', b.eyebrow)
-        + E('headline', 'h2', 'font-size:24px;font-weight:800;letter-spacing:-0.6px;color:' + T + ';margin:0 0 32px;', b.headline) + '</div>'
-        + '<div style="max-width:480px;margin:0 auto;">'
-        + (b.items || []).map((x, ii) => '<div style="display:flex;gap:18px;align-items:baseline;padding:18px 0;' + (ii ? 'border-top:1px solid ' + LINE + ';' : '') + '">'
-          + '<span style="flex:0 0 auto;font-size:15px;font-weight:800;color:' + ACC + ';letter-spacing:0.5px;">' + String(ii + 1).padStart(2, '0') + '</span>'
-          + EI('items', ii, 'span', 'font-size:17px;color:' + T + ';line-height:1.55;font-weight:500;', x) + '</div>').join('')
+      return '<div style="padding:60px 30px;background:' + SOFT + ';"><div style="text-align:center;margin-bottom:38px;">' + eb('eyebrow', b.eyebrow)
+        + E('headline', 'h2', 'font-size:clamp(22px,5vw,28px);font-weight:800;letter-spacing:-0.6px;color:' + T + ';margin:0;', b.headline) + '</div>'
+        + '<div style="max-width:500px;margin:0 auto;display:flex;flex-direction:column;gap:14px;">'
+        + (b.items || []).map((x, ii) => '<div style="display:flex;gap:18px;align-items:center;background:#fff;border-radius:18px;padding:20px 22px;box-shadow:0 4px 20px rgba(0,0,0,0.05);">'
+          + '<span style="flex:0 0 auto;width:52px;height:52px;border-radius:50%;background:' + ACC + ';display:inline-flex;align-items:center;justify-content:center;">' + iconSvg(pickIcon(x, ii), '#fff', 26) + '</span>'
+          + EI('items', ii, 'span', 'font-size:16.5px;color:' + T + ';line-height:1.5;font-weight:500;', x) + '</div>').join('')
         + '</div></div>';
     case 'scene':
       return img(b.image)
-        + '<div style="padding:50px 34px;">' + eb('eyebrow', b.eyebrow)
-        + E('headline', 'h2', 'font-size:25px;font-weight:800;color:' + T + ';margin:0 0 14px;line-height:1.35;letter-spacing:-0.5px;', b.headline)
+        + '<div style="padding:54px 34px;">' + eb('eyebrow', b.eyebrow)
+        + E('headline', 'h2', 'font-size:clamp(21px,4.6vw,26px);font-weight:800;color:' + T + ';margin:0 0 14px;line-height:1.35;letter-spacing:-0.5px;', b.headline)
         + E('body', 'p', 'font-size:16px;color:#5f574e;line-height:1.9;margin:0;white-space:pre-line;', b.body)
         + '</div>';
     case 'image':
       return img(b.image);
     case 'comparison':
-      return '<div style="padding:56px 34px;background:' + INK + ';color:#fff;text-align:center;">'
+      return '<div style="padding:60px 34px;background:' + T + ';color:#fff;text-align:center;">'
         + '<p style="font-size:12px;font-weight:700;letter-spacing:2.5px;color:' + ACC + ';margin:0 0 16px;text-transform:uppercase;">The Difference</p>'
-        + E('headline', 'h2', 'font-size:24px;font-weight:800;letter-spacing:-0.6px;margin:0 0 30px;color:#fff;', b.headline)
-        + '<div style="max-width:460px;margin:0 auto;">'
-        + (b.points || []).map((x, ii) => EI('points', ii, 'p', 'font-size:16.5px;color:#e8e2da;line-height:1.6;margin:0;padding:17px 0;' + (ii ? 'border-top:1px solid rgba(255,255,255,0.12);' : ''), x)).join('')
+        + E('headline', 'h2', 'font-size:clamp(22px,5vw,27px);font-weight:800;letter-spacing:-0.6px;margin:0 0 34px;color:#fff;', b.headline)
+        + '<div style="max-width:480px;margin:0 auto;display:flex;flex-direction:column;gap:14px;text-align:left;">'
+        + (b.points || []).map((x, ii) => '<div style="display:flex;gap:16px;align-items:center;background:rgba(255,255,255,0.07);border-radius:14px;padding:18px 20px;">'
+          + '<span style="flex:0 0 auto;width:30px;height:30px;border-radius:50%;background:' + ACC + ';display:inline-flex;align-items:center;justify-content:center;">' + iconSvg('check', '#fff', 18) + '</span>'
+          + EI('points', ii, 'span', 'font-size:16px;color:#fff;line-height:1.55;', x) + '</div>').join('')
         + '</div></div>';
     case 'spec':
-      return '<div style="padding:52px 34px;">' + eb('eyebrow', 'Product Info')
+      return '<div style="padding:54px 34px;">' + eb('eyebrow', 'Product Info')
         + '<h2 style="font-size:22px;font-weight:800;letter-spacing:-0.5px;color:' + T + ';margin:0 0 18px;">제품 정보</h2>'
         + '<div style="border-bottom:1px solid ' + LINE + ';">'
         + (b.rows || []).map((r) => '<div style="display:flex;justify-content:space-between;gap:20px;padding:15px 0;border-top:1px solid ' + LINE + ';">'
@@ -509,16 +542,17 @@ function renderBlock(b, i, pal) {
           + '<span style="font-size:14px;color:' + T + ';font-weight:500;text-align:right;">' + esc(r[1]) + '</span></div>').join('')
         + '</div></div>';
     case 'faq':
-      return '<div style="padding:50px 34px;background:' + SOFT + ';">' + eb('eyebrow', 'FAQ')
-        + E('headline', 'h2', 'font-size:22px;font-weight:800;color:' + T + ';margin:0 0 20px;letter-spacing:-0.5px;', b.headline)
-        + (b.items || []).map((f, ii) => '<div style="padding:18px 0;' + (ii ? 'border-top:1px solid ' + LINE + ';' : '') + '">'
-          + '<p data-b="' + i + '" data-f="faq.q" data-i="' + ii + '" style="font-size:16px;font-weight:700;color:' + T + ';margin:0 0 8px;">' + esc(f.q) + '</p>'
+      return '<div style="padding:54px 34px;background:' + SOFT + ';">' + eb('eyebrow', 'FAQ')
+        + E('headline', 'h2', 'font-size:22px;font-weight:800;color:' + T + ';margin:0 0 22px;letter-spacing:-0.5px;', b.headline)
+        + (b.items || []).map((f, ii) => '<div style="background:#fff;border-radius:14px;padding:20px 22px;margin-bottom:12px;">'
+          + '<div style="display:flex;gap:8px;margin:0 0 8px;"><span style="color:' + ACC + ';font-weight:800;font-size:16px;flex:0 0 auto;">Q.</span>'
+          + '<p data-b="' + i + '" data-f="faq.q" data-i="' + ii + '" style="font-size:16px;font-weight:700;color:' + T + ';margin:0;">' + esc(f.q) + '</p></div>'
           + '<p data-b="' + i + '" data-f="faq.a" data-i="' + ii + '" style="font-size:14.5px;color:#6b6259;margin:0;line-height:1.75;">' + esc(f.a) + '</p></div>').join('')
         + '</div>';
     case 'cta':
-      return '<div style="background:' + INK + ';color:#fff;padding:60px 34px;text-align:center;">'
-        + '<div style="width:36px;height:2px;background:' + ACC + ';margin:0 auto 24px;"></div>'
-        + E('headline', 'p', 'font-size:21px;font-weight:700;margin:0;line-height:1.55;letter-spacing:-0.3px;', b.headline) + '</div>';
+      return '<div style="background:' + ACC + ';color:#fff;padding:64px 34px;text-align:center;">'
+        + '<div style="width:40px;height:3px;background:rgba(255,255,255,0.7);margin:0 auto 24px;border-radius:2px;"></div>'
+        + E('headline', 'p', 'font-size:clamp(20px,4.5vw,24px);font-weight:800;margin:0;line-height:1.5;letter-spacing:-0.4px;', b.headline) + '</div>';
     default:
       return '';
   }
