@@ -61,7 +61,7 @@ async function runAnalysis(p) {
 }
 
 // 실제 생성 — 도매꾹 링크/사진 → 베이스 화보 → 카피 → 디자인 컷 → 조립.
-async function runGeneration(p) {
+async function runGeneration(p, jobId) {
   const { url, title, features, imageBase64, quality, skipPhoto } = p || {};
   let product, srcForPhoto;
   if (url) {
@@ -131,6 +131,13 @@ async function runGeneration(p) {
     }
     sceneCount = scenes.filter((s) => s.img).length;
     if (!palette) palette = await accentPalette((scenes.find((s) => s.img) || {}).img || baseB64);
+    // 화보(base64)를 파일로 분리 저장 → blocks엔 URL만 (HTML/blocks 경량화: 9MB→수십KB, 모바일서 결과 열림).
+    const IMG_DIR = path.join(RESULTS_DIR, 'img');
+    try { fs.mkdirSync(IMG_DIR, { recursive: true }); } catch (_) {}
+    scenes.forEach((s, i) => {
+      if (!s.img) return;
+      try { fs.writeFileSync(path.join(IMG_DIR, jobId + '-' + i + '.png'), Buffer.from(s.img, 'base64')); s.img = 'https://lumi.it.kr/r/img/' + jobId + '-' + i + '.png'; } catch (_) {}
+    });
     blocks = copyToBlocks(product, copy, scenes);
   }
   const html = renderBlocks(blocks, palette);
@@ -176,7 +183,7 @@ exports.handler = async (event) => {
   const jobId = Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
   jobs[jobId] = { status: 'pending', ts: Date.now() };
   gcJobs();
-  runGeneration(params)
+  runGeneration(params, jobId)
     .then((r) => {
       try { fs.writeFileSync(path.join(RESULTS_DIR, jobId + '.html'), r.html || ''); r.resultUrl = 'https://lumi.it.kr/r/' + jobId + '.html'; } catch (_) {}
       jobs[jobId] = { status: 'done', ts: Date.now(), ...r };
