@@ -127,7 +127,7 @@ async function runGeneration(p, jobId) {
     let styleHint = null;
     try { styleHint = await analyzeReferenceStyle(['data:image/jpeg;base64,' + stripDataUri(p.referenceImageBase64)]); } catch (_) {}
     const plan = refBlockPlan(product, copy, factsForPrompt, styleHint);
-    const blockB64 = [];
+    const blockResults = [];
     // 비타민은 레퍼런스 이미지 미입력으로 이미 차단됨 → verify 불필요. 블록을 3개씩 병렬 생성(속도: 순차 18분 → 수분).
     const sharpLib = require('sharp');
     const fsq = require('fs'); const pathq = require('path');
@@ -143,16 +143,24 @@ async function runGeneration(p, jobId) {
           const img = sharpLib(Buffer.from(photo, 'base64'));
           const m = await img.metadata();
           const txt = renderBlockText(blk, m.width || 1024, m.height || 1536, styleHint);
-          return (await img.composite([{ input: txt, top: 0, left: 0 }]).png().toBuffer()).toString('base64');
-        } catch (_) { return photo; }
+          return { key: blk.key, b64: (await img.composite([{ input: txt, top: 0, left: 0 }]).png().toBuffer()).toString('base64') };
+        } catch (_) { return { key: blk.key, b64: photo }; }
       })));
-      batch.forEach((img) => { if (img) blockB64.push(img); });
+      batch.forEach((x) => { if (x) blockResults.push(x); });
     }
     // 플랜·스타일 메타 저장(편집/재합성용 — 화보 재생성 없이 텍스트만 다시 얹음).
     try { fsq.writeFileSync(pathq.join(cacheDir, '_meta.json'), JSON.stringify({ plan: plan.map((b) => ({ key: b.key, text: b.text })), styleHint })); } catch (_) {}
-    if (!blockB64.length) throw new Error('이미지 생성에 실패했습니다. 다시 시도해 주세요');
-    const stitched = await stitchBlocks(blockB64);
-    return { title: product.title, image: stitched || blockB64[0], copy, reviewPoints: result.reviewPoints || [], mode: 'image', blockCount: blockB64.length, styleHint: styleHint || null, jobId: String(jobId || '') };
+    if (!blockResults.length) throw new Error('이미지 생성에 실패했습니다. 다시 시도해 주세요');
+    // ★블록별 결과 — 개별 저장(/r/img/{jobId}-{key}.png) + URL → 편집 화면(블록 편집)용. blocks=[{key,img,text}].
+    try { fsq.mkdirSync(pathq.join(RESULTS_DIR, 'img'), { recursive: true }); } catch (_) {}
+    const blocks = blockResults.map((br) => {
+      const fn = String(jobId) + '-' + br.key + '.png';
+      try { fsq.writeFileSync(pathq.join(RESULTS_DIR, 'img', fn), Buffer.from(br.b64, 'base64')); } catch (_) {}
+      const pm = plan.find((p) => p.key === br.key);
+      return { key: br.key, img: 'https://lumi.it.kr/r/img/' + fn, text: pm ? pm.text : {} };
+    });
+    const stitched = await stitchBlocks(blockResults.map((b) => b.b64));
+    return { title: product.title, image: stitched || blockResults[0].b64, copy, reviewPoints: result.reviewPoints || [], mode: 'image', blockCount: blockResults.length, blocks, styleHint: styleHint || null, jobId: String(jobId || '') };
   }
 
   // (레퍼런스 없을 때) 기존 블록 흐름
