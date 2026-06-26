@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>lumi — 상세페이지 편집</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/wanteddev/wanted-sans@v1.0.3/packages/wanted-sans/fonts/webfonts/variable/split/WantedSansVariable.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap" />
+<style>
+:root{
+  --bg:#0a0a0c;--bg-2:#0e0e12;--bg-3:#121218;
+  --panel:rgba(255,255,255,.035);--panel-2:rgba(255,255,255,.06);
+  --line:rgba(255,255,255,.09);--line-strong:rgba(255,255,255,.15);
+  --ink:#f4f3f6;--ink-2:#b7b5c2;--ink-3:#7d7b8a;--ink-4:#56545f;
+  --c1:#ff7a5c;--c2:#ff4d8d;--c3:#a855f7;
+  --grad:linear-gradient(100deg,var(--c1),var(--c2) 48%,var(--c3));
+  --grad-soft:linear-gradient(100deg,rgba(255,122,92,.16),rgba(255,77,141,.14),rgba(168,85,247,.16));
+  --ease:cubic-bezier(.22,.61,.36,1);-webkit-font-smoothing:antialiased;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:"Gowun Dodum","Wanted Sans",-apple-system,sans-serif;line-height:1.6;letter-spacing:0;min-height:100vh}
+h1,h2,.t-jua{font-family:"Jua",sans-serif;font-weight:400}
+a{color:inherit;text-decoration:none}
+::selection{background:rgba(255,77,141,.32);color:#fff}
+body::before{content:"";position:fixed;inset:0;z-index:-2;background:radial-gradient(700px 520px at 82% -10%,rgba(255,77,141,.1),transparent 60%);pointer-events:none}
+
+/* 게이트 */
+#gate{display:none;min-height:100vh;align-items:center;justify-content:center;padding:40px 22px}
+#gate.on{display:flex}
+.gate-card{max-width:420px;text-align:center;background:var(--panel);border:1px solid var(--line);border-radius:24px;padding:40px 32px}
+.gate-card h1{font-size:23px;margin-bottom:10px}
+.gate-card p{color:var(--ink-2);font-size:14.5px;margin-bottom:24px}
+.kakao-btn{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;height:50px;border-radius:14px;background:#FEE500;color:#191600;font-weight:700;font-size:15px;border:none;cursor:pointer;font-family:inherit}
+
+/* 상단바 */
+.topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:12px;height:60px;padding:0 18px;background:rgba(10,10,12,.84);backdrop-filter:saturate(160%) blur(18px);border-bottom:1px solid var(--line)}
+.logo{display:inline-flex;align-items:center}
+.logo img{height:24px;display:block}
+.logo .ed{font-size:13px;color:var(--ink-3);font-weight:600;margin-left:8px;font-family:"Jua",sans-serif}
+.top-right{margin-left:auto;display:flex;gap:8px}
+.btn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--panel);color:var(--ink-2);border-radius:11px;padding:10px 16px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s;white-space:nowrap}
+.btn:hover{border-color:var(--line-strong);color:var(--ink);background:var(--panel-2)}
+.btn.solid{background:var(--grad);color:#140a10;border-color:transparent;box-shadow:0 8px 22px -8px rgba(255,77,141,.55)}
+.btn.solid:hover{filter:brightness(1.05);color:#140a10}
+.btn svg{width:16px;height:16px}
+
+/* 레이아웃 */
+#app{display:none}
+#app.on{display:block}
+.wrap{max-width:780px;margin:0 auto;padding:28px 18px 100px}
+.head{margin-bottom:22px}
+.head h1{font-size:clamp(22px,4vw,28px);margin-bottom:6px}
+.head p{color:var(--ink-2);font-size:14px}
+
+/* 블록 카드 */
+.block{background:var(--panel);border:1px solid var(--line);border-radius:18px;margin-bottom:16px;overflow:hidden;transition:border-color .2s}
+.block:hover{border-color:var(--line-strong)}
+.block-head{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--line);background:var(--bg-2)}
+.block-tag{display:inline-flex;align-items:center;gap:7px;font-size:13.5px;font-weight:700;color:var(--ink);font-family:"Jua",sans-serif}
+.block-tag .ic{width:26px;height:26px;border-radius:8px;background:var(--grad-soft);border:1px solid var(--line-strong);display:flex;align-items:center;justify-content:center}
+.block-tag .ic svg{width:14px;height:14px;color:var(--c2)}
+.block-ctrl{margin-left:auto;display:flex;gap:4px}
+.ctrl{width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line);background:var(--panel);color:var(--ink-3);border-radius:9px;cursor:pointer;transition:.15s}
+.ctrl:hover{border-color:var(--line-strong);color:var(--ink);background:var(--panel-2)}
+.ctrl.danger:hover{border-color:#ff5c7a;color:#ff5c7a}
+.ctrl svg{width:15px;height:15px}
+.ctrl:disabled{opacity:.3;cursor:not-allowed}
+.block-body{display:flex;gap:16px;padding:16px}
+.block-img{width:140px;flex-shrink:0;aspect-ratio:3/4;border-radius:12px;overflow:hidden;background:var(--grad-soft);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;position:relative}
+.block-img img{width:100%;height:100%;object-fit:cover;object-position:top;display:block}
+.block-img .ph{font-size:11px;color:var(--ink-3);text-align:center;padding:8px}
+.fields{flex:1;display:flex;flex-direction:column;gap:9px;min-width:0}
+.field label{display:block;font-size:11.5px;color:var(--ink-3);font-weight:600;margin-bottom:4px}
+.field input,.field textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px;font-family:inherit;background:var(--bg-3);color:var(--ink);transition:border-color .15s}
+.field input:focus,.field textarea:focus{outline:none;border-color:var(--c2)}
+.field textarea{resize:vertical;min-height:54px;line-height:1.5}
+.block-foot{display:flex;gap:8px;padding:0 16px 16px;flex-wrap:wrap}
+.mini{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--panel);color:var(--ink-2);border-radius:9px;padding:8px 13px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s}
+.mini:hover{border-color:var(--c2);color:var(--c2)}
+.mini svg{width:14px;height:14px}
+.mini .cost{font-size:11px;color:var(--ink-4);font-weight:500}
+.add-block{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:16px;border:1.5px dashed var(--line-strong);border-radius:16px;background:none;color:var(--ink-2);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s}
+.add-block:hover{border-color:var(--c2);color:var(--c2);background:var(--panel)}
+.add-block svg{width:18px;height:18px}
+@media(max-width:560px){.block-body{flex-direction:column}.block-img{width:100%;aspect-ratio:16/9}}
+</style>
+</head>
+<body>
+
+<!-- 게이트 -->
+<div id="gate"><div class="gate-card">
+  <h1 class="t-jua">로그인이 필요해요</h1>
+  <p>편집은 로그인 후 이용할 수 있어요.</p>
+  <button class="kakao-btn" id="kakaoLogin">카카오로 시작하기</button>
+</div></div>
+
+<!-- 편집기 -->
+<div id="app">
+  <div class="topbar">
+    <a href="/studio" class="logo" aria-label="lumi"><img src="/assets/logo-wordmark.webp" alt="lumi"><span class="ed">편집</span></a>
+    <div class="top-right">
+      <button class="btn" id="saveBtn"><i data-lucide="check"></i> 저장</button>
+      <button class="btn solid" id="dlBtn"><i data-lucide="download"></i> 다운로드</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="head">
+      <h1>상세페이지 편집</h1>
+      <p>블록을 클릭해 글자를 고치고, 이미지를 바꾸고, 순서를 옮겨보세요. 글자·색·순서 수정은 무료예요.</p>
+    </div>
+    <div id="blocks"></div>
+    <button class="add-block" id="addBlock"><i data-lucide="plus"></i> 블록 추가</button>
+  </div>
+</div>
+
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script>
+(function(){
+  // 로그인 게이트
+  if(location.hash&&location.hash.indexOf('lumi_token=')!==-1){try{var hp=new URLSearchParams(location.hash.replace(/^#/,''));var t=hp.get('lumi_token');if(t)localStorage.setItem('lumi-auth',t);history.replaceState(null,'',location.pathname);}catch(e){}}
+  var token=localStorage.getItem('lumi-auth')||localStorage.getItem('lumi_auth')||localStorage.getItem('seller_jwt')||'';
+  document.getElementById('kakaoLogin').addEventListener('click',function(){location.href='/api/auth/kakao/start';});
+  function icons(){try{if(window.lucide)lucide.createIcons();}catch(e){}}
+  if(!token){document.getElementById('gate').classList.add('on');icons();return;}
+  document.getElementById('app').classList.add('on');
+
+  // 블록 메타 (백엔드 _meta.json plan 구조와 동일: key + text). 실제론 generate-detail이 imageUrl까지 넘김.
+  // 데모용 — 실제 연동 전 UI 방향 확인.
+  var ICONS={hero:'sparkles',features:'list-checks',scene:'image',colors:'palette',spec:'table',cta:'megaphone'};
+  var LABELS={hero:'히어로',features:'핵심 특징',scene:'사용 장면',colors:'색상 옵션',spec:'제품 스펙',cta:'마무리'};
+  var blocks;
+  try{ var bj=sessionStorage.getItem('lumi_edit_blocks'); blocks = bj? JSON.parse(bj) : null; }catch(e){ blocks=null; }
+  if(!blocks){
+    blocks=[
+      {key:'hero',img:'',text:{kicker:'AI 상세페이지',headline:'잘 팔리는 상세페이지, 사진만 넣으면 끝',sub:'마음에 드는 레퍼런스로 같은 퀄리티를'}},
+      {key:'features',img:'',text:{title:'핵심 기능',items:['수분광','저자극','비건','국내생산']}},
+      {key:'spec',img:'',text:{title:'제품 상세 스펙',items:['용량 : 50ml','타입 : 크림','원산지 : 대한민국']}},
+      {key:'cta',img:'',text:{headline:'지금 바로 만나보세요'}}
+    ];
+  }
+
+  var root=document.getElementById('blocks');
+  function fieldsHtml(b){
+    var t=b.text||{}, h='';
+    function f(k,label,val,area){ return '<div class="field"><label>'+label+'</label>'+(area?'<textarea data-bk="'+b._id+'" data-tk="'+k+'" rows="2">'+esc(val||'')+'</textarea>':'<input data-bk="'+b._id+'" data-tk="'+k+'" value="'+esc(val||'')+'">')+'</div>'; }
+    if(t.kicker!==undefined) h+=f('kicker','작은 라벨',t.kicker);
+    if(t.headline!==undefined) h+=f('headline','헤드라인',t.headline,true);
+    if(t.title!==undefined) h+=f('title','제목',t.title);
+    if(t.sub!==undefined) h+=f('sub','설명',t.sub,true);
+    if(t.items!==undefined) h+=f('items','항목 (한 줄에 하나)',(t.items||[]).join('\n'),true);
+    return h;
+  }
+  function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');}
+
+  function render(){
+    blocks.forEach(function(b,i){ if(b._id==null) b._id='b'+i+'_'+Math.floor(performance.now()); });
+    root.innerHTML=blocks.map(function(b,i){
+      var label=LABELS[b.key]||'블록', ic=ICONS[b.key]||'square';
+      var thumb=b.img?'<img src="'+esc(b.img)+'" alt="">':'<div class="ph">'+label+'<br>화보</div>';
+      return '<div class="block" data-id="'+b._id+'">'+
+        '<div class="block-head">'+
+          '<span class="block-tag"><span class="ic"><i data-lucide="'+ic+'"></i></span>'+label+'</span>'+
+          '<span class="block-ctrl">'+
+            '<button class="ctrl" data-act="up" '+(i===0?'disabled':'')+' title="위로"><i data-lucide="chevron-up"></i></button>'+
+            '<button class="ctrl" data-act="down" '+(i===blocks.length-1?'disabled':'')+' title="아래로"><i data-lucide="chevron-down"></i></button>'+
+            '<button class="ctrl" data-act="dup" title="복제"><i data-lucide="copy"></i></button>'+
+            '<button class="ctrl danger" data-act="del" title="삭제"><i data-lucide="trash-2"></i></button>'+
+          '</span>'+
+        '</div>'+
+        '<div class="block-body">'+
+          '<div class="block-img">'+thumb+'</div>'+
+          '<div class="fields">'+fieldsHtml(b)+'</div>'+
+        '</div>'+
+        '<div class="block-foot">'+
+          '<button class="mini" data-act="replace"><i data-lucide="image-up"></i> 이미지 교체 <span class="cost">무료</span></button>'+
+          '<button class="mini" data-act="regen"><i data-lucide="refresh-cw"></i> AI 재생성 <span class="cost">~100원</span></button>'+
+        '</div>'+
+      '</div>';
+    }).join('');
+    icons();
+  }
+
+  // 블록 조작
+  root.addEventListener('click',function(e){
+    var btn=e.target.closest('[data-act]'); if(!btn)return;
+    var card=e.target.closest('.block'); var id=card&&card.getAttribute('data-id');
+    var i=blocks.findIndex(function(b){return b._id===id;}); if(i<0)return;
+    var act=btn.getAttribute('data-act');
+    if(act==='up'&&i>0){ var t=blocks[i];blocks[i]=blocks[i-1];blocks[i-1]=t;render(); }
+    else if(act==='down'&&i<blocks.length-1){ var t2=blocks[i];blocks[i]=blocks[i+1];blocks[i+1]=t2;render(); }
+    else if(act==='dup'){ blocks.splice(i+1,0,JSON.parse(JSON.stringify(Object.assign({},blocks[i],{_id:null})))); render(); }
+    else if(act==='del'){ if(blocks.length>1){blocks.splice(i,1);render();} else alert('마지막 블록은 지울 수 없어요.'); }
+    else if(act==='replace'){ alert('이미지 교체 — 백엔드 연동 시: 파일 업로드 → 해당 블록 화보 교체 (무료, 합성만).'); }
+    else if(act==='regen'){ alert('AI 재생성 — 백엔드 연동 시: 이 블록 화보만 gpt-image-2로 새로 (~100원, 부분 재생성).'); }
+  });
+  // 텍스트 입력 → 블록 데이터 갱신 (실제론 recompose 호출 → 이미지 갱신)
+  root.addEventListener('input',function(e){
+    var el=e.target; var bk=el.getAttribute&&el.getAttribute('data-bk'), tk=el.getAttribute&&el.getAttribute('data-tk');
+    if(!bk||!tk)return;
+    var b=blocks.find(function(x){return x._id===bk;}); if(!b)return;
+    if(tk==='items') b.text.items=el.value.split('\n').map(function(s){return s.trim();}).filter(Boolean);
+    else b.text[tk]=el.value;
+  });
+  document.getElementById('addBlock').addEventListener('click',function(){
+    blocks.push({key:'scene',img:'',text:{headline:'새 블록'}}); render();
+  });
+  document.getElementById('saveBtn').addEventListener('click',function(){ alert('저장 — 백엔드 연동 시: 블록 순서·텍스트 → recompose 재합성(무료) 후 저장.'); });
+  document.getElementById('dlBtn').addEventListener('click',function(){ alert('다운로드 — 블록 합쳐서(stitch) 최종 PNG 저장.'); });
+
+  render();
+})();
+</script>
+</body>
+</html>
