@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>lumi — 잘 팔리는 상세페이지, 사진과 정보만 넣으면 끝</title>
+<meta name="description" content="마음에 드는 레퍼런스를 올리면 AI가 구조를 분석해 같은 퀄리티의 상세페이지를 만들어 드립니다. 한글 글자 하나까지 정확하게, 폰트·색은 마음대로." />
+
+<!-- Body: Wanted Sans (variable) -->
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/wanteddev/wanted-sans@v1.0.3/packages/wanted-sans/fonts/webfonts/variable/split/WantedSansVariable.min.css" />
+<!-- Editorial display accent: Instrument Serif -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" />
+
+<style>
+:root{
+  /* surfaces */
+  --bg:#0a0a0c;
+  --bg-2:#0e0e12;
+  --bg-3:#121218;
+  --panel:rgba(255,255,255,.025);
+  --panel-2:rgba(255,255,255,.045);
+  --line:rgba(255,255,255,.08);
+  --line-strong:rgba(255,255,255,.14);
+
+  /* text */
+  --ink:#f4f3f6;
+  --ink-2:#b7b5c2;
+  --ink-3:#7d7b8a;
+  --ink-4:#56545f;
+
+  /* accent — coral → magenta → violet aurora (warm-to-cool) */
+  --c1:#ff7a5c;   /* coral */
+  --c2:#ff4d8d;   /* magenta */
+  --c3:#a855f7;   /* violet */
+  --spark:#5ad7ff; /* cyan secondary spark */
+  --grad:linear-gradient(100deg, var(--c1) 0%, var(--c2) 48%, var(--c3) 100%);
+  --grad-soft:linear-gradient(100deg, rgba(255,122,92,.16), rgba(255,77,141,.14), rgba(168,85,247,.16));
+
+  --radius:18px;
+  --radius-lg:26px;
+  --maxw:1180px;
+  --ease:cubic-bezier(.22,.61,.36,1);
+
+  font-synthesis-weight:none;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:"Wanted Sans Variable","Wanted Sans",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif;
+  font-size:17px;
+  line-height:1.6;
+  letter-spacing:-.014em;
+  overflow-x:hidden;
+}
+a{color:inherit;text-decoration:none}
+::selection{background:rgba(255,77,141,.32);color:#fff}
+
+/* ambient backdrop — fixed aurora behind everything */
+body::before{
+  content:"";
+  position:fixed;inset:0;z-index:-2;
+  background:
+    radial-gradient(720px 520px at 78% -8%, rgba(255,77,141,.16), transparent 60%),
+    radial-gradient(680px 560px at 8% 6%, rgba(168,85,247,.13), transparent 60%),
+    radial-gradient(900px 700px at 50% 116%, rgba(90,215,255,.06), transparent 55%);
+  pointer-events:none;
+}
+body::after{
+  content:"";
+  position:fixed;inset:0;z-index:-1;
+  background-image:
+    linear-gradient(rgba(255,255,255,.022) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.022) 1px,transparent 1px);
+  background-size:64px 64px;
+  -webkit-mask-image:radial-gradient(900px 700px at 50% 0%,#000,transparent 75%);
+          mask-image:radial-gradient(900px 700px at 50% 0%,#000,transparent 75%);
+  pointer-events:none;
+}
+
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+
+/* ---------- shared bits ---------- */
+.kicker{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:12.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-2);
+}
+.kicker .dot{width:6px;height:6px;border-radius:50%;background:var(--grad);box-shadow:0 0 14px rgba(255,77,141,.6)}
+.grad-text{background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+.serif{font-family:"Instrument Serif",serif;font-style:italic;letter-spacing:.01em}
+
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  font-weight:600;font-size:15px;letter-spacing:-.01em;
+  height:48px;padding:0 24px;border-radius:980px;border:1px solid transparent;
+  cursor:pointer;transition:transform .35s var(--ease),box-shadow .35s var(--ease),background .25s,border-color .25s,color .25s;
+  white-space:nowrap;
+}
+.btn svg{width:17px;height:17px}
+.btn-primary{
+  color:#140a10;
+  background:var(--grad);background-size:160% 160%;
+  box-shadow:0 10px 30px -8px rgba(255,77,141,.5), inset 0 1px 0 rgba(255,255,255,.4);
+}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 18px 44px -10px rgba(255,77,141,.62), inset 0 1px 0 rgba(255,255,255,.5);background-position:100% 0}
+.btn-ghost{color:var(--ink);background:var(--panel);border-color:var(--line-strong);backdrop-filter:blur(10px)}
+.btn-ghost:hover{transform:translateY(-2px);background:var(--panel-2);border-color:rgba(255,255,255,.24)}
+.btn-sm{height:40px;padding:0 18px;font-size:14px}
+
+.eyebrow-row{display:flex;flex-direction:column;align-items:center;text-align:center;gap:18px}
+
+/* ---------- nav ---------- */
+nav{
+  position:sticky;top:0;z-index:50;
+  background:rgba(10,10,12,.62);
+  backdrop-filter:saturate(160%) blur(18px);
+  -webkit-backdrop-filter:saturate(160%) blur(18px);
+  border-bottom:1px solid transparent;
+  transition:border-color .3s,background .3s;
+}
+nav.scrolled{border-bottom-color:var(--line);background:rgba(10,10,12,.82)}
+.nav-in{display:flex;align-items:center;justify-content:space-between;height:66px}
+.logo{display:inline-flex;align-items:center}
+.logo img{height:28px;width:auto;display:block}
+.nav-menu{display:flex;gap:34px;align-items:center}
+.nav-menu a{font-size:14.5px;color:var(--ink-2);font-weight:500;transition:color .2s;position:relative}
+.nav-menu a:hover{color:var(--ink)}
+.nav-cta{display:flex;align-items:center;gap:12px}
+.nav-login{font-size:14.5px;color:var(--ink-2);font-weight:500;transition:color .2s}
+.nav-login:hover{color:var(--ink)}
+.nav-toggle{display:none;background:none;border:none;color:var(--ink);cursor:pointer}
+.nav-toggle svg{width:24px;height:24px}
+
+/* ---------- hero ---------- */
+.hero{position:relative;padding:96px 0 80px}
+.hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center}
+.hero h1{
+  font-size:clamp(38px,6vw,68px);
+  line-height:1.04;
+  font-weight:800;
+  letter-spacing:-.04em;
+  margin:22px 0 0;
+}
+.hero h1 .serif{font-weight:400;letter-spacing:0;}
+.hero-sub{margin-top:26px;font-size:clamp(16px,1.5vw,19px);line-height:1.65;color:var(--ink-2);max-width:520px}
+.hero-cta{margin-top:36px;display:flex;gap:14px;flex-wrap:wrap}
+.hero-meta{margin-top:26px;display:flex;align-items:center;gap:10px;color:var(--ink-3);font-size:13.5px}
+.hero-meta .check{display:inline-flex;width:18px;height:18px;align-items:center;justify-content:center;border-radius:50%;background:var(--grad-soft);border:1px solid var(--line)}
+.hero-meta .check svg{width:11px;height:11px;color:var(--c2)}
+
+/* hero kicker pill */
+.hero-pill{
+  display:inline-flex;align-items:center;gap:9px;
+  padding:7px 14px 7px 11px;border-radius:980px;
+  background:var(--panel);border:1px solid var(--line);
+  font-size:13px;font-weight:600;color:var(--ink-2);letter-spacing:-.005em;
+}
+.hero-pill .badge{font-size:11px;font-weight:700;letter-spacing:.06em;padding:3px 8px;border-radius:980px;background:var(--grad);color:#140a10}
+
+/* ---------- hero mockup: a CSS-drawn detail page ---------- */
+.mock-stage{position:relative;display:flex;justify-content:center;align-items:center;perspective:1600px}
+.mock-glow{
+  position:absolute;inset:-10% -6%;z-index:0;
+  background:radial-gradient(closest-side, rgba(255,77,141,.22), rgba(168,85,247,.10) 60%, transparent 75%);
+  filter:blur(8px);
+}
+.device{
+  position:relative;z-index:2;width:min(330px,80%);
+  border-radius:30px;padding:11px;
+  background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.02));
+  border:1px solid var(--line-strong);
+  box-shadow:0 40px 90px -30px rgba(0,0,0,.8), 0 0 0 1px rgba(0,0,0,.4) inset, 0 1px 0 rgba(255,255,255,.18) inset;
+  transform:rotateY(-9deg) rotateX(3deg);
+  transform-style:preserve-3d;
+}
+.device-notch{position:absolute;top:18px;left:50%;transform:translateX(-50%);width:78px;height:6px;border-radius:6px;background:rgba(255,255,255,.16);z-index:3}
+.screen{
+  border-radius:21px;overflow:hidden;background:var(--bg-3);
+  height:520px;position:relative;
+  border:1px solid rgba(255,255,255,.05);
+}
+.screen-scroll{position:absolute;inset:0;animation:scrollLoop 16s linear infinite}
+@keyframes scrollLoop{0%{transform:translateY(0)}45%{transform:translateY(-44%)}55%{transform:translateY(-44%)}100%{transform:translateY(0)}}
+
+/* detail-page blocks drawn purely in CSS */
+.dp{display:flex;flex-direction:column}
+.dp-hero{height:230px;position:relative;background:
+  radial-gradient(120% 90% at 70% 10%, rgba(255,122,92,.5), transparent 55%),
+  radial-gradient(120% 100% at 10% 90%, rgba(168,85,247,.5), transparent 55%),
+  linear-gradient(160deg,#2a1822,#16121c);}
+.dp-hero .obj{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.dp-hero .obj .bottle{width:54px;height:128px;border-radius:30px 30px 16px 16px;background:linear-gradient(160deg,rgba(255,255,255,.92),rgba(255,255,255,.55));box-shadow:0 18px 40px -12px rgba(0,0,0,.6), inset 0 0 0 1px rgba(0,0,0,.06);position:relative}
+.dp-hero .obj .bottle::before{content:"";position:absolute;top:12px;left:50%;transform:translateX(-50%);width:30px;height:46px;border-radius:8px;background:var(--grad);opacity:.9}
+.dp-hero .obj .bottle::after{content:"";position:absolute;top:-12px;left:50%;transform:translateX(-50%);width:18px;height:16px;border-radius:4px 4px 0 0;background:rgba(255,255,255,.7)}
+.dp-kicker{position:absolute;left:20px;top:20px;font-family:"Instrument Serif",serif;font-style:italic;font-size:14px;color:rgba(255,255,255,.85);letter-spacing:.02em}
+.dp-headline{position:absolute;left:20px;bottom:22px;right:20px}
+.dp-headline .l{height:13px;border-radius:4px;background:rgba(255,255,255,.92);margin-bottom:7px}
+.dp-headline .l.w1{width:76%}
+.dp-headline .l.w2{width:54%;background:linear-gradient(90deg,var(--c1),var(--c2))}
+
+.dp-sec{padding:22px 20px;border-top:1px solid rgba(255,255,255,.05)}
+.dp-sec.alt{background:rgba(255,255,255,.018)}
+.dp-num{font-family:"Instrument Serif",serif;font-style:italic;font-size:13px;color:var(--c2);margin-bottom:10px}
+.dp-t{height:11px;width:48%;border-radius:4px;background:rgba(255,255,255,.8);margin-bottom:14px}
+.line{height:7px;border-radius:4px;background:rgba(255,255,255,.16);margin-bottom:8px}
+.line.s{width:92%}.line.m{width:78%}.line.l{width:64%}
+.dp-img{height:120px;border-radius:12px;margin-top:6px;background:
+  linear-gradient(135deg,rgba(90,215,255,.28),transparent 60%),
+  linear-gradient(300deg,rgba(255,77,141,.30),transparent 55%),
+  #1b1722;border:1px solid rgba(255,255,255,.06);position:relative;overflow:hidden}
+.dp-img::after{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:60px;height:60px;border-radius:14px;background:linear-gradient(160deg,rgba(255,255,255,.9),rgba(255,255,255,.5));box-shadow:0 12px 30px -10px rgba(0,0,0,.6)}
+.dp-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+.dp-tags span{font-size:9px;padding:4px 9px;border-radius:980px;background:var(--grad-soft);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.7)}
+.dp-grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+.dp-grid2 .dp-img{height:84px;margin-top:0}
+
+/* floating chips around device */
+.chip{
+  position:absolute;z-index:4;display:flex;align-items:center;gap:8px;
+  padding:9px 13px;border-radius:14px;
+  background:rgba(18,18,24,.78);backdrop-filter:blur(14px);
+  border:1px solid var(--line-strong);
+  box-shadow:0 18px 40px -16px rgba(0,0,0,.7);
+  font-size:12.5px;font-weight:600;color:var(--ink);
+  animation:floaty 6s ease-in-out infinite;
+}
+.chip svg{width:15px;height:15px}
+.chip .ic{width:24px;height:24px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:var(--grad-soft);color:var(--c2)}
+.chip-1{top:40px;left:-26px;animation-delay:0s}
+.chip-2{bottom:96px;right:-34px;animation-delay:-2s}
+.chip-3{bottom:18px;left:-14px;animation-delay:-4s}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+.chip .sub{display:block;font-size:10.5px;font-weight:500;color:var(--ink-3);letter-spacing:0}
+
+/* ---------- trust bar ---------- */
+.trust{padding:34px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--bg-2)}
+.trust-in{display:flex;flex-direction:column;align-items:center;gap:22px}
+.trust-label{font-size:13px;color:var(--ink-3);letter-spacing:.04em}
+.trust-logos{display:flex;gap:clamp(22px,5vw,56px);align-items:center;flex-wrap:wrap;justify-content:center}
+.trust-logos .lg{font-size:clamp(15px,2vw,19px);font-weight:700;letter-spacing:-.02em;color:var(--ink-3);opacity:.85;transition:color .25s,opacity .25s}
+.trust-logos .lg:hover{color:var(--ink-2);opacity:1}
+
+/* ---------- section frame ---------- */
+section.block{padding:clamp(80px,11vw,128px) 0;position:relative}
+section.tint{background:var(--bg-2)}
+.sec-head{max-width:680px;margin-bottom:54px}
+.sec-head.center{margin-left:auto;margin-right:auto;text-align:center}
+.sec-head h2{font-size:clamp(28px,4.4vw,46px);line-height:1.1;font-weight:800;letter-spacing:-.035em;margin-top:16px}
+.sec-head p{margin-top:18px;font-size:clamp(15px,1.6vw,18px);color:var(--ink-2);line-height:1.65}
+
+/* ---------- problem cards ---------- */
+.prob-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px}
+.prob{
+  position:relative;padding:28px 26px;border-radius:var(--radius);
+  background:var(--panel);border:1px solid var(--line);
+  backdrop-filter:blur(10px);overflow:hidden;
+  transition:transform .4s var(--ease),border-color .3s,background .3s;
+}
+.prob:hover{transform:translateY(-4px);border-color:var(--line-strong);background:var(--panel-2)}
+.prob .pn{font-family:"Instrument Serif",serif;font-style:italic;font-size:30px;color:var(--ink-4);line-height:1}
+.prob h3{margin-top:16px;font-size:18px;font-weight:700;letter-spacing:-.02em}
+.prob p{margin-top:9px;font-size:14.5px;color:var(--ink-3);line-height:1.6}
+.prob .cost{margin-top:16px;display:inline-block;font-size:13px;font-weight:700;color:var(--c2)}
+
+/* ---------- how (3 steps) ---------- */
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px;counter-reset:step}
+.step{
+  position:relative;padding:30px 28px 32px;border-radius:var(--radius-lg);
+  background:var(--panel);border:1px solid var(--line);overflow:hidden;
+  transition:transform .4s var(--ease),border-color .3s;
+}
+.step:hover{transform:translateY(-5px);border-color:var(--line-strong)}
+.step::before{
+  content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;
+  background:var(--grad);opacity:0;transition:opacity .35s;
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;
+}
+.step:hover::before{opacity:.6}
+.step-no{
+  width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:18px;color:#140a10;background:var(--grad);
+  box-shadow:0 10px 24px -8px rgba(255,77,141,.5);
+}
+.step h3{margin-top:22px;font-size:20px;font-weight:700;letter-spacing:-.025em}
+.step p{margin-top:11px;font-size:15px;color:var(--ink-2);line-height:1.62}
+.step .mini{margin-top:20px;height:96px;border-radius:13px;border:1px solid var(--line);background:var(--bg-3);position:relative;overflow:hidden}
+
+/* mini illustrations per step */
+.mini-up{display:flex;align-items:center;justify-content:center;gap:10px}
+.mini-up .ph{width:46px;height:58px;border-radius:8px;background:linear-gradient(150deg,rgba(90,215,255,.25),rgba(255,77,141,.25));border:1px solid var(--line-strong)}
+.mini-up .plus{color:var(--ink-3)}
+.mini-up .txt{width:54px;display:flex;flex-direction:column;gap:5px}
+.mini-up .txt i{display:block;height:6px;border-radius:3px;background:rgba(255,255,255,.18)}
+.mini-up .txt i:nth-child(2){width:70%}
+.mini-ref{display:flex;align-items:center;justify-content:center;gap:8px;padding:0 14px}
+.mini-ref .card{position:relative;flex:1;height:64px;border-radius:8px;border:1px solid var(--line);background:var(--bg-2);opacity:.5}
+.mini-ref .card.sel{opacity:1;border-color:transparent;background:var(--grad-soft);box-shadow:0 0 0 1.5px var(--c2)}
+.mini-ref .card.sel::after{content:"";position:absolute;top:50%;left:50%;width:9px;height:16px;margin:-10px 0 0 -4px;border:solid var(--c2);border-width:0 2.5px 2.5px 0;transform:rotate(45deg)}
+.mini-done{display:flex;align-items:center;justify-content:center}
+.mini-done .bar{position:absolute;bottom:0;left:0;height:4px;width:100%;background:rgba(255,255,255,.08)}
+.mini-done .bar i{display:block;height:100%;width:100%;background:var(--grad);transform-origin:left;animation:fill 3s var(--ease) infinite}
+@keyframes fill{0%{transform:scaleX(0)}70%{transform:scaleX(1)}100%{transform:scaleX(1)}}
+.mini-done .tick{width:40px;height:40px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;color:#140a10}
+.mini-done .tick svg{width:20px;height:20px}
+
+/* ---------- features ---------- */
+.feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(252px,1fr));gap:18px}
+.feat{
+  position:relative;padding:30px 28px;border-radius:var(--radius);
+  background:var(--panel);border:1px solid var(--line);
+  transition:transform .4s var(--ease),border-color .3s,background .3s;overflow:hidden;
+}
+.feat:hover{transform:translateY(-4px);border-color:var(--line-strong);background:var(--panel-2)}
+.feat .fi{
+  width:50px;height:50px;border-radius:14px;display:flex;align-items:center;justify-content:center;
+  background:var(--grad-soft);border:1px solid var(--line);color:var(--c2);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
+}
+.feat .fi svg{width:23px;height:23px}
+.feat h3{margin-top:20px;font-size:18.5px;font-weight:700;letter-spacing:-.02em}
+.feat p{margin-top:10px;font-size:14.5px;color:var(--ink-3);line-height:1.62}
+.feat .pill{margin-top:16px;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--c2);padding:5px 11px;border-radius:980px;background:rgba(255,77,141,.08);border:1px solid rgba(255,77,141,.18)}
+
+/* ---------- comparison table ---------- */
+.cmp{border:1px solid var(--line);border-radius:var(--radius-lg);overflow:hidden;background:var(--panel);backdrop-filter:blur(10px)}
+.cmp-row{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr}
+.cmp-row+.cmp-row{border-top:1px solid var(--line)}
+.cmp-cell{padding:20px 22px;font-size:14.5px;color:var(--ink-2);display:flex;align-items:center;gap:8px}
+.cmp-head .cmp-cell{font-weight:700;color:var(--ink-3);font-size:13px;letter-spacing:.02em;background:var(--bg-3)}
+.cmp-cell.row-label{font-weight:600;color:var(--ink)}
+.cmp-col-lumi{background:linear-gradient(180deg,rgba(255,77,141,.06),rgba(168,85,247,.04));position:relative}
+.cmp-head .cmp-col-lumi{background:linear-gradient(180deg,rgba(255,77,141,.16),rgba(168,85,247,.10))}
+.cmp-col-lumi .lumi-name{font-weight:800;color:var(--ink)}
+.cmp-cell .ok{color:#5ad7ff;display:inline-flex}
+.cmp-cell .no{color:var(--ink-4);display:inline-flex}
+.cmp-cell .ok svg,.cmp-cell .no svg{width:17px;height:17px}
+.cmp-good{color:var(--ink);font-weight:600}
+
+/* ---------- pricing ---------- */
+.price-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;align-items:stretch}
+.price{
+  position:relative;display:flex;flex-direction:column;
+  padding:34px 30px;border-radius:var(--radius-lg);
+  background:var(--panel);border:1px solid var(--line);backdrop-filter:blur(10px);
+  transition:transform .4s var(--ease),border-color .3s;
+}
+.price:hover{transform:translateY(-5px);border-color:var(--line-strong)}
+.price.featured{
+  background:linear-gradient(180deg,rgba(255,77,141,.07),rgba(168,85,247,.04));
+  border-color:transparent;
+}
+.price.featured::before{
+  content:"";position:absolute;inset:0;border-radius:inherit;padding:1.4px;
+  background:var(--grad);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;
+}
+.price .pop{
+  position:absolute;top:-13px;left:50%;transform:translateX(-50%);
+  font-size:11.5px;font-weight:700;letter-spacing:.06em;
+  padding:6px 14px;border-radius:980px;background:var(--grad);color:#140a10;
+  box-shadow:0 8px 22px -8px rgba(255,77,141,.6);white-space:nowrap;
+}
+.price .tier{font-size:14px;font-weight:700;letter-spacing:.02em;color:var(--ink-2)}
+.price .amt{margin-top:14px;display:flex;align-items:baseline;gap:4px}
+.price .amt .num{font-size:42px;font-weight:800;letter-spacing:-.04em;line-height:1}
+.price .amt .cur{font-size:18px;font-weight:700}
+.price .amt .per{font-size:14px;color:var(--ink-3);font-weight:500}
+.price .desc{margin-top:12px;font-size:14px;color:var(--ink-3);line-height:1.55;min-height:42px}
+.price ul{list-style:none;margin:24px 0;display:flex;flex-direction:column;gap:13px}
+.price li{display:flex;align-items:flex-start;gap:10px;font-size:14.5px;color:var(--ink-2)}
+.price li .lc{flex:0 0 auto;width:19px;height:19px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--grad-soft);border:1px solid var(--line);margin-top:1px}
+.price li .lc svg{width:11px;height:11px;color:var(--c2)}
+.price .btn{width:100%;margin-top:auto}
+
+/* ---------- final CTA ---------- */
+.final{position:relative;text-align:center;padding:clamp(90px,13vw,150px) 0;overflow:hidden}
+.final::before{
+  content:"";position:absolute;inset:0;z-index:0;
+  background:radial-gradient(680px 360px at 50% 30%, rgba(255,77,141,.22), transparent 65%),
+             radial-gradient(560px 320px at 50% 90%, rgba(168,85,247,.16), transparent 65%);
+}
+.final .wrap{position:relative;z-index:1}
+.final h2{font-size:clamp(30px,5.2vw,56px);line-height:1.06;font-weight:800;letter-spacing:-.04em;max-width:760px;margin:18px auto 0}
+.final p{margin-top:20px;font-size:clamp(15px,1.7vw,18px);color:var(--ink-2);max-width:520px;margin-left:auto;margin-right:auto}
+.final .hero-cta{justify-content:center;margin-top:34px}
+
+/* ---------- footer ---------- */
+footer{border-top:1px solid var(--line);background:var(--bg-2);padding:54px 0 40px}
+.foot-top{display:flex;justify-content:space-between;align-items:flex-start;gap:32px;flex-wrap:wrap}
+.foot-brand{max-width:300px}
+.foot-brand .logo{margin-bottom:14px}
+.foot-brand p{font-size:14px;color:var(--ink-3);line-height:1.6}
+.foot-links{display:flex;gap:60px;flex-wrap:wrap}
+.foot-col h4{font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-4);margin-bottom:16px;font-weight:600}
+.foot-col a{display:block;font-size:14.5px;color:var(--ink-2);margin-bottom:11px;transition:color .2s}
+.foot-col a:hover{color:var(--ink)}
+.foot-bot{margin-top:48px;padding-top:24px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--ink-4)}
+
+/* ---------- reveal animation ---------- */
+.reveal{opacity:0;transform:translateY(26px);transition:opacity .8s var(--ease),transform .8s var(--ease)}
+.reveal.in{opacity:1;transform:none}
+.reveal.d1{transition-delay:.08s}.reveal.d2{transition-delay:.16s}
+.reveal.d3{transition-delay:.24s}.reveal.d4{transition-delay:.32s}
+
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;scroll-behavior:auto!important}
+  .reveal{opacity:1;transform:none;transition:none}
+}
+
+/* ---------- responsive ---------- */
+@media (max-width:920px){
+  .hero-grid{grid-template-columns:1fr;gap:48px}
+  .hero{padding:64px 0 56px}
+  .mock-stage{order:2}
+  .device{transform:none;width:min(320px,78%)}
+  .chip-1{left:-8px}.chip-2{right:-8px}.chip-3{left:0}
+  .cmp-row{grid-template-columns:1fr}
+  .cmp-cell{padding:13px 18px;justify-content:space-between}
+  .cmp-head{display:none}
+  .cmp-cell.row-label{background:var(--bg-3);font-size:13px;letter-spacing:.04em;color:var(--ink-3);text-transform:uppercase}
+  .cmp-cell::before{content:attr(data-h);font-size:12.5px;color:var(--ink-4);font-weight:600}
+  .cmp-cell.row-label::before{content:none}
+}
+@media (max-width:720px){
+  .nav-menu,.nav-login{display:none}
+  .nav-toggle{display:inline-flex}
+  body{font-size:16px}
+  .hero-cta .btn{flex:1;min-width:140px}
+  .foot-links{gap:36px}
+  .foot-bot{flex-direction:column;align-items:flex-start}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== NAV ===== -->
+<nav id="nav">
+  <div class="wrap nav-in">
+    <a href="#" class="logo" aria-label="lumi 홈"><img src="/assets/logo-wordmark.webp" alt="lumi"></a>
+    <div class="nav-menu">
+      <a href="#features">기능</a>
+      <a href="#how">작동 방식</a>
+      <a href="#pricing">요금제</a>
+    </div>
+    <div class="nav-cta">
+      <a href="#" class="nav-login">로그인</a>
+      <a href="#pricing" class="btn btn-primary btn-sm">무료로 시작</a>
+      <button class="nav-toggle" id="navToggle" aria-label="메뉴 열기"><i data-lucide="menu"></i></button>
+    </div>
+  </div>
+</nav>
+
+<!-- ===== HERO ===== -->
+<header class="hero">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <span class="hero-pill reveal"><span class="badge">AI</span> 상세페이지 메이커</span>
+      <h1 class="reveal d1">잘 팔리는 상세페이지,<br><span class="serif grad-text">사진과 정보만</span> 넣으면 끝</h1>
+      <p class="hero-sub reveal d2">마음에 드는 레퍼런스를 올리면 AI가 구조를 분석해 같은 퀄리티로 만들어 드려요. 글자 하나까지 정확하게 — 폰트와 색은 마음대로 편집하세요.</p>
+      <div class="hero-cta reveal d3">
+        <a href="#pricing" class="btn btn-primary">무료로 만들어보기 <i data-lucide="arrow-right"></i></a>
+        <a href="#how" class="btn btn-ghost">샘플 보기</a>
+      </div>
+      <div class="hero-meta reveal d4">
+        <span class="check"><i data-lucide="check"></i></span>
+        카드 등록 없이 첫 상세페이지 무료 · 3분이면 완성
+      </div>
+    </div>
+
+    <!-- CSS-drawn detail-page mockup -->
+    <div class="mock-stage reveal d2">
+      <div class="mock-glow"></div>
+
+      <div class="chip chip-1">
+        <span class="ic"><i data-lucide="scan-search"></i></span>
+        <span>구조 분석 완료<span class="sub">레퍼런스 8블록 감지</span></span>
+      </div>
+      <div class="chip chip-2">
+        <span class="ic"><i data-lucide="type"></i></span>
+        <span>한글 100% 정확<span class="sub">글자 깨짐 0건</span></span>
+      </div>
+      <div class="chip chip-3">
+        <span class="ic"><i data-lucide="sparkles"></i></span>
+        <span>3분 만에 완성</span>
+      </div>
+
+      <div class="device" aria-hidden="true">
+        <div class="device-notch"></div>
+        <div class="screen">
+          <div class="screen-scroll">
+            <div class="dp">
+              <div class="dp-hero">
+                <span class="dp-kicker">Daily Glow Serum</span>
+                <div class="obj"><div class="bottle"></div></div>
+                <div class="dp-headline">
+                  <div class="l w1"></div>
+                  <div class="l w2"></div>
+                </div>
+              </div>
+
+              <div class="dp-sec">
+                <div class="dp-num">01 — 핵심 성분</div>
+                <div class="dp-t"></div>
+                <div class="line s"></div><div class="line m"></div><div class="line l"></div>
+                <div class="dp-tags"><span>#수분광</span><span>#저자극</span><span>#비건</span></div>
+              </div>
+
+              <div class="dp-sec alt">
+                <div class="dp-num">02 — 사용 전후</div>
+                <div class="dp-grid2"><div class="dp-img"></div><div class="dp-img"></div></div>
+              </div>
+
+              <div class="dp-sec">
+                <div class="dp-num">03 — 텍스처</div>
+                <div class="dp-img"></div>
+                <div class="line s" style="margin-top:14px"></div><div class="line m"></div>
+              </div>
+
+              <div class="dp-sec alt">
+                <div class="dp-num">04 — 디테일</div>
+                <div class="dp-t"></div>
+                <div class="line s"></div><div class="line l"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ===== TRUST BAR ===== -->
+<section class="trust">
+  <div class="wrap trust-in">
+    <span class="trust-label reveal">스마트스토어 · 쿠팡 · 카페24 셀러들이 사용 중</span>
+    <div class="trust-logos reveal d1">
+      <span class="lg">스마트스토어</span>
+      <span class="lg">쿠팡</span>
+      <span class="lg">카페24</span>
+      <span class="lg">아임웹</span>
+      <span class="lg">올리브영</span>
+    </div>
+  </div>
+</section>
+
+<!-- ===== PROBLEM ===== -->
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="kicker"><span class="dot"></span> 왜 루미인가</span>
+      <h2>상세페이지 하나에<br>며칠씩 쓰고 계신가요?</h2>
+      <p>기획부터 촬영, 디자인, 외주까지 — 상품 하나를 올리는 데 드는 시간과 비용이 매출보다 먼저 빠져나갑니다.</p>
+    </div>
+    <div class="prob-grid">
+      <div class="prob reveal d1">
+        <div class="pn">01</div>
+        <h3>끝없는 기획·구성</h3>
+        <p>어떤 순서로, 무슨 메시지를 넣어야 팔릴지 매번 백지에서 고민합니다.</p>
+        <span class="cost">평균 1~2일 소요</span>
+      </div>
+      <div class="prob reveal d2">
+        <div class="pn">02</div>
+        <h3>촬영·보정의 늪</h3>
+        <p>제품컷 찍고 보정하고 배치하는 작업이 상품 수만큼 반복됩니다.</p>
+        <span class="cost">컷당 수 시간</span>
+      </div>
+      <div class="prob reveal d3">
+        <div class="pn">03</div>
+        <h3>디자인 외주비</h3>
+        <p>퀄리티를 맞추려 외주를 맡기면 상세페이지 한 장에 수십만 원.</p>
+        <span class="cost">건당 20~50만 원</span>
+      </div>
+      <div class="prob reveal d4">
+        <div class="pn">04</div>
+        <h3>수정의 굴레</h3>
+        <p>문구 한 줄, 색 하나 바꾸려 해도 다시 디자이너를 거쳐야 합니다.</p>
+        <span class="cost">매번 며칠 대기</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== HOW (3 steps) ===== -->
+<section class="block tint" id="how">
+  <div class="wrap">
+    <div class="sec-head center reveal">
+      <span class="kicker" style="justify-content:center"><span class="dot"></span> 작동 방식</span>
+      <h2>업로드 → 선택 → 완성. 세 번이면 끝.</h2>
+      <p>복잡한 디자인 툴도, 외주 커뮤니케이션도 없습니다. 클릭 몇 번이면 됩니다.</p>
+    </div>
+    <div class="steps">
+      <div class="step reveal d1">
+        <div class="step-no">1</div>
+        <h3>사진 + 정보 업로드</h3>
+        <p>제품 사진과 핵심 정보만 넣으세요. 기존 상세페이지가 있다면 그대로 붙여넣어도 됩니다.</p>
+        <div class="mini">
+          <div class="mini-up" style="height:100%">
+            <div class="ph"></div>
+            <span class="plus"><i data-lucide="plus"></i></span>
+            <div class="txt"><i></i><i></i></div>
+          </div>
+        </div>
+      </div>
+      <div class="step reveal d2">
+        <div class="step-no">2</div>
+        <h3>레퍼런스 선택 → 승인</h3>
+        <p>마음에 드는 상세페이지를 고르면 AI가 구조를 분석합니다. 결과를 미리 확인하고 승인하세요.</p>
+        <div class="mini">
+          <div class="mini-ref" style="height:100%">
+            <div class="card"></div>
+            <div class="card sel"></div>
+            <div class="card"></div>
+          </div>
+        </div>
+      </div>
+      <div class="step reveal d3">
+        <div class="step-no">3</div>
+        <h3>3분 만에 완성</h3>
+        <p>완성된 상세페이지를 받고, 폰트·색·문구를 클릭 한 번으로 자유롭게 편집하세요.</p>
+        <div class="mini">
+          <div class="mini-done" style="height:100%">
+            <div class="tick"><i data-lucide="check"></i></div>
+            <div class="bar"><i></i></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FEATURES ===== -->
+<section class="block" id="features">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="kicker"><span class="dot"></span> 핵심 기능</span>
+      <h2>레퍼런스 퀄리티를,<br>한글 깨짐 없이.</h2>
+      <p>AI 이미지의 고질적 약점이던 한글 텍스트 문제를 루미만의 하이브리드 방식으로 해결했습니다.</p>
+    </div>
+    <div class="feat-grid">
+      <div class="feat reveal d1">
+        <div class="fi"><i data-lucide="scan-search"></i></div>
+        <h3>레퍼런스 구조 분석</h3>
+        <p>마음에 드는 상세페이지의 흐름과 구성을 분석해, 똑같은 완성도로 내 상품에 맞춰 재구성합니다.</p>
+      </div>
+      <div class="feat reveal d2">
+        <div class="fi"><i data-lucide="languages"></i></div>
+        <h3>한글 100% 정확</h3>
+        <p>화보는 AI로, 텍스트는 코드로 얹는 하이브리드 방식. 글자 하나도 깨지지 않습니다.</p>
+        <span class="pill"><i data-lucide="shield-check" style="width:13px;height:13px"></i> 루미만의 방식</span>
+      </div>
+      <div class="feat reveal d3">
+        <div class="fi"><i data-lucide="mouse-pointer-click"></i></div>
+        <h3>자유 편집</h3>
+        <p>폰트, 색, 문구를 클릭 한 번에 바꾸세요. 디자이너 없이 즉시 수정됩니다.</p>
+      </div>
+      <div class="feat reveal d4">
+        <div class="fi"><i data-lucide="palette"></i></div>
+        <h3>다양한 무드 폰트</h3>
+        <p>명조·고딕·손글씨까지. 상품의 톤에 맞는 분위기를 폰트로 완성합니다.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== COMPARISON ===== -->
+<section class="block tint">
+  <div class="wrap">
+    <div class="sec-head center reveal">
+      <span class="kicker" style="justify-content:center"><span class="dot"></span> 비교</span>
+      <h2>같은 결과, 압도적으로 빠르고 싸게</h2>
+    </div>
+    <div class="cmp reveal d1">
+      <div class="cmp-row cmp-head">
+        <div class="cmp-cell"></div>
+        <div class="cmp-cell">디자인 외주</div>
+        <div class="cmp-cell">템플릿 직접제작</div>
+        <div class="cmp-cell cmp-col-lumi"><span class="lumi-name">lumi</span></div>
+      </div>
+      <div class="cmp-row">
+        <div class="cmp-cell row-label">제작 시간</div>
+        <div class="cmp-cell" data-h="디자인 외주">3~7일</div>
+        <div class="cmp-cell" data-h="템플릿">반나절~하루</div>
+        <div class="cmp-cell cmp-col-lumi" data-h="lumi"><span class="cmp-good">약 3분</span></div>
+      </div>
+      <div class="cmp-row">
+        <div class="cmp-cell row-label">건당 비용</div>
+        <div class="cmp-cell" data-h="디자인 외주">20~50만 원</div>
+        <div class="cmp-cell" data-h="템플릿">시간 = 비용</div>
+        <div class="cmp-cell cmp-col-lumi" data-h="lumi"><span class="cmp-good">월 구독 1건 수준</span></div>
+      </div>
+      <div class="cmp-row">
+        <div class="cmp-cell row-label">한글 정확도</div>
+        <div class="cmp-cell" data-h="디자인 외주"><span class="ok"><i data-lucide="check"></i></span> 사람이 직접</div>
+        <div class="cmp-cell" data-h="템플릿"><span class="ok"><i data-lucide="check"></i></span> 직접 입력</div>
+        <div class="cmp-cell cmp-col-lumi" data-h="lumi"><span class="ok"><i data-lucide="check"></i></span> <span class="cmp-good">100% 정확</span></div>
+      </div>
+      <div class="cmp-row">
+        <div class="cmp-cell row-label">수정 자유도</div>
+        <div class="cmp-cell" data-h="디자인 외주"><span class="no"><i data-lucide="x"></i></span> 재요청 필요</div>
+        <div class="cmp-cell" data-h="템플릿"><span class="ok"><i data-lucide="check"></i></span> 가능하나 번거로움</div>
+        <div class="cmp-cell cmp-col-lumi" data-h="lumi"><span class="ok"><i data-lucide="check"></i></span> <span class="cmp-good">클릭 한 번</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== PRICING ===== -->
+<section class="block" id="pricing">
+  <div class="wrap">
+    <div class="sec-head center reveal">
+      <span class="kicker" style="justify-content:center"><span class="dot"></span> 요금제</span>
+      <h2>부담 없이 시작하고,<br>필요한 만큼 키우세요</h2>
+      <p>모든 플랜에 한글 정확 보장과 자유 편집이 포함됩니다. 언제든 해지할 수 있어요.</p>
+    </div>
+    <div class="price-grid">
+      <div class="price reveal d1">
+        <div class="tier">Free</div>
+        <div class="amt"><span class="num">0</span><span class="per">원 / 체험</span></div>
+        <p class="desc">처음이라면 부담 없이. 카드 등록 없이 결과부터 확인하세요.</p>
+        <ul>
+          <li><span class="lc"><i data-lucide="check"></i></span> 월 1건 상세페이지 생성</li>
+          <li><span class="lc"><i data-lucide="check"></i></span> 기본 무드 폰트</li>
+          <li><span class="lc"><i data-lucide="check"></i></span> 한글 정확 보장</li>
+        </ul>
+        <a href="#" class="btn btn-ghost">무료로 시작</a>
+      </div>
+
+      <div class="price featured reveal d2">
+        <span class="pop">가장 인기</span>
+        <div class="tier">Basic</div>
+        <div class="amt"><span class="cur">₩</span><span class="num">16,500</span><span class="per">/ 월</span></div>
+        <p class="desc">매달 신상품을 올리는 1인 셀러를 위한 가장 합리적인 선택.</p>
+        <ul>
+          <li><span class="lc"><i data-lucide="check"></i></span> 월 10건 상세페이지 생성</li>
+          <li><span class="lc"><i data-lucide="check"></i></span> 전체 무드 폰트 (명조·고딕·손글씨)</li>
+          <li><span class="lc"><i data-lucide="check"></i></span> 레퍼런스 구조 분석</li>
+          <li><span class="lc"><i data-lucide="check"></i></span> 무제한 자유 편집</li>
+        </ul>
+        <a href="#" class="btn btn-primary">Basic 시작하기</a>
+      </div>
+
+      <div class="price reveal d3">
+        <div class="tier">Pro</div>
+        <div class="amt"><span class="cur">₩</span><span class="num">39,000</span><span class="per">/ 월</span></div>
+        <p class="desc">상품 회전이 빠른 셀러와 팀을 위한 넉넉한 한도.</p>
+        <ul>
+          <li><span class="lc"><i data-lucide="check"></i></span> 월 40건 상세페이지 생성</li>
+          <li><span class="lc"><i data-lucide="check"></i></span> Basic의 모든 기능 포함</li>
+          <li><span class="lc"><i data-lucide="check"></i></span> 우선 생성 큐 (빠른 처리)</li>
+          <li><span class="lc"><i data-lucide="check"></i></span> 우선 고객 지원</li>
+        </ul>
+        <a href="#" class="btn btn-ghost">Pro 시작하기</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FINAL CTA ===== -->
+<section class="final">
+  <div class="wrap">
+    <span class="kicker reveal" style="justify-content:center"><span class="dot"></span> 지금 시작하세요</span>
+    <h2 class="reveal d1">지금 바로, 첫 상세페이지를<br><span class="serif grad-text">무료로</span> 만들어보세요</h2>
+    <p class="reveal d2">사진과 정보만 준비하면 됩니다. 결과가 마음에 들 때까지, 부담은 0원.</p>
+    <div class="hero-cta reveal d3">
+      <a href="#" class="btn btn-primary">무료로 만들어보기 <i data-lucide="arrow-right"></i></a>
+      <a href="#how" class="btn btn-ghost">작동 방식 보기</a>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer>
+  <div class="wrap">
+    <div class="foot-top">
+      <div class="foot-brand">
+        <a href="#" class="logo" aria-label="lumi 홈"><img src="/assets/logo-wordmark.webp" alt="lumi"></a>
+        <p>사진과 정보만 넣으면, 잘 팔리는 상세페이지가 완성됩니다. AI 상세페이지 메이커.</p>
+      </div>
+      <div class="foot-links">
+        <div class="foot-col">
+          <h4>제품</h4>
+          <a href="#features">기능</a>
+          <a href="#how">작동 방식</a>
+          <a href="#pricing">요금제</a>
+        </div>
+        <div class="foot-col">
+          <h4>회사</h4>
+          <a href="#">소개</a>
+          <a href="#">블로그</a>
+          <a href="#">고객 지원</a>
+        </div>
+        <div class="foot-col">
+          <h4>법적 고지</h4>
+          <a href="#">이용약관</a>
+          <a href="#">개인정보처리방침</a>
+          <a href="#">환불 정책</a>
+        </div>
+      </div>
+    </div>
+    <div class="foot-bot">
+      <span>© 2026 lumi. All rights reserved.</span>
+      <span>made with care in Seoul</span>
+    </div>
+  </div>
+</footer>
+
+<!-- Lucide Icons -->
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script>
+  // render icons
+  if (window.lucide) lucide.createIcons();
+
+  // nav shadow on scroll
+  const nav = document.getElementById('nav');
+  const onScroll = () => nav.classList.toggle('scrolled', window.scrollY > 12);
+  onScroll();
+  window.addEventListener('scroll', onScroll, { passive:true });
+
+  // intersection reveal
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); }
+    });
+  }, { threshold:.12, rootMargin:'0px 0px -8% 0px' });
+  const reveals = [...document.querySelectorAll('.reveal')];
+  reveals.forEach(el=>io.observe(el));
+  // Fallback: IntersectionObserver doesn't fire while the tab is hidden
+  // (e.g. opened in a background tab). Reveal in-view elements once the
+  // page becomes visible or finishes loading so content never stays blank.
+  const ensureVisible = ()=>reveals.forEach(el=>{ const r=el.getBoundingClientRect(); if(r.top < innerHeight*1.1){ el.style.transition='none'; el.classList.add('in'); } });
+  window.addEventListener('load', ()=>{ if(document.visibilityState!=='visible') ensureVisible(); });
+  document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') ensureVisible(); });
+
+  // simple mobile menu (anchor scroll to pricing/sections still works; toggle shows menu)
+  const toggle = document.getElementById('navToggle');
+  const menu = document.querySelector('.nav-menu');
+  if(toggle){
+    toggle.addEventListener('click', ()=>{
+      const open = menu.style.display === 'flex';
+      menu.style.display = open ? '' : 'flex';
+      if(!open){
+        menu.style.position='absolute';menu.style.top='66px';menu.style.left='0';menu.style.right='0';
+        menu.style.flexDirection='column';menu.style.gap='4px';menu.style.padding='14px 24px 20px';
+        menu.style.background='rgba(10,10,12,.96)';menu.style.backdropFilter='blur(18px)';
+        menu.style.borderBottom='1px solid rgba(255,255,255,.08)';
+      }
+    });
+    menu.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{ if(window.innerWidth<=720) menu.style.display=''; }));
+  }
+</script>
+</body>
+</html>

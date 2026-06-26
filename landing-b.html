@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>lumi — 잘 팔리는 상세페이지, 사진과 정보만 넣으면 끝</title>
+<meta name="description" content="마음에 드는 레퍼런스를 올리면 AI가 구조를 분석해 같은 퀄리티로 상세페이지를 만들어드려요. 글자 하나까지 정확하게, 폰트·색은 마음대로.">
+
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/wanteddev/wanted-sans@v1.0.3/packages/wanted-sans/fonts/webfonts/variable/split/WantedSansVariable.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fonts-archive/GmarketSans/GmarketSans.css">
+<script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js" defer></script>
+
+<style>
+:root{
+  --ink:#0E0E10;
+  --ink-2:#33343A;
+  --muted:#6B6C75;
+  --line:#E8E8EC;
+  --bg:#ffffff;
+  --bg-alt:#F7F7F8;
+  --lime:#C8FF3D;        /* signature color-block accent */
+  --lime-deep:#9BD200;   /* lime text on light */
+  --cobalt:#2547FF;      /* sharp secondary accent */
+  --cobalt-soft:#EDF0FF;
+  --r-sm:10px;
+  --r-md:16px;
+  --r-lg:24px;
+  --r-pill:980px;
+  --max:1120px;
+  --display:"Gmarket Sans","Wanted Sans Variable","Wanted Sans",system-ui,sans-serif;
+  --body:"Wanted Sans Variable","Wanted Sans",system-ui,-apple-system,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--body);
+  color:var(--ink);
+  background:var(--bg);
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+  overflow-x:hidden;
+}
+::selection{background:var(--lime);color:var(--ink)}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 24px}
+.display{font-family:var(--display);font-weight:700;letter-spacing:-0.02em;line-height:1.04}
+.eyebrow{
+  display:inline-flex;align-items:center;gap:7px;
+  font-size:13px;font-weight:600;letter-spacing:0.04em;
+  color:var(--ink-2);
+  background:var(--bg-alt);
+  border:1px solid var(--line);
+  padding:7px 14px;border-radius:var(--r-pill);
+}
+.eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--cobalt)}
+.lucide,[data-lucide]{width:1em;height:1em;stroke-width:2;vertical-align:-0.12em}
+
+/* ---------- buttons ---------- */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  font-family:var(--body);font-weight:600;font-size:16px;
+  padding:14px 26px;border-radius:var(--r-pill);
+  border:1px solid transparent;cursor:pointer;white-space:nowrap;
+  transition:transform .18s cubic-bezier(.2,.8,.2,1),box-shadow .25s,background .2s,color .2s;
+}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--ink);color:#fff}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 28px -12px rgba(14,14,16,.55)}
+.btn-lime{background:var(--lime);color:var(--ink)}
+.btn-lime:hover{transform:translateY(-2px);box-shadow:0 12px 30px -10px rgba(155,210,0,.7)}
+.btn-ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn-ghost:hover{background:var(--bg-alt);border-color:#d7d7dd}
+.btn-sm{padding:9px 18px;font-size:14.5px}
+
+/* ---------- nav ---------- */
+.nav{
+  position:sticky;top:0;z-index:50;
+  background:rgba(255,255,255,.72);
+  backdrop-filter:saturate(180%) blur(18px);
+  -webkit-backdrop-filter:saturate(180%) blur(18px);
+  border-bottom:1px solid transparent;
+  transition:border-color .3s,background .3s;
+}
+.nav.scrolled{border-bottom-color:var(--line);background:rgba(255,255,255,.85)}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;height:66px}
+.logo{
+  font-family:var(--display);font-size:27px;color:var(--ink);
+  letter-spacing:-0.03em;display:inline-flex;align-items:center;gap:2px;
+}
+.logo .spark{
+  display:inline-block;width:9px;height:9px;border-radius:2px;
+  background:var(--lime);transform:translateY(-9px) rotate(45deg);margin-left:1px;
+}
+.nav-menu{display:flex;gap:34px}
+.nav-menu a{font-size:15px;color:var(--ink-2);font-weight:500;transition:color .2s}
+.nav-menu a:hover{color:var(--ink)}
+.nav-cta{display:flex;align-items:center;gap:14px}
+.nav-cta .login{font-size:15px;font-weight:600;color:var(--ink-2)}
+.nav-cta .login:hover{color:var(--ink)}
+.burger{display:none;background:none;border:none;color:var(--ink);font-size:24px;cursor:pointer}
+
+/* ---------- reveal ---------- */
+.reveal{opacity:0;transform:translateY(26px);transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1)}
+.reveal.in{opacity:1;transform:none}
+.reveal[data-d="1"]{transition-delay:.08s}
+.reveal[data-d="2"]{transition-delay:.16s}
+.reveal[data-d="3"]{transition-delay:.24s}
+.reveal[data-d="4"]{transition-delay:.32s}
+
+/* ---------- hero ---------- */
+.hero{position:relative;padding:64px 0 40px;overflow:hidden}
+.hero-grid{display:grid;grid-template-columns:1.08fr .92fr;gap:56px;align-items:center}
+.hero h1{font-size:clamp(38px,6.2vw,74px);margin:22px 0 0}
+.hero h1 .hl{position:relative;white-space:nowrap}
+.hero h1 .hl::after{
+  content:"";position:absolute;left:-2px;right:-4px;bottom:.1em;height:.34em;
+  background:var(--lime);z-index:-1;border-radius:3px;
+  transform:scaleX(0);transform-origin:left;transition:transform .8s .5s cubic-bezier(.2,.8,.2,1);
+}
+.hero.lit h1 .hl::after{transform:scaleX(1)}
+.hero h1 .hl span{position:relative;z-index:1}
+.hero-sub{
+  font-size:clamp(16px,1.5vw,19px);color:var(--muted);
+  margin:26px 0 34px;max-width:520px;line-height:1.7;font-weight:450;
+}
+.hero-sub b{color:var(--ink-2);font-weight:600}
+.hero-cta{display:flex;gap:14px;flex-wrap:wrap}
+.hero-trust-mini{margin-top:26px;display:flex;align-items:center;gap:10px;color:var(--muted);font-size:14px}
+.hero-trust-mini .avs{display:flex}
+.hero-trust-mini .av{
+  width:30px;height:30px;border-radius:50%;border:2px solid #fff;margin-left:-9px;
+  background:var(--bg-alt);display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;color:var(--ink-2);
+}
+.hero-trust-mini .av:first-child{margin-left:0}
+.hero-trust-mini .av.l{background:var(--lime);color:var(--ink)}
+.hero-trust-mini .av.c{background:var(--cobalt);color:#fff}
+
+/* hero visual mockup */
+.mock-stage{position:relative;display:flex;justify-content:center}
+.mock-stage::before{
+  content:"";position:absolute;inset:-12% -8% -6% -8%;z-index:0;
+  background:
+    radial-gradient(60% 50% at 70% 18%,rgba(200,255,61,.55),transparent 70%),
+    radial-gradient(50% 45% at 22% 88%,rgba(37,71,255,.12),transparent 70%);
+  filter:blur(6px);
+}
+.mock-frame{
+  position:relative;z-index:1;width:300px;max-width:100%;
+  background:#fff;border:1px solid var(--line);border-radius:26px;
+  box-shadow:0 40px 80px -36px rgba(14,14,16,.28),0 8px 24px -16px rgba(14,14,16,.2);
+  padding:14px 14px 0;
+}
+.mock-bar{display:flex;align-items:center;gap:6px;padding:2px 4px 12px}
+.mock-bar i{width:9px;height:9px;border-radius:50%;background:var(--line);display:inline-block}
+.mock-bar i:nth-child(2){background:#ddd}
+.mock-bar .url{
+  margin-left:8px;flex:1;height:22px;border-radius:6px;background:var(--bg-alt);
+  display:flex;align-items:center;padding:0 9px;font-size:11px;color:var(--muted);
+  font-family:var(--body);
+}
+.mock-page{
+  height:430px;overflow:hidden;border-radius:14px 14px 0 0;
+  border:1px solid var(--line);border-bottom:none;background:#fff;
+  position:relative;
+}
+.mock-scroll{position:absolute;inset:0;animation:mockScroll 13s ease-in-out infinite alternate}
+@keyframes mockScroll{0%,12%{transform:translateY(0)}88%,100%{transform:translateY(-52%)}}
+.mp-hero{height:150px;background:var(--ink);position:relative;overflow:hidden}
+.mp-hero::after{content:"";position:absolute;right:-30px;top:-30px;width:130px;height:130px;border-radius:50%;background:var(--lime);opacity:.92}
+.mp-hero .tag{position:absolute;left:16px;top:18px;width:60px;height:9px;border-radius:5px;background:rgba(255,255,255,.45)}
+.mp-hero .h{position:absolute;left:16px;top:40px;width:150px;height:18px;border-radius:5px;background:#fff}
+.mp-hero .h2{position:absolute;left:16px;top:66px;width:110px;height:18px;border-radius:5px;background:var(--lime)}
+.mp-block{padding:16px}
+.mp-img{height:96px;border-radius:10px;background:linear-gradient(120deg,#EDEFF5,#F7F7F8);margin-bottom:14px;position:relative;overflow:hidden}
+.mp-img::after{content:"";position:absolute;left:14px;bottom:14px;width:54px;height:54px;border-radius:10px;background:var(--cobalt);opacity:.16}
+.mp-line{height:10px;border-radius:5px;background:var(--bg-alt);margin-bottom:9px}
+.mp-line.w1{width:80%}.mp-line.w2{width:95%}.mp-line.w3{width:60%}
+.mp-pill{display:inline-block;height:22px;width:90px;border-radius:980px;background:var(--lime);margin-top:6px}
+.mp-split{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.mp-split .c{height:80px;border-radius:10px;background:var(--bg-alt)}
+.mp-split .c.dark{background:var(--ink)}
+.mp-quote{margin-top:16px;padding:14px;border-radius:12px;background:var(--cobalt-soft)}
+.mp-quote .q1{height:9px;width:90%;border-radius:5px;background:#cdd6ff;margin-bottom:7px}
+.mp-quote .q2{height:9px;width:70%;border-radius:5px;background:#cdd6ff}
+
+/* floating chips on mockup */
+.chip{
+  position:absolute;z-index:2;background:#fff;border:1px solid var(--line);
+  border-radius:14px;padding:11px 14px;display:flex;align-items:center;gap:9px;
+  box-shadow:0 16px 34px -18px rgba(14,14,16,.35);font-size:13.5px;font-weight:600;
+}
+.chip .ic{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.chip.a{top:54px;left:-30px;animation:floaty 5s ease-in-out infinite}
+.chip.a .ic{background:var(--lime);color:var(--ink)}
+.chip.b{bottom:74px;right:-26px;animation:floaty 5.6s ease-in-out infinite .8s}
+.chip.b .ic{background:var(--cobalt);color:#fff}
+.chip small{display:block;font-size:11px;font-weight:500;color:var(--muted);margin-top:1px}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+
+/* ---------- trust bar ---------- */
+.trust{border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--bg-alt);padding:30px 0}
+.trust-inner{display:flex;align-items:center;justify-content:center;gap:clamp(20px,5vw,64px);flex-wrap:wrap}
+.trust-label{font-size:14px;color:var(--muted);font-weight:500;letter-spacing:.01em}
+.trust-label b{color:var(--ink-2);font-weight:700}
+.trust-logos{display:flex;align-items:center;gap:clamp(18px,3vw,40px);flex-wrap:wrap;justify-content:center}
+.trust-logos span{font-family:var(--display);font-size:19px;color:#A9AAB2;letter-spacing:-.02em;transition:color .2s}
+.trust-logos span:hover{color:var(--ink-2)}
+
+/* ---------- section shell ---------- */
+.section{padding:clamp(72px,9vw,116px) 0}
+.section.alt{background:var(--bg-alt)}
+.sec-head{max-width:720px;margin-bottom:54px}
+.sec-head.center{margin-left:auto;margin-right:auto;text-align:center}
+.sec-head h2{font-size:clamp(30px,4.4vw,50px);margin:18px 0 0;letter-spacing:-.025em}
+.sec-head p{font-size:clamp(16px,1.5vw,18px);color:var(--muted);margin-top:18px;line-height:1.7}
+.kicker{font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--cobalt)}
+
+/* ---------- problem cards ---------- */
+.prob-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(232px,1fr));gap:20px}
+.prob-card{
+  background:#fff;border:1px solid var(--line);border-radius:var(--r-md);
+  padding:28px 26px;transition:transform .3s,box-shadow .3s,border-color .3s;
+}
+.prob-card:hover{transform:translateY(-5px);box-shadow:0 22px 44px -28px rgba(14,14,16,.3);border-color:#dcdce2}
+.prob-ic{width:46px;height:46px;border-radius:13px;background:var(--bg-alt);display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--ink);margin-bottom:18px}
+.prob-card h3{font-size:18px;font-weight:700;letter-spacing:-.01em}
+.prob-card p{color:var(--muted);font-size:15px;margin-top:9px;line-height:1.6}
+.prob-card .cost{display:inline-block;margin-top:14px;font-family:var(--display);font-size:20px;color:var(--ink)}
+.prob-card .cost em{font-style:normal;color:var(--cobalt)}
+
+/* ---------- steps ---------- */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;counter-reset:s}
+.step{
+  position:relative;background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);
+  padding:34px 30px 30px;overflow:hidden;
+}
+.step::before{
+  counter-increment:s;content:"0" counter(s);
+  font-family:var(--display);font-size:74px;line-height:1;color:var(--bg-alt);
+  position:absolute;right:18px;top:6px;z-index:0;
+}
+.step.feat{background:var(--ink);color:#fff;border-color:var(--ink)}
+.step.feat::before{color:rgba(255,255,255,.08)}
+.step .num{
+  position:relative;z-index:1;width:42px;height:42px;border-radius:12px;
+  background:var(--lime);color:var(--ink);font-family:var(--display);font-size:19px;
+  display:flex;align-items:center;justify-content:center;margin-bottom:20px;
+}
+.step h3{position:relative;z-index:1;font-size:21px;font-weight:700;letter-spacing:-.015em}
+.step p{position:relative;z-index:1;margin-top:11px;font-size:15px;line-height:1.62;color:var(--muted)}
+.step.feat p{color:rgba(255,255,255,.72)}
+.step .arrow{position:absolute;z-index:1;right:24px;bottom:22px;font-size:20px;color:var(--lime);opacity:0}
+.step:hover .arrow{opacity:1;transition:opacity .3s}
+
+/* ---------- feature cards ---------- */
+.feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px}
+.feat-card{
+  position:relative;background:#fff;border:1px solid var(--line);border-radius:var(--r-md);
+  padding:30px 28px;transition:transform .3s,box-shadow .3s,border-color .3s;overflow:hidden;
+}
+.feat-card:hover{transform:translateY(-5px);box-shadow:0 24px 48px -30px rgba(14,14,16,.32);border-color:#dcdce2}
+.feat-card .fic{
+  width:54px;height:54px;border-radius:15px;display:flex;align-items:center;justify-content:center;
+  font-size:25px;margin-bottom:20px;background:var(--ink);color:var(--lime);
+}
+.feat-card:nth-child(2) .fic{background:var(--lime);color:var(--ink)}
+.feat-card:nth-child(3) .fic{background:var(--cobalt);color:#fff}
+.feat-card:nth-child(4) .fic{background:var(--bg-alt);color:var(--ink)}
+.feat-card h3{font-size:20px;font-weight:700;letter-spacing:-.015em}
+.feat-card p{color:var(--muted);font-size:15px;margin-top:11px;line-height:1.64}
+.feat-card .badge{
+  display:inline-block;margin-top:16px;font-size:12.5px;font-weight:700;
+  color:var(--lime-deep);background:#F4FFD6;border:1px solid #E4F9B0;
+  padding:5px 12px;border-radius:var(--r-pill);
+}
+
+/* ---------- comparison table ---------- */
+.cmp{overflow-x:auto;border-radius:var(--r-md);border:1px solid var(--line)}
+.cmp table{width:100%;border-collapse:collapse;min-width:620px;background:#fff}
+.cmp th,.cmp td{padding:20px 22px;text-align:left;border-bottom:1px solid var(--line)}
+.cmp thead th{font-size:14px;font-weight:600;color:var(--muted);background:var(--bg-alt)}
+.cmp thead th.lumi{background:var(--ink);color:#fff;font-family:var(--display);font-size:18px;font-weight:400;letter-spacing:-.02em;border-top-right-radius:var(--r-md)}
+.cmp thead th:first-child{border-top-left-radius:var(--r-md)}
+.cmp tbody th{font-weight:600;font-size:15px;color:var(--ink-2)}
+.cmp td{font-size:15px;color:var(--ink-2)}
+.cmp td.lumi{background:#FCFFF2;font-weight:700;color:var(--ink);position:relative}
+.cmp tr:last-child td,.cmp tr:last-child th{border-bottom:none}
+.cmp td.lumi .ok{display:inline-flex;align-items:center;gap:7px;color:var(--lime-deep)}
+.cmp td.lumi .ok i{color:var(--ink);background:var(--lime);border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:13px}
+.cmp td .no{color:#B9B9C0;display:inline-flex;align-items:center;gap:6px}
+.cmp .v-strong{color:var(--ink);font-weight:700}
+
+/* ---------- pricing ---------- */
+.price-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:22px;align-items:start}
+.price-card{
+  background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);
+  padding:34px 30px;position:relative;transition:transform .3s,box-shadow .3s;
+}
+.price-card:hover{transform:translateY(-4px);box-shadow:0 24px 50px -32px rgba(14,14,16,.28)}
+.price-card.pop{background:var(--ink);color:#fff;border-color:var(--ink);transform:scale(1.02)}
+.price-card.pop:hover{transform:scale(1.02) translateY(-4px)}
+.price-badge{
+  position:absolute;top:-13px;left:50%;transform:translateX(-50%);
+  background:var(--lime);color:var(--ink);font-size:12.5px;font-weight:700;
+  padding:6px 16px;border-radius:var(--r-pill);letter-spacing:.02em;white-space:nowrap;
+}
+.price-name{font-size:16px;font-weight:700;letter-spacing:.01em}
+.price-card.pop .price-name{color:var(--lime)}
+.price-amt{font-family:var(--display);font-size:clamp(34px,4vw,42px);margin:16px 0 2px;letter-spacing:-.02em}
+.price-amt small{font-family:var(--body);font-size:16px;font-weight:500;color:var(--muted)}
+.price-card.pop .price-amt small{color:rgba(255,255,255,.6)}
+.price-cap{font-size:14px;color:var(--muted)}
+.price-card.pop .price-cap{color:rgba(255,255,255,.72)}
+.price-feats{list-style:none;margin:24px 0 28px;display:flex;flex-direction:column;gap:13px}
+.price-feats li{display:flex;align-items:flex-start;gap:11px;font-size:14.5px;color:var(--ink-2);line-height:1.45}
+.price-card.pop .price-feats li{color:rgba(255,255,255,.82)}
+.price-feats li i{color:var(--lime-deep);font-size:18px;margin-top:1px;flex-shrink:0}
+.price-card.pop .price-feats li i{color:var(--lime)}
+.price-card .btn{width:100%}
+
+/* ---------- final CTA ---------- */
+.final{background:var(--ink);color:#fff;position:relative;overflow:hidden;border-radius:var(--r-lg);margin:0 24px;}
+.final-inner{max-width:var(--max);margin:0 auto;padding:clamp(64px,9vw,108px) 32px;text-align:center;position:relative;z-index:1}
+.final::before{content:"";position:absolute;top:-40%;right:-6%;width:460px;height:460px;border-radius:50%;background:var(--lime);opacity:.16;filter:blur(8px)}
+.final::after{content:"";position:absolute;bottom:-46%;left:-4%;width:420px;height:420px;border-radius:50%;background:var(--cobalt);opacity:.22;filter:blur(8px)}
+.final h2{font-size:clamp(32px,5vw,58px);letter-spacing:-.025em;line-height:1.08}
+.final h2 .lime{color:var(--lime)}
+.final p{color:rgba(255,255,255,.72);font-size:clamp(16px,1.6vw,19px);margin:22px auto 38px;max-width:520px}
+.final .hero-cta{justify-content:center}
+.final .btn-ghost{color:#fff;border-color:rgba(255,255,255,.25)}
+.final .btn-ghost:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.4)}
+.final-note{margin-top:22px;font-size:13.5px;color:rgba(255,255,255,.55)}
+
+/* ---------- footer ---------- */
+.footer{padding:64px 0 48px;border-top:1px solid var(--line)}
+.footer-top{display:flex;justify-content:space-between;gap:40px;flex-wrap:wrap;align-items:flex-start}
+.footer .logo{font-size:30px}
+.footer-tag{color:var(--muted);font-size:14px;margin-top:12px;max-width:280px;line-height:1.6}
+.footer-links{display:flex;gap:48px;flex-wrap:wrap}
+.footer-col h4{font-size:13px;font-weight:700;color:var(--ink-2);letter-spacing:.04em;margin-bottom:14px}
+.footer-col a{display:block;font-size:14.5px;color:var(--muted);margin-bottom:10px;transition:color .2s}
+.footer-col a:hover{color:var(--ink)}
+.footer-bottom{margin-top:48px;padding-top:26px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center}
+.footer-bottom p{font-size:13.5px;color:var(--muted)}
+.footer-bottom .badge{font-size:12.5px;color:var(--ink-2);background:var(--bg-alt);border:1px solid var(--line);padding:6px 13px;border-radius:var(--r-pill);font-weight:600}
+
+/* ---------- responsive ---------- */
+@media(max-width:900px){
+  .hero-grid{grid-template-columns:1fr;gap:48px}
+  .mock-stage{order:-1}
+  .steps{grid-template-columns:1fr}
+  .step.feat{order:0}
+}
+@media(max-width:768px){
+  .nav-menu{display:none}
+  .nav-cta .login{display:none}
+  .burger{display:inline-flex}
+  .chip.a{left:-6px}
+  .chip.b{right:-6px}
+  .hero{padding:42px 0 28px}
+  .footer-top{flex-direction:column}
+  .price-card.pop{transform:none}
+  .price-card.pop:hover{transform:translateY(-4px)}
+}
+@media(max-width:480px){
+  .wrap{padding:0 18px}
+  .hero-cta{flex-direction:column;align-items:stretch}
+  .hero-cta .btn{width:100%}
+  .chip{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ NAV ============ -->
+<header class="nav" id="nav">
+  <div class="wrap nav-inner">
+    <a href="#top" class="logo">lumi<span class="spark"></span></a>
+    <nav class="nav-menu">
+      <a href="#features">기능</a>
+      <a href="#how">작동방식</a>
+      <a href="#pricing">요금제</a>
+    </nav>
+    <div class="nav-cta">
+      <a href="#" class="login">로그인</a>
+      <a href="#pricing" class="btn btn-lime btn-sm">무료로 시작</a>
+      <button class="burger" id="burger" aria-label="메뉴 열기"><i data-lucide="menu"></i></button>
+    </div>
+  </div>
+</header>
+
+<!-- ============ HERO ============ -->
+<section class="hero" id="top">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <span class="eyebrow reveal"><span class="dot"></span>AI 상세페이지 메이커</span>
+      <h1 class="display reveal" data-d="1">
+        잘 팔리는 상세페이지,<br>
+        <span class="hl"><span>사진과 정보</span></span>만<br>
+        넣으면 끝.
+      </h1>
+      <p class="hero-sub reveal" data-d="2">
+        마음에 드는 레퍼런스를 올리면 AI가 구조를 분석해 <b>같은 퀄리티로</b> 만들어드려요.
+        글자 하나까지 정확하게, 폰트·색은 마음대로 편집하세요.
+      </p>
+      <div class="hero-cta reveal" data-d="3">
+        <a href="#pricing" class="btn btn-primary"><i data-lucide="sparkles"></i>무료로 만들어보기</a>
+        <a href="#how" class="btn btn-ghost"><i data-lucide="play"></i>샘플 보기</a>
+      </div>
+      <div class="hero-trust-mini reveal" data-d="4">
+        <div class="avs">
+          <span class="av l">스</span><span class="av c">쿠</span><span class="av">카</span><span class="av">셀</span>
+        </div>
+        스마트스토어·쿠팡 셀러 1,400+ 명이 먼저 쓰는 중
+      </div>
+    </div>
+
+    <div class="mock-stage reveal" data-d="2">
+      <div class="chip a">
+        <span class="ic"><i data-lucide="scan-search"></i></span>
+        <div>구조 분석 완료<small>레퍼런스 그대로</small></div>
+      </div>
+      <div class="chip b">
+        <span class="ic"><i data-lucide="check"></i></span>
+        <div>한글 100% 정확<small>글자 안 깨짐</small></div>
+      </div>
+      <div class="mock-frame">
+        <div class="mock-bar">
+          <i></i><i></i><i></i>
+          <span class="url">lumi.it.kr / detail</span>
+        </div>
+        <div class="mock-page">
+          <div class="mock-scroll">
+            <div class="mp-hero">
+              <span class="tag"></span><span class="h"></span><span class="h2"></span>
+            </div>
+            <div class="mp-block">
+              <div class="mp-img"></div>
+              <div class="mp-line w2"></div>
+              <div class="mp-line w1"></div>
+              <div class="mp-line w3"></div>
+              <span class="mp-pill"></span>
+              <div class="mp-split">
+                <div class="c dark"></div><div class="c"></div>
+              </div>
+              <div class="mp-quote"><div class="q1"></div><div class="q2"></div></div>
+              <div class="mp-img" style="margin-top:16px"></div>
+              <div class="mp-line w2"></div>
+              <div class="mp-line w3"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TRUST BAR ============ -->
+<section class="trust">
+  <div class="wrap trust-inner">
+    <span class="trust-label"><b>스마트스토어 · 쿠팡 · 카페24</b> 셀러들이 사용 중</span>
+    <div class="trust-logos">
+      <span>스마트스토어</span>
+      <span>쿠팡</span>
+      <span>카페24</span>
+      <span>아임웹</span>
+      <span>도매꾹</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PROBLEM ============ -->
+<section class="section">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="kicker">왜 lumi인가</span>
+      <h2 class="display">상세페이지 하나에<br>며칠씩 쓰고 계신가요?</h2>
+      <p>기획부터 촬영, 디자인, 외주까지. 상품 하나 올리는 데 들어가는 시간과 비용이 매출보다 무겁습니다.</p>
+    </div>
+    <div class="prob-grid">
+      <div class="prob-card reveal">
+        <div class="prob-ic"><i data-lucide="pencil-ruler"></i></div>
+        <h3>기획·구성에 반나절</h3>
+        <p>무슨 순서로, 어떤 카피로 보여줄지. 매번 백지에서 시작합니다.</p>
+        <span class="cost">반나절 <em>이상</em></span>
+      </div>
+      <div class="prob-card reveal" data-d="1">
+        <div class="prob-ic"><i data-lucide="palette"></i></div>
+        <h3>디자인 툴과의 사투</h3>
+        <p>포토샵·미리캔버스를 켜고 픽셀과 씨름. 디자이너가 아니면 한계가 명확합니다.</p>
+        <span class="cost">하루 <em>꼬박</em></span>
+      </div>
+      <div class="prob-card reveal" data-d="2">
+        <div class="prob-ic"><i data-lucide="wallet"></i></div>
+        <h3>외주비 수십만 원</h3>
+        <p>맡기면 편하지만 상품마다 비용이 쌓입니다. 수정 한 번에 또 추가 요금.</p>
+        <span class="cost"><em>30~80만</em> 원</span>
+      </div>
+      <div class="prob-card reveal" data-d="3">
+        <div class="prob-ic"><i data-lucide="hourglass"></i></div>
+        <h3>그새 트렌드는 지나가고</h3>
+        <p>완성될 때쯤이면 이미 한 박자 늦습니다. 빠른 셀러가 시장을 가져갑니다.</p>
+        <span class="cost"><em>며칠</em> 지연</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ HOW IT WORKS ============ -->
+<section class="section alt" id="how">
+  <div class="wrap">
+    <div class="sec-head center reveal">
+      <span class="kicker">작동 방식</span>
+      <h2 class="display">3단계, 3분이면 됩니다</h2>
+      <p>복잡한 디자인 지식은 필요 없어요. 사진과 정보만 있으면 나머지는 lumi가 합니다.</p>
+    </div>
+    <div class="steps">
+      <div class="step reveal">
+        <div class="num">1</div>
+        <h3>사진 + 정보 업로드</h3>
+        <p>상품 사진과 핵심 정보만 넣으세요. 기존 상세페이지가 있다면 그대로 붙여넣어도 됩니다.</p>
+        <i data-lucide="arrow-up-right" class="arrow"></i>
+      </div>
+      <div class="step feat reveal" data-d="1">
+        <div class="num">2</div>
+        <h3>레퍼런스 선택 → AI 분석</h3>
+        <p>마음에 드는 상세페이지를 고르면 AI가 구조를 분석합니다. 결과를 확인하고 승인만 하세요.</p>
+        <i data-lucide="arrow-up-right" class="arrow"></i>
+      </div>
+      <div class="step reveal" data-d="2">
+        <div class="num">3</div>
+        <h3>완성 → 자유 편집</h3>
+        <p>3분 만에 완성된 상세페이지. 폰트·색·문구를 클릭 한 번으로 내 톤에 맞게 다듬으세요.</p>
+        <i data-lucide="arrow-up-right" class="arrow"></i>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FEATURES ============ -->
+<section class="section" id="features">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="kicker">핵심 기능</span>
+      <h2 class="display">템플릿이 아니라,<br>당신의 레퍼런스 그대로.</h2>
+      <p>흔한 템플릿에 끼워 맞추지 않습니다. 원하는 퀄리티를 그대로 가져와 내 상품에 입힙니다.</p>
+    </div>
+    <div class="feat-grid">
+      <div class="feat-card reveal">
+        <div class="fic"><i data-lucide="scan-search"></i></div>
+        <h3>레퍼런스 구조 분석</h3>
+        <p>마음에 드는 상세페이지를 올리면 섹션 구성·흐름·강조점까지 분석해 같은 퀄리티로 재구성합니다.</p>
+      </div>
+      <div class="feat-card reveal" data-d="1">
+        <div class="fic"><i data-lucide="languages"></i></div>
+        <h3>한글 100% 정확</h3>
+        <p>AI 이미지 특유의 글자 깨짐이 없습니다. 텍스트는 코드로, 비주얼은 AI로 — 우리만의 하이브리드 방식.</p>
+        <span class="badge">lumi 단독 기술</span>
+      </div>
+      <div class="feat-card reveal" data-d="2">
+        <div class="fic"><i data-lucide="mouse-pointer-click"></i></div>
+        <h3>클릭 한 번 자유 편집</h3>
+        <p>폰트·색·문구 모두 클릭으로 바로 수정. 마음에 안 드는 부분만 골라 손쉽게 다듬을 수 있어요.</p>
+      </div>
+      <div class="feat-card reveal" data-d="3">
+        <div class="fic"><i data-lucide="type"></i></div>
+        <h3>다양한 무드 폰트</h3>
+        <p>명조·고딕·손글씨까지. 식품이든 패션이든 뷰티든, 상품 톤에 꼭 맞는 분위기를 입힙니다.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ COMPARISON ============ -->
+<section class="section alt">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="kicker">비교</span>
+      <h2 class="display">외주도, 직접도 아닌<br>세 번째 선택지.</h2>
+      <p>시간·비용·한글 정확도·편집 자유도. 모든 기준에서 lumi가 답이 됩니다.</p>
+    </div>
+    <div class="cmp reveal" data-d="1">
+      <table>
+        <thead>
+          <tr>
+            <th>&nbsp;</th>
+            <th>디자인 외주</th>
+            <th>템플릿 직접 제작</th>
+            <th class="lumi">lumi</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th>제작 시간</th>
+            <td>3~7일</td>
+            <td>반나절~하루</td>
+            <td class="lumi"><span class="v-strong">약 3분</span></td>
+          </tr>
+          <tr>
+            <th>비용</th>
+            <td>건당 30~80만 원</td>
+            <td>툴 구독 + 내 시간</td>
+            <td class="lumi"><span class="v-strong">월 16,500원~</span></td>
+          </tr>
+          <tr>
+            <th>한글 정확도</th>
+            <td>높음 (사람 작업)</td>
+            <td>높음</td>
+            <td class="lumi"><span class="ok"><i data-lucide="check"></i>100% 정확</span></td>
+          </tr>
+          <tr>
+            <th>레퍼런스 반영</th>
+            <td>요청해야 함</td>
+            <td><span class="no"><i data-lucide="x"></i>직접 따라야</span></td>
+            <td class="lumi"><span class="ok"><i data-lucide="check"></i>구조 자동 분석</span></td>
+          </tr>
+          <tr>
+            <th>수정 자유도</th>
+            <td><span class="no"><i data-lucide="x"></i>요청·추가비</span></td>
+            <td>가능하나 번거로움</td>
+            <td class="lumi"><span class="ok"><i data-lucide="check"></i>클릭 편집</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PRICING ============ -->
+<section class="section" id="pricing">
+  <div class="wrap">
+    <div class="sec-head center reveal">
+      <span class="kicker">요금제</span>
+      <h2 class="display">부담 없이 시작하세요</h2>
+      <p>먼저 무료로 만들어보고, 필요한 만큼만 결제하세요. 언제든 변경·해지할 수 있습니다.</p>
+    </div>
+    <div class="price-grid">
+      <div class="price-card reveal">
+        <div class="price-name">Free</div>
+        <div class="price-amt">₩0<small> / 체험</small></div>
+        <div class="price-cap">월 1건 생성 · 워터마크 포함</div>
+        <ul class="price-feats">
+          <li><i data-lucide="check"></i>상세페이지 월 1건</li>
+          <li><i data-lucide="check"></i>레퍼런스 구조 분석</li>
+          <li><i data-lucide="check"></i>기본 폰트 세트</li>
+          <li><i data-lucide="check"></i>한글 100% 정확</li>
+        </ul>
+        <a href="#" class="btn btn-ghost">무료로 시작</a>
+      </div>
+
+      <div class="price-card pop reveal" data-d="1">
+        <span class="price-badge">가장 인기</span>
+        <div class="price-name">Basic</div>
+        <div class="price-amt">₩16,500<small> / 월</small></div>
+        <div class="price-cap">월 15건 생성 · 워터마크 없음</div>
+        <ul class="price-feats">
+          <li><i data-lucide="check"></i>상세페이지 월 15건</li>
+          <li><i data-lucide="check"></i>모든 무드 폰트</li>
+          <li><i data-lucide="check"></i>자유 편집 무제한</li>
+          <li><i data-lucide="check"></i>고해상도 다운로드</li>
+          <li><i data-lucide="check"></i>워터마크 제거</li>
+        </ul>
+        <a href="#" class="btn btn-lime">Basic 시작하기</a>
+      </div>
+
+      <div class="price-card reveal" data-d="2">
+        <div class="price-name">Pro</div>
+        <div class="price-amt">₩39,000<small> / 월</small></div>
+        <div class="price-cap">월 50건 생성 · 우선 처리</div>
+        <ul class="price-feats">
+          <li><i data-lucide="check"></i>상세페이지 월 50건</li>
+          <li><i data-lucide="check"></i>Basic의 모든 기능</li>
+          <li><i data-lucide="check"></i>우선 생성 처리</li>
+          <li><i data-lucide="check"></i>브랜드 폰트 업로드</li>
+          <li><i data-lucide="check"></i>1:1 우선 지원</li>
+        </ul>
+        <a href="#" class="btn btn-ghost">Pro 시작하기</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FINAL CTA ============ -->
+<section class="section" style="padding-top:0;padding-bottom:clamp(72px,9vw,116px)">
+  <div class="final reveal">
+    <div class="final-inner">
+      <h2 class="display">지금 바로, 첫 상세페이지를<br><span class="lime">무료로</span> 만들어보세요.</h2>
+      <p>가입 30초, 생성 3분. 마음에 들면 그때 결제하세요. 카드 등록 없이 바로 시작할 수 있어요.</p>
+      <div class="hero-cta">
+        <a href="#" class="btn btn-lime"><i data-lucide="sparkles"></i>무료로 만들어보기</a>
+        <a href="#how" class="btn btn-ghost"><i data-lucide="play"></i>샘플 먼저 보기</a>
+      </div>
+      <p class="final-note">신용카드 불필요 · 1분 안에 첫 결과 확인</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-top">
+      <div>
+        <a href="#top" class="logo">lumi<span class="spark"></span></a>
+        <p class="footer-tag">사진과 정보만 넣으면 끝. 잘 팔리는 상세페이지를 3분 만에 만드는 AI 메이커.</p>
+      </div>
+      <div class="footer-links">
+        <div class="footer-col">
+          <h4>제품</h4>
+          <a href="#features">기능</a>
+          <a href="#how">작동방식</a>
+          <a href="#pricing">요금제</a>
+        </div>
+        <div class="footer-col">
+          <h4>지원</h4>
+          <a href="#">고객지원</a>
+          <a href="#">자주 묻는 질문</a>
+          <a href="#">사용 가이드</a>
+        </div>
+        <div class="footer-col">
+          <h4>약관</h4>
+          <a href="#">이용약관</a>
+          <a href="#">개인정보처리방침</a>
+          <a href="#">환불정책</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2026 lumi. All rights reserved.</p>
+      <span class="badge">made for korean sellers</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  // icons
+  function paintIcons(){ if(window.lucide) window.lucide.createIcons(); }
+  if(window.lucide){ paintIcons(); }
+  else { window.addEventListener('load', paintIcons); }
+
+  // sticky nav border
+  var nav=document.getElementById('nav');
+  var onScroll=function(){ nav.classList.toggle('scrolled', window.scrollY>8); };
+  onScroll(); window.addEventListener('scroll', onScroll, {passive:true});
+
+  // hero highlight + first reveals
+  var hero=document.querySelector('.hero');
+  requestAnimationFrame(function(){
+    setTimeout(function(){ if(hero) hero.classList.add('lit'); }, 120);
+  });
+
+  // intersection reveal
+  var els=document.querySelectorAll('.reveal');
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); }
+      });
+    },{threshold:0.12, rootMargin:'0px 0px -8% 0px'});
+    els.forEach(function(el){ io.observe(el); });
+  } else {
+    els.forEach(function(el){ el.classList.add('in'); });
+  }
+
+  // mobile menu (lightweight scroll-to)
+  var burger=document.getElementById('burger');
+  if(burger){
+    burger.addEventListener('click', function(){
+      document.getElementById('pricing').scrollIntoView({behavior:'smooth'});
+    });
+  }
+})();
+</script>
+</body>
+</html>
