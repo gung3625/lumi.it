@@ -103,7 +103,7 @@ exports.handler = async (event) => {
   // sellers 조회: Supabase JWT → email 매칭, seller-jwt → id 매칭
   const sellerQuery = admin
     .from('sellers')
-    .select('id, owner_name, phone, email, store_name, signup_step, signup_completed_at, plan, trial_start, marketing_consent, referral_code, created_at, onboarded, signup_method, display_name, avatar_url, age_range, industry, region, store_desc, tone_sample_1, tone_sample_2, tone_sample_3, tone_request, deletion_requested_at, deletion_scheduled_at, deletion_cancelled_at, publish_prefs, tester_requested_at, tester_requested_ig_handle, tester_invited_at');
+    .select('id, owner_name, phone, email, store_name, signup_step, signup_completed_at, plan, trial_start, marketing_consent, referral_code, created_at, onboarded, signup_method, display_name, avatar_url, age_range, industry, region, store_desc, tone_sample_1, tone_sample_2, tone_sample_3, tone_request, deletion_requested_at, deletion_scheduled_at, deletion_cancelled_at, publish_prefs, tester_requested_at, tester_requested_ig_handle, tester_invited_at, free_credits_remaining');
 
   let { data: seller, error: selErr } = sellerQueryField
     ? await sellerQuery.eq(sellerQueryField, sellerQueryValue).maybeSingle()
@@ -271,6 +271,7 @@ exports.handler = async (event) => {
         toneRequest: seller.tone_request || '',
         plan: seller.plan,
         trialStart: seller.trial_start,
+        freeCredits: typeof seller.free_credits_remaining === 'number' ? seller.free_credits_remaining : null,
         marketingConsent: seller.marketing_consent,
         referralCode: seller.referral_code,
         createdAt: seller.created_at,

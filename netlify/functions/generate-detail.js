@@ -7,6 +7,7 @@ const { getItemView } = require('./_shared/domeggook-api.js');
 const { getDometopiaItem, parseNo } = require('./_shared/dometopia.js');
 const { fetchViaUnlocker, parseUniversalProduct } = require('./_shared/universal.js');
 const { verifySellerToken, extractBearerToken } = require('./_shared/seller-jwt.js');
+const { getAdminClient } = require('./_shared/supabase-admin.js');
 const fs = require('fs');
 const path = require('path');
 // 결과 영구 저장 폴더(~/lumi/r) — server.js 정적 서빙으로 lumi.it.kr/r/<jobId>.html 접근.
@@ -21,6 +22,14 @@ const headers = {
 };
 const ok = (obj, code) => ({ statusCode: code || 200, headers, body: JSON.stringify(obj) });
 const err = (code, msg) => ({ statusCode: code, headers, body: JSON.stringify({ error: msg }) });
+
+// 관리자(사장님 등) 계정은 무료 크레딧 체크 면제 — 무제한 생성.
+function isAdminSeller(id) {
+  if (!id) return false;
+  const ids = String(process.env.LUMI_ADMIN_USER_IDS || '').split(',').map((s) => s.trim()).filter(Boolean);
+  const brand = (process.env.LUMI_BRAND_USER_ID || '').trim();
+  return ids.includes(id) || (!!brand && id === brand);
+}
 const stripDataUri = (s) => String(s || '').replace(/^data:image\/[a-zA-Z0-9.+-]+;base64,/, '');
 
 // 레퍼런스 hex 팔레트 → {accent, ink(가장 어두운), soft(가장 밝은)}. 6자리 hex만 사용.
@@ -185,13 +194,14 @@ exports.handler = async (event) => {
   // 인증: 로그인 회원만 (비로그인 API 직접호출 차단 → 비용 안전). create.html 이 Bearer 토큰 전송.
   const { payload: _auth, error: _authErr } = verifySellerToken(extractBearerToken(event));
   if (_authErr || !_auth) return err(401, '로그인이 필요합니다. 다시 로그인해 주세요.');
+  const sellerId = _auth.seller_id;
 
   // 상태 조회
   if (event.httpMethod === 'GET') {
     const id = (event.queryStringParameters || {}).jobId;
     const j = id && jobs[id];
     if (!j) return err(404, '작업을 찾을 수 없습니다. 다시 시도해 주세요');
-    if (j.status === 'done') return ok({ status: 'done', mode: j.mode || 'html', title: j.title, html: j.html, blocks: j.blocks, palette: j.palette, copy: j.copy, reviewPoints: j.reviewPoints, sceneCount: j.sceneCount, resultUrl: j.resultUrl });
+    if (j.status === 'done') return ok({ status: 'done', mode: j.mode || 'html', title: j.title, html: j.html, blocks: j.blocks, palette: j.palette, copy: j.copy, reviewPoints: j.reviewPoints, sceneCount: j.sceneCount, resultUrl: j.resultUrl, creditRemaining: j.creditRemaining });
     if (j.status === 'error') return ok({ status: 'error', error: j.error });
     return ok({ status: 'pending' });
   }
@@ -232,6 +242,17 @@ exports.handler = async (event) => {
   var ip = String(event.headers['x-forwarded-for'] || '').split(',')[0].trim() || event.headers['x-real-ip'] || 'ip';
   if (!allowRate(ip)) return err(429, '하루 생성 한도(' + RATE_LIMIT + '회)를 초과했습니다. 내일 다시 이용해 주세요.');
 
+  // 무료 크레딧 체크 — 관리자 면제. 잔여 0이면 생성 차단(유료 안내). 조회 실패 시엔 막지 않고 진행(사용자 우선).
+  const _isAdmin = isAdminSeller(sellerId);
+  let _credit = null;
+  if (!_isAdmin) {
+    try {
+      const { data: _s } = await getAdminClient().from('sellers').select('free_credits_remaining').eq('id', sellerId).single();
+      _credit = _s ? (_s.free_credits_remaining == null ? 0 : _s.free_credits_remaining) : 0;
+    } catch (_) { _credit = null; }
+    if (_credit !== null && _credit <= 0) return err(403, '무료 생성 2회를 모두 사용했어요. 더 만들려면 곧 열릴 유료 플랜을 이용해 주세요.');
+  }
+
   const jobId = Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
   jobs[jobId] = { status: 'pending', ts: Date.now() };
   gcJobs();
@@ -247,7 +268,13 @@ exports.handler = async (event) => {
           r.resultUrl = 'https://lumi.it.kr/r/' + jobId + '.html';
         }
       } catch (_) {}
-      jobs[jobId] = { status: 'done', ts: Date.now(), ...r };
+      let _remain = null;
+      if (!_isAdmin && _credit !== null) _remain = Math.max(0, _credit - 1);
+      jobs[jobId] = { status: 'done', ts: Date.now(), ...r, creditRemaining: _remain };
+      // 생성 성공 → 무료 크레딧 1 차감 (관리자·조회실패 제외). fire-and-forget.
+      if (!_isAdmin && _credit !== null && _credit > 0) {
+        getAdminClient().from('sellers').update({ free_credits_remaining: _credit - 1 }).eq('id', sellerId).then(function () {}, function () {});
+      }
     })
     .catch((e) => { jobs[jobId] = { status: 'error', ts: Date.now(), error: (e && e.message) || '생성 중 오류가 발생했습니다' }; });
 

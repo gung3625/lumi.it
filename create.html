@@ -50,6 +50,7 @@ nav{position:sticky;top:0;z-index:50;background:rgba(10,10,12,.7);backdrop-filte
 .nav-right .store{font-weight:600;color:var(--ink)}
 .nav-right a.lk{color:var(--ink-3);transition:color .2s}
 .nav-right a.lk:hover{color:var(--ink)}
+.nav-right .credit{font-size:12.5px;font-weight:600;color:var(--c2);background:var(--grad-soft);border:1px solid var(--line-strong);border-radius:980px;padding:3px 11px}
 
 /* ===== login gate ===== */
 #gate{display:none;min-height:calc(100vh - 62px);align-items:center;justify-content:center;padding:40px 22px}
@@ -240,7 +241,10 @@ summary::before{content:"+ ";font-weight:700}
   fetch('/api/me',{headers:authHeaders}).then(function(r){return r.json();}).then(function(d){
     if(d&&d.seller){
       var name=d.seller.storeName||d.seller.displayName||d.seller.ownerName||'내 매장';
-      navRight.innerHTML='<a class="lk" href="/dashboard">대시보드</a><span class="store">'+name+'</span><a class="lk" href="#" id="logout">로그아웃</a>';
+      freeCredits=(typeof d.seller.freeCredits==='number')?d.seller.freeCredits:null;
+      var creditHtml=(freeCredits===null)?'':'<span class="credit">무료 '+freeCredits+'회</span>';
+      navRight.innerHTML='<a class="lk" href="/dashboard">대시보드</a>'+creditHtml+'<span class="store">'+name+'</span><a class="lk" href="#" id="logout">로그아웃</a>';
+      updateCreditUI();
       var lo=document.getElementById('logout');
       if(lo)lo.addEventListener('click',function(e){e.preventDefault();['lumi-auth','lumi_auth','seller_jwt','lumi_refresh'].forEach(function(k){try{localStorage.removeItem(k);}catch(_){}});try{sessionStorage.clear();}catch(_){}location.href='/';});
     }else{
@@ -251,6 +255,10 @@ summary::before{content:"+ ";font-weight:700}
   // ===== 생성 로직 (detail-maker 검증 로직 이식) =====
   var go=document.getElementById('go'),loading=document.getElementById('loading'),result=document.getElementById('result'),frame=document.getElementById('frame'),err=document.getElementById('err');
   var currentJobId=null,currentBlocks=null,currentPalette=null;
+  var freeCredits=null; // 남은 무료 생성 횟수 (null=관리자/무제한)
+  function updateCreditUI(){
+    if(freeCredits===0){ go.disabled=true; go.textContent='무료 횟수 소진'; err.innerHTML='무료 생성 2회를 모두 사용했어요. 곧 열릴 유료 플랜을 이용해 주세요.'; err.classList.add('on'); }
+  }
   var easyEdit=document.getElementById('easyEdit'),proEdit=document.getElementById('proEdit'),savebtn=document.getElementById('savebtn'),editsave=document.getElementById('editsave');
 
   if(easyEdit)easyEdit.addEventListener('click',function(){
@@ -325,6 +333,7 @@ summary::before{content:"+ ";font-weight:700}
   }
   go.addEventListener('click',function(){
     err.classList.remove('on');
+    if(freeCredits===0){showErr('무료 2회를 모두 사용했어요. 곧 열릴 유료 플랜을 이용해 주세요.',false);return;}
     if(mode==='link'){
       var url=document.getElementById('url').value.trim();
       if(!url){err.textContent='상품 링크를 붙여넣어 주세요.';err.classList.add('on');return;}
@@ -359,7 +368,7 @@ summary::before{content:"+ ";font-weight:700}
   function poll(jobId,n){
     if(n>150){loading.classList.remove('on');go.disabled=false;err.textContent='시간이 너무 오래 걸립니다. 다시 시도해 주세요.';err.classList.add('on');return;}
     fetch('/api/generate-detail?jobId='+encodeURIComponent(jobId),{headers:authHeaders}).then(function(r){return r.json();}).then(function(j){
-      if(j.status==='done'&&(j.html||j.resultUrl)){currentJobId=jobId;currentBlocks=j.blocks||null;currentPalette=j.palette||null;loading.classList.remove('on');go.disabled=false;showResult(j.html,j.resultUrl,j.mode);}
+      if(j.status==='done'&&(j.html||j.resultUrl)){currentJobId=jobId;currentBlocks=j.blocks||null;currentPalette=j.palette||null;if(typeof j.creditRemaining==='number'){freeCredits=j.creditRemaining;var cb=document.querySelector('.nav-right .credit');if(cb)cb.textContent='무료 '+freeCredits+'회';}loading.classList.remove('on');go.disabled=false;showResult(j.html,j.resultUrl,j.mode);updateCreditUI();}
       else if(j.status==='error'){loading.classList.remove('on');go.disabled=false;showErr(j.error||'생성에 실패했습니다.',mode==='link');}
       else{setTimeout(function(){poll(jobId,n+1);},3000);}
     }).catch(function(){setTimeout(function(){poll(jobId,n+1);},3000);});
