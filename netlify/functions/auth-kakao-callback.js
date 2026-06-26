@@ -280,7 +280,8 @@ exports.handler = async (event) => {
   let frag = `#kakao=callback&lumi_token=${encodeURIComponent(sellerJwt)}`;
   if (refreshPlain) frag += `&lumi_refresh=${encodeURIComponent(refreshPlain)}`;
   if (onboarded) frag += '&onboarded=1';
-  const destination = onboarded ? `/dashboard${frag}` : `/signup${frag}`;
+  // 상세페이지가 lumi 메인 — 로그인 후 상세페이지 작업실(/studio)로. (인스타 대시보드는 /dashboard 직접 접근)
+  const destination = `/studio${frag}`;
 
   return redirect(destination, { 'Set-Cookie': cookieVal });
 };
