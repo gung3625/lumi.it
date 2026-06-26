@@ -281,7 +281,7 @@ function softenClaims(copy) {
 }
 
 // 상품(getItemView 결과) + 소싱 힌트 → { copy, html, imageFacts } 또는 { error }.
-async function generateDetailPage(product, { diffHook, painPoints, sellingHook, model, skipVision, imageFacts: injectedFacts } = {}) {
+async function generateDetailPage(product, { diffHook, painPoints, sellingHook, model, skipVision, imageFacts: injectedFacts, userRequest, tone } = {}) {
   const sp = product.spec || {};
   const visionImgs = (product.descImages && product.descImages.length) ? product.descImages : product.images;
   // 확정된 정보(사용자 검수)가 주입되면 재분석하지 않고 그대로 사용 — 2단계(분석→확인→생성) 흐름.
@@ -294,12 +294,14 @@ async function generateDetailPage(product, { diffHook, painPoints, sellingHook, 
     옵션: (product.options || []).slice(0, 10),
     이미지분석: imageFacts,
     소싱데이터: { 차별화: diffHook || null, 불만해소: painPoints || null, 판매전술: sellingHook || null },
+    고객요청: userRequest || null,
+    톤: tone || null,
   };
   let copy = null, llmErr = null;
   try {
     const res = await llmChat({
       model: model || 'gpt-4o',
-      messages: [{ role: 'system', content: SYS }, { role: 'user', content: '상품데이터:\n' + JSON.stringify(ctx, null, 1) + '\n\n위 데이터(상품데이터·이미지분석에 있는 사실만)로 컷 흐름의 고급 상세페이지 카피를 JSON으로 작성.' }],
+      messages: [{ role: 'system', content: SYS }, { role: 'user', content: '상품데이터:\n' + JSON.stringify(ctx, null, 1) + '\n\n위 데이터(상품데이터·이미지분석에 있는 사실만)로 컷 흐름의 고급 상세페이지 카피를 JSON으로 작성. 단, 「고객요청」·「톤」이 있으면 그 톤·타겟·강조점을 반드시 반영하되, 거기 적힌 내용이라도 상품데이터·이미지분석에 없는 사실(효능·성분·수치)은 절대 지어내지 말 것.' }],
       max_tokens: 3800,
       response_format: { type: 'json_object' },
     }, { sensitive: false, label: 'detail-page', timeoutMs: 90000 });

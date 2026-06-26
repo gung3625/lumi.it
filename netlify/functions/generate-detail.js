@@ -112,7 +112,7 @@ async function runGeneration(p, jobId) {
 
   // 2단계 확정 정보(facts)가 오면 재분석 없이 그대로 사용. 없으면 비전 분석.
   const confirmedFacts = Array.isArray(p.facts) ? p.facts : undefined;
-  const result = await generateDetailPage(product, { sellingHook: features || '', skipVision: false, imageFacts: confirmedFacts });
+  const result = await generateDetailPage(product, { sellingHook: features || '', skipVision: false, imageFacts: confirmedFacts, userRequest: p.userRequest, tone: p.tone });
   if (!result || result.error) throw new Error(result && result.error ? result.error : '카피 생성 실패');
   // ★거짓 방지(업로드 모드): 사진 비전·캡처·입력 어디에도 정보가 없으면 거부 → 지어내기 차단.
   if (!url && !(result.imageFacts || []).length && !String(features || '').trim()) {
