@@ -196,8 +196,8 @@ body::before{content:"";position:fixed;inset:0;z-index:-2;background:radial-grad
     else if(act==='down'&&i<blocks.length-1){ var t2=blocks[i];blocks[i]=blocks[i+1];blocks[i+1]=t2;render(); }
     else if(act==='dup'){ blocks.splice(i+1,0,JSON.parse(JSON.stringify(Object.assign({},blocks[i],{_id:null})))); render(); }
     else if(act==='del'){ if(blocks.length>1){blocks.splice(i,1);render();} else alert('마지막 블록은 지울 수 없어요.'); }
-    else if(act==='replace'){ alert('이미지 교체 — 백엔드 연동 시: 파일 업로드 → 해당 블록 화보 교체 (무료, 합성만).'); }
-    else if(act==='regen'){ alert('AI 재생성 — 백엔드 연동 시: 이 블록 화보만 gpt-image-2로 새로 (~100원, 부분 재생성).'); }
+    else if(act==='replace'){ replaceImage(blocks[i]); }
+    else if(act==='regen'){ regenBlock(blocks[i]); }
   });
   // 텍스트 입력 → 블록 데이터 갱신 → recompose(무료) → 해당 블록 이미지 실시간 갱신
   var debTimers={};
@@ -207,6 +207,26 @@ body::before{content:"";position:fixed;inset:0;z-index:-2;background:radial-grad
       .then(function(r){return r.json();}).then(function(d){
         if(d&&d.img){var card=root.querySelector('[data-id="'+b._id+'"]');if(card){var box=card.querySelector('.block-img');if(box){box.innerHTML='<img src="'+esc(d.img)+'?t='+Date.now()+'" alt="">';b.img=d.img;}}}
       }).catch(function(){});
+  }
+  // 이미지 교체(무료, 파일 업로드) / AI 재생성(유료) — 해당 블록 화보만 갱신.
+  function blockBox(b){var card=root.querySelector('[data-id="'+b._id+'"]');return card?card.querySelector('.block-img'):null;}
+  function applyBlockImg(b,d){var box=blockBox(b);if(d&&d.img){if(box)box.innerHTML='<img src="'+esc(d.img)+'?t='+Date.now()+'" alt="">';b.img=d.img;}else{alert((d&&d.error)||'실패했어요. 다시 시도해 주세요.');render();}}
+  function replaceImage(b){
+    if(!jobId){alert('생성 후 "정밀 편집"으로 들어와 주세요.');return;}
+    var inp=document.createElement('input');inp.type='file';inp.accept='image/*';
+    inp.onchange=function(){var f=inp.files&&inp.files[0];if(!f)return;var rd=new FileReader();
+      rd.onload=function(){var b64=String(rd.result).replace(/^data:image\/\w+;base64,/,'');var box=blockBox(b);if(box)box.innerHTML='<div class="ph">교체 중…</div>';
+        fetch('/api/generate-detail',{method:'POST',headers:authHeaders,body:JSON.stringify({action:'replace-image',jobId:jobId,blockKey:b.key,imageBase64:b64,textOverride:b.text})})
+          .then(function(r){return r.json();}).then(function(d){applyBlockImg(b,d);}).catch(function(){alert('교체에 실패했어요.');render();});};
+      rd.readAsDataURL(f);};
+    inp.click();
+  }
+  function regenBlock(b){
+    if(!jobId){alert('생성 후 "정밀 편집"으로 들어와 주세요.');return;}
+    if(!confirm('이 블록 화보를 AI로 다시 만들어요. 약 100원이 들어요. 진행할까요?'))return;
+    var box=blockBox(b);if(box)box.innerHTML='<div class="ph">AI 재생성 중…</div>';
+    fetch('/api/generate-detail',{method:'POST',headers:authHeaders,body:JSON.stringify({action:'regen-block',jobId:jobId,blockKey:b.key,textOverride:b.text})})
+      .then(function(r){return r.json();}).then(function(d){applyBlockImg(b,d);}).catch(function(){alert('재생성에 실패했어요.');render();});
   }
   root.addEventListener('input',function(e){
     var el=e.target; var bk=el.getAttribute&&el.getAttribute('data-bk'), tk=el.getAttribute&&el.getAttribute('data-tk');

@@ -149,7 +149,8 @@ async function runGeneration(p, jobId) {
       batch.forEach((x) => { if (x) blockResults.push(x); });
     }
     // 플랜·스타일 메타 저장(편집/재합성용 — 화보 재생성 없이 텍스트만 다시 얹음).
-    try { fsq.writeFileSync(pathq.join(cacheDir, '_meta.json'), JSON.stringify({ plan: plan.map((b) => ({ key: b.key, text: b.text })), styleHint })); } catch (_) {}
+    try { fsq.writeFileSync(pathq.join(cacheDir, '_meta.json'), JSON.stringify({ plan: plan.map((b) => ({ key: b.key, text: b.text, prompt: b.prompt, quality: b.quality })), styleHint })); } catch (_) {}
+    try { fsq.writeFileSync(pathq.join(cacheDir, '_src.txt'), String(srcForPhoto || '')); } catch (_) {}
     if (!blockResults.length) throw new Error('이미지 생성에 실패했습니다. 다시 시도해 주세요');
     // ★블록별 결과 — 개별 저장(/r/img/{jobId}-{key}.png) + URL → 편집 화면(블록 편집)용. blocks=[{key,img,text}].
     try { fsq.mkdirSync(pathq.join(RESULTS_DIR, 'img'), { recursive: true }); } catch (_) {}
@@ -268,6 +269,45 @@ exports.handler = async (event) => {
       fs.writeFileSync(path.join(imgDir, jid + '.jpg'), Buffer.from(stitched, 'base64'));
       return ok({ recomposed: true, resultUrl: 'https://lumi.it.kr/r/img/' + jid + '.jpg' });
     } catch (e) { return err(500, '재합성에 실패했습니다'); }
+  }
+  // 이미지 교체(무료) — 고객이 올린 사진으로 블록 화보 교체 후 텍스트 재합성. gpt 0.
+  if (params.action === 'replace-image') {
+    const jid = String(params.jobId || '').replace(/[^a-z0-9-]/gi, '');
+    if (!jid || !params.blockKey || !params.imageBase64) return err(400, '교체 정보가 부족합니다');
+    try {
+      const cacheDir = path.join(process.env.HOME || '/home/lumi', 'lumi', 'cache', jid);
+      const raw = String(params.imageBase64).replace(/^data:image\/\w+;base64,/, '');
+      fs.writeFileSync(path.join(cacheDir, params.blockKey + '.png'), Buffer.from(raw, 'base64'));
+      const style = { fontOverride: params.fontOverride, inkOverride: params.inkOverride, accentOverride: params.accentOverride, subOverride: params.subOverride };
+      const out = await recomposeBlock(cacheDir, params.blockKey, params.textOverride || null, style);
+      if (!out) return err(404, '교체에 실패했습니다. 다시 시도해 주세요');
+      const imgDir = path.join(RESULTS_DIR, 'img'); try { fs.mkdirSync(imgDir, { recursive: true }); } catch (_) {}
+      const fn = jid + '-' + params.blockKey + '.png';
+      fs.writeFileSync(path.join(imgDir, fn), Buffer.from(out, 'base64'));
+      return ok({ replaced: true, blockKey: params.blockKey, img: 'https://lumi.it.kr/r/img/' + fn });
+    } catch (e) { return err(500, '이미지 교체에 실패했습니다'); }
+  }
+  // AI 재생성(유료) — 원본 사진+프롬프트로 해당 블록 화보만 다시 생성. 회원만(handler 진입부 인증).
+  if (params.action === 'regen-block') {
+    const jid = String(params.jobId || '').replace(/[^a-z0-9-]/gi, '');
+    if (!jid || !params.blockKey) return err(400, '재생성 정보가 부족합니다');
+    try {
+      const cacheDir = path.join(process.env.HOME || '/home/lumi', 'lumi', 'cache', jid);
+      let meta; try { meta = JSON.parse(fs.readFileSync(path.join(cacheDir, '_meta.json'), 'utf8')); } catch (_) { return err(404, '원본 정보가 없습니다. 다시 생성해 주세요'); }
+      const blk = (meta.plan || []).find((b) => b.key === params.blockKey);
+      if (!blk || !blk.prompt) return err(404, '이 블록은 재생성을 지원하지 않습니다');
+      let src = ''; try { src = fs.readFileSync(path.join(cacheDir, '_src.txt'), 'utf8'); } catch (_) {}
+      if (!src) return err(404, '원본 사진이 없습니다. 다시 생성해 주세요');
+      const photo = await generateAiPhoto(src, blk.prompt, { quality: blk.quality || 'medium' });
+      if (!photo) return err(502, 'AI 재생성에 실패했습니다. 다시 시도해 주세요');
+      fs.writeFileSync(path.join(cacheDir, params.blockKey + '.png'), Buffer.from(photo, 'base64'));
+      const style = { fontOverride: params.fontOverride, inkOverride: params.inkOverride, accentOverride: params.accentOverride, subOverride: params.subOverride };
+      const out = await recomposeBlock(cacheDir, params.blockKey, params.textOverride || null, style);
+      const imgDir = path.join(RESULTS_DIR, 'img'); try { fs.mkdirSync(imgDir, { recursive: true }); } catch (_) {}
+      const fn = jid + '-' + params.blockKey + '.png';
+      fs.writeFileSync(path.join(imgDir, fn), Buffer.from(out || photo, 'base64'));
+      return ok({ regenerated: true, blockKey: params.blockKey, img: 'https://lumi.it.kr/r/img/' + fn });
+    } catch (e) { return err(500, 'AI 재생성에 실패했습니다'); }
   }
   if (!params.url && !params.imageBase64) return err(400, '상품 링크를 넣거나, 대표 사진을 올려주세요');
 
