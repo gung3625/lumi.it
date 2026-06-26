@@ -198,7 +198,15 @@ exports.handler = async (event) => {
 
   // 상태 조회
   if (event.httpMethod === 'GET') {
-    const id = (event.queryStringParameters || {}).jobId;
+    const q = event.queryStringParameters || {};
+    // 내 작품 목록 (대시보드 갤러리) — 로그인 회원의 detail_jobs 최신순
+    if (q.action === 'list') {
+      try {
+        const { data } = await getAdminClient().from('detail_jobs').select('job_id,title,result_url,mode,created_at').eq('seller_id', sellerId).order('created_at', { ascending: false }).limit(60);
+        return ok({ items: data || [] });
+      } catch (e) { return ok({ items: [] }); }
+    }
+    const id = q.jobId;
     const j = id && jobs[id];
     if (!j) return err(404, '작업을 찾을 수 없습니다. 다시 시도해 주세요');
     if (j.status === 'done') return ok({ status: 'done', mode: j.mode || 'html', title: j.title, html: j.html, blocks: j.blocks, palette: j.palette, copy: j.copy, reviewPoints: j.reviewPoints, sceneCount: j.sceneCount, resultUrl: j.resultUrl, creditRemaining: j.creditRemaining });
@@ -275,6 +283,8 @@ exports.handler = async (event) => {
       if (!_isAdmin && _credit !== null && _credit > 0) {
         getAdminClient().from('sellers').update({ free_credits_remaining: _credit - 1 }).eq('id', sellerId).then(function () {}, function () {});
       }
+      // 내 작품 갤러리용 — 회원별 작업 기록 저장 (fire-and-forget)
+      getAdminClient().from('detail_jobs').insert({ seller_id: sellerId, job_id: jobId, title: r.title || null, result_url: r.resultUrl || null, mode: r.mode || 'html' }).then(function () {}, function () {});
     })
     .catch((e) => { jobs[jobId] = { status: 'error', ts: Date.now(), error: (e && e.message) || '생성 중 오류가 발생했습니다' }; });
 

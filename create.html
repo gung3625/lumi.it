@@ -243,14 +243,14 @@ summary::before{content:"+ ";font-weight:700}
       var name=d.seller.storeName||d.seller.displayName||d.seller.ownerName||'내 매장';
       freeCredits=(typeof d.seller.freeCredits==='number')?d.seller.freeCredits:null;
       var creditHtml=(freeCredits===null)?'':'<span class="credit">무료 '+freeCredits+'회</span>';
-      navRight.innerHTML='<a class="lk" href="/dashboard">대시보드</a>'+creditHtml+'<span class="store">'+name+'</span><a class="lk" href="#" id="logout">로그아웃</a>';
+      navRight.innerHTML='<a class="lk" href="/studio">내 작업실</a>'+creditHtml+'<span class="store">'+name+'</span><a class="lk" href="#" id="logout">로그아웃</a>';
       updateCreditUI();
       var lo=document.getElementById('logout');
       if(lo)lo.addEventListener('click',function(e){e.preventDefault();['lumi-auth','lumi_auth','seller_jwt','lumi_refresh'].forEach(function(k){try{localStorage.removeItem(k);}catch(_){}});try{sessionStorage.clear();}catch(_){}location.href='/';});
     }else{
-      navRight.innerHTML='<a class="lk" href="/dashboard">대시보드</a>';
+      navRight.innerHTML='<a class="lk" href="/studio">내 작업실</a>';
     }
-  }).catch(function(){navRight.innerHTML='<a class="lk" href="/dashboard">대시보드</a>';});
+  }).catch(function(){navRight.innerHTML='<a class="lk" href="/studio">내 작업실</a>';});
 
   // ===== 생성 로직 (detail-maker 검증 로직 이식) =====
   var go=document.getElementById('go'),loading=document.getElementById('loading'),result=document.getElementById('result'),frame=document.getElementById('frame'),err=document.getElementById('err');
