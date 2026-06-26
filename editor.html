@@ -4,39 +4,51 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>루미 상세페이지 에디터</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/wanteddev/wanted-sans@v1.0.3/packages/wanted-sans/fonts/webfonts/variable/split/WantedSansVariable.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Do+Hyeon&family=Jua&family=Gowun+Dodum&family=Nanum+Pen+Script&family=Gaegu&family=Sunflower:wght@500;700&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
-  :root{--pink:#C8507A;--ink:#241a14;--line:#e7ded2;--bg:#f3efe9;--mut:#8a7d70}
-  body{font-family:'Pretendard',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;overflow-x:hidden}
-  .topbar{position:sticky;top:0;z-index:50;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:6px;padding:8px 10px;flex-wrap:wrap}
-  .logo{font-weight:800;font-size:17px;margin-right:6px}.logo span{color:var(--pink)}
+  :root{--bg:#0a0a0c;--bg-2:#0e0e12;--bg-3:#121218;--panel:rgba(255,255,255,.04);--line:rgba(255,255,255,.1);--line-strong:rgba(255,255,255,.17);--ink:#f4f3f6;--ink-2:#b7b5c2;--mut:#7d7b8a;--c1:#ff7a5c;--c2:#ff4d8d;--c3:#a855f7;--grad:linear-gradient(100deg,var(--c1),var(--c2) 48%,var(--c3))}
+  body{font-family:"Wanted Sans Variable","Wanted Sans",'Pretendard',-apple-system,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  .topbar{position:sticky;top:0;z-index:50;background:rgba(10,10,12,.82);backdrop-filter:saturate(160%) blur(18px);-webkit-backdrop-filter:saturate(160%) blur(18px);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:6px;padding:9px 12px;flex-wrap:wrap}
+  .logo{display:inline-flex;align-items:center;margin-right:8px;text-decoration:none}
+  .logo img{height:22px;width:auto;display:block}
+  .logo .ed{font-size:13px;color:var(--mut);font-weight:600;margin-left:7px}
   .tb{display:flex;gap:6px;flex-wrap:wrap;flex:1}
-  .btn{border:1px solid var(--line);background:#fff;border-radius:9px;padding:9px 12px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;transition:.12s}
-  .btn:hover{border-color:var(--pink);color:var(--pink)}
-  .btn.solid{background:var(--pink);color:#fff;border-color:var(--pink)}
-  .btn.solid:hover{filter:brightness(.94);color:#fff}
-  .stage{display:flex;justify-content:center;padding:22px 10px 120px}
-  .canvas-wrap{box-shadow:0 8px 40px rgba(80,55,35,.13);background:#fff;border-radius:4px;overflow:hidden}
+  .btn{border:1px solid var(--line);background:var(--panel);color:var(--ink-2);border-radius:9px;padding:9px 12px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;transition:.15s}
+  .btn:hover{border-color:var(--line-strong);color:var(--ink);background:rgba(255,255,255,.08)}
+  .btn.solid{background:var(--grad);color:#140a10;border-color:transparent;box-shadow:0 6px 18px -8px rgba(255,77,141,.6)}
+  .btn.solid:hover{filter:brightness(1.06);color:#140a10}
+  .stage{display:flex;justify-content:center;padding:24px 10px 130px}
+  .canvas-wrap{box-shadow:0 12px 50px rgba(0,0,0,.5);background:#fff;border-radius:6px;overflow:hidden;border:1px solid var(--line)}
   /* 선택 객체 편집 패널 (하단 고정) */
-  .panel{position:fixed;left:0;right:0;bottom:0;z-index:60;background:#fff;border-top:1px solid var(--line);box-shadow:0 -6px 24px rgba(0,0,0,.08);padding:10px 12px;display:none;gap:8px;align-items:center;flex-wrap:wrap}
+  .panel{position:fixed;left:0;right:0;bottom:0;z-index:60;background:rgba(14,14,18,.94);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-top:1px solid var(--line);box-shadow:0 -6px 24px rgba(0,0,0,.4);padding:11px 14px;display:none;gap:8px;align-items:center;flex-wrap:wrap}
   .panel.on{display:flex}
   .panel .grp{display:flex;align-items:center;gap:6px}
   .panel label{font-size:11px;color:var(--mut);font-weight:600}
-  .panel select,.panel input[type=number]{border:1px solid var(--line);border-radius:8px;padding:7px 8px;font-size:13px;font-family:inherit;background:#fafafa}
-  .panel input[type=color]{width:34px;height:34px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer;padding:2px}
-  .chip{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 10px;font-size:13px;font-weight:700;cursor:pointer}
-  .chip.act{background:var(--pink);color:#fff;border-color:var(--pink)}
-  .hint{font-size:12px;color:var(--mut);text-align:center;padding:6px}
+  .panel select,.panel input[type=number]{border:1px solid var(--line);border-radius:8px;padding:7px 8px;font-size:13px;font-family:inherit;background:var(--bg-3);color:var(--ink)}
+  .panel input[type=color]{width:34px;height:34px;border:1px solid var(--line);border-radius:8px;background:var(--bg-3);cursor:pointer;padding:2px}
+  .chip{border:1px solid var(--line);background:var(--panel);color:var(--ink-2);border-radius:8px;padding:7px 10px;font-size:13px;font-weight:700;cursor:pointer}
+  .chip.act{background:var(--grad);color:#140a10;border-color:transparent}
+  .hint{font-size:12px;color:var(--mut);text-align:center;padding:8px}
   .divider{width:1px;height:26px;background:var(--line);margin:0 2px}
 </style>
 </head>
 <body>
 
+<script>
+// 로그인 게이트 — 미로그인 시 /create 로 (거기서 카카오 로그인). 카카오 콜백 해시 토큰도 흡수.
+(function(){
+  if(location.hash&&location.hash.indexOf('lumi_token=')!==-1){try{var p=new URLSearchParams(location.hash.replace(/^#/,''));var t=p.get('lumi_token'),rt=p.get('lumi_refresh');if(t)localStorage.setItem('lumi-auth',t);if(rt)localStorage.setItem('lumi_refresh',rt);history.replaceState(null,'',location.pathname);}catch(e){}}
+  var token=localStorage.getItem('lumi-auth')||localStorage.getItem('lumi_auth')||localStorage.getItem('seller_jwt')||'';
+  if(!token){location.replace('/create');}
+})();
+</script>
+
 <div class="topbar">
-  <div class="logo">lumi<span>.</span> 에디터</div>
+  <a href="/create" class="logo" aria-label="lumi"><img src="/assets/logo-wordmark.webp" alt="lumi"><span class="ed">에디터</span></a>
   <div class="tb">
     <button class="btn" id="addText">＋ 글자</button>
     <button class="btn" id="addImg">＋ 사진</button>
@@ -215,7 +227,7 @@
   };
 
   // 미니 토스트
-  function toast(msg){var d=document.createElement('div');d.textContent=msg;d.style.cssText='position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#241a14;color:#fff;padding:11px 18px;border-radius:980px;font-size:13px;font-weight:600;z-index:200;box-shadow:0 6px 20px rgba(0,0,0,.25)';document.body.appendChild(d);setTimeout(function(){d.style.transition='opacity .4s';d.style.opacity='0';setTimeout(function(){d.remove();},400);},1600);}
+  function toast(msg){var d=document.createElement('div');d.textContent=msg;d.style.cssText='position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:linear-gradient(100deg,#ff7a5c,#ff4d8d);color:#140a10;padding:11px 18px;border-radius:980px;font-size:13px;font-weight:700;z-index:200;box-shadow:0 8px 24px rgba(255,77,141,.4)';document.body.appendChild(d);setTimeout(function(){d.style.transition='opacity .4s';d.style.opacity='0';setTimeout(function(){d.remove();},400);},1600);}
 
   // ---- AI 생성 결과(blocks) → fabric 레이어로 펼치기 (어려운 버전 진입) ----
   // 핵심: 히어로·라이프스타일·CTA는 글자를 "사진/색 위에 오버레이"(흰색+그림자) → 캔바식 화려함 + 글자 수정 가능.
