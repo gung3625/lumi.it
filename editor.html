@@ -8,32 +8,56 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Do+Hyeon&family=Jua&family=Gowun+Dodum&family=Nanum+Pen+Script&family=Gaegu&family=Sunflower:wght@500;700&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
-  :root{--bg:#0a0a0c;--bg-2:#0e0e12;--bg-3:#121218;--panel:rgba(255,255,255,.04);--line:rgba(255,255,255,.1);--line-strong:rgba(255,255,255,.17);--ink:#f4f3f6;--ink-2:#b7b5c2;--mut:#7d7b8a;--c1:#ff7a5c;--c2:#ff4d8d;--c3:#a855f7;--grad:linear-gradient(100deg,var(--c1),var(--c2) 48%,var(--c3))}
-  body{font-family:"Gowun Dodum","Wanted Sans Variable","Wanted Sans",'Pretendard',-apple-system,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.65;letter-spacing:0;overflow-x:hidden}
-  .topbar{position:sticky;top:0;z-index:50;background:rgba(10,10,12,.82);backdrop-filter:saturate(160%) blur(18px);-webkit-backdrop-filter:saturate(160%) blur(18px);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:6px;padding:9px 12px;flex-wrap:wrap}
-  .logo{display:inline-flex;align-items:center;margin-right:8px;text-decoration:none}
+  :root{--bg:#0a0a0c;--bg-2:#0e0e12;--bg-3:#121218;--panel:rgba(255,255,255,.04);--panel-2:rgba(255,255,255,.06);--line:rgba(255,255,255,.1);--line-strong:rgba(255,255,255,.17);--ink:#f4f3f6;--ink-2:#b7b5c2;--mut:#7d7b8a;--c1:#ff7a5c;--c2:#ff4d8d;--c3:#a855f7;--grad:linear-gradient(100deg,var(--c1),var(--c2) 48%,var(--c3))}
+  body{font-family:"Gowun Dodum","Wanted Sans Variable","Wanted Sans",'Pretendard',-apple-system,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.65;letter-spacing:0;height:100vh;overflow:hidden}
+  /* 상단바: 로고 | 되돌리기 | (우)저장·내보내기·더보기 */
+  .topbar{display:flex;align-items:center;gap:10px;height:58px;padding:0 16px;background:rgba(10,10,12,.86);backdrop-filter:saturate(160%) blur(18px);-webkit-backdrop-filter:saturate(160%) blur(18px);border-bottom:1px solid var(--line)}
+  .logo{display:inline-flex;align-items:center;text-decoration:none}
   .logo img{height:22px;width:auto;display:block}
   .logo .ed{font-size:13px;color:var(--mut);font-weight:600;margin-left:7px}
-  .tb{display:flex;gap:6px;flex-wrap:wrap;flex:1}
-  .btn{border:1px solid var(--line);background:var(--panel);color:var(--ink-2);border-radius:9px;padding:9px 12px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;transition:.15s}
+  .tb-left{display:flex;gap:4px;align-items:center;margin-left:8px}
+  .tb-right{margin-left:auto;display:flex;gap:8px;align-items:center;position:relative}
+  .btn{border:1px solid var(--line);background:var(--panel);color:var(--ink-2);border-radius:10px;padding:9px 14px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;transition:.15s}
   .btn:hover{border-color:var(--line-strong);color:var(--ink);background:rgba(255,255,255,.08)}
-  .btn.solid{background:var(--grad);color:#140a10;border-color:transparent;box-shadow:0 6px 18px -8px rgba(255,77,141,.6)}
+  .btn.solid{display:inline-flex;align-items:center;gap:6px;background:var(--grad);color:#140a10;border-color:transparent;box-shadow:0 6px 18px -8px rgba(255,77,141,.6)}
   .btn.solid:hover{filter:brightness(1.06);color:#140a10}
-  .stage{display:flex;justify-content:center;padding:24px 10px 130px}
-  .canvas-wrap{box-shadow:0 12px 50px rgba(0,0,0,.5);background:#fff;border-radius:6px;overflow:hidden;border:1px solid var(--line)}
-  /* 선택 객체 편집 패널 (하단 고정) */
-  .panel{position:fixed;left:0;right:0;bottom:0;z-index:60;background:rgba(14,14,18,.94);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-top:1px solid var(--line);box-shadow:0 -6px 24px rgba(0,0,0,.4);padding:11px 14px;display:none;gap:8px;align-items:center;flex-wrap:wrap}
+  .btn.solid svg{width:16px;height:16px}
+  .ico-btn{width:38px;height:38px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line);background:var(--panel);color:var(--ink-2);border-radius:10px;cursor:pointer;transition:.15s}
+  .ico-btn:hover{border-color:var(--line-strong);color:var(--ink);background:rgba(255,255,255,.08)}
+  .ico-btn svg{width:18px;height:18px}
+  /* 더보기 드롭다운 */
+  .more-menu{position:absolute;top:46px;right:0;min-width:168px;background:var(--bg-2);border:1px solid var(--line);border-radius:13px;padding:6px;display:none;flex-direction:column;gap:2px;z-index:100;box-shadow:0 14px 36px rgba(0,0,0,.55)}
+  .more-menu.on{display:flex}
+  .more-menu button{display:flex;align-items:center;gap:9px;width:100%;text-align:left;background:none;border:none;color:var(--ink-2);font-family:inherit;font-size:13.5px;font-weight:600;padding:10px 12px;border-radius:9px;cursor:pointer}
+  .more-menu button:hover{background:var(--panel-2);color:var(--ink)}
+  .more-menu svg{width:16px;height:16px}
+  /* 작업 영역: 좌측 도구 + 캔버스 */
+  .work{display:flex;height:calc(100vh - 58px)}
+  .tools{width:88px;flex-shrink:0;border-right:1px solid var(--line);background:var(--bg-2);padding:14px 8px;display:flex;flex-direction:column;gap:6px;overflow-y:auto}
+  .tool{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 4px;border-radius:13px;border:1px solid transparent;background:none;color:var(--ink-2);font-size:11.5px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s}
+  .tool:hover{background:var(--panel);color:var(--ink);border-color:var(--line)}
+  .tool svg{width:22px;height:22px}
+  .stage{flex:1;overflow:auto;display:flex;justify-content:center;padding:28px 16px 150px}
+  .canvas-wrap{align-self:flex-start;box-shadow:0 12px 50px rgba(0,0,0,.5);background:#fff;border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+  /* 하단 컨텍스트 패널 (객체 선택 시) */
+  .panel{position:fixed;left:88px;right:0;bottom:0;z-index:60;background:rgba(14,14,18,.95);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-top:1px solid var(--line);box-shadow:0 -6px 24px rgba(0,0,0,.4);padding:11px 16px;display:none;gap:10px;align-items:center;flex-wrap:wrap}
   .panel.on{display:flex}
   .panel .grp{display:flex;align-items:center;gap:6px}
   .panel label{font-size:11px;color:var(--mut);font-weight:600}
   .panel select,.panel input[type=number]{border:1px solid var(--line);border-radius:8px;padding:7px 8px;font-size:13px;font-family:inherit;background:var(--bg-3);color:var(--ink)}
   .panel input[type=color]{width:34px;height:34px;border:1px solid var(--line);border-radius:8px;background:var(--bg-3);cursor:pointer;padding:2px}
+  .obj-acts{display:flex;gap:4px}
+  .obj-acts .ob{border:1px solid var(--line);background:var(--panel);color:var(--ink-2);border-radius:8px;padding:7px 11px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s}
+  .obj-acts .ob:hover{border-color:var(--c2);color:var(--c2)}
+  .obj-acts .ob.danger:hover{border-color:#ff5c7a;color:#ff5c7a}
   .chip{border:1px solid var(--line);background:var(--panel);color:var(--ink-2);border-radius:8px;padding:7px 10px;font-size:13px;font-weight:700;cursor:pointer}
   .chip.act{background:var(--grad);color:#140a10;border-color:transparent}
-  .hint{font-size:12px;color:var(--mut);text-align:center;padding:8px}
   .divider{width:1px;height:26px;background:var(--line);margin:0 2px}
+  .hint{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);font-size:12px;color:var(--mut);background:rgba(14,14,18,.82);padding:7px 16px;border-radius:980px;border:1px solid var(--line);z-index:55;pointer-events:none;white-space:nowrap}
+  @media(max-width:640px){.tools{width:64px}.tool{font-size:10.5px;padding:10px 2px}.panel{left:64px}.btn{padding:9px 11px}}
 </style>
 </head>
 <body>
@@ -47,38 +71,48 @@
 })();
 </script>
 
+<!-- 상단바 -->
 <div class="topbar">
-  <a href="/create" class="logo" aria-label="lumi"><img src="/assets/logo-wordmark.webp" alt="lumi"><span class="ed">에디터</span></a>
-  <div class="tb">
-    <button class="btn" id="addText">＋ 글자</button>
-    <button class="btn" id="addImg">＋ 사진</button>
-    <button class="btn" id="addRect">▭ 사각형</button>
-    <button class="btn" id="addCircle">● 원</button>
-    <button class="btn" id="addLine">― 선</button>
-    <span class="divider"></span>
-    <button class="btn" id="undo">↶ 취소</button>
-    <button class="btn" id="redo">↷ 다시</button>
-    <span class="divider"></span>
-    <button class="btn" id="dup">복제</button>
-    <button class="btn" id="front">맨 앞</button>
-    <button class="btn" id="back">맨 뒤</button>
-    <button class="btn" id="center">가운데</button>
-    <button class="btn" id="del">삭제</button>
-    <span class="divider"></span>
-    <button class="btn" id="taller">캔버스 늘리기</button>
-    <span class="divider"></span>
+  <a href="/studio" class="logo" aria-label="lumi"><img src="/assets/logo-wordmark.webp" alt="lumi"><span class="ed">에디터</span></a>
+  <div class="tb-left">
+    <button class="ico-btn" id="undo" title="실행취소 (Ctrl+Z)"><i data-lucide="undo-2"></i></button>
+    <button class="ico-btn" id="redo" title="다시실행 (Ctrl+Y)"><i data-lucide="redo-2"></i></button>
+  </div>
+  <div class="tb-right">
     <button class="btn" id="save">저장</button>
-    <button class="btn" id="load">불러오기</button>
-    <button class="btn solid" id="export">PNG 내보내기</button>
+    <button class="btn solid" id="export"><i data-lucide="download"></i> PNG 내보내기</button>
+    <button class="ico-btn" id="moreBtn" title="더보기"><i data-lucide="more-horizontal"></i></button>
+    <div class="more-menu" id="moreMenu">
+      <button id="load"><i data-lucide="folder-open"></i> 불러오기</button>
+      <button id="taller"><i data-lucide="chevrons-down"></i> 캔버스 늘리기</button>
+    </div>
   </div>
 </div>
 
-<div class="hint">글자를 더블클릭하면 내용 수정 · 끌어서 이동 · 모서리로 크기조절 · 아래 패널에서 폰트·색 변경</div>
+<!-- 작업 영역: 좌측 도구 + 캔버스 -->
+<div class="work">
+  <aside class="tools" aria-label="추가 도구">
+    <button class="tool" id="addText"><i data-lucide="type"></i> 글자</button>
+    <button class="tool" id="addImg"><i data-lucide="image"></i> 사진</button>
+    <button class="tool" id="addRect"><i data-lucide="square"></i> 사각형</button>
+    <button class="tool" id="addCircle"><i data-lucide="circle"></i> 원</button>
+    <button class="tool" id="addLine"><i data-lucide="minus"></i> 선</button>
+  </aside>
+  <div class="stage"><div class="canvas-wrap"><canvas id="c" width="720" height="1600"></canvas></div></div>
+</div>
 
-<div class="stage"><div class="canvas-wrap"><canvas id="c" width="720" height="1600"></canvas></div></div>
+<div class="hint">글자를 더블클릭해 수정 · 끌어서 이동 · 모서리로 크기조절</div>
 
-<!-- 선택 객체 편집 패널 -->
+<!-- 선택 객체 편집 패널 (객체 선택 시에만 표시) -->
 <div class="panel" id="panel">
+  <div class="obj-acts">
+    <button class="ob" id="dup">복제</button>
+    <button class="ob" id="front">맨 앞</button>
+    <button class="ob" id="back">맨 뒤</button>
+    <button class="ob" id="center">가운데</button>
+    <button class="ob danger" id="del">삭제</button>
+  </div>
+  <span class="divider"></span>
   <div class="grp" id="fontGrp">
     <label>폰트</label>
     <select id="fontFamily">
@@ -270,6 +304,17 @@
     if(bj){var dd=JSON.parse(bj);sessionStorage.removeItem('lumi_editor_blocks');loadBlocks(dd.blocks,dd.palette);toast('AI가 만든 결과를 불러왔어요');}
     else{var saved=localStorage.getItem(KEY);if(saved){loadJSON(saved);}setTimeout(function(){history=[JSON.stringify(canvas.toJSON())];hi=0;},600);}
   }catch(e){setTimeout(function(){history=[JSON.stringify(canvas.toJSON())];hi=0;},600);}
+})();
+</script>
+<script>
+// 더보기(⋯) 메뉴 토글 + Lucide 아이콘 렌더 (fabric 로직과 독립)
+if(window.lucide)lucide.createIcons();
+(function(){
+  var mb=document.getElementById('moreBtn'),mm=document.getElementById('moreMenu');
+  if(mb&&mm){
+    mb.addEventListener('click',function(e){e.stopPropagation();mm.classList.toggle('on');});
+    document.addEventListener('click',function(){mm.classList.remove('on');});
+  }
 })();
 </script>
 </body>
