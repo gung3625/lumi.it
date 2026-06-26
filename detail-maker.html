@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- 구버전 도구 — 새 로그인 기반 생성 화면(/create)으로 일원화. 내용은 아래 보존. -->
+<script>location.replace('/create');</script>
 <title>루미 — 링크나 사진만 넣으면 상세페이지 완성</title>
 <meta name="description" content="상품 링크나 사진만 있으면 AI가 화보·카피·디자인까지. 팔리는 상세페이지가 몇 분이면 완성됩니다.">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
@@ -299,11 +301,15 @@
       });
     }
   });
-  function showResult(html,resultUrl){frame.srcdoc=html;result.classList.add('on');var ru=document.getElementById('rurl');if(ru)ru.innerHTML=resultUrl?'저장된 결과: <a href="'+resultUrl+'" target="_blank" style="color:#C8507A;font-weight:600;word-break:break-all;">'+resultUrl+'</a><br>(북마크해두면 언제든 다시 볼 수 있어요)':'';frame.onload=function(){try{frame.style.height=(frame.contentWindow.document.body.scrollHeight+40)+'px';}catch(e){frame.style.height='3000px';}};result.scrollIntoView({behavior:'smooth'});}
+  function showResult(html,resultUrl,mode){
+    // 하이브리드는 html이 없고 image(jpg)만 — resultUrl을 img로 표시. html 모드는 기존대로 iframe.
+    if((mode==='image'||!html)&&resultUrl){frame.srcdoc='<body style="margin:0;background:#fff"><img src="'+resultUrl+'" style="width:100%;display:block"></body>';}
+    else{frame.srcdoc=html||'';}
+    result.classList.add('on');var ru=document.getElementById('rurl');if(ru)ru.innerHTML=resultUrl?'저장된 결과: <a href="'+resultUrl+'" target="_blank" style="color:#C8507A;font-weight:600;word-break:break-all;">'+resultUrl+'</a><br>(북마크해두면 언제든 다시 볼 수 있어요)':'';frame.onload=function(){try{frame.style.height=(frame.contentWindow.document.body.scrollHeight+40)+'px';}catch(e){frame.style.height='3000px';}};result.scrollIntoView({behavior:'smooth'});}
   function poll(jobId,n){
     if(n>150){loading.classList.remove('on');go.disabled=false;err.textContent='시간이 너무 오래 걸립니다. 다시 시도해 주세요.';err.classList.add('on');return;}
     fetch('/api/generate-detail?jobId='+encodeURIComponent(jobId)).then(function(r){return r.json();}).then(function(j){
-      if(j.status==='done'&&j.html){currentJobId=jobId;currentBlocks=j.blocks||null;currentPalette=j.palette||null;loading.classList.remove('on');go.disabled=false;showResult(j.html,j.resultUrl);}
+      if(j.status==='done'&&(j.html||j.resultUrl)){currentJobId=jobId;currentBlocks=j.blocks||null;currentPalette=j.palette||null;loading.classList.remove('on');go.disabled=false;showResult(j.html,j.resultUrl,j.mode);}
       else if(j.status==='error'){loading.classList.remove('on');go.disabled=false;showErr(j.error||'생성에 실패했습니다.',mode==='link');}
       else{setTimeout(function(){poll(jobId,n+1);},3000);}
     }).catch(function(){setTimeout(function(){poll(jobId,n+1);},3000);});

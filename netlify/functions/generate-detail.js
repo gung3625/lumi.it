@@ -2,10 +2,11 @@
 //   POST {url|title+imageBase64} → 즉시 jobId 반환(202), 백그라운드에서 생성.
 //   GET  ?jobId → 상태 조회(pending / done+html / error).
 // 생성이 1~3분 걸려서 동기 응답은 프록시·브라우저 타임아웃 위험 → 작업+폴링 방식.
-const { generateDetailPage, generateAiPhoto, photoPrompt, scenePlan, copyToBlocks, renderBlocks, accentPalette, extractProductTitle, analyzeProductImages, analyzeReferenceStyle } = require('./_shared/detail-page.js');
+const { generateDetailPage, generateAiPhoto, photoPrompt, scenePlan, copyToBlocks, renderBlocks, accentPalette, extractProductTitle, analyzeProductImages, analyzeReferenceStyle, refStylePrompt, verifyGenerated, refBlockPlan, stitchBlocks, renderBlockText, recomposeBlocks } = require('./_shared/detail-page.js');
 const { getItemView } = require('./_shared/domeggook-api.js');
 const { getDometopiaItem, parseNo } = require('./_shared/dometopia.js');
 const { fetchViaUnlocker, parseUniversalProduct } = require('./_shared/universal.js');
+const { verifySellerToken, extractBearerToken } = require('./_shared/seller-jwt.js');
 const fs = require('fs');
 const path = require('path');
 // 결과 영구 저장 폴더(~/lumi/r) — server.js 정적 서빙으로 lumi.it.kr/r/<jobId>.html 접근.
@@ -80,7 +81,8 @@ async function runGeneration(p, jobId) {
       item = await getItemView(no);
     }
     if (!item || !item.title) throw new Error('상품 정보를 불러오지 못했습니다. 링크를 확인해 주세요');
-    srcForPhoto = (item.images || [])[0] || null;
+    // 입력은 가장 큰 이미지로(작은 썸네일은 날개 등 디테일이 뭉개짐). 도매꾹 760 우선, 없으면 마지막(보통 최대).
+    srcForPhoto = (item.images || []).find((u) => /760|_l\b|large|origin/i.test(String(u))) || (item.images || []).slice(-1)[0] || (item.images || [])[0] || null;
     product = { title: item.title, spec: item.spec || {}, options: item.options || [], descImages: item.descImages || [], images: (item.images || []).slice(0, 4), keywords: item.keywords || [], categoryTree: item.categoryTree || [] };
   } else {
     if (!imageBase64) throw new Error('상품 대표 사진을 올려주세요');
@@ -108,12 +110,44 @@ async function runGeneration(p, jobId) {
     throw new Error('올리신 사진에 상품 정보가 없어요. ① 상품 정보를 입력하거나, 정보(스펙·설명)가 적힌 상세페이지 사진을 올려주세요.');
   }
   const copy = result.copy || {};
+  const factsForPrompt = (Array.isArray(p.facts) ? p.facts : (result.imageFacts || []));
 
-  // 레퍼런스 스타일 분석(있으면) — 콘텐츠 아닌 비주얼 스타일만(법적 안전선).
-  let styleHint = null;
-  if (p.referenceImageBase64) {
-    try { styleHint = await analyzeReferenceStyle(['data:image/png;base64,' + stripDataUri(p.referenceImageBase64)]); } catch (_) {}
+  // ★레퍼런스 스타일 모드 — 레퍼런스 이미지를 통째로 넣지 않고, 스타일 텍스트만 추출해 주입(비타민/엉뚱제품 복제 차단).
+  if (p.referenceImageBase64 && srcForPhoto) {
+    // 레퍼런스에서 디자인 스타일(palette·mood·layout·stylePrompt)만 비전 추출 → 블록 플랜에 텍스트로 주입.
+    let styleHint = null;
+    try { styleHint = await analyzeReferenceStyle(['data:image/jpeg;base64,' + stripDataUri(p.referenceImageBase64)]); } catch (_) {}
+    const plan = refBlockPlan(product, copy, factsForPrompt, styleHint);
+    const blockB64 = [];
+    // 비타민은 레퍼런스 이미지 미입력으로 이미 차단됨 → verify 불필요. 블록을 3개씩 병렬 생성(속도: 순차 18분 → 수분).
+    const sharpLib = require('sharp');
+    const fsq = require('fs'); const pathq = require('path');
+    // ★화보 캐시: 블록 화보(텍스트0)를 jobId별로 저장 → 편집·재합성 시 gpt 재호출 X(크레딧 0).
+    const cacheDir = pathq.join(process.env.HOME || '/home/lumi', 'lumi', 'cache', String(jobId || 'tmp'));
+    try { fsq.mkdirSync(cacheDir, { recursive: true }); } catch (_) {}
+    for (let i = 0; i < plan.length; i += 3) {
+      // 화보(텍스트 0) 생성 → 캐시 저장 → renderBlockText(한글 SVG) 합성 → 블록.
+      const batch = await Promise.all(plan.slice(i, i + 3).map((blk) => generateAiPhoto(srcForPhoto, blk.prompt, { quality: blk.quality }).then(async (photo) => {
+        if (!photo) return null;
+        try {
+          try { fsq.writeFileSync(pathq.join(cacheDir, blk.key + '.png'), Buffer.from(photo, 'base64')); } catch (_) {}
+          const img = sharpLib(Buffer.from(photo, 'base64'));
+          const m = await img.metadata();
+          const txt = renderBlockText(blk, m.width || 1024, m.height || 1536, styleHint);
+          return (await img.composite([{ input: txt, top: 0, left: 0 }]).png().toBuffer()).toString('base64');
+        } catch (_) { return photo; }
+      })));
+      batch.forEach((img) => { if (img) blockB64.push(img); });
+    }
+    // 플랜·스타일 메타 저장(편집/재합성용 — 화보 재생성 없이 텍스트만 다시 얹음).
+    try { fsq.writeFileSync(pathq.join(cacheDir, '_meta.json'), JSON.stringify({ plan: plan.map((b) => ({ key: b.key, text: b.text })), styleHint })); } catch (_) {}
+    if (!blockB64.length) throw new Error('이미지 생성에 실패했습니다. 다시 시도해 주세요');
+    const stitched = await stitchBlocks(blockB64);
+    return { title: product.title, image: stitched || blockB64[0], copy, reviewPoints: result.reviewPoints || [], mode: 'image', blockCount: blockB64.length, styleHint: styleHint || null, jobId: String(jobId || '') };
   }
+
+  // (레퍼런스 없을 때) 기존 블록 흐름
+  let styleHint = null;
 
   let baseB64 = null;
   if (!skipPhoto && srcForPhoto) baseB64 = await generateAiPhoto(srcForPhoto, photoPrompt(product.title), { quality: 'low' });
@@ -144,15 +178,20 @@ async function runGeneration(p, jobId) {
   return { title: product.title, html, blocks, palette, copy, reviewPoints: result.reviewPoints || [], photoGenerated: !!baseB64, sceneCount, styleHint: styleHint || null };
 }
 
+exports.runGeneration = runGeneration; // 테스트/재사용용 노출
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers, body: '' };
+
+  // 인증: 로그인 회원만 (비로그인 API 직접호출 차단 → 비용 안전). create.html 이 Bearer 토큰 전송.
+  const { payload: _auth, error: _authErr } = verifySellerToken(extractBearerToken(event));
+  if (_authErr || !_auth) return err(401, '로그인이 필요합니다. 다시 로그인해 주세요.');
 
   // 상태 조회
   if (event.httpMethod === 'GET') {
     const id = (event.queryStringParameters || {}).jobId;
     const j = id && jobs[id];
     if (!j) return err(404, '작업을 찾을 수 없습니다. 다시 시도해 주세요');
-    if (j.status === 'done') return ok({ status: 'done', title: j.title, html: j.html, blocks: j.blocks, palette: j.palette, styleHint: j.styleHint, copy: j.copy, reviewPoints: j.reviewPoints, sceneCount: j.sceneCount, resultUrl: j.resultUrl });
+    if (j.status === 'done') return ok({ status: 'done', mode: j.mode || 'html', title: j.title, html: j.html, blocks: j.blocks, palette: j.palette, copy: j.copy, reviewPoints: j.reviewPoints, sceneCount: j.sceneCount, resultUrl: j.resultUrl });
     if (j.status === 'error') return ok({ status: 'error', error: j.error });
     return ok({ status: 'pending' });
   }
@@ -167,6 +206,19 @@ exports.handler = async (event) => {
     if (!jid || !params.html) return err(400, '저장 정보가 부족합니다');
     try { fs.writeFileSync(path.join(RESULTS_DIR, jid + '.html'), String(params.html)); return ok({ saved: true, resultUrl: 'https://lumi.it.kr/r/' + jid + '.html' }); }
     catch (_) { return err(500, '저장에 실패했습니다'); }
+  }
+  // 편집/재합성: 저장된 화보 캐시 + 폰트·색·문구 override → 재합성(gpt 0원, rate 무관).
+  if (params.action === 'recompose') {
+    const jid = String(params.jobId || '').replace(/[^a-z0-9-]/gi, '');
+    if (!jid) return err(400, 'jobId가 필요합니다');
+    try {
+      const cacheDir = path.join(process.env.HOME || '/home/lumi', 'lumi', 'cache', jid);
+      const style = { fontOverride: params.fontOverride, inkOverride: params.inkOverride, accentOverride: params.accentOverride, subOverride: params.subOverride };
+      const stitched = await recomposeBlocks(cacheDir, style, params.textOverride);
+      if (!stitched) return err(404, '저장된 화보가 없습니다. 먼저 생성해 주세요');
+      fs.writeFileSync(path.join(process.env.HOME || '/home/lumi', 'lumi', 'r', 'img', jid + '.jpg'), Buffer.from(stitched, 'base64'));
+      return ok({ recomposed: true, resultUrl: 'https://lumi.it.kr/r/img/' + jid + '.jpg' });
+    } catch (e) { return err(500, '재합성에 실패했습니다'); }
   }
   if (!params.url && !params.imageBase64) return err(400, '상품 링크를 넣거나, 대표 사진을 올려주세요');
 
@@ -185,7 +237,16 @@ exports.handler = async (event) => {
   gcJobs();
   runGeneration(params, jobId)
     .then((r) => {
-      try { fs.writeFileSync(path.join(RESULTS_DIR, jobId + '.html'), r.html || ''); r.resultUrl = 'https://lumi.it.kr/r/' + jobId + '.html'; } catch (_) {}
+      try {
+        if (r.image) {
+          fs.writeFileSync(path.join(RESULTS_DIR, jobId + '.jpg'), Buffer.from(r.image, 'base64'));
+          r.resultUrl = 'https://lumi.it.kr/r/' + jobId + '.jpg';
+          delete r.image; // b64는 응답에서 제거(경량). stitchBlocks가 JPG q95로 반환.
+        } else {
+          fs.writeFileSync(path.join(RESULTS_DIR, jobId + '.html'), r.html || '');
+          r.resultUrl = 'https://lumi.it.kr/r/' + jobId + '.html';
+        }
+      } catch (_) {}
       jobs[jobId] = { status: 'done', ts: Date.now(), ...r };
     })
     .catch((e) => { jobs[jobId] = { status: 'error', ts: Date.now(), error: (e && e.message) || '생성 중 오류가 발생했습니다' }; });
