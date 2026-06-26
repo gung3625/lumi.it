@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>lumi — 상세페이지 만들기</title>
+<meta name="description" content="링크나 사진만 넣으면 AI가 화보·카피·디자인까지. 팔리는 상세페이지가 몇 분이면 완성됩니다." />
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/wanteddev/wanted-sans@v1.0.3/packages/wanted-sans/fonts/webfonts/variable/split/WantedSansVariable.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" />
+<style>
+:root{
+  --bg:#0a0a0c;--bg-2:#0e0e12;--bg-3:#121218;
+  --panel:rgba(255,255,255,.025);--panel-2:rgba(255,255,255,.045);
+  --line:rgba(255,255,255,.08);--line-strong:rgba(255,255,255,.14);
+  --ink:#f4f3f6;--ink-2:#b7b5c2;--ink-3:#7d7b8a;--ink-4:#56545f;
+  --c1:#ff7a5c;--c2:#ff4d8d;--c3:#a855f7;
+  --grad:linear-gradient(100deg,var(--c1) 0%,var(--c2) 48%,var(--c3) 100%);
+  --grad-soft:linear-gradient(100deg,rgba(255,122,92,.16),rgba(255,77,141,.14),rgba(168,85,247,.16));
+  --radius:18px;--maxw:760px;--ease:cubic-bezier(.22,.61,.36,1);
+  font-synthesis-weight:none;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:"Wanted Sans Variable","Wanted Sans",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif;font-size:16px;line-height:1.6;letter-spacing:-.014em;min-height:100vh;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+::selection{background:rgba(255,77,141,.32);color:#fff}
+body::before{content:"";position:fixed;inset:0;z-index:-2;background:radial-gradient(720px 520px at 78% -8%,rgba(255,77,141,.14),transparent 60%),radial-gradient(680px 560px at 8% 6%,rgba(168,85,247,.11),transparent 60%);pointer-events:none}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
+.kicker{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2)}
+.kicker .dot{width:6px;height:6px;border-radius:50%;background:var(--grad);box-shadow:0 0 14px rgba(255,77,141,.6)}
+.grad-text{background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+.serif{font-family:"Instrument Serif",serif;font-style:italic;letter-spacing:.01em}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:inherit;font-weight:600;font-size:15px;letter-spacing:-.01em;height:50px;padding:0 24px;border-radius:980px;border:1px solid transparent;cursor:pointer;transition:transform .3s var(--ease),box-shadow .3s var(--ease),background .25s,border-color .25s,color .25s;white-space:nowrap}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-primary{color:#140a10;background:var(--grad);background-size:160% 160%;box-shadow:0 10px 30px -8px rgba(255,77,141,.5),inset 0 1px 0 rgba(255,255,255,.4)}
+.btn-primary:not(:disabled):hover{transform:translateY(-2px);box-shadow:0 18px 44px -10px rgba(255,77,141,.62);background-position:100% 0}
+.btn-ghost{color:var(--ink);background:var(--panel);border-color:var(--line-strong);backdrop-filter:blur(10px)}
+.btn-ghost:not(:disabled):hover{transform:translateY(-2px);background:var(--panel-2);border-color:rgba(255,255,255,.24)}
+.btn-sm{height:40px;padding:0 18px;font-size:14px}
+
+/* nav */
+nav{position:sticky;top:0;z-index:50;background:rgba(10,10,12,.7);backdrop-filter:saturate(160%) blur(18px);-webkit-backdrop-filter:saturate(160%) blur(18px);border-bottom:1px solid var(--line)}
+.nav-in{max-width:var(--maxw);margin:0 auto;padding:0 22px;display:flex;align-items:center;justify-content:space-between;height:62px}
+.logo{display:inline-flex;align-items:center}
+.logo img{height:26px;width:auto;display:block}
+.nav-right{display:flex;align-items:center;gap:14px;font-size:13.5px;color:var(--ink-2)}
+.nav-right .store{font-weight:600;color:var(--ink)}
+.nav-right a.lk{color:var(--ink-3);transition:color .2s}
+.nav-right a.lk:hover{color:var(--ink)}
+
+/* ===== login gate ===== */
+#gate{display:none;min-height:calc(100vh - 62px);align-items:center;justify-content:center;padding:40px 22px}
+#gate.on{display:flex}
+.gate-card{width:100%;max-width:420px;text-align:center;background:var(--panel);border:1px solid var(--line);border-radius:24px;padding:40px 32px;backdrop-filter:blur(14px)}
+.gate-card .ico{width:54px;height:54px;border-radius:16px;background:var(--grad-soft);border:1px solid var(--line-strong);display:flex;align-items:center;justify-content:center;margin:0 auto 20px}
+.gate-card .ico svg{width:26px;height:26px;color:var(--c2)}
+.gate-card h1{font-size:24px;font-weight:700;letter-spacing:-.02em;margin-bottom:10px}
+.gate-card p{font-size:14.5px;color:var(--ink-2);line-height:1.65;margin-bottom:26px}
+.kakao-btn{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;height:52px;border-radius:14px;background:#FEE500;color:#191600;font-weight:700;font-size:15.5px;border:none;cursor:pointer;font-family:inherit;transition:filter .2s}
+.kakao-btn:hover{filter:brightness(.96)}
+.kakao-btn svg{width:19px;height:19px}
+.gate-card .fine{margin-top:16px;font-size:12px;color:var(--ink-4);line-height:1.6}
+
+/* ===== app ===== */
+#app{display:none;padding:46px 0 90px}
+#app.on{display:block}
+.head{margin-bottom:30px}
+.head .kicker{margin-bottom:14px}
+.head h1{font-size:clamp(28px,5vw,40px);font-weight:800;letter-spacing:-.03em;line-height:1.12;margin-bottom:12px}
+.head p{font-size:15.5px;color:var(--ink-2);max-width:540px;line-height:1.6}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:26px 24px;backdrop-filter:blur(14px)}
+.tabs{display:flex;gap:8px;margin-bottom:20px;background:var(--bg-2);border:1px solid var(--line);border-radius:14px;padding:5px}
+.tabbtn{flex:1;height:42px;border-radius:10px;border:none;background:transparent;color:var(--ink-3);font-family:inherit;font-size:14.5px;font-weight:600;cursor:pointer;transition:background .2s,color .2s}
+.tabbtn.active{background:var(--grad);color:#140a10;box-shadow:0 6px 18px -8px rgba(255,77,141,.6)}
+label{display:block;font-size:14px;font-weight:600;margin-bottom:9px;color:var(--ink)}
+label .req{color:var(--c2)}
+input[type=text],textarea{width:100%;border:1px solid var(--line);border-radius:12px;padding:14px;font-size:15px;font-family:inherit;background:var(--bg-2);color:var(--ink);transition:border-color .2s,background .2s}
+input[type=text]:focus,textarea:focus{outline:none;border-color:var(--c2);background:var(--bg-3)}
+input::placeholder,textarea::placeholder{color:var(--ink-4)}
+textarea{resize:vertical;min-height:70px;line-height:1.55}
+input[type=file]{width:100%;margin-top:9px;font-size:13px;color:var(--ink-3)}
+input[type=file]::file-selector-button{font-family:inherit;background:var(--panel-2);color:var(--ink-2);border:1px solid var(--line-strong);border-radius:8px;padding:7px 12px;margin-right:10px;cursor:pointer}
+.hint{font-size:12.5px;color:var(--ink-3);margin-top:9px;line-height:1.6}
+.hint a{color:var(--c2)}
+.hint b{color:var(--ink-2)}
+.dropbox{margin-top:9px;border:2px dashed var(--line-strong);border-radius:12px;padding:18px;text-align:center;color:var(--ink-2);cursor:pointer;font-size:13.5px;outline:none;background:var(--bg-2);transition:border-color .2s,background .2s}
+.dropbox:hover,.dropbox:focus{border-color:var(--c2);background:var(--bg-3)}
+.dropbox b{color:var(--ink)}
+.preview-thumb img{max-width:100%;border-radius:10px;border:1px solid var(--line);display:block;margin-top:9px}
+.preview-thumb .ok{font-size:12.5px;color:#5ad79a;font-weight:600;margin-top:6px}
+details{margin-top:14px;border-top:1px solid var(--line);padding-top:14px}
+summary{font-size:13.5px;color:var(--c2);cursor:pointer;font-weight:600;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"+ ";font-weight:700}
+#go{width:100%;margin-top:20px}
+
+#analyzebox{display:none;margin-top:20px;padding:20px;border:1px solid var(--line-strong);border-radius:14px;background:var(--grad-soft)}
+#analyzebox .ab-h{font-weight:700;color:var(--ink);margin-bottom:4px;font-size:15.5px;display:flex;align-items:center;gap:7px}
+#analyzebox .ab-h .dot{width:6px;height:6px;border-radius:50%;background:var(--grad)}
+#analyzebox .ab-sub{font-size:13px;color:var(--ink-2);margin-bottom:14px;line-height:1.55}
+#analyzebox .ab-sub b{color:var(--c2)}
+#analyzebox label{margin-top:12px}
+#analyzebox label:first-of-type{margin-top:0}
+
+#loading{display:none;text-align:center;padding:34px 0}
+#loading.on{display:block}
+.spin{width:40px;height:40px;border:3px solid var(--line-strong);border-top-color:var(--c2);border-radius:50%;margin:0 auto 16px;animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+#loading p{color:var(--ink-2);font-size:14px;line-height:1.6}
+.errbox{display:none;background:rgba(255,77,141,.08);border:1px solid rgba(255,77,141,.3);color:#ff9bb8;border-radius:12px;padding:14px;margin-top:16px;font-size:14px;line-height:1.55}
+.errbox.on{display:block}
+#result{display:none;margin-top:24px}
+#result.on{display:block}
+#result h3{font-size:16px;font-weight:700;text-align:center;margin-bottom:8px}
+#rurl{text-align:center;font-size:12.5px;color:var(--ink-3);margin-bottom:14px;line-height:1.6}
+#rurl a{color:var(--c2);font-weight:600;word-break:break-all}
+.result-actions{display:flex;gap:8px;max-width:480px;margin:0 auto 14px}
+.result-actions .btn{flex:1}
+#editsave{display:none;text-align:center;margin-bottom:14px;padding:13px;background:var(--grad-soft);border:1px solid var(--line-strong);border-radius:12px}
+#editsave span{font-size:13px;color:var(--ink-2);font-weight:500}
+#editsave .ok{color:#5ad79a;font-weight:700}
+.preview{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fff}
+.preview iframe{width:100%;border:none;display:block;min-height:560px;background:#fff}
+@media(max-width:560px){.head h1{font-size:26px}.card{padding:20px 16px}}
+</style>
+</head>
+<body>
+
+<nav><div class="nav-in">
+  <a href="/" class="logo" aria-label="lumi 홈"><img src="/assets/logo-wordmark.webp" alt="lumi"></a>
+  <div class="nav-right" id="navRight"></div>
+</div></nav>
+
+<!-- ===== 미로그인 게이트 ===== -->
+<div id="gate"><div class="gate-card">
+  <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+  <h1>로그인하고 시작하기</h1>
+  <p>상세페이지 만들기는 로그인이 필요해요.<br>카카오로 3초면 시작할 수 있습니다.</p>
+  <button class="kakao-btn" id="kakaoLogin">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3C6.48 3 2 6.48 2 10.8c0 2.76 1.86 5.18 4.66 6.56-.2.72-.74 2.7-.84 3.12-.13.52.19.52.4.38.16-.11 2.6-1.76 3.66-2.48.7.1 1.42.16 2.12.16 5.52 0 10-3.48 10-7.74C22 6.48 17.52 3 12 3z"/></svg>
+    카카오로 시작하기
+  </button>
+  <div class="fine">로그인하면 만든 상세페이지가 계정에 저장돼<br>언제든 다시 보고 편집할 수 있어요.</div>
+</div></div>
+
+<!-- ===== 생성 앱 ===== -->
+<main id="app"><div class="wrap">
+  <div class="head">
+    <div class="kicker"><span class="dot"></span> AI 상세페이지 메이커</div>
+    <h1>링크나 사진만 넣으면<br><span class="serif grad-text">팔리는 상세페이지</span>가 완성</h1>
+    <p>상품 링크를 붙여넣거나 사진을 올리면 AI가 화보·카피·디자인까지 새로 만듭니다. 글자 하나까지 정확하게.</p>
+  </div>
+
+  <div class="card">
+    <div class="tabs">
+      <button type="button" class="tabbtn active" data-mode="link">링크로</button>
+      <button type="button" class="tabbtn" data-mode="upload">사진으로</button>
+    </div>
+
+    <div id="m-link">
+      <label for="url">상품 링크</label>
+      <input type="text" id="url" placeholder="상품 페이지 주소를 붙여넣으세요 (https://...)" autocomplete="off">
+      <div class="hint">주소를 넣으면 AI가 페이지를 읽어 분석합니다. 안 열리는 사이트는 사진으로 안내해 드려요.</div>
+    </div>
+
+    <div id="m-upload" style="display:none;">
+      <label for="mainimg">상품 사진 또는 페이지 캡처 <span class="req">*</span></label>
+      <div id="pastebox" class="dropbox" tabindex="0">클릭 후 <b>Cmd+V</b>로 붙여넣기</div>
+      <div id="cappreview" class="preview-thumb"></div>
+      <input type="file" id="mainimg" accept="image/*">
+      <div class="hint">제품 사진이든 상품페이지 캡처든 <b>1장</b>만 올리면 AI가 정보를 읽고 화보를 만듭니다. 제품이 선명한 사진일수록 화보가 예뻐요. 전체 캡처는 <a href="https://chromewebstore.google.com/detail/fdpohaocaechififmbbbbbknoalclacl" target="_blank">GoFullPage</a>(무료) 추천. <b>다음 단계에서 정보 확인·수정</b>할 수 있어요.</div>
+    </div>
+
+    <details>
+      <summary>디자인 레퍼런스 (선택 — 맘에 드는 상세페이지 캡처)</summary>
+      <div id="refpaste" class="dropbox" tabindex="0" style="margin-top:12px;">클릭 후 <b>Cmd+V</b>로 레퍼런스 붙여넣기</div>
+      <div id="refpreview" class="preview-thumb"></div>
+      <input type="file" id="refimg" accept="image/*">
+      <div class="hint">붙여넣거나 올리면 그 <b>색·무드·레이아웃</b>을 참고해 비슷한 느낌으로 만들어요. (실제 사진·문구를 베끼지 않아요)</div>
+    </details>
+
+    <button class="btn btn-primary" id="go">상세페이지 만들기</button>
+
+    <div id="analyzebox">
+      <div class="ab-h"><span class="dot"></span> AI가 분석한 정보</div>
+      <div class="ab-sub">맞는지 확인하고, <b>틀린 건 고치거나 지워주세요.</b> 이 정보로 상세페이지를 만듭니다.</div>
+      <label for="a-title">상품명</label>
+      <input type="text" id="a-title" autocomplete="off">
+      <label for="a-facts">상품 정보·특징 <span style="color:var(--ink-3);font-weight:400;font-size:13px;">(한 줄에 하나씩)</span></label>
+      <textarea id="a-facts" rows="7"></textarea>
+      <button class="btn btn-primary" id="confirmgo" style="width:100%;margin-top:14px;">확인했어요 · 상세페이지 만들기</button>
+    </div>
+
+    <div id="loading"><div class="spin"></div><p id="loadmsg">AI가 화보·카피·디자인 컷을 만드는 중...<br>약 3~4분 걸려요. 창을 닫지 말고 기다려 주세요.</p></div>
+    <div class="errbox" id="err"></div>
+
+    <div id="result">
+      <h3>완성된 상세페이지</h3>
+      <div id="rurl"></div>
+      <div class="result-actions">
+        <button class="btn btn-ghost btn-sm" id="easyEdit">✏️ 글씨만 수정</button>
+        <button class="btn btn-primary btn-sm" id="proEdit">🎨 정밀 편집</button>
+      </div>
+      <div id="editsave"><span>노란 점선이 그어진 글자를 눌러 고친 뒤, 아래 저장을 누르세요.</span><button class="btn btn-primary btn-sm" id="savebtn" style="max-width:240px;margin:10px auto 0;display:flex;">수정한 내용 저장</button></div>
+      <div class="preview"><iframe id="frame"></iframe></div>
+    </div>
+  </div>
+</div></main>
+
+<script>
+(function(){
+  // ===== 로그인 게이트 =====
+  // 카카오 callback 이 해시로 토큰을 돌려주는 경우(직접 /create 로 온 케이스) 흡수
+  if(location.hash && location.hash.indexOf('lumi_token=')!==-1){
+    try{
+      var hp=new URLSearchParams(location.hash.replace(/^#/,''));
+      var ht=hp.get('lumi_token'), hrt=hp.get('lumi_refresh');
+      if(ht)localStorage.setItem('lumi-auth',ht);
+      if(hrt)localStorage.setItem('lumi_refresh',hrt);
+      history.replaceState(null,'',location.pathname);
+    }catch(e){}
+  }
+  var token=localStorage.getItem('lumi-auth')||localStorage.getItem('lumi_auth')||localStorage.getItem('seller_jwt')||'';
+  var authHeaders={'Content-Type':'application/json'};
+  if(token)authHeaders['Authorization']='Bearer '+token;
+
+  var gate=document.getElementById('gate'),app=document.getElementById('app');
+  document.getElementById('kakaoLogin').addEventListener('click',function(){
+    location.href='/api/auth/kakao/start';
+  });
+  if(!token){ gate.classList.add('on'); return; }  // 미로그인 → 게이트만 표시, 앱 로직 미실행
+  app.classList.add('on');
+
+  // 로그인 상태 — 매장명/로그아웃 표시 (실패해도 생성은 가능)
+  var navRight=document.getElementById('navRight');
+  fetch('/api/me',{headers:authHeaders}).then(function(r){return r.json();}).then(function(d){
+    if(d&&d.seller){
+      var name=d.seller.storeName||d.seller.displayName||d.seller.ownerName||'내 매장';
+      navRight.innerHTML='<a class="lk" href="/dashboard">대시보드</a><span class="store">'+name+'</span><a class="lk" href="#" id="logout">로그아웃</a>';
+      var lo=document.getElementById('logout');
+      if(lo)lo.addEventListener('click',function(e){e.preventDefault();['lumi-auth','lumi_auth','seller_jwt','lumi_refresh'].forEach(function(k){try{localStorage.removeItem(k);}catch(_){}});try{sessionStorage.clear();}catch(_){}location.href='/';});
+    }else{
+      navRight.innerHTML='<a class="lk" href="/dashboard">대시보드</a>';
+    }
+  }).catch(function(){navRight.innerHTML='<a class="lk" href="/dashboard">대시보드</a>';});
+
+  // ===== 생성 로직 (detail-maker 검증 로직 이식) =====
+  var go=document.getElementById('go'),loading=document.getElementById('loading'),result=document.getElementById('result'),frame=document.getElementById('frame'),err=document.getElementById('err');
+  var currentJobId=null,currentBlocks=null,currentPalette=null;
+  var easyEdit=document.getElementById('easyEdit'),proEdit=document.getElementById('proEdit'),savebtn=document.getElementById('savebtn'),editsave=document.getElementById('editsave');
+
+  if(easyEdit)easyEdit.addEventListener('click',function(){
+    try{var d=frame.contentDocument;var els=d.querySelectorAll('[data-f]');
+      if(!els.length){alert('이 결과는 글씨 수정을 지원하지 않아요. 정밀 편집을 이용해 주세요.');return;}
+      Array.prototype.forEach.call(els,function(el){el.setAttribute('contenteditable','true');el.style.outline='1px dashed #E8A23D';el.style.outlineOffset='2px';});
+    }catch(e){alert('이 결과는 편집할 수 없어요.');return;}
+    editsave.style.display='block';easyEdit.style.display='none';editsave.scrollIntoView({behavior:'smooth'});
+  });
+  if(savebtn)savebtn.addEventListener('click',function(){
+    if(!currentJobId){alert('저장할 작업을 찾지 못했어요. 다시 만들어 주세요.');return;}
+    var html;try{var d=frame.contentDocument;Array.prototype.forEach.call(d.querySelectorAll('[data-f]'),function(el){el.removeAttribute('contenteditable');el.style.outline='';el.style.outlineOffset='';});html=d.documentElement.outerHTML;}catch(e){alert('수정 내용을 읽지 못했어요.');return;}
+    savebtn.disabled=true;savebtn.textContent='저장 중...';
+    fetch('/api/generate-detail',{method:'POST',headers:authHeaders,body:JSON.stringify({action:'save',jobId:currentJobId,html:html})})
+    .then(function(r){return r.json();}).then(function(j){savebtn.disabled=false;savebtn.textContent='수정한 내용 저장';if(j.saved){editsave.innerHTML='<span class="ok">저장됐어요! 저장된 링크에 반영됐습니다.</span>';easyEdit.style.display='';}else{alert(j.error||'저장에 실패했어요.');}})
+    .catch(function(){savebtn.disabled=false;savebtn.textContent='수정한 내용 저장';alert('저장 중 오류가 발생했어요.');});
+  });
+  if(proEdit)proEdit.addEventListener('click',function(){
+    if(!currentBlocks||!currentBlocks.length){alert('정밀 편집용 데이터가 없어요. 다시 만들어 주세요.');return;}
+    try{sessionStorage.setItem('lumi_editor_blocks',JSON.stringify({blocks:currentBlocks,palette:currentPalette}));}catch(e){alert('편집 데이터가 너무 큽니다.');return;}
+    window.open('/editor.html','_blank');
+  });
+
+  var mode='link';
+  var tabs=document.querySelectorAll('.tabbtn');
+  Array.prototype.forEach.call(tabs,function(t){
+    t.addEventListener('click',function(){
+      mode=t.getAttribute('data-mode');
+      Array.prototype.forEach.call(tabs,function(x){x.classList.toggle('active',x===t);});
+      document.getElementById('m-link').style.display=mode==='link'?'':'none';
+      document.getElementById('m-upload').style.display=mode==='upload'?'':'none';
+    });
+  });
+  function fileB64(id){return new Promise(function(res){var f=document.getElementById(id).files[0];if(!f){res(null);return;}var fr=new FileReader();fr.onload=function(){res(fr.result);};fr.onerror=function(){res(null);};fr.readAsDataURL(f);});}
+  var capturePasted=null,pendingMain=null,refData=null;
+  var refEl=document.getElementById('refimg');
+  if(refEl)refEl.addEventListener('change',function(){fileB64('refimg').then(function(d){refData=d;var rp=document.getElementById('refpreview');if(rp&&d)rp.innerHTML='<img src="'+d+'"><div class="ok">레퍼런스 업로드 완료</div>';});});
+  function setLoad(msg){var lm=document.getElementById('loadmsg');if(lm)lm.innerHTML=msg;}
+  var pb=document.getElementById('pastebox');
+  if(pb)pb.addEventListener('click',function(){pb.focus();});
+  var rpb=document.getElementById('refpaste');
+  if(rpb)rpb.addEventListener('click',function(){rpb.focus();});
+  document.addEventListener('paste',function(e){
+    var isRef=(document.activeElement===rpb);
+    if(!isRef&&mode!=='upload')return;
+    var items=(e.clipboardData||{}).items||[];
+    for(var i=0;i<items.length;i++){
+      if(items[i].type&&items[i].type.indexOf('image')===0){
+        var blob=items[i].getAsFile();var fr=new FileReader();
+        if(isRef){
+          fr.onload=function(){refData=fr.result;var rp=document.getElementById('refpreview');if(rp)rp.innerHTML='<img src="'+fr.result+'"><div class="ok">레퍼런스 붙여넣기 완료</div>';};
+        }else{
+          fr.onload=function(){capturePasted=fr.result;var cp=document.getElementById('cappreview');if(cp)cp.innerHTML='<img src="'+fr.result+'"><div class="ok">붙여넣기 완료</div>';};
+        }
+        fr.readAsDataURL(blob);e.preventDefault();break;
+      }
+    }
+  });
+  function showErr(msg,suggest){
+    err.innerHTML=(msg||'오류가 발생했습니다.')+(suggest?'<br><button type="button" id="toup" class="btn btn-ghost btn-sm" style="margin-top:12px;">사진으로 만들기</button>':'');
+    err.classList.add('on');
+    var b=document.getElementById('toup');
+    if(b)b.addEventListener('click',function(){var ut=document.querySelector('.tabbtn[data-mode="upload"]');if(ut)ut.click();err.classList.remove('on');err.innerHTML='';});
+  }
+  function start(body){
+    go.disabled=true;result.classList.remove('on');loading.classList.add('on');
+    fetch('/api/generate-detail',{method:'POST',headers:authHeaders,body:JSON.stringify(body)})
+    .then(function(r){return r.json();}).then(function(j){
+      if(!j.jobId){loading.classList.remove('on');go.disabled=false;showErr(j.error||'생성을 시작하지 못했습니다.',mode==='link');return;}
+      poll(j.jobId,0);
+    }).catch(function(){loading.classList.remove('on');go.disabled=false;showErr('네트워크 오류입니다. 다시 시도해 주세요.',false);});
+  }
+  go.addEventListener('click',function(){
+    err.classList.remove('on');
+    if(mode==='link'){
+      var url=document.getElementById('url').value.trim();
+      if(!url){err.textContent='상품 링크를 붙여넣어 주세요.';err.classList.add('on');return;}
+      start({url:url,quality:'medium',referenceImageBase64:refData||undefined});
+    }else{
+      fileB64('mainimg').then(function(mainf){
+        var main=capturePasted||mainf;
+        if(!main){showErr('상품 사진이나 페이지 캡처를 올려주세요.',false);return;}
+        pendingMain=main;
+        go.disabled=true;result.classList.remove('on');document.getElementById('analyzebox').style.display='none';
+        setLoad('상품 정보를 분석하는 중...<br>약 30초~1분 걸려요.');loading.classList.add('on');
+        fetch('/api/generate-detail',{method:'POST',headers:authHeaders,body:JSON.stringify({step:'analyze',imageBase64:main})})
+        .then(function(r){return r.json();}).then(function(a){
+          loading.classList.remove('on');go.disabled=false;
+          if(a.error){showErr(a.error,false);return;}
+          document.getElementById('a-title').value=a.title||'';
+          document.getElementById('a-facts').value=(a.facts||[]).join('\n');
+          var ab=document.getElementById('analyzebox');ab.style.display='block';ab.scrollIntoView({behavior:'smooth'});
+        }).catch(function(){loading.classList.remove('on');go.disabled=false;showErr('분석 중 오류가 발생했어요. 다시 시도해 주세요.',false);});
+      });
+    }
+  });
+  function showResult(html,resultUrl,rmode){
+    if((rmode==='image'||!html)&&resultUrl){frame.srcdoc='<body style="margin:0;background:#fff"><img src="'+resultUrl+'" style="width:100%;display:block"></body>';}
+    else{frame.srcdoc=html||'';}
+    result.classList.add('on');
+    var ru=document.getElementById('rurl');
+    if(ru)ru.innerHTML=resultUrl?'저장된 결과: <a href="'+resultUrl+'" target="_blank">'+resultUrl+'</a><br>(북마크해두면 언제든 다시 볼 수 있어요)':'';
+    frame.onload=function(){try{frame.style.height=(frame.contentWindow.document.body.scrollHeight+40)+'px';}catch(e){frame.style.height='3000px';}};
+    result.scrollIntoView({behavior:'smooth'});
+  }
+  function poll(jobId,n){
+    if(n>150){loading.classList.remove('on');go.disabled=false;err.textContent='시간이 너무 오래 걸립니다. 다시 시도해 주세요.';err.classList.add('on');return;}
+    fetch('/api/generate-detail?jobId='+encodeURIComponent(jobId),{headers:authHeaders}).then(function(r){return r.json();}).then(function(j){
+      if(j.status==='done'&&(j.html||j.resultUrl)){currentJobId=jobId;currentBlocks=j.blocks||null;currentPalette=j.palette||null;loading.classList.remove('on');go.disabled=false;showResult(j.html,j.resultUrl,j.mode);}
+      else if(j.status==='error'){loading.classList.remove('on');go.disabled=false;showErr(j.error||'생성에 실패했습니다.',mode==='link');}
+      else{setTimeout(function(){poll(jobId,n+1);},3000);}
+    }).catch(function(){setTimeout(function(){poll(jobId,n+1);},3000);});
+  }
+  var confirmgo=document.getElementById('confirmgo');
+  if(confirmgo)confirmgo.addEventListener('click',function(){
+    var t=document.getElementById('a-title').value.trim();
+    var facts=document.getElementById('a-facts').value.split('\n').map(function(s){return s.trim();}).filter(Boolean);
+    if(!facts.length){showErr('상품 정보를 한 줄 이상 남겨주세요.',false);return;}
+    document.getElementById('analyzebox').style.display='none';
+    setLoad('AI가 화보·카피·디자인 컷을 만드는 중...<br>약 3~4분 걸려요. 창을 닫지 말고 기다려 주세요.');
+    start({title:t||undefined,facts:facts,imageBase64:pendingMain,quality:'medium',referenceImageBase64:refData||undefined});
+  });
+})();
+</script>
+</body>
+</html>
