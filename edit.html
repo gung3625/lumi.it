@@ -122,6 +122,9 @@ body::before{content:"";position:fixed;inset:0;z-index:-2;background:radial-grad
   // 로그인 게이트
   if(location.hash&&location.hash.indexOf('lumi_token=')!==-1){try{var hp=new URLSearchParams(location.hash.replace(/^#/,''));var t=hp.get('lumi_token');if(t)localStorage.setItem('lumi-auth',t);history.replaceState(null,'',location.pathname);}catch(e){}}
   var token=localStorage.getItem('lumi-auth')||localStorage.getItem('lumi_auth')||localStorage.getItem('seller_jwt')||'';
+  var jobId=''; try{jobId=sessionStorage.getItem('lumi_edit_job')||'';}catch(e){}
+  var authHeaders={'Content-Type':'application/json','Authorization':'Bearer '+token};
+  var savedUrl='';
   document.getElementById('kakaoLogin').addEventListener('click',function(){location.href='/api/auth/kakao/start';});
   function icons(){try{if(window.lucide)lucide.createIcons();}catch(e){}}
   if(!token){document.getElementById('gate').classList.add('on');icons();return;}
@@ -196,19 +199,40 @@ body::before{content:"";position:fixed;inset:0;z-index:-2;background:radial-grad
     else if(act==='replace'){ alert('이미지 교체 — 백엔드 연동 시: 파일 업로드 → 해당 블록 화보 교체 (무료, 합성만).'); }
     else if(act==='regen'){ alert('AI 재생성 — 백엔드 연동 시: 이 블록 화보만 gpt-image-2로 새로 (~100원, 부분 재생성).'); }
   });
-  // 텍스트 입력 → 블록 데이터 갱신 (실제론 recompose 호출 → 이미지 갱신)
+  // 텍스트 입력 → 블록 데이터 갱신 → recompose(무료) → 해당 블록 이미지 실시간 갱신
+  var debTimers={};
+  function recomposeBlockUI(b){
+    if(!jobId||!b)return;
+    fetch('/api/generate-detail',{method:'POST',headers:authHeaders,body:JSON.stringify({action:'recompose',jobId:jobId,blockKey:b.key,textOverride:b.text})})
+      .then(function(r){return r.json();}).then(function(d){
+        if(d&&d.img){var card=root.querySelector('[data-id="'+b._id+'"]');if(card){var box=card.querySelector('.block-img');if(box){box.innerHTML='<img src="'+esc(d.img)+'?t='+Date.now()+'" alt="">';b.img=d.img;}}}
+      }).catch(function(){});
+  }
   root.addEventListener('input',function(e){
     var el=e.target; var bk=el.getAttribute&&el.getAttribute('data-bk'), tk=el.getAttribute&&el.getAttribute('data-tk');
     if(!bk||!tk)return;
     var b=blocks.find(function(x){return x._id===bk;}); if(!b)return;
     if(tk==='items') b.text.items=el.value.split('\n').map(function(s){return s.trim();}).filter(Boolean);
     else b.text[tk]=el.value;
+    clearTimeout(debTimers[bk]); debTimers[bk]=setTimeout(function(){recomposeBlockUI(b);},700);
   });
   document.getElementById('addBlock').addEventListener('click',function(){
     blocks.push({key:'scene',img:'',text:{headline:'새 블록'}}); render();
   });
-  document.getElementById('saveBtn').addEventListener('click',function(){ alert('저장 — 백엔드 연동 시: 블록 순서·텍스트 → recompose 재합성(무료) 후 저장.'); });
-  document.getElementById('dlBtn').addEventListener('click',function(){ alert('다운로드 — 블록 합쳐서(stitch) 최종 PNG 저장.'); });
+  function saveAll(cb){
+    if(!jobId){alert('저장할 작업이 없어요. 생성 후 "정밀 편집"으로 들어와 주세요.');cb&&cb(null);return;}
+    fetch('/api/generate-detail',{method:'POST',headers:authHeaders,body:JSON.stringify({action:'recompose',jobId:jobId,blocks:blocks.map(function(b){return {key:b.key,text:b.text};})})})
+      .then(function(r){return r.json();}).then(function(d){ if(d&&d.resultUrl){savedUrl=d.resultUrl;cb&&cb(d.resultUrl);} else {alert((d&&d.error)||'저장에 실패했어요.');cb&&cb(null);} })
+      .catch(function(){alert('저장에 실패했어요.');cb&&cb(null);});
+  }
+  document.getElementById('saveBtn').addEventListener('click',function(){
+    var btn=this,orig=btn.innerHTML;btn.disabled=true;btn.innerHTML='저장 중…';
+    saveAll(function(url){btn.disabled=false;btn.innerHTML=orig;if(url)alert('저장됐어요! 작업실에서 확인할 수 있어요.');});
+  });
+  document.getElementById('dlBtn').addEventListener('click',function(){
+    var btn=this,orig=btn.innerHTML;btn.disabled=true;btn.innerHTML='준비 중…';
+    saveAll(function(url){btn.disabled=false;btn.innerHTML=orig;if(url){var a=document.createElement('a');a.href=url+'?t='+Date.now();a.download='상세페이지.jpg';document.body.appendChild(a);a.click();a.remove();}});
+  });
 
   render();
 })();

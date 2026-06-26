@@ -2,7 +2,7 @@
 //   POST {url|title+imageBase64} → 즉시 jobId 반환(202), 백그라운드에서 생성.
 //   GET  ?jobId → 상태 조회(pending / done+html / error).
 // 생성이 1~3분 걸려서 동기 응답은 프록시·브라우저 타임아웃 위험 → 작업+폴링 방식.
-const { generateDetailPage, generateAiPhoto, photoPrompt, scenePlan, copyToBlocks, renderBlocks, accentPalette, extractProductTitle, analyzeProductImages, analyzeReferenceStyle, refStylePrompt, verifyGenerated, refBlockPlan, stitchBlocks, renderBlockText, recomposeBlocks } = require('./_shared/detail-page.js');
+const { generateDetailPage, generateAiPhoto, photoPrompt, scenePlan, copyToBlocks, renderBlocks, accentPalette, extractProductTitle, analyzeProductImages, analyzeReferenceStyle, refStylePrompt, verifyGenerated, refBlockPlan, stitchBlocks, renderBlockText, recomposeBlocks, recomposeBlock } = require('./_shared/detail-page.js');
 const { getItemView } = require('./_shared/domeggook-api.js');
 const { getDometopiaItem, parseNo } = require('./_shared/dometopia.js');
 const { fetchViaUnlocker, parseUniversalProduct } = require('./_shared/universal.js');
@@ -217,7 +217,7 @@ exports.handler = async (event) => {
     const id = q.jobId;
     const j = id && jobs[id];
     if (!j) return err(404, '작업을 찾을 수 없습니다. 다시 시도해 주세요');
-    if (j.status === 'done') return ok({ status: 'done', mode: j.mode || 'html', title: j.title, html: j.html, blocks: j.blocks, palette: j.palette, copy: j.copy, reviewPoints: j.reviewPoints, sceneCount: j.sceneCount, resultUrl: j.resultUrl, creditRemaining: j.creditRemaining });
+    if (j.status === 'done') return ok({ status: 'done', mode: j.mode || 'html', title: j.title, html: j.html, blocks: j.blocks, palette: j.palette, copy: j.copy, reviewPoints: j.reviewPoints, sceneCount: j.sceneCount, resultUrl: j.resultUrl, jobId: j.jobId || id, creditRemaining: j.creditRemaining });
     if (j.status === 'error') return ok({ status: 'error', error: j.error });
     return ok({ status: 'pending' });
   }
@@ -240,9 +240,32 @@ exports.handler = async (event) => {
     try {
       const cacheDir = path.join(process.env.HOME || '/home/lumi', 'lumi', 'cache', jid);
       const style = { fontOverride: params.fontOverride, inkOverride: params.inkOverride, accentOverride: params.accentOverride, subOverride: params.subOverride };
+      const imgDir = path.join(RESULTS_DIR, 'img');
+      try { fs.mkdirSync(imgDir, { recursive: true }); } catch (_) {}
+      // (a) 블록 1개 실시간 갱신 — 편집기에서 글자 고칠 때(무료, gpt 0).
+      if (params.blockKey) {
+        const b64 = await recomposeBlock(cacheDir, params.blockKey, params.textOverride || null, style);
+        if (!b64) return err(404, '블록을 재합성할 수 없습니다');
+        const fn = jid + '-' + params.blockKey + '.png';
+        fs.writeFileSync(path.join(imgDir, fn), Buffer.from(b64, 'base64'));
+        return ok({ recomposed: true, blockKey: params.blockKey, img: 'https://lumi.it.kr/r/img/' + fn });
+      }
+      // (b) 저장 — blocks 순서·문구 그대로 각 블록 재합성 → 이어붙여 최종 1장(무료).
+      if (Array.isArray(params.blocks) && params.blocks.length) {
+        const parts = [];
+        for (const b of params.blocks) {
+          const b64 = await recomposeBlock(cacheDir, b.key, (b.text || null), style);
+          if (b64) parts.push(b64);
+        }
+        const stitched = await stitchBlocks(parts);
+        if (!stitched) return err(404, '저장된 화보가 없습니다. 먼저 생성해 주세요');
+        fs.writeFileSync(path.join(imgDir, jid + '.jpg'), Buffer.from(stitched, 'base64'));
+        return ok({ recomposed: true, resultUrl: 'https://lumi.it.kr/r/img/' + jid + '.jpg' });
+      }
+      // (c) 전체 재합성(기존 — 폰트·색 일괄 변경).
       const stitched = await recomposeBlocks(cacheDir, style, params.textOverride);
       if (!stitched) return err(404, '저장된 화보가 없습니다. 먼저 생성해 주세요');
-      fs.writeFileSync(path.join(process.env.HOME || '/home/lumi', 'lumi', 'r', 'img', jid + '.jpg'), Buffer.from(stitched, 'base64'));
+      fs.writeFileSync(path.join(imgDir, jid + '.jpg'), Buffer.from(stitched, 'base64'));
       return ok({ recomposed: true, resultUrl: 'https://lumi.it.kr/r/img/' + jid + '.jpg' });
     } catch (e) { return err(500, '재합성에 실패했습니다'); }
   }

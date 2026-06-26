@@ -51,9 +51,9 @@ const SYS = [
   '메인히어로 → 문제공감 → 해결혜택 → 핵심차별점 → 실물/사용장면 → 신뢰근거 → 구성/옵션 → 배송/주의 → FAQ → CTA.',
   '',
   '== 출력 JSON 키 ==',
-  'seoTitle: 검색 잘되는 60자내 제목.  heroHeadline: 첫화면 후킹(이익 중심 12~22자).  heroSub: 보조 한 줄.',
+  'seoTitle: 검색 잘되는 60자내 제목.  heroKicker: 헤드라인 위 작은 영문 라벨(대문자 영어 2~4단어, 예 WINTER COLLECTION/DAILY ESSENTIAL — 제품 카테고리·콘셉트를 영어로).  heroHeadline: 첫화면 후킹(이익 중심 12~22자).  heroEmphasis: heroHeadline 안에서 강조할 핵심 단어/구 1개 — heroHeadline에 "그대로 포함된" 부분 문자열이어야 함(색 강조용).  heroSub: 보조 한 줄.',
   'concerns: 고객 고민 2~3개("이런 적 없으세요?" 톤, 불만해소 데이터 반영).',
-  'benefits: 핵심 혜택 3~4개(혜택+근거).  sections: 실물/사용장면 1~2개[{name,headline,body}].',
+  'benefits: 핵심 혜택 3~4개(혜택+근거).  featureLabels: 핵심 기능/특징을 아이콘 옆에 넣을 "짧은 명사 키워드" 4개(각 4~7자, 예 "기모 안감"·"퀼팅 패턴"·"세트 구성" — 완전한 문장 금지, 서술형 금지).  sections: 실물/사용장면 1~2개[{name,headline,body}].',
   'comparison: {headline:"왜 이 제품인가", points:[차별점 2~3]}.  faq: 소비자질문 2~3개[{q,a}].  closing: 마무리 한 줄.',
   'reviewPoints: 판매자가 출고 전 꼭 확인할 항목 2~4개(추정으로 채운 사양, 강하게 단정한 카피, 빠졌을 수 있는 정보). 소비자 비노출 — 판매자 검수용.',
   '[소싱데이터]·[이미지분석]이 있으면 적극 반영. 출력은 위 키의 JSON 하나만.',
@@ -184,22 +184,50 @@ function buildHtml(product, copy) {
   return W(h);
 }
 
-// photo-analysis: 도매꾹 상세 이미지에서 "읽히는 사실"만 비전 추출(추론 금지). 무료 Gemini. best-effort(실패시 null).
-async function analyzeProductImages(images, title) {
-  const urls = distinctImages(images || []).slice(0, 5);
-  if (!urls.length) return null;
-  const prompt = '아래는 상품 "' + (title || '') + '"의 상세 이미지들이다. ★오직 이 상품 자체의 사실만 한국어로 추출하라. 같은 페이지에 다른 모델·관련상품·세트 카탈로그·타 사양(제목과 명백히 다른 단수/형태/용도)이 섞여 있으면 그건 무시하라(제목 "' + (title || '') + '"과 맞는 것만). 읽히는 사실(기능 예 각도조절·풍량단수, 옵션·색상, 수치, 인증, 구성품, 소재, 사용법)만. ★제외(절대 포함 금지): 판매자·회사 연락처/전화번호, 상담시간, 배송·교환·반품 정책, 휴무, CCTV, 회사소개. 안 보이거나 불확실하면 추론·창작 금지. JSON으로만: {"facts":["사실1"...]}';
+// 세로로 긴 상세이미지는 통째로 넣으면 AI vision이 축소→작은 글씨가 깨짐. 세로 타일로 잘라 각 조각 고해상도 유지 → 정확한 분석.
+async function tileTall(src, maxTiles) {
+  const sharp = require('sharp');
   try {
-    const res = await llmChat({
+    let buf;
+    if (/^https?:/i.test(src)) { const r = await fetch(src, { signal: AbortSignal.timeout(20000) }); if (!r.ok) return [src]; buf = Buffer.from(await r.arrayBuffer()); }
+    else if (/^data:/i.test(src)) buf = Buffer.from(String(src).replace(/^data:[^,]+,/, ''), 'base64');
+    else buf = Buffer.from(src, 'base64');
+    const m = await sharp(buf).metadata();
+    const W = m.width || 0, H = m.height || 0;
+    // 세로가 가로의 1.8배 이하면 분할 불필요(그대로 1장). 1.8로 낮춤 — 여주환(비율 2.0)처럼 작은 상세도 분할되게.
+    if (!W || !H || H <= W * 1.8) return ['data:image/jpeg;base64,' + (await sharp(buf).jpeg({ quality: 88 }).toBuffer()).toString('base64')];
+    const tiles = Math.min(maxTiles || 8, Math.max(2, Math.round(H / (W * 1.3))));
+    const th = Math.ceil(H / tiles);
+    const out = [];
+    for (let i = 0; i < tiles; i++) { const top = i * th, h = Math.min(th, H - top); if (h <= 10) break; const t = await sharp(buf).extract({ left: 0, top, width: W, height: h }).jpeg({ quality: 88 }).toBuffer(); out.push('data:image/jpeg;base64,' + t.toString('base64')); }
+    return out.length ? out : [src];
+  } catch (_) { return [src]; }
+}
+
+// photo-analysis: 상세 이미지에서 "읽히는 사실"만 비전 추출(추론 금지). 긴 이미지는 타일 분할로 작은 글씨까지 정확히. best-effort(실패시 null).
+async function analyzeProductImages(images, title, model) {
+  const srcs = distinctImages(images || []).slice(0, 5);
+  if (!srcs.length) return null;
+  // 긴 상세이미지는 세로로 잘라 조각마다 고해상도 분석(작은 글씨 보존). 전체 조각 최대 12장.
+  let urls = [];
+  for (const s of srcs) { const tiles = await tileTall(s, 8); for (const u of tiles) { if (urls.length < 12) urls.push(u); } if (urls.length >= 12) break; }
+  if (!urls.length) return null;
+  const prompt = '아래는 상품 "' + (title || '') + '"의 상세 이미지들이다. ★오직 이 상품 자체의 사실만 한국어로 "빠짐없이 전부" 추출하라. 같은 페이지에 다른 모델·관련상품·세트 카탈로그·타 사양이 섞여 있으면 무시(제목 "' + (title || '') + '"과 맞는 것만). 다음 항목을 이미지에 보이는 대로 전부 뽑아라: 크기·치수, 무게, 용량, 재질·소재, ★성분·영양성분표(비타민·미네랄·아미노산·추출물 등 모든 성분명과 함량 수치를 표/리스트에 적힌 그대로 하나도 빠짐없이), 색상·옵션 전종류, 구성품·세트구성, 핵심기능·작동방식(예 각도조절·풍량단수·온도·모드), 사용법·작동순서, 인증(KC·식약처 등), 원산지, 제조사·수입사, 모델명/품번, 정격(전압·소비전력·배터리·용량), 주의사항, 그 외 모든 수치·스펙. 같은 항목이 여러 번 나와도 가장 구체적인 것으로. ★제외(절대 포함 금지): 판매자·회사 연락처/전화번호, 상담시간, 배송·교환·반품 정책, 휴무, CCTV, 회사소개. ★제조사·브랜드·원산지·인증번호·모델명은 이미지에 적힌 글자 그대로만 추출하고, 안 보이면 절대 지어내지 말 것(환각 금지). 원료 형태(분말/추출물/농축액/환 등)도 표기된 그대로 쓰고 임의로 바꾸지 말 것. 안 보이거나 불확실하면 추론·창작 금지(없는 건 빼라). JSON으로만: {"facts":["사실1"...]}';
+  try {
+    const _mdl = model || 'gpt-5.5';
+    const _payload = {
       messages: [{ role: 'user', content: [{ type: 'text', text: prompt }, ...urls.map((u) => ({ type: 'image_url', image_url: { url: u } }))] }],
-      max_tokens: 700,
+      model: _mdl,
+      max_tokens: 5000,
       response_format: { type: 'json_object' },
-    }, { sensitive: false, provider: 'gemini', label: 'photo-analysis', timeoutMs: 70000 });
+    };
+    if (/^(gpt-5|o\d)/.test(_mdl)) _payload.reasoning_effort = 'none'; // reasoning_effort는 gpt-5/o 계열만
+    const res = await llmChat(_payload, { sensitive: false, label: 'photo-analysis', timeoutMs: 120000 });
     const d = await res.json();
     const txt = d && d.choices && d.choices[0] && d.choices[0].message ? d.choices[0].message.content : '';
     const o = JSON.parse(String(txt).replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim());
     const DROP = /전화|연락처|상담|배송|발송|마감|휴무|cctv|문의|교환|반품|평일|오전|오후|정책|주문\s*변경|\d{2,4}[.\-]\d{3,4}/i;
-    const facts = Array.isArray(o.facts) ? o.facts.filter((x) => x && String(x).trim() && !DROP.test(String(x))).slice(0, 12) : [];
+    const facts = Array.isArray(o.facts) ? o.facts.filter((x) => x && String(x).trim() && !DROP.test(String(x))).slice(0, 30) : [];
     return facts.length ? facts : null;
   } catch (_) { return null; }
 }
@@ -223,18 +251,23 @@ async function extractProductTitle(image) {
 async function analyzeReferenceStyle(images) {
   const urls = (Array.isArray(images) ? images : [images]).filter(Boolean).slice(0, 3);
   if (!urls.length) return null;
-  const prompt = '아래는 사용자가 "이런 디자인 느낌으로 만들어줘"라고 가져온 상세페이지 레퍼런스다. ★디자인 스타일만 분석하라(실제 문구·상품·사진은 복제 대상 아님 — 오직 비주얼 스타일). 추출: 색 팔레트(주요 hex 2~4개), 전체 무드(예 고급/미니멀/키치/내추럴/팝), 레이아웃 방식(예 "풀블리드 사진+글자 오버레이", "카드형", "여백 큰 에디토리얼"), 타이포 느낌(굵기·크기감·세리프 여부), 그래픽 요소(그라디언트·도형·뱃지·라인 등). 그리고 이 스타일을 영어 이미지 생성 프롬프트 한 문장으로 요약(stylePrompt). JSON으로만: {"palette":["#xxxxxx"],"mood":"...","layout":"...","typography":"...","graphics":"...","stylePrompt":"english one-line visual style directive"}';
+  const prompt = '아래는 사용자가 "이런 디자인 느낌으로 만들어줘"라고 가져온 상세페이지 레퍼런스다. ★디자인 스타일과 레이아웃 구조만 분석하라(실제 문구·상품·사진은 복제 대상 아님 — 오직 비주얼). 추출: 색 팔레트(주요 hex 2~4개), 전체 무드(예 고급/미니멀/키치/내추럴/팝), 레이아웃 방식 한줄 요약(layout), 타이포 느낌(굵기·크기감·세리프 여부), 그래픽 요소(그라디언트·도형·뱃지·라인 등). '
+    + '★그리고 페이지를 위→아래로 보며 "섹션 구조"(structure)를 순서대로 배열로 적어라. 각 섹션 type은 반드시 다음 중 하나: "hero"(상단 대표 풀폭컷), "full"(풀폭 단일 이미지), "grid2"(좌우 2단 나란히), "grid3"(3단), "text"(텍스트 단락 중심), "spec"(표/스펙 리스트). note는 그 섹션을 설명하는 한국어 한 줄. '
+    + '이 스타일을 영어 이미지 생성 프롬프트 한 문장으로 요약(stylePrompt). JSON으로만: {"palette":["#xxxxxx"],"mood":"...","layout":"...","typography":"...","graphics":"...","structure":[{"type":"hero","note":"..."},{"type":"grid2","note":"..."}],"stylePrompt":"english one-line visual style directive"}';
   try {
     const res = await llmChat({
+      model: 'gpt-4o',
       messages: [{ role: 'user', content: [{ type: 'text', text: prompt }, ...urls.map((u) => ({ type: 'image_url', image_url: { url: u } }))] }],
-      max_tokens: 500,
+      max_tokens: 700,
       response_format: { type: 'json_object' },
-    }, { sensitive: false, provider: 'gemini', label: 'reference-style', timeoutMs: 60000 });
+    }, { sensitive: false, label: 'reference-style', timeoutMs: 60000 });
     const d = await res.json();
     const txt = d && d.choices && d.choices[0] && d.choices[0].message ? d.choices[0].message.content : '';
     const o = JSON.parse(String(txt).replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim());
     if (!o || (!o.stylePrompt && !o.mood && !(o.palette && o.palette.length))) return null;
     if (o.palette) o.palette = (Array.isArray(o.palette) ? o.palette : []).filter((c) => /^#?[0-9a-f]{3,8}$/i.test(String(c))).map((c) => String(c)[0] === '#' ? String(c) : '#' + c).slice(0, 4);
+    // 레이아웃 구조(섹션 순서·타입) — 유효 타입만 남김. refBlockPlan이 이 순서대로 블록을 배치.
+    o.structure = Array.isArray(o.structure) ? o.structure.filter((s) => s && /^(hero|full|grid2|grid3|text|spec)$/.test(String(s.type))).slice(0, 8) : null;
     return o;
   } catch (_) { return null; }
 }
@@ -281,7 +314,7 @@ async function generateDetailPage(product, { diffHook, painPoints, sellingHook, 
 }
 
 // gpt-image-2 edits로 도매꾹 사진→고급 화보(제품 유지). src=https URL 또는 base64 PNG. 실패 시 null. low=장당 ~19원.
-async function generateAiPhoto(src, prompt, { quality = 'low', size = '1024x1536' } = {}) {
+async function generateAiPhoto(src, prompt, { quality = 'low', size = '1024x1536', refImage = null } = {}) {
   const key = process.env.OPENAI_API_KEY;
   if (!key || !src) return null;
   let buf, ct = 'image/png';
@@ -292,7 +325,13 @@ async function generateAiPhoto(src, prompt, { quality = 'low', size = '1024x1536
       buf = Buffer.from(await r.arrayBuffer());
       const c = (r.headers.get('content-type') || '').toLowerCase();
       if (/jpe?g/.test(c)) ct = 'image/jpeg'; else if (/webp/.test(c)) ct = 'image/webp'; else if (/png/.test(c)) ct = 'image/png'; else ct = 'image/jpeg'; // 도매꾹 octet-stream → jpeg 가정
-    } else { buf = Buffer.from(src, 'base64'); }
+    } else {
+      buf = Buffer.from(src, 'base64');
+      // base64 입력 포맷 자동 감지(jpeg/png/webp) — ct 불일치 시 gpt-image-2가 거부할 수 있어 magic-byte로 판별.
+      if (buf[0] === 0xFF && buf[1] === 0xD8) ct = 'image/jpeg';
+      else if (buf[0] === 0x89 && buf[1] === 0x50) ct = 'image/png';
+      else if (buf.length > 12 && buf.toString('ascii', 8, 12) === 'WEBP') ct = 'image/webp';
+    }
   } catch (_) { return null; }
   const ext = (ct.split('/')[1] || 'jpg');
   // gpt-image-2 edits — 일시 실패/rate limit가 있어 최대 3회 시도(컷 누락 방지). 재시도 전 점증 대기.
@@ -302,10 +341,16 @@ async function generateAiPhoto(src, prompt, { quality = 'low', size = '1024x1536
       const form = new FormData();
       form.append('model', 'gpt-image-2');
       form.append('prompt', prompt);
-      form.append('image', new Blob([buf], { type: ct }), 'src.' + ext);
+      if (refImage) {
+        // 레퍼런스 스타일 참조 — 상품 + 레퍼런스를 멀티이미지(image[])로
+        form.append('image[]', new Blob([buf], { type: ct }), 'src.' + ext);
+        try { const rb = Buffer.from(String(refImage).replace(/^data:image\/[a-z0-9.+-]+;base64,/i, ''), 'base64'); form.append('image[]', new Blob([rb], { type: 'image/jpeg' }), 'ref.jpg'); } catch (_) {}
+      } else {
+        form.append('image', new Blob([buf], { type: ct }), 'src.' + ext);
+      }
       form.append('size', size);
       form.append('quality', quality);
-      const res = await fetch('https://api.openai.com/v1/images/edits', { method: 'POST', headers: { Authorization: 'Bearer ' + key }, body: form, signal: AbortSignal.timeout(120000) });
+      const res = await fetch('https://api.openai.com/v1/images/edits', { method: 'POST', headers: { Authorization: 'Bearer ' + key }, body: form, signal: AbortSignal.timeout(240000) });
       const j = await res.json();
       if (j && !j.error && j.data && j.data[0] && j.data[0].b64_json) return j.data[0].b64_json;
     } catch (_) {}
@@ -564,4 +609,221 @@ function renderBlocks(blocks, palette) {
   return '<div class="lumi-detail" style="max-width:720px;margin:0 auto;font-family:Pretendard,-apple-system,system-ui,sans-serif;background:#fff;color:' + INK + ';line-height:1.6;">' + inner + '</div>';
 }
 
-module.exports = { generateDetailPage, buildHtml, analyzeProductImages, distinctImages, generateAiPhoto, photoPrompt, cutPlan, assembleCutPage, accentPalette, extractProductTitle, SYS, esc, scenePlan, specRowsData, copyToBlocks, renderBlock, renderBlocks, analyzeReferenceStyle };
+// 레퍼런스 스타일 통이미지 프롬프트 — 제품 변형금지 + 레퍼런스 스타일 + 정보 카피 박기(글자 포함).
+function refStylePrompt(product, copy, facts) {
+  const c = copy || {};
+  // 색상은 옵션(정확)으로 따로 다루므로 facts에서 색상 항목 제외(비전 색상 환각 차단)
+  const info = (Array.isArray(facts) ? facts : []).filter((f) => !/색상|컬러|color|옵션|option/i.test(String(f))).slice(0, 8).join(' / ');
+  const colors = (product.options || []).map((o) => String((o && (o.name || o.value)) || o).trim()).filter(Boolean).slice(0, 6);
+  const head = String(c.heroHeadline || c.seoTitle || product.title || '').slice(0, 28);
+  const sub = String(c.heroSub || '').slice(0, 40);
+  return 'You are given TWO images. The SECOND image is the ACTUAL product. The FIRST image is ONLY a visual STYLE reference. '
+    + '★★ABSOLUTE RULE: NEVER copy, include, draw, or show the reference\'s product, box, package, bottle, label, or any of its letters/text. The first image exists SOLELY so you copy its visual STYLE (color palette, layout structure, mood, icon/graphic treatment). The ONLY product that may appear anywhere in the output is the one in the SECOND image. Drawing anything from the first image besides its style is WRONG. '
+    + 'Create ONE premium vertical Korean e-commerce detail-page for the SECOND product, in the reference STYLE. '
+    + '★The product must stay 100% IDENTICAL to the SECOND image: exact shape, color, proportions, every detail — do NOT alter, recolor or beautify it. '
+    + (colors.length ? '★Color options: show EXACTLY these ' + colors.length + ' color(s) and NO others — ' + colors.join(', ') + '. Do NOT invent extra colors, do NOT add any "random" or "?" swatch. ' : '')
+    + 'Bake Korean marketing text into the design: headline "' + head + '"' + (sub ? ', subtitle "' + sub + '"' : '') + (info ? ', feature points: ' + info : '') + '. '
+    + 'When the SAME product appears multiple times (wind-speed steps, usage scenes, etc.), use ONE consistent color for it across all those repetitions — NEVER switch its color between steps. Color variety belongs ONLY in the dedicated color-options section. '
+    + 'High quality, vertical Korean detail-page format.';
+}
+
+// 생성 결과 검증 — 레퍼런스에서 넘어온 엉뚱한 제품(약·박스 등)이 박혔는지 비전으로 검사. 발견 시 재생성용.
+async function verifyGenerated(imageB64, title) {
+  if (!imageB64) return { ok: true };
+  const prompt = '이 상품 상세페이지 이미지를 검사하라. 주 상품은 "' + (title || '') + '"다. '
+    + '이 상품과 무관한 "다른 제품"(예: 약·알약·건강기능식품·영양제·음료·화장품·엉뚱한 박스나 패키지)이 이미지 어딘가에 그려져 있는지 확인하라. '
+    + '주 상품(' + (title || '') + ') 본체와 그 부속품·구성품은 정상이다. 오직 "전혀 다른 종류의 제품"이 섞였을 때만 true. '
+    + 'JSON으로만: {"hasForeignProduct": true/false, "what": "발견한 엉뚱한 제품(없으면 빈 문자열)"}';
+  try {
+    const res = await llmChat({
+      messages: [{ role: 'user', content: [{ type: 'text', text: prompt }, { type: 'image_url', image_url: { url: 'data:image/png;base64,' + imageB64 } }] }],
+      max_tokens: 150, response_format: { type: 'json_object' },
+    }, { sensitive: false, provider: 'gemini', label: 'verify-gen', timeoutMs: 45000 });
+    const d = await res.json();
+    const txt = d && d.choices && d.choices[0] && d.choices[0].message ? d.choices[0].message.content : '';
+    const o = JSON.parse(String(txt).replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim());
+    return { ok: !o.hasForeignProduct, foreign: o.what || '' };
+  } catch (_) { return { ok: true }; } // 검증 실패 시 통과(생성 막지 않음)
+}
+
+// 레퍼런스 블록 플랜 — 레퍼런스를 "이미지로 입력하지 않고" 스타일 텍스트(styleHint)만 주입(비타민 차단).
+// + 블록마다 구도/앵글을 다르게 명시(구도 반복 방지), 정보를 한 블록에서만 다룸(중복 방지), 크기·수치는 스펙 블록 1곳만(환각 방지).
+function refBlockPlan(product, copy, facts, styleHint) {
+  const c = copy || {};
+  const colors = (product.options || []).map((o) => String((o && (o.name || o.value)) || o).trim()).filter(Boolean).slice(0, 6);
+  const allFacts = Array.isArray(facts) ? facts : [];
+  // 스펙(크기·무게·정격 등 수치)과 기능을 분리 → 각각 한 블록에서만 표기(중복·환각 차단).
+  const SPEC_RE = /(\d+\s*(cm|mm|kg|g|w|wh|mah|v|인치|ml|l)\b)|크기|치수|지름|무게|중량|용량|정격|전압|소비전력|배터리|재질|소재|사이즈/i;
+  const specFacts = allFacts.filter((f) => SPEC_RE.test(String(f))).slice(0, 8);
+  const featFacts = allFacts.filter((f) => !SPEC_RE.test(String(f)) && !/색상|컬러|color|옵션|option/i.test(String(f))).slice(0, 6);
+  const sh = styleHint || {};
+  const styleLine = (sh.stylePrompt || 'premium clean modern Korean e-commerce detail-page style')
+    + (sh.palette && sh.palette.length ? '. Color palette: ' + sh.palette.join(', ') : '')
+    + (sh.mood ? '. Mood: ' + sh.mood : '')
+    + (sh.layout ? '. Layout treatment: ' + sh.layout : '');
+  // 입력 이미지는 "제품 한 장"뿐(레퍼런스 이미지는 넣지 않음).
+  // ★하이브리드: 화보는 텍스트 0 — 한글 텍스트는 renderBlockText가 SVG로 합성(한글 정확 + 고객 수정 무료).
+  const base = 'This input image is the ACTUAL product. Keep the product 100% IDENTICAL — exact shape, color, pattern, proportions, every detail. Do NOT alter, recolor, beautify, or add any other product/box/package. '
+    + 'Create a premium vertical Korean e-commerce detail-page SECTION for THIS product. '
+    + 'Follow this TEXT-DESCRIBED visual style only (never invent products from it): ' + styleLine + '. '
+    + '★CRITICAL: render NO text, NO letters, NO words and NO numbers anywhere in the image (text is added separately). '
+    + '★The product must sit NATURALLY on or against a real surface — on a table/podium/floor, laid flat, worn on a mannequin, or hung on a rack as appropriate for the product type — with a soft realistic shadow. NEVER let it float in mid-air. ';
+  const blocks = [];
+  // 1. 히어로 — 정면 영웅샷, 상단 40% 비움(헤드라인 자리). kicker(영문 라벨)→큰 2줄 헤드라인→부제 위계.
+  blocks.push({ key: 'hero', quality: 'medium', text: { kicker: String(c.heroKicker || '').slice(0, 26), headline: String(c.heroHeadline || product.title || '').slice(0, 24), sub: String(c.heroSub || '').slice(0, 32), emphasis: String(c.heroEmphasis || '').slice(0, 12) }, prompt: base + 'COMPOSITION: ONE single large front hero shot, product in the LOWER 60 percent, dramatic premium lighting, NOT a row of repeated units. Keep the TOP 40 percent a clean empty background for a headline.' });
+  // 2. 기능 — 제품 연출(아이콘·라벨은 코드로), 상단 비움
+  // 라벨은 카피의 짧은 키워드(featureLabels) 우선, 없으면 분석 facts(서술형이라 잘릴 수 있음).
+  const featLabels = (Array.isArray(c.featureLabels) && c.featureLabels.length) ? c.featureLabels.map((x) => String(x).slice(0, 8)).filter(Boolean).slice(0, 4) : featFacts.slice(0, 4);
+  if (featLabels.length) blocks.push({ key: 'features', quality: 'medium', text: { kicker: 'KEY FEATURES', title: '핵심 기능', items: featLabels }, prompt: base + 'COMPOSITION: the product styled on a clean minimal surface in the LOWER half. Keep the TOP half a clean empty background for feature labels.' });
+  // 3. 사용장면 — 다른 앵글(책상/손/공간)
+  if (Array.isArray(c.sections) && c.sections[0]) blocks.push({ key: 'scene', quality: 'medium', text: { headline: String(c.sections[0].headline || '').slice(0, 22) }, prompt: base + 'COMPOSITION: a real-life LIFESTYLE scene from a DIFFERENT angle (on a desk, held in a hand, or in a room) — NOT a centered studio shot. Keep an upper area clean for a caption.' });
+  // 4. 색상 — 옆으로 나열(딱 옵션 수만큼)
+  if (colors.length >= 2) blocks.push({ key: 'colors', quality: 'medium', text: { kicker: 'COLOR', title: '색상 옵션', items: colors }, prompt: base + 'COMPOSITION: a side-by-side COLOR line-up showing the product in EXACTLY these ' + colors.length + ' colors and NO others — ' + colors.join(', ') + '. No invented colors. Keep an upper area clean for a title.' });
+  // 5. 스펙 — 클로즈업 + 표(수치는 코드로, facts만)
+  if (specFacts.length) blocks.push({ key: 'spec', quality: 'medium', text: { kicker: 'SPECIFICATION', title: '제품 상세 스펙', items: specFacts.slice(0, 6) }, prompt: base + 'COMPOSITION: a product SPEC section with a close-up/detail shot in the LOWER half. Keep the TOP half a clean empty background for a spec table.' });
+  // 6. CTA — 분위기 마무리(제품 작게)
+  blocks.push({ key: 'cta', quality: 'medium', text: { headline: String(c.closing || '').slice(0, 20) }, prompt: base + 'COMPOSITION: a closing MOOD shot (product smaller, atmospheric background). Keep an upper area clean for a closing line.' });
+  return blocks;
+}
+
+// 블록 이미지(base64[])를 같은 폭으로 맞춰 세로로 이어붙여 단일 상세페이지 PNG(base64) 반환.
+async function stitchBlocks(b64list) {
+  const sharp = require('sharp');
+  const bufs = (b64list || []).filter(Boolean).map((b) => Buffer.from(b, 'base64'));
+  if (!bufs.length) return null;
+  let W = 0;
+  for (const b of bufs) { const m = await sharp(b).metadata(); if ((m.width || 0) > W) W = m.width; }
+  W = W || 1024;
+  const resized = [];
+  let totalH = 0;
+  for (const b of bufs) {
+    const r = await sharp(b).resize({ width: W }).png().toBuffer();
+    const m = await sharp(r).metadata();
+    resized.push({ buf: r, h: m.height || 0 });
+    totalH += m.height || 0;
+  }
+  const composites = [];
+  let top = 0;
+  for (const r of resized) { composites.push({ input: r.buf, top, left: 0 }); top += r.h; }
+  // 퀄리티 유지(육안 무손실) + 용량 대폭 절감: PNG 대신 JPG q95(4:4:4). 해상도는 그대로.
+  const out = await sharp({ create: { width: W, height: totalH, channels: 4, background: '#ffffff' } }).composite(composites).jpeg({ quality: 95, chromaSubsampling: '4:4:4' }).toBuffer();
+  return out.toString('base64');
+}
+
+// 블록 화보 위에 얹을 한글 텍스트(SVG buffer). 텍스트=코드 → 한글 정확 + 고객 수정 무료(재합성만).
+// block.text(헤드라인·라벨·스펙) + 레퍼런스 palette로 톤 결정. 화보엔 텍스트가 없으므로 겹침 없음.
+function renderBlockText(block, W, H, sh) {
+  const BODY = "'Apple SD Gothic Neo','NanumSquare','NanumGothic','Noto Sans CJK KR',sans-serif";
+  // 헤드라인 폰트 = 레퍼런스 무드별 자동 선택(명조/둥근/손글씨/고딕). 두꺼워 겹치는 디스플레이(Do Hyeon)는 제외. DESIGN.md 기준.
+  const _ty = String((sh && sh.typography) || '') + ' ' + String((sh && sh.mood) || '') + ' ' + String((sh && sh.layout) || '');
+  // 편집 override(고객이 폰트 직접 선택, family명)가 있으면 우선, 없으면 무드 자동.
+  const HEAD = (sh && sh.fontOverride) ? ("'Apple SD Gothic Neo','" + String(sh.fontOverride).replace(/['"]/g, '') + "',sans-serif")
+    : /serif|명조|세리프|elegant|luxur|classic|우아|고급|editorial|vintage|전통|premium/i.test(_ty) ? "'Apple SD Gothic Neo','Gowun Batang','Song Myung','NanumMyeongjo',serif"
+    : /round|cute|friendly|둥근|귀여|키즈|베이비|푸드|kid|baby|food|soft|pastel|playful/i.test(_ty) ? "'Apple SD Gothic Neo','Gowun Dodum','NanumSquareRound',sans-serif"
+    : /hand|script|brush|감성|수제|카페|내추럴|handwritten|cafe|natural|organic|warm|cozy/i.test(_ty) ? "'Apple SD Gothic Neo','Nanum Pen','Gamja Flower',cursive"
+    : BODY;
+  const t = (block && block.text) || {};
+  const pal = (sh && Array.isArray(sh.palette)) ? sh.palette : [];
+  const lum = (hex) => { const h = String(hex || '').replace('#', ''); if (h.length < 6) return 140; return parseInt(h.slice(0, 2), 16) * 0.299 + parseInt(h.slice(2, 4), 16) * 0.587 + parseInt(h.slice(4, 6), 16) * 0.114; };
+  const light = pal.length ? pal.some((c) => lum(c) > 175) : true;
+  // 편집 override(고객이 글자색·강조색 직접 지정)가 있으면 우선.
+  const main = (sh && sh.inkOverride) || (light ? '#241a14' : '#ffffff');
+  const subc = (sh && sh.subOverride) || (light ? '#6b5b4d' : '#e6dbd0');
+  const acc = (sh && sh.accentOverride) || pal.find((c) => { const l = lum(c); return l < 150 && l > 35; }) || (light ? '#9a7b5c' : '#e0a8b8');
+  const cx = W / 2;
+  const fit = (txt, max, ratio) => Math.max(22, Math.min(max, Math.floor(W * (ratio || 0.86) / Math.max(String(txt || '').length, 1))));
+  // 긴 헤드라인은 중간 근처 공백 기준으로 2줄 분할(레퍼런스처럼 큰 2줄 헤드라인).
+  const twoLines = (txt) => { const ws = String(txt || '').trim().split(/\s+/); if (ws.length < 2 || String(txt || '').length <= 9) return [String(txt || '')]; let bi = 1, bd = 1e9, a = 0; const tot = String(txt).length; for (let i = 1; i < ws.length; i++) { a += ws[i - 1].length + 1; if (Math.abs(a - tot / 2) < bd) { bd = Math.abs(a - tot / 2); bi = i; } } return [ws.slice(0, bi).join(' '), ws.slice(bi).join(' ')]; };
+  const TX = (x, y, sz, fill, w, ls, txt, anc, font) => { const sp = ls != null ? ls : Math.round(sz * 0.05 * 10) / 10; return '<text x="' + Math.round(x) + '" y="' + Math.round(y) + '" text-anchor="' + (anc || 'middle') + '" font-family="' + (font || BODY) + '" font-size="' + sz + '"' + (w ? ' font-weight="' + w + '"' : '') + ' letter-spacing="' + sp + '" fill="' + fill + '">' + esc(String(txt == null ? '' : txt)) + '</text>'; };
+  // ★위에서부터 y를 누적(각 요소 baseline = y, 다음 요소는 폰트높이+여백만큼 내려감) → 겹침 원천 차단.
+  let s = '';
+  if (block.key === 'hero') {
+    let y = H * 0.12;
+    if (t.kicker) { s += TX(cx, y, 24, acc, 700, 7, t.kicker); y += 60; }
+    const lines = twoLines(t.headline);
+    const hs = Math.min(86, fit(lines.reduce((a, b) => a.length > b.length ? a : b, ''), 86, 0.84));
+    const emph = String(t.emphasis || '').trim();
+    lines.forEach((ln) => {
+      y += hs;
+      if (emph && ln.indexOf(emph) >= 0) {
+        // 헤드라인 핵심어만 강조색(tspan). 레퍼런스처럼 포인트 컬러.
+        const i = ln.indexOf(emph), sp = Math.round(hs * 0.05 * 10) / 10;
+        s += '<text x="' + Math.round(cx) + '" y="' + Math.round(y) + '" text-anchor="middle" font-family="' + HEAD + '" font-size="' + hs + '" font-weight="800" letter-spacing="' + sp + '" fill="' + main + '">' + esc(ln.slice(0, i)) + '<tspan fill="' + acc + '">' + esc(emph) + '</tspan>' + esc(ln.slice(i + emph.length)) + '</text>';
+      } else { s += TX(cx, y, hs, main, 800, null, ln, null, HEAD); }
+      y += Math.round(hs * 0.22);
+    });
+    if (t.sub) { y += 42; s += TX(cx, y, fit(t.sub, 27, 0.62), subc, 400, null, t.sub); }
+  } else if (block.key === 'features' && Array.isArray(t.items) && t.items.length) {
+    let y = H * 0.11;
+    if (t.kicker) { s += TX(cx, y, 20, acc, 700, 6, t.kicker); y += 46; }
+    const ts = fit(t.title || '핵심 기능', 48, 0.5); y += ts; s += TX(cx, y, ts, main, 800, null, t.title || '핵심 기능', null, HEAD);
+    const cy = y + 96, n = Math.min(t.items.length, 4), gap = W / (n + 1);
+    for (let i = 0; i < n; i++) {
+      const x = gap * (i + 1);
+      const lbl = String(t.items[i]).slice(0, 10);
+      const lsize = Math.max(15, Math.min(22, Math.floor(gap * 0.9 / Math.max(lbl.length, 1))));
+      s += '<circle cx="' + Math.round(x) + '" cy="' + Math.round(cy) + '" r="46" fill="' + acc + '" fill-opacity="0.1" stroke="' + acc + '" stroke-width="2.5"/>'
+        + TX(x, cy + 11, 30, acc, 800, null, String(i + 1))
+        + TX(x, cy + 92, lsize, main, 500, 0.5, lbl);
+    }
+  } else if (block.key === 'spec' && Array.isArray(t.items) && t.items.length) {
+    let y = H * 0.10;
+    if (t.kicker) { s += TX(cx, y, 20, acc, 700, 6, t.kicker); y += 46; }
+    const ts = fit(t.title || '제품 상세 스펙', 48, 0.5); y += ts; s += TX(cx, y, ts, main, 800, null, t.title || '제품 상세 스펙', null, HEAD);
+    y += 54;
+    t.items.slice(0, 6).forEach((it, i) => { const ry = y + i * 56; const kv = String(it).split(/[:：]/); const k = (kv[0] || '').trim(), v = kv.slice(1).join(':').trim(); s += TX(W * 0.2, ry, 25, acc, 600, 0.5, k.slice(0, 14), 'start'); if (v) s += TX(W * 0.8, ry, 25, main, 400, 0.5, v.slice(0, 24), 'end'); s += '<line x1="' + Math.round(W * 0.2) + '" y1="' + Math.round(ry + 16) + '" x2="' + Math.round(W * 0.8) + '" y2="' + Math.round(ry + 16) + '" stroke="' + acc + '" stroke-opacity="0.25" stroke-width="1"/>'; });
+  } else if (block.key === 'colors') {
+    let y = H * 0.11;
+    if (t.kicker) { s += TX(cx, y, 20, acc, 700, 6, t.kicker); y += 46; }
+    const ts = fit(t.title || '색상 옵션', 46, 0.5); y += ts; s += TX(cx, y, ts, main, 800, null, t.title || '색상 옵션', null, HEAD);
+  } else if ((block.key === 'cta' || block.key === 'scene') && t.headline) {
+    let y = H * 0.14;
+    const lines = twoLines(t.headline);
+    const cs = Math.min(54, fit(lines.reduce((a, b) => a.length > b.length ? a : b, ''), 54, 0.84));
+    lines.forEach((ln) => { y += cs; s += TX(cx, y, cs, main, 800, null, ln, null, HEAD); y += Math.round(cs * 0.22); });
+  }
+  return Buffer.from('<svg width="' + W + '" height="' + H + '" xmlns="http://www.w3.org/2000/svg">' + s + '</svg>');
+}
+
+// 화보 캐시(텍스트0) + 새 텍스트/폰트/색(styleOverride)로 재합성 → gpt 재호출 0(크레딧 0). 편집·검증용.
+// styleOverride: { fontOverride, inkOverride, accentOverride, subOverride } 또는 textOverride(블록별 문구 교체).
+async function recomposeBlocks(cacheDir, styleOverride, textOverride) {
+  const fs = require('fs'); const path = require('path'); const sharp = require('sharp');
+  let meta;
+  try { meta = JSON.parse(fs.readFileSync(path.join(cacheDir, '_meta.json'), 'utf8')); } catch (_) { return null; }
+  const sh = Object.assign({}, meta.styleHint || {}, styleOverride || {});
+  const blockB64 = [];
+  for (const blk of (meta.plan || [])) {
+    const pp = path.join(cacheDir, blk.key + '.png');
+    if (!fs.existsSync(pp)) continue;
+    try {
+      // 문구 편집(textOverride[key])이 있으면 저장된 text에 덮어씀.
+      const b = (textOverride && textOverride[blk.key]) ? { key: blk.key, text: Object.assign({}, blk.text, textOverride[blk.key]) } : blk;
+      const img = sharp(pp); const m = await img.metadata();
+      const txt = renderBlockText(b, m.width || 1024, m.height || 1536, sh);
+      blockB64.push((await img.composite([{ input: txt, top: 0, left: 0 }]).png().toBuffer()).toString('base64'));
+    } catch (_) {}
+  }
+  if (!blockB64.length) return null;
+  return stitchBlocks(blockB64);
+}
+
+// 블록 1개만 재합성(캐시 화보 + 새 문구/스타일) → base64. gpt 0원 — 편집기 실시간 갱신·저장용.
+// textOverride = 해당 블록 text 객체({headline,sub,items,...}) 또는 null(원본 그대로).
+async function recomposeBlock(cacheDir, blockKey, textOverride, styleOverride) {
+  const fs = require('fs'); const path = require('path'); const sharp = require('sharp');
+  let meta;
+  try { meta = JSON.parse(fs.readFileSync(path.join(cacheDir, '_meta.json'), 'utf8')); } catch (_) { return null; }
+  const pp = path.join(cacheDir, blockKey + '.png');
+  if (!fs.existsSync(pp)) return null;
+  const sh = Object.assign({}, meta.styleHint || {}, styleOverride || {});
+  const base = (meta.plan || []).find((b) => b.key === blockKey) || { key: blockKey, text: {} };
+  const b = textOverride ? { key: blockKey, text: Object.assign({}, base.text, textOverride) } : base;
+  try {
+    const img = sharp(pp); const m = await img.metadata();
+    const txt = renderBlockText(b, m.width || 1024, m.height || 1536, sh);
+    return (await img.composite([{ input: txt, top: 0, left: 0 }]).png().toBuffer()).toString('base64');
+  } catch (_) { return null; }
+}
+
+module.exports = { generateDetailPage, buildHtml, analyzeProductImages, distinctImages, generateAiPhoto, photoPrompt, cutPlan, assembleCutPage, accentPalette, extractProductTitle, SYS, esc, scenePlan, specRowsData, copyToBlocks, renderBlock, renderBlocks, analyzeReferenceStyle, refStylePrompt, verifyGenerated, refBlockPlan, stitchBlocks, renderBlockText, recomposeBlocks, recomposeBlock };
