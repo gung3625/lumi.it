@@ -133,7 +133,6 @@ body::before{content:"";position:fixed;inset:0;z-index:-2;background:radial-grad
 <div class="layout" id="app">
   <aside class="sidebar">
     <a class="brand" href="/studio" aria-label="lumi"><img src="/assets/logo-wordmark.webp" alt="lumi"></a>
-    <div class="account"><span class="av"></span><span class="nm" id="storeName">내 매장</span></div>
     <nav class="side-nav">
       <a class="active" href="/studio"><i data-lucide="home"></i> 홈</a>
     </nav>
@@ -145,8 +144,8 @@ body::before{content:"";position:fixed;inset:0;z-index:-2;background:radial-grad
 
   <main class="main">
     <div class="greet">
-      <h1>안녕하세요, <span id="greetName" class="grad-text">사장님</span></h1>
-      <p>사진이나 링크만 있으면 상세페이지가 3분이면 완성돼요.</p>
+      <h1>오늘은 어떤 <span class="grad-text">상세페이지</span>를 만들까요?</h1>
+      <p>사진이나 링크만 있으면 3분이면 완성돼요.</p>
     </div>
 
     <a class="make-cta" href="/create">
@@ -193,9 +192,6 @@ body::before{content:"";position:fixed;inset:0;z-index:-2;background:radial-grad
   // 회원 정보 + 크레딧
   fetch('/api/me',{headers:authHeaders}).then(function(r){return r.json();}).then(function(d){
     if(d&&d.seller){
-      var name=d.seller.storeName||d.seller.displayName||d.seller.ownerName||'사장님';
-      document.getElementById('storeName').textContent=name;
-      document.getElementById('greetName').textContent=name;
       renderCredit((typeof d.seller.freeCredits==='number')?d.seller.freeCredits:null);
     }
   }).catch(function(){});
