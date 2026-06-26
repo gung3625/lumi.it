@@ -116,11 +116,15 @@ summary::before{content:"+ ";font-weight:700}
 #userreq{width:100%;border:1px solid var(--line-strong);border-radius:12px;padding:11px 13px;font-size:14px;font-family:inherit;background:rgba(255,255,255,.04);color:var(--ink);resize:vertical;min-height:64px;line-height:1.55}
 #userreq:focus{outline:none;border-color:var(--c2)}
 
-#loading{display:none;text-align:center;padding:34px 0}
+#loading{display:none;text-align:center;padding:46px 0}
 #loading.on{display:block}
-.spin{width:40px;height:40px;border:3px solid var(--line-strong);border-top-color:var(--c2);border-radius:50%;margin:0 auto 16px;animation:sp 1s linear infinite}
-@keyframes sp{to{transform:rotate(360deg)}}
-#loading p{color:var(--ink-2);font-size:14px;line-height:1.6}
+.loadorb{width:60px;height:60px;margin:0 auto 22px;border-radius:50%;background:var(--grad);animation:orbpulse 1.6s var(--ease) infinite}
+@keyframes orbpulse{0%,100%{transform:scale(.8);opacity:.5;box-shadow:0 0 0 0 rgba(255,77,141,.3)}50%{transform:scale(1);opacity:1;box-shadow:0 0 34px 7px rgba(255,77,141,.25)}}
+.loadbar{width:190px;height:5px;margin:0 auto 20px;border-radius:980px;background:var(--line-strong);overflow:hidden;position:relative}
+.loadbar::after{content:"";position:absolute;top:0;left:0;height:100%;width:42%;border-radius:980px;background:var(--grad);animation:loadbar 1.4s var(--ease) infinite}
+@keyframes loadbar{0%{transform:translateX(-110%)}100%{transform:translateX(360%)}}
+#loadmsg{color:var(--ink);font-size:16px;line-height:1.6;transition:opacity .25s ease;font-family:"Jua",sans-serif}
+.loadsub{display:block;margin-top:8px;color:var(--ink-3);font-size:12.5px;line-height:1.5;font-family:"Gowun Dodum",sans-serif}
 .errbox{display:none;background:rgba(255,77,141,.08);border:1px solid rgba(255,77,141,.3);color:#ff9bb8;border-radius:12px;padding:14px;margin-top:16px;font-size:14px;line-height:1.55}
 .errbox.on{display:block}
 #result{display:none;margin-top:24px}
@@ -216,7 +220,7 @@ summary::before{content:"+ ";font-weight:700}
       <button class="btn btn-primary" id="confirmgo" style="width:100%;margin-top:14px;">확인했어요 · 상세페이지 만들기</button>
     </div>
 
-    <div id="loading"><div class="spin"></div><p id="loadmsg">AI가 화보·카피·디자인 컷을 만드는 중...<br>약 3~4분 걸려요. 창을 닫지 말고 기다려 주세요.</p></div>
+    <div id="loading"><div class="loadorb"></div><div class="loadbar"></div><p id="loadmsg">상품을 분석하는 중<br><span class="loadsub">약 3~4분 걸려요. 창을 닫지 말고 기다려 주세요.</span></p></div>
     <div class="errbox" id="err"></div>
 
     <div id="result">
@@ -317,6 +321,11 @@ summary::before{content:"+ ";font-weight:700}
   var refEl=document.getElementById('refimg');
   if(refEl)refEl.addEventListener('change',function(){fileB64('refimg').then(function(d){refData=d;var rp=document.getElementById('refpreview');if(rp&&d)rp.innerHTML='<img src="'+d+'"><div class="ok">레퍼런스 업로드 완료</div>';});});
   function setLoad(msg){var lm=document.getElementById('loadmsg');if(lm)lm.innerHTML=msg;}
+  var loadCycle=null,loadIdx=0;
+  var LOAD_SUB='<span class="loadsub">약 3~4분 걸려요. 창을 닫지 말고 기다려 주세요.</span>';
+  var LOAD_MSGS=['상품을 분석하는 중','화보를 그리는 중','카피를 쓰는 중','디자인을 다듬는 중'];
+  function startLoadCycle(){loadIdx=0;var lm=document.getElementById('loadmsg');if(lm){lm.style.opacity='1';lm.innerHTML=LOAD_MSGS[0]+'<br>'+LOAD_SUB;}clearInterval(loadCycle);loadCycle=setInterval(function(){loadIdx=(loadIdx+1)%LOAD_MSGS.length;var l=document.getElementById('loadmsg');if(!l)return;l.style.opacity='0';setTimeout(function(){l.innerHTML=LOAD_MSGS[loadIdx]+'<br>'+LOAD_SUB;l.style.opacity='1';},250);},4500);}
+  function stopLoadCycle(){clearInterval(loadCycle);loadCycle=null;}
   var pb=document.getElementById('pastebox');
   if(pb)pb.addEventListener('click',function(){pb.focus();});
   var rpb=document.getElementById('refpaste');
@@ -351,12 +360,12 @@ summary::before{content:"+ ";font-weight:700}
   function start(body){
     var u=document.getElementById('userreq');var req=u?u.value.trim():'';
     if(req)body.userRequest=req; if(selectedTone)body.tone=selectedTone;
-    go.disabled=true;result.classList.remove('on');loading.classList.add('on');
+    go.disabled=true;result.classList.remove('on');loading.classList.add('on');startLoadCycle();
     fetch('/api/generate-detail',{method:'POST',headers:authHeaders,body:JSON.stringify(body)})
     .then(function(r){return r.json();}).then(function(j){
-      if(!j.jobId){loading.classList.remove('on');go.disabled=false;showErr(j.error||'생성을 시작하지 못했습니다.',mode==='link');return;}
+      if(!j.jobId){loading.classList.remove('on');stopLoadCycle();go.disabled=false;showErr(j.error||'생성을 시작하지 못했습니다.',mode==='link');return;}
       poll(j.jobId,0);
-    }).catch(function(){loading.classList.remove('on');go.disabled=false;showErr('네트워크 오류입니다. 다시 시도해 주세요.',false);});
+    }).catch(function(){loading.classList.remove('on');stopLoadCycle();go.disabled=false;showErr('네트워크 오류입니다. 다시 시도해 주세요.',false);});
   }
   go.addEventListener('click',function(){
     err.classList.remove('on');
@@ -374,12 +383,12 @@ summary::before{content:"+ ";font-weight:700}
         setLoad('상품 정보를 분석하는 중...<br>약 30초~1분 걸려요.');loading.classList.add('on');
         fetch('/api/generate-detail',{method:'POST',headers:authHeaders,body:JSON.stringify({step:'analyze',imageBase64:main})})
         .then(function(r){return r.json();}).then(function(a){
-          loading.classList.remove('on');go.disabled=false;
+          loading.classList.remove('on');stopLoadCycle();go.disabled=false;
           if(a.error){showErr(a.error,false);return;}
           document.getElementById('a-title').value=a.title||'';
           document.getElementById('a-facts').value=(a.facts||[]).join('\n');
           var ab=document.getElementById('analyzebox');ab.style.display='block';ab.scrollIntoView({behavior:'smooth'});
-        }).catch(function(){loading.classList.remove('on');go.disabled=false;showErr('분석 중 오류가 발생했어요. 다시 시도해 주세요.',false);});
+        }).catch(function(){loading.classList.remove('on');stopLoadCycle();go.disabled=false;showErr('분석 중 오류가 발생했어요. 다시 시도해 주세요.',false);});
       });
     }
   });
@@ -393,10 +402,10 @@ summary::before{content:"+ ";font-weight:700}
     result.scrollIntoView({behavior:'smooth'});
   }
   function poll(jobId,n){
-    if(n>150){loading.classList.remove('on');go.disabled=false;err.textContent='시간이 너무 오래 걸립니다. 다시 시도해 주세요.';err.classList.add('on');return;}
+    if(n>150){loading.classList.remove('on');stopLoadCycle();go.disabled=false;err.textContent='시간이 너무 오래 걸립니다. 다시 시도해 주세요.';err.classList.add('on');return;}
     fetch('/api/generate-detail?jobId='+encodeURIComponent(jobId),{headers:authHeaders}).then(function(r){return r.json();}).then(function(j){
-      if(j.status==='done'&&(j.html||j.resultUrl)){currentJobId=jobId;currentBlocks=j.blocks||null;currentPalette=j.palette||null;if(typeof j.creditRemaining==='number'){freeCredits=j.creditRemaining;var cb=document.querySelector('.nav-right .credit');if(cb)cb.textContent='무료 '+freeCredits+'회';}loading.classList.remove('on');go.disabled=false;showResult(j.html,j.resultUrl,j.mode);updateCreditUI();}
-      else if(j.status==='error'){loading.classList.remove('on');go.disabled=false;showErr(j.error||'생성에 실패했습니다.',mode==='link');}
+      if(j.status==='done'&&(j.html||j.resultUrl)){currentJobId=jobId;currentBlocks=j.blocks||null;currentPalette=j.palette||null;if(typeof j.creditRemaining==='number'){freeCredits=j.creditRemaining;var cb=document.querySelector('.nav-right .credit');if(cb)cb.textContent='무료 '+freeCredits+'회';}loading.classList.remove('on');stopLoadCycle();go.disabled=false;showResult(j.html,j.resultUrl,j.mode);updateCreditUI();}
+      else if(j.status==='error'){loading.classList.remove('on');stopLoadCycle();go.disabled=false;showErr(j.error||'생성에 실패했습니다.',mode==='link');}
       else{setTimeout(function(){poll(jobId,n+1);},3000);}
     }).catch(function(){setTimeout(function(){poll(jobId,n+1);},3000);});
   }
