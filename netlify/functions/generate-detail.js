@@ -67,7 +67,7 @@ async function runAnalysis(p) {
     if (!item || !item.title) throw new Error('상품 정보를 불러오지 못했습니다. 링크를 확인해 주세요');
     const cleanTitle = (String(item.title || '').replace(/^\s*(?:\[[^\]]*\]\s*|\([^)]*\)\s*)+/, '').trim()) || String(item.title || '');
     const visionImgs = (item.descImages && item.descImages.length) ? item.descImages : (item.images || []);
-    const facts = (await analyzeProductImages(visionImgs.slice(0, 4), cleanTitle)) || [];
+    const facts = (await analyzeProductImages(visionImgs.slice(0, 12), cleanTitle)) || [];
     const info = String(features || '').trim();
     return { title: String(title || '').trim() || cleanTitle, facts: info ? [info, ...facts] : facts };
   }
