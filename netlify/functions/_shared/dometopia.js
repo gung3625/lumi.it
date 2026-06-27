@@ -30,14 +30,17 @@ async function getDometopiaItem(no) {
   }
 
   // 상품 이미지(vipweb/goods_img CDN). 썸네일·아이콘 제외, large/view 우선.
-  const all = [...new Set((html.match(/https?:\/\/[^"'\s)]*(?:vipweb|goods_img|dmtusr)[^"'\s)]*\.(?:jpe?g|png)/gi) || []))];
+  const all = [...new Set((html.match(/https?:\/\/[^"'\s)]*(?:vipweb|goods_img|dmtusr)[^"'\s)]*\.(?:jpe?g|png|webp)/gi) || []))]
+    .filter((u) => !/icon|btn_|banner|bnr|sprite|favicon|\/logo/i.test(u));
   const big = all.filter((u) => /(large|view)/i.test(u) && !/thumb/i.test(u));
   const images = (big.length ? big : all).slice(0, 8);
+  // 상세 설명 컷 — 썸네일 제외 전체(상세 이미지 포함). 대표만으론 정보 빈약.
+  const descImages = all.filter((u) => !/thumb/i.test(u)).slice(0, 12);
 
   return {
     title,
     images,
-    descImages: images,
+    descImages,
     spec: {},
     options: [],
     keywords: [],
