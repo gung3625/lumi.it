@@ -187,11 +187,12 @@ summary::before{content:"+ ";font-weight:700}
     </div>
 
     <details>
-      <summary>디자인 레퍼런스 (선택 — 맘에 드는 상세페이지 캡처)</summary>
-      <div id="refpaste" class="dropbox" tabindex="0" style="margin-top:12px;">클릭 후 <b>Cmd+V</b>로 레퍼런스 붙여넣기</div>
+      <summary>디자인 레퍼런스 (선택 — 맘에 드는 상세페이지 링크나 캡처)</summary>
+      <input type="text" id="refurl" placeholder="레퍼런스 상세페이지 주소 (https://...)" autocomplete="off" style="margin-top:12px;">
+      <div id="refpaste" class="dropbox" tabindex="0" style="margin-top:10px;">또는 클릭 후 <b>Cmd+V</b>로 캡처 붙여넣기</div>
       <div id="refpreview" class="preview-thumb"></div>
       <input type="file" id="refimg" accept="image/*">
-      <div class="hint">붙여넣거나 올리면 그 <b>색·무드·레이아웃</b>을 참고해 비슷한 느낌으로 만들어요. (실제 사진·문구를 베끼지 않아요)</div>
+      <div class="hint">링크나 캡처를 넣으면 그 <b>색·무드·레이아웃</b>을 참고해 비슷한 느낌으로 만들어요. (실제 사진·문구를 베끼지 않아요)</div>
     </details>
 
     <div id="reqbox">
@@ -346,6 +347,7 @@ summary::before{content:"+ ";font-weight:700}
   function start(body){
     var u=document.getElementById('userreq');var req=u?u.value.trim():'';
     if(req)body.userRequest=req;
+    var ru=document.getElementById('refurl');if(ru&&ru.value.trim())body.referenceUrl=ru.value.trim();
     go.disabled=true;result.classList.remove('on');loading.classList.add('on');startLoadCycle();
     fetch('/api/generate-detail',{method:'POST',headers:authHeaders,body:JSON.stringify(body)})
     .then(function(r){return r.json();}).then(function(j){

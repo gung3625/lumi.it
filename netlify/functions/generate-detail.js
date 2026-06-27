@@ -122,10 +122,22 @@ async function runGeneration(p, jobId) {
   const factsForPrompt = (Array.isArray(p.facts) ? p.facts : (result.imageFacts || []));
 
   // ★레퍼런스 스타일 모드 — 레퍼런스 이미지를 통째로 넣지 않고, 스타일 텍스트만 추출해 주입(비타민/엉뚱제품 복제 차단).
-  if (p.referenceImageBase64 && srcForPhoto) {
-    // 레퍼런스에서 디자인 스타일(palette·mood·layout·stylePrompt)만 비전 추출 → 블록 플랜에 텍스트로 주입.
+  if ((p.referenceImageBase64 || p.referenceUrl) && srcForPhoto) {
+    // 레퍼런스에서 디자인 스타일(palette·mood·layout)만 비전 추출 → 블록 플랜에 텍스트로 주입.
+    // 이미지 base64 또는 링크(페이지 스크래핑 → 대표 이미지) 둘 다 지원. 실패 시 레퍼런스 없이 진행.
+    let refImgs = null;
+    if (p.referenceImageBase64) {
+      refImgs = ['data:image/jpeg;base64,' + stripDataUri(p.referenceImageBase64)];
+    } else if (p.referenceUrl) {
+      try {
+        const rhtml = await fetchViaUnlocker(p.referenceUrl);
+        const ritem = parseUniversalProduct(rhtml, p.referenceUrl);
+        const rims = ((ritem.descImages && ritem.descImages.length) ? ritem.descImages : (ritem.images || [])) || [];
+        if (rims.length) refImgs = rims.slice(0, 2);
+      } catch (_) {}
+    }
     let styleHint = null;
-    try { styleHint = await analyzeReferenceStyle(['data:image/jpeg;base64,' + stripDataUri(p.referenceImageBase64)]); } catch (_) {}
+    try { if (refImgs) styleHint = await analyzeReferenceStyle(refImgs); } catch (_) {}
     const plan = refBlockPlan(product, copy, factsForPrompt, styleHint);
     const blockResults = [];
     // 비타민은 레퍼런스 이미지 미입력으로 이미 차단됨 → verify 불필요. 블록을 3개씩 병렬 생성(속도: 순차 18분 → 수분).
