@@ -41,9 +41,10 @@ function paletteFromHex(arr) {
   return { accent: hs[0], ink: sorted[0], soft: sorted[sorted.length - 1] };
 }
 
-// 작업 저장소(모듈 스코프 — server.js가 1회 require하므로 프로세스 동안 유지). 30분 TTL.
+// 작업 저장소(모듈 스코프 — server.js가 1회 require하므로 프로세스 동안 유지). 90분 TTL.
+// 블록 무제한 생성은 오래 걸릴 수 있어 폴링 한도를 없앤 만큼, 긴 작업이 만료로 사라지지 않도록 TTL도 넉넉히.
 const jobs = {};
-function gcJobs() { const now = Date.now(); for (const id in jobs) { if (now - jobs[id].ts > 1800000) delete jobs[id]; } }
+function gcJobs() { const now = Date.now(); for (const id in jobs) { if (now - jobs[id].ts > 5400000) delete jobs[id]; } }
 
 // 비용 방어: IP당 일일 생성 한도(무인증 공개 시 악용·비용폭탄 차단). 상품당 ~400원이라 필수.
 const RATE_LIMIT = 5;
