@@ -215,6 +215,13 @@ exports.handler = async (event) => {
         return ok({ items: data || [] });
       } catch (e) { return ok({ items: [] }); }
     }
+    // 공개 샘플(관리자가 is_sample=true로 지정) — 빈 작업실에 "이렇게 만들어져요"로 노출. seller 무관 공개.
+    if (q.action === 'samples') {
+      try {
+        const { data } = await getAdminClient().from('detail_jobs').select('job_id,title,result_url,mode,created_at').eq('is_sample', true).order('created_at', { ascending: false }).limit(12);
+        return ok({ items: data || [] });
+      } catch (e) { return ok({ items: [] }); }
+    }
     const id = q.jobId;
     const j = id && jobs[id];
     if (!j) return err(404, '작업을 찾을 수 없습니다. 다시 시도해 주세요');
