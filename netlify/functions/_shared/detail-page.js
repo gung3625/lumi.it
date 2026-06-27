@@ -664,27 +664,29 @@ function refBlockPlan(product, copy, facts, styleHint) {
     + (sh.mood ? '. Mood: ' + sh.mood : '')
     + (sh.layout ? '. Layout treatment: ' + sh.layout : '');
   // 입력 이미지는 "제품 한 장"뿐(레퍼런스 이미지는 넣지 않음).
-  // ★하이브리드: 화보는 텍스트 0 — 한글 텍스트는 renderBlockText가 SVG로 합성(한글 정확 + 고객 수정 무료).
+  // ★전환(2026-06-27): 하이브리드(화보 텍스트0 + SVG) → gpt-image-2가 한글 글씨까지 직접 생성(한글 정확 실측 통과). renderBlockText 미사용.
   const base = 'This input image is the ACTUAL product. Keep the product 100% IDENTICAL — exact shape, color, pattern, proportions, every detail. Do NOT alter, recolor, beautify, or add any other product/box/package. '
     + 'Create a premium vertical Korean e-commerce detail-page SECTION for THIS product. '
     + 'Follow this TEXT-DESCRIBED visual style only (never invent products from it): ' + styleLine + '. '
-    + '★CRITICAL: render NO text, NO letters, NO words and NO numbers anywhere in the image (text is added separately). '
+    + '★CRITICAL TYPOGRAPHY: render ONLY the Korean text specified in COMPOSITION below, EXACTLY as written — large, crisp, 100% accurate Hangul with correct spelling, NO gibberish, NO random or extra letters/numbers anywhere. Do not add any other text. '
     + '★The product must sit NATURALLY on or against a real surface — on a table/podium/floor, laid flat, worn on a mannequin, or hung on a rack as appropriate for the product type — with a soft realistic shadow. NEVER let it float in mid-air. ';
   const blocks = [];
-  // 1. 히어로 — 정면 영웅샷, 상단 40% 비움(헤드라인 자리). kicker(영문 라벨)→큰 2줄 헤드라인→부제 위계.
-  blocks.push({ key: 'hero', quality: 'medium', text: { kicker: String(c.heroKicker || '').slice(0, 26), headline: String(c.heroHeadline || product.title || '').slice(0, 24), sub: String(c.heroSub || '').slice(0, 32), emphasis: String(c.heroEmphasis || '').slice(0, 12) }, prompt: base + 'COMPOSITION: ONE single large front hero shot, product in the LOWER 60 percent, dramatic premium lighting, NOT a row of repeated units. Keep the TOP 40 percent a clean empty background for a headline.' });
-  // 2. 기능 — 제품 연출(아이콘·라벨은 코드로), 상단 비움
-  // 라벨은 카피의 짧은 키워드(featureLabels) 우선, 없으면 분석 facts(서술형이라 잘릴 수 있음).
-  const featLabels = (Array.isArray(c.featureLabels) && c.featureLabels.length) ? c.featureLabels.map((x) => String(x).slice(0, 8)).filter(Boolean).slice(0, 4) : featFacts.slice(0, 4);
-  if (featLabels.length) blocks.push({ key: 'features', quality: 'medium', text: { kicker: 'KEY FEATURES', title: '핵심 기능', items: featLabels }, prompt: base + 'COMPOSITION: the product styled on a clean minimal surface in the LOWER half. Keep the TOP half a clean empty background for feature labels.' });
-  // 3. 사용장면 — 다른 앵글(책상/손/공간)
-  if (Array.isArray(c.sections) && c.sections[0]) blocks.push({ key: 'scene', quality: 'medium', text: { headline: String(c.sections[0].headline || '').slice(0, 22) }, prompt: base + 'COMPOSITION: a real-life LIFESTYLE scene from a DIFFERENT angle (on a desk, held in a hand, or in a room) — NOT a centered studio shot. Keep an upper area clean for a caption.' });
-  // 4. 색상 — 옆으로 나열(딱 옵션 수만큼)
-  if (colors.length >= 2) blocks.push({ key: 'colors', quality: 'medium', text: { kicker: 'COLOR', title: '색상 옵션', items: colors }, prompt: base + 'COMPOSITION: a side-by-side COLOR line-up showing the product in EXACTLY these ' + colors.length + ' colors and NO others — ' + colors.join(', ') + '. No invented colors. Keep an upper area clean for a title.' });
-  // 5. 스펙 — 클로즈업 + 표(수치는 코드로, facts만)
-  if (specFacts.length) blocks.push({ key: 'spec', quality: 'medium', text: { kicker: 'SPECIFICATION', title: '제품 상세 스펙', items: specFacts.slice(0, 6) }, prompt: base + 'COMPOSITION: a product SPEC section with a close-up/detail shot in the LOWER half. Keep the TOP half a clean empty background for a spec table.' });
-  // 6. CTA — 분위기 마무리(제품 작게)
-  blocks.push({ key: 'cta', quality: 'medium', text: { headline: String(c.closing || '').slice(0, 20) }, prompt: base + 'COMPOSITION: a closing MOOD shot (product smaller, atmospheric background). Keep an upper area clean for a closing line.' });
+  // 프롬프트에 넣을 한글 텍스트를 안전하게 따옴표로 감싼다(따옴표/역슬래시 제거).
+  const q = (s, n) => '"' + String(s == null ? '' : s).slice(0, n).replace(/["\\]/g, '') + '"';
+  // 1. 히어로 — 영웅샷 + 상단 한글 헤드라인(gpt가 직접 렌더)
+  const heroHead = String(c.heroHeadline || product.title || '').slice(0, 24);
+  blocks.push({ key: 'hero', quality: 'medium', text: { kicker: String(c.heroKicker || '').slice(0, 26), headline: heroHead, sub: String(c.heroSub || '').slice(0, 32), emphasis: String(c.heroEmphasis || '').slice(0, 12) }, prompt: base + 'COMPOSITION: ONE single large front hero shot, product in the LOWER 60 percent, dramatic premium lighting, NOT a row of repeated units. In the clean TOP 40 percent render Korean text — a small kicker ' + q(c.heroKicker, 26) + ', then a LARGE two-line headline ' + q(heroHead, 24) + ', then a smaller subline ' + q(c.heroSub, 32) + '.' });
+  // 2. 기능 — 아이콘+한글 라벨 그리드(gpt가 직접 렌더)
+  const featLabels = (Array.isArray(c.featureLabels) && c.featureLabels.length) ? c.featureLabels.map((x) => String(x).slice(0, 10)).filter(Boolean).slice(0, 4) : featFacts.slice(0, 4);
+  if (featLabels.length) blocks.push({ key: 'features', quality: 'medium', text: { kicker: 'KEY FEATURES', title: '핵심 기능', items: featLabels }, prompt: base + 'COMPOSITION: at the TOP a Korean section title "핵심 기능". Below it ONE horizontal row of EXACTLY ' + featLabels.length + ' items, each = a simple minimal line icon + an accurate short Korean label. Labels in order: ' + featLabels.map((x) => q(x, 10)).join(', ') + '. Product subtly styled at the bottom.' });
+  // 3. 사용장면 — 다른 앵글 + 한글 캡션
+  if (Array.isArray(c.sections) && c.sections[0]) blocks.push({ key: 'scene', quality: 'medium', text: { headline: String(c.sections[0].headline || '').slice(0, 22) }, prompt: base + 'COMPOSITION: a real-life LIFESTYLE scene from a DIFFERENT angle (on a desk, held in a hand, or in a room) — NOT a centered studio shot. In a clean area render one Korean caption line ' + q(c.sections[0].headline, 22) + '.' });
+  // 4. 색상 — 옆으로 나열 + 한글 제목
+  if (colors.length >= 2) blocks.push({ key: 'colors', quality: 'medium', text: { kicker: 'COLOR', title: '색상 옵션', items: colors }, prompt: base + 'COMPOSITION: a side-by-side COLOR line-up showing the product in EXACTLY these ' + colors.length + ' colors and NO others — ' + colors.join(', ') + '. At the top render Korean title "색상 옵션". No invented colors.' });
+  // 5. 스펙 — 클로즈업 + 한글 스펙표(gpt가 직접 렌더)
+  if (specFacts.length) blocks.push({ key: 'spec', quality: 'medium', text: { kicker: 'SPECIFICATION', title: '제품 상세 스펙', items: specFacts.slice(0, 6) }, prompt: base + 'COMPOSITION: a product SPEC section, close-up/detail in the lower area. At the TOP a Korean title "제품 상세 스펙" and a clean spec table listing EXACTLY these Korean rows: ' + specFacts.slice(0, 6).map((x) => q(x, 30)).join(', ') + '.' });
+  // 6. CTA — 분위기 마무리 + 한글 마무리 문구
+  blocks.push({ key: 'cta', quality: 'medium', text: { headline: String(c.closing || '').slice(0, 20) }, prompt: base + 'COMPOSITION: a closing MOOD shot (product smaller, atmospheric background). In a clean area render one Korean closing line ' + q(c.closing, 20) + '.' });
   return blocks;
 }
 

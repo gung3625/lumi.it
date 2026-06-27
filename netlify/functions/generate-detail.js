@@ -147,16 +147,11 @@ async function runGeneration(p, jobId) {
     const cacheDir = pathq.join(process.env.HOME || '/home/lumi', 'lumi', 'cache', String(jobId || 'tmp'));
     try { fsq.mkdirSync(cacheDir, { recursive: true }); } catch (_) {}
     for (let i = 0; i < plan.length; i += 3) {
-      // 화보(텍스트 0) 생성 → 캐시 저장 → renderBlockText(한글 SVG) 합성 → 블록.
-      const batch = await Promise.all(plan.slice(i, i + 3).map((blk) => generateAiPhoto(srcForPhoto, blk.prompt, { quality: blk.quality }).then(async (photo) => {
+      // gpt-image-2가 한글 글씨까지 직접 생성 → 결과 그대로 사용(renderBlockText/SVG 합성 미사용). 캐시는 재생성 편집용.
+      const batch = await Promise.all(plan.slice(i, i + 3).map((blk) => generateAiPhoto(srcForPhoto, blk.prompt, { quality: blk.quality }).then((photo) => {
         if (!photo) return null;
-        try {
-          try { fsq.writeFileSync(pathq.join(cacheDir, blk.key + '.png'), Buffer.from(photo, 'base64')); } catch (_) {}
-          const img = sharpLib(Buffer.from(photo, 'base64'));
-          const m = await img.metadata();
-          const txt = renderBlockText(blk, m.width || 1024, m.height || 1536, styleHint);
-          return { key: blk.key, b64: (await img.composite([{ input: txt, top: 0, left: 0 }]).png().toBuffer()).toString('base64') };
-        } catch (_) { return { key: blk.key, b64: photo }; }
+        try { fsq.writeFileSync(pathq.join(cacheDir, blk.key + '.png'), Buffer.from(photo, 'base64')); } catch (_) {}
+        return { key: blk.key, b64: photo };
       })));
       batch.forEach((x) => { if (x) blockResults.push(x); });
     }
