@@ -92,7 +92,9 @@ async function runGeneration(p, jobId) {
     if (!item || !item.title) throw new Error('상품 정보를 불러오지 못했습니다. 링크를 확인해 주세요');
     // 입력은 가장 큰 이미지로(작은 썸네일은 날개 등 디테일이 뭉개짐). 도매꾹 760 우선, 없으면 마지막(보통 최대).
     srcForPhoto = (item.images || []).find((u) => /760|_l\b|large|origin/i.test(String(u))) || (item.images || []).slice(-1)[0] || (item.images || [])[0] || null;
-    product = { title: item.title, spec: item.spec || {}, options: item.options || [], descImages: item.descImages || [], images: (item.images || []).slice(0, 4), keywords: item.keywords || [], categoryTree: item.categoryTree || [] };
+    // 도매꾹 상품명의 선두 마케팅 prefix([임박특가]·(무료배송) 등) 제거 → 깔끔한 상품명만 카피/이미지에 사용.
+    const cleanTitle = (String(item.title || '').replace(/^\s*(?:\[[^\]]*\]\s*|\([^)]*\)\s*)+/, '').trim()) || String(item.title || '');
+    product = { title: cleanTitle, spec: item.spec || {}, options: item.options || [], descImages: item.descImages || [], images: (item.images || []).slice(0, 4), keywords: item.keywords || [], categoryTree: item.categoryTree || [] };
   } else {
     if (!imageBase64) throw new Error('상품 대표 사진을 올려주세요');
     srcForPhoto = stripDataUri(imageBase64);
