@@ -301,7 +301,7 @@ async function generateDetailPage(product, { diffHook, painPoints, sellingHook, 
   try {
     const res = await llmChat({
       model: model || 'gpt-4o',
-      messages: [{ role: 'system', content: SYS }, { role: 'user', content: '상품데이터:\n' + JSON.stringify(ctx, null, 1) + '\n\n위 데이터(상품데이터·이미지분석에 있는 사실만)로 컷 흐름의 고급 상세페이지 카피를 JSON으로 작성. 단, 「고객요청」·「톤」이 있으면 그 톤·타겟·강조점을 반드시 반영하되, 거기 적힌 내용이라도 상품데이터·이미지분석에 없는 사실(효능·성분·수치)은 절대 지어내지 말 것.' }],
+      messages: [{ role: 'system', content: SYS }, { role: 'user', content: '상품데이터:\n' + JSON.stringify(ctx, null, 1) + '\n\n위 데이터(상품데이터·이미지분석에 있는 사실만)로 컷 흐름의 고급 상세페이지 카피를 JSON으로 작성. 단, 「고객요청」·「톤」이 있으면 그것을 ★최우선으로 반영(다른 기본 구성·톤보다 우선)하되, 거기 적힌 내용이라도 상품데이터·이미지분석에 없는 사실(효능·성분·수치)은 절대 지어내지 말 것. 「고객요청」이 없으면 상품데이터 기준으로 그냥 진행.' }],
       max_tokens: 3800,
       response_format: { type: 'json_object' },
     }, { sensitive: false, label: 'detail-page', timeoutMs: 90000 });
@@ -674,7 +674,7 @@ function detectCategory(product) {
 // 레퍼런스 블록 플랜 — 레퍼런스를 "이미지로 입력하지 않고" 스타일 텍스트(styleHint)만 주입(비타민 차단).
 // + 블록마다 구도/앵글을 다르게 명시(구도 반복 방지), 정보를 한 블록에서만 다룸(중복 방지), 크기·수치는 스펙 블록 1곳만(환각 방지).
 // + 레퍼런스 structure 없으면 detectCategory→CATEGORY_TEMPLATES로 카테고리 표준 구조를 깐다.
-function refBlockPlan(product, copy, facts, styleHint) {
+function refBlockPlan(product, copy, facts, styleHint, userRequest) {
   const c = copy || {};
   const colors = (product.options || []).map((o) => String((o && (o.name || o.value)) || o).trim()).filter(Boolean).slice(0, 6);
   const allFacts = Array.isArray(facts) ? facts : [];
@@ -695,7 +695,8 @@ function refBlockPlan(product, copy, facts, styleHint) {
     + '★CRITICAL TYPOGRAPHY: the Korean strings quoted in COMPOSITION below are THE EXACT TEXT TO RENDER — reproduce them character-for-character, large and crisp, 100% accurate Hangul with correct spelling, NO gibberish, NO random or extra letters/numbers anywhere. Use a clean Korean sans-serif (Pretendard or Noto Sans KR; if unavailable, a clean geometric sans-serif). Do not add any other text. '
     + '★Overall look: high-fidelity, sharp and crisp, no color banding, no AI artifacts. '
     + '★The product must sit NATURALLY on or against a real surface — on a table/podium/floor, laid flat, worn on a mannequin, or hung on a rack as appropriate for the product type — with a soft realistic shadow. NEVER let it float in mid-air. '
-    + '★CONSISTENCY across all sections of this page: soft even lighting, neutral ~5500K white balance, clean seamless background, no chromatic aberration, no plastic sheen — so every block looks like one cohesive set. ';
+    + '★CONSISTENCY across all sections of this page: soft even lighting, neutral ~5500K white balance, clean seamless background, no chromatic aberration, no plastic sheen — so every block looks like one cohesive set. '
+    + (userRequest && String(userRequest).trim() ? '★★HIGHEST PRIORITY — the customer explicitly requested: "' + String(userRequest).slice(0, 200).replace(/["\\]/g, '') + '". Follow this request above all default styling choices (but never invent product facts that are not provided). ' : '');
   // 프롬프트에 넣을 한글 텍스트를 안전하게 따옴표로 감싼다(따옴표/역슬래시 제거).
   const q = (s, n) => '"' + String(s == null ? '' : s).slice(0, n).replace(/["\\]/g, '') + '"';
   const heroHead = String(c.heroHeadline || product.title || '').slice(0, 24);
@@ -711,6 +712,7 @@ function refBlockPlan(product, copy, facts, styleHint) {
   let sceneN = 0;
   const mkScene = (note) => {
     const cap = (secList[sceneN] && secList[sceneN].headline) ? String(secList[sceneN].headline).slice(0, 22) : (featFacts[sceneN] ? String(featFacts[sceneN]).slice(0, 22) : '');
+    if (!cap) return null; // ★상품 정보(섹션·기능)가 없으면 장면컷을 억지로 만들지 않음 — 정보 있는 블록만(레퍼런스 블록 수에 끌려가지 않음)
     sceneN += 1;
     const topic = note ? (' This section should visually convey: ' + String(note).slice(0, 60).replace(/["\\]/g, '') + '.') : '';
     return { key: 'scene' + sceneN, quality: 'medium', text: { headline: cap }, prompt: base + 'COMPOSITION: a real-life LIFESTYLE/usage scene from a DIFFERENT angle (on a desk, held in a hand, or in a room) — NOT a centered studio shot.' + topic + (cap ? ' In a clean area render one Korean caption line ' + q(cap, 22) + '.' : ' Keep on-image text minimal.') };
@@ -750,9 +752,9 @@ function refBlockPlan(product, copy, facts, styleHint) {
           break;
         default: break; // full / text / 기타 설명 섹션
       }
-      // 어떤 타입이든 위에서 블록을 못 만들면(중복·데이터 없음) 장면 컷으로 대체 — 레퍼런스 섹션 손실 0(충실도)
+      // 위에서 블록을 못 만들면(중복·데이터 없음) 장면 컷 시도. 단 상품 정보가 없으면 mkScene이 null → 그 섹션은 건너뜀(빈 블록 억지생성 X).
       if (!b) b = mkScene(note);
-      sblocks.push(b);
+      if (b) sblocks.push(b);
     });
     if (!sblocks.some((x) => x.key === 'hero')) sblocks.unshift(mkHero());
     if (sblocks.length >= 2) return [...sblocks, ...mkExtras(), ...(String(c.closing || '').trim() ? [mkCta()] : [])];
@@ -762,7 +764,7 @@ function refBlockPlan(product, copy, facts, styleHint) {
   const blocks = [];
   blocks.push(mkHero());
   const bf = mkFeatures(); if (bf) blocks.push(bf);
-  if (secList[0]) blocks.push(mkScene(''));
+  if (secList[0]) { const sc0 = mkScene(''); if (sc0) blocks.push(sc0); }
   const bc = mkColors(); if (bc) blocks.push(bc);
   const bs = mkSpec(); if (bs) blocks.push(bs);
   mkExtras().forEach((b) => blocks.push(b));
