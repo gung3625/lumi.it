@@ -656,8 +656,8 @@ function refBlockPlan(product, copy, facts, styleHint) {
   const allFacts = Array.isArray(facts) ? facts : [];
   // 스펙(크기·무게·정격 등 수치)과 기능을 분리 → 각각 한 블록에서만 표기(중복·환각 차단).
   const SPEC_RE = /(\d+\s*(cm|mm|kg|g|w|wh|mah|v|인치|ml|l)\b)|크기|치수|지름|무게|중량|용량|정격|전압|소비전력|배터리|재질|소재|사이즈/i;
-  const specFacts = allFacts.filter((f) => SPEC_RE.test(String(f))).slice(0, 8);
-  const featFacts = allFacts.filter((f) => !SPEC_RE.test(String(f)) && !/색상|컬러|color|옵션|option/i.test(String(f))).slice(0, 6);
+  const specFacts = allFacts.filter((f) => SPEC_RE.test(String(f))).slice(0, 14);
+  const featFacts = allFacts.filter((f) => !SPEC_RE.test(String(f)) && !/색상|컬러|color|옵션|option/i.test(String(f))).slice(0, 10);
   const sh = styleHint || {};
   const styleLine = (sh.stylePrompt || 'premium clean modern Korean e-commerce detail-page style')
     + (sh.palette && sh.palette.length ? '. Color palette: ' + sh.palette.join(', ') : '')
@@ -681,7 +681,7 @@ function refBlockPlan(product, copy, facts, styleHint) {
   const mkHero = () => ({ key: 'hero', quality: 'medium', text: { kicker: String(c.heroKicker || '').slice(0, 26), headline: heroHead, sub: String(c.heroSub || '').slice(0, 32), emphasis: String(c.heroEmphasis || '').slice(0, 12) }, prompt: base + 'COMPOSITION: ONE single large front hero shot, product in the LOWER 60 percent, dramatic premium lighting, NOT a row of repeated units. In the clean TOP 40 percent render Korean text — a small kicker ' + q(c.heroKicker, 26) + ', then a LARGE two-line headline ' + q(heroHead, 24) + ', then a smaller subline ' + q(c.heroSub, 32) + '.' });
   const mkFeatures = () => featLabels.length ? { key: 'features', quality: 'medium', text: { kicker: 'KEY FEATURES', title: '핵심 기능', items: featLabels }, prompt: base + 'COMPOSITION: at the TOP a Korean section title "핵심 기능". Below it ONE horizontal row of EXACTLY ' + featLabels.length + ' items, each = a simple minimal line icon + an accurate short Korean label. Labels in order: ' + featLabels.map((x) => q(x, 10)).join(', ') + '. Product subtly styled at the bottom.' } : null;
   const mkColors = () => colors.length >= 2 ? { key: 'colors', quality: 'medium', text: { kicker: 'COLOR', title: '색상 옵션', items: colors }, prompt: base + 'COMPOSITION: a side-by-side COLOR line-up showing the product in EXACTLY these ' + colors.length + ' colors and NO others — ' + colors.join(', ') + '. At the top render Korean title "색상 옵션". No invented colors.' } : null;
-  const mkSpec = () => specFacts.length ? { key: 'spec', quality: 'medium', text: { kicker: 'SPECIFICATION', title: '제품 상세 스펙', items: specFacts.slice(0, 6) }, prompt: base + 'COMPOSITION: a product SPEC section, close-up/detail in the lower area. At the TOP a Korean title "제품 상세 스펙" and a clean spec table listing EXACTLY these Korean rows: ' + specFacts.slice(0, 6).map((x) => q(x, 30)).join(', ') + '.' } : null;
+  const mkSpec = () => specFacts.length ? { key: 'spec', quality: 'medium', text: { kicker: 'SPECIFICATION', title: '제품 상세 스펙', items: specFacts.slice(0, 10) }, prompt: base + 'COMPOSITION: a product SPEC section, close-up/detail in the lower area. At the TOP a Korean title "제품 상세 스펙" and a clean spec table listing EXACTLY these Korean rows: ' + specFacts.slice(0, 10).map((x) => q(x, 30)).join(', ') + '.' } : null;
   // full/text 등 "설명 섹션" — 기존 상세의 해당 섹션 주제(note)를 살려, 다른 앵글 화보 + 한글 캡션으로 재현.
   let sceneN = 0;
   const mkScene = (note) => {
