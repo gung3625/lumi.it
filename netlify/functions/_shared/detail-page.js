@@ -252,13 +252,13 @@ async function analyzeReferenceStyle(images) {
   const urls = (Array.isArray(images) ? images : [images]).filter(Boolean).slice(0, 3);
   if (!urls.length) return null;
   const prompt = '아래는 사용자가 "이런 디자인 느낌으로 만들어줘"라고 가져온 상세페이지 레퍼런스다. ★디자인 스타일과 레이아웃 구조만 분석하라(실제 문구·상품·사진은 복제 대상 아님 — 오직 비주얼). 추출: 색 팔레트(주요 hex 2~4개), 전체 무드(예 고급/미니멀/키치/내추럴/팝), 레이아웃 방식 한줄 요약(layout), 타이포 느낌(굵기·크기감·세리프 여부), 그래픽 요소(그라디언트·도형·뱃지·라인 등). '
-    + '★그리고 페이지를 위→아래로 보며 "섹션 구조"(structure)를 순서대로 배열로 적어라. 각 섹션 type은 반드시 다음 중 하나: "hero"(상단 대표 풀폭컷), "full"(풀폭 단일 이미지), "grid2"(좌우 2단 나란히), "grid3"(3단), "text"(텍스트 단락 중심), "spec"(표/스펙 리스트). note는 그 섹션을 설명하는 한국어 한 줄. '
+    + '★그리고 페이지를 위→아래로 보며 "섹션 구조"(structure)를 처음부터 끝까지 하나도 빠짐없이 순서대로 배열로 적어라(섹션이 10개·15개면 그 개수만큼 전부 — 절대 요약하거나 합치지 마라). 각 섹션 type은 반드시 다음 중 하나: "hero"(상단 대표 풀폭컷), "full"(풀폭 단일 이미지), "grid2"(좌우 2단 나란히), "grid3"(3단), "text"(텍스트 단락 중심), "spec"(표/스펙 리스트). note는 그 섹션을 설명하는 한국어 한 줄. '
     + '이 스타일을 영어 이미지 생성 프롬프트 한 문장으로 요약(stylePrompt). JSON으로만: {"palette":["#xxxxxx"],"mood":"...","layout":"...","typography":"...","graphics":"...","structure":[{"type":"hero","note":"..."},{"type":"grid2","note":"..."}],"stylePrompt":"english one-line visual style directive"}';
   try {
     const res = await llmChat({
       model: 'gpt-4o',
       messages: [{ role: 'user', content: [{ type: 'text', text: prompt }, ...urls.map((u) => ({ type: 'image_url', image_url: { url: u } }))] }],
-      max_tokens: 700,
+      max_tokens: 1500,
       response_format: { type: 'json_object' },
     }, { sensitive: false, label: 'reference-style', timeoutMs: 60000 });
     const d = await res.json();
@@ -267,7 +267,7 @@ async function analyzeReferenceStyle(images) {
     if (!o || (!o.stylePrompt && !o.mood && !(o.palette && o.palette.length))) return null;
     if (o.palette) o.palette = (Array.isArray(o.palette) ? o.palette : []).filter((c) => /^#?[0-9a-f]{3,8}$/i.test(String(c))).map((c) => String(c)[0] === '#' ? String(c) : '#' + c).slice(0, 4);
     // 레이아웃 구조(섹션 순서·타입) — 유효 타입만 남김. refBlockPlan이 이 순서대로 블록을 배치.
-    o.structure = Array.isArray(o.structure) ? o.structure.filter((s) => s && /^(hero|full|grid2|grid3|text|spec)$/.test(String(s.type))).slice(0, 8) : null;
+    o.structure = Array.isArray(o.structure) ? o.structure.filter((s) => s && /^(hero|full|grid2|grid3|text|spec)$/.test(String(s.type))).slice(0, 20) : null;
     return o;
   } catch (_) { return null; }
 }
