@@ -390,10 +390,13 @@ summary::before{content:"+ ";font-weight:700}
       });
     }
   });
-  function showResult(html,resultUrl,rmode){
+  function showResult(html,resultUrl,rmode,legalWarning){
     if((rmode==='image'||!html)&&resultUrl){frame.srcdoc='<body style="margin:0;background:#fff"><img src="'+resultUrl+'" style="width:100%;display:block"></body>';}
     else{frame.srcdoc=html||'';}
     result.classList.add('on');
+    var lw=document.getElementById('legalwarn');
+    if(!lw){lw=document.createElement('div');lw.id='legalwarn';lw.style.cssText='margin:0 0 14px;padding:14px 16px;border-radius:12px;background:#fff4e5;border:1px solid #ffcf8a;color:#8a5a00;font-size:14px;line-height:1.55;font-weight:600;';result.insertBefore(lw,result.firstChild);}
+    lw.style.display=legalWarning?'block':'none';if(legalWarning)lw.textContent=legalWarning;
     var ru=document.getElementById('rurl');
     if(ru)ru.innerHTML=resultUrl?'저장된 결과: <a href="'+resultUrl+'" target="_blank">'+resultUrl+'</a><br>(북마크해두면 언제든 다시 볼 수 있어요)':'';
     frame.onload=function(){try{frame.style.height=(frame.contentWindow.document.body.scrollHeight+40)+'px';}catch(e){frame.style.height='3000px';}};
@@ -402,7 +405,7 @@ summary::before{content:"+ ";font-weight:700}
   function poll(jobId,n){
     if(n>150){loading.classList.remove('on');stopLoadCycle();go.disabled=false;err.textContent='시간이 너무 오래 걸립니다. 다시 시도해 주세요.';err.classList.add('on');return;}
     fetch('/api/generate-detail?jobId='+encodeURIComponent(jobId),{headers:authHeaders}).then(function(r){return r.json();}).then(function(j){
-      if(j.status==='done'&&(j.html||j.resultUrl)){currentJobId=jobId;currentBlocks=j.blocks||null;currentPalette=j.palette||null;if(typeof j.creditRemaining==='number'){freeCredits=j.creditRemaining;var cb=document.querySelector('.nav-right .credit');if(cb)cb.textContent='무료 '+freeCredits+'회';}loading.classList.remove('on');stopLoadCycle();go.disabled=false;showResult(j.html,j.resultUrl,j.mode);updateCreditUI();}
+      if(j.status==='done'&&(j.html||j.resultUrl)){currentJobId=jobId;currentBlocks=j.blocks||null;currentPalette=j.palette||null;if(typeof j.creditRemaining==='number'){freeCredits=j.creditRemaining;var cb=document.querySelector('.nav-right .credit');if(cb)cb.textContent='무료 '+freeCredits+'회';}loading.classList.remove('on');stopLoadCycle();go.disabled=false;showResult(j.html,j.resultUrl,j.mode,j.legalWarning);updateCreditUI();}
       else if(j.status==='error'){loading.classList.remove('on');stopLoadCycle();go.disabled=false;showErr(j.error||'생성에 실패했습니다.',mode==='link');}
       else{setTimeout(function(){poll(jobId,n+1);},3000);}
     }).catch(function(){setTimeout(function(){poll(jobId,n+1);},3000);});

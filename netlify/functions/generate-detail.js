@@ -2,7 +2,7 @@
 //   POST {url|title+imageBase64} → 즉시 jobId 반환(202), 백그라운드에서 생성.
 //   GET  ?jobId → 상태 조회(pending / done+html / error).
 // 생성이 1~3분 걸려서 동기 응답은 프록시·브라우저 타임아웃 위험 → 작업+폴링 방식.
-const { generateDetailPage, generateAiPhoto, photoPrompt, scenePlan, copyToBlocks, renderBlocks, accentPalette, extractProductTitle, analyzeProductImages, analyzeReferenceStyle, refStylePrompt, verifyGenerated, refBlockPlan, stitchBlocks, renderBlockText, recomposeBlocks, recomposeBlock } = require('./_shared/detail-page.js');
+const { generateDetailPage, generateAiPhoto, photoPrompt, scenePlan, copyToBlocks, renderBlocks, accentPalette, extractProductTitle, analyzeProductImages, analyzeReferenceStyle, refStylePrompt, verifyGenerated, refBlockPlan, detectCategory, stitchBlocks, renderBlockText, recomposeBlocks, recomposeBlock } = require('./_shared/detail-page.js');
 const { getItemView } = require('./_shared/domeggook-api.js');
 const { getDometopiaItem, parseNo } = require('./_shared/dometopia.js');
 const { fetchViaUnlocker, parseUniversalProduct } = require('./_shared/universal.js');
@@ -135,6 +135,10 @@ async function runGeneration(p, jobId) {
   }
   const copy = result.copy || {};
   const factsForPrompt = (Array.isArray(p.facts) ? p.facts : (result.imageFacts || []));
+  // ★식품/건기식 법정 표시사항 검수 경고 — AI 렌더 오타 시 식품표시광고법 위반 소지(생성은 하되 검수 강제).
+  const _legalCat = detectCategory(product);
+  const legalWarning = (_legalCat === 'food' || _legalCat === 'supplement') ? '⚠️ 식품·건강기능식품은 영양성분·원재료명·소비기한·원산지 등 법정 표시사항을 AI가 잘못 그릴 수 있습니다. 생성된 이미지의 해당 항목을 실제 표시와 반드시 대조·검수해 주세요.' : null;
+  const withLegal = (rp) => legalWarning ? [legalWarning, ...(Array.isArray(rp) ? rp : [])] : (Array.isArray(rp) ? rp : []);
 
   // ★이미지 생성 모드(기본) — gpt-image-2가 한글까지 직접 렌더. 레퍼런스 유무와 무관하게 항상 고품질로 생성.
   //   별도 레퍼런스가 있으면 그 디자인을, 없으면 상품 자기 상세페이지를 레퍼런스 삼아 구조·스타일을 그대로 재현.
@@ -195,7 +199,7 @@ async function runGeneration(p, jobId) {
       return { key: br.key, img: 'https://lumi.it.kr/r/img/' + fn, text: pm ? pm.text : {} };
     });
     const stitched = await stitchBlocks(blockResults.map((b) => b.b64));
-    return { title: product.title, image: stitched || blockResults[0].b64, copy, reviewPoints: result.reviewPoints || [], mode: 'image', blockCount: blockResults.length, blocks, styleHint: styleHint || null, jobId: String(jobId || '') };
+    return { title: product.title, image: stitched || blockResults[0].b64, copy, reviewPoints: withLegal(result.reviewPoints), legalWarning, mode: 'image', blockCount: blockResults.length, blocks, styleHint: styleHint || null, jobId: String(jobId || '') };
   }
 
   // (레퍼런스 없을 때) 기존 블록 흐름
@@ -227,7 +231,7 @@ async function runGeneration(p, jobId) {
     blocks = copyToBlocks(product, copy, scenes);
   }
   const html = renderBlocks(blocks, palette);
-  return { title: product.title, html, blocks, palette, copy, reviewPoints: result.reviewPoints || [], photoGenerated: !!baseB64, sceneCount, styleHint: styleHint || null };
+  return { title: product.title, html, blocks, palette, copy, reviewPoints: withLegal(result.reviewPoints), legalWarning, photoGenerated: !!baseB64, sceneCount, styleHint: styleHint || null };
 }
 
 exports.runGeneration = runGeneration; // 테스트/재사용용 노출
@@ -259,7 +263,7 @@ exports.handler = async (event) => {
     const id = q.jobId;
     const j = id && jobs[id];
     if (!j) return err(404, '작업을 찾을 수 없습니다. 다시 시도해 주세요');
-    if (j.status === 'done') return ok({ status: 'done', mode: j.mode || 'html', title: j.title, html: j.html, blocks: j.blocks, palette: j.palette, copy: j.copy, reviewPoints: j.reviewPoints, sceneCount: j.sceneCount, resultUrl: j.resultUrl, jobId: j.jobId || id, creditRemaining: j.creditRemaining });
+    if (j.status === 'done') return ok({ status: 'done', mode: j.mode || 'html', title: j.title, html: j.html, blocks: j.blocks, palette: j.palette, copy: j.copy, reviewPoints: j.reviewPoints, legalWarning: j.legalWarning || null, sceneCount: j.sceneCount, resultUrl: j.resultUrl, jobId: j.jobId || id, creditRemaining: j.creditRemaining });
     if (j.status === 'error') return ok({ status: 'error', error: j.error });
     return ok({ status: 'pending' });
   }

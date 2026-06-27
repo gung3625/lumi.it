@@ -910,4 +910,4 @@ async function recomposeBlock(cacheDir, blockKey, textOverride, styleOverride) {
   } catch (_) { return null; }
 }
 
-module.exports = { generateDetailPage, buildHtml, analyzeProductImages, distinctImages, generateAiPhoto, photoPrompt, cutPlan, assembleCutPage, accentPalette, extractProductTitle, SYS, esc, scenePlan, specRowsData, copyToBlocks, renderBlock, renderBlocks, analyzeReferenceStyle, refStylePrompt, verifyGenerated, refBlockPlan, stitchBlocks, renderBlockText, recomposeBlocks, recomposeBlock };
+module.exports = { generateDetailPage, buildHtml, analyzeProductImages, distinctImages, generateAiPhoto, photoPrompt, cutPlan, assembleCutPage, accentPalette, extractProductTitle, SYS, esc, scenePlan, specRowsData, copyToBlocks, renderBlock, renderBlocks, analyzeReferenceStyle, refStylePrompt, verifyGenerated, refBlockPlan, detectCategory, stitchBlocks, renderBlockText, recomposeBlocks, recomposeBlock };
