@@ -680,8 +680,8 @@ function refBlockPlan(product, copy, facts, styleHint) {
   const allFacts = Array.isArray(facts) ? facts : [];
   // 스펙(크기·무게·정격 등 수치)과 기능을 분리 → 각각 한 블록에서만 표기(중복·환각 차단).
   const SPEC_RE = /(\d+\s*(cm|mm|kg|g|w|wh|mah|v|인치|ml|l)\b)|크기|치수|지름|무게|중량|용량|정격|전압|소비전력|배터리|재질|소재|사이즈/i;
-  const specFacts = allFacts.filter((f) => SPEC_RE.test(String(f))).slice(0, 14);
-  const featFacts = allFacts.filter((f) => !SPEC_RE.test(String(f)) && !/색상|컬러|color|옵션|option/i.test(String(f))).slice(0, 10);
+  const specFacts = allFacts.filter((f) => SPEC_RE.test(String(f)));
+  const featFacts = allFacts.filter((f) => !SPEC_RE.test(String(f)) && !/색상|컬러|color|옵션|option/i.test(String(f)));
   const sh = styleHint || {};
   const styleLine = (sh.stylePrompt || 'premium clean modern Korean e-commerce detail-page style')
     + (sh.palette && sh.palette.length ? '. Color palette: ' + sh.palette.join(', ') : '')
@@ -719,7 +719,12 @@ function refBlockPlan(product, copy, facts, styleHint) {
   const mkBenefits = () => { const items = (c.benefits || []).map((x) => String(x).slice(0, 40)).filter(Boolean).slice(0, 6); return items.length ? { key: 'benefits', quality: 'medium', text: { kicker: 'BENEFITS', title: '이런 점이 좋아요', items }, prompt: base + 'COMPOSITION: at the TOP a Korean section title "이런 점이 좋아요". Below it a clean vertical list of EXACTLY ' + items.length + ' benefit rows, each a short Korean line with a small check/plus icon: ' + items.map((x) => q(x, 40)).join(', ') + '.' } : null; };
   const mkComparison = () => { const pts = ((c.comparison && c.comparison.points) || []).map((x) => String(x).slice(0, 40)).filter(Boolean).slice(0, 4); return pts.length ? { key: 'compare', quality: 'medium', text: { kicker: 'WHY', title: String((c.comparison && c.comparison.headline) || '왜 이 제품일까요').slice(0, 20), items: pts }, prompt: base + 'COMPOSITION: at the TOP a Korean title ' + q((c.comparison && c.comparison.headline) || '왜 이 제품일까요', 20) + '. Below it ' + pts.length + ' key differentiator points in a clean comparison layout: ' + pts.map((x) => q(x, 40)).join(', ') + '.' } : null; };
   const mkFaq = () => { const fs = (c.faq || []).map((f) => ({ qq: String((f && f.q) || '').slice(0, 30), aa: String((f && f.a) || '').slice(0, 55) })).filter((f) => f.qq).slice(0, 4); return fs.length ? { key: 'faq', quality: 'medium', text: { kicker: 'FAQ', title: '자주 묻는 질문', items: fs.map((f) => f.qq + ' / ' + f.aa) }, prompt: base + 'COMPOSITION: at the TOP a Korean title "자주 묻는 질문". Below it ' + fs.length + ' Q&A pairs, each a bold Korean question then its answer: ' + fs.map((f) => 'Q ' + q(f.qq, 30) + ' A ' + q(f.aa, 55)).join(' / ') + '.' } : null; };
+  // 한 블록에 다 못 담는 스펙/기능은 버리지 말고 다음 블록으로 넘긴다(페이지네이션 — 정보 누락 0). 첫 블록은 mkSpec/mkFeatures가 담당.
+  const mkSpecOverflow = () => { const out = []; for (let i = 10; i < specFacts.length; i += 10) { const items = specFacts.slice(i, i + 10); out.push({ key: 'spec_' + i, quality: 'medium', text: { kicker: 'SPECIFICATION', title: '제품 상세 스펙', items }, prompt: base + 'COMPOSITION: a continued product SPEC table. At the TOP a Korean title "제품 상세 스펙". A clean spec table listing EXACTLY these Korean rows: ' + items.map((x) => q(x, 30)).join(', ') + '.' }); } return out; };
+  const mkFeatOverflow = () => { const out = []; const start = (Array.isArray(c.featureLabels) && c.featureLabels.length) ? 0 : 4; for (let i = start; i < featFacts.length; i += 4) { const items = featFacts.slice(i, i + 4).map((x) => String(x).slice(0, 14)); if (!items.length) break; out.push({ key: 'feat_' + i, quality: 'medium', text: { kicker: 'FEATURES', title: '추가 기능', items }, prompt: base + 'COMPOSITION: at the TOP a Korean section title "추가 기능". One horizontal row of EXACTLY ' + items.length + ' items, each a simple minimal line icon + a short Korean label: ' + items.map((x) => q(x, 14)).join(', ') + '.' }); } return out; };
   const mkExtras = () => [
+    ...mkSpecOverflow(),
+    ...mkFeatOverflow(),
     (Array.isArray(c.benefits) && c.benefits.length) ? mkBenefits() : null,
     (c.comparison && Array.isArray(c.comparison.points) && c.comparison.points.length) ? mkComparison() : null,
     (Array.isArray(c.faq) && c.faq.length) ? mkFaq() : null,
