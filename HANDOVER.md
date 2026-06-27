@@ -16,7 +16,37 @@
 
 ## 1. lumi 현재 배포 상태 (전부 main 머지 완료)
 
-### ⭐⭐⭐ 2026-06-24 세션 — 상세페이지 메이커: 블록 에디터 전환 (구현 착수) [★현재 작업]
+### ⭐⭐⭐ 2026-06-27 — 상세페이지 SaaS화(main) + 생성 버그 수정(⚠️미배포) [★현재 작업, 여기부터]
+
+> **⚠️⚠️ 미배포 작업 있음 — 아래 "배포할 것" 먼저 실행. lumi.it.kr 라이브는 아직 옛 버전.** (이 클라우드 작업환경은 SSH 키·ssh 명령이 없어 Claude가 직접 GCP 배포 불가 → 사장님 Mac에서 배포해야 함.)
+
+**현재 라이브 구조 (main — 6-24~27 후속 50+커밋, 대부분 gung3625 로컬 작업. 아래는 커밋메시지 기준 요지이니 이어받을 땐 코드 정독 권장)**:
+- **SaaS 전환**: 새 다크 랜딩 + 카카오 로그인(GCP 복구) + 무료 크레딧(가입 2개) + 스튜디오 대시보드 `/studio` + `detail_jobs` 테이블(Supabase, job_id·title·result_url·mode) + 공개 샘플.
+- **진입점**: 생성 `lumi.it.kr/create`(로그인) · 편집 `/edit`(블록 카드 편집기) · 작업실 `/studio`. ★구 `detail-maker.html`→`/create`, `editor.html`(fabric 캔바식)→`/edit` 리다이렉트로 **폐기됨**(블록 카드 편집기로 대체).
+- **생성 엔진**: gpt-image-2가 **한글 글씨까지 직접 렌더**(SVG 하이브리드 폐기). `_shared/detail-page.js`의 `refBlockPlan`이 블록별 프롬프트(공통 `base` + 블록별 `COMPOSITION`) 생성 → 블록 3개씩 병렬, hero를 톤앵커(refImage)로 첨부해 세트 일관성. 비동기 job+폴링(`generate-detail.js`).
+- 레퍼런스 링크/캡처/붙여넣기 입력, 카테고리 fallback(detectCategory→CATEGORY_TEMPLATES), 가드레일(의료·효능 차단·톤 4요소락), 식품 법정표시 검수, 정보충실도(상세 12장 분석·블록 cap 해제).
+
+**오늘(6-27) Claude 수정 — 브랜치 `claude/handover-review-112s8m` (main보다 앞섬, ⚠️미배포·미머지)**:
+- 🔴 **"시간 오래 걸려 실패" 버그 수정**: 원인=화면 폴링 한도(7.5분=150×3초)가 실제 생성시간보다 짧아 먼저 포기(서버는 완성·저장하는데 화면만 실패 표시. 실증: job `taym5ywjmqw2iawp`는 화면 실패였지만 `lumi.it.kr/r/taym5ywjmqw2iawp.jpg`로 완성저장됨). → `create.html` poll **시간제한 완전 제거**(done/error/404까지 무한 대기), 로딩문구 "상세페이지 내용이 많을수록 더 오래 걸려요"(3곳), `generate-detail.js` job TTL 30→90분.
+- 🔴 **정보 있는 블록만 생성**: `refBlockPlan` `mkScene`이 상품 정보(섹션·기능) 없으면 null → 빈 장면컷 억지생성 X. **레퍼런스 블록 수에 끌려가지 않고 정보량 기준**으로 블록 수 결정.
+- 🔴 **고객요청(userRequest) 최우선**: `refBlockPlan` base 프롬프트에 `★★HIGHEST PRIORITY` 주입(이미지·블록 전체) + 카피 생성도 "반드시"→"최우선". 요청 없으면 그냥 진행. (요청에 적혀도 상품에 없는 사실은 안 지어냄.)
+
+**⚠️ 배포할 것 (사장님 Mac에서 — 복붙)**:
+```
+cd ~/lumi.it
+git checkout claude/handover-review-112s8m && git pull origin claude/handover-review-112s8m
+KEY=~/.ssh/lumi_gcp; H=lumi@34.158.206.244; D=/home/lumi/lumi
+rsync -e "ssh -i $KEY" netlify/functions/_shared/detail-page.js  $H:$D/netlify/functions/_shared/
+rsync -e "ssh -i $KEY" netlify/functions/generate-detail.js      $H:$D/netlify/functions/
+rsync -e "ssh -i $KEY" create.html                               $H:$D/
+ssh -i $KEY $H 'pm2 reload lumi'
+```
+(create.html=정적 즉시반영, 함수 2개는 `pm2 reload` 필요. 브랜치를 main 머지 후 배포해도 됨.)
+
+**🔴 미완 — 다음 작업 (★사장님 핵심 지적, 미구현)**:
+- **레퍼런스 vs 기존상세 역할 분리**: 레퍼런스(고객이 "이런 느낌으로" 가져온 것)는 **디자인(palette·mood·layout)만** 봐야 하고, 블록 **구조(structure)·정보(facts)는 기존 상세페이지(상품 원본 `descImages`)**에서 와야 함. 현재 `generate-detail.js:161` `refForStyle = refImgs || descImages`로 둘이 합쳐져, **레퍼런스가 있으면 레퍼런스의 structure를 블록 구조로 따라가는 버그**(기존 상세에 스펙 섹션 있어도 레퍼런스 구조에 없으면 누락). → `analyzeReferenceStyle`을 디자인용(레퍼런스 입력)·구조용(기존상세 입력)으로 **분리 호출**, `refBlockPlan`의 structure는 **항상 기존상세**에서 가져오게 수정 필요.
+
+### ⭐⭐⭐ 2026-06-24 세션 — 상세페이지 메이커: 블록 에디터 전환 (구현 착수)
 
 > **제품 컨셉 확정 (사장님)**: 두 버전으로 어필. ①**쉬운 버전** = 참고할 상세페이지를 붙여넣으면 AI가 참고해 생성 + **글씨만 수정**(대부분 셀러용). ②**어려운 버전** = 미리캔버스·제디터처럼 **캔바식 풀 편집**(폰트·색·위치·도형 자유). 둘 다 같은 AI 생성 결과의 두 출구.
 
