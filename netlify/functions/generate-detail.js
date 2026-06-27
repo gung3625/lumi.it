@@ -136,8 +136,9 @@ async function runGeneration(p, jobId) {
   const copy = result.copy || {};
   const factsForPrompt = (Array.isArray(p.facts) ? p.facts : (result.imageFacts || []));
 
-  // ★레퍼런스 스타일 모드 — 레퍼런스 이미지를 통째로 넣지 않고, 스타일 텍스트만 추출해 주입(비타민/엉뚱제품 복제 차단).
-  if ((p.referenceImageBase64 || p.referenceUrl) && srcForPhoto) {
+  // ★이미지 생성 모드(기본) — gpt-image-2가 한글까지 직접 렌더. 레퍼런스 유무와 무관하게 항상 고품질로 생성.
+  //   별도 레퍼런스가 있으면 그 디자인을, 없으면 상품 자기 상세페이지를 레퍼런스 삼아 구조·스타일을 그대로 재현.
+  if (srcForPhoto) {
     // 레퍼런스에서 디자인 스타일(palette·mood·layout)만 비전 추출 → 블록 플랜에 텍스트로 주입.
     // 이미지 base64 또는 링크(페이지 스크래핑 → 대표 이미지) 둘 다 지원. 실패 시 레퍼런스 없이 진행.
     let refImgs = null;
@@ -151,8 +152,10 @@ async function runGeneration(p, jobId) {
         if (rims.length) refImgs = rims.slice(0, 2);
       } catch (_) {}
     }
+    // ★레퍼런스 미입력 시: 상품 자기 상세페이지(descImages)를 레퍼런스로 — 기존 상세의 섹션 순서·스타일을 추출해 그대로 재현.
+    const refForStyle = refImgs || ((product.descImages && product.descImages.length) ? product.descImages.slice(0, 3) : null);
     let styleHint = null;
-    try { if (refImgs) styleHint = await analyzeReferenceStyle(refImgs); } catch (_) {}
+    try { if (refForStyle) styleHint = await analyzeReferenceStyle(refForStyle); } catch (_) {}
     const plan = refBlockPlan(product, copy, factsForPrompt, styleHint);
     const blockResults = [];
     // 비타민은 레퍼런스 이미지 미입력으로 이미 차단됨 → verify 불필요. 블록을 3개씩 병렬 생성(속도: 순차 18분 → 수분).

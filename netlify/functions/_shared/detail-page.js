@@ -670,23 +670,59 @@ function refBlockPlan(product, copy, facts, styleHint) {
     + 'Follow this TEXT-DESCRIBED visual style only (never invent products from it): ' + styleLine + '. '
     + '★CRITICAL TYPOGRAPHY: render ONLY the Korean text specified in COMPOSITION below, EXACTLY as written — large, crisp, 100% accurate Hangul with correct spelling, NO gibberish, NO random or extra letters/numbers anywhere. Do not add any other text. '
     + '★The product must sit NATURALLY on or against a real surface — on a table/podium/floor, laid flat, worn on a mannequin, or hung on a rack as appropriate for the product type — with a soft realistic shadow. NEVER let it float in mid-air. ';
-  const blocks = [];
   // 프롬프트에 넣을 한글 텍스트를 안전하게 따옴표로 감싼다(따옴표/역슬래시 제거).
   const q = (s, n) => '"' + String(s == null ? '' : s).slice(0, n).replace(/["\\]/g, '') + '"';
-  // 1. 히어로 — 영웅샷 + 상단 한글 헤드라인(gpt가 직접 렌더)
   const heroHead = String(c.heroHeadline || product.title || '').slice(0, 24);
-  blocks.push({ key: 'hero', quality: 'medium', text: { kicker: String(c.heroKicker || '').slice(0, 26), headline: heroHead, sub: String(c.heroSub || '').slice(0, 32), emphasis: String(c.heroEmphasis || '').slice(0, 12) }, prompt: base + 'COMPOSITION: ONE single large front hero shot, product in the LOWER 60 percent, dramatic premium lighting, NOT a row of repeated units. In the clean TOP 40 percent render Korean text — a small kicker ' + q(c.heroKicker, 26) + ', then a LARGE two-line headline ' + q(heroHead, 24) + ', then a smaller subline ' + q(c.heroSub, 32) + '.' });
-  // 2. 기능 — 아이콘+한글 라벨 그리드(gpt가 직접 렌더)
   const featLabels = (Array.isArray(c.featureLabels) && c.featureLabels.length) ? c.featureLabels.map((x) => String(x).slice(0, 10)).filter(Boolean).slice(0, 4) : featFacts.slice(0, 4);
-  if (featLabels.length) blocks.push({ key: 'features', quality: 'medium', text: { kicker: 'KEY FEATURES', title: '핵심 기능', items: featLabels }, prompt: base + 'COMPOSITION: at the TOP a Korean section title "핵심 기능". Below it ONE horizontal row of EXACTLY ' + featLabels.length + ' items, each = a simple minimal line icon + an accurate short Korean label. Labels in order: ' + featLabels.map((x) => q(x, 10)).join(', ') + '. Product subtly styled at the bottom.' });
-  // 3. 사용장면 — 다른 앵글 + 한글 캡션
-  if (Array.isArray(c.sections) && c.sections[0]) blocks.push({ key: 'scene', quality: 'medium', text: { headline: String(c.sections[0].headline || '').slice(0, 22) }, prompt: base + 'COMPOSITION: a real-life LIFESTYLE scene from a DIFFERENT angle (on a desk, held in a hand, or in a room) — NOT a centered studio shot. In a clean area render one Korean caption line ' + q(c.sections[0].headline, 22) + '.' });
-  // 4. 색상 — 옆으로 나열 + 한글 제목
-  if (colors.length >= 2) blocks.push({ key: 'colors', quality: 'medium', text: { kicker: 'COLOR', title: '색상 옵션', items: colors }, prompt: base + 'COMPOSITION: a side-by-side COLOR line-up showing the product in EXACTLY these ' + colors.length + ' colors and NO others — ' + colors.join(', ') + '. At the top render Korean title "색상 옵션". No invented colors.' });
-  // 5. 스펙 — 클로즈업 + 한글 스펙표(gpt가 직접 렌더)
-  if (specFacts.length) blocks.push({ key: 'spec', quality: 'medium', text: { kicker: 'SPECIFICATION', title: '제품 상세 스펙', items: specFacts.slice(0, 6) }, prompt: base + 'COMPOSITION: a product SPEC section, close-up/detail in the lower area. At the TOP a Korean title "제품 상세 스펙" and a clean spec table listing EXACTLY these Korean rows: ' + specFacts.slice(0, 6).map((x) => q(x, 30)).join(', ') + '.' });
-  // 6. CTA — 분위기 마무리 + 한글 마무리 문구
-  blocks.push({ key: 'cta', quality: 'medium', text: { headline: String(c.closing || '').slice(0, 20) }, prompt: base + 'COMPOSITION: a closing MOOD shot (product smaller, atmospheric background). In a clean area render one Korean closing line ' + q(c.closing, 20) + '.' });
+  const secList = Array.isArray(c.sections) ? c.sections.filter(Boolean) : [];
+
+  // 타입별 블록 빌더(재사용) — 기존 상세의 섹션 순서(structure) 배치와 기본 흐름 양쪽에서 사용.
+  const mkHero = () => ({ key: 'hero', quality: 'medium', text: { kicker: String(c.heroKicker || '').slice(0, 26), headline: heroHead, sub: String(c.heroSub || '').slice(0, 32), emphasis: String(c.heroEmphasis || '').slice(0, 12) }, prompt: base + 'COMPOSITION: ONE single large front hero shot, product in the LOWER 60 percent, dramatic premium lighting, NOT a row of repeated units. In the clean TOP 40 percent render Korean text — a small kicker ' + q(c.heroKicker, 26) + ', then a LARGE two-line headline ' + q(heroHead, 24) + ', then a smaller subline ' + q(c.heroSub, 32) + '.' });
+  const mkFeatures = () => featLabels.length ? { key: 'features', quality: 'medium', text: { kicker: 'KEY FEATURES', title: '핵심 기능', items: featLabels }, prompt: base + 'COMPOSITION: at the TOP a Korean section title "핵심 기능". Below it ONE horizontal row of EXACTLY ' + featLabels.length + ' items, each = a simple minimal line icon + an accurate short Korean label. Labels in order: ' + featLabels.map((x) => q(x, 10)).join(', ') + '. Product subtly styled at the bottom.' } : null;
+  const mkColors = () => colors.length >= 2 ? { key: 'colors', quality: 'medium', text: { kicker: 'COLOR', title: '색상 옵션', items: colors }, prompt: base + 'COMPOSITION: a side-by-side COLOR line-up showing the product in EXACTLY these ' + colors.length + ' colors and NO others — ' + colors.join(', ') + '. At the top render Korean title "색상 옵션". No invented colors.' } : null;
+  const mkSpec = () => specFacts.length ? { key: 'spec', quality: 'medium', text: { kicker: 'SPECIFICATION', title: '제품 상세 스펙', items: specFacts.slice(0, 6) }, prompt: base + 'COMPOSITION: a product SPEC section, close-up/detail in the lower area. At the TOP a Korean title "제품 상세 스펙" and a clean spec table listing EXACTLY these Korean rows: ' + specFacts.slice(0, 6).map((x) => q(x, 30)).join(', ') + '.' } : null;
+  // full/text 등 "설명 섹션" — 기존 상세의 해당 섹션 주제(note)를 살려, 다른 앵글 화보 + 한글 캡션으로 재현.
+  let sceneN = 0;
+  const mkScene = (note) => {
+    const cap = (secList[sceneN] && secList[sceneN].headline) ? String(secList[sceneN].headline).slice(0, 22) : (featFacts[sceneN] ? String(featFacts[sceneN]).slice(0, 22) : '');
+    sceneN += 1;
+    const topic = note ? (' This section should visually convey: ' + String(note).slice(0, 60).replace(/["\\]/g, '') + '.') : '';
+    return { key: 'scene' + sceneN, quality: 'medium', text: { headline: cap }, prompt: base + 'COMPOSITION: a real-life LIFESTYLE/usage scene from a DIFFERENT angle (on a desk, held in a hand, or in a room) — NOT a centered studio shot.' + topic + (cap ? ' In a clean area render one Korean caption line ' + q(cap, 22) + '.' : ' Keep on-image text minimal.') };
+  };
+  const mkCta = () => ({ key: 'cta', quality: 'medium', text: { headline: String(c.closing || '').slice(0, 20) }, prompt: base + 'COMPOSITION: a closing MOOD shot (product smaller, atmospheric background). In a clean area render one Korean closing line ' + q(c.closing, 20) + '.' });
+
+  // ★기존 상세의 섹션 순서(structure)가 있으면 그 순서·구성 그대로 재현. 없으면 기본 흐름.
+  const structure = (Array.isArray(sh.structure) && sh.structure.length >= 3) ? sh.structure : null;
+  if (structure) {
+    const sblocks = [];
+    let featDone = false, colorDone = false, specDone = false;
+    structure.forEach((sec) => {
+      const note = sec && sec.note;
+      let b = null;
+      switch (sec && sec.type) {
+        case 'hero': b = sblocks.some((x) => x.key === 'hero') ? null : mkHero(); break;
+        case 'spec': if (!specDone) { b = mkSpec(); specDone = true; } break;
+        case 'grid2': case 'grid3':
+          if (!featDone) { b = mkFeatures(); featDone = true; }
+          else if (!colorDone) { b = mkColors(); colorDone = true; }
+          else b = mkScene(note);
+          break;
+        default: b = mkScene(note); break; // full / text / 기타 설명 섹션
+      }
+      if (b) sblocks.push(b);
+    });
+    if (!sblocks.some((x) => x.key === 'hero')) sblocks.unshift(mkHero());
+    if (sblocks.length >= 2) return sblocks;
+  }
+
+  // 기본 흐름(structure 없음): 히어로→기능→장면→색상→스펙→CTA
+  const blocks = [];
+  blocks.push(mkHero());
+  const bf = mkFeatures(); if (bf) blocks.push(bf);
+  if (secList[0]) blocks.push(mkScene(''));
+  const bc = mkColors(); if (bc) blocks.push(bc);
+  const bs = mkSpec(); if (bs) blocks.push(bs);
+  blocks.push(mkCta());
   return blocks;
 }
 
