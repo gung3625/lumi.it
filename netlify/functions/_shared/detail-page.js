@@ -273,7 +273,7 @@ async function analyzeReferenceStyle(images) {
 }
 
 // 위험 표현 결정적 안전망(프롬프트가 놓친 절대·순위 단정을 부드럽게 치환). copy-compliance 기준.
-const SOFTEN = [[/완벽히/g, '세심하게'], [/완벽한/g, '뛰어난'], [/완벽/g, '우수'], [/100\s*%/g, '높은 수준'], [/무조건/g, '언제든'], [/\s?보장(?=[\s.,!]|$)/g, ''], [/평생/g, '오래'], [/최고급/g, '고급'], [/최고의/g, '우수한'], [/최고(?![급])/g, '우수'], [/최저가/g, '합리적인 가격'], [/유일무이한?/g, '특별한'], [/유일한/g, '특별한'], [/국내\s*1위/g, '인기'], [/업계\s*1위/g, '인기']];
+const SOFTEN = [[/완벽히/g, '세심하게'], [/완벽한/g, '뛰어난'], [/완벽/g, '우수'], [/100\s*%/g, '높은 수준'], [/무조건/g, '언제든'], [/\s?보장(?=[\s.,!]|$)/g, ''], [/평생/g, '오래'], [/최고급/g, '고급'], [/최고의/g, '우수한'], [/최고(?![급])/g, '우수'], [/최저가/g, '합리적인 가격'], [/유일무이한?/g, '특별한'], [/유일한/g, '특별한'], [/국내\s*1위/g, '인기'], [/업계\s*1위/g, '인기'], [/완치|치유/g, '관리'], [/부작용\s*(?:이|은|는)?\s*없[다어요음습는]\S*/g, '순한 사용감'], [/즉각적?\s*효과|즉시\s*효과/g, '꾸준한 도움'], [/(?:질병|질환|병)\s*(?:을|를)?\s*(?:치료|예방)\S*/g, '건강 관리에 도움']];
 function softenClaims(copy) {
   const fix = (s) => typeof s === 'string' ? SOFTEN.reduce((a, [re, to]) => a.replace(re, to), s) : s;
   const walk = (v) => Array.isArray(v) ? v.map(walk) : (v && typeof v === 'object') ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, walk(x)])) : fix(v);
@@ -694,7 +694,8 @@ function refBlockPlan(product, copy, facts, styleHint) {
     + 'Follow this TEXT-DESCRIBED visual style only (never invent products from it): ' + styleLine + '. '
     + '★CRITICAL TYPOGRAPHY: the Korean strings quoted in COMPOSITION below are THE EXACT TEXT TO RENDER — reproduce them character-for-character, large and crisp, 100% accurate Hangul with correct spelling, NO gibberish, NO random or extra letters/numbers anywhere. Use a clean Korean sans-serif (Pretendard or Noto Sans KR; if unavailable, a clean geometric sans-serif). Do not add any other text. '
     + '★Overall look: high-fidelity, sharp and crisp, no color banding, no AI artifacts. '
-    + '★The product must sit NATURALLY on or against a real surface — on a table/podium/floor, laid flat, worn on a mannequin, or hung on a rack as appropriate for the product type — with a soft realistic shadow. NEVER let it float in mid-air. ';
+    + '★The product must sit NATURALLY on or against a real surface — on a table/podium/floor, laid flat, worn on a mannequin, or hung on a rack as appropriate for the product type — with a soft realistic shadow. NEVER let it float in mid-air. '
+    + '★CONSISTENCY across all sections of this page: soft even lighting, neutral ~5500K white balance, clean seamless background, no chromatic aberration, no plastic sheen — so every block looks like one cohesive set. ';
   // 프롬프트에 넣을 한글 텍스트를 안전하게 따옴표로 감싼다(따옴표/역슬래시 제거).
   const q = (s, n) => '"' + String(s == null ? '' : s).slice(0, n).replace(/["\\]/g, '') + '"';
   const heroHead = String(c.heroHeadline || product.title || '').slice(0, 24);
