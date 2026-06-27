@@ -314,7 +314,7 @@ summary::before{content:"+ ";font-weight:700}
   if(refEl)refEl.addEventListener('change',function(){fileB64('refimg').then(function(d){refData=d;var rp=document.getElementById('refpreview');if(rp&&d)rp.innerHTML='<img src="'+d+'"><div class="ok">레퍼런스 업로드 완료</div>';});});
   function setLoad(msg){var lm=document.getElementById('loadmsg');if(lm)lm.innerHTML=msg;}
   var loadCycle=null,loadIdx=0;
-  var LOAD_SUB='<span class="loadsub">약 3~4분 걸려요. 창을 닫지 말고 기다려 주세요.</span>';
+  var LOAD_SUB='<span class="loadsub">상세페이지 내용이 많을수록 더 오래 걸려요. 창을 닫지 말고 기다려 주세요.</span>';
   var LOAD_MSGS=['상품을 분석하는 중','화보를 그리는 중','카피를 쓰는 중','디자인을 다듬는 중'];
   function startLoadCycle(){loadIdx=0;var lm=document.getElementById('loadmsg');if(lm){lm.style.opacity='1';lm.innerHTML=LOAD_MSGS[0]+'<br>'+LOAD_SUB;}clearInterval(loadCycle);loadCycle=setInterval(function(){loadIdx=(loadIdx+1)%LOAD_MSGS.length;var l=document.getElementById('loadmsg');if(!l)return;l.style.opacity='0';setTimeout(function(){l.innerHTML=LOAD_MSGS[loadIdx]+'<br>'+LOAD_SUB;l.style.opacity='1';},250);},4500);}
   function stopLoadCycle(){clearInterval(loadCycle);loadCycle=null;}
@@ -403,10 +403,11 @@ summary::before{content:"+ ";font-weight:700}
     result.scrollIntoView({behavior:'smooth'});
   }
   function poll(jobId,n){
-    if(n>150){loading.classList.remove('on');stopLoadCycle();go.disabled=false;err.textContent='시간이 너무 오래 걸립니다. 다시 시도해 주세요.';err.classList.add('on');return;}
-    fetch('/api/generate-detail?jobId='+encodeURIComponent(jobId),{headers:authHeaders}).then(function(r){return r.json();}).then(function(j){
+    // 시간 제한 없음 — 블록 수가 많으면 생성이 오래 걸리는 게 정상. done/error 또는 작업 소멸(404)까지 계속 대기.
+    fetch('/api/generate-detail?jobId='+encodeURIComponent(jobId),{headers:authHeaders}).then(function(r){return r.json().then(function(j){return {s:r.status,j:j};});}).then(function(o){var j=o.j;
       if(j.status==='done'&&(j.html||j.resultUrl)){currentJobId=jobId;currentBlocks=j.blocks||null;currentPalette=j.palette||null;if(typeof j.creditRemaining==='number'){freeCredits=j.creditRemaining;var cb=document.querySelector('.nav-right .credit');if(cb)cb.textContent='무료 '+freeCredits+'회';}loading.classList.remove('on');stopLoadCycle();go.disabled=false;showResult(j.html,j.resultUrl,j.mode,j.legalWarning);updateCreditUI();}
       else if(j.status==='error'){loading.classList.remove('on');stopLoadCycle();go.disabled=false;showErr(j.error||'생성에 실패했습니다.',mode==='link');}
+      else if(o.s===404||(j.error&&!j.status)){loading.classList.remove('on');stopLoadCycle();go.disabled=false;err.textContent=(j.error||'작업을 찾을 수 없어요. 다시 시도해 주세요.');err.classList.add('on');}
       else{setTimeout(function(){poll(jobId,n+1);},3000);}
     }).catch(function(){setTimeout(function(){poll(jobId,n+1);},3000);});
   }
