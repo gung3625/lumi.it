@@ -53,7 +53,8 @@ async function getItemView(no) {
     if (!r || !r.basis) return null;
     const images = [...new Set(JSON.stringify(r).match(/https:\/\/cdn[0-9]*\.domeggook\.com[^"\\]+?_img_[0-9]+[^"\\]*/g) || [])].slice(0, 6);
     // 상세설명 컷 이미지(실제 기능·스펙 텍스트가 박혀있음 — 비전 추출용). desc HTML에서 추출(_stt_ + 외부CDN).
-    const descImages = [...new Set((JSON.stringify(r.desc || {}).match(/https?:\/\/[^"\\\s]+?\.(?:jpg|jpeg|png|gif)/gi) || []))]
+    const descImages = [...new Set((JSON.stringify(r.desc || {}).match(/(?:https?:)?\/\/[^"\\\s]+?\.(?:jpg|jpeg|png|gif|webp)/gi) || []))]
+      .map((u) => u.replace(/^\/\//, 'https://'))
       .filter((u) => !/_stt_(50|150)[^0-9]|icon|logo|notice|cou-notice|btn_|bnr|banner/i.test(u)).slice(0, 12);
     // 실제 스펙(고시정보·skuInfo 자동채움 원천) — 제목만 보고 GPT가 지어내지 않게.
     const d = r.detail || {};
