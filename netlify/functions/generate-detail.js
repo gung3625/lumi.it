@@ -57,7 +57,20 @@ function allowRate(ip) {
 
 // 분석 단계(업로드 모드) — 사진/캡처에서 상품명·정보만 추출(화보·컷 없이). 사용자 확인·수정용.
 async function runAnalysis(p) {
-  const { title, imageBase64, features } = p || {};
+  const { title, imageBase64, features, url } = p || {};
+  // 링크 모드: 스크래핑 → 상품 정보 분석(업로드와 동일하게 {title, facts} 반환). 고객이 확인·수정 후 승인.
+  if (url) {
+    let item;
+    if (/dometopia\.com/i.test(url)) { const no = parseNo(url); if (!no) throw new Error('도매토피아 상품 링크가 맞는지 확인해 주세요'); item = await getDometopiaItem(no); }
+    else if (/^https?:\/\//i.test(url) && !/domeggook/i.test(url)) { const html = await fetchViaUnlocker(url); item = parseUniversalProduct(html, url); }
+    else { const no = (String(url).match(/(\d{6,})/) || [])[1]; if (!no) throw new Error('도매꾹 상품 링크가 맞는지 확인해 주세요'); item = await getItemView(no); }
+    if (!item || !item.title) throw new Error('상품 정보를 불러오지 못했습니다. 링크를 확인해 주세요');
+    const cleanTitle = (String(item.title || '').replace(/^\s*(?:\[[^\]]*\]\s*|\([^)]*\)\s*)+/, '').trim()) || String(item.title || '');
+    const visionImgs = (item.descImages && item.descImages.length) ? item.descImages : (item.images || []);
+    const facts = (await analyzeProductImages(visionImgs.slice(0, 4), cleanTitle)) || [];
+    const info = String(features || '').trim();
+    return { title: String(title || '').trim() || cleanTitle, facts: info ? [info, ...facts] : facts };
+  }
   if (!imageBase64) throw new Error('상품 사진을 올려주세요');
   const mainUri = 'data:image/jpeg;base64,' + stripDataUri(imageBase64);
   const cap = p.captureBase64 ? ('data:image/png;base64,' + stripDataUri(p.captureBase64)) : null;
@@ -94,7 +107,7 @@ async function runGeneration(p, jobId) {
     srcForPhoto = (item.images || []).find((u) => /760|_l\b|large|origin/i.test(String(u))) || (item.images || []).slice(-1)[0] || (item.images || [])[0] || null;
     // 도매꾹 상품명의 선두 마케팅 prefix([임박특가]·(무료배송) 등) 제거 → 깔끔한 상품명만 카피/이미지에 사용.
     const cleanTitle = (String(item.title || '').replace(/^\s*(?:\[[^\]]*\]\s*|\([^)]*\)\s*)+/, '').trim()) || String(item.title || '');
-    product = { title: cleanTitle, spec: item.spec || {}, options: item.options || [], descImages: item.descImages || [], images: (item.images || []).slice(0, 4), keywords: item.keywords || [], categoryTree: item.categoryTree || [] };
+    product = { title: (String(p.title || '').trim() || cleanTitle), spec: item.spec || {}, options: item.options || [], descImages: item.descImages || [], images: (item.images || []).slice(0, 4), keywords: item.keywords || [], categoryTree: item.categoryTree || [] };
   } else {
     if (!imageBase64) throw new Error('상품 대표 사진을 올려주세요');
     srcForPhoto = stripDataUri(imageBase64);

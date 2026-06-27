@@ -309,7 +309,7 @@ summary::before{content:"+ ";font-weight:700}
     });
   });
   function fileB64(id){return new Promise(function(res){var f=document.getElementById(id).files[0];if(!f){res(null);return;}var fr=new FileReader();fr.onload=function(){res(fr.result);};fr.onerror=function(){res(null);};fr.readAsDataURL(f);});}
-  var capturePasted=null,pendingMain=null,refData=null;
+  var capturePasted=null,pendingMain=null,pendingUrl=null,refData=null;
   var refEl=document.getElementById('refimg');
   if(refEl)refEl.addEventListener('change',function(){fileB64('refimg').then(function(d){refData=d;var rp=document.getElementById('refpreview');if(rp&&d)rp.innerHTML='<img src="'+d+'"><div class="ok">레퍼런스 업로드 완료</div>';});});
   function setLoad(msg){var lm=document.getElementById('loadmsg');if(lm)lm.innerHTML=msg;}
@@ -361,7 +361,17 @@ summary::before{content:"+ ";font-weight:700}
     if(mode==='link'){
       var url=document.getElementById('url').value.trim();
       if(!url){err.textContent='상품 링크를 붙여넣어 주세요.';err.classList.add('on');return;}
-      start({url:url,quality:'medium',referenceImageBase64:refData||undefined});
+      pendingUrl=url;pendingMain=null;
+      go.disabled=true;result.classList.remove('on');document.getElementById('analyzebox').style.display='none';
+      setLoad('상품 정보를 분석하는 중...<br>약 30초~1분 걸려요.');loading.classList.add('on');
+      fetch('/api/generate-detail',{method:'POST',headers:authHeaders,body:JSON.stringify({step:'analyze',url:url})})
+      .then(function(r){return r.json();}).then(function(a){
+        loading.classList.remove('on');stopLoadCycle();go.disabled=false;
+        if(a.error){showErr(a.error,true);return;}
+        document.getElementById('a-title').value=a.title||'';
+        document.getElementById('a-facts').value=(a.facts||[]).join('\n');
+        var ab=document.getElementById('analyzebox');ab.style.display='block';ab.scrollIntoView({behavior:'smooth'});
+      }).catch(function(){loading.classList.remove('on');stopLoadCycle();go.disabled=false;showErr('분석 중 오류가 발생했어요. 다시 시도해 주세요.',true);});
     }else{
       fileB64('mainimg').then(function(mainf){
         var main=capturePasted||mainf;
@@ -404,7 +414,8 @@ summary::before{content:"+ ";font-weight:700}
     if(!facts.length){showErr('상품 정보를 한 줄 이상 남겨주세요.',false);return;}
     document.getElementById('analyzebox').style.display='none';
     setLoad('AI가 화보·카피·디자인 컷을 만드는 중...<br>약 3~4분 걸려요. 창을 닫지 말고 기다려 주세요.');
-    start({title:t||undefined,facts:facts,imageBase64:pendingMain,quality:'medium',referenceImageBase64:refData||undefined});
+    if(pendingUrl) start({url:pendingUrl,title:t||undefined,facts:facts,quality:'medium',referenceImageBase64:refData||undefined});
+    else start({title:t||undefined,facts:facts,imageBase64:pendingMain,quality:'medium',referenceImageBase64:refData||undefined});
   });
 })();
 </script>
