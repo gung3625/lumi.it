@@ -648,8 +648,32 @@ async function verifyGenerated(imageB64, title) {
   } catch (_) { return { ok: true }; } // 검증 실패 시 통과(생성 막지 않음)
 }
 
+// 카테고리별 표준 섹션 템플릿(type 순서) — 레퍼런스 structure가 없을 때 fallback으로 사용.
+// 출처: 2026-06-27 리서치(화장품/건기식/가전/패션/식품 베스트프랙티스).
+const CATEGORY_TEMPLATES = {
+  beauty: ['hero', 'text', 'full', 'grid3', 'full', 'grid2', 'text', 'spec'],
+  supplement: ['hero', 'text', 'spec', 'grid3', 'full', 'grid2', 'text', 'spec'],
+  appliance: ['hero', 'grid3', 'full', 'spec', 'full', 'grid2', 'spec', 'text'],
+  fashion: ['hero', 'full', 'grid2', 'text', 'spec', 'grid3', 'full', 'text'],
+  food: ['hero', 'full', 'grid2', 'text', 'spec', 'text', 'grid3', 'spec'],
+};
+// 상품명·카테고리·키워드에서 5종 카테고리 감지(키워드 매칭). 못 찾으면 null → 공통 기본흐름.
+function detectCategory(product) {
+  const hay = [(product.categoryTree || []).join(' '), product.title || '', (product.keywords || []).join(' ')].join(' ').toLowerCase();
+  const RULES = [
+    ['supplement', /영양제|비타민|유산균|건강기능|밀크씨슬|실리마린|오메가|홍삼|루테인|프로바이오|콜라겐|효소|보충제|supplement|probiotic/],
+    ['beauty', /토너|세럼|크림|로션|에센스|클렌징|화장품|스킨케어|선크림|마스크팩|앰플|미스트|쿠션|파운데이션|cosmetic|serum|skincare/],
+    ['appliance', /에어컨|청소기|냉장고|세탁기|노트북|모니터|선풍기|가전|전자제품|드라이어|믹서|가습기|공기청정|appliance|electronic/],
+    ['fashion', /의류|티셔츠|셔츠|원피스|바지|니트|자켓|코트|신발|운동화|가방|모자|패션|주얼리|apparel|fashion|clothing/],
+    ['food', /식품|간식|과자|음료|커피|건강식|반찬|소스|분말|식자재|먹거리|디저트|food|snack|beverage/],
+  ];
+  for (const [cat, re] of RULES) { if (re.test(hay)) return cat; }
+  return null;
+}
+
 // 레퍼런스 블록 플랜 — 레퍼런스를 "이미지로 입력하지 않고" 스타일 텍스트(styleHint)만 주입(비타민 차단).
 // + 블록마다 구도/앵글을 다르게 명시(구도 반복 방지), 정보를 한 블록에서만 다룸(중복 방지), 크기·수치는 스펙 블록 1곳만(환각 방지).
+// + 레퍼런스 structure 없으면 detectCategory→CATEGORY_TEMPLATES로 카테고리 표준 구조를 깐다.
 function refBlockPlan(product, copy, facts, styleHint) {
   const c = copy || {};
   const colors = (product.options || []).map((o) => String((o && (o.name || o.value)) || o).trim()).filter(Boolean).slice(0, 6);
@@ -701,8 +725,10 @@ function refBlockPlan(product, copy, facts, styleHint) {
     (Array.isArray(c.faq) && c.faq.length) ? mkFaq() : null,
   ].filter(Boolean);
 
-  // ★기존 상세의 섹션 순서(structure)가 있으면 그 순서·구성 그대로 재현. 없으면 기본 흐름.
-  const structure = (Array.isArray(sh.structure) && sh.structure.length >= 3) ? sh.structure : null;
+  // ★기존 상세의 섹션 순서(structure)가 있으면 그 순서·구성 그대로 재현(충실도=해자). 없으면 카테고리 표준 템플릿 fallback.
+  const cat = detectCategory(product);
+  const structure = (Array.isArray(sh.structure) && sh.structure.length >= 3) ? sh.structure
+    : (cat && CATEGORY_TEMPLATES[cat] ? CATEGORY_TEMPLATES[cat].map((t) => ({ type: t, note: '' })) : null);
   if (structure) {
     const sblocks = [];
     let featDone = false, colorDone = false, specDone = false;
