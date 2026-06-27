@@ -75,7 +75,15 @@ function parseUniversalProduct(html, baseUrl) {
   if (!title || !images.length) {
     throw new Error('상품 정보를 찾지 못했습니다. 상품 상세 페이지 링크인지 확인해 주세요');
   }
-  return { title, images, descImages: images, spec: {}, options: [], keywords: [], categoryTree: [] };
+  // 상세 설명 영역의 <img>(상품 상세 컷)까지 추출 — 대표만으론 정보 빈약. lazy(data-src) 포함 + 노이즈 필터.
+  const bodyImgs = [];
+  let im2; const reImg = /<img[^>]+(?:data-src|data-original|src)=["']([^"']+)["']/gi;
+  while ((im2 = reImg.exec(html))) bodyImgs.push(im2[1]);
+  const descImages = [...new Set([...images, ...bodyImgs.map((u) => abs(u, baseUrl))])]
+    .map((u) => u.replace(/^\/\//, 'https://'))
+    .filter((u) => /^https?:/i.test(u) && !SKIP.test(u) && !/icon|btn_|banner|bnr|sprite|_\d{1,3}x\d{1,3}\./i.test(u) && /\.(?:jpe?g|png|webp|gif)(?:[?#]|$)/i.test(u))
+    .slice(0, 12);
+  return { title, images, descImages, spec: {}, options: [], keywords: [], categoryTree: [] };
 }
 
 module.exports = { fetchViaUnlocker, parseUniversalProduct };
