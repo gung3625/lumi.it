@@ -700,16 +700,17 @@ function refBlockPlan(product, copy, facts, styleHint) {
       const note = sec && sec.note;
       let b = null;
       switch (sec && sec.type) {
-        case 'hero': b = sblocks.some((x) => x.key === 'hero') ? null : mkHero(); break;
-        case 'spec': if (!specDone) { b = mkSpec(); specDone = true; } break;
+        case 'hero': if (!sblocks.some((x) => x.key === 'hero')) b = mkHero(); break;
+        case 'spec': if (!specDone) { b = mkSpec(); if (b) specDone = true; } break;
         case 'grid2': case 'grid3':
-          if (!featDone) { b = mkFeatures(); featDone = true; }
-          else if (!colorDone) { b = mkColors(); colorDone = true; }
-          else b = mkScene(note);
+          if (!featDone) { b = mkFeatures(); if (b) featDone = true; }
+          else if (!colorDone) { b = mkColors(); if (b) colorDone = true; }
           break;
-        default: b = mkScene(note); break; // full / text / 기타 설명 섹션
+        default: break; // full / text / 기타 설명 섹션
       }
-      if (b) sblocks.push(b);
+      // 어떤 타입이든 위에서 블록을 못 만들면(중복·데이터 없음) 장면 컷으로 대체 — 레퍼런스 섹션 손실 0(충실도)
+      if (!b) b = mkScene(note);
+      sblocks.push(b);
     });
     if (!sblocks.some((x) => x.key === 'hero')) sblocks.unshift(mkHero());
     if (sblocks.length >= 2) return sblocks;
