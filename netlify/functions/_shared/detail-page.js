@@ -665,10 +665,11 @@ function refBlockPlan(product, copy, facts, styleHint) {
     + (sh.layout ? '. Layout treatment: ' + sh.layout : '');
   // 입력 이미지는 "제품 한 장"뿐(레퍼런스 이미지는 넣지 않음).
   // ★전환(2026-06-27): 하이브리드(화보 텍스트0 + SVG) → gpt-image-2가 한글 글씨까지 직접 생성(한글 정확 실측 통과). renderBlockText 미사용.
-  const base = 'This input image is the ACTUAL product. Keep the product 100% IDENTICAL — exact shape, color, pattern, proportions, every detail. Do NOT alter, recolor, beautify, or add any other product/box/package. '
+  const base = 'This input image is the ACTUAL product. Keep the product 100% IDENTICAL — exact shape, color, pattern, proportions, every detail. Do NOT alter, recolor, beautify, or add any other product/box/package. Preserve product geometry and label legibility exactly; no artificial smoothing, keep natural texture/grain, render a photorealistic contact shadow. '
     + 'Create a premium vertical Korean e-commerce detail-page SECTION for THIS product. '
     + 'Follow this TEXT-DESCRIBED visual style only (never invent products from it): ' + styleLine + '. '
-    + '★CRITICAL TYPOGRAPHY: render ONLY the Korean text specified in COMPOSITION below, EXACTLY as written — large, crisp, 100% accurate Hangul with correct spelling, NO gibberish, NO random or extra letters/numbers anywhere. Do not add any other text. '
+    + '★CRITICAL TYPOGRAPHY: the Korean strings quoted in COMPOSITION below are THE EXACT TEXT TO RENDER — reproduce them character-for-character, large and crisp, 100% accurate Hangul with correct spelling, NO gibberish, NO random or extra letters/numbers anywhere. Use a clean Korean sans-serif (Pretendard or Noto Sans KR; if unavailable, a clean geometric sans-serif). Do not add any other text. '
+    + '★Overall look: high-fidelity, sharp and crisp, no color banding, no AI artifacts. '
     + '★The product must sit NATURALLY on or against a real surface — on a table/podium/floor, laid flat, worn on a mannequin, or hung on a rack as appropriate for the product type — with a soft realistic shadow. NEVER let it float in mid-air. ';
   // 프롬프트에 넣을 한글 텍스트를 안전하게 따옴표로 감싼다(따옴표/역슬래시 제거).
   const q = (s, n) => '"' + String(s == null ? '' : s).slice(0, n).replace(/["\\]/g, '') + '"';
