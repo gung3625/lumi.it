@@ -109,10 +109,6 @@ summary::before{content:"+ ";font-weight:700}
 #analyzebox label:first-of-type{margin-top:0}
 #reqbox{margin-top:16px}
 #reqbox>label{display:block;font-size:13.5px;font-weight:600;color:var(--ink-2);margin-bottom:9px}
-#tonechips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px}
-.tonechip{border:1px solid var(--line-strong);background:rgba(255,255,255,.04);color:var(--ink-2);border-radius:980px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s}
-.tonechip:hover{border-color:var(--c2);color:var(--ink)}
-.tonechip.on{background:var(--grad);color:#140a10;border-color:transparent}
 #userreq{width:100%;border:1px solid var(--line-strong);border-radius:12px;padding:11px 13px;font-size:14px;font-family:inherit;background:rgba(255,255,255,.04);color:var(--ink);resize:vertical;min-height:64px;line-height:1.55}
 #userreq:focus{outline:none;border-color:var(--c2)}
 
@@ -200,12 +196,6 @@ summary::before{content:"+ ";font-weight:700}
 
     <div id="reqbox">
       <label>요청사항 <span style="color:var(--ink-3);font-weight:400;">(선택)</span></label>
-      <div id="tonechips">
-        <button type="button" class="tonechip" data-tone="친근하게">친근하게</button>
-        <button type="button" class="tonechip" data-tone="고급스럽게">고급스럽게</button>
-        <button type="button" class="tonechip" data-tone="전문적으로">전문적으로</button>
-        <button type="button" class="tonechip" data-tone="활기차게">활기차게</button>
-      </div>
       <textarea id="userreq" rows="3"></textarea>
     </div>
 
@@ -353,14 +343,9 @@ summary::before{content:"+ ";font-weight:700}
     var b=document.getElementById('toup');
     if(b)b.addEventListener('click',function(){var ut=document.querySelector('.tabbtn[data-mode="upload"]');if(ut)ut.click();err.classList.remove('on');err.innerHTML='';});
   }
-  var selectedTone='';
-  document.querySelectorAll('.tonechip').forEach(function(c){c.addEventListener('click',function(){
-    if(c.classList.contains('on')){c.classList.remove('on');selectedTone='';}
-    else{document.querySelectorAll('.tonechip').forEach(function(x){x.classList.remove('on');});c.classList.add('on');selectedTone=c.getAttribute('data-tone');}
-  });});
   function start(body){
     var u=document.getElementById('userreq');var req=u?u.value.trim():'';
-    if(req)body.userRequest=req; if(selectedTone)body.tone=selectedTone;
+    if(req)body.userRequest=req;
     go.disabled=true;result.classList.remove('on');loading.classList.add('on');startLoadCycle();
     fetch('/api/generate-detail',{method:'POST',headers:authHeaders,body:JSON.stringify(body)})
     .then(function(r){return r.json();}).then(function(j){
