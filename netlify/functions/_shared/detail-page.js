@@ -691,6 +691,15 @@ function refBlockPlan(product, copy, facts, styleHint) {
     return { key: 'scene' + sceneN, quality: 'medium', text: { headline: cap }, prompt: base + 'COMPOSITION: a real-life LIFESTYLE/usage scene from a DIFFERENT angle (on a desk, held in a hand, or in a room) — NOT a centered studio shot.' + topic + (cap ? ' In a clean area render one Korean caption line ' + q(cap, 22) + '.' : ' Keep on-image text minimal.') };
   };
   const mkCta = () => ({ key: 'cta', quality: 'medium', text: { headline: String(c.closing || '').slice(0, 20) }, prompt: base + 'COMPOSITION: a closing MOOD shot (product smaller, atmospheric background). In a clean area render one Korean closing line ' + q(c.closing, 20) + '.' });
+  // 미사용 핵심 카피(혜택/비교/FAQ)를 블록으로 — 레퍼런스 구조에 안 담겨도 정보 누락 방지(정보 완전성).
+  const mkBenefits = () => { const items = (c.benefits || []).map((x) => String(x).slice(0, 40)).filter(Boolean).slice(0, 6); return items.length ? { key: 'benefits', quality: 'medium', text: { kicker: 'BENEFITS', title: '이런 점이 좋아요', items }, prompt: base + 'COMPOSITION: at the TOP a Korean section title "이런 점이 좋아요". Below it a clean vertical list of EXACTLY ' + items.length + ' benefit rows, each a short Korean line with a small check/plus icon: ' + items.map((x) => q(x, 40)).join(', ') + '.' } : null; };
+  const mkComparison = () => { const pts = ((c.comparison && c.comparison.points) || []).map((x) => String(x).slice(0, 40)).filter(Boolean).slice(0, 4); return pts.length ? { key: 'compare', quality: 'medium', text: { kicker: 'WHY', title: String((c.comparison && c.comparison.headline) || '왜 이 제품일까요').slice(0, 20), items: pts }, prompt: base + 'COMPOSITION: at the TOP a Korean title ' + q((c.comparison && c.comparison.headline) || '왜 이 제품일까요', 20) + '. Below it ' + pts.length + ' key differentiator points in a clean comparison layout: ' + pts.map((x) => q(x, 40)).join(', ') + '.' } : null; };
+  const mkFaq = () => { const fs = (c.faq || []).map((f) => ({ qq: String((f && f.q) || '').slice(0, 30), aa: String((f && f.a) || '').slice(0, 55) })).filter((f) => f.qq).slice(0, 4); return fs.length ? { key: 'faq', quality: 'medium', text: { kicker: 'FAQ', title: '자주 묻는 질문', items: fs.map((f) => f.qq + ' / ' + f.aa) }, prompt: base + 'COMPOSITION: at the TOP a Korean title "자주 묻는 질문". Below it ' + fs.length + ' Q&A pairs, each a bold Korean question then its answer: ' + fs.map((f) => 'Q ' + q(f.qq, 30) + ' A ' + q(f.aa, 55)).join(' / ') + '.' } : null; };
+  const mkExtras = () => [
+    (Array.isArray(c.benefits) && c.benefits.length) ? mkBenefits() : null,
+    (c.comparison && Array.isArray(c.comparison.points) && c.comparison.points.length) ? mkComparison() : null,
+    (Array.isArray(c.faq) && c.faq.length) ? mkFaq() : null,
+  ].filter(Boolean);
 
   // ★기존 상세의 섹션 순서(structure)가 있으면 그 순서·구성 그대로 재현. 없으면 기본 흐름.
   const structure = (Array.isArray(sh.structure) && sh.structure.length >= 3) ? sh.structure : null;
@@ -714,7 +723,7 @@ function refBlockPlan(product, copy, facts, styleHint) {
       sblocks.push(b);
     });
     if (!sblocks.some((x) => x.key === 'hero')) sblocks.unshift(mkHero());
-    if (sblocks.length >= 2) return sblocks;
+    if (sblocks.length >= 2) return [...sblocks, ...mkExtras(), ...(String(c.closing || '').trim() ? [mkCta()] : [])];
   }
 
   // 기본 흐름(structure 없음): 히어로→기능→장면→색상→스펙→CTA
@@ -724,6 +733,7 @@ function refBlockPlan(product, copy, facts, styleHint) {
   if (secList[0]) blocks.push(mkScene(''));
   const bc = mkColors(); if (bc) blocks.push(bc);
   const bs = mkSpec(); if (bs) blocks.push(bs);
+  mkExtras().forEach((b) => blocks.push(b));
   blocks.push(mkCta());
   return blocks;
 }
