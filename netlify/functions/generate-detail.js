@@ -164,9 +164,18 @@ async function runGeneration(p, jobId) {
     // ★화보 캐시: 블록 화보(텍스트0)를 jobId별로 저장 → 편집·재합성 시 gpt 재호출 X(크레딧 0).
     const cacheDir = pathq.join(process.env.HOME || '/home/lumi', 'lumi', 'cache', String(jobId || 'tmp'));
     try { fsq.mkdirSync(cacheDir, { recursive: true }); } catch (_) {}
-    for (let i = 0; i < plan.length; i += 3) {
-      // gpt-image-2가 한글 글씨까지 직접 생성 → 결과 그대로 사용(renderBlockText/SVG 합성 미사용). 캐시는 재생성 편집용.
-      const batch = await Promise.all(plan.slice(i, i + 3).map((blk) => generateAiPhoto(srcForPhoto, blk.prompt, { quality: blk.quality }).then((photo) => {
+    // ★톤 앵커: hero(첫 블록)를 먼저 생성 → 나머지 블록 생성 시 refImage로 첨부해 블록 간 제품/톤 일관성 확보.
+    const ordered = plan.slice();
+    const heroIdx = ordered.findIndex((b) => b.key === 'hero');
+    const heroBlk = heroIdx >= 0 ? ordered.splice(heroIdx, 1)[0] : null;
+    let anchor = null;
+    if (heroBlk) {
+      const hp = await generateAiPhoto(srcForPhoto, heroBlk.prompt, { quality: heroBlk.quality });
+      if (hp) { anchor = hp; try { fsq.writeFileSync(pathq.join(cacheDir, heroBlk.key + '.png'), Buffer.from(hp, 'base64')); } catch (_) {} blockResults.push({ key: heroBlk.key, b64: hp }); }
+    }
+    for (let i = 0; i < ordered.length; i += 3) {
+      // gpt-image-2가 한글 글씨까지 직접 생성 → 결과 그대로 사용. hero를 앵커(refImage)로 첨부해 세트 일관성.
+      const batch = await Promise.all(ordered.slice(i, i + 3).map((blk) => generateAiPhoto(srcForPhoto, blk.prompt, { quality: blk.quality, refImage: anchor }).then((photo) => {
         if (!photo) return null;
         try { fsq.writeFileSync(pathq.join(cacheDir, blk.key + '.png'), Buffer.from(photo, 'base64')); } catch (_) {}
         return { key: blk.key, b64: photo };

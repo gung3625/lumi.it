@@ -342,9 +342,9 @@ async function generateAiPhoto(src, prompt, { quality = 'low', size = '1024x1536
     try {
       const form = new FormData();
       form.append('model', 'gpt-image-2');
-      form.append('prompt', prompt);
+      form.append('prompt', refImage ? (prompt + ' ★The SECOND attached image is an already-generated section of THIS exact product set — match its product appearance, lighting, color temperature and overall visual style so every section looks like one cohesive page.') : prompt);
       if (refImage) {
-        // 레퍼런스 스타일 참조 — 상품 + 레퍼런스를 멀티이미지(image[])로
+        // 톤/제품 앵커 — 상품 + 앵커(앞서 생성한 hero)를 멀티이미지(image[])로 함께 넣어 블록 간 일관성 확보
         form.append('image[]', new Blob([buf], { type: ct }), 'src.' + ext);
         try { const rb = Buffer.from(String(refImage).replace(/^data:image\/[a-z0-9.+-]+;base64,/i, ''), 'base64'); form.append('image[]', new Blob([rb], { type: 'image/jpeg' }), 'ref.jpg'); } catch (_) {}
       } else {
