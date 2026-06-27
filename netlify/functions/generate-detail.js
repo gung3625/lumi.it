@@ -161,7 +161,7 @@ async function runGeneration(p, jobId) {
     const refForStyle = refImgs || ((product.descImages && product.descImages.length) ? product.descImages.slice(0, 3) : null);
     let styleHint = null;
     try { if (refForStyle) styleHint = await analyzeReferenceStyle(refForStyle); } catch (_) {}
-    const plan = refBlockPlan(product, copy, factsForPrompt, styleHint);
+    const plan = refBlockPlan(product, copy, factsForPrompt, styleHint, p.userRequest);
     const blockResults = [];
     // 비타민은 레퍼런스 이미지 미입력으로 이미 차단됨 → verify 불필요. 블록을 3개씩 병렬 생성(속도: 순차 18분 → 수분).
     const sharpLib = require('sharp');
