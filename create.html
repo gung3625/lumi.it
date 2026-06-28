@@ -384,6 +384,7 @@ summary::before{content:"+ ";font-weight:700}
     fetch('/api/generate-detail',{method:'POST',headers:authHeaders,body:JSON.stringify(body)})
     .then(function(r){return r.json();}).then(function(j){
       if(!j.jobId){loading.classList.remove('on');stopLoadCycle();go.disabled=false;showErr(j.error||'생성을 시작하지 못했습니다.',mode==='link');return;}
+      try{var _pj=JSON.parse(localStorage.getItem('lumi_pending')||'[]');_pj.push({jobId:j.jobId,title:(body&&(body.title||body.url))||'상세페이지',ts:Date.now()});localStorage.setItem('lumi_pending',JSON.stringify(_pj));}catch(_){}
       poll(j.jobId,0);
     }).catch(function(){loading.classList.remove('on');stopLoadCycle();go.disabled=false;showErr('네트워크 오류입니다. 다시 시도해 주세요.',false);});
   }
@@ -437,7 +438,7 @@ summary::before{content:"+ ";font-weight:700}
   function poll(jobId,n){
     // 시간 제한 없음 — 블록 수가 많으면 생성이 오래 걸리는 게 정상. done/error 또는 작업 소멸(404)까지 계속 대기.
     fetch('/api/generate-detail?jobId='+encodeURIComponent(jobId),{headers:authHeaders}).then(function(r){return r.json().then(function(j){return {s:r.status,j:j};});}).then(function(o){var j=o.j;
-      if(j.status==='done'&&(j.html||j.resultUrl)){currentJobId=jobId;currentBlocks=j.blocks||null;currentPalette=j.palette||null;if(typeof j.creditRemaining==='number'){freeCredits=j.creditRemaining;var cb=document.querySelector('.nav-right .credit');if(cb)cb.textContent='무료 '+freeCredits+'회';}loading.classList.remove('on');stopLoadCycle();go.disabled=false;showResult(j.html,j.resultUrl,j.mode,j.legalWarning);updateCreditUI();}
+      if(j.status==='done'&&(j.html||j.resultUrl)){currentJobId=jobId;currentBlocks=j.blocks||null;currentPalette=j.palette||null;if(typeof j.creditRemaining==='number'){freeCredits=j.creditRemaining;var cb=document.querySelector('.nav-right .credit');if(cb)cb.textContent='무료 '+freeCredits+'회';}loading.classList.remove('on');stopLoadCycle();go.disabled=false;try{var _pj=JSON.parse(localStorage.getItem('lumi_pending')||'[]').filter(function(x){return x.jobId!==jobId;});localStorage.setItem('lumi_pending',JSON.stringify(_pj));}catch(_){}showResult(j.html,j.resultUrl,j.mode,j.legalWarning);updateCreditUI();}
       else if(j.status==='error'){loading.classList.remove('on');stopLoadCycle();go.disabled=false;showErr(j.error||'생성에 실패했습니다.',mode==='link');}
       else if(o.s===404||(j.error&&!j.status)){loading.classList.remove('on');stopLoadCycle();go.disabled=false;err.textContent=(j.error||'작업을 찾을 수 없어요. 다시 시도해 주세요.');err.classList.add('on');}
       else{setTimeout(function(){poll(jobId,n+1);},3000);}

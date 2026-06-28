@@ -112,6 +112,16 @@ body::before{content:"";position:fixed;inset:0;z-index:-2;background:radial-grad
 .stepar{color:var(--ink-4)}.stepar i{width:18px;height:18px}
 @media(max-width:560px){.steps{flex-direction:column;gap:10px}.stepar{transform:rotate(90deg)}}
 .loading{text-align:center;padding:50px;color:var(--ink-3);font-size:14px}
+/* 진행 중 작업 구름 카드 — 루미 로고 구름 mask + 그라데이션 */
+.cloud-cell{display:flex;align-items:center;justify-content:center;min-height:128px}
+.cloud-loader{width:74px;height:56px;
+  -webkit-mask:url(/assets/cloud-alpha.png) center/contain no-repeat;
+  mask:url(/assets/cloud-alpha.png) center/contain no-repeat;
+  background:var(--grad);
+  animation:cloud-float 4.4s cubic-bezier(.45,.05,.55,.95) infinite, cloud-glow 4.4s ease-in-out infinite}
+@keyframes cloud-float{0%{transform:translate(0,0)}25%{transform:translate(6px,-13px)}50%{transform:translate(0,-19px)}75%{transform:translate(-6px,-11px)}100%{transform:translate(0,0)}}
+@keyframes cloud-glow{0%,100%{filter:drop-shadow(0 4px 10px rgba(255,77,141,.22))}50%{filter:drop-shadow(0 12px 22px rgba(255,77,141,.5)) drop-shadow(0 0 14px rgba(168,85,247,.32))}}
+@media(prefers-reduced-motion:reduce){.cloud-loader{animation:none;filter:drop-shadow(0 4px 14px rgba(255,77,141,.3))}}
 
 @media(max-width:820px){
   .layout.on{flex-direction:column}
@@ -246,19 +256,44 @@ body::before{content:"";position:fixed;inset:0;z-index:-2;background:radial-grad
       icons();
     }).catch(function(){g.style.display='none';empty.hidden=false;});
   }
-  // 내 작품 목록
-  fetch('/api/generate-detail?action=list',{headers:authHeaders}).then(function(r){return r.json();}).then(function(d){
-    var items=(d&&d.items)||[];
+  // 진행 중(생성 중) 작업 = 구름 카드 (localStorage 큐, create.html에서 등록)
+  function getPending(){try{return JSON.parse(localStorage.getItem('lumi_pending')||'[]');}catch(_){return [];}}
+  function pendingCards(){
+    return getPending().map(function(p){
+      return '<div class="work"><div class="thumb-ph cloud-cell"><div class="cloud-loader"></div></div><div class="meta"><div class="wt">'+String(p.title||'상세페이지').replace(/</g,'&lt;')+'</div><div class="wd">생성 중…</div></div><div class="acts"><span style="color:var(--ink-3)">잠시만 기다려 주세요</span></div></div>';
+    }).join('');
+  }
+  // 내 작품 + 진행 중 통합 로드(재호출 가능)
+  function loadWorks(){
     var g=document.getElementById('gallery'),empty=document.getElementById('emptyState'),loading=document.getElementById('loading'),cnt=document.getElementById('workCount');
-    loading.style.display='none';
-    if(!items.length){showSamples(g,empty,cnt);return;}
-    cnt.textContent=items.length+'개';
-    g.innerHTML=items.map(function(it){return workCard(it,false);}).join('');
-    icons();
-  }).catch(function(){
-    document.getElementById('loading').style.display='none';
-    showSamples(document.getElementById('gallery'),document.getElementById('emptyState'),document.getElementById('workCount'));
-  });
+    fetch('/api/generate-detail?action=list',{headers:authHeaders}).then(function(r){return r.json();}).then(function(d){
+      var items=(d&&d.items)||[];var pend=pendingCards();var pc=getPending().length;
+      loading.style.display='none';
+      if(!items.length&&!pc){showSamples(g,empty,cnt);return;}
+      empty.hidden=true;g.style.display='';
+      cnt.textContent=(items.length+pc)+'개';
+      g.innerHTML=pend+items.map(function(it){return workCard(it,false);}).join('');
+      icons();
+    }).catch(function(){
+      loading.style.display='none';var pend=pendingCards();
+      if(pend){empty.hidden=true;g.style.display='';g.innerHTML=pend;icons();}
+      else showSamples(g,empty,cnt);
+    });
+  }
+  // 진행 중 작업 폴링 — 완료/실패면 큐에서 빼고 갤러리 새로고침. 큐 있는 동안만 반복.
+  function pollPending(){
+    var pj=getPending();if(!pj.length)return;
+    var checked=0,changed=0;
+    pj.forEach(function(p){
+      fetch('/api/generate-detail?jobId='+encodeURIComponent(p.jobId),{headers:authHeaders}).then(function(r){return r.json().then(function(j){return {s:r.status,j:j};});}).then(function(o){
+        var st=o.j&&o.j.status;
+        if(st==='done'||st==='error'||o.s===404){try{localStorage.setItem('lumi_pending',JSON.stringify(getPending().filter(function(x){return x.jobId!==p.jobId;})));}catch(_){}changed++;}
+        if(++checked===pj.length){if(changed)loadWorks();setTimeout(pollPending,3000);}
+      }).catch(function(){if(++checked===pj.length)setTimeout(pollPending,3000);});
+    });
+  }
+  loadWorks();
+  pollPending();
 })();
 </script>
 </body>
