@@ -158,9 +158,18 @@ async function runGeneration(p, jobId) {
       } catch (_) {}
     }
     // ★레퍼런스 미입력 시: 상품 자기 상세페이지(descImages)를 레퍼런스로 — 기존 상세의 섹션 순서·스타일을 추출해 그대로 재현.
-    const refForStyle = refImgs || ((product.descImages && product.descImages.length) ? product.descImages.slice(0, 3) : null);
+    // ★레퍼런스=디자인(색·무드·레이아웃)만, 구조(섹션 순서)=내 제품 기준으로 분리.
+    //   (사장님 핵심: "레퍼런스는 디자인 참고, 내용·구조는 내 제품" — 에어컨에 영양제 레퍼런스를 줘도 영양제 섹션순서를 따라가면 안 됨)
+    const selfImgs = (product.descImages && product.descImages.length) ? product.descImages.slice(0, 3) : null;
+    const styleRef = refImgs || selfImgs; // 스타일 소스: 레퍼런스 우선, 없으면 자기 상세
     let styleHint = null;
-    try { if (refForStyle) styleHint = await analyzeReferenceStyle(refForStyle); } catch (_) {}
+    try { if (styleRef) styleHint = await analyzeReferenceStyle(styleRef); } catch (_) {}
+    // 레퍼런스를 따로 줬으면 그 레퍼런스의 '구조'는 버리고, 내 제품 상세에서 추출한 구조로 교체. 자기 상세가 없거나 빈약하면 null → refBlockPlan이 카테고리 표준 fallback.
+    if (refImgs && styleHint) {
+      let selfStruct = null;
+      try { if (selfImgs) { const sh = await analyzeReferenceStyle(selfImgs); if (sh && Array.isArray(sh.structure) && sh.structure.length) selfStruct = sh.structure; } } catch (_) {}
+      styleHint.structure = selfStruct;
+    }
     const plan = refBlockPlan(product, copy, factsForPrompt, styleHint, p.userRequest);
     const blockResults = [];
     // 비타민은 레퍼런스 이미지 미입력으로 이미 차단됨 → verify 불필요. 블록을 3개씩 병렬 생성(속도: 순차 18분 → 수분).
