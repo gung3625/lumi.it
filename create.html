@@ -114,8 +114,38 @@ summary::before{content:"+ ";font-weight:700}
 
 #loading{display:none;text-align:center;padding:46px 0}
 #loading.on{display:block}
-.loadorb{width:60px;height:60px;margin:0 auto 22px;border-radius:50%;background:var(--grad);animation:orbpulse 1.6s var(--ease) infinite}
-@keyframes orbpulse{0%,100%{transform:scale(.8);opacity:.5;box-shadow:0 0 0 0 rgba(255,77,141,.3)}50%{transform:scale(1);opacity:1;box-shadow:0 0 34px 7px rgba(255,77,141,.25)}}
+
+/* ── cloud-loader (재사용 가능 독립 컴포넌트) ── */
+.cloud-loader{width:96px;height:64px;margin:0 auto 22px;position:relative}
+.cloud-loader svg{width:100%;height:100%;overflow:visible}
+/* 메인 구름 — 위아래 크게 + 좌우 drift */
+@keyframes cloud-float{
+  0%   {transform:translate(0, 0)}
+  25%  {transform:translate(4px, -12px)}
+  50%  {transform:translate(0px, -18px)}
+  75%  {transform:translate(-4px, -10px)}
+  100% {transform:translate(0, 0)}
+}
+/* glow pulse — float 주기와 맞춤 */
+@keyframes cloud-glow{
+  0%,100%{filter:drop-shadow(0 4px 10px rgba(255,77,141,.18)) drop-shadow(0 0 5px rgba(255,122,92,.10))}
+  50%     {filter:drop-shadow(0 14px 28px rgba(255,77,141,.50)) drop-shadow(0 0 18px rgba(168,85,247,.35))}
+}
+/* 보조 구름 — 살짝 다른 위상·진폭으로 시차 */
+@keyframes cloud-float-b{
+  0%   {transform:translate(0, 0)}
+  30%  {transform:translate(-3px, -8px)}
+  60%  {transform:translate(3px, -13px)}
+  100% {transform:translate(0, 0)}
+}
+.cloud-loader svg{
+  animation:cloud-float 3.6s cubic-bezier(.45,.05,.55,.95) infinite,
+            cloud-glow   3.6s ease-in-out infinite;
+}
+@media(prefers-reduced-motion:reduce){
+  .cloud-loader svg{animation:none;filter:drop-shadow(0 4px 14px rgba(255,77,141,.28))}
+  .cloud-loader svg g{animation:none !important}
+}
 .loadbar{width:190px;height:5px;margin:0 auto 20px;border-radius:980px;background:var(--line-strong);overflow:hidden;position:relative}
 .loadbar::after{content:"";position:absolute;top:0;left:0;height:100%;width:42%;border-radius:980px;background:var(--grad);animation:loadbar 1.4s var(--ease) infinite}
 @keyframes loadbar{0%{transform:translateX(-110%)}100%{transform:translateX(360%)}}
@@ -212,7 +242,36 @@ summary::before{content:"+ ";font-weight:700}
       <button class="btn btn-primary" id="confirmgo" style="width:100%;margin-top:14px;">확인했어요 · 상세페이지 만들기</button>
     </div>
 
-    <div id="loading"><div class="loadorb"></div><div class="loadbar"></div><p id="loadmsg">상품을 분석하는 중<br><span class="loadsub">상세페이지 내용이 많을수록 더 오래 걸려요. 창을 닫지 말고 기다려 주세요.</span></p></div>
+    <div id="loading">
+      <div class="cloud-loader">
+        <svg viewBox="0 0 96 64" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="cg1" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%"   stop-color="#ff7a5c"/>
+              <stop offset="48%"  stop-color="#ff4d8d"/>
+              <stop offset="100%" stop-color="#a855f7"/>
+            </linearGradient>
+            <linearGradient id="cg2" x1="10%" y1="0%" x2="90%" y2="100%">
+              <stop offset="0%"   stop-color="#ff7a5c" stop-opacity=".45"/>
+              <stop offset="100%" stop-color="#a855f7" stop-opacity=".45"/>
+            </linearGradient>
+          </defs>
+          <!-- 뒤 레이어: 작은 보조 구름 (시차, 오른쪽) -->
+          <g style="animation:cloud-float-b 4.2s 1s var(--ease) infinite">
+            <ellipse cx="74" cy="46" rx="14" ry="8"  fill="url(#cg2)"/>
+            <circle  cx="67" cy="41" r="8"            fill="url(#cg2)"/>
+            <circle  cx="77" cy="40" r="6"            fill="url(#cg2)"/>
+          </g>
+          <!-- 앞 레이어: 메인 뭉게구름 (중앙) -->
+          <ellipse cx="44" cy="46" rx="28" ry="14"   fill="url(#cg1)"/>
+          <circle  cx="30" cy="38" r="12"             fill="url(#cg1)"/>
+          <circle  cx="44" cy="32" r="16"             fill="url(#cg1)"/>
+          <circle  cx="58" cy="37" r="11"             fill="url(#cg1)"/>
+        </svg>
+      </div>
+      <div class="loadbar"></div>
+      <p id="loadmsg">상품을 분석하는 중<br><span class="loadsub">상세페이지 내용이 많을수록 더 오래 걸려요. 창을 닫지 말고 기다려 주세요.</span></p>
+    </div>
     <div class="errbox" id="err"></div>
 
     <div id="result">
