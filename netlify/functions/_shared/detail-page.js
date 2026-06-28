@@ -53,7 +53,7 @@ const SYS = [
   '== 출력 JSON 키 ==',
   'seoTitle: 검색 잘되는 60자내 제목.  heroKicker: 헤드라인 위 작은 영문 라벨(대문자 영어 2~4단어, 예 WINTER COLLECTION/DAILY ESSENTIAL — 제품 카테고리·콘셉트를 영어로).  heroHeadline: 첫화면 후킹(이익 중심 12~22자).  heroEmphasis: heroHeadline 안에서 강조할 핵심 단어/구 1개 — heroHeadline에 "그대로 포함된" 부분 문자열이어야 함(색 강조용).  heroSub: 보조 한 줄.',
   'concerns: 고객 고민 2~3개("이런 적 없으세요?" 톤, 불만해소 데이터 반영).',
-  'benefits: 핵심 혜택 3~4개(혜택+근거).  featureLabels: 핵심 기능/특징을 아이콘 옆에 넣을 "짧은 명사 키워드" 4개(각 4~7자, 예 "기모 안감"·"퀼팅 패턴"·"세트 구성" — 완전한 문장 금지, 서술형 금지).  sections: 실물/사용장면 1~2개[{name,headline,body}].',
+  'benefits: 핵심 혜택 3~4개(혜택+근거).  featureLabels: 핵심 기능/특징을 아이콘 옆에 넣을 "짧은 명사 키워드" 4개(각 4~7자, 예 "기모 안감"·"퀼팅 패턴"·"세트 구성" — 완전한 문장 금지, 서술형 금지).  sections: 실물/사용장면·핵심기능 2~4개[{name,headline,body,visual}]. ★visual = 이 섹션의 "의미"를 보여줄 이미지를 영어 한 줄로 구체 지시(제품이 무엇과·어떻게 보이는지). 단순 "제품 정면"이 아니라 그 섹션이 말하는 바를 시각화 — 예: 보온강조면 "ice cubes still fully frozen inside the cup after hours, cold condensation"; 대용량이면 "filled to the brim beside a regular cup for size comparison"; 휴대편의면 "held in a hand or clipped to a bag on the go"; 디자인소개면 "clean premium studio hero shot, 3/4 angle". 기능 섹션엔 그 기능을 시연/은유하는 장면을, 디자인 섹션엔 예쁜 구도를.',
   'comparison: {headline:"왜 이 제품인가", points:[차별점 2~3]}.  faq: 소비자질문 2~3개[{q,a}].  closing: 마무리 한 줄.',
   'reviewPoints: 판매자가 출고 전 꼭 확인할 항목 2~4개(추정으로 채운 사양, 강하게 단정한 카피, 빠졌을 수 있는 정보). 소비자 비노출 — 판매자 검수용.',
   '[소싱데이터]·[이미지분석]이 있으면 적극 반영. 출력은 위 키의 JSON 하나만.',
@@ -711,11 +711,16 @@ function refBlockPlan(product, copy, facts, styleHint, userRequest) {
   // full/text 등 "설명 섹션" — 기존 상세의 해당 섹션 주제(note)를 살려, 다른 앵글 화보 + 한글 캡션으로 재현.
   let sceneN = 0;
   const mkScene = (note) => {
-    const cap = (secList[sceneN] && secList[sceneN].headline) ? String(secList[sceneN].headline).slice(0, 22) : (featFacts[sceneN] ? String(featFacts[sceneN]).slice(0, 22) : '');
+    const sec = secList[sceneN] || {};
+    const cap = sec.headline ? String(sec.headline).slice(0, 22) : (featFacts[sceneN] ? String(featFacts[sceneN]).slice(0, 22) : '');
     if (!cap) return null; // ★상품 정보(섹션·기능)가 없으면 장면컷을 억지로 만들지 않음 — 정보 있는 블록만(레퍼런스 블록 수에 끌려가지 않음)
+    const vis = (sec.visual && String(sec.visual).trim()) ? String(sec.visual).slice(0, 170).replace(/["\\]/g, '') : '';
     sceneN += 1;
-    const topic = note ? (' This section should visually convey: ' + String(note).slice(0, 60).replace(/["\\]/g, '') + '.') : '';
-    return { key: 'scene' + sceneN, quality: 'medium', text: { headline: cap }, prompt: base + 'COMPOSITION: a real-life LIFESTYLE/usage scene from a DIFFERENT angle (on a desk, held in a hand, or in a room) — NOT a centered studio shot.' + topic + (cap ? ' In a clean area render one Korean caption line ' + q(cap, 22) + '.' : ' Keep on-image text minimal.') };
+    // ★섹션 의미 기반 시각: visual 지시가 있으면 그 장면을 그린다(보온→얼음 등). 없으면 note, 둘 다 없으면 기본 라이프스타일.
+    const scene = vis
+      ? ('COMPOSITION: ' + vis + ' — a real, photo-realistic scene that conveys this section (not a plain centered studio shot).')
+      : ('COMPOSITION: a real-life LIFESTYLE/usage scene from a DIFFERENT angle (on a desk, held in a hand, or in a room) — NOT a centered studio shot.' + (note ? ' Convey: ' + String(note).slice(0, 60).replace(/["\\]/g, '') + '.' : ''));
+    return { key: 'scene' + sceneN, quality: 'medium', text: { headline: cap }, prompt: base + scene + ' In a clean area render one Korean caption line ' + q(cap, 22) + '.' };
   };
   const mkCta = () => ({ key: 'cta', quality: 'medium', text: { headline: String(c.closing || '').slice(0, 20) }, prompt: base + 'COMPOSITION: a closing MOOD shot (product smaller, atmospheric background). In a clean area render one Korean closing line ' + q(c.closing, 20) + '.' });
   // 미사용 핵심 카피(혜택/비교/FAQ)를 블록으로 — 레퍼런스 구조에 안 담겨도 정보 누락 방지(정보 완전성).
