@@ -239,6 +239,13 @@ exports.handler = async (event) => {
     console.warn('[me] ig_accounts 조회 경고:', e && e.message);
   }
 
+  // 관리자(이메일 또는 user_id 매칭)는 무료 크레딧을 무제한(null)으로 — sellers 행이 이미 있어도 적용
+  const _adminEmails = String(process.env.ADMIN_EMAIL || 'gung3625@gmail.com').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+  const _adminUserIds = String((process.env.LUMI_ADMIN_USER_IDS || '') + ',' + (process.env.LUMI_BRAND_USER_ID || '')).split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+  const _sellerEmail = String(seller.email || '').toLowerCase();
+  const _authUid = String((supaAuthData && supaAuthData.user && supaAuthData.user.id) || '').toLowerCase();
+  const _isAdmin = _adminEmails.includes(_sellerEmail) || (!!_authUid && _adminUserIds.includes(_authUid));
+
   return {
     statusCode: 200,
     headers: CORS,
@@ -271,7 +278,7 @@ exports.handler = async (event) => {
         toneRequest: seller.tone_request || '',
         plan: seller.plan,
         trialStart: seller.trial_start,
-        freeCredits: typeof seller.free_credits_remaining === 'number' ? seller.free_credits_remaining : null,
+        freeCredits: _isAdmin ? null : (typeof seller.free_credits_remaining === 'number' ? seller.free_credits_remaining : null),
         marketingConsent: seller.marketing_consent,
         referralCode: seller.referral_code,
         createdAt: seller.created_at,
