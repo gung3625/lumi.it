@@ -240,7 +240,7 @@ exports.handler = async (event) => {
   }
 
   // 관리자(이메일 또는 user_id 매칭)는 무료 크레딧을 무제한(null)으로 — sellers 행이 이미 있어도 적용
-  const _adminEmails = String(process.env.ADMIN_EMAIL || 'gung3625@gmail.com').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+  const _adminEmails = String((process.env.ADMIN_EMAIL || 'gung3625@gmail.com') + ',gung3625@kakao.com').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
   const _adminUserIds = String((process.env.LUMI_ADMIN_USER_IDS || '') + ',' + (process.env.LUMI_BRAND_USER_ID || '')).split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
   const _sellerEmail = String(seller.email || '').toLowerCase();
   const _authUid = String((supaAuthData && supaAuthData.user && supaAuthData.user.id) || '').toLowerCase();

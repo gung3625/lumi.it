@@ -30,6 +30,12 @@ function isAdminSeller(id) {
   const brand = (process.env.LUMI_BRAND_USER_ID || '').trim();
   return ids.includes(id) || (!!brand && id === brand);
 }
+// 관리자 이메일 매칭 — 카카오 로그인(seller-jwt)은 Supabase auth user_id가 없어 id 매칭 불가 → email로 판정
+function isAdminEmail(email) {
+  if (!email) return false;
+  const list = String((process.env.ADMIN_EMAIL || 'gung3625@gmail.com') + ',gung3625@kakao.com').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+  return list.includes(String(email).toLowerCase());
+}
 const stripDataUri = (s) => String(s || '').replace(/^data:image\/[a-zA-Z0-9.+-]+;base64,/, '');
 
 // 레퍼런스 hex 팔레트 → {accent, ink(가장 어두운), soft(가장 밝은)}. 6자리 hex만 사용.
@@ -377,14 +383,15 @@ exports.handler = async (event) => {
   if (!allowRate(ip)) return err(429, '하루 생성 한도(' + RATE_LIMIT + '회)를 초과했습니다. 내일 다시 이용해 주세요.');
 
   // 무료 크레딧 체크 — 관리자 면제. 잔여 0이면 생성 차단(유료 안내). 조회 실패 시엔 막지 않고 진행(사용자 우선).
-  const _isAdmin = isAdminSeller(sellerId);
+  let _isAdmin = isAdminSeller(sellerId);
   let _credit = null;
   if (!_isAdmin) {
     try {
-      const { data: _s } = await getAdminClient().from('sellers').select('free_credits_remaining').eq('id', sellerId).single();
-      _credit = _s ? (_s.free_credits_remaining == null ? 0 : _s.free_credits_remaining) : 0;
+      const { data: _s } = await getAdminClient().from('sellers').select('free_credits_remaining, email').eq('id', sellerId).single();
+      if (_s && isAdminEmail(_s.email)) { _isAdmin = true; }
+      else { _credit = _s ? (_s.free_credits_remaining == null ? 0 : _s.free_credits_remaining) : 0; }
     } catch (_) { _credit = null; }
-    if (_credit !== null && _credit <= 0) return err(403, '무료 생성 2회를 모두 사용했어요. 더 만들려면 곧 열릴 유료 플랜을 이용해 주세요.');
+    if (!_isAdmin && _credit !== null && _credit <= 0) return err(403, '무료 생성 2회를 모두 사용했어요. 더 만들려면 곧 열릴 유료 플랜을 이용해 주세요.');
   }
 
   const jobId = Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
