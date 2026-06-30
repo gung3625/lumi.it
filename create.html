@@ -52,6 +52,10 @@ nav{position:sticky;top:0;z-index:50;background:rgba(10,10,12,.7);backdrop-filte
 .nav-right a.lk{color:var(--ink-3);transition:color .2s}
 .nav-right a.lk:hover{color:var(--ink)}
 .nav-right .credit{font-size:12.5px;font-weight:600;color:var(--c2);background:var(--grad-soft);border:1px solid var(--line-strong);border-radius:980px;padding:3px 11px}
+.pend-banner{align-items:center;gap:10px;margin:0 0 18px;padding:12px 16px;border-radius:14px;background:var(--grad-soft);border:1px solid var(--line-strong);font-size:14px;font-weight:600;color:var(--c2)}
+.pend-banner a{margin-left:auto;color:var(--c2);text-decoration:underline;font-weight:700;white-space:nowrap}
+.pend-banner .pb-dot{width:9px;height:9px;border-radius:50%;background:var(--c2);animation:pbpulse 1.3s ease-in-out infinite;flex:none}
+@keyframes pbpulse{0%,100%{opacity:.35;transform:scale(.85)}50%{opacity:1;transform:scale(1.15)}}
 
 /* ===== login gate ===== */
 #gate{display:none;min-height:calc(100vh - 62px);align-items:center;justify-content:center;padding:40px 22px}
@@ -190,6 +194,7 @@ summary::before{content:"+ ";font-weight:700}
   </div>
 
   <div class="card">
+    <div id="pendBanner" class="pend-banner" style="display:none"></div>
     <div id="inputArea">
     <div class="tabs">
       <button type="button" class="tabbtn active" data-mode="link">링크로</button>
@@ -281,6 +286,7 @@ summary::before{content:"+ ";font-weight:700}
   });
   if(!token){ gate.classList.add('on'); return; }  // 미로그인 → 게이트만 표시, 앱 로직 미실행
   app.classList.add('on');
+  refreshPending();pollPendingCreate();
 
   // 로그인 상태 — 매장명/로그아웃 표시 (실패해도 생성은 가능)
   var navRight=document.getElementById('navRight');
@@ -375,18 +381,45 @@ summary::before{content:"+ ";font-weight:700}
     var b=document.getElementById('toup');
     if(b)b.addEventListener('click',function(){var ut=document.querySelector('.tabbtn[data-mode="upload"]');if(ut)ut.click();err.classList.remove('on');err.innerHTML='';});
   }
+  function showToast(msg){
+    var t=document.getElementById('toast');
+    if(!t){t=document.createElement('div');t.id='toast';t.style.cssText='position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:rgba(20,10,16,.95);color:#fff;padding:13px 20px;border-radius:14px;font-size:14.5px;font-weight:600;z-index:9999;box-shadow:0 8px 30px rgba(0,0,0,.4);max-width:90vw;text-align:center;opacity:0;transition:opacity .3s;';document.body.appendChild(t);}
+    t.innerHTML=msg;t.style.opacity='1';clearTimeout(t._h);t._h=setTimeout(function(){t.style.opacity='0';},4600);
+  }
+  function getPend(){try{return JSON.parse(localStorage.getItem('lumi_pending')||'[]');}catch(_){return [];}}
+  function setPend(arr){try{localStorage.setItem('lumi_pending',JSON.stringify(arr));}catch(_){}}
+  function refreshPending(){
+    var b=document.getElementById('pendBanner');if(!b)return;var pj=getPend();
+    if(!pj.length){b.style.display='none';return;}
+    b.style.display='flex';b.innerHTML='<span class="pb-dot"></span><span>'+pj.length+'개 생성 중…</span><a href="/studio">작업실에서 보기 →</a>';
+  }
+  var _pollTimer=null;
+  function pollPendingCreate(){
+    var pj=getPend();
+    if(!pj.length){_pollTimer=setTimeout(pollPendingCreate,5000);return;}
+    var checked=0,done=0;
+    pj.forEach(function(p){
+      fetch('/api/generate-detail?jobId='+encodeURIComponent(p.jobId),{headers:authHeaders}).then(function(r){return r.json().then(function(j){return{s:r.status,j:j};});}).then(function(o){
+        var st=o.j&&o.j.status;
+        if(st==='done'||st==='error'||o.s===404){setPend(getPend().filter(function(x){return x.jobId!==p.jobId;}));if(st==='done')done++;}
+        if(++checked===pj.length){refreshPending();if(done)showToast('✓ '+done+'개 완성! <a href="/studio" style="color:#ffb3d0;text-decoration:underline">작업실에서 보기</a>');_pollTimer=setTimeout(pollPendingCreate,5000);}
+      }).catch(function(){if(++checked===pj.length){refreshPending();_pollTimer=setTimeout(pollPendingCreate,5000);}});
+    });
+  }
   function start(body){
     var u=document.getElementById('userreq');var req=u?u.value.trim():'';
     if(req)body.userRequest=req;
     var ru=document.getElementById('refurl');if(ru&&ru.value.trim())body.referenceUrl=ru.value.trim();
-    var _ia=document.getElementById('inputArea');if(_ia)_ia.style.display='none';
-    go.disabled=true;result.classList.remove('on');loading.classList.add('on');startLoadCycle();
+    go.disabled=true;
     fetch('/api/generate-detail',{method:'POST',headers:authHeaders,body:JSON.stringify(body)})
     .then(function(r){return r.json();}).then(function(j){
-      if(!j.jobId){loading.classList.remove('on');stopLoadCycle();go.disabled=false;showErr(j.error||'생성을 시작하지 못했습니다.',mode==='link');return;}
-      try{var _pj=JSON.parse(localStorage.getItem('lumi_pending')||'[]');_pj.push({jobId:j.jobId,title:(body&&(body.title||body.url))||'상세페이지',ts:Date.now()});localStorage.setItem('lumi_pending',JSON.stringify(_pj));}catch(_){}
-      poll(j.jobId,0);
-    }).catch(function(){loading.classList.remove('on');stopLoadCycle();go.disabled=false;showErr('네트워크 오류입니다. 다시 시도해 주세요.',false);});
+      go.disabled=false;
+      if(!j.jobId){showErr(j.error||'생성을 시작하지 못했습니다.',mode==='link');return;}
+      var _pj=getPend();_pj.push({jobId:j.jobId,title:(body&&(body.title||body.url))||'상세페이지',ts:Date.now()});setPend(_pj);
+      var ab=document.getElementById('analyzebox');if(ab)ab.style.display='none';
+      err.classList.remove('on');refreshPending();
+      showToast('🌥 생성을 시작했어요! 바로 다음 것도 만드세요. <a href="/studio" style="color:#ffb3d0;text-decoration:underline">작업실에서 진행 보기</a>');
+    }).catch(function(){go.disabled=false;showErr('네트워크 오류입니다. 다시 시도해 주세요.',false);});
   }
   go.addEventListener('click',function(){
     err.classList.remove('on');
@@ -450,7 +483,6 @@ summary::before{content:"+ ";font-weight:700}
     var facts=document.getElementById('a-facts').value.split('\n').map(function(s){return s.trim();}).filter(Boolean);
     if(!facts.length){showErr('상품 정보를 한 줄 이상 남겨주세요.',false);return;}
     document.getElementById('analyzebox').style.display='none';
-    setLoad('AI가 화보·카피·디자인 컷을 만드는 중...<br>상세페이지 내용이 많을수록 더 오래 걸려요. 창을 닫지 말고 기다려 주세요.');
     if(pendingUrl) start({url:pendingUrl,title:t||undefined,facts:facts,quality:'medium',referenceImageBase64:refData||undefined});
     else start({title:t||undefined,facts:facts,imageBase64:pendingMain,quality:'medium',referenceImageBase64:refData||undefined});
   });
