@@ -351,7 +351,7 @@ async function generateAiPhoto(src, prompt, { quality = 'low', size = '1024x1536
         // 멀티이미지 — 제품(첫째, 형태 기준) + hero 앵커(톤) + 디자인 레퍼런스(스타일). 제품 형태는 첫째에서, 디자인은 레퍼런스에서.
         form.append('image[]', new Blob([buf], { type: ct }), 'src.' + ext);
         if (refImage) { try { const rb = Buffer.from(String(refImage).replace(/^data:image\/[a-z0-9.+-]+;base64,/i, ''), 'base64'); form.append('image[]', new Blob([rb], { type: 'image/jpeg' }), 'anchor.jpg'); } catch (_) {} }
-        if (styleRefImage) { try { const sb = Buffer.from(String(styleRefImage).replace(/^data:image\/[a-z0-9.+-]+;base64,/i, ''), 'base64'); form.append('image[]', new Blob([sb], { type: 'image/jpeg' }), 'styleref.jpg'); } catch (_) {} }
+        if (styleRefImage) { try { const sb0 = Buffer.from(String(styleRefImage).replace(/^data:image\/[a-z0-9.+-]+;base64,/i, ''), 'base64'); const shp = require('sharp'); const rz = await shp(sb0).resize({ width: 640 }).toBuffer(); const sm = await shp(rz).metadata(); const sb = await shp(rz).extract({ left: 0, top: 0, width: sm.width || 640, height: Math.min(960, sm.height || 960) }).jpeg({ quality: 78 }).toBuffer(); form.append('image[]', new Blob([sb], { type: 'image/jpeg' }), 'styleref.jpg'); } catch (_) {} }
       } else {
         form.append('image', new Blob([buf], { type: ct }), 'src.' + ext);
       }
