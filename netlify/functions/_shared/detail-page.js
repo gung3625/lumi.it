@@ -342,7 +342,7 @@ async function generateAiPhoto(src, prompt, { quality = 'low', size = '1024x1536
     try {
       const form = new FormData();
       form.append('model', 'gpt-image-2');
-      form.append('prompt', refImage ? (prompt + ' ★The SECOND attached image is an already-generated section of THIS exact product set — match its product appearance, lighting, color temperature and overall visual style so every section looks like one cohesive page.') : prompt);
+      form.append('prompt', refImage ? (prompt + ' ★The FIRST attached image is the REAL product — replicate its exact form, silhouette and all parts (handle, lid, straw, etc.) precisely. The SECOND attached image is a previously generated section of the SAME product — match ONLY its color tone, lighting and visual style for page cohesion; do NOT let the second image make you reinterpret, simplify or alter the product form.') : prompt);
       if (refImage) {
         // 톤/제품 앵커 — 상품 + 앵커(앞서 생성한 hero)를 멀티이미지(image[])로 함께 넣어 블록 간 일관성 확보
         form.append('image[]', new Blob([buf], { type: ct }), 'src.' + ext);
@@ -690,6 +690,7 @@ function refBlockPlan(product, copy, facts, styleHint, userRequest) {
   // 입력 이미지는 "제품 한 장"뿐(레퍼런스 이미지는 넣지 않음).
   // ★전환(2026-06-27): 하이브리드(화보 텍스트0 + SVG) → gpt-image-2가 한글 글씨까지 직접 생성(한글 정확 실측 통과). renderBlockText 미사용.
   const base = 'This input image is the ACTUAL product. Keep the product 100% IDENTICAL — exact shape, color, pattern, proportions, every detail. Do NOT alter, recolor, beautify, or add any other product/box/package. Preserve product geometry and label legibility exactly; no artificial smoothing, keep natural texture/grain, render a photorealistic contact shadow. '
+    + '★PRODUCT FORM LOCK (critical): the product SILHOUETTE and every physical part (handle, lid, straw, spout, cap, buttons, body shape, number of parts) must stay EXACTLY as the input image across ALL sections. You may change camera angle, scene and lighting, but NEVER redesign, simplify, remove or add parts — if the input has a handle and a straw lid, every single shot must show that SAME handle and SAME straw lid with the same proportions. Do not turn it into a different product type (e.g. a mug or plain cup). '
     + 'Create a premium vertical Korean e-commerce detail-page SECTION for THIS product. '
     + 'Follow this TEXT-DESCRIBED visual style only (never invent products from it): ' + styleLine + '. '
     + '★CRITICAL TYPOGRAPHY: the Korean strings quoted in COMPOSITION below are THE EXACT TEXT TO RENDER — reproduce them character-for-character, large and crisp, 100% accurate Hangul with correct spelling, NO gibberish, NO random or extra letters/numbers anywhere. Use a clean Korean sans-serif (Pretendard or Noto Sans KR; if unavailable, a clean geometric sans-serif). Do not add any other text. '
@@ -736,7 +737,7 @@ function refBlockPlan(product, copy, facts, styleHint, userRequest) {
   // 한 블록에 다 못 담는 스펙/기능은 버리지 말고 다음 블록으로 넘긴다(페이지네이션 — 정보 누락 0). 첫 블록은 mkSpec/mkFeatures가 담당.
   const mkSpecOverflow = () => { const out = []; for (let i = 10; i < specFacts.length; i += 10) { const items = specFacts.slice(i, i + 10); out.push({ key: 'spec_' + i, quality: 'medium', text: { kicker: 'SPECIFICATION', title: '제품 상세 스펙', items }, prompt: base + 'COMPOSITION: a continued product SPEC table. At the TOP a Korean title "제품 상세 스펙". A clean spec table listing EXACTLY these Korean rows: ' + items.map((x) => q(x, 30)).join(', ') + '.' }); } return out; };
   // ★도배 방지: featFacts가 많아도 '추가 기능' 블록은 최대 2개까지만(핵심기능 1 + 추가 최대 2). 그 이상은 버린다(반복 도배가 정보누락보다 큰 품질 손해).
-  const mkFeatOverflow = () => { const out = []; const start = (Array.isArray(c.featureLabels) && c.featureLabels.length) ? 0 : 4; for (let i = start; i < featFacts.length && out.length < 2; i += 4) { const items = featFacts.slice(i, i + 4).map((x) => String(x).slice(0, 14)); if (!items.length) break; out.push({ key: 'feat_' + i, quality: 'medium', text: { kicker: 'FEATURES', title: '추가 기능', items }, prompt: base + 'COMPOSITION: at the TOP a Korean section title "추가 기능". One horizontal row of EXACTLY ' + items.length + ' items, each a simple minimal line icon + a short Korean label: ' + items.map((x) => q(x, 14)).join(', ') + '.' }); } return out; };
+  const mkFeatOverflow = () => { const out = []; const start = (Array.isArray(c.featureLabels) && c.featureLabels.length) ? 0 : 4; for (let i = start; i < featFacts.length && out.length < 1; i += 4) { const items = featFacts.slice(i, i + 4).map((x) => String(x).slice(0, 14)); if (!items.length) break; out.push({ key: 'feat_' + i, quality: 'medium', text: { kicker: 'FEATURES', title: '추가 기능', items }, prompt: base + 'COMPOSITION: at the TOP a Korean section title "추가 기능". One horizontal row of EXACTLY ' + items.length + ' items, each a simple minimal line icon + a short Korean label: ' + items.map((x) => q(x, 14)).join(', ') + '.' }); } return out; };
   const mkExtras = () => [
     ...mkSpecOverflow(),
     ...mkFeatOverflow(),
