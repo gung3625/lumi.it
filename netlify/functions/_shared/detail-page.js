@@ -316,7 +316,7 @@ async function generateDetailPage(product, { diffHook, painPoints, sellingHook, 
 }
 
 // gpt-image-2 edits로 도매꾹 사진→고급 화보(제품 유지). src=https URL 또는 base64 PNG. 실패 시 null. low=장당 ~19원.
-async function generateAiPhoto(src, prompt, { quality = 'low', size = '1024x1536', refImage = null } = {}) {
+async function generateAiPhoto(src, prompt, { quality = 'low', size = '1024x1536', refImage = null, styleRefImage = null } = {}) {
   const key = process.env.OPENAI_API_KEY;
   if (!key || !src) return null;
   let buf, ct = 'image/png';
@@ -342,11 +342,16 @@ async function generateAiPhoto(src, prompt, { quality = 'low', size = '1024x1536
     try {
       const form = new FormData();
       form.append('model', 'gpt-image-2');
-      form.append('prompt', refImage ? (prompt + ' ★The FIRST attached image is the REAL product — replicate its exact form, silhouette and all parts (handle, lid, straw, etc.) precisely. The SECOND attached image is a previously generated section of the SAME product — match ONLY its color tone, lighting and visual style for page cohesion; do NOT let the second image make you reinterpret, simplify or alter the product form.') : prompt);
-      if (refImage) {
-        // 톤/제품 앵커 — 상품 + 앵커(앞서 생성한 hero)를 멀티이미지(image[])로 함께 넣어 블록 간 일관성 확보
+      let fullPrompt = prompt;
+      if (refImage || styleRefImage) fullPrompt += ' ★The FIRST attached image is the REAL product — replicate its exact form, silhouette, all parts (handle, lid, straw, etc.) and color precisely; keep the product identical.';
+      if (refImage) fullPrompt += ' The next attached image is a previously generated section of the SAME product — match ONLY its color tone, lighting and visual style for page cohesion; do NOT reinterpret, simplify or alter the product form.';
+      if (styleRefImage) fullPrompt += ' ★The LAST attached image is a DESIGN STYLE REFERENCE (a detail-page the user likes) — closely adopt its color palette, overall mood, layout/composition, spacing and graphic treatment so this section FEELS like that reference, but do NOT copy its product, its text, or its photos; apply only its visual design language to THIS product.';
+      form.append('prompt', fullPrompt);
+      if (refImage || styleRefImage) {
+        // 멀티이미지 — 제품(첫째, 형태 기준) + hero 앵커(톤) + 디자인 레퍼런스(스타일). 제품 형태는 첫째에서, 디자인은 레퍼런스에서.
         form.append('image[]', new Blob([buf], { type: ct }), 'src.' + ext);
-        try { const rb = Buffer.from(String(refImage).replace(/^data:image\/[a-z0-9.+-]+;base64,/i, ''), 'base64'); form.append('image[]', new Blob([rb], { type: 'image/jpeg' }), 'ref.jpg'); } catch (_) {}
+        if (refImage) { try { const rb = Buffer.from(String(refImage).replace(/^data:image\/[a-z0-9.+-]+;base64,/i, ''), 'base64'); form.append('image[]', new Blob([rb], { type: 'image/jpeg' }), 'anchor.jpg'); } catch (_) {} }
+        if (styleRefImage) { try { const sb = Buffer.from(String(styleRefImage).replace(/^data:image\/[a-z0-9.+-]+;base64,/i, ''), 'base64'); form.append('image[]', new Blob([sb], { type: 'image/jpeg' }), 'styleref.jpg'); } catch (_) {} }
       } else {
         form.append('image', new Blob([buf], { type: ct }), 'src.' + ext);
       }
