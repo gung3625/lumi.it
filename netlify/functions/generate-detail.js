@@ -190,12 +190,12 @@ async function runGeneration(p, jobId) {
     const heroBlk = heroIdx >= 0 ? ordered.splice(heroIdx, 1)[0] : null;
     let anchor = null;
     if (heroBlk) {
-      const hp = await generateAiPhoto(srcForPhoto, heroBlk.prompt, { quality: heroBlk.quality, styleRefImage: (refImgs && refImgs[0]) || null });
+      const hp = await generateAiPhoto(srcForPhoto, heroBlk.prompt, { quality: heroBlk.quality });
       if (hp) { anchor = hp; try { fsq.writeFileSync(pathq.join(cacheDir, heroBlk.key + '.png'), Buffer.from(hp, 'base64')); } catch (_) {} blockResults.push({ key: heroBlk.key, b64: hp }); }
     }
     for (let i = 0; i < ordered.length; i += 3) {
       // gpt-image-2가 한글 글씨까지 직접 생성 → 결과 그대로 사용. hero를 앵커(refImage)로 첨부해 세트 일관성.
-      const batch = await Promise.all(ordered.slice(i, i + 3).map((blk) => generateAiPhoto(srcForPhoto, blk.prompt, { quality: blk.quality, refImage: anchor, styleRefImage: (refImgs && refImgs[0]) || null }).then((photo) => {
+      const batch = await Promise.all(ordered.slice(i, i + 3).map((blk) => generateAiPhoto(srcForPhoto, blk.prompt, { quality: blk.quality, refImage: anchor }).then((photo) => {
         if (!photo) return null;
         try { fsq.writeFileSync(pathq.join(cacheDir, blk.key + '.png'), Buffer.from(photo, 'base64')); } catch (_) {}
         return { key: blk.key, b64: photo };
