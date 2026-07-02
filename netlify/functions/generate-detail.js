@@ -2,7 +2,7 @@
 //   POST {url|title+imageBase64} → 즉시 jobId 반환(202), 백그라운드에서 생성.
 //   GET  ?jobId → 상태 조회(pending / done+html / error).
 // 생성이 1~3분 걸려서 동기 응답은 프록시·브라우저 타임아웃 위험 → 작업+폴링 방식.
-const { generateDetailPage, generateAiPhoto, photoPrompt, scenePlan, copyToBlocks, renderBlocks, accentPalette, paletteFromHex, extractProductTitle, analyzeProductImages, analyzeReferenceStyle, refStylePrompt, verifyGenerated, refBlockPlan, detectCategory, stitchBlocks, renderBlockText, recomposeBlocks, recomposeBlock } = require('./_shared/detail-page.js');
+const { generateDetailPage, generateAiPhoto, photoPrompt, scenePlan, copyToBlocks, renderBlocks, accentPalette, extractProductTitle, analyzeProductImages, analyzeReferenceStyle, refStylePrompt, verifyGenerated, refBlockPlan, detectCategory, stitchBlocks, renderBlockText, recomposeBlocks, recomposeBlock } = require('./_shared/detail-page.js');
 const { getItemView } = require('./_shared/domeggook-api.js');
 const { getDometopiaItem, parseNo } = require('./_shared/dometopia.js');
 const { fetchViaUnlocker, parseUniversalProduct } = require('./_shared/universal.js');
