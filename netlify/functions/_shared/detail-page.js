@@ -360,8 +360,33 @@ async function generateAiPhoto(src, prompt, { quality = 'low', size = '1024x1536
       const res = await fetch('https://api.openai.com/v1/images/edits', { method: 'POST', headers: { Authorization: 'Bearer ' + key }, body: form, signal: AbortSignal.timeout(240000) });
       const j = await res.json();
       if (j && !j.error && j.data && j.data[0] && j.data[0].b64_json) return j.data[0].b64_json;
+      // 잔액 소진(insufficient_quota)은 재시도해도 무의미 → 즉시 폴백으로.
+      if (j && j.error && /insufficient_quota|billing/i.test(String(j.error.code || '') + String(j.error.type || '') + String(j.error.message || ''))) break;
     } catch (_) {}
   }
+  // OpenAI 전부 실패 → Gemini(나노바나나) 폴백. 무료 키는 이미지 쿼터 0(2026-07 실측 429) — GEMINI_PAID_API_KEY 등록 시 작동.
+  try {
+    const gkey = process.env.GEMINI_PAID_API_KEY || process.env.GEMINI_API_KEY;
+    if (!gkey) return null;
+    const gmodel = process.env.GEMINI_IMAGE_MODEL || 'gemini-2.5-flash-image';
+    let gPrompt = prompt + ' Vertical 2:3 e-commerce composition.';
+    if (refImage) gPrompt += ' ★The FIRST attached image is the REAL product — keep it 100% identical (shape, color, all parts). The SECOND image is a previously generated section of the SAME product — match ONLY its color tone and style.';
+    const parts = [{ inline_data: { mime_type: ct, data: buf.toString('base64') } }];
+    if (refImage) { try { parts.push({ inline_data: { mime_type: 'image/jpeg', data: String(refImage).replace(/^data:image\/[a-z0-9.+-]+;base64,/i, '') } }); } catch (_) {} }
+    parts.push({ text: gPrompt });
+    const gcall = async (withCfg) => {
+      const body = { contents: [{ parts }] };
+      if (withCfg) body.generationConfig = { imageConfig: { aspectRatio: '2:3' } };
+      const gr = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + gmodel + ':generateContent?key=' + gkey, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(120000) });
+      return gr.json();
+    };
+    let gj = await gcall(true);
+    if (gj && gj.error && /imageConfig|aspect/i.test(String(gj.error.message || ''))) gj = await gcall(false); // 구모델이 imageConfig 미지원이면 없이 재시도
+    if (gj && gj.error) { console.warn('[photo] gemini 폴백 실패:', String(gj.error.message || '').slice(0, 80)); return null; }
+    const gp = (((gj.candidates || [])[0] || {}).content || {}).parts || [];
+    const gi = gp.find((p) => p.inlineData && p.inlineData.data);
+    if (gi) { console.warn('[photo] OpenAI 실패 → gemini(' + gmodel + ') 폴백 성공'); return gi.inlineData.data; }
+  } catch (e) { console.warn('[photo] gemini 폴백 예외:', String(e && e.message).slice(0, 80)); }
   return null;
 }
 
