@@ -2,7 +2,7 @@
 //   POST {url|title+imageBase64} → 즉시 jobId 반환(202), 백그라운드에서 생성.
 //   GET  ?jobId → 상태 조회(pending / done+html / error).
 // 생성이 1~3분 걸려서 동기 응답은 프록시·브라우저 타임아웃 위험 → 작업+폴링 방식.
-const { generateDetailPage, generateAiPhoto, photoPrompt, scenePlan, copyToBlocks, renderBlocks, accentPalette, extractProductTitle, analyzeProductImages, analyzeReferenceStyle, refStylePrompt, verifyGenerated, refBlockPlan, detectCategory, stitchBlocks, renderBlockText, recomposeBlocks, recomposeBlock } = require('./_shared/detail-page.js');
+const { generateDetailPage, generateAiPhoto, photoPrompt, scenePlan, copyToBlocks, renderBlocks, accentPalette, paletteFromHex, extractProductTitle, analyzeProductImages, analyzeReferenceStyle, refStylePrompt, verifyGenerated, refBlockPlan, detectCategory, stitchBlocks, renderBlockText, recomposeBlocks, recomposeBlock } = require('./_shared/detail-page.js');
 const { getItemView } = require('./_shared/domeggook-api.js');
 const { getDometopiaItem, parseNo } = require('./_shared/dometopia.js');
 const { fetchViaUnlocker, parseUniversalProduct } = require('./_shared/universal.js');
@@ -176,46 +176,28 @@ async function runGeneration(p, jobId) {
       try { if (selfImgs) { const sh = await analyzeReferenceStyle(selfImgs); if (sh && Array.isArray(sh.structure) && sh.structure.length) selfStruct = sh.structure; } } catch (_) {}
       styleHint.structure = selfStruct;
     }
-    const plan = refBlockPlan(product, copy, factsForPrompt, styleHint, p.userRequest);
-    const blockResults = [];
-    // 비타민은 레퍼런스 이미지 미입력으로 이미 차단됨 → verify 불필요. 블록을 3개씩 병렬 생성(속도: 순차 18분 → 수분).
-    const sharpLib = require('sharp');
+    // ★하이브리드 전환(2026-07-02): 통이미지(글자 구움)→ 글자 없는 화보(scenePlan) + HTML 텍스트 레이어(renderBlocks).
+    //   통이미지의 텍스트 뭉개짐·스타일 제각각·제품 오염을 원천 차단. 레퍼런스는 styleHint(색·무드·팔레트)로 반영.
     const fsq = require('fs'); const pathq = require('path');
-    // ★화보 캐시: 블록 화보(텍스트0)를 jobId별로 저장 → 편집·재합성 시 gpt 재호출 X(크레딧 0).
     const cacheDir = pathq.join(process.env.HOME || '/home/lumi', 'lumi', 'cache', String(jobId || 'tmp'));
     try { fsq.mkdirSync(cacheDir, { recursive: true }); } catch (_) {}
-    // ★톤 앵커: hero(첫 블록)를 먼저 생성 → 나머지 블록 생성 시 refImage로 첨부해 블록 간 제품/톤 일관성 확보.
-    const ordered = plan.slice();
-    const heroIdx = ordered.findIndex((b) => b.key === 'hero');
-    const heroBlk = heroIdx >= 0 ? ordered.splice(heroIdx, 1)[0] : null;
-    let anchor = null;
-    if (heroBlk) {
-      const hp = await generateAiPhoto(srcForPhoto, heroBlk.prompt, { quality: heroBlk.quality });
-      if (hp) { anchor = hp; try { fsq.writeFileSync(pathq.join(cacheDir, heroBlk.key + '.png'), Buffer.from(hp, 'base64')); } catch (_) {} blockResults.push({ key: heroBlk.key, b64: hp }); }
+    const IMG_DIR = pathq.join(RESULTS_DIR, 'img');
+    try { fsq.mkdirSync(IMG_DIR, { recursive: true }); } catch (_) {}
+    // 제품 앵커 화보(글자 없는) 먼저 생성 → 나머지 컷의 제품/톤 일관성 확보.
+    const baseB64 = await generateAiPhoto(srcForPhoto, photoPrompt(product.title), { quality: 'low' });
+    const scPlan = scenePlan(product, copy, styleHint);
+    const scenes = [];
+    for (let i = 0; i < scPlan.length; i += 3) {
+      const batch = await Promise.all(scPlan.slice(i, i + 3).map(async (c) => ({ key: c.key, img: await generateAiPhoto(baseB64 || srcForPhoto, c.prompt, { quality: quality || 'medium', refImage: baseB64 || null }) })));
+      scenes.push(...batch);
     }
-    for (let i = 0; i < ordered.length; i += 3) {
-      // gpt-image-2가 한글 글씨까지 직접 생성 → 결과 그대로 사용. hero를 앵커(refImage)로 첨부해 세트 일관성.
-      const batch = await Promise.all(ordered.slice(i, i + 3).map((blk) => generateAiPhoto(srcForPhoto, blk.prompt, { quality: blk.quality, refImage: anchor }).then((photo) => {
-        if (!photo) return null;
-        try { fsq.writeFileSync(pathq.join(cacheDir, blk.key + '.png'), Buffer.from(photo, 'base64')); } catch (_) {}
-        return { key: blk.key, b64: photo };
-      })));
-      batch.forEach((x) => { if (x) blockResults.push(x); });
-    }
-    // 플랜·스타일 메타 저장(편집/재합성용 — 화보 재생성 없이 텍스트만 다시 얹음).
-    try { fsq.writeFileSync(pathq.join(cacheDir, '_meta.json'), JSON.stringify({ plan: plan.map((b) => ({ key: b.key, text: b.text, prompt: b.prompt, quality: b.quality })), styleHint })); } catch (_) {}
+    scenes.forEach((s) => { if (!s.img) return; try { fsq.writeFileSync(pathq.join(cacheDir, s.key + '.png'), Buffer.from(s.img, 'base64')); fsq.writeFileSync(pathq.join(IMG_DIR, String(jobId) + '-' + s.key + '.png'), Buffer.from(s.img, 'base64')); s.img = 'https://lumi.it.kr/r/img/' + String(jobId) + '-' + s.key + '.png'; } catch (_) {} });
+    const hblocks = copyToBlocks(product, copy, scenes);
+    const palette = (styleHint && styleHint.palette && styleHint.palette.length) ? paletteFromHex(styleHint.palette) : await accentPalette((scenes.find((s) => s.img) || {}).img || baseB64);
+    try { fsq.writeFileSync(pathq.join(cacheDir, '_meta.json'), JSON.stringify({ blocks: hblocks, palette, styleHint })); } catch (_) {}
     try { fsq.writeFileSync(pathq.join(cacheDir, '_src.txt'), String(srcForPhoto || '')); } catch (_) {}
-    if (!blockResults.length) throw new Error('이미지 생성에 실패했습니다. 다시 시도해 주세요');
-    // ★블록별 결과 — 개별 저장(/r/img/{jobId}-{key}.png) + URL → 편집 화면(블록 편집)용. blocks=[{key,img,text}].
-    try { fsq.mkdirSync(pathq.join(RESULTS_DIR, 'img'), { recursive: true }); } catch (_) {}
-    const blocks = blockResults.map((br) => {
-      const fn = String(jobId) + '-' + br.key + '.png';
-      try { fsq.writeFileSync(pathq.join(RESULTS_DIR, 'img', fn), Buffer.from(br.b64, 'base64')); } catch (_) {}
-      const pm = plan.find((p) => p.key === br.key);
-      return { key: br.key, img: 'https://lumi.it.kr/r/img/' + fn, text: pm ? pm.text : {} };
-    });
-    const stitched = await stitchBlocks(blockResults.map((b) => b.b64));
-    return { title: product.title, image: stitched || blockResults[0].b64, copy, reviewPoints: withLegal(result.reviewPoints), legalWarning, mode: 'image', blockCount: blockResults.length, blocks, styleHint: styleHint || null, jobId: String(jobId || '') };
+    const html = renderBlocks(hblocks, palette);
+    return { title: product.title, html, blocks: hblocks, palette, copy, reviewPoints: withLegal(result.reviewPoints), legalWarning, mode: 'html', sceneCount: scenes.filter((s) => s.img).length, styleHint: styleHint || null, jobId: String(jobId || '') };
   }
 
   // (레퍼런스 없을 때) 기존 블록 흐름
