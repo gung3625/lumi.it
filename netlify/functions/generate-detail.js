@@ -40,11 +40,20 @@ const stripDataUri = (s) => String(s || '').replace(/^data:image\/[a-zA-Z0-9.+-]
 
 // 레퍼런스 hex 팔레트 → {accent, ink(가장 어두운), soft(가장 밝은)}. 6자리 hex만 사용.
 function lum(hex) { const h = hex.replace('#', ''); return 0.299 * parseInt(h.slice(0, 2), 16) + 0.587 * parseInt(h.slice(2, 4), 16) + 0.114 * parseInt(h.slice(4, 6), 16); }
+function sat(hex) { const h = hex.replace('#', ''); const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16); return Math.max(r, g, b) - Math.min(r, g, b); }
+function darkenHex(hex, f) { const h = hex.replace('#', ''); return '#' + [h.slice(0, 2), h.slice(2, 4), h.slice(4, 6)].map((x) => Math.max(0, Math.round(parseInt(x, 16) * f)).toString(16).padStart(2, '0')).join(''); }
 function paletteFromHex(arr) {
   const hs = (arr || []).filter((c) => /^#[0-9a-f]{6}$/i.test(String(c)));
   if (!hs.length) return null;
   const sorted = [...hs].sort((a, b) => lum(a) - lum(b));
-  return { accent: hs[0], ink: sorted[0], soft: sorted[sorted.length - 1] };
+  // accent: 흰/회색 방지 — 채도 있는 색(≥30) 중 극단 명도 아닌 것에서 채도 최대. 파스텔(밝음)이면 어둡게 보정. 없으면 undefined → 렌더러 기본색.
+  const cands = hs.filter((c) => sat(c) >= 30 && lum(c) >= 30 && lum(c) <= 215).sort((a, b) => sat(b) - sat(a));
+  let accent = cands[0];
+  if (accent && lum(accent) > 170) accent = darkenHex(accent, 0.7);
+  // ink는 충분히 어두울 때만(≤80), soft는 충분히 밝을 때만(≥225) — 아니면 렌더러 기본값 사용.
+  const ink = lum(sorted[0]) <= 80 ? sorted[0] : undefined;
+  const soft = lum(sorted[sorted.length - 1]) >= 225 ? sorted[sorted.length - 1] : undefined;
+  return { accent, ink, soft };
 }
 
 // 작업 저장소(모듈 스코프 — server.js가 1회 require하므로 프로세스 동안 유지). 90분 TTL.
@@ -191,6 +200,8 @@ async function runGeneration(p, jobId) {
       const batch = await Promise.all(scPlan.slice(i, i + 3).map(async (c) => ({ key: c.key, img: await generateAiPhoto(baseB64 || srcForPhoto, c.prompt, { quality: quality || 'medium', refImage: baseB64 || null }) })));
       scenes.push(...batch);
     }
+    // 화보가 한 장도 안 나오면(예: API 잔액 소진) 이미지 없는 반쪽 결과를 내보내지 않고 명확히 실패 처리.
+    if (!scenes.some((s) => s.img)) throw new Error('화보 이미지 생성에 실패했습니다. 잠시 후 다시 시도해 주세요. (반복되면 관리자에게 문의)');
     scenes.forEach((s) => { if (!s.img) return; try { fsq.writeFileSync(pathq.join(cacheDir, s.key + '.png'), Buffer.from(s.img, 'base64')); fsq.writeFileSync(pathq.join(IMG_DIR, String(jobId) + '-' + s.key + '.png'), Buffer.from(s.img, 'base64')); s.img = 'https://lumi.it.kr/r/img/' + String(jobId) + '-' + s.key + '.png'; } catch (_) {} });
     const hblocks = copyToBlocks(product, copy, scenes);
     const palette = (styleHint && styleHint.palette && styleHint.palette.length) ? paletteFromHex(styleHint.palette) : await accentPalette((scenes.find((s) => s.img) || {}).img || baseB64);
