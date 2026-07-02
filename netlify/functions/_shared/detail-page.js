@@ -47,15 +47,24 @@ const SYS = [
   '제품 사실(치수·용량·구성품·인증·기능·옵션·색상)은 [상품데이터]·[이미지분석]에 있는 것을 쓴다. 거기 없거나 안 읽히는 사실(구체 수치·작동시간 등)은 추론·창작하지 말고 빼거나 "상세 참조". [이미지분석]에 기능(예 각도조절·풍량)이 있으면 그건 실제이니 적극 활용.',
   '도매 거래조건(MOQ·도매단가·사업자·재판매)은 소비자 카피에 절대 X. 한국어·모바일 가독성·이모지 금지.',
   '',
+  '== ★판매 시나리오(먼저 1개 선택) ==',
+  '제품 특성에 맞는 시나리오를 고르고, sections를 그 beat 순서대로 설계한다(전체가 하나의 판매 서사).',
+  '- storybrand(기본 — 처음 보는 고객을 차근차근 설득): 문제제기→가이드/제품소개→해결계획→사용후변화→손실회피→마지막확신.',
+  '- objection(가격·효과·신뢰 때문에 망설일 가능성이 큰 제품): 구매전고민→전환선언→비교기준→제품디테일→근거/신뢰→마지막확신.',
+  '- usage(사용 장면·라이프스타일 전환이 매력인 제품): 상황질문→사용장면→사용루틴→제품디테일→제품구성.',
+  '- compare(대체재가 많아 선택 기준을 잡아줘야 하는 제품): 왜지금필요→디테일확인→확인근거→상품정보→오퍼.',
+  '★연속 서사(반복 금지): 각 섹션은 "전체 N개 중 i번째 장면"이다. 이전 섹션·히어로의 문구/메시지를 반복하지 말고, 매 섹션이 새로운 정보·새로운 장면으로 다음 구매 판단으로 이어지게 쓴다. 섹션 headline은 내부 단계명이 아니라 소비자에게 말 거는 카피.',
+  '',
   '== 컷 흐름(이 순서) ==',
-  '메인히어로 → 문제공감 → 해결혜택 → 핵심차별점 → 실물/사용장면 → 신뢰근거 → 구성/옵션 → 배송/주의 → FAQ → CTA.',
+  '메인히어로 → 문제공감(concerns) → 해결혜택(benefits) → 시나리오 sections → 핵심차별점(comparison) → 구성/스펙 → FAQ → CTA.',
   '',
   '== 출력 JSON 키 ==',
   'seoTitle: 검색 잘되는 60자내 제목.  heroKicker: 헤드라인 위 작은 영문 라벨(대문자 영어 2~4단어, 예 WINTER COLLECTION/DAILY ESSENTIAL — 제품 카테고리·콘셉트를 영어로).  heroHeadline: 첫화면 후킹(이익 중심 12~22자).  heroEmphasis: heroHeadline 안에서 강조할 핵심 단어/구 1개 — heroHeadline에 "그대로 포함된" 부분 문자열이어야 함(색 강조용).  heroSub: 보조 한 줄.',
   'concerns: 고객 고민 2~3개("이런 적 없으세요?" 톤, 불만해소 데이터 반영).',
-  'benefits: 핵심 혜택 3~4개(혜택+근거).  featureLabels: 핵심 기능/특징을 아이콘 옆에 넣을 "짧은 명사 키워드" 4개(각 4~7자, 예 "기모 안감"·"퀼팅 패턴"·"세트 구성" — 완전한 문장 금지, 서술형 금지).  sections: 실물/사용장면·핵심기능 2~4개[{name,headline,body,visual}]. ★visual = 이 섹션의 "의미"를 보여줄 이미지를 영어 한 줄로 구체 지시(제품이 무엇과·어떻게 보이는지). 단순 "제품 정면"이 아니라 그 섹션이 말하는 바를 시각화 — 예: 보온강조면 "ice cubes still fully frozen inside the cup after hours, cold condensation"; 대용량이면 "filled to the brim beside a regular cup for size comparison"; 휴대편의면 "held in a hand or clipped to a bag on the go"; 디자인소개면 "clean premium studio hero shot, 3/4 angle". 기능 섹션엔 그 기능을 시연/은유하는 장면을, 디자인 섹션엔 예쁜 구도를.',
+  'benefits: 핵심 혜택 3~4개(혜택+근거).  featureLabels: 핵심 기능/특징을 아이콘 옆에 넣을 "짧은 명사 키워드" 4개(각 4~7자, 예 "기모 안감"·"퀼팅 패턴"·"세트 구성" — 완전한 문장 금지, 서술형 금지).  sections: 선택한 시나리오의 beat 순서를 따르는 4~6개[{beat,name,headline,body,visual}]. beat=시나리오 단계명(예 "문제제기"·"사용후변화"). ★visual = 이 섹션의 "의미"를 보여줄 이미지를 영어 한 줄로 구체 지시(제품이 무엇과·어떻게 보이는지). 단순 "제품 정면"이 아니라 그 섹션이 말하는 바를 시각화 — 예: 보온강조면 "ice cubes still fully frozen inside the cup after hours, cold condensation"; 대용량이면 "filled to the brim beside a regular cup for size comparison"; 휴대편의면 "held in a hand or clipped to a bag on the go"; 디자인소개면 "clean premium studio hero shot, 3/4 angle". 기능 섹션엔 그 기능을 시연/은유하는 장면을, 디자인 섹션엔 예쁜 구도를.',
   'comparison: {headline:"왜 이 제품인가", points:[차별점 2~3]}.  faq: 소비자질문 2~3개[{q,a}].  closing: 마무리 한 줄.',
   'reviewPoints: 판매자가 출고 전 꼭 확인할 항목 2~4개(추정으로 채운 사양, 강하게 단정한 카피, 빠졌을 수 있는 정보). 소비자 비노출 — 판매자 검수용.',
+  'scenario: 선택한 시나리오 키(storybrand|objection|usage|compare) 하나.',
   '[소싱데이터]·[이미지분석]이 있으면 적극 반영. 출력은 위 키의 JSON 하나만.',
 ].join('\n');
 
@@ -524,7 +533,8 @@ function copyToBlocks(product, copy, scenes) {
   if (byKey.detail) blocks.push({ type: 'image', image: byKey.detail });
   if (c.comparison && Array.isArray(c.comparison.points) && c.comparison.points.length) blocks.push({ type: 'comparison', headline: c.comparison.headline || '왜 이 제품일까요?', points: c.comparison.points });
   if (byKey.color) blocks.push({ type: 'image', image: byKey.color });
-  sections.slice(1).forEach((s) => blocks.push({ type: 'scene', image: byKey.benefit || null, eyebrow: '', headline: s.headline || '', body: s.body || '' }));
+  // 같은 화보 반복 금지 — 첫 추가 섹션만 benefit 컷 사용, 나머지는 텍스트 중심(이미지 없는 scene 블록도 깔끔하게 렌더됨).
+  sections.slice(1).forEach((s, i) => blocks.push({ type: 'scene', image: i === 0 ? (byKey.benefit || null) : null, eyebrow: '', headline: s.headline || '', body: s.body || '' }));
   const rows = specRowsData(product.spec);
   if (rows.length) blocks.push({ type: 'spec', rows });
   if (Array.isArray(c.faq) && c.faq.length) blocks.push({ type: 'faq', headline: '자주 묻는 질문', items: c.faq });
